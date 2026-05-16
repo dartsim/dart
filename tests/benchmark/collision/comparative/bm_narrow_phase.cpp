@@ -38,6 +38,7 @@
 #include <dart/collision/native/narrow_phase/capsule_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_capsule.hpp>
 #include <dart/collision/native/narrow_phase/capsule_sphere.hpp>
+#include <dart/collision/native/narrow_phase/convex_convex.hpp>
 #include <dart/collision/native/narrow_phase/cylinder_collision.hpp>
 #include <dart/collision/native/narrow_phase/plane_sphere.hpp>
 #include <dart/collision/native/narrow_phase/sphere_box.hpp>
@@ -135,6 +136,17 @@ void RunDetectorBenchmark(
 Eigen::Isometry3d OffsetTransform(double x, double y, double z)
 {
   return dart::benchmark::collision::MakeTransform(Eigen::Vector3d(x, y, z));
+}
+
+std::vector<Eigen::Vector3d> MakeBenchmarkOctahedronVertices(double scale)
+{
+  return {
+      {scale, 0.0, 0.0},
+      {-scale, 0.0, 0.0},
+      {0.0, scale, 0.0},
+      {0.0, -scale, 0.0},
+      {0.0, 0.0, scale},
+      {0.0, 0.0, -scale}};
 }
 
 enum class RawCollisionSanity
@@ -1199,6 +1211,99 @@ struct CylinderCylinderBatchBenchmarkRegistrar
 
 static CylinderCylinderBatchBenchmarkRegistrar
     g_cylinder_cylinder_batch_benchmark_registrar;
+
+static void BM_NarrowPhase_ConvexConvex_Native(benchmark::State& state)
+{
+  ConvexShape c1(MakeBenchmarkOctahedronVertices(0.60));
+  ConvexShape c2(MakeBenchmarkOctahedronVertices(0.55));
+
+  const Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  const Eigen::Isometry3d tf2 = OffsetTransform(0.65, 0.0, 0.0);
+
+  CollisionResult result;
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  for (auto _ : state) {
+    result.clear();
+    benchmark::DoNotOptimize(
+        collideConvexConvex(c1, tf1, c2, tf2, result, option));
+  }
+}
+BENCHMARK(BM_NarrowPhase_ConvexConvex_Native);
+
+static std::vector<ConvexPair> MakeConvexConvexBatchPairs(
+    std::size_t batchSize, const ConvexShape& convex1, const ConvexShape& convex2)
+{
+  std::mt19937 rng(577215u);
+  std::uniform_real_distribution<double> offset(-0.04, 0.04);
+  std::uniform_real_distribution<double> angle(-0.12, 0.12);
+
+  std::vector<ConvexPair> pairs;
+  pairs.reserve(batchSize);
+  for (std::size_t i = 0; i < batchSize; ++i) {
+    Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+    tf1.linear()
+        = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
+           * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
+              .toRotationMatrix();
+    tf1.translation() = Eigen::Vector3d(
+        offset(rng), offset(rng), offset(rng));
+
+    Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+    tf2.linear()
+        = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
+           * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
+              .toRotationMatrix();
+    tf2.translation() = Eigen::Vector3d(
+        0.65 + offset(rng), offset(rng), offset(rng));
+
+    pairs.push_back(ConvexPair{&convex1, &convex2, tf1, tf2});
+  }
+  return pairs;
+}
+
+static void BM_NarrowPhase_ConvexConvex_Native_Batch(
+    benchmark::State& state, std::size_t batchSize)
+{
+  ConvexShape c1(MakeBenchmarkOctahedronVertices(0.60));
+  ConvexShape c2(MakeBenchmarkOctahedronVertices(0.55));
+
+  const auto pairs = MakeConvexConvexBatchPairs(batchSize, c1, c2);
+  std::vector<CollisionResult> results(batchSize);
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  for (auto _ : state) {
+    for (auto& result : results)
+      result.clear();
+    collideConvexConvexBatch(pairs, results, option);
+    benchmark::DoNotOptimize(results.data());
+    benchmark::ClobberMemory();
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations())
+      * static_cast<int64_t>(batchSize));
+  state.counters["pairs_per_iteration"] = static_cast<double>(batchSize);
+}
+
+struct ConvexConvexBatchBenchmarkRegistrar
+{
+  ConvexConvexBatchBenchmarkRegistrar()
+  {
+    for (const std::size_t batchSize : {1u, 10u, 100u, 1000u}) {
+      const std::string name
+          = "BM_NarrowPhase_ConvexConvex_Native_Batch_N"
+            + std::to_string(batchSize);
+      benchmark::RegisterBenchmark(
+          name.c_str(), BM_NarrowPhase_ConvexConvex_Native_Batch, batchSize);
+    }
+  }
+};
+
+static ConvexConvexBatchBenchmarkRegistrar
+    g_convex_convex_batch_benchmark_registrar;
 
 static void BM_NarrowPhase_CylinderCylinder_FCL(benchmark::State& state)
 {

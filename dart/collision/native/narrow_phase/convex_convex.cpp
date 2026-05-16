@@ -34,6 +34,7 @@
 #include <dart/collision/native/narrow_phase/mpr.hpp>
 
 #include <limits>
+#include <stdexcept>
 #include <vector>
 
 #include <cmath>
@@ -280,6 +281,28 @@ bool collideConvexConvex(
   const Eigen::Vector3d centerB = computeShapeCenter(shape2, tf2);
   return collideSupportFunctions(
       supportA, centerA, supportB, centerB, result, option);
+}
+
+void collideConvexConvexBatch(
+    std::span<const ConvexPair> pairs,
+    std::span<CollisionResult> results,
+    const CollisionOption& option)
+{
+  if (results.size() < pairs.size()) {
+    throw std::invalid_argument(
+        "collideConvexConvexBatch requires one result for each pair");
+  }
+
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    const auto& pair = pairs[i];
+    if (pair.shapeA == nullptr || pair.shapeB == nullptr) {
+      throw std::invalid_argument(
+          "collideConvexConvexBatch received a null shape");
+    }
+
+    [[maybe_unused]] const bool collided = collideConvexConvex(
+        *pair.shapeA, pair.tfA, *pair.shapeB, pair.tfB, results[i], option);
+  }
 }
 
 double distanceConvexConvex(

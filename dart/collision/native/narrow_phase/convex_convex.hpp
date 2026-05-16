@@ -39,7 +39,17 @@
 
 #include <Eigen/Geometry>
 
+#include <span>
+
 namespace dart::collision::native {
+
+struct DART_COLLISION_NATIVE_API ConvexPair
+{
+  const Shape* shapeA;
+  const Shape* shapeB;
+  Eigen::Isometry3d tfA;
+  Eigen::Isometry3d tfB;
+};
 
 DART_COLLISION_NATIVE_API SupportFunction makeConvexSupportFunction(
     const ConvexShape& shape, const Eigen::Isometry3d& transform);
@@ -74,6 +84,11 @@ DART_COLLISION_NATIVE_API bool collideConvexConvex(
     const Eigen::Isometry3d& tf2,
     CollisionResult& result,
     const CollisionOption& option);
+
+DART_COLLISION_NATIVE_API void collideConvexConvexBatch(
+    std::span<const ConvexPair> pairs,
+    std::span<CollisionResult> results,
+    const CollisionOption& option = CollisionOption());
 
 DART_COLLISION_NATIVE_API double distanceConvexConvex(
     const Shape& shape1,

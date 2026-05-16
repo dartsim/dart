@@ -37,6 +37,10 @@
 
 #include <gtest/gtest.h>
 
+#include <random>
+#include <stdexcept>
+#include <vector>
+
 using namespace dart::collision::native;
 
 std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale = 1.0)
@@ -81,6 +85,57 @@ std::vector<MeshShape::Triangle> makeCubeTriangles()
       {1, 6, 2}};
 }
 
+Eigen::Isometry3d makeConvexBatchTransform(
+    double x, double y, double z, double angle)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = (Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitX())
+                 * Eigen::AngleAxisd(0.5 * angle, Eigen::Vector3d::UnitY()))
+                    .toRotationMatrix();
+  tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
+
+void expectVectorExactlyEqual(
+    const Eigen::Vector3d& expected, const Eigen::Vector3d& actual)
+{
+  EXPECT_EQ(expected.x(), actual.x());
+  EXPECT_EQ(expected.y(), actual.y());
+  EXPECT_EQ(expected.z(), actual.z());
+}
+
+void expectContactExactlyEqual(
+    const ContactPoint& expected, const ContactPoint& actual)
+{
+  expectVectorExactlyEqual(expected.position, actual.position);
+  expectVectorExactlyEqual(expected.normal, actual.normal);
+  EXPECT_EQ(expected.depth, actual.depth);
+  EXPECT_EQ(expected.object1, actual.object1);
+  EXPECT_EQ(expected.object2, actual.object2);
+  EXPECT_EQ(expected.featureIndex1, actual.featureIndex1);
+  EXPECT_EQ(expected.featureIndex2, actual.featureIndex2);
+}
+
+void expectCollisionResultExactlyEqual(
+    const CollisionResult& expected, const CollisionResult& actual)
+{
+  ASSERT_EQ(expected.numManifolds(), actual.numManifolds());
+  ASSERT_EQ(expected.numContacts(), actual.numContacts());
+
+  for (std::size_t i = 0; i < expected.numManifolds(); ++i) {
+    const auto& expectedManifold = expected.getManifold(i);
+    const auto& actualManifold = actual.getManifold(i);
+    EXPECT_EQ(expectedManifold.getType(), actualManifold.getType());
+    EXPECT_EQ(expectedManifold.getObject1(), actualManifold.getObject1());
+    EXPECT_EQ(expectedManifold.getObject2(), actualManifold.getObject2());
+    ASSERT_EQ(expectedManifold.numContacts(), actualManifold.numContacts());
+    for (std::size_t j = 0; j < expectedManifold.numContacts(); ++j) {
+      expectContactExactlyEqual(
+          expectedManifold.getContact(j), actualManifold.getContact(j));
+    }
+  }
+}
+
 TEST(ConvexCollision, ConvexConvexIntersecting)
 {
   auto octahedron1 = std::make_unique<ConvexShape>(makeOctahedronVertices());
@@ -99,6 +154,65 @@ TEST(ConvexCollision, ConvexConvexIntersecting)
 
   EXPECT_TRUE(collides);
   EXPECT_GE(result.numContacts(), 1u);
+}
+
+TEST(ConvexCollisionBatch, convex_convex_batch_determinism_vs_single)
+{
+  ConvexShape convexA(makeOctahedronVertices(0.60));
+  ConvexShape convexB(makeOctahedronVertices(0.55));
+
+  std::mt19937 rng(577215u);
+  std::uniform_real_distribution<double> offset(-0.04, 0.04);
+  std::uniform_real_distribution<double> angle(-0.12, 0.12);
+
+  std::vector<ConvexPair> pairs;
+  pairs.reserve(100);
+  for (int i = 0; i < 100; ++i) {
+    const Eigen::Isometry3d tfA = makeConvexBatchTransform(
+        offset(rng), offset(rng), offset(rng), angle(rng));
+    const Eigen::Isometry3d tfB = makeConvexBatchTransform(
+        0.65 + offset(rng), offset(rng), offset(rng), angle(rng));
+
+    pairs.push_back(ConvexPair{&convexA, &convexB, tfA, tfB});
+  }
+
+  CollisionOption option;
+  option.maxNumContacts = 1;
+  std::vector<CollisionResult> batchResults(pairs.size());
+  collideConvexConvexBatch(pairs, batchResults, option);
+
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    CollisionResult singleResult;
+    ASSERT_TRUE(collideConvexConvex(
+        *pairs[i].shapeA,
+        pairs[i].tfA,
+        *pairs[i].shapeB,
+        pairs[i].tfB,
+        singleResult,
+        option));
+    expectCollisionResultExactlyEqual(singleResult, batchResults[i]);
+  }
+}
+
+TEST(ConvexCollisionBatch, RejectsMalformedInputs)
+{
+  ConvexShape convexA(makeOctahedronVertices(0.60));
+  ConvexShape convexB(makeOctahedronVertices(0.55));
+
+  const Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.translation() = Eigen::Vector3d(0.65, 0.0, 0.0);
+
+  const std::vector<ConvexPair> validPairs{{&convexA, &convexB, tfA, tfB}};
+  std::vector<CollisionResult> emptyResults;
+  EXPECT_THROW(
+      collideConvexConvexBatch(validPairs, emptyResults),
+      std::invalid_argument);
+
+  const std::vector<ConvexPair> nullShapePairs{{nullptr, &convexB, tfA, tfB}};
+  std::vector<CollisionResult> results(1);
+  EXPECT_THROW(
+      collideConvexConvexBatch(nullShapePairs, results), std::invalid_argument);
 }
 
 TEST(ConvexCollision, ConvexConvexSeparated)

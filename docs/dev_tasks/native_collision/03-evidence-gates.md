@@ -3405,6 +3405,22 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     benchmark target rebuilt cleanly, its built-in accuracy verification
     passed for all registered raw narrow-phase pairs, and the
     cylinder-cylinder batch benchmark emitted JSON for N=1/10/100/1000.
+- Current local convex-convex batch narrow-phase refresh:
+  - Commit: current working tree after local head `8702b83b8d3`
+    (`Add cylinder-cylinder native batch coverage`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_convex --parallel "$CMAKE_BUILD_PARALLEL_LEVEL"`,
+    `./build/default/cpp/Release/bin/test_convex --gtest_filter='ConvexCollisionBatch.*'`,
+    `CMAKE_BUILD_DIR=build/collision-reference/cpp/Release python scripts/cmake_build.py --target bm_comparative_narrow_phase --parallel "$CMAKE_BUILD_PARALLEL_LEVEL"`,
+    and
+    `./build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_filter='BM_NarrowPhase_ConvexConvex_Native(_Batch_N(1|10|100|1000))?$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_convex_convex_batch.json --benchmark_out_format=json`.
+  - Result: passed. The new `collideConvexConvexBatch(...)` API emits one
+    result per `ConvexPair`, rejects malformed result spans and null shape
+    pointers, and the focused batch test passed exact batch-vs-scalar
+    comparison for 100 deterministic colliding convex pairs. The
+    reference-enabled benchmark target rebuilt cleanly, its built-in accuracy
+    verification passed for all registered raw narrow-phase pairs, and the
+    convex-convex batch benchmark emitted JSON for N=1/10/100/1000.
 
 ## Known Risks
 
