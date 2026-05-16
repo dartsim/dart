@@ -162,16 +162,16 @@ Make native DART collision the default runtime stack
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   passed before benchmark-evidence commit `4b155655890`.
 - `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e gazebo test-gz`
-  passed on local head `6404f7607be` with reference tests and benchmarks `OFF`
-  and no per-engine FCL/Bullet/ODE collision build switches.
+  passed on earlier local baseline `6404f7607be` with reference tests and
+  benchmarks `OFF` and no per-engine FCL/Bullet/ODE collision build switches.
 - `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e gazebo test-gz`
   also passed on newer local head `6742a21ab0f` after the current validation
   evidence commit. The gz-physics run passed 65/65, and an explicit plugin
   dependency scan reported `libdart-collision-native.so` without old DART
   collision reference/facade, FCL, Bullet, ODE, or libccd matches.
 - Native compatibility package smoke and direct `readelf` link inspection passed
-  on local head `6404f7607be`; gz/plugin package-smoke binaries link
-  `libdart-collision-native.so` without old collision/reference runtime
+  on earlier local baseline `6404f7607be`; gz/plugin package-smoke binaries
+  link `libdart-collision-native.so` without old collision/reference runtime
   dependencies.
 - Native compatibility package smoke and direct `readelf` link inspection also
   passed on newer local head `dcfc994542f`; retained `collision-fcl`,
