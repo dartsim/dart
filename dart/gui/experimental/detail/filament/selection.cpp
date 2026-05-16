@@ -203,6 +203,17 @@ const std::string& SelectionController::selectedLabel() const
   return mSelectedLabel;
 }
 
+const std::optional<Eigen::Vector3d>& SelectionController::selectedPoint() const
+{
+  return mSelectedPoint;
+}
+
+const std::optional<Eigen::Vector3d>& SelectionController::selectedNormal()
+    const
+{
+  return mSelectedNormal;
+}
+
 bool SelectionController::isDraggingSelection() const
 {
   return mLeftMouseStartedDrag;
@@ -212,12 +223,16 @@ void SelectionController::select(RenderableId renderableId, std::string label)
 {
   mSelectedRenderableId = renderableId;
   mSelectedLabel = std::move(label);
+  mSelectedPoint.reset();
+  mSelectedNormal.reset();
 }
 
 void SelectionController::clear()
 {
   mSelectedRenderableId = 0;
   mSelectedLabel = "none";
+  mSelectedPoint.reset();
+  mSelectedNormal.reset();
 }
 
 void SelectionController::applyKeyboardNudge(
@@ -375,6 +390,8 @@ void SelectionController::updateMouseSelection(
               camera, cursorX, cursorY, framebufferWidth, framebufferHeight));
       if (hit) {
         mSelectedRenderableId = hit->id;
+        mSelectedPoint = hit->point;
+        mSelectedNormal = hit->normal;
         const RenderableDescriptor& descriptor
             = descriptors[hit->renderableIndex];
         mSelectedLabel = selectionLabelForRenderable(scene, descriptor);

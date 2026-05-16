@@ -704,6 +704,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   RecordingPanelBuilder builder;
   dart::gui::PanelContext context;
   context.selectedLabel = "box";
+  context.selectedPoint = Eigen::Vector3d(1.0, 2.0, 3.0);
+  context.selectedNormal = Eigen::Vector3d::UnitZ();
   panel.build(builder);
   panel.buildWithContext(builder, context);
 
@@ -711,6 +713,10 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(diagnostics);
   EXPECT_DOUBLE_EQ(gain, 1.0);
   EXPECT_EQ(selectedLabel, "box");
+  ASSERT_TRUE(context.selectedPoint.has_value());
+  EXPECT_TRUE(context.selectedPoint->isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  ASSERT_TRUE(context.selectedNormal.has_value());
+  EXPECT_TRUE(context.selectedNormal->isApprox(Eigen::Vector3d::UnitZ()));
   bool preStepCalled = false;
   EXPECT_EQ(
       builder.events,
@@ -2489,16 +2495,44 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
 
   const auto tinkertoySource = readSourceFile(
       std::filesystem::path("examples") / "tinkertoy" / "main.cpp");
+  const auto tinkertoyReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "tinkertoy" / "README.md");
+  const auto panelHeader
+      = readSourceFile(std::filesystem::path("dart") / "gui" / "panel.hpp");
   EXPECT_NE(tinkertoySource.find("createTargetHandleShape"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("LineSegmentShape"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("tinkertoy_target"), std::string::npos);
+  EXPECT_NE(
+      tinkertoySource.find("syncPickFromSelectionContext"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("context.selectedPoint"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("context.selectedNormal"), std::string::npos);
+  EXPECT_NE(
+      tinkertoySource.find("kDefaultBlockWidth / 2.0"), std::string::npos);
+  EXPECT_NE(panelHeader.find("selectedPoint"), std::string::npos);
+  EXPECT_NE(panelHeader.find("selectedNormal"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("class TinkertoyState"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("addWeldJointBlock"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("deletePick"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("setGravityEnabled"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("setForceCoeff"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("Tinkertoy Control"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("initialPosition"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("initialSize"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("backgroundAlpha = 0.5"), std::string::npos);
+  EXPECT_NE(
+      tinkertoySource.find("horizontalScrollbar = true"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("menuBar = true"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("Gravity On/Off"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("Force Coeff"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("Add a Weld-Joint Block"), std::string::npos);
+  EXPECT_NE(
+      tinkertoySource.find("Add a Revolute-Joint Block"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("Add a Ball-Joint Block"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("options.height = 720"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("KeyboardShortcut"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("KeyboardAction"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("options.keyboardActions"), std::string::npos);
@@ -2506,6 +2540,15 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(tinkertoySource.find("context.resetCamera"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("CollisionAspect"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("DynamicsAspect"), std::string::npos);
+  EXPECT_NE(
+      tinkertoyReadmeSource.find("Tinkertoy Builder Example"),
+      std::string::npos);
+  EXPECT_NE(
+      tinkertoyReadmeSource.find("pixi run ex tinkertoy"), std::string::npos);
+  EXPECT_NE(tinkertoyReadmeSource.find("--gui-scale"), std::string::npos);
+  EXPECT_NE(tinkertoyReadmeSource.find("--out"), std::string::npos);
+  EXPECT_NE(
+      tinkertoyReadmeSource.find("Enter-key recording"), std::string::npos);
   EXPECT_EQ(tinkertoySource.find("options.defaultScene"), std::string::npos);
 }
 

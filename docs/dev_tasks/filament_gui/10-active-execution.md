@@ -243,6 +243,28 @@ history but are not guaranteed to be in chronological order.
   `520993d7301^:examples/tinkertoy`, then restore or explicitly classify the
   historical construction controls, force controls, camera home, recording
   behavior, README, and marker coverage before moving past it.
+- Current Tinkertoy strict re-open implementation restores selected hit
+  point/normal through public `PanelContext`, uses that data to place the
+  force target at the clicked point plus surface-normal offset, restores the
+  historical panel title/window geometry/menu/help/control labels, explicit
+  1280x720 defaults, console force/edit messages, README, and marker coverage.
+  Runtime Enter recording and the headlight checkbox remain named public API
+  gaps; the maintained capture path is `--screenshot` and `--out`.
+- Tinkertoy pre-lint validation: focused build for `tinkertoy` and
+  `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed after fixing
+  a README marker-string mismatch, direct and pixi software-GL screenshots
+  passed basic analyzer coverage (`/tmp/dart_tinkertoy_direct.ppm`,
+  921600/921600 nonzero pixels, and `/tmp/dart_tinkertoy_pixi.ppm`,
+  307200/307200 nonzero pixels), image-sequence capture passed analyzer
+  coverage (`/tmp/dart_tinkertoy_frames/frame_000001.ppm`, 921600/921600
+  nonzero pixels), aggregate `build-examples` passed, and Python C++
+  example-runner tests passed (67/67).
+- Tinkertoy post-lint validation: mandatory `pixi run lint` passed, focused
+  rebuild for `tinkertoy` and `UNIT_gui_FilamentSceneExtraction` passed,
+  focused CTest passed, direct software-GL screenshot basic analyzer passed
+  (`/tmp/dart_tinkertoy_postlint.ppm`, 921600/921600 nonzero pixels),
+  `git diff --check` passed, and the generated API-boundary inventory had no
+  diff.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`

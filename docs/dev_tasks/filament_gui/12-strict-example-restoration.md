@@ -524,6 +524,22 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     source/README against `520993d7301^:examples/tinkertoy`, then restore or
     classify the historical construction controls, force controls, camera home,
     recording behavior, README, and marker coverage before moving past it.
+56. `examples/tinkertoy/` strict re-open found concrete gaps after the prior
+    checkpoints: the current source restores the initial assemblies, block
+    shapes, add/delete controls, force application, target handle, gravity
+    control, force coefficient control, Tab camera reset, and promoted
+    selection movement, but it lacks the README, explicit 1280x720 defaults,
+    historical panel layout/menu/help labels, historical console force/edit
+    messages, and exact pick-point/normal behavior. The current source repairs
+    those gaps by extending public `PanelContext` with selected hit
+    point/normal, using that in Tinkertoy, restoring panel/README/default
+    markers, and keeping runtime Enter recording plus headlight toggles as
+    named public API gaps. Pre-lint validation includes focused builds, focused
+    CTest, direct and pixi software-GL screenshot basic analyzer checks,
+    image-sequence analyzer check, aggregate `build-examples`, and Python C++
+    example-runner tests. Mandatory `pixi run lint`, post-lint focused
+    rebuild/CTest, post-lint direct screenshot basic analyzer check,
+    `git diff --check`, and an API-boundary inventory diff check also passed.
 
 ## Checkpoint Rule
 

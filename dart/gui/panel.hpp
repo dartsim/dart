@@ -35,6 +35,8 @@
 
 #include <dart/gui/export.hpp>
 
+#include <Eigen/Core>
+
 #include <array>
 #include <functional>
 #include <optional>
@@ -106,6 +108,8 @@ struct PanelContext
   dart::simulation::World* world = nullptr;
   ViewerLifecycleState* lifecycle = nullptr;
   std::string selectedLabel;
+  std::optional<Eigen::Vector3d> selectedPoint;
+  std::optional<Eigen::Vector3d> selectedNormal;
   double simulationTime = 0.0;
   std::size_t contactCount = 0;
 };

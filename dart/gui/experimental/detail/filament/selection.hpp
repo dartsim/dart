@@ -38,6 +38,7 @@
 
 #include <Eigen/Core>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -67,6 +68,8 @@ class SelectionController
 public:
   dart::gui::RenderableId selectedRenderableId() const;
   const std::string& selectedLabel() const;
+  const std::optional<Eigen::Vector3d>& selectedPoint() const;
+  const std::optional<Eigen::Vector3d>& selectedNormal() const;
   bool isDraggingSelection() const;
 
   void select(dart::gui::RenderableId renderableId, std::string label);
@@ -114,6 +117,8 @@ private:
   Eigen::Vector3d mSelectedRotationAxis = Eigen::Vector3d::UnitZ();
   dart::gui::RenderableId mSelectedRenderableId = 0;
   std::string mSelectedLabel = "none";
+  std::optional<Eigen::Vector3d> mSelectedPoint;
+  std::optional<Eigen::Vector3d> mSelectedNormal;
 };
 
 } // namespace dart::gui::filament

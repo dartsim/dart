@@ -103,6 +103,9 @@
   - Restored the `soft_bodies` example's historical 640x480 launch default,
     console playback instructions, README, and marker coverage through public
     `dart::gui`.
+  - Restored the `tinkertoy` example's historical panel layout, selected
+    pick-point behavior, explicit 1280x720 launch default, README, and marker
+    coverage through public `dart::gui`.
   - Restored the `add_delete_skels` example's README, historical 640x480
     launch default, and spawn-only-on-command startup behavior through public
     `dart::gui`.

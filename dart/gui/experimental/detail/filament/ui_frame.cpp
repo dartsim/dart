@@ -79,6 +79,8 @@ void updateFrameUi(
       dartScene.world.get(),
       &lifecycle,
       selectedLabel,
+      selectionController.selectedPoint(),
+      selectionController.selectedNormal(),
       dartScene.world->getTime(),
       dartScene.world->getLastCollisionResult().getNumContacts()};
   const bool debugOptionsChanged = renderBuiltInStatusPanel(

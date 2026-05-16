@@ -59,7 +59,10 @@
 #include <Eigen/Geometry>
 
 #include <algorithm>
+#include <array>
+#include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -350,19 +353,27 @@ public:
     return mWorld;
   }
 
-  void syncPickFromSelectionLabel(const std::string& selectedLabel)
+  void syncPickFromSelectionContext(
+      const std::string& selectedLabel,
+      const std::optional<Eigen::Vector3d>& selectedPoint,
+      const std::optional<Eigen::Vector3d>& selectedNormal)
   {
-    if (selectedLabel == mLastSelectedLabel) {
+    const bool samePoint
+        = (!selectedPoint.has_value() && !mLastSelectedPoint.has_value())
+          || (selectedPoint.has_value() && mLastSelectedPoint.has_value()
+              && selectedPoint->isApprox(*mLastSelectedPoint));
+    if (selectedLabel == mLastSelectedLabel && samePoint) {
       return;
     }
 
     mLastSelectedLabel = selectedLabel;
+    mLastSelectedPoint = selectedPoint;
     auto* selectedBody = findSelectedBody(selectedLabel);
     if (selectedBody == nullptr) {
       return;
     }
 
-    setPickedNode(selectedBody);
+    setPickedNode(selectedBody, selectedPoint, selectedNormal);
   }
 
   void preStep()
@@ -416,12 +427,14 @@ public:
   {
     setForceCoeff(mForceCoeff + kForceIncrement);
     mStatus = "Force coefficient: " + std::to_string(mForceCoeff);
+    std::cout << "[Force Coefficient: " << mForceCoeff << "]" << std::endl;
   }
 
   void decrementForceCoeff()
   {
     setForceCoeff(mForceCoeff - kForceIncrement);
     mStatus = "Force coefficient: " + std::to_string(mForceCoeff);
+    std::cout << "[Force Coefficient: " << mForceCoeff << "]" << std::endl;
   }
 
   const std::string& status() const
@@ -513,18 +526,35 @@ private:
     return skeleton == nullptr ? nullptr : skeleton->getBodyNode(bodyName);
   }
 
-  void setPickedNode(dart::dynamics::BodyNode* body)
+  void setPickedNode(
+      dart::dynamics::BodyNode* body,
+      const std::optional<Eigen::Vector3d>& selectedPoint = std::nullopt,
+      const std::optional<Eigen::Vector3d>& selectedNormal = std::nullopt)
   {
     if (body == nullptr) {
       return;
     }
 
     mPickedNode = body;
-    mPickedPoint = body->getLocalCOM();
+    if (selectedPoint.has_value()) {
+      mPickedPoint = body->getWorldTransform().inverse() * *selectedPoint;
+    } else {
+      mPickedPoint = body->getLocalCOM();
+    }
 
     if (mTarget != nullptr) {
       Eigen::Isometry3d transform = body->getWorldTransform();
-      transform.translation() = body->getCOM();
+      if (selectedPoint.has_value()) {
+        Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+        if (selectedNormal.has_value() && selectedNormal->allFinite()
+            && selectedNormal->norm() > 1e-12) {
+          normal = selectedNormal->normalized();
+        }
+        transform.translation()
+            = *selectedPoint + normal * (kDefaultBlockWidth / 2.0);
+      } else {
+        transform.translation() = body->getCOM();
+      }
       mTarget->setTransform(transform);
     }
 
@@ -537,6 +567,8 @@ private:
   {
     if (!paused) {
       mStatus = std::string("Pause simulation before attempting to ") + action;
+      std::cout << " -- Please pause simulation [using the Spacebar] before "
+                << "attempting to " << action << "." << std::endl;
       return false;
     }
     return true;
@@ -557,7 +589,7 @@ private:
       const dart::dynamics::ShapePtr& jointShape,
       const char* status)
   {
-    if (!canEdit(paused, "add new blocks")) {
+    if (!canEdit(paused, "add new bodies")) {
       return;
     }
 
@@ -624,6 +656,7 @@ private:
   double mForceCoeff = kDefaultForceCoeff;
   bool mGravityEnabled = true;
   std::string mLastSelectedLabel;
+  std::optional<Eigen::Vector3d> mLastSelectedPoint;
   std::string mStatus = "No block selected";
 };
 
@@ -702,28 +735,91 @@ std::vector<dart::gui::KeyboardAction> createTinkertoyKeyboardActions(
   return actions;
 }
 
+dart::gui::RunOptions makeTinkertoyRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 1280;
+  options.height = 720;
+  return options;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
 {
   auto state = std::make_shared<TinkertoyState>();
-  bool showBuilderHints = true;
 
   dart::gui::Panel controls;
-  controls.title = "Tinkertoy Controls";
-  controls.buildWithContext = [state, showBuilderHints](
+  controls.title = "Tinkertoy Control";
+  controls.initialPosition = std::array<double, 2>{10.0, 20.0};
+  controls.initialSize = std::array<double, 2>{360.0, 640.0};
+  controls.backgroundAlpha = 0.5;
+  controls.autoResize = false;
+  controls.horizontalScrollbar = true;
+  controls.menuBar = true;
+
+  auto showAbout = std::make_shared<bool>(false);
+  controls.buildWithContext = [state, showAbout](
                                   dart::gui::PanelBuilder& panel,
                                   dart::gui::PanelContext& context) mutable {
-    state->syncPickFromSelectionLabel(context.selectedLabel);
+    state->syncPickFromSelectionContext(
+        context.selectedLabel, context.selectedPoint, context.selectedNormal);
     const bool paused
         = context.lifecycle == nullptr || context.lifecycle->paused;
     state->updateVisualState(!paused);
 
+    if (panel.beginMenuBar()) {
+      if (panel.beginMenu("Menu")) {
+        if (panel.menuItem("Exit") && context.lifecycle != nullptr) {
+          dart::gui::requestExit(*context.lifecycle);
+        }
+        panel.endMenu();
+      }
+      if (panel.beginMenu("Help")) {
+        if (panel.menuItem("About DART")) {
+          *showAbout = true;
+        }
+        panel.endMenu();
+      }
+      panel.endMenuBar();
+    }
+
     panel.text("Interactive tinkertoy fixture");
-    panel.separator();
-    if (context.lifecycle != nullptr) {
-      if (panel.button(context.lifecycle->paused ? "Resume" : "Pause")) {
-        dart::gui::togglePaused(*context.lifecycle);
+
+    if (panel.collapsingHeader("Help")) {
+      panel.text("User Guide:");
+      panel.text("Left-click on a block to select it.");
+      panel.text("Press [Backspace] to deselect.");
+      panel.text("Press [Tab] to reset the camera view.");
+      panel.text("Press [`] to reset the orientation of the target.");
+      panel.text("--- While Simulation is Paused ---");
+      panel.text("The selected block will be red; all other blocks yellow.");
+      panel.text("Press [1] -> [3] to attach a block to the selected block.");
+      panel.text("[1]: Attach using a WeldJoint.");
+      panel.text("[2]: Attach using a RevoluteJoint.");
+      panel.text("[3]: Attach using a BallJoint.");
+      panel.text("The new block follows the target's red x-axis.");
+      panel.text("RevoluteJoint axes follow the target's blue z-axis.");
+      panel.text("Press [Delete] to remove a block and all its children.");
+      panel.text("With no selected block, adding starts a new tree.");
+      panel.text("--- While Simulation is Active ---");
+      panel.text("The selected block will be fuchsia; all others blue.");
+      panel.text("Move the target to pull on the selected block.");
+      panel.text("Press [Up] or [Down] to adjust pulling strength.");
+      panel.text("Blocks in different trees can collide.");
+      panel.text("Blocks in the same tree ignore each other.");
+      panel.text("Ctrl-left drag, arrows, and PageUp/PageDown move targets.");
+      panel.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
+    }
+
+    if (panel.collapsingHeader("Simulation", true)
+        && context.lifecycle != nullptr) {
+      if (panel.button("Play")) {
+        context.lifecycle->paused = false;
+      }
+      panel.sameLine();
+      if (panel.button("Pause")) {
+        context.lifecycle->paused = true;
       }
       panel.sameLine();
       if (panel.button("Step")) {
@@ -731,53 +827,47 @@ int main(int argc, char* argv[])
       }
     }
 
-    bool gravityEnabled = state->gravityEnabled();
-    if (panel.checkbox("Gravity", gravityEnabled)) {
-      state->setGravityEnabled(gravityEnabled);
+    if (panel.collapsingHeader("World Options", true)) {
+      bool gravityEnabled = state->gravityEnabled();
+      if (panel.checkbox("Gravity On/Off", gravityEnabled)) {
+        state->setGravityEnabled(gravityEnabled);
+      }
     }
 
-    double forceCoeff = state->forceCoeff();
-    if (panel.slider(
-            "Force coefficient", forceCoeff, kMinForceCoeff, kMaxForceCoeff)) {
-      state->setForceCoeff(forceCoeff);
+    if (panel.collapsingHeader("Tinkertoy Options", true)) {
+      double forceCoeff = state->forceCoeff();
+      if (panel.slider(
+              "Force Coeff", forceCoeff, kMinForceCoeff, kMaxForceCoeff)) {
+        state->setForceCoeff(forceCoeff);
+      }
+
+      if (panel.button("Reorient Target")) {
+        state->reorientTarget();
+      }
+      panel.sameLine();
+      if (panel.button("Reset Target")) {
+        state->clearPick();
+      }
+
+      if (panel.button("Add a Weld-Joint Block")) {
+        state->addWeldJointBlock(paused);
+      }
+      if (panel.button("Add a Revolute-Joint Block")) {
+        state->addRevoluteJointBlock(paused);
+      }
+      if (panel.button("Add a Ball-Joint Block")) {
+        state->addBallJointBlock(paused);
+      }
+      if (panel.button("Delete Block")) {
+        state->deletePick(paused);
+      }
     }
 
-    if (panel.button("Add Weld Block")) {
-      state->addWeldJointBlock(paused);
+    if (*showAbout) {
+      panel.separator();
+      panel.text("About DART: project and libdart simulation libraries.");
     }
-    panel.sameLine();
-    if (panel.button("Add Revolute Block")) {
-      state->addRevoluteJointBlock(paused);
-    }
-    panel.sameLine();
-    if (panel.button("Add Ball Block")) {
-      state->addBallJointBlock(paused);
-    }
-
-    if (panel.button("Delete Block")) {
-      state->deletePick(paused);
-    }
-    panel.sameLine();
-    if (panel.button("Clear Pick")) {
-      state->clearPick();
-    }
-    panel.sameLine();
-    if (panel.button("Reorient Target")) {
-      state->reorientTarget();
-    }
-
-    panel.checkbox("Show builder hints", showBuilderHints);
-    if (showBuilderHints) {
-      panel.text("Select a block to attach new blocks or apply force.");
-      panel.text("Select the magenta target handle to move it.");
-      panel.text("Hotkeys: 1/2/3 add blocks; Backspace clears pick.");
-      panel.text("Delete removes a picked subtree; ` resets target.");
-      panel.text("Up/Down adjusts the force coefficient.");
-      panel.text("Tab restores the camera home view.");
-      panel.text("Ctrl-left drag moves the selected handle.");
-      panel.text("Arrow keys and PageUp/PageDown nudge it.");
-      panel.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
-    }
+    panel.separator();
     panel.text("time: " + std::to_string(context.simulationTime));
     panel.text("contacts: " + std::to_string(context.contactCount));
     panel.text("selected: " + context.selectedLabel);
@@ -786,6 +876,7 @@ int main(int argc, char* argv[])
 
   dart::gui::ApplicationOptions options;
   options.world = state->world();
+  options.runDefaults = makeTinkertoyRunDefaults();
   options.preStep = [state]() {
     state->preStep();
   };
