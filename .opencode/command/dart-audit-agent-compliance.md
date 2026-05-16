@@ -12,6 +12,9 @@ Audit agent compliance issue: $ARGUMENTS
 ## Required Reading
 
 @AGENTS.md
+@docs/ai/principles.md
+@docs/ai/verification.md
+@docs/ai/components.md
 @docs/onboarding/ai-tools.md
 @docs/onboarding/contributing.md
 
@@ -39,10 +42,13 @@ Treat missing positional values as details to infer from the user request or ask
    - make it scannable with a checklist or mandatory marker
    - consolidate duplicate guidance
    - add cross-references from relevant commands or skills
-5. Run `pixi run lint` and, for AI workflow changes, `pixi run check-ai-commands`.
+5. Run the principle audit from `docs/ai/principles.md` and use
+   `docs/ai/verification.md` to map audit results to evidence.
+6. Run `pixi run lint` and, for AI workflow changes, `pixi run check-ai-commands`.
 
 ## Output
 
 - Root cause for the missed rule
 - Files changed and why
+- Which audit items were proven by automation vs manual inspection
 - Confidence level that the recurrence risk is reduced

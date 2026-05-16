@@ -20,7 +20,7 @@ Generated files include source metadata and must not be hand-edited.
 
 1. Add the concise workflow source under `.claude/commands/dart-<name>.md`.
 2. Keep detailed policy in `docs/ai/` or `docs/onboarding/`.
-3. Add the workflow to `AGENTS.md` and `docs/ai/workflows.md`.
+3. Add the workflow to `docs/ai/workflows.md`.
 4. Run `pixi run sync-ai-commands`.
 5. Run `pixi run check-ai-commands`.
 
@@ -28,9 +28,41 @@ Generated files include source metadata and must not be hand-edited.
 
 1. Add `.claude/skills/dart-<name>/SKILL.md`.
 2. Keep the skill lightweight and point to full docs.
-3. Add the skill to `AGENTS.md` and `docs/ai/workflows.md`.
+3. Add the skill to `docs/ai/workflows.md`.
 4. Run `pixi run sync-ai-commands`.
 5. Run `pixi run check-ai-commands`.
+
+## Improving AI Infra From Learnings
+
+Use `dart-retrospect` after a completed session only when the learning is
+general enough to help future agents or contributors. Skip routine work,
+one-off local choices, and review-only narrative.
+
+Retrospective docs edits are local work when the user requested them. GitHub,
+CI, branch, and review-thread mutations still require explicit approval.
+
+Route durable learnings to one owner:
+
+- Cross-session axioms and audit questions: `docs/ai/principles.md`, kept
+  compact.
+- Gate selection and evidence expectations: `docs/ai/verification.md`.
+- Workflow routing and public paths: `docs/ai/workflows.md`.
+- AI component mechanics, source surfaces, and structural checks: this file.
+- Tool compatibility and generated-adapter caveats:
+  `docs/onboarding/ai-tools.md`.
+- Reusable user-invoked workflow: `.claude/commands/`, synced to generated
+  adapters.
+- Reusable on-demand domain knowledge: `.claude/skills/`, synced to generated
+  adapters.
+- Future agents, hooks, or scripts: add only when the responsibility or
+  lifecycle trigger is stable enough to justify a maintained component.
+- Project, problem, component, or plan-specific learning: the relevant
+  `docs/` owner, such as `docs/plans/`, `docs/onboarding/`, or a module
+  `AGENTS.md`.
+
+Prefer improving or consolidating an existing component over adding a new
+surface. If two docs would need the same changing fact, pick one owner and make
+the other a pointer.
 
 ## Public Path Requirement
 
@@ -40,6 +72,28 @@ faster; it must not be the only path.
 
 ## Checks
 
-`scripts/sync_ai_commands.py` verifies adapter parity, metadata budgets, and the
-`docs/ai/workflows.md` capability index. `pixi run check-ai-commands` is the
-non-mutating CI check.
+`scripts/sync_ai_commands.py` is the implementation behind
+`pixi run sync-ai-commands` and `pixi run check-ai-commands`.
+
+`pixi run sync-ai-commands` updates generated `.codex/skills/` and
+`.opencode/command/` files from `.claude/` sources.
+
+`pixi run check-ai-commands` is the non-mutating CI check. It verifies:
+
+- generated adapter sync;
+- effective capability parity across Claude Code, OpenCode, and Codex;
+- command and skill frontmatter, descriptions, and size budgets;
+- required `docs/ai/` policy documents exist;
+- `AGENTS.md` and `docs/README.md` point to the AI entrypoint;
+- `AGENTS.md` points to the workflow catalog and generated surfaces;
+- `docs/ai/workflows.md` capability rows;
+- public path and gate evidence for each workflow;
+- required-reading entries are represented in each workflow row;
+- approval-boundary wording around GitHub, CI, branch, and review-thread
+  mutations;
+- private-path references in `docs/ai/`.
+
+These checks are structural. The principle audit in `docs/ai/principles.md`
+owns judgment calls such as source-of-truth placement, public path quality, and
+whether a change is simpler than the alternatives. `docs/ai/verification.md`
+owns gate selection and evidence mapping.

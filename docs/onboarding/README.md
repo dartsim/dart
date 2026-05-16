@@ -1,4 +1,4 @@
-# DART GUI - Developer Onboarding Guide
+# DART Developer Onboarding Guide
 
 ## Start here next time
 
@@ -25,7 +25,13 @@
 
 ## 1. Overview
 
-**DART** (Dynamic Animation and Robotics Toolkit) is a comprehensive C++ physics engine for robotics simulation, kinematics, dynamics, and control. The **dart_gui** component provides 3D visualization and interactive manipulation capabilities built on OpenSceneGraph (OSG) and Dear ImGui.
+**DART** (Dynamic Animation and Robotics Toolkit) is a research-focused C++20
+physics engine for robotics, animation, and machine learning. It exposes
+transparent kinematics, dynamics, collision, constraint-solving, model-loading,
+and Python-binding foundations so researchers can build on DART rather than
+treating the simulator as a black box. The **dart_gui** component provides 3D
+visualization and interactive manipulation capabilities built on OpenSceneGraph
+(OSG) and Dear ImGui.
 
 ### Release & Branch Strategy
 
@@ -1327,7 +1333,8 @@ This repository contains additional detailed analysis documents:
 
 ## Summary
 
-**DART GUI** is a mature, research-grade robotics simulation and visualization library with:
+**DART** is a mature, research-focused physics engine and visualization stack
+with:
 
 ✅ **O(n) efficient dynamics** via Featherstone algorithms
 ✅ **Interactive 3D visualization** with OSG + ImGui

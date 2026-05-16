@@ -21,6 +21,9 @@ For the full attribution template, see [ATTRIBUTION.md](ATTRIBUTION.md).
 
 ## Contents
 
+Use this file as the theory entrypoint. Add new research-foundation topics as
+peer sections here, then point to topic-specific directories or pages below.
+
 ### [Dynamics](dynamics/)
 
 Lagrangian dynamics for articulated rigid body systems:

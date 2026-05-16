@@ -40,18 +40,18 @@ This document tracks AI coding assistant compatibility with DART's documentation
 
 ### Conventions
 
-| Convention                      | Rule                                                                                               |
-| ------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **Pointer board**               | `AGENTS.md` stays concise and points to durable docs                                               |
-| **AI-native policy**            | `docs/ai/` owns workflow maps, verification, sessions, and component ownership                     |
-| **Command naming**              | `dart-` prefix (e.g., `dart-new-task.md`)                                                          |
-| **Skill naming**                | `dart-` prefix (e.g., `dart-build`)                                                                |
-| **Skill descriptions**          | Start with display name and quote colon values (e.g., `"DART Build: ..."`)                         |
-| **Tool-specific language**      | Use generic terms except in compatibility or routing docs where tool behavior is the subject       |
-| **Placeholders**                | Use `$ARGUMENTS`, `$1`, `$2` for command args                                                      |
-| **Tracked file references**     | Use repo-relative `@file` syntax; home-directory references are only for untracked personal files  |
-| **Workflow source**             | Repeatable workflows currently live in `.claude/commands/` and are generated to Codex/OpenCode     |
-| **Manual public path required** | Every AI workflow must map back to public docs and `pixi run ...` commands for non-AI contributors |
+| Convention                      | Rule                                                                                                |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Pointer board**               | `AGENTS.md` stays concise and points to durable docs                                                |
+| **AI-native policy**            | `docs/ai/` owns AI-infra principles, workflow maps, verification, sessions, and component ownership |
+| **Command naming**              | `dart-` prefix (e.g., `dart-new-task.md`)                                                           |
+| **Skill naming**                | `dart-` prefix (e.g., `dart-build`)                                                                 |
+| **Skill descriptions**          | Start with display name and quote colon values (e.g., `"DART Build: ..."`)                          |
+| **Tool-specific language**      | Use generic terms except in compatibility or routing docs where tool behavior is the subject        |
+| **Placeholders**                | Use `$ARGUMENTS`, `$1`, `$2` for command args                                                       |
+| **Tracked file references**     | Use repo-relative `@file` syntax; home-directory references are only for untracked personal files   |
+| **Workflow source**             | Repeatable workflows currently live in `.claude/commands/` and are generated to Codex/OpenCode      |
+| **Manual public path required** | Every AI workflow must map back to public docs and `pixi run ...` commands for non-AI contributors  |
 
 ### @file Import Syntax
 
@@ -120,7 +120,7 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
 2. Sync to OpenCode and Codex: `pixi run lint` (includes `sync-ai-commands`)
 
-3. Update `AGENTS.md` and `docs/ai/workflows.md` if the command should be discoverable in the root workflow table
+3. Update `docs/ai/workflows.md` so the command is discoverable from the workflow catalog
 
 4. Put long background material in `docs/onboarding/*.md`; keep command files concise and action-oriented
 
@@ -151,7 +151,7 @@ becomes `$dart-fix-ci`.
 
 2. Sync to Codex: `pixi run lint` (includes `sync-ai-commands`)
 
-3. Update `AGENTS.md` and `docs/ai/workflows.md` skills tables
+3. Update `docs/ai/workflows.md` so the skill is discoverable from the workflow catalog
 
 ### Skill Design Principles
 
@@ -239,9 +239,8 @@ Skills work across multiple AI tools through automatic syncing:
 
 **Sync is automatic** via `pixi run lint` (includes `sync-ai-commands`).
 
-**CI verification**: `pixi run check-ai-commands` ensures sync in CI, checks
-that Claude Code, OpenCode, and Codex expose the same effective DART capability
-set, and validates command/skill description style plus context-budget limits.
+**CI verification**: `pixi run check-ai-commands` is the non-mutating sync and
+AI-component check. `docs/ai/components.md` owns the exact check coverage.
 
 #### Acknowledgment
 
@@ -278,6 +277,9 @@ editable workflow source currently lives in `.claude/commands/`.
 
 - Keep `AGENTS.md` as the concise pointer board, `docs/ai/` as shared agent
   policy, and this document as the tool-compatibility reference.
+- Keep AI-infra axioms and the manual principle audit in
+  `docs/ai/principles.md`; link to it from entrypoints and workflows instead of
+  restating it.
 - Keep public contributor paths available through tracked docs and
   `pixi run ...` tasks; AI workflows can route work, but must not be the only
   way to complete it.
@@ -293,11 +295,8 @@ Different tools expose the same workflows differently:
 - OpenCode: `.opencode/command/` plus `.claude/skills/`
 - Codex: `.codex/skills/` for both domain skills and workflow skills
 
-`pixi run check-ai-commands` compares those effective sets and fails if any
-supported agent is missing a command/skill or has an extra one. It also checks
-that skill descriptions begin with the display name, command descriptions stay
-short and lowercase, and command/skill files remain within context-budget line
-limits.
+`pixi run check-ai-commands` compares those effective sets and runs the
+structural AI-component checks owned by `docs/ai/components.md`.
 
 **Sync details**:
 
