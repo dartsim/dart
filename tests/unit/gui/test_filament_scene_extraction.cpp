@@ -646,7 +646,11 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
       {std::filesystem::path("examples") / "atlas_simbicon", true},
       {std::filesystem::path("examples") / "atlas_puppet", true},
       {std::filesystem::path("examples") / "hubo_puppet", true},
-      {std::filesystem::path("examples") / "g1_puppet", true}};
+      {std::filesystem::path("examples") / "g1_puppet", true},
+      {std::filesystem::path("examples") / "hardcoded_design", false},
+      {std::filesystem::path("examples") / "heightmap", false},
+      {std::filesystem::path("examples") / "point_cloud", false},
+      {std::filesystem::path("examples") / "polyhedron_visual", false}};
   std::vector<std::filesystem::path> sources;
   for (const auto& example : examples) {
     sources.push_back(example.directory / "main.cpp");
@@ -773,6 +777,39 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("'1'"), std::string::npos);
   EXPECT_NE(mainSource.find("'4'"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
+{
+  const auto hardcodedSource = readSourceFile(
+      std::filesystem::path("examples") / "hardcoded_design" / "main.cpp");
+  EXPECT_NE(hardcodedSource.find("visual_hardcoded_design"), std::string::npos);
+  EXPECT_NE(hardcodedSource.find("RevoluteJoint"), std::string::npos);
+  EXPECT_NE(hardcodedSource.find("LHY"), std::string::npos);
+  EXPECT_EQ(hardcodedSource.find("options.defaultScene"), std::string::npos);
+
+  const auto heightmapSource = readSourceFile(
+      std::filesystem::path("examples") / "heightmap" / "main.cpp");
+  EXPECT_NE(heightmapSource.find("visual_heightmap"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("HeightmapShaped"), std::string::npos);
+  EXPECT_NE(
+      heightmapSource.find("visual_heightmap_sample_ball_"), std::string::npos);
+  EXPECT_EQ(heightmapSource.find("options.defaultScene"), std::string::npos);
+
+  const auto pointCloudSource = readSourceFile(
+      std::filesystem::path("examples") / "point_cloud" / "main.cpp");
+  EXPECT_NE(pointCloudSource.find("visual_point_cloud"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("PointCloudShape"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("point_cloud_sensor"), std::string::npos);
+  EXPECT_EQ(pointCloudSource.find("options.defaultScene"), std::string::npos);
+
+  const auto polyhedronSource = readSourceFile(
+      std::filesystem::path("examples") / "polyhedron_visual" / "main.cpp");
+  EXPECT_NE(
+      polyhedronSource.find("visual_polyhedron_surface"), std::string::npos);
+  EXPECT_NE(polyhedronSource.find("ConvexMeshShape"), std::string::npos);
+  EXPECT_NE(polyhedronSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_EQ(polyhedronSource.find("options.defaultScene"), std::string::npos);
 }
 
 TEST(

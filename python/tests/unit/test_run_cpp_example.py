@@ -14,7 +14,7 @@ FILAMENT_ROUTED_EXAMPLES = {
     "boxes": (),
     "box_stacking": (),
     "rigid_cubes": (),
-    "hardcoded_design": ("--scene", "hardcoded-design"),
+    "hardcoded_design": (),
     "rigid_chain": (),
     "rigid_loop": (),
     "mixed_chain": (),
@@ -39,11 +39,11 @@ FILAMENT_ROUTED_EXAMPLES = {
     "empty": ("--scene", "drag-and-drop"),
     "simple_frames": (),
     "soft_bodies": ("--scene", "soft-bodies"),
-    "point_cloud": ("--scene", "point-cloud"),
+    "point_cloud": (),
     "capsule_ground_contact": (),
     "simulation_event_handler": ("--scene", "simulation-event-handler"),
-    "polyhedron_visual": ("--scene", "polyhedron"),
-    "heightmap": ("--scene", "heightmap"),
+    "polyhedron_visual": (),
+    "heightmap": (),
     "g1_puppet": (),
 }
 

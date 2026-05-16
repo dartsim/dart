@@ -866,6 +866,75 @@ Fourteenth source-ownership checkpoint:
   `polyhedron_visual`, `simulation_event_handler`, `soft_bodies`, and
   `vehicle`.
 
+Fifteenth source-ownership checkpoint:
+
+- Restore the static geometry/visual macro launchers as real public-API
+  example sources: `hardcoded_design`, `heightmap`, `point_cloud`, and
+  `polyhedron_visual`.
+- Move the hardcoded revolute-chain construction into
+  `examples/hardcoded_design/main.cpp`.
+- Move the authored height field, reference box, and sample marker layout into
+  `examples/heightmap/main.cpp`.
+- Move the point-cloud shape, per-point colors, optional voxel-grid fixture,
+  and sensor marker frame into `examples/point_cloud/main.cpp`.
+- Move the convex polyhedron mesh and wireframe line-segment shape into
+  `examples/polyhedron_visual/main.cpp`.
+- Each example should pass `options.world` through promoted `dart::gui`, with
+  no private `DartScene`, no scene-string launcher, and no backend headers.
+- Switch each CMake file to `dart_build_gui_example(...)`, and remove the
+  Python runner's injected scene defaults for these four executables.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for the four examples and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for each example
+  - `pixi run ex <example> --headless --frames 1 --screenshot ...` for each
+    example
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+- Implementation state for this slice: `examples/hardcoded_design`,
+  `examples/heightmap`, `examples/point_cloud`, and
+  `examples/polyhedron_visual` now own their visual DART worlds in
+  per-example `main.cpp` files, call promoted
+  `dart::gui::runApplication(argc, argv, options)`, and no longer rely on
+  private scene strings from CMake or the Python runner.
+- Local evidence so far:
+  - C++ GUI target build for `hardcoded_design`, `heightmap`, `point_cloud`,
+    `polyhedron_visual`, and `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot captures for all four examples
+  - `pixi run ex <example> --headless --frames 1 --screenshot ...` captures
+    for all four examples
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - Post-lint C++ GUI target rebuild for `hardcoded_design`, `heightmap`,
+    `point_cloud`, `polyhedron_visual`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint Python runner test:
+    `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - `git diff --check`
+
+User correction during the fifteenth checkpoint:
+
+- Do not treat the remaining `dart_build_gui_scene_example(...)` list as the
+  complete restoration backlog. It is only the source-ownership backlog.
+- Examples such as `examples/fetch/` can already have their own `main.cpp` and
+  still require parity scrutiny against the historical example behavior.
+- Current Fetch status: `examples/fetch/main.cpp` is source-owned, uses
+  promoted `dart::gui`, preserves the MJCF load, Bullet preference when
+  available, live mocap target following, visible target cross affordance, and
+  has a focused parity-marker guard. Keep it in the final example-parity audit
+  rather than assuming "source-owned" means "fully restored".
+- After this static geometry checkpoint lands, the source-ownership backlog is
+  expected to be only `empty`, `lcp_physics`, `mimic_pendulums`,
+  `simulation_event_handler`, `soft_bodies`, and `vehicle`, but the full
+  restored-example acceptance still includes rechecking source-owned examples
+  such as `fetch` for missing controls, visual affordances, camera defaults,
+  and behavior parity.
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -896,14 +965,18 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Finish the `hubo_puppet`/`g1_puppet` checkpoint with lint, post-lint focused
-   rebuild, commit, push, and CI dispatch if permissions allow it.
-2. Continue across the remaining GUI macro launchers in small related
+1. Finish the static geometry checkpoint with a full examples build, lint,
+   post-lint focused validation, commit, push, and CI dispatch if permissions
+   allow it.
+2. Re-audit restored examples as parity surfaces, not only as source-owned
+   programs. `fetch` stays in that audit even though it already has a
+   public-API `main.cpp`.
+3. Continue across the remaining GUI macro launchers in small related
    families, documenting each slice here before implementation.
-3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-4. Do not start the physical `experimental/` directory move until the
+5. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-5. Run `pixi run lint` before every checkpoint commit, then push the commit to
+6. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.
