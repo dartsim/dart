@@ -3198,6 +3198,15 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
   - Result: passed. EPA now has a standalone analytic penetration-depth test
     with a constructed tetrahedral simplex, and the broader
     `collision-native` CTest label passed 29/29.
+- Current local full validation after SDF and algorithm coverage refresh:
+  - Commit: current local head `00486aca5df`
+    (`Cover EPA penetration depth`).
+  - Command: `pixi run test-all`.
+  - Result: passed 6/6 gates: linting, build, unit tests,
+    simulation-experimental tests, Python tests, and documentation. The full
+    C++ unit/integration CTest slice reported 264/264 tests passing, including
+    all 29 `collision-native` tests; the simulation-experimental slice
+    separately reported 13/13 passing tests.
 
 ## Known Risks
 
