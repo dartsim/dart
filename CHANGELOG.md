@@ -85,16 +85,10 @@
     source-owned public DART line geometry at the original grid offset.
   - Restored the `fetch` example panel title and instructional copy against
     the historical example source.
-  - Restored the `fetch` example's draggable target as two transparent green
-    bars matching the historical end-effector affordance.
-  - Strengthened the `fetch` example target affordance with source-owned
-    public DART line geometry, renderer-neutral target rotation/reset keyboard
-    actions, restored viewer help text, and mouse-driven selected-frame
-    rotation through the promoted `dart::gui` selection API.
-  - Restored the `fetch` example target handle closer to the historical
-    interactive-frame affordance with source-owned local-axis arrowheads,
-    planar translation guides, and restored standalone README build/execute
-    instructions.
+  - Restored the `fetch` example's draggable target as a selectable
+    source-owned mesh cross made from two transparent green bars, matching the
+    historical end-effector affordance while retaining renderer-neutral drag,
+    rotation, and reset controls through promoted `dart::gui`.
   - Restored the `biped_stand` example's historical space/start and push
     instruction text plus standalone README build/execute instructions.
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,

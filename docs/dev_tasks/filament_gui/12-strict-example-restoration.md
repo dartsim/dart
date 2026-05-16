@@ -325,6 +325,21 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `11-example-parity-audit.md` before coding, then repair any newly found gap
     or record the promoted public API gap. Resume
     `examples/hybrid_dynamics/` after the Fetch re-open is handled.
+32. The Hubo checkpoint was pushed as
+    `f7d408fea9e Restore Hubo Puppet target controls`. The active strict-audit
+    slice is now `examples/fetch/`; do the fresh historical-source comparison
+    before any Fetch code edits.
+33. Fresh Fetch comparison found a concrete target-visual drift: the historical
+    source describes the dummy object at "the cross of the two transparent
+    green bars," while the current source uses a custom line/ring/arrow target
+    gizmo. Restore a selectable source-owned mesh cross with two transparent
+    green bars, keep promoted selected-frame manipulation for drag/rotation,
+    and update README/marker guards accordingly. Implementation and pre-lint
+    validation are complete: focused build/CTest, direct and pixi headless
+    screenshot smokes, Python C++ example-runner tests, aggregate `examples`
+    build, and `git diff --check` passed locally. Mandatory `pixi run lint`,
+    post-lint focused build/CTest, post-lint direct screenshot smoke, and
+    post-lint `git diff --check` also passed.
 
 ## Checkpoint Rule
 

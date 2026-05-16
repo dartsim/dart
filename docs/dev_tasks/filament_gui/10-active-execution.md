@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `1e691ce891b Restore G1 Puppet scene parity`.
+  `f7d408fea9e Restore Hubo Puppet target controls`.
 - Latest pushed code checkpoint:
-  `1e691ce891b Restore G1 Puppet scene parity`.
+  `f7d408fea9e Restore Hubo Puppet target controls`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -152,6 +152,7 @@ history but are not guaranteed to be in chronological order.
   - `061bf811d76 Restore simple frames names and arrow`
   - `7a9c712a3f1 Restore Fetch panel window controls`
   - `1e691ce891b Restore G1 Puppet scene parity`
+  - `f7d408fea9e Restore Hubo Puppet target controls`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -812,11 +813,27 @@ history but are not guaranteed to be in chronological order.
   runner tests, aggregate `examples` build, `git diff --check`, mandatory
   `pixi run lint`, post-lint focused build/CTest, post-lint `git diff --check`,
   and post-lint direct Hubo screenshot
-  (`/tmp/dart_hubo_puppet_strict_postlint.ppm`, 1280x960) passed locally. After
-  this checkpoint is committed and pushed, the next strict-audit cursor is a
-  fresh `examples/fetch/` re-open; resume `examples/hybrid_dynamics/` only after
-  that Fetch correction is either repaired or explicitly recorded as a promoted
-  API gap.
+  (`/tmp/dart_hubo_puppet_strict_postlint.ppm`, 1280x960) passed locally. This
+  checkpoint was pushed as `f7d408fea9e Restore Hubo Puppet target controls`.
+- Active work is now a fresh `examples/fetch/` re-open per maintainer
+  correction. Before coding, compare the current source and README against
+  `520993d7301^:examples/fetch`, update
+  `11-example-parity-audit.md` with the newly found gap, and only then repair
+  it or record the exact promoted API gap. Resume
+  `examples/hybrid_dynamics/` after the Fetch re-open is handled.
+- Active `examples/fetch/` repair implementation state: the historical
+  "cross of the two transparent green bars" target is restored as a selectable
+  source-owned `MeshShape` cross on the same `SimpleFrame` used for mocap sync.
+  Validation passed: focused build for `fetch` and
+  `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct and `pixi run ex
+fetch` llvmpipe screenshots
+  (`/tmp/dart_fetch_green_bars_direct.ppm`, 1280x960, 3638192/3686400 nonzero
+  bytes; `/tmp/dart_fetch_green_bars_pixi.ppm`, 640x480, 910984/921600 nonzero
+  bytes), Python C++ example-runner tests, aggregate `examples` build, and
+  `git diff --check`; mandatory `pixi run lint`; post-lint focused
+  rebuild/CTest, post-lint `git diff --check`, and post-lint direct screenshot
+  (`/tmp/dart_fetch_green_bars_direct_postlint.ppm`, 1280x960,
+  3638187/3686400 nonzero bytes, 4150 greenish pixels).
 
 ## Current Code Shape
 

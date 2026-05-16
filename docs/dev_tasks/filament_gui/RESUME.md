@@ -819,14 +819,16 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`1e691ce891b Restore G1 Puppet scene parity`. No rows remain with the exact
+`f7d408fea9e Restore Hubo Puppet target controls`. No rows remain with the exact
 `Needs strict audit` state. The current pending checkpoint is
-`examples/hubo_puppet/` strict re-open. Implementation and local validation are
-complete; commit and push this checkpoint before moving on. The checkpoint
-restores target activation toggles, support toggles, DOF print, posture reset,
-historical ground, support overlay, camera/run defaults, README, and marker
-guards. Balance/key-release, camera-roll/up-vector, and exact COM marker color
-parity remain named follow-ups.
+`examples/fetch/` strict re-open. Hubo was pushed as
+`f7d408fea9e Restore Hubo Puppet target controls`. Fetch is active because
+maintainer steering again named it as not fully restored despite previous
+checkpoints. The current Fetch repair restores the historical target as a
+selectable source-owned mesh cross made from two transparent green bars.
+Validation is complete through mandatory `pixi run lint` and post-lint focused
+checks; commit and push this checkpoint before moving back to the remaining
+strict-audit queue.
 
 ## Current Immediate Next Step
 

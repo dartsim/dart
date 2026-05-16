@@ -1519,11 +1519,12 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
       mainSource.find("CollisionDetectorType::Bullet"), std::string::npos);
   EXPECT_NE(mainSource.find("interactive frame"), std::string::npos);
   EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("createTargetHandleShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("addAxisArrowhead"), std::string::npos);
-  EXPECT_NE(mainSource.find("addPlanarTranslationGuide"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("transparent green target handle"), std::string::npos);
+  EXPECT_NE(mainSource.find("MeshShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::math::TriMesh<double>"), std::string::npos);
+  EXPECT_NE(mainSource.find("createTargetCrossShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("addBoxToMesh"), std::string::npos);
+  EXPECT_NE(mainSource.find("two transparent green bars"), std::string::npos);
+  EXPECT_NE(mainSource.find("MeshShape::SHAPE_ALPHA"), std::string::npos);
   EXPECT_NE(mainSource.find("kTargetRotationStep"), std::string::npos);
   EXPECT_NE(mainSource.find("rotateFetchTarget"), std::string::npos);
   EXPECT_NE(mainSource.find("createFetchKeyboardActions"), std::string::npos);
@@ -1607,10 +1608,8 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(panelSource.find("ImGui::BeginMenuBar"), std::string::npos);
   EXPECT_NE(panelSource.find("ImGui::CollapsingHeader"), std::string::npos);
   EXPECT_NE(readmeSource.find("Fetch MJCF Example"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("transparent green target handle"), std::string::npos);
-  EXPECT_NE(readmeSource.find("local-axis arrowheads"), std::string::npos);
-  EXPECT_NE(readmeSource.find("planar translation"), std::string::npos);
+  EXPECT_NE(readmeSource.find("two transparent green bars"), std::string::npos);
+  EXPECT_NE(readmeSource.find("select the green cross"), std::string::npos);
   EXPECT_NE(
       readmeSource.find("Ctrl-Shift-left drag rotates"), std::string::npos);
   EXPECT_NE(

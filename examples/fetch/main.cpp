@@ -46,6 +46,7 @@
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
@@ -63,7 +64,6 @@
 #include <utility>
 #include <vector>
 
-#include <cmath>
 #include <cstddef>
 
 namespace {
@@ -78,6 +78,8 @@ constexpr const char* kFetchGridName = "fetch_pick_and_place_grid";
 constexpr const char* kFetchGridBodyName = "fetch_pick_and_place_grid_body";
 constexpr const char* kFetchGridShapeName = "fetch_pick_and_place_grid_lines";
 constexpr double kTargetRotationStep = 0.08726646259971647;
+constexpr double kTargetBarLength = 0.52;
+constexpr double kTargetBarWidth = 0.045;
 
 struct FetchScene
 {
@@ -159,113 +161,67 @@ void setFrameColor(
   frame->getVisualAspect(true)->setRGBA(color);
 }
 
-std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetHandleShape()
+void addBoxToMesh(
+    dart::math::TriMesh<double>& mesh,
+    const Eigen::Vector3d& center,
+    const Eigen::Vector3d& size)
 {
-  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(8.0f);
-  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
+  const Eigen::Vector3d half = 0.5 * size;
+  const Eigen::Vector3d min = center - half;
+  const Eigen::Vector3d max = center + half;
+  const auto base = mesh.getVertices().size();
 
-  const auto addSegment
-      = [&](const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
-          const std::size_t startIndex = handle->addVertex(start);
-          handle->addVertex(end, startIndex);
+  mesh.addVertex(min.x(), min.y(), min.z());
+  mesh.addVertex(max.x(), min.y(), min.z());
+  mesh.addVertex(max.x(), max.y(), min.z());
+  mesh.addVertex(min.x(), max.y(), min.z());
+  mesh.addVertex(min.x(), min.y(), max.z());
+  mesh.addVertex(max.x(), min.y(), max.z());
+  mesh.addVertex(max.x(), max.y(), max.z());
+  mesh.addVertex(min.x(), max.y(), max.z());
+
+  const auto addFace
+      = [&](std::size_t a, std::size_t b, std::size_t c, std::size_t d) {
+          mesh.addTriangle(base + a, base + b, base + c);
+          mesh.addTriangle(base + a, base + c, base + d);
         };
 
-  handle->addVertex(Eigen::Vector3d(0.24, 0.0, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(-0.24, 0.0, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(0.0, 0.24, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(0.0, -0.24, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(0.0, 0.0, 0.24), center);
-  handle->addVertex(Eigen::Vector3d(0.0, 0.0, -0.24), center);
+  addFace(0, 1, 2, 3);
+  addFace(4, 7, 6, 5);
+  addFace(0, 4, 5, 1);
+  addFace(1, 5, 6, 2);
+  addFace(2, 6, 7, 3);
+  addFace(3, 7, 4, 0);
+}
 
-  const auto addAxisArrowhead = [&](const Eigen::Vector3d& axis,
-                                    const Eigen::Vector3d& sideA,
-                                    const Eigen::Vector3d& sideB) {
-    const Eigen::Vector3d tip = 0.34 * axis;
-    const Eigen::Vector3d base = 0.25 * axis;
-    constexpr double spread = 0.045;
-    addSegment(tip, base + spread * sideA);
-    addSegment(tip, base - spread * sideA);
-    addSegment(tip, base + spread * sideB);
-    addSegment(tip, base - spread * sideB);
-  };
+std::shared_ptr<dart::dynamics::MeshShape> createTargetCrossShape()
+{
+  auto mesh = std::make_shared<dart::math::TriMesh<double>>();
+  mesh->reserveVertices(16);
+  mesh->reserveTriangles(24);
+  addBoxToMesh(
+      *mesh,
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(kTargetBarLength, kTargetBarWidth, kTargetBarWidth));
+  addBoxToMesh(
+      *mesh,
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(kTargetBarWidth, kTargetBarWidth, kTargetBarLength));
+  mesh->computeVertexNormals();
 
-  addAxisArrowhead(
-      Eigen::Vector3d::UnitX(),
-      Eigen::Vector3d::UnitY(),
-      Eigen::Vector3d::UnitZ());
-  addAxisArrowhead(
-      Eigen::Vector3d::UnitY(),
-      Eigen::Vector3d::UnitX(),
-      Eigen::Vector3d::UnitZ());
-  addAxisArrowhead(
-      Eigen::Vector3d::UnitZ(),
-      Eigen::Vector3d::UnitX(),
-      Eigen::Vector3d::UnitY());
-
-  const auto addPlanarTranslationGuide
-      = [&](const Eigen::Vector3d& axisA, const Eigen::Vector3d& axisB) {
-          constexpr double inner = 0.11;
-          constexpr double outer = 0.23;
-          const Eigen::Vector3d a0 = inner * axisA + inner * axisB;
-          const Eigen::Vector3d a1 = outer * axisA + inner * axisB;
-          const Eigen::Vector3d a2 = outer * axisA + outer * axisB;
-          const Eigen::Vector3d a3 = inner * axisA + outer * axisB;
-          addSegment(a0, a1);
-          addSegment(a1, a2);
-          addSegment(a2, a3);
-          addSegment(a3, a0);
-        };
-
-  addPlanarTranslationGuide(Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY());
-  addPlanarTranslationGuide(Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitZ());
-  addPlanarTranslationGuide(Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitZ());
-
-  const auto addLoop = [&](auto&& pointForIndex) {
-    constexpr std::size_t segments = 32;
-    std::size_t first = 0;
-    std::size_t previous = 0;
-    for (std::size_t i = 0; i < segments; ++i) {
-      const auto vertex = handle->addVertex(pointForIndex(i, segments));
-      if (i == 0) {
-        first = vertex;
-      } else {
-        handle->addConnection(previous, vertex);
-      }
-      previous = vertex;
-    }
-    handle->addConnection(previous, first);
-  };
-
-  constexpr double radius = 0.30;
-  constexpr double pi = 3.14159265358979323846;
-  addLoop([radius, pi](std::size_t i, std::size_t segments) {
-    const double angle
-        = 2.0 * pi * static_cast<double>(i) / static_cast<double>(segments);
-    return Eigen::Vector3d(
-        radius * std::cos(angle), radius * std::sin(angle), 0.0);
-  });
-  addLoop([radius, pi](std::size_t i, std::size_t segments) {
-    const double angle
-        = 2.0 * pi * static_cast<double>(i) / static_cast<double>(segments);
-    return Eigen::Vector3d(
-        radius * std::cos(angle), 0.0, radius * std::sin(angle));
-  });
-  addLoop([radius, pi](std::size_t i, std::size_t segments) {
-    const double angle
-        = 2.0 * pi * static_cast<double>(i) / static_cast<double>(segments);
-    return Eigen::Vector3d(
-        0.0, radius * std::cos(angle), radius * std::sin(angle));
-  });
-
-  return handle;
+  auto shape = std::make_shared<dart::dynamics::MeshShape>(
+      Eigen::Vector3d::Ones(), mesh);
+  shape->setColorMode(dart::dynamics::MeshShape::SHAPE_COLOR);
+  shape->setAlphaMode(dart::dynamics::MeshShape::SHAPE_ALPHA);
+  return shape;
 }
 
 std::shared_ptr<dart::dynamics::SimpleFrame> createTargetFrame()
 {
   auto target = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kFetchTargetName, makeTargetTransform());
-  target->setShape(createTargetHandleShape());
-  setFrameColor(target, Eigen::Vector4d(0.18, 0.86, 0.34, 0.55));
+  target->setShape(createTargetCrossShape());
+  setFrameColor(target, Eigen::Vector4d(0.18, 0.86, 0.34, 0.45));
   return target;
 }
 
@@ -499,13 +455,13 @@ dart::gui::Panel createFetchPanel()
         "location of the end-effector.");
     builder.text(
         "The end-effector follows the invisible dummy object indicated at the "
-        "center of the transparent green target handle.");
+        "cross of the two transparent green bars.");
     builder.text("The offset grid marks the pick-and-place work area.");
 
     if (builder.collapsingHeader("Help")) {
       builder.text("User Guid:");
       builder.text(
-          "Select the green handle, then Ctrl-left drag or use arrow keys.");
+          "Select the green cross, then Ctrl-left drag or use arrows.");
       builder.text("X/Y/Z constrain Ctrl-left drag to one world axis.");
       builder.text("Ctrl-Shift-left drag rotates the selected handle.");
       builder.text("Hold X/Y/Z while rotating to use a local target axis.");

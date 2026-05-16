@@ -81,6 +81,14 @@ commits. The itemized inventory below is not a terminal closure; re-check it
 against the historical OSG/ImGui source and update this file before any Fetch
 code change.
 
+Fresh Fetch re-open after the Hubo checkpoint: the historical panel says the
+dummy object position is indicated "at the cross of the two transparent green
+bars." The source had drifted to a custom line/ring/arrow target gizmo. The
+current source restores the selectable target as a source-owned mesh cross made
+from two transparent green bars, while keeping promoted selection, rotation,
+and keyboard reset controls as renderer-neutral replacements for the old
+`InteractiveFrame` manipulation.
+
 ### Fetch Itemized Inventory
 
 Historical source compared: `520993d7301^:examples/fetch/main.cpp`.
@@ -93,7 +101,7 @@ Historical source compared: `520993d7301^:examples/fetch/main.cpp`.
 | Restore the object initial position.                                                                                         | Restored.                                           | Current source keeps the historical object coordinates.                                                                                                                                                             |
 | Find `robot0:mocap`, reset the first weld constraint, and sync the mocap root to the interactive target before each step.    | Restored.                                           | Current source uses `ApplicationOptions::preStep` and `syncMocapTarget`.                                                                                                                                            |
 | Create an interactive target at `(1.3, 0.75, 0.50)` with a 90-degree Y rotation.                                             | Restored through public `dart::gui`.                | Current source uses one draggable `SimpleFrame`, a richer source-owned line handle, keyboard rotation/reset actions, and mouse-driven selected-frame rotation through public `dart::gui`.                           |
-| Show the target as the visible end-effector control affordance.                                                              | Restored with stronger public DART geometry.        | Current source uses public line geometry with local axes, arrowheads, planar translation guides, and rotation rings on the same selectable frame used by mocap sync.                                                |
+| Show the target as the visible end-effector control affordance: the cross of two transparent green bars.                     | Restored.                                           | Current source uses a source-owned `MeshShape` cross attached to the same selectable frame used by mocap sync.                                                                                                      |
 | Add a work-area grid offset at `(1.3, 0.75, 0)`.                                                                             | Restored.                                           | Current source uses DART-owned line-segment geometry instead of OSG `GridVisual`.                                                                                                                                   |
 | Provide an ImGui-scale option.                                                                                               | Restored through the promoted runner.               | `--gui-scale` is parsed by the shared `dart::gui` application runner.                                                                                                                                               |
 | Default window size 1280x960 while preserving CLI overrides.                                                                 | Restored.                                           | Current source uses `ApplicationOptions::runDefaults`.                                                                                                                                                              |
