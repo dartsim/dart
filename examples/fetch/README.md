@@ -6,9 +6,10 @@
 - Concepts/APIs: `dart::io::readWorld`, Bullet collision when available,
   `dart::gui::ApplicationOptions`, custom panels, draggable simple frames, and
   per-step callbacks.
-- Expected output: a Fetch robot, object, work-area grid, and draggable green
-  target cross.
-- Controls: select the cross, then Ctrl-left drag it or move it with the
+- Expected output: a Fetch robot, object, work-area grid, and draggable
+  transparent green target bars.
+- Controls: select the green target bars, then Ctrl-left drag them or move
+  them with the
   keyboard selection controls. `--gui-scale` adjusts the GUI scale, and
   `--width`/`--height` override the default 1280x960 window size.
 

@@ -42,6 +42,10 @@ The next Fetch pass should compare the current source against
   renderer-neutral API, record that API gap explicitly in
   `11-example-parity-audit.md`.
 
+The current Fetch repair addresses the first point by replacing the generic
+3-axis target cross with two transparent green target bars on the same
+selectable `SimpleFrame`.
+
 ## Active Queue
 
 Use `11-example-parity-audit.md` as the live per-example table. The queue is

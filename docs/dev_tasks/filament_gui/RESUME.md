@@ -64,7 +64,7 @@ docs now distinguish example ownership (`options.world`, no
 `options.defaultScene`) from feature parity with the historical source. The
 Fetch repair has been committed and pushed: it adds a public
 `ApplicationOptions::camera` override, restores the historical camera framing,
-and makes the visible target cross one draggable target-frame renderable rather
+and makes the visible target bars one draggable target-frame renderable rather
 than child bars that can detach from the mocap target. A follow-up Fetch slice
 is now implemented locally because the historical source also added a visible
 `GridVisual` offset at the pick-and-place work area. It restores that as public
@@ -118,7 +118,7 @@ is implemented and pushed. The active slice is now
 keys, `h` harness toggle, and camera default through public `dart::gui`; that
 checkpoint is implemented and pushed. The active slice is now to re-open
 `examples/fetch/` as a full historical-source parity audit. Earlier Fetch
-checkpoints restored the promoted source file, camera, target cross,
+checkpoints restored the promoted source file, camera, target bars,
 work-area grid, panel controls, README, and run defaults, but maintainer
 feedback says there are many more examples that are not fully restored and
 Fetch remains the concrete reminder. Do not declare Fetch, or any other
@@ -810,19 +810,19 @@ reminder case, and capture the next `examples/coupler_constraint/` inventory.
 
 ## Current Immediate Next Step
 
-Commit and push the strict-restoration documentation checkpoint without
-opening a PR. It updates the active task docs so scope is not lost: Fetch
-remains re-openable, all pre-existing user-facing examples stay parity pending
-until itemized against historical source, and `coupler_constraint` is the next
-documented code-restoration target after the Fetch re-check.
+Commit and push the Fetch target-bar parity checkpoint without opening a PR.
+The current local repair replaces the generic 3-axis target cross with two
+transparent green target bars on the same selectable `SimpleFrame`, updates
+the Fetch panel/README wording, and adds marker-test coverage. Local
+validation has passed focused build/CTest, direct and pixi screenshot analyzer
+checks, Python example-runner tests, aggregate `examples` build,
+`git diff --check`, `pixi run lint`, and post-lint focused checks.
 
-After that docs checkpoint, compare current `examples/fetch/main.cpp` again
-with `520993d7301^:examples/fetch/main.cpp` and repair any concrete remaining
-user-visible gap through public `dart::gui`. Then restore
-`examples/coupler_constraint/` dynamic controller/reset/overlay/grid/camera
-parity. Keep `--screenshot <path>` and `--out <dir>` working for the existing
-CTest, GitHub Actions smoke path, and historical image-sequence workflows. A
-later broader smoke sweep can still use:
+After that checkpoint, restore `examples/coupler_constraint/` dynamic
+controller/reset/overlay/grid/camera parity through public `dart::gui`. Keep
+`--screenshot <path>` and `--out <dir>` working for the existing CTest, GitHub
+Actions smoke path, and historical image-sequence workflows. A later broader
+smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

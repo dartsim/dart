@@ -153,25 +153,23 @@ void setFrameColor(
   frame->getVisualAspect(true)->setRGBA(color);
 }
 
-std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetCrossShape()
+std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetBarsShape()
 {
-  auto cross = std::make_shared<dart::dynamics::LineSegmentShape>(8.0f);
-  const std::size_t center = cross->addVertex(Eigen::Vector3d::Zero());
-  cross->addVertex(Eigen::Vector3d(0.24, 0.0, 0.0), center);
-  cross->addVertex(Eigen::Vector3d(-0.24, 0.0, 0.0), center);
-  cross->addVertex(Eigen::Vector3d(0.0, 0.24, 0.0), center);
-  cross->addVertex(Eigen::Vector3d(0.0, -0.24, 0.0), center);
-  cross->addVertex(Eigen::Vector3d(0.0, 0.0, 0.18), center);
-  cross->addVertex(Eigen::Vector3d(0.0, 0.0, -0.18), center);
-  return cross;
+  auto bars = std::make_shared<dart::dynamics::LineSegmentShape>(10.0f);
+  const std::size_t center = bars->addVertex(Eigen::Vector3d::Zero());
+  bars->addVertex(Eigen::Vector3d(0.24, 0.0, 0.0), center);
+  bars->addVertex(Eigen::Vector3d(-0.24, 0.0, 0.0), center);
+  bars->addVertex(Eigen::Vector3d(0.0, 0.24, 0.0), center);
+  bars->addVertex(Eigen::Vector3d(0.0, -0.24, 0.0), center);
+  return bars;
 }
 
 std::shared_ptr<dart::dynamics::SimpleFrame> createTargetFrame()
 {
   auto target = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kFetchTargetName, makeTargetTransform());
-  target->setShape(createTargetCrossShape());
-  setFrameColor(target, Eigen::Vector4d(0.18, 0.86, 0.34, 0.92));
+  target->setShape(createTargetBarsShape());
+  setFrameColor(target, Eigen::Vector4d(0.18, 0.86, 0.34, 0.55));
   return target;
 }
 
@@ -288,11 +286,12 @@ dart::gui::Panel createFetchPanel()
         "The whole body motion of the Fetch robot is determined by the "
         "location of the end-effector.");
     builder.text(
-        "The end-effector follows the interactive target indicated by the "
-        "green cross.");
+        "The end-effector follows the invisible dummy object indicated at the "
+        "cross of the two transparent green bars.");
     builder.text("The offset grid marks the pick-and-place work area.");
     builder.text("User Guide");
-    builder.text("Select the cross, then Ctrl-left drag or use arrow keys.");
+    builder.text(
+        "Select the green bars, then Ctrl-left drag or use arrow keys.");
     builder.text("X/Y/Z constrain Ctrl-left drag to one world axis.");
     builder.separator();
     if (context.lifecycle != nullptr) {

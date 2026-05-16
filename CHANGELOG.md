@@ -62,6 +62,8 @@
     source-owned public DART line geometry at the original grid offset.
   - Restored the `fetch` example panel title and instructional copy against
     the historical example source.
+  - Restored the `fetch` example's draggable target as two transparent green
+    bars matching the historical end-effector affordance.
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
     `mixed_chain`, `coupler_constraint`, `add_delete_skels`, and
     `rigid_shapes`) as source-defined `dart::gui` examples.

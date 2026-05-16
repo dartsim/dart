@@ -26,10 +26,10 @@ The strict restoration rule is now captured in
 `12-strict-example-restoration.md`; use that note before narrowing the active
 slice to a single example.
 The Fetch checkpoint has now restored the historical camera framing, made the
-visible target cross the draggable target-frame affordance, and restored the
-historical work-area grid offset as source-owned public DART geometry because
-the example-specific grid is another user-visible behavior from the old OSG
-source. The active robot/IK parity work started with
+two transparent green target bars the draggable target-frame affordance, and
+restored the historical work-area grid offset as source-owned public DART
+geometry because the example-specific grid is another user-visible behavior
+from the old OSG source. The active robot/IK parity work started with
 `g1_puppet`, `atlas_puppet`, and `hubo_puppet`, because those examples still
 have clear gaps around target handles, target activation/teleoperation, and
 whole-body IK behavior compared with the historical OSG sources. The first
@@ -87,7 +87,7 @@ restoring the historical `1`-`4` perturbation keys, `h` harness toggle, and
 camera default through public `dart::gui`; that checkpoint is implemented and
 pushed. The immediate correction is to re-open `examples/fetch/` as a full
 historical-source parity audit, not a source-ownership audit. Earlier Fetch
-checkpoints restored the promoted source file, camera, target cross,
+checkpoints restored the promoted source file, camera, target bars,
 work-area grid, and panel controls, but Fetch remains the concrete reminder
 that screenshots and a real `main.cpp` are not enough evidence. Any remaining
 Fetch user-visible behavior gap should be restored through promoted
@@ -95,7 +95,11 @@ Fetch user-visible behavior gap should be restored through promoted
 re-audit checkpoint now restores the missing example README and adds
 renderer-neutral `ApplicationOptions::runDefaults` so the source-owned example
 can recover the historical 1280x960 default launch size while preserving
-command-line overrides. The next active parity slice is `examples/rigid_shapes`:
+command-line overrides. A later strict Fetch pass restores the historical
+two-transparent-green-bar target affordance on the same selectable
+`SimpleFrame`, updates the panel/README wording, and validates it with focused
+build/CTest plus direct and pixi headless screenshot smokes. The next active
+parity slice is `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default
 launch size through public `dart::gui`, plus the rigid-shapes-specific

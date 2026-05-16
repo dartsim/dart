@@ -182,16 +182,22 @@ history but are not guaranteed to be in chronological order.
   direct llvmpipe Fetch screenshot with analyzer coverage
   (`/tmp/dart_fetch_panel_text_direct_postlint.ppm`, 303694/307200 nonzero
   pixels).
-- Current implementation checkpoint in the worktree: docs correction only.
-  Update `README.md`, `RESUME.md`, `10-active-execution.md`, and
-  `11-example-parity-audit.md` to record the broad strict-restoration rule,
-  the latest pushed `rigid_cubes` checkpoint, the Fetch re-open requirement,
-  and the next concrete `coupler_constraint` audit inventory before making the
-  next code change.
-- After this docs checkpoint is committed and pushed, continue with a concrete
-  strict-audit repair. Start by re-checking `examples/fetch/` against the
-  historical source, then restore `examples/coupler_constraint/` dynamic
-  behavior through public `dart::gui`.
+- Current implementation checkpoint in the worktree: `examples/fetch/` target
+  affordance parity. The strict re-check found that the maintained source had
+  drifted to a generic 3-axis green target cross, while the historical panel
+  text described the target as the cross of two transparent green bars.
+- Fetch target-bar implementation state: `examples/fetch/main.cpp` now uses
+  one selectable `SimpleFrame` with two transparent green line bars, preserving
+  the promoted drag/selection behavior without child renderables that can
+  detach from the mocap target. The panel and README now describe the same
+  target-bar affordance, and the marker test guards the new source shape/text.
+- Fetch target-bar validation completed before commit: focused C++ build for
+  `fetch` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction`, direct and pixi Fetch headless
+  screenshots with analyzer coverage, Python C++ example-runner tests
+  (67 passed), aggregate `examples` build, `git diff --check`,
+  mandatory `pixi run lint`, and post-lint focused build/CTest/direct
+  screenshot analyzer checks.
 
 ## Current Code Shape
 
@@ -636,7 +642,7 @@ Fetch parity correction after user review:
   was mistaken for full restoration.
 - Implementation state for this slice: `examples/fetch/main.cpp` now prefers
   Bullet when available, preserves the live mocap target-following `preStep`,
-  restores a visible green cross target from public `SimpleFrame`/shape APIs,
+  restores visible green target bars from public `SimpleFrame`/shape APIs,
   and has a focused boundary guard for those parity markers.
 - Local evidence for the in-progress checkpoint:
   - C++ GUI target build for `fetch` and
@@ -1034,7 +1040,7 @@ User correction during the fifteenth checkpoint:
   still require parity scrutiny against the historical example behavior.
 - Current Fetch status: `examples/fetch/main.cpp` is source-owned, uses
   promoted `dart::gui`, preserves the MJCF load, Bullet preference when
-  available, live mocap target following, visible target cross affordance, and
+  available, live mocap target following, visible target-bar affordance, and
   has a focused parity-marker guard. Keep it in the final example-parity audit
   rather than assuming "source-owned" means "fully restored".
 - After this static geometry checkpoint lands, the source-ownership backlog is
@@ -1316,7 +1322,7 @@ Twenty-first parity-audit correction checkpoint:
     launcher or backend/experimental headers
 - Immediate `fetch` repair scope:
   - Keep the already-restored public source ownership, Bullet preference when
-    available, live mocap target following, and green target cross.
+    available, live mocap target following, and green target bars.
   - Restore remaining historical user experience where the current public API
     can support it: camera home framing, clearer target/status/help panel
     content, and a stronger visible target affordance.
@@ -1458,7 +1464,7 @@ Twenty-fourth Fetch work-area grid parity checkpoint:
 - Follow-up maintainer correction: `examples/fetch/` must stay in the parity
   audit set, not only in the completed source-ownership set. The prior Fetch
   repair restored the public source, Bullet preference, live mocap target,
-  camera framing, and draggable target cross; the historical source also added
+  camera framing, and draggable target bars; the historical source also added
   a visible `GridVisual` offset at the Fetch pick-and-place work area.
 - Current gap: the promoted `dart::gui` path has a generic debug grid, but the
   Fetch example source does not recreate the old example-specific grid anchor
@@ -1725,7 +1731,7 @@ Thirtieth source-owned example restoration checkpoint:
   the maintained Fetch source through promoted `dart::gui` APIs.
 - Re-audit result for the first Fetch slice: the maintained source already
   restores the live MJCF simulation, Bullet preference, initial robot/object
-  poses, weld reset, mocap target following, visible draggable target cross,
+  poses, weld reset, mocap target following, visible draggable target bars,
   work-area grid, `--gui-scale`, and camera default. The remaining user-facing
   gap in this slice is the legacy viewer panel affordance set: Exit,
   Help/About text, and explicit Play/Pause controls instead of only
@@ -2312,7 +2318,7 @@ Thirty-seventh Fetch parity re-audit checkpoint:
 - Maintainer correction: source ownership is still not sufficient evidence of
   full restoration. `examples/fetch/` remains the concrete example to re-open
   even though earlier checkpoints restored the promoted source file, camera,
-  visible target cross, work-area grid, and legacy panel controls.
+  visible target bars, work-area grid, and legacy panel controls.
 - Scope before code changes: compare the current `examples/fetch/main.cpp`
   against the historical OSG example source again, identify any remaining
   user-visible behavior gaps, and move repairable behavior into the promoted
@@ -2320,7 +2326,7 @@ Thirty-seventh Fetch parity re-audit checkpoint:
   headless screenshots, source ownership, or previous smoke evidence.
 - Audit finding before code changes: the restored source already covers the
   historical MJCF load, Bullet preference, robot/object initial positions,
-  mocap weld reset, target sync loop, visible target cross, work-area grid,
+  mocap weld reset, target sync loop, visible target bars, work-area grid,
   camera home, panel controls, and `--gui-scale` command-line support through
   the promoted runner. The remaining repairable gaps for this checkpoint are:
   restore the missing `examples/fetch/README.md`, and add a renderer-neutral
@@ -2562,22 +2568,18 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push the strict-restoration documentation checkpoint after
-   `pixi run lint`.
-2. Re-check `examples/fetch/` against
-   `520993d7301^:examples/fetch/main.cpp`; repair any concrete remaining
-   user-visible gap through public `dart::gui` or record the exact public API
-   gap.
-3. Restore `examples/coupler_constraint/` dynamic controller, reset key,
+1. Commit and push the Fetch target-bar parity checkpoint after the completed
+   validation set.
+2. Restore `examples/coupler_constraint/` dynamic controller, reset key,
    diagnostic panel, grid, camera/run defaults, README, and guard coverage
    through public `dart::gui`.
-4. Continue the same historical-source parity audit across every remaining
+3. Continue the same historical-source parity audit across every remaining
    pre-existing example; do not treat source ownership, build success, runner
    coverage, or screenshots as sufficient restoration evidence.
-5. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-6. Do not start the physical `experimental/` directory move until the
+5. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-7. Run `pixi run lint` before every checkpoint commit, then push the commit to
+6. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.
