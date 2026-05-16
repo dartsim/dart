@@ -3467,8 +3467,9 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push the `examples/wam_ikfast/` strict parity checkpoint after
-   final local validation stays green.
+1. Strict re-open `examples/fetch/` next. Compare current source/README against
+   `520993d7301^:examples/fetch`, then restore or classify target manipulation,
+   panel/help behavior, camera/defaults, README, capture, and marker coverage.
 2. Continue the same historical-source parity audit across every remaining
    pre-existing example; do not treat source ownership, build success, runner
    coverage, or screenshots as sufficient restoration evidence.

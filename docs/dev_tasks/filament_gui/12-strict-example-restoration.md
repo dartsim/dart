@@ -584,6 +584,12 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     coverage, aggregate `build-examples`, and Python C++ example-runner tests.
     Mandatory `pixi run lint`, post-lint focused rebuild/CTest, post-lint direct
     screenshot basic analyzer check, and `git diff --check` also passed.
+61. The active strict re-open cursor is now `examples/fetch/`. Maintainer
+    correction explicitly called out Fetch as not fully restored, so do not rely
+    on earlier restored wording. Compare current source/README against
+    `520993d7301^:examples/fetch`, then restore or classify historical target
+    manipulation, panel/help behavior, camera/defaults, README, capture, and
+    marker coverage before moving past it.
 
 ## Checkpoint Rule
 
