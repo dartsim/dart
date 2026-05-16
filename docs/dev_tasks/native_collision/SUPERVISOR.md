@@ -3003,8 +3003,9 @@ row flips for the three box-box batch rows, and evidence/audit notes. Focused
 validation passed: `test_box_box`, the focused batch test, the
 `bm_comparative_narrow_phase` build, the refreshed benchmark command,
 `pixi run lint`, and the full 29-test `collision-native` CTest label.
-Per Round 17 queue order, F11-1 is closed; the next local-only slice is Round
-16 unless the user redirects.
+At that point in the historical queue, F11-1 was closed and the next
+local-only slice was Round 16 unless the user redirected; Round 16 is now
+closed in the following section.
 
 ## Round 16 Local Completion Notes (Codex, 2026-05-15)
 
