@@ -1240,6 +1240,34 @@ Deferred finalization scope:
    `07-pr-evidence-transfer.md` as the starting packet for the final PR
    description, then delete this dev-task folder in the same completing PR.
 
+## Current-Head Read-Only Recheck (2026-05-16)
+
+The latest branch-local recheck after `ccbe9e5dd06` (`Fix native collision PR
+packet command wrapping`) confirmed the same no-PR finalization boundary:
+
+- `git status --short --branch` reported
+  `feature/new_coll...origin/feature/new_coll [ahead 144]`.
+- `git rev-parse HEAD` reported
+  `ccbe9e5dd063496568e3d3902021adcfefe42a46`; `origin/feature/new_coll`
+  remained `f8f5663d514582d8e7ec5d13871f254671083e0d`.
+- `gh auth status -h github.com` showed `jslee02` as the active account.
+- `gh pr list --repo dartsim/dart --head feature/new_coll --state all`
+  returned only PR #2652, still `CLOSED`, draft, based on `main`, updated
+  `2026-05-14T19:20:08Z`, and anchored to old head
+  `714d220d82a6ba99350bf2214fc9696f5495a30f`.
+- `gh run list --repo dartsim/dart --branch feature/new_coll --commit ccbe9e5dd06`
+  returned `[]`.
+- `pixi run lint` passed before the current-head audit note, including
+  `check-collision-runtime-isolation` and
+  `audit-collision-compat-facades`.
+- `git diff --check` passed before the current-head audit note.
+
+No PR metadata, workflow state, branch state, push, or GitHub artifact was
+mutated by this recheck. The objective remains open only on the deferred
+finalization gates: maintainer-selected PR/CI surface, final artifact evidence
+on that surface, evidence transfer, and deleting this working-doc folder in
+the same completing PR.
+
 ## Completion Bar
 
 Do not mark this dev task complete until every row in the checklist is either

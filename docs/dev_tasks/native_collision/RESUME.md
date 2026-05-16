@@ -114,13 +114,14 @@ recorded in `03-evidence-gates.md`.
 ## Current Branch
 
 `feature/new_coll` tracks `origin/feature/new_coll`. The latest audited
-remote-tracking head was `f8f5663d5145`, and the local branch is ahead. Run
-`git rev-parse HEAD` and `git rev-parse origin/feature/new_coll` for the exact
-current local/remote heads because editing this file changes the latest local
-hash. The latest pre-handoff read-only GitHub recheck on local docs/evidence
-head `307cb5fb07b` found no Actions runs for that head; branch-local commits
-do not trigger the main workflows while PR #2652 remains closed. PR #2652 is
-closed, draft, dirty, and still anchored to old head `714d220d82a`.
+remote-tracking head was `f8f5663d5145`, and the local branch was clean and
+ahead by 144 commits before this resume update. Run `git rev-parse HEAD` and
+`git rev-parse origin/feature/new_coll` for the exact current local/remote
+heads because editing this file changes the latest local hash. The latest
+read-only GitHub recheck on local docs/evidence head `ccbe9e5dd06` found no
+Actions runs for that head; branch-local commits do not trigger the main
+workflows while PR #2652 remains closed. PR #2652 is closed, draft, dirty, and
+still anchored to old head `714d220d82a`.
 
 The latest pushed validation baseline is `376fd5e686d`
 (`Remove per-engine collision reference build options`). Current branch head
@@ -147,7 +148,7 @@ the distinction clear:
    evidence transfer, final local validation on that completing state, and
    deleting this folder in the same completing PR. The latest read-only review
    surface check found no workflow runs for local docs/evidence head
-   `307cb5fb07b`, `gh pr list --head feature/new_coll --state all` returned
+   `ccbe9e5dd06`, `gh pr list --head feature/new_coll --state all` returned
    only PR #2652, `gh auth status -h github.com` showed `jslee02` is the active
    account, and confirmed
    PR #2652 remains closed on old head `714d220d82a6ba99350bf2214fc9696f5495a30f`.
