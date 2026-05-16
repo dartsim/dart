@@ -24,6 +24,9 @@ gz-physics/package/link smoke baseline. `pixi run lint`, runtime isolation,
 and compatibility-facade audits remain part of the local gate. The completion
 audit snapshot and validation-baseline wording were also refreshed so future
 passes do not treat historical "current head" evidence as live branch state.
+The latest local evidence-record commit before this handoff update was
+`49faf77240f` (`Record native collision stability validation`), which records
+the stability-label validation across the dev-task evidence packet.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not
@@ -58,10 +61,10 @@ approval, the docs/evidence commits were published to
 `f8f5663d514` (`Avoid stale native collision publish head`). Run
 `git rev-parse HEAD` and `git rev-parse origin/feature/new_coll` for the exact
 current local/remote heads because amending this note changes the latest hash.
-A read-only GitHub recheck after publishing found no Actions runs for the
-published evidence head; branch pushes do not trigger the main workflows while
-PR #2652 remains closed. PR #2652 is closed, draft, dirty, and still anchored
-to old head `714d220d82a`.
+A read-only GitHub recheck on local evidence head `49faf77240f` found no
+Actions runs for that head; branch-local commits do not trigger the main
+workflows while PR #2652 remains closed. PR #2652 is closed, draft, dirty, and
+still anchored to old head `714d220d82a`.
 
 The latest pushed validation baseline is `376fd5e686d`
 (`Remove per-engine collision reference build options`). Current branch head
@@ -87,7 +90,7 @@ the distinction clear:
 2. Deferred PR-finalization scope: maintainer-selected PR/CI surface, final
    evidence transfer, final local validation on that completing state, and
    deleting this folder in the same completing PR. Read-only checks on local
-   head `ed451c25829` found no workflow runs for that head and confirmed
+   head `49faf77240f` found no workflow runs for that head and confirmed
    PR #2652 remains closed on old head `714d220d82a6ba99350bf2214fc9696f5495a30f`.
 
 If code or evidence changes again, run `pixi run lint` before committing and
@@ -120,11 +123,13 @@ post GitHub comments unless the user explicitly asks.
   after the raw, convex, mesh, mixed batch-dispatcher, docs/evidence cleanup,
   and native stability-label follow-ups. That run included linting, build,
   unit tests, simulation-experimental tests, Python tests, and documentation.
-- Latest evidence-record commits: current local commits may be ahead of
-  `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
-  current head. Recent docs-only evidence commits refresh the completion-audit
-  snapshot, avoid stale-current-head wording, align milestone local/final
-  evidence wording, and keep the deferred finalization handoff explicit.
+- Latest evidence-record commit before this handoff update: `49faf77240f`
+  (`Record native collision stability validation`). Current local commits may
+  be ahead of `origin/feature/new_coll`; run
+  `git log -3 --oneline --decorate` for the current head. Recent docs-only
+  evidence commits refresh the completion-audit snapshot, avoid
+  stale-current-head wording, align milestone local/final evidence wording,
+  and keep the deferred finalization handoff explicit.
 - Latest source-build prerequisite docs cleanup: `621fca5a1fb`. Validation:
   `pixi run lint` passed on that tree after moving FCL out of required
   prerequisites.
@@ -134,9 +139,10 @@ post GitHub comments unless the user explicitly asks.
 - Latest pushed docs/reference-cleanup heads after those baselines have no
   GitHub Actions runs because branch pushes do not match the workflow filters
   while PR #2652 is closed.
-- Latest read-only successor-PR search found no maintainer-opened replacement
-  review surface; PR #2652 remains the only relevant native-collision PR and is
-  closed/draft on old head `714d220d82a`.
+- Latest read-only successor-PR search on local evidence head `49faf77240f`
+  found no maintainer-opened replacement review surface; PR #2652 remains the
+  only relevant native-collision PR and is closed/draft on old head
+  `714d220d82a`.
 - Latest remote-ref check: `git fetch origin feature/new_coll` failed because
   SSH to `github.com:22` was unreachable in this environment. HTTPS fetch and
   `git ls-remote https://github.com/dartsim/dart.git refs/heads/feature/new_coll`

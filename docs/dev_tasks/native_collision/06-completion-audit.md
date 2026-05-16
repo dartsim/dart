@@ -74,19 +74,20 @@ outside the current no-PR/no-GitHub-mutation scope.
 
 ## Read-Only Review Surface Reaudit (2026-05-16)
 
-Read-only GitHub checks on local head `ed451c25829` confirmed the final
-review/CI gap remains external to this branch-local pass:
+Read-only GitHub checks on local evidence head `49faf77240f` confirmed the
+final review/CI gap remains external to this branch-local pass:
 
 - The `gh run list` check for full commit
-  `ed451c25829a90d74052d8f89727085d419d29a2` returned `[]`.
+  `49faf77240f26c7888bdd4c494b71c8849bd7d8d` returned `[]`.
 - The `gh pr list --head feature/new_coll --state all` check returned only
   PR #2652, still `CLOSED`, draft, and anchored to old head
   `714d220d82a6ba99350bf2214fc9696f5495a30f`.
 
 No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
-that audit. This supersedes the earlier read-only check on local head
-`1b98064eeac`. Later docs-only commits may move `HEAD`; rerun the commands
-above with `git rev-parse HEAD` for an exact current-head check.
+that audit. This supersedes the earlier read-only checks on local heads
+`ed451c25829` and `1b98064eeac`. Later docs-only commits may move `HEAD`;
+rerun the commands above with `git rev-parse HEAD` for an exact current-head
+check.
 
 ## Current Local Full Validation Recheck (2026-05-16)
 
