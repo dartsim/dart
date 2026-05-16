@@ -10,19 +10,20 @@ Final PR CI evidence, evidence transfer, and folder deletion are deferred
 finalization steps.
 
 Latest local code follow-up: the current tree fixes the default native box-ground
-contact regression reported from `hello_world`/Atlas-style scenes, makes
-invalid convex/soft mesh data non-collidable with a warning, adds focused raw
-box-box, sphere-sphere batch, capsule-capsule batch, cylinder-cylinder batch,
-convex-convex batch, mesh-mesh batch, narrow-phase batch dispatcher,
-convex-mesh, mesh, default-world, Atlas foot-ground, stack, stress,
-mesh-BVH, convex-landscape, convex-fragment, exact `hello_world`-style
-no-tunneling, and Atlas Simbicon controller-loop regression coverage, rebuilds
-`hello_world` without the OctoMap `<ciso646>` warning, and refreshes the
-focused native/reference/benchmark validation evidence in
-`03-evidence-gates.md`. The latest local build-surface follow-up also removes
-stale legacy collision artifacts and stale package export snippets from reused
-build directories after the retained FCL/Bullet/ODE component names became
-native-backed interface facades.
+contact regression reported from `hello_world`/Atlas-style scenes, scopes
+capsule-box duplicate filtering to the current pair so accumulated collision
+results cannot suppress new pair contacts, makes invalid convex/soft mesh data
+non-collidable with a warning, adds focused raw box-box, sphere-sphere batch,
+capsule-capsule batch, cylinder-cylinder batch, convex-convex batch,
+mesh-mesh batch, narrow-phase batch dispatcher, convex-mesh, mesh,
+default-world, Atlas foot-ground, stack, stress, mesh-BVH, convex-landscape,
+convex-fragment, exact `hello_world`-style no-tunneling, and Atlas Simbicon
+controller-loop regression coverage, rebuilds `hello_world` without the OctoMap
+`<ciso646>` warning, and refreshes the focused native/reference/benchmark
+validation evidence in `03-evidence-gates.md`. The latest local build-surface
+follow-up also removes stale legacy collision artifacts and stale package export
+snippets from reused build directories after the retained FCL/Bullet/ODE
+component names became native-backed interface facades.
 
 ## Current Status
 
@@ -60,7 +61,9 @@ native-backed interface facades.
       supported distance, raycast, raycast-batch, mesh-heavy, and
       mixed-primitive scenario cases pass. The previous mixed-primitives dense
       1000 loss is now a win through cached broad-phase snapshot reuse:
-      native is 1.06 ms CPU mean versus Bullet at 1.69 ms.
+      native is 1.06 ms CPU mean versus Bullet at 1.69 ms. The current
+      capsule-box pair-local duplicate-filtering fix also restores the broad
+      mixed-primitive guard on local head `c1f03f23147`.
 - [x] FCL, Bullet, and ODE are no longer required collision dependencies. A
       core `dart` build, focused native/default C++ tests, and `dartpy` now
       build without exposing or requiring per-engine collision build switches.
@@ -247,6 +250,13 @@ native-backed interface facades.
       package components resolving as native-backed facades and `readelf`
       showing `libdart-collision-native.so` without old collision/reference
       runtime dependencies.
+      The current head `c1f03f23147` adds the capsule-box pair-local
+      duplicate-filtering fix and passed focused `test_capsule_capsule`,
+      `pixi run -e collision-reference bm-collision-check-mixed`, the full
+      `pixi run -e collision-reference bm-collision-check`, `pixi run lint`,
+      `pixi run test-all`, and a fresh `pixi run -e gazebo test-gz` 65/65
+      downstream compatibility gate. The gz plugin dependency scan again
+      reported `libdart-collision-native.so`.
       The latest code-validation head `4db514cfd22` also passed the full local
       gate with Release CTest 264/264 and Python tests 147/147. The same code
       head passed the focused reference-backend checks and the final

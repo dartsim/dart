@@ -60,6 +60,12 @@ retained `collision-fcl`, `collision-bullet`, and `collision-ode` components
 resolving as native-backed package facades and `readelf` showing
 `libdart-collision-native.so` without old collision/reference runtime
 dependencies.
+The current local head `c1f03f23147` scopes capsule-box duplicate filtering to
+the current pair, adds `CapsuleBox.DuplicateFilteringIsPairLocal`, and passed
+focused `test_capsule_capsule`, the mixed and full `collision-reference`
+benchmark guards, `pixi run lint`, `pixi run test-all`, and a fresh
+`pixi run -e gazebo test-gz` 65/65 compatibility gate. No PR, push, workflow,
+branch, or GitHub state was mutated for that recheck.
 The package-smoke evidence was recorded at `25b60737498`; later docs-only
 evidence and reference-surface wording commits may move `HEAD`. Use
 `git log -3 --oneline --decorate` for the exact current local head. None of
@@ -80,9 +86,11 @@ dependencies. That docs cleanup is commit `621fca5a1fb` and was validated with
 
 Current local code follow-up fixes a native box-box contact-point
 regression that could let a rotated box fall through a large ground box in
-default-world simulation. It also makes invalid convex/soft mesh data
-non-collidable with a warning and adds public-detector coverage for
-sphere-mesh collision. The slice adds raw box-box, sphere-sphere batch,
+default-world simulation and a capsule-box duplicate-filtering regression that
+could suppress contacts from later pairs in an accumulated collision result. It
+also makes invalid convex/soft mesh data non-collidable with a warning and adds
+public-detector coverage for sphere-mesh collision. The slice adds raw box-box,
+sphere-sphere batch,
 capsule-capsule batch,
 cylinder-cylinder batch, convex-convex batch, mesh-mesh batch, default-world,
 narrow-phase batch dispatcher, convex-mesh, mesh, ten-box stack stability,
@@ -264,6 +272,12 @@ post GitHub comments unless the user explicitly asks.
   direct `readelf` checks showed the gz DART plugin and package-smoke
   executable depend on `libdart-collision-native.so` without old
   collision/reference runtime dependencies.
+- Current local capsule-box duplicate-filtering refresh after `c1f03f23147`:
+  focused `test_capsule_capsule` passed with the new pair-local accumulated
+  result regression, the previously failing mixed benchmark guard passed, the
+  full `pixi run -e collision-reference bm-collision-check` guard passed,
+  `pixi run lint` and `git diff --check` passed, `pixi run test-all` passed
+  all 6 top-level gates, and `pixi run -e gazebo test-gz` passed 65/65.
 - Current local feature-level stability refresh after `ca0201e67f4`: focused
   build of `INTEGRATION_simulation_World` passed,
   `World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`

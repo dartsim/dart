@@ -32,9 +32,10 @@ Make native DART collision the default runtime stack
   C++ and package facades are removed or hard-deprecated further.
 - Adds runtime-isolation, compatibility-facade, wheel/package, downstream, and
   benchmark evidence gates.
-- Fixes the latest native box-ground contact regression, makes invalid
-  convex/soft mesh data non-collidable with a warning, and adds focused raw,
-  convex, mesh, and default-world regression coverage.
+- Fixes the latest native box-ground contact regression, scopes capsule-box
+  duplicate filtering to the current pair, makes invalid convex/soft mesh data
+  non-collidable with a warning, and adds focused raw, convex, mesh, and
+  default-world regression coverage.
 
 ## Motivation / Problem
 
@@ -59,8 +60,10 @@ Make native DART collision the default runtime stack
 - Runtime isolation, compatibility-facade, wheel/package, downstream, and
   benchmark guards keep normal builds native-only.
 - Box-box contact points now stay local to the overlap for upright and rotated
-  boxes on large ground boxes; invalid convex/soft mesh data is non-collidable
-  with a warning; public sphere-mesh collision has focused coverage.
+  boxes on large ground boxes; capsule-box duplicate filtering is pair-local
+  for accumulated result objects; invalid convex/soft mesh data is
+  non-collidable with a warning; public sphere-mesh collision has focused
+  coverage.
 - The public OctoMap include is wrapped with DART's warning-suppression helper
   so `hello_world` rebuilds without the third-party `<ciso646>` C++20 warning.
 
@@ -97,6 +100,7 @@ Make native DART collision the default runtime stack
   - `944bd95f874` (`Add hello world native collision regression`)
   - `ca0201e67f4` (`Add Atlas Simbicon native collision regression`)
   - `35578ad2f8a` (`Clean stale legacy collision build artifacts`)
+  - `c1f03f23147` (`Scope capsule-box duplicate filtering`)
 - `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
   passed on local head `4db514cfd22` with 6/6 top-level gates: linting, build,
   unit tests, simulation-experimental tests, Python tests, and documentation.
@@ -131,6 +135,13 @@ Make native DART collision the default runtime stack
   Python tests, and documentation. The lint sub-gate reran
   `check-collision-runtime-isolation` and `audit-collision-compat-facades`. No
   PR, push, workflow, branch, or GitHub state was mutated by this recheck.
+- The current head `c1f03f23147` passed focused `test_capsule_capsule` with the
+  new `CapsuleBox.DuplicateFilteringIsPairLocal` regression, the mixed
+  collision benchmark guard, the full `pixi run -e collision-reference
+bm-collision-check` guard, `pixi run lint`, `git diff --check`,
+  `pixi run test-all`, and a fresh `pixi run -e gazebo test-gz` 65/65
+  downstream compatibility gate. The gz DART plugin dependency scan again
+  reported `libdart-collision-native.so`.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`

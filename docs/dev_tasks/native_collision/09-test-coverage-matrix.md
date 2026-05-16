@@ -243,6 +243,7 @@ deterministic across threads, etc.).
 | `cross_backend_contact_count_parity`  | DONE   | `test_box_ground_contact_parity.cpp`                                                       | Reference-enabled parity test; match Bullet contact count within ±1 |
 | `thin_box_no_tunneling`               | DONE   | `test_world.cpp::DefaultNativeThinBoxDoesNotTunnel`                                        | Slender feature stress                                              |
 | `slender_capsule_no_tunneling`        | DONE   | `test_world.cpp::DefaultNativeSlenderCapsuleDoesNotTunnel`                                 | Capsule line-support stress                                         |
+| `capsule_box_duplicate_filter_local`  | DONE   | `test_capsule_capsule.cpp::DuplicateFilteringIsPairLocal`                                  | Accumulated-result regression                                       |
 | `coincident_vertex_no_crash`          | DONE   | `test_narrow_phase.cpp::CoincidentVertexMeshNoCrashAcrossBatch`                            | Degenerate mesh batch regression                                    |
 | `zero_extent_shape_no_crash`          | DONE   | `test_narrow_phase.cpp::ZeroExtentShapesNoCrashAcrossBatch`                                | Zero-size primitive batch regression                                |
 | `huge_magnitude_fp_stability`         | DONE   | `test_narrow_phase.cpp::HugeMagnitudeBoxesRemainFiniteAcrossBatch`                         | 1e6 m boxes                                                         |
@@ -352,10 +353,10 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 - **§1 Pair-wise narrow-phase:** 89 DONE, 0 PARTIAL, 0 GAP (of 89 rows)
 - **§2 Algorithm-level:** 38 DONE, 0 PARTIAL, 0 GAP, 11 DEFERRED (of 49 rows)
-- **§3 Stress / regression:** 33 DONE, 0 PARTIAL, 0 GAP (of 33 rows)
+- **§3 Stress / regression:** 34 DONE, 0 PARTIAL, 0 GAP (of 34 rows)
 - **§4 Benchmarks:** 30 DONE, 0 PARTIAL, 0 GAP, 14 DEFERRED (of 44 rows)
 - **§5 Infrastructure:** 9 DONE, 0 PARTIAL, 0 GAP (of 9 rows)
-- **TOTAL:** 199 DONE, 0 PARTIAL, 0 GAP, 25 DEFERRED (of 224 rows)
+- **TOTAL:** 200 DONE, 0 PARTIAL, 0 GAP, 25 DEFERRED (of 225 rows)
 
 DART native has no open non-deferred feature-level rows in this matrix. The
 remaining proposed-superset rows are explicitly deferred into:

@@ -3719,6 +3719,39 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `libdart-collision-reference-*`, `libdart-test-reference-*`, FCL, Bullet,
     ODE, or libccd runtime dependency. No PR, push, workflow, branch, or GitHub
     state was mutated by this local validation pass.
+- Current local capsule-box duplicate-filtering refresh after the latest
+  feature-level user report:
+  - Commit: `c1f03f23147`
+    (`Scope capsule-box duplicate filtering`).
+  - Scope: capsule-box duplicate filtering is now pair-local instead of
+    scanning all already-accumulated contacts in the caller's
+    `CollisionResult`. This preserves contacts for later pairs in dense worlds
+    and avoids the quadratic accumulated-result scan that tripped the
+    mixed-primitive benchmark guard.
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_capsule_capsule --parallel 5`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_capsule_capsule$' -j 5`,
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference bm-collision-check-mixed`,
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference bm-collision-check`,
+    `pixi run lint`,
+    `git diff --check`,
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`,
+    and
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e gazebo test-gz`.
+  - Result: passed. The focused capsule test passed with the new
+    `CapsuleBox.DuplicateFilteringIsPairLocal` regression. The mixed-primitive
+    check passed after the previously failing dense scenario improved from
+    roughly 47 ms CPU to roughly 1.65 ms CPU. The full collision benchmark
+    guard exited 0, with enforced narrowphase, distance, raycast,
+    mixed-primitive, mesh-heavy, and raycast-batch subsets passing and
+    report-only adapter/raw-reference subsets completing. `pixi run lint`
+    passed, including runtime-isolation and compatibility-facade audits, and
+    `git diff --check` passed. The full `pixi run test-all` report passed all
+    6 top-level gates: linting, build, unit tests, simulation-experimental
+    tests, Python tests, and documentation, then printed `All tests passed!`.
+    The fresh gz-physics gate passed 65/65 and the DART plugin dependency scan
+    reported `libdart-collision-native.so`. No PR, push, workflow, branch, or
+    GitHub state was mutated by this local validation pass.
 
 ## Known Risks
 
