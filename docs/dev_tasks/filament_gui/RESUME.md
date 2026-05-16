@@ -125,7 +125,12 @@ Fetch remains the concrete reminder. Do not declare Fetch, or any other
 source-owned example, complete until `11-example-parity-audit.md` has an
 itemized historical-source inventory and every user-visible item is restored
 through promoted `dart::gui`, explicitly superseded, or recorded as a public
-API gap. A later slice restored `examples/rigid_shapes`: restore the
+API gap. The current Fetch re-audit checkpoint restores the historical
+`Fetch robot example` panel title and whole-body-motion instructional copy,
+updates the audit table, adds source-marker coverage, and has passed focused
+build/CTest, direct and pixi screenshot analyzer checks, and the Python
+example-runner unit test. A later slice restored `examples/rigid_shapes`:
+restore the
 historical `q`/`w`/`e`/`r` shape-spawn controls, `a` delete-last control, `c`
 contact-point toggle, convex mesh spawn path, camera home, and 640x480 default
 launch size through public `dart::gui`, plus the rigid-shapes-specific

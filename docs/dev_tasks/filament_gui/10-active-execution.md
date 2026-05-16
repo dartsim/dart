@@ -155,6 +155,21 @@ history but are not guaranteed to be in chronological order.
   Fetch behaviors. Any remaining Fetch-specific behavior gap must either be
   repaired through promoted `dart::gui` APIs or recorded as a named public API
   follow-up.
+- Current Fetch re-audit implementation in the worktree restores the
+  historical `Fetch robot example` panel title and the old whole-body-motion
+  instructional copy, updates the strict audit table, adds source-marker test
+  coverage, and records the user-visible repair in the changelog.
+- Fetch panel-text validation completed before this checkpoint commit: focused
+  C++ build for `fetch` and `UNIT_gui_FilamentSceneExtraction`, focused CTest
+  for `UNIT_gui_FilamentSceneExtraction`, direct and pixi Fetch headless
+  screenshots with analyzer coverage, and
+  `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  (67 passed).
+- Fetch panel-text post-lint validation completed: `pixi run lint`, focused
+  rebuild and CTest for `fetch` plus `UNIT_gui_FilamentSceneExtraction`, and a
+  direct llvmpipe Fetch screenshot with analyzer coverage
+  (`/tmp/dart_fetch_panel_text_direct_postlint.ppm`, 303694/307200 nonzero
+  pixels).
 - Next implementation candidate after the Fetch re-audit remains
   `examples/heightmap`. Historical behavior included an interactive heightmap
   `SimpleFrame`, panel controls for terrain visibility, regeneration,
@@ -2544,9 +2559,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Fill the strict audit inventory for `examples/fetch/` in
-   `11-example-parity-audit.md` and repair any remaining user-visible gaps
-   through public `dart::gui`.
+1. Commit and push the Fetch panel-title/instructional-text re-audit checkpoint
+   after `pixi run lint`.
 2. Continue the same historical-source parity audit across every remaining
    pre-existing example; do not treat source ownership, build success, runner
    coverage, or screenshots as sufficient restoration evidence.

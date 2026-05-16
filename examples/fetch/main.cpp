@@ -280,13 +280,18 @@ void syncMocapTarget(const FetchScene& scene)
 dart::gui::Panel createFetchPanel()
 {
   dart::gui::Panel panel;
-  panel.title = "Fetch";
+  panel.title = "Fetch robot example";
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
     builder.text("Point cloud and voxel grid rendering example");
-    builder.text("Fetch pick-and-place MJCF world");
-    builder.text("Whole-body motion follows the green cross target.");
+    builder.text(
+        "The whole body motion of the Fetch robot is determined by the "
+        "location of the end-effector.");
+    builder.text(
+        "The end-effector follows the interactive target indicated by the "
+        "green cross.");
     builder.text("The offset grid marks the pick-and-place work area.");
+    builder.text("User Guide");
     builder.text("Select the cross, then Ctrl-left drag or use arrow keys.");
     builder.text("X/Y/Z constrain Ctrl-left drag to one world axis.");
     builder.separator();

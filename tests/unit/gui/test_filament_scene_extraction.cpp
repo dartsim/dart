@@ -908,9 +908,14 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("syncMocapTarget"), std::string::npos);
+  EXPECT_NE(mainSource.find("Fetch robot example"), std::string::npos);
   EXPECT_NE(
       mainSource.find("Point cloud and voxel grid rendering example"),
       std::string::npos);
+  EXPECT_NE(
+      mainSource.find("whole body motion of the Fetch robot"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("User Guide"), std::string::npos);
   EXPECT_NE(mainSource.find("builder.button(\"Play\")"), std::string::npos);
   EXPECT_NE(mainSource.find("builder.button(\"Pause\")"), std::string::npos);
   EXPECT_NE(mainSource.find("builder.button(\"Exit\")"), std::string::npos);

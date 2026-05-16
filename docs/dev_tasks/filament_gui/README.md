@@ -730,18 +730,13 @@ longer express stable DART concepts.
 
 ## Immediate next steps
 
-1. Fill the strict historical-source inventory in
-   `11-example-parity-audit.md`, starting by re-opening `examples/fetch/` as
-   the concrete reminder that source ownership and screenshots are not full
-   restoration.
-2. Repair any remaining Fetch-specific user-visible gaps through promoted
-   `dart::gui` APIs, or record the exact public API gap if a behavior cannot
-   be restored yet.
-3. Continue the same audit pattern across every pre-existing example before
+1. Commit and push the Fetch re-audit checkpoint that restores the historical
+   panel title and instructional copy, after `pixi run lint`.
+2. Continue the same audit pattern across every pre-existing example before
    declaring it restored. `examples/heightmap` is already known incomplete and
    should regain `--demo`, interactive controls, alignment mode, camera/run
    defaults, README, and parity tests.
-4. Add only DART-owned public GUI concepts needed for those examples: no public
+3. Add only DART-owned public GUI concepts needed for those examples: no public
    Filament, GLFW, Dear ImGui, OSG, Raylib, OpenGL, Vulkan, or Metal types.
-5. Keep checkpoint commits small, run `pixi run lint` before every commit, and
+4. Keep checkpoint commits small, run `pixi run lint` before every commit, and
    push the tracked branch without opening a PR so GitHub CI can run.
