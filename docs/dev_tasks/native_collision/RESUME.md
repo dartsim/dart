@@ -224,6 +224,13 @@ post GitHub comments unless the user explicitly asks.
   intended hit/intersection path. Fresh local benchmark JSON was emitted for
   algorithm rows, CCD rows, and convex-convex scalar/batch rows, and the
   focused convexity/CCD CTest slice passed 9/9.
+- Latest local mesh benchmark harness audit: `2c6a29eaf0d`. The mesh-heavy
+  scenario benchmark now consumes native/detector collision results and contact
+  counts in timed rows, TriMesh-backed `MeshShape` construction no longer probes
+  empty `file://` resources, the mesh-heavy benchmark guard passed without
+  empty-URI warnings, and `.benchmark_results/native_collision_mesh_mesh_batch.json`
+  was refreshed for mesh-mesh scalar/batch rows after built-in accuracy
+  verification passed.
 - Latest full local `pixi run test-all` validation after the convexity
   benchmark harness audit: source head `1f59af53d30`, with the docs/evidence
   update recording the result. The full local gate passed linting, build, unit
@@ -325,6 +332,12 @@ post GitHub comments unless the user explicitly asks.
   built-in accuracy verification passed. Native remained ahead of the fastest
   reference lane on the eight checked rows by roughly 11x-22x with result and
   contact-count consumption active.
+- Current local mesh benchmark harness audit after `2c6a29eaf0d`: focused
+  build and CTest passed, `bm-collision-check-mesh` reported
+  `1 passed, 0 failed, 0 skipped` without empty `file://` mesh-load warnings,
+  and the mesh-mesh scalar/batch benchmark refreshed
+  `.benchmark_results/native_collision_mesh_mesh_batch.json`. No PR, push,
+  workflow, branch, or GitHub state was mutated by this validation pass.
 - Current local full validation after `184c8be739d`: `pixi run test-all`
   passed all 6 top-level gates and printed `All tests passed!`. No PR, push,
   workflow, branch, or GitHub state was mutated by this validation pass.

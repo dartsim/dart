@@ -3829,6 +3829,28 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     the filtered run. The focused convexity/CCD CTest slice passed 9/9, and
     the final lint and whitespace checks passed. No PR, push, workflow, branch,
     or GitHub state was mutated by this local validation pass.
+- Current local mesh benchmark harness audit:
+  - Commit: `2c6a29eaf0d`
+    (`Harden mesh-heavy benchmark coverage`).
+  - Scope: `bm_mesh_heavy.cpp` now consumes native and detector collision
+    results plus contact counts in timed rows, and TriMesh-backed `MeshShape`
+    construction skips material-resource probing for empty file URIs while
+    preserving real URI/path material extraction.
+  - Commands:
+    `pixi run -e collision-reference -- cmake --build build/collision-reference/cpp/Release --target bm_scenarios_mesh_heavy bm_comparative_narrow_phase UNIT_dynamics_MeshShape --parallel "$JOBS"`,
+    `pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^(UNIT_dynamics_MeshShape|INTEGRATION_collision_MeshContactRegression|UNIT_collision_DartCollisionDetector|UNIT_collision_ConvexMesh|UNIT_collision_Raycast|UNIT_dynamics_MeshShape|UNIT_dynamics_ConvexMeshShape|test_mesh_mesh|test_convex|test_compound|test_sdf_compare)$' -j "$JOBS"`,
+    `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e collision-reference bm-collision-check-mesh`,
+    `pixi run -e collision-reference -- ./build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_filter='BM_NarrowPhase_MeshMesh_Native(_Batch_N(1|10|100|1000))?$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_mesh_mesh_batch.json --benchmark_out_format=json`,
+    `pixi run lint`, and `git diff --check`.
+  - Result: passed locally. The affected benchmark and unit-test targets
+    rebuilt cleanly. The focused mesh/reference CTest slice passed 10/10,
+    including the new empty-URI `MeshShape` regression. The mesh-heavy guard
+    reported `collision benchmark check: 1 passed, 0 failed, 0 skipped` and no
+    longer emitted empty `file://` mesh-load warnings. The mesh-mesh
+    scalar/batch benchmark emitted N=1/10/100/1000 rows after built-in
+    accuracy verification passed for all registered raw narrow-phase pairs.
+    Final lint and whitespace checks passed. No PR, push, workflow, branch, or
+    GitHub state was mutated by this local validation pass.
 - Current local full validation after benchmark harness audit:
   - Commit: `184c8be739d`
     (`Record benchmark harness audit evidence`).
