@@ -40,18 +40,18 @@ This document tracks AI coding assistant compatibility with DART's documentation
 
 ### Conventions
 
-| Convention                      | Rule                                                                                               |
-| ------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **Pointer board**               | `AGENTS.md` stays concise and points to durable docs                                               |
-| **AI-native policy**            | `docs/ai/` owns workflow maps, verification, sessions, and component ownership                     |
-| **Command naming**              | `dart-` prefix (e.g., `dart-new-task.md`)                                                          |
-| **Skill naming**                | `dart-` prefix (e.g., `dart-build`)                                                                |
-| **Skill descriptions**          | Start with display name and quote colon values (e.g., `"DART Build: ..."`)                         |
-| **Tool-specific language**      | Use generic terms except in compatibility or routing docs where tool behavior is the subject       |
-| **Placeholders**                | Use `$ARGUMENTS`, `$1`, `$2` for command args                                                      |
-| **Tracked file references**     | Use repo-relative `@file` syntax; home-directory references are only for untracked personal files  |
-| **Workflow source**             | Repeatable workflows currently live in `.claude/commands/` and are generated to Codex/OpenCode     |
-| **Manual public path required** | Every AI workflow must map back to public docs and `pixi run ...` commands for non-AI contributors |
+| Convention                      | Rule                                                                                                |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Pointer board**               | `AGENTS.md` stays concise and points to durable docs                                                |
+| **AI-native policy**            | `docs/ai/` owns AI-infra principles, workflow maps, verification, sessions, and component ownership |
+| **Command naming**              | `dart-` prefix (e.g., `dart-new-task.md`)                                                           |
+| **Skill naming**                | `dart-` prefix (e.g., `dart-build`)                                                                 |
+| **Skill descriptions**          | Start with display name and quote colon values (e.g., `"DART Build: ..."`)                          |
+| **Tool-specific language**      | Use generic terms except in compatibility or routing docs where tool behavior is the subject        |
+| **Placeholders**                | Use `$ARGUMENTS`, `$1`, `$2` for command args                                                       |
+| **Tracked file references**     | Use repo-relative `@file` syntax; home-directory references are only for untracked personal files   |
+| **Workflow source**             | Repeatable workflows currently live in `.claude/commands/` and are generated to Codex/OpenCode      |
+| **Manual public path required** | Every AI workflow must map back to public docs and `pixi run ...` commands for non-AI contributors  |
 
 ### @file Import Syntax
 
@@ -120,7 +120,7 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 
 2. Sync to OpenCode and Codex: `pixi run lint` (includes `sync-ai-commands`)
 
-3. Update `AGENTS.md` and `docs/ai/workflows.md` if the command should be discoverable in the root workflow table
+3. Update `docs/ai/workflows.md` so the command is discoverable from the workflow catalog
 
 4. Put long background material in `docs/onboarding/*.md`; keep command files concise and action-oriented
 
@@ -151,7 +151,7 @@ becomes `$dart-fix-ci`.
 
 2. Sync to Codex: `pixi run lint` (includes `sync-ai-commands`)
 
-3. Update `AGENTS.md` and `docs/ai/workflows.md` skills tables
+3. Update `docs/ai/workflows.md` so the skill is discoverable from the workflow catalog
 
 ### Skill Design Principles
 
@@ -239,9 +239,8 @@ Skills work across multiple AI tools through automatic syncing:
 
 **Sync is automatic** via `pixi run lint` (includes `sync-ai-commands`).
 
-**CI verification**: `pixi run check-ai-commands` ensures sync in CI, checks
-that Claude Code, OpenCode, and Codex expose the same effective DART capability
-set, and validates command/skill description style plus context-budget limits.
+**CI verification**: `pixi run check-ai-commands` is the non-mutating sync and
+AI-component check. `docs/ai/components.md` owns the exact check coverage.
 
 #### Acknowledgment
 
@@ -278,6 +277,9 @@ editable workflow source currently lives in `.claude/commands/`.
 
 - Keep `AGENTS.md` as the concise pointer board, `docs/ai/` as shared agent
   policy, and this document as the tool-compatibility reference.
+- Keep AI-infra axioms and the manual principle audit in
+  `docs/ai/principles.md`; link to it from entrypoints and workflows instead of
+  restating it.
 - Keep public contributor paths available through tracked docs and
   `pixi run ...` tasks; AI workflows can route work, but must not be the only
   way to complete it.
@@ -293,11 +295,8 @@ Different tools expose the same workflows differently:
 - OpenCode: `.opencode/command/` plus `.claude/skills/`
 - Codex: `.codex/skills/` for both domain skills and workflow skills
 
-`pixi run check-ai-commands` compares those effective sets and fails if any
-supported agent is missing a command/skill or has an extra one. It also checks
-that skill descriptions begin with the display name, command descriptions stay
-short and lowercase, and command/skill files remain within context-budget line
-limits.
+`pixi run check-ai-commands` compares those effective sets and runs the
+structural AI-component checks owned by `docs/ai/components.md`.
 
 **Sync details**:
 
@@ -501,6 +500,28 @@ This avoids noisy bot-to-bot conversations while still leveraging automated veri
 
 > **Note**: False positives can recur across reviews. Tests that explicitly refute incorrect claims prevent future confusion and document the verification.
 
+### First Codex Review After Publishing A Draft
+
+When a draft PR is first marked ready for review, Codex review is expected to
+start automatically. The PR body may show a small Codex activity indicator, such
+as an eyes/count badge, before the submitted review appears.
+
+Do not immediately post `@codex review` for the first review. Wait a reasonable
+time for either the activity indicator or a submitted Codex review. Consider a
+manual `@codex review` only after that wait if neither signal appears, or when a
+follow-up push needs a fresh review. A manual trigger is a PR comment and still
+requires explicit maintainer/user approval.
+
+### Updating Published PRs
+
+Prefer additive follow-up commits for updates to already-published PRs. This
+keeps review history inspectable and makes each review round clear.
+
+Amend or force-push only when the user explicitly requests it or when there is a
+clear reason, such as removing sensitive content, repairing broken branch
+history, or cleaning up noisy local work before the PR is first published.
+Force-pushes are PR mutations and require explicit maintainer/user approval.
+
 ### Review-Fix Loop Workflow
 
 After identifying an AI-generated review comment to address:
@@ -510,7 +531,8 @@ After identifying an AI-generated review comment to address:
 3. **Ask for explicit maintainer/user approval before external mutations**
 4. **If approved, commit and push** silently (no reply to the comment)
 5. **If approved, resolve the thread** using GraphQL (see commands below)
-6. **If approved, re-trigger the review**: `gh pr comment <PR> --body "@codex review"`
+6. **If approved and needed after a follow-up push, re-trigger the review**:
+   `gh pr comment <PR> --body "@codex review"`
 7. **Monitor for results**:
    - New review comments → repeat from step 1
    - "No issues" or 👍 reaction → done, PR is ready for human review
@@ -570,7 +592,8 @@ For agents iterating on automated reviews, the complete loop is:
    d. Ask for explicit maintainer/user approval before push or PR mutation
 3. If approved, commit and push silently (no reply to bot comment)
 4. If approved, resolve addressed threads via GraphQL
-5. If approved, re-trigger: `gh pr comment <PR> --body "@codex review"`
+5. If approved and needed after a follow-up push, re-trigger:
+   `gh pr comment <PR> --body "@codex review"`
 6. Monitor CI: `gh pr checks <PR>`
 7. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
 8. If new review has comments → go to step 2

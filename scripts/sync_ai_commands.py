@@ -378,54 +378,6 @@ def parse_workflow_rows(workflow_content: str) -> dict[str, list[str]]:
     return rows
 
 
-def parse_agents_workflow_rows(agents_content: str) -> dict[str, list[str]]:
-    """Extract AGENTS.md workflow command rows keyed by capability name."""
-    rows: dict[str, list[str]] = {}
-    in_workflow_table = False
-
-    for line in agents_content.splitlines():
-        if line.startswith("## Workflow Commands"):
-            in_workflow_table = True
-            continue
-        if in_workflow_table and line.startswith("## "):
-            break
-        if not in_workflow_table or not line.startswith("| `/dart-"):
-            continue
-
-        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-        if len(cells) < 3:
-            continue
-        match = re.fullmatch(r"`/(dart-[a-z0-9-]+)(?: [^`]*)?`", cells[0])
-        if match:
-            rows[match.group(1)] = cells
-
-    return rows
-
-
-def parse_agents_skill_rows(agents_content: str) -> dict[str, list[str]]:
-    """Extract AGENTS.md domain skill rows keyed by skill name."""
-    rows: dict[str, list[str]] = {}
-    in_skill_table = False
-
-    for line in agents_content.splitlines():
-        if line.startswith("## Skills (On-Demand Knowledge)"):
-            in_skill_table = True
-            continue
-        if in_skill_table and line.startswith("## "):
-            break
-        if not in_skill_table or not line.startswith("| `dart-"):
-            continue
-
-        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-        if len(cells) < 2:
-            continue
-        match = re.fullmatch(r"`(dart-[a-z0-9-]+)`", cells[0])
-        if match:
-            rows[match.group(1)] = cells
-
-    return rows
-
-
 def extract_required_reading_from_content(content: str) -> list[str]:
     """Extract @file entries from a command Required Reading section."""
     readings: list[str] = []
@@ -834,6 +786,7 @@ def validate_ai_docs(repo_root: Path) -> bool:
     docs_dir = repo_root / "docs" / "ai"
     required_files = [
         docs_dir / "README.md",
+        docs_dir / "principles.md",
         docs_dir / "workflows.md",
         docs_dir / "verification.md",
         docs_dir / "sessions.md",
@@ -848,6 +801,8 @@ def validate_ai_docs(repo_root: Path) -> bool:
     docs_readme_content = (repo_root / "docs" / "README.md").read_text()
     if "docs/ai/README.md" not in agents_content:
         errors.append("AGENTS.md: missing docs/ai/README.md pointer")
+    if "docs/ai/principles.md" not in agents_content:
+        errors.append("AGENTS.md: missing docs/ai/principles.md pointer")
     if "ai/README.md" not in docs_readme_content:
         errors.append("docs/README.md: missing ai/README.md index link")
 
@@ -859,8 +814,6 @@ def validate_ai_docs(repo_root: Path) -> bool:
         errors.extend(skill_errors)
         expected = command_names | skill_names
         workflow_rows = parse_workflow_rows(workflow_content)
-        agents_workflow_rows = parse_agents_workflow_rows(agents_content)
-        agents_skill_rows = parse_agents_skill_rows(agents_content)
 
         if has_gate_evidence("explicit approval before push"):
             errors.append(
@@ -960,27 +913,12 @@ def validate_ai_docs(repo_root: Path) -> bool:
                 f"{display_path(workflows_path)}: unknown capability `{name}`"
             )
 
-        for name in sorted(command_names):
-            cells = agents_workflow_rows.get(name)
-            if not cells:
-                errors.append(f"AGENTS.md: missing workflow command `{name}`")
-                continue
-            codex_cell = cells[1] if len(cells) > 1 else ""
-            codex_entry_pattern = rf"`\${re.escape(name)}(?: [^`]*)?`"
-            if not re.search(codex_entry_pattern, codex_cell):
-                errors.append(f"AGENTS.md: workflow `{name}` missing Codex skill")
-
-        extra_agent_workflows = set(agents_workflow_rows) - command_names
-        for name in sorted(extra_agent_workflows):
-            errors.append(f"AGENTS.md: unknown workflow command `{name}`")
-
-        for name in sorted(skill_names):
-            if name not in agents_skill_rows:
-                errors.append(f"AGENTS.md: missing domain skill `{name}`")
-
-        extra_agent_skills = set(agents_skill_rows) - skill_names
-        for name in sorted(extra_agent_skills):
-            errors.append(f"AGENTS.md: unknown domain skill `{name}`")
+        if "docs/ai/workflows.md" not in agents_content:
+            errors.append("AGENTS.md: missing docs/ai/workflows.md catalog pointer")
+        if ".claude/commands/" not in agents_content:
+            errors.append("AGENTS.md: missing .claude/commands/ source pointer")
+        if ".codex/skills/" not in agents_content:
+            errors.append("AGENTS.md: missing .codex/skills/ generated pointer")
 
     errors.extend(validate_approval_boundary(repo_root))
 

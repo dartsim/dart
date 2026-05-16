@@ -93,10 +93,15 @@ Use these practices:
    gh pr create --draft --base <target-branch> --milestone "<milestone>" \
      --title "<plain title>" --body-file <filled-template-file>
    ```
-9. If `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
-   local until explicit maintainer/user approval is given for the additional
-   push or PR update.
-10. Monitor CI:
+9. After a PR is published, prefer additive follow-up commits for updates so
+   reviewers can inspect each review round. Amend or force-push only after
+   explicit maintainer/user approval and only when the user explicitly requests
+   it or when there is a clear reason such as removing sensitive content or
+   repairing broken branch history.
+10. If `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
+    local until explicit maintainer/user approval is given for the additional
+    push or PR update.
+11. Monitor CI:
     ```bash
     gh pr checks <PR_NUMBER>
     ```
@@ -105,5 +110,9 @@ Use these practices:
 
 Never reply to AI-generated review comments from bot users such as
 `chatgpt-codex-connector[bot]`, `github-actions[bot]`, or `copilot[bot]`.
-Make fixes silently. Push and ask for a new AI review with `@codex review` only
-after explicit maintainer/user approval.
+When a draft PR is first published, wait a reasonable time for the automatic
+Codex review to start; the PR body may show a small Codex activity indicator
+before the submitted review appears. Make fixes silently. Push and ask for a new
+AI review with `@codex review` only after explicit maintainer/user approval and
+only when the automatic first review did not appear after a reasonable wait, or
+after a follow-up push needs a new review.

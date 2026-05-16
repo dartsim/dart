@@ -1,30 +1,38 @@
-/*! @mainpage DART - Dynamic Animation and Robotics Toolkits
+/*! @mainpage DART - Dynamic Animation and Robotics Toolkit
 
 @image html "DART logo.png"
 
 @section intro Introduction
 
-DART is an open source library for developing kinematic and dynamic
-applications in robotics and computer animation. DART features two
-main components: a multibody dynamic simulator developed by Georgia
-Tech Graphics Lab and a variety of motion planning algorithms
-developed by Georgia Tech Humanoid Robotics Lab. This document focuses
-only on the dynamic simulator.
+DART is an open-source, research-focused physics engine for robotics,
+animation, and machine learning. It provides transparent kinematics,
+dynamics, collision, and constraint-solving foundations for users who
+need more than a black-box simulator.
 
-The multibody dynamics simulator in DART is designed to aid
-development of motion control algorithms. DART uses generalized
-coordinates to represent articulated rigid body systems and computes
-Lagrange’s equations derived from D’Alembert’s principle to describe
-the dynamics of motion. In contrast to many popular physics engines
-which view the simulator as a black box, DART provides full access to
-internal kinematic and dynamic quantities, such as mass matrix,
-Coriolis and centrifugal force, transformation matrices and their
-derivatives, etc. DART also provides efficient computation of Jacobian
-matrices for arbitrary body points and coordinate frames.
+DART uses generalized coordinates to represent articulated rigid body
+systems and Featherstone algorithms to compute motion dynamics. In
+contrast to many popular physics engines that hide the simulator behind
+a black-box API, DART provides direct access to internal kinematic and
+dynamic quantities, such as the mass matrix, Coriolis and centrifugal
+forces, transformation matrices, derivatives, and Jacobians for
+arbitrary body points and coordinate frames.
+
+@section why Why DART?
+
+- Research-grade dynamics with direct access to dynamics quantities.
+- Easy-to-start C++ and Python APIs with packages through common package
+  managers and reproducible pixi-based source builds.
+- Extensible math, collision, constraint, model-loading, benchmark, and
+  test foundations for implementing new algorithms and comparing them
+  against existing baselines.
+- Cross-platform CPU support today, with roadmap work for multi-core,
+  SIMD, and accelerator backends.
+- Ecosystem use through Gazebo, robotics labs, and downstream
+  applications.
 
 The contact and collision are handled using an implicit time-stepping,
 velocity-based LCP (linear-complementarity problem) to guarantee
-non-penetration, directional friction, and approximated Coulombs
+non-penetration, directional friction, and approximated Coulomb
 friction cone conditions. The LCP problem is solved efficiently by
 Lemke's algorithm. For the collision detection, DART directly uses FCL
 package developed by UNC Gamma Lab.
