@@ -151,7 +151,14 @@ manipulation gap by promoting selected-frame rotation through public
 `dart::gui` and updating Fetch controls, README, and marker coverage. That
 repair is implemented in the current worktree and pre-lint validation has
 passed; the checkpoint still needs mandatory lint, post-lint focused checks,
-commit, and push.
+commit, and push. That checkpoint has now been pushed as
+`c39ed94fef3 Restore Fetch selected-frame rotation`. The active strict-audit
+slice is now `examples/atlas_simbicon/`, whose current source is only a visual
+shell. Restore the historical Simbicon controller/state files, pre-step
+control, perturbation keys, stride/gravity/reset panel controls, camera/run
+defaults, README, and marker coverage through public `dart::gui`, while keeping
+backend-specific headlight/depth/shadow toggles as named public API gaps unless
+the branch adds renderer-neutral APIs for them.
 An earlier parity slice restored `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default

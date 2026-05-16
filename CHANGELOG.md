@@ -77,6 +77,10 @@
   - Restored the joint/dynamics example batch (`hybrid_dynamics`,
     `biped_stand`, `joint_constraints`, `free_joint_cases`, and
     `human_joint_limits`) as source-defined `dart::gui` examples.
+  - Restored the `atlas_simbicon` example's Simbicon controller/state files,
+    pre-step control loop, perturbation and state-machine keyboard actions,
+    gravity/harness/stride panel controls, camera/run defaults, and README
+    through public `dart::gui`.
   - Restored the `human_joint_limits` example's live SKEL world, joint-limit
     enforcement, run defaults, README, and marker coverage through public
     `dart::gui`, with the historical TinyDNN-backed custom constraints tracked

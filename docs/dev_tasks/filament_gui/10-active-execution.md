@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `f3bdffff5ad Audit unified loading example`.
+  `c39ed94fef3 Restore Fetch selected-frame rotation`.
 - Latest pushed code checkpoint:
-  `f3bdffff5ad Audit unified loading example`.
+  `c39ed94fef3 Restore Fetch selected-frame rotation`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -139,6 +139,7 @@ history but are not guaranteed to be in chronological order.
   - `18dd2a70dd5 Audit headless simulation example`
   - `824c520659c Audit speed test example`
   - `f3bdffff5ad Audit unified loading example`
+  - `c39ed94fef3 Restore Fetch selected-frame rotation`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -405,6 +406,43 @@ history but are not guaranteed to be in chronological order.
   `UNIT_gui_FilamentSceneExtraction`, direct llvmpipe Fetch screenshot with
   analyzer coverage (`/tmp/dart_fetch_rotation_direct_postlint.ppm`,
   303780/307200 nonzero pixels), and `git diff --check`.
+- The Fetch selected-frame rotation checkpoint was pushed as
+  `c39ed94fef3 Restore Fetch selected-frame rotation`; do not wait for CI
+  before continuing independent strict-audit work.
+- Active slice is now `examples/atlas_simbicon/`. Historical comparison
+  against `520993d7301^:examples/atlas_simbicon` shows the current source
+  dropped the controller, state machine, terminal conditions, event handler,
+  widget controls, README, loaded ground skeleton, Y-down gravity, Simbicon
+  pre-step update, perturbation keys, stride-mode controls, harness/reset
+  controls, gravity slider, window title, 1280x960 default size, and historical
+  camera home. Restore the controller/state implementation as example-owned
+  code, migrate the OSG `WorldNode`/event-handler/widget responsibilities to
+  public `dart::gui::ApplicationOptions` pre-step callbacks, panels, and
+  keyboard actions, restore the README, and record remaining public API gaps
+  only for backend-specific headlight/depth/shadow toggles that cannot be
+  expressed without renderer hooks.
+- Atlas Simbicon implementation state: `controller`, `state`,
+  `state_machine`, and `terminal_condition` are restored as example-owned
+  non-OSG source files; `main.cpp` now creates the historical loaded
+  ground/Atlas world, sets Y-down gravity, owns a runtime object with
+  controller pre-step updates and temporary pelvis perturbations, exposes
+  reset/perturb/state-machine keyboard actions, restores gravity/harness/
+  stride/reset panel controls, sets 1280x960 run defaults and the historical
+  camera target, and restores the README. Headlight, shadow-toggle, and depth
+  camera controls remain explicit public render-settings API gaps.
+- Atlas Simbicon validation completed before lint: focused C++ build for
+  `atlas_simbicon` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction`, direct and pixi Atlas Simbicon headless
+  screenshots with basic analyzer coverage
+  (`/tmp/dart_atlas_simbicon_direct.ppm` and
+  `/tmp/dart_atlas_simbicon_pixi.ppm`, both 307180/307200 nonzero pixels),
+  Python C++ example-runner tests (67 passed), and aggregate `examples` build.
+- Atlas Simbicon post-lint validation completed: mandatory `pixi run lint`,
+  focused rebuild and CTest for `atlas_simbicon` plus
+  `UNIT_gui_FilamentSceneExtraction`, direct llvmpipe Atlas Simbicon
+  screenshot with basic analyzer coverage
+  (`/tmp/dart_atlas_simbicon_direct_postlint.ppm`, 307180/307200 nonzero
+  pixels), and `git diff --check`.
 
 ## Current Code Shape
 

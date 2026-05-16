@@ -1769,6 +1769,69 @@ TEST(
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "atlas_simbicon" / "main.cpp");
+  const auto controllerSource = readSourceFile(
+      std::filesystem::path("examples") / "atlas_simbicon" / "controller.cpp");
+  const auto stateSource = readSourceFile(
+      std::filesystem::path("examples") / "atlas_simbicon" / "state.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "atlas_simbicon" / "README.md");
+
+  EXPECT_NE(
+      mainSource.find("dart://sample/sdf/atlas/ground.urdf"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart://sample/sdf/atlas/atlas_v3_no_head.sdf"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("scene.atlas->setPosition(0, -0.5 * dart::math::pi)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("scene.world->setGravity(-kDefaultGravity"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("std::make_unique<Controller>"), std::string::npos);
+  EXPECT_NE(mainSource.find("runtime->preStep()"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("createAtlasSimbiconKeyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("Push Atlas forward"), std::string::npos);
+  EXPECT_NE(mainSource.find("Standing controller"), std::string::npos);
+  EXPECT_NE(mainSource.find("Walking-in-place controller"), std::string::npos);
+  EXPECT_NE(mainSource.find("Atlas Control"), std::string::npos);
+  EXPECT_NE(mainSource.find("Gravity Acc."), std::string::npos);
+  EXPECT_NE(mainSource.find("Harness pelvis"), std::string::npos);
+  EXPECT_NE(mainSource.find("Normal-Stride Walking"), std::string::npos);
+  EXPECT_NE(mainSource.find("Short-Stride Walking"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Headlights, shadow toggle, and depth mode"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("makeAtlasSimbiconCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(1.0, 0.0, 0.0)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(
+      controllerSource.find("_createWalkingStateMachine"), std::string::npos);
+  EXPECT_NE(controllerSource.find("harnessPelvis"), std::string::npos);
+  EXPECT_NE(controllerSource.find("keyboard"), std::string::npos);
+  EXPECT_NE(stateSource.find("computeControlForce"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Atlas Simbicon Example"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("dart::gui::ApplicationOptions::preStep"),
+      std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("Remaining renderer-neutral API gaps"),
+      std::string::npos);
+  EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
+  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
+  EXPECT_EQ(mainSource.find("osg"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(

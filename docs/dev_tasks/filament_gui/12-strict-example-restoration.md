@@ -168,6 +168,16 @@ Immediate order:
     added.
 11. Continue through the remaining `Needs strict audit` and
     `Recent parity checkpoint; still subject to strict audit re-open` rows.
+    The next strict-audit cursor is `examples/atlas_simbicon/`; do not skip it
+    because it already builds. This slice must restore the deleted Simbicon
+    controller/state files and migrate the historical OSG world-node,
+    event-handler, and widget behavior to public `dart::gui` pre-step
+    callbacks, keyboard actions, and panel controls.
+    Implementation and pre-lint validation are complete; exact headlight,
+    shadow-toggle, depth-camera, and native window-title parity remain named
+    public API gaps. Post-lint focused build/CTest, direct Atlas Simbicon
+    screenshot smoke, and `git diff --check` also passed. Commit and push this
+    checkpoint before moving the cursor to the remaining strict-audit rows.
 
 ## Checkpoint Rule
 

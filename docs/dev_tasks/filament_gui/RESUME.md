@@ -819,30 +819,29 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`f3bdffff5ad Audit unified loading example`. The current pending checkpoint is
-the re-opened `examples/fetch/` mouse-manipulation repair. Historical
-comparison against `520993d7301^:examples/fetch/main.cpp` shows the remaining
-gap is the old `InteractiveFrame` mouse rotation affordance: current Fetch has
-a visible target, translation dragging, keyboard rotation, and reset, but the
-mouse path still cannot rotate the selected frame. Promote renderer-neutral
-selected-frame rotation through public `dart::gui`, then update Fetch help,
-README, marker tests, and validation notes. Implementation and pre-lint
-validation are complete in the current worktree.
+`c39ed94fef3 Restore Fetch selected-frame rotation`. The current pending
+checkpoint is `examples/atlas_simbicon/` strict restoration. Historical
+comparison against `520993d7301^:examples/atlas_simbicon` shows the current
+source dropped the Simbicon controller/state implementation, event handler,
+widget controls, README, loaded ground skeleton, Y-down gravity, pre-step
+control loop, perturbation keys, stride controls, reset/harness controls,
+gravity slider, camera/run defaults, and historical window naming. Restore the
+example-owned controller/state files, migrate OSG `WorldNode`/event-handler/
+widget responsibilities to public `dart::gui::ApplicationOptions`, panels, and
+keyboard actions, and keep exact headlight/depth/shadow toggles as explicit
+public API gaps unless this branch adds renderer-neutral APIs for them.
+Implementation and pre-lint validation are complete in the current worktree.
+Mandatory lint, post-lint focused build/CTest, direct Atlas Simbicon screenshot
+smoke, and `git diff --check` have also passed.
 
 ## Current Immediate Next Step
 
-Implement and push the re-opened `examples/fetch/` checkpoint without opening a
-PR. The planned implementation adds selected-frame rotation to public
-`dart::gui` interaction behavior, maps Ctrl-Shift-left drag to rotation for
-selected frames, uses X/Y/Z as local-axis constraints, updates Fetch
-documentation from "remaining gap" to implemented controls, and strengthens
-source-marker coverage. Completed pre-lint validation is focused build for
-`fetch` and `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct and pixi
-Fetch screenshots with analyzer coverage, Python C++ example-runner coverage,
-and aggregate `examples` build. Post-lint validation is also complete:
-mandatory `pixi run lint`, focused rebuild/CTest, a direct post-lint Fetch
-screenshot with analyzer coverage, and `git diff --check`. Commit and push the
-checkpoint. Keep
+Commit and push the `examples/atlas_simbicon/` strict-restoration checkpoint
+without opening a PR. The implementation restores the historical
+controller/state/terminal-condition files as example-owned non-OSG code and
+replaces the old WorldNode/event-handler/widget glue with a small public
+`dart::gui` runtime object, `ApplicationOptions::preStep`, keyboard actions,
+and `PanelBuilder` controls. Keep
 `--screenshot <path>` and `--out <dir>` working for the existing CTest, GitHub
 Actions smoke path, and historical image-sequence workflows. A later broader
 smoke sweep can still use:
