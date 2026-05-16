@@ -3660,6 +3660,21 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `collision-native-stability` CTest label passed 2/2. No PR, push,
     workflow, branch, or GitHub state was mutated by this local validation
     pass.
+- Current local full validation after latest current-audit evidence refresh:
+  - Commit: `59769b3ee58`
+    (`Record native collision current audit state`).
+  - Command:
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`.
+  - Result: passed. The full local `pixi run test-all` report passed all 6
+    top-level gates: linting, build, unit tests, simulation-experimental tests,
+    Python tests, and documentation, then printed `All tests passed!`. The
+    lint sub-gate reran `check-collision-runtime-isolation` and
+    `audit-collision-compat-facades`; the compatibility audit still reported
+    factory keys `experimental`, `fcl`, `fcl_mesh`, `bullet`, and `ode` route to
+    `dart`, dartpy exposes `DartCollisionDetector` only, and reference engines
+    live only under `tests/dart/test/reference_collision`. No PR, push,
+    workflow, branch, or GitHub state was mutated by this local validation
+    pass.
 - Current local gz-physics compatibility refresh after docs/evidence and CMake
   cleanup commits:
   - Commit: `6742a21ab0f`

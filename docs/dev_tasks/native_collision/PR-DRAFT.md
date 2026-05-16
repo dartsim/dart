@@ -116,6 +116,12 @@ Make native DART collision the default runtime stack
   Atlas Simbicon controller-loop no-tunneling regression, and
   `collision-native-stability` CTest label also passed locally. No PR, push,
   workflow, branch, or GitHub state was mutated by this recheck.
+- The latest current-head local recheck with
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  passed on head `59769b3ee58` after the current audit/evidence refresh. The
+  final report passed 6/6 top-level gates: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation. No PR, push,
+  workflow, branch, or GitHub state was mutated by this recheck.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`

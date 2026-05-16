@@ -43,7 +43,7 @@ mutation during the current pass:
 
 | Requirement / gate                                                                  | Concrete evidence                                                                                                                                                                                                                                                                                       | Current audit result                                                                                                                |
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Native `dart` detector is the normal runtime path.                                  | `README.md` current-status checklist, default-detector tests recorded in `03-evidence-gates.md`, `pixi run test-all` on `ca0201e67f4`, the evidence-hardening recheck on `5627a80a0a2`, and the current full validation on `35578ad2f8a`.                                                               | Locally satisfied; final PR validation still required.                                                                              |
+| Native `dart` detector is the normal runtime path.                                  | `README.md` current-status checklist, default-detector tests recorded in `03-evidence-gates.md`, `pixi run test-all` on `ca0201e67f4`, the evidence-hardening recheck on `5627a80a0a2`, the stale-artifact cleanup validation on `35578ad2f8a`, and the current-head validation on `59769b3ee58`.       | Locally satisfied; final PR validation still required.                                                                              |
 | Legacy FCL/Bullet/ODE names are compatibility facades, not runtime backend choices. | `audit-collision-compat-facades`, `check-collision-runtime-isolation`, package smoke in `docs/dev_tasks/native_collision/smoke/native_compat_package/`, direct `readelf` checks recorded on `6742a21ab0f` and `dcfc994542f`, and stale-artifact/export cleanup evidence on `35578ad2f8a`.               | Locally satisfied; final downstream/PR evidence still required before removing retained facades.                                    |
 | Feature-level collision correctness covers the current DART surface.                | `09-test-coverage-matrix.md` records 199 DONE, 0 PARTIAL, 0 GAP, and 25 DEFERRED rows; focused raw, convex, mesh, batch, `hello_world`, and Atlas Simbicon validations are recorded in `03-evidence-gates.md`.                                                                                          | Locally satisfied for the feature-level pass; deferred rows are explicitly outside this pass or belong to the performance wave.     |
 | gz-physics compatibility remains green.                                             | `pixi run -e gazebo test-gz` passed 65/65 on `6742a21ab0f`; `readelf` showed the gz DART plugin depends on `libdart-collision-native.so` without old collision/reference runtime dependencies.                                                                                                          | Locally satisfied; final PR/downstream CI evidence still required.                                                                  |
@@ -246,6 +246,19 @@ validation gate was rerun on clean head `48c0cc3f90e`
   passed 1/1, and
   `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability -j 1`
   passed 2/2.
+- Scope: local validation only. No PR, push, workflow, branch, or GitHub state
+  was mutated by this recheck.
+
+After the latest current-audit evidence refresh, the same full local validation
+gate was rerun on clean head `59769b3ee58`
+(`Record native collision current audit state`):
+
+- Command:
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+- Result: passed. The full local report passed 6/6 top-level gates: linting,
+  build, unit tests, simulation-experimental tests, Python tests, and
+  documentation, then printed `All tests passed!`. The lint sub-gate reran
+  `check-collision-runtime-isolation` and `audit-collision-compat-facades`.
 - Scope: local validation only. No PR, push, workflow, branch, or GitHub state
   was mutated by this recheck.
 
