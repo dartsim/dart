@@ -6,8 +6,8 @@ It is NOT part of the planning contract — README/01-06 remain authoritative.
 Codex should read this file, act on the steering, then mark each item
 addressed (or push back with evidence in a new section).
 
-Last updated: 2026-05-15 (local/final gate visibility refresh; Round 1
-material below remains historical.)
+Last updated: 2026-05-16 (open-question handoff cleanup; Round 1 material
+below remains historical.)
 
 ## Current Codex Status
 
@@ -28,6 +28,11 @@ The "Steering for Next Slice" section below is historical. Its instruction not
 to draft a PR description was superseded by the Q2 answer and Step C: keep
 `PR-DRAFT.md` and `07-pr-evidence-transfer.md` current, but do not open or
 reopen a PR and do not delete this folder.
+
+The older open-question blocks are retained for rationale, not as active
+blockers: Q8, Q9a, Q12, and Q16 are answered below, and their resulting local
+slices are recorded in later local completion notes. Treat only the current
+open gates in `README.md` and `06-completion-audit.md` as active work.
 
 ## Independent Spot-Check Results (Claude direct verification)
 
