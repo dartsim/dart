@@ -3179,10 +3179,10 @@ at top; PRESERVE grep anchors (`## Round N`,
 `## Round N Local Completion Notes`) so snapshot tooling
 continues to work.
 
-Cadence: implementing agent compacts when doc crosses target by
->50% (e.g. SUPERVISOR.md > 2250 → compact to < 1500); compaction
-is its OWN commit, NEVER bundled with code, NEVER during an
-in-flight slice. Steering agent compacts between Rounds.
+Cadence: implementing agent compacts when doc crosses target by more than 50%
+(e.g. SUPERVISOR.md > 2250 → compact to < 1500); compaction is its OWN commit,
+NEVER bundled with code, NEVER during an in-flight slice. Steering agent
+compacts between Rounds.
 
 PROMOTE durable lessons to global skills / project memory BEFORE
 deleting from the planning doc.
@@ -3233,6 +3233,7 @@ Acceptance bar for "Round 21 complete":
 ### Sequencing
 
 SIMD work lands AFTER:
+
 - Round 9 main slice (per-pair batch APIs for sphere/capsule/
   cylinder/plane/mesh/convex/compound — the API surface SIMD
   fills in).
@@ -3244,6 +3245,7 @@ SIMD work lands AFTER:
   Tier 2 batching alone achieves, vs which need SIMD).
 
 SIMD work lands BEFORE:
+
 - DART 8 cleanup / public release.
 - Tier 3 ECS integration (Q9b ANSWER B — Tier 3 will route into
   the SIMD'd Tier 2 batch entries; doing Tier 3 against a scalar
