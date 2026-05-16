@@ -394,8 +394,8 @@ subcomponents, not only against whether old backend names still compile.
 
 ## Where To Check Progress
 
-- `README.md`: live north-star status, progress scale, immediate next steps,
-  and remaining single-PR epics.
+- `README.md`: live north-star status, progress scale, deferred finalization
+  steps, and remaining single-PR epics.
 - `01-design.md`: canonical built-in collision architecture and design review
   gates for API cleanliness, scalability, performance, reference isolation, and
   compatibility facades.
