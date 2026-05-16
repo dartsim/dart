@@ -204,9 +204,10 @@ focused native/reference/benchmark validation evidence in
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
       latest full current-state `pixi run test-all` pass was rerun on local
-      head `ca0201e67f4` and passed 6/6 top-level gates: linting, build, unit
-      tests, simulation-experimental tests, Python tests, and documentation.
-      The same head adds stack, stress, mesh-BVH, convex-landscape,
+      head `5627a80a0a2` after docs/evidence audit hardening and passed 6/6
+      top-level gates: linting, build, unit tests, simulation-experimental
+      tests, Python tests, and documentation. The latest feature code head
+      `ca0201e67f4` adds stack, stress, mesh-BVH, convex-landscape,
       convex-fragment, and exact `hello_world`-style stability coverage and
       an Atlas Simbicon controller-loop no-tunneling regression, and
       verifies the native collision CTest labels for the world-level native

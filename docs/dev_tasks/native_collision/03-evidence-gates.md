@@ -3598,6 +3598,19 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     printed `All tests passed!`. The full suite rebuilt examples, including
     `hello_world` and `atlas_simbicon`. No PR, push, workflow, branch, or
     GitHub state was mutated by this local validation pass.
+- Current local full validation after evidence hardening:
+  - Commit: `5627a80a0a2`
+    (`Clarify native collision supervisor status`).
+  - Scope: docs/evidence-only audit hardening after the Atlas Simbicon
+    controller coverage head `ca0201e67f4`.
+  - Command:
+    `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`.
+  - Result: passed. The C++ unit-test phase reported 264/264 passing tests,
+    and the final `pixi run test-all` report passed 6/6 top-level gates:
+    linting, build, unit tests, simulation-experimental tests, Python tests,
+    and documentation, then printed `All tests passed!`. The command was local
+    only; no PR, push, workflow, branch, or GitHub state was mutated by this
+    validation pass.
 
 ## Known Risks
 

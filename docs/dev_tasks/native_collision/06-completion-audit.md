@@ -40,7 +40,7 @@ mutation during the current pass:
 
 | Requirement / gate                                                                  | Concrete evidence                                                                                                                                                                                                                                                                                       | Current audit result                                                                                                                |
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Native `dart` detector is the normal runtime path.                                  | `README.md` current-status checklist, default-detector tests recorded in `03-evidence-gates.md`, and `pixi run test-all` on `ca0201e67f4`.                                                                                                                                                              | Locally satisfied; final PR validation still required.                                                                              |
+| Native `dart` detector is the normal runtime path.                                  | `README.md` current-status checklist, default-detector tests recorded in `03-evidence-gates.md`, `pixi run test-all` on `ca0201e67f4`, and the current evidence-hardening recheck on `5627a80a0a2`.                                                                                                     | Locally satisfied; final PR validation still required.                                                                              |
 | Legacy FCL/Bullet/ODE names are compatibility facades, not runtime backend choices. | `audit-collision-compat-facades`, `check-collision-runtime-isolation`, package smoke in `docs/dev_tasks/native_collision/smoke/native_compat_package/`, and direct `readelf` checks recorded on `6404f7607be`.                                                                                          | Locally satisfied; final downstream/PR evidence still required before removing retained facades.                                    |
 | Feature-level collision correctness covers the current DART surface.                | `09-test-coverage-matrix.md` records 199 DONE, 0 PARTIAL, 0 GAP, and 25 DEFERRED rows; focused raw, convex, mesh, batch, `hello_world`, and Atlas Simbicon validations are recorded in `03-evidence-gates.md`.                                                                                          | Locally satisfied for the feature-level pass; deferred rows are explicitly outside this pass or belong to the performance wave.     |
 | gz-physics compatibility remains green.                                             | `pixi run -e gazebo test-gz` passed 65/65 on `6404f7607be`; `readelf` showed the gz DART plugin depends on `libdart-collision-native.so` without old collision/reference runtime dependencies.                                                                                                          | Locally satisfied; final PR/downstream CI evidence still required.                                                                  |
@@ -52,8 +52,8 @@ mutation during the current pass:
 
 Snapshot audit commands before recording this section showed:
 
-- Branch-state snapshot: `feature/new_coll` was clean at `1bfc9103a6b`
-  (`Refresh current gz compatibility evidence`) and was 92 commits ahead of
+- Branch-state snapshot: `feature/new_coll` was clean at `5627a80a0a2`
+  (`Clarify native collision supervisor status`) and was 97 commits ahead of
   `origin/feature/new_coll`. This snapshot and later docs-only audit commits may
   move `HEAD`; use `git status --short --branch` and
   `git log -3 --oneline --decorate` for the exact current branch state.
@@ -62,10 +62,12 @@ Snapshot audit commands before recording this section showed:
 - Review surface state: read-only `gh pr view 2652 --repo dartsim/dart`
   reports PR #2652 as `CLOSED`, draft, dirty, based on `main`, and still
   anchored to head `714d220d82a`. No PR metadata or GitHub state was mutated.
-- Latest full current-state validation head: `ca0201e67f4`
-  (`Add Atlas Simbicon native collision regression`) passed the local
+- Latest full current-state validation head: `5627a80a0a2`
+  (`Clarify native collision supervisor status`) passed the local
   `pixi run test-all` gate with 6/6 top-level gates: linting, build, unit
-  tests, simulation-experimental tests, Python tests, and documentation.
+  tests, simulation-experimental tests, Python tests, and documentation. This is
+  a docs/evidence-only recheck on top of the `ca0201e67f4` Atlas Simbicon code
+  coverage head.
 - Latest full code-validation head: `4db514cfd22`
   (`Add native narrow-phase batch dispatcher`) also passed the local
   `pixi run test-all` gate with Release CTest 264/264 and Python 147/147.
@@ -80,7 +82,8 @@ Snapshot audit commands before recording this section showed:
   coverage, degenerate and scale narrow-phase stress coverage, mixed primitive
   stack coverage, raw stress coverage, convex landscape and fragment coverage,
   exact `hello_world`-style no-tunneling coverage, and Atlas Simbicon
-  controller-loop no-tunneling coverage. Run
+  controller-loop no-tunneling coverage, followed by docs/evidence audit
+  hardening. Run
   `git log -3 --oneline --decorate` for the exact current local head.
 
 Audit result: the local branch-evidence packet is current, but the objective
@@ -128,6 +131,19 @@ full validation pass was run on head `ca0201e67f4`
   passed, the full `INTEGRATION_simulation_World` executable passed 18/18, and
   `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability -j 5`
   passed 2/2.
+
+After the follow-up docs/evidence hardening, the same full local validation gate
+was rerun on clean head `5627a80a0a2`
+(`Clarify native collision supervisor status`):
+
+- Command:
+  `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`
+- Result: passed. The C++ unit-test phase reported 264/264 passing tests, and
+  the final report passed 6/6 top-level gates: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation, then printed
+  `All tests passed!`.
+- Scope: local validation only. No PR, push, workflow, branch, or GitHub state
+  was mutated by this recheck.
 - Scope note: no PR, push, workflow, branch, or GitHub state was mutated by
   this validation pass.
 
@@ -331,12 +347,14 @@ Current audited state:
   tests and reference benchmarks `ON` and all FCL, Bullet, and ODE reference
   components configured internally.
 - Current local evidence-head validation: `pixi run test-all` was rerun with
-  safe local parallelism on local head `ca0201e67f4`
-  (`Add Atlas Simbicon native collision regression`) and passed all 6 top-level
+  safe local parallelism on local head `5627a80a0a2`
+  (`Clarify native collision supervisor status`) and passed all 6 top-level
   gates: linting, build, unit tests, simulation-experimental tests, Python
-  tests, and documentation. The latest focused Atlas controller refresh also
-  passed `World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`,
-  full `INTEGRATION_simulation_World` 18/18, and
+  tests, and documentation. This is a docs/evidence-only recheck on top of the
+  `ca0201e67f4` Atlas Simbicon code coverage head. The latest focused Atlas
+  controller refresh also passed
+  `World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`, full
+  `INTEGRATION_simulation_World` 18/18, and
   `ctest -L collision-native-stability` 2/2. The previous default-world
   refresh passed `WorldTests.DefaultNativeHelloWorldBoxDoesNotTunnel`, full
   `UNIT_simulation_World` 81/81, and `ctest -L collision-native-stability`

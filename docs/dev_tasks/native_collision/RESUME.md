@@ -124,13 +124,16 @@ post GitHub comments unless the user explicitly asks.
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation: local head `ca0201e67f4`
-  (`Add Atlas Simbicon native collision regression`), with 6/6 top-level gates
-  passing after the raw, convex, mesh, mixed batch-dispatcher, docs/evidence
-  cleanup, native stability-label, stack/stress/BVH/convex-landscape, convex
-  fragment, exact `hello_world`, and Atlas Simbicon controller stability
-  follow-ups. That run included linting, build, examples, unit tests,
-  simulation-experimental tests, Python tests, and documentation.
+- Latest full local `pixi run test-all` validation: local head `5627a80a0a2`
+  (`Clarify native collision supervisor status`), with 6/6 top-level gates
+  passing after docs/evidence audit hardening on top of the Atlas Simbicon
+  coverage head. The latest feature code head remains `ca0201e67f4`
+  (`Add Atlas Simbicon native collision regression`), after the raw, convex,
+  mesh, mixed batch-dispatcher, native stability-label,
+  stack/stress/BVH/convex-landscape, convex fragment, exact `hello_world`, and
+  Atlas Simbicon controller stability follow-ups. The full validation run
+  included linting, build, examples, unit tests, simulation-experimental tests,
+  Python tests, and documentation.
 - Latest evidence-record commits are local and may be ahead of
   `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
   current local head. Recent docs-only evidence commits refresh the

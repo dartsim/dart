@@ -101,11 +101,12 @@ Make native DART collision the default runtime stack
   unit tests, simulation-experimental tests, Python tests, and documentation.
   Release CTest passed 264/264 and Python tests passed 147/147.
 - The latest current-state local recheck with the same `pixi run test-all`
-  command passed on head `ca0201e67f4` after the docs/evidence cleanup,
-  native stability-label commits, stack/stress/BVH/convex-landscape coverage,
-  exact `hello_world`-style no-tunneling coverage, and Atlas Simbicon
-  controller-loop no-tunneling coverage, again with 6/6 top-level gates and
-  the final `All tests passed!` report.
+  command passed on head `5627a80a0a2` after docs/evidence audit hardening on
+  top of `ca0201e67f4`, which includes the native stability-label commits,
+  stack/stress/BVH/convex-landscape coverage, exact `hello_world`-style
+  no-tunneling coverage, and Atlas Simbicon controller-loop no-tunneling
+  coverage. The recheck passed 6/6 top-level gates and printed the final
+  `All tests passed!` report.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`
@@ -140,10 +141,11 @@ Make native DART collision the default runtime stack
   `INTEGRATION_collision_native_backend_consistency` 2/2, the non-simulation
   CTest sweep 288/288, the dedicated simulation-experimental task 13/13, and
   the final unfiltered CTest sweep 301/301.
-- Local commits after `ca0201e67f4` may be docs/evidence-only refreshes;
-  `pixi run lint` has passed after the latest code update, including
-  `check-collision-runtime-isolation` and `audit-collision-compat-facades`.
-  Use `git log -3 --oneline --decorate` for the exact current local head.
+- Local commits after `ca0201e67f4` are docs/evidence-only refreshes through
+  `5627a80a0a2`; `pixi run lint` has passed after the latest code update,
+  including `check-collision-runtime-isolation` and
+  `audit-collision-compat-facades`. Use `git log -3 --oneline --decorate` for
+  the exact current local head.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   passed before benchmark-evidence commit `4b155655890`.
 - `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e gazebo test-gz`
