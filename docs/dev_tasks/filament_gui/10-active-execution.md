@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `f7d408fea9e Restore Hubo Puppet target controls`.
+  `cfce8c0186f Restore Fetch green bar target`.
 - Latest pushed code checkpoint:
-  `f7d408fea9e Restore Hubo Puppet target controls`.
+  `cfce8c0186f Restore Fetch green bar target`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -153,6 +153,7 @@ history but are not guaranteed to be in chronological order.
   - `7a9c712a3f1 Restore Fetch panel window controls`
   - `1e691ce891b Restore G1 Puppet scene parity`
   - `f7d408fea9e Restore Hubo Puppet target controls`
+  - `cfce8c0186f Restore Fetch green bar target`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -833,7 +834,31 @@ fetch` llvmpipe screenshots
   `git diff --check`; mandatory `pixi run lint`; post-lint focused
   rebuild/CTest, post-lint `git diff --check`, and post-lint direct screenshot
   (`/tmp/dart_fetch_green_bars_direct_postlint.ppm`, 1280x960,
-  3638187/3686400 nonzero bytes, 4150 greenish pixels).
+  3638187/3686400 nonzero bytes, 4150 greenish pixels). This checkpoint was
+  pushed as `cfce8c0186f Restore Fetch green bar target`.
+- Active work is now `examples/hybrid_dynamics/` strict re-open. Compare the
+  current source and README against
+  `520993d7301^:examples/hybrid_dynamics` before coding.
+- Active `examples/hybrid_dynamics/` audit findings: the README is missing,
+  `ApplicationOptions::runDefaults` does not restore the historical 640x480
+  launch size, the current source renames/recolors the loaded SKEL scene instead
+  of preserving the historical `fullbody1.skel` visuals, and the promoted
+  harness action no longer prints "The pelvis is locked/unlocked." Restore those
+  now through public `dart::gui`. The historical custom camera up vector
+  `(0, 1, 0)` remains a named `OrbitCamera` API gap unless a public roll/up
+  vector surface is added in this checkpoint.
+- Active `examples/hybrid_dynamics/` implementation state: README, 640x480
+  run defaults, loaded SKEL names/visuals, console instructions, and
+  pelvis-lock/unlock console messages are restored. Pre-lint validation passed:
+  focused build for `hybrid_dynamics` and `UNIT_gui_FilamentSceneExtraction`,
+  focused CTest, direct and `pixi run ex hybrid_dynamics` llvmpipe screenshots
+  (`/tmp/dart_hybrid_dynamics_strict_direct.ppm` and
+  `/tmp/dart_hybrid_dynamics_strict_pixi.ppm`, both 640x480 with
+  921429/921600 nonzero bytes), Python C++ example-runner tests, aggregate
+  `examples` build, `git diff --check`, mandatory `pixi run lint`, post-lint
+  focused build/CTest, post-lint `git diff --check`, and post-lint direct
+  screenshot (`/tmp/dart_hybrid_dynamics_strict_direct_postlint.ppm`, 640x480
+  with 921429/921600 nonzero bytes).
 
 ## Current Code Shape
 

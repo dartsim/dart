@@ -51,8 +51,8 @@
 namespace {
 
 constexpr const char* kHybridWorldUri = "dart://sample/skel/fullbody1.skel";
-constexpr const char* kGroundSkeletonName = "hybrid_dynamics_ground";
-constexpr const char* kBipedSkeletonName = "hybrid_dynamics_biped";
+constexpr const char* kGroundSkeletonName = "ground skeleton";
+constexpr const char* kBipedSkeletonName = "fullbody1";
 
 dart::dynamics::Joint* getRequiredJoint(
     const dart::dynamics::SkeletonPtr& skeleton, const char* name)
@@ -71,29 +71,6 @@ std::size_t getRequiredCommandIndex(
   return getRequiredJoint(skeleton, jointName)->getIndexInSkeleton(0);
 }
 
-void colorBiped(const dart::dynamics::SkeletonPtr& biped)
-{
-  const std::size_t numBodies = biped->getNumBodyNodes();
-  for (std::size_t i = 0; i < numBodies; ++i) {
-    auto* body = biped->getBodyNode(i);
-    if (body == nullptr) {
-      continue;
-    }
-    const double t = numBodies <= 1 ? 0.0
-                                    : static_cast<double>(i)
-                                          / static_cast<double>(numBodies - 1);
-    body->setColor(
-        Eigen::Vector3d(0.25 + 0.45 * t, 0.42 + 0.22 * t, 0.78 - 0.35 * t));
-  }
-
-  if (auto* head = biped->getBodyNode("h_head")) {
-    head->setColor(Eigen::Vector3d(0.88, 0.70, 0.46));
-  }
-  if (auto* spine = biped->getBodyNode("h_spine")) {
-    spine->setColor(Eigen::Vector3d(0.22, 0.48, 0.86));
-  }
-}
-
 dart::simulation::WorldPtr createHybridDynamicsWorld()
 {
   auto world = dart::io::readWorld(kHybridWorldUri);
@@ -108,16 +85,11 @@ dart::simulation::WorldPtr createHybridDynamicsWorld()
   if (ground == nullptr) {
     throw std::runtime_error("hybrid_dynamics world is missing ground");
   }
-  ground->setName(kGroundSkeletonName);
-  if (auto* body = ground->getBodyNode("ground")) {
-    body->setColor(Eigen::Vector3d(0.46, 0.50, 0.46));
-  }
 
-  auto biped = world->getSkeleton("fullbody1");
+  auto biped = world->getSkeleton(kBipedSkeletonName);
   if (biped == nullptr) {
     throw std::runtime_error("hybrid_dynamics world is missing fullbody1");
   }
-  biped->setName(kBipedSkeletonName);
 
   const std::vector<std::size_t> genCoordIds{
       1,  // global orientation y
@@ -141,8 +113,6 @@ dart::simulation::WorldPtr createHybridDynamicsWorld()
       joint->setActuatorType(dart::dynamics::Joint::ActuatorType::VELOCITY);
     }
   }
-
-  colorBiped(biped);
   return world;
 }
 
@@ -192,6 +162,9 @@ public:
     joint->setActuatorType(
         mHarnessOn ? dart::dynamics::Joint::ActuatorType::LOCKED
                    : dart::dynamics::Joint::ActuatorType::PASSIVE);
+    std::cout
+        << (mHarnessOn ? "The pelvis is locked." : "The pelvis is unlocked.")
+        << std::endl;
   }
 
   bool harnessOn() const
@@ -219,6 +192,20 @@ dart::gui::OrbitCamera makeHybridDynamicsCamera()
   camera.pitch = 0.4758822496604165;
   camera.distance = 6.557438524302;
   return camera;
+}
+
+dart::gui::RunOptions makeHybridDynamicsRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+void printHybridDynamicsInstructions()
+{
+  std::cout << "'h': toggle harness on/off\n"
+            << "space bar: simulation on/off\n";
 }
 
 std::vector<dart::gui::KeyboardAction> createHybridDynamicsKeyboardActions(
@@ -277,12 +264,14 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = world;
     options.camera = makeHybridDynamicsCamera();
+    options.runDefaults = makeHybridDynamicsRunDefaults();
     options.preStep = [controller]() {
       controller->preStep();
     };
     options.keyboardActions = createHybridDynamicsKeyboardActions(controller);
     options.panels.push_back(createHybridDynamicsPanel(controller));
 
+    printHybridDynamicsInstructions();
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {
     std::cerr << "hybrid_dynamics: " << e.what() << "\n";

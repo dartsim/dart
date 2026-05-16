@@ -339,7 +339,22 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     screenshot smokes, Python C++ example-runner tests, aggregate `examples`
     build, and `git diff --check` passed locally. Mandatory `pixi run lint`,
     post-lint focused build/CTest, post-lint direct screenshot smoke, and
-    post-lint `git diff --check` also passed.
+    post-lint `git diff --check` also passed. This checkpoint was pushed as
+    `cfce8c0186f Restore Fetch green bar target`.
+34. The active strict-audit cursor is now `examples/hybrid_dynamics/`; compare
+    it against `520993d7301^:examples/hybrid_dynamics` before coding.
+35. `examples/hybrid_dynamics/` strict re-open found concrete gaps: missing
+    README, missing 640x480 `ApplicationOptions::runDefaults`, renamed and
+    recolored loaded SKEL skeletons/body visuals, missing historical harness
+    console messages, and missing source-marker coverage for those restored
+    contracts. Restore those now; keep the historical `(0, 1, 0)` camera up
+    vector as a named public camera API gap unless a promoted camera roll/up
+    surface is added in this checkpoint.
+    Implementation and pre-lint validation are complete: focused build/CTest,
+    direct and pixi headless screenshot smokes, Python C++ example-runner tests,
+    aggregate `examples` build, and `git diff --check` passed locally.
+    Mandatory `pixi run lint`, post-lint focused build/CTest, post-lint direct
+    screenshot smoke, and post-lint `git diff --check` also passed.
 
 ## Checkpoint Rule
 

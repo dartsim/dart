@@ -1965,11 +1965,30 @@ TEST(FilamentSceneExtraction, HybridDynamicsExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(
       std::filesystem::path("examples") / "hybrid_dynamics" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "hybrid_dynamics" / "README.md");
 
   EXPECT_NE(
       mainSource.find("dart://sample/skel/fullbody1.skel"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("kGroundSkeletonName = \"ground skeleton\""),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("kBipedSkeletonName = \"fullbody1\""), std::string::npos);
+  EXPECT_EQ(mainSource.find("setName(kGroundSkeletonName)"), std::string::npos);
+  EXPECT_EQ(mainSource.find("setName(kBipedSkeletonName)"), std::string::npos);
+  EXPECT_EQ(mainSource.find("colorBiped"), std::string::npos);
+  EXPECT_EQ(mainSource.find("setColor("), std::string::npos);
   EXPECT_NE(mainSource.find("toggleHarness"), std::string::npos);
+  EXPECT_NE(mainSource.find("The pelvis is locked."), std::string::npos);
+  EXPECT_NE(mainSource.find("The pelvis is unlocked."), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("printHybridDynamicsInstructions"), std::string::npos);
   EXPECT_NE(mainSource.find("makeHybridDynamicsCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("makeHybridDynamicsRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
   EXPECT_NE(
       mainSource.find("createHybridDynamicsKeyboardActions"),
       std::string::npos);
@@ -1979,10 +1998,18 @@ TEST(FilamentSceneExtraction, HybridDynamicsExamplePreservesLegacyParityMarkers)
   EXPECT_NE(
       mainSource.find("Toggle hybrid-dynamics harness"), std::string::npos);
   EXPECT_NE(mainSource.find("'h': toggle harness on/off"), std::string::npos);
+  EXPECT_NE(mainSource.find("space bar: simulation on/off"), std::string::npos);
   EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Hybrid Dynamics Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("pixi run ex hybrid_dynamics"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 

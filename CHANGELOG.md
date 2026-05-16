@@ -216,8 +216,9 @@
     defaults through public `dart::gui`.
   - Restored soft-bodies example playback keys for frame stepping, restart, and
     jump-to-latest through public `dart::gui` keyboard actions.
-  - Restored hybrid-dynamics example `h` harness toggle and camera defaults
-    through public `dart::gui`.
+  - Restored hybrid-dynamics example `h` harness toggle, historical
+    lock/unlock console messages, 640x480 launch default, loaded SKEL visuals,
+    camera defaults, and README through public `dart::gui`.
   - Restored joint-constraints example perturbation keys, `h` harness toggle,
     and camera defaults through public `dart::gui`.
   - Restored rigid-shapes example spawn/delete/contact keyboard controls,

@@ -819,26 +819,20 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`f7d408fea9e Restore Hubo Puppet target controls`. No rows remain with the exact
+`cfce8c0186f Restore Fetch green bar target`. No rows remain with the exact
 `Needs strict audit` state. The current pending checkpoint is
-`examples/fetch/` strict re-open. Hubo was pushed as
-`f7d408fea9e Restore Hubo Puppet target controls`. Fetch is active because
-maintainer steering again named it as not fully restored despite previous
-checkpoints. The current Fetch repair restores the historical target as a
-selectable source-owned mesh cross made from two transparent green bars.
-Validation is complete through mandatory `pixi run lint` and post-lint focused
-checks; commit and push this checkpoint before moving back to the remaining
-strict-audit queue.
+`examples/hybrid_dynamics/` strict re-open. The Fetch green-bar checkpoint was
+pushed as `cfce8c0186f Restore Fetch green bar target`. Hybrid implementation
+and validation are complete through mandatory `pixi run lint` and post-lint
+focused checks; commit and push this checkpoint before moving to the next
+strict-audit row.
 
 ## Current Immediate Next Step
 
-After the Hubo checkpoint is pushed, re-open `examples/fetch/` next because the
-maintainer again called it out as not fully restored. Compare the current
-source and README to `520993d7301^:examples/fetch`, update
-`11-example-parity-audit.md` before coding, and repair any newly found
-historical behavior gap or record the exact promoted API gap. Resume
-`examples/hybrid_dynamics/` after the Fetch re-open is handled. A later broader
-smoke sweep can still use:
+Audit `examples/hybrid_dynamics/` next: compare the current source and README
+to `520993d7301^:examples/hybrid_dynamics`, challenge the recent parity
+checkpoint, and verify harness toggle behavior, camera/run defaults, README,
+capture, and source-marker guards. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke
