@@ -182,12 +182,15 @@ build, CTest, direct/pixi screenshot smokes, Python example-runner tests, and
 the aggregate `examples` build, `git diff --check`, `pixi run lint`, and
 post-lint focused build/CTest/direct screenshot smoke. The checkpoint was
 committed and pushed as `74870cc5cf3 Restore boxes run defaults`. The active
-slice is now `examples/simple_frames`: restore camera/run defaults, README, and
-parity tests through promoted `dart::gui`. That checkpoint is implemented and
-locally validated through the pre-lint focused build, CTest, direct/pixi
-screenshot smokes, Python example-runner tests, the aggregate `examples` build,
-`git diff --check`, `pixi run lint`, and post-lint focused
-build/CTest/direct screenshot smoke. The remaining work is commit and push.
+slice is now `examples/point_cloud`: the strict historical-source audit is
+documented in `11-example-parity-audit.md`, and the local implementation
+restores live KR5 robot sampling, point-cloud and voxel-grid updates,
+renderer-neutral panel controls, camera/run defaults, README, and
+source-marker guards through promoted `dart::gui`. Validate, lint, commit, and
+push this checkpoint next. The previous Heightmap checkpoint has been committed
+and pushed as
+`089947fc413 Restore heightmap example controls`; the OSG grid style controls
+and color editor remain explicit public API gaps.
 Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
 Atlas/Hubo target activation semantics, and Enter recording as explicit parity
 gaps unless a later slice adds the narrow renderer-neutral public API needed
@@ -750,17 +753,19 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`95a6ad0a737 Restore simple frames run defaults`; the current pending
-checkpoint starts with documentation for the stricter full-example parity rule,
-then repairs `examples/hardcoded_design`.
+`089947fc413 Restore heightmap example controls`; the current pending
+checkpoint restores `examples/point_cloud` from the strict historical-source
+audit and still needs local validation, lint, commit, and push.
 
 ## Current Immediate Next Step
 
-If the hardcoded-design checkpoint is still uncommitted, commit and push it
-without opening a PR. It restores keyboard controls, camera home, README, and
-parity tests through public `dart::gui`; the old OSG wireframe mode remains a
-render-style/debug API follow-up. Then continue the historical-source parity
-audit. Treat `examples/fetch/` and other already source-owned examples as still
+Validate, lint, commit, and push the local `examples/point_cloud` restoration
+checkpoint without opening a PR. It loads the KR5 robot and ground, restores
+robot/box point sampling, moves the sensor frame, updates `PointCloudShape` and
+`VoxelGridShape` through public APIs, adds renderer-neutral panel controls,
+restores camera/run defaults, refreshes the README, and adds source-marker
+tests.
+Treat `examples/fetch/` and other already source-owned examples as still
 auditable if a missing historical user-visible behavior is identified; do not
 use source ownership or screenshot smoke coverage as full-restoration evidence
 by itself. Keep `--screenshot <path>` and `--out <dir>` working for the

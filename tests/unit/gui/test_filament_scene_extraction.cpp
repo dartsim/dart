@@ -757,7 +757,7 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
       {std::filesystem::path("examples") / "g1_puppet", true},
       {std::filesystem::path("examples") / "hardcoded_design", true},
       {std::filesystem::path("examples") / "heightmap", true},
-      {std::filesystem::path("examples") / "point_cloud", false},
+      {std::filesystem::path("examples") / "point_cloud", true},
       {std::filesystem::path("examples") / "polyhedron_visual", false},
       {std::filesystem::path("examples") / "lcp_physics", true},
       {std::filesystem::path("examples") / "mimic_pendulums", true},
@@ -1379,9 +1379,50 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
 
   const auto pointCloudSource = readSourceFile(
       std::filesystem::path("examples") / "point_cloud" / "main.cpp");
+  const auto pointCloudReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "point_cloud" / "README.md");
   EXPECT_NE(pointCloudSource.find("visual_point_cloud"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("PointCloudShape"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("point_cloud_sensor"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("KR5 sixx R650.urdf"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("ground.urdf"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("PointSamplingMode"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("SampleOnRobot"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("SampleInBox"), std::string::npos);
+  EXPECT_NE(
+      pointCloudSource.find("generatePointCloudOnRobot"), std::string::npos);
+  EXPECT_NE(
+      pointCloudSource.find("generatePointCloudInBox"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("updateRobotPose"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("updateSensor"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("DART_HAVE_OCTOMAP"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("VoxelGridShape"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("visual_voxel_grid"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("point_cloud_grid"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(
+      pointCloudSource.find("Point Cloud & Voxel Grid Demo"),
+      std::string::npos);
+  EXPECT_NE(
+      pointCloudSource.find("Point cloud and voxel grid rendering example"),
+      std::string::npos);
+  EXPECT_NE(pointCloudSource.find("Run Robot Updating"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("Sample on robot"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("Sample in box"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("Cycle Color Mode"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("Cycle Point Shape Type"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("Visual Size"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("debug-grid API"), std::string::npos);
+  EXPECT_NE(
+      pointCloudSource.find("makePointCloudRunDefaults"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("options.height = 720"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("makePointCloudCamera"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(
+      pointCloudReadmeSource.find("Point Cloud Example"), std::string::npos);
+  EXPECT_NE(pointCloudReadmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(pointCloudReadmeSource.find("1280x720"), std::string::npos);
   EXPECT_EQ(pointCloudSource.find("options.defaultScene"), std::string::npos);
 
   const auto polyhedronSource = readSourceFile(
