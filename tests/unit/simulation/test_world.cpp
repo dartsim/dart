@@ -609,6 +609,31 @@ std::shared_ptr<ConvexMeshShape> makeNativeTetraConvexShape(double scale)
   return ConvexMeshShape::fromMesh(mesh, true);
 }
 
+std::shared_ptr<ConvexMeshShape> makeNativeFragmentConvexShape(
+    int variant, double scale)
+{
+  auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
+  const std::array<Eigen::Vector3d, 6> baseVertices{
+      Eigen::Vector3d(1.0, 0.15, 0.25),
+      Eigen::Vector3d(-0.85, -0.2, 0.35),
+      Eigen::Vector3d(0.2, 0.95, -0.1),
+      Eigen::Vector3d(-0.1, -0.9, -0.25),
+      Eigen::Vector3d(0.35, -0.25, 0.9),
+      Eigen::Vector3d(-0.25, 0.2, -0.85)};
+
+  const Eigen::Vector3d stretch(
+      1.0 + 0.06 * static_cast<double>(variant % 3),
+      0.92 + 0.05 * static_cast<double>((variant + 1) % 4),
+      0.88 + 0.04 * static_cast<double>((variant + 2) % 5));
+
+  mesh->reserveVertices(baseVertices.size());
+  for (const auto& vertex : baseVertices) {
+    mesh->addVertex(scale * vertex.cwiseProduct(stretch));
+  }
+
+  return ConvexMeshShape::fromMesh(mesh, true);
+}
+
 NativeBoxGroundRunResult runDefaultNativeBoxOnGroundWithSize(
     const Eigen::Matrix3d& initialRotation,
     int numSteps,
@@ -1230,6 +1255,89 @@ TEST(WorldTests, DefaultNativeConvexBodiesSettleOnStaticMeshLandscape)
   EXPECT_TRUE(sawContact);
   EXPECT_TRUE(sawTerrainContact);
   EXPECT_GE(lowestConvexPointZ, terrainLowestZ - 0.03);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeConvexFragmentsSettleOnMeshLandscape)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  auto terrainMesh = makeNativeLandscapeTriMesh(10, 0.16, 0.05);
+  ASSERT_NE(terrainMesh, nullptr);
+  const double terrainLowestZ = computeTriMeshLowestZ(*terrainMesh);
+
+  auto terrain = Skeleton::create("convex_fragment_landscape");
+  auto terrainPair = terrain->createJointAndBodyNodePair<WeldJoint>();
+  auto* terrainBody = terrainPair.second;
+  terrainPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<MeshShape>(
+          Eigen::Vector3d::Ones(),
+          terrainMesh,
+          common::Uri("dart://native_collision/fragment_landscape")));
+  world->addSkeleton(terrain);
+
+  constexpr int kRows = 5;
+  constexpr int kCols = 5;
+  std::vector<NativeConvexBody> fragments;
+  fragments.reserve(static_cast<std::size_t>(kRows * kCols));
+
+  for (int row = 0; row < kRows; ++row) {
+    for (int col = 0; col < kCols; ++col) {
+      const int index = row * kCols + col;
+      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+      tf.translation() = Eigen::Vector3d(
+          (static_cast<double>(col) - 0.5 * (kCols - 1)) * 0.13,
+          (static_cast<double>(row) - 0.5 * (kRows - 1)) * 0.13,
+          0.30 + 0.025 * static_cast<double>((row + col) % 3));
+      tf.linear() = math::expMapRot(
+          Eigen::Vector3d(
+              0.17 * static_cast<double>(index % 5),
+              -0.11 * static_cast<double>((index + 2) % 7),
+              0.13 * static_cast<double>((index + 3) % 6)));
+
+      fragments.push_back(createNativeFreeConvex(
+          world.get(),
+          "convex_fragment_" + std::to_string(index),
+          makeNativeFragmentConvexShape(index, 0.032),
+          tf));
+    }
+  }
+
+  bool sawContact = false;
+  bool sawTerrainContact = false;
+  std::size_t maxContacts = 0;
+  double lowestConvexPointZ = std::numeric_limits<double>::infinity();
+
+  for (int step = 0; step < 1600; ++step) {
+    world->step();
+    const auto& collisionResult = world->getLastCollisionResult();
+    sawContact = sawContact || collisionResult.getNumContacts() > 0u;
+    sawTerrainContact
+        = sawTerrainContact || collisionResult.inCollision(terrainBody);
+    maxContacts = std::max(
+        maxContacts,
+        static_cast<std::size_t>(collisionResult.getNumContacts()));
+
+    for (const auto& fragment : fragments) {
+      ASSERT_TRUE(
+          fragment.body->getWorldTransform().matrix().array().allFinite())
+          << "step=" << step;
+      const double fragmentLowestPointZ = measureConvexLowestPointZ(fragment);
+      lowestConvexPointZ = std::min(lowestConvexPointZ, fragmentLowestPointZ);
+      if (step >= 200 && step % 100 == 0) {
+        EXPECT_GE(fragmentLowestPointZ, terrainLowestZ - 0.035)
+            << "step=" << step;
+      }
+    }
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_TRUE(sawTerrainContact);
+  EXPECT_GT(maxContacts, 4u);
+  EXPECT_GE(lowestConvexPointZ, terrainLowestZ - 0.035);
 }
 
 //==============================================================================
