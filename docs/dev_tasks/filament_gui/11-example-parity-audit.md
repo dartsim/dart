@@ -997,6 +997,38 @@ inspection of the KR5/ground/red-target capture. Mandatory `pixi run lint`,
 post-lint focused rebuild/CTest, post-lint direct screenshot analyzer check,
 and `git diff --check` also passed.
 
+### Rigid Shapes Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/rigid_shapes`.
+
+Strict re-open found that the prior parity checkpoint restored many controls
+but still drifted from the historical example by replacing the loaded
+`shapes.skel` scene with a source-owned startup scene, omitting the historical
+README, and dropping the console instruction printout. The current source
+restores those items while keeping the promoted `dart::gui` keyboard actions,
+panel buttons, and example-owned contact-marker frame.
+
+| Historical item                                                                                                                                  | Current outcome                      | Notes                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Load `dart://sample/skel/shapes.skel` as the initial rigid-shape scene.                                                                          | Restored through public `dart::gui`. | Current source loads the historical SKEL world with `dart::io::readWorld`.                                                               |
+| Preserve `--collision-detector`, `--max-contacts`, and `--ground-thickness`.                                                                     | Restored.                            | Current source keeps local option parsing, detector selection, max-contact assignment, and ground-thickness updates on the loaded world. |
+| Print the selected collision detector.                                                                                                           | Restored.                            | Current source prints `Collision detector: ...` after applying detector selection.                                                       |
+| Preserve contact-point toggling with `c`/`C`.                                                                                                    | Restored through public `dart::gui`. | Current source uses keyboard actions and an example-owned `PointCloudShape` instead of OSG `CustomWorldNode`.                            |
+| Preserve `q`/`w`/`e`/`r` random shape spawning for box, ellipsoid, cylinder, and convex mesh.                                                    | Restored.                            | Current source restores random transform, color, size/radius/height, and convex-mesh vertex generation.                                  |
+| Preserve `a`/`A` delete-last behavior.                                                                                                           | Restored with safer filtering.       | Current source removes the latest spawned `rigid_shape_` skeleton without deleting loaded scene skeletons.                               |
+| Preserve printed instructions and 640x480 launch default.                                                                                        | Restored.                            | Current source prints the historical instruction block and uses `RunOptions` defaults.                                                   |
+| Preserve camera home from eye `(2, 2, 2)` to target `(0, 0, 0)` with up `(0, 1, 0)`.                                                             | Restored except exact up vector.     | `OrbitCamera` matches the eye/target framing; exact custom up-vector/roll remains a public camera API gap.                               |
+| Preserve README/run/build/execute documentation.                                                                                                 | Restored.                            | README documents promoted runner usage, capture, local options, and standalone build/execute sections.                                   |
+| Keep marker coverage for SKEL load, CLI options, contact markers, key controls, random spawning, README, defaults, and no private scene handoff. | Restored.                            | Marker guard covers the restored contract and rejects private scene handoff.                                                             |
+
+Validation for this slice includes focused `rigid_shapes` and
+`UNIT_gui_FilamentSceneExtraction` builds, focused CTest, direct and pixi
+software-GL screenshot analyzer checks, direct CLI-options screenshot smoke,
+image-sequence analyzer checks, aggregate `build-examples`, Python C++ example
+runner tests, and direct visual inspection of the loaded SKEL scene. Mandatory
+`pixi run lint`, post-lint focused rebuild/CTest, post-lint direct screenshot
+analyzer check, and `git diff --check` also passed.
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                                                                                                                                                                                              |
@@ -1035,7 +1067,7 @@ and `git diff --check` also passed.
 | `rigid_chain`               | Restored by strict audit.                                                          | Keep marker guards for random pose, damping, camera/defaults, README, and no backend types.                                                                                                                                                                                                       |
 | `rigid_cubes`               | Restored by strict audit.                                                          | Keep marker guards for `cubes.skel`, force keys/decay, camera/defaults, instructions, README, and no backend types.                                                                                                                                                                               |
 | `rigid_loop`                | Restored by strict audit.                                                          | Keep marker guards for constrained-link colors, instructions, defaults, README, and no backend types.                                                                                                                                                                                             |
-| `rigid_shapes`              | Strict re-open active; prior parity checkpoint still needs itemized inventory.     | Compare current source against `520993d7301^:examples/rigid_shapes`, then confirm spawn/delete/contact controls, CLI options, camera/defaults, README, and guards.                                                                                                                                |
+| `rigid_shapes`              | Restored by strict re-open except exact camera up-vector gap.                      | Keep marker guards for SKEL load, spawn/delete/contact controls, CLI options, random spawning, console instructions, camera/defaults, README, and no backend types.                                                                                                                               |
 | `simple_frames`             | Restored by strict re-open.                                                        | Keep marker guards for historical names, ArrowShape, camera/defaults, README, and no backend types.                                                                                                                                                                                               |
 | `simulation_event_handler`  | Restored except shifted-slash help alias follow-up.                                | Keep source-marker guards for controls, arrows, camera/defaults, README, and no backend types.                                                                                                                                                                                                    |
 | `soft_bodies`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm playback controls, shifted keys, camera/defaults, and guards.                                                                                                                                                                                                                             |

@@ -1711,10 +1711,18 @@ TEST(FilamentSceneExtraction, RigidShapesExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(
       std::filesystem::path("examples") / "rigid_shapes" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "rigid_shapes" / "README.md");
 
+  EXPECT_NE(
+      mainSource.find("dart://sample/skel/shapes.skel"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::io::readWorld"), std::string::npos);
   EXPECT_NE(mainSource.find("ConvexMeshShape"), std::string::npos);
   EXPECT_NE(mainSource.find("spawnConvexMesh"), std::string::npos);
   EXPECT_NE(mainSource.find("ConvexMeshShape::fromMesh"), std::string::npos);
+  EXPECT_NE(mainSource.find("Random::uniform"), std::string::npos);
+  EXPECT_NE(mainSource.find("printRigidShapesInstructions"), std::string::npos);
+  EXPECT_NE(mainSource.find("Collision detector:"), std::string::npos);
   EXPECT_NE(mainSource.find("PointCloudShape"), std::string::npos);
   EXPECT_NE(mainSource.find("contact_points"), std::string::npos);
   EXPECT_NE(mainSource.find("toggleContactPoints"), std::string::npos);
@@ -1739,6 +1747,12 @@ TEST(FilamentSceneExtraction, RigidShapesExamplePreservesLegacyParityMarkers)
       mainSource.find("KeyboardShortcut::characterKey(key)"),
       std::string::npos);
   EXPECT_NE(mainSource.find("Keys: q box"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("GUIEventHandler"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Rigid Shapes Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("pixi run ex rigid_shapes"), std::string::npos);
+  EXPECT_NE(readmeSource.find("--collision-detector"), std::string::npos);
+  EXPECT_NE(readmeSource.find("--out"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, BipedStandExamplePreservesLegacyParityMarkers)

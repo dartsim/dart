@@ -473,6 +473,20 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     against `520993d7301^:examples/rigid_shapes`, then restore or classify the
     historical spawn/delete/contact controls, CLI options, camera/defaults,
     README, panel, and marker behavior.
+51. `examples/rigid_shapes/` strict re-open found concrete gaps after the
+    prior parity checkpoint: startup scene loading drifted from the historical
+    `dart://sample/skel/shapes.skel` world to source-owned initial shapes, the
+    random spawn behavior became deterministic, console instructions were not
+    printed, the collision-detector printout was missing, and the historical
+    README was absent. The current source restores those through public
+    `dart::gui` and `dart::io`, preserving the promoted panel controls and
+    example-owned `PointCloudShape` contact markers. Pre-lint validation
+    includes focused builds, focused CTest, direct/pixi screenshot analyzer
+    checks, direct CLI-options screenshot smoke, image-sequence analyzer check,
+    aggregate `build-examples`, Python C++ example-runner tests, and direct
+    visual inspection of the loaded SKEL scene.
+    Mandatory `pixi run lint`, post-lint focused rebuild/CTest, post-lint
+    direct screenshot analyzer check, and `git diff --check` also passed.
 
 ## Checkpoint Rule
 

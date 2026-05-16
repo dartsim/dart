@@ -97,6 +97,9 @@
   - Restored the `mixed_chain` example's random startup pose, 640x480 launch
     default, console instructions, README, and marker coverage through public
     `dart::gui`.
+  - Restored the `rigid_shapes` example's historical `shapes.skel` startup
+    scene, random spawn behavior, console instructions, collision-detector
+    printout, README, and marker coverage through public `dart::gui`.
   - Restored the `add_delete_skels` example's README, historical 640x480
     launch default, and spawn-only-on-command startup behavior through public
     `dart::gui`.

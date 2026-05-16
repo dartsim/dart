@@ -191,6 +191,20 @@ history but are not guaranteed to be in chronological order.
   `520993d7301^:examples/rigid_shapes`, then restore or explicitly classify
   every historical spawn/delete/contact control, command-line option,
   camera/default, README, panel, and marker behavior before moving past it.
+- Current rigid-shapes strict re-open implementation restores the historical
+  `dart://sample/skel/shapes.skel` startup scene, random box/ellipsoid/cylinder
+  and convex-mesh spawning, collision-detector printout, console instructions,
+  README, and marker coverage while preserving the promoted keyboard actions,
+  panel controls, 640x480 defaults, camera framing, CLI parsing, and
+  example-owned `PointCloudShape` contact markers.
+- Rigid-shapes pre-lint validation has passed: focused target and marker-test
+  build, focused `UNIT_gui_FilamentSceneExtraction` CTest, direct/pixi
+  software-GL screenshot analyzer checks, direct CLI-options screenshot smoke,
+  image-sequence analyzer check, direct visual inspection of the SKEL capture,
+  aggregate `build-examples`, and Python C++ example-runner tests.
+- Mandatory `pixi run lint` passed for the rigid-shapes slice. Post-lint
+  focused rebuild, focused CTest, direct software-GL screenshot analyzer check,
+  and `git diff --check` also passed.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`

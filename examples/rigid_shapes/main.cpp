@@ -64,12 +64,16 @@
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
-#include <dart/dynamics/weld_joint.hpp>
+
+#include <dart/math/constants.hpp>
+#include <dart/math/geometry.hpp>
+#include <dart/math/random.hpp>
+
+#include <dart/io/read.hpp>
 
 #include <Eigen/Geometry>
 
 #include <algorithm>
-#include <array>
 #include <charconv>
 #include <functional>
 #include <iostream>
@@ -87,7 +91,7 @@
 
 namespace {
 
-constexpr const char* kGroundName = "rigid_shapes_ground";
+constexpr const char* kShapesUri = "dart://sample/skel/shapes.skel";
 constexpr const char* kShapePrefix = "rigid_shape_";
 constexpr const char* kContactFrameName = "contact_points";
 
@@ -206,26 +210,65 @@ bool applyCollisionDetector(
   return false;
 }
 
-dart::dynamics::SkeletonPtr createGround(double requestedThickness)
+bool updateGroundThickness(
+    const dart::simulation::WorldPtr& world, double thickness)
 {
-  const double thickness = requestedThickness > 0.0 ? requestedThickness : 0.08;
-  auto ground = dart::dynamics::Skeleton::create(kGroundName);
-  auto pair = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>();
-  auto* body = pair.second;
+  if (world == nullptr) {
+    return false;
+  }
 
-  auto shape = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d(7.0, 7.0, thickness));
-  auto* shapeNode = body->createShapeNodeWith<
-      dart::dynamics::VisualAspect,
-      dart::dynamics::CollisionAspect,
-      dart::dynamics::DynamicsAspect>(shape);
-  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.76, 0.78, 0.76));
+  dart::dynamics::SkeletonPtr groundSkeleton
+      = world->getSkeleton("ground skeleton");
+  if (groundSkeleton == nullptr) {
+    for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+      auto skeleton = world->getSkeleton(i);
+      if (skeleton != nullptr && skeleton->getBodyNode("ground") != nullptr) {
+        groundSkeleton = skeleton;
+        break;
+      }
+    }
+  }
 
-  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.translation().z() = -0.5 * thickness;
-  pair.first->setTransformFromParentBodyNode(transform);
+  if (groundSkeleton == nullptr) {
+    return false;
+  }
 
-  return ground;
+  auto* groundBody = groundSkeleton->getBodyNode("ground");
+  if (groundBody == nullptr) {
+    return false;
+  }
+
+  const auto updateShapeNode
+      = [thickness](dart::dynamics::ShapeNode* shapeNode) {
+          if (shapeNode == nullptr) {
+            return;
+          }
+
+          auto box = std::dynamic_pointer_cast<dart::dynamics::BoxShape>(
+              shapeNode->getShape());
+          if (box == nullptr) {
+            return;
+          }
+
+          const Eigen::Vector3d originalSize = box->getSize();
+          const Eigen::Vector3d originalTranslation
+              = shapeNode->getRelativeTranslation();
+          const double originalTop
+              = originalTranslation.y() + 0.5 * originalSize.y();
+
+          Eigen::Vector3d size = originalSize;
+          size.y() = thickness;
+          box->setSize(size);
+
+          Eigen::Vector3d translation = originalTranslation;
+          translation.y() = originalTop - 0.5 * thickness;
+          shapeNode->setRelativeTranslation(translation);
+        };
+
+  groundBody->eachShapeNodeWith<dart::dynamics::VisualAspect>(updateShapeNode);
+  groundBody->eachShapeNodeWith<dart::dynamics::CollisionAspect>(
+      updateShapeNode);
+  return true;
 }
 
 dart::dynamics::SkeletonPtr createDynamicShape(
@@ -255,39 +298,22 @@ dart::dynamics::SkeletonPtr createDynamicShape(
   return skeleton;
 }
 
-Eigen::Isometry3d makePose(std::size_t index)
+Eigen::Isometry3d makeRandomTransform()
 {
-  static const std::array<Eigen::Vector3d, 6> kPositions{{
-      Eigen::Vector3d(-1.4, -0.25, 0.45),
-      Eigen::Vector3d(-0.85, 0.25, 0.75),
-      Eigen::Vector3d(-0.25, -0.15, 1.05),
-      Eigen::Vector3d(0.35, 0.25, 1.35),
-      Eigen::Vector3d(0.95, -0.20, 1.65),
-      Eigen::Vector3d(1.55, 0.25, 1.95),
-  }};
-
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-  transform.translation() = kPositions[index % kPositions.size()];
-  transform.rotate(
-      Eigen::AngleAxisd(
-          0.22 * static_cast<double>(index + 1), Eigen::Vector3d::UnitX()));
-  transform.rotate(
-      Eigen::AngleAxisd(
-          0.17 * static_cast<double>(index + 2), Eigen::Vector3d::UnitY()));
+  const Eigen::Vector3d rotation = dart::math::Random::uniform<Eigen::Vector3d>(
+      -dart::math::pi, dart::math::pi);
+  transform.translation() = Eigen::Vector3d(
+      dart::math::Random::uniform(-1.0, 1.0),
+      dart::math::Random::uniform(0.5, 1.0),
+      dart::math::Random::uniform(-1.0, 1.0));
+  transform.linear() = dart::math::expMapRot(rotation);
   return transform;
 }
 
-Eigen::Vector3d makeColor(std::size_t index)
+Eigen::Vector3d makeRandomColor()
 {
-  static const std::array<Eigen::Vector3d, 6> kColors{{
-      Eigen::Vector3d(0.85, 0.25, 0.22),
-      Eigen::Vector3d(0.22, 0.55, 0.88),
-      Eigen::Vector3d(0.95, 0.72, 0.24),
-      Eigen::Vector3d(0.30, 0.75, 0.42),
-      Eigen::Vector3d(0.68, 0.35, 0.82),
-      Eigen::Vector3d(0.25, 0.74, 0.72),
-  }};
-  return kColors[index % kColors.size()];
+  return dart::math::Random::uniform<Eigen::Vector3d>(0.0, 1.0);
 }
 
 struct RigidShapesState
@@ -313,7 +339,7 @@ struct RigidShapesState
   void spawnShape(
       std::string label,
       std::shared_ptr<dart::dynamics::Shape> shape,
-      double mass = 1.0)
+      double mass = 10.0)
   {
     if (world == nullptr || shape == nullptr) {
       return;
@@ -324,8 +350,8 @@ struct RigidShapesState
         std::string(kShapePrefix) + std::move(label) + "_"
             + std::to_string(index),
         std::move(shape),
-        makePose(index),
-        makeColor(index),
+        makeRandomTransform(),
+        makeRandomColor(),
         mass));
   }
 
@@ -339,18 +365,23 @@ struct RigidShapesState
 
   void spawnBox()
   {
-    spawn<dart::dynamics::BoxShape>("box", Eigen::Vector3d(0.42, 0.28, 0.24));
+    spawn<dart::dynamics::BoxShape>(
+        "box", dart::math::Random::uniform<Eigen::Vector3d>(0.05, 0.25));
   }
 
   void spawnEllipsoid()
   {
     spawn<dart::dynamics::EllipsoidShape>(
-        "ellipsoid", Eigen::Vector3d(0.30, 0.20, 0.18));
+        "ellipsoid",
+        2.0 * dart::math::Random::uniform<Eigen::Vector3d>(0.025, 0.125));
   }
 
   void spawnCylinder()
   {
-    spawn<dart::dynamics::CylinderShape>("cylinder", 0.18, 0.42);
+    spawn<dart::dynamics::CylinderShape>(
+        "cylinder",
+        dart::math::Random::uniform(0.05, 0.25),
+        dart::math::Random::uniform(0.1, 0.5));
   }
 
   void spawnSphere()
@@ -367,18 +398,20 @@ struct RigidShapesState
   {
     auto mesh
         = std::make_shared<dart::dynamics::ConvexMeshShape::TriMeshType>();
-    mesh->reserveVertices(10);
-    constexpr double bound = 0.24;
-    mesh->addVertex(Eigen::Vector3d(-bound, -bound, -bound));
-    mesh->addVertex(Eigen::Vector3d(bound, -bound, bound));
-    mesh->addVertex(Eigen::Vector3d(-bound, bound, bound));
-    mesh->addVertex(Eigen::Vector3d(bound, bound, -bound));
-    mesh->addVertex(Eigen::Vector3d(0.0, -bound, 0.5 * bound));
-    mesh->addVertex(Eigen::Vector3d(-0.5 * bound, 0.0, -bound));
-    mesh->addVertex(Eigen::Vector3d(0.5 * bound, bound, 0.0));
-    mesh->addVertex(Eigen::Vector3d(-bound, 0.5 * bound, 0.0));
-    mesh->addVertex(Eigen::Vector3d(bound, -0.5 * bound, 0.0));
-    mesh->addVertex(Eigen::Vector3d(0.0, 0.0, bound));
+    const int vertexCount = dart::math::Random::uniform<int>(16, 32);
+    const double bound = dart::math::Random::uniform(0.1, 0.25);
+    mesh->reserveVertices(vertexCount + 4);
+
+    const double seed = bound * 0.6;
+    mesh->addVertex(Eigen::Vector3d(-seed, -seed, -seed));
+    mesh->addVertex(Eigen::Vector3d(seed, -seed, seed));
+    mesh->addVertex(Eigen::Vector3d(-seed, seed, seed));
+    mesh->addVertex(Eigen::Vector3d(seed, seed, -seed));
+
+    for (int i = 0; i < vertexCount; ++i) {
+      mesh->addVertex(
+          dart::math::Random::uniform<Eigen::Vector3d>(-bound, bound));
+    }
     spawnShape(
         "convex_mesh", dart::dynamics::ConvexMeshShape::fromMesh(mesh, true));
   }
@@ -446,20 +479,18 @@ struct RigidShapesState
 std::shared_ptr<RigidShapesState> createRigidShapesState(
     const dart::simulation::WorldPtr& world)
 {
-  auto state = std::make_shared<RigidShapesState>(world);
-  state->spawnBox();
-  state->spawnEllipsoid();
-  state->spawnCylinder();
-  state->spawnSphere();
-  state->spawnCone();
-  return state;
+  return std::make_shared<RigidShapesState>(world);
 }
 
 dart::simulation::WorldPtr createRigidShapesWorld(
     const RigidShapesConfig& config)
 {
-  auto world = dart::simulation::World::create("rigid_shapes");
-  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  auto world = dart::io::readWorld(kShapesUri);
+  if (world == nullptr) {
+    throw std::runtime_error(
+        "Failed to load rigid-shapes world from " + std::string(kShapesUri));
+  }
+
   if (!applyCollisionDetector(world, config.collisionDetector)) {
     throw std::runtime_error(
         "Unsupported collision detector: " + config.collisionDetector);
@@ -467,8 +498,29 @@ dart::simulation::WorldPtr createRigidShapesWorld(
   if (auto* constraintSolver = world->getConstraintSolver()) {
     constraintSolver->getCollisionOption().maxNumContacts = config.maxContacts;
   }
-  world->addSkeleton(createGround(config.groundThickness));
+  if (config.groundThickness > 0.0
+      && !updateGroundThickness(world, config.groundThickness)) {
+    throw std::runtime_error("Failed to update ground thickness");
+  }
   return world;
+}
+
+void printRigidShapesInstructions(const dart::simulation::WorldPtr& world)
+{
+  if (world != nullptr) {
+    if (const auto detector = world->getCollisionDetector()) {
+      std::cout << "Collision detector: " << detector->getTypeView() << "\n";
+    }
+  }
+
+  std::cout << "Rigid Shapes Example Controls:\n"
+            << "space bar: simulation on/off\n"
+            << "'q': spawn a random cube\n"
+            << "'w': spawn a random ellipsoid\n"
+            << "'e': spawn a random cylinder\n"
+            << "'r': spawn a random convex mesh\n"
+            << "'a': delete a spawned object at last\n"
+            << "'c': toggle contact points\n";
 }
 
 dart::gui::Panel createControlsPanel(
@@ -623,6 +675,7 @@ int main(int argc, char* argv[])
     };
     options.keyboardActions = createRigidShapesKeyboardActions(state);
     options.panels.push_back(createControlsPanel(state));
+    printRigidShapesInstructions(world);
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {
     std::cerr << "rigid_shapes: " << e.what() << "\n";
