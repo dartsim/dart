@@ -42,10 +42,10 @@
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/degree_of_freedom.hpp>
 #include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
-#include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/common/uri.hpp>
@@ -141,6 +141,21 @@ dart::dynamics::SkeletonPtr createGround()
   return ground;
 }
 
+std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetHandleShape(
+    double radius)
+{
+  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(7.0f);
+  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
+  const auto addAxis = [&](const Eigen::Vector3d& axis) {
+    handle->addVertex(axis, center);
+    handle->addVertex(-axis, center);
+  };
+  addAxis(Eigen::Vector3d(radius, 0.0, 0.0));
+  addAxis(Eigen::Vector3d(0.0, radius, 0.0));
+  addAxis(Eigen::Vector3d(0.0, 0.0, 0.75 * radius));
+  return handle;
+}
+
 dart::simulation::WorldPtr createWamIkFastWorld()
 {
   auto world = dart::simulation::World::create("dartsim_wam_ikfast");
@@ -157,7 +172,7 @@ dart::simulation::WorldPtr createWamIkFastWorld()
   targetTransform.translate(Eigen::Vector3d(0.0, 0.0, -0.09));
   auto target = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kTargetFrameName, targetTransform);
-  target->setShape(std::make_shared<dart::dynamics::SphereShape>(0.045));
+  target->setShape(createTargetHandleShape(0.15));
   target->getVisualAspect(true)->setRGBA(
       Eigen::Vector4d(0.18, 0.55, 1.0, 0.92));
   world->addSimpleFrame(target);
@@ -173,7 +188,10 @@ dart::gui::Panel createWamIkFastPanel()
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
     builder.text("WAM IKFast visual target scene");
-    builder.text("The blue target frame is selectable and movable.");
+    builder.text("Select the blue target handle.");
+    builder.text("Ctrl-left drag moves the selected handle.");
+    builder.text("Arrow keys and PageUp/PageDown nudge it.");
+    builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {

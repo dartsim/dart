@@ -1310,6 +1310,44 @@ Twenty-second robot/IK parity-audit checkpoint:
     plus basic analyzer checks for their 640x480 screenshots
   - Post-lint full `examples` aggregate target build
 
+Twenty-third target-affordance parity checkpoint:
+
+- Continue the target-handle audit across the remaining task-space and
+  construction examples that expose a movable target frame:
+  `operational_space_control`, `wam_ikfast`, and `tinkertoy`.
+- Historical `operational_space_control` used an OSG drag-and-drop target with
+  explicit help text for constrained movement. The migrated source has the
+  controller and pre-step callback restored but still renders the target as a
+  small sphere. Replace that with the same line-segment target-handle affordance
+  pattern and document the promoted Ctrl-drag/X/Y/Z controls.
+- `tinkertoy` still has broader builder parity gaps from the OSG example:
+  add/delete block hotkeys, picking semantics, force coefficient controls, and
+  recording toggles. This checkpoint only addresses the visible movable target
+  affordance and panel guidance; builder workflow parity remains a follow-up.
+- `wam_ikfast` is a current source-owned visual target scene. Keep it aligned
+  with the promoted target affordance even though the exact historical baseline
+  is the branch-local WAM restoration rather than the pre-OSG-removal source.
+- Implementation state for this slice: `operational_space_control`,
+  `wam_ikfast`, and `tinkertoy` now render their user-movable target frames as
+  line-segment handles instead of small spheres. Their panels document the
+  promoted target movement controls: Ctrl-left drag, arrow/PageUp/PageDown
+  nudging, and X/Y/Z constrained drag.
+- Remaining explicit gaps after this slice: `tinkertoy` still needs builder
+  workflow parity for add/delete block hotkeys, picking semantics, force
+  coefficient controls, target reorientation, and recording toggles. Those
+  should be restored through promoted `dart::gui` input/panel concepts rather
+  than by reintroducing OSG handlers.
+- Local evidence so far:
+  - C++ GUI target build for `operational_space_control`, `wam_ikfast`,
+    `tinkertoy`, and `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Python runner tests (`67 passed`)
+  - `pixi run ex operational_space_control --headless --frames 2 --width 640 --height 480 --screenshot ...`
+  - `pixi run ex wam_ikfast --headless --frames 2 --width 640 --height 480 --screenshot ...`
+  - `pixi run ex tinkertoy --headless --frames 2 --width 640 --height 480 --screenshot ...`
+  - Basic analyzer checks for all three 640x480 screenshots
+  - Full `examples` aggregate target build
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:

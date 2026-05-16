@@ -166,6 +166,21 @@ void addTinkertoyAxis(
   world.addSimpleFrame(frame);
 }
 
+std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetHandleShape(
+    double radius)
+{
+  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(7.0f);
+  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
+  const auto addAxis = [&](const Eigen::Vector3d& axis) {
+    handle->addVertex(axis, center);
+    handle->addVertex(-axis, center);
+  };
+  addAxis(Eigen::Vector3d(radius, 0.0, 0.0));
+  addAxis(Eigen::Vector3d(0.0, radius, 0.0));
+  addAxis(Eigen::Vector3d(0.0, 0.0, 0.75 * radius));
+  return handle;
+}
+
 void addTinkertoyReferenceFrames(dart::simulation::World& world)
 {
   addTinkertoyAxis(
@@ -190,7 +205,7 @@ void addTinkertoyReferenceFrames(dart::simulation::World& world)
       dart::dynamics::Frame::World(),
       kTinkertoyTargetFrameName,
       targetTransform);
-  target->setShape(std::make_shared<dart::dynamics::SphereShape>(0.055));
+  target->setShape(createTargetHandleShape(0.15));
   target->getVisualAspect(true)->setRGBA(Eigen::Vector4d(1.0, 0.0, 1.0, 1.0));
   world.addSimpleFrame(target);
 
@@ -317,7 +332,10 @@ int main(int argc, char* argv[])
           }
           panel.checkbox("Show builder hints", showBuilderHints);
           if (showBuilderHints) {
-            panel.text("Select a block target, then drag its handles.");
+            panel.text("Select the magenta target handle.");
+            panel.text("Ctrl-left drag moves the selected handle.");
+            panel.text("Arrow keys and PageUp/PageDown nudge it.");
+            panel.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
           }
           panel.text("time: " + std::to_string(context.simulationTime));
           panel.text("contacts: " + std::to_string(context.contactCount));

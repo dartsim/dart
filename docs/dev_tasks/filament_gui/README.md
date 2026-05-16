@@ -30,7 +30,12 @@ handles, target activation/teleoperation, and whole-body IK behavior compared
 with the historical OSG sources. The first robot/IK parity slice restores
 line-segment target handles and updated control text for those three examples,
 while explicitly leaving solver-objective and full hotkey parity as remaining
-audit work.
+audit work. The next target-affordance slice applies the same visible-handle
+pattern to `operational_space_control`, `wam_ikfast`, and `tinkertoy` while
+tracking Tinkertoy's larger builder workflow gaps separately. That handle slice
+is now implemented locally; Tinkertoy still needs add/delete block hotkeys,
+picking semantics, force coefficient controls, target reorientation, and
+recording toggle parity through promoted GUI concepts.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

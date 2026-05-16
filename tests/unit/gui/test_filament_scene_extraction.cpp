@@ -842,6 +842,35 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
+{
+  const auto operationalSource = readSourceFile(
+      std::filesystem::path("examples") / "operational_space_control"
+      / "main.cpp");
+  EXPECT_NE(
+      operationalSource.find("createTargetHandleShape"), std::string::npos);
+  EXPECT_NE(operationalSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(operationalSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(operationalSource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_EQ(operationalSource.find("options.defaultScene"), std::string::npos);
+
+  const auto wamSource = readSourceFile(
+      std::filesystem::path("examples") / "wam_ikfast" / "main.cpp");
+  EXPECT_NE(wamSource.find("createTargetHandleShape"), std::string::npos);
+  EXPECT_NE(wamSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(wamSource.find("wam_ikfast_target"), std::string::npos);
+  EXPECT_NE(wamSource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_EQ(wamSource.find("options.defaultScene"), std::string::npos);
+
+  const auto tinkertoySource = readSourceFile(
+      std::filesystem::path("examples") / "tinkertoy" / "main.cpp");
+  EXPECT_NE(tinkertoySource.find("createTargetHandleShape"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("tinkertoy_target"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_EQ(tinkertoySource.find("options.defaultScene"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
 {
   const auto hardcodedSource = readSourceFile(

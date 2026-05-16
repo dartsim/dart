@@ -74,8 +74,9 @@ analytical IK, legacy target toggle, or WASD/Q/E/F/Z teleoperation parity.
 ## Immediate Next Step
 
 After the current target-handle checkpoint is committed and pushed, continue
-solver-behavior parity such as Atlas relaxed posture, Hubo analytical IK, and
-full OSG hotkey parity before claiming a robot/IK example is complete.
+Tinkertoy builder workflow parity and solver-behavior parity such as Atlas
+relaxed posture, Hubo analytical IK, and full OSG hotkey behavior before
+claiming the robot/IK and construction examples are complete.
 
 ## Context That Would Be Lost
 
@@ -640,10 +641,11 @@ checkpoint is the G1/Atlas/Hubo target-handle parity repair.
 ## Current Immediate Next Step
 
 After the G1/Atlas/Hubo target-handle checkpoint is committed and pushed,
-continue the robot/IK parity audit with solver and hotkey behavior. Keep
-`--screenshot <path>` and `--out <dir>` working for the existing CTest, GitHub
-Actions smoke path, and historical image-sequence workflows. A later broader
-smoke sweep can still use:
+finish and push the `operational_space_control`/`wam_ikfast`/`tinkertoy`
+target-affordance checkpoint, then resume parity work on Tinkertoy builder
+controls and robot solver/hotkey behavior. Keep `--screenshot <path>` and
+`--out <dir>` working for the existing CTest, GitHub Actions smoke path, and
+historical image-sequence workflows. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

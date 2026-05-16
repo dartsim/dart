@@ -93,6 +93,8 @@
     keeping the example on public `dart::gui` APIs.
   - Restored visible line-segment IK target handles and promoted control text
     for the G1, Atlas, and Hubo puppet examples.
+  - Restored visible line-segment target handles and promoted control text for
+    the operational-space control, WAM IKFast, and Tinkertoy examples.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

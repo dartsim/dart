@@ -43,9 +43,9 @@
 #include <dart/dynamics/degree_of_freedom.hpp>
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
-#include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/common/uri.hpp>
@@ -122,6 +122,21 @@ dart::dynamics::SkeletonPtr createGround()
   shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, -0.005));
   shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.18, 0.32, 0.58, 1.0));
   return ground;
+}
+
+std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetHandleShape(
+    double radius)
+{
+  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(7.0f);
+  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
+  const auto addAxis = [&](const Eigen::Vector3d& axis) {
+    handle->addVertex(axis, center);
+    handle->addVertex(-axis, center);
+  };
+  addAxis(Eigen::Vector3d(radius, 0.0, 0.0));
+  addAxis(Eigen::Vector3d(0.0, radius, 0.0));
+  addAxis(Eigen::Vector3d(0.0, 0.0, 0.75 * radius));
+  return handle;
 }
 
 class OperationalSpaceControlState
@@ -224,7 +239,7 @@ OperationalSpaceScene createOperationalSpaceScene()
   targetTransform.pretranslate(Eigen::Vector3d(0.05, 0.0, 0.0));
   auto target = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kTargetFrameName, targetTransform);
-  target->setShape(std::make_shared<dart::dynamics::SphereShape>(0.04));
+  target->setShape(createTargetHandleShape(0.15));
   target->getVisualAspect(true)->setRGBA(
       Eigen::Vector4d(0.92, 0.08, 0.08, 1.0));
   scene.world->addSimpleFrame(target);
@@ -242,7 +257,10 @@ dart::gui::Panel createOperationalSpacePanel()
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
     builder.text("WAM operational-space target control");
-    builder.text("Drag or nudge the red target frame.");
+    builder.text("Select the red target handle.");
+    builder.text("Ctrl-left drag moves the selected handle.");
+    builder.text("Arrow keys and PageUp/PageDown nudge it.");
+    builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
