@@ -3518,6 +3518,31 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     unit tests, simulation-experimental tests, Python tests, and documentation,
     then printed `All tests passed!`. No PR, push, workflow, branch, or
     GitHub state was mutated by this local validation pass.
+- Current local full validation after slender-capsule stability coverage:
+  - Commit: `c5bc95e3bcf`
+    (`Stabilize native capsule box line contacts`).
+  - Coverage:
+    `WorldTests.DefaultNativeSlenderCapsuleDoesNotTunnel` closes the
+    `slender_capsule_no_tunneling` stress/regression row with the default
+    native `dart` detector, a slender dynamic capsule, 3000 simulation steps,
+    contact detection, finite-state checks, and a lowest-capsule-point
+    ground-tunneling bound. `CapsuleBox.HorizontalLineSupportHasEndpointContacts`
+    covers the raw capsule-box line-support case directly.
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_capsule_capsule --target UNIT_simulation_World --parallel 5`,
+    `./build/default/cpp/Release/bin/test_capsule_capsule`,
+    `./build/default/cpp/Release/bin/UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeSlenderCapsuleDoesNotTunnel`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native`,
+    and
+    `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`.
+  - Result: passed. The focused capsule-box unit target passed 17/17 tests,
+    the default-world slender-capsule regression passed, the
+    `collision-native` label passed 31/31, and the full local
+    `pixi run test-all` report passed 6/6 top-level gates: linting, build,
+    unit tests, simulation-experimental tests, Python tests, and documentation,
+    then printed `All tests passed!`. The full suite also rebuilt examples,
+    including `hello_world` and `atlas_simbicon`. No PR, push, workflow,
+    branch, or GitHub state was mutated by this local validation pass.
 
 ## Known Risks
 

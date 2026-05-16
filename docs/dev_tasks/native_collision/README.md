@@ -15,8 +15,8 @@ invalid convex/soft mesh data non-collidable with a warning, adds focused raw
 box-box, sphere-sphere batch, capsule-capsule batch, cylinder-cylinder batch,
 convex-convex batch, mesh-mesh batch, narrow-phase batch dispatcher,
 convex-mesh, mesh, default-world, Atlas foot-ground, ten-box stack, and
-thin-box stability regression coverage, rebuilds `hello_world` without the
-OctoMap `<ciso646>` warning, and refreshes the focused
+thin-box and slender-capsule stability regression coverage, rebuilds
+`hello_world` without the OctoMap `<ciso646>` warning, and refreshes the focused
 native/reference/benchmark validation evidence in `03-evidence-gates.md`.
 
 ## Current Status
@@ -202,11 +202,11 @@ native/reference/benchmark validation evidence in `03-evidence-gates.md`.
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
       latest full current-state `pixi run test-all` pass was rerun on local
-      head `3fe8f9f7fde` and passed 6/6 top-level gates: linting, build, unit
+      head `c5bc95e3bcf` and passed 6/6 top-level gates: linting, build, unit
       tests, simulation-experimental tests, Python tests, and documentation.
-      The same head adds ten-box stack and thin-box stability coverage and
-      verifies the `collision-native-stability` CTest label for the
-      world-level native stability executables.
+      The same head adds ten-box stack, thin-box, and slender-capsule stability
+      coverage and verifies the native collision CTest labels for the
+      world-level native stability executables and raw native collision tests.
       The latest code-validation head `4db514cfd22` also passed the full local
       gate with Release CTest 264/264 and Python tests 147/147. The same code
       head passed the focused reference-backend checks and the final

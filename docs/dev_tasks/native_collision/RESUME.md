@@ -16,19 +16,20 @@ stretch GPU support are the next performance wave.
 This session refreshed full local validation on local head `4db514cfd22` with
 `pixi run test-all`, then refreshed the `collision-reference` evidence through
 focused reference-backend checks and a final unfiltered CTest pass of 301/301.
-A later current-state `pixi run test-all` pass on local head `3fe8f9f7fde`
+A later current-state `pixi run test-all` pass on local head `c5bc95e3bcf`
 passed all 6 top-level gates after the docs/evidence cleanup commits, the
 native stability CTest label update, the ten-box stack stability coverage, and
-the thin-box stability coverage. The earlier pushed `64abc65a032` validation
-still records the latest local gz-physics/package/link smoke baseline.
+the thin-box and slender-capsule stability coverage. The earlier pushed
+`64abc65a032` validation still records the latest local
+gz-physics/package/link smoke baseline.
 `pixi run lint`, runtime isolation, and compatibility-facade audits remain
 part of the local gate. The completion audit snapshot and validation-baseline
 wording were also refreshed so future passes do not treat historical "current
 head" evidence as live branch state.
-The latest local code commit before this handoff update was `3fe8f9f7fde`
-(`Add native thin box stability coverage`), which records the thin-box
-stability regression in the test matrix and passed the full local validation
-gate.
+The latest local code commit before this handoff update was `c5bc95e3bcf`
+(`Stabilize native capsule box line contacts`), which records the
+slender-capsule stability regression in the test matrix and passed the full
+local validation gate.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not
@@ -51,10 +52,10 @@ sphere-mesh collision. The slice adds raw box-box, sphere-sphere batch,
 capsule-capsule batch,
 cylinder-cylinder batch, convex-convex batch, mesh-mesh batch, default-world,
 narrow-phase batch dispatcher, convex-mesh, mesh, ten-box stack stability, and
-thin-box stability regression tests, rebuilds `hello_world` without the OctoMap
-`<ciso646>` warning, and refreshes focused native/reference validation plus raw
-narrow-phase benchmark evidence. The canonical command list and results are
-recorded in `03-evidence-gates.md`.
+thin-box and slender-capsule stability regression tests, rebuilds
+`hello_world` without the OctoMap `<ciso646>` warning, and refreshes focused
+native/reference validation plus raw narrow-phase benchmark evidence. The
+canonical command list and results are recorded in `03-evidence-gates.md`.
 
 ## Current Branch
 
@@ -98,7 +99,7 @@ the distinction clear:
 
 If code or evidence changes again, run `pixi run lint` before committing and
 run the focused validation that matches the change. Full `pixi run test-all`
-evidence is refreshed locally for current-state validation head `f9ee1dd28ba`;
+evidence is refreshed locally for current-state validation head `c5bc95e3bcf`;
 later local evidence commits are docs-only and should be checked with
 `git status --short --branch` plus `git log -3 --oneline --decorate`.
 
@@ -121,12 +122,13 @@ post GitHub comments unless the user explicitly asks.
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation: local head `3fe8f9f7fde`
-  (`Add native thin box stability coverage`), with 6/6 top-level gates
+- Latest full local `pixi run test-all` validation: local head `c5bc95e3bcf`
+  (`Stabilize native capsule box line contacts`), with 6/6 top-level gates
   passing after the raw, convex, mesh, mixed batch-dispatcher, docs/evidence
-  cleanup, native stability-label, ten-box stack stability, and thin-box
-  stability follow-ups. That run included linting, build, unit tests,
-  simulation-experimental tests, Python tests, and documentation.
+  cleanup, native stability-label, ten-box stack stability, thin-box
+  stability, and slender-capsule stability follow-ups. That run included
+  linting, build, examples, unit tests, simulation-experimental tests, Python
+  tests, and documentation.
 - Latest evidence-record commits are local and may be ahead of
   `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
   current head. Recent docs-only evidence commits refresh the completion-audit
@@ -200,6 +202,13 @@ post GitHub comments unless the user explicitly asks.
   `collision-reference` non-simulation CTest sweep passed 288/288; the
   dedicated simulation-experimental task passed 13/13; and the final
   unfiltered `collision-reference` CTest sweep passed 301/301.
+- Current local slender-capsule stability refresh after `c5bc95e3bcf`: focused
+  build of `test_capsule_capsule` and `UNIT_simulation_World` passed,
+  `test_capsule_capsule` passed 17/17, the default-world
+  `WorldTests.DefaultNativeSlenderCapsuleDoesNotTunnel` regression passed,
+  `ctest -L collision-native` passed 31/31, and
+  `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`
+  passed all 6 top-level gates with the final `All tests passed!` report.
 
 Useful lightweight guards:
 
