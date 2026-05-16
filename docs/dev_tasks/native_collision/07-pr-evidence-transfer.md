@@ -195,7 +195,10 @@ Local validation currently recorded in the dev-task evidence:
   - `readelf` showed gz/plugin package-smoke binaries depending on
     `libdart-collision-native.so` without old collision/reference runtime
     dependencies
-  - latest local refresh is tied to code head `64abc65a032`
+  - latest local refresh is tied to local head `6404f7607be`
+  - the same local head also passed the native compatibility package smoke and
+    direct `readelf` checks after the matrix deferral audit; no PR, push, or
+    GitHub state was mutated for that refresh
 - Prior workflow-dispatch reference evidence on pushed head `1e1faf6feb1`:
   - native-only CI passed
   - gz-physics CI passed

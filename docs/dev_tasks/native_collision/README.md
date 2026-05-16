@@ -42,7 +42,7 @@ focused native/reference/benchmark validation evidence in
       cylinder-vs-plane-like-box support for gz's plane-as-large-box path,
       capped large flat box/mesh contact patches for gz max-contact tests, and
       legacy FCL/ODE facade raycast behavior required by gz's ray-intersection
-      feature tests. The latest local refresh on code head `64abc65a032`
+      feature tests. The latest local refresh on local head `6404f7607be`
       rebuilt a fresh gz-physics checkout, printed the expected DART plugin
       integration success line, and `readelf` showed the gz DART plugin
       depends on `libdart-collision-native.so` without any
@@ -133,8 +133,8 @@ focused native/reference/benchmark validation evidence in
       facades. A default native-only install/export probe and downstream
       package smoke test that requests `collision-fcl`, `collision-bullet`, and
       `collision-ode` proves those names link the built-in `dart` stack and do
-      not install old collision libraries. The latest local refresh on code
-      head `64abc65a032` reran that package smoke and `readelf` showed the
+      not install old collision libraries. The latest local refresh on local
+      head `6404f7607be` reran that package smoke and `readelf` showed the
       smoke executable depends on `libdart-collision-native.so` without any
       old collision/reference runtime dependency.
 - [x] Installed legacy detector headers for FCL, Bullet, and ODE are now
@@ -211,6 +211,11 @@ focused native/reference/benchmark validation evidence in
       an Atlas Simbicon controller-loop no-tunneling regression, and
       verifies the native collision CTest labels for the world-level native
       stability executables and raw native collision tests.
+      The latest local downstream/package/link refresh was rerun on local head
+      `6404f7607be`: gz-physics passed 65/65, the native compatibility package
+      smoke passed, and direct `readelf` checks showed the gz plugin and package
+      smoke executable use `libdart-collision-native.so` without old
+      collision/reference runtime dependencies.
       The latest code-validation head `4db514cfd22` also passed the full local
       gate with Release CTest 264/264 and Python tests 147/147. The same code
       head passed the focused reference-backend checks and the final
@@ -604,8 +609,9 @@ collision stack.
    - Do not remove compatibility facades until downstream code has a tested
      native-backed path.
    - Current gz-physics evidence is locally green: a fresh
-     `pixi run -e gazebo test-gz` passed 65/65 tests against the DART plugin.
-     CI evidence is still required.
+     `pixi run -e gazebo test-gz` passed 65/65 tests against the DART plugin
+     on local head `6404f7607be`; the same refresh passed the native package
+     smoke and direct link inspections. CI evidence is still required.
 6. **Performance Guardrails**
    - The current `bm-collision-check` task runs checked narrowphase, distance,
      raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter

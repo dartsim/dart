@@ -354,30 +354,29 @@ build/default/cpp/Debug -R '^UNIT_collision_DistanceFilter$'
     libccd runtime libraries.
 
 - Current downstream migration evidence refresh
-  - Commit: `64abc65a032` (`Clarify native collision progress gates`), code
-    head before this evidence-record update. That head was pushed to
-    `origin/feature/new_coll`; feature-branch pushes still do not trigger the
-    main GitHub Actions workflows while PR #2652 is closed.
+  - Commit: `6404f7607be` (`Classify native collision matrix deferrals`), local
+    head before this evidence-record update. This refresh was local only: no
+    push, PR creation, PR reopening, or GitHub metadata mutation occurred.
   - Commands:
 
     ```bash
-    DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e gazebo test-gz
-    DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -- bash -lc 'set -euo pipefail
-    rm -rf build/native-compat-install build/native-compat-package-smoke
-    cmake --install build/default/cpp/Release --prefix build/native-compat-install --component headers >/tmp/dart_native_compat_install_current.log
-    cmake --install build/default/cpp/Release --prefix build/native-compat-install >>/tmp/dart_native_compat_install_current.log
-    cmake -S docs/dev_tasks/native_collision/smoke/native_compat_package -B build/native-compat-package-smoke -DCMAKE_PREFIX_PATH="$PWD/build/native-compat-install;$CONDA_PREFIX" >/tmp/dart_native_compat_smoke_config_current.log
-    cmake --build build/native-compat-package-smoke --parallel "$DART_PARALLEL_JOBS" >/tmp/dart_native_compat_smoke_build_current.log
-    build/native-compat-package-smoke/native_collision_compat_package_smoke
-    if find build/native-compat-install/lib -maxdepth 1 \( -type f -o -type l \) | sort | rg "dart-collision-reference|lib(fcl|bullet|ode|ccd)"; then
+    JOBS=$(python scripts/parallel_jobs.py 2>/dev/null || nproc)
+    DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e gazebo test-gz
+    pixi run bash -lc 'set -euo pipefail
+    JOBS=$(python scripts/parallel_jobs.py 2>/dev/null || nproc)
+    rm -rf build/native-compat-install-current build/native-compat-package-smoke-current
+    cmake --install build/default/cpp/Release --prefix "$PWD/build/native-compat-install-current" >/tmp/dart_native_compat_install_current_head.log
+    cmake -S docs/dev_tasks/native_collision/smoke/native_compat_package -B build/native-compat-package-smoke-current -DCMAKE_PREFIX_PATH="$PWD/build/native-compat-install-current;$CONDA_PREFIX" >/tmp/dart_native_compat_smoke_config_current_head.log
+    cmake --build build/native-compat-package-smoke-current --parallel "$JOBS" >/tmp/dart_native_compat_smoke_build_current_head.log
+    build/native-compat-package-smoke-current/native_collision_compat_package_smoke | tee /tmp/dart_native_compat_smoke_run_current_head.log
+    readelf -d build/native-compat-package-smoke-current/native_collision_compat_package_smoke | rg "NEEDED|RUNPATH" | tee /tmp/dart_native_compat_smoke_readelf_current_head.txt
+    if rg -i "libdart-collision-reference|libdart-test-reference|libfcl|libbullet|libBullet|libode|libccd" /tmp/dart_native_compat_smoke_readelf_current_head.txt; then
+      exit 1
+    fi'
+    readelf -d .deps/gz-physics/build/lib/libgz-physics-dartsim-plugin.so.9.0.0 | rg -i 'NEEDED|RPATH|RUNPATH' | tee /tmp/dart_gz_readelf_current_head.txt
+    if rg -i 'libdart-collision-reference|libdart-test-reference|libfcl|libbullet|libBullet|libode|libccd' /tmp/dart_gz_readelf_current_head.txt; then
       exit 1
     fi
-    readelf -d .deps/gz-physics/build/lib/libgz-physics-dartsim-plugin.so | rg "NEEDED|RUNPATH" | tee /tmp/dart_gz_readelf_current.txt
-    readelf -d build/native-compat-package-smoke/native_collision_compat_package_smoke | rg "NEEDED|RUNPATH" | tee /tmp/dart_native_compat_smoke_readelf_current.txt
-    if rg "libdart-collision-reference|libfcl|libbullet|libBullet|libode|libccd" /tmp/dart_gz_readelf_current.txt /tmp/dart_native_compat_smoke_readelf_current.txt; then
-      exit 1
-    fi
-    echo "native downstream package/link smoke passed"'
     ```
 
   - Result: passed locally. The fresh gz-physics workflow patched only the
@@ -387,12 +386,13 @@ build/default/cpp/Debug -R '^UNIT_collision_DistanceFilter$'
     the DART integration success
     message. The package smoke passed on the current installed native build,
     including retained `collision-fcl`, `collision-bullet`, and `collision-ode`
-    component facades. The current-head `test-all` and post-edit lint runs
-    above cover runtime isolation, compatibility-facade routing, the focused
-    C++ legacy facade test, and the Python clean-API test.
+    component facades. The current-state `test-all` pass on `ca0201e67f4` and
+    post-edit lint runs above cover runtime isolation, compatibility-facade
+    routing, the focused C++ legacy facade test, and the Python clean-API test.
     `readelf` showed both the gz DART plugin and the package-smoke executable
     depend on `libdart-collision-native.so` and do not depend on
-    `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd. This is
+    `libdart-collision-reference-*`, `libdart-test-reference-*`, FCL, Bullet,
+    ODE, or libccd. This is
     primary local evidence; manual GitHub Actions runs are reference evidence
     only.
 

@@ -206,16 +206,17 @@ full validation pass was run on head `ca0201e67f4`
   engines are available only through reference comparison gates rather than
   normal per-engine runtime switches. The latest clean reference validation
   baseline is `376fd5e686d`
-  (`Remove per-engine collision reference build options`), and current-head
-  local `test-all` plus downstream/package/link smoke evidence is refreshed on
-  code head `64abc65a032`. The matching `gh run list` checks returned no
+  (`Remove per-engine collision reference build options`), the latest
+  current-state local `test-all` evidence is refreshed on code head
+  `ca0201e67f4`, and downstream/package/link smoke evidence is refreshed on
+  local head `6404f7607be`. The matching `gh run list` checks returned no
   GitHub Actions runs because these branch pushes are not an allowed workflow
   trigger while PR #2652 is closed.
 - Local downstream migration evidence is refreshed: fresh gz-physics,
   package-smoke, runtime-isolation, C++ compatibility-name, dartpy clean-API,
   direct link-inspection checks, and human-authored stale-backend docs audit all
-  pass. The primary executable/link-smoke evidence is refreshed on code head
-  `64abc65a032`, with only public reference tests/benchmarks gates and no
+  pass. The primary executable/link-smoke evidence is refreshed on local head
+  `6404f7607be`, with only public reference tests/benchmarks gates and no
   per-engine FCL/Bullet/ODE collision build switches in current code/config
   paths.
   `05-downstream-migration.md` now defines the deprecation evidence acceptance
@@ -337,8 +338,8 @@ Current audited state:
   DART adapter benchmark JSON outputs. This is local benchmark evidence; it
   does not replace final PR/CI artifact evidence because feature-branch pushes
   do not trigger the benchmark workflow while PR #2652 is closed.
-- Downstream/package/link refresh head: code head `64abc65a032`
-  (`Clarify native collision progress gates`). The safe-job
+- Downstream/package/link refresh head: local head `6404f7607be`
+  (`Classify native collision matrix deferrals`). The safe-job
   `pixi run -e gazebo test-gz` run configured the gazebo DART install with
   collision reference tests and collision reference benchmarks `OFF`, then
   passed 65/65 gz-physics tests and printed the expected DART plugin
