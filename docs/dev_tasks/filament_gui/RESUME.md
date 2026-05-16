@@ -104,10 +104,13 @@ restore the historical `q`/`w` keyboard controls, Bullet preference, and camera
 default through public `dart::gui`; that checkpoint is implemented and pushed.
 The active slice is now `examples/mixed_chain/`: restore the historical
 `q`/`w`, `e`/`r`, and `t`/`y` impulse keyboard controls plus camera default
-through public `dart::gui`. Keep Atlas relaxed-posture/balance optimization,
-Hubo analytical IK, Atlas/Hubo target activation semantics, and Enter
-recording as explicit parity gaps unless a later slice adds the narrow
-renderer-neutral public API needed for them.
+through public `dart::gui`; that checkpoint is implemented and pushed. The
+active slice is now `examples/vehicle/`: restore the historical
+`w`/`s`/`x`/`a`/`d` command keys and camera default through public `dart::gui`.
+Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
+Atlas/Hubo target activation semantics, and Enter recording as explicit parity
+gaps unless a later slice adds the narrow renderer-neutral public API needed
+for them.
 
 ## Context That Would Be Lost
 

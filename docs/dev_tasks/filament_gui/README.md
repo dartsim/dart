@@ -69,6 +69,9 @@ the historical `q`/`w` keyboard controls, Bullet preference, and camera default
 through public `dart::gui`; that checkpoint is implemented and pushed. The
 next bounded restoration slice is `examples/mixed_chain/`, restoring the
 historical six impulse keyboard controls and camera default through public
+`dart::gui`; that checkpoint is implemented and pushed. The next bounded
+restoration slice is `examples/vehicle/`, restoring the historical
+`w`/`s`/`x`/`a`/`d` command keys and camera default through public
 `dart::gui`. Enter recording remains a separate capture/session API gap.
 
 The completion audit in `07-completion-audit.md` describes an earlier

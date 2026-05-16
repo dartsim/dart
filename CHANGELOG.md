@@ -116,6 +116,8 @@
     preference, and camera defaults through public `dart::gui`.
   - Restored mixed-chain example `q`/`w`, `e`/`r`, and `t`/`y` impulse
     keyboard controls and camera defaults through public `dart::gui`.
+  - Restored vehicle example `w`/`s`/`x`/`a`/`d` command keys and camera
+    defaults through public `dart::gui`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

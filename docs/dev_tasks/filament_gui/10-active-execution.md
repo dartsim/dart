@@ -1777,6 +1777,57 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
   - Post-lint `pixi run ex mixed_chain --headless --frames 2 --width 640
 --height 480 --screenshot /tmp/dart_mixed_chain_pixi_postlint.ppm` plus
     analyzer (307200/307200 nonzero pixels)
+- Implementation status: pushed as
+  `d24b69a4149 Restore mixed chain impulse controls`.
+
+Thirty-third vehicle parity checkpoint:
+
+- Historical `examples/vehicle` exposed `w`, `s`, `x`, `a`, and `d` keyboard
+  controls for forward, stop, reverse, left steering, and right steering,
+  printed those controls as viewer instructions, and set an example-specific
+  camera home view. The current promoted source owns the world and pre-step
+  vehicle controller, plus equivalent panel buttons/sliders, but it does not
+  wire the legacy keyboard actions or camera default through public
+  `dart::gui`.
+- Implementation scope: restore those five vehicle command keys as
+  renderer-neutral `dart::gui::KeyboardAction`s, add a promoted
+  `ApplicationOptions::camera` default matching the historical home-position
+  intent, and update the panel text so the example itself documents the
+  keyboard controls.
+- Keep this checkpoint focused on vehicle parity. The existing panel sliders
+  are kept as additive promoted-GUI affordances; the historical keyboard
+  semantics and camera default are the parity gate for this slice.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `vehicle` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct and/or pixi vehicle headless screenshot with analyzer coverage
+  - Python runner tests
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+- Local validation completed:
+  - `cmake --build build/default/cpp/Release --target vehicle
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe vehicle screenshot plus `analyze_headless_smoke.py`
+    (`/tmp/dart_vehicle_direct.ppm`, 307200/307200 nonzero pixels)
+  - `pixi run ex vehicle --headless --frames 2 --width 640 --height 480
+--screenshot /tmp/dart_vehicle_pixi.ppm` plus analyzer (307200/307200 nonzero
+    pixels)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target vehicle
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe vehicle screenshot plus
+    `analyze_headless_smoke.py` (`/tmp/dart_vehicle_direct_postlint.ppm`,
+    307200/307200 nonzero pixels)
 - Implementation status: ready for checkpoint commit and push.
 
 ## Stretch Direction
@@ -1809,8 +1860,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore mixed-chain `q`/`w`, `e`/`r`, and `t`/`y` impulse keyboard controls
-   and camera default through public `dart::gui`.
+1. Restore vehicle `w`/`s`/`x`/`a`/`d` keyboard controls and camera default
+   through public `dart::gui`.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

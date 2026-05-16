@@ -1116,7 +1116,25 @@ TEST(FilamentSceneExtraction, SoftBodiesAndVehicleExamplesPreserveParityMarkers)
   EXPECT_NE(vehicleSource.find("kWheelSpeedCommand"), std::string::npos);
   EXPECT_NE(vehicleSource.find("mBackWheelVelocity"), std::string::npos);
   EXPECT_NE(vehicleSource.find("forces[6]"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("makeVehicleCamera"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("makeVehicleAction"), std::string::npos);
+  EXPECT_NE(
+      vehicleSource.find("KeyboardShortcut::characterKey(key)"),
+      std::string::npos);
+  EXPECT_NE(
+      vehicleSource.find("createVehicleKeyboardActions"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("Move vehicle forward"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("Stop vehicle"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("Move vehicle backward"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("Steer vehicle left"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("Steer vehicle right"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("'w': move forward"), std::string::npos);
+  EXPECT_NE(
+      vehicleSource.find("'a': rotate steering wheels to left"),
+      std::string::npos);
+  EXPECT_NE(vehicleSource.find("options.camera"), std::string::npos);
   EXPECT_NE(vehicleSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(vehicleSource.find("options.world"), std::string::npos);
   EXPECT_EQ(vehicleSource.find("options.defaultScene"), std::string::npos);
 }

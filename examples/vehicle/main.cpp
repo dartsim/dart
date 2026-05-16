@@ -50,6 +50,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <cmath>
 #include <cstddef>
@@ -210,6 +211,55 @@ dart::simulation::WorldPtr createVehicleWorld()
   return world;
 }
 
+dart::gui::OrbitCamera makeVehicleCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.5404195002705842;
+  camera.pitch = 0.4758822496604165;
+  camera.distance = 6.557438524302;
+  return camera;
+}
+
+dart::gui::KeyboardAction makeVehicleAction(
+    const std::shared_ptr<VehicleController>& controller,
+    char key,
+    std::string label,
+    void (VehicleController::*command)())
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback = [controller, command](dart::gui::KeyboardActionContext&) {
+    ((*controller).*command)();
+  };
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createVehicleKeyboardActions(
+    const std::shared_ptr<VehicleController>& controller)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(5);
+  actions.push_back(makeVehicleAction(
+      controller,
+      'w',
+      "Move vehicle forward",
+      &VehicleController::moveForward));
+  actions.push_back(makeVehicleAction(
+      controller, 's', "Stop vehicle", &VehicleController::stop));
+  actions.push_back(makeVehicleAction(
+      controller,
+      'x',
+      "Move vehicle backward",
+      &VehicleController::moveBackward));
+  actions.push_back(makeVehicleAction(
+      controller, 'a', "Steer vehicle left", &VehicleController::steerLeft));
+  actions.push_back(makeVehicleAction(
+      controller, 'd', "Steer vehicle right", &VehicleController::steerRight));
+  return actions;
+}
+
 dart::gui::Panel createVehiclePanel(
     const std::shared_ptr<VehicleController>& controller)
 {
@@ -219,6 +269,13 @@ dart::gui::Panel createVehiclePanel(
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     builder.text("Vehicle steering and wheel commands");
+    builder.text("'w': move forward");
+    builder.text("'s': stop");
+    builder.text("'x': move backward");
+    builder.text("'a': rotate steering wheels to left");
+    builder.text("'d': rotate steering wheels to right");
+    builder.text("space bar: simulation on/off");
+    builder.separator();
     builder.text(
         makeStatusLine("wheel velocity: ", controller->wheelVelocity()));
     builder.text(
@@ -275,9 +332,11 @@ int main(int argc, char* argv[])
 
   dart::gui::ApplicationOptions options;
   options.world = std::move(world);
+  options.camera = makeVehicleCamera();
   options.preStep = [controller]() {
     controller->preStep();
   };
+  options.keyboardActions = createVehicleKeyboardActions(controller);
   options.panels.push_back(createVehiclePanel(controller));
 
   return dart::gui::runApplication(argc, argv, options);
