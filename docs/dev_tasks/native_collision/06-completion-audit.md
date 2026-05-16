@@ -213,6 +213,28 @@ No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
 this read-only recheck. Later docs-only commits may move `HEAD`; use the
 commands above for the exact current local state.
 
+The latest no-PR boundary recheck on local docs/evidence head
+`17f75efeed780c367e7b7bbb74ab9be6ad5bffc4`
+(`Refresh native collision current evidence`) confirmed the same finalization
+gap:
+
+- `git status --short --branch` reported
+  `feature/new_coll...origin/feature/new_coll [ahead 123]`.
+- `origin/feature/new_coll` remained
+  `f8f5663d514582d8e7ec5d13871f254671083e0d`.
+- `gh auth status -h github.com` showed `jslee02` as the active account.
+- `gh run list --repo dartsim/dart --branch feature/new_coll --commit 17f75efeed7`
+  returned `[]`.
+- `gh pr list --repo dartsim/dart --head feature/new_coll --state all`
+  returned only PR #2652, still `CLOSED`, draft, based on `main`, updated
+  `2026-05-14T19:20:08Z`, and anchored to old head
+  `714d220d82a6ba99350bf2214fc9696f5495a30f`.
+
+No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
+this read-only recheck. This preserves the current user boundary: do not open,
+reopen, push for, or otherwise mutate a PR until the maintainer explicitly
+asks.
+
 ## Current Local Full Validation Recheck (2026-05-16)
 
 After the Atlas Simbicon controller stability coverage update, a fresh local
