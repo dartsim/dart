@@ -268,6 +268,26 @@ history but are not guaranteed to be in chronological order.
   `520993d7301^:examples/vehicle`, then restore or explicitly classify the
   historical command behavior, controller setup, camera/defaults, README,
   capture, and marker coverage before moving past it.
+- Current vehicle strict re-open implementation restores the missing 640x480
+  launch defaults, printed instruction block, README run/capture/build/execute
+  documentation, and marker coverage while preserving the already-promoted
+  vehicle world/controller, keyboard actions, camera, and additive panel
+  buttons/sliders.
+- Vehicle pre-lint validation: focused build for `vehicle` and
+  `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed, direct and
+  pixi software-GL screenshots passed basic analyzer coverage
+  (`/tmp/dart_vehicle_strict_direct.ppm` and
+  `/tmp/dart_vehicle_strict_pixi.ppm`, both 307200/307200 nonzero pixels),
+  image-sequence capture passed analyzer coverage
+  (`/tmp/dart_vehicle_strict_frames/frame_000001.ppm`, 307200/307200 nonzero
+  pixels), aggregate `build-examples` passed, and Python C++ example-runner
+  tests passed (67/67). The first analyzer invocation omitted explicit
+  dimensions and was immediately rerun successfully against the already written
+  capture.
+- Vehicle post-lint validation: mandatory `pixi run lint` passed, focused
+  rebuild for `vehicle` and `UNIT_gui_FilamentSceneExtraction` passed, focused
+  CTest passed, and direct software-GL screenshot basic analyzer passed
+  (`/tmp/dart_vehicle_strict_postlint.ppm`, 307200/307200 nonzero pixels).
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`

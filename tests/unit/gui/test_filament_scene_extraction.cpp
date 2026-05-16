@@ -2969,6 +2969,8 @@ TEST(FilamentSceneExtraction, SoftBodiesAndVehicleExamplesPreserveParityMarkers)
 
   const auto vehicleSource = readSourceFile(
       std::filesystem::path("examples") / "vehicle" / "main.cpp");
+  const auto vehicleReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "vehicle" / "README.md");
   EXPECT_NE(
       vehicleSource.find("dart://sample/skel/vehicle.skel"), std::string::npos);
   EXPECT_NE(vehicleSource.find("visual_vehicle_car"), std::string::npos);
@@ -2988,15 +2990,23 @@ TEST(FilamentSceneExtraction, SoftBodiesAndVehicleExamplesPreserveParityMarkers)
   EXPECT_NE(vehicleSource.find("Move vehicle backward"), std::string::npos);
   EXPECT_NE(vehicleSource.find("Steer vehicle left"), std::string::npos);
   EXPECT_NE(vehicleSource.find("Steer vehicle right"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("printVehicleInstructions"), std::string::npos);
   EXPECT_NE(vehicleSource.find("'w': move forward"), std::string::npos);
   EXPECT_NE(
       vehicleSource.find("'a': rotate steering wheels to left"),
       std::string::npos);
+  EXPECT_NE(vehicleSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("options.height = 480"), std::string::npos);
   EXPECT_NE(vehicleSource.find("options.camera"), std::string::npos);
   EXPECT_NE(vehicleSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(vehicleSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(vehicleSource.find("options.world"), std::string::npos);
   EXPECT_EQ(vehicleSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_NE(vehicleReadmeSource.find("Vehicle Example"), std::string::npos);
+  EXPECT_NE(vehicleReadmeSource.find("pixi run ex vehicle"), std::string::npos);
+  EXPECT_NE(vehicleReadmeSource.find("--screenshot"), std::string::npos);
+  EXPECT_NE(vehicleReadmeSource.find("--out"), std::string::npos);
 }
 
 TEST(

@@ -233,8 +233,9 @@
     preference, and camera defaults through public `dart::gui`.
   - Restored mixed-chain example `q`/`w`, `e`/`r`, and `t`/`y` impulse
     keyboard controls and camera defaults through public `dart::gui`.
-  - Restored vehicle example `w`/`s`/`x`/`a`/`d` command keys and camera
-    defaults through public `dart::gui`.
+  - Restored vehicle example `w`/`s`/`x`/`a`/`d` command keys, camera
+    defaults, 640x480 run default, console instructions, and README through
+    public `dart::gui`.
   - Restored soft-bodies example playback keys for frame stepping, restart, and
     jump-to-latest through public `dart::gui` keyboard actions.
   - Restored hybrid-dynamics example `h` harness toggle, historical

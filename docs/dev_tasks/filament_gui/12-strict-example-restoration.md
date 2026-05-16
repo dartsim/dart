@@ -546,6 +546,18 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     source/README against `520993d7301^:examples/vehicle`, then restore or
     classify historical command behavior, controller setup, camera/defaults,
     README, capture, and marker coverage before moving past it.
+58. `examples/vehicle/` strict re-open found concrete gaps after the prior
+    command-key checkpoint: current source had the world/controller, keyboard
+    actions, camera, and panel controls, but still lacked the historical
+    640x480 launch default, printed instruction block, README, and marker
+    coverage for those restored surfaces. The current source repairs those via
+    public `dart::gui::RunOptions`, source-owned console text, restored README
+    run/capture/build/execute documentation, and marker guards. Pre-lint
+    validation includes focused builds, focused CTest, direct and pixi
+    software-GL screenshot basic analyzer checks, image-sequence analyzer
+    coverage, aggregate `build-examples`, and Python C++ example-runner tests.
+    Mandatory `pixi run lint`, post-lint focused rebuild/CTest, and post-lint
+    direct screenshot basic analyzer check also passed.
 
 ## Checkpoint Rule
 

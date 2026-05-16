@@ -45,6 +45,7 @@
 
 #include <algorithm>
 #include <array>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -322,6 +323,24 @@ dart::gui::Panel createVehiclePanel(
   return panel;
 }
 
+dart::gui::RunOptions makeVehicleRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+void printVehicleInstructions()
+{
+  std::cout << "'w': move forward\n"
+            << "'s': stop\n"
+            << "'x': move backward\n"
+            << "'a': rotate steering wheels to left\n"
+            << "'d': rotate steering wheels to right\n"
+            << "space bar: simulation on/off\n";
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -332,6 +351,7 @@ int main(int argc, char* argv[])
 
   dart::gui::ApplicationOptions options;
   options.world = std::move(world);
+  options.runDefaults = makeVehicleRunDefaults();
   options.camera = makeVehicleCamera();
   options.preStep = [controller]() {
     controller->preStep();
@@ -339,5 +359,6 @@ int main(int argc, char* argv[])
   options.keyboardActions = createVehicleKeyboardActions(controller);
   options.panels.push_back(createVehiclePanel(controller));
 
+  printVehicleInstructions();
   return dart::gui::runApplication(argc, argv, options);
 }
