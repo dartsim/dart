@@ -146,10 +146,14 @@ sampling workflow, point-cloud and voxel-grid updates, renderer-neutral panel
 controls, camera/run defaults, README, and source-marker guards has been
 committed and pushed as
 `9e111631eb5 Restore point cloud example controls`. The active slice is now
-`examples/polyhedron_visual`: the local implementation restores the historical
-640x480 run default, camera home, scene-grid replacement, README, and
-source-marker guards through promoted `dart::gui`. Validate, lint, commit, and
-push this checkpoint next.
+`examples/polyhedron_visual`: the checkpoint restoring the historical 640x480
+run default, camera home, scene-grid replacement, README, and source-marker
+guards has been committed and pushed as
+`227c2498a53 Restore polyhedron visual defaults`. The active slice is now
+`examples/empty`: the local implementation restores public keydown actions,
+camera/run defaults, README, and marker guards while recording pre/post-render
+and key-release callbacks as public API gaps. Validate, lint, commit, and push
+this checkpoint next.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as
@@ -734,8 +738,8 @@ longer express stable DART concepts.
 
 ## Immediate next steps
 
-1. Validate, lint, commit, and push the local `examples/polyhedron_visual`
-   restoration checkpoint without opening a PR.
+1. Validate, lint, commit, and push the local `examples/empty` restoration
+   checkpoint without opening a PR.
 2. Continue the same audit pattern across every pre-existing example before
    declaring it restored. Re-open examples whenever the historical source has
    user-visible behavior that only source ownership or screenshots covered.

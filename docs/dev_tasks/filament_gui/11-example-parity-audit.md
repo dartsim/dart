@@ -139,6 +139,27 @@ primitives and promoted `dart::gui` options.
 | README documents the promoted runner and no longer says the standalone source remains OSG/ImGui. | Restored.                    | Current README documents `pixi run ex polyhedron_visual`, headless capture, and the public `dart::gui` migration.         |
 | Keep the example free of backend-specific viewer/visual types.                                   | Restored through guard test. | Current source uses `ApplicationOptions`, DART shape primitives, and `dart::gui::runApplication`, with no backend tokens. |
 
+### Empty Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/empty/main.cpp`.
+
+The source-owned checkpoint restores a minimal selectable frame world,
+renderer-neutral keydown callbacks, run defaults, camera home, and README. The
+remaining gaps are public GUI API gaps for key-release callbacks and pre/post
+render hooks; backend-specific event-handler types must stay out of the
+example source.
+
+| Historical item                                                                                   | Current outcome                             | Notes                                                                                                                             |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Create a world and add a target `InteractiveFrame` to it.                                         | Restored with promoted frame.               | Current source uses public `SimpleFrame`/selection affordances instead of OSG `InteractiveFrame`.                                 |
+| Enable drag-and-drop for the target.                                                              | Restored by promoted runner.                | Current source and README describe Ctrl-left drag / keyboard nudge controls.                                                      |
+| Demonstrate a custom world node with pre/post refresh and pre/post step hooks.                    | Partially restored; partial public API gap. | Current source preserves the `preStep` hook through `ApplicationOptions::preStep`; pre/post render and post-step hooks need APIs. |
+| Demonstrate custom keydown handling for `q`, `Q`, Left, and Right.                                | Restored.                                   | Current source uses renderer-neutral `KeyboardAction` callbacks.                                                                  |
+| Demonstrate custom keyup handling for `q`, `Q`, Left, and Right.                                  | Public API gap.                             | Requires a renderer-neutral key-release callback surface; do not expose backend event types.                                      |
+| Default launch size 640x480.                                                                      | Restored.                                   | Current source uses `ApplicationOptions::runDefaults`.                                                                            |
+| Camera home from eye `(2.57, 3.14, 1.64)` to target `(0, 0, 0)` with up `(-0.24, -0.25, 0.94)`.   | Restored.                                   | Current source converts the historical home to `dart::gui::OrbitCamera`.                                                          |
+| README documents the promoted runner and no longer says the standalone source remains OSG/legacy. | Restored.                                   | Current README documents `pixi run ex empty`, headless capture, promoted controls, and the remaining public API gaps.             |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                     |
@@ -153,7 +174,7 @@ primitives and promoted `dart::gui` options.
 | `coupler_constraint`        | Needs strict audit.                                                                | Compare historical source and list controls/defaults.                                    |
 | `csv_logger`                | Needs strict audit.                                                                | Confirm non-GUI logging behavior and README remain intact.                               |
 | `drag_and_drop`             | Needs strict audit.                                                                | Compare historical selection/drag affordances and README.                                |
-| `empty`                     | Needs strict audit.                                                                | Confirm historical minimal-run behavior and defaults.                                    |
+| `empty`                     | Restored except public key-release/render-hook API gaps.                           | Keep key-release and pre/post-render hooks tracked as public API follow-ups.             |
 | `fetch`                     | Itemized first-pass audit; panel-title/text gap repaired in current checkpoint.    | Keep re-openable if further historical behavior gaps are identified.                     |
 | `free_joint_cases`          | Needs strict audit.                                                                | Compare historical source and list controls/defaults.                                    |
 | `g1_puppet`                 | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm target activation, IK, teleoperation, camera, and guards.                        |

@@ -37,8 +37,11 @@
 
 #include <Eigen/Geometry>
 
+#include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -118,6 +121,10 @@ dart::gui::Panel createEmptyPanel()
                               dart::gui::PanelContext& context) {
     builder.text("Minimal public frame viewer scaffold");
     builder.text("selectable anchor, draggable child, and axis markers");
+    builder.text("Keyboard actions print q, Q, Left, and Right keydown events");
+    builder.text(
+        "key-release callbacks and pre/post render hooks require public API "
+        "follow-up.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -133,12 +140,76 @@ dart::gui::Panel createEmptyPanel()
   return panel;
 }
 
+void emptyPreStepScaffold()
+{
+  // Preserves the promoted pre-step hook shape from the historical scaffold.
+}
+
+dart::gui::RunOptions makeEmptyRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makeEmptyCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.8848934155088675;
+  camera.pitch = 0.38410042777133657;
+  camera.distance = 4.376539729055364;
+  return camera;
+}
+
+dart::gui::KeyboardAction makePrintAction(
+    std::string label,
+    dart::gui::KeyboardShortcut shortcut,
+    std::string message)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = shortcut;
+  action.callback
+      = [message = std::move(message)](dart::gui::KeyboardActionContext&) {
+          std::cout << message << std::endl;
+        };
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createEmptyKeyboardActions()
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makePrintAction(
+      "Lowercase q pressed",
+      dart::gui::KeyboardShortcut::characterKey('q'),
+      "Lowercase q pressed"));
+  actions.push_back(makePrintAction(
+      "Capital Q pressed",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q pressed"));
+  actions.push_back(makePrintAction(
+      "Left arrow key pressed",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
+      "Left arrow key pressed"));
+  actions.push_back(makePrintAction(
+      "Right arrow key pressed",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
+      "Right arrow key pressed"));
+  return actions;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
 {
   dart::gui::ApplicationOptions options;
   options.world = createEmptyWorld();
+  options.preStep = emptyPreStepScaffold;
+  options.runDefaults = makeEmptyRunDefaults();
+  options.camera = makeEmptyCamera();
   options.panels.push_back(createEmptyPanel());
+  options.keyboardActions = createEmptyKeyboardActions();
   return dart::gui::runApplication(argc, argv, options);
 }

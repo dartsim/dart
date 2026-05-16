@@ -1522,10 +1522,40 @@ TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
 {
   const auto emptySource = readSourceFile(
       std::filesystem::path("examples") / "empty" / "main.cpp");
+  const auto emptyReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "empty" / "README.md");
   EXPECT_NE(emptySource.find("interactive frame"), std::string::npos);
   EXPECT_NE(emptySource.find("draggable"), std::string::npos);
   EXPECT_NE(emptySource.find("createEmptyWorld"), std::string::npos);
+  EXPECT_NE(emptySource.find("emptyPreStepScaffold"), std::string::npos);
+  EXPECT_NE(emptySource.find("createEmptyKeyboardActions"), std::string::npos);
+  EXPECT_NE(
+      emptySource.find("KeyboardShortcut::characterKey('q')"),
+      std::string::npos);
+  EXPECT_NE(
+      emptySource.find("KeyboardShortcut::characterKey('Q')"),
+      std::string::npos);
+  EXPECT_NE(emptySource.find("KeyboardKey::Left"), std::string::npos);
+  EXPECT_NE(emptySource.find("KeyboardKey::Right"), std::string::npos);
+  EXPECT_NE(emptySource.find("Lowercase q pressed"), std::string::npos);
+  EXPECT_NE(emptySource.find("Capital Q pressed"), std::string::npos);
+  EXPECT_NE(emptySource.find("Left arrow key pressed"), std::string::npos);
+  EXPECT_NE(emptySource.find("Right arrow key pressed"), std::string::npos);
+  EXPECT_NE(emptySource.find("key-release callback"), std::string::npos);
+  EXPECT_NE(emptySource.find("pre/post render hooks"), std::string::npos);
+  EXPECT_NE(emptySource.find("makeEmptyRunDefaults"), std::string::npos);
+  EXPECT_NE(emptySource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(emptySource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(emptySource.find("makeEmptyCamera"), std::string::npos);
+  EXPECT_NE(
+      emptySource.find("camera.target = Eigen::Vector3d::Zero()"),
+      std::string::npos);
+  EXPECT_NE(emptySource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(emptySource.find("options.preStep"), std::string::npos);
   EXPECT_NE(emptySource.find("options.world"), std::string::npos);
+  EXPECT_NE(emptyReadmeSource.find("Empty Viewer Example"), std::string::npos);
+  EXPECT_NE(emptyReadmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(emptyReadmeSource.find("640x480"), std::string::npos);
   EXPECT_EQ(emptySource.find("options.defaultScene"), std::string::npos);
 
   const auto eventSource = readSourceFile(

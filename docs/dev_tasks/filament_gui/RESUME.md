@@ -183,11 +183,13 @@ the aggregate `examples` build, `git diff --check`, `pixi run lint`, and
 post-lint focused build/CTest/direct screenshot smoke. The checkpoint was
 committed and pushed as `74870cc5cf3 Restore boxes run defaults`. The
 `examples/point_cloud` strict audit and restoration checkpoint is committed and
-pushed as `9e111631eb5 Restore point cloud example controls`. The active slice
-is now `examples/polyhedron_visual`: the local implementation restores the
-historical 640x480 run default, camera home, DART-owned grid replacement,
-README, and source-marker guards through promoted `dart::gui`. Validate, lint,
-commit, and push this checkpoint next.
+pushed as `9e111631eb5 Restore point cloud example controls`. The
+`examples/polyhedron_visual` checkpoint is committed and pushed as
+`227c2498a53 Restore polyhedron visual defaults`. The active slice is now
+`examples/empty`: the local implementation restores public keydown actions,
+camera/run defaults, README, and marker guards while keeping key-release and
+pre/post-render callbacks as public API gaps. Validate, lint, commit, and push
+this checkpoint next.
 Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
 Atlas/Hubo target activation semantics, and Enter recording as explicit parity
 gaps unless a later slice adds the narrow renderer-neutral public API needed
@@ -750,17 +752,17 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`9e111631eb5 Restore point cloud example controls`; the current pending
-checkpoint restores `examples/polyhedron_visual` from the strict
-historical-source audit and still needs local validation, lint, commit, and
-push.
+`227c2498a53 Restore polyhedron visual defaults`; the current pending
+checkpoint restores `examples/empty` from the strict historical-source audit
+and still needs local validation, lint, commit, and push.
 
 ## Current Immediate Next Step
 
-Validate, lint, commit, and push the local `examples/polyhedron_visual`
-restoration checkpoint without opening a PR. It adds DART-owned grid geometry,
-restores the 640x480 run default, converts the historical camera home to
-`dart::gui::OrbitCamera`, refreshes the README, and adds source-marker tests.
+Validate, lint, commit, and push the local `examples/empty` restoration
+checkpoint without opening a PR. It adds public keydown actions for `q`, `Q`,
+Left, and Right, restores the 640x480 run default and historical camera home,
+refreshes the README, adds source-marker tests, and keeps key-release plus
+pre/post-render callbacks recorded as public API gaps.
 Treat `examples/fetch/` and other already source-owned examples as still
 auditable if a missing historical user-visible behavior is identified; do not
 use source ownership or screenshot smoke coverage as full-restoration evidence
