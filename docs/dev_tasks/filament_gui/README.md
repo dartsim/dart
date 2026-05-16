@@ -131,11 +131,16 @@ box/slider demo back to the historical panel-extension example shape using
 public `dart::gui`, including target selection/dragging, keydown callbacks,
 gravity control, viewer help, camera/run defaults, README, and explicit public
 API gaps for headlight toggles, camera-inspector text, key release, and
-render/post-step hooks. The active strict-audit slice is now
-`examples/csv_logger/`: historical/current source comparison found it
-unchanged from the pre-promotion baseline, so the checkpoint should document
-the preserved non-GUI CLI logging contract, add marker coverage, validate a
-short CSV run, and avoid adding renderer dependencies.
+render/post-step hooks. The `examples/csv_logger/` strict audit has been
+pushed as `7ec64c3609e Audit CSV logger example`; historical/current source
+comparison found it unchanged from the pre-promotion baseline, so the
+checkpoint documents the preserved non-GUI CLI logging contract, adds marker
+coverage, validates a short CSV run, and avoids renderer dependencies. The
+active strict-audit slice is now `examples/headless_simulation/`: its
+historical/current source comparison also matches the pre-promotion baseline,
+so the checkpoint should document the preserved non-GUI deterministic
+batch-simulation contract, add marker coverage, validate a short headless run,
+and avoid adding renderer dependencies.
 An earlier parity slice restored `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default

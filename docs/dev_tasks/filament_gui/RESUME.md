@@ -819,26 +819,28 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`63f990d5251 Restore panel extension example`. The current pending checkpoint
-is `examples/csv_logger/` strict audit. Historical comparison shows
-`examples/csv_logger/main.cpp` and `examples/csv_logger/README.md` match
-`520993d7301^` exactly, so this slice preserves the non-GUI command-line CSV
-logger instead of migrating it to `dart::gui`. Add marker guards for the
-world/output/steps/time-step/skeleton/body CLI contract, exact CSV header and
-row-count behavior, README expectations, and absence of renderer dependencies;
-then validate a short executable run that writes a CSV file.
+`7ec64c3609e Audit CSV logger example`. The current pending checkpoint is
+`examples/headless_simulation/` strict audit. Historical comparison shows
+`examples/headless_simulation/main.cpp` and
+`examples/headless_simulation/README.md` match `520993d7301^` exactly, so this
+slice preserves the non-GUI deterministic batch-simulation workflow instead of
+migrating it to `dart::gui`. Add marker guards for the
+world/steps/time-step/seed CLI contract, deterministic seed setup, progress
+and timing output, README expectations, and absence of renderer dependencies;
+then validate a short executable run.
 
 ## Current Immediate Next Step
 
-Implement and push the local `examples/csv_logger/` checkpoint without opening
-a PR. Completed pre-lint validation is focused build for `csv_logger` and
-`UNIT_gui_FilamentSceneExtraction`, focused CTest, a direct short CSV run
-checking header and row count, Python C++ example-runner coverage, and the
-aggregate `examples` build. Remaining checkpoint validation is mandatory
-`pixi run lint` and post-lint focused checks; those have also passed locally.
-Commit and push the checkpoint. Keep `--screenshot <path>` and `--out <dir>`
-working for the existing CTest, GitHub Actions smoke path, and historical
-image-sequence workflows. A later broader smoke sweep can still use:
+Implement and push the local `examples/headless_simulation/` checkpoint
+without opening a PR. Completed pre-lint validation is focused build for
+`headless_simulation` and `UNIT_gui_FilamentSceneExtraction`, focused CTest, a
+direct short headless run checking the printed step/time output, Python C++
+example-runner coverage, and aggregate `examples` build. Remaining checkpoint
+validation is mandatory `pixi run lint` and post-lint focused checks; those
+have also passed locally. Commit and push the checkpoint. Keep
+`--screenshot <path>` and `--out <dir>` working for the existing CTest, GitHub
+Actions smoke path, and historical image-sequence workflows. A later broader
+smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

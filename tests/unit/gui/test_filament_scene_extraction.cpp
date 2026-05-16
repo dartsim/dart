@@ -851,6 +851,51 @@ TEST(FilamentSceneExtraction, CsvLoggerPreservesNonGuiLoggingContract)
   EXPECT_EQ(cmakeSource.find("dart-gui"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, HeadlessSimulationPreservesNonGuiContract)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "headless_simulation" / "main.cpp");
+  const auto cmakeSource = readSourceFile(
+      std::filesystem::path("examples") / "headless_simulation"
+      / "CMakeLists.txt");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "headless_simulation" / "README.md");
+
+  EXPECT_NE(
+      mainSource.find("dart://sample/sdf/double_pendulum.world"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("std::size_t steps = 1000"), std::string::npos);
+  EXPECT_NE(mainSource.find("double timeStep = 0.001"), std::string::npos);
+  EXPECT_NE(mainSource.find("unsigned int seed = 42"), std::string::npos);
+  EXPECT_NE(mainSource.find("--world <uri>"), std::string::npos);
+  EXPECT_NE(mainSource.find("--steps <n>"), std::string::npos);
+  EXPECT_NE(mainSource.find("--dt <seconds>"), std::string::npos);
+  EXPECT_NE(mainSource.find("--seed <n>"), std::string::npos);
+  EXPECT_NE(mainSource.find("parseUnsignedInt"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::math::Random::setSeed(options.seed)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("dart::io::readWorld"), std::string::npos);
+  EXPECT_NE(mainSource.find("world->setTimeStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("world->getNumSkeletons()"), std::string::npos);
+  EXPECT_NE(mainSource.find("Time step: "), std::string::npos);
+  EXPECT_NE(mainSource.find("Steps: "), std::string::npos);
+  EXPECT_NE(mainSource.find("world->step()"), std::string::npos);
+  EXPECT_NE(mainSource.find("Simulated time: "), std::string::npos);
+  EXPECT_NE(mainSource.find("Elapsed wall time: "), std::string::npos);
+
+  EXPECT_NE(
+      readmeSource.find("Headless Simulation Example"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("deterministic, headless simulation"),
+      std::string::npos);
+  EXPECT_NE(readmeSource.find("Pass `--help`"), std::string::npos);
+
+  EXPECT_EQ(mainSource.find("dart/gui"), std::string::npos);
+  EXPECT_EQ(mainSource.find("ApplicationOptions"), std::string::npos);
+  EXPECT_EQ(cmakeSource.find("dart-gui"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, HelloWorldExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(

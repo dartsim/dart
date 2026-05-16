@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `63f990d5251 Restore panel extension example`.
+  `7ec64c3609e Audit CSV logger example`.
 - Latest pushed code checkpoint:
-  `63f990d5251 Restore panel extension example`.
+  `7ec64c3609e Audit CSV logger example`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -135,6 +135,7 @@ history but are not guaranteed to be in chronological order.
   - `1297aca1fe6 Restore drag and drop affordances`
   - `ae175ef6981 Restore Fetch target manipulation`
   - `63f990d5251 Restore panel extension example`
+  - `7ec64c3609e Audit CSV logger example`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -302,6 +303,26 @@ history but are not guaranteed to be in chronological order.
 - CSV logger post-lint validation completed: mandatory `pixi run lint`,
   focused rebuild and CTest for `csv_logger` plus
   `UNIT_gui_FilamentSceneExtraction`, direct `csv_logger --steps 3` CSV
+  verification, and `git diff --check`.
+- The CSV logger checkpoint was pushed as
+  `7ec64c3609e Audit CSV logger example`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now `examples/headless_simulation/`. The historical source
+  and README match the current files exactly, so this slice should preserve the
+  non-GUI deterministic batch-simulation workflow, document the itemized
+  historical inventory, add source-marker coverage for CLI flags, deterministic
+  seed setup, world loading, simulation stepping, progress/timing output, README
+  text, and absence of GUI renderer dependencies, then validate a short
+  executable run.
+- Headless simulation validation completed before lint: focused C++ build for
+  `headless_simulation` and `UNIT_gui_FilamentSceneExtraction`, focused CTest
+  for `UNIT_gui_FilamentSceneExtraction`, a direct
+  `headless_simulation --steps 3 --dt 0.002 --seed 17` run that printed the
+  expected step, time-step, and simulated-time output, Python C++ example-runner
+  tests (67 passed), and aggregate `examples` build.
+- Headless simulation post-lint validation completed: mandatory
+  `pixi run lint`, focused rebuild and CTest for `headless_simulation` plus
+  `UNIT_gui_FilamentSceneExtraction`, direct short headless output
   verification, and `git diff --check`.
 
 ## Current Code Shape

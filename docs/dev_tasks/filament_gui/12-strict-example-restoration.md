@@ -78,8 +78,8 @@ are not itemized.
 Immediate order:
 
 1. Update the active docs to reflect the latest pushed
-   `63f990d5251 Restore panel extension example` checkpoint and the active
-   CSV logger strict-audit slice.
+   `7ec64c3609e Audit CSV logger example` checkpoint and the active headless
+   simulation strict-audit slice.
 2. Re-open `examples/fetch` now. Stronger target manipulation/help parity is
    implemented and locally validated; commit and push it. Exact mouse rotation
    rings/tools remain a renderer-neutral manipulation API gap.
@@ -102,10 +102,23 @@ Immediate order:
    tests, and aggregate `examples` build passed.
    Post-lint focused build/CTest, direct CSV verification, and
    `git diff --check` also passed.
-5. `examples/coupler_constraint/` was committed and pushed as
+   This checkpoint was pushed as
+   `7ec64c3609e Audit CSV logger example`.
+5. Audit `examples/headless_simulation/` next. The historical source and
+   README are byte-for-byte identical to the current files, so this slice
+   should preserve the non-GUI deterministic batch-simulation workflow, add
+   source-marker guards for the CLI/seed/progress contract, validate a short
+   headless run, and avoid adding `dart::gui` or renderer dependencies.
+   Implementation and pre-lint validation are complete: focused build/CTest,
+   direct `headless_simulation --steps 3 --dt 0.002 --seed 17` output
+   verification, Python C++ example-runner tests, and aggregate `examples`
+   build passed.
+   Post-lint focused build/CTest, direct output verification, and
+   `git diff --check` also passed.
+6. `examples/coupler_constraint/` was committed and pushed as
    `3945c65852c Restore coupler constraint controls` after mandatory lint and
    post-lint focused checks.
-6. Audit and restore `examples/drag_and_drop/` next. The historical source used
+7. Audit and restore `examples/drag_and_drop/` next. The historical source used
    an `InteractiveFrame` at `(4, -4, 0)`, a child red box, X/Y/Z markers, a
    640x480 window, camera home from `(20, 17, 17)` to the origin, console
    instructions, and a README that described the interaction contract. Restore
@@ -114,7 +127,7 @@ Immediate order:
    rather than reintroducing OSG.
    This checkpoint was pushed as
    `1297aca1fe6 Restore drag and drop affordances`.
-7. `examples/human_joint_limits/` was committed and pushed as
+8. `examples/human_joint_limits/` was committed and pushed as
    `cf0ed62209e Restore human joint limits live example`. The historical
    example depended on TinyDNN-backed custom arm/leg constraints and required
    ODE/Bullet; the current branch no longer carries TinyDNN. Restore the live
@@ -122,7 +135,7 @@ Immediate order:
    marker guards now, and record the TinyDNN/custom neural-network constraint
    path as a named dependency/API follow-up unless a maintained replacement is
    added.
-8. Continue through the remaining `Needs strict audit` and
+9. Continue through the remaining `Needs strict audit` and
    `Recent parity checkpoint; still subject to strict audit re-open` rows.
 
 ## Checkpoint Rule

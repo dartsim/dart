@@ -452,6 +452,30 @@ logging workflow intact while the renderer migration proceeds around it.
 | No GUI renderer migration is required for this example.                                                               | Superseded by non-GUI scope.   | Do not add `dart::gui` or renderer dependencies; the official renderer promotion should leave this CLI example intact.                            |
 | Keep source-marker coverage for the preserved CLI/logging contract.                                                   | Restored through marker guard. | `UNIT_gui_FilamentSceneExtraction` now guards the CLI flags, defaults, CSV header, row count expression, README, and absence of GUI dependencies. |
 
+### Headless Simulation Itemized Inventory
+
+Historical sources compared:
+`520993d7301^:examples/headless_simulation/main.cpp` and
+`520993d7301^:examples/headless_simulation/README.md`.
+
+This is a preserved non-GUI example. The current source and README match the
+pre-promotion files exactly, so restoration means keeping the deterministic
+batch-simulation workflow intact while the renderer migration proceeds around
+it.
+
+| Historical item                                                                                                                 | Current outcome                | Notes                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Load `dart://sample/sdf/double_pendulum.world` by default.                                                                      | Preserved.                     | Current source keeps the historical `Options::worldUri` default and `dart::io::readWorld` path.                                                 |
+| Simulate 1000 steps by default, rejecting zero or invalid step counts.                                                          | Preserved.                     | Current source keeps `steps = 1000`, `--steps <n>`, and the historical validation path.                                                         |
+| Use time step `0.001` unless `--dt <seconds>` is provided.                                                                      | Preserved.                     | Current source keeps the default time step value and only applies it when the flag is present.                                                  |
+| Use deterministic random seed `42` unless `--seed <n>` is provided.                                                             | Preserved.                     | Current source keeps `dart::math::Random::setSeed(options.seed)` before loading/stepping the world.                                             |
+| Accept `--world`, `--steps`, `--dt`, `--seed`, `-h`, and `--help`.                                                              | Preserved.                     | Current source keeps the historical parser and error handling.                                                                                  |
+| Print world skeleton count, time step, step count, simulated time, and elapsed wall time.                                       | Preserved.                     | Current source keeps the same console progress/timing output.                                                                                   |
+| Step the loaded world exactly `steps` times.                                                                                    | Preserved.                     | Current source keeps the tight `for` loop around `world->step()`.                                                                               |
+| README explains deterministic headless batch simulation, DART IO/world-step concepts, output, CLI flags, build, and help usage. | Preserved.                     | Current README is unchanged from the historical file.                                                                                           |
+| No GUI renderer migration is required for this example.                                                                         | Superseded by non-GUI scope.   | Do not add `dart::gui` or renderer dependencies; the official renderer promotion should leave this CLI example intact.                          |
+| Keep source-marker coverage for the preserved headless simulation contract.                                                     | Restored through marker guard. | `UNIT_gui_FilamentSceneExtraction` now guards the CLI flags, default seed/time/steps, progress output, README, and absence of GUI dependencies. |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                               |
@@ -472,7 +496,7 @@ logging workflow intact while the renderer migration proceeds around it.
 | `g1_puppet`                 | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm target activation, IK, teleoperation, camera, and guards.                                                                  |
 | `gui_scene_diagnostics`     | Needs strict audit.                                                                | Confirm diagnostic GUI behavior and capture expectations.                                                                          |
 | `hardcoded_design`          | Recent parity checkpoint; OSG wireframe remains public API gap.                    | Confirm checklist entry and keep wireframe follow-up explicit.                                                                     |
-| `headless_simulation`       | Needs strict audit.                                                                | Confirm non-GUI simulation/capture behavior remains intact.                                                                        |
+| `headless_simulation`       | Preserved by strict audit as a non-GUI example.                                    | Keep marker guards for CLI flags, seed setup, progress output, README, and no GUI renderer dependency.                             |
 | `heightmap`                 | Restored except public debug-grid/color editor gaps.                               | Keep OSG grid style controls tracked as public API follow-up.                                                                      |
 | `hello_world`               | Restored by strict audit.                                                          | Keep marker guards for instructions, camera/defaults, profiling, README, and no backend types.                                     |
 | `hubo_puppet`               | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK, teleoperation, target activation semantics, and guards.                                                                |
