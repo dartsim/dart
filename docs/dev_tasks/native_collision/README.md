@@ -450,7 +450,12 @@ subcomponents, not only against whether old backend names still compile.
   that, performance work can gradually optimize native until it beats the
   reference engines on required workloads.
 
-## Immediate Next Steps
+## Deferred Finalization Steps
+
+These steps are for the maintainer-opened review/CI surface, or for a later
+session where the user explicitly authorizes PR or workflow actions. They are
+not branch-local actions for the current no-PR pass except for keeping the
+evidence packet accurate.
 
 1. Run and harden the new native-only CI job alongside existing gz-physics CI.
    Local gz-physics evidence is now the full fresh `pixi run -e gazebo test-gz`
