@@ -1261,6 +1261,15 @@ packet command wrapping`) confirmed the same no-PR finalization boundary:
   `check-collision-runtime-isolation` and
   `audit-collision-compat-facades`.
 - `git diff --check` passed before the current-head audit note.
+- After the current-head audit note was committed, pre-record local head
+  `5f8c9b0204a` passed
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  with all 6 top-level gates green: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation. The C++
+  unit-test phase reported 264/264 passing tests, including
+  `collision-native` and `collision-native-stability`; simulation-experimental
+  reported 13/13, Python reported 147/147, documentation built successfully,
+  and the report printed `All tests passed!`.
 
 No PR metadata, workflow state, branch state, push, or GitHub artifact was
 mutated by this recheck. The objective remains open only on the deferred

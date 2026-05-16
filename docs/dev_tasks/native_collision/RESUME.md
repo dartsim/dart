@@ -123,6 +123,16 @@ Actions runs for that head; branch-local commits do not trigger the main
 workflows while PR #2652 remains closed. PR #2652 is closed, draft, dirty, and
 still anchored to old head `714d220d82a`.
 
+The latest branch-local full validation head `5f8c9b0204a` passed
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+with all 6 top-level gates green: linting, build, unit tests,
+simulation-experimental tests, Python tests, and documentation. The C++
+unit-test phase reported 264/264 passing tests, including `collision-native`
+and `collision-native-stability`; simulation-experimental reported 13/13,
+Python reported 147/147, documentation built successfully, and the report
+printed `All tests passed!`. No PR, push, workflow, branch, or GitHub state
+was mutated by this recheck.
+
 The latest pushed validation baseline is `376fd5e686d`
 (`Remove per-engine collision reference build options`). Current branch head
 may include docs-only evidence refresh commits on top of that validation

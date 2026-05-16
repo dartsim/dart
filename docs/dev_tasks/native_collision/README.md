@@ -212,7 +212,17 @@ component names became native-backed interface facades.
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
-      latest recorded full local `pixi run test-all` pass was rerun on
+      latest branch-local full `pixi run test-all` pass was rerun on
+      pre-record head `5f8c9b0204a` with
+      `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5`;
+      it passed all 6 top-level gates: linting, build, unit tests,
+      simulation-experimental tests, Python tests, and documentation, then
+      printed `All tests passed!`. The C++ unit-test phase reported 264/264
+      passing tests, including `collision-native` and
+      `collision-native-stability`; simulation-experimental reported 13/13 and
+      Python reported 147/147. No PR, push, workflow, branch, or GitHub state
+      was mutated by that validation pass. The earlier recorded full local
+      `pixi run test-all` pass was rerun on
       validation head `b5801f6c84c` after the no-PR boundary audit; it passed
       6/6 top-level gates: linting, build, unit tests,
       simulation-experimental tests, Python tests, and documentation. The C++

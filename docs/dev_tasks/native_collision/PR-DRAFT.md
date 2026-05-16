@@ -176,6 +176,15 @@ Make native DART collision the default runtime stack
   linting, build, unit tests, simulation-experimental tests, Python tests, and
   documentation. The default configure path kept reference tests and benchmarks
   `OFF` and exposed no per-engine FCL/Bullet/ODE collision build switches.
+- The latest branch-local full validation head `5f8c9b0204a` passed
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  with all 6 top-level gates green: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation. The C++
+  unit-test phase reported 264/264 passing tests, including
+  `collision-native` and `collision-native-stability`; simulation-experimental
+  reported 13/13, Python reported 147/147, documentation built successfully,
+  and the report printed `All tests passed!`. No PR, push, workflow, branch,
+  or GitHub state was mutated by this recheck.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`
   passed 1/1 after configuring `collision-reference` with reference tests and
   reference benchmarks `ON` and all FCL, Bullet, and ODE test-only reference

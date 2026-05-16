@@ -171,6 +171,15 @@ Local validation currently recorded in the dev-task evidence:
   `All tests passed!`. The C++ unit-test phase reported 264/264 passing tests,
   including the native collision labels. No PR, push, workflow, branch, or
   GitHub state was mutated by this recheck.
+- The latest branch-local full validation head `5f8c9b0204a` passed
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  with all 6 top-level gates green: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation. The C++
+  unit-test phase reported 264/264 passing tests, including
+  `collision-native` and `collision-native-stability`; simulation-experimental
+  reported 13/13, Python reported 147/147, documentation built successfully,
+  and the report printed `All tests passed!`. No PR, push, workflow, branch,
+  or GitHub state was mutated by this recheck.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`
