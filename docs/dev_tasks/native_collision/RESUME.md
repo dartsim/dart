@@ -83,7 +83,9 @@ the distinction clear:
    `PR-DRAFT.md`, and `07-pr-evidence-transfer.md`.
 2. Deferred PR-finalization scope: maintainer-selected PR/CI surface, final
    evidence transfer, final local validation on that completing state, and
-   deleting this folder in the same completing PR.
+   deleting this folder in the same completing PR. Read-only checks on local
+   head `1b98064eeac` found no workflow runs for that head and confirmed
+   PR #2652 remains closed on old head `714d220d82a6ba99350bf2214fc9696f5495a30f`.
 
 If code or evidence changes again, run `pixi run lint` before committing and
 run the focused validation that matches the change. Full `pixi run test-all`

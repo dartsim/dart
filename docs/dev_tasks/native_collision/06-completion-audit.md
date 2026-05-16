@@ -70,6 +70,21 @@ PR state, evidence transfer into the PR description, and deletion of this
 dev-task folder in the same completing PR. Those actions are intentionally
 outside the current no-PR/no-GitHub-mutation scope.
 
+## Read-Only Review Surface Reaudit (2026-05-16)
+
+Read-only GitHub checks on local head `1b98064eeac` confirmed the final
+review/CI gap remains external to this branch-local pass:
+
+- The `gh run list` check for full commit
+  `1b98064eeac765068fb08f880635f9fb0c561d72` returned `[]`.
+- The `gh pr list --head feature/new_coll --state all` check returned only
+  PR #2652, still `CLOSED`, draft, and anchored to old head
+  `714d220d82a6ba99350bf2214fc9696f5495a30f`.
+
+No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
+that audit. Later docs-only commits may move `HEAD`; rerun the commands above
+with `git rev-parse HEAD` for an exact current-head check.
+
 - Native-only and gz-physics manual workflow-dispatch evidence is now collected
   for pushed head `1e1faf6feb1`, but the final PR-complete state still needs
   whatever CI surface the maintainer chooses because PR #2652 is closed.
