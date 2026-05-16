@@ -22,6 +22,12 @@ real source file but was not fully restored to the historical GUI behavior.
 Every pre-existing user-facing GUI example remains parity pending until its
 legacy source has been inventoried and the migrated `dart::gui` version
 preserves the user-visible behavior or records a deliberate follow-up gap.
+The Fetch checkpoint has now restored the historical camera framing and made the
+visible target cross the draggable target-frame affordance. The next active
+parity slice is the robot/IK family, starting with `g1_puppet`, `atlas_puppet`,
+and `hubo_puppet`, because those examples still have clear gaps around target
+handles, target activation/teleoperation, and whole-body IK behavior compared
+with the historical OSG sources.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as
@@ -604,31 +610,12 @@ longer express stable DART concepts.
 
 ## Immediate next steps
 
-1. Use the north-star migration plan as the gate for any new public GUI API:
-   DART-owned concepts only, no public backend types, and no OSG renderer
-   source-compatibility promise. Use the legacy surface audit to decide whether
-   an existing GUI surface becomes a stable DART concept, a private Filament
-   detail, or a removed/unsupported renderer-specific API. Keep the experimental
-   public-header leakage test passing; its reusable scan should add promoted
-   `dart/gui/*.hpp` headers when APIs move into first-class `dart::gui`.
-2. Keep the hosted Ubuntu `DART GUI Smoke (GCC)` and
-   `DART GUI Smoke (Clang)` jobs green on each follow-up PR when the
-   explicit pinned fetch path or Filament example behavior changes.
-3. Add broader human visual review and larger authored environment/PBR assets
-   for the visual-quality gate. The current screenshot analyzer is a smoke check
-   for shadow/lighting contrast, not a replacement for broader visual review.
-4. Track the conda-forge staged-recipes PR as the preferred future packaging
-   path, but do not block Linux smoke coverage on it. After it merges, add the
-   `filament-static` package to the Pixi toolchain and validate that
-   `Filament_ROOT=$CONDA_PREFIX` discovers headers, libraries, and `matc`.
-5. Expand debug overlay and interaction scenario coverage beyond the MVP,
-   drag-and-drop, task-space target, and robot IK fixtures.
-6. Continue moving reusable renderer resource management out of the Filament
-   example once the API boundary is stable enough.
-7. Keep the MVP ImGui panel/tool policy example-scoped unless promotion needs
-   user extension points; then add DART-owned panel/tool abstractions instead
-   of exposing raw ImGui APIs.
-8. Complete remaining platform and GUI option-matrix wheel evidence before
-   promoting anything to `dart-gui`.
-9. Keep onboarding docs aligned with the north-star plan as API names and
-   migration gates move from experimental to promoted `dart::gui`.
+1. Continue the legacy-source parity audit for migrated examples instead of
+   treating source ownership as completion. The current implementation slice is
+   the robot/IK example family: `g1_puppet`, `atlas_puppet`, and
+   `hubo_puppet` first, then `operational_space_control`, `wam_ikfast`, and
+   `tinkertoy`.
+2. Add only DART-owned public GUI concepts needed for those examples: no public
+   Filament, GLFW, Dear ImGui, OSG, Raylib, OpenGL, Vulkan, or Metal types.
+3. Keep checkpoint commits small, run `pixi run lint` before every commit, and
+   push the tracked branch without opening a PR so GitHub CI can run.

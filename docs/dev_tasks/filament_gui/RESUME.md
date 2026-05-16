@@ -62,19 +62,20 @@ Maintainer correction after the source-ownership sweep: examples such as
 `examples/fetch/` may be source-owned without being fully restored. The active
 docs now distinguish example ownership (`options.world`, no
 `options.defaultScene`) from feature parity with the historical source. The
-in-progress fetch repair adds a public `ApplicationOptions::camera` override,
-restores the historical camera framing, and makes the visible target cross one
-draggable target-frame renderable rather than child bars that can detach from
-the mocap target. After this checkpoint, continue a legacy-source parity audit
-across all migrated examples.
+Fetch repair has been committed and pushed: it adds a public
+`ApplicationOptions::camera` override, restores the historical camera framing,
+and makes the visible target cross one draggable target-frame renderable rather
+than child bars that can detach from the mocap target. The active parity audit
+has moved to the robot/IK family, starting with `g1_puppet`, `atlas_puppet`,
+and `hubo_puppet`.
 
 ## Immediate Next Step
 
-Finish the `examples/fetch/` parity checkpoint: run `pixi run lint`, repeat the
-focused post-lint build/CTest/Python runner/headless capture checks, commit the
-fetch camera/target-cross/docs changes, push, and dispatch CI without opening a
-PR. Then continue the same legacy-source parity audit for the other migrated
-examples.
+Continue the robot/IK legacy-source parity audit. Start with the narrow public
+`dart::gui` target-handle affordance needed by `examples/g1_puppet/`,
+`examples/atlas_puppet/`, and `examples/hubo_puppet/`, then document any
+remaining solver-behavior gaps such as Atlas relaxed posture, Hubo analytical
+IK, and full OSG hotkey parity before claiming an example is complete.
 
 ## Context That Would Be Lost
 
@@ -96,6 +97,10 @@ examples.
 - The private file layout can remain under `dart/gui/experimental/detail` for a
   later sweep; the next slice is capture compatibility, not a full directory
   move.
+- Do not treat a restored `examples/<name>/main.cpp` as full parity. Compare
+  against the historical source, for example
+  `git show 520993d7301^:examples/<name>/main.cpp`, before claiming an example
+  is restored.
 
 ## Historical Summary
 
@@ -629,18 +634,17 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`93bfd9cf205 Restore Atlas Puppet GUI example`; the current pending checkpoint
-is the `hubo_puppet`/`g1_puppet` source-ownership repair.
+`67ccb2a4cd1 Restore Fetch GUI camera and target cross`; the current pending
+checkpoint is the robot/IK parity-audit repair.
 
 ## Current Immediate Next Step
 
-Commit and push `hubo_puppet`/`g1_puppet` after `pixi run lint` and the
-post-lint focused validation pass. Remaining GUI macro launchers are `empty`,
-`hardcoded_design`, `heightmap`, `lcp_physics`, `mimic_pendulums`,
-`point_cloud`, `polyhedron_visual`, `simulation_event_handler`, `soft_bodies`,
-and `vehicle`. Keep `--screenshot <path>` and `--out <dir>` working for the
-existing CTest, GitHub Actions smoke path, and historical image-sequence
-workflows. A later broader smoke sweep can still use:
+Continue the robot/IK parity audit by restoring visible target-handle
+affordances and public `dart::gui` wiring in `g1_puppet`, `atlas_puppet`, and
+`hubo_puppet`, then record any remaining solver or hotkey parity gaps before
+claiming those examples are complete. Keep `--screenshot <path>` and
+`--out <dir>` working for the existing CTest, GitHub Actions smoke path, and
+historical image-sequence workflows. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

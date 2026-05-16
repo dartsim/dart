@@ -31,7 +31,7 @@ context survives across sessions.
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
 - Latest pushed checkpoint before this in-progress slice:
-  `9f195a0738c Expose GUI IK handles for examples`
+  `67ccb2a4cd1 Restore Fetch GUI camera and target cross`
 - GitHub Actions were manually dispatched for the pushed checkpoint without
   opening a PR:
   - CI Lint: https://github.com/dartsim/dart/actions/runs/25945043484
@@ -83,6 +83,10 @@ context survives across sessions.
   token lacks workflow-dispatch permission on this repository. Continue
   pushing checkpoints so push-triggered CI can run; do not block local
   progress on manual dispatch.
+- The Fetch parity checkpoint was pushed to the tracked remote branch without
+  opening a PR. Push-triggered CI runs were created for lint, Linux, macOS,
+  Windows, and CodeQL. Do not wait for those runs before continuing independent
+  parity work.
 
 ## Current Code Shape
 
@@ -1236,10 +1240,42 @@ Twenty-first parity-audit correction checkpoint:
   - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
     (`67 passed`)
   - Full `examples` aggregate target build
+  - `pixi run lint`
+  - Post-lint focused C++ GUI target build for `dart-gui`, `fetch`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint Python runner tests (`67 passed`)
+  - Post-lint project-runner Fetch headless capture and direct llvmpipe Fetch
+    headless capture with analyzer coverage
+  - `git diff --check`
 - Local environment note: a direct system-Filament headless Fetch run returned
   an all-zero PPM on this workstation, while the project runner's llvmpipe path
   rendered correctly. Treat the project runner environment as the relevant
   local headless validation path for this checkpoint.
+
+Twenty-second robot/IK parity-audit checkpoint:
+
+- The next slice starts from the robot and IK examples because they expose the
+  largest difference between "restored source ownership" and historical GUI
+  behavior. The first audited examples are `examples/g1_puppet/`,
+  `examples/atlas_puppet/`, and `examples/hubo_puppet/`, followed by
+  `examples/operational_space_control/`, `examples/wam_ikfast/`, and
+  `examples/tinkertoy/`.
+- Initial legacy-source comparison shows that the migrated puppet examples are
+  runnable but still miss important OSG-era user-visible behavior:
+  target-frame affordances, key-driven target activation/deactivation,
+  WASD/Q/E/F/Z target teleoperation, whole-body/per-step IK solving behavior,
+  relaxed-posture or balance objectives where the historical example had them,
+  and example-specific camera/help text polish.
+- Immediate implementation scope for this checkpoint is deliberately narrow:
+  restore the visible target-handle affordance and the public `dart::gui`
+  wiring needed by the puppet examples without exposing Filament, GLFW, Dear
+  ImGui, or private fixture APIs. Larger solver-behavior parity such as Hubo
+  analytical IK, Atlas relaxed-posture objectives, and full OSG hotkey parity
+  remains tracked as explicit follow-up until it is implemented.
+- Do not claim full parity for a robot/IK example until its historical source
+  has been inventoried and each visible behavior is either restored or recorded
+  as a justified remaining gap.
 
 ## Stretch Direction
 
@@ -1271,18 +1307,15 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Finish the static geometry checkpoint with a full examples build, lint,
-   post-lint focused validation, commit, push, and CI dispatch if permissions
-   allow it.
-2. Re-audit restored examples as parity surfaces, not only as source-owned
-   programs. `fetch` stays in that audit even though it already has a
-   public-API `main.cpp`.
-3. Continue across the remaining GUI macro launchers in small related
-   families, documenting each slice here before implementation.
-4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+1. Continue the legacy-source parity audit with the robot/IK example family,
+   starting with G1, Atlas, and Hubo target affordances and public
+   `dart::gui` wiring.
+2. Keep `examples/fetch/` in the completed-evidence set for camera/target-cross
+   parity, but do not generalize that result to other examples.
+3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-5. Do not start the physical `experimental/` directory move until the
+4. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-6. Run `pixi run lint` before every checkpoint commit, then push the commit to
+5. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.
