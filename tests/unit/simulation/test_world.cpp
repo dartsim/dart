@@ -471,6 +471,12 @@ struct NativePrimitiveBody
   double height = 0.0;
 };
 
+struct NativeConvexBody
+{
+  BodyNode* body = nullptr;
+  std::shared_ptr<ConvexMeshShape> shape;
+};
+
 double measureBoxLowestVertexZ(
     const BodyNode* body, const Eigen::Vector3d& boxSize)
 {
@@ -526,6 +532,81 @@ double measureNativePrimitiveLowestPointZ(const NativePrimitiveBody& primitive)
           primitive.body, primitive.radius, primitive.height);
   }
   return std::numeric_limits<double>::infinity();
+}
+
+double measureConvexLowestPointZ(const NativeConvexBody& convex)
+{
+  const auto mesh = convex.shape ? convex.shape->getMesh() : nullptr;
+  if (!convex.body || !mesh) {
+    return std::numeric_limits<double>::infinity();
+  }
+
+  double lowest = std::numeric_limits<double>::infinity();
+  const auto tf = convex.body->getWorldTransform();
+  for (const auto& vertex : mesh->getVertices()) {
+    lowest = std::min(lowest, (tf * vertex).z());
+  }
+  return lowest;
+}
+
+std::shared_ptr<math::TriMesh<double>> makeNativeLandscapeTriMesh(
+    int resolution, double spacing, double heightScale)
+{
+  auto mesh = std::make_shared<math::TriMesh<double>>();
+  mesh->reserveVertices(
+      static_cast<std::size_t>((resolution + 1) * (resolution + 1)));
+  mesh->reserveTriangles(static_cast<std::size_t>(resolution * resolution * 2));
+
+  const double halfExtent = 0.5 * static_cast<double>(resolution) * spacing;
+  for (int y = 0; y <= resolution; ++y) {
+    for (int x = 0; x <= resolution; ++x) {
+      const double px = static_cast<double>(x) * spacing - halfExtent;
+      const double py = static_cast<double>(y) * spacing - halfExtent;
+      const double pz
+          = heightScale * (0.5 + 0.5 * std::sin(1.7 * px) * std::cos(1.3 * py));
+      mesh->addVertex(Eigen::Vector3d(px, py, pz));
+    }
+  }
+
+  const auto index = [resolution](int x, int y) {
+    return y * (resolution + 1) + x;
+  };
+
+  for (int y = 0; y < resolution; ++y) {
+    for (int x = 0; x < resolution; ++x) {
+      mesh->addTriangle(
+          math::TriMesh<double>::Triangle(
+              index(x, y), index(x + 1, y), index(x + 1, y + 1)));
+      mesh->addTriangle(
+          math::TriMesh<double>::Triangle(
+              index(x, y), index(x + 1, y + 1), index(x, y + 1)));
+    }
+  }
+
+  return mesh;
+}
+
+double computeTriMeshLowestZ(const math::TriMesh<double>& mesh)
+{
+  double lowest = std::numeric_limits<double>::infinity();
+  for (const auto& vertex : mesh.getVertices()) {
+    lowest = std::min(lowest, vertex.z());
+  }
+  return lowest;
+}
+
+std::shared_ptr<ConvexMeshShape> makeNativeTetraConvexShape(double scale)
+{
+  auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
+  mesh->addVertex(scale * Eigen::Vector3d(1.0, 1.0, 1.0));
+  mesh->addVertex(scale * Eigen::Vector3d(-1.0, -1.0, 1.0));
+  mesh->addVertex(scale * Eigen::Vector3d(-1.0, 1.0, -1.0));
+  mesh->addVertex(scale * Eigen::Vector3d(1.0, -1.0, -1.0));
+  mesh->addTriangle(ConvexMeshShape::TriMeshType::Triangle(0, 1, 2));
+  mesh->addTriangle(ConvexMeshShape::TriMeshType::Triangle(0, 1, 3));
+  mesh->addTriangle(ConvexMeshShape::TriMeshType::Triangle(0, 2, 3));
+  mesh->addTriangle(ConvexMeshShape::TriMeshType::Triangle(1, 2, 3));
+  return ConvexMeshShape::fromMesh(mesh, true);
 }
 
 NativeBoxGroundRunResult runDefaultNativeBoxOnGroundWithSize(
@@ -759,6 +840,33 @@ NativePrimitiveBody createNativeFreePrimitive(
 
   world->addSkeleton(skel);
   return primitive;
+}
+
+NativeConvexBody createNativeFreeConvex(
+    World* world,
+    const std::string& name,
+    std::shared_ptr<ConvexMeshShape> shape,
+    const Eigen::Isometry3d& transform)
+{
+  auto skel = Skeleton::create(name);
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  pair.first->setTransform(transform);
+
+  auto* shapeNode
+      = pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          shape);
+
+  Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(shapeNode->getShape()->computeInertia(1.0));
+  pair.second->setInertia(inertia);
+
+  NativeConvexBody convex;
+  convex.body = pair.second;
+  convex.shape = std::move(shape);
+
+  world->addSkeleton(skel);
+  return convex;
 }
 
 } // namespace
@@ -1050,6 +1158,78 @@ TEST(WorldTests, DefaultNativeCapsulePileDoesNotTunnel)
 
   EXPECT_TRUE(sawContact);
   EXPECT_GE(lowestPointZ, groundTop - 0.025);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeConvexBodiesSettleOnStaticMeshLandscape)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  auto terrainMesh = makeNativeLandscapeTriMesh(8, 0.18, 0.05);
+  ASSERT_NE(terrainMesh, nullptr);
+  const double terrainLowestZ = computeTriMeshLowestZ(*terrainMesh);
+
+  auto terrain = Skeleton::create("convex_landscape");
+  auto terrainPair = terrain->createJointAndBodyNodePair<WeldJoint>();
+  auto* terrainBody = terrainPair.second;
+  terrainPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<MeshShape>(
+          Eigen::Vector3d::Ones(),
+          terrainMesh,
+          common::Uri("dart://native_collision/landscape")));
+  world->addSkeleton(terrain);
+
+  std::vector<NativeConvexBody> convexBodies;
+  convexBodies.reserve(9);
+  for (int row = 0; row < 3; ++row) {
+    for (int col = 0; col < 3; ++col) {
+      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+      tf.translation() = Eigen::Vector3d(
+          (static_cast<double>(col) - 1.0) * 0.18,
+          (static_cast<double>(row) - 1.0) * 0.18,
+          0.35 + 0.04 * static_cast<double>(row + col));
+      tf.linear() = math::expMapRot(
+          Eigen::Vector3d(
+              0.2 * static_cast<double>(row + 1),
+              -0.15 * static_cast<double>(col + 1),
+              0.1 * static_cast<double>(row - col)));
+      convexBodies.push_back(createNativeFreeConvex(
+          world.get(),
+          "convex_landscape_body_" + std::to_string(row) + "_"
+              + std::to_string(col),
+          makeNativeTetraConvexShape(0.045),
+          tf));
+    }
+  }
+
+  bool sawContact = false;
+  bool sawTerrainContact = false;
+  double lowestConvexPointZ = std::numeric_limits<double>::infinity();
+
+  for (int step = 0; step < 1600; ++step) {
+    world->step();
+    const auto& collisionResult = world->getLastCollisionResult();
+    sawContact = sawContact || collisionResult.getNumContacts() > 0u;
+    sawTerrainContact
+        = sawTerrainContact || collisionResult.inCollision(terrainBody);
+
+    for (const auto& convex : convexBodies) {
+      ASSERT_TRUE(convex.body->getWorldTransform().matrix().array().allFinite())
+          << "step=" << step;
+      const double convexLowestPointZ = measureConvexLowestPointZ(convex);
+      lowestConvexPointZ = std::min(lowestConvexPointZ, convexLowestPointZ);
+      if (step >= 100 && step % 100 == 0) {
+        EXPECT_GE(convexLowestPointZ, terrainLowestZ - 0.03) << "step=" << step;
+      }
+    }
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_TRUE(sawTerrainContact);
+  EXPECT_GE(lowestConvexPointZ, terrainLowestZ - 0.03);
 }
 
 //==============================================================================
