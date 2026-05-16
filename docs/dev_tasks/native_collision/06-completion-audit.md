@@ -35,6 +35,38 @@ The current branch has strong local evidence. The remaining north-star gates
 are deferred finalization gates rather than work that should trigger a PR
 mutation during the current pass:
 
+## Current Audit Snapshot (2026-05-15)
+
+Latest local audit commands show:
+
+- Local branch state: `feature/new_coll` is clean at
+  `55bcce1b726` (`Clarify native collision code follow-up scope`) and is 44
+  commits ahead of `origin/feature/new_coll`.
+- Local remote-tracking baseline: `origin/feature/new_coll` resolves to
+  `f8f5663d514`.
+- Review surface state: read-only `gh pr view 2652 --repo dartsim/dart`
+  reports PR #2652 as `CLOSED`, draft, dirty, based on `main`, and still
+  anchored to head `714d220d82a`. No PR metadata or GitHub state was mutated.
+- Latest full code validation head: `4db514cfd22`
+  (`Add native narrow-phase batch dispatcher`) passed the local
+  `pixi run test-all` gate with 6/6 top-level gates, Release CTest 264/264,
+  and Python 147/147. The same code head passed focused reference-backend
+  checks and the final unfiltered `collision-reference` CTest sweep 301/301
+  after building the dedicated simulation-experimental target.
+- Current HEAD delta after that validation is docs-only:
+  `cd3b46e19c3` refreshed the evidence packet and `55bcce1b726` clarified
+  code-follow-up wording. `pixi run lint` passed on the current HEAD after
+  those docs-only commits, including runtime source isolation and
+  compatibility-facade audits.
+
+Audit result: the local branch-evidence packet is current, but the objective
+is not complete. The remaining checklist rows require a maintainer-selected
+PR/CI review surface, final benchmark artifact evidence on that surface,
+downstream/deprecation finalization evidence, final validation on the completing
+PR state, evidence transfer into the PR description, and deletion of this
+dev-task folder in the same completing PR. Those actions are intentionally
+outside the current no-PR/no-GitHub-mutation scope.
+
 - Native-only and gz-physics manual workflow-dispatch evidence is now collected
   for pushed head `1e1faf6feb1`, but the final PR-complete state still needs
   whatever CI surface the maintainer chooses because PR #2652 is closed.
