@@ -88,6 +88,12 @@ The README "Architecture Completion Rubric" tracks every row as `Local` pending 
 - For each rubric row marked "Still needed: CI evidence", record the _exact_ CI workflow + job name that would close it, as a hyperlink-style table. This makes resumption trivial when the user authorizes a successor diff.
 - Note in `06-completion-audit.md` that the manual workflow-dispatch evidence on `1e1faf6feb1` (run IDs already cited) should count as "reference evidence" toward those rubric rows even though they are not the eventual permanent gate. This is consistent with how the audit already treats those rows but isn't reflected in the rubric table.
 
+**Resolved (2026-05-15):** `README.md` now has a Final CI Closure Map with
+workflow/job names, and each Architecture Completion Rubric row points to the
+relevant map entry. `06-completion-audit.md` records manual workflow-dispatch
+runs on `1e1faf6feb1` as reference evidence while keeping final PR-state CI
+open.
+
 ## Plan-Coherence Concerns
 
 These are concerns the supervisor identified before agent findings arrive:
