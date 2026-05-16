@@ -3319,6 +3319,26 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     moving FCL/Bullet/ODE reference implementation code under
     `tests/dart/test/reference_collision/` and renaming the reference targets
     to `dart-test-reference-*`.
+- Current local raw reference-engine edge-case benchmark refresh:
+  - Commit: current working tree after local head `69dd425b5f4`
+    (`Move collision references into test tree`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/collision-reference/cpp/Release python scripts/cmake_build.py --target bm_comparative_narrow_phase --parallel 5`
+    and
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference bm-collision-check-narrow-raw-reference`.
+  - Result: passed. The comparative narrow-phase benchmark target rebuilt
+    cleanly, the benchmark binary's built-in accuracy verification passed for
+    Sphere-Sphere, Box-Box, Capsule-Capsule, Sphere-Box, Capsule-Sphere,
+    Capsule-Box, Cylinder-Cylinder, Cylinder-Sphere, Cylinder-Box,
+    Cylinder-Capsule, Cylinder-Plane, Plane-Sphere, Plane-Box, and
+    Plane-Capsule, and the raw-reference benchmark task exited 0 with
+    `collision benchmark check: 1 passed, 0 failed, 0 skipped, 23 reported`.
+    The raw-reference filter now covers the fixed SphereSphere/BoxBox/SphereBox
+    raw rows plus primitive edge-case rows for SphereSphere, BoxBox,
+    CapsuleCapsule, SphereBox, CapsuleSphere, and CapsuleBox at scale index 1.
+    Strict setup-collision sanity remains on the fixed colliding rows; the
+    edge-case lane now times boundary and near-miss setups without emitting
+    benchmark error rows.
 
 ## Known Risks
 

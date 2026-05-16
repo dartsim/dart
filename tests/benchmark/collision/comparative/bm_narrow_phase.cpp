@@ -67,6 +67,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include <fcl/geometry/shape/capsule.h>
 #include <fcl/geometry/shape/box.h>
 #include <fcl/geometry/shape/sphere.h>
 #include <fcl/narrowphase/collision.h>
@@ -136,6 +137,12 @@ Eigen::Isometry3d OffsetTransform(double x, double y, double z)
   return dart::benchmark::collision::MakeTransform(Eigen::Vector3d(x, y, z));
 }
 
+enum class RawCollisionSanity
+{
+  kRequireCollision,
+  kAllowNoCollision
+};
+
 fcl::Transform3<double> MakeFclTransform(const Eigen::Isometry3d& tf)
 {
   fcl::Transform3<double> fclTf = fcl::Transform3<double>::Identity();
@@ -149,7 +156,8 @@ void RunFclRawCollisionBenchmark(
     const std::shared_ptr<fcl::CollisionGeometry<double>>& geometry1,
     const Eigen::Isometry3d& tf1,
     const std::shared_ptr<fcl::CollisionGeometry<double>>& geometry2,
-    const Eigen::Isometry3d& tf2)
+    const Eigen::Isometry3d& tf2,
+    RawCollisionSanity sanity = RawCollisionSanity::kRequireCollision)
 {
   fcl::CollisionObject<double> object1(geometry1, MakeFclTransform(tf1));
   fcl::CollisionObject<double> object2(geometry2, MakeFclTransform(tf2));
@@ -162,7 +170,8 @@ void RunFclRawCollisionBenchmark(
   fcl::CollisionResult<double> result;
 
   benchmark::DoNotOptimize(fcl::collide(&object1, &object2, request, result));
-  if (!result.isCollision()) {
+  if (sanity == RawCollisionSanity::kRequireCollision
+      && !result.isCollision()) {
     state.SkipWithError("FCL raw benchmark setup did not collide.");
     return;
   }
@@ -220,7 +229,8 @@ void RunBulletRawCollisionBenchmark(
     btCollisionShape& shape1,
     const Eigen::Isometry3d& tf1,
     btCollisionShape& shape2,
-    const Eigen::Isometry3d& tf2)
+    const Eigen::Isometry3d& tf2,
+    RawCollisionSanity sanity = RawCollisionSanity::kRequireCollision)
 {
   btDefaultCollisionConfiguration config;
   btCollisionDispatcher dispatcher(&config);
@@ -237,7 +247,8 @@ void RunBulletRawCollisionBenchmark(
 
   CountingBulletContactCallback sanityCheck;
   world.contactPairTest(&object1, &object2, sanityCheck);
-  if (sanityCheck.numContacts == 0) {
+  if (sanity == RawCollisionSanity::kRequireCollision
+      && sanityCheck.numContacts == 0) {
     state.SkipWithError("Bullet raw benchmark setup did not collide.");
     return;
   }
@@ -293,7 +304,8 @@ void RunOdeRawCollisionBenchmark(
     dGeomID geom1,
     const Eigen::Isometry3d& tf1,
     dGeomID geom2,
-    const Eigen::Isometry3d& tf2)
+    const Eigen::Isometry3d& tf2,
+    RawCollisionSanity sanity = RawCollisionSanity::kRequireCollision)
 {
   SetOdeTransform(geom1, tf1);
   SetOdeTransform(geom2, tf2);
@@ -305,7 +317,8 @@ void RunOdeRawCollisionBenchmark(
       static_cast<int>(contacts.size()),
       contacts.data(),
       sizeof(dContactGeom));
-  if (sanityContacts <= 0) {
+  if (sanity == RawCollisionSanity::kRequireCollision
+      && sanityContacts <= 0) {
     state.SkipWithError("ODE raw benchmark setup did not collide.");
     return;
   }
@@ -1743,6 +1756,289 @@ static void BM_NarrowPhaseAdapter_EdgeCases_ODE(
 }
 #endif
 
+void RunNarrowPhaseCaseFclRaw(
+    benchmark::State& state,
+    PairKind pair,
+    EdgeCase edge)
+{
+  const double scale = ScaleFromIndex(static_cast<int>(state.range(0)));
+  const auto sphereSpec = MakeSphereSpec(scale);
+  const auto capsuleSpec = MakeCapsuleSpec(scale);
+  const auto boxSpec = MakeBoxSpec(scale, edge == EdgeCase::kThinFeature);
+  const auto sanity = RawCollisionSanity::kAllowNoCollision;
+
+  switch (pair) {
+    case PairKind::kSphereSphere: {
+      auto shape1 = std::make_shared<fcl::Sphere<double>>(sphereSpec.radius);
+      auto shape2 = std::make_shared<fcl::Sphere<double>>(sphereSpec.radius);
+      const auto tfs = MakeSphereSphereTransforms(
+          sphereSpec.radius, sphereSpec.radius, edge);
+      RunFclRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+    case PairKind::kBoxBox: {
+      auto shape1 = std::make_shared<fcl::Box<double>>(
+          boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      auto shape2 = std::make_shared<fcl::Box<double>>(
+          boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      const auto tfs = MakeBoxBoxTransforms(
+          boxSpec.halfExtents, boxSpec.halfExtents, edge);
+      RunFclRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+    case PairKind::kCapsuleCapsule: {
+      auto shape1 = std::make_shared<fcl::Capsule<double>>(
+          capsuleSpec.radius, capsuleSpec.height);
+      auto shape2 = std::make_shared<fcl::Capsule<double>>(
+          capsuleSpec.radius, capsuleSpec.height);
+      const auto tfs = MakeCapsuleCapsuleTransforms(
+          capsuleSpec.radius, capsuleSpec.radius, edge);
+      RunFclRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+    case PairKind::kSphereBox: {
+      auto shape1 = std::make_shared<fcl::Sphere<double>>(sphereSpec.radius);
+      auto shape2 = std::make_shared<fcl::Box<double>>(
+          boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      const auto tfs = MakeSphereBoxTransforms(
+          sphereSpec.radius, boxSpec.halfExtents, edge);
+      RunFclRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+    case PairKind::kCapsuleSphere: {
+      auto shape1 = std::make_shared<fcl::Capsule<double>>(
+          capsuleSpec.radius, capsuleSpec.height);
+      auto shape2 = std::make_shared<fcl::Sphere<double>>(sphereSpec.radius);
+      const auto tfs = MakeCapsuleSphereTransforms(
+          capsuleSpec.radius, sphereSpec.radius, edge);
+      RunFclRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+    case PairKind::kCapsuleBox: {
+      auto shape1 = std::make_shared<fcl::Capsule<double>>(
+          capsuleSpec.radius, capsuleSpec.height);
+      auto shape2 = std::make_shared<fcl::Box<double>>(
+          boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      const auto tfs = MakeCapsuleBoxTransforms(
+          capsuleSpec.radius, boxSpec.halfExtents, edge);
+      RunFclRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+  }
+}
+
+#if DART_HAVE_BULLET
+btScalar ToBtScalar(double value)
+{
+  return static_cast<btScalar>(value);
+}
+
+btVector3 ToBtVector3(const Eigen::Vector3d& value)
+{
+  return btVector3(ToBtScalar(value.x()), ToBtScalar(value.y()), ToBtScalar(value.z()));
+}
+
+void RunNarrowPhaseCaseBulletRaw(
+    benchmark::State& state,
+    PairKind pair,
+    EdgeCase edge)
+{
+  const double scale = ScaleFromIndex(static_cast<int>(state.range(0)));
+  const auto sphereSpec = MakeSphereSpec(scale);
+  const auto capsuleSpec = MakeCapsuleSpec(scale);
+  const auto boxSpec = MakeBoxSpec(scale, edge == EdgeCase::kThinFeature);
+  const auto sanity = RawCollisionSanity::kAllowNoCollision;
+
+  switch (pair) {
+    case PairKind::kSphereSphere: {
+      btSphereShape shape1(ToBtScalar(sphereSpec.radius));
+      btSphereShape shape2(ToBtScalar(sphereSpec.radius));
+      const auto tfs = MakeSphereSphereTransforms(
+          sphereSpec.radius, sphereSpec.radius, edge);
+      RunBulletRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+    case PairKind::kBoxBox: {
+      btBoxShape shape1(ToBtVector3(boxSpec.halfExtents));
+      btBoxShape shape2(ToBtVector3(boxSpec.halfExtents));
+      const auto tfs = MakeBoxBoxTransforms(
+          boxSpec.halfExtents, boxSpec.halfExtents, edge);
+      RunBulletRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+    case PairKind::kCapsuleCapsule: {
+      btCapsuleShapeZ shape1(
+          ToBtScalar(capsuleSpec.radius), ToBtScalar(capsuleSpec.height));
+      btCapsuleShapeZ shape2(
+          ToBtScalar(capsuleSpec.radius), ToBtScalar(capsuleSpec.height));
+      const auto tfs = MakeCapsuleCapsuleTransforms(
+          capsuleSpec.radius, capsuleSpec.radius, edge);
+      RunBulletRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+    case PairKind::kSphereBox: {
+      btSphereShape shape1(ToBtScalar(sphereSpec.radius));
+      btBoxShape shape2(ToBtVector3(boxSpec.halfExtents));
+      const auto tfs = MakeSphereBoxTransforms(
+          sphereSpec.radius, boxSpec.halfExtents, edge);
+      RunBulletRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+    case PairKind::kCapsuleSphere: {
+      btCapsuleShapeZ shape1(
+          ToBtScalar(capsuleSpec.radius), ToBtScalar(capsuleSpec.height));
+      btSphereShape shape2(ToBtScalar(sphereSpec.radius));
+      const auto tfs = MakeCapsuleSphereTransforms(
+          capsuleSpec.radius, sphereSpec.radius, edge);
+      RunBulletRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+    case PairKind::kCapsuleBox: {
+      btCapsuleShapeZ shape1(
+          ToBtScalar(capsuleSpec.radius), ToBtScalar(capsuleSpec.height));
+      btBoxShape shape2(ToBtVector3(boxSpec.halfExtents));
+      const auto tfs = MakeCapsuleBoxTransforms(
+          capsuleSpec.radius, boxSpec.halfExtents, edge);
+      RunBulletRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      return;
+    }
+  }
+}
+#endif
+
+#if DART_HAVE_ODE
+void RunNarrowPhaseCaseOdeRaw(
+    benchmark::State& state,
+    PairKind pair,
+    EdgeCase edge)
+{
+  const double scale = ScaleFromIndex(static_cast<int>(state.range(0)));
+  const auto sphereSpec = MakeSphereSpec(scale);
+  const auto capsuleSpec = MakeCapsuleSpec(scale);
+  const auto boxSpec = MakeBoxSpec(scale, edge == EdgeCase::kThinFeature);
+  const auto sanity = RawCollisionSanity::kAllowNoCollision;
+
+  OdeRuntime ode;
+
+  switch (pair) {
+    case PairKind::kSphereSphere: {
+      dGeomID shape1 = dCreateSphere(0, sphereSpec.radius);
+      dGeomID shape2 = dCreateSphere(0, sphereSpec.radius);
+      const auto tfs = MakeSphereSphereTransforms(
+          sphereSpec.radius, sphereSpec.radius, edge);
+      RunOdeRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      dGeomDestroy(shape1);
+      dGeomDestroy(shape2);
+      return;
+    }
+    case PairKind::kBoxBox: {
+      dGeomID shape1 = dCreateBox(
+          0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      dGeomID shape2 = dCreateBox(
+          0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      const auto tfs = MakeBoxBoxTransforms(
+          boxSpec.halfExtents, boxSpec.halfExtents, edge);
+      RunOdeRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      dGeomDestroy(shape1);
+      dGeomDestroy(shape2);
+      return;
+    }
+    case PairKind::kCapsuleCapsule: {
+      dGeomID shape1
+          = dCreateCapsule(0, capsuleSpec.radius, capsuleSpec.height);
+      dGeomID shape2
+          = dCreateCapsule(0, capsuleSpec.radius, capsuleSpec.height);
+      const auto tfs = MakeCapsuleCapsuleTransforms(
+          capsuleSpec.radius, capsuleSpec.radius, edge);
+      RunOdeRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      dGeomDestroy(shape1);
+      dGeomDestroy(shape2);
+      return;
+    }
+    case PairKind::kSphereBox: {
+      dGeomID shape1 = dCreateSphere(0, sphereSpec.radius);
+      dGeomID shape2 = dCreateBox(
+          0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      const auto tfs = MakeSphereBoxTransforms(
+          sphereSpec.radius, boxSpec.halfExtents, edge);
+      RunOdeRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      dGeomDestroy(shape1);
+      dGeomDestroy(shape2);
+      return;
+    }
+    case PairKind::kCapsuleSphere: {
+      dGeomID shape1
+          = dCreateCapsule(0, capsuleSpec.radius, capsuleSpec.height);
+      dGeomID shape2 = dCreateSphere(0, sphereSpec.radius);
+      const auto tfs = MakeCapsuleSphereTransforms(
+          capsuleSpec.radius, sphereSpec.radius, edge);
+      RunOdeRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      dGeomDestroy(shape1);
+      dGeomDestroy(shape2);
+      return;
+    }
+    case PairKind::kCapsuleBox: {
+      dGeomID shape1
+          = dCreateCapsule(0, capsuleSpec.radius, capsuleSpec.height);
+      dGeomID shape2 = dCreateBox(
+          0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      const auto tfs = MakeCapsuleBoxTransforms(
+          capsuleSpec.radius, boxSpec.halfExtents, edge);
+      RunOdeRawCollisionBenchmark(
+          state, shape1, tfs.tf1, shape2, tfs.tf2, sanity);
+      dGeomDestroy(shape1);
+      dGeomDestroy(shape2);
+      return;
+    }
+  }
+}
+#endif
+
+static void BM_NarrowPhaseRawReference_EdgeCases_Native(
+    benchmark::State& state, PairKind pair, EdgeCase edge)
+{
+  RunNarrowPhaseCaseNative(state, pair, edge);
+}
+
+static void BM_NarrowPhaseRawReference_EdgeCases_FCL(
+    benchmark::State& state, PairKind pair, EdgeCase edge)
+{
+  RunNarrowPhaseCaseFclRaw(state, pair, edge);
+}
+
+#if DART_HAVE_BULLET
+static void BM_NarrowPhaseRawReference_EdgeCases_Bullet(
+    benchmark::State& state, PairKind pair, EdgeCase edge)
+{
+  RunNarrowPhaseCaseBulletRaw(state, pair, edge);
+}
+#endif
+
+#if DART_HAVE_ODE
+static void BM_NarrowPhaseRawReference_EdgeCases_ODE(
+    benchmark::State& state, PairKind pair, EdgeCase edge)
+{
+  RunNarrowPhaseCaseOdeRaw(state, pair, edge);
+}
+#endif
+
 } // namespace edge_case_bench
 
 using dart::benchmark::collision::EdgeCase;
@@ -1868,6 +2164,41 @@ static void RegisterNarrowPhaseEdgeCases()
   RegisterEdgeCaseBenchmarkGroup(
       "BM_NarrowPhaseAdapter_EdgeCases_ODE",
       edge_case_bench::BM_NarrowPhaseAdapter_EdgeCases_ODE,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
+#endif
+
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhaseRawReference_EdgeCases_Native",
+      edge_case_bench::BM_NarrowPhaseRawReference_EdgeCases_Native,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhaseRawReference_EdgeCases_FCL",
+      edge_case_bench::BM_NarrowPhaseRawReference_EdgeCases_FCL,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
+
+#if DART_HAVE_BULLET
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhaseRawReference_EdgeCases_Bullet",
+      edge_case_bench::BM_NarrowPhaseRawReference_EdgeCases_Bullet,
+      base_pairs,
+      box_pairs,
+      base_edges,
+      box_edges);
+#endif
+
+#if DART_HAVE_ODE
+  RegisterEdgeCaseBenchmarkGroup(
+      "BM_NarrowPhaseRawReference_EdgeCases_ODE",
+      edge_case_bench::BM_NarrowPhaseRawReference_EdgeCases_ODE,
       base_pairs,
       box_pairs,
       base_edges,

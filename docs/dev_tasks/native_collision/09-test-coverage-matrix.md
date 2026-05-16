@@ -254,11 +254,11 @@ Query-parity note).
 
 ### Per-pair narrow-phase
 
-| Codename                              | Status | JSON output                                 | Notes                                                  |
-| ------------------------------------- | ------ | ------------------------------------------- | ------------------------------------------------------ |
-| `bench_narrow_phase_per_pair_raw`     | DONE   | `native_collision_raw_narrow_phase.json`    | Native raw vs reference adapter — see Q4 parity gap    |
-| `bench_narrow_phase_per_pair_adapter` | DONE   | `collision_check_narrow_adapter.json`       | Native/reference through public detector adapter path  |
-| `bench_narrow_phase_per_pair_ref_raw` | DONE   | `collision_check_narrow_raw_reference.json` | Focused SphereSphere/BoxBox/SphereBox raw engine paths |
+| Codename                              | Status | JSON output                                 | Notes                                                                                                                                                                              |
+| ------------------------------------- | ------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bench_narrow_phase_per_pair_raw`     | DONE   | `native_collision_raw_narrow_phase.json`    | Native raw vs reference adapter — see Q4 parity gap                                                                                                                                |
+| `bench_narrow_phase_per_pair_adapter` | DONE   | `collision_check_narrow_adapter.json`       | Native/reference through public detector adapter path                                                                                                                              |
+| `bench_narrow_phase_per_pair_ref_raw` | DONE   | `collision_check_narrow_raw_reference.json` | SphereSphere/BoxBox/SphereBox fixed raw rows plus primitive edge-case raw rows for SphereSphere, BoxBox, CapsuleCapsule, SphereBox, CapsuleSphere, and CapsuleBox at scale index 1 |
 
 ### Distance + raycast + CCD
 
@@ -362,16 +362,15 @@ benchmarks beyond the focused raw primitive rows.
 
 1. **Raw narrow-phase correctness gaps** — continue pair and
    algorithm-isolation rows before moving into convexity-specific coverage.
-2. **Round 6 tests/ reference move** — no test changes but updates
-   `lint_runtime_isolation` to enforce the new path. ~0 net change to
-   this matrix; 1 row gets a new "and rejects old path" condition.
-3. **Cylinder × Sdf** — remaining cylinder pair row.
-4. **Convex/Mesh × Sdf** — remaining convexity and mesh pair rows.
-5. **Long-horizon stability scenes** — `stacked_boxes_n10/n100`,
+2. **Convexity-specific collision coverage** — close remaining primitive /
+   convex dispatch and algorithm-isolation rows.
+3. **Mesh collision coverage** — prioritize mesh pair-order, contact patch,
+   and degenerate geometry rows before broad scenario expansion.
+4. **Long-horizon stability scenes** — `stacked_boxes_n10/n100`,
    `mixed_primitive_stack` unit-test version, `ragdoll_capsule_pile`,
    `thin_box_no_tunneling`. These are the highest-leverage rows for
    "DART is provably stable" marketing.
-6. **Stretch GAP rows** — auto-diff narrow-phase, float/double parity,
+5. **Stretch GAP rows** — auto-diff narrow-phase, float/double parity,
    k-DOP / OBB / RSS BVH variants. These are scope-decision items, not
    urgent fills. Decide before adding rows.
 

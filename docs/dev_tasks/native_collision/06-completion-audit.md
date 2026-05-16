@@ -734,6 +734,25 @@ Validation passed on the post-move tree:
 - `python scripts/check_collision_runtime_isolation.py` passed.
 - `python scripts/audit_collision_compat_facades.py` passed.
 
+## Round 14 Spot-Check
+
+The raw reference-engine narrow-phase benchmark coverage was refreshed on the
+local post-Round-6 tree. The benchmark target now includes fixed raw rows for
+SphereSphere/BoxBox/SphereBox plus primitive edge-case raw rows for
+SphereSphere, BoxBox, CapsuleCapsule, SphereBox, CapsuleSphere, and CapsuleBox
+at scale index 1. Fixed colliding rows keep the strict setup-collision sanity
+check; edge-case rows can time boundary and near-miss setups without producing
+benchmark error rows.
+
+Validation passed on the post-refresh tree:
+
+- `CMAKE_BUILD_DIR=build/collision-reference/cpp/Release python scripts/cmake_build.py --target bm_comparative_narrow_phase --parallel 5`
+  passed.
+- `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference bm-collision-check-narrow-raw-reference`
+  passed. The benchmark binary's built-in accuracy verification passed for all
+  listed primitive pairs, and the raw-reference task reported
+  `collision benchmark check: 1 passed, 0 failed, 0 skipped, 23 reported`.
+
 ## Prompt-To-Artifact Checklist
 
 | Requirement                                                                                                                  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Status  |

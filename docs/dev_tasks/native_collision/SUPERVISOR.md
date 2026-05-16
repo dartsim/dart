@@ -3032,3 +3032,19 @@ Validation passed on the post-move tree: default `hello_world` build,
 `audit_collision_compat_facades.py`. The benchmark task exited 0; report-only
 adapter/raw-reference measurements are retained as input to the later
 performance wave, not as blockers for this feature-level pass.
+
+## Q4 Raw Reference Edge-Case Local Completion Notes (Codex, 2026-05-15)
+
+The raw reference-engine narrow-phase benchmark filter now covers the existing
+fixed SphereSphere/BoxBox/SphereBox raw rows plus primitive edge-case rows for
+SphereSphere, BoxBox, CapsuleCapsule, SphereBox, CapsuleSphere, and CapsuleBox
+at scale index 1. Fixed colliding rows retain the existing strict sanity check;
+edge-case rows allow boundary and near-miss setups so they are timed instead of
+reported as benchmark setup errors.
+
+Validation passed on the post-Round-6 tree:
+`bm_comparative_narrow_phase` rebuilt in the `collision-reference` build, and
+`pixi run -e collision-reference bm-collision-check-narrow-raw-reference`
+exited 0 with `collision benchmark check: 1 passed, 0 failed, 0 skipped, 23 reported`.
+The benchmark binary's built-in accuracy verification passed for the primitive
+pairs listed in the benchmark output.
