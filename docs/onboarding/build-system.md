@@ -243,8 +243,8 @@ These dependencies are reference-comparison inputs only. Core DART libraries,
 dartpy, gz-physics runtime integration, and the native-backed
 `collision-fcl`/`collision-bullet`/`collision-ode` compatibility facades do not
 need per-engine collision build switches. The optional FCL, Bullet, and ODE
-reference components are built only when `DART_BUILD_COLLISION_REFERENCE_TESTS`
-or `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` is enabled, normally through the
+reference targets are built only when `DART_BUILD_COLLISION_REFERENCE_TESTS` or
+`DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` is enabled, normally through the
 `collision-reference` Pixi environment. Do not use reference gates as
 compatibility gates for normal core, package, dartpy, or downstream runtime
 builds.
@@ -256,14 +256,14 @@ builds.
   benchmarks
 - **Build gate:** `DART_BUILD_COLLISION_REFERENCE_TESTS` or
   `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`
-- **Integration:** Builds optional `dart-collision-reference-fcl` component.
+- **Integration:** Builds optional `dart-test-reference-fcl` target.
   The core DART libraries, dartpy, native-backed compatibility facades, and
   normal runtime collision stack do not depend on FCL.
 - **CMake Module:** `cmake/DARTFindfcl.cmake`
 - **ROS Dependency:** `libfcl-dev`
 - **Failure mode:** Configuration aborts with `FATAL_ERROR` if reference tests
   or benchmarks are enabled and FCL is missing.
-- **Disable:** Leave both reference gates `OFF` to omit the component entirely.
+- **Disable:** Leave both reference gates `OFF` to omit the target entirely.
 
 #### 11. Bullet Physics
 
@@ -272,13 +272,13 @@ builds.
   benchmarks
 - **Build gate:** `DART_BUILD_COLLISION_REFERENCE_TESTS` or
   `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`
-- **Integration:** Builds optional `dart-collision-reference-bullet`
-  component. The core DART libraries, dartpy, native-backed compatibility
+- **Integration:** Builds optional `dart-test-reference-bullet` target. The core
+  DART libraries, dartpy, native-backed compatibility
   facades, and normal runtime collision stack do not depend on Bullet.
 - **CMake Module:** `cmake/DARTFindBullet.cmake`
 - **Failure mode:** Configuration aborts with `FATAL_ERROR` if reference tests
   or benchmarks are enabled and Bullet is missing.
-- **Disable:** Leave both reference gates `OFF` to omit the component entirely.
+- **Disable:** Leave both reference gates `OFF` to omit the target entirely.
 
 #### 12. Open Dynamics Engine (ODE)
 
@@ -287,13 +287,13 @@ builds.
   benchmarks
 - **Build gate:** `DART_BUILD_COLLISION_REFERENCE_TESTS` or
   `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`
-- **Integration:** Builds optional `dart-collision-reference-ode` component.
+- **Integration:** Builds optional `dart-test-reference-ode` target.
   The core DART libraries, dartpy, native-backed compatibility facades, and
   normal runtime collision stack do not depend on ODE collision.
 - **CMake Module:** `cmake/DARTFindODE.cmake`
 - **Failure mode:** Configuration aborts with `FATAL_ERROR` if reference tests
   or benchmarks are enabled and ODE is missing.
-- **Disable:** Leave both reference gates `OFF` to omit the component entirely.
+- **Disable:** Leave both reference gates `OFF` to omit the target entirely.
 
 ### Utility Dependencies
 
@@ -460,10 +460,12 @@ Component Dependency Tree:
     ├── octomap (optional)
     ├── collision-fcl (native-backed compatibility facade; no FCL dependency)
     ├── collision-bullet (native-backed compatibility facade; no Bullet dependency)
-    ├── collision-ode (native-backed compatibility facade; no ODE collision dependency)
-    ├── collision-reference-fcl (optional; reference tests/benchmarks only)
-    ├── collision-reference-bullet (optional; reference tests/benchmarks only)
-    └── collision-reference-ode (optional; reference tests/benchmarks only)
+    └── collision-ode (native-backed compatibility facade; no ODE collision dependency)
+
+Reference test/benchmark targets, when enabled:
+    ├── dart-test-reference-fcl (optional; reference tests/benchmarks only)
+    ├── dart-test-reference-bullet (optional; reference tests/benchmarks only)
+    └── dart-test-reference-ode (optional; reference tests/benchmarks only)
 
     ├── utils
     │   └── depends: dart, tinyxml2, libsdformat
@@ -480,23 +482,23 @@ Component Dependency Tree:
 
 ### Component Targets
 
-| Component                    | Library Target                    | Dependencies                                                        |
-| ---------------------------- | --------------------------------- | ------------------------------------------------------------------- |
-| `dart`                       | `dart`                            | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `assimp`, `fmt::fmt` |
-| `collision-fcl`              | `dart-collision-fcl`              | `dart`                                                              |
-| `collision-bullet`           | `dart-collision-bullet`           | `dart`                                                              |
-| `collision-ode`              | `dart-collision-ode`              | `dart`                                                              |
-| `collision-reference-fcl`    | `dart-collision-reference-fcl`    | `dart`, `fcl`                                                       |
-| `collision-reference-bullet` | `dart-collision-reference-bullet` | `dart`, `Bullet`                                                    |
-| `collision-reference-ode`    | `dart-collision-reference-ode`    | `dart`, `ODE`                                                       |
-| `utils`                      | `dart-utils`                      | `dart`, `tinyxml2`, `libsdformat`                                   |
-| `utils-urdf`                 | `dart-utils-urdf`                 | `dart-utils`, `urdfdom`                                             |
-| `io`                         | `dart-io`                         | `dart-utils` (plus `dart-utils-urdf` when available)                |
-| `gui`                        | `dart-gui`                        | `dart-utils`, `osg::osg`, `imgui::imgui`                            |
-| `external-imgui`             | `dart-external-imgui`             | `OpenGL::GL`                                                        |
+| Component               | Library Target               | Dependencies                                                        |
+| ----------------------- | ---------------------------- | ------------------------------------------------------------------- |
+| `dart`                  | `dart`                       | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `assimp`, `fmt::fmt` |
+| `collision-fcl`         | `dart-collision-fcl`         | `dart`                                                              |
+| `collision-bullet`      | `dart-collision-bullet`      | `dart`                                                              |
+| `collision-ode`         | `dart-collision-ode`         | `dart`                                                              |
+| `test-reference-fcl`    | `dart-test-reference-fcl`    | `dart`, `fcl`                                                       |
+| `test-reference-bullet` | `dart-test-reference-bullet` | `dart`, `Bullet`                                                    |
+| `test-reference-ode`    | `dart-test-reference-ode`    | `dart`, `ODE`                                                       |
+| `utils`                 | `dart-utils`                 | `dart`, `tinyxml2`, `libsdformat`                                   |
+| `utils-urdf`            | `dart-utils-urdf`            | `dart-utils`, `urdfdom`                                             |
+| `io`                    | `dart-io`                    | `dart-utils` (plus `dart-utils-urdf` when available)                |
+| `gui`                   | `dart-gui`                   | `dart-utils`, `osg::osg`, `imgui::imgui`                            |
+| `external-imgui`        | `dart-external-imgui`        | `OpenGL::GL`                                                        |
 
 > FCL, Bullet, and ODE collision dependencies are optional
-> `dart-collision-reference-*` components. `collision-fcl`,
+> `dart-test-reference-*` targets. `collision-fcl`,
 > `collision-bullet`, and `collision-ode` remain native-backed compatibility
 > facades that do not add external collision runtime dependencies. Enable
 > `DART_BUILD_COLLISION_REFERENCE_TESTS` or
@@ -828,7 +830,7 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
     package components are native-backed compatibility facades; the reference
     `DART_BUILD_COLLISION_REFERENCE_TESTS` and
     `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` gates are for explicit
-    `collision-reference-*` comparison builds, not required by core DART,
+    `dart-test-reference-*` comparison builds, not required by core DART,
     dartpy, gz-physics runtime integration, or native-backed compatibility
     facades.
 - **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.

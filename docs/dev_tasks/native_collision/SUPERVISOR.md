@@ -146,7 +146,10 @@ valid for retained C++ compatibility facades and factory keys.
 
 ## Anti-Goals (do not pursue without explicit user direction)
 
-- Do not delete reference implementations under `dart/collision/{fcl,bullet,ode}/reference/` if they're still reachable from `collision-reference-*` test/benchmark targets. Only the unreferenced ones may be removed (see Step B2).
+- Do not delete reference implementations under
+  `tests/dart/test/reference_collision/{fcl,bullet,ode}/` while they are still
+  reachable from `dart-test-reference-*` test/benchmark targets. Only
+  unreferenced reference files may be removed (see Step B2).
 - **Do not open a new GitHub PR.** User will open the successor PR manually when ready (per Q2 answer). Codex's job is to keep `PR-DRAFT.md` in sync.
 - Do not delete this dev-task folder until the user has manually opened the successor PR (see Step D).
 - Do not "consolidate" the planning docs in a single sweeping refactor commit — that would obscure the progress trail. Shrink incrementally as part of normal slices.
@@ -167,7 +170,7 @@ valid for retained C++ compatibility facades and factory keys.
 | Python exposes only clean `DartCollisionDetector` API                                      | VERIFIED | `python/dartpy/collision/collision_detector.cpp`; `audit-collision-compat-facades` confirms legacy detector aliases are absent                                                                    |
 | `wheel-verify` runs `verify_wheel_collision_isolation.py`                                  | VERIFIED | `pixi.toml:1278-1280`; `wheel-verify` deps at `:2189`, `:2322`, `:2441`                                                                                                                           |
 | Smoke `smoke/native_compat_package/` runnable                                              | VERIFIED | `CMakeLists.txt` + `main.cpp` present; CMake requests `collision-fcl/bullet/ode` components and links `dart-collision-{fcl,bullet,ode}`                                                           |
-| Retained components are facades; old engines use `collision-reference-*`                   | VERIFIED | `dart/CMakeLists.txt:59-61` registers facade components; `fcl/bullet/ode/CMakeLists.txt` use `collision-reference-*` target names                                                                 |
+| Retained components are facades; old engines use `dart-test-reference-*`                   | VERIFIED | `dart/CMakeLists.txt:59-61` registers facade components; `tests/dart/test/reference_collision/*/CMakeLists.txt` use `dart-test-reference-*` target names                                          |
 
 **Verifier-discovered gap (NEW, medium-severity):**
 
@@ -297,12 +300,19 @@ User answers cleared the policy fork. Codex may now do BOTH:
 
 **B2. Final runtime cleanup (architect's slice):**
 
-Enumerate `dart/collision/**/reference/` files reachable only from `collision-reference-*` test/benchmark targets. Identify any no longer referenced by `test_reference_backends`, comparative benchmarks, or `createReference()` paths, and delete the unreferenced ones. Keep top-level `dart/collision/{fcl,bullet,ode}/` compatibility facades intact. Run the architect's done-evidence command set. Record results in a new `## Final Runtime Cleanup` subsection in `06-completion-audit.md`.
+Enumerate `tests/dart/test/reference_collision/**` files reachable only from
+`dart-test-reference-*` test/benchmark targets. Identify any no longer
+referenced by `test_reference_backends`, comparative benchmarks, or
+`createReference()` paths, and delete the unreferenced ones. Keep top-level
+`dart/collision/{fcl,bullet,ode}/` compatibility facades intact. Run the
+architect's done-evidence command set. Record results in a new
+`## Final Runtime Cleanup` subsection in `06-completion-audit.md`.
 
 Status update: the reference-file audit found no unreferenced old-engine
 implementation files to delete. The remaining FCL/Bullet/ODE files are under
-`reference/`, are built only into `dart-collision-reference-*` targets, and are
-kept for `createReference()`, reference tests, and comparative benchmarks.
+`tests/dart/test/reference_collision/`, are built only into
+`dart-test-reference-*` targets, and are kept for `createReference()`,
+reference tests, and comparative benchmarks.
 
 **B-ordering note:** Do B1 BEFORE B2. The deprecation attributes are the public-API change downstreams need to see first; the runtime cleanup is internal. If both land in the same commit they'll be hard to bisect if a downstream regression appears.
 
@@ -801,7 +811,7 @@ is:
   `*_collision_group.{hpp,cpp}`, `*_collision_object.{hpp,cpp}`,
   `*_collision_shape.{hpp,cpp}`, `*_types.{hpp,cpp}`, plus engine-specific
   `detail/`. These are consumed ONLY by test/benchmark targets via
-  `createReference()` and the `dart-collision-reference-{fcl,bullet,ode}`
+  `createReference()` and the `dart-test-reference-{fcl,bullet,ode}`
   CMake targets. **MOVE under `tests/`** because they have no runtime
   callers inside `dart/`.
 

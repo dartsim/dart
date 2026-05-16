@@ -193,7 +193,7 @@ selection mechanics. The final shape is:
   runtime collision implementation.
 - Reference APIs: any call path that intentionally reaches FCL, Bullet, or ODE
   must be visibly named as reference/test/benchmark behavior, such as
-  `createReference()` or `collision-reference-*`.
+  `createReference()` or `dart-test-reference-*`.
 
 New public options should be semantic and engine-neutral. Examples of valid
 public options are maximum contacts, nearest-point data, raycast hit mode,
@@ -367,7 +367,7 @@ evidence all match the intended ownership boundary.
 | Compatibility shell     | Temporary legacy headers, class names, package component names, and factory aliases needed by gz-physics or source-compatible downstreams.                                                                                                   | Collision algorithms, external-engine state, hidden package links, or behavior that differs from the built-in detector except documented compatibility quirks. | Legacy names compile without FCL/Bullet/ODE headers, route to the built-in detector, and pass gz-physics/downstream smoke coverage.                                                                                            |
 | DART adapter            | `CollisionObject` membership, `ShapeFrame` access, shape/result/filter adaptation, persistent adapter scene state, stable IDs, dirty sync, deterministic result conversion, and factory registration.                                        | Narrowphase algorithms, broadphase data structures, external backend calls, or public API churn for internal optimization.                                     | Collision, distance, raycast, filter, dynamic-shape invalidation, cache invalidation, and deterministic ordering tests exercise the public DART path.                                                                          |
 | Native scene/query core | Compact geometry, object handles, broadphase state, snapshots/query contexts, candidate traversal, narrowphase dispatch, distance, raycast, CCD/sweeps, contact/manifold generation, scratch reuse, cache invalidation, and profiler labels. | DART public object ownership, gz-physics compatibility policy, package metadata, or legacy backend dependencies.                                               | Native tests cover the feature surface; benchmarks expose adapter sync, broadphase, candidate traversal, narrowphase, distance, raycast, contact generation, and result conversion costs.                                      |
-| Reference harness       | Optional FCL/Bullet/ODE correctness comparisons and comparative benchmarks.                                                                                                                                                                  | Runtime collision target links, default package dependencies, installed compatibility headers, or public backend selection.                                    | CMake opt-in jobs build `collision-reference-*` targets; native-only builds opt out cleanly; benchmark JSON compares native to the best enabled reference engine.                                                              |
+| Reference harness       | Optional FCL/Bullet/ODE correctness comparisons and comparative benchmarks.                                                                                                                                                                  | Runtime collision target links, default package dependencies, installed compatibility headers, or public backend selection.                                    | CMake opt-in jobs build `dart-test-reference-*` targets from `tests/dart/test/reference_collision/`; native-only builds opt out cleanly; benchmark JSON compares native to the best enabled reference engine.                  |
 
 The design has four invariants:
 
@@ -456,9 +456,9 @@ old detector class still lands on native collision algorithms and state.
 
 The component boundary has been split: retained package component names
 `collision-fcl`, `collision-bullet`, and `collision-ode` are native-backed
-interface facades, while old-engine libraries/components are explicitly named
-`collision-reference-fcl`, `collision-reference-bullet`, and
-`collision-reference-ode`. Installed FCL, Bullet, and ODE detector headers are
+interface facades, while old-engine comparison libraries are explicitly named
+`dart-test-reference-fcl`, `dart-test-reference-bullet`, and
+`dart-test-reference-ode`. Installed FCL, Bullet, and ODE detector headers are
 compatibility facades over `DartCollisionDetector` in both native-only and
 reference-enabled installs, while old-engine object/type/detail headers are no
 longer installed on the public legacy paths. Source-tree legacy headers now
@@ -538,7 +538,7 @@ backends:
 - Retained legacy component names such as `collision-fcl`,
   `collision-bullet`, and `collision-ode` must be native-backed compatibility
   facades. External-engine comparison targets must use explicit
-  `collision-reference-*` names and must not silently select an external
+  `dart-test-reference-*` names and must not silently select an external
   runtime backend.
 - Installed legacy detector headers must compile without FCL, Bullet, or ODE
   headers and construct native-backed detector facades, even when the build
