@@ -423,6 +423,9 @@ dart_add_test("unit" UNIT_sensor_SensorManager sensor/test_sensor_manager.cpp)
 # Simulation Tests
 # ==============================================================================
 dart_add_test("unit" UNIT_simulation_World simulation/test_world.cpp)
+set_property(
+  TEST UNIT_simulation_World
+  APPEND PROPERTY LABELS collision-native-stability)
 if(DART_BUILD_COLLISION_REFERENCE_TESTS)
   target_compile_definitions(
     UNIT_simulation_World

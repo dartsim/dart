@@ -412,6 +412,9 @@ if(TARGET dart-utils AND TARGET dart-io)
   target_link_libraries(INTEGRATION_simulation_FileInfoWorld dart-io)
 
   dart_add_test("integration" INTEGRATION_simulation_World simulation/test_world.cpp)
+  set_property(
+    TEST INTEGRATION_simulation_World
+    APPEND PROPERTY LABELS collision-native-stability)
   target_link_libraries(INTEGRATION_simulation_World dart-io)
   if(DART_BUILD_COLLISION_REFERENCE_TESTS)
     target_compile_definitions(

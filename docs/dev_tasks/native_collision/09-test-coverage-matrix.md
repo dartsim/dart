@@ -333,26 +333,26 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 ## 5. Cross-Cutting Infrastructure
 
-| Codename                                 | Status | Source                                                   |
-| ---------------------------------------- | ------ | -------------------------------------------------------- | ------------------------------------------ |
-| `fixture_shape_factories`                | DONE   | `tests/benchmark/collision/fixtures/shape_factories.hpp` |
-| `fixture_scene_builders`                 | DONE   | `tests/benchmark/collision/fixtures/scene_builders.hpp`  |
-| `fixture_edge_cases`                     | DONE   | `tests/benchmark/collision/fixtures/edge_cases.hpp`      |
-| `pixi_task_bm_collision_check`           | DONE   | `pixi.toml` `bm-collision-check` aggregator              |
-| `ctest_label_collision_native`           | DONE   | `tests/unit/collision/CMakeLists.txt`                    |
-| `ctest_label_collision_native_stability` | GAP    | —                                                        | New label for long-horizon tests (Round 7) |
-| `lint_runtime_isolation`                 | DONE   | `scripts/check_collision_runtime_isolation.py`           |
-| `lint_compat_facade_audit`               | DONE   | `scripts/audit_collision_compat_facades.py`              |
-| `lint_benchmark_schema`                  | DONE   | `scripts/check_collision_benchmarks.py`                  |
+| Codename                                 | Status | Source                                                          |
+| ---------------------------------------- | ------ | --------------------------------------------------------------- | --------------------------------------------------- |
+| `fixture_shape_factories`                | DONE   | `tests/benchmark/collision/fixtures/shape_factories.hpp`        |
+| `fixture_scene_builders`                 | DONE   | `tests/benchmark/collision/fixtures/scene_builders.hpp`         |
+| `fixture_edge_cases`                     | DONE   | `tests/benchmark/collision/fixtures/edge_cases.hpp`             |
+| `pixi_task_bm_collision_check`           | DONE   | `pixi.toml` `bm-collision-check` aggregator                     |
+| `ctest_label_collision_native`           | DONE   | `tests/unit/collision/CMakeLists.txt`                           |
+| `ctest_label_collision_native_stability` | DONE   | `tests/unit/CMakeLists.txt`, `tests/integration/CMakeLists.txt` | Labels the world-level native stability executables |
+| `lint_runtime_isolation`                 | DONE   | `scripts/check_collision_runtime_isolation.py`                  |
+| `lint_compat_facade_audit`               | DONE   | `scripts/audit_collision_compat_facades.py`                     |
+| `lint_benchmark_schema`                  | DONE   | `scripts/check_collision_benchmarks.py`                         |
 
-## Summary Counters (as of 2026-05-15)
+## Summary Counters (as of 2026-05-16)
 
 - **§1 Pair-wise narrow-phase:** 89 DONE, 0 PARTIAL, 0 GAP (of 89 rows)
 - **§2 Algorithm-level:** 36 DONE, 1 PARTIAL, 12 GAP (of 49 rows)
 - **§3 Stress / regression:** 19 DONE, 1 PARTIAL, 11 GAP (of 31 rows)
 - **§4 Benchmarks:** 30 DONE, 0 PARTIAL, 14 GAP (of 44 rows)
-- **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 182 DONE, 2 PARTIAL, 38 GAP (of 222 rows)
+- **§5 Infrastructure:** 9 DONE, 0 PARTIAL, 0 GAP (of 9 rows)
+- **TOTAL:** 183 DONE, 2 PARTIAL, 37 GAP (of 222 rows)
 
 DART native is currently at ~82% of the proposed superset, with pair-wise
 narrow-phase coverage closed. The remaining coverage is concentrated in:
