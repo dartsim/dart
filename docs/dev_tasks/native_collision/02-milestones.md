@@ -162,7 +162,8 @@ Purpose: keep the high correctness and performance bar after runtime backends
 are removed. FCL, Bullet, and ODE are reference engines only; they are not
 selectable collision backends.
 
-Current working-tree status: this phase is started. The branch now has
+Current working-tree status: this phase is locally implemented and final
+PR-state evidence remains open. The branch now has
 `DART_BUILD_COLLISION_REFERENCE_TESTS` and
 `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` CMake options, gates focused
 reference-only tests and comparative benchmarks behind them, and has local
@@ -183,9 +184,9 @@ FCL, Bullet, ODE, and the FCL transitive packages; the explicit
 `collision-reference` environment owns those packages and restores the focused
 reference target. A repaired py312 wheel artifact built without normal
 old-engine collision switches now imports successfully and has no old collision
-component files or runtime links. Downstream-component inspection and CI
-wheel-matrix evidence are still required before this phase is complete. C++
-reference tests
+component files or runtime links. Downstream-component inspection now passes
+locally through package/link smokes; final PR wheel-matrix and reference-gate
+CI evidence are still required before this phase is complete. C++ reference tests
 and benchmarks now call explicit `createReference()` detector APIs, so
 old-engine comparison intent is visible at each call site.
 The runtime source isolation check is wired into lint so non-reference DART
@@ -220,12 +221,13 @@ Purpose: make native collision the only normal runtime collision stack while
 retaining legacy backends only where they are intentionally requested for
 reference or benchmark work.
 
-Current working-tree status: this phase is started, not complete. Normal pixi
-configure paths now request native-only collision by default, wheel CMake
-defaults keep reference harnesses disabled, and a native-only install-style
-build/install produced no old collision libraries or old collision component
-target files. The latest package-export cleanup also removes the default
-`collision-fcl` fallback and the generated
+Current working-tree status: this phase is locally implemented and final
+PR-state packaging evidence remains open. Normal pixi configure paths now
+request native-only collision by default, wheel CMake defaults keep reference
+harnesses disabled, and a native-only install-style build/install produced no
+old collision libraries or old collision component target files. The latest
+package-export cleanup also removes the default `collision-fcl` fallback and
+the generated
 `collision-bullet`/`collision-ode` compatibility text from native-only
 installed CMake metadata; the install probe now reports only
 `DART_BUILD_COLLISION_REFERENCE_TESTS` and
@@ -238,8 +240,9 @@ package environment for reference comparisons. A repaired py312 wheel artifact
 has no
 old collision component headers, old collision component libraries, old
 collision CMake exports, or FCL, Bullet, ODE, or libccd runtime links.
-Remaining work includes CI wheel-matrix evidence and gz-physics compatibility
-for any retained legacy component facades.
+Local package/link and gz-physics smoke evidence now covers retained
+native-backed compatibility component facades. Remaining work is final
+maintainer-selected PR/CI wheel, package, and downstream evidence.
 
 Success criteria:
 
@@ -315,9 +318,11 @@ the PR only aliases old names to `dart`; the architecture must also support
 scalable native queries and performance work without reopening public backend
 selection.
 
-Current working-tree status: this phase is started. Factory-level backend
-selection is now native-backed: `dart`, `experimental`, `fcl`, `fcl_mesh`,
-`bullet`, and `ode` all create `DartCollisionDetector` through the public
+Current working-tree status: this phase is locally implemented for the current
+branch-evidence pass, with final PR/CI and downstream finalization evidence
+still open. Factory-level backend selection is now native-backed: `dart`,
+`experimental`, `fcl`, `fcl_mesh`, `bullet`, and `ode` all create
+`DartCollisionDetector` through the public
 factory. Default package exports now also point users at the `dart` component
 without auto-adding old collision components. The target built-in architecture
 is documented in `01-design.md` as public API and compatibility facades outside a
