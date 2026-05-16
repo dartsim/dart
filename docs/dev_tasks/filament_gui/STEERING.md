@@ -51,6 +51,17 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
   running at the latest check and should not block independent local progress.
 - Current pivot after `5d514a4558e`: the application source directory is
   `apps/dartsim/`; `examples/dartsim/` was only an interim location.
+- `36684d68e67` moves the `dartsim` application source to `apps/dartsim/`
+  while preserving the `dartsim` target and binary.
+- `a23ea52a9b0` restores `examples/hello_world/main.cpp` as a real
+  source-defined `dart::gui` program and adds
+  `dart::gui::ApplicationOptions::world` as the public handoff from example
+  code to the official runner.
+- Next checkpoint scope: restore the rigid-box example family
+  (`boxes`, `rigid_cubes`, `box_stacking`) as source-defined public-API
+  examples. Use public DART dynamics/simulation APIs to construct worlds,
+  pass them through `ApplicationOptions::world`, and use `Panel` only for the
+  former custom controls that still matter after the OSG removal.
 
 ### Decisions in force (do NOT reopen)
 
@@ -332,6 +343,23 @@ real source. The Tier-B set (`hello_world`, `boxes`, `simple_frames`,
 `capsule_ground_contact`, `soft_bodies`, `empty`) are the simplest
 templates to restore first; the API-forcing examples (`imgui`,
 `drag_and_drop`) gate item 7'.
+
+Rigid-box family slice:
+
+- [~] `examples/boxes/main.cpp`: restore the stacked 5x5x5 dynamic-box
+  educational source through `ApplicationOptions::world`; do not expose
+  Bullet, OSG, Filament, GLFW, or ImGui in the example source.
+- [~] `examples/rigid_cubes/main.cpp`: restore the cube world as a standalone
+  source-defined example. Replace OSG keyboard handlers with a small
+  public `dart::gui::Panel` only if the force-control affordance is kept.
+- [~] `examples/box_stacking/main.cpp`: restore the stacking setup as a
+  public-API world plus a compact `Panel` for simulation/solver status if
+  supported by the current promoted panel API.
+- [ ] Remove the `--scene boxes` runner defaults for these binaries after their
+      own sources are active.
+- [ ] Validate with focused builds, the GUI boundary unit test, Python example
+      runner coverage, one direct headless screenshot, `pixi run lint`, commit,
+      and push.
 
 ### Stop condition for this pivot
 

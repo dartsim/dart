@@ -33,6 +33,9 @@
     tree, added a public `dart::gui::ApplicationOptions::world` handoff for
     example-owned worlds, and restored `hello_world` as a real public-API
     `dart::gui` example source.
+  - Restored `boxes`, `rigid_cubes`, and `box_stacking` as real public-API
+    `dart::gui` example sources with source-defined DART worlds instead of
+    shared private scene-fixture launchers.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

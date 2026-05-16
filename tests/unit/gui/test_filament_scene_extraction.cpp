@@ -600,6 +600,9 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
 
   const std::vector<ExampleExpectation> examples
       = {{std::filesystem::path("examples") / "hello_world", false},
+         {std::filesystem::path("examples") / "boxes", false},
+         {std::filesystem::path("examples") / "rigid_cubes", true},
+         {std::filesystem::path("examples") / "box_stacking", true},
          {std::filesystem::path("examples") / "imgui", true},
          {std::filesystem::path("examples") / "drag_and_drop", true},
          {std::filesystem::path("examples") / "tinkertoy", true}};

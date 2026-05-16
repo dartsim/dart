@@ -421,6 +421,29 @@ Third API/example checkpoint:
   - Direct `hello_world --headless --frames 1 --screenshot ...` capture
   - `pixi run ex hello_world --headless --frames 1 --screenshot ...` capture
 
+Fourth source-migration checkpoint:
+
+- Restore the rigid-box example family as source-defined public-API examples:
+  `examples/boxes`, `examples/rigid_cubes`, and `examples/box_stacking`.
+- Keep the examples educational and self-contained: construct DART worlds with
+  public dynamics/simulation APIs, pass them through
+  `dart::gui::ApplicationOptions::world`, and keep GUI controls on
+  `dart::gui::Panel` where needed.
+- Remove the runner default `--scene` injection for these binaries so direct
+  launches and `pixi run ex <name>` execute the restored example source by
+  default.
+- Keep the private `createBoxesScene()` fixture and related validation counters
+  as transitional dev/test infrastructure for `dartsim --scene boxes` until
+  the remaining examples no longer depend on shared fixture coverage.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `dart-gui`, the three migrated examples, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for at least one migrated rigid-box
+    binary
+  - `pixi run lint` before committing
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -451,10 +474,10 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Finish validating, commit, and push the `apps/dartsim` extraction checkpoint.
-2. Restore the next simple canonical example source (`hello_world`) as a real
-   public-API `dart::gui` program, then continue across all pre-existing
-   examples.
+1. Restore the rigid-box example family (`boxes`, `rigid_cubes`,
+   `box_stacking`) as real public-API `dart::gui` programs.
+2. Continue across the remaining pre-existing examples in small related
+   families, documenting each slice here before implementation.
 3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
 4. Do not start the physical `experimental/` directory move until the
