@@ -66,8 +66,10 @@ legacy panel affordances; Exit, Play/Pause, Help, and About controls are now
 implemented and pushed through public `dart::gui` lifecycle/panel APIs. The
 next source-owned restoration slice is `examples/add_delete_skels/`, restoring
 the historical `q`/`w` keyboard controls, Bullet preference, and camera default
-through public `dart::gui`. Enter recording remains a separate capture/session
-API gap.
+through public `dart::gui`; that checkpoint is implemented and pushed. The
+next bounded restoration slice is `examples/mixed_chain/`, restoring the
+historical six impulse keyboard controls and camera default through public
+`dart::gui`. Enter recording remains a separate capture/session API gap.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

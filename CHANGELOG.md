@@ -114,6 +114,8 @@
     restore Fetch example panel Exit, Play/Pause, Help, and About affordances.
   - Restored add/delete skeleton example `q`/`w` keyboard controls, Bullet
     preference, and camera defaults through public `dart::gui`.
+  - Restored mixed-chain example `q`/`w`, `e`/`r`, and `t`/`y` impulse
+    keyboard controls and camera defaults through public `dart::gui`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

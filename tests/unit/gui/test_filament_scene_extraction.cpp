@@ -837,6 +837,36 @@ TEST(FilamentSceneExtraction, AddDeleteSkelsExamplePreservesLegacyParityMarkers)
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, MixedChainExamplePreservesLegacyParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "mixed_chain" / "main.cpp");
+
+  EXPECT_NE(mainSource.find("startImpulse"), std::string::npos);
+  EXPECT_NE(mainSource.find("applyImpulse"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeImpulseAction"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey(key)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("createMixedChainKeyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("Apply mixed-chain impulse -X"), std::string::npos);
+  EXPECT_NE(mainSource.find("Apply mixed-chain impulse +X"), std::string::npos);
+  EXPECT_NE(mainSource.find("Apply mixed-chain impulse -Y"), std::string::npos);
+  EXPECT_NE(mainSource.find("Apply mixed-chain impulse +Y"), std::string::npos);
+  EXPECT_NE(mainSource.find("Apply mixed-chain impulse -Z"), std::string::npos);
+  EXPECT_NE(mainSource.find("Apply mixed-chain impulse +Z"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("'q'/'w': apply force in -X/+X direction"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("makeMixedChainCamera"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(

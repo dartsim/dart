@@ -47,7 +47,9 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace {
 
@@ -93,6 +95,16 @@ dart::simulation::WorldPtr createMixedChainWorld()
   return world;
 }
 
+dart::gui::OrbitCamera makeMixedChainCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.4636476090008061;
+  camera.pitch = 0.7297276562269663;
+  camera.distance = 3.0;
+  return camera;
+}
+
 struct MixedChainControls
 {
   explicit MixedChainControls(dart::simulation::WorldPtr inputWorld)
@@ -130,6 +142,59 @@ struct MixedChainControls
   int framesRemaining = 0;
 };
 
+dart::gui::KeyboardAction makeImpulseAction(
+    const std::shared_ptr<MixedChainControls>& controls,
+    char key,
+    std::string label,
+    const Eigen::Vector3d& force)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback = [controls, force](dart::gui::KeyboardActionContext&) {
+    controls->startImpulse(force);
+  };
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createMixedChainKeyboardActions(
+    const std::shared_ptr<MixedChainControls>& controls)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(6);
+  actions.push_back(makeImpulseAction(
+      controls,
+      'q',
+      "Apply mixed-chain impulse -X",
+      Eigen::Vector3d(-kForceMagnitude, 0.0, 0.0)));
+  actions.push_back(makeImpulseAction(
+      controls,
+      'w',
+      "Apply mixed-chain impulse +X",
+      Eigen::Vector3d(kForceMagnitude, 0.0, 0.0)));
+  actions.push_back(makeImpulseAction(
+      controls,
+      'e',
+      "Apply mixed-chain impulse -Y",
+      Eigen::Vector3d(0.0, -kForceMagnitude, 0.0)));
+  actions.push_back(makeImpulseAction(
+      controls,
+      'r',
+      "Apply mixed-chain impulse +Y",
+      Eigen::Vector3d(0.0, kForceMagnitude, 0.0)));
+  actions.push_back(makeImpulseAction(
+      controls,
+      't',
+      "Apply mixed-chain impulse -Z",
+      Eigen::Vector3d(0.0, 0.0, -kForceMagnitude)));
+  actions.push_back(makeImpulseAction(
+      controls,
+      'y',
+      "Apply mixed-chain impulse +Z",
+      Eigen::Vector3d(0.0, 0.0, kForceMagnitude)));
+  return actions;
+}
+
 dart::gui::Panel createControlsPanel(
     const std::shared_ptr<MixedChainControls>& controls)
 {
@@ -139,6 +204,10 @@ dart::gui::Panel createControlsPanel(
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     builder.text("Apply a short impulse to the soft link.");
+    builder.text("'q'/'w': apply force in -X/+X direction");
+    builder.text("'e'/'r': apply force in -Y/+Y direction");
+    builder.text("'t'/'y': apply force in -Z/+Z direction");
+    builder.text("space bar: simulation on/off");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -189,9 +258,11 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = world;
+    options.camera = makeMixedChainCamera();
     options.preStep = [controls]() {
       controls->applyImpulse();
     };
+    options.keyboardActions = createMixedChainKeyboardActions(controls);
     options.panels.push_back(createControlsPanel(controls));
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {

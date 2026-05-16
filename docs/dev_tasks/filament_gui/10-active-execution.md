@@ -1720,6 +1720,63 @@ add_delete_skels UNIT_gui_FilamentSceneExtraction --parallel 5`
   - Post-lint direct llvmpipe add/delete screenshot plus
     `analyze_headless_smoke.py` (`/tmp/dart_add_delete_direct_postlint.ppm`,
     307200/307200 nonzero pixels)
+- Implementation status: pushed as
+  `184396a4cf0 Restore add delete skeleton controls`.
+
+Thirty-second mixed chain parity checkpoint:
+
+- Historical `examples/mixed_chain` exposed `q`/`w`, `e`/`r`, and `t`/`y`
+  keyboard controls for short -/+ X, -/+ Y, and -/+ Z impulses on a soft link,
+  printed those controls as viewer instructions, and set an example-specific
+  camera home view. The current promoted source owns the world and
+  `preStep`-driven impulse application but only exposes panel buttons and does
+  not wire the legacy keyboard actions or camera default through public
+  `dart::gui`.
+- Implementation scope: restore those six impulse keys as renderer-neutral
+  `dart::gui::KeyboardAction`s, add a promoted `ApplicationOptions::camera`
+  default matching the historical home-position intent, and update the panel
+  text so the example itself documents the keyboard controls.
+- Keep this checkpoint focused on mixed-chain parity. Do not delete the
+  private fixture yet; fixture cleanup remains a later promotion-debt sweep
+  after enough source-owned examples prove the public API surface.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `mixed_chain` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct and/or pixi mixed-chain headless screenshot with analyzer coverage
+  - Python runner tests
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+- Local validation completed:
+  - `cmake --build build/default/cpp/Release --target mixed_chain
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Fixed the first source-marker test pass after the implementation routed all
+    six keys through `makeImpulseAction(...)`; the guard now checks the helper,
+    six labels, and `KeyboardShortcut::characterKey(key)`.
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe mixed-chain screenshot plus `analyze_headless_smoke.py`
+    (`/tmp/dart_mixed_chain_direct.ppm`, 307200/307200 nonzero pixels)
+  - `pixi run ex mixed_chain --headless --frames 2 --width 640 --height 480
+--screenshot /tmp/dart_mixed_chain_pixi.ppm` plus analyzer
+    (307200/307200 nonzero pixels)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target mixed_chain
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe mixed-chain screenshot plus
+    `analyze_headless_smoke.py`
+    (`/tmp/dart_mixed_chain_direct_postlint.ppm`, 307200/307200 nonzero
+    pixels)
+  - Post-lint `pixi run ex mixed_chain --headless --frames 2 --width 640
+--height 480 --screenshot /tmp/dart_mixed_chain_pixi_postlint.ppm` plus
+    analyzer (307200/307200 nonzero pixels)
 - Implementation status: ready for checkpoint commit and push.
 
 ## Stretch Direction
@@ -1752,7 +1809,7 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore add/delete skeleton `q`/`w` keyboard controls, Bullet preference,
+1. Restore mixed-chain `q`/`w`, `e`/`r`, and `t`/`y` impulse keyboard controls
    and camera default through public `dart::gui`.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
