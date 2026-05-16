@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `9fa571ed585 Restore add-delete skeleton defaults`.
+  `3ca9f65c9bb Restore Atlas Puppet defaults`.
 - Latest pushed code checkpoint:
-  `9fa571ed585 Restore add-delete skeleton defaults`.
+  `3ca9f65c9bb Restore Atlas Puppet defaults`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -144,6 +144,7 @@ history but are not guaranteed to be in chronological order.
   - `b80b7809570 Audit GUI scene diagnostics example`
   - `6511db33821 Audit Rerun placeholder example`
   - `9fa571ed585 Restore add-delete skeleton defaults`
+  - `3ca9f65c9bb Restore Atlas Puppet defaults`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -564,6 +565,41 @@ history but are not guaranteed to be in chronological order.
   (`/tmp/dart_atlas_puppet_direct_postlint.ppm`, 304716/307200 nonzero pixels,
   and `/tmp/dart_atlas_puppet_pixi_postlint.ppm`, 304716/307200 nonzero
   pixels), and `git diff --check` passed.
+- The Atlas Puppet defaults checkpoint was pushed as
+  `3ca9f65c9bb Restore Atlas Puppet defaults`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now the fresh `examples/fetch/` re-open requested by
+  maintainer correction. Re-compare the current source and README against
+  `520993d7301^:examples/fetch/main.cpp`, challenge every prior restored-state
+  assumption, update `11-example-parity-audit.md` with any missing behavior, and
+  only then make code changes.
+- Fresh Fetch audit finding: the source restores the world, mocap sync,
+  panel/help text, target rotation, work-area grid, camera, and run defaults,
+  but the visible target handle is still a simplified source-owned affordance.
+  Restore a closer public-API approximation of the historical
+  `InteractiveFrame` by adding local-axis arrowheads and planar translation
+  guide geometry. The README also needs the historical standalone build and
+  execute instructions restored for the promoted `fetch` executable.
+- Implementation state for this Fetch re-open: `examples/fetch/main.cpp` now
+  adds source-owned target local-axis arrowheads and planar translation guide
+  outlines around the existing selectable `SimpleFrame` rings. The README now
+  restores standalone build and execute instruction sections while retaining the
+  promoted `pixi run ex fetch` and headless capture paths.
+- Fetch pre-lint validation: focused build for `fetch` and
+  `UNIT_gui_FilamentSceneExtraction` passed, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction` passed after adjusting the README marker
+  guard for line wrapping, direct and pixi llvmpipe headless screenshots passed
+  analyzer coverage (`/tmp/dart_fetch_interactive_frame_direct.ppm`,
+  303782/307200 nonzero pixels, and
+  `/tmp/dart_fetch_interactive_frame_pixi.ppm`, 303779/307200 nonzero pixels),
+  Python C++ example-runner tests passed (67/67), aggregate `examples` build
+  passed, and `git diff --check` passed.
+- Fetch post-lint validation: `pixi run lint` passed, focused build for `fetch`
+  and `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed, direct
+  and pixi llvmpipe headless screenshots passed analyzer coverage
+  (`/tmp/dart_fetch_interactive_frame_direct_postlint.ppm`, 303782/307200
+  nonzero pixels, and `/tmp/dart_fetch_interactive_frame_pixi_postlint.ppm`,
+  303777/307200 nonzero pixels), and `git diff --check` passed.
 
 ## Current Code Shape
 

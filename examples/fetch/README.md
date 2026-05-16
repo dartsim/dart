@@ -7,7 +7,8 @@
   `dart::gui::ApplicationOptions`, custom panels, draggable simple frames, and
   per-step callbacks.
 - Expected output: a Fetch robot, object, work-area grid, and draggable
-  transparent green target handle.
+  transparent green target handle with local-axis arrowheads, planar translation
+  guides, and rotation rings.
 - Controls: select the green target handle, then Ctrl-left drag it or move it
   with the keyboard selection controls. Hold X/Y/Z while Ctrl-dragging to
   constrain motion to one world axis. Ctrl-Shift-left drag rotates the selected
@@ -19,12 +20,27 @@
 - Mouse manipulation uses the promoted renderer-neutral selection API for
   translation and rotation of the target frame.
 
-## Run
+## Build Instructions
+
+From this directory:
+
+    $ mkdir build
+    $ cd build
+    $ cmake ..
+    $ make
+
+## Execute Instructions
 
 From the source tree:
 
 ```bash
 pixi run ex fetch
+```
+
+From a standalone build directory:
+
+```bash
+./fetch
 ```
 
 Headless capture is also supported through the promoted `dart::gui` runner:

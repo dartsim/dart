@@ -234,6 +234,9 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     and camera home now; keep target activation/deactivation, support toggles,
     relaxed-pose/posture recovery, balance recovery, and default support
     polygon/COM visualization as explicit follow-up gaps until implemented.
+19. The Atlas Puppet defaults checkpoint was pushed as
+    `3ca9f65c9bb Restore Atlas Puppet defaults`. The active cursor is now the
+    fresh `examples/fetch/` re-open requested by maintainer correction.
 
 ## Checkpoint Rule
 

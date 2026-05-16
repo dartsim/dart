@@ -1418,6 +1418,8 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("interactive frame"), std::string::npos);
   EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
   EXPECT_NE(mainSource.find("createTargetHandleShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("addAxisArrowhead"), std::string::npos);
+  EXPECT_NE(mainSource.find("addPlanarTranslationGuide"), std::string::npos);
   EXPECT_NE(
       mainSource.find("transparent green target handle"), std::string::npos);
   EXPECT_NE(mainSource.find("kTargetRotationStep"), std::string::npos);
@@ -1471,6 +1473,8 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("Fetch MJCF Example"), std::string::npos);
   EXPECT_NE(
       readmeSource.find("transparent green target handle"), std::string::npos);
+  EXPECT_NE(readmeSource.find("local-axis arrowheads"), std::string::npos);
+  EXPECT_NE(readmeSource.find("planar translation"), std::string::npos);
   EXPECT_NE(
       readmeSource.find("Ctrl-Shift-left drag rotates"), std::string::npos);
   EXPECT_NE(
@@ -1480,6 +1484,9 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(
       readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);
   EXPECT_NE(readmeSource.find("1280x960"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("./fetch"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
   EXPECT_EQ(
       mainSource.find("setGravity(Eigen::Vector3d::Zero())"),

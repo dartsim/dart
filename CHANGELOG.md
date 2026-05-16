@@ -68,6 +68,10 @@
     public DART line geometry, renderer-neutral target rotation/reset keyboard
     actions, restored viewer help text, and mouse-driven selected-frame
     rotation through the promoted `dart::gui` selection API.
+  - Restored the `fetch` example target handle closer to the historical
+    interactive-frame affordance with source-owned local-axis arrowheads,
+    planar translation guides, and restored standalone README build/execute
+    instructions.
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
     `mixed_chain`, `coupler_constraint`, `add_delete_skels`, and
     `rigid_shapes`) as source-defined `dart::gui` examples.

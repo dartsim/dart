@@ -163,12 +163,61 @@ std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetHandleShape()
   auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(8.0f);
   const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
 
+  const auto addSegment
+      = [&](const Eigen::Vector3d& start, const Eigen::Vector3d& end) {
+          const std::size_t startIndex = handle->addVertex(start);
+          handle->addVertex(end, startIndex);
+        };
+
   handle->addVertex(Eigen::Vector3d(0.24, 0.0, 0.0), center);
   handle->addVertex(Eigen::Vector3d(-0.24, 0.0, 0.0), center);
   handle->addVertex(Eigen::Vector3d(0.0, 0.24, 0.0), center);
   handle->addVertex(Eigen::Vector3d(0.0, -0.24, 0.0), center);
   handle->addVertex(Eigen::Vector3d(0.0, 0.0, 0.24), center);
   handle->addVertex(Eigen::Vector3d(0.0, 0.0, -0.24), center);
+
+  const auto addAxisArrowhead = [&](const Eigen::Vector3d& axis,
+                                    const Eigen::Vector3d& sideA,
+                                    const Eigen::Vector3d& sideB) {
+    const Eigen::Vector3d tip = 0.34 * axis;
+    const Eigen::Vector3d base = 0.25 * axis;
+    constexpr double spread = 0.045;
+    addSegment(tip, base + spread * sideA);
+    addSegment(tip, base - spread * sideA);
+    addSegment(tip, base + spread * sideB);
+    addSegment(tip, base - spread * sideB);
+  };
+
+  addAxisArrowhead(
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ());
+  addAxisArrowhead(
+      Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitZ());
+  addAxisArrowhead(
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY());
+
+  const auto addPlanarTranslationGuide
+      = [&](const Eigen::Vector3d& axisA, const Eigen::Vector3d& axisB) {
+          constexpr double inner = 0.11;
+          constexpr double outer = 0.23;
+          const Eigen::Vector3d a0 = inner * axisA + inner * axisB;
+          const Eigen::Vector3d a1 = outer * axisA + inner * axisB;
+          const Eigen::Vector3d a2 = outer * axisA + outer * axisB;
+          const Eigen::Vector3d a3 = inner * axisA + outer * axisB;
+          addSegment(a0, a1);
+          addSegment(a1, a2);
+          addSegment(a2, a3);
+          addSegment(a3, a0);
+        };
+
+  addPlanarTranslationGuide(Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY());
+  addPlanarTranslationGuide(Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitZ());
+  addPlanarTranslationGuide(Eigen::Vector3d::UnitY(), Eigen::Vector3d::UnitZ());
 
   const auto addLoop = [&](auto&& pointForIndex) {
     constexpr std::size_t segments = 32;
