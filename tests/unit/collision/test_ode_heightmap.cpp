@@ -34,10 +34,11 @@
 
 #if DART_HAVE_ODE
 
+  #include <dart/test/reference_collision/ode/ode_collision_detector.hpp>
+
   #include <dart/collision/collision_group.hpp>
   #include <dart/collision/collision_option.hpp>
   #include <dart/collision/collision_result.hpp>
-  #include <dart/collision/ode/reference/ode_collision_detector.hpp>
 
   #include <dart/dynamics/heightmap_shape.hpp>
   #include <dart/dynamics/simple_frame.hpp>

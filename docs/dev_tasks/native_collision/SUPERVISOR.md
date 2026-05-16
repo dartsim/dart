@@ -3012,3 +3012,23 @@ Validation passed on the post-move tree: `dart_collision_native_tests`,
 `UNIT_collision_CollisionBackend`, the full 29-test `collision-native` CTest
 label, the focused default-collision CI regex, `pixi run lint`, and
 `pixi run test-unit` (277/277 tests).
+
+## Round 6 Local Completion Notes (Codex, 2026-05-15)
+
+Round 6 is implemented in the current local working tree after Round 16:
+FCL/Bullet/ODE reference implementation code moved out of
+`dart/collision/{fcl,bullet,ode}/reference/` and now lives under
+`tests/dart/test/reference_collision/{fcl,bullet,ode}/`. Runtime
+`dart/collision/{fcl,bullet,ode}/` directories are compatibility facades only;
+the reference libraries are test-only `dart-test-reference-*` targets and the
+installable `collision-reference-*` package components are gone.
+
+Validation passed on the post-move tree: default `hello_world` build,
+`UNIT_simulation_World` 1/1, the 29-test `collision-native` label, full
+`pixi run test-all` with 6/6 top-level gates and C++ tests 264/264, focused
+`test_reference_backends` 1/1, full `collision-reference` C++ test suite
+288/288, `pixi run -e collision-reference bm-collision-check`, and both
+`check_collision_runtime_isolation.py` and
+`audit_collision_compat_facades.py`. The benchmark task exited 0; report-only
+adapter/raw-reference measurements are retained as input to the later
+performance wave, not as blockers for this feature-level pass.

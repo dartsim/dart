@@ -6,8 +6,6 @@
 
 #if DART_HAVE_BULLET
 
-  #include "dart/collision/bullet/reference/bullet_collision_detector.hpp"
-  #include "dart/collision/bullet/reference/bullet_collision_object.hpp"
   #include "dart/collision/collision_filter.hpp"
   #include "dart/collision/collision_group.hpp"
   #include "dart/collision/collision_object.hpp"
@@ -28,6 +26,8 @@
   #include "dart/dynamics/simple_frame.hpp"
   #include "dart/dynamics/sphere_shape.hpp"
   #include "dart/math/tri_mesh.hpp"
+  #include "dart/test/reference_collision/bullet/bullet_collision_detector.hpp"
+  #include "dart/test/reference_collision/bullet/bullet_collision_object.hpp"
 
 using dart::collision::BulletCollisionDetector;
 using dart::collision::CollisionFilter;

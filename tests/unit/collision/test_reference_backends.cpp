@@ -8,16 +8,17 @@
  * This file is provided under the following "BSD-style" License
  */
 
-#include <dart/collision/CollisionDetector.hpp>
-#include <dart/collision/fcl/reference/FCLCollisionDetector.hpp>
+#include <dart/test/reference_collision/fcl/fcl_collision_detector.hpp>
+
+#include <dart/collision/collision_detector.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/narrow_phase/gjk.hpp>
 #include <dart/collision/native/narrow_phase/mpr.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
 
-#include <dart/dynamics/BoxShape.hpp>
-#include <dart/dynamics/SimpleFrame.hpp>
-#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 #include <gtest/gtest.h>
 
@@ -28,11 +29,11 @@
 #include <cmath>
 
 #if DART_HAVE_BULLET
-  #include <dart/collision/bullet/reference/BulletCollisionDetector.hpp>
+  #include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
 #endif
 
 #if DART_HAVE_ODE
-  #include <dart/collision/ode/reference/OdeCollisionDetector.hpp>
+  #include <dart/test/reference_collision/ode/ode_collision_detector.hpp>
 #endif
 
 using dart::collision::native::Gjk;

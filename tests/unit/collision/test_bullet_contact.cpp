@@ -35,8 +35,8 @@
 #include <gtest/gtest.h>
 
 #if DART_HAVE_BULLET
-  #include "dart/collision/bullet/reference/detail/bullet_contact.hpp"
   #include "dart/collision/collision_option.hpp"
+  #include "dart/test/reference_collision/bullet/detail/bullet_contact.hpp"
 #endif
 
 using namespace dart;

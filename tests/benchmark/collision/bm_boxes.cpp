@@ -34,7 +34,7 @@
 
 #include <dart/constraint/All.hpp>
 
-#include <dart/collision/bullet/reference/bullet_collision_detector.hpp>
+#include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
 
 #include <dart/dynamics/All.hpp>
 

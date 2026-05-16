@@ -50,13 +50,13 @@ must be deleted in the same PR that completes the native-collision migration.
   retain legacy detector aliases.
 - Legacy package components `collision-fcl`, `collision-bullet`, and
   `collision-ode` are native-backed interface facades.
-- Explicit `collision-reference-*` surfaces retain opt-in access for tests and
+- Explicit `dart-test-reference-*` targets retain opt-in access for tests and
   benchmarks.
 - Public DART migration docs now state the DART 7 policy: C++ legacy collision
   names are native-backed migration facades, dartpy keeps the clean
   `DartCollisionDetector` API without legacy aliases, and FCL/Bullet/ODE
-  comparison engines are opt-in reference components rather than normal runtime
-  build options.
+  comparison engines are opt-in test-only reference targets rather than normal
+  runtime build options.
 - Source-build prerequisite docs now keep FCL/Bullet/ODE out of the required
   dependency set. They are optional reference-comparison dependencies only.
 - `05-downstream-migration.md` defines the downstream/deprecation evidence
@@ -125,7 +125,7 @@ Local validation currently recorded in the dev-task evidence:
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`
   passed 1/1 after the `collision-reference` configure path reported reference
   tests and reference benchmarks `ON` and configured all three FCL, Bullet, and
-  ODE reference components.
+  ODE test-only reference targets.
 - `pixi run lint` passed and includes:
   - `check-collision-runtime-isolation`
   - `audit-collision-compat-facades`
@@ -216,7 +216,7 @@ Compatibility notes:
   `CollisionDetectorType::Dart`, and the default `dart` package component.
 - Downstream Python runtime code should migrate directly to
   `DartCollisionDetector`; DART 7 does not keep dartpy detector aliases.
-- Explicit old-engine comparisons should use `collision-reference-*` targets
+- Explicit old-engine comparisons should use `dart-test-reference-*` targets
   and `createReference()` APIs.
 
 ## Related Issues / PRs

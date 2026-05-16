@@ -16,8 +16,8 @@ Make native DART collision the default runtime stack
   gz-physics/downstream C++ compatibility surface needed for migration.
 - Uses a clean dartpy DART 7 API: `DartCollisionDetector` is exposed, legacy
   detector aliases are not.
-- Keeps FCL, Bullet, and ODE available only through explicit
-  `collision-reference-*` targets and `createReference()` APIs for tests and
+- Keeps FCL, Bullet, and ODE available only through explicit test-only
+  `dart-test-reference-*` targets and `createReference()` APIs for tests and
   benchmarks.
 - Removes per-engine FCL/Bullet/ODE collision build switches from the current
   build surface; explicit reference tests and benchmarks are the only public
@@ -54,7 +54,7 @@ Make native DART collision the default runtime stack
 - C++ legacy detector/group surfaces and legacy package components are
   native-backed compatibility facades.
 - dartpy exposes only the clean DART 7 `DartCollisionDetector` API.
-- Explicit `collision-reference-*` targets and `createReference()` APIs retain
+- Explicit `dart-test-reference-*` targets and `createReference()` APIs retain
   old-engine access for tests and benchmarks only.
 - Runtime isolation, compatibility-facade, wheel/package, downstream, and
   benchmark guards keep normal builds native-only.
@@ -95,8 +95,8 @@ Make native DART collision the default runtime stack
   `OFF` and exposed no per-engine FCL/Bullet/ODE collision build switches.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`
   passed 1/1 after configuring `collision-reference` with reference tests and
-  reference benchmarks `ON` and all FCL, Bullet, and ODE reference components
-  enabled internally.
+  reference benchmarks `ON` and all FCL, Bullet, and ODE test-only reference
+  targets enabled internally.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   passed before benchmark-evidence commit `4b155655890`.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e gazebo test-gz`

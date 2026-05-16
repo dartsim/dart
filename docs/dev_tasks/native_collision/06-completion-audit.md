@@ -255,8 +255,8 @@ Current audited state:
   integration success line. The native compatibility package smoke passed.
   Direct `readelf` inspections showed both the gz DART plugin and package-smoke
   executable depend on `libdart-collision-native.so` without
-  `libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
-  dependencies.
+  `libdart-collision-reference-*`, `libdart-test-reference-*`, FCL, Bullet,
+  ODE, or libccd runtime dependencies.
 - GitHub PR state: PR #2652
   (https://github.com/dartsim/dart/pull/2652) is closed, still marked draft,
   has merge state `DIRTY`, and remains anchored to old head `714d220d82a`.
@@ -608,22 +608,22 @@ compiling with /utf-8'`. The current repair adds `/utf-8` to the root MSVC
 - Final runtime cleanup reference-file audit:
 
   ```bash
-  find dart/collision/{fcl,bullet,ode}/reference -type f | sort
-  rg -n 'file\(GLOB|dart_add_library|add_component_targets' \
+  find tests/dart/test/reference_collision/{fcl,bullet,ode} -type f | sort
+  rg -n 'file\(GLOB|dart_add_library|target_include_directories|add_component_targets' \
+    tests/dart/test/reference_collision \
     dart/collision/fcl/CMakeLists.txt \
     dart/collision/bullet/CMakeLists.txt \
-    dart/collision/ode/CMakeLists.txt
+    dart/collision/ode/CMakeLists.txt \
+    dart/CMakeLists.txt
   ```
 
-  Result: inspected all old-engine implementation files under explicit
-  `reference/` paths. FCL has 12 files, Bullet has 16, and ODE has 26. Each
-  engine CMake file globs the corresponding `reference/*.cpp` and
-  `reference/detail/*.cpp` sources where applicable, builds only the matching
-  `dart-collision-reference-*` target, and registers only the matching
-  `collision-reference-*` package component. No unreferenced old-engine runtime
-  file was found outside the explicit reference targets, so this audit deletes
-  nothing and preserves the remaining reference implementations for
-  `createReference()`, reference tests, and comparative benchmarks.
+  Result: inspected all old-engine implementation files under
+  `tests/dart/test/reference_collision/`. FCL has 12 files, Bullet has 16, and
+  ODE has 26. Each test-only engine CMake file globs the corresponding local
+  sources, builds only the matching `dart-test-reference-*` target, and has no
+  `INSTALL_INTERFACE` or package-component registration. The old
+  `dart/collision/{fcl,bullet,ode}/reference/` runtime directories are absent;
+  public runtime directories contain only native-backed compatibility facades.
 
 Additional inspected artifacts:
 
@@ -693,16 +693,57 @@ Validation passed on the post-move tree:
 - `pixi run test-unit` passed 277/277 tests, including the 29-test
   `collision-native` label and 13 `simulation-experimental` tests.
 
+## Round 13 Spot-Check
+
+Round 6 reference-code relocation is current on the local post-Round-16 working
+tree. FCL/Bullet/ODE reference implementation code moved from
+`dart/collision/{fcl,bullet,ode}/reference/` to
+`tests/dart/test/reference_collision/{fcl,bullet,ode}/`. The retained runtime
+paths under `dart/collision/{fcl,bullet,ode}/` are compatibility facades only;
+the optional comparison libraries are test-only `dart-test-reference-*` targets
+with no package-component install surface.
+
+Validation passed on the post-move tree:
+
+- `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target hello_world --parallel 5`
+  passed and did not reproduce the earlier OctoMap `<ciso646>` warning in this
+  build.
+- `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_simulation_World --parallel 5`
+  passed.
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_simulation_World$' -j 5`
+  passed 1/1 test.
+- `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target dart_collision_native_tests --parallel 5`
+  passed.
+- `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j 5`
+  passed 29/29 tests.
+- `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  passed 6/6 top-level gates: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation. The C++ test
+  slice reported 264/264 tests passing, and the simulation-experimental slice
+  reported 13/13.
+- `CMAKE_BUILD_DIR=build/collision-reference/cpp/Release python scripts/cmake_build.py --target test_reference_backends --parallel 5`
+  passed.
+- `pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`
+  passed 1/1 test.
+- `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference test`
+  passed 288/288 tests, including 31 `collision-native` tests.
+- `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference bm-collision-check`
+  exited 0. Enforced narrowphase, distance, raycast, mixed-primitive,
+  mesh-heavy, and raycast-batch checks passed; report-only adapter and
+  raw-reference rows wrote comparison JSON for the later performance wave.
+- `python scripts/check_collision_runtime_isolation.py` passed.
+- `python scripts/audit_collision_compat_facades.py` passed.
+
 ## Prompt-To-Artifact Checklist
 
 | Requirement                                                                                                                  | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Status  |
 | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
 | Track progress on the scale of the path toward the north star.                                                               | `README.md` and `03-evidence-gates.md` both define the 0-12 north-star progress scale. Stage 10 has local design evidence, stage 11 has local source/reference split evidence, and stage 12 remains blocked on CI, migration, final deletion, validation, and PR packaging.                                                                                                                                                                                              | Done    |
 | One PR continues until it fully reaches the north star.                                                                      | `README.md` states the checkpoint is not a final PR boundary, and `02-milestones.md` keeps final PR packaging and dev-task deletion as completion gates.                                                                                                                                                                                                                                                                                                                 | Open    |
-| `dart/collision/` stops exposing a real multi-backend runtime selection layer.                                               | `dart/collision/dart/dart_collision_detector.hpp` owns the canonical `dart` registrar plus legacy alias registrars. Top-level FCL/Bullet/ODE headers route through compatibility facades, and old implementation sources live under explicit `reference/` paths.                                                                                                                                                                                                         | Local   |
+| `dart/collision/` stops exposing a real multi-backend runtime selection layer.                                               | `dart/collision/dart/dart_collision_detector.hpp` owns the canonical `dart` registrar plus legacy alias registrars. Top-level FCL/Bullet/ODE headers route through compatibility facades, and old implementation sources live under `tests/dart/test/reference_collision/`.                                                                                                                                                                                              | Local   |
 | Retained FCL/Bullet/ODE/experimental names are wrappers/adapters over the built-in detector.                                 | Compatibility headers under `dart/collision/{fcl,bullet,ode}/compat/` and the package smoke under `docs/dev_tasks/native_collision/smoke/native_compat_package/` verify native-backed C++ and package compatibility names. Dartpy uses the clean `DartCollisionDetector` API and tests/audit verify legacy detector aliases are absent.                                                                                                                                  | Local   |
 | Any selected "backend" through retained public names always uses the built-in detector.                                      | `UNIT_collision_DartCollisionDetector` covers factory aliases and legacy facade behavior. The native compatibility package smoke verifies package components, factory keys, installed headers, and direct legacy `create()` calls.                                                                                                                                                                                                                                       | Local   |
-| FCL/Bullet/ODE remain only as optional reference engines for tests and benchmarks.                                           | `DART_BUILD_COLLISION_REFERENCE_TESTS` and `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` exist in CMake/Pixi configure paths; `collision-reference` is the explicit opt-in Pixi environment; per-engine FCL/Bullet/ODE collision build switches are gone from the current build surface; reference call sites use `createReference()` and `collision-reference-*` names.                                                                                                   | Local   |
+| FCL/Bullet/ODE remain only as optional reference engines for tests and benchmarks.                                           | `DART_BUILD_COLLISION_REFERENCE_TESTS` and `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` exist in CMake/Pixi configure paths; `collision-reference` is the explicit opt-in Pixi environment; per-engine FCL/Bullet/ODE collision build switches are gone from the current build surface; reference call sites use `createReference()` and `dart-test-reference-*` targets under `tests/dart/test/reference_collision/`.                                                    | Local   |
 | Native-only builds can opt out of FCL/Bullet/ODE.                                                                            | Normal Pixi configure paths default reference tests and reference benchmarks to `OFF`; local native-only build/install/wheel evidence is recorded in `03-evidence-gates.md`. Manual workflow-dispatch native-only CI passed on repaired head `1e1faf6feb1` as reference evidence, but final PR-state CI evidence remains open.                                                                                                                                           | Local   |
 | Default packages and wheels do not carry old collision runtime dependencies.                                                 | Package install probes, Pixi dependency metadata checks, and the `verify_wheel_collision_isolation.py` verifier are recorded. `wheel-verify-core` runs the wheel isolation verifier, and `publish_dartpy.yml` invokes `pixi run -e py${{ matrix.python-version }}-wheel wheel-verify`. Manual workflow-dispatch wheel matrix evidence passed on repaired head `1e1faf6feb1`; final PR-state artifact evidence remains open.                                              | Local   |
 | Built-in detector maintains correctness tests.                                                                               | Native unit/integration tests, feature parity tests, DART adapter tests, gz-focused regressions, and reference comparison tests are recorded in `03-evidence-gates.md`.                                                                                                                                                                                                                                                                                                  | Local   |
@@ -751,9 +792,10 @@ Deferred finalization scope:
 2. Apply the documented compatibility-facade policy in the final PR state:
    preserve only wrappers required for source compatibility, keep them
    native-backed, and keep all external engines reference-only. The local
-   reference-file cleanup audit found no unreferenced old-engine implementation
-   files to delete; the remaining FCL/Bullet/ODE implementation files are
-   intentional `collision-reference-*` test/benchmark code.
+   reference-file cleanup audit moved old-engine implementation files under
+   `tests/dart/test/reference_collision/`; the remaining FCL/Bullet/ODE
+   implementation files are intentional `dart-test-reference-*`
+   test/benchmark code.
 3. Run final validation after the final PR code state, including at least
    `pixi run lint` and `pixi run test-all`, plus any CI-specific gates whose
    failures are not covered locally. The current working tree has a fresh local

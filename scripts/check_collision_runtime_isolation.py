@@ -42,6 +42,7 @@ COMPAT_PREFIXES = tuple(f"dart/collision/{engine}/compat/" for engine in LEGACY_
 FORBIDDEN_DART_REFERENCE_INCLUDES = tuple(
     f"dart/collision/{engine}/reference/" for engine in LEGACY_ENGINES
 )
+TEST_REFERENCE_INCLUDE_PREFIX = "dart/test/reference_collision/"
 FORBIDDEN_EXTERNAL_INCLUDE_PREFIXES = (
     "fcl/",
     "ode/",
@@ -54,6 +55,15 @@ FORBIDDEN_EXTERNAL_INCLUDE_PREFIXES = (
 )
 
 INCLUDE_PATTERN = re.compile(r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]")
+SKIPPED_SCAN_DIRS = {
+    ".git",
+    ".pixi",
+    ".pytest_cache",
+    "__pycache__",
+    "build",
+    "dist",
+    "install",
+}
 
 
 def is_source_file(path: Path) -> bool:
@@ -68,6 +78,10 @@ def is_compat_path(relative_path: str) -> bool:
     return relative_path.startswith(COMPAT_PREFIXES)
 
 
+def should_skip_path(path: Path) -> bool:
+    return any(part in SKIPPED_SCAN_DIRS for part in path.parts)
+
+
 def check_forbidden_sources(repo_root: Path) -> list[str]:
     failures: list[str] = []
     for engine in LEGACY_ENGINES:
@@ -78,12 +92,15 @@ def check_forbidden_sources(repo_root: Path) -> list[str]:
             if not path.is_file() or path.suffix.lower() not in {".cc", ".cpp", ".cxx"}:
                 continue
             relative_path = path.relative_to(repo_root).as_posix()
-            if not is_reference_path(relative_path) and not is_compat_path(
-                relative_path
-            ):
+            if is_reference_path(relative_path):
+                failures.append(
+                    f"{relative_path}: reference collision implementation source "
+                    "must live under tests/dart/test/reference_collision/"
+                )
+            elif not is_compat_path(relative_path):
                 failures.append(
                     f"{relative_path}: legacy engine implementation source must "
-                    "live under reference/ or compat/"
+                    "live under compat/"
                 )
     return failures
 
@@ -105,8 +122,7 @@ def check_public_facade_headers(repo_root: Path) -> list[str]:
             if path.name not in allowed_headers:
                 failures.append(
                     f"{relative_path}: public legacy collision source must be "
-                    "an explicit forwarding facade or move under compat/ or "
-                    "reference/"
+                    "an explicit forwarding facade or move under compat/"
                 )
                 continue
 
@@ -160,6 +176,32 @@ def check_forbidden_includes(repo_root: Path) -> list[str]:
                 failures.append(
                     f"{relative_path}:{line_number}: runtime source includes "
                     f"legacy collision dependency header {include}"
+                )
+
+    for path in sorted(repo_root.rglob("*")):
+        if not path.is_file() or not is_source_file(path) or should_skip_path(path):
+            continue
+        relative_path = path.relative_to(repo_root).as_posix()
+        if relative_path.startswith("tests/"):
+            continue
+
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8", errors="replace").splitlines(),
+            start=1,
+        ):
+            match = INCLUDE_PATTERN.match(line)
+            if not match:
+                continue
+            include = match.group(1)
+            if include.startswith(FORBIDDEN_DART_REFERENCE_INCLUDES):
+                failures.append(
+                    f"{relative_path}:{line_number}: non-test source includes "
+                    f"old reference backend header {include}"
+                )
+            if include.startswith(TEST_REFERENCE_INCLUDE_PREFIX):
+                failures.append(
+                    f"{relative_path}:{line_number}: non-test source includes "
+                    f"test-only reference backend header {include}"
                 )
     return failures
 

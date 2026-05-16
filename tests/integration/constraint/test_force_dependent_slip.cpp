@@ -32,7 +32,7 @@
 
 #include "../../helpers/dynamics_helpers.hpp"
 #include "../../helpers/gtest_utils.hpp"
-#include "dart/collision/ode/reference/ode_collision_detector.hpp"
+#include "dart/test/reference_collision/ode/ode_collision_detector.hpp"
 #include "dart/constraint/constraint_solver.hpp"
 #include "dart/dynamics/simple_frame.hpp"
 #include "dart/math/geometry.hpp"

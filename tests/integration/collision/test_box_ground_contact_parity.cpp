@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/bullet/reference/bullet_collision_detector.hpp>
+#include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
 #include <dart/collision/collision_detector.hpp>
 #include <dart/collision/collision_group.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
-#include <dart/collision/fcl/reference/fcl_collision_detector.hpp>
-#include <dart/collision/ode/reference/ode_collision_detector.hpp>
+#include <dart/test/reference_collision/fcl/fcl_collision_detector.hpp>
+#include <dart/test/reference_collision/ode/ode_collision_detector.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/frame.hpp>

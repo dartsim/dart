@@ -205,6 +205,12 @@ def check_python_clean_api(repo_root: Path) -> list[str]:
 def check_package_components(repo_root: Path) -> list[str]:
     failures: list[str] = []
     source = read_text(repo_root, "dart/CMakeLists.txt")
+    require_not_contains(
+        failures,
+        source,
+        "collision-reference-",
+        "dart/CMakeLists.txt",
+    )
     require_contains(
         failures,
         source,
@@ -225,6 +231,49 @@ def check_package_components(repo_root: Path) -> list[str]:
     return failures
 
 
+def check_reference_tree(repo_root: Path) -> list[str]:
+    failures: list[str] = []
+    for facade in FACADES:
+        old_dir = repo_root / "dart" / "collision" / facade.engine / "reference"
+        if old_dir.exists():
+            failures.append(
+                f"{old_dir.relative_to(repo_root).as_posix()}: reference "
+                "implementation must live under tests/dart/test/reference_collision/"
+            )
+
+        new_dir = (
+            repo_root
+            / "tests"
+            / "dart"
+            / "test"
+            / "reference_collision"
+            / facade.engine
+        )
+        if not new_dir.is_dir():
+            failures.append(
+                f"{new_dir.relative_to(repo_root).as_posix()}: missing "
+                "test-only reference implementation directory"
+            )
+
+        cmake = read_text(
+            repo_root,
+            f"tests/dart/test/reference_collision/{facade.engine}/CMakeLists.txt",
+        )
+        require_contains(
+            failures,
+            cmake,
+            f"-test-reference-{facade.engine}",
+            f"tests/dart/test/reference_collision/{facade.engine}/CMakeLists.txt",
+        )
+        require_not_contains(
+            failures,
+            cmake,
+            "INSTALL_INTERFACE",
+            f"tests/dart/test/reference_collision/{facade.engine}/CMakeLists.txt",
+        )
+    return failures
+
+
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     failures: list[str] = []
@@ -233,6 +282,7 @@ def main() -> int:
         failures.extend(check_cpp_facade(repo_root, facade))
     failures.extend(check_python_clean_api(repo_root))
     failures.extend(check_package_components(repo_root))
+    failures.extend(check_reference_tree(repo_root))
 
     if failures:
         print("Collision compatibility facade audit failed:", file=sys.stderr)
@@ -248,6 +298,7 @@ def main() -> int:
     )
     print("  dartpy API: DartCollisionDetector only; legacy detector aliases absent")
     print("  package components: collision-fcl/bullet/ode -> dart")
+    print("  reference engines: tests/dart/test/reference_collision only")
     return 0
 
 

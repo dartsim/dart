@@ -36,7 +36,7 @@
 
   #include <dart/simulation/world.hpp>
 
-  #include <dart/collision/bullet/reference/bullet_collision_detector.hpp>
+  #include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
 
   #include <dart/dynamics/box_shape.hpp>
   #include <dart/dynamics/cylinder_shape.hpp>

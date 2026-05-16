@@ -78,7 +78,7 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
   if(NOT DART_TESTS_LIBCCD_FOUND)
     list(FILTER test_files EXCLUDE REGEX "test_libccd_.*\\.cpp$")
   endif()
-  if(NOT DART_BUILD_COLLISION_REFERENCE_TESTS OR NOT TARGET dart-collision-reference-fcl)
+  if(NOT DART_BUILD_COLLISION_REFERENCE_TESTS OR NOT TARGET dart-test-reference-fcl)
     list(FILTER test_files EXCLUDE REGEX "test_reference_backends\\.cpp$")
   endif()
 
@@ -105,17 +105,17 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
         ${test_name}
         PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
       )
-      if(TARGET dart-collision-reference-fcl)
+      if(TARGET dart-test-reference-fcl)
         target_link_libraries(${test_name} PRIVATE
-          -Wl,--no-as-needed dart-collision-reference-fcl -Wl,--as-needed)
+          -Wl,--no-as-needed dart-test-reference-fcl -Wl,--as-needed)
       endif()
-      if(TARGET dart-collision-reference-bullet)
+      if(TARGET dart-test-reference-bullet)
         target_link_libraries(${test_name} PRIVATE
-          -Wl,--no-as-needed dart-collision-reference-bullet -Wl,--as-needed)
+          -Wl,--no-as-needed dart-test-reference-bullet -Wl,--as-needed)
       endif()
-      if(TARGET dart-collision-reference-ode)
+      if(TARGET dart-test-reference-ode)
         target_link_libraries(${test_name} PRIVATE
-          -Wl,--no-as-needed dart-collision-reference-ode -Wl,--as-needed)
+          -Wl,--no-as-needed dart-test-reference-ode -Wl,--as-needed)
       endif()
     endif()
     if(test_name STREQUAL "test_sdf_compare" AND VOXBLOX_FOUND)

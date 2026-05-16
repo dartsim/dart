@@ -14,7 +14,7 @@ compatible but do not select external runtime engines:
 | C++ detector classes `FCLCollisionDetector`, `BulletCollisionDetector`, `OdeCollisionDetector` | Native-backed facades over `DartCollisionDetector`; legacy display strings may be preserved for gz-physics compatibility. |
 | dartpy detector API                                                                            | Clean DART 7 Python API: use `DartCollisionDetector`; legacy backend detector aliases are not retained.                   |
 | Package components `collision-fcl`, `collision-bullet`, `collision-ode`                        | Native-backed interface facades that link the built-in `dart` stack.                                                      |
-| Explicit reference targets `collision-reference-*`                                             | Test/benchmark-only opt-in surfaces for FCL, Bullet, and ODE comparisons.                                                 |
+| Explicit reference targets `dart-test-reference-*`                                             | Test/benchmark-only opt-in build targets for FCL, Bullet, and ODE comparisons.                                            |
 
 The downstream-compatible runtime spelling is `dart`, `DartCollisionDetector`,
 `CollisionDetectorType::Dart`, and the default `dart` package component. Direct
@@ -23,10 +23,10 @@ compatibility display strings, but those strings do not select external
 runtime engines. Per-engine FCL/Bullet/ODE collision build switches are gone
 from the current build surface; core DART, dartpy, gz-physics runtime
 integration, and native-backed compatibility component facades do not need
-backend-shaped build flags. Explicit `collision-reference-*` comparison
-components are built only through the reference test/benchmark gates, and those
-gates are not compatibility switches for normal core libraries, dartpy wheels,
-package facades, or downstream runtime integration.
+backend-shaped build flags. Explicit `dart-test-reference-*` comparison targets
+are built only through the reference test/benchmark gates, are not installed
+package components, and are not compatibility switches for normal core
+libraries, dartpy wheels, package facades, or downstream runtime integration.
 
 Current project steering for future changes: choose the clean long-term DART
 collision API over preserving old backend-selection behavior. The compatibility
@@ -50,8 +50,8 @@ the built-in stack without installed old-engine runtime libraries. The latest
 local refresh on code head `64abc65a032` also checks those built artifacts
 directly: `readelf` shows the gz DART plugin and the native compatibility
 package smoke executable depend on `libdart-collision-native.so` without any
-`libdart-collision-reference-*`, FCL, Bullet, ODE, or libccd runtime
-dependency. The local `audit-collision-compat-facades` guard now verifies
+`libdart-collision-reference-*`, `libdart-test-reference-*`, FCL, Bullet, ODE,
+or libccd runtime dependency. The local `audit-collision-compat-facades` guard now verifies
 that retained factory keys, C++ facades, and package component names route to
 native DART collision while dartpy exposes only the clean
 `DartCollisionDetector` API. Manual GitHub workflow runs are reference evidence
@@ -73,7 +73,7 @@ prefer a clean API over compatibility shims: Python users should construct
 | C++ classes `FCLCollisionDetector`, `BulletCollisionDetector`, `OdeCollisionDetector` | Retained as native-backed facades; marked deprecated by default through `DART_COLLISION_DEPRECATE_LEGACY_NAMES`. | Delete or move behind a final compatibility opt-in.     |
 | CMake package components `collision-fcl`, `collision-bullet`, `collision-ode`         | Retained as native-backed interface targets for source/package compatibility.                                    | Remove once DART 6.x compatibility is no longer needed. |
 | dartpy legacy detector names                                                          | Not retained; no Python `DeprecationWarning` shim. The clean API is `DartCollisionDetector`.                     | No additional cleanup expected.                         |
-| Explicit reference APIs and components                                                | Not deprecated. `createReference()` and `collision-reference-*` remain the intentional comparison surface.       | Preserve while reference comparisons remain useful.     |
+| Explicit reference APIs and targets                                                   | Not deprecated. `createReference()` and `dart-test-reference-*` remain the intentional comparison surface.       | Preserve while reference comparisons remain useful.     |
 
 Downstreams that temporarily need to compile C++ legacy detector classes without
 deprecation warnings can configure with
@@ -119,7 +119,7 @@ Downstream runtime code should migrate in this order:
    `collision-ode` with `dart` when downstream no longer needs source
    compatibility with DART 6.x.
 5. Keep reference-engine comparisons in tests or benchmarks only, using
-   `collision-reference-*` components and the explicit `createReference()` APIs.
+   `dart-test-reference-*` targets and the explicit `createReference()` APIs.
 
 ## Gates Before Removing Compatibility Facades
 
@@ -142,15 +142,16 @@ checks pass:
    Bullet, or ODE headers in native-only builds.
 5. `check-collision-runtime-isolation` and
    `audit-collision-compat-facades` pass in lint, proving non-reference DART
-   source paths do not include old-engine or reference-backend headers, legacy
-   implementation sources remain under explicit `reference/` paths, top-level
-   legacy headers are pure native-backed forwarding facades, and retained
-   compatibility names route to native DART collision.
+   source paths do not include old-engine or reference-backend headers, non-test
+   code does not include `dart/test/reference_collision/...`, old reference
+   implementation sources stay under `tests/dart/test/reference_collision/`,
+   top-level legacy headers are pure native-backed forwarding facades, and
+   retained compatibility names route to native DART collision.
 6. Wheel artifacts pass `wheel-verify`, including the collision-isolation
    verifier. Local wheel verifier evidence exists, and the current wheel-matrix
    workflow pass is reference evidence only until final PR packaging.
 7. Reference tests and benchmarks still have explicit opt-in access through
-   `collision-reference-*` targets.
+   `dart-test-reference-*` targets.
 
 ## Final Removal Sequence
 

@@ -160,6 +160,7 @@ endif()
 
 # Common test utilities shared across test types
 add_subdirectory(common)
+add_subdirectory(dart/test/reference_collision)
 
 # We categorize tests as:
 # - "integration": high level tests to verify the combination of several

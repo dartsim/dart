@@ -3288,6 +3288,37 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `UNIT_collision_CollisionBackend`, the focused CI regex passes 4/4 tests,
     the `collision-native` label passes 29/29 tests, and `pixi run test-unit`
     passes 277/277 tests.
+- Current local Round 6 reference-code relocation:
+  - Commit: current working tree after local head `dd7d8bb163c`
+    (`Flatten native collision unit tests`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target hello_world --parallel 5`,
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_simulation_World --parallel 5`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_simulation_World$' -j 5`,
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target dart_collision_native_tests --parallel 5`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j 5`,
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`,
+    `CMAKE_BUILD_DIR=build/collision-reference/cpp/Release python scripts/cmake_build.py --target test_reference_backends --parallel 5`,
+    `pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^test_reference_backends$' -j 5`,
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference test`,
+    `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e collision-reference bm-collision-check`,
+    `python scripts/check_collision_runtime_isolation.py`, and
+    `python scripts/audit_collision_compat_facades.py`.
+  - Result: passed. Default `hello_world` built without reproducing the
+    reported OctoMap `<ciso646>` warning in this build, `UNIT_simulation_World`
+    passed 1/1, the default `collision-native` label passed 29/29, and
+    `pixi run test-all` passed all 6 top-level gates with C++ tests 264/264,
+    simulation-experimental tests 13/13, Python tests, documentation, and the
+    final `All tests passed!` report. The reference-enabled full C++ suite
+    passed 288/288 tests, including 31 `collision-native` tests, and the
+    focused `test_reference_backends` check passed 1/1. The benchmark gate
+    exited 0: enforced narrowphase, distance, raycast, mixed-primitive,
+    mesh-heavy, and raycast-batch checks all passed; report-only adapter and
+    raw-reference sections wrote comparison JSON for the later performance
+    wave. Runtime isolation and compatibility-facade audits both passed after
+    moving FCL/Bullet/ODE reference implementation code under
+    `tests/dart/test/reference_collision/` and renaming the reference targets
+    to `dart-test-reference-*`.
 
 ## Known Risks
 
@@ -3298,8 +3329,8 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
   names are now native-backed interface facades, old-engine shared libraries
   are explicitly reference-named, and top-level source-tree legacy
   detector/group headers are native-backed facades. Old FCL, Bullet, and ODE
-  implementation files still exist only as explicit reference test/benchmark
-  surfaces under `reference/` paths.
+  implementation files still exist only as explicit test-only reference
+  surfaces under `tests/dart/test/reference_collision/`.
 - Normal pixi configure paths, default/wheel Pixi lock metadata, the repaired
   py312 wheel artifact, and the repaired-head workflow-dispatch wheel matrix
   now exclude the old collision engines. Keep final PR-state packaging

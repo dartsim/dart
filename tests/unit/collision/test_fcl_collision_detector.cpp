@@ -1,14 +1,15 @@
 // Copyright (c) 2011, The DART development contributors
 
+#include <dart/test/reference_collision/fcl/fcl_collision_detector.hpp>
+#include <dart/test/reference_collision/fcl/fcl_collision_group.hpp>
+#include <dart/test/reference_collision/fcl/fcl_types.hpp>
+
 #include <dart/collision/collision_group.hpp>
 #include <dart/collision/collision_object.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/distance_option.hpp>
 #include <dart/collision/distance_result.hpp>
-#include <dart/collision/fcl/reference/fcl_collision_detector.hpp>
-#include <dart/collision/fcl/reference/fcl_collision_group.hpp>
-#include <dart/collision/fcl/reference/fcl_types.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/cone_shape.hpp>

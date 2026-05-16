@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/reference/fcl_collision_detector.hpp"
+#include "dart/test/reference_collision/fcl/fcl_collision_detector.hpp"
 
 #include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 #if DART_HAVE_BULLET
-  #include "dart/collision/bullet/reference/bullet_collision_detector.hpp"
+  #include "dart/test/reference_collision/bullet/bullet_collision_detector.hpp"
 #endif
 #include "../../helpers/gtest_utils.hpp"
 

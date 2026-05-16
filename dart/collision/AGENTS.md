@@ -13,13 +13,13 @@ for tests and benchmarks. Do not add new runtime backend selection paths.
 
 ## Backends
 
-| Surface    | Directory | Status                  | Notes                                    |
-| ---------- | --------- | ----------------------- | ---------------------------------------- |
-| **DART**   | `dart/`   | Default runtime         | Built-in native-backed detector          |
-| **Native** | `native/` | Internal engine         | Geometry, broadphase, narrowphase, query |
-| **FCL**    | `fcl/`    | Reference/compatibility | Optional correctness/benchmark reference |
-| **Bullet** | `bullet/` | Reference/compatibility | Optional correctness/benchmark reference |
-| **ODE**    | `ode/`    | Reference/compatibility | Optional correctness/benchmark reference |
+| Surface    | Directory | Status               | Notes                                    |
+| ---------- | --------- | -------------------- | ---------------------------------------- |
+| **DART**   | `dart/`   | Default runtime      | Built-in native-backed detector          |
+| **Native** | `native/` | Internal engine      | Geometry, broadphase, narrowphase, query |
+| **FCL**    | `fcl/`    | Compatibility facade | Reference code lives under `tests/`      |
+| **Bullet** | `bullet/` | Compatibility facade | Reference code lives under `tests/`      |
+| **ODE**    | `ode/`    | Compatibility facade | Reference code lives under `tests/`      |
 
 ## Key Concepts
 
@@ -35,8 +35,8 @@ for tests and benchmarks. Do not add new runtime backend selection paths.
 - Legacy factory keys/classes must route to the built-in detector unless they
   are explicitly part of an opt-in reference test or benchmark target.
 - Reference tests and benchmarks that intentionally compare against FCL,
-  Bullet, or ODE should use the explicit `createReference()` APIs, not ordinary
-  runtime detector creation.
+  Bullet, or ODE should include `dart/test/reference_collision/...` and use the
+  explicit `createReference()` APIs, not ordinary runtime detector creation.
 - Keep the runtime layer split clean: public API and compatibility facades call
   into `dart/collision/dart/`, while `dart/collision/native/` owns geometry,
   broadphase, narrowphase, distance, raycast, contact persistence, cache

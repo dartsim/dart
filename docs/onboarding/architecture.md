@@ -273,20 +273,20 @@ are treated as optional reference engines for tests and benchmarks, plus
 temporary source-compatibility facades for downstream projects during
 migration.
 
-| Layer                     | Directory / API                         | Runtime role                                                                  |
-| ------------------------- | --------------------------------------- | ----------------------------------------------------------------------------- |
-| **Public DART API**       | `CollisionDetector`, groups, options    | Stable user-facing collision semantics                                        |
-| **Compatibility facades** | `fcl/`, `bullet/`, `ode/` public names  | Preserve source-compatible names while constructing/reporting built-in DART   |
-| **DART adapter**          | `dart/collision/dart/`                  | Shape/result/filter adaptation and persistent scene synchronization           |
-| **Native core**           | `dart/collision/native/`                | Geometry, broadphase, narrowphase, distance, raycast, caches, and profiling   |
-| **Reference harnesses**   | explicit `reference/` paths and targets | Optional correctness/performance comparison against FCL, Bullet, and ODE only |
+| Layer                     | Directory / API                                                            | Runtime role                                                                  |
+| ------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Public DART API**       | `CollisionDetector`, groups, options                                       | Stable user-facing collision semantics                                        |
+| **Compatibility facades** | `fcl/`, `bullet/`, `ode/` public names                                     | Preserve source-compatible names while constructing/reporting built-in DART   |
+| **DART adapter**          | `dart/collision/dart/`                                                     | Shape/result/filter adaptation and persistent scene synchronization           |
+| **Native core**           | `dart/collision/native/`                                                   | Geometry, broadphase, narrowphase, distance, raycast, caches, and profiling   |
+| **Reference harnesses**   | `tests/dart/test/reference_collision/` and `dart-test-reference-*` targets | Optional correctness/performance comparison against FCL, Bullet, and ODE only |
 
 **Default runtime:** The built-in DART detector is the default factory key
 (`"dart"`). Legacy keys such as `"experimental"` and retained FCL/Bullet/ODE
 names may exist during migration as compatibility aliases, but selecting them
 must still use the built-in detector in normal runtime builds. Any intentional
 call to an external engine belongs in explicit reference test/benchmark APIs
-and opt-in reference targets.
+and opt-in test-only reference targets.
 
 **Built-in component design:**
 
@@ -338,7 +338,7 @@ and opt-in reference targets.
 - Public API and compatibility facades: `dart/collision/`
 - DART adapter: `dart/collision/dart/`
 - Native core: `dart/collision/native/`
-- Reference-only engines: `dart/collision/{fcl,bullet,ode}/reference/`
+- Reference-only engines: `tests/dart/test/reference_collision/{fcl,bullet,ode}/`
 - Bridge files: `dart/dynamics/detail/*_bridge.cpp` (collision→dynamics glue)
 
 ---
@@ -1092,9 +1092,9 @@ This architecture makes DART suitable for:
 │   ├── collision/            # Collision detection
 │   │   ├── dart/            # DART adapter for the built-in detector
 │   │   ├── native/          # Native geometry/query implementation
-│   │   ├── fcl/             # Compatibility facade + reference harness
-│   │   ├── bullet/          # Compatibility facade + reference harness
-│   │   └── ode/             # Compatibility facade + reference harness
+│   │   ├── fcl/             # Compatibility facade
+│   │   ├── bullet/          # Compatibility facade
+│   │   └── ode/             # Compatibility facade
 │   ├── dynamics/             # Articulated body dynamics
 │   ├── constraint/           # Constraint solving
 │   ├── simulation/           # World and simulation loop / time stepping
@@ -1102,5 +1102,9 @@ This architecture makes DART suitable for:
 │   ├── optimizer/            # Deprecated headers forwarding to math/optimization
 │   └── gui/                  # Visualization (OSG, ImGui)
 ├── CMakeLists.txt            # Build configuration
+├── tests/dart/test/reference_collision/
+│   ├── fcl/                  # Test-only FCL reference harness
+│   ├── bullet/               # Test-only Bullet reference harness
+│   └── ode/                  # Test-only ODE reference harness
 └── README.md                 # Project overview
 ```

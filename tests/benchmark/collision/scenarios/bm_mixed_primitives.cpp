@@ -34,7 +34,7 @@
 
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
-#include <dart/collision/fcl/reference/fcl_collision_detector.hpp>
+#include <dart/test/reference_collision/fcl/fcl_collision_detector.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
@@ -46,11 +46,11 @@
 #include <dart/dynamics/sphere_shape.hpp>
 
 #if DART_HAVE_BULLET
-  #include <dart/collision/bullet/reference/bullet_collision_detector.hpp>
+  #include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
 #endif
 
 #if DART_HAVE_ODE
-  #include <dart/collision/ode/reference/ode_collision_detector.hpp>
+  #include <dart/test/reference_collision/ode/ode_collision_detector.hpp>
 #endif
 
 #include "tests/benchmark/collision/fixtures/scene_builders.hpp"

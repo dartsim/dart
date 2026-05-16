@@ -47,7 +47,7 @@
 #include <dart/dynamics/sphere_shape.hpp>
 
 #if DART_HAVE_BULLET
-  #include <dart/collision/bullet/reference/bullet_collision_detector.hpp>
+  #include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
 #endif
 
 #include "tests/benchmark/collision/fixtures/shape_factories.hpp"
