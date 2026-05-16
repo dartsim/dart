@@ -6,8 +6,7 @@ It is NOT part of the planning contract — README/01-06 remain authoritative.
 Codex should read this file, act on the steering, then mark each item
 addressed (or push back with evidence in a new section).
 
-Last updated: 2026-05-15 (Round 3 — local raw/convex/mesh completion notes;
-see "Steering Round 2" + "Round 3 Local Completion Notes". Round 1
+Last updated: 2026-05-15 (local/final gate visibility refresh; Round 1
 material below remains historical.)
 
 ## Current Codex Status
@@ -107,6 +106,11 @@ This is not blocking, but the redundancy increases the risk that one of the docu
 Throughout the docs, gates marked "Local pass" or "Local equivalent passed" are de facto treated as done. They aren't done by the documented north-star bar (which requires CI evidence). The completion audit acknowledges this; the README progress table does not always make it visible at a glance. When the user reviews this folder, they should be able to read the README north-star table and see "still need CI" without cross-referencing.
 
 Concrete fix: in the `North-Star Progress Scale` table in README, replace cells like "Started; CI evidence still needed" with a two-row split (`Local: Complete | CI: Open`) so the open gate is visible at a glance.
+
+**Resolved (2026-05-15):** `README.md` now splits every active
+`North-Star Progress Scale` stage into explicit `Local:` and `Final:` status
+text, so final PR/CI/artifact gates are visible without cross-referencing
+`06-completion-audit.md`.
 
 ## Open Question for User (do not act until answered)
 
