@@ -100,16 +100,16 @@ normals flip).
 | `capsule_plane_standing`             | DONE   | `test_plane.cpp`                                                   |                                                               |
 | `capsule_plane_lying`                | DONE   | `test_plane.cpp`                                                   |                                                               |
 | `capsule_cylinder_*`                 | DONE   | `test_cylinder.cpp`                                                | Parallel + capsule-on-top                                     |
-| `capsule_mesh`                       | GAP    | —                                                                  | Not exercised by any test today                               |
-| `capsule_convex`                     | GAP    | —                                                                  |                                                               |
+| `capsule_mesh`                       | DONE   | `test_mesh_mesh.cpp::CapsuleVsMeshPairOrder`                       |                                                               |
+| `capsule_convex`                     | DONE   | `test_convex.cpp::CapsuleConvexPairOrder`                          |                                                               |
 | `capsule_sdf`                        | DONE   | `test_sdf_compare.cpp`                                             |                                                               |
 | `capsule_compound`                   | GAP    | —                                                                  |                                                               |
 | `cylinder_cylinder_parallel_overlap` | DONE   | `test_cylinder.cpp`                                                |                                                               |
 | `cylinder_cylinder_stacked`          | DONE   | `test_cylinder.cpp`                                                |                                                               |
 | `cylinder_cylinder_perpendicular`    | DONE   | `test_cylinder.cpp`                                                |                                                               |
 | `cylinder_plane_*`                   | DONE   | `test_cylinder.cpp`                                                | Standing / lying / tilted / distance                          |
-| `cylinder_mesh`                      | GAP    | —                                                                  |                                                               |
-| `cylinder_convex`                    | GAP    | —                                                                  |                                                               |
+| `cylinder_mesh`                      | DONE   | `test_mesh_mesh.cpp::CylinderVsMeshPairOrder`                      |                                                               |
+| `cylinder_convex`                    | DONE   | `test_convex.cpp::CylinderConvexPairOrder`                         |                                                               |
 | `cylinder_sdf`                       | GAP    | —                                                                  |                                                               |
 | `cylinder_compound`                  | GAP    | —                                                                  |                                                               |
 | `plane_mesh_penetrating`             | DONE   | `test_plane.cpp`                                                   |                                                               |

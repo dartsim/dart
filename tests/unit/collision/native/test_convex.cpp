@@ -197,6 +197,96 @@ TEST(ConvexCollision, PlaneConvexPairOrder)
       1e-10);
 }
 
+TEST(ConvexCollision, CapsuleConvexPairOrder)
+{
+  CapsuleShape capsule(0.25, 1.0);
+  ConvexShape octahedron(makeOctahedronVertices(0.5));
+
+  Eigen::Isometry3d capsuleTf = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d convexTf = Eigen::Isometry3d::Identity();
+  convexTf.translation() = Eigen::Vector3d(0.5, 0, 0);
+
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  CollisionResult capsuleConvex;
+  const bool capsuleConvexCollides = NarrowPhase::collide(
+      &capsule, capsuleTf, &octahedron, convexTf, option, capsuleConvex);
+
+  ASSERT_TRUE(capsuleConvexCollides);
+  ASSERT_EQ(capsuleConvex.numContacts(), 1u);
+  EXPECT_GT(capsuleConvex.getContact(0).depth, 0.0);
+  EXPECT_TRUE(capsuleConvex.getContact(0).position.allFinite());
+  EXPECT_TRUE(capsuleConvex.getContact(0).normal.allFinite());
+  EXPECT_LT(capsuleConvex.getContact(0).normal.x(), -0.5);
+
+  CollisionResult convexCapsule;
+  const bool convexCapsuleCollides = NarrowPhase::collide(
+      &octahedron, convexTf, &capsule, capsuleTf, option, convexCapsule);
+
+  ASSERT_TRUE(convexCapsuleCollides);
+  ASSERT_EQ(convexCapsule.numContacts(), 1u);
+  EXPECT_GT(convexCapsule.getContact(0).depth, 0.0);
+  EXPECT_TRUE(convexCapsule.getContact(0).position.allFinite());
+  EXPECT_TRUE(convexCapsule.getContact(0).normal.allFinite());
+  EXPECT_GT(convexCapsule.getContact(0).normal.x(), 0.5);
+  EXPECT_NEAR(
+      capsuleConvex.getContact(0).depth,
+      convexCapsule.getContact(0).depth,
+      1e-10);
+  EXPECT_NEAR(
+      (capsuleConvex.getContact(0).position
+       - convexCapsule.getContact(0).position)
+          .norm(),
+      0.0,
+      1e-10);
+}
+
+TEST(ConvexCollision, CylinderConvexPairOrder)
+{
+  CylinderShape cylinder(0.25, 1.0);
+  ConvexShape octahedron(makeOctahedronVertices(0.5));
+
+  Eigen::Isometry3d cylinderTf = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d convexTf = Eigen::Isometry3d::Identity();
+  convexTf.translation() = Eigen::Vector3d(0.5, 0, 0);
+
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  CollisionResult cylinderConvex;
+  const bool cylinderConvexCollides = NarrowPhase::collide(
+      &cylinder, cylinderTf, &octahedron, convexTf, option, cylinderConvex);
+
+  ASSERT_TRUE(cylinderConvexCollides);
+  ASSERT_EQ(cylinderConvex.numContacts(), 1u);
+  EXPECT_GT(cylinderConvex.getContact(0).depth, 0.0);
+  EXPECT_TRUE(cylinderConvex.getContact(0).position.allFinite());
+  EXPECT_TRUE(cylinderConvex.getContact(0).normal.allFinite());
+  EXPECT_LT(cylinderConvex.getContact(0).normal.x(), -0.5);
+
+  CollisionResult convexCylinder;
+  const bool convexCylinderCollides = NarrowPhase::collide(
+      &octahedron, convexTf, &cylinder, cylinderTf, option, convexCylinder);
+
+  ASSERT_TRUE(convexCylinderCollides);
+  ASSERT_EQ(convexCylinder.numContacts(), 1u);
+  EXPECT_GT(convexCylinder.getContact(0).depth, 0.0);
+  EXPECT_TRUE(convexCylinder.getContact(0).position.allFinite());
+  EXPECT_TRUE(convexCylinder.getContact(0).normal.allFinite());
+  EXPECT_GT(convexCylinder.getContact(0).normal.x(), 0.5);
+  EXPECT_NEAR(
+      cylinderConvex.getContact(0).depth,
+      convexCylinder.getContact(0).depth,
+      1e-10);
+  EXPECT_NEAR(
+      (cylinderConvex.getContact(0).position
+       - convexCylinder.getContact(0).position)
+          .norm(),
+      0.0,
+      1e-10);
+}
+
 TEST(ConvexCollision, MeshConvexPairOrder)
 {
   MeshShape mesh(makeCubeVertices(0.5), makeCubeTriangles());

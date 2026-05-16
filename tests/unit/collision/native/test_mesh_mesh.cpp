@@ -167,6 +167,99 @@ TEST(PrimitiveMesh, SphereVsMesh)
   EXPECT_GE(result.numContacts(), 1u);
 }
 
+TEST(PrimitiveMesh, CapsuleVsMeshPairOrder)
+{
+  MeshShape mesh = makeGridMesh(1, 2.0);
+  CapsuleShape capsule(0.25, 0.4);
+
+  Eigen::Isometry3d meshTf = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d capsuleTf = Eigen::Isometry3d::Identity();
+  capsuleTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.4);
+
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  CollisionResult meshCapsule;
+  const bool meshCapsuleCollides = NarrowPhase::collide(
+      &mesh, meshTf, &capsule, capsuleTf, option, meshCapsule);
+
+  ASSERT_TRUE(meshCapsuleCollides);
+  ASSERT_EQ(meshCapsule.numContacts(), 1u);
+  EXPECT_GT(meshCapsule.getContact(0).depth, 0.0);
+  EXPECT_TRUE(meshCapsule.getContact(0).position.allFinite());
+  EXPECT_TRUE(meshCapsule.getContact(0).normal.allFinite());
+
+  CollisionResult capsuleMesh;
+  const bool capsuleMeshCollides = NarrowPhase::collide(
+      &capsule, capsuleTf, &mesh, meshTf, option, capsuleMesh);
+
+  ASSERT_TRUE(capsuleMeshCollides);
+  ASSERT_EQ(capsuleMesh.numContacts(), 1u);
+  EXPECT_GT(capsuleMesh.getContact(0).depth, 0.0);
+  EXPECT_TRUE(capsuleMesh.getContact(0).position.allFinite());
+  EXPECT_TRUE(capsuleMesh.getContact(0).normal.allFinite());
+  EXPECT_NEAR(
+      meshCapsule.getContact(0).depth, capsuleMesh.getContact(0).depth, 1e-10);
+  EXPECT_NEAR(
+      (meshCapsule.getContact(0).position - capsuleMesh.getContact(0).position)
+          .norm(),
+      0.0,
+      1e-10);
+  EXPECT_NEAR(
+      (meshCapsule.getContact(0).normal + capsuleMesh.getContact(0).normal)
+          .norm(),
+      0.0,
+      1e-10);
+}
+
+TEST(PrimitiveMesh, CylinderVsMeshPairOrder)
+{
+  MeshShape mesh = makeGridMesh(1, 2.0);
+  CylinderShape cylinder(0.25, 0.4);
+
+  Eigen::Isometry3d meshTf = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d cylinderTf = Eigen::Isometry3d::Identity();
+  cylinderTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.15);
+
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  CollisionResult meshCylinder;
+  const bool meshCylinderCollides = NarrowPhase::collide(
+      &mesh, meshTf, &cylinder, cylinderTf, option, meshCylinder);
+
+  ASSERT_TRUE(meshCylinderCollides);
+  ASSERT_EQ(meshCylinder.numContacts(), 1u);
+  EXPECT_GT(meshCylinder.getContact(0).depth, 0.0);
+  EXPECT_TRUE(meshCylinder.getContact(0).position.allFinite());
+  EXPECT_TRUE(meshCylinder.getContact(0).normal.allFinite());
+
+  CollisionResult cylinderMesh;
+  const bool cylinderMeshCollides = NarrowPhase::collide(
+      &cylinder, cylinderTf, &mesh, meshTf, option, cylinderMesh);
+
+  ASSERT_TRUE(cylinderMeshCollides);
+  ASSERT_EQ(cylinderMesh.numContacts(), 1u);
+  EXPECT_GT(cylinderMesh.getContact(0).depth, 0.0);
+  EXPECT_TRUE(cylinderMesh.getContact(0).position.allFinite());
+  EXPECT_TRUE(cylinderMesh.getContact(0).normal.allFinite());
+  EXPECT_NEAR(
+      meshCylinder.getContact(0).depth,
+      cylinderMesh.getContact(0).depth,
+      1e-10);
+  EXPECT_NEAR(
+      (meshCylinder.getContact(0).position
+       - cylinderMesh.getContact(0).position)
+          .norm(),
+      0.0,
+      1e-10);
+  EXPECT_NEAR(
+      (meshCylinder.getContact(0).normal + cylinderMesh.getContact(0).normal)
+          .norm(),
+      0.0,
+      1e-10);
+}
+
 TEST(PrimitiveMesh, LargeFlatBoxMeshContactPatchIsCapped)
 {
   CollisionWorld world;
@@ -187,7 +280,7 @@ TEST(PrimitiveMesh, LargeFlatBoxMeshContactPatchIsCapped)
   ASSERT_GT(result.numContacts(), 30u);
   for (std::size_t i = 0; i < result.numContacts(); ++i) {
     const auto& contact = result.getContact(i);
-    EXPECT_GT(contact.normal.z(), 0.99);
+    EXPECT_LT(contact.normal.z(), -0.99);
     EXPECT_NEAR(contact.depth, 0.25, 1e-12);
   }
 }

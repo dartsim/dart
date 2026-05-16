@@ -3031,6 +3031,32 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     matrix row through native `NarrowPhase` dispatch, including nonzero
     penetration depth, finite contact position/normal data, and pair-order
     normal orientation for both mesh/convex and convex/mesh query order.
+- Current local capsule/cylinder convex refresh:
+  - Commit: current working tree after local head `295a0a592f1`
+    (`Cover native narrowphase edge cases`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_convex --parallel "$JOBS"`
+    and
+    `./build/default/cpp/Release/bin/test_convex --gtest_filter='ConvexCollision.CapsuleConvexPairOrder:ConvexCollision.CylinderConvexPairOrder'`.
+  - Result: passed. `test_convex` now covers `capsule_convex` and
+    `cylinder_convex` through native `NarrowPhase` dispatch, including nonzero
+    penetration depth, finite contact position/normal data, and pair-order
+    normal orientation for both shape/convex and convex/shape query order.
+- Current local primitive/mesh pair-order refresh:
+  - Commit: current working tree after local head `295a0a592f1`
+    (`Cover native narrowphase edge cases`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_mesh_mesh --parallel "$JOBS"`
+    and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_mesh_mesh$' -j "$JOBS"`.
+  - Result: passed. The new `capsule_mesh` and `cylinder_mesh` coverage first
+    exposed that primitive-vs-mesh dispatch returned the same contact normal
+    for both query orders. `NarrowPhase` now flips contacts when dispatching a
+    primitive as object 1 against a mesh as object 2, matching the asymmetric
+    pair-order contract used by the other native narrow-phase wrappers. The
+    full `test_mesh_mesh` executable passes, including the existing capped
+    large flat box/mesh contact patch with its updated pair-order normal
+    expectation.
 
 ## Known Risks
 

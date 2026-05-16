@@ -407,7 +407,12 @@ bool collideShapes(
 
   if (type2 == ShapeType::Mesh && type1 != ShapeType::Convex) {
     const auto* mesh = static_cast<const MeshShape*>(shape2);
-    return collidePrimitiveMesh(*shape1, tf1, *mesh, tf2, result, option);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePrimitiveMesh(*shape1, tf1, *mesh, tf2, local, opt);
+        });
   }
 
   if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh
