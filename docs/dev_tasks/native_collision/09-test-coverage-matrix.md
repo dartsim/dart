@@ -162,7 +162,7 @@ Bar per row: at least one test exercises the algorithm in isolation
 | `epa_penetration_depth`               | PARTIAL | `test_libccd_algorithms.cpp`                                       | Only through cross-check, not standalone                               |
 | `epa_libccd_parity`                   | DONE    | `test_libccd_algorithms.cpp`                                       |                                                                        |
 | `epa_signed_distance`                 | GAP     | —                                                                  | Negative distance via EPA                                              |
-| `mpr_penetration_depth`               | PARTIAL | `test_libccd_algorithms.cpp`                                       | Only through cross-check                                               |
+| `mpr_penetration_depth`               | DONE    | `test_gjk.cpp::SphereSpherePenetrationDepthAnalytic`               | Standalone analytic depth check                                        |
 | `mpr_libccd_parity`                   | DONE    | `test_libccd_algorithms.cpp`                                       |                                                                        |
 | `sat_box_axes`                        | DONE    | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations` | Calls `computeBoxBoxSat` directly                                      |
 | `sat_axis_no_flicker`                 | DONE    | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations` | Round 7 acceptance #5                                                  |
@@ -347,14 +347,14 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 ## Summary Counters (as of 2026-05-15)
 
 - **§1 Pair-wise narrow-phase:** 72 DONE, 0 PARTIAL, 8 GAP (of 80 rows)
-- **§2 Algorithm-level:** 27 DONE, 4 PARTIAL, 13 GAP (of 44 rows)
+- **§2 Algorithm-level:** 28 DONE, 3 PARTIAL, 13 GAP (of 44 rows)
 - **§3 Stress / regression:** 17 DONE, 1 PARTIAL, 15 GAP (of 33 rows)
 - **§4 Benchmarks:** 19 DONE, 0 PARTIAL, 9 GAP (of 28 rows)
 - **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 143 DONE, 5 PARTIAL, 46 GAP (of 194 rows)
+- **TOTAL:** 144 DONE, 4 PARTIAL, 46 GAP (of 194 rows)
 
-DART native is currently at ~73% of the proposed superset, with the
-remaining 27% concentrated in: (a) less-common shape pairs against
+DART native is currently at ~74% of the proposed superset, with the
+remaining 26% concentrated in: (a) less-common shape pairs against
 capsule/cylinder/mesh/convex/sdf/compound, (b) algorithm-isolation
 tests for SAT internals, (c) long-horizon stability and stress scenes,
 (d) scale and scenario benchmarks beyond the focused raw primitive rows.

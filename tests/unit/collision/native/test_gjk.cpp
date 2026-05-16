@@ -31,6 +31,7 @@
  */
 
 #include <dart/collision/native/narrow_phase/gjk.hpp>
+#include <dart/collision/native/narrow_phase/mpr.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <gtest/gtest.h>
@@ -249,4 +250,24 @@ TEST(Epa, SphereSphereIntersecting)
   } else {
     EXPECT_LT(gjk.simplex.size, 4);
   }
+}
+
+TEST(Mpr, SphereSpherePenetrationDepthAnalytic)
+{
+  const Eigen::Vector3d centerA = Eigen::Vector3d::Zero();
+  const Eigen::Vector3d centerB(1.5, 0.0, 0.0);
+  constexpr double radius = 1.0;
+
+  auto supportA = makeSphereSupport(centerA, radius);
+  auto supportB = makeSphereSupport(centerB, radius);
+
+  const MprResult mpr = Mpr::penetration(supportA, supportB, centerA, centerB);
+  ASSERT_TRUE(mpr.success);
+
+  const double expectedDepth = 2.0 * radius - (centerB - centerA).norm();
+  EXPECT_NEAR(mpr.depth, expectedDepth, 1e-4);
+  EXPECT_GT(mpr.normal.normalized().dot(Eigen::Vector3d::UnitX()), 0.99);
+  EXPECT_TRUE(mpr.pointOnA.allFinite());
+  EXPECT_TRUE(mpr.pointOnB.allFinite());
+  EXPECT_TRUE(mpr.position.allFinite());
 }
