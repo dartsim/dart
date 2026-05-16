@@ -742,17 +742,20 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`74870cc5cf3 Restore boxes run defaults`; the current pending checkpoint is the
-simple-frames camera/defaults/README parity repair.
+`95a6ad0a737 Restore simple frames run defaults`; the current pending
+checkpoint starts with documentation for the stricter full-example parity rule,
+then repairs `examples/hardcoded_design`.
 
 ## Current Immediate Next Step
 
-Restore simple-frames camera/run defaults, README, and parity tests through
-public `dart::gui`, then validate, lint, commit, and push without opening a PR.
-After that, continue the remaining source-owned historical example parity
-audit. Keep `--screenshot <path>` and `--out <dir>` working for the existing
-CTest, GitHub Actions smoke path, and historical image-sequence workflows. A
-later broader smoke sweep can still use:
+Restore hardcoded-design keyboard controls, camera home, README, and parity
+tests through public `dart::gui`, then validate, lint, commit, and push without
+opening a PR. Treat `examples/fetch/` and other already source-owned examples
+as still auditable if a missing historical user-visible behavior is identified;
+do not use source ownership or screenshot smoke coverage as full-restoration
+evidence by itself. Keep `--screenshot <path>` and `--out <dir>` working for
+the existing CTest, GitHub Actions smoke path, and historical image-sequence
+workflows. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

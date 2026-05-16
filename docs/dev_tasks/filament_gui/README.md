@@ -729,11 +729,14 @@ longer express stable DART concepts.
 ## Immediate next steps
 
 1. Continue the legacy-source parity audit for migrated examples instead of
-   treating source ownership as completion. The current implementation slice is
-   the robot/IK example family: `g1_puppet`, `atlas_puppet`, and
-   `hubo_puppet` first, then `operational_space_control`, `wam_ikfast`, and
-   `tinkertoy`.
-2. Add only DART-owned public GUI concepts needed for those examples: no public
+   treating source ownership, buildability, or headless screenshots as full
+   restoration. `examples/fetch/` is explicitly still part of that audit
+   standard if any missing Fetch-specific behavior is identified.
+2. The current implementation slice is `examples/hardcoded_design`: restore
+   number-key joint controls, the `-` direction toggle, camera home, README,
+   and parity tests through public `dart::gui`. Track the old OSG wireframe
+   mode as a future DART-owned render-style/debug API requirement.
+3. Add only DART-owned public GUI concepts needed for those examples: no public
    Filament, GLFW, Dear ImGui, OSG, Raylib, OpenGL, Vulkan, or Metal types.
-3. Keep checkpoint commits small, run `pixi run lint` before every commit, and
+4. Keep checkpoint commits small, run `pixi run lint` before every commit, and
    push the tracked branch without opening a PR so GitHub CI can run.

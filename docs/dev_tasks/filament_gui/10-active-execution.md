@@ -31,7 +31,7 @@ context survives across sessions.
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
 - Latest pushed checkpoint before this in-progress slice:
-  `67ccb2a4cd1 Restore Fetch GUI camera and target cross`
+  `95a6ad0a737 Restore simple frames run defaults`
 - GitHub Actions were manually dispatched for the pushed checkpoint without
   opening a PR:
   - CI Lint: https://github.com/dartsim/dart/actions/runs/25945043484
@@ -102,6 +102,45 @@ context survives across sessions.
   tracked remote branch without opening a PR. It adds the public
   keyboard-action camera reset callback and restores Tab camera-home in
   Tinkertoy. Do not wait for CI before continuing independent parity work.
+
+## Authoritative Current Status
+
+Use this section first when resuming; older checkpoint notes below preserve
+history but are not guaranteed to be in chronological order.
+
+- Latest pushed commit on the tracked branch:
+  `95a6ad0a737 Restore simple frames run defaults`.
+- Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
+  pre-existing local edits and should remain unstaged unless the maintainer
+  explicitly asks to include it.
+- Recent pushed example-parity checkpoints after Fetch include:
+  - `619af5649bc Restore LCP physics controls`
+  - `2bc6a0e168d Restore mimic pendulums diagnostics`
+  - `3493d7065c0 Restore box stacking solver controls`
+  - `74870cc5cf3 Restore boxes run defaults`
+  - `95a6ad0a737 Restore simple frames run defaults`
+- Maintainer correction for the active slice: source ownership, build success,
+  and headless screenshot output are not sufficient evidence that an example is
+  fully restored. Every pre-existing user-facing example must be compared
+  against its historical source for user-visible behavior.
+- `examples/fetch/` is the concrete reminder for that rule. Known restored
+  Fetch behavior currently includes MJCF loading, Bullet preference,
+  robot/object initial positions, mocap weld reset, target sync, visible target
+  cross, work-area grid, camera home, 1280x960 default launch size, GUI scale,
+  selection/drag/nudge instructions, Play/Pause/Step/Exit panel controls,
+  README, and source-marker tests. If any further Fetch-specific historical
+  behavior is identified, repair it through promoted `dart::gui` APIs.
+- Next implementation checkpoint: `examples/hardcoded_design`. Restore
+  number-key joint increments for DOFs 0-2, `-` direction toggling, camera home
+  from eye `(2, 2, 2)` to target `(0, 0, 0)`, README/help text, and tests
+  through public `dart::gui`. Keep the old OSG wireframe mode as a documented
+  follow-up requiring a DART-owned render-style/debug concept rather than OSG
+  or private Filament hooks.
+- Acceptance for the hardcoded-design checkpoint: focused C++ target build,
+  focused `UNIT_gui_FilamentSceneExtraction` CTest, direct and pixi
+  hardcoded-design screenshots with analyzer coverage, Python C++ example
+  runner tests, full `examples` target build, `git diff --check`,
+  `pixi run lint`, and post-lint focused rebuild/CTest/screenshot checks.
 
 ## Current Code Shape
 
@@ -2472,11 +2511,13 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore simple-frames camera/run defaults, README, and parity tests through
-   public `dart::gui`.
-2. Continue the source-owned historical parity audit across the remaining
-   pre-existing examples; do not treat build or screenshot smoke coverage as
-   full restoration evidence by itself.
+1. Restore hardcoded-design keyboard controls, camera home, README, and parity
+   tests through public `dart::gui`; track wireframe as a public render-style
+   follow-up instead of reviving OSG.
+2. Continue the historical-source parity audit across the remaining
+   pre-existing examples, including re-opening examples such as `fetch` if a
+   missing user-visible behavior is found; do not treat build or screenshot
+   smoke coverage as full restoration evidence by itself.
 3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
 4. Do not start the physical `experimental/` directory move until the
