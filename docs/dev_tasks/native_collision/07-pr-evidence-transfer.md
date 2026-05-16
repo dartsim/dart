@@ -242,11 +242,11 @@ Compatibility notes:
 - PR #2652: `https://github.com/dartsim/dart/pull/2652`
 - Latest audited branch evidence:
   - `beea226cf8d` (`Stabilize native box-box contact points`) — local only;
-    push is blocked by the current execution policy.
-  - `0839874dffb` (`Unify invalid mesh collision handling`) — local only; push
-    is blocked by the current execution policy.
+    kept under the current no-push/no-PR scope.
+  - `0839874dffb` (`Unify invalid mesh collision handling`) — local only;
+    kept under the current no-push/no-PR scope.
   - `bb4b48c1eff` (`Refresh native collision evidence notes`) — local only;
-    push is blocked by the current execution policy.
+    kept under the current no-push/no-PR scope.
   - `6853e86f9a6` (`Suppress OctoMap include warning`) — local only.
   - `3ff258d3bf2` (`Preserve native convex mesh fallback`) — local only;
     superseded by `0839874dffb` for invalid mesh data.
