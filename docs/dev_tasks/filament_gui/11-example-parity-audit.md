@@ -580,6 +580,23 @@ maintained GUI application.
 | README documents descriptor diagnostics and the promoted application direction.                           | Restored.                      | README points users to `apps/dartsim` instead of the removed backend-named example.                                    |
 | Keep marker coverage for CLI, world setup, descriptor extraction, diagnostic output, README, and no OSG.  | Restored through marker guard. | `UNIT_gui_FilamentSceneExtraction` now guards the preserved non-interactive diagnostic contract and promoted boundary. |
 
+### Rerun Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/rerun`.
+
+The historical and current trees are identical: `rerun` is a placeholder
+directory with no source files. It should not be migrated to `dart::gui` or a
+renderer dependency until a real Rerun integration example is added.
+
+| Historical item                                                                                       | Current outcome                | Notes                                                                                                            |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Directory contains README and CMake scaffolding only, with no `.cpp` or `.hpp` sources.               | Preserved.                     | The current tree still has no sources for this placeholder.                                                      |
+| CMake discovers local sources and returns early when none exist.                                      | Preserved.                     | This avoids creating a broken empty executable target in source builds and external builds.                      |
+| Placeholder links only future `utils-urdf` requirements after sources exist.                          | Preserved.                     | No GUI renderer dependency is introduced.                                                                        |
+| README describes future Rerun integration scaffolding and states that source files are pending.       | Preserved.                     | Current README is unchanged from the historical source.                                                          |
+| Keep marker coverage for no-source status, early CMake skip, pending-source README, and no GUI types. | Restored through marker guard. | `UNIT_gui_FilamentSceneExtraction` guards the preserved placeholder contract.                                    |
+| Runtime or capture validation.                                                                        | Not applicable until sourced.  | There is intentionally no `rerun` executable in this checkpoint, so validation is CMake/test/build-only focused. |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                                          |
@@ -614,7 +631,7 @@ maintained GUI application.
 | `operational_space_control` | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK/control behavior, teleoperation, camera, and guards.                                                                               |
 | `point_cloud`               | Restored except public color-editor/debug-grid API gaps.                           | Keep color editors and fine-grained grid controls tracked as public API follow-ups.                                                           |
 | `polyhedron_visual`         | Restored by strict audit.                                                          | Keep marker guards for surface, wireframe, grid, camera/defaults, and README.                                                                 |
-| `rerun`                     | Needs strict audit.                                                                | Confirm non-Filament logging/viewer behavior remains correct.                                                                                 |
+| `rerun`                     | Preserved by strict audit as a no-source placeholder.                              | Keep marker guards for CMake early skip, pending-source README, no sources, and no GUI renderer dependency.                                   |
 | `rigid_chain`               | Restored by strict audit.                                                          | Keep marker guards for random pose, damping, camera/defaults, README, and no backend types.                                                   |
 | `rigid_cubes`               | Restored by strict audit.                                                          | Keep marker guards for `cubes.skel`, force keys/decay, camera/defaults, instructions, README, and no backend types.                           |
 | `rigid_loop`                | Restored by strict audit.                                                          | Keep marker guards for constrained-link colors, instructions, defaults, README, and no backend types.                                         |

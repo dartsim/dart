@@ -85,6 +85,10 @@
     as a promoted `dart::gui` descriptor diagnostic example with marker
     coverage for CLI options, descriptor extraction, debug/selection lines,
     camera picking, README, and no renderer dependency.
+  - Audited `rerun` against its historical source and preserved it as a
+    no-source placeholder with CMake early-skip behavior, README scaffolding,
+    and no GUI renderer dependency until a real Rerun integration example is
+    added.
   - Restored the `human_joint_limits` example's live SKEL world, joint-limit
     enforcement, run defaults, README, and marker coverage through public
     `dart::gui`, with the historical TinyDNN-backed custom constraints tracked

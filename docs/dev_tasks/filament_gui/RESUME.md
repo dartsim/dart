@@ -819,23 +819,24 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`82e39c45558 Restore Atlas Simbicon controller example`. The current pending
-checkpoint is `examples/gui_scene_diagnostics/` strict restoration. Compare the
-current source against `520993d7301^:examples/gui_scene_diagnostics`, write the
-itemized inventory in `11-example-parity-audit.md`, then restore or explicitly
-name any remaining public API gaps before coding past this slice.
-Audit result: this is a non-interactive descriptor diagnostic example, and the
-current behavior matches the historical source except for intentional promoted
-`dart::gui` naming and README wording. Pre-lint focused build/CTest, direct
-diagnostic output verification, Python C++ example-runner tests, and aggregate
-`examples` build passed. Mandatory lint, post-lint focused build/CTest, direct
-diagnostic output verification, and `git diff --check` also passed.
+`b80b7809570 Audit GUI scene diagnostics example`. The current pending
+checkpoint is `examples/rerun/` strict restoration. Compare the current source
+against `520993d7301^:examples/rerun`, write the itemized inventory in
+`11-example-parity-audit.md`, then preserve, restore, or explicitly name any
+public API gaps before coding past this slice.
+Audit result: `examples/rerun/` is unchanged from the historical source. It is
+a no-source placeholder with README/CMake scaffolding and should keep its CMake
+early-skip behavior until a real Rerun integration example is added.
+Pre-lint focused build/CTest, aggregate `examples` build, no-`rerun`-executable
+verification, and Python C++ example-runner tests passed. Mandatory lint,
+post-lint focused build/CTest, aggregate `examples` build,
+no-`rerun`-executable verification, and `git diff --check` also passed.
 
 ## Current Immediate Next Step
 
-Commit and push the `examples/gui_scene_diagnostics/` audit checkpoint without
-opening a PR. Keep `--screenshot <path>` and `--out <dir>` working for the
-existing CTest, GitHub Actions smoke path, and historical image-sequence
+Commit and push the `examples/rerun/` no-source placeholder audit checkpoint
+without opening a PR. Keep `--screenshot <path>` and `--out <dir>` working for
+the existing CTest, GitHub Actions smoke path, and historical image-sequence
 workflows. A later broader smoke sweep can still use:
 
 ```bash

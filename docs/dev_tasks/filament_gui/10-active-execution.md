@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `82e39c45558 Restore Atlas Simbicon controller example`.
+  `b80b7809570 Audit GUI scene diagnostics example`.
 - Latest pushed code checkpoint:
-  `82e39c45558 Restore Atlas Simbicon controller example`.
+  `b80b7809570 Audit GUI scene diagnostics example`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -141,6 +141,7 @@ history but are not guaranteed to be in chronological order.
   - `f3bdffff5ad Audit unified loading example`
   - `c39ed94fef3 Restore Fetch selected-frame rotation`
   - `82e39c45558 Restore Atlas Simbicon controller example`
+  - `b80b7809570 Audit GUI scene diagnostics example`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -476,6 +477,28 @@ history but are not guaranteed to be in chronological order.
   `UNIT_gui_FilamentSceneExtraction`, direct diagnostic output verification
   with `gui_scene_diagnostics --frames 3 --width 320 --height 240`, and
   `git diff --check`.
+- The GUI scene diagnostics audit checkpoint was pushed as
+  `b80b7809570 Audit GUI scene diagnostics example`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now `examples/rerun/`, the remaining `Needs strict audit`
+  row. Before editing source, compare the current source against
+  `520993d7301^:examples/rerun`, write an itemized inventory in
+  `11-example-parity-audit.md`, then preserve, restore, or explicitly name any
+  public API gaps.
+- Rerun audit result: the historical and current trees are identical
+  placeholders with only README/CMake scaffolding and no source files. Preserve
+  the no-source early-skip contract, add marker coverage, and do not add
+  `dart::gui` or renderer dependencies until a real Rerun integration example
+  exists.
+- Rerun validation completed before lint: focused C++ build for
+  `UNIT_gui_FilamentSceneExtraction`, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction`, aggregate `examples` build, verification
+  that `build/default/cpp/Release/bin/rerun` is not produced, and Python C++
+  example-runner tests (67 passed).
+- Rerun post-lint validation completed: mandatory `pixi run lint`, focused
+  rebuild and CTest for `UNIT_gui_FilamentSceneExtraction`, aggregate
+  `examples` build, verification that `build/default/cpp/Release/bin/rerun`
+  is not produced, and `git diff --check`.
 
 ## Current Code Shape
 

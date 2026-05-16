@@ -182,7 +182,21 @@ Immediate order:
     committing this audit checkpoint. Pre-lint focused build/CTest, direct
     diagnostic output verification, Python C++ example-runner tests, and
     aggregate `examples` build passed. Post-lint focused build/CTest, direct
-    diagnostic output verification, and `git diff --check` also passed.
+    diagnostic output verification, and `git diff --check` also passed. This
+    checkpoint was pushed as `b80b7809570 Audit GUI scene diagnostics example`.
+13. The next strict-audit cursor is `examples/rerun/`, the final current
+    `Needs strict audit` row. Compare it against
+    `520993d7301^:examples/rerun`, document the itemized inventory, then
+    preserve, restore, or explicitly name any public API gaps before coding
+    past the slice.
+14. `examples/rerun/` has been compared against
+    `520993d7301^:examples/rerun`. It is an unchanged no-source placeholder,
+    not a migrated GUI example. Preserve the CMake early-skip behavior, README
+    scaffolding, absence of source files, and absence of renderer dependencies
+    with marker coverage. Pre-lint focused build/CTest, aggregate `examples`
+    build, no-`rerun`-executable verification, and Python C++ example-runner
+    tests passed. Post-lint focused build/CTest, aggregate `examples` build,
+    no-`rerun`-executable verification, and `git diff --check` also passed.
 
 ## Checkpoint Rule
 
