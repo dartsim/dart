@@ -36,6 +36,8 @@
 #include <dart/gui/export.hpp>
 #include <dart/gui/panel.hpp>
 
+#include <dart/simulation/fwd.hpp>
+
 #include <string>
 #include <vector>
 
@@ -43,6 +45,7 @@ namespace dart::gui {
 
 struct ApplicationOptions
 {
+  dart::simulation::WorldPtr world;
   std::string defaultScene;
   std::vector<Panel> panels;
 };

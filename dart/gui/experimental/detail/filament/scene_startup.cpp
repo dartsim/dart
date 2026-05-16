@@ -51,13 +51,15 @@ std::optional<InitialSceneState> createInitialSceneState(
     MaterialResources& materialResources,
     ExampleScene exampleScene,
     DartScene& dartScene,
+    bool validateFixtureRequirements,
     std::ostream& errors)
 {
   const auto initialDescriptors
       = dart::gui::extractRenderables(*dartScene.world);
   const SceneContentCounts expectedSceneContent
       = countSceneContent(initialDescriptors);
-  if (!validateSceneDescriptorContent(
+  if (validateFixtureRequirements
+      && !validateSceneDescriptorContent(
           exampleScene, expectedSceneContent, errors)) {
     return std::nullopt;
   }
@@ -80,7 +82,8 @@ std::optional<InitialSceneState> createInitialSceneState(
 
   const SceneContentCounts createdSceneContent
       = countCreatedSceneContent(initialDescriptors, state.sceneRenderables);
-  if (!validateCreatedSceneContent(
+  if (validateFixtureRequirements
+      && !validateCreatedSceneContent(
           exampleScene, expectedSceneContent, createdSceneContent, errors)) {
     return std::nullopt;
   }

@@ -65,6 +65,7 @@ std::optional<InitialSceneState> createInitialSceneState(
     MaterialResources& materialResources,
     ExampleScene exampleScene,
     DartScene& dartScene,
+    bool validateFixtureRequirements,
     std::ostream& errors);
 
 } // namespace dart::gui::filament

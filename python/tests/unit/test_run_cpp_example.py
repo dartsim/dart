@@ -10,7 +10,7 @@ FILAMENT_ROUTED_EXAMPLES = {
     "dartsim": (),
     "imgui": (),
     "rigid_shapes": ("--scene", "mvp"),
-    "hello_world": ("--scene", "hello-world"),
+    "hello_world": (),
     "boxes": ("--scene", "boxes"),
     "box_stacking": ("--scene", "boxes"),
     "rigid_cubes": ("--scene", "boxes"),

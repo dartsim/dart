@@ -580,23 +580,33 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "text:selected:box"}));
 
   dart::gui::ApplicationOptions options;
+  options.world = World::create("panel_test");
   options.defaultScene = "mvp";
   options.panels.push_back(std::move(panel));
+  ASSERT_NE(options.world, nullptr);
+  EXPECT_EQ(options.world->getName(), "panel_test");
   EXPECT_EQ(options.defaultScene, "mvp");
   ASSERT_EQ(options.panels.size(), 1u);
   EXPECT_EQ(options.panels.front().title, "Controls");
 }
 
-TEST(FilamentSceneExtraction, TierAExamplesUsePromotedPanelBoundary)
+TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
 {
-  const std::vector<std::filesystem::path> examples
-      = {std::filesystem::path("examples") / "imgui",
-         std::filesystem::path("examples") / "drag_and_drop",
-         std::filesystem::path("examples") / "tinkertoy"};
+  struct ExampleExpectation
+  {
+    std::filesystem::path directory;
+    bool usesPanel = false;
+  };
+
+  const std::vector<ExampleExpectation> examples
+      = {{std::filesystem::path("examples") / "hello_world", false},
+         {std::filesystem::path("examples") / "imgui", true},
+         {std::filesystem::path("examples") / "drag_and_drop", true},
+         {std::filesystem::path("examples") / "tinkertoy", true}};
   std::vector<std::filesystem::path> sources;
   for (const auto& example : examples) {
-    sources.push_back(example / "main.cpp");
-    sources.push_back(example / "CMakeLists.txt");
+    sources.push_back(example.directory / "main.cpp");
+    sources.push_back(example.directory / "CMakeLists.txt");
   }
 
   const auto backendViolations
@@ -614,18 +624,20 @@ TEST(FilamentSceneExtraction, TierAExamplesUsePromotedPanelBoundary)
   }
 
   for (const auto& example : examples) {
-    const auto mainSource = readSourceFile(example / "main.cpp");
+    const auto mainSource = readSourceFile(example.directory / "main.cpp");
     EXPECT_NE(
         mainSource.find("#include <dart/gui/application.hpp>"),
         std::string::npos);
     EXPECT_NE(
-        mainSource.find("#include <dart/gui/panel.hpp>"), std::string::npos);
-    EXPECT_NE(
         mainSource.find("dart::gui::ApplicationOptions"), std::string::npos);
-    EXPECT_NE(mainSource.find("dart::gui::Panel"), std::string::npos);
     EXPECT_NE(
         mainSource.find("dart::gui::runApplication(argc, argv, options)"),
         std::string::npos);
+    if (example.usesPanel) {
+      EXPECT_NE(
+          mainSource.find("#include <dart/gui/panel.hpp>"), std::string::npos);
+      EXPECT_NE(mainSource.find("dart::gui::Panel"), std::string::npos);
+    }
   }
 }
 

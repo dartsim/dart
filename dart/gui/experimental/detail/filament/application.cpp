@@ -123,12 +123,17 @@ using dart::gui::filament::SimulationStepper;
 using dart::gui::filament::updateFrameUi;
 using dart::gui::filament::updateFrameViewport;
 
+bool hasSceneOption(int argc, char* argv[]);
+
 int runFilamentGuiApplicationImpl(
     int argc,
     char* argv[],
     const dart::gui::ApplicationOptions& applicationOptions)
 {
   AppOptions appOptions = parseOptions(argc, argv);
+  if (!hasSceneOption(argc, argv)) {
+    appOptions.world = applicationOptions.world;
+  }
   appOptions.panels = applicationOptions.panels;
   const RunOptions& runOptions = appOptions.run;
 
@@ -174,6 +179,7 @@ int runFilamentGuiApplicationImpl(
   MaterialResources materialResources = createMaterialResources(*engine);
   const MaterialSet materials = materialResources.materialSet();
 
+  const bool validateFixtureRequirements = appOptions.world == nullptr;
   DartScene dartScene = createDartScene(appOptions);
   std::optional<InitialSceneState> maybeInitialSceneState
       = createInitialSceneState(
@@ -183,6 +189,7 @@ int runFilamentGuiApplicationImpl(
           materialResources,
           appOptions.scene,
           dartScene,
+          validateFixtureRequirements,
           std::cerr);
   if (!maybeInitialSceneState) {
     return 1;
@@ -362,7 +369,9 @@ int runApplication(int argc, char* argv[], const char* defaultScene)
 int runApplication(
     int argc, char* argv[], const ApplicationOptions& applicationOptions)
 {
-  if (applicationOptions.defaultScene.empty() || hasSceneOption(argc, argv)) {
+  if (applicationOptions.world != nullptr
+      || applicationOptions.defaultScene.empty()
+      || hasSceneOption(argc, argv)) {
     return filament::runFilamentGuiApplication(argc, argv, applicationOptions);
   }
 

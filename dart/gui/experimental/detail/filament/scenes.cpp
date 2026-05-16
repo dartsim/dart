@@ -678,6 +678,12 @@ AppOptions parseOptions(int argc, char* argv[])
 
 DartScene createDartScene(const AppOptions& options)
 {
+  if (options.world != nullptr) {
+    DartScene scene;
+    scene.world = options.world;
+    return scene;
+  }
+
   switch (options.scene) {
     case ExampleScene::Mvp:
       return createMvpDartScene();

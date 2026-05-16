@@ -400,6 +400,27 @@ Second API checkpoint:
       capture
     - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
 
+Third API/example checkpoint:
+
+- Add `dart::gui::ApplicationOptions::world` so application and example code
+  can hand a DART `WorldPtr` to the official GUI runner without reaching into
+  private Filament scene fixtures.
+- Restore `examples/hello_world/main.cpp` as a real source file that constructs
+  the falling blue box and ground through public DART dynamics/simulation APIs,
+  then passes that world to `dart::gui::runApplication`.
+- Drop the `hello_world` runner default `--scene hello-world` argument so the
+  restored binary runs its own source-defined world by default.
+- Keep the private `createHelloWorldScene()` fixture as transitional dev/test
+  infrastructure until fixture deletion is batched with the remaining example
+  migrations.
+- Local evidence so far:
+  - C++ GUI target build for `dart-gui`, `hello_world`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct `hello_world --headless --frames 1 --screenshot ...` capture
+  - `pixi run ex hello_world --headless --frames 1 --screenshot ...` capture
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:

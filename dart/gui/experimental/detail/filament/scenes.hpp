@@ -107,6 +107,7 @@ enum class ExampleScene
 struct AppOptions
 {
   dart::gui::RunOptions run;
+  dart::simulation::WorldPtr world;
   std::vector<dart::gui::Panel> panels;
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;

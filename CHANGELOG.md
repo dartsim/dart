@@ -29,6 +29,10 @@
     alongside the existing `--screenshot <path>` final-frame capture.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
+  - Moved the `dartsim` viewer source to the application-level `apps/dartsim`
+    tree, added a public `dart::gui::ApplicationOptions::world` handoff for
+    example-owned worlds, and restored `hello_world` as a real public-API
+    `dart::gui` example source.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

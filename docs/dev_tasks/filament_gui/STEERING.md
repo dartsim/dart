@@ -386,6 +386,21 @@ capture default, Isaac Sim default stage) all combine these.
      existing IBL workflow intact.
    - Cost: zero perf.
 
+**Hard constraint: shadows must stay visible by default.** The fix
+must not flatten contact-grounding cast shadows from the key light.
+After the lighting tweak:
+
+- A box on a ground plane must still cast a clearly readable shadow
+  in the default scene with **no CLI flags**.
+- The shadow must remain readable across the orbit (not just at
+  flattering key angles).
+- The fill light from lever 2 is **shadow-disabled** specifically so
+  it does not soften or lift the key's shadow.
+- The ratio of "lit-side luminance : shadow-side fill" should stay
+  roughly **3:1 to 4:1** (cinematography fill ratio). Anything above
+  ~2:1 starts looking flat. If the ×1.6 IBL boost compresses below
+  3:1, dial it back rather than disabling the fill.
+
 **What NOT to do:**
 
 - Do not crank only IBL/ambient — the scene flattens and shadows lose
@@ -393,12 +408,30 @@ capture default, Isaac Sim default stage) all combine these.
   `06-visual-quality.md`).
 - Do not disable shadows — they are required by the visual-quality
   gate and are a useful debugging signal for contact and penetration.
-- Do not change the orbit-light default period or default-on state to
-  paper over the issue. Orbit is a shading-diagnostics aid, not a
-  required scene element. The static lighting must be self-sufficient.
+- Do not change the orbit-light default period to paper over the
+  issue. Orbit is a shading-diagnostics aid, not a required scene
+  element. The static lighting must be self-sufficient.
 - Do not introduce per-scene lighting tuning in `scene_fixtures.cpp`
   for this fix — the change belongs in the renderer's default lighting
   setup so every scene benefits.
+
+**Flip the orbit-light default to off (opt-in).** The orbit was on by
+default to compensate for the shadow-side darkness; with the three
+lighting levers above in place, the static setup is sufficient and the
+orbit becomes purely a diagnostic toggle.
+
+- New default: `--orbit-light` = OFF. Users opt in with `--orbit-light`
+  or the panel checkbox when they want the diagnostic motion.
+- The CLI flag pair stays symmetric: `--orbit-light` enables it,
+  `--no-orbit-light` is now redundant but kept for compatibility.
+- The panel checkbox stays; just flip its initial state to unchecked.
+- Update `--help` text to read "enable orbiting key light (diagnostic
+  shading aid; off by default)".
+- Update `--orbit-light-period <seconds>` description to clarify it
+  only takes effect when orbit is enabled.
+- Document the change in `CHANGELOG.md` as a behavior break: previous
+  default was orbit-on with an 80-second period; new default is
+  orbit-off with a static key.
 
 **Implementation notes for Codex:**
 
@@ -426,6 +459,14 @@ capture default, Isaac Sim default stage) all combine these.
   shaded — no pure-black geometry — without flattening the lit side.
 - The visual-quality shadow gate in `06-visual-quality.md` still
   passes (shadows still visible, contact grounding preserved).
+- **Default scene with no CLI flags shows a clearly cast shadow from
+  the key light onto the ground plane.** This is the user-visible
+  regression check for the "I'd like to see shadow by default"
+  requirement.
+- **Default scene with no CLI flags has a static key light** — orbit
+  is opt-in via `--orbit-light` or the panel checkbox.
+- Lit:fill luminance ratio stays in the 3:1–4:1 cinematography range;
+  if exceeded, dial back the IBL boost rather than removing the fill.
 - The contrast smoke analyzer still rejects flat output; the fix
   raises the floor without removing the upper-bound check.
 
@@ -691,7 +732,9 @@ Two new threads, **in this order** (capture slice still comes first):
    - [ ] `boxes` — visual-only multi-box (factory stays as
          `--scene boxes` developer fixture)
    - [ ] `capsule_ground_contact` — visual-only contact setup
-   - [ ] `hello_world` — single dynamic blue box; canonical "first example"
+   - [~] `hello_world` — single dynamic blue box; canonical "first example"
+     (own promoted `dart::gui` `main.cpp` with public `WorldPtr` handoff
+     exists; private fixture deletion remains)
    - [ ] `simple_frames` — visual `SimpleFrame` hierarchy
    - [ ] `soft_bodies` — visual soft-body SKEL playback
 
