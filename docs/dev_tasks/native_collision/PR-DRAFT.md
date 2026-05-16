@@ -142,6 +142,13 @@ bm-collision-check` guard, `pixi run lint`, `git diff --check`,
   `pixi run test-all`, and a fresh `pixi run -e gazebo test-gz` 65/65
   downstream compatibility gate. The gz DART plugin dependency scan again
   reported `libdart-collision-native.so`.
+- The current no-PR boundary audit head `b5801f6c84c` passed a fresh
+  current-head `pixi run test-all` using the safe local job cap. The full
+  report passed all 6 top-level gates: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation, then printed
+  `All tests passed!`. The C++ unit-test phase reported 264/264 passing tests,
+  including the native collision labels. No PR, push, workflow, branch, or
+  GitHub state was mutated by this recheck.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`

@@ -3752,6 +3752,20 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     The fresh gz-physics gate passed 65/65 and the DART plugin dependency scan
     reported `libdart-collision-native.so`. No PR, push, workflow, branch, or
     GitHub state was mutated by this local validation pass.
+- Current local full validation after the no-PR boundary audit:
+  - Commit: `b5801f6c84c`
+    (`Record native collision no-PR boundary audit`).
+  - Command:
+    `JOBS=$(dart_safe_jobs); DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`.
+  - Result: passed. The full current-head `pixi run test-all` report passed
+    all 6 top-level gates: linting, build, unit tests,
+    simulation-experimental tests, Python tests, and documentation, then
+    printed `All tests passed!`. The C++ unit-test phase reported 264/264
+    passing tests, including the `collision-native` and
+    `collision-native-stability` labels. The examples build rebuilt
+    `hello_world` and `atlas_simbicon`, and the documentation build completed.
+    No PR, push, workflow, branch, or GitHub state was mutated by this local
+    validation pass.
 
 ## Known Risks
 

@@ -336,6 +336,21 @@ validation gate was rerun on clean head `6d3224426ce`
 - Scope: local validation only. No PR, push, workflow, branch, or GitHub state
   was mutated by this recheck.
 
+After the no-PR boundary audit refresh, the same full local validation gate was
+rerun on clean head `b5801f6c84c`
+(`Record native collision no-PR boundary audit`):
+
+- Command:
+  `JOBS=$(dart_safe_jobs); DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
+- Result: passed. The full current-head report passed 6/6 top-level gates:
+  linting, build, unit tests, simulation-experimental tests, Python tests, and
+  documentation, then printed `All tests passed!`. The C++ unit-test phase
+  reported 264/264 passing tests, including the `collision-native` and
+  `collision-native-stability` labels. The examples build rebuilt
+  `hello_world` and `atlas_simbicon`.
+- Scope: local validation only. No PR, push, workflow, branch, or GitHub state
+  was mutated by this recheck.
+
 After the current validation evidence commit, the local gz-physics
 compatibility gate was rerun on clean head `6742a21ab0f`
 (`Record native collision current validation evidence`):

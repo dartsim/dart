@@ -71,6 +71,12 @@ fix evidence in the dev-task packet. A read-only external recheck for that head
 found no GitHub Actions runs and only closed PR #2652 on old head
 `714d220d82a`; no PR metadata, workflow state, branch state, or GitHub artifact
 was mutated.
+The current no-PR boundary audit head `b5801f6c84c` then passed a fresh
+current-head `pixi run test-all` with all 6 top-level gates green: linting,
+build, unit tests, simulation-experimental tests, Python tests, and
+documentation. The C++ unit-test phase reported 264/264 passing tests,
+including the native collision labels. No PR, push, workflow, branch, or GitHub
+state was mutated for that recheck.
 The package-smoke evidence was recorded at `25b60737498`; later docs-only
 evidence and reference-surface wording commits may move `HEAD`. Use
 `git log -3 --oneline --decorate` for the exact current local head. None of
