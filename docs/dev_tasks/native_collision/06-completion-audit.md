@@ -24,7 +24,7 @@ paths, multi-core CPU parallelism, and stretch GPU support.
 
 Status: final north-star PR completion is not complete. Current no-PR
 branch-evidence execution is locally satisfied by the evidence packet and
-latest local validation records. The latest local follow-up refreshes raw
+latest local validation records. The latest local code follow-up refreshes raw
 box-ground, convex-mesh fallback, public mesh collision coverage, raw /
 convex / mesh batch narrow-phase coverage, and mixed batch-dispatcher
 coverage without changing the no-PR boundary. This dev-task folder remains

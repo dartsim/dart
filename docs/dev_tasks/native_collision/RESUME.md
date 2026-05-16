@@ -33,11 +33,12 @@ prerequisites and documented FCL/Bullet/ODE as optional reference-comparison
 dependencies. That docs cleanup is commit `621fca5a1fb` and was validated with
 `pixi run lint`.
 
-Current unpushed follow-up fixes a native box-box contact-point regression that
-could let a rotated box fall through a large ground box in default-world
-simulation. It also makes invalid convex/soft mesh data non-collidable with a
-warning and adds public-detector coverage for sphere-mesh collision. The slice
-adds raw box-box, sphere-sphere batch, capsule-capsule batch,
+Current unpushed code follow-up fixes a native box-box contact-point
+regression that could let a rotated box fall through a large ground box in
+default-world simulation. It also makes invalid convex/soft mesh data
+non-collidable with a warning and adds public-detector coverage for
+sphere-mesh collision. The slice adds raw box-box, sphere-sphere batch,
+capsule-capsule batch,
 cylinder-cylinder batch, convex-convex batch, mesh-mesh batch, default-world,
 narrow-phase batch dispatcher, convex-mesh, and mesh regression tests, rebuilds
 `hello_world` without the OctoMap `<ciso646>` warning, and refreshes focused

@@ -9,7 +9,7 @@ folder in the current pass. Keep `feature/new_coll`, `PR-DRAFT.md`, and
 Final PR CI evidence, evidence transfer, and folder deletion are deferred
 finalization steps.
 
-Latest local follow-up: the current tree fixes the default native box-ground
+Latest local code follow-up: the current tree fixes the default native box-ground
 contact regression reported from `hello_world`/Atlas-style scenes, makes
 invalid convex/soft mesh data non-collidable with a warning, adds focused raw
 box-box, sphere-sphere batch, capsule-capsule batch, cylinder-cylinder batch,

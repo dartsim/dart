@@ -87,8 +87,8 @@ must be deleted in the same PR that completes the native-collision migration.
 
 Local validation currently recorded in the dev-task evidence:
 
-- Latest local committed follow-up, not yet pushed under the current no-PR /
-  no-GitHub-mutation scope, contains:
+- Latest local committed code follow-up, not yet pushed under the current
+  no-PR / no-GitHub-mutation scope, contains:
   - `beea226cf8d` (`Stabilize native box-box contact points`)
   - `0839874dffb` (`Unify invalid mesh collision handling`)
   - `5e8a2c67d78` (`Fix native box-box ground contacts`)
