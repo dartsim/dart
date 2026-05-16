@@ -162,7 +162,16 @@ remaining superseded by the promoted renderer-neutral keyboard and panel APIs.
 Focused build/CTest, direct and pixi screenshot smokes, Python example-runner
 tests, the aggregate `examples` build, `git diff --check`, mandatory
 `pixi run lint`, and post-lint focused build/CTest/direct screenshot smoke
-pass. Commit and push this checkpoint next.
+pass. This checkpoint has been committed and pushed as
+`6ee2b97a20f Restore simulation event handler controls`. The active slice is
+now `examples/hello_world`: the local implementation restores the historical
+instruction text, deterministic non-axis-aligned initial box orientation,
+640x480 run default, camera home, profiling scope/dump markers, README, and
+source-marker guards through public `dart::gui`. Focused build/CTest, direct
+and pixi screenshot smokes, Python example-runner tests, the aggregate
+`examples` build, `git diff --check`, mandatory `pixi run lint`, and
+post-lint focused build/CTest/direct screenshot smoke pass. Commit and push
+this checkpoint next.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

@@ -61,6 +61,28 @@ Historical source compared: `520993d7301^:examples/fetch/main.cpp`.
 | Enable drag-and-drop of the target.                                                                                          | Restored through promoted selection/drag controls.  | Current runner supports Ctrl-left drag plus keyboard nudge controls on selectable frames.                                      |
 | README documents how to run the example.                                                                                     | Restored for promoted runner.                       | Current README documents `pixi run ex fetch` and headless capture.                                                             |
 
+### Hello World Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/hello_world/main.cpp`.
+
+The source-owned checkpoint restores the single dynamic blue box, gray ground,
+gravity, collision, instruction text, camera/run defaults, profiling markers,
+README, and promoted `ApplicationOptions::world` handoff through public
+`dart::gui`.
+
+| Historical item                                                                                  | Current outcome                      | Notes                                                                                                  |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| Create one blue dynamic box at `(0, 0, 1)` with size `(0.3, 0.3, 0.3)` and mass `1`.             | Restored through public `dart::gui`. | Current source owns the DART skeleton, collision, visual, and dynamics aspects.                        |
+| Give the box a randomized initial orientation.                                                   | Restored with deterministic variant. | Current source uses a non-axis-aligned orientation while keeping promoted screenshots repeatable.      |
+| Create a light gray 10x10 ground box.                                                            | Restored.                            | Current source owns the DART ground skeleton and collision/visual aspects.                             |
+| Let the world simulate the box falling under gravity.                                            | Restored.                            | Current source sets gravity `(0, 0, -9.81)` and the shared runner handles Space pause/resume.          |
+| Print/show `Press space to start free falling the box.` viewer instructions.                     | Restored.                            | Current source emits the text to the console and in a promoted panel.                                  |
+| Enable default OSG shadow setup.                                                                 | Superseded by promoted renderer.     | Filament configures maintained scene lighting/shadows globally; do not expose backend shadow settings. |
+| Default launch size 640x480.                                                                     | Restored.                            | Current source uses `ApplicationOptions::runDefaults`.                                                 |
+| Camera home from eye `(2.57, 3.14, 1.64)` to target `(0, 0, 0.50)` with up `(-0.24,-0.25,0.94)`. | Restored.                            | Current source converts the historical home to `dart::gui::OrbitCamera`.                               |
+| Emit scoped profiling markers and text dump.                                                     | Restored.                            | Current source preserves `DART_PROFILE_SCOPED_N` and `DART_PROFILE_TEXT_DUMP`.                         |
+| README documents the promoted runner and no longer says the standalone source remains OSG.       | Restored.                            | Current README documents `pixi run ex hello_world`, controls, and headless capture.                    |
+
 ### Heightmap Itemized Inventory
 
 Historical source compared: `520993d7301^:examples/heightmap/main.cpp`.
@@ -214,7 +236,7 @@ first-class keyboard shortcut.
 | `hardcoded_design`          | Recent parity checkpoint; OSG wireframe remains public API gap.                    | Confirm checklist entry and keep wireframe follow-up explicit.                                 |
 | `headless_simulation`       | Needs strict audit.                                                                | Confirm non-GUI simulation/capture behavior remains intact.                                    |
 | `heightmap`                 | Restored except public debug-grid/color editor gaps.                               | Keep OSG grid style controls tracked as public API follow-up.                                  |
-| `hello_world`               | Needs strict audit.                                                                | Confirm historical camera/default behavior and README.                                         |
+| `hello_world`               | Restored by strict audit.                                                          | Keep marker guards for instructions, camera/defaults, profiling, README, and no backend types. |
 | `hubo_puppet`               | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK, teleoperation, target activation semantics, and guards.                            |
 | `human_joint_limits`        | Needs strict audit.                                                                | Compare historical controls/defaults and visual diagnostics.                                   |
 | `hybrid_dynamics`           | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm harness toggle, camera, and guards.                                                    |

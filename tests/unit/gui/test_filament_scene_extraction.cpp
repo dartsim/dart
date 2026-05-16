@@ -728,7 +728,7 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
   };
 
   const std::vector<ExampleExpectation> examples = {
-      {std::filesystem::path("examples") / "hello_world", false},
+      {std::filesystem::path("examples") / "hello_world", true},
       {std::filesystem::path("examples") / "boxes", false},
       {std::filesystem::path("examples") / "rigid_cubes", true},
       {std::filesystem::path("examples") / "box_stacking", true},
@@ -805,6 +805,35 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
       EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
     }
   }
+}
+
+TEST(FilamentSceneExtraction, HelloWorldExamplePreservesParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "hello_world" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "hello_world" / "README.md");
+
+  EXPECT_NE(mainSource.find("DART_PROFILE_SCOPED_N"), std::string::npos);
+  EXPECT_NE(mainSource.find("DART_PROFILE_TEXT_DUMP"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Press space to start free falling the box."),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("Eigen::AngleAxisd(0.35"), std::string::npos);
+  EXPECT_NE(mainSource.find("createHelloWorldPanel"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeHelloWorldRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeHelloWorldCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.50)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("options.panels"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Hello World Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, BoxesExamplePreservesParityMarkers)

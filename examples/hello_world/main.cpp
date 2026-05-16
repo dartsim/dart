@@ -31,6 +31,8 @@
  */
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -41,11 +43,17 @@
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
+#include <dart/common/profile.hpp>
+
 #include <Eigen/Geometry>
 
+#include <iostream>
 #include <memory>
 
 namespace {
+
+constexpr const char* kHelloWorldInstructions
+    = "Press space to start free falling the box.";
 
 dart::dynamics::SkeletonPtr createFallingBox()
 {
@@ -56,6 +64,10 @@ dart::dynamics::SkeletonPtr createFallingBox()
 
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+  transform.linear() = (Eigen::AngleAxisd(0.35, Eigen::Vector3d::UnitX())
+                        * Eigen::AngleAxisd(-0.45, Eigen::Vector3d::UnitY())
+                        * Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()))
+                           .toRotationMatrix();
   body->getParentJoint()->setTransformFromParentBodyNode(transform);
 
   const auto shape = std::make_shared<dart::dynamics::BoxShape>(
@@ -106,11 +118,60 @@ dart::simulation::WorldPtr createHelloWorld()
   return world;
 }
 
+dart::gui::Panel createHelloWorldPanel()
+{
+  dart::gui::Panel panel;
+  panel.title = "Hello World";
+  panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
+                              dart::gui::PanelContext& context) {
+    builder.text(kHelloWorldInstructions);
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("contacts: " + std::to_string(context.contactCount));
+  };
+  return panel;
+}
+
+dart::gui::RunOptions makeHelloWorldRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makeHelloWorldCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.50);
+  camera.yaw = 0.8848934155088675;
+  camera.pitch = 0.27389034471171636;
+  camera.distance = 4.214747916542578;
+  return camera;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
 {
+  DART_PROFILE_SCOPED_N("hello_world_main");
+  std::cout << kHelloWorldInstructions << std::endl;
+
   dart::gui::ApplicationOptions options;
   options.world = createHelloWorld();
-  return dart::gui::runApplication(argc, argv, options);
+  options.panels.push_back(createHelloWorldPanel());
+  options.runDefaults = makeHelloWorldRunDefaults();
+  options.camera = makeHelloWorldCamera();
+  const int result = dart::gui::runApplication(argc, argv, options);
+  DART_PROFILE_TEXT_DUMP();
+  return result;
 }

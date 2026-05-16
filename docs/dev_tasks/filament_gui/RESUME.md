@@ -193,7 +193,16 @@ key-release and pre/post-render callbacks as public API gaps. The active slice
 is now `examples/simulation_event_handler`: the local implementation restores
 the historical event-handler controls, selected-body force/torque application,
 force-arrow visualization, camera/run defaults, README, and source-marker
-guards through public `dart::gui`.
+guards through public `dart::gui`. This checkpoint has been committed and
+pushed as `6ee2b97a20f Restore simulation event handler controls`. The active
+slice is now `examples/hello_world`: restore the historical instruction text,
+deterministic non-axis-aligned initial box orientation, 640x480 run default,
+camera home, profiling scope/dump markers, README, and source-marker guards
+through public `dart::gui`. The local implementation is in place and has
+passed focused build/CTest, direct and pixi screenshot smokes, Python
+example-runner tests, the aggregate `examples` build, and `git diff --check`
+before lint. Mandatory `pixi run lint` and post-lint focused
+build/CTest/direct screenshot smoke also pass.
 Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
 Atlas/Hubo target activation semantics, and Enter recording as explicit parity
 gaps unless a later slice adds the narrow renderer-neutral public API needed
@@ -756,19 +765,19 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`158e10d4cc2 Restore empty viewer scaffold`; the current pending checkpoint
-restores `examples/simulation_event_handler` from the strict
-historical-source audit. Focused build/CTest, direct and pixi screenshot
-smokes, Python example-runner tests, the aggregate `examples` build,
-`git diff --check`, mandatory `pixi run lint`, and post-lint focused
-build/CTest/direct screenshot smoke pass; it still needs commit and push.
+`6ee2b97a20f Restore simulation event handler controls`; the current pending
+checkpoint restores `examples/hello_world` from the strict historical-source
+audit. Focused build/CTest, direct and pixi screenshot smokes, Python
+example-runner tests, the aggregate `examples` build, and `git diff --check`
+pass before lint. Mandatory `pixi run lint` and post-lint focused
+build/CTest/direct screenshot smoke also pass; it still needs commit and push.
 
 ## Current Immediate Next Step
 
-Commit and push the `examples/simulation_event_handler` restoration checkpoint
-without opening a PR. It restores the historical selected-body controls,
-force/torque application keys, force-arrow visualization, timestep/magnitude
-controls, camera/run defaults, README, and source-marker tests through public
+Commit and push the `examples/hello_world` restoration checkpoint without
+opening a PR. It restores the historical instruction text, deterministic
+non-axis-aligned initial box orientation, 640x480 run default, camera home,
+profiling scope/dump markers, README, and source-marker tests through public
 `dart::gui`.
 Treat `examples/fetch/` and other already source-owned examples as still
 auditable if a missing historical user-visible behavior is identified; do not
