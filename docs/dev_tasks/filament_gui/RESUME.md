@@ -93,14 +93,16 @@ exposing backend camera/window types. This is implemented and pushed. The next
 slice is G1 target activation parity: use public `dart::gui` keyboard actions
 to make number keys add/remove target frames, reset activated targets to their
 end-effector transforms, and solve only active G1 targets from
-`ApplicationOptions::preStep`. This is implemented, locally validated, and
-ready to commit/push. The next source-owned restoration slice re-audits
-`examples/fetch/` against the historical OSG source, because prior Fetch
-camera/grid/capture evidence is not proof that the full example behavior was
-restored. Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
-Atlas/Hubo target activation semantics, and Enter recording as explicit parity
-gaps unless a later slice adds the narrow renderer-neutral public API needed
-for them.
+`ApplicationOptions::preStep`. This is implemented and pushed. The next
+source-owned restoration slice re-audits `examples/fetch/` against the
+historical OSG source, because prior Fetch camera/grid/capture evidence is not
+proof that the full example behavior was restored. That Fetch re-audit found a
+remaining first-slice gap in the legacy panel affordances; Exit, Play/Pause,
+Help, and About controls are now implemented locally through public
+`dart::gui` lifecycle/panel APIs and are in validation/commit state. Keep Atlas
+relaxed-posture/balance optimization, Hubo analytical IK, Atlas/Hubo target
+activation semantics, and Enter recording as explicit parity gaps unless a
+later slice adds the narrow renderer-neutral public API needed for them.
 
 ## Context That Would Be Lost
 

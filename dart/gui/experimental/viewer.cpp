@@ -108,6 +108,11 @@ void requestSingleStep(ViewerLifecycleState& state, bool pause)
   state.stepOnce = true;
 }
 
+void requestExit(ViewerLifecycleState& state)
+{
+  state.exitRequested = true;
+}
+
 bool shouldAdvanceSimulation(const ViewerLifecycleState& state)
 {
   return !state.paused || state.stepOnce;

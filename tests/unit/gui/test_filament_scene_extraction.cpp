@@ -796,6 +796,14 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("syncMocapTarget"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Point cloud and voxel grid rendering example"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("builder.button(\"Play\")"), std::string::npos);
+  EXPECT_NE(mainSource.find("builder.button(\"Pause\")"), std::string::npos);
+  EXPECT_NE(mainSource.find("builder.button(\"Exit\")"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::gui::requestExit"), std::string::npos);
+  EXPECT_NE(mainSource.find("About DART"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
   EXPECT_EQ(
       mainSource.find("setGravity(Eigen::Vector3d::Zero())"),
@@ -2795,6 +2803,9 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_EQ(state.renderedFrames, 1);
   EXPECT_EQ(state.skippedFrames, 0);
   EXPECT_TRUE(dart::gui::shouldStopAfterFrame(options, state));
+  EXPECT_FALSE(state.exitRequested);
+  dart::gui::requestExit(state);
+  EXPECT_TRUE(state.exitRequested);
 
   dart::gui::RunOptions windowOnly;
   windowOnly.guiScale = 10.0;

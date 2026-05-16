@@ -58,11 +58,14 @@ camera-home gap by adding a renderer-neutral camera reset callback to
 implemented and pushed. The next active slice restores G1's historical
 number-key target activation/deactivation semantics and active-target pre-step
 solving through source-owned public `dart::gui` actions; it is implemented and
-in checkpoint validation/commit state. The next source-owned restoration slice
-re-audits `examples/fetch/` against the historical OSG source, because prior
-Fetch evidence proves camera/grid/capture smoke parity but does not by itself
-prove the full example was restored. Enter recording remains a separate
-capture/session API gap.
+pushed. The next source-owned restoration slice re-audits `examples/fetch/`
+against the historical OSG source, because prior Fetch evidence proves
+camera/grid/capture smoke parity but does not by itself prove the full example
+was restored. That Fetch re-audit found the remaining first-slice gap in the
+legacy panel affordances; Exit, Play/Pause, Help, and About controls are now
+implemented locally through public `dart::gui` lifecycle/panel APIs and are in
+validation/commit state. Enter recording remains a separate capture/session API
+gap.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

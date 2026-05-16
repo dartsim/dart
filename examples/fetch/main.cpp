@@ -275,6 +275,7 @@ dart::gui::Panel createFetchPanel()
   panel.title = "Fetch";
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
+    builder.text("Point cloud and voxel grid rendering example");
     builder.text("Fetch pick-and-place MJCF world");
     builder.text("Whole-body motion follows the green cross target.");
     builder.text("The offset grid marks the pick-and-place work area.");
@@ -282,14 +283,26 @@ dart::gui::Panel createFetchPanel()
     builder.text("X/Y/Z constrain Ctrl-left drag to one world axis.");
     builder.separator();
     if (context.lifecycle != nullptr) {
-      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
-        dart::gui::togglePaused(*context.lifecycle);
+      if (builder.button("Play")) {
+        context.lifecycle->paused = false;
+      }
+      builder.sameLine();
+      if (builder.button("Pause")) {
+        context.lifecycle->paused = true;
       }
       builder.sameLine();
       if (builder.button("Step")) {
         dart::gui::requestSingleStep(*context.lifecycle);
       }
+      builder.sameLine();
+      if (builder.button("Exit")) {
+        dart::gui::requestExit(*context.lifecycle);
+      }
     }
+    builder.separator();
+    builder.text("Help");
+    builder.text("The end-effector follows the interactive target.");
+    builder.text("About DART: project and libdart simulation libraries.");
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("contacts: " + std::to_string(context.contactCount));
     builder.text("selected: " + context.selectedLabel);

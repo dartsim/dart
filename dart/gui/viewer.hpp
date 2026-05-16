@@ -70,6 +70,7 @@ struct ViewerLifecycleState
   bool paused = false;
   bool stepOnce = false;
   bool screenshotRequested = false;
+  bool exitRequested = false;
 };
 
 struct OrbitCamera
@@ -172,6 +173,8 @@ DART_GUI_API void togglePaused(ViewerLifecycleState& state);
 
 DART_GUI_API void requestSingleStep(
     ViewerLifecycleState& state, bool pause = true);
+
+DART_GUI_API void requestExit(ViewerLifecycleState& state);
 
 DART_GUI_API bool shouldAdvanceSimulation(const ViewerLifecycleState& state);
 

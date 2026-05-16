@@ -244,7 +244,8 @@ int runFilamentGuiApplicationImpl(
       orbitStartClock,
       profile);
 
-  while (shouldContinueApplicationLoop(runOptions.headless, window)) {
+  while (!lifecycle.exitRequested
+         && shouldContinueApplicationLoop(runOptions.headless, window)) {
     const auto frameStart = ProfileAccumulator::Clock::now();
     auto phaseStart = ProfileAccumulator::Clock::now();
     pollApplicationInput(

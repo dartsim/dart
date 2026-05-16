@@ -1617,8 +1617,8 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
   - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
     (67 passed)
   - `git diff --check`
-- Implementation status: ready to commit and push as the G1 target-toggle
-  checkpoint.
+- Implementation status: pushed as
+  `1db37cf8275 Restore G1 target toggles`.
 
 Thirtieth source-owned example restoration checkpoint:
 
@@ -1633,6 +1633,42 @@ Thirtieth source-owned example restoration checkpoint:
   `examples/fetch/` against its historical OSG source and move any remaining
   example behavior, UI controls, display text, and interaction semantics into
   the maintained Fetch source through promoted `dart::gui` APIs.
+- Re-audit result for the first Fetch slice: the maintained source already
+  restores the live MJCF simulation, Bullet preference, initial robot/object
+  poses, weld reset, mocap target following, visible draggable target cross,
+  work-area grid, `--gui-scale`, and camera default. The remaining user-facing
+  gap in this slice is the legacy viewer panel affordance set: Exit,
+  Help/About text, and explicit Play/Pause controls instead of only
+  Pause/Step/status text.
+- Implementation scope for this Fetch checkpoint: add a narrow public
+  `dart::gui` lifecycle exit request helper and use it from the Fetch panel;
+  update the Fetch panel to expose the historical Play/Pause controls and
+  viewer-help/about copy through existing public panel widgets. Do not expose
+  Filament, GLFW, Dear ImGui, or backend window types to the example.
+- Local validation completed:
+  - `cmake --build build/default/cpp/Release --target fetch
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe Fetch screenshot plus `analyze_headless_smoke.py`
+    (`/tmp/dart_fetch_panel_direct.ppm`, 303695/307200 nonzero pixels)
+  - `pixi run ex fetch --headless --frames 2 --width 640 --height 480
+--screenshot /tmp/dart_fetch_panel_pixi.ppm` plus analyzer
+    (303694/307200 nonzero pixels)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target fetch
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct and pixi Fetch screenshots plus
+    `analyze_headless_smoke.py` (`/tmp/dart_fetch_panel_direct_postlint.ppm`
+    and `/tmp/dart_fetch_panel_pixi_postlint.ppm`, both 303695/307200 nonzero
+    pixels)
+- Implementation status: ready for checkpoint commit and push.
 - After Fetch, continue the same source-owned audit pattern across the rest of
   the pre-existing examples before treating the migration as complete.
 
@@ -1666,10 +1702,11 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push the validated G1 number-key target activation/deactivation
-   and active-target pre-step solving checkpoint.
-2. Re-audit `examples/fetch/` against the historical OSG source and restore any
-   remaining source-owned behavior through public `dart::gui`.
+1. Run the mandatory pre-commit `pixi run lint`, then commit and push the
+   validated Fetch lifecycle/panel parity checkpoint.
+2. Continue the source-owned historical parity audit across the remaining
+   pre-existing examples; do not treat build or screenshot smoke coverage as
+   full restoration evidence by itself.
 3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
 4. Do not start the physical `experimental/` directory move until the
