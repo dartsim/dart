@@ -36,6 +36,80 @@
 
 using namespace dart::collision::native;
 
+namespace {
+
+Aabb computeTriangleAabb(
+    const std::vector<Eigen::Vector3d>& vertices,
+    const MeshShape::Triangle& triangle)
+{
+  const Eigen::Vector3d& v0 = vertices[static_cast<std::size_t>(triangle[0])];
+  const Eigen::Vector3d& v1 = vertices[static_cast<std::size_t>(triangle[1])];
+  const Eigen::Vector3d& v2 = vertices[static_cast<std::size_t>(triangle[2])];
+  return Aabb(v0.cwiseMin(v1).cwiseMin(v2), v0.cwiseMax(v1).cwiseMax(v2));
+}
+
+void expectValidMeshBvh(const MeshShape& mesh, bool enforceLeafSizeLimit)
+{
+  const auto& nodes = mesh.bvhNodes();
+  const auto& triOrder = mesh.bvhTriIndices();
+  const auto& triangles = mesh.getTriangles();
+  ASSERT_FALSE(nodes.empty());
+  ASSERT_EQ(triOrder.size(), triangles.size());
+
+  std::vector<int> visitCounts(triangles.size(), 0);
+  const auto visitNode = [&](auto&& self, int nodeIndex) -> void {
+    ASSERT_GE(nodeIndex, 0);
+    ASSERT_LT(static_cast<std::size_t>(nodeIndex), nodes.size());
+
+    const auto& node = nodes[static_cast<std::size_t>(nodeIndex)];
+    EXPECT_TRUE(node.box.min.allFinite());
+    EXPECT_TRUE(node.box.max.allFinite());
+    EXPECT_TRUE((node.box.max.array() >= node.box.min.array()).all());
+
+    if (node.left < 0 && node.right < 0) {
+      ASSERT_GE(node.first, 0);
+      ASSERT_GT(node.count, 0);
+      if (enforceLeafSizeLimit) {
+        EXPECT_LE(node.count, 4);
+      }
+      ASSERT_LE(
+          static_cast<std::size_t>(node.first + node.count), triOrder.size());
+
+      for (int i = 0; i < node.count; ++i) {
+        const int triangleIndex
+            = triOrder[static_cast<std::size_t>(node.first + i)];
+        ASSERT_GE(triangleIndex, 0);
+        ASSERT_LT(static_cast<std::size_t>(triangleIndex), triangles.size());
+        ++visitCounts[static_cast<std::size_t>(triangleIndex)];
+        EXPECT_TRUE(node.box.contains(computeTriangleAabb(
+            mesh.getVertices(),
+            triangles[static_cast<std::size_t>(triangleIndex)])));
+      }
+      return;
+    }
+
+    ASSERT_GE(node.left, 0);
+    ASSERT_GE(node.right, 0);
+    EXPECT_EQ(node.first, 0);
+    EXPECT_EQ(node.count, 0);
+    ASSERT_LT(static_cast<std::size_t>(node.left), nodes.size());
+    ASSERT_LT(static_cast<std::size_t>(node.right), nodes.size());
+    EXPECT_TRUE(
+        node.box.contains(nodes[static_cast<std::size_t>(node.left)].box));
+    EXPECT_TRUE(
+        node.box.contains(nodes[static_cast<std::size_t>(node.right)].box));
+    self(self, node.left);
+    self(self, node.right);
+  };
+
+  visitNode(visitNode, 0);
+  for (const int count : visitCounts) {
+    EXPECT_EQ(count, 1);
+  }
+}
+
+} // namespace
+
 TEST(SphereShape, Construction)
 {
   SphereShape sphere(2.5);
@@ -375,10 +449,36 @@ TEST(MeshShape, BvhLargeMesh)
 
   ASSERT_EQ(mesh.bvhTriIndices().size(), triangles.size());
   ASSERT_FALSE(mesh.bvhNodes().empty());
+  expectValidMeshBvh(mesh, true);
+
+  const auto localAabb = mesh.computeLocalAabb();
+  const auto& rootBox = mesh.bvhNodes()[0].box;
+  EXPECT_EQ(rootBox.min, localAabb.min);
+  EXPECT_EQ(rootBox.max, localAabb.max);
   if (triangles.size() > 4) {
     const auto& root = mesh.bvhNodes()[0];
     EXPECT_EQ(root.count, 0);
     EXPECT_GE(root.left, 0);
     EXPECT_GE(root.right, 0);
   }
+}
+
+TEST(MeshShape, BvhDegenerateTriangles)
+{
+  std::vector<Eigen::Vector3d> vertices
+      = {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {0, 0, 0}, {1, 0, 0}};
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 0, 0}, {0, 1, 2}, {3, 3, 4}, {1, 1, 1}, {2, 4, 2}};
+
+  MeshShape mesh(vertices, triangles);
+
+  ASSERT_EQ(mesh.bvhTriIndices().size(), triangles.size());
+  ASSERT_FALSE(mesh.bvhNodes().empty());
+  expectValidMeshBvh(mesh, false);
+
+  const auto localAabb = mesh.computeLocalAabb();
+  const auto& rootBox = mesh.bvhNodes()[0].box;
+  EXPECT_TRUE(rootBox.contains(localAabb));
+  EXPECT_TRUE(rootBox.min.allFinite());
+  EXPECT_TRUE(rootBox.max.allFinite());
 }

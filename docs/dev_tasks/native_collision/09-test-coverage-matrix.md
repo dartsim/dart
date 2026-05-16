@@ -153,57 +153,57 @@ adapt to convex/mesh/compound):
 Bar per row: at least one test exercises the algorithm in isolation
 (not through `NarrowPhase::collide`) AND covers degenerate inputs.
 
-| Codename                              | Status  | Source                                                             | Notes                                                                  |
-| ------------------------------------- | ------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `gjk_distance_query`                  | DONE    | `test_gjk.cpp`                                                     |                                                                        |
-| `gjk_intersection_query`              | DONE    | `test_gjk.cpp`                                                     |                                                                        |
-| `gjk_warm_start_cache`                | DONE    | `test_gjk.cpp::WarmStartSimplexReuseMatchesColdQuery`              | Warm-start via simplex reuse                                           |
-| `gjk_degenerate_segments`             | DONE    | `test_gjk_degenerate.cpp`                                          |                                                                        |
-| `gjk_libccd_parity`                   | DONE    | `test_libccd_algorithms.cpp`                                       |                                                                        |
-| `epa_penetration_depth`               | DONE    | `test_gjk.cpp::BoxBoxPenetrationDepthAnalytic`                     | Standalone analytic depth check                                        |
-| `epa_libccd_parity`                   | DONE    | `test_libccd_algorithms.cpp`                                       |                                                                        |
-| `epa_signed_distance`                 | DONE    | `test_gjk.cpp::BoxBoxSignedDistanceAnalytic`                       | Negative distance via EPA                                              |
-| `mpr_penetration_depth`               | DONE    | `test_gjk.cpp::SphereSpherePenetrationDepthAnalytic`               | Standalone analytic depth check                                        |
-| `mpr_libccd_parity`                   | DONE    | `test_libccd_algorithms.cpp`                                       |                                                                        |
-| `sat_box_axes`                        | DONE    | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations` | Calls `computeBoxBoxSat` directly                                      |
-| `sat_axis_no_flicker`                 | DONE    | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations` | Round 7 acceptance #5                                                  |
-| `sat_axis_face_bias_tie`              | DONE    | `test_box_box.cpp::SatAxisFaceBiasTiePrefersFace`                  | Round 7 RC3 fix verification                                           |
-| `sat_skip_degenerate_cross_axes`      | DONE    | `test_box_box.cpp::SatSkipsDegenerateCrossAxes`                    | Round 7 RC2 fix verification                                           |
-| `bvh_build_from_triangles`            | PARTIAL | `test_shapes.cpp::MeshShape.BvhLargeMesh`                          | No build-time guarantees                                               |
-| `bvh_build_from_points`               | GAP     | —                                                                  |                                                                        |
-| `bvh_traversal_hit`                   | DONE    | `test_mesh_mesh.cpp::RaycastMesh.BvhTraversalHit`                  |                                                                        |
-| `bvh_refit_after_transform`           | GAP     | —                                                                  |                                                                        |
-| `bvh_traversal_with_front_list`       | GAP     | —                                                                  | Warm-start incremental BVH                                             |
-| `bvh_overlap_aabb_only`               | DONE    | `test_aabb_tree.cpp`                                               |                                                                        |
-| `bvh_overlap_obb`                     | GAP     | —                                                                  | DART native has only AABB BVH today; OBB BVH is a future-wave decision |
-| `bvh_overlap_rss`                     | GAP     | —                                                                  | Same                                                                   |
-| `bvh_kdop`                            | GAP     | —                                                                  | Decide if k-DOP is in DART's native scope                              |
-| `persistent_manifold_create`          | DONE    | `test_collision_backend.cpp::PersistentManifoldCache*`             |                                                                        |
-| `persistent_manifold_pair_key`        | DONE    | `test_collision_backend.cpp`                                       | Pair-key symmetry                                                      |
-| `persistent_manifold_warm_start`      | DONE    | `test_collision_backend.cpp`                                       |                                                                        |
-| `persistent_manifold_refresh_drift`   | DONE    | `test_collision_backend.cpp`                                       |                                                                        |
-| `persistent_manifold_threshold_break` | DONE    | `test_collision_backend.cpp`                                       |                                                                        |
-| `persistent_manifold_reduction`       | DONE    | `test_collision_backend.cpp`                                       |                                                                        |
-| `ccd_sphere_cast_*`                   | DONE    | `test_ccd.cpp`                                                     | Sphere/Box/Plane/Cylinder/Convex/Mesh targets                          |
-| `ccd_capsule_cast_*`                  | DONE    | `test_ccd.cpp`                                                     | Capsule/Box/Convex/Mesh targets                                        |
-| `ccd_conservative_advancement_convex` | DONE    | `bm_ccd.cpp` (benchmark)                                           | Add unit test                                                          |
-| `ccd_spline_motion`                   | GAP     | —                                                                  | Decide if non-linear motion is in scope                                |
-| `ccd_screw_motion`                    | GAP     | —                                                                  | Same                                                                   |
-| `ccd_bilateral_advancement`           | GAP     | —                                                                  | Two-body conservative advancement                                      |
-| `broadphase_brute_force`              | DONE    | `test_brute_force.cpp`                                             |                                                                        |
-| `broadphase_aabb_tree`                | DONE    | `test_aabb_tree.cpp`                                               |                                                                        |
-| `broadphase_aabb_tree_bulk_build`     | DONE    | `test_aabb_tree.cpp`                                               |                                                                        |
-| `broadphase_sap`                      | DONE    | `test_sweep_and_prune.cpp`                                         |                                                                        |
-| `broadphase_spatial_hash`             | DONE    | `test_spatial_hash.cpp`                                            |                                                                        |
-| `broadphase_parity_brute_force`       | DONE    | `test_aabb_tree.cpp` / `test_sap.cpp` / `test_spatial_hash.cpp`    | Cross-validation against brute force                                   |
-| `broadphase_octree`                   | GAP     | —                                                                  | Decide if octree is in scope (VoxelGrid covers some)                   |
-| `contact_filter_composite`            | DONE    | `test_collision_filter_core.cpp`                                   |                                                                        |
-| `contact_filter_bodynode`             | DONE    | `test_collision_filter_core.cpp`                                   |                                                                        |
-| `distance_filter`                     | DONE    | `test_distance_filter.cpp`                                         |                                                                        |
-| `sdf_dense_field`                     | DONE    | `test_sdf_compare.cpp`                                             |                                                                        |
-| `sdf_esdf_voxblox`                    | DONE    | `test_sdf_compare.cpp`                                             |                                                                        |
-| `auto_diff_narrow_phase`              | GAP     | —                                                                  | Run pair tests under autodiff scalar (future)                          |
-| `float_double_parity`                 | GAP     | —                                                                  | DART is double-only today; in-scope if we add `float` instantiation    |
+| Codename                              | Status | Source                                                              | Notes                                                                  |
+| ------------------------------------- | ------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `gjk_distance_query`                  | DONE   | `test_gjk.cpp`                                                      |                                                                        |
+| `gjk_intersection_query`              | DONE   | `test_gjk.cpp`                                                      |                                                                        |
+| `gjk_warm_start_cache`                | DONE   | `test_gjk.cpp::WarmStartSimplexReuseMatchesColdQuery`               | Warm-start via simplex reuse                                           |
+| `gjk_degenerate_segments`             | DONE   | `test_gjk_degenerate.cpp`                                           |                                                                        |
+| `gjk_libccd_parity`                   | DONE   | `test_libccd_algorithms.cpp`                                        |                                                                        |
+| `epa_penetration_depth`               | DONE   | `test_gjk.cpp::BoxBoxPenetrationDepthAnalytic`                      | Standalone analytic depth check                                        |
+| `epa_libccd_parity`                   | DONE   | `test_libccd_algorithms.cpp`                                        |                                                                        |
+| `epa_signed_distance`                 | DONE   | `test_gjk.cpp::BoxBoxSignedDistanceAnalytic`                        | Negative distance via EPA                                              |
+| `mpr_penetration_depth`               | DONE   | `test_gjk.cpp::SphereSpherePenetrationDepthAnalytic`                | Standalone analytic depth check                                        |
+| `mpr_libccd_parity`                   | DONE   | `test_libccd_algorithms.cpp`                                        |                                                                        |
+| `sat_box_axes`                        | DONE   | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations`  | Calls `computeBoxBoxSat` directly                                      |
+| `sat_axis_no_flicker`                 | DONE   | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations`  | Round 7 acceptance #5                                                  |
+| `sat_axis_face_bias_tie`              | DONE   | `test_box_box.cpp::SatAxisFaceBiasTiePrefersFace`                   | Round 7 RC3 fix verification                                           |
+| `sat_skip_degenerate_cross_axes`      | DONE   | `test_box_box.cpp::SatSkipsDegenerateCrossAxes`                     | Round 7 RC2 fix verification                                           |
+| `bvh_build_from_triangles`            | DONE   | `test_shapes.cpp::MeshShape.BvhLargeMesh`, `BvhDegenerateTriangles` | Build invariants and degenerate triangle coverage                      |
+| `bvh_build_from_points`               | GAP    | —                                                                   |                                                                        |
+| `bvh_traversal_hit`                   | DONE   | `test_mesh_mesh.cpp::RaycastMesh.BvhTraversalHit`                   |                                                                        |
+| `bvh_refit_after_transform`           | GAP    | —                                                                   |                                                                        |
+| `bvh_traversal_with_front_list`       | GAP    | —                                                                   | Warm-start incremental BVH                                             |
+| `bvh_overlap_aabb_only`               | DONE   | `test_aabb_tree.cpp`                                                |                                                                        |
+| `bvh_overlap_obb`                     | GAP    | —                                                                   | DART native has only AABB BVH today; OBB BVH is a future-wave decision |
+| `bvh_overlap_rss`                     | GAP    | —                                                                   | Same                                                                   |
+| `bvh_kdop`                            | GAP    | —                                                                   | Decide if k-DOP is in DART's native scope                              |
+| `persistent_manifold_create`          | DONE   | `test_collision_backend.cpp::PersistentManifoldCache*`              |                                                                        |
+| `persistent_manifold_pair_key`        | DONE   | `test_collision_backend.cpp`                                        | Pair-key symmetry                                                      |
+| `persistent_manifold_warm_start`      | DONE   | `test_collision_backend.cpp`                                        |                                                                        |
+| `persistent_manifold_refresh_drift`   | DONE   | `test_collision_backend.cpp`                                        |                                                                        |
+| `persistent_manifold_threshold_break` | DONE   | `test_collision_backend.cpp`                                        |                                                                        |
+| `persistent_manifold_reduction`       | DONE   | `test_collision_backend.cpp`                                        |                                                                        |
+| `ccd_sphere_cast_*`                   | DONE   | `test_ccd.cpp`                                                      | Sphere/Box/Plane/Cylinder/Convex/Mesh targets                          |
+| `ccd_capsule_cast_*`                  | DONE   | `test_ccd.cpp`                                                      | Capsule/Box/Convex/Mesh targets                                        |
+| `ccd_conservative_advancement_convex` | DONE   | `bm_ccd.cpp` (benchmark)                                            | Add unit test                                                          |
+| `ccd_spline_motion`                   | GAP    | —                                                                   | Decide if non-linear motion is in scope                                |
+| `ccd_screw_motion`                    | GAP    | —                                                                   | Same                                                                   |
+| `ccd_bilateral_advancement`           | GAP    | —                                                                   | Two-body conservative advancement                                      |
+| `broadphase_brute_force`              | DONE   | `test_brute_force.cpp`                                              |                                                                        |
+| `broadphase_aabb_tree`                | DONE   | `test_aabb_tree.cpp`                                                |                                                                        |
+| `broadphase_aabb_tree_bulk_build`     | DONE   | `test_aabb_tree.cpp`                                                |                                                                        |
+| `broadphase_sap`                      | DONE   | `test_sweep_and_prune.cpp`                                          |                                                                        |
+| `broadphase_spatial_hash`             | DONE   | `test_spatial_hash.cpp`                                             |                                                                        |
+| `broadphase_parity_brute_force`       | DONE   | `test_aabb_tree.cpp` / `test_sap.cpp` / `test_spatial_hash.cpp`     | Cross-validation against brute force                                   |
+| `broadphase_octree`                   | GAP    | —                                                                   | Decide if octree is in scope (VoxelGrid covers some)                   |
+| `contact_filter_composite`            | DONE   | `test_collision_filter_core.cpp`                                    |                                                                        |
+| `contact_filter_bodynode`             | DONE   | `test_collision_filter_core.cpp`                                    |                                                                        |
+| `distance_filter`                     | DONE   | `test_distance_filter.cpp`                                          |                                                                        |
+| `sdf_dense_field`                     | DONE   | `test_sdf_compare.cpp`                                              |                                                                        |
+| `sdf_esdf_voxblox`                    | DONE   | `test_sdf_compare.cpp`                                              |                                                                        |
+| `auto_diff_narrow_phase`              | GAP    | —                                                                   | Run pair tests under autodiff scalar (future)                          |
+| `float_double_parity`                 | GAP    | —                                                                   | DART is double-only today; in-scope if we add `float` instantiation    |
 
 ## 3. Stress / Regression / Determinism
 
@@ -348,13 +348,13 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 ## Summary Counters (as of 2026-05-16)
 
 - **§1 Pair-wise narrow-phase:** 89 DONE, 0 PARTIAL, 0 GAP (of 89 rows)
-- **§2 Algorithm-level:** 36 DONE, 1 PARTIAL, 12 GAP (of 49 rows)
+- **§2 Algorithm-level:** 37 DONE, 0 PARTIAL, 12 GAP (of 49 rows)
 - **§3 Stress / regression:** 22 DONE, 1 PARTIAL, 8 GAP (of 31 rows)
 - **§4 Benchmarks:** 30 DONE, 0 PARTIAL, 14 GAP (of 44 rows)
 - **§5 Infrastructure:** 9 DONE, 0 PARTIAL, 0 GAP (of 9 rows)
-- **TOTAL:** 186 DONE, 2 PARTIAL, 34 GAP (of 222 rows)
+- **TOTAL:** 187 DONE, 1 PARTIAL, 34 GAP (of 222 rows)
 
-DART native is currently at ~82% of the proposed superset, with pair-wise
+DART native is currently at ~84% of the proposed superset, with pair-wise
 narrow-phase coverage closed. The remaining coverage is concentrated in:
 (a) BVH/CCD algorithm-isolation rows, (b) long-horizon stability and stress
 scenes, and (c) scale, scenario, and SIMD benchmark rows for the follow-up
