@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Enforce repository documentation content policies.
-
-This script is intentionally narrow and exists to prevent accidental
-re-introduction of stale/generated metadata footers in Markdown docs.
-"""
+"""Enforce repository documentation content policies."""
 
 from __future__ import annotations
 
@@ -11,6 +7,18 @@ import sys
 from pathlib import Path
 
 SKIP_DIRS = {".deps", ".git", ".pixi", "build", "external", "node_modules"}
+REQUIRED_DOCS_TOP_LEVEL_DIRS = (
+    "ai",
+    "assets",
+    "background",
+    "design",
+    "dev_tasks",
+    "doxygen",
+    "onboarding",
+    "plans",
+    "python_api",
+    "readthedocs",
+)
 
 # These strings have shown up as "footer metadata" in Markdown docs and should
 # not be committed to the repository.
@@ -55,11 +63,52 @@ def check_file(path: Path, repo_root: Path) -> list[str]:
     return failures
 
 
+def check_docs_indexes(repo_root: Path) -> list[str]:
+    """Ensure tracked top-level docs buckets stay visible from docs indexes."""
+    failures: list[str] = []
+    docs_readme = repo_root / "docs" / "README.md"
+    docs_agents = repo_root / "docs" / "AGENTS.md"
+
+    for path in (docs_readme, docs_agents):
+        if not path.exists():
+            failures.append(f"{path.relative_to(repo_root)}: missing docs index")
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for directory in REQUIRED_DOCS_TOP_LEVEL_DIRS:
+            marker = f"{directory}/"
+            if marker not in text:
+                failures.append(
+                    f"{path.relative_to(repo_root)}: missing `{marker}` entry"
+                )
+
+    return failures
+
+
+def check_dev_task_shape(repo_root: Path) -> list[str]:
+    """Ensure active dev-task folders include status and resume context."""
+    failures: list[str] = []
+    dev_tasks_dir = repo_root / "docs" / "dev_tasks"
+    if not dev_tasks_dir.exists():
+        return failures
+
+    for task_dir in sorted(path for path in dev_tasks_dir.iterdir() if path.is_dir()):
+        for required in ("README.md", "RESUME.md"):
+            required_path = task_dir / required
+            if not required_path.exists():
+                failures.append(
+                    f"{task_dir.relative_to(repo_root)}: missing required {required}"
+                )
+
+    return failures
+
+
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     failures: list[str] = []
     for path in iter_markdown_files(repo_root):
         failures.extend(check_file(path, repo_root))
+    failures.extend(check_docs_indexes(repo_root))
+    failures.extend(check_dev_task_shape(repo_root))
 
     if not failures:
         return 0

@@ -4,7 +4,8 @@
 
 - Local build/test workflow: [building.md](building.md) and [testing.md](testing.md)
 - CI monitoring and expectations: [ci-cd.md](ci-cd.md)
-- Dartpy developer build guide: [docs/readthedocs/dartpy/developer_guide/build.rst](../readthedocs/dartpy/developer_guide/build.rst)
+- Dartpy developer build workflow: [building.md](building.md) and
+  [api-documentation.md](api-documentation.md)
 
 ## Design Decisions
 
@@ -164,7 +165,8 @@ conda install dartpy -c conda-forge
 
 ### For Developers
 
-**See**: `docs/readthedocs/dartpy/developer_guide/build.rst` for detailed instructions
+**See**: [building.md](building.md) for build commands and
+[api-documentation.md](api-documentation.md) for API documentation behavior.
 
 **Quick options**:
 
@@ -301,4 +303,5 @@ robot.setForces(forces)
 - **Build system**: `python/dartpy/CMakeLists.txt`
 - **pixi configuration**: `pixi.toml` (features: `py312-wheel`, `py313-wheel`)
 - **Examples**: `python/examples/README.md` (index) and `python/examples/`
-- **Developer guide**: `docs/readthedocs/dartpy/developer_guide/build.rst`
+- **Developer docs**: [building.md](building.md) and
+  [api-documentation.md](api-documentation.md)

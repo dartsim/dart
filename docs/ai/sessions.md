@@ -34,7 +34,7 @@ must contain:
 
 When a dev task completes:
 
-1. Move durable lessons to the relevant onboarding doc.
+1. Move durable lessons to the relevant developer doc.
 2. Delete the task folder in the same PR.
 3. Run the verification gates listed in `docs/ai/verification.md`.
 4. Include the cleanup in the completion PR.
