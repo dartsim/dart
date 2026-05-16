@@ -539,6 +539,12 @@ double distanceShapes(
     return d;
   }
 
+  if (type1 == ShapeType::Sdf && type2 == ShapeType::Sdf) {
+    const auto* sdf1 = static_cast<const SdfShape*>(shape1);
+    const auto* sdf2 = static_cast<const SdfShape*>(shape2);
+    return distanceSdfSdf(*sdf1, tf1, *sdf2, tf2, result, option);
+  }
+
   if (type1 == ShapeType::Sphere && type2 == ShapeType::Box) {
     const auto* s = static_cast<const SphereShape*>(shape1);
     const auto* b = static_cast<const BoxShape*>(shape2);
@@ -1091,6 +1097,9 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
   }
   if ((type1 == ShapeType::Sphere && type2 == ShapeType::Sdf)
       || (type1 == ShapeType::Sdf && type2 == ShapeType::Sphere)) {
+    return true;
+  }
+  if (type1 == ShapeType::Sdf && type2 == ShapeType::Sdf) {
     return true;
   }
   if (type1 == ShapeType::Box && type2 == ShapeType::Box) {

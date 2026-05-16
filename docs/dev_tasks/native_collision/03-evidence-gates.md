@@ -3221,6 +3221,20 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     overload with an empty-cache fallback, EPA exposes the negative
     signed-distance convention used by distance queries, `test_gjk` passed,
     and the broader `collision-native` CTest label passed 29/29.
+- Current local SDF/SDF distance coverage refresh:
+  - Commit: current working tree after local head `c026db49fa8`
+    (`Cover GJK warm start and EPA signed distance`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_sdf_compare --parallel 5`,
+    `./build/default/cpp/Release/bin/test_sdf_compare --gtest_filter='SdfDistance.SdfVsSdf:SdfDistance.SdfSdfPairOrder'`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_sdf_compare$' -j 5`,
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target dart_collision_native_tests --parallel 5`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j 5`,
+    and `pixi run lint`.
+  - Result: passed. Native distance now supports `SdfShape` against
+    `SdfShape` in both query orders while collision support remains disabled
+    for that pair, `test_sdf_compare` passed, and the broader
+    `collision-native` CTest label passed 29/29.
 
 ## Known Risks
 

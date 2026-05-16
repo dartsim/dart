@@ -50,6 +50,14 @@ struct SegmentClosestResult
   double distSq;
 };
 
+struct SdfSdfCandidate
+{
+  double distance = std::numeric_limits<double>::max();
+  Eigen::Vector3d pointOnSource = Eigen::Vector3d::Zero();
+  Eigen::Vector3d pointOnTarget = Eigen::Vector3d::Zero();
+  Eigen::Vector3d normalSourceToTarget = Eigen::Vector3d::UnitX();
+};
+
 SegmentClosestResult closestPointsBetweenSegments(
     const Eigen::Vector3d& p1,
     const Eigen::Vector3d& q1,
@@ -306,6 +314,143 @@ double boundedSdfQueryDistance(double upperBound, double margin)
     return std::numeric_limits<double>::max();
   }
   return upperBound + margin;
+}
+
+int sdfAxisSampleCount(double extent, double voxelSize)
+{
+  if (!std::isfinite(extent) || extent <= 0.0) {
+    return 2;
+  }
+
+  return std::clamp(static_cast<int>(std::ceil(extent / voxelSize)) + 1, 2, 64);
+}
+
+bool isValidAabb(const Aabb& aabb)
+{
+  return aabb.min.allFinite() && aabb.max.allFinite()
+         && (aabb.max.array() >= aabb.min.array()).all();
+}
+
+bool sampleSdfSurfaceAgainstSdf(
+    const SignedDistanceField* sourceField,
+    const Eigen::Isometry3d& sourceTransform,
+    const SignedDistanceField* targetField,
+    const Eigen::Isometry3d& targetTransform,
+    double shellThickness,
+    const DistanceOption& option,
+    SdfSdfCandidate& best)
+{
+  if (!sourceField || !targetField) {
+    return false;
+  }
+
+  const Aabb sourceAabb = sourceField->localAabb();
+  if (!isValidAabb(sourceAabb)) {
+    return false;
+  }
+
+  const double sourceVoxelSize = std::max(sourceField->voxelSize(), 1e-6);
+  const Eigen::Vector3d extents = sourceAabb.extents();
+  const Eigen::Vector3i samples(
+      sdfAxisSampleCount(extents.x(), sourceVoxelSize),
+      sdfAxisSampleCount(extents.y(), sourceVoxelSize),
+      sdfAxisSampleCount(extents.z(), sourceVoxelSize));
+
+  SdfQueryOptions sourceOptions;
+  sourceOptions.maxDistance = shellThickness;
+
+  SdfQueryOptions targetOptions;
+  targetOptions.maxDistance
+      = boundedSdfQueryDistance(option.upperBound, shellThickness);
+
+  const Eigen::Isometry3d targetInverse = targetTransform.inverse();
+  const Eigen::Matrix3d targetRotation = targetTransform.rotation();
+
+  bool found = false;
+
+  for (int z = 0; z < samples.z(); ++z) {
+    const double zAlpha
+        = (samples.z() == 1)
+              ? 0.5
+              : static_cast<double>(z) / static_cast<double>(samples.z() - 1);
+    for (int y = 0; y < samples.y(); ++y) {
+      const double yAlpha
+          = (samples.y() == 1)
+                ? 0.5
+                : static_cast<double>(y) / static_cast<double>(samples.y() - 1);
+      for (int x = 0; x < samples.x(); ++x) {
+        const double xAlpha = (samples.x() == 1)
+                                  ? 0.5
+                                  : static_cast<double>(x)
+                                        / static_cast<double>(samples.x() - 1);
+
+        const Eigen::Vector3d sourcePointLocal(
+            sourceAabb.min.x() + extents.x() * xAlpha,
+            sourceAabb.min.y() + extents.y() * yAlpha,
+            sourceAabb.min.z() + extents.z() * zAlpha);
+
+        double sourceDistance = 0.0;
+        Eigen::Vector3d sourceGradient = Eigen::Vector3d::Zero();
+        if (!sourceField->distanceAndGradient(
+                sourcePointLocal,
+                &sourceDistance,
+                &sourceGradient,
+                sourceOptions)) {
+          continue;
+        }
+        if (std::abs(sourceDistance) > shellThickness) {
+          continue;
+        }
+
+        Eigen::Vector3d sourceSurfaceLocal = sourcePointLocal;
+        const double sourceGradientNorm = sourceGradient.norm();
+        if (sourceGradientNorm > 1e-12) {
+          sourceSurfaceLocal
+              -= (sourceGradient / sourceGradientNorm) * sourceDistance;
+        }
+
+        const Eigen::Vector3d sourceSurfaceWorld
+            = sourceTransform * sourceSurfaceLocal;
+
+        double targetDistance = 0.0;
+        Eigen::Vector3d targetGradientWorld = Eigen::Vector3d::Zero();
+        if (!querySdfDistanceAndGradient(
+                targetField,
+                targetInverse,
+                targetRotation,
+                sourceSurfaceWorld,
+                targetOptions,
+                &targetDistance,
+                &targetGradientWorld)) {
+          continue;
+        }
+
+        if (targetDistance >= best.distance) {
+          continue;
+        }
+
+        Eigen::Vector3d normal = Eigen::Vector3d::UnitX();
+        Eigen::Vector3d targetSurfaceWorld = sourceSurfaceWorld;
+        const double targetGradientNorm = targetGradientWorld.norm();
+        if (targetGradientNorm > 1e-12) {
+          const Eigen::Vector3d targetGradientUnit
+              = targetGradientWorld / targetGradientNorm;
+          const double sign = (targetDistance >= 0.0) ? 1.0 : -1.0;
+          normal = targetGradientUnit * sign;
+          targetSurfaceWorld
+              = sourceSurfaceWorld - targetGradientUnit * targetDistance;
+        }
+
+        best.distance = targetDistance;
+        best.pointOnSource = sourceSurfaceWorld;
+        best.pointOnTarget = targetSurfaceWorld;
+        best.normalSourceToTarget = normal;
+        found = true;
+      }
+    }
+  }
+
+  return found;
 }
 
 double distancePointSetSdf(
@@ -1059,6 +1204,70 @@ double distanceMeshSdf(
 {
   return distancePointSetSdf(
       mesh.getVertices(), meshTransform, sdf, sdfTransform, result, option);
+}
+
+double distanceSdfSdf(
+    const SdfShape& sdf1,
+    const Eigen::Isometry3d& sdf1Transform,
+    const SdfShape& sdf2,
+    const Eigen::Isometry3d& sdf2Transform,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  const SignedDistanceField* field1 = sdf1.getField();
+  const SignedDistanceField* field2 = sdf2.getField();
+  if (!field1 || !field2) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  const double shellThickness
+      = 1.5 * std::max({field1->voxelSize(), field2->voxelSize(), 1e-6});
+
+  SdfSdfCandidate best;
+  bool found = sampleSdfSurfaceAgainstSdf(
+      field1,
+      sdf1Transform,
+      field2,
+      sdf2Transform,
+      shellThickness,
+      option,
+      best);
+
+  SdfSdfCandidate reverseBest;
+  if (sampleSdfSurfaceAgainstSdf(
+          field2,
+          sdf2Transform,
+          field1,
+          sdf1Transform,
+          shellThickness,
+          option,
+          reverseBest)
+      && reverseBest.distance < best.distance) {
+    best.distance = reverseBest.distance;
+    best.pointOnSource = reverseBest.pointOnTarget;
+    best.pointOnTarget = reverseBest.pointOnSource;
+    best.normalSourceToTarget = -reverseBest.normalSourceToTarget;
+    found = true;
+  }
+
+  if (!found) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  result.distance = best.distance;
+  if (best.distance > option.upperBound) {
+    return best.distance;
+  }
+
+  if (option.enableNearestPoints) {
+    result.pointOnObject1 = best.pointOnSource;
+    result.pointOnObject2 = best.pointOnTarget;
+    result.normal = best.normalSourceToTarget;
+  }
+
+  return best.distance;
 }
 
 } // namespace dart::collision::native

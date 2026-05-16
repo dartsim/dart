@@ -419,6 +419,69 @@ TEST(SdfDistance, MeshSdfPairOrder)
   EXPECT_LT(mesh_sdf.normal.dot(sdf_mesh.normal), -0.9);
 }
 
+TEST(SdfDistance, SdfVsSdf)
+{
+  using namespace dart::collision::native;
+
+  auto field1 = buildDenseField();
+  auto field2 = buildDenseField();
+  SdfShape sdf1(field1);
+  SdfShape sdf2(field2);
+
+  Eigen::Isometry3d sdf1_tf = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d sdf2_tf = Eigen::Isometry3d::Identity();
+  sdf2_tf.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+
+  DistanceResult result;
+  DistanceOption option;
+  double dist = distanceSdfSdf(sdf1, sdf1_tf, sdf2, sdf2_tf, result, option);
+
+  EXPECT_NEAR(dist, 0.4, kDistTol);
+  EXPECT_TRUE(result.pointOnObject1.allFinite());
+  EXPECT_TRUE(result.pointOnObject2.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
+
+  sdf2_tf.translation() = Eigen::Vector3d(1.2, 0.0, 0.0);
+  result.clear();
+  dist = distanceSdfSdf(sdf1, sdf1_tf, sdf2, sdf2_tf, result, option);
+
+  EXPECT_LT(dist, 0.0);
+  EXPECT_NEAR(dist, -0.4, kDistTol);
+}
+
+TEST(SdfDistance, SdfSdfPairOrder)
+{
+  using namespace dart::collision::native;
+
+  auto field1 = buildDenseField();
+  auto field2 = buildDenseField();
+  CollisionWorld world;
+  auto sdf1 = world.createObject(std::make_unique<SdfShape>(field1));
+  auto sdf2 = world.createObject(std::make_unique<SdfShape>(field2));
+
+  Eigen::Isometry3d sdf2_tf = Eigen::Isometry3d::Identity();
+  sdf2_tf.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+  sdf2.setTransform(sdf2_tf);
+
+  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Sdf, ShapeType::Sdf));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Sdf, ShapeType::Sdf));
+
+  DistanceResult sdf1_sdf2;
+  DistanceResult sdf2_sdf1;
+  const DistanceOption option = DistanceOption::unlimited();
+
+  const double dist1 = NarrowPhase::distance(sdf1, sdf2, option, sdf1_sdf2);
+  const double dist2 = NarrowPhase::distance(sdf2, sdf1, option, sdf2_sdf1);
+
+  EXPECT_NEAR(dist1, 0.4, kDistTol);
+  EXPECT_NEAR(dist1, dist2, kDistTol);
+  EXPECT_TRUE(sdf1_sdf2.pointOnObject1.allFinite());
+  EXPECT_TRUE(sdf1_sdf2.pointOnObject2.allFinite());
+  EXPECT_TRUE(sdf2_sdf1.pointOnObject1.allFinite());
+  EXPECT_TRUE(sdf2_sdf1.pointOnObject2.allFinite());
+  EXPECT_LT(sdf1_sdf2.normal.dot(sdf2_sdf1.normal), -0.9);
+}
+
 TEST(SdfDistance, CompoundSdfPairOrder)
 {
   using namespace dart::collision::native;
