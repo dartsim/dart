@@ -148,6 +148,30 @@ guards through public APIs.
 | README documents the promoted runner, controls, default size, and headless capture.            | Restored.                            | Current README documents `pixi run ex rigid_loop`, controls, and headless capture.        |
 | Keep the example free of backend-specific world-node, event-handler, viewer, and OSG types.    | Restored through guard test.         | Marker coverage prevents reintroducing removed renderer surfaces or `defaultScene`.       |
 
+### Rigid Cubes Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/rigid_cubes/main.cpp`.
+
+The source-owned checkpoint replaces the hand-built three-cube scene with the
+historical `cubes.skel` world, restores the directional force keys with force
+decay, recovers the historical gravity/camera/defaults and instruction text,
+and keeps headless capture on the promoted `dart::gui` runner instead of
+reintroducing OSG viewer code.
+
+| Historical item                                                                                       | Current outcome              | Notes                                                                                            |
+| ----------------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------ |
+| Load `dart://sample/skel/cubes.skel`.                                                                 | Restored.                    | Current source loads the shipped sample world with `dart::io::readWorld`.                        |
+| Use gravity `(0, -9.81, 0)`.                                                                          | Restored.                    | Current source restores the historical Y-down world setting.                                     |
+| Apply a decaying force to skeleton index 1, body node 0 before each simulation step.                  | Restored through `preStep`.  | Current source stores pending force and halves it after every promoted pre-step callback.        |
+| Space toggles simulation through the viewer, `p` toggles playback/default event handling.             | Restored/superseded.         | Space is shared runner behavior; `p` maps to the promoted lifecycle toggle without OSG handlers. |
+| `v` toggles visualization marker state and prints a status line.                                      | Restored.                    | Current source restores renderer-neutral marker state and console feedback.                      |
+| `1`/`2`/`3`/`4` apply `-X`, `+X`, `-Z`, and `+Z` forces of magnitude 500.                             | Restored.                    | Current source restores all four keys and matching panel buttons.                                |
+| Default launch size 640x480 and CLI/headless capture options.                                         | Restored.                    | Current source uses `ApplicationOptions::runDefaults`; promoted runner owns capture arguments.   |
+| Camera home from eye `(5, 5, 5)` to target `(0, 0, 0)` with world-up `(0, 0, 1)`.                     | Restored.                    | Current source converts the historical home to `dart::gui::OrbitCamera`.                         |
+| Print and display the historical title and controls.                                                  | Restored.                    | Current source prints instructions and keeps panel instruction coverage.                         |
+| README documents the promoted runner, controls, default size, and headless/image-sequence capture.    | Restored.                    | Current README documents screenshot and `--out` image-sequence capture.                          |
+| Keep the example free of backend-specific world-node, event-handler, viewer, and OSG recording types. | Restored through guard test. | Marker coverage prevents reintroducing removed renderer surfaces or `defaultScene`.              |
+
 ### Heightmap Itemized Inventory
 
 Historical source compared: `520993d7301^:examples/heightmap/main.cpp`.
@@ -281,48 +305,48 @@ first-class keyboard shortcut.
 
 ## Example Inventory
 
-| Example                     | Current Audit State                                                                | Next Required Action                                                                                  |
-| --------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `add_delete_skels`          | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm historical controls/defaults are itemized and guarded.                                        |
-| `atlas_puppet`              | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm target activation, IK, posture, and camera items are itemized.                                |
-| `atlas_simbicon`            | Needs strict audit.                                                                | Compare historical source and list controls/defaults/panels.                                          |
-| `biped_stand`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm perturbation controls, camera, run defaults, README, and guards.                              |
-| `box_stacking`              | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm solver controls, camera/defaults, README, and guards.                                         |
-| `boxes`                     | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm Bullet preference, camera/defaults, README, and guards.                                       |
-| `capsule_ground_contact`    | Restored by strict audit.                                                          | Keep marker guards for controls, camera/defaults, README, and no backend types.                       |
-| `coupler_constraint`        | Needs strict audit.                                                                | Compare historical source and list controls/defaults.                                                 |
-| `csv_logger`                | Needs strict audit.                                                                | Confirm non-GUI logging behavior and README remain intact.                                            |
-| `drag_and_drop`             | Needs strict audit.                                                                | Compare historical selection/drag affordances and README.                                             |
-| `empty`                     | Restored except public key-release/render-hook API gaps.                           | Keep key-release and pre/post-render hooks tracked as public API follow-ups.                          |
-| `fetch`                     | Itemized first-pass audit; panel-title/text gap repaired in current checkpoint.    | Keep re-openable if further historical behavior gaps are identified.                                  |
-| `free_joint_cases`          | Needs strict audit.                                                                | Compare historical source and list controls/defaults.                                                 |
-| `g1_puppet`                 | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm target activation, IK, teleoperation, camera, and guards.                                     |
-| `gui_scene_diagnostics`     | Needs strict audit.                                                                | Confirm diagnostic GUI behavior and capture expectations.                                             |
-| `hardcoded_design`          | Recent parity checkpoint; OSG wireframe remains public API gap.                    | Confirm checklist entry and keep wireframe follow-up explicit.                                        |
-| `headless_simulation`       | Needs strict audit.                                                                | Confirm non-GUI simulation/capture behavior remains intact.                                           |
-| `heightmap`                 | Restored except public debug-grid/color editor gaps.                               | Keep OSG grid style controls tracked as public API follow-up.                                         |
-| `hello_world`               | Restored by strict audit.                                                          | Keep marker guards for instructions, camera/defaults, profiling, README, and no backend types.        |
-| `hubo_puppet`               | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK, teleoperation, target activation semantics, and guards.                                   |
-| `human_joint_limits`        | Needs strict audit.                                                                | Compare historical controls/defaults and visual diagnostics.                                          |
-| `hybrid_dynamics`           | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm harness toggle, camera, and guards.                                                           |
-| `imgui`                     | Needs strict audit.                                                                | Confirm promoted panel behavior preserves the user-facing ImGui example scope.                        |
-| `joint_constraints`         | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm perturbation controls, harness toggle, camera, and guards.                                    |
-| `lcp_physics`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm solver/collision controls, camera/defaults, README, and guards.                               |
-| `mimic_pendulums`           | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm diagnostics, solver/collision flags, README, and guards.                                      |
-| `mixed_chain`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm impulse controls, camera, and guards.                                                         |
-| `operational_space_control` | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK/control behavior, teleoperation, camera, and guards.                                       |
-| `point_cloud`               | Restored except public color-editor/debug-grid API gaps.                           | Keep color editors and fine-grained grid controls tracked as public API follow-ups.                   |
-| `polyhedron_visual`         | Restored by strict audit.                                                          | Keep marker guards for surface, wireframe, grid, camera/defaults, and README.                         |
-| `rerun`                     | Needs strict audit.                                                                | Confirm non-Filament logging/viewer behavior remains correct.                                         |
-| `rigid_chain`               | Restored by strict audit.                                                          | Keep marker guards for random pose, damping, camera/defaults, README, and no backend types.           |
-| `rigid_cubes`               | Needs strict audit.                                                                | Confirm restored launcher captures historical cube scene behavior.                                    |
-| `rigid_loop`                | Restored by strict audit.                                                          | Keep marker guards for constrained-link colors, instructions, defaults, README, and no backend types. |
-| `rigid_shapes`              | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm spawn/delete/contact controls, CLI options, camera/defaults, README, and guards.              |
-| `simple_frames`             | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm camera/defaults, README, and guards.                                                          |
-| `simulation_event_handler`  | Restored except shifted-slash help alias follow-up.                                | Keep source-marker guards for controls, arrows, camera/defaults, README, and no backend types.        |
-| `soft_bodies`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm playback controls, shifted keys, camera/defaults, and guards.                                 |
-| `speed_test`                | Needs strict audit.                                                                | Confirm performance-test behavior and README remain intact.                                           |
-| `tinkertoy`                 | Recent builder/keyboard/camera checkpoints; still subject to strict audit re-open. | Confirm all construction controls, force controls, camera home, and recording gap.                    |
-| `unified_loading`           | Needs strict audit.                                                                | Confirm model-loading workflows, CLI behavior, and README.                                            |
-| `vehicle`                   | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm command keys, camera, and guards.                                                             |
-| `wam_ikfast`                | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK target behavior, teleoperation, camera, and guards.                                        |
+| Example                     | Current Audit State                                                                | Next Required Action                                                                                                |
+| --------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `add_delete_skels`          | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm historical controls/defaults are itemized and guarded.                                                      |
+| `atlas_puppet`              | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm target activation, IK, posture, and camera items are itemized.                                              |
+| `atlas_simbicon`            | Needs strict audit.                                                                | Compare historical source and list controls/defaults/panels.                                                        |
+| `biped_stand`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm perturbation controls, camera, run defaults, README, and guards.                                            |
+| `box_stacking`              | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm solver controls, camera/defaults, README, and guards.                                                       |
+| `boxes`                     | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm Bullet preference, camera/defaults, README, and guards.                                                     |
+| `capsule_ground_contact`    | Restored by strict audit.                                                          | Keep marker guards for controls, camera/defaults, README, and no backend types.                                     |
+| `coupler_constraint`        | Needs strict audit.                                                                | Compare historical source and list controls/defaults.                                                               |
+| `csv_logger`                | Needs strict audit.                                                                | Confirm non-GUI logging behavior and README remain intact.                                                          |
+| `drag_and_drop`             | Needs strict audit.                                                                | Compare historical selection/drag affordances and README.                                                           |
+| `empty`                     | Restored except public key-release/render-hook API gaps.                           | Keep key-release and pre/post-render hooks tracked as public API follow-ups.                                        |
+| `fetch`                     | Itemized first-pass audit; panel-title/text gap repaired in current checkpoint.    | Keep re-openable if further historical behavior gaps are identified.                                                |
+| `free_joint_cases`          | Needs strict audit.                                                                | Compare historical source and list controls/defaults.                                                               |
+| `g1_puppet`                 | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm target activation, IK, teleoperation, camera, and guards.                                                   |
+| `gui_scene_diagnostics`     | Needs strict audit.                                                                | Confirm diagnostic GUI behavior and capture expectations.                                                           |
+| `hardcoded_design`          | Recent parity checkpoint; OSG wireframe remains public API gap.                    | Confirm checklist entry and keep wireframe follow-up explicit.                                                      |
+| `headless_simulation`       | Needs strict audit.                                                                | Confirm non-GUI simulation/capture behavior remains intact.                                                         |
+| `heightmap`                 | Restored except public debug-grid/color editor gaps.                               | Keep OSG grid style controls tracked as public API follow-up.                                                       |
+| `hello_world`               | Restored by strict audit.                                                          | Keep marker guards for instructions, camera/defaults, profiling, README, and no backend types.                      |
+| `hubo_puppet`               | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK, teleoperation, target activation semantics, and guards.                                                 |
+| `human_joint_limits`        | Needs strict audit.                                                                | Compare historical controls/defaults and visual diagnostics.                                                        |
+| `hybrid_dynamics`           | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm harness toggle, camera, and guards.                                                                         |
+| `imgui`                     | Needs strict audit.                                                                | Confirm promoted panel behavior preserves the user-facing ImGui example scope.                                      |
+| `joint_constraints`         | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm perturbation controls, harness toggle, camera, and guards.                                                  |
+| `lcp_physics`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm solver/collision controls, camera/defaults, README, and guards.                                             |
+| `mimic_pendulums`           | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm diagnostics, solver/collision flags, README, and guards.                                                    |
+| `mixed_chain`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm impulse controls, camera, and guards.                                                                       |
+| `operational_space_control` | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK/control behavior, teleoperation, camera, and guards.                                                     |
+| `point_cloud`               | Restored except public color-editor/debug-grid API gaps.                           | Keep color editors and fine-grained grid controls tracked as public API follow-ups.                                 |
+| `polyhedron_visual`         | Restored by strict audit.                                                          | Keep marker guards for surface, wireframe, grid, camera/defaults, and README.                                       |
+| `rerun`                     | Needs strict audit.                                                                | Confirm non-Filament logging/viewer behavior remains correct.                                                       |
+| `rigid_chain`               | Restored by strict audit.                                                          | Keep marker guards for random pose, damping, camera/defaults, README, and no backend types.                         |
+| `rigid_cubes`               | Restored by strict audit.                                                          | Keep marker guards for `cubes.skel`, force keys/decay, camera/defaults, instructions, README, and no backend types. |
+| `rigid_loop`                | Restored by strict audit.                                                          | Keep marker guards for constrained-link colors, instructions, defaults, README, and no backend types.               |
+| `rigid_shapes`              | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm spawn/delete/contact controls, CLI options, camera/defaults, README, and guards.                            |
+| `simple_frames`             | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm camera/defaults, README, and guards.                                                                        |
+| `simulation_event_handler`  | Restored except shifted-slash help alias follow-up.                                | Keep source-marker guards for controls, arrows, camera/defaults, README, and no backend types.                      |
+| `soft_bodies`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm playback controls, shifted keys, camera/defaults, and guards.                                               |
+| `speed_test`                | Needs strict audit.                                                                | Confirm performance-test behavior and README remain intact.                                                         |
+| `tinkertoy`                 | Recent builder/keyboard/camera checkpoints; still subject to strict audit re-open. | Confirm all construction controls, force controls, camera home, and recording gap.                                  |
+| `unified_loading`           | Needs strict audit.                                                                | Confirm model-loading workflows, CLI behavior, and README.                                                          |
+| `vehicle`                   | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm command keys, camera, and guards.                                                                           |
+| `wam_ikfast`                | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK target behavior, teleoperation, camera, and guards.                                                      |

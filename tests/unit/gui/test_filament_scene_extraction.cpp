@@ -957,6 +957,68 @@ TEST(FilamentSceneExtraction, RigidLoopExamplePreservesParityMarkers)
   EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, RigidCubesExamplePreservesParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "rigid_cubes" / "main.cpp");
+  const auto cmakeSource = readSourceFile(
+      std::filesystem::path("examples") / "rigid_cubes" / "CMakeLists.txt");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "rigid_cubes" / "README.md");
+
+  EXPECT_NE(
+      mainSource.find("dart://sample/skel/cubes.skel"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::io::readWorld"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0))"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("applyPendingForce"), std::string::npos);
+  EXPECT_NE(mainSource.find("state->pendingForce /= 2.0"), std::string::npos);
+  EXPECT_NE(mainSource.find("getSkeleton(1)"), std::string::npos);
+  EXPECT_NE(mainSource.find("printRigidCubesInstructions"), std::string::npos);
+  EXPECT_NE(mainSource.find("Rigid Cubes Example"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('p')"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('v')"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('1')"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('2')"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('3')"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('4')"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("makeRigidCubesRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeRigidCubesCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d::Zero()"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.distance = 8.660254037844387"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(cmakeSource.find("dart-io"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Rigid Cubes Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(readmeSource.find("--out"), std::string::npos);
+  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("RealTimeWorldNode"), std::string::npos);
+  EXPECT_EQ(mainSource.find("dart::gui::Viewer"), std::string::npos);
+  EXPECT_EQ(mainSource.find("viewer.record"), std::string::npos);
+  EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, BoxesExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(

@@ -51,6 +51,9 @@
   - Restored the `rigid_loop` example's constrained-link colors, console
     instructions, run defaults, README, and marker coverage while keeping its
     damping callback on public `dart::gui`.
+  - Restored the `rigid_cubes` example's shipped `cubes.skel` world, Y-down
+    gravity, decaying directional force keys, camera/run defaults, README, and
+    marker coverage through public `dart::gui`.
   - Added a public `dart::gui::ApplicationOptions::preStep` lifecycle callback
     and restored `fetch` as a source-defined `dart::gui` example with its live
     mocap target-following behavior, Bullet preference when available, and

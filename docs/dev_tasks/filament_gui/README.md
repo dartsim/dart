@@ -198,6 +198,15 @@ behavior. The local implementation is in place and has passed the pre-lint
 focused build/CTest, direct and pixi screenshot smokes, Python example-runner
 tests, the aggregate `examples` build, and `git diff --check`. Mandatory
 `pixi run lint` and post-lint focused build/CTest/direct screenshot smoke also
+pass. The checkpoint has been committed and pushed as
+`4a957790bef Restore rigid loop defaults`. The active slice is now
+`examples/rigid_cubes`: restore the historical `cubes.skel` world, Y-down
+gravity, decaying directional force keys, 640x480 run default, camera home,
+instruction text, README, and source-marker guards through public `dart::gui`.
+The local implementation is in place and has passed the pre-lint focused
+build/CTest, direct and pixi screenshot smokes, Python example-runner tests,
+the aggregate `examples` build, and `git diff --check`. Mandatory
+`pixi run lint` and post-lint focused build/CTest/direct screenshot smoke also
 pass. Commit and push this checkpoint next.
 
 The completion audit in `07-completion-audit.md` describes an earlier
