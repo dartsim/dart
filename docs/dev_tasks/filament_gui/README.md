@@ -78,6 +78,9 @@ restoration slice is `examples/soft_bodies/`, restoring the historical
 checkpoint is implemented and pushed. Enter recording remains a separate
 capture/session API gap. The next bounded restoration slice is
 `examples/hybrid_dynamics/`, restoring the historical `h` harness toggle and
+camera default through public `dart::gui`; that checkpoint is implemented and
+pushed. The next bounded restoration slice is `examples/joint_constraints/`,
+restoring the historical `1`-`4` perturbation keys, `h` harness toggle, and
 camera default through public `dart::gui`.
 
 The completion audit in `07-completion-audit.md` describes an earlier

@@ -892,6 +892,41 @@ TEST(FilamentSceneExtraction, HybridDynamicsExamplePreservesLegacyParityMarkers)
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
+TEST(
+    FilamentSceneExtraction,
+    JointConstraintsExamplePreservesLegacyParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "joint_constraints" / "main.cpp");
+
+  EXPECT_NE(
+      mainSource.find("dart://sample/skel/fullbody1.skel"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeJointConstraintsCamera"), std::string::npos);
+  EXPECT_NE(mainSource.find("makePerturbAction"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("createJointConstraintsKeyboardActions"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey(key)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('h')"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Apply joint-constraints forward perturbation"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Toggle joint-constraints harness"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("'1'-'4': programmed perturbations"), std::string::npos);
+  EXPECT_NE(mainSource.find("'h': toggle harness on/off"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(

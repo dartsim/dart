@@ -1928,6 +1928,60 @@ hybrid_dynamics UNIT_gui_FilamentSceneExtraction --parallel 5`
     `analyze_headless_smoke.py`
     (`/tmp/dart_hybrid_dynamics_direct_postlint.ppm`, 307200/307200 nonzero
     pixels)
+- Implementation status: pushed as
+  `d6545957998 Restore hybrid dynamics harness controls`.
+
+Thirty-sixth joint-constraints parity checkpoint:
+
+- Historical `examples/joint_constraints` exposed `1` through `4` as
+  programmed perturbation keys, `h` as the harness toggle, printed those
+  controls as viewer instructions, and set an example-specific camera home
+  view. The current promoted source owns the fullbody controller, perturbation
+  state, harness state, and equivalent panel buttons, but it does not wire the
+  legacy keyboard actions or camera default through public `dart::gui`.
+- Implementation scope: restore the five keyboard actions as renderer-neutral
+  `dart::gui::KeyboardAction`s, add a promoted `ApplicationOptions::camera`
+  default matching the historical home-position intent, and update the panel
+  text so the example itself documents the keyboard controls.
+- Keep this checkpoint focused on joint-constraints parity. The existing panel
+  buttons are kept as additive promoted-GUI affordances.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `joint_constraints` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct and/or pixi joint-constraints headless screenshot with analyzer
+    coverage
+  - Python runner tests
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+- Local validation completed:
+  - `cmake --build build/default/cpp/Release --target joint_constraints
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Fixed the first source-marker test pass after the implementation routed
+    perturbation keys through `makePerturbAction(...)`; the guard now checks
+    the helper, labels, and `KeyboardShortcut::characterKey(key)`.
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe joint-constraints screenshot plus
+    `analyze_headless_smoke.py` (`/tmp/dart_joint_constraints_direct.ppm`,
+    307200/307200 nonzero pixels)
+  - `pixi run ex joint_constraints --headless --frames 2 --width 640 --height
+480 --screenshot /tmp/dart_joint_constraints_pixi.ppm` plus analyzer
+    (307200/307200 nonzero pixels)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target
+joint_constraints UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe joint-constraints screenshot plus
+    `analyze_headless_smoke.py`
+    (`/tmp/dart_joint_constraints_direct_postlint.ppm`, 307200/307200 nonzero
+    pixels)
 - Implementation status: ready for checkpoint commit and push.
 
 ## Stretch Direction
@@ -1960,8 +2014,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore hybrid-dynamics `h` harness toggle and camera default through public
-   `dart::gui`.
+1. Restore joint-constraints `1`-`4` perturbation keys, `h` harness toggle,
+   and camera default through public `dart::gui`.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

@@ -122,6 +122,8 @@
     jump-to-latest through public `dart::gui` keyboard actions.
   - Restored hybrid-dynamics example `h` harness toggle and camera defaults
     through public `dart::gui`.
+  - Restored joint-constraints example perturbation keys, `h` harness toggle,
+    and camera defaults through public `dart::gui`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

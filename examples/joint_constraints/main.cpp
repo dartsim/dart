@@ -46,6 +46,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -273,6 +274,67 @@ private:
   std::shared_ptr<dart::constraint::WeldJointConstraint> mWeldJoint;
 };
 
+dart::gui::OrbitCamera makeJointConstraintsCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.5404195002705842;
+  camera.pitch = 0.4758822496604165;
+  camera.distance = 6.557438524302;
+  return camera;
+}
+
+dart::gui::KeyboardAction makePerturbAction(
+    const std::shared_ptr<JointConstraintsController>& controller,
+    char key,
+    std::string label,
+    const Eigen::Vector3d& force)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback = [controller, force](dart::gui::KeyboardActionContext&) {
+    controller->perturb(force);
+  };
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createJointConstraintsKeyboardActions(
+    const std::shared_ptr<JointConstraintsController>& controller)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(5);
+  actions.push_back(makePerturbAction(
+      controller,
+      '1',
+      "Apply joint-constraints forward perturbation",
+      Eigen::Vector3d(40.0, 0.0, 0.0)));
+  actions.push_back(makePerturbAction(
+      controller,
+      '2',
+      "Apply joint-constraints backward perturbation",
+      Eigen::Vector3d(-40.0, 0.0, 0.0)));
+  actions.push_back(makePerturbAction(
+      controller,
+      '3',
+      "Apply joint-constraints right perturbation",
+      Eigen::Vector3d(0.0, 0.0, 50.0)));
+  actions.push_back(makePerturbAction(
+      controller,
+      '4',
+      "Apply joint-constraints left perturbation",
+      Eigen::Vector3d(0.0, 0.0, -50.0)));
+
+  dart::gui::KeyboardAction toggleHarness;
+  toggleHarness.label = "Toggle joint-constraints harness";
+  toggleHarness.shortcut = dart::gui::KeyboardShortcut::characterKey('h');
+  toggleHarness.callback = [controller](dart::gui::KeyboardActionContext&) {
+    controller->toggleHarness();
+  };
+  actions.push_back(std::move(toggleHarness));
+  return actions;
+}
+
 dart::gui::Panel createJointConstraintsPanel(
     const std::shared_ptr<JointConstraintsController>& controller)
 {
@@ -282,6 +344,9 @@ dart::gui::Panel createJointConstraintsPanel(
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     builder.text("Balanced fullbody controller with constraint perturbations");
+    builder.text("'1'-'4': programmed perturbations");
+    builder.text("'h': toggle harness on/off");
+    builder.text("space bar: simulation on/off");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -332,9 +397,11 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = world;
+    options.camera = makeJointConstraintsCamera();
     options.preStep = [controller]() {
       controller->preStep();
     };
+    options.keyboardActions = createJointConstraintsKeyboardActions(controller);
     options.panels.push_back(createJointConstraintsPanel(controller));
 
     return dart::gui::runApplication(argc, argv, options);
