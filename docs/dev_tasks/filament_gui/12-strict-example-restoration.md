@@ -442,6 +442,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     checks, image-sequence analyzer checks, aggregate `build-examples`, Python
     C++ example-runner tests, mandatory `pixi run lint`, post-lint focused
     checks, and `git diff --check`.
+47. The active strict re-open cursor is now
+    `examples/operational_space_control/`; compare it against
+    `520993d7301^:examples/operational_space_control` before coding past that
+    slice.
 
 ## Checkpoint Rule
 

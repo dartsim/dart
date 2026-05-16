@@ -113,9 +113,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `4db26872b44 Restore Mimic Pendulums panel controls`.
+  `b0da74db11c Restore Mixed Chain example defaults`.
 - Latest pushed code checkpoint:
-  `4db26872b44 Restore Mimic Pendulums panel controls`.
+  `b0da74db11c Restore Mixed Chain example defaults`.
 - Latest pushed infrastructure checkpoint: `b7a269906f9` merged
   `origin/main` so the branch has the new AI-native living-plan and API
   boundary infrastructure without reopening the removed backend-named
@@ -155,15 +155,16 @@ history but are not guaranteed to be in chronological order.
   reference/follower/error/base-drift diagnostics, README option inventory, and
   marker guards through public `dart::gui`. Exact ImGui table and color-swatch
   layout remains a named public panel API gap.
-- Active strict re-open cursor: `examples/mixed_chain/`. Compare it against
-  `520993d7301^:examples/mixed_chain` before coding, then restore or
-  explicitly classify every historical loading, impulse, force application,
-  camera/default, README, panel, and marker behavior.
-- Current implementation checkpoint in the worktree: `examples/mixed_chain/`
+- Latest pushed strict re-open checkpoint: `examples/mixed_chain/`
   restores the historical random startup pose, 640x480 launch default, console
   instructions, README/capture documentation, and marker coverage while
   preserving the already-promoted pre-step impulse controls, keyboard actions,
   panel buttons, and camera.
+- Active strict re-open cursor: `examples/operational_space_control/`. Compare
+  it against `520993d7301^:examples/operational_space_control` before coding,
+  then restore or explicitly classify every historical robot loading,
+  controller/IK behavior, target controls, camera/default, README, panel, and
+  marker behavior.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`
@@ -208,6 +209,7 @@ history but are not guaranteed to be in chronological order.
   - `b4ed7d9d62f Remove Rerun placeholder example`
   - `e5523b4f5cd Restore LCP physics scene controls`
   - `4db26872b44 Restore Mimic Pendulums panel controls`
+  - `b0da74db11c Restore Mixed Chain example defaults`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
