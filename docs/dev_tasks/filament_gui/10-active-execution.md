@@ -805,6 +805,67 @@ Thirteenth source-ownership checkpoint:
     `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
   - `git diff --check`
 
+Fourteenth source-ownership checkpoint:
+
+- Restore the remaining IK puppet macro launchers, `examples/hubo_puppet` and
+  `examples/g1_puppet`, as real public-API example sources.
+- Move the Hubo DRCHubo URDF load, finger-body cleanup, start pose, DOF limit
+  setup, ground, six IK targets, support-foot geometry, hotkeys, and status
+  panel into `examples/hubo_puppet/main.cpp`.
+- Move the G1 package/resource resolver, robot load, ground, four IK targets,
+  support-foot geometry, hotkeys, package override parsing, and status panel
+  into `examples/g1_puppet/main.cpp`.
+- Both examples should pass `options.world` and `options.ikHandles` through
+  promoted `dart::gui`, with no private `DartScene`, no scene-string launcher,
+  and no backend headers.
+- Switch both CMake files to `dart_build_gui_example(...)` linked with
+  `dart-io`, and remove the Python runner's injected `--scene hubo-puppet` and
+  `--scene g1` defaults.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `hubo_puppet`, `g1_puppet`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for both examples
+  - `pixi run ex hubo_puppet --headless --frames 1 --screenshot ...`
+  - `pixi run ex g1_puppet --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+- Implementation state for this slice: `examples/hubo_puppet` now owns the
+  DRCHubo URDF load, finger-body cleanup, standing start pose, visual-only
+  robot setup, ground, six selectable IK target frames, support-foot geometry,
+  target hotkeys, solve-on-drag IK handles, and status panel in its own
+  `main.cpp`. `examples/g1_puppet` now owns the G1 package resource resolver,
+  robot load, ground, four selectable IK target frames, support-foot geometry,
+  target hotkeys, package/robot override parsing, solve-on-drag IK handles, and
+  status panel in its own `main.cpp`. The Python runner no longer injects
+  `--scene hubo-puppet` or `--scene g1` for either executable.
+- Local evidence so far:
+  - C++ GUI target build for `hubo_puppet`, `g1_puppet`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for `hubo_puppet`
+    (`/tmp/hubo_puppet_self_owned.ppm`, 2764816 bytes)
+  - Direct headless screenshot capture for `g1_puppet`
+    (`/tmp/g1_puppet_self_owned.ppm`, 2764816 bytes)
+  - Pixi example-runner screenshot capture for
+    `/tmp/hubo_puppet_pixi_self_owned.ppm` (921615 bytes)
+  - Pixi example-runner screenshot capture for
+    `/tmp/g1_puppet_pixi_self_owned.ppm` (921615 bytes)
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - Post-lint focused build for `hubo_puppet`, `g1_puppet`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint Python runner test:
+    `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - `git diff --check`
+- Remaining GUI macro launchers after this slice: `empty`, `hardcoded_design`,
+  `heightmap`, `lcp_physics`, `mimic_pendulums`, `point_cloud`,
+  `polyhedron_visual`, `simulation_event_handler`, `soft_bodies`, and
+  `vehicle`.
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -835,16 +896,14 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Finish the `atlas_puppet` checkpoint with lint, post-lint focused rebuild,
-   commit, push, and CI dispatch if permissions allow it.
-2. Prioritize the remaining robot/IK macro-launcher examples after
-   `atlas_puppet`: `hubo_puppet` and `g1_puppet`.
-3. Continue across the remaining pre-existing examples in small related
+1. Finish the `hubo_puppet`/`g1_puppet` checkpoint with lint, post-lint focused
+   rebuild, commit, push, and CI dispatch if permissions allow it.
+2. Continue across the remaining GUI macro launchers in small related
    families, documenting each slice here before implementation.
-4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-5. Do not start the physical `experimental/` directory move until the
+4. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-6. Run `pixi run lint` before every checkpoint commit, then push the commit to
+5. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

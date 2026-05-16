@@ -29,7 +29,7 @@ FILAMENT_ROUTED_EXAMPLES = {
     "lcp_physics": ("--scene", "lcp-physics"),
     "mimic_pendulums": ("--scene", "mimic-pendulums"),
     "atlas_puppet": (),
-    "hubo_puppet": ("--scene", "hubo-puppet"),
+    "hubo_puppet": (),
     "atlas_simbicon": (),
     "operational_space_control": (),
     "wam_ikfast": (),
@@ -44,7 +44,7 @@ FILAMENT_ROUTED_EXAMPLES = {
     "simulation_event_handler": ("--scene", "simulation-event-handler"),
     "polyhedron_visual": ("--scene", "polyhedron"),
     "heightmap": ("--scene", "heightmap"),
-    "g1_puppet": ("--scene", "g1"),
+    "g1_puppet": (),
 }
 
 
@@ -113,7 +113,7 @@ def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
             "g1_puppet",
             "g1_puppet",
             ("filament",),
-            ("--scene", "g1"),
+            (),
         ),
         (
             "atlas_simbicon",
@@ -269,12 +269,10 @@ def test_filament_smoke_cmake_registers_analysis_modes(run_cpp_example):
     assert _cmake_option_value(scene_call, "ANALYSIS_MODE") == "basic"
 
 
-def test_run_args_with_defaults_uses_g1_scene(run_cpp_example):
+def test_run_args_with_defaults_does_not_inject_g1_scene(run_cpp_example):
     spec = run_cpp_example._resolve_example("g1_puppet")
 
     assert run_cpp_example._run_args_with_defaults(spec, ["--frames", "1"]) == [
-        "--scene",
-        "g1",
         "--frames",
         "1",
     ]

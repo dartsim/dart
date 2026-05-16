@@ -69,13 +69,13 @@ the last per-example `options.defaultScene` uses by making `imgui` and
 
 ## Immediate Next Step
 
-The current source-ownership checkpoint is `atlas_puppet` using the promoted
-IK-handle handoff. The example now owns the Atlas URDF load, start pose,
-ground, root-handle visual, four IK target frames, hotkey labels, support-foot
-geometry, solve-on-drag handles, and panel through public `dart::gui`
-`ApplicationOptions`. Finish this checkpoint with lint, a post-lint focused
-rebuild, commit, and push. Remaining puppet examples after that are
-`hubo_puppet` and `g1_puppet`.
+The current source-ownership checkpoint is the remaining IK puppet pair,
+`hubo_puppet` and `g1_puppet`, using the promoted IK-handle handoff proven by
+`atlas_puppet`. Their example sources now own robot loading, ground setup, IK
+targets, support geometry, target hotkeys, solve-on-drag handles, and panels,
+and the Python runner no longer injects `--scene hubo-puppet` or `--scene g1`.
+Finish this checkpoint with lint, post-lint validation, commit, push, and CI
+dispatch.
 
 ## Context That Would Be Lost
 
@@ -630,16 +630,18 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`9f195a0738c Expose GUI IK handles for examples`; the current pending
-checkpoint is the `atlas_puppet` source-ownership repair.
+`93bfd9cf205 Restore Atlas Puppet GUI example`; the current pending checkpoint
+is the `hubo_puppet`/`g1_puppet` source-ownership repair.
 
 ## Current Immediate Next Step
 
-Commit and push `atlas_puppet` after `pixi run lint` and the post-lint focused
-validation pass. Then take the remaining IK puppet examples,
-`hubo_puppet` and `g1_puppet`. Keep `--screenshot <path>` and `--out <dir>`
-working for the existing CTest, GitHub Actions smoke path, and historical
-image-sequence workflows. A later broader smoke sweep can still use:
+Commit and push `hubo_puppet`/`g1_puppet` after `pixi run lint` and the
+post-lint focused validation pass. Remaining GUI macro launchers are `empty`,
+`hardcoded_design`, `heightmap`, `lcp_physics`, `mimic_pendulums`,
+`point_cloud`, `polyhedron_visual`, `simulation_event_handler`, `soft_bodies`,
+and `vehicle`. Keep `--screenshot <path>` and `--out <dir>` working for the
+existing CTest, GitHub Actions smoke path, and historical image-sequence
+workflows. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

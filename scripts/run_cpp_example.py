@@ -92,7 +92,7 @@ GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
     "lcp_physics": ("--scene", "lcp-physics"),
     "mimic_pendulums": ("--scene", "mimic-pendulums"),
     "atlas_puppet": (),
-    "hubo_puppet": ("--scene", "hubo-puppet"),
+    "hubo_puppet": (),
     "atlas_simbicon": (),
     "operational_space_control": (),
     "wam_ikfast": (),
@@ -107,7 +107,7 @@ GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
     "simulation_event_handler": ("--scene", "simulation-event-handler"),
     "polyhedron_visual": ("--scene", "polyhedron"),
     "heightmap": ("--scene", "heightmap"),
-    "g1_puppet": ("--scene", "g1"),
+    "g1_puppet": (),
 }
 
 EXAMPLE_SPECS = {

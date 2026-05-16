@@ -555,10 +555,11 @@ Current result after the Atlas Puppet ownership repair:
   carries public DART IK target handles so puppet examples can move to
   `options.world` without losing hotkey selection, selected labels, or
   solve-on-drag behavior.
-- **Next puppet repairs:** `examples/hubo_puppet` and `examples/g1_puppet`
-  should move from macro launchers to real source-owned `main.cpp` files that
-  load their robots, create visible IK targets, and pass `options.ikHandles`
-  through promoted `dart::gui`.
+- **Current puppet repairs:** `examples/hubo_puppet` and `examples/g1_puppet`
+  now move from macro launchers to real source-owned `main.cpp` files that
+  load their robots, create visible IK targets, preserve package/robot
+  override handling where applicable, and pass `options.ikHandles` through
+  promoted `dart::gui`.
 - **Flipped to self-owned in the latest slice:** `examples/atlas_puppet` now
   owns the Atlas URDF load, start pose, visual-only setup, ground, root handle,
   four IK target frames, support-foot geometry, hotkeys, panel, and
@@ -568,6 +569,10 @@ Current result after the Atlas Puppet ownership repair:
   `examples/atlas_simbicon/main.cpp` now loads the Atlas SDF, owns the
   visual-only setup and ground in-source, and the runner no longer injects
   `--scene atlas-simbicon`.
+- **Remaining GUI macro launchers after the puppet pair:** `empty`,
+  `hardcoded_design`, `heightmap`, `lcp_physics`, `mimic_pendulums`,
+  `point_cloud`, `polyhedron_visual`, `simulation_event_handler`,
+  `soft_bodies`, and `vehicle`.
 - **Recently flipped:**
   `examples/operational_space_control/main.cpp` now loads the WAM URDF, owns
   the target, ground, and operational-space pre-step controller in-source, and
