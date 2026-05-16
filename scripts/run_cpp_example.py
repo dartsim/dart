@@ -93,7 +93,7 @@ GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
     "mimic_pendulums": ("--scene", "mimic-pendulums"),
     "atlas_puppet": ("--scene", "atlas-puppet"),
     "hubo_puppet": ("--scene", "hubo-puppet"),
-    "atlas_simbicon": ("--scene", "atlas-simbicon"),
+    "atlas_simbicon": (),
     "operational_space_control": (),
     "wam_ikfast": (),
     "fetch": (),

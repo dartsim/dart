@@ -628,7 +628,8 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
       {std::filesystem::path("examples") / "drag_and_drop", true},
       {std::filesystem::path("examples") / "tinkertoy", true},
       {std::filesystem::path("examples") / "operational_space_control", true},
-      {std::filesystem::path("examples") / "wam_ikfast", true}};
+      {std::filesystem::path("examples") / "wam_ikfast", true},
+      {std::filesystem::path("examples") / "atlas_simbicon", true}};
   std::vector<std::filesystem::path> sources;
   for (const auto& example : examples) {
     sources.push_back(example.directory / "main.cpp");

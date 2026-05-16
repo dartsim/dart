@@ -30,7 +30,7 @@ FILAMENT_ROUTED_EXAMPLES = {
     "mimic_pendulums": ("--scene", "mimic-pendulums"),
     "atlas_puppet": ("--scene", "atlas-puppet"),
     "hubo_puppet": ("--scene", "hubo-puppet"),
-    "atlas_simbicon": ("--scene", "atlas-simbicon"),
+    "atlas_simbicon": (),
     "operational_space_control": (),
     "wam_ikfast": (),
     "fetch": (),
@@ -120,7 +120,7 @@ def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
             "atlas_simbicon",
             "atlas_simbicon",
             ("filament",),
-            ("--scene", "atlas-simbicon"),
+            (),
         ),
     ],
 )

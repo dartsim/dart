@@ -690,6 +690,44 @@ examples/wam_ikfast ...` returns no matches for the WAM pair.
   - Post-lint C++ GUI target rebuild for `operational_space_control`,
     `wam_ikfast`, and `UNIT_gui_FilamentSceneExtraction`
   - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+
+Eleventh source-ownership checkpoint:
+
+- Restore `examples/atlas_simbicon` before the puppet examples. It still uses
+  the macro scene launcher, but unlike Atlas/Hubo/G1 puppet it does not depend
+  on private viewer IK-handle plumbing.
+- Move Atlas Simbicon to a real `main.cpp` that loads the Atlas SDF through
+  public `dart::io`, creates the ground and visual-only Atlas setup in source,
+  and passes `options.world` through promoted `dart::gui`.
+- Switch its CMake target from `dart_build_gui_scene_example(...)` to
+  `dart_build_gui_example(...)` linked with `dart-io`, and remove the Python
+  runner's injected `--scene atlas-simbicon` default.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `atlas_simbicon` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for `atlas_simbicon`
+  - `pixi run ex atlas_simbicon --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+- Implementation state for this slice: `examples/atlas_simbicon/main.cpp` now
+  owns the Atlas SDF load, visual-only collision/gravity disabling, Simbicon
+  starting pose, ground, and status panel, and passes `options.world` through
+  promoted `dart::gui`. Its CMake target no longer uses
+  `dart_build_gui_scene_example(...)`, and the Python runner no longer injects
+  `--scene atlas-simbicon`.
+- Local evidence so far:
+  - C++ GUI target build for `atlas_simbicon` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for `atlas_simbicon`
+  - `pixi run ex atlas_simbicon --headless --frames 1 --screenshot ...`
+  - `rg -n "options\.defaultScene" examples` returns no matches.
+  - `rg -n "dart_build_gui_scene_example" examples/atlas_simbicon ...`
+    returns no matches for `atlas_simbicon`.
+  - Full `examples` aggregate target build
   - `pixi run lint`
 - Implementation state for this slice: `examples/operational_space_control`
   now owns its WAM URDF load, ground, target frame, operational-space
@@ -740,14 +778,17 @@ The branch is ready to hand off for review only when:
 ## Immediate Next Steps
 
 1. Finish the WAM robot/IK pair checkpoint with commit, push, and CI dispatch.
-2. Continue across the remaining pre-existing examples in small related
+2. Complete the `atlas_simbicon` source-ownership checkpoint with lint,
+   post-lint focused rebuild, commit, push, and CI dispatch if permissions
+   allow it.
+3. Continue across the remaining pre-existing examples in small related
    families, documenting each slice here before implementation.
-3. Prioritize the remaining robot/IK macro-launcher examples after the WAM
-   pair: `atlas_puppet`, `atlas_simbicon`, `hubo_puppet`, and `g1_puppet`.
-4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+4. Prioritize the remaining robot/IK macro-launcher examples after
+   `atlas_simbicon`: `atlas_puppet`, `hubo_puppet`, and `g1_puppet`.
+5. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-5. Do not start the physical `experimental/` directory move until the
+6. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-6. Run `pixi run lint` before every checkpoint commit, then push the commit to
+7. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

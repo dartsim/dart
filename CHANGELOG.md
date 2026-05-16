@@ -58,6 +58,9 @@
   - Moved `operational_space_control` and `wam_ikfast` off private named-scene
     fixture launchers so their example sources load the WAM robot, create their
     visible targets, and run through promoted `dart::gui` options directly.
+  - Moved `atlas_simbicon` off the private named-scene fixture launcher so the
+    example source loads Atlas, creates its ground, and runs through promoted
+    `dart::gui` options directly.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

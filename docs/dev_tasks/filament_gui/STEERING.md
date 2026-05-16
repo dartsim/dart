@@ -548,10 +548,14 @@ Audit command:
 rg -n "options\\.defaultScene" examples
 ```
 
-Current result after the WAM robot/IK pair ownership repair:
+Current result after the Atlas Simbicon ownership repair:
 
 - **Still inverse-dependent:** none under `examples/**/*.cpp`.
 - **Flipped to self-owned in the latest slice:**
+  `examples/atlas_simbicon/main.cpp` now loads the Atlas SDF, owns the
+  visual-only setup and ground in-source, and the runner no longer injects
+  `--scene atlas-simbicon`.
+- **Recently flipped:**
   `examples/operational_space_control/main.cpp` now loads the WAM URDF, owns
   the target, ground, and operational-space pre-step controller in-source, and
   `examples/wam_ikfast/main.cpp` now loads the WAM URDF, owns the visual-only
@@ -571,7 +575,7 @@ Current result after the WAM robot/IK pair ownership repair:
   `rigid_chain`, `rigid_loop`, `mixed_chain`, `coupler_constraint`,
   `add_delete_skels`, `rigid_shapes`, `hybrid_dynamics`, `biped_stand`,
   `joint_constraints`, `free_joint_cases`, `human_joint_limits`,
-  `operational_space_control`, and `wam_ikfast`.
+  `operational_space_control`, `wam_ikfast`, and `atlas_simbicon`.
 - **Fixture cleanup gap:** the private `createDragAndDropScene()` remains for
   `empty` and `dartsim --scene drag-and-drop` developer coverage. Deleting or
   moving that fixture requires migrating `empty` and then deciding the

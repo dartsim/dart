@@ -74,8 +74,9 @@ continue the broader example restoration audit. Do not wait for CI before
 making independent progress, but inspect and fix CI failures if they surface.
 The current WAM robot/IK slice moves `operational_space_control` and
 `wam_ikfast` off macro scene launchers. After that checkpoint is committed and
-pushed, continue with the remaining robot/IK examples: `atlas_puppet`,
-`atlas_simbicon`, `hubo_puppet`, and `g1_puppet`.
+pushed, `atlas_simbicon` is the next source-owned robot example checkpoint.
+After that checkpoint, continue with the remaining IK puppet examples:
+`atlas_puppet`, `hubo_puppet`, and `g1_puppet`.
 
 ## Context That Would Be Lost
 
@@ -634,10 +635,9 @@ the `imgui`/`tinkertoy` source-ownership repair.
 
 ## Current Immediate Next Step
 
-Continue by finishing the `operational_space_control` and `wam_ikfast`
-checkpoint, then restore the remaining robot/IK examples through the promoted
-`dart::gui` runtime. Keep `--screenshot <path>` and `--out <dir>` working for
-the existing CTest, GitHub Actions smoke path, and historical image-sequence
+Continue by finishing the `atlas_simbicon` checkpoint, then take the IK puppet
+examples. Keep `--screenshot <path>` and `--out <dir>` working for the
+existing CTest, GitHub Actions smoke path, and historical image-sequence
 workflows. A later broader smoke sweep can still use:
 
 ```bash
