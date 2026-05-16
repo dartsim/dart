@@ -308,6 +308,26 @@ dart::gui::Panel createSoftBodiesPanel(
   return panel;
 }
 
+dart::gui::RunOptions makeSoftBodiesRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+void printSoftBodiesInstructions()
+{
+  std::cout << "Soft Bodies Example Controls:\n"
+            << "space bar: simulation on/off\n"
+            << "'[': move playback backward one frame\n"
+            << "']': move playback forward one frame\n"
+            << "'{': move playback backward ten frames\n"
+            << "'}': move playback forward ten frames\n"
+            << "'r': restart playback\n"
+            << "'\\': jump playback to latest frame\n";
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -317,11 +337,13 @@ int main(int argc, char* argv[])
 
   dart::gui::ApplicationOptions options;
   options.world = std::move(world);
+  options.runDefaults = makeSoftBodiesRunDefaults();
   options.preStep = [history]() {
     history->captureStepStart();
   };
   options.keyboardActions = createSoftBodiesKeyboardActions(history);
   options.panels.push_back(createSoftBodiesPanel(history));
 
+  printSoftBodiesInstructions();
   return dart::gui::runApplication(argc, argv, options);
 }

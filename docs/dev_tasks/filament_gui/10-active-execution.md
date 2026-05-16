@@ -118,9 +118,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `0e5f7980923 Restore Operational Space Control example`.
+  `b7ff9b6f5ff Restore Rigid Shapes example scene`.
 - Latest pushed code checkpoint:
-  `0e5f7980923 Restore Operational Space Control example`.
+  `b7ff9b6f5ff Restore Rigid Shapes example scene`.
 - Latest pushed infrastructure checkpoint: `b7a269906f9` merged
   `origin/main` so the branch has the new AI-native living-plan and API
   boundary infrastructure without reopening the removed backend-named
@@ -185,12 +185,12 @@ history but are not guaranteed to be in chronological order.
 - Mandatory `pixi run lint` passed for the operational-space-control slice.
   Post-lint focused rebuild, focused CTest, direct software-GL screenshot
   analyzer check, and `git diff --check` also passed.
-- Active strict re-open cursor: `examples/rigid_shapes/`. The source had a
-  prior parity checkpoint, but `11-example-parity-audit.md` still lacks an
-  itemized strict inventory for it. Compare current source and README against
-  `520993d7301^:examples/rigid_shapes`, then restore or explicitly classify
-  every historical spawn/delete/contact control, command-line option,
-  camera/default, README, panel, and marker behavior before moving past it.
+- Latest pushed strict re-open checkpoint: `examples/rigid_shapes/` restores
+  the historical `dart://sample/skel/shapes.skel` startup scene, random
+  box/ellipsoid/cylinder and convex-mesh spawning, collision-detector printout,
+  console instructions, README, and marker coverage while preserving the
+  promoted keyboard actions, panel controls, 640x480 defaults, camera framing,
+  CLI parsing, and example-owned `PointCloudShape` contact markers.
 - Current rigid-shapes strict re-open implementation restores the historical
   `dart://sample/skel/shapes.skel` startup scene, random box/ellipsoid/cylinder
   and convex-mesh spawning, collision-detector printout, console instructions,
@@ -205,6 +205,31 @@ history but are not guaranteed to be in chronological order.
 - Mandatory `pixi run lint` passed for the rigid-shapes slice. Post-lint
   focused rebuild, focused CTest, direct software-GL screenshot analyzer check,
   and `git diff --check` also passed.
+- Active strict re-open cursor: `examples/soft_bodies/`. The current source
+  has now been compared against `520993d7301^:examples/soft_bodies`, and the
+  strict inventory in `11-example-parity-audit.md` is updated.
+- Current soft-bodies strict re-open implementation restores the historical
+  `softBodies.skel` load, recorded playback history, bracket/brace/reset/latest
+  shortcuts, 640x480 launch default, console instruction printout, README,
+  promoted playback panel, and marker coverage through public `dart::gui` and
+  `dart::io`.
+- Soft Bodies pre-lint validation: focused build for `soft_bodies` and
+  `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed, direct and
+  pixi software-GL screenshots passed analyzer coverage
+  (`/tmp/dart_soft_bodies_direct.ppm`, 307200/307200 nonzero pixels, and
+  `/tmp/dart_soft_bodies_pixi.ppm`, 307200/307200 nonzero pixels),
+  image-sequence capture passed analyzer coverage
+  (`/tmp/dart_soft_bodies_frames/frame_000001.ppm`, 307200/307200 nonzero
+  pixels), aggregate `build-examples` passed, Python C++ example-runner tests
+  passed (67/67), and direct visual inspection confirmed the soft-body wall and
+  grid rendered correctly.
+- Soft Bodies post-lint validation: mandatory `pixi run lint` passed, focused
+  rebuild for `soft_bodies` and `UNIT_gui_FilamentSceneExtraction` passed,
+  focused CTest passed, direct software-GL screenshot basic analyzer passed
+  (`/tmp/dart_soft_bodies_postlint.ppm`, 307200/307200 nonzero pixels), and
+  `git diff --check` passed. The generic contrast analyzer is not used as a
+  gate for this low-shadow soft-body scene; rely on the basic nonblank check
+  plus visual inspection.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`

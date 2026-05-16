@@ -487,6 +487,28 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     visual inspection of the loaded SKEL scene.
     Mandatory `pixi run lint`, post-lint focused rebuild/CTest, post-lint
     direct screenshot analyzer check, and `git diff --check` also passed.
+52. The active strict re-open cursor is now `examples/soft_bodies/`. A prior
+    parity checkpoint restored source-owned playback controls, but
+    `11-example-parity-audit.md` still lacks the itemized historical-source
+    inventory. Before coding past this slice, compare current source/README
+    against `520993d7301^:examples/soft_bodies`, then restore or classify the
+    historical playback/step/reset controls, shifted-key shortcuts,
+    camera/defaults, README, panel, and marker behavior.
+53. `examples/soft_bodies/` strict re-open found concrete gaps after the prior
+    parity checkpoint: the current source restores the historical
+    `softBodies.skel` load, recorded playback history, bracket/brace controls,
+    reset/latest controls, and promoted panel, but it does not set the
+    historical 640x480 launch default, print the historical instruction block,
+    or include the README. The current source restores those gaps through
+    public `dart::gui` and `dart::io` while keeping the promoted playback panel
+    and marker coverage. Pre-lint validation includes focused builds, focused
+    CTest, direct and pixi software-GL screenshot analyzer checks,
+    image-sequence analyzer check, aggregate `build-examples`, Python C++
+    example-runner tests, and direct visual inspection of the rendered
+    soft-body scene. Mandatory `pixi run lint`, post-lint focused
+    rebuild/CTest, post-lint direct screenshot basic analyzer check, and
+    `git diff --check` also passed. The generic contrast analyzer is not a
+    soft-bodies gate because the scene is low-shadow by design.
 
 ## Checkpoint Rule
 

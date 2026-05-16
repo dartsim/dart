@@ -2861,6 +2861,8 @@ TEST(FilamentSceneExtraction, SoftBodiesAndVehicleExamplesPreserveParityMarkers)
 {
   const auto softBodiesSource = readSourceFile(
       std::filesystem::path("examples") / "soft_bodies" / "main.cpp");
+  const auto softBodiesReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "soft_bodies" / "README.md");
   EXPECT_NE(
       softBodiesSource.find("dart://sample/skel/softBodies.skel"),
       std::string::npos);
@@ -2897,11 +2899,22 @@ TEST(FilamentSceneExtraction, SoftBodiesAndVehicleExamplesPreserveParityMarkers)
   EXPECT_NE(
       softBodiesSource.find("'{'/'}': move backward/forward ten frames"),
       std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("printSoftBodiesInstructions"), std::string::npos);
+  EXPECT_NE(softBodiesSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(softBodiesSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(softBodiesSource.find("options.height = 480"), std::string::npos);
   EXPECT_NE(softBodiesSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(
       softBodiesSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(softBodiesSource.find("options.world"), std::string::npos);
   EXPECT_EQ(softBodiesSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_NE(
+      softBodiesReadmeSource.find("Soft Bodies Example"), std::string::npos);
+  EXPECT_NE(
+      softBodiesReadmeSource.find("pixi run ex soft_bodies"),
+      std::string::npos);
+  EXPECT_NE(softBodiesReadmeSource.find("--out"), std::string::npos);
 
   const auto inputSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "experimental" / "detail"
