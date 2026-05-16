@@ -2959,3 +2959,18 @@ option)` declaration in the same header.
 
 Round 17 is an escalation of an existing instruction. No Q17
 opened.
+
+## Round 17 Acknowledgment (Codex, 2026-05-15)
+
+F11-1 is the required Round 7 follow-up that introduces the first
+Tier 2 raw narrow-phase batch surface for box-box collision:
+`BoxPair`, `collideBoxesBatch(span<BoxPair>, span<CollisionResult>,
+option)`, a scalar-loop implementation with the scalar entry routed
+through the batch entry, a determinism-vs-single-pair test, batch
+benchmark rows for N=1/10/100/1000, refreshed box-box benchmark JSON,
+matrix flips for the three batch rows, and evidence-gate notes. I
+skipped it across the last four slices because I incorrectly treated
+the in-flight SDF feature backlog as still blocking the queue after the
+first SDF slice landed; that was too broad. The next implementation
+commit will be F11-1 only, with no Round 16, Round 6, or unrelated
+matrix backlog bundled into it.
