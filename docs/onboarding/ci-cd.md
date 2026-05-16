@@ -34,7 +34,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - The Eigen over-alignment job forces `EIGEN_MAX_ALIGN_BYTES=64` and `EIGEN_MAX_STATIC_ALIGN_BYTES=64`; failures usually indicate allocator, placement-new, or storage code assuming a smaller Eigen alignment.
   - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
   - dartpy test failures can show up as a Python abort with minimal traceback when a C++ `DART_ASSERT` triggers; rerun the single test locally and inspect the C++ assert.
-  - Reference collision raycast tests require the relevant reference component and dependency to be built; skip those checks or use the `collision-reference` environment when FCL/Bullet/ODE are intentionally disabled in a native-only build.
+  - Reference collision raycast tests require the relevant reference target and dependency to be available; skip those checks or use the `collision-reference` environment when FCL/Bullet/ODE are intentionally disabled in a native-only build.
   - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`.
   - `gh run view --json ...` only accepts supported fields; prefer the `url` field instead of guessing `htmlURL`.
   - `gh run rerun --job` expects the job `databaseId` (not the numeric ID from the job URL); if `gh run view --json jobs` shows `id: null`, use `databaseId`. Suggested (Unverified): `gh run view <RUN_ID> --json jobs --jq '.jobs[] | {name, databaseId}'`.

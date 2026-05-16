@@ -237,7 +237,7 @@ dart/
 - **Target:** `OpenGL::GL`
 - **Platform:** All (system-provided)
 
-### Collision Reference Dependencies (Optional Components)
+### Collision Reference Dependencies (Optional Inputs)
 
 These dependencies are reference-comparison inputs only. Core DART libraries,
 dartpy, gz-physics runtime integration, and the native-backed

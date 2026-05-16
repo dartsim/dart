@@ -75,7 +75,7 @@ dartpy detector aliases ``DARTCollisionDetector``, ``FCLCollisionDetector``,
 compatibility shims.
 
 FCL, Bullet, and ODE remain available only as explicit reference-comparison
-components for tests and benchmarks. Enable those through the reference
+dependencies for tests and benchmarks. Enable those through the reference
 test/benchmark gates, normally via the ``collision-reference`` Pixi
 environment; normal core DART, dartpy, package, and downstream runtime builds
 do not use per-engine collision build switches.
