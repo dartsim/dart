@@ -212,10 +212,11 @@ component names became native-backed interface facades.
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
-      latest current-head `pixi run test-all` pass was rerun on local head
-      `b5801f6c84c` after the no-PR boundary audit; it passed 6/6 top-level
-      gates: linting, build, unit tests, simulation-experimental tests, Python
-      tests, and documentation. The C++ unit-test phase reported 264/264
+      latest recorded full local `pixi run test-all` pass was rerun on
+      validation head `b5801f6c84c` after the no-PR boundary audit; it passed
+      6/6 top-level gates: linting, build, unit tests,
+      simulation-experimental tests, Python tests, and documentation. The C++
+      unit-test phase reported 264/264
       passing tests, including the `collision-native` and
       `collision-native-stability` labels. No PR, push, workflow, branch, or
       GitHub state was mutated by that validation pass. Earlier pre-record
@@ -247,7 +248,7 @@ component names became native-backed interface facades.
       package components resolving as native-backed facades and `readelf`
       showing `libdart-collision-native.so` without old collision/reference
       runtime dependencies.
-      The current head `c1f03f23147` adds the capsule-box pair-local
+      The capsule-box fix head `c1f03f23147` adds the capsule-box pair-local
       duplicate-filtering fix and passed focused `test_capsule_capsule`,
       `pixi run -e collision-reference bm-collision-check-mixed`, the full
       `pixi run -e collision-reference bm-collision-check`, `pixi run lint`,

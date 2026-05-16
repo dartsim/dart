@@ -60,23 +60,23 @@ retained `collision-fcl`, `collision-bullet`, and `collision-ode` components
 resolving as native-backed package facades and `readelf` showing
 `libdart-collision-native.so` without old collision/reference runtime
 dependencies.
-The current local head `c1f03f23147` scopes capsule-box duplicate filtering to
-the current pair, adds `CapsuleBox.DuplicateFilteringIsPairLocal`, and passed
-focused `test_capsule_capsule`, the mixed and full `collision-reference`
-benchmark guards, `pixi run lint`, `pixi run test-all`, and a fresh
-`pixi run -e gazebo test-gz` 65/65 compatibility gate. No PR, push, workflow,
-branch, or GitHub state was mutated for that recheck.
+The capsule-box fix head `c1f03f23147` scopes capsule-box duplicate filtering
+to the current pair, adds `CapsuleBox.DuplicateFilteringIsPairLocal`, and
+passed focused `test_capsule_capsule`, the mixed and full
+`collision-reference` benchmark guards, `pixi run lint`, `pixi run test-all`,
+and a fresh `pixi run -e gazebo test-gz` 65/65 compatibility gate. No PR,
+push, workflow, branch, or GitHub state was mutated for that recheck.
 The local docs/evidence refresh `17f75efeed7` records the current capsule-box
 fix evidence in the dev-task packet. A read-only external recheck for that head
 found no GitHub Actions runs and only closed PR #2652 on old head
 `714d220d82a`; no PR metadata, workflow state, branch state, or GitHub artifact
 was mutated.
-The current no-PR boundary audit head `b5801f6c84c` then passed a fresh
-current-head `pixi run test-all` with all 6 top-level gates green: linting,
-build, unit tests, simulation-experimental tests, Python tests, and
-documentation. The C++ unit-test phase reported 264/264 passing tests,
-including the native collision labels. No PR, push, workflow, branch, or GitHub
-state was mutated for that recheck.
+The no-PR boundary audit head `b5801f6c84c` then passed a fresh full local
+`pixi run test-all` with all 6 top-level gates green: linting, build, unit
+tests, simulation-experimental tests, Python tests, and documentation. The C++
+unit-test phase reported 264/264 passing tests, including the native collision
+labels. No PR, push, workflow, branch, or GitHub state was mutated for that
+recheck.
 The package-smoke evidence was recorded at `25b60737498`; later docs-only
 evidence and reference-surface wording commits may move `HEAD`. Use
 `git log -3 --oneline --decorate` for the exact current local head. None of

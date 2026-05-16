@@ -134,7 +134,7 @@ Local validation currently recorded in the dev-task evidence:
   and printed the final `All tests passed!` report. The artifact scan reported
   only `libdart-collision-native.so`, and the package/export scan found no old
   facade-library or FCL/Bullet/ODE/libccd runtime references.
-- A newer current-head local recheck with the same `pixi run test-all` command
+- A newer local recheck with the same `pixi run test-all` command
   passed on head `48c0cc3f90e` after docs/evidence PR-surface audit refreshes.
   The focused `hello_world` no-tunneling regression,
   Atlas Simbicon controller-loop no-tunneling regression, and
@@ -155,15 +155,16 @@ Local validation currently recorded in the dev-task evidence:
   Python tests, and documentation. The lint sub-gate reran
   `check-collision-runtime-isolation` and `audit-collision-compat-facades`. No
   PR, push, workflow, branch, or GitHub state was mutated by this recheck.
-- The current head `c1f03f23147` passed focused `test_capsule_capsule` with the
-  new `CapsuleBox.DuplicateFilteringIsPairLocal` regression, the mixed
+- The capsule-box fix head `c1f03f23147` passed focused
+  `test_capsule_capsule` with the new
+  `CapsuleBox.DuplicateFilteringIsPairLocal` regression, the mixed
   collision benchmark guard, the full `pixi run -e collision-reference
 bm-collision-check` guard, `pixi run lint`, `git diff --check`,
   `pixi run test-all`, and a fresh `pixi run -e gazebo test-gz` 65/65
   downstream compatibility gate. The gz DART plugin dependency scan again
   reported `libdart-collision-native.so`.
-- The current no-PR boundary audit head `b5801f6c84c` passed a fresh
-  current-head `pixi run test-all` using the safe local job cap. The full
+- The no-PR boundary audit head `b5801f6c84c` passed a fresh
+  full local `pixi run test-all` using the safe local job cap. The full
   report passed all 6 top-level gates: linting, build, unit tests,
   simulation-experimental tests, Python tests, and documentation, then printed
   `All tests passed!`. The C++ unit-test phase reported 264/264 passing tests,
@@ -225,7 +226,7 @@ bm-collision-check` guard, `pixi run lint`, `git diff --check`,
   `dart-test-reference-*` target/dependency wording. `pixi run lint` passed
   after that cleanup, including runtime-isolation and compatibility-facade
   audits, and current-facing stale wording searches returned no matches. A
-  read-only current-head audit found no workflow runs and only closed PR #2652
+  read-only review-surface audit found no workflow runs and only closed PR #2652
   on old head `714d220d82a`.
 - `pixi run lint` passed and includes:
   - `check-collision-runtime-isolation`

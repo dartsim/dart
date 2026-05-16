@@ -3198,8 +3198,8 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
   - Result: passed. EPA now has a standalone analytic penetration-depth test
     with a constructed tetrahedral simplex, and the broader
     `collision-native` CTest label passed 29/29.
-- Current local full validation after SDF and algorithm coverage refresh:
-  - Commit: current local head `00486aca5df`
+- Local full validation after SDF and algorithm coverage refresh:
+  - Commit: then-current local head `00486aca5df`
     (`Cover EPA penetration depth`).
   - Command: `pixi run test-all`.
   - Result: passed 6/6 gates: linting, build, unit tests,
@@ -3207,7 +3207,7 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     C++ unit/integration CTest slice reported 264/264 tests passing, including
     all 29 `collision-native` tests; the simulation-experimental slice
     separately reported 13/13 passing tests.
-- Current local raw GJK/EPA cache coverage refresh:
+- Local raw GJK/EPA cache coverage refresh:
   - Commit: current working tree after local head `1fb1aaad766`
     (`Record native collision full validation`).
   - Commands:
@@ -3221,7 +3221,7 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     overload with an empty-cache fallback, EPA exposes the negative
     signed-distance convention used by distance queries, `test_gjk` passed,
     and the broader `collision-native` CTest label passed 29/29.
-- Current local SDF/SDF distance coverage refresh:
+- Local SDF/SDF distance coverage refresh:
   - Commit: current working tree after local head `c026db49fa8`
     (`Cover GJK warm start and EPA signed distance`).
   - Commands:
@@ -3235,8 +3235,8 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `SdfShape` in both query orders while collision support remains disabled
     for that pair, `test_sdf_compare` passed, and the broader
     `collision-native` CTest label passed 29/29.
-- Current local full validation after raw/SDF feature refresh:
-  - Commit: current local head `c4dec13ff15`
+- Local full validation after raw/SDF feature refresh:
+  - Commit: then-current local head `c4dec13ff15`
     (`Supervisor steering: Rounds 13-17 + Q8/Q9a/Q9b/Q16 answers`).
   - Command: `pixi run test-all`.
   - Result: passed 6/6 gates: linting, build, unit tests,
@@ -3757,7 +3757,7 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     (`Record native collision no-PR boundary audit`).
   - Command:
     `JOBS=$(dart_safe_jobs); DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`.
-  - Result: passed. The full current-head `pixi run test-all` report passed
+  - Result: passed. The full local `pixi run test-all` report passed
     all 6 top-level gates: linting, build, unit tests,
     simulation-experimental tests, Python tests, and documentation, then
     printed `All tests passed!`. The C++ unit-test phase reported 264/264
