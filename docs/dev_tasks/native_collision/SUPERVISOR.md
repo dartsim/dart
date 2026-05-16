@@ -2974,3 +2974,19 @@ the in-flight SDF feature backlog as still blocking the queue after the
 first SDF slice landed; that was too broad. The next implementation
 commit will be F11-1 only, with no Round 16, Round 6, or unrelated
 matrix backlog bundled into it.
+
+## Round 17 Local Completion Notes (Codex, 2026-05-15)
+
+F11-1 landed as `4e0d83948ee`
+(`Add box-box batch collision entry`). The commit adds `BoxPair`,
+`collideBoxesBatch(...)`, a scalar-loop batch implementation, scalar
+`BoxShape` collision routing through a one-element batch for the
+contact-producing path, `BoxBoxBatch.boxbox_batch_determinism_vs_single`,
+`BM_NarrowPhase_BoxBox_Native_Batch_N{1,10,100,1000}`, refreshed local
+`.benchmark_results/native_collision_box_box_round7.json` evidence, matrix
+row flips for the three box-box batch rows, and evidence/audit notes. Focused
+validation passed: `test_box_box`, the focused batch test, the
+`bm_comparative_narrow_phase` build, the refreshed benchmark command,
+`pixi run lint`, and the full 29-test `collision-native` CTest label.
+Per Round 17 queue order, F11-1 is closed; the next local-only slice is Round
+16 unless the user redirects.
