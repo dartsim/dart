@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <span>
 
 #include <cmath>
 
@@ -305,6 +306,87 @@ double boundedSdfQueryDistance(double upperBound, double margin)
     return std::numeric_limits<double>::max();
   }
   return upperBound + margin;
+}
+
+double distancePointSetSdf(
+    std::span<const Eigen::Vector3d> pointsLocal,
+    const Eigen::Isometry3d& pointSetTransform,
+    const SdfShape& sdf,
+    const Eigen::Isometry3d& sdfTransform,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  if (pointsLocal.empty()) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  const SignedDistanceField* field = sdf.getField();
+  if (!field) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  const Eigen::Isometry3d sdfInverse = sdfTransform.inverse();
+  const Eigen::Matrix3d sdfRotation = sdfTransform.rotation();
+
+  SdfQueryOptions queryOptions;
+  queryOptions.maxDistance = boundedSdfQueryDistance(option.upperBound, 0.0);
+
+  bool found = false;
+  double bestDistance = std::numeric_limits<double>::max();
+  Eigen::Vector3d bestPoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d bestGradient = Eigen::Vector3d::Zero();
+
+  for (const auto& pointLocal : pointsLocal) {
+    const Eigen::Vector3d pointWorld = pointSetTransform * pointLocal;
+    double fieldDistance = 0.0;
+    Eigen::Vector3d gradientWorld = Eigen::Vector3d::Zero();
+    if (!querySdfDistanceAndGradient(
+            field,
+            sdfInverse,
+            sdfRotation,
+            pointWorld,
+            queryOptions,
+            &fieldDistance,
+            &gradientWorld)) {
+      continue;
+    }
+
+    if (fieldDistance < bestDistance) {
+      bestDistance = fieldDistance;
+      bestPoint = pointWorld;
+      bestGradient = gradientWorld;
+      found = true;
+    }
+  }
+
+  if (!found) {
+    result.distance = std::numeric_limits<double>::max();
+    return result.distance;
+  }
+
+  result.distance = bestDistance;
+  if (bestDistance > option.upperBound) {
+    return bestDistance;
+  }
+
+  if (option.enableNearestPoints) {
+    Eigen::Vector3d normal = Eigen::Vector3d::UnitX();
+    const double gradNorm = bestGradient.norm();
+    if (gradNorm > 1e-12) {
+      const Eigen::Vector3d gradUnit = bestGradient / gradNorm;
+      const double sign = (bestDistance >= 0.0) ? 1.0 : -1.0;
+      normal = gradUnit * sign;
+      result.pointOnObject2 = bestPoint - gradUnit * bestDistance;
+    } else {
+      result.pointOnObject2 = bestPoint;
+    }
+    result.pointOnObject1 = bestPoint;
+    result.normal = normal;
+  }
+
+  return bestDistance;
 }
 
 } // namespace
@@ -953,6 +1035,18 @@ double distanceCylinderSdf(
   }
 
   return bestDistance;
+}
+
+double distanceConvexSdf(
+    const ConvexShape& convex,
+    const Eigen::Isometry3d& convexTransform,
+    const SdfShape& sdf,
+    const Eigen::Isometry3d& sdfTransform,
+    DistanceResult& result,
+    const DistanceOption& option)
+{
+  return distancePointSetSdf(
+      convex.getVertices(), convexTransform, sdf, sdfTransform, result, option);
 }
 
 } // namespace dart::collision::native

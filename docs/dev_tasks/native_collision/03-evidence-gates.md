@@ -3148,6 +3148,20 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
   - Result: passed. Native distance now covers `SdfShape` against a compound
     shape in both query orders through the existing compound child dispatcher,
     with finite nearest-point data and flipped swapped-order normals.
+- Current local convex/SDF distance refresh:
+  - Commit: current working tree after local head `3d52e117c7f`
+    (`Cover SDF compound distance order`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_sdf_compare --parallel 5`,
+    `./build/default/cpp/Release/bin/test_sdf_compare --gtest_filter='SdfDistance.ConvexVsSdf:SdfDistance.ConvexSdfPairOrder'`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_sdf_compare$' -j 5`,
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target dart_collision_native_tests --parallel 5`,
+    and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native -j 5`.
+  - Result: passed. Native distance now covers `ConvexShape` against
+    `SdfShape` in both query orders, while generic convex/mesh collision and
+    distance fallbacks no longer claim unsupported SDF pairs. The broader
+    `collision-native` CTest label passed 29/29.
 
 ## Known Risks
 

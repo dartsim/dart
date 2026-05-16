@@ -75,6 +75,17 @@ std::shared_ptr<dart::collision::native::DenseSdfField> buildDenseField()
   return field;
 }
 
+std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale)
+{
+  return {
+      {scale, 0.0, 0.0},
+      {-scale, 0.0, 0.0},
+      {0.0, scale, 0.0},
+      {0.0, -scale, 0.0},
+      {0.0, 0.0, scale},
+      {0.0, 0.0, -scale}};
+}
+
 std::shared_ptr<dart::collision::native::DenseTsdfField> buildDenseTsdf()
 {
   using dart::collision::native::DenseTsdfField;
@@ -256,6 +267,74 @@ TEST(SdfDistance, CylinderSdfPairOrder)
   EXPECT_TRUE(sdf_cylinder.pointOnObject1.allFinite());
   EXPECT_TRUE(sdf_cylinder.pointOnObject2.allFinite());
   EXPECT_LT(cylinder_sdf.normal.dot(sdf_cylinder.normal), -0.9);
+}
+
+TEST(SdfDistance, ConvexVsSdf)
+{
+  using namespace dart::collision::native;
+
+  auto field = buildDenseField();
+  SdfShape sdf(field);
+  ConvexShape convex(makeOctahedronVertices(0.2));
+
+  Eigen::Isometry3d convex_tf = Eigen::Isometry3d::Identity();
+  convex_tf.translation() = gridCenter() + Eigen::Vector3d(1.2, 0.0, 0.0);
+
+  Eigen::Isometry3d sdf_tf = Eigen::Isometry3d::Identity();
+
+  DistanceResult result;
+  DistanceOption option;
+  double dist
+      = distanceConvexSdf(convex, convex_tf, sdf, sdf_tf, result, option);
+
+  EXPECT_NEAR(dist, 0.2, kDistTol);
+  EXPECT_TRUE(result.pointOnObject1.allFinite());
+  EXPECT_TRUE(result.pointOnObject2.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
+
+  convex_tf.translation() = gridCenter() + Eigen::Vector3d(0.9, 0.0, 0.0);
+  result.clear();
+  dist = distanceConvexSdf(convex, convex_tf, sdf, sdf_tf, result, option);
+
+  EXPECT_LT(dist, 0.0);
+  EXPECT_NEAR(dist, -0.1, kDistTol);
+}
+
+TEST(SdfDistance, ConvexSdfPairOrder)
+{
+  using namespace dart::collision::native;
+
+  auto field = buildDenseField();
+  CollisionWorld world;
+  auto convex = world.createObject(
+      std::make_unique<ConvexShape>(makeOctahedronVertices(0.2)));
+  auto sdf = world.createObject(std::make_unique<SdfShape>(field));
+
+  Eigen::Isometry3d convex_tf = Eigen::Isometry3d::Identity();
+  convex_tf.translation() = gridCenter() + Eigen::Vector3d(1.2, 0.0, 0.0);
+  convex.setTransform(convex_tf);
+
+  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Convex, ShapeType::Sdf));
+  EXPECT_FALSE(NarrowPhase::isSupported(ShapeType::Sdf, ShapeType::Convex));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Convex, ShapeType::Sdf));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sdf, ShapeType::Convex));
+
+  DistanceResult convex_sdf;
+  DistanceResult sdf_convex;
+  const DistanceOption option = DistanceOption::unlimited();
+
+  const double dist1 = NarrowPhase::distance(convex, sdf, option, convex_sdf);
+  const double dist2 = NarrowPhase::distance(sdf, convex, option, sdf_convex);
+
+  EXPECT_NEAR(dist1, 0.2, kDistTol);
+  EXPECT_NEAR(dist1, dist2, kDistTol);
+  EXPECT_TRUE(convex_sdf.pointOnObject1.allFinite());
+  EXPECT_TRUE(convex_sdf.pointOnObject2.allFinite());
+  EXPECT_TRUE(sdf_convex.pointOnObject1.allFinite());
+  EXPECT_TRUE(sdf_convex.pointOnObject2.allFinite());
+  EXPECT_LT(convex_sdf.normal.dot(sdf_convex.normal), -0.9);
 }
 
 TEST(SdfDistance, CompoundSdfPairOrder)

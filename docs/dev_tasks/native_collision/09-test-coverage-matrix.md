@@ -127,7 +127,7 @@ normals flip).
 | `convex_convex_intersecting`         | DONE   | `test_convex.cpp`                                                  |                                                               |
 | `convex_convex_separated`            | DONE   | `test_convex.cpp`                                                  |                                                               |
 | `convex_convex_rotated`              | DONE   | `test_convex.cpp`                                                  |                                                               |
-| `convex_sdf`                         | GAP    | —                                                                  |                                                               |
+| `convex_sdf`                         | DONE   | `test_sdf_compare.cpp::ConvexSdfPairOrder`                         | Distance support                                              |
 | `convex_compound`                    | DONE   | `test_compound.cpp::ConvexPairOrder`                               |                                                               |
 | `sdf_sdf`                            | GAP    | —                                                                  | Decide: in-scope or out?                                      |
 | `sdf_compound`                       | DONE   | `test_sdf_compare.cpp::CompoundSdfPairOrder`                       | Distance support                                              |
@@ -346,12 +346,12 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 ## Summary Counters (as of 2026-05-15)
 
-- **§1 Pair-wise narrow-phase:** 70 DONE, 0 PARTIAL, 10 GAP (of 80 rows)
+- **§1 Pair-wise narrow-phase:** 71 DONE, 0 PARTIAL, 9 GAP (of 80 rows)
 - **§2 Algorithm-level:** 27 DONE, 4 PARTIAL, 13 GAP (of 44 rows)
 - **§3 Stress / regression:** 17 DONE, 1 PARTIAL, 15 GAP (of 33 rows)
 - **§4 Benchmarks:** 19 DONE, 0 PARTIAL, 9 GAP (of 28 rows)
 - **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 141 DONE, 5 PARTIAL, 48 GAP (of 194 rows)
+- **TOTAL:** 142 DONE, 5 PARTIAL, 47 GAP (of 194 rows)
 
 DART native is currently at ~73% of the proposed superset, with the
 remaining 27% concentrated in: (a) less-common shape pairs against

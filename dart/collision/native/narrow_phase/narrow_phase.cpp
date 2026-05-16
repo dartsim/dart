@@ -415,8 +415,9 @@ bool collideShapes(
         });
   }
 
-  if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh
-      || type2 == ShapeType::Convex || type2 == ShapeType::Mesh) {
+  if ((type1 == ShapeType::Convex || type1 == ShapeType::Mesh
+       || type2 == ShapeType::Convex || type2 == ShapeType::Mesh)
+      && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf) {
     return collideConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
   }
 
@@ -595,6 +596,21 @@ double distanceShapes(
     return d;
   }
 
+  if (type1 == ShapeType::Convex && type2 == ShapeType::Sdf) {
+    const auto* c = static_cast<const ConvexShape*>(shape1);
+    const auto* sdf = static_cast<const SdfShape*>(shape2);
+    return distanceConvexSdf(*c, tf1, *sdf, tf2, result, option);
+  }
+
+  if (type1 == ShapeType::Sdf && type2 == ShapeType::Convex) {
+    const auto* sdf = static_cast<const SdfShape*>(shape1);
+    const auto* c = static_cast<const ConvexShape*>(shape2);
+    double d = distanceConvexSdf(*c, tf2, *sdf, tf1, result, option);
+    std::swap(result.pointOnObject1, result.pointOnObject2);
+    result.normal = -result.normal;
+    return d;
+  }
+
   if (type1 == ShapeType::Capsule && type2 == ShapeType::Sphere) {
     const auto* c = static_cast<const CapsuleShape*>(shape1);
     const auto* s = static_cast<const SphereShape*>(shape2);
@@ -649,8 +665,9 @@ double distanceShapes(
     return distanceMeshMesh(*m1, tf1, *m2, tf2, result, option);
   }
 
-  if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh
-      || type2 == ShapeType::Convex || type2 == ShapeType::Mesh) {
+  if ((type1 == ShapeType::Convex || type1 == ShapeType::Mesh
+       || type2 == ShapeType::Convex || type2 == ShapeType::Mesh)
+      && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf) {
     return distanceConvexConvex(*shape1, tf1, *shape2, tf2, result, option);
   }
 
@@ -1001,8 +1018,9 @@ bool NarrowPhase::isSupported(ShapeType type1, ShapeType type2)
       || (type1 == ShapeType::Plane && type2 == ShapeType::Cylinder)) {
     return true;
   }
-  if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh
-      || type2 == ShapeType::Convex || type2 == ShapeType::Mesh) {
+  if ((type1 == ShapeType::Convex || type1 == ShapeType::Mesh
+       || type2 == ShapeType::Convex || type2 == ShapeType::Mesh)
+      && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf) {
     return true;
   }
   return false;
@@ -1078,6 +1096,10 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
       || (type1 == ShapeType::Sdf && type2 == ShapeType::Cylinder)) {
     return true;
   }
+  if ((type1 == ShapeType::Convex && type2 == ShapeType::Sdf)
+      || (type1 == ShapeType::Sdf && type2 == ShapeType::Convex)) {
+    return true;
+  }
   if ((type1 == ShapeType::Capsule && type2 == ShapeType::Sphere)
       || (type1 == ShapeType::Sphere && type2 == ShapeType::Capsule)) {
     return true;
@@ -1099,8 +1121,9 @@ bool NarrowPhase::isDistanceSupported(ShapeType type1, ShapeType type2)
       && type1 != ShapeType::Plane && type2 != ShapeType::Plane) {
     return true;
   }
-  if (type1 == ShapeType::Convex || type1 == ShapeType::Mesh
-      || type2 == ShapeType::Convex || type2 == ShapeType::Mesh) {
+  if ((type1 == ShapeType::Convex || type1 == ShapeType::Mesh
+       || type2 == ShapeType::Convex || type2 == ShapeType::Mesh)
+      && type1 != ShapeType::Sdf && type2 != ShapeType::Sdf) {
     return true;
   }
   return false;

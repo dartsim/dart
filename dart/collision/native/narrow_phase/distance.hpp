@@ -42,6 +42,7 @@ namespace dart::collision::native {
 
 class BoxShape;
 class CapsuleShape;
+class ConvexShape;
 class CylinderShape;
 class PlaneShape;
 class Shape;
@@ -123,6 +124,14 @@ class SdfShape;
 [[nodiscard]] DART_COLLISION_NATIVE_API double distanceCylinderSdf(
     const CylinderShape& cylinder,
     const Eigen::Isometry3d& cylinderTransform,
+    const SdfShape& sdf,
+    const Eigen::Isometry3d& sdfTransform,
+    DistanceResult& result,
+    const DistanceOption& option = DistanceOption());
+
+[[nodiscard]] DART_COLLISION_NATIVE_API double distanceConvexSdf(
+    const ConvexShape& convex,
+    const Eigen::Isometry3d& convexTransform,
     const SdfShape& sdf,
     const Eigen::Isometry3d& sdfTransform,
     DistanceResult& result,
