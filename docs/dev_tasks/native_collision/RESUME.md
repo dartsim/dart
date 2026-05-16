@@ -73,7 +73,7 @@ git rev-parse HEAD
 git rev-parse origin/feature/new_coll
 ```
 
-## Immediate Next Step
+## Current Resume Scope
 
 Under the current user constraint, do not spend the next pass trying to open,
 reopen, or prepare GitHub PR mutations. Use `06-completion-audit.md` to keep

@@ -390,7 +390,7 @@ The critic disagrees with the code-reviewer on whether this slice should
 exist at all in the current pass:
 
 1. **Scope creep (CRITICAL).** The active scope per `README.md` Current
-   Scope + `RESUME.md` Immediate Next Step is "branch-local feature/evidence
+   Scope + `RESUME.md` current resume scope is "branch-local feature/evidence
    completion" — not a public-default-detector behavior change. The
    `box_box.cpp` rewrite is real engineering surface that wasn't on the
    audit's open-gate list and wasn't surfaced as a policy question first.
