@@ -93,6 +93,9 @@
     their example sources own public frames, sensors, and panels directly.
   - Restored the `empty` example's public keyboard-action scaffold,
     camera/run defaults, and README through public `dart::gui`.
+  - Restored the `simulation_event_handler` example's selected-body
+    force/torque controls, force-arrow visualization, camera/run defaults, and
+    README through public `dart::gui`.
   - Moved the soft-body and vehicle examples (`soft_bodies` and `vehicle`) off
     private named-scene fixture launchers so their example sources own imported
     worlds, public panels, and simulation controls directly.

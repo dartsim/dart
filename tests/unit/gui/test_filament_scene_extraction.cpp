@@ -1561,15 +1561,51 @@ TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
   const auto eventSource = readSourceFile(
       std::filesystem::path("examples") / "simulation_event_handler"
       / "main.cpp");
+  const auto eventReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "simulation_event_handler"
+      / "README.md");
   EXPECT_NE(
       eventSource.find("class BlinkingMarkerSensor final"), std::string::npos);
+  EXPECT_NE(eventSource.find("class SimulationEventState"), std::string::npos);
   EXPECT_NE(eventSource.find("fast_sensor"), std::string::npos);
   EXPECT_NE(eventSource.find("slow_sensor"), std::string::npos);
   EXPECT_NE(
       eventSource.find("simulation_event_handler_fast_sensor"),
       std::string::npos);
+  EXPECT_NE(
+      eventSource.find("simulation_event_handler_force_arrow"),
+      std::string::npos);
+  EXPECT_NE(eventSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(
+      eventSource.find("createSimulationEventKeyboardActions"),
+      std::string::npos);
+  EXPECT_NE(eventSource.find("KeyboardKey::Tab"), std::string::npos);
+  EXPECT_NE(eventSource.find("KeyboardKey::Backspace"), std::string::npos);
+  EXPECT_NE(eventSource.find("KeyboardKey::Up"), std::string::npos);
+  EXPECT_NE(eventSource.find("KeyboardKey::Down"), std::string::npos);
+  EXPECT_NE(eventSource.find("KeyboardKey::Left"), std::string::npos);
+  EXPECT_NE(eventSource.find("KeyboardKey::Right"), std::string::npos);
+  EXPECT_NE(
+      eventSource.find("KeyboardShortcut::characterKey"), std::string::npos);
+  EXPECT_NE(eventSource.find("addExtForce"), std::string::npos);
+  EXPECT_NE(eventSource.find("addExtTorque"), std::string::npos);
+  EXPECT_NE(
+      eventSource.find("makeSimulationEventRunDefaults"), std::string::npos);
+  EXPECT_NE(eventSource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(eventSource.find("options.height = 960"), std::string::npos);
+  EXPECT_NE(eventSource.find("makeSimulationEventCamera"), std::string::npos);
+  EXPECT_NE(
+      eventSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 1.0)"),
+      std::string::npos);
   EXPECT_NE(eventSource.find("world->addSensor"), std::string::npos);
+  EXPECT_NE(eventSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(eventSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(eventSource.find("options.world"), std::string::npos);
+  EXPECT_NE(
+      eventReadmeSource.find("Simulation Event Handler Example"),
+      std::string::npos);
+  EXPECT_NE(eventReadmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(eventReadmeSource.find("Tab / Backspace"), std::string::npos);
   EXPECT_EQ(eventSource.find("options.defaultScene"), std::string::npos);
 }
 

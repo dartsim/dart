@@ -149,11 +149,20 @@ committed and pushed as
 `examples/polyhedron_visual`: the checkpoint restoring the historical 640x480
 run default, camera home, scene-grid replacement, README, and source-marker
 guards has been committed and pushed as
-`227c2498a53 Restore polyhedron visual defaults`. The active slice is now
-`examples/empty`: the local implementation restores public keydown actions,
-camera/run defaults, README, and marker guards while recording pre/post-render
-and key-release callbacks as public API gaps. Validate, lint, commit, and push
-this checkpoint next.
+`227c2498a53 Restore polyhedron visual defaults`. The `examples/empty`
+checkpoint restoring public keydown actions, camera/run defaults, README, and
+marker guards while recording pre/post-render and key-release callbacks as
+public API gaps has been committed and pushed as
+`158e10d4cc2 Restore empty viewer scaffold`. The active slice is now
+`examples/simulation_event_handler`: the local implementation restores the
+historical event-handler controls, selected-body force/torque application,
+force-arrow visualization, camera/run defaults, README, and source-marker
+guards through public `dart::gui`, with OSG event-handler/viewer types
+remaining superseded by the promoted renderer-neutral keyboard and panel APIs.
+Focused build/CTest, direct and pixi screenshot smokes, Python example-runner
+tests, the aggregate `examples` build, `git diff --check`, mandatory
+`pixi run lint`, and post-lint focused build/CTest/direct screenshot smoke
+pass. Commit and push this checkpoint next.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as
