@@ -56,8 +56,9 @@ Latest local audit commands before recording this snapshot showed:
   checks and the final unfiltered `collision-reference` CTest sweep 301/301
   after building the dedicated simulation-experimental target.
 - Post-validation branch delta is docs-only: after `4db514cfd22`, local commits
-  refreshed the evidence packet, clarified code-follow-up wording, and recorded
-  this audit state. They do not touch collision runtime, tests, or build logic.
+  refreshed the evidence packet, clarified code-follow-up/current-head wording,
+  recorded this audit state, and kept the deferred-finalization handoff
+  explicit. They do not touch collision runtime, tests, or build logic.
   `pixi run lint` passed after those docs-only commits, including runtime
   source isolation and compatibility-facade audits.
 
