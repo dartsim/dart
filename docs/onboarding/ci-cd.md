@@ -418,6 +418,18 @@ The shared filter also excludes maintenance-only workflow files such as
 `.github/workflows/update_lockfiles.yml`; those changes should still run lint,
 but they do not need to launch the platform build/test or wheel matrix.
 
+Coverage guardrails:
+
+- Do not add broad `.github/workflows/**` exclusions. Changes to build, test,
+  packaging, and CI orchestration workflows should continue to run heavy CI.
+- Keep `.github/filters/ci-code.yml` itself covered by the filter so changes to
+  the trigger policy run the normal matrix.
+- Prefer job-level `changes` gates over top-level `pull_request.paths-ignore`
+  for required platform workflows so branch protection still receives stable
+  workflow/check contexts.
+- Use native `paths-ignore` only for workflows that cannot share the dorny
+  filter file, such as CodeQL trigger configuration.
+
 **Savings:** 12-25 minutes per PR on platform jobs for doc-only and
 maintenance-workflow-only changes
 
