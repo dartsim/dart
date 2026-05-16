@@ -46,7 +46,7 @@ mutation during the current pass:
 | gz-physics compatibility remains green.                                             | `pixi run -e gazebo test-gz` passed 65/65 on `6404f7607be`; `readelf` showed the gz DART plugin depends on `libdart-collision-native.so` without old collision/reference runtime dependencies.                                                                                                          | Locally satisfied; final PR/downstream CI evidence still required.                                                                  |
 | Benchmark/profiling guardrails exist without making optimization part of this pass. | `pixi run -e collision-reference bm-collision-check` passed before benchmark-evidence head `4b155655890`, and local benchmark JSON artifacts are recorded in `03-evidence-gates.md`.                                                                                                                    | Locally satisfied for guardrails; final benchmark artifact evidence on the completing PR surface remains open.                      |
 | Clean package, wheel, and Python surfaces are preserved.                            | Wheel verifier wiring, package metadata checks, clean dartpy API tests/audit, repaired-head wheel-matrix reference evidence, and local package/link smokes are recorded in `03-evidence-gates.md`, `05-downstream-migration.md`, `07-pr-evidence-transfer.md`, and `PR-DRAFT.md`.                       | Locally satisfied; final PR-state wheel/package evidence remains open.                                                              |
-| Completion packaging is done in the same PR.                                        | `PR-DRAFT.md` and `07-pr-evidence-transfer.md` stage the PR packet; `docs/dev_tasks/README.md` requires deleting `docs/dev_tasks/native_collision/` in the completing PR after evidence is transferred. Read-only GitHub checks on `1bfc9103a6b` found no current workflow runs and no open PR surface. | Not complete by design under current user scope; requires explicit maintainer/user approval to open/select the final PR/CI surface. |
+| Completion packaging is done in the same PR.                                        | `PR-DRAFT.md` and `07-pr-evidence-transfer.md` stage the PR packet; `docs/dev_tasks/README.md` requires deleting `docs/dev_tasks/native_collision/` in the completing PR after evidence is transferred. Read-only GitHub checks on `19aed78ae04` found no current workflow runs and no open PR surface. | Not complete by design under current user scope; requires explicit maintainer/user approval to open/select the final PR/CI surface. |
 
 ## Current Audit Snapshot (2026-05-16)
 
@@ -96,22 +96,26 @@ outside the current no-PR/no-GitHub-mutation scope.
 
 ## Read-Only Review Surface Reaudit (2026-05-16)
 
-Read-only GitHub checks on local evidence head `1bfc9103a6b` confirmed the
-final review/CI gap remains external to this branch-local pass:
+Read-only GitHub checks on local evidence head `1bfc9103a6b`, and a later
+read-only recheck on local docs/evidence head `19aed78ae04`, confirmed the final
+review/CI gap remains external to this branch-local pass:
 
 - The `gh run list` check for full commit
   `1bfc9103a6b3ec6c9481c95bd5c180c9bc12b0fd` returned `[]`.
+- The `gh run list` check for full commit
+  `19aed78ae0448173e0a0de0350c92344f9de28a0` also returned `[]`.
 - The `gh pr list --head feature/new_coll --state all` check returned only
   PR #2652, still `CLOSED`, draft, and anchored to old head
   `714d220d82a6ba99350bf2214fc9696f5495a30f`.
 - `gh pr status --repo dartsim/dart` reported no open PRs created by the
   current user for this repository.
+- `gh auth status -h github.com` showed the active account is `jslee02`.
 
 No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
-that audit. This supersedes the earlier read-only checks on local heads
-`ed451c25829`, `1b98064eeac`, and `49faf77240f`. Later docs-only commits may
-move `HEAD`; rerun the commands above with `git rev-parse HEAD` for an exact
-current-head check.
+those audits. This supersedes the earlier read-only checks on local heads
+`ed451c25829`, `1b98064eeac`, `49faf77240f`, and `1bfc9103a6b`. Later docs-only
+commits may move `HEAD`; rerun the commands above with `git rev-parse HEAD` for
+an exact current-head check.
 
 ## Current Local Full Validation Recheck (2026-05-16)
 

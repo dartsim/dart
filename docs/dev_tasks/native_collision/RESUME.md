@@ -65,8 +65,8 @@ recorded in `03-evidence-gates.md`.
 remote-tracking head was `f8f5663d5145`, and the local branch is ahead. Run
 `git rev-parse HEAD` and `git rev-parse origin/feature/new_coll` for the exact
 current local/remote heads because editing this file changes the latest local
-hash. The latest read-only GitHub recheck on local evidence head
-`1bfc9103a6b` found no Actions runs for that head; branch-local commits do not
+hash. The latest read-only GitHub recheck on local docs/evidence head
+`19aed78ae04` found no Actions runs for that head; branch-local commits do not
 trigger the main workflows while PR #2652 remains closed. PR #2652 is closed,
 draft, dirty, and still anchored to old head `714d220d82a`.
 
@@ -94,9 +94,10 @@ the distinction clear:
 2. Deferred PR-finalization scope: maintainer-selected PR/CI surface, final
    evidence transfer, final local validation on that completing state, and
    deleting this folder in the same completing PR. The latest read-only review
-   surface check found no workflow runs for local evidence head `1bfc9103a6b`,
-   `gh pr status` found no open PRs created by the current user for this
-   repository, and confirmed
+   surface check found no workflow runs for local docs/evidence head
+   `19aed78ae04`, `gh pr status` found no open PRs created by the current user
+   for this repository, `gh auth status -h github.com` showed `jslee02` is the
+   active account, and confirmed
    PR #2652 remains closed on old head `714d220d82a6ba99350bf2214fc9696f5495a30f`.
 
 If code or evidence changes again, run `pixi run lint` before committing and
@@ -149,7 +150,7 @@ post GitHub comments unless the user explicitly asks.
 - Latest pushed docs/reference-cleanup heads after those baselines have no
   GitHub Actions runs because branch pushes do not match the workflow filters
   while PR #2652 is closed.
-- Latest read-only successor-PR search on local evidence head `1bfc9103a6b`
+- Latest read-only successor-PR search on local docs/evidence head `19aed78ae04`
   found no maintainer-opened replacement review surface; PR #2652 remains the
   only relevant native-collision PR and is closed/draft on old head
   `714d220d82a`.
