@@ -41,10 +41,10 @@
 #include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/inverse_kinematics.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
-#include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/math/geometry.hpp>
@@ -186,6 +186,15 @@ void setupAtlasPuppetStartConfiguration(
   setRequiredDofPosition(atlas, "l_leg_kny", 90.0 * degrees);
   setRequiredDofPosition(atlas, "l_leg_aky", -45.0 * degrees);
 
+  setRequiredDofPosition(atlas, "r_arm_shx", 65.0 * degrees);
+  setRequiredDofPosition(atlas, "r_arm_ely", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "r_arm_elx", -90.0 * degrees);
+  setRequiredDofPosition(atlas, "r_arm_wry", 65.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_shx", -65.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_ely", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_elx", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_wry", 65.0 * degrees);
+
   atlas->getDof("r_leg_kny")->setPositionLowerLimit(10.0 * degrees);
   atlas->getDof("l_leg_kny")->setPositionLowerLimit(10.0 * degrees);
 }
@@ -246,6 +255,31 @@ dart::math::SupportGeometry makeAtlasPuppetFootSupportGeometry()
   support.emplace_back(supportPositiveX, supportPositiveY, 0.0);
   support.emplace_back(supportNegativeX, supportPositiveY, 0.0);
   return support;
+}
+
+std::shared_ptr<dart::dynamics::LineSegmentShape> createIkTargetHandleShape(
+    double radius)
+{
+  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(7.0f);
+  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
+  const auto addAxis = [&](const Eigen::Vector3d& axis) {
+    handle->addVertex(axis, center);
+    handle->addVertex(-axis, center);
+  };
+  addAxis(Eigen::Vector3d(radius, 0.0, 0.0));
+  addAxis(Eigen::Vector3d(0.0, radius, 0.0));
+  addAxis(Eigen::Vector3d(0.0, 0.0, 0.75 * radius));
+  return handle;
+}
+
+void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)
+{
+  Eigen::Vector3d linearBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d angularBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
+  ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
 }
 
 dart::dynamics::SkeletonPtr createGround()
@@ -365,13 +399,15 @@ void addAtlasPuppetIkTargets(
       angularBounds.y() = 1e-8;
       ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
       ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
+    } else {
+      setUnconstrainedIkBounds(ik);
     }
 
     auto target = dart::dynamics::SimpleFrame::createShared(
         dart::dynamics::Frame::World(),
         config.targetName,
         endEffector->getWorldTransform());
-    target->setShape(std::make_shared<dart::dynamics::SphereShape>(0.06));
+    target->setShape(createIkTargetHandleShape(0.15));
     target->getVisualAspect(true)->setRGBA(config.color);
     scene.world->addSimpleFrame(target);
     ik->setTarget(target);
@@ -405,7 +441,10 @@ dart::gui::Panel createAtlasPuppetPanel()
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
     builder.text("Atlas whole-body IK puppet");
-    builder.text("Press 1-4 or select a colored target.");
+    builder.text("Press 1-4 or select a target handle.");
+    builder.text("Ctrl-left drag moves the selected handle.");
+    builder.text("Arrow keys and PageUp/PageDown nudge it.");
+    builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {

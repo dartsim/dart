@@ -91,6 +91,8 @@
   - Added a renderer-neutral `dart::gui::ApplicationOptions::camera` hook and
     used it to restore the Fetch example's historical camera framing while
     keeping the example on public `dart::gui` APIs.
+  - Restored visible line-segment IK target handles and promoted control text
+    for the G1, Atlas, and Hubo puppet examples.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

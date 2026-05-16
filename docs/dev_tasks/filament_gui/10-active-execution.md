@@ -1276,6 +1276,39 @@ Twenty-second robot/IK parity-audit checkpoint:
 - Do not claim full parity for a robot/IK example until its historical source
   has been inventoried and each visible behavior is either restored or recorded
   as a justified remaining gap.
+- Implementation state for this slice: `g1_puppet`, `atlas_puppet`, and
+  `hubo_puppet` now use line-segment target handles on the draggable
+  `SimpleFrame` targets instead of small spheres, matching the Fetch repair's
+  "visible affordance is the thing being dragged" pattern. Their panels now
+  document the promoted selection controls: number-key target selection,
+  Ctrl-left drag, arrow/PageUp/PageDown nudging, and X/Y/Z constrained drag.
+  Atlas also restores the historical comfortable arm start pose and gives the
+  hand IK targets unconstrained linear/angular bounds.
+- Remaining explicit gaps after this slice: Atlas relaxed posture and balance
+  objective parity, Hubo analytical IK and relaxed-posture/balance parity,
+  legacy target activation/deactivation semantics, and full OSG
+  WASD/Q/E/F/Z-style teleoperation. These should be restored through
+  renderer-neutral `dart::gui` concepts before declaring those examples fully
+  restored.
+- Local evidence so far:
+  - C++ GUI target build for `g1_puppet`, `atlas_puppet`, `hubo_puppet`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run ex g1_puppet --headless --frames 2 --width 640 --height 480 --screenshot ...`
+  - `pixi run ex atlas_puppet --headless --frames 2 --width 640 --height 480 --screenshot ...`
+  - `pixi run ex hubo_puppet --headless --frames 2 --width 640 --height 480 --screenshot ...`
+  - Basic analyzer checks for all three 640x480 screenshots
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (`67 passed`)
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - Post-lint focused C++ GUI target build for `g1_puppet`, `atlas_puppet`,
+    `hubo_puppet`, and `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint Python runner tests (`67 passed`)
+  - Post-lint direct llvmpipe headless captures for all three puppet examples
+    plus basic analyzer checks for their 640x480 screenshots
+  - Post-lint full `examples` aggregate target build
 
 ## Stretch Direction
 

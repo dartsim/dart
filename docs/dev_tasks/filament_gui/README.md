@@ -27,7 +27,10 @@ visible target cross the draggable target-frame affordance. The next active
 parity slice is the robot/IK family, starting with `g1_puppet`, `atlas_puppet`,
 and `hubo_puppet`, because those examples still have clear gaps around target
 handles, target activation/teleoperation, and whole-body IK behavior compared
-with the historical OSG sources.
+with the historical OSG sources. The first robot/IK parity slice restores
+line-segment target handles and updated control text for those three examples,
+while explicitly leaving solver-objective and full hotkey parity as remaining
+audit work.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

@@ -66,16 +66,16 @@ Fetch repair has been committed and pushed: it adds a public
 `ApplicationOptions::camera` override, restores the historical camera framing,
 and makes the visible target cross one draggable target-frame renderable rather
 than child bars that can detach from the mocap target. The active parity audit
-has moved to the robot/IK family, starting with `g1_puppet`, `atlas_puppet`,
-and `hubo_puppet`.
+has moved to the robot/IK family. The current pending code slice restores
+line-segment target handles and control text for `g1_puppet`, `atlas_puppet`,
+and `hubo_puppet`; it does not yet close Atlas relaxed-posture/balance, Hubo
+analytical IK, legacy target toggle, or WASD/Q/E/F/Z teleoperation parity.
 
 ## Immediate Next Step
 
-Continue the robot/IK legacy-source parity audit. Start with the narrow public
-`dart::gui` target-handle affordance needed by `examples/g1_puppet/`,
-`examples/atlas_puppet/`, and `examples/hubo_puppet/`, then document any
-remaining solver-behavior gaps such as Atlas relaxed posture, Hubo analytical
-IK, and full OSG hotkey parity before claiming an example is complete.
+After the current target-handle checkpoint is committed and pushed, continue
+solver-behavior parity such as Atlas relaxed posture, Hubo analytical IK, and
+full OSG hotkey parity before claiming a robot/IK example is complete.
 
 ## Context That Would Be Lost
 
@@ -634,17 +634,16 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`67ccb2a4cd1 Restore Fetch GUI camera and target cross`; the current pending
-checkpoint is the robot/IK parity-audit repair.
+`70ed9c2ed7a Document robot IK parity audit scope`; the current pending
+checkpoint is the G1/Atlas/Hubo target-handle parity repair.
 
 ## Current Immediate Next Step
 
-Continue the robot/IK parity audit by restoring visible target-handle
-affordances and public `dart::gui` wiring in `g1_puppet`, `atlas_puppet`, and
-`hubo_puppet`, then record any remaining solver or hotkey parity gaps before
-claiming those examples are complete. Keep `--screenshot <path>` and
-`--out <dir>` working for the existing CTest, GitHub Actions smoke path, and
-historical image-sequence workflows. A later broader smoke sweep can still use:
+After the G1/Atlas/Hubo target-handle checkpoint is committed and pushed,
+continue the robot/IK parity audit with solver and hotkey behavior. Keep
+`--screenshot <path>` and `--out <dir>` working for the existing CTest, GitHub
+Actions smoke path, and historical image-sequence workflows. A later broader
+smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

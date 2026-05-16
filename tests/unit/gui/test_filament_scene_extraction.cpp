@@ -772,6 +772,8 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("dart://sample/sdf/atlas/atlas_v3_no_head.urdf"),
       std::string::npos);
   EXPECT_NE(mainSource.find("atlas_puppet_root_handle"), std::string::npos);
+  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("createIkTargetHandleShape"), std::string::npos);
   EXPECT_NE(
       mainSource.find("atlas_puppet_ik_target_left_hand"), std::string::npos);
   EXPECT_NE(
@@ -781,6 +783,10 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(
       mainSource.find("atlas_puppet_ik_target_right_foot"), std::string::npos);
   EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
+  EXPECT_NE(mainSource.find("r_arm_shx"), std::string::npos);
+  EXPECT_NE(mainSource.find("l_arm_shx"), std::string::npos);
+  EXPECT_NE(mainSource.find("setUnconstrainedIkBounds"), std::string::npos);
+  EXPECT_NE(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
@@ -797,11 +803,15 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("urdf/drchubo/drchubo.urdf"), std::string::npos);
   EXPECT_NE(
       mainSource.find("removeHuboPuppetFingerBodyNodes"), std::string::npos);
+  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("createIkTargetHandleShape"), std::string::npos);
   EXPECT_NE(
       mainSource.find("hubo_puppet_ik_target_left_hand"), std::string::npos);
   EXPECT_NE(
       mainSource.find("hubo_puppet_ik_target_right_peg"), std::string::npos);
   EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
+  EXPECT_NE(mainSource.find("setUnconstrainedIkBounds"), std::string::npos);
+  EXPECT_NE(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
   EXPECT_NE(mainSource.find("'1'"), std::string::npos);
@@ -819,9 +829,12 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
       std::string::npos);
   EXPECT_NE(mainSource.find("createG1ResourceRetriever"), std::string::npos);
   EXPECT_NE(mainSource.find("--g1-package-uri"), std::string::npos);
+  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("createIkTargetHandleShape"), std::string::npos);
   EXPECT_NE(mainSource.find("ik_target_left_hand"), std::string::npos);
   EXPECT_NE(mainSource.find("ik_target_right_foot"), std::string::npos);
   EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
+  EXPECT_NE(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
   EXPECT_NE(mainSource.find("'1'"), std::string::npos);
