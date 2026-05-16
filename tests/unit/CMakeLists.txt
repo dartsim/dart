@@ -246,12 +246,12 @@ dart_build_tests(
 # ==============================================================================
 # GUI Tests
 # ==============================================================================
-if(TARGET dart-gui-experimental)
+if(TARGET dart-gui-core)
   dart_add_test(
     "unit"
     UNIT_gui_FilamentSceneExtraction
     gui/test_filament_scene_extraction.cpp)
-  target_link_libraries(UNIT_gui_FilamentSceneExtraction dart-gui-experimental)
+  target_link_libraries(UNIT_gui_FilamentSceneExtraction dart-gui-core)
 endif()
 
 # ==============================================================================

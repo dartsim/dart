@@ -547,6 +547,28 @@ TEST(FilamentSceneExtraction, GuiExamplesDoNotExposeSceneLauncherShim)
           / "gui_scene_launcher.cpp"));
 }
 
+TEST(FilamentSceneExtraction, GuiBuildTargetsUseOfficialCoreName)
+{
+  const std::vector<std::filesystem::path> cmakeFiles = {
+      std::filesystem::path("dart") / "gui" / "CMakeLists.txt",
+      std::filesystem::path("dart") / "gui" / "experimental" / "CMakeLists.txt",
+      std::filesystem::path("tests") / "unit" / "CMakeLists.txt",
+      std::filesystem::path("python") / "dartpy" / "CMakeLists.txt"};
+
+  for (const auto& cmakeFile : cmakeFiles) {
+    const auto source = readSourceFile(cmakeFile);
+    EXPECT_EQ(source.find("dart-gui-experimental"), std::string::npos)
+        << cmakeFile;
+    EXPECT_EQ(source.find("gui-experimental"), std::string::npos) << cmakeFile;
+  }
+
+  const auto coreCMake = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "experimental"
+      / "CMakeLists.txt");
+  EXPECT_NE(coreCMake.find("${PROJECT_NAME}-gui-core"), std::string::npos);
+  EXPECT_NE(coreCMake.find("gui-core"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
 {
   bool diagnostics = false;

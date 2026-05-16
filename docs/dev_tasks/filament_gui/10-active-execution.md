@@ -1137,6 +1137,50 @@ Nineteenth source-ownership cleanup checkpoint:
   - Post-lint Python runner tests (`67 passed`)
   - `git diff --check`
 
+Twentieth official-target checkpoint:
+
+- Rename the internal GUI extraction/rendering CMake target and component away
+  from `dart-gui-experimental` / `gui-experimental` to `dart-gui-core` /
+  `gui-core`.
+- Keep `dart/gui/experimental/*.hpp` compatibility headers and the
+  `dart/gui/experimental/detail/filament` file layout in this checkpoint. Those
+  names are source-layout and compatibility debt; this step removes the build
+  target/component branding that downstream CMake consumers and tests see.
+- Retarget `dart-gui`, dartpy GUI bindings, and
+  `UNIT_gui_FilamentSceneExtraction` to the official/core target names.
+- Extend audit coverage so promoted example and public GUI surfaces keep
+  rejecting `dart-gui-experimental` references, and the test target no longer
+  links to an experimental GUI library.
+- Local acceptance for this checkpoint:
+  - CMake configure/build for `dart-gui`, `dart-gui-core`, `dartpy`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - `pixi run lint`
+  - `git diff --check`
+- Implementation state for this slice: the core GUI implementation target is
+  now `dart-gui-core` with component `gui-core`; `dart-gui`, dartpy, and
+  `UNIT_gui_FilamentSceneExtraction` no longer link against
+  `dart-gui-experimental`; audit coverage rejects the old target/component name
+  from active GUI CMake files.
+- Local evidence so far:
+  - CMake configure/build for `dart-gui-core`, `dart-gui`, `dartpy`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Full `examples` aggregate target build
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (`67 passed`)
+  - Build-tree dartpy GUI compatibility import
+    (`dartpy.gui.experimental.ShapeKind.Box`)
+  - `pixi run lint`
+  - Post-lint CMake configure/build for `dart-gui-core`, `dart-gui`, `dartpy`,
+    and `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint Python runner tests (`67 passed`)
+  - Post-lint build-tree dartpy GUI compatibility import
+    (`dartpy.gui.experimental.ShapeKind.Box`)
+  - `git diff --check`
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:

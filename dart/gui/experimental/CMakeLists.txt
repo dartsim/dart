@@ -1,7 +1,7 @@
 # Copyright (c) 2011, The DART development contributors
 
-set(target_name ${PROJECT_NAME}-gui-experimental)
-set(component_name gui-experimental)
+set(target_name ${PROJECT_NAME}-gui-core)
+set(component_name gui-core)
 
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")

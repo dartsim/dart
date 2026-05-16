@@ -38,7 +38,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #        gui, [assimp, eigen3, fcl, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
-# dart-gui - {dart-gui-experimental}, gui, gui/experimental/detail/filament,
+# dart-gui - {dart-gui-core}, gui, gui/experimental/detail/filament,
 #            [filament, glfw3, imgui, png, jpeg]
 
 #===============================================================================
@@ -47,7 +47,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart - {dart}
 # utils - (dart), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
-# gui - (gui-experimental), {dart-gui}
+# gui - (gui-core), {dart-gui}
 # collision-bullet - (dart), {dart} [compat]
 # collision-ode - (dart), {dart} [compat]
 

@@ -84,6 +84,10 @@
     worlds, public panels, and simulation controls directly.
   - Removed the unused GUI example scene-launcher shim so restored examples
     must build real source files instead of private named-scene fixtures.
+  - Renamed the internal GUI extraction/rendering target from
+    `dart-gui-experimental` to `dart-gui-core` while keeping compatibility
+    headers for existing `dart::gui::experimental` and `dartpy.gui.experimental`
+    imports.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+
