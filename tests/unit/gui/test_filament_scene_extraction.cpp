@@ -874,6 +874,14 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(tinkertoySource.find("LineSegmentShape"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("tinkertoy_target"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("class TinkertoyState"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("addWeldJointBlock"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("deletePick"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("setGravityEnabled"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("setForceCoeff"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("CollisionAspect"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("DynamicsAspect"), std::string::npos);
   EXPECT_EQ(tinkertoySource.find("options.defaultScene"), std::string::npos);
 }
 

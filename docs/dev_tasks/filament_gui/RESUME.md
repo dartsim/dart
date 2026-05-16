@@ -71,17 +71,22 @@ is now implemented locally because the historical source also added a visible
 DART line-segment geometry in `examples/fetch/main.cpp`, not as a private
 Filament debug-overlay hook. The robot/IK target-handle parity checkpoint has
 also been pushed for `g1_puppet`, `atlas_puppet`, `hubo_puppet`,
-`operational_space_control`, `wam_ikfast`, and `tinkertoy`; it does not yet
-close Atlas relaxed-posture/balance, Hubo analytical IK, legacy target toggle,
-WASD/Q/E/F/Z teleoperation parity, or Tinkertoy builder workflow parity.
+`operational_space_control`, `wam_ikfast`, and `tinkertoy`. The active code
+slice is Tinkertoy builder-state parity: selected-block state, dynamic
+add/delete controls, gravity and force-coefficient controls, target
+reorientation, force-line updates, external force application, and
+collision/dynamics block construction are implemented locally through public
+`dart::gui` panels and `ApplicationOptions::preStep`. It does not yet close Atlas
+relaxed-posture/balance, Hubo analytical IK, legacy target toggle,
+WASD/Q/E/F/Z teleoperation parity, Tinkertoy raw keyboard hotkeys, or the
+legacy Enter recording toggle.
 
 ## Immediate Next Step
 
 Run mandatory lint plus post-lint focused validation, commit, and push the
-Fetch work-area grid parity checkpoint. Then continue Tinkertoy builder
-workflow parity and solver-behavior parity such as Atlas relaxed posture, Hubo
-analytical IK, and full OSG hotkey behavior before claiming the robot/IK and
-construction examples are complete.
+Tinkertoy builder-state parity checkpoint. Then continue solver-behavior parity
+such as Atlas relaxed posture, Hubo analytical IK, and full OSG hotkey behavior
+before claiming the robot/IK and construction examples are complete.
 
 ## Context That Would Be Lost
 

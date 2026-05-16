@@ -97,6 +97,10 @@
     for the G1, Atlas, and Hubo puppet examples.
   - Restored visible line-segment target handles and promoted control text for
     the operational-space control, WAM IKFast, and Tinkertoy examples.
+  - Restored Tinkertoy builder state through public `dart::gui` panel controls,
+    including selected-block add/delete actions, gravity and force-coefficient
+    controls, target reorientation, force-line updates, external force
+    application, and collision/dynamics block construction.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

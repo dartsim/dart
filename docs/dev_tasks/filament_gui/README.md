@@ -35,11 +35,15 @@ text for those three examples, while explicitly leaving solver-objective and
 full hotkey parity as remaining audit work. The next target-affordance slice
 applies the same visible-handle pattern to `operational_space_control`,
 `wam_ikfast`, and `tinkertoy` while tracking Tinkertoy's larger builder
-workflow gaps separately. That handle slice has been pushed; the Fetch grid
-slice is ready for its checkpoint push after mandatory lint and post-lint
-focused validation. Tinkertoy still needs add/delete block hotkeys, picking
-semantics, force coefficient controls, target reorientation, and recording
-toggle parity through promoted GUI concepts.
+workflow gaps separately. That handle slice and the Fetch grid slice have been
+pushed. The active Tinkertoy checkpoint now restores the stateful builder
+workflow that can be expressed through current promoted `dart::gui` concepts:
+selected block state, add/delete panel controls, gravity and force-coefficient
+controls, target reorientation, force-line updates, external force
+application, and collision/dynamics block construction. It is ready for
+mandatory lint plus post-lint focused validation. Raw keyboard hotkeys and the
+legacy recording toggle remain explicit follow-up gaps until there is a
+renderer-neutral public input/action API.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

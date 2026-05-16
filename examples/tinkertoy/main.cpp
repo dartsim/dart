@@ -36,6 +36,10 @@
 
 #include <dart/simulation/world.hpp>
 
+#include <dart/constraint/constraint_solver.hpp>
+
+#include <dart/collision/collision_group.hpp>
+
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
@@ -54,6 +58,7 @@
 
 #include <Eigen/Geometry>
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -67,6 +72,23 @@ constexpr const char* kTinkertoySkeletonPrefix = "visual_tinkertoy_toy_";
 constexpr const char* kTinkertoyTargetFrameName = "tinkertoy_target";
 constexpr const char* kTinkertoyForceLineFrameName = "tinkertoy_force_line";
 constexpr const char* kTinkertoyAxisFramePrefix = "tinkertoy_axis_";
+constexpr double kDefaultBlockLength = 0.5;
+constexpr double kDefaultBlockWidth = 0.075;
+constexpr double kDefaultJointRadius = 1.5 * kDefaultBlockWidth / 2.0;
+constexpr double kBalsaWoodDensity = 0.16 * 10e3;
+constexpr double kDefaultBlockMass = kBalsaWoodDensity * kDefaultBlockLength
+                                     * kDefaultBlockWidth * kDefaultBlockWidth;
+constexpr double kDefaultDamping = 0.4;
+constexpr double kMaxForce = 200.0;
+constexpr double kDefaultForceCoeff = 100.0;
+constexpr double kMaxForceCoeff = 1000.0;
+constexpr double kMinForceCoeff = 10.0;
+
+const Eigen::Vector4d kSimulationColor(0.5, 0.5, 1.0, 1.0);
+const Eigen::Vector4d kPausedColor(0xEE / 255.0, 0xC9 / 255.0, 0.0, 1.0);
+const Eigen::Vector4d kSelectedColor(1.0, 0.0, 0.0, 1.0);
+const Eigen::Vector4d kForceBodyColor(1.0, 0.0, 1.0, 1.0);
+const Eigen::Vector4d kForceLineColor(1.0, 0.63, 0.0, 1.0);
 
 struct TinkertoyShapes
 {
@@ -79,20 +101,18 @@ struct TinkertoyShapes
 
 TinkertoyShapes createTinkertoyShapes()
 {
-  constexpr double blockLength = 0.5;
-  constexpr double blockWidth = 0.075;
-  constexpr double jointRadius = 1.5 * blockWidth / 2.0;
-
   TinkertoyShapes shapes;
-  shapes.weldJointShape = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d(2.0 * jointRadius, blockWidth, blockWidth));
+  shapes.weldJointShape
+      = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(
+          2.0 * kDefaultJointRadius, kDefaultBlockWidth, kDefaultBlockWidth));
   shapes.revoluteJointShape = std::make_shared<dart::dynamics::CylinderShape>(
-      jointRadius, 1.5 * blockWidth);
+      kDefaultJointRadius, 1.5 * kDefaultBlockWidth);
   shapes.ballJointShape
-      = std::make_shared<dart::dynamics::SphereShape>(jointRadius);
-  shapes.blockShape = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d(blockLength, blockWidth, blockWidth));
-  shapes.blockOffset.translation().x() = blockLength / 2.0;
+      = std::make_shared<dart::dynamics::SphereShape>(kDefaultJointRadius);
+  shapes.blockShape
+      = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(
+          kDefaultBlockLength, kDefaultBlockWidth, kDefaultBlockWidth));
+  shapes.blockOffset.translation().x() = kDefaultBlockLength / 2.0;
   return shapes;
 }
 
@@ -105,10 +125,6 @@ dart::dynamics::BodyNode* addTinkertoyBlock(
     const dart::dynamics::ShapePtr& jointShape,
     std::size_t& nextToyIndex)
 {
-  constexpr double blockMass = 0.16 * 10e3 * 0.5 * 0.075 * 0.075;
-  const Eigen::Vector4d blockColor(0xEE / 255.0, 0xC9 / 255.0, 0.0, 1.0);
-  const Eigen::Vector4d jointColor(0.50, 0.50, 1.0, 1.0);
-
   dart::dynamics::SkeletonPtr skeleton;
   if (parent != nullptr) {
     skeleton = parent->getSkeleton();
@@ -126,25 +142,31 @@ dart::dynamics::BodyNode* addTinkertoyBlock(
     joint->setAxis(Eigen::Vector3d::UnitZ());
   }
   for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
-    joint->setDampingCoefficient(i, 0.4);
+    joint->setDampingCoefficient(i, kDefaultDamping);
   }
 
-  auto* jointShapeNode
-      = body->template createShapeNodeWith<dart::dynamics::VisualAspect>(
-          jointShape);
-  jointShapeNode->getVisualAspect()->setRGBA(jointColor);
+  auto* jointShapeNode = body->template createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(jointShape);
+  jointShapeNode->getVisualAspect()->setRGBA(kPausedColor);
 
-  auto* blockShapeNode
-      = body->template createShapeNodeWith<dart::dynamics::VisualAspect>(
-          shapes.blockShape);
+  auto* blockShapeNode = body->template createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shapes.blockShape);
   blockShapeNode->setRelativeTransform(shapes.blockOffset);
-  blockShapeNode->getVisualAspect()->setRGBA(blockColor);
+  blockShapeNode->getVisualAspect()->setRGBA(kPausedColor);
 
   body->setInertia(
       dart::dynamics::Inertia(
-          blockMass,
+          kDefaultBlockMass,
           0.25 * Eigen::Vector3d::UnitX(),
-          shapes.blockShape->computeInertia(blockMass)));
+          shapes.blockShape->computeInertia(kDefaultBlockMass)));
+
+  if (auto* solver = world.getConstraintSolver()) {
+    solver->getCollisionGroup()->addShapeFramesOf(body);
+  }
 
   return body;
 }
@@ -181,7 +203,14 @@ std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetHandleShape(
   return handle;
 }
 
-void addTinkertoyReferenceFrames(dart::simulation::World& world)
+struct TinkertoyReferenceFrames
+{
+  dart::dynamics::SimpleFramePtr target;
+  std::shared_ptr<dart::dynamics::LineSegmentShape> forceLine;
+};
+
+TinkertoyReferenceFrames addTinkertoyReferenceFrames(
+    dart::simulation::World& world)
 {
   addTinkertoyAxis(
       world,
@@ -214,16 +243,16 @@ void addTinkertoyReferenceFrames(dart::simulation::World& world)
   auto forceLineShape = std::make_shared<dart::dynamics::LineSegmentShape>(
       Eigen::Vector3d(0.08, -0.15, 0.18), targetTransform.translation(), 3.0f);
   forceLine->setShape(forceLineShape);
-  forceLine->getVisualAspect(true)->setRGBA(
-      Eigen::Vector4d(1.0, 0.63, 0.0, 1.0));
+  forceLine->getVisualAspect(true)->setRGBA(kForceLineColor);
   world.addSimpleFrame(forceLine);
+  return {target, forceLineShape};
 }
 
-void addTinkertoyInitialAssemblies(dart::simulation::World& world)
+void addTinkertoyInitialAssemblies(
+    dart::simulation::World& world,
+    const TinkertoyShapes& shapes,
+    std::size_t& nextToyIndex)
 {
-  TinkertoyShapes shapes = createTinkertoyShapes();
-  std::size_t nextToyIndex = 0;
-
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.rotate(
       Eigen::AngleAxisd(dart::math::toRadian(45.0), Eigen::Vector3d::UnitY()));
@@ -276,7 +305,7 @@ void addTinkertoyInitialAssemblies(dart::simulation::World& world)
       Eigen::AngleAxisd(dart::math::toRadian(-90.0), Eigen::Vector3d::UnitX()));
   transform.rotate(
       Eigen::AngleAxisd(dart::math::toRadian(-90.0), Eigen::Vector3d::UnitZ()));
-  transform.translation().z() = 0.075 / 2.0;
+  transform.translation().z() = kDefaultBlockWidth / 2.0;
   addTinkertoyBlock<dart::dynamics::RevoluteJoint>(
       world,
       shapes,
@@ -300,50 +329,374 @@ void addTinkertoyInitialAssemblies(dart::simulation::World& world)
       world, shapes, secondToy, transform, shapes.ballJointShape, nextToyIndex);
 }
 
-dart::simulation::WorldPtr createTinkertoyWorld()
+class TinkertoyState
 {
-  auto world = dart::simulation::World::create("tinkertoy");
-  world->setGravity(Eigen::Vector3d::Zero());
-  addTinkertoyReferenceFrames(*world);
-  addTinkertoyInitialAssemblies(*world);
-  return world;
-}
+public:
+  TinkertoyState()
+    : mWorld(dart::simulation::World::create("tinkertoy")),
+      mShapes(createTinkertoyShapes())
+  {
+    setGravityEnabled(true);
+    auto references = addTinkertoyReferenceFrames(*mWorld);
+    mTarget = std::move(references.target);
+    mForceLine = std::move(references.forceLine);
+    addTinkertoyInitialAssemblies(*mWorld, mShapes, mNextToyIndex);
+    updateVisualState(false);
+  }
+
+  const dart::simulation::WorldPtr& world() const
+  {
+    return mWorld;
+  }
+
+  void syncPickFromSelectionLabel(const std::string& selectedLabel)
+  {
+    if (selectedLabel == mLastSelectedLabel) {
+      return;
+    }
+
+    mLastSelectedLabel = selectedLabel;
+    auto* selectedBody = findSelectedBody(selectedLabel);
+    if (selectedBody == nullptr) {
+      return;
+    }
+
+    setPickedNode(selectedBody);
+  }
+
+  void preStep()
+  {
+    applyPickedForce();
+    updateForceLine();
+  }
+
+  void updateVisualState(bool simulating)
+  {
+    mWorld->eachSkeleton([&](dart::dynamics::Skeleton* skeleton) {
+      if (skeleton != nullptr
+          && skeleton->getName().starts_with(kTinkertoySkeletonPrefix)) {
+        skeleton->setColor(simulating ? kSimulationColor : kPausedColor);
+      }
+    });
+
+    if (mPickedNode != nullptr) {
+      mPickedNode->setColor(simulating ? kForceBodyColor : kSelectedColor);
+    }
+
+    updateForceLine();
+  }
+
+  void setGravityEnabled(bool enabled)
+  {
+    mGravityEnabled = enabled;
+    if (mGravityEnabled) {
+      mWorld->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
+    } else {
+      mWorld->setGravity(Eigen::Vector3d::Zero());
+    }
+  }
+
+  bool gravityEnabled() const
+  {
+    return mGravityEnabled;
+  }
+
+  void setForceCoeff(double coeff)
+  {
+    mForceCoeff = std::clamp(coeff, kMinForceCoeff, kMaxForceCoeff);
+  }
+
+  double forceCoeff() const
+  {
+    return mForceCoeff;
+  }
+
+  const std::string& status() const
+  {
+    return mStatus;
+  }
+
+  void clearPick()
+  {
+    mPickedNode = nullptr;
+    mPickedPoint = Eigen::Vector3d::Zero();
+    if (mTarget != nullptr) {
+      mTarget->setTransform(Eigen::Isometry3d::Identity());
+    }
+    mStatus = "No block selected";
+    updateForceLine();
+  }
+
+  void deletePick(bool paused)
+  {
+    if (!canEdit(paused, "delete blocks") || mPickedNode == nullptr) {
+      return;
+    }
+
+    auto removedSubtree = mPickedNode->remove();
+    if (auto* solver = mWorld->getConstraintSolver();
+        solver != nullptr && removedSubtree != nullptr) {
+      solver->getCollisionGroup()->removeShapeFramesOf(removedSubtree.get());
+    }
+    clearPick();
+    mStatus = "Deleted selected block subtree";
+  }
+
+  void reorientTarget()
+  {
+    if (mTarget == nullptr) {
+      return;
+    }
+
+    Eigen::Isometry3d transform = mTarget->getWorldTransform();
+    transform.linear() = Eigen::Matrix3d::Identity();
+    mTarget->setTransform(transform);
+    mStatus = "Target orientation reset";
+  }
+
+  void addWeldJointBlock(bool paused)
+  {
+    addBlock<dart::dynamics::WeldJoint>(
+        paused, mShapes.weldJointShape, "Added WeldJoint block");
+  }
+
+  void addRevoluteJointBlock(bool paused)
+  {
+    addBlock<dart::dynamics::RevoluteJoint>(
+        paused, mShapes.revoluteJointShape, "Added RevoluteJoint block");
+  }
+
+  void addBallJointBlock(bool paused)
+  {
+    addBlock<dart::dynamics::BallJoint>(
+        paused, mShapes.ballJointShape, "Added BallJoint block");
+  }
+
+private:
+  dart::dynamics::BodyNode* findSelectedBody(
+      const std::string& selectedLabel) const
+  {
+    const auto firstSlash = selectedLabel.find('/');
+    if (firstSlash == std::string::npos) {
+      return nullptr;
+    }
+
+    const std::string skeletonName = selectedLabel.substr(0, firstSlash);
+    if (!skeletonName.starts_with(kTinkertoySkeletonPrefix)) {
+      return nullptr;
+    }
+
+    const auto secondSlash = selectedLabel.find('/', firstSlash + 1);
+    const auto shapeSuffix = selectedLabel.find(" (", firstSlash + 1);
+    const auto bodyEnd
+        = secondSlash == std::string::npos ? shapeSuffix : secondSlash;
+    if (bodyEnd == std::string::npos || bodyEnd <= firstSlash + 1) {
+      return nullptr;
+    }
+
+    const std::string bodyName
+        = selectedLabel.substr(firstSlash + 1, bodyEnd - firstSlash - 1);
+    const auto skeleton = mWorld->getSkeleton(skeletonName);
+    return skeleton == nullptr ? nullptr : skeleton->getBodyNode(bodyName);
+  }
+
+  void setPickedNode(dart::dynamics::BodyNode* body)
+  {
+    if (body == nullptr) {
+      return;
+    }
+
+    mPickedNode = body;
+    mPickedPoint = body->getLocalCOM();
+
+    if (mTarget != nullptr) {
+      Eigen::Isometry3d transform = body->getWorldTransform();
+      transform.translation() = body->getCOM();
+      mTarget->setTransform(transform);
+    }
+
+    mStatus
+        = "Picked " + body->getSkeleton()->getName() + "/" + body->getName();
+    updateForceLine();
+  }
+
+  bool canEdit(bool paused, const char* action)
+  {
+    if (!paused) {
+      mStatus = std::string("Pause simulation before attempting to ") + action;
+      return false;
+    }
+    return true;
+  }
+
+  Eigen::Isometry3d relativeTargetTransform() const
+  {
+    if (mTarget == nullptr) {
+      return Eigen::Isometry3d::Identity();
+    }
+    return mPickedNode != nullptr ? mTarget->getTransform(mPickedNode)
+                                  : mTarget->getWorldTransform();
+  }
+
+  template <class JointType>
+  void addBlock(
+      bool paused,
+      const dart::dynamics::ShapePtr& jointShape,
+      const char* status)
+  {
+    if (!canEdit(paused, "add new blocks")) {
+      return;
+    }
+
+    auto* body = addTinkertoyBlock<JointType>(
+        *mWorld,
+        mShapes,
+        mPickedNode,
+        relativeTargetTransform(),
+        jointShape,
+        mNextToyIndex);
+    if (body == nullptr) {
+      return;
+    }
+
+    setPickedNode(body);
+    mStatus = status;
+    updateVisualState(false);
+  }
+
+  void updateForceLine()
+  {
+    if (mForceLine == nullptr) {
+      return;
+    }
+
+    if (mPickedNode == nullptr || mTarget == nullptr) {
+      Eigen::Vector3d target = Eigen::Vector3d::Zero();
+      if (mTarget != nullptr) {
+        target = mTarget->getWorldTransform().translation();
+      }
+      mForceLine->setVertex(0, target + Eigen::Vector3d(0.08, -0.15, 0.18));
+      mForceLine->setVertex(1, target);
+      return;
+    }
+
+    mForceLine->setVertex(0, mPickedNode->getWorldTransform() * mPickedPoint);
+    mForceLine->setVertex(1, mTarget->getWorldTransform().translation());
+  }
+
+  void applyPickedForce()
+  {
+    if (mPickedNode == nullptr || mTarget == nullptr) {
+      return;
+    }
+
+    Eigen::Vector3d force
+        = mForceCoeff
+          * (mTarget->getWorldTransform().translation()
+             - mPickedNode->getWorldTransform() * mPickedPoint);
+    const double forceNorm = force.norm();
+    if (forceNorm > kMaxForce) {
+      force = kMaxForce * force / forceNorm;
+    }
+    mPickedNode->addExtForce(force, mPickedPoint);
+  }
+
+  dart::simulation::WorldPtr mWorld;
+  TinkertoyShapes mShapes;
+  std::size_t mNextToyIndex = 0;
+  dart::dynamics::SimpleFramePtr mTarget;
+  std::shared_ptr<dart::dynamics::LineSegmentShape> mForceLine;
+  dart::dynamics::BodyNode* mPickedNode = nullptr;
+  Eigen::Vector3d mPickedPoint = Eigen::Vector3d::Zero();
+  double mForceCoeff = kDefaultForceCoeff;
+  bool mGravityEnabled = true;
+  std::string mLastSelectedLabel;
+  std::string mStatus = "No block selected";
+};
 
 } // namespace
 
 int main(int argc, char* argv[])
 {
+  auto state = std::make_shared<TinkertoyState>();
   bool showBuilderHints = true;
 
   dart::gui::Panel controls;
   controls.title = "Tinkertoy Controls";
-  controls.buildWithContext
-      = [&](dart::gui::PanelBuilder& panel, dart::gui::PanelContext& context) {
-          panel.text("Interactive tinkertoy fixture");
-          panel.separator();
-          if (context.lifecycle != nullptr) {
-            if (panel.button(context.lifecycle->paused ? "Resume" : "Pause")) {
-              dart::gui::togglePaused(*context.lifecycle);
-            }
-            panel.sameLine();
-            if (panel.button("Step")) {
-              dart::gui::requestSingleStep(*context.lifecycle);
-            }
-          }
-          panel.checkbox("Show builder hints", showBuilderHints);
-          if (showBuilderHints) {
-            panel.text("Select the magenta target handle.");
-            panel.text("Ctrl-left drag moves the selected handle.");
-            panel.text("Arrow keys and PageUp/PageDown nudge it.");
-            panel.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
-          }
-          panel.text("time: " + std::to_string(context.simulationTime));
-          panel.text("contacts: " + std::to_string(context.contactCount));
-          panel.text("selected: " + context.selectedLabel);
-        };
+  controls.buildWithContext = [state, showBuilderHints](
+                                  dart::gui::PanelBuilder& panel,
+                                  dart::gui::PanelContext& context) mutable {
+    state->syncPickFromSelectionLabel(context.selectedLabel);
+    const bool paused
+        = context.lifecycle == nullptr || context.lifecycle->paused;
+    state->updateVisualState(!paused);
+
+    panel.text("Interactive tinkertoy fixture");
+    panel.separator();
+    if (context.lifecycle != nullptr) {
+      if (panel.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      panel.sameLine();
+      if (panel.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+
+    bool gravityEnabled = state->gravityEnabled();
+    if (panel.checkbox("Gravity", gravityEnabled)) {
+      state->setGravityEnabled(gravityEnabled);
+    }
+
+    double forceCoeff = state->forceCoeff();
+    if (panel.slider(
+            "Force coefficient", forceCoeff, kMinForceCoeff, kMaxForceCoeff)) {
+      state->setForceCoeff(forceCoeff);
+    }
+
+    if (panel.button("Add Weld Block")) {
+      state->addWeldJointBlock(paused);
+    }
+    panel.sameLine();
+    if (panel.button("Add Revolute Block")) {
+      state->addRevoluteJointBlock(paused);
+    }
+    panel.sameLine();
+    if (panel.button("Add Ball Block")) {
+      state->addBallJointBlock(paused);
+    }
+
+    if (panel.button("Delete Block")) {
+      state->deletePick(paused);
+    }
+    panel.sameLine();
+    if (panel.button("Clear Pick")) {
+      state->clearPick();
+    }
+    panel.sameLine();
+    if (panel.button("Reorient Target")) {
+      state->reorientTarget();
+    }
+
+    panel.checkbox("Show builder hints", showBuilderHints);
+    if (showBuilderHints) {
+      panel.text("Select a block to attach new blocks or apply force.");
+      panel.text("Select the magenta target handle to move it.");
+      panel.text("Ctrl-left drag moves the selected handle.");
+      panel.text("Arrow keys and PageUp/PageDown nudge it.");
+      panel.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
+    }
+    panel.text("time: " + std::to_string(context.simulationTime));
+    panel.text("contacts: " + std::to_string(context.contactCount));
+    panel.text("selected: " + context.selectedLabel);
+    panel.text("builder: " + state->status());
+  };
 
   dart::gui::ApplicationOptions options;
-  options.world = createTinkertoyWorld();
+  options.world = state->world();
+  options.preStep = [state]() {
+    state->preStep();
+  };
   options.panels.push_back(std::move(controls));
 
   return dart::gui::runApplication(argc, argv, options);

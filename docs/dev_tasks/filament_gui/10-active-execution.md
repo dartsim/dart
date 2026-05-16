@@ -1378,6 +1378,45 @@ Twenty-fourth Fetch work-area grid parity checkpoint:
   - Python runner tests (`67 passed`)
   - Full `examples` aggregate target build
 
+Twenty-fifth Tinkertoy builder-state parity checkpoint:
+
+- Historical baseline: the OSG Tinkertoy example kept a stateful picked block,
+  created blocks dynamically from the selected body and target frame, applied a
+  capped spring-like external force from the picked point to the target,
+  rendered a force line, changed colors for paused/simulating/selected states,
+  exposed gravity and force-coefficient controls, and provided add/delete,
+  clear, and target-reorientation actions in both the ImGui widget and
+  keyboard handler.
+- Implementation state for this checkpoint: `examples/tinkertoy/main.cpp` now
+  has a local `TinkertoyState`, keeps the implementation on public DART and
+  `dart::gui` APIs, and restores the builder workflow through
+  renderer-neutral panel controls. Users can select a block through the
+  promoted scene selection label, then use panel buttons to add
+  Weld/Revolute/Ball blocks, delete/clear the pick, reorient the target, toggle
+  gravity, and adjust force coefficient. The example restores per-step force
+  application and dynamic force-line updates through
+  `ApplicationOptions::preStep`/panel context.
+- The restored block construction now uses `VisualAspect`, `CollisionAspect`,
+  and `DynamicsAspect`, so dynamically added Tinkertoy bodies participate in
+  physics instead of being visual-only geometry.
+- Explicit follow-up gap: raw keyboard parity (`1`/`2`/`3`,
+  Backspace, Delete, Up/Down, backtick, Tab) and legacy Enter recording toggle
+  require a renderer-neutral public input/action API. Do not wire the example
+  to private GLFW or Filament input handlers to close that gap.
+- Guard state: the Tinkertoy source marker test now requires stateful builder
+  markers (`TinkertoyState`, `addWeldJointBlock`, `deletePick`,
+  `setGravityEnabled`, `setForceCoeff`, `options.preStep`) and restored
+  `CollisionAspect`/`DynamicsAspect` block construction.
+- Local evidence so far:
+  - Focused C++ target build for `tinkertoy` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct llvmpipe `tinkertoy --headless --frames 2 --width 640 --height 480 --screenshot ...`
+  - `pixi run ex tinkertoy --headless --frames 2 --width 640 --height 480 --screenshot ...`
+  - Basic analyzer checks for both Tinkertoy screenshots
+  - Python runner tests (`67 passed`)
+  - Full `examples` aggregate target build
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -1408,10 +1447,10 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Finish the Fetch work-area grid checkpoint with mandatory lint, post-lint
-   focused validation, commit, and push.
-2. Then continue Tinkertoy builder workflow parity and robot/IK solver/hotkey
-   parity through promoted `dart::gui` concepts.
+1. Finish the Tinkertoy builder-state checkpoint with mandatory lint,
+   post-lint focused validation, commit, and push.
+2. Then continue robot/IK solver/hotkey parity through promoted `dart::gui`
+   concepts.
 3. Keep `examples/fetch/` in the completed-evidence set for camera,
    target-cross, and work-area-grid parity, but do not generalize that result
    to other examples.
