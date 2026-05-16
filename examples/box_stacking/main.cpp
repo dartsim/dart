@@ -45,8 +45,10 @@
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
+#include <dart/math/helpers.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 #include <dart/math/lcp/projection/pgs_solver.hpp>
+#include <dart/math/random.hpp>
 
 #include <Eigen/Geometry>
 
@@ -178,9 +180,7 @@ void applyLcpSolver(
 }
 
 dart::dynamics::SkeletonPtr createBox(
-    std::size_t index,
-    const Eigen::Vector3d& position,
-    const Eigen::Vector3d& color)
+    std::size_t index, const Eigen::Vector3d& position)
 {
   auto skeleton
       = dart::dynamics::Skeleton::create("stack_box_" + std::to_string(index));
@@ -198,7 +198,8 @@ dart::dynamics::SkeletonPtr createBox(
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(shape);
-  shapeNode->getVisualAspect()->setColor(color);
+  shapeNode->getVisualAspect()->setColor(
+      dart::math::Random::uniform<Eigen::Vector3d>(0.0, 1.0));
 
   constexpr double mass = 1.0;
   body->setInertia(
@@ -216,7 +217,7 @@ dart::dynamics::SkeletonPtr createFloor()
   auto* joint = jointAndBody.first;
   auto* body = jointAndBody.second;
 
-  constexpr double floorHeight = 0.02;
+  constexpr double floorHeight = 0.01;
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(0.0, 0.0, -0.5 * floorHeight);
   joint->setTransformFromParentBodyNode(transform);
@@ -227,7 +228,7 @@ dart::dynamics::SkeletonPtr createFloor()
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(shape);
-  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.82, 0.82, 0.82));
+  shapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
 
   return floor;
 }
@@ -241,11 +242,9 @@ dart::simulation::WorldPtr createBoxStackingWorld(
 
   constexpr int numBoxes = 5;
   for (int i = 0; i < numBoxes; ++i) {
-    const double t = static_cast<double>(i) / static_cast<double>(numBoxes - 1);
     world->addSkeleton(createBox(
         static_cast<std::size_t>(i),
-        Eigen::Vector3d(0.0, 0.0, 0.25 + i * 0.5),
-        Eigen::Vector3d(0.2 + 0.5 * t, 0.35, 0.85 - 0.5 * t)));
+        Eigen::Vector3d(0.0, 0.0, 0.5 + 0.25 + i * 0.5)));
   }
 
   applyLcpSolver(world.get(), config.solver, false);
@@ -281,6 +280,7 @@ dart::gui::Panel createControlsPanel(const BoxStackingConfig& config)
   controls.buildWithContext = [gravityEnabled, splitImpulseEnabled, solverType](
                                   dart::gui::PanelBuilder& panel,
                                   dart::gui::PanelContext& context) mutable {
+    panel.text("Box stacking demo");
     panel.text("Stacked rigid-body contact demo");
     panel.separator();
     if (context.lifecycle != nullptr) {
@@ -294,12 +294,13 @@ dart::gui::Panel createControlsPanel(const BoxStackingConfig& config)
     }
 
     if (context.world != nullptr) {
-      if (panel.checkbox("Gravity", gravityEnabled)) {
+      if (panel.checkbox("Gravity On/Off", gravityEnabled)) {
         context.world->setGravity(
             gravityEnabled ? Eigen::Vector3d(0.0, 0.0, -9.81)
                            : Eigen::Vector3d::Zero());
       }
-      panel.text("LCP solver: " + solverName(solverType));
+      panel.text("LCP solver:");
+      panel.text("selected: " + solverName(solverType));
       if (panel.button(
               solverType == SolverType::Dantzig ? "Dantzig (selected)"
                                                 : "Dantzig")) {
@@ -319,8 +320,13 @@ dart::gui::Panel createControlsPanel(const BoxStackingConfig& config)
       }
     }
 
-    panel.text("time: " + std::to_string(context.simulationTime));
-    panel.text("contacts: " + std::to_string(context.contactCount));
+    panel.text("Time: " + std::to_string(context.simulationTime));
+    panel.text("Contacts: " + std::to_string(context.contactCount));
+    panel.separator();
+    panel.text("User Guide:");
+    panel.text("Space toggles simulation; n steps once while paused.");
+    panel.text("Left drag orbits, right/middle drag pans, wheel zooms.");
+    panel.text("Use --gui-scale to scale this panel.");
   };
   return controls;
 }

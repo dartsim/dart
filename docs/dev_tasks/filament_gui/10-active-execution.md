@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `6ea2c868547 Restore Fetch target affordance`.
+  `b11f7db7d6c Restore Biped Stand instructions`.
 - Latest pushed code checkpoint:
-  `6ea2c868547 Restore Fetch target affordance`.
+  `b11f7db7d6c Restore Biped Stand instructions`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -146,6 +146,7 @@ history but are not guaranteed to be in chronological order.
   - `9fa571ed585 Restore add-delete skeleton defaults`
   - `3ca9f65c9bb Restore Atlas Puppet defaults`
   - `6ea2c868547 Restore Fetch target affordance`
+  - `b11f7db7d6c Restore Biped Stand instructions`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -630,6 +631,44 @@ history but are not guaranteed to be in chronological order.
   (`/tmp/dart_biped_stand_instructions_direct_postlint.ppm`, 307200/307200
   nonzero pixels, and `/tmp/dart_biped_stand_instructions_pixi_postlint.ppm`,
   307200/307200 nonzero pixels), and `git diff --check` passed.
+- The Biped Stand instruction checkpoint was pushed as
+  `b11f7db7d6c Restore Biped Stand instructions`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now `examples/box_stacking/`. Compare the current source and
+  README against `520993d7301^:examples/box_stacking`, itemize any remaining
+  historical behavior gaps in `11-example-parity-audit.md`, then repair or name
+  public `dart::gui` API gaps before moving on.
+- Box Stacking strict re-open finding before code changes: the current source
+  restores the promoted world handoff, Dantzig/PGS controls, split-impulse
+  control, 800x640 defaults, and historical camera home, but it regresses the
+  historical stack placement by starting the first box at `z=0.25` instead of
+  `z=0.75`, uses deterministic box colors instead of historical random colors,
+  uses a `0.02` floor instead of the historical `0.01` floor, and omits
+  historical panel/README text. Repair those now through public
+  `dart::gui`, extend marker guards, and keep headlight toggles, camera
+  Eye/Center/Up panel readout, and key-release callbacks as named public API
+  gaps unless those APIs are added in the same slice.
+- Box Stacking implementation state: source now restores historical random
+  colors, stack placement, 0.01 light-gray floor, `Gravity On/Off`,
+  `LCP solver:`, `Box stacking demo`, `User Guide`, README build/execute
+  sections, and marker coverage. Exact OSG menu-bar placement, headlight
+  toggle, live camera Eye/Center/Up readout, and key-release callbacks remain
+  named public `dart::gui` API gaps.
+- Box Stacking pre-lint validation: focused build for `box_stacking` and
+  `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed, direct
+  llvmpipe screenshot passed analyzer coverage
+  (`/tmp/dart_box_stacking_strict_direct.ppm`, 512000/512000 nonzero pixels),
+  pixi `box_stacking` screenshot passed analyzer coverage
+  (`/tmp/dart_box_stacking_strict_pixi.ppm`, 307200/307200 nonzero pixels),
+  Python C++ example-runner tests passed (67/67), aggregate `examples` build
+  passed, and `git diff --check` passed.
+- Box Stacking post-lint validation: mandatory `pixi run lint` passed, focused
+  rebuild for `box_stacking` and `UNIT_gui_FilamentSceneExtraction` passed,
+  focused CTest passed, direct llvmpipe screenshot passed analyzer coverage
+  (`/tmp/dart_box_stacking_strict_direct_postlint.ppm`, 512000/512000 nonzero
+  pixels), pixi `box_stacking` screenshot passed analyzer coverage
+  (`/tmp/dart_box_stacking_strict_pixi_postlint.ppm`, 307200/307200 nonzero
+  pixels), and `git diff --check` passed.
 
 ## Current Code Shape
 

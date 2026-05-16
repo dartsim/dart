@@ -39,6 +39,10 @@
   - Restored `boxes`, `rigid_cubes`, and `box_stacking` as real public-API
     `dart::gui` example sources with source-defined DART worlds instead of
     shared private scene-fixture launchers.
+  - Restored the `box_stacking` example's historical stack placement, random
+    box colors, floor geometry, panel labels/help text, standalone README
+    build/execute instructions, and marker coverage through public
+    `dart::gui`.
   - Restored `simple_frames` and `capsule_ground_contact` as public-API
     `dart::gui` example sources using source-defined DART frame and contact
     worlds.

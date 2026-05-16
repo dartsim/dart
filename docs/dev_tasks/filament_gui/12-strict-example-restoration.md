@@ -241,6 +241,17 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `6ea2c868547 Restore Fetch target affordance`. The active cursor is now
     `examples/biped_stand/`; compare it against
     `520993d7301^:examples/biped_stand` before coding.
+21. The Biped Stand instruction checkpoint was pushed as
+    `b11f7db7d6c Restore Biped Stand instructions`. The active cursor is now
+    `examples/box_stacking/`; compare it against
+    `520993d7301^:examples/box_stacking` before coding.
+22. `examples/box_stacking/` strict re-open found remaining scene, panel, and
+    README gaps after the earlier solver-controls checkpoint. Repair the stack
+    height, floor thickness/color, historical panel labels/help, standalone
+    README sections, and marker guards now. Keep OSG-specific menu-bar
+    placement, headlight toggles, camera Eye/Center/Up readout, and key-release
+    callbacks explicit as public `dart::gui` API follow-ups unless the missing
+    renderer-neutral APIs are added.
 
 ## Checkpoint Rule
 

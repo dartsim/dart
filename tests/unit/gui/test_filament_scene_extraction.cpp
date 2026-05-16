@@ -1386,7 +1386,18 @@ TEST(FilamentSceneExtraction, BoxStackingExamplePreservesParityMarkers)
   EXPECT_NE(mainSource.find("DantzigSolver"), std::string::npos);
   EXPECT_NE(mainSource.find("PgsSolver"), std::string::npos);
   EXPECT_NE(mainSource.find("--solver"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Random::uniform<Eigen::Vector3d>"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(0.0, 0.0, 0.5 + 0.25 + i * 0.5)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("floorHeight = 0.01"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::Color::LightGray()"), std::string::npos);
   EXPECT_NE(mainSource.find("setSplitImpulseEnabled"), std::string::npos);
+  EXPECT_NE(mainSource.find("Box stacking demo"), std::string::npos);
+  EXPECT_NE(mainSource.find("Gravity On/Off"), std::string::npos);
+  EXPECT_NE(mainSource.find("LCP solver:"), std::string::npos);
+  EXPECT_NE(mainSource.find("User Guide:"), std::string::npos);
   EXPECT_NE(mainSource.find("makeBoxStackingRunDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.width = 800"), std::string::npos);
   EXPECT_NE(mainSource.find("options.height = 640"), std::string::npos);
@@ -1397,7 +1408,13 @@ TEST(FilamentSceneExtraction, BoxStackingExamplePreservesParityMarkers)
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
   EXPECT_NE(readmeSource.find("Box Stacking Example"), std::string::npos);
   EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(readmeSource.find("800x640"), std::string::npos);
+  EXPECT_NE(readmeSource.find("--gui-scale"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
+  EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)

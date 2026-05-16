@@ -819,35 +819,29 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`6ea2c868547 Restore Fetch target affordance`. No rows remain with the exact
+`b11f7db7d6c Restore Biped Stand instructions`. No rows remain with the exact
 `Needs strict audit` state. The current pending checkpoint is
-`examples/biped_stand/` strict re-open. Compare the current source and README
-against `520993d7301^:examples/biped_stand`, write any updated inventory
-findings in
-`11-example-parity-audit.md`, then preserve, restore, or explicitly name any
-public API gaps before coding past this slice.
+`examples/box_stacking/` strict re-open. The historical-source comparison has
+been documented in `11-example-parity-audit.md`: repair the first-box stack
+height, random box colors, floor thickness/color, historical panel labels/help,
+README build/execute sections, and marker guards before committing. Keep headlight
+toggles, camera Eye/Center/Up panel readout, OSG menu-bar placement, and
+key-release callbacks as explicit public `dart::gui` API follow-ups unless the
+missing APIs are added.
 
 ## Current Immediate Next Step
 
-Audit `examples/biped_stand/` before coding: compare the current source and
-README to the historical OSG/ImGui source, verify perturbation controls, camera,
-run defaults, README, and marker guards, then repair the source or name missing
-renderer-neutral public API explicitly. Keep `--screenshot <path>` and
-`--out <dir>` working for the existing CTest, GitHub Actions smoke path, and
-historical image-sequence workflows. A later broader smoke sweep can still use:
-
-Implementation state: Biped Stand now restores the historical start text, exact
-push-instruction text for keys 1-4, standalone README build/execute sections,
-and marker coverage. Validate this slice before committing.
-
-Pre-lint validation is complete: focused build/CTest, direct/pixi headless
-screenshot analyzer checks, Python C++ example-runner tests, aggregate
-`examples` build, and `git diff --check` passed. Mandatory lint and post-lint
-focused checks remain before commit.
-
-Post-lint validation is complete: `pixi run lint`, focused build/CTest,
-direct/pixi headless screenshot analyzer checks, and `git diff --check` passed.
-A final `pixi run lint` pass also completed after these resume updates.
+Implementation state: Box Stacking now restores the historical
+non-intersecting stack heights, random box colors, 0.01 light-gray floor,
+historical panel text/help labels, README build/execute sections, and marker
+guards. Pre-lint validation passed: focused build/CTest, direct and pixi
+headless screenshot analyzer checks, Python C++ example-runner tests, aggregate
+`examples` build, and `git diff --check`. Post-lint validation also passed:
+mandatory `pixi run lint`, focused build/CTest, direct and pixi headless
+screenshot analyzer checks, and `git diff --check`. Commit and push this
+checkpoint next. Keep `--screenshot <path>` and `--out <dir>` working for the
+existing CTest, GitHub Actions smoke path, and historical image-sequence
+workflows. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke
