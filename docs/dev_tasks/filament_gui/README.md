@@ -141,10 +141,12 @@ historical/current source comparison also matches the pre-promotion baseline,
 and the checkpoint has been pushed as
 `18dd2a70dd5 Audit headless simulation example`. The active strict-audit slice
 is now `examples/speed_test/`: its historical/current source comparison also
+matches the pre-promotion baseline, and the checkpoint has been pushed as
+`824c520659c Audit speed test example`. The active strict-audit slice is now
+`examples/unified_loading/`: its historical/current source comparison also
 matches the pre-promotion baseline, so the checkpoint should document the
-preserved non-GUI benchmark contract, add marker coverage, validate with build
-and unit coverage, and avoid adding renderer dependencies or quick-run controls
-to the intentionally long benchmark.
+preserved non-GUI shared `ReadOptions` loading contract, add marker coverage,
+validate a short direct load run, and avoid adding renderer dependencies.
 An earlier parity slice restored `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default

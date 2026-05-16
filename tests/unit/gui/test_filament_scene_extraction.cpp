@@ -947,6 +947,56 @@ TEST(FilamentSceneExtraction, SpeedTestPreservesNonGuiBenchmarkContract)
   EXPECT_EQ(cmakeSource.find("dart-gui"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, UnifiedLoadingPreservesNonGuiReadOptionsContract)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "unified_loading" / "main.cpp");
+  const auto cmakeSource = readSourceFile(
+      std::filesystem::path("examples") / "unified_loading" / "CMakeLists.txt");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "unified_loading" / "README.md");
+
+  EXPECT_NE(
+      mainSource.find("dart://sample/sdf/double_pendulum.world"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart://sample/urdf/test/primitive_geometry.urdf"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("dart::io::ModelFormat::Auto"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::io::RootJointType::Floating"), std::string::npos);
+  EXPECT_NE(mainSource.find("--world <uri>"), std::string::npos);
+  EXPECT_NE(mainSource.find("--skeleton <uri>"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("--format <auto|skel|sdf|urdf|mjcf>"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("--sdf-root-joint <floating|fixed>"), std::string::npos);
+  EXPECT_NE(mainSource.find("--package <name=path>"), std::string::npos);
+  EXPECT_NE(mainSource.find("--no-world"), std::string::npos);
+  EXPECT_NE(mainSource.find("--no-skeleton"), std::string::npos);
+  EXPECT_NE(mainSource.find("parseModelFormat"), std::string::npos);
+  EXPECT_NE(mainSource.find("parseRootJointType"), std::string::npos);
+  EXPECT_NE(mainSource.find("parsePackageMapping"), std::string::npos);
+  EXPECT_NE(mainSource.find("Nothing to load."), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::io::ReadOptions"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("readOptions.addPackageDirectory"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::io::readWorld"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::io::readSkeleton"), std::string::npos);
+  EXPECT_NE(mainSource.find("Read options: format="), std::string::npos);
+  EXPECT_NE(mainSource.find("World loaded with "), std::string::npos);
+  EXPECT_NE(mainSource.find("Skeleton '"), std::string::npos);
+
+  EXPECT_NE(readmeSource.find("Unified Loading Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::io::ReadOptions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("format inference"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Pass `--help`"), std::string::npos);
+
+  EXPECT_EQ(mainSource.find("dart/gui"), std::string::npos);
+  EXPECT_EQ(mainSource.find("ApplicationOptions"), std::string::npos);
+  EXPECT_EQ(cmakeSource.find("dart-gui"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, HelloWorldExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(

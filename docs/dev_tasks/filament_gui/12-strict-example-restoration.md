@@ -129,10 +129,24 @@ Immediate order:
    benchmark executable itself was not run because the preserved historical
    behavior is an intentionally long timing loop with no bounded mode.
    Post-lint focused build/CTest and `git diff --check` also passed.
-7. `examples/coupler_constraint/` was committed and pushed as
+   This checkpoint was pushed as
+   `824c520659c Audit speed test example`.
+7. Audit `examples/unified_loading/` next. The historical source and README
+   are byte-for-byte identical to the current files, so this slice should
+   preserve the non-GUI shared `ReadOptions` loading workflow, add
+   source-marker guards for world/skeleton load toggles, format/root-joint
+   parsing, package mappings, summary output, and README, validate a short
+   direct load run, and avoid adding `dart::gui` or renderer dependencies.
+   Implementation and pre-lint validation are complete: focused build/CTest,
+   direct `unified_loading --no-world --format urdf --sdf-root-joint fixed`
+   output verification, Python C++ example-runner tests, and aggregate
+   `examples` build passed.
+   Post-lint focused build/CTest, direct output verification, and
+   `git diff --check` also passed.
+8. `examples/coupler_constraint/` was committed and pushed as
    `3945c65852c Restore coupler constraint controls` after mandatory lint and
    post-lint focused checks.
-8. Audit and restore `examples/drag_and_drop/` next. The historical source used
+9. Audit and restore `examples/drag_and_drop/` next. The historical source used
    an `InteractiveFrame` at `(4, -4, 0)`, a child red box, X/Y/Z markers, a
    640x480 window, camera home from `(20, 17, 17)` to the origin, console
    instructions, and a README that described the interaction contract. Restore
@@ -141,15 +155,15 @@ Immediate order:
    rather than reintroducing OSG.
    This checkpoint was pushed as
    `1297aca1fe6 Restore drag and drop affordances`.
-9. `examples/human_joint_limits/` was committed and pushed as
-   `cf0ed62209e Restore human joint limits live example`. The historical
-   example depended on TinyDNN-backed custom arm/leg constraints and required
-   ODE/Bullet; the current branch no longer carries TinyDNN. Restore the live
-   world, joint-limit enforcement, default size, instructions, README, and
-   marker guards now, and record the TinyDNN/custom neural-network constraint
-   path as a named dependency/API follow-up unless a maintained replacement is
-   added.
-10. Continue through the remaining `Needs strict audit` and
+10. `examples/human_joint_limits/` was committed and pushed as
+    `cf0ed62209e Restore human joint limits live example`. The historical
+    example depended on TinyDNN-backed custom arm/leg constraints and required
+    ODE/Bullet; the current branch no longer carries TinyDNN. Restore the live
+    world, joint-limit enforcement, default size, instructions, README, and
+    marker guards now, and record the TinyDNN/custom neural-network constraint
+    path as a named dependency/API follow-up unless a maintained replacement is
+    added.
+11. Continue through the remaining `Needs strict audit` and
     `Recent parity checkpoint; still subject to strict audit re-open` rows.
 
 ## Checkpoint Rule

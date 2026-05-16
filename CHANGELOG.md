@@ -210,6 +210,9 @@
   - Preserved the `speed_test` example's non-GUI timing benchmark contract and
     added strict-audit marker coverage so renderer promotion does not pull it
     into the GUI dependency surface.
+  - Preserved the `unified_loading` example's non-GUI shared `ReadOptions`
+    loading contract and added strict-audit marker coverage so renderer
+    promotion does not pull it into the GUI dependency surface.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

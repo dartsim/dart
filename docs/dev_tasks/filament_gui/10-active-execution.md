@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `18dd2a70dd5 Audit headless simulation example`.
+  `824c520659c Audit speed test example`.
 - Latest pushed code checkpoint:
-  `18dd2a70dd5 Audit headless simulation example`.
+  `824c520659c Audit speed test example`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -137,6 +137,7 @@ history but are not guaranteed to be in chronological order.
   - `63f990d5251 Restore panel extension example`
   - `7ec64c3609e Audit CSV logger example`
   - `18dd2a70dd5 Audit headless simulation example`
+  - `824c520659c Audit speed test example`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -345,6 +346,26 @@ history but are not guaranteed to be in chronological order.
 - Speed test post-lint validation completed: mandatory `pixi run lint`,
   focused rebuild and CTest for `speed_test` plus
   `UNIT_gui_FilamentSceneExtraction`, and `git diff --check`.
+- The speed-test checkpoint was pushed as
+  `824c520659c Audit speed test example`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now `examples/unified_loading/`. The historical source and
+  README match the current files exactly, so this slice should preserve the
+  non-GUI model-loading workflow, document the itemized historical inventory,
+  add source-marker coverage for shared `ReadOptions`, format parsing,
+  root-joint parsing, package mapping, world/skeleton load toggles, summary
+  output, README text, and absence of GUI renderer dependencies, then validate
+  with focused build/unit coverage and a short direct load run.
+- Unified loading validation completed before lint: focused C++ build for
+  `unified_loading` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction`, a direct
+  `unified_loading --no-world --format urdf --sdf-root-joint fixed` run that
+  loaded the default skeleton and printed the expected read-options summary,
+  Python C++ example-runner tests (67 passed), and aggregate `examples` build.
+- Unified loading post-lint validation completed: mandatory `pixi run lint`,
+  focused rebuild and CTest for `unified_loading` plus
+  `UNIT_gui_FilamentSceneExtraction`, direct short load output verification,
+  and `git diff --check`.
 
 ## Current Code Shape
 
