@@ -245,6 +245,11 @@ The architect and critic disagree on whether to start coding (architect: yes, ru
 
 ### Step A — No code, no commits. Do this first.
 
+**Resolved (2026-05-16):** Step A is historical. The current status section at
+the top of this file records that documentation truthfulness cleanup, canonical
+baseline wording, downstream acceptance criteria, and lint guard wiring have
+already landed.
+
 A1. **Decommit inflated README `[x]` items.** Convert items whose evidence is "manual workflow-dispatch on closed PR" to `[~]` (in progress) and rewrite the line so the actual gate (scheduled CI on an open PR or merged main) is visible.
 
 A2. **Pick ONE canonical "current SHA"** and ensure README, RESUME, and
@@ -2571,6 +2576,10 @@ updated to record the two-bar structure (raw-first, adapter-second)
 so future sessions pick it up automatically.
 
 ## Round 15 — F11-1 Priority Reminder (NEW, 2026-05-15)
+
+**Resolved (2026-05-16):** This priority reminder is historical. F11-1 landed
+as `4e0d83948ee`, and the later Round 17 and Round 16 local completion notes
+record the closed queue state.
 
 Codex has been productive on the matrix `GAP` backlog over the past
 6 commits (`aeaaaa7186a`, `320c9fa32e9`, `914afcd367b`, `7910e22f1b6`,
