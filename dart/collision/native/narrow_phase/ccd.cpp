@@ -33,8 +33,6 @@
 #include <dart/collision/native/narrow_phase/ccd.hpp>
 #include <dart/collision/native/narrow_phase/gjk.hpp>
 
-#include <dart/common/macros.hpp>
-
 #include <algorithm>
 
 #include <cmath>
@@ -88,7 +86,7 @@ bool sphereCastSphere(
     const CcdOption& option,
     CcdResult& result)
 {
-  DART_UNUSED(option);
+  (void)option;
   result.clear();
 
   const Eigen::Vector3d targetCenter = targetTransform.translation();
@@ -138,7 +136,7 @@ bool sphereCastBox(
     const CcdOption& option,
     CcdResult& result)
 {
-  DART_UNUSED(option);
+  (void)option;
   result.clear();
 
   const Eigen::Isometry3d invTransform = targetTransform.inverse();
@@ -231,7 +229,7 @@ bool sphereCastCapsule(
     const CcdOption& option,
     CcdResult& result)
 {
-  DART_UNUSED(option);
+  (void)option;
   result.clear();
 
   const double capsuleRadius = target.getRadius();
@@ -310,7 +308,7 @@ bool sphereCastPlane(
     const CcdOption& option,
     CcdResult& result)
 {
-  DART_UNUSED(option);
+  (void)option;
   result.clear();
 
   const Eigen::Vector3d worldNormal
@@ -356,7 +354,7 @@ bool sphereCastCylinder(
     const CcdOption& option,
     CcdResult& result)
 {
-  DART_UNUSED(option);
+  (void)option;
   result.clear();
 
   const double cylinderRadius = target.getRadius();
