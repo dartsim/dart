@@ -85,6 +85,36 @@ std::vector<Eigen::Vector3i> MakeBoxTriangles()
   };
 }
 
+bool requireCcdHit(
+    benchmark::State& state,
+    bool hit,
+    const CcdResult& result,
+    const char* message)
+{
+  if (!hit || !result.isHit()) {
+    state.SkipWithError(message);
+    return false;
+  }
+
+  return true;
+}
+
+void consumeCcdResult(bool hit, const CcdResult& result)
+{
+  bool resultHit = result.hit;
+  double timeOfImpact = result.timeOfImpact;
+  double pointX = result.point.x();
+  double normalX = result.normal.x();
+  auto* object = result.object;
+  benchmark::DoNotOptimize(hit);
+  benchmark::DoNotOptimize(resultHit);
+  benchmark::DoNotOptimize(timeOfImpact);
+  benchmark::DoNotOptimize(pointX);
+  benchmark::DoNotOptimize(normalX);
+  benchmark::DoNotOptimize(object);
+  benchmark::ClobberMemory();
+}
+
 } // namespace
 
 static void BM_CCD_SphereCast_Sphere(benchmark::State& state)
@@ -98,10 +128,21 @@ static void BM_CCD_SphereCast_Sphere(benchmark::State& state)
   CcdOption option = CcdOption::standard();
   CcdResult result;
 
+  CcdResult sanity;
+  if (!requireCcdHit(
+          state,
+          sphereCastSphere(
+              start, end, kSphereRadius, target, targetTf, option, sanity),
+          sanity,
+          "Sphere-sphere CCD benchmark setup did not hit.")) {
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(sphereCastSphere(
-        start, end, kSphereRadius, target, targetTf, option, result));
+    const bool hit = sphereCastSphere(
+        start, end, kSphereRadius, target, targetTf, option, result);
+    consumeCcdResult(hit, result);
   }
 }
 BENCHMARK(BM_CCD_SphereCast_Sphere);
@@ -117,10 +158,21 @@ static void BM_CCD_SphereCast_Box(benchmark::State& state)
   CcdOption option = CcdOption::standard();
   CcdResult result;
 
+  CcdResult sanity;
+  if (!requireCcdHit(
+          state,
+          sphereCastBox(
+              start, end, kSphereRadius, target, targetTf, option, sanity),
+          sanity,
+          "Sphere-box CCD benchmark setup did not hit.")) {
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(sphereCastBox(
-        start, end, kSphereRadius, target, targetTf, option, result));
+    const bool hit = sphereCastBox(
+        start, end, kSphereRadius, target, targetTf, option, result);
+    consumeCcdResult(hit, result);
   }
 }
 BENCHMARK(BM_CCD_SphereCast_Box);
@@ -136,10 +188,21 @@ static void BM_CCD_SphereCast_Plane(benchmark::State& state)
   CcdOption option = CcdOption::standard();
   CcdResult result;
 
+  CcdResult sanity;
+  if (!requireCcdHit(
+          state,
+          sphereCastPlane(
+              start, end, kSphereRadius, target, targetTf, option, sanity),
+          sanity,
+          "Sphere-plane CCD benchmark setup did not hit.")) {
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(sphereCastPlane(
-        start, end, kSphereRadius, target, targetTf, option, result));
+    const bool hit = sphereCastPlane(
+        start, end, kSphereRadius, target, targetTf, option, result);
+    consumeCcdResult(hit, result);
   }
 }
 BENCHMARK(BM_CCD_SphereCast_Plane);
@@ -155,10 +218,21 @@ static void BM_CCD_SphereCast_Cylinder(benchmark::State& state)
   CcdOption option = CcdOption::standard();
   CcdResult result;
 
+  CcdResult sanity;
+  if (!requireCcdHit(
+          state,
+          sphereCastCylinder(
+              start, end, kSphereRadius, target, targetTf, option, sanity),
+          sanity,
+          "Sphere-cylinder CCD benchmark setup did not hit.")) {
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(sphereCastCylinder(
-        start, end, kSphereRadius, target, targetTf, option, result));
+    const bool hit = sphereCastCylinder(
+        start, end, kSphereRadius, target, targetTf, option, result);
+    consumeCcdResult(hit, result);
   }
 }
 BENCHMARK(BM_CCD_SphereCast_Cylinder);
@@ -174,10 +248,21 @@ static void BM_CCD_SphereCast_Convex(benchmark::State& state)
   CcdOption option = CcdOption::standard();
   CcdResult result;
 
+  CcdResult sanity;
+  if (!requireCcdHit(
+          state,
+          sphereCastConvex(
+              start, end, kSphereRadius, target, targetTf, option, sanity),
+          sanity,
+          "Sphere-convex CCD benchmark setup did not hit.")) {
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(sphereCastConvex(
-        start, end, kSphereRadius, target, targetTf, option, result));
+    const bool hit = sphereCastConvex(
+        start, end, kSphereRadius, target, targetTf, option, result);
+    consumeCcdResult(hit, result);
   }
 }
 BENCHMARK(BM_CCD_SphereCast_Convex);
@@ -193,10 +278,21 @@ static void BM_CCD_SphereCast_Mesh(benchmark::State& state)
   CcdOption option = CcdOption::standard();
   CcdResult result;
 
+  CcdResult sanity;
+  if (!requireCcdHit(
+          state,
+          sphereCastMesh(
+              start, end, kSphereRadius, target, targetTf, option, sanity),
+          sanity,
+          "Sphere-mesh CCD benchmark setup did not hit.")) {
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(sphereCastMesh(
-        start, end, kSphereRadius, target, targetTf, option, result));
+    const bool hit = sphereCastMesh(
+        start, end, kSphereRadius, target, targetTf, option, result);
+    consumeCcdResult(hit, result);
   }
 }
 BENCHMARK(BM_CCD_SphereCast_Mesh);
@@ -213,10 +309,21 @@ static void BM_CCD_CapsuleCast_Capsule(benchmark::State& state)
   CcdOption option = CcdOption::standard();
   CcdResult result;
 
+  CcdResult sanity;
+  if (!requireCcdHit(
+          state,
+          capsuleCastCapsule(
+              startTf, endTf, capsule, capsule, targetTf, option, sanity),
+          sanity,
+          "Capsule-capsule CCD benchmark setup did not hit.")) {
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(capsuleCastCapsule(
-        startTf, endTf, capsule, capsule, targetTf, option, result));
+    const bool hit = capsuleCastCapsule(
+        startTf, endTf, capsule, capsule, targetTf, option, result);
+    consumeCcdResult(hit, result);
   }
 }
 BENCHMARK(BM_CCD_CapsuleCast_Capsule);
@@ -228,16 +335,27 @@ static void BM_CCD_CapsuleCast_Box(benchmark::State& state)
   const Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
 
   const Eigen::Isometry3d startTf
-      = MakeTransform(Eigen::Vector3d(-5.0, 0.0, 0.0));
-  const Eigen::Isometry3d endTf = MakeTransform(Eigen::Vector3d(5.0, 0.0, 0.0));
+      = MakeTransform(Eigen::Vector3d(0.0, 0.0, -5.0));
+  const Eigen::Isometry3d endTf = MakeTransform(Eigen::Vector3d(0.0, 0.0, 5.0));
 
   CcdOption option = CcdOption::standard();
   CcdResult result;
 
+  CcdResult sanity;
+  if (!requireCcdHit(
+          state,
+          capsuleCastBox(
+              startTf, endTf, capsule, target, targetTf, option, sanity),
+          sanity,
+          "Capsule-box CCD benchmark setup did not hit.")) {
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(capsuleCastBox(
-        startTf, endTf, capsule, target, targetTf, option, result));
+    const bool hit = capsuleCastBox(
+        startTf, endTf, capsule, target, targetTf, option, result);
+    consumeCcdResult(hit, result);
   }
 }
 BENCHMARK(BM_CCD_CapsuleCast_Box);
@@ -255,10 +373,21 @@ static void BM_CCD_CapsuleCast_Convex(benchmark::State& state)
   CcdOption option = CcdOption::standard();
   CcdResult result;
 
+  CcdResult sanity;
+  if (!requireCcdHit(
+          state,
+          capsuleCastConvex(
+              startTf, endTf, capsule, target, targetTf, option, sanity),
+          sanity,
+          "Capsule-convex CCD benchmark setup did not hit.")) {
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(capsuleCastConvex(
-        startTf, endTf, capsule, target, targetTf, option, result));
+    const bool hit = capsuleCastConvex(
+        startTf, endTf, capsule, target, targetTf, option, result);
+    consumeCcdResult(hit, result);
   }
 }
 BENCHMARK(BM_CCD_CapsuleCast_Convex);
@@ -276,10 +405,21 @@ static void BM_CCD_CapsuleCast_Mesh(benchmark::State& state)
   CcdOption option = CcdOption::standard();
   CcdResult result;
 
+  CcdResult sanity;
+  if (!requireCcdHit(
+          state,
+          capsuleCastMesh(
+              startTf, endTf, capsule, target, targetTf, option, sanity),
+          sanity,
+          "Capsule-mesh CCD benchmark setup did not hit.")) {
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(capsuleCastMesh(
-        startTf, endTf, capsule, target, targetTf, option, result));
+    const bool hit = capsuleCastMesh(
+        startTf, endTf, capsule, target, targetTf, option, result);
+    consumeCcdResult(hit, result);
   }
 }
 BENCHMARK(BM_CCD_CapsuleCast_Mesh);
@@ -297,10 +437,21 @@ static void BM_CCD_ConservativeAdvancement_Convex(benchmark::State& state)
   CcdOption option = CcdOption::standard();
   CcdResult result;
 
+  CcdResult sanity;
+  if (!requireCcdHit(
+          state,
+          conservativeAdvancement(
+              shapeA, startTf, endTf, shapeB, targetTf, option, sanity),
+          sanity,
+          "Conservative advancement benchmark setup did not hit.")) {
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(conservativeAdvancement(
-        shapeA, startTf, endTf, shapeB, targetTf, option, result));
+    const bool hit = conservativeAdvancement(
+        shapeA, startTf, endTf, shapeB, targetTf, option, result);
+    consumeCcdResult(hit, result);
   }
 }
 BENCHMARK(BM_CCD_ConservativeAdvancement_Convex);

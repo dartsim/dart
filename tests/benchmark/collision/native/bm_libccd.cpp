@@ -134,6 +134,48 @@ void configureCcd(
   ccd.mpr_tolerance = 1e-6;
 }
 
+void consumeIntersectResult(bool result)
+{
+  benchmark::DoNotOptimize(result);
+  benchmark::ClobberMemory();
+}
+
+void consumeGjkEpaResult(const GjkResult& gjk, const EpaResult& epa)
+{
+  bool intersecting = gjk.intersecting;
+  int simplexSize = gjk.simplex.size;
+  bool epaSuccess = epa.success;
+  double depth = epa.depth;
+  benchmark::DoNotOptimize(intersecting);
+  benchmark::DoNotOptimize(simplexSize);
+  benchmark::DoNotOptimize(epaSuccess);
+  benchmark::DoNotOptimize(depth);
+  benchmark::ClobberMemory();
+}
+
+void consumeMprResult(const MprResult& mpr)
+{
+  bool success = mpr.success;
+  double depth = mpr.depth;
+  double normalX = mpr.normal.x();
+  benchmark::DoNotOptimize(success);
+  benchmark::DoNotOptimize(depth);
+  benchmark::DoNotOptimize(normalX);
+  benchmark::ClobberMemory();
+}
+
+void consumeCcdPenetrationResult(
+    int status, double depth, const ccd_vec3_t& dir, const ccd_vec3_t& pos)
+{
+  double dirX = dir.v[0];
+  double posX = pos.v[0];
+  benchmark::DoNotOptimize(status);
+  benchmark::DoNotOptimize(depth);
+  benchmark::DoNotOptimize(dirX);
+  benchmark::DoNotOptimize(posX);
+  benchmark::ClobberMemory();
+}
+
 } // namespace
 
 static void BM_Dart_GjkIntersect_SphereSphere(benchmark::State& state)
@@ -145,9 +187,14 @@ static void BM_Dart_GjkIntersect_SphereSphere(benchmark::State& state)
   auto supportA = makeSphereSupport(centerA, radius);
   auto supportB = makeSphereSupport(centerB, radius);
 
+  if (!Gjk::intersect(supportA, supportB, centerB - centerA)) {
+    state.SkipWithError("DART GJK sphere-sphere setup did not intersect.");
+    return;
+  }
+
   for (auto _ : state) {
-    benchmark::DoNotOptimize(
-        Gjk::intersect(supportA, supportB, centerB - centerA));
+    const bool result = Gjk::intersect(supportA, supportB, centerB - centerA);
+    consumeIntersectResult(result);
   }
 }
 BENCHMARK(BM_Dart_GjkIntersect_SphereSphere);
@@ -160,8 +207,15 @@ static void BM_Libccd_GjkIntersect_SphereSphere(benchmark::State& state)
   ccd_t ccd;
   configureCcd(ccd, supportSphere, supportSphere, centerSphere, centerSphere);
 
+  if (ccdGJKIntersect(&sphereA, &sphereB, &ccd) != 1) {
+    state.SkipWithError("libccd GJK sphere-sphere setup did not intersect.");
+    return;
+  }
+
   for (auto _ : state) {
-    benchmark::DoNotOptimize(ccdGJKIntersect(&sphereA, &sphereB, &ccd));
+    int result = ccdGJKIntersect(&sphereA, &sphereB, &ccd);
+    benchmark::DoNotOptimize(result);
+    benchmark::ClobberMemory();
   }
 }
 BENCHMARK(BM_Libccd_GjkIntersect_SphereSphere);
@@ -175,12 +229,16 @@ static void BM_Dart_GjkEpa_SphereSphere(benchmark::State& state)
   auto supportA = makeSphereSupport(centerA, radius);
   auto supportB = makeSphereSupport(centerB, radius);
 
+  const GjkResult sanityGjk = Gjk::query(supportA, supportB, centerB - centerA);
+  if (!sanityGjk.intersecting) {
+    state.SkipWithError("DART GJK/EPA sphere-sphere setup did not intersect.");
+    return;
+  }
+
   for (auto _ : state) {
     GjkResult gjk = Gjk::query(supportA, supportB, centerB - centerA);
-    if (gjk.intersecting) {
-      EpaResult epa = Epa::penetration(supportA, supportB, gjk.simplex);
-      benchmark::DoNotOptimize(epa);
-    }
+    EpaResult epa = Epa::penetration(supportA, supportB, gjk.simplex);
+    consumeGjkEpaResult(gjk, epa);
   }
 }
 BENCHMARK(BM_Dart_GjkEpa_SphereSphere);
@@ -193,12 +251,23 @@ static void BM_Libccd_GjkEpa_SphereSphere(benchmark::State& state)
   ccd_t ccd;
   configureCcd(ccd, supportSphere, supportSphere, centerSphere, centerSphere);
 
+  double sanityDepth = 0.0;
+  ccd_vec3_t sanityDir;
+  ccd_vec3_t sanityPos;
+  if (ccdGJKPenetration(
+          &sphereA, &sphereB, &ccd, &sanityDepth, &sanityDir, &sanityPos)
+      != 0) {
+    state.SkipWithError("libccd GJK/EPA sphere-sphere setup did not collide.");
+    return;
+  }
+
   for (auto _ : state) {
     double depth = 0.0;
     ccd_vec3_t dir;
     ccd_vec3_t pos;
-    benchmark::DoNotOptimize(
-        ccdGJKPenetration(&sphereA, &sphereB, &ccd, &depth, &dir, &pos));
+    const int status
+        = ccdGJKPenetration(&sphereA, &sphereB, &ccd, &depth, &dir, &pos);
+    consumeCcdPenetrationResult(status, depth, dir, pos);
   }
 }
 BENCHMARK(BM_Libccd_GjkEpa_SphereSphere);
@@ -212,9 +281,14 @@ static void BM_Dart_Mpr_SphereSphere(benchmark::State& state)
   auto supportA = makeSphereSupport(centerA, radius);
   auto supportB = makeSphereSupport(centerB, radius);
 
+  if (!Mpr::penetration(supportA, supportB, centerA, centerB).success) {
+    state.SkipWithError("DART MPR sphere-sphere setup did not collide.");
+    return;
+  }
+
   for (auto _ : state) {
     MprResult mpr = Mpr::penetration(supportA, supportB, centerA, centerB);
-    benchmark::DoNotOptimize(mpr);
+    consumeMprResult(mpr);
   }
 }
 BENCHMARK(BM_Dart_Mpr_SphereSphere);
@@ -227,12 +301,23 @@ static void BM_Libccd_Mpr_SphereSphere(benchmark::State& state)
   ccd_t ccd;
   configureCcd(ccd, supportSphere, supportSphere, centerSphere, centerSphere);
 
+  double sanityDepth = 0.0;
+  ccd_vec3_t sanityDir;
+  ccd_vec3_t sanityPos;
+  if (ccdMPRPenetration(
+          &sphereA, &sphereB, &ccd, &sanityDepth, &sanityDir, &sanityPos)
+      != 0) {
+    state.SkipWithError("libccd MPR sphere-sphere setup did not collide.");
+    return;
+  }
+
   for (auto _ : state) {
     double depth = 0.0;
     ccd_vec3_t dir;
     ccd_vec3_t pos;
-    benchmark::DoNotOptimize(
-        ccdMPRPenetration(&sphereA, &sphereB, &ccd, &depth, &dir, &pos));
+    const int status
+        = ccdMPRPenetration(&sphereA, &sphereB, &ccd, &depth, &dir, &pos);
+    consumeCcdPenetrationResult(status, depth, dir, pos);
   }
 }
 BENCHMARK(BM_Libccd_Mpr_SphereSphere);
@@ -246,9 +331,14 @@ static void BM_Dart_GjkIntersect_BoxBox(benchmark::State& state)
   auto supportA = makeBoxSupport(centerA, halfExtents);
   auto supportB = makeBoxSupport(centerB, halfExtents);
 
+  if (!Gjk::intersect(supportA, supportB, centerB - centerA)) {
+    state.SkipWithError("DART GJK box-box setup did not intersect.");
+    return;
+  }
+
   for (auto _ : state) {
-    benchmark::DoNotOptimize(
-        Gjk::intersect(supportA, supportB, centerB - centerA));
+    const bool result = Gjk::intersect(supportA, supportB, centerB - centerA);
+    consumeIntersectResult(result);
   }
 }
 BENCHMARK(BM_Dart_GjkIntersect_BoxBox);
@@ -263,8 +353,15 @@ static void BM_Libccd_GjkIntersect_BoxBox(benchmark::State& state)
   ccd_t ccd;
   configureCcd(ccd, supportBox, supportBox, centerBox, centerBox);
 
+  if (ccdGJKIntersect(&boxA, &boxB, &ccd) != 1) {
+    state.SkipWithError("libccd GJK box-box setup did not intersect.");
+    return;
+  }
+
   for (auto _ : state) {
-    benchmark::DoNotOptimize(ccdGJKIntersect(&boxA, &boxB, &ccd));
+    int result = ccdGJKIntersect(&boxA, &boxB, &ccd);
+    benchmark::DoNotOptimize(result);
+    benchmark::ClobberMemory();
   }
 }
 BENCHMARK(BM_Libccd_GjkIntersect_BoxBox);
