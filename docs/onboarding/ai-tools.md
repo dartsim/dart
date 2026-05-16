@@ -500,6 +500,28 @@ This avoids noisy bot-to-bot conversations while still leveraging automated veri
 
 > **Note**: False positives can recur across reviews. Tests that explicitly refute incorrect claims prevent future confusion and document the verification.
 
+### First Codex Review After Publishing A Draft
+
+When a draft PR is first marked ready for review, Codex review is expected to
+start automatically. The PR body may show a small Codex activity indicator, such
+as an eyes/count badge, before the submitted review appears.
+
+Do not immediately post `@codex review` for the first review. Wait a reasonable
+time for either the activity indicator or a submitted Codex review. Consider a
+manual `@codex review` only after that wait if neither signal appears, or when a
+follow-up push needs a fresh review. A manual trigger is a PR comment and still
+requires explicit maintainer/user approval.
+
+### Updating Published PRs
+
+Prefer additive follow-up commits for updates to already-published PRs. This
+keeps review history inspectable and makes each review round clear.
+
+Amend or force-push only when the user explicitly requests it or when there is a
+clear reason, such as removing sensitive content, repairing broken branch
+history, or cleaning up noisy local work before the PR is first published.
+Force-pushes are PR mutations and require explicit maintainer/user approval.
+
 ### Review-Fix Loop Workflow
 
 After identifying an AI-generated review comment to address:
@@ -509,7 +531,8 @@ After identifying an AI-generated review comment to address:
 3. **Ask for explicit maintainer/user approval before external mutations**
 4. **If approved, commit and push** silently (no reply to the comment)
 5. **If approved, resolve the thread** using GraphQL (see commands below)
-6. **If approved, re-trigger the review**: `gh pr comment <PR> --body "@codex review"`
+6. **If approved and needed after a follow-up push, re-trigger the review**:
+   `gh pr comment <PR> --body "@codex review"`
 7. **Monitor for results**:
    - New review comments → repeat from step 1
    - "No issues" or 👍 reaction → done, PR is ready for human review
@@ -569,7 +592,8 @@ For agents iterating on automated reviews, the complete loop is:
    d. Ask for explicit maintainer/user approval before push or PR mutation
 3. If approved, commit and push silently (no reply to bot comment)
 4. If approved, resolve addressed threads via GraphQL
-5. If approved, re-trigger: `gh pr comment <PR> --body "@codex review"`
+5. If approved and needed after a follow-up push, re-trigger:
+   `gh pr comment <PR> --body "@codex review"`
 6. Monitor CI: `gh pr checks <PR>`
 7. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
 8. If new review has comments → go to step 2

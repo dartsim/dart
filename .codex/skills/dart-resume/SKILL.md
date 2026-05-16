@@ -56,8 +56,12 @@ and ask.
 - Run relevant tests; use `pixi run test-all` before done when feasible.
 - Push with `git push -u origin HEAD` and create/update the PR only after
   explicit maintainer/user approval.
+- For already-published PRs, prefer additive follow-up commits. Amend or
+  force-push only after explicit maintainer/user approval and only when the user
+  explicitly requests it or when there is a clear reason such as removing
+  sensitive content or repairing broken branch history.
 
 ## Safety
 
 No destructive git commands (`reset --hard`, dropping stashes, deleting branches)
-without explicit confirmation.
+without explicit maintainer/user approval.
