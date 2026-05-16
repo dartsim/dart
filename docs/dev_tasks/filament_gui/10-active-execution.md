@@ -1042,6 +1042,61 @@ Seventeenth source-ownership checkpoint:
   - `git diff --check`
 - Remaining GUI macro launchers after this slice: `soft_bodies` and `vehicle`.
 
+Eighteenth source-ownership checkpoint:
+
+- Restore the final GUI scene macro launchers as real public-API sources:
+  `soft_bodies` and `vehicle`.
+- Move `soft_bodies` back to `examples/soft_bodies/main.cpp` by loading
+  `dart://sample/skel/softBodies.skel` directly, owning the `World`, and
+  replacing the old OSG recording key handler with a public `dart::gui::Panel`
+  that records, rewinds, advances, restarts, and jumps to the latest captured
+  soft-body state.
+- Move `vehicle` back to `examples/vehicle/main.cpp` by loading
+  `dart://sample/skel/vehicle.skel` directly, preserving the historical
+  gravity, car/ground/obstacle naming and colors, and replacing the old OSG
+  keyboard handler with a public `dart::gui::Panel` plus `options.preStep`
+  controller that applies wheel velocities and steering forces to the vehicle
+  skeleton.
+- Switch both CMake files to `dart_build_gui_example(...)`, and remove the
+  Python runner's injected `--scene vehicle` and `--scene soft-bodies`
+  defaults.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `soft_bodies`, `vehicle`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for both examples
+  - Sequential pixi-runner screenshot capture for both examples
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+- Implementation state for this slice: `examples/soft_bodies/main.cpp` now owns
+  `softBodies.skel`, `SoftBodyHistory`, state capture/restore, and the public
+  playback panel. `examples/vehicle/main.cpp` now owns `vehicle.skel`, gravity,
+  visual naming/color parity, a public panel, and an `options.preStep`
+  controller for wheel/steering forces. The Python runner no longer injects
+  scene defaults for either executable.
+- Local evidence so far:
+  - C++ GUI target build for `soft_bodies`, `vehicle`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (`66 passed`)
+  - Direct headless screenshot capture for `soft_bodies` and `vehicle`
+    (`2764816` bytes each)
+  - Sequential pixi-runner screenshot capture for `soft_bodies` and `vehicle`
+    (`921615` bytes each)
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - Post-lint focused C++ GUI target build for `soft_bodies`, `vehicle`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint Python runner tests (`66 passed`)
+  - `git diff --check`
+- Remaining GUI macro launchers after this slice: none. The source-ownership
+  phase still requires a final parity audit of all restored examples and
+  follow-up cleanup of now-unused fixture-only private scene plumbing.
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:

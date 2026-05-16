@@ -79,6 +79,9 @@
   - Moved the interaction/event examples (`empty` and
     `simulation_event_handler`) off private named-scene fixture launchers so
     their example sources own public frames, sensors, and panels directly.
+  - Moved the soft-body and vehicle examples (`soft_bodies` and `vehicle`) off
+    private named-scene fixture launchers so their example sources own imported
+    worlds, public panels, and simulation controls directly.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

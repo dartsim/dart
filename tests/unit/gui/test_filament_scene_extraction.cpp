@@ -654,7 +654,9 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
       {std::filesystem::path("examples") / "lcp_physics", true},
       {std::filesystem::path("examples") / "mimic_pendulums", true},
       {std::filesystem::path("examples") / "empty", true},
-      {std::filesystem::path("examples") / "simulation_event_handler", true}};
+      {std::filesystem::path("examples") / "simulation_event_handler", true},
+      {std::filesystem::path("examples") / "soft_bodies", true},
+      {std::filesystem::path("examples") / "vehicle", true}};
   std::vector<std::filesystem::path> sources;
   for (const auto& example : examples) {
     sources.push_back(example.directory / "main.cpp");
@@ -866,6 +868,34 @@ TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
   EXPECT_NE(eventSource.find("world->addSensor"), std::string::npos);
   EXPECT_NE(eventSource.find("options.world"), std::string::npos);
   EXPECT_EQ(eventSource.find("options.defaultScene"), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, SoftBodiesAndVehicleExamplesPreserveParityMarkers)
+{
+  const auto softBodiesSource = readSourceFile(
+      std::filesystem::path("examples") / "soft_bodies" / "main.cpp");
+  EXPECT_NE(
+      softBodiesSource.find("dart://sample/skel/softBodies.skel"),
+      std::string::npos);
+  EXPECT_NE(softBodiesSource.find("class SoftBodyHistory"), std::string::npos);
+  EXPECT_NE(softBodiesSource.find("captureStepStart"), std::string::npos);
+  EXPECT_NE(softBodiesSource.find("moveBackward"), std::string::npos);
+  EXPECT_NE(softBodiesSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(softBodiesSource.find("options.world"), std::string::npos);
+  EXPECT_EQ(softBodiesSource.find("options.defaultScene"), std::string::npos);
+
+  const auto vehicleSource = readSourceFile(
+      std::filesystem::path("examples") / "vehicle" / "main.cpp");
+  EXPECT_NE(
+      vehicleSource.find("dart://sample/skel/vehicle.skel"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("visual_vehicle_car"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("wheel_front_left"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("kWheelSpeedCommand"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("mBackWheelVelocity"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("forces[6]"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(vehicleSource.find("options.world"), std::string::npos);
+  EXPECT_EQ(vehicleSource.find("options.defaultScene"), std::string::npos);
 }
 
 TEST(
