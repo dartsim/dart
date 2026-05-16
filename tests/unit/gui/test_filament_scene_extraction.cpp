@@ -890,6 +890,41 @@ TEST(FilamentSceneExtraction, RigidShapesExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("Keys: q box"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, BipedStandExamplePreservesLegacyParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "biped_stand" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "biped_stand" / "README.md");
+
+  EXPECT_NE(mainSource.find("BipedStandController"), std::string::npos);
+  EXPECT_NE(mainSource.find("controller->preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("controller->perturb"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("createBipedStandKeyboardActions"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey(key)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(50.0, 0.0, 0.0)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(-50.0, 0.0, 0.0)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(0.0, 0.0, 50.0)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(0.0, 0.0, -50.0)"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeBipedStandRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeBipedStandCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d::Zero()"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("Keys: 1 +X"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Biped Stand Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("keyboard actions"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, AddDeleteSkelsExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(

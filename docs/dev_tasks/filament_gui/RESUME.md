@@ -130,7 +130,13 @@ overrides. The active slice is now `examples/rigid_shapes`: restore the
 historical `q`/`w`/`e`/`r` shape-spawn controls, `a` delete-last control, `c`
 contact-point toggle, convex mesh spawn path, camera home, and 640x480 default
 launch size through public `dart::gui`, plus the rigid-shapes-specific
-collision-detector, max-contact, and ground-thickness command-line options.
+collision-detector, max-contact, and ground-thickness command-line options;
+that checkpoint is implemented and pushed. The active slice is now
+`examples/biped_stand`: restore the historical `1`-`4` perturbation keys,
+camera home, 640x480 default launch size, and README through promoted
+`dart::gui`. That checkpoint is implemented and locally validated; commit and
+push it before selecting the next pre-existing example for source-owned parity
+restoration.
 Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
 Atlas/Hubo target activation semantics, and Enter recording as explicit parity
 gaps unless a later slice adds the narrow renderer-neutral public API needed

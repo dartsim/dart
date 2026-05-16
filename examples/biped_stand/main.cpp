@@ -44,6 +44,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -264,6 +265,7 @@ dart::gui::Panel createBipedStandPanel(
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     builder.text("SPD standing controller with panel perturbations");
+    builder.text("Keys: 1 +X, 2 -X, 3 +Z, 4 -Z push for 100 frames.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -296,6 +298,57 @@ dart::gui::Panel createBipedStandPanel(
   return panel;
 }
 
+dart::gui::OrbitCamera makeBipedStandCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.4636476090008061;
+  camera.pitch = 0.7297276562269663;
+  camera.distance = 4.5;
+  return camera;
+}
+
+dart::gui::RunOptions makeBipedStandRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::KeyboardAction makeBipedStandAction(
+    std::shared_ptr<BipedStandController> controller,
+    char key,
+    std::string label,
+    const Eigen::Vector3d& force)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback = [controller = std::move(controller),
+                     force](dart::gui::KeyboardActionContext&) {
+    if (controller != nullptr) {
+      controller->perturb(force);
+    }
+  };
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createBipedStandKeyboardActions(
+    const std::shared_ptr<BipedStandController>& controller)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makeBipedStandAction(
+      controller, '1', "Push +X", Eigen::Vector3d(50.0, 0.0, 0.0)));
+  actions.push_back(makeBipedStandAction(
+      controller, '2', "Push -X", Eigen::Vector3d(-50.0, 0.0, 0.0)));
+  actions.push_back(makeBipedStandAction(
+      controller, '3', "Push +Z", Eigen::Vector3d(0.0, 0.0, 50.0)));
+  actions.push_back(makeBipedStandAction(
+      controller, '4', "Push -Z", Eigen::Vector3d(0.0, 0.0, -50.0)));
+  return actions;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -307,9 +360,12 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = world;
+    options.runDefaults = makeBipedStandRunDefaults();
+    options.camera = makeBipedStandCamera();
     options.preStep = [controller]() {
       controller->preStep();
     };
+    options.keyboardActions = createBipedStandKeyboardActions(controller);
     options.panels.push_back(createBipedStandPanel(controller));
 
     return dart::gui::runApplication(argc, argv, options);

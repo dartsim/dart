@@ -96,7 +96,13 @@ command-line overrides. The next active parity slice is `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default
 launch size through public `dart::gui`, plus the rigid-shapes-specific
-collision-detector, max-contact, and ground-thickness command-line options.
+collision-detector, max-contact, and ground-thickness command-line options;
+that checkpoint is implemented and pushed. The next active parity slice is
+`examples/biped_stand`: restore the historical `1`-`4` perturbation keys,
+camera home, 640x480 default launch size, and README through promoted
+`dart::gui`. That checkpoint is implemented and locally validated; the next
+operational step is committing and pushing it, then selecting the next
+pre-existing example for source-owned parity restoration.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

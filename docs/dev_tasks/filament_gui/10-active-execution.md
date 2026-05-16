@@ -2121,6 +2121,51 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
     width/height plus `analyze_headless_smoke.py`
     (`/tmp/dart_rigid_shapes_direct_postlint.ppm`, 307200/307200 nonzero
     pixels)
+- Implementation status: pushed as
+  `161d6a16be4 Restore rigid shapes controls`.
+
+Thirty-ninth biped-stand parity checkpoint:
+
+- Historical `examples/biped_stand` loaded `fullbody1.skel`, ran the SPD
+  standing controller, exposed `1` through `4` as perturbation keys
+  (`+X`, `-X`, `+Z`, `-Z` for 100 frames), printed those controls, used a
+  640x480 viewer, set camera home from eye `(3, 1.5, 3)` to target
+  `(0, 0, 0)`, and had an example README.
+- Current promoted source owns the controller and panel perturbation buttons,
+  but it does not restore the legacy number-key actions, camera/run defaults,
+  or README.
+- Scope before code changes: add renderer-neutral `KeyboardAction`s for
+  `1` through `4`, set the historical camera and 640x480 defaults through
+  public `ApplicationOptions`, restore the README with promoted `dart::gui`
+  wording, update the panel text, tests, and changelog, and keep the controller
+  source-owned without private renderer hooks.
+- Implementation status: biped-stand source now restores renderer-neutral
+  number-key perturbation actions, panel help text, camera/run defaults, and
+  the example README through promoted `dart::gui`.
+- Local acceptance completed for this checkpoint:
+  - `cmake --build build/default/cpp/Release --target biped_stand
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe biped-stand screenshot without explicit width/height plus
+    `analyze_headless_smoke.py` (`/tmp/dart_biped_stand_direct.ppm`,
+    307200/307200 nonzero pixels)
+  - `pixi run ex biped_stand --headless --frames 2 --screenshot
+/tmp/dart_biped_stand_pixi.ppm` plus `analyze_headless_smoke.py`
+    (307200/307200 nonzero pixels)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target biped_stand
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe biped-stand screenshot without explicit
+    width/height plus `analyze_headless_smoke.py`
+    (`/tmp/dart_biped_stand_direct_postlint.ppm`, 307200/307200 nonzero
+    pixels)
 
 ## Stretch Direction
 
@@ -2152,8 +2197,7 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore rigid-shapes keyboard spawning, convex mesh, contact-point toggle,
-   camera home, and default run size through public `dart::gui`.
+1. Commit and push the validated biped-stand parity checkpoint.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

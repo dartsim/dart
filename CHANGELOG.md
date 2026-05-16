@@ -130,6 +130,8 @@
   - Restored rigid-shapes example spawn/delete/contact keyboard controls,
     convex mesh spawning, contact-point visualization, rigid-shapes-specific
     command-line options, and camera/run defaults through public `dart::gui`.
+  - Restored biped-stand example perturbation keyboard controls, camera/run
+    defaults, and example README through public `dart::gui`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+
