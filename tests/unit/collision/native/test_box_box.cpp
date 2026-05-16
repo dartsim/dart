@@ -542,6 +542,156 @@ TEST(BoxBox, SatAxisStableForNearFaceBoxGroundPerturbations)
   }
 }
 
+TEST(BoxBox, EdgeEdgeTiltedContactEmitsSingleSupportPoint)
+{
+  const Eigen::Vector3d halfExtents(2.0, 0.08, 0.08);
+  const Eigen::Isometry3d box1Tf = Eigen::Isometry3d::Identity();
+  const dart::collision::native::box_box::BoxData box1{
+      box1Tf.translation(), halfExtents, box1Tf.rotation()};
+
+  Eigen::Isometry3d box2Tf = Eigen::Isometry3d::Identity();
+  box2Tf.linear() << 0.5195097239462093, -0.22755680602979128,
+      -0.8236064270966159, -0.06965685052231302, 0.9493991403131945,
+      -0.30625021722095036, 0.8516205551186782, 0.21646979558840784,
+      0.47737119487592405;
+  box2Tf.translation() = Eigen::Vector3d(
+      -0.038403205753238676, -0.1346570769876879, -0.14933261157368102);
+  const dart::collision::native::box_box::BoxData box2{
+      box2Tf.translation(), halfExtents, box2Tf.rotation()};
+
+  dart::collision::native::box_box::SatResult sat;
+  ASSERT_TRUE(
+      dart::collision::native::box_box::computeBoxBoxSat(box1, box2, sat));
+  EXPECT_EQ(sat.axisType, dart::collision::native::box_box::SatAxisType::Edge);
+  EXPECT_EQ(sat.axisIndex, 6);
+  EXPECT_TRUE(sat.normal.allFinite());
+  EXPECT_NEAR(sat.normal.norm(), 1.0, 1e-12);
+
+  CollisionResult result;
+  CollisionOption option;
+  option.maxNumContacts = 8;
+  ASSERT_TRUE(
+      collideBoxes(halfExtents, box1Tf, halfExtents, box2Tf, result, option));
+  ASSERT_EQ(result.numManifolds(), 1u);
+  EXPECT_EQ(result.getManifold(0).getType(), ContactType::Edge);
+  ASSERT_EQ(result.numContacts(), 1u);
+  const auto& contact = result.getContact(0);
+  EXPECT_TRUE(contact.position.allFinite());
+  EXPECT_TRUE(contact.normal.allFinite());
+  EXPECT_GT(contact.depth, 0.0);
+  EXPECT_NEAR(contact.normal.norm(), 1.0, 1e-12);
+}
+
+TEST(BoxBox, FaceVertexContactAgainstGroundFace)
+{
+  const Eigen::Vector3d boxHalfExtents(0.20, 0.30, 0.40);
+  const Eigen::Vector3d groundHalfExtents(5.0, 5.0, 0.05);
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.linear() = (Eigen::AngleAxisd(0.63, Eigen::Vector3d::UnitX())
+                    * Eigen::AngleAxisd(-0.52, Eigen::Vector3d::UnitY())
+                    * Eigen::AngleAxisd(0.41, Eigen::Vector3d::UnitZ()))
+                       .toRotationMatrix();
+
+  Eigen::Vector3d lowestLocalVertex = Eigen::Vector3d::Zero();
+  double lowestVertexZ = std::numeric_limits<double>::infinity();
+  for (const double sx : {-1.0, 1.0}) {
+    for (const double sy : {-1.0, 1.0}) {
+      for (const double sz : {-1.0, 1.0}) {
+        const Eigen::Vector3d localVertex(
+            sx * boxHalfExtents.x(),
+            sy * boxHalfExtents.y(),
+            sz * boxHalfExtents.z());
+        const Eigen::Vector3d rotatedVertex = boxTf.linear() * localVertex;
+        if (rotatedVertex.z() < lowestVertexZ) {
+          lowestVertexZ = rotatedVertex.z();
+          lowestLocalVertex = localVertex;
+        }
+      }
+    }
+  }
+
+  const double penetration = 0.01;
+  const double groundTop = groundHalfExtents.z();
+  boxTf.translation()
+      = Eigen::Vector3d(0.15, -0.10, groundTop - lowestVertexZ - penetration);
+  const Eigen::Vector3d expectedVertex = boxTf * lowestLocalVertex;
+
+  Eigen::Isometry3d groundTf = Eigen::Isometry3d::Identity();
+
+  CollisionResult result;
+  CollisionOption option;
+  option.maxNumContacts = 8;
+  ASSERT_TRUE(collideBoxes(
+      boxHalfExtents, boxTf, groundHalfExtents, groundTf, result, option));
+  ASSERT_GE(result.numContacts(), 1u);
+  ASSERT_LE(result.numContacts(), 4u);
+
+  double closestDistance = std::numeric_limits<double>::infinity();
+  for (const auto& manifold : result.getManifolds()) {
+    for (const auto& contact : manifold.getContacts()) {
+      EXPECT_TRUE(contact.position.allFinite());
+      EXPECT_TRUE(contact.normal.allFinite());
+      EXPECT_GT(contact.normal.z(), 0.6)
+          << "position=" << contact.position.transpose()
+          << " normal=" << contact.normal.transpose();
+      EXPECT_GE(contact.depth, 0.0);
+      closestDistance = std::min(
+          closestDistance, (contact.position - expectedVertex).norm());
+    }
+  }
+
+  EXPECT_LT(closestDistance, 0.05)
+      << "expected vertex=" << expectedVertex.transpose();
+}
+
+TEST(BoxBox, SatAxisFaceBiasTiePrefersFace)
+{
+  const Eigen::Vector3d halfExtents(1.0, 1.0, 1.0);
+  const Eigen::Isometry3d box1Tf = Eigen::Isometry3d::Identity();
+  const dart::collision::native::box_box::BoxData box1{
+      box1Tf.translation(), halfExtents, box1Tf.rotation()};
+
+  Eigen::Isometry3d box2Tf = Eigen::Isometry3d::Identity();
+  box2Tf.linear() << 0.9931958804661412, 0.11587467619999768,
+      -0.011619055066231654, -0.11301993020561968, 0.9831403341293836,
+      0.14374136072919544, 0.02807914531112528, -0.14145014253619373,
+      0.9895470775941321;
+  box2Tf.translation() = Eigen::Vector3d(
+      1.9109651304887858, -0.009774674473954012, -0.06826065396649084);
+  const dart::collision::native::box_box::BoxData box2{
+      box2Tf.translation(), halfExtents, box2Tf.rotation()};
+
+  dart::collision::native::box_box::SatResult sat;
+  ASSERT_TRUE(
+      dart::collision::native::box_box::computeBoxBoxSat(box1, box2, sat));
+  EXPECT_EQ(sat.axisType, dart::collision::native::box_box::SatAxisType::Face);
+  EXPECT_EQ(sat.axisIndex, 0);
+  EXPECT_TRUE(sat.normal.allFinite());
+  EXPECT_NEAR(sat.normal.norm(), 1.0, 1e-12);
+}
+
+TEST(BoxBox, SatSkipsDegenerateCrossAxes)
+{
+  const Eigen::Vector3d halfExtents(1.0, 1.0, 1.0);
+  const Eigen::Isometry3d box1Tf = Eigen::Isometry3d::Identity();
+  const dart::collision::native::box_box::BoxData box1{
+      box1Tf.translation(), halfExtents, box1Tf.rotation()};
+
+  Eigen::Isometry3d box2Tf = Eigen::Isometry3d::Identity();
+  box2Tf.rotate(Eigen::AngleAxisd(1e-8, Eigen::Vector3d::UnitZ()));
+  box2Tf.translation() = Eigen::Vector3d(1.9, 0.0, 0.0);
+  const dart::collision::native::box_box::BoxData box2{
+      box2Tf.translation(), halfExtents, box2Tf.rotation()};
+
+  dart::collision::native::box_box::SatResult sat;
+  ASSERT_TRUE(
+      dart::collision::native::box_box::computeBoxBoxSat(box1, box2, sat));
+  EXPECT_EQ(sat.axisType, dart::collision::native::box_box::SatAxisType::Face);
+  EXPECT_TRUE(sat.normal.allFinite());
+  EXPECT_NEAR(sat.normal.norm(), 1.0, 1e-12);
+}
+
 TEST(BoxBox, Determinism)
 {
   std::vector<ContactPoint> contacts;

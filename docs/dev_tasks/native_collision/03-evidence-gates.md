@@ -2942,6 +2942,18 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     suppression helper. The final full local validation for this working tree
     passed 6/6 top-level `test-all` gates: linting, build, unit tests,
     simulation-experimental tests, Python tests, and documentation.
+- Current local raw box-box gap-closure refresh:
+  - Commit: current working tree after local head `4d5f07eebbf`
+    (`Stabilize native box-box contact patches`).
+  - Commands:
+    `cmake --build build/default/cpp/Release --target test_box_box --parallel "$JOBS"`
+    and
+    `ctest -j "$JOBS" --test-dir build/default/cpp/Release --output-on-failure -R '^test_box_box$'`.
+  - Result: passed. `test_box_box` now covers the remaining raw box-box
+    Round 7 gaps: tilted edge-edge support contact, one vertex against an
+    opposing face, direct SAT face-axis tie bias, and degenerate cross-axis
+    skipping. The executable passed 26/26 tests after the new coverage was
+    added.
 
 ## Known Risks
 

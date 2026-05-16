@@ -77,8 +77,8 @@ normals flip).
 | `boxbox_separated_axis_xyz`          | DONE   | `test_box_box.cpp`                                                 |                                                               |
 | `boxbox_touching`                    | DONE   | `test_box_box.cpp`                                                 |                                                               |
 | `boxbox_overlapping_face_patch`      | DONE   | `test_box_box.cpp::RotatedBoxOnFlatGroundEmitsFacePatch`           | Rotated near-face patch emits >=3 clipped contacts            |
-| `boxbox_edge_edge`                   | GAP    | —                                                                  | Edge-edge tilted contact — Round 7                            |
-| `boxbox_face_vertex`                 | GAP    | —                                                                  | One vertex against opposing face — Round 7                    |
+| `boxbox_edge_edge`                   | DONE   | `test_box_box.cpp::EdgeEdgeTiltedContactEmitsSingleSupportPoint`   | Edge-edge tilted contact — Round 7                            |
+| `boxbox_face_vertex`                 | DONE   | `test_box_box.cpp::FaceVertexContactAgainstGroundFace`             | One vertex against opposing face — Round 7                    |
 | `boxbox_rotated_on_ground`           | DONE   | `test_box_box.cpp` + `test_world.cpp`                              | Static contact patch + dynamic rest checks                    |
 | `boxbox_rotated_settles_on_face`     | DONE   | `test_world.cpp::DefaultNativeRotatedBoxSettlesOnFace`             | Dynamic rest condition — Round 7 acceptance #2                |
 | `boxbox_15s_no_tunneling`            | DONE   | `test_world.cpp::DefaultNativeRotatedBoxStaysOnGround15s`          | Long-horizon stability — Round 7 acceptance #3                |
@@ -166,8 +166,8 @@ Bar per row: at least one test exercises the algorithm in isolation
 | `mpr_libccd_parity`                   | DONE    | `test_libccd_algorithms.cpp`                                       |                                                                        |
 | `sat_box_axes`                        | DONE    | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations` | Calls `computeBoxBoxSat` directly                                      |
 | `sat_axis_no_flicker`                 | DONE    | `test_box_box.cpp::SatAxisStableForNearFaceBoxGroundPerturbations` | Round 7 acceptance #5                                                  |
-| `sat_axis_face_bias_tie`              | GAP     | —                                                                  | Round 7 RC3 fix verification                                           |
-| `sat_skip_degenerate_cross_axes`      | GAP     | —                                                                  | Round 7 RC2 fix verification                                           |
+| `sat_axis_face_bias_tie`              | DONE    | `test_box_box.cpp::SatAxisFaceBiasTiePrefersFace`                  | Round 7 RC3 fix verification                                           |
+| `sat_skip_degenerate_cross_axes`      | DONE    | `test_box_box.cpp::SatSkipsDegenerateCrossAxes`                    | Round 7 RC2 fix verification                                           |
 | `bvh_build_from_triangles`            | PARTIAL | `test_shapes.cpp::MeshShape.BvhLargeMesh`                          | No build-time guarantees                                               |
 | `bvh_build_from_points`               | GAP     | —                                                                  |                                                                        |
 | `bvh_traversal_hit`                   | DONE    | `test_mesh_mesh.cpp::RaycastMesh.BvhTraversalHit`                  |                                                                        |
@@ -346,38 +346,34 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 ## Summary Counters (as of 2026-05-15)
 
-- **§1 Pair-wise narrow-phase:** 56 DONE, 0 PARTIAL, 24 GAP (of 80 rows)
-- **§2 Algorithm-level:** 25 DONE, 4 PARTIAL, 15 GAP (of 44 rows)
+- **§1 Pair-wise narrow-phase:** 58 DONE, 0 PARTIAL, 22 GAP (of 80 rows)
+- **§2 Algorithm-level:** 27 DONE, 4 PARTIAL, 13 GAP (of 44 rows)
 - **§3 Stress / regression:** 17 DONE, 1 PARTIAL, 15 GAP (of 33 rows)
 - **§4 Benchmarks:** 17 DONE, 0 PARTIAL, 11 GAP (of 28 rows)
 - **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 123 DONE, 5 PARTIAL, 66 GAP (of 194 rows)
+- **TOTAL:** 127 DONE, 5 PARTIAL, 62 GAP (of 194 rows)
 
-DART native is currently at ~63% of the proposed superset, with the
-remaining 37% concentrated in: (a) less-common shape pairs against
+DART native is currently at ~65% of the proposed superset, with the
+remaining 35% concentrated in: (a) less-common shape pairs against
 capsule/cylinder/mesh/convex/sdf/compound, (b) algorithm-isolation
 tests for SAT internals, (c) long-horizon stability and stress scenes,
 (d) per-engine raw-narrow-phase parity benchmarks.
 
 ## Next Priorities (TDD order)
 
-1. **Remaining raw box-box GAPs** — `boxbox_edge_edge`,
-   `boxbox_face_vertex`, `sat_axis_face_bias_tie`, and
-   `sat_skip_degenerate_cross_axes`.
-2. **Q4 bench parity** — `bench_narrow_phase_per_pair_adapter` + raw
+1. **Q4 bench parity** — `bench_narrow_phase_per_pair_adapter` + raw
    reference rows. Per the Q4 ANSWER both Option A and B land. ~2 rows
    flip DONE.
-3. **Round 6 tests/ reference move** — no test changes but updates
+2. **Round 6 tests/ reference move** — no test changes but updates
    `lint_runtime_isolation` to enforce the new path. ~0 net change to
    this matrix; 1 row gets a new "and rejects old path" condition.
-4. **Capsule × {Mesh, Convex, Compound}** — 3 GAP rows. Same week.
-5. **Cylinder × {Mesh, Convex, Compound, Sdf}** — 4 GAP rows.
-6. **SAT algorithm-isolation suite** — `sat_*` rows from §2.
-7. **Long-horizon stability scenes** — `stacked_boxes_n10/n100`,
+3. **Capsule × {Mesh, Convex, Compound}** — 3 GAP rows. Same week.
+4. **Cylinder × {Mesh, Convex, Compound, Sdf}** — 4 GAP rows.
+5. **Long-horizon stability scenes** — `stacked_boxes_n10/n100`,
    `mixed_primitive_stack` unit-test version, `ragdoll_capsule_pile`,
    `thin_box_no_tunneling`. These are the highest-leverage rows for
    "DART is provably stable" marketing.
-8. **Stretch GAP rows** — auto-diff narrow-phase, float/double parity,
+6. **Stretch GAP rows** — auto-diff narrow-phase, float/double parity,
    k-DOP / OBB / RSS BVH variants. These are scope-decision items, not
    urgent fills. Decide before adding rows.
 
