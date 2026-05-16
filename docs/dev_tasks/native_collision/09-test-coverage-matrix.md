@@ -254,11 +254,11 @@ Query-parity note).
 
 ### Per-pair narrow-phase
 
-| Codename                              | Status | JSON output                              | Notes                                                      |
-| ------------------------------------- | ------ | ---------------------------------------- | ---------------------------------------------------------- |
-| `bench_narrow_phase_per_pair_raw`     | DONE   | `native_collision_raw_narrow_phase.json` | Native raw vs reference adapter — see Q4 parity gap        |
-| `bench_narrow_phase_per_pair_adapter` | DONE   | `collision_check_narrow_adapter.json`    | Native/reference through public detector adapter path      |
-| `bench_narrow_phase_per_pair_ref_raw` | GAP    | —                                        | Q4 Option B: reference via raw FCL/Bullet/ODE narrow-phase |
+| Codename                              | Status | JSON output                                 | Notes                                                  |
+| ------------------------------------- | ------ | ------------------------------------------- | ------------------------------------------------------ |
+| `bench_narrow_phase_per_pair_raw`     | DONE   | `native_collision_raw_narrow_phase.json`    | Native raw vs reference adapter — see Q4 parity gap    |
+| `bench_narrow_phase_per_pair_adapter` | DONE   | `collision_check_narrow_adapter.json`       | Native/reference through public detector adapter path  |
+| `bench_narrow_phase_per_pair_ref_raw` | DONE   | `collision_check_narrow_raw_reference.json` | Focused SphereSphere/BoxBox/SphereBox raw engine paths |
 
 ### Distance + raycast + CCD
 
@@ -349,21 +349,20 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 - **§1 Pair-wise narrow-phase:** 58 DONE, 0 PARTIAL, 22 GAP (of 80 rows)
 - **§2 Algorithm-level:** 27 DONE, 4 PARTIAL, 13 GAP (of 44 rows)
 - **§3 Stress / regression:** 17 DONE, 1 PARTIAL, 15 GAP (of 33 rows)
-- **§4 Benchmarks:** 18 DONE, 0 PARTIAL, 10 GAP (of 28 rows)
+- **§4 Benchmarks:** 19 DONE, 0 PARTIAL, 9 GAP (of 28 rows)
 - **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 128 DONE, 5 PARTIAL, 61 GAP (of 194 rows)
+- **TOTAL:** 129 DONE, 5 PARTIAL, 60 GAP (of 194 rows)
 
 DART native is currently at ~66% of the proposed superset, with the
 remaining 34% concentrated in: (a) less-common shape pairs against
 capsule/cylinder/mesh/convex/sdf/compound, (b) algorithm-isolation
 tests for SAT internals, (c) long-horizon stability and stress scenes,
-(d) per-engine raw-narrow-phase parity benchmarks.
+(d) scale and scenario benchmarks beyond the focused raw primitive rows.
 
 ## Next Priorities (TDD order)
 
-1. **Q4 bench parity** — finish
-   `bench_narrow_phase_per_pair_ref_raw` for the raw reference-engine
-   narrow-phase path.
+1. **Raw narrow-phase correctness gaps** — continue pair and
+   algorithm-isolation rows before moving into convexity-specific coverage.
 2. **Round 6 tests/ reference move** — no test changes but updates
    `lint_runtime_isolation` to enforce the new path. ~0 net change to
    this matrix; 1 row gets a new "and rejects old path" condition.

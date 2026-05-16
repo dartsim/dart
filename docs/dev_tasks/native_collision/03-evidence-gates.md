@@ -2966,6 +2966,21 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     reported `collision benchmark check: 0 passed, 0 failed, 0 skipped, 3 reported`.
     The benchmark binary's built-in accuracy verification passed
     for the same primitive pairs covered by the raw narrow-phase benchmark.
+- Current local raw reference-engine narrow-phase benchmark refresh:
+  - Commit: current working tree after local head `49466bf7b92`
+    (`Add native adapter narrow-phase benchmark`).
+  - Command:
+    `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e collision-reference bm-collision-check-narrow-raw-reference`
+  - Result: passed. The task rebuilt `bm_comparative_narrow_phase`, ran
+    focused SphereSphere/BoxBox/SphereBox raw native, FCL, Bullet, and ODE
+    benchmark rows, wrote
+    `.benchmark_results/collision_check_narrow_raw_reference.json`, and
+    reported `collision benchmark check: 0 passed, 0 failed, 0 skipped, 3 reported`.
+    The benchmark binary's built-in accuracy verification still passed for
+    Sphere-Sphere, Box-Box, Capsule-Capsule, Sphere-Box, Capsule-Sphere,
+    Capsule-Box, Cylinder-Cylinder, Cylinder-Sphere, Cylinder-Box,
+    Cylinder-Capsule, Cylinder-Plane, Plane-Sphere, Plane-Box, and
+    Plane-Capsule.
 
 ## Known Risks
 

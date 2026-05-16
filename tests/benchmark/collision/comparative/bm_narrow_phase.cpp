@@ -53,17 +53,23 @@
 #include <dart/dynamics/sphere_shape.hpp>
 
 #if DART_HAVE_BULLET
+  #include <dart/collision/bullet/reference/bullet_include.hpp>
   #include <dart/collision/bullet/reference/bullet_collision_detector.hpp>
 #endif
 
 #if DART_HAVE_ODE
   #include <dart/collision/ode/reference/ode_collision_detector.hpp>
+  #include <ode/ode.h>
 #endif
 
 #include "tests/benchmark/collision/fixtures/edge_cases.hpp"
 #include "tests/benchmark/collision/fixtures/shape_factories.hpp"
 
 #include <benchmark/benchmark.h>
+
+#include <fcl/geometry/shape/box.h>
+#include <fcl/geometry/shape/sphere.h>
+#include <fcl/narrowphase/collision.h>
 
 #include <array>
 #include <functional>
@@ -127,6 +133,192 @@ Eigen::Isometry3d OffsetTransform(double x, double y, double z)
 {
   return dart::benchmark::collision::MakeTransform(Eigen::Vector3d(x, y, z));
 }
+
+fcl::Transform3<double> MakeFclTransform(const Eigen::Isometry3d& tf)
+{
+  fcl::Transform3<double> fclTf = fcl::Transform3<double>::Identity();
+  fclTf.linear() = tf.linear();
+  fclTf.translation() = tf.translation();
+  return fclTf;
+}
+
+void RunFclRawCollisionBenchmark(
+    benchmark::State& state,
+    const std::shared_ptr<fcl::CollisionGeometry<double>>& geometry1,
+    const Eigen::Isometry3d& tf1,
+    const std::shared_ptr<fcl::CollisionGeometry<double>>& geometry2,
+    const Eigen::Isometry3d& tf2)
+{
+  fcl::CollisionObject<double> object1(geometry1, MakeFclTransform(tf1));
+  fcl::CollisionObject<double> object2(geometry2, MakeFclTransform(tf2));
+  object1.computeAABB();
+  object2.computeAABB();
+
+  fcl::CollisionRequest<double> request;
+  request.enable_contact = true;
+  request.num_max_contacts = 8u;
+  fcl::CollisionResult<double> result;
+
+  benchmark::DoNotOptimize(fcl::collide(&object1, &object2, request, result));
+  if (!result.isCollision()) {
+    state.SkipWithError("FCL raw benchmark setup did not collide.");
+    return;
+  }
+
+  for (auto _ : state) {
+    result.clear();
+    benchmark::DoNotOptimize(
+        fcl::collide(&object1, &object2, request, result));
+  }
+}
+
+#if DART_HAVE_BULLET
+btTransform MakeBulletTransform(const Eigen::Isometry3d& tf)
+{
+  btMatrix3x3 basis(
+      static_cast<btScalar>(tf.linear()(0, 0)),
+      static_cast<btScalar>(tf.linear()(0, 1)),
+      static_cast<btScalar>(tf.linear()(0, 2)),
+      static_cast<btScalar>(tf.linear()(1, 0)),
+      static_cast<btScalar>(tf.linear()(1, 1)),
+      static_cast<btScalar>(tf.linear()(1, 2)),
+      static_cast<btScalar>(tf.linear()(2, 0)),
+      static_cast<btScalar>(tf.linear()(2, 1)),
+      static_cast<btScalar>(tf.linear()(2, 2)));
+  btTransform bulletTf;
+  bulletTf.setBasis(basis);
+  bulletTf.setOrigin(btVector3(
+      static_cast<btScalar>(tf.translation().x()),
+      static_cast<btScalar>(tf.translation().y()),
+      static_cast<btScalar>(tf.translation().z())));
+  return bulletTf;
+}
+
+struct CountingBulletContactCallback final
+  : public btCollisionWorld::ContactResultCallback
+{
+  btScalar addSingleResult(
+      btManifoldPoint&,
+      const btCollisionObjectWrapper*,
+      int,
+      int,
+      const btCollisionObjectWrapper*,
+      int,
+      int) override
+  {
+    ++numContacts;
+    return 0.0;
+  }
+
+  int numContacts{0};
+};
+
+void RunBulletRawCollisionBenchmark(
+    benchmark::State& state,
+    btCollisionShape& shape1,
+    const Eigen::Isometry3d& tf1,
+    btCollisionShape& shape2,
+    const Eigen::Isometry3d& tf2)
+{
+  btDefaultCollisionConfiguration config;
+  btCollisionDispatcher dispatcher(&config);
+  btDbvtBroadphase broadphase;
+  btCollisionWorld world(&dispatcher, &broadphase, &config);
+
+  btCollisionObject object1;
+  object1.setCollisionShape(&shape1);
+  object1.setWorldTransform(MakeBulletTransform(tf1));
+
+  btCollisionObject object2;
+  object2.setCollisionShape(&shape2);
+  object2.setWorldTransform(MakeBulletTransform(tf2));
+
+  CountingBulletContactCallback sanityCheck;
+  world.contactPairTest(&object1, &object2, sanityCheck);
+  if (sanityCheck.numContacts == 0) {
+    state.SkipWithError("Bullet raw benchmark setup did not collide.");
+    return;
+  }
+
+  for (auto _ : state) {
+    CountingBulletContactCallback callback;
+    world.contactPairTest(&object1, &object2, callback);
+    benchmark::DoNotOptimize(callback.numContacts);
+  }
+}
+#endif
+
+#if DART_HAVE_ODE
+struct OdeRuntime
+{
+  OdeRuntime()
+  {
+    const auto initialized = dInitODE2(0);
+    DART_ASSERT(initialized);
+    DART_UNUSED(initialized);
+    dAllocateODEDataForThread(dAllocateMaskAll);
+  }
+
+  ~OdeRuntime()
+  {
+    dCloseODE();
+  }
+};
+
+void SetOdeTransform(dGeomID geom, const Eigen::Isometry3d& tf)
+{
+  dGeomSetPosition(
+      geom, tf.translation().x(), tf.translation().y(), tf.translation().z());
+
+  dMatrix3 rotation;
+  rotation[0] = tf.linear()(0, 0);
+  rotation[1] = tf.linear()(0, 1);
+  rotation[2] = tf.linear()(0, 2);
+  rotation[3] = 0.0;
+  rotation[4] = tf.linear()(1, 0);
+  rotation[5] = tf.linear()(1, 1);
+  rotation[6] = tf.linear()(1, 2);
+  rotation[7] = 0.0;
+  rotation[8] = tf.linear()(2, 0);
+  rotation[9] = tf.linear()(2, 1);
+  rotation[10] = tf.linear()(2, 2);
+  rotation[11] = 0.0;
+  dGeomSetRotation(geom, rotation);
+}
+
+void RunOdeRawCollisionBenchmark(
+    benchmark::State& state,
+    dGeomID geom1,
+    const Eigen::Isometry3d& tf1,
+    dGeomID geom2,
+    const Eigen::Isometry3d& tf2)
+{
+  SetOdeTransform(geom1, tf1);
+  SetOdeTransform(geom2, tf2);
+
+  std::array<dContactGeom, 8> contacts;
+  auto sanityContacts = dCollide(
+      geom1,
+      geom2,
+      static_cast<int>(contacts.size()),
+      contacts.data(),
+      sizeof(dContactGeom));
+  if (sanityContacts <= 0) {
+    state.SkipWithError("ODE raw benchmark setup did not collide.");
+    return;
+  }
+
+  for (auto _ : state) {
+    auto numContacts = dCollide(
+        geom1,
+        geom2,
+        static_cast<int>(contacts.size()),
+        contacts.data(),
+        sizeof(dContactGeom));
+    benchmark::DoNotOptimize(numContacts);
+  }
+}
+#endif
 
 } // namespace
 
@@ -392,6 +584,169 @@ static void BM_NarrowPhase_SphereBox_ODE(benchmark::State& state)
   RunDetectorBenchmark(state, detector, shape1, tf1, shape2, tf2);
 }
 BENCHMARK(BM_NarrowPhase_SphereBox_ODE);
+#endif
+
+static void BM_NarrowPhaseRawReference_SphereSphere_Native(
+    benchmark::State& state)
+{
+  BM_NarrowPhase_SphereSphere_Native(state);
+}
+BENCHMARK(BM_NarrowPhaseRawReference_SphereSphere_Native);
+
+static void BM_NarrowPhaseRawReference_BoxBox_Native(benchmark::State& state)
+{
+  BM_NarrowPhase_BoxBox_Native(state);
+}
+BENCHMARK(BM_NarrowPhaseRawReference_BoxBox_Native);
+
+static void BM_NarrowPhaseRawReference_SphereBox_Native(benchmark::State& state)
+{
+  BM_NarrowPhase_SphereBox_Native(state);
+}
+BENCHMARK(BM_NarrowPhaseRawReference_SphereBox_Native);
+
+static void BM_NarrowPhaseRawReference_SphereSphere_FCL(benchmark::State& state)
+{
+  auto sphere1 = std::make_shared<fcl::Sphere<double>>(1.0);
+  auto sphere2 = std::make_shared<fcl::Sphere<double>>(1.0);
+
+  RunFclRawCollisionBenchmark(
+      state,
+      sphere1,
+      Eigen::Isometry3d::Identity(),
+      sphere2,
+      OffsetTransform(1.5, 0.0, 0.0));
+}
+BENCHMARK(BM_NarrowPhaseRawReference_SphereSphere_FCL);
+
+static void BM_NarrowPhaseRawReference_BoxBox_FCL(benchmark::State& state)
+{
+  auto box1 = std::make_shared<fcl::Box<double>>(1.0, 1.0, 1.0);
+  auto box2 = std::make_shared<fcl::Box<double>>(1.0, 1.0, 1.0);
+
+  RunFclRawCollisionBenchmark(
+      state,
+      box1,
+      Eigen::Isometry3d::Identity(),
+      box2,
+      OffsetTransform(0.8, 0.0, 0.0));
+}
+BENCHMARK(BM_NarrowPhaseRawReference_BoxBox_FCL);
+
+static void BM_NarrowPhaseRawReference_SphereBox_FCL(benchmark::State& state)
+{
+  auto sphere = std::make_shared<fcl::Sphere<double>>(0.5);
+  auto box = std::make_shared<fcl::Box<double>>(1.0, 1.0, 1.0);
+
+  RunFclRawCollisionBenchmark(
+      state,
+      sphere,
+      OffsetTransform(0.8, 0.0, 0.0),
+      box,
+      Eigen::Isometry3d::Identity());
+}
+BENCHMARK(BM_NarrowPhaseRawReference_SphereBox_FCL);
+
+#if DART_HAVE_BULLET
+static void BM_NarrowPhaseRawReference_SphereSphere_Bullet(
+    benchmark::State& state)
+{
+  btSphereShape sphere1(1.0);
+  btSphereShape sphere2(1.0);
+
+  RunBulletRawCollisionBenchmark(
+      state,
+      sphere1,
+      Eigen::Isometry3d::Identity(),
+      sphere2,
+      OffsetTransform(1.5, 0.0, 0.0));
+}
+BENCHMARK(BM_NarrowPhaseRawReference_SphereSphere_Bullet);
+
+static void BM_NarrowPhaseRawReference_BoxBox_Bullet(benchmark::State& state)
+{
+  btBoxShape box1(btVector3(0.5, 0.5, 0.5));
+  btBoxShape box2(btVector3(0.5, 0.5, 0.5));
+
+  RunBulletRawCollisionBenchmark(
+      state,
+      box1,
+      Eigen::Isometry3d::Identity(),
+      box2,
+      OffsetTransform(0.8, 0.0, 0.0));
+}
+BENCHMARK(BM_NarrowPhaseRawReference_BoxBox_Bullet);
+
+static void BM_NarrowPhaseRawReference_SphereBox_Bullet(
+    benchmark::State& state)
+{
+  btSphereShape sphere(0.5);
+  btBoxShape box(btVector3(0.5, 0.5, 0.5));
+
+  RunBulletRawCollisionBenchmark(
+      state,
+      sphere,
+      OffsetTransform(0.8, 0.0, 0.0),
+      box,
+      Eigen::Isometry3d::Identity());
+}
+BENCHMARK(BM_NarrowPhaseRawReference_SphereBox_Bullet);
+#endif
+
+#if DART_HAVE_ODE
+static void BM_NarrowPhaseRawReference_SphereSphere_ODE(benchmark::State& state)
+{
+  OdeRuntime ode;
+  dGeomID sphere1 = dCreateSphere(0, 1.0);
+  dGeomID sphere2 = dCreateSphere(0, 1.0);
+
+  RunOdeRawCollisionBenchmark(
+      state,
+      sphere1,
+      Eigen::Isometry3d::Identity(),
+      sphere2,
+      OffsetTransform(1.5, 0.0, 0.0));
+
+  dGeomDestroy(sphere1);
+  dGeomDestroy(sphere2);
+}
+BENCHMARK(BM_NarrowPhaseRawReference_SphereSphere_ODE);
+
+static void BM_NarrowPhaseRawReference_BoxBox_ODE(benchmark::State& state)
+{
+  OdeRuntime ode;
+  dGeomID box1 = dCreateBox(0, 1.0, 1.0, 1.0);
+  dGeomID box2 = dCreateBox(0, 1.0, 1.0, 1.0);
+
+  RunOdeRawCollisionBenchmark(
+      state,
+      box1,
+      Eigen::Isometry3d::Identity(),
+      box2,
+      OffsetTransform(0.8, 0.0, 0.0));
+
+  dGeomDestroy(box1);
+  dGeomDestroy(box2);
+}
+BENCHMARK(BM_NarrowPhaseRawReference_BoxBox_ODE);
+
+static void BM_NarrowPhaseRawReference_SphereBox_ODE(benchmark::State& state)
+{
+  OdeRuntime ode;
+  dGeomID sphere = dCreateSphere(0, 0.5);
+  dGeomID box = dCreateBox(0, 1.0, 1.0, 1.0);
+
+  RunOdeRawCollisionBenchmark(
+      state,
+      sphere,
+      OffsetTransform(0.8, 0.0, 0.0),
+      box,
+      Eigen::Isometry3d::Identity());
+
+  dGeomDestroy(sphere);
+  dGeomDestroy(box);
+}
+BENCHMARK(BM_NarrowPhaseRawReference_SphereBox_ODE);
 #endif
 
 static void BM_NarrowPhase_CapsuleSphere_Native(benchmark::State& state)
