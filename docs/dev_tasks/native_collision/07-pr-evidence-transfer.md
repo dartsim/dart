@@ -170,10 +170,11 @@ Local validation currently recorded in the dev-task evidence:
   `INTEGRATION_collision_native_backend_consistency` 2/2, the non-simulation
   CTest sweep 288/288, the dedicated simulation-experimental task 13/13, and
   the final unfiltered CTest sweep 301/301.
-- Local commits after `ca0201e67f4` are docs/evidence-only refreshes through
-  `d1a1dbd9ac9`; the latest audit commits record the current local `test-all`
-  evidence and read-only review-surface state. `pixi run lint` has passed after
-  the latest code update, including `check-collision-runtime-isolation` and
+- Local commits after `ca0201e67f4` are docs/evidence-only refreshes. Recent
+  audit commits include `19aed78ae04` for current local `test-all` evidence and
+  `d1a1dbd9ac9` for read-only review-surface state; later packet refresh commits
+  may move `HEAD`. `pixi run lint` has passed after the latest code update,
+  including `check-collision-runtime-isolation` and
   `audit-collision-compat-facades`. Use `git log -3 --oneline --decorate` for
   the exact current local head.
 - `pixi run lint` passed and includes:
@@ -303,6 +304,8 @@ Compatibility notes:
   - `5627a80a0a2` (`Clarify native collision supervisor status`)
   - `19aed78ae04` (`Refresh current native collision test-all evidence`)
   - `d1a1dbd9ac9` (`Refresh native collision review surface audit`)
+  - Later docs-only PR-packet refresh commits may exist; use
+    `git log --oneline --decorate` for the exact current local head.
 
 ## Checklist Notes
 
