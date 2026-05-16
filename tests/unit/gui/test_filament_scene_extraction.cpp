@@ -536,23 +536,35 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   bool diagnostics = false;
   double gain = 0.0;
   int clicks = 0;
-  dart::gui::Panel panel{"Controls", [&](dart::gui::PanelBuilder& builder) {
-                           builder.text("custom controls");
-                           builder.separator();
-                           if (builder.button("Trigger")) {
-                             ++clicks;
-                           }
-                           builder.sameLine();
-                           builder.checkbox("Diagnostics", diagnostics);
-                           builder.slider("Gain", gain, 0.0, 2.0);
-                         }};
+  std::string selectedLabel;
+  dart::gui::Panel panel;
+  panel.title = "Controls";
+  panel.build = [&](dart::gui::PanelBuilder& builder) {
+    builder.text("custom controls");
+    builder.separator();
+    if (builder.button("Trigger")) {
+      ++clicks;
+    }
+    builder.sameLine();
+    builder.checkbox("Diagnostics", diagnostics);
+    builder.slider("Gain", gain, 0.0, 2.0);
+  };
+  panel.buildWithContext = [&](dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    selectedLabel = context.selectedLabel;
+    builder.text("selected:" + context.selectedLabel);
+  };
 
   RecordingPanelBuilder builder;
+  dart::gui::PanelContext context;
+  context.selectedLabel = "box";
   panel.build(builder);
+  panel.buildWithContext(builder, context);
 
   EXPECT_EQ(clicks, 1);
   EXPECT_TRUE(diagnostics);
   EXPECT_DOUBLE_EQ(gain, 1.0);
+  EXPECT_EQ(selectedLabel, "box");
   EXPECT_EQ(
       builder.events,
       (std::vector<std::string>{
@@ -561,7 +573,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "button:Trigger",
           "same-line",
           "checkbox:Diagnostics",
-          "slider:Gain"}));
+          "slider:Gain",
+          "text:selected:box"}));
 
   dart::gui::ApplicationOptions options;
   options.defaultScene = "mvp";
@@ -571,11 +584,17 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_EQ(options.panels.front().title, "Controls");
 }
 
-TEST(FilamentSceneExtraction, ImguiExampleUsesPromotedPanelBoundary)
+TEST(FilamentSceneExtraction, TierAExamplesUsePromotedPanelBoundary)
 {
-  const std::vector<std::filesystem::path> sources
-      = {std::filesystem::path("examples") / "imgui" / "main.cpp",
-         std::filesystem::path("examples") / "imgui" / "CMakeLists.txt"};
+  const std::vector<std::filesystem::path> examples
+      = {std::filesystem::path("examples") / "imgui",
+         std::filesystem::path("examples") / "drag_and_drop",
+         std::filesystem::path("examples") / "tinkertoy"};
+  std::vector<std::filesystem::path> sources;
+  for (const auto& example : examples) {
+    sources.push_back(example / "main.cpp");
+    sources.push_back(example / "CMakeLists.txt");
+  }
 
   const auto backendViolations
       = scanSourceFilesForTokens(sources, kForbiddenBackendTokens);
@@ -591,19 +610,20 @@ TEST(FilamentSceneExtraction, ImguiExampleUsesPromotedPanelBoundary)
                   << violation.token << "`";
   }
 
-  const auto mainSource = readSourceFile(
-      std::filesystem::path("examples") / "imgui" / "main.cpp");
-  EXPECT_NE(
-      mainSource.find("#include <dart/gui/application.hpp>"),
-      std::string::npos);
-  EXPECT_NE(
-      mainSource.find("#include <dart/gui/panel.hpp>"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("dart::gui::ApplicationOptions"), std::string::npos);
-  EXPECT_NE(mainSource.find("dart::gui::Panel"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("dart::gui::runApplication(argc, argv, options)"),
-      std::string::npos);
+  for (const auto& example : examples) {
+    const auto mainSource = readSourceFile(example / "main.cpp");
+    EXPECT_NE(
+        mainSource.find("#include <dart/gui/application.hpp>"),
+        std::string::npos);
+    EXPECT_NE(
+        mainSource.find("#include <dart/gui/panel.hpp>"), std::string::npos);
+    EXPECT_NE(
+        mainSource.find("dart::gui::ApplicationOptions"), std::string::npos);
+    EXPECT_NE(mainSource.find("dart::gui::Panel"), std::string::npos);
+    EXPECT_NE(
+        mainSource.find("dart::gui::runApplication(argc, argv, options)"),
+        std::string::npos);
+  }
 }
 
 TEST(FilamentSceneExtraction, FilamentExampleHeadersAvoidDirectFilamentIncludes)

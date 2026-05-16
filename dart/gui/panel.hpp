@@ -39,7 +39,15 @@
 #include <string>
 #include <string_view>
 
+#include <cstddef>
+
+namespace dart::simulation {
+class World;
+} // namespace dart::simulation
+
 namespace dart::gui {
+
+struct ViewerLifecycleState;
 
 class DART_GUI_API PanelBuilder
 {
@@ -61,10 +69,20 @@ public:
       = 0;
 };
 
+struct PanelContext
+{
+  dart::simulation::World* world = nullptr;
+  ViewerLifecycleState* lifecycle = nullptr;
+  std::string selectedLabel;
+  double simulationTime = 0.0;
+  std::size_t contactCount = 0;
+};
+
 struct Panel
 {
   std::string title;
   std::function<void(PanelBuilder&)> build;
+  std::function<void(PanelBuilder&, PanelContext&)> buildWithContext;
 };
 
 } // namespace dart::gui

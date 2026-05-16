@@ -50,6 +50,7 @@ struct OrbitCameraBasis;
 struct OrbitCameraController;
 struct Panel;
 class PanelBuilder;
+struct PanelContext;
 struct PerspectiveProjection;
 struct PickHit;
 struct PickRay;

@@ -46,6 +46,7 @@
 
 #include <imgui.h>
 
+#include <string>
 #include <vector>
 
 #include <cstdint>
@@ -73,11 +74,18 @@ void updateFrameUi(
   auto phaseStart = dart::gui::ProfileAccumulator::Clock::now();
   updateImGuiMouseInput(window, imguiIo, viewport.width, viewport.height);
   ImGui::NewFrame();
+  const std::string selectedLabel = selectionController.selectedLabel();
+  dart::gui::PanelContext panelContext{
+      dartScene.world.get(),
+      &lifecycle,
+      selectedLabel,
+      dartScene.world->getTime(),
+      dartScene.world->getLastCollisionResult().getNumContacts()};
   const bool debugOptionsChanged = renderBuiltInStatusPanel(
       sceneName(exampleScene),
-      dartScene.world->getTime(),
-      dartScene.world->getLastCollisionResult().getNumContacts(),
-      selectionController.selectedLabel(),
+      panelContext.simulationTime,
+      panelContext.contactCount,
+      panelContext.selectedLabel,
       !dartScene.ikHandles.empty(),
       orbitLight,
       debugOverlays.staticOptions,
@@ -94,7 +102,7 @@ void updateFrameUi(
         dartScene.world->getLastCollisionResult(),
         debugOverlays);
   }
-  renderApplicationPanels(panels, guiScale);
+  renderApplicationPanels(panels, panelContext, guiScale);
   ImGui::Render();
   updateImGuiOverlay(
       engine,

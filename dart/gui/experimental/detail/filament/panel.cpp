@@ -171,11 +171,13 @@ bool renderBuiltInStatusPanel(
 }
 
 void renderApplicationPanels(
-    std::vector<dart::gui::Panel>& panels, double guiScale)
+    std::vector<dart::gui::Panel>& panels,
+    dart::gui::PanelContext& context,
+    double guiScale)
 {
   ImGuiPanelBuilder builder;
   for (auto& panel : panels) {
-    if (!panel.build) {
+    if (!panel.build && !panel.buildWithContext) {
       continue;
     }
 
@@ -188,7 +190,12 @@ void renderApplicationPanels(
         title,
         nullptr,
         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
-    panel.build(builder);
+    if (panel.build) {
+      panel.build(builder);
+    }
+    if (panel.buildWithContext) {
+      panel.buildWithContext(builder, context);
+    }
     ImGui::End();
   }
 }

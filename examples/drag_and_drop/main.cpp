@@ -32,34 +32,39 @@
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <string>
 #include <utility>
 
 int main(int argc, char* argv[])
 {
-  bool showDiagnostics = true;
-  double responseGain = 0.5;
-  int buttonClicks = 0;
+  bool showInteractionTips = true;
+
+  dart::gui::Panel controls;
+  controls.title = "Drag Controls";
+  controls.buildWithContext
+      = [&](dart::gui::PanelBuilder& panel, dart::gui::PanelContext& context) {
+          panel.text("Drag targets with selection handles");
+          panel.separator();
+          if (context.lifecycle != nullptr) {
+            if (panel.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+              dart::gui::togglePaused(*context.lifecycle);
+            }
+            panel.sameLine();
+            if (panel.button("Step")) {
+              dart::gui::requestSingleStep(*context.lifecycle);
+            }
+          }
+          panel.checkbox("Show tips", showInteractionTips);
+          if (showInteractionTips) {
+            panel.text("Ctrl-left drag moves the selected object.");
+          }
+          panel.text("selected: " + context.selectedLabel);
+        };
 
   dart::gui::ApplicationOptions options;
-  options.defaultScene = "mvp";
-  dart::gui::Panel controls;
-  controls.title = "Example Controls";
-  controls.build = [&](dart::gui::PanelBuilder& panel) {
-    panel.text("Custom example controls");
-    panel.separator();
-    if (panel.button("Trigger action")) {
-      ++buttonClicks;
-    }
-    panel.sameLine();
-    panel.text("clicks: " + std::to_string(buttonClicks));
-    panel.checkbox("Diagnostics", showDiagnostics);
-    panel.slider("Response gain", responseGain, 0.0, 1.0);
-    if (showDiagnostics) {
-      panel.text("gain: " + std::to_string(responseGain));
-    }
-  };
+  options.defaultScene = "drag-and-drop";
   options.panels.push_back(std::move(controls));
 
   return dart::gui::runApplication(argc, argv, options);

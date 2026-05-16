@@ -184,6 +184,140 @@ Two new threads, **in this order** (capture slice still comes first):
      `--scene <name>` fixture in `scene_fixtures.cpp` can then shrink to a
      visual-only fallback.
 
+   #### Where the example code currently lives (and why this matters)
+
+   This is the structural problem item 7 fixes:
+
+   ```
+   examples/<name>/CMakeLists.txt   ← 7 lines, calls macro with scene name
+           ↓
+   examples/gui_scene_launcher.cpp  ← 42 lines, ONE shared main() for all
+           ↓ runtime: dart::gui::runApplication(argc, argv, "<scene>")
+           ↓
+   dart/gui/experimental/detail/filament/scenes.cpp     ← name → factory dispatch
+           ↓ if (name == "atlas-puppet") return createAtlasPuppetScene();
+           ↓
+   dart/gui/experimental/detail/filament/scene_fixtures.cpp  ← 4082 LOC,
+                                                              32 createXxxScene()
+                                                              factories
+   ```
+
+   Every example's distinctive behavior — world setup, custom keybindings,
+   panel widgets, scenario reset, force/torque overlays — lives as a
+   `DartScene createXxxScene()` factory inside the **GUI library's private
+   detail dir**, not under `examples/`. That is the inverse of the typical
+   example layout: examples should _consume_ the library, not _be defined
+   inside_ it. A user reading `examples/atlas_puppet/CMakeLists.txt` learns
+   nothing about how to write their own `dart::gui` app — they see only
+   `dart_build_gui_scene_example(atlas_puppet "atlas-puppet")`.
+
+   The migration target is to invert this so each Tier-A example's behavior
+   moves out of `scene_fixtures.cpp` into `examples/<name>/main.cpp`, calling
+   the promoted `dart::gui` public API the way an external user would. Once
+   migrated, the `createXxxScene()` factory is deleted from
+   `scene_fixtures.cpp`. Tier-B (visual-only) examples keep using the shared
+   launcher; their scene factories also stay, since they're useful as
+   `dartsim --scene <name>` fixtures for headless smoke generation.
+
+   #### Per-scene graduation checklist (Codex: keep this current)
+
+   Mark `[x]` when the example has its own `main.cpp` consuming `dart::gui`
+   public API and the corresponding factory in `scene_fixtures.cpp` has been
+   deleted. Mark `[~]` for partial (own `main.cpp` exists but factory still
+   present, or `main.cpp` still uses `experimental::filament`). Add the
+   commit short-SHA next to each completed item.
+
+   **Tier-A (need real `main.cpp` migrated to `dart::gui` public API):**
+   - [ ] `add_delete_skels` — `createAddDeleteSkelsScene()` (live add/delete
+         q/w controls)
+   - [ ] `atlas_puppet` — `createAtlasPuppetScene()` (selectable IK targets)
+   - [ ] `atlas_simbicon` — `createAtlasSimbiconScene()` (gait controller +
+         perturbation panel)
+   - [ ] `biped_stand` — shares `createHybridDynamicsScene()` (SPD control + perturbation)
+   - [ ] `box_stacking` — shares `createBoxesScene()` (solver/gravity panel,
+         custom key callbacks)
+   - [ ] `coupler_constraint` — `createCouplerConstraintScene()` (status
+         overlay + reset controls)
+   - [~] `drag_and_drop` — `createDragAndDropScene()` (own promoted
+     `dart::gui` `main.cpp` with context-aware panel exists; private
+     factory and full promoted plane/axis-drag API migration remain)
+   - [ ] `empty` — shares `createDragAndDropScene()` (custom world hooks + raw key-event callbacks)
+   - [ ] `fetch` — `createFetchScene()` (panel, drag controls, mocap target
+         update loop)
+   - [ ] `free_joint_cases` — `createFreeJointCasesScene()` (numeric checks + reference-model controls)
+   - [ ] `g1_puppet` — `createG1Scene()` (IK targets + support-polygon
+         overlay; required for project-README animation)
+   - [ ] `hardcoded_design` — `createHardcodedDesignScene()` (direct
+         key-controlled joint motion + wireframe rendering)
+   - [ ] `heightmap` — `createHeightmapScene()` (panel-driven sculpting +
+         contact-alignment controls)
+   - [ ] `hubo_puppet` — `createHuboPuppetScene()` (teleoperation widget +
+         keyboard controls)
+   - [ ] `human_joint_limits` — `createHumanJointLimitsScene()` (custom
+         TinyDNN-backed arm/leg constraints)
+   - [ ] `hybrid_dynamics` — `createHybridDynamicsScene()` (scripted joint
+         commands + harness toggling)
+   - [~] `imgui` — uses default MVP scene + custom-widget extension points
+     (own promoted `dart::gui` `main.cpp` with panel callback exists;
+     broader tool API remains)
+   - [ ] `joint_constraints` — `createJointConstraintsScene()` (perturbation
+         shortcuts + harness toggling)
+   - [ ] `lcp_physics` — `createLcpPhysicsScene()` (solver controls, plots,
+         scenario switching, frame recording)
+   - [ ] `mimic_pendulums` — `createMimicPendulumsScene()` (ImGui solver/debug
+         table)
+   - [ ] `mixed_chain` — `createMixedChainScene()` (keyboard-applied external
+         forces)
+   - [ ] `operational_space_control` — `createOperationalSpaceControlScene()`
+         (drag-and-drop axis constraints)
+   - [ ] `point_cloud` — `createPointCloudScene()` (robot-mesh sampling
+         controls)
+   - [ ] `polyhedron_visual` — `createPolyhedronScene()` (convex hull +
+         wireframe inspection)
+   - [ ] `rigid_chain` — `createRigidChainScene()` (custom per-step damping
+         hook)
+   - [ ] `rigid_cubes` — shares `createBoxesScene()` (directional force
+         controls + frame-recording options; load-bearing for legacy CI
+         workflow)
+   - [ ] `rigid_loop` — `createRigidLoopScene()` (damping + constraint
+         setup)
+   - [ ] `rigid_shapes` — uses default MVP scene (shape spawning, contact
+         toggles, collision-detector controls)
+   - [ ] `simulation_event_handler` — `createSimulationEventHandlerScene()`
+         (force/torque controls + force-arrow visualization)
+   - [~] `tinkertoy` — `createTinkertoyScene()` (own promoted `dart::gui`
+     `main.cpp` with context-aware panel exists; private factory plus
+     full mouse picking and block-add/delete controls remain)
+   - [ ] `vehicle` — `createVehicleScene()` (live throttle + steering
+         controls)
+   - [ ] `wam_ikfast` — `createWamIkFastScene()` (IKFast solver + drag modes + posture reset)
+
+   **Tier-B (shared launcher OK; factory stays for `--scene` use):**
+   - [ ] `boxes` — visual-only multi-box (factory stays as
+         `--scene boxes` developer fixture)
+   - [ ] `capsule_ground_contact` — visual-only contact setup
+   - [ ] `hello_world` — single dynamic blue box; canonical "first example"
+   - [ ] `simple_frames` — visual `SimpleFrame` hierarchy
+   - [ ] `soft_bodies` — visual soft-body SKEL playback
+
+   **Migration ordering recommendation:**
+   1. `imgui` first — it forces the `dart::gui::Panel` / `dart::gui::Tool`
+      public API into existence, which unblocks every other Tier-A item.
+   2. `drag_and_drop` next — it forces a clean public manipulation API.
+   3. `hello_world` (Tier-B) third — establishes the canonical user-facing
+      `main.cpp` template that other Tier-B examples copy.
+   4. Then batch the remaining Tier-A items by family: rigid demos, joint
+      demos, robot demos, fixture demos. One PR per family is fine; the
+      branch already does not open PRs, so commit boundaries are the unit
+      of review.
+
+   **Stop condition for item 7:** every Tier-A example has its own
+   `main.cpp` consuming only promoted `dart::gui` public API; every
+   migrated factory is removed from `scene_fixtures.cpp`; remaining
+   factories in `scene_fixtures.cpp` are explicitly Tier-B / dev-only.
+   `scene_fixtures.cpp` should drop from 4082 LOC to <1500 LOC after this
+   migration completes.
+
 8. **Drop the `experimental/` segment from code paths.** Now that
    `dart::gui::*` is the promoted namespace and `dart/gui/*.hpp` are the
    stable headers, the physical `dart/gui/experimental/` directory and the

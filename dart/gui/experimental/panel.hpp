@@ -39,6 +39,7 @@ namespace dart::gui::experimental {
 
 using ::dart::gui::Panel;
 using ::dart::gui::PanelBuilder;
+using ::dart::gui::PanelContext;
 
 } // namespace dart::gui::experimental
 

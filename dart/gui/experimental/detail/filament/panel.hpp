@@ -57,7 +57,9 @@ bool renderBuiltInStatusPanel(
     double guiScale);
 
 void renderApplicationPanels(
-    std::vector<dart::gui::Panel>& panels, double guiScale);
+    std::vector<dart::gui::Panel>& panels,
+    dart::gui::PanelContext& context,
+    double guiScale);
 
 } // namespace dart::gui::filament
 

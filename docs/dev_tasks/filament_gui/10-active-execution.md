@@ -328,6 +328,29 @@ Implementation state:
   - Direct `imgui --headless --show-ui --frames 1 --screenshot ...` capture
     to exercise the custom panel render path
 
+Second API checkpoint:
+
+- Extend panel callbacks with a renderer-neutral `PanelContext` containing the
+  current world pointer, lifecycle state, selection label, simulation time, and
+  contact count.
+- Keep `PanelContext` free of Filament, GLFW, and Dear ImGui types.
+- Migrate `examples/drag_and_drop` and `examples/tinkertoy` to real
+  per-example source files that use context-aware panels for example-owned
+  controls and status.
+- Current implementation state:
+  - `PanelContext` is wired into private panel rendering.
+  - `examples/drag_and_drop` and `examples/tinkertoy` have real promoted
+    `dart::gui` entry points with context-aware panels.
+  - Local evidence so far:
+    - C++ GUI target build for `dart-gui`, `imgui`, `drag_and_drop`,
+      `tinkertoy`, and `UNIT_gui_FilamentSceneExtraction`
+    - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+    - Direct `drag_and_drop --headless --show-ui --frames 1 --screenshot ...`
+      capture
+    - Direct `tinkertoy --headless --show-ui --frames 1 --screenshot ...`
+      capture
+    - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
