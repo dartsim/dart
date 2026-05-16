@@ -144,6 +144,36 @@ No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
 the current-head recheck. This section may be followed by docs-only audit
 commits; use the commands above for the exact current head.
 
+The latest local docs/audit refresh before this note was run on pre-note head
+`8e37f9edc7bf625a0792878c959e91966a90fbc2`
+(`Clarify native collision reference docs`) and kept the same branch-local
+boundary:
+
+- `git status --short --branch` reported
+  `feature/new_coll...origin/feature/new_coll [ahead 115]`.
+- `origin/feature/new_coll` remained
+  `f8f5663d514582d8e7ec5d13871f254671083e0d`.
+- `gh auth status -h github.com` showed `jslee02` as the active account.
+- `gh run list --repo dartsim/dart --branch feature/new_coll --commit 8e37f9edc7bf625a0792878c959e91966a90fbc2`
+  returned `[]`.
+- `gh pr list --repo dartsim/dart --head feature/new_coll --state all`
+  returned only PR #2652, still `CLOSED`, draft, based on `main`, updated
+  `2026-05-14T19:20:08Z`, and anchored to old head
+  `714d220d82a6ba99350bf2214fc9696f5495a30f`.
+- `pixi run lint` passed after the latest public-doc reference wording cleanup,
+  including `check-collision-runtime-isolation` and
+  `audit-collision-compat-facades`.
+- Current-facing stale wording searches across public docs, build files,
+  runtime source, tests, and workflows found no old
+  `collision-reference-*` component wording or `reference component(s)`
+  language. The remaining `collision-reference` references are the intentional
+  Pixi environment and CI job surface.
+
+No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
+this read-only recheck. Later docs-only commits may move `HEAD`; use
+`git status --short --branch` and `git log -3 --oneline --decorate` for the
+exact current local state.
+
 ## Current Local Full Validation Recheck (2026-05-16)
 
 After the Atlas Simbicon controller stability coverage update, a fresh local

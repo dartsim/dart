@@ -188,6 +188,13 @@ Local validation currently recorded in the dev-task evidence:
   latest code update, including `check-collision-runtime-isolation` and
   `audit-collision-compat-facades`. Use `git log -3 --oneline --decorate` for
   the exact current local head.
+- Latest docs-only reference-surface cleanup corrected stale public
+  `collision-reference-*` component wording to the current
+  `dart-test-reference-*` target/dependency wording. `pixi run lint` passed
+  after that cleanup, including runtime-isolation and compatibility-facade
+  audits, and current-facing stale wording searches returned no matches. A
+  read-only current-head audit found no workflow runs and only closed PR #2652
+  on old head `714d220d82a`.
 - `pixi run lint` passed and includes:
   - `check-collision-runtime-isolation`
   - `audit-collision-compat-facades`

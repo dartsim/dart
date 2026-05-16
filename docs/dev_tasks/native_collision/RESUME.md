@@ -51,8 +51,10 @@ retained `collision-fcl`, `collision-bullet`, and `collision-ode` components
 resolving as native-backed package facades and `readelf` showing
 `libdart-collision-native.so` without old collision/reference runtime
 dependencies.
-The current local evidence head after recording that package-smoke evidence is
-`25b60737498`; it is docs-only and has not opened, pushed, or mutated any PR.
+The package-smoke evidence was recorded at `25b60737498`; later docs-only
+evidence and reference-surface wording commits may move `HEAD`. Use
+`git log -3 --oneline --decorate` for the exact current local head. None of
+those local evidence commits opened, pushed, or mutated any PR.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not

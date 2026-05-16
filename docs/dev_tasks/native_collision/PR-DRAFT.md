@@ -159,6 +159,13 @@ Make native DART collision the default runtime stack
   latest code update, including `check-collision-runtime-isolation` and
   `audit-collision-compat-facades`. Use `git log -3 --oneline --decorate` for
   the exact current local head.
+- Latest docs-only reference-surface cleanup corrected stale public
+  `collision-reference-*` component wording to the current
+  `dart-test-reference-*` target/dependency wording. `pixi run lint` passed
+  after that cleanup, including runtime-isolation and compatibility-facade
+  audits, and current-facing stale wording searches returned no matches. A
+  read-only current-head audit found no workflow runs and only closed PR #2652
+  on old head `714d220d82a`.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   passed before benchmark-evidence commit `4b155655890`.
 - `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e gazebo test-gz`
