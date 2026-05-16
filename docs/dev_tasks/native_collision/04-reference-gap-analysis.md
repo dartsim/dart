@@ -139,10 +139,13 @@ These capabilities define the bar the built-in layer should meet or exceed.
 | Reference harness isolation        | Working tree adds reference test/benchmark CMake options, defaults normal pixi configure paths to native-only collision, keeps explicit reference opt-in through overrides, builds old-engine libraries only as test-only `dart-test-reference-*` targets, keeps retained `collision-*` package component names as native-backed interface facades, moves old-engine implementation files under `tests/dart/test/reference_collision/`, wires runtime source isolation into lint, and has focused reference-off/on, core-link, fresh runtime-link, installed package-export, current compatibility package smoke, Pixi lock metadata, `collision-reference` environment coverage, repaired py312 wheel artifact evidence, full workflow-dispatch wheel-matrix evidence, and wheel verifier coverage for old collision runtime artifacts. | Reference engines are enabled only for test/benchmark targets and can be disabled without affecting runtime targets.                                                                                                                                                                                                                                                                                                                                                | Keep final PR-state wheel/package evidence current and finish downstream migration/deprecation evidence so reference engines cannot leak back into runtime paths. |
 | Performance guardrails             | Working tree has recurring `bm-collision-check` coverage for native-vs-reference narrowphase, distance, raycast, mixed-primitive, mesh-heavy, and raycast-batch subsets, plus public DART adapter JSON output for collision, dirty-world collision, distance, and raycast through `DartCollisionDetector`. The latest local broad guard was refreshed in `4b155655890` and passes after the current gz compatibility and package-smoke changes. CI Linux now has a scheduled/manual `Collision Benchmark Guard` job that runs the broad guard in the `collision-reference` environment and uploads `.benchmark_results/collision_check_*.json` artifacts; workflow-dispatch run `25887939088` uploaded `collision-benchmark-guard-25887939088-1`.                                                                                        | Benchmarks cover primitive, mesh-heavy, mixed, raycast, distance, batch, dirty-world, and DART adapter API paths.                                                                                                                                                                                                                                                                                                                                                   | Keep final PR-state benchmark evidence current, then keep extending it as new native capabilities land.                                                           |
 
-## Implementation Architecture For Next Step
+## Implementation Architecture For Completed Adapter/Core Step
 
-The next implementation step should not start by deleting legacy backends. It
-should first make the built-in DART path use the scalable native layer.
+The adapter/core implementation plan below is the historical plan that made the
+built-in DART path use the scalable native layer before legacy runtime backend
+removal or finalization. Its checklist is now implemented locally; remaining
+work is final CI, downstream migration, benchmark-artifact, and review-surface
+evidence recorded in `06-completion-audit.md`.
 
 ### 1. `DartCollisionScene`
 
@@ -291,7 +294,7 @@ The built-in architecture should make performance visible before optimization:
 19. Continue final CI, downstream migration, GitHub benchmark guard evidence,
     and runtime backend deletion validation.
 
-## Ready-To-Implement Checklist
+## Implemented Checklist
 
 - [x] Internal `DartCollisionScene` helper exists in the DART adapter path.
 - [x] `DartCollisionGroup` owns and syncs a `DartCollisionScene`.
