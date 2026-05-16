@@ -23,8 +23,9 @@ narrowphase, query algorithms, cache lifetimes, and profiling.
 `01-design.md` is the canonical architecture contract for those boundaries and
 must be satisfied before the collision abstraction cleanup phase is complete.
 
-`04-reference-gap-analysis.md` tracks the detailed feature/API/performance gaps
-that make the next implementation step concrete.
+`04-reference-gap-analysis.md` tracks the detailed feature/API/performance gaps,
+implemented local coverage, and follow-up/finalization evidence that remain
+after the adapter/core implementation.
 
 ## Phase 1: Native Default Path
 
