@@ -819,20 +819,30 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`cfce8c0186f Restore Fetch green bar target`. No rows remain with the exact
+`0800c54ec18 Restore Hybrid Dynamics defaults`. No rows remain with the exact
 `Needs strict audit` state. The current pending checkpoint is
-`examples/hybrid_dynamics/` strict re-open. The Fetch green-bar checkpoint was
-pushed as `cfce8c0186f Restore Fetch green bar target`. Hybrid implementation
-and validation are complete through mandatory `pixi run lint` and post-lint
-focused checks; commit and push this checkpoint before moving to the next
-strict-audit row.
+`examples/joint_constraints/` strict re-open. The Hybrid checkpoint was pushed
+as `0800c54ec18 Restore Hybrid Dynamics defaults`; compare
+`examples/joint_constraints/` against
+`520993d7301^:examples/joint_constraints` before coding. The current
+implementation restores the missing README, 640x480 default, loaded SKEL
+names/visuals, historical perturbation and harness console messages, and
+marker coverage; the historical custom camera up vector remains a named public
+camera roll/up-vector API gap. Local validation is complete: focused
+build/CTest, direct and pixi 640x480 headless screenshots, Python
+example-runner tests, aggregate `examples` build, `git diff --check`,
+mandatory `pixi run lint`, post-lint focused build/CTest, and post-lint direct
+screenshot smoke passed.
 
 ## Current Immediate Next Step
 
-Audit `examples/hybrid_dynamics/` next: compare the current source and README
-to `520993d7301^:examples/hybrid_dynamics`, challenge the recent parity
-checkpoint, and verify harness toggle behavior, camera/run defaults, README,
-capture, and source-marker guards. A later broader smoke sweep can still use:
+Audit `examples/joint_constraints/` next: compare the current source and README
+to `520993d7301^:examples/joint_constraints`, challenge the recent parity
+checkpoint, and verify perturbation controls, harness toggle behavior,
+camera/run defaults, loaded SKEL visuals, README, capture, and source-marker
+guards. The code/docs edits and local validation are complete; commit and push
+the checkpoint without opening a PR, then continue the strict re-open cursor at
+`examples/lcp_physics/`. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

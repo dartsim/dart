@@ -220,7 +220,8 @@
     lock/unlock console messages, 640x480 launch default, loaded SKEL visuals,
     camera defaults, and README through public `dart::gui`.
   - Restored joint-constraints example perturbation keys, `h` harness toggle,
-    and camera defaults through public `dart::gui`.
+    historical console messages, 640x480 launch default, loaded SKEL visuals,
+    README, and camera defaults through public `dart::gui`.
   - Restored rigid-shapes example spawn/delete/contact keyboard controls,
     convex mesh spawning, contact-point visualization, rigid-shapes-specific
     command-line options, and camera/run defaults through public `dart::gui`.

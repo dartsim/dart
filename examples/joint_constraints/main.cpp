@@ -53,31 +53,8 @@ namespace {
 
 constexpr const char* kJointConstraintsWorldUri
     = "dart://sample/skel/fullbody1.skel";
-constexpr const char* kGroundSkeletonName = "joint_constraints_ground";
-constexpr const char* kBipedSkeletonName = "joint_constraints_biped";
-
-void colorBiped(const dart::dynamics::SkeletonPtr& biped)
-{
-  const std::size_t numBodies = biped->getNumBodyNodes();
-  for (std::size_t i = 0; i < numBodies; ++i) {
-    auto* body = biped->getBodyNode(i);
-    if (body == nullptr) {
-      continue;
-    }
-    const double t = numBodies <= 1 ? 0.0
-                                    : static_cast<double>(i)
-                                          / static_cast<double>(numBodies - 1);
-    body->setColor(
-        Eigen::Vector3d(0.24 + 0.34 * t, 0.52 - 0.20 * t, 0.34 + 0.24 * t));
-  }
-
-  if (auto* head = biped->getBodyNode("h_head")) {
-    head->setColor(Eigen::Vector3d(0.84, 0.68, 0.50));
-  }
-  if (auto* spine = biped->getBodyNode("h_spine")) {
-    spine->setColor(Eigen::Vector3d(0.30, 0.58, 0.34));
-  }
-}
+constexpr const char* kGroundSkeletonName = "ground skeleton";
+constexpr const char* kBipedSkeletonName = "fullbody1";
 
 dart::simulation::WorldPtr createJointConstraintsWorld()
 {
@@ -93,16 +70,11 @@ dart::simulation::WorldPtr createJointConstraintsWorld()
   if (ground == nullptr) {
     throw std::runtime_error("joint_constraints world is missing ground");
   }
-  ground->setName(kGroundSkeletonName);
-  if (auto* body = ground->getBodyNode("ground")) {
-    body->setColor(Eigen::Vector3d(0.42, 0.46, 0.44));
-  }
 
-  auto biped = world->getSkeleton("fullbody1");
+  auto biped = world->getSkeleton(kBipedSkeletonName);
   if (biped == nullptr) {
     throw std::runtime_error("joint_constraints world is missing fullbody1");
   }
-  biped->setName(kBipedSkeletonName);
 
   const std::vector<std::size_t> genCoordIds{
       1,  // global orientation y
@@ -118,8 +90,6 @@ dart::simulation::WorldPtr createJointConstraintsWorld()
   Eigen::VectorXd initConfig(9);
   initConfig << -0.1, 0.2, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
   biped->setPositions(genCoordIds, initConfig);
-
-  colorBiped(biped);
   return world;
 }
 
@@ -178,10 +148,14 @@ public:
     mBiped->setForces(mTorques);
   }
 
-  void perturb(const Eigen::Vector3d& force, int frames = 100)
+  void perturb(
+      const Eigen::Vector3d& force, const char* message, int frames = 100)
   {
     mForce = force;
     mImpulseDuration = frames;
+    if (message != nullptr) {
+      std::cout << message << std::endl;
+    }
   }
 
   void toggleHarness()
@@ -198,6 +172,7 @@ public:
       }
       mWeldJoint.reset();
       mHarnessOn = false;
+      std::cout << "Harness off" << std::endl;
       return;
     }
 
@@ -205,6 +180,7 @@ public:
         = std::make_shared<dart::constraint::WeldJointConstraint>(pelvis);
     solver->addConstraint(mWeldJoint);
     mHarnessOn = true;
+    std::cout << "Harness on" << std::endl;
   }
 
   bool harnessOn() const
@@ -284,18 +260,35 @@ dart::gui::OrbitCamera makeJointConstraintsCamera()
   return camera;
 }
 
+dart::gui::RunOptions makeJointConstraintsRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+void printJointConstraintsInstructions()
+{
+  std::cout << "'1'-'4': programmed perturbations\n"
+            << "'h': toggle harness on/off\n"
+            << "space bar: simulation on/off\n";
+}
+
 dart::gui::KeyboardAction makePerturbAction(
     const std::shared_ptr<JointConstraintsController>& controller,
     char key,
     std::string label,
-    const Eigen::Vector3d& force)
+    const Eigen::Vector3d& force,
+    const char* message)
 {
   dart::gui::KeyboardAction action;
   action.label = std::move(label);
   action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
-  action.callback = [controller, force](dart::gui::KeyboardActionContext&) {
-    controller->perturb(force);
-  };
+  action.callback
+      = [controller, force, message](dart::gui::KeyboardActionContext&) {
+          controller->perturb(force, message);
+        };
   return action;
 }
 
@@ -308,22 +301,26 @@ std::vector<dart::gui::KeyboardAction> createJointConstraintsKeyboardActions(
       controller,
       '1',
       "Apply joint-constraints forward perturbation",
-      Eigen::Vector3d(40.0, 0.0, 0.0)));
+      Eigen::Vector3d(40.0, 0.0, 0.0),
+      "push forward"));
   actions.push_back(makePerturbAction(
       controller,
       '2',
       "Apply joint-constraints backward perturbation",
-      Eigen::Vector3d(-40.0, 0.0, 0.0)));
+      Eigen::Vector3d(-40.0, 0.0, 0.0),
+      "push backward"));
   actions.push_back(makePerturbAction(
       controller,
       '3',
       "Apply joint-constraints right perturbation",
-      Eigen::Vector3d(0.0, 0.0, 50.0)));
+      Eigen::Vector3d(0.0, 0.0, 50.0),
+      "push right"));
   actions.push_back(makePerturbAction(
       controller,
       '4',
       "Apply joint-constraints left perturbation",
-      Eigen::Vector3d(0.0, 0.0, -50.0)));
+      Eigen::Vector3d(0.0, 0.0, -50.0),
+      "push left"));
 
   dart::gui::KeyboardAction toggleHarness;
   toggleHarness.label = "Toggle joint-constraints harness";
@@ -358,18 +355,18 @@ dart::gui::Panel createJointConstraintsPanel(
       }
     }
     if (builder.button("Push forward")) {
-      controller->perturb(Eigen::Vector3d(40.0, 0.0, 0.0));
+      controller->perturb(Eigen::Vector3d(40.0, 0.0, 0.0), "push forward");
     }
     builder.sameLine();
     if (builder.button("Push backward")) {
-      controller->perturb(Eigen::Vector3d(-40.0, 0.0, 0.0));
+      controller->perturb(Eigen::Vector3d(-40.0, 0.0, 0.0), "push backward");
     }
     if (builder.button("Push right")) {
-      controller->perturb(Eigen::Vector3d(0.0, 0.0, 50.0));
+      controller->perturb(Eigen::Vector3d(0.0, 0.0, 50.0), "push right");
     }
     builder.sameLine();
     if (builder.button("Push left")) {
-      controller->perturb(Eigen::Vector3d(0.0, 0.0, -50.0));
+      controller->perturb(Eigen::Vector3d(0.0, 0.0, -50.0), "push left");
     }
     if (builder.button(
             controller->harnessOn() ? "Remove harness" : "Add harness")) {
@@ -398,12 +395,14 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = world;
     options.camera = makeJointConstraintsCamera();
+    options.runDefaults = makeJointConstraintsRunDefaults();
     options.preStep = [controller]() {
       controller->preStep();
     };
     options.keyboardActions = createJointConstraintsKeyboardActions(controller);
     options.panels.push_back(createJointConstraintsPanel(controller));
 
+    printJointConstraintsInstructions();
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {
     std::cerr << "joint_constraints: " << e.what() << "\n";

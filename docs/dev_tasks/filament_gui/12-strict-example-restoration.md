@@ -354,7 +354,25 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     direct and pixi headless screenshot smokes, Python C++ example-runner tests,
     aggregate `examples` build, and `git diff --check` passed locally.
     Mandatory `pixi run lint`, post-lint focused build/CTest, post-lint direct
-    screenshot smoke, and post-lint `git diff --check` also passed.
+    screenshot smoke, and post-lint `git diff --check` also passed. This
+    checkpoint was pushed as `0800c54ec18 Restore Hybrid Dynamics defaults`.
+36. The active strict-audit cursor is now `examples/joint_constraints/`;
+    compare it against `520993d7301^:examples/joint_constraints` before coding.
+37. `examples/joint_constraints/` strict re-open found concrete gaps: missing
+    README, missing 640x480 `ApplicationOptions::runDefaults`, renamed and
+    recolored loaded SKEL skeletons/body visuals, missing historical
+    perturbation and harness console messages, and missing source-marker
+    coverage for those restored contracts. Restore those now; keep the
+    historical `(0, 1, 0)` camera up vector as a named public camera API gap
+    unless a promoted camera roll/up surface is added in this checkpoint.
+    Implementation and validation are complete: focused build/CTest, direct
+    and pixi headless screenshot smokes, Python C++ example-runner tests,
+    aggregate `examples` build, `git diff --check`, mandatory
+    `pixi run lint`, post-lint focused build/CTest, and post-lint direct
+    screenshot smoke passed locally.
+38. After pushing the joint-constraints checkpoint, the next strict re-open
+    cursor is `examples/lcp_physics/`; compare it against
+    `520993d7301^:examples/lcp_physics` before coding past that slice.
 
 ## Checkpoint Rule
 

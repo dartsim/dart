@@ -831,6 +831,32 @@ roll/up-vector selection.
 | README documents concepts, controls, standalone build/execute instructions, and promoted runner path. | Restored.                                       | README is restored with promoted `dart::gui` wording and headless capture guidance.                                                                             |
 | Keep marker coverage for world setup, harness console messages, instructions, run defaults, README.   | Restored for this slice.                        | Marker guard now covers the strict restored contract.                                                                                                           |
 
+### Joint Constraints Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/joint_constraints`.
+
+The current source is a promoted `dart::gui` example and already restores the
+`fullbody1.skel` world, SPD controller, perturbation forces, harness
+constraint, camera direction, and panel controls. Strict re-open found concrete
+remaining gaps: missing README, missing 640x480 launch default, renamed and
+recolored loaded SKEL skeletons/body visuals, missing historical perturbation
+and harness console messages, and incomplete marker coverage for the restored
+contract. The historical custom camera up vector remains a public camera API
+gap because `OrbitCamera` does not expose roll/up-vector selection.
+
+| Historical item                                                                                          | Current outcome                                 | Notes                                                                                                                                                           |
+| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Load `dart://sample/skel/fullbody1.skel` and set gravity to `(0, -9.81, 0)`.                             | Restored through public `dart::gui`.            | Current source loads the SKEL world and passes it through `ApplicationOptions::world`.                                                                          |
+| Preserve the loaded ground/biped names and SKEL-authored visuals.                                        | Restored.                                       | Current source uses the historical `ground skeleton` and `fullbody1` names and no longer recolors the loaded bodies.                                            |
+| Set the same nine initial generalized coordinates and SPD desired pose.                                  | Restored.                                       | Current source keeps the historical DOF ids, numeric pose values, controller gains, and ankle compensation behavior.                                            |
+| Pre-step SPD control and perturbation-force decay.                                                       | Restored through `ApplicationOptions::preStep`. | Current source preserves controller pre-step behavior and force duration state.                                                                                 |
+| `1`/`2`/`3`/`4` apply forward/backward/right/left perturbations and print `push ...` messages.           | Restored through public keyboard actions.       | Current source emits the historical console messages from both keyboard actions and promoted panel buttons.                                                     |
+| `h`/`H` toggles the pelvis harness and prints `Harness on` / `Harness off`.                              | Restored.                                       | Current source prints the historical messages from the promoted harness action used by the keyboard and panel.                                                  |
+| User-visible instructions include perturbation keys, harness toggle, and `space bar: simulation on/off`. | Restored.                                       | Current source prints the instructions to the console and shows equivalent controls in the panel/README.                                                        |
+| Default 640x480 window and camera home from `(5, 3, 3)` to `(0, 0, 0)` with up vector `(0, 1, 0)`.       | Partially restored.                             | `ApplicationOptions::runDefaults` restores 640x480 and `OrbitCamera` restores target/yaw/pitch/distance; custom up vector/roll remains a public camera API gap. |
+| README documents concepts, controls, standalone build/execute instructions, and promoted runner path.    | Restored.                                       | README is restored with promoted `dart::gui` wording and headless capture guidance.                                                                             |
+| Keep marker coverage for world setup, perturb/harness console messages, defaults, README, no OSG path.   | Restored for this slice.                        | Marker guard now covers the strict restored contract.                                                                                                           |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                                                                                                       |
@@ -858,7 +884,7 @@ roll/up-vector selection.
 | `human_joint_limits`        | Restored except TinyDNN/custom-constraint dependency follow-up.                    | Keep marker guards for live world, joint-limit enforcement, defaults, README, and no backend types.                                                                                                        |
 | `hybrid_dynamics`           | Restored by strict re-open except camera up-vector/roll API gap.                   | Keep marker guards for README, 640x480 defaults, loaded-scene names/colors, harness console messages, and no backend types.                                                                                |
 | `imgui`                     | Restored except public headlight/camera/key-release/render-hook API gaps.          | Keep marker guards for target frame, keydown callbacks, gravity control, help text, camera/defaults, README, and no backend types.                                                                         |
-| `joint_constraints`         | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm perturbation controls, harness toggle, camera, and guards.                                                                                                                                         |
+| `joint_constraints`         | Restored by strict re-open except camera up-vector/roll API gap.                   | Keep marker guards for README, 640x480 defaults, loaded-scene visuals, perturb/harness console messages, and no backend types.                                                                             |
 | `lcp_physics`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm solver/collision controls, camera/defaults, README, and guards.                                                                                                                                    |
 | `mimic_pendulums`           | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm diagnostics, solver/collision flags, README, and guards.                                                                                                                                           |
 | `mixed_chain`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm impulse controls, camera, and guards.                                                                                                                                                              |

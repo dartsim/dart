@@ -109,12 +109,24 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `cfce8c0186f Restore Fetch green bar target`.
+  `0800c54ec18 Restore Hybrid Dynamics defaults`.
 - Latest pushed code checkpoint:
-  `cfce8c0186f Restore Fetch green bar target`.
+  `0800c54ec18 Restore Hybrid Dynamics defaults`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
+- Current in-progress checkpoint: `examples/joint_constraints/` strict
+  re-open. The implementation restores the missing README, 640x480 launch
+  default, loaded SKEL names/visuals, historical perturbation and harness
+  console messages, and source-marker guards. The old custom camera up vector
+  remains a public camera roll/up-vector API gap unless a promoted API is added
+  in this checkpoint.
+- Joint Constraints local validation is complete for this checkpoint: focused
+  build/CTest, direct and pixi 640x480 headless screenshots, Python
+  example-runner tests, aggregate `examples` build, `git diff --check`,
+  mandatory `pixi run lint`, post-lint focused build/CTest, and post-lint
+  direct screenshot smoke passed. After this checkpoint is pushed, continue the
+  strict re-open cursor at `examples/lcp_physics/`.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`
@@ -154,6 +166,7 @@ history but are not guaranteed to be in chronological order.
   - `1e691ce891b Restore G1 Puppet scene parity`
   - `f7d408fea9e Restore Hubo Puppet target controls`
   - `cfce8c0186f Restore Fetch green bar target`
+  - `0800c54ec18 Restore Hybrid Dynamics defaults`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -858,7 +871,11 @@ fetch` llvmpipe screenshots
   `examples` build, `git diff --check`, mandatory `pixi run lint`, post-lint
   focused build/CTest, post-lint `git diff --check`, and post-lint direct
   screenshot (`/tmp/dart_hybrid_dynamics_strict_direct_postlint.ppm`, 640x480
-  with 921429/921600 nonzero bytes).
+  with 921429/921600 nonzero bytes). This checkpoint was pushed as
+  `0800c54ec18 Restore Hybrid Dynamics defaults`.
+- Active work is now `examples/joint_constraints/` strict re-open. Compare the
+  current source and README against
+  `520993d7301^:examples/joint_constraints` before coding.
 
 ## Current Code Shape
 

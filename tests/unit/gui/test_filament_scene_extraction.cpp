@@ -2019,11 +2019,28 @@ TEST(
 {
   const auto mainSource = readSourceFile(
       std::filesystem::path("examples") / "joint_constraints" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "joint_constraints" / "README.md");
 
   EXPECT_NE(
       mainSource.find("dart://sample/skel/fullbody1.skel"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("kGroundSkeletonName = \"ground skeleton\""),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("kBipedSkeletonName = \"fullbody1\""), std::string::npos);
+  EXPECT_EQ(mainSource.find("setName(kGroundSkeletonName)"), std::string::npos);
+  EXPECT_EQ(mainSource.find("setName(kBipedSkeletonName)"), std::string::npos);
+  EXPECT_EQ(mainSource.find("colorBiped"), std::string::npos);
+  EXPECT_EQ(mainSource.find("setColor("), std::string::npos);
   EXPECT_NE(mainSource.find("makeJointConstraintsCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("makeJointConstraintsRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
   EXPECT_NE(mainSource.find("makePerturbAction"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("printJointConstraintsInstructions"), std::string::npos);
   EXPECT_NE(
       mainSource.find("createJointConstraintsKeyboardActions"),
       std::string::npos);
@@ -2036,15 +2053,29 @@ TEST(
   EXPECT_NE(
       mainSource.find("Apply joint-constraints forward perturbation"),
       std::string::npos);
+  EXPECT_NE(mainSource.find("push forward"), std::string::npos);
+  EXPECT_NE(mainSource.find("push backward"), std::string::npos);
+  EXPECT_NE(mainSource.find("push right"), std::string::npos);
+  EXPECT_NE(mainSource.find("push left"), std::string::npos);
   EXPECT_NE(
       mainSource.find("Toggle joint-constraints harness"), std::string::npos);
+  EXPECT_NE(mainSource.find("Harness on"), std::string::npos);
+  EXPECT_NE(mainSource.find("Harness off"), std::string::npos);
   EXPECT_NE(
       mainSource.find("'1'-'4': programmed perturbations"), std::string::npos);
   EXPECT_NE(mainSource.find("'h': toggle harness on/off"), std::string::npos);
+  EXPECT_NE(mainSource.find("space bar: simulation on/off"), std::string::npos);
   EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Joint Constraints Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("pixi run ex joint_constraints"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
