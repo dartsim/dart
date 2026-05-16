@@ -144,6 +144,14 @@ Local validation currently recorded in the dev-task evidence:
   top-level gates: linting, build, unit tests, simulation-experimental tests,
   Python tests, and documentation. No PR, push, workflow, branch, or GitHub
   state was mutated by this recheck.
+- The newest pre-record local recheck with the same safe-job `pixi run test-all`
+  gate passed on head `6d3224426ce`
+  (`Clarify native collision validation snapshot`) after the validation snapshot
+  doc correction and before this evidence update. The final report passed 6/6
+  top-level gates: linting, build, unit tests, simulation-experimental tests,
+  Python tests, and documentation. The lint sub-gate reran
+  `check-collision-runtime-isolation` and `audit-collision-compat-facades`. No
+  PR, push, workflow, branch, or GitHub state was mutated by this recheck.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`

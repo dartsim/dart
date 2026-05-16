@@ -46,6 +46,11 @@ The latest pre-record validation on `59769b3ee58` passed
 `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
 with all 6 top-level gates green before the docs-only validation-record commit.
 No PR, push, workflow, branch, or GitHub state was mutated for that recheck.
+The newest pre-record validation on `6d3224426ce` passed
+`DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
+with all 6 top-level gates green after the validation-snapshot documentation
+correction and before the latest evidence update. No PR, push, workflow,
+branch, or GitHub state was mutated for that recheck.
 The newer local gz-physics refresh on `6742a21ab0f` also passed 65/65 with
 reference collision tests and benchmarks configured `OFF`; an explicit plugin
 dependency scan reported `libdart-collision-native.so` without old DART
