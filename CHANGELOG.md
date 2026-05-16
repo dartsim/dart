@@ -42,6 +42,9 @@
   - Restored `simple_frames` and `capsule_ground_contact` as public-API
     `dart::gui` example sources using source-defined DART frame and contact
     worlds.
+  - Restored the `capsule_ground_contact` example's pose-reset keyboard
+    controls, velocity-clear action, camera/run defaults, persistent-manifold
+    instructions, and README through public `dart::gui`.
   - Added a public `dart::gui::ApplicationOptions::preStep` lifecycle callback
     and restored `fetch` as a source-defined `dart::gui` example with its live
     mocap target-following behavior, Bullet preference when available, and

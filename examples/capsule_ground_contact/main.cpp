@@ -49,13 +49,27 @@
 
 #include <Eigen/Geometry>
 
+#include <functional>
+#include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 
 constexpr double kCapsuleRadius = 0.2;
 constexpr double kCapsuleHeight = 0.6;
+
+void printCapsuleGroundContactInstructions()
+{
+  std::cout << "Controls:\n"
+            << "  [H] Reset capsule to horizontal pose\n"
+            << "  [V] Reset capsule to vertical pose\n"
+            << "  [Space] Clear velocities\n"
+            << "This example uses ODE with persistent manifolds to keep the\n"
+            << "capsule from sinking when lying on its side.\n";
+}
 
 Eigen::Isometry3d makeHorizontalPose()
 {
@@ -107,6 +121,8 @@ dart::dynamics::SkeletonPtr createCapsule()
       = capsule->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
   auto* joint = jointAndBody.first;
   auto* body = jointAndBody.second;
+  joint->setName("capsule_joint");
+  body->setName("capsule_body");
   joint->setTransformFromParentBodyNode(makeHorizontalPose());
 
   const auto capsuleShape = std::make_shared<dart::dynamics::CapsuleShape>(
@@ -138,25 +154,40 @@ dart::simulation::WorldPtr createCapsuleGroundContactWorld()
   return world;
 }
 
-void resetCapsule(dart::simulation::World* world, const Eigen::Isometry3d& pose)
+dart::dynamics::FreeJoint* getCapsuleJoint(dart::simulation::World* world)
 {
   if (world == nullptr) {
-    return;
+    return nullptr;
   }
 
   const auto capsule = world->getSkeleton("capsule");
   if (capsule == nullptr || capsule->getNumJoints() == 0) {
+    return nullptr;
+  }
+
+  return dynamic_cast<dart::dynamics::FreeJoint*>(capsule->getJoint(0));
+}
+
+void clearCapsuleVelocities(dart::simulation::World* world)
+{
+  auto* joint = getCapsuleJoint(world);
+  if (joint == nullptr) {
     return;
   }
 
-  auto* joint = dynamic_cast<dart::dynamics::FreeJoint*>(capsule->getJoint(0));
-  if (joint == nullptr) {
+  joint->setVelocities(Eigen::Matrix<double, 6, 1>::Zero());
+}
+
+void resetCapsule(dart::simulation::World* world, const Eigen::Isometry3d& pose)
+{
+  auto* joint = getCapsuleJoint(world);
+  if (joint == nullptr || world == nullptr) {
     return;
   }
 
   world->reset();
   joint->setRelativeTransform(pose);
-  joint->setVelocities(Eigen::Matrix<double, 6, 1>::Zero());
+  clearCapsuleVelocities(world);
 }
 
 dart::gui::Panel createControlsPanel()
@@ -166,6 +197,8 @@ dart::gui::Panel createControlsPanel()
   controls.buildWithContext
       = [](dart::gui::PanelBuilder& panel, dart::gui::PanelContext& context) {
           panel.text("Capsule and ground contact");
+          panel.text("ODE persistent manifolds keep the capsule stable");
+          panel.text("H: horizontal, V: vertical, Space: clear velocities");
           panel.separator();
           if (context.lifecycle != nullptr) {
             if (panel.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -189,12 +222,73 @@ dart::gui::Panel createControlsPanel()
   return controls;
 }
 
+dart::gui::KeyboardAction makeCapsuleAction(
+    std::string label,
+    dart::gui::KeyboardShortcut shortcut,
+    std::function<void(dart::gui::KeyboardActionContext&)> callback)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = shortcut;
+  action.callback = std::move(callback);
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createCapsuleKeyboardActions(
+    const dart::simulation::WorldPtr& world)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makeCapsuleAction(
+      "Reset capsule to horizontal pose",
+      dart::gui::KeyboardShortcut::characterKey('h'),
+      [world](dart::gui::KeyboardActionContext&) {
+        resetCapsule(world.get(), makeHorizontalPose());
+      }));
+  actions.push_back(makeCapsuleAction(
+      "Reset capsule to vertical pose",
+      dart::gui::KeyboardShortcut::characterKey('v'),
+      [world](dart::gui::KeyboardActionContext&) {
+        resetCapsule(world.get(), makeVerticalPose());
+      }));
+  actions.push_back(makeCapsuleAction(
+      "Clear capsule velocities",
+      dart::gui::KeyboardShortcut::characterKey(' '),
+      [world](dart::gui::KeyboardActionContext&) {
+        clearCapsuleVelocities(world.get());
+      }));
+  return actions;
+}
+
+dart::gui::RunOptions makeCapsuleRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 1024;
+  options.height = 768;
+  return options;
+}
+
+dart::gui::OrbitCamera makeCapsuleCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.2);
+  camera.yaw = 0.7853981633974483;
+  camera.pitch = 0.3523514203703505;
+  camera.distance = 3.7669616403674726;
+  return camera;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
 {
+  printCapsuleGroundContactInstructions();
+  auto world = createCapsuleGroundContactWorld();
+
   dart::gui::ApplicationOptions options;
-  options.world = createCapsuleGroundContactWorld();
+  options.world = world;
+  options.runDefaults = makeCapsuleRunDefaults();
+  options.camera = makeCapsuleCamera();
   options.panels.push_back(createControlsPanel());
+  options.keyboardActions = createCapsuleKeyboardActions(world);
   return dart::gui::runApplication(argc, argv, options);
 }

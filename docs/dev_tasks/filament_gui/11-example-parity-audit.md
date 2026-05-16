@@ -83,6 +83,29 @@ README, and promoted `ApplicationOptions::world` handoff through public
 | Emit scoped profiling markers and text dump.                                                     | Restored.                            | Current source preserves `DART_PROFILE_SCOPED_N` and `DART_PROFILE_TEXT_DUMP`.                         |
 | README documents the promoted runner and no longer says the standalone source remains OSG.       | Restored.                            | Current README documents `pixi run ex hello_world`, controls, and headless capture.                    |
 
+### Capsule Ground Contact Itemized Inventory
+
+Historical source compared:
+`520993d7301^:examples/capsule_ground_contact/main.cpp`.
+
+The source-owned checkpoint restores the capsule, ground plane, ODE preference
+when available, keyboard reset/velocity controls, camera/run defaults, README,
+and promoted panel controls through public `dart::gui`.
+
+| Historical item                                                                                                 | Current outcome                           | Notes                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Require/exercise ODE capsule-plane contact with persistent manifolds.                                           | Restored when ODE is available.           | Current source selects ODE under `#if DART_HAVE_ODE`; no backend-specific GUI path is needed.         |
+| Create an infinite collision plane plus visible gray ground box.                                                | Restored through public `dart::gui`.      | Current source uses `PlaneShape` for collision and a DART visual box for the ground.                  |
+| Create one blue dynamic capsule with radius `0.2`, height `0.6`, mass `1.0`, and free joint name/body metadata. | Restored.                                 | Current source restores the shape, mass, `capsule_joint`, and `capsule_body`.                         |
+| Start the capsule in the historical horizontal pose.                                                            | Restored with a slight contact-safe lift. | Current source uses the historical horizontal orientation and a small lift to avoid initial clipping. |
+| `h`/`H` resets to horizontal pose.                                                                              | Restored.                                 | Current source uses a promoted `KeyboardAction`.                                                      |
+| `v`/`V` resets to vertical pose.                                                                                | Restored.                                 | Current source uses a promoted `KeyboardAction`.                                                      |
+| Space clears capsule velocities.                                                                                | Restored with promoted key handling.      | Shared Space also toggles pause; current source also clears capsule velocities on the same key.       |
+| Print controls and persistent-manifold explanation to the console.                                              | Restored.                                 | Current source prints the controls and also shows the persistent-manifold note in the panel.          |
+| Default launch size 1024x768.                                                                                   | Restored.                                 | Current source uses `ApplicationOptions::runDefaults`.                                                |
+| Camera home from eye `(2.5, 2.5, 1.5)` to target `(0, 0, 0.2)` with up `(-0.2,-0.2,0.95)`.                      | Restored.                                 | Current source converts the historical home to `dart::gui::OrbitCamera`.                              |
+| README documents the promoted runner and no longer says the standalone source remains OSG.                      | Restored.                                 | Current README documents `pixi run ex capsule_ground_contact`, controls, and headless capture.        |
+
 ### Heightmap Itemized Inventory
 
 Historical source compared: `520993d7301^:examples/heightmap/main.cpp`.
@@ -224,7 +247,7 @@ first-class keyboard shortcut.
 | `biped_stand`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm perturbation controls, camera, run defaults, README, and guards.                       |
 | `box_stacking`              | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm solver controls, camera/defaults, README, and guards.                                  |
 | `boxes`                     | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm Bullet preference, camera/defaults, README, and guards.                                |
-| `capsule_ground_contact`    | Needs strict audit.                                                                | Compare historical source and list visual/default behavior.                                    |
+| `capsule_ground_contact`    | Restored by strict audit.                                                          | Keep marker guards for controls, camera/defaults, README, and no backend types.                |
 | `coupler_constraint`        | Needs strict audit.                                                                | Compare historical source and list controls/defaults.                                          |
 | `csv_logger`                | Needs strict audit.                                                                | Confirm non-GUI logging behavior and README remain intact.                                     |
 | `drag_and_drop`             | Needs strict audit.                                                                | Compare historical selection/drag affordances and README.                                      |

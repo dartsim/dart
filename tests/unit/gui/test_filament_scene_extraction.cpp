@@ -836,6 +836,49 @@ TEST(FilamentSceneExtraction, HelloWorldExamplePreservesParityMarkers)
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, CapsuleGroundContactPreservesParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "capsule_ground_contact"
+      / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "capsule_ground_contact"
+      / "README.md");
+
+  EXPECT_NE(mainSource.find("DART_HAVE_ODE"), std::string::npos);
+  EXPECT_NE(mainSource.find("CollisionDetectorType::Ode"), std::string::npos);
+  EXPECT_NE(mainSource.find("PlaneShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("CapsuleShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("capsule_joint"), std::string::npos);
+  EXPECT_NE(mainSource.find("capsule_body"), std::string::npos);
+  EXPECT_NE(mainSource.find("persistent manifolds"), std::string::npos);
+  EXPECT_NE(mainSource.find("clearCapsuleVelocities"), std::string::npos);
+  EXPECT_NE(mainSource.find("createCapsuleKeyboardActions"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('h')"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey('v')"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey(' ')"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("makeCapsuleRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 1024"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 768"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeCapsuleCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.2)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("Capsule Ground Contact Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(readmeSource.find("1024x768"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, BoxesExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(
