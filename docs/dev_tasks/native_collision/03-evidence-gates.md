@@ -2981,6 +2981,22 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     Capsule-Box, Cylinder-Cylinder, Cylinder-Sphere, Cylinder-Box,
     Cylinder-Capsule, Cylinder-Plane, Plane-Sphere, Plane-Box, and
     Plane-Capsule.
+- Current local reference-enabled C++ test refresh:
+  - Commit: current working tree after local head `e9db0b4fcf1`
+    (`Add raw reference narrow-phase benchmarks`).
+  - Commands:
+    `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^INTEGRATION_collision_Collision$' -j "$JOBS"`,
+    `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e collision-reference -- ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^(UNIT_collision_Distance|UNIT_collision_Raycast)$' -j "$JOBS"`,
+    and
+    `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e collision-reference test`.
+  - Result: passed. The initial full reference-enabled build exposed stale
+    compatibility-facade includes in reference-only tests; after switching those
+    call sites to explicit `reference/` detector headers, the focused CTest
+    checks passed and the full `collision-reference` C++ suite passed 288/288.
+    This includes `INTEGRATION_collision_BoxGroundContactParity`,
+    `INTEGRATION_collision_CapsuleGroundContact`,
+    `INTEGRATION_collision_native_backend_consistency`, and
+    `test_reference_backends`.
 
 ## Known Risks
 

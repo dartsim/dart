@@ -37,14 +37,14 @@
 #endif
 
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
-  #include "dart/collision/fcl/All.hpp"
+  #include "dart/collision/fcl/reference/fcl_collision_detector.hpp"
 #endif
 
 #include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 #if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
-  #include "dart/collision/bullet/All.hpp"
+  #include "dart/collision/bullet/reference/bullet_collision_detector.hpp"
 #endif
 #include "../../helpers/gtest_utils.hpp"
 
