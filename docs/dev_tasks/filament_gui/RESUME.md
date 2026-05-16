@@ -819,30 +819,40 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`6511db33821 Audit Rerun placeholder example`. No rows remain with the exact
-`Needs strict audit` state. The current pending checkpoint is
-`examples/add_delete_skels/` strict re-open. Compare the current source against
-`520993d7301^:examples/add_delete_skels`, write the itemized inventory in
+`9fa571ed585 Restore add-delete skeleton defaults`. No rows remain with the
+exact `Needs strict audit` state. The current pending checkpoint is
+`examples/atlas_puppet/` strict re-open. Compare the current source against
+`520993d7301^:examples/atlas_puppet`, write the itemized inventory in
 `11-example-parity-audit.md`, then preserve, restore, or explicitly name any
 public API gaps before coding past this slice.
-Audit result: controls and camera were mostly restored in
-`184396a4cf0 Restore add delete skeleton controls`, but the current tree
-deleted the README, omitted the historical 640x480 launch default, and added
-startup cubes even though the historical source only spawned cubes through
-`q`.
-Implementation and pre-lint validation are complete: README restored, 640x480
-run defaults added, startup cube spawning removed, marker coverage strengthened,
-focused build/CTest passed, direct and pixi headless screenshot smokes passed,
-Python C++ example-runner tests passed, and aggregate `examples` build passed.
-Mandatory lint, post-lint focused build/CTest, direct screenshot smoke, and
-`git diff --check` also passed.
+Audit result: source-owned Atlas load, visible IK target handles, continuous IK
+solving, and WASD/QE/FZ root teleoperation are present, but README/defaults are
+missing. Remaining explicit gaps are target activation/deactivation, support
+toggles, relaxed-pose/posture recovery, balance recovery, and default support
+polygon/COM visualization.
+Maintainer correction during this checkpoint: `examples/fetch/` is still a
+concrete case of a migrated example that may not be fully restored. After the
+Atlas Puppet checkpoint is committed and pushed, re-open Fetch again against
+`520993d7301^:examples/fetch/main.cpp` before continuing the broader queue.
 
 ## Current Immediate Next Step
 
-Commit and push the `examples/add_delete_skels/` strict re-open checkpoint
-without opening a PR. Keep `--screenshot <path>` and `--out <dir>` working for
-the existing CTest, GitHub Actions smoke path, and historical image-sequence
-workflows. A later broader smoke sweep can still use:
+Restore the `examples/atlas_puppet/` README, 1280x960 run defaults, camera
+home, and marker coverage, then validate with focused build/CTest, direct/pixi
+headless screenshot smokes, Python example-runner tests, aggregate `examples`,
+mandatory lint, and post-lint focused checks. Keep `--screenshot <path>` and
+`--out <dir>` working for the existing CTest, GitHub Actions smoke path, and
+historical image-sequence workflows. A later broader smoke sweep can still use:
+
+Pre-lint Atlas Puppet validation is complete: focused build/CTest,
+direct/pixi headless screenshot analyzer checks, Python C++ example-runner
+tests, aggregate `examples` build, and `git diff --check` passed. Mandatory
+lint and post-lint focused checks remain before commit.
+
+Post-lint Atlas Puppet validation is complete: `pixi run lint`, focused
+build/CTest, direct/pixi headless screenshot analyzer checks, and
+`git diff --check` passed. A second `pixi run lint` pass also completed after
+these resume notes were updated.
 
 ```bash
 pixi run test-dart-gui-smoke

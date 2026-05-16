@@ -601,6 +601,24 @@ dart::gui::Panel createAtlasPuppetPanel()
   return panel;
 }
 
+dart::gui::RunOptions makeAtlasPuppetRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 1280;
+  options.height = 960;
+  return options;
+}
+
+dart::gui::OrbitCamera makeAtlasPuppetCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 1.0);
+  camera.yaw = 0.5118558424318241;
+  camera.pitch = 0.22626228031830084;
+  camera.distance = 6.285196894290584;
+  return camera;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -611,6 +629,8 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
     options.ikHandles = scene.ikHandles;
+    options.runDefaults = makeAtlasPuppetRunDefaults();
+    options.camera = makeAtlasPuppetCamera();
     options.preStep = [handles = scene.ikHandles]() {
       solveIkHandles(handles);
     };

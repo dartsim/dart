@@ -1938,6 +1938,8 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(
       std::filesystem::path("examples") / "atlas_puppet" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "atlas_puppet" / "README.md");
 
   EXPECT_NE(
       mainSource.find("dart://sample/sdf/atlas/atlas_v3_no_head.urdf"),
@@ -1966,9 +1968,28 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("solveIkHandles"), std::string::npos);
   EXPECT_NE(mainSource.find("WASD moves the root"), std::string::npos);
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeAtlasPuppetRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 960"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeAtlasPuppetCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 1.0)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.yaw = 0.5118558424318241"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
   EXPECT_NE(mainSource.find("'1'"), std::string::npos);
   EXPECT_NE(mainSource.find("'4'"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
+  EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Atlas Puppet Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("pixi run ex atlas_puppet"), std::string::npos);
+  EXPECT_NE(readmeSource.find("1280"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("Remaining strict-parity gaps"), std::string::npos);
+  EXPECT_NE(readmeSource.find("activation/deactivation"), std::string::npos);
+  EXPECT_NE(readmeSource.find("support-polygon/COM"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)

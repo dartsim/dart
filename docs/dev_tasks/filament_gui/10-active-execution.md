@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `6511db33821 Audit Rerun placeholder example`.
+  `9fa571ed585 Restore add-delete skeleton defaults`.
 - Latest pushed code checkpoint:
-  `6511db33821 Audit Rerun placeholder example`.
+  `9fa571ed585 Restore add-delete skeleton defaults`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -143,6 +143,7 @@ history but are not guaranteed to be in chronological order.
   - `82e39c45558 Restore Atlas Simbicon controller example`
   - `b80b7809570 Audit GUI scene diagnostics example`
   - `6511db33821 Audit Rerun placeholder example`
+  - `9fa571ed585 Restore add-delete skeleton defaults`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -530,6 +531,39 @@ history but are not guaranteed to be in chronological order.
   `UNIT_gui_FilamentSceneExtraction`, direct llvmpipe screenshot with basic
   analyzer coverage (`/tmp/dart_add_delete_direct_postlint.ppm`,
   307200/307200 nonzero pixels), and `git diff --check`.
+- The add/delete skeletons strict re-open checkpoint was pushed as
+  `9fa571ed585 Restore add-delete skeleton defaults`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now `examples/atlas_puppet/`. Compare the current source
+  against `520993d7301^:examples/atlas_puppet`, write an itemized inventory in
+  `11-example-parity-audit.md`, then preserve, restore, or explicitly name any
+  public API gaps before coding past this slice.
+- Atlas Puppet strict re-open result: source-owned Atlas load, visible IK
+  target handles, continuous IK solving, and WASD/QE/FZ root teleoperation are
+  present, but the README was deleted and the historical 1280x960 window plus
+  camera home are missing. Deeper historical gaps remain explicit for target
+  activation/deactivation, support toggles, relaxed-pose/posture recovery,
+  balance recovery, and default support-polygon/COM visualization.
+- Maintainer correction while the Atlas Puppet checkpoint is in flight:
+  `examples/fetch/` is still a concrete example of an already-migrated example
+  that may not be fully restored. After the Atlas Puppet docs/defaults checkpoint
+  is committed and pushed, re-open Fetch again as a fresh historical-source
+  parity pass instead of relying on the previous "restored by strict re-open"
+  inventory row.
+- Atlas Puppet pre-lint validation: focused build for `atlas_puppet` and
+  `UNIT_gui_FilamentSceneExtraction` passed, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction` passed, direct and pixi llvmpipe headless
+  screenshots passed analyzer coverage
+  (`/tmp/dart_atlas_puppet_direct.ppm`, 304711/307200 nonzero pixels, and
+  `/tmp/dart_atlas_puppet_pixi.ppm`, 304716/307200 nonzero pixels), Python C++
+  example-runner tests passed (67/67), aggregate `examples` build passed, and
+  `git diff --check` passed.
+- Atlas Puppet post-lint validation: `pixi run lint` passed, focused build for
+  `atlas_puppet` and `UNIT_gui_FilamentSceneExtraction` passed, focused CTest
+  passed, direct and pixi llvmpipe headless screenshots passed analyzer coverage
+  (`/tmp/dart_atlas_puppet_direct_postlint.ppm`, 304716/307200 nonzero pixels,
+  and `/tmp/dart_atlas_puppet_pixi_postlint.ppm`, 304716/307200 nonzero
+  pixels), and `git diff --check` passed.
 
 ## Current Code Shape
 

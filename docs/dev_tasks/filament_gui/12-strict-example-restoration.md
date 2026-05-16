@@ -69,6 +69,14 @@ screenshot smokes, Python C++ example-runner tests, aggregate `examples` build,
 `git diff --check`, mandatory lint, and post-lint focused smoke checks have
 passed locally for this slice.
 
+2026-05-16 follow-up during the Atlas Puppet checkpoint: maintainer steering
+again called out that many more examples are not fully restored and named
+`examples/fetch/` specifically. Treat the previous Fetch restored state as
+provisional only. After the current Atlas Puppet checkpoint is committed and
+pushed, perform a fresh Fetch historical-source comparison and keep Fetch open
+until every remaining user-visible behavior is restored or named as a public
+`dart::gui` API gap.
+
 ## Active Queue
 
 Use `11-example-parity-audit.md` as the live per-example table. The queue is
@@ -78,6 +86,10 @@ camera defaults, command-line options, README expectations, and marker guards
 are not itemized.
 
 Immediate order:
+
+Current override after the Atlas Puppet checkpoint: re-open `examples/fetch`
+again because maintainer steering explicitly identified it as still not fully
+restored. Do not rely on earlier restored-state wording in the inventory.
 
 1. Update the active docs to reflect the latest pushed
    `18dd2a70dd5 Audit headless simulation example` checkpoint and the active
@@ -212,6 +224,16 @@ Immediate order:
     direct and pixi headless screenshot smokes, Python C++ example-runner
     tests, and aggregate `examples` build passed. Post-lint focused
     build/CTest, direct screenshot smoke, and `git diff --check` also passed.
+    This checkpoint was pushed as
+    `9fa571ed585 Restore add-delete skeleton defaults`.
+17. The next strict re-open cursor is `examples/atlas_puppet/`: compare it
+    against `520993d7301^:examples/atlas_puppet`, document the itemized
+    inventory, then preserve, restore, or explicitly name any public API gaps.
+18. `examples/atlas_puppet/` strict re-open found missing README/defaults and
+    deeper remaining behavior gaps. Restore the README, 1280x960 run defaults,
+    and camera home now; keep target activation/deactivation, support toggles,
+    relaxed-pose/posture recovery, balance recovery, and default support
+    polygon/COM visualization as explicit follow-up gaps until implemented.
 
 ## Checkpoint Rule
 

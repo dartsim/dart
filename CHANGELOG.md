@@ -123,6 +123,9 @@
   - Moved `atlas_puppet` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground/root handle/IK targets, and
     passes public `dart::gui` IK handles directly.
+  - Restored the `atlas_puppet` example's README, historical 1280x960 launch
+    default, and camera home while keeping target activation, posture/balance,
+    and support visualization gaps explicit.
   - Moved `hubo_puppet` and `g1_puppet` off private named-scene fixture
     launchers so their example sources load the robots, create visible IK
     targets, and pass public `dart::gui` IK handles directly.
