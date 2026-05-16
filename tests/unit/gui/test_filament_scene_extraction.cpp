@@ -916,6 +916,47 @@ TEST(FilamentSceneExtraction, RigidChainExamplePreservesParityMarkers)
   EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, RigidLoopExamplePreservesParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "rigid_loop" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "rigid_loop" / "README.md");
+
+  EXPECT_NE(
+      mainSource.find("dart://sample/skel/chain.skel"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0))"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->setTimeStep(1.0 / 2000.0)"), std::string::npos);
+  EXPECT_NE(mainSource.find("std::array{20, 23, 26, 29}"), std::string::npos);
+  EXPECT_NE(mainSource.find("0.4 * dart::math::pi"), std::string::npos);
+  EXPECT_NE(mainSource.find("BallJointConstraint"), std::string::npos);
+  EXPECT_NE(mainSource.find("link 6"), std::string::npos);
+  EXPECT_NE(mainSource.find("link 10"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("link6->setColor(Eigen::Vector3d(1.0, 0.0, 0.0))"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("link10->setColor(Eigen::Vector3d(1.0, 0.0, 0.0))"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("printRigidLoopInstructions"), std::string::npos);
+  EXPECT_NE(mainSource.find("Rigid Loop Chain Simulation"), std::string::npos);
+  EXPECT_NE(mainSource.find("applyChainDamping"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeRigidLoopRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Rigid Loop Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
+  EXPECT_EQ(mainSource.find("dart::gui::Viewer"), std::string::npos);
+  EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, BoxesExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(

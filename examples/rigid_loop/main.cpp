@@ -57,6 +57,16 @@ namespace {
 constexpr const char* kRigidLoopUri = "dart://sample/skel/chain.skel";
 constexpr const char* kRigidLoopName = "rigid_loop";
 
+void printRigidLoopInstructions()
+{
+  std::cout << "Rigid Loop Chain Simulation\n"
+            << "Red links are connected by a ball joint constraint to form a "
+               "closed loop\n"
+            << "Space bar: Play/pause simulation\n"
+            << "ESC: Exit\n"
+            << std::endl;
+}
+
 void applyChainDamping(const dart::dynamics::SkeletonPtr& chain)
 {
   if (chain == nullptr) {
@@ -96,18 +106,14 @@ dart::simulation::WorldPtr createRigidLoopWorld()
   }
   chain->setPositions(initialPose);
 
-  for (std::size_t i = 0; i < chain->getNumBodyNodes(); ++i) {
-    chain->getBodyNode(i)->setColor(Eigen::Vector3d(0.35, 0.55, 0.85));
-  }
-
   auto* link6 = chain->getBodyNode("link 6");
   auto* link10 = chain->getBodyNode("link 10");
   if (link6 == nullptr || link10 == nullptr) {
     throw std::runtime_error("Rigid loop world is missing link 6 or link 10");
   }
 
-  link6->setColor(Eigen::Vector3d(0.95, 0.12, 0.12));
-  link10->setColor(Eigen::Vector3d(0.95, 0.12, 0.12));
+  link6->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
+  link10->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
 
   const Eigen::Vector3d offset(0.0, 0.025, 0.0);
   const Eigen::Vector3d jointPosition = link6->getTransform() * offset;
@@ -141,16 +147,27 @@ dart::gui::Panel createStatusPanel()
   return panel;
 }
 
+dart::gui::RunOptions makeRigidLoopRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
 {
   try {
+    printRigidLoopInstructions();
+
     auto world = createRigidLoopWorld();
     auto chain = world->getSkeleton(kRigidLoopName);
 
     dart::gui::ApplicationOptions options;
     options.world = world;
+    options.runDefaults = makeRigidLoopRunDefaults();
     options.preStep = [chain]() {
       applyChainDamping(chain);
     };

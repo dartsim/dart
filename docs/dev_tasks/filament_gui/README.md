@@ -189,7 +189,16 @@ implementation is in place and has passed the pre-lint focused build/CTest,
 direct and pixi screenshot smokes, Python example-runner tests, the aggregate
 `examples` build, and `git diff --check`. Mandatory `pixi run lint`,
 post-lint focused build/CTest/direct screenshot smoke also pass. Commit and
-push this checkpoint next.
+push this checkpoint next. The checkpoint has been committed and pushed as
+`b864e5a31d3 Restore rigid chain defaults`. The active slice is now
+`examples/rigid_loop`: restore the historical exact red constrained-link
+colors, console instructions, 640x480 run default, README, and source-marker
+guards while preserving the promoted `ApplicationOptions::preStep` damping
+behavior. The local implementation is in place and has passed the pre-lint
+focused build/CTest, direct and pixi screenshot smokes, Python example-runner
+tests, the aggregate `examples` build, and `git diff --check`. Mandatory
+`pixi run lint` and post-lint focused build/CTest/direct screenshot smoke also
+pass. Commit and push this checkpoint next.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as
