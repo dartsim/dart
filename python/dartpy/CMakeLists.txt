@@ -244,6 +244,14 @@ set(dartpy_gui_experimental_sources
   gui/experimental.cpp
 )
 
+set(dartpy_simulation_experimental_headers
+  simulation_experimental/module.hpp
+)
+
+set(dartpy_simulation_experimental_sources
+  simulation_experimental/module.cpp
+)
+
 set(dartpy_gui_legacy_headers
   gui/gui.hpp
   gui/utils.hpp
@@ -264,6 +272,7 @@ set(dartpy_gui_legacy_sources
 
 set(_dartpy_has_legacy_gui FALSE)
 set(_dartpy_has_experimental_gui FALSE)
+set(_dartpy_has_simulation_experimental FALSE)
 
 if(DART_BUILD_GUI)
   list(APPEND dartpy_headers ${dartpy_gui_legacy_headers})
@@ -275,6 +284,12 @@ if(TARGET dart-gui-experimental)
   list(APPEND dartpy_headers ${dartpy_gui_experimental_headers})
   list(APPEND dartpy_sources ${dartpy_gui_experimental_sources})
   set(_dartpy_has_experimental_gui TRUE)
+endif()
+
+if(TARGET dart-simulation-experimental)
+  list(APPEND dartpy_headers ${dartpy_simulation_experimental_headers})
+  list(APPEND dartpy_sources ${dartpy_simulation_experimental_sources})
+  set(_dartpy_has_simulation_experimental TRUE)
 endif()
 
 if(_dartpy_has_legacy_gui OR _dartpy_has_experimental_gui)
@@ -356,6 +371,20 @@ if(TARGET dart-gui-experimental)
   endforeach()
 endif()
 
+if(TARGET dart-simulation-experimental)
+  target_link_libraries(dartpy PRIVATE dart-simulation-experimental)
+  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(
+      _simulation_experimental_includes dart-simulation-experimental ${prop}
+    )
+    if(_simulation_experimental_includes)
+      target_include_directories(
+        dartpy PRIVATE ${_simulation_experimental_includes}
+      )
+    endif()
+  endforeach()
+endif()
+
 # Surface a version string to Python.
 target_compile_definitions(dartpy
   PRIVATE
@@ -371,6 +400,11 @@ if(_dartpy_has_legacy_gui)
 endif()
 if(_dartpy_has_experimental_gui)
   target_compile_definitions(dartpy PRIVATE DARTPY_HAS_EXPERIMENTAL_GUI=1)
+endif()
+if(_dartpy_has_simulation_experimental)
+  target_compile_definitions(
+    dartpy PRIVATE DARTPY_HAS_SIMULATION_EXPERIMENTAL=1
+  )
 endif()
 
 set_target_properties(dartpy PROPERTIES
