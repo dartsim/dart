@@ -111,6 +111,7 @@ struct KeyboardAction
 struct ApplicationOptions
 {
   dart::simulation::WorldPtr world;
+  std::optional<RunOptions> runDefaults;
   std::function<void()> preStep;
   std::optional<OrbitCamera> camera;
   std::string defaultScene;

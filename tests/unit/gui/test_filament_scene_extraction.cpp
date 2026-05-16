@@ -33,6 +33,7 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/gui/geometry.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/scene.hpp>
@@ -87,6 +88,7 @@
 #include <fstream>
 #include <iterator>
 #include <limits>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -620,6 +622,9 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   options.preStep = [&preStepCalled]() {
     preStepCalled = true;
   };
+  options.runDefaults = dart::gui::RunOptions{};
+  options.runDefaults->width = 640;
+  options.runDefaults->height = 480;
   options.camera = dart::gui::OrbitCamera{};
   options.camera->target = Eigen::Vector3d(1.0, 2.0, 3.0);
   options.defaultScene = "mvp";
@@ -628,6 +633,9 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_EQ(options.world->getName(), "panel_test");
   options.preStep();
   EXPECT_TRUE(preStepCalled);
+  ASSERT_TRUE(options.runDefaults.has_value());
+  EXPECT_EQ(options.runDefaults->width, 640);
+  EXPECT_EQ(options.runDefaults->height, 480);
   ASSERT_TRUE(options.camera.has_value());
   EXPECT_TRUE(options.camera->target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_EQ(options.defaultScene, "mvp");
@@ -647,6 +655,34 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresIkHandles)
   ASSERT_EQ(options.ikHandles.size(), 1u);
   EXPECT_EQ(options.ikHandles.front().label, "left hand");
   EXPECT_EQ(options.ikHandles.front().hotkey, '1');
+}
+
+TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
+{
+  dart::gui::RunOptions defaults;
+  defaults.width = 1280;
+  defaults.height = 960;
+
+  char executable[] = "fetch";
+  char* defaultArgv[] = {executable};
+  const auto defaultOptions = dart::gui::filament::parseOptions(
+      1, defaultArgv, std::optional<dart::gui::RunOptions>{defaults});
+
+  EXPECT_EQ(defaultOptions.run.width, 1280);
+  EXPECT_EQ(defaultOptions.run.height, 960);
+
+  char overrideExecutable[] = "fetch";
+  char widthOption[] = "--width";
+  char widthValue[] = "640";
+  char heightOption[] = "--height";
+  char heightValue[] = "480";
+  char* overrideArgv[] = {
+      overrideExecutable, widthOption, widthValue, heightOption, heightValue};
+  const auto overrideOptions = dart::gui::filament::parseOptions(
+      5, overrideArgv, std::optional<dart::gui::RunOptions>{defaults});
+
+  EXPECT_EQ(overrideOptions.run.width, 640);
+  EXPECT_EQ(overrideOptions.run.height, 480);
 }
 
 TEST(FilamentSceneExtraction, ApplicationOptionsStoresKeyboardActions)
@@ -775,6 +811,8 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(
       std::filesystem::path("examples") / "fetch" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "fetch" / "README.md");
 
   EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
   EXPECT_NE(
@@ -790,6 +828,10 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
       mainSource.find("Eigen::Vector3d(1.3, 0.75, 0.0)"), std::string::npos);
   EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
   EXPECT_NE(mainSource.find("makeFetchCamera"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeFetchRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 960"), std::string::npos);
   EXPECT_NE(
       mainSource.find("camera.target = Eigen::Vector3d(0.1, -0.3, 0.3)"),
       std::string::npos);
@@ -804,6 +846,10 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("builder.button(\"Exit\")"), std::string::npos);
   EXPECT_NE(mainSource.find("dart::gui::requestExit"), std::string::npos);
   EXPECT_NE(mainSource.find("About DART"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Fetch MJCF Example"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("1280x960"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
   EXPECT_EQ(
       mainSource.find("setGravity(Eigen::Vector3d::Zero())"),

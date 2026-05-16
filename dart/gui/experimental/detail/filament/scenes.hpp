@@ -323,7 +323,10 @@ bool parseSceneName(std::string_view name, ExampleScene& scene);
 
 dart::gui::OrbitCamera initialCameraForScene(ExampleScene scene);
 
-AppOptions parseOptions(int argc, char* argv[]);
+AppOptions parseOptions(
+    int argc,
+    char* argv[],
+    const std::optional<dart::gui::RunOptions>& runDefaults = std::nullopt);
 
 DartScene createDartScene(const AppOptions& options);
 

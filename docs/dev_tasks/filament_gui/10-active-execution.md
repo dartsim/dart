@@ -1982,7 +1982,76 @@ joint_constraints UNIT_gui_FilamentSceneExtraction --parallel 5`
     `analyze_headless_smoke.py`
     (`/tmp/dart_joint_constraints_direct_postlint.ppm`, 307200/307200 nonzero
     pixels)
-- Implementation status: ready for checkpoint commit and push.
+- Implementation status: pushed as
+  `1ab02df5766 Restore joint constraints controls`.
+
+Thirty-seventh Fetch parity re-audit checkpoint:
+
+- Maintainer correction: source ownership is still not sufficient evidence of
+  full restoration. `examples/fetch/` remains the concrete example to re-open
+  even though earlier checkpoints restored the promoted source file, camera,
+  visible target cross, work-area grid, and legacy panel controls.
+- Scope before code changes: compare the current `examples/fetch/main.cpp`
+  against the historical OSG example source again, identify any remaining
+  user-visible behavior gaps, and move repairable behavior into the promoted
+  `dart::gui` public-API example. Do not claim Fetch complete based only on
+  headless screenshots, source ownership, or previous smoke evidence.
+- Audit finding before code changes: the restored source already covers the
+  historical MJCF load, Bullet preference, robot/object initial positions,
+  mocap weld reset, target sync loop, visible target cross, work-area grid,
+  camera home, panel controls, and `--gui-scale` command-line support through
+  the promoted runner. The remaining repairable gaps for this checkpoint are:
+  restore the missing `examples/fetch/README.md`, and add a renderer-neutral
+  way for a source-owned example to set its default run/window options so Fetch
+  can recover the historical 1280x960 launch size while preserving command-line
+  overrides.
+- Keep any unrepaired behavior gap explicit with the public API it needs. Do
+  not revive OSG, private Filament hooks, or backend-specific example code to
+  close a parity item.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `fetch` and `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct and pixi Fetch headless screenshots with analyzer coverage
+  - Python C++ example runner tests
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+- Implementation state for this checkpoint: `dart::gui::ApplicationOptions`
+  now accepts optional renderer-neutral `runDefaults`, the private Filament
+  option parser seeds its defaults from that value before applying command-line
+  overrides, `examples/fetch/main.cpp` uses it to recover the historical
+  1280x960 default launch size, and `examples/fetch/README.md` is restored
+  with promoted `dart::gui` run/capture instructions.
+- Local validation completed:
+  - `cmake --build build/default/cpp/Release --target fetch
+UNIT_gui_FilamentSceneExtraction --parallel 4`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe Fetch screenshot without explicit width/height plus
+    `analyze_headless_smoke.py`
+    (`/tmp/dart_fetch_run_defaults_direct.ppm`, 1212842/1228800 nonzero
+    pixels)
+  - `pixi run ex fetch --headless --frames 2 --screenshot
+/tmp/dart_fetch_run_defaults_pixi.ppm`; the pixi runner intentionally appends
+    its 640x480 smoke size, and analyzer coverage passed at 303695/307200
+    nonzero pixels.
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target fetch
+UNIT_gui_FilamentSceneExtraction --parallel 4`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe Fetch screenshot without explicit width/height
+    plus `analyze_headless_smoke.py`
+    (`/tmp/dart_fetch_run_defaults_direct_postlint.ppm`,
+    1212842/1228800 nonzero pixels)
+- Next audit after this checkpoint: continue the remaining historical-source
+  parity pass, with `examples/rigid_shapes/` already identified as a likely
+  next slice because its historical keyboard spawn/delete/contact controls and
+  camera default still need a current-source audit.
 
 ## Stretch Direction
 
@@ -2014,8 +2083,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore joint-constraints `1`-`4` perturbation keys, `h` harness toggle,
-   and camera default through public `dart::gui`.
+1. Checkpoint and push the Fetch parity re-audit repair without staging the
+   pre-existing `STEERING.md` draft.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

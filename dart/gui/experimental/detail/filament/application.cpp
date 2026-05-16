@@ -130,7 +130,8 @@ int runFilamentGuiApplicationImpl(
     char* argv[],
     const dart::gui::ApplicationOptions& applicationOptions)
 {
-  AppOptions appOptions = parseOptions(argc, argv);
+  AppOptions appOptions
+      = parseOptions(argc, argv, applicationOptions.runDefaults);
   appOptions.camera = applicationOptions.camera;
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;

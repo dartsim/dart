@@ -93,6 +93,9 @@
   - Added a renderer-neutral `dart::gui::ApplicationOptions::camera` hook and
     used it to restore the Fetch example's historical camera framing while
     keeping the example on public `dart::gui` APIs.
+  - Added renderer-neutral `dart::gui::ApplicationOptions::runDefaults`,
+    restored the Fetch example's historical 1280x960 default launch size, and
+    restored its example README.
   - Restored visible line-segment IK target handles and promoted control text
     for the G1, Atlas, and Hubo puppet examples.
   - Restored visible line-segment target handles and promoted control text for

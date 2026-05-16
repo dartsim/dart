@@ -223,6 +223,14 @@ dart::gui::OrbitCamera makeFetchCamera()
   return camera;
 }
 
+dart::gui::RunOptions makeFetchRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 1280;
+  options.height = 960;
+  return options;
+}
+
 FetchScene createFetchScene()
 {
   FetchScene scene;
@@ -319,6 +327,7 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
+    options.runDefaults = makeFetchRunDefaults();
     options.camera = makeFetchCamera();
     options.preStep = [scene]() {
       syncMocapTarget(scene);

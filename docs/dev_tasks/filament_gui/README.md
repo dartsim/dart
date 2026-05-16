@@ -81,7 +81,18 @@ capture/session API gap. The next bounded restoration slice is
 camera default through public `dart::gui`; that checkpoint is implemented and
 pushed. The next bounded restoration slice is `examples/joint_constraints/`,
 restoring the historical `1`-`4` perturbation keys, `h` harness toggle, and
-camera default through public `dart::gui`.
+camera default through public `dart::gui`; that checkpoint is implemented and
+pushed. The immediate correction is to re-open `examples/fetch/` as a full
+historical-source parity audit, not a source-ownership audit. Earlier Fetch
+checkpoints restored the promoted source file, camera, target cross,
+work-area grid, and panel controls, but Fetch remains the concrete reminder
+that screenshots and a real `main.cpp` are not enough evidence. Any remaining
+Fetch user-visible behavior gap should be restored through promoted
+`dart::gui` APIs or recorded with the public API still needed. The Fetch
+re-audit checkpoint now restores the missing example README and adds
+renderer-neutral `ApplicationOptions::runDefaults` so the source-owned example
+can recover the historical 1280x960 default launch size while preserving
+command-line overrides.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

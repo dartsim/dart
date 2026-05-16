@@ -533,9 +533,16 @@ dart::gui::OrbitCamera initialCameraForScene(ExampleScene scene)
   return camera;
 }
 
-AppOptions parseOptions(int argc, char* argv[])
+AppOptions parseOptions(
+    int argc,
+    char* argv[],
+    const std::optional<dart::gui::RunOptions>& runDefaults)
 {
   AppOptions options;
+  if (runDefaults.has_value()) {
+    options.run = *runDefaults;
+  }
+
   bool g1PackageNameExplicit = false;
   bool g1PackageUriExplicit = false;
   bool g1RobotUriExplicit = false;

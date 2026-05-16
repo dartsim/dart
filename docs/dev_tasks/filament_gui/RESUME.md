@@ -115,11 +115,22 @@ active slice is now `examples/hybrid_dynamics/`: restore the historical `h`
 harness toggle and camera default through public `dart::gui`; that checkpoint
 is implemented and pushed. The active slice is now
 `examples/joint_constraints/`: restore the historical `1`-`4` perturbation
-keys, `h` harness toggle, and camera default through public `dart::gui`. Keep
-Atlas relaxed-posture/balance optimization, Hubo analytical IK, Atlas/Hubo
-target activation semantics, and Enter recording as explicit parity gaps
-unless a later slice adds the narrow renderer-neutral public API needed for
-them.
+keys, `h` harness toggle, and camera default through public `dart::gui`; that
+checkpoint is implemented and pushed. The active slice is now to re-open
+`examples/fetch/` as a full historical-source parity audit. Earlier Fetch
+checkpoints restored the promoted source file, camera, target cross,
+work-area grid, and panel controls, but maintainer feedback says examples such
+as Fetch still cannot be considered fully restored until their historical
+source is inventoried again and each user-visible behavior is either restored
+through promoted `dart::gui` APIs or recorded as a deliberate public-API gap.
+This Fetch re-audit checkpoint restores the missing example README and adds
+renderer-neutral `ApplicationOptions::runDefaults` so Fetch can recover its
+historical 1280x960 default launch size while preserving command-line
+overrides.
+Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
+Atlas/Hubo target activation semantics, and Enter recording as explicit parity
+gaps unless a later slice adds the narrow renderer-neutral public API needed
+for them.
 
 ## Context That Would Be Lost
 
