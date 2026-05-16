@@ -121,6 +121,27 @@ those audits. This supersedes the earlier read-only checks on local heads
 commits may move `HEAD`; rerun the commands above with `git rev-parse HEAD` for
 an exact current-head check.
 
+A current-head read-only recheck on local docs/evidence head `68944664f39`
+(`Refresh native collision stale artifact evidence`) again confirmed that no
+completing review/CI surface exists under the active no-PR scope:
+
+- `git status --short --branch` reported
+  `feature/new_coll...origin/feature/new_coll [ahead 103]`.
+- `git rev-parse HEAD` reported
+  `68944664f390ec905d6303318caa5ce6792c7b9f`; `origin/feature/new_coll`
+  remained `f8f5663d514582d8e7ec5d13871f254671083e0d`.
+- `gh auth status -h github.com` showed `jslee02` as the active account.
+- `gh run list --repo dartsim/dart --branch feature/new_coll --commit 68944664f390ec905d6303318caa5ce6792c7b9f`
+  returned `[]`.
+- `gh pr list --repo dartsim/dart --head feature/new_coll --state all` returned
+  only PR #2652, still `CLOSED`, draft, based on `main`, updated
+  `2026-05-14T19:20:08Z`, and anchored to old head
+  `714d220d82a6ba99350bf2214fc9696f5495a30f`.
+
+No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
+the current-head recheck. This section may be followed by docs-only audit
+commits; use the commands above for the exact current head.
+
 ## Current Local Full Validation Recheck (2026-05-16)
 
 After the Atlas Simbicon controller stability coverage update, a fresh local
