@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/gui/application.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -40,6 +42,7 @@
 #include <dart/constraint/weld_joint_constraint.hpp>
 
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/degree_of_freedom.hpp>
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/joint.hpp>
@@ -62,7 +65,7 @@ constexpr const char* kFetchWorldUri
 constexpr const char* kFetchRobotName = "robot0:base_link";
 constexpr const char* kFetchObjectName = "object0";
 constexpr const char* kFetchMocapName = "robot0:mocap";
-constexpr const char* kFetchTargetName = "fetch_target";
+constexpr const char* kFetchTargetName = "interactive frame";
 
 struct FetchScene
 {
@@ -79,6 +82,15 @@ Eigen::Isometry3d makeTargetTransform()
       = Eigen::AngleAxisd(1.5707963267948966, Eigen::Vector3d::UnitY())
             .toRotationMatrix();
   return transform;
+}
+
+void preferBulletCollisionDetector(dart::simulation::World& world)
+{
+#if DART_HAVE_BULLET
+  world.setCollisionDetector(dart::simulation::CollisionDetectorType::Bullet);
+#else
+  (void)world;
+#endif
 }
 
 void configureRobot(const dart::dynamics::SkeletonPtr& robot)
@@ -128,13 +140,31 @@ void resetFirstWeldConstraint(const dart::simulation::WorldPtr& world)
   }
 }
 
+void setFrameColor(
+    const std::shared_ptr<dart::dynamics::SimpleFrame>& frame,
+    const Eigen::Vector4d& color)
+{
+  frame->getVisualAspect(true)->setRGBA(color);
+}
+
+void addTargetBar(
+    dart::simulation::World& world,
+    const std::shared_ptr<dart::dynamics::SimpleFrame>& target,
+    const std::string& name,
+    const Eigen::Vector3d& dimensions)
+{
+  auto bar = target->spawnChildSimpleFrame(name);
+  bar->setShape(std::make_shared<dart::dynamics::BoxShape>(dimensions));
+  setFrameColor(bar, Eigen::Vector4d(0.18, 0.86, 0.34, 0.42));
+  world.addSimpleFrame(bar);
+}
+
 std::shared_ptr<dart::dynamics::SimpleFrame> createTargetFrame()
 {
   auto target = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kFetchTargetName, makeTargetTransform());
   target->setShape(std::make_shared<dart::dynamics::SphereShape>(0.06));
-  target->getVisualAspect(true)->setRGBA(
-      Eigen::Vector4d(0.18, 0.86, 0.34, 0.92));
+  setFrameColor(target, Eigen::Vector4d(0.18, 0.86, 0.34, 0.92));
   return target;
 }
 
@@ -145,7 +175,7 @@ FetchScene createFetchScene()
   if (scene.world == nullptr) {
     throw std::runtime_error("Failed to load Fetch pick-and-place MJCF world");
   }
-  scene.world->setGravity(Eigen::Vector3d::Zero());
+  preferBulletCollisionDetector(*scene.world);
 
   auto robot = scene.world->getSkeleton(kFetchRobotName);
   if (robot == nullptr) {
@@ -168,6 +198,16 @@ FetchScene createFetchScene()
 
   scene.target = createTargetFrame();
   scene.world->addSimpleFrame(scene.target);
+  addTargetBar(
+      *scene.world,
+      scene.target,
+      "fetch_target_x_bar",
+      Eigen::Vector3d(0.42, 0.035, 0.035));
+  addTargetBar(
+      *scene.world,
+      scene.target,
+      "fetch_target_y_bar",
+      Eigen::Vector3d(0.035, 0.42, 0.035));
   return scene;
 }
 
@@ -190,6 +230,7 @@ dart::gui::Panel createFetchPanel()
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
     builder.text("Fetch pick-and-place MJCF world");
+    builder.text("Whole-body motion follows the green cross target.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -200,7 +241,6 @@ dart::gui::Panel createFetchPanel()
         dart::gui::requestSingleStep(*context.lifecycle);
       }
     }
-    builder.text("Move the green target to drive the mocap body.");
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("contacts: " + std::to_string(context.contactCount));
     builder.text("selected: " + context.selectedLabel);

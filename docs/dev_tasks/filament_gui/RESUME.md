@@ -58,14 +58,21 @@ The latest naming direction also distinguishes library and application brands:
 for package/library artifacts, and `dartsim` is the application-level
 simulator/viewer identity, analogous to Isaac Sim.
 
+User correction after the `drag_and_drop` checkpoint: examples such as
+`examples/fetch/` may be source-owned without being fully restored. The docs now
+distinguish example ownership (`options.world`, no `options.defaultScene`) from
+feature parity with the historical source. `fetch` is the immediate repair
+target because it lost visible interactive target affordances, Bullet
+preference, and richer target-following panel content during the first
+migration.
+
 ## Immediate Next Step
 
-Continue from the pushed `--out <dir>` image-sequence capture checkpoint. Do
-not wait for CI before making independent progress, but inspect and fix CI
-failures if they surface. The checkpoint adds the promoted `RunOptions` field,
-C++/Python helpers, CLI parsing, frame readback/save path, focused C++/Python
-tests, and direct plus Pixi `rigid_cubes --headless --frames 2 --out ...`
-verification.
+After the Fetch parity checkpoint is committed and pushed, continue the broader
+example restoration audit. Do not wait for CI before making independent
+progress, but inspect and fix CI failures if they surface. Next priorities are
+the remaining inverse-dependent examples (`imgui`, `tinkertoy`) and the
+robot/IK examples that still use macro scene launchers.
 
 ## Context That Would Be Lost
 

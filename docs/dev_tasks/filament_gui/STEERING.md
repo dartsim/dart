@@ -618,7 +618,8 @@ with `SimpleFrame` anchor + child + axis markers; the
        --scene drag-and-drop` either keeps working via a slim
 linkage or is removed.
 R19-3. **Migrate the rest of the inverse-dependent examples**
-in the same order Codex used for the original "restoration":
+(`imgui`, `tinkertoy`) so they own their worlds in-source and then continue
+fixture cleanup in the same order Codex used for the original "restoration":
 rigid family → joint/dynamics → robot/IK → geometry/visual.
 Each migration is one commit per example (or per family
 if examples share fixture code).
@@ -651,6 +652,87 @@ keep their previous priority.
   enum-based API. The whole concept of "library knows about
   named example scenes" is what we're removing; making it more
   ergonomic to call would entrench the inversion.
+
+---
+
+## 2026-05-15 Round 20 — "Self-owned" is not the same as fully restored
+
+**Trigger (user correction):**
+
+> Wait, there are many more examples that are not fully restored, such as
+> `examples/fetch/`
+
+The Round 19 audit correctly separated examples that use `options.world` from
+examples that still use `options.defaultScene`, but that is only an
+ownership/dependency audit. It is **not** enough to call an example fully
+restored. A restored example must also preserve the educational behavior and
+important user-visible controls from the pre-OSG source unless the missing
+piece is deliberately replaced by a documented `dart::gui` feature.
+
+### Fetch parity gap
+
+`examples/fetch/main.cpp` currently owns a world and uses public `dart::gui`,
+but the migration is still partial compared with the historical Fetch example:
+
+- The legacy example preferred the Bullet collision detector when available.
+- The legacy interactive target was an `InteractiveFrame` with a visible
+  cross/handle affordance and drag behavior; the current source reduces this
+  to a small green sphere.
+- The private fixture marks the loaded skeletons visual-only for developer
+  render coverage, but the historical example was a live simulation. The
+  restored example should prefer historical behavior and document any remaining
+  fixture/example divergence instead of silently treating the fixture as
+  canonical.
+- The legacy panel text described the whole-body target-following behavior and
+  exposed the old viewer help/menu affordances. The current panel is only a
+  minimal status panel.
+- The legacy camera/home-view intent is not expressed by the public example
+  path yet; until `dart::gui` exposes per-example camera defaults, this remains
+  a parity gap to track explicitly.
+
+### Restoration bar for all examples
+
+For every restored `examples/<name>/main.cpp`, track both:
+
+- **Ownership:** no `options.defaultScene`; source constructs or loads the
+  world and passes `options.world`.
+- **Parity:** source preserves the example's essential simulation behavior,
+  visual affordances, controls, and headless renderability under the promoted
+  `dart::gui` API.
+
+Do not mark an example "fully restored" based only on `options.world`. Use
+"source-owned, parity pending" when behavior or controls are still reduced.
+
+### Immediate order
+
+R20-1. Update the active execution notes so `fetch` is no longer described as
+fully restored; call it source-owned with parity gaps.
+
+R20-2. Repair `examples/fetch/` first: restore the visual target affordance
+using public DART shapes/frames, prefer Bullet when available, preserve the
+historical live target-following simulation over the fixture-only visual setup,
+and strengthen the panel copy without exposing Filament, GLFW, Dear ImGui,
+OSG, or private GUI headers.
+
+R20-3. Add or update a boundary/unit guard that checks the Fetch source keeps
+the expected public-only ownership/parity markers.
+
+R20-4. Validate `fetch` directly and through `pixi run ex fetch`, then commit
+and push a checkpoint without opening a PR.
+
+### Implementation state
+
+- The current code slice repairs `examples/fetch/main.cpp` by preferring
+  Bullet when available, preserving the live mocap target-following `preStep`,
+  restoring a visible green cross target with public `SimpleFrame` and shape
+  APIs, and strengthening the panel text around the whole-body target behavior.
+- `UNIT_gui_FilamentSceneExtraction` now includes Fetch-specific parity
+  markers so the example cannot regress back to a source-owned but reduced
+  marker-only version without a test failure.
+- Remaining explicit gap: the legacy OSG camera home-position API has no
+  public `dart::gui` equivalent yet, so Fetch's exact initial view remains
+  tracked as a future `ApplicationOptions`/camera-default API question rather
+  than hidden in the example.
 
 ---
 

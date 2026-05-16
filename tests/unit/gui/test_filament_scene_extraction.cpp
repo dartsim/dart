@@ -669,6 +669,26 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
   }
 }
 
+TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "fetch" / "main.cpp");
+
+  EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("CollisionDetectorType::Bullet"), std::string::npos);
+  EXPECT_NE(mainSource.find("interactive frame"), std::string::npos);
+  EXPECT_NE(mainSource.find("fetch_target_x_bar"), std::string::npos);
+  EXPECT_NE(mainSource.find("fetch_target_y_bar"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("syncMocapTarget"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(
+      mainSource.find("setGravity(Eigen::Vector3d::Zero())"),
+      std::string::npos);
+}
+
 TEST(
     FilamentSceneExtraction,
     DartsimApplicationHeadersAvoidDirectFilamentIncludes)

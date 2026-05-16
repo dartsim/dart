@@ -484,7 +484,9 @@ Correction after checkpoint `3b4ac2cae7b`:
 
 Sixth source-migration checkpoint:
 
-- Restore `examples/fetch` as a source-defined public-API example.
+- Restore `examples/fetch` as a source-defined public-API example. Current
+  status correction: `fetch` is source-owned, but not yet fully restored to
+  parity with the historical example.
 - Add the smallest renderer-neutral lifecycle hook required by the original
   Fetch behavior: `dart::gui::ApplicationOptions::preStep`, invoked before each
   simulation step when an example supplies its own world.
@@ -506,6 +508,34 @@ Sixth source-migration checkpoint:
   - `pixi run ex fetch --headless --frames 1 --screenshot ...`
   - Full `examples` aggregate target build
   - `pixi run lint`
+
+Fetch parity correction after user review:
+
+- Treat `examples/fetch` as **source-owned, parity pending** until the public
+  example preserves the old Fetch-specific affordances: Bullet preference when
+  available, visible draggable target/cross handles, historical live
+  target-following simulation behavior, stronger target-following panel
+  content, and documented camera-default gap until `dart::gui` exposes
+  per-example camera defaults.
+- The next code slice repairs `examples/fetch/` before continuing broader
+  robot/IK migration, because it is a concrete example where `options.world`
+  was mistaken for full restoration.
+- Implementation state for this slice: `examples/fetch/main.cpp` now prefers
+  Bullet when available, preserves the live mocap target-following `preStep`,
+  restores a visible green cross target from public `SimpleFrame`/shape APIs,
+  and has a focused boundary guard for those parity markers.
+- Local evidence for the in-progress checkpoint:
+  - C++ GUI target build for `fetch` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct `fetch --headless --frames 1 --screenshot ...` capture
+  - `pixi run ex fetch --headless --frames 1 --screenshot ...`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - Post-lint focused rebuild/CTest for `fetch` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint direct `fetch --headless --frames 1 --screenshot ...` capture
 
 Seventh source-migration checkpoint:
 
@@ -603,8 +633,10 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore `examples/fetch` as a real public-API `dart::gui` program, including
-   the minimal public pre-step hook needed to preserve its original behavior.
+1. Repair `examples/fetch` from source-owned but partial to parity-restored:
+   restore its target affordance with public DART frames/shapes, prefer Bullet
+   when available, preserve the live target-following behavior, and add a
+   focused boundary guard.
 2. Continue across the remaining pre-existing examples in small related
    families, documenting each slice here before implementation.
 3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
