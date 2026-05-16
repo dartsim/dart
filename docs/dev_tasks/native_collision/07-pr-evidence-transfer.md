@@ -158,8 +158,9 @@ Local validation currently recorded in the dev-task evidence:
 - The capsule-box fix head `c1f03f23147` passed focused
   `test_capsule_capsule` with the new
   `CapsuleBox.DuplicateFilteringIsPairLocal` regression, the mixed
-  collision benchmark guard, the full `pixi run -e collision-reference
-bm-collision-check` guard, `pixi run lint`, `git diff --check`,
+  collision benchmark guard, the full
+  `pixi run -e collision-reference bm-collision-check` guard, `pixi run lint`,
+  `git diff --check`,
   `pixi run test-all`, and a fresh `pixi run -e gazebo test-gz` 65/65
   downstream compatibility gate. The gz DART plugin dependency scan again
   reported `libdart-collision-native.so`.
