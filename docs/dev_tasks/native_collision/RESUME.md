@@ -165,9 +165,11 @@ post GitHub comments unless the user explicitly asks.
   current local head. Recent docs-only evidence commits refresh the
   completion-audit snapshot, avoid stale-current-head wording, align milestone
   local/final evidence wording, record native stability-label validation, and
-  keep the deferred finalization handoff explicit. The latest local
-  evidence-record commit before this resume refresh is `25b60737498`
-  (`Record native collision package smoke validation`).
+  keep the deferred finalization handoff explicit. Recent local evidence-record
+  commits include package-smoke validation, PR evidence packet cleanup, and
+  supervisor reference-audit cleanup; use `git log -3 --oneline --decorate` for
+  the exact current local head instead of treating a docs-only evidence commit
+  as stable.
 - Latest source-build prerequisite docs cleanup: `621fca5a1fb`. Validation:
   `pixi run lint` passed on that tree after moving FCL out of required
   prerequisites.
