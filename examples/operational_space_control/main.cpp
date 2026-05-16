@@ -30,8 +30,6 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-
 #include <dart/gui/application.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -39,22 +37,18 @@
 #include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/body_node.hpp>
-#include <dart/dynamics/box_shape.hpp>
-#include <dart/dynamics/degree_of_freedom.hpp>
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/joint.hpp>
-#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
-#include <dart/dynamics/weld_joint.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
-#include <dart/common/uri.hpp>
+#include <dart/math/constants.hpp>
 
 #include <dart/io/read.hpp>
 
 #include <Eigen/Geometry>
 
-#include <array>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -62,81 +56,56 @@
 
 namespace {
 
-constexpr const char* kWamPackageName = "herb_description";
-constexpr const char* kWamPackagePath = "urdf/wam";
-constexpr const char* kWamUrdfPath = "urdf/wam/wam.urdf";
-constexpr const char* kWamSkeletonName = "visual_operational_space_control_wam";
+constexpr const char* kRobotUri = "dart://sample/urdf/KR5/KR5 sixx R650.urdf";
+constexpr const char* kGroundUri = "dart://sample/urdf/KR5/ground.urdf";
+constexpr const char* kRobotSkeletonName = "KR5";
 constexpr const char* kTargetFrameName = "operational_space_control_target";
 constexpr const char* kGroundSkeletonName
     = "visual_operational_space_control_ground";
 
-dart::dynamics::SkeletonPtr loadOperationalSpaceControlWamSkeleton()
+dart::dynamics::SkeletonPtr loadOperationalSpaceRobot()
 {
-  dart::io::ReadOptions options;
-  options.addPackageDirectory(
-      kWamPackageName, dart::config::dataPath(kWamPackagePath));
-  const auto wamUri
-      = dart::common::Uri::createFromPath(dart::config::dataPath(kWamUrdfPath));
-  auto wam = dart::io::readSkeleton(wamUri, options);
-  if (wam == nullptr) {
+  auto robot = dart::io::readSkeleton(kRobotUri);
+  if (robot == nullptr) {
     throw std::runtime_error(
-        "Failed to load operational-space WAM from " + wamUri.toString());
+        "Failed to load operational-space robot from "
+        + std::string(kRobotUri));
   }
 
-  wam->setName(kWamSkeletonName);
-  const std::array<std::pair<const char*, double>, 7> jointPositions{{
-      {"/j1", 0.0},
-      {"/j2", 0.0},
-      {"/j3", 0.0},
-      {"/j4", 0.0},
-      {"/j5", 0.0},
-      {"/j6", 0.0},
-      {"/j7", 0.0},
-  }};
-  for (const auto& [name, position] : jointPositions) {
-    auto* dof = wam->getDof(name);
-    if (dof == nullptr) {
-      throw std::runtime_error(
-          "Operational-space WAM is missing expected DOF " + std::string(name));
-    }
-    dof->setPosition(position);
+  if (robot->getNumJoints() == 0 || robot->getJoint(0) == nullptr) {
+    throw std::runtime_error("Operational-space KR5 is missing its root joint");
   }
+  robot->getJoint(0)->setTransformFromParentBodyNode(
+      Eigen::Isometry3d::Identity());
+  robot->setName(kRobotSkeletonName);
 
-  wam->eachJoint([](dart::dynamics::Joint* joint) {
+  robot->eachJoint([](dart::dynamics::Joint* joint) {
     joint->setLimitEnforcement(false);
-    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
-      joint->setDampingCoefficient(i, 0.5);
+    if (joint->getNumDofs() > 0) {
+      joint->setDampingCoefficient(0, 0.5);
     }
   });
-  return wam;
+  return robot;
 }
 
-dart::dynamics::SkeletonPtr createGround()
+dart::dynamics::SkeletonPtr loadOperationalSpaceGround()
 {
-  auto ground = dart::dynamics::Skeleton::create(kGroundSkeletonName);
-  auto* body
-      = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
-  auto* shapeNode = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
-      std::make_shared<dart::dynamics::BoxShape>(
-          Eigen::Vector3d(5.0, 5.0, 0.01)));
-  shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, -0.005));
-  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.18, 0.32, 0.58, 1.0));
+  auto ground = dart::io::readSkeleton(kGroundUri);
+  if (ground == nullptr || ground->getNumJoints() == 0
+      || ground->getJoint(0) == nullptr) {
+    throw std::runtime_error(
+        "Failed to load operational-space ground from "
+        + std::string(kGroundUri));
+  }
+
+  ground->setName(kGroundSkeletonName);
+  Eigen::Isometry3d transform
+      = ground->getJoint(0)->getTransformFromParentBodyNode();
+  transform.pretranslate(Eigen::Vector3d(0.0, 0.0, 0.5));
+  transform.rotate(
+      Eigen::AngleAxisd(dart::math::pi / 2.0, Eigen::Vector3d::UnitX()));
+  ground->getJoint(0)->setTransformFromParentBodyNode(transform);
   return ground;
-}
-
-std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetHandleShape(
-    double radius)
-{
-  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(7.0f);
-  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
-  const auto addAxis = [&](const Eigen::Vector3d& axis) {
-    handle->addVertex(axis, center);
-    handle->addVertex(-axis, center);
-  };
-  addAxis(Eigen::Vector3d(radius, 0.0, 0.0));
-  addAxis(Eigen::Vector3d(0.0, radius, 0.0));
-  addAxis(Eigen::Vector3d(0.0, 0.0, 0.75 * radius));
-  return handle;
 }
 
 class OperationalSpaceControlState
@@ -145,13 +114,16 @@ public:
   OperationalSpaceControlState(
       dart::dynamics::SkeletonPtr robot, dart::dynamics::SimpleFramePtr target)
     : mRobot(std::move(robot)),
-      mEndEffector(mRobot ? mRobot->getBodyNode("/wam7") : nullptr),
+      mEndEffector(
+          mRobot && mRobot->getNumBodyNodes() > 0
+              ? mRobot->getBodyNode(mRobot->getNumBodyNodes() - 1)
+              : nullptr),
       mTarget(std::move(target)),
       mOffset(0.05, 0.0, 0.0)
   {
     if (mRobot == nullptr || mEndEffector == nullptr || mTarget == nullptr) {
       throw std::runtime_error(
-          "Operational-space control is missing WAM, end-effector, or target");
+          "Operational-space control is missing KR5, end-effector, or target");
     }
 
     const std::size_t dofs = mEndEffector->getNumDependentGenCoords();
@@ -226,28 +198,62 @@ OperationalSpaceScene createOperationalSpaceScene()
   OperationalSpaceScene scene;
   scene.world = dart::simulation::World::create("dartsim_operational_space");
   scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
-  scene.world->addSkeleton(createGround());
+  scene.world->addSkeleton(loadOperationalSpaceGround());
 
-  auto wam = loadOperationalSpaceControlWamSkeleton();
-  auto* endEffector = wam->getBodyNode("/wam7");
-  if (endEffector == nullptr) {
+  auto robot = loadOperationalSpaceRobot();
+  if (robot->getNumBodyNodes() == 0) {
     throw std::runtime_error(
-        "Operational-space WAM is missing /wam7 body node");
+        "Operational-space KR5 is missing an end-effector body node");
   }
+  auto* endEffector = robot->getBodyNode(robot->getNumBodyNodes() - 1);
 
   Eigen::Isometry3d targetTransform = endEffector->getWorldTransform();
   targetTransform.pretranslate(Eigen::Vector3d(0.05, 0.0, 0.0));
   auto target = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kTargetFrameName, targetTransform);
-  target->setShape(createTargetHandleShape(0.15));
+  target->setShape(std::make_shared<dart::dynamics::SphereShape>(0.025));
   target->getVisualAspect(true)->setRGBA(
       Eigen::Vector4d(0.92, 0.08, 0.08, 1.0));
   scene.world->addSimpleFrame(target);
 
   scene.controller
-      = std::make_shared<OperationalSpaceControlState>(wam, target);
-  scene.world->addSkeleton(wam);
+      = std::make_shared<OperationalSpaceControlState>(robot, target);
+  scene.world->addSkeleton(robot);
   return scene;
+}
+
+dart::gui::RunOptions makeOperationalSpaceRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makeOperationalSpaceCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.8848934155088675;
+  camera.pitch = 0.38410042777133657;
+  camera.distance = 4.376539729055364;
+  return camera;
+}
+
+void printOperationalSpaceInstructions()
+{
+  std::cout
+      << "Operational Space Control Example Controls:\n"
+      << "Click the red ball, then Ctrl-left drag it to move the target of "
+         "the operational space controller.\n"
+      << "Hold key 1 or X while Ctrl-dragging to constrain movement to the "
+         "x-axis.\n"
+      << "Hold key 2 or Y while Ctrl-dragging to constrain movement to the "
+         "y-axis.\n"
+      << "Hold key 3 or Z while Ctrl-dragging to constrain movement to the "
+         "z-axis.\n"
+      << "Arrow keys and PageUp/PageDown nudge the selected target.\n"
+      << "Space: Toggle simulation\n";
 }
 
 dart::gui::Panel createOperationalSpacePanel()
@@ -256,11 +262,11 @@ dart::gui::Panel createOperationalSpacePanel()
   panel.title = "Operational Space";
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
-    builder.text("WAM operational-space target control");
-    builder.text("Select the red target handle.");
+    builder.text("KR5 operational-space target control");
+    builder.text("Select the red target ball.");
     builder.text("Ctrl-left drag moves the selected handle.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
-    builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
+    builder.text("Hold 1/2/3 or X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -286,11 +292,14 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
+    options.runDefaults = makeOperationalSpaceRunDefaults();
+    options.camera = makeOperationalSpaceCamera();
     options.preStep = [controller = scene.controller]() {
       controller->preStep();
     };
     options.panels.push_back(createOperationalSpacePanel());
 
+    printOperationalSpaceInstructions();
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {
     std::cerr << "operational_space_control: " << e.what() << "\n";

@@ -2383,12 +2383,87 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   const auto operationalSource = readSourceFile(
       std::filesystem::path("examples") / "operational_space_control"
       / "main.cpp");
+  const auto operationalReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "operational_space_control"
+      / "README.md");
+  const auto inputSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
+      / "filament" / "input.cpp");
+  const auto selectionSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
+      / "filament" / "selection.cpp");
   EXPECT_NE(
-      operationalSource.find("createTargetHandleShape"), std::string::npos);
-  EXPECT_NE(operationalSource.find("LineSegmentShape"), std::string::npos);
+      operationalSource.find("KR5/KR5 sixx R650.urdf"), std::string::npos);
+  EXPECT_NE(operationalSource.find("KR5/ground.urdf"), std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("setTransformFromParentBodyNode"),
+      std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("Eigen::Isometry3d::Identity()"),
+      std::string::npos);
+  EXPECT_NE(
+      operationalSource.find(
+          "transform.pretranslate(Eigen::Vector3d(0.0, 0.0, 0.5))"),
+      std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("Eigen::AngleAxisd(dart::math::pi / 2.0"),
+      std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("joint->setLimitEnforcement(false)"),
+      std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("joint->setDampingCoefficient(0, 0.5)"),
+      std::string::npos);
+  EXPECT_NE(operationalSource.find("SphereShape>(0.025)"), std::string::npos);
+  EXPECT_NE(operationalSource.find("getMassMatrix"), std::string::npos);
+  EXPECT_NE(operationalSource.find("getLinearJacobian"), std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("getLinearJacobianDeriv"), std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("getCoriolisAndGravityForces"), std::string::npos);
+  EXPECT_NE(operationalSource.find("mKp(i, i) = 50.0"), std::string::npos);
+  EXPECT_NE(operationalSource.find("mKd(i, i) = 5.0"), std::string::npos);
+  EXPECT_NE(operationalSource.find("mRobot->setForces"), std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("makeOperationalSpaceRunDefaults"),
+      std::string::npos);
+  EXPECT_NE(operationalSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(operationalSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("makeOperationalSpaceCamera"), std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("camera.yaw = 0.8848934155088675"),
+      std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("camera.distance = 4.376539729055364"),
+      std::string::npos);
   EXPECT_NE(operationalSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(operationalSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(operationalSource.find("options.camera"), std::string::npos);
   EXPECT_NE(operationalSource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("Hold key 1 or X while Ctrl-dragging"),
+      std::string::npos);
   EXPECT_EQ(operationalSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(operationalSource.find("wam.urdf"), std::string::npos);
+  EXPECT_NE(inputSource.find("GLFW_KEY_1"), std::string::npos);
+  EXPECT_NE(inputSource.find("GLFW_KEY_2"), std::string::npos);
+  EXPECT_NE(inputSource.find("GLFW_KEY_3"), std::string::npos);
+  EXPECT_NE(selectionSource.find("GLFW_KEY_1"), std::string::npos);
+  EXPECT_NE(selectionSource.find("GLFW_KEY_2"), std::string::npos);
+  EXPECT_NE(selectionSource.find("GLFW_KEY_3"), std::string::npos);
+  EXPECT_NE(
+      operationalReadmeSource.find("Operational Space Control Example"),
+      std::string::npos);
+  EXPECT_NE(
+      operationalReadmeSource.find("pixi run ex operational_space_control"),
+      std::string::npos);
+  EXPECT_NE(
+      operationalReadmeSource.find("`1`, `2`, or `3`"), std::string::npos);
+  EXPECT_NE(operationalReadmeSource.find("--out"), std::string::npos);
+  EXPECT_NE(
+      operationalReadmeSource.find("shadow-control API gap"),
+      std::string::npos);
 
   const auto wamSource = readSourceFile(
       std::filesystem::path("examples") / "wam_ikfast" / "main.cpp");

@@ -28,17 +28,17 @@ pinned CMake fetch/build path.
 
 ## Candidate assessment
 
-| Candidate              | Assessment                                                                                  | Outcome                                      |
-| ---------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| Filament               | Strong real-time rendering quality, PBR, shadows, glTF tooling, embeddable C++ API.         | Preferred renderer candidate.                |
-| OpenSceneGraph         | Existing path, mature scene graph, but aging rendering model and public API leakage.        | Keep as legacy until replacement is ready.   |
-| VulkanSceneGraph       | Modern lower-level direction, but raises integration and maintenance cost for DART.         | Not the first replacement candidate.         |
-| Raylib                 | Excellent lightweight smoke/demo stack, but not enough visual-quality headroom.             | Keep only as legacy experiment for now.      |
-| GLFW                   | Window/input library, not a renderer.                                                       | Use with Filament.                           |
-| Dear ImGui             | Debug UI library, not a renderer.                                                           | Use privately for controls/panels.           |
-| Viser                  | Useful remote/browser visualization model, but not a native built-in DART GUI foundation.   | Consider separately for remote workflows.    |
-| Rerun                  | Useful logging/time-series visualization model, but not a direct interactive GUI backend.   | Consider separately for telemetry workflows. |
-| Zero-dependency custom | Maximum control, but would make DART own rendering quality, platform, and asset complexity. | Reject for this scope.                       |
+| Candidate                  | Assessment                                                                                  | Outcome                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Filament                   | Strong real-time rendering quality, PBR, shadows, glTF tooling, embeddable C++ API.         | Preferred renderer candidate.              |
+| OpenSceneGraph             | Existing path, mature scene graph, but aging rendering model and public API leakage.        | Keep as legacy until replacement is ready. |
+| VulkanSceneGraph           | Modern lower-level direction, but raises integration and maintenance cost for DART.         | Not the first replacement candidate.       |
+| Raylib                     | Excellent lightweight smoke/demo stack, but not enough visual-quality headroom.             | Keep only as legacy experiment for now.    |
+| GLFW                       | Window/input library, not a renderer.                                                       | Use with Filament.                         |
+| Dear ImGui                 | Debug UI library, not a renderer.                                                           | Use privately for controls/panels.         |
+| Viser                      | Useful remote/browser visualization model, but not a native built-in DART GUI foundation.   | Consider separately only with demand.      |
+| External telemetry viewers | Useful logging/time-series model, but not a direct interactive GUI backend.                 | No maintained scope without users.         |
+| Zero-dependency custom     | Maximum control, but would make DART own rendering quality, platform, and asset complexity. | Reject for this scope.                     |
 
 ## Required mix
 
@@ -48,6 +48,7 @@ The first serious experiment should therefore be:
 Filament renderer + GLFW window/input + private Dear ImGui debug controls
 ```
 
-Rerun, Viser, or similar tools can still be useful adjacent workflows, but they
-should not be treated as replacements for the maintained in-process `dart::gui`
-viewer.
+External remote or telemetry tools can still be useful adjacent workflows, but
+they should not be treated as replacements for the maintained in-process
+`dart::gui` viewer, and they should not become maintained surfaces without a
+concrete workflow or downstream user.

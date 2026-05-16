@@ -29,6 +29,11 @@ context survives across sessions.
   a concrete use case or known downstream user. If `examples/rerun/` is still
   only a no-source placeholder, prefer removing the placeholder support to
   reduce maintenance surface instead of carrying it as a restored example.
+- Latest maintainer steering reaffirms that broader Rerun support should also
+  be treated as removable maintenance surface unless a concrete use case,
+  executable workflow, or downstream user is identified. After the current
+  checkpoint, audit remaining Rerun references and remove stale scaffolding or
+  docs instead of preserving unsupported optional surfaces.
 
 ## Branch And CI State
 
@@ -113,7 +118,7 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `b0da74db11c Restore Mixed Chain example defaults`.
+  `b718e65fe15 Advance Filament GUI strict cursor`.
 - Latest pushed code checkpoint:
   `b0da74db11c Restore Mixed Chain example defaults`.
 - Latest pushed infrastructure checkpoint: `b7a269906f9` merged
@@ -165,6 +170,21 @@ history but are not guaranteed to be in chronological order.
   then restore or explicitly classify every historical robot loading,
   controller/IK behavior, target controls, camera/default, README, panel, and
   marker behavior.
+- Current operational-space-control implementation restores the historical KR5
+  robot/ground load, red target ball, task-space controller, 640x480 default,
+  camera home, console/panel instructions, README/capture docs, and marker
+  coverage. 1/2/3 aliases were added to the promoted selection drag axis
+  constraints so the old axis-control keys work alongside the existing X/Y/Z
+  aliases. Shadow toggling and exact custom camera up-vector/roll remain public
+  API gaps.
+- Operational-space-control pre-lint validation has passed: focused target and
+  marker-test build, focused `UNIT_gui_FilamentSceneExtraction` CTest, direct
+  and pixi software-GL screenshot analyzer checks, image-sequence analyzer
+  check, direct visual inspection of the KR5 capture, aggregate
+  `build-examples`, and Python C++ example-runner tests.
+- Mandatory `pixi run lint` passed for the operational-space-control slice.
+  Post-lint focused rebuild, focused CTest, direct software-GL screenshot
+  analyzer check, and `git diff --check` also passed.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`
@@ -210,6 +230,7 @@ history but are not guaranteed to be in chronological order.
   - `e5523b4f5cd Restore LCP physics scene controls`
   - `4db26872b44 Restore Mimic Pendulums panel controls`
   - `b0da74db11c Restore Mixed Chain example defaults`
+  - `b718e65fe15 Advance Filament GUI strict cursor`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared

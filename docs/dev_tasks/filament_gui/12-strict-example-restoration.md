@@ -446,6 +446,26 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `examples/operational_space_control/`; compare it against
     `520993d7301^:examples/operational_space_control` before coding past that
     slice.
+48. `examples/operational_space_control/` strict re-open found major scope
+    drift: the promoted source loaded WAM, while the historical example loads
+    KR5 plus KR5 ground. The current source restores KR5 robot/ground loading,
+    the red `SphereShape(0.025)` target ball, controller math on the KR5 end
+    effector, 640x480 defaults, camera home, console/panel instructions,
+    README/capture docs, and marker coverage. 1/2/3 aliases were added to
+    promoted axis-constrained drag so the historical constraint keys work
+    without reintroducing OSG. The hidden shadow toggle and exact custom camera
+    up vector remain public API gaps. Pre-lint validation includes focused
+    builds, focused CTest, direct and pixi software-GL screenshot analyzer
+    checks, image-sequence analyzer checks, aggregate `build-examples`, Python
+    C++ example runner tests, and direct visual inspection of the KR5 capture.
+    Mandatory `pixi run lint`, post-lint focused rebuild/CTest, post-lint
+    direct screenshot analyzer check, and `git diff --check` also passed.
+49. New maintainer steering after item 48: do not keep Rerun support merely as
+    optional scaffolding. The `examples/rerun/` placeholder is already removed;
+    this slice also removed stale Rerun-as-adjacent-tool planning language from
+    the renderer selection and north-star migration notes. The remaining
+    lowercase `rerun` references are CI retry workflow docs or intentional
+    removal guards/history, not product support.
 
 ## Checkpoint Rule
 

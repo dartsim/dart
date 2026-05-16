@@ -98,11 +98,10 @@ not a drop-in OSG replacement.
 - **Raylib** is useful for small examples, but its renderer quality ceiling,
   material model, asset pipeline, and robotics visualization headroom are below
   the target for replacing OSG examples.
-- **Viser, Rerun, and web or streaming viewers** are useful adjacent tools for
-  remote inspection, time-series logging, or browser workflows. They are not a
-  native built-in replacement for DART's maintained C++ GUI library. Their
-  strengths should be treated as optional export or streaming integrations, not
-  as the primary GUI layer.
+- **External remote, telemetry, and streaming viewers** may be useful adjacent
+  tools for remote inspection, time-series logging, or browser workflows. They
+  are not a native built-in replacement for DART's maintained C++ GUI library,
+  and they should not become maintained integrations without concrete demand.
 - **Dear ImGui and GLFW** are windowing and debug UI dependencies, not renderer
   replacements. They should stay private implementation details unless DART
   intentionally adds stable DART-owned panel abstractions.
@@ -298,9 +297,9 @@ not a drop-in OSG replacement.
 
 ### 16. Recording and remote inspection alternatives
 
-- **Existing support in alternatives:** Rerun and similar tools are stronger
-  than Filament for time-series logging, remote playback, and inspection
-  outside the native process.
+- **Existing support in alternatives:** External telemetry tools can be
+  stronger than Filament for time-series logging, remote playback, and
+  inspection outside the native process.
 - **Filament gap:** Filament is an in-process renderer, not a recording or
   telemetry product.
 - **North-star plan:** Keep the built-in GUI focused on native interactive

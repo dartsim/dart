@@ -82,13 +82,13 @@ const RenderableDescriptor* findRenderableDescriptor(
 
 std::optional<int> selectedRotationAxisIndexFromKeyboard(GLFWwindow* window)
 {
-  if (isKeyDown(window, GLFW_KEY_X)) {
+  if (isKeyDown(window, GLFW_KEY_X) || isKeyDown(window, GLFW_KEY_1)) {
     return 0;
   }
-  if (isKeyDown(window, GLFW_KEY_Y)) {
+  if (isKeyDown(window, GLFW_KEY_Y) || isKeyDown(window, GLFW_KEY_2)) {
     return 1;
   }
-  if (isKeyDown(window, GLFW_KEY_Z)) {
+  if (isKeyDown(window, GLFW_KEY_Z) || isKeyDown(window, GLFW_KEY_3)) {
     return 2;
   }
 

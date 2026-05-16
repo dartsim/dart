@@ -300,13 +300,13 @@ bool isRotationDragModifierDown(GLFWwindow* window)
 
 std::optional<Eigen::Vector3d> selectedDragAxisFromKeyboard(GLFWwindow* window)
 {
-  if (isKeyDown(window, GLFW_KEY_X)) {
+  if (isKeyDown(window, GLFW_KEY_X) || isKeyDown(window, GLFW_KEY_1)) {
     return Eigen::Vector3d::UnitX();
   }
-  if (isKeyDown(window, GLFW_KEY_Y)) {
+  if (isKeyDown(window, GLFW_KEY_Y) || isKeyDown(window, GLFW_KEY_2)) {
     return Eigen::Vector3d::UnitY();
   }
-  if (isKeyDown(window, GLFW_KEY_Z)) {
+  if (isKeyDown(window, GLFW_KEY_Z) || isKeyDown(window, GLFW_KEY_3)) {
     return Eigen::Vector3d::UnitZ();
   }
 

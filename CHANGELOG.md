@@ -142,6 +142,10 @@
   - Moved `operational_space_control` and `wam_ikfast` off private named-scene
     fixture launchers so their example sources load the WAM robot, create their
     visible targets, and run through promoted `dart::gui` options directly.
+  - Restored the `operational_space_control` example's historical KR5 robot,
+    KR5 ground, target ball, task-space controller, 640x480 launch default,
+    camera framing, control instructions, README, and marker coverage through
+    public `dart::gui`.
   - Moved `atlas_simbicon` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground, and runs through promoted
     `dart::gui` options directly.
