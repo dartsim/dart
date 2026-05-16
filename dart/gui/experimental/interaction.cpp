@@ -1014,4 +1014,42 @@ bool translateFrameRenderable(
          || translateSimpleFrameRenderable(renderable, worldTranslation);
 }
 
+bool rotateSimpleFrameRenderable(
+    const RenderableDescriptor& renderable,
+    const Eigen::Vector3d& worldAxis,
+    double angle)
+{
+  if (!worldAxis.allFinite() || !std::isfinite(angle)) {
+    return false;
+  }
+
+  const double axisNorm = worldAxis.norm();
+  if (axisNorm <= 1e-12) {
+    return false;
+  }
+
+  const auto simpleFrame = renderable.simpleFrame.lock();
+  if (simpleFrame == nullptr || simpleFrame.get() != renderable.shapeFrame
+      || simpleFrame->getVersion() != renderable.shapeFrameVersion) {
+    return false;
+  }
+
+  auto* mutableSimpleFrame
+      = const_cast<dynamics::SimpleFrame*>(simpleFrame.get());
+  Eigen::Isometry3d transform = mutableSimpleFrame->getWorldTransform();
+  transform.linear()
+      = Eigen::AngleAxisd(angle, worldAxis / axisNorm).toRotationMatrix()
+        * transform.linear();
+  mutableSimpleFrame->setTransform(transform, dynamics::Frame::World());
+  return true;
+}
+
+bool rotateFrameRenderable(
+    const RenderableDescriptor& renderable,
+    const Eigen::Vector3d& worldAxis,
+    double angle)
+{
+  return rotateSimpleFrameRenderable(renderable, worldAxis, angle);
+}
+
 } // namespace dart::gui

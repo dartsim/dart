@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `824c520659c Audit speed test example`.
+  `f3bdffff5ad Audit unified loading example`.
 - Latest pushed code checkpoint:
-  `824c520659c Audit speed test example`.
+  `f3bdffff5ad Audit unified loading example`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -138,6 +138,7 @@ history but are not guaranteed to be in chronological order.
   - `7ec64c3609e Audit CSV logger example`
   - `18dd2a70dd5 Audit headless simulation example`
   - `824c520659c Audit speed test example`
+  - `f3bdffff5ad Audit unified loading example`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -179,6 +180,20 @@ history but are not guaranteed to be in chronological order.
   `520993d7301^:examples/fetch/main.cpp` before declaring it complete; repair
   any new behavior gap through promoted `dart::gui` or record the exact public
   API gap.
+- Current re-opened Fetch repair scope: the old OSG `InteractiveFrame` exposed
+  mouse-driven rotation tools. The promoted source already has a visible target
+  handle and keyboard orientation controls, but mouse manipulation is still
+  translation-only. Before touching code, treat this as the active gap: add a
+  renderer-neutral selected-frame rotation path to public `dart::gui`
+  interaction/application behavior, wire Fetch help/README/tests to it, and
+  remove the old gap wording once local validation proves the replacement is
+  implemented.
+- Implementation state for the re-opened Fetch repair: public
+  `dart::gui::rotateSimpleFrameRenderable` and `rotateFrameRenderable` now
+  rotate selected `SimpleFrame` renderables, the Filament/GLFW selection
+  controller maps Ctrl-Shift-left drag to selected-frame rotation, X/Y/Z select
+  local target axes for constrained rotation, and Fetch help/README/marker
+  coverage describe the implemented controls instead of a remaining API gap.
 - Fetch panel-text validation completed before this checkpoint commit: focused
   C++ build for `fetch` and `UNIT_gui_FilamentSceneExtraction`, focused CTest
   for `UNIT_gui_FilamentSceneExtraction`, direct and pixi Fetch headless
@@ -255,8 +270,9 @@ history but are not guaranteed to be in chronological order.
   now replaces the two-bar-only marker with one transparent green line target
   handle that carries local axes/rings on the same selectable `SimpleFrame`,
   adds renderer-neutral target rotation/reset keyboard actions, and restores
-  the shared viewer help text in the promoted panel. Exact mouse rotation
-  rings/tools remain a public manipulation API follow-up.
+  the shared viewer help text in the promoted panel. At that checkpoint, exact
+  mouse rotation still required the selected-frame rotation repair implemented
+  in the current slice.
 - Fetch re-open validation completed before checkpoint commit: focused C++
   build for `fetch` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
   `UNIT_gui_FilamentSceneExtraction`, direct and pixi Fetch headless
@@ -366,6 +382,29 @@ history but are not guaranteed to be in chronological order.
   focused rebuild and CTest for `unified_loading` plus
   `UNIT_gui_FilamentSceneExtraction`, direct short load output verification,
   and `git diff --check`.
+- The unified-loading checkpoint was pushed as
+  `f3bdffff5ad Audit unified loading example`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now re-opened `examples/fetch/`. Historical comparison
+  against `520993d7301^:examples/fetch/main.cpp` shows the remaining
+  user-visible gap is the old `InteractiveFrame` mouse rotation affordance:
+  current Fetch has the target visual, translation dragging, keyboard
+  rotation/reset, and help text, but the mouse path cannot rotate the selected
+  frame. Add public selected-frame rotation support to `dart::gui`, map
+  Ctrl-Shift-left drag to rotation with X/Y/Z local-axis constraints, update
+  Fetch controls/README/tests, and then validate before committing.
+- Fetch selected-frame rotation validation completed before lint: focused C++
+  build for `fetch` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction`, direct and pixi Fetch headless
+  screenshots with analyzer coverage
+  (`/tmp/dart_fetch_rotation_direct.ppm`, 303779/307200 nonzero pixels, and
+  `/tmp/dart_fetch_rotation_pixi.ppm`, 303773/307200 nonzero pixels), Python
+  C++ example-runner tests (67 passed), and aggregate `examples` build.
+- Fetch selected-frame rotation post-lint validation completed: mandatory
+  `pixi run lint`, focused rebuild and CTest for `fetch` plus
+  `UNIT_gui_FilamentSceneExtraction`, direct llvmpipe Fetch screenshot with
+  analyzer coverage (`/tmp/dart_fetch_rotation_direct_postlint.ppm`,
+  303780/307200 nonzero pixels), and `git diff --check`.
 
 ## Current Code Shape
 

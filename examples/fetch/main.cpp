@@ -430,6 +430,8 @@ dart::gui::Panel createFetchPanel()
     builder.text(
         "Select the green handle, then Ctrl-left drag or use arrow keys.");
     builder.text("X/Y/Z constrain Ctrl-left drag to one world axis.");
+    builder.text("Ctrl-Shift-left drag rotates the selected handle.");
+    builder.text("Hold X/Y/Z while rotating to use a local target axis.");
     builder.text("u/j, i/k, o/l rotate the target about local X/Y/Z.");
     builder.text("r resets the target pose.");
     builder.text("Left drag orbits; right or middle drag pans; wheel zooms.");
@@ -457,7 +459,7 @@ dart::gui::Panel createFetchPanel()
     builder.separator();
     builder.text("Help");
     builder.text("The end-effector follows the interactive target.");
-    builder.text("Mouse rotation rings need a public manipulation API.");
+    builder.text("Mouse rotation uses public selected-frame manipulation.");
     builder.text("About DART: project and libdart simulation libraries.");
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("contacts: " + std::to_string(context.contactCount));

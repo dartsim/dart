@@ -10,13 +10,14 @@
   transparent green target handle.
 - Controls: select the green target handle, then Ctrl-left drag it or move it
   with the keyboard selection controls. Hold X/Y/Z while Ctrl-dragging to
-  constrain motion to one world axis. Use u/j, i/k, and o/l to rotate the
-  target about its local X/Y/Z axes, and r to reset the target pose.
+  constrain motion to one world axis. Ctrl-Shift-left drag rotates the selected
+  target; hold X/Y/Z while rotating to use a local target axis. Use u/j, i/k,
+  and o/l to rotate the target about its local X/Y/Z axes, and r to reset the
+  target pose.
   `--gui-scale` adjusts the GUI scale, and `--width`/`--height` override the
   default 1280x960 window size.
-- Remaining gap: the historical mouse rotation rings need a public
-  renderer-neutral manipulation API. This example restores orientation control
-  through keyboard actions until that API exists.
+- Mouse manipulation uses the promoted renderer-neutral selection API for
+  translation and rotation of the target frame.
 
 ## Run
 

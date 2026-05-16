@@ -79,6 +79,8 @@ bool isInsideStatusPanel(double cursorX, double cursorY, double guiScale);
 
 bool isDragModifierDown(GLFWwindow* window);
 
+bool isRotationDragModifierDown(GLFWwindow* window);
+
 std::optional<Eigen::Vector3d> selectedDragAxisFromKeyboard(GLFWwindow* window);
 
 Eigen::Vector3d selectedNudgeFromKeyboard(

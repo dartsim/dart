@@ -142,11 +142,16 @@ and the checkpoint has been pushed as
 `18dd2a70dd5 Audit headless simulation example`. The active strict-audit slice
 is now `examples/speed_test/`: its historical/current source comparison also
 matches the pre-promotion baseline, and the checkpoint has been pushed as
-`824c520659c Audit speed test example`. The active strict-audit slice is now
-`examples/unified_loading/`: its historical/current source comparison also
-matches the pre-promotion baseline, so the checkpoint should document the
-preserved non-GUI shared `ReadOptions` loading contract, add marker coverage,
-validate a short direct load run, and avoid adding renderer dependencies.
+`824c520659c Audit speed test example`. The
+`examples/unified_loading/` strict-audit checkpoint has been pushed as
+`f3bdffff5ad Audit unified loading example`; it preserves the non-GUI shared
+`ReadOptions` loading contract and avoids renderer dependencies. The active
+slice is now re-opened `examples/fetch/`: close the remaining mouse
+manipulation gap by promoting selected-frame rotation through public
+`dart::gui` and updating Fetch controls, README, and marker coverage. That
+repair is implemented in the current worktree and pre-lint validation has
+passed; the checkpoint still needs mandatory lint, post-lint focused checks,
+commit, and push.
 An earlier parity slice restored `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default

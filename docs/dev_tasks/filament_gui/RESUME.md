@@ -819,24 +819,30 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`824c520659c Audit speed test example`. The current pending checkpoint is
-`examples/unified_loading/` strict audit. Historical comparison shows
-`examples/unified_loading/main.cpp` and `examples/unified_loading/README.md`
-match `520993d7301^` exactly, so this slice preserves the non-GUI shared
-`ReadOptions` loading workflow instead of migrating it to `dart::gui`. Add
-marker guards for world/skeleton load toggles, format/root-joint parsing,
-package mappings, summary output, README expectations, and absence of renderer
-dependencies; then validate a short direct load run.
+`f3bdffff5ad Audit unified loading example`. The current pending checkpoint is
+the re-opened `examples/fetch/` mouse-manipulation repair. Historical
+comparison against `520993d7301^:examples/fetch/main.cpp` shows the remaining
+gap is the old `InteractiveFrame` mouse rotation affordance: current Fetch has
+a visible target, translation dragging, keyboard rotation, and reset, but the
+mouse path still cannot rotate the selected frame. Promote renderer-neutral
+selected-frame rotation through public `dart::gui`, then update Fetch help,
+README, marker tests, and validation notes. Implementation and pre-lint
+validation are complete in the current worktree.
 
 ## Current Immediate Next Step
 
-Implement and push the local `examples/unified_loading/` checkpoint without
-opening a PR. Completed pre-lint validation is focused build for
-`unified_loading` and `UNIT_gui_FilamentSceneExtraction`, focused CTest, a
-direct short load run, Python C++ example-runner coverage, and aggregate
-`examples` build. Remaining checkpoint validation is mandatory
-`pixi run lint` and post-lint focused checks; those have also passed locally.
-Commit and push the checkpoint. Keep
+Implement and push the re-opened `examples/fetch/` checkpoint without opening a
+PR. The planned implementation adds selected-frame rotation to public
+`dart::gui` interaction behavior, maps Ctrl-Shift-left drag to rotation for
+selected frames, uses X/Y/Z as local-axis constraints, updates Fetch
+documentation from "remaining gap" to implemented controls, and strengthens
+source-marker coverage. Completed pre-lint validation is focused build for
+`fetch` and `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct and pixi
+Fetch screenshots with analyzer coverage, Python C++ example-runner coverage,
+and aggregate `examples` build. Post-lint validation is also complete:
+mandatory `pixi run lint`, focused rebuild/CTest, a direct post-lint Fetch
+screenshot with analyzer coverage, and `git diff --check`. Commit and push the
+checkpoint. Keep
 `--screenshot <path>` and `--out <dir>` working for the existing CTest, GitHub
 Actions smoke path, and historical image-sequence workflows. A later broader
 smoke sweep can still use:

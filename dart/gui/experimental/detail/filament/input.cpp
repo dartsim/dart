@@ -293,6 +293,11 @@ bool isDragModifierDown(GLFWwindow* window)
          || isKeyDown(window, GLFW_KEY_RIGHT_CONTROL);
 }
 
+bool isRotationDragModifierDown(GLFWwindow* window)
+{
+  return isDragModifierDown(window) && isShiftDown(window);
+}
+
 std::optional<Eigen::Vector3d> selectedDragAxisFromKeyboard(GLFWwindow* window)
 {
   if (isKeyDown(window, GLFW_KEY_X)) {

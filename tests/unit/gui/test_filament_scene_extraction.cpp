@@ -1330,6 +1330,11 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
       std::filesystem::path("examples") / "fetch" / "main.cpp");
   const auto readmeSource = readSourceFile(
       std::filesystem::path("examples") / "fetch" / "README.md");
+  const auto interactionHeader = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "interaction.hpp");
+  const auto selectionSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
+      / "filament" / "selection.cpp");
 
   EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
   EXPECT_NE(
@@ -1369,6 +1374,9 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
       std::string::npos);
   EXPECT_NE(mainSource.find("User Guide"), std::string::npos);
   EXPECT_NE(mainSource.find("Left drag orbits"), std::string::npos);
+  EXPECT_NE(mainSource.find("Ctrl-Shift-left drag rotates"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("public selected-frame manipulation"), std::string::npos);
   EXPECT_NE(mainSource.find("u/j, i/k, o/l rotate"), std::string::npos);
   EXPECT_NE(mainSource.find("builder.button(\"Play\")"), std::string::npos);
   EXPECT_NE(mainSource.find("builder.button(\"Pause\")"), std::string::npos);
@@ -1378,12 +1386,21 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("Rotate target +X"), std::string::npos);
   EXPECT_NE(mainSource.find("Reset target pose"), std::string::npos);
+  EXPECT_NE(
+      interactionHeader.find("rotateSimpleFrameRenderable"), std::string::npos);
+  EXPECT_NE(
+      selectionSource.find("rotateRenderableAndApplyIk"), std::string::npos);
+  EXPECT_NE(
+      selectionSource.find("isRotationDragModifierDown"), std::string::npos);
   EXPECT_NE(readmeSource.find("Fetch MJCF Example"), std::string::npos);
   EXPECT_NE(
       readmeSource.find("transparent green target handle"), std::string::npos);
   EXPECT_NE(
-      readmeSource.find("renderer-neutral manipulation API"),
+      readmeSource.find("Ctrl-Shift-left drag rotates"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("promoted renderer-neutral selection API"),
       std::string::npos);
+  EXPECT_EQ(readmeSource.find("Remaining gap"), std::string::npos);
   EXPECT_NE(
       readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);
   EXPECT_NE(readmeSource.find("1280x960"), std::string::npos);
@@ -3636,6 +3653,49 @@ TEST(
   EXPECT_FALSE(
       dart::gui::translateSimpleFrameRenderable(
           renderables.front(), Eigen::Vector3d(1.0, 0.0, 0.0)));
+}
+
+TEST(
+    FilamentSceneExtraction,
+    RotateSimpleFrameRenderable_SelectedFrame_UpdatesFrameOrientation)
+{
+  auto world = World::create("world");
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(-1.0, 2.0, 0.5);
+  auto frame = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "interactive_target", transform);
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  frame->getVisualAspect(true);
+  world->addSimpleFrame(frame);
+
+  const auto renderables = dart::gui::extractRenderables(*world);
+  ASSERT_EQ(renderables.size(), 1u);
+
+  const double angle = 0.5;
+  EXPECT_TRUE(
+      dart::gui::rotateSimpleFrameRenderable(
+          renderables.front(), Eigen::Vector3d::UnitZ(), angle));
+
+  Eigen::Isometry3d expected = transform;
+  expected.linear()
+      = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ()).toRotationMatrix()
+        * expected.linear();
+  EXPECT_TRUE(frame->getWorldTransform().isApprox(expected));
+
+  EXPECT_TRUE(
+      dart::gui::rotateFrameRenderable(
+          renderables.front(), Eigen::Vector3d::UnitZ(), -angle));
+  EXPECT_TRUE(frame->getWorldTransform().isApprox(transform));
+
+  EXPECT_FALSE(
+      dart::gui::rotateSimpleFrameRenderable(
+          renderables.front(), Eigen::Vector3d::Zero(), angle));
+  EXPECT_FALSE(
+      dart::gui::rotateSimpleFrameRenderable(
+          renderables.front(),
+          Eigen::Vector3d::UnitZ(),
+          std::numeric_limits<double>::quiet_NaN()));
 }
 
 TEST(FilamentSceneExtraction, PlaneDragHelpers_ReturnExpectedTranslation)

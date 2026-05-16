@@ -92,16 +92,26 @@ public:
       dart::gui::ViewerLifecycleState& lifecycle);
 
 private:
+  enum class DragMode
+  {
+    Translate,
+    Rotate,
+  };
+
   bool mWasLeftMousePressed = false;
   bool mLeftMouseStartedOnPanel = false;
   bool mLeftMouseStartedDrag = false;
+  DragMode mSelectedDragMode = DragMode::Translate;
   double mLeftMousePressX = 0.0;
   double mLeftMousePressY = 0.0;
+  double mSelectedDragLastCursorX = 0.0;
+  double mSelectedDragLastCursorY = 0.0;
   dart::gui::PickRay mSelectedDragLastRay;
   bool mSelectedDragIsAxisConstrained = false;
   Eigen::Vector3d mSelectedDragPlanePoint = Eigen::Vector3d::Zero();
   Eigen::Vector3d mSelectedDragPlaneNormal = Eigen::Vector3d::UnitX();
   Eigen::Vector3d mSelectedDragAxisDirection = Eigen::Vector3d::UnitX();
+  Eigen::Vector3d mSelectedRotationAxis = Eigen::Vector3d::UnitZ();
   dart::gui::RenderableId mSelectedRenderableId = 0;
   std::string mSelectedLabel = "none";
 };

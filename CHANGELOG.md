@@ -66,8 +66,8 @@
     bars matching the historical end-effector affordance.
   - Strengthened the `fetch` example target affordance with source-owned
     public DART line geometry, renderer-neutral target rotation/reset keyboard
-    actions, and restored viewer help text, while tracking exact mouse
-    rotation rings as a public manipulation API follow-up.
+    actions, restored viewer help text, and mouse-driven selected-frame
+    rotation through the promoted `dart::gui` selection API.
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
     `mixed_chain`, `coupler_constraint`, `add_delete_skels`, and
     `rigid_shapes`) as source-defined `dart::gui` examples.

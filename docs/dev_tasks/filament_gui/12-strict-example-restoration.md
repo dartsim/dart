@@ -56,11 +56,13 @@ viewer instructions. Restore the strongest public `dart::gui` replacement now
 and keep exact mouse rotation-gizmo parity as a named public manipulation API
 gap if it cannot be expressed without legacy renderer types.
 
-Implementation state for this re-opened Fetch slice: the source now uses one
+Implementation state for this re-opened Fetch slice: the source uses one
 transparent green line target handle with local axes/rings, adds
-renderer-neutral keyboard actions for target rotation/reset, and restores the
-shared viewer help text in the panel. Exact mouse rotation rings remain a
-public manipulation API follow-up.
+renderer-neutral keyboard actions for target rotation/reset, restores the
+shared viewer help text in the panel, and now promotes selected-frame rotation
+through public `dart::gui`. Ctrl-Shift-left drag rotates the selected target,
+with X/Y/Z selecting local target axes as the renderer-neutral replacement for
+the old `InteractiveFrame` mouse rotation tools.
 
 Validation state: focused Fetch build/CTest, direct and pixi headless
 screenshot smokes, Python C++ example-runner tests, aggregate `examples` build,
@@ -80,9 +82,10 @@ Immediate order:
 1. Update the active docs to reflect the latest pushed
    `18dd2a70dd5 Audit headless simulation example` checkpoint and the active
    speed-test strict-audit slice.
-2. Re-open `examples/fetch` now. Stronger target manipulation/help parity is
-   implemented and locally validated; commit and push it. Exact mouse rotation
-   rings/tools remain a renderer-neutral manipulation API gap.
+2. Re-open `examples/fetch` now. The selected-frame rotation repair is
+   implemented and locally validated. Pre-lint and post-lint focused checks
+   passed; commit and push it before moving to the remaining strict-audit
+   examples.
 3. Audit and restore `examples/imgui/` next. The current source is a generic
    box/slider panel, while the historical example demonstrated panel
    extension, an empty target frame with drag controls, custom key handling,

@@ -60,10 +60,13 @@ using dart::gui::pickNearestRenderable;
 using dart::gui::PickRay;
 using dart::gui::RenderableDescriptor;
 using dart::gui::RenderableId;
+using dart::gui::rotateFrameRenderable;
 using dart::gui::translateFrameRenderable;
 using dart::gui::ViewerLifecycleState;
 
 namespace {
+
+constexpr double kRotationRadiansPerPixel = 0.01;
 
 const RenderableDescriptor* findRenderableDescriptor(
     const std::vector<RenderableDescriptor>& descriptors, RenderableId id)
@@ -75,6 +78,58 @@ const RenderableDescriptor* findRenderableDescriptor(
         return candidate.id == id;
       });
   return descriptor == descriptors.end() ? nullptr : &*descriptor;
+}
+
+std::optional<int> selectedRotationAxisIndexFromKeyboard(GLFWwindow* window)
+{
+  if (isKeyDown(window, GLFW_KEY_X)) {
+    return 0;
+  }
+  if (isKeyDown(window, GLFW_KEY_Y)) {
+    return 1;
+  }
+  if (isKeyDown(window, GLFW_KEY_Z)) {
+    return 2;
+  }
+
+  return std::nullopt;
+}
+
+Eigen::Vector3d selectedRotationAxis(
+    GLFWwindow* window,
+    const OrbitCamera& camera,
+    const RenderableDescriptor& descriptor)
+{
+  if (const auto axisIndex = selectedRotationAxisIndexFromKeyboard(window)) {
+    Eigen::Vector3d axis = descriptor.worldTransform.linear().col(*axisIndex);
+    const double axisNorm = axis.norm();
+    if (axis.allFinite() && axisNorm > 1e-12) {
+      return axis / axisNorm;
+    }
+  }
+
+  const auto basis = makeOrbitCameraBasis(camera);
+  return basis.forward;
+}
+
+bool rotateRenderableAndApplyIk(
+    DartScene& scene,
+    const RenderableDescriptor& descriptor,
+    const Eigen::Vector3d& worldAxis,
+    double angle)
+{
+  if (!rotateFrameRenderable(descriptor, worldAxis, angle)) {
+    return false;
+  }
+
+  if (auto* handle = findIkHandle(scene, descriptor.id)) {
+    if (handle->ik) {
+      handle->ik->getSolver()->setNumMaxIterations(30);
+      handle->ik->solveAndApply(true);
+    }
+  }
+
+  return true;
 }
 
 } // namespace
@@ -227,55 +282,84 @@ void SelectionController::updateMouseSelection(
       const RenderableDescriptor* selectedDescriptor
           = findRenderableDescriptor(descriptors, mSelectedRenderableId);
       if (selectedDescriptor != nullptr) {
-        const auto basis = makeOrbitCameraBasis(camera);
-        const PickRay ray = makePerspectivePickRay(
-            camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
-        const Eigen::Vector3d planePoint
-            = selectedDescriptor->worldTransform.translation();
-        const Eigen::Vector3d planeNormal = basis.forward;
-        if (const auto axis = selectedDragAxisFromKeyboard(window)) {
-          if (computeAxisDragTranslation(ray, ray, planePoint, *axis)) {
+        if (isRotationDragModifierDown(window)
+            && !selectedDescriptor->simpleFrame.expired()) {
+          mLeftMouseStartedDrag = true;
+          mSelectedDragMode = DragMode::Rotate;
+          mSelectedRotationAxis
+              = selectedRotationAxis(window, camera, *selectedDescriptor);
+          mSelectedDragLastCursorX = cursorX;
+          mSelectedDragLastCursorY = cursorY;
+          lifecycle.paused = true;
+        } else if (!isRotationDragModifierDown(window)) {
+          const auto basis = makeOrbitCameraBasis(camera);
+          const PickRay ray = makePerspectivePickRay(
+              camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
+          const Eigen::Vector3d planePoint
+              = selectedDescriptor->worldTransform.translation();
+          const Eigen::Vector3d planeNormal = basis.forward;
+          if (const auto axis = selectedDragAxisFromKeyboard(window)) {
+            if (computeAxisDragTranslation(ray, ray, planePoint, *axis)) {
+              mLeftMouseStartedDrag = true;
+              mSelectedDragMode = DragMode::Translate;
+              mSelectedDragIsAxisConstrained = true;
+              mSelectedDragLastRay = ray;
+              mSelectedDragPlanePoint = planePoint;
+              mSelectedDragAxisDirection = *axis;
+              lifecycle.paused = true;
+            }
+          } else if (intersectPlane(ray, planePoint, planeNormal)) {
             mLeftMouseStartedDrag = true;
-            mSelectedDragIsAxisConstrained = true;
+            mSelectedDragMode = DragMode::Translate;
             mSelectedDragLastRay = ray;
             mSelectedDragPlanePoint = planePoint;
-            mSelectedDragAxisDirection = *axis;
+            mSelectedDragPlaneNormal = planeNormal;
             lifecycle.paused = true;
           }
-        } else if (intersectPlane(ray, planePoint, planeNormal)) {
-          mLeftMouseStartedDrag = true;
-          mSelectedDragLastRay = ray;
-          mSelectedDragPlanePoint = planePoint;
-          mSelectedDragPlaneNormal = planeNormal;
-          lifecycle.paused = true;
         }
       }
     }
   }
 
   if (isLeftMousePressed && mLeftMouseStartedDrag) {
-    const PickRay ray = makePerspectivePickRay(
-        camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
-    const auto translation = mSelectedDragIsAxisConstrained
-                                 ? computeAxisDragTranslation(
-                                       mSelectedDragLastRay,
-                                       ray,
-                                       mSelectedDragPlanePoint,
-                                       mSelectedDragAxisDirection)
-                                 : computePlaneDragTranslation(
-                                       mSelectedDragLastRay,
-                                       ray,
-                                       mSelectedDragPlanePoint,
-                                       mSelectedDragPlaneNormal);
-    if (translation && translation->squaredNorm() > 1e-12) {
+    if (mSelectedDragMode == DragMode::Rotate) {
+      const double cursorDelta = (cursorX - mSelectedDragLastCursorX)
+                                 - (cursorY - mSelectedDragLastCursorY);
+      const double angle = cursorDelta * kRotationRadiansPerPixel;
       const RenderableDescriptor* selectedDescriptor
           = findRenderableDescriptor(descriptors, mSelectedRenderableId);
-      if (selectedDescriptor != nullptr
-          && translateRenderableAndApplyIk(
-              scene, *selectedDescriptor, *translation)) {
-        mSelectedDragLastRay = ray;
+      if (std::abs(angle) > 1e-12 && selectedDescriptor != nullptr
+          && rotateRenderableAndApplyIk(
+              scene, *selectedDescriptor, mSelectedRotationAxis, angle)) {
         lifecycle.paused = true;
         descriptors = extractRenderables(*scene.world);
+      }
+      mSelectedDragLastCursorX = cursorX;
+      mSelectedDragLastCursorY = cursorY;
+    } else {
+      const PickRay ray = makePerspectivePickRay(
+          camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
+      const auto translation = mSelectedDragIsAxisConstrained
+                                   ? computeAxisDragTranslation(
+                                         mSelectedDragLastRay,
+                                         ray,
+                                         mSelectedDragPlanePoint,
+                                         mSelectedDragAxisDirection)
+                                   : computePlaneDragTranslation(
+                                         mSelectedDragLastRay,
+                                         ray,
+                                         mSelectedDragPlanePoint,
+                                         mSelectedDragPlaneNormal);
+      if (translation && translation->squaredNorm() > 1e-12) {
+        const RenderableDescriptor* selectedDescriptor
+            = findRenderableDescriptor(descriptors, mSelectedRenderableId);
+        if (selectedDescriptor != nullptr
+            && translateRenderableAndApplyIk(
+                scene, *selectedDescriptor, *translation)) {
+          mSelectedDragLastRay = ray;
+          lifecycle.paused = true;
+          descriptors = extractRenderables(*scene.world);
+        }
       }
     }
   }
@@ -299,6 +383,7 @@ void SelectionController::updateMouseSelection(
       }
     }
     mLeftMouseStartedDrag = false;
+    mSelectedDragMode = DragMode::Translate;
   }
 
   mWasLeftMousePressed = isLeftMousePressed;

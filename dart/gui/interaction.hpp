@@ -91,6 +91,16 @@ DART_GUI_API bool translateFrameRenderable(
     const RenderableDescriptor& renderable,
     const Eigen::Vector3d& worldTranslation);
 
+DART_GUI_API bool rotateSimpleFrameRenderable(
+    const RenderableDescriptor& renderable,
+    const Eigen::Vector3d& worldAxis,
+    double angle);
+
+DART_GUI_API bool rotateFrameRenderable(
+    const RenderableDescriptor& renderable,
+    const Eigen::Vector3d& worldAxis,
+    double angle);
+
 } // namespace dart::gui
 
 #endif // DART_GUI_INTERACTION_HPP_
