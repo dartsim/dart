@@ -212,18 +212,15 @@ component names became native-backed interface facades.
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
-      latest pre-record `pixi run test-all` pass was rerun on local head
-      `6d3224426ce` after the validation-snapshot documentation correction and
-      before this evidence update; it passed 6/6 top-level gates: linting,
-      build, unit tests, simulation-experimental tests, Python tests, and
-      documentation. The lint sub-gate reran `check-collision-runtime-isolation`
-      and `audit-collision-compat-facades`, with legacy factory keys still
-      routing to `dart`, dartpy exposing only `DartCollisionDetector`, and
-      reference engines confined to `tests/dart/test/reference_collision`. No
-      PR, push, workflow, branch, or GitHub state was mutated by that
-      validation pass. The earlier pre-record pass on `59769b3ee58` also
-      passed the same 6/6 top-level gate after the current audit/evidence
-      refresh. Earlier full
+      latest current-head `pixi run test-all` pass was rerun on local head
+      `b5801f6c84c` after the no-PR boundary audit; it passed 6/6 top-level
+      gates: linting, build, unit tests, simulation-experimental tests, Python
+      tests, and documentation. The C++ unit-test phase reported 264/264
+      passing tests, including the `collision-native` and
+      `collision-native-stability` labels. No PR, push, workflow, branch, or
+      GitHub state was mutated by that validation pass. Earlier pre-record
+      passes on `6d3224426ce` and `59769b3ee58` also passed the same 6/6
+      top-level gate after the current audit/evidence refreshes. Earlier full
       current-state validation on `35578ad2f8a` also reported only
       `libdart-collision-native.so` in the artifact scan and no old
       facade-library or FCL/Bullet/ODE/libccd runtime references in the

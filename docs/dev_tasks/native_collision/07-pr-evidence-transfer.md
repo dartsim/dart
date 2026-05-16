@@ -366,6 +366,10 @@ Compatibility notes:
   - `19aed78ae04` (`Refresh current native collision test-all evidence`)
   - `d1a1dbd9ac9` (`Refresh native collision review surface audit`)
   - `35578ad2f8a` (`Clean stale legacy collision build artifacts`)
+  - `c1f03f23147` (`Scope capsule-box duplicate filtering`)
+  - `17f75efeed7` (`Refresh native collision current evidence`)
+  - `b5801f6c84c` (`Record native collision no-PR boundary audit`)
+  - `be5d23058e6` (`Record native collision current-head validation`)
   - Later docs-only PR-packet refresh commits may exist; use
     `git log --oneline --decorate` for the exact current local head.
 
