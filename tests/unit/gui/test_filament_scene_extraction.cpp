@@ -856,6 +856,40 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
       std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, RigidShapesExamplePreservesLegacyParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "rigid_shapes" / "main.cpp");
+
+  EXPECT_NE(mainSource.find("ConvexMeshShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("spawnConvexMesh"), std::string::npos);
+  EXPECT_NE(mainSource.find("ConvexMeshShape::fromMesh"), std::string::npos);
+  EXPECT_NE(mainSource.find("PointCloudShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("contact_points"), std::string::npos);
+  EXPECT_NE(mainSource.find("toggleContactPoints"), std::string::npos);
+  EXPECT_NE(mainSource.find("updateContactPoints"), std::string::npos);
+  EXPECT_NE(mainSource.find("getLastCollisionResult"), std::string::npos);
+  EXPECT_NE(mainSource.find("--collision-detector"), std::string::npos);
+  EXPECT_NE(mainSource.find("--max-contacts"), std::string::npos);
+  EXPECT_NE(mainSource.find("--ground-thickness"), std::string::npos);
+  EXPECT_NE(mainSource.find("maxNumContacts"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeRigidShapesRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeRigidShapesCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d::Zero()"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardShortcut::characterKey(key)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("Keys: q box"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, AddDeleteSkelsExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(

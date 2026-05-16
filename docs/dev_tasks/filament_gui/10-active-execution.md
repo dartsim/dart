@@ -2052,6 +2052,75 @@ UNIT_gui_FilamentSceneExtraction --parallel 4`
   parity pass, with `examples/rigid_shapes/` already identified as a likely
   next slice because its historical keyboard spawn/delete/contact controls and
   camera default still need a current-source audit.
+- Implementation status: pushed as
+  `ddc5e113853 Restore Fetch run defaults and README`.
+
+Thirty-eighth rigid-shapes parity checkpoint:
+
+- Historical `examples/rigid_shapes` loaded a rigid-shape world, set a 640x480
+  viewer, used a camera home from eye `(2, 2, 2)` to target `(0, 0, 0)`, and
+  exposed keyboard controls: `q` spawns a cube, `w` spawns an ellipsoid, `e`
+  spawns a cylinder, `r` spawns a convex mesh, `a` deletes the last spawned
+  object, and `c` toggles contact-point rendering.
+- Current promoted source owns its world and panel, but the historical
+  keyboard controls, convex-mesh spawn path, contact-point toggle, camera
+  default, 640x480 default launch size, and rigid-shapes-specific
+  `--collision-detector`, `--max-contacts`, and `--ground-thickness` command
+  line options are not yet restored.
+- Scope before code changes: keep the source-owned public `dart::gui` example,
+  add the historical keyboard actions through `ApplicationOptions`, restore
+  convex mesh spawning as public DART shape construction, represent contact
+  points as an example-owned `PointCloudShape` simple frame instead of private
+  Filament debug hooks, parse the rigid-shapes-specific command-line options
+  locally while leaving promoted runner options to `dart::gui`, set the
+  historical camera/run defaults through public options, and update
+  panel/test/changelog coverage.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `rigid_shapes` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct and pixi rigid-shapes headless screenshots with analyzer coverage
+  - Python C++ example runner tests
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+- Implementation state for this checkpoint: `examples/rigid_shapes/main.cpp`
+  now restores source-owned public `dart::gui` keyboard actions for
+  `q`/`w`/`e`/`r` shape spawning, `a` delete-last, and `c` contact-point
+  toggling. Convex mesh spawning is restored with public
+  `ConvexMeshShape::fromMesh`, contact markers are restored as an
+  example-owned `PointCloudShape` simple frame, and the historical camera home
+  plus 640x480 default run size are set through `ApplicationOptions`. The
+  example also parses the historical rigid-shapes-specific
+  `--collision-detector`, `--max-contacts`, and `--ground-thickness` options
+  locally before handing remaining promoted runner options to `dart::gui`.
+- Local validation completed:
+  - `cmake --build build/default/cpp/Release --target rigid_shapes
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe rigid-shapes screenshot without explicit width/height plus
+    `analyze_headless_smoke.py` (`/tmp/dart_rigid_shapes_direct.ppm`,
+    307200/307200 nonzero pixels)
+  - Direct rigid-shapes CLI smoke with `--collision-detector dart
+--max-contacts 0 --ground-thickness 0.12` plus analyzer coverage
+    (`/tmp/dart_rigid_shapes_cli_direct.ppm`, 307200/307200 nonzero pixels)
+  - `pixi run ex rigid_shapes --headless --frames 2 --screenshot
+/tmp/dart_rigid_shapes_pixi.ppm` plus analyzer coverage (307200/307200
+    nonzero pixels)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target rigid_shapes
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe rigid-shapes screenshot without explicit
+    width/height plus `analyze_headless_smoke.py`
+    (`/tmp/dart_rigid_shapes_direct_postlint.ppm`, 307200/307200 nonzero
+    pixels)
 
 ## Stretch Direction
 
@@ -2083,8 +2152,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Checkpoint and push the Fetch parity re-audit repair without staging the
-   pre-existing `STEERING.md` draft.
+1. Restore rigid-shapes keyboard spawning, convex mesh, contact-point toggle,
+   camera home, and default run size through public `dart::gui`.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

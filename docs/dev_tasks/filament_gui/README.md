@@ -92,7 +92,11 @@ Fetch user-visible behavior gap should be restored through promoted
 re-audit checkpoint now restores the missing example README and adds
 renderer-neutral `ApplicationOptions::runDefaults` so the source-owned example
 can recover the historical 1280x960 default launch size while preserving
-command-line overrides.
+command-line overrides. The next active parity slice is `examples/rigid_shapes`:
+restore the historical shape-spawn/delete/contact keyboard controls, convex
+mesh spawn path, contact-point visualization, camera home, and 640x480 default
+launch size through public `dart::gui`, plus the rigid-shapes-specific
+collision-detector, max-contact, and ground-thickness command-line options.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

@@ -127,6 +127,9 @@
     through public `dart::gui`.
   - Restored joint-constraints example perturbation keys, `h` harness toggle,
     and camera defaults through public `dart::gui`.
+  - Restored rigid-shapes example spawn/delete/contact keyboard controls,
+    convex mesh spawning, contact-point visualization, rigid-shapes-specific
+    command-line options, and camera/run defaults through public `dart::gui`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+
