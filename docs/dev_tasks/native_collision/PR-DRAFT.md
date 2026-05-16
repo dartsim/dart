@@ -142,8 +142,9 @@ Make native DART collision the default runtime stack
   CTest sweep 288/288, the dedicated simulation-experimental task 13/13, and
   the final unfiltered CTest sweep 301/301.
 - Local commits after `ca0201e67f4` are docs/evidence-only refreshes through
-  `5627a80a0a2`; `pixi run lint` has passed after the latest code update,
-  including `check-collision-runtime-isolation` and
+  `d1a1dbd9ac9`; the latest audit commits record the current local `test-all`
+  evidence and read-only review-surface state. `pixi run lint` has passed after
+  the latest code update, including `check-collision-runtime-isolation` and
   `audit-collision-compat-facades`. Use `git log -3 --oneline --decorate` for
   the exact current local head.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
@@ -185,7 +186,7 @@ manual PR is opened.
       `OdeCollisionDetector`. Use `DartCollisionDetector` or the default
       detector.
 
-## Related Issues / PRs
+## Related Issues / PRs (backports)
 
 - PR #2652: `https://github.com/dartsim/dart/pull/2652`
 

@@ -171,8 +171,9 @@ Local validation currently recorded in the dev-task evidence:
   CTest sweep 288/288, the dedicated simulation-experimental task 13/13, and
   the final unfiltered CTest sweep 301/301.
 - Local commits after `ca0201e67f4` are docs/evidence-only refreshes through
-  `5627a80a0a2`; `pixi run lint` has passed after the latest code update,
-  including `check-collision-runtime-isolation` and
+  `d1a1dbd9ac9`; the latest audit commits record the current local `test-all`
+  evidence and read-only review-surface state. `pixi run lint` has passed after
+  the latest code update, including `check-collision-runtime-isolation` and
   `audit-collision-compat-facades`. Use `git log -3 --oneline --decorate` for
   the exact current local head.
 - `pixi run lint` passed and includes:
@@ -271,7 +272,7 @@ Compatibility notes:
 - Explicit old-engine comparisons should use `dart-test-reference-*` targets
   and `createReference()` APIs.
 
-## Related Issues / PRs
+## Related Issues / PRs (backports)
 
 - PR #2652: `https://github.com/dartsim/dart/pull/2652`
 - Latest audited branch evidence:
@@ -300,6 +301,8 @@ Compatibility notes:
   - `6404f7607be` (`Classify native collision matrix deferrals`)
   - `1bfc9103a6b` (`Refresh current gz compatibility evidence`)
   - `5627a80a0a2` (`Clarify native collision supervisor status`)
+  - `19aed78ae04` (`Refresh current native collision test-all evidence`)
+  - `d1a1dbd9ac9` (`Refresh native collision review surface audit`)
 
 ## Checklist Notes
 
