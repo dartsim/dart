@@ -118,6 +118,8 @@
     keyboard controls and camera defaults through public `dart::gui`.
   - Restored vehicle example `w`/`s`/`x`/`a`/`d` command keys and camera
     defaults through public `dart::gui`.
+  - Restored soft-bodies example playback keys for frame stepping, restart, and
+    jump-to-latest through public `dart::gui` keyboard actions.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

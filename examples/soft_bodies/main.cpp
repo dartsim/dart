@@ -48,6 +48,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cstddef>
@@ -200,6 +201,60 @@ dart::simulation::WorldPtr createSoftBodiesWorld()
   return world;
 }
 
+template <typename Callback>
+dart::gui::KeyboardAction makePlaybackAction(
+    const std::shared_ptr<SoftBodyHistory>& history,
+    char key,
+    std::string label,
+    Callback callback)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback = [history, callback = std::move(callback)](
+                        dart::gui::KeyboardActionContext&) {
+    callback(*history);
+  };
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createSoftBodiesKeyboardActions(
+    const std::shared_ptr<SoftBodyHistory>& history)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(6);
+  actions.push_back(makePlaybackAction(
+      history,
+      '[',
+      "Move soft-body playback backward one frame",
+      [](SoftBodyHistory& state) { state.moveBackward(1); }));
+  actions.push_back(makePlaybackAction(
+      history,
+      ']',
+      "Move soft-body playback forward one frame",
+      [](SoftBodyHistory& state) { state.moveForward(1); }));
+  actions.push_back(makePlaybackAction(
+      history,
+      '{',
+      "Move soft-body playback backward ten frames",
+      [](SoftBodyHistory& state) { state.moveBackward(10); }));
+  actions.push_back(makePlaybackAction(
+      history,
+      '}',
+      "Move soft-body playback forward ten frames",
+      [](SoftBodyHistory& state) { state.moveForward(10); }));
+  actions.push_back(makePlaybackAction(
+      history, 'r', "Restart soft-body playback", [](SoftBodyHistory& state) {
+        state.restart();
+      }));
+  actions.push_back(makePlaybackAction(
+      history,
+      '\\',
+      "Jump soft-body playback to latest frame",
+      [](SoftBodyHistory& state) { state.moveToEnd(); }));
+  return actions;
+}
+
 dart::gui::Panel createSoftBodiesPanel(
     const std::shared_ptr<SoftBodyHistory>& history)
 {
@@ -209,6 +264,11 @@ dart::gui::Panel createSoftBodiesPanel(
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     builder.text("Recorded soft-body state playback");
+    builder.text("'['/']': move backward/forward one frame");
+    builder.text("'{'/'}': move backward/forward ten frames");
+    builder.text("'r': restart playback");
+    builder.text("'\\': jump to latest frame");
+    builder.separator();
     builder.text(makeStatusLine("history frames: ", history->historySize()));
     builder.text(makeStatusLine("current frame: ", history->currentIndex()));
     builder.separator();
@@ -260,6 +320,7 @@ int main(int argc, char* argv[])
   options.preStep = [history]() {
     history->captureStepStart();
   };
+  options.keyboardActions = createSoftBodiesKeyboardActions(history);
   options.panels.push_back(createSoftBodiesPanel(history));
 
   return dart::gui::runApplication(argc, argv, options);

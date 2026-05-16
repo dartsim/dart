@@ -1103,9 +1103,49 @@ TEST(FilamentSceneExtraction, SoftBodiesAndVehicleExamplesPreserveParityMarkers)
   EXPECT_NE(softBodiesSource.find("class SoftBodyHistory"), std::string::npos);
   EXPECT_NE(softBodiesSource.find("captureStepStart"), std::string::npos);
   EXPECT_NE(softBodiesSource.find("moveBackward"), std::string::npos);
+  EXPECT_NE(softBodiesSource.find("makePlaybackAction"), std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("KeyboardShortcut::characterKey(key)"),
+      std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("createSoftBodiesKeyboardActions"),
+      std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("Move soft-body playback backward one frame"),
+      std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("Move soft-body playback forward one frame"),
+      std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("Move soft-body playback backward ten frames"),
+      std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("Move soft-body playback forward ten frames"),
+      std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("Restart soft-body playback"), std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("Jump soft-body playback to latest frame"),
+      std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("'['/']': move backward/forward one frame"),
+      std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("'{'/'}': move backward/forward ten frames"),
+      std::string::npos);
   EXPECT_NE(softBodiesSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(
+      softBodiesSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(softBodiesSource.find("options.world"), std::string::npos);
   EXPECT_EQ(softBodiesSource.find("options.defaultScene"), std::string::npos);
+
+  const auto inputSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
+      / "filament" / "input.cpp");
+  EXPECT_NE(inputSource.find("GLFW_KEY_LEFT_BRACKET"), std::string::npos);
+  EXPECT_NE(inputSource.find("GLFW_KEY_RIGHT_BRACKET"), std::string::npos);
+  EXPECT_NE(inputSource.find("GLFW_KEY_BACKSLASH"), std::string::npos);
+  EXPECT_NE(inputSource.find("isShiftDown"), std::string::npos);
 
   const auto vehicleSource = readSourceFile(
       std::filesystem::path("examples") / "vehicle" / "main.cpp");

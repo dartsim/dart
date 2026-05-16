@@ -1828,6 +1828,56 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
   - Post-lint direct llvmpipe vehicle screenshot plus
     `analyze_headless_smoke.py` (`/tmp/dart_vehicle_direct_postlint.ppm`,
     307200/307200 nonzero pixels)
+- Implementation status: pushed as
+  `3f603fec25b Restore vehicle keyboard controls`.
+
+Thirty-fourth soft-bodies playback parity checkpoint:
+
+- Historical `examples/soft_bodies` exposed `[`, `]`, `{`, `}`, `r`, and `\`
+  keyboard controls for stepping backward/forward by one, stepping
+  backward/forward by ten, restarting, and jumping to the latest recorded
+  state. The current promoted source owns the soft-body world, history capture,
+  and equivalent panel buttons, but it does not wire the legacy playback keys
+  through public `dart::gui`.
+- Implementation scope: restore those six playback keys as renderer-neutral
+  `dart::gui::KeyboardAction`s, update the panel text so the example itself
+  documents the keyboard controls, and teach the private GLFW input bridge to
+  distinguish shifted bracket shortcuts so `KeyboardShortcut::characterKey('{')`
+  and `KeyboardShortcut::characterKey('}')` can coexist with `[` and `]`.
+- Keep this checkpoint focused on soft-body playback parity. The example did
+  not set a historical camera home view, so this slice should not invent one.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `soft_bodies` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct and/or pixi soft-bodies headless screenshot with analyzer coverage
+  - Python runner tests
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+- Local validation completed:
+  - `cmake --build build/default/cpp/Release --target soft_bodies
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe soft-bodies screenshot plus `analyze_headless_smoke.py`
+    (`/tmp/dart_soft_bodies_direct.ppm`, 307200/307200 nonzero pixels)
+  - `pixi run ex soft_bodies --headless --frames 2 --width 640 --height 480
+--screenshot /tmp/dart_soft_bodies_pixi.ppm` plus analyzer (307200/307200
+    nonzero pixels)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target soft_bodies
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe soft-bodies screenshot plus
+    `analyze_headless_smoke.py`
+    (`/tmp/dart_soft_bodies_direct_postlint.ppm`, 307200/307200 nonzero
+    pixels)
 - Implementation status: ready for checkpoint commit and push.
 
 ## Stretch Direction
@@ -1860,7 +1910,7 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore vehicle `w`/`s`/`x`/`a`/`d` keyboard controls and camera default
+1. Restore soft-bodies `[`, `]`, `{`, `}`, `r`, and `\` playback controls
    through public `dart::gui`.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as

@@ -76,6 +76,20 @@ int glfwKeyForShortcut(const KeyboardShortcut& shortcut)
     if (std::isalpha(value)) {
       return std::toupper(value);
     }
+
+    switch (shortcut.character) {
+      case '[':
+      case '{':
+        return GLFW_KEY_LEFT_BRACKET;
+      case ']':
+      case '}':
+        return GLFW_KEY_RIGHT_BRACKET;
+      case '\\':
+        return GLFW_KEY_BACKSLASH;
+      default:
+        break;
+    }
+
     return value;
   }
 
@@ -109,11 +123,30 @@ int glfwKeyForShortcut(const KeyboardShortcut& shortcut)
   return GLFW_KEY_UNKNOWN;
 }
 
+bool isShiftDown(GLFWwindow* window)
+{
+  return glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS
+         || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
+}
+
 bool isShortcutDown(GLFWwindow* window, const KeyboardShortcut& shortcut)
 {
   const int glfwKey = glfwKeyForShortcut(shortcut);
-  return glfwKey != GLFW_KEY_UNKNOWN
-         && glfwGetKey(window, glfwKey) == GLFW_PRESS;
+  if (glfwKey == GLFW_KEY_UNKNOWN
+      || glfwGetKey(window, glfwKey) != GLFW_PRESS) {
+    return false;
+  }
+
+  switch (shortcut.character) {
+    case '{':
+    case '}':
+      return isShiftDown(window);
+    case '[':
+    case ']':
+      return !isShiftDown(window);
+    default:
+      return true;
+  }
 }
 
 void dispatchKeyboardActions(
