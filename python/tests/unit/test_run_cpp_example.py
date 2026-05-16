@@ -171,6 +171,11 @@ def test_filament_routed_scene_defaults_are_known(run_cpp_example):
     assert routed_scenes <= set(run_cpp_example.FILAMENT_KNOWN_SCENES)
 
 
+def test_filament_routed_examples_do_not_inject_scene_defaults():
+    for example, default_args in FILAMENT_ROUTED_EXAMPLES.items():
+        assert "--scene" not in default_args, example
+
+
 def test_split_filament_scene_all_uses_smoke_scene_list(run_cpp_example):
     scenes, args = run_cpp_example._split_filament_scenes(
         ["--frames", "1", "--scene", "all", "--width", "320"]

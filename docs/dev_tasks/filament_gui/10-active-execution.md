@@ -1097,6 +1097,46 @@ Eighteenth source-ownership checkpoint:
   phase still requires a final parity audit of all restored examples and
   follow-up cleanup of now-unused fixture-only private scene plumbing.
 
+Nineteenth source-ownership cleanup checkpoint:
+
+- Remove the now-unused `dart_build_gui_scene_example(...)` helper from
+  `examples/gui_scene_example.cmake` and delete `examples/gui_scene_launcher.cpp`.
+  The public example helper should only build real sources; examples must not be
+  able to route themselves through a private named-scene fixture again.
+- Add/extend audit coverage so the source-ownership state is explicit:
+  `examples/` should have no `dart_build_gui_scene_example(...)` references,
+  `scripts/run_cpp_example.py` should not inject per-example `--scene` defaults,
+  and every restored GUI example should be represented in the promoted
+  `dart::gui` boundary scan.
+- Keep `dartsim --scene ...` private fixture paths only as transitional app
+  diagnostics for now; this cleanup checkpoint removes the example build
+  escape hatch first. Physical app scene-fixture pruning belongs to the next
+  checkpoint because it changes `dartsim --scene all` smoke coverage and CI
+  registration.
+- Local acceptance for this checkpoint:
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+- Implementation state for this slice: `examples/gui_scene_launcher.cpp` is
+  deleted, `examples/gui_scene_example.cmake` only exposes
+  `dart_build_gui_example(...)`, the C++ GUI unit test rejects the old
+  scene-launcher shim, and the Python runner tests reject per-example `--scene`
+  defaults.
+- Local evidence so far:
+  - Full `examples` aggregate target build plus
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (`67 passed`)
+  - `pixi run lint`
+  - Post-lint full `examples` aggregate target build plus
+    `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint Python runner tests (`67 passed`)
+  - `git diff --check`
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:

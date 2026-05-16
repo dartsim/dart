@@ -1,9 +1,6 @@
 # Copyright (c) 2011, The DART development contributors
 
 set(DART_GUI_SCENE_EXAMPLE_DIR "${CMAKE_CURRENT_LIST_DIR}")
-set(DART_GUI_SCENE_EXAMPLE_LAUNCHER
-    "${DART_GUI_SCENE_EXAMPLE_DIR}/gui_scene_launcher.cpp"
-)
 
 function(dart_build_gui_example target_name)
   if(NOT DART_IN_SOURCE_BUILD)
@@ -29,15 +26,5 @@ function(dart_build_gui_example target_name)
     )
     dart_add_example(${target_name})
     dart_format_add(${ARGN})
-  endif()
-endfunction()
-
-function(dart_build_gui_scene_example target_name scene_name)
-  dart_build_gui_example(${target_name} "${DART_GUI_SCENE_EXAMPLE_LAUNCHER}")
-  if(TARGET ${target_name})
-    target_compile_definitions(
-      ${target_name}
-      PRIVATE DART_GUI_DEFAULT_SCENE="${scene_name}"
-    )
   endif()
 endfunction()

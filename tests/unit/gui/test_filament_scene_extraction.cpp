@@ -534,6 +534,19 @@ TEST(FilamentSceneExtraction, DiagnosticsExampleUsesPromotedGuiBoundary)
       mainSource.find("dart::gui::extractRenderables"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, GuiExamplesDoNotExposeSceneLauncherShim)
+{
+  const auto helperSource = readSourceFile(
+      std::filesystem::path("examples") / "gui_scene_example.cmake");
+  EXPECT_EQ(
+      helperSource.find("dart_build_gui_scene_example"), std::string::npos);
+  EXPECT_EQ(helperSource.find("DART_GUI_DEFAULT_SCENE"), std::string::npos);
+  EXPECT_FALSE(
+      std::filesystem::exists(
+          std::filesystem::path(dart::config::sourcePath()) / "examples"
+          / "gui_scene_launcher.cpp"));
+}
+
 TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
 {
   bool diagnostics = false;

@@ -82,6 +82,8 @@
   - Moved the soft-body and vehicle examples (`soft_bodies` and `vehicle`) off
     private named-scene fixture launchers so their example sources own imported
     worlds, public panels, and simulation controls directly.
+  - Removed the unused GUI example scene-launcher shim so restored examples
+    must build real source files instead of private named-scene fixtures.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+
