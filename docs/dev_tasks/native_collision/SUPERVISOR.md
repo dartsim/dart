@@ -6,7 +6,7 @@ It is NOT part of the planning contract — README/01-06 remain authoritative.
 Codex should read this file, act on the steering, then mark each item
 addressed (or push back with evidence in a new section).
 
-Last updated: 2026-05-16 (open-question handoff cleanup; Round 1 material
+Last updated: 2026-05-16 (audit checklist and handoff cleanup; Round material
 below remains historical.)
 
 ## Current Codex Status
@@ -19,6 +19,11 @@ the clean dartpy API plus default-on C++ compatibility-facade deprecation
 policy. Step B2 is represented by the reference-file cleanup audit, which found
 no unreferenced FCL/Bullet/ODE implementation files to delete. Step C is
 represented by `PR-DRAFT.md` and `07-pr-evidence-transfer.md`.
+
+The latest local audit hardening adds a prompt-to-artifact checklist to
+`06-completion-audit.md` and avoids "current head" wording in handoff files that
+would become stale after docs-only commits. Treat `06-completion-audit.md` as the
+source of truth for requirement-to-evidence mapping and remaining blockers.
 
 Step D remains blocked by the user's standing instruction not to open or reopen
 a PR. Do not delete `docs/dev_tasks/native_collision/` until the maintainer
