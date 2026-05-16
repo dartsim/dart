@@ -104,6 +104,8 @@
   - Added renderer-neutral `dart::gui` keyboard actions and used them to
     restore Tinkertoy add/delete, force coefficient, clear-pick, and target
     reorientation hotkeys without exposing backend input headers.
+  - Restored Atlas and Hubo puppet continuous IK solving and WASD/QE/FZ root
+    teleoperation through renderer-neutral `dart::gui` keyboard actions.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

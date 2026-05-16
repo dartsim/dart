@@ -72,6 +72,21 @@ namespace {
 constexpr const char* kHuboSkeletonName = "visual_hubo_puppet_robot";
 constexpr const char* kGroundSkeletonName = "visual_hubo_puppet_ground";
 constexpr double kDegrees = 3.14159265358979323846 / 180.0;
+constexpr double kTeleopLinearStep = 0.01;
+constexpr double kTeleopElevationStep = 0.2 * kTeleopLinearStep;
+constexpr double kTeleopYawStep = 2.0 * 3.14159265358979323846 / 180.0;
+
+enum class PuppetMotion
+{
+  Forward,
+  Backward,
+  Left,
+  Right,
+  Up,
+  Down,
+  YawLeft,
+  YawRight,
+};
 
 void disableSkeletonCollisionAndGravity(
     const dart::dynamics::SkeletonPtr& skeleton)
@@ -321,6 +336,7 @@ dart::dynamics::SkeletonPtr createGround()
 struct HuboPuppetScene
 {
   dart::simulation::WorldPtr world;
+  dart::dynamics::SkeletonPtr hubo;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
 };
 
@@ -462,9 +478,132 @@ HuboPuppetScene createHuboPuppetScene()
   scene.world->addSkeleton(createGround());
 
   auto hubo = loadHuboPuppetSkeleton();
+  scene.hubo = hubo;
   scene.world->addSkeleton(hubo);
   addHuboPuppetIkTargets(scene, hubo);
   return scene;
+}
+
+void solveIkHandles(
+    const std::vector<dart::gui::InverseKinematicsHandle>& handles)
+{
+  for (const auto& handle : handles) {
+    if (handle.ik != nullptr) {
+      handle.ik->solveAndApply(true);
+    }
+  }
+}
+
+bool applyRootTeleoperationStep(
+    const dart::dynamics::SkeletonPtr& hubo, PuppetMotion motion)
+{
+  auto* rootBody = hubo ? hubo->getRootBodyNode() : nullptr;
+  if (rootBody == nullptr
+      || dynamic_cast<dart::dynamics::FreeJoint*>(rootBody->getParentJoint())
+             == nullptr) {
+    return false;
+  }
+
+  const Eigen::Isometry3d current = rootBody->getWorldTransform();
+  Eigen::Isometry3d next = current;
+
+  Eigen::Vector3d forward = current.linear().col(0);
+  forward.z() = 0.0;
+  if (forward.norm() > 1e-10) {
+    forward.normalize();
+  } else {
+    forward.setZero();
+  }
+
+  Eigen::Vector3d left = current.linear().col(1);
+  left.z() = 0.0;
+  if (left.norm() > 1e-10) {
+    left.normalize();
+  } else {
+    left.setZero();
+  }
+
+  switch (motion) {
+    case PuppetMotion::Forward:
+      next.translation() += kTeleopLinearStep * forward;
+      break;
+    case PuppetMotion::Backward:
+      next.translation() -= kTeleopLinearStep * forward;
+      break;
+    case PuppetMotion::Left:
+      next.translation() += kTeleopLinearStep * left;
+      break;
+    case PuppetMotion::Right:
+      next.translation() -= kTeleopLinearStep * left;
+      break;
+    case PuppetMotion::Up:
+      next.translation() += kTeleopElevationStep * Eigen::Vector3d::UnitZ();
+      break;
+    case PuppetMotion::Down:
+      next.translation() -= kTeleopElevationStep * Eigen::Vector3d::UnitZ();
+      break;
+    case PuppetMotion::YawLeft:
+      next.linear()
+          = Eigen::AngleAxisd(kTeleopYawStep, Eigen::Vector3d::UnitZ())
+                .toRotationMatrix()
+            * current.linear();
+      break;
+    case PuppetMotion::YawRight:
+      next.linear()
+          = Eigen::AngleAxisd(-kTeleopYawStep, Eigen::Vector3d::UnitZ())
+                .toRotationMatrix()
+            * current.linear();
+      break;
+  }
+
+  dart::dynamics::FreeJoint::setTransformOf(rootBody, next);
+  return true;
+}
+
+std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
+    const dart::dynamics::SkeletonPtr& hubo,
+    const std::vector<dart::gui::InverseKinematicsHandle>& ikHandles)
+{
+  struct Config
+  {
+    char key;
+    const char* label;
+    PuppetMotion motion;
+  };
+
+  const std::array<Config, 8> configs{{
+      {'w', "Move Hubo forward", PuppetMotion::Forward},
+      {'s', "Move Hubo backward", PuppetMotion::Backward},
+      {'a', "Move Hubo left", PuppetMotion::Left},
+      {'d', "Move Hubo right", PuppetMotion::Right},
+      {'f', "Raise Hubo root", PuppetMotion::Up},
+      {'z', "Lower Hubo root", PuppetMotion::Down},
+      {'q', "Yaw Hubo left", PuppetMotion::YawLeft},
+      {'e', "Yaw Hubo right", PuppetMotion::YawRight},
+  }};
+
+  auto handles
+      = std::make_shared<std::vector<dart::gui::InverseKinematicsHandle>>(
+          ikHandles);
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(configs.size());
+  for (const Config& config : configs) {
+    dart::gui::KeyboardAction action;
+    action.label = config.label;
+    action.shortcut = dart::gui::KeyboardShortcut::characterKey(config.key);
+    action.repeat = true;
+    action.callback = [hubo, handles, motion = config.motion](
+                          dart::gui::KeyboardActionContext& context) {
+      if (applyRootTeleoperationStep(hubo, motion)) {
+        solveIkHandles(*handles);
+        if (context.lifecycle != nullptr) {
+          context.lifecycle->paused = true;
+        }
+      }
+    };
+    actions.push_back(std::move(action));
+  }
+  return actions;
 }
 
 dart::gui::Panel createHuboPuppetPanel()
@@ -478,6 +617,7 @@ dart::gui::Panel createHuboPuppetPanel()
     builder.text("Ctrl-left drag moves the selected handle.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
+    builder.text("WASD moves the root; Q/E yaw; F/Z height.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -504,6 +644,11 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
     options.ikHandles = scene.ikHandles;
+    options.preStep = [handles = scene.ikHandles]() {
+      solveIkHandles(handles);
+    };
+    options.keyboardActions
+        = createHuboPuppetKeyboardActions(scene.hubo, scene.ikHandles);
     options.panels.push_back(createHuboPuppetPanel());
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {

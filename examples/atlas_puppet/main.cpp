@@ -72,6 +72,21 @@ constexpr const char* kAtlasUri
 constexpr const char* kAtlasSkeletonName = "visual_atlas_robot";
 constexpr const char* kGroundSkeletonName = "visual_atlas_puppet_ground";
 constexpr const char* kIkTargetPrefix = "atlas_puppet_ik_target_";
+constexpr double kTeleopLinearStep = 0.01;
+constexpr double kTeleopElevationStep = 0.2 * kTeleopLinearStep;
+constexpr double kTeleopYawStep = 2.0 * 3.14159265358979323846 / 180.0;
+
+enum class PuppetMotion
+{
+  Forward,
+  Backward,
+  Left,
+  Right,
+  Up,
+  Down,
+  YawLeft,
+  YawRight,
+};
 
 void disableSkeletonCollisionAndGravity(
     const dart::dynamics::SkeletonPtr& skeleton)
@@ -298,6 +313,7 @@ dart::dynamics::SkeletonPtr createGround()
 struct AtlasPuppetScene
 {
   dart::simulation::WorldPtr world;
+  dart::dynamics::SkeletonPtr atlas;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
 };
 
@@ -429,9 +445,132 @@ AtlasPuppetScene createAtlasPuppetScene()
   scene.world->addSkeleton(createGround());
 
   auto atlas = loadAtlasPuppetSkeleton();
+  scene.atlas = atlas;
   scene.world->addSkeleton(atlas);
   addAtlasPuppetIkTargets(scene, atlas);
   return scene;
+}
+
+void solveIkHandles(
+    const std::vector<dart::gui::InverseKinematicsHandle>& handles)
+{
+  for (const auto& handle : handles) {
+    if (handle.ik != nullptr) {
+      handle.ik->solveAndApply(true);
+    }
+  }
+}
+
+bool applyRootTeleoperationStep(
+    const dart::dynamics::SkeletonPtr& atlas, PuppetMotion motion)
+{
+  auto* rootBody = atlas ? atlas->getRootBodyNode() : nullptr;
+  if (rootBody == nullptr
+      || dynamic_cast<dart::dynamics::FreeJoint*>(rootBody->getParentJoint())
+             == nullptr) {
+    return false;
+  }
+
+  const Eigen::Isometry3d current = rootBody->getWorldTransform();
+  Eigen::Isometry3d next = current;
+
+  Eigen::Vector3d forward = current.linear().col(0);
+  forward.z() = 0.0;
+  if (forward.norm() > 1e-10) {
+    forward.normalize();
+  } else {
+    forward.setZero();
+  }
+
+  Eigen::Vector3d left = current.linear().col(1);
+  left.z() = 0.0;
+  if (left.norm() > 1e-10) {
+    left.normalize();
+  } else {
+    left.setZero();
+  }
+
+  switch (motion) {
+    case PuppetMotion::Forward:
+      next.translation() += kTeleopLinearStep * forward;
+      break;
+    case PuppetMotion::Backward:
+      next.translation() -= kTeleopLinearStep * forward;
+      break;
+    case PuppetMotion::Left:
+      next.translation() += kTeleopLinearStep * left;
+      break;
+    case PuppetMotion::Right:
+      next.translation() -= kTeleopLinearStep * left;
+      break;
+    case PuppetMotion::Up:
+      next.translation() += kTeleopElevationStep * Eigen::Vector3d::UnitZ();
+      break;
+    case PuppetMotion::Down:
+      next.translation() -= kTeleopElevationStep * Eigen::Vector3d::UnitZ();
+      break;
+    case PuppetMotion::YawLeft:
+      next.linear()
+          = Eigen::AngleAxisd(kTeleopYawStep, Eigen::Vector3d::UnitZ())
+                .toRotationMatrix()
+            * current.linear();
+      break;
+    case PuppetMotion::YawRight:
+      next.linear()
+          = Eigen::AngleAxisd(-kTeleopYawStep, Eigen::Vector3d::UnitZ())
+                .toRotationMatrix()
+            * current.linear();
+      break;
+  }
+
+  dart::dynamics::FreeJoint::setTransformOf(rootBody, next);
+  return true;
+}
+
+std::vector<dart::gui::KeyboardAction> createAtlasPuppetKeyboardActions(
+    const dart::dynamics::SkeletonPtr& atlas,
+    const std::vector<dart::gui::InverseKinematicsHandle>& ikHandles)
+{
+  struct Config
+  {
+    char key;
+    const char* label;
+    PuppetMotion motion;
+  };
+
+  const std::array<Config, 8> configs{{
+      {'w', "Move Atlas forward", PuppetMotion::Forward},
+      {'s', "Move Atlas backward", PuppetMotion::Backward},
+      {'a', "Move Atlas left", PuppetMotion::Left},
+      {'d', "Move Atlas right", PuppetMotion::Right},
+      {'f', "Raise Atlas root", PuppetMotion::Up},
+      {'z', "Lower Atlas root", PuppetMotion::Down},
+      {'q', "Yaw Atlas left", PuppetMotion::YawLeft},
+      {'e', "Yaw Atlas right", PuppetMotion::YawRight},
+  }};
+
+  auto handles
+      = std::make_shared<std::vector<dart::gui::InverseKinematicsHandle>>(
+          ikHandles);
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(configs.size());
+  for (const Config& config : configs) {
+    dart::gui::KeyboardAction action;
+    action.label = config.label;
+    action.shortcut = dart::gui::KeyboardShortcut::characterKey(config.key);
+    action.repeat = true;
+    action.callback = [atlas, handles, motion = config.motion](
+                          dart::gui::KeyboardActionContext& context) {
+      if (applyRootTeleoperationStep(atlas, motion)) {
+        solveIkHandles(*handles);
+        if (context.lifecycle != nullptr) {
+          context.lifecycle->paused = true;
+        }
+      }
+    };
+    actions.push_back(std::move(action));
+  }
+  return actions;
 }
 
 dart::gui::Panel createAtlasPuppetPanel()
@@ -445,6 +584,7 @@ dart::gui::Panel createAtlasPuppetPanel()
     builder.text("Ctrl-left drag moves the selected handle.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
+    builder.text("WASD moves the root; Q/E yaw; F/Z height.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -471,6 +611,11 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
     options.ikHandles = scene.ikHandles;
+    options.preStep = [handles = scene.ikHandles]() {
+      solveIkHandles(handles);
+    };
+    options.keyboardActions
+        = createAtlasPuppetKeyboardActions(scene.atlas, scene.ikHandles);
     options.panels.push_back(createAtlasPuppetPanel());
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {

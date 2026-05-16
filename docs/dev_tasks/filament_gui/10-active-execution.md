@@ -87,6 +87,11 @@ context survives across sessions.
   opening a PR. Push-triggered CI runs were created for lint, Linux, macOS,
   Windows, and CodeQL. Do not wait for those runs before continuing independent
   parity work.
+- The renderer-neutral keyboard-action checkpoint
+  (`c91adf346e5 Add GUI keyboard actions`) was pushed to the tracked remote
+  branch without opening a PR. It restores the Tinkertoy hotkeys that can be
+  expressed without new camera-reset or recording APIs and provides the public
+  input surface needed for robot/IK parity work.
 
 ## Current Code Shape
 
@@ -1448,6 +1453,75 @@ Twenty-sixth renderer-neutral keyboard-action checkpoint:
   - Python runner tests (`67 passed`)
   - Full `examples` aggregate target build
 
+Twenty-seventh robot/IK behavior parity checkpoint:
+
+- Source ownership is not the remaining blocker for the legacy example set:
+  an audit against `origin/main:examples` found that every legacy example
+  directory with `main.cpp` has a current `main.cpp`, except intentionally
+  removed backend-only renderer demos (`filament_gui` and `raylib`).
+  `wam_ikfast` is branch-new. This does not mean feature parity is complete.
+- Continue comparing source-owned examples against the historical source
+  baseline before marking them restored. `examples/fetch/` remains the model
+  correction: it was source-owned before camera, target-cross, and work-area
+  grid parity were restored.
+- Immediate implementation scope: use the new public
+  `ApplicationOptions::keyboardActions` surface to restore the Atlas/Hubo
+  whole-body puppet behavior that can be expressed without exposing GLFW or
+  private Filament APIs:
+  - continuous IK solving from the example-owned world state rather than only
+    solving on backend drag/nudge operations
+  - WASD planar root translation, Q/E yaw rotation, and F/Z vertical root
+    translation
+  - compact panel text documenting the restored teleoperation controls
+- Keep this checkpoint focused. Atlas relaxed-posture/balance optimization,
+  Hubo analytical IK, target activation/deactivation semantics, G1 target
+  toggle semantics, and recording/camera-reset shortcuts remain explicit
+  parity gaps unless the slice adds the smallest renderer-neutral public API
+  needed to implement them cleanly.
+- Implementation state for this slice: `examples/atlas_puppet` and
+  `examples/hubo_puppet` now register repeatable public
+  `dart::gui::KeyboardAction` callbacks for W/A/S/D/F/Z/Q/E root movement.
+  Each callback applies the same root-frame step sizes as the historical
+  puppet teleoperation path, solves the example-owned IK handles immediately,
+  and pauses the viewer through the public lifecycle context. Both examples
+  also solve their IK handles from `ApplicationOptions::preStep` while the
+  simulation advances, so IK behavior is no longer limited to backend drag or
+  nudge events.
+- Guard state: the GUI source-marker test now requires Atlas/Hubo
+  `options.preStep`, `options.keyboardActions`, root teleoperation helper
+  markers, IK-solve helper markers, and panel text for the restored WASD/QE/FZ
+  controls.
+- Local evidence so far:
+  - Focused C++ target build for `atlas_puppet`, `hubo_puppet`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct llvmpipe headless captures for `atlas_puppet` and `hubo_puppet`
+    with basic analyzer checks at 640x480
+  - Sequential `pixi run ex ... --headless --frames 2 --width 640 --height
+480 --screenshot ...` captures for `atlas_puppet` and `hubo_puppet` with
+    basic analyzer checks
+  - Python runner tests (`67 passed`)
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - Post-lint focused C++ target build for `atlas_puppet`, `hubo_puppet`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint direct llvmpipe headless captures for `atlas_puppet` and
+    `hubo_puppet` with basic analyzer checks at 640x480
+  - Post-lint Python runner tests (`67 passed`)
+  - Post-lint full `examples` aggregate target build
+  - `git diff --check`
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `atlas_puppet`, `hubo_puppet`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct or pixi headless screenshots for `atlas_puppet` and `hubo_puppet`
+    with basic analyzer checks
+  - Python runner tests
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -1478,17 +1552,15 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Finish the keyboard action checkpoint with mandatory lint, post-lint focused
-   validation, commit, and push.
-2. Then continue robot/IK solver/hotkey parity through promoted `dart::gui`
-   concepts.
-3. Keep `examples/fetch/` in the completed-evidence set for camera,
+1. Restore the Atlas/Hubo robot teleoperation and continuous solve behavior
+   through promoted `dart::gui` keyboard actions.
+2. Keep `examples/fetch/` in the completed-evidence set for camera,
    target-cross, and work-area-grid parity, but do not generalize that result
    to other examples.
-4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-5. Do not start the physical `experimental/` directory move until the
+4. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-6. Run `pixi run lint` before every checkpoint commit, then push the commit to
+5. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

@@ -36,20 +36,23 @@ full hotkey parity as remaining audit work. The next target-affordance slice
 applies the same visible-handle pattern to `operational_space_control`,
 `wam_ikfast`, and `tinkertoy` while tracking Tinkertoy's larger builder
 workflow gaps separately. That handle slice and the Fetch grid slice have been
-pushed. The active Tinkertoy checkpoint now restores the stateful builder
-workflow that can be expressed through current promoted `dart::gui` concepts:
-selected block state, add/delete panel controls, gravity and force-coefficient
-controls, target reorientation, force-line updates, external force
-application, and collision/dynamics block construction. It is ready for
-mandatory lint plus post-lint focused validation. Raw keyboard hotkeys and the
-legacy recording toggle remain explicit follow-up gaps until there is a
-renderer-neutral public input/action API.
+pushed. The Tinkertoy builder and keyboard checkpoints now restore the
+stateful builder workflow through promoted `dart::gui` concepts: selected
+block state, add/delete panel controls, gravity and force-coefficient controls,
+target reorientation, force-line updates, external force application,
+collision/dynamics block construction, and the `1`/`2`/`3`, Backspace, Delete,
+Up/Down, and backtick hotkeys. Tab camera-home and Enter recording remain
+explicit follow-up gaps until public camera-reset and recording APIs exist.
 
-The next active slice has locally introduced that renderer-neutral keyboard
-action surface on `dart::gui::ApplicationOptions` and uses it for Tinkertoy
-hotkeys that do not require new camera-reset or recording APIs. This is also
-the prerequisite for restoring robot/IK teleoperation hotkeys without exposing
-GLFW or private Filament input types from examples.
+The next active slice uses the renderer-neutral keyboard action surface for
+robot/IK behavior parity. The first target is Atlas/Hubo whole-body puppet
+behavior that can be restored through promoted `dart::gui`: continuous IK
+solving plus WASD/QE/FZ root teleoperation. That slice is implemented locally
+for `atlas_puppet` and `hubo_puppet` and is in validation/commit state. Atlas
+relaxed-posture/balance optimization, Hubo analytical IK, target
+activation/deactivation semantics, and G1 target toggle semantics remain
+tracked parity gaps unless a later slice adds the narrow public API needed to
+implement them cleanly.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

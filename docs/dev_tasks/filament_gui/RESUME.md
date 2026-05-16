@@ -71,29 +71,27 @@ is now implemented locally because the historical source also added a visible
 DART line-segment geometry in `examples/fetch/main.cpp`, not as a private
 Filament debug-overlay hook. The robot/IK target-handle parity checkpoint has
 also been pushed for `g1_puppet`, `atlas_puppet`, `hubo_puppet`,
-`operational_space_control`, `wam_ikfast`, and `tinkertoy`. The active code
-slice is Tinkertoy builder-state parity: selected-block state, dynamic
+`operational_space_control`, `wam_ikfast`, and `tinkertoy`. The Tinkertoy
+builder and keyboard checkpoints are pushed: selected-block state, dynamic
 add/delete controls, gravity and force-coefficient controls, target
-reorientation, force-line updates, external force application, and
-collision/dynamics block construction are implemented locally through public
-`dart::gui` panels and `ApplicationOptions::preStep`. It does not yet close Atlas
-relaxed-posture/balance, Hubo analytical IK, legacy target toggle,
-WASD/Q/E/F/Z teleoperation parity, Tinkertoy raw keyboard hotkeys, or the
-legacy Enter recording toggle.
+reorientation, force-line updates, external force application,
+collision/dynamics block construction, and the `1`/`2`/`3`, Backspace, Delete,
+Up/Down, and backtick hotkeys are implemented through public `dart::gui`
+panels, `ApplicationOptions::preStep`, and
+`ApplicationOptions::keyboardActions`. It does not yet close Atlas
+relaxed-posture/balance, Hubo analytical IK, legacy target toggle semantics,
+Tab camera-home, or the legacy Enter recording toggle.
 
 ## Immediate Next Step
 
-Run mandatory lint plus post-lint focused validation, commit, and push the
-Tinkertoy builder-state parity checkpoint. Then continue solver-behavior parity
-such as Atlas relaxed posture, Hubo analytical IK, and full OSG hotkey behavior
-before claiming the robot/IK and construction examples are complete.
-
-After the Tinkertoy builder-state checkpoint was pushed, the next slice is a
-renderer-neutral keyboard action API on `dart::gui::ApplicationOptions`. It is
-implemented locally and first restores Tinkertoy's `1`/`2`/`3`, Backspace,
-Delete, Up/Down, and backtick hotkeys without exposing GLFW/Filament headers.
-Leave Tab camera-home and Enter recording as explicit gaps until public camera
-reset and recording APIs exist.
+Restore Atlas/Hubo robot puppet behavior through the promoted keyboard action
+API: continuous IK solving plus WASD/QE/FZ root teleoperation. This is
+implemented locally for `atlas_puppet` and `hubo_puppet`; finish lint/commit
+handoff if it has not been pushed yet. Keep Atlas relaxed-posture/balance
+optimization, Hubo analytical IK, target activation/deactivation semantics, G1
+target toggles, Tab camera-home, and Enter recording as explicit parity gaps
+unless the next slice adds the narrow renderer-neutral public API needed for
+them.
 
 ## Context That Would Be Lost
 
