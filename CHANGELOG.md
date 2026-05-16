@@ -44,6 +44,9 @@
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
     `mixed_chain`, `coupler_constraint`, `add_delete_skels`, and
     `rigid_shapes`) as source-defined `dart::gui` examples.
+  - Restored the joint/dynamics example batch (`hybrid_dynamics`,
+    `biped_stand`, `joint_constraints`, `free_joint_cases`, and
+    `human_joint_limits`) as source-defined `dart::gui` examples.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

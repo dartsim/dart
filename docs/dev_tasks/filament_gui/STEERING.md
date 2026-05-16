@@ -71,6 +71,13 @@ disagreement under "Open Issues" instead of editing "Decisions in force".
 - Correction: these checkpoints are not the end of example restoration. Every
   remaining `dart_build_gui_scene_example(...)` target, including
   `examples/fetch`, is still incomplete until it owns a real public-API source.
+- `19eae1d2d91` restores `examples/fetch` as a source-defined public-API
+  example with `ApplicationOptions::preStep`. `fdd9d248033` restores the
+  rigid/constraint batch (`rigid_chain`, `rigid_loop`, `mixed_chain`,
+  `coupler_constraint`, `add_delete_skels`, and `rigid_shapes`). The next
+  active checkpoint is the joint/dynamics batch: `hybrid_dynamics`,
+  `biped_stand`, `joint_constraints`, `free_joint_cases`, and
+  `human_joint_limits`.
 
 ### Decisions in force (do NOT reopen)
 
@@ -426,7 +433,366 @@ not bundle with R12-1/2/3.
 
 ---
 
-## 2026-05-15 Round 14 — `apps/dartsim/` is currently a renamed example, not an app
+## 2026-05-15 Round 17 — Every restored example must accept `--gui-scale`
+
+**Trigger:** User direction: "all the GUI examples should be able to
+take `--gui-scale`."
+
+### Verified evidence (the plumbing is mostly in place)
+
+- `dart/gui/experimental/detail/filament/scenes.cpp:576-587` parses
+  `--gui-scale <factor>` from `argv` into
+  `options.run.guiScale`, clamped to `[0.5, 4.0]`.
+- `dart/gui/experimental/viewer.cpp:50-53` normalizes the value
+  with a NaN/inf guard.
+- All restored examples (`hello_world`, `drag_and_drop`,
+  `biped_stand`, `boxes`, `box_stacking`, `capsule_ground_contact`,
+  `coupler_constraint`, `fetch`, `free_joint_cases`,
+  `human_joint_limits`, `hybrid_dynamics`, `imgui`,
+  `joint_constraints`, `mixed_chain`, `rigid_chain`, `rigid_cubes`,
+  `rigid_loop`, `rigid_shapes`, `simple_frames`, `tinkertoy`)
+  call `dart::gui::runApplication(argc, argv, options)` — meaning
+  the CLI parser they reach already supports `--gui-scale`.
+
+So the option **technically works today** for every restored
+example. The gap is in three other places:
+
+### Gaps to close
+
+1. **Verify the option survives `ApplicationOptions` overrides.**
+   When an example sets `options.defaultScene` /
+   `options.preStep` / `options.panels` / `options.world` and
+   passes them to `runApplication(argc, argv, options)`, the CLI
+   parser should still parse `--gui-scale` from `argv` and apply
+   it to `options.run.guiScale` — not be stomped by an example-set
+   default. Audit the merge order in
+   `dart/gui/experimental/detail/filament/scenes.cpp` (where
+   `argv` parsing happens) versus the `ApplicationOptions` overlay
+   point. If any example-set value silently wins over the parsed
+   CLI value, fix the merge to make CLI authoritative for run
+   options like `guiScale`, `frames`, `headless`, `screenshot`.
+
+2. **Document `--gui-scale` consistently.** Each restored
+   example's `--help` output and any per-example README should
+   list `--gui-scale <factor>` (range 0.5–4.0) alongside
+   `--frames`, `--headless`, `--screenshot`. The text should be
+   identical across examples — surface it through a shared
+   `dart::gui::printCommonOptions()` helper rather than copy-paste,
+   so future option additions don't drift per example.
+
+3. **Headless smoke for the option.** Add a focused unit /
+   smoke test:
+   - Run `<example> --headless --frames 5 --gui-scale 2.0
+--screenshot /tmp/x_2x.ppm` and assert the PPM is roughly 2×
+     the linear dimensions of `<example> --headless --frames 5
+--screenshot /tmp/x_1x.ppm`.
+   - Pick one example per family for the smoke (e.g.
+     `hello_world` for visual-only, `drag_and_drop` for
+     interaction, `atlas_puppet` once migrated for robot meshes).
+     Don't add the smoke to all 30+ examples — that's CI noise.
+
+### Acceptance for Round 17
+
+- `pixi run ex hello_world --gui-scale 2` produces a window roughly
+  2× the default size (or, headless, a PPM 2× the default linear
+  dimensions).
+- The same works for `drag_and_drop`, `biped_stand`, every other
+  restored example, AND every example migrated under R12-5 going
+  forward (this is a permanent acceptance criterion for any new
+  per-example `main.cpp`).
+- `pixi run ex <example> --help` lists `--gui-scale` in a uniform
+  format across all examples.
+- A headless smoke proves the option propagates to the actual
+  framebuffer dimensions.
+- `apps/dartsim/` (after R12-3) inherits `--gui-scale` for free
+  via `runApplication`; no additional plumbing needed in
+  `apps/dartsim/main.cpp`.
+
+### Implementation surface (short)
+
+- Audit `scenes.cpp` argv parsing vs `ApplicationOptions` overlay
+  precedence; fix merge order if needed.
+- Add `dart::gui::printCommonOptions()` helper consumed by every
+  example's `--help` (or, simpler: `--help` is already centrally
+  printed by `runApplication`, so just confirm it lists
+  `--gui-scale`; if the example overrides `--help`, restructure
+  to delegate the common section).
+- Add `tests/unit/gui/test_gui_scale_propagation.cpp` (graphics-
+  free) asserting the parsed `options.run.guiScale` matches the
+  string passed in `argv` for the supported range and rejects
+  out-of-range / non-numeric inputs.
+- Add one or two pixi smoke tests under
+  `pixi run test-filament-gui-smoke` that verify framebuffer
+  scaling at 1.0 vs 2.0.
+
+### What Codex should NOT do for Round 17
+
+- Do NOT add a per-example CLI parser. Every example must
+  continue to delegate to `runApplication(argc, argv, options)`.
+  The option lives in the central parser; examples just inherit.
+- Do NOT clamp `guiScale` differently per example. The
+  `[0.5, 4.0]` range in `viewer.cpp:53` is global.
+- Do NOT add `options.run.guiScale = ...;` overrides inside
+  example `main.cpp` files except as a per-example default
+  applied BEFORE `runApplication` parses `argv`. CLI must win
+  over example defaults.
+
+---
+
+## 2026-05-15 Round 16 — ImGui Docking is REQUIRED for `apps/dartsim/` (overrides original Decision 5)
+
+**Trigger:** User direction: "for dartsim, it should use ImGui
+Docking." This makes the contradiction in earlier rounds explicit
+and removes ambiguity:
+
+- The original `### Decisions in force` line 116-118 lists
+  `"ImGui Docking, dockable 3D widget, video capture, font atlas/label
+work, ... — Out of scope for this branch (do not start, even
+opportunistically)"`.
+- Round 14 line 621 lists `"Docked panel layout — ImGui Docking
+with at least these distinct panel files"` as a divergence
+  requirement.
+- Round 12 step R12-3b (line ~288) already enables ImGui Docking
+  for `apps/dartsim/` specifically.
+
+These conflict on paper. This round resolves the conflict in writing.
+
+### Decision (overrides Decision 5)
+
+**ImGui Docking is REQUIRED for `apps/dartsim/`.** It is no longer
+"out of scope". Codex must:
+
+- Build Filament's bundled ImGui (or vendor a Docking-enabled ImGui
+  source) with `IMGUI_HAS_DOCK` defined; the configure step needs
+  to verify the active ImGui supports docking. If the current
+  vendored ImGui in the Filament tree does not have Docking, this
+  round includes the work to switch to the Docking branch (it is
+  the same upstream ImGui repo, just the `docking` branch).
+- Set `ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable`
+  during the dartsim ImGui init.
+- Add a top-level dockspace via `ImGui::DockSpaceOverViewport()` so
+  every panel `apps/dartsim/app/*_panel.cpp` registers can be
+  docked / undocked / re-arranged at runtime.
+- Persist the dock layout as part of the `.dartsim` project file
+  (per Round 14 divergence point #9). On startup, restore the saved
+  layout if present; otherwise apply a sensible default
+  (3D viewport central, Scene + Inspector left, Timeline + Log
+  bottom, Recording right).
+
+### What stays out of scope (Decision 5 partial-survival)
+
+The original Decision 5 list still excludes — UNLESS the user lifts
+them in a later round:
+
+- ~~ImGui Docking~~ — **lifted by this round**.
+- Multi-viewport / multi-window (`ImGuiConfigFlags_ViewportsEnable`)
+  — out. One window with internal docking only.
+- Video capture (`.mp4` / `.webm` encoding) — out. Image-sequence
+  capture (Decision 6) is the only recording in scope.
+- Font atlas / label rendering work — out.
+- Custom theme / internationalization — out.
+- macOS / Windows port work — out.
+- conda-forge feedstock changes — out.
+
+### Implementation notes for Codex
+
+- ImGui Docking adds new symbols (`ImGui::DockSpace*`,
+  `ImGuiID DockSpaceOverViewport(...)`, `ImGuiDockNodeFlags_*`).
+  If the current build does not link these, the first commit in
+  R12-3b is the ImGui-source / build switch, NOT the docking
+  layout itself. Land that as its own commit so any build breakage
+  is bisectable.
+- The boundary-guard test (`UNIT_gui_FilamentSceneExtraction`)
+  currently rejects `<imgui.h>` in `examples/`. That rejection
+  must continue. `apps/dartsim/app/docking_layout.cpp` is the one
+  ImGui consumer outside `dart/gui/detail/filament/`; the
+  boundary-guard's `dart_gui_add_application()` configure check
+  needs an explicit allowance for that one file (or, preferably,
+  the ImGui Docking calls move behind a `dart::gui::DockingLayout`
+  wrapper added in R12-4 so `apps/` doesn't include `<imgui.h>`
+  at all — that's the better long-term shape).
+- The dartsim built-in status panel (the MVP debug overlay) keeps
+  working; it just becomes one more dockable window in the new
+  layout. Do NOT delete it as part of this round.
+
+### Acceptance for Round 16
+
+- `apps/dartsim/main.cpp` (or `apps/dartsim/app/docking_layout.cpp`
+  after R12-3b) calls `ImGui::DockSpaceOverViewport()` and the
+  panel windows are dockable in a running session.
+- The user can drag a panel out, dock it to a different edge, and
+  the new layout persists across restart (via `.dartsim` project
+  file from Round 14 / R12-3a).
+- The boundary-guard test still rejects `<imgui.h>` in
+  `examples/**`, but allows it in `apps/dartsim/app/docking_layout.cpp`
+  (or rejects it everywhere if the `dart::gui::DockingLayout`
+  wrapper lands first).
+- `pixi run dartsim` (no args, after R12-8) opens with the default
+  dock layout: central 3D viewport, Scene + Inspector docked left,
+  Timeline + Log docked bottom, Recording docked right.
+
+### What Codex should NOT do for Round 16
+
+- Do NOT enable `ImGuiConfigFlags_ViewportsEnable` (multi-window).
+  That's a separate, larger change (cross-platform window
+  management) that stays out of scope.
+- Do NOT add docking to the dartsim built-in status panel as a
+  half-measure. The status panel works fine inside a docked
+  viewport once the dockspace exists; no changes needed there.
+- Do NOT block this on `apps/dartsim/app/` panels existing —
+  enable docking and add an empty dockspace first; panels register
+  as they're built in R12-3c..3e.
+- Do NOT change Decision 5 lines 116-118 in place; the override is
+  recorded here for traceability. (If you do edit Decision 5, mark
+  the ImGui-Docking entry as `~~ImGui Docking~~ — lifted by
+Round 16` rather than deleting it.)
+
+---
+
+## 2026-05-15 Round 15 — Two user-reported bugs in `drag_and_drop` + ImGui-vs-camera leakage
+
+**Trigger:** User reported, on running `pixi run ex drag_and_drop`:
+
+1. "Mouse handling is still not ready for drag and drop" — i.e. the
+   selectable targets (anchor / child frame / axis markers) cannot be
+   dragged with a plain LMB drag.
+2. "While interacting with ImGui widget, it still manipulates the
+   camera" — clicking inside a panel (drag a slider, click a button)
+   also rotates the camera underneath.
+
+This is a regression-class bug, not a polish item. Both must land in
+focused commits with regression tests. **Promote both above
+R12-3/4/5/8 in the order of operations**: R12-1 (mouse bindings) and
+the new R15-2 (ImGui capture) are now the next two commits.
+
+### Verified evidence
+
+- `examples/drag_and_drop/main.cpp:79` panel tip text still reads
+  `"Ctrl-left drag moves the selected object."` — proves the OLD
+  Ctrl-modifier scheme is still authoritative in code; Round 12's
+  mouse-binding decision (LMB drags selectables, no Ctrl required)
+  has not landed.
+- `git log --all --oneline` shows zero commits matching `mouse |
+binding | drag.*select | imgui.*capture` since the Round 12
+  steering was written. R12-1 has not started.
+- `dart/gui/experimental/detail/filament/input.cpp` has no
+  references to ImGui's `WantCaptureMouse` / `WantCaptureKeyboard`.
+  The input bridge unconditionally forwards mouse events to the
+  camera controller, regardless of whether ImGui is consuming them
+  for a panel widget.
+
+### R15-1: Implement the LMB-drags-selectables binding (was R12-1)
+
+This was already specified in the **Mouse input bindings** section
+above. Restating the user-visible acceptance:
+
+- `pixi run ex drag_and_drop` — plain LMB drag on the anchor /
+  child frame / axis marker moves the selectable. **No Ctrl
+  modifier.**
+- `pixi run ex atlas_puppet` — plain LMB drag on the right-hand
+  IK target moves the target.
+- `pixi run ex hubo_puppet` — same on hand/foot/wrist-peg targets.
+- `pixi run ex g1_puppet` — same on the four IK markers (also
+  reachable by `1`-`4` keys per the existing G1 docs).
+
+Code surface:
+
+- `dart/gui/experimental/detail/filament/input.cpp` — change the
+  LMB press path: pick-test on press, if a selectable is hit start
+  a drag (no Ctrl required), otherwise fall through to camera-orbit
+  start (RMB-drag in the new scheme).
+- `dart/gui/experimental/detail/filament/selection.cpp` — remove
+  the Ctrl gate around plane-drag dispatch; X/Y/Z keys are
+  modifier-style (held during press) instead of Ctrl-prefixed.
+- Update `examples/drag_and_drop/main.cpp:79` panel-tip text to
+  match: `"Drag a selectable with the left mouse button."`
+  (and remove `"Ctrl-left drag…"` references everywhere they
+  appear in the example tree, the `dartsim` README, and any
+  in-app `--help` output).
+- Update `apps/dartsim/README.md` mouse-binding table once R12-3
+  rebuilds the app's docs.
+
+Regression test:
+
+- `tests/unit/gui/test_input_bindings.cpp` (new file). Builds a
+  mock `SelectionController`, feeds synthetic `MouseButtonEvent`
+  / `MouseMoveEvent` sequences, asserts: (a) LMB press on a
+  selectable hits + LMB drag emits `SelectableDragRequest` (NOT
+  `OrbitCameraDelta`); (b) RMB drag emits `OrbitCameraDelta`;
+  (c) MMB drag emits `PanCameraDelta`; (d) scroll emits
+  `ZoomCameraDelta`; (e) X / Y / Z + LMB drag on selectable
+  emits axis-constrained drag; (f) LMB on empty space + drag
+  does NOT emit `OrbitCameraDelta`.
+- Add a smoke gesture test for `--scene drag-and-drop`,
+  `--scene atlas-puppet`, `--scene g1` (per Round 12 acceptance):
+  simulate LMB-press on the well-known selectable position,
+  drag 50 px, release; assert position changed.
+
+### R15-2: ImGui must capture mouse + keyboard before camera
+
+When the cursor is over an ImGui panel, ImGui owns the input.
+The camera controller must NOT also process those events.
+
+Code surface:
+
+- `dart/gui/experimental/detail/filament/input.cpp` — at the top
+  of every mouse / keyboard / scroll callback, query
+  `ImGui::GetIO().WantCaptureMouse` (or
+  `WantCaptureKeyboard` for key events). If true, return early
+  without forwarding to the camera controller, selection
+  controller, or hotkey poller. The ImGui overlay's own callback
+  ordering must run BEFORE this check (ImGui needs the event to
+  decide whether to capture it).
+- The dartsim built-in status panel and the new
+  `examples/drag_and_drop` `dart::gui::Panel` must both benefit
+  — this is a global suppression in the input bridge, not a
+  per-panel hook.
+- One subtle case: pick-test on LMB press. The press position
+  must be tested against ImGui's panel rects FIRST. If
+  `WantCaptureMouse` is true on press, do not start a
+  selectable-drag either — the user is interacting with the
+  widget, not the 3D scene.
+
+Regression test:
+
+- Add to `tests/unit/gui/test_input_bindings.cpp`: simulate
+  `ImGui::GetIO().WantCaptureMouse = true`, feed an LMB-down +
+  drag sequence; assert ZERO `OrbitCameraDelta` /
+  `SelectableDragRequest` events emitted. Repeat with
+  `WantCaptureKeyboard = true` for a key event sequence.
+- End-to-end: in `--scene drag-and-drop`, position the cursor
+  over the `Drag Controls` panel area (computed from window
+  size + panel layout), inject LMB-down + 100 px move + LMB-up;
+  assert camera transform is unchanged from the pre-event state.
+
+### Order update (overrides earlier R12-1..R12-7 ordering)
+
+R15-1 (mouse drag-selectable) → R15-2 (ImGui capture) →
+R12-2 (lighting) → R12-8 (pixi alias) → R12-3 (apps/dartsim
+build-out) → R12-4 (panel/tool API gaps) → R12-5 (remaining 17
+example migrations) → R12-6 (delete macro shim) → R12-7 (drop
+experimental/).
+
+R15-1 and R15-2 are SEPARATE commits — they touch the same file
+but have independently provable acceptance tests, and either fix
+on its own is valuable.
+
+### What Codex should NOT do for Round 15
+
+- Do not paper over R15-1 by adding a panel checkbox "Drag mode
+  enabled" or a CLI `--enable-drag` flag — the binding change is
+  the fix.
+- Do not implement R15-2 by hard-coding which screen regions are
+  "panel area"; use `ImGui::GetIO().WantCaptureMouse` /
+  `WantCaptureKeyboard` so the suppression follows ImGui's own
+  hit-testing.
+- Do not skip the `examples/drag_and_drop/main.cpp:79` text
+  update — the example is the regression demo for R15-1; its
+  tip text is the user's first hint about how to interact.
+- Do not bundle these with example migrations or app build-out.
+  Land R15-1 and R15-2 first; then resume R12-3 / R12-5.
+
+---
 
 **Trigger:** Verified working-tree:
 
@@ -935,7 +1301,29 @@ Rigid/constraint family slice:
       their worlds by default.
 - [x] Validate with focused build, GUI boundary unit test, Python example
       runner coverage, representative headless screenshots, full `examples`
-      build, `pixi run lint`, commit, push, and dispatch CI.
+      build, `pixi run lint`, commit, push, and dispatch CI. Evidence:
+      `fdd9d248033`.
+
+Joint/dynamics family slice:
+
+- [x] Restore `examples/hybrid_dynamics/main.cpp`,
+      `examples/biped_stand/main.cpp`, `examples/joint_constraints/main.cpp`,
+      `examples/free_joint_cases/main.cpp`, and
+      `examples/human_joint_limits/main.cpp` as real public-API sources rather
+      than `dart_build_gui_scene_example(...)` macro shims.
+- [x] Preserve the key educational behavior: hybrid scripted velocity
+      commands, biped SPD standing control, joint-constraint balance control,
+      free-joint reference-body integration, and human joint-limit pose setup.
+- [x] Use `dart::gui::ApplicationOptions::world`, `preStep`, and `Panel`
+      without including Filament, GLFW, Dear ImGui, OSG, or
+      `dart/gui/experimental` headers.
+- [x] Remove the corresponding `--scene` runner defaults after the binaries own
+      their worlds by default.
+- [x] Validate with focused build, GUI boundary unit test, Python example
+      runner coverage, representative direct and Pixi headless screenshots,
+      inherited `--gui-scale` parsing, full `examples` build, and
+      `pixi run lint`; commit, push, and dispatch CI as the checkpoint
+      following this doc update.
 
 ### Stop condition for this pivot
 

@@ -533,6 +533,45 @@ Seventh source-migration checkpoint:
   - `pixi run ex rigid_chain --headless --frames 1 --screenshot ...`
   - Full `examples` aggregate target build
   - `pixi run lint`
+- Evidence: `fdd9d248033` restores the six sources, removes their runner
+  defaults, validates the boundary/unit/Python runner path, captures
+  representative headless screenshots, builds all examples, runs lint, pushes,
+  and dispatches GitHub Actions without opening a PR.
+
+Eighth source-migration checkpoint:
+
+- Restore the joint/dynamics macro-shim batch:
+  `examples/hybrid_dynamics`, `examples/biped_stand`,
+  `examples/joint_constraints`, `examples/free_joint_cases`, and
+  `examples/human_joint_limits`.
+- Recover the legacy simulation setup from history and the current private
+  fixtures, then migrate it into public DART + `dart::gui` example sources.
+  Preserve the important per-step controller/reference behavior through
+  `dart::gui::ApplicationOptions::preStep`.
+- Use promoted `dart::gui::Panel` for compact simulation status and controls
+  that fit the current renderer-neutral panel API. Do not expose Filament,
+  GLFW, Dear ImGui, OSG, or `dart/gui/experimental` headers from these
+  examples.
+- Remove the matching runner default `--scene ...` entries after the binaries
+  own their worlds by default.
+- Keep the matching private fixtures temporarily for `dartsim --scene ...`
+  developer coverage until all example behavior has migrated and fixture
+  cleanup can be batched.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `dart-gui`, the five migrated examples, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshots for the migrated examples, including the
+    controller-heavy and free-joint cases
+  - `pixi run ex hybrid_dynamics --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+- Evidence: this checkpoint restores all five sources, removes their runner
+  defaults, validates the boundary/unit/Python runner path, captures all five
+  migrated binaries headlessly, validates the Pixi `hybrid_dynamics` route,
+  smoke-checks inherited `--gui-scale` parsing, builds all examples, and runs
+  lint before commit/push/CI dispatch.
 
 ## Stretch Direction
 
