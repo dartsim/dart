@@ -18,7 +18,9 @@ This session refreshed full local validation on local head `4db514cfd22` with
 focused reference-backend checks and a final unfiltered CTest pass of 301/301.
 The earlier pushed `64abc65a032` validation still records the latest local
 gz-physics/package/link smoke baseline. `pixi run lint`, runtime isolation,
-and compatibility-facade audits remain part of the local gate.
+and compatibility-facade audits remain part of the local gate. The completion
+audit snapshot and validation-baseline wording were also refreshed so future
+passes do not treat historical "current head" evidence as live branch state.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not
@@ -85,7 +87,9 @@ the distinction clear:
 
 If code or evidence changes again, run `pixi run lint` before committing and
 run the focused validation that matches the change. Full `pixi run test-all`
-evidence is already refreshed locally for local head `4db514cfd22`.
+evidence is already refreshed locally for code-validation head `4db514cfd22`;
+later local evidence commits are docs-only and should be checked with
+`git status --short --branch` plus `git log -3 --oneline --decorate`.
 
 Publish transport note: `origin` is configured as
 `git@github.com:dartsim/dart.git`, but SSH access was unreachable during resume
@@ -113,7 +117,8 @@ post GitHub comments unless the user explicitly asks.
   Python tests, and documentation.
 - Latest evidence-record commits: current local commits may be ahead of
   `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
-  current head.
+  current head. Recent docs-only evidence commits refresh the completion-audit
+  snapshot and avoid stale-current-head wording.
 - Latest source-build prerequisite docs cleanup: `621fca5a1fb`. Validation:
   `pixi run lint` passed on that tree after moving FCL out of required
   prerequisites.
