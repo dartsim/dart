@@ -83,6 +83,8 @@
   - Restored the `point_cloud` example's KR5 robot sampling workflow,
     point-cloud and voxel-grid updates, sensor visualization, panel controls,
     camera/run defaults, scene grid, and README through public `dart::gui`.
+  - Restored the `polyhedron_visual` example's scene grid, camera/run
+    defaults, and README through public `dart::gui`.
   - Moved the LCP and mimic dynamics examples (`lcp_physics` and
     `mimic_pendulums`) off private named-scene fixture launchers so their
     example sources own solver setup, imported worlds, and public GUI panels.

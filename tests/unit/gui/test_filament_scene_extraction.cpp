@@ -1427,10 +1427,32 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
 
   const auto polyhedronSource = readSourceFile(
       std::filesystem::path("examples") / "polyhedron_visual" / "main.cpp");
+  const auto polyhedronReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "polyhedron_visual" / "README.md");
   EXPECT_NE(
       polyhedronSource.find("visual_polyhedron_surface"), std::string::npos);
+  EXPECT_NE(
+      polyhedronSource.find("visual_polyhedron_wireframe"), std::string::npos);
+  EXPECT_NE(polyhedronSource.find("visual_polyhedron_grid"), std::string::npos);
   EXPECT_NE(polyhedronSource.find("ConvexMeshShape"), std::string::npos);
   EXPECT_NE(polyhedronSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(
+      polyhedronSource.find("createPolyhedronGridShape"), std::string::npos);
+  EXPECT_NE(
+      polyhedronSource.find("makePolyhedronRunDefaults"), std::string::npos);
+  EXPECT_NE(polyhedronSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(polyhedronSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(polyhedronSource.find("makePolyhedronCamera"), std::string::npos);
+  EXPECT_NE(
+      polyhedronSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.4)"),
+      std::string::npos);
+  EXPECT_NE(polyhedronSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(polyhedronSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(
+      polyhedronReadmeSource.find("Polyhedron Visual Example"),
+      std::string::npos);
+  EXPECT_NE(polyhedronReadmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(polyhedronReadmeSource.find("640x480"), std::string::npos);
   EXPECT_EQ(polyhedronSource.find("options.defaultScene"), std::string::npos);
 }
 

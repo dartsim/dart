@@ -141,13 +141,15 @@ Python example-runner tests, the aggregate `examples` build,
 build/CTest/direct screenshot smoke. The checkpoint was committed and pushed
 as `74870cc5cf3 Restore boxes run defaults`. The next active parity slice is
 `examples/point_cloud`: the strict historical-source audit is documented in
-`11-example-parity-audit.md`, and the local implementation now restores the
-live KR5 robot sampling workflow, point-cloud and voxel-grid updates,
-renderer-neutral panel controls, camera/run defaults, README, and
+`11-example-parity-audit.md`, and the checkpoint restoring the live KR5 robot
+sampling workflow, point-cloud and voxel-grid updates, renderer-neutral panel
+controls, camera/run defaults, README, and source-marker guards has been
+committed and pushed as
+`9e111631eb5 Restore point cloud example controls`. The active slice is now
+`examples/polyhedron_visual`: the local implementation restores the historical
+640x480 run default, camera home, scene-grid replacement, README, and
 source-marker guards through promoted `dart::gui`. Validate, lint, commit, and
-push this checkpoint next. The previous Heightmap checkpoint has been committed
-and pushed as `089947fc413 Restore heightmap example controls`; its old OSG
-grid style controls and color editor remain explicit public API gaps.
+push this checkpoint next.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as
@@ -732,7 +734,7 @@ longer express stable DART concepts.
 
 ## Immediate next steps
 
-1. Validate, lint, commit, and push the local `examples/point_cloud`
+1. Validate, lint, commit, and push the local `examples/polyhedron_visual`
    restoration checkpoint without opening a PR.
 2. Continue the same audit pattern across every pre-existing example before
    declaring it restored. Re-open examples whenever the historical source has

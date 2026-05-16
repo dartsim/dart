@@ -119,6 +119,26 @@ GridVisual concepts must stay out of the example source.
 | Camera home from eye `(2.57, 3.14, 1.64)` to target `(0, 0, 0.30)`.                                                | Restored.                                           | Current source converts the historical home to `dart::gui::OrbitCamera`.                                                             |
 | README documents the promoted runner and no longer says the standalone source remains OSG/ImGui.                   | Restored.                                           | Current README documents `pixi run ex point_cloud`, headless capture, and the public `dart::gui` migration.                          |
 
+### Polyhedron Visual Itemized Inventory
+
+Historical source compared:
+`520993d7301^:examples/polyhedron_visual/main.cpp`.
+
+The source-owned checkpoint restores the convex surface, wireframe, scene-grid
+replacement, run defaults, camera home, and README through DART shape
+primitives and promoted `dart::gui` options.
+
+| Historical item                                                                                  | Current outcome              | Notes                                                                                                                     |
+| ------------------------------------------------------------------------------------------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Build a convex polyhedron from the historical eight vertex positions.                            | Restored.                    | Current source preserves the same V-representation in the source-owned DART mesh.                                         |
+| Render a translucent green surface.                                                              | Restored.                    | Current source uses `ConvexMeshShape`.                                                                                    |
+| Render a dark wireframe over the surface.                                                        | Restored.                    | Current source uses `LineSegmentShape`.                                                                                   |
+| Add a viewer grid for reference.                                                                 | Restored.                    | Current source restores it as DART-owned line geometry named `visual_polyhedron_grid` instead of OSG `GridVisual`.        |
+| Default launch size 640x480.                                                                     | Restored.                    | Current source uses `ApplicationOptions::runDefaults`.                                                                    |
+| Camera home from eye `(2.0, 2.0, 1.5)` to target `(0, 0, 0.4)` with world-up `(0, 0, 1)`.        | Restored.                    | Current source converts the historical home to `dart::gui::OrbitCamera`.                                                  |
+| README documents the promoted runner and no longer says the standalone source remains OSG/ImGui. | Restored.                    | Current README documents `pixi run ex polyhedron_visual`, headless capture, and the public `dart::gui` migration.         |
+| Keep the example free of backend-specific viewer/visual types.                                   | Restored through guard test. | Current source uses `ApplicationOptions`, DART shape primitives, and `dart::gui::runApplication`, with no backend tokens. |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                     |
@@ -152,7 +172,7 @@ GridVisual concepts must stay out of the example source.
 | `mixed_chain`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm impulse controls, camera, and guards.                                            |
 | `operational_space_control` | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK/control behavior, teleoperation, camera, and guards.                          |
 | `point_cloud`               | Restored except public color-editor/debug-grid API gaps.                           | Keep color editors and fine-grained grid controls tracked as public API follow-ups.      |
-| `polyhedron_visual`         | Needs strict audit.                                                                | Compare historical visual behavior and defaults.                                         |
+| `polyhedron_visual`         | Restored by strict audit.                                                          | Keep marker guards for surface, wireframe, grid, camera/defaults, and README.            |
 | `rerun`                     | Needs strict audit.                                                                | Confirm non-Filament logging/viewer behavior remains correct.                            |
 | `rigid_chain`               | Needs strict audit.                                                                | Compare historical controls/defaults and camera.                                         |
 | `rigid_cubes`               | Needs strict audit.                                                                | Confirm restored launcher captures historical cube scene behavior.                       |

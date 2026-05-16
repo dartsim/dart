@@ -138,6 +138,24 @@ std::shared_ptr<dart::dynamics::LineSegmentShape> createPolyhedronWireframe()
   return shape;
 }
 
+std::shared_ptr<dart::dynamics::LineSegmentShape> createPolyhedronGridShape()
+{
+  auto grid = std::make_shared<dart::dynamics::LineSegmentShape>(1.5f);
+  constexpr double halfExtent = 1.25;
+  constexpr int lineCount = 10;
+  for (int i = 0; i <= lineCount; ++i) {
+    const double coordinate
+        = -halfExtent + 2.0 * halfExtent * static_cast<double>(i) / lineCount;
+    const auto startX
+        = grid->addVertex(Eigen::Vector3d(-halfExtent, coordinate, -0.02));
+    grid->addVertex(Eigen::Vector3d(halfExtent, coordinate, -0.02), startX);
+    const auto startY
+        = grid->addVertex(Eigen::Vector3d(coordinate, -halfExtent, -0.02));
+    grid->addVertex(Eigen::Vector3d(coordinate, halfExtent, -0.02), startY);
+  }
+  return grid;
+}
+
 dart::simulation::WorldPtr createPolyhedronWorld()
 {
   auto world = dart::simulation::World::create("dartsim_polyhedron");
@@ -153,7 +171,31 @@ dart::simulation::WorldPtr createPolyhedronWorld()
       createPolyhedronWireframe(),
       Eigen::Vector3d::Zero(),
       Eigen::Vector3d(0.05, 0.05, 0.05)));
+  world->addSkeleton(createStaticVisualSkeleton(
+      "visual_polyhedron_grid",
+      createPolyhedronGridShape(),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.42, 0.48, 0.44),
+      0.48));
   return world;
+}
+
+dart::gui::RunOptions makePolyhedronRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makePolyhedronCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.4);
+  camera.yaw = 0.7853981633974483;
+  camera.pitch = 0.37090852303346045;
+  camera.distance = 3.034798181098704;
+  return camera;
 }
 
 } // namespace
@@ -162,5 +204,7 @@ int main(int argc, char* argv[])
 {
   dart::gui::ApplicationOptions options;
   options.world = createPolyhedronWorld();
+  options.runDefaults = makePolyhedronRunDefaults();
+  options.camera = makePolyhedronCamera();
   return dart::gui::runApplication(argc, argv, options);
 }

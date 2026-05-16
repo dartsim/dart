@@ -181,16 +181,13 @@ checkpoint is implemented and locally validated through the pre-lint focused
 build, CTest, direct/pixi screenshot smokes, Python example-runner tests, and
 the aggregate `examples` build, `git diff --check`, `pixi run lint`, and
 post-lint focused build/CTest/direct screenshot smoke. The checkpoint was
-committed and pushed as `74870cc5cf3 Restore boxes run defaults`. The active
-slice is now `examples/point_cloud`: the strict historical-source audit is
-documented in `11-example-parity-audit.md`, and the local implementation
-restores live KR5 robot sampling, point-cloud and voxel-grid updates,
-renderer-neutral panel controls, camera/run defaults, README, and
-source-marker guards through promoted `dart::gui`. Validate, lint, commit, and
-push this checkpoint next. The previous Heightmap checkpoint has been committed
-and pushed as
-`089947fc413 Restore heightmap example controls`; the OSG grid style controls
-and color editor remain explicit public API gaps.
+committed and pushed as `74870cc5cf3 Restore boxes run defaults`. The
+`examples/point_cloud` strict audit and restoration checkpoint is committed and
+pushed as `9e111631eb5 Restore point cloud example controls`. The active slice
+is now `examples/polyhedron_visual`: the local implementation restores the
+historical 640x480 run default, camera home, DART-owned grid replacement,
+README, and source-marker guards through promoted `dart::gui`. Validate, lint,
+commit, and push this checkpoint next.
 Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
 Atlas/Hubo target activation semantics, and Enter recording as explicit parity
 gaps unless a later slice adds the narrow renderer-neutral public API needed
@@ -753,18 +750,17 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`089947fc413 Restore heightmap example controls`; the current pending
-checkpoint restores `examples/point_cloud` from the strict historical-source
-audit and still needs local validation, lint, commit, and push.
+`9e111631eb5 Restore point cloud example controls`; the current pending
+checkpoint restores `examples/polyhedron_visual` from the strict
+historical-source audit and still needs local validation, lint, commit, and
+push.
 
 ## Current Immediate Next Step
 
-Validate, lint, commit, and push the local `examples/point_cloud` restoration
-checkpoint without opening a PR. It loads the KR5 robot and ground, restores
-robot/box point sampling, moves the sensor frame, updates `PointCloudShape` and
-`VoxelGridShape` through public APIs, adds renderer-neutral panel controls,
-restores camera/run defaults, refreshes the README, and adds source-marker
-tests.
+Validate, lint, commit, and push the local `examples/polyhedron_visual`
+restoration checkpoint without opening a PR. It adds DART-owned grid geometry,
+restores the 640x480 run default, converts the historical camera home to
+`dart::gui::OrbitCamera`, refreshes the README, and adds source-marker tests.
 Treat `examples/fetch/` and other already source-owned examples as still
 auditable if a missing historical user-visible behavior is identified; do not
 use source ownership or screenshot smoke coverage as full-restoration evidence
