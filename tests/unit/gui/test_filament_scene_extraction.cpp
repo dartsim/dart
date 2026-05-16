@@ -650,7 +650,9 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
       {std::filesystem::path("examples") / "hardcoded_design", false},
       {std::filesystem::path("examples") / "heightmap", false},
       {std::filesystem::path("examples") / "point_cloud", false},
-      {std::filesystem::path("examples") / "polyhedron_visual", false}};
+      {std::filesystem::path("examples") / "polyhedron_visual", false},
+      {std::filesystem::path("examples") / "lcp_physics", true},
+      {std::filesystem::path("examples") / "mimic_pendulums", true}};
   std::vector<std::filesystem::path> sources;
   for (const auto& example : examples) {
     sources.push_back(example.directory / "main.cpp");
@@ -810,6 +812,33 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
   EXPECT_NE(polyhedronSource.find("ConvexMeshShape"), std::string::npos);
   EXPECT_NE(polyhedronSource.find("LineSegmentShape"), std::string::npos);
   EXPECT_EQ(polyhedronSource.find("options.defaultScene"), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
+{
+  const auto lcpSource = readSourceFile(
+      std::filesystem::path("examples") / "lcp_physics" / "main.cpp");
+  EXPECT_NE(lcpSource.find("lcp_physics_contact_box_"), std::string::npos);
+  EXPECT_NE(lcpSource.find("lcp_physics_ball_drop_sphere_"), std::string::npos);
+  EXPECT_NE(lcpSource.find("DantzigSolver"), std::string::npos);
+  EXPECT_NE(lcpSource.find("options.world"), std::string::npos);
+  EXPECT_EQ(lcpSource.find("options.defaultScene"), std::string::npos);
+
+  const auto mimicSource = readSourceFile(
+      std::filesystem::path("examples") / "mimic_pendulums" / "main.cpp");
+  EXPECT_NE(
+      mimicSource.find(
+          "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf"),
+      std::string::npos);
+  EXPECT_NE(mimicSource.find("visual_mimic_pendulum_"), std::string::npos);
+  EXPECT_NE(
+      mimicSource.find("pendulum_with_base_mimic_slow_follows_fast"),
+      std::string::npos);
+  EXPECT_NE(
+      mimicSource.find("pendulum_with_base_mimic_fast_follows_slow"),
+      std::string::npos);
+  EXPECT_NE(mimicSource.find("options.world"), std::string::npos);
+  EXPECT_EQ(mimicSource.find("options.defaultScene"), std::string::npos);
 }
 
 TEST(

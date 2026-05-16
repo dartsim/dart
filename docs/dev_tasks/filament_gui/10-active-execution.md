@@ -934,6 +934,61 @@ User correction during the fifteenth checkpoint:
   restored-example acceptance still includes rechecking source-owned examples
   such as `fetch` for missing controls, visual affordances, camera defaults,
   and behavior parity.
+- Immediate Fetch recheck on the current pushed head rendered both direct and
+  pixi-runner screenshots:
+  - Direct output: `/tmp/fetch_parity_recheck.ppm`
+  - Pixi runner output: `/tmp/fetch_pixi_parity_recheck.ppm`
+
+Sixteenth source-ownership checkpoint:
+
+- Restore the LCP/mimic dynamics pair as real public-API example sources:
+  `lcp_physics` and `mimic_pendulums`.
+- Move the LCP physics contact stack, mass-ratio boxes, domino chain,
+  ball-drop spheres, ground, timestep, gravity, and Dantzig solver selection
+  into `examples/lcp_physics/main.cpp`.
+- Move the mimic pendulum SDF load, ground rename/visual ground, per-rig color
+  setup, and mimic-world gravity into `examples/mimic_pendulums/main.cpp`.
+- Keep both examples on promoted `dart::gui::ApplicationOptions`, with no
+  private `DartScene`, no scene-string launcher, and no backend headers. Add
+  small public panels only for status/play-step controls and example context.
+- Switch both CMake files to `dart_build_gui_example(...)`; link
+  `mimic_pendulums` with `dart-io`; remove the Python runner's injected
+  `--scene lcp-physics` and `--scene mimic-pendulums` defaults.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `lcp_physics`, `mimic_pendulums`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for both examples
+  - `pixi run ex lcp_physics --headless --frames 1 --screenshot ...`
+  - `pixi run ex mimic_pendulums --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+- Implementation state for this slice: `examples/lcp_physics/main.cpp` now
+  owns the contact solver benchmark world, including the Dantzig LCP solver,
+  ground, mass-ratio boxes, box stack, domino chain, ball-drop spheres, and
+  status panel. `examples/mimic_pendulums/main.cpp` now owns the SDF load,
+  imported/visual ground setup, mimic-rig color coding, gravity, and status
+  panel. The Python runner no longer injects `--scene` defaults for either
+  executable.
+- Local evidence so far:
+  - C++ GUI target build for `lcp_physics`, `mimic_pendulums`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for both examples
+  - Sequential pixi-runner screenshot capture for `lcp_physics`
+  - Sequential pixi-runner screenshot capture for `mimic_pendulums`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - Post-lint C++ GUI target rebuild for `lcp_physics`,
+    `mimic_pendulums`, and `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint Python runner test:
+    `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - `git diff --check`
+- Remaining GUI macro launchers after this slice: `empty`,
+  `simulation_event_handler`, `soft_bodies`, and `vehicle`.
 
 ## Stretch Direction
 
