@@ -590,6 +590,15 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `520993d7301^:examples/fetch`, then restore or classify historical target
     manipulation, panel/help behavior, camera/defaults, README, capture, and
     marker coverage before moving past it.
+62. The Fetch re-open after WAM found source behavior still aligned with the
+    historical source through public `dart::gui`; the concrete gap was README
+    and marker coverage for promoted `--out` image-sequence capture. That local
+    checkpoint is committed locally as `de1873ddab7` and passed focused
+    build/CTest, mandatory lint, and direct/pixi Fetch `--out` smoke checks.
+    The active implementation slice is now R24-1:
+    add the public `dart::gui::Gizmo` value API, register render-only gizmos
+    through `ApplicationOptions`, render them privately as debug-line overlays,
+    and attach them to Atlas Puppet targets before implementing gizmo drag.
 
 ## Checkpoint Rule
 

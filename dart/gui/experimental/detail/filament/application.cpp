@@ -136,6 +136,7 @@ int runFilamentGuiApplicationImpl(
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;
     appOptions.preStep = applicationOptions.preStep;
+    appOptions.gizmos = applicationOptions.gizmos;
     appOptions.ikHandles = applicationOptions.ikHandles;
     appOptions.keyboardActions = applicationOptions.keyboardActions;
   }

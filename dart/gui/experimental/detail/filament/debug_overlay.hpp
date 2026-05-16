@@ -35,6 +35,7 @@
 
 #include <dart/gui/debug.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_resources.hpp>
+#include <dart/gui/gizmo.hpp>
 
 #include <optional>
 #include <vector>
@@ -53,6 +54,7 @@ struct DebugOverlayController
   dart::gui::DebugDrawOptions contactOptions;
   std::optional<Renderable> staticOverlay;
   std::optional<Renderable> contactOverlay;
+  std::optional<Renderable> gizmoOverlay;
 };
 
 DebugOverlayController makeDebugOverlayController(bool drawSupportPolygons);
@@ -86,6 +88,14 @@ void refreshContactDebugOverlay(
     ::filament::Scene& scene,
     ::filament::Material& material,
     const dart::collision::CollisionResult& result,
+    DebugOverlayController& controller);
+
+void refreshGizmoDebugOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    ::filament::Material& material,
+    const std::vector<dart::gui::Gizmo>& gizmos,
+    double guiScale,
     DebugOverlayController& controller);
 
 void refreshSelectionDebugLineOverlay(

@@ -30,39 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_FWD_HPP_
-#define DART_GUI_FWD_HPP_
+#ifndef DART_GUI_EXPERIMENTAL_GIZMO_HPP_
+#define DART_GUI_EXPERIMENTAL_GIZMO_HPP_
 
-namespace dart {
-namespace gui {
+#include <dart/gui/gizmo.hpp>
 
-struct ActiveRenderableState;
-struct ApplicationOptions;
-struct DebugLineDescriptor;
-struct Gizmo;
-struct GizmoAxisColors;
-struct GeometryDescriptor;
-struct MaterialDescriptor;
-struct MeshGeometry;
-struct MeshIndexRange;
-struct MeshTriangle;
-struct MeshVertex;
-struct OrbitCamera;
-struct OrbitCameraBasis;
-struct OrbitCameraController;
-struct Panel;
-class PanelBuilder;
-struct PanelContext;
-struct PerspectiveProjection;
-struct PickHit;
-struct PickRay;
-struct ProfileAccumulator;
-struct RenderableDescriptor;
-struct RenderableSetUpdatePlan;
-struct RunOptions;
-struct ViewerLifecycleState;
+namespace dart::gui::experimental {
 
-} // namespace gui
-} // namespace dart
+using ::dart::gui::Gizmo;
+using ::dart::gui::GizmoAxisColors;
+using ::dart::gui::GizmoFlags;
+using ::dart::gui::hasGizmoFlag;
+using ::dart::gui::makeGizmoDebugLines;
 
-#endif // DART_GUI_FWD_HPP_
+} // namespace dart::gui::experimental
+
+#endif // DART_GUI_EXPERIMENTAL_GIZMO_HPP_

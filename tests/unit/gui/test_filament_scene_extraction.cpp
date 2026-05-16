@@ -35,6 +35,7 @@
 #include <dart/gui/application.hpp>
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
 #include <dart/gui/geometry.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/scene.hpp>
 
@@ -531,6 +532,7 @@ TEST(FilamentSceneExtraction, PublicAggregateUsesPromotedGuiHeaders)
       = readSourceFile(std::filesystem::path("dart") / "gui" / "all.hpp");
 
   EXPECT_EQ(aggregate.find("dart/gui/experimental"), std::string::npos);
+  EXPECT_NE(aggregate.find("#include <dart/gui/gizmo.hpp>"), std::string::npos);
   EXPECT_NE(aggregate.find("#include <dart/gui/panel.hpp>"), std::string::npos);
   EXPECT_NE(aggregate.find("#include <dart/gui/scene.hpp>"), std::string::npos);
   EXPECT_NE(
@@ -774,6 +776,58 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresIkHandles)
   ASSERT_EQ(options.ikHandles.size(), 1u);
   EXPECT_EQ(options.ikHandles.front().label, "left hand");
   EXPECT_EQ(options.ikHandles.front().hotkey, '1');
+}
+
+TEST(FilamentSceneExtraction, ApplicationOptionsStoresGizmos)
+{
+  dart::gui::ApplicationOptions options;
+  auto target = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "gizmo_target");
+
+  dart::gui::Gizmo gizmo;
+  gizmo.label = "target gizmo";
+  gizmo.target = target;
+  gizmo.flags = dart::gui::GizmoFlags::Translate;
+  gizmo.size = 0.25;
+
+  options.gizmos.push_back(gizmo);
+
+  ASSERT_EQ(options.gizmos.size(), 1u);
+  EXPECT_EQ(options.gizmos.front().label, "target gizmo");
+  EXPECT_EQ(options.gizmos.front().target, target);
+  EXPECT_EQ(options.gizmos.front().flags, dart::gui::GizmoFlags::Translate);
+  EXPECT_DOUBLE_EQ(options.gizmos.front().size, 0.25);
+}
+
+TEST(FilamentSceneExtraction, GizmoDebugLinesFollowTargetFrame)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(1.0, 2.0, 3.0);
+  auto target = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "gizmo_target", transform);
+
+  dart::gui::Gizmo gizmo;
+  gizmo.label = "atlas_target";
+  gizmo.target = target;
+  gizmo.size = 0.5;
+
+  const auto lines = dart::gui::makeGizmoDebugLines(gizmo, 2.0);
+
+  ASSERT_EQ(lines.size(), 12u);
+  EXPECT_EQ(lines.front().label, "atlas_target.x");
+  EXPECT_TRUE(lines.front().from.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_TRUE(lines.front().to.isApprox(Eigen::Vector3d(2.0, 2.0, 3.0)));
+  EXPECT_NE(
+      std::find_if(
+          lines.begin(),
+          lines.end(),
+          [](const dart::gui::DebugLineDescriptor& line) {
+            return line.label == "atlas_target.free_x";
+          }),
+      lines.end());
+
+  dart::gui::Gizmo invalid;
+  EXPECT_TRUE(dart::gui::makeGizmoDebugLines(invalid).empty());
 }
 
 TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
@@ -2197,6 +2251,8 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("applyRootTeleoperationStep"), std::string::npos);
@@ -2219,6 +2275,8 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
   EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
   EXPECT_NE(readmeSource.find("Atlas Puppet Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
+  EXPECT_NE(readmeSource.find("render-only affordances"), std::string::npos);
   EXPECT_NE(readmeSource.find("pixi run ex atlas_puppet"), std::string::npos);
   EXPECT_NE(readmeSource.find("1280"), std::string::npos);
   EXPECT_NE(

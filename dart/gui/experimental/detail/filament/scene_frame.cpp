@@ -153,6 +153,16 @@ void SceneFrameUpdater::update(
   }
 
   phaseStart = dart::gui::ProfileAccumulator::Clock::now();
+  refreshGizmoDebugOverlay(
+      mEngine,
+      mScene,
+      mMaterials.debugColor,
+      mDartScene.gizmos,
+      mOptions.guiScale,
+      mSceneState.debugOverlays);
+  mProfile.selectionDebugMs += dart::gui::elapsedMs(phaseStart);
+
+  phaseStart = dart::gui::ProfileAccumulator::Clock::now();
   mSelectionController.updateMouseSelection(
       mWindow,
       mCameraController.camera,

@@ -23,6 +23,7 @@ descriptor APIs:
 - orbit camera and controller helpers
 - run options and viewer lifecycle state
 - application options and renderer-neutral panel controls
+- renderer-neutral transform gizmo descriptors
 - screenshot and frame-output helpers
 - profile/debug helpers
 

@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -315,6 +316,7 @@ struct AtlasPuppetScene
   dart::simulation::WorldPtr world;
   dart::dynamics::SkeletonPtr atlas;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  std::vector<dart::gui::Gizmo> gizmos;
 };
 
 void addAtlasPuppetIkTargets(
@@ -431,8 +433,15 @@ void addAtlasPuppetIkTargets(
     dart::gui::InverseKinematicsHandle handle;
     handle.label = config.label;
     handle.hotkey = config.hotkey;
-    handle.target = std::move(target);
+    handle.target = target;
     handle.ik = std::move(ik);
+
+    dart::gui::Gizmo gizmo;
+    gizmo.label = config.targetName;
+    gizmo.target = target;
+    gizmo.size = 0.24;
+
+    scene.gizmos.push_back(std::move(gizmo));
     scene.ikHandles.push_back(std::move(handle));
   }
 }
@@ -629,6 +638,7 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
     options.ikHandles = scene.ikHandles;
+    options.gizmos = scene.gizmos;
     options.runDefaults = makeAtlasPuppetRunDefaults();
     options.camera = makeAtlasPuppetCamera();
     options.preStep = [handles = scene.ikHandles]() {

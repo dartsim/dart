@@ -34,6 +34,7 @@
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SCENES_HPP_
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/scene.hpp>
 
@@ -67,6 +68,7 @@ struct DartScene
 {
   dart::simulation::WorldPtr world;
   std::vector<IkHandle> ikHandles;
+  std::vector<dart::gui::Gizmo> gizmos;
   std::vector<dart::gui::KeyboardAction> keyboardActions;
   std::function<void()> preStep;
 };
@@ -114,6 +116,7 @@ struct AppOptions
   std::function<void()> preStep;
   std::optional<dart::gui::OrbitCamera> camera;
   std::vector<dart::gui::Panel> panels;
+  std::vector<dart::gui::Gizmo> gizmos;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
   std::vector<dart::gui::KeyboardAction> keyboardActions;
   ExampleScene scene = ExampleScene::Mvp;

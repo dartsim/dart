@@ -34,6 +34,7 @@
 #define DART_GUI_APPLICATION_HPP_
 
 #include <dart/gui/export.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -116,6 +117,7 @@ struct ApplicationOptions
   std::optional<OrbitCamera> camera;
   std::string defaultScene;
   std::vector<Panel> panels;
+  std::vector<Gizmo> gizmos;
   std::vector<InverseKinematicsHandle> ikHandles;
   std::vector<KeyboardAction> keyboardActions;
 };

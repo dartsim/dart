@@ -6,19 +6,21 @@ checkpoint-push policy, CI state, and immediate example/API migration plan.
 
 ## Current Resume Override
 
-Latest pushed branch head:
-`89f069efc3e Restore WAM IKFast example controls`. The branch is tracking
-`origin/feature/filament-gui-full-execution`; keep pushing checkpoint commits
-without opening a PR. Leave the pre-existing local
-`docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
-explicitly asks to include them.
+The branch is `feature/filament-gui-full-execution`, tracking
+`origin/feature/filament-gui-full-execution`. The current local branch is ahead
+of the tracked remote with the Fetch image-sequence capture checkpoint
+`de1873ddab7 Document Fetch image-sequence capture`, and this handoff includes
+the R24-1 public gizmo-affordance checkpoint. Do not push these local
+checkpoints without explicit maintainer/user approval in the active session.
+Leave the pre-existing local `docs/dev_tasks/filament_gui/STEERING.md` edits
+unstaged unless the maintainer explicitly asks to include them.
 
-Immediate next slice: strict re-open `examples/fetch/`. Maintainer correction
-explicitly called out Fetch as not fully restored. Compare the current source
-and README against `520993d7301^:examples/fetch`, update the itemized inventory,
-then restore or classify historical target manipulation, panel/help behavior,
-camera/defaults, README, capture, and marker coverage before advancing to
-another example.
+Immediate next slice after R24-1: continue the R24 Gizmo work from
+`STEERING.md`. The public `dart::gui::Gizmo` registration surface and
+render-only debug-line affordances are in place for Atlas Puppet, but drag
+mechanics, plane handles, rotation rings, and replacing the remaining
+example-owned target-sphere controls with public gizmos are still follow-up
+work.
 
 ## Live Supervisor Steering
 

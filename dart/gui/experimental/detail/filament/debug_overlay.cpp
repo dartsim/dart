@@ -33,6 +33,7 @@
 #include <dart/gui/experimental/detail/filament/debug_overlay.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_factory.hpp>
 #include <dart/gui/experimental/detail/filament/renderable_sync.hpp>
+#include <dart/gui/gizmo.hpp>
 
 #include <algorithm>
 
@@ -83,6 +84,7 @@ void clearDebugOverlays(
 {
   clearDebugLineOverlay(engine, scene, controller.staticOverlay);
   clearDebugLineOverlay(engine, scene, controller.contactOverlay);
+  clearDebugLineOverlay(engine, scene, controller.gizmoOverlay);
 }
 
 void refreshDebugLineOverlay(
@@ -128,6 +130,22 @@ void refreshContactDebugOverlay(
       material,
       extractContactDebugLines(result, controller.contactOptions),
       controller.contactOverlay);
+}
+
+void refreshGizmoDebugOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    ::filament::Material& material,
+    const std::vector<dart::gui::Gizmo>& gizmos,
+    double guiScale,
+    DebugOverlayController& controller)
+{
+  refreshDebugLineOverlay(
+      engine,
+      scene,
+      material,
+      dart::gui::makeGizmoDebugLines(gizmos, guiScale),
+      controller.gizmoOverlay);
 }
 
 void refreshSelectionDebugLineOverlay(

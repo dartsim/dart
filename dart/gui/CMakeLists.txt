@@ -21,6 +21,7 @@ set(
   debug.hpp
   export.hpp
   fwd.hpp
+  gizmo.hpp
   geometry.hpp
   interaction.hpp
   panel.hpp
@@ -58,6 +59,7 @@ install(
     debug.hpp
     export.hpp
     fwd.hpp
+    gizmo.hpp
     geometry.hpp
     interaction.hpp
     panel.hpp
