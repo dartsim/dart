@@ -558,6 +558,12 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     coverage, aggregate `build-examples`, and Python C++ example-runner tests.
     Mandatory `pixi run lint`, post-lint focused rebuild/CTest, and post-lint
     direct screenshot basic analyzer check also passed.
+59. The active strict re-open cursor is now `examples/wam_ikfast/`. A prior
+    robot/IK checkpoint restored target-handle behavior, but the strict
+    itemized inventory is still missing. Compare current source/README against
+    `520993d7301^:examples/wam_ikfast`, then restore or classify historical WAM
+    URDF loading, IK target behavior, keyboard/teleoperation, camera/defaults,
+    README, capture, and marker coverage before moving past it.
 
 ## Checkpoint Rule
 

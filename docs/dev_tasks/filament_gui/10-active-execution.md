@@ -120,9 +120,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `8b4f8192588 Restore Tinkertoy example picking`.
+  `7abc08540e9 Restore vehicle example defaults`.
 - Latest pushed code checkpoint:
-  `8b4f8192588 Restore Tinkertoy example picking`.
+  `7abc08540e9 Restore vehicle example defaults`.
 - Latest pushed infrastructure checkpoint: `b7a269906f9` merged
   `origin/main` so the branch has the new AI-native living-plan and API
   boundary infrastructure without reopening the removed backend-named
@@ -288,6 +288,12 @@ history but are not guaranteed to be in chronological order.
   rebuild for `vehicle` and `UNIT_gui_FilamentSceneExtraction` passed, focused
   CTest passed, and direct software-GL screenshot basic analyzer passed
   (`/tmp/dart_vehicle_strict_postlint.ppm`, 307200/307200 nonzero pixels).
+- Active strict re-open cursor: `examples/wam_ikfast/`. A previous robot/IK
+  checkpoint restored target-handle behavior, but the strict itemized inventory
+  is still missing. Compare current source/README against
+  `520993d7301^:examples/wam_ikfast`, then restore or explicitly classify the
+  historical WAM URDF loading, IK target behavior, keyboard/teleoperation,
+  camera/defaults, README, capture, and marker coverage before moving past it.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`

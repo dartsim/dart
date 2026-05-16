@@ -7,17 +7,17 @@ checkpoint-push policy, CI state, and immediate example/API migration plan.
 ## Current Resume Override
 
 Latest pushed branch head:
-`8b4f8192588 Restore Tinkertoy example picking`. The branch is tracking
+`7abc08540e9 Restore vehicle example defaults`. The branch is tracking
 `origin/feature/filament-gui-full-execution`; keep pushing checkpoint commits
 without opening a PR. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
 explicitly asks to include them.
 
-Immediate next slice: strict re-open `examples/vehicle/`. Compare the current
-source and README against `520993d7301^:examples/vehicle`, update the itemized
-inventory, then restore or classify historical command behavior, controller
-setup, camera/defaults, README, capture, and marker coverage before advancing
-to another example.
+Immediate next slice: strict re-open `examples/wam_ikfast/`. Compare the
+current source and README against `520993d7301^:examples/wam_ikfast`, update
+the itemized inventory, then restore or classify historical WAM URDF loading,
+IK target behavior, keyboard/teleoperation, camera/defaults, README, capture,
+and marker coverage before advancing to another example.
 
 ## Live Supervisor Steering
 
