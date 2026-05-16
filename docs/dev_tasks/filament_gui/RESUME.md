@@ -212,7 +212,16 @@ public `dart::gui`. The local implementation is in place and has passed the
 pre-lint focused build/CTest, direct and pixi screenshot smokes, Python
 example-runner tests, the aggregate `examples` build, and `git diff --check`.
 Mandatory `pixi run lint` and post-lint focused build/CTest/direct screenshot
-smoke also pass. Commit and push this checkpoint next.
+smoke also pass. The checkpoint has been committed and pushed as
+`b00e054c45f Restore capsule contact controls`. The active slice is now
+`examples/rigid_chain`: restore the historical random initial pose, 640x480
+run default, camera home, README, and source-marker guards while preserving
+the promoted `ApplicationOptions::preStep` damping behavior. The local
+implementation is in place and has passed the pre-lint focused build/CTest,
+direct and pixi screenshot smokes, Python example-runner tests, the aggregate
+`examples` build, and `git diff --check`. Mandatory `pixi run lint`,
+post-lint focused build/CTest/direct screenshot smoke also pass. Commit and
+push this checkpoint next.
 Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
 Atlas/Hubo target activation semantics, and Enter recording as explicit parity
 gaps unless a later slice adds the narrow renderer-neutral public API needed
@@ -775,16 +784,16 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`bcc31d495c8 Restore hello world defaults`; the current pending checkpoint
-restores `examples/capsule_ground_contact` from the strict historical-source
-audit and still needs commit and push after completed local validation.
+`b00e054c45f Restore capsule contact controls`; the current pending checkpoint
+restores `examples/rigid_chain` from the strict historical-source audit and
+still needs commit and push after completed local validation.
 
 ## Current Immediate Next Step
 
-Commit and push the `examples/capsule_ground_contact` restoration checkpoint
-without opening a PR. It restores the historical `h`/`v` pose-reset keys, Space
-velocity-clear action, 1024x768 run default, camera home, persistent-manifold
-instruction text, README, and source-marker tests through public `dart::gui`.
+Commit and push the `examples/rigid_chain` restoration checkpoint without
+opening a PR. It restores the historical random initial pose, 640x480 run
+default, camera home, README, and source-marker tests through public
+`dart::gui`, while preserving the promoted pre-step damping behavior.
 Treat `examples/fetch/` and other already source-owned examples as still
 auditable if a missing historical user-visible behavior is identified; do not
 use source ownership or screenshot smoke coverage as full-restoration evidence

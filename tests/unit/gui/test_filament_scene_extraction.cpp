@@ -879,6 +879,43 @@ TEST(FilamentSceneExtraction, CapsuleGroundContactPreservesParityMarkers)
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, RigidChainExamplePreservesParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "rigid_chain" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "rigid_chain" / "README.md");
+
+  EXPECT_NE(
+      mainSource.find("dart://sample/skel/chain.skel"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0))"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->setTimeStep(1.0 / 2000.0)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::math::Random::uniform(-0.5, 0.5)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("applyChainDamping"), std::string::npos);
+  EXPECT_NE(mainSource.find("damping[i] *= 0.1"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeRigidChainRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeRigidChainCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d::Zero()"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("camera.distance = 3.0"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Rigid Chain Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("RealTimeWorldNode"), std::string::npos);
+  EXPECT_EQ(mainSource.find("dart::gui::Viewer"), std::string::npos);
+  EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, BoxesExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(

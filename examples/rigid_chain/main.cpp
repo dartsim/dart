@@ -39,14 +39,14 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
+#include <dart/math/random.hpp>
+
 #include <dart/io/read.hpp>
 
 #include <Eigen/Core>
 
 #include <iostream>
 #include <stdexcept>
-
-#include <cmath>
 
 namespace {
 
@@ -71,7 +71,7 @@ dart::simulation::WorldPtr createRigidChainWorld()
 
   Eigen::VectorXd initialPose(chain->getNumDofs());
   for (Eigen::Index i = 0; i < initialPose.size(); ++i) {
-    initialPose[i] = 0.18 * std::sin(static_cast<double>(i) * 0.7);
+    initialPose[i] = dart::math::Random::uniform(-0.5, 0.5);
   }
   chain->setPositions(initialPose);
 
@@ -125,6 +125,24 @@ dart::gui::Panel createStatusPanel()
   return panel;
 }
 
+dart::gui::RunOptions makeRigidChainRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makeRigidChainCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.4636476090008061;
+  camera.pitch = 0.7297276562269663;
+  camera.distance = 3.0;
+  return camera;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -135,6 +153,8 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = world;
+    options.runDefaults = makeRigidChainRunDefaults();
+    options.camera = makeRigidChainCamera();
     options.preStep = [chain]() {
       applyChainDamping(chain);
     };

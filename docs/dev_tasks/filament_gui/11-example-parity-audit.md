@@ -106,6 +106,26 @@ and promoted panel controls through public `dart::gui`.
 | Camera home from eye `(2.5, 2.5, 1.5)` to target `(0, 0, 0.2)` with up `(-0.2,-0.2,0.95)`.                      | Restored.                                 | Current source converts the historical home to `dart::gui::OrbitCamera`.                              |
 | README documents the promoted runner and no longer says the standalone source remains OSG.                      | Restored.                                 | Current README documents `pixi run ex capsule_ground_contact`, controls, and headless capture.        |
 
+### Rigid Chain Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/rigid_chain/main.cpp`.
+
+The source-owned checkpoint keeps the promoted `dart::gui` world handoff and
+panel, and restores the historical random initial pose, pre-simulation damping
+behavior, 640x480 default launch size, camera home, example README, and
+source-marker guards through public APIs.
+
+| Historical item                                                                                | Current outcome                      | Notes                                                                                     |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Load `dart://sample/skel/chain.skel`.                                                          | Restored through public `dart::gui`. | Current source owns the DART world and uses promoted `ApplicationOptions::world`.         |
+| Use gravity `(0, -9.81, 0)` and timestep `1 / 2000`.                                           | Restored.                            | Current source sets both on the example world.                                            |
+| Initialize every DOF with `dart::math::Random::uniform(-0.5, 0.5)`.                            | Restored.                            | Current source uses the same DART random helper as the historical example.                |
+| Apply damping before each simulation step, with twist DOFs damped by an extra factor of `0.1`. | Restored through `preStep`.          | Current source uses promoted `ApplicationOptions::preStep` rather than an OSG world node. |
+| Default launch size 640x480.                                                                   | Restored.                            | Current source uses `ApplicationOptions::runDefaults` so CLI overrides keep working.      |
+| Camera home from eye `(2, 1, 2)` to target `(0, 0, 0)` with world-up `(0, 0, 1)`.              | Restored.                            | Current source converts the historical home to `dart::gui::OrbitCamera`.                  |
+| README documents the promoted runner, controls, default size, and headless capture.            | Restored.                            | Current README documents `pixi run ex rigid_chain`, controls, and headless capture.       |
+| Keep the example free of backend-specific world-node, event-handler, viewer, and OSG types.    | Restored through guard test.         | Marker coverage prevents reintroducing removed renderer surfaces or `defaultScene`.       |
+
 ### Heightmap Itemized Inventory
 
 Historical source compared: `520993d7301^:examples/heightmap/main.cpp`.
@@ -272,7 +292,7 @@ first-class keyboard shortcut.
 | `point_cloud`               | Restored except public color-editor/debug-grid API gaps.                           | Keep color editors and fine-grained grid controls tracked as public API follow-ups.            |
 | `polyhedron_visual`         | Restored by strict audit.                                                          | Keep marker guards for surface, wireframe, grid, camera/defaults, and README.                  |
 | `rerun`                     | Needs strict audit.                                                                | Confirm non-Filament logging/viewer behavior remains correct.                                  |
-| `rigid_chain`               | Needs strict audit.                                                                | Compare historical controls/defaults and camera.                                               |
+| `rigid_chain`               | Restored by strict audit.                                                          | Keep marker guards for random pose, damping, camera/defaults, README, and no backend types.    |
 | `rigid_cubes`               | Needs strict audit.                                                                | Confirm restored launcher captures historical cube scene behavior.                             |
 | `rigid_loop`                | Needs strict audit.                                                                | Compare historical controls/defaults and camera.                                               |
 | `rigid_shapes`              | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm spawn/delete/contact controls, CLI options, camera/defaults, README, and guards.       |

@@ -45,6 +45,9 @@
   - Restored the `capsule_ground_contact` example's pose-reset keyboard
     controls, velocity-clear action, camera/run defaults, persistent-manifold
     instructions, and README through public `dart::gui`.
+  - Restored the `rigid_chain` example's historical random initial pose,
+    camera/run defaults, README, and marker coverage while keeping its damping
+    callback on public `dart::gui`.
   - Added a public `dart::gui::ApplicationOptions::preStep` lifecycle callback
     and restored `fetch` as a source-defined `dart::gui` example with its live
     mocap target-following behavior, Bullet preference when available, and
