@@ -3660,6 +3660,21 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `collision-native-stability` CTest label passed 2/2. No PR, push,
     workflow, branch, or GitHub state was mutated by this local validation
     pass.
+- Current local gz-physics compatibility refresh after docs/evidence and CMake
+  cleanup commits:
+  - Commit: `6742a21ab0f`
+    (`Record native collision current validation evidence`).
+  - Commands:
+    `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e gazebo test-gz`
+    and
+    `LD_LIBRARY_PATH=.deps/gz-physics/build/lib:.pixi/envs/gazebo/lib:${LD_LIBRARY_PATH:-} ldd .deps/gz-physics/build/lib/libgz-physics-dartsim-plugin.so | rg 'libdart-collision-native|libdart-collision-reference|libdart-collision-(fcl|bullet|ode)|libfcl|libBullet|libode|libccd'`.
+  - Result: passed. The gz-physics gate cloned `gz-physics9_9.0.0`, applied
+    only the DART version patch, configured DART with reference collision tests
+    and benchmarks `OFF`, built the DART plugin, and passed 65/65 gz-physics
+    tests. The explicit dependency scan reported
+    `libdart-collision-native.so` and no old DART collision reference/facade,
+    FCL, Bullet, ODE, or libccd match. No PR, push, workflow, branch, or
+    GitHub state was mutated by this local validation pass.
 
 ## Known Risks
 

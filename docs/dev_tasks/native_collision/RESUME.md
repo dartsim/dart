@@ -40,6 +40,10 @@ The newer docs/evidence-head validation on `48c0cc3f90e` also passed
 Atlas Simbicon controller-loop no-tunneling regression, and the
 `collision-native-stability` CTest label. No PR, push, workflow, branch, or
 GitHub state was mutated for that recheck.
+The newer local gz-physics refresh on `6742a21ab0f` also passed 65/65 with
+reference collision tests and benchmarks configured `OFF`; an explicit plugin
+dependency scan reported `libdart-collision-native.so` without old DART
+collision reference/facade, FCL, Bullet, ODE, or libccd matches.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not

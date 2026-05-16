@@ -217,6 +217,23 @@ validation gate was rerun on clean head `48c0cc3f90e`
 - Scope: local validation only. No PR, push, workflow, branch, or GitHub state
   was mutated by this recheck.
 
+After the current validation evidence commit, the local gz-physics
+compatibility gate was rerun on clean head `6742a21ab0f`
+(`Record native collision current validation evidence`):
+
+- Command:
+  `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run -e gazebo test-gz`
+- Result: passed. The gz-physics gate cloned `gz-physics9_9.0.0`, applied only
+  the DART version patch, configured DART with reference collision tests and
+  benchmarks `OFF`, built the DART plugin, passed 65/65 gz-physics tests, and
+  printed `DART plugin built successfully with DART integration!`.
+- Dependency scan:
+  `LD_LIBRARY_PATH=.deps/gz-physics/build/lib:.pixi/envs/gazebo/lib:${LD_LIBRARY_PATH:-} ldd .deps/gz-physics/build/lib/libgz-physics-dartsim-plugin.so | rg 'libdart-collision-native|libdart-collision-reference|libdart-collision-(fcl|bullet|ode)|libfcl|libBullet|libode|libccd'`
+  reported `libdart-collision-native.so` and no old DART collision
+  reference/facade, FCL, Bullet, ODE, or libccd match.
+- Scope: local validation only. No PR, push, workflow, branch, or GitHub state
+  was mutated by this recheck.
+
 - Native-only and gz-physics manual workflow-dispatch evidence is now collected
   for pushed head `1e1faf6feb1`, but the final PR-complete state still needs
   whatever CI surface the maintainer chooses because PR #2652 is closed.

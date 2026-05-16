@@ -230,6 +230,10 @@ native-backed interface facades.
       smoke passed, and direct `readelf` checks showed the gz plugin and package
       smoke executable use `libdart-collision-native.so` without old
       collision/reference runtime dependencies.
+      A newer local gz-physics refresh on `6742a21ab0f` also passed 65/65 after
+      the current validation evidence commit, and an explicit plugin dependency
+      scan reported `libdart-collision-native.so` without old DART collision
+      reference/facade, FCL, Bullet, ODE, or libccd matches.
       The latest code-validation head `4db514cfd22` also passed the full local
       gate with Release CTest 264/264 and Python tests 147/147. The same code
       head passed the focused reference-backend checks and the final
