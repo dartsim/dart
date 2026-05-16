@@ -3467,6 +3467,15 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     simulation-experimental passed 13/13 and the final unfiltered
     `collision-reference` CTest sweep passed 301/301, including FCL, Bullet,
     ODE, and native collision tests.
+- Current local full validation after docs/evidence cleanup:
+  - Commit: `c99b257cf15`
+    (`Clarify native collision resume scope heading`).
+  - Command:
+    `DART_PARALLEL_JOBS=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS CTEST_PARALLEL_LEVEL=$JOBS pixi run test-all`.
+  - Result: passed. The final report passed 6/6 top-level gates: linting,
+    build, unit tests, simulation-experimental tests, Python tests, and
+    documentation, then printed `All tests passed!`. No PR, push, workflow,
+    branch, or GitHub state was mutated by this local validation pass.
 
 ## Known Risks
 

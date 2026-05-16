@@ -106,6 +106,9 @@ Local validation currently recorded in the dev-task evidence:
   passed on local head `4db514cfd22` with 6/6 top-level gates: linting, build,
   unit tests, simulation-experimental tests, Python tests, and documentation.
   Release CTest passed 264/264 and Python tests passed 147/147.
+- A later current-state local recheck with the same `pixi run test-all`
+  command passed on head `c99b257cf15` after the docs/evidence cleanup commits,
+  again with 6/6 top-level gates and the final `All tests passed!` report.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`

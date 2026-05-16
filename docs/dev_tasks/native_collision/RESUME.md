@@ -16,7 +16,9 @@ stretch GPU support are the next performance wave.
 This session refreshed full local validation on local head `4db514cfd22` with
 `pixi run test-all`, then refreshed the `collision-reference` evidence through
 focused reference-backend checks and a final unfiltered CTest pass of 301/301.
-The earlier pushed `64abc65a032` validation still records the latest local
+A later current-state `pixi run test-all` pass on local head `c99b257cf15`
+passed all 6 top-level gates after the docs/evidence cleanup commits. The
+earlier pushed `64abc65a032` validation still records the latest local
 gz-physics/package/link smoke baseline. `pixi run lint`, runtime isolation,
 and compatibility-facade audits remain part of the local gate. The completion
 audit snapshot and validation-baseline wording were also refreshed so future
@@ -89,7 +91,7 @@ the distinction clear:
 
 If code or evidence changes again, run `pixi run lint` before committing and
 run the focused validation that matches the change. Full `pixi run test-all`
-evidence is already refreshed locally for code-validation head `4db514cfd22`;
+evidence is refreshed locally for current-state validation head `c99b257cf15`;
 later local evidence commits are docs-only and should be checked with
 `git status --short --branch` plus `git log -3 --oneline --decorate`.
 
@@ -112,11 +114,11 @@ post GitHub comments unless the user explicitly asks.
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation: local head `4db514cfd22`
-  (`Add native narrow-phase batch dispatcher`), with 6/6 top-level gates
-  passing after the raw, convex, mesh, and mixed batch-dispatcher follow-up.
-  That run included linting, build, unit tests, simulation-experimental tests,
-  Python tests, and documentation.
+- Latest full local `pixi run test-all` validation: local head `c99b257cf15`
+  (`Clarify native collision resume scope heading`), with 6/6 top-level gates
+  passing after the raw, convex, mesh, mixed batch-dispatcher, and
+  docs/evidence cleanup follow-ups. That run included linting, build, unit
+  tests, simulation-experimental tests, Python tests, and documentation.
 - Latest evidence-record commits: current local commits may be ahead of
   `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
   current head. Recent docs-only evidence commits refresh the completion-audit

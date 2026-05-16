@@ -49,18 +49,20 @@ Latest local audit commands before recording this snapshot showed:
 - Review surface state: read-only `gh pr view 2652 --repo dartsim/dart`
   reports PR #2652 as `CLOSED`, draft, dirty, based on `main`, and still
   anchored to head `714d220d82a`. No PR metadata or GitHub state was mutated.
-- Latest full code validation head: `4db514cfd22`
-  (`Add native narrow-phase batch dispatcher`) passed the local
-  `pixi run test-all` gate with 6/6 top-level gates, Release CTest 264/264,
-  and Python 147/147. The same code head passed focused reference-backend
-  checks and the final unfiltered `collision-reference` CTest sweep 301/301
-  after building the dedicated simulation-experimental target.
-- Post-validation branch delta is docs-only: after `4db514cfd22`, local commits
-  refreshed the evidence packet, clarified code-follow-up/current-head wording,
-  recorded this audit state, and kept the deferred-finalization handoff
-  explicit. They do not touch collision runtime, tests, or build logic.
-  `pixi run lint` passed after those docs-only commits, including runtime
-  source isolation and compatibility-facade audits.
+- Latest full current-state validation head: `c99b257cf15`
+  (`Clarify native collision resume scope heading`) passed the local
+  `pixi run test-all` gate with 6/6 top-level gates: linting, build, unit
+  tests, simulation-experimental tests, Python tests, and documentation.
+- Latest full code-validation head: `4db514cfd22`
+  (`Add native narrow-phase batch dispatcher`) also passed the local
+  `pixi run test-all` gate with Release CTest 264/264 and Python 147/147.
+  The same code head passed focused reference-backend checks and the final
+  unfiltered `collision-reference` CTest sweep 301/301 after building the
+  dedicated simulation-experimental target.
+- Post-validation branch delta is docs-only: after `c99b257cf15`, local commits
+  may refresh this evidence packet and keep the deferred-finalization handoff
+  explicit. They do not touch collision runtime, tests, or build logic. Run
+  `git log -3 --oneline --decorate` for the exact current local head.
 
 Audit result: the local branch-evidence packet is current, but the objective
 is not complete. The remaining checklist rows require a maintainer-selected
@@ -84,6 +86,20 @@ review/CI gap remains external to this branch-local pass:
 No PR metadata, workflow state, branch state, or GitHub artifact was mutated by
 that audit. Later docs-only commits may move `HEAD`; rerun the commands above
 with `git rev-parse HEAD` for an exact current-head check.
+
+## Current Local Full Validation Recheck (2026-05-16)
+
+After the docs/evidence cleanup commits, a fresh local full validation pass was
+run on head `c99b257cf15`
+(`Clarify native collision resume scope heading`):
+
+- Command:
+  `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
+- Result: passed 6/6 top-level gates: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation. The final
+  report printed `All tests passed!`.
+- Scope note: no PR, push, workflow, branch, or GitHub state was mutated by
+  this validation pass.
 
 - Native-only and gz-physics manual workflow-dispatch evidence is now collected
   for pushed head `1e1faf6feb1`, but the final PR-complete state still needs
