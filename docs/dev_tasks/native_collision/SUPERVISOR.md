@@ -6,8 +6,8 @@ It is NOT part of the planning contract — README/01-06 remain authoritative.
 Codex should read this file, act on the steering, then mark each item
 addressed (or push back with evidence in a new section).
 
-Last updated: 2026-05-16 (audit checklist and handoff cleanup; Round material
-below remains historical.)
+Last updated: 2026-05-16 (audit checklist, handoff cleanup, and stale
+spot-check correction; Round material below remains historical.)
 
 ## Current Codex Status
 
@@ -43,11 +43,11 @@ open gates in `README.md` and `06-completion-audit.md` as active work.
 
 These were verified against the working tree, not just from the docs.
 
-| Claim                                                                                 | Result   | Evidence                                                                                                                |
-| ------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `check-collision-runtime-isolation` is wired into lint and check-lint                 | VERIFIED | `pixi.toml:195` defines the task; `pixi.toml:207`, `:255`, `:1636`, `:1655` reference it from the lint task lists.      |
-| Old-engine implementation under `reference/` paths                                    | VERIFIED | `dart/collision/{bullet,fcl,ode}/reference/` directories all exist.                                                     |
-| `dart/collision/` directory layout matches the documented native+adapter+facade split | VERIFIED | Top-level layout: `dart/`, `native/`, `bullet/`, `fcl/`, `ode/`, `detail/` plus public collision\_\*.{cpp,hpp} headers. |
+| Claim                                                                                 | Result   | Evidence                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `check-collision-runtime-isolation` is wired into lint and check-lint                 | VERIFIED | `pixi.toml:195` defines the task; `pixi.toml:207`, `:255`, `:1636`, `:1655` reference it from the lint task lists.                                                         |
+| Old-engine implementation isolated outside runtime collision paths                    | VERIFIED | Runtime `dart/collision/{bullet,fcl,ode}/reference/` directories are absent; reference implementations live under `tests/dart/test/reference_collision/{bullet,fcl,ode}/`. |
+| `dart/collision/` directory layout matches the documented native+adapter+facade split | VERIFIED | Top-level layout: `dart/`, `native/`, `bullet/`, `fcl/`, `ode/`, `detail/` plus public collision\_\*.{cpp,hpp} headers.                                                    |
 
 Additional independent agent findings will be appended below as they arrive.
 
@@ -158,16 +158,16 @@ valid for retained C++ compatibility facades and factory keys.
 
 **Verdict: PASS (high confidence).** All 8 sampled claims plus 3 additional spot-checks verified against working tree.
 
-| Claim                                                                              | Result   | Evidence                                                                                                                                 |
-| ---------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Factory keys `fcl`, `fcl_mesh`, `bullet`, `ode` resolve to `DartCollisionDetector` | VERIFIED | `dart/collision/dart/dart_collision_detector.cpp:212,222,228,235,242` — all four lambdas return `std::shared_ptr<DartCollisionDetector>` |
-| Lint guard wired into `lint` and `check-lint`; script exits 0                      | VERIFIED | `pixi.toml:207`, `:255`; live run: `Collision runtime isolation check passed.`                                                           |
-| Old-engine implementation under `reference/` paths; top-level files are facades    | VERIFIED | `dart/collision/{fcl,bullet,ode}/reference/` exist; top-level `*_collision_detector.hpp` is `#pragma once` + redirect to `compat/`       |
-| Native `ShapeType` taxonomy excludes cone/heightfield/point-cloud                  | VERIFIED | `dart/collision/native/shapes/shape.hpp:44-55` — exactly `Sphere, Box, Capsule, Cylinder, Plane, Mesh, Convex, Sdf, Compound`            |
-| Python exposes only clean `DartCollisionDetector` API                              | VERIFIED | `python/dartpy/collision/collision_detector.cpp`; `audit-collision-compat-facades` confirms legacy detector aliases are absent           |
-| `wheel-verify` runs `verify_wheel_collision_isolation.py`                          | VERIFIED | `pixi.toml:1278-1280`; `wheel-verify` deps at `:2189`, `:2322`, `:2441`                                                                  |
-| Smoke `smoke/native_compat_package/` runnable                                      | VERIFIED | `CMakeLists.txt` + `main.cpp` present; CMake requests `collision-fcl/bullet/ode` components and links `dart-collision-{fcl,bullet,ode}`  |
-| Retained components are facades; old engines use `collision-reference-*`           | VERIFIED | `dart/CMakeLists.txt:59-61` registers facade components; `fcl/bullet/ode/CMakeLists.txt` use `collision-reference-*` target names        |
+| Claim                                                                                      | Result   | Evidence                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Factory keys `fcl`, `fcl_mesh`, `bullet`, `ode` resolve to `DartCollisionDetector`         | VERIFIED | `dart/collision/dart/dart_collision_detector.cpp:212,222,228,235,242` — all four lambdas return `std::shared_ptr<DartCollisionDetector>`                                                          |
+| Lint guard wired into `lint` and `check-lint`; script exits 0                              | VERIFIED | `pixi.toml:207`, `:255`; live run: `Collision runtime isolation check passed.`                                                                                                                    |
+| Old-engine implementation isolated under test reference paths; top-level files are facades | VERIFIED | `tests/dart/test/reference_collision/{fcl,bullet,ode}/` exist; runtime `dart/collision/{fcl,bullet,ode}/reference/` paths are absent; top-level `*_collision_detector.hpp` redirects to `compat/` |
+| Native `ShapeType` taxonomy excludes cone/heightfield/point-cloud                          | VERIFIED | `dart/collision/native/shapes/shape.hpp:44-55` — exactly `Sphere, Box, Capsule, Cylinder, Plane, Mesh, Convex, Sdf, Compound`                                                                     |
+| Python exposes only clean `DartCollisionDetector` API                                      | VERIFIED | `python/dartpy/collision/collision_detector.cpp`; `audit-collision-compat-facades` confirms legacy detector aliases are absent                                                                    |
+| `wheel-verify` runs `verify_wheel_collision_isolation.py`                                  | VERIFIED | `pixi.toml:1278-1280`; `wheel-verify` deps at `:2189`, `:2322`, `:2441`                                                                                                                           |
+| Smoke `smoke/native_compat_package/` runnable                                              | VERIFIED | `CMakeLists.txt` + `main.cpp` present; CMake requests `collision-fcl/bullet/ode` components and links `dart-collision-{fcl,bullet,ode}`                                                           |
+| Retained components are facades; old engines use `collision-reference-*`                   | VERIFIED | `dart/CMakeLists.txt:59-61` registers facade components; `fcl/bullet/ode/CMakeLists.txt` use `collision-reference-*` target names                                                                 |
 
 **Verifier-discovered gap (NEW, medium-severity):**
 
