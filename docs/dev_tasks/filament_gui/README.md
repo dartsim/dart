@@ -115,7 +115,15 @@ camera/run defaults, panel context, and README through promoted `dart::gui`.
 That checkpoint is implemented and locally validated through the pre-lint
 focused build, CTest, `--list`, direct/pixi screenshot smokes, Python
 example-runner tests, the aggregate `examples` build, `pixi run lint`, and
-post-lint focused build/CTest/direct screenshot smoke.
+post-lint focused build/CTest/direct screenshot smoke. The checkpoint was
+pushed as `619af5649bc Restore LCP physics controls`. The next active parity
+slice is `examples/mimic_pendulums`: restore baseline retargeting, mimic
+diagnostics, local solver/collision flags, camera/run defaults, and README
+through promoted `dart::gui`. That checkpoint is implemented and locally
+validated through the pre-lint focused build, CTest, direct/pixi screenshot
+smokes, Python example-runner tests, the aggregate `examples` build,
+`git diff --check`, `pixi run lint`, and post-lint focused
+build/CTest/direct screenshot smoke. The remaining work is commit and push.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

@@ -1282,6 +1282,8 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
 
   const auto mimicSource = readSourceFile(
       std::filesystem::path("examples") / "mimic_pendulums" / "main.cpp");
+  const auto mimicReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "mimic_pendulums" / "README.md");
   EXPECT_NE(
       mimicSource.find(
           "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf"),
@@ -1293,7 +1295,24 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
   EXPECT_NE(
       mimicSource.find("pendulum_with_base_mimic_fast_follows_slow"),
       std::string::npos);
+  EXPECT_NE(mimicSource.find("retargetMimicsToBaseline"), std::string::npos);
+  EXPECT_NE(mimicSource.find("collectMimicPairs"), std::string::npos);
+  EXPECT_NE(mimicSource.find("base drift"), std::string::npos);
+  EXPECT_NE(mimicSource.find("--solver"), std::string::npos);
+  EXPECT_NE(mimicSource.find("--collision"), std::string::npos);
+  EXPECT_NE(mimicSource.find("PgsSolver"), std::string::npos);
+  EXPECT_NE(
+      mimicSource.find("makeMimicPendulumsRunDefaults"), std::string::npos);
+  EXPECT_NE(mimicSource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(mimicSource.find("options.height = 720"), std::string::npos);
+  EXPECT_NE(mimicSource.find("makeMimicPendulumsCamera"), std::string::npos);
+  EXPECT_NE(
+      mimicSource.find("camera.target = Eigen::Vector3d(0.5, 0.0, 1.5)"),
+      std::string::npos);
   EXPECT_NE(mimicSource.find("options.world"), std::string::npos);
+  EXPECT_NE(
+      mimicReadmeSource.find("Mimic Pendulums Example"), std::string::npos);
+  EXPECT_NE(mimicReadmeSource.find("dart::gui"), std::string::npos);
   EXPECT_EQ(mimicSource.find("options.defaultScene"), std::string::npos);
 }
 

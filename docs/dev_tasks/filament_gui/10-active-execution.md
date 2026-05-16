@@ -1668,18 +1668,56 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
 --solver pgs` plus `analyze_headless_smoke.py`
     (`/tmp/dart_lcp_physics_direct_postlint.ppm`, 921600/921600 nonzero
     pixels)
+- Implementation status: pushed as
+  `619af5649bc Restore LCP physics controls`.
+
+Forty-second mimic-pendulums parity checkpoint:
+
+- Historical `examples/mimic_pendulums` loaded the SDF mimic pendulum world,
+  retargeted mimic references to the uncoupled baseline rig, colored the rigs,
+  exposed solver/collision controls, showed mimic pair error and base-drift
+  diagnostics, used a 1280x720 viewer, set camera home from eye `(8, -7, 4)` to
+  target `(0.5, 0, 1.5)`, and had an example README.
+- Current promoted source loads and colors the visual rigs, but it does not
+  retarget mimic joints to the baseline, does not expose solver/collision
+  launch controls, does not display mimic error/base-drift diagnostics, and
+  lacks README plus camera/run defaults.
+- Scope before code changes: restore baseline retargeting, pair collection,
+  readable metric rows in the renderer-neutral panel, local `--solver` and
+  `--collision` launch flags, camera/run defaults, README, tests, and
+  changelog through promoted `dart::gui`; keep detailed ImGui tables and
+  in-window solver/collision mutation as public control-surface follow-up.
+- Implementation status: mimic-pendulums now restores baseline retargeting,
+  mimic-pair collection, panel diagnostics for pair error and base drift,
+  launch-time `--solver` and `--collision` flags, camera/run defaults, and the
+  example README through promoted `dart::gui`.
+- Local validation completed so far:
+  - `cmake --build build/default/cpp/Release --target mimic_pendulums
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe `mimic_pendulums --solver pgs --collision dart
+--headless --frames 2 --screenshot /tmp/dart_mimic_pendulums_direct.ppm`
+    plus `analyze_headless_smoke.py` (921600/921600 nonzero pixels). The
+    forced DART collision-detector path reports expected unsupported-cylinder
+    diagnostics while exiting successfully.
+  - `pixi run ex mimic_pendulums --headless --frames 2 --screenshot
+/tmp/dart_mimic_pendulums_pixi.ppm` plus `analyze_headless_smoke.py`
+    (307200/307200 nonzero pixels at the pixi wrapper's 640x480 size)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
   - `git diff --check`
   - `pixi run lint`
   - Post-lint `cmake --build build/default/cpp/Release --target
-free_joint_cases UNIT_gui_FilamentSceneExtraction --parallel 5`
+mimic_pendulums UNIT_gui_FilamentSceneExtraction --parallel 5`
   - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
 -R '^UNIT_gui_FilamentSceneExtraction$'`
-  - Post-lint direct llvmpipe free-joint-cases screenshot with the restored
-    local CLI flags plus `analyze_headless_smoke.py`
-    (`/tmp/dart_free_joint_cases_direct_postlint.ppm`, 921600/921600 nonzero
-    pixels)
-- Implementation status: pushed as
-  `f4963df00cd Restore free joint cases controls`.
+  - Post-lint direct llvmpipe `mimic_pendulums --solver pgs --collision dart
+--headless --frames 2 --screenshot
+/tmp/dart_mimic_pendulums_direct_postlint.ppm` plus
+    `analyze_headless_smoke.py` (921600/921600 nonzero pixels)
+- Remaining before checkpoint handoff: commit and push without opening a PR.
 
 Forty-first LCP physics parity checkpoint:
 
@@ -2303,7 +2341,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push the validated LCP physics parity checkpoint.
+1. Commit and push the validated mimic-pendulums checkpoint to the tracked
+   remote branch without opening a PR.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

@@ -150,7 +150,15 @@ camera/run defaults, panel context, and README through promoted `dart::gui`.
 That checkpoint is implemented and locally validated through the pre-lint
 focused build, CTest, `--list`, direct/pixi screenshot smokes, Python
 example-runner tests, the aggregate `examples` build, `pixi run lint`, and
-post-lint focused build/CTest/direct screenshot smoke.
+post-lint focused build/CTest/direct screenshot smoke. The checkpoint was
+pushed as `619af5649bc Restore LCP physics controls`. The active slice is now
+`examples/mimic_pendulums`: restore baseline retargeting, mimic diagnostics,
+local solver/collision flags, camera/run defaults, and README through promoted
+`dart::gui`. That checkpoint is implemented and locally validated through the
+pre-lint focused build, CTest, direct/pixi screenshot smokes, Python
+example-runner tests, the aggregate `examples` build, `git diff --check`,
+`pixi run lint`, and post-lint focused build/CTest/direct screenshot smoke.
+The remaining work is commit and push.
 Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
 Atlas/Hubo target activation semantics, and Enter recording as explicit parity
 gaps unless a later slice adds the narrow renderer-neutral public API needed
@@ -713,17 +721,16 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`70ed9c2ed7a Document robot IK parity audit scope`; the current pending
-checkpoint is the G1/Atlas/Hubo target-handle parity repair.
+`619af5649bc Restore LCP physics controls`; the current pending checkpoint is
+the mimic-pendulums diagnostics and launch-controls parity repair.
 
 ## Current Immediate Next Step
 
-After the G1/Atlas/Hubo target-handle checkpoint is committed and pushed,
-finish and push the `operational_space_control`/`wam_ikfast`/`tinkertoy`
-target-affordance checkpoint, then resume parity work on Tinkertoy builder
-controls and robot solver/hotkey behavior. Keep `--screenshot <path>` and
-`--out <dir>` working for the existing CTest, GitHub Actions smoke path, and
-historical image-sequence workflows. A later broader smoke sweep can still use:
+Commit and push the validated mimic-pendulums checkpoint without opening a PR.
+After that, continue the remaining source-owned historical example parity
+audit. Keep `--screenshot <path>` and `--out <dir>` working for the existing
+CTest, GitHub Actions smoke path, and historical image-sequence workflows. A
+later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke
