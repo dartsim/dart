@@ -31,9 +31,11 @@ context survives across sessions.
   reduce maintenance surface instead of carrying it as a restored example.
 - Latest maintainer steering reaffirms that broader Rerun support should also
   be treated as removable maintenance surface unless a concrete use case,
-  executable workflow, or downstream user is identified. After the current
-  checkpoint, audit remaining Rerun references and remove stale scaffolding or
-  docs instead of preserving unsupported optional surfaces.
+  executable workflow, or downstream user is identified. The follow-up audit
+  after the soft-bodies checkpoint found no remaining product support to remove:
+  no CMake/package/API/runtime files and no path named Rerun remain. Keep only
+  CI retry workflow docs, generated command guard patterns, marker tests that
+  enforce the removed placeholder, and historical dev-task notes.
 
 ## Branch And CI State
 
@@ -118,9 +120,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `b7ff9b6f5ff Restore Rigid Shapes example scene`.
+  `23d23c868ec Restore Soft Bodies example defaults`.
 - Latest pushed code checkpoint:
-  `b7ff9b6f5ff Restore Rigid Shapes example scene`.
+  `23d23c868ec Restore Soft Bodies example defaults`.
 - Latest pushed infrastructure checkpoint: `b7a269906f9` merged
   `origin/main` so the branch has the new AI-native living-plan and API
   boundary infrastructure without reopening the removed backend-named
@@ -230,6 +232,17 @@ history but are not guaranteed to be in chronological order.
   `git diff --check` passed. The generic contrast analyzer is not used as a
   gate for this low-shadow soft-body scene; rely on the basic nonblank check
   plus visual inspection.
+- Rerun support audit after the soft-bodies checkpoint: repository search found
+  no product CMake/package/API/runtime support and no remaining path named
+  Rerun. Remaining lowercase `rerun` references are CI retry workflow docs,
+  generated command/skill guard patterns, the marker test that enforces removed
+  `examples/rerun/` state, and historical dev-task notes. No additional product
+  code or docs need removal unless a new concrete Rerun use case is introduced.
+- Active strict re-open cursor after the Rerun audit: `examples/tinkertoy/`.
+  Re-compare current source and README against
+  `520993d7301^:examples/tinkertoy`, then restore or explicitly classify the
+  historical construction controls, force controls, camera home, recording
+  behavior, README, and marker coverage before moving past it.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`

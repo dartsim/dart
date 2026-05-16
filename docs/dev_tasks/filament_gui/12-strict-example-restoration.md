@@ -509,6 +509,21 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     rebuild/CTest, post-lint direct screenshot basic analyzer check, and
     `git diff --check` also passed. The generic contrast analyzer is not a
     soft-bodies gate because the scene is low-shadow by design.
+54. Rerun support audit after the soft-bodies checkpoint: maintainer steering
+    asked to remove Rerun maintenance surface unless a concrete use case or
+    downstream user exists. Repository search found no remaining product
+    CMake/package/API/runtime support and no path named Rerun. The remaining
+    lowercase `rerun` references are CI retry workflow docs, generated
+    command/skill guard patterns, marker tests that enforce the removed
+    `examples/rerun/` placeholder, and historical dev-task notes. No additional
+    product removal is needed now; future Rerun work should return only as a
+    real sourced example or application feature with a concrete use case.
+55. The active strict re-open cursor is now `examples/tinkertoy/`. A prior
+    parity checkpoint restored substantial builder/keyboard/camera behavior,
+    but the strict itemized inventory is still missing. Compare current
+    source/README against `520993d7301^:examples/tinkertoy`, then restore or
+    classify the historical construction controls, force controls, camera home,
+    recording behavior, README, and marker coverage before moving past it.
 
 ## Checkpoint Rule
 
