@@ -77,6 +77,9 @@
   - Moved the static geometry examples (`hardcoded_design`, `heightmap`,
     `point_cloud`, and `polyhedron_visual`) off private named-scene fixture
     launchers so their example sources own the visual DART worlds directly.
+  - Restored the `heightmap` example's local demo selector, interactive
+    regeneration panel, alignment scene, camera/run defaults, and README
+    through public `dart::gui`.
   - Moved the LCP and mimic dynamics examples (`lcp_physics` and
     `mimic_pendulums`) off private named-scene fixture launchers so their
     example sources own solver setup, imported worlds, and public GUI panels.

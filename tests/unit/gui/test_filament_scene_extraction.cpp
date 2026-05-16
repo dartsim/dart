@@ -756,7 +756,7 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
       {std::filesystem::path("examples") / "hubo_puppet", true},
       {std::filesystem::path("examples") / "g1_puppet", true},
       {std::filesystem::path("examples") / "hardcoded_design", true},
-      {std::filesystem::path("examples") / "heightmap", false},
+      {std::filesystem::path("examples") / "heightmap", true},
       {std::filesystem::path("examples") / "point_cloud", false},
       {std::filesystem::path("examples") / "polyhedron_visual", false},
       {std::filesystem::path("examples") / "lcp_physics", true},
@@ -1343,10 +1343,38 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
 
   const auto heightmapSource = readSourceFile(
       std::filesystem::path("examples") / "heightmap" / "main.cpp");
+  const auto heightmapReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "heightmap" / "README.md");
   EXPECT_NE(heightmapSource.find("visual_heightmap"), std::string::npos);
   EXPECT_NE(heightmapSource.find("HeightmapShaped"), std::string::npos);
   EXPECT_NE(
       heightmapSource.find("visual_heightmap_sample_ball_"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("--demo"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("HeightmapDemo"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("createHeightmapPanel"), std::string::npos);
+  EXPECT_NE(
+      heightmapSource.find("makeHeightmapRunDefaults"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("options.height = 720"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("makeHeightmapCamera"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("Heightmap Demo"), std::string::npos);
+  EXPECT_NE(
+      heightmapSource.find("Heightmap rendering example"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("builder.slider"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("Show Terrain"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("Show Grid"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("Regenerate"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("requestSingleStep"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("requestExit"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("setupAlignmentDemo"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("DART_HAVE_ODE"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("heightmap_ball_"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("box_ball_"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("reference_box"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("debug-grid API"), std::string::npos);
+  EXPECT_NE(heightmapReadmeSource.find("Heightmap Example"), std::string::npos);
+  EXPECT_NE(heightmapReadmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(heightmapReadmeSource.find("--demo alignment"), std::string::npos);
   EXPECT_EQ(heightmapSource.find("options.defaultScene"), std::string::npos);
 
   const auto pointCloudSource = readSourceFile(

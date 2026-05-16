@@ -129,8 +129,12 @@ API gap. The current Fetch re-audit checkpoint restores the historical
 `Fetch robot example` panel title and whole-body-motion instructional copy,
 updates the audit table, adds source-marker coverage, and has passed focused
 build/CTest, direct and pixi screenshot analyzer checks, and the Python
-example-runner unit test. A later slice restored `examples/rigid_shapes`:
-restore the
+example-runner unit test. The current heightmap checkpoint restores
+`--demo interactive|alignment`, a mutable `HeightmapShaped` `SimpleFrame`,
+renderer-neutral panel controls, the ODE-backed alignment scene, camera/run
+defaults, README, changelog, and source-marker tests. The old OSG grid style
+controls and terrain color editor remain documented public API gaps. A later
+slice restored `examples/rigid_shapes`: restore the
 historical `q`/`w`/`e`/`r` shape-spawn controls, `a` delete-last control, `c`
 contact-point toggle, convex mesh spawn path, camera home, and 640x480 default
 launch size through public `dart::gui`, plus the rigid-shapes-specific

@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `456fdc6fe07 Restore hardcoded design controls`.
+  `7e66f70256b Restore Fetch panel instructions`.
 - Latest pushed code checkpoint:
-  `456fdc6fe07 Restore hardcoded design controls`.
+  `7e66f70256b Restore Fetch panel instructions`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -170,25 +170,35 @@ history but are not guaranteed to be in chronological order.
   direct llvmpipe Fetch screenshot with analyzer coverage
   (`/tmp/dart_fetch_panel_text_direct_postlint.ppm`, 303694/307200 nonzero
   pixels).
-- Next implementation candidate after the Fetch re-audit remains
-  `examples/heightmap`. Historical behavior included an interactive heightmap
+- Current implementation checkpoint in the worktree: `examples/heightmap`.
+  Historical behavior included an interactive heightmap
   `SimpleFrame`, panel controls for terrain visibility, regeneration,
   resolution, XY size, Z range, and grid display parameters, `--gui-scale`,
   `--demo interactive|alignment`, an ODE-backed alignment demo with a
   heightmap, reference box, and ball grids, 1280x720 launch defaults, camera
   homes for both demos, and an example README.
-- Current promoted heightmap source owns only a static visual heightmap,
-  reference box, and sample marker balls; it lacks the README, local demo CLI,
-  interactive regeneration controls, alignment mode, camera/run defaults, and
-  panel/help text.
-- Scope before heightmap code changes: keep the example source-owned and
-  backend-hidden; restore `--demo` launch selection, an interactive
-  source-owned `HeightmapShaped` frame with renderer-neutral panel sliders and
-  checkboxes for the public controls that `PanelBuilder` can express, a
-  source-owned alignment world, camera/run defaults, README, changelog, and
-  source-marker tests. Treat old OSG `GridVisual` fine-grained line-color/line-
-  width controls as a public debug-grid API follow-up unless a DART-owned
-  public replacement already exists.
+- Heightmap implementation state: the source now restores local
+  `--demo interactive|alignment`, 1280x720 run defaults, both historical camera
+  homes, a mutable world-owned `HeightmapShaped` `SimpleFrame`, panel controls
+  for terrain/grid visibility, X/Y resolution, X/Y size, Z min/max,
+  regenerate, Play/Pause/Step/Exit, an ODE-backed alignment world with
+  `heightmap_ball_`, `box_ball_`, and `reference_box` objects, README,
+  changelog, and source-marker tests through public `dart::gui`.
+- Heightmap remaining public API gap: old OSG `GridVisual` fine-grained
+  plane/offset/line-count/line-step/line-width/color controls and the terrain
+  color editor still require DART-owned public panel/debug-grid/color concepts.
+  Do not revive OSG or expose private Filament hooks for these.
+- Heightmap validation completed before lint: focused C++ build for
+  `heightmap` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
+  `UNIT_gui_FilamentSceneExtraction`, direct interactive and alignment
+  screenshots with basic analyzer coverage, pixi interactive and alignment
+  screenshots with basic analyzer coverage, Python C++ example-runner tests
+  (67 passed), and the full `examples` aggregate target build.
+- Heightmap post-lint validation completed: `pixi run lint`, focused rebuild
+  and CTest for `heightmap` plus `UNIT_gui_FilamentSceneExtraction`, and a
+  direct llvmpipe interactive screenshot with basic analyzer coverage
+  (`/tmp/dart_heightmap_interactive_direct_postlint.ppm`, 307200/307200
+  nonzero pixels).
 
 ## Current Code Shape
 

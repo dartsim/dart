@@ -730,12 +730,13 @@ longer express stable DART concepts.
 
 ## Immediate next steps
 
-1. Commit and push the Fetch re-audit checkpoint that restores the historical
-   panel title and instructional copy, after `pixi run lint`.
+1. Commit and push the heightmap checkpoint after `pixi run lint`. It restores
+   the local `--demo` modes, interactive panel controls, alignment scene,
+   camera/run defaults, README, changelog, and source-marker tests through
+   public `dart::gui`.
 2. Continue the same audit pattern across every pre-existing example before
-   declaring it restored. `examples/heightmap` is already known incomplete and
-   should regain `--demo`, interactive controls, alignment mode, camera/run
-   defaults, README, and parity tests.
+   declaring it restored. Re-open examples whenever the historical source has
+   user-visible behavior that only source ownership or screenshots covered.
 3. Add only DART-owned public GUI concepts needed for those examples: no public
    Filament, GLFW, Dear ImGui, OSG, Raylib, OpenGL, Vulkan, or Metal types.
 4. Keep checkpoint commits small, run `pixi run lint` before every commit, and
