@@ -341,8 +341,8 @@ MeshShape::MeshShape(
 
   mMaterials.clear();
 
-  const std::string uriString = uri.toString();
-  if (!uriString.empty()) {
+  const bool hasMaterialSource = uri.mPath && !uri.getPath().empty();
+  if (hasMaterialSource) {
     common::ResourceRetrieverPtr materialRetriever = mResourceRetriever;
     if (!materialRetriever && uri.mScheme.get_value_or("file") == "file"
         && uri.mPath) {

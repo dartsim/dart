@@ -49,6 +49,12 @@
   - Restored `simple_frames` and `capsule_ground_contact` as public-API
     `dart::gui` example sources using source-defined DART frame and contact
     worlds.
+  - Restored the `simple_frames` example's historical frame names, marker
+    names, ArrowShape marker, standalone README build/execute instructions, and
+    marker coverage through public `dart::gui`.
+  - Stopped generated in-memory mesh shapes from attempting material loads from
+    empty file URIs, allowing examples such as `simple_frames` to use
+    `ArrowShape` without renderer startup warnings.
   - Restored the `capsule_ground_contact` example's pose-reset keyboard
     controls, velocity-clear action, camera/run defaults, persistent-manifold
     instructions, and README through public `dart::gui`.

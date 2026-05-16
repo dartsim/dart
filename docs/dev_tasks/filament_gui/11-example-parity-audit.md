@@ -65,6 +65,14 @@ helpers, wires Ctrl-Shift-left drag through the Filament/GLFW selection
 controller, and updates Fetch help/README/tests to describe mouse rotation as
 implemented renderer-neutral manipulation.
 
+2026-05-16 follow-up during the Simple Frames checkpoint: maintainer steering
+again warned that many more examples are not fully restored and named
+`examples/fetch/` specifically. Do not let the linear cursor through recently
+touched examples imply that Fetch is closed. After the in-flight Simple Frames
+checkpoint is committed and pushed, the next active audit must re-open Fetch
+with a fresh historical-source comparison, then continue through every row that
+is still marked as a recent checkpoint, partial restoration, or public API gap.
+
 ### Fetch Itemized Inventory
 
 Historical source compared: `520993d7301^:examples/fetch/main.cpp`.
@@ -159,6 +167,26 @@ example restored.
 | Default launch size 1360x768 and camera home from `(20, 20, 15)` to target `(0, 0, 3)`.              | Restored.                                | Current source uses `ApplicationOptions::runDefaults` and `ApplicationOptions::camera`.                                                                   |
 | README documents in-tree run, controls, headless capture, and historical build/execute sections.     | Restored.                                | Current README documents promoted runner usage, controls, headless capture, default size, and standalone build/execute sections.                          |
 | Keep marker coverage for Bullet preference, grid, names, ground color, instructions, README, no OSG. | Restored through marker guard.           | The source-marker test now guards the restored labels, ground color, instruction text, README sections, and absence of legacy renderer entry points.      |
+
+### Simple Frames Itemized Inventory
+
+Historical source compared:
+`520993d7301^:examples/simple_frames/main.cpp` and
+`520993d7301^:examples/simple_frames/README.md`.
+
+The current source is already a real `dart::gui` example and restores the frame
+transforms, default window, and camera home. The strict re-open found remaining
+historical naming, arrow-shape, README, and marker gaps.
+
+| Historical item                                                                                       | Current outcome                               | Notes                                                                                                                                                     |
+| ----------------------------------------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Create frame hierarchy `F1 -> F2 -> F3` with transforms `(0.1,-0.1,0)`, 45-degree X, and 60-degree Y. | Restored through public `dart::gui`.          | Current source preserves transforms and restores the historical frame names.                                                                              |
+| Add marker hierarchy `A -> A1/A2/A3` at the corresponding frame transforms.                           | Restored through public `dart::gui`.          | Current source preserves marker transforms and restores the historical marker names.                                                                      |
+| Render the arrow using DART `ArrowShape` from `(0.1,-0.1,0)` to `(0.1,0,0)` with pink color.          | Restored through public `dart::gui`.          | Current source uses the historical DART `ArrowShape`; generated in-memory mesh shapes no longer attempt empty file-URI material loads.                    |
+| Add root frames to the world and render their descendants.                                            | Restored visually with explicit registration. | Public extraction currently visits world-registered simple frames, so current source registers descendants explicitly while preserving parent transforms. |
+| Default launch size 640x480 and camera home from `(2, 1, 2)` to the origin.                           | Restored.                                     | Current source uses `ApplicationOptions::runDefaults` and `ApplicationOptions::camera`.                                                                   |
+| README documents in-tree run, controls, headless capture, and historical build/execute sections.      | Restored.                                     | Current README documents promoted runner usage, controls, headless capture, default size, standalone build/execute sections, and feature list.            |
+| Keep marker coverage for names, geometry, arrow shape, defaults, README, and no backend renderer.     | Restored through marker guard.                | The source-marker test now guards historical names, `ArrowShape`, README sections, and absence of legacy renderer entry points.                           |
 
 ### Hello World Itemized Inventory
 
@@ -750,7 +778,7 @@ state machinery.
 | `rigid_cubes`               | Restored by strict audit.                                                          | Keep marker guards for `cubes.skel`, force keys/decay, camera/defaults, instructions, README, and no backend types.                                                                                        |
 | `rigid_loop`                | Restored by strict audit.                                                          | Keep marker guards for constrained-link colors, instructions, defaults, README, and no backend types.                                                                                                      |
 | `rigid_shapes`              | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm spawn/delete/contact controls, CLI options, camera/defaults, README, and guards.                                                                                                                   |
-| `simple_frames`             | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm camera/defaults, README, and guards.                                                                                                                                                               |
+| `simple_frames`             | Restored by strict re-open.                                                        | Keep marker guards for historical names, ArrowShape, camera/defaults, README, and no backend types.                                                                                                        |
 | `simulation_event_handler`  | Restored except shifted-slash help alias follow-up.                                | Keep source-marker guards for controls, arrows, camera/defaults, README, and no backend types.                                                                                                             |
 | `soft_bodies`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm playback controls, shifted keys, camera/defaults, and guards.                                                                                                                                      |
 | `speed_test`                | Preserved by strict audit as a non-GUI benchmark example.                          | Keep marker guards for scene list, dynamics/kinematics loops, summaries, README, and no GUI renderer dependency.                                                                                           |

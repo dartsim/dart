@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `7af2ad1228d Restore box stacking scene parity`.
+  `68e31a339e4 Restore boxes example instructions`.
 - Latest pushed code checkpoint:
-  `7af2ad1228d Restore box stacking scene parity`.
+  `68e31a339e4 Restore boxes example instructions`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -148,6 +148,7 @@ history but are not guaranteed to be in chronological order.
   - `6ea2c868547 Restore Fetch target affordance`
   - `b11f7db7d6c Restore Biped Stand instructions`
   - `7af2ad1228d Restore box stacking scene parity`
+  - `68e31a339e4 Restore boxes example instructions`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -704,6 +705,45 @@ history but are not guaranteed to be in chronological order.
   pixels), pixi `boxes` screenshot passed analyzer coverage
   (`/tmp/dart_boxes_strict_pixi_postlint.ppm`, 307200/307200 nonzero pixels),
   and `git diff --check` passed.
+- The Boxes instruction checkpoint was pushed as
+  `68e31a339e4 Restore boxes example instructions`; do not wait for CI before
+  continuing independent strict-audit work.
+- Active slice is now `examples/simple_frames/`. Compare the current source and
+  README against `520993d7301^:examples/simple_frames`, itemize any remaining
+  historical behavior gaps in `11-example-parity-audit.md`, then repair or name
+  public `dart::gui` API gaps before coding.
+- Simple Frames strict re-open finding before code changes: the current source
+  restores transforms, 640x480 defaults, and the historical camera home, but it
+  uses `box_frame_*` and `marker_*` names instead of historical `F1`/`F2`/`F3`
+  and `A`/`A1`/`A2`/`A3`, approximates the historical DART `ArrowShape` with
+  `LineSegmentShape`, and omits README build/execute sections and the
+  historical feature list. Repair those now through public `dart::gui`.
+- Simple Frames implementation state: source now restores historical frame and
+  marker names, uses DART `ArrowShape`, restores README build/execute sections
+  and feature list, and extends marker coverage. The renderer/dynamics mesh
+  path now skips material loading for generated in-memory mesh shapes with
+  empty URIs, so `ArrowShape` renders without empty `file://` startup warnings.
+- Simple Frames pre-lint validation: focused build for `simple_frames` and
+  `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed, direct
+  llvmpipe screenshot passed analyzer coverage
+  (`/tmp/dart_simple_frames_strict_direct.ppm`, 307200/307200 nonzero pixels),
+  pixi `simple_frames` screenshot passed analyzer coverage
+  (`/tmp/dart_simple_frames_strict_pixi.ppm`, 307200/307200 nonzero pixels),
+  Python C++ example-runner tests passed (67/67), aggregate `examples` build
+  passed, and `git diff --check` passed.
+- Simple Frames post-lint validation: `pixi run lint` passed, focused rebuild
+  for `simple_frames` and `UNIT_gui_FilamentSceneExtraction` passed, focused
+  CTest passed, direct llvmpipe screenshot passed analyzer coverage
+  (`/tmp/dart_simple_frames_strict_direct_postlint.ppm`, 307200/307200
+  nonzero pixels), pixi `simple_frames` screenshot passed analyzer coverage
+  (`/tmp/dart_simple_frames_strict_pixi_postlint.ppm`, 307200/307200 nonzero
+  pixels), and `git diff --check` passed.
+- Maintainer correction during the Simple Frames checkpoint: there are still
+  many incompletely restored examples, with `examples/fetch/` named again as a
+  representative case. Do not treat Fetch as closed because previous
+  checkpoints restored target manipulation and panel help. After the in-flight
+  Simple Frames checkpoint is committed and pushed, re-open Fetch with a fresh
+  historical-source comparison before selecting another linear cursor.
 
 ## Current Code Shape
 

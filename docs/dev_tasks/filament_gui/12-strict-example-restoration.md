@@ -77,6 +77,15 @@ pushed, perform a fresh Fetch historical-source comparison and keep Fetch open
 until every remaining user-visible behavior is restored or named as a public
 `dart::gui` API gap.
 
+2026-05-16 follow-up during the Simple Frames checkpoint: maintainer steering
+again called out that there are many more incompletely restored examples, such
+as `examples/fetch/`. This overrides any temptation to treat the remaining work
+as only the current linear cursor. Finish the in-flight Simple Frames
+checkpoint, push it for CI, then re-open Fetch as the next active example while
+continuing to drive every table row with a recent checkpoint, partial
+restoration, or named public API gap through this strict historical-source
+standard.
+
 ## Active Queue
 
 Use `11-example-parity-audit.md` as the live per-example table. The queue is
@@ -256,6 +265,16 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `7af2ad1228d Restore box stacking scene parity`. The active cursor is now
     `examples/boxes/`; compare it against `520993d7301^:examples/boxes`
     before coding.
+24. The Boxes instruction checkpoint was pushed as
+    `68e31a339e4 Restore boxes example instructions`. The active cursor is now
+    `examples/simple_frames/`; compare it against
+    `520993d7301^:examples/simple_frames` before coding.
+25. Maintainer steering during the Simple Frames checkpoint explicitly
+    re-emphasized that many examples remain incomplete, with
+    `examples/fetch/` named as the representative case. Complete and push the
+    in-flight Simple Frames checkpoint, then re-open `examples/fetch/` with a
+    fresh comparison against `520993d7301^:examples/fetch/main.cpp` before
+    selecting another linear cursor.
 
 ## Checkpoint Rule
 

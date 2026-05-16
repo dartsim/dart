@@ -819,37 +819,48 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`7af2ad1228d Restore box stacking scene parity`. No rows remain with the exact
+`68e31a339e4 Restore boxes example instructions`. No rows remain with the exact
 `Needs strict audit` state. The current pending checkpoint is
-`examples/boxes/` strict re-open. Compare the current source and README against
-`520993d7301^:examples/boxes`, write any updated inventory findings in
-`11-example-parity-audit.md`, then preserve, restore, or explicitly name any
-public API gaps before coding past this slice.
+`examples/simple_frames/` strict re-open. Compare the current source and README
+against `520993d7301^:examples/simple_frames`, write any updated inventory
+findings in `11-example-parity-audit.md`, then preserve, restore, or explicitly
+name any public API gaps before coding past this slice.
 
 ## Current Immediate Next Step
 
-Audit `examples/boxes/` before coding: compare the current source and README to
-the historical OSG/ImGui source, verify Bullet preference, box-grid/floor
-geometry, camera/run defaults, README, and marker guards, then repair the
+Audit `examples/simple_frames/` before coding: compare the current source and
+README to the historical OSG/ImGui source, verify frame geometry, view/frame
+controls, camera/run defaults, README, and marker guards, then repair the
 source or name missing renderer-neutral public API explicitly. Keep
 `--screenshot <path>` and `--out <dir>` working for the existing CTest, GitHub
 Actions smoke path, and historical image-sequence workflows. A later broader
 smoke sweep can still use:
 
-Current Boxes audit finding: repair `box0`-style historical names, restore
-`dart::Color::LightGray()` for the ground, restore the historical experimental
-warning and "Press space to start free falling the box." instruction text,
-restore standalone README build/execute sections, and extend marker guards.
-Keep OSG shadow-map setup superseded by Filament rather than reintroducing OSG.
+Current Simple Frames audit finding: repair historical frame names `F1`, `F2`,
+`F3`, marker names `A`, `A1`, `A2`, `A3`, restore the DART `ArrowShape` instead
+of the line-segment approximation, restore standalone README build/execute
+sections and feature list, and extend marker guards.
 
-Implementation state: Boxes now restores the historical names, light-gray
-ground, instruction text, README build/execute sections, and marker guards.
-Pre-lint validation passed: focused build/CTest, direct and pixi headless
+Implementation state: Simple Frames now restores the historical frame and
+marker names, uses DART `ArrowShape`, restores README build/execute sections
+and feature list, and extends marker coverage. The renderer/dynamics mesh path
+also skips empty material source URIs for generated in-memory mesh shapes so
+`ArrowShape` does not emit empty `file://` startup warnings.
+
+Pre-lint validation passed: focused build for `simple_frames` and
+`UNIT_gui_FilamentSceneExtraction`, focused CTest, direct and pixi headless
 screenshot analyzer checks, Python C++ example-runner tests, aggregate
-`examples` build, and `git diff --check`. Mandatory lint and post-lint focused
-checks also passed: `pixi run lint`, focused build/CTest, direct and pixi
-headless screenshot analyzer checks, and `git diff --check`. Commit and push
-this checkpoint next.
+`examples` build, and `git diff --check`.
+
+Post-lint validation passed: `pixi run lint`, focused rebuild for
+`simple_frames` and `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct
+and pixi headless screenshot analyzer checks, and `git diff --check`.
+
+Latest maintainer correction during this checkpoint: many more examples remain
+incompletely restored, and `examples/fetch/` was named again as the concrete
+case. Finish, lint, commit, and push the in-flight Simple Frames checkpoint,
+then re-open Fetch with a fresh comparison against
+`520993d7301^:examples/fetch/main.cpp` before taking another linear cursor.
 
 ```bash
 pixi run test-dart-gui-smoke

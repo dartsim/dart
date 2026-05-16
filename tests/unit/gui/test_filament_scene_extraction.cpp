@@ -1328,9 +1328,16 @@ TEST(FilamentSceneExtraction, SimpleFramesExamplePreservesParityMarkers)
   const auto readmeSource = readSourceFile(
       std::filesystem::path("examples") / "simple_frames" / "README.md");
 
-  EXPECT_NE(mainSource.find("box_frame_1"), std::string::npos);
-  EXPECT_NE(mainSource.find("marker_root"), std::string::npos);
-  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("\"F1\""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"F2\""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"F3\""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"A\""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"A1\""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"A2\""), std::string::npos);
+  EXPECT_NE(mainSource.find("\"A3\""), std::string::npos);
+  EXPECT_NE(mainSource.find("ArrowShape"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("ArrowShape::Properties(0.002, 1.8)"), std::string::npos);
   EXPECT_NE(mainSource.find("makeSimpleFramesRunDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
   EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
@@ -1341,7 +1348,12 @@ TEST(FilamentSceneExtraction, SimpleFramesExamplePreservesParityMarkers)
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
   EXPECT_NE(readmeSource.find("Simple Frames Example"), std::string::npos);
   EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(readmeSource.find("ArrowShape"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_EQ(mainSource.find("::osg"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, DragAndDropExamplePreservesLegacyParityMarkers)

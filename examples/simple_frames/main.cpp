@@ -35,10 +35,10 @@
 
 #include <dart/simulation/world.hpp>
 
+#include <dart/dynamics/arrow_shape.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/frame.hpp>
-#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
 #include <Eigen/Geometry>
@@ -80,21 +80,21 @@ dart::simulation::WorldPtr createSimpleFramesWorld()
   tf3.rotate(Eigen::AngleAxisd(1.0471975511965976, Eigen::Vector3d::UnitY()));
 
   auto f1 = dart::dynamics::SimpleFrame::createShared(
-      dart::dynamics::Frame::World(), "box_frame_1", tf1);
+      dart::dynamics::Frame::World(), "F1", tf1);
   f1->setShape(
       std::make_shared<dart::dynamics::BoxShape>(
           Eigen::Vector3d(0.05, 0.05, 0.02)));
   setColor(f1, Eigen::Vector4d(0.92, 0.32, 0.24, 1.0));
   addFrame(*world, f1);
 
-  auto f2 = f1->spawnChildSimpleFrame("box_frame_2", tf2);
+  auto f2 = f1->spawnChildSimpleFrame("F2", tf2);
   f2->setShape(
       std::make_shared<dart::dynamics::BoxShape>(
           Eigen::Vector3d(0.05, 0.05, 0.02)));
   setColor(f2, Eigen::Vector4d(0.24, 0.58, 0.92, 1.0));
   addFrame(*world, f2);
 
-  auto f3 = f2->spawnChildSimpleFrame("box_frame_3", tf3);
+  auto f3 = f2->spawnChildSimpleFrame("F3", tf3);
   f3->setShape(
       std::make_shared<dart::dynamics::BoxShape>(
           Eigen::Vector3d(0.05, 0.05, 0.02)));
@@ -102,7 +102,7 @@ dart::simulation::WorldPtr createSimpleFramesWorld()
   addFrame(*world, f3);
 
   auto markerRoot = dart::dynamics::SimpleFrame::createShared(
-      dart::dynamics::Frame::World(), "marker_root");
+      dart::dynamics::Frame::World(), "A");
   markerRoot->setShape(
       std::make_shared<dart::dynamics::EllipsoidShape>(
           Eigen::Vector3d(0.02, 0.02, 0.02)));
@@ -118,16 +118,17 @@ dart::simulation::WorldPtr createSimpleFramesWorld()
           setColor(marker, Eigen::Vector4d(0.95, 0.75, 0.20, 1.0));
           addFrame(*world, marker);
         };
-  addMarker("marker_1", f1->getTransform(markerRoot.get()));
-  addMarker("marker_2", f2->getTransform(markerRoot.get()));
-  addMarker("marker_3", f3->getTransform(markerRoot.get()));
+  addMarker("A1", f1->getTransform(markerRoot.get()));
+  addMarker("A2", f2->getTransform(markerRoot.get()));
+  addMarker("A3", f3->getTransform(markerRoot.get()));
 
   auto arrow = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), "arrow");
-  auto arrowShape = std::make_shared<dart::dynamics::LineSegmentShape>(
-      Eigen::Vector3d(0.1, -0.1, 0.0), Eigen::Vector3d(0.1, 0.0, 0.0), 2.0f);
-  arrowShape->addVertex(Eigen::Vector3d(0.075, -0.025, 0.0), 1);
-  arrowShape->addVertex(Eigen::Vector3d(0.125, -0.025, 0.0), 1);
+  auto arrowShape = std::make_shared<dart::dynamics::ArrowShape>(
+      Eigen::Vector3d(0.1, -0.1, 0.0),
+      Eigen::Vector3d(0.1, 0.0, 0.0),
+      dart::dynamics::ArrowShape::Properties(0.002, 1.8),
+      Eigen::Vector4d(1.0, 0.5, 0.5, 1.0));
   arrow->setShape(arrowShape);
   setColor(arrow, Eigen::Vector4d(1.0, 0.5, 0.5, 1.0));
   addFrame(*world, arrow);

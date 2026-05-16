@@ -1134,6 +1134,9 @@ std::optional<Renderable> createMeshRenderable(
         const auto loadBinding
             = [&](const std::string& source,
                   TextureColorSpace colorSpace) -> const TextureBinding* {
+          if (source.empty()) {
+            return nullptr;
+          }
           return getOrLoadTextureBinding(
               engine, textureCache, source, colorSpace);
         };
