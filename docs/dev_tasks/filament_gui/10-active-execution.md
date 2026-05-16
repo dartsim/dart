@@ -1719,6 +1719,54 @@ mimic_pendulums UNIT_gui_FilamentSceneExtraction --parallel 5`
     `analyze_headless_smoke.py` (921600/921600 nonzero pixels)
 - Remaining before checkpoint handoff: commit and push without opening a PR.
 
+Forty-third box-stacking parity checkpoint:
+
+- Historical `examples/box_stacking` built a five-box stack on a floor, exposed
+  Play/Pause, gravity, split-impulse, and LCP solver controls in its ImGui
+  panel, printed viewer help/instructions, used an 800x640 launch size, set
+  camera home from eye `(12, 12, 9)` to target `(0, 0, 2)`, and had an example
+  README. It also carried sample custom world-node and OSG event-handler
+  scaffolding that is not a DART-owned user-facing feature to preserve.
+- Current promoted source owns the world, gravity control, split-impulse
+  control, and pause/step panel through public `dart::gui`, but it lacks the
+  README, solver selection, camera/run defaults, and viewer-help/about text.
+- Scope before code changes: restore solver selection through renderer-neutral
+  panel buttons plus launch-time `--solver`, keep split-impulse state when the
+  solver changes, restore camera/run defaults through public
+  `ApplicationOptions`, restore the README with promoted `dart::gui` wording,
+  and update tests/changelog. Keep headlights, raw camera matrices, and the
+  old OSG custom event-handler sample out of scope unless future public
+  DART-owned concepts need them.
+- Implementation status: box-stacking now restores launch-time `--solver`,
+  renderer-neutral Dantzig/PGS panel buttons, split-impulse preservation across
+  solver changes, 800x640 run defaults, historical camera home, and the example
+  README through promoted `dart::gui`.
+- Local validation completed so far:
+  - `cmake --build build/default/cpp/Release --target box_stacking
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe `box_stacking --solver pgs --headless --frames 2
+--screenshot /tmp/dart_box_stacking_direct.ppm` plus
+    `analyze_headless_smoke.py` (512000/512000 nonzero pixels at the restored
+    800x640 default)
+  - `pixi run ex box_stacking --headless --frames 2 --screenshot
+/tmp/dart_box_stacking_pixi.ppm` plus `analyze_headless_smoke.py`
+    (307200/307200 nonzero pixels at the pixi wrapper's 640x480 size)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target box_stacking
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe `box_stacking --solver pgs --headless --frames 2
+--screenshot /tmp/dart_box_stacking_direct_postlint.ppm` plus
+    `analyze_headless_smoke.py` (512000/512000 nonzero pixels)
+- Remaining before checkpoint handoff: commit and push without opening a PR.
+
 Forty-first LCP physics parity checkpoint:
 
 - Historical `examples/lcp_physics` exposed separate LCP benchmark scenarios
@@ -2341,8 +2389,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push the validated mimic-pendulums checkpoint to the tracked
-   remote branch without opening a PR.
+1. Restore box-stacking solver selection, camera/run defaults, README, and
+   parity tests through public `dart::gui`.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

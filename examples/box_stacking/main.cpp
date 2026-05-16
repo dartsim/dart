@@ -45,14 +45,137 @@
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
+#include <dart/math/lcp/pivoting/dantzig_solver.hpp>
+#include <dart/math/lcp/projection/pgs_solver.hpp>
+
 #include <Eigen/Geometry>
 
+#include <algorithm>
+#include <iostream>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 
+#include <cctype>
 #include <cstddef>
 
 namespace {
+
+enum class SolverType
+{
+  Dantzig,
+  Pgs,
+};
+
+struct BoxStackingConfig
+{
+  SolverType solver = SolverType::Dantzig;
+};
+
+std::string toLowerAscii(std::string_view value)
+{
+  std::string lowered(value);
+  std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](char c) {
+    return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  });
+  return lowered;
+}
+
+std::optional<std::string_view> getOptionValue(
+    std::string_view argument,
+    std::string_view option,
+    int& index,
+    int argc,
+    char* argv[])
+{
+  if (argument == option) {
+    if (index + 1 >= argc) {
+      throw std::runtime_error("Missing value for " + std::string(option));
+    }
+    return std::string_view(argv[++index]);
+  }
+
+  const std::string prefix = std::string(option) + "=";
+  if (argument.starts_with(prefix)) {
+    return argument.substr(prefix.size());
+  }
+
+  return std::nullopt;
+}
+
+std::optional<SolverType> parseSolver(std::string_view value)
+{
+  const std::string lowered = toLowerAscii(value);
+  if (lowered == "dantzig") {
+    return SolverType::Dantzig;
+  }
+  if (lowered == "pgs" || lowered == "projected-gauss-seidel") {
+    return SolverType::Pgs;
+  }
+  return std::nullopt;
+}
+
+std::string solverName(SolverType solver)
+{
+  return solver == SolverType::Pgs ? "pgs" : "dantzig";
+}
+
+void printBoxStackingUsage(const char* executable)
+{
+  std::cout << "Usage: " << executable << " [--solver dantzig|pgs]\n"
+            << "       [common dart::gui flags such as --headless, --frames,\n"
+            << "        --screenshot, --out, --width, --height, --gui-scale]\n";
+}
+
+enum class ParseResult
+{
+  Ok,
+  Help,
+};
+
+ParseResult parseBoxStackingConfig(
+    int argc, char* argv[], BoxStackingConfig& config)
+{
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view argument(argv[i] == nullptr ? "" : argv[i]);
+    if (argument == "--help" || argument == "-h") {
+      printBoxStackingUsage(argv[0]);
+      return ParseResult::Help;
+    }
+    if (auto value = getOptionValue(argument, "--solver", i, argc, argv)) {
+      if (auto solver = parseSolver(*value)) {
+        config.solver = *solver;
+      } else {
+        throw std::runtime_error(
+            "Unknown --solver value: " + std::string(*value));
+      }
+    }
+  }
+
+  return ParseResult::Ok;
+}
+
+void applyLcpSolver(
+    dart::simulation::World* world,
+    SolverType solverType,
+    bool splitImpulseEnabled)
+{
+  auto* solver = world == nullptr ? nullptr : world->getConstraintSolver();
+  if (solver == nullptr) {
+    return;
+  }
+
+  if (solverType == SolverType::Pgs) {
+    solver->setLcpSolver(std::make_shared<dart::math::PgsSolver>());
+    solver->setSecondaryLcpSolver(nullptr);
+  } else {
+    solver->setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
+    solver->setSecondaryLcpSolver(std::make_shared<dart::math::PgsSolver>());
+  }
+  solver->setSplitImpulseEnabled(splitImpulseEnabled);
+}
 
 dart::dynamics::SkeletonPtr createBox(
     std::size_t index,
@@ -109,7 +232,8 @@ dart::dynamics::SkeletonPtr createFloor()
   return floor;
 }
 
-dart::simulation::WorldPtr createBoxStackingWorld()
+dart::simulation::WorldPtr createBoxStackingWorld(
+    const BoxStackingConfig& config)
 {
   auto world = dart::simulation::World::create("box_stacking");
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
@@ -124,17 +248,37 @@ dart::simulation::WorldPtr createBoxStackingWorld()
         Eigen::Vector3d(0.2 + 0.5 * t, 0.35, 0.85 - 0.5 * t)));
   }
 
+  applyLcpSolver(world.get(), config.solver, false);
   return world;
 }
 
-dart::gui::Panel createControlsPanel()
+dart::gui::RunOptions makeBoxStackingRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 800;
+  options.height = 640;
+  return options;
+}
+
+dart::gui::OrbitCamera makeBoxStackingCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 2.0);
+  camera.yaw = 0.7853981633974483;
+  camera.pitch = 0.39121759480759044;
+  camera.distance = 18.35755975068582;
+  return camera;
+}
+
+dart::gui::Panel createControlsPanel(const BoxStackingConfig& config)
 {
   bool gravityEnabled = true;
   bool splitImpulseEnabled = false;
+  SolverType solverType = config.solver;
 
   dart::gui::Panel controls;
   controls.title = "Box Stacking";
-  controls.buildWithContext = [gravityEnabled, splitImpulseEnabled](
+  controls.buildWithContext = [gravityEnabled, splitImpulseEnabled, solverType](
                                   dart::gui::PanelBuilder& panel,
                                   dart::gui::PanelContext& context) mutable {
     panel.text("Stacked rigid-body contact demo");
@@ -155,6 +299,19 @@ dart::gui::Panel createControlsPanel()
             gravityEnabled ? Eigen::Vector3d(0.0, 0.0, -9.81)
                            : Eigen::Vector3d::Zero());
       }
+      panel.text("LCP solver: " + solverName(solverType));
+      if (panel.button(
+              solverType == SolverType::Dantzig ? "Dantzig (selected)"
+                                                : "Dantzig")) {
+        solverType = SolverType::Dantzig;
+        applyLcpSolver(context.world, solverType, splitImpulseEnabled);
+      }
+      panel.sameLine();
+      if (panel.button(
+              solverType == SolverType::Pgs ? "PGS (selected)" : "PGS")) {
+        solverType = SolverType::Pgs;
+        applyLcpSolver(context.world, solverType, splitImpulseEnabled);
+      }
       if (auto* solver = context.world->getConstraintSolver()) {
         if (panel.checkbox("Split impulse", splitImpulseEnabled)) {
           solver->setSplitImpulseEnabled(splitImpulseEnabled);
@@ -172,8 +329,20 @@ dart::gui::Panel createControlsPanel()
 
 int main(int argc, char* argv[])
 {
-  dart::gui::ApplicationOptions options;
-  options.world = createBoxStackingWorld();
-  options.panels.push_back(createControlsPanel());
-  return dart::gui::runApplication(argc, argv, options);
+  try {
+    BoxStackingConfig config;
+    if (parseBoxStackingConfig(argc, argv, config) == ParseResult::Help) {
+      return 0;
+    }
+
+    dart::gui::ApplicationOptions options;
+    options.world = createBoxStackingWorld(config);
+    options.runDefaults = makeBoxStackingRunDefaults();
+    options.camera = makeBoxStackingCamera();
+    options.panels.push_back(createControlsPanel(config));
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "box_stacking: " << e.what() << "\n";
+    return 1;
+  }
 }

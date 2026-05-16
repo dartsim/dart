@@ -123,7 +123,15 @@ through promoted `dart::gui`. That checkpoint is implemented and locally
 validated through the pre-lint focused build, CTest, direct/pixi screenshot
 smokes, Python example-runner tests, the aggregate `examples` build,
 `git diff --check`, `pixi run lint`, and post-lint focused
-build/CTest/direct screenshot smoke. The remaining work is commit and push.
+build/CTest/direct screenshot smoke. The checkpoint was committed and pushed
+as `2bc6a0e168d Restore mimic pendulums diagnostics`. The next active parity
+slice is `examples/box_stacking`: restore solver selection, camera/run
+defaults, README, and parity tests through promoted `dart::gui`. That
+checkpoint is implemented and locally validated through the pre-lint focused
+build, CTest, direct/pixi screenshot smokes, Python example-runner tests, the
+aggregate `examples` build, `git diff --check`, `pixi run lint`, and
+post-lint focused build/CTest/direct screenshot smoke. The remaining work is
+commit and push.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

@@ -807,6 +807,30 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
   }
 }
 
+TEST(FilamentSceneExtraction, BoxStackingExamplePreservesParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "box_stacking" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "box_stacking" / "README.md");
+
+  EXPECT_NE(mainSource.find("DantzigSolver"), std::string::npos);
+  EXPECT_NE(mainSource.find("PgsSolver"), std::string::npos);
+  EXPECT_NE(mainSource.find("--solver"), std::string::npos);
+  EXPECT_NE(mainSource.find("setSplitImpulseEnabled"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeBoxStackingRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 800"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeBoxStackingCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 2.0)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Box Stacking Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(

@@ -141,6 +141,8 @@
   - Restored mimic-pendulums example baseline retargeting, mimic diagnostics,
     solver/collision launch flags, camera/run defaults, and example README
     through public `dart::gui`.
+  - Restored box-stacking example solver selection, split-impulse controls,
+    camera/run defaults, and example README through public `dart::gui`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+
