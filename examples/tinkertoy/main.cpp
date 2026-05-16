@@ -690,6 +690,14 @@ std::vector<dart::gui::KeyboardAction> createTinkertoyKeyboardActions(
       dart::gui::KeyboardShortcut::namedKey(
           dart::gui::KeyboardKey::GraveAccent),
       [state](dart::gui::KeyboardActionContext&) { state->reorientTarget(); });
+  addAction(
+      "Reset Tinkertoy camera",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Tab),
+      [](dart::gui::KeyboardActionContext& context) {
+        if (context.resetCamera) {
+          context.resetCamera();
+        }
+      });
 
   return actions;
 }
@@ -765,6 +773,7 @@ int main(int argc, char* argv[])
       panel.text("Hotkeys: 1/2/3 add blocks; Backspace clears pick.");
       panel.text("Delete removes a picked subtree; ` resets target.");
       panel.text("Up/Down adjusts the force coefficient.");
+      panel.text("Tab restores the camera home view.");
       panel.text("Ctrl-left drag moves the selected handle.");
       panel.text("Arrow keys and PageUp/PageDown nudge it.");
       panel.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");

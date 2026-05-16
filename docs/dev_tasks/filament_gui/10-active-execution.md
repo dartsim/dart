@@ -92,6 +92,11 @@ context survives across sessions.
   branch without opening a PR. It restores the Tinkertoy hotkeys that can be
   expressed without new camera-reset or recording APIs and provides the public
   input surface needed for robot/IK parity work.
+- The robot/IK behavior checkpoint
+  (`39d1c51de47 Restore puppet teleoperation actions`) was pushed to the
+  tracked remote branch without opening a PR. It restores Atlas/Hubo continuous
+  IK solving and WASD/QE/FZ root teleoperation through promoted `dart::gui`
+  concepts. Do not wait for CI before continuing independent parity work.
 
 ## Current Code Shape
 
@@ -1522,6 +1527,50 @@ Twenty-seventh robot/IK behavior parity checkpoint:
   - `pixi run lint`
   - `git diff --check`
 
+Twenty-eighth camera-home keyboard-action checkpoint:
+
+- Tinkertoy still has an explicit keyboard parity gap from the historical OSG
+  example: Tab should return the camera to the example's home framing. The
+  existing `ApplicationOptions::camera` hook sets the initial camera, but
+  keyboard actions currently cannot request a runtime camera reset.
+- Add the smallest renderer-neutral public handoff needed by examples:
+  `KeyboardActionContext` should expose a camera-home/reset callback supplied
+  by the backend. The callback resets the public `OrbitCameraController` to the
+  application home camera; it must not expose GLFW, Filament, ImGui, native
+  window handles, or backend camera objects through public headers.
+- Use that callback in `examples/tinkertoy` to restore the Tab camera-home
+  hotkey through `ApplicationOptions::keyboardActions`.
+- Keep Enter recording as a separate explicit gap. Runtime recording needs a
+  public capture/session API, not only a camera reset callback.
+- Implementation state for this slice: `KeyboardActionContext` now carries an
+  optional `resetCamera` callback. The private Filament input bridge binds it
+  to the application home `OrbitCamera` and resets orbit tracking internally,
+  so public examples can request camera home without seeing backend camera or
+  window objects. `examples/tinkertoy` registers Tab as a keyboard action and
+  documents the restored hotkey in its builder panel.
+- Guard state: unit/source markers cover the public `resetCamera` context
+  callback and Tinkertoy's `KeyboardKey::Tab` binding.
+- Local evidence so far:
+  - Focused C++ target build for `dart-gui`, `tinkertoy`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct llvmpipe Tinkertoy headless capture with basic analyzer coverage at
+    640x480
+  - `pixi run ex tinkertoy --headless --frames 2 --width 640 --height 480 --screenshot ...`
+    with basic analyzer coverage
+  - Python runner tests (`67 passed`)
+  - `git diff --check`
+  - Full `examples` aggregate target build
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `dart-gui`, `tinkertoy`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct and/or pixi Tinkertoy headless screenshot with analyzer coverage
+  - Python runner tests
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -1552,8 +1601,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore the Atlas/Hubo robot teleoperation and continuous solve behavior
-   through promoted `dart::gui` keyboard actions.
+1. Restore Tinkertoy Tab camera-home through a renderer-neutral
+   `KeyboardActionContext` camera reset callback.
 2. Keep `examples/fetch/` in the completed-evidence set for camera,
    target-cross, and work-area-grid parity, but do not generalize that result
    to other examples.

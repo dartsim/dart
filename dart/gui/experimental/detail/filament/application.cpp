@@ -168,6 +168,7 @@ int runFilamentGuiApplicationImpl(
   OrbitCameraController cameraController;
   cameraController.camera
       = appOptions.camera.value_or(initialCameraForScene(appOptions.scene));
+  const auto homeCamera = cameraController.camera;
   attachOrbitCameraController(window, cameraController);
 
   FilamentRenderContext renderContext = createFilamentRenderContext(
@@ -247,7 +248,13 @@ int runFilamentGuiApplicationImpl(
     const auto frameStart = ProfileAccumulator::Clock::now();
     auto phaseStart = ProfileAccumulator::Clock::now();
     pollApplicationInput(
-        window, dartScene, selectionController, lifecycle, inputState);
+        window,
+        dartScene,
+        selectionController,
+        lifecycle,
+        cameraController,
+        homeCamera,
+        inputState);
     profile.inputMs += elapsedMs(phaseStart);
 
     phaseStart = ProfileAccumulator::Clock::now();

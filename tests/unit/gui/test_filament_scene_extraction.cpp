@@ -670,10 +670,16 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresKeyboardActions)
       options.keyboardActions.front().shortcut.key,
       dart::gui::KeyboardKey::Delete);
   dart::gui::ViewerLifecycleState lifecycle;
+  bool cameraReset = false;
   dart::gui::KeyboardActionContext context;
   context.lifecycle = &lifecycle;
+  context.resetCamera = [&cameraReset]() {
+    cameraReset = true;
+  };
   options.keyboardActions.front().callback(context);
   EXPECT_TRUE(lifecycle.paused);
+  context.resetCamera();
+  EXPECT_TRUE(cameraReset);
 }
 
 TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
@@ -920,6 +926,8 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(tinkertoySource.find("KeyboardShortcut"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("KeyboardAction"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("KeyboardKey::Tab"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("context.resetCamera"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("CollisionAspect"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("DynamicsAspect"), std::string::npos);
   EXPECT_EQ(tinkertoySource.find("options.defaultScene"), std::string::npos);

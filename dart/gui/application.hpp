@@ -97,6 +97,7 @@ struct KeyboardShortcut
 struct KeyboardActionContext
 {
   ViewerLifecycleState* lifecycle = nullptr;
+  std::function<void()> resetCamera;
 };
 
 struct KeyboardAction

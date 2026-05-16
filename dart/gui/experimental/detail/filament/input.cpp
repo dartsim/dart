@@ -50,8 +50,11 @@ using dart::gui::DirectionalNudgeInput;
 using dart::gui::KeyboardActionContext;
 using dart::gui::KeyboardKey;
 using dart::gui::KeyboardShortcut;
+using dart::gui::OrbitCamera;
+using dart::gui::OrbitCameraController;
 using dart::gui::OrbitCameraControllerInput;
 using dart::gui::requestSingleStep;
+using dart::gui::resetOrbitCameraTracking;
 using dart::gui::togglePaused;
 using dart::gui::updateOrbitCameraController;
 
@@ -117,6 +120,8 @@ void dispatchKeyboardActions(
     GLFWwindow* window,
     DartScene& scene,
     dart::gui::ViewerLifecycleState& lifecycle,
+    OrbitCameraController& cameraController,
+    const OrbitCamera& homeCamera,
     ApplicationInputState& state)
 {
   if (state.customActionWasPressed.size() != scene.keyboardActions.size()) {
@@ -125,6 +130,10 @@ void dispatchKeyboardActions(
 
   KeyboardActionContext context;
   context.lifecycle = &lifecycle;
+  context.resetCamera = [&cameraController, homeCamera]() {
+    cameraController.camera = homeCamera;
+    resetOrbitCameraTracking(cameraController);
+  };
 
   for (std::size_t i = 0; i < scene.keyboardActions.size(); ++i) {
     const auto& action = scene.keyboardActions[i];
@@ -160,6 +169,8 @@ void pollApplicationInput(
     DartScene& scene,
     SelectionController& selectionController,
     dart::gui::ViewerLifecycleState& lifecycle,
+    OrbitCameraController& cameraController,
+    const OrbitCamera& homeCamera,
     ApplicationInputState& state)
 {
   if (window == nullptr) {
@@ -191,7 +202,8 @@ void pollApplicationInput(
     }
   }
 
-  dispatchKeyboardActions(window, scene, lifecycle, state);
+  dispatchKeyboardActions(
+      window, scene, lifecycle, cameraController, homeCamera, state);
 }
 
 void updateImGuiMouseInput(

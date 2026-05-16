@@ -106,6 +106,8 @@
     reorientation hotkeys without exposing backend input headers.
   - Restored Atlas and Hubo puppet continuous IK solving and WASD/QE/FZ root
     teleoperation through renderer-neutral `dart::gui` keyboard actions.
+  - Added a renderer-neutral keyboard action camera reset callback and used it
+    to restore Tinkertoy's Tab camera-home hotkey.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

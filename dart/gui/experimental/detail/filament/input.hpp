@@ -65,6 +65,8 @@ void pollApplicationInput(
     DartScene& scene,
     SelectionController& selectionController,
     dart::gui::ViewerLifecycleState& lifecycle,
+    dart::gui::OrbitCameraController& cameraController,
+    const dart::gui::OrbitCamera& homeCamera,
     ApplicationInputState& state);
 
 void updateImGuiMouseInput(

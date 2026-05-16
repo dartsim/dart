@@ -48,11 +48,15 @@ The next active slice uses the renderer-neutral keyboard action surface for
 robot/IK behavior parity. The first target is Atlas/Hubo whole-body puppet
 behavior that can be restored through promoted `dart::gui`: continuous IK
 solving plus WASD/QE/FZ root teleoperation. That slice is implemented locally
-for `atlas_puppet` and `hubo_puppet` and is in validation/commit state. Atlas
+for `atlas_puppet` and `hubo_puppet` and has been pushed. Atlas
 relaxed-posture/balance optimization, Hubo analytical IK, target
 activation/deactivation semantics, and G1 target toggle semantics remain
 tracked parity gaps unless a later slice adds the narrow public API needed to
-implement them cleanly.
+implement them cleanly. The next active slice closes Tinkertoy's Tab
+camera-home gap by adding a renderer-neutral camera reset callback to
+`KeyboardActionContext`; that callback and Tinkertoy Tab binding are
+implemented locally and in validation/commit state. Enter recording remains a
+separate capture/session API gap.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

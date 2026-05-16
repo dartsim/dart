@@ -86,12 +86,14 @@ Tab camera-home, or the legacy Enter recording toggle.
 
 Restore Atlas/Hubo robot puppet behavior through the promoted keyboard action
 API: continuous IK solving plus WASD/QE/FZ root teleoperation. This is
-implemented locally for `atlas_puppet` and `hubo_puppet`; finish lint/commit
-handoff if it has not been pushed yet. Keep Atlas relaxed-posture/balance
-optimization, Hubo analytical IK, target activation/deactivation semantics, G1
-target toggles, Tab camera-home, and Enter recording as explicit parity gaps
-unless the next slice adds the narrow renderer-neutral public API needed for
-them.
+implemented and pushed for `atlas_puppet` and `hubo_puppet`. The next slice is
+Tinkertoy Tab camera-home: add a renderer-neutral camera reset callback to
+`KeyboardActionContext` and register Tab from the Tinkertoy example without
+exposing backend camera/window types. This is implemented locally and is in
+validation/commit state. Keep Atlas relaxed-posture/balance optimization, Hubo
+analytical IK, target activation/deactivation semantics, G1 target toggles,
+and Enter recording as explicit parity gaps unless a later slice adds the
+narrow renderer-neutral public API needed for them.
 
 ## Context That Would Be Lost
 
