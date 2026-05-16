@@ -57,6 +57,7 @@ jobs:
              || "$GITHUB_EVENT_NAME" == "schedule" \
              || "$GITHUB_EVENT_NAME" == "workflow_dispatch" \
              || "$GITHUB_REF" == "refs/heads/main" \
+             || "$GITHUB_REF" == refs/heads/release-* \
              || "$GITHUB_REF" == refs/tags/v* ]]; then
             cat >> "$GITHUB_OUTPUT" <<'EOF'
           matrix<<JSON
