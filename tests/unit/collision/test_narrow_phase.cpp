@@ -41,6 +41,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include <cmath>
+
 using namespace dart::collision::native;
 
 namespace {
@@ -131,6 +133,16 @@ void expectCollisionResultExactlyEqual(
       expectContactExactlyEqual(
           expectedManifold.getContact(j), actualManifold.getContact(j));
     }
+  }
+}
+
+void expectFiniteCollisionResult(const CollisionResult& result)
+{
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    const ContactPoint& contact = result.getContact(i);
+    EXPECT_TRUE(contact.position.allFinite());
+    EXPECT_TRUE(contact.normal.allFinite());
+    EXPECT_TRUE(std::isfinite(contact.depth));
   }
 }
 
@@ -240,6 +252,83 @@ TEST(NarrowPhase, collide_batch_dispatcher_reports_hit_flags)
   EXPECT_GE(results[0].numContacts(), 1u);
   EXPECT_EQ(results[1].numContacts(), 0u);
   EXPECT_GE(results[2].numContacts(), 1u);
+}
+
+TEST(NarrowPhase, ZeroExtentShapesNoCrashAcrossBatch)
+{
+  SphereShape zeroSphere(0.0);
+  SphereShape unitSphere(1.0);
+  BoxShape zeroBox(Eigen::Vector3d::Zero());
+  BoxShape unitBox(Eigen::Vector3d::Ones());
+  CapsuleShape zeroCapsule(0.0, 0.0);
+  CylinderShape zeroCylinder(0.0, 0.0);
+  ConvexShape pointConvex({Eigen::Vector3d::Zero()});
+  ConvexShape unitConvex(makeOctahedronVertices(1.0));
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const std::array<NarrowPhasePair, 10> cases{{
+      {&zeroSphere, &unitSphere, identity, identity},
+      {&zeroSphere, &unitBox, identity, identity},
+      {&zeroBox, &unitSphere, identity, identity},
+      {&zeroBox, &unitBox, identity, identity},
+      {&zeroCapsule, &unitSphere, identity, identity},
+      {&zeroCapsule, &unitBox, identity, identity},
+      {&zeroCylinder, &unitSphere, identity, identity},
+      {&zeroCylinder, &unitBox, identity, identity},
+      {&pointConvex, &unitSphere, identity, identity},
+      {&pointConvex, &unitConvex, identity, identity},
+  }};
+
+  std::vector<NarrowPhasePair> pairs;
+  pairs.reserve(120);
+  for (int i = 0; i < 120; ++i) {
+    pairs.push_back(cases[static_cast<std::size_t>(i) % cases.size()]);
+    pairs.back().tfB = translated(0.01 * (i % 3));
+  }
+
+  CollisionOption option;
+  option.maxNumContacts = 8;
+  std::vector<CollisionResult> results(pairs.size());
+
+  EXPECT_NO_THROW(NarrowPhase::collideBatch(pairs, results, option));
+  for (const CollisionResult& result : results) {
+    expectFiniteCollisionResult(result);
+  }
+}
+
+TEST(NarrowPhase, CoincidentVertexMeshNoCrashAcrossBatch)
+{
+  std::vector<Eigen::Vector3d> vertices(5, Eigen::Vector3d::Zero());
+  std::vector<MeshShape::Triangle> triangles
+      = {{0, 0, 0}, {0, 1, 2}, {2, 3, 4}, {4, 4, 4}};
+  MeshShape coincidentMesh(vertices, triangles);
+  MeshShape cubeMesh(makeCubeMeshVertices(1.0), makeCubeMeshTriangles());
+  SphereShape unitSphere(1.0);
+  BoxShape unitBox(Eigen::Vector3d::Ones());
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const std::array<NarrowPhasePair, 4> cases{{
+      {&coincidentMesh, &unitSphere, identity, identity},
+      {&unitBox, &coincidentMesh, identity, identity},
+      {&coincidentMesh, &cubeMesh, identity, identity},
+      {&coincidentMesh, &coincidentMesh, identity, identity},
+  }};
+
+  std::vector<NarrowPhasePair> pairs;
+  pairs.reserve(120);
+  for (int i = 0; i < 120; ++i) {
+    pairs.push_back(cases[static_cast<std::size_t>(i) % cases.size()]);
+    pairs.back().tfB = translated(0.001 * (i % 5));
+  }
+
+  CollisionOption option;
+  option.maxNumContacts = 8;
+  std::vector<CollisionResult> results(pairs.size());
+
+  EXPECT_NO_THROW(NarrowPhase::collideBatch(pairs, results, option));
+  for (const CollisionResult& result : results) {
+    expectFiniteCollisionResult(result);
+  }
 }
 
 TEST(NarrowPhase, collide_batch_dispatcher_rejects_malformed_inputs)
