@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `933ae7e0404 Update Filament GUI parity task state`.
+  `456fdc6fe07 Restore hardcoded design controls`.
 - Latest pushed code checkpoint:
-  `95a6ad0a737 Restore simple frames run defaults`.
+  `456fdc6fe07 Restore hardcoded design controls`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -132,19 +132,48 @@ history but are not guaranteed to be in chronological order.
   selection/drag/nudge instructions, Play/Pause/Step/Exit panel controls,
   README, and source-marker tests. If any further Fetch-specific historical
   behavior is identified, repair it through promoted `dart::gui` APIs.
-- Current implementation checkpoint: `examples/hardcoded_design`. The
-  worktree restores number-key joint increments for DOFs 0-2, `-` direction
-  toggling, camera home from eye `(2, 2, 2)` to target `(0, 0, 0)`,
-  README/help text, changelog coverage, and source-marker tests through public
-  `dart::gui`. The old OSG wireframe mode remains a documented follow-up
-  requiring a DART-owned render-style/debug concept rather than OSG or private
-  Filament hooks.
-- Hardcoded-design validation completed in this worktree: focused C++ target
-  build, focused `UNIT_gui_FilamentSceneExtraction` CTest, direct and pixi
+- Completed implementation checkpoint: `examples/hardcoded_design` now
+  restores number-key joint increments for DOFs 0-2, `-` direction toggling,
+  camera home from eye `(2, 2, 2)` to target `(0, 0, 0)`, README/help text,
+  changelog coverage, and source-marker tests through public `dart::gui`. The
+  old OSG wireframe mode remains a documented follow-up requiring a DART-owned
+  render-style/debug concept rather than OSG or private Filament hooks.
+- Hardcoded-design validation completed before push: focused C++ target build,
+  focused `UNIT_gui_FilamentSceneExtraction` CTest, direct and pixi
   hardcoded-design screenshots with analyzer coverage, Python C++ example
   runner tests, full `examples` target build, `git diff --check`,
   `pixi run lint`, and post-lint focused rebuild/CTest/direct screenshot
   checks.
+- Maintainer correction after the hardcoded-design checkpoint: there are many
+  more examples that are not fully restored, and `examples/fetch/` is still the
+  concrete reminder. The next work must use an explicit historical-source
+  inventory for every pre-existing example before calling it restored.
+  `docs/dev_tasks/filament_gui/11-example-parity-audit.md` is now the live
+  checklist for that stricter audit.
+- Immediate audit priority: re-open `examples/fetch/` as an itemized
+  historical-source comparison, even though previous checkpoints restored many
+  Fetch behaviors. Any remaining Fetch-specific behavior gap must either be
+  repaired through promoted `dart::gui` APIs or recorded as a named public API
+  follow-up.
+- Next implementation candidate after the Fetch re-audit remains
+  `examples/heightmap`. Historical behavior included an interactive heightmap
+  `SimpleFrame`, panel controls for terrain visibility, regeneration,
+  resolution, XY size, Z range, and grid display parameters, `--gui-scale`,
+  `--demo interactive|alignment`, an ODE-backed alignment demo with a
+  heightmap, reference box, and ball grids, 1280x720 launch defaults, camera
+  homes for both demos, and an example README.
+- Current promoted heightmap source owns only a static visual heightmap,
+  reference box, and sample marker balls; it lacks the README, local demo CLI,
+  interactive regeneration controls, alignment mode, camera/run defaults, and
+  panel/help text.
+- Scope before heightmap code changes: keep the example source-owned and
+  backend-hidden; restore `--demo` launch selection, an interactive
+  source-owned `HeightmapShaped` frame with renderer-neutral panel sliders and
+  checkboxes for the public controls that `PanelBuilder` can express, a
+  source-owned alignment world, camera/run defaults, README, changelog, and
+  source-marker tests. Treat old OSG `GridVisual` fine-grained line-color/line-
+  width controls as a public debug-grid API follow-up unless a DART-owned
+  public replacement already exists.
 
 ## Current Code Shape
 
@@ -2515,15 +2544,19 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push the hardcoded-design checkpoint without opening a PR.
-2. Continue the historical-source parity audit across the remaining
-   pre-existing examples, including re-opening examples such as `fetch` if a
-   missing user-visible behavior is found; do not treat build or screenshot
-   smoke coverage as full restoration evidence by itself.
-3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+1. Fill the strict audit inventory for `examples/fetch/` in
+   `11-example-parity-audit.md` and repair any remaining user-visible gaps
+   through public `dart::gui`.
+2. Continue the same historical-source parity audit across every remaining
+   pre-existing example; do not treat source ownership, build success, runner
+   coverage, or screenshots as sufficient restoration evidence.
+3. Restore heightmap `--demo` selection, interactive controls, alignment mode,
+   camera/run defaults, README, and parity tests through public `dart::gui`
+   after the Fetch re-audit has a documented itemized result.
+4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-4. Do not start the physical `experimental/` directory move until the
+5. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-5. Run `pixi run lint` before every checkpoint commit, then push the commit to
+6. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

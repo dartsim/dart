@@ -119,14 +119,13 @@ keys, `h` harness toggle, and camera default through public `dart::gui`; that
 checkpoint is implemented and pushed. The active slice is now to re-open
 `examples/fetch/` as a full historical-source parity audit. Earlier Fetch
 checkpoints restored the promoted source file, camera, target cross,
-work-area grid, and panel controls, but maintainer feedback says examples such
-as Fetch still cannot be considered fully restored until their historical
-source is inventoried again and each user-visible behavior is either restored
-through promoted `dart::gui` APIs or recorded as a deliberate public-API gap.
-This Fetch re-audit checkpoint restores the missing example README and adds
-renderer-neutral `ApplicationOptions::runDefaults` so Fetch can recover its
-historical 1280x960 default launch size while preserving command-line
-overrides. The active slice is now `examples/rigid_shapes`: restore the
+work-area grid, panel controls, README, and run defaults, but maintainer
+feedback says there are many more examples that are not fully restored and
+Fetch remains the concrete reminder. Do not declare Fetch, or any other
+source-owned example, complete until `11-example-parity-audit.md` has an
+itemized historical-source inventory and every user-visible item is restored
+through promoted `dart::gui`, explicitly superseded, or recorded as a public
+API gap. A later slice restored `examples/rigid_shapes`: restore the
 historical `q`/`w`/`e`/`r` shape-spawn controls, `a` delete-last control, `c`
 contact-point toggle, convex mesh spawn path, camera home, and 640x480 default
 launch size through public `dart::gui`, plus the rigid-shapes-specific

@@ -723,20 +723,25 @@ longer express stable DART concepts.
 - Completion audit: `docs/dev_tasks/filament_gui/07-completion-audit.md`
 - North-star migration plan: `docs/dev_tasks/filament_gui/08-north-star-migration.md`
 - Legacy surface audit: `docs/dev_tasks/filament_gui/09-legacy-surface-audit.md`
+- Example parity audit:
+  `docs/dev_tasks/filament_gui/11-example-parity-audit.md`
 - Resume prompt: `docs/dev_tasks/filament_gui/RESUME.md`
 - Live supervisor steering: `docs/dev_tasks/filament_gui/STEERING.md`
 
 ## Immediate next steps
 
-1. Continue the legacy-source parity audit for migrated examples instead of
-   treating source ownership, buildability, or headless screenshots as full
-   restoration. `examples/fetch/` is explicitly still part of that audit
-   standard if any missing Fetch-specific behavior is identified.
-2. The current implementation slice is `examples/hardcoded_design`: commit the
-   restored number-key joint controls, `-` direction toggle, camera home,
-   README, and parity tests through public `dart::gui`. Track the old OSG
-   wireframe mode as a future DART-owned render-style/debug API requirement.
-3. Add only DART-owned public GUI concepts needed for those examples: no public
+1. Fill the strict historical-source inventory in
+   `11-example-parity-audit.md`, starting by re-opening `examples/fetch/` as
+   the concrete reminder that source ownership and screenshots are not full
+   restoration.
+2. Repair any remaining Fetch-specific user-visible gaps through promoted
+   `dart::gui` APIs, or record the exact public API gap if a behavior cannot
+   be restored yet.
+3. Continue the same audit pattern across every pre-existing example before
+   declaring it restored. `examples/heightmap` is already known incomplete and
+   should regain `--demo`, interactive controls, alignment mode, camera/run
+   defaults, README, and parity tests.
+4. Add only DART-owned public GUI concepts needed for those examples: no public
    Filament, GLFW, Dear ImGui, OSG, Raylib, OpenGL, Vulkan, or Metal types.
-4. Keep checkpoint commits small, run `pixi run lint` before every commit, and
+5. Keep checkpoint commits small, run `pixi run lint` before every commit, and
    push the tracked branch without opening a PR so GitHub CI can run.
