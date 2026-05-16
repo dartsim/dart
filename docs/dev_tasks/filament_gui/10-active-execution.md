@@ -1878,6 +1878,56 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
     `analyze_headless_smoke.py`
     (`/tmp/dart_soft_bodies_direct_postlint.ppm`, 307200/307200 nonzero
     pixels)
+- Implementation status: pushed as
+  `5a00359a1f4 Restore soft bodies playback controls`.
+
+Thirty-fifth hybrid-dynamics parity checkpoint:
+
+- Historical `examples/hybrid_dynamics` exposed `h` as the harness toggle,
+  printed the harness and simulation instructions, and set an example-specific
+  camera home view. The current promoted source owns the world, scripted
+  controller, and equivalent panel button, but it does not wire the legacy
+  keyboard action or camera default through public `dart::gui`.
+- Implementation scope: restore `h` as a renderer-neutral
+  `dart::gui::KeyboardAction`, add a promoted `ApplicationOptions::camera`
+  default matching the historical home-position intent, and update the panel
+  text so the example itself documents the keyboard control.
+- Keep this checkpoint focused on hybrid-dynamics parity. The existing harness
+  panel button is kept as an additive promoted-GUI affordance.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `hybrid_dynamics` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct and/or pixi hybrid-dynamics headless screenshot with analyzer
+    coverage
+  - Python runner tests
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+- Local validation completed:
+  - `cmake --build build/default/cpp/Release --target hybrid_dynamics
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe hybrid-dynamics screenshot plus
+    `analyze_headless_smoke.py` (`/tmp/dart_hybrid_dynamics_direct.ppm`,
+    307200/307200 nonzero pixels)
+  - `pixi run ex hybrid_dynamics --headless --frames 2 --width 640 --height
+480 --screenshot /tmp/dart_hybrid_dynamics_pixi.ppm` plus analyzer
+    (307200/307200 nonzero pixels)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
+  - `git diff --check`
+  - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target
+hybrid_dynamics UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe hybrid-dynamics screenshot plus
+    `analyze_headless_smoke.py`
+    (`/tmp/dart_hybrid_dynamics_direct_postlint.ppm`, 307200/307200 nonzero
+    pixels)
 - Implementation status: ready for checkpoint commit and push.
 
 ## Stretch Direction
@@ -1910,8 +1960,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore soft-bodies `[`, `]`, `{`, `}`, `r`, and `\` playback controls
-   through public `dart::gui`.
+1. Restore hybrid-dynamics `h` harness toggle and camera default through public
+   `dart::gui`.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

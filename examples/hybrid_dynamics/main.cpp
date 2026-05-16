@@ -43,6 +43,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -210,6 +211,28 @@ private:
   bool mHarnessOn = false;
 };
 
+dart::gui::OrbitCamera makeHybridDynamicsCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.5404195002705842;
+  camera.pitch = 0.4758822496604165;
+  camera.distance = 6.557438524302;
+  return camera;
+}
+
+std::vector<dart::gui::KeyboardAction> createHybridDynamicsKeyboardActions(
+    const std::shared_ptr<HybridDynamicsController>& controller)
+{
+  dart::gui::KeyboardAction toggleHarness;
+  toggleHarness.label = "Toggle hybrid-dynamics harness";
+  toggleHarness.shortcut = dart::gui::KeyboardShortcut::characterKey('h');
+  toggleHarness.callback = [controller](dart::gui::KeyboardActionContext&) {
+    controller->toggleHarness();
+  };
+  return {std::move(toggleHarness)};
+}
+
 dart::gui::Panel createHybridDynamicsPanel(
     const std::shared_ptr<HybridDynamicsController>& controller)
 {
@@ -219,6 +242,8 @@ dart::gui::Panel createHybridDynamicsPanel(
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     builder.text("Scripted velocity commands on the fullbody biped");
+    builder.text("'h': toggle harness on/off");
+    builder.text("space bar: simulation on/off");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -251,9 +276,11 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = world;
+    options.camera = makeHybridDynamicsCamera();
     options.preStep = [controller]() {
       controller->preStep();
     };
+    options.keyboardActions = createHybridDynamicsKeyboardActions(controller);
     options.panels.push_back(createHybridDynamicsPanel(controller));
 
     return dart::gui::runApplication(argc, argv, options);
