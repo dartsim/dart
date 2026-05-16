@@ -91,7 +91,7 @@ GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
     "human_joint_limits": (),
     "lcp_physics": ("--scene", "lcp-physics"),
     "mimic_pendulums": ("--scene", "mimic-pendulums"),
-    "atlas_puppet": ("--scene", "atlas-puppet"),
+    "atlas_puppet": (),
     "hubo_puppet": ("--scene", "hubo-puppet"),
     "atlas_simbicon": (),
     "operational_space_control": (),

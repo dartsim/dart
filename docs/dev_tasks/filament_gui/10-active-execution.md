@@ -31,7 +31,7 @@ context survives across sessions.
 - Branch: `feature/filament-gui-full-execution`
 - Upstream: `origin/feature/filament-gui-full-execution`
 - Latest pushed checkpoint before this in-progress slice:
-  `45e44a0318a Restore frame and capsule GUI examples`
+  `9f195a0738c Expose GUI IK handles for examples`
 - GitHub Actions were manually dispatched for the pushed checkpoint without
   opening a PR:
   - CI Lint: https://github.com/dartsim/dart/actions/runs/25945043484
@@ -78,6 +78,11 @@ context survives across sessions.
     `python/tests/unit/test_run_cpp_example.py`, direct `rigid_cubes`
     headless PPM capture, and `pixi run test-dart-gui-smoke` all passed
     before or during the checkpoint.
+- Recent manual `gh workflow run ... --ref feature/filament-gui-full-execution`
+  attempts after the WAM/Atlas checkpoints failed with HTTP 403 because the
+  token lacks workflow-dispatch permission on this repository. Continue
+  pushing checkpoints so push-triggered CI can run; do not block local
+  progress on manual dispatch.
 
 ## Current Code Shape
 
@@ -749,35 +754,56 @@ Twelfth promoted-API checkpoint:
   - C++ GUI target build for `dart-gui` and
     `UNIT_gui_FilamentSceneExtraction`
   - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
-  - `pixi run lint`
-- Implementation state for this slice: `dart::gui::InverseKinematicsHandle`
-  now exists on promoted `dart/gui/application.hpp` and
-  `ApplicationOptions::ikHandles` carries public DART target frames and IK
-  objects. The Filament runtime copies those handles into its private
-  `DartScene` only for source-owned application worlds and computes renderable
-  IDs internally.
-- Local evidence so far:
-  - C++ GUI target build for `dart-gui` and
-    `UNIT_gui_FilamentSceneExtraction`
-  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
-  - `pixi run lint`
-- Implementation state for this slice: `examples/operational_space_control`
-  now owns its WAM URDF load, ground, target frame, operational-space
-  controller, pre-step callback, and status panel; `examples/wam_ikfast` now
-  owns its WAM URDF load, visual-only setup, ground, target frame, and status
-  panel. Both examples now call promoted `dart::gui::runApplication(argc, argv,
-options)` with `options.world`, and the runner no longer injects `--scene`
-  for either executable.
-- Local evidence so far:
-  - C++ GUI target build for `operational_space_control`, `wam_ikfast`, and
+
+Thirteenth source-ownership checkpoint:
+
+- Restore `examples/atlas_puppet` now that promoted `ApplicationOptions`
+  carries IK handles.
+- Move the Atlas URDF load, start pose, ground, visible root handle, four IK
+  targets, support-foot geometry, hotkey labels, and solver configuration into
+  `examples/atlas_puppet/main.cpp`.
+- The example should pass `options.world` and `options.ikHandles` through
+  promoted `dart::gui`, with no private `DartScene`, no scene-string launcher,
+  and no backend headers.
+- Switch CMake to `dart_build_gui_example(...)` linked with `dart-io`, and
+  remove the Python runner's injected `--scene atlas-puppet` default.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `atlas_puppet` and
     `UNIT_gui_FilamentSceneExtraction`
   - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
   - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
-  - Direct headless screenshot capture for both examples
-  - `pixi run ex operational_space_control --headless --frames 1
---screenshot ...`
-  - `pixi run ex wam_ikfast --headless --frames 1 --screenshot ...`
+  - Direct headless screenshot capture for `atlas_puppet`
+  - `pixi run ex atlas_puppet --headless --frames 1 --screenshot ...`
   - Full `examples` aggregate target build
+  - `pixi run lint`
+- Implementation state for this slice: `examples/atlas_puppet` now owns the
+  Atlas URDF load, standing start pose, visual-only robot setup, ground,
+  visible root handle, four selectable IK target frames, support-foot geometry,
+  target hotkeys, solve-on-drag IK handles, and status panel in its own
+  `main.cpp`. The executable now passes `options.world` and
+  `options.ikHandles` through promoted `dart::gui`, and the Python runner no
+  longer injects `--scene atlas-puppet`.
+- `dart/gui/application.hpp` now includes the full DART dynamics types needed
+  by the public IK-handle vector. The full examples aggregate build caught that
+  this public API cannot rely on forward declarations when examples include
+  only `<dart/gui/application.hpp>`.
+- Local evidence so far:
+  - C++ GUI target build for `atlas_puppet` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for `atlas_puppet`
+    (`/tmp/atlas_puppet_self_owned.ppm`, 2764816 bytes)
+  - Pixi example-runner screenshot capture for
+    `/tmp/atlas_puppet_pixi_self_owned.ppm` (921615 bytes)
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - Post-lint focused build for `atlas_puppet` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint Python runner test:
+    `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - `git diff --check`
 
 ## Stretch Direction
 
@@ -809,20 +835,16 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Finish the WAM robot/IK pair checkpoint with commit, push, and CI dispatch.
-2. Complete the `atlas_simbicon` source-ownership checkpoint with lint,
-   post-lint focused rebuild, commit, push, and CI dispatch if permissions
-   allow it.
+1. Finish the `atlas_puppet` checkpoint with lint, post-lint focused rebuild,
+   commit, push, and CI dispatch if permissions allow it.
+2. Prioritize the remaining robot/IK macro-launcher examples after
+   `atlas_puppet`: `hubo_puppet` and `g1_puppet`.
 3. Continue across the remaining pre-existing examples in small related
    families, documenting each slice here before implementation.
-4. Finish the promoted IK-handle handoff with lint, post-lint focused rebuild,
-   commit, push, and CI dispatch if permissions allow it.
-5. Prioritize the remaining robot/IK macro-launcher examples after the
-   IK-handle handoff: `atlas_puppet`, `hubo_puppet`, and `g1_puppet`.
-6. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-7. Do not start the physical `experimental/` directory move until the
+5. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-8. Run `pixi run lint` before every checkpoint commit, then push the commit to
+6. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

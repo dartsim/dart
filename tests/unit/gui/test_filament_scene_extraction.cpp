@@ -643,7 +643,8 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
       {std::filesystem::path("examples") / "tinkertoy", true},
       {std::filesystem::path("examples") / "operational_space_control", true},
       {std::filesystem::path("examples") / "wam_ikfast", true},
-      {std::filesystem::path("examples") / "atlas_simbicon", true}};
+      {std::filesystem::path("examples") / "atlas_simbicon", true},
+      {std::filesystem::path("examples") / "atlas_puppet", true}};
   std::vector<std::filesystem::path> sources;
   for (const auto& example : examples) {
     sources.push_back(example.directory / "main.cpp");
@@ -704,6 +705,32 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_EQ(
       mainSource.find("setGravity(Eigen::Vector3d::Zero())"),
       std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "atlas_puppet" / "main.cpp");
+
+  EXPECT_NE(
+      mainSource.find("dart://sample/sdf/atlas/atlas_v3_no_head.urdf"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("atlas_puppet_root_handle"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("atlas_puppet_ik_target_left_hand"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("atlas_puppet_ik_target_right_hand"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("atlas_puppet_ik_target_left_foot"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("atlas_puppet_ik_target_right_foot"), std::string::npos);
+  EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
+  EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(mainSource.find("'1'"), std::string::npos);
+  EXPECT_NE(mainSource.find("'4'"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
 }
 
 TEST(

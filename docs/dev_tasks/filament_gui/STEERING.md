@@ -548,14 +548,23 @@ Audit command:
 rg -n "options\\.defaultScene" examples
 ```
 
-Current result after the Atlas Simbicon ownership repair:
+Current result after the Atlas Puppet ownership repair:
 
 - **Still inverse-dependent:** none under `examples/**/*.cpp`.
 - **Current promoted API repair:** `dart::gui::ApplicationOptions::ikHandles`
-  now carries public DART IK target handles so `atlas_puppet`, `hubo_puppet`,
-  and `g1_puppet` can move to `options.world` without losing hotkey selection,
-  selected labels, or solve-on-drag behavior.
-- **Flipped to self-owned in the latest slice:**
+  carries public DART IK target handles so puppet examples can move to
+  `options.world` without losing hotkey selection, selected labels, or
+  solve-on-drag behavior.
+- **Next puppet repairs:** `examples/hubo_puppet` and `examples/g1_puppet`
+  should move from macro launchers to real source-owned `main.cpp` files that
+  load their robots, create visible IK targets, and pass `options.ikHandles`
+  through promoted `dart::gui`.
+- **Flipped to self-owned in the latest slice:** `examples/atlas_puppet` now
+  owns the Atlas URDF load, start pose, visual-only setup, ground, root handle,
+  four IK target frames, support-foot geometry, hotkeys, panel, and
+  `options.ikHandles` handoff in-source. The runner no longer injects
+  `--scene atlas-puppet`.
+- **Recently flipped to self-owned:**
   `examples/atlas_simbicon/main.cpp` now loads the Atlas SDF, owns the
   visual-only setup and ground in-source, and the runner no longer injects
   `--scene atlas-simbicon`.
@@ -752,6 +761,133 @@ and push a checkpoint without opening a PR.
   public `dart::gui` equivalent yet, so Fetch's exact initial view remains
   tracked as a future `ApplicationOptions`/camera-default API question rather
   than hidden in the example.
+
+---
+
+## 2026-05-15 Round 21 — `scene_fixtures.cpp` still carries 4082 LOC of dead-code duplicates
+
+**Trigger:** Supervisor audit of working tree (orthogonal to
+Codex's Round 20 parity audit; addresses a different gap).
+
+```
+$ wc -l dart/gui/experimental/detail/filament/scene_fixtures.cpp
+   4082    ← unchanged since R19 began
+
+$ grep -cE '^DartScene create[A-Z][a-zA-Z]*Scene\(' \
+        dart/gui/experimental/detail/filament/scene_fixtures.cpp
+   31    ← all factories still resident
+```
+
+R19 removed every `options.defaultScene = "<name>"` from the
+example tree (✅ ownership inversion fixed at the example side),
+and Codex's Round 20 documents the remaining parity gaps inside
+self-owned examples. **But the duplicate fixtures still resident
+in the GUI library itself** — the
+`createXxxScene()` factories that the examples used to look up —
+have not been removed.
+
+19 of 30 migrated examples have a duplicate fixture inside
+`scene_fixtures.cpp`, reachable via `scenes.cpp`'s `name → enum →
+factory` dispatch as `dartsim --scene <name>`:
+
+```
+hello_world, boxes, drag_and_drop, simple_frames,
+capsule_ground_contact, rigid_chain, rigid_loop, mixed_chain,
+coupler_constraint, add_delete_skels, hybrid_dynamics,
+joint_constraints, free_joint_cases, human_joint_limits, fetch,
+atlas_simbicon, tinkertoy, wam_ikfast, operational_space_control
+```
+
+These are dead-code duplicates of the per-example sources Codex
+just authored. They inflate `scene_fixtures.cpp` to 4082 LOC, force
+the production `dart-gui` library to carry example fixture code,
+and make every future example edit land in two places.
+
+### How this differs from Codex's Round 20
+
+- **Codex's R20** is about _parity_ — does the self-owned example
+  preserve the original example's behavior (controls, affordances,
+  collision detector, camera home, etc.)? That's a per-example
+  quality bar, addressed inside `examples/<name>/main.cpp`.
+- **This R21** is about _cleanup_ — the library-side factory that
+  the example used to reference is now an unreachable duplicate
+  (or, if `dartsim --scene <name>` still reaches it, a
+  competing-source-of-truth).
+
+Both rounds must land. R20 ensures the example is pedagogically
+real; R21 ensures the library doesn't carry the same content
+twice.
+
+### Two acceptable terminal states (pick one PER FIXTURE)
+
+**Option A — DELETE the duplicate factory + its `enum
+ExampleScene` entry + its `name → factory` dispatch case.**
+`dartsim --scene <name>` then no longer recognizes that name.
+The per-example binary is the only way to run the fixture.
+Headless smoke for the fixture runs `pixi run ex <name>
+--headless --frames 5 --screenshot ...` against the per-example
+binary instead of `dartsim --scene <name>`.
+
+**Option B — MOVE the factory to a test-only target
+(`tests/fixtures/gui_scenes/<name>_scene.cpp`)** and link it into
+the `dartsim` developer menu through that test target. The
+production `dart-gui` library carries zero fixture code.
+Acceptable if the `dartsim --scene <name>` developer menu must
+keep working as the canonical batch-screenshot surface.
+
+**Default to A.** Choose B only when there's a concrete need to
+keep the developer menu name (e.g. existing CI pipeline depends
+on it). Pick consistently per fixture; do not mix within one
+example.
+
+### Acceptance for Round 21
+
+- `wc -l dart/gui/experimental/detail/filament/scene_fixtures.cpp`
+  drops by AT LEAST 2000 LOC.
+- `grep -cE '^DartScene create' scene_fixtures.cpp` returns ≤ 12
+  (only `MvpDartScene` plus the not-yet-migrated examples:
+  `vehicle`, `g1_puppet`, `hubo_puppet`, `lcp_physics`,
+  `mimic_pendulums`, `point_cloud`, `polyhedron_visual`,
+  `simulation_event_handler`, `soft_bodies`, `heightmap`,
+  `hardcoded_design`, `empty`).
+- For each of the 19 names listed above, EITHER (Option A)
+  `grep -nE "name == \"<scene-name>\"" scenes.cpp` returns zero
+  matches AND `dartsim --scene <name>` exits with "unknown scene"
+  AND the smoke pipeline calls the per-example binary;
+  OR (Option B) the dispatch points at a `tests/fixtures/`-backed
+  loader.
+- `MvpDartScene` stays in `scene_fixtures.cpp` — that's the
+  default `dartsim` (no flags) scene, not an example fixture.
+- Standing rule for new R12-5 migrations: **the example's commit
+  also deletes its factory in the same commit** (or moves it to
+  `tests/fixtures/`). This avoids re-accumulating the cleanup
+  debt R21 catches up on.
+
+### Order
+
+R21 is independent of R12-1/R12-2/R12-3/R15. Run it in PARALLEL
+with the next mouse-fix / lighting-fix / app-build-out commits.
+Land as one big cleanup commit (or 4-commit family sequence:
+rigid → joint → robot → geometry) so reviewers see the LOC drop
+in one place.
+
+After R21 lands, R19 may be marked `~~done~~` with evidence:
+"Factories removed in commit XYZ; `scene_fixtures.cpp` dropped
+from 4082 → <new> LOC."
+
+### What Codex should NOT do for Round 21
+
+- Do NOT keep factories "for safety" or "in case the developer
+  menu needs them later". If the menu needs them, Option B
+  (move to `tests/fixtures/`) is the correct response, not
+  "leave them in the library".
+- Do NOT mark R19 as done while the factories still live in the
+  library. Working-tree evidence trumps doc claims.
+- Do NOT bundle this round with R12-5 future migrations. R21 is
+  the catch-up commit for the 19 that already shipped without
+  cleanup; R12-5 going forward bundles cleanup with each new
+  migration.
+- Do NOT delete `MvpDartScene`.
 
 ---
 
@@ -2053,7 +2189,8 @@ Two new threads, **in this order** (capture slice still comes first):
    **Tier-A (need real `main.cpp` migrated to `dart::gui` public API):**
    - [ ] `add_delete_skels` — `createAddDeleteSkelsScene()` (live add/delete
          q/w controls)
-   - [ ] `atlas_puppet` — `createAtlasPuppetScene()` (selectable IK targets)
+   - [~] `atlas_puppet` — `createAtlasPuppetScene()` (own promoted
+     `dart::gui` source exists; private fixture cleanup remains)
    - [ ] `atlas_simbicon` — `createAtlasSimbiconScene()` (gait controller +
          perturbation panel)
    - [ ] `biped_stand` — shares `createHybridDynamicsScene()` (SPD control + perturbation)

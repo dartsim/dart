@@ -69,15 +69,13 @@ the last per-example `options.defaultScene` uses by making `imgui` and
 
 ## Immediate Next Step
 
-After the `imgui`/`tinkertoy` ownership checkpoint is committed and pushed,
-continue the broader example restoration audit. Do not wait for CI before
-making independent progress, but inspect and fix CI failures if they surface.
-The current WAM robot/IK slice moves `operational_space_control` and
-`wam_ikfast` off macro scene launchers. After that checkpoint is committed and
-pushed, `atlas_simbicon` is the next source-owned robot example checkpoint.
-After that checkpoint, the current API checkpoint adds the promoted IK-handle
-handoff required by the remaining IK puppet examples: `atlas_puppet`,
-`hubo_puppet`, and `g1_puppet`.
+The current source-ownership checkpoint is `atlas_puppet` using the promoted
+IK-handle handoff. The example now owns the Atlas URDF load, start pose,
+ground, root-handle visual, four IK target frames, hotkey labels, support-foot
+geometry, solve-on-drag handles, and panel through public `dart::gui`
+`ApplicationOptions`. Finish this checkpoint with lint, a post-lint focused
+rebuild, commit, and push. Remaining puppet examples after that are
+`hubo_puppet` and `g1_puppet`.
 
 ## Context That Would Be Lost
 
@@ -630,16 +628,18 @@ the smoke regex, and CMake scene pairs for drift.
 
 `feature/filament-gui-full-execution`, tracking
 `origin/feature/filament-gui-full-execution`. Verify with
-`git status --short --branch` before editing. The Fetch parity checkpoint is
-`0294ef88c0f3812321c80161dffc857276767fa9`; the current pending checkpoint is
-the `imgui`/`tinkertoy` source-ownership repair.
+`git status --short --branch` before editing. The latest pushed checkpoint
+before the current working tree is
+`9f195a0738c Expose GUI IK handles for examples`; the current pending
+checkpoint is the `atlas_puppet` source-ownership repair.
 
 ## Current Immediate Next Step
 
-Continue by finishing the promoted IK-handle handoff, then take the IK puppet
-examples. Keep `--screenshot <path>` and `--out <dir>` working for the existing
-CTest, GitHub Actions smoke path, and historical image-sequence workflows. A
-later broader smoke sweep can still use:
+Commit and push `atlas_puppet` after `pixi run lint` and the post-lint focused
+validation pass. Then take the remaining IK puppet examples,
+`hubo_puppet` and `g1_puppet`. Keep `--screenshot <path>` and `--out <dir>`
+working for the existing CTest, GitHub Actions smoke path, and historical
+image-sequence workflows. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke

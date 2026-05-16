@@ -38,7 +38,9 @@
 
 #include <dart/simulation/fwd.hpp>
 
-#include <dart/dynamics/fwd.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/inverse_kinematics.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
 #include <functional>
 #include <string>
