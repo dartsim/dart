@@ -32,8 +32,9 @@
 
 #include <dart/config.hpp>
 
-#include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/test/reference_collision/fcl/fcl_collision_detector.hpp>
+
+#include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/native/narrow_phase/box_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_box.hpp>
 #include <dart/collision/native/narrow_phase/capsule_capsule.hpp>
@@ -56,12 +57,13 @@
 #include <dart/dynamics/sphere_shape.hpp>
 
 #if DART_HAVE_BULLET
-  #include <dart/test/reference_collision/bullet/bullet_include.hpp>
   #include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
+  #include <dart/test/reference_collision/bullet/bullet_include.hpp>
 #endif
 
 #if DART_HAVE_ODE
   #include <dart/test/reference_collision/ode/ode_collision_detector.hpp>
+
   #include <ode/ode.h>
 #endif
 
@@ -69,9 +71,8 @@
 #include "tests/benchmark/collision/fixtures/shape_factories.hpp"
 
 #include <benchmark/benchmark.h>
-
-#include <fcl/geometry/shape/capsule.h>
 #include <fcl/geometry/shape/box.h>
+#include <fcl/geometry/shape/capsule.h>
 #include <fcl/geometry/shape/sphere.h>
 #include <fcl/narrowphase/collision.h>
 
@@ -122,16 +123,27 @@ void RunDetectorBenchmark(
     const std::shared_ptr<dart::dynamics::Shape>& shape1,
     const Eigen::Isometry3d& tf1,
     const std::shared_ptr<dart::dynamics::Shape>& shape2,
-    const Eigen::Isometry3d& tf2)
+    const Eigen::Isometry3d& tf2,
+    bool requireCollision = true)
 {
   auto ctx = MakePairContext(detector, shape1, tf1, shape2, tf2);
   auto option = dart::benchmark::collision::MakeCollisionOption();
   dart::collision::CollisionResult result;
 
+  const bool sanityCollision
+      = detector->collide(ctx.group.get(), option, &result);
+  if (requireCollision && (!sanityCollision || result.getNumContacts() == 0u)) {
+    state.SkipWithError("Detector benchmark setup did not produce contacts.");
+    return;
+  }
+
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(
-        detector->collide(ctx.group.get(), option, &result));
+    bool collision = detector->collide(ctx.group.get(), option, &result);
+    auto numContacts = result.getNumContacts();
+    benchmark::DoNotOptimize(collision);
+    benchmark::DoNotOptimize(numContacts);
+    benchmark::ClobberMemory();
   }
 }
 
@@ -188,6 +200,39 @@ enum class RawCollisionSanity
   kAllowNoCollision
 };
 
+void ConsumeNativeCollisionResult(bool collision, const CollisionResult& result)
+{
+  auto numContacts = result.numContacts();
+  benchmark::DoNotOptimize(collision);
+  benchmark::DoNotOptimize(numContacts);
+  benchmark::ClobberMemory();
+}
+
+template <typename Results>
+void ConsumeNativeBatchResults(const Results& results)
+{
+  std::size_t totalContacts = 0u;
+  for (const auto& result : results) {
+    totalContacts += result.numContacts();
+  }
+
+  benchmark::DoNotOptimize(totalContacts);
+  benchmark::ClobberMemory();
+}
+
+#define DART_BENCHMARK_NATIVE_COLLIDE(expr)                                    \
+  ConsumeNativeCollisionResult((expr), result)
+
+#define DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(expr)                  \
+  do {                                                                         \
+    const bool dartNativeBenchmarkCollision = (expr);                          \
+    if (!dartNativeBenchmarkCollision || result.numContacts() == 0u) {         \
+      state.SkipWithError("Native benchmark setup did not produce contacts."); \
+      return;                                                                  \
+    }                                                                          \
+    ConsumeNativeCollisionResult(dartNativeBenchmarkCollision, result);        \
+  } while (false)
+
 fcl::Transform3<double> MakeFclTransform(const Eigen::Isometry3d& tf)
 {
   fcl::Transform3<double> fclTf = fcl::Transform3<double>::Identity();
@@ -216,15 +261,18 @@ void RunFclRawCollisionBenchmark(
 
   benchmark::DoNotOptimize(fcl::collide(&object1, &object2, request, result));
   if (sanity == RawCollisionSanity::kRequireCollision
-      && !result.isCollision()) {
+      && (!result.isCollision() || result.numContacts() == 0u)) {
     state.SkipWithError("FCL raw benchmark setup did not collide.");
     return;
   }
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(
-        fcl::collide(&object1, &object2, request, result));
+    auto numContacts = fcl::collide(&object1, &object2, request, result);
+    auto resultContacts = result.numContacts();
+    benchmark::DoNotOptimize(numContacts);
+    benchmark::DoNotOptimize(resultContacts);
+    benchmark::ClobberMemory();
   }
 }
 
@@ -302,6 +350,7 @@ void RunBulletRawCollisionBenchmark(
     CountingBulletContactCallback callback;
     world.contactPairTest(&object1, &object2, callback);
     benchmark::DoNotOptimize(callback.numContacts);
+    benchmark::ClobberMemory();
   }
 }
 #endif
@@ -362,8 +411,7 @@ void RunOdeRawCollisionBenchmark(
       static_cast<int>(contacts.size()),
       contacts.data(),
       sizeof(dContactGeom));
-  if (sanity == RawCollisionSanity::kRequireCollision
-      && sanityContacts <= 0) {
+  if (sanity == RawCollisionSanity::kRequireCollision && sanityContacts <= 0) {
     state.SkipWithError("ODE raw benchmark setup did not collide.");
     return;
   }
@@ -375,7 +423,10 @@ void RunOdeRawCollisionBenchmark(
         static_cast<int>(contacts.size()),
         contacts.data(),
         sizeof(dContactGeom));
+    auto* contactData = contacts.data();
     benchmark::DoNotOptimize(numContacts);
+    benchmark::DoNotOptimize(contactData);
+    benchmark::ClobberMemory();
   }
 }
 #endif
@@ -395,13 +446,16 @@ static void BM_NarrowPhase_SphereSphere_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(collideSpheres(s1, tf1, s2, tf2, result, option));
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(
+        collideSpheres(s1, tf1, s2, tf2, result, option));
   }
 }
 BENCHMARK(BM_NarrowPhase_SphereSphere_Native);
 
 static std::vector<SpherePair> MakeSphereSphereBatchPairs(
-    std::size_t batchSize, const SphereShape& sphere1, const SphereShape& sphere2)
+    std::size_t batchSize,
+    const SphereShape& sphere1,
+    const SphereShape& sphere2)
 {
   std::mt19937 rng(314159u);
   std::uniform_real_distribution<double> offset(-0.10, 0.10);
@@ -410,8 +464,7 @@ static std::vector<SpherePair> MakeSphereSphereBatchPairs(
   pairs.reserve(batchSize);
   for (std::size_t i = 0; i < batchSize; ++i) {
     Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
-    tf1.translation() = Eigen::Vector3d(
-        offset(rng), offset(rng), offset(rng));
+    tf1.translation() = Eigen::Vector3d(offset(rng), offset(rng), offset(rng));
 
     Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
     tf2.translation()
@@ -433,11 +486,11 @@ static void BM_NarrowPhase_SphereSphere_Native_Batch(
   CollisionOption option;
 
   for (auto _ : state) {
-    for (auto& result : results)
+    for (auto& result : results) {
       result.clear();
+    }
     collideSpheresBatch(pairs, results, option);
-    benchmark::DoNotOptimize(results.data());
-    benchmark::ClobberMemory();
+    ConsumeNativeBatchResults(results);
   }
 
   state.SetItemsProcessed(
@@ -451,9 +504,8 @@ struct SphereSphereBatchBenchmarkRegistrar
   SphereSphereBatchBenchmarkRegistrar()
   {
     for (const std::size_t batchSize : {1u, 10u, 100u, 1000u}) {
-      const std::string name
-          = "BM_NarrowPhase_SphereSphere_Native_Batch_N"
-            + std::to_string(batchSize);
+      const std::string name = "BM_NarrowPhase_SphereSphere_Native_Batch_N"
+                               + std::to_string(batchSize);
       benchmark::RegisterBenchmark(
           name.c_str(), BM_NarrowPhase_SphereSphere_Native_Batch, batchSize);
     }
@@ -523,7 +575,8 @@ static void BM_NarrowPhase_BoxBox_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(collideBoxes(b1, tf1, b2, tf2, result, option));
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(
+        collideBoxes(b1, tf1, b2, tf2, result, option));
   }
 }
 BENCHMARK(BM_NarrowPhase_BoxBox_Native);
@@ -543,16 +596,16 @@ static std::vector<BoxPair> MakeBoxBoxBatchPairs(
         = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
            * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
               .toRotationMatrix();
-    tf1.translation() = Eigen::Vector3d(
-        0.05 * offset(rng), offset(rng), offset(rng));
+    tf1.translation()
+        = Eigen::Vector3d(0.05 * offset(rng), offset(rng), offset(rng));
 
     Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
     tf2.linear()
         = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitY())
            * Eigen::AngleAxisd(-0.25 * angle(rng), Eigen::Vector3d::UnitZ()))
               .toRotationMatrix();
-    tf2.translation() = Eigen::Vector3d(
-        0.9 + offset(rng), offset(rng), offset(rng));
+    tf2.translation()
+        = Eigen::Vector3d(0.9 + offset(rng), offset(rng), offset(rng));
 
     pairs.push_back(BoxPair{&box1, &box2, tf1, tf2});
   }
@@ -571,18 +624,17 @@ static void BM_NarrowPhase_BoxBox_Native_Batch(
   CollisionOption option;
 
   for (auto _ : state) {
-    for (auto& result : results)
+    for (auto& result : results) {
       result.clear();
+    }
     collideBoxesBatch(pairs, results, option);
-    benchmark::DoNotOptimize(results.data());
-    benchmark::ClobberMemory();
+    ConsumeNativeBatchResults(results);
   }
 
   state.SetItemsProcessed(
       static_cast<int64_t>(state.iterations())
       * static_cast<int64_t>(batchSize));
-  state.counters["pairs_per_iteration"]
-      = static_cast<double>(batchSize);
+  state.counters["pairs_per_iteration"] = static_cast<double>(batchSize);
 }
 
 struct BoxBoxBatchBenchmarkRegistrar
@@ -591,8 +643,7 @@ struct BoxBoxBatchBenchmarkRegistrar
   {
     for (const std::size_t batchSize : {1u, 10u, 100u, 1000u}) {
       const std::string name
-          = "BM_NarrowPhase_BoxBox_Native_Batch_N"
-            + std::to_string(batchSize);
+          = "BM_NarrowPhase_BoxBox_Native_Batch_N" + std::to_string(batchSize);
       benchmark::RegisterBenchmark(
           name.c_str(), BM_NarrowPhase_BoxBox_Native_Batch, batchSize);
     }
@@ -663,7 +714,8 @@ static void BM_NarrowPhase_CapsuleCapsule_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(collideCapsules(c1, tf1, c2, tf2, result, option));
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(
+        collideCapsules(c1, tf1, c2, tf2, result, option));
   }
 }
 BENCHMARK(BM_NarrowPhase_CapsuleCapsule_Native);
@@ -685,16 +737,15 @@ static std::vector<CapsulePair> MakeCapsuleCapsuleBatchPairs(
         = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
            * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
               .toRotationMatrix();
-    tf1.translation() = Eigen::Vector3d(
-        offset(rng), offset(rng), offset(rng));
+    tf1.translation() = Eigen::Vector3d(offset(rng), offset(rng), offset(rng));
 
     Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
     tf2.linear()
         = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
            * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
               .toRotationMatrix();
-    tf2.translation() = Eigen::Vector3d(
-        0.45 + offset(rng), offset(rng), offset(rng));
+    tf2.translation()
+        = Eigen::Vector3d(0.45 + offset(rng), offset(rng), offset(rng));
 
     pairs.push_back(CapsulePair{&capsule1, &capsule2, tf1, tf2});
   }
@@ -712,11 +763,11 @@ static void BM_NarrowPhase_CapsuleCapsule_Native_Batch(
   CollisionOption option;
 
   for (auto _ : state) {
-    for (auto& result : results)
+    for (auto& result : results) {
       result.clear();
+    }
     collideCapsulesBatch(pairs, results, option);
-    benchmark::DoNotOptimize(results.data());
-    benchmark::ClobberMemory();
+    ConsumeNativeBatchResults(results);
   }
 
   state.SetItemsProcessed(
@@ -730,9 +781,8 @@ struct CapsuleCapsuleBatchBenchmarkRegistrar
   CapsuleCapsuleBatchBenchmarkRegistrar()
   {
     for (const std::size_t batchSize : {1u, 10u, 100u, 1000u}) {
-      const std::string name
-          = "BM_NarrowPhase_CapsuleCapsule_Native_Batch_N"
-            + std::to_string(batchSize);
+      const std::string name = "BM_NarrowPhase_CapsuleCapsule_Native_Batch_N"
+                               + std::to_string(batchSize);
       benchmark::RegisterBenchmark(
           name.c_str(), BM_NarrowPhase_CapsuleCapsule_Native_Batch, batchSize);
     }
@@ -801,7 +851,7 @@ static void BM_NarrowPhase_SphereBox_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(
         collideSphereBox(sphere, tf_sphere, box, tf_box, result, option));
   }
 }
@@ -947,8 +997,7 @@ static void BM_NarrowPhaseRawReference_BoxBox_Bullet(benchmark::State& state)
 }
 BENCHMARK(BM_NarrowPhaseRawReference_BoxBox_Bullet);
 
-static void BM_NarrowPhaseRawReference_SphereBox_Bullet(
-    benchmark::State& state)
+static void BM_NarrowPhaseRawReference_SphereBox_Bullet(benchmark::State& state)
 {
   btSphereShape sphere(0.5);
   btBoxShape box(btVector3(0.5, 0.5, 0.5));
@@ -1032,7 +1081,7 @@ static void BM_NarrowPhase_CapsuleSphere_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(collideCapsuleSphere(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(collideCapsuleSphere(
         capsule, tf_capsule, sphere, tf_sphere, result, option));
   }
 }
@@ -1097,7 +1146,7 @@ static void BM_NarrowPhase_CapsuleBox_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(
         collideCapsuleBox(capsule, tf_capsule, box, tf_box, result, option));
   }
 }
@@ -1165,7 +1214,7 @@ static void BM_NarrowPhase_CylinderCylinder_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(
         collideCylinders(c1, tf1, c2, tf2, result, option));
   }
 }
@@ -1188,16 +1237,15 @@ static std::vector<CylinderPair> MakeCylinderCylinderBatchPairs(
         = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
            * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
               .toRotationMatrix();
-    tf1.translation() = Eigen::Vector3d(
-        offset(rng), offset(rng), offset(rng));
+    tf1.translation() = Eigen::Vector3d(offset(rng), offset(rng), offset(rng));
 
     Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
     tf2.linear()
         = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
            * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
               .toRotationMatrix();
-    tf2.translation() = Eigen::Vector3d(
-        0.45 + offset(rng), offset(rng), offset(rng));
+    tf2.translation()
+        = Eigen::Vector3d(0.45 + offset(rng), offset(rng), offset(rng));
 
     pairs.push_back(CylinderPair{&cylinder1, &cylinder2, tf1, tf2});
   }
@@ -1215,11 +1263,11 @@ static void BM_NarrowPhase_CylinderCylinder_Native_Batch(
   CollisionOption option;
 
   for (auto _ : state) {
-    for (auto& result : results)
+    for (auto& result : results) {
       result.clear();
+    }
     collideCylindersBatch(pairs, results, option);
-    benchmark::DoNotOptimize(results.data());
-    benchmark::ClobberMemory();
+    ConsumeNativeBatchResults(results);
   }
 
   state.SetItemsProcessed(
@@ -1233,11 +1281,12 @@ struct CylinderCylinderBatchBenchmarkRegistrar
   CylinderCylinderBatchBenchmarkRegistrar()
   {
     for (const std::size_t batchSize : {1u, 10u, 100u, 1000u}) {
-      const std::string name
-          = "BM_NarrowPhase_CylinderCylinder_Native_Batch_N"
-            + std::to_string(batchSize);
+      const std::string name = "BM_NarrowPhase_CylinderCylinder_Native_Batch_N"
+                               + std::to_string(batchSize);
       benchmark::RegisterBenchmark(
-          name.c_str(), BM_NarrowPhase_CylinderCylinder_Native_Batch, batchSize);
+          name.c_str(),
+          BM_NarrowPhase_CylinderCylinder_Native_Batch,
+          batchSize);
     }
   }
 };
@@ -1259,14 +1308,16 @@ static void BM_NarrowPhase_ConvexConvex_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(
         collideConvexConvex(c1, tf1, c2, tf2, result, option));
   }
 }
 BENCHMARK(BM_NarrowPhase_ConvexConvex_Native);
 
 static std::vector<ConvexPair> MakeConvexConvexBatchPairs(
-    std::size_t batchSize, const ConvexShape& convex1, const ConvexShape& convex2)
+    std::size_t batchSize,
+    const ConvexShape& convex1,
+    const ConvexShape& convex2)
 {
   std::mt19937 rng(577215u);
   std::uniform_real_distribution<double> offset(-0.04, 0.04);
@@ -1280,16 +1331,15 @@ static std::vector<ConvexPair> MakeConvexConvexBatchPairs(
         = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
            * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
               .toRotationMatrix();
-    tf1.translation() = Eigen::Vector3d(
-        offset(rng), offset(rng), offset(rng));
+    tf1.translation() = Eigen::Vector3d(offset(rng), offset(rng), offset(rng));
 
     Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
     tf2.linear()
         = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
            * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
               .toRotationMatrix();
-    tf2.translation() = Eigen::Vector3d(
-        0.65 + offset(rng), offset(rng), offset(rng));
+    tf2.translation()
+        = Eigen::Vector3d(0.65 + offset(rng), offset(rng), offset(rng));
 
     pairs.push_back(ConvexPair{&convex1, &convex2, tf1, tf2});
   }
@@ -1308,11 +1358,11 @@ static void BM_NarrowPhase_ConvexConvex_Native_Batch(
   option.maxNumContacts = 1;
 
   for (auto _ : state) {
-    for (auto& result : results)
+    for (auto& result : results) {
       result.clear();
+    }
     collideConvexConvexBatch(pairs, results, option);
-    benchmark::DoNotOptimize(results.data());
-    benchmark::ClobberMemory();
+    ConsumeNativeBatchResults(results);
   }
 
   state.SetItemsProcessed(
@@ -1326,9 +1376,8 @@ struct ConvexConvexBatchBenchmarkRegistrar
   ConvexConvexBatchBenchmarkRegistrar()
   {
     for (const std::size_t batchSize : {1u, 10u, 100u, 1000u}) {
-      const std::string name
-          = "BM_NarrowPhase_ConvexConvex_Native_Batch_N"
-            + std::to_string(batchSize);
+      const std::string name = "BM_NarrowPhase_ConvexConvex_Native_Batch_N"
+                               + std::to_string(batchSize);
       benchmark::RegisterBenchmark(
           name.c_str(), BM_NarrowPhase_ConvexConvex_Native_Batch, batchSize);
     }
@@ -1354,7 +1403,7 @@ static void BM_NarrowPhase_MeshMesh_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(
         collideMeshMesh(m1, tf1, m2, tf2, result, option));
   }
 }
@@ -1375,16 +1424,15 @@ static std::vector<MeshPair> MakeMeshMeshBatchPairs(
         = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
            * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
               .toRotationMatrix();
-    tf1.translation() = Eigen::Vector3d(
-        offset(rng), offset(rng), offset(rng));
+    tf1.translation() = Eigen::Vector3d(offset(rng), offset(rng), offset(rng));
 
     Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
     tf2.linear()
         = (Eigen::AngleAxisd(angle(rng), Eigen::Vector3d::UnitX())
            * Eigen::AngleAxisd(0.5 * angle(rng), Eigen::Vector3d::UnitY()))
               .toRotationMatrix();
-    tf2.translation() = Eigen::Vector3d(
-        1.20 + offset(rng), offset(rng), offset(rng));
+    tf2.translation()
+        = Eigen::Vector3d(1.20 + offset(rng), offset(rng), offset(rng));
 
     pairs.push_back(MeshPair{&mesh1, &mesh2, tf1, tf2});
   }
@@ -1405,11 +1453,11 @@ static void BM_NarrowPhase_MeshMesh_Native_Batch(
   option.maxNumContacts = 8;
 
   for (auto _ : state) {
-    for (auto& result : results)
+    for (auto& result : results) {
       result.clear();
+    }
     collideMeshMeshBatch(pairs, results, option);
-    benchmark::DoNotOptimize(results.data());
-    benchmark::ClobberMemory();
+    ConsumeNativeBatchResults(results);
   }
 
   state.SetItemsProcessed(
@@ -1423,9 +1471,8 @@ struct MeshMeshBatchBenchmarkRegistrar
   MeshMeshBatchBenchmarkRegistrar()
   {
     for (const std::size_t batchSize : {1u, 10u, 100u, 1000u}) {
-      const std::string name
-          = "BM_NarrowPhase_MeshMesh_Native_Batch_N"
-            + std::to_string(batchSize);
+      const std::string name = "BM_NarrowPhase_MeshMesh_Native_Batch_N"
+                               + std::to_string(batchSize);
       benchmark::RegisterBenchmark(
           name.c_str(), BM_NarrowPhase_MeshMesh_Native_Batch, batchSize);
     }
@@ -1439,8 +1486,10 @@ struct NarrowPhaseDispatcherBatchShapes
   NarrowPhaseDispatcherBatchShapes()
     : convex1(MakeBenchmarkOctahedronVertices(0.60)),
       convex2(MakeBenchmarkOctahedronVertices(0.55)),
-      mesh1(MakeBenchmarkCubeMeshVertices(1.0), MakeBenchmarkCubeMeshTriangles()),
-      mesh2(MakeBenchmarkCubeMeshVertices(1.0), MakeBenchmarkCubeMeshTriangles())
+      mesh1(
+          MakeBenchmarkCubeMeshVertices(1.0), MakeBenchmarkCubeMeshTriangles()),
+      mesh2(
+          MakeBenchmarkCubeMeshVertices(1.0), MakeBenchmarkCubeMeshTriangles())
   {
   }
 
@@ -1508,11 +1557,11 @@ static void BM_NarrowPhase_CollideBatchDispatcher_Native_Batch(
   option.maxNumContacts = 8;
 
   for (auto _ : state) {
-    for (auto& result : results)
+    for (auto& result : results) {
       result.clear();
+    }
     NarrowPhase::collideBatch(pairs, results, option);
-    benchmark::DoNotOptimize(results.data());
-    benchmark::ClobberMemory();
+    ConsumeNativeBatchResults(results);
   }
 
   state.SetItemsProcessed(
@@ -1599,7 +1648,7 @@ static void BM_NarrowPhase_CylinderSphere_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(collideCylinderSphere(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(collideCylinderSphere(
         cylinder, tf_cylinder, sphere, tf_sphere, result, option));
   }
 }
@@ -1664,7 +1713,7 @@ static void BM_NarrowPhase_CylinderBox_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(
         collideCylinderBox(cylinder, tf_cylinder, box, tf_box, result, option));
   }
 }
@@ -1732,7 +1781,7 @@ static void BM_NarrowPhase_CylinderCapsule_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(collideCylinderCapsule(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(collideCylinderCapsule(
         cylinder, tf_cylinder, capsule, tf_capsule, result, option));
   }
 }
@@ -1797,7 +1846,7 @@ static void BM_NarrowPhase_CylinderPlane_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(collideCylinderPlane(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(collideCylinderPlane(
         cylinder, tf_cylinder, plane, tf_plane, result, option));
   }
 }
@@ -1865,7 +1914,7 @@ static void BM_NarrowPhase_PlaneSphere_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(
         collidePlaneSphere(plane, tf_plane, sphere, tf_sphere, result, option));
   }
 }
@@ -1933,7 +1982,7 @@ static void BM_NarrowPhase_PlaneBox_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(
         collidePlaneBox(plane, tf_plane, box, tf_box, result, option));
   }
 }
@@ -2004,7 +2053,7 @@ static void BM_NarrowPhase_PlaneCapsule_Native(benchmark::State& state)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(collidePlaneCapsule(
+    DART_BENCHMARK_NATIVE_COLLIDE_EXPECTING_CONTACT(collidePlaneCapsule(
         plane, tf_plane, capsule, tf_capsule, result, option));
   }
 }
@@ -2099,7 +2148,7 @@ void RunNarrowPhaseCaseNative(
 
       for (auto _ : state) {
         result.clear();
-        benchmark::DoNotOptimize(
+        DART_BENCHMARK_NATIVE_COLLIDE(
             collideSpheres(s1, tfs.tf1, s2, tfs.tf2, result, option));
       }
       return;
@@ -2112,7 +2161,7 @@ void RunNarrowPhaseCaseNative(
 
       for (auto _ : state) {
         result.clear();
-        benchmark::DoNotOptimize(
+        DART_BENCHMARK_NATIVE_COLLIDE(
             collideBoxes(b1, tfs.tf1, b2, tfs.tf2, result, option));
       }
       return;
@@ -2125,7 +2174,7 @@ void RunNarrowPhaseCaseNative(
 
       for (auto _ : state) {
         result.clear();
-        benchmark::DoNotOptimize(
+        DART_BENCHMARK_NATIVE_COLLIDE(
             collideCapsules(c1, tfs.tf1, c2, tfs.tf2, result, option));
       }
       return;
@@ -2138,7 +2187,7 @@ void RunNarrowPhaseCaseNative(
 
       for (auto _ : state) {
         result.clear();
-        benchmark::DoNotOptimize(
+        DART_BENCHMARK_NATIVE_COLLIDE(
             collideSphereBox(sphere, tfs.tf1, box, tfs.tf2, result, option));
       }
       return;
@@ -2151,7 +2200,7 @@ void RunNarrowPhaseCaseNative(
 
       for (auto _ : state) {
         result.clear();
-        benchmark::DoNotOptimize(collideCapsuleSphere(
+        DART_BENCHMARK_NATIVE_COLLIDE(collideCapsuleSphere(
             capsule, tfs.tf1, sphere, tfs.tf2, result, option));
       }
       return;
@@ -2164,7 +2213,7 @@ void RunNarrowPhaseCaseNative(
 
       for (auto _ : state) {
         result.clear();
-        benchmark::DoNotOptimize(
+        DART_BENCHMARK_NATIVE_COLLIDE(
             collideCapsuleBox(capsule, tfs.tf1, box, tfs.tf2, result, option));
       }
       return;
@@ -2192,7 +2241,8 @@ void RunNarrowPhaseCaseDetector(
           = std::make_shared<dart::dynamics::SphereShape>(sphereSpec.radius);
       const auto tfs = MakeSphereSphereTransforms(
           sphereSpec.radius, sphereSpec.radius, edge);
-      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      RunDetectorBenchmark(
+          state, detector, shape1, tfs.tf1, shape2, tfs.tf2, false);
       return;
     }
     case PairKind::kBoxBox: {
@@ -2200,7 +2250,8 @@ void RunNarrowPhaseCaseDetector(
       auto shape2 = std::make_shared<dart::dynamics::BoxShape>(boxSpec.size);
       const auto tfs = MakeBoxBoxTransforms(
           boxSpec.halfExtents, boxSpec.halfExtents, edge);
-      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      RunDetectorBenchmark(
+          state, detector, shape1, tfs.tf1, shape2, tfs.tf2, false);
       return;
     }
     case PairKind::kCapsuleCapsule: {
@@ -2210,7 +2261,8 @@ void RunNarrowPhaseCaseDetector(
           capsuleSpec.radius, capsuleSpec.height);
       const auto tfs = MakeCapsuleCapsuleTransforms(
           capsuleSpec.radius, capsuleSpec.radius, edge);
-      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      RunDetectorBenchmark(
+          state, detector, shape1, tfs.tf1, shape2, tfs.tf2, false);
       return;
     }
     case PairKind::kSphereBox: {
@@ -2219,7 +2271,8 @@ void RunNarrowPhaseCaseDetector(
       auto shape2 = std::make_shared<dart::dynamics::BoxShape>(boxSpec.size);
       const auto tfs = MakeSphereBoxTransforms(
           sphereSpec.radius, boxSpec.halfExtents, edge);
-      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      RunDetectorBenchmark(
+          state, detector, shape1, tfs.tf1, shape2, tfs.tf2, false);
       return;
     }
     case PairKind::kCapsuleSphere: {
@@ -2229,7 +2282,8 @@ void RunNarrowPhaseCaseDetector(
           = std::make_shared<dart::dynamics::SphereShape>(sphereSpec.radius);
       const auto tfs = MakeCapsuleSphereTransforms(
           capsuleSpec.radius, sphereSpec.radius, edge);
-      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      RunDetectorBenchmark(
+          state, detector, shape1, tfs.tf1, shape2, tfs.tf2, false);
       return;
     }
     case PairKind::kCapsuleBox: {
@@ -2238,7 +2292,8 @@ void RunNarrowPhaseCaseDetector(
       auto shape2 = std::make_shared<dart::dynamics::BoxShape>(boxSpec.size);
       const auto tfs = MakeCapsuleBoxTransforms(
           capsuleSpec.radius, boxSpec.halfExtents, edge);
-      RunDetectorBenchmark(state, detector, shape1, tfs.tf1, shape2, tfs.tf2);
+      RunDetectorBenchmark(
+          state, detector, shape1, tfs.tf1, shape2, tfs.tf2, false);
       return;
     }
   }
@@ -2308,9 +2363,7 @@ static void BM_NarrowPhaseAdapter_EdgeCases_ODE(
 #endif
 
 void RunNarrowPhaseCaseFclRaw(
-    benchmark::State& state,
-    PairKind pair,
-    EdgeCase edge)
+    benchmark::State& state, PairKind pair, EdgeCase edge)
 {
   const double scale = ScaleFromIndex(static_cast<int>(state.range(0)));
   const auto sphereSpec = MakeSphereSpec(scale);
@@ -2392,13 +2445,12 @@ btScalar ToBtScalar(double value)
 
 btVector3 ToBtVector3(const Eigen::Vector3d& value)
 {
-  return btVector3(ToBtScalar(value.x()), ToBtScalar(value.y()), ToBtScalar(value.z()));
+  return btVector3(
+      ToBtScalar(value.x()), ToBtScalar(value.y()), ToBtScalar(value.z()));
 }
 
 void RunNarrowPhaseCaseBulletRaw(
-    benchmark::State& state,
-    PairKind pair,
-    EdgeCase edge)
+    benchmark::State& state, PairKind pair, EdgeCase edge)
 {
   const double scale = ScaleFromIndex(static_cast<int>(state.range(0)));
   const auto sphereSpec = MakeSphereSpec(scale);
@@ -2471,9 +2523,7 @@ void RunNarrowPhaseCaseBulletRaw(
 
 #if DART_HAVE_ODE
 void RunNarrowPhaseCaseOdeRaw(
-    benchmark::State& state,
-    PairKind pair,
-    EdgeCase edge)
+    benchmark::State& state, PairKind pair, EdgeCase edge)
 {
   const double scale = ScaleFromIndex(static_cast<int>(state.range(0)));
   const auto sphereSpec = MakeSphereSpec(scale);
@@ -2496,10 +2546,10 @@ void RunNarrowPhaseCaseOdeRaw(
       return;
     }
     case PairKind::kBoxBox: {
-      dGeomID shape1 = dCreateBox(
-          0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
-      dGeomID shape2 = dCreateBox(
-          0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      dGeomID shape1
+          = dCreateBox(0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      dGeomID shape2
+          = dCreateBox(0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
       const auto tfs = MakeBoxBoxTransforms(
           boxSpec.halfExtents, boxSpec.halfExtents, edge);
       RunOdeRawCollisionBenchmark(
@@ -2523,8 +2573,8 @@ void RunNarrowPhaseCaseOdeRaw(
     }
     case PairKind::kSphereBox: {
       dGeomID shape1 = dCreateSphere(0, sphereSpec.radius);
-      dGeomID shape2 = dCreateBox(
-          0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      dGeomID shape2
+          = dCreateBox(0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
       const auto tfs = MakeSphereBoxTransforms(
           sphereSpec.radius, boxSpec.halfExtents, edge);
       RunOdeRawCollisionBenchmark(
@@ -2548,8 +2598,8 @@ void RunNarrowPhaseCaseOdeRaw(
     case PairKind::kCapsuleBox: {
       dGeomID shape1
           = dCreateCapsule(0, capsuleSpec.radius, capsuleSpec.height);
-      dGeomID shape2 = dCreateBox(
-          0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
+      dGeomID shape2
+          = dCreateBox(0, boxSpec.size.x(), boxSpec.size.y(), boxSpec.size.z());
       const auto tfs = MakeCapsuleBoxTransforms(
           capsuleSpec.radius, boxSpec.halfExtents, edge);
       RunOdeRawCollisionBenchmark(
@@ -2627,12 +2677,14 @@ static void RegisterEdgeCaseBenchmarkGroup(
     const std::array<EdgeCase, BoxEdgeCount>& box_edges)
 {
   for (EdgeCase edge : base_edges) {
-    for (PairKind pair : base_pairs)
+    for (PairKind pair : base_pairs) {
       RegisterEdgeCaseBenchmark(prefix, fn, pair, edge);
+    }
   }
   for (EdgeCase edge : box_edges) {
-    for (PairKind pair : box_pairs)
+    for (PairKind pair : box_pairs) {
       RegisterEdgeCaseBenchmark(prefix, fn, pair, edge);
+    }
   }
 }
 
@@ -2645,9 +2697,10 @@ static void RegisterNarrowPhaseEdgeCases()
          EdgeCase::kDeepPenetration,
          EdgeCase::kGrazing,
          EdgeCase::kThinFeature};
-  const std::array<PairKind, 3> base_pairs = {PairKind::kSphereSphere,
-                                             PairKind::kCapsuleCapsule,
-                                             PairKind::kCapsuleSphere};
+  const std::array<PairKind, 3> base_pairs
+      = {PairKind::kSphereSphere,
+         PairKind::kCapsuleCapsule,
+         PairKind::kCapsuleSphere};
   const std::array<PairKind, 3> box_pairs
       = {PairKind::kBoxBox, PairKind::kSphereBox, PairKind::kCapsuleBox};
 
