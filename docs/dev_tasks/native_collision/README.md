@@ -201,17 +201,19 @@ the focused native/reference/benchmark validation evidence in
 - [ ] Final validation after the completing code state is still open. At
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
-      latest full local `pixi run test-all` pass was rerun on local head
-      `4db514cfd22` and passed 6/6 top-level gates with Release CTest 264/264
-      and Python tests 147/147. The same head passed the focused
-      reference-backend checks and the final unfiltered `collision-reference`
-      CTest sweep 301/301 after building the dedicated simulation-experimental
-      target. The current clean reference-gate refresh proves normal configure
-      exposes only reference tests/benchmarks, keeps both `OFF` by default,
-      and no longer has per-engine FCL/Bullet/ODE collision build switches.
-      The source-build prerequisite cleanup was linted on pushed docs commit
-      `621fca5a1fb`; final maintainer-selected PR/CI evidence is still
-      pending.
+      latest full current-state `pixi run test-all` pass was rerun on local
+      head `c99b257cf15` and passed 6/6 top-level gates: linting, build, unit
+      tests, simulation-experimental tests, Python tests, and documentation.
+      The latest code-validation head `4db514cfd22` also passed the full local
+      gate with Release CTest 264/264 and Python tests 147/147. The same code
+      head passed the focused reference-backend checks and the final
+      unfiltered `collision-reference` CTest sweep 301/301 after building the
+      dedicated simulation-experimental target. The current clean
+      reference-gate refresh proves normal configure exposes only reference
+      tests/benchmarks, keeps both `OFF` by default, and no longer has
+      per-engine FCL/Bullet/ODE collision build switches. The source-build
+      prerequisite cleanup was linted on pushed docs commit `621fca5a1fb`;
+      final maintainer-selected PR/CI evidence is still pending.
 - [ ] Final evidence transfer and dev-task cleanup are still open.
       `07-pr-evidence-transfer.md` and `PR-DRAFT.md` stage the review packet,
       but this folder must stay until that evidence is moved to the completing
