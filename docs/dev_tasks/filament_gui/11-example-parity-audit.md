@@ -364,6 +364,33 @@ InteractiveFrame-style rotation handles remain a named public API gap.
 | README documents the promoted runner and no longer calls the standalone source legacy OSG.     | Restored.                             | Current README documents `pixi run ex drag_and_drop`, controls, defaults, headless capture, and the API gap.   |
 | Keep the source free of OSG viewer, world-node, InteractiveFrame, and backend-specific tokens. | Restored through guard test.          | Marker coverage prevents reintroducing removed renderer surfaces.                                              |
 
+### Human Joint Limits Itemized Inventory
+
+Historical sources compared:
+`520993d7301^:examples/human_joint_limits/main.cpp`,
+`520993d7301^:examples/human_joint_limits/README.md`,
+`520993d7301^:examples/human_joint_limits/human_arm_joint_limit_constraint.*`,
+and
+`520993d7301^:examples/human_joint_limits/human_leg_joint_limit_constraint.*`.
+
+The strict-audit slice restores the example as a live `dart::gui` world where
+the current public dependency stack allows it. The historical TinyDNN-backed
+custom arm/leg constraints are not silently replaced by a visual-only scene;
+they remain a named dependency/API follow-up until DART has a maintained
+replacement for that neural-network constraint path.
+
+| Historical item                                                                                   | Current outcome                   | Notes                                                                                                             |
+| ------------------------------------------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Load `dart://sample/skel/kima/kima_human_edited.skel`.                                            | Restored.                         | Current source uses `dart::io::readWorld` and passes the world through `ApplicationOptions::world`.               |
+| Preserve the SKEL world timestep and Y-down gravity.                                              | Restored.                         | Current source no longer converts the human into a zero-gravity visual-only fixture.                              |
+| Enable `Joint::setLimitEnforcement(true)` on every human joint.                                   | Restored.                         | Current source keeps the historical DART joint-limit enforcement pass.                                            |
+| Install left/right `HumanArmJointLimitConstraint` and `HumanLegJointLimitConstraint` instances.   | Dependency/API follow-up.         | Requires a maintained TinyDNN dependency or replacement public neural-network constraint implementation.          |
+| Step the world through the viewer and let Space toggle simulation.                                | Restored through promoted runner. | Current source uses the shared runner lifecycle instead of an OSG `WorldNode`; Space remains shared runner input. |
+| Print `space bar: simulation on/off` and show the example purpose.                                | Restored.                         | Current source prints the historical control and mirrors the purpose in the promoted panel.                       |
+| Default launch size 640x480.                                                                      | Restored.                         | Current source uses `ApplicationOptions::runDefaults`.                                                            |
+| README documents the promoted runner and no longer says the source is legacy OSG comparison code. | Restored.                         | Current README documents controls, capture, and the TinyDNN/custom-constraint follow-up.                          |
+| Keep the source free of OSG viewer, world-node, event-handler, and backend-specific tokens.       | Restored through guard test.      | Marker coverage prevents reintroducing removed renderer surfaces.                                                 |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                |
@@ -388,7 +415,7 @@ InteractiveFrame-style rotation handles remain a named public API gap.
 | `heightmap`                 | Restored except public debug-grid/color editor gaps.                               | Keep OSG grid style controls tracked as public API follow-up.                                                       |
 | `hello_world`               | Restored by strict audit.                                                          | Keep marker guards for instructions, camera/defaults, profiling, README, and no backend types.                      |
 | `hubo_puppet`               | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK, teleoperation, target activation semantics, and guards.                                                 |
-| `human_joint_limits`        | Needs strict audit.                                                                | Compare historical controls/defaults and visual diagnostics.                                                        |
+| `human_joint_limits`        | Restored except TinyDNN/custom-constraint dependency follow-up.                    | Keep marker guards for live world, joint-limit enforcement, defaults, README, and no backend types.                 |
 | `hybrid_dynamics`           | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm harness toggle, camera, and guards.                                                                         |
 | `imgui`                     | Needs strict audit.                                                                | Confirm promoted panel behavior preserves the user-facing ImGui example scope.                                      |
 | `joint_constraints`         | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm perturbation controls, harness toggle, camera, and guards.                                                  |

@@ -109,9 +109,9 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `3945c65852c Restore coupler constraint controls`.
+  `1297aca1fe6 Restore drag and drop affordances`.
 - Latest pushed code checkpoint:
-  `3945c65852c Restore coupler constraint controls`.
+  `1297aca1fe6 Restore drag and drop affordances`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -132,6 +132,7 @@ history but are not guaranteed to be in chronological order.
   - `9f4af05ef1c Restore rigid cubes controls`
   - `ce8ba83d2f3 Restore Fetch target affordance`
   - `3945c65852c Restore coupler constraint controls`
+  - `1297aca1fe6 Restore drag and drop affordances`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -184,13 +185,15 @@ history but are not guaranteed to be in chronological order.
   direct llvmpipe Fetch screenshot with analyzer coverage
   (`/tmp/dart_fetch_panel_text_direct_postlint.ppm`, 303694/307200 nonzero
   pixels).
-- Current implementation checkpoint in the worktree: `examples/drag_and_drop/`
-  strict audit. The local implementation restores the historical
-  frame/child/axis-marker layout, visible frame manipulation affordance,
-  console/help text, 640x480 default launch size, camera home, README, and
-  marker guards through public `dart::gui`. True InteractiveFrame-style
-  rotation drag is tracked as a public manipulation API gap instead of reviving
-  OSG or private backend hooks.
+- Current implementation checkpoint in the worktree:
+  `examples/human_joint_limits/` strict audit. The local implementation
+  restores the live SKEL world, preserves the file timestep/Y-down gravity,
+  keeps the ground static, enables joint-limit enforcement on every human
+  joint, restores the 640x480 default launch size, prints Space instructions,
+  adds README coverage, and adds marker guards through public `dart::gui`.
+  The removed TinyDNN dependency/custom neural-network constraint path remains
+  a named follow-up unless a maintained dependency or replacement public
+  constraint implementation is added.
 - Latest Fetch target-bar checkpoint state: committed and pushed as
   `ce8ba83d2f3 Restore Fetch target affordance`. Validation covered focused
   C++ build/CTest, direct and pixi Fetch headless screenshots with analyzer
@@ -212,6 +215,18 @@ history but are not guaranteed to be in chronological order.
   drag-and-drop headless screenshots with basic analyzer coverage, Python C++
   example-runner tests (67 passed), aggregate `examples` build, mandatory
   `pixi run lint`, and post-lint focused build/CTest/direct screenshot smoke.
+- The drag-and-drop checkpoint was pushed as
+  `1297aca1fe6 Restore drag and drop affordances`; do not wait for CI before
+  continuing independent strict-audit work.
+- Human joint-limits validation completed before lint: focused C++ build for
+  `human_joint_limits` and `UNIT_gui_FilamentSceneExtraction`, focused CTest
+  for `UNIT_gui_FilamentSceneExtraction`, direct and pixi human-joint-limits
+  headless screenshots with basic analyzer coverage, Python C++ example-runner
+  tests (67 passed), and aggregate `examples` build.
+- Human joint-limits post-lint validation completed: mandatory
+  `pixi run lint`, focused rebuild and CTest for `human_joint_limits` plus
+  `UNIT_gui_FilamentSceneExtraction`, and direct llvmpipe headless screenshot
+  with basic analyzer coverage.
 
 ## Current Code Shape
 

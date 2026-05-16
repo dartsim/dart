@@ -803,20 +803,22 @@ the smoke regex, and CMake scene pairs for drift.
 `origin/feature/filament-gui-full-execution`. Verify with
 `git status --short --branch` before editing. The latest pushed checkpoint
 before the current working tree is
-`3945c65852c Restore coupler constraint controls`. The current pending
-checkpoint is `examples/drag_and_drop/` strict audit. The implementation
-restores the historical frame/child/axis-marker layout, visible manipulation
-affordance, 640x480 default launch size, camera home, console/help text,
-README, and marker guards through public `dart::gui`. True
-InteractiveFrame-style rotation drag remains recorded as a public manipulation
-API gap unless a renderer-neutral rotation manipulator is added.
+`1297aca1fe6 Restore drag and drop affordances`. The current pending
+checkpoint is `examples/human_joint_limits/` strict audit. The implementation
+restores the live SKEL world, preserves the file timestep/Y-down gravity, keeps
+the ground static, enables joint-limit enforcement on every human joint,
+restores the 640x480 default launch size, prints Space instructions, adds
+README coverage, and adds marker guards through public `dart::gui`. The
+historical TinyDNN-backed custom arm/leg constraints remain a named
+dependency/API follow-up because the current maintained dependency stack no
+longer carries TinyDNN.
 
 ## Current Immediate Next Step
 
-Commit and push the local `examples/drag_and_drop/` checkpoint without opening
-a PR. Completed validation includes focused build/CTest, direct and pixi
-headless screenshot analyzer checks, Python example-runner tests, aggregate
-`examples` build, mandatory `pixi run lint`, and post-lint focused
+Commit and push the local `examples/human_joint_limits/` checkpoint without
+opening a PR. Completed validation includes focused build/CTest, direct and
+pixi headless screenshot analyzer checks, Python example-runner tests,
+aggregate `examples` build, mandatory `pixi run lint`, and post-lint focused
 build/CTest/direct screenshot smoke. Keep `--screenshot <path>` and
 `--out <dir>` working for the existing CTest, GitHub Actions smoke path, and
 historical image-sequence workflows. A later broader smoke sweep can still use:

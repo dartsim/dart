@@ -70,7 +70,16 @@ Immediate order:
    everything expressible through public `dart::gui`; record true
    InteractiveFrame-style rotation/handle manipulation as a public API gap
    rather than reintroducing OSG.
-5. Continue through the remaining `Needs strict audit` and
+   This checkpoint was pushed as
+   `1297aca1fe6 Restore drag and drop affordances`.
+5. Audit and restore `examples/human_joint_limits/` next. The historical
+   example depended on TinyDNN-backed custom arm/leg constraints and required
+   ODE/Bullet; the current branch no longer carries TinyDNN. Restore the live
+   world, joint-limit enforcement, default size, instructions, README, and
+   marker guards now, and record the TinyDNN/custom neural-network constraint
+   path as a named dependency/API follow-up unless a maintained replacement is
+   added.
+6. Continue through the remaining `Needs strict audit` and
    `Recent parity checkpoint; still subject to strict audit re-open` rows.
 
 ## Checkpoint Rule

@@ -1343,6 +1343,44 @@ TEST(FilamentSceneExtraction, FreeJointCasesExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, HumanJointLimitsExamplePreservesParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "human_joint_limits" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "human_joint_limits" / "README.md");
+
+  EXPECT_NE(mainSource.find("kima_human_edited.skel"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("joint->setLimitEnforcement(true)"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeStaticGround"), std::string::npos);
+  EXPECT_NE(mainSource.find("human->setMobile(true)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("makeHumanJointLimitsRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("printHumanJointLimitsInstructions"), std::string::npos);
+  EXPECT_NE(mainSource.find("space bar: simulation on/off"), std::string::npos);
+  EXPECT_NE(mainSource.find("TinyDNN custom constraints"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Human Joint Limits Example"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);
+  EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
+  EXPECT_NE(readmeSource.find("TinyDNN-backed"), std::string::npos);
+  EXPECT_NE(readmeSource.find("custom constraint path"), std::string::npos);
+  EXPECT_EQ(
+      mainSource.find("setGravity(Eigen::Vector3d::Zero())"),
+      std::string::npos);
+  EXPECT_EQ(
+      mainSource.find("makeVisualOnlySkeleton(human)"), std::string::npos);
+  EXPECT_EQ(mainSource.find("setRequiredJointPositions"), std::string::npos);
+  EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, AddDeleteSkelsExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(

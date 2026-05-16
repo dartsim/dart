@@ -48,14 +48,13 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 namespace {
 
 constexpr const char* kGroundSkeletonName = "human_joint_limits_ground";
 constexpr const char* kHumanSkeletonName = "human_joint_limits_human";
 
-void makeVisualOnlySkeleton(const dart::dynamics::SkeletonPtr& skeleton)
+void makeStaticGround(const dart::dynamics::SkeletonPtr& skeleton)
 {
   if (skeleton == nullptr) {
     return;
@@ -67,36 +66,8 @@ void makeVisualOnlySkeleton(const dart::dynamics::SkeletonPtr& skeleton)
     if (body == nullptr) {
       continue;
     }
-    body->setCollidable(false);
     body->setGravityMode(false);
-    body->eachShapeNodeWith<dart::dynamics::CollisionAspect>(
-        [](dart::dynamics::ShapeNode* shapeNode) {
-          shapeNode->getCollisionAspect()->setCollidable(false);
-        });
   }
-}
-
-void setRequiredJointPositions(
-    const dart::dynamics::SkeletonPtr& skeleton,
-    const char* jointName,
-    const std::vector<double>& positions)
-{
-  auto* joint = skeleton == nullptr ? nullptr : skeleton->getJoint(jointName);
-  if (joint == nullptr) {
-    throw std::runtime_error(
-        "human_joint_limits world is missing joint: " + std::string(jointName));
-  }
-  if (joint->getNumDofs() != positions.size()) {
-    throw std::runtime_error(
-        "human_joint_limits joint has unexpected DOF count: "
-        + std::string(jointName));
-  }
-
-  Eigen::VectorXd q(static_cast<Eigen::Index>(positions.size()));
-  for (std::size_t i = 0; i < positions.size(); ++i) {
-    q[static_cast<Eigen::Index>(i)] = positions[i];
-  }
-  joint->setPositions(q);
 }
 
 void colorHuman(const dart::dynamics::SkeletonPtr& human)
@@ -134,14 +105,13 @@ dart::simulation::WorldPtr createHumanJointLimitsWorld()
     throw std::runtime_error(
         "Failed to load human_joint_limits world from " + worldUri.toString());
   }
-  world->setGravity(Eigen::Vector3d::Zero());
 
   auto ground = world->getSkeleton("ground skeleton");
   if (ground == nullptr) {
     throw std::runtime_error("human_joint_limits world is missing ground");
   }
   ground->setName(kGroundSkeletonName);
-  makeVisualOnlySkeleton(ground);
+  makeStaticGround(ground);
   if (auto* body = ground->getBodyNode("ground")) {
     body->setColor(Eigen::Vector3d(0.58, 0.62, 0.60));
   }
@@ -151,23 +121,20 @@ dart::simulation::WorldPtr createHumanJointLimitsWorld()
     throw std::runtime_error("human_joint_limits world is missing human");
   }
   human->setName(kHumanSkeletonName);
-  makeVisualOnlySkeleton(human);
+  human->setMobile(true);
   human->eachJoint(
       [](dart::dynamics::Joint* joint) { joint->setLimitEnforcement(true); });
 
-  setRequiredJointPositions(human, "j_bicep_left", {-0.35, 0.20, 0.55});
-  setRequiredJointPositions(human, "j_forearm_left", {0.75});
-  setRequiredJointPositions(human, "j_bicep_right", {0.35, 0.20, -0.55});
-  setRequiredJointPositions(human, "j_forearm_right", {0.75});
-  setRequiredJointPositions(human, "j_thigh_left", {0.08, -0.12, 0.08});
-  setRequiredJointPositions(human, "j_shin_left", {0.28});
-  setRequiredJointPositions(human, "j_heel_left", {-0.12, 0.05});
-  setRequiredJointPositions(human, "j_thigh_right", {-0.08, -0.12, -0.08});
-  setRequiredJointPositions(human, "j_shin_right", {0.28});
-  setRequiredJointPositions(human, "j_heel_right", {-0.12, -0.05});
-
   colorHuman(human);
   return world;
+}
+
+dart::gui::RunOptions makeHumanJointLimitsRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
 }
 
 dart::gui::Panel createHumanJointLimitsPanel()
@@ -177,6 +144,8 @@ dart::gui::Panel createHumanJointLimitsPanel()
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
     builder.text("Kima human skeleton with DART joint-limit enforcement");
+    builder.text("space bar: simulation on/off");
+    builder.text("TinyDNN custom constraints are tracked as follow-up.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -194,15 +163,23 @@ dart::gui::Panel createHumanJointLimitsPanel()
   return panel;
 }
 
+void printHumanJointLimitsInstructions()
+{
+  std::cout << "Human joint limits example\n";
+  std::cout << "space bar: simulation on/off\n";
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
 {
   try {
     auto world = createHumanJointLimitsWorld();
+    printHumanJointLimitsInstructions();
 
     dart::gui::ApplicationOptions options;
     options.world = world;
+    options.runDefaults = makeHumanJointLimitsRunDefaults();
     options.panels.push_back(createHumanJointLimitsPanel());
 
     return dart::gui::runApplication(argc, argv, options);

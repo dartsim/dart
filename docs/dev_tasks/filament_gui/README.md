@@ -106,6 +106,12 @@ home, console/help text, README, and marker guards through public `dart::gui`.
 True InteractiveFrame-style rotation drag remains a named public API gap until
 the promoted manipulation layer exposes a renderer-neutral rotation
 manipulator.
+The current strict-audit slice is `examples/human_joint_limits`: restore the
+historical live SKEL world, joint-limit enforcement, 640x480 default launch
+size, instructions, README, and marker guards through public `dart::gui`.
+The historical TinyDNN-backed custom arm/leg constraints remain a named
+dependency/API follow-up because the current maintained dependency stack no
+longer carries TinyDNN.
 An earlier parity slice restored `examples/rigid_shapes`:
 restore the historical shape-spawn/delete/contact keyboard controls, convex
 mesh spawn path, contact-point visualization, camera home, and 640x480 default
