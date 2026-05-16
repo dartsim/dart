@@ -1607,6 +1607,7 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(
       readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);
   EXPECT_NE(readmeSource.find("1280x960"), std::string::npos);
+  EXPECT_NE(readmeSource.find("--out"), std::string::npos);
   EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
   EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
   EXPECT_NE(readmeSource.find("./fetch"), std::string::npos);

@@ -88,7 +88,8 @@
   - Restored the `fetch` example's draggable target as a selectable
     source-owned mesh cross made from two transparent green bars, matching the
     historical end-effector affordance while retaining renderer-neutral drag,
-    rotation, and reset controls through promoted `dart::gui`.
+    rotation, reset controls, and image-sequence capture docs through promoted
+    `dart::gui`.
   - Restored the `biped_stand` example's historical space/start and push
     instruction text plus standalone README build/execute instructions.
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,

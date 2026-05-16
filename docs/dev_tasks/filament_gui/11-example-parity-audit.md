@@ -35,16 +35,15 @@ Backend-specific sample surfaces are treated separately:
 
 ## Active Correction
 
-`examples/fetch/` remains open as the concrete reminder case. Earlier
+`examples/fetch/` was kept open as the concrete reminder case. Earlier
 checkpoints restored MJCF loading, Bullet preference, robot/object initial
-positions, mocap weld reset, target sync, visible target affordance,
-work-area grid, camera home, 1280x960 run defaults, GUI scaling,
-selection/drag/nudge instructions, Play/Pause/Step/Exit panel controls,
-README, and source-marker tests. That evidence does not close Fetch if another
-historical user-visible behavior is found. Treat Fetch as re-openable until a
-fresh comparison against `520993d7301^:examples/fetch/main.cpp` confirms that
-the remaining differences are either public `dart::gui` restorations,
-official-renderer supersessions, or explicit public API gaps.
+positions, mocap weld reset, target sync, visible target affordance, work-area
+grid, camera home, 1280x960 run defaults, GUI scaling, selection/drag/nudge
+instructions, Play/Pause/Step/Exit panel controls, README, and source-marker
+tests. The post-WAM strict re-open rechecked the current source and README
+against `520993d7301^:examples/fetch/main.cpp`; the source behavior remains
+restored or superseded by public `dart::gui`, and the concrete follow-up gap was
+README/marker coverage for the promoted `--out` image-sequence capture path.
 
 The broader correction is documented in `12-strict-example-restoration.md`:
 every pre-existing user-facing example, including ones with recent restoration
@@ -95,6 +94,13 @@ from two transparent green bars, while keeping promoted selection, rotation,
 and keyboard reset controls as renderer-neutral replacements for the old
 `InteractiveFrame` manipulation.
 
+Fresh Fetch re-open after the WAM IKFast checkpoint: the current source still
+matches the historical behavior through public `dart::gui`, including target
+sync, target manipulation, grid, panel, camera/defaults, and menu/help
+affordances. The README and source-marker test are updated in this slice to
+cover `--out` image-sequence capture alongside `--screenshot`, keeping Fetch
+aligned with the promoted capture contract.
+
 ### Fetch Itemized Inventory
 
 Historical source compared: `520993d7301^:examples/fetch/main.cpp`.
@@ -120,7 +126,7 @@ Historical source compared: `520993d7301^:examples/fetch/main.cpp`.
 | Expose Exit and About DART affordances.                                                                                      | Restored with promoted panel/menu controls.         | Current source exposes Exit both from the menu bar and the Simulation section, and exposes About DART from the Help menu.                                                                                           |
 | Show general viewer instructions/help.                                                                                       | Restored with promoted flat panel text.             | Current source includes selection/drag, target rotation/reset, orbit/pan/zoom, pause/step, screenshot/capture, and exit guidance. Historical collapsible placement is superseded by the renderer-neutral panel API. |
 | Enable drag-and-drop of the target.                                                                                          | Restored through public `dart::gui`.                | Current runner supports Ctrl-left drag plus keyboard nudge controls on selectable frames and Ctrl-Shift-left rotation for selected `SimpleFrame`s, with X/Y/Z local-axis rotation constraints.                      |
-| README documents how to run the example.                                                                                     | Restored.                                           | Current README documents `pixi run ex fetch`, headless capture, and the historical standalone build/execute instruction sections.                                                                                   |
+| README documents how to run the example.                                                                                     | Restored.                                           | Current README documents `pixi run ex fetch`, `--screenshot`, `--out`, and the historical standalone build/execute instruction sections.                                                                            |
 | Keep Fetch open if another historical behavior gap is identified.                                                            | Active strict-audit rule.                           | Do not treat the first-pass inventory as final without re-checking the current source against the old OSG/ImGui source.                                                                                             |
 
 ### Biped Stand Itemized Inventory

@@ -47,4 +47,5 @@ Headless capture is also supported through the promoted `dart::gui` runner:
 
 ```bash
 pixi run ex fetch --headless --frames 2 --screenshot /tmp/fetch.ppm
+pixi run ex fetch --headless --frames 2 --out /tmp/fetch_frames
 ```
