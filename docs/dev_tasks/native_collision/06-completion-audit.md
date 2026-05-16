@@ -49,8 +49,8 @@ Latest local audit commands before recording this snapshot showed:
 - Review surface state: read-only `gh pr view 2652 --repo dartsim/dart`
   reports PR #2652 as `CLOSED`, draft, dirty, based on `main`, and still
   anchored to head `714d220d82a`. No PR metadata or GitHub state was mutated.
-- Latest full current-state validation head: `c99b257cf15`
-  (`Clarify native collision resume scope heading`) passed the local
+- Latest full current-state validation head: `f9ee1dd28ba`
+  (`Label native collision stability tests`) passed the local
   `pixi run test-all` gate with 6/6 top-level gates: linting, build, unit
   tests, simulation-experimental tests, Python tests, and documentation.
 - Latest full code-validation head: `4db514cfd22`
@@ -59,7 +59,7 @@ Latest local audit commands before recording this snapshot showed:
   The same code head passed focused reference-backend checks and the final
   unfiltered `collision-reference` CTest sweep 301/301 after building the
   dedicated simulation-experimental target.
-- Post-validation branch delta is docs-only: after `c99b257cf15`, local commits
+- Post-validation branch delta is docs-only: after `f9ee1dd28ba`, local commits
   may refresh this evidence packet and keep the deferred-finalization handoff
   explicit. They do not touch collision runtime, tests, or build logic. Run
   `git log -3 --oneline --decorate` for the exact current local head.
@@ -90,15 +90,19 @@ above with `git rev-parse HEAD` for an exact current-head check.
 
 ## Current Local Full Validation Recheck (2026-05-16)
 
-After the docs/evidence cleanup commits, a fresh local full validation pass was
-run on head `c99b257cf15`
-(`Clarify native collision resume scope heading`):
+After the native stability-label update, a fresh local full validation pass was
+run on head `f9ee1dd28ba` (`Label native collision stability tests`):
 
 - Command:
-  `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
 - Result: passed 6/6 top-level gates: linting, build, unit tests,
   simulation-experimental tests, Python tests, and documentation. The final
   report printed `All tests passed!`.
+- Focused label validation:
+  `ctest --test-dir build/default/cpp/Release -N -L collision-native-stability`
+  selected `INTEGRATION_simulation_World` and `UNIT_simulation_World`, and
+  `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability`
+  passed 2/2.
 - Scope note: no PR, push, workflow, branch, or GitHub state was mutated by
   this validation pass.
 

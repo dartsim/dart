@@ -202,8 +202,10 @@ the focused native/reference/benchmark validation evidence in
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
       latest full current-state `pixi run test-all` pass was rerun on local
-      head `c99b257cf15` and passed 6/6 top-level gates: linting, build, unit
+      head `f9ee1dd28ba` and passed 6/6 top-level gates: linting, build, unit
       tests, simulation-experimental tests, Python tests, and documentation.
+      The same head adds and verifies the `collision-native-stability` CTest
+      label for the world-level native stability executables.
       The latest code-validation head `4db514cfd22` also passed the full local
       gate with Release CTest 264/264 and Python tests 147/147. The same code
       head passed the focused reference-backend checks and the final

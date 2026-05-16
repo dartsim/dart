@@ -3467,15 +3467,19 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     simulation-experimental passed 13/13 and the final unfiltered
     `collision-reference` CTest sweep passed 301/301, including FCL, Bullet,
     ODE, and native collision tests.
-- Current local full validation after docs/evidence cleanup:
-  - Commit: `c99b257cf15`
-    (`Clarify native collision resume scope heading`).
+- Current local full validation after native stability-label coverage:
+  - Commit: `f9ee1dd28ba` (`Label native collision stability tests`).
   - Command:
-    `DART_PARALLEL_JOBS=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS CTEST_PARALLEL_LEVEL=$JOBS pixi run test-all`.
+    `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`.
   - Result: passed. The final report passed 6/6 top-level gates: linting,
     build, unit tests, simulation-experimental tests, Python tests, and
     documentation, then printed `All tests passed!`. No PR, push, workflow,
     branch, or GitHub state was mutated by this local validation pass.
+  - Focused label validation:
+    `ctest --test-dir build/default/cpp/Release -N -L collision-native-stability`
+    selected `INTEGRATION_simulation_World` and `UNIT_simulation_World`, and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability`
+    passed 2/2.
 
 ## Known Risks
 
