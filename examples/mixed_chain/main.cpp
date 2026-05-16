@@ -40,6 +40,8 @@
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/soft_body_node.hpp>
 
+#include <dart/math/random.hpp>
+
 #include <dart/io/read.hpp>
 
 #include <Eigen/Core>
@@ -76,10 +78,9 @@ dart::simulation::WorldPtr createMixedChainWorld()
   chain->setName(kMixedChainName);
 
   Eigen::VectorXd initialPose = Eigen::VectorXd::Zero(chain->getNumDofs());
-  if (initialPose.size() >= 3) {
-    initialPose[0] = -0.25;
-    initialPose[1] = 0.18;
-    initialPose[2] = 0.12;
+  for (Eigen::Index i = 0; i < std::min<Eigen::Index>(3, initialPose.size());
+       ++i) {
+    initialPose[i] = dart::math::Random::uniform(-0.5, 0.5);
   }
   chain->setPositions(initialPose);
 
@@ -103,6 +104,23 @@ dart::gui::OrbitCamera makeMixedChainCamera()
   camera.pitch = 0.7297276562269663;
   camera.distance = 3.0;
   return camera;
+}
+
+dart::gui::RunOptions makeMixedChainRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+void printMixedChainInstructions()
+{
+  std::cout << "Mixed Chain Example Controls:\n";
+  std::cout << "'q'/'w': Apply force in -X/+X direction\n";
+  std::cout << "'e'/'r': Apply force in -Y/+Y direction\n";
+  std::cout << "'t'/'y': Apply force in -Z/+Z direction\n";
+  std::cout << "Space: Toggle simulation\n";
 }
 
 struct MixedChainControls
@@ -207,7 +225,7 @@ dart::gui::Panel createControlsPanel(
     builder.text("'q'/'w': apply force in -X/+X direction");
     builder.text("'e'/'r': apply force in -Y/+Y direction");
     builder.text("'t'/'y': apply force in -Z/+Z direction");
-    builder.text("space bar: simulation on/off");
+    builder.text("Space: Toggle simulation");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -258,12 +276,14 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = world;
+    options.runDefaults = makeMixedChainRunDefaults();
     options.camera = makeMixedChainCamera();
     options.preStep = [controls]() {
       controls->applyImpulse();
     };
     options.keyboardActions = createMixedChainKeyboardActions(controls);
     options.panels.push_back(createControlsPanel(controls));
+    printMixedChainInstructions();
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {
     std::cerr << "mixed_chain: " << e.what() << "\n";

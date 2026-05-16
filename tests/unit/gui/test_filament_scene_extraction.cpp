@@ -1917,9 +1917,20 @@ TEST(FilamentSceneExtraction, MixedChainExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(
       std::filesystem::path("examples") / "mixed_chain" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "mixed_chain" / "README.md");
 
+  EXPECT_NE(
+      mainSource.find("test_articulated_bodies_10bodies.skel"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::math::Random::uniform(-0.5, 0.5)"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("startImpulse"), std::string::npos);
   EXPECT_NE(mainSource.find("applyImpulse"), std::string::npos);
+  EXPECT_NE(mainSource.find("kForceMagnitude = 500.0"), std::string::npos);
+  EXPECT_NE(mainSource.find("kImpulseFrames = 100"), std::string::npos);
+  EXPECT_NE(mainSource.find("getSoftBodyNode(3)"), std::string::npos);
   EXPECT_NE(mainSource.find("makeImpulseAction"), std::string::npos);
   EXPECT_NE(
       mainSource.find("KeyboardShortcut::characterKey(key)"),
@@ -1935,12 +1946,25 @@ TEST(FilamentSceneExtraction, MixedChainExamplePreservesLegacyParityMarkers)
   EXPECT_NE(
       mainSource.find("'q'/'w': apply force in -X/+X direction"),
       std::string::npos);
+  EXPECT_NE(
+      mainSource.find("'q'/'w': Apply force in -X/+X direction"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("printMixedChainInstructions"), std::string::npos);
+  EXPECT_NE(mainSource.find("Space: Toggle simulation"), std::string::npos);
   EXPECT_NE(mainSource.find("makeMixedChainCamera"), std::string::npos);
   EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeMixedChainRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Mixed Chain Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("pixi run ex mixed_chain"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(readmeSource.find("--out"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, HybridDynamicsExamplePreservesLegacyParityMarkers)

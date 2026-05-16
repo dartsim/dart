@@ -94,6 +94,9 @@
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
     `mixed_chain`, `coupler_constraint`, `add_delete_skels`, and
     `rigid_shapes`) as source-defined `dart::gui` examples.
+  - Restored the `mixed_chain` example's random startup pose, 640x480 launch
+    default, console instructions, README, and marker coverage through public
+    `dart::gui`.
   - Restored the `add_delete_skels` example's README, historical 640x480
     launch default, and spawn-only-on-command startup behavior through public
     `dart::gui`.

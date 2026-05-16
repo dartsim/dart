@@ -932,6 +932,35 @@ software-GL screenshot and image-sequence analyzer checks, aggregate
 `build-examples`, Python C++ example runner tests, mandatory `pixi run lint`,
 post-lint focused build/CTest/screenshot checks, and `git diff --check`.
 
+### Mixed Chain Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/mixed_chain`.
+
+The promoted `dart::gui` source now owns the SKEL-loaded world, restores the
+historical random startup pose, applies short impulses through
+`ApplicationOptions::preStep`, wires six keyboard actions, exposes panel
+impulse buttons, prints the historical console instructions, sets the
+historical 640x480 default and camera, and documents shared headless capture.
+
+| Historical item                                                                                       | Current outcome / repair plan        | Notes                                                                                |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------ |
+| Load `dart://sample/skel/test/test_articulated_bodies_10bodies.skel` and operate on skeleton index 1. | Restored through public `dart::gui`. | Current source loads the same SKEL world and renames the active chain for lookup.    |
+| Initialize the first three DOFs with `dart::math::Random::uniform(-0.5, 0.5)`.                        | Restored.                            | Screenshot smoke checks stay nonblank despite the historical startup randomness.     |
+| Apply a 500 N force to soft body node index 3 for 100 frames.                                         | Restored.                            | Current source uses `kForceMagnitude`, `kImpulseFrames`, and `getSoftBodyNode(3)`.   |
+| Preserve `q`/`w`, `e`/`r`, and `t`/`y` impulse keyboard controls.                                     | Restored.                            | Current source uses renderer-neutral `KeyboardAction`s.                              |
+| Preserve the printed control instructions.                                                            | Restored.                            | Source prints the historical control block before running the public application.    |
+| Preserve the 640x480 launch default and historical camera framing.                                    | Restored.                            | `RunOptions` and `OrbitCamera` cover these.                                          |
+| Preserve promoted panel controls and diagnostics for remaining impulse frames/time.                   | Restored.                            | Public panel text/buttons are acceptable for this example.                           |
+| Preserve README/run/capture documentation.                                                            | Restored.                            | README covers `pixi run ex mixed_chain`, `--screenshot`, and `--out`.                |
+| Keep marker coverage for URI, random pose, force magnitude/duration, keys, defaults, README.          | Restored.                            | Marker guard covers the restored contract and rejects the old private-scene handoff. |
+
+Validation for this slice includes focused `mixed_chain` and
+`UNIT_gui_FilamentSceneExtraction` builds, focused CTest, direct and pixi
+software-GL screenshot analyzer checks, image-sequence analyzer checks,
+aggregate `build-examples`, Python C++ example runner tests, mandatory
+`pixi run lint`, post-lint focused build/CTest/screenshot checks, and
+`git diff --check`.
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                                                                                                       |
@@ -962,7 +991,7 @@ post-lint focused build/CTest/screenshot checks, and `git diff --check`.
 | `joint_constraints`         | Restored by strict re-open except camera up-vector/roll API gap.                   | Keep marker guards for README, 640x480 defaults, loaded-scene visuals, perturb/harness console messages, and no backend types.                                                                             |
 | `lcp_physics`               | Restored by strict re-open except plot/render-metrics API gap.                     | Keep marker guards for historical scene counts/names/placements, live solver/scenario/reset/timestep/gravity panel controls, README options, capture flags, and no backend types.                          |
 | `mimic_pendulums`           | Restored by strict re-open except table/color-swatch panel API gap.                | Keep marker guards for live controls, source-owned grid, original rig names/base colors, diagnostics, README options, capture flags, and no backend/private-scene handoff.                                 |
-| `mixed_chain`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm impulse controls, camera, and guards.                                                                                                                                                              |
+| `mixed_chain`               | Restored by strict re-open.                                                        | Keep marker guards for random startup pose, impulse controls, force duration/magnitude, 640x480 defaults, console instructions, README options, capture flags, and no private-scene handoff.               |
 | `operational_space_control` | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK/control behavior, teleoperation, camera, and guards.                                                                                                                                            |
 | `point_cloud`               | Restored except public color-editor/debug-grid API gaps.                           | Keep color editors and fine-grained grid controls tracked as public API follow-ups.                                                                                                                        |
 | `polyhedron_visual`         | Restored by strict audit.                                                          | Keep marker guards for surface, wireframe, grid, camera/defaults, and README.                                                                                                                              |

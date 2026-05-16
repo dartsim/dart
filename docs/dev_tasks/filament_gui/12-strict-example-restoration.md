@@ -426,6 +426,22 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     screenshot and image-sequence analyzer checks, aggregate `build-examples`,
     Python C++ example-runner tests, mandatory `pixi run lint`, post-lint
     focused checks, and `git diff --check`.
+44. The active strict re-open cursor is now `examples/mixed_chain/`; compare it
+    against `520993d7301^:examples/mixed_chain` before coding past that slice.
+45. `examples/mixed_chain/` strict re-open found concrete gaps after the prior
+    parity checkpoint: the historical random startup pose became deterministic,
+    640x480 defaults were not wired through public run options, console
+    instructions are missing, there is no README, and marker coverage does not
+    guard the full restored contract. Restore those items now while keeping the
+    already-promoted pre-step impulse controls and keyboard actions.
+46. `examples/mixed_chain/` now restores the random startup pose, 640x480 run
+    default, console instructions, README/capture documentation, and marker
+    coverage while keeping the promoted pre-step impulse controls, keyboard
+    actions, panel buttons, and camera. Local validation includes focused
+    builds, focused CTest, direct and pixi software-GL screenshot analyzer
+    checks, image-sequence analyzer checks, aggregate `build-examples`, Python
+    C++ example-runner tests, mandatory `pixi run lint`, post-lint focused
+    checks, and `git diff --check`.
 
 ## Checkpoint Rule
 
