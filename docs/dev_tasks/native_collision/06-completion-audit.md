@@ -37,12 +37,14 @@ mutation during the current pass:
 
 ## Current Audit Snapshot (2026-05-15)
 
-Latest local audit commands show:
+Latest local audit commands before recording this snapshot showed:
 
-- Local branch state: `feature/new_coll` is clean at
+- Audit baseline branch state: `feature/new_coll` was clean at
   `55bcce1b726` (`Clarify native collision code follow-up scope`) and is 44
-  commits ahead of `origin/feature/new_coll`.
-- Local remote-tracking baseline: `origin/feature/new_coll` resolves to
+  commits ahead of `origin/feature/new_coll`. This snapshot and later
+  docs-only audit commits may move `HEAD`; use `git status --short --branch`
+  and `git log -3 --oneline --decorate` for the exact current branch state.
+- Audit baseline remote-tracking state: `origin/feature/new_coll` resolved to
   `f8f5663d514`.
 - Review surface state: read-only `gh pr view 2652 --repo dartsim/dart`
   reports PR #2652 as `CLOSED`, draft, dirty, based on `main`, and still
@@ -53,11 +55,11 @@ Latest local audit commands show:
   and Python 147/147. The same code head passed focused reference-backend
   checks and the final unfiltered `collision-reference` CTest sweep 301/301
   after building the dedicated simulation-experimental target.
-- Current HEAD delta after that validation is docs-only:
-  `cd3b46e19c3` refreshed the evidence packet and `55bcce1b726` clarified
-  code-follow-up wording. `pixi run lint` passed on the current HEAD after
-  those docs-only commits, including runtime source isolation and
-  compatibility-facade audits.
+- Post-validation branch delta is docs-only: after `4db514cfd22`, local commits
+  refreshed the evidence packet, clarified code-follow-up wording, and recorded
+  this audit state. They do not touch collision runtime, tests, or build logic.
+  `pixi run lint` passed after those docs-only commits, including runtime
+  source isolation and compatibility-facade audits.
 
 Audit result: the local branch-evidence packet is current, but the objective
 is not complete. The remaining checklist rows require a maintainer-selected
