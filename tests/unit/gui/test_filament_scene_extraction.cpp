@@ -2562,13 +2562,32 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
       std::filesystem::path("examples") / "lcp_physics" / "main.cpp");
   const auto lcpReadmeSource = readSourceFile(
       std::filesystem::path("examples") / "lcp_physics" / "README.md");
-  EXPECT_NE(lcpSource.find("lcp_physics_contact_box_"), std::string::npos);
-  EXPECT_NE(lcpSource.find("lcp_physics_ball_drop_sphere_"), std::string::npos);
+  EXPECT_NE(
+      lcpSource.find("constexpr int kBallDropSphereCount = 75"),
+      std::string::npos);
+  EXPECT_NE(
+      lcpSource.find("constexpr int kBoxStackLayers = 5"), std::string::npos);
+  EXPECT_NE(
+      lcpSource.find("constexpr int kDominoCount = 20"), std::string::npos);
+  EXPECT_NE(lcpSource.find("\"light_box\""), std::string::npos);
+  EXPECT_NE(lcpSource.find("\"heavy_box\""), std::string::npos);
+  EXPECT_NE(lcpSource.find("\"box_\""), std::string::npos);
+  EXPECT_NE(lcpSource.find("\"ball_\""), std::string::npos);
+  EXPECT_NE(lcpSource.find("\"domino_\""), std::string::npos);
   EXPECT_NE(lcpSource.find("DantzigSolver"), std::string::npos);
   EXPECT_NE(lcpSource.find("PgsSolver"), std::string::npos);
   EXPECT_NE(lcpSource.find("--scenario"), std::string::npos);
   EXPECT_NE(lcpSource.find("--solver"), std::string::npos);
   EXPECT_NE(lcpSource.find("--list"), std::string::npos);
+  EXPECT_NE(lcpSource.find("resetLcpWorld"), std::string::npos);
+  EXPECT_NE(lcpSource.find("builder.button(label)"), std::string::npos);
+  EXPECT_NE(
+      lcpSource.find("builder.slider(\"Timestep (Hz)\""), std::string::npos);
+  EXPECT_NE(
+      lcpSource.find("builder.slider(\"Gravity (m/s^2)\""), std::string::npos);
+  EXPECT_NE(
+      lcpSource.find("step-time plots need a public panel plotting"),
+      std::string::npos);
   EXPECT_NE(lcpSource.find("createInclinedPlaneScenario"), std::string::npos);
   EXPECT_NE(lcpSource.find("makeLcpRunDefaults"), std::string::npos);
   EXPECT_NE(lcpSource.find("options.width = 1280"), std::string::npos);
@@ -2580,6 +2599,9 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
   EXPECT_NE(lcpSource.find("options.world"), std::string::npos);
   EXPECT_NE(lcpReadmeSource.find("LCP Physics Example"), std::string::npos);
   EXPECT_NE(lcpReadmeSource.find("mass_ratio"), std::string::npos);
+  EXPECT_NE(lcpReadmeSource.find("75 balls dropping"), std::string::npos);
+  EXPECT_NE(lcpReadmeSource.find("Command-Line Options"), std::string::npos);
+  EXPECT_NE(lcpReadmeSource.find("--out <dir>"), std::string::npos);
   EXPECT_EQ(lcpSource.find("options.defaultScene"), std::string::npos);
 
   const auto mimicSource = readSourceFile(

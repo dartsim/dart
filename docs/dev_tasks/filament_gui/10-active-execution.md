@@ -113,13 +113,19 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `b7a269906f9 Merge origin/main into Filament GUI branch`.
+  `b4ed7d9d62f Remove Rerun placeholder example`.
 - Latest pushed code checkpoint:
-  `cf13c6e5115 Restore Joint Constraints defaults`.
+  `b4ed7d9d62f Remove Rerun placeholder example`.
 - Latest pushed infrastructure checkpoint: `b7a269906f9` merged
   `origin/main` so the branch has the new AI-native living-plan and API
   boundary infrastructure without reopening the removed backend-named
   `examples/filament_gui/` surface.
+- Latest pushed maintenance checkpoint: `b4ed7d9d62f` removes the no-source
+  `examples/rerun/` placeholder because the re-opened audit found no concrete
+  integration workflow, executable, or downstream user. Local validation
+  covered focused build/CTest, aggregate examples build, example-runner tests,
+  absence checks, `git diff --check`, mandatory `pixi run lint`, and post-lint
+  focused checks.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
@@ -136,6 +142,13 @@ history but are not guaranteed to be in chronological order.
   the previously preserved `examples/rerun/` placeholder. If there is no source
   file, executable, concrete workflow, or downstream contract, remove it from
   the examples set rather than preserving a maintenance-only stub.
+- Current implementation checkpoint in the worktree: `examples/lcp_physics/`
+  strict re-open restores the historical 5-layer box pyramid, 75-ball drop,
+  20-domino chain, mass-ratio names/placement, live scenario/solver switching,
+  Reset/timestep/gravity panel controls, README option inventory, and marker
+  guards through public `dart::gui`. Exact ImGui line plots and backend
+  render/debug metrics remain a named public panel plotting/render-metrics API
+  gap.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`
@@ -177,6 +190,7 @@ history but are not guaranteed to be in chronological order.
   - `cfce8c0186f Restore Fetch green bar target`
   - `0800c54ec18 Restore Hybrid Dynamics defaults`
   - `cf13c6e5115 Restore Joint Constraints defaults`
+  - `b4ed7d9d62f Remove Rerun placeholder example`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared

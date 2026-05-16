@@ -864,6 +864,41 @@ gap because `OrbitCamera` does not expose roll/up-vector selection.
 | README documents concepts, controls, standalone build/execute instructions, and promoted runner path.    | Restored.                                       | README is restored with promoted `dart::gui` wording and headless capture guidance.                                                                             |
 | Keep marker coverage for world setup, perturb/harness console messages, defaults, README, no OSG path.   | Restored for this slice.                        | Marker guard now covers the strict restored contract.                                                                                                           |
 
+### LCP Physics Itemized Inventory
+
+Historical source compared: `520993d7301^:examples/lcp_physics`.
+
+The current source is a promoted `dart::gui` example with local scenario
+builders, Dantzig/PGS solver selection, 1280x720 defaults, and shared
+headless/capture parsing. Strict re-open found concrete gaps: the scenes were
+scaled down from the historical source, names/placement drifted, the panel lost
+live scenario/solver/reset/timestep/gravity controls, README lost the
+command-line option inventory, and marker coverage guarded only a subset of the
+strict restored contract. The implementation now repairs the expressible
+behavior through public `dart::gui`; exact ImGui line plots and renderer debug
+metrics remain a public panel plotting/render-metrics API gap.
+
+| Historical item                                                                                                 | Current outcome                           | Notes                                                                                                                                          |
+| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Provide five scenarios: mass ratio, box pyramid, 75-ball drop, 20-domino chain, and inclined plane.             | Restored through source-owned DART world. | Current source restores historical scene sizes, counts, names, colors, placements, seeded jitter, and friction/restitution setup.              |
+| Preserve Dantzig and PGS LCP solver selection from CLI and panel controls.                                      | Restored through public `dart::gui`.      | CLI `--solver` works; promoted panel buttons switch the active solver on the live world.                                                       |
+| Preserve scenario selection from CLI, `--list`, and panel controls.                                             | Restored through public `dart::gui`.      | CLI scenario parsing works; promoted panel buttons replace the live world contents with the selected scenario.                                 |
+| Preserve Simulation controls: Play/Pause, Step, Reset, simulation time, and step count.                         | Restored through public `dart::gui`.      | Promoted lifecycle buttons cover Play/Pause/Step; the source-owned state adds Reset and step count.                                            |
+| Preserve parameter controls: timestep slider from 100 to 2000 Hz and gravity slider from 0 to 20 m/s^2.         | Restored through public `dart::gui`.      | `PanelBuilder::slider` updates the current world timestep and gravity.                                                                         |
+| Preserve performance/debug information: FPS, contacts, body count, step-time plot, ImGui display/font metrics.  | Partially restored; public API gap.       | Contacts/body count are shown now. FPS, step-time plotting, and ImGui-specific debug metrics need public render-metrics/plot APIs.             |
+| Preserve scenario explanations and research references in the panel/README.                                     | Restored.                                 | Current source carries scenario explanation text and README restores options/references.                                                       |
+| Preserve 1280x720 default launch size, camera home from `(3, 2, 3)` to `(0, 0.3, 0)`, and `--gui-scale`.        | Restored through public `dart::gui`.      | `RunOptions`, `OrbitCamera`, and shared runner parsing cover these.                                                                            |
+| Preserve headless mode, `--frames`, `--out`, `--width`, `--height`, `--gui-scale`, and list/selection examples. | Restored with promoted capture semantics. | Shared `dart::gui` runner owns headless/capture flags; README documents `--out` image sequences and `--screenshot`.                            |
+| Keep marker coverage for scene counts, solver/scenario controls, panel controls, README, and no backend types.  | Restored for this slice.                  | Marker guards now cover scene counts/names, live controls, README options, capture flags, public API gap text, and absence of legacy launcher. |
+
+Pre-lint validation for this slice passed: focused `lcp_physics` and
+`UNIT_gui_FilamentSceneExtraction` build, focused CTest, direct `--list`, direct
+software-GL screenshot and `--out` image-sequence analyzer checks, pixi runner
+screenshot analyzer check, Python example-runner tests, aggregate `examples`
+build, and `git diff --check`. Mandatory `pixi run lint`, post-lint focused
+build/CTest, direct `--list`, software-GL screenshot analyzer check, and
+post-lint `git diff --check` also passed.
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                                | Next Required Action                                                                                                                                                                                       |
@@ -892,7 +927,7 @@ gap because `OrbitCamera` does not expose roll/up-vector selection.
 | `hybrid_dynamics`           | Restored by strict re-open except camera up-vector/roll API gap.                   | Keep marker guards for README, 640x480 defaults, loaded-scene names/colors, harness console messages, and no backend types.                                                                                |
 | `imgui`                     | Restored except public headlight/camera/key-release/render-hook API gaps.          | Keep marker guards for target frame, keydown callbacks, gravity control, help text, camera/defaults, README, and no backend types.                                                                         |
 | `joint_constraints`         | Restored by strict re-open except camera up-vector/roll API gap.                   | Keep marker guards for README, 640x480 defaults, loaded-scene visuals, perturb/harness console messages, and no backend types.                                                                             |
-| `lcp_physics`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm solver/collision controls, camera/defaults, README, and guards.                                                                                                                                    |
+| `lcp_physics`               | Restored by strict re-open except plot/render-metrics API gap.                     | Keep marker guards for historical scene counts/names/placements, live solver/scenario/reset/timestep/gravity panel controls, README options, capture flags, and no backend types.                          |
 | `mimic_pendulums`           | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm diagnostics, solver/collision flags, README, and guards.                                                                                                                                           |
 | `mixed_chain`               | Recent parity checkpoint; still subject to strict audit re-open.                   | Confirm impulse controls, camera, and guards.                                                                                                                                                              |
 | `operational_space_control` | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK/control behavior, teleoperation, camera, and guards.                                                                                                                                            |

@@ -383,7 +383,28 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `examples/rerun/` from the examples set instead of preserving no-source
     placeholder support. The audit confirms those conditions, so this slice
     removes the placeholder directory, build/list entries, old preservation
-    wording, and marker test, and replaces them with a removal guard.
+    wording, and marker test, and replaces them with a removal guard. This
+    checkpoint was pushed as
+    `b4ed7d9d62f Remove Rerun placeholder example`; local validation covered
+    focused build/CTest, aggregate examples build, example-runner tests,
+    absence checks, `git diff --check`, mandatory `pixi run lint`, and
+    post-lint focused checks.
+40. `examples/lcp_physics/` strict re-open found concrete gaps: scene counts
+    and placement drifted from the historical source, live scenario/solver
+    switching and Reset/timestep/gravity panel controls were missing, README
+    command-line option coverage was incomplete, and marker tests covered only
+    a subset of the contract. Restore the historical scene counts, names,
+    placement, local scenario/solver controls, Reset/timestep/gravity controls,
+    README option inventory, and marker guards now. Keep exact ImGui line plots
+    and backend-specific debug metrics as a named public panel
+    plotting/render-metrics API gap. Implementation and pre-lint validation are
+    complete: focused `lcp_physics` and `UNIT_gui_FilamentSceneExtraction`
+    build, focused CTest, direct `--list`, software-GL screenshot and `--out`
+    image-sequence analyzer checks, pixi runner screenshot analyzer check,
+    Python example-runner tests, aggregate `examples` build, and
+    `git diff --check` passed locally. Mandatory `pixi run lint`, post-lint
+    focused build/CTest, direct `--list`, software-GL screenshot analyzer
+    check, and post-lint `git diff --check` also passed.
 
 ## Checkpoint Rule
 

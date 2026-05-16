@@ -48,14 +48,14 @@
 #include <Eigen/Geometry>
 
 #include <algorithm>
-#include <charconv>
+#include <array>
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <system_error>
 #include <vector>
 
 #include <cctype>
@@ -63,10 +63,11 @@
 
 namespace {
 
-constexpr const char* kGroundName = "lcp_physics_ground";
-constexpr const char* kBoxPrefix = "lcp_physics_contact_box_";
-constexpr const char* kSpherePrefix = "lcp_physics_ball_drop_sphere_";
-constexpr int kSphereCount = 12;
+constexpr int kBallDropSphereCount = 75;
+constexpr int kBoxStackLayers = 5;
+constexpr int kDominoCount = 20;
+constexpr double kDefaultTimeStepHz = 1000.0;
+constexpr double kDefaultGravityMagnitude = 9.81;
 
 enum class Scenario
 {
@@ -88,6 +89,7 @@ struct ScenarioInfo
   Scenario type;
   std::string name;
   std::string description;
+  std::string explanation;
 };
 
 struct SolverInfo
@@ -101,6 +103,8 @@ struct LcpPhysicsConfig
 {
   Scenario scenario = Scenario::MassRatio;
   SolverType solver = SolverType::Dantzig;
+  double timeStepHz = kDefaultTimeStepHz;
+  double gravityMagnitude = kDefaultGravityMagnitude;
 };
 
 const std::vector<ScenarioInfo>& getScenarios()
@@ -108,11 +112,29 @@ const std::vector<ScenarioInfo>& getScenarios()
   static const std::vector<ScenarioInfo> scenarios = {
       {Scenario::MassRatio,
        "mass_ratio",
-       "heavy box on light box with a 1000:1 mass ratio"},
-      {Scenario::BoxStack, "box_stack", "stacked box pyramid"},
-      {Scenario::BallDrop, "ball_drop", "many spheres dropping and settling"},
-      {Scenario::Dominos, "dominos", "sequential domino impulse propagation"},
-      {Scenario::InclinedPlane, "inclined_plane", "sliding block on a ramp"},
+       "heavy box on light box with a 1000:1 mass ratio",
+       "Tests solver stability with extreme mass ratios. A 1000kg box sits on "
+       "a 1kg box; unstable solvers may jitter or let the light box sink."},
+      {Scenario::BoxStack,
+       "box_stack",
+       "stacked box pyramid",
+       "Tests shock propagation through a contact graph. The five-layer "
+       "pyramid must distribute loads through many simultaneous contacts."},
+      {Scenario::BallDrop,
+       "ball_drop",
+       "75 spheres dropping and settling",
+       "Tests many-contact performance and stability with a seeded 75-ball "
+       "drop, inspired by SimBenchmark contact-heavy scenes."},
+      {Scenario::Dominos,
+       "dominos",
+       "sequential domino impulse propagation",
+       "Tests impulse propagation accuracy as a 20-domino chain transfers "
+       "energy from the first tilted block."},
+      {Scenario::InclinedPlane,
+       "inclined_plane",
+       "sliding block on a ramp",
+       "Tests friction model behavior as a block slides down a ramp with "
+       "angle greater than the friction threshold."},
   };
   return scenarios;
 }
@@ -279,18 +301,21 @@ ParseResult parseLcpPhysicsConfig(
 
 dart::dynamics::SkeletonPtr createGround()
 {
-  auto ground = dart::dynamics::Skeleton::create(kGroundName);
+  auto ground = dart::dynamics::Skeleton::create("ground");
   auto* body
       = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
-  constexpr double thickness = 0.08;
+  constexpr double thickness = 0.1;
   auto* shapeNode = body->createShapeNodeWith<
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(
       std::make_shared<dart::dynamics::BoxShape>(
-          Eigen::Vector3d(7.0, thickness, 4.5)));
-  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.72, 0.74, 0.72));
+          Eigen::Vector3d(20.0, thickness, 20.0)));
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
   shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.3);
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.8);
+  shapeNode->getDynamicsAspect()->setPrimarySlipCompliance(0.0);
+  shapeNode->getDynamicsAspect()->setSecondarySlipCompliance(0.0);
 
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation().y() = -0.5 * thickness;
@@ -327,7 +352,7 @@ dart::dynamics::SkeletonPtr createBox(
 }
 
 dart::dynamics::SkeletonPtr createTranslatedBox(
-    const std::string& suffix,
+    const std::string& name,
     const Eigen::Vector3d& size,
     double mass,
     const Eigen::Vector3d& position,
@@ -335,19 +360,41 @@ dart::dynamics::SkeletonPtr createTranslatedBox(
 {
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = position;
-  return createBox(
-      std::string(kBoxPrefix) + suffix, size, mass, transform, color);
+  return createBox(name, size, mass, transform, color);
+}
+
+dart::dynamics::SkeletonPtr createWeldedBox(
+    const std::string& name,
+    const Eigen::Vector3d& size,
+    const Eigen::Isometry3d& transform,
+    const Eigen::Vector3d& color)
+{
+  auto box = dart::dynamics::Skeleton::create(name);
+  auto [joint, body]
+      = box->createJointAndBodyNodePair<dart::dynamics::WeldJoint>();
+  joint->setTransformFromParentBodyNode(transform);
+
+  auto boxShape = std::make_shared<dart::dynamics::BoxShape>(size);
+  auto* shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(boxShape);
+  shapeNode->getVisualAspect()->setColor(color);
+  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.3);
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.8);
+  shapeNode->getDynamicsAspect()->setPrimarySlipCompliance(0.0);
+  shapeNode->getDynamicsAspect()->setSecondarySlipCompliance(0.0);
+  return box;
 }
 
 dart::dynamics::SkeletonPtr createSphere(
-    const std::string& suffix,
+    const std::string& name,
     double radius,
     const Eigen::Vector3d& position,
     const Eigen::Vector3d& color,
     double mass)
 {
-  auto sphere
-      = dart::dynamics::Skeleton::create(std::string(kSpherePrefix) + suffix);
+  auto sphere = dart::dynamics::Skeleton::create(name);
   auto [joint, body]
       = sphere->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
@@ -360,6 +407,10 @@ dart::dynamics::SkeletonPtr createSphere(
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(sphereShape);
   shapeNode->getVisualAspect()->setColor(color);
+  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.5);
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.6);
+  shapeNode->getDynamicsAspect()->setPrimarySlipCompliance(0.0);
+  shapeNode->getDynamicsAspect()->setSecondarySlipCompliance(0.0);
   body->setInertia(
       dart::dynamics::Inertia(
           mass, Eigen::Vector3d::Zero(), sphereShape->computeInertia(mass)));
@@ -368,53 +419,52 @@ dart::dynamics::SkeletonPtr createSphere(
 
 dart::simulation::WorldPtr createMassRatioScenario()
 {
-  auto world = dart::simulation::World::create("lcp_physics_mass_ratio");
+  auto world = dart::simulation::World::create("mass_ratio");
   world->setTimeStep(0.001);
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
   world->addSkeleton(createGround());
 
-  constexpr double massBoxSize = 0.36;
+  constexpr double massBoxSize = 0.5;
   world->addSkeleton(createTranslatedBox(
-      "light_mass",
+      "light_box",
       Eigen::Vector3d::Constant(massBoxSize),
       1.0,
-      Eigen::Vector3d(-2.0, 0.5 * massBoxSize, -0.85),
-      Eigen::Vector3d(0.30, 0.72, 0.36)));
+      Eigen::Vector3d(0.0, 0.5 * massBoxSize, 0.0),
+      Eigen::Vector3d(0.4, 0.8, 0.4)));
   world->addSkeleton(createTranslatedBox(
-      "heavy_mass",
+      "heavy_box",
       Eigen::Vector3d::Constant(massBoxSize),
       1000.0,
-      Eigen::Vector3d(-2.0, 1.5 * massBoxSize, -0.85),
-      Eigen::Vector3d(0.84, 0.24, 0.20)));
+      Eigen::Vector3d(0.0, massBoxSize * 1.6, 0.0),
+      Eigen::Vector3d(0.8, 0.2, 0.2)));
 
   return world;
 }
 
 dart::simulation::WorldPtr createBoxStackScenario()
 {
-  auto world = dart::simulation::World::create("lcp_physics_box_stack");
+  auto world = dart::simulation::World::create("box_stack");
   world->setTimeStep(0.001);
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
   world->addSkeleton(createGround());
 
-  constexpr int pyramidLayers = 4;
-  constexpr double pyramidBoxSize = 0.28;
+  constexpr double pyramidBoxSize = 0.3;
   int pyramidBoxIndex = 0;
-  for (int layer = 0; layer < pyramidLayers; ++layer) {
-    const int boxesInLayer = pyramidLayers - layer;
+  for (int layer = 0; layer < kBoxStackLayers; ++layer) {
+    const int boxesInLayer = kBoxStackLayers - layer;
     const double y = 0.5 * pyramidBoxSize + layer * pyramidBoxSize * 1.05;
-    const double startX = -0.5 * (boxesInLayer - 1) * pyramidBoxSize * 1.12;
+    const double startX = -(boxesInLayer - 1) * pyramidBoxSize * 0.55;
     for (int i = 0; i < boxesInLayer; ++i) {
-      const double x = startX + i * pyramidBoxSize * 1.12;
+      const double x = startX + i * pyramidBoxSize * 1.1;
       const double t
           = static_cast<double>(pyramidBoxIndex)
-            / static_cast<double>(pyramidLayers * (pyramidLayers + 1) / 2);
+            / static_cast<double>(kBoxStackLayers * (kBoxStackLayers + 1) / 2);
       world->addSkeleton(createTranslatedBox(
-          "stack_" + std::to_string(pyramidBoxIndex),
+          "box_" + std::to_string(pyramidBoxIndex),
           Eigen::Vector3d::Constant(pyramidBoxSize),
           1.0,
-          Eigen::Vector3d(x, y, -0.55),
-          Eigen::Vector3d(0.28 + 0.42 * t, 0.52, 0.82 - 0.34 * t)));
+          Eigen::Vector3d(x, y, 0.0),
+          Eigen::Vector3d(0.3 + 0.5 * t, 0.5, 0.8 - 0.5 * t)));
       ++pyramidBoxIndex;
     }
   }
@@ -424,28 +474,27 @@ dart::simulation::WorldPtr createBoxStackScenario()
 
 dart::simulation::WorldPtr createDominosScenario()
 {
-  auto world = dart::simulation::World::create("lcp_physics_dominos");
+  auto world = dart::simulation::World::create("dominos");
   world->setTimeStep(0.001);
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
   world->addSkeleton(createGround());
 
-  constexpr int dominoCount = 8;
-  constexpr double dominoSpacing = 0.16;
-  for (int i = 0; i < dominoCount; ++i) {
+  constexpr double dominoSpacing = 0.12;
+  for (int i = 0; i < kDominoCount; ++i) {
     const double x
-        = (static_cast<double>(i) - 0.5 * (dominoCount - 1)) * dominoSpacing;
+        = (static_cast<double>(i) - 0.5 * kDominoCount) * dominoSpacing;
     Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-    transform.translation() = Eigen::Vector3d(x, 0.18, 0.85);
+    transform.translation() = Eigen::Vector3d(x, 0.15, 0.0);
     if (i == 0) {
       transform.rotate(Eigen::AngleAxisd(0.30, Eigen::Vector3d::UnitZ()));
     }
-    const double t = static_cast<double>(i) / static_cast<double>(dominoCount);
+    const double t = static_cast<double>(i) / static_cast<double>(kDominoCount);
     world->addSkeleton(createBox(
-        std::string(kBoxPrefix) + "domino_" + std::to_string(i),
-        Eigen::Vector3d(0.055, 0.32, 0.15),
+        "domino_" + std::to_string(i),
+        Eigen::Vector3d(0.05, 0.3, 0.15),
         0.5,
         transform,
-        Eigen::Vector3d(0.18 + 0.52 * t, 0.34, 0.84 - 0.42 * t)));
+        Eigen::Vector3d(0.2 + 0.6 * t, 0.3, 0.8 - 0.5 * t)));
   }
 
   return world;
@@ -453,26 +502,35 @@ dart::simulation::WorldPtr createDominosScenario()
 
 dart::simulation::WorldPtr createBallDropScenario()
 {
-  auto world = dart::simulation::World::create("lcp_physics_ball_drop");
+  auto world = dart::simulation::World::create("ball_drop");
   world->setTimeStep(0.001);
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
   world->addSkeleton(createGround());
 
+  constexpr double radius = 0.1;
+  constexpr int gridSize = 5;
+  std::mt19937 rng(42);
+  std::uniform_real_distribution<double> jitter(-0.02, 0.02);
+
   int sphereIndex = 0;
-  for (int xIndex = 0; xIndex < 4; ++xIndex) {
-    for (int zIndex = 0; zIndex < 3; ++zIndex) {
-      const double t = static_cast<double>(sphereIndex)
-                       / static_cast<double>(kSphereCount);
-      world->addSkeleton(createSphere(
-          std::to_string(sphereIndex),
-          0.11,
-          Eigen::Vector3d(
-              1.45 + (static_cast<double>(xIndex) - 1.5) * 0.28,
-              0.65 + 0.10 * static_cast<double>(zIndex),
-              -0.55 + (static_cast<double>(zIndex) - 1.0) * 0.28),
-          Eigen::Vector3d(0.86 - 0.35 * t, 0.42 + 0.35 * t, 0.36),
-          0.5));
-      ++sphereIndex;
+  for (int xIndex = 0; xIndex < gridSize; ++xIndex) {
+    for (int zIndex = 0; zIndex < gridSize; ++zIndex) {
+      for (int yIndex = 0; yIndex < 3; ++yIndex) {
+        const double t = static_cast<double>(sphereIndex)
+                         / static_cast<double>(kBallDropSphereCount);
+        world->addSkeleton(createSphere(
+            "ball_" + std::to_string(sphereIndex),
+            radius,
+            Eigen::Vector3d(
+                (static_cast<double>(xIndex) - gridSize / 2.0) * radius * 2.5
+                    + jitter(rng),
+                radius + yIndex * radius * 2.2 + 0.5,
+                (static_cast<double>(zIndex) - gridSize / 2.0) * radius * 2.5
+                    + jitter(rng)),
+            Eigen::Vector3d(0.8 - 0.4 * t, 0.4 + 0.4 * t, 0.4),
+            0.5));
+        ++sphereIndex;
+      }
     }
   }
 
@@ -481,7 +539,7 @@ dart::simulation::WorldPtr createBallDropScenario()
 
 dart::simulation::WorldPtr createInclinedPlaneScenario()
 {
-  auto world = dart::simulation::World::create("lcp_physics_inclined_plane");
+  auto world = dart::simulation::World::create("inclined_plane");
   world->setTimeStep(0.001);
   world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
@@ -489,13 +547,11 @@ dart::simulation::WorldPtr createInclinedPlaneScenario()
   constexpr double rampAngle = 0.4;
   rampTransform.translation() = Eigen::Vector3d(0.0, 0.5, 0.0);
   rampTransform.rotate(Eigen::AngleAxisd(rampAngle, Eigen::Vector3d::UnitZ()));
-  auto ramp = createBox(
-      "lcp_physics_ramp",
+  auto ramp = createWeldedBox(
+      "ramp",
       Eigen::Vector3d(3.0, 0.1, 1.0),
-      1.0,
       rampTransform,
       Eigen::Vector3d(0.50, 0.50, 0.50));
-  ramp->setMobile(false);
   if (auto* rampShape = ramp->getBodyNode(0)->getShapeNode(0)) {
     rampShape->getDynamicsAspect()->setFrictionCoeff(0.5);
   }
@@ -549,11 +605,54 @@ void applySolver(const dart::simulation::WorldPtr& world, SolverType solverType)
   }
 }
 
+void applyParameters(
+    const dart::simulation::WorldPtr& world, const LcpPhysicsConfig& config)
+{
+  if (world == nullptr) {
+    return;
+  }
+
+  world->setTimeStep(1.0 / std::max(1.0, config.timeStepHz));
+  world->setGravity(Eigen::Vector3d(0.0, -config.gravityMagnitude, 0.0));
+}
+
 dart::simulation::WorldPtr createLcpPhysicsWorld(const LcpPhysicsConfig& config)
 {
   auto world = createScenario(config.scenario);
+  applyParameters(world, config);
   applySolver(world, config.solver);
   return world;
+}
+
+struct LcpPhysicsState
+{
+  LcpPhysicsConfig config;
+  dart::simulation::WorldPtr world;
+  std::size_t stepCount = 0;
+};
+
+void replaceWorldContents(
+    dart::simulation::World& target, const dart::simulation::WorldPtr& source)
+{
+  target.removeAllSensors();
+  target.removeAllSimpleFrames();
+  target.removeAllSkeletons();
+  target.setName(source->getName());
+  target.setTime(0.0);
+  while (source->getNumSkeletons() > 0) {
+    auto skeleton = source->getSkeleton(0);
+    source->removeSkeleton(skeleton);
+    target.addSkeleton(skeleton);
+  }
+}
+
+void resetLcpWorld(LcpPhysicsState& state)
+{
+  auto nextWorld = createLcpPhysicsWorld(state.config);
+  replaceWorldContents(*state.world, nextWorld);
+  applyParameters(state.world, state.config);
+  applySolver(state.world, state.config.solver);
+  state.stepCount = 0;
 }
 
 dart::gui::RunOptions makeLcpRunDefaults()
@@ -574,29 +673,92 @@ dart::gui::OrbitCamera makeLcpCamera()
   return camera;
 }
 
-dart::gui::Panel createLcpPanel(const LcpPhysicsConfig& config)
+dart::gui::Panel createLcpPanel(const std::shared_ptr<LcpPhysicsState>& state)
 {
   dart::gui::Panel panel;
-  panel.title = "LCP Physics";
-  panel.buildWithContext = [config](
+  panel.title = "LCP Physics Control";
+  panel.initialPosition = std::array<double, 2>{10.0, 10.0};
+  panel.initialSize = std::array<double, 2>{340.0, 600.0};
+  panel.backgroundAlpha = 0.85;
+  panel.autoResize = false;
+  panel.horizontalScrollbar = true;
+  panel.buildWithContext = [state](
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     builder.text("LCP contact solver benchmark scene");
-    builder.text("scenario: " + scenarioInfo(config.scenario).name);
-    builder.text("solver: " + solverInfo(config.solver).name);
-    builder.text(scenarioInfo(config.scenario).description);
-    builder.separator();
-    if (context.lifecycle != nullptr) {
-      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
-        dart::gui::togglePaused(*context.lifecycle);
+    builder.text("scenario: " + scenarioInfo(state->config.scenario).name);
+    builder.text("solver: " + solverInfo(state->config.solver).name);
+
+    if (builder.collapsingHeader("Simulation", true)) {
+      if (context.lifecycle != nullptr) {
+        if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+          dart::gui::togglePaused(*context.lifecycle);
+        }
+        builder.sameLine();
+        if (builder.button("Step")) {
+          dart::gui::requestSingleStep(*context.lifecycle);
+        }
+        builder.sameLine();
       }
-      builder.sameLine();
-      if (builder.button("Step")) {
-        dart::gui::requestSingleStep(*context.lifecycle);
+      if (builder.button("Reset")) {
+        resetLcpWorld(*state);
+      }
+      builder.text("time: " + std::to_string(context.simulationTime));
+      builder.text("steps: " + std::to_string(state->stepCount));
+    }
+
+    if (builder.collapsingHeader("Scenario", true)) {
+      for (const auto& scenario : getScenarios()) {
+        const std::string label
+            = (state->config.scenario == scenario.type ? "* " : "")
+              + scenario.name;
+        if (builder.button(label)) {
+          state->config.scenario = scenario.type;
+          resetLcpWorld(*state);
+        }
+        builder.text(scenario.description);
       }
     }
-    builder.text("time: " + std::to_string(context.simulationTime));
-    builder.text("contacts: " + std::to_string(context.contactCount));
+
+    if (builder.collapsingHeader("LCP Solver", true)) {
+      for (const auto& solver : getSolvers()) {
+        const std::string label
+            = (state->config.solver == solver.type ? "* " : "") + solver.name;
+        if (builder.button(label)) {
+          state->config.solver = solver.type;
+          applySolver(state->world, state->config.solver);
+        }
+        builder.text(solver.description);
+      }
+    }
+
+    if (builder.collapsingHeader("Parameters", true)) {
+      double timestepHz = state->config.timeStepHz;
+      if (builder.slider("Timestep (Hz)", timestepHz, 100.0, 2000.0)) {
+        state->config.timeStepHz = std::max(1.0, timestepHz);
+        applyParameters(state->world, state->config);
+      }
+
+      double gravity = state->config.gravityMagnitude;
+      if (builder.slider("Gravity (m/s^2)", gravity, 0.0, 20.0)) {
+        state->config.gravityMagnitude = std::max(0.0, gravity);
+        applyParameters(state->world, state->config);
+      }
+    }
+
+    if (builder.collapsingHeader("Performance", true)) {
+      builder.text("contacts: " + std::to_string(context.contactCount));
+      if (context.world != nullptr) {
+        builder.text(
+            "bodies: " + std::to_string(context.world->getNumSkeletons()));
+      }
+      builder.text(
+          "step-time plots need a public panel plotting/render-metrics API");
+    }
+
+    if (builder.collapsingHeader("About This Scenario")) {
+      builder.text(scenarioInfo(state->config.scenario).explanation);
+    }
   };
   return panel;
 }
@@ -615,10 +777,17 @@ int main(int argc, char* argv[])
     return 1;
   }
 
+  auto state = std::make_shared<LcpPhysicsState>();
+  state->config = config;
+  state->world = createLcpPhysicsWorld(config);
+
   dart::gui::ApplicationOptions options;
-  options.world = createLcpPhysicsWorld(config);
+  options.world = state->world;
   options.runDefaults = makeLcpRunDefaults();
   options.camera = makeLcpCamera();
-  options.panels.push_back(createLcpPanel(config));
+  options.preStep = [state]() {
+    ++state->stepCount;
+  };
+  options.panels.push_back(createLcpPanel(state));
   return dart::gui::runApplication(argc, argv, options);
 }
