@@ -41,9 +41,12 @@
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/degree_of_freedom.hpp>
+#include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/inverse_kinematics.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/shared_library_ik_fast.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/weld_joint.hpp>
@@ -56,9 +59,13 @@
 
 #include <array>
 #include <iostream>
+#include <limits>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -66,16 +73,17 @@ constexpr const char* kWamPackageName = "herb_description";
 constexpr const char* kWamPackagePath = "urdf/wam";
 constexpr const char* kWamUrdfPath = "urdf/wam/wam.urdf";
 constexpr const char* kWamSkeletonName = "visual_wam_ikfast_robot";
-constexpr const char* kTargetFrameName = "wam_ikfast_target";
+constexpr const char* kEndEffectorName = "ee";
+constexpr const char* kTargetFrameName = "lh_target";
 constexpr const char* kGroundSkeletonName = "visual_wam_ikfast_ground";
 
-void makeVisualOnlySkeleton(const dart::dynamics::SkeletonPtr& skeleton)
+void disableSkeletonCollisionAndGravity(
+    const dart::dynamics::SkeletonPtr& skeleton)
 {
   if (skeleton == nullptr) {
     return;
   }
 
-  skeleton->setMobile(false);
   skeleton->disableSelfCollisionCheck();
   skeleton->setAdjacentBodyCheck(false);
   for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
@@ -124,7 +132,7 @@ dart::dynamics::SkeletonPtr loadWamIkFastSkeleton()
     dof->setPosition(position);
   }
 
-  makeVisualOnlySkeleton(wam);
+  disableSkeletonCollisionAndGravity(wam);
   return wam;
 }
 
@@ -156,29 +164,289 @@ std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetHandleShape(
   return handle;
 }
 
-dart::simulation::WorldPtr createWamIkFastWorld()
+void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)
 {
-  auto world = dart::simulation::World::create("dartsim_wam_ikfast");
-  world->setGravity(Eigen::Vector3d::Zero());
-  world->addSkeleton(createGround());
+  const Eigen::Vector3d linearBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  const Eigen::Vector3d angularBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
+  ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
+}
 
-  auto wam = loadWamIkFastSkeleton();
-  auto* endEffector = wam->getBodyNode("/wam7");
-  if (endEffector == nullptr) {
+std::string makeWamIkFastLibraryPath()
+{
+#ifdef DART_WAM_IKFAST_LIB_PATH
+  return DART_WAM_IKFAST_LIB_PATH;
+#else
+  std::stringstream stream;
+  stream << DART_SHARED_LIB_PREFIX << "wamIk";
+  #if (DART_OS_LINUX || DART_OS_MACOS) && !defined(NDEBUG)
+  stream << "d";
+  #endif
+  stream << "." << DART_SHARED_LIB_EXTENSION;
+  return stream.str();
+#endif
+}
+
+struct WamIkFastSetup
+{
+  dart::dynamics::EndEffector* effector = nullptr;
+  dart::dynamics::InverseKinematicsPtr ik;
+  dart::dynamics::SimpleFramePtr target;
+};
+
+WamIkFastSetup setupWamIkFastTarget(const dart::dynamics::SkeletonPtr& wam)
+{
+  auto* endEffectorBody = wam ? wam->getBodyNode("/wam7") : nullptr;
+  if (endEffectorBody == nullptr) {
     throw std::runtime_error("WAM IKFast robot is missing /wam7 body node");
   }
 
-  Eigen::Isometry3d targetTransform = endEffector->getWorldTransform();
-  targetTransform.translate(Eigen::Vector3d(0.0, 0.0, -0.09));
+  Eigen::Isometry3d handOffset = Eigen::Isometry3d::Identity();
+  handOffset.translate(Eigen::Vector3d(0.0, 0.0, -0.09));
+
+  auto* effector = endEffectorBody->createEndEffector(kEndEffectorName);
+  effector->setDefaultRelativeTransform(handOffset, true);
+
   auto target = dart::dynamics::SimpleFrame::createShared(
-      dart::dynamics::Frame::World(), kTargetFrameName, targetTransform);
+      dart::dynamics::Frame::World(),
+      kTargetFrameName,
+      effector->getWorldTransform());
   target->setShape(createTargetHandleShape(0.15));
   target->getVisualAspect(true)->setRGBA(
       Eigen::Vector4d(0.18, 0.55, 1.0, 0.92));
-  world->addSimpleFrame(target);
-  world->addSkeleton(wam);
 
-  return world;
+  auto ik = effector->getIK(true);
+  ik->setTarget(target);
+  ik->setHierarchyLevel(1);
+  ik->setGradientMethod<dart::dynamics::SharedLibraryIkFast>(
+      makeWamIkFastLibraryPath(),
+      std::vector<std::size_t>{0, 1, 3, 4, 5, 6},
+      std::vector<std::size_t>{2});
+  setUnconstrainedIkBounds(ik);
+
+  WamIkFastSetup setup;
+  setup.effector = effector;
+  setup.ik = std::move(ik);
+  setup.target = std::move(target);
+  return setup;
+}
+
+class WamIkFastTargetState
+{
+public:
+  WamIkFastTargetState(
+      dart::simulation::WorldPtr world,
+      dart::dynamics::SkeletonPtr wam,
+      WamIkFastSetup setup)
+    : mWorld(std::move(world)),
+      mWam(std::move(wam)),
+      mEffector(setup.effector),
+      mIk(std::move(setup.ik)),
+      mTarget(std::move(setup.target))
+  {
+    if (mWorld == nullptr || mWam == nullptr || mEffector == nullptr
+        || mIk == nullptr || mTarget == nullptr) {
+      throw std::runtime_error("WAM IKFast target state is incomplete");
+    }
+
+    mRestConfig = mWam->getPositions();
+    mDefaultBounds = mIk->getErrorMethod().getBounds();
+    mDefaultTargetTransform = mTarget->getRelativeTransform();
+  }
+
+  void activate()
+  {
+    if (mActive) {
+      return;
+    }
+
+    mIk->getErrorMethod().setBounds();
+    mTarget->setTransform(mEffector->getWorldTransform());
+    mWorld->addSimpleFrame(mTarget);
+    mActive = true;
+    std::cout << "Activated WAM IKFast target.\n";
+    solve();
+  }
+
+  void deactivate()
+  {
+    if (!mActive) {
+      return;
+    }
+
+    mIk->getErrorMethod().setBounds(mDefaultBounds);
+    mTarget->setRelativeTransform(mDefaultTargetTransform);
+    mWorld->removeSimpleFrame(mTarget);
+    mActive = false;
+    std::cout << "Deactivated WAM IKFast target.\n";
+  }
+
+  void toggle()
+  {
+    if (mActive) {
+      deactivate();
+    } else {
+      activate();
+    }
+  }
+
+  void printJointValues() const
+  {
+    for (std::size_t i = 0; i < mWam->getNumDofs(); ++i) {
+      const auto* dof = mWam->getDof(i);
+      if (dof != nullptr) {
+        std::cout << dof->getName() << ": " << dof->getPosition() << "\n";
+      }
+    }
+  }
+
+  void resetPosture()
+  {
+    mWam->setPositions(mRestConfig);
+    std::cout << "Reset WAM to relaxed posture.\n";
+    solve();
+  }
+
+  void solve()
+  {
+    if (mActive && mIk != nullptr) {
+      mIk->solveAndApply(true);
+    }
+  }
+
+  bool active() const
+  {
+    return mActive;
+  }
+
+  const dart::dynamics::SimpleFramePtr& target() const
+  {
+    return mTarget;
+  }
+
+  const dart::dynamics::InverseKinematicsPtr& ik() const
+  {
+    return mIk;
+  }
+
+private:
+  dart::simulation::WorldPtr mWorld;
+  dart::dynamics::SkeletonPtr mWam;
+  dart::dynamics::EndEffector* mEffector = nullptr;
+  dart::dynamics::InverseKinematicsPtr mIk;
+  dart::dynamics::SimpleFramePtr mTarget;
+  Eigen::VectorXd mRestConfig;
+  std::pair<Eigen::Vector6d, Eigen::Vector6d> mDefaultBounds;
+  Eigen::Isometry3d mDefaultTargetTransform = Eigen::Isometry3d::Identity();
+  bool mActive = false;
+};
+
+struct WamIkFastScene
+{
+  dart::simulation::WorldPtr world;
+  dart::dynamics::SkeletonPtr wam;
+  std::shared_ptr<WamIkFastTargetState> targetState;
+  std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+};
+
+WamIkFastScene createWamIkFastScene()
+{
+  WamIkFastScene scene;
+  scene.world = dart::simulation::World::create("dartsim_wam_ikfast");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->addSkeleton(createGround());
+
+  auto wam = loadWamIkFastSkeleton();
+  auto setup = setupWamIkFastTarget(wam);
+  scene.wam = wam;
+  scene.world->addSkeleton(scene.wam);
+  scene.targetState = std::make_shared<WamIkFastTargetState>(
+      scene.world, scene.wam, std::move(setup));
+
+  dart::gui::InverseKinematicsHandle handle;
+  handle.label = "1 WAM end-effector";
+  handle.hotkey = '1';
+  handle.target = scene.targetState->target();
+  handle.ik = scene.targetState->ik();
+  scene.ikHandles.push_back(std::move(handle));
+  return scene;
+}
+
+std::vector<dart::gui::KeyboardAction> createWamIkFastKeyboardActions(
+    const std::shared_ptr<WamIkFastTargetState>& targetState)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(3);
+
+  dart::gui::KeyboardAction toggleTarget;
+  toggleTarget.label = "Toggle WAM IKFast target";
+  toggleTarget.shortcut = dart::gui::KeyboardShortcut::characterKey('1');
+  toggleTarget.callback
+      = [targetState](dart::gui::KeyboardActionContext& context) {
+          targetState->toggle();
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  actions.push_back(std::move(toggleTarget));
+
+  dart::gui::KeyboardAction printJoints;
+  printJoints.label = "Print WAM joint values";
+  printJoints.shortcut = dart::gui::KeyboardShortcut::characterKey('p');
+  printJoints.callback = [targetState](dart::gui::KeyboardActionContext&) {
+    targetState->printJointValues();
+  };
+  actions.push_back(std::move(printJoints));
+
+  dart::gui::KeyboardAction resetPosture;
+  resetPosture.label = "Reset WAM relaxed posture";
+  resetPosture.shortcut = dart::gui::KeyboardShortcut::characterKey('t');
+  resetPosture.callback
+      = [targetState](dart::gui::KeyboardActionContext& context) {
+          targetState->resetPosture();
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  actions.push_back(std::move(resetPosture));
+
+  return actions;
+}
+
+dart::gui::RunOptions makeWamIkFastRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 1280;
+  options.height = 960;
+  return options;
+}
+
+dart::gui::OrbitCamera makeWamIkFastCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.50);
+  camera.yaw = 0.5118558424318241;
+  camera.pitch = 0.22626228031830078;
+  camera.distance = 6.285196894290584;
+  return camera;
+}
+
+void printWamIkFastInstructions()
+{
+  std::cout
+      << "WAM IKFast Example Controls:\n"
+      << "Ctrl-left drag: translate the selected target handle\n"
+      << "Ctrl+Shift-left drag: rotate the selected target handle\n"
+      << "Arrow keys and PageUp/PageDown: nudge the selected target handle\n"
+      << "Hold X/Y/Z with Ctrl-drag to constrain movement to an axis\n"
+      << "1: Toggle the interactive target of an EndEffector\n"
+      << "P: Print the current joint values\n"
+      << "T: Reset the robot to its relaxed posture\n"
+      << "\n"
+      << "Note that this is purely kinematic. Physical simulation is not "
+         "allowed in this app.\n";
 }
 
 dart::gui::Panel createWamIkFastPanel()
@@ -187,11 +455,14 @@ dart::gui::Panel createWamIkFastPanel()
   panel.title = "WAM IKFast";
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
-    builder.text("WAM IKFast visual target scene");
-    builder.text("Select the blue target handle.");
+    builder.text("WAM IKFast kinematic target scene");
+    builder.text("Press 1 to toggle the target handle.");
+    builder.text("Press P to print joints; T resets posture.");
     builder.text("Ctrl-left drag moves the selected handle.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
+    builder.text("Ctrl+Shift-left drag rotates it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
+    builder.text("IK solves only while the target is active.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -213,9 +484,20 @@ dart::gui::Panel createWamIkFastPanel()
 int main(int argc, char* argv[])
 {
   try {
+    WamIkFastScene scene = createWamIkFastScene();
+
     dart::gui::ApplicationOptions options;
-    options.world = createWamIkFastWorld();
+    options.world = scene.world;
+    options.ikHandles = scene.ikHandles;
+    options.runDefaults = makeWamIkFastRunDefaults();
+    options.camera = makeWamIkFastCamera();
+    options.preStep = [targetState = scene.targetState]() {
+      targetState->solve();
+    };
+    options.keyboardActions = createWamIkFastKeyboardActions(scene.targetState);
     options.panels.push_back(createWamIkFastPanel());
+
+    printWamIkFastInstructions();
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {
     std::cerr << "wam_ikfast: " << e.what() << "\n";

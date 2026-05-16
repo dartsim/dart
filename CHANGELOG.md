@@ -155,6 +155,10 @@
     KR5 ground, target ball, task-space controller, 640x480 launch default,
     camera framing, control instructions, README, and marker coverage through
     public `dart::gui`.
+  - Restored the `wam_ikfast` example's generated IKFast shared library,
+    `SharedLibraryIkFast` setup, target activation workflow, relaxed-posture
+    reset, joint-value printing, 1280x960 launch default, camera framing,
+    README, and marker coverage through public `dart::gui`.
   - Moved `atlas_simbicon` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground, and runs through promoted
     `dart::gui` options directly.

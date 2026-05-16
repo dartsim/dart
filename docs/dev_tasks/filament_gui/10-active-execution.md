@@ -3394,6 +3394,49 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
     (67 passed)
   - `cmake --build build/default/cpp/Release --target examples --parallel 5`
 
+Forty-first WAM IKFast strict parity checkpoint:
+
+- Historical `examples/wam_ikfast` loaded the WAM URDF, restored a local
+  generated IKFast shared-library target, created end-effector `ee` on `/wam7`,
+  targeted frame `lh_target`, configured `SharedLibraryIkFast` with WAM DOFs
+  `{0,1,3,4,5,6}` and free DOF `{2}`, solved the active target every refresh,
+  printed Alt/Ctrl/Shift drag instructions plus `1`/`P`/`T` keyboard controls,
+  used 1280x960 launch defaults, framed the camera around the WAM, and included
+  an example README.
+- Current promoted source preserved WAM loading and a visible target handle, but
+  had dropped the solver library/configuration, activation workflow, reset/print
+  controls, README, console instructions, restored defaults, camera home, and
+  marker coverage.
+- Implementation status: WAM IKFast now restores the generated `wamIk` shared
+  library target, configures `SharedLibraryIkFast` from the example source,
+  creates `ee`/`lh_target`, drives active IK through `ApplicationOptions::preStep`,
+  exposes promoted keyboard actions for target toggle, joint printing, and
+  relaxed-posture reset, restores the 1280x960/camera defaults and README, and
+  extends marker coverage. Exact parent-joint-only OSG drag semantics and
+  explicit no-simulation lifecycle remain public API follow-ups.
+- Rerun support remains intentionally removed after the latest maintenance-cost
+  check: no product CMake/package/API/runtime surface or concrete downstream use
+  case remains, and tests continue to guard the absent `examples/rerun`
+  placeholder. Remaining lowercase `rerun` references are CI retry docs,
+  generated guard patterns, marker tests, or historical dev-task notes.
+- Local acceptance completed for this checkpoint:
+  - Focused build for `wam_ikfast` and `UNIT_gui_FilamentSceneExtraction`.
+  - Focused CTest for `UNIT_gui_FilamentSceneExtraction`.
+  - Direct llvmpipe WAM screenshot at 1280x960 plus
+    `analyze_headless_smoke.py` (`/tmp/dart_wam_ikfast_strict_direct.ppm`,
+    1228800/1228800 nonzero pixels).
+  - `pixi run ex wam_ikfast --headless --frames 5 --width 1280 --height 960`
+    screenshot plus analyzer (`/tmp/dart_wam_ikfast_strict_pixi.ppm`,
+    1228800/1228800 nonzero pixels).
+  - Direct `--out` frame export plus analyzer
+    (`/tmp/dart_wam_ikfast_strict_frames/frame_000001.ppm`, 1228800/1228800
+    nonzero pixels).
+  - `pixi run build-examples`.
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed).
+  - Mandatory `pixi run lint`, post-lint focused rebuild/CTest, post-lint direct
+    screenshot analyzer check, and `git diff --check`.
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -3424,8 +3467,8 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Run mandatory `pixi run lint`, post-lint focused Coupler checks, then commit
-   and push the `examples/coupler_constraint/` parity checkpoint.
+1. Commit and push the `examples/wam_ikfast/` strict parity checkpoint after
+   final local validation stays green.
 2. Continue the same historical-source parity audit across every remaining
    pre-existing example; do not treat source ownership, build success, runner
    coverage, or screenshots as sufficient restoration evidence.

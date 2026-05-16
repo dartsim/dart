@@ -2487,11 +2487,52 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
 
   const auto wamSource = readSourceFile(
       std::filesystem::path("examples") / "wam_ikfast" / "main.cpp");
+  const auto wamReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "wam_ikfast" / "README.md");
+  const auto wamCmakeSource = readSourceFile(
+      std::filesystem::path("examples") / "wam_ikfast" / "CMakeLists.txt");
+  const auto wamIkfastCmakeSource = readSourceFile(
+      std::filesystem::path("examples") / "wam_ikfast" / "ikfast"
+      / "CMakeLists.txt");
   EXPECT_NE(wamSource.find("createTargetHandleShape"), std::string::npos);
   EXPECT_NE(wamSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(wamSource.find("wam_ikfast_target"), std::string::npos);
+  EXPECT_NE(wamSource.find("SharedLibraryIkFast"), std::string::npos);
+  EXPECT_NE(wamSource.find("DART_WAM_IKFAST_LIB_PATH"), std::string::npos);
+  EXPECT_NE(
+      wamSource.find("std::vector<std::size_t>{0, 1, 3, 4, 5, 6}"),
+      std::string::npos);
+  EXPECT_NE(wamSource.find("std::vector<std::size_t>{2}"), std::string::npos);
+  EXPECT_NE(wamSource.find("lh_target"), std::string::npos);
+  EXPECT_NE(
+      wamSource.find("createWamIkFastKeyboardActions"), std::string::npos);
+  EXPECT_NE(wamSource.find("Toggle WAM IKFast target"), std::string::npos);
+  EXPECT_NE(wamSource.find("Print WAM joint values"), std::string::npos);
+  EXPECT_NE(wamSource.find("Reset WAM relaxed posture"), std::string::npos);
+  EXPECT_NE(wamSource.find("targetState->solve"), std::string::npos);
+  EXPECT_NE(wamSource.find("makeWamIkFastRunDefaults"), std::string::npos);
+  EXPECT_NE(wamSource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(wamSource.find("options.height = 960"), std::string::npos);
+  EXPECT_NE(wamSource.find("makeWamIkFastCamera"), std::string::npos);
+  EXPECT_NE(
+      wamSource.find("camera.distance = 6.285196894290584"), std::string::npos);
+  EXPECT_NE(wamSource.find("options.ikHandles"), std::string::npos);
+  EXPECT_NE(wamSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(wamSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(wamSource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_NE(
+      wamSource.find("Note that this is purely kinematic"), std::string::npos);
   EXPECT_EQ(wamSource.find("options.defaultScene"), std::string::npos);
+  EXPECT_NE(wamCmakeSource.find("add_subdirectory(ikfast)"), std::string::npos);
+  EXPECT_NE(wamCmakeSource.find("DART_WAM_IKFAST_LIB_PATH"), std::string::npos);
+  EXPECT_NE(wamCmakeSource.find("wamIk"), std::string::npos);
+  EXPECT_NE(wamIkfastCmakeSource.find("add_library(wamIk"), std::string::npos);
+  EXPECT_NE(wamReadmeSource.find("WAM IKFast Example"), std::string::npos);
+  EXPECT_NE(wamReadmeSource.find("pixi run ex wam_ikfast"), std::string::npos);
+  EXPECT_NE(wamReadmeSource.find("--screenshot"), std::string::npos);
+  EXPECT_NE(wamReadmeSource.find("--out"), std::string::npos);
+  EXPECT_NE(
+      wamReadmeSource.find("parent-joint-only manipulation"),
+      std::string::npos);
 
   const auto tinkertoySource = readSourceFile(
       std::filesystem::path("examples") / "tinkertoy" / "main.cpp");

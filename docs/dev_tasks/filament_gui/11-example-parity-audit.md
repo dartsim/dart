@@ -1103,6 +1103,36 @@ keeping the promoted panel buttons/sliders as additive affordances.
 | README documents summary, controls, promoted run/capture, build, and execute instructions.                          | Restored in this slice.              | README now documents `pixi run ex vehicle`, `--screenshot`, `--out`, and standalone build/execute sections.            |
 | Keep marker coverage for SKEL load, controller, keys, printed instructions, defaults, README, and no private scene. | Restored in this slice.              | Marker guards cover the restored source and README behavior and reject private scene handoff.                          |
 
+### WAM IKFast Itemized Inventory
+
+Historical source compared:
+`520993d7301^:examples/wam_ikfast/{osgWamIkFast.cpp,helpers.*,input_handler.*,wam_world.*,ikfast/}`.
+
+Strict re-open found that the current promoted source preserves WAM URDF
+loading and a visible target handle, but it dropped the historical IKFast
+solver setup, target activation keyboard workflow, reset/print keys, console
+instructions, README, 1280x960 launch default, camera home, and the local
+IKFast shared-library target. This slice restores the feasible behavior through
+public `dart::gui` keyboard actions, pre-step IK solving, run defaults, camera,
+README, and marker guards. Exact OSG drag-mode semantics remain partially
+superseded by the promoted selection tool: public `dart::gui` supports
+selection, Ctrl-left drag translation, Ctrl+Shift rotation, keyboard nudges,
+and axis constraints, but not the old Alt/Ctrl/Shift parent-joint drag mode
+split.
+
+| Historical item                                                                                             | Current outcome                      | Notes                                                                                                                                        |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Load WAM from `urdf/wam/wam.urdf` with the `herb_description` package path and zero joint positions.        | Restored through public `dart::gui`. | Current source keeps DART URI loading and validates `/j1` through `/j7`.                                                                     |
+| Create a ground plane and kinematic WAM world with physical simulation disabled.                            | Partially restored.                  | Current source uses zero gravity and kinematic-style pre-step IK; exact `allowSimulation(false)` remains a public lifecycle/default gap.     |
+| Create end-effector `ee`, target frame `lh_target`, and configure `SharedLibraryIkFast` with WAM DOFs.      | Restored in this slice.              | The local `wamIk` shared library target is restored and the example configures `SharedLibraryIkFast` through public DART dynamics APIs.      |
+| Run IK solving every refresh/step while an IK target is active.                                             | Restored through public `dart::gui`. | Current source solves active targets from `ApplicationOptions::preStep` and after keyboard activation/reset.                                 |
+| Key `1` toggles target activation, `P` prints joint values, and `T` resets the relaxed posture.             | Restored in this slice.              | Current source uses promoted `KeyboardAction`s and pauses after discrete target/reset commands.                                              |
+| Alt/Ctrl/Shift drag-mode instructions for translation, rotation, and parent-joint-only manipulation.        | Superseded / public API gap.         | Promoted selection supports target selection, Ctrl-left translation, Ctrl+Shift rotation, nudges, and axis constraints, not the exact modes. |
+| Print viewer instructions and kinematic-mode note.                                                          | Restored in this slice.              | Current source prints the promoted console instruction block before launching.                                                               |
+| Preserve 1280x960 launch default and camera home from eye `(5.34,3.00,1.91)` to target `(0,0,0.50)`.        | Restored in this slice.              | Current source sets `ApplicationOptions::runDefaults` and promoted `OrbitCamera` framing.                                                    |
+| README documents summary, controls, promoted run/capture, build, and execute instructions.                  | Restored in this slice.              | README documents `pixi run ex wam_ikfast`, `--screenshot`, `--out`, and the drag-mode API gap.                                               |
+| Keep marker coverage for IKFast setup, activation/reset/print keys, defaults, README, and no private scene. | Restored in this slice.              | Marker guards cover restored source/README behavior and reject private scene handoff.                                                        |
+
 ## Example Inventory
 
 | Example                     | Current Audit State                                                               | Next Required Action                                                                                                                                                                                                                                                                                                                  |
@@ -1149,4 +1179,4 @@ keeping the promoted panel buttons/sliders as additive affordances.
 | `tinkertoy`                 | Restored by strict re-open except runtime recording and headlight API gaps.       | Keep marker guards for selected hit point/normal, panel options/help/buttons, explicit defaults, README, capture flags, and no private scene handoff; keep runtime Enter recording and headlights as public API gaps.                                                                                                                 |
 | `unified_loading`           | Preserved by strict audit as a non-GUI loading example.                           | Keep marker guards for `ReadOptions`, load toggles, format/root-joint/package controls, README, and no GUI renderer dependency.                                                                                                                                                                                                       |
 | `vehicle`                   | Restored by strict re-open.                                                       | Keep marker guards for SKEL load, controller, command keys, printed instructions, 640x480 defaults, README/capture docs, and no private scene handoff.                                                                                                                                                                                |
-| `wam_ikfast`                | Active strict re-open cursor after Vehicle.                                       | Re-check historical WAM loading, IK target behavior, keyboard/teleoperation, camera/defaults, README, capture, and marker guards against `520993d7301^:examples/wam_ikfast` before calling it complete.                                                                                                                               |
+| `wam_ikfast`                | Restored by strict re-open except exact drag-mode/lifecycle API gaps.             | Keep marker guards for WAM URDF loading, `SharedLibraryIkFast`, `lh_target`, activation/reset/print keys, defaults, camera, README, capture, and no private scene handoff; keep parent-joint drag-mode and explicit no-simulation lifecycle as public API follow-ups.                                                                 |

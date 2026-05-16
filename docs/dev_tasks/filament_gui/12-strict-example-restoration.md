@@ -564,6 +564,26 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `520993d7301^:examples/wam_ikfast`, then restore or classify historical WAM
     URDF loading, IK target behavior, keyboard/teleoperation, camera/defaults,
     README, capture, and marker coverage before moving past it.
+60. `examples/wam_ikfast/` strict re-open found concrete gaps after the prior
+    visual target checkpoint: the current source loaded the WAM and exposed a
+    visible target, but it had dropped the historical local IKFast shared
+    library target, `SharedLibraryIkFast` configuration, `ee`/`lh_target`
+    setup, target activation workflow, `P` joint printing, `T` relaxed-posture
+    reset, console instructions, 1280x960 launch default, camera home, README,
+    and marker coverage. The current source repairs the feasible behavior
+    through public `dart::gui` keyboard actions, IK handles, pre-step solving,
+    run defaults, camera setup, restored README/capture docs, and marker guards.
+    Exact Alt/Ctrl/Shift parent-joint manipulation and explicit
+    `allowSimulation(false)` lifecycle remain documented public API gaps. Rerun
+    support remains intentionally removed: repository search still finds no
+    product CMake/package/API/runtime surface or downstream use case, and
+    remaining lowercase `rerun` references are CI retry docs, generated command
+    guards, historical task notes, or tests that guard the removed placeholder.
+    Pre-lint validation includes focused builds, focused CTest, direct and pixi
+    software-GL screenshot basic analyzer checks, image-sequence analyzer
+    coverage, aggregate `build-examples`, and Python C++ example-runner tests.
+    Mandatory `pixi run lint`, post-lint focused rebuild/CTest, post-lint direct
+    screenshot basic analyzer check, and `git diff --check` also passed.
 
 ## Checkpoint Rule
 
