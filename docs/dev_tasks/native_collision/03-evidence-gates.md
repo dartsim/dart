@@ -3086,6 +3086,18 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `NarrowPhase` compound dispatch in both query orders, including nonzero
     penetration depth, finite contact position/normal data, and flipped normal
     orientation for swapped arguments.
+- Current local convex/mesh compound refresh:
+  - Commit: current working tree after local head `914afcd367b`
+    (`Cover primitive compound pair order`).
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target test_compound --parallel 5`,
+    `./build/default/cpp/Release/bin/test_compound --gtest_filter='CompoundCollision.ConvexPairOrder:CompoundCollision.MeshPairOrder'`,
+    and
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_compound$' -j 5`.
+  - Result: passed. `test_compound` now covers `convex_compound` and
+    `mesh_compound` through existing native compound dispatch in both query
+    orders, including nonzero penetration depth, finite contact position/normal
+    data, and flipped normal orientation for swapped arguments.
 
 ## Known Risks
 

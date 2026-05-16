@@ -37,6 +37,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <vector>
 
 #include <cmath>
 
@@ -64,6 +65,48 @@ void addBoxChild(
     const Eigen::Isometry3d& transform)
 {
   compound.addChild(std::make_unique<BoxShape>(halfExtents), transform);
+}
+
+std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale = 1.0)
+{
+  return {
+      {scale, 0, 0},
+      {-scale, 0, 0},
+      {0, scale, 0},
+      {0, -scale, 0},
+      {0, 0, scale},
+      {0, 0, -scale}};
+}
+
+MeshShape makeGridMesh(int resolution, double scale)
+{
+  std::vector<Eigen::Vector3d> vertices;
+  std::vector<MeshShape::Triangle> triangles;
+
+  vertices.reserve(
+      static_cast<std::size_t>((resolution + 1) * (resolution + 1)));
+  triangles.reserve(static_cast<std::size_t>(resolution * resolution * 2));
+
+  for (int y = 0; y <= resolution; ++y) {
+    for (int x = 0; x <= resolution; ++x) {
+      const double px = (static_cast<double>(x) / resolution - 0.5) * scale;
+      const double py = (static_cast<double>(y) / resolution - 0.5) * scale;
+      vertices.emplace_back(px, py, 0.0);
+    }
+  }
+
+  const auto idx = [resolution](int x, int y) {
+    return y * (resolution + 1) + x;
+  };
+
+  for (int y = 0; y < resolution; ++y) {
+    for (int x = 0; x < resolution; ++x) {
+      triangles.emplace_back(idx(x, y), idx(x + 1, y), idx(x + 1, y + 1));
+      triangles.emplace_back(idx(x, y), idx(x + 1, y + 1), idx(x, y + 1));
+    }
+  }
+
+  return MeshShape(std::move(vertices), std::move(triangles));
 }
 
 void expectPairOrderCollision(
@@ -332,6 +375,34 @@ TEST(CompoundCollision, PlanePairOrder)
       compound,
       Eigen::Isometry3d::Identity(),
       plane,
+      Eigen::Isometry3d::Identity());
+}
+
+TEST(CompoundCollision, ConvexPairOrder)
+{
+  CompoundShape compound;
+  addBoxChild(
+      compound, Eigen::Vector3d(0.5, 0.5, 0.5), Eigen::Isometry3d::Identity());
+
+  ConvexShape convex(makeOctahedronVertices(0.5));
+  Eigen::Isometry3d convexTf = Eigen::Isometry3d::Identity();
+  convexTf.translation() = Eigen::Vector3d(0.6, 0.0, 0.0);
+
+  expectPairOrderCollision(
+      compound, Eigen::Isometry3d::Identity(), convex, convexTf);
+}
+
+TEST(CompoundCollision, MeshPairOrder)
+{
+  CompoundShape compound;
+  addSphereChild(compound, 0.5, Eigen::Vector3d(0.0, 0.0, 0.4));
+
+  MeshShape mesh = makeGridMesh(1, 2.0);
+
+  expectPairOrderCollision(
+      compound,
+      Eigen::Isometry3d::Identity(),
+      mesh,
       Eigen::Isometry3d::Identity());
 }
 

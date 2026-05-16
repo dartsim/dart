@@ -123,12 +123,12 @@ normals flip).
 | `mesh_mesh_contact_plane`            | DONE   | `test_mesh_contact_regression.cpp`                                 |                                                               |
 | `mesh_convex`                        | DONE   | `test_convex.cpp::MeshConvexPairOrder`                             | Routes through GJK                                            |
 | `mesh_sdf`                           | GAP    | —                                                                  |                                                               |
-| `mesh_compound`                      | GAP    | —                                                                  |                                                               |
+| `mesh_compound`                      | DONE   | `test_compound.cpp::MeshPairOrder`                                 |                                                               |
 | `convex_convex_intersecting`         | DONE   | `test_convex.cpp`                                                  |                                                               |
 | `convex_convex_separated`            | DONE   | `test_convex.cpp`                                                  |                                                               |
 | `convex_convex_rotated`              | DONE   | `test_convex.cpp`                                                  |                                                               |
 | `convex_sdf`                         | GAP    | —                                                                  |                                                               |
-| `convex_compound`                    | GAP    | —                                                                  |                                                               |
+| `convex_compound`                    | DONE   | `test_compound.cpp::ConvexPairOrder`                               |                                                               |
 | `sdf_sdf`                            | GAP    | —                                                                  | Decide: in-scope or out?                                      |
 | `sdf_compound`                       | GAP    | —                                                                  |                                                               |
 | `compound_compound_basic`            | DONE   | `test_compound.cpp`                                                |                                                               |
@@ -346,15 +346,15 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 ## Summary Counters (as of 2026-05-15)
 
-- **§1 Pair-wise narrow-phase:** 65 DONE, 0 PARTIAL, 15 GAP (of 80 rows)
+- **§1 Pair-wise narrow-phase:** 67 DONE, 0 PARTIAL, 13 GAP (of 80 rows)
 - **§2 Algorithm-level:** 27 DONE, 4 PARTIAL, 13 GAP (of 44 rows)
 - **§3 Stress / regression:** 17 DONE, 1 PARTIAL, 15 GAP (of 33 rows)
 - **§4 Benchmarks:** 19 DONE, 0 PARTIAL, 9 GAP (of 28 rows)
 - **§5 Infrastructure:** 8 DONE, 0 PARTIAL, 1 GAP (of 9 rows)
-- **TOTAL:** 136 DONE, 5 PARTIAL, 53 GAP (of 194 rows)
+- **TOTAL:** 138 DONE, 5 PARTIAL, 51 GAP (of 194 rows)
 
-DART native is currently at ~70% of the proposed superset, with the
-remaining 30% concentrated in: (a) less-common shape pairs against
+DART native is currently at ~71% of the proposed superset, with the
+remaining 29% concentrated in: (a) less-common shape pairs against
 capsule/cylinder/mesh/convex/sdf/compound, (b) algorithm-isolation
 tests for SAT internals, (c) long-horizon stability and stress scenes,
 (d) scale and scenario benchmarks beyond the focused raw primitive rows.
@@ -367,7 +367,7 @@ tests for SAT internals, (c) long-horizon stability and stress scenes,
    `lint_runtime_isolation` to enforce the new path. ~0 net change to
    this matrix; 1 row gets a new "and rejects old path" condition.
 3. **Cylinder × Sdf** — remaining cylinder pair row.
-4. **Convex/Mesh × {Sdf, Compound}** — remaining convexity and mesh pair rows.
+4. **Convex/Mesh × Sdf** — remaining convexity and mesh pair rows.
 5. **Long-horizon stability scenes** — `stacked_boxes_n10/n100`,
    `mixed_primitive_stack` unit-test version, `ragdoll_capsule_pile`,
    `thin_box_no_tunneling`. These are the highest-leverage rows for
