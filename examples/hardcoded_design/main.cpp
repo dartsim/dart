@@ -31,6 +31,8 @@
  */
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -42,12 +44,52 @@
 
 #include <Eigen/Geometry>
 
+#include <iostream>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <cstddef>
 
 namespace {
 
 constexpr const char* kSkeletonName = "visual_hardcoded_design";
 constexpr double kPi = 3.14159265358979323846;
+constexpr double kJointStep = 0.1;
+
+struct HardcodedDesignScene
+{
+  dart::simulation::WorldPtr world;
+  dart::dynamics::SkeletonPtr skeleton;
+};
+
+struct HardcodedDesignControls
+{
+  dart::dynamics::SkeletonPtr skeleton;
+  bool inverse = false;
+
+  void toggleDirection()
+  {
+    inverse = !inverse;
+    std::cout << "Direction inverted: " << (inverse ? "negative" : "positive")
+              << "\n";
+  }
+
+  void moveDof(std::size_t dofIndex)
+  {
+    if (skeleton == nullptr || dofIndex >= skeleton->getNumDofs()) {
+      return;
+    }
+
+    Eigen::VectorXd pose = skeleton->getPositions();
+    pose(static_cast<Eigen::Index>(dofIndex))
+        += inverse ? -kJointStep : kJointStep;
+    skeleton->setPositions(pose);
+    std::cout << "Updated pose DOF " << dofIndex << ": " << pose.transpose()
+              << "\n";
+  }
+};
 
 dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
 {
@@ -133,19 +175,93 @@ dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
   return skeleton;
 }
 
-dart::simulation::WorldPtr createHardcodedDesignWorld()
+HardcodedDesignScene createHardcodedDesignScene()
 {
-  auto world = dart::simulation::World::create("dartsim_hardcoded_design");
-  world->setGravity(Eigen::Vector3d::Zero());
-  world->addSkeleton(createHardcodedDesignSkeleton());
-  return world;
+  HardcodedDesignScene scene;
+  scene.world = dart::simulation::World::create("dartsim_hardcoded_design");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.skeleton = createHardcodedDesignSkeleton();
+  scene.world->addSkeleton(scene.skeleton);
+  return scene;
+}
+
+dart::gui::OrbitCamera makeHardcodedDesignCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.0);
+  camera.yaw = 0.7853981633974483;
+  camera.pitch = 0.6154797086703874;
+  camera.distance = 3.4641016151377544;
+  return camera;
+}
+
+dart::gui::KeyboardAction makeMoveJointAction(
+    char key,
+    std::size_t dofIndex,
+    const std::shared_ptr<HardcodedDesignControls>& controls)
+{
+  dart::gui::KeyboardAction action;
+  action.label = "Move hardcoded-design DOF " + std::to_string(dofIndex);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback
+      = [controls, dofIndex](dart::gui::KeyboardActionContext& context) {
+          controls->moveDof(dofIndex);
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createHardcodedDesignKeyboardActions(
+    const std::shared_ptr<HardcodedDesignControls>& controls)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makeMoveJointAction('1', 0, controls));
+  actions.push_back(makeMoveJointAction('2', 1, controls));
+  actions.push_back(makeMoveJointAction('3', 2, controls));
+
+  dart::gui::KeyboardAction direction;
+  direction.label = "Toggle hardcoded-design joint direction";
+  direction.shortcut = dart::gui::KeyboardShortcut::characterKey('-');
+  direction.callback = [controls](dart::gui::KeyboardActionContext& context) {
+    controls->toggleDirection();
+    if (context.lifecycle != nullptr) {
+      context.lifecycle->paused = true;
+    }
+  };
+  actions.push_back(std::move(direction));
+  return actions;
+}
+
+dart::gui::Panel createHardcodedDesignPanel(
+    const std::shared_ptr<HardcodedDesignControls>& controls)
+{
+  dart::gui::Panel panel;
+  panel.title = "Hardcoded Design";
+  panel.build = [controls](dart::gui::PanelBuilder& builder) {
+    builder.text("Hand-built three-link revolute skeleton.");
+    builder.text("Keys: 1 LHY, 2 LHR, 3 LHP.");
+    builder.text("Key: - toggles joint increment direction.");
+    builder.text(
+        std::string("direction: ")
+        + (controls->inverse ? "negative" : "positive"));
+  };
+  return panel;
 }
 
 } // namespace
 
 int main(int argc, char* argv[])
 {
+  auto scene = createHardcodedDesignScene();
+  auto controls = std::make_shared<HardcodedDesignControls>();
+  controls->skeleton = scene.skeleton;
+
   dart::gui::ApplicationOptions options;
-  options.world = createHardcodedDesignWorld();
+  options.world = scene.world;
+  options.camera = makeHardcodedDesignCamera();
+  options.keyboardActions = createHardcodedDesignKeyboardActions(controls);
+  options.panels.push_back(createHardcodedDesignPanel(controls));
   return dart::gui::runApplication(argc, argv, options);
 }

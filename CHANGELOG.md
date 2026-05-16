@@ -147,6 +147,8 @@
     README through public `dart::gui`.
   - Restored simple-frames example camera/run defaults and example README
     through public `dart::gui`.
+  - Restored hardcoded-design example joint keyboard controls, camera default,
+    and example README through public `dart::gui`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

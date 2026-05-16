@@ -732,10 +732,10 @@ longer express stable DART concepts.
    treating source ownership, buildability, or headless screenshots as full
    restoration. `examples/fetch/` is explicitly still part of that audit
    standard if any missing Fetch-specific behavior is identified.
-2. The current implementation slice is `examples/hardcoded_design`: restore
-   number-key joint controls, the `-` direction toggle, camera home, README,
-   and parity tests through public `dart::gui`. Track the old OSG wireframe
-   mode as a future DART-owned render-style/debug API requirement.
+2. The current implementation slice is `examples/hardcoded_design`: commit the
+   restored number-key joint controls, `-` direction toggle, camera home,
+   README, and parity tests through public `dart::gui`. Track the old OSG
+   wireframe mode as a future DART-owned render-style/debug API requirement.
 3. Add only DART-owned public GUI concepts needed for those examples: no public
    Filament, GLFW, Dear ImGui, OSG, Raylib, OpenGL, Vulkan, or Metal types.
 4. Keep checkpoint commits small, run `pixi run lint` before every commit, and

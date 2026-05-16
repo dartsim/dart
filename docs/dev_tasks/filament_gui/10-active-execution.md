@@ -109,6 +109,8 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
+  `933ae7e0404 Update Filament GUI parity task state`.
+- Latest pushed code checkpoint:
   `95a6ad0a737 Restore simple frames run defaults`.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
@@ -130,17 +132,19 @@ history but are not guaranteed to be in chronological order.
   selection/drag/nudge instructions, Play/Pause/Step/Exit panel controls,
   README, and source-marker tests. If any further Fetch-specific historical
   behavior is identified, repair it through promoted `dart::gui` APIs.
-- Next implementation checkpoint: `examples/hardcoded_design`. Restore
-  number-key joint increments for DOFs 0-2, `-` direction toggling, camera home
-  from eye `(2, 2, 2)` to target `(0, 0, 0)`, README/help text, and tests
-  through public `dart::gui`. Keep the old OSG wireframe mode as a documented
-  follow-up requiring a DART-owned render-style/debug concept rather than OSG
-  or private Filament hooks.
-- Acceptance for the hardcoded-design checkpoint: focused C++ target build,
-  focused `UNIT_gui_FilamentSceneExtraction` CTest, direct and pixi
+- Current implementation checkpoint: `examples/hardcoded_design`. The
+  worktree restores number-key joint increments for DOFs 0-2, `-` direction
+  toggling, camera home from eye `(2, 2, 2)` to target `(0, 0, 0)`,
+  README/help text, changelog coverage, and source-marker tests through public
+  `dart::gui`. The old OSG wireframe mode remains a documented follow-up
+  requiring a DART-owned render-style/debug concept rather than OSG or private
+  Filament hooks.
+- Hardcoded-design validation completed in this worktree: focused C++ target
+  build, focused `UNIT_gui_FilamentSceneExtraction` CTest, direct and pixi
   hardcoded-design screenshots with analyzer coverage, Python C++ example
   runner tests, full `examples` target build, `git diff --check`,
-  `pixi run lint`, and post-lint focused rebuild/CTest/screenshot checks.
+  `pixi run lint`, and post-lint focused rebuild/CTest/direct screenshot
+  checks.
 
 ## Current Code Shape
 
@@ -2511,9 +2515,7 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Restore hardcoded-design keyboard controls, camera home, README, and parity
-   tests through public `dart::gui`; track wireframe as a public render-style
-   follow-up instead of reviving OSG.
+1. Commit and push the hardcoded-design checkpoint without opening a PR.
 2. Continue the historical-source parity audit across the remaining
    pre-existing examples, including re-opening examples such as `fetch` if a
    missing user-visible behavior is found; do not treat build or screenshot

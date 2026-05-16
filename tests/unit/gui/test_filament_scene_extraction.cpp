@@ -755,7 +755,7 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
       {std::filesystem::path("examples") / "atlas_puppet", true},
       {std::filesystem::path("examples") / "hubo_puppet", true},
       {std::filesystem::path("examples") / "g1_puppet", true},
-      {std::filesystem::path("examples") / "hardcoded_design", false},
+      {std::filesystem::path("examples") / "hardcoded_design", true},
       {std::filesystem::path("examples") / "heightmap", false},
       {std::filesystem::path("examples") / "point_cloud", false},
       {std::filesystem::path("examples") / "polyhedron_visual", false},
@@ -1295,9 +1295,45 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
 {
   const auto hardcodedSource = readSourceFile(
       std::filesystem::path("examples") / "hardcoded_design" / "main.cpp");
+  const auto hardcodedReadmeSource = readSourceFile(
+      std::filesystem::path("examples") / "hardcoded_design" / "README.md");
   EXPECT_NE(hardcodedSource.find("visual_hardcoded_design"), std::string::npos);
   EXPECT_NE(hardcodedSource.find("RevoluteJoint"), std::string::npos);
   EXPECT_NE(hardcodedSource.find("LHY"), std::string::npos);
+  EXPECT_NE(hardcodedSource.find("kJointStep = 0.1"), std::string::npos);
+  EXPECT_NE(hardcodedSource.find("moveDof"), std::string::npos);
+  EXPECT_NE(hardcodedSource.find("toggleDirection"), std::string::npos);
+  EXPECT_NE(
+      hardcodedSource.find("createHardcodedDesignKeyboardActions"),
+      std::string::npos);
+  EXPECT_NE(
+      hardcodedSource.find("makeMoveJointAction('1', 0, controls)"),
+      std::string::npos);
+  EXPECT_NE(
+      hardcodedSource.find("makeMoveJointAction('2', 1, controls)"),
+      std::string::npos);
+  EXPECT_NE(
+      hardcodedSource.find("makeMoveJointAction('3', 2, controls)"),
+      std::string::npos);
+  EXPECT_NE(
+      hardcodedSource.find("KeyboardShortcut::characterKey(key)"),
+      std::string::npos);
+  EXPECT_NE(
+      hardcodedSource.find("KeyboardShortcut::characterKey('-')"),
+      std::string::npos);
+  EXPECT_NE(
+      hardcodedSource.find("makeHardcodedDesignCamera"), std::string::npos);
+  EXPECT_NE(
+      hardcodedSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.0)"),
+      std::string::npos);
+  EXPECT_NE(hardcodedSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(hardcodedSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(hardcodedSource.find("Hardcoded Design"), std::string::npos);
+  EXPECT_NE(
+      hardcodedReadmeSource.find("Hardcoded Design Example"),
+      std::string::npos);
+  EXPECT_NE(hardcodedReadmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(hardcodedReadmeSource.find("wireframe"), std::string::npos);
   EXPECT_EQ(hardcodedSource.find("options.defaultScene"), std::string::npos);
 
   const auto heightmapSource = readSourceFile(

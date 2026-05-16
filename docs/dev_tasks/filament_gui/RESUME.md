@@ -748,13 +748,15 @@ then repairs `examples/hardcoded_design`.
 
 ## Current Immediate Next Step
 
-Restore hardcoded-design keyboard controls, camera home, README, and parity
-tests through public `dart::gui`, then validate, lint, commit, and push without
-opening a PR. Treat `examples/fetch/` and other already source-owned examples
-as still auditable if a missing historical user-visible behavior is identified;
-do not use source ownership or screenshot smoke coverage as full-restoration
-evidence by itself. Keep `--screenshot <path>` and `--out <dir>` working for
-the existing CTest, GitHub Actions smoke path, and historical image-sequence
+If the hardcoded-design checkpoint is still uncommitted, commit and push it
+without opening a PR. It restores keyboard controls, camera home, README, and
+parity tests through public `dart::gui`; the old OSG wireframe mode remains a
+render-style/debug API follow-up. Then continue the historical-source parity
+audit. Treat `examples/fetch/` and other already source-owned examples as still
+auditable if a missing historical user-visible behavior is identified; do not
+use source ownership or screenshot smoke coverage as full-restoration evidence
+by itself. Keep `--screenshot <path>` and `--out <dir>` working for the
+existing CTest, GitHub Actions smoke path, and historical image-sequence
 workflows. A later broader smoke sweep can still use:
 
 ```bash
