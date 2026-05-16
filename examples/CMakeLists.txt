@@ -11,7 +11,6 @@ endif()
 add_subdirectory(headless_simulation)
 add_subdirectory(speed_test)
 add_subdirectory(csv_logger)
-add_subdirectory(rerun)
 
 if(DART_BUILD_GUI_FILAMENT OR NOT DART_IN_SOURCE_BUILD)
   add_subdirectory(add_delete_skels)

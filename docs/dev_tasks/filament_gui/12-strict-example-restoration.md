@@ -226,6 +226,8 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     no-`rerun`-executable verification, and `git diff --check` also passed.
     This checkpoint was pushed as
     `6511db33821 Audit Rerun placeholder example`.
+    This earlier preservation decision has now been superseded by the
+    maintenance-cost re-open in item 39.
 15. No rows remain with the exact `Needs strict audit` state. Continue through
     the rows still marked as recent checkpoints subject to strict-audit
     re-open. The next cursor is `examples/add_delete_skels/`: compare it
@@ -369,10 +371,19 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     and pixi headless screenshot smokes, Python C++ example-runner tests,
     aggregate `examples` build, `git diff --check`, mandatory
     `pixi run lint`, post-lint focused build/CTest, and post-lint direct
-    screenshot smoke passed locally.
-38. After pushing the joint-constraints checkpoint, the next strict re-open
-    cursor is `examples/lcp_physics/`; compare it against
+    screenshot smoke passed locally. This checkpoint was pushed as
+    `cf13c6e5115 Restore Joint Constraints defaults`.
+38. The active strict re-open cursor is now `examples/lcp_physics/`; compare it
+    against
     `520993d7301^:examples/lcp_physics` before coding past that slice.
+39. Before advancing the `examples/lcp_physics/` code slice, re-open the
+    previous `examples/rerun/` placeholder decision. New maintainer steering is
+    to optimize maintenance effort: if the audit still finds no source files,
+    executable, concrete user workflow, or downstream dependency, remove
+    `examples/rerun/` from the examples set instead of preserving no-source
+    placeholder support. The audit confirms those conditions, so this slice
+    removes the placeholder directory, build/list entries, old preservation
+    wording, and marker test, and replaces them with a removal guard.
 
 ## Checkpoint Rule
 

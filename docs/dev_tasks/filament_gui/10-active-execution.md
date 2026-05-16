@@ -25,6 +25,10 @@ context survives across sessions.
 - Current application pivot: `dartsim` should live under `apps/dartsim/` as a
   real application, not under `examples/`. The examples should return to
   educational per-directory programs that consume public `dart::gui` APIs.
+- Rerun integration is not part of the renderer-promotion MVP unless there is
+  a concrete use case or known downstream user. If `examples/rerun/` is still
+  only a no-source placeholder, prefer removing the placeholder support to
+  reduce maintenance surface instead of carrying it as a restored example.
 
 ## Branch And CI State
 
@@ -109,24 +113,29 @@ Use this section first when resuming; older checkpoint notes below preserve
 history but are not guaranteed to be in chronological order.
 
 - Latest pushed commit on the tracked branch:
-  `0800c54ec18 Restore Hybrid Dynamics defaults`.
+  `b7a269906f9 Merge origin/main into Filament GUI branch`.
 - Latest pushed code checkpoint:
-  `0800c54ec18 Restore Hybrid Dynamics defaults`.
+  `cf13c6e5115 Restore Joint Constraints defaults`.
+- Latest pushed infrastructure checkpoint: `b7a269906f9` merged
+  `origin/main` so the branch has the new AI-native living-plan and API
+  boundary infrastructure without reopening the removed backend-named
+  `examples/filament_gui/` surface.
 - Current worktree note: `docs/dev_tasks/filament_gui/STEERING.md` has
   pre-existing local edits and should remain unstaged unless the maintainer
   explicitly asks to include it.
-- Current in-progress checkpoint: `examples/joint_constraints/` strict
-  re-open. The implementation restores the missing README, 640x480 launch
-  default, loaded SKEL names/visuals, historical perturbation and harness
-  console messages, and source-marker guards. The old custom camera up vector
-  remains a public camera roll/up-vector API gap unless a promoted API is added
-  in this checkpoint.
-- Joint Constraints local validation is complete for this checkpoint: focused
-  build/CTest, direct and pixi 640x480 headless screenshots, Python
-  example-runner tests, aggregate `examples` build, `git diff --check`,
-  mandatory `pixi run lint`, post-lint focused build/CTest, and post-lint
-  direct screenshot smoke passed. After this checkpoint is pushed, continue the
-  strict re-open cursor at `examples/lcp_physics/`.
+- Latest pushed strict re-open checkpoint: `examples/joint_constraints/`
+  restores the missing README, 640x480 launch default, loaded SKEL
+  names/visuals, historical perturbation and harness console messages, and
+  source-marker guards. The old custom camera up vector remains a public camera
+  roll/up-vector API gap.
+- Active strict re-open cursor: `examples/lcp_physics/`. Compare it against
+  `520993d7301^:examples/lcp_physics` before coding, then restore or explicitly
+  classify every historical scenario/solver, command-line, camera/default,
+  README, panel, and marker behavior.
+- New maintainer steering before continuing the `lcp_physics` cursor: re-audit
+  the previously preserved `examples/rerun/` placeholder. If there is no source
+  file, executable, concrete workflow, or downstream contract, remove it from
+  the examples set rather than preserving a maintenance-only stub.
 - Recent pushed example-parity checkpoints after Fetch include:
   - `619af5649bc Restore LCP physics controls`
   - `2bc6a0e168d Restore mimic pendulums diagnostics`
@@ -167,6 +176,7 @@ history but are not guaranteed to be in chronological order.
   - `f7d408fea9e Restore Hubo Puppet target controls`
   - `cfce8c0186f Restore Fetch green bar target`
   - `0800c54ec18 Restore Hybrid Dynamics defaults`
+  - `cf13c6e5115 Restore Joint Constraints defaults`
 - Maintainer correction for the active slice: source ownership, build success,
   and headless screenshot output are not sufficient evidence that an example is
   fully restored. Every pre-existing user-facing example must be compared
@@ -535,6 +545,11 @@ history but are not guaranteed to be in chronological order.
 - The Rerun placeholder audit checkpoint was pushed as
   `6511db33821 Audit Rerun placeholder example`; do not wait for CI before
   continuing independent strict-audit work.
+- Rerun decision re-open: new maintainer steering prioritizes maintenance
+  effort when there is no concrete use case or downstream user. The audit still
+  finds no source files, executable, runtime workflow, or downstream contract,
+  so remove `examples/rerun/` from the examples set and replace the old
+  placeholder marker test with a removal guard.
 - No rows remain with the exact `Needs strict audit` state. Continue through
   rows still marked as recent checkpoints subject to strict-audit re-open.
 - Active slice is now `examples/add_delete_skels/`. Compare the current source

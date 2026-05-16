@@ -555,8 +555,8 @@ Examples are built in `build/.../bin/`:
 - Historical GUI names such as `hello_world`, `rigid_cubes`, and
   `drag_and_drop` - thin `dart::gui` launchers for migrated scenes
 - `gui_scene_diagnostics` - Backend-hidden GUI descriptor diagnostics
-- `unified_loading`, `headless_simulation`, `speed_test`, `csv_logger`,
-  `rerun` - Maintained non-legacy examples
+- `unified_loading`, `headless_simulation`, `speed_test`, and `csv_logger` -
+  Maintained non-legacy examples
 
 ### Tutorial Executables
 

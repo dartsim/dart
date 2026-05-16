@@ -26,6 +26,11 @@ Backend-specific sample surfaces are treated separately:
   the scoped `dartsim` application direction.
 - `examples/raylib` is not restored because Raylib is not a maintained renderer
   path.
+- `examples/rerun` was previously preserved as an unchanged no-source
+  placeholder. Re-evaluate that decision before continuing the next example
+  restoration slice: if no concrete Rerun integration workflow or downstream
+  dependency exists, remove the placeholder from the examples set to keep the
+  official Filament/GLFW/ImGui example surface focused.
 
 ## Active Correction
 
@@ -701,18 +706,20 @@ maintained GUI application.
 
 Historical source compared: `520993d7301^:examples/rerun`.
 
-The historical and current trees are identical: `rerun` is a placeholder
-directory with no source files. It should not be migrated to `dart::gui` or a
-renderer dependency until a real Rerun integration example is added.
+The historical and pre-removal branch trees were identical: `rerun` was only a
+placeholder directory with no source files. New maintainer steering re-opened
+the decision and found no concrete integration workflow, executable, or known
+downstream user, so the placeholder is removed instead of carried as an
+official example.
 
-| Historical item                                                                                       | Current outcome                | Notes                                                                                                            |
-| ----------------------------------------------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| Directory contains README and CMake scaffolding only, with no `.cpp` or `.hpp` sources.               | Preserved.                     | The current tree still has no sources for this placeholder.                                                      |
-| CMake discovers local sources and returns early when none exist.                                      | Preserved.                     | This avoids creating a broken empty executable target in source builds and external builds.                      |
-| Placeholder links only future `utils-urdf` requirements after sources exist.                          | Preserved.                     | No GUI renderer dependency is introduced.                                                                        |
-| README describes future Rerun integration scaffolding and states that source files are pending.       | Preserved.                     | Current README is unchanged from the historical source.                                                          |
-| Keep marker coverage for no-source status, early CMake skip, pending-source README, and no GUI types. | Restored through marker guard. | `UNIT_gui_FilamentSceneExtraction` guards the preserved placeholder contract.                                    |
-| Runtime or capture validation.                                                                        | Not applicable until sourced.  | There is intentionally no `rerun` executable in this checkpoint, so validation is CMake/test/build-only focused. |
+| Historical item                                                                                       | Current outcome                     | Notes                                                                                                                            |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Directory contains README and CMake scaffolding only, with no `.cpp` or `.hpp` sources.               | Removed as maintenance-only stub.   | There is no source to migrate to public `dart::gui`, no executable contract, and no concrete workflow to validate.               |
+| CMake discovers local sources and returns early when none exist.                                      | Removed.                            | The official examples build no longer carries an empty early-skip subdirectory.                                                  |
+| Placeholder links only future `utils-urdf` requirements after sources exist.                          | Removed.                            | Future Rerun integration should be added as a real example with its actual dependencies when a use case exists.                  |
+| README describes future Rerun integration scaffolding and states that source files are pending.       | Removed.                            | Pending-source documentation is not useful enough to justify a maintained example entry.                                         |
+| Keep marker coverage for no-source status, early CMake skip, pending-source README, and no GUI types. | Replaced by removal guard.          | `UNIT_gui_FilamentSceneExtraction` now guards that the placeholder directory, CMake subdirectory, and README entry stay removed. |
+| Runtime or capture validation.                                                                        | Not applicable; no example remains. | There was intentionally no `rerun` executable before removal.                                                                    |
 
 ### Add/Delete Skeletons Itemized Inventory
 
@@ -891,7 +898,7 @@ gap because `OrbitCamera` does not expose roll/up-vector selection.
 | `operational_space_control` | Recent robot/IK checkpoint; still subject to strict audit re-open.                 | Confirm IK/control behavior, teleoperation, camera, and guards.                                                                                                                                            |
 | `point_cloud`               | Restored except public color-editor/debug-grid API gaps.                           | Keep color editors and fine-grained grid controls tracked as public API follow-ups.                                                                                                                        |
 | `polyhedron_visual`         | Restored by strict audit.                                                          | Keep marker guards for surface, wireframe, grid, camera/defaults, and README.                                                                                                                              |
-| `rerun`                     | Preserved by strict audit as a no-source placeholder.                              | Keep marker guards for CMake early skip, pending-source README, no sources, and no GUI renderer dependency.                                                                                                |
+| `rerun`                     | Removed after maintainer re-open of the no-source placeholder decision.            | Keep removal guards for absent directory, absent CMake subdirectory, and absent README entry. Future Rerun integration should return only as a real sourced example with a concrete use case.              |
 | `rigid_chain`               | Restored by strict audit.                                                          | Keep marker guards for random pose, damping, camera/defaults, README, and no backend types.                                                                                                                |
 | `rigid_cubes`               | Restored by strict audit.                                                          | Keep marker guards for `cubes.skel`, force keys/decay, camera/defaults, instructions, README, and no backend types.                                                                                        |
 | `rigid_loop`                | Restored by strict audit.                                                          | Keep marker guards for constrained-link colors, instructions, defaults, README, and no backend types.                                                                                                      |

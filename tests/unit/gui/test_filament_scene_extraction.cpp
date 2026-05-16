@@ -615,37 +615,19 @@ TEST(FilamentSceneExtraction, DiagnosticsExamplePreservesLegacyContractMarkers)
   EXPECT_NE(readmeSource.find("apps/dartsim"), std::string::npos);
 }
 
-TEST(FilamentSceneExtraction, RerunPlaceholderPreservesNoSourceContract)
+TEST(FilamentSceneExtraction, RerunPlaceholderIsRemoved)
 {
-  const auto cmakeSource = readSourceFile(
-      std::filesystem::path("examples") / "rerun" / "CMakeLists.txt");
-  const auto readmeSource = readSourceFile(
-      std::filesystem::path("examples") / "rerun" / "README.md");
+  const auto examplesCmake
+      = readSourceFile(std::filesystem::path("examples") / "CMakeLists.txt");
+  const auto examplesReadme
+      = readSourceFile(std::filesystem::path("examples") / "README.md");
 
-  EXPECT_NE(
-      cmakeSource.find("file(GLOB srcs \"*.cpp\" \"*.hpp\")"),
-      std::string::npos);
-  EXPECT_NE(cmakeSource.find("if(NOT srcs)"), std::string::npos);
-  EXPECT_NE(
-      cmakeSource.find("Skipping ${example_name} example (no sources yet)"),
-      std::string::npos);
-  EXPECT_NE(
-      cmakeSource.find("set(required_components utils-urdf)"),
-      std::string::npos);
-  EXPECT_EQ(cmakeSource.find("dart-gui"), std::string::npos);
-  EXPECT_EQ(cmakeSource.find("dart::gui"), std::string::npos);
-
-  EXPECT_NE(readmeSource.find("Rerun Example"), std::string::npos);
-  EXPECT_NE(readmeSource.find("source files are pending"), std::string::npos);
-
-  const auto rerunPath = std::filesystem::path(dart::config::sourcePath())
-                         / "examples" / "rerun";
-  bool hasSource = false;
-  for (const auto& entry : std::filesystem::directory_iterator(rerunPath)) {
-    const auto extension = entry.path().extension().string();
-    hasSource = hasSource || extension == ".cpp" || extension == ".hpp";
-  }
-  EXPECT_FALSE(hasSource);
+  EXPECT_EQ(examplesCmake.find("add_subdirectory(rerun)"), std::string::npos);
+  EXPECT_EQ(examplesReadme.find("`rerun`"), std::string::npos);
+  EXPECT_FALSE(
+      std::filesystem::exists(
+          std::filesystem::path(dart::config::sourcePath()) / "examples"
+          / "rerun"));
 }
 
 TEST(FilamentSceneExtraction, GuiExamplesDoNotExposeSceneLauncherShim)

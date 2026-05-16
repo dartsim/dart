@@ -34,7 +34,6 @@
 ### 03 Integration and Tools
 
 - `csv_logger`
-- `rerun`
 
 ## Build Each Example
 
