@@ -331,6 +331,63 @@ TEST(NarrowPhase, CoincidentVertexMeshNoCrashAcrossBatch)
   }
 }
 
+TEST(NarrowPhase, HugeMagnitudeBoxesRemainFiniteAcrossBatch)
+{
+  BoxShape boxA(Eigen::Vector3d::Constant(5.0e5));
+  BoxShape boxB(Eigen::Vector3d::Constant(5.0e5));
+
+  const Eigen::Isometry3d tfA = translated(1.0e6, -1.0e6, 1.0e6);
+  std::vector<NarrowPhasePair> pairs;
+  pairs.reserve(120);
+  for (int i = 0; i < 120; ++i) {
+    const double offset = (i % 2 == 0) ? 9.5e5 : 1.1e6;
+    pairs.push_back(
+        {&boxA, &boxB, tfA, translated(1.0e6 + offset, -1.0e6, 1.0e6)});
+  }
+
+  CollisionOption option;
+  option.maxNumContacts = 8;
+  std::vector<CollisionResult> results(pairs.size());
+
+  EXPECT_NO_THROW(NarrowPhase::collideBatch(pairs, results, option));
+  for (std::size_t i = 0; i < results.size(); ++i) {
+    expectFiniteCollisionResult(results[i]);
+    if (i % 2 == 0) {
+      EXPECT_GE(results[i].numContacts(), 1u);
+    } else {
+      EXPECT_EQ(results[i].numContacts(), 0u);
+    }
+  }
+}
+
+TEST(NarrowPhase, TinyMagnitudeSpheresRemainFiniteAcrossBatch)
+{
+  SphereShape sphereA(1.0e-6);
+  SphereShape sphereB(1.0e-6);
+
+  const Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  std::vector<NarrowPhasePair> pairs;
+  pairs.reserve(120);
+  for (int i = 0; i < 120; ++i) {
+    const double offset = (i % 2 == 0) ? 1.5e-6 : 3.0e-6;
+    pairs.push_back({&sphereA, &sphereB, tfA, translated(offset)});
+  }
+
+  CollisionOption option;
+  option.maxNumContacts = 8;
+  std::vector<CollisionResult> results(pairs.size());
+
+  EXPECT_NO_THROW(NarrowPhase::collideBatch(pairs, results, option));
+  for (std::size_t i = 0; i < results.size(); ++i) {
+    expectFiniteCollisionResult(results[i]);
+    if (i % 2 == 0) {
+      EXPECT_GE(results[i].numContacts(), 1u);
+    } else {
+      EXPECT_EQ(results[i].numContacts(), 0u);
+    }
+  }
+}
+
 TEST(NarrowPhase, collide_batch_dispatcher_rejects_malformed_inputs)
 {
   SphereShape sphereA(0.75);
