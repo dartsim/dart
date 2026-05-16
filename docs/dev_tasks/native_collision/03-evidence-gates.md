@@ -3480,6 +3480,25 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     selected `INTEGRATION_simulation_World` and `UNIT_simulation_World`, and
     `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability`
     passed 2/2.
+- Current local full validation after ten-box stack stability coverage:
+  - Commit: `9d9e6aeb62c`
+    (`Add native stacked box stability coverage`).
+  - Coverage: `WorldTests.DefaultNativeTenBoxStackDoesNotTunnel` closes the
+    `stacked_boxes_n10` stress/regression row with the default native `dart`
+    detector, 10 dynamic boxes, 3000 simulation steps, finite-state checks, no
+    ground tunneling, retained stack height, and bounded final kinetic energy.
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_simulation_World --parallel 5`,
+    `./build/default/cpp/Release/bin/UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeTenBoxStackDoesNotTunnel`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability`,
+    and
+    `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`.
+  - Result: passed. The focused test passed, the
+    `collision-native-stability` label passed 2/2, and the full local
+    `pixi run test-all` report passed 6/6 top-level gates: linting, build,
+    unit tests, simulation-experimental tests, Python tests, and documentation,
+    then printed `All tests passed!`. No PR, push, workflow, branch, or
+    GitHub state was mutated by this local validation pass.
 
 ## Known Risks
 

@@ -107,12 +107,14 @@ Local validation currently recorded in the dev-task evidence:
   unit tests, simulation-experimental tests, Python tests, and documentation.
   Release CTest passed 264/264 and Python tests passed 147/147.
 - A later current-state local recheck with the same `pixi run test-all`
-  command passed on head `f9ee1dd28ba` after the docs/evidence cleanup and
-  native stability-label commits, again with 6/6 top-level gates and the final
-  `All tests passed!` report.
+  command passed on head `9d9e6aeb62c` after the docs/evidence cleanup,
+  native stability-label commits, and ten-box stack stability coverage, again
+  with 6/6 top-level gates and the final `All tests passed!` report.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`
+  - `UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeTenBoxStackDoesNotTunnel`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability`
   - `UNIT_collision_DartCollisionDetector --gtest_filter='DartCollisionDetector.SphereMeshCollisionDetectsContact:DartCollisionDetector.ConvexMeshCollisionUsesNativeConvexGeometry:DartCollisionDetector.EmptyConvexMeshIsNotCollidable'`
   - `test_convex`
   - `test_mesh_mesh`

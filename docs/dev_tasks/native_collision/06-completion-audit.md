@@ -27,9 +27,9 @@ branch-evidence execution is locally satisfied by the evidence packet and
 latest local validation records. The latest local code follow-up refreshes raw
 box-ground, convex-mesh fallback, public mesh collision coverage, raw /
 convex / mesh batch narrow-phase coverage, and mixed batch-dispatcher
-coverage without changing the no-PR boundary. This dev-task folder remains
-active because final PR/CI evidence transfer and folder deletion are
-explicitly out of the current scope.
+coverage, and ten-box stack stability coverage without changing the no-PR
+boundary. This dev-task folder remains active because final PR/CI evidence
+transfer and folder deletion are explicitly out of the current scope.
 
 The current branch has strong local evidence. The remaining north-star gates
 are deferred finalization gates rather than work that should trigger a PR
@@ -49,8 +49,8 @@ Latest local audit commands before recording this snapshot showed:
 - Review surface state: read-only `gh pr view 2652 --repo dartsim/dart`
   reports PR #2652 as `CLOSED`, draft, dirty, based on `main`, and still
   anchored to head `714d220d82a`. No PR metadata or GitHub state was mutated.
-- Latest full current-state validation head: `f9ee1dd28ba`
-  (`Label native collision stability tests`) passed the local
+- Latest full current-state validation head: `9d9e6aeb62c`
+  (`Add native stacked box stability coverage`) passed the local
   `pixi run test-all` gate with 6/6 top-level gates: linting, build, unit
   tests, simulation-experimental tests, Python tests, and documentation.
 - Latest full code-validation head: `4db514cfd22`
@@ -59,7 +59,7 @@ Latest local audit commands before recording this snapshot showed:
   The same code head passed focused reference-backend checks and the final
   unfiltered `collision-reference` CTest sweep 301/301 after building the
   dedicated simulation-experimental target.
-- Post-validation branch delta is docs-only: after `f9ee1dd28ba`, local commits
+- Post-validation branch delta is docs-only: after `9d9e6aeb62c`, local commits
   may refresh this evidence packet and keep the deferred-finalization handoff
   explicit. They do not touch collision runtime, tests, or build logic. Run
   `git log -3 --oneline --decorate` for the exact current local head.
@@ -91,8 +91,9 @@ check.
 
 ## Current Local Full Validation Recheck (2026-05-16)
 
-After the native stability-label update, a fresh local full validation pass was
-run on head `f9ee1dd28ba` (`Label native collision stability tests`):
+After the ten-box stack stability coverage update, a fresh local full
+validation pass was run on head `9d9e6aeb62c`
+(`Add native stacked box stability coverage`):
 
 - Command:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
@@ -100,8 +101,9 @@ run on head `f9ee1dd28ba` (`Label native collision stability tests`):
   simulation-experimental tests, Python tests, and documentation. The final
   report printed `All tests passed!`.
 - Focused label validation:
-  `ctest --test-dir build/default/cpp/Release -N -L collision-native-stability`
-  selected `INTEGRATION_simulation_World` and `UNIT_simulation_World`, and
+  `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_simulation_World --parallel 5`
+  rebuilt the affected test target, the new
+  `WorldTests.DefaultNativeTenBoxStackDoesNotTunnel` test passed, and
   `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability`
   passed 2/2.
 - Scope note: no PR, push, workflow, branch, or GitHub state was mutated by
