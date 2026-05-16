@@ -187,7 +187,7 @@ Bar per row: at least one test exercises the algorithm in isolation
 | `persistent_manifold_reduction`       | DONE     | `test_collision_backend.cpp`                                                 |                                                                                        |
 | `ccd_sphere_cast_*`                   | DONE     | `test_ccd.cpp`                                                               | Sphere/Box/Plane/Cylinder/Convex/Mesh targets                                          |
 | `ccd_capsule_cast_*`                  | DONE     | `test_ccd.cpp`                                                               | Capsule/Box/Convex/Mesh targets                                                        |
-| `ccd_conservative_advancement_convex` | DONE     | `test_ccd.cpp::ConservativeAdvancement*`, `bm_ccd.cpp`                       | Unit and benchmark coverage                                                            |
+| `ccd_conservative_advancement_convex` | DONE     | `test_ccd.cpp::ConservativeAdvancement*`, `bm_ccd.cpp`                       | Unit and audited benchmark coverage                                                    |
 | `ccd_spline_motion`                   | DEFERRED | —                                                                            | Decide if non-linear motion is in scope                                                |
 | `ccd_screw_motion`                    | DEFERRED | —                                                                            | Same                                                                                   |
 | `ccd_bilateral_advancement`           | DEFERRED | —                                                                            | Two-body conservative advancement                                                      |
@@ -305,13 +305,13 @@ Query-parity note).
 
 ### Algorithm-level micro-benchmarks
 
-| Codename              | Status   | Notes                                      |
-| --------------------- | -------- | ------------------------------------------ |
-| `bench_gjk_per_pair`  | DONE     | `bm_libccd.cpp` covers SphereSphere/BoxBox |
-| `bench_epa_per_pair`  | DONE     | `bm_libccd.cpp`                            |
-| `bench_mpr_per_pair`  | DONE     | `bm_libccd.cpp`                            |
-| `bench_bvh_build`     | DEFERRED | —                                          |
-| `bench_bvh_traversal` | DEFERRED | —                                          |
+| Codename              | Status   | Notes                                                                |
+| --------------------- | -------- | -------------------------------------------------------------------- |
+| `bench_gjk_per_pair`  | DONE     | `bm_libccd.cpp` covers SphereSphere/BoxBox; audited on `1f59af53d30` |
+| `bench_epa_per_pair`  | DONE     | `bm_libccd.cpp`; audited on `1f59af53d30`                            |
+| `bench_mpr_per_pair`  | DONE     | `bm_libccd.cpp`; audited on `1f59af53d30`                            |
+| `bench_bvh_build`     | DEFERRED | —                                                                    |
+| `bench_bvh_traversal` | DEFERRED | —                                                                    |
 
 ### Batch + SIMD (Round 9 architectural direction)
 
@@ -337,18 +337,18 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 
 ## 5. Cross-Cutting Infrastructure
 
-| Codename                                 | Status | Source                                                          | Notes                                                                                              |
-| ---------------------------------------- | ------ | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `fixture_shape_factories`                | DONE   | `tests/benchmark/collision/fixtures/shape_factories.hpp`        |                                                                                                    |
-| `fixture_scene_builders`                 | DONE   | `tests/benchmark/collision/fixtures/scene_builders.hpp`         |                                                                                                    |
-| `fixture_edge_cases`                     | DONE   | `tests/benchmark/collision/fixtures/edge_cases.hpp`             |                                                                                                    |
-| `pixi_task_bm_collision_check`           | DONE   | `pixi.toml` `bm-collision-check` aggregator                     |                                                                                                    |
-| `ctest_label_collision_native`           | DONE   | `tests/unit/collision/CMakeLists.txt`                           |                                                                                                    |
-| `ctest_label_collision_native_stability` | DONE   | `tests/unit/CMakeLists.txt`, `tests/integration/CMakeLists.txt` | Labels the world-level native stability executables                                                |
-| `lint_runtime_isolation`                 | DONE   | `scripts/check_collision_runtime_isolation.py`                  |                                                                                                    |
-| `lint_compat_facade_audit`               | DONE   | `scripts/audit_collision_compat_facades.py`                     |                                                                                                    |
-| `lint_benchmark_schema`                  | DONE   | `scripts/check_collision_benchmarks.py`                         |                                                                                                    |
-| `benchmark_output_consumption`           | DONE   | `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`     | Timed rows consume collision outputs/contact counts; strict fixed rows reject empty-contact setups |
+| Codename                                 | Status | Source                                                                                                                                                       | Notes                                                                                             |
+| ---------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `fixture_shape_factories`                | DONE   | `tests/benchmark/collision/fixtures/shape_factories.hpp`                                                                                                     |                                                                                                   |
+| `fixture_scene_builders`                 | DONE   | `tests/benchmark/collision/fixtures/scene_builders.hpp`                                                                                                      |                                                                                                   |
+| `fixture_edge_cases`                     | DONE   | `tests/benchmark/collision/fixtures/edge_cases.hpp`                                                                                                          |                                                                                                   |
+| `pixi_task_bm_collision_check`           | DONE   | `pixi.toml` `bm-collision-check` aggregator                                                                                                                  |                                                                                                   |
+| `ctest_label_collision_native`           | DONE   | `tests/unit/collision/CMakeLists.txt`                                                                                                                        |                                                                                                   |
+| `ctest_label_collision_native_stability` | DONE   | `tests/unit/CMakeLists.txt`, `tests/integration/CMakeLists.txt`                                                                                              | Labels the world-level native stability executables                                               |
+| `lint_runtime_isolation`                 | DONE   | `scripts/check_collision_runtime_isolation.py`                                                                                                               |                                                                                                   |
+| `lint_compat_facade_audit`               | DONE   | `scripts/audit_collision_compat_facades.py`                                                                                                                  |                                                                                                   |
+| `lint_benchmark_schema`                  | DONE   | `scripts/check_collision_benchmarks.py`                                                                                                                      |                                                                                                   |
+| `benchmark_output_consumption`           | DONE   | `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`, `tests/benchmark/collision/native/bm_libccd.cpp`, `tests/benchmark/collision/native/bm_ccd.cpp` | Timed rows consume collision/algorithm/CCD outputs; strict fixed rows reject empty-contact setups |
 
 ## Summary Counters (as of 2026-05-16)
 

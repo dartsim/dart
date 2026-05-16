@@ -218,6 +218,17 @@ post GitHub comments unless the user explicitly asks.
   `.benchmark_results/native_collision_suspicious_win_raw_audit.json` covered
   the eight high-margin primitive rows with the hardened benchmark guards
   active.
+- Latest local convexity benchmark harness audit: `1f59af53d30`. The native
+  algorithm and CCD benchmark harnesses now consume the output fields they
+  populate in timed loops and reject setup rows that do not enter their
+  intended hit/intersection path. Fresh local benchmark JSON was emitted for
+  algorithm rows, CCD rows, and convex-convex scalar/batch rows, and the
+  focused convexity/CCD CTest slice passed 9/9.
+- Latest full local `pixi run test-all` validation after the convexity
+  benchmark harness audit: source head `1f59af53d30`, with the docs/evidence
+  update recording the result. The full local gate passed linting, build, unit
+  tests, simulation-experimental tests, Python tests, and documentation, and
+  printed `All tests passed!`.
 - Latest local gz-physics baseline: `6742a21ab0f`.
 - Latest local native compatibility package-smoke baseline: `dcfc994542f`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.

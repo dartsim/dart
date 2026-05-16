@@ -3804,6 +3804,31 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     the fastest reference lane by roughly 12.36x, 19.44x, 21.64x, 18.79x,
     15.04x, 15.00x, 11.09x, and 14.72x respectively. No PR, push, workflow,
     branch, or GitHub state was mutated by this local validation pass.
+- Current local convexity benchmark harness audit:
+  - Commit: `1f59af53d30`
+    (`Harden convexity benchmark consumption`).
+  - Scope: `bm_libccd.cpp` now consumes GJK/EPA/MPR output fields in timed
+    rows and rejects benchmark setups that do not enter the intended
+    intersecting/penetrating path. `bm_ccd.cpp` now consumes populated CCD
+    result fields in timed rows, rejects non-hit setups, and uses the existing
+    direct-hit capsule-box trajectory for that benchmark row.
+  - Commands:
+    `pixi run -e collision-reference -- cmake --build build/collision-reference/cpp/Release --target bm_native_ccd bm_native_libccd bm_comparative_narrow_phase --parallel "$JOBS"`,
+    `pixi run -e collision-reference -- ./build/collision-reference/cpp/Release/bin/bm_native_libccd --benchmark_filter='BM_(Dart|Libccd)_(GjkIntersect|GjkEpa|Mpr)_(SphereSphere|BoxBox)$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_convexity_algorithms.json --benchmark_out_format=json`,
+    `pixi run -e collision-reference -- ./build/collision-reference/cpp/Release/bin/bm_native_ccd --benchmark_filter='BM_CCD_(SphereCast_(Sphere|Box|Plane|Cylinder|Convex|Mesh)|CapsuleCast_(Capsule|Box|Convex|Mesh)|ConservativeAdvancement_Convex)$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_convexity_ccd.json --benchmark_out_format=json`,
+    `pixi run -e collision-reference -- ./build/collision-reference/cpp/Release/bin/bm_comparative_narrow_phase --benchmark_filter='BM_NarrowPhase_ConvexConvex_Native(_Batch_N(1|10|100|1000))?$' --benchmark_min_time=1ms --benchmark_repetitions=1 --benchmark_out=.benchmark_results/native_collision_convexity_convexconvex_batch.json --benchmark_out_format=json`,
+    `ctest --test-dir build/collision-reference/cpp/Release --output-on-failure -R '^(test_convex|test_gjk|test_gjk_degenerate|test_libccd_algorithms|test_ccd|test_distance_core|test_compound|UNIT_collision_DartCollisionDetector|UNIT_collision_Raycast)$' -j "$JOBS"`,
+    `pixi run lint`, and `git diff --check`.
+  - Result: passed locally. The algorithm benchmark JSON covered DART and
+    libccd GJK intersection, GJK/EPA, and MPR rows for sphere-sphere plus GJK
+    intersection rows for box-box with output-field consumption active. The
+    CCD benchmark JSON covered all registered sphere-cast, capsule-cast, and
+    conservative-advancement rows with hit-result consumption active. The
+    convex-convex scalar/batch benchmark emitted N=1/10/100/1000 rows and the
+    comparative benchmark binary's built-in accuracy verification passed before
+    the filtered run. The focused convexity/CCD CTest slice passed 9/9, and
+    the final lint and whitespace checks passed. No PR, push, workflow, branch,
+    or GitHub state was mutated by this local validation pass.
 - Current local full validation after benchmark harness audit:
   - Commit: `184c8be739d`
     (`Record benchmark harness audit evidence`).
@@ -3814,6 +3839,19 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     and documentation, then printed `All tests passed!`. No PR, push,
     workflow, branch, or GitHub state was mutated by this local validation
     pass.
+- Current local full validation after convexity benchmark harness audit:
+  - Source commit: `1f59af53d30`
+    (`Harden convexity benchmark consumption`); this docs/evidence update
+    records the validation result on top of that source head.
+  - Command:
+    `JOBS=$(dart_safe_jobs); DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`.
+  - Result: passed. The full local report passed all 6 top-level gates:
+    linting, build, unit tests, simulation-experimental tests, Python tests,
+    and documentation, then printed `All tests passed!`. The lint sub-gate
+    reran runtime-isolation and compatibility-facade audits; the C++ unit-test
+    phase reported 264/264 passing tests, simulation-experimental CTest passed
+    13/13, and Python tests passed 147/147. No PR, push, workflow, branch, or
+    GitHub state was mutated by this local validation pass.
 
 ## Known Risks
 
