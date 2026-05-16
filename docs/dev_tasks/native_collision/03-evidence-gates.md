@@ -3235,6 +3235,16 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     `SdfShape` in both query orders while collision support remains disabled
     for that pair, `test_sdf_compare` passed, and the broader
     `collision-native` CTest label passed 29/29.
+- Current local full validation after raw/SDF feature refresh:
+  - Commit: current local head `c4dec13ff15`
+    (`Supervisor steering: Rounds 13-17 + Q8/Q9a/Q9b/Q16 answers`).
+  - Command: `pixi run test-all`.
+  - Result: passed 6/6 gates: linting, build, unit tests,
+    simulation-experimental tests, Python tests, and documentation. The full
+    C++ unit/integration CTest slice reported 264/264 tests passing, including
+    all 29 `collision-native` tests; the simulation-experimental slice
+    separately reported 13/13 passing tests. The final report printed
+    `All tests passed!`.
 
 ## Known Risks
 
