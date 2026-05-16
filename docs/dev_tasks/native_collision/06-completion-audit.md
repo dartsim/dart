@@ -65,13 +65,20 @@ Snapshot audit commands before recording this section showed:
 - Review surface state: read-only `gh pr view 2652 --repo dartsim/dart`
   reports PR #2652 as `CLOSED`, draft, dirty, based on `main`, and still
   anchored to head `714d220d82a`. No PR metadata or GitHub state was mutated.
-- Latest full current-state validation head: `35578ad2f8a`
+- Earlier stale-artifact cleanup validation head: `35578ad2f8a`
   (`Clean stale legacy collision build artifacts`) passed the local
   `pixi run test-all` gate with 6/6 top-level gates: linting, build, unit
   tests, simulation-experimental tests, Python tests, and documentation. This
   includes a CMake cleanup that removes stale legacy collision artifacts and
   export snippets from reused build directories after the compatibility
   component names became native-backed interface facades.
+- Latest full pre-record validation head: `59769b3ee58`
+  (`Record native collision current audit state`) passed the local
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  gate with 6/6 top-level gates: linting, build, unit tests,
+  simulation-experimental tests, Python tests, and documentation. Later
+  docs-only validation-record commits may move `HEAD`; use the current git
+  commands above for exact branch state.
 - Latest full code-validation head: `4db514cfd22`
   (`Add native narrow-phase batch dispatcher`) also passed the local
   `pixi run test-all` gate with Release CTest 264/264 and Python 147/147.
