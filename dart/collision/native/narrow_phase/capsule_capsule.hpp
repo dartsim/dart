@@ -38,9 +38,19 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <span>
+
 namespace dart::collision::native {
 
 class CapsuleShape;
+
+struct DART_COLLISION_NATIVE_API CapsulePair
+{
+  const CapsuleShape* shapeA;
+  const CapsuleShape* shapeB;
+  Eigen::Isometry3d tfA;
+  Eigen::Isometry3d tfB;
+};
 
 [[nodiscard]] DART_COLLISION_NATIVE_API bool collideCapsules(
     const CapsuleShape& capsule1,
@@ -48,6 +58,11 @@ class CapsuleShape;
     const CapsuleShape& capsule2,
     const Eigen::Isometry3d& transform2,
     CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
+
+DART_COLLISION_NATIVE_API void collideCapsulesBatch(
+    std::span<const CapsulePair> pairs,
+    std::span<CollisionResult> results,
     const CollisionOption& option = CollisionOption());
 
 } // namespace dart::collision::native

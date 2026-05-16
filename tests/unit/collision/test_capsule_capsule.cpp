@@ -37,7 +37,66 @@
 
 #include <gtest/gtest.h>
 
+#include <random>
+#include <stdexcept>
+#include <vector>
+
 using namespace dart::collision::native;
+
+namespace {
+
+Eigen::Isometry3d makeCapsuleBatchTransform(
+    double x, double y, double z, double angle)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = (Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitX())
+                 * Eigen::AngleAxisd(0.5 * angle, Eigen::Vector3d::UnitY()))
+                    .toRotationMatrix();
+  tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
+
+void expectVectorExactlyEqual(
+    const Eigen::Vector3d& expected, const Eigen::Vector3d& actual)
+{
+  EXPECT_EQ(expected.x(), actual.x());
+  EXPECT_EQ(expected.y(), actual.y());
+  EXPECT_EQ(expected.z(), actual.z());
+}
+
+void expectContactExactlyEqual(
+    const ContactPoint& expected, const ContactPoint& actual)
+{
+  expectVectorExactlyEqual(expected.position, actual.position);
+  expectVectorExactlyEqual(expected.normal, actual.normal);
+  EXPECT_EQ(expected.depth, actual.depth);
+  EXPECT_EQ(expected.object1, actual.object1);
+  EXPECT_EQ(expected.object2, actual.object2);
+  EXPECT_EQ(expected.featureIndex1, actual.featureIndex1);
+  EXPECT_EQ(expected.featureIndex2, actual.featureIndex2);
+}
+
+void expectCollisionResultExactlyEqual(
+    const CollisionResult& expected, const CollisionResult& actual)
+{
+  ASSERT_EQ(expected.numManifolds(), actual.numManifolds());
+  ASSERT_EQ(expected.numContacts(), actual.numContacts());
+
+  for (std::size_t i = 0; i < expected.numManifolds(); ++i) {
+    const auto& expectedManifold = expected.getManifold(i);
+    const auto& actualManifold = actual.getManifold(i);
+    EXPECT_EQ(expectedManifold.getType(), actualManifold.getType());
+    EXPECT_EQ(expectedManifold.getObject1(), actualManifold.getObject1());
+    EXPECT_EQ(expectedManifold.getObject2(), actualManifold.getObject2());
+    ASSERT_EQ(expectedManifold.numContacts(), actualManifold.numContacts());
+    for (std::size_t j = 0; j < expectedManifold.numContacts(); ++j) {
+      expectContactExactlyEqual(
+          expectedManifold.getContact(j), actualManifold.getContact(j));
+    }
+  }
+}
+
+} // namespace
 
 TEST(CapsuleCapsule, NoCollision)
 {
@@ -121,6 +180,63 @@ TEST(CapsuleCapsule, Concentric)
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.8, 1e-6);
+}
+
+TEST(CapsuleCapsuleBatch, capsule_capsule_batch_determinism_vs_single)
+{
+  CapsuleShape capsuleA(0.35, 1.2);
+  CapsuleShape capsuleB(0.30, 1.0);
+
+  std::mt19937 rng(271828u);
+  std::uniform_real_distribution<double> offset(-0.05, 0.05);
+  std::uniform_real_distribution<double> angle(-0.20, 0.20);
+
+  std::vector<CapsulePair> pairs;
+  pairs.reserve(100);
+  for (int i = 0; i < 100; ++i) {
+    const Eigen::Isometry3d tfA = makeCapsuleBatchTransform(
+        offset(rng), offset(rng), offset(rng), angle(rng));
+    const Eigen::Isometry3d tfB = makeCapsuleBatchTransform(
+        0.45 + offset(rng), offset(rng), offset(rng), angle(rng));
+
+    pairs.push_back(CapsulePair{&capsuleA, &capsuleB, tfA, tfB});
+  }
+
+  CollisionOption option;
+  std::vector<CollisionResult> batchResults(pairs.size());
+  collideCapsulesBatch(pairs, batchResults, option);
+
+  for (std::size_t i = 0; i < pairs.size(); ++i) {
+    CollisionResult singleResult;
+    ASSERT_TRUE(collideCapsules(
+        *pairs[i].shapeA,
+        pairs[i].tfA,
+        *pairs[i].shapeB,
+        pairs[i].tfB,
+        singleResult,
+        option));
+    expectCollisionResultExactlyEqual(singleResult, batchResults[i]);
+  }
+}
+
+TEST(CapsuleCapsuleBatch, RejectsMalformedInputs)
+{
+  CapsuleShape capsuleA(0.35, 1.2);
+  CapsuleShape capsuleB(0.30, 1.0);
+
+  const Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.translation() = Eigen::Vector3d(0.45, 0.0, 0.0);
+
+  const std::vector<CapsulePair> validPairs{{&capsuleA, &capsuleB, tfA, tfB}};
+  std::vector<CollisionResult> emptyResults;
+  EXPECT_THROW(
+      collideCapsulesBatch(validPairs, emptyResults), std::invalid_argument);
+
+  const std::vector<CapsulePair> nullShapePairs{{nullptr, &capsuleB, tfA, tfB}};
+  std::vector<CollisionResult> results(1);
+  EXPECT_THROW(
+      collideCapsulesBatch(nullShapePairs, results), std::invalid_argument);
 }
 
 TEST(CapsuleSphere, NoCollision)
