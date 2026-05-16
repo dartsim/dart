@@ -132,6 +132,9 @@
     command-line options, and camera/run defaults through public `dart::gui`.
   - Restored biped-stand example perturbation keyboard controls, camera/run
     defaults, and example README through public `dart::gui`.
+  - Restored free-joint-cases example numeric/reference controls, local
+    command-line flags, camera/run defaults, and example README through public
+    `dart::gui`.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+

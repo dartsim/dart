@@ -136,7 +136,14 @@ that checkpoint is implemented and pushed. The active slice is now
 camera home, 640x480 default launch size, and README through promoted
 `dart::gui`. That checkpoint is implemented and locally validated; commit and
 push it before selecting the next pre-existing example for source-owned parity
-restoration.
+restoration. The checkpoint was pushed as
+`90b373beb14 Restore biped stand controls`. The active slice is now
+`examples/free_joint_cases`: restore the historical numeric/reference controls,
+local CLI flags, camera/run defaults, and README through promoted `dart::gui`.
+That checkpoint is implemented and locally validated through the pre-lint
+focused build, CTest, direct/pixi screenshot smokes, Python example-runner
+tests, the aggregate `examples` build, `pixi run lint`, and post-lint focused
+build/CTest/direct screenshot smoke.
 Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK,
 Atlas/Hubo target activation semantics, and Enter recording as explicit parity
 gaps unless a later slice adds the narrow renderer-neutral public API needed

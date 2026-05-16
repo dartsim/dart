@@ -925,6 +925,44 @@ TEST(FilamentSceneExtraction, BipedStandExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("keyboard actions"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, FreeJointCasesExamplePreservesLegacyParityMarkers)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "free_joint_cases" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "free_joint_cases" / "README.md");
+
+  EXPECT_NE(mainSource.find("computeMetrics"), std::string::npos);
+  EXPECT_NE(mainSource.find("getWorldJacobian"), std::string::npos);
+  EXPECT_NE(mainSource.find("getJacobianClassicDeriv"), std::string::npos);
+  EXPECT_NE(mainSource.find("getRelativeJacobianTimeDeriv"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("GroundTruthModel::ConstantWorldTwist"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("setUseSphericalInertia"), std::string::npos);
+  EXPECT_NE(mainSource.find("recomputeMetrics"), std::string::npos);
+  EXPECT_NE(mainSource.find("--numeric-dt"), std::string::npos);
+  EXPECT_NE(mainSource.find("--dt"), std::string::npos);
+  EXPECT_NE(mainSource.find("--spherical-inertia"), std::string::npos);
+  EXPECT_NE(mainSource.find("--ground-truth"), std::string::npos);
+  EXPECT_NE(mainSource.find("--ground-truth-substeps"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("builder.button(\"Numeric checks\")"), std::string::npos);
+  EXPECT_NE(mainSource.find("Torque-free substeps"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("makeFreeJointCasesRunDefaults"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.height = 720"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeFreeJointCasesCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.target = Eigen::Vector3d(2.5, 0.0, 0.0)"),
+      std::string::npos);
+  EXPECT_NE(readmeSource.find("Free Joint Cases Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, AddDeleteSkelsExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(

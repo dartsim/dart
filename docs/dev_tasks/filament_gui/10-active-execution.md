@@ -1660,6 +1660,16 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
   - `cmake --build build/default/cpp/Release --target examples --parallel 5`
   - `git diff --check`
   - `pixi run lint`
+  - Post-lint `cmake --build build/default/cpp/Release --target
+free_joint_cases UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
+-R '^UNIT_gui_FilamentSceneExtraction$'`
+  - Post-lint direct llvmpipe free-joint-cases screenshot with the restored
+    local CLI flags plus `analyze_headless_smoke.py`
+    (`/tmp/dart_free_joint_cases_direct_postlint.ppm`, 921600/921600 nonzero
+    pixels)
+  - `git diff --check`
+  - `pixi run lint`
   - Post-lint `cmake --build build/default/cpp/Release --target fetch
 UNIT_gui_FilamentSceneExtraction --parallel 5`
   - Post-lint `ctest --test-dir build/default/cpp/Release --output-on-failure
@@ -2166,6 +2176,49 @@ UNIT_gui_FilamentSceneExtraction --parallel 5`
     width/height plus `analyze_headless_smoke.py`
     (`/tmp/dart_biped_stand_direct_postlint.ppm`, 307200/307200 nonzero
     pixels)
+- Implementation status: pushed as
+  `90b373beb14 Restore biped stand controls`.
+
+Fortieth free-joint-cases parity checkpoint:
+
+- Historical `examples/free_joint_cases` had a standalone ImGui panel for
+  pause/step/reset, numeric Jacobian checks, reference-body visibility,
+  spherical-inertia toggling, torque-free versus constant-world-twist reference
+  models, torque-free substeps, grid visibility, per-case metric rows,
+  example-specific CLI flags (`--numeric-dt`, `--dt`, `--spherical-inertia`,
+  `--ground-truth`, `--ground-truth-substeps`), 1280x720 defaults, camera home
+  from eye `(2.5, -10, 4)` to target `(2.5, 0, 0)`, and an example README.
+- Current promoted source owns the free-joint visual cases and torque-free
+  reference bodies, but it dropped the README, example-specific CLI controls,
+  constant-twist reference mode, spherical-inertia toggle, numeric metric
+  recomputation, metric display, and camera/run defaults.
+- Scope before code changes: restore the source-owned controls through the
+  existing renderer-neutral `PanelBuilder` primitives, keep any unsupported
+  table/combo affordances as readable text/button/check/slider controls rather
+  than private ImGui calls, parse the historical free-joint CLI flags locally
+  while letting `dart::gui` own shared viewer flags, set the historical camera
+  and 1280x720 defaults through public `ApplicationOptions`, restore the
+  README with promoted `dart::gui` wording, and update tests/changelog.
+- Implementation status: free-joint-cases source now restores numeric metric
+  recomputation/display, reference visibility, spherical-inertia and
+  constant-world-twist controls, torque-free substeps, local CLI flags, camera
+  and run defaults, and the example README through promoted `dart::gui`.
+- Local acceptance completed so far for this checkpoint:
+  - `cmake --build build/default/cpp/Release --target free_joint_cases
+UNIT_gui_FilamentSceneExtraction --parallel 5`
+  - `ctest --test-dir build/default/cpp/Release --output-on-failure -R
+'^UNIT_gui_FilamentSceneExtraction$'`
+  - Direct llvmpipe free-joint-cases screenshot with
+    `--ground-truth constant --spherical-inertia --numeric-dt 1e-6 --dt 0.001
+--ground-truth-substeps 20`, no explicit width/height, and
+    `analyze_headless_smoke.py` (`/tmp/dart_free_joint_cases_direct.ppm`,
+    921600/921600 nonzero pixels)
+  - `pixi run ex free_joint_cases --headless --frames 2 --screenshot
+/tmp/dart_free_joint_cases_pixi.ppm` plus `analyze_headless_smoke.py`
+    (307200/307200 nonzero pixels at the pixi wrapper's 640x480 size)
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+    (67 passed)
+  - `cmake --build build/default/cpp/Release --target examples --parallel 5`
 
 ## Stretch Direction
 
@@ -2197,7 +2250,7 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Commit and push the validated biped-stand parity checkpoint.
+1. Commit and push the validated free-joint-cases parity checkpoint.
 2. Continue the source-owned historical parity audit across the remaining
    pre-existing examples; do not treat build or screenshot smoke coverage as
    full restoration evidence by itself.

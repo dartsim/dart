@@ -101,8 +101,14 @@ that checkpoint is implemented and pushed. The next active parity slice is
 `examples/biped_stand`: restore the historical `1`-`4` perturbation keys,
 camera home, 640x480 default launch size, and README through promoted
 `dart::gui`. That checkpoint is implemented and locally validated; the next
-operational step is committing and pushing it, then selecting the next
-pre-existing example for source-owned parity restoration.
+checkpoint was pushed as
+`90b373beb14 Restore biped stand controls`. The next active parity slice is
+`examples/free_joint_cases`: restore the historical numeric/reference controls,
+local CLI flags, camera/run defaults, and README through promoted `dart::gui`.
+That checkpoint is implemented and locally validated through the pre-lint
+focused build, CTest, direct/pixi screenshot smokes, Python example-runner
+tests, the aggregate `examples` build, `pixi run lint`, and post-lint focused
+build/CTest/direct screenshot smoke.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as
