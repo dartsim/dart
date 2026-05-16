@@ -44,9 +44,9 @@ mutation during the current pass:
 | Requirement / gate                                                                  | Concrete evidence                                                                                                                                                                                                                                                                                       | Current audit result                                                                                                                |
 | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | Native `dart` detector is the normal runtime path.                                  | `README.md` current-status checklist, default-detector tests recorded in `03-evidence-gates.md`, `pixi run test-all` on `ca0201e67f4`, the evidence-hardening recheck on `5627a80a0a2`, and the current full validation on `35578ad2f8a`.                                                               | Locally satisfied; final PR validation still required.                                                                              |
-| Legacy FCL/Bullet/ODE names are compatibility facades, not runtime backend choices. | `audit-collision-compat-facades`, `check-collision-runtime-isolation`, package smoke in `docs/dev_tasks/native_collision/smoke/native_compat_package/`, direct `readelf` checks recorded on `6404f7607be`, and stale-artifact/export cleanup evidence on `35578ad2f8a`.                                 | Locally satisfied; final downstream/PR evidence still required before removing retained facades.                                    |
+| Legacy FCL/Bullet/ODE names are compatibility facades, not runtime backend choices. | `audit-collision-compat-facades`, `check-collision-runtime-isolation`, package smoke in `docs/dev_tasks/native_collision/smoke/native_compat_package/`, direct `readelf` checks recorded on `6742a21ab0f` and `dcfc994542f`, and stale-artifact/export cleanup evidence on `35578ad2f8a`.               | Locally satisfied; final downstream/PR evidence still required before removing retained facades.                                    |
 | Feature-level collision correctness covers the current DART surface.                | `09-test-coverage-matrix.md` records 199 DONE, 0 PARTIAL, 0 GAP, and 25 DEFERRED rows; focused raw, convex, mesh, batch, `hello_world`, and Atlas Simbicon validations are recorded in `03-evidence-gates.md`.                                                                                          | Locally satisfied for the feature-level pass; deferred rows are explicitly outside this pass or belong to the performance wave.     |
-| gz-physics compatibility remains green.                                             | `pixi run -e gazebo test-gz` passed 65/65 on `6404f7607be`; `readelf` showed the gz DART plugin depends on `libdart-collision-native.so` without old collision/reference runtime dependencies.                                                                                                          | Locally satisfied; final PR/downstream CI evidence still required.                                                                  |
+| gz-physics compatibility remains green.                                             | `pixi run -e gazebo test-gz` passed 65/65 on `6742a21ab0f`; `readelf` showed the gz DART plugin depends on `libdart-collision-native.so` without old collision/reference runtime dependencies.                                                                                                          | Locally satisfied; final PR/downstream CI evidence still required.                                                                  |
 | Benchmark/profiling guardrails exist without making optimization part of this pass. | `pixi run -e collision-reference bm-collision-check` passed before benchmark-evidence head `4b155655890`, and local benchmark JSON artifacts are recorded in `03-evidence-gates.md`.                                                                                                                    | Locally satisfied for guardrails; final benchmark artifact evidence on the completing PR surface remains open.                      |
 | Clean package, wheel, and Python surfaces are preserved.                            | Wheel verifier wiring, package metadata checks, clean dartpy API tests/audit, repaired-head wheel-matrix reference evidence, and local package/link smokes are recorded in `03-evidence-gates.md`, `05-downstream-migration.md`, `07-pr-evidence-transfer.md`, and `PR-DRAFT.md`.                       | Locally satisfied; final PR-state wheel/package evidence remains open.                                                              |
 | Completion packaging is done in the same PR.                                        | `PR-DRAFT.md` and `07-pr-evidence-transfer.md` stage the PR packet; `docs/dev_tasks/README.md` requires deleting `docs/dev_tasks/native_collision/` in the completing PR after evidence is transferred. Read-only GitHub checks on `19aed78ae04` found no current workflow runs and no open PR surface. | Not complete by design under current user scope; requires explicit maintainer/user approval to open/select the final PR/CI surface. |
@@ -78,10 +78,12 @@ Snapshot audit commands before recording this section showed:
   The same code head passed focused reference-backend checks and the final
   unfiltered `collision-reference` CTest sweep 301/301 after building the
   dedicated simulation-experimental target.
-- Local downstream/package/link refresh head: `6404f7607be`
+- Earlier local downstream/package/link refresh head: `6404f7607be`
   (`Classify native collision matrix deferrals`) passed the gz-physics Pixi gate
   65/65, the native compatibility package smoke, and direct `readelf` link
-  checks. Docs/evidence commit `1bfc9103a6b` records that evidence.
+  checks. Docs/evidence commit `1bfc9103a6b` records that evidence. Newer
+  local refreshes on `6742a21ab0f` and `dcfc994542f` reran gz-physics and the
+  native package smoke separately.
 - Local commits after `c5bc95e3bcf` added capsule validation notes, mesh BVH
   coverage, degenerate and scale narrow-phase stress coverage, mixed primitive
   stack coverage, raw stress coverage, convex landscape and fragment coverage,
@@ -478,16 +480,18 @@ Current audited state:
   DART adapter benchmark JSON outputs. This is local benchmark evidence; it
   does not replace final PR/CI artifact evidence because feature-branch pushes
   do not trigger the benchmark workflow while PR #2652 is closed.
-- Downstream/package/link refresh head: local head `6404f7607be`
-  (`Classify native collision matrix deferrals`). The safe-job
-  `pixi run -e gazebo test-gz` run configured the gazebo DART install with
-  collision reference tests and collision reference benchmarks `OFF`, then
-  passed 65/65 gz-physics tests and printed the expected DART plugin
-  integration success line. The native compatibility package smoke passed.
-  Direct `readelf` inspections showed both the gz DART plugin and package-smoke
-  executable depend on `libdart-collision-native.so` without
-  `libdart-collision-reference-*`, `libdart-test-reference-*`, FCL, Bullet,
-  ODE, or libccd runtime dependencies.
+- Current downstream/package/link refresh heads: local head `6742a21ab0f`
+  (`Record native collision current validation evidence`) reran
+  `pixi run -e gazebo test-gz`, configured the gazebo DART install with
+  collision reference tests and collision reference benchmarks `OFF`, passed
+  65/65 gz-physics tests, and printed the expected DART plugin integration
+  success line. Local head `dcfc994542f`
+  (`Record native collision gz physics validation`) reran the native
+  compatibility package smoke. Direct `readelf` inspections showed both the gz
+  DART plugin and package-smoke executable depend on
+  `libdart-collision-native.so` without `libdart-collision-reference-*`,
+  `libdart-test-reference-*`, FCL, Bullet, ODE, or libccd runtime
+  dependencies.
 - GitHub PR state: PR #2652
   (https://github.com/dartsim/dart/pull/2652) is closed, still marked draft,
   has merge state `DIRTY`, and remains anchored to old head `714d220d82a`.

@@ -46,14 +46,14 @@ strings, FCL/ODE facades preserve gz-required unsupported raycast behavior, a
 fresh local `pixi run -e gazebo test-gz` run passes 65/65 tests through the
 built-in detector, and a current native compatibility package smoke links the
 retained `collision-fcl`, `collision-bullet`, and `collision-ode` components to
-the built-in stack without installed old-engine runtime libraries. The latest
-local refresh on local head `6404f7607be` also checks those built artifacts
-directly: `readelf` shows the gz DART plugin and the native compatibility
-package smoke executable depend on `libdart-collision-native.so` without any
+the built-in stack without installed old-engine runtime libraries. The current
+local refreshes check those built artifacts directly: `readelf` shows the gz
+DART plugin on `6742a21ab0f` and the native compatibility package smoke
+executable on `dcfc994542f` depend on `libdart-collision-native.so` without any
 `libdart-collision-reference-*`, `libdart-test-reference-*`, FCL, Bullet, ODE,
-or libccd runtime dependency. The local `audit-collision-compat-facades` guard now verifies
-that retained factory keys, C++ facades, and package component names route to
-native DART collision while dartpy exposes only the clean
+or libccd runtime dependency. The local `audit-collision-compat-facades` guard
+now verifies that retained factory keys, C++ facades, and package component
+names route to native DART collision while dartpy exposes only the clean
 `DartCollisionDetector` API. Manual GitHub workflow runs are reference evidence
 only. Downstream migration/deprecation policy evidence is still required before
 retained C++ and package compatibility facades can be removed or hard-deprecated.
@@ -93,7 +93,7 @@ hard-deprecated further.
 | Retained compatibility surface         | A named list of every DART 7 compatibility facade and the planned DART 8 cleanup path.                                                                                                   | Defined above for factory keys, C++ detector classes, package components, dartpy aliases, and reference APIs.                                                                         |
 | C++ deprecation behavior               | `DART_COLLISION_DEPRECATE_LEGACY_NAMES` defaults `ON`, legacy C++ detector classes carry deprecation attributes through that gate, and legacy factory keys warn while routing to `dart`. | Implemented locally; `audit-collision-compat-facades` verifies retained names route to native DART collision.                                                                         |
 | dartpy clean API behavior              | dartpy exposes `DartCollisionDetector` and does not expose `DARTCollisionDetector`, `FCLCollisionDetector`, `BulletCollisionDetector`, or `OdeCollisionDetector` aliases or shims.       | Implemented locally; Python tests and `audit-collision-compat-facades` verify the aliases are absent.                                                                                 |
-| Runtime/package compatibility evidence | gz-physics, native package smokes, installed headers, and link inspections prove retained names are migration facades rather than external runtime backend selectors.                    | Complete locally on current local head `6404f7607be`; final PR/downstream CI evidence and PR evidence transfer remain open.                                                           |
+| Runtime/package compatibility evidence | gz-physics, native package smokes, installed headers, and link inspections prove retained names are migration facades rather than external runtime backend selectors.                    | Complete locally on current local heads `6742a21ab0f` and `dcfc994542f`; final PR/downstream CI evidence and PR evidence transfer remain open.                                        |
 | Removal plan                           | A future cleanup plan states what to delete and what to preserve after downstream migration.                                                                                             | Delete C++ factory aliases, C++ facade classes/headers, and `collision-fcl/bullet/ode` package facades only after downstream evidence; preserve explicit reference APIs while useful. |
 
 Until the final PR or downstream CI surface carries that evidence, the retained
@@ -129,13 +129,13 @@ checks pass:
 1. `pixi run -e gazebo test-gz` passes without local gz-physics behavioral
    source patches beyond the intended DART CMake version requirement bump. This
    is complete locally from a fresh gz-physics clone on local head
-   `6404f7607be`; manual GitHub gz-physics CI on `1e1faf6feb1` is reference
+   `6742a21ab0f`; manual GitHub gz-physics CI on `1e1faf6feb1` is reference
    evidence only.
 2. A downstream package smoke that requests `collision-fcl`,
    `collision-bullet`, and `collision-ode` links only the built-in `dart` stack.
    This is complete locally with the dev-task native compatibility package
-   smoke, and direct `readelf` inspection shows only `libdart-collision-native`
-   from the collision stack.
+   smoke on `dcfc994542f`, and direct `readelf` inspection shows only
+   `libdart-collision-native` from the collision stack.
 3. dartpy exposes `DartCollisionDetector` and does not expose legacy detector
    aliases.
 4. Source-tree and installed legacy detector headers compile without FCL,

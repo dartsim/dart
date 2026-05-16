@@ -45,9 +45,9 @@ native-backed interface facades.
       cylinder-vs-plane-like-box support for gz's plane-as-large-box path,
       capped large flat box/mesh contact patches for gz max-contact tests, and
       legacy FCL/ODE facade raycast behavior required by gz's ray-intersection
-      feature tests. The latest local refresh on local head `6404f7607be`
-      rebuilt a fresh gz-physics checkout, printed the expected DART plugin
-      integration success line, and `readelf` showed the gz DART plugin
+      feature tests. The current local gz-physics refresh on local head
+      `6742a21ab0f` rebuilt a fresh gz-physics checkout, printed the expected
+      DART plugin integration success line, and `readelf` showed the gz DART plugin
       depends on `libdart-collision-native.so` without any
       `libdart-collision-reference-*`, `libdart-test-reference-*`, FCL, Bullet,
       ODE, or libccd runtime dependency. Manual workflow-dispatch evidence on
@@ -138,10 +138,11 @@ native-backed interface facades.
       facades. A default native-only install/export probe and downstream
       package smoke test that requests `collision-fcl`, `collision-bullet`, and
       `collision-ode` proves those names link the built-in `dart` stack and do
-      not install old collision libraries. The latest local refresh on local
-      head `6404f7607be` reran that package smoke and `readelf` showed the
-      smoke executable depends on `libdart-collision-native.so` without any
-      old collision/reference runtime dependency.
+      not install old collision libraries. The current local package-smoke
+      refresh on local head `dcfc994542f` reran that package smoke and
+      `readelf` showed the smoke executable depends on
+      `libdart-collision-native.so` without any old collision/reference
+      runtime dependency.
 - [x] Installed legacy detector headers for FCL, Bullet, and ODE are now
       compatibility facades over `DartCollisionDetector` in native-only and
       reference-enabled installs. The downstream package/header smokes include
@@ -631,10 +632,11 @@ collision stack.
      legacy detector names and factory aliases.
    - Do not remove compatibility facades until downstream code has a tested
      native-backed path.
-   - Current gz-physics evidence is locally green: a fresh
+   - Current gz-physics and package evidence is locally green: a fresh
      `pixi run -e gazebo test-gz` passed 65/65 tests against the DART plugin
-     on local head `6404f7607be`; the same refresh passed the native package
-     smoke and direct link inspections. CI evidence is still required.
+     on local head `6742a21ab0f`; the native package smoke passed on local head
+     `dcfc994542f`; direct link inspections showed only the native collision
+     runtime. CI evidence is still required.
 6. **Performance Guardrails**
    - The current `bm-collision-check` task runs checked narrowphase, distance,
      raycast, mixed-primitive, mesh-heavy, raycast-batch, and public adapter

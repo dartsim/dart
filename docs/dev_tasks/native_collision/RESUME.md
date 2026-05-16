@@ -20,9 +20,10 @@ A later current-state `pixi run test-all` pass on local head `ca0201e67f4`
 passed all 6 top-level gates after the docs/evidence cleanup commits, the
 native stability CTest label update, the stack/stress/BVH/convex-landscape
 coverage, the exact `hello_world`-style no-tunneling regression, and the Atlas
-Simbicon controller-loop no-tunneling regression. The latest local
-gz-physics/package/link smoke refresh on `6404f7607be` passed 65/65 gz tests,
-the native compatibility package smoke, and direct `readelf` checks.
+Simbicon controller-loop no-tunneling regression. The current local
+gz-physics refresh on `6742a21ab0f` passed 65/65 gz tests, and the current
+native compatibility package smoke on `dcfc994542f` passed with direct
+`readelf` checks.
 `pixi run lint`, runtime isolation, and compatibility-facade audits remain
 part of the local gate. The completion audit snapshot and validation-baseline
 wording were refreshed so future passes do not treat historical "current head"
@@ -34,7 +35,8 @@ build directories after the retained FCL/Bullet/ODE component names became
 native-backed interface facades. The latest local feature-code commit remains
 `ca0201e67f4` (`Add Atlas Simbicon native collision regression`), which records
 the controller-loop Atlas Simbicon no-tunneling regression in the test matrix.
-The current head `35578ad2f8a` passed the full local validation gate.
+The local build-surface cleanup head `35578ad2f8a` passed the full local
+validation gate.
 The newer docs/evidence-head validation on `48c0cc3f90e` also passed
 `pixi run test-all`, the focused `hello_world` no-tunneling regression, the
 Atlas Simbicon controller-loop no-tunneling regression, and the
@@ -49,6 +51,8 @@ retained `collision-fcl`, `collision-bullet`, and `collision-ode` components
 resolving as native-backed package facades and `readelf` showing
 `libdart-collision-native.so` without old collision/reference runtime
 dependencies.
+The current local evidence head after recording that package-smoke evidence is
+`25b60737498`; it is docs-only and has not opened, pushed, or mutated any PR.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not
@@ -162,13 +166,14 @@ post GitHub comments unless the user explicitly asks.
   completion-audit snapshot, avoid stale-current-head wording, align milestone
   local/final evidence wording, record native stability-label validation, and
   keep the deferred finalization handoff explicit. The latest local
-  evidence-record commit before this resume refresh is `68944664f39`
-  (`Refresh native collision stale artifact evidence`).
+  evidence-record commit before this resume refresh is `25b60737498`
+  (`Record native collision package smoke validation`).
 - Latest source-build prerequisite docs cleanup: `621fca5a1fb`. Validation:
   `pixi run lint` passed on that tree after moving FCL out of required
   prerequisites.
 - Latest local `collision-reference` benchmark guard baseline: `4b155655890`.
-- Latest local downstream/package/link smoke baseline: `6404f7607be`.
+- Latest local gz-physics baseline: `6742a21ab0f`.
+- Latest local native compatibility package-smoke baseline: `dcfc994542f`.
 - Last manual workflow-dispatch CI evidence head: `1e1faf6feb1`.
 - Latest pushed docs/reference-cleanup heads after those baselines have no
   GitHub Actions runs because branch pushes do not match the workflow filters
@@ -238,13 +243,13 @@ post GitHub comments unless the user explicitly asks.
   `ctest -L collision-native` passed 31/31, and
   `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`
   passed all 6 top-level gates with the final `All tests passed!` report.
-- Current local downstream/package/link refresh after `6404f7607be`:
-  `pixi run -e gazebo test-gz` passed 65/65 tests with the gazebo DART install
-  configured with reference tests and benchmarks `OFF`; the native compatibility
-  package smoke passed against the installed native build; direct `readelf`
-  checks showed the gz DART plugin and package-smoke executable depend on
-  `libdart-collision-native.so` without old collision/reference runtime
-  dependencies.
+- Current local downstream/package/link refresh after `6742a21ab0f` and
+  `dcfc994542f`: `pixi run -e gazebo test-gz` passed 65/65 tests with the
+  gazebo DART install configured with reference tests and benchmarks `OFF`; the
+  native compatibility package smoke passed against the installed native build;
+  direct `readelf` checks showed the gz DART plugin and package-smoke
+  executable depend on `libdart-collision-native.so` without old
+  collision/reference runtime dependencies.
 - Current local feature-level stability refresh after `ca0201e67f4`: focused
   build of `INTEGRATION_simulation_World` passed,
   `World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`
