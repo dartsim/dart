@@ -42,8 +42,50 @@ jobs:
               - '!**/*.po'
               - '!**/*.pot'
 
+  wheel_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - id: matrix
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "schedule" \
+             || "$GITHUB_EVENT_NAME" == "workflow_dispatch" \
+             || "$GITHUB_REF" == "refs/heads/main" \
+             || "$GITHUB_REF" == refs/tags/v* ]]; then
+            cat >> "$GITHUB_OUTPUT" <<'EOF'
+          matrix<<JSON
+          {
+            "include": [
+              {"os":"ubuntu-latest","python-version":"312"},
+              {"os":"ubuntu-latest","python-version":"313"},
+              {"os":"ubuntu-latest","python-version":"314"},
+              {"os":"macos-latest","python-version":"312"},
+              {"os":"macos-latest","python-version":"313"},
+              {"os":"macos-latest","python-version":"314"},
+              {"os":"windows-latest","python-version":"312"},
+              {"os":"windows-latest","python-version":"313"},
+              {"os":"windows-latest","python-version":"314"}
+            ]
+          }
+          JSON
+          EOF
+          else
+            cat >> "$GITHUB_OUTPUT" <<'EOF'
+          matrix<<JSON
+          {
+            "include": [
+              {"os":"ubuntu-latest","python-version":"312"},
+              {"os":"macos-latest","python-version":"312"},
+              {"os":"windows-latest","python-version":"312"}
+            ]
+          }
+          JSON
+          EOF
+          fi
+
   build_wheels:
-    needs: changes
+    needs: [changes, wheel_matrix]
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Wheels | ${{ matrix.os }} Py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -54,47 +96,16 @@ jobs:
       # Keep parallelism modest to avoid posix_spawn failures on hosted runners
       DART_PARALLEL_JOBS: 8
       CMAKE_BUILD_PARALLEL_LEVEL: 8
-      RUN_WHEEL: ${{ matrix.skip-on-commit != true || github.event_name == 'pull_request' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
     # Note: No dedicated container image is used; all platforms rely on pixi environments.
     # Linux wheels: auditwheel derives the glibc compatibility tag from bundled symbols.
     # macOS wheels: delocate bundles dylibs. Windows wheels: delvewheel bundles DLLs.
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          # Linux builds
-          - os: ubuntu-latest
-            python-version: "312"
-          - os: ubuntu-latest
-            python-version: "313"
-            skip-on-commit: true
-          - os: ubuntu-latest
-            python-version: "314"
-            skip-on-commit: true
-          # macOS builds
-          - os: macos-latest
-            python-version: "312"
-          - os: macos-latest
-            python-version: "313"
-            skip-on-commit: true
-          - os: macos-latest
-            python-version: "314"
-            skip-on-commit: true
-          # Windows builds
-          - os: windows-latest
-            python-version: "312"
-          - os: windows-latest
-            python-version: "313"
-            skip-on-commit: true
-          - os: windows-latest
-            python-version: "314"
-            skip-on-commit: true
+      matrix: ${{ fromJSON(needs.wheel_matrix.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v6
-        if: env.RUN_WHEEL == 'true'
 
       - name: Setup pixi (CI)
-        if: env.RUN_WHEEL == 'true'
         uses: ./.github/actions/setup-pixi-ci
         with:
           pixi-version: latest
@@ -103,30 +114,24 @@ jobs:
           install-args: -e py${{ matrix.python-version }}-wheel
 
       - name: Configure environment for compiler cache
-        if: env.RUN_WHEEL == 'true'
         uses: ./.github/actions/configure-compiler-cache
 
       - name: Build wheel
-        if: env.RUN_WHEEL == 'true'
         env:
           # Work around occasional sccache spawn failures on ubuntu-latest + Python 3.14 wheel builds.
           DART_DISABLE_COMPILER_CACHE: ${{ (matrix.os == 'ubuntu-latest' && matrix.python-version == '314') && 'ON' || 'OFF' }}
         run: pixi run -e py${{ matrix.python-version }}-wheel wheel-build
 
       - name: Repair wheel
-        if: env.RUN_WHEEL == 'true'
         run: pixi run -e py${{ matrix.python-version }}-wheel wheel-repair
 
       - name: Verify wheel
-        if: env.RUN_WHEEL == 'true'
         run: pixi run -e py${{ matrix.python-version }}-wheel wheel-verify
 
       - name: Test wheel
-        if: env.RUN_WHEEL == 'true'
         run: pixi run -e py${{ matrix.python-version }}-wheel wheel-test
 
       - uses: actions/upload-artifact@v7
-        if: env.RUN_WHEEL == 'true'
         with:
           path: ./dist/*.whl
           name: ${{ matrix.os }}-py${{ matrix.python-version }}
