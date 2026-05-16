@@ -41,7 +41,7 @@ mutation during the current pass:
 Latest local audit commands before recording this snapshot showed:
 
 - Audit baseline branch state: `feature/new_coll` was clean at
-  `944bd95f874` (`Add hello world native collision regression`) and is 87
+  `ca0201e67f4` (`Add Atlas Simbicon native collision regression`) and is 89
   commits ahead of `origin/feature/new_coll`. This snapshot and later
   docs-only audit commits may move `HEAD`; use `git status --short --branch`
   and `git log -3 --oneline --decorate` for the exact current branch state.
@@ -50,8 +50,8 @@ Latest local audit commands before recording this snapshot showed:
 - Review surface state: read-only `gh pr view 2652 --repo dartsim/dart`
   reports PR #2652 as `CLOSED`, draft, dirty, based on `main`, and still
   anchored to head `714d220d82a`. No PR metadata or GitHub state was mutated.
-- Latest full current-state validation head: `944bd95f874`
-  (`Add hello world native collision regression`) passed the local
+- Latest full current-state validation head: `ca0201e67f4`
+  (`Add Atlas Simbicon native collision regression`) passed the local
   `pixi run test-all` gate with 6/6 top-level gates: linting, build, unit
   tests, simulation-experimental tests, Python tests, and documentation.
 - Latest full code-validation head: `4db514cfd22`
@@ -63,7 +63,8 @@ Latest local audit commands before recording this snapshot showed:
 - Local commits after `c5bc95e3bcf` added capsule validation notes, mesh BVH
   coverage, degenerate and scale narrow-phase stress coverage, mixed primitive
   stack coverage, raw stress coverage, convex landscape and fragment coverage,
-  and exact `hello_world`-style no-tunneling coverage. Run
+  exact `hello_world`-style no-tunneling coverage, and Atlas Simbicon
+  controller-loop no-tunneling coverage. Run
   `git log -3 --oneline --decorate` for the exact current local head.
 
 Audit result: the local branch-evidence packet is current, but the objective
@@ -93,9 +94,9 @@ check.
 
 ## Current Local Full Validation Recheck (2026-05-16)
 
-After the exact `hello_world`-style stability coverage update, a fresh local
-full validation pass was run on head `944bd95f874`
-(`Add hello world native collision regression`):
+After the Atlas Simbicon controller stability coverage update, a fresh local
+full validation pass was run on head `ca0201e67f4`
+(`Add Atlas Simbicon native collision regression`):
 
 - Command:
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
@@ -103,10 +104,10 @@ full validation pass was run on head `944bd95f874`
   simulation-experimental tests, Python tests, and documentation. The final
   report printed `All tests passed!`.
 - Focused label validation:
-  `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target UNIT_simulation_World --parallel 5`
-  rebuilt the affected world test target,
-  `WorldTests.DefaultNativeHelloWorldBoxDoesNotTunnel` passed, the full
-  `UNIT_simulation_World` executable passed 81/81, and
+  `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_simulation_World --parallel 5`
+  rebuilt the affected integration world test target,
+  `World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`
+  passed, the full `INTEGRATION_simulation_World` executable passed 18/18, and
   `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability -j 5`
   passed 2/2.
 - Scope note: no PR, push, workflow, branch, or GitHub state was mutated by
@@ -311,13 +312,16 @@ Current audited state:
   tests and reference benchmarks `ON` and all FCL, Bullet, and ODE reference
   components configured internally.
 - Current local evidence-head validation: `pixi run test-all` was rerun with
-  safe local parallelism on local head `944bd95f874`
-  (`Add hello world native collision regression`) and passed all 6 top-level
+  safe local parallelism on local head `ca0201e67f4`
+  (`Add Atlas Simbicon native collision regression`) and passed all 6 top-level
   gates: linting, build, unit tests, simulation-experimental tests, Python
-  tests, and documentation. The latest focused default-world refresh also
-  passed `WorldTests.DefaultNativeHelloWorldBoxDoesNotTunnel`, full
+  tests, and documentation. The latest focused Atlas controller refresh also
+  passed `World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`,
+  full `INTEGRATION_simulation_World` 18/18, and
+  `ctest -L collision-native-stability` 2/2. The previous default-world
+  refresh passed `WorldTests.DefaultNativeHelloWorldBoxDoesNotTunnel`, full
   `UNIT_simulation_World` 81/81, and `ctest -L collision-native-stability`
-  2/2. The previous capsule-box/default-world refresh passed
+  2/2. The earlier capsule-box/default-world refresh passed
   `test_capsule_capsule` 17/17, `WorldTests.DefaultNativeSlenderCapsuleDoesNotTunnel`,
   and `ctest -L collision-native` 31/31. The earlier
   `4db514cfd22` code head passed focused reference checks for

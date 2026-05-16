@@ -15,10 +15,11 @@ invalid convex/soft mesh data non-collidable with a warning, adds focused raw
 box-box, sphere-sphere batch, capsule-capsule batch, cylinder-cylinder batch,
 convex-convex batch, mesh-mesh batch, narrow-phase batch dispatcher,
 convex-mesh, mesh, default-world, Atlas foot-ground, stack, stress,
-mesh-BVH, convex-landscape, convex-fragment, and exact `hello_world`-style
-no-tunneling regression coverage, rebuilds `hello_world` without the OctoMap
-`<ciso646>` warning, and refreshes the focused native/reference/benchmark
-validation evidence in `03-evidence-gates.md`.
+mesh-BVH, convex-landscape, convex-fragment, exact `hello_world`-style
+no-tunneling, and Atlas Simbicon controller-loop regression coverage, rebuilds
+`hello_world` without the OctoMap `<ciso646>` warning, and refreshes the
+focused native/reference/benchmark validation evidence in
+`03-evidence-gates.md`.
 
 ## Current Status
 
@@ -203,10 +204,11 @@ validation evidence in `03-evidence-gates.md`.
       minimum this means `pixi run lint`, `pixi run test-all`, and any
       maintainer-selected CI gates whose failures are not covered locally. The
       latest full current-state `pixi run test-all` pass was rerun on local
-      head `944bd95f874` and passed 6/6 top-level gates: linting, build, unit
+      head `ca0201e67f4` and passed 6/6 top-level gates: linting, build, unit
       tests, simulation-experimental tests, Python tests, and documentation.
       The same head adds stack, stress, mesh-BVH, convex-landscape,
       convex-fragment, and exact `hello_world`-style stability coverage and
+      an Atlas Simbicon controller-loop no-tunneling regression, and
       verifies the native collision CTest labels for the world-level native
       stability executables and raw native collision tests.
       The latest code-validation head `4db514cfd22` also passed the full local

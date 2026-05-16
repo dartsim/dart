@@ -16,20 +16,21 @@ stretch GPU support are the next performance wave.
 This session refreshed full local validation on local head `4db514cfd22` with
 `pixi run test-all`, then refreshed the `collision-reference` evidence through
 focused reference-backend checks and a final unfiltered CTest pass of 301/301.
-A later current-state `pixi run test-all` pass on local head `944bd95f874`
+A later current-state `pixi run test-all` pass on local head `ca0201e67f4`
 passed all 6 top-level gates after the docs/evidence cleanup commits, the
 native stability CTest label update, the stack/stress/BVH/convex-landscape
-coverage, and the exact `hello_world`-style no-tunneling regression. The earlier pushed
+coverage, the exact `hello_world`-style no-tunneling regression, and the Atlas
+Simbicon controller-loop no-tunneling regression. The earlier pushed
 `64abc65a032` validation still records the latest local
 gz-physics/package/link smoke baseline.
 `pixi run lint`, runtime isolation, and compatibility-facade audits remain
 part of the local gate. The completion audit snapshot and validation-baseline
 wording were also refreshed so future passes do not treat historical "current
 head" evidence as live branch state.
-The latest local code commit before this handoff update was `944bd95f874`
-(`Add hello world native collision regression`), which records the exact
-example-style no-tunneling regression in the test matrix and passed the full
-local validation gate.
+The latest local code commit before this handoff update was `ca0201e67f4`
+(`Add Atlas Simbicon native collision regression`), which records the
+controller-loop Atlas Simbicon no-tunneling regression in the test matrix and
+passed the full local validation gate.
 
 The final north-star PR is not complete because PR #2652 is closed and still
 points at old head `714d220d82a`; later pushes to `feature/new_coll` do not
@@ -51,11 +52,12 @@ non-collidable with a warning and adds public-detector coverage for
 sphere-mesh collision. The slice adds raw box-box, sphere-sphere batch,
 capsule-capsule batch,
 cylinder-cylinder batch, convex-convex batch, mesh-mesh batch, default-world,
-narrow-phase batch dispatcher, convex-mesh, mesh, ten-box stack stability, and
-thin-box and slender-capsule stability regression tests, rebuilds
-`hello_world` without the OctoMap `<ciso646>` warning, and refreshes focused
-native/reference validation plus raw narrow-phase benchmark evidence. The
-canonical command list and results are recorded in `03-evidence-gates.md`.
+narrow-phase batch dispatcher, convex-mesh, mesh, ten-box stack stability,
+thin-box, slender-capsule, exact `hello_world`, and Atlas Simbicon controller
+stability regression tests, rebuilds `hello_world` without the OctoMap
+`<ciso646>` warning, and refreshes focused native/reference validation plus raw
+narrow-phase benchmark evidence. The canonical command list and results are
+recorded in `03-evidence-gates.md`.
 
 ## Current Branch
 
@@ -99,7 +101,7 @@ the distinction clear:
 
 If code or evidence changes again, run `pixi run lint` before committing and
 run the focused validation that matches the change. Full `pixi run test-all`
-evidence is refreshed locally for current-state validation head `944bd95f874`;
+evidence is refreshed locally for current-state validation head `ca0201e67f4`;
 later local evidence commits are docs-only and should be checked with
 `git status --short --branch` plus `git log -3 --oneline --decorate`.
 
@@ -122,13 +124,13 @@ post GitHub comments unless the user explicitly asks.
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation: local head `944bd95f874`
-  (`Add hello world native collision regression`), with 6/6 top-level gates
+- Latest full local `pixi run test-all` validation: local head `ca0201e67f4`
+  (`Add Atlas Simbicon native collision regression`), with 6/6 top-level gates
   passing after the raw, convex, mesh, mixed batch-dispatcher, docs/evidence
   cleanup, native stability-label, stack/stress/BVH/convex-landscape, convex
-  fragment, and exact `hello_world` stability follow-ups. That run included
-  linting, build, examples, unit tests, simulation-experimental tests, Python
-  tests, and documentation.
+  fragment, exact `hello_world`, and Atlas Simbicon controller stability
+  follow-ups. That run included linting, build, examples, unit tests,
+  simulation-experimental tests, Python tests, and documentation.
 - Latest evidence-record commits are local and may be ahead of
   `origin/feature/new_coll`; run `git log -3 --oneline --decorate` for the
   current head. Recent docs-only evidence commits refresh the completion-audit
@@ -209,7 +211,15 @@ post GitHub comments unless the user explicitly asks.
   `ctest -L collision-native` passed 31/31, and
   `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`
   passed all 6 top-level gates with the final `All tests passed!` report.
-- Current local feature-level stability refresh after `944bd95f874`: focused
+- Current local feature-level stability refresh after `ca0201e67f4`: focused
+  build of `INTEGRATION_simulation_World` passed,
+  `World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`
+  passed, full `INTEGRATION_simulation_World` passed 18/18,
+  `ctest -L collision-native-stability` passed 2/2, `pixi run lint` and
+  `git diff --check` passed, and
+  `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`
+  passed all 6 top-level gates with the final `All tests passed!` report.
+- Previous local default-world stability refresh after `944bd95f874`: focused
   build of `UNIT_simulation_World` passed,
   `WorldTests.DefaultNativeHelloWorldBoxDoesNotTunnel` passed, full
   `UNIT_simulation_World` passed 81/81, `ctest -L collision-native-stability`

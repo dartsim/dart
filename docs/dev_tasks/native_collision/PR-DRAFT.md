@@ -95,15 +95,17 @@ Make native DART collision the default runtime stack
   - `fe2759bb1b1` (`Add native convex mesh landscape coverage`)
   - `e65c57a9770` (`Add native convex fragment stability coverage`)
   - `944bd95f874` (`Add hello world native collision regression`)
+  - `ca0201e67f4` (`Add Atlas Simbicon native collision regression`)
 - `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
   passed on local head `4db514cfd22` with 6/6 top-level gates: linting, build,
   unit tests, simulation-experimental tests, Python tests, and documentation.
   Release CTest passed 264/264 and Python tests passed 147/147.
-- A later current-state local recheck with the same `pixi run test-all`
-  command passed on head `944bd95f874` after the docs/evidence cleanup,
+- The latest current-state local recheck with the same `pixi run test-all`
+  command passed on head `ca0201e67f4` after the docs/evidence cleanup,
   native stability-label commits, stack/stress/BVH/convex-landscape coverage,
-  and exact `hello_world`-style no-tunneling coverage, again with 6/6
-  top-level gates and the final `All tests passed!` report.
+  exact `hello_world`-style no-tunneling coverage, and Atlas Simbicon
+  controller-loop no-tunneling coverage, again with 6/6 top-level gates and
+  the final `All tests passed!` report.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`
@@ -112,6 +114,9 @@ Make native DART collision the default runtime stack
   - `UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeSlenderCapsuleDoesNotTunnel`
   - `UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeHelloWorldBoxDoesNotTunnel`
   - `UNIT_simulation_World`
+  - `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_simulation_World --parallel 5`
+  - `INTEGRATION_simulation_World --gtest_filter=World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`
+  - `INTEGRATION_simulation_World`
   - `test_capsule_capsule`
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability`
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native`
@@ -135,7 +140,7 @@ Make native DART collision the default runtime stack
   `INTEGRATION_collision_native_backend_consistency` 2/2, the non-simulation
   CTest sweep 288/288, the dedicated simulation-experimental task 13/13, and
   the final unfiltered CTest sweep 301/301.
-- Local commits after `944bd95f874` may be docs/evidence-only refreshes;
+- Local commits after `ca0201e67f4` may be docs/evidence-only refreshes;
   `pixi run lint` has passed after the latest code update, including
   `check-collision-runtime-isolation` and `audit-collision-compat-facades`.
   Use `git log -3 --oneline --decorate` for the exact current local head.

@@ -3571,6 +3571,33 @@ tutorials python --glob '!build/**' --glob '!.pixi/**' --glob '!external/**'`
     The full suite rebuilt examples, including `hello_world` and
     `atlas_simbicon`. No PR, push, workflow, branch, or GitHub state was
     mutated by this local validation pass.
+- Current local full validation after Atlas Simbicon controller coverage:
+  - Commit: `ca0201e67f4`
+    (`Add Atlas Simbicon native collision regression`).
+  - Coverage added since the previous full validation head:
+    `World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`,
+    which runs the non-GUI Atlas Simbicon controller loop for 600 native
+    collision steps, requires finite Atlas state, observes foot contact, and
+    asserts the foot collision extents remain above the ground within the
+    dynamic-contact tolerance.
+  - Commands:
+    `CMAKE_BUILD_DIR=build/default/cpp/Release python scripts/cmake_build.py --target INTEGRATION_simulation_World --parallel 5`,
+    `./build/default/cpp/Release/bin/INTEGRATION_simulation_World --gtest_filter=World.AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision`,
+    `./build/default/cpp/Release/bin/INTEGRATION_simulation_World`,
+    `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability -j 5`,
+    `pixi run lint`,
+    `git diff --check`, and
+    `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`.
+  - Result: passed. The new Atlas controller regression passed, the full
+    `INTEGRATION_simulation_World` executable passed 18/18, the
+    `collision-native-stability` label passed 2/2, `pixi run lint` passed
+    including runtime-isolation and compatibility-facade audits, the
+    whitespace check passed, and the full local `pixi run test-all` report
+    passed 6/6 top-level gates: linting, build, unit tests,
+    simulation-experimental tests, Python tests, and documentation, then
+    printed `All tests passed!`. The full suite rebuilt examples, including
+    `hello_world` and `atlas_simbicon`. No PR, push, workflow, branch, or
+    GitHub state was mutated by this local validation pass.
 
 ## Known Risks
 
