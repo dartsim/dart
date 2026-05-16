@@ -548,15 +548,21 @@ Audit command:
 rg -n "options\\.defaultScene" examples
 ```
 
-Current result after the `imgui` / `tinkertoy` ownership repair:
+Current result after the WAM robot/IK pair ownership repair:
 
 - **Still inverse-dependent:** none under `examples/**/*.cpp`.
-- **Flipped to self-owned in the latest slice:** `examples/imgui/main.cpp`
+- **Flipped to self-owned in the latest slice:**
+  `examples/operational_space_control/main.cpp` now loads the WAM URDF, owns
+  the target, ground, and operational-space pre-step controller in-source, and
+  `examples/wam_ikfast/main.cpp` now loads the WAM URDF, owns the visual-only
+  robot setup, target, and ground in-source. The runner no longer injects
+  `--scene` for either executable.
+- **Recently flipped:** `examples/imgui/main.cpp`
   now constructs a small panel-demo DART world in-source, and
   `examples/tinkertoy/main.cpp` now constructs its reference axes, target,
   force-line, and initial Tinkertoy assemblies in-source. The runner no longer
   injects `--scene tinkertoy`.
-- **Recently flipped:** `examples/drag_and_drop/main.cpp` constructs its
+- **Earlier flipped:** `examples/drag_and_drop/main.cpp` constructs its
   `SimpleFrame` anchor, child draggable frame, and X/Y/Z marker frames
   in-source and passes `options.world` to
   `runApplication(argc, argv, options)`.
@@ -564,7 +570,8 @@ Current result after the `imgui` / `tinkertoy` ownership repair:
   `rigid_cubes`, `simple_frames`, `capsule_ground_contact`, `fetch`,
   `rigid_chain`, `rigid_loop`, `mixed_chain`, `coupler_constraint`,
   `add_delete_skels`, `rigid_shapes`, `hybrid_dynamics`, `biped_stand`,
-  `joint_constraints`, `free_joint_cases`, and `human_joint_limits`.
+  `joint_constraints`, `free_joint_cases`, `human_joint_limits`,
+  `operational_space_control`, and `wam_ikfast`.
 - **Fixture cleanup gap:** the private `createDragAndDropScene()` remains for
   `empty` and `dartsim --scene drag-and-drop` developer coverage. Deleting or
   moving that fixture requires migrating `empty` and then deciding the

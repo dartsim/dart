@@ -605,28 +605,30 @@ TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
     bool ownsWorld = true;
   };
 
-  const std::vector<ExampleExpectation> examples
-      = {{std::filesystem::path("examples") / "hello_world", false},
-         {std::filesystem::path("examples") / "boxes", false},
-         {std::filesystem::path("examples") / "rigid_cubes", true},
-         {std::filesystem::path("examples") / "box_stacking", true},
-         {std::filesystem::path("examples") / "simple_frames", false},
-         {std::filesystem::path("examples") / "capsule_ground_contact", true},
-         {std::filesystem::path("examples") / "fetch", true},
-         {std::filesystem::path("examples") / "rigid_chain", true},
-         {std::filesystem::path("examples") / "rigid_loop", true},
-         {std::filesystem::path("examples") / "mixed_chain", true},
-         {std::filesystem::path("examples") / "coupler_constraint", true},
-         {std::filesystem::path("examples") / "add_delete_skels", true},
-         {std::filesystem::path("examples") / "rigid_shapes", true},
-         {std::filesystem::path("examples") / "hybrid_dynamics", true},
-         {std::filesystem::path("examples") / "biped_stand", true},
-         {std::filesystem::path("examples") / "joint_constraints", true},
-         {std::filesystem::path("examples") / "free_joint_cases", true},
-         {std::filesystem::path("examples") / "human_joint_limits", true},
-         {std::filesystem::path("examples") / "imgui", true},
-         {std::filesystem::path("examples") / "drag_and_drop", true},
-         {std::filesystem::path("examples") / "tinkertoy", true}};
+  const std::vector<ExampleExpectation> examples = {
+      {std::filesystem::path("examples") / "hello_world", false},
+      {std::filesystem::path("examples") / "boxes", false},
+      {std::filesystem::path("examples") / "rigid_cubes", true},
+      {std::filesystem::path("examples") / "box_stacking", true},
+      {std::filesystem::path("examples") / "simple_frames", false},
+      {std::filesystem::path("examples") / "capsule_ground_contact", true},
+      {std::filesystem::path("examples") / "fetch", true},
+      {std::filesystem::path("examples") / "rigid_chain", true},
+      {std::filesystem::path("examples") / "rigid_loop", true},
+      {std::filesystem::path("examples") / "mixed_chain", true},
+      {std::filesystem::path("examples") / "coupler_constraint", true},
+      {std::filesystem::path("examples") / "add_delete_skels", true},
+      {std::filesystem::path("examples") / "rigid_shapes", true},
+      {std::filesystem::path("examples") / "hybrid_dynamics", true},
+      {std::filesystem::path("examples") / "biped_stand", true},
+      {std::filesystem::path("examples") / "joint_constraints", true},
+      {std::filesystem::path("examples") / "free_joint_cases", true},
+      {std::filesystem::path("examples") / "human_joint_limits", true},
+      {std::filesystem::path("examples") / "imgui", true},
+      {std::filesystem::path("examples") / "drag_and_drop", true},
+      {std::filesystem::path("examples") / "tinkertoy", true},
+      {std::filesystem::path("examples") / "operational_space_control", true},
+      {std::filesystem::path("examples") / "wam_ikfast", true}};
   std::vector<std::filesystem::path> sources;
   for (const auto& example : examples) {
     sources.push_back(example.directory / "main.cpp");

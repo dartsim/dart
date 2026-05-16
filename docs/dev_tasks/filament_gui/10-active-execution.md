@@ -648,6 +648,67 @@ Ninth source-ownership checkpoint:
     `UNIT_gui_FilamentSceneExtraction`
   - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
 
+Tenth source-ownership checkpoint:
+
+- Restore the WAM robot/IK pair before the larger Atlas/Hubo puppet slice:
+  `examples/operational_space_control` and `examples/wam_ikfast`.
+- These examples still launch through `dart_build_gui_scene_example(...)` and
+  runner-injected `--scene` values. Move them directly to source-owned
+  promoted `dart::gui::ApplicationOptions` without introducing any new
+  `options.defaultScene` dependency.
+- `operational_space_control` should load the WAM URDF with a public
+  `dart::io::ReadOptions` package directory, create its target frame and
+  ground in the example source, and carry the operational-space controller as
+  example-owned pre-step behavior.
+- `wam_ikfast` should load the WAM URDF, create the visible target frame and
+  ground in the example source, and keep the WAM visual-only so the example
+  remains a renderer/geometry restoration checkpoint rather than a hidden
+  private fixture lookup.
+- CMake for both examples should switch from `dart_build_gui_scene_example` to
+  `dart_build_gui_example` and link `dart-io`. The Python runner defaults and
+  runner tests should stop injecting `--scene` for these executables.
+- This checkpoint intentionally leaves `atlas_puppet`, `hubo_puppet`,
+  `atlas_simbicon`, and `g1_puppet` for the next robot/IK pass. The puppet
+  examples need a public promoted way to pass IK handles/hotkeys into the
+  viewer before their historical target-selection affordances can move out of
+  the private `DartScene` fixture path without feature loss.
+- Local acceptance for this checkpoint:
+  - C++ GUI target build for `operational_space_control`, `wam_ikfast`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for both examples
+  - `pixi run ex operational_space_control --headless --frames 1
+--screenshot ...`
+  - `pixi run ex wam_ikfast --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+  - `pixi run lint`
+  - `git diff --check`
+  - `rg -n "options\.defaultScene" examples` returns no matches.
+  - `rg -n "dart_build_gui_scene_example" examples/operational_space_control
+examples/wam_ikfast ...` returns no matches for the WAM pair.
+  - Post-lint C++ GUI target rebuild for `operational_space_control`,
+    `wam_ikfast`, and `UNIT_gui_FilamentSceneExtraction`
+  - Post-lint focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run lint`
+- Implementation state for this slice: `examples/operational_space_control`
+  now owns its WAM URDF load, ground, target frame, operational-space
+  controller, pre-step callback, and status panel; `examples/wam_ikfast` now
+  owns its WAM URDF load, visual-only setup, ground, target frame, and status
+  panel. Both examples now call promoted `dart::gui::runApplication(argc, argv,
+options)` with `options.world`, and the runner no longer injects `--scene`
+  for either executable.
+- Local evidence so far:
+  - C++ GUI target build for `operational_space_control`, `wam_ikfast`, and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - `pixi run python -m pytest python/tests/unit/test_run_cpp_example.py -q`
+  - Direct headless screenshot capture for both examples
+  - `pixi run ex operational_space_control --headless --frames 1
+--screenshot ...`
+  - `pixi run ex wam_ikfast --headless --frames 1 --screenshot ...`
+  - Full `examples` aggregate target build
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -678,15 +739,15 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Continue across the remaining pre-existing examples in small related
+1. Finish the WAM robot/IK pair checkpoint with commit, push, and CI dispatch.
+2. Continue across the remaining pre-existing examples in small related
    families, documenting each slice here before implementation.
-2. Prioritize the robot/IK macro-launcher examples next:
-   `atlas_puppet`, `atlas_simbicon`, `hubo_puppet`, `g1_puppet`,
-   `wam_ikfast`, and `operational_space_control`.
-3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+3. Prioritize the remaining robot/IK macro-launcher examples after the WAM
+   pair: `atlas_puppet`, `atlas_simbicon`, `hubo_puppet`, and `g1_puppet`.
+4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-4. Do not start the physical `experimental/` directory move until the
+5. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-5. Run `pixi run lint` before every checkpoint commit, then push the commit to
+6. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

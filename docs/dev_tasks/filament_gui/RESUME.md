@@ -72,9 +72,10 @@ the last per-example `options.defaultScene` uses by making `imgui` and
 After the `imgui`/`tinkertoy` ownership checkpoint is committed and pushed,
 continue the broader example restoration audit. Do not wait for CI before
 making independent progress, but inspect and fix CI failures if they surface.
-Next priorities are the robot/IK examples that still use macro scene launchers:
-`atlas_puppet`, `atlas_simbicon`, `hubo_puppet`, `g1_puppet`, `wam_ikfast`,
-and `operational_space_control`.
+The current WAM robot/IK slice moves `operational_space_control` and
+`wam_ikfast` off macro scene launchers. After that checkpoint is committed and
+pushed, continue with the remaining robot/IK examples: `atlas_puppet`,
+`atlas_simbicon`, `hubo_puppet`, and `g1_puppet`.
 
 ## Context That Would Be Lost
 
@@ -633,11 +634,11 @@ the `imgui`/`tinkertoy` source-ownership repair.
 
 ## Current Immediate Next Step
 
-Continue after the `imgui`/`tinkertoy` source-ownership checkpoint by restoring
-the robot/IK macro-launcher examples through the promoted `dart::gui` runtime.
-Keep `--screenshot <path>` and `--out <dir>` working for the existing CTest,
-GitHub Actions smoke path, and historical image-sequence workflows. A later
-broader smoke sweep can still use:
+Continue by finishing the `operational_space_control` and `wam_ikfast`
+checkpoint, then restore the remaining robot/IK examples through the promoted
+`dart::gui` runtime. Keep `--screenshot <path>` and `--out <dir>` working for
+the existing CTest, GitHub Actions smoke path, and historical image-sequence
+workflows. A later broader smoke sweep can still use:
 
 ```bash
 pixi run test-dart-gui-smoke
