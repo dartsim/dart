@@ -1348,6 +1348,36 @@ Twenty-third target-affordance parity checkpoint:
   - Basic analyzer checks for all three 640x480 screenshots
   - Full `examples` aggregate target build
 
+Twenty-fourth Fetch work-area grid parity checkpoint:
+
+- Follow-up maintainer correction: `examples/fetch/` must stay in the parity
+  audit set, not only in the completed source-ownership set. The prior Fetch
+  repair restored the public source, Bullet preference, live mocap target,
+  camera framing, and draggable target cross; the historical source also added
+  a visible `GridVisual` offset at the Fetch pick-and-place work area.
+- Current gap: the promoted `dart::gui` path has a generic debug grid, but the
+  Fetch example source does not recreate the old example-specific grid anchor
+  at `(1.3, 0.75, 0.0)`. That makes the source less faithful to the historical
+  user-facing scene even though the robot/object/target behavior is present.
+- Implementation state for this slice: `examples/fetch/main.cpp` now adds a
+  source-owned, non-dynamic line-segment grid as ordinary DART world geometry
+  on a weld-joint skeleton. This keeps the example on public `dart::gui` and
+  `dart::dynamics` APIs, avoids private Filament debug-overlay controls, and
+  gives headless screenshots the same visible work-area reference as the old
+  OSG example.
+- Guard state: the Fetch source marker test now requires the grid skeleton
+  name, public `WeldJoint`/`LineSegmentShape` construction, and the historical
+  grid offset.
+- Local evidence so far:
+  - Focused C++ target build for `fetch` and
+    `UNIT_gui_FilamentSceneExtraction`
+  - Focused CTest run for `UNIT_gui_FilamentSceneExtraction`
+  - Direct llvmpipe `fetch --headless --frames 10 --width 640 --height 480 --screenshot ...`
+  - `pixi run ex fetch --headless --frames 10 --width 640 --height 480 --screenshot ...`
+  - Basic analyzer checks for both Fetch screenshots
+  - Python runner tests (`67 passed`)
+  - Full `examples` aggregate target build
+
 ## Stretch Direction
 
 These should be designed for but do not block the immediate restoration slice:
@@ -1378,15 +1408,17 @@ The branch is ready to hand off for review only when:
 
 ## Immediate Next Steps
 
-1. Continue the legacy-source parity audit with the robot/IK example family,
-   starting with G1, Atlas, and Hubo target affordances and public
-   `dart::gui` wiring.
-2. Keep `examples/fetch/` in the completed-evidence set for camera/target-cross
-   parity, but do not generalize that result to other examples.
-3. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
+1. Finish the Fetch work-area grid checkpoint with mandatory lint, post-lint
+   focused validation, commit, and push.
+2. Then continue Tinkertoy builder workflow parity and robot/IK solver/hotkey
+   parity through promoted `dart::gui` concepts.
+3. Keep `examples/fetch/` in the completed-evidence set for camera,
+   target-cross, and work-area-grid parity, but do not generalize that result
+   to other examples.
+4. Keep `scene_fixtures.cpp` as transitional dev/test infrastructure until the
    corresponding example behavior has moved into public-API example code.
-4. Do not start the physical `experimental/` directory move until the
+5. Do not start the physical `experimental/` directory move until the
    application extraction and enough real example sources prove the consumed
    public API surface.
-5. Run `pixi run lint` before every checkpoint commit, then push the commit to
+6. Run `pixi run lint` before every checkpoint commit, then push the commit to
    the tracked remote branch.

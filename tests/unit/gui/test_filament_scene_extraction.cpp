@@ -749,6 +749,12 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("interactive frame"), std::string::npos);
   EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
   EXPECT_NE(mainSource.find("createTargetCrossShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("fetch_pick_and_place_grid"), std::string::npos);
+  EXPECT_NE(mainSource.find("createFetchGridShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("createFetchGrid"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::dynamics::WeldJoint"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector3d(1.3, 0.75, 0.0)"), std::string::npos);
   EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
   EXPECT_NE(mainSource.find("makeFetchCamera"), std::string::npos);
   EXPECT_NE(

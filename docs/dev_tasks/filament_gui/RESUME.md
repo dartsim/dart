@@ -65,18 +65,23 @@ docs now distinguish example ownership (`options.world`, no
 Fetch repair has been committed and pushed: it adds a public
 `ApplicationOptions::camera` override, restores the historical camera framing,
 and makes the visible target cross one draggable target-frame renderable rather
-than child bars that can detach from the mocap target. The active parity audit
-has moved to the robot/IK family. The current pending code slice restores
-line-segment target handles and control text for `g1_puppet`, `atlas_puppet`,
-and `hubo_puppet`; it does not yet close Atlas relaxed-posture/balance, Hubo
-analytical IK, legacy target toggle, or WASD/Q/E/F/Z teleoperation parity.
+than child bars that can detach from the mocap target. A follow-up Fetch slice
+is now implemented locally because the historical source also added a visible
+`GridVisual` offset at the pick-and-place work area. It restores that as public
+DART line-segment geometry in `examples/fetch/main.cpp`, not as a private
+Filament debug-overlay hook. The robot/IK target-handle parity checkpoint has
+also been pushed for `g1_puppet`, `atlas_puppet`, `hubo_puppet`,
+`operational_space_control`, `wam_ikfast`, and `tinkertoy`; it does not yet
+close Atlas relaxed-posture/balance, Hubo analytical IK, legacy target toggle,
+WASD/Q/E/F/Z teleoperation parity, or Tinkertoy builder workflow parity.
 
 ## Immediate Next Step
 
-After the current target-handle checkpoint is committed and pushed, continue
-Tinkertoy builder workflow parity and solver-behavior parity such as Atlas
-relaxed posture, Hubo analytical IK, and full OSG hotkey behavior before
-claiming the robot/IK and construction examples are complete.
+Run mandatory lint plus post-lint focused validation, commit, and push the
+Fetch work-area grid parity checkpoint. Then continue Tinkertoy builder
+workflow parity and solver-behavior parity such as Atlas relaxed posture, Hubo
+analytical IK, and full OSG hotkey behavior before claiming the robot/IK and
+construction examples are complete.
 
 ## Context That Would Be Lost
 

@@ -43,6 +43,8 @@
     and restored `fetch` as a source-defined `dart::gui` example with its live
     mocap target-following behavior, Bullet preference when available, and
     public-API target affordance.
+  - Restored the `fetch` example's historical pick-and-place work-area grid as
+    source-owned public DART line geometry at the original grid offset.
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
     `mixed_chain`, `coupler_constraint`, `add_delete_skels`, and
     `rigid_shapes`) as source-defined `dart::gui` examples.

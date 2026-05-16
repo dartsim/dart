@@ -22,20 +22,24 @@ real source file but was not fully restored to the historical GUI behavior.
 Every pre-existing user-facing GUI example remains parity pending until its
 legacy source has been inventoried and the migrated `dart::gui` version
 preserves the user-visible behavior or records a deliberate follow-up gap.
-The Fetch checkpoint has now restored the historical camera framing and made the
-visible target cross the draggable target-frame affordance. The next active
-parity slice is the robot/IK family, starting with `g1_puppet`, `atlas_puppet`,
-and `hubo_puppet`, because those examples still have clear gaps around target
-handles, target activation/teleoperation, and whole-body IK behavior compared
-with the historical OSG sources. The first robot/IK parity slice restores
-line-segment target handles and updated control text for those three examples,
-while explicitly leaving solver-objective and full hotkey parity as remaining
-audit work. The next target-affordance slice applies the same visible-handle
-pattern to `operational_space_control`, `wam_ikfast`, and `tinkertoy` while
-tracking Tinkertoy's larger builder workflow gaps separately. That handle slice
-is now implemented locally; Tinkertoy still needs add/delete block hotkeys,
-picking semantics, force coefficient controls, target reorientation, and
-recording toggle parity through promoted GUI concepts.
+The Fetch checkpoint has now restored the historical camera framing, made the
+visible target cross the draggable target-frame affordance, and restored the
+historical work-area grid offset as source-owned public DART geometry because
+the example-specific grid is another user-visible behavior from the old OSG
+source. The active robot/IK parity work started with
+`g1_puppet`, `atlas_puppet`, and `hubo_puppet`, because those examples still
+have clear gaps around target handles, target activation/teleoperation, and
+whole-body IK behavior compared with the historical OSG sources. The first
+robot/IK parity slice restores line-segment target handles and updated control
+text for those three examples, while explicitly leaving solver-objective and
+full hotkey parity as remaining audit work. The next target-affordance slice
+applies the same visible-handle pattern to `operational_space_control`,
+`wam_ikfast`, and `tinkertoy` while tracking Tinkertoy's larger builder
+workflow gaps separately. That handle slice has been pushed; the Fetch grid
+slice is ready for its checkpoint push after mandatory lint and post-lint
+focused validation. Tinkertoy still needs add/delete block hotkeys, picking
+semantics, force coefficient controls, target reorientation, and recording
+toggle parity through promoted GUI concepts.
 
 The completion audit in `07-completion-audit.md` describes an earlier
 promotion checkpoint. The detailed progress notes below are retained as

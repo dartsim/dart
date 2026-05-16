@@ -46,8 +46,10 @@
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/io/read.hpp>
 
@@ -67,6 +69,9 @@ constexpr const char* kFetchRobotName = "robot0:base_link";
 constexpr const char* kFetchObjectName = "object0";
 constexpr const char* kFetchMocapName = "robot0:mocap";
 constexpr const char* kFetchTargetName = "interactive frame";
+constexpr const char* kFetchGridName = "fetch_pick_and_place_grid";
+constexpr const char* kFetchGridBodyName = "fetch_pick_and_place_grid_body";
+constexpr const char* kFetchGridShapeName = "fetch_pick_and_place_grid_lines";
 
 struct FetchScene
 {
@@ -170,6 +175,44 @@ std::shared_ptr<dart::dynamics::SimpleFrame> createTargetFrame()
   return target;
 }
 
+std::shared_ptr<dart::dynamics::LineSegmentShape> createFetchGridShape()
+{
+  auto grid = std::make_shared<dart::dynamics::LineSegmentShape>(2.0f);
+  constexpr double halfExtent = 1.6;
+  constexpr double spacing = 0.2;
+  constexpr int lineCount = 16;
+  for (int i = -lineCount / 2; i <= lineCount / 2; ++i) {
+    const double coordinate = static_cast<double>(i) * spacing;
+    const auto startX
+        = grid->addVertex(Eigen::Vector3d(-halfExtent, coordinate, 0.0));
+    grid->addVertex(Eigen::Vector3d(halfExtent, coordinate, 0.0), startX);
+    const auto startY
+        = grid->addVertex(Eigen::Vector3d(coordinate, -halfExtent, 0.0));
+    grid->addVertex(Eigen::Vector3d(coordinate, halfExtent, 0.0), startY);
+  }
+  return grid;
+}
+
+dart::dynamics::SkeletonPtr createFetchGrid()
+{
+  auto grid = dart::dynamics::Skeleton::create(kFetchGridName);
+  auto pair = grid->createJointAndBodyNodePair<dart::dynamics::WeldJoint>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+  body->setName(kFetchGridBodyName);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(1.3, 0.75, 0.0);
+  joint->setTransformFromParentBodyNode(transform);
+
+  auto* shapeNode = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
+      createFetchGridShape());
+  shapeNode->setName(kFetchGridShapeName);
+  shapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(0.44, 0.62, 0.50, 0.62));
+  return grid;
+}
+
 dart::gui::OrbitCamera makeFetchCamera()
 {
   dart::gui::OrbitCamera camera;
@@ -209,6 +252,7 @@ FetchScene createFetchScene()
   resetFirstWeldConstraint(scene.world);
 
   scene.target = createTargetFrame();
+  scene.world->addSkeleton(createFetchGrid());
   scene.world->addSimpleFrame(scene.target);
   return scene;
 }
@@ -233,6 +277,7 @@ dart::gui::Panel createFetchPanel()
                               dart::gui::PanelContext& context) {
     builder.text("Fetch pick-and-place MJCF world");
     builder.text("Whole-body motion follows the green cross target.");
+    builder.text("The offset grid marks the pick-and-place work area.");
     builder.text("Select the cross, then Ctrl-left drag or use arrow keys.");
     builder.text("X/Y/Z constrain Ctrl-left drag to one world axis.");
     builder.separator();
