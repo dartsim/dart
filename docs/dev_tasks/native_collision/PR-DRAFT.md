@@ -85,21 +85,33 @@ Make native DART collision the default runtime stack
   - `9d9e6aeb62c` (`Add native stacked box stability coverage`)
   - `3fe8f9f7fde` (`Add native thin box stability coverage`)
   - `c5bc95e3bcf` (`Stabilize native capsule box line contacts`)
+  - `bb188c616fa` (`Record native capsule stability validation`)
+  - `84c7084d619` (`Add native mesh BVH build coverage`)
+  - `c72447845ea` (`Add native mesh BVH transform coverage`)
+  - `8ff535a8a6f` (`Add native degenerate narrow phase stress coverage`)
+  - `14da49427bb` (`Add native narrow phase scale stress coverage`)
+  - `c7aae13da4f` (`Add native mixed primitive stack coverage`)
+  - `07645052a4b` (`Add native raw stress stability coverage`)
+  - `fe2759bb1b1` (`Add native convex mesh landscape coverage`)
+  - `e65c57a9770` (`Add native convex fragment stability coverage`)
+  - `944bd95f874` (`Add hello world native collision regression`)
 - `DART_PARALLEL_JOBS=$JOBS CTEST_PARALLEL_LEVEL=$JOBS CMAKE_BUILD_PARALLEL_LEVEL=$JOBS pixi run test-all`
   passed on local head `4db514cfd22` with 6/6 top-level gates: linting, build,
   unit tests, simulation-experimental tests, Python tests, and documentation.
   Release CTest passed 264/264 and Python tests passed 147/147.
 - A later current-state local recheck with the same `pixi run test-all`
-  command passed on head `c5bc95e3bcf` after the docs/evidence cleanup,
-  native stability-label commits, ten-box stack stability coverage, and
-  thin-box and slender-capsule stability coverage, again with 6/6 top-level
-  gates and the final `All tests passed!` report.
+  command passed on head `944bd95f874` after the docs/evidence cleanup,
+  native stability-label commits, stack/stress/BVH/convex-landscape coverage,
+  and exact `hello_world`-style no-tunneling coverage, again with 6/6
+  top-level gates and the final `All tests passed!` report.
 - Focused local regression validation for the latest follow-up passed:
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_box_box|UNIT_collision_DartCollisionDetector|test_convex|test_mesh_mesh)$' --repeat until-fail:20`
   - `UNIT_simulation_World --gtest_filter='WorldTests.DefaultNative*BoxRestsOnGround'`
   - `UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeTenBoxStackDoesNotTunnel`
   - `UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeThinBoxDoesNotTunnel`
   - `UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeSlenderCapsuleDoesNotTunnel`
+  - `UNIT_simulation_World --gtest_filter=WorldTests.DefaultNativeHelloWorldBoxDoesNotTunnel`
+  - `UNIT_simulation_World`
   - `test_capsule_capsule`
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native-stability`
   - `ctest --test-dir build/default/cpp/Release --output-on-failure -L collision-native`
@@ -123,10 +135,10 @@ Make native DART collision the default runtime stack
   `INTEGRATION_collision_native_backend_consistency` 2/2, the non-simulation
   CTest sweep 288/288, the dedicated simulation-experimental task 13/13, and
   the final unfiltered CTest sweep 301/301.
-- Local commits after `c5bc95e3bcf` are docs/evidence-only; `pixi run lint`
-  has passed after those updates, including `check-collision-runtime-isolation`
-  and `audit-collision-compat-facades`. Use `git log -3 --oneline --decorate`
-  for the exact current local head.
+- Local commits after `944bd95f874` may be docs/evidence-only refreshes;
+  `pixi run lint` has passed after the latest code update, including
+  `check-collision-runtime-isolation` and `audit-collision-compat-facades`.
+  Use `git log -3 --oneline --decorate` for the exact current local head.
 - `DART_PARALLEL_JOBS=4 CTEST_PARALLEL_LEVEL=4 CMAKE_BUILD_PARALLEL_LEVEL=4 pixi run -e collision-reference bm-collision-check`
   passed before benchmark-evidence commit `4b155655890`.
 - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run -e gazebo test-gz`

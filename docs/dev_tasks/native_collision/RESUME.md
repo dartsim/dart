@@ -16,19 +16,19 @@ stretch GPU support are the next performance wave.
 This session refreshed full local validation on local head `4db514cfd22` with
 `pixi run test-all`, then refreshed the `collision-reference` evidence through
 focused reference-backend checks and a final unfiltered CTest pass of 301/301.
-A later current-state `pixi run test-all` pass on local head `c5bc95e3bcf`
+A later current-state `pixi run test-all` pass on local head `944bd95f874`
 passed all 6 top-level gates after the docs/evidence cleanup commits, the
-native stability CTest label update, the ten-box stack stability coverage, and
-the thin-box and slender-capsule stability coverage. The earlier pushed
+native stability CTest label update, the stack/stress/BVH/convex-landscape
+coverage, and the exact `hello_world`-style no-tunneling regression. The earlier pushed
 `64abc65a032` validation still records the latest local
 gz-physics/package/link smoke baseline.
 `pixi run lint`, runtime isolation, and compatibility-facade audits remain
 part of the local gate. The completion audit snapshot and validation-baseline
 wording were also refreshed so future passes do not treat historical "current
 head" evidence as live branch state.
-The latest local code commit before this handoff update was `c5bc95e3bcf`
-(`Stabilize native capsule box line contacts`), which records the
-slender-capsule stability regression in the test matrix and passed the full
+The latest local code commit before this handoff update was `944bd95f874`
+(`Add hello world native collision regression`), which records the exact
+example-style no-tunneling regression in the test matrix and passed the full
 local validation gate.
 
 The final north-star PR is not complete because PR #2652 is closed and still
@@ -99,7 +99,7 @@ the distinction clear:
 
 If code or evidence changes again, run `pixi run lint` before committing and
 run the focused validation that matches the change. Full `pixi run test-all`
-evidence is refreshed locally for current-state validation head `c5bc95e3bcf`;
+evidence is refreshed locally for current-state validation head `944bd95f874`;
 later local evidence commits are docs-only and should be checked with
 `git status --short --branch` plus `git log -3 --oneline --decorate`.
 
@@ -122,11 +122,11 @@ post GitHub comments unless the user explicitly asks.
   `test_reference_backends`, fresh `pixi run -e gazebo test-gz`, and native
   package/link smoke with direct `readelf` checks.
 - Public docs collision-runtime wording baseline: `ad1b6782578`.
-- Latest full local `pixi run test-all` validation: local head `c5bc95e3bcf`
-  (`Stabilize native capsule box line contacts`), with 6/6 top-level gates
+- Latest full local `pixi run test-all` validation: local head `944bd95f874`
+  (`Add hello world native collision regression`), with 6/6 top-level gates
   passing after the raw, convex, mesh, mixed batch-dispatcher, docs/evidence
-  cleanup, native stability-label, ten-box stack stability, thin-box
-  stability, and slender-capsule stability follow-ups. That run included
+  cleanup, native stability-label, stack/stress/BVH/convex-landscape, convex
+  fragment, and exact `hello_world` stability follow-ups. That run included
   linting, build, examples, unit tests, simulation-experimental tests, Python
   tests, and documentation.
 - Latest evidence-record commits are local and may be ahead of
@@ -207,6 +207,13 @@ post GitHub comments unless the user explicitly asks.
   `test_capsule_capsule` passed 17/17, the default-world
   `WorldTests.DefaultNativeSlenderCapsuleDoesNotTunnel` regression passed,
   `ctest -L collision-native` passed 31/31, and
+  `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`
+  passed all 6 top-level gates with the final `All tests passed!` report.
+- Current local feature-level stability refresh after `944bd95f874`: focused
+  build of `UNIT_simulation_World` passed,
+  `WorldTests.DefaultNativeHelloWorldBoxDoesNotTunnel` passed, full
+  `UNIT_simulation_World` passed 81/81, `ctest -L collision-native-stability`
+  passed 2/2, `pixi run lint` and `git diff --check` passed, and
   `DART_PARALLEL_JOBS=5 CMAKE_BUILD_PARALLEL_LEVEL=5 CTEST_PARALLEL_LEVEL=5 pixi run test-all`
   passed all 6 top-level gates with the final `All tests passed!` report.
 
