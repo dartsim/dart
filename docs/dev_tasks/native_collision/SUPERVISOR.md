@@ -3190,3 +3190,140 @@ deleting from the planning doc.
 Durable: `dev-task-doc-hygiene.md` (memory) + new "Side-channel
 hygiene" section in `dart-co-agent` skill (lines 145-225 of the
 skill).
+
+## Round 21 — SIMD Final Target for Batch Collision (2026-05-16)
+
+User direction (2026-05-16): "in the end it should be planned to
+fully utilize SIMD for batch collision detection (currently just
+for-loop of single pair collision detection)."
+
+Current state: F11-1 landed `collideBoxesBatch(span<BoxPair>,
+span<CollisionResult>, option)` as Tier 2 stub with scalar
+for-loop body. That was the API-shape preservation step. SIMD is
+the perf payoff step.
+
+### Final target
+
+Every Tier 2 batch entry (`collide<Pair>Batch` per Q9a ANSWER C)
+ships a SIMD-vectorized implementation that processes 4 / 8 / 16
+pairs in parallel per instruction stream. The scalar for-loop
+body F11-1 added is the SCAFFOLDING, not the destination — it
+exists so the API and call sites are stable while the SIMD body
+is being developed.
+
+Acceptance bar for "Round 21 complete":
+
+1. Each `collide<Pair>Batch` has a SIMD body for batch sizes
+   N >= 4 (smaller batches fall back to scalar).
+2. `BM_NarrowPhase_<Pair>_Native_Batch_N{4,8,16,100,1000}` shows
+   per-pair time strictly LESS than single-pair-loop time at
+   matching N — the SIMD win is measurable.
+3. Bar 2 (adapter-on-both-sides) PERF-GAPs close: BoxBox_Touching,
+   SphereSphere_Touching, SphereBox_Touching all flip from
+   PERF-GAP to WIN (audited) ≥ 1.05× over best reference.
+4. Mixed-primitive scenario benchmarks (`bench_scenario_*`)
+   adopt batch entries internally — single-loop dispatch is no
+   longer the bottleneck.
+5. Determinism contract still holds: batch result is bit-identical
+   to single-pair loop across thread / batch-ordering changes.
+6. Audit (Round 18 protocol): SIMD body audited for DCE, output
+   assertion, equal compiler flags (xsimd / std::simd consistency
+   across pair types).
+
+### Sequencing
+
+SIMD work lands AFTER:
+- Round 9 main slice (per-pair batch APIs for sphere/capsule/
+  cylinder/plane/mesh/convex/compound — the API surface SIMD
+  fills in).
+- Round 18a optional audit slice (audit the existing scalar
+  baselines so SIMD speedup is measured against known-good
+  numbers).
+- Q4 followup (extend Option B + adapter-overhead micro-bench
+  per Round 14 — needed to know which adapter-lane improvements
+  Tier 2 batching alone achieves, vs which need SIMD).
+
+SIMD work lands BEFORE:
+- DART 8 cleanup / public release.
+- Tier 3 ECS integration (Q9b ANSWER B — Tier 3 will route into
+  the SIMD'd Tier 2 batch entries; doing Tier 3 against a scalar
+  Tier 2 means rewriting Tier 3 once SIMD lands).
+
+### Strategy (planning detail)
+
+Reused from Round 9 design with batch-first sharpening:
+
+1. **SoA layout at the Tier 2 boundary.** Inside Tier 2,
+   transpose the input `span<BoxPair>` into parallel arrays
+   (`std::vector<Eigen::Vector3d> centerA, centerB; ...`) so the
+   SAT axes / projection intervals / face-clipping inner loops
+   can be vectorized across pairs.
+2. **xsimd OR std::simd** — pick one and stick to it. xsimd is
+   header-only BSD, already available in DART's ecosystem.
+   std::simd is C++26 and may not be available on all our
+   compiler targets yet. Recommend xsimd until the C++ standard
+   catches up.
+3. **First SIMD win: SAT axes.** For BoxBox, 15 SAT axes per
+   pair (3 face1 + 3 face2 + 9 cross + sometimes padding). With
+   AVX2 (4-wide doubles) or AVX-512 (8-wide), process 4 / 8
+   pairs' SAT projections in parallel.
+4. **Second SIMD win: face-polygon clipping.** Each pair has its
+   own 4-edge clip; trivially parallel across pairs at the
+   per-pair level.
+5. **Third SIMD win: contact reduction.** "Best 4 of N" is
+   per-pair scalar; amortize via batch-level prefetching and
+   loop unrolling.
+6. **Mixed-pair-type batches (Round 21b, optional).** Tier 2
+   batch APIs are per-pair-type today. A higher-level batch
+   entry could accept mixed pair types and group internally
+   for SIMD efficiency. Defer until per-pair SIMD lands and the
+   speedup vs added complexity is measurable.
+
+### Anti-goals
+
+- Do NOT hand-write x86 intrinsics. Use xsimd or std::simd. Per
+  Round 9 anti-goal — platform fragmentation kills OSS
+  maintenance.
+- Do NOT SIMD-ize the single-pair entry (`collideBoxes`). Single
+  pair is single pair; SIMD only pays off in batch.
+- Do NOT prematurely SIMD the per-pair Tier 2 entry while Round
+  9 main slice (other per-pair batch APIs) is still being built.
+  Need all pair types' batch APIs in place first so SIMD adds
+  consistency across the whole `NarrowPhase::collideBatch`
+  dispatcher.
+- Do NOT skip the audit protocol (Round 18) on SIMD'd numbers.
+  SIMD can introduce subtle DCE patterns if `DoNotOptimize`
+  isn't applied per-vector-lane.
+- Do NOT lose pair-order symmetry. SIMD result for `(A,B)` and
+  `(B,A)` batches must flip normals consistently across the
+  whole vector lane.
+
+### gz-physics constraint
+
+SIMD code paths must produce results bit-identical to the
+current scalar paths (or within tight numeric tolerance per
+contact-point determinism). gz-physics regression test
+(`pixi run -e gazebo test-gz`) MUST pass after every SIMD slice.
+If a SIMD body diverges numerically from scalar, the slice rolls
+back.
+
+### Round 21 status
+
+Currently **PLANNED, not started.** Lands after Round 9 main
+slice + Q4 followup + Round 18a audit completion. Estimated as
+its own multi-commit Round 21 slice (one commit per pair type's
+SIMD body, plus benchmark/audit commits).
+
+### Durable preference recorded
+
+This SIMD target gets a one-line entry in
+`dart-collision-perf-bar.md` so the Bar 2 release-gate text
+explicitly says "SIMD-vectorized Tier 2 batch is the means by
+which Bar 2 PERF-GAPs close." Memory entry will be updated in the
+same pass that adds Round 21.
+
+### No new question
+
+Round 21 is the documented final target for the perf work; no
+Q21 opened. The sequencing question (when to start) is answered
+by the existing queue.
