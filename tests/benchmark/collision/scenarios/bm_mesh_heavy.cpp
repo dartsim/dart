@@ -245,6 +245,23 @@ void BuildDetectorScene(
   }
 }
 
+void ConsumeNativeResult(bool collision, const CollisionResult& result)
+{
+  auto numContacts = result.numContacts();
+  benchmark::DoNotOptimize(collision);
+  benchmark::DoNotOptimize(numContacts);
+  benchmark::ClobberMemory();
+}
+
+void ConsumeDetectorResult(
+    bool collision, const dart::collision::CollisionResult& result)
+{
+  auto numContacts = result.getNumContacts();
+  benchmark::DoNotOptimize(collision);
+  benchmark::DoNotOptimize(numContacts);
+  benchmark::ClobberMemory();
+}
+
 void RunNativeMeshScenario(benchmark::State& state, const MeshData& mesh)
 {
   const std::size_t primitiveCount = static_cast<std::size_t>(state.range(0));
@@ -259,8 +276,8 @@ void RunNativeMeshScenario(benchmark::State& state, const MeshData& mesh)
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(world.collide(option, result));
-    benchmark::DoNotOptimize(result.numContacts());
+    const bool collision = world.collide(option, result);
+    ConsumeNativeResult(collision, result);
   }
 
   state.SetComplexityN(kMeshCount + primitiveCount);
@@ -282,8 +299,8 @@ void RunDetectorMeshScenario(
 
   for (auto _ : state) {
     result.clear();
-    benchmark::DoNotOptimize(detector->collide(group.get(), option, &result));
-    benchmark::DoNotOptimize(result.getNumContacts());
+    const bool collision = detector->collide(group.get(), option, &result);
+    ConsumeDetectorResult(collision, result);
   }
 
   state.SetComplexityN(kMeshCount + primitiveCount);

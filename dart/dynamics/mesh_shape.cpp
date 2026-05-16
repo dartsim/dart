@@ -329,9 +329,14 @@ MeshShape::MeshShape(
     mAlphaMode(BLEND),
     mColorIndex(0)
 {
-  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
+  const std::string uriString = uri.toString();
+  const bool isFileUri = uri.mScheme.get_value_or("file") == "file";
+  const bool hasMeshResource
+      = !uriString.empty() && !(isFileUri && uri.getFilesystemPath().empty());
+
+  if (isFileUri && uri.mPath && hasMeshResource) {
     mMeshPath = uri.getFilesystemPath();
-  } else if (mResourceRetriever) {
+  } else if (mResourceRetriever && hasMeshResource) {
     DART_SUPPRESS_DEPRECATED_BEGIN
     mMeshPath = mResourceRetriever->getFilePath(uri);
     DART_SUPPRESS_DEPRECATED_END
@@ -341,8 +346,7 @@ MeshShape::MeshShape(
 
   mMaterials.clear();
 
-  const std::string uriString = uri.toString();
-  if (!uriString.empty()) {
+  if (hasMeshResource) {
     common::ResourceRetrieverPtr materialRetriever = mResourceRetriever;
     if (!materialRetriever && uri.mScheme.get_value_or("file") == "file"
         && uri.mPath) {
