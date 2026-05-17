@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/debug.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -42,6 +43,7 @@
 #include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/inverse_kinematics.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
@@ -65,15 +67,23 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
+
 namespace {
 
 constexpr const char* kAtlasUri
     = "dart://sample/sdf/atlas/atlas_v3_no_head.urdf";
 constexpr const char* kAtlasSkeletonName = "visual_atlas_robot";
 constexpr const char* kGroundSkeletonName = "visual_atlas_puppet_ground";
+constexpr const char* kAtlasSupportOverlayName
+    = "atlas_puppet_support_polygon_overlay";
+constexpr const char* kAtlasSupportComOverlayName
+    = "atlas_puppet_support_com_overlay";
 constexpr double kTeleopLinearStep = 0.01;
 constexpr double kTeleopElevationStep = 0.2 * kTeleopLinearStep;
 constexpr double kTeleopYawStep = 2.0 * 3.14159265358979323846 / 180.0;
+constexpr double kSupportVisualElevation = 0.05;
+constexpr double kSupportComMarkerRadius = 0.06;
 
 enum class PuppetMotion
 {
@@ -271,6 +281,163 @@ dart::math::SupportGeometry makeAtlasPuppetFootSupportGeometry()
   return support;
 }
 
+std::shared_ptr<dart::dynamics::LineSegmentShape> createLineShape(
+    const std::vector<dart::gui::DebugLineDescriptor>& lines)
+{
+  auto shape = std::make_shared<dart::dynamics::LineSegmentShape>(2.0f);
+  for (const auto& line : lines) {
+    const auto fromIndex = shape->addVertex(line.from);
+    shape->addVertex(line.to, fromIndex);
+  }
+  return shape;
+}
+
+void appendMarkerAxisLines(
+    std::vector<dart::gui::DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& center,
+    double radius,
+    const std::string& label)
+{
+  dart::gui::DebugLineDescriptor x;
+  x.from = center - Eigen::Vector3d::UnitX() * radius;
+  x.to = center + Eigen::Vector3d::UnitX() * radius;
+  x.label = label + ".x";
+  lines.push_back(x);
+
+  dart::gui::DebugLineDescriptor y;
+  y.from = center - Eigen::Vector3d::UnitY() * radius;
+  y.to = center + Eigen::Vector3d::UnitY() * radius;
+  y.label = label + ".y";
+  lines.push_back(y);
+
+  dart::gui::DebugLineDescriptor z;
+  z.from = center - Eigen::Vector3d::UnitZ() * radius;
+  z.to = center + Eigen::Vector3d::UnitZ() * radius;
+  z.label = label + ".z";
+  lines.push_back(z);
+}
+
+std::vector<dart::gui::DebugLineDescriptor> makeAtlasSupportPolygonLines(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  if (atlas == nullptr) {
+    return {};
+  }
+
+  dart::gui::DebugDrawOptions options;
+  options.drawGrid = false;
+  options.drawWorldFrame = false;
+  options.drawSupportPolygons = true;
+  options.supportPolygonElevation = kSupportVisualElevation;
+  return dart::gui::makeSupportPolygonDebugLines(*atlas, options, "atlas");
+}
+
+std::optional<Eigen::Vector2d> computeAtlasComSupportProjection(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  if (atlas == nullptr || atlas->getMass() <= 0.0
+      || !std::isfinite(atlas->getMass())) {
+    return std::nullopt;
+  }
+
+  const auto& axes = atlas->getSupportAxes();
+  if (!axes.first.allFinite() || !axes.second.allFinite()) {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d com = atlas->getCOM();
+  if (!com.allFinite()) {
+    return std::nullopt;
+  }
+
+  return Eigen::Vector2d(com.dot(axes.first), com.dot(axes.second));
+}
+
+std::vector<dart::gui::DebugLineDescriptor> makeAtlasSupportComLines(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  if (atlas == nullptr) {
+    return {};
+  }
+
+  const auto projectedCom = computeAtlasComSupportProjection(atlas);
+  if (!projectedCom) {
+    return {};
+  }
+
+  const auto& axes = atlas->getSupportAxes();
+  const Eigen::Vector3d up = axes.first.cross(axes.second);
+  if (!up.allFinite() || up.squaredNorm() <= 1e-18) {
+    return {};
+  }
+
+  const Eigen::Vector3d center = axes.first * projectedCom->x()
+                                 + axes.second * projectedCom->y()
+                                 + up.normalized() * kSupportVisualElevation;
+  std::vector<dart::gui::DebugLineDescriptor> lines;
+  lines.reserve(3);
+  appendMarkerAxisLines(
+      lines, center, kSupportComMarkerRadius, "atlas.support_com");
+  return lines;
+}
+
+Eigen::Vector4d atlasSupportComColor(const dart::dynamics::SkeletonPtr& atlas)
+{
+  const auto projectedCom = computeAtlasComSupportProjection(atlas);
+  if (atlas == nullptr || !projectedCom) {
+    return Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
+  }
+
+  return dart::math::isInsideSupportPolygon(
+             *projectedCom, atlas->getSupportPolygon())
+             ? Eigen::Vector4d(0.0, 0.0, 1.0, 1.0)
+             : Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
+}
+
+dart::dynamics::SimpleFramePtr createAtlasSupportPolygonOverlay(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  auto overlay = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), kAtlasSupportOverlayName);
+  overlay->setShape(createLineShape(makeAtlasSupportPolygonLines(atlas)));
+  overlay->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.22, 0.86, 0.38, 0.86));
+  return overlay;
+}
+
+dart::dynamics::SimpleFramePtr createAtlasSupportComOverlay(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  auto overlay = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), kAtlasSupportComOverlayName);
+  overlay->setShape(createLineShape(makeAtlasSupportComLines(atlas)));
+  overlay->getVisualAspect(true)->setRGBA(atlasSupportComColor(atlas));
+  return overlay;
+}
+
+void updateAtlasSupportPolygonOverlay(
+    const dart::dynamics::SkeletonPtr& atlas,
+    const dart::dynamics::SimpleFramePtr& overlay)
+{
+  if (overlay == nullptr) {
+    return;
+  }
+
+  overlay->setShape(createLineShape(makeAtlasSupportPolygonLines(atlas)));
+}
+
+void updateAtlasSupportComOverlay(
+    const dart::dynamics::SkeletonPtr& atlas,
+    const dart::dynamics::SimpleFramePtr& overlay)
+{
+  if (overlay == nullptr) {
+    return;
+  }
+
+  overlay->setShape(createLineShape(makeAtlasSupportComLines(atlas)));
+  overlay->getVisualAspect(true)->setRGBA(atlasSupportComColor(atlas));
+}
+
 void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)
 {
   Eigen::Vector3d linearBounds
@@ -298,8 +465,69 @@ struct AtlasPuppetScene
 {
   dart::simulation::WorldPtr world;
   dart::dynamics::SkeletonPtr atlas;
+  dart::dynamics::SimpleFramePtr supportOverlay;
+  dart::dynamics::SimpleFramePtr supportComOverlay;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
   std::vector<dart::gui::Gizmo> gizmos;
+  struct TargetState
+  {
+    dart::simulation::WorldPtr world;
+    dart::dynamics::EndEffector* effector = nullptr;
+    dart::dynamics::InverseKinematicsPtr ik;
+    dart::dynamics::SimpleFramePtr target;
+    std::pair<Eigen::Vector6d, Eigen::Vector6d> defaultBounds;
+    Eigen::Isometry3d defaultTargetTransform = Eigen::Isometry3d::Identity();
+    std::string label;
+    char hotkey = '\0';
+    bool active = false;
+
+    void activate()
+    {
+      if (active || world == nullptr || effector == nullptr || target == nullptr
+          || ik == nullptr) {
+        return;
+      }
+
+      ik->getErrorMethod().setBounds();
+      target->setTransform(effector->getWorldTransform());
+      world->addSimpleFrame(target);
+      active = true;
+      std::cout << "Activated IK target '" << effector->getName() << "'.\n";
+      solve();
+    }
+
+    void deactivate()
+    {
+      if (!active || world == nullptr || target == nullptr || ik == nullptr) {
+        return;
+      }
+
+      ik->getErrorMethod().setBounds(defaultBounds);
+      target->setTransform(defaultTargetTransform);
+      world->removeSimpleFrame(target);
+      active = false;
+      std::cout << "Deactivated IK target '" << effector->getName() << "'.\n";
+    }
+
+    void toggle()
+    {
+      if (active) {
+        deactivate();
+      } else {
+        activate();
+      }
+    }
+
+    void solve()
+    {
+      if (active && ik != nullptr) {
+        ik->solveAndApply(true);
+      }
+    }
+  };
+
+  std::vector<std::shared_ptr<TargetState>> targetStates;
+  Eigen::VectorXd restConfiguration;
 };
 
 void addAtlasPuppetIkTargets(
@@ -403,8 +631,17 @@ void addAtlasPuppetIkTargets(
         dart::dynamics::Frame::World(),
         config.targetName,
         endEffector->getWorldTransform());
-    scene.world->addSimpleFrame(target);
     ik->setTarget(target);
+
+    auto state = std::make_shared<AtlasPuppetScene::TargetState>();
+    state->world = scene.world;
+    state->effector = endEffector;
+    state->ik = ik;
+    state->target = target;
+    state->defaultBounds = ik->getErrorMethod().getBounds();
+    state->defaultTargetTransform = target->getRelativeTransform();
+    state->label = config.label;
+    state->hotkey = config.hotkey;
 
     dart::gui::InverseKinematicsHandle handle;
     handle.label = config.label;
@@ -416,9 +653,13 @@ void addAtlasPuppetIkTargets(
     gizmo.label = config.targetName;
     gizmo.target = target;
     gizmo.size = 0.24;
+    gizmo.isVisible = [state]() {
+      return state->active;
+    };
 
     scene.gizmos.push_back(std::move(gizmo));
     scene.ikHandles.push_back(std::move(handle));
+    scene.targetStates.push_back(std::move(state));
   }
 }
 
@@ -426,22 +667,28 @@ AtlasPuppetScene createAtlasPuppetScene()
 {
   AtlasPuppetScene scene;
   scene.world = dart::simulation::World::create("dartsim_atlas_puppet");
-  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   scene.world->addSkeleton(createGround());
 
   auto atlas = loadAtlasPuppetSkeleton();
   scene.atlas = atlas;
   scene.world->addSkeleton(atlas);
   addAtlasPuppetIkTargets(scene, atlas);
+  scene.restConfiguration = atlas->getPositions();
+  scene.supportOverlay = createAtlasSupportPolygonOverlay(scene.atlas);
+  scene.world->addSimpleFrame(scene.supportOverlay);
+  scene.supportComOverlay = createAtlasSupportComOverlay(scene.atlas);
+  scene.world->addSimpleFrame(scene.supportComOverlay);
   return scene;
 }
 
-void solveIkHandles(
-    const std::vector<dart::gui::InverseKinematicsHandle>& handles)
+void solveActiveAtlasTargets(
+    const std::vector<std::shared_ptr<AtlasPuppetScene::TargetState>>&
+        targetStates)
 {
-  for (const auto& handle : handles) {
-    if (handle.ik != nullptr) {
-      handle.ik->solveAndApply(true);
+  for (const auto& state : targetStates) {
+    if (state != nullptr) {
+      state->solve();
     }
   }
 }
@@ -514,7 +761,9 @@ bool applyRootTeleoperationStep(
 
 std::vector<dart::gui::KeyboardAction> createAtlasPuppetKeyboardActions(
     const dart::dynamics::SkeletonPtr& atlas,
-    const std::vector<dart::gui::InverseKinematicsHandle>& ikHandles)
+    const std::vector<std::shared_ptr<AtlasPuppetScene::TargetState>>&
+        targetStates,
+    const Eigen::VectorXd& restConfiguration)
 {
   struct Config
   {
@@ -534,20 +783,20 @@ std::vector<dart::gui::KeyboardAction> createAtlasPuppetKeyboardActions(
       {'e', "Yaw Atlas right", PuppetMotion::YawRight},
   }};
 
-  auto handles
-      = std::make_shared<std::vector<dart::gui::InverseKinematicsHandle>>(
-          ikHandles);
+  auto states = std::make_shared<
+      std::vector<std::shared_ptr<AtlasPuppetScene::TargetState>>>(
+      targetStates);
   std::vector<dart::gui::KeyboardAction> actions;
-  actions.reserve(configs.size());
+  actions.reserve(configs.size() + targetStates.size() + 4);
   for (const Config& config : configs) {
     dart::gui::KeyboardAction action;
     action.label = config.label;
     action.shortcut = dart::gui::KeyboardShortcut::characterKey(config.key);
     action.repeat = true;
-    action.callback = [atlas, handles, motion = config.motion](
+    action.callback = [atlas, states, motion = config.motion](
                           dart::gui::KeyboardActionContext& context) {
       if (applyRootTeleoperationStep(atlas, motion)) {
-        solveIkHandles(*handles);
+        solveActiveAtlasTargets(*states);
         if (context.lifecycle != nullptr) {
           context.lifecycle->paused = true;
         }
@@ -555,6 +804,84 @@ std::vector<dart::gui::KeyboardAction> createAtlasPuppetKeyboardActions(
     };
     actions.push_back(std::move(action));
   }
+
+  for (const auto& state : targetStates) {
+    if (state == nullptr || state->hotkey == '\0') {
+      continue;
+    }
+
+    dart::gui::KeyboardAction action;
+    action.label = "Toggle Atlas target " + state->label;
+    action.shortcut = dart::gui::KeyboardShortcut::characterKey(state->hotkey);
+    action.callback = [state](dart::gui::KeyboardActionContext& context) {
+      state->toggle();
+      if (context.lifecycle != nullptr) {
+        context.lifecycle->paused = true;
+      }
+    };
+    actions.push_back(std::move(action));
+  }
+
+  const auto addSupportToggle
+      = [&](char key, const char* effectorName, const char* label) {
+          dart::gui::KeyboardAction action;
+          action.label = label;
+          action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+          action.callback =
+              [atlas, effectorName](dart::gui::KeyboardActionContext& context) {
+                auto* effector
+                    = atlas ? atlas->getEndEffector(effectorName) : nullptr;
+                auto* support = effector ? effector->getSupport() : nullptr;
+                if (support != nullptr) {
+                  support->setActive(!support->isActive());
+                  if (context.lifecycle != nullptr) {
+                    context.lifecycle->paused = true;
+                  }
+                }
+              };
+          actions.push_back(std::move(action));
+        };
+  addSupportToggle(
+      'x', "atlas_puppet_left_foot", "Toggle left Atlas foot support");
+  addSupportToggle(
+      'c', "atlas_puppet_right_foot", "Toggle right Atlas foot support");
+
+  dart::gui::KeyboardAction printDofs;
+  printDofs.label = "Print Atlas DOFs";
+  printDofs.shortcut = dart::gui::KeyboardShortcut::characterKey('p');
+  printDofs.callback = [atlas](dart::gui::KeyboardActionContext&) {
+    if (atlas == nullptr) {
+      return;
+    }
+    for (std::size_t i = 0; i < atlas->getNumDofs(); ++i) {
+      auto* dof = atlas->getDof(i);
+      std::cout << dof->getName() << ": " << dof->getPosition() << "\n";
+    }
+  };
+  actions.push_back(std::move(printDofs));
+
+  dart::gui::KeyboardAction resetPosture;
+  resetPosture.label = "Reset Atlas relaxed posture";
+  resetPosture.shortcut = dart::gui::KeyboardShortcut::characterKey('t');
+  resetPosture.callback = [atlas, restConfiguration, states](
+                              dart::gui::KeyboardActionContext& context) {
+    if (atlas == nullptr
+        || static_cast<std::size_t>(restConfiguration.size())
+               != atlas->getNumDofs()) {
+      return;
+    }
+
+    for (std::size_t i = 0; i < atlas->getNumDofs(); ++i) {
+      if (i < 2 || 4 < i) {
+        atlas->getDof(i)->setPosition(restConfiguration[static_cast<int>(i)]);
+      }
+    }
+    solveActiveAtlasTargets(*states);
+    if (context.lifecycle != nullptr) {
+      context.lifecycle->paused = true;
+    }
+  };
+  actions.push_back(std::move(resetPosture));
   return actions;
 }
 
@@ -565,11 +892,14 @@ dart::gui::Panel createAtlasPuppetPanel()
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
     builder.text("Atlas whole-body IK puppet");
-    builder.text("Press 1-4 to select a target for keyboard nudges.");
-    builder.text("Left-drag gizmo arrows/planes/rings.");
+    builder.text("Press 1-4 to toggle/select active targets.");
+    builder.text("Left-drag active target gizmo handles.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text("WASD moves the root; Q/E yaw; F/Z height.");
+    builder.text("X/C toggles foot support; P prints DOFs; T resets posture.");
+    builder.text("Blue/red COM marker shows support-polygon validity.");
+    builder.text("Only active targets solve each simulation step.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -617,11 +947,16 @@ int main(int argc, char* argv[])
     options.gizmos = scene.gizmos;
     options.runDefaults = makeAtlasPuppetRunDefaults();
     options.camera = makeAtlasPuppetCamera();
-    options.preStep = [handles = scene.ikHandles]() {
-      solveIkHandles(handles);
+    options.preStep = [targetStates = scene.targetStates,
+                       atlas = scene.atlas,
+                       supportOverlay = scene.supportOverlay,
+                       supportComOverlay = scene.supportComOverlay]() {
+      solveActiveAtlasTargets(targetStates);
+      updateAtlasSupportPolygonOverlay(atlas, supportOverlay);
+      updateAtlasSupportComOverlay(atlas, supportComOverlay);
     };
-    options.keyboardActions
-        = createAtlasPuppetKeyboardActions(scene.atlas, scene.ikHandles);
+    options.keyboardActions = createAtlasPuppetKeyboardActions(
+        scene.atlas, scene.targetStates, scene.restConfiguration);
     options.panels.push_back(createAtlasPuppetPanel());
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {

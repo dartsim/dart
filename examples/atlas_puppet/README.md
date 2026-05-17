@@ -4,27 +4,34 @@
 
 - Goal: teleoperate the Atlas model with kinematic whole-body IK targets.
 - Concepts/APIs: `dart::gui::ApplicationOptions`, `InverseKinematicsHandle`,
-  `dart::gui::Gizmo`, keyboard actions, `SimpleFrame` IK targets, and foot
-  support geometry.
-- Expected output: a DART GUI viewer displaying Atlas with selectable hand and
-  foot transform gizmos at those targets.
-- Controls: press 1-4 to select a target for keyboard nudges; left-drag a gizmo
-  axis arrow or plane handle to move it, or a rotation ring to orient it; WASD
-  moves the root; Q/E yaw; F/Z adjusts height; space toggles simulation.
+  `dart::gui::Gizmo`, keyboard actions, `SimpleFrame` IK targets, source-owned
+  support debug geometry, and foot support geometry.
+- Expected output: a DART GUI viewer displaying Atlas with toggleable hand and
+  foot transform gizmos plus an always-visible support-polygon and COM validity
+  overlay.
+- Controls: press 1-4 to toggle/select a target for keyboard nudges; left-drag
+  a gizmo axis arrow or plane handle to move it, or a rotation ring to orient
+  it; WASD moves the root; Q/E yaw; F/Z adjusts height; X/C toggles left/right
+  foot support; P prints DOFs; T resets the relaxed posture; space toggles
+  simulation.
 
 ## Notes
 
 - This example runs in kinematic mode and continuously resolves the promoted IK
   handles.
-- The transform gizmos currently support X/Y/Z axis-arrow dragging and rotation
-  ring dragging plus XY/YZ/XZ plane handles. Hovered and actively dragged
-  handles use the configured highlight color.
+- The transform gizmos support X/Y/Z axis-arrow dragging and rotation ring
+  dragging plus XY/YZ/XZ plane handles. Hovered and actively dragged handles use
+  the configured highlight color.
+- Only active targets solve each simulation step. Activating a target adds its
+  visible frame at the current end-effector transform; deactivating it removes
+  the frame.
+- The support overlay is source-owned DART line geometry. The polygon and
+  centroid are green; the COM marker is blue when its support projection is
+  inside the active support polygon and red otherwise.
 - The default launch size is 1280x960, matching the historical standalone
   viewer.
-- Remaining strict-parity gaps from the historical OSG source include target
-  activation/deactivation.
-- Other remaining gaps are X/C support toggles, R/T posture recovery,
-  whole-body balance recovery, and default support-polygon/COM visualization.
+- The historical hold/release R whole-body posture and balance optimization
+  remains a solver follow-up.
 
 ## Build Instructions
 

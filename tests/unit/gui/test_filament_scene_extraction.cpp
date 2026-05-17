@@ -2706,11 +2706,37 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(
       mainSource.find("atlas_puppet_ik_target_right_foot"), std::string::npos);
   EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find(
+          "scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81))"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("atlas_puppet_support_polygon_overlay"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("atlas_puppet_support_com_overlay"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeAtlasSupportPolygonLines"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeAtlasSupportComLines"), std::string::npos);
+  EXPECT_NE(mainSource.find("atlasSupportComColor"), std::string::npos);
+  EXPECT_NE(mainSource.find("isInsideSupportPolygon"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector4d(0.0, 0.0, 1.0, 1.0)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector4d(1.0, 0.0, 0.0, 1.0)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
+  EXPECT_NE(mainSource.find("state->toggle()"), std::string::npos);
+  EXPECT_NE(mainSource.find("gizmo.isVisible"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->addSimpleFrame(target)"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("world->removeSimpleFrame(target)"), std::string::npos);
   EXPECT_NE(mainSource.find("r_arm_shx"), std::string::npos);
   EXPECT_NE(mainSource.find("l_arm_shx"), std::string::npos);
   EXPECT_NE(mainSource.find("setUnconstrainedIkBounds"), std::string::npos);
   EXPECT_NE(
-      mainSource.find("Left-drag gizmo arrows/planes/rings"),
+      mainSource.find("Left-drag active target gizmo handles"),
       std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
@@ -2719,8 +2745,17 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("applyRootTeleoperationStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("solveIkHandles"), std::string::npos);
+  EXPECT_NE(mainSource.find("solveActiveAtlasTargets"), std::string::npos);
   EXPECT_NE(mainSource.find("WASD moves the root"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Toggle left Atlas foot support"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Toggle right Atlas foot support"), std::string::npos);
+  EXPECT_NE(mainSource.find("Print Atlas DOFs"), std::string::npos);
+  EXPECT_NE(mainSource.find("Reset Atlas relaxed posture"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Blue/red COM marker shows support-polygon validity"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
   EXPECT_NE(mainSource.find("makeAtlasPuppetRunDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
@@ -2742,14 +2777,16 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("SimpleFrame` IK targets"), std::string::npos);
   EXPECT_NE(readmeSource.find("axis-arrow dragging"), std::string::npos);
   EXPECT_NE(readmeSource.find("rotation"), std::string::npos);
-  EXPECT_NE(readmeSource.find("ring dragging"), std::string::npos);
+  EXPECT_NE(readmeSource.find("rotation ring"), std::string::npos);
   EXPECT_NE(readmeSource.find("plane handles"), std::string::npos);
+  EXPECT_NE(readmeSource.find("COM validity"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Only active targets solve"), std::string::npos);
+  EXPECT_NE(readmeSource.find("COM marker is blue"), std::string::npos);
   EXPECT_NE(readmeSource.find("pixi run ex atlas_puppet"), std::string::npos);
   EXPECT_NE(readmeSource.find("1280"), std::string::npos);
   EXPECT_NE(
-      readmeSource.find("Remaining strict-parity gaps"), std::string::npos);
-  EXPECT_NE(readmeSource.find("activation/deactivation"), std::string::npos);
-  EXPECT_NE(readmeSource.find("support-polygon/COM"), std::string::npos);
+      readmeSource.find("hold/release R whole-body posture"),
+      std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)

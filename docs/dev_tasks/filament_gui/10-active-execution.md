@@ -543,7 +543,7 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   direct llvmpipe Fetch screenshot with analyzer coverage
   (`/tmp/dart_fetch_panel_text_direct_postlint.ppm`, 303694/307200 nonzero
   pixels).
-- Current implementation checkpoint in the worktree:
+- Recent local implementation checkpoint:
   `examples/hubo_puppet/` strict re-open. This slice restores the historical
   10x10x0.01 blue `ground`, six number-key target activation toggles,
   renderer-neutral X/C foot-support toggles, P DOF print, T relaxed-posture
@@ -554,6 +554,19 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   and deeper posture/balance behavior remain named promoted API or solver
   follow-ups. Historical camera up-vector/roll is restored by the local R24-14
   public `OrbitCamera::up` checkpoint.
+- Active local implementation checkpoint: `examples/atlas_puppet/` target and
+  support follow-up. This slice restores number-key target
+  activation/deactivation, active-target-only IK solving, source-owned
+  support-polygon/centroid and blue/red COM validity overlays, X/C foot-support
+  toggles, P DOF print, T relaxed-posture reset, README, and marker guards
+  through public `dart::gui`. The historical hold/release R whole-body
+  relaxed-posture and balance solver behavior remains a named solver follow-up.
+  Pre-lint validation passed: focused `atlas_puppet` and
+  `UNIT_gui_FilamentSceneExtraction` build, focused CTest, and the Atlas
+  headless example runner with the smoke analyzer (`304622/307200` nonzero
+  pixels).
+  Post-lint validation passed with the same focused build/CTest and Atlas
+  headless smoke analyzer coverage (`304623/307200` nonzero pixels).
 - Latest maintainer correction after the Hubo work: there are still many more
   incompletely restored examples, and `examples/fetch/` remains the concrete
   warning case. After the Hubo checkpoint is committed and pushed, re-open
@@ -2400,12 +2413,10 @@ Twenty-second robot/IK parity-audit checkpoint:
   Ctrl-left drag, arrow/PageUp/PageDown nudging, and X/Y/Z constrained drag.
   Atlas also restores the historical comfortable arm start pose and gives the
   hand IK targets unconstrained linear/angular bounds.
-- Remaining explicit gaps after this slice: Atlas relaxed posture and balance
-  objective parity, Hubo analytical IK and relaxed-posture/balance parity,
-  legacy target activation/deactivation semantics, and full OSG
-  WASD/Q/E/F/Z-style teleoperation. These should be restored through
-  renderer-neutral `dart::gui` concepts before declaring those examples fully
-  restored.
+- Remaining explicit gaps after later local target/teleop follow-ups: Atlas
+  relaxed posture and balance objective parity plus Hubo analytical IK and
+  relaxed-posture/balance parity. Target activation/deactivation and
+  WASD/Q/E/F/Z teleoperation are restored through renderer-neutral `dart::gui`.
 - Local evidence so far:
   - C++ GUI target build for `g1_puppet`, `atlas_puppet`, `hubo_puppet`, and
     `UNIT_gui_FilamentSceneExtraction`
@@ -2585,10 +2596,10 @@ Twenty-seventh robot/IK behavior parity checkpoint:
     translation
   - compact panel text documenting the restored teleoperation controls
 - Keep this checkpoint focused. Atlas relaxed-posture/balance optimization,
-  Hubo analytical IK, target activation/deactivation semantics, G1 target
-  toggle semantics, and recording/camera-reset shortcuts remain explicit
-  parity gaps unless the slice adds the smallest renderer-neutral public API
-  needed to implement them cleanly.
+  Hubo analytical IK, and recording/camera-reset shortcuts remain explicit
+  parity gaps unless a slice adds the smallest renderer-neutral public API or
+  source-owned state needed to implement them cleanly. Later local checkpoints
+  restore target activation/deactivation semantics.
 - Implementation state for this slice: `examples/atlas_puppet` and
   `examples/hubo_puppet` now register repeatable public
   `dart::gui::KeyboardAction` callbacks for W/A/S/D/F/Z/Q/E root movement.
@@ -2691,9 +2702,10 @@ Twenty-ninth G1 target activation parity checkpoint:
   keyboard actions should add/remove the target frame from the world, reset an
   activated target to its end-effector transform, and solve only active
   targets from `ApplicationOptions::preStep`.
-- Keep this checkpoint focused on G1. Atlas/Hubo target activation semantics,
-  Atlas relaxed-posture/balance optimization, Hubo analytical IK, and Enter
-  recording remain explicit follow-up gaps.
+- Keep this checkpoint focused on G1. Atlas relaxed-posture/balance
+  optimization, Hubo analytical IK, and Enter recording remain explicit
+  follow-up gaps; later local checkpoints restore Atlas/Hubo target activation
+  semantics.
 - Local acceptance for this checkpoint:
   - C++ GUI target build for `g1_puppet` and
     `UNIT_gui_FilamentSceneExtraction`
