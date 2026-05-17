@@ -1,6 +1,10 @@
 # DART Release Roadmap
 
-DART is moving toward a Python-first experience while keeping production users productive during the transition. This roadmap reflects the current codebase and will become the source of truth once it is locked.
+DART is moving toward an easier-start research experience while keeping
+production users productive on a best-effort basis during the transition.
+Python-first APIs are a major part of that direction, layered on a refreshed
+C++20 core. This roadmap reflects the current codebase and will become the
+source of truth once it is locked.
 
 ## Compatibility & Deprecation Policy
 
@@ -16,7 +20,7 @@ DART is moving toward a Python-first experience while keeping production users p
 
 - `main` targets DART 7.0.0 with a Python-first API layered on a refreshed C++ architecture.
 - The legacy DART 6 API remains available throughout DART 7 to support migration and is deprecated rather than removed during DART 7.
-- Algorithmic behavior aligns with DART 6 while the refreshed architecture opens room for multi-core gains. GPU support for DART 7 is still undetermined and likely not planned.
+- Algorithmic behavior aligns with DART 6 while the refreshed architecture opens room for multi-core gains. GPU acceleration remains an evidence-gated roadmap item, not a DART 7 public API commitment, until workload benchmarks and packaging constraints justify a backend choice.
 
 ## DART 8: Clean Break
 
@@ -26,6 +30,6 @@ DART is moving toward a Python-first experience while keeping production users p
 
 ## Contributing During the Transition
 
-- Prioritize work that advances or hardens the Python-first API.
+- Prioritize work that advances or hardens the easy-start research API, including Python-first workflows where they are the best user path.
 - When updating legacy code, validate gz-physics compatibility as described above.
 - Share feedback through issues or pull requests if the roadmap overlooks critical scenarios.

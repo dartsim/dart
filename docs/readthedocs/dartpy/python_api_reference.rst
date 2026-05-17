@@ -1,16 +1,16 @@
 Python API Reference
 ====================
 
-The full ``dartpy`` API reference is built directly on Read the Docs using the
-wheel pinned in ``docs/readthedocs/requirements.txt``. Sphinx imports the
-modules under ``docs/python_api/`` and auto-documents them using the installed
-package. Local builds use the compiled extension in ``build/.../python`` so the
-API pages always reflect the current nanobind bindings.
+The full ``dartpy`` API reference is built from the module pages under
+``docs/python_api/``. Sphinx imports a live ``dartpy`` module when one is
+available; otherwise ``docs/readthedocs/conf.py`` falls back to the committed
+stubs under ``python/stubs/dartpy`` so Read the Docs renders the current
+repository API shape without pinning an older release wheel.
 
 .. note::
-   If a compatible wheel is unavailable, ``conf.py`` falls back to the stub
-   package in ``python/stubs/dartpy`` so RTD still renders the module layout.
-   Local builds can always use ``pixi run docs-build`` or ``pixi run api-docs-py``.
+   Local ``pixi run docs-build`` uses the same fallback path unless the current
+   shell already exposes a built ``dartpy`` module. Use ``pixi run api-docs-py``
+   when you need a local API build backed by the freshly compiled extension.
 
 Getting Started
 ---------------

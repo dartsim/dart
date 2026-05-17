@@ -1,0 +1,165 @@
+# DART Living Plans
+
+This directory holds DART's living plan from current state to the AI-native
+north star. Use it when deciding what to do next, revising priorities, or
+turning a strategic direction into bounded work.
+
+## Why `docs/plans/`
+
+`docs/plans/` is a collection of durable planning docs, so it follows the
+plural collection style used by `docs/dev_tasks/`. It is separate from
+`docs/dev_tasks/`:
+
+- `docs/plans/` records the current strategic path and priority order.
+- `docs/dev_tasks/` tracks active multi-session implementation work and is
+  deleted when that work completes.
+- `docs/onboarding/` keeps durable developer design explanations after work
+  lands.
+
+## Files
+
+| File                                             | Purpose                                                         |
+| ------------------------------------------------ | --------------------------------------------------------------- |
+| [`README.md`](README.md)                         | Planning rules, structure, and revision workflow                |
+| [`dashboard.md`](dashboard.md)                   | Single source of truth for plan operating state                 |
+| [`north-star-roadmap.md`](north-star-roadmap.md) | Strategic framing and sequencing principles                     |
+| Numbered initiative files, such as `010-*.md`    | Detailed owner docs for plan scope, evidence, and rationale     |
+| [`AGENTS.md`](AGENTS.md)                         | Local rules for agents editing plan docs                        |
+| [`../ai/north-star.md`](../ai/north-star.md)     | Mission, current state, missing capabilities, and readiness bar |
+| [`../ai/verification.md`](../ai/verification.md) | Completion audit and gate-selection rules                       |
+| External owner docs linked from `dashboard.md`   | Source docs for initiatives that do not need a plan file yet    |
+
+## Directory Structure
+
+Keep `docs/plans/` flat for the dashboard, roadmap, and single-file initiative
+plans. Flat files are easier for maintainers and agents to scan, link, diff,
+and reorder while the plan set is small enough to fit in the dashboard.
+
+Use a sidecar subdirectory only when one initiative needs multiple durable
+planning artifacts, such as an evidence matrix, benchmark decision record, API
+inventory, or migration map. Keep the stable `.md` owner file in place and add
+the sidecar directory under the same initiative ID:
+
+```text
+docs/plans/020-algorithm-extension-contracts.md
+docs/plans/020-algorithm-extension-contracts/
+├── baseline-harness.md
+└── api-inventory.md
+```
+
+Only move the owner file into a directory when the plan truly outgrows the
+single-file shape. If that happens, use `git mv` and update every owner link in
+the same change.
+
+Do not create subdirectories by status, horizon, or north-star dimension.
+Plans move across those categories often, and directory moves make links and
+diffs noisier. Implementation tracking still belongs in `docs/dev_tasks/`, not
+in `docs/plans/`.
+
+## Single Source Of Truth
+
+Avoid duplicating tracking fields across files. `dashboard.md` owns plan
+priority, status, horizon, north-star dimension, next step, and gate. Detailed
+plan files and external owner documents should point to the dashboard for those
+fields instead of repeating them.
+
+Dashboard entries may link to either:
+
+- a detailed numbered initiative file in `docs/plans/`; or
+- an authoritative owner document, such as a release roadmap or active dev-task
+  design, when that surface already owns the scope and a dedicated plan file
+  would duplicate it.
+
+Keep dashboard entries git-history friendly: one plan per block, priority order
+by document order, and one frequently changed field per line.
+
+When editing:
+
+- update `dashboard.md` for operating state;
+- update the detailed numbered initiative file or external owner document linked
+  from `dashboard.md` for scope, workstreams, acceptance criteria, revision
+  triggers, and rationale;
+- update `north-star-roadmap.md` only when strategic framing or sequencing
+  principles change.
+
+## Planning Principles
+
+Plans should be:
+
+- **Clearly designed**: each initiative has a named outcome, owner surface,
+  next decision, and verification evidence.
+- **Frequently revised**: priority order, horizon, scope, and initiative shape
+  should change as evidence changes.
+- **Current-state oriented**: describe the intended path now, not every previous
+  path considered.
+- **Small enough to maintain**: keep initiative cards concise and move detailed
+  design into developer docs or active dev tasks.
+- **Evidence-backed**: every change should cite repository docs, code, CI,
+  issue/PR state, benchmark data, or explicit maintainer direction.
+
+## Revision Triggers
+
+Revise plans when any of these happen:
+
+- the north star changes;
+- a release priority changes;
+- CI, benchmarks, packaging, or downstream evidence changes risk or sequencing;
+- a new research direction needs an algorithm extension point or baseline;
+- a plan item is split, consolidated, removed, completed, blocked, or parked;
+- a dev task starts or completes and changes roadmap state;
+- a maintainer asks to compare alternatives before changing direction.
+- the dashboard no longer fits on one screen or stops being useful as an
+  operating view.
+
+## Initiative Card Shape
+
+Use this shape for plan entries:
+
+```markdown
+### PLAN-000: Short Name
+
+- Operating state: `PLAN-000` in `docs/plans/dashboard.md`
+- Outcome: <what success looks like>
+- Current evidence: <repo docs, code, tests, CI, issue/PR state, benchmark data>
+```
+
+Statuses mean:
+
+| Status   | Meaning                                            |
+| -------- | -------------------------------------------------- |
+| Proposed | Worth considering but not actively sequenced       |
+| Active   | Currently part of the intended path                |
+| Blocked  | Valuable but waiting on a named decision/evidence  |
+| Complete | Outcome achieved; move durable lessons elsewhere   |
+| Parked   | Intentionally deferred; revisit only with new data |
+
+Horizons mean:
+
+| Horizon | Meaning                                                          |
+| ------- | ---------------------------------------------------------------- |
+| Now     | Highest-priority work for the next planning/implementation cycle |
+| Next    | Sequenced after current blockers or active tasks clear           |
+| Later   | Strategic direction, not yet ready for near-term execution       |
+| Parked  | Out of active sequence until evidence changes                    |
+
+## Plan Update Workflow
+
+Use `$dart-plan-update` in Codex or `/dart-plan-update` in Claude/OpenCode for
+planning discussions and plan edits.
+Use `$dart-next` or `/dart-next` when the goal is to select and execute the
+next bounded task from the dashboard and other tracked evidence.
+
+1. Load `docs/ai/north-star.md`, this file, `docs/plans/dashboard.md`, and
+   `docs/plans/north-star-roadmap.md`.
+2. Classify the request as discussion-only, plan edit, or task derivation.
+3. Inspect current evidence before changing priority, timeline, scope, or
+   status.
+4. Propose the smallest plan change that keeps the roadmap coherent.
+5. If editing, update the dashboard for operating state, the detailed numbered
+   initiative file or external owner document for plan rationale, and any index
+   links.
+6. Run the matching verification gates from `docs/ai/verification.md`.
+
+Plan discussions can be exploratory. Plan edits should leave the files in a
+state where the next agent can immediately tell what changed, why it changed,
+and what to do next.

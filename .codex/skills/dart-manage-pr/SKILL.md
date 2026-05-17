@@ -75,13 +75,23 @@ gh pr checks <PR_NUMBER>
      code or behavior changed.
    - Commit only intended files. Push only after explicit maintainer/user
      approval, then continue monitoring the PR.
+   - For already-published PRs, prefer additive follow-up commits so reviewers
+     can inspect each update. Amend or force-push only after explicit
+     maintainer/user approval and only when the user explicitly requests it or
+     when there is a clear reason such as removing sensitive content or
+     repairing broken branch history.
 4. Address reviews:
    - Use the `dart-review-pr` workflow for substantive review feedback.
    - Never reply to AI-generated review comments from bot users such as
      `chatgpt-codex-connector[bot]`, `github-actions[bot]`, or `copilot[bot]`.
+   - When a draft PR is first marked ready for review, Codex review is expected
+     to start automatically. Before posting `@codex review`, wait a reasonable
+     time for the PR-body Codex activity indicator or a submitted Codex review.
    - Apply AI-review fixes silently. After explicit maintainer/user approval
      and after the branch is ready, push, resolve reviewed and addressed
-     threads, and request a fresh AI review:
+     threads, and request a fresh AI review only when the automatic first review
+     did not appear after a reasonable wait, or after a follow-up push needs a
+     new review:
      ```bash
      gh pr comment <PR_NUMBER> --body "@codex review"
      ```

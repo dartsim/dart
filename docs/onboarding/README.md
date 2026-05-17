@@ -1,4 +1,4 @@
-# DART GUI - Developer Onboarding Guide
+# DART Developer Knowledge Base
 
 ## Start here next time
 
@@ -11,7 +11,7 @@
 
 ## Documentation Principles
 
-**Onboarding docs should**:
+**Developer docs should**:
 
 - ✅ Explain **design decisions** and **why** (not just what)
 - ✅ Point to **code as source of truth** (CMakeLists.txt, pixi.toml, source files)
@@ -25,7 +25,13 @@
 
 ## 1. Overview
 
-**DART** (Dynamic Animation and Robotics Toolkit) is a comprehensive C++ physics engine for robotics simulation, kinematics, dynamics, and control. The **dart_gui** component provides 3D visualization and interactive manipulation capabilities built on OpenSceneGraph (OSG) and Dear ImGui.
+**DART** (Dynamic Animation and Robotics Toolkit) is a research-focused C++20
+physics engine for robotics, animation, and machine learning. It exposes
+transparent kinematics, dynamics, collision, constraint-solving, model-loading,
+and Python-binding foundations so researchers can build on DART rather than
+treating the simulator as a black box. The **dart_gui** component provides 3D
+visualization and interactive manipulation capabilities built on OpenSceneGraph
+(OSG) and Dear ImGui.
 
 ### Release & Branch Strategy
 
@@ -55,20 +61,31 @@ See [release-roadmap.md](release-roadmap.md) for the detailed roadmap, compatibi
 
 ### Documentation Structure
 
-This onboarding guide is organized into several focused documents:
+This developer knowledge base is organized into focused owner documents:
 
-- **[README.md](README.md)** (this file) - Architecture overview and common workflows
+- **[README.md](README.md)** (this file) - Entry point, architecture overview, and common workflows
 - **[building.md](building.md)** - Step-by-step build instructions for all platforms
 - **[contributing.md](contributing.md)** - Comprehensive contribution workflow and guidelines
 - **[code-style.md](code-style.md)** - Code style conventions for C++, Python, and CMake
 - **[testing.md](testing.md)** - Test suite organization, unit vs integration tests, running tests
 - **[ci-cd.md](ci-cd.md)** - CI/CD workflows, caching strategies, and performance optimization
+- **[release-management.md](release-management.md)** - Release workflow and backport guidance
 - **[release-roadmap.md](release-roadmap.md)** - Release/branch strategy and deprecation policy
+- **[compatibility-policy.md](compatibility-policy.md)** - Compatibility policy for DART 7 and later
 - **[api-boundaries.md](api-boundaries.md)** - Public vs internal API policy, Python exposure, and symbol visibility
 - **[api-boundary-inventory.md](api-boundary-inventory.md)** - Generated public-header and dartpy boundary inventory
+- **[api-documentation.md](api-documentation.md)** - Published docs and API reference architecture
 - **[architecture.md](architecture.md)** - Deep dive into DART's simulation core
+- **[aspect-system.md](aspect-system.md)** - Aspect/State/Properties design
 - **[dynamics.md](dynamics.md)** - Articulated body system and kinematics
 - **[constraints.md](constraints.md)** - Constraint resolution and collision response
+- **[gui-rendering.md](gui-rendering.md)** - GUI and rendering architecture
+- **[python-bindings.md](python-bindings.md)** - dartpy binding architecture and workflows
+- **[build-system.md](build-system.md)** - CMake internals and dependency analysis
+- **[io-parsing.md](io-parsing.md)** - Unified model loading API (`dart::io`)
+- **[error-handling.md](error-handling.md)** - Error handling and numerical validation policy
+- **[header-migration-analysis.md](header-migration-analysis.md)** - Header migration notes
+- **[ai-tools.md](ai-tools.md)** - AI tool compatibility and review-handling rules
 
 ### Theory References
 
@@ -1142,7 +1159,7 @@ sequenceDiagram
 
 ## 6. Build and Development Guide
 
-This section is intentionally brief and delegates to the focused onboarding docs:
+This section is intentionally brief and delegates to focused developer docs:
 
 - Build / install / pixi tasks: [building.md](building.md)
 - Contribution workflow + formatting: [contributing.md](contributing.md)
@@ -1327,7 +1344,8 @@ This repository contains additional detailed analysis documents:
 
 ## Summary
 
-**DART GUI** is a mature, research-grade robotics simulation and visualization library with:
+**DART** is a mature, research-focused physics engine and visualization stack
+with:
 
 ✅ **O(n) efficient dynamics** via Featherstone algorithms
 ✅ **Interactive 3D visualization** with OSG + ImGui

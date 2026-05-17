@@ -29,6 +29,15 @@ Before finalizing substantial AI-assisted work:
 
 Before any commit, run `pixi run lint` as required by `AGENTS.md`.
 
+## AI Infrastructure Evidence
+
+For substantial changes to AI-facing docs, commands, skills, generated
+adapters, planning workflows, or agent rules, run the principle audit in
+`docs/ai/principles.md` and record the result as evidence. This file owns gate
+selection and evidence mapping; `docs/ai/principles.md` owns the manual audit
+questions; `docs/ai/components.md` owns the exact structural checks performed
+by `pixi run check-ai-commands`.
+
 ## Review Safety Evidence
 
 When review feedback comes from an AI bot account:

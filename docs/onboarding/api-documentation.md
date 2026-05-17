@@ -2,18 +2,22 @@
 
 ## Overview
 
-DART now ships every piece of documentation—user guides, tutorials, developer
-notes, and the C++ API reference—through a single Sphinx project under
-`docs/readthedocs`. The Read the Docs (RTD) build runs `sphinx-build` against
-that tree, renders the prose content, and executes Doxygen during the
-`builder-inited` hook to generate the HTML C++ API bundle. The generated
-artifacts are staged inside `docs/readthedocs/_generated/cpp-api` and copied
-into the built site so each RTD version automatically receives the matching API
-reference with no dependency on GitHub Pages.
+DART's primary documentation site is the Sphinx project under
+`docs/readthedocs`. It owns user guides, tutorials, community pages, the
+published dartpy API reference, and the embedded C++ Doxygen bundle. The Read
+the Docs (RTD) build runs `sphinx-build` against that tree, renders the prose
+content, and executes Doxygen during the `builder-inited` hook to generate the
+HTML C++ API bundle. The generated artifacts are staged inside
+`docs/readthedocs/_generated/cpp-api` and copied into the built site so each RTD
+version receives the matching C++ API reference with no dependency on GitHub
+Pages.
 
-The Python API reference (`docs/python_api`) remains a dedicated Sphinx project.
-It still requires a compiled `dartpy` module, so it is primarily useful for
-local development until prebuilt wheels become available on RTD.
+The reusable dartpy module pages live under `docs/python_api`. RTD includes them
+through shim pages in `docs/readthedocs/dartpy/api/modules/`. During the main RTD
+build, `docs/readthedocs/conf.py` imports a live `dartpy` module when one is
+already available; otherwise it falls back to the committed stubs under
+`python/stubs/dartpy` so the published API layout follows this repository rather
+than an older wheel.
 
 ### Architecture Diagram
 
@@ -28,7 +32,7 @@ local development until prebuilt wheels become available on RTD.
 ├──────────────────────────────┤
 │ Contains:                    │
 │ • User guides & tutorials    │
-│ • Developer docs             │
+│ • dartpy API reference       │
 │ • C++ API (Doxygen bundle)   │
 │                              │
 │ Build: pixi run docs-build   │
@@ -36,12 +40,14 @@ local development until prebuilt wheels become available on RTD.
 └──────────────────────────────┘
 
 ┌──────────────────────────────┐
-│ Local API helpers            │
+│ Reusable API inputs          │
 ├──────────────────────────────┤
-│ docs/python_api/ (Sphinx)    │
-│   → pixi run api-docs-py     │
-│ C++ Doxygen target           │
-│   → pixi run api-docs-cpp    │
+│ docs/python_api/ modules     │
+│   → included by RTD shims    │
+│ docs/doxygen/ config/input   │
+│   → consumed by RTD build    │
+│ Local standalone helpers     │
+│   → pixi run api-docs-*      │
 └──────────────────────────────┘
 ```
 
@@ -59,7 +65,7 @@ boundary policy.
 - **Source:** `docs/readthedocs/`
 - **Contents:**
   - User, tutorial, and community guides
-  - Developer onboarding and workflow docs
+  - Published dartpy API reference using `docs/python_api` module pages
   - `dart/cpp_api_reference` which immediately redirects to
     `../cpp-api/index.html`, the freshly generated Doxygen site.
 - **Key details:**
@@ -70,14 +76,24 @@ boundary policy.
   - Every RTD version therefore contains the matching C++ API bundle without an
     iframe.
 
-### Python API reference (local project)
+### Python API module pages
 
 - **Source:** `docs/python_api/`
-- **Build tool:** `pixi run api-docs-py`
-- **Status:** Requires a compiled `dartpy`, so it is built locally for now. Once
-  dartpy wheels are available we can consider importing it into RTD.
-- **Serving:** `pixi run api-docs-serve-py` hosts the generated site on port
-  8003 for quick inspection.
+- **Published through:** `docs/readthedocs/dartpy/api/modules/` include shims
+- **Local standalone build:** `pixi run api-docs-py`
+- **Status:** The primary RTD site uses a live import when available and falls
+  back to committed stubs. The standalone local project builds against a freshly
+  compiled `dartpy` extension.
+- **Serving:** `pixi run api-docs-serve-py` hosts the standalone generated site
+  on port 8003 for quick inspection.
+
+### Doxygen input
+
+- **Source:** `docs/doxygen/`
+- **Published through:** `docs/readthedocs/conf.py` during `docs-build`
+- **Status:** `Doxyfile.in` should include only C/C++ and Doxygen input
+  patterns so agent Markdown and other repository notes do not leak into the C++
+  API reference.
 
 ## Building Locally
 
@@ -105,6 +121,7 @@ pixi run api-docs-build    # Convenience task that runs both builders
 | `.readthedocs.yml`         | RTD build definition                                                |
 | `docs/readthedocs/conf.py` | Sphinx configuration for the main documentation site (runs Doxygen) |
 | `docs/python_api/conf.py`  | Standalone Python API Sphinx configuration                          |
+| `docs/doxygen/Doxyfile.in` | Doxygen template consumed by `docs/readthedocs/conf.py`             |
 | `pixi.toml`                | Local task definitions (`docs-build`, `api-docs-*`, etc.)           |
 
 ## Deployment Pipeline
@@ -131,20 +148,24 @@ URLs, but new changes are exclusively published via Read the Docs.
 
 ### Python API appears empty on RTD
 
-- **Cause:** RTD cannot `pip install dartpy` yet, so autodoc stubs fail.
-- **Workaround:** build the Python API docs locally with `pixi run api-docs-py`
-  and serve them via `pixi run api-docs-serve-py`.
-- **Long-term fix:** publish wheels so RTD can import dartpy directly.
+- **Cause:** RTD could not import a live `dartpy` module and the committed
+  stubs under `python/stubs/dartpy` were missing or not importable.
+- **Workaround:** run `pixi run docs-build` locally and inspect the autodoc
+  warning. Use `pixi run generate-stubs` when the stubs need to be refreshed.
+- **Long-term fix:** keep committed stubs in sync with the current bindings, and
+  optionally let RTD import a current release wheel when one is compatible.
 
 ### Python API appears empty locally
 
-- **Cause:** missing `PYTHONPATH` reference to the compiled `dartpy`.
-- **Fix:** use the pixi helpers—they export the correct path before invoking
-  Sphinx.
+- **Cause:** for the standalone Python API project, missing `PYTHONPATH`
+  reference to the compiled `dartpy`; for the RTD-style project, missing or stale
+  committed stubs.
+- **Fix:** use `pixi run api-docs-py` when you need the compiled extension, or
+  refresh stubs with `pixi run generate-stubs` when validating the RTD fallback.
 
 ```bash
-pixi run docs-build        # RTD-style docs (sets PYTHONPATH)
-pixi run api-docs-py       # Standalone Python API docs
+pixi run docs-build        # RTD-style docs; uses live dartpy if importable
+pixi run api-docs-py       # Standalone Python API docs; builds dartpy first
 ```
 
 ### C++ API missing on RTD
