@@ -84,8 +84,8 @@ Latest read-only review-surface evidence:
 - PR #2652 is `CLOSED`, draft, based on `main`, and anchored to old head
   `714d220d82a`.
 - `gh run list --repo dartsim/dart --branch feature/new_coll --commit <current-head>`
-  returned no runs for the current pushed evidence head before local compaction
-  commits.
+  returned no runs for local-only docs/evidence heads. Rerun the command from
+  `RESUME.md` for the exact current local head.
 - No PR metadata, workflow state, branch state, push, or GitHub artifact was
   mutated by read-only audits.
 

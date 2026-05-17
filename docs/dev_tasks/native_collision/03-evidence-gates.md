@@ -12,7 +12,7 @@ of this file per Round 20; use git history for the pre-compaction transcript.
 - Latest feature-code evidence head: `08a3ee5555c`
   (`Fix native capsule mesh CCD`)
 - Current branch-local status: later commits are docs/evidence cleanup unless
-  `git log -3 --oneline --decorate` shows otherwise.
+  recent `git log --oneline --decorate` output shows otherwise.
 
 ## Gate Matrix
 
@@ -158,8 +158,8 @@ Read-only GitHub checks show:
   `714d220d82a`.
 - Feature-branch pushes after PR closure do not start the main PR workflows.
 - `gh run list --repo dartsim/dart --branch feature/new_coll --commit <head>`
-  returned no runs for the current pushed evidence head before local compaction
-  commits.
+  returned no runs for local-only docs/evidence heads. Rerun the command from
+  `RESUME.md` for the exact current local head.
 
 Manual workflow-dispatch reference evidence on repaired head `1e1faf6feb1`
 exists for native-only CI, gz-physics CI, dartpy wheel matrix, and collision
