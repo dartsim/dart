@@ -847,6 +847,71 @@ TEST(FilamentSceneExtraction, GizmoDebugLinesFollowTargetFrame)
   EXPECT_TRUE(dart::gui::makeGizmoDebugLines(invalid).empty());
 }
 
+TEST(FilamentSceneExtraction, GizmoDebugLinesHighlightSelectedHandle)
+{
+  auto target = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "gizmo_target");
+
+  dart::gui::Gizmo gizmo;
+  gizmo.label = "highlight_target";
+  gizmo.target = target;
+  gizmo.size = 1.0;
+
+  const auto lineWithLabel
+      = [](const std::vector<dart::gui::DebugLineDescriptor>& lines,
+           const std::string& label) {
+          const auto line = std::find_if(
+              lines.begin(),
+              lines.end(),
+              [&](const dart::gui::DebugLineDescriptor& candidate) {
+                return candidate.label == label;
+              });
+          return line == lines.end() ? nullptr : &*line;
+        };
+
+  const auto highlightedPlaneLines = dart::gui::makeGizmoDebugLines(
+      gizmo, 1.0, dart::gui::GizmoHandleKind::TranslateXY);
+  const auto* highlightedPlaneLine
+      = lineWithLabel(highlightedPlaneLines, "highlight_target.translate_xy");
+  ASSERT_NE(highlightedPlaneLine, nullptr);
+  EXPECT_TRUE(highlightedPlaneLine->rgba.isApprox(gizmo.colors.highlight));
+
+  const auto* xLine
+      = lineWithLabel(highlightedPlaneLines, "highlight_target.x");
+  ASSERT_NE(xLine, nullptr);
+  EXPECT_TRUE(xLine->rgba.isApprox(gizmo.colors.x));
+
+  const auto* freeLine
+      = lineWithLabel(highlightedPlaneLines, "highlight_target.free_x");
+  ASSERT_NE(freeLine, nullptr);
+  EXPECT_FALSE(freeLine->rgba.isApprox(gizmo.colors.highlight));
+
+  auto secondTarget = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "second_gizmo_target");
+  dart::gui::Gizmo secondGizmo;
+  secondGizmo.label = "second_target";
+  secondGizmo.target = secondTarget;
+  secondGizmo.size = 1.0;
+
+  dart::gui::GizmoHandleHit activeHandle;
+  activeHandle.gizmoIndex = 1u;
+  activeHandle.handle = dart::gui::GizmoHandleKind::RotateZ;
+
+  const std::vector<dart::gui::Gizmo> gizmos{gizmo, secondGizmo};
+  const auto aggregateLines
+      = dart::gui::makeGizmoDebugLines(gizmos, 1.0, activeHandle);
+
+  const auto* firstRotateZ
+      = lineWithLabel(aggregateLines, "highlight_target.rotate_z");
+  ASSERT_NE(firstRotateZ, nullptr);
+  EXPECT_TRUE(firstRotateZ->rgba.isApprox(gizmo.colors.z));
+
+  const auto* secondRotateZ
+      = lineWithLabel(aggregateLines, "second_target.rotate_z");
+  ASSERT_NE(secondRotateZ, nullptr);
+  EXPECT_TRUE(secondRotateZ->rgba.isApprox(secondGizmo.colors.highlight));
+}
+
 TEST(FilamentSceneExtraction, GizmoAxisHandlePickingDrivesTargetFrame)
 {
   auto target = SimpleFrame::createShared(

@@ -33,6 +33,7 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SELECTION_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SELECTION_HPP_
 
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -72,6 +73,7 @@ public:
   const std::string& selectedLabel() const;
   const std::optional<Eigen::Vector3d>& selectedPoint() const;
   const std::optional<Eigen::Vector3d>& selectedNormal() const;
+  std::optional<dart::gui::GizmoHandleHit> highlightedGizmoHandle() const;
   bool isDraggingSelection() const;
 
   void select(dart::gui::RenderableId renderableId, std::string label);
@@ -117,6 +119,8 @@ private:
   dart::gui::PickRay mSelectedDragLastRay;
   bool mSelectedDragIsAxisConstrained = false;
   std::size_t mActiveGizmoIndex = 0u;
+  std::optional<dart::gui::GizmoHandleHit> mHoveredGizmoHandle;
+  std::optional<dart::gui::GizmoHandleHit> mActiveGizmoHandle;
   Eigen::Vector3d mSelectedDragPlanePoint = Eigen::Vector3d::Zero();
   Eigen::Vector3d mSelectedDragPlaneNormal = Eigen::Vector3d::UnitX();
   Eigen::Vector3d mSelectedDragAxisDirection = Eigen::Vector3d::UnitX();

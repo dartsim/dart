@@ -237,6 +237,15 @@ const std::optional<Eigen::Vector3d>& SelectionController::selectedNormal()
   return mSelectedNormal;
 }
 
+std::optional<dart::gui::GizmoHandleHit>
+SelectionController::highlightedGizmoHandle() const
+{
+  if (mActiveGizmoHandle) {
+    return mActiveGizmoHandle;
+  }
+  return mHoveredGizmoHandle;
+}
+
 bool SelectionController::isDraggingSelection() const
 {
   return mLeftMouseStartedDrag;
@@ -307,19 +316,34 @@ void SelectionController::updateMouseSelection(
   glfwGetCursorPos(window, &cursorX, &cursorY);
   const bool isLeftMousePressed
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+  const bool cursorOverPanel
+      = showUi && isInsideStatusPanel(cursorX, cursorY, guiScale);
+  const PickRay cursorRay = makePerspectivePickRay(
+      camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
+  const bool gizmoDragActive
+      = mLeftMouseStartedDrag
+        && (mSelectedDragMode == DragMode::GizmoTranslateAxis
+            || mSelectedDragMode == DragMode::GizmoTranslatePlane
+            || mSelectedDragMode == DragMode::GizmoRotateAxis);
+  if (gizmoDragActive) {
+    mHoveredGizmoHandle.reset();
+  } else if (!cursorOverPanel) {
+    mHoveredGizmoHandle
+        = pickNearestGizmoHandle(scene.gizmos, cursorRay, guiScale);
+  } else {
+    mHoveredGizmoHandle.reset();
+  }
+
   if (isLeftMousePressed && !mWasLeftMousePressed) {
     mLeftMousePressX = cursorX;
     mLeftMousePressY = cursorY;
     mLeftMouseStartedDrag = false;
     mSelectedDragIsAxisConstrained = false;
-    mLeftMouseStartedOnPanel
-        = showUi && isInsideStatusPanel(cursorX, cursorY, guiScale);
+    mLeftMouseStartedOnPanel = cursorOverPanel;
 
-    const PickRay pressRay = makePerspectivePickRay(
-        camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
     if (!mLeftMouseStartedOnPanel) {
       if (const auto gizmoHit
-          = pickNearestGizmoHandle(scene.gizmos, pressRay, guiScale)) {
+          = pickNearestGizmoHandle(scene.gizmos, cursorRay, guiScale)) {
         mLeftMouseStartedDrag = true;
         if (isRotationGizmoHandle(gizmoHit->handle)) {
           mSelectedDragMode = DragMode::GizmoRotateAxis;
@@ -330,7 +354,8 @@ void SelectionController::updateMouseSelection(
         }
         mSelectedDragIsAxisConstrained = true;
         mActiveGizmoIndex = gizmoHit->gizmoIndex;
-        mSelectedDragLastRay = pressRay;
+        mActiveGizmoHandle = *gizmoHit;
+        mSelectedDragLastRay = cursorRay;
         mSelectedDragLastCursorX = cursorX;
         mSelectedDragLastCursorY = cursorY;
         mSelectedDragPlanePoint = gizmoHit->point;
@@ -367,19 +392,19 @@ void SelectionController::updateMouseSelection(
           const Eigen::Vector3d planeNormal = basis.forward;
           if (const auto axis = selectedDragAxisFromKeyboard(window)) {
             if (computeAxisDragTranslation(
-                    pressRay, pressRay, planePoint, *axis)) {
+                    cursorRay, cursorRay, planePoint, *axis)) {
               mLeftMouseStartedDrag = true;
               mSelectedDragMode = DragMode::Translate;
               mSelectedDragIsAxisConstrained = true;
-              mSelectedDragLastRay = pressRay;
+              mSelectedDragLastRay = cursorRay;
               mSelectedDragPlanePoint = planePoint;
               mSelectedDragAxisDirection = *axis;
               lifecycle.paused = true;
             }
-          } else if (intersectPlane(pressRay, planePoint, planeNormal)) {
+          } else if (intersectPlane(cursorRay, planePoint, planeNormal)) {
             mLeftMouseStartedDrag = true;
             mSelectedDragMode = DragMode::Translate;
-            mSelectedDragLastRay = pressRay;
+            mSelectedDragLastRay = cursorRay;
             mSelectedDragPlanePoint = planePoint;
             mSelectedDragPlaneNormal = planeNormal;
             lifecycle.paused = true;
@@ -490,10 +515,7 @@ void SelectionController::updateMouseSelection(
         = std::hypot(cursorX - mLeftMousePressX, cursorY - mLeftMousePressY);
     if (!mLeftMouseStartedOnPanel && !mLeftMouseStartedDrag
         && dragDistance < 4.0) {
-      const auto hit = pickNearestRenderable(
-          descriptors,
-          makePerspectivePickRay(
-              camera, cursorX, cursorY, framebufferWidth, framebufferHeight));
+      const auto hit = pickNearestRenderable(descriptors, cursorRay);
       if (hit) {
         mSelectedRenderableId = hit->id;
         mSelectedPoint = hit->point;
@@ -508,6 +530,7 @@ void SelectionController::updateMouseSelection(
     mLeftMouseStartedDrag = false;
     mSelectedDragMode = DragMode::Translate;
     mActiveGizmoIndex = 0u;
+    mActiveGizmoHandle.reset();
   }
 
   mWasLeftMousePressed = isLeftMousePressed;

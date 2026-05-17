@@ -121,10 +121,14 @@ struct GizmoHandleHit
 };
 
 DART_GUI_API std::vector<DebugLineDescriptor> makeGizmoDebugLines(
-    const Gizmo& gizmo, double scale = 1.0);
+    const Gizmo& gizmo,
+    double scale = 1.0,
+    GizmoHandleKind highlightedHandle = GizmoHandleKind::None);
 
 DART_GUI_API std::vector<DebugLineDescriptor> makeGizmoDebugLines(
-    const std::vector<Gizmo>& gizmos, double scale = 1.0);
+    const std::vector<Gizmo>& gizmos,
+    double scale = 1.0,
+    std::optional<GizmoHandleHit> highlightedHandle = std::nullopt);
 
 DART_GUI_API std::optional<GizmoHandleHit> pickNearestGizmoHandle(
     const std::vector<Gizmo>& gizmos,

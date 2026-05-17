@@ -19,7 +19,8 @@
 - This example runs in kinematic mode and continuously resolves the promoted IK
   handles.
 - The transform gizmos currently support X/Y/Z axis-arrow dragging and rotation
-  ring dragging plus XY/YZ/XZ plane handles.
+  ring dragging plus XY/YZ/XZ plane handles. Hovered and actively dragged
+  handles use the configured highlight color.
 - The default launch size is 1280x960, matching the historical standalone
   viewer.
 - Remaining strict-parity gaps from the historical OSG source include target

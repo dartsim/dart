@@ -168,7 +168,8 @@
     solve-on-drag behavior without depending on private renderer fixtures.
   - Added a promoted `dart::gui::Gizmo` registration surface with debug-line
     visualization, X/Y/Z axis-handle dragging, plane-handle dragging, and
-    rotation-ring dragging for source-owned transform target affordances.
+    rotation-ring dragging, plus hover/active handle highlighting for
+    source-owned transform target affordances.
   - Moved `atlas_puppet` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground/root handle/IK targets, and
     passes public `dart::gui` IK handles directly.

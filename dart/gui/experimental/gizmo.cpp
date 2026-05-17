@@ -225,6 +225,31 @@ std::string makeGizmoLabel(const Gizmo& gizmo)
   return gizmo.label.empty() ? "gizmo" : gizmo.label;
 }
 
+bool isHighlightedHandle(
+    GizmoHandleKind highlightedHandle, GizmoHandleKind candidate)
+{
+  return highlightedHandle != GizmoHandleKind::None
+         && highlightedHandle == candidate;
+}
+
+Eigen::Vector4d colorForHandle(
+    const Gizmo& gizmo,
+    GizmoHandleKind highlightedHandle,
+    GizmoHandleKind candidate,
+    const Eigen::Vector4d& defaultColor)
+{
+  return isHighlightedHandle(highlightedHandle, candidate)
+             ? gizmo.colors.highlight
+             : defaultColor;
+}
+
+Eigen::Vector4d makeFreeMoveColor(const GizmoAxisColors& colors)
+{
+  Eigen::Vector4d color = (colors.x + colors.y + colors.z) / 3.0;
+  color.w() = std::max({colors.x.w(), colors.y.w(), colors.z.w()});
+  return color;
+}
+
 GizmoHandleKind handleKindForAxisIndex(int axisIndex)
 {
   switch (axisIndex) {
@@ -398,7 +423,7 @@ std::optional<PlaneHandleHit> intersectRayPlaneHandle(
 } // namespace
 
 std::vector<DebugLineDescriptor> makeGizmoDebugLines(
-    const Gizmo& gizmo, double scale)
+    const Gizmo& gizmo, double scale, GizmoHandleKind highlightedHandle)
 {
   std::vector<DebugLineDescriptor> lines;
   if (gizmo.target == nullptr || gizmo.size <= 0.0 || !std::isfinite(gizmo.size)
@@ -426,15 +451,42 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
   if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)
       || hasGizmoFlag(gizmo.flags, GizmoFlags::TranslateXY)) {
     appendArrowLines(
-        lines, origin, rotation.col(0), length, gizmo.colors.x, label + ".x");
+        lines,
+        origin,
+        rotation.col(0),
+        length,
+        colorForHandle(
+            gizmo,
+            highlightedHandle,
+            GizmoHandleKind::TranslateX,
+            gizmo.colors.x),
+        label + ".x");
     appendArrowLines(
-        lines, origin, rotation.col(1), length, gizmo.colors.y, label + ".y");
+        lines,
+        origin,
+        rotation.col(1),
+        length,
+        colorForHandle(
+            gizmo,
+            highlightedHandle,
+            GizmoHandleKind::TranslateY,
+            gizmo.colors.y),
+        label + ".y");
     if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)) {
       appendArrowLines(
-          lines, origin, rotation.col(2), length, gizmo.colors.z, label + ".z");
+          lines,
+          origin,
+          rotation.col(2),
+          length,
+          colorForHandle(
+              gizmo,
+              highlightedHandle,
+              GizmoHandleKind::TranslateZ,
+              gizmo.colors.z),
+          label + ".z");
     }
     appendFreeMoveHandle(
-        lines, origin, length * 0.18, gizmo.colors.highlight, label);
+        lines, origin, length * 0.18, makeFreeMoveColor(gizmo.colors), label);
 
     const double planeOffset = length * kPlaneHandleOffsetScale;
     const double planeSize = length * kPlaneHandleSizeScale;
@@ -445,7 +497,11 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
         rotation.col(1),
         planeOffset,
         planeSize,
-        gizmo.colors.z,
+        colorForHandle(
+            gizmo,
+            highlightedHandle,
+            GizmoHandleKind::TranslateXY,
+            gizmo.colors.z),
         label + ".translate_xy");
     if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)) {
       appendPlaneHandleLines(
@@ -455,7 +511,11 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
           rotation.col(2),
           planeOffset,
           planeSize,
-          gizmo.colors.x,
+          colorForHandle(
+              gizmo,
+              highlightedHandle,
+              GizmoHandleKind::TranslateYZ,
+              gizmo.colors.x),
           label + ".translate_yz");
       appendPlaneHandleLines(
           lines,
@@ -464,7 +524,11 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
           rotation.col(2),
           planeOffset,
           planeSize,
-          gizmo.colors.y,
+          colorForHandle(
+              gizmo,
+              highlightedHandle,
+              GizmoHandleKind::TranslateXZ,
+              gizmo.colors.y),
           label + ".translate_xz");
     }
   }
@@ -477,7 +541,8 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
         rotation.col(1),
         rotation.col(2),
         ringRadius,
-        gizmo.colors.x,
+        colorForHandle(
+            gizmo, highlightedHandle, GizmoHandleKind::RotateX, gizmo.colors.x),
         label + ".rotate_x");
     appendRingLines(
         lines,
@@ -485,7 +550,8 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
         rotation.col(2),
         rotation.col(0),
         ringRadius,
-        gizmo.colors.y,
+        colorForHandle(
+            gizmo, highlightedHandle, GizmoHandleKind::RotateY, gizmo.colors.y),
         label + ".rotate_y");
     appendRingLines(
         lines,
@@ -493,7 +559,8 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
         rotation.col(0),
         rotation.col(1),
         ringRadius,
-        gizmo.colors.z,
+        colorForHandle(
+            gizmo, highlightedHandle, GizmoHandleKind::RotateZ, gizmo.colors.z),
         label + ".rotate_z");
   }
 
@@ -501,11 +568,18 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
 }
 
 std::vector<DebugLineDescriptor> makeGizmoDebugLines(
-    const std::vector<Gizmo>& gizmos, double scale)
+    const std::vector<Gizmo>& gizmos,
+    double scale,
+    std::optional<GizmoHandleHit> highlightedHandle)
 {
   std::vector<DebugLineDescriptor> lines;
-  for (const Gizmo& gizmo : gizmos) {
-    auto gizmoLines = makeGizmoDebugLines(gizmo, scale);
+  for (std::size_t gizmoIndex = 0; gizmoIndex < gizmos.size(); ++gizmoIndex) {
+    const Gizmo& gizmo = gizmos[gizmoIndex];
+    const GizmoHandleKind handleToHighlight
+        = (highlightedHandle && highlightedHandle->gizmoIndex == gizmoIndex)
+              ? highlightedHandle->handle
+              : GizmoHandleKind::None;
+    auto gizmoLines = makeGizmoDebugLines(gizmo, scale, handleToHighlight);
     lines.insert(
         lines.end(),
         std::make_move_iterator(gizmoLines.begin()),

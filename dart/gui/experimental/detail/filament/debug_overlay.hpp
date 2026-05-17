@@ -96,6 +96,7 @@ void refreshGizmoDebugOverlay(
     ::filament::Material& material,
     const std::vector<dart::gui::Gizmo>& gizmos,
     double guiScale,
+    std::optional<dart::gui::GizmoHandleHit> highlightedGizmoHandle,
     DebugOverlayController& controller);
 
 void refreshSelectionDebugLineOverlay(

@@ -604,9 +604,11 @@ restored. Do not rely on earlier restored-state wording in the inventory.
 65. R24-3 is committed locally as `a5f776f6eb1`. It adds X/Y/Z rotation rings
     and wires them to target rotation.
 66. The latest local R24 checkpoint adds XY/YZ/XZ plane handles and wires them
-    to target translation. The active implementation slice is now R24-5:
-    hover/active highlighting, followed by replacing the old target-sphere
-    affordance in a later R24 slice.
+    to target translation.
+67. R24-5 adds hover/active highlighting for gizmo handles by feeding the
+    hovered or actively dragged handle into renderer-neutral gizmo debug-line
+    generation. The active implementation slice is now replacing the old
+    target-sphere affordance with public gizmos.
 
 ## Checkpoint Rule
 
