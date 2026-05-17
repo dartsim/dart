@@ -212,10 +212,8 @@ def _filament_sources_cmake_text(run_cpp_example):
         repo_root
         / "dart"
         / "gui"
-        / "experimental"
         / "detail"
-        / "filament"
-        / "filament_sources.cmake"
+        / "backend_sources.cmake"
     )
     return cmake_path.read_text(encoding="utf-8")
 

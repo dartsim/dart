@@ -140,6 +140,8 @@
     `lcp_physics` display/font debug diagnostics.
   - Added public runtime frame-output capture controls and restored the
     Tinkertoy example's Enter-key recording workflow.
+  - Fixed the dartpy bindings for GUI frame-output capture helpers after
+    viewer-lifecycle overloads were added.
   - Added public `dart::gui::PanelBuilder` modal helpers and restored
     Tinkertoy's About DART modal workflow.
   - Added public `dart::gui::ApplicationOptions::simulateWorld` and restored
@@ -198,8 +200,8 @@
   - Restored the `imgui` panel-extension example's target frame with a public
     `dart::gui::Gizmo`, promoted keydown callbacks, gravity control, viewer
     help, camera/run defaults, README, and marker coverage through public
-    `dart::gui`, with headlight, camera-inspector, key-release, and render-hook
-    gaps tracked as public API follow-ups.
+    `dart::gui`, with later public APIs covering the headlight,
+    camera-inspector, key-release, and render-hook parity paths.
   - Moved `operational_space_control` and `wam_ikfast` off private named-scene
     fixture launchers so their example sources load the WAM robot, create their
     visible targets, and run through promoted `dart::gui` options directly.
@@ -266,10 +268,9 @@
     worlds, public panels, and simulation controls directly.
   - Removed the unused GUI example scene-launcher shim so restored examples
     must build real source files instead of private named-scene fixtures.
-  - Renamed the internal GUI extraction/rendering target from
-    `dart-gui-experimental` to `dart-gui-core` while keeping compatibility
-    headers for existing `dart::gui::experimental` and `dartpy.gui.experimental`
-    imports.
+  - Promoted the GUI extraction/rendering implementation into the official
+    `dart-gui-core` target and removed the old experimental C++ and Python
+    compatibility surfaces.
   - Added a renderer-neutral `dart::gui::ApplicationOptions::camera` hook and
     used it to restore the Fetch example's historical camera framing while
     keeping the example on public `dart::gui` APIs.
@@ -364,6 +365,8 @@
   - Introduced per-target export headers (`dart/<component>/Export.hpp`) that define `DART_<COMPONENT>_API` macros. Each library now controls symbol visibility independently on Windows instead of sharing the monolithic `DART_API`, which fixes long‑standing DLL import inconsistencies. ([#2163](https://github.com/dartsim/dart/pull/2163))
   - Packaging and distribution updates: migrated to `pyproject.toml`, switched dartpy wheel builds to pixi, added Windows wheel builds, standardized wheel cleanup, removed manylinux artifacts, and fixed the `package.xml` version. ([#2043](https://github.com/dartsim/dart/pull/2043), [#2072](https://github.com/dartsim/dart/pull/2072), [#2266](https://github.com/dartsim/dart/pull/2266), [#2268](https://github.com/dartsim/dart/pull/2268), [#2080](https://github.com/dartsim/dart/pull/2080), [#2207](https://github.com/dartsim/dart/pull/2207), [#2172](https://github.com/dartsim/dart/pull/2172))
   - Developer workflow updates: refactored pixi tasks, tuned pixi parallelism, simplified the devcontainer, and bumped the DART version to 7.0.0. ([#2083](https://github.com/dartsim/dart/pull/2083), [#2208](https://github.com/dartsim/dart/pull/2208), [#2255](https://github.com/dartsim/dart/pull/2255), [#2046](https://github.com/dartsim/dart/pull/2046))
+  - Limited `pixi run test-unit` to the built C++ `UNIT_` test set so
+    simulation-experimental tests remain covered by their dedicated task.
   - Added ASan build mode and example install destination controls. ([#2101](https://github.com/dartsim/dart/pull/2101), [#2100](https://github.com/dartsim/dart/pull/2100))
   - GUI dependency handling updates: switched ImGui to FetchContent, prefer local Vulkan loader, and removed bundled lodepng. ([#2056](https://github.com/dartsim/dart/pull/2056), [#2085](https://github.com/dartsim/dart/pull/2085), [#2051](https://github.com/dartsim/dart/pull/2051))
   - Pixi tasks and helper scripts now guard optional targets (dartpy, GUI examples) automatically, detect missing generator targets before invoking `cmake --build`, and expose `DART_BUILD_*_OVERRIDE` environment hooks so CI and local workflows can toggle bindings/apps without editing `pixi.toml`.
@@ -445,8 +448,8 @@
   - Documented SKEL as a legacy format.
 
 - GUI and Rendering
-  - Added an optional experimental Filament GUI path with backend-hidden
-    `dart::gui::experimental` scene descriptors, bounded/headless smoke support,
+  - Added the Filament-backed GUI path with backend-hidden `dart::gui` scene
+    descriptors, bounded/headless smoke support,
     debug overlays, selection/manipulation helpers, constrained dartpy bindings,
     a pinned explicit fetch fallback, and GCC/Clang smoke coverage for local and
     CI validation.
@@ -454,7 +457,7 @@
   - Added a Filament-rendered Unitree G1 scene and routed the in-tree
     `g1_puppet` example runner through that Filament path with visible IK
     targets for hand and foot manipulation.
-  - Extended experimental Filament GUI descriptor and renderer coverage to
+  - Extended Filament GUI descriptor and renderer coverage to
     `PyramidShape`, `MultiSphereConvexHullShape`, `LineSegmentShape`, and
     `ConvexMeshShape`, `PointCloudShape`, `HeightmapShape`, and
     `SoftMeshShape`, plus `VoxelGridShape` when OctoMap is available, with the
@@ -473,29 +476,29 @@
     policy is also exposed through descriptors and visual alpha changes now
     invalidate renderer resources when material transparency can change. The
     Filament point-cloud path also consumes per-point color descriptors, and
-    the experimental public headers now have unit coverage that guards against
+    the public GUI headers now have unit coverage that guards against
     leaking Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal, OSG, or Raylib
-    implementation tokens. The Filament example now includes the
-    `dart::gui::experimental` API directly instead of carrying an example-local
-    namespace re-export header, and checked-in dartpy stubs and API docs now
-    expose `dartpy.gui.experimental` without backend-specific names.
+    implementation tokens. The Filament example now includes the `dart::gui`
+    API directly instead of carrying an example-local namespace re-export
+    header, and checked-in dartpy stubs and API docs now expose `dartpy.gui`
+    without backend-specific names.
     Orbit-camera controller state, perspective projection, near/far clipping
     policy, GUI scale normalization, and camera-relative keyboard nudge math now
-    also live in a dedicated `dart/gui/experimental/viewer.hpp` runtime helper
-    and are consumed by the Filament example through `dart-gui-experimental`.
+    also live in a dedicated `dart/gui/viewer.hpp` runtime helper
+    and are consumed by the Filament example through `dart-gui-core`.
     Axis-constrained drag translation now also lives in the backend-hidden
     interaction helpers with C++ and Python coverage, and the Filament example
     uses it for Ctrl-X/Y/Z-left constrained selection dragging.
     The backend-hidden implementation is now split by responsibility across
     `viewer.cpp`, `debug.cpp`, `geometry.cpp`, `interaction.cpp`,
-    `shape_descriptions.cpp`, and `profile.cpp`, with focused experimental
+    `shape_descriptions.cpp`, and `profile.cpp`, with focused
     headers for renderable, interaction, debug, geometry, and viewer concepts
-    while `scene.hpp` remains an aggregate compatibility include for existing
-    experimental consumers. Filament renderer setup, frame lifecycle, material
+    while `scene.hpp` remains the scene descriptor aggregate. Filament renderer
+    setup, frame lifecycle, material
     and texture resources, descriptor synchronization, selection state, input
     translation, simulation stepping, smoke-test registration, material header
     generation, and reusable scene fixtures now live under private
-    `dart/gui/experimental/detail/filament` implementation units; scene option
+    `dart/gui/detail` implementation units; scene option
     parsing and dispatch remain in `scenes.cpp`, while fixture construction is
     split into `scene_fixtures.cpp`. The `simple_frames` runner now routes to
     a `--scene simple-frames` Filament fixture that renders its `SimpleFrame`

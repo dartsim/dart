@@ -669,8 +669,8 @@ sequenceDiagram
 
 **Key Files**:
 
-- [`imgui_overlay.cpp`](../../dart/gui/experimental/detail/filament/imgui_overlay.cpp)
-- [`panel.cpp`](../../dart/gui/experimental/detail/filament/panel.cpp)
+- [`imgui_overlay.cpp`](../../dart/gui/detail/imgui_overlay.cpp)
+- [`panel.cpp`](../../dart/gui/detail/panel.cpp)
 
 ---
 

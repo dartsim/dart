@@ -118,7 +118,7 @@ dart/
 ├── simulation/     # Simulation framework + time stepping
 ├── utils/          # Parsers and helpers (URDF/SDF)
 └── gui/            # Filament-backed GUI components
-    └── experimental/detail/filament/
+    └── detail/
 ```
 
 #### 3. dart/gui/CMakeLists.txt
@@ -481,7 +481,7 @@ dart/
 │   ├── sdf/        # SDF file parser
 │   └── urdf/       # URDF file parser
 └── gui/             # Filament-backed GUI components
-    └── experimental/detail/filament/
+    └── detail/
 ```
 
 ---

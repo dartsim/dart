@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from pathlib import Path
 
 import dartpy as dart
@@ -8,17 +7,11 @@ import dartpy as dart
 def test_gui_stub_surface_is_backend_hidden():
     repo_root = Path(__file__).resolve().parents[4]
     gui_stub = repo_root / "python" / "stubs" / "dartpy" / "gui" / "__init__.pyi"
-    experimental_stub = (
-        repo_root / "python" / "stubs" / "dartpy" / "gui" / "experimental.pyi"
-    )
     gui_docs = repo_root / "docs" / "python_api" / "modules" / "gui.rst"
     rtd_conf = repo_root / "docs" / "readthedocs" / "conf.py"
 
     gui_stub_text = gui_stub.read_text()
-    combined_stub_text = gui_stub_text + experimental_stub.read_text()
-    assert "from . import experimental" in gui_stub_text
-    assert "from .experimental import *" in gui_stub_text
-    assert "*experimental.__all__" in gui_stub_text
+    assert "experimental" not in gui_stub_text
     assert "automodule:: dartpy.gui" in gui_docs.read_text()
     assert "dartpy.gui.experimental" not in gui_docs.read_text()
     assert "dartpy.gui" in rtd_conf.read_text()
@@ -35,13 +28,7 @@ def test_gui_stub_surface_is_backend_hidden():
         "osg::",
         "filament::",
     ):
-        assert token not in combined_stub_text
-
-
-def test_gui_experimental_namespace_is_compatibility_alias():
-    assert dart.gui.experimental.ShapeKind is dart.gui.ShapeKind
-    assert dart.gui.experimental.RenderableDescriptor is dart.gui.RenderableDescriptor
-    assert dart.gui.experimental.extract_renderables is dart.gui.extract_renderables
+        assert token not in gui_stub_text
 
 
 def test_gui_extract_renderables_from_world():

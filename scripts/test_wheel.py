@@ -132,24 +132,17 @@ for module_name in optional_modules:
         print(f'  ✓ dartpy.{module_name}')
         if module_name == 'gui':
             has_viewer = hasattr(module, 'Viewer')
-            has_experimental = hasattr(module, 'experimental')
+            has_scene_api = hasattr(module, 'extract_renderables')
             viewer_marker = '✓' if has_viewer else '⚠'
             viewer_detail = 'Viewer available' if has_viewer else 'Viewer missing'
-            experimental_marker = '✓' if has_experimental else '⚠'
-            experimental_detail = (
-                'experimental API available'
-                if has_experimental
-                else 'experimental API missing'
-            )
+            scene_marker = '✓' if has_scene_api else '⚠'
+            scene_detail = 'scene API available' if has_scene_api else 'scene API missing'
             print(f'    {viewer_marker} dartpy.gui ({viewer_detail})')
-            print(
-                f'    {experimental_marker} dartpy.gui.experimental '
-                f'({experimental_detail})'
-            )
-            if has_experimental:
+            print(f'    {scene_marker} dartpy.gui scene API ({scene_detail})')
+            if has_scene_api:
                 import numpy as np
 
-                world = dartpy.World.create('wheel_gui_experimental')
+                world = dartpy.World.create('wheel_gui')
                 skeleton = dartpy.Skeleton('robot')
                 _, body = skeleton.create_free_joint_and_body_node_pair()
                 shape = dartpy.BoxShape(np.array([1.0, 1.0, 1.0]))
@@ -157,21 +150,18 @@ for module_name in optional_modules:
                 shape_node.create_visual_aspect()
                 world.add_skeleton(skeleton)
 
-                renderables = module.experimental.extract_renderables(world)
+                renderables = module.extract_renderables(world)
                 if len(renderables) != 1:
                     raise AssertionError(
-                        'dartpy.gui.experimental returned '
+                        'dartpy.gui.extract_renderables returned '
                         f'{len(renderables)} renderables, expected 1'
                     )
-                if (
-                    renderables[0].geometry.kind
-                    != module.experimental.ShapeKind.Box
-                ):
+                if renderables[0].geometry.kind != module.ShapeKind.Box:
                     raise AssertionError(
-                        'dartpy.gui.experimental did not preserve '
+                        'dartpy.gui.extract_renderables did not preserve '
                         'the Box shape descriptor'
                     )
-                print('    ✓ dartpy.gui.experimental scene smoke')
+                print('    ✓ dartpy.gui scene smoke')
     except AttributeError as e:
         print(f'  ⚠ dartpy.{module_name} not available (optional)')
 

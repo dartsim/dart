@@ -38,9 +38,7 @@ def analyzer():
         repo_root
         / "dart"
         / "gui"
-        / "experimental"
         / "detail"
-        / "filament"
         / "testing"
         / "analyze_headless_smoke.py"
     )

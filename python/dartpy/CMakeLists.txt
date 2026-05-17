@@ -236,23 +236,23 @@ set(dartpy_gui_module_sources
   gui/module.cpp
 )
 
-set(dartpy_gui_experimental_headers
-  gui/experimental.hpp
+set(dartpy_gui_headers
+  gui/descriptors.hpp
 )
 
-set(dartpy_gui_experimental_sources
-  gui/experimental.cpp
+set(dartpy_gui_sources
+  gui/descriptors.cpp
 )
 
-set(_dartpy_has_experimental_gui FALSE)
+set(_dartpy_has_gui FALSE)
 
 if(TARGET dart-gui-core)
-  list(APPEND dartpy_headers ${dartpy_gui_experimental_headers})
-  list(APPEND dartpy_sources ${dartpy_gui_experimental_sources})
-  set(_dartpy_has_experimental_gui TRUE)
+  list(APPEND dartpy_headers ${dartpy_gui_headers})
+  list(APPEND dartpy_sources ${dartpy_gui_sources})
+  set(_dartpy_has_gui TRUE)
 endif()
 
-if(_dartpy_has_experimental_gui)
+if(_dartpy_has_gui)
   list(APPEND dartpy_headers ${dartpy_gui_module_headers})
   list(APPEND dartpy_sources ${dartpy_gui_module_sources})
 endif()
@@ -338,11 +338,8 @@ target_compile_definitions(dartpy
 )
 target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
 
-if(_dartpy_has_experimental_gui)
+if(_dartpy_has_gui)
   target_compile_definitions(dartpy PRIVATE DARTPY_HAS_GUI=1)
-endif()
-if(_dartpy_has_experimental_gui)
-  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_EXPERIMENTAL_GUI=1)
 endif()
 
 set_target_properties(dartpy PROPERTIES

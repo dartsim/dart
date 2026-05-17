@@ -33,8 +33,8 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
-#include <dart/gui/experimental/detail/filament/scenes.hpp>
-#include <dart/gui/experimental/detail/filament/simulation_stepper.hpp>
+#include <dart/gui/detail/scenes.hpp>
+#include <dart/gui/detail/simulation_stepper.hpp>
 #include <dart/gui/geometry.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
@@ -399,13 +399,14 @@ constexpr std::array<std::string_view, 18> kForbiddenBackendTokens
 constexpr std::array<std::string_view, 2> kForbiddenFilamentIncludeTokens
     = {"#include <filament/", "#include \"filament/"};
 
-constexpr std::array<std::string_view, 2> kForbiddenFilamentDetailTokens
-    = {"detail/filament", "experimental::filament"};
+constexpr std::array<std::string_view, 3> kForbiddenDetailTokens
+    = {"detail/filament", "detail/detail", "experimental::filament"};
 
-constexpr std::array<std::string_view, 3> kForbiddenPromotedGuiTokens
+constexpr std::array<std::string_view, 4> kForbiddenPromotedGuiTokens
     = {"dart/gui/experimental",
        "dart::gui::experimental",
-       "dart-gui-experimental"};
+       "dart-gui-experimental",
+       "gui-experimental"};
 
 const std::filesystem::path kDartsimApplicationDirectory
     = std::filesystem::path("apps") / "dartsim";
@@ -533,8 +534,7 @@ std::vector<BackendTokenViolation> scanHeadersForBackendTokens(
 std::vector<std::filesystem::path> guiHeaderDirectoriesForBackendTokenScan()
 {
   std::vector<std::filesystem::path> directories
-      = {std::filesystem::path("dart") / "gui" / "experimental",
-         std::filesystem::path("dart") / "gui"};
+      = {std::filesystem::path("dart") / "gui"};
   return directories;
 }
 
@@ -578,7 +578,7 @@ void expectMeshGeometryIsWellFormed(const MeshGeometry& mesh)
   }
 }
 
-TEST(FilamentSceneExtraction, ExperimentalPublicHeadersStayBackendHidden)
+TEST(FilamentSceneExtraction, PublicHeadersStayBackendHidden)
 {
   const auto publicHeaderDirectories
       = guiHeaderDirectoriesForBackendTokenScan();
@@ -720,7 +720,6 @@ TEST(FilamentSceneExtraction, GuiBuildTargetsUseOfficialCoreName)
 {
   const std::vector<std::filesystem::path> cmakeFiles = {
       std::filesystem::path("dart") / "gui" / "CMakeLists.txt",
-      std::filesystem::path("dart") / "gui" / "experimental" / "CMakeLists.txt",
       std::filesystem::path("tests") / "unit" / "CMakeLists.txt",
       std::filesystem::path("python") / "dartpy" / "CMakeLists.txt"};
 
@@ -732,8 +731,7 @@ TEST(FilamentSceneExtraction, GuiBuildTargetsUseOfficialCoreName)
   }
 
   const auto coreCMake = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "experimental"
-      / "CMakeLists.txt");
+      std::filesystem::path("dart") / "gui" / "CMakeLists.txt");
   EXPECT_NE(coreCMake.find("${PROJECT_NAME}-gui-core"), std::string::npos);
   EXPECT_NE(coreCMake.find("gui-core"), std::string::npos);
 }
@@ -970,12 +968,12 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   ASSERT_EQ(options.panels.size(), 1u);
   EXPECT_EQ(options.panels.front().title, "Controls");
 
-  dart::gui::filament::AppOptions appOptions;
+  dart::gui::detail::AppOptions appOptions;
   appOptions.world = options.world;
   appOptions.simulateWorld = options.simulateWorld;
   appOptions.renderSettings = options.renderSettings;
-  const dart::gui::filament::DartScene scene
-      = dart::gui::filament::createDartScene(appOptions);
+  const dart::gui::detail::DartScene scene
+      = dart::gui::detail::createDartScene(appOptions);
   EXPECT_FALSE(scene.simulateWorld);
   EXPECT_EQ(
       scene.renderSettings.outputMode, dart::gui::RenderOutputMode::Depth);
@@ -997,7 +995,7 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresIkHandles)
 
 TEST(FilamentSceneExtraction, ApplicationOptionsCanSkipWorldStepping)
 {
-  dart::gui::filament::DartScene scene;
+  dart::gui::detail::DartScene scene;
   scene.world = World::create("kinematic_scene");
   scene.simulateWorld = false;
 
@@ -1014,7 +1012,7 @@ TEST(FilamentSceneExtraction, ApplicationOptionsCanSkipWorldStepping)
   dart::gui::ProfileAccumulator profile;
   const double initialTime = scene.world->getTime();
   EXPECT_TRUE(
-      dart::gui::filament::advanceSimulationSteps(
+      dart::gui::detail::advanceSimulationSteps(
           scene, 3, lifecycle, profile));
 
   EXPECT_EQ(preStepCalls, 3);
@@ -1067,11 +1065,11 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresBodyNodeDragHandles)
   EXPECT_EQ(options.bodyNodeDragHandles.front().bodyNode, body);
   EXPECT_TRUE(options.bodyNodeDragHandles.front().useWholeBody);
 
-  dart::gui::filament::AppOptions appOptions;
+  dart::gui::detail::AppOptions appOptions;
   appOptions.world = options.world;
   appOptions.bodyNodeDragHandles = options.bodyNodeDragHandles;
-  const dart::gui::filament::DartScene scene
-      = dart::gui::filament::createDartScene(appOptions);
+  const dart::gui::detail::DartScene scene
+      = dart::gui::detail::createDartScene(appOptions);
   ASSERT_EQ(scene.bodyNodeDragHandles.size(), 1u);
   EXPECT_EQ(scene.bodyNodeDragHandles.front().bodyNode, body);
 }
@@ -1222,8 +1220,7 @@ TEST(FilamentSceneExtraction, GizmoVisibilityControlsDebugLinesAndPicking)
 TEST(FilamentSceneExtraction, FilamentStartupAcceptsGizmoOnlyScenes)
 {
   const auto startupSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
-      / "filament" / "scene_startup.cpp");
+      std::filesystem::path("dart") / "gui" / "detail" / "scene_startup.cpp");
 
   EXPECT_NE(
       startupSource.find("makeGizmoDebugLines(dartScene.gizmos)"),
@@ -1374,7 +1371,7 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
 
   char executable[] = "fetch";
   char* defaultArgv[] = {executable};
-  const auto defaultOptions = dart::gui::filament::parseOptions(
+  const auto defaultOptions = dart::gui::detail::parseOptions(
       1, defaultArgv, std::optional<dart::gui::RunOptions>{defaults});
 
   EXPECT_EQ(defaultOptions.run.width, 1280);
@@ -1387,7 +1384,7 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
   char heightValue[] = "480";
   char* overrideArgv[] = {
       overrideExecutable, widthOption, widthValue, heightOption, heightValue};
-  const auto overrideOptions = dart::gui::filament::parseOptions(
+  const auto overrideOptions = dart::gui::detail::parseOptions(
       5, overrideArgv, std::optional<dart::gui::RunOptions>{defaults});
 
   EXPECT_EQ(overrideOptions.run.width, 640);
@@ -1397,7 +1394,7 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
   char renderOutputOption[] = "--render-output";
   char renderOutputValue[] = "depth";
   char* depthArgv[] = {depthExecutable, renderOutputOption, renderOutputValue};
-  const auto depthOptions = dart::gui::filament::parseOptions(
+  const auto depthOptions = dart::gui::detail::parseOptions(
       3, depthArgv, std::optional<dart::gui::RunOptions>{defaults});
 
   EXPECT_TRUE(depthOptions.renderOutputModeExplicit);
@@ -1960,7 +1957,7 @@ TEST(FilamentSceneExtraction, BoxesExamplePreservesParityMarkers)
   EXPECT_NE(
       mainSource.find("Eigen::Vector3d(25.0, 25.0, 0.1)"), std::string::npos);
   EXPECT_NE(mainSource.find("dart::Color::LightGray()"), std::string::npos);
-  EXPECT_NE(mainSource.find("[Experimental] Please note"), std::string::npos);
+  EXPECT_EQ(mainSource.find("[Experimental] Please note"), std::string::npos);
   EXPECT_NE(
       mainSource.find("Press space to start free falling the box."),
       std::string::npos);
@@ -2133,11 +2130,9 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   const auto panelHeader
       = readSourceFile(std::filesystem::path("dart") / "gui" / "panel.hpp");
   const auto selectionSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
-      / "filament" / "selection.cpp");
+      std::filesystem::path("dart") / "gui" / "detail" / "selection.cpp");
   const auto panelSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
-      / "filament" / "panel.cpp");
+      std::filesystem::path("dart") / "gui" / "detail" / "panel.cpp");
 
   EXPECT_NE(mainSource.find("#if DART_HAVE_BULLET"), std::string::npos);
   EXPECT_NE(
@@ -3272,11 +3267,9 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
       std::filesystem::path("examples") / "operational_space_control"
       / "README.md");
   const auto inputSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
-      / "filament" / "input.cpp");
+      std::filesystem::path("dart") / "gui" / "detail" / "input.cpp");
   const auto selectionSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
-      / "filament" / "selection.cpp");
+      std::filesystem::path("dart") / "gui" / "detail" / "selection.cpp");
   EXPECT_NE(
       operationalSource.find("KR5/KR5 sixx R650.urdf"), std::string::npos);
   EXPECT_NE(operationalSource.find("KR5/ground.urdf"), std::string::npos);
@@ -4032,8 +4025,7 @@ TEST(FilamentSceneExtraction, SoftBodiesAndVehicleExamplesPreserveParityMarkers)
   EXPECT_NE(softBodiesReadmeSource.find("--out"), std::string::npos);
 
   const auto inputSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
-      / "filament" / "input.cpp");
+      std::filesystem::path("dart") / "gui" / "detail" / "input.cpp");
   EXPECT_NE(inputSource.find("GLFW_KEY_LEFT_BRACKET"), std::string::npos);
   EXPECT_NE(inputSource.find("GLFW_KEY_RIGHT_BRACKET"), std::string::npos);
   EXPECT_NE(inputSource.find("GLFW_KEY_SLASH"), std::string::npos);
@@ -4132,7 +4124,7 @@ TEST(FilamentSceneExtraction, DartsimApplicationEntryPointUsesPublicGuiBoundary)
       = {kDartsimApplicationDirectory / "main.cpp"};
 
   const auto violations
-      = scanSourceFilesForTokens(sources, kForbiddenFilamentDetailTokens);
+      = scanSourceFilesForTokens(sources, kForbiddenDetailTokens);
   for (const auto& violation : violations) {
     ADD_FAILURE() << violation.source << " reaches backend detail token `"
                   << violation.token << "` directly";
@@ -5826,8 +5818,7 @@ TEST(FilamentSceneExtraction, ExtractContactDebugLines_ReturnsMarkersAndVectors)
 TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
 {
   const auto nativeWindowSource = readSourceFile(
-      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
-      / "filament" / "native_window.cpp");
+      std::filesystem::path("dart") / "gui" / "detail" / "native_window.cpp");
 
   dart::gui::RunOptions options;
   EXPECT_EQ(options.windowTitle, "dartsim");
@@ -5912,7 +5903,7 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
 TEST(FilamentSceneExtraction, WriteRgbaPpm_DropsAlphaAndHandlesBottomLeftOrigin)
 {
   const auto path = std::filesystem::temp_directory_path()
-                    / "dart_gui_experimental_rgba.ppm";
+                    / "dart_gui_rgba.ppm";
   std::filesystem::remove(path);
 
   const std::vector<std::uint8_t> rgbaPixels = {

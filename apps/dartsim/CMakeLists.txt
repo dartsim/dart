@@ -24,7 +24,7 @@ if(NOT DART_IN_SOURCE_BUILD)
   endif()
 endif()
 
-include("${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/experimental/detail/filament/filament_sources.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/../../dart/gui/detail/backend_sources.cmake")
 
 dart_gui_add_application(
   ${application_target}

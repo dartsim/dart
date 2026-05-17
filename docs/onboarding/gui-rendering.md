@@ -34,8 +34,8 @@ windowing, or UI toolkit headers.
 ## Backend Boundary
 
 The private Filament backend lives under
-`dart/gui/experimental/detail/filament/` and uses the private
-`dart::gui::filament` namespace. It owns:
+`dart/gui/detail/` and uses the private
+`dart::gui::detail` namespace. It owns:
 
 - Filament engine, renderer, view, scene, camera, swap-chain, and resources
 - GLFW native window and input translation
@@ -44,8 +44,7 @@ The private Filament backend lives under
 - texture and image loading through PNG/JPEG
 - renderable synchronization, selection, screenshots, and frame lifecycle
 
-The older `dart/gui/experimental/*.hpp` headers are compatibility shims.
-Maintained code should include promoted headers such as
+Maintained code should include public headers such as
 `dart/gui/scene.hpp`, `dart/gui/viewer.hpp`, and `dart/gui/renderable.hpp`.
 `dart-gui` is the official component target that links to the private
 implementation.

@@ -11,9 +11,8 @@ than renderer or windowing types.
 
 ## Subdirectories
 
-- `experimental/` - Compatibility headers and the private Filament
-  implementation. Prefer promoted `dart/gui/*.hpp` headers for maintained
-  code.
+- `detail/` - Private Filament implementation. Maintained code should include
+  the public `dart/gui/*.hpp` headers.
 
 ## GUI Rules
 

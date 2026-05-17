@@ -125,9 +125,7 @@ builds you can disable GUI, but some examples/tutorials will not run.
 
 The maintained `dartpy.gui` surface is built around DART-owned concepts such as
 scene descriptors, renderable descriptors, picking, camera helpers, debug
-draws, screenshot options, and viewer lifecycle state.
-`dartpy.gui.experimental` remains import-compatible for the current promotion
-checkpoint, but new Python code should use `dartpy.gui`. Filament, GLFW, Dear
+draws, screenshot options, and viewer lifecycle state. Filament, GLFW, Dear
 ImGui, OpenGL, Vulkan, Metal, OSG, and Raylib implementation types stay out of
 public Python-facing contracts. See [gui-rendering.md](gui-rendering.md) for
 the promoted GUI boundary.

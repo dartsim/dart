@@ -57,9 +57,6 @@
 
 namespace {
 
-constexpr const char* kBoxesExperimentalWarning
-    = "[Experimental] Please note: This example is in an experimental phase "
-      "and may not be fully functional at this time.";
 constexpr const char* kBoxesStartInstruction
     = "Press space to start free falling the box.";
 
@@ -173,7 +170,6 @@ dart::gui::Panel createBoxesInstructionsPanel()
   dart::gui::Panel instructions;
   instructions.title = "Boxes";
   instructions.build = [](dart::gui::PanelBuilder& panel) {
-    panel.text(kBoxesExperimentalWarning);
     panel.text(kBoxesStartInstruction);
     panel.separator();
     panel.text("Space starts or pauses simulation.");
@@ -186,8 +182,7 @@ dart::gui::Panel createBoxesInstructionsPanel()
 
 int main(int argc, char* argv[])
 {
-  std::cout << kBoxesExperimentalWarning << "\n"
-            << kBoxesStartInstruction << "\n";
+  std::cout << kBoxesStartInstruction << "\n";
 
   dart::gui::ApplicationOptions options;
   options.world = createBoxesWorld();

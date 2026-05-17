@@ -2,8 +2,8 @@
 
 #include "gui/module.hpp"
 
-#if defined(DARTPY_HAS_EXPERIMENTAL_GUI)
-  #include "gui/experimental.hpp"
+#if defined(DARTPY_HAS_GUI)
+  #include "gui/descriptors.hpp"
 #endif
 
 #include <nanobind/nanobind.h>
@@ -12,10 +12,8 @@ namespace dart::python_nb {
 
 void defGuiModule(nanobind::module_& m)
 {
-#if defined(DARTPY_HAS_EXPERIMENTAL_GUI)
-  auto experimental = m.def_submodule(
-      "experimental", "Compatibility namespace for promoted GUI descriptors");
-  defGuiExperimentalModule(experimental);
+#if defined(DARTPY_HAS_GUI)
+  defGuiDescriptors(m);
 #endif
 }
 
