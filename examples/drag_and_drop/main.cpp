@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -38,7 +39,6 @@
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/frame.hpp>
-#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
 #include <Eigen/Geometry>
@@ -47,43 +47,33 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace {
 
-std::shared_ptr<dart::dynamics::LineSegmentShape> createDragFrameHandleShape()
+struct DragAndDropScene
 {
-  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(8.0f);
-  const auto center = handle->addVertex(Eigen::Vector3d::Zero());
-  handle->addVertex(Eigen::Vector3d(2.0, 0.0, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(-2.0, 0.0, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(0.0, 2.0, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(0.0, -2.0, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(0.0, 0.0, 2.0), center);
-  handle->addVertex(Eigen::Vector3d(0.0, 0.0, -2.0), center);
+  dart::simulation::WorldPtr world;
+  std::vector<dart::gui::Gizmo> gizmos;
+};
 
-  const auto xyA = handle->addVertex(Eigen::Vector3d(1.35, 1.35, 0.0));
-  const auto xyB = handle->addVertex(Eigen::Vector3d(-1.35, 1.35, 0.0));
-  const auto xyC = handle->addVertex(Eigen::Vector3d(-1.35, -1.35, 0.0));
-  const auto xyD = handle->addVertex(Eigen::Vector3d(1.35, -1.35, 0.0));
-  handle->addConnection(xyA, xyB);
-  handle->addConnection(xyB, xyC);
-  handle->addConnection(xyC, xyD);
-  handle->addConnection(xyD, xyA);
-  return handle;
-}
-
-dart::simulation::WorldPtr createDragAndDropWorld()
+DragAndDropScene createDragAndDropScene()
 {
-  auto world = dart::simulation::World::create("drag_and_drop");
-  world->setGravity(Eigen::Vector3d::Zero());
+  DragAndDropScene scene;
+  scene.world = dart::simulation::World::create("drag_and_drop");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
 
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(4.0, -4.0, 0.0);
   auto anchor = std::make_shared<dart::dynamics::SimpleFrame>(
       dart::dynamics::Frame::World(), "interactive frame", transform);
-  anchor->setShape(createDragFrameHandleShape());
-  anchor->getVisualAspect(true)->setColor(Eigen::Vector3d(0.95, 0.78, 0.18));
-  world->addSimpleFrame(anchor);
+  scene.world->addSimpleFrame(anchor);
+
+  dart::gui::Gizmo gizmo;
+  gizmo.label = "interactive frame";
+  gizmo.target = anchor;
+  gizmo.size = 2.0;
+  scene.gizmos.push_back(std::move(gizmo));
 
   transform = Eigen::Isometry3d::Identity();
   transform.translation() = Eigen::Vector3d(-4.0, 4.0, 0.0);
@@ -92,7 +82,7 @@ dart::simulation::WorldPtr createDragAndDropWorld()
       std::make_shared<dart::dynamics::BoxShape>(
           Eigen::Vector3d(1.0, 1.0, 1.0)));
   draggable->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9, 0.0, 0.0));
-  world->addSimpleFrame(draggable);
+  scene.world->addSimpleFrame(draggable);
 
   const auto addMarker = [&](const std::string& name,
                              const Eigen::Vector3d& position,
@@ -105,7 +95,7 @@ dart::simulation::WorldPtr createDragAndDropWorld()
         std::make_shared<dart::dynamics::BoxShape>(
             Eigen::Vector3d(0.2, 0.2, 0.2)));
     marker->getVisualAspect(true)->setColor(color);
-    world->addSimpleFrame(marker);
+    scene.world->addSimpleFrame(marker);
   };
 
   addMarker(
@@ -115,7 +105,7 @@ dart::simulation::WorldPtr createDragAndDropWorld()
   addMarker(
       "Z", Eigen::Vector3d(0.0, 0.0, 8.0), Eigen::Vector3d(0.0, 0.0, 0.9));
 
-  return world;
+  return scene;
 }
 
 dart::gui::RunOptions makeDragAndDropRunDefaults()
@@ -141,12 +131,10 @@ void printDragAndDropInstructions()
   std::cout
       << "Drag and drop example:\n"
       << "  - Click a renderable to select it.\n"
-      << "  - Ctrl-left drag moves the selected frame; hold X, Y, or Z to "
-         "constrain the drag axis.\n"
+      << "  - Left-drag gizmo arrows, planes, and rings to move or rotate the "
+         "interactive frame.\n"
       << "  - Arrow keys nudge on the camera plane; PageUp/PageDown nudge "
          "vertically.\n"
-      << "  - Historical Ctrl-left rotation needs a public "
-         "rotation-manipulator API.\n"
       << std::endl;
 }
 
@@ -173,8 +161,8 @@ int main(int argc, char* argv[])
           }
           panel.checkbox("Show tips", showInteractionTips);
           if (showInteractionTips) {
-            panel.text("Click to select. Ctrl-left drag moves the selection.");
-            panel.text("Hold X, Y, or Z while dragging to constrain an axis.");
+            panel.text("Left-drag gizmo arrows, planes, and rings.");
+            panel.text("Click renderables to inspect selection.");
             panel.text("Arrow/PageUp/PageDown nudge the selected frame.");
           }
           panel.text("selected: " + context.selectedLabel);
@@ -182,8 +170,10 @@ int main(int argc, char* argv[])
 
   printDragAndDropInstructions();
 
+  auto scene = createDragAndDropScene();
   dart::gui::ApplicationOptions options;
-  options.world = createDragAndDropWorld();
+  options.world = scene.world;
+  options.gizmos = scene.gizmos;
   options.runDefaults = makeDragAndDropRunDefaults();
   options.camera = makeDragAndDropCamera();
   options.panels.push_back(std::move(controls));

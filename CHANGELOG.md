@@ -137,10 +137,9 @@
   - Moved `drag_and_drop` off the private named-scene fixture path so the
     example source owns its DART world and passes it through
     `dart::gui::ApplicationOptions::world`.
-  - Restored the `drag_and_drop` example's visible frame handle, historical
+  - Restored the `drag_and_drop` example's public transform gizmo, historical
     marker layout, camera/run defaults, README, and marker coverage through
-    public `dart::gui`, with rotation-handle manipulation tracked as a public
-    API follow-up.
+    public `dart::gui`.
   - Moved `imgui` and `tinkertoy` off private named-scene fixture defaults so
     their example sources own their DART worlds through
     `dart::gui::ApplicationOptions::world`.
@@ -170,11 +169,12 @@
     visualization, X/Y/Z axis-handle dragging, plane-handle dragging,
     rotation-ring dragging, and per-target visibility, plus hover/active handle
     highlighting for source-owned transform target affordances. Gizmo-only
-    scenes can start without dummy renderable geometry, and `atlas_puppet`,
-    `hubo_puppet`, `g1_puppet`, `operational_space_control`, `wam_ikfast`, and
-    `imgui` now use those public gizmos instead of source-owned target-handle
-    or target-ball geometry; Tinkertoy uses the same public gizmo for its force
-    target while keeping its source-owned axes and force-line geometry.
+    scenes can start without dummy renderable geometry, and `drag_and_drop`,
+    `atlas_puppet`, `hubo_puppet`, `g1_puppet`, `operational_space_control`,
+    `wam_ikfast`, and `imgui` now use those public gizmos instead of
+    source-owned frame-handle, target-handle, or target-ball geometry;
+    Tinkertoy uses the same public gizmo for its force target while keeping its
+    source-owned axes and force-line geometry.
   - Moved `atlas_puppet` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground/root handle/IK targets, and
     passes public `dart::gui` IK handles directly.

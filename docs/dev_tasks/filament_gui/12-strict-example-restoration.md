@@ -648,6 +648,17 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `tinkertoy`, aggregate `examples` build, mandatory `pixi run lint`,
     post-lint focused rebuild/CTest, post-lint direct screenshot smoke,
     stale-handle text scan, and `git diff --check`.
+72. The current R24-11 implementation re-opens `examples/drag_and_drop` now
+    that public gizmos have axis, plane, and rotation handles. The example keeps
+    its source-owned DART world, red child box, X/Y/Z marker boxes, run
+    defaults, camera, panel, README, and selection text, but replaces the old
+    source-owned line-handle geometry with a public `dart::gui::Gizmo` attached
+    to the `interactive frame` `SimpleFrame`. Validation passed focused build
+    for `drag_and_drop` plus `UNIT_gui_FilamentSceneExtraction`, focused CTest,
+    direct 640x480 software-GL screenshot analyzer smoke for `drag_and_drop`,
+    aggregate `examples` build, mandatory `pixi run lint`, post-lint focused
+    rebuild/CTest, post-lint direct screenshot smoke, stale-handle text scan,
+    and `git diff --check`.
 
 ## Checkpoint Rule
 
