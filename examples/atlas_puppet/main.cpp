@@ -42,7 +42,6 @@
 #include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/inverse_kinematics.hpp>
-#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
@@ -72,7 +71,6 @@ constexpr const char* kAtlasUri
     = "dart://sample/sdf/atlas/atlas_v3_no_head.urdf";
 constexpr const char* kAtlasSkeletonName = "visual_atlas_robot";
 constexpr const char* kGroundSkeletonName = "visual_atlas_puppet_ground";
-constexpr const char* kIkTargetPrefix = "atlas_puppet_ik_target_";
 constexpr double kTeleopLinearStep = 0.01;
 constexpr double kTeleopElevationStep = 0.2 * kTeleopLinearStep;
 constexpr double kTeleopYawStep = 2.0 * 3.14159265358979323846 / 180.0;
@@ -273,21 +271,6 @@ dart::math::SupportGeometry makeAtlasPuppetFootSupportGeometry()
   return support;
 }
 
-std::shared_ptr<dart::dynamics::LineSegmentShape> createIkTargetHandleShape(
-    double radius)
-{
-  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(7.0f);
-  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
-  const auto addAxis = [&](const Eigen::Vector3d& axis) {
-    handle->addVertex(axis, center);
-    handle->addVertex(-axis, center);
-  };
-  addAxis(Eigen::Vector3d(radius, 0.0, 0.0));
-  addAxis(Eigen::Vector3d(0.0, radius, 0.0));
-  addAxis(Eigen::Vector3d(0.0, 0.0, 0.75 * radius));
-  return handle;
-}
-
 void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)
 {
   Eigen::Vector3d linearBounds
@@ -330,7 +313,6 @@ void addAtlasPuppetIkTargets(
     const char* label;
     int hotkey;
     Eigen::Isometry3d relativeTransform;
-    Eigen::Vector4d color;
     bool supportContact;
   };
 
@@ -354,7 +336,6 @@ void addAtlasPuppetIkTargets(
        "1 left hand",
        '1',
        leftHand,
-       {0.18, 0.55, 1.0, 0.92},
        false},
       {"r_hand",
        "atlas_puppet_right_hand",
@@ -362,7 +343,6 @@ void addAtlasPuppetIkTargets(
        "2 right hand",
        '2',
        rightHand,
-       {1.0, 0.40, 0.24, 0.92},
        false},
       {"l_foot",
        "atlas_puppet_left_foot",
@@ -370,7 +350,6 @@ void addAtlasPuppetIkTargets(
        "3 left foot",
        '3',
        foot,
-       {0.26, 0.86, 0.34, 0.92},
        true},
       {"r_foot",
        "atlas_puppet_right_foot",
@@ -378,7 +357,6 @@ void addAtlasPuppetIkTargets(
        "4 right foot",
        '4',
        foot,
-       {0.95, 0.72, 0.18, 0.92},
        true},
   }};
 
@@ -425,8 +403,6 @@ void addAtlasPuppetIkTargets(
         dart::dynamics::Frame::World(),
         config.targetName,
         endEffector->getWorldTransform());
-    target->setShape(createIkTargetHandleShape(0.15));
-    target->getVisualAspect(true)->setRGBA(config.color);
     scene.world->addSimpleFrame(target);
     ik->setTarget(target);
 
@@ -589,8 +565,8 @@ dart::gui::Panel createAtlasPuppetPanel()
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
     builder.text("Atlas whole-body IK puppet");
-    builder.text("Press 1-4 or select a target handle.");
-    builder.text("Left-drag gizmo arrows/planes/rings or Ctrl-left drag.");
+    builder.text("Press 1-4 to select a target for keyboard nudges.");
+    builder.text("Left-drag gizmo arrows/planes/rings.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text("WASD moves the root; Q/E yaw; F/Z height.");

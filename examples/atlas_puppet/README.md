@@ -4,15 +4,13 @@
 
 - Goal: teleoperate the Atlas model with kinematic whole-body IK targets.
 - Concepts/APIs: `dart::gui::ApplicationOptions`, `InverseKinematicsHandle`,
-  `dart::gui::Gizmo`, keyboard actions, `SimpleFrame` target handles, and foot
+  `dart::gui::Gizmo`, keyboard actions, `SimpleFrame` IK targets, and foot
   support geometry.
 - Expected output: a DART GUI viewer displaying Atlas with selectable hand and
-  foot IK target handles plus transform gizmo axes at those targets.
-- Controls: press 1-4 or click a target handle to select it; left-drag a gizmo
-  axis arrow or plane handle to move it, or a rotation ring to orient it;
-  Ctrl-left-drag a selected target handle to move it; keyboard nudges also move
-  the selected handle; WASD moves the root; Q/E yaw; F/Z adjusts height; space
-  toggles simulation.
+  foot transform gizmos at those targets.
+- Controls: press 1-4 to select a target for keyboard nudges; left-drag a gizmo
+  axis arrow or plane handle to move it, or a rotation ring to orient it; WASD
+  moves the root; Q/E yaw; F/Z adjusts height; space toggles simulation.
 
 ## Notes
 

@@ -2449,8 +2449,8 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("dart://sample/sdf/atlas/atlas_v3_no_head.urdf"),
       std::string::npos);
   EXPECT_NE(mainSource.find("atlas_puppet_root_handle"), std::string::npos);
-  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("createIkTargetHandleShape"), std::string::npos);
+  EXPECT_EQ(mainSource.find("createIkTargetHandleShape"), std::string::npos);
+  EXPECT_EQ(mainSource.find("target->setShape"), std::string::npos);
   EXPECT_NE(
       mainSource.find("atlas_puppet_ik_target_left_hand"), std::string::npos);
   EXPECT_NE(
@@ -2463,7 +2463,9 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("r_arm_shx"), std::string::npos);
   EXPECT_NE(mainSource.find("l_arm_shx"), std::string::npos);
   EXPECT_NE(mainSource.find("setUnconstrainedIkBounds"), std::string::npos);
-  EXPECT_NE(mainSource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Left-drag gizmo arrows/planes/rings"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
   EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
@@ -2491,6 +2493,7 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
   EXPECT_NE(readmeSource.find("Atlas Puppet Example"), std::string::npos);
   EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
+  EXPECT_NE(readmeSource.find("SimpleFrame` IK targets"), std::string::npos);
   EXPECT_NE(readmeSource.find("axis-arrow dragging"), std::string::npos);
   EXPECT_NE(readmeSource.find("rotation"), std::string::npos);
   EXPECT_NE(readmeSource.find("ring dragging"), std::string::npos);

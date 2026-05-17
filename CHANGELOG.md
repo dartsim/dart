@@ -169,7 +169,8 @@
   - Added a promoted `dart::gui::Gizmo` registration surface with debug-line
     visualization, X/Y/Z axis-handle dragging, plane-handle dragging, and
     rotation-ring dragging, plus hover/active handle highlighting for
-    source-owned transform target affordances.
+    source-owned transform target affordances. `atlas_puppet` now uses those
+    public gizmos instead of source-owned target-handle geometry.
   - Moved `atlas_puppet` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground/root handle/IK targets, and
     passes public `dart::gui` IK handles directly.

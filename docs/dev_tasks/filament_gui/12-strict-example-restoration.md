@@ -609,6 +609,11 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     hovered or actively dragged handle into renderer-neutral gizmo debug-line
     generation. The active implementation slice is now replacing the old
     target-sphere affordance with public gizmos.
+68. R24-7 replaces `examples/atlas_puppet/` source-owned IK target-handle
+    geometry with public `dart::gui::Gizmo` affordances while preserving
+    number-key target selection and keyboard nudges. The active implementation
+    slice is now applying the same no-bare-target-affordance rule to the
+    remaining robot/IK examples.
 
 ## Checkpoint Rule
 

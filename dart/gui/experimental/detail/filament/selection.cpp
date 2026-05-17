@@ -216,6 +216,27 @@ bool translateRenderableAndApplyIk(
   return true;
 }
 
+bool translateIkHandleTargetAndApplyIk(
+    IkHandle& handle, const Eigen::Vector3d& worldTranslation)
+{
+  if (handle.target == nullptr) {
+    return false;
+  }
+
+  dart::gui::Gizmo gizmo;
+  gizmo.target = handle.target;
+  if (!translateGizmoTarget(gizmo, worldTranslation)) {
+    return false;
+  }
+
+  if (handle.ik) {
+    handle.ik->getSolver()->setNumMaxIterations(30);
+    handle.ik->solveAndApply(true);
+  }
+
+  return true;
+}
+
 RenderableId SelectionController::selectedRenderableId() const
 {
   return mSelectedRenderableId;
@@ -287,9 +308,16 @@ void SelectionController::applyKeyboardNudge(
 
   const RenderableDescriptor* selectedDescriptor
       = findRenderableDescriptor(descriptors, mSelectedRenderableId);
-  if (selectedDescriptor == nullptr
-      || !translateRenderableAndApplyIk(scene, *selectedDescriptor, nudge)) {
-    return;
+  if (selectedDescriptor != nullptr) {
+    if (!translateRenderableAndApplyIk(scene, *selectedDescriptor, nudge)) {
+      return;
+    }
+  } else {
+    auto* handle = findIkHandle(scene, mSelectedRenderableId);
+    if (handle == nullptr
+        || !translateIkHandleTargetAndApplyIk(*handle, nudge)) {
+      return;
+    }
   }
 
   lifecycle.paused = true;
