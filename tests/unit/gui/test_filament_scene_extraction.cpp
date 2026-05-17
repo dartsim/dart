@@ -2478,6 +2478,10 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
   EXPECT_NE(
       mainSource.find("camera.target = Eigen::Vector3d(1.0, 0.0, 0.0)"),
       std::string::npos);
+  EXPECT_NE(
+      mainSource.find("options.windowTitle = \"Atlas Simbicon\""),
+      std::string::npos);
+  EXPECT_EQ(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
@@ -2491,6 +2495,7 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
   EXPECT_NE(
       readmeSource.find("dart::gui::ApplicationOptions::preStep"),
       std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui::RunOptions"), std::string::npos);
   EXPECT_NE(
       readmeSource.find("Remaining renderer-neutral API gaps"),
       std::string::npos);
@@ -5169,7 +5174,13 @@ TEST(FilamentSceneExtraction, ExtractContactDebugLines_ReturnsMarkersAndVectors)
 
 TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
 {
+  const auto nativeWindowSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
+      / "filament" / "native_window.cpp");
+
   dart::gui::RunOptions options;
+  EXPECT_EQ(options.windowTitle, "dartsim");
+  options.windowTitle.clear();
   options.width = 0;
   options.height = -8;
   options.guiScale = std::numeric_limits<double>::quiet_NaN();
@@ -5178,6 +5189,7 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
 
   dart::gui::normalizeRunOptions(options);
 
+  EXPECT_EQ(options.windowTitle, "dartsim");
   EXPECT_EQ(options.width, 1);
   EXPECT_EQ(options.height, 1);
   EXPECT_NEAR(options.guiScale, 1.0, 1e-12);
@@ -5229,6 +5241,9 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
           .filename()
           .string(),
       "frame_000007.ppm");
+  EXPECT_NE(
+      nativeWindowSource.find("options.windowTitle.c_str()"),
+      std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, WriteRgbaPpm_DropsAlphaAndHandlesBottomLeftOrigin)

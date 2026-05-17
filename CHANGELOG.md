@@ -118,8 +118,8 @@
     `human_joint_limits`) as source-defined `dart::gui` examples.
   - Restored the `atlas_simbicon` example's Simbicon controller/state files,
     pre-step control loop, perturbation and state-machine keyboard actions,
-    gravity/harness/stride panel controls, camera/run defaults, and README
-    through public `dart::gui`.
+    gravity/harness/stride panel controls, native window title,
+    camera/run defaults, and README through public `dart::gui`.
   - Audited `gui_scene_diagnostics` against its historical source and kept it
     as a promoted `dart::gui` descriptor diagnostic example with marker
     coverage for CLI options, descriptor extraction, debug/selection lines,

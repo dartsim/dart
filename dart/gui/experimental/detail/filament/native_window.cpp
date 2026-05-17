@@ -104,7 +104,11 @@ ApplicationWindow createApplicationWindow(
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   GLFWwindow* window = glfwCreateWindow(
-      options.width, options.height, "dartsim", nullptr, nullptr);
+      options.width,
+      options.height,
+      options.windowTitle.c_str(),
+      nullptr,
+      nullptr);
   if (window == nullptr) {
     errors << "Failed to create GLFW window\n";
     glfwTerminate();

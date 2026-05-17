@@ -273,6 +273,7 @@ private:
 dart::gui::RunOptions makeAtlasSimbiconRunDefaults()
 {
   dart::gui::RunOptions options;
+  options.windowTitle = "Atlas Simbicon";
   options.width = 1280;
   options.height = 960;
   return options;
@@ -346,7 +347,7 @@ dart::gui::Panel createAtlasSimbiconPanel(
     builder.text("Press [d] to push left Atlas torso.");
     builder.text("Press [f] to push right Atlas torso.");
     builder.text("Press [1]/[2]/[3]/[4] to switch state machines.");
-    builder.text("Select objects with left click; Ctrl-left drag moves them.");
+    builder.text("Select objects with left click; keyboard nudges move them.");
     builder.separator();
 
     if (context.lifecycle != nullptr) {

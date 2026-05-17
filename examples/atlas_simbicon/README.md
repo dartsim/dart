@@ -5,9 +5,10 @@
 - Goal: run a Simbicon-style controller on the Atlas model.
 - Concepts/APIs: `dart::io::readSkeleton`, example-owned gait controller
   state machines, `dart::gui::ApplicationOptions::preStep`, keyboard actions,
-  and panel controls.
-- Expected output: Atlas walking on the atlas ground with Simbicon control,
-  perturbation keys, and an `Atlas Control` panel.
+  `dart::gui::RunOptions`, and panel controls.
+- Expected output: an `Atlas Simbicon` window with Atlas walking on the atlas
+  ground with Simbicon control, perturbation keys, and an `Atlas Control`
+  panel.
 - Controls: use r to reset, a/s/d/f to push the torso, 1/2/3/4 to switch
   state machines, and the panel for gravity, harness toggles, reset, stride
   mode, pause, step, and exit. `--gui-scale` adjusts the GUI scale, and

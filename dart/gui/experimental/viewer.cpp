@@ -45,6 +45,9 @@ namespace dart::gui {
 
 void normalizeRunOptions(RunOptions& options)
 {
+  if (options.windowTitle.empty()) {
+    options.windowTitle = "dartsim";
+  }
   options.width = std::max(1, options.width);
   options.height = std::max(1, options.height);
   if (!std::isfinite(options.guiScale) || options.guiScale <= 0.0) {

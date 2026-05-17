@@ -16,22 +16,24 @@ checkpoint, the R24-5 handle-highlighting checkpoint, the R24-7 Atlas
 public-gizmo target checkpoint, the R24-8 remaining robot/IK gizmo rollout, the
 R24-9 `imgui` panel target gizmo cleanup, the R24-10 Tinkertoy force-target
 gizmo cleanup, the R24-11 drag-and-drop frame-gizmo cleanup, and the R24-12
-Fetch target-gizmo cleanup. Do not push these local checkpoints without
-explicit maintainer/user approval in the active session. Leave the pre-existing
-local `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the
-maintainer explicitly asks to include them.
+Fetch target-gizmo cleanup, and the R24-13 native window-title cleanup. Do not
+push these local checkpoints without explicit maintainer/user approval in the
+active session. Leave the pre-existing local
+`docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
+explicitly asks to include them.
 
-Immediate next slice after the R24-12 Fetch target-gizmo rollout: continue the
-fresh audit for
-remaining source-owned visible manipulation affordances and either migrate them
-to public `dart::gui::Gizmo`, keep them as intentional example-owned geometry,
-or record a named public API gap. The public `dart::gui::Gizmo` registration
-surface, render-only debug-line affordances, X/Y/Z axis-arrow dragging, X/Y/Z
-rotation-ring dragging, XY/YZ/XZ plane-handle dragging, hover/active handle
-highlighting, per-target visibility, and public-gizmo target affordances for
-Fetch, Atlas, Hubo, G1, operational-space control, WAM IKFast, and the `imgui`
-panel-extension target, Tinkertoy's force target, and the drag-and-drop
-interactive frame are in place for `SimpleFrame` targets.
+Immediate next slice after the R24-13 window-title rollout: continue reducing
+the named public API gaps in `11-example-parity-audit.md`. The fresh
+source-owned manipulation-affordance sweep has usable public `dart::gui::Gizmo`
+coverage for `SimpleFrame` targets: registration, render-only debug-line
+affordances, X/Y/Z axis arrows, X/Y/Z rotation rings, XY/YZ/XZ plane handles,
+hover/active highlighting, per-target visibility, and public-gizmo target
+affordances for Fetch, Atlas, Hubo, G1, operational-space control, WAM IKFast,
+the `imgui` panel-extension target, Tinkertoy's force target, and the
+drag-and-drop interactive frame. Remaining audit gaps are mostly render
+settings, camera roll/up-vector, key-release/render hooks, panel plotting/table
+widgets, and example-specific simulation or posture controls rather than bare
+source-owned target handles.
 
 ## Live Supervisor Steering
 

@@ -670,6 +670,17 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     build, mandatory `pixi run lint`, post-lint focused rebuild/CTest,
     post-lint direct screenshot smoke, stale-handle text scan, and
     `git diff --check`.
+74. The current R24-13 implementation promotes a native window-title field on
+    `dart::gui::RunOptions` and uses it from `examples/atlas_simbicon` to
+    restore the historical `Atlas Simbicon` window title. This removes the
+    window-title public API gap from Atlas Simbicon while keeping the remaining
+    headlight, shadow, and depth-mode render-settings gaps explicit. Validation
+    passed focused build for `atlas_simbicon` plus
+    `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct 1280x960
+    software-GL screenshot analyzer smoke for `atlas_simbicon`, aggregate
+    `examples` build, mandatory `pixi run lint`, post-lint focused
+    rebuild/CTest, post-lint direct screenshot smoke, stale window-title/text
+    scan, and `git diff --check`.
 
 ## Checkpoint Rule
 

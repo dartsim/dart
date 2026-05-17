@@ -54,6 +54,7 @@ struct PickRay
 
 struct RunOptions
 {
+  std::string windowTitle = "dartsim";
   int width = 1280;
   int height = 720;
   int maxFrames = -1;
