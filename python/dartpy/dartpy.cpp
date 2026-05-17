@@ -44,6 +44,11 @@
 #include "math/module.hpp"
 #include "optimizer/module.hpp"
 #include "simulation/module.hpp"
+
+#if defined(DARTPY_HAS_SIMULATION_EXPERIMENTAL)
+  #include "simulation_experimental/module.hpp"
+#endif
+
 #include "utils/module.hpp"
 
 #include <nanobind/nanobind.h>
@@ -81,6 +86,13 @@ NB_MODULE(_dartpy, m)
   auto simulation = m.def_submodule(
       "simulation", "Simulation utilities backed by nanobind");
   dart::python_nb::defSimulationModule(simulation);
+
+#if defined(DARTPY_HAS_SIMULATION_EXPERIMENTAL)
+  auto simulation_experimental = m.def_submodule(
+      "simulation_experimental",
+      "Experimental ECS-backed simulation utilities");
+  dart::python_nb::defSimulationExperimentalModule(simulation_experimental);
+#endif
 
   auto constraint = m.def_submodule(
       "constraint", "Constraint utilities backed by nanobind");

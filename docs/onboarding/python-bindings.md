@@ -57,6 +57,8 @@ namespaces:
 ```
 dartpy/
 ├── io            # File parsers (URDF, SDF, SKEL, MJCF)
+├── simulation_experimental
+│                 # Opt-in ECS-backed experimental world
 └── gui           # 3D visualization (OpenSceneGraph + ImGui)
 ```
 
@@ -65,8 +67,23 @@ dartpy/
 - Legacy submodules remain importable in DART 7.x but will be removed in DART
   8.0. Toggle deprecation handling with `DARTPY_WARN_ON_LEGACY_MODULES` or
   `DARTPY_ENABLE_LEGACY_MODULES`.
+- `dartpy.simulation_experimental` is not promoted onto the top-level package
+  and is not part of the legacy submodule compatibility layer.
 
 **Source**: See `python/dartpy/` directory for module implementations
+
+### Experimental World Bindings And Transition
+
+DART 7 keeps the classic Skeleton-backed `dart::simulation::World` and
+`dartpy.World` path stable while the ECS-backed world matures behind explicit
+experimental namespaces. C++ users opt in through
+`dart::simulation::experimental`; Python users opt in through
+`dartpy.simulation_experimental`, which is built only when
+`DART_BUILD_SIMULATION_EXPERIMENTAL=ON`. Bindings for this module should expose
+only public experimental wrapper types and must not expose EnTT, `comps`, or
+other ECS internals until the C++ API provides public wrappers. The DART 8 path
+is to remove the classic world after the experimental world reaches parity and
+promote the experimental shape into the stable simulation namespace.
 
 ### Eigen ↔ NumPy Integration
 

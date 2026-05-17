@@ -624,6 +624,7 @@ graph TB
 
 - `dartpy` (top-level) - Core classes/functions (math, dynamics, collision, simulation, constraint, optimizer) exposed in snake_case
 - `dartpy.io` - File parsers (URDF, SDF, SKEL, MJCF) [alias for legacy `utils`]
+- `dartpy.simulation_experimental` - Opt-in ECS-backed world bindings, available when `DART_BUILD_SIMULATION_EXPERIMENTAL=ON`
 - `dartpy.gui` - 3D visualization with OSG and ImGui
 - Legacy `dartpy`/`math`/`dynamics`/`collision`/`simulation`/`constraint`/`optimizer`/`utils` remain importable in DART 7.x but emit `DeprecationWarning` and will be removed in DART 8.0.
 

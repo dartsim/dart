@@ -12,6 +12,7 @@ from . import io
 from . import math
 from . import optimizer
 from . import simulation
+from . import simulation_experimental
 from . import utils
 
 __all__: list[str] = [
@@ -24,6 +25,7 @@ __all__: list[str] = [
     "math",
     "optimizer",
     "simulation",
+    "simulation_experimental",
     "utils",
 ]
 __version__: str = ''
