@@ -105,6 +105,13 @@ public:
 
 struct PanelContext
 {
+  struct CameraViewState
+  {
+    Eigen::Vector3d eye = Eigen::Vector3d::Zero();
+    Eigen::Vector3d target = Eigen::Vector3d::Zero();
+    Eigen::Vector3d up = Eigen::Vector3d::UnitZ();
+  };
+
   dart::simulation::World* world = nullptr;
   ViewerLifecycleState* lifecycle = nullptr;
   std::string selectedLabel;
@@ -112,6 +119,7 @@ struct PanelContext
   std::optional<Eigen::Vector3d> selectedNormal;
   double simulationTime = 0.0;
   std::size_t contactCount = 0;
+  CameraViewState camera;
 };
 
 struct Panel

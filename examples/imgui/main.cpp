@@ -42,8 +42,10 @@
 
 #include <Eigen/Geometry>
 
+#include <iomanip>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -115,6 +117,14 @@ void setPanelWorldGravity(
   } else {
     world->setGravity(Eigen::Vector3d::Zero());
   }
+}
+
+std::string formatCameraVector(const Eigen::Vector3d& value)
+{
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(2) << "(" << value.x() << ", "
+         << value.y() << ", " << value.z() << ")";
+  return stream.str();
 }
 
 dart::gui::KeyboardAction makePrintAction(
@@ -197,7 +207,9 @@ dart::gui::Panel createPanelExtensionControls(const PanelExtensionScene& scene)
 
     panel.separator();
     panel.text("View");
-    panel.text("Camera readout needs a public viewer-inspection API.");
+    panel.text("Eye   : " + formatCameraVector(context.camera.eye));
+    panel.text("Center: " + formatCameraVector(context.camera.target));
+    panel.text("Up    : " + formatCameraVector(context.camera.up));
 
     panel.separator();
     panel.text("Help");

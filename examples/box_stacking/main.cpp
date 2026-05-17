@@ -53,9 +53,11 @@
 #include <Eigen/Geometry>
 
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -269,6 +271,14 @@ dart::gui::OrbitCamera makeBoxStackingCamera()
   return camera;
 }
 
+std::string formatCameraVector(const Eigen::Vector3d& value)
+{
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(2) << "(" << value.x() << ", "
+         << value.y() << ", " << value.z() << ")";
+  return stream.str();
+}
+
 dart::gui::Panel createControlsPanel(const BoxStackingConfig& config)
 {
   bool gravityEnabled = true;
@@ -322,6 +332,11 @@ dart::gui::Panel createControlsPanel(const BoxStackingConfig& config)
 
     panel.text("Time: " + std::to_string(context.simulationTime));
     panel.text("Contacts: " + std::to_string(context.contactCount));
+    panel.separator();
+    panel.text("View");
+    panel.text("Eye   : " + formatCameraVector(context.camera.eye));
+    panel.text("Center: " + formatCameraVector(context.camera.target));
+    panel.text("Up    : " + formatCameraVector(context.camera.up));
     panel.separator();
     panel.text("User Guide:");
     panel.text("Space toggles simulation; n steps once while paused.");

@@ -118,6 +118,8 @@
     `human_joint_limits`) as source-defined `dart::gui` examples.
   - Added public `dart::gui::OrbitCamera` up-vector control and restored
     historical camera roll/up-vector defaults across migrated GUI examples.
+  - Added public `dart::gui::PanelContext` camera inspection state and restored
+    Eye/Center/Up panel readouts in migrated GUI examples.
   - Restored the `atlas_simbicon` example's Simbicon controller/state files,
     pre-step control loop, perturbation and state-machine keyboard actions,
     gravity/harness/stride panel controls, native window title,

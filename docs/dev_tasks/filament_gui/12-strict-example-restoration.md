@@ -694,6 +694,17 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `hybrid_dynamics`, aggregate `examples` build, mandatory `pixi run lint`,
     post-lint focused rebuild/CTest, post-lint direct screenshot smokes, stale
     camera-up gap text scan, and `git diff --check`.
+76. The current R24-15 implementation promotes
+    `dart::gui::PanelContext::camera` as renderer-neutral camera inspection
+    state with live eye, target, and up vectors. `examples/box_stacking` and
+    `examples/imgui` use that public panel context to restore the historical
+    Eye/Center/Up readouts without exposing backend viewer or camera objects.
+    Validation passed focused build for `imgui`, `box_stacking`, and
+    `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct software-GL
+    screenshot analyzer smokes for `imgui` and `box_stacking`, aggregate
+    `examples` build, mandatory `pixi run lint`, post-lint focused rebuild/CTest,
+    post-lint direct screenshot smokes, stale camera-inspection gap text scan,
+    and `git diff --check`.
 
 ## Checkpoint Rule
 

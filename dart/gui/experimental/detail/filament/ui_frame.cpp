@@ -39,6 +39,7 @@
 #include <dart/gui/experimental/detail/filament/selection.hpp>
 #include <dart/gui/experimental/detail/filament/ui_frame.hpp>
 #include <dart/gui/profile.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -63,6 +64,7 @@ void updateFrameUi(
     const FrameViewport& viewport,
     ExampleScene exampleScene,
     DartScene& dartScene,
+    const dart::gui::OrbitCameraController& cameraController,
     const SelectionController& selectionController,
     bool& orbitLight,
     DebugOverlayController& debugOverlays,
@@ -75,6 +77,8 @@ void updateFrameUi(
   updateImGuiMouseInput(window, imguiIo, viewport.width, viewport.height);
   ImGui::NewFrame();
   const std::string selectedLabel = selectionController.selectedLabel();
+  const auto cameraBasis
+      = dart::gui::makeOrbitCameraBasis(cameraController.camera);
   dart::gui::PanelContext panelContext{
       dartScene.world.get(),
       &lifecycle,
@@ -82,7 +86,8 @@ void updateFrameUi(
       selectionController.selectedPoint(),
       selectionController.selectedNormal(),
       dartScene.world->getTime(),
-      dartScene.world->getLastCollisionResult().getNumContacts()};
+      dartScene.world->getLastCollisionResult().getNumContacts(),
+      {cameraBasis.eye, cameraController.camera.target, cameraBasis.up}};
   const bool debugOptionsChanged = renderBuiltInStatusPanel(
       sceneName(exampleScene),
       panelContext.simulationTime,

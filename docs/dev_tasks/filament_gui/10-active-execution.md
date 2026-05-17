@@ -147,9 +147,17 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   frame, and R24-13 adds promoted `RunOptions::windowTitle` support for native
   GLFW windows and Atlas Simbicon. R24-14 adds promoted `OrbitCamera::up`
   support and restores historical camera up-vector defaults across the migrated
-  examples that carried custom OSG up vectors. These local checkpoints are not
+  examples that carried custom OSG up vectors. R24-15 adds promoted
+  `PanelContext::camera` inspection state and restores Eye/Center/Up panel
+  readouts in `box_stacking` and `imgui`. These local checkpoints are not
   pushed.
-- Latest local R24-14 validation passed focused build for
+- Latest local R24-15 validation passed focused build for `imgui`,
+  `box_stacking`, and `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct
+  software-GL screenshot analyzer smokes for `imgui` and `box_stacking`;
+  aggregate `examples` build; mandatory `pixi run lint`; post-lint focused
+  rebuild/CTest; post-lint direct screenshot smokes; stale camera-inspection gap
+  text scan; and `git diff --check`.
+  R24-14 validation passed focused build for
   `UNIT_gui_FilamentSceneExtraction`, `operational_space_control`, and
   `hybrid_dynamics`; focused CTest; direct software-GL screenshot analyzer
   smokes for `operational_space_control` and `hybrid_dynamics`; aggregate
@@ -548,16 +556,18 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   panel-extension example: restore the empty-world target frame, promoted
   keydown callbacks, panel title/sections, gravity control, viewer help,
   run/camera defaults, README, and marker guards. Keep direct backend UI types
-  out of source. Record headlight toggles, live camera-inspector text,
-  key-release callbacks, and pre/post render or post-step hooks as public
-  `dart::gui` API gaps unless the public API is added.
+  out of source. The local R24-15 checkpoint restores live camera-inspector text
+  through public `PanelContext::camera`; headlight toggles, key-release
+  callbacks, and pre/post render or post-step hooks remain public `dart::gui`
+  API gaps unless their APIs are added.
 - Implementation state for this panel-extension slice:
   `examples/imgui/main.cpp` now owns an empty world with a selectable target
   frame, restores the historical panel title, Play/Pause/Time, gravity
   controls, viewer help, keydown callbacks for `q`/Left/Right, pre-step
   callback demonstration, 640x480 default size, and camera home through public
-  `dart::gui`. The README and marker guards are in place. Headlight toggles,
-  live camera readout, key-release callbacks, shifted-`Q` distinction, and
+  `dart::gui`. The local R24-15 checkpoint restores the live camera readout
+  through public `PanelContext::camera`. The README and marker guards are in
+  place. Headlight toggles, key-release callbacks, shifted-`Q` distinction, and
   pre/post render or post-step hooks remain named public API gaps.
 - Panel-extension validation completed before checkpoint commit: focused C++
   build for `imgui` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for

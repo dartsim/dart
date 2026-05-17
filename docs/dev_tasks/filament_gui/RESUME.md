@@ -17,24 +17,22 @@ public-gizmo target checkpoint, the R24-8 remaining robot/IK gizmo rollout, the
 R24-9 `imgui` panel target gizmo cleanup, the R24-10 Tinkertoy force-target
 gizmo cleanup, the R24-11 drag-and-drop frame-gizmo cleanup, and the R24-12
 Fetch target-gizmo cleanup, the R24-13 native window-title cleanup, and the
-R24-14 camera up-vector cleanup. Do not push these local checkpoints without
-explicit maintainer/user approval in the active session. Leave the pre-existing local
+R24-14 camera up-vector cleanup, and the R24-15 panel camera-inspection cleanup.
+Do not push these local checkpoints without explicit maintainer/user approval in
+the active session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
 explicitly asks to include them.
 
-Immediate next slice after the R24-14 camera up-vector rollout: continue
-reducing the named public API gaps in `11-example-parity-audit.md`. The fresh
-source-owned manipulation-affordance sweep has usable public `dart::gui::Gizmo`
-coverage for `SimpleFrame` targets: registration, render-only debug-line
-affordances, X/Y/Z axis arrows, X/Y/Z rotation rings, XY/YZ/XZ plane handles,
-hover/active highlighting, per-target visibility, and public-gizmo target
-affordances for Fetch, Atlas, Hubo, G1, operational-space control, WAM IKFast,
-the `imgui` panel-extension target, Tinkertoy's force target, and the
-drag-and-drop interactive frame. Public `OrbitCamera::up` now covers historical
-custom camera up-vector defaults for the migrated examples that needed them.
-Remaining audit gaps are mostly render settings, key-release/render hooks, panel
-plotting/table widgets, and example-specific simulation or posture controls
-rather than bare source-owned target handles or camera up-vector defaults.
+Immediate next slice after the R24-15 camera-inspection rollout: continue
+reducing the named public API gaps in `11-example-parity-audit.md`. Public
+`dart::gui::Gizmo` now covers the source-owned manipulation affordances for the
+recently re-opened target examples, public `OrbitCamera::up` covers historical
+custom camera up-vector defaults, and public `PanelContext::camera` covers the
+Eye/Center/Up panel readouts in `box_stacking` and `imgui`. Remaining audit gaps
+are mostly render settings, key-release/render hooks, panel plotting/table
+widgets, color editors/debug-grid controls, and example-specific simulation or
+posture controls rather than bare source-owned target handles, camera
+up-vector defaults, or basic camera readouts.
 
 ## Live Supervisor Steering
 

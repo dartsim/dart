@@ -702,6 +702,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
                                dart::gui::PanelContext& context) {
     selectedLabel = context.selectedLabel;
     builder.text("selected:" + context.selectedLabel);
+    builder.text("eye-x:" + std::to_string(context.camera.eye.x()));
   };
 
   RecordingPanelBuilder builder;
@@ -709,6 +710,9 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   context.selectedLabel = "box";
   context.selectedPoint = Eigen::Vector3d(1.0, 2.0, 3.0);
   context.selectedNormal = Eigen::Vector3d::UnitZ();
+  context.camera.eye = Eigen::Vector3d(4.0, 5.0, 6.0);
+  context.camera.target = Eigen::Vector3d(1.0, 2.0, 3.0);
+  context.camera.up = Eigen::Vector3d::UnitY();
   panel.build(builder);
   panel.buildWithContext(builder, context);
 
@@ -720,6 +724,9 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(context.selectedPoint->isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   ASSERT_TRUE(context.selectedNormal.has_value());
   EXPECT_TRUE(context.selectedNormal->isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_TRUE(context.camera.eye.isApprox(Eigen::Vector3d(4.0, 5.0, 6.0)));
+  EXPECT_TRUE(context.camera.target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_TRUE(context.camera.up.isApprox(Eigen::Vector3d::UnitY()));
   bool preStepCalled = false;
   EXPECT_EQ(
       builder.events,
@@ -737,7 +744,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "same-line",
           "checkbox:Diagnostics",
           "slider:Gain",
-          "text:selected:box"}));
+          "text:selected:box",
+          "text:eye-x:4.000000"}));
 
   dart::gui::ApplicationOptions options;
   options.world = World::create("panel_test");
@@ -1791,6 +1799,10 @@ TEST(FilamentSceneExtraction, BoxStackingExamplePreservesParityMarkers)
   EXPECT_NE(mainSource.find("Box stacking demo"), std::string::npos);
   EXPECT_NE(mainSource.find("Gravity On/Off"), std::string::npos);
   EXPECT_NE(mainSource.find("LCP solver:"), std::string::npos);
+  EXPECT_NE(mainSource.find("context.camera.eye"), std::string::npos);
+  EXPECT_NE(mainSource.find("Eye   : "), std::string::npos);
+  EXPECT_NE(mainSource.find("Center: "), std::string::npos);
+  EXPECT_NE(mainSource.find("Up    : "), std::string::npos);
   EXPECT_NE(mainSource.find("User Guide:"), std::string::npos);
   EXPECT_NE(mainSource.find("makeBoxStackingRunDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.width = 800"), std::string::npos);
@@ -2040,7 +2052,10 @@ TEST(FilamentSceneExtraction, PanelExtensionExamplePreservesLegacyParityMarkers)
       mainSource.find("Left-drag target gizmo arrows/planes/rings"),
       std::string::npos);
   EXPECT_NE(mainSource.find("public lighting control API"), std::string::npos);
-  EXPECT_NE(mainSource.find("public viewer-inspection API"), std::string::npos);
+  EXPECT_NE(mainSource.find("context.camera.eye"), std::string::npos);
+  EXPECT_NE(mainSource.find("Eye   : "), std::string::npos);
+  EXPECT_NE(mainSource.find("Center: "), std::string::npos);
+  EXPECT_NE(mainSource.find("Up    : "), std::string::npos);
   EXPECT_NE(readmeSource.find("Panel Extension Example"), std::string::npos);
   EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(readmeSource.find("Tinkertoy Control"), std::string::npos);

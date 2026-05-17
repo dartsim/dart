@@ -13,9 +13,8 @@
   Right to exercise the promoted keydown callbacks. `--gui-scale` adjusts the
   GUI scale, and `--width` / `--height` override the default 640x480 window
   size.
-- Remaining gaps: headlight toggles, camera eye/center/up readouts,
-  key-release callbacks, and pre/post render or post-step hooks need public
-  renderer-neutral APIs.
+- Remaining gaps: headlight toggles, key-release callbacks, and pre/post render
+  or post-step hooks need public renderer-neutral APIs.
 
 ## Run
 

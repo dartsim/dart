@@ -48,6 +48,7 @@ namespace dart::gui {
 
 struct Panel;
 struct ProfileAccumulator;
+struct OrbitCameraController;
 struct ViewerLifecycleState;
 
 } // namespace dart::gui
@@ -71,6 +72,7 @@ void updateFrameUi(
     const FrameViewport& viewport,
     ExampleScene exampleScene,
     DartScene& dartScene,
+    const dart::gui::OrbitCameraController& cameraController,
     const SelectionController& selectionController,
     bool& orbitLight,
     DebugOverlayController& debugOverlays,

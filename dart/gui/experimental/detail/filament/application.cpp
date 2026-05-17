@@ -292,6 +292,7 @@ int runFilamentGuiApplicationImpl(
           viewport,
           appOptions.scene,
           dartScene,
+          cameraController,
           selectionController,
           orbitLight,
           debugOverlays,
