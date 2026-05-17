@@ -1020,7 +1020,7 @@ bm-collision-check-mixed = { cmd = """
       --max-native-ratio 1.10 \
       -- \
       --benchmark_min_time=1ms \
-      --benchmark_repetitions=3
+      --benchmark_repetitions=5
 """, depends-on = [
   "config",
 ] }
