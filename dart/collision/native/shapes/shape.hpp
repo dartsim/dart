@@ -222,6 +222,11 @@ public:
   CompoundShape();
   explicit CompoundShape(std::vector<ChildShape> children);
 
+  CompoundShape(const CompoundShape&) = delete;
+  CompoundShape& operator=(const CompoundShape&) = delete;
+  CompoundShape(CompoundShape&&) noexcept = default;
+  CompoundShape& operator=(CompoundShape&&) noexcept = default;
+
   void addChild(
       std::unique_ptr<Shape> shape,
       const Eigen::Isometry3d& localTransform = Eigen::Isometry3d::Identity());
