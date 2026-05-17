@@ -385,10 +385,11 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   force target at the clicked point plus surface-normal offset, restores the
   historical panel title/window geometry/menu/help/control labels, explicit
   1280x720 defaults, console force/edit messages, README, and marker coverage.
-  Runtime Enter recording remains a named public API gap; the maintained
-  capture path is `--screenshot` and `--out`. The later local R24-17
-  lighting-state checkpoint restores the headlight checkbox through public
-  `PanelContext::lighting`.
+  The later local R24-17 lighting-state checkpoint restores the headlight
+  checkbox through public `PanelContext::lighting`. The local R24-34 follow-up
+  adds public `ViewerLifecycleState` frame-output capture controls and restores
+  the Enter recording toggle to the historical `screencap` data directory;
+  focused validation passes locally.
 - Tinkertoy pre-lint validation: focused build for `tinkertoy` and
   `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed after fixing
   a README marker-string mismatch, direct and pixi software-GL screenshots
@@ -404,6 +405,19 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   (`/tmp/dart_tinkertoy_postlint.ppm`, 921600/921600 nonzero pixels),
   `git diff --check` passed, and the generated API-boundary inventory had no
   diff.
+- R24-34 Tinkertoy runtime recording validation: focused rebuild for
+  `tinkertoy` and `UNIT_gui_FilamentSceneExtraction` passed, focused CTest
+  passed, the promoted `--screenshot` smoke passed basic analyzer coverage
+  (`/tmp/dart_tinkertoy_runtime_recording.ppm`, 307200/307200 nonzero pixels),
+  promoted frame-sequence capture passed analyzer coverage
+  (`/tmp/dart_tinkertoy_runtime_frames.9RnW7Z/frame_000001.ppm`,
+  307200/307200 nonzero pixels), mandatory `pixi run lint` passed, post-lint
+  focused rebuild/CTest passed, post-lint `--screenshot` smoke passed analyzer
+  coverage (`/tmp/dart_tinkertoy_runtime_recording_postlint.ppm`,
+  307200/307200 nonzero pixels), and post-lint frame-sequence capture passed
+  analyzer coverage
+  (`/tmp/dart_tinkertoy_runtime_frames_postlint.2hh5UR/frame_000001.ppm`,
+  307200/307200 nonzero pixels).
 - Active strict re-open cursor: `examples/vehicle/`. A previous parity
   checkpoint restored command keys and camera defaults, but the strict itemized
   inventory is still missing. Compare current source/README against

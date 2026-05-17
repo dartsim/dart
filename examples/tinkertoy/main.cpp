@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/gui/application.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
@@ -61,6 +63,7 @@
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -76,6 +79,7 @@ constexpr const char* kTinkertoySkeletonPrefix = "visual_tinkertoy_toy_";
 constexpr const char* kTinkertoyTargetFrameName = "tinkertoy_target";
 constexpr const char* kTinkertoyForceLineFrameName = "tinkertoy_force_line";
 constexpr const char* kTinkertoyAxisFramePrefix = "tinkertoy_axis_";
+constexpr const char* kTinkertoyRecordingDirectory = "screencap";
 constexpr double kDefaultBlockLength = 0.5;
 constexpr double kDefaultBlockWidth = 0.075;
 constexpr double kDefaultJointRadius = 1.5 * kDefaultBlockWidth / 2.0;
@@ -655,6 +659,35 @@ private:
   std::string mStatus = "No block selected";
 };
 
+void toggleTinkertoyRecording(dart::gui::ViewerLifecycleState& lifecycle)
+{
+  const std::string outputDirectory
+      = dart::config::dataPath(kTinkertoyRecordingDirectory);
+  const bool enabling = !lifecycle.frameOutputEnabled
+                        || lifecycle.frameOutputDirectory != outputDirectory;
+  if (enabling) {
+    std::error_code error;
+    std::filesystem::create_directories(outputDirectory, error);
+    if (error) {
+      std::cerr << "Failed to create Tinkertoy recording directory '"
+                << outputDirectory << "': " << error.message() << "\n";
+      return;
+    }
+  }
+
+  dart::gui::toggleFrameOutputCapture(lifecycle, outputDirectory);
+  std::cout << "Tinkertoy recording "
+            << (lifecycle.frameOutputEnabled ? "started" : "paused") << ": "
+            << outputDirectory << "\n";
+}
+
+bool isTinkertoyRecording(const dart::gui::ViewerLifecycleState& lifecycle)
+{
+  return lifecycle.frameOutputEnabled
+         && lifecycle.frameOutputDirectory
+                == dart::config::dataPath(kTinkertoyRecordingDirectory);
+}
+
 std::vector<dart::gui::KeyboardAction> createTinkertoyKeyboardActions(
     const std::shared_ptr<TinkertoyState>& state)
 {
@@ -724,6 +757,14 @@ std::vector<dart::gui::KeyboardAction> createTinkertoyKeyboardActions(
       [](dart::gui::KeyboardActionContext& context) {
         if (context.resetCamera) {
           context.resetCamera();
+        }
+      });
+  addAction(
+      "Toggle Tinkertoy recording",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Enter),
+      [](dart::gui::KeyboardActionContext& context) {
+        if (context.lifecycle != nullptr) {
+          toggleTinkertoyRecording(*context.lifecycle);
         }
       });
 
@@ -819,6 +860,14 @@ int main(int argc, char* argv[])
       if (panel.button("Step")) {
         dart::gui::requestSingleStep(*context.lifecycle);
       }
+      bool recording = isTinkertoyRecording(*context.lifecycle);
+      if (panel.button(recording ? "Stop Recording" : "Start Recording")) {
+        toggleTinkertoyRecording(*context.lifecycle);
+        recording = isTinkertoyRecording(*context.lifecycle);
+      }
+      panel.text(
+          "Recording: "
+          + std::string(recording ? kTinkertoyRecordingDirectory : "off"));
     }
 
     if (panel.collapsingHeader("World Options", true)) {

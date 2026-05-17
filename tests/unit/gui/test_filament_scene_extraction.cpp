@@ -3309,7 +3309,17 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(tinkertoySource.find("KeyboardAction"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("KeyboardKey::Tab"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("KeyboardKey::Enter"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("context.resetCamera"), std::string::npos);
+  EXPECT_NE(
+      tinkertoySource.find("toggleTinkertoyRecording"), std::string::npos);
+  EXPECT_NE(
+      tinkertoySource.find("toggleFrameOutputCapture"), std::string::npos);
+  EXPECT_NE(
+      tinkertoySource.find("kTinkertoyRecordingDirectory"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("frameOutputEnabled"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("Start Recording"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("Stop Recording"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("CollisionAspect"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("DynamicsAspect"), std::string::npos);
   EXPECT_NE(
@@ -3322,6 +3332,9 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(tinkertoyReadmeSource.find("--out"), std::string::npos);
   EXPECT_NE(
       tinkertoyReadmeSource.find("Enter-key recording"), std::string::npos);
+  EXPECT_EQ(
+      tinkertoyReadmeSource.find("Runtime Enter-key recording remains"),
+      std::string::npos);
   EXPECT_EQ(tinkertoyReadmeSource.find("viewer headlight"), std::string::npos);
   EXPECT_EQ(tinkertoySource.find("options.defaultScene"), std::string::npos);
 }
@@ -5689,6 +5702,18 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
           .filename()
           .string(),
       "frame_000007.ppm");
+  dart::gui::ViewerLifecycleState captureState;
+  EXPECT_FALSE(dart::gui::shouldCaptureFrameOutput(windowOnly, captureState));
+  dart::gui::setFrameOutputCapture(captureState, "runtime_frames", true);
+  EXPECT_TRUE(captureState.frameOutputEnabled);
+  EXPECT_TRUE(dart::gui::shouldCaptureFrameOutput(windowOnly, captureState));
+  const std::filesystem::path runtimeFramePath
+      = dart::gui::makeFrameOutputPath(windowOnly, captureState, 8);
+  EXPECT_EQ(runtimeFramePath.filename().string(), "frame_000008.ppm");
+  EXPECT_EQ(
+      runtimeFramePath.parent_path().filename().string(), "runtime_frames");
+  dart::gui::toggleFrameOutputCapture(captureState, "runtime_frames");
+  EXPECT_FALSE(captureState.frameOutputEnabled);
   EXPECT_NE(
       nativeWindowSource.find("options.windowTitle.c_str()"),
       std::string::npos);

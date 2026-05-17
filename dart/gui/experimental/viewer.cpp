@@ -38,10 +38,38 @@
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <string_view>
+#include <utility>
 
 #include <cmath>
 
 namespace dart::gui {
+
+namespace {
+
+std::string makeFrameOutputPath(
+    std::string_view outputDirectory, int frameNumber)
+{
+  if (outputDirectory.empty()) {
+    return {};
+  }
+
+  std::ostringstream filename;
+  filename << "frame_" << std::setw(6) << std::setfill('0')
+           << std::max(0, frameNumber) << ".ppm";
+  return (std::filesystem::path(outputDirectory) / filename.str()).string();
+}
+
+std::string activeFrameOutputDirectory(
+    const RunOptions& options, const ViewerLifecycleState& state)
+{
+  if (state.frameOutputEnabled && !state.frameOutputDirectory.empty()) {
+    return state.frameOutputDirectory;
+  }
+  return options.frameOutputDirectory;
+}
+
+} // namespace
 
 void normalizeRunOptions(RunOptions& options)
 {
@@ -82,15 +110,38 @@ bool shouldCaptureFrameOutput(const RunOptions& options)
 
 std::string makeFrameOutputPath(const RunOptions& options, int frameNumber)
 {
-  if (!shouldCaptureFrameOutput(options)) {
-    return {};
-  }
+  return makeFrameOutputPath(options.frameOutputDirectory, frameNumber);
+}
 
-  std::ostringstream filename;
-  filename << "frame_" << std::setw(6) << std::setfill('0')
-           << std::max(0, frameNumber) << ".ppm";
-  return (std::filesystem::path(options.frameOutputDirectory) / filename.str())
-      .string();
+void setFrameOutputCapture(
+    ViewerLifecycleState& state, std::string outputDirectory, bool enabled)
+{
+  state.frameOutputDirectory = std::move(outputDirectory);
+  state.frameOutputEnabled = enabled && !state.frameOutputDirectory.empty();
+}
+
+void toggleFrameOutputCapture(
+    ViewerLifecycleState& state, std::string outputDirectory)
+{
+  const bool enable = !state.frameOutputEnabled
+                      || state.frameOutputDirectory != outputDirectory;
+  setFrameOutputCapture(state, std::move(outputDirectory), enable);
+}
+
+bool shouldCaptureFrameOutput(
+    const RunOptions& options, const ViewerLifecycleState& state)
+{
+  return shouldCaptureFrameOutput(options)
+         || (state.frameOutputEnabled && !state.frameOutputDirectory.empty());
+}
+
+std::string makeFrameOutputPath(
+    const RunOptions& options,
+    const ViewerLifecycleState& state,
+    int frameNumber)
+{
+  return makeFrameOutputPath(
+      activeFrameOutputDirectory(options, state), frameNumber);
 }
 
 bool shouldStopAfterFrame(const RunOptions& options, int renderedFrames)

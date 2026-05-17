@@ -73,9 +73,11 @@ struct ViewerLifecycleState
 {
   int renderedFrames = 0;
   int skippedFrames = 0;
+  std::string frameOutputDirectory;
   bool paused = false;
   bool stepOnce = false;
   bool screenshotRequested = false;
+  bool frameOutputEnabled = false;
   bool exitRequested = false;
 };
 
@@ -172,6 +174,20 @@ DART_GUI_API bool shouldCaptureFrameOutput(const RunOptions& options);
 
 DART_GUI_API std::string makeFrameOutputPath(
     const RunOptions& options, int frameNumber);
+
+DART_GUI_API void setFrameOutputCapture(
+    ViewerLifecycleState& state, std::string outputDirectory, bool enabled);
+
+DART_GUI_API void toggleFrameOutputCapture(
+    ViewerLifecycleState& state, std::string outputDirectory);
+
+DART_GUI_API bool shouldCaptureFrameOutput(
+    const RunOptions& options, const ViewerLifecycleState& state);
+
+DART_GUI_API std::string makeFrameOutputPath(
+    const RunOptions& options,
+    const ViewerLifecycleState& state,
+    int frameNumber);
 
 DART_GUI_API bool shouldStopAfterFrame(
     const RunOptions& options, int renderedFrames);

@@ -138,6 +138,8 @@
     `lcp_physics` step-time history plot.
   - Added public `dart::gui::PanelContext` UI metrics and restored the
     `lcp_physics` display/font debug diagnostics.
+  - Added public runtime frame-output capture controls and restored the
+    Tinkertoy example's Enter-key recording workflow.
   - Restored the Heightmap and Point Cloud examples' fine-grained scene-grid
     controls with source-owned DART line geometry.
   - Restored the `hubo_puppet` support overlay's blue/red center-of-mass

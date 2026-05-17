@@ -68,14 +68,19 @@ plot. Its focused build, marker CTest, mandatory lint, post-lint rebuild/CTest,
 and LCP headless smoke analyzer validation pass locally. R24-33 adds public
 `PanelContext::UiState` metrics and restores the `lcp_physics` display/font
 debug diagnostics. Its focused build, marker CTest, mandatory lint, post-lint
-rebuild/CTest, and LCP headless smoke analyzer validation pass locally.
+rebuild/CTest, and LCP headless smoke analyzer validation pass locally. R24-34
+adds public runtime frame-output capture controls and restores Tinkertoy
+Enter-key recording. Its focused build, marker CTest, mandatory lint,
+post-lint rebuild/CTest, screenshot smoke, and frame-sequence analyzer
+validation pass locally.
 Do not push these local checkpoints without explicit maintainer/user approval
 in the active session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
 explicitly asks to include them.
 
-Immediate next slice after the R24-33 LCP UI metrics rollout: continue
-reducing the named public API gaps in `11-example-parity-audit.md`. Public
+Immediate next slice after the R24-34 Tinkertoy runtime recording rollout:
+continue reducing the named public API gaps in `11-example-parity-audit.md`.
+Public
 `dart::gui::Gizmo` now covers the source-owned manipulation affordances for the
 recently re-opened target examples, public `OrbitCamera::up` covers historical
 custom camera up-vector defaults, and public `PanelContext::camera` covers the
@@ -89,14 +94,16 @@ now cover post-step and pre/post-render lifecycle hooks for `empty` and
 `PanelBuilder::plotLines` covers simple metric history plots, public
 `PanelContext::UiState` covers display/font diagnostics, and the local
 source-owned grid helper covers the Heightmap and Point Cloud fine-grained grid
-controls. Remaining audit gaps are mostly depth render outputs, runtime capture
-controls, articulated-body drag, TinyDNN/custom constraint restoration, and WAM
+controls, and public `ViewerLifecycleState` frame-output capture covers runtime
+recording toggles. Remaining audit gaps are mostly depth render outputs,
+articulated-body drag, TinyDNN/custom constraint restoration, and WAM
 lifecycle/drag-mode behavior rather than bare source-owned target handles,
 camera up-vector defaults, basic camera readouts, simple key-release callbacks,
 headlight checkboxes, basic lifecycle hooks, shadow toggles, basic color
-editors, simple panel plotting, UI display/font metrics, source-owned grid
-controls, source-owned metric summaries, source-owned target activation,
-source-owned COM overlays, or Atlas/Hubo source-owned posture/balance solving.
+editors, simple panel plotting, UI display/font metrics, runtime frame
+recording, source-owned grid controls, source-owned metric summaries,
+source-owned target activation, source-owned COM overlays, or Atlas/Hubo
+source-owned posture/balance solving.
 
 ## Live Supervisor Steering
 

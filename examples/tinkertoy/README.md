@@ -13,12 +13,14 @@
 - Controls: `1`/`2`/`3` attach weld, revolute, and ball-joint blocks;
   Backspace clears the selected block; Delete removes the selected block
   subtree while paused; Up/Down adjusts pulling strength; `` ` `` resets the
-  target orientation; left-drag target gizmo arrows/planes/rings to move the
-  force target; Tab resets the camera. Space toggles simulation and `n` steps
-  once while paused.
+  target orientation; Enter toggles runtime recording to
+  `dart::config::dataPath("screencap")`; left-drag target gizmo
+  arrows/planes/rings to move the force target; Tab resets the camera. Space
+  toggles simulation and `n` steps once while paused.
 
-Runtime Enter-key recording remains a public `dart::gui` API gap. Use the
-promoted capture flags below for maintained image sequence output.
+Enter-key recording writes a runtime image sequence to the historical
+`screencap` data directory. The promoted capture flags below remain available
+for explicit screenshot and image-sequence output paths.
 
 ## Run
 

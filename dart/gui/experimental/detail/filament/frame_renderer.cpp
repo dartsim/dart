@@ -36,6 +36,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
+#include <iostream>
 #include <string>
 #include <thread>
 
@@ -55,6 +57,35 @@ using dart::gui::shouldRequestScreenshot;
 using dart::gui::shouldStopAfterFrame;
 using dart::gui::ViewerLifecycleState;
 
+namespace {
+
+bool ensureFrameOutputParentDirectory(const std::string& frameOutputPath)
+{
+  const std::filesystem::path outputPath(frameOutputPath);
+  const std::filesystem::path outputDirectory = outputPath.parent_path();
+  if (outputDirectory.empty()) {
+    return true;
+  }
+
+  std::error_code error;
+  std::filesystem::create_directories(outputDirectory, error);
+  if (error) {
+    std::cerr << "Failed to create frame output directory '"
+              << outputDirectory.string() << "': " << error.message() << "\n";
+    return false;
+  }
+
+  if (!std::filesystem::is_directory(outputDirectory, error)) {
+    std::cerr << "Frame output path parent is not a directory: "
+              << outputDirectory.string() << "\n";
+    return false;
+  }
+
+  return true;
+}
+
+} // namespace
+
 FrameRenderResult renderApplicationFrame(
     FilamentRenderContext& renderContext,
     ::filament::View* overlayView,
@@ -68,7 +99,7 @@ FrameRenderResult renderApplicationFrame(
 {
   const bool shouldCaptureScreenshot
       = shouldRequestScreenshot(options, lifecycle);
-  const bool shouldCaptureFrame = shouldCaptureFrameOutput(options);
+  const bool shouldCaptureFrame = shouldCaptureFrameOutput(options, lifecycle);
   const bool shouldCaptureRenderedFrame
       = shouldCaptureScreenshot || shouldCaptureFrame;
 
@@ -111,7 +142,10 @@ FrameRenderResult renderApplicationFrame(
 
   if (shouldCaptureFrame) {
     const std::string frameOutputPath
-        = makeFrameOutputPath(options, lifecycle.renderedFrames + 1);
+        = makeFrameOutputPath(options, lifecycle, lifecycle.renderedFrames + 1);
+    if (!ensureFrameOutputParentDirectory(frameOutputPath)) {
+      return {.stopLoop = true, .failed = true};
+    }
     if (!saveCompletedScreenshotCapture(
             renderContext, screenshotCapture, frameOutputPath, profile)) {
       return {.stopLoop = true, .failed = true};

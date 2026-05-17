@@ -227,6 +227,8 @@ int runFilamentGuiApplicationImpl(
   auto& imguiIo = getCurrentImGuiIo();
 
   ViewerLifecycleState lifecycle;
+  lifecycle.frameOutputDirectory = runOptions.frameOutputDirectory;
+  lifecycle.frameOutputEnabled = !runOptions.frameOutputDirectory.empty();
   ApplicationInputState inputState;
   SelectionController selectionController;
   ScreenshotCapture screenshotCapture;
