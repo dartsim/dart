@@ -370,7 +370,7 @@ computing the derivative term, -k<sub>d</sub> (x&#775; - p&#775;):
 
 The linear/angular velocity/acceleration of any point in any coordinate
 frame can be easily accessed in DART. The full list of the APIs for accessing
-various velocities/accelerations can be found in the [API Documentation](http://dartsim.github.io/dart/). The
+various velocities/accelerations can be found in the [C++ API Reference](../dart/cpp_api_reference). The
 following table summarizes the essential APIs.
 
 | Function Name          | Description                                                                                            |
@@ -594,7 +594,7 @@ math::VectorXd solveIK(SkeletonPtr biped)
 }
 ```
 
-The full list of Jacobian APIs can be found in the [API Documentation](http://dartsim.github.io/dart/). The
+The full list of Jacobian APIs can be found in the [C++ API Reference](../dart/cpp_api_reference). The
 following table summarizes the essential APIs.
 
 | Function Name           | Description                                                                                                                                                        |

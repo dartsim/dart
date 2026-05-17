@@ -4,7 +4,8 @@
 
 - Local build/test workflow: [building.md](building.md) and [testing.md](testing.md)
 - CI monitoring and expectations: [ci-cd.md](ci-cd.md)
-- Dartpy developer build guide: [docs/readthedocs/dartpy/developer_guide/build.rst](../readthedocs/dartpy/developer_guide/build.rst)
+- Dartpy developer build workflow: [building.md](building.md) and
+  [api-documentation.md](api-documentation.md)
 
 ## Design Decisions
 
@@ -56,6 +57,8 @@ namespaces:
 ```
 dartpy/
 ├── io            # File parsers (URDF, SDF, SKEL, MJCF)
+├── simulation_experimental
+│                 # Opt-in ECS-backed experimental world
 └── gui           # 3D visualization (OpenSceneGraph + ImGui)
 ```
 
@@ -64,6 +67,8 @@ dartpy/
 - Legacy submodules remain importable in DART 7.x but will be removed in DART
   8.0. Toggle deprecation handling with `DARTPY_WARN_ON_LEGACY_MODULES` or
   `DARTPY_ENABLE_LEGACY_MODULES`.
+- `dartpy.simulation_experimental` is not promoted onto the top-level package
+  and is not part of the legacy submodule compatibility layer.
 - Collision detector backend aliases are different: for the DART 7 native
   collision transition, dartpy does not need to keep backward compatibility for
   legacy `DARTCollisionDetector`, `FCLCollisionDetector`,
@@ -75,6 +80,19 @@ dartpy/
   should not be mirrored back into the Python API.
 
 **Source**: See `python/dartpy/` directory for module implementations
+
+### Experimental World Bindings And Transition
+
+DART 7 keeps the classic Skeleton-backed `dart::simulation::World` and
+`dartpy.World` path stable while the ECS-backed world matures behind explicit
+experimental namespaces. C++ users opt in through
+`dart::simulation::experimental`; Python users opt in through
+`dartpy.simulation_experimental`, which is built only when
+`DART_BUILD_SIMULATION_EXPERIMENTAL=ON`. Bindings for this module should expose
+only public experimental wrapper types and must not expose EnTT, `comps`, or
+other ECS internals until the C++ API provides public wrappers. The DART 8 path
+is to remove the classic world after the experimental world reaches parity and
+promote the experimental shape into the stable simulation namespace.
 
 ### Eigen ↔ NumPy Integration
 
@@ -173,7 +191,8 @@ conda install dartpy -c conda-forge
 
 ### For Developers
 
-**See**: `docs/readthedocs/dartpy/developer_guide/build.rst` for detailed instructions
+**See**: [building.md](building.md) for build commands and
+[api-documentation.md](api-documentation.md) for API documentation behavior.
 
 **Quick options**:
 
@@ -310,4 +329,5 @@ robot.setForces(forces)
 - **Build system**: `python/dartpy/CMakeLists.txt`
 - **pixi configuration**: `pixi.toml` (features: `py312-wheel`, `py313-wheel`)
 - **Examples**: `python/examples/README.md` (index) and `python/examples/`
-- **Developer guide**: `docs/readthedocs/dartpy/developer_guide/build.rst`
+- **Developer docs**: [building.md](building.md) and
+  [api-documentation.md](api-documentation.md)

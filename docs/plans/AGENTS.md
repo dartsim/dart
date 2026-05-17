@@ -11,7 +11,7 @@ implementation trackers.
 ## Rules
 
 - Start with `docs/ai/north-star.md`, then `docs/plans/README.md`.
-- Keep plans concise and evidence-based; link deeper design to onboarding docs
+- Keep plans concise and evidence-based; link deeper design to developer docs
   or `docs/dev_tasks/`.
 - Prefer revising existing initiatives over adding duplicate plan entries.
 - Use stable initiative IDs when renaming, reprioritizing, splitting, or

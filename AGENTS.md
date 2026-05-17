@@ -56,6 +56,9 @@ portable source of truth.
 
 Use `/dart-*` commands in Claude Code/OpenCode and generated `$dart-*` skills in
 Codex. `docs/ai/workflows.md` owns the workflow and skill catalog.
+Use `/dart-next` or `$dart-next` when an agent should select the next bounded
+task from the north star, plan dashboard, dev-task state, issues, PRs, or CI;
+pass `focus=<topic>` to prefer an area without hard-coding the outcome.
 
 Editable sources live in `.claude/commands/` and `.claude/skills/`. Generated
 OpenCode and Codex entrypoints live in `.opencode/command/` and

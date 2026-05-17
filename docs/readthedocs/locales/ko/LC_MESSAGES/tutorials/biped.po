@@ -406,11 +406,11 @@ msgid ""
 "The linear/angular velocity/acceleration of any point in any coordinate "
 "frame can be easily accessed in DART. The full list of the APIs for "
 "accessing various velocities/accelerations can be found in the [API "
-"Documentation](http://dartsim.github.io/dart/). The  following table "
+"Documentation](../dart/cpp_api_reference). The  following table "
 "summarizes the essential APIs."
 msgstr ""
 "DART에서는 어떤 좌표계에서든任의 지점의 선형/각 속도·가속도를 쉽게 얻을 수 있습니다. 관련 API 전체 목록은 [API "
-"문서](http://dartsim.github.io/dart/)에서 확인할 수 있으며, 아래 표에는 핵심 API를 정리했습니다."
+"문서](../dart/cpp_api_reference)에서 확인할 수 있으며, 아래 표에는 핵심 API를 정리했습니다."
 
 #: ../../tutorials/biped.md 41ca13d831b44ce1906d4ba3a95c5a73
 #: 6234031a3ea841568af67e5a1a434397 db54f5f8b7b34b9c98ee1e46a4ccd74b
@@ -817,10 +817,10 @@ msgstr ""
 #: ../../tutorials/biped.md:582 e73bd1a121e6490f90a161ebce6bd3a6
 msgid ""
 "The full list of Jacobian APIs can be found in the [API "
-"Documentation](http://dartsim.github.io/dart/). The  following table "
+"Documentation](../dart/cpp_api_reference). The  following table "
 "summarizes the essential APIs."
 msgstr ""
-"자코비안 관련 API 전체 목록은 [API 문서](http://dartsim.github.io/dart/)에서 확인할 수 있으며 "
+"자코비안 관련 API 전체 목록은 [API 문서](../dart/cpp_api_reference)에서 확인할 수 있으며 "
 "아래 표는 핵심 API를 정리한 것입니다."
 
 #: ../../tutorials/biped.md fe7cf3eb082e4e7cbfb6242c935115cd

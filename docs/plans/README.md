@@ -13,7 +13,8 @@ plural collection style used by `docs/dev_tasks/`. It is separate from
 - `docs/plans/` records the current strategic path and priority order.
 - `docs/dev_tasks/` tracks active multi-session implementation work and is
   deleted when that work completes.
-- `docs/onboarding/` keeps durable design explanations after work lands.
+- `docs/onboarding/` keeps durable developer design explanations after work
+  lands.
 
 ## Files
 
@@ -92,7 +93,7 @@ Plans should be:
 - **Current-state oriented**: describe the intended path now, not every previous
   path considered.
 - **Small enough to maintain**: keep initiative cards concise and move detailed
-  design into onboarding docs or active dev tasks.
+  design into developer docs or active dev tasks.
 - **Evidence-backed**: every change should cite repository docs, code, CI,
   issue/PR state, benchmark data, or explicit maintainer direction.
 
@@ -145,6 +146,8 @@ Horizons mean:
 
 Use `$dart-plan-update` in Codex or `/dart-plan-update` in Claude/OpenCode for
 planning discussions and plan edits.
+Use `$dart-next` or `/dart-next` when the goal is to select and execute the
+next bounded task from the dashboard and other tracked evidence.
 
 1. Load `docs/ai/north-star.md`, this file, `docs/plans/dashboard.md`, and
    `docs/plans/north-star-roadmap.md`.
