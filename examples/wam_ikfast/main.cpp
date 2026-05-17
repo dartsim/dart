@@ -407,6 +407,29 @@ std::vector<dart::gui::KeyboardAction> createWamIkFastKeyboardActions(
   return actions;
 }
 
+std::vector<dart::gui::BodyNodeDragHandle> createWamBodyNodeDragHandles(
+    const dart::dynamics::SkeletonPtr& wam)
+{
+  std::vector<dart::gui::BodyNodeDragHandle> handles;
+  if (wam == nullptr) {
+    return handles;
+  }
+
+  handles.reserve(wam->getNumBodyNodes());
+  for (std::size_t i = 0; i < wam->getNumBodyNodes(); ++i) {
+    auto* bodyNode = wam->getBodyNode(i);
+    if (bodyNode == nullptr) {
+      continue;
+    }
+
+    dart::gui::BodyNodeDragHandle handle;
+    handle.label = bodyNode->getName();
+    handle.bodyNode = bodyNode;
+    handles.push_back(handle);
+  }
+  return handles;
+}
+
 dart::gui::RunOptions makeWamIkFastRunDefaults()
 {
   dart::gui::RunOptions options;
@@ -430,6 +453,9 @@ void printWamIkFastInstructions()
   std::cout
       << "WAM IKFast Example Controls:\n"
       << "Left-drag active target gizmo arrows/planes/rings\n"
+      << "Alt + left-drag body: translate without changing orientation\n"
+      << "Ctrl + left-drag body: rotate without changing translation\n"
+      << "Shift + left-drag body: move using only its parent joint\n"
       << "Arrow keys and PageUp/PageDown: nudge the selected target gizmo\n"
       << "1: Toggle the interactive target of an EndEffector\n"
       << "P: Print the current joint values\n"
@@ -449,6 +475,7 @@ dart::gui::Panel createWamIkFastPanel()
     builder.text("Press 1 to toggle/select the target.");
     builder.text("Press P to print joints; T resets posture.");
     builder.text("Left-drag active target gizmo handles.");
+    builder.text("Alt/Ctrl/Shift-drag WAM body nodes.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("IK solves only while the target is active.");
     builder.separator();
@@ -485,6 +512,7 @@ int main(int argc, char* argv[])
       targetState->solve();
     };
     options.keyboardActions = createWamIkFastKeyboardActions(scene.targetState);
+    options.bodyNodeDragHandles = createWamBodyNodeDragHandles(scene.wam);
     options.panels.push_back(createWamIkFastPanel());
 
     printWamIkFastInstructions();

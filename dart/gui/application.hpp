@@ -59,6 +59,13 @@ struct InverseKinematicsHandle
   dart::dynamics::InverseKinematicsPtr ik;
 };
 
+struct BodyNodeDragHandle
+{
+  std::string label;
+  dart::dynamics::BodyNode* bodyNode = nullptr;
+  bool useWholeBody = false;
+};
+
 enum class KeyboardKey
 {
   Unknown,
@@ -132,6 +139,7 @@ struct ApplicationOptions
   std::vector<Panel> panels;
   std::vector<Gizmo> gizmos;
   std::vector<InverseKinematicsHandle> ikHandles;
+  std::vector<BodyNodeDragHandle> bodyNodeDragHandles;
   std::vector<KeyboardAction> keyboardActions;
 };
 

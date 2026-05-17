@@ -84,6 +84,13 @@ restores Atlas Simbicon's depth output toggle plus `--render-output depth`
 capture. Its focused build, marker CTest, mandatory lint, post-lint
 rebuild/CTest, and Atlas depth-output screenshot smoke analyzer validation pass
 locally.
+R24-38 adds public `BodyNodeDragHandle` registration on
+`ApplicationOptions` and restores G1 Puppet plus WAM IKFast body-node drag
+workflows. Alt-drag translates while preserving orientation, Ctrl-drag rotates
+in place, and Shift-drag restricts solving to the dragged body's parent joint.
+Focused build for `g1_puppet`, `wam_ikfast`, and
+`UNIT_gui_FilamentSceneExtraction`, focused CTest, and WAM/G1 headless
+screenshot analyzer smokes pass locally.
 Do not push these local checkpoints without explicit maintainer/user approval
 in the active session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
@@ -109,9 +116,10 @@ controls, and public `ViewerLifecycleState` frame-output capture covers runtime
 recording toggles. Public `PanelBuilder` modal helpers cover exact panel modal
 workflows. Public `ApplicationOptions::simulateWorld` covers explicit
 no-world-step kinematic app lifecycles, and public
-`RenderSettings::outputMode` covers depth render-output toggles. Remaining
-audit gaps are mostly articulated-body drag, TinyDNN/custom constraint
-restoration, and WAM drag-mode behavior rather than bare source-owned target
+`RenderSettings::outputMode` covers depth render-output toggles, and
+`BodyNodeDragHandle` covers articulated-body drag plus the WAM Alt/Ctrl/Shift
+drag-mode split. Remaining audit gaps are mostly TinyDNN/custom constraint
+restoration rather than bare source-owned target
 handles, camera up-vector defaults, basic camera readouts, simple key-release
 callbacks, headlight checkboxes, basic lifecycle hooks, no-world-step
 lifecycles, shadow toggles, depth output toggles, basic color editors, simple

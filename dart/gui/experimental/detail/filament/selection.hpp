@@ -33,11 +33,15 @@
 #ifndef DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SELECTION_HPP_
 #define DART_GUI_EXPERIMENTAL_DETAIL_FILAMENT_SELECTION_HPP_
 
+#include <dart/gui/fwd.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
 
+#include <dart/dynamics/fwd.hpp>
+
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include <optional>
 #include <string>
@@ -106,7 +110,35 @@ private:
     GizmoTranslateAxis,
     GizmoTranslatePlane,
     GizmoRotateAxis,
+    BodyTranslate,
+    BodyRotate,
   };
+
+  struct ActiveBodyNodeDrag
+  {
+    dart::dynamics::BodyNode* bodyNode = nullptr;
+    dart::dynamics::InverseKinematicsPtr ik;
+    Eigen::Vector3d pivot = Eigen::Vector3d::Zero();
+    Eigen::Matrix3d savedRotation = Eigen::Matrix3d::Identity();
+    Eigen::Vector3d savedGlobalOffset = Eigen::Vector3d::Zero();
+    Eigen::Vector3d savedLocalOffset = Eigen::Vector3d::Zero();
+    Eigen::Isometry3d targetTransform = Eigen::Isometry3d::Identity();
+  };
+
+  bool beginBodyNodeDrag(
+      GLFWwindow* window,
+      const dart::gui::OrbitCamera& camera,
+      DartScene& scene,
+      const dart::gui::RenderableDescriptor& descriptor,
+      const dart::gui::PickRay& cursorRay,
+      double cursorX,
+      double cursorY,
+      dart::gui::ViewerLifecycleState& lifecycle);
+
+  bool applyBodyNodeDragTranslation(const Eigen::Vector3d& worldTranslation);
+
+  bool applyBodyNodeDragRotation(
+      const Eigen::Vector3d& worldAxis, double angle);
 
   bool mWasLeftMousePressed = false;
   bool mLeftMouseStartedOnPanel = false;
@@ -125,6 +157,7 @@ private:
   Eigen::Vector3d mSelectedDragPlaneNormal = Eigen::Vector3d::UnitX();
   Eigen::Vector3d mSelectedDragAxisDirection = Eigen::Vector3d::UnitX();
   Eigen::Vector3d mSelectedRotationAxis = Eigen::Vector3d::UnitZ();
+  std::optional<ActiveBodyNodeDrag> mActiveBodyNodeDrag;
   dart::gui::RenderableId mSelectedRenderableId = 0;
   std::string mSelectedLabel = "none";
   std::optional<Eigen::Vector3d> mSelectedPoint;

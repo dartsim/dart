@@ -435,6 +435,14 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   Filament hooks. Focused build, marker CTest, mandatory lint, post-lint
   rebuild/CTest, and Atlas depth-output screenshot analyzer validation pass
   locally.
+- R24-38 body-node drag follow-up adds public
+  `ApplicationOptions::bodyNodeDragHandles` / `BodyNodeDragHandle` and restores
+  the historical G1 Puppet and WAM IKFast articulated-body drag workflows.
+  Alt-drag translates while preserving orientation, Ctrl-drag rotates in place,
+  and Shift-drag restricts solving to the dragged body's parent joint. Focused
+  build for `g1_puppet`, `wam_ikfast`, and
+  `UNIT_gui_FilamentSceneExtraction`, focused CTest, and WAM/G1 headless
+  screenshot analyzer smokes pass locally.
 - Active strict re-open cursor: `examples/vehicle/`. A previous parity
   checkpoint restored command keys and camera defaults, but the strict itemized
   inventory is still missing. Compare current source/README against
@@ -3644,8 +3652,9 @@ Forty-first WAM IKFast strict parity checkpoint:
   creates `ee`/`lh_target`, drives active IK through `ApplicationOptions::preStep`,
   exposes promoted keyboard actions for target toggle, joint printing, and
   relaxed-posture reset, restores the 1280x960/camera defaults and README, and
-  extends marker coverage. Exact parent-joint-only OSG drag semantics and
-  explicit no-simulation lifecycle remain public API follow-ups.
+  extends marker coverage. Later local follow-ups restore the explicit
+  no-simulation lifecycle through `ApplicationOptions::simulateWorld` and the
+  Alt/Ctrl/Shift body-node drag modes through public `BodyNodeDragHandle`.
 - Rerun support remains intentionally removed after the latest maintenance-cost
   check: no product CMake/package/API/runtime surface or concrete downstream use
   case remains, and tests continue to guard the absent `examples/rerun`

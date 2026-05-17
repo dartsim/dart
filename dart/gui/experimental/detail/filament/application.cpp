@@ -146,6 +146,7 @@ int runFilamentGuiApplicationImpl(
     }
     appOptions.gizmos = applicationOptions.gizmos;
     appOptions.ikHandles = applicationOptions.ikHandles;
+    appOptions.bodyNodeDragHandles = applicationOptions.bodyNodeDragHandles;
     appOptions.keyboardActions = applicationOptions.keyboardActions;
   }
   appOptions.preRender = applicationOptions.preRender;

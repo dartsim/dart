@@ -565,6 +565,29 @@ std::vector<dart::gui::KeyboardAction> createG1KeyboardActions(
   return actions;
 }
 
+std::vector<dart::gui::BodyNodeDragHandle> createG1BodyNodeDragHandles(
+    const dart::dynamics::SkeletonPtr& robot)
+{
+  std::vector<dart::gui::BodyNodeDragHandle> handles;
+  if (robot == nullptr) {
+    return handles;
+  }
+
+  handles.reserve(robot->getNumBodyNodes());
+  for (std::size_t i = 0; i < robot->getNumBodyNodes(); ++i) {
+    auto* bodyNode = robot->getBodyNode(i);
+    if (bodyNode == nullptr) {
+      continue;
+    }
+
+    dart::gui::BodyNodeDragHandle handle;
+    handle.label = bodyNode->getName();
+    handle.bodyNode = bodyNode;
+    handles.push_back(handle);
+  }
+  return handles;
+}
+
 dart::gui::Panel createG1Panel(const G1Options& options)
 {
   dart::gui::Panel panel;
@@ -575,6 +598,8 @@ dart::gui::Panel createG1Panel(const G1Options& options)
     builder.text("G1 whole-body IK puppet");
     builder.text("Press 1-4 to toggle/select targets.");
     builder.text("Left-drag active target gizmo handles.");
+    builder.text("Alt-drag translates body nodes; Ctrl-drag rotates them.");
+    builder.text("Shift-drag moves a body with only its parent joint.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text(
@@ -636,6 +661,7 @@ int main(int argc, char* argv[])
       updateG1SupportPolygonOverlay(robot, supportOverlay);
     };
     options.keyboardActions = createG1KeyboardActions(scene.targetStates);
+    options.bodyNodeDragHandles = createG1BodyNodeDragHandles(scene.robot);
     options.panels.push_back(createG1Panel(g1Options));
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {

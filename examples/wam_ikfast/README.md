@@ -13,6 +13,9 @@
   - `P`: print current joint values
   - `T`: reset the robot to its relaxed posture
   - Left-drag active target gizmo arrows/planes/rings: move the selected target
+  - Alt-left-drag a body: translate without changing orientation
+  - Ctrl-left-drag a body: rotate without changing translation
+  - Shift-left-drag a body: move using only that body's parent joint
   - Arrow keys / PageUp / PageDown: nudge the selected target after pressing
     `1`
 
@@ -22,9 +25,8 @@
   disables world stepping through `ApplicationOptions::simulateWorld = false`,
   matching the old OSG `allowSimulation(false)` workflow while still running
   the active target solve callback.
-- The old OSG Alt/Ctrl/Shift drag modes are superseded by the promoted public
-  gizmo tool. Exact parent-joint-only manipulation remains a public
-  manipulation API gap.
+- Public `dart::gui::BodyNodeDragHandle` restores the old Alt/Ctrl/Shift
+  body-node drag modes without reintroducing OSG viewer types.
 
 ## Run
 

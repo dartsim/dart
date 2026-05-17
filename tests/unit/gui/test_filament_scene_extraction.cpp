@@ -1045,6 +1045,37 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresGizmos)
   EXPECT_DOUBLE_EQ(options.gizmos.front().size, 0.25);
 }
 
+TEST(FilamentSceneExtraction, ApplicationOptionsStoresBodyNodeDragHandles)
+{
+  auto world = World::create("body_drag_scene");
+  auto skeleton = Skeleton::create("body_drag_robot");
+  auto* body = skeleton->createJointAndBodyNodePair<FreeJoint>().second;
+  body->setName("dragged_body");
+  world->addSkeleton(skeleton);
+
+  dart::gui::ApplicationOptions options;
+  options.world = world;
+
+  dart::gui::BodyNodeDragHandle handle;
+  handle.label = "dragged body";
+  handle.bodyNode = body;
+  handle.useWholeBody = true;
+  options.bodyNodeDragHandles.push_back(handle);
+
+  ASSERT_EQ(options.bodyNodeDragHandles.size(), 1u);
+  EXPECT_EQ(options.bodyNodeDragHandles.front().label, "dragged body");
+  EXPECT_EQ(options.bodyNodeDragHandles.front().bodyNode, body);
+  EXPECT_TRUE(options.bodyNodeDragHandles.front().useWholeBody);
+
+  dart::gui::filament::AppOptions appOptions;
+  appOptions.world = options.world;
+  appOptions.bodyNodeDragHandles = options.bodyNodeDragHandles;
+  const dart::gui::filament::DartScene scene
+      = dart::gui::filament::createDartScene(appOptions);
+  ASSERT_EQ(scene.bodyNodeDragHandles.size(), 1u);
+  EXPECT_EQ(scene.bodyNodeDragHandles.front().bodyNode, body);
+}
+
 TEST(FilamentSceneExtraction, GizmoDebugLinesFollowTargetFrame)
 {
   Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
@@ -3158,6 +3189,14 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
   EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
+  EXPECT_NE(mainSource.find("BodyNodeDragHandle"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.bodyNodeDragHandles"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Alt-drag translates body nodes"), std::string::npos);
+  EXPECT_NE(mainSource.find("Ctrl-drag rotates them"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Shift-drag moves a body with only its parent joint"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("gizmo.isVisible"), std::string::npos);
   EXPECT_NE(
       mainSource.find("Left-drag active target gizmo handles"),
@@ -3198,7 +3237,11 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("--package-uri"), std::string::npos);
   EXPECT_NE(readmeSource.find("--g1-package-uri"), std::string::npos);
   EXPECT_NE(readmeSource.find("support-polygon overlay"), std::string::npos);
-  EXPECT_NE(readmeSource.find("renderer-neutral"), std::string::npos);
+  EXPECT_NE(readmeSource.find("BodyNodeDragHandle"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Alt preserves orientation"), std::string::npos);
+  EXPECT_EQ(
+      readmeSource.find("do not have a full renderer-neutral"),
+      std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
@@ -3347,11 +3390,16 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(wamSource.find("options.ikHandles"), std::string::npos);
   EXPECT_NE(wamSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(wamSource.find("options.gizmos"), std::string::npos);
+  EXPECT_NE(wamSource.find("BodyNodeDragHandle"), std::string::npos);
+  EXPECT_NE(wamSource.find("options.bodyNodeDragHandles"), std::string::npos);
   EXPECT_NE(wamSource.find("gizmo.isVisible"), std::string::npos);
   EXPECT_NE(wamSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(wamSource.find("options.simulateWorld = false"), std::string::npos);
   EXPECT_NE(wamSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(wamSource.find("Left-drag active target gizmo"), std::string::npos);
+  EXPECT_NE(wamSource.find("Alt + left-drag body"), std::string::npos);
+  EXPECT_NE(wamSource.find("Ctrl + left-drag body"), std::string::npos);
+  EXPECT_NE(wamSource.find("Shift + left-drag body"), std::string::npos);
   EXPECT_EQ(wamSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(
       wamSource.find("Note that this is purely kinematic"), std::string::npos);
@@ -3366,8 +3414,11 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(wamReadmeSource.find("--screenshot"), std::string::npos);
   EXPECT_NE(wamReadmeSource.find("--out"), std::string::npos);
   EXPECT_NE(wamReadmeSource.find("simulateWorld = false"), std::string::npos);
-  EXPECT_NE(
-      wamReadmeSource.find("parent-joint-only manipulation"),
+  EXPECT_NE(wamReadmeSource.find("BodyNodeDragHandle"), std::string::npos);
+  EXPECT_NE(wamReadmeSource.find("Alt/Ctrl/Shift"), std::string::npos);
+  EXPECT_NE(wamReadmeSource.find("Shift-left-drag a body"), std::string::npos);
+  EXPECT_EQ(
+      wamReadmeSource.find("remains a public manipulation API gap"),
       std::string::npos);
 
   const auto tinkertoySource = readSourceFile(

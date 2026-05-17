@@ -39,7 +39,10 @@
 #include <dart/gui/interaction.hpp>
 #include <dart/gui/renderable.hpp>
 
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/degree_of_freedom.hpp>
 #include <dart/dynamics/inverse_kinematics.hpp>
+#include <dart/dynamics/joint.hpp>
 
 #include <GLFW/glfw3.h>
 
@@ -116,6 +119,102 @@ Eigen::Vector3d selectedRotationAxis(
   return basis.forward;
 }
 
+bool isAltDown(GLFWwindow* window)
+{
+  return isKeyDown(window, GLFW_KEY_LEFT_ALT)
+         || isKeyDown(window, GLFW_KEY_RIGHT_ALT);
+}
+
+bool isShiftDown(GLFWwindow* window)
+{
+  return isKeyDown(window, GLFW_KEY_LEFT_SHIFT)
+         || isKeyDown(window, GLFW_KEY_RIGHT_SHIFT);
+}
+
+bool isBodyNodeDragModifierDown(GLFWwindow* window)
+{
+  return isAltDown(window) || isDragModifierDown(window) || isShiftDown(window);
+}
+
+bool isBodyNodeRotationModifierDown(GLFWwindow* window)
+{
+  return isDragModifierDown(window) && !isShiftDown(window);
+}
+
+bool isBodyNodeParentJointModifierDown(GLFWwindow* window)
+{
+  return isShiftDown(window) && !isDragModifierDown(window);
+}
+
+dart::dynamics::BodyNode* bodyNodeForDescriptor(
+    const RenderableDescriptor& descriptor)
+{
+  const auto skeleton = descriptor.skeleton.lock();
+  if (skeleton == nullptr || descriptor.bodyName.empty()) {
+    return nullptr;
+  }
+
+  return const_cast<dart::dynamics::BodyNode*>(
+      skeleton->getBodyNode(descriptor.bodyName));
+}
+
+const dart::gui::BodyNodeDragHandle* findBodyNodeDragHandle(
+    const DartScene& scene, const RenderableDescriptor& descriptor)
+{
+  auto* bodyNode = bodyNodeForDescriptor(descriptor);
+  if (bodyNode == nullptr) {
+    return nullptr;
+  }
+
+  const auto handle = std::find_if(
+      scene.bodyNodeDragHandles.begin(),
+      scene.bodyNodeDragHandles.end(),
+      [&](const dart::gui::BodyNodeDragHandle& candidate) {
+        return candidate.bodyNode == bodyNode;
+      });
+  return handle == scene.bodyNodeDragHandles.end() ? nullptr : &*handle;
+}
+
+std::string selectionLabelForBodyNodeDragHandle(
+    const dart::gui::BodyNodeDragHandle& handle,
+    const RenderableDescriptor& descriptor)
+{
+  if (!handle.label.empty()) {
+    return handle.label + " body drag";
+  }
+  if (!descriptor.bodyName.empty()) {
+    return descriptor.bodyName + " body drag";
+  }
+  return "body drag";
+}
+
+void configureBodyNodeDragIkDofs(
+    dart::dynamics::InverseKinematics& ik,
+    dart::dynamics::BodyNode& bodyNode,
+    bool parentJointOnly,
+    bool useWholeBody)
+{
+  if (parentJointOnly) {
+    std::vector<std::size_t> dofs;
+    if (auto* joint = bodyNode.getParentJoint()) {
+      dofs.reserve(joint->getNumDofs());
+      for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+        if (auto* dof = joint->getDof(i)) {
+          dofs.push_back(dof->getIndexInSkeleton());
+        }
+      }
+    }
+    ik.setDofs(dofs);
+    return;
+  }
+
+  if (useWholeBody) {
+    ik.useWholeBody();
+  } else {
+    ik.useChain();
+  }
+}
+
 bool rotateRenderableAndApplyIk(
     DartScene& scene,
     const RenderableDescriptor& descriptor,
@@ -185,6 +284,9 @@ std::string selectionLabelForRenderable(
 {
   if (const auto* handle = findIkHandle(scene, descriptor.id)) {
     return handle->label + " IK target";
+  }
+  if (const auto* handle = findBodyNodeDragHandle(scene, descriptor)) {
+    return selectionLabelForBodyNodeDragHandle(*handle, descriptor);
   }
 
   std::string label = descriptor.skeletonName.empty()
@@ -286,6 +388,130 @@ void SelectionController::clear()
   mSelectedLabel = "none";
   mSelectedPoint.reset();
   mSelectedNormal.reset();
+}
+
+bool SelectionController::beginBodyNodeDrag(
+    GLFWwindow* window,
+    const OrbitCamera& camera,
+    DartScene& scene,
+    const RenderableDescriptor& descriptor,
+    const PickRay& cursorRay,
+    double cursorX,
+    double cursorY,
+    ViewerLifecycleState& lifecycle)
+{
+  const auto* handle = findBodyNodeDragHandle(scene, descriptor);
+  auto* bodyNode = bodyNodeForDescriptor(descriptor);
+  if (handle == nullptr || handle->bodyNode == nullptr
+      || handle->bodyNode != bodyNode || bodyNode == nullptr) {
+    return false;
+  }
+
+  auto ik = dart::dynamics::InverseKinematics::create(bodyNode);
+  if (ik == nullptr) {
+    return false;
+  }
+  ik->setGradientMethod<dart::dynamics::InverseKinematics::JacobianTranspose>();
+  ik->getSolver()->setNumMaxIterations(30);
+
+  ActiveBodyNodeDrag bodyDrag;
+  bodyDrag.bodyNode = bodyNode;
+  bodyDrag.ik = std::move(ik);
+  bodyDrag.pivot = bodyNode->getWorldTransform().translation();
+  bodyDrag.savedRotation = bodyNode->getWorldTransform().rotation();
+  bodyDrag.savedGlobalOffset = Eigen::Vector3d::Zero();
+  if (mSelectedPoint) {
+    bodyDrag.savedGlobalOffset = *mSelectedPoint - bodyDrag.pivot;
+  }
+  bodyDrag.savedLocalOffset
+      = bodyDrag.savedRotation.transpose() * bodyDrag.savedGlobalOffset;
+  bodyDrag.targetTransform = bodyNode->getWorldTransform();
+  bodyDrag.targetTransform.translation()
+      = bodyDrag.pivot + bodyDrag.savedGlobalOffset;
+  configureBodyNodeDragIkDofs(
+      *bodyDrag.ik,
+      *bodyNode,
+      isBodyNodeParentJointModifierDown(window),
+      handle->useWholeBody);
+
+  mActiveBodyNodeDrag = std::move(bodyDrag);
+  mLeftMouseStartedDrag = true;
+  mSelectedLabel = selectionLabelForBodyNodeDragHandle(*handle, descriptor);
+  mSelectedDragLastCursorX = cursorX;
+  mSelectedDragLastCursorY = cursorY;
+  mSelectedDragLastRay = cursorRay;
+  mSelectedDragPlanePoint = descriptor.worldTransform.translation();
+  mSelectedDragIsAxisConstrained = false;
+
+  if (isBodyNodeRotationModifierDown(window)) {
+    mSelectedDragMode = DragMode::BodyRotate;
+    mSelectedRotationAxis = selectedRotationAxis(window, camera, descriptor);
+  } else {
+    mSelectedDragMode = DragMode::BodyTranslate;
+    if (const auto axis = selectedDragAxisFromKeyboard(window)) {
+      if (computeAxisDragTranslation(
+              cursorRay, cursorRay, mSelectedDragPlanePoint, *axis)) {
+        mSelectedDragIsAxisConstrained = true;
+        mSelectedDragAxisDirection = *axis;
+      }
+    }
+    if (!mSelectedDragIsAxisConstrained) {
+      const auto basis = makeOrbitCameraBasis(camera);
+      mSelectedDragPlaneNormal = basis.forward;
+      if (!intersectPlane(
+              cursorRay, mSelectedDragPlanePoint, mSelectedDragPlaneNormal)) {
+        mActiveBodyNodeDrag.reset();
+        mLeftMouseStartedDrag = false;
+        return false;
+      }
+    }
+  }
+
+  lifecycle.paused = true;
+  return true;
+}
+
+bool SelectionController::applyBodyNodeDragTranslation(
+    const Eigen::Vector3d& worldTranslation)
+{
+  if (!mActiveBodyNodeDrag || !worldTranslation.allFinite()
+      || mActiveBodyNodeDrag->bodyNode == nullptr
+      || mActiveBodyNodeDrag->ik == nullptr) {
+    return false;
+  }
+
+  Eigen::Isometry3d target = mActiveBodyNodeDrag->targetTransform;
+  target.linear() = mActiveBodyNodeDrag->savedRotation;
+  target.translation() += worldTranslation;
+  mActiveBodyNodeDrag->targetTransform = target;
+  mActiveBodyNodeDrag->ik->setOffset(mActiveBodyNodeDrag->savedLocalOffset);
+  mActiveBodyNodeDrag->ik->getTarget()->setTransform(target);
+  return mActiveBodyNodeDrag->ik->solveAndApply(true);
+}
+
+bool SelectionController::applyBodyNodeDragRotation(
+    const Eigen::Vector3d& worldAxis, double angle)
+{
+  if (!mActiveBodyNodeDrag || !worldAxis.allFinite() || !std::isfinite(angle)
+      || mActiveBodyNodeDrag->bodyNode == nullptr
+      || mActiveBodyNodeDrag->ik == nullptr) {
+    return false;
+  }
+
+  const double axisNorm = worldAxis.norm();
+  if (axisNorm <= 1e-12) {
+    return false;
+  }
+
+  mActiveBodyNodeDrag->targetTransform.translation()
+      = mActiveBodyNodeDrag->pivot;
+  mActiveBodyNodeDrag->targetTransform.linear()
+      = Eigen::AngleAxisd(angle, worldAxis / axisNorm).toRotationMatrix()
+        * mActiveBodyNodeDrag->targetTransform.linear();
+  mActiveBodyNodeDrag->ik->setOffset();
+  mActiveBodyNodeDrag->ik->getTarget()->setTransform(
+      mActiveBodyNodeDrag->targetTransform);
+  return mActiveBodyNodeDrag->ik->solveAndApply(true);
 }
 
 void SelectionController::applyKeyboardNudge(
@@ -400,6 +626,39 @@ void SelectionController::updateMouseSelection(
     }
 
     if (!mLeftMouseStartedOnPanel && !mLeftMouseStartedDrag
+        && isBodyNodeDragModifierDown(window)) {
+      const RenderableDescriptor* selectedDescriptor = nullptr;
+      if (mSelectedRenderableId != 0) {
+        selectedDescriptor
+            = findRenderableDescriptor(descriptors, mSelectedRenderableId);
+      }
+
+      if (selectedDescriptor == nullptr
+          || findBodyNodeDragHandle(scene, *selectedDescriptor) == nullptr) {
+        if (const auto hit = pickNearestRenderable(descriptors, cursorRay)) {
+          selectedDescriptor = &descriptors[hit->renderableIndex];
+          mSelectedRenderableId = hit->id;
+          mSelectedPoint = hit->point;
+          mSelectedNormal = hit->normal;
+          mSelectedLabel = selectionLabelForRenderable(
+              scene, descriptors[hit->renderableIndex]);
+        }
+      }
+
+      if (selectedDescriptor != nullptr) {
+        beginBodyNodeDrag(
+            window,
+            camera,
+            scene,
+            *selectedDescriptor,
+            cursorRay,
+            cursorX,
+            cursorY,
+            lifecycle);
+      }
+    }
+
+    if (!mLeftMouseStartedOnPanel && !mLeftMouseStartedDrag
         && mSelectedRenderableId != 0 && isDragModifierDown(window)) {
       const RenderableDescriptor* selectedDescriptor
           = findRenderableDescriptor(descriptors, mSelectedRenderableId);
@@ -457,6 +716,37 @@ void SelectionController::updateMouseSelection(
       }
       mSelectedDragLastCursorX = cursorX;
       mSelectedDragLastCursorY = cursorY;
+    } else if (mSelectedDragMode == DragMode::BodyRotate) {
+      const double cursorDelta = (cursorX - mSelectedDragLastCursorX)
+                                 - (cursorY - mSelectedDragLastCursorY);
+      const double angle = cursorDelta * kRotationRadiansPerPixel;
+      if (std::abs(angle) > 1e-12
+          && applyBodyNodeDragRotation(mSelectedRotationAxis, angle)) {
+        lifecycle.paused = true;
+        descriptors = extractRenderables(*scene.world);
+      }
+      mSelectedDragLastCursorX = cursorX;
+      mSelectedDragLastCursorY = cursorY;
+    } else if (mSelectedDragMode == DragMode::BodyTranslate) {
+      const PickRay ray = makePerspectivePickRay(
+          camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
+      const auto translation = mSelectedDragIsAxisConstrained
+                                   ? computeAxisDragTranslation(
+                                         mSelectedDragLastRay,
+                                         ray,
+                                         mSelectedDragPlanePoint,
+                                         mSelectedDragAxisDirection)
+                                   : computePlaneDragTranslation(
+                                         mSelectedDragLastRay,
+                                         ray,
+                                         mSelectedDragPlanePoint,
+                                         mSelectedDragPlaneNormal);
+      if (translation && translation->squaredNorm() > 1e-12
+          && applyBodyNodeDragTranslation(*translation)) {
+        mSelectedDragLastRay = ray;
+        lifecycle.paused = true;
+        descriptors = extractRenderables(*scene.world);
+      }
     } else if (mSelectedDragMode == DragMode::GizmoTranslateAxis) {
       const PickRay ray = makePerspectivePickRay(
           camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
@@ -559,6 +849,7 @@ void SelectionController::updateMouseSelection(
     mSelectedDragMode = DragMode::Translate;
     mActiveGizmoIndex = 0u;
     mActiveGizmoHandle.reset();
+    mActiveBodyNodeDrag.reset();
   }
 
   mWasLeftMousePressed = isLeftMousePressed;

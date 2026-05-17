@@ -69,6 +69,7 @@ struct DartScene
   dart::simulation::WorldPtr world;
   std::vector<IkHandle> ikHandles;
   std::vector<dart::gui::Gizmo> gizmos;
+  std::vector<dart::gui::BodyNodeDragHandle> bodyNodeDragHandles;
   std::vector<dart::gui::KeyboardAction> keyboardActions;
   std::function<void()> preStep;
   std::function<void()> postStep;
@@ -127,6 +128,7 @@ struct AppOptions
   std::vector<dart::gui::Panel> panels;
   std::vector<dart::gui::Gizmo> gizmos;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  std::vector<dart::gui::BodyNodeDragHandle> bodyNodeDragHandles;
   std::vector<dart::gui::KeyboardAction> keyboardActions;
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;

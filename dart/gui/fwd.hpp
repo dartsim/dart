@@ -43,6 +43,7 @@ struct Gizmo;
 struct GizmoAxisColors;
 struct GizmoHandleHit;
 struct GeometryDescriptor;
+struct BodyNodeDragHandle;
 struct MaterialDescriptor;
 struct MeshGeometry;
 struct MeshIndexRange;

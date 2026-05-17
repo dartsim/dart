@@ -12,7 +12,9 @@
   with hand/foot IK targets, a ground grid, and a support-polygon overlay.
 - Controls: left drag orbits, right/middle drag pans, wheel zooms, press `1`-`4`
   to toggle/select targets, left-drag active gizmo handles, arrow/PageUp/PageDown
-  nudges selected targets, and Escape exits.
+  nudges selected targets, Alt-drag translates body nodes, Ctrl-drag rotates
+  body nodes, Shift-drag moves a body with only its parent joint, and Escape
+  exits.
 
 ## Notes
 
@@ -25,10 +27,9 @@
 - Press `1`-`4` to toggle IK targets for the hands and feet. Active targets are
   visible as public gizmos; move or rotate a selected target to solve the
   corresponding IK chain.
-- The historical OpenSceneGraph body-node drag tools do not have a full
-  renderer-neutral articulated-body manipulator yet. The promoted replacement
-  supports selecting and dragging the free-root renderable plus explicit public
-  IK target gizmos.
+- Public `dart::gui::BodyNodeDragHandle` restores the historical body-node drag
+  workflow: Alt preserves orientation while translating, Ctrl rotates in place,
+  and Shift restricts solving to the dragged body's parent joint.
 
 ## Run In Tree
 

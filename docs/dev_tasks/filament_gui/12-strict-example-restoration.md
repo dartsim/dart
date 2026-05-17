@@ -305,8 +305,8 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     z `0.75`, missing XY grid geometry, and no restored 1280x960 camera home.
     Repair those through promoted `dart::gui` and source-owned DART geometry
     now. Restore the always-on support polygon as a source-owned public debug
-    line overlay in this checkpoint; keep per-body articulated dragging as the
-    remaining named public API follow-up.
+    line overlay in this checkpoint; a later local follow-up restores
+    per-body articulated dragging through public `BodyNodeDragHandle`.
     Implementation and validation are complete: focused build/CTest, direct G1
     headless screenshot, Python C++ example-runner tests, aggregate `examples`
     build, `git diff --check`, mandatory `pixi run lint`, and post-lint
@@ -601,9 +601,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     through public `dart::gui` keyboard actions, IK handles, pre-step solving,
     run defaults, camera setup, restored README/capture docs, and marker guards.
     A later local follow-up restores the explicit `allowSimulation(false)`
-    lifecycle with public `ApplicationOptions::simulateWorld`. Exact
-    Alt/Ctrl/Shift parent-joint manipulation remains a documented public API
-    gap. Rerun support remains intentionally removed: repository search still
+    lifecycle with public `ApplicationOptions::simulateWorld`, and the next
+    local follow-up restores Alt/Ctrl/Shift body-node manipulation through
+    public `BodyNodeDragHandle`. Rerun support remains intentionally removed:
+    repository search still
     finds no
     product CMake/package/API/runtime surface or downstream use case, and
     remaining lowercase `rerun` references are CI retry docs, generated command
@@ -831,6 +832,15 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     software-GL screenshot analyzer smokes for both examples, aggregate
     `examples` build, mandatory `pixi run lint`, post-lint focused
     rebuild/CTest, and post-lint pixi screenshot smokes.
+86. The current body-node drag follow-up promotes
+    `dart::gui::BodyNodeDragHandle` through `ApplicationOptions` and registers
+    G1 Puppet plus WAM IKFast body nodes for articulated drag. The private
+    Filament/GLFW selection controller uses temporary DART IK while preserving
+    the historical modifier split: Alt translates while preserving orientation,
+    Ctrl rotates in place, and Shift restricts solving to the dragged body's
+    parent joint. Validation passed focused build for `g1_puppet`,
+    `wam_ikfast`, and `UNIT_gui_FilamentSceneExtraction`, focused CTest, and
+    WAM/G1 headless screenshot analyzer smokes.
 
 ## Checkpoint Rule
 
