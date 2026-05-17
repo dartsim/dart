@@ -22,7 +22,8 @@
 - Press `1`-`6` to toggle the hand, foot, and peg IK targets. Active targets are
   rendered as public gizmos and solved each step; inactive targets are hidden
   and do not constrain the robot.
-- WASD moves the root, Q/E yaws the root, and F/Z changes root height.
+- WASD moves the root, Q/E yaws the root, and F/Z changes root height. Hold
+  Shift with those keys for the historical 2x movement amplification.
 - X/C toggles left/right foot support, hold R optimizes whole-body posture and
   balance, P prints the current DOF positions, and T resets the relaxed posture
   while preserving the root x/y/yaw placement.
@@ -34,9 +35,7 @@
 - The support overlay is source-owned DART line geometry. The polygon and
   centroid are green; the COM marker is blue when its support projection is
   inside the active support polygon and red otherwise.
-- The historical OpenSceneGraph example also supported Shift movement
-  amplification. That remains a promoted key-state/modifier API follow-up. The
-  historical custom camera up vector is restored through public
+- The historical custom camera up vector is restored through public
   `dart::gui::OrbitCamera`.
 
 ## Run In Tree

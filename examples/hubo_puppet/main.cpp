@@ -91,6 +91,7 @@ constexpr double kDegrees = 3.14159265358979323846 / 180.0;
 constexpr double kTeleopLinearStep = 0.01;
 constexpr double kTeleopElevationStep = 0.2 * kTeleopLinearStep;
 constexpr double kTeleopYawStep = 2.0 * 3.14159265358979323846 / 180.0;
+constexpr double kTeleopAmplifiedScale = 2.0;
 constexpr double kSupportVisualElevation = 0.05;
 constexpr double kSupportComMarkerRadius = 0.06;
 
@@ -1418,7 +1419,7 @@ void solveHuboWholeBody(const dart::dynamics::SkeletonPtr& hubo)
 }
 
 bool applyRootTeleoperationStep(
-    const dart::dynamics::SkeletonPtr& hubo, PuppetMotion motion)
+    const dart::dynamics::SkeletonPtr& hubo, PuppetMotion motion, double scale)
 {
   auto* rootBody = hubo ? hubo->getRootBodyNode() : nullptr;
   if (rootBody == nullptr
@@ -1446,36 +1447,38 @@ bool applyRootTeleoperationStep(
     left.setZero();
   }
 
+  const double linearStep = scale * kTeleopLinearStep;
+  const double elevationStep = scale * kTeleopElevationStep;
+  const double yawStep = scale * kTeleopYawStep;
+
   switch (motion) {
     case PuppetMotion::Forward:
-      next.translation() += kTeleopLinearStep * forward;
+      next.translation() += linearStep * forward;
       break;
     case PuppetMotion::Backward:
-      next.translation() -= kTeleopLinearStep * forward;
+      next.translation() -= linearStep * forward;
       break;
     case PuppetMotion::Left:
-      next.translation() += kTeleopLinearStep * left;
+      next.translation() += linearStep * left;
       break;
     case PuppetMotion::Right:
-      next.translation() -= kTeleopLinearStep * left;
+      next.translation() -= linearStep * left;
       break;
     case PuppetMotion::Up:
-      next.translation() += kTeleopElevationStep * Eigen::Vector3d::UnitZ();
+      next.translation() += elevationStep * Eigen::Vector3d::UnitZ();
       break;
     case PuppetMotion::Down:
-      next.translation() -= kTeleopElevationStep * Eigen::Vector3d::UnitZ();
+      next.translation() -= elevationStep * Eigen::Vector3d::UnitZ();
       break;
     case PuppetMotion::YawLeft:
-      next.linear()
-          = Eigen::AngleAxisd(kTeleopYawStep, Eigen::Vector3d::UnitZ())
-                .toRotationMatrix()
-            * current.linear();
+      next.linear() = Eigen::AngleAxisd(yawStep, Eigen::Vector3d::UnitZ())
+                          .toRotationMatrix()
+                      * current.linear();
       break;
     case PuppetMotion::YawRight:
-      next.linear()
-          = Eigen::AngleAxisd(-kTeleopYawStep, Eigen::Vector3d::UnitZ())
-                .toRotationMatrix()
-            * current.linear();
+      next.linear() = Eigen::AngleAxisd(-yawStep, Eigen::Vector3d::UnitZ())
+                          .toRotationMatrix()
+                      * current.linear();
       break;
   }
 
@@ -1493,38 +1496,49 @@ std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
   struct Config
   {
     char key;
+    char amplifiedKey;
     const char* label;
     PuppetMotion motion;
   };
 
   const std::array<Config, 8> configs{{
-      {'w', "Move Hubo forward", PuppetMotion::Forward},
-      {'s', "Move Hubo backward", PuppetMotion::Backward},
-      {'a', "Move Hubo left", PuppetMotion::Left},
-      {'d', "Move Hubo right", PuppetMotion::Right},
-      {'f', "Raise Hubo root", PuppetMotion::Up},
-      {'z', "Lower Hubo root", PuppetMotion::Down},
-      {'q', "Yaw Hubo left", PuppetMotion::YawLeft},
-      {'e', "Yaw Hubo right", PuppetMotion::YawRight},
+      {'w', 'W', "Move Hubo forward", PuppetMotion::Forward},
+      {'s', 'S', "Move Hubo backward", PuppetMotion::Backward},
+      {'a', 'A', "Move Hubo left", PuppetMotion::Left},
+      {'d', 'D', "Move Hubo right", PuppetMotion::Right},
+      {'f', 'F', "Raise Hubo root", PuppetMotion::Up},
+      {'z', 'Z', "Lower Hubo root", PuppetMotion::Down},
+      {'q', 'Q', "Yaw Hubo left", PuppetMotion::YawLeft},
+      {'e', 'E', "Yaw Hubo right", PuppetMotion::YawRight},
   }};
 
   std::vector<dart::gui::KeyboardAction> actions;
-  actions.reserve(configs.size() + targetStates.size() + 6);
+  actions.reserve(configs.size() * 2 + targetStates.size() + 6);
+  const auto addTeleoperationAction
+      = [&](char key, std::string label, PuppetMotion motion, double scale) {
+          dart::gui::KeyboardAction action;
+          action.label = std::move(label);
+          action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+          action.repeat = true;
+          action.callback =
+              [hubo, motion, scale](dart::gui::KeyboardActionContext& context) {
+                if (applyRootTeleoperationStep(hubo, motion, scale)) {
+                  solveHuboWholeBody(hubo);
+                  if (context.lifecycle != nullptr) {
+                    context.lifecycle->paused = true;
+                  }
+                }
+              };
+          actions.push_back(std::move(action));
+        };
+
   for (const Config& config : configs) {
-    dart::gui::KeyboardAction action;
-    action.label = config.label;
-    action.shortcut = dart::gui::KeyboardShortcut::characterKey(config.key);
-    action.repeat = true;
-    action.callback = [hubo, motion = config.motion](
-                          dart::gui::KeyboardActionContext& context) {
-      if (applyRootTeleoperationStep(hubo, motion)) {
-        solveHuboWholeBody(hubo);
-        if (context.lifecycle != nullptr) {
-          context.lifecycle->paused = true;
-        }
-      }
-    };
-    actions.push_back(std::move(action));
+    addTeleoperationAction(config.key, config.label, config.motion, 1.0);
+    addTeleoperationAction(
+        config.amplifiedKey,
+        std::string("Amplified ") + config.label,
+        config.motion,
+        kTeleopAmplifiedScale);
   }
 
   for (const auto& state : targetStates) {

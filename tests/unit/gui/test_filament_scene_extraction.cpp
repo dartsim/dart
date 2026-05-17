@@ -2875,6 +2875,8 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("applyRootTeleoperationStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("kTeleopAmplifiedScale"), std::string::npos);
+  EXPECT_NE(mainSource.find("std::string(\"Amplified \")"), std::string::npos);
   EXPECT_NE(mainSource.find("RelaxedPosture"), std::string::npos);
   EXPECT_NE(mainSource.find("setupHuboWholeBodySolver"), std::string::npos);
   EXPECT_NE(mainSource.find("GradientDescentSolver"), std::string::npos);
@@ -2919,6 +2921,8 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("'c'"), std::string::npos);
   EXPECT_NE(mainSource.find("'p'"), std::string::npos);
   EXPECT_NE(mainSource.find("'t'"), std::string::npos);
+  EXPECT_NE(mainSource.find("'W'"), std::string::npos);
+  EXPECT_NE(mainSource.find("'E'"), std::string::npos);
   EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.width = 1280"), std::string::npos);
   EXPECT_NE(mainSource.find("options.height = 960"), std::string::npos);
@@ -2945,7 +2949,7 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
       std::string::npos);
   EXPECT_NE(readmeSource.find("COM marker is blue"), std::string::npos);
   EXPECT_NE(readmeSource.find("Press `1`-`6`"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Shift movement"), std::string::npos);
+  EXPECT_NE(readmeSource.find("historical 2x movement"), std::string::npos);
   EXPECT_NE(readmeSource.find("whole-body"), std::string::npos);
   EXPECT_NE(readmeSource.find("posture"), std::string::npos);
   EXPECT_NE(readmeSource.find("balance"), std::string::npos);

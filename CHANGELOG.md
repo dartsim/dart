@@ -142,6 +142,8 @@
     constraint, whole-body IK solve path, and hold/release R balance controls.
   - Restored the `hubo_puppet` example's source-owned analytical arm and leg IK
     methods.
+  - Restored the `hubo_puppet` example's historical Shift-amplified root
+    movement controls.
   - Restored the `atlas_puppet` example's number-key target activation,
     support toggles, DOF print/reset shortcuts, and source-owned support
     polygon/center-of-mass validity overlays.

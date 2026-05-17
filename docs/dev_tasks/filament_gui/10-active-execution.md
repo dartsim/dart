@@ -550,12 +550,11 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   reset, always-on support-polygon overlay, 1280x960 run defaults, camera home,
   README, and marker guards through public `dart::gui`; a later checkpoint also
   restores the blue/red COM validity marker with source-owned DART line
-  geometry, and the current local follow-up restores the source-owned
+  geometry, and later local follow-ups restore the source-owned
   relaxed-posture objective, public `BalanceConstraint`, whole-body IK solve
-  path, and hold/release R posture/balance optimization. Shift movement
-  amplification remains a named follow-up. A later local checkpoint restores
-  Hubo analytical IK. Historical camera up-vector/roll is restored by the local
-  R24-14 public `OrbitCamera::up` checkpoint.
+  path, hold/release R posture/balance optimization, Hubo analytical IK, and
+  Shift movement amplification. Historical camera up-vector/roll is restored by
+  the local R24-14 public `OrbitCamera::up` checkpoint.
 - Active local implementation checkpoint: `examples/atlas_puppet/` target and
   support follow-up. This slice restores number-key target
   activation/deactivation, active-target-only IK solving, source-owned
@@ -594,6 +593,13 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   focused `hubo_puppet` and `UNIT_gui_FilamentSceneExtraction` build, focused
   CTest, and Hubo headless smoke analyzer coverage (`307200/307200` nonzero
   pixels).
+- Active local implementation checkpoint: `examples/hubo_puppet/` Shift
+  movement follow-up. This slice restores the historical 2x Shift movement
+  amplification for WASD/QE/FZ teleoperation through public
+  `KeyboardShortcut::characterKey` uppercase shortcuts, without backend or
+  private input APIs. Post-lint validation passed: focused `hubo_puppet` and
+  `UNIT_gui_FilamentSceneExtraction` build, focused CTest, and Hubo headless
+  smoke analyzer coverage (`307200/307200` nonzero pixels).
 - Latest maintainer correction after the Hubo work: there are still many more
   incompletely restored examples, and `examples/fetch/` remains the concrete
   warning case. After the Hubo checkpoint is committed and pushed, re-open
@@ -2440,9 +2446,8 @@ Twenty-second robot/IK parity-audit checkpoint:
   Ctrl-left drag, arrow/PageUp/PageDown nudging, and X/Y/Z constrained drag.
   Atlas also restores the historical comfortable arm start pose and gives the
   hand IK targets unconstrained linear/angular bounds.
-- Remaining explicit gaps after later local target/teleop follow-ups: Hubo
-  analytical IK and Shift modifier movement. Later local solver checkpoints
-  restore Atlas/Hubo relaxed posture and balance objective parity; target
+- Later local checkpoints restore Hubo analytical IK, Hubo Shift modifier
+  movement, and Atlas/Hubo relaxed posture and balance objective parity; target
   activation/deactivation and WASD/Q/E/F/Z teleoperation are restored through
   renderer-neutral `dart::gui`.
 - Local evidence so far:
