@@ -31,6 +31,8 @@
 set(target_name ${PROJECT_NAME}-collision-native)
 set(component_name collision-native)
 
+include(dart_defs)
+
 # Source files - start minimal, add as we implement
 set(collision_native_sources
   aabb.cpp
@@ -69,9 +71,7 @@ set(collision_native_sources
   types.cpp
 )
 
-add_library(${target_name} ${collision_native_sources})
-
-include(dart_defs)
+dart_add_library(${target_name} ${collision_native_sources})
 if(NOT TARGET Eigen3::Eigen)
   dart_find_package(Eigen3)
 endif()
@@ -105,19 +105,10 @@ target_link_libraries(${target_name}
     EnTT::EnTT
 )
 
-if(BUILD_SHARED_LIBS)
-  set(dart_collision_native_build_shared 1)
-else()
-  set(dart_collision_native_build_shared 0)
-endif()
-
 target_compile_definitions(${target_name}
-  PUBLIC
-    DART_BUILD_SHARED=${dart_collision_native_build_shared}
   PRIVATE
     DART_BUILDING_COLLISION_NATIVE
 )
-unset(dart_collision_native_build_shared)
 
 # Benchmarks (optional)
 dart_experimental_add_benchmark(
