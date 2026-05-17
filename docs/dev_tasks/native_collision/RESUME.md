@@ -15,7 +15,9 @@ native-collision side-channel files and refreshed this resume handoff:
 - `21ea43cdc12` — `Compact native collision supervisor notes`
 - `01adba243b1` — `Compact native collision completion audit`
 - `f8e251ee1c8` — `Compact native collision evidence gates`
-- this `RESUME.md` update may move `HEAD`; run `git log -6 --oneline` for the
+- `de5a1695ea8` — `Refresh native collision resume handoff`
+- `d875b95e0a5` — `Compact native collision README`
+- this `RESUME.md` update may move `HEAD`; run `git log -8 --oneline` for the
   exact current hash.
 
 The compaction preserved the active no-PR boundary, current completion
@@ -27,10 +29,10 @@ history.
 
 `feature/new_coll` tracks `origin/feature/new_coll`.
 
-Before this resume update, local `HEAD` was `f8e251ee1c8` and
+Before this resume update, local `HEAD` was `d875b95e0a5` and
 `origin/feature/new_coll` was `e0304211446`. After committing this file, the
 local branch should be ahead by one additional docs-only handoff commit. Run
-`git log -6 --oneline --decorate` for the exact current local head. Do not push
+`git log -8 --oneline --decorate` for the exact current local head. Do not push
 without explicit maintainer/user approval.
 
 PR #2652 remains closed, draft, based on `main`, and anchored to old head
@@ -89,7 +91,7 @@ Latest docs-compaction validation:
 ```bash
 git checkout feature/new_coll
 git status --short --branch
-git log -6 --oneline --decorate
+git log -8 --oneline --decorate
 git rev-parse HEAD
 git rev-parse origin/feature/new_coll
 gh pr list --repo dartsim/dart --head feature/new_coll --state all \
