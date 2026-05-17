@@ -434,7 +434,7 @@ TEST(MeshShape, BvhLargeMesh)
     }
   }
 
-  const auto idx = [kResolution](int x, int y) {
+  const auto idx = [](int x, int y) {
     return y * (kResolution + 1) + x;
   };
 
