@@ -242,6 +242,18 @@ dart::dynamics::SkeletonPtr createGround()
   return ground;
 }
 
+void addDisconnectedLine(
+    dart::dynamics::LineSegmentShape& shape,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to)
+{
+  const auto start = shape.addVertex(from);
+  if (start > 0u) {
+    shape.removeConnection(start - 1u, start);
+  }
+  shape.addVertex(to, start);
+}
+
 std::shared_ptr<dart::dynamics::LineSegmentShape> createG1GridShape()
 {
   auto grid = std::make_shared<dart::dynamics::LineSegmentShape>(1.0f);
@@ -250,12 +262,14 @@ std::shared_ptr<dart::dynamics::LineSegmentShape> createG1GridShape()
   constexpr double halfExtent = cellCount * spacing * 0.5;
   for (int i = -cellCount / 2; i <= cellCount / 2; ++i) {
     const double coordinate = static_cast<double>(i) * spacing;
-    const auto startX
-        = grid->addVertex(Eigen::Vector3d(-halfExtent, coordinate, 0.0));
-    grid->addVertex(Eigen::Vector3d(halfExtent, coordinate, 0.0), startX);
-    const auto startY
-        = grid->addVertex(Eigen::Vector3d(coordinate, -halfExtent, 0.0));
-    grid->addVertex(Eigen::Vector3d(coordinate, halfExtent, 0.0), startY);
+    addDisconnectedLine(
+        *grid,
+        Eigen::Vector3d(-halfExtent, coordinate, 0.0),
+        Eigen::Vector3d(halfExtent, coordinate, 0.0));
+    addDisconnectedLine(
+        *grid,
+        Eigen::Vector3d(coordinate, -halfExtent, 0.0),
+        Eigen::Vector3d(coordinate, halfExtent, 0.0));
   }
   return grid;
 }
@@ -315,8 +329,7 @@ std::shared_ptr<dart::dynamics::LineSegmentShape> createLineShape(
 {
   auto shape = std::make_shared<dart::dynamics::LineSegmentShape>(3.0f);
   for (const auto& line : lines) {
-    const auto start = shape->addVertex(line.from);
-    shape->addVertex(line.to, start);
+    addDisconnectedLine(*shape, line.from, line.to);
   }
   return shape;
 }
@@ -375,13 +388,15 @@ struct G1Scene
     char hotkey = '\0';
     bool active = false;
 
-    void activate()
+    void activate(bool resetTargetTransform = true)
     {
       if (active || world == nullptr || effector == nullptr
           || target == nullptr) {
         return;
       }
-      target->setTransform(effector->getWorldTransform());
+      if (resetTargetTransform) {
+        target->setTransform(effector->getWorldTransform());
+      }
       world->addSimpleFrame(target);
       active = true;
       std::cout << "Activated IK target '" << effector->getName() << "'.\n";
@@ -503,8 +518,14 @@ void addG1IkTargets(G1Scene& scene, const dart::dynamics::SkeletonPtr& robot)
     gizmo.label = config.targetName;
     gizmo.target = target;
     gizmo.size = 0.24;
-    gizmo.isVisible = [state]() {
-      return state->active;
+    gizmo.isVisible = []() {
+      return true;
+    };
+    gizmo.onChanged = [state](const Eigen::Isometry3d&) {
+      if (!state->active) {
+        state->activate(false);
+      }
+      state->solve();
     };
     scene.gizmos.push_back(std::move(gizmo));
     scene.targetStates.push_back(std::move(state));
@@ -597,7 +618,7 @@ dart::gui::Panel createG1Panel(const G1Options& options)
                                dart::gui::PanelContext& context) {
     builder.text("G1 whole-body IK puppet");
     builder.text("Press 1-4 to toggle/select targets.");
-    builder.text("Left-drag active target gizmo handles.");
+    builder.text("Left-drag target gizmo handles.");
     builder.text("Alt-drag translates body nodes; Ctrl-drag rotates them.");
     builder.text("Shift-drag moves a body with only its parent joint.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");

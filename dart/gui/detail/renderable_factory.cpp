@@ -82,6 +82,9 @@ using utils::EntityManager;
 
 namespace {
 
+constexpr int kDebugLineTubeSegments = 8;
+constexpr double kTwoPi = 6.2831853071795864769;
+
 struct Vertex
 {
   float3 position;
@@ -494,6 +497,112 @@ std::uint32_t packColor(const Eigen::Vector4d& rgba)
   return red | (green << 8u) | (blue << 16u) | (alpha << 24u);
 }
 
+void appendThinDebugLine(
+    std::vector<DebugVertex>& vertices,
+    std::vector<std::uint32_t>& indices,
+    const DebugLineDescriptor& line)
+{
+  const auto start = static_cast<std::uint32_t>(vertices.size());
+  const std::uint32_t color = packColor(line.rgba);
+  vertices.push_back({toFloat3(line.from), color});
+  vertices.push_back({toFloat3(line.to), color});
+  indices.push_back(start);
+  indices.push_back(start + 1u);
+}
+
+bool appendThickDebugLine(
+    std::vector<DebugVertex>& vertices,
+    std::vector<std::uint32_t>& triangleIndices,
+    const DebugLineDescriptor& line)
+{
+  if (line.thickness <= 0.0 || !std::isfinite(line.thickness)
+      || !line.from.allFinite() || !line.to.allFinite()) {
+    return false;
+  }
+
+  const Eigen::Vector3d segment = line.to - line.from;
+  const double length = segment.norm();
+  if (!std::isfinite(length) || length < 1e-9) {
+    return false;
+  }
+
+  const Eigen::Vector3d direction = segment / length;
+  const Eigen::Vector3d seed = std::abs(direction.z()) < 0.9
+                                   ? Eigen::Vector3d::UnitZ()
+                                   : Eigen::Vector3d::UnitY();
+  Eigen::Vector3d first = direction.cross(seed);
+  const double firstNorm = first.norm();
+  if (!std::isfinite(firstNorm) || firstNorm < 1e-12) {
+    return false;
+  }
+  first /= firstNorm;
+  const Eigen::Vector3d second = direction.cross(first).normalized();
+  if (!second.allFinite()) {
+    return false;
+  }
+
+  const double radius = std::min(line.thickness * 0.5, length * 0.2);
+  if (radius <= 0.0 || !std::isfinite(radius)) {
+    return false;
+  }
+
+  const auto start = static_cast<std::uint32_t>(vertices.size());
+  const std::uint32_t color = packColor(line.rgba);
+  for (int end = 0; end < 2; ++end) {
+    const Eigen::Vector3d center = end == 0 ? line.from : line.to;
+    for (int segmentIndex = 0; segmentIndex < kDebugLineTubeSegments;
+         ++segmentIndex) {
+      const double angle = kTwoPi * static_cast<double>(segmentIndex)
+                           / static_cast<double>(kDebugLineTubeSegments);
+      const Eigen::Vector3d offset
+          = (first * std::cos(angle) + second * std::sin(angle)) * radius;
+      vertices.push_back({toFloat3(center + offset), color});
+    }
+  }
+
+  for (int segmentIndex = 0; segmentIndex < kDebugLineTubeSegments;
+       ++segmentIndex) {
+    const auto a = static_cast<std::uint32_t>(start + segmentIndex);
+    const auto b = static_cast<std::uint32_t>(
+        start + ((segmentIndex + 1) % kDebugLineTubeSegments));
+    const auto c = static_cast<std::uint32_t>(
+        start + kDebugLineTubeSegments + segmentIndex);
+    const auto d = static_cast<std::uint32_t>(
+        start + kDebugLineTubeSegments
+        + ((segmentIndex + 1) % kDebugLineTubeSegments));
+    triangleIndices.push_back(a);
+    triangleIndices.push_back(c);
+    triangleIndices.push_back(b);
+    triangleIndices.push_back(b);
+    triangleIndices.push_back(c);
+    triangleIndices.push_back(d);
+  }
+
+  const auto fromCenter = static_cast<std::uint32_t>(vertices.size());
+  vertices.push_back({toFloat3(line.from), color});
+  const auto toCenter = static_cast<std::uint32_t>(vertices.size());
+  vertices.push_back({toFloat3(line.to), color});
+  for (int segmentIndex = 0; segmentIndex < kDebugLineTubeSegments;
+       ++segmentIndex) {
+    const auto a = static_cast<std::uint32_t>(start + segmentIndex);
+    const auto b = static_cast<std::uint32_t>(
+        start + ((segmentIndex + 1) % kDebugLineTubeSegments));
+    const auto c = static_cast<std::uint32_t>(
+        start + kDebugLineTubeSegments + segmentIndex);
+    const auto d = static_cast<std::uint32_t>(
+        start + kDebugLineTubeSegments
+        + ((segmentIndex + 1) % kDebugLineTubeSegments));
+    triangleIndices.push_back(fromCenter);
+    triangleIndices.push_back(b);
+    triangleIndices.push_back(a);
+    triangleIndices.push_back(toCenter);
+    triangleIndices.push_back(c);
+    triangleIndices.push_back(d);
+  }
+
+  return true;
+}
+
 } // namespace
 
 std::optional<Renderable> createDebugLineRenderable(
@@ -506,21 +615,25 @@ std::optional<Renderable> createDebugLineRenderable(
   }
 
   std::vector<DebugVertex> vertices;
-  std::vector<std::uint32_t> indices;
+  std::vector<std::uint32_t> lineIndices;
+  std::vector<std::uint32_t> triangleIndices;
   vertices.reserve(lines.size() * 2u);
-  indices.reserve(lines.size() * 2u);
+  lineIndices.reserve(lines.size() * 2u);
 
   for (const DebugLineDescriptor& line : lines) {
-    const auto start = static_cast<std::uint32_t>(vertices.size());
-    const std::uint32_t color = packColor(line.rgba);
-    vertices.push_back({toFloat3(line.from), color});
-    vertices.push_back({toFloat3(line.to), color});
-    indices.push_back(start);
-    indices.push_back(start + 1u);
+    if (line.thickness > 0.0
+        && appendThickDebugLine(vertices, triangleIndices, line)) {
+      continue;
+    }
+    appendThinDebugLine(vertices, lineIndices, line);
   }
 
   const Bounds bounds = computeDebugBounds(vertices);
-  const std::size_t indexCount = indices.size();
+  std::vector<std::uint32_t> indices;
+  indices.reserve(lineIndices.size() + triangleIndices.size());
+  indices.insert(indices.end(), lineIndices.begin(), lineIndices.end());
+  const std::size_t triangleIndexOffset = indices.size();
+  indices.insert(indices.end(), triangleIndices.begin(), triangleIndices.end());
   Renderable renderable;
   renderable.vertexBuffer
       = ::filament::VertexBuffer::Builder()
@@ -553,19 +666,38 @@ std::optional<Renderable> createDebugLineRenderable(
 
   auto* materialInstance = addRenderableMaterial(renderable, material);
   renderable.entity = EntityManager::get().create();
-  ::filament::RenderableManager::Builder(1)
-      .boundingBox({bounds.min, bounds.max})
-      .material(0, materialInstance)
-      .geometry(
-          0,
-          ::filament::RenderableManager::PrimitiveType::LINES,
-          renderable.vertexBuffer,
-          renderable.indexBuffer,
-          0,
-          indexCount)
+  const bool hasLines = !lineIndices.empty();
+  const bool hasTriangles = !triangleIndices.empty();
+  const std::uint8_t primitiveCount
+      = static_cast<std::uint8_t>((hasLines ? 1 : 0) + (hasTriangles ? 1 : 0));
+  ::filament::RenderableManager::Builder builder(primitiveCount);
+  builder.boundingBox({bounds.min, bounds.max})
       .castShadows(false)
-      .receiveShadows(false)
-      .build(engine, renderable.entity);
+      .receiveShadows(false);
+
+  std::uint8_t primitiveIndex = 0;
+  if (hasLines) {
+    builder.material(primitiveIndex, materialInstance)
+        .geometry(
+            primitiveIndex,
+            ::filament::RenderableManager::PrimitiveType::LINES,
+            renderable.vertexBuffer,
+            renderable.indexBuffer,
+            0,
+            lineIndices.size());
+    ++primitiveIndex;
+  }
+  if (hasTriangles) {
+    builder.material(primitiveIndex, materialInstance)
+        .geometry(
+            primitiveIndex,
+            ::filament::RenderableManager::PrimitiveType::TRIANGLES,
+            renderable.vertexBuffer,
+            renderable.indexBuffer,
+            triangleIndexOffset,
+            triangleIndices.size());
+  }
+  builder.build(engine, renderable.entity);
 
   return renderable;
 }

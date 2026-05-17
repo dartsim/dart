@@ -91,6 +91,7 @@ SceneFrameUpdater::SceneFrameUpdater(
 void SceneFrameUpdater::update(
     const FrameViewport& viewport,
     bool showUi,
+    bool uiCapturesMouse,
     bool orbitLight,
     double orbitLightPeriodSeconds)
 {
@@ -163,6 +164,7 @@ void SceneFrameUpdater::update(
       viewport.width,
       viewport.height,
       showUi,
+      uiCapturesMouse,
       mOptions.guiScale,
       mDartScene,
       descriptors,
@@ -186,7 +188,7 @@ void SceneFrameUpdater::update(
       mScene,
       mMaterials.debugColor,
       descriptors,
-      mSelectionController.selectedRenderableId(),
+      mSelectionController.selectionDebugRenderableId(),
       mSelectionDebugOverlay);
   mProfile.selectionDebugMs += dart::gui::elapsedMs(phaseStart);
 }

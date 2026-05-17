@@ -57,6 +57,7 @@ struct DebugLineDescriptor
   Eigen::Vector3d from = Eigen::Vector3d::Zero();
   Eigen::Vector3d to = Eigen::Vector3d::Zero();
   Eigen::Vector4d rgba = Eigen::Vector4d::Ones();
+  double thickness = 0.0;
   std::string label;
 };
 

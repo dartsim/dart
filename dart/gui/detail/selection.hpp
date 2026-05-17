@@ -78,6 +78,7 @@ public:
   const std::optional<Eigen::Vector3d>& selectedPoint() const;
   const std::optional<Eigen::Vector3d>& selectedNormal() const;
   std::optional<dart::gui::GizmoHandleHit> highlightedGizmoHandle() const;
+  dart::gui::RenderableId selectionDebugRenderableId() const;
   bool isDraggingSelection() const;
 
   void select(dart::gui::RenderableId renderableId, std::string label);
@@ -97,6 +98,7 @@ public:
       int framebufferWidth,
       int framebufferHeight,
       bool showUi,
+      bool uiCapturesMouse,
       double guiScale,
       DartScene& scene,
       std::vector<dart::gui::RenderableDescriptor>& descriptors,
@@ -153,6 +155,7 @@ private:
   std::size_t mActiveGizmoIndex = 0u;
   std::optional<dart::gui::GizmoHandleHit> mHoveredGizmoHandle;
   std::optional<dart::gui::GizmoHandleHit> mActiveGizmoHandle;
+  bool mSelectionBoundsVisible = true;
   Eigen::Vector3d mSelectedDragPlanePoint = Eigen::Vector3d::Zero();
   Eigen::Vector3d mSelectedDragPlaneNormal = Eigen::Vector3d::UnitX();
   Eigen::Vector3d mSelectedDragAxisDirection = Eigen::Vector3d::UnitX();

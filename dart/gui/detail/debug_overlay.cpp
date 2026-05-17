@@ -39,6 +39,12 @@
 
 namespace dart::gui::detail {
 
+namespace {
+
+constexpr double kGizmoWorldScale = 1.0;
+
+} // namespace
+
 using dart::gui::DebugDrawOptions;
 using dart::gui::extractContactDebugLines;
 using dart::gui::extractDebugLines;
@@ -137,7 +143,7 @@ void refreshGizmoDebugOverlay(
     ::filament::Scene& scene,
     ::filament::Material& material,
     const std::vector<dart::gui::Gizmo>& gizmos,
-    double guiScale,
+    double,
     std::optional<dart::gui::GizmoHandleHit> highlightedGizmoHandle,
     DebugOverlayController& controller)
 {
@@ -145,7 +151,8 @@ void refreshGizmoDebugOverlay(
       engine,
       scene,
       material,
-      dart::gui::makeGizmoDebugLines(gizmos, guiScale, highlightedGizmoHandle),
+      dart::gui::makeGizmoDebugLines(
+          gizmos, kGizmoWorldScale, highlightedGizmoHandle),
       controller.gizmoOverlay);
 }
 

@@ -360,13 +360,24 @@ dart::math::SupportGeometry makeAtlasPuppetFootSupportGeometry()
   return support;
 }
 
+void addDisconnectedLine(
+    dart::dynamics::LineSegmentShape& shape,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to)
+{
+  const auto start = shape.addVertex(from);
+  if (start > 0u) {
+    shape.removeConnection(start - 1u, start);
+  }
+  shape.addVertex(to, start);
+}
+
 std::shared_ptr<dart::dynamics::LineSegmentShape> createLineShape(
     const std::vector<dart::gui::DebugLineDescriptor>& lines)
 {
   auto shape = std::make_shared<dart::dynamics::LineSegmentShape>(2.0f);
   for (const auto& line : lines) {
-    const auto fromIndex = shape->addVertex(line.from);
-    shape->addVertex(line.to, fromIndex);
+    addDisconnectedLine(*shape, line.from, line.to);
   }
   return shape;
 }
@@ -630,7 +641,7 @@ struct AtlasPuppetScene
     char hotkey = '\0';
     bool active = false;
 
-    void activate()
+    void activate(bool resetTargetTransform = true)
     {
       if (active || world == nullptr || effector == nullptr || target == nullptr
           || ik == nullptr) {
@@ -638,7 +649,9 @@ struct AtlasPuppetScene
       }
 
       ik->getErrorMethod().setBounds();
-      target->setTransform(effector->getWorldTransform());
+      if (resetTargetTransform) {
+        target->setTransform(effector->getWorldTransform());
+      }
       world->addSimpleFrame(target);
       active = true;
       std::cout << "Activated IK target '" << effector->getName() << "'.\n";
@@ -655,6 +668,13 @@ struct AtlasPuppetScene
       world->removeSimpleFrame(target);
       active = false;
       std::cout << "Deactivated IK target '" << effector->getName() << "'.\n";
+    }
+
+    void solve()
+    {
+      if (active && ik != nullptr) {
+        ik->solveAndApply(true);
+      }
     }
 
     void toggle()
@@ -794,8 +814,14 @@ void addAtlasPuppetIkTargets(
     gizmo.label = config.targetName;
     gizmo.target = target;
     gizmo.size = 0.24;
-    gizmo.isVisible = [state]() {
-      return state->active;
+    gizmo.isVisible = []() {
+      return true;
+    };
+    gizmo.onChanged = [state](const Eigen::Isometry3d&) {
+      if (!state->active) {
+        state->activate(false);
+      }
+      state->solve();
     };
 
     scene.gizmos.push_back(std::move(gizmo));
@@ -1071,7 +1097,7 @@ dart::gui::Panel createAtlasPuppetPanel()
                               dart::gui::PanelContext& context) {
     builder.text("Atlas whole-body IK puppet");
     builder.text("Press 1-4 to toggle/select active targets.");
-    builder.text("Left-drag active target gizmo handles.");
+    builder.text("Left-drag target gizmo handles.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text("WASD moves the root; Q/E yaw; F/Z height.");

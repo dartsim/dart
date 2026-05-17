@@ -46,9 +46,10 @@ namespace dart::gui {
 namespace {
 
 constexpr int kRingSegments = 48;
-constexpr double kRingRadiusScale = 0.72;
-constexpr double kPlaneHandleOffsetScale = 0.22;
-constexpr double kPlaneHandleSizeScale = 0.18;
+constexpr double kRingRadiusScale = 0.62;
+constexpr double kPlaneHandleOffsetScale = 0.18;
+constexpr double kPlaneHandleSizeScale = 0.15;
+constexpr double kHandleThicknessScale = 0.022;
 constexpr double kTwoPi = 6.2831853071795864769;
 
 void appendLine(
@@ -56,12 +57,14 @@ void appendLine(
     const Eigen::Vector3d& from,
     const Eigen::Vector3d& to,
     const Eigen::Vector4d& color,
+    double thickness,
     std::string label)
 {
   DebugLineDescriptor line;
   line.from = from;
   line.to = to;
   line.rgba = color;
+  line.thickness = thickness;
   line.label = std::move(label);
   lines.push_back(std::move(line));
 }
@@ -72,6 +75,7 @@ void appendArrowLines(
     const Eigen::Vector3d& axis,
     double length,
     const Eigen::Vector4d& color,
+    double thickness,
     const std::string& label)
 {
   if (length <= 0.0 || !std::isfinite(length) || !axis.allFinite()) {
@@ -84,7 +88,7 @@ void appendArrowLines(
   }
 
   const Eigen::Vector3d tip = origin + direction * length;
-  appendLine(lines, origin, tip, color, label);
+  appendLine(lines, origin, tip, color, thickness, label);
 
   const Eigen::Vector3d seed = std::abs(direction.z()) < 0.9
                                    ? Eigen::Vector3d::UnitZ()
@@ -94,11 +98,13 @@ void appendArrowLines(
     return;
   }
 
-  const double headLength = length * 0.25;
-  const double headWidth = headLength * 0.45;
+  const double headLength = length * 0.18;
+  const double headWidth = headLength * 0.65;
   const Eigen::Vector3d base = tip - direction * headLength;
-  appendLine(lines, tip, base + side * headWidth, color, label + ".head_a");
-  appendLine(lines, tip, base - side * headWidth, color, label + ".head_b");
+  appendLine(
+      lines, tip, base + side * headWidth, color, thickness, label + ".head_a");
+  appendLine(
+      lines, tip, base - side * headWidth, color, thickness, label + ".head_b");
 }
 
 void appendFreeMoveHandle(
@@ -106,6 +112,7 @@ void appendFreeMoveHandle(
     const Eigen::Vector3d& origin,
     double radius,
     const Eigen::Vector4d& color,
+    double thickness,
     const std::string& label)
 {
   if (radius <= 0.0 || !std::isfinite(radius) || !origin.allFinite()) {
@@ -117,18 +124,21 @@ void appendFreeMoveHandle(
       origin - Eigen::Vector3d::UnitX() * radius,
       origin + Eigen::Vector3d::UnitX() * radius,
       color,
+      thickness,
       label + ".free_x");
   appendLine(
       lines,
       origin - Eigen::Vector3d::UnitY() * radius,
       origin + Eigen::Vector3d::UnitY() * radius,
       color,
+      thickness,
       label + ".free_y");
   appendLine(
       lines,
       origin - Eigen::Vector3d::UnitZ() * radius,
       origin + Eigen::Vector3d::UnitZ() * radius,
       color,
+      thickness,
       label + ".free_z");
 }
 
@@ -139,6 +149,7 @@ void appendRingLines(
     const Eigen::Vector3d& secondAxis,
     double radius,
     const Eigen::Vector4d& color,
+    double thickness,
     const std::string& label)
 {
   if (!origin.allFinite() || !firstAxis.allFinite() || !secondAxis.allFinite()
@@ -166,7 +177,7 @@ void appendRingLines(
     const Eigen::Vector3d to
         = origin
           + (first * std::cos(angle1) + second * std::sin(angle1)) * radius;
-    appendLine(lines, from, to, color, label);
+    appendLine(lines, from, to, color, thickness, label);
   }
 }
 
@@ -178,6 +189,7 @@ void appendPlaneHandleLines(
     double offset,
     double size,
     const Eigen::Vector4d& color,
+    double thickness,
     const std::string& label)
 {
   if (!origin.allFinite() || !firstAxis.allFinite() || !secondAxis.allFinite()
@@ -200,10 +212,11 @@ void appendPlaneHandleLines(
   const Eigen::Vector3d b = corner + first * size;
   const Eigen::Vector3d c = corner + first * size + second * size;
   const Eigen::Vector3d d = corner + second * size;
-  appendLine(lines, a, b, color, label);
-  appendLine(lines, b, c, color, label);
-  appendLine(lines, c, d, color, label);
-  appendLine(lines, d, a, color, label);
+  appendLine(lines, a, b, color, thickness, label);
+  appendLine(lines, b, c, color, thickness, label);
+  appendLine(lines, c, d, color, thickness, label);
+  appendLine(lines, d, a, color, thickness, label);
+  appendLine(lines, a, c, color, thickness * 0.65, label + ".diagonal");
 }
 
 struct RaySegmentHit
@@ -450,6 +463,7 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
   const Eigen::Vector3d origin = transform.translation();
   const Eigen::Matrix3d rotation = transform.linear();
   const double length = gizmo.size * scale;
+  const double thickness = length * kHandleThicknessScale;
   const std::string label = makeGizmoLabel(gizmo);
 
   lines.reserve(12 + kRingSegments * 3);
@@ -465,6 +479,7 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
             highlightedHandle,
             GizmoHandleKind::TranslateX,
             gizmo.colors.x),
+        thickness,
         label + ".x");
     appendArrowLines(
         lines,
@@ -476,6 +491,7 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
             highlightedHandle,
             GizmoHandleKind::TranslateY,
             gizmo.colors.y),
+        thickness,
         label + ".y");
     if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)) {
       appendArrowLines(
@@ -488,10 +504,16 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
               highlightedHandle,
               GizmoHandleKind::TranslateZ,
               gizmo.colors.z),
+          thickness,
           label + ".z");
     }
     appendFreeMoveHandle(
-        lines, origin, length * 0.18, makeFreeMoveColor(gizmo.colors), label);
+        lines,
+        origin,
+        length * 0.14,
+        makeFreeMoveColor(gizmo.colors),
+        thickness,
+        label);
 
     const double planeOffset = length * kPlaneHandleOffsetScale;
     const double planeSize = length * kPlaneHandleSizeScale;
@@ -507,6 +529,7 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
             highlightedHandle,
             GizmoHandleKind::TranslateXY,
             gizmo.colors.z),
+        thickness,
         label + ".translate_xy");
     if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)) {
       appendPlaneHandleLines(
@@ -521,6 +544,7 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
               highlightedHandle,
               GizmoHandleKind::TranslateYZ,
               gizmo.colors.x),
+          thickness,
           label + ".translate_yz");
       appendPlaneHandleLines(
           lines,
@@ -534,6 +558,7 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
               highlightedHandle,
               GizmoHandleKind::TranslateXZ,
               gizmo.colors.y),
+          thickness,
           label + ".translate_xz");
     }
   }
@@ -548,6 +573,7 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
         ringRadius,
         colorForHandle(
             gizmo, highlightedHandle, GizmoHandleKind::RotateX, gizmo.colors.x),
+        thickness,
         label + ".rotate_x");
     appendRingLines(
         lines,
@@ -557,6 +583,7 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
         ringRadius,
         colorForHandle(
             gizmo, highlightedHandle, GizmoHandleKind::RotateY, gizmo.colors.y),
+        thickness,
         label + ".rotate_y");
     appendRingLines(
         lines,
@@ -566,6 +593,7 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
         ringRadius,
         colorForHandle(
             gizmo, highlightedHandle, GizmoHandleKind::RotateZ, gizmo.colors.z),
+        thickness,
         label + ".rotate_z");
   }
 

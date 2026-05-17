@@ -3,6 +3,7 @@ material {
     shadingModel : unlit,
     blending : transparent,
     depthWrite : false,
+    doubleSided : true,
     requires : [
         color
     ]

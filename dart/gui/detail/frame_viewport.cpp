@@ -75,6 +75,7 @@ FrameViewport updateFrameViewport(
     glfwGetCursorPos(window, &cursorX, &cursorY);
     const bool suppressCameraOrbit
         = selectionController.isDraggingSelection()
+          || isSceneMouseInputCapturedByUi(showUi, imguiIo)
           || (showUi && isInsideStatusPanel(cursorX, cursorY, guiScale));
     updateCameraController(window, cameraController, suppressCameraOrbit);
   }

@@ -266,8 +266,7 @@ bool renderBuiltInStatusPanel(
       "Keys: Space pause, N step, arrows/Pg or Ctrl-left drag selected, "
       "Esc exit.");
   if (showIkHint) {
-    ImGui::TextWrapped(
-        "IK: press 1-4 or click a colored target, then move it.");
+    ImGui::TextWrapped("IK: press 1-4 or drag a target gizmo to move it.");
   }
   ImGui::PopTextWrapPos();
   ImGui::Separator();

@@ -86,6 +86,7 @@ public:
   void update(
       const FrameViewport& viewport,
       bool showUi,
+      bool uiCapturesMouse,
       bool orbitLight,
       double orbitLightPeriodSeconds);
 

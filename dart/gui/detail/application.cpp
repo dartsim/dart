@@ -31,8 +31,8 @@
  */
 
 #include <dart/gui/application.hpp>
-#include <dart/gui/detail/application_runner.hpp>
 #include <dart/gui/detail/application.hpp>
+#include <dart/gui/detail/application_runner.hpp>
 #include <dart/gui/detail/application_teardown.hpp>
 #include <dart/gui/detail/debug_overlay.hpp>
 #include <dart/gui/detail/frame_renderer.hpp>
@@ -112,6 +112,7 @@ using dart::gui::detail::getNativeWindow;
 using dart::gui::detail::ImGuiOverlay;
 using dart::gui::detail::initialCameraForScene;
 using dart::gui::detail::InitialSceneState;
+using dart::gui::detail::isSceneMouseInputCapturedByUi;
 using dart::gui::detail::MaterialResources;
 using dart::gui::detail::MaterialSet;
 using dart::gui::detail::parseOptions;
@@ -145,8 +146,7 @@ void discardFilamentLog(void*, const char*) {}
 
 void configureFilamentLogging()
 {
-  if (
-      isTruthyEnvironmentVariable("DART_VERBOSE")
+  if (isTruthyEnvironmentVariable("DART_VERBOSE")
       || isTruthyEnvironmentVariable("DART_GUI_VERBOSE")) {
     return;
   }
@@ -322,9 +322,12 @@ int runGuiBackendApplicationImpl(
         runOptions.guiScale);
     profile.viewportCameraMs += elapsedMs(phaseStart);
 
+    const bool uiCapturesMouse
+        = isSceneMouseInputCapturedByUi(appOptions.showUi, imguiIo);
     sceneFrameUpdater.update(
         viewport,
         appOptions.showUi,
+        uiCapturesMouse,
         orbitLight,
         appOptions.orbitLightPeriodSeconds);
 

@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from pathlib import Path
 
 import dartpy as dart

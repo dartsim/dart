@@ -11,7 +11,7 @@
 - Expected output: a kinematic G1 in the official Filament/GLFW/ImGui renderer
   with hand/foot IK targets, a ground grid, and a support-polygon overlay.
 - Controls: left drag orbits, right/middle drag pans, wheel zooms, press `1`-`4`
-  to toggle/select targets, left-drag active gizmo handles, arrow/PageUp/PageDown
+  to toggle/select targets, left-drag target gizmo handles, arrow/PageUp/PageDown
   nudges selected targets, Alt-drag translates body nodes, Ctrl-drag rotates
   body nodes, Shift-drag moves a body with only its parent joint, and Escape
   exits.
@@ -24,8 +24,8 @@
 - This example runs in kinematic mode: the world keeps historical gravity for
   scene parity, while the G1 body nodes ignore gravity and collision so IK
   manipulation is stable.
-- Press `1`-`4` to toggle IK targets for the hands and feet. Active targets are
-  visible as public gizmos; move or rotate a selected target to solve the
+- Press `1`-`4` to toggle IK targets for the hands and feet. Target gizmos stay
+  visible as public drag affordances; moving one activates it and solves the
   corresponding IK chain.
 - Public `dart::gui::BodyNodeDragHandle` restores the historical body-node drag
   workflow: Alt preserves orientation while translating, Ctrl rotates in place,

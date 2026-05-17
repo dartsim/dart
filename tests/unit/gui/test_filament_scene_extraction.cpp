@@ -610,6 +610,58 @@ TEST(FilamentSceneExtraction, PublicAggregateUsesPromotedGuiHeaders)
       aggregate.find("#include <dart/gui/viewer.hpp>"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
+{
+  const auto inputSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "input.cpp");
+  const auto frameViewportSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "frame_viewport.cpp");
+  const auto sceneFrameSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "scene_frame.cpp");
+  const auto selectionSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "selection.cpp");
+  const auto debugOverlaySource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "debug_overlay.cpp");
+  const auto renderableFactorySource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail"
+      / "renderable_factory.cpp");
+  const auto renderEnvironmentSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail"
+      / "render_environment.cpp");
+
+  EXPECT_NE(
+      inputSource.find("isSceneMouseInputCapturedByUi"), std::string::npos);
+  EXPECT_NE(inputSource.find("io.WantCaptureMouse"), std::string::npos);
+  EXPECT_NE(
+      frameViewportSource.find(
+          "isSceneMouseInputCapturedByUi(showUi, imguiIo)"),
+      std::string::npos);
+  EXPECT_NE(sceneFrameSource.find("uiCapturesMouse"), std::string::npos);
+  EXPECT_NE(selectionSource.find("uiCapturesMouse"), std::string::npos);
+  EXPECT_NE(
+      sceneFrameSource.find("selectionDebugRenderableId()"), std::string::npos);
+  EXPECT_NE(
+      selectionSource.find("mSelectionBoundsVisible = false"),
+      std::string::npos);
+  EXPECT_NE(selectionSource.find("kGizmoWorldScale = 1.0"), std::string::npos);
+  EXPECT_NE(debugOverlaySource.find("kGizmoWorldScale = 1.0"), std::string::npos);
+  EXPECT_NE(renderableFactorySource.find("line.thickness"), std::string::npos);
+  EXPECT_NE(
+      renderableFactorySource.find("PrimitiveType::TRIANGLES"),
+      std::string::npos);
+
+  EXPECT_NE(
+      renderEnvironmentSource.find("{0.30f, 0.32f, 0.36f}"), std::string::npos);
+  EXPECT_NE(
+      renderEnvironmentSource.find(".intensity(60000.0f)"), std::string::npos);
+  EXPECT_NE(
+      renderEnvironmentSource.find("fogOptions.enabled = true"),
+      std::string::npos);
+  EXPECT_NE(
+      renderEnvironmentSource.find("ambientOcclusionOptions.intensity = 0.30f"),
+      std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, PromotedGuiHeadersAvoidExperimentalSurface)
 {
   const auto headers
@@ -718,10 +770,10 @@ TEST(FilamentSceneExtraction, GuiExamplesDoNotExposeSceneLauncherShim)
 
 TEST(FilamentSceneExtraction, GuiBuildTargetsUseOfficialCoreName)
 {
-  const std::vector<std::filesystem::path> cmakeFiles = {
-      std::filesystem::path("dart") / "gui" / "CMakeLists.txt",
-      std::filesystem::path("tests") / "unit" / "CMakeLists.txt",
-      std::filesystem::path("python") / "dartpy" / "CMakeLists.txt"};
+  const std::vector<std::filesystem::path> cmakeFiles
+      = {std::filesystem::path("dart") / "gui" / "CMakeLists.txt",
+         std::filesystem::path("tests") / "unit" / "CMakeLists.txt",
+         std::filesystem::path("python") / "dartpy" / "CMakeLists.txt"};
 
   for (const auto& cmakeFile : cmakeFiles) {
     const auto source = readSourceFile(cmakeFile);
@@ -1012,8 +1064,7 @@ TEST(FilamentSceneExtraction, ApplicationOptionsCanSkipWorldStepping)
   dart::gui::ProfileAccumulator profile;
   const double initialTime = scene.world->getTime();
   EXPECT_TRUE(
-      dart::gui::detail::advanceSimulationSteps(
-          scene, 3, lifecycle, profile));
+      dart::gui::detail::advanceSimulationSteps(scene, 3, lifecycle, profile));
 
   EXPECT_EQ(preStepCalls, 3);
   EXPECT_EQ(postStepCalls, 3);
@@ -1092,6 +1143,7 @@ TEST(FilamentSceneExtraction, GizmoDebugLinesFollowTargetFrame)
   EXPECT_EQ(lines.front().label, "atlas_target.x");
   EXPECT_TRUE(lines.front().from.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_TRUE(lines.front().to.isApprox(Eigen::Vector3d(2.0, 2.0, 3.0)));
+  EXPECT_GT(lines.front().thickness, 0.0);
   EXPECT_NE(
       std::find_if(
           lines.begin(),
@@ -1333,7 +1385,7 @@ TEST(FilamentSceneExtraction, GizmoRotationHandleDrivesTargetFrame)
   gizmo.size = 1.0;
 
   std::vector<dart::gui::Gizmo> gizmos{gizmo};
-  const double ringPoint = 0.72 / std::sqrt(2.0);
+  const double ringPoint = 0.62 / std::sqrt(2.0);
   const dart::gui::PickRay xRingRay{
       Eigen::Vector3d(-0.02, ringPoint, ringPoint), Eigen::Vector3d::UnitX()};
   const auto hit
@@ -2910,6 +2962,10 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("atlas_puppet_support_com_overlay"), std::string::npos);
   EXPECT_NE(mainSource.find("makeAtlasSupportPolygonLines"), std::string::npos);
   EXPECT_NE(mainSource.find("makeAtlasSupportComLines"), std::string::npos);
+  EXPECT_NE(mainSource.find("addDisconnectedLine"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("removeConnection(start - 1u, start)"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("atlasSupportComColor"), std::string::npos);
   EXPECT_NE(mainSource.find("isInsideSupportPolygon"), std::string::npos);
   EXPECT_NE(
@@ -2921,6 +2977,9 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
   EXPECT_NE(mainSource.find("state->toggle()"), std::string::npos);
   EXPECT_NE(mainSource.find("gizmo.isVisible"), std::string::npos);
+  EXPECT_NE(mainSource.find("gizmo.onChanged"), std::string::npos);
+  EXPECT_NE(mainSource.find("state->activate(false)"), std::string::npos);
+  EXPECT_NE(mainSource.find("gizmo.size = 0.24"), std::string::npos);
   EXPECT_NE(
       mainSource.find("world->addSimpleFrame(target)"), std::string::npos);
   EXPECT_NE(
@@ -2937,8 +2996,7 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("FROM_CENTROID"), std::string::npos);
   EXPECT_NE(mainSource.find("SHIFT_SUPPORT"), std::string::npos);
   EXPECT_NE(
-      mainSource.find("Left-drag active target gizmo handles"),
-      std::string::npos);
+      mainSource.find("Left-drag target gizmo handles"), std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
   EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
@@ -2987,6 +3045,7 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(readmeSource.find("SimpleFrame` IK targets"), std::string::npos);
   EXPECT_NE(readmeSource.find("axis-arrow dragging"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Target gizmos stay"), std::string::npos);
   EXPECT_NE(readmeSource.find("rotation"), std::string::npos);
   EXPECT_NE(readmeSource.find("rotation ring"), std::string::npos);
   EXPECT_NE(readmeSource.find("plane handles"), std::string::npos);
@@ -3030,6 +3089,10 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("hubo_support_polygon_overlay"), std::string::npos);
   EXPECT_NE(mainSource.find("hubo_support_com_overlay"), std::string::npos);
   EXPECT_NE(mainSource.find("makeHuboSupportComLines"), std::string::npos);
+  EXPECT_NE(mainSource.find("addDisconnectedLine"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("removeConnection(start - 1u, start)"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("huboSupportComColor"), std::string::npos);
   EXPECT_NE(mainSource.find("isInsideSupportPolygon"), std::string::npos);
   EXPECT_NE(
@@ -3055,9 +3118,11 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
   EXPECT_NE(mainSource.find("gizmo.isVisible"), std::string::npos);
+  EXPECT_NE(mainSource.find("gizmo.onChanged"), std::string::npos);
+  EXPECT_NE(mainSource.find("state->activate(false)"), std::string::npos);
+  EXPECT_NE(mainSource.find("gizmo.size = 0.24"), std::string::npos);
   EXPECT_NE(
-      mainSource.find("Left-drag active target gizmo handles"),
-      std::string::npos);
+      mainSource.find("Left-drag target gizmo handles"), std::string::npos);
   EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
   EXPECT_NE(
       mainSource.find("world->addSimpleFrame(target)"), std::string::npos);
@@ -3142,6 +3207,7 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
       std::string::npos);
   EXPECT_NE(readmeSource.find("COM marker is blue"), std::string::npos);
   EXPECT_NE(readmeSource.find("Press `1`-`6`"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Target gizmos stay"), std::string::npos);
   EXPECT_NE(readmeSource.find("historical 2x movement"), std::string::npos);
   EXPECT_NE(readmeSource.find("whole-body"), std::string::npos);
   EXPECT_NE(readmeSource.find("posture"), std::string::npos);
@@ -3190,6 +3256,10 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("kSupportVisualElevation = 0.02"), std::string::npos);
   EXPECT_NE(mainSource.find("makeSupportPolygonDebugLines"), std::string::npos);
   EXPECT_NE(mainSource.find("g1_support_polygon_overlay"), std::string::npos);
+  EXPECT_NE(mainSource.find("addDisconnectedLine"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("removeConnection(start - 1u, start)"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
   EXPECT_EQ(mainSource.find("createIkTargetHandleShape"), std::string::npos);
   EXPECT_EQ(mainSource.find("target->setShape"), std::string::npos);
@@ -3212,9 +3282,11 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("Shift-drag moves a body with only its parent joint"),
       std::string::npos);
   EXPECT_NE(mainSource.find("gizmo.isVisible"), std::string::npos);
+  EXPECT_NE(mainSource.find("gizmo.onChanged"), std::string::npos);
+  EXPECT_NE(mainSource.find("state->activate(false)"), std::string::npos);
+  EXPECT_NE(mainSource.find("gizmo.size = 0.24"), std::string::npos);
   EXPECT_NE(
-      mainSource.find("Left-drag active target gizmo handles"),
-      std::string::npos);
+      mainSource.find("Left-drag target gizmo handles"), std::string::npos);
   EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
   EXPECT_NE(mainSource.find("createG1KeyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("solveActiveG1Targets"), std::string::npos);
@@ -3252,6 +3324,7 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("--g1-package-uri"), std::string::npos);
   EXPECT_NE(readmeSource.find("support-polygon overlay"), std::string::npos);
   EXPECT_NE(readmeSource.find("BodyNodeDragHandle"), std::string::npos);
+  EXPECT_NE(readmeSource.find("Target gizmos stay"), std::string::npos);
   EXPECT_NE(readmeSource.find("Alt preserves orientation"), std::string::npos);
   EXPECT_EQ(
       readmeSource.find("do not have a full renderer-neutral"),
@@ -5902,8 +5975,8 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
 
 TEST(FilamentSceneExtraction, WriteRgbaPpm_DropsAlphaAndHandlesBottomLeftOrigin)
 {
-  const auto path = std::filesystem::temp_directory_path()
-                    / "dart_gui_rgba.ppm";
+  const auto path
+      = std::filesystem::temp_directory_path() / "dart_gui_rgba.ppm";
   std::filesystem::remove(path);
 
   const std::vector<std::uint8_t> rgbaPixels = {

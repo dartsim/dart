@@ -74,6 +74,7 @@ using dart::gui::ViewerLifecycleState;
 namespace {
 
 constexpr double kRotationRadiansPerPixel = 0.01;
+constexpr double kGizmoWorldScale = 1.0;
 
 const RenderableDescriptor* findRenderableDescriptor(
     const std::vector<RenderableDescriptor>& descriptors, RenderableId id)
@@ -369,6 +370,11 @@ SelectionController::highlightedGizmoHandle() const
   return mHoveredGizmoHandle;
 }
 
+RenderableId SelectionController::selectionDebugRenderableId() const
+{
+  return mSelectionBoundsVisible ? mSelectedRenderableId : 0;
+}
+
 bool SelectionController::isDraggingSelection() const
 {
   return mLeftMouseStartedDrag;
@@ -380,6 +386,7 @@ void SelectionController::select(RenderableId renderableId, std::string label)
   mSelectedLabel = std::move(label);
   mSelectedPoint.reset();
   mSelectedNormal.reset();
+  mSelectionBoundsVisible = true;
 }
 
 void SelectionController::clear()
@@ -388,6 +395,7 @@ void SelectionController::clear()
   mSelectedLabel = "none";
   mSelectedPoint.reset();
   mSelectedNormal.reset();
+  mSelectionBoundsVisible = true;
 }
 
 bool SelectionController::beginBodyNodeDrag(
@@ -437,6 +445,7 @@ bool SelectionController::beginBodyNodeDrag(
   mActiveBodyNodeDrag = std::move(bodyDrag);
   mLeftMouseStartedDrag = true;
   mSelectedLabel = selectionLabelForBodyNodeDragHandle(*handle, descriptor);
+  mSelectionBoundsVisible = false;
   mSelectedDragLastCursorX = cursorX;
   mSelectedDragLastCursorY = cursorY;
   mSelectedDragLastRay = cursorRay;
@@ -556,6 +565,7 @@ void SelectionController::updateMouseSelection(
     int framebufferWidth,
     int framebufferHeight,
     bool showUi,
+    bool uiCapturesMouse,
     double guiScale,
     DartScene& scene,
     std::vector<RenderableDescriptor>& descriptors,
@@ -571,7 +581,8 @@ void SelectionController::updateMouseSelection(
   const bool isLeftMousePressed
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
   const bool cursorOverPanel
-      = showUi && isInsideStatusPanel(cursorX, cursorY, guiScale);
+      = uiCapturesMouse
+        || (showUi && isInsideStatusPanel(cursorX, cursorY, guiScale));
   const PickRay cursorRay = makePerspectivePickRay(
       camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
   const bool gizmoDragActive
@@ -583,7 +594,7 @@ void SelectionController::updateMouseSelection(
     mHoveredGizmoHandle.reset();
   } else if (!cursorOverPanel) {
     mHoveredGizmoHandle
-        = pickNearestGizmoHandle(scene.gizmos, cursorRay, guiScale);
+        = pickNearestGizmoHandle(scene.gizmos, cursorRay, kGizmoWorldScale);
   } else {
     mHoveredGizmoHandle.reset();
   }
@@ -597,7 +608,7 @@ void SelectionController::updateMouseSelection(
 
     if (!mLeftMouseStartedOnPanel) {
       if (const auto gizmoHit
-          = pickNearestGizmoHandle(scene.gizmos, cursorRay, guiScale)) {
+          = pickNearestGizmoHandle(scene.gizmos, cursorRay, kGizmoWorldScale)) {
         mLeftMouseStartedDrag = true;
         if (isRotationGizmoHandle(gizmoHit->handle)) {
           mSelectedDragMode = DragMode::GizmoRotateAxis;
@@ -638,6 +649,7 @@ void SelectionController::updateMouseSelection(
         if (const auto hit = pickNearestRenderable(descriptors, cursorRay)) {
           selectedDescriptor = &descriptors[hit->renderableIndex];
           mSelectedRenderableId = hit->id;
+          mSelectionBoundsVisible = true;
           mSelectedPoint = hit->point;
           mSelectedNormal = hit->normal;
           mSelectedLabel = selectionLabelForRenderable(
@@ -836,6 +848,7 @@ void SelectionController::updateMouseSelection(
       const auto hit = pickNearestRenderable(descriptors, cursorRay);
       if (hit) {
         mSelectedRenderableId = hit->id;
+        mSelectionBoundsVisible = true;
         mSelectedPoint = hit->point;
         mSelectedNormal = hit->normal;
         const RenderableDescriptor& descriptor
