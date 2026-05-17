@@ -317,9 +317,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     camera home, and missing renderer-neutral replacements for the historical
     `X`/`C` support toggles, `P` DOF print, and `T` relaxed-pose reset. Repair
     those now. Keep Shift movement amplification, hold/release `R` posture
-    optimization with balance mode, and exact COM marker colors as named
-    promoted API or solver follow-ups. Historical camera roll/up-vector parity
-    is restored by the later R24-14 public `OrbitCamera::up` checkpoint.
+    optimization with balance mode as named promoted API or solver follow-ups.
+    A later checkpoint restores exact blue/red COM marker colors with
+    source-owned DART line geometry. Historical camera roll/up-vector parity is
+    restored by the later R24-14 public `OrbitCamera::up` checkpoint.
     Implementation and pre-lint validation are complete: focused build/CTest,
     direct Hubo headless screenshot, Python C++ example-runner tests, aggregate
     `examples` build, and `git diff --check` passed locally.

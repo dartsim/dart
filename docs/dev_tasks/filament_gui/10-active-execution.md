@@ -548,8 +548,9 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   10x10x0.01 blue `ground`, six number-key target activation toggles,
   renderer-neutral X/C foot-support toggles, P DOF print, T relaxed-posture
   reset, always-on support-polygon overlay, 1280x960 run defaults, camera home,
-  README, and marker guards through public `dart::gui`. Shift movement
-  amplification, hold/release R balance optimization, exact COM marker colors,
+  README, and marker guards through public `dart::gui`; a later checkpoint also
+  restores the blue/red COM validity marker with source-owned DART line
+  geometry. Shift movement amplification, hold/release R balance optimization,
   and deeper posture/balance behavior remain named promoted API or solver
   follow-ups. Historical camera up-vector/roll is restored by the local R24-14
   public `OrbitCamera::up` checkpoint.

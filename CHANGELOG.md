@@ -136,6 +136,8 @@
     examples.
   - Restored the Heightmap and Point Cloud examples' fine-grained scene-grid
     controls with source-owned DART line geometry.
+  - Restored the `hubo_puppet` support overlay's blue/red center-of-mass
+    validity marker with source-owned DART line geometry.
   - Added public `dart::gui::PanelBuilder` table and color-swatch controls and
     restored the Mimic Pendulums diagnostics table and rig legend.
   - Restored the `hardcoded_design` example's historical wireframe link

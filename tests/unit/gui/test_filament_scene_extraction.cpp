@@ -2779,6 +2779,16 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("kSupportVisualElevation = 0.05"), std::string::npos);
   EXPECT_NE(mainSource.find("makeSupportPolygonDebugLines"), std::string::npos);
   EXPECT_NE(mainSource.find("hubo_support_polygon_overlay"), std::string::npos);
+  EXPECT_NE(mainSource.find("hubo_support_com_overlay"), std::string::npos);
+  EXPECT_NE(mainSource.find("makeHuboSupportComLines"), std::string::npos);
+  EXPECT_NE(mainSource.find("huboSupportComColor"), std::string::npos);
+  EXPECT_NE(mainSource.find("isInsideSupportPolygon"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector4d(0.0, 0.0, 1.0, 1.0)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Eigen::Vector4d(1.0, 0.0, 0.0, 1.0)"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
   EXPECT_EQ(mainSource.find("createIkTargetHandleShape"), std::string::npos);
   EXPECT_EQ(mainSource.find("target->setShape"), std::string::npos);
@@ -2814,6 +2824,9 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("Toggle left Hubo foot support"), std::string::npos);
   EXPECT_NE(
       mainSource.find("Toggle right Hubo foot support"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Blue/red COM marker shows support-polygon validity"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("Print Hubo DOFs"), std::string::npos);
   EXPECT_NE(mainSource.find("Reset Hubo relaxed posture"), std::string::npos);
   EXPECT_NE(mainSource.find("WASD moves the root"), std::string::npos);
@@ -2844,7 +2857,10 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("Hubo Puppet Example"), std::string::npos);
   EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(readmeSource.find("pixi run ex hubo_puppet"), std::string::npos);
-  EXPECT_NE(readmeSource.find("support-polygon overlay"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("support-polygon and COM validity overlay"),
+      std::string::npos);
+  EXPECT_NE(readmeSource.find("COM marker is blue"), std::string::npos);
   EXPECT_NE(readmeSource.find("Press `1`-`6`"), std::string::npos);
   EXPECT_NE(readmeSource.find("Shift movement"), std::string::npos);
 }

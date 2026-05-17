@@ -69,16 +69,20 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
+
 namespace {
 
 constexpr const char* kHuboSkeletonName = "hubo_copy";
 constexpr const char* kGroundSkeletonName = "ground";
 constexpr const char* kHuboSupportOverlayName = "hubo_support_polygon_overlay";
+constexpr const char* kHuboSupportComOverlayName = "hubo_support_com_overlay";
 constexpr double kDegrees = 3.14159265358979323846 / 180.0;
 constexpr double kTeleopLinearStep = 0.01;
 constexpr double kTeleopElevationStep = 0.2 * kTeleopLinearStep;
 constexpr double kTeleopYawStep = 2.0 * 3.14159265358979323846 / 180.0;
 constexpr double kSupportVisualElevation = 0.05;
+constexpr double kSupportComMarkerRadius = 0.06;
 
 enum class PuppetMotion
 {
@@ -310,6 +314,31 @@ std::shared_ptr<dart::dynamics::LineSegmentShape> createLineShape(
   return shape;
 }
 
+void appendMarkerAxisLines(
+    std::vector<dart::gui::DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& center,
+    double radius,
+    const std::string& label)
+{
+  dart::gui::DebugLineDescriptor x;
+  x.from = center - Eigen::Vector3d::UnitX() * radius;
+  x.to = center + Eigen::Vector3d::UnitX() * radius;
+  x.label = label + ".x";
+  lines.push_back(x);
+
+  dart::gui::DebugLineDescriptor y;
+  y.from = center - Eigen::Vector3d::UnitY() * radius;
+  y.to = center + Eigen::Vector3d::UnitY() * radius;
+  y.label = label + ".y";
+  lines.push_back(y);
+
+  dart::gui::DebugLineDescriptor z;
+  z.from = center - Eigen::Vector3d::UnitZ() * radius;
+  z.to = center + Eigen::Vector3d::UnitZ() * radius;
+  z.label = label + ".z";
+  lines.push_back(z);
+}
+
 std::vector<dart::gui::DebugLineDescriptor> makeHuboSupportPolygonLines(
     const dart::dynamics::SkeletonPtr& hubo)
 {
@@ -325,6 +354,68 @@ std::vector<dart::gui::DebugLineDescriptor> makeHuboSupportPolygonLines(
   return dart::gui::makeSupportPolygonDebugLines(*hubo, options, "hubo");
 }
 
+std::optional<Eigen::Vector2d> computeHuboComSupportProjection(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  if (hubo == nullptr || hubo->getMass() <= 0.0
+      || !std::isfinite(hubo->getMass())) {
+    return std::nullopt;
+  }
+
+  const auto& axes = hubo->getSupportAxes();
+  if (!axes.first.allFinite() || !axes.second.allFinite()) {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d com = hubo->getCOM();
+  if (!com.allFinite()) {
+    return std::nullopt;
+  }
+
+  return Eigen::Vector2d(com.dot(axes.first), com.dot(axes.second));
+}
+
+std::vector<dart::gui::DebugLineDescriptor> makeHuboSupportComLines(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  if (hubo == nullptr) {
+    return {};
+  }
+
+  const auto projectedCom = computeHuboComSupportProjection(hubo);
+  if (!projectedCom) {
+    return {};
+  }
+
+  const auto& axes = hubo->getSupportAxes();
+  const Eigen::Vector3d up = axes.first.cross(axes.second);
+  if (!up.allFinite() || up.squaredNorm() <= 1e-18) {
+    return {};
+  }
+
+  const Eigen::Vector3d center = axes.first * projectedCom->x()
+                                 + axes.second * projectedCom->y()
+                                 + up.normalized() * kSupportVisualElevation;
+  std::vector<dart::gui::DebugLineDescriptor> lines;
+  lines.reserve(3);
+  appendMarkerAxisLines(
+      lines, center, kSupportComMarkerRadius, "hubo.support_com");
+  return lines;
+}
+
+Eigen::Vector4d huboSupportComColor(const dart::dynamics::SkeletonPtr& hubo)
+{
+  const auto projectedCom = computeHuboComSupportProjection(hubo);
+  if (hubo == nullptr || !projectedCom) {
+    return Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
+  }
+
+  return dart::math::isInsideSupportPolygon(
+             *projectedCom, hubo->getSupportPolygon())
+             ? Eigen::Vector4d(0.0, 0.0, 1.0, 1.0)
+             : Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
+}
+
 dart::dynamics::SimpleFramePtr createHuboSupportPolygonOverlay(
     const dart::dynamics::SkeletonPtr& hubo)
 {
@@ -333,6 +424,16 @@ dart::dynamics::SimpleFramePtr createHuboSupportPolygonOverlay(
   overlay->setShape(createLineShape(makeHuboSupportPolygonLines(hubo)));
   overlay->getVisualAspect(true)->setRGBA(
       Eigen::Vector4d(0.22, 0.86, 0.38, 0.86));
+  return overlay;
+}
+
+dart::dynamics::SimpleFramePtr createHuboSupportComOverlay(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  auto overlay = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), kHuboSupportComOverlayName);
+  overlay->setShape(createLineShape(makeHuboSupportComLines(hubo)));
+  overlay->getVisualAspect(true)->setRGBA(huboSupportComColor(hubo));
   return overlay;
 }
 
@@ -345,6 +446,18 @@ void updateHuboSupportPolygonOverlay(
   }
 
   overlay->setShape(createLineShape(makeHuboSupportPolygonLines(hubo)));
+}
+
+void updateHuboSupportComOverlay(
+    const dart::dynamics::SkeletonPtr& hubo,
+    const dart::dynamics::SimpleFramePtr& overlay)
+{
+  if (overlay == nullptr) {
+    return;
+  }
+
+  overlay->setShape(createLineShape(makeHuboSupportComLines(hubo)));
+  overlay->getVisualAspect(true)->setRGBA(huboSupportComColor(hubo));
 }
 
 void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)
@@ -377,6 +490,7 @@ struct HuboPuppetScene
   dart::simulation::WorldPtr world;
   dart::dynamics::SkeletonPtr hubo;
   dart::dynamics::SimpleFramePtr supportOverlay;
+  dart::dynamics::SimpleFramePtr supportComOverlay;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
   std::vector<dart::gui::Gizmo> gizmos;
   struct TargetState
@@ -594,6 +708,8 @@ HuboPuppetScene createHuboPuppetScene()
   scene.restConfiguration = hubo->getPositions();
   scene.supportOverlay = createHuboSupportPolygonOverlay(scene.hubo);
   scene.world->addSimpleFrame(scene.supportOverlay);
+  scene.supportComOverlay = createHuboSupportComOverlay(scene.hubo);
+  scene.world->addSimpleFrame(scene.supportComOverlay);
   return scene;
 }
 
@@ -811,6 +927,7 @@ dart::gui::Panel createHuboPuppetPanel()
     builder.text("WASD moves the root; Q/E yaw; F/Z height.");
     builder.text("X/C toggles foot support; P prints DOFs; T resets posture.");
     builder.text("The support polygon overlay follows active foot support.");
+    builder.text("Blue/red COM marker shows support-polygon validity.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -861,9 +978,11 @@ int main(int argc, char* argv[])
     options.camera = makeHuboPuppetCamera();
     options.preStep = [targetStates = scene.targetStates,
                        hubo = scene.hubo,
-                       supportOverlay = scene.supportOverlay]() {
+                       supportOverlay = scene.supportOverlay,
+                       supportComOverlay = scene.supportComOverlay]() {
       solveActiveHuboTargets(targetStates);
       updateHuboSupportPolygonOverlay(hubo, supportOverlay);
+      updateHuboSupportComOverlay(hubo, supportComOverlay);
     };
     options.keyboardActions = createHuboPuppetKeyboardActions(
         scene.hubo, scene.targetStates, scene.restConfiguration);
