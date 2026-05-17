@@ -23,25 +23,18 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      code: ${{ steps.filter.outputs.code }}
-      wheel_workflow: ${{ steps.filter.outputs.wheel_workflow }}
+      code: ${{ steps.code_filter.outputs.code }}
+      wheel_workflow: ${{ steps.wheel_filter.outputs.wheel_workflow }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v4
-        id: filter
+        id: code_filter
+        with:
+          filters: .github/filters/ci-code.yml
+      - uses: dorny/paths-filter@v4
+        id: wheel_filter
         with:
           filters: |
-            code:
-              - '**'
-              - '!.github/workflows/cache_*.yml'
-              - '!docker/dev/**'
-              - '!docs/**'
-              - '!.readthedocs.yml'
-              - '!tutorials/**'
-              - '!**/*.md'
-              - '!**/*.rst'
-              - '!**/*.po'
-              - '!**/*.pot'
             wheel_workflow:
               - '.github/workflows/publish_dartpy.yml'
 

@@ -1205,7 +1205,11 @@ docs-serve-ko = { cmd = """
 """, depends-on = ["docs-build-ko"] }
 
 docs-clean = { cmd = """
-    rm -rf docs/readthedocs/_build
+    rm -rf docs/readthedocs/_build \
+           docs/readthedocs/_generated \
+           docs/readthedocs/_generated_stubs \
+           docs/readthedocs/__pycache__ \
+           docs/python_api/_build
 """ }
 
 # Build C++ API documentation (Doxygen)
