@@ -10,9 +10,9 @@
 - Expected output: an uncoupled gray baseline pendulum plus red and blue mimic
   pendulum rigs over an XY reference grid.
 - Controls: Space starts or pauses simulation. The panel can pause, step, and
-  reset the world, toggle ODE collision, toggle the PGS solver, and display
-  reference angle, follower angle, mimic position error, mimic velocity error,
-  and base drift for each retargeted pair.
+  reset the world, toggle ODE collision, toggle the PGS solver, show the rig
+  color legend, and display reference angle, follower angle, mimic position
+  error, mimic velocity error, and base drift for each retargeted pair.
 
 ## Run
 

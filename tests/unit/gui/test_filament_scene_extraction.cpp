@@ -272,6 +272,41 @@ public:
     return true;
   }
 
+  void colorSwatch(std::string_view label, const Eigen::Vector4d& rgba) override
+  {
+    (void)rgba;
+    events.emplace_back("color-swatch:" + std::string(label));
+  }
+
+  bool beginTable(
+      std::string_view label,
+      std::span<const std::string_view> columns) override
+  {
+    events.emplace_back(
+        "begin-table:" + std::string(label) + ":"
+        + std::to_string(columns.size()));
+    for (std::string_view column : columns) {
+      events.emplace_back("table-column:" + std::string(column));
+    }
+    return true;
+  }
+
+  void tableNextRow() override
+  {
+    events.emplace_back("table-row");
+  }
+
+  bool tableNextColumn() override
+  {
+    events.emplace_back("table-column-next");
+    return true;
+  }
+
+  void endTable() override
+  {
+    events.emplace_back("end-table");
+  }
+
   bool collapsingHeader(std::string_view label, bool defaultOpen) override
   {
     events.emplace_back(
@@ -710,6 +745,16 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
     builder.checkbox("Diagnostics", diagnostics);
     builder.slider("Gain", gain, 0.0, 2.0);
     builder.colorEdit("Tint", tint);
+    builder.colorSwatch("Tint swatch", tint);
+    constexpr std::array<std::string_view, 2> columns{"Name", "Value"};
+    if (builder.beginTable("Stats", columns)) {
+      builder.tableNextRow();
+      builder.tableNextColumn();
+      builder.text("gain");
+      builder.tableNextColumn();
+      builder.text(std::to_string(gain));
+      builder.endTable();
+    }
   };
   panel.buildWithContext = [&](dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
@@ -778,6 +823,16 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "checkbox:Diagnostics",
           "slider:Gain",
           "color:Tint",
+          "color-swatch:Tint swatch",
+          "begin-table:Stats:2",
+          "table-column:Name",
+          "table-column:Value",
+          "table-row",
+          "table-column-next",
+          "text:gain",
+          "table-column-next",
+          "text:1.000000",
+          "end-table",
           "text:selected:box",
           "text:eye-x:4.000000",
           "checkbox:Headlights On/Off",
@@ -3366,6 +3421,8 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
   EXPECT_NE(mimicSource.find("collectMimicPairs"), std::string::npos);
   EXPECT_NE(mimicSource.find("tintBases"), std::string::npos);
   EXPECT_NE(mimicSource.find("base drift"), std::string::npos);
+  EXPECT_NE(mimicSource.find("colorSwatch"), std::string::npos);
+  EXPECT_NE(mimicSource.find("beginTable(\"mimic_table\""), std::string::npos);
   EXPECT_NE(mimicSource.find("Reference (rad)"), std::string::npos);
   EXPECT_NE(mimicSource.find("Follower (rad)"), std::string::npos);
   EXPECT_NE(mimicSource.find("toDegree"), std::string::npos);
@@ -3389,6 +3446,7 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
   EXPECT_NE(
       mimicReadmeSource.find("Mimic Pendulums Example"), std::string::npos);
   EXPECT_NE(mimicReadmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(mimicReadmeSource.find("color legend"), std::string::npos);
   EXPECT_NE(mimicReadmeSource.find("Command-Line Options"), std::string::npos);
   EXPECT_NE(mimicReadmeSource.find("--out <dir>"), std::string::npos);
   EXPECT_EQ(mimicSource.find("options.defaultScene"), std::string::npos);

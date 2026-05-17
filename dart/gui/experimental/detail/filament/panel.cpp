@@ -96,6 +96,59 @@ public:
     return true;
   }
 
+  void colorSwatch(std::string_view label, const Eigen::Vector4d& rgba) override
+  {
+    const std::string labelValue(label);
+    const std::string buttonId = "##color_" + labelValue;
+    ImGui::ColorButton(
+        buttonId.c_str(),
+        ImVec4(
+            static_cast<float>(rgba[0]),
+            static_cast<float>(rgba[1]),
+            static_cast<float>(rgba[2]),
+            static_cast<float>(rgba[3])),
+        ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoInputs,
+        ImVec2(18.0f, 18.0f));
+    ImGui::SameLine();
+    ImGui::TextUnformatted(labelValue.c_str());
+  }
+
+  bool beginTable(
+      std::string_view label,
+      std::span<const std::string_view> columns) override
+  {
+    const std::string labelValue(label);
+    const ImGuiTableFlags flags
+        = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg
+          | ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_Resizable;
+    if (!ImGui::BeginTable(
+            labelValue.c_str(), static_cast<int>(columns.size()), flags)) {
+      return false;
+    }
+
+    for (std::string_view column : columns) {
+      const std::string columnValue(column);
+      ImGui::TableSetupColumn(columnValue.c_str());
+    }
+    ImGui::TableHeadersRow();
+    return true;
+  }
+
+  void tableNextRow() override
+  {
+    ImGui::TableNextRow();
+  }
+
+  bool tableNextColumn() override
+  {
+    return ImGui::TableNextColumn();
+  }
+
+  void endTable() override
+  {
+    ImGui::EndTable();
+  }
+
   bool collapsingHeader(std::string_view label, bool defaultOpen) override
   {
     const std::string labelValue(label);

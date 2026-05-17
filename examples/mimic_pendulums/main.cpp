@@ -576,8 +576,12 @@ dart::gui::Panel createMimicPendulumsPanel(
     builder.text("mimic pairs: " + std::to_string(state->pairs.size()));
     builder.separator();
 
+    builder.text("Rigs:");
     for (const auto& entry : getPalette()) {
-      builder.text(entry.model + " (" + entry.label + ")");
+      builder.colorSwatch(
+          entry.model + " (" + entry.label + ")",
+          Eigen::Vector4d(
+              entry.color.x(), entry.color.y(), entry.color.z(), 1.0));
     }
     builder.separator();
 
@@ -585,9 +589,20 @@ dart::gui::Panel createMimicPendulumsPanel(
       builder.text(
           "No mimic joints were parsed from " + std::string(kWorldUri));
     }
-    builder.text(
-        "Pair | Reference (rad) | Follower (rad) | Error (rad) | Velocity "
-        "error (rad/s) | Base drift (m)");
+
+    constexpr std::array<std::string_view, 6> kMimicColumns{
+        "Pair",
+        "Reference (rad)",
+        "Follower (rad)",
+        "Error (rad)",
+        "Velocity error (rad/s)",
+        "Base drift (m)"};
+    const bool useTable = builder.beginTable("mimic_table", kMimicColumns);
+    if (!useTable) {
+      builder.text(
+          "Pair | Reference (rad) | Follower (rad) | Error (rad) | Velocity "
+          "error (rad/s) | Base drift (m)");
+    }
     for (const auto& pair : state->pairs) {
       if (pair.follower == nullptr || pair.reference == nullptr) {
         continue;
@@ -604,12 +619,32 @@ dart::gui::Panel createMimicPendulumsPanel(
       const double velocityError = followerVelocity - referenceVelocity;
       const double baseDrift
           = (translationOf(pair.base) - pair.baseStart).norm();
-      builder.text(
-          pair.label + ": reference " + formatAngle(referencePosition)
-          + ", follower " + formatAngle(followerPosition) + ", position error "
-          + formatDouble(positionError) + " rad, velocity error "
-          + formatDouble(velocityError) + " rad/s, base drift "
-          + formatDouble(baseDrift) + " m");
+
+      if (useTable) {
+        builder.tableNextRow();
+        builder.tableNextColumn();
+        builder.text(pair.label);
+        builder.tableNextColumn();
+        builder.text(formatAngle(referencePosition));
+        builder.tableNextColumn();
+        builder.text(formatAngle(followerPosition));
+        builder.tableNextColumn();
+        builder.text(formatDouble(positionError));
+        builder.tableNextColumn();
+        builder.text(formatDouble(velocityError));
+        builder.tableNextColumn();
+        builder.text(formatDouble(baseDrift));
+      } else {
+        builder.text(
+            pair.label + ": reference " + formatAngle(referencePosition)
+            + ", follower " + formatAngle(followerPosition)
+            + ", position error " + formatDouble(positionError)
+            + " rad, velocity error " + formatDouble(velocityError)
+            + " rad/s, base drift " + formatDouble(baseDrift) + " m");
+      }
+    }
+    if (useTable) {
+      builder.endTable();
     }
   };
   return panel;

@@ -20,7 +20,7 @@ Fetch target-gizmo cleanup, the R24-13 native window-title cleanup, the R24-14
 camera up-vector cleanup, the R24-15 panel camera-inspection cleanup, the
 R24-16 key-release cleanup, the R24-17 panel lighting cleanup, the R24-18
 application-callback cleanup, the R24-19 render-settings cleanup, and the
-R24-20 panel-color cleanup. R24-16
+R24-20 panel-color cleanup, and the R24-21 panel-table/swatch cleanup. R24-16
 adds key-release triggers for promoted keyboard actions and restores
 keydown/key-release callbacks in the affected migrated examples. R24-17 adds
 `PanelContext::lighting` headlight state and restores historical headlight
@@ -31,6 +31,8 @@ adds public `RenderSettings::shadowsEnabled` and restores historical shadow
 toggles in `atlas_simbicon` and `operational_space_control`. R24-20 adds
 public `PanelBuilder::colorEdit` and restores the terrain color editor in
 `heightmap` plus point-cloud and voxel-grid color editors in `point_cloud`.
+R24-21 adds public panel table and color-swatch primitives and restores the
+historical Mimic Pendulums rig legend plus diagnostics table.
 Do not push these local checkpoints without explicit maintainer/user approval
 in the active session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
@@ -48,7 +50,7 @@ covers historical headlight checkboxes. Public `ApplicationOptions` callbacks
 now cover post-step and pre/post-render lifecycle hooks for `empty` and
 `imgui`, public `RenderSettings` now covers shadow toggles, and public
 `PanelBuilder::colorEdit` now covers basic RGBA panel color editors. Remaining
-audit gaps are mostly depth render outputs, panel plotting/table widgets,
+audit gaps are mostly depth render outputs, panel plotting/render metrics,
 debug-grid controls, and example-specific simulation or posture controls
 rather than bare source-owned target handles, camera up-vector
 defaults, basic camera readouts, simple key-release callbacks, headlight

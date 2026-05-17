@@ -422,8 +422,7 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     PGS solver controls; keeps original rig names with base-color legend;
     replaces the old OSG grid with a source-owned `LineSegmentShape` XY grid;
     reports reference/follower angles, position error, velocity error, and base
-    drift; and documents shared capture flags in the README. Exact ImGui table
-    and color-swatch layout remains a public panel API gap. Local validation
+    drift; and documents shared capture flags in the README. Local validation
     includes focused builds, focused CTest, direct `--help`, software-GL
     screenshot and image-sequence analyzer checks, aggregate `build-examples`,
     Python C++ example-runner tests, mandatory `pixi run lint`, post-lint
@@ -767,6 +766,16 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     screenshot analyzer smokes for `heightmap` and `point_cloud`, aggregate
     `examples` build, mandatory `pixi run lint`, post-lint focused
     rebuild/CTest, and post-lint direct screenshot smokes.
+82. The current R24-21 implementation promotes renderer-neutral
+    `dart::gui::PanelBuilder` table and color-swatch primitives. The private
+    Filament ImGui panel bridge maps them to `BeginTable`/`ColorButton`, while
+    `examples/mimic_pendulums` uses them to restore the historical rig legend
+    color swatches and mimic diagnostics table with a flat-text fallback for
+    renderers without table support. Validation passed focused build for
+    `mimic_pendulums` and `UNIT_gui_FilamentSceneExtraction`, focused CTest,
+    direct software-GL screenshot analyzer smoke for `mimic_pendulums`,
+    aggregate `examples` build, mandatory `pixi run lint`, post-lint focused
+    rebuild/CTest, and post-lint direct screenshot smoke.
 
 ## Checkpoint Rule
 

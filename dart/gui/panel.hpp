@@ -41,6 +41,7 @@
 #include <array>
 #include <functional>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -78,6 +79,35 @@ public:
     (void)label;
     (void)rgba;
     return false;
+  }
+
+  virtual void colorSwatch(std::string_view label, const Eigen::Vector4d& rgba)
+  {
+    (void)rgba;
+    text(label);
+  }
+
+  virtual bool beginTable(
+      std::string_view label, std::span<const std::string_view> columns)
+  {
+    (void)label;
+    (void)columns;
+    return false;
+  }
+
+  virtual void tableNextRow()
+  {
+    // Default no-op for renderers without panel tables.
+  }
+
+  virtual bool tableNextColumn()
+  {
+    return false;
+  }
+
+  virtual void endTable()
+  {
+    // Default no-op for renderers without panel tables.
   }
 
   virtual bool collapsingHeader(std::string_view, bool = false)

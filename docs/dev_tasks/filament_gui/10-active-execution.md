@@ -160,9 +160,17 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   adds promoted `RenderSettings::shadowsEnabled` and restores historical shadow
   toggles in `atlas_simbicon` and `operational_space_control`. R24-20 adds
   promoted `PanelBuilder::colorEdit` and restores terrain, point-cloud, and
-  voxel-grid color editors in `heightmap` and `point_cloud`. These local
-  checkpoints are not pushed.
-- Latest local R24-20 validation passed focused build for `heightmap`,
+  voxel-grid color editors in `heightmap` and `point_cloud`. R24-21 adds
+  promoted `PanelBuilder` table and color-swatch primitives and restores the
+  Mimic Pendulums rig legend plus diagnostics table. These local checkpoints
+  are not pushed.
+- Latest local R24-21 validation passed focused build for `mimic_pendulums`
+  and `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct software-GL
+  screenshot analyzer smoke for `mimic_pendulums` (307200/307200 nonzero
+  pixels); aggregate `examples` build; mandatory `pixi run lint`; post-lint
+  focused rebuild/CTest; and post-lint direct screenshot smoke with the same
+  nonzero count.
+  R24-20 validation passed focused build for `heightmap`,
   `point_cloud`, and `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct
   software-GL screenshot analyzer smokes for `heightmap` (307200/307200
   nonzero pixels) and `point_cloud` (307096/307200); aggregate `examples`
@@ -262,8 +270,9 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   restores live reset/ODE-collision/PGS-solver controls, original rig names
   with base colors, a source-owned XY grid,
   reference/follower/error/base-drift diagnostics, README option inventory, and
-  marker guards through public `dart::gui`. Exact ImGui table and color-swatch
-  layout remains a named public panel API gap.
+  marker guards through public `dart::gui`. The local R24-21 public
+  table/color-swatch panel checkpoint restores the historical legend and
+  diagnostics table without exposing backend widgets.
 - Latest pushed strict re-open checkpoint: `examples/mixed_chain/`
   restores the historical random startup pose, 640x480 launch default, console
   instructions, README/capture documentation, and marker coverage while
