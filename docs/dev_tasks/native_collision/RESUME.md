@@ -95,6 +95,22 @@ prerequisites and documented FCL/Bullet/ODE as optional reference-comparison
 dependencies. That docs cleanup is commit `621fca5a1fb` and was validated with
 `pixi run lint`.
 
+The latest pushed feature-code head `08a3ee5555c` (`Fix native capsule mesh
+CCD`) reworks `dart/collision/native/narrow_phase/ccd.cpp` so sphere- and
+capsule-vs-mesh casts iterate triangle ConvexShapes through the canonical
+sphere/capsule-vs-convex CCD paths and keep the best timeOfImpact across hits,
+eliminating direct-hit misses against open/thin triangle meshes. It is the
+first feature commit after the `origin/main` merge `80b6f00dcdf`. Full local
+validation on that head passed `pixi run lint` plus
+`DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi
+run test-all` with all 6 top-level gates green (Linting, Build, Unit Tests,
+Simulation-Experimental Tests, Python Tests, Documentation; `All tests
+passed!`). Focused Release CCD/capsule/mesh re-runs against the same build
+tree passed `test_ccd` 62/62 (covers `NarrowPhaseSphereCast.*`,
+`NarrowPhaseCapsuleCast.*`, and `ConservativeAdvancement`),
+`test_capsule_capsule` 18/18, and `test_mesh_mesh` 11/11. No PR, push,
+workflow, branch, or GitHub state was mutated for that recheck.
+
 Current local code follow-up fixes a native box-box contact-point
 regression that could let a rotated box fall through a large ground box in
 default-world simulation and a capsule-box duplicate-filtering regression that

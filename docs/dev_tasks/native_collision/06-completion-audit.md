@@ -94,6 +94,17 @@ Snapshot audit commands before recording this section showed:
   The same code head passed focused reference-backend checks and the final
   unfiltered `collision-reference` CTest sweep 301/301 after building the
   dedicated simulation-experimental target.
+- Newest full code-validation head after the `origin/main` merge: `08a3ee5555c`
+  (`Fix native capsule mesh CCD`). Passed `pixi run lint` plus
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  with all 6 top-level gates green (Linting, Build, Unit Tests,
+  Simulation-Experimental Tests, Python Tests, Documentation;
+  `All tests passed!`). Focused Release reruns of the affected narrow-phase
+  CCD targets against the same build tree passed `test_ccd` 62/62 (covers
+  `NarrowPhaseSphereCast.*`, `NarrowPhaseCapsuleCast.*`, and
+  `ConservativeAdvancement`), `test_capsule_capsule` 18/18, and
+  `test_mesh_mesh` 11/11. No PR, push, workflow, branch, or GitHub state was
+  mutated by this validation pass.
 - Earlier local downstream/package/link refresh head: `6404f7607be`
   (`Classify native collision matrix deferrals`) passed the gz-physics Pixi gate
   65/65, the native compatibility package smoke, and direct `readelf` link
