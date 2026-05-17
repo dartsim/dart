@@ -16,8 +16,8 @@ collision migration.
    `06-completion-audit.md`.
 3. Replace the branch-local evidence below with review-head evidence where a
    final CI artifact exists.
-4. Paste the Summary, Key Changes, Testing, Breaking Changes, and Checklist
-   Notes sections into the PR body.
+4. Paste the Summary, Key Changes, Testing, Breaking Changes,
+   Related Issues / PRs (backports), and Checklist sections into the PR body.
 5. Delete `docs/dev_tasks/native_collision/` in the same completing PR after the
    evidence transfer.
 
@@ -177,15 +177,16 @@ Compatibility notes:
 - Explicit old-engine comparisons should use `dart-test-reference-*` targets and
   `createReference()` APIs.
 
-## Checklist Notes
+#### Checklist
 
-- [ ] Milestone set on the final review surface.
-- [x] `CHANGELOG.md` carries DART 7 native-collision entries.
+- [ ] Milestone set (DART 7.0 for `main`, DART 6.16.x for `release-6.16`;
+      final surface pending).
+- [x] CHANGELOG.md carries DART 7 native-collision entries.
 - [x] Unit, integration, downstream, package, wheel, and guard evidence is
       recorded in this task folder.
-- [x] Public migration, architecture, build-system, building, and Python docs
-      carry the DART 7 native-collision policy.
-- [x] dartpy exposes the clean `DartCollisionDetector` API.
+- [x] Add unit tests for new functionality.
+- [x] Document new methods and classes.
+- [x] Add Python bindings (dartpy) if applicable.
 - [ ] Final PR/CI evidence transferred after the maintainer-selected review
       surface exists.
 - [ ] `docs/dev_tasks/native_collision/` deleted in the completing PR after

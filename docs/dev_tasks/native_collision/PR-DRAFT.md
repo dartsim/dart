@@ -138,6 +138,7 @@ surface. Use this closure map:
 
 ## Breaking Changes
 
+- [ ] None
 - dartpy no longer exposes `DARTCollisionDetector`, `FCLCollisionDetector`,
   `BulletCollisionDetector`, or `OdeCollisionDetector`. Use
   `DartCollisionDetector` or the default detector.
@@ -146,22 +147,23 @@ surface. Use this closure map:
 - Explicit old-engine comparisons should use `dart-test-reference-*` targets
   and `createReference()` APIs.
 
-## Related Issues / PRs
+## Related Issues / PRs (backports)
 
 - Supersedes or replaces closed draft PR #2652:
   `https://github.com/dartsim/dart/pull/2652`
 
-## Checklist Notes
+#### Checklist
 
-- [ ] Milestone set on the final review surface (`DART 7.0` for `main`).
-- [x] `CHANGELOG.md` updated for DART 7 native-collision behavior, dartpy alias
+- [ ] Milestone set (DART 7.0 for `main`, DART 6.16.x for `release-6.16`;
+      final surface pending).
+- [x] CHANGELOG.md updated for DART 7 native-collision behavior, dartpy alias
       removal, reference-only old engines, benchmark guard, wheel isolation, and
       runtime source isolation.
+- [x] Add unit tests for new functionality.
+- [x] Document new methods and classes.
+- [x] Add Python bindings (dartpy) if applicable.
 - [x] Unit/integration/downstream/package/guard evidence is recorded in
       `docs/dev_tasks/native_collision/`.
-- [x] Public migration, architecture, build-system, building, and Python docs
-      carry the DART 7 collision policy and reference-only old-engine scope.
-- [x] dartpy exposes `DartCollisionDetector` without legacy detector aliases.
 - [ ] Final PR/CI evidence transferred after the maintainer-selected review
       surface exists.
 - [ ] `docs/dev_tasks/native_collision/` deleted in the same completing PR after
