@@ -12,8 +12,9 @@ The latest focused feature-code head is `08a3ee5555c`
 reruns recorded in `03-evidence-gates.md`.
 
 Recent local-only history refreshed the Round 20 documentation-hygiene slice
-for the largest native-collision side-channel files, refreshed the PR staging
-packet, and merged current upstream `main`:
+for the largest native-collision side-channel files, merged current upstream
+`main`, recorded the merged validation evidence, and aligned the PR staging
+packet with `.github/PULL_REQUEST_TEMPLATE.md`:
 
 - `21ea43cdc12` — `Compact native collision supervisor notes`
 - `01adba243b1` — `Compact native collision completion audit`
@@ -26,6 +27,10 @@ packet, and merged current upstream `main`:
 - `aea78dc3d61` — `Record native collision current packet validation`
 - `a9816dcfe06` — `Clarify native collision local CI audit wording`
 - `f949b7cbbbe` — `Merge current main into native collision branch`
+- `7246d1d59ff` — `Record native collision merged validation evidence`
+- `2f128a6664e` — `Align native collision PR packet with template`
+- `f544a72ae12` — `Complete native collision PR transfer packet`
+- `d2a0d842a3f` — `Match native collision transfer packet to PR sections`
 - this `RESUME.md` update may move `HEAD`; run `git log -10 --oneline` for the
   exact current hash.
 
@@ -37,7 +42,7 @@ history.
 ## Current Branch
 
 `feature/new_coll` tracks `origin/feature/new_coll`. Before this resume update,
-local `HEAD` was `f949b7cbbbe` and `origin/feature/new_coll` was
+local `HEAD` was `d2a0d842a3f` and `origin/feature/new_coll` was
 `e0304211446`. After committing this file, the local branch should be ahead by
 one additional docs-only handoff commit. Run `git log -10 --oneline --decorate`
 for the exact current local head. Do not push without explicit
@@ -80,7 +85,7 @@ Latest focused feature-code validation:
 - Focused reruns passed `test_ccd` 62/62, `test_capsule_capsule` 18/18, and
   `test_mesh_mesh` 11/11.
 
-Latest docs-compaction validation:
+Latest docs/PR-packet validation:
 
 - `pixi run lint` passed after each committed compaction slice.
 - `git diff --check` passed before each commit.
@@ -89,6 +94,9 @@ Latest docs-compaction validation:
 - `pixi run check-lint-md` passed during the compaction checks.
 - The PR staging packet now points to evidence-owner files instead of copying
   long historical run lists.
+- `PR-DRAFT.md` and `07-pr-evidence-transfer.md` now use PR-template section
+  names for Summary, Changes / Key Changes, Testing, Breaking Changes,
+  Related Issues / PRs (backports), and Checklist.
 - Pre-record docs-packet head `23dbbccc6c0` passed
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
   with all 6 top-level gates green and `All tests passed!`.
