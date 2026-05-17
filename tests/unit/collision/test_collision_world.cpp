@@ -61,6 +61,7 @@ TEST(CollisionWorld, AddRemoveObjects)
 
   auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0));
   EXPECT_EQ(world.numObjects(), 2u);
+  EXPECT_TRUE(obj2.isValid());
 
   world.destroyObject(obj1);
   EXPECT_EQ(world.numObjects(), 1u);
@@ -79,6 +80,8 @@ TEST(CollisionWorld, TwoSpheres_Colliding)
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
   auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+  EXPECT_TRUE(obj1.isValid());
+  EXPECT_TRUE(obj2.isValid());
 
   CollisionOption option;
   CollisionResult result;
@@ -123,6 +126,8 @@ TEST(CollisionWorld, TwoSpheres_Separated)
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
   auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+  EXPECT_TRUE(obj1.isValid());
+  EXPECT_TRUE(obj2.isValid());
 
   CollisionOption option;
   CollisionResult result;
@@ -146,6 +151,9 @@ TEST(CollisionWorld, MultipleObjects)
   Eigen::Isometry3d tf3 = Eigen::Isometry3d::Identity();
   tf3.translation() = Eigen::Vector3d(10.0, 0, 0);
   auto obj3 = world.createObject(std::make_unique<SphereShape>(1.0), tf3);
+  EXPECT_TRUE(obj1.isValid());
+  EXPECT_TRUE(obj2.isValid());
+  EXPECT_TRUE(obj3.isValid());
 
   CollisionOption option;
   CollisionResult result;
@@ -185,6 +193,8 @@ TEST(CollisionWorld, MixedShapes)
   tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
   auto obj2 = world.createObject(
       std::make_unique<BoxShape>(Eigen::Vector3d(1, 1, 1)), tf2);
+  EXPECT_TRUE(obj1.isValid());
+  EXPECT_TRUE(obj2.isValid());
 
   CollisionOption option;
   CollisionResult result;
@@ -225,6 +235,7 @@ TEST(CollisionWorld, UpdateObject)
   CollisionWorld world;
 
   auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+  EXPECT_TRUE(obj1.isValid());
 
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
@@ -452,6 +463,7 @@ TEST(CollisionWorld, UpdateDirtyById)
 
   Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
   auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0), tf1);
+  EXPECT_TRUE(obj1.isValid());
 
   Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
   tf2.translation() = Eigen::Vector3d(5.0, 0, 0);
