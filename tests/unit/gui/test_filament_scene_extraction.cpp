@@ -3542,6 +3542,7 @@ TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
   EXPECT_NE(eventSource.find("KeyboardKey::Right"), std::string::npos);
   EXPECT_NE(
       eventSource.find("KeyboardShortcut::characterKey"), std::string::npos);
+  EXPECT_NE(eventSource.find("character('?')"), std::string::npos);
   EXPECT_NE(eventSource.find("addExtForce"), std::string::npos);
   EXPECT_NE(eventSource.find("addExtTorque"), std::string::npos);
   EXPECT_NE(
@@ -3561,6 +3562,7 @@ TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
       std::string::npos);
   EXPECT_NE(eventReadmeSource.find("dart::gui"), std::string::npos);
   EXPECT_NE(eventReadmeSource.find("Tab / Backspace"), std::string::npos);
+  EXPECT_NE(eventReadmeSource.find("`h` / `?`"), std::string::npos);
   EXPECT_EQ(eventSource.find("options.defaultScene"), std::string::npos);
 }
 
@@ -3628,7 +3630,9 @@ TEST(FilamentSceneExtraction, SoftBodiesAndVehicleExamplesPreserveParityMarkers)
       / "filament" / "input.cpp");
   EXPECT_NE(inputSource.find("GLFW_KEY_LEFT_BRACKET"), std::string::npos);
   EXPECT_NE(inputSource.find("GLFW_KEY_RIGHT_BRACKET"), std::string::npos);
+  EXPECT_NE(inputSource.find("GLFW_KEY_SLASH"), std::string::npos);
   EXPECT_NE(inputSource.find("GLFW_KEY_BACKSLASH"), std::string::npos);
+  EXPECT_NE(inputSource.find("case '?'"), std::string::npos);
   EXPECT_NE(inputSource.find("isShiftDown"), std::string::npos);
 
   const auto vehicleSource = readSourceFile(

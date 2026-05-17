@@ -851,6 +851,12 @@ std::vector<dart::gui::KeyboardAction> createSimulationEventKeyboardActions(
       [state](dart::gui::KeyboardActionContext&) {
         state->printInstructions();
       }));
+  actions.push_back(makeSimulationEventAction(
+      "Print controls (?)",
+      character('?'),
+      [state](dart::gui::KeyboardActionContext&) {
+        state->printInstructions();
+      }));
 
   return actions;
 }

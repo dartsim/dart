@@ -776,6 +776,16 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     direct software-GL screenshot analyzer smoke for `mimic_pendulums`,
     aggregate `examples` build, mandatory `pixi run lint`, post-lint focused
     rebuild/CTest, and post-lint direct screenshot smoke.
+83. The current R24-22 implementation maps
+    `dart::gui::KeyboardShortcut::characterKey('?')` to shifted slash in the
+    private Filament input bridge, while keeping unshifted slash distinct. This
+    restores the historical Simulation Event Handler `?` help alias through
+    public `dart::gui::KeyboardAction` instead of backend event types.
+    Validation passed focused build for `simulation_event_handler` and
+    `UNIT_gui_FilamentSceneExtraction`, focused CTest, pixi software-GL
+    screenshot analyzer smoke for `simulation_event_handler`, aggregate
+    `examples` build, mandatory `pixi run lint`, post-lint focused
+    rebuild/CTest, and post-lint pixi screenshot smoke.
 
 ## Checkpoint Rule
 

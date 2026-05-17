@@ -162,9 +162,16 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   promoted `PanelBuilder::colorEdit` and restores terrain, point-cloud, and
   voxel-grid color editors in `heightmap` and `point_cloud`. R24-21 adds
   promoted `PanelBuilder` table and color-swatch primitives and restores the
-  Mimic Pendulums rig legend plus diagnostics table. These local checkpoints
-  are not pushed.
-- Latest local R24-21 validation passed focused build for `mimic_pendulums`
+  Mimic Pendulums rig legend plus diagnostics table. R24-22 adds shifted-slash
+  `KeyboardAction` handling and restores the Simulation Event Handler `?` help
+  alias. These local checkpoints are not pushed.
+- Latest local R24-22 validation passed focused build for
+  `simulation_event_handler` and `UNIT_gui_FilamentSceneExtraction`; focused
+  CTest; pixi software-GL screenshot analyzer smoke for
+  `simulation_event_handler` (307200/307200 nonzero pixels); aggregate
+  `examples` build; mandatory `pixi run lint`; post-lint focused
+  build/CTest; and post-lint pixi screenshot smoke with the same nonzero count.
+  R24-21 validation passed focused build for `mimic_pendulums`
   and `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct software-GL
   screenshot analyzer smoke for `mimic_pendulums` (307200/307200 nonzero
   pixels); aggregate `examples` build; mandatory `pixi run lint`; post-lint

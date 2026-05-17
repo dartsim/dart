@@ -122,6 +122,8 @@
     Eye/Center/Up panel readouts in migrated GUI examples.
   - Added public key-release triggers for `dart::gui::KeyboardAction` and
     restored historical keydown/key-release callbacks in migrated GUI examples.
+  - Added shifted-slash shortcut handling for `dart::gui::KeyboardAction` and
+    restored the Simulation Event Handler `?` help alias.
   - Added public `dart::gui::PanelContext` lighting state and restored
     historical headlight panel checkboxes in migrated GUI examples.
   - Added public `dart::gui::ApplicationOptions` post-step and render

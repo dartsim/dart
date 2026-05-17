@@ -27,4 +27,4 @@ Controls:
 - `.` / `,`: adjust the simulation timestep
 - `v`: toggle force-arrow visualization
 - `i`: print simulation state
-- `h`: print controls
+- `h` / `?`: print controls

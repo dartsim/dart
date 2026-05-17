@@ -85,6 +85,9 @@ int glfwKeyForShortcut(const KeyboardShortcut& shortcut)
       case ']':
       case '}':
         return GLFW_KEY_RIGHT_BRACKET;
+      case '/':
+      case '?':
+        return GLFW_KEY_SLASH;
       case '\\':
         return GLFW_KEY_BACKSLASH;
       default:
@@ -141,9 +144,11 @@ bool isShortcutDown(GLFWwindow* window, const KeyboardShortcut& shortcut)
   switch (shortcut.character) {
     case '{':
     case '}':
+    case '?':
       return isShiftDown(window);
     case '[':
     case ']':
+    case '/':
       return !isShiftDown(window);
     default:
       break;
