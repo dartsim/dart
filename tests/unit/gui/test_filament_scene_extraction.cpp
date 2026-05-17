@@ -278,6 +278,14 @@ public:
     events.emplace_back("color-swatch:" + std::string(label));
   }
 
+  void plotLines(
+      std::string_view label, std::span<const double> values) override
+  {
+    events.emplace_back(
+        "plot-lines:" + std::string(label) + ":"
+        + std::to_string(values.size()));
+  }
+
   bool beginTable(
       std::string_view label,
       std::span<const std::string_view> columns) override
@@ -746,6 +754,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
     builder.slider("Gain", gain, 0.0, 2.0);
     builder.colorEdit("Tint", tint);
     builder.colorSwatch("Tint swatch", tint);
+    constexpr std::array<double, 3> trend{0.0, 1.0, 0.5};
+    builder.plotLines("Trend", trend);
     constexpr std::array<std::string_view, 2> columns{"Name", "Value"};
     if (builder.beginTable("Stats", columns)) {
       builder.tableNextRow();
@@ -824,6 +834,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "slider:Gain",
           "color:Tint",
           "color-swatch:Tint swatch",
+          "plot-lines:Trend:3",
           "begin-table:Stats:2",
           "table-column:Name",
           "table-column:Value",
@@ -3532,10 +3543,13 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
       lcpSource.find("builder.beginTable(\"lcp_performance\""),
       std::string::npos);
   EXPECT_NE(
-      lcpSource.find("Step-time line plot needs a public panel plotting API"),
+      lcpSource.find("builder.plotLines(\"Step time (ms)\""),
       std::string::npos);
   EXPECT_NE(
       lcpSource.find("Display/font metrics need backend debug access"),
+      std::string::npos);
+  EXPECT_EQ(
+      lcpSource.find("Step-time line plot needs a public panel plotting API"),
       std::string::npos);
   EXPECT_EQ(
       lcpSource.find("step-time plots need a public panel plotting"),

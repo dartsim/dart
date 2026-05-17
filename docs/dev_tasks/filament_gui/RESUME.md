@@ -28,9 +28,9 @@ the R24-25 `lcp_physics` metric-diagnostics cleanup, and the R24-26
 target/support cleanup, and the R24-28 `atlas_puppet` whole-body solver
 cleanup, and the R24-29 `hubo_puppet` whole-body solver cleanup, and the
 R24-30 `hubo_puppet` analytical IK cleanup, and the R24-31 `hubo_puppet`
-Shift movement cleanup. R24-16 adds key-release triggers for promoted keyboard
-actions and restores keydown/key-release callbacks in the affected migrated
-examples. R24-17 adds
+Shift movement cleanup, and the R24-32 `lcp_physics` panel plotting cleanup.
+R24-16 adds key-release triggers for promoted keyboard actions and restores
+keydown/key-release callbacks in the affected migrated examples. R24-17 adds
 `PanelContext::lighting` headlight state and restores historical headlight
 checkboxes through public `dart::gui`. R24-18 adds public
 `ApplicationOptions::postStep`, `preRender`, and `postRender` callbacks and
@@ -62,13 +62,16 @@ focused build, marker CTest, mandatory lint, post-lint rebuild/CTest, and Hubo
 headless smoke analyzer validation pass locally. R24-31 restores the Hubo
 historical Shift-amplified WASD/QE/FZ root movement controls. Its focused
 build, marker CTest, mandatory lint, post-lint rebuild/CTest, and Hubo headless
-smoke analyzer validation pass locally.
+smoke analyzer validation pass locally. R24-32 adds public
+`PanelBuilder::plotLines` and restores the `lcp_physics` step-time history
+plot. Its focused build, marker CTest, mandatory lint, post-lint rebuild/CTest,
+and LCP headless smoke analyzer validation pass locally.
 Do not push these local checkpoints without explicit maintainer/user approval
 in the active session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
 explicitly asks to include them.
 
-Immediate next slice after the R24-31 Hubo Shift movement rollout: continue
+Immediate next slice after the R24-32 LCP panel plotting rollout: continue
 reducing the named public API gaps in `11-example-parity-audit.md`. Public
 `dart::gui::Gizmo` now covers the source-owned manipulation affordances for the
 recently re-opened target examples, public `OrbitCamera::up` covers historical
@@ -79,16 +82,16 @@ Eye/Center/Up panel readouts in `box_stacking` and `imgui`. Public
 covers historical headlight checkboxes. Public `ApplicationOptions` callbacks
 now cover post-step and pre/post-render lifecycle hooks for `empty` and
 `imgui`, public `RenderSettings` now covers shadow toggles, and public
-`PanelBuilder::colorEdit` now covers basic RGBA panel color editors, and the
-local source-owned grid helper covers the Heightmap and Point Cloud
-fine-grained grid controls. Remaining audit gaps are mostly depth render
-outputs, exact panel line plotting/backend debug metrics, and example-specific
-simulation controls rather than bare source-owned target handles, camera
-up-vector defaults, basic camera readouts, simple key-release callbacks,
-headlight checkboxes, basic lifecycle hooks, shadow toggles, basic color
-editors, source-owned grid controls, source-owned metric summaries,
-source-owned target activation, source-owned COM overlays, or Atlas/Hubo
-source-owned posture/balance solving.
+`PanelBuilder::colorEdit` now covers basic RGBA panel color editors, public
+`PanelBuilder::plotLines` covers simple metric history plots, and the local
+source-owned grid helper covers the Heightmap and Point Cloud fine-grained grid
+controls. Remaining audit gaps are mostly depth render outputs, backend debug
+metrics, and example-specific simulation controls rather than bare source-owned
+target handles, camera up-vector defaults, basic camera readouts, simple
+key-release callbacks, headlight checkboxes, basic lifecycle hooks, shadow
+toggles, basic color editors, simple panel plotting, source-owned grid
+controls, source-owned metric summaries, source-owned target activation,
+source-owned COM overlays, or Atlas/Hubo source-owned posture/balance solving.
 
 ## Live Supervisor Steering
 

@@ -87,6 +87,12 @@ public:
     text(label);
   }
 
+  virtual void plotLines(std::string_view label, std::span<const double> values)
+  {
+    (void)values;
+    text(label);
+  }
+
   virtual bool beginTable(
       std::string_view label, std::span<const std::string_view> columns)
   {

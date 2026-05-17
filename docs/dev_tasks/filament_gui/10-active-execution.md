@@ -287,8 +287,13 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   Reset/timestep/gravity panel controls, README option inventory, and marker
   guards through public `dart::gui`; a later checkpoint also restores
   source-owned render FPS, rendered/skipped frame counts, and rolling step-time
-  summaries. Exact ImGui line plots and backend display/font debug metrics
-  remain a named public panel plotting/backend-debug API gap.
+  summaries. The current local follow-up adds public `PanelBuilder::plotLines`
+  and restores the step-time history plot; backend display/font debug metrics
+  remain a named backend-debug API gap. Its validation passed focused
+  `lcp_physics` and `UNIT_gui_FilamentSceneExtraction` build, focused CTest,
+  mandatory `pixi run lint`, post-lint focused build/CTest, and post-lint
+  LCP pixi headless screenshot analyzer smoke with 307200/307200 nonzero
+  pixels.
 - Latest pushed strict re-open checkpoint: `examples/mimic_pendulums/`
   restores live reset/ODE-collision/PGS-solver controls, original rig names
   with base colors, a source-owned XY grid,

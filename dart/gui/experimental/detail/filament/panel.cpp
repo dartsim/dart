@@ -34,6 +34,7 @@
 
 #include <imgui.h>
 
+#include <limits>
 #include <string>
 
 namespace {
@@ -111,6 +112,30 @@ public:
         ImVec2(18.0f, 18.0f));
     ImGui::SameLine();
     ImGui::TextUnformatted(labelValue.c_str());
+  }
+
+  void plotLines(
+      std::string_view label, std::span<const double> values) override
+  {
+    const std::string labelValue(label);
+    const auto valueGetter = [](void* data, int index) {
+      const auto* values = static_cast<const std::span<const double>*>(data);
+      return static_cast<float>((*values)[static_cast<std::size_t>(index)]);
+    };
+    const auto valueCount = values.size() > static_cast<std::size_t>(
+                                std::numeric_limits<int>::max())
+                                ? std::numeric_limits<int>::max()
+                                : static_cast<int>(values.size());
+    ImGui::PlotLines(
+        labelValue.c_str(),
+        valueGetter,
+        &values,
+        valueCount,
+        0,
+        nullptr,
+        std::numeric_limits<float>::max(),
+        std::numeric_limits<float>::max(),
+        ImVec2(0.0f, 72.0f));
   }
 
   bool beginTable(

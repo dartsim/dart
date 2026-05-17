@@ -407,9 +407,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     placement, local scenario/solver controls, Reset/timestep/gravity controls,
     README option inventory, and marker guards now. A later checkpoint restored
     source-owned render FPS, rendered/skipped frame counts, and rolling
-    step-time summaries. Keep exact ImGui line plots and backend-specific
-    display/font debug metrics as a named public panel plotting/backend-debug
-    API gap. Implementation and pre-lint validation are
+    step-time summaries. Another local checkpoint restores the step-time plot
+    through public `PanelBuilder::plotLines`. Keep backend-specific display/font
+    debug metrics as a named backend-debug API gap. Implementation and pre-lint
+    validation are
     complete: focused `lcp_physics` and `UNIT_gui_FilamentSceneExtraction`
     build, focused CTest, direct `--list`, software-GL screenshot and `--out`
     image-sequence analyzer checks, pixi runner screenshot analyzer check,
@@ -417,7 +418,12 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `git diff --check` passed locally. Mandatory `pixi run lint`, post-lint
     focused build/CTest, direct `--list`, software-GL screenshot analyzer
     check, and post-lint `git diff --check` also passed. This checkpoint was
-    pushed as `e5523b4f5cd Restore LCP physics scene controls`.
+    pushed as `e5523b4f5cd Restore LCP physics scene controls`. The
+    panel-plotting follow-up validation also passed: focused `lcp_physics` and
+    `UNIT_gui_FilamentSceneExtraction` build, focused CTest, mandatory
+    `pixi run lint`, post-lint focused build/CTest, and post-lint
+    LCP pixi headless screenshot analyzer smoke with 307200/307200 nonzero
+    pixels.
 41. The active strict re-open cursor is now `examples/mimic_pendulums/`;
     compare it against `520993d7301^:examples/mimic_pendulums` before coding
     past that slice.

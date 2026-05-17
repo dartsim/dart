@@ -778,6 +778,11 @@ void addMetricFallbackText(
       + " max=" + formatMetricCell(summary, summary.maximum, suffix));
 }
 
+std::vector<double> copyMetricHistory(const std::deque<double>& history)
+{
+  return {history.begin(), history.end()};
+}
+
 void replaceWorldContents(
     dart::simulation::World& target, const dart::simulation::WorldPtr& source)
 {
@@ -919,7 +924,9 @@ dart::gui::Panel createLcpPanel(const std::shared_ptr<LcpPhysicsState>& state)
       } else {
         addMetricFallbackText(builder, "step time", stepTime, " ms");
       }
-      builder.text("Step-time line plot needs a public panel plotting API.");
+      const std::vector<double> stepTimeValues
+          = copyMetricHistory(state->stepTimeHistory);
+      builder.plotLines("Step time (ms)", stepTimeValues);
       builder.text("Display/font metrics need backend debug access.");
     }
 
