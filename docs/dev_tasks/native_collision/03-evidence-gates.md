@@ -183,8 +183,9 @@ Read-only GitHub checks show:
 - PR #2652 is closed, draft, based on `main`, and anchored to old head
   `714d220d82a`.
 - Feature-branch pushes after PR closure do not start the main PR workflows.
-- `gh run list --repo dartsim/dart --commit f949b7cbbbe...` returned no runs
-  for the local-only merged validation head.
+- Read-only `gh run list --repo dartsim/dart --commit <current-local-head>`
+  lookups for local-only heads returned no runs. Rerun the command from
+  `RESUME.md` for the exact current local head.
 
 Manual workflow-dispatch reference evidence on repaired head `1e1faf6feb1`
 exists for native-only CI, gz-physics CI, dartpy wheel matrix, and collision

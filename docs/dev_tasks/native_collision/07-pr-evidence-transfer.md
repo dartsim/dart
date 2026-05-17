@@ -78,7 +78,8 @@ Current local branch status at the time this packet was refreshed:
   `main` at `b218b43786c`.
 - PR #2652 is closed, draft, based on `main`, and anchored to old head
   `714d220d82a`.
-- Read-only run lookup for `f949b7cbbbe` returns no GitHub Actions runs.
+- Read-only run lookups for local-only heads return no GitHub Actions runs.
+  Rerun the command from `RESUME.md` for the exact current local head.
 
 Latest current-branch validation recorded by the task:
 
