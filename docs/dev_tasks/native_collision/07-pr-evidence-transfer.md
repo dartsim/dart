@@ -33,7 +33,7 @@ collision migration.
 - Treats this as feature-level completion. More aggressive CPU/GPU performance
   work is a later wave.
 
-## Key Changes
+## Changes / Key Changes
 
 - Default detector and factory routing now select the built-in `dart` stack.
 - Legacy C++ detector/group names and package components are native-backed
@@ -176,6 +176,11 @@ Compatibility notes:
   `DartCollisionDetector`.
 - Explicit old-engine comparisons should use `dart-test-reference-*` targets and
   `createReference()` APIs.
+
+## Related Issues / PRs (backports)
+
+- Supersedes or replaces closed draft PR #2652:
+  `https://github.com/dartsim/dart/pull/2652`
 
 #### Checklist
 
