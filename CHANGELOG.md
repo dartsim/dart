@@ -173,7 +173,8 @@
     scenes can start without dummy renderable geometry, and `atlas_puppet`,
     `hubo_puppet`, `g1_puppet`, `operational_space_control`, `wam_ikfast`, and
     `imgui` now use those public gizmos instead of source-owned target-handle
-    or target-ball geometry.
+    or target-ball geometry; Tinkertoy uses the same public gizmo for its force
+    target while keeping its source-owned axes and force-line geometry.
   - Moved `atlas_puppet` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground/root handle/IK targets, and
     passes public `dart::gui` IK handles directly.
@@ -229,8 +230,9 @@
     operational-space control, WAM IKFast, and Tinkertoy examples.
   - Restored Tinkertoy builder state through public `dart::gui` panel controls,
     including selected-block add/delete actions, gravity and force-coefficient
-    controls, target reorientation, force-line updates, external force
-    application, and collision/dynamics block construction.
+    controls, public-gizmo target movement, target reorientation, force-line
+    updates, external force application, and collision/dynamics block
+    construction.
   - Added renderer-neutral `dart::gui` keyboard actions and used them to
     restore Tinkertoy add/delete, force coefficient, clear-pick, and target
     reorientation hotkeys without exposing backend input headers.

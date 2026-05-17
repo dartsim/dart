@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -192,21 +193,6 @@ void addTinkertoyAxis(
   world.addSimpleFrame(frame);
 }
 
-std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetHandleShape(
-    double radius)
-{
-  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(7.0f);
-  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
-  const auto addAxis = [&](const Eigen::Vector3d& axis) {
-    handle->addVertex(axis, center);
-    handle->addVertex(-axis, center);
-  };
-  addAxis(Eigen::Vector3d(radius, 0.0, 0.0));
-  addAxis(Eigen::Vector3d(0.0, radius, 0.0));
-  addAxis(Eigen::Vector3d(0.0, 0.0, 0.75 * radius));
-  return handle;
-}
-
 struct TinkertoyReferenceFrames
 {
   dart::dynamics::SimpleFramePtr target;
@@ -238,8 +224,6 @@ TinkertoyReferenceFrames addTinkertoyReferenceFrames(
       dart::dynamics::Frame::World(),
       kTinkertoyTargetFrameName,
       targetTransform);
-  target->setShape(createTargetHandleShape(0.15));
-  target->getVisualAspect(true)->setRGBA(Eigen::Vector4d(1.0, 0.0, 1.0, 1.0));
   world.addSimpleFrame(target);
 
   auto forceLine = dart::dynamics::SimpleFrame::createShared(
@@ -344,6 +328,11 @@ public:
     auto references = addTinkertoyReferenceFrames(*mWorld);
     mTarget = std::move(references.target);
     mForceLine = std::move(references.forceLine);
+    dart::gui::Gizmo gizmo;
+    gizmo.label = kTinkertoyTargetFrameName;
+    gizmo.target = mTarget;
+    gizmo.size = 0.24;
+    mGizmos.push_back(std::move(gizmo));
     addTinkertoyInitialAssemblies(*mWorld, mShapes, mNextToyIndex);
     updateVisualState(false);
   }
@@ -351,6 +340,11 @@ public:
   const dart::simulation::WorldPtr& world() const
   {
     return mWorld;
+  }
+
+  const std::vector<dart::gui::Gizmo>& gizmos() const
+  {
+    return mGizmos;
   }
 
   void syncPickFromSelectionContext(
@@ -648,6 +642,7 @@ private:
 
   dart::simulation::WorldPtr mWorld;
   TinkertoyShapes mShapes;
+  std::vector<dart::gui::Gizmo> mGizmos;
   std::size_t mNextToyIndex = 0;
   dart::dynamics::SimpleFramePtr mTarget;
   std::shared_ptr<dart::dynamics::LineSegmentShape> mForceLine;
@@ -808,8 +803,7 @@ int main(int argc, char* argv[])
       panel.text("Press [Up] or [Down] to adjust pulling strength.");
       panel.text("Blocks in different trees can collide.");
       panel.text("Blocks in the same tree ignore each other.");
-      panel.text("Ctrl-left drag, arrows, and PageUp/PageDown move targets.");
-      panel.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
+      panel.text("Left-drag target gizmo arrows/planes/rings.");
     }
 
     if (panel.collapsingHeader("Simulation", true)
@@ -877,6 +871,7 @@ int main(int argc, char* argv[])
   dart::gui::ApplicationOptions options;
   options.world = state->world();
   options.runDefaults = makeTinkertoyRunDefaults();
+  options.gizmos = state->gizmos();
   options.preStep = [state]() {
     state->preStep();
   };

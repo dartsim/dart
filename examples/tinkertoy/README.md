@@ -5,15 +5,17 @@
 - Goal: interactively assemble simple jointed structures and pull on selected
   blocks.
 - Concepts/APIs: DART dynamics shapes, weld/revolute/ball joints,
-  renderer-neutral selection hit data, public `dart::gui` panels, keyboard
-  actions, and headless capture.
+  renderer-neutral selection hit data, public `dart::gui::Gizmo` target
+  affordances, public `dart::gui` panels, keyboard actions, and headless
+  capture.
 - Expected output: the historical two-assembly tinkertoy scene with an ImGui
-  control panel and a movable magenta force target.
+  control panel and a movable public transform gizmo force target.
 - Controls: `1`/`2`/`3` attach weld, revolute, and ball-joint blocks;
   Backspace clears the selected block; Delete removes the selected block
   subtree while paused; Up/Down adjusts pulling strength; `` ` `` resets the
-  target orientation; Tab resets the camera. Space toggles simulation and `n`
-  steps once while paused.
+  target orientation; left-drag target gizmo arrows/planes/rings to move the
+  force target; Tab resets the camera. Space toggles simulation and `n` steps
+  once while paused.
 
 Runtime Enter-key recording and viewer headlight toggles remain public
 `dart::gui` API gaps. Use the promoted capture flags below for maintained image

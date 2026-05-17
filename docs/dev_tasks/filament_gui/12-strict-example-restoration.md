@@ -636,6 +636,18 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     software-GL screenshot analyzer smoke for `imgui`, aggregate `examples`
     build, mandatory `pixi run lint`, post-lint focused rebuild/CTest, and
     post-lint direct screenshot smoke.
+71. The current R24-10 implementation extends the cleanup to
+    `examples/tinkertoy`: the builder keeps its intentional source-owned axes
+    and force-line geometry, but the user-movable force target now uses a
+    public `dart::gui::Gizmo` instead of source-owned target-handle geometry.
+    The panel and README describe gizmo dragging while preserving the existing
+    selected-hit data, force application, add/delete controls, target
+    reorientation, camera reset, and capture behavior. Validation passed
+    focused build for `tinkertoy` plus `UNIT_gui_FilamentSceneExtraction`,
+    focused CTest, direct software-GL screenshot analyzer smoke for
+    `tinkertoy`, aggregate `examples` build, mandatory `pixi run lint`,
+    post-lint focused rebuild/CTest, post-lint direct screenshot smoke,
+    stale-handle text scan, and `git diff --check`.
 
 ## Checkpoint Rule
 

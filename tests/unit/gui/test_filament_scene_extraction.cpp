@@ -2901,8 +2901,10 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
       std::filesystem::path("examples") / "tinkertoy" / "README.md");
   const auto panelHeader
       = readSourceFile(std::filesystem::path("dart") / "gui" / "panel.hpp");
-  EXPECT_NE(tinkertoySource.find("createTargetHandleShape"), std::string::npos);
+  EXPECT_EQ(tinkertoySource.find("createTargetHandleShape"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("dart::gui::Gizmo"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("options.gizmos"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("tinkertoy_target"), std::string::npos);
   EXPECT_NE(
       tinkertoySource.find("syncPickFromSelectionContext"), std::string::npos);
@@ -2912,7 +2914,10 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
       tinkertoySource.find("kDefaultBlockWidth / 2.0"), std::string::npos);
   EXPECT_NE(panelHeader.find("selectedPoint"), std::string::npos);
   EXPECT_NE(panelHeader.find("selectedNormal"), std::string::npos);
-  EXPECT_NE(tinkertoySource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_NE(
+      tinkertoySource.find("Left-drag target gizmo arrows/planes/rings"),
+      std::string::npos);
+  EXPECT_EQ(tinkertoySource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("class TinkertoyState"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("addWeldJointBlock"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("deletePick"), std::string::npos);
@@ -2947,6 +2952,7 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
       std::string::npos);
   EXPECT_NE(
       tinkertoyReadmeSource.find("pixi run ex tinkertoy"), std::string::npos);
+  EXPECT_NE(tinkertoyReadmeSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(tinkertoyReadmeSource.find("--gui-scale"), std::string::npos);
   EXPECT_NE(tinkertoyReadmeSource.find("--out"), std::string::npos);
   EXPECT_NE(
