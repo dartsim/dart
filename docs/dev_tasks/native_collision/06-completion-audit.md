@@ -67,7 +67,8 @@ Latest branch-local evidence packet:
 - `PR-DRAFT.md` and `07-pr-evidence-transfer.md` stage the successor PR body
   using the repository PR-template sections.
 - `RESUME.md` records the no-PR boundary, exact commands for resuming, and the
-  local PR-packet alignment commits through `b27586c9c8e`.
+  local PR-packet alignment handoff. Run `git log -10 --oneline` for the exact
+  current local head.
 - `SUPERVISOR.md` has been compacted per Round 20 so current guidance is not
   buried under historical side-channel detail.
 - Pre-record docs-packet head `23dbbccc6c0`
@@ -91,8 +92,9 @@ Latest read-only review-surface evidence:
   returns only PR #2652.
 - PR #2652 is `CLOSED`, draft, based on `main`, and anchored to old head
   `714d220d82a`.
-- `gh run list --repo dartsim/dart --commit b27586c9c8e...` returned no runs
-  for the local-only current head.
+- Read-only `gh run list --repo dartsim/dart --commit <current-local-head>`
+  lookups for local-only heads returned no runs. Rerun the command from
+  `RESUME.md` for the exact current local head.
 - No PR metadata, workflow state, branch state, push, or GitHub artifact was
   mutated by read-only audits.
 
