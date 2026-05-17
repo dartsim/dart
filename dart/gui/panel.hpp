@@ -145,6 +145,21 @@ public:
   {
     return false;
   }
+
+  virtual void openModal(std::string_view, bool& open)
+  {
+    open = true;
+  }
+
+  virtual bool beginModal(std::string_view, bool& open)
+  {
+    return open;
+  }
+
+  virtual void endModal()
+  {
+    // Default no-op for renderers without panel modals.
+  }
 };
 
 struct PanelContext

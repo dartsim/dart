@@ -418,6 +418,11 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   analyzer coverage
   (`/tmp/dart_tinkertoy_runtime_frames_postlint.2hh5UR/frame_000001.ppm`,
   307200/307200 nonzero pixels).
+- R24-35 Tinkertoy About modal follow-up adds public `PanelBuilder` modal
+  helpers and restores the exact Help/About DART modal path without exposing
+  ImGui or Filament in public headers. Focused build, marker CTest, mandatory
+  lint, post-lint rebuild/CTest, and Tinkertoy screenshot smoke analyzer
+  validation pass locally.
 - Active strict re-open cursor: `examples/vehicle/`. A previous parity
   checkpoint restored command keys and camera defaults, but the strict itemized
   inventory is still missing. Compare current source/README against

@@ -813,7 +813,7 @@ int main(int argc, char* argv[])
       }
       if (panel.beginMenu("Help")) {
         if (panel.menuItem("About DART")) {
-          *showAbout = true;
+          panel.openModal("About DART", *showAbout);
         }
         panel.endMenu();
       }
@@ -912,9 +912,13 @@ int main(int argc, char* argv[])
       }
     }
 
-    if (*showAbout) {
-      panel.separator();
-      panel.text("About DART: project and libdart simulation libraries.");
+    if (panel.beginModal("About DART", *showAbout)) {
+      panel.text("DART: Dynamic Animation and Robotics Toolkit");
+      panel.text("Project and libdart simulation libraries.");
+      if (panel.button("OK")) {
+        *showAbout = false;
+      }
+      panel.endModal();
     }
     panel.separator();
     panel.text("time: " + std::to_string(context.simulationTime));

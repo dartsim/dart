@@ -72,7 +72,10 @@ rebuild/CTest, and LCP headless smoke analyzer validation pass locally. R24-34
 adds public runtime frame-output capture controls and restores Tinkertoy
 Enter-key recording. Its focused build, marker CTest, mandatory lint,
 post-lint rebuild/CTest, screenshot smoke, and frame-sequence analyzer
-validation pass locally.
+validation pass locally. R24-35 adds public `PanelBuilder` modal helpers and
+restores the Tinkertoy Help/About DART modal workflow. Its focused build,
+marker CTest, mandatory lint, post-lint rebuild/CTest, and Tinkertoy screenshot
+smoke analyzer validation pass locally.
 Do not push these local checkpoints without explicit maintainer/user approval
 in the active session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
@@ -95,15 +98,16 @@ now cover post-step and pre/post-render lifecycle hooks for `empty` and
 `PanelContext::UiState` covers display/font diagnostics, and the local
 source-owned grid helper covers the Heightmap and Point Cloud fine-grained grid
 controls, and public `ViewerLifecycleState` frame-output capture covers runtime
-recording toggles. Remaining audit gaps are mostly depth render outputs,
+recording toggles. Public `PanelBuilder` modal helpers cover exact panel modal
+workflows. Remaining audit gaps are mostly depth render outputs,
 articulated-body drag, TinyDNN/custom constraint restoration, and WAM
 lifecycle/drag-mode behavior rather than bare source-owned target handles,
 camera up-vector defaults, basic camera readouts, simple key-release callbacks,
 headlight checkboxes, basic lifecycle hooks, shadow toggles, basic color
 editors, simple panel plotting, UI display/font metrics, runtime frame
-recording, source-owned grid controls, source-owned metric summaries,
-source-owned target activation, source-owned COM overlays, or Atlas/Hubo
-source-owned posture/balance solving.
+recording, exact panel modals, source-owned grid controls, source-owned metric
+summaries, source-owned target activation, source-owned COM overlays, or
+Atlas/Hubo source-owned posture/balance solving.
 
 ## Live Supervisor Steering
 

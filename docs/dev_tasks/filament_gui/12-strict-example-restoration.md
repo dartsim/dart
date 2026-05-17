@@ -557,7 +557,8 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     those gaps by extending public `PanelContext` with selected hit
     point/normal, using that in Tinkertoy, restoring panel/README/default
     markers, and later restoring runtime Enter recording through public
-    `ViewerLifecycleState` frame-output capture controls. The later local
+    `ViewerLifecycleState` frame-output capture controls plus the exact About
+    DART modal through public `PanelBuilder` modal helpers. The later local
     R24-17 lighting-state checkpoint restores the headlight toggle.
     Pre-lint validation includes focused builds, focused
     CTest, direct and pixi software-GL screenshot basic analyzer checks,

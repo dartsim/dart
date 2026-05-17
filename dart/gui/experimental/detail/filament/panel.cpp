@@ -210,6 +210,25 @@ public:
     const std::string labelValue(label);
     return ImGui::MenuItem(labelValue.c_str());
   }
+
+  void openModal(std::string_view label, bool& open) override
+  {
+    const std::string labelValue(label);
+    open = true;
+    ImGui::OpenPopup(labelValue.c_str());
+  }
+
+  bool beginModal(std::string_view label, bool& open) override
+  {
+    const std::string labelValue(label);
+    return ImGui::BeginPopupModal(
+        labelValue.c_str(), &open, ImGuiWindowFlags_AlwaysAutoResize);
+  }
+
+  void endModal() override
+  {
+    ImGui::EndPopup();
+  }
 };
 
 } // namespace

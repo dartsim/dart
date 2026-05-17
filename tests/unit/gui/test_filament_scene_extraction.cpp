@@ -351,6 +351,24 @@ public:
     return true;
   }
 
+  void openModal(std::string_view label, bool& open) override
+  {
+    events.emplace_back("open-modal:" + std::string(label));
+    open = true;
+  }
+
+  bool beginModal(std::string_view label, bool& open) override
+  {
+    events.emplace_back(
+        "begin-modal:" + std::string(label) + ":" + (open ? "open" : "closed"));
+    return open;
+  }
+
+  void endModal() override
+  {
+    events.emplace_back("end-modal");
+  }
+
   bool buttonPressed = true;
   bool checkboxValue = true;
   Eigen::Vector4d colorValue = Eigen::Vector4d(0.25, 0.5, 0.75, 0.85);
@@ -726,6 +744,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   int clicks = 0;
   std::string selectedLabel;
   bool headlights = false;
+  bool aboutOpen = false;
   Eigen::Vector4d tint = Eigen::Vector4d::Ones();
   dart::gui::RenderSettings renderSettings;
   renderSettings.shadowsEnabled = false;
@@ -739,7 +758,20 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
         }
         builder.endMenu();
       }
+      if (builder.beginMenu("Help")) {
+        if (builder.menuItem("About DART")) {
+          builder.openModal("About DART", aboutOpen);
+        }
+        builder.endMenu();
+      }
       builder.endMenuBar();
+    }
+    if (builder.beginModal("About DART", aboutOpen)) {
+      builder.text("about modal");
+      if (builder.button("Close")) {
+        aboutOpen = false;
+      }
+      builder.endModal();
     }
     builder.text("custom controls");
     builder.separator();
@@ -815,6 +847,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(diagnostics);
   EXPECT_DOUBLE_EQ(gain, 1.0);
   EXPECT_EQ(selectedLabel, "box");
+  EXPECT_FALSE(aboutOpen);
   ASSERT_TRUE(context.selectedPoint.has_value());
   EXPECT_TRUE(context.selectedPoint->isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   ASSERT_TRUE(context.selectedNormal.has_value());
@@ -844,7 +877,15 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "begin-menu:Menu",
           "menu-item:Exit",
           "end-menu",
+          "begin-menu:Help",
+          "menu-item:About DART",
+          "open-modal:About DART",
+          "end-menu",
           "end-menu-bar",
+          "begin-modal:About DART:open",
+          "text:about modal",
+          "button:Close",
+          "end-modal",
           "text:custom controls",
           "separator",
           "collapsing:Advanced:open",
@@ -2087,6 +2128,8 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(panelHeader.find("collapsingHeader"), std::string::npos);
   EXPECT_NE(panelHeader.find("beginMenuBar"), std::string::npos);
   EXPECT_NE(panelHeader.find("menuItem"), std::string::npos);
+  EXPECT_NE(panelHeader.find("openModal"), std::string::npos);
+  EXPECT_NE(panelHeader.find("beginModal"), std::string::npos);
   EXPECT_NE(
       selectionSource.find("rotateRenderableAndApplyIk"), std::string::npos);
   EXPECT_NE(
@@ -3317,6 +3360,10 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
       tinkertoySource.find("toggleFrameOutputCapture"), std::string::npos);
   EXPECT_NE(
       tinkertoySource.find("kTinkertoyRecordingDirectory"), std::string::npos);
+  EXPECT_NE(
+      tinkertoySource.find("openModal(\"About DART\""), std::string::npos);
+  EXPECT_NE(
+      tinkertoySource.find("beginModal(\"About DART\""), std::string::npos);
   EXPECT_NE(tinkertoySource.find("frameOutputEnabled"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("Start Recording"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("Stop Recording"), std::string::npos);
