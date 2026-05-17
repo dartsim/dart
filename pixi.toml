@@ -2000,7 +2000,7 @@ libode = ">=0.16.6,<0.17"
 # 1. Downloading gz-physics from source (gz-physics9_9.0.0 branch)
 # 2. Patching CMakeLists.txt to accept DART 7.0 (was hardcoded to 6.10)
 # 3. Building gz-physics with the dartsim plugin and test binaries
-# 4. Running the gz-physics test suite and verifying the dartsim plugin links against DART libraries
+# 4. Running the full gz-physics test suite and verifying the dartsim plugin links against DART libraries
 #
 # Usage (single command runs entire chain):
 #   pixi run -e gazebo test-gz
@@ -2013,7 +2013,7 @@ libode = ">=0.16.6,<0.17"
 #   pixi run -e gazebo patch-gz     # Patch DART version requirement
 #   pixi run -e gazebo config-gz    # Configure CMake build
 #   pixi run -e gazebo build-gz     # Build gz-physics + dartsim plugin
-#   pixi run -e gazebo test-gz      # Verify DART integration
+#   pixi run -e gazebo test-gz      # Run full gz-physics suite + verify DART integration
 #
 
 [feature.gazebo]
@@ -2116,34 +2116,10 @@ test-gz = { cmd = """
         ROOT_DIR=$PWD
         cd .deps/gz-physics/build
         python "$ROOT_DIR/scripts/cmake_build.py" --build-dir . --parallel ${DART_PARALLEL_JOBS} --target all
-        python <<\"PY\"
-import os
-import subprocess
-from pathlib import Path
-
-build_dir = Path(\".\")
-ctest = subprocess.run([\"ctest\", \"-N\"], cwd=build_dir, text=True, capture_output=True, check=True)
-targets = set()
-for line in ctest.stdout.splitlines():
-    line = line.strip()
-    if not line.startswith(\"Test #\"):
-        continue
-    name = line.split(\":\", 1)[1].strip()
-    if name.startswith(\"UNIT_\"):
-        targets.add(name)
-        if name.startswith(\"check_UNIT_\"):
-            base = name[len(\"check_\"):]
-            targets.add(base)
-    elif name.startswith(\"COMMON_TEST_\") and name.endswith(\"_dartsim\"):
-        base = name.rsplit(\"_\", 1)[0]
-        targets.add(base)
-jobs = os.environ.get(\"DART_PARALLEL_JOBS\", \"1\")
-subprocess.check_call([\"ninja\", \"-j\", jobs, *sorted(targets)], cwd=build_dir)
-PY
-        ctest --output-on-failure --tests-regex \"^(UNIT_|check_UNIT_|COMMON_TEST_.*dartsim)\"
+        ctest --output-on-failure --parallel ${DART_PARALLEL_JOBS}
         cd lib
         (otool -L libgz-physics-dartsim-plugin*.dylib 2>/dev/null || ldd libgz-physics-dartsim-plugin.so 2>/dev/null) | grep dart
-        echo "✓ DART plugin built successfully with DART integration!"
+        echo "✓ Full gz-physics suite passed and DART plugin links successfully!"
     '
 """, depends-on = [
   "build-gz",

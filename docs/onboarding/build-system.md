@@ -791,7 +791,7 @@ build/
 - `patch-gz` - Patch DART version requirement
 - `config-gz` - Configure gz-physics build
 - `build-gz` - Build gz-physics with dartsim plugin
-- `test-gz` - Verify DART integration
+- `test-gz` - Run the full gz-physics test suite and verify DART integration
 
 **Start here next time:**
 
@@ -811,9 +811,9 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 
 This command downloads the pinned `gz-physics9_9.0.0` branch, applies only the
 DART version-requirement patch from `scripts/patch_gz_physics.py`, configures
-with tests enabled, builds the DART plugin and selected gz-physics tests, runs
-`ctest --tests-regex "^(UNIT_|check_UNIT_|COMMON_TEST_.*dartsim)"`, and checks
-that the generated `libgz-physics-dartsim-plugin` links to DART libraries.
+with tests enabled, builds gz-physics and the DART plugin, runs the full
+gz-physics CTest inventory, and checks that the generated
+`libgz-physics-dartsim-plugin` links to DART libraries.
 
 **Fast iteration loop (Suggested (Unverified)):**
 
@@ -824,13 +824,13 @@ that the generated `libgz-physics-dartsim-plugin` links to DART libraries.
 
 **What to look for (success signal):**
 
-- The selected `UNIT_`, `check_UNIT_`, and `COMMON_TEST_.*dartsim` ctest targets
-  pass with `CTEST_OUTPUT_ON_FAILURE=1`.
+- The full gz-physics CTest inventory passes with `CTEST_OUTPUT_ON_FAILURE=1`.
 - The plugin linkage check prints a DART library from `ldd` or `otool -L`.
-- `test-gz` prints: `✓ DART plugin built successfully with DART integration!`
+- `test-gz` prints:
+  `✓ Full gz-physics suite passed and DART plugin links successfully!`
 
 For PR or release evidence, paste either the `CI gz-physics` run URL or a short
-local transcript summary with the pinned branch, command, selected ctest regex,
+local transcript summary with the pinned branch, command, full CTest result,
 plugin link-check result, and final success line. If a gz-physics-sensitive
 change skips this gate, state the deferral reason in the PR description.
 

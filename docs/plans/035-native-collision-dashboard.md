@@ -141,9 +141,11 @@ inventoried.
   native and Bullet-reference rows.
   Remaining pre-PR gate: final PR-state benchmark artifact remains required.
 - **Downstream/gz compatibility**
-  Inventory evidence: local `pixi run -e gazebo test-gz` passed 65/65;
+  Inventory evidence: local full gz-physics `ctest` inventory passed 203/203;
+  `pixi run -e gazebo test-gz` is the persistent full-suite gate and the
   compatibility-facade audit keeps old names native-backed.
-  Coverage status: covered locally for the current DART/gz use cases.
+  Coverage status: covered locally for the current DART/gz use cases and all
+  pinned gz-physics tests.
   Remaining pre-PR gate: final downstream CI evidence on the chosen review
   surface.
 
