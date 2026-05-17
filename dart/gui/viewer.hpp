@@ -64,6 +64,11 @@ struct RunOptions
   std::string frameOutputDirectory;
 };
 
+struct RenderSettings
+{
+  bool shadowsEnabled = true;
+};
+
 struct ViewerLifecycleState
 {
   int renderedFrames = 0;

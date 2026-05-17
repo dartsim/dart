@@ -260,7 +260,25 @@ void printOperationalSpaceInstructions()
       << "Left-drag the target gizmo arrows/planes/rings to move the "
          "operational-space target.\n"
       << "Press 1 to select the target for arrow/PageUp/PageDown nudges.\n"
+      << "s/S: Toggle shadows\n"
       << "Space: Toggle simulation\n";
+}
+
+std::vector<dart::gui::KeyboardAction> createOperationalSpaceKeyboardActions()
+{
+  const auto makeToggleShadowsAction = [](char shortcut) {
+    dart::gui::KeyboardAction action;
+    action.label = "Toggle shadows";
+    action.shortcut = dart::gui::KeyboardShortcut::characterKey(shortcut);
+    action.callback = [](dart::gui::KeyboardActionContext& context) {
+      if (context.renderSettings != nullptr) {
+        context.renderSettings->shadowsEnabled
+            = !context.renderSettings->shadowsEnabled;
+      }
+    };
+    return action;
+  };
+  return {makeToggleShadowsAction('s'), makeToggleShadowsAction('S')};
 }
 
 dart::gui::Panel createOperationalSpacePanel()
@@ -281,6 +299,12 @@ dart::gui::Panel createOperationalSpacePanel()
       builder.sameLine();
       if (builder.button("Step")) {
         dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    if (context.rendering.settings != nullptr) {
+      bool shadows = context.rendering.settings->shadowsEnabled;
+      if (builder.checkbox("Shadow On/Off", shadows)) {
+        context.rendering.settings->shadowsEnabled = shadows;
       }
     }
     builder.text("time: " + std::to_string(context.simulationTime));
@@ -305,6 +329,7 @@ int main(int argc, char* argv[])
     options.preStep = [controller = scene.controller]() {
       controller->preStep();
     };
+    options.keyboardActions = createOperationalSpaceKeyboardActions();
     options.panels.push_back(createOperationalSpacePanel());
 
     printOperationalSpaceInstructions();

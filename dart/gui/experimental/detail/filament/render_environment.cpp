@@ -150,11 +150,17 @@ void configureMainView(
     bool headless)
 {
   view.setColorGrading(colorGrading);
-  view.setShadowingEnabled(true);
+  applyRenderSettings(view, dart::gui::RenderSettings{});
   view.setShadowType(::filament::ShadowType::PCF);
   if (!headless) {
     configureWindowedViewQuality(view);
   }
+}
+
+void applyRenderSettings(
+    ::filament::View& view, const dart::gui::RenderSettings& settings)
+{
+  view.setShadowingEnabled(settings.shadowsEnabled);
 }
 
 void clearMainViewColorGrading(::filament::View& view)

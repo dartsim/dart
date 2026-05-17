@@ -11,11 +11,10 @@
   panel.
 - Controls: use r to reset, a/s/d/f to push the torso, 1/2/3/4 to switch
   state machines, and the panel for gravity, harness toggles, reset, stride
-  mode, headlights, pause, step, and exit. `--gui-scale` adjusts the GUI scale,
-  and `--width`/`--height` override the default 1280x960 window size.
-- Remaining renderer-neutral API gaps: the historical OSG shadow toggle and
-  depth camera mode need public render-settings APIs before exact panel parity
-  can be restored.
+  mode, headlights, shadows, pause, step, and exit. `--gui-scale` adjusts the
+  GUI scale, and `--width`/`--height` override the default 1280x960 window size.
+- Remaining renderer-neutral API gap: the historical OSG depth camera mode
+  needs a public render-output API before exact panel parity can be restored.
 
 ## Run
 

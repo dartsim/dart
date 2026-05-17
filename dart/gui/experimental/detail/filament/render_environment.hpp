@@ -50,6 +50,7 @@ class View;
 namespace dart::gui {
 
 struct OrbitCamera;
+struct RenderSettings;
 
 } // namespace dart::gui
 
@@ -75,6 +76,9 @@ void configureMainView(
     ::filament::View& view,
     ::filament::ColorGrading* colorGrading,
     bool headless);
+
+void applyRenderSettings(
+    ::filament::View& view, const dart::gui::RenderSettings& settings);
 
 void clearMainViewColorGrading(::filament::View& view);
 

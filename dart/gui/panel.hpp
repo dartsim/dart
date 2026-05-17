@@ -34,6 +34,7 @@
 #define DART_GUI_PANEL_HPP_
 
 #include <dart/gui/export.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <Eigen/Core>
 
@@ -117,6 +118,11 @@ struct PanelContext
     bool* headlightsEnabled = nullptr;
   };
 
+  struct RenderingState
+  {
+    RenderSettings* settings = nullptr;
+  };
+
   dart::simulation::World* world = nullptr;
   ViewerLifecycleState* lifecycle = nullptr;
   std::string selectedLabel;
@@ -126,6 +132,7 @@ struct PanelContext
   std::size_t contactCount = 0;
   CameraViewState camera;
   LightingState lighting;
+  RenderingState rendering;
 };
 
 struct Panel

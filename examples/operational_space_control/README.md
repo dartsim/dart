@@ -12,7 +12,8 @@
   gizmo near the end effector.
 - Controls: left-drag the target gizmo arrows/planes/rings to move the
   operational-space target. Press `1` to select the target for
-  arrow/PageUp/PageDown nudges. Space toggles simulation.
+  arrow/PageUp/PageDown nudges. Press `s` or `S` to toggle shadows. Space
+  toggles simulation.
 
 ## Run
 
@@ -36,7 +37,5 @@ pixi run ex operational_space_control --headless --frames 3 --out /tmp/operation
 
 ## Notes
 
-- The historical OSG shadow toggle is tracked as a public renderer-neutral
-  shadow-control API gap.
-- The historical camera home and custom up vector are restored through public
-  `dart::gui::OrbitCamera`.
+- The historical camera home, custom up vector, and shadow toggle are restored
+  through public `dart::gui` APIs.

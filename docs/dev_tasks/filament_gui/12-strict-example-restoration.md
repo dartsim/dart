@@ -198,8 +198,8 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `Recent parity checkpoint; still subject to strict audit re-open` rows.
     The Atlas Simbicon checkpoint has been committed and pushed as
     `82e39c45558 Restore Atlas Simbicon controller example`; exact
-    shadow-toggle and depth-camera parity remain named public API gaps after
-    later local headlight and native window-title repairs.
+    depth-camera parity remains a named public API gap after later local
+    headlight, native window-title, and shadow-toggle repairs.
     `examples/free_joint_cases/` was already restored and
     pushed as `f4963df00cd Restore free joint cases controls`, so the next
     strict-audit cursor is `examples/gui_scene_diagnostics/`.
@@ -455,9 +455,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     effector, 640x480 defaults, camera home, console/panel instructions,
     README/capture docs, and marker coverage. 1/2/3 aliases were added to
     promoted axis-constrained drag so the historical constraint keys work
-    without reintroducing OSG. The hidden shadow toggle remains a public API gap;
-    the exact custom camera up vector is restored by the later R24-14 public
-    `OrbitCamera::up` checkpoint. Pre-lint validation includes focused
+    without reintroducing OSG. The hidden shadow toggle is restored by the local
+    R24-19 public `RenderSettings` checkpoint; the exact custom camera up vector
+    is restored by the later R24-14 public `OrbitCamera::up` checkpoint.
+    Pre-lint validation includes focused
     builds, focused CTest, direct and pixi software-GL screenshot analyzer
     checks, image-sequence analyzer checks, aggregate `build-examples`, Python
     C++ example runner tests, and direct visual inspection of the KR5 capture.
@@ -677,9 +678,9 @@ restored. Do not rely on earlier restored-state wording in the inventory.
 74. The current R24-13 implementation promotes a native window-title field on
     `dart::gui::RunOptions` and uses it from `examples/atlas_simbicon` to
     restore the historical `Atlas Simbicon` window title. This removes the
-    window-title public API gap from Atlas Simbicon while keeping the remaining
-    shadow and depth-mode render-settings gaps explicit. Validation
-    passed focused build for `atlas_simbicon` plus
+    window-title public API gap from Atlas Simbicon while keeping the
+    then-remaining render-settings gaps explicit until later local checkpoints.
+    Validation passed focused build for `atlas_simbicon` plus
     `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct 1280x960
     software-GL screenshot analyzer smoke for `atlas_simbicon`, aggregate
     `examples` build, mandatory `pixi run lint`, post-lint focused
@@ -742,6 +743,19 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     focused CTest, direct software-GL screenshot analyzer smokes for `empty`
     and `imgui`, aggregate `examples` build, mandatory `pixi run lint`,
     post-lint focused rebuild/CTest, and post-lint direct screenshot smokes.
+80. The current R24-19 implementation promotes
+    `dart::gui::RenderSettings::shadowsEnabled`, exposes that renderer-neutral
+    state to panels through `PanelContext::rendering`, exposes it to keyboard
+    callbacks through `KeyboardActionContext::renderSettings`, and applies it
+    to the private Filament view before rendering each frame. This restores the
+    historical Atlas Simbicon `Shadow On/Off` panel checkbox and operational
+    space control `s`/`S` shadow toggle without exposing backend shadow
+    techniques. Validation passed focused build for `atlas_simbicon`,
+    `operational_space_control`, and `UNIT_gui_FilamentSceneExtraction`,
+    focused CTest, direct software-GL screenshot analyzer smokes for
+    `atlas_simbicon` and `operational_space_control`, aggregate `examples`
+    build, mandatory `pixi run lint`, post-lint focused rebuild/CTest, and
+    post-lint direct screenshot smokes.
 
 ## Checkpoint Rule
 

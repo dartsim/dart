@@ -98,6 +98,7 @@ struct KeyboardShortcut
 struct KeyboardActionContext
 {
   ViewerLifecycleState* lifecycle = nullptr;
+  RenderSettings* renderSettings = nullptr;
   std::function<void()> resetCamera;
 };
 
@@ -125,6 +126,7 @@ struct ApplicationOptions
   std::function<void()> preRender;
   std::function<void()> postRender;
   std::optional<OrbitCamera> camera;
+  RenderSettings renderSettings;
   std::string defaultScene;
   std::vector<Panel> panels;
   std::vector<Gizmo> gizmos;

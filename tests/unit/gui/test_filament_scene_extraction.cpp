@@ -675,6 +675,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   int clicks = 0;
   std::string selectedLabel;
   bool headlights = false;
+  dart::gui::RenderSettings renderSettings;
+  renderSettings.shadowsEnabled = false;
   dart::gui::Panel panel;
   panel.title = "Controls";
   panel.build = [&](dart::gui::PanelBuilder& builder) {
@@ -710,6 +712,12 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
         *context.lighting.headlightsEnabled = enabled;
       }
     }
+    if (context.rendering.settings != nullptr) {
+      bool shadows = context.rendering.settings->shadowsEnabled;
+      if (builder.checkbox("Shadow On/Off", shadows)) {
+        context.rendering.settings->shadowsEnabled = shadows;
+      }
+    }
   };
 
   RecordingPanelBuilder builder;
@@ -721,6 +729,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   context.camera.target = Eigen::Vector3d(1.0, 2.0, 3.0);
   context.camera.up = Eigen::Vector3d::UnitY();
   context.lighting.headlightsEnabled = &headlights;
+  context.rendering.settings = &renderSettings;
   panel.build(builder);
   panel.buildWithContext(builder, context);
 
@@ -736,6 +745,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(context.camera.target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_TRUE(context.camera.up.isApprox(Eigen::Vector3d::UnitY()));
   EXPECT_TRUE(headlights);
+  EXPECT_TRUE(renderSettings.shadowsEnabled);
   bool preStepCalled = false;
   bool postStepCalled = false;
   bool preRenderCalled = false;
@@ -758,7 +768,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "slider:Gain",
           "text:selected:box",
           "text:eye-x:4.000000",
-          "checkbox:Headlights On/Off"}));
+          "checkbox:Headlights On/Off",
+          "checkbox:Shadow On/Off"}));
 
   dart::gui::ApplicationOptions options;
   options.world = World::create("panel_test");
@@ -779,6 +790,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   options.runDefaults->height = 480;
   options.camera = dart::gui::OrbitCamera{};
   options.camera->target = Eigen::Vector3d(1.0, 2.0, 3.0);
+  options.renderSettings.shadowsEnabled = false;
   options.defaultScene = "mvp";
   options.panels.push_back(std::move(panel));
   ASSERT_NE(options.world, nullptr);
@@ -796,6 +808,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_EQ(options.runDefaults->height, 480);
   ASSERT_TRUE(options.camera.has_value());
   EXPECT_TRUE(options.camera->target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_FALSE(options.renderSettings.shadowsEnabled);
   EXPECT_EQ(options.defaultScene, "mvp");
   ASSERT_EQ(options.panels.size(), 1u);
   EXPECT_EQ(options.panels.front().title, "Controls");
@@ -1166,6 +1179,9 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresKeyboardActions)
     if (context.lifecycle != nullptr) {
       context.lifecycle->paused = true;
     }
+    if (context.renderSettings != nullptr) {
+      context.renderSettings->shadowsEnabled = false;
+    }
   };
 
   options.keyboardActions.push_back(std::move(action));
@@ -1179,14 +1195,17 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresKeyboardActions)
       options.keyboardActions.front().trigger,
       dart::gui::KeyboardActionTrigger::Release);
   dart::gui::ViewerLifecycleState lifecycle;
+  dart::gui::RenderSettings renderSettings;
   bool cameraReset = false;
   dart::gui::KeyboardActionContext context;
   context.lifecycle = &lifecycle;
+  context.renderSettings = &renderSettings;
   context.resetCamera = [&cameraReset]() {
     cameraReset = true;
   };
   options.keyboardActions.front().callback(context);
   EXPECT_TRUE(lifecycle.paused);
+  EXPECT_FALSE(renderSettings.shadowsEnabled);
   context.resetCamera();
   EXPECT_TRUE(cameraReset);
 }
@@ -2560,9 +2579,12 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
   EXPECT_NE(mainSource.find("Gravity Acc."), std::string::npos);
   EXPECT_NE(mainSource.find("Harness pelvis"), std::string::npos);
   EXPECT_NE(mainSource.find("Headlights On/Off"), std::string::npos);
+  EXPECT_NE(mainSource.find("Shadow On/Off"), std::string::npos);
   EXPECT_NE(mainSource.find("Normal-Stride Walking"), std::string::npos);
   EXPECT_NE(mainSource.find("Short-Stride Walking"), std::string::npos);
-  EXPECT_NE(mainSource.find("Shadow toggle and depth mode"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Depth mode needs a public render-output API"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("makeAtlasSimbiconCamera"), std::string::npos);
   EXPECT_NE(
       mainSource.find("camera.target = Eigen::Vector3d(1.0, 0.0, 0.0)"),
@@ -2586,8 +2608,10 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
       std::string::npos);
   EXPECT_NE(readmeSource.find("dart::gui::RunOptions"), std::string::npos);
   EXPECT_NE(
-      readmeSource.find("Remaining renderer-neutral API gaps"),
+      readmeSource.find("Remaining renderer-neutral API gap"),
       std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("historical OSG depth camera mode"), std::string::npos);
   EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
   EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
   EXPECT_EQ(mainSource.find("osg"), std::string::npos);
@@ -2923,6 +2947,14 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(
       operationalSource.find("Left-drag the target gizmo"), std::string::npos);
   EXPECT_NE(operationalSource.find("Press 1 to select"), std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("createOperationalSpaceKeyboardActions"),
+      std::string::npos);
+  EXPECT_NE(operationalSource.find("Toggle shadows"), std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("makeToggleShadowsAction('S')"),
+      std::string::npos);
+  EXPECT_NE(operationalSource.find("Shadow On/Off"), std::string::npos);
   EXPECT_EQ(operationalSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_EQ(
       operationalSource.find("Hold key 1 or X while Ctrl-dragging"),
@@ -2946,8 +2978,14 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
       std::string::npos);
   EXPECT_NE(
       operationalReadmeSource.find("Press `1` to select"), std::string::npos);
+  EXPECT_NE(
+      operationalReadmeSource.find("Press `s` or `S` to toggle shadows"),
+      std::string::npos);
   EXPECT_NE(operationalReadmeSource.find("--out"), std::string::npos);
   EXPECT_NE(
+      operationalReadmeSource.find("shadow toggle are restored"),
+      std::string::npos);
+  EXPECT_EQ(
       operationalReadmeSource.find("shadow-control API gap"),
       std::string::npos);
 

@@ -388,6 +388,12 @@ dart::gui::Panel createAtlasSimbiconPanel(
         *context.lighting.headlightsEnabled = headlights;
       }
     }
+    if (context.rendering.settings != nullptr) {
+      bool shadows = context.rendering.settings->shadowsEnabled;
+      if (builder.checkbox("Shadow On/Off", shadows)) {
+        context.rendering.settings->shadowsEnabled = shadows;
+      }
+    }
 
     builder.separator();
     if (builder.button("Reset Atlas")) {
@@ -412,8 +418,7 @@ dart::gui::Panel createAtlasSimbiconPanel(
     }
 
     builder.separator();
-    builder.text(
-        "Shadow toggle and depth mode need public render settings APIs.");
+    builder.text("Depth mode needs a public render-output API.");
     builder.text("state machine: " + runtime->currentStateMachineName());
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("contacts: " + std::to_string(context.contactCount));

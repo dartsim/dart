@@ -82,6 +82,7 @@ using dart::gui::RunOptions;
 using dart::gui::ViewerLifecycleState;
 using dart::gui::filament::ApplicationInputState;
 using dart::gui::filament::ApplicationWindow;
+using dart::gui::filament::applyRenderSettings;
 using dart::gui::filament::AppOptions;
 using dart::gui::filament::attachOrbitCameraController;
 using dart::gui::filament::attachSceneEnvironment;
@@ -137,6 +138,7 @@ int runFilamentGuiApplicationImpl(
     appOptions.world = applicationOptions.world;
     appOptions.preStep = applicationOptions.preStep;
     appOptions.postStep = applicationOptions.postStep;
+    appOptions.renderSettings = applicationOptions.renderSettings;
     appOptions.gizmos = applicationOptions.gizmos;
     appOptions.ikHandles = applicationOptions.ikHandles;
     appOptions.keyboardActions = applicationOptions.keyboardActions;
@@ -307,6 +309,7 @@ int runFilamentGuiApplicationImpl(
           profile);
     }
     setSceneLightsEnabled(*engine, lights, headlightsEnabled);
+    applyRenderSettings(*view, dartScene.renderSettings);
 
     if (appOptions.preRender) {
       appOptions.preRender();

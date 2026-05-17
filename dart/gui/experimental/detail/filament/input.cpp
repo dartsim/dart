@@ -172,6 +172,7 @@ void dispatchKeyboardActions(
 
   KeyboardActionContext context;
   context.lifecycle = &lifecycle;
+  context.renderSettings = &scene.renderSettings;
   context.resetCamera = [&cameraController, homeCamera]() {
     cameraController.camera = homeCamera;
     resetOrbitCameraTracking(cameraController);

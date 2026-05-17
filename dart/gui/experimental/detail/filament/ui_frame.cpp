@@ -89,7 +89,8 @@ void updateFrameUi(
       dartScene.world->getTime(),
       dartScene.world->getLastCollisionResult().getNumContacts(),
       {cameraBasis.eye, cameraController.camera.target, cameraBasis.up},
-      {&headlightsEnabled}};
+      {&headlightsEnabled},
+      {&dartScene.renderSettings}};
   const bool debugOptionsChanged = renderBuiltInStatusPanel(
       sceneName(exampleScene),
       panelContext.simulationTime,

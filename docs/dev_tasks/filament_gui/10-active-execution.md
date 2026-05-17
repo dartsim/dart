@@ -156,9 +156,18 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   restores historical headlight panel checkboxes in the migrated examples that
   had been blocked on lighting state. R24-18 adds promoted
   `ApplicationOptions::postStep`, `preRender`, and `postRender` callbacks and
-  restores the historical lifecycle-hook demos in `empty` and `imgui`. These
-  local checkpoints are not pushed.
-- Latest local R24-18 validation passed focused build for `empty`, `imgui`, and
+  restores the historical lifecycle-hook demos in `empty` and `imgui`. R24-19
+  adds promoted `RenderSettings::shadowsEnabled` and restores historical shadow
+  toggles in `atlas_simbicon` and `operational_space_control`. These local
+  checkpoints are not pushed.
+- Latest local R24-19 validation passed focused build for `atlas_simbicon`,
+  `operational_space_control`, and `UNIT_gui_FilamentSceneExtraction`; focused
+  CTest; direct software-GL screenshot analyzer smokes for `atlas_simbicon`
+  (1228564/1228800 nonzero pixels) and `operational_space_control`
+  (306625/307200); aggregate `examples` build; mandatory `pixi run lint`;
+  post-lint focused rebuild/CTest; and post-lint direct screenshot smokes with
+  the same nonzero counts.
+  R24-18 validation passed focused build for `empty`, `imgui`, and
   `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct software-GL
   screenshot analyzer smokes for `empty` (307200/307200 nonzero pixels) and
   `imgui` (307200/307200); aggregate `examples` build; mandatory
@@ -262,9 +271,9 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   camera home, console/panel instructions, README/capture docs, and marker
   coverage. 1/2/3 aliases were added to the promoted selection drag axis
   constraints so the old axis-control keys work alongside the existing X/Y/Z
-  aliases. Shadow toggling remains a public API gap; the exact custom camera
-  up-vector/roll is restored by the local R24-14 public `OrbitCamera::up`
-  checkpoint.
+  aliases. The local R24-19 render-settings checkpoint restores the shadow
+  toggle through public `RenderSettings`; the exact custom camera up-vector/roll
+  is restored by the local R24-14 public `OrbitCamera::up` checkpoint.
 - Operational-space-control pre-lint validation has passed: focused target and
   marker-test build, focused `UNIT_gui_FilamentSceneExtraction` CTest, direct
   and pixi software-GL screenshot analyzer checks, image-sequence analyzer
@@ -722,8 +731,8 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   code, migrate the OSG `WorldNode`/event-handler/widget responsibilities to
   public `dart::gui::ApplicationOptions` pre-step callbacks, panels, and
   keyboard actions, restore the README, and record remaining public API gaps
-  only for backend-specific depth/shadow toggles that cannot be expressed
-  without renderer hooks.
+  only for backend-specific render outputs that cannot be expressed without
+  renderer hooks.
 - Atlas Simbicon implementation state: `controller`, `state`,
   `state_machine`, and `terminal_condition` are restored as example-owned
   non-OSG source files; `main.cpp` now creates the historical loaded
@@ -732,8 +741,9 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   reset/perturb/state-machine keyboard actions, restores gravity/harness/
   stride/reset panel controls, sets 1280x960 run defaults and the historical
   camera target, and restores the README. The later local R24-17
-  lighting-state checkpoint restores the headlight checkbox; shadow-toggle and
-  depth camera controls remain explicit public render-settings API gaps.
+  lighting-state checkpoint restores the headlight checkbox, and the local
+  R24-19 render-settings checkpoint restores the shadow toggle; depth camera
+  controls remain an explicit public render-output API gap.
 - Atlas Simbicon validation completed before lint: focused C++ build for
   `atlas_simbicon` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
   `UNIT_gui_FilamentSceneExtraction`, direct and pixi Atlas Simbicon headless
