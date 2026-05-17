@@ -13,7 +13,6 @@
 #   * Redistributions in binary form must reproduce the above
 #     copyright notice, this list of conditions and the following
 #     disclaimer in the documentation and/or other materials provided
-#     with the distribution.
 #   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 #   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
 #   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -105,10 +104,19 @@ target_link_libraries(${target_name}
     EnTT::EnTT
 )
 
+if(BUILD_SHARED_LIBS)
+  set(dart_collision_native_build_shared 1)
+else()
+  set(dart_collision_native_build_shared 0)
+endif()
+
 target_compile_definitions(${target_name}
+  PUBLIC
+    DART_BUILD_SHARED=${dart_collision_native_build_shared}
   PRIVATE
     DART_BUILDING_COLLISION_NATIVE
 )
+unset(dart_collision_native_build_shared)
 
 # Benchmarks (optional)
 dart_experimental_add_benchmark(
