@@ -40,6 +40,8 @@
 
 #include <dart/simulation/world.hpp>
 
+#include <dart/constraint/balance_constraint.hpp>
+
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/end_effector.hpp>
@@ -52,6 +54,9 @@
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/math/geometry.hpp>
+#include <dart/math/optimization/function.hpp>
+#include <dart/math/optimization/gradient_descent_solver.hpp>
+#include <dart/math/optimization/problem.hpp>
 
 #include <dart/common/uri.hpp>
 
@@ -59,6 +64,7 @@
 
 #include <Eigen/Geometry>
 
+#include <algorithm>
 #include <array>
 #include <iostream>
 #include <limits>
@@ -94,6 +100,79 @@ enum class PuppetMotion
   Down,
   YawLeft,
   YawRight,
+};
+
+class RelaxedPosture final : public dart::math::Function
+{
+public:
+  RelaxedPosture(
+      const Eigen::VectorXd& idealPosture,
+      const Eigen::VectorXd& lower,
+      const Eigen::VectorXd& upper,
+      const Eigen::VectorXd& weights,
+      bool enforceIdeal = false)
+    : enforceIdealPosture(enforceIdeal),
+      mIdeal(idealPosture),
+      mLower(lower),
+      mUpper(upper),
+      mWeights(weights)
+  {
+    const Eigen::Index dofCount = mIdeal.size();
+    if (mLower.size() != dofCount || mUpper.size() != dofCount
+        || mWeights.size() != dofCount) {
+      throw std::runtime_error(
+          "Hubo relaxed-posture objective has mismatched vector sizes");
+    }
+    mResultVector.setZero(dofCount);
+  }
+
+  double eval(const Eigen::VectorXd& x) override
+  {
+    computeResultVector(x);
+    return 0.5 * mResultVector.dot(mResultVector);
+  }
+
+  void evalGradient(
+      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
+  {
+    computeResultVector(x);
+
+    grad.setZero();
+    const Eigen::Index count = std::min(mResultVector.size(), grad.size());
+    for (Eigen::Index i = 0; i < count; ++i) {
+      grad[i] = mResultVector[i];
+    }
+  }
+
+  void computeResultVector(const Eigen::VectorXd& x)
+  {
+    mResultVector.setZero();
+    const Eigen::Index count = std::min(mIdeal.size(), x.size());
+    for (Eigen::Index i = 0; i < count; ++i) {
+      if (enforceIdealPosture) {
+        mResultVector[i] = mWeights[i] * (x[i] - mIdeal[i]);
+      } else if (x[i] < mLower[i]) {
+        mResultVector[i] = mWeights[i] * (x[i] - mLower[i]);
+      } else if (mUpper[i] < x[i]) {
+        mResultVector[i] = mWeights[i] * (x[i] - mUpper[i]);
+      }
+    }
+  }
+
+  bool enforceIdealPosture;
+
+private:
+  Eigen::VectorXd mResultVector;
+  Eigen::VectorXd mIdeal;
+  Eigen::VectorXd mLower;
+  Eigen::VectorXd mUpper;
+  Eigen::VectorXd mWeights;
+};
+
+struct HuboWholeBodySolverState
+{
+  std::shared_ptr<RelaxedPosture> posture;
+  std::shared_ptr<dart::constraint::BalanceConstraint> balance;
 };
 
 void disableSkeletonCollisionAndGravity(
@@ -470,6 +549,59 @@ void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)
   ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
 }
 
+void setVectorEntry(Eigen::VectorXd& values, Eigen::Index index, double value)
+{
+  if (0 <= index && index < values.size()) {
+    values[index] = value;
+  }
+}
+
+HuboWholeBodySolverState setupHuboWholeBodySolver(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  HuboWholeBodySolverState state;
+  if (hubo == nullptr) {
+    return state;
+  }
+
+  auto wholeBodyIk = hubo->getIK(true);
+  auto solver = std::dynamic_pointer_cast<dart::math::GradientDescentSolver>(
+      wholeBodyIk->getSolver());
+  if (solver != nullptr) {
+    solver->setNumMaxIterations(5);
+  }
+
+  const Eigen::Index dofCount = static_cast<Eigen::Index>(hubo->getNumDofs());
+  constexpr double defaultWeight = 0.01;
+  Eigen::VectorXd weights = defaultWeight * Eigen::VectorXd::Ones(dofCount);
+  setVectorEntry(weights, 2, 0.0);
+  setVectorEntry(weights, 3, 0.0);
+  setVectorEntry(weights, 4, 0.0);
+
+  Eigen::VectorXd lowerPosture = Eigen::VectorXd::Constant(
+      dofCount, -std::numeric_limits<double>::infinity());
+  setVectorEntry(lowerPosture, 0, -0.35);
+  setVectorEntry(lowerPosture, 1, -0.35);
+  setVectorEntry(lowerPosture, 5, 0.55);
+
+  Eigen::VectorXd upperPosture = Eigen::VectorXd::Constant(
+      dofCount, std::numeric_limits<double>::infinity());
+  setVectorEntry(upperPosture, 0, 0.35);
+  setVectorEntry(upperPosture, 1, 0.50);
+  setVectorEntry(upperPosture, 5, 0.95);
+
+  state.posture = std::make_shared<RelaxedPosture>(
+      hubo->getPositions(), lowerPosture, upperPosture, weights);
+  wholeBodyIk->setObjective(state.posture);
+
+  state.balance = std::make_shared<dart::constraint::BalanceConstraint>(
+      wholeBodyIk,
+      dart::constraint::BalanceConstraint::SHIFT_SUPPORT,
+      dart::constraint::BalanceConstraint::FROM_CENTROID);
+  wholeBodyIk->getProblem()->addEqConstraint(state.balance);
+  return state;
+}
+
 dart::dynamics::SkeletonPtr createGround()
 {
   auto ground = dart::dynamics::Skeleton::create(kGroundSkeletonName);
@@ -493,6 +625,7 @@ struct HuboPuppetScene
   dart::dynamics::SimpleFramePtr supportComOverlay;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
   std::vector<dart::gui::Gizmo> gizmos;
+  HuboWholeBodySolverState wholeBodySolver;
   struct TargetState
   {
     dart::simulation::WorldPtr world;
@@ -517,7 +650,6 @@ struct HuboPuppetScene
       world->addSimpleFrame(target);
       active = true;
       std::cout << "Activated IK target '" << effector->getName() << "'.\n";
-      solve();
     }
 
     void deactivate()
@@ -539,13 +671,6 @@ struct HuboPuppetScene
         deactivate();
       } else {
         activate();
-      }
-    }
-
-    void solve()
-    {
-      if (active && ik != nullptr) {
-        ik->solveAndApply(true);
       }
     }
   };
@@ -705,6 +830,7 @@ HuboPuppetScene createHuboPuppetScene()
   scene.hubo = hubo;
   scene.world->addSkeleton(hubo);
   addHuboPuppetIkTargets(scene, hubo);
+  scene.wholeBodySolver = setupHuboWholeBodySolver(scene.hubo);
   scene.restConfiguration = hubo->getPositions();
   scene.supportOverlay = createHuboSupportPolygonOverlay(scene.hubo);
   scene.world->addSimpleFrame(scene.supportOverlay);
@@ -713,14 +839,11 @@ HuboPuppetScene createHuboPuppetScene()
   return scene;
 }
 
-void solveActiveHuboTargets(
-    const std::vector<std::shared_ptr<HuboPuppetScene::TargetState>>&
-        targetStates)
+void solveHuboWholeBody(const dart::dynamics::SkeletonPtr& hubo)
 {
-  for (const auto& state : targetStates) {
-    if (state != nullptr) {
-      state->solve();
-    }
+  const auto wholeBodyIk = hubo ? hubo->getIK() : nullptr;
+  if (wholeBodyIk != nullptr) {
+    wholeBodyIk->solveAndApply(true);
   }
 }
 
@@ -794,7 +917,8 @@ std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
     const dart::dynamics::SkeletonPtr& hubo,
     const std::vector<std::shared_ptr<HuboPuppetScene::TargetState>>&
         targetStates,
-    const Eigen::VectorXd& restConfiguration)
+    const Eigen::VectorXd& restConfiguration,
+    const HuboWholeBodySolverState& wholeBodySolver)
 {
   struct Config
   {
@@ -814,19 +938,17 @@ std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
       {'e', "Yaw Hubo right", PuppetMotion::YawRight},
   }};
 
-  auto states = std::make_shared<
-      std::vector<std::shared_ptr<HuboPuppetScene::TargetState>>>(targetStates);
   std::vector<dart::gui::KeyboardAction> actions;
-  actions.reserve(configs.size() + targetStates.size() + 4);
+  actions.reserve(configs.size() + targetStates.size() + 6);
   for (const Config& config : configs) {
     dart::gui::KeyboardAction action;
     action.label = config.label;
     action.shortcut = dart::gui::KeyboardShortcut::characterKey(config.key);
     action.repeat = true;
-    action.callback = [hubo, states, motion = config.motion](
+    action.callback = [hubo, motion = config.motion](
                           dart::gui::KeyboardActionContext& context) {
       if (applyRootTeleoperationStep(hubo, motion)) {
-        solveActiveHuboTargets(*states);
+        solveHuboWholeBody(hubo);
         if (context.lifecycle != nullptr) {
           context.lifecycle->paused = true;
         }
@@ -843,8 +965,9 @@ std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
     dart::gui::KeyboardAction action;
     action.label = "Toggle Hubo target " + state->label;
     action.shortcut = dart::gui::KeyboardShortcut::characterKey(state->hotkey);
-    action.callback = [state](dart::gui::KeyboardActionContext& context) {
+    action.callback = [hubo, state](dart::gui::KeyboardActionContext& context) {
       state->toggle();
+      solveHuboWholeBody(hubo);
       if (context.lifecycle != nullptr) {
         context.lifecycle->paused = true;
       }
@@ -864,6 +987,7 @@ std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
                 auto* support = effector ? effector->getSupport() : nullptr;
                 if (support != nullptr) {
                   support->setActive(!support->isActive());
+                  solveHuboWholeBody(hubo);
                   if (context.lifecycle != nullptr) {
                     context.lifecycle->paused = true;
                   }
@@ -891,7 +1015,7 @@ std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
   dart::gui::KeyboardAction resetPosture;
   resetPosture.label = "Reset Hubo relaxed posture";
   resetPosture.shortcut = dart::gui::KeyboardShortcut::characterKey('t');
-  resetPosture.callback = [hubo, restConfiguration, states](
+  resetPosture.callback = [hubo, restConfiguration](
                               dart::gui::KeyboardActionContext& context) {
     if (hubo == nullptr
         || static_cast<std::size_t>(restConfiguration.size())
@@ -904,12 +1028,51 @@ std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
         hubo->getDof(i)->setPosition(restConfiguration[static_cast<int>(i)]);
       }
     }
-    solveActiveHuboTargets(*states);
+    solveHuboWholeBody(hubo);
     if (context.lifecycle != nullptr) {
       context.lifecycle->paused = true;
     }
   };
   actions.push_back(std::move(resetPosture));
+
+  dart::gui::KeyboardAction optimizePosture;
+  optimizePosture.label = "Optimize Hubo posture and balance";
+  optimizePosture.shortcut = dart::gui::KeyboardShortcut::characterKey('r');
+  optimizePosture.callback
+      = [wholeBodySolver, hubo](dart::gui::KeyboardActionContext& context) {
+          if (wholeBodySolver.posture != nullptr) {
+            wholeBodySolver.posture->enforceIdealPosture = true;
+          }
+          if (wholeBodySolver.balance != nullptr) {
+            wholeBodySolver.balance->setErrorMethod(
+                dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+          }
+          solveHuboWholeBody(hubo);
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  actions.push_back(std::move(optimizePosture));
+
+  dart::gui::KeyboardAction restoreBalanceMode;
+  restoreBalanceMode.label = "Restore Hubo centroid balance mode";
+  restoreBalanceMode.shortcut = dart::gui::KeyboardShortcut::characterKey('r');
+  restoreBalanceMode.trigger = dart::gui::KeyboardActionTrigger::Release;
+  restoreBalanceMode.callback
+      = [wholeBodySolver, hubo](dart::gui::KeyboardActionContext& context) {
+          if (wholeBodySolver.posture != nullptr) {
+            wholeBodySolver.posture->enforceIdealPosture = false;
+          }
+          if (wholeBodySolver.balance != nullptr) {
+            wholeBodySolver.balance->setErrorMethod(
+                dart::constraint::BalanceConstraint::FROM_CENTROID);
+          }
+          solveHuboWholeBody(hubo);
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  actions.push_back(std::move(restoreBalanceMode));
   return actions;
 }
 
@@ -926,8 +1089,10 @@ dart::gui::Panel createHuboPuppetPanel()
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text("WASD moves the root; Q/E yaw; F/Z height.");
     builder.text("X/C toggles foot support; P prints DOFs; T resets posture.");
+    builder.text("Hold R to optimize whole-body posture and balance.");
     builder.text("The support polygon overlay follows active foot support.");
     builder.text("Blue/red COM marker shows support-polygon validity.");
+    builder.text("Whole-body IK solves active targets and balance each step.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -976,16 +1141,18 @@ int main(int argc, char* argv[])
     options.gizmos = scene.gizmos;
     options.runDefaults = makeHuboPuppetRunDefaults();
     options.camera = makeHuboPuppetCamera();
-    options.preStep = [targetStates = scene.targetStates,
-                       hubo = scene.hubo,
+    options.preStep = [hubo = scene.hubo,
                        supportOverlay = scene.supportOverlay,
                        supportComOverlay = scene.supportComOverlay]() {
-      solveActiveHuboTargets(targetStates);
+      solveHuboWholeBody(hubo);
       updateHuboSupportPolygonOverlay(hubo, supportOverlay);
       updateHuboSupportComOverlay(hubo, supportComOverlay);
     };
     options.keyboardActions = createHuboPuppetKeyboardActions(
-        scene.hubo, scene.targetStates, scene.restConfiguration);
+        scene.hubo,
+        scene.targetStates,
+        scene.restConfiguration,
+        scene.wholeBodySolver);
     options.panels.push_back(createHuboPuppetPanel());
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {

@@ -320,8 +320,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     of number-key toggled, missing support-polygon overlay, missing 1280x960
     camera home, and missing renderer-neutral replacements for the historical
     `X`/`C` support toggles, `P` DOF print, and `T` relaxed-pose reset. Repair
-    those now. Keep Shift movement amplification, hold/release `R` posture
-    optimization with balance mode as named promoted API or solver follow-ups.
+    those now. Keep Shift movement amplification and analytical IK as named
+    promoted API or solver follow-ups. A later local checkpoint restores
+    hold/release `R` posture optimization with balance mode through public DART
+    whole-body IK APIs.
     A later checkpoint restores exact blue/red COM marker colors with
     source-owned DART line geometry. Historical camera roll/up-vector parity is
     restored by the later R24-14 public `OrbitCamera::up` checkpoint.

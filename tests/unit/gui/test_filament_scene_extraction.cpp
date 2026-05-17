@@ -2875,7 +2875,20 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("applyRootTeleoperationStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("solveActiveHuboTargets"), std::string::npos);
+  EXPECT_NE(mainSource.find("RelaxedPosture"), std::string::npos);
+  EXPECT_NE(mainSource.find("setupHuboWholeBodySolver"), std::string::npos);
+  EXPECT_NE(mainSource.find("GradientDescentSolver"), std::string::npos);
+  EXPECT_NE(mainSource.find("BalanceConstraint"), std::string::npos);
+  EXPECT_NE(mainSource.find("OPTIMIZE_BALANCE"), std::string::npos);
+  EXPECT_NE(mainSource.find("FROM_CENTROID"), std::string::npos);
+  EXPECT_NE(mainSource.find("SHIFT_SUPPORT"), std::string::npos);
+  EXPECT_NE(mainSource.find("solveHuboWholeBody"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Optimize Hubo posture and balance"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Restore Hubo centroid balance mode"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardActionTrigger::Release"), std::string::npos);
   EXPECT_NE(
       mainSource.find("Toggle left Hubo foot support"), std::string::npos);
   EXPECT_NE(
@@ -2886,6 +2899,12 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("Print Hubo DOFs"), std::string::npos);
   EXPECT_NE(mainSource.find("Reset Hubo relaxed posture"), std::string::npos);
   EXPECT_NE(mainSource.find("WASD moves the root"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Hold R to optimize whole-body posture and balance"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Whole-body IK solves active targets and balance"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("'1'"), std::string::npos);
   EXPECT_NE(mainSource.find("'6'"), std::string::npos);
   EXPECT_NE(mainSource.find("'x'"), std::string::npos);
@@ -2919,6 +2938,11 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("COM marker is blue"), std::string::npos);
   EXPECT_NE(readmeSource.find("Press `1`-`6`"), std::string::npos);
   EXPECT_NE(readmeSource.find("Shift movement"), std::string::npos);
+  EXPECT_NE(readmeSource.find("whole-body"), std::string::npos);
+  EXPECT_NE(readmeSource.find("posture"), std::string::npos);
+  EXPECT_NE(readmeSource.find("balance"), std::string::npos);
+  EXPECT_NE(readmeSource.find("relaxed-posture objective"), std::string::npos);
+  EXPECT_NE(readmeSource.find("balance constraint"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)

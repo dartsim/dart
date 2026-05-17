@@ -138,6 +138,8 @@
     controls with source-owned DART line geometry.
   - Restored the `hubo_puppet` support overlay's blue/red center-of-mass
     validity marker with source-owned DART line geometry.
+  - Restored the `hubo_puppet` example's relaxed-posture objective, balance
+    constraint, whole-body IK solve path, and hold/release R balance controls.
   - Restored the `atlas_puppet` example's number-key target activation,
     support toggles, DOF print/reset shortcuts, and source-owned support
     polygon/center-of-mass validity overlays.
