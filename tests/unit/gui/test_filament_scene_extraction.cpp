@@ -943,6 +943,20 @@ TEST(FilamentSceneExtraction, GizmoVisibilityControlsDebugLinesAndPicking)
           .has_value());
 }
 
+TEST(FilamentSceneExtraction, FilamentStartupAcceptsGizmoOnlyScenes)
+{
+  const auto startupSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "experimental" / "detail"
+      / "filament" / "scene_startup.cpp");
+
+  EXPECT_NE(
+      startupSource.find("makeGizmoDebugLines(dartScene.gizmos)"),
+      std::string::npos);
+  EXPECT_NE(
+      startupSource.find("state.sceneRenderables.empty() && !hasVisibleGizmos"),
+      std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, GizmoAxisHandlePickingDrivesTargetFrame)
 {
   auto target = SimpleFrame::createShared(
@@ -1971,8 +1985,10 @@ TEST(FilamentSceneExtraction, PanelExtensionExamplePreservesLegacyParityMarkers)
 
   EXPECT_NE(mainSource.find("PanelExtensionScene"), std::string::npos);
   EXPECT_NE(mainSource.find("panel extension target"), std::string::npos);
-  EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("createPanelTargetShape"), std::string::npos);
+  EXPECT_EQ(mainSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_EQ(mainSource.find("createPanelTargetShape"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
   EXPECT_NE(mainSource.find("createPanelExtensionControls"), std::string::npos);
   EXPECT_NE(mainSource.find("Tinkertoy Control"), std::string::npos);
   EXPECT_NE(
@@ -2001,9 +2017,13 @@ TEST(FilamentSceneExtraction, PanelExtensionExamplePreservesLegacyParityMarkers)
       mainSource.find("camera.distance = 4.376539729055364"),
       std::string::npos);
   EXPECT_NE(mainSource.find("User Guide"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Left-drag target gizmo arrows/planes/rings"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("public lighting control API"), std::string::npos);
   EXPECT_NE(mainSource.find("public viewer-inspection API"), std::string::npos);
   EXPECT_NE(readmeSource.find("Panel Extension Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(readmeSource.find("Tinkertoy Control"), std::string::npos);
   EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
   EXPECT_NE(readmeSource.find("key-release callbacks"), std::string::npos);

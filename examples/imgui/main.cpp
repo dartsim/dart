@@ -31,25 +31,22 @@
  */
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/frame.hpp>
-#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
 #include <Eigen/Geometry>
 
-#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <cstddef>
 
 namespace {
 
@@ -59,41 +56,15 @@ struct PanelExtensionScene
 {
   dart::simulation::WorldPtr world;
   std::shared_ptr<dart::dynamics::SimpleFrame> target;
+  std::vector<dart::gui::Gizmo> gizmos;
   std::shared_ptr<int> preStepCount;
   std::shared_ptr<bool> gravityEnabled;
 };
 
-std::shared_ptr<dart::dynamics::LineSegmentShape> createPanelTargetShape()
-{
-  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(6.0f);
-  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
-  handle->addVertex(Eigen::Vector3d(0.35, 0.0, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(-0.35, 0.0, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(0.0, 0.35, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(0.0, -0.35, 0.0), center);
-  handle->addVertex(Eigen::Vector3d(0.0, 0.0, 0.35), center);
-  handle->addVertex(Eigen::Vector3d(0.0, 0.0, -0.35), center);
-
-  const auto a = handle->addVertex(Eigen::Vector3d(0.25, 0.25, 0.0));
-  const auto b = handle->addVertex(Eigen::Vector3d(-0.25, 0.25, 0.0));
-  const auto c = handle->addVertex(Eigen::Vector3d(-0.25, -0.25, 0.0));
-  const auto d = handle->addVertex(Eigen::Vector3d(0.25, -0.25, 0.0));
-  handle->addConnection(a, b);
-  handle->addConnection(b, c);
-  handle->addConnection(c, d);
-  handle->addConnection(d, a);
-
-  return handle;
-}
-
 std::shared_ptr<dart::dynamics::SimpleFrame> createPanelTarget()
 {
-  auto target = dart::dynamics::SimpleFrame::createShared(
+  return dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kPanelTargetName);
-  target->setShape(createPanelTargetShape());
-  target->getVisualAspect(true)->setRGBA(
-      Eigen::Vector4d(0.94, 0.78, 0.22, 0.8));
-  return target;
 }
 
 PanelExtensionScene createPanelExtensionScene()
@@ -103,6 +74,11 @@ PanelExtensionScene createPanelExtensionScene()
   scene.world->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
   scene.target = createPanelTarget();
   scene.world->addSimpleFrame(scene.target);
+  dart::gui::Gizmo gizmo;
+  gizmo.label = kPanelTargetName;
+  gizmo.target = scene.target;
+  gizmo.size = 0.24;
+  scene.gizmos.push_back(std::move(gizmo));
   scene.preStepCount = std::make_shared<int>(0);
   scene.gravityEnabled = std::make_shared<bool>(true);
   return scene;
@@ -226,8 +202,7 @@ dart::gui::Panel createPanelExtensionControls(const PanelExtensionScene& scene)
     panel.text("Help");
     panel.text("User Guide");
     panel.text("Left drag orbits; right or middle drag pans; wheel zooms.");
-    panel.text("Select the target, then Ctrl-left drag it.");
-    panel.text("Arrow/PageUp/PageDown nudge the selected target.");
+    panel.text("Left-drag target gizmo arrows/planes/rings.");
     panel.text("q, Left, and Right demonstrate keydown callbacks.");
     panel.text("Key release and shifted Q need public shortcut APIs.");
     panel.text("About DART: project and libdart simulation libraries.");
@@ -246,6 +221,7 @@ int main(int argc, char* argv[])
   options.world = scene.world;
   options.runDefaults = makePanelExtensionRunDefaults();
   options.camera = makePanelExtensionCamera();
+  options.gizmos = scene.gizmos;
   options.preStep = [count = scene.preStepCount]() {
     if (count != nullptr) {
       ++*count;

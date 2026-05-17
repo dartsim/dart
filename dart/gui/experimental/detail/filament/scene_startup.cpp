@@ -36,6 +36,7 @@
 #include <dart/gui/experimental/detail/filament/scene_requirements.hpp>
 #include <dart/gui/experimental/detail/filament/scene_startup.hpp>
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/scene.hpp>
 
 #include <dart/simulation/world.hpp>
@@ -75,7 +76,9 @@ std::optional<InitialSceneState> createInitialSceneState(
         return createRenderableFromDescriptor(
             engine, materials, materialResources.textureCache, descriptor);
       });
-  if (state.sceneRenderables.empty()) {
+  const bool hasVisibleGizmos
+      = !dart::gui::makeGizmoDebugLines(dartScene.gizmos).empty();
+  if (state.sceneRenderables.empty() && !hasVisibleGizmos) {
     errors << "No supported visible DART renderables were extracted\n";
     return std::nullopt;
   }

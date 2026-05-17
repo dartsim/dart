@@ -5,14 +5,14 @@
 - Goal: demonstrate the promoted `dart::gui` panel-extension surface with a
   selectable target frame and source-owned controls.
 - Concepts/APIs: `dart::gui::ApplicationOptions`, custom panels, keyboard
-  actions, simple-frame selection/dragging, per-step callbacks, run defaults,
-  and camera defaults.
-- Expected output: an empty world with a yellow target handle and a
+  actions, public `dart::gui::Gizmo` target affordances, per-step callbacks,
+  run defaults, and camera defaults.
+- Expected output: an empty world with a target transform gizmo and a
   `Tinkertoy Control` panel.
-- Controls: select the yellow target, then Ctrl-left drag it or use the
-  keyboard selection controls. Press q, Left, or Right to exercise the promoted
-  keydown callbacks. `--gui-scale` adjusts the GUI scale, and `--width` /
-  `--height` override the default 640x480 window size.
+- Controls: left-drag the target gizmo arrows/planes/rings. Press q, Left, or
+  Right to exercise the promoted keydown callbacks. `--gui-scale` adjusts the
+  GUI scale, and `--width` / `--height` override the default 640x480 window
+  size.
 - Remaining gaps: headlight toggles, camera eye/center/up readouts,
   key-release callbacks, and pre/post render or post-step hooks need public
   renderer-neutral APIs.

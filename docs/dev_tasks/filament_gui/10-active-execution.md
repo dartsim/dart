@@ -138,18 +138,21 @@ history but are not guaranteed to be in chronological order.
   explicitly asks to include it.
 - Latest committed local checkpoints: `de1873ddab7 Document Fetch image-sequence
 capture` updates Fetch README/audit/marker coverage for the promoted `--out`
-  image-sequence path, and R24-1 through R24-8 add public
+  image-sequence path, and R24-1 through R24-9 add public
   `dart::gui::Gizmo` registration, axis/plane/ring dragging, handle
   highlighting, per-target visibility, Atlas Puppet public-gizmo IK target
   affordances, and the same public-gizmo target affordances for Hubo Puppet,
-  G1 Puppet, operational-space control, and WAM IKFast. These local checkpoints
-  are not pushed.
-- Latest local R24 validation passed focused builds for the four migrated
-  examples plus `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct
-  software-GL screenshot analyzer smokes for Hubo, G1, operational-space
-  control, and WAM IKFast, aggregate `examples` build, mandatory
-  `pixi run lint`, post-lint focused rebuild/CTest, post-lint direct
-  screenshot smokes, stale-handle text scan, and `git diff --check`.
+  G1 Puppet, operational-space control, WAM IKFast, and the panel-extension
+  `imgui` example. These local checkpoints are not pushed.
+- Latest local R24-9 validation passed focused build for `imgui` plus
+  `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct software-GL
+  screenshot analyzer smoke for `imgui`, aggregate `examples` build, mandatory
+  `pixi run lint`, post-lint focused rebuild/CTest, and post-lint direct
+  screenshot smoke. R24-8 validation covered the four robot/IK migrations with
+  focused builds, focused CTest, direct software-GL screenshot smokes,
+  aggregate `examples` build, mandatory `pixi run lint`, post-lint focused
+  rebuild/CTest, post-lint direct screenshot smokes, stale-handle text scan,
+  and `git diff --check`.
 - Latest pushed strict re-open checkpoint: `examples/joint_constraints/`
   restores the missing README, 640x480 launch default, loaded SKEL
   names/visuals, historical perturbation and harness console messages, and

@@ -144,11 +144,11 @@
   - Moved `imgui` and `tinkertoy` off private named-scene fixture defaults so
     their example sources own their DART worlds through
     `dart::gui::ApplicationOptions::world`.
-  - Restored the `imgui` panel-extension example's target frame, promoted
-    keydown callbacks, gravity control, viewer help, camera/run defaults,
-    README, and marker coverage through public `dart::gui`, with headlight,
-    camera-inspector, key-release, and render-hook gaps tracked as public API
-    follow-ups.
+  - Restored the `imgui` panel-extension example's target frame with a public
+    `dart::gui::Gizmo`, promoted keydown callbacks, gravity control, viewer
+    help, camera/run defaults, README, and marker coverage through public
+    `dart::gui`, with headlight, camera-inspector, key-release, and render-hook
+    gaps tracked as public API follow-ups.
   - Moved `operational_space_control` and `wam_ikfast` off private named-scene
     fixture launchers so their example sources load the WAM robot, create their
     visible targets, and run through promoted `dart::gui` options directly.
@@ -169,10 +169,11 @@
   - Added a promoted `dart::gui::Gizmo` registration surface with debug-line
     visualization, X/Y/Z axis-handle dragging, plane-handle dragging,
     rotation-ring dragging, and per-target visibility, plus hover/active handle
-    highlighting for source-owned transform target affordances. `atlas_puppet`,
-    `hubo_puppet`, `g1_puppet`, `operational_space_control`, and `wam_ikfast`
-    now use those public gizmos instead of source-owned target-handle or
-    target-ball geometry.
+    highlighting for source-owned transform target affordances. Gizmo-only
+    scenes can start without dummy renderable geometry, and `atlas_puppet`,
+    `hubo_puppet`, `g1_puppet`, `operational_space_control`, `wam_ikfast`, and
+    `imgui` now use those public gizmos instead of source-owned target-handle
+    or target-ball geometry.
   - Moved `atlas_puppet` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground/root handle/IK targets, and
     passes public `dart::gui` IK handles directly.

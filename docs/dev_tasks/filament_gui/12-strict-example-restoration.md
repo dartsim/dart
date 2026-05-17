@@ -625,6 +625,17 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     operational-space control, and WAM IKFast, aggregate `examples` build,
     mandatory `pixi run lint`, post-lint focused rebuild/CTest, post-lint
     direct screenshot smokes, stale-handle text scan, and `git diff --check`.
+70. The current R24-9 implementation extends the same public-gizmo cleanup to
+    `examples/imgui`: the panel-extension example now uses a public
+    `dart::gui::Gizmo` for its target frame instead of a source-owned yellow
+    line handle while preserving the panel, keydown, gravity, pre-step, camera,
+    and README behavior from the strict audit. The private Filament startup
+    gate now allows visible gizmo-only scenes instead of forcing examples to
+    keep dummy renderable geometry. Validation passed focused build for
+    `imgui` plus `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct
+    software-GL screenshot analyzer smoke for `imgui`, aggregate `examples`
+    build, mandatory `pixi run lint`, post-lint focused rebuild/CTest, and
+    post-lint direct screenshot smoke.
 
 ## Checkpoint Rule
 
