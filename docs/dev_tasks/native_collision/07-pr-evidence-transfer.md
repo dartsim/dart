@@ -16,7 +16,7 @@ collision migration.
    `06-completion-audit.md`.
 3. Replace the branch-local evidence below with review-head evidence where a
    final CI artifact exists.
-4. Paste the Summary, Key Changes, Testing, Breaking Changes,
+4. Paste the Summary, Changes / Key Changes, Testing, Breaking Changes,
    Related Issues / PRs (backports), and Checklist sections into the PR body.
 5. Delete `docs/dev_tasks/native_collision/` in the same completing PR after the
    evidence transfer.
@@ -65,7 +65,9 @@ Use these files as evidence owners; do not paste their full history into the PR:
 | Architecture contract       | `01-design.md`, `docs/onboarding/architecture.md`                                    |
 | PR body draft               | `PR-DRAFT.md`                                                                        |
 
-## Branch-Local Evidence Snapshot
+## Testing
+
+### Branch-Local Evidence Snapshot
 
 Current local branch status at the time this packet was refreshed:
 
@@ -143,7 +145,7 @@ Prior GitHub reference evidence:
 - Treat that evidence as reference-only until the maintainer-selected final PR
   or workflow surface exists.
 
-## Final CI Closure Map
+### Final CI Closure Map
 
 Replace branch-local rows with final review-surface evidence before completing
 the task.
@@ -159,6 +161,7 @@ the task.
 
 ## Breaking Changes
 
+- [ ] None
 - dartpy no longer exposes `DARTCollisionDetector`, `FCLCollisionDetector`,
   `BulletCollisionDetector`, or `OdeCollisionDetector`. Use
   `DartCollisionDetector` or the default detector.
