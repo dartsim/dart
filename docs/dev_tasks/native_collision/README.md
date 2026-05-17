@@ -46,6 +46,8 @@ Local implementation/evidence status:
       DEFERRED rows for the current feature-level pass.
 - [x] Public onboarding/build/python docs contain the durable native-collision
       architecture and migration notes.
+- [x] Current branch-local merge head `f949b7cbbbe` includes upstream `main`
+      `b218b43786c` and passed `pixi run lint` plus `pixi run test-all`.
 
 Open finalization gates:
 

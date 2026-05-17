@@ -4,14 +4,16 @@
 
 `feature/new_coll` makes native DART collision the normal runtime stack and
 keeps FCL, Bullet, and ODE only as optional reference engines for tests and
-benchmarks. The latest feature-code head is `08a3ee5555c`
-(`Fix native capsule mesh CCD`), which passed `pixi run lint`,
-`pixi run test-all`, and focused CCD/capsule/mesh reruns recorded in
-`03-evidence-gates.md`.
+benchmarks. The latest merged validation head is `f949b7cbbbe`
+(`Merge current main into native collision branch`), which includes upstream
+`main` at `b218b43786c` and passed `pixi run lint` plus `pixi run test-all`.
+The latest focused feature-code head is `08a3ee5555c`
+(`Fix native capsule mesh CCD`), which passed the focused CCD/capsule/mesh
+reruns recorded in `03-evidence-gates.md`.
 
-This session completed the Round 20 documentation-hygiene slice for the largest
-native-collision side-channel files plus the PR staging packet, then refreshed
-this resume handoff:
+Recent local-only history refreshed the Round 20 documentation-hygiene slice
+for the largest native-collision side-channel files, refreshed the PR staging
+packet, and merged current upstream `main`:
 
 - `21ea43cdc12` — `Compact native collision supervisor notes`
 - `01adba243b1` — `Compact native collision completion audit`
@@ -20,6 +22,10 @@ this resume handoff:
 - `d875b95e0a5` — `Compact native collision README`
 - `9d2017f73e7` — `Refresh native collision resume after README cleanup`
 - `b16165f5859` — `Compact native collision PR packet`
+- `23dbbccc6c0` — `Refresh native collision resume after PR packet cleanup`
+- `aea78dc3d61` — `Record native collision current packet validation`
+- `a9816dcfe06` — `Clarify native collision local CI audit wording`
+- `f949b7cbbbe` — `Merge current main into native collision branch`
 - this `RESUME.md` update may move `HEAD`; run `git log -10 --oneline` for the
   exact current hash.
 
@@ -30,13 +36,12 @@ history.
 
 ## Current Branch
 
-`feature/new_coll` tracks `origin/feature/new_coll`.
-
-Before this resume update, local `HEAD` was `b16165f5859` and
-`origin/feature/new_coll` was `e0304211446`. After committing this file, the
-local branch should be ahead by one additional docs-only handoff commit. Run
-`git log -10 --oneline --decorate` for the exact current local head. Do not push
-without explicit maintainer/user approval.
+`feature/new_coll` tracks `origin/feature/new_coll`. Before this resume update,
+local `HEAD` was `f949b7cbbbe` and `origin/feature/new_coll` was
+`e0304211446`. After committing this file, the local branch should be ahead by
+one additional docs-only handoff commit. Run `git log -10 --oneline --decorate`
+for the exact current local head. Do not push without explicit
+maintainer/user approval.
 
 PR #2652 remains closed, draft, based on `main`, and anchored to old head
 `714d220d82a`. Feature-branch pushes do not start the main PR workflows while
@@ -56,9 +61,19 @@ and delete `docs/dev_tasks/native_collision/` in that same completing PR.
 
 ## Current Evidence
 
-Latest feature-code validation:
+Latest merged-branch validation:
 
-- `08a3ee5555c` passed `pixi run lint`.
+- `f949b7cbbbe` includes upstream `main` at `b218b43786c`.
+- `f949b7cbbbe` passed `pixi run lint`.
+- `f949b7cbbbe` passed
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  with all 6 top-level gates green and `All tests passed!`.
+- The C++ unit-test phase reported 266/266 tests passing, including 29
+  `collision-native` tests and 2 `collision-native-stability` tests.
+- The simulation-experimental C++ phase reported 13/13 tests passing.
+
+Latest focused feature-code validation:
+
 - `08a3ee5555c` passed
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
   with all 6 top-level gates green and `All tests passed!`.

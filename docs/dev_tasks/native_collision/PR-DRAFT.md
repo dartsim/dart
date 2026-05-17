@@ -79,17 +79,23 @@ benchmarks.
 
 Branch-local evidence currently staged in `docs/dev_tasks/native_collision/`:
 
-- Latest feature-code head recorded by the task: `08a3ee5555c`
-  (`Fix native capsule mesh CCD`).
-- Recorded full local validation on that feature-code head:
+- Latest merged validation head recorded by the task: `f949b7cbbbe`
+  (`Merge current main into native collision branch`), including upstream
+  `main` at `b218b43786c`.
+- Recorded full local validation on that merged head:
 
   ```bash
   DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all
   ```
 
   The run passed all 6 top-level gates and printed `All tests passed!`.
+  C++ unit tests reported 266/266 passing, including 29 `collision-native`
+  tests and 2 `collision-native-stability` tests. Simulation-experimental C++
+  tests reported 13/13 passing.
 
-- Focused reruns on the same code head passed:
+- Latest focused feature-code head: `08a3ee5555c`
+  (`Fix native capsule mesh CCD`).
+- Focused reruns on that feature-code head passed:
   - `test_ccd` 62/62
   - `test_capsule_capsule` 18/18
   - `test_mesh_mesh` 11/11
@@ -104,8 +110,8 @@ Branch-local evidence currently staged in `docs/dev_tasks/native_collision/`:
 - Local reference/benchmark evidence recorded in `03-evidence-gates.md` includes
   reference-backend CTest coverage and `bm-collision-check` benchmark guard
   output.
-- Docs-only cleanup commits after the feature-code head have run `pixi run lint`
-  and `git diff --check`; the lint gate reran runtime-isolation and
+- Later local cleanup and current-main merge commits have run `pixi run lint`
+  and diff whitespace checks; the lint gate reran runtime-isolation and
   compatibility-facade audits.
 - Pre-record docs-packet head `23dbbccc6c0`
   (`Refresh native collision resume after PR packet cleanup`) passed

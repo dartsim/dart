@@ -11,8 +11,12 @@ of this file per Round 20; use git history for the pre-compaction transcript.
 - Starting commit for the native-default push: `96436fd2503`
 - Latest feature-code evidence head: `08a3ee5555c`
   (`Fix native capsule mesh CCD`)
-- Current branch-local status: later commits are docs/evidence cleanup unless
-  recent `git log --oneline --decorate` output shows otherwise.
+- Latest current-branch validation head: `f949b7cbbbe`
+  (`Merge current main into native collision branch`)
+- Current branch-local status: `f949b7cbbbe` merges upstream `main`
+  `b218b43786c` and has local `pixi run test-all` evidence. Later commits are
+  docs/evidence cleanup unless recent `git log --oneline --decorate` output
+  shows otherwise.
 
 ## Gate Matrix
 
@@ -25,7 +29,7 @@ of this file per Round 20; use git history for the pre-compaction transcript.
 | Performance guard     | Comparative benchmark guards check native/reference and public adapter paths.                                    | Local pass, final benchmark artifact open.                                     |
 | Dependency removal    | Normal builds/packages/wheels avoid old collision runtime deps.                                                  | Local pass plus repaired-head workflow evidence, final PR-state evidence open. |
 | Source isolation      | Lint blocks old-engine runtime include/source leakage.                                                           | Local pass.                                                                    |
-| Full validation       | `pixi run test-all` passes on the feature-code state and current local packet.                                   | Local pass on latest feature-code head and docs-packet head.                   |
+| Full validation       | `pixi run test-all` passes on the feature-code state and current local packet.                                   | Local pass on latest feature-code head and current merged packet.              |
 
 ## North-Star Progress Scale
 
@@ -47,7 +51,29 @@ of this file per Round 20; use git history for the pre-compaction transcript.
 
 ## Current Local Validation
 
-Latest feature-code validation:
+Latest current-branch validation:
+
+- Commit: `f949b7cbbbe` (`Merge current main into native collision branch`)
+- Upstream included: `main` at `b218b43786c`
+- Commands:
+  - `pixi run update-api-boundary-inventory`
+  - `pixi run check-api-boundary-inventory`
+  - `pixi run lint`
+  - `git diff --cached --check`
+  - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+- Observed output:
+  - API boundary inventory regenerated and checked clean after the upstream
+    merge.
+  - Lint passed, including `check-collision-runtime-isolation`,
+    `audit-collision-compat-facades`, API-boundary checks, and AI command sync.
+  - `test-all` passed all 6 top-level gates: linting, build, unit tests,
+    simulation-experimental tests, Python tests, and documentation.
+  - The C++ unit-test phase reported 266/266 tests passing, including 29
+    `collision-native` tests and 2 `collision-native-stability` tests.
+  - The simulation-experimental C++ phase reported 13/13 tests passing.
+  - Final report printed `All tests passed!`.
+
+Latest focused feature-code validation:
 
 - Commit: `08a3ee5555c` (`Fix native capsule mesh CCD`)
 - Command:
@@ -60,7 +86,7 @@ Latest feature-code validation:
   - `test_capsule_capsule` passed 18/18.
   - `test_mesh_mesh` passed 11/11.
 
-Current docs-compaction validation:
+Prior docs-compaction validation:
 
 - Commands:
   - `pixi run lint`
@@ -157,9 +183,8 @@ Read-only GitHub checks show:
 - PR #2652 is closed, draft, based on `main`, and anchored to old head
   `714d220d82a`.
 - Feature-branch pushes after PR closure do not start the main PR workflows.
-- `gh run list --repo dartsim/dart --branch feature/new_coll --commit <head>`
-  returned no runs for local-only docs/evidence heads. Rerun the command from
-  `RESUME.md` for the exact current local head.
+- `gh run list --repo dartsim/dart --commit f949b7cbbbe...` returned no runs
+  for the local-only merged validation head.
 
 Manual workflow-dispatch reference evidence on repaired head `1e1faf6feb1`
 exists for native-only CI, gz-physics CI, dartpy wheel matrix, and collision

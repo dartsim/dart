@@ -69,14 +69,31 @@ Use these files as evidence owners; do not paste their full history into the PR:
 
 Current local branch status at the time this packet was refreshed:
 
-- `feature/new_coll` is ahead of `origin/feature/new_coll` by local docs-only
-  cleanup commits.
+- `feature/new_coll` is ahead of `origin/feature/new_coll` by local feature,
+  docs, evidence, and current-main merge commits.
+- The latest merged validation head is `f949b7cbbbe`
+  (`Merge current main into native collision branch`), which includes upstream
+  `main` at `b218b43786c`.
 - PR #2652 is closed, draft, based on `main`, and anchored to old head
   `714d220d82a`.
-- Read-only run lookup for the current local head returns no GitHub Actions
-  runs.
+- Read-only run lookup for `f949b7cbbbe` returns no GitHub Actions runs.
 
-Latest feature-code validation recorded by the task:
+Latest current-branch validation recorded by the task:
+
+- Merged validation head: `f949b7cbbbe`
+  (`Merge current main into native collision branch`).
+- Full local gate:
+
+  ```bash
+  DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all
+  ```
+
+  Result: all 6 top-level gates passed and the report printed
+  `All tests passed!`. The C++ unit-test phase reported 266/266 passing tests,
+  including 29 `collision-native` tests and 2 `collision-native-stability`
+  tests; the simulation-experimental C++ phase reported 13/13 passing tests.
+
+Latest focused feature-code validation recorded by the task:
 
 - Feature-code head: `08a3ee5555c` (`Fix native capsule mesh CCD`).
 - Full local gate:

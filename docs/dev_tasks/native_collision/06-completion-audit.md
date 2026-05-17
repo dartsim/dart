@@ -47,14 +47,20 @@ folder is deleted in that same PR.
 
 Latest branch-local code evidence:
 
-- Latest feature-code head after the `origin/main` merge:
-  `08a3ee5555c` (`Fix native capsule mesh CCD`).
-- Recorded validation on that code head: `pixi run lint` plus
+- Latest current-branch validation head after merging current upstream `main`:
+  `f949b7cbbbe` (`Merge current main into native collision branch`).
+- Upstream `main` included at `b218b43786c`.
+- Recorded validation on that merged head: `pixi run lint` plus
   `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
   passed all 6 top-level gates and printed `All tests passed!`.
-- Focused reruns against the same build tree passed `test_ccd` 62/62,
+- The C++ unit-test phase reported 266/266 tests passing, including 29
+  `collision-native` tests and 2 `collision-native-stability` tests.
+- The simulation-experimental C++ phase reported 13/13 tests passing.
+- Focused feature-code reruns against `08a3ee5555c`
+  (`Fix native capsule mesh CCD`) passed `test_ccd` 62/62,
   `test_capsule_capsule` 18/18, and `test_mesh_mesh` 11/11.
-- Later local changes before this compaction pass were docs/evidence-only.
+- Later local changes after `f949b7cbbbe`, if any, should be treated as
+  docs/evidence-only unless recent git history shows otherwise.
 
 Latest branch-local evidence packet:
 
@@ -72,7 +78,7 @@ Latest branch-local evidence packet:
 Latest local guard evidence from the compaction pass:
 
 - `pixi run lint` passed.
-- `git diff --check` passed before commit.
+- `git diff --cached --check` passed before the `f949b7cbbbe` merge commit.
 - `check-collision-runtime-isolation` passed.
 - `audit-collision-compat-facades` passed and confirmed factory aliases,
   C++ facades, dartpy API, package components, and reference-engine locations.
@@ -83,9 +89,8 @@ Latest read-only review-surface evidence:
   returns only PR #2652.
 - PR #2652 is `CLOSED`, draft, based on `main`, and anchored to old head
   `714d220d82a`.
-- `gh run list --repo dartsim/dart --branch feature/new_coll --commit <current-head>`
-  returned no runs for local-only docs/evidence heads. Rerun the command from
-  `RESUME.md` for the exact current local head.
+- `gh run list --repo dartsim/dart --commit f949b7cbbbe...` returned no runs
+  for the local-only merge head.
 - No PR metadata, workflow state, branch state, push, or GitHub artifact was
   mutated by read-only audits.
 
