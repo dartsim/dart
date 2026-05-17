@@ -31,6 +31,7 @@
  */
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -41,7 +42,6 @@
 #include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
-#include <dart/dynamics/sphere_shape.hpp>
 
 #include <dart/math/constants.hpp>
 
@@ -53,6 +53,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -191,6 +192,8 @@ struct OperationalSpaceScene
 {
   dart::simulation::WorldPtr world;
   std::shared_ptr<OperationalSpaceControlState> controller;
+  std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  std::vector<dart::gui::Gizmo> gizmos;
 };
 
 OperationalSpaceScene createOperationalSpaceScene()
@@ -211,13 +214,22 @@ OperationalSpaceScene createOperationalSpaceScene()
   targetTransform.pretranslate(Eigen::Vector3d(0.05, 0.0, 0.0));
   auto target = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kTargetFrameName, targetTransform);
-  target->setShape(std::make_shared<dart::dynamics::SphereShape>(0.025));
-  target->getVisualAspect(true)->setRGBA(
-      Eigen::Vector4d(0.92, 0.08, 0.08, 1.0));
   scene.world->addSimpleFrame(target);
 
   scene.controller
       = std::make_shared<OperationalSpaceControlState>(robot, target);
+  dart::gui::InverseKinematicsHandle handle;
+  handle.label = "1 operational-space target";
+  handle.hotkey = '1';
+  handle.target = target;
+  scene.ikHandles.push_back(std::move(handle));
+
+  dart::gui::Gizmo gizmo;
+  gizmo.label = kTargetFrameName;
+  gizmo.target = target;
+  gizmo.size = 0.16;
+  scene.gizmos.push_back(std::move(gizmo));
+
   scene.world->addSkeleton(robot);
   return scene;
 }
@@ -244,15 +256,9 @@ void printOperationalSpaceInstructions()
 {
   std::cout
       << "Operational Space Control Example Controls:\n"
-      << "Click the red ball, then Ctrl-left drag it to move the target of "
-         "the operational space controller.\n"
-      << "Hold key 1 or X while Ctrl-dragging to constrain movement to the "
-         "x-axis.\n"
-      << "Hold key 2 or Y while Ctrl-dragging to constrain movement to the "
-         "y-axis.\n"
-      << "Hold key 3 or Z while Ctrl-dragging to constrain movement to the "
-         "z-axis.\n"
-      << "Arrow keys and PageUp/PageDown nudge the selected target.\n"
+      << "Left-drag the target gizmo arrows/planes/rings to move the "
+         "operational-space target.\n"
+      << "Press 1 to select the target for arrow/PageUp/PageDown nudges.\n"
       << "Space: Toggle simulation\n";
 }
 
@@ -263,10 +269,9 @@ dart::gui::Panel createOperationalSpacePanel()
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
     builder.text("KR5 operational-space target control");
-    builder.text("Select the red target ball.");
-    builder.text("Ctrl-left drag moves the selected handle.");
-    builder.text("Arrow keys and PageUp/PageDown nudge it.");
-    builder.text("Hold 1/2/3 or X/Y/Z with Ctrl-drag to constrain an axis.");
+    builder.text("Left-drag the target gizmo arrows/planes/rings.");
+    builder.text("Press 1 to select it for keyboard nudges.");
+    builder.text("Arrow keys and PageUp/PageDown nudge selected targets.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -292,6 +297,8 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
+    options.ikHandles = scene.ikHandles;
+    options.gizmos = scene.gizmos;
     options.runDefaults = makeOperationalSpaceRunDefaults();
     options.camera = makeOperationalSpaceCamera();
     options.preStep = [controller = scene.controller]() {

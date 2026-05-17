@@ -2,16 +2,17 @@
 
 ## Summary
 
-- Goal: control the KR5 end effector by moving a red operational-space target.
+- Goal: control the KR5 end effector by moving an operational-space target
+  gizmo.
 - Concepts/APIs: URDF loading, Jacobian-based operational-space control,
-  per-step callbacks, selectable `SimpleFrame` targets, renderer-neutral drag
-  and nudge controls, and public `dart::gui` panels.
-- Expected output: the KR5 robot over the KR5 ground with a red target ball near
-  the end effector.
-- Controls: click the red target ball, then Ctrl-left drag it or use
-  arrow/PageUp/PageDown keys to move it. Hold `1`, `2`, or `3` while
-  Ctrl-dragging to constrain movement to X, Y, or Z; `X`, `Y`, and `Z` are also
-  supported by the promoted viewer. Space toggles simulation.
+  per-step callbacks, `SimpleFrame` targets, public `dart::gui::Gizmo`
+  affordances, renderer-neutral drag and nudge controls, and public
+  `dart::gui` panels.
+- Expected output: the KR5 robot over the KR5 ground with a public transform
+  gizmo near the end effector.
+- Controls: left-drag the target gizmo arrows/planes/rings to move the
+  operational-space target. Press `1` to select the target for
+  arrow/PageUp/PageDown nudges. Space toggles simulation.
 
 ## Run
 

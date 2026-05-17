@@ -6,13 +6,13 @@
   `dart::gui` application runner.
 - Concepts/APIs: whole-body IK targets, support geometry,
   `dart::gui::ApplicationOptions`, renderer-neutral keyboard actions, promoted
-  panel callbacks, and source-owned debug line geometry.
+  `dart::gui::Gizmo` target affordances, panel callbacks, and source-owned
+  support debug line geometry.
 - Expected output: a kinematic Hubo model with toggleable hand, foot, and peg IK
-  targets plus an always-visible support-polygon overlay.
-- Controls: left drag orbits, right/middle drag pans, wheel zooms, click
-  selects renderables, Ctrl-left drag or arrow/PageUp/PageDown nudges selected
-  items, Ctrl-Shift-left drag rotates selected target handles, and Escape
-  exits.
+  target gizmos plus an always-visible support-polygon overlay.
+- Controls: left drag orbits, right/middle drag pans, wheel zooms, press `1`-`6`
+  to toggle/select targets, left-drag active gizmo handles, arrow/PageUp/PageDown
+  nudges selected targets, and Escape exits.
 
 ## Notes
 
@@ -20,8 +20,8 @@
   polygon computation, while the Hubo body nodes ignore gravity and collision so
   target manipulation is stable.
 - Press `1`-`6` to toggle the hand, foot, and peg IK targets. Active targets are
-  added to the world and solved each step; inactive targets are hidden and do
-  not constrain the robot.
+  rendered as public gizmos and solved each step; inactive targets are hidden
+  and do not constrain the robot.
 - WASD moves the root, Q/E yaws the root, and F/Z changes root height.
 - X/C toggles left/right foot support, P prints the current DOF positions, and T
   resets the relaxed posture while preserving the root x/y/yaw placement.

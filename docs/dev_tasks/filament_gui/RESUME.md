@@ -11,19 +11,23 @@ The branch is `feature/filament-gui-full-execution`, tracking
 of the tracked remote with the Fetch image-sequence capture checkpoint
 `de1873ddab7 Document Fetch image-sequence capture`, and this handoff includes
 the R24-1 public gizmo-affordance checkpoint, the R24-2 gizmo axis-handle drag
-checkpoint, the R24-3 rotation-ring checkpoint, and the current R24-4
-plane-handle checkpoint. Do not push these local checkpoints without
+checkpoint, the R24-3 rotation-ring checkpoint, the R24-4 plane-handle
+checkpoint, the R24-5 handle-highlighting checkpoint, the R24-7 Atlas
+public-gizmo target checkpoint, and the R24-8 remaining robot/IK gizmo rollout.
+Do not push these local checkpoints without
 explicit maintainer/user approval in the active session. Leave the pre-existing
 local `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the
 maintainer explicitly asks to include them.
 
-Immediate next slice after Atlas Puppet's R24-7 replacement: continue the R24
-Gizmo work from `STEERING.md` by applying the same no-bare-target-affordance
-rule to the remaining robot/IK examples. The public `dart::gui::Gizmo`
-registration surface, render-only debug-line affordances, X/Y/Z axis-arrow
-dragging, X/Y/Z rotation-ring dragging, XY/YZ/XZ plane-handle dragging,
-hover/active handle highlighting, and Atlas Puppet public-gizmo target
-affordances are in place for `SimpleFrame` targets.
+Immediate next slice after the R24-8 robot/IK rollout: run a fresh audit for
+remaining source-owned visible manipulation affordances and either migrate them
+to public `dart::gui::Gizmo`, keep them as intentional example-owned geometry,
+or record a named public API gap. The public `dart::gui::Gizmo` registration
+surface, render-only debug-line affordances, X/Y/Z axis-arrow dragging, X/Y/Z
+rotation-ring dragging, XY/YZ/XZ plane-handle dragging, hover/active handle
+highlighting, per-target visibility, and public-gizmo target affordances for
+Atlas, Hubo, G1, operational-space control, and WAM IKFast are in place for
+`SimpleFrame` targets.
 
 ## Live Supervisor Steering
 

@@ -912,6 +912,37 @@ TEST(FilamentSceneExtraction, GizmoDebugLinesHighlightSelectedHandle)
   EXPECT_TRUE(secondRotateZ->rgba.isApprox(secondGizmo.colors.highlight));
 }
 
+TEST(FilamentSceneExtraction, GizmoVisibilityControlsDebugLinesAndPicking)
+{
+  auto target = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "gizmo_target");
+
+  dart::gui::Gizmo gizmo;
+  gizmo.label = "hidden_target";
+  gizmo.target = target;
+  gizmo.size = 1.0;
+  gizmo.isVisible = []() {
+    return false;
+  };
+
+  EXPECT_TRUE(dart::gui::makeGizmoDebugLines(gizmo).empty());
+
+  std::vector<dart::gui::Gizmo> gizmos{gizmo};
+  const dart::gui::PickRay xHandleRay{
+      Eigen::Vector3d(0.5, -0.02, 0.0), Eigen::Vector3d::UnitY()};
+  EXPECT_FALSE(
+      dart::gui::pickNearestGizmoHandle(gizmos, xHandleRay, 1.0, 0.05)
+          .has_value());
+
+  gizmos.front().isVisible = []() {
+    return true;
+  };
+  EXPECT_FALSE(dart::gui::makeGizmoDebugLines(gizmos).empty());
+  EXPECT_TRUE(
+      dart::gui::pickNearestGizmoHandle(gizmos, xHandleRay, 1.0, 0.05)
+          .has_value());
+}
+
 TEST(FilamentSceneExtraction, GizmoAxisHandlePickingDrivesTargetFrame)
 {
   auto target = SimpleFrame::createShared(
@@ -2534,7 +2565,8 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("makeSupportPolygonDebugLines"), std::string::npos);
   EXPECT_NE(mainSource.find("hubo_support_polygon_overlay"), std::string::npos);
   EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("createIkTargetHandleShape"), std::string::npos);
+  EXPECT_EQ(mainSource.find("createIkTargetHandleShape"), std::string::npos);
+  EXPECT_EQ(mainSource.find("target->setShape"), std::string::npos);
   EXPECT_NE(
       mainSource.find("hubo_puppet_ik_target_left_hand"), std::string::npos);
   EXPECT_NE(
@@ -2543,9 +2575,15 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("\"r_peg\""), std::string::npos);
   EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
   EXPECT_NE(mainSource.find("setUnconstrainedIkBounds"), std::string::npos);
-  EXPECT_NE(mainSource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_EQ(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
+  EXPECT_NE(mainSource.find("gizmo.isVisible"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Left-drag active target gizmo handles"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
   EXPECT_NE(
       mainSource.find("world->addSimpleFrame(target)"), std::string::npos);
@@ -2586,6 +2624,7 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
   EXPECT_EQ(mainSource.find("osg"), std::string::npos);
   EXPECT_NE(readmeSource.find("Hubo Puppet Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(readmeSource.find("pixi run ex hubo_puppet"), std::string::npos);
   EXPECT_NE(readmeSource.find("support-polygon overlay"), std::string::npos);
   EXPECT_NE(readmeSource.find("Press `1`-`6`"), std::string::npos);
@@ -2631,15 +2670,22 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("makeSupportPolygonDebugLines"), std::string::npos);
   EXPECT_NE(mainSource.find("g1_support_polygon_overlay"), std::string::npos);
   EXPECT_NE(mainSource.find("LineSegmentShape"), std::string::npos);
-  EXPECT_NE(mainSource.find("createIkTargetHandleShape"), std::string::npos);
+  EXPECT_EQ(mainSource.find("createIkTargetHandleShape"), std::string::npos);
+  EXPECT_EQ(mainSource.find("target->setShape"), std::string::npos);
   EXPECT_NE(mainSource.find("ik_target_left_hand"), std::string::npos);
   EXPECT_NE(mainSource.find("ik_target_right_foot"), std::string::npos);
   EXPECT_NE(mainSource.find("left_rubber_hand_target"), std::string::npos);
   EXPECT_NE(mainSource.find("right_ankle_roll_link_target"), std::string::npos);
   EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
-  EXPECT_NE(mainSource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_EQ(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
+  EXPECT_NE(mainSource.find("gizmo.isVisible"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Left-drag active target gizmo handles"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
   EXPECT_NE(mainSource.find("createG1KeyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("solveActiveG1Targets"), std::string::npos);
@@ -2661,7 +2707,7 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(
       mainSource.find("camera.yaw = 0.48995732625372834"), std::string::npos);
   EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(mainSource.find("toggle target handles"), std::string::npos);
+  EXPECT_NE(mainSource.find("toggle/select targets"), std::string::npos);
   EXPECT_NE(mainSource.find("'1'"), std::string::npos);
   EXPECT_NE(mainSource.find("'4'"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
@@ -2671,6 +2717,7 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
   EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
   EXPECT_EQ(mainSource.find("osg"), std::string::npos);
   EXPECT_NE(readmeSource.find("G1 Puppet Example"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(readmeSource.find("pixi run ex g1_puppet"), std::string::npos);
   EXPECT_NE(readmeSource.find("--package-uri"), std::string::npos);
   EXPECT_NE(readmeSource.find("--g1-package-uri"), std::string::npos);
@@ -2714,7 +2761,7 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(
       operationalSource.find("joint->setDampingCoefficient(0, 0.5)"),
       std::string::npos);
-  EXPECT_NE(operationalSource.find("SphereShape>(0.025)"), std::string::npos);
+  EXPECT_EQ(operationalSource.find("SphereShape"), std::string::npos);
   EXPECT_NE(operationalSource.find("getMassMatrix"), std::string::npos);
   EXPECT_NE(operationalSource.find("getLinearJacobian"), std::string::npos);
   EXPECT_NE(
@@ -2738,10 +2785,16 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
       operationalSource.find("camera.distance = 4.376539729055364"),
       std::string::npos);
   EXPECT_NE(operationalSource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(operationalSource.find("options.ikHandles"), std::string::npos);
+  EXPECT_NE(operationalSource.find("dart::gui::Gizmo"), std::string::npos);
+  EXPECT_NE(operationalSource.find("options.gizmos"), std::string::npos);
   EXPECT_NE(operationalSource.find("options.runDefaults"), std::string::npos);
   EXPECT_NE(operationalSource.find("options.camera"), std::string::npos);
-  EXPECT_NE(operationalSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(
+      operationalSource.find("Left-drag the target gizmo"), std::string::npos);
+  EXPECT_NE(operationalSource.find("Press 1 to select"), std::string::npos);
+  EXPECT_EQ(operationalSource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_EQ(
       operationalSource.find("Hold key 1 or X while Ctrl-dragging"),
       std::string::npos);
   EXPECT_EQ(operationalSource.find("options.defaultScene"), std::string::npos);
@@ -2759,7 +2812,10 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
       operationalReadmeSource.find("pixi run ex operational_space_control"),
       std::string::npos);
   EXPECT_NE(
-      operationalReadmeSource.find("`1`, `2`, or `3`"), std::string::npos);
+      operationalReadmeSource.find("public `dart::gui::Gizmo`"),
+      std::string::npos);
+  EXPECT_NE(
+      operationalReadmeSource.find("Press `1` to select"), std::string::npos);
   EXPECT_NE(operationalReadmeSource.find("--out"), std::string::npos);
   EXPECT_NE(
       operationalReadmeSource.find("shadow-control API gap"),
@@ -2774,8 +2830,8 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   const auto wamIkfastCmakeSource = readSourceFile(
       std::filesystem::path("examples") / "wam_ikfast" / "ikfast"
       / "CMakeLists.txt");
-  EXPECT_NE(wamSource.find("createTargetHandleShape"), std::string::npos);
-  EXPECT_NE(wamSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_EQ(wamSource.find("createTargetHandleShape"), std::string::npos);
+  EXPECT_EQ(wamSource.find("LineSegmentShape"), std::string::npos);
   EXPECT_NE(wamSource.find("SharedLibraryIkFast"), std::string::npos);
   EXPECT_NE(wamSource.find("DART_WAM_IKFAST_LIB_PATH"), std::string::npos);
   EXPECT_NE(
@@ -2796,9 +2852,13 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(
       wamSource.find("camera.distance = 6.285196894290584"), std::string::npos);
   EXPECT_NE(wamSource.find("options.ikHandles"), std::string::npos);
+  EXPECT_NE(wamSource.find("dart::gui::Gizmo"), std::string::npos);
+  EXPECT_NE(wamSource.find("options.gizmos"), std::string::npos);
+  EXPECT_NE(wamSource.find("gizmo.isVisible"), std::string::npos);
   EXPECT_NE(wamSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(wamSource.find("options.preStep"), std::string::npos);
-  EXPECT_NE(wamSource.find("Ctrl-left drag"), std::string::npos);
+  EXPECT_NE(wamSource.find("Left-drag active target gizmo"), std::string::npos);
+  EXPECT_EQ(wamSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(
       wamSource.find("Note that this is purely kinematic"), std::string::npos);
   EXPECT_EQ(wamSource.find("options.defaultScene"), std::string::npos);
@@ -2807,6 +2867,7 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(wamCmakeSource.find("wamIk"), std::string::npos);
   EXPECT_NE(wamIkfastCmakeSource.find("add_library(wamIk"), std::string::npos);
   EXPECT_NE(wamReadmeSource.find("WAM IKFast Example"), std::string::npos);
+  EXPECT_NE(wamReadmeSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(wamReadmeSource.find("pixi run ex wam_ikfast"), std::string::npos);
   EXPECT_NE(wamReadmeSource.find("--screenshot"), std::string::npos);
   EXPECT_NE(wamReadmeSource.find("--out"), std::string::npos);

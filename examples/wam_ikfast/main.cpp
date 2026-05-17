@@ -33,6 +33,7 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -44,7 +45,6 @@
 #include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/inverse_kinematics.hpp>
-#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/shared_library_ik_fast.hpp>
 #include <dart/dynamics/simple_frame.hpp>
@@ -149,21 +149,6 @@ dart::dynamics::SkeletonPtr createGround()
   return ground;
 }
 
-std::shared_ptr<dart::dynamics::LineSegmentShape> createTargetHandleShape(
-    double radius)
-{
-  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(7.0f);
-  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
-  const auto addAxis = [&](const Eigen::Vector3d& axis) {
-    handle->addVertex(axis, center);
-    handle->addVertex(-axis, center);
-  };
-  addAxis(Eigen::Vector3d(radius, 0.0, 0.0));
-  addAxis(Eigen::Vector3d(0.0, radius, 0.0));
-  addAxis(Eigen::Vector3d(0.0, 0.0, 0.75 * radius));
-  return handle;
-}
-
 void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)
 {
   const Eigen::Vector3d linearBounds
@@ -213,9 +198,6 @@ WamIkFastSetup setupWamIkFastTarget(const dart::dynamics::SkeletonPtr& wam)
       dart::dynamics::Frame::World(),
       kTargetFrameName,
       effector->getWorldTransform());
-  target->setShape(createTargetHandleShape(0.15));
-  target->getVisualAspect(true)->setRGBA(
-      Eigen::Vector4d(0.18, 0.55, 1.0, 0.92));
 
   auto ik = effector->getIK(true);
   ik->setTarget(target);
@@ -349,6 +331,7 @@ struct WamIkFastScene
   dart::dynamics::SkeletonPtr wam;
   std::shared_ptr<WamIkFastTargetState> targetState;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  std::vector<dart::gui::Gizmo> gizmos;
 };
 
 WamIkFastScene createWamIkFastScene()
@@ -371,6 +354,15 @@ WamIkFastScene createWamIkFastScene()
   handle.target = scene.targetState->target();
   handle.ik = scene.targetState->ik();
   scene.ikHandles.push_back(std::move(handle));
+
+  dart::gui::Gizmo gizmo;
+  gizmo.label = kTargetFrameName;
+  gizmo.target = scene.targetState->target();
+  gizmo.size = 0.24;
+  gizmo.isVisible = [targetState = scene.targetState]() {
+    return targetState->active();
+  };
+  scene.gizmos.push_back(std::move(gizmo));
   return scene;
 }
 
@@ -437,10 +429,8 @@ void printWamIkFastInstructions()
 {
   std::cout
       << "WAM IKFast Example Controls:\n"
-      << "Ctrl-left drag: translate the selected target handle\n"
-      << "Ctrl+Shift-left drag: rotate the selected target handle\n"
-      << "Arrow keys and PageUp/PageDown: nudge the selected target handle\n"
-      << "Hold X/Y/Z with Ctrl-drag to constrain movement to an axis\n"
+      << "Left-drag active target gizmo arrows/planes/rings\n"
+      << "Arrow keys and PageUp/PageDown: nudge the selected target gizmo\n"
       << "1: Toggle the interactive target of an EndEffector\n"
       << "P: Print the current joint values\n"
       << "T: Reset the robot to its relaxed posture\n"
@@ -456,12 +446,10 @@ dart::gui::Panel createWamIkFastPanel()
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
     builder.text("WAM IKFast kinematic target scene");
-    builder.text("Press 1 to toggle the target handle.");
+    builder.text("Press 1 to toggle/select the target.");
     builder.text("Press P to print joints; T resets posture.");
-    builder.text("Ctrl-left drag moves the selected handle.");
+    builder.text("Left-drag active target gizmo handles.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
-    builder.text("Ctrl+Shift-left drag rotates it.");
-    builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text("IK solves only while the target is active.");
     builder.separator();
     if (context.lifecycle != nullptr) {
@@ -489,6 +477,7 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
     options.ikHandles = scene.ikHandles;
+    options.gizmos = scene.gizmos;
     options.runDefaults = makeWamIkFastRunDefaults();
     options.camera = makeWamIkFastCamera();
     options.preStep = [targetState = scene.targetState]() {

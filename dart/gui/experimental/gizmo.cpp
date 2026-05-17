@@ -225,6 +225,11 @@ std::string makeGizmoLabel(const Gizmo& gizmo)
   return gizmo.label.empty() ? "gizmo" : gizmo.label;
 }
 
+bool isGizmoVisible(const Gizmo& gizmo)
+{
+  return !gizmo.isVisible || gizmo.isVisible();
+}
+
 bool isHighlightedHandle(
     GizmoHandleKind highlightedHandle, GizmoHandleKind candidate)
 {
@@ -426,8 +431,8 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
     const Gizmo& gizmo, double scale, GizmoHandleKind highlightedHandle)
 {
   std::vector<DebugLineDescriptor> lines;
-  if (gizmo.target == nullptr || gizmo.size <= 0.0 || !std::isfinite(gizmo.size)
-      || scale <= 0.0 || !std::isfinite(scale)) {
+  if (!isGizmoVisible(gizmo) || gizmo.target == nullptr || gizmo.size <= 0.0
+      || !std::isfinite(gizmo.size) || scale <= 0.0 || !std::isfinite(scale)) {
     return lines;
   }
 
@@ -603,7 +608,7 @@ std::optional<GizmoHandleHit> pickNearestGizmoHandle(
   double nearestSeparation = std::numeric_limits<double>::infinity();
   for (std::size_t gizmoIndex = 0; gizmoIndex < gizmos.size(); ++gizmoIndex) {
     const Gizmo& gizmo = gizmos[gizmoIndex];
-    if (gizmo.target == nullptr || gizmo.size <= 0.0
+    if (!isGizmoVisible(gizmo) || gizmo.target == nullptr || gizmo.size <= 0.0
         || !std::isfinite(gizmo.size)
         || (!hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)
             && !hasGizmoFlag(gizmo.flags, GizmoFlags::TranslateXY)

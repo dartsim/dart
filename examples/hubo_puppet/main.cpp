@@ -34,6 +34,7 @@
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/debug.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -298,21 +299,6 @@ dart::math::SupportGeometry makeHuboPuppetFootSupportGeometry()
   return support;
 }
 
-std::shared_ptr<dart::dynamics::LineSegmentShape> createIkTargetHandleShape(
-    double radius)
-{
-  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(7.0f);
-  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
-  const auto addAxis = [&](const Eigen::Vector3d& axis) {
-    handle->addVertex(axis, center);
-    handle->addVertex(-axis, center);
-  };
-  addAxis(Eigen::Vector3d(radius, 0.0, 0.0));
-  addAxis(Eigen::Vector3d(0.0, radius, 0.0));
-  addAxis(Eigen::Vector3d(0.0, 0.0, 0.75 * radius));
-  return handle;
-}
-
 std::shared_ptr<dart::dynamics::LineSegmentShape> createLineShape(
     const std::vector<dart::gui::DebugLineDescriptor>& lines)
 {
@@ -392,6 +378,7 @@ struct HuboPuppetScene
   dart::dynamics::SkeletonPtr hubo;
   dart::dynamics::SimpleFramePtr supportOverlay;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  std::vector<dart::gui::Gizmo> gizmos;
   struct TargetState
   {
     dart::simulation::WorldPtr world;
@@ -464,7 +451,6 @@ void addHuboPuppetIkTargets(
     const char* label;
     int hotkey;
     Eigen::Isometry3d relativeTransform;
-    Eigen::Vector4d color;
     bool supportContact;
   };
 
@@ -484,7 +470,6 @@ void addHuboPuppetIkTargets(
        "1 left hand",
        '1',
        hand,
-       {0.18, 0.55, 1.0, 0.92},
        false},
       {"Body_RWR",
        "r_hand",
@@ -492,7 +477,6 @@ void addHuboPuppetIkTargets(
        "2 right hand",
        '2',
        hand,
-       {1.0, 0.40, 0.24, 0.92},
        false},
       {"Body_LAR",
        "l_foot",
@@ -500,7 +484,6 @@ void addHuboPuppetIkTargets(
        "3 left foot",
        '3',
        foot,
-       {0.26, 0.86, 0.34, 0.92},
        true},
       {"Body_RAR",
        "r_foot",
@@ -508,7 +491,6 @@ void addHuboPuppetIkTargets(
        "4 right foot",
        '4',
        foot,
-       {0.95, 0.72, 0.18, 0.92},
        true},
       {"Body_LWP",
        "l_peg",
@@ -516,7 +498,6 @@ void addHuboPuppetIkTargets(
        "5 left peg",
        '5',
        peg,
-       {0.70, 0.43, 0.96, 0.92},
        false},
       {"Body_RWP",
        "r_peg",
@@ -524,7 +505,6 @@ void addHuboPuppetIkTargets(
        "6 right peg",
        '6',
        peg,
-       {0.25, 0.88, 0.78, 0.92},
        false},
   }};
 
@@ -569,8 +549,6 @@ void addHuboPuppetIkTargets(
         dart::dynamics::Frame::World(),
         config.targetName,
         endEffector->getWorldTransform());
-    target->setShape(createIkTargetHandleShape(0.15));
-    target->getVisualAspect(true)->setRGBA(config.color);
     ik->setTarget(target);
 
     auto state = std::make_shared<HuboPuppetScene::TargetState>();
@@ -589,6 +567,15 @@ void addHuboPuppetIkTargets(
     handle.target = target;
     handle.ik = ik;
     scene.ikHandles.push_back(std::move(handle));
+
+    dart::gui::Gizmo gizmo;
+    gizmo.label = config.targetName;
+    gizmo.target = target;
+    gizmo.size = 0.24;
+    gizmo.isVisible = [state]() {
+      return state->active;
+    };
+    scene.gizmos.push_back(std::move(gizmo));
     scene.targetStates.push_back(std::move(state));
   }
 }
@@ -817,8 +804,8 @@ dart::gui::Panel createHuboPuppetPanel()
   panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
                               dart::gui::PanelContext& context) {
     builder.text("Hubo whole-body IK puppet");
-    builder.text("Press 1-6 or select a target handle.");
-    builder.text("Ctrl-left drag moves the selected handle.");
+    builder.text("Press 1-6 to toggle/select targets.");
+    builder.text("Left-drag active target gizmo handles.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text("WASD moves the root; Q/E yaw; F/Z height.");
@@ -868,6 +855,7 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
     options.ikHandles = scene.ikHandles;
+    options.gizmos = scene.gizmos;
     options.runDefaults = makeHuboPuppetRunDefaults();
     options.camera = makeHuboPuppetCamera();
     options.preStep = [targetStates = scene.targetStates,

@@ -167,10 +167,12 @@
     source-owned examples can preserve target hotkeys, selection labels, and
     solve-on-drag behavior without depending on private renderer fixtures.
   - Added a promoted `dart::gui::Gizmo` registration surface with debug-line
-    visualization, X/Y/Z axis-handle dragging, plane-handle dragging, and
-    rotation-ring dragging, plus hover/active handle highlighting for
-    source-owned transform target affordances. `atlas_puppet` now uses those
-    public gizmos instead of source-owned target-handle geometry.
+    visualization, X/Y/Z axis-handle dragging, plane-handle dragging,
+    rotation-ring dragging, and per-target visibility, plus hover/active handle
+    highlighting for source-owned transform target affordances. `atlas_puppet`,
+    `hubo_puppet`, `g1_puppet`, `operational_space_control`, and `wam_ikfast`
+    now use those public gizmos instead of source-owned target-handle or
+    target-ball geometry.
   - Moved `atlas_puppet` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground/root handle/IK targets, and
     passes public `dart::gui` IK handles directly.
@@ -220,10 +222,10 @@
   - Added renderer-neutral `dart::gui::ApplicationOptions::runDefaults`,
     restored the Fetch example's historical 1280x960 default launch size, and
     restored its example README.
-  - Restored visible line-segment IK target handles and promoted control text
-    for the G1, Atlas, and Hubo puppet examples.
-  - Restored visible line-segment target handles and promoted control text for
-    the operational-space control, WAM IKFast, and Tinkertoy examples.
+  - Restored visible IK target controls and promoted control text for the G1,
+    Atlas, and Hubo puppet examples.
+  - Restored visible target controls and promoted control text for the
+    operational-space control, WAM IKFast, and Tinkertoy examples.
   - Restored Tinkertoy builder state through public `dart::gui` panel controls,
     including selected-block add/delete actions, gravity and force-coefficient
     controls, target reorientation, force-line updates, external force

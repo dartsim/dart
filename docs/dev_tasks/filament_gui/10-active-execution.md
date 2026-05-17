@@ -138,14 +138,18 @@ history but are not guaranteed to be in chronological order.
   explicitly asks to include it.
 - Latest committed local checkpoints: `de1873ddab7 Document Fetch image-sequence
 capture` updates Fetch README/audit/marker coverage for the promoted `--out`
-  image-sequence path, and `9d5dc251b43 Add public GUI gizmo affordances` adds
-  the R24-1 `dart::gui::Gizmo` public API with Atlas Puppet render-only
-  registration. These local checkpoints are not pushed.
-- Latest local R24 checkpoint replaces Atlas Puppet's remaining source-owned
-  IK target-handle geometry with public `dart::gui::Gizmo` affordances while
-  preserving number-key target selection and keyboard nudges. The next R24
-  slice is rolling the same no-bare-target-affordance rule through the
-  remaining robot/IK examples.
+  image-sequence path, and R24-1 through R24-8 add public
+  `dart::gui::Gizmo` registration, axis/plane/ring dragging, handle
+  highlighting, per-target visibility, Atlas Puppet public-gizmo IK target
+  affordances, and the same public-gizmo target affordances for Hubo Puppet,
+  G1 Puppet, operational-space control, and WAM IKFast. These local checkpoints
+  are not pushed.
+- Latest local R24 validation passed focused builds for the four migrated
+  examples plus `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct
+  software-GL screenshot analyzer smokes for Hubo, G1, operational-space
+  control, and WAM IKFast, aggregate `examples` build, mandatory
+  `pixi run lint`, post-lint focused rebuild/CTest, post-lint direct
+  screenshot smokes, stale-handle text scan, and `git diff --check`.
 - Latest pushed strict re-open checkpoint: `examples/joint_constraints/`
   restores the missing README, 640x480 launch default, loaded SKEL
   names/visuals, historical perturbation and harness console messages, and

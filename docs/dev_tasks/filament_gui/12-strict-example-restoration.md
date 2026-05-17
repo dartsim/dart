@@ -603,17 +603,28 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     handles to axis-drag math for `SimpleFrame` targets.
 65. R24-3 is committed locally as `a5f776f6eb1`. It adds X/Y/Z rotation rings
     and wires them to target rotation.
-66. The latest local R24 checkpoint adds XY/YZ/XZ plane handles and wires them
-    to target translation.
-67. R24-5 adds hover/active highlighting for gizmo handles by feeding the
-    hovered or actively dragged handle into renderer-neutral gizmo debug-line
-    generation. The active implementation slice is now replacing the old
-    target-sphere affordance with public gizmos.
-68. R24-7 replaces `examples/atlas_puppet/` source-owned IK target-handle
-    geometry with public `dart::gui::Gizmo` affordances while preserving
-    number-key target selection and keyboard nudges. The active implementation
-    slice is now applying the same no-bare-target-affordance rule to the
-    remaining robot/IK examples.
+66. R24-4 is committed locally as `2fb5c962e9e`. It adds XY/YZ/XZ plane
+    handles and wires them to target translation.
+67. R24-5 is committed locally as `dfb829b5307`. It adds hover/active
+    highlighting for gizmo handles by feeding the hovered or actively dragged
+    handle into renderer-neutral gizmo debug-line generation.
+68. R24-7 is committed locally as `8778962b97a`. It replaces
+    `examples/atlas_puppet/` source-owned IK target-handle geometry with public
+    `dart::gui::Gizmo` affordances while preserving number-key target selection
+    and keyboard nudges.
+69. R24-8 applies the same no-bare-target-affordance rule to the remaining
+    robot/IK examples:
+    `examples/hubo_puppet`, `examples/g1_puppet`,
+    `examples/operational_space_control`, and `examples/wam_ikfast` now use
+    public `dart::gui::Gizmo` target affordances instead of source-owned
+    target-handle or target-ball geometry. `Gizmo::isVisible` keeps inactive
+    target gizmos out of rendering and picking while preserving number-key
+    target selection and keyboard nudges. Local validation passed focused
+    builds for the four migrated examples plus `UNIT_gui_FilamentSceneExtraction`,
+    focused CTest, direct software-GL screenshot analyzer smokes for Hubo, G1,
+    operational-space control, and WAM IKFast, aggregate `examples` build,
+    mandatory `pixi run lint`, post-lint focused rebuild/CTest, post-lint
+    direct screenshot smokes, stale-handle text scan, and `git diff --check`.
 
 ## Checkpoint Rule
 

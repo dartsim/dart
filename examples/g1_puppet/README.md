@@ -6,13 +6,13 @@
   promoted `dart::gui` application runner.
 - Concepts/APIs: `dart::io::readSkeleton`, `HttpResourceRetriever`,
   `PackageResourceRetriever`, `dart::gui::ApplicationOptions`, promoted panel
-  callbacks, IK target handles, and source-owned debug line geometry.
+  callbacks, public `dart::gui::Gizmo` target affordances, and source-owned
+  support debug line geometry.
 - Expected output: a kinematic G1 in the official Filament/GLFW/ImGui renderer
   with hand/foot IK targets, a ground grid, and a support-polygon overlay.
-- Controls: left drag orbits, right/middle drag pans, wheel zooms, click
-  selects renderables, Ctrl-left drag or arrow/PageUp/PageDown nudges selected
-  items, Ctrl-Shift-left drag rotates selected target handles, and Escape
-  exits.
+- Controls: left drag orbits, right/middle drag pans, wheel zooms, press `1`-`4`
+  to toggle/select targets, left-drag active gizmo handles, arrow/PageUp/PageDown
+  nudges selected targets, and Escape exits.
 
 ## Notes
 
@@ -23,12 +23,12 @@
   scene parity, while the G1 body nodes ignore gravity and collision so IK
   manipulation is stable.
 - Press `1`-`4` to toggle IK targets for the hands and feet. Active targets are
-  visible as colored handles; move or rotate a selected handle to solve the
-  corresponding IK target.
+  visible as public gizmos; move or rotate a selected target to solve the
+  corresponding IK chain.
 - The historical OpenSceneGraph body-node drag tools do not have a full
   renderer-neutral articulated-body manipulator yet. The promoted replacement
-  supports selecting and dragging the free-root renderable plus the explicit IK
-  target handles.
+  supports selecting and dragging the free-root renderable plus explicit public
+  IK target gizmos.
 
 ## Run In Tree
 

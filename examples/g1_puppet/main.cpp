@@ -32,6 +32,7 @@
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/debug.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -309,21 +310,6 @@ dart::math::SupportGeometry makeG1FootSupportGeometry()
   return geometry;
 }
 
-std::shared_ptr<dart::dynamics::LineSegmentShape> createIkTargetHandleShape(
-    double radius)
-{
-  auto handle = std::make_shared<dart::dynamics::LineSegmentShape>(7.0f);
-  const std::size_t center = handle->addVertex(Eigen::Vector3d::Zero());
-  const auto addAxis = [&](const Eigen::Vector3d& axis) {
-    handle->addVertex(axis, center);
-    handle->addVertex(-axis, center);
-  };
-  addAxis(Eigen::Vector3d(radius, 0.0, 0.0));
-  addAxis(Eigen::Vector3d(0.0, radius, 0.0));
-  addAxis(Eigen::Vector3d(0.0, 0.0, 0.75 * radius));
-  return handle;
-}
-
 std::shared_ptr<dart::dynamics::LineSegmentShape> createLineShape(
     const std::vector<dart::gui::DebugLineDescriptor>& lines)
 {
@@ -378,6 +364,7 @@ struct G1Scene
   dart::dynamics::SkeletonPtr robot;
   dart::dynamics::SimpleFramePtr supportOverlay;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  std::vector<dart::gui::Gizmo> gizmos;
   struct TargetState
   {
     dart::simulation::WorldPtr world;
@@ -440,7 +427,6 @@ void addG1IkTargets(G1Scene& scene, const dart::dynamics::SkeletonPtr& robot)
     const char* targetName;
     const char* label;
     int hotkey;
-    Eigen::Vector4d color;
     bool supportContact;
   };
 
@@ -450,28 +436,24 @@ void addG1IkTargets(G1Scene& scene, const dart::dynamics::SkeletonPtr& robot)
        "ik_target_left_hand",
        "1 left hand",
        '1',
-       {0.18, 0.55, 1.0, 0.92},
        false},
       {"right_rubber_hand",
        "right_rubber_hand_target",
        "ik_target_right_hand",
        "2 right hand",
        '2',
-       {1.0, 0.40, 0.24, 0.92},
        false},
       {"left_ankle_roll_link",
        "left_ankle_roll_link_target",
        "ik_target_left_foot",
        "3 left foot",
        '3',
-       {0.26, 0.86, 0.34, 0.92},
        true},
       {"right_ankle_roll_link",
        "right_ankle_roll_link_target",
        "ik_target_right_foot",
        "4 right foot",
        '4',
-       {0.95, 0.72, 0.18, 0.92},
        true},
   }};
 
@@ -500,8 +482,6 @@ void addG1IkTargets(G1Scene& scene, const dart::dynamics::SkeletonPtr& robot)
         dart::dynamics::Frame::World(),
         config.targetName,
         endEffector->getWorldTransform());
-    target->setShape(createIkTargetHandleShape(0.15));
-    target->getVisualAspect(true)->setRGBA(config.color);
     ik->setTarget(target);
 
     auto state = std::make_shared<G1Scene::TargetState>();
@@ -518,6 +498,15 @@ void addG1IkTargets(G1Scene& scene, const dart::dynamics::SkeletonPtr& robot)
     handle.target = target;
     handle.ik = ik;
     scene.ikHandles.push_back(std::move(handle));
+
+    dart::gui::Gizmo gizmo;
+    gizmo.label = config.targetName;
+    gizmo.target = target;
+    gizmo.size = 0.24;
+    gizmo.isVisible = [state]() {
+      return state->active;
+    };
+    scene.gizmos.push_back(std::move(gizmo));
     scene.targetStates.push_back(std::move(state));
   }
 }
@@ -584,9 +573,8 @@ dart::gui::Panel createG1Panel(const G1Options& options)
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
     builder.text("G1 whole-body IK puppet");
-    builder.text("Press 1-4 to toggle target handles.");
-    builder.text("Select an active target handle to move it.");
-    builder.text("Ctrl-left drag moves the selected handle.");
+    builder.text("Press 1-4 to toggle/select targets.");
+    builder.text("Left-drag active target gizmo handles.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text(
@@ -638,6 +626,7 @@ int main(int argc, char* argv[])
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
     options.ikHandles = scene.ikHandles;
+    options.gizmos = scene.gizmos;
     options.runDefaults = makeG1RunDefaults();
     options.camera = makeG1Camera();
     options.preStep = [targetStates = scene.targetStates,

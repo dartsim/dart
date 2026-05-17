@@ -3,26 +3,26 @@
 ## Summary
 
 - Goal: interactively solve a WAM arm end-effector target using IKFast.
-- Concepts/APIs: analytic IK, source-owned target frames, public `dart::gui`
-  keyboard actions, and kinematic target manipulation.
+- Concepts/APIs: analytic IK, source-owned target frames, public
+  `dart::gui::Gizmo` target affordances, public `dart::gui` keyboard actions,
+  and kinematic target manipulation.
 - Expected output: a WAM arm above a blue ground plane. Press `1` to show the
-  blue target handle, then move it to solve the active IK target.
+  active target gizmo, then move it to solve the active IK target.
 - Controls:
   - `1`: toggle the end-effector target
   - `P`: print current joint values
   - `T`: reset the robot to its relaxed posture
-  - Ctrl-left drag: translate the selected target handle
-  - Ctrl+Shift-left drag: rotate the selected target handle
-  - Arrow keys / PageUp / PageDown: nudge the selected target handle
-  - X / Y / Z while Ctrl-dragging: constrain movement to one axis
+  - Left-drag active target gizmo arrows/planes/rings: move the selected target
+  - Arrow keys / PageUp / PageDown: nudge the selected target after pressing
+    `1`
 
 ## Notes
 
 - This example runs as a kinematic target scene. The promoted `dart::gui` runner
   does not expose the old OSG `allowSimulation(false)` switch yet, so the world
   uses zero gravity and solves the active target from the pre-step callback.
-- The old OSG Alt/Ctrl/Shift drag modes are superseded by the promoted
-  selection tool. Exact parent-joint-only manipulation remains a public
+- The old OSG Alt/Ctrl/Shift drag modes are superseded by the promoted public
+  gizmo tool. Exact parent-joint-only manipulation remains a public
   manipulation API gap.
 
 ## Run

@@ -94,6 +94,7 @@ struct DART_GUI_API Gizmo
   GizmoFlags flags = GizmoFlags::All;
   double size = 0.15;
   GizmoAxisColors colors;
+  std::function<bool()> isVisible;
   std::function<void(const Eigen::Isometry3d& newWorldTransform)> onChanged;
 };
 
