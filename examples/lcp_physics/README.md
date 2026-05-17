@@ -11,7 +11,7 @@
   GUI.
 - Controls: Space starts or pauses simulation. The panel can pause, step,
   reset, switch scenarios, switch solvers, tune timestep/gravity, and show
-  timing/contact diagnostics.
+  render FPS, step-time, frame-count, contact, and body-count diagnostics.
 
 ## Scenarios
 

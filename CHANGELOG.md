@@ -154,6 +154,8 @@
     placement, live scenario/solver switching, reset/timestep/gravity panel
     controls, README option inventory, and marker coverage through public
     `dart::gui`.
+  - Restored the `lcp_physics` panel's render FPS, rendered/skipped frame
+    counts, and rolling step-time diagnostics using source-owned metrics.
   - Restored the `human_joint_limits` example's live SKEL world, joint-limit
     enforcement, run defaults, README, and marker coverage through public
     `dart::gui`, with the historical TinyDNN-backed custom constraints tracked

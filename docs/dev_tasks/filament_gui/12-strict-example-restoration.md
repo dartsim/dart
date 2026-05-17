@@ -397,9 +397,11 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     command-line option coverage was incomplete, and marker tests covered only
     a subset of the contract. Restore the historical scene counts, names,
     placement, local scenario/solver controls, Reset/timestep/gravity controls,
-    README option inventory, and marker guards now. Keep exact ImGui line plots
-    and backend-specific debug metrics as a named public panel
-    plotting/render-metrics API gap. Implementation and pre-lint validation are
+    README option inventory, and marker guards now. A later checkpoint restored
+    source-owned render FPS, rendered/skipped frame counts, and rolling
+    step-time summaries. Keep exact ImGui line plots and backend-specific
+    display/font debug metrics as a named public panel plotting/backend-debug
+    API gap. Implementation and pre-lint validation are
     complete: focused `lcp_physics` and `UNIT_gui_FilamentSceneExtraction`
     build, focused CTest, direct `--list`, software-GL screenshot and `--out`
     image-sequence analyzer checks, pixi runner screenshot analyzer check,

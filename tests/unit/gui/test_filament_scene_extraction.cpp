@@ -3415,8 +3415,22 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
   EXPECT_NE(
       lcpSource.find("builder.slider(\"Gravity (m/s^2)\""), std::string::npos);
   EXPECT_NE(
+      lcpSource.find("std::deque<double> stepTimeHistory"), std::string::npos);
+  EXPECT_NE(lcpSource.find("updateRenderFps"), std::string::npos);
+  EXPECT_NE(lcpSource.find("render fps:"), std::string::npos);
+  EXPECT_NE(
+      lcpSource.find("builder.beginTable(\"lcp_performance\""),
+      std::string::npos);
+  EXPECT_NE(
+      lcpSource.find("Step-time line plot needs a public panel plotting API"),
+      std::string::npos);
+  EXPECT_NE(
+      lcpSource.find("Display/font metrics need backend debug access"),
+      std::string::npos);
+  EXPECT_EQ(
       lcpSource.find("step-time plots need a public panel plotting"),
       std::string::npos);
+  EXPECT_EQ(lcpSource.find("ImGui"), std::string::npos);
   EXPECT_NE(lcpSource.find("createInclinedPlaneScenario"), std::string::npos);
   EXPECT_NE(lcpSource.find("makeLcpRunDefaults"), std::string::npos);
   EXPECT_NE(lcpSource.find("options.width = 1280"), std::string::npos);

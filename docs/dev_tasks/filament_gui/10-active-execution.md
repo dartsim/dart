@@ -285,9 +285,10 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   the historical 5-layer box pyramid, 75-ball drop, 20-domino chain,
   mass-ratio names/placement, live scenario/solver switching,
   Reset/timestep/gravity panel controls, README option inventory, and marker
-  guards through public `dart::gui`. Exact ImGui line plots and backend
-  render/debug metrics remain a named public panel plotting/render-metrics API
-  gap.
+  guards through public `dart::gui`; a later checkpoint also restores
+  source-owned render FPS, rendered/skipped frame counts, and rolling step-time
+  summaries. Exact ImGui line plots and backend display/font debug metrics
+  remain a named public panel plotting/backend-debug API gap.
 - Latest pushed strict re-open checkpoint: `examples/mimic_pendulums/`
   restores live reset/ODE-collision/PGS-solver controls, original rig names
   with base colors, a source-owned XY grid,

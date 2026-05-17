@@ -20,8 +20,11 @@ Fetch target-gizmo cleanup, the R24-13 native window-title cleanup, the R24-14
 camera up-vector cleanup, the R24-15 panel camera-inspection cleanup, the
 R24-16 key-release cleanup, the R24-17 panel lighting cleanup, the R24-18
 application-callback cleanup, the R24-19 render-settings cleanup, and the
-R24-20 panel-color cleanup, and the R24-21 panel-table/swatch cleanup. R24-16
-adds key-release triggers for promoted keyboard actions and restores
+R24-20 panel-color cleanup, the R24-21 panel-table/swatch cleanup, the R24-22
+Simulation Event Handler help-alias cleanup, the R24-23 `hardcoded_design`
+wireframe cleanup, the R24-24 Heightmap/Point Cloud source-owned grid cleanup,
+and the R24-25 `lcp_physics` metric-diagnostics cleanup. R24-16 adds
+key-release triggers for promoted keyboard actions and restores
 keydown/key-release callbacks in the affected migrated examples. R24-17 adds
 `PanelContext::lighting` headlight state and restores historical headlight
 checkboxes through public `dart::gui`. R24-18 adds public
@@ -32,13 +35,19 @@ toggles in `atlas_simbicon` and `operational_space_control`. R24-20 adds
 public `PanelBuilder::colorEdit` and restores the terrain color editor in
 `heightmap` plus point-cloud and voxel-grid color editors in `point_cloud`.
 R24-21 adds public panel table and color-swatch primitives and restores the
-historical Mimic Pendulums rig legend plus diagnostics table.
+historical Mimic Pendulums rig legend plus diagnostics table. R24-22 restores
+the Simulation Event Handler `?` help alias. R24-23 restores
+`hardcoded_design` wireframe link visuals with source-owned DART line
+geometry. R24-24 restores Heightmap and Point Cloud fine-grained grid controls
+with source-owned DART line geometry. R24-25 restores `lcp_physics` render FPS,
+rendered/skipped frame counts, and rolling step-time diagnostics with
+source-owned metrics.
 Do not push these local checkpoints without explicit maintainer/user approval
 in the active session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
 explicitly asks to include them.
 
-Immediate next slice after the R24-19 render-settings rollout: continue
+Immediate next slice after the R24-25 metric-diagnostics rollout: continue
 reducing the named public API gaps in `11-example-parity-audit.md`. Public
 `dart::gui::Gizmo` now covers the source-owned manipulation affordances for the
 recently re-opened target examples, public `OrbitCamera::up` covers historical
@@ -52,10 +61,11 @@ now cover post-step and pre/post-render lifecycle hooks for `empty` and
 `PanelBuilder::colorEdit` now covers basic RGBA panel color editors, and the
 local source-owned grid helper covers the Heightmap and Point Cloud
 fine-grained grid controls. Remaining audit gaps are mostly depth render
-outputs, panel plotting/render metrics, and example-specific simulation or
-posture controls rather than bare source-owned target handles, camera up-vector
-defaults, basic camera readouts, simple key-release callbacks, headlight
-checkboxes, basic lifecycle hooks, or shadow toggles.
+outputs, exact panel line plotting/backend debug metrics, and example-specific
+simulation or posture controls rather than bare source-owned target handles,
+camera up-vector defaults, basic camera readouts, simple key-release callbacks,
+headlight checkboxes, basic lifecycle hooks, shadow toggles, basic color
+editors, or source-owned grid/metric summaries.
 
 ## Live Supervisor Steering
 

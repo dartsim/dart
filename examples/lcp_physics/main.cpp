@@ -49,10 +49,15 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
+#include <deque>
+#include <iomanip>
 #include <iostream>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <random>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -66,6 +71,7 @@ namespace {
 constexpr int kBallDropSphereCount = 75;
 constexpr int kBoxStackLayers = 5;
 constexpr int kDominoCount = 20;
+constexpr int kMaxMetricHistorySize = 120;
 constexpr double kDefaultTimeStepHz = 1000.0;
 constexpr double kDefaultGravityMagnitude = 9.81;
 
@@ -105,6 +111,14 @@ struct LcpPhysicsConfig
   SolverType solver = SolverType::Dantzig;
   double timeStepHz = kDefaultTimeStepHz;
   double gravityMagnitude = kDefaultGravityMagnitude;
+};
+
+struct MetricSummary
+{
+  std::size_t samples = 0;
+  double latest = 0.0;
+  double average = 0.0;
+  double maximum = 0.0;
 };
 
 const std::vector<ScenarioInfo>& getScenarios()
@@ -155,6 +169,52 @@ std::string toLowerAscii(std::string_view value)
     return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
   });
   return lowered;
+}
+
+std::string formatFixed(double value, int precision)
+{
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(precision) << value;
+  return stream.str();
+}
+
+double elapsedMilliseconds(std::chrono::steady_clock::time_point start)
+{
+  return std::chrono::duration<double, std::milli>(
+             std::chrono::steady_clock::now() - start)
+      .count();
+}
+
+void appendMetricSample(std::deque<double>& history, double value)
+{
+  history.push_back(value);
+  while (history.size() > kMaxMetricHistorySize) {
+    history.pop_front();
+  }
+}
+
+MetricSummary summarizeMetrics(const std::deque<double>& history)
+{
+  MetricSummary summary;
+  summary.samples = history.size();
+  if (history.empty()) {
+    return summary;
+  }
+
+  summary.latest = history.back();
+  summary.average = std::accumulate(history.begin(), history.end(), 0.0)
+                    / static_cast<double>(history.size());
+  summary.maximum = *std::max_element(history.begin(), history.end());
+  return summary;
+}
+
+std::string formatMetricCell(
+    const MetricSummary& summary, double value, std::string_view suffix)
+{
+  if (summary.samples == 0) {
+    return "n/a";
+  }
+  return formatFixed(value, 3) + std::string(suffix);
 }
 
 std::optional<std::string_view> getOptionValue(
@@ -626,10 +686,97 @@ dart::simulation::WorldPtr createLcpPhysicsWorld(const LcpPhysicsConfig& config)
 
 struct LcpPhysicsState
 {
+  using Clock = std::chrono::steady_clock;
+
   LcpPhysicsConfig config;
   dart::simulation::WorldPtr world;
   std::size_t stepCount = 0;
+  Clock::time_point stepStart = Clock::now();
+  Clock::time_point fpsWindowStart = Clock::now();
+  int lastRenderedFrameCount = 0;
+  int framesInFpsWindow = 0;
+  double renderFps = 0.0;
+  std::deque<double> stepTimeHistory;
+
+  void beginStep()
+  {
+    stepStart = Clock::now();
+  }
+
+  void finishStep()
+  {
+    appendMetricSample(stepTimeHistory, elapsedMilliseconds(stepStart));
+    ++stepCount;
+  }
+
+  void resetStepMetrics()
+  {
+    stepCount = 0;
+    stepTimeHistory.clear();
+    stepStart = Clock::now();
+  }
+
+  void updateRenderFps(const dart::gui::ViewerLifecycleState* lifecycle)
+  {
+    if (lifecycle == nullptr) {
+      return;
+    }
+
+    const int renderedFrameCount = lifecycle->renderedFrames;
+    if (renderedFrameCount < lastRenderedFrameCount) {
+      lastRenderedFrameCount = renderedFrameCount;
+      framesInFpsWindow = 0;
+      fpsWindowStart = Clock::now();
+      return;
+    }
+
+    framesInFpsWindow += renderedFrameCount - lastRenderedFrameCount;
+    lastRenderedFrameCount = renderedFrameCount;
+
+    const auto now = Clock::now();
+    const double elapsedSeconds
+        = std::chrono::duration<double>(now - fpsWindowStart).count();
+    if (elapsedSeconds >= 0.5) {
+      renderFps = static_cast<double>(framesInFpsWindow) / elapsedSeconds;
+      framesInFpsWindow = 0;
+      fpsWindowStart = now;
+    }
+  }
 };
+
+void addMetricTableRow(
+    dart::gui::PanelBuilder& builder,
+    std::string_view label,
+    const MetricSummary& summary,
+    std::string_view suffix)
+{
+  builder.tableNextRow();
+  if (builder.tableNextColumn()) {
+    builder.text(label);
+  }
+  if (builder.tableNextColumn()) {
+    builder.text(formatMetricCell(summary, summary.latest, suffix));
+  }
+  if (builder.tableNextColumn()) {
+    builder.text(formatMetricCell(summary, summary.average, suffix));
+  }
+  if (builder.tableNextColumn()) {
+    builder.text(formatMetricCell(summary, summary.maximum, suffix));
+  }
+}
+
+void addMetricFallbackText(
+    dart::gui::PanelBuilder& builder,
+    std::string_view label,
+    const MetricSummary& summary,
+    std::string_view suffix)
+{
+  builder.text(
+      std::string(label)
+      + " last=" + formatMetricCell(summary, summary.latest, suffix)
+      + " avg=" + formatMetricCell(summary, summary.average, suffix)
+      + " max=" + formatMetricCell(summary, summary.maximum, suffix));
+}
 
 void replaceWorldContents(
     dart::simulation::World& target, const dart::simulation::WorldPtr& source)
@@ -652,7 +799,7 @@ void resetLcpWorld(LcpPhysicsState& state)
   replaceWorldContents(*state.world, nextWorld);
   applyParameters(state.world, state.config);
   applySolver(state.world, state.config.solver);
-  state.stepCount = 0;
+  state.resetStepMetrics();
 }
 
 dart::gui::RunOptions makeLcpRunDefaults()
@@ -685,6 +832,7 @@ dart::gui::Panel createLcpPanel(const std::shared_ptr<LcpPhysicsState>& state)
   panel.buildWithContext = [state](
                                dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
+    state->updateRenderFps(context.lifecycle);
     builder.text("LCP contact solver benchmark scene");
     builder.text("scenario: " + scenarioInfo(state->config.scenario).name);
     builder.text("solver: " + solverInfo(state->config.solver).name);
@@ -747,13 +895,32 @@ dart::gui::Panel createLcpPanel(const std::shared_ptr<LcpPhysicsState>& state)
     }
 
     if (builder.collapsingHeader("Performance", true)) {
+      builder.text("render fps: " + formatFixed(state->renderFps, 1));
+      if (context.lifecycle != nullptr) {
+        builder.text(
+            "rendered frames: "
+            + std::to_string(context.lifecycle->renderedFrames));
+        builder.text(
+            "skipped frames: "
+            + std::to_string(context.lifecycle->skippedFrames));
+      }
       builder.text("contacts: " + std::to_string(context.contactCount));
       if (context.world != nullptr) {
         builder.text(
             "bodies: " + std::to_string(context.world->getNumSkeletons()));
       }
-      builder.text(
-          "step-time plots need a public panel plotting/render-metrics API");
+
+      const MetricSummary stepTime = summarizeMetrics(state->stepTimeHistory);
+      static constexpr std::array<std::string_view, 4> kMetricColumns
+          = {"metric", "last", "avg", "max"};
+      if (builder.beginTable("lcp_performance", kMetricColumns)) {
+        addMetricTableRow(builder, "step time", stepTime, " ms");
+        builder.endTable();
+      } else {
+        addMetricFallbackText(builder, "step time", stepTime, " ms");
+      }
+      builder.text("Step-time line plot needs a public panel plotting API.");
+      builder.text("Display/font metrics need backend debug access.");
     }
 
     if (builder.collapsingHeader("About This Scenario")) {
@@ -786,7 +953,10 @@ int main(int argc, char* argv[])
   options.runDefaults = makeLcpRunDefaults();
   options.camera = makeLcpCamera();
   options.preStep = [state]() {
-    ++state->stepCount;
+    state->beginStep();
+  };
+  options.postStep = [state]() {
+    state->finishStep();
   };
   options.panels.push_back(createLcpPanel(state));
   return dart::gui::runApplication(argc, argv, options);
