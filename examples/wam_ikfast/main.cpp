@@ -480,6 +480,7 @@ int main(int argc, char* argv[])
     options.gizmos = scene.gizmos;
     options.runDefaults = makeWamIkFastRunDefaults();
     options.camera = makeWamIkFastCamera();
+    options.simulateWorld = false;
     options.preStep = [targetState = scene.targetState]() {
       targetState->solve();
     };

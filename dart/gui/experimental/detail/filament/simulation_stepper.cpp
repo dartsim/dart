@@ -98,11 +98,13 @@ bool advanceSimulationSteps(
     if (scene.preStep) {
       scene.preStep();
     }
-    scene.world->step();
+    if (scene.simulateWorld) {
+      scene.world->step();
+      profile.simulatedMs += timeStep * 1000.0;
+    }
     if (scene.postStep) {
       scene.postStep();
     }
-    profile.simulatedMs += timeStep * 1000.0;
   }
   markSimulationAdvanced(lifecycle);
   profile.simulationSteps += simulationStepsToRun;

@@ -19,8 +19,9 @@
 ## Notes
 
 - This example runs as a kinematic target scene. The promoted `dart::gui` runner
-  does not expose the old OSG `allowSimulation(false)` switch yet, so the world
-  uses zero gravity and solves the active target from the pre-step callback.
+  disables world stepping through `ApplicationOptions::simulateWorld = false`,
+  matching the old OSG `allowSimulation(false)` workflow while still running
+  the active target solve callback.
 - The old OSG Alt/Ctrl/Shift drag modes are superseded by the promoted public
   gizmo tool. Exact parent-joint-only manipulation remains a public
   manipulation API gap.

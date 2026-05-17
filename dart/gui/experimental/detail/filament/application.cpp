@@ -145,6 +145,7 @@ int runFilamentGuiApplicationImpl(
   }
   appOptions.preRender = applicationOptions.preRender;
   appOptions.postRender = applicationOptions.postRender;
+  appOptions.simulateWorld = applicationOptions.simulateWorld;
   appOptions.panels = applicationOptions.panels;
   const RunOptions& runOptions = appOptions.run;
 

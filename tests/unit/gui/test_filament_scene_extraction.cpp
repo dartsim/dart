@@ -34,6 +34,7 @@
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/experimental/detail/filament/scenes.hpp>
+#include <dart/gui/experimental/detail/filament/simulation_stepper.hpp>
 #include <dart/gui/geometry.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
@@ -927,6 +928,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   options.postRender = [&postRenderCalled]() {
     postRenderCalled = true;
   };
+  options.simulateWorld = false;
   options.runDefaults = dart::gui::RunOptions{};
   options.runDefaults->width = 640;
   options.runDefaults->height = 480;
@@ -945,6 +947,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(preRenderCalled);
   options.postRender();
   EXPECT_TRUE(postRenderCalled);
+  EXPECT_FALSE(options.simulateWorld);
   ASSERT_TRUE(options.runDefaults.has_value());
   EXPECT_EQ(options.runDefaults->width, 640);
   EXPECT_EQ(options.runDefaults->height, 480);
@@ -954,6 +957,13 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_EQ(options.defaultScene, "mvp");
   ASSERT_EQ(options.panels.size(), 1u);
   EXPECT_EQ(options.panels.front().title, "Controls");
+
+  dart::gui::filament::AppOptions appOptions;
+  appOptions.world = options.world;
+  appOptions.simulateWorld = options.simulateWorld;
+  const dart::gui::filament::DartScene scene
+      = dart::gui::filament::createDartScene(appOptions);
+  EXPECT_FALSE(scene.simulateWorld);
 }
 
 TEST(FilamentSceneExtraction, ApplicationOptionsStoresIkHandles)
@@ -968,6 +978,35 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresIkHandles)
   ASSERT_EQ(options.ikHandles.size(), 1u);
   EXPECT_EQ(options.ikHandles.front().label, "left hand");
   EXPECT_EQ(options.ikHandles.front().hotkey, '1');
+}
+
+TEST(FilamentSceneExtraction, ApplicationOptionsCanSkipWorldStepping)
+{
+  dart::gui::filament::DartScene scene;
+  scene.world = World::create("kinematic_scene");
+  scene.simulateWorld = false;
+
+  int preStepCalls = 0;
+  int postStepCalls = 0;
+  scene.preStep = [&preStepCalls]() {
+    ++preStepCalls;
+  };
+  scene.postStep = [&postStepCalls]() {
+    ++postStepCalls;
+  };
+
+  dart::gui::ViewerLifecycleState lifecycle;
+  dart::gui::ProfileAccumulator profile;
+  const double initialTime = scene.world->getTime();
+  EXPECT_TRUE(
+      dart::gui::filament::advanceSimulationSteps(
+          scene, 3, lifecycle, profile));
+
+  EXPECT_EQ(preStepCalls, 3);
+  EXPECT_EQ(postStepCalls, 3);
+  EXPECT_DOUBLE_EQ(scene.world->getTime(), initialTime);
+  EXPECT_EQ(profile.simulationSteps, 3u);
+  EXPECT_DOUBLE_EQ(profile.simulatedMs, 0.0);
 }
 
 TEST(FilamentSceneExtraction, ApplicationOptionsStoresGizmos)
@@ -3278,6 +3317,7 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(wamSource.find("options.gizmos"), std::string::npos);
   EXPECT_NE(wamSource.find("gizmo.isVisible"), std::string::npos);
   EXPECT_NE(wamSource.find("options.keyboardActions"), std::string::npos);
+  EXPECT_NE(wamSource.find("options.simulateWorld = false"), std::string::npos);
   EXPECT_NE(wamSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(wamSource.find("Left-drag active target gizmo"), std::string::npos);
   EXPECT_EQ(wamSource.find("Ctrl-left drag"), std::string::npos);
@@ -3293,6 +3333,7 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(wamReadmeSource.find("pixi run ex wam_ikfast"), std::string::npos);
   EXPECT_NE(wamReadmeSource.find("--screenshot"), std::string::npos);
   EXPECT_NE(wamReadmeSource.find("--out"), std::string::npos);
+  EXPECT_NE(wamReadmeSource.find("simulateWorld = false"), std::string::npos);
   EXPECT_NE(
       wamReadmeSource.find("parent-joint-only manipulation"),
       std::string::npos);

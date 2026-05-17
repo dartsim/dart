@@ -72,6 +72,7 @@ struct DartScene
   std::vector<dart::gui::KeyboardAction> keyboardActions;
   std::function<void()> preStep;
   std::function<void()> postStep;
+  bool simulateWorld = true;
   dart::gui::RenderSettings renderSettings;
 };
 
@@ -119,6 +120,7 @@ struct AppOptions
   std::function<void()> postStep;
   std::function<void()> preRender;
   std::function<void()> postRender;
+  bool simulateWorld = true;
   std::optional<dart::gui::OrbitCamera> camera;
   dart::gui::RenderSettings renderSettings;
   std::vector<dart::gui::Panel> panels;

@@ -423,6 +423,12 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   ImGui or Filament in public headers. Focused build, marker CTest, mandatory
   lint, post-lint rebuild/CTest, and Tinkertoy screenshot smoke analyzer
   validation pass locally.
+- R24-36 WAM IKFast follow-up adds public
+  `ApplicationOptions::simulateWorld` so examples can keep callbacks running
+  while skipping `World::step()`. `examples/wam_ikfast` now uses it to restore
+  the historical kinematic no-simulation lifecycle. Focused build, marker
+  CTest, mandatory lint, post-lint rebuild/CTest, and WAM screenshot smoke
+  analyzer validation pass locally.
 - Active strict re-open cursor: `examples/vehicle/`. A previous parity
   checkpoint restored command keys and camera defaults, but the strict itemized
   inventory is still missing. Compare current source/README against

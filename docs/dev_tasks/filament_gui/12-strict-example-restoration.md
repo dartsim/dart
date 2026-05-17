@@ -599,9 +599,11 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     and marker coverage. The current source repairs the feasible behavior
     through public `dart::gui` keyboard actions, IK handles, pre-step solving,
     run defaults, camera setup, restored README/capture docs, and marker guards.
-    Exact Alt/Ctrl/Shift parent-joint manipulation and explicit
-    `allowSimulation(false)` lifecycle remain documented public API gaps. Rerun
-    support remains intentionally removed: repository search still finds no
+    A later local follow-up restores the explicit `allowSimulation(false)`
+    lifecycle with public `ApplicationOptions::simulateWorld`. Exact
+    Alt/Ctrl/Shift parent-joint manipulation remains a documented public API
+    gap. Rerun support remains intentionally removed: repository search still
+    finds no
     product CMake/package/API/runtime surface or downstream use case, and
     remaining lowercase `rerun` references are CI retry docs, generated command
     guards, historical task notes, or tests that guard the removed placeholder.

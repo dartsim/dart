@@ -142,6 +142,8 @@
     Tinkertoy example's Enter-key recording workflow.
   - Added public `dart::gui::PanelBuilder` modal helpers and restored
     Tinkertoy's About DART modal workflow.
+  - Added public `dart::gui::ApplicationOptions::simulateWorld` and restored
+    the WAM IKFast example's kinematic no-world-step workflow.
   - Restored the Heightmap and Point Cloud examples' fine-grained scene-grid
     controls with source-owned DART line geometry.
   - Restored the `hubo_puppet` support overlay's blue/red center-of-mass

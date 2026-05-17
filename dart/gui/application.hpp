@@ -125,6 +125,7 @@ struct ApplicationOptions
   std::function<void()> postStep;
   std::function<void()> preRender;
   std::function<void()> postRender;
+  bool simulateWorld = true;
   std::optional<OrbitCamera> camera;
   RenderSettings renderSettings;
   std::string defaultScene;
