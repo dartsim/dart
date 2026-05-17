@@ -1,0 +1,12 @@
+code:
+  - "**"
+  - "!.github/workflows/cache_*.yml"
+  - "!.github/workflows/update_lockfiles.yml"
+  - "!docker/dev/**"
+  - "!docs/**"
+  - "!.readthedocs.yml"
+  - "!tutorials/**"
+  - "!**/*.md"
+  - "!**/*.rst"
+  - "!**/*.po"
+  - "!**/*.pot"
