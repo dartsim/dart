@@ -3,14 +3,32 @@
 This file is the authoritative tracker for what DART's native collision
 test + benchmark suite covers today, what it should cover to be the
 **superset** of every comparable physics-engine collision test in the
-wild, and where the gaps are. The goal is not "match upstream X" — it
-is "be the strict superset so DART native is provably feature-complete
-AND demonstrably faster than every alternative."
+wild, and where the gaps are. The goal is not "match upstream X" — it is
+"own the strict superset so DART native is provably feature-complete, with
+benchmark evidence ready for the next performance wave."
 
 Categories below are sourced from a cross-survey of major open-source
 physics collision libraries. They are NOT attributed per-engine because
 the goal is for DART to own this taxonomy as its own quality bar, not
 to chase any one upstream.
+
+## Survey Scope
+
+This matrix covers DART-owned DART 6 and DART 7 collision tests, examples,
+benchmarks, tutorials, downstream compatibility surfaces, and reference-only
+harnesses that previously exercised non-native collision detectors. The
+persistent dashboard summarizes the per-reference survey inputs; this file owns
+the DART-native feature and performance taxonomy that results from that survey.
+
+Current branch bar:
+
+- Comparable correctness behavior is implemented in native collision and
+  covered by tests.
+- Comparable performance surfaces have benchmark rows, even if later
+  optimization remains open.
+- Rows outside the current feature-complete pass are marked `DEFERRED` with a
+  feature/performance rationale instead of remaining hidden in a temporary
+  dev-task folder.
 
 ## How To Read This File
 
@@ -39,8 +57,8 @@ new collision feature or fix lands in this order:
 5. Confirm the test passes.
 6. Flip the row to `DONE` and re-record the benchmark JSON if applicable.
 
-Round 7's box-box face-clipping work is the first slice to use this
-workflow end-to-end (see SUPERVISOR.md Round 7).
+This branch's box-box face-clipping work is the first slice to use this
+workflow end-to-end.
 
 ## 1. Pair-Wise Narrow-Phase (collide + distance)
 
@@ -140,14 +158,14 @@ normals flip).
 native taxonomy does not have a dedicated `ShapeType` for them; they
 adapt to convex/mesh/compound):
 
-| Codename              | Status | Source                             | Notes |
-| --------------------- | ------ | ---------------------------------- | ----- |
-| `adapter_cone`        | DONE   | `test_collision_backend.cpp`       |       |
-| `adapter_ellipsoid`   | DONE   | `test_collision_backend.cpp`       |       |
-| `adapter_heightmap`   | DONE   | `test_collision_backend.cpp`       |       |
-| `adapter_multisphere` | DONE   | `test_collision_backend.cpp`       |       |
-| `adapter_voxelgrid`   | DONE   | `test_collision_backend.cpp`       |       |
-| `adapter_pyramid`     | DONE   | `test_dart_collision_detector.cpp` |       |
+| Codename              | Status | Source                                                                                     | Notes                                                         |
+| --------------------- | ------ | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| `adapter_cone`        | DONE   | `test_collision_backend.cpp`                                                               |                                                               |
+| `adapter_ellipsoid`   | DONE   | `test_collision_backend.cpp`                                                               |                                                               |
+| `adapter_heightmap`   | DONE   | `test_collision_backend.cpp`, `test_dart_collision_detector.cpp::RaycastWorksForHeightmap` | Includes collision and raycast through native mesh adaptation |
+| `adapter_multisphere` | DONE   | `test_collision_backend.cpp`                                                               |                                                               |
+| `adapter_voxelgrid`   | DONE   | `test_collision_backend.cpp`                                                               |                                                               |
+| `adapter_pyramid`     | DONE   | `test_dart_collision_detector.cpp`                                                         |                                                               |
 
 ## 2. Algorithm-Level
 
@@ -239,7 +257,7 @@ deterministic across threads, etc.).
 | `gz_issue1654_capsule_ground`         | DONE   | `test_capsule_ground_contact.cpp`                                                          |                                                                     |
 | `gz_issue867_box_stack`               | DONE   | `test_bullet_box_stack.cpp`                                                                |                                                                     |
 | `gz_issue895_self_collision`          | DONE   | `test_self_collision_filtering.cpp`                                                        |                                                                     |
-| `cross_backend_consistency`           | DONE   | `test_native_backend_consistency.cpp`                                                      | Gated on reference engines                                          |
+| `native_reference_consistency`        | DONE   | `test_native_collision_consistency.cpp`                                                    | Gated on reference engines                                          |
 | `cross_backend_contact_count_parity`  | DONE   | `test_box_ground_contact_parity.cpp`                                                       | Reference-enabled parity test; match Bullet contact count within ±1 |
 | `thin_box_no_tunneling`               | DONE   | `test_world.cpp::DefaultNativeThinBoxDoesNotTunnel`                                        | Slender feature stress                                              |
 | `slender_capsule_no_tunneling`        | DONE   | `test_world.cpp::DefaultNativeSlenderCapsuleDoesNotTunnel`                                 | Capsule line-support stress                                         |
@@ -254,8 +272,8 @@ deterministic across threads, etc.).
 Bar: every pair / algorithm / scene listed in §1-3 should have a
 benchmark variant (or be intentionally marked "no benchmark — pure
 correctness"). Cross-engine comparisons (vs FCL / Bullet / ODE)
-should use the apples-to-apples adapter path (see Q4 — `08-pair-coverage.md`
-Query-parity note).
+should use the apples-to-apples adapter path documented by the performance
+dashboard and PR evidence packet.
 
 ### Per-pair narrow-phase
 
@@ -292,16 +310,16 @@ Query-parity note).
 
 ### Scenarios
 
-| Codename                             | Status   | JSON output                    | Notes                                                                                |
-| ------------------------------------ | -------- | ------------------------------ | ------------------------------------------------------------------------------------ |
-| `bench_scenario_mixed_primitives`    | DONE     | `collision_check_mixed.json`   | Dense + Sparse × 100/1000                                                            |
-| `bench_scenario_mesh_heavy`          | DONE     | `collision_check_mesh.json`    | Native vs Bullet/FCL; audited on `2c6a29eaf0d` with result/contact-count consumption |
-| `bench_scenario_stacked_boxes`       | DEFERRED | —                              | Performance-wave vertical stack of N=10..1000 boxes                                  |
-| `bench_scenario_pyramid_wall_tower`  | DEFERRED | —                              | Performance-wave mixed-stack settling                                                |
-| `bench_scenario_ragdoll_pile`        | DEFERRED | —                              | Performance-wave capsule-capsule + capsule-box at scale                              |
-| `bench_scenario_convex_vs_landscape` | DEFERRED | —                              | Performance-wave BVH-driven convex-concave under load                                |
-| `bench_scenario_pipeline_breakdown`  | DONE     | `bm_pipeline_breakdown.cpp`    | Per-stage timing                                                                     |
-| `bench_scenario_dart_adapter`        | DONE     | `collision_check_adapter.json` | Public adapter persistent scene                                                      |
+| Codename                             | Status   | JSON output                    | Notes                                                                                                                          |
+| ------------------------------------ | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `bench_scenario_mixed_primitives`    | DONE     | `collision_check_mixed.json`   | Dense + Sparse × 100/1000                                                                                                      |
+| `bench_scenario_mesh_heavy`          | DONE     | `collision_check_mesh.json`    | Native vs Bullet/FCL; audited on `2c6a29eaf0d` with result/contact-count consumption                                           |
+| `bench_scenario_stacked_boxes`       | DONE     | `bm_boxes.cpp`                 | Native vs Bullet-reference `BM_RunBoxes` for 8/64/512-box cube stacks; larger scale sweeps stay in broadphase/performance rows |
+| `bench_scenario_pyramid_wall_tower`  | DEFERRED | —                              | Performance-wave mixed-stack settling                                                                                          |
+| `bench_scenario_ragdoll_pile`        | DEFERRED | —                              | Performance-wave capsule-capsule + capsule-box at scale                                                                        |
+| `bench_scenario_convex_vs_landscape` | DEFERRED | —                              | Performance-wave BVH-driven convex-concave under load                                                                          |
+| `bench_scenario_pipeline_breakdown`  | DONE     | `bm_pipeline_breakdown.cpp`    | Per-stage timing                                                                                                               |
+| `bench_scenario_dart_adapter`        | DONE     | `collision_check_adapter.json` | Public adapter persistent scene                                                                                                |
 
 ### Algorithm-level micro-benchmarks
 
@@ -332,7 +350,7 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 | `bench_narrow_phase_per_pair_batch`             | DONE     | `.benchmark_results/native_collision_box_box_round7.json` and focused per-pair JSON files, including `.benchmark_results/native_collision_mesh_mesh_batch.json`: BoxBox/SphereSphere/CapsuleCapsule/CylinderCylinder/ConvexConvex/MeshMesh/Dispatcher N=1/10/100/1000 |
 | `bench_simd_sat_axes_per_pair`                  | DEFERRED | Perf-wave benchmark: SoA SAT-axis projection across N pairs                                                                                                                                                                                                           |
 | `bench_simd_face_clip_per_pair`                 | DEFERRED | Perf-wave benchmark: parallel polygon clipping                                                                                                                                                                                                                        |
-| `bench_simd_xsimd_vs_scalar_speedup`            | DEFERRED | Cross-cutting: report per-pair speedup factor when SIMD-enabled                                                                                                                                                                                                       |
+| `bench_simd_vectorized_vs_scalar_speedup`       | DEFERRED | Cross-cutting: report per-pair speedup factor when SIMD-enabled                                                                                                                                                                                                       |
 | `lint_no_naked_single_pair_loops`               | DEFERRED | Future lint: every new pair file must expose batch API too                                                                                                                                                                                                            |
 
 ## 5. Cross-Cutting Infrastructure
@@ -350,14 +368,14 @@ plus a benchmark sweeping batch size N=1/10/100/1000.
 | `lint_benchmark_schema`                  | DONE   | `scripts/check_collision_benchmarks.py`                                                                                                                                                                               |                                                                                                            |
 | `benchmark_output_consumption`           | DONE   | `tests/benchmark/collision/comparative/bm_narrow_phase.cpp`, `tests/benchmark/collision/native/bm_libccd.cpp`, `tests/benchmark/collision/native/bm_ccd.cpp`, `tests/benchmark/collision/scenarios/bm_mesh_heavy.cpp` | Timed rows consume collision/algorithm/CCD/scenario outputs; strict fixed rows reject empty-contact setups |
 
-## Summary Counters (as of 2026-05-16)
+## Summary Counters (as of 2026-05-17)
 
 - **§1 Pair-wise narrow-phase:** 89 DONE, 0 PARTIAL, 0 GAP (of 89 rows)
 - **§2 Algorithm-level:** 38 DONE, 0 PARTIAL, 0 GAP, 11 DEFERRED (of 49 rows)
 - **§3 Stress / regression:** 34 DONE, 0 PARTIAL, 0 GAP (of 34 rows)
-- **§4 Benchmarks:** 30 DONE, 0 PARTIAL, 0 GAP, 14 DEFERRED (of 44 rows)
+- **§4 Benchmarks:** 31 DONE, 0 PARTIAL, 0 GAP, 13 DEFERRED (of 44 rows)
 - **§5 Infrastructure:** 10 DONE, 0 PARTIAL, 0 GAP (of 10 rows)
-- **TOTAL:** 201 DONE, 0 PARTIAL, 0 GAP, 25 DEFERRED (of 226 rows)
+- **TOTAL:** 202 DONE, 0 PARTIAL, 0 GAP, 24 DEFERRED (of 226 rows)
 
 DART native has no open non-deferred feature-level rows in this matrix. The
 remaining proposed-superset rows are explicitly deferred into:

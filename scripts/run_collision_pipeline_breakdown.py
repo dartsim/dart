@@ -11,8 +11,8 @@ from datetime import date
 from pathlib import Path
 
 TARGET = "bm_scenarios_pipeline_breakdown"
-RESULTS_DIR = Path("docs/dev_tasks/native_collision/results")
-SUMMARY_PATH = Path("docs/dev_tasks/native_collision/benchmark_results.md")
+RESULTS_DIR = Path(".benchmark_results")
+SUMMARY_PATH = Path(".benchmark_results/collision_pipeline_breakdown.md")
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -31,13 +31,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--no-doc-update",
         action="store_true",
-        help="Do not append summary to benchmark_results.md",
+        help="Do not append summary to .benchmark_results/collision_pipeline_breakdown.md",
     )
     parser.add_argument(
         "--out",
         type=Path,
         default=None,
-        help="Path to JSON output (defaults to docs/dev_tasks/native_collision/results/)",
+        help="Path to JSON output (defaults to .benchmark_results/)",
     )
     parser.add_argument(
         "benchmark_args",

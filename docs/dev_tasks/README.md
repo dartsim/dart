@@ -4,7 +4,9 @@ Working documentation for multi-phase development tasks in DART.
 
 > **Key Rule**: `docs/dev_tasks/` is for **working documentation** during active development.
 > When a task completes, the folder is **deleted** (not archived). Key insights
-> go to the relevant developer knowledge-base doc under `docs/onboarding/`.
+> go to the relevant developer knowledge-base doc under `docs/onboarding/`,
+> while durable dashboards, evidence matrices, API inventories, and migration
+> maps go to `docs/plans/` or `docs/onboarding/` before deletion.
 
 ## When to Create a dev_tasks Folder
 
@@ -147,16 +149,22 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 **When task is completed, agents MUST:**
 
-1. [ ] **Extract key insights** → Add a brief section to an existing relevant
-       `docs/onboarding/<topic>.md`
-2. [ ] **Delete the entire folder** → `git rm -r docs/dev_tasks/<task>/`
-3. [ ] **Include in completion PR** → Same PR that finishes the implementation
+1. [ ] **Promote durable artifacts** → Move dashboards, evidence matrices,
+       API inventories, migration maps, and long-lived decisions to
+       `docs/plans/` or an existing relevant `docs/onboarding/<topic>.md`
+2. [ ] **Remove temporary links** → Durable docs must not point back to the
+       completed task folder
+3. [ ] **Delete the entire folder** → `git rm -r docs/dev_tasks/<task>/`
+       or remove it locally before the completion change is finalized
+4. [ ] **Include in completion PR** → Same PR that finishes the implementation
 
 ### Why This Matters
 
 - `dev_tasks/` is **working documentation** — it has no value after completion
 - Key decisions belong in `docs/onboarding/` where agents will find durable
   developer context
+- Durable dashboards and row-level matrices belong in `docs/plans/` when they
+  remain useful after the implementation lands
 - Orphaned folders confuse future agents and waste context window
 
 **Developer docs must stay lean**:

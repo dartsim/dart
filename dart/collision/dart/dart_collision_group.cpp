@@ -405,7 +405,8 @@ public:
     }
 
     const native::Ray ray(from, delta, totalLength);
-    const auto nativeOption = native::RaycastOption::unlimited();
+    auto nativeOption = native::RaycastOption::unlimited();
+    nativeOption.backfaceCulling = false;
     const native::Aabb rayAabb(from.cwiseMin(to), from.cwiseMax(to));
     const auto candidateIds = mWorld.getBroadPhase().queryOverlapping(rayAabb);
     if (candidateIds.empty()) {

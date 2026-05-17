@@ -12,7 +12,9 @@ Before finalizing substantial AI-assisted work:
 2. Map each explicit request, file, command, gate, and deliverable to evidence.
 3. Inspect the actual files, command output, review state, or artifacts.
 4. Identify missing, weakly verified, or blocked requirements.
-5. Continue working until all required items are satisfied or a real blocker
+5. If the work used `docs/dev_tasks/<task>/`, verify durable artifacts were
+   promoted and the completed task folder was removed.
+6. Continue working until all required items are satisfied or a real blocker
    remains.
 
 ## Gate Selection

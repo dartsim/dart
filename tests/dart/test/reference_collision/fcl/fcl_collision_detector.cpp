@@ -82,7 +82,7 @@ bool useExperimentalNarrowPhase()
   // Disabled by default: experimental narrow phase produces different contact
   // geometry (normals, positions, counts) than native FCL, breaking existing
   // test expectations. Enable selectively once experimental manifold quality
-  // matches native backends.
+  // matches the native collision core.
   return false;
 }
 #endif

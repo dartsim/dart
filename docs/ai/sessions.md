@@ -35,6 +35,15 @@ must contain:
 When a dev task completes:
 
 1. Move durable lessons to the relevant developer doc.
-2. Delete the task folder in the same PR.
-3. Run the verification gates listed in `docs/ai/verification.md`.
-4. Include the cleanup in the completion PR.
+2. Move any dashboard, evidence matrix, API inventory, migration map, or other
+   artifact that must survive task cleanup to `docs/plans/` or
+   `docs/onboarding/`.
+3. Replace dev-task links from durable docs with persistent links, or delete
+   the temporary references.
+4. Delete the task folder in the same PR.
+5. Run the verification gates listed in `docs/ai/verification.md`.
+6. Include the cleanup in the completion PR.
+
+Never treat a dashboard or matrix under `docs/dev_tasks/` as durable. If users
+or future agents will need it after the implementation lands, promote it before
+the dev-task folder is removed.

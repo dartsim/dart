@@ -18,16 +18,18 @@ plural collection style used by `docs/dev_tasks/`. It is separate from
 
 ## Files
 
-| File                                             | Purpose                                                         |
-| ------------------------------------------------ | --------------------------------------------------------------- |
-| [`README.md`](README.md)                         | Planning rules, structure, and revision workflow                |
-| [`dashboard.md`](dashboard.md)                   | Single source of truth for plan operating state                 |
-| [`north-star-roadmap.md`](north-star-roadmap.md) | Strategic framing and sequencing principles                     |
-| Numbered initiative files, such as `010-*.md`    | Detailed owner docs for plan scope, evidence, and rationale     |
-| [`AGENTS.md`](AGENTS.md)                         | Local rules for agents editing plan docs                        |
-| [`../ai/north-star.md`](../ai/north-star.md)     | Mission, current state, missing capabilities, and readiness bar |
-| [`../ai/verification.md`](../ai/verification.md) | Completion audit and gate-selection rules                       |
-| External owner docs linked from `dashboard.md`   | Source docs for initiatives that do not need a plan file yet    |
+| File                                                                                 | Purpose                                                         |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| [`README.md`](README.md)                                                             | Planning rules, structure, and revision workflow                |
+| [`dashboard.md`](dashboard.md)                                                       | Single source of truth for plan operating state                 |
+| [`north-star-roadmap.md`](north-star-roadmap.md)                                     | Strategic framing and sequencing principles                     |
+| [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)             | Durable native-collision feature/performance dashboard          |
+| [`035-native-collision-coverage-matrix.md`](035-native-collision-coverage-matrix.md) | Durable row-level native-collision coverage matrix              |
+| Numbered initiative files, such as `010-*.md`                                        | Detailed owner docs for plan scope, evidence, and rationale     |
+| [`AGENTS.md`](AGENTS.md)                                                             | Local rules for agents editing plan docs                        |
+| [`../ai/north-star.md`](../ai/north-star.md)                                         | Mission, current state, missing capabilities, and readiness bar |
+| [`../ai/verification.md`](../ai/verification.md)                                     | Completion audit and gate-selection rules                       |
+| External owner docs linked from `dashboard.md`                                       | Source docs for initiatives that do not need a plan file yet    |
 
 ## Directory Structure
 

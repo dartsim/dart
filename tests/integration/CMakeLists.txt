@@ -91,24 +91,24 @@ endif()
 
 dart_add_test(
   "integration"
-  INTEGRATION_collision_native_backend_consistency
-  collision/test_native_backend_consistency.cpp)
+  INTEGRATION_collision_native_collision_consistency
+  collision/test_native_collision_consistency.cpp)
 target_link_libraries(
-  INTEGRATION_collision_native_backend_consistency
+  INTEGRATION_collision_native_collision_consistency
   dart-collision-native)
 if(DART_BUILD_COLLISION_REFERENCE_TESTS)
   target_compile_definitions(
-    INTEGRATION_collision_native_backend_consistency
+    INTEGRATION_collision_native_collision_consistency
     PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
   )
   if(TARGET dart-test-reference-fcl)
-    target_link_libraries(INTEGRATION_collision_native_backend_consistency dart-test-reference-fcl)
+    target_link_libraries(INTEGRATION_collision_native_collision_consistency dart-test-reference-fcl)
   endif()
   if(TARGET dart-test-reference-bullet)
-    target_link_libraries(INTEGRATION_collision_native_backend_consistency dart-test-reference-bullet)
+    target_link_libraries(INTEGRATION_collision_native_collision_consistency dart-test-reference-bullet)
   endif()
   if(TARGET dart-test-reference-ode)
-    target_link_libraries(INTEGRATION_collision_native_backend_consistency dart-test-reference-ode)
+    target_link_libraries(INTEGRATION_collision_native_collision_consistency dart-test-reference-ode)
   endif()
 endif()
 

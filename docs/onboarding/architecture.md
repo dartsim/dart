@@ -313,6 +313,9 @@ and opt-in test-only reference targets.
   FCL, Bullet, and ODE, including primitive, convex, mesh, heightmap,
   ellipsoid, cone, multi-sphere, soft mesh, voxel grid, collision filtering,
   distance, raycast, and solver contact-manifold paths.
+- The durable feature/performance dashboard and row-level coverage matrix live
+  in `docs/plans/035-native-collision-dashboard.md` and
+  `docs/plans/035-native-collision-coverage-matrix.md`.
 - Native-vs-reference consistency tests remain the guardrail for contact sign,
   normal direction, penetration depth, distance, nearest-point, and raycast
   semantics when reference engines are available.

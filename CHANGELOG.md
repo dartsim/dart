@@ -106,6 +106,12 @@
     `DART_COLLISION_DEPRECATE_LEGACY_NAMES` while keeping explicit
     `dart-test-reference-*` targets for tests and benchmarks.
   - Added native plane/mesh collision dispatch, unbounded PlaneShape AABB transform handling, and regression coverage for mesh-plane contacts through both native tests and the public DART collision group path.
+  - Fixed GLTF PBR material import with Assimp 5.x so `MeshShape` preserves
+    combined metallic-roughness texture paths on GLTF fixtures.
+  - Fixed public DART raycast adapter paths to query mesh-adapted surfaces
+    double-sided, including heightmap raycasts through `DartCollisionGroup`.
+  - Fixed Atlas Simbicon state terminal-condition ownership so the native
+    collision stability integration path exits cleanly under AddressSanitizer.
   - Added collision benchmark regression checks that parse Google Benchmark JSON and compare native collision timings against the best enabled FCL, Bullet, or ODE reference result across narrowphase, distance, raycast, mixed primitive, mesh-heavy, raycast-batch, and public DART adapter scenarios, with a scheduled/manual CI Linux guard that uploads the JSON artifacts.
   - Added dartpy wheel verification that rejects legacy collision runtime libraries, reference collision libraries, and old reference collision component exports from wheel artifacts while allowing native-backed compatibility component facades.
   - Added a runtime source isolation check that fails if non-reference DART source paths include FCL, Bullet, ODE, libccd, or explicit collision reference backend headers.

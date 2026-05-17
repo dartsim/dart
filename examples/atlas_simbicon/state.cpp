@@ -53,6 +53,7 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
   : mName(_name),
     mSkeleton(_skeleton),
     mNextState(this),
+    mTerminalCondition(nullptr),
     mBeginTime(0.0),
     mEndTime(0.0),
     mFrame(0),
@@ -101,7 +102,10 @@ State::State(SkeletonPtr _skeleton, const std::string& _name)
 }
 
 //==============================================================================
-State::~State() {}
+State::~State()
+{
+  delete mTerminalCondition;
+}
 
 //==============================================================================
 void State::setName(string& _name)
@@ -126,6 +130,11 @@ void State::setTerminalCondition(TerminalCondition* _condition)
 {
   DART_ASSERT(_condition != nullptr);
 
+  if (mTerminalCondition == _condition) {
+    return;
+  }
+
+  delete mTerminalCondition;
   mTerminalCondition = _condition;
 }
 

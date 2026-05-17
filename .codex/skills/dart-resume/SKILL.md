@@ -29,6 +29,8 @@ Resume unfinished work: $ARGUMENTS
 ## Required Reading
 
 @AGENTS.md
+@docs/dev_tasks/README.md
+@docs/ai/sessions.md
 @docs/onboarding/ci-cd.md
 @docs/onboarding/contributing.md
 
@@ -52,6 +54,10 @@ and ask.
 
 - Propose a 3-6 step plan before editing.
 - Continue with minimal scope and preserve existing user changes.
+- If the task is being completed, promote any durable dashboard, evidence
+  matrix, API inventory, migration map, or long-lived decision out of
+  `docs/dev_tasks/<task>/` into `docs/plans/` or `docs/onboarding/`, then
+  remove the dev-task folder completely in the completing change.
 - Run `pixi run lint` before committing.
 - Run relevant tests; use `pixi run test-all` before done when feasible.
 - Push with `git push -u origin HEAD` and create/update the PR only after

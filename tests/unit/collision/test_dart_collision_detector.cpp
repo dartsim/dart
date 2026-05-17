@@ -3,6 +3,7 @@
 #include <dart/config.hpp>
 
 #include <dart/collision/collision_group.hpp>
+#include <dart/collision/collision_object.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
@@ -478,6 +479,41 @@ TEST(DartCollisionDetector, RaycastWorksForSphere)
   const bool hit = group->raycast(from, to, option, &result);
   EXPECT_TRUE(hit);
   EXPECT_TRUE(result.hasHit());
+}
+
+TEST(DartCollisionDetector, RaycastWorksForHeightmap)
+{
+  auto detector = DartCollisionDetector::create();
+
+  auto heightmap = std::make_shared<HeightmapShaped>();
+  HeightmapShaped::HeightField heights(2, 2);
+  heights.setZero();
+  heightmap->setHeightField(heights);
+
+  auto setup = makeShapeSetup("heightmap", heightmap);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setup.shapeNode);
+
+  RaycastOption option;
+  RaycastResult result;
+
+  const Eigen::Vector3d from(0.25, 0.25, 1.0);
+  const Eigen::Vector3d to(0.25, 0.25, -1.0);
+
+  const bool hit = group->raycast(from, to, option, &result);
+  ASSERT_TRUE(hit);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(1u, result.mRayHits.size());
+
+  const auto& rayHit = result.mRayHits[0];
+  ASSERT_NE(nullptr, rayHit.mCollisionObject);
+  EXPECT_EQ(setup.shapeNode, rayHit.mCollisionObject->getShapeFrame());
+  EXPECT_NEAR(0.5, rayHit.mFraction, 1e-12);
+  EXPECT_NEAR(0.25, rayHit.mPoint.x(), 1e-12);
+  EXPECT_NEAR(0.25, rayHit.mPoint.y(), 1e-12);
+  EXPECT_NEAR(0.0, rayHit.mPoint.z(), 1e-12);
+  EXPECT_GT(rayHit.mNormal.z(), 0.99);
 }
 
 TEST(DartCollisionDetector, LegacyUppercaseHeaderKeepsRaycastUnsupported)

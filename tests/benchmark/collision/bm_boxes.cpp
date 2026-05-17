@@ -78,13 +78,23 @@ namespace {
   return boxSkel;
 }
 
-[[nodiscard]] simulation::WorldPtr createWorld(size_t dim)
+enum class DetectorKind
+{
+  Native,
+  BulletReference,
+};
+
+[[nodiscard]] simulation::WorldPtr createWorld(size_t dim, DetectorKind detector)
 {
   // Create an empty world
   auto world = simulation::World::create();
 
-  // Set collision detector type
-  world->setCollisionDetector(collision::BulletCollisionDetector::createReference());
+  if (detector == DetectorKind::Native) {
+    world->setCollisionDetector(CollisionDetectorType::Dart);
+  } else {
+    world->setCollisionDetector(
+        collision::BulletCollisionDetector::createReference());
+  }
 
   // Create dim x dim x dim boxes
   for (auto i = 0u; i < dim; ++i) {
@@ -123,10 +133,10 @@ namespace {
 
 } // namespace
 
-static void BM_RunBoxes(benchmark::State& state)
+static void runBoxes(benchmark::State& state, DetectorKind detector)
 {
   const auto steps = 2000u;
-  auto world = createWorld(state.range(0));
+  auto world = createWorld(state.range(0), detector);
 
   for (auto _ : state) {
     for (size_t i = 0; i < steps; ++i) {
@@ -135,4 +145,23 @@ static void BM_RunBoxes(benchmark::State& state)
   }
 }
 
-BENCHMARK(BM_RunBoxes)->Arg(2)->Arg(4)->Arg(8)->Unit(benchmark::kMillisecond);
+static void BM_RunBoxes_Native(benchmark::State& state)
+{
+  runBoxes(state, DetectorKind::Native);
+}
+
+static void BM_RunBoxes_Bullet(benchmark::State& state)
+{
+  runBoxes(state, DetectorKind::BulletReference);
+}
+
+BENCHMARK(BM_RunBoxes_Native)
+    ->Arg(2)
+    ->Arg(4)
+    ->Arg(8)
+    ->Unit(benchmark::kMillisecond);
+BENCHMARK(BM_RunBoxes_Bullet)
+    ->Arg(2)
+    ->Arg(4)
+    ->Arg(8)
+    ->Unit(benchmark::kMillisecond);

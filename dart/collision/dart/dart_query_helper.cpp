@@ -313,7 +313,8 @@ bool dartRaycast(
   }
 
   const native::Ray ray(from, delta, totalLength);
-  const auto nativeOption = native::RaycastOption::unlimited();
+  auto nativeOption = native::RaycastOption::unlimited();
+  nativeOption.backfaceCulling = false;
 
   bool hitFound = false;
   RayHit closestHit;

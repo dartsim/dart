@@ -42,6 +42,7 @@
 #include "dart/dynamics/detail/assimp_input_resource_adaptor.hpp"
 #include "dart/dynamics/mesh_material.hpp"
 
+#include <assimp/GltfMaterial.h>
 #include <assimp/Importer.hpp>
 #include <assimp/cexport.h>
 #include <assimp/cimport.h>
@@ -1430,18 +1431,22 @@ void MeshShape::extractMaterialsFromScene(
     assert(aiMat);
 
     MeshMaterial material;
-    const auto getFirstTexturePath
-        = [&](const aiTextureType type) -> std::string {
-      if (aiMat->GetTextureCount(type) == 0u) {
+    const auto getTexturePath = [&](const aiTextureType type,
+                                    const unsigned int index) -> std::string {
+      if (aiMat->GetTextureCount(type) <= index) {
         return {};
       }
 
       aiString imagePath;
-      if (aiMat->GetTexture(type, 0u, &imagePath) != AI_SUCCESS) {
+      if (aiMat->GetTexture(type, index, &imagePath) != AI_SUCCESS) {
         return {};
       }
 
       return resolveTexturePath(imagePath.C_Str());
+    };
+    const auto getFirstTexturePath
+        = [&](const aiTextureType type) -> std::string {
+      return getTexturePath(type, 0u);
     };
 
     // Extract colors
@@ -1506,9 +1511,9 @@ void MeshShape::extractMaterialsFromScene(
     material.metallicTexturePath = getFirstTexturePath(aiTextureType_METALNESS);
     material.roughnessTexturePath
         = getFirstTexturePath(aiTextureType_DIFFUSE_ROUGHNESS);
-#if DART_ASSIMP_VERSION_MAJOR >= 6
-    material.metallicRoughnessTexturePath
-        = getFirstTexturePath(aiTextureType_GLTF_METALLIC_ROUGHNESS);
+#ifdef AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE
+    material.metallicRoughnessTexturePath = getTexturePath(
+        AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE);
 #endif
     material.normalTexturePath = getFirstTexturePath(aiTextureType_NORMALS);
     if (material.normalTexturePath.empty()) {
@@ -1547,24 +1552,30 @@ void MeshShape::extractMaterialsFromScene(
         aiTextureType_METALNESS,
         aiTextureType_DIFFUSE_ROUGHNESS,
         aiTextureType_AMBIENT_OCCLUSION,
-#if DART_ASSIMP_VERSION_MAJOR >= 6
-        aiTextureType_GLTF_METALLIC_ROUGHNESS,
-#endif
     });
 
+    const auto appendTextureImagePaths
+        = [&](const aiTextureType type, const unsigned int /*index*/ = 0u) {
+            const auto count = aiMat->GetTextureCount(type);
+            for (auto j = 0u; j < count; ++j) {
+              aiString imagePath;
+              if (aiMat->GetTexture(type, j, &imagePath) == AI_SUCCESS) {
+                const std::string resolvedPath
+                    = resolveTexturePath(imagePath.C_Str());
+                if (!resolvedPath.empty()) {
+                  material.textureImagePaths.emplace_back(resolvedPath);
+                }
+              }
+            }
+          };
+
     for (const auto& type : textureTypes) {
-      const auto count = aiMat->GetTextureCount(type);
-      for (auto j = 0u; j < count; ++j) {
-        aiString imagePath;
-        if (aiMat->GetTexture(type, j, &imagePath) == AI_SUCCESS) {
-          const std::string resolvedPath
-              = resolveTexturePath(imagePath.C_Str());
-          if (!resolvedPath.empty()) {
-            material.textureImagePaths.emplace_back(resolvedPath);
-          }
-        }
-      }
+      appendTextureImagePaths(type);
     }
+#ifdef AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE
+    appendTextureImagePaths(
+        AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE);
+#endif
 
     mMaterials.emplace_back(std::move(material));
   }

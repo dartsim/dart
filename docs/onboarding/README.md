@@ -583,6 +583,8 @@ legacy detector names during migration.
 - `dart/collision/{fcl,bullet,ode}/` - Compatibility facades that route normal runtime use to DART native
 - `dart/collision/native/` - Native geometry, broadphase, narrowphase, distance, raycast, and cache implementation
 - `reference/` targets - Optional FCL/Bullet/ODE comparison harnesses for tests and benchmarks
+- [`docs/plans/035-native-collision-dashboard.md`](../plans/035-native-collision-dashboard.md) - Durable feature/performance dashboard
+- [`docs/plans/035-native-collision-coverage-matrix.md`](../plans/035-native-collision-coverage-matrix.md) - Durable row-level coverage matrix
 
 **Key Elements**:
 
