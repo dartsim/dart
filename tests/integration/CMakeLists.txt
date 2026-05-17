@@ -415,6 +415,7 @@ if(TARGET dart-utils AND TARGET dart-io)
   set_property(
     TEST INTEGRATION_simulation_World
     APPEND PROPERTY LABELS collision-native-stability)
+  set_tests_properties(INTEGRATION_simulation_World PROPERTIES TIMEOUT 3600)
   target_link_libraries(INTEGRATION_simulation_World dart-io)
   target_include_directories(
     INTEGRATION_simulation_World

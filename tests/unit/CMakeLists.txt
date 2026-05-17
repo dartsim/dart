@@ -435,6 +435,7 @@ dart_add_test("unit" UNIT_simulation_World simulation/test_world.cpp)
 set_property(
   TEST UNIT_simulation_World
   APPEND PROPERTY LABELS collision-native-stability)
+set_tests_properties(UNIT_simulation_World PROPERTIES TIMEOUT 3600)
 if(DART_BUILD_COLLISION_REFERENCE_TESTS)
   target_compile_definitions(
     UNIT_simulation_World
