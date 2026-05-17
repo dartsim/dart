@@ -38,12 +38,14 @@
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
 #include <Eigen/Geometry>
 
+#include <array>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -57,6 +59,8 @@ namespace {
 constexpr const char* kSkeletonName = "visual_hardcoded_design";
 constexpr double kPi = 3.14159265358979323846;
 constexpr double kJointStep = 0.1;
+const Eigen::Vector3d kLinkSize(0.3, 0.3, 1.0);
+const Eigen::Vector4d kWireframeColor(0.02, 0.02, 0.02, 1.0);
 
 struct HardcodedDesignScene
 {
@@ -91,6 +95,63 @@ struct HardcodedDesignControls
   }
 };
 
+std::shared_ptr<dart::dynamics::LineSegmentShape> createBoxWireframeShape(
+    const Eigen::Vector3d& size)
+{
+  auto wireframe = std::make_shared<dart::dynamics::LineSegmentShape>(2.0f);
+  const Eigen::Vector3d half = 0.5 * size;
+  const std::array<Eigen::Vector3d, 8> vertices{{
+      {-half.x(), -half.y(), -half.z()},
+      {half.x(), -half.y(), -half.z()},
+      {half.x(), half.y(), -half.z()},
+      {-half.x(), half.y(), -half.z()},
+      {-half.x(), -half.y(), half.z()},
+      {half.x(), -half.y(), half.z()},
+      {half.x(), half.y(), half.z()},
+      {-half.x(), half.y(), half.z()},
+  }};
+  for (const auto& vertex : vertices) {
+    wireframe->addVertex(vertex);
+  }
+  while (!wireframe->getConnections().empty()) {
+    wireframe->removeConnection(0);
+  }
+
+  const std::array<std::pair<std::size_t, std::size_t>, 12> edges{{
+      {0, 1},
+      {1, 2},
+      {2, 3},
+      {3, 0},
+      {4, 5},
+      {5, 6},
+      {6, 7},
+      {7, 4},
+      {0, 4},
+      {1, 5},
+      {2, 6},
+      {3, 7},
+  }};
+  for (const auto& edge : edges) {
+    wireframe->addConnection(edge.first, edge.second);
+  }
+  return wireframe;
+}
+
+void addBoxWireframe(
+    dart::dynamics::BodyNode* body,
+    const Eigen::Vector3d& center,
+    const Eigen::Vector3d& size)
+{
+  if (body == nullptr) {
+    return;
+  }
+
+  auto* wireframeNode = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
+      createBoxWireframeShape(size));
+  wireframeNode->setRelativeTranslation(center);
+  wireframeNode->getVisualAspect()->setRGBA(kWireframeColor);
+}
+
 dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
 {
   auto skeleton = dart::dynamics::Skeleton::create(kSkeletonName);
@@ -99,8 +160,7 @@ dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
   dart::dynamics::BodyNode::Properties body;
   body.mName = "LHY";
   body.mInertia.setMass(mass);
-  auto shape = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d(0.3, 0.3, 1.0));
+  auto shape = std::make_shared<dart::dynamics::BoxShape>(kLinkSize);
 
   dart::dynamics::RevoluteJoint::Properties joint;
   joint.mName = "LHY";
@@ -118,13 +178,13 @@ dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
       dart::dynamics::DynamicsAspect>(shape);
   rootShapeNode->getVisualAspect()->setRGBA(
       Eigen::Vector4d(0.18, 0.38, 0.92, 0.9));
+  addBoxWireframe(rootBody, Eigen::Vector3d::Zero(), kLinkSize);
   rootBody->setMass(mass);
 
   body = dart::dynamics::BodyNode::Properties();
   body.mName = "LHR";
   body.mInertia.setMass(mass);
-  shape = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d(0.3, 0.3, 1.0));
+  shape = std::make_shared<dart::dynamics::BoxShape>(kLinkSize);
   joint = dart::dynamics::RevoluteJoint::Properties();
   joint.mName = "LHR";
   joint.mAxis = Eigen::Vector3d::UnitX();
@@ -143,14 +203,15 @@ dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
   hipRollShapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
   hipRollShapeNode->getVisualAspect()->setRGBA(
       Eigen::Vector4d(0.95, 0.65, 0.12, 0.9));
+  addBoxWireframe(
+      hipRollBody, hipRollShapeNode->getRelativeTranslation(), kLinkSize);
   hipRollBody->setLocalCOM(hipRollShapeNode->getRelativeTranslation());
   hipRollBody->setMass(mass);
 
   body = dart::dynamics::BodyNode::Properties();
   body.mName = "LHP";
   body.mInertia.setMass(mass);
-  shape = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d(0.3, 0.3, 1.0));
+  shape = std::make_shared<dart::dynamics::BoxShape>(kLinkSize);
   joint = dart::dynamics::RevoluteJoint::Properties();
   joint.mName = "LHP";
   joint.mAxis = Eigen::Vector3d::UnitY();
@@ -169,6 +230,8 @@ dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
   hipPitchShapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
   hipPitchShapeNode->getVisualAspect()->setRGBA(
       Eigen::Vector4d(0.84, 0.18, 0.18, 0.9));
+  addBoxWireframe(
+      hipPitchBody, hipPitchShapeNode->getRelativeTranslation(), kLinkSize);
   hipPitchBody->setLocalCOM(hipPitchShapeNode->getRelativeTranslation());
   hipPitchBody->setMass(mass);
 

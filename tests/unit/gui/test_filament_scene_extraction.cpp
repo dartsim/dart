@@ -3191,6 +3191,9 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
   EXPECT_NE(hardcodedSource.find("visual_hardcoded_design"), std::string::npos);
   EXPECT_NE(hardcodedSource.find("RevoluteJoint"), std::string::npos);
   EXPECT_NE(hardcodedSource.find("LHY"), std::string::npos);
+  EXPECT_NE(hardcodedSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(hardcodedSource.find("createBoxWireframeShape"), std::string::npos);
+  EXPECT_NE(hardcodedSource.find("addBoxWireframe"), std::string::npos);
   EXPECT_NE(hardcodedSource.find("kJointStep = 0.1"), std::string::npos);
   EXPECT_NE(hardcodedSource.find("moveDof"), std::string::npos);
   EXPECT_NE(hardcodedSource.find("toggleDirection"), std::string::npos);
@@ -3224,7 +3227,12 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
       hardcodedReadmeSource.find("Hardcoded Design Example"),
       std::string::npos);
   EXPECT_NE(hardcodedReadmeSource.find("dart::gui"), std::string::npos);
-  EXPECT_NE(hardcodedReadmeSource.find("wireframe"), std::string::npos);
+  EXPECT_NE(hardcodedReadmeSource.find("wireframe link"), std::string::npos);
+  EXPECT_NE(
+      hardcodedReadmeSource.find("DART line geometry"), std::string::npos);
+  EXPECT_EQ(
+      hardcodedReadmeSource.find("render-style or debug-mode API"),
+      std::string::npos);
   EXPECT_EQ(hardcodedSource.find("options.defaultScene"), std::string::npos);
 
   const auto heightmapSource = readSourceFile(

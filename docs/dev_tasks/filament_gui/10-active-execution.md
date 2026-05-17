@@ -164,8 +164,15 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   promoted `PanelBuilder` table and color-swatch primitives and restores the
   Mimic Pendulums rig legend plus diagnostics table. R24-22 adds shifted-slash
   `KeyboardAction` handling and restores the Simulation Event Handler `?` help
-  alias. These local checkpoints are not pushed.
-- Latest local R24-22 validation passed focused build for
+  alias. R24-23 restores the Hardcoded Design wireframe link appearance with
+  source-owned DART line geometry. These local checkpoints are not pushed.
+- Latest local R24-23 validation passed focused build for `hardcoded_design`
+  and `UNIT_gui_FilamentSceneExtraction`; focused CTest; pixi software-GL
+  screenshot analyzer smoke for `hardcoded_design` (307200/307200 nonzero
+  pixels); aggregate `examples` build; mandatory `pixi run lint`; post-lint
+  focused build/CTest; and post-lint pixi screenshot smoke with the same
+  nonzero count.
+  R24-22 validation passed focused build for
   `simulation_event_handler` and `UNIT_gui_FilamentSceneExtraction`; focused
   CTest; pixi software-GL screenshot analyzer smoke for
   `simulation_event_handler` (307200/307200 nonzero pixels); aggregate

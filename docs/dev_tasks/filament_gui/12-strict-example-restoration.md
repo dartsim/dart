@@ -786,6 +786,16 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     screenshot analyzer smoke for `simulation_event_handler`, aggregate
     `examples` build, mandatory `pixi run lint`, post-lint focused
     rebuild/CTest, and post-lint pixi screenshot smoke.
+84. The current R24-23 implementation restores the historical
+    `hardcoded_design` wireframe appearance by attaching source-owned
+    `dart::dynamics::LineSegmentShape` edge overlays to each articulated link.
+    This closes the OSG polygon-mode gap without exposing backend renderer
+    state or adding a renderer-wide style setting that Filament does not
+    provide. Validation passed focused build for `hardcoded_design` and
+    `UNIT_gui_FilamentSceneExtraction`, focused CTest, pixi software-GL
+    screenshot analyzer smoke for `hardcoded_design`, aggregate `examples`
+    build, mandatory `pixi run lint`, post-lint focused rebuild/CTest, and
+    post-lint pixi screenshot smoke.
 
 ## Checkpoint Rule
 
