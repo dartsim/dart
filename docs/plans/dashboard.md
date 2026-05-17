@@ -70,13 +70,15 @@ its own line so status updates remain git-history friendly.
 ### PLAN-050: Experimental World Split
 
 - Owner doc:
-  [`../dev_tasks/world_split/README.md`](../dev_tasks/world_split/README.md)
-- Status: Active
-- Horizon: Next
+  [`../onboarding/python-bindings.md#experimental-world-bindings-and-transition`](../onboarding/python-bindings.md#experimental-world-bindings-and-transition)
+- Status: Complete
+- Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Decide the Python module split for the experimental world.
-- Gate: `world_split` README and RESUME stay current, and Phase 2 names the
-  Python binding module shape.
+- Next step: Track any future DART 8 promotion work under the release roadmap
+  once the experimental world has parity gates.
+- Gate: `dartpy.simulation_experimental` is separate from legacy
+  `dartpy.simulation`, has focused import/API coverage, and the DART 7/8
+  transition path is documented in onboarding docs.
 
 ### PLAN-060: Backend-Hidden GUI Roadmap
 

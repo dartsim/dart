@@ -20,11 +20,17 @@ source of truth once it is locked.
 
 - `main` targets DART 7.0.0 with a Python-first API layered on a refreshed C++ architecture.
 - The legacy DART 6 API remains available throughout DART 7 to support migration and is deprecated rather than removed during DART 7.
+- The classic Skeleton-backed world remains the stable DART 7 simulation path.
+  The ECS-backed world is an opt-in experimental surface under
+  `dart::simulation::experimental` and `dartpy.simulation_experimental`.
 - Algorithmic behavior aligns with DART 6 while the refreshed architecture opens room for multi-core gains. GPU acceleration remains an evidence-gated roadmap item, not a DART 7 public API commitment, until workload benchmarks and packaging constraints justify a backend choice.
 
 ## DART 8: Clean Break
 
 - DART 8 removes the legacy DART 6 API and deprecated DART 7 APIs.
+- DART 8 is the promotion point for the ECS-backed world once it has stable
+  public wrappers, migration notes, and parity gates; the classic
+  Skeleton-backed `World` is removed rather than mixed with the new world.
 - DART 8 becomes the first stable release of the new API; from here we preserve backward compatibility on a best-effort basis.
 - Users who still need the legacy surface should remain on DART 7 or DART 6, where that code continues in maintenance.
 
