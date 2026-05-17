@@ -9,7 +9,9 @@
 - Expected output: five randomly colored boxes falling onto a light gray floor.
 - Controls: Space starts or pauses simulation. The panel can pause, step,
   toggle gravity, switch between Dantzig and PGS, and toggle split impulse.
-  The default window size is 800x640, matching the historical example.
+  Pressing and releasing q, Q, Left, and Right prints the historical
+  keydown/key-release callback messages. The default window size is 800x640,
+  matching the historical example.
 
 ## Run
 

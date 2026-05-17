@@ -1133,6 +1133,7 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresKeyboardActions)
   action.label = "clear";
   action.shortcut
       = dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Delete);
+  action.trigger = dart::gui::KeyboardActionTrigger::Release;
   action.callback = [](dart::gui::KeyboardActionContext& context) {
     if (context.lifecycle != nullptr) {
       context.lifecycle->paused = true;
@@ -1146,6 +1147,9 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresKeyboardActions)
   EXPECT_EQ(
       options.keyboardActions.front().shortcut.key,
       dart::gui::KeyboardKey::Delete);
+  EXPECT_EQ(
+      options.keyboardActions.front().trigger,
+      dart::gui::KeyboardActionTrigger::Release);
   dart::gui::ViewerLifecycleState lifecycle;
   bool cameraReset = false;
   dart::gui::KeyboardActionContext context;
@@ -1799,6 +1803,11 @@ TEST(FilamentSceneExtraction, BoxStackingExamplePreservesParityMarkers)
   EXPECT_NE(mainSource.find("Box stacking demo"), std::string::npos);
   EXPECT_NE(mainSource.find("Gravity On/Off"), std::string::npos);
   EXPECT_NE(mainSource.find("LCP solver:"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("createBoxStackingKeyboardActions"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardActionTrigger::Release"), std::string::npos);
+  EXPECT_NE(mainSource.find("Capital Q released"), std::string::npos);
   EXPECT_NE(mainSource.find("context.camera.eye"), std::string::npos);
   EXPECT_NE(mainSource.find("Eye   : "), std::string::npos);
   EXPECT_NE(mainSource.find("Center: "), std::string::npos);
@@ -1815,6 +1824,7 @@ TEST(FilamentSceneExtraction, BoxStackingExamplePreservesParityMarkers)
   EXPECT_NE(readmeSource.find("Box Stacking Example"), std::string::npos);
   EXPECT_NE(readmeSource.find("dart::gui"), std::string::npos);
   EXPECT_NE(readmeSource.find("800x640"), std::string::npos);
+  EXPECT_NE(readmeSource.find("keydown/key-release"), std::string::npos);
   EXPECT_NE(readmeSource.find("--gui-scale"), std::string::npos);
   EXPECT_NE(readmeSource.find("Build Instructions"), std::string::npos);
   EXPECT_NE(readmeSource.find("Execute Instructions"), std::string::npos);
@@ -2027,8 +2037,15 @@ TEST(FilamentSceneExtraction, PanelExtensionExamplePreservesLegacyParityMarkers)
       mainSource.find("createPanelExtensionKeyboardActions"),
       std::string::npos);
   EXPECT_NE(mainSource.find("Lowercase q pressed"), std::string::npos);
+  EXPECT_NE(mainSource.find("Capital Q pressed"), std::string::npos);
+  EXPECT_NE(mainSource.find("Lowercase q released"), std::string::npos);
+  EXPECT_NE(mainSource.find("Capital Q released"), std::string::npos);
   EXPECT_NE(mainSource.find("Left arrow key pressed"), std::string::npos);
+  EXPECT_NE(mainSource.find("Left arrow key released"), std::string::npos);
   EXPECT_NE(mainSource.find("Right arrow key pressed"), std::string::npos);
+  EXPECT_NE(mainSource.find("Right arrow key released"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardActionTrigger::Release"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("Pre-step callbacks"), std::string::npos);
@@ -2060,7 +2077,7 @@ TEST(FilamentSceneExtraction, PanelExtensionExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(readmeSource.find("Tinkertoy Control"), std::string::npos);
   EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
-  EXPECT_NE(readmeSource.find("key-release callbacks"), std::string::npos);
+  EXPECT_NE(readmeSource.find("keyboard callbacks"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
   EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
   EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
@@ -3292,10 +3309,15 @@ TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
   EXPECT_NE(emptySource.find("KeyboardKey::Right"), std::string::npos);
   EXPECT_NE(emptySource.find("Lowercase q pressed"), std::string::npos);
   EXPECT_NE(emptySource.find("Capital Q pressed"), std::string::npos);
+  EXPECT_NE(emptySource.find("Lowercase q released"), std::string::npos);
+  EXPECT_NE(emptySource.find("Capital Q released"), std::string::npos);
+  EXPECT_NE(
+      emptySource.find("KeyboardActionTrigger::Release"), std::string::npos);
   EXPECT_NE(emptySource.find("Left arrow key pressed"), std::string::npos);
+  EXPECT_NE(emptySource.find("Left arrow key released"), std::string::npos);
   EXPECT_NE(emptySource.find("Right arrow key pressed"), std::string::npos);
-  EXPECT_NE(emptySource.find("key-release callback"), std::string::npos);
-  EXPECT_NE(emptySource.find("pre/post render hooks"), std::string::npos);
+  EXPECT_NE(emptySource.find("Right arrow key released"), std::string::npos);
+  EXPECT_NE(emptySource.find("Pre/post render hooks"), std::string::npos);
   EXPECT_NE(emptySource.find("makeEmptyRunDefaults"), std::string::npos);
   EXPECT_NE(emptySource.find("options.width = 640"), std::string::npos);
   EXPECT_NE(emptySource.find("options.height = 480"), std::string::npos);
@@ -3312,6 +3334,8 @@ TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
   EXPECT_NE(emptyReadmeSource.find("Empty Viewer Example"), std::string::npos);
   EXPECT_NE(emptyReadmeSource.find("dart::gui"), std::string::npos);
   EXPECT_NE(emptyReadmeSource.find("640x480"), std::string::npos);
+  EXPECT_NE(
+      emptyReadmeSource.find("keydown and key-release"), std::string::npos);
   EXPECT_EQ(emptySource.find("options.defaultScene"), std::string::npos);
 
   const auto eventSource = readSourceFile(

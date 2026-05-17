@@ -9,12 +9,12 @@
   run defaults, and camera defaults.
 - Expected output: an empty world with a target transform gizmo and a
   `Tinkertoy Control` panel.
-- Controls: left-drag the target gizmo arrows/planes/rings. Press q, Left, or
-  Right to exercise the promoted keydown callbacks. `--gui-scale` adjusts the
-  GUI scale, and `--width` / `--height` override the default 640x480 window
-  size.
-- Remaining gaps: headlight toggles, key-release callbacks, and pre/post render
-  or post-step hooks need public renderer-neutral APIs.
+- Controls: left-drag the target gizmo arrows/planes/rings. Press and release q,
+  Q, Left, or Right to exercise the promoted keyboard callbacks. `--gui-scale`
+  adjusts the GUI scale, and `--width` / `--height` override the default 640x480
+  window size.
+- Remaining gaps: headlight toggles and pre/post render or post-step hooks need
+  public renderer-neutral APIs.
 
 ## Run
 

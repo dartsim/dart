@@ -101,11 +101,18 @@ struct KeyboardActionContext
   std::function<void()> resetCamera;
 };
 
+enum class KeyboardActionTrigger
+{
+  Press,
+  Release,
+};
+
 struct KeyboardAction
 {
   std::string label;
   KeyboardShortcut shortcut;
   bool repeat = false;
+  KeyboardActionTrigger trigger = KeyboardActionTrigger::Press;
   std::function<void(KeyboardActionContext&)> callback;
 };
 

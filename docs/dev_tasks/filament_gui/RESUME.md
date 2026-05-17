@@ -18,21 +18,25 @@ R24-9 `imgui` panel target gizmo cleanup, the R24-10 Tinkertoy force-target
 gizmo cleanup, the R24-11 drag-and-drop frame-gizmo cleanup, and the R24-12
 Fetch target-gizmo cleanup, the R24-13 native window-title cleanup, and the
 R24-14 camera up-vector cleanup, and the R24-15 panel camera-inspection cleanup.
-Do not push these local checkpoints without explicit maintainer/user approval in
-the active session. Leave the pre-existing local
+R24-16 adds key-release triggers for promoted keyboard actions and restores
+keydown/key-release callbacks in the affected migrated examples. Do not push
+these local checkpoints without explicit maintainer/user approval in the active
+session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
 explicitly asks to include them.
 
-Immediate next slice after the R24-15 camera-inspection rollout: continue
+Immediate next slice after the R24-16 key-release rollout: continue
 reducing the named public API gaps in `11-example-parity-audit.md`. Public
 `dart::gui::Gizmo` now covers the source-owned manipulation affordances for the
 recently re-opened target examples, public `OrbitCamera::up` covers historical
 custom camera up-vector defaults, and public `PanelContext::camera` covers the
-Eye/Center/Up panel readouts in `box_stacking` and `imgui`. Remaining audit gaps
-are mostly render settings, key-release/render hooks, panel plotting/table
-widgets, color editors/debug-grid controls, and example-specific simulation or
-posture controls rather than bare source-owned target handles, camera
-up-vector defaults, or basic camera readouts.
+Eye/Center/Up panel readouts in `box_stacking` and `imgui`. Public
+`KeyboardActionTrigger::Release` now covers the historical keyup messages in
+`box_stacking`, `empty`, and `imgui`. Remaining audit gaps are mostly render
+settings, render hooks, panel plotting/table widgets, color editors/debug-grid
+controls, and example-specific simulation or posture controls rather than bare
+source-owned target handles, camera up-vector defaults, basic camera readouts,
+or simple key-release callbacks.
 
 ## Live Supervisor Steering
 
@@ -174,8 +178,10 @@ public `dart::gui`, not the current generic box/slider demo. The first code
 pass should restore the target frame, promoted keydown callbacks, gravity
 control, panel sections, viewer help, 640x480/camera defaults, README, and
 source-marker guards while tracking headlight toggles, camera-inspector text,
-key-release callbacks, and render/post-step hooks as public API gaps. The
-current heightmap checkpoint restores
+keyboard release behavior, and render/post-step hooks for follow-up. Later local
+R24-15/R24-16 checkpoints restore camera-inspector text and keyboard release
+callbacks through public `dart::gui`; headlight toggles and render/post-step
+hooks remain. The current heightmap checkpoint restores
 `--demo interactive|alignment`, a mutable `HeightmapShaped` `SimpleFrame`,
 renderer-neutral panel controls, the ODE-backed alignment scene, camera/run
 defaults, README, changelog, and source-marker tests. The old OSG grid style
@@ -234,9 +240,9 @@ pushed as `9e111631eb5 Restore point cloud example controls`. The
 `227c2498a53 Restore polyhedron visual defaults`. The `examples/empty`
 checkpoint is committed and pushed as
 `158e10d4cc2 Restore empty viewer scaffold`; it restores public keydown
-actions, camera/run defaults, README, and marker guards while keeping
-key-release and pre/post-render callbacks as public API gaps. The active slice
-is now `examples/simulation_event_handler`: the local implementation restores
+actions, camera/run defaults, README, and marker guards while keeping pre/post
+render callbacks as public API gaps after the later local R24-16 key-release
+repair. The active slice is now `examples/simulation_event_handler`: the local implementation restores
 the historical event-handler controls, selected-body force/torque application,
 force-arrow visualization, camera/run defaults, README, and source-marker
 guards through public `dart::gui`. This checkpoint has been committed and

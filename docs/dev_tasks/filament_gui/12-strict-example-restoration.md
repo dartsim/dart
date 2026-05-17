@@ -705,6 +705,17 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `examples` build, mandatory `pixi run lint`, post-lint focused rebuild/CTest,
     post-lint direct screenshot smokes, stale camera-inspection gap text scan,
     and `git diff --check`.
+77. The current R24-16 implementation promotes
+    `dart::gui::KeyboardActionTrigger::Release`, teaches character shortcuts to
+    distinguish shifted uppercase keys from lowercase keys, and restores the
+    historical keydown/key-release callback messages in `box_stacking`, `empty`,
+    and `imgui` without exposing backend event types. Validation passed focused
+    build for `empty`, `imgui`, `box_stacking`, and
+    `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct software-GL
+    screenshot analyzer smokes for `empty`, `imgui`, and `box_stacking`,
+    aggregate `examples` build, mandatory `pixi run lint`, post-lint focused
+    rebuild/CTest, post-lint direct screenshot smokes, stale key-release gap text
+    scan, and `git diff --check`.
 
 ## Checkpoint Rule
 

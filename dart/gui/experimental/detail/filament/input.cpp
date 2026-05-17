@@ -48,6 +48,7 @@ using dart::gui::addOrbitCameraScroll;
 using dart::gui::computeCameraRelativeNudge;
 using dart::gui::DirectionalNudgeInput;
 using dart::gui::KeyboardActionContext;
+using dart::gui::KeyboardActionTrigger;
 using dart::gui::KeyboardKey;
 using dart::gui::KeyboardShortcut;
 using dart::gui::OrbitCamera;
@@ -145,8 +146,16 @@ bool isShortcutDown(GLFWwindow* window, const KeyboardShortcut& shortcut)
     case ']':
       return !isShiftDown(window);
     default:
-      return true;
+      break;
   }
+
+  const unsigned char character
+      = static_cast<unsigned char>(shortcut.character);
+  if (std::isalpha(character)) {
+    return (std::isupper(character) != 0) == isShiftDown(window);
+  }
+
+  return true;
 }
 
 void dispatchKeyboardActions(
@@ -171,8 +180,12 @@ void dispatchKeyboardActions(
   for (std::size_t i = 0; i < scene.keyboardActions.size(); ++i) {
     const auto& action = scene.keyboardActions[i];
     const bool isPressed = isShortcutDown(window, action.shortcut);
-    if (isPressed && (action.repeat || !state.customActionWasPressed[i])
-        && action.callback) {
+    const bool wasPressed = state.customActionWasPressed[i];
+    const bool shouldTrigger
+        = action.trigger == KeyboardActionTrigger::Release
+              ? (!isPressed && wasPressed)
+              : (isPressed && (action.repeat || !wasPressed));
+    if (shouldTrigger && action.callback) {
       action.callback(context);
     }
     state.customActionWasPressed[i] = isPressed;

@@ -61,6 +61,8 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include <cctype>
 #include <cstddef>
@@ -279,6 +281,66 @@ std::string formatCameraVector(const Eigen::Vector3d& value)
   return stream.str();
 }
 
+dart::gui::KeyboardAction makePrintAction(
+    std::string label,
+    dart::gui::KeyboardShortcut shortcut,
+    std::string message,
+    dart::gui::KeyboardActionTrigger trigger
+    = dart::gui::KeyboardActionTrigger::Press)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = shortcut;
+  action.trigger = trigger;
+  action.callback
+      = [message = std::move(message)](dart::gui::KeyboardActionContext&) {
+          std::cout << message << std::endl;
+        };
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createBoxStackingKeyboardActions()
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makePrintAction(
+      "Lowercase q pressed",
+      dart::gui::KeyboardShortcut::characterKey('q'),
+      "Lowercase q pressed"));
+  actions.push_back(makePrintAction(
+      "Capital Q pressed",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q pressed"));
+  actions.push_back(makePrintAction(
+      "Left arrow key pressed",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
+      "Left arrow key pressed"));
+  actions.push_back(makePrintAction(
+      "Right arrow key pressed",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
+      "Right arrow key pressed"));
+  actions.push_back(makePrintAction(
+      "Lowercase q released",
+      dart::gui::KeyboardShortcut::characterKey('q'),
+      "Lowercase q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Capital Q released",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Left arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
+      "Left arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Right arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
+      "Right arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
+  return actions;
+}
+
 dart::gui::Panel createControlsPanel(const BoxStackingConfig& config)
 {
   bool gravityEnabled = true;
@@ -341,6 +403,7 @@ dart::gui::Panel createControlsPanel(const BoxStackingConfig& config)
     panel.text("User Guide:");
     panel.text("Space toggles simulation; n steps once while paused.");
     panel.text("Left drag orbits, right/middle drag pans, wheel zooms.");
+    panel.text("q, Q, Left, and Right print keydown/release messages.");
     panel.text("Use --gui-scale to scale this panel.");
   };
   return controls;
@@ -361,6 +424,7 @@ int main(int argc, char* argv[])
     options.runDefaults = makeBoxStackingRunDefaults();
     options.camera = makeBoxStackingCamera();
     options.panels.push_back(createControlsPanel(config));
+    options.keyboardActions = createBoxStackingKeyboardActions();
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {
     std::cerr << "box_stacking: " << e.what() << "\n";

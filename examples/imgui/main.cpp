@@ -130,11 +130,14 @@ std::string formatCameraVector(const Eigen::Vector3d& value)
 dart::gui::KeyboardAction makePrintAction(
     std::string label,
     dart::gui::KeyboardShortcut shortcut,
-    std::string message)
+    std::string message,
+    dart::gui::KeyboardActionTrigger trigger
+    = dart::gui::KeyboardActionTrigger::Press)
 {
   dart::gui::KeyboardAction action;
   action.label = std::move(label);
   action.shortcut = shortcut;
+  action.trigger = trigger;
   action.callback
       = [message = std::move(message)](dart::gui::KeyboardActionContext&) {
           std::cout << message << std::endl;
@@ -150,6 +153,10 @@ std::vector<dart::gui::KeyboardAction> createPanelExtensionKeyboardActions()
       dart::gui::KeyboardShortcut::characterKey('q'),
       "Lowercase q pressed"));
   actions.push_back(makePrintAction(
+      "Capital Q pressed",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q pressed"));
+  actions.push_back(makePrintAction(
       "Left arrow key pressed",
       dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
       "Left arrow key pressed"));
@@ -157,6 +164,26 @@ std::vector<dart::gui::KeyboardAction> createPanelExtensionKeyboardActions()
       "Right arrow key pressed",
       dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
       "Right arrow key pressed"));
+  actions.push_back(makePrintAction(
+      "Lowercase q released",
+      dart::gui::KeyboardShortcut::characterKey('q'),
+      "Lowercase q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Capital Q released",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Left arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
+      "Left arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Right arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
+      "Right arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
   return actions;
 }
 
@@ -216,8 +243,7 @@ dart::gui::Panel createPanelExtensionControls(const PanelExtensionScene& scene)
     panel.text("User Guide");
     panel.text("Left drag orbits; right or middle drag pans; wheel zooms.");
     panel.text("Left-drag target gizmo arrows/planes/rings.");
-    panel.text("q, Left, and Right demonstrate keydown callbacks.");
-    panel.text("Key release and shifted Q need public shortcut APIs.");
+    panel.text("q, Q, Left, and Right demonstrate keydown/release callbacks.");
     panel.text("About DART: project and libdart simulation libraries.");
     panel.text("selected: " + context.selectedLabel);
   };

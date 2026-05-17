@@ -123,8 +123,8 @@ dart::gui::Panel createEmptyPanel()
     builder.text("selectable anchor, draggable child, and axis markers");
     builder.text("Keyboard actions print q, Q, Left, and Right keydown events");
     builder.text(
-        "key-release callbacks and pre/post render hooks require public API "
-        "follow-up.");
+        "Key-release actions print q, Q, Left, and Right release events.");
+    builder.text("Pre/post render hooks remain public API follow-up.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -167,11 +167,14 @@ dart::gui::OrbitCamera makeEmptyCamera()
 dart::gui::KeyboardAction makePrintAction(
     std::string label,
     dart::gui::KeyboardShortcut shortcut,
-    std::string message)
+    std::string message,
+    dart::gui::KeyboardActionTrigger trigger
+    = dart::gui::KeyboardActionTrigger::Press)
 {
   dart::gui::KeyboardAction action;
   action.label = std::move(label);
   action.shortcut = shortcut;
+  action.trigger = trigger;
   action.callback
       = [message = std::move(message)](dart::gui::KeyboardActionContext&) {
           std::cout << message << std::endl;
@@ -198,6 +201,26 @@ std::vector<dart::gui::KeyboardAction> createEmptyKeyboardActions()
       "Right arrow key pressed",
       dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
       "Right arrow key pressed"));
+  actions.push_back(makePrintAction(
+      "Lowercase q released",
+      dart::gui::KeyboardShortcut::characterKey('q'),
+      "Lowercase q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Capital Q released",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Left arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
+      "Left arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Right arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
+      "Right arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
   return actions;
 }
 

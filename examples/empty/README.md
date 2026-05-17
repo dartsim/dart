@@ -32,8 +32,9 @@ command-line overrides handled by the shared `dart::gui` runner.
 - The panel exposes pause/resume and single-step controls.
 - Click a frame, then use Ctrl-left drag or arrow/PageUp/PageDown keys to move
   selected items through the promoted viewer controls.
-- `q`, `Q`, Left, and Right print the historical keydown messages through
+- `q`, `Q`, Left, and Right print the historical keydown and key-release
+  messages through
   renderer-neutral `KeyboardAction` callbacks.
 
-The legacy key-release callback examples and pre/post render hooks remain
-public API follow-ups; the example does not include backend event-handler types.
+The legacy pre/post render hooks remain public API follow-ups; the example does
+not include backend event-handler types.

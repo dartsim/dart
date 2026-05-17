@@ -149,9 +149,17 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   support and restores historical camera up-vector defaults across the migrated
   examples that carried custom OSG up vectors. R24-15 adds promoted
   `PanelContext::camera` inspection state and restores Eye/Center/Up panel
-  readouts in `box_stacking` and `imgui`. These local checkpoints are not
-  pushed.
-- Latest local R24-15 validation passed focused build for `imgui`,
+  readouts in `box_stacking` and `imgui`. R24-16 adds promoted
+  `KeyboardActionTrigger::Release`, makes shifted character shortcuts distinct,
+  and restores keydown/key-release callbacks in `box_stacking`, `empty`, and
+  `imgui`. These local checkpoints are not pushed.
+- Latest local R24-16 validation passed focused build for `empty`, `imgui`,
+  `box_stacking`, and `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct
+  software-GL screenshot analyzer smokes for `empty`, `imgui`, and
+  `box_stacking`; aggregate `examples` build; mandatory `pixi run lint`;
+  post-lint focused rebuild/CTest; post-lint direct screenshot smokes; stale
+  key-release gap text scan; and `git diff --check`.
+  R24-15 validation passed focused build for `imgui`,
   `box_stacking`, and `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct
   software-GL screenshot analyzer smokes for `imgui` and `box_stacking`;
   aggregate `examples` build; mandatory `pixi run lint`; post-lint focused
@@ -913,15 +921,16 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   `z=0.75`, uses deterministic box colors instead of historical random colors,
   uses a `0.02` floor instead of the historical `0.01` floor, and omits
   historical panel/README text. Repair those now through public
-  `dart::gui`, extend marker guards, and keep headlight toggles, camera
-  Eye/Center/Up panel readout, and key-release callbacks as named public API
-  gaps unless those APIs are added in the same slice.
+  `dart::gui`, extend marker guards, and track headlight toggles, camera
+  Eye/Center/Up panel readout, and key-release callbacks until later local
+  public API slices restore or classify them.
 - Box Stacking implementation state: source now restores historical random
   colors, stack placement, 0.01 light-gray floor, `Gravity On/Off`,
   `LCP solver:`, `Box stacking demo`, `User Guide`, README build/execute
-  sections, and marker coverage. Exact OSG menu-bar placement, headlight
-  toggle, live camera Eye/Center/Up readout, and key-release callbacks remain
-  named public `dart::gui` API gaps.
+  sections, and marker coverage. The local R24-15/R24-16 checkpoints restore
+  live camera Eye/Center/Up readout and key-release callbacks through public
+  `dart::gui`; exact OSG menu-bar placement and the headlight toggle remain
+  named public API gaps.
 - Box Stacking pre-lint validation: focused build for `box_stacking` and
   `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed, direct
   llvmpipe screenshot passed analyzer coverage
