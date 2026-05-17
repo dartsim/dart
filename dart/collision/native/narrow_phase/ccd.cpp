@@ -457,9 +457,6 @@ bool sphereCastConvex(
 {
   result.clear();
 
-  SphereShape sphere(sphereRadius);
-  ConvexShape expandedTarget = target;
-
   Eigen::Isometry3d sphereTransformStart = Eigen::Isometry3d::Identity();
   sphereTransformStart.translation() = sphereStart;
   Eigen::Isometry3d sphereTransformEnd = Eigen::Isometry3d::Identity();
@@ -480,9 +477,22 @@ bool sphereCastConvex(
   for (int iter = 0; iter < option.maxIterations; ++iter) {
     Eigen::Vector3d currentCenter = sphereStart + t * (sphereEnd - sphereStart);
 
-    auto supportA = [&](const Eigen::Vector3d& dir) {
-      return currentCenter + sphereRadius * dir.normalized();
-    };
+    const double centerX = currentCenter.x();
+    const double centerY = currentCenter.y();
+    const double centerZ = currentCenter.z();
+    auto supportA =
+        [centerX, centerY, centerZ, sphereRadius](const Eigen::Vector3d& dir) {
+          Eigen::Vector3d worldDir = dir;
+          if (worldDir.squaredNorm() < kEpsilon) {
+            worldDir = Eigen::Vector3d::UnitZ();
+          } else {
+            worldDir.normalize();
+          }
+          return Eigen::Vector3d(
+              centerX + sphereRadius * worldDir.x(),
+              centerY + sphereRadius * worldDir.y(),
+              centerZ + sphereRadius * worldDir.z());
+        };
     auto supportB = [&](const Eigen::Vector3d& dir) {
       return targetTransform
              * target.support(targetTransform.rotation().transpose() * dir);

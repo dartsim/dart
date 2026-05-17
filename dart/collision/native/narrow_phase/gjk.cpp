@@ -51,7 +51,7 @@ SupportPoint computeSupport(
     const Eigen::Vector3d& direction)
 {
   Eigen::Vector3d dir = direction;
-  if (dir.squaredNorm() < kEpsilon) {
+  if (!dir.allFinite() || dir.squaredNorm() < kEpsilon) {
     dir = Eigen::Vector3d::UnitX();
   } else {
     dir.normalize();
@@ -525,6 +525,9 @@ GjkResult queryFromSimplex(
     }
 
     direction = -closest;
+    if (!isUsableDirection(direction)) {
+      direction = Eigen::Vector3d::UnitX();
+    }
     SupportPoint newPoint = computeSupport(supportA, supportB, direction);
 
     const double delta = newPoint.v.dot(direction) - closest.dot(direction);
