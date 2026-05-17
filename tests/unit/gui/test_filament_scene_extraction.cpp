@@ -822,6 +822,13 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
       if (builder.checkbox("Shadow On/Off", shadows)) {
         context.rendering.settings->shadowsEnabled = shadows;
       }
+      bool depthMode = context.rendering.settings->outputMode
+                       == dart::gui::RenderOutputMode::Depth;
+      if (builder.checkbox("Depth mode", depthMode)) {
+        context.rendering.settings->outputMode
+            = depthMode ? dart::gui::RenderOutputMode::Depth
+                        : dart::gui::RenderOutputMode::Color;
+      }
     }
   };
 
@@ -867,6 +874,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(headlights);
   EXPECT_TRUE(tint.isApprox(Eigen::Vector4d(0.25, 0.5, 0.75, 0.85)));
   EXPECT_TRUE(renderSettings.shadowsEnabled);
+  EXPECT_EQ(renderSettings.outputMode, dart::gui::RenderOutputMode::Depth);
   bool preStepCalled = false;
   bool postStepCalled = false;
   bool preRenderCalled = false;
@@ -912,7 +920,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "text:ui-display-width:640.000000",
           "text:ui-font-texture-width:512",
           "checkbox:Headlights On/Off",
-          "checkbox:Shadow On/Off"}));
+          "checkbox:Shadow On/Off",
+          "checkbox:Depth mode"}));
 
   dart::gui::ApplicationOptions options;
   options.world = World::create("panel_test");
@@ -935,6 +944,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   options.camera = dart::gui::OrbitCamera{};
   options.camera->target = Eigen::Vector3d(1.0, 2.0, 3.0);
   options.renderSettings.shadowsEnabled = false;
+  options.renderSettings.outputMode = dart::gui::RenderOutputMode::Depth;
   options.defaultScene = "mvp";
   options.panels.push_back(std::move(panel));
   ASSERT_NE(options.world, nullptr);
@@ -954,6 +964,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   ASSERT_TRUE(options.camera.has_value());
   EXPECT_TRUE(options.camera->target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_FALSE(options.renderSettings.shadowsEnabled);
+  EXPECT_EQ(
+      options.renderSettings.outputMode, dart::gui::RenderOutputMode::Depth);
   EXPECT_EQ(options.defaultScene, "mvp");
   ASSERT_EQ(options.panels.size(), 1u);
   EXPECT_EQ(options.panels.front().title, "Controls");
@@ -961,9 +973,12 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   dart::gui::filament::AppOptions appOptions;
   appOptions.world = options.world;
   appOptions.simulateWorld = options.simulateWorld;
+  appOptions.renderSettings = options.renderSettings;
   const dart::gui::filament::DartScene scene
       = dart::gui::filament::createDartScene(appOptions);
   EXPECT_FALSE(scene.simulateWorld);
+  EXPECT_EQ(
+      scene.renderSettings.outputMode, dart::gui::RenderOutputMode::Depth);
 }
 
 TEST(FilamentSceneExtraction, ApplicationOptionsStoresIkHandles)
@@ -1346,6 +1361,18 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
 
   EXPECT_EQ(overrideOptions.run.width, 640);
   EXPECT_EQ(overrideOptions.run.height, 480);
+
+  char depthExecutable[] = "fetch";
+  char renderOutputOption[] = "--render-output";
+  char renderOutputValue[] = "depth";
+  char* depthArgv[] = {depthExecutable, renderOutputOption, renderOutputValue};
+  const auto depthOptions = dart::gui::filament::parseOptions(
+      3, depthArgv, std::optional<dart::gui::RunOptions>{defaults});
+
+  EXPECT_TRUE(depthOptions.renderOutputModeExplicit);
+  EXPECT_EQ(
+      depthOptions.renderSettings.outputMode,
+      dart::gui::RenderOutputMode::Depth);
 }
 
 TEST(FilamentSceneExtraction, ApplicationOptionsStoresKeyboardActions)
@@ -2763,9 +2790,12 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
   EXPECT_NE(mainSource.find("Harness pelvis"), std::string::npos);
   EXPECT_NE(mainSource.find("Headlights On/Off"), std::string::npos);
   EXPECT_NE(mainSource.find("Shadow On/Off"), std::string::npos);
+  EXPECT_NE(mainSource.find("Depth mode"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("dart::gui::RenderOutputMode::Depth"), std::string::npos);
   EXPECT_NE(mainSource.find("Normal-Stride Walking"), std::string::npos);
   EXPECT_NE(mainSource.find("Short-Stride Walking"), std::string::npos);
-  EXPECT_NE(
+  EXPECT_EQ(
       mainSource.find("Depth mode needs a public render-output API"),
       std::string::npos);
   EXPECT_NE(mainSource.find("makeAtlasSimbiconCamera"), std::string::npos);
@@ -2790,10 +2820,12 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
       readmeSource.find("dart::gui::ApplicationOptions::preStep"),
       std::string::npos);
   EXPECT_NE(readmeSource.find("dart::gui::RunOptions"), std::string::npos);
-  EXPECT_NE(
+  EXPECT_NE(readmeSource.find("depth output"), std::string::npos);
+  EXPECT_NE(readmeSource.find("--render-output depth"), std::string::npos);
+  EXPECT_EQ(
       readmeSource.find("Remaining renderer-neutral API gap"),
       std::string::npos);
-  EXPECT_NE(
+  EXPECT_EQ(
       readmeSource.find("historical OSG depth camera mode"), std::string::npos);
   EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
   EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);

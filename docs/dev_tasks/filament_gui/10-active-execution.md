@@ -429,6 +429,12 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   the historical kinematic no-simulation lifecycle. Focused build, marker
   CTest, mandatory lint, post-lint rebuild/CTest, and WAM screenshot smoke
   analyzer validation pass locally.
+- R24-37 Atlas Simbicon follow-up adds public `RenderSettings::outputMode`
+  with a depth visualization mode and restores the historical panel "Depth
+  mode" toggle plus `--render-output depth` capture without OSG or private
+  Filament hooks. Focused build, marker CTest, mandatory lint, post-lint
+  rebuild/CTest, and Atlas depth-output screenshot analyzer validation pass
+  locally.
 - Active strict re-open cursor: `examples/vehicle/`. A previous parity
   checkpoint restored command keys and camera defaults, but the strict itemized
   inventory is still missing. Compare current source/README against

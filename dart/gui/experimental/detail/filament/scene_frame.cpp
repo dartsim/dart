@@ -138,7 +138,11 @@ void SceneFrameUpdater::update(
           mEngine,
           descriptors,
           mSceneState.sceneRenderables,
-          mSelectionController.selectedRenderableId())) {
+          mSelectionController.selectedRenderableId(),
+          mDartScene.renderSettings,
+          mCameraController.camera,
+          viewport.width,
+          viewport.height)) {
     mSelectionController.clear();
   }
   mProfile.syncMs += dart::gui::elapsedMs(phaseStart);

@@ -60,6 +60,8 @@ struct PickRay;
 struct ProfileAccumulator;
 struct RenderableDescriptor;
 struct RenderableSetUpdatePlan;
+enum class RenderOutputMode;
+struct RenderSettings;
 struct RunOptions;
 struct ViewerLifecycleState;
 

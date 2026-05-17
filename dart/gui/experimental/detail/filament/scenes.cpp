@@ -571,6 +571,18 @@ AppOptions parseOptions(
       options.orbitLight = true;
     } else if (arg == "--no-orbit-light") {
       options.orbitLight = false;
+    } else if (arg == "--render-output" && i + 1 < argc) {
+      const std::string_view value(argv[++i]);
+      if (value == "color") {
+        options.renderSettings.outputMode = dart::gui::RenderOutputMode::Color;
+      } else if (value == "depth") {
+        options.renderSettings.outputMode = dart::gui::RenderOutputMode::Depth;
+      } else {
+        std::cerr << "Invalid --render-output value '" << value
+                  << "'. Expected 'color' or 'depth'.\n";
+        std::exit(2);
+      }
+      options.renderOutputModeExplicit = true;
     } else if (arg == "--orbit-light-period" && i + 1 < argc) {
       char* end = nullptr;
       const char* value = argv[++i];
@@ -636,6 +648,7 @@ AppOptions parseOptions(
              " [--screenshot PATH] [--out DIR] [--headless]"
              " [--hide-ui|--show-ui]"
              " [--orbit-light|--no-orbit-light]"
+             " [--render-output color|depth]"
              " [--orbit-light-period SECONDS]"
              " [--gui-scale N]"
              " [--profile]"

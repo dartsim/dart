@@ -46,6 +46,11 @@ class Engine;
 class Scene;
 } // namespace filament
 
+namespace dart::gui {
+struct OrbitCamera;
+struct RenderSettings;
+} // namespace dart::gui
+
 namespace dart::gui::filament {
 
 using RenderableFactory = std::function<std::optional<Renderable>(
@@ -66,13 +71,21 @@ void updateSceneRenderableFromDescriptor(
     ::filament::Engine& engine,
     SceneRenderable& sceneRenderable,
     const dart::gui::RenderableDescriptor& descriptor,
+    const dart::gui::RenderSettings& renderSettings,
+    const dart::gui::OrbitCamera& camera,
+    int viewportWidth,
+    int viewportHeight,
     bool selected);
 
 bool updateSceneRenderablesFromDescriptors(
     ::filament::Engine& engine,
     const std::vector<dart::gui::RenderableDescriptor>& descriptors,
     std::vector<SceneRenderable>& sceneRenderables,
-    dart::gui::RenderableId selectedRenderableId);
+    dart::gui::RenderableId selectedRenderableId,
+    const dart::gui::RenderSettings& renderSettings,
+    const dart::gui::OrbitCamera& camera,
+    int viewportWidth,
+    int viewportHeight);
 
 void logUnsupportedRenderableDescriptorOnce(
     std::vector<dart::gui::RenderableId>& loggedUnsupportedRenderableIds,

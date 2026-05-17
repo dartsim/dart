@@ -64,9 +64,16 @@ struct RunOptions
   std::string frameOutputDirectory;
 };
 
+enum class RenderOutputMode
+{
+  Color,
+  Depth,
+};
+
 struct RenderSettings
 {
   bool shadowsEnabled = true;
+  RenderOutputMode outputMode = RenderOutputMode::Color;
 };
 
 struct ViewerLifecycleState

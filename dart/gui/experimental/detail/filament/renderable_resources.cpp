@@ -169,7 +169,10 @@ void destroyMaterialResources(
 }
 
 void updateRenderableSelection(
-    Renderable& renderable, const float4& descriptorColor, bool selected)
+    Renderable& renderable,
+    const float4& descriptorColor,
+    bool selected,
+    const std::optional<float4>& overrideColor)
 {
   for (Renderable::MaterialInstance& material : renderable.materials) {
     if (material.instance == nullptr || !material.hasBaseColor) {
@@ -178,12 +181,11 @@ void updateRenderableSelection(
     if (material.followsDescriptorColor) {
       material.baseColor = descriptorColor;
     }
+    const float4 displayColor = overrideColor.value_or(material.baseColor);
     material.instance->setParameter(
         "baseColor",
-        selected
-            ? withRgb(
-                  material.baseColor, selectionTint(rgb(material.baseColor)))
-            : material.baseColor);
+        selected ? withRgb(displayColor, selectionTint(rgb(displayColor)))
+                 : displayColor);
   }
 }
 

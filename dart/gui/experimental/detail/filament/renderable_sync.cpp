@@ -32,6 +32,8 @@
 
 #include "renderable_sync.hpp"
 
+#include <dart/gui/viewer.hpp>
+
 #include <filament/Engine.h>
 #include <filament/Scene.h>
 #include <filament/TransformManager.h>
@@ -40,6 +42,8 @@
 
 #include <algorithm>
 #include <iostream>
+
+#include <cmath>
 
 namespace dart::gui::filament {
 namespace {
@@ -71,6 +75,42 @@ float4 toRgba(const Eigen::Vector4d& rgba)
       static_cast<float>(rgba.y()),
       static_cast<float>(rgba.z()),
       static_cast<float>(rgba.w())};
+}
+
+std::optional<float4> makeRenderOutputOverrideColor(
+    const RenderableDescriptor& descriptor,
+    const dart::gui::RenderSettings& renderSettings,
+    const dart::gui::OrbitCamera& camera,
+    int viewportWidth,
+    int viewportHeight)
+{
+  switch (renderSettings.outputMode) {
+    case dart::gui::RenderOutputMode::Color:
+      return std::nullopt;
+    case dart::gui::RenderOutputMode::Depth: {
+      const dart::gui::PerspectiveProjection projection
+          = dart::gui::makePerspectiveProjection(
+              camera, viewportWidth, viewportHeight);
+      const dart::gui::OrbitCameraBasis cameraBasis
+          = dart::gui::makeOrbitCameraBasis(camera);
+      const double depth
+          = (descriptor.worldTransform.translation() - cameraBasis.eye)
+                .dot(cameraBasis.forward);
+      const double safeDepth
+          = std::isfinite(depth) ? depth : projection.farPlane;
+      const double depthRange
+          = std::max(1e-9, projection.farPlane - projection.nearPlane);
+      const double normalizedDepth = std::clamp(
+          (safeDepth - projection.nearPlane) / depthRange, 0.0, 1.0);
+      const float shade
+          = static_cast<float>(0.12 + 0.88 * (1.0 - normalizedDepth));
+      const float alpha = static_cast<float>(
+          std::clamp(descriptor.material.rgba.w(), 0.0, 1.0));
+      return float4{shade, shade, shade, alpha};
+    }
+  }
+
+  return std::nullopt;
 }
 
 bool containsRenderableId(const std::vector<RenderableId>& ids, RenderableId id)
@@ -141,6 +181,10 @@ void updateSceneRenderableFromDescriptor(
     ::filament::Engine& engine,
     SceneRenderable& sceneRenderable,
     const RenderableDescriptor& descriptor,
+    const dart::gui::RenderSettings& renderSettings,
+    const dart::gui::OrbitCamera& camera,
+    int viewportWidth,
+    int viewportHeight,
     bool selected)
 {
   sceneRenderable.shapeVersion = descriptor.shapeVersion;
@@ -148,7 +192,11 @@ void updateSceneRenderableFromDescriptor(
   setRenderableTransform(
       engine, sceneRenderable.renderable, descriptor.worldTransform);
   updateRenderableSelection(
-      sceneRenderable.renderable, toRgba(descriptor.material.rgba), selected);
+      sceneRenderable.renderable,
+      toRgba(descriptor.material.rgba),
+      selected,
+      makeRenderOutputOverrideColor(
+          descriptor, renderSettings, camera, viewportWidth, viewportHeight));
   applyRenderableShadowSettings(
       engine, sceneRenderable.renderable, descriptor.material);
 }
@@ -157,7 +205,11 @@ bool updateSceneRenderablesFromDescriptors(
     ::filament::Engine& engine,
     const std::vector<RenderableDescriptor>& descriptors,
     std::vector<SceneRenderable>& sceneRenderables,
-    RenderableId selectedRenderableId)
+    RenderableId selectedRenderableId,
+    const dart::gui::RenderSettings& renderSettings,
+    const dart::gui::OrbitCamera& camera,
+    int viewportWidth,
+    int viewportHeight)
 {
   bool selectedRenderableStillVisible = selectedRenderableId == 0;
   for (SceneRenderable& sceneRenderable : sceneRenderables) {
@@ -176,7 +228,14 @@ bool updateSceneRenderablesFromDescriptors(
       selectedRenderableStillVisible = true;
     }
     updateSceneRenderableFromDescriptor(
-        engine, sceneRenderable, *descriptor, isSelected);
+        engine,
+        sceneRenderable,
+        *descriptor,
+        renderSettings,
+        camera,
+        viewportWidth,
+        viewportHeight,
+        isSelected);
   }
   return selectedRenderableStillVisible;
 }

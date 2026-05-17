@@ -197,9 +197,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
 11. Continue through the remaining `Needs strict audit` and
     `Recent parity checkpoint; still subject to strict audit re-open` rows.
     The Atlas Simbicon checkpoint has been committed and pushed as
-    `82e39c45558 Restore Atlas Simbicon controller example`; exact
-    depth-camera parity remains a named public API gap after later local
-    headlight, native window-title, and shadow-toggle repairs.
+    `82e39c45558 Restore Atlas Simbicon controller example`; a later local
+    follow-up restores depth-camera parity through public
+    `RenderSettings::outputMode` after the headlight, native window-title, and
+    shadow-toggle repairs.
     `examples/free_joint_cases/` was already restored and
     pushed as `f4963df00cd Restore free joint cases controls`, so the next
     strict-audit cursor is `examples/gui_scene_diagnostics/`.

@@ -133,12 +133,17 @@ int runFilamentGuiApplicationImpl(
 {
   AppOptions appOptions
       = parseOptions(argc, argv, applicationOptions.runDefaults);
+  const bool renderOutputModeExplicit = appOptions.renderOutputModeExplicit;
+  const auto renderOutputMode = appOptions.renderSettings.outputMode;
   appOptions.camera = applicationOptions.camera;
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;
     appOptions.preStep = applicationOptions.preStep;
     appOptions.postStep = applicationOptions.postStep;
     appOptions.renderSettings = applicationOptions.renderSettings;
+    if (renderOutputModeExplicit) {
+      appOptions.renderSettings.outputMode = renderOutputMode;
+    }
     appOptions.gizmos = applicationOptions.gizmos;
     appOptions.ikHandles = applicationOptions.ikHandles;
     appOptions.keyboardActions = applicationOptions.keyboardActions;

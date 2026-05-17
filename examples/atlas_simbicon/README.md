@@ -11,10 +11,9 @@
   panel.
 - Controls: use r to reset, a/s/d/f to push the torso, 1/2/3/4 to switch
   state machines, and the panel for gravity, harness toggles, reset, stride
-  mode, headlights, shadows, pause, step, and exit. `--gui-scale` adjusts the
-  GUI scale, and `--width`/`--height` override the default 1280x960 window size.
-- Remaining renderer-neutral API gap: the historical OSG depth camera mode
-  needs a public render-output API before exact panel parity can be restored.
+  mode, headlights, shadows, depth output, pause, step, and exit.
+  `--gui-scale` adjusts the GUI scale, and `--width`/`--height` override the
+  default 1280x960 window size.
 
 ## Run
 
@@ -28,4 +27,5 @@ Headless capture is also supported through the promoted `dart::gui` runner:
 
 ```bash
 pixi run ex atlas_simbicon --headless --frames 2 --screenshot /tmp/atlas_simbicon.ppm
+pixi run ex atlas_simbicon --headless --frames 2 --render-output depth --screenshot /tmp/atlas_simbicon_depth.ppm
 ```

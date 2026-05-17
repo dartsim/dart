@@ -393,6 +393,14 @@ dart::gui::Panel createAtlasSimbiconPanel(
       if (builder.checkbox("Shadow On/Off", shadows)) {
         context.rendering.settings->shadowsEnabled = shadows;
       }
+
+      bool depthMode = context.rendering.settings->outputMode
+                       == dart::gui::RenderOutputMode::Depth;
+      if (builder.checkbox("Depth mode", depthMode)) {
+        context.rendering.settings->outputMode
+            = depthMode ? dart::gui::RenderOutputMode::Depth
+                        : dart::gui::RenderOutputMode::Color;
+      }
     }
 
     builder.separator();
@@ -418,7 +426,6 @@ dart::gui::Panel createAtlasSimbiconPanel(
     }
 
     builder.separator();
-    builder.text("Depth mode needs a public render-output API.");
     builder.text("state machine: " + runtime->currentStateMachineName());
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("contacts: " + std::to_string(context.contactCount));

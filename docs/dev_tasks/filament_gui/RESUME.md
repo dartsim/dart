@@ -79,6 +79,11 @@ smoke analyzer validation pass locally. R24-36 adds public
 `ApplicationOptions::simulateWorld` and restores WAM IKFast's no-world-step
 kinematic lifecycle. Its focused build, marker CTest, mandatory lint, post-lint
 rebuild/CTest, and WAM screenshot smoke analyzer validation pass locally.
+R24-37 adds public `RenderSettings::outputMode` depth visualization and
+restores Atlas Simbicon's depth output toggle plus `--render-output depth`
+capture. Its focused build, marker CTest, mandatory lint, post-lint
+rebuild/CTest, and Atlas depth-output screenshot smoke analyzer validation pass
+locally.
 Do not push these local checkpoints without explicit maintainer/user approval
 in the active session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
@@ -103,15 +108,17 @@ source-owned grid helper covers the Heightmap and Point Cloud fine-grained grid
 controls, and public `ViewerLifecycleState` frame-output capture covers runtime
 recording toggles. Public `PanelBuilder` modal helpers cover exact panel modal
 workflows. Public `ApplicationOptions::simulateWorld` covers explicit
-no-world-step kinematic app lifecycles. Remaining audit gaps are mostly depth
-render outputs, articulated-body drag, TinyDNN/custom constraint restoration,
-and WAM drag-mode behavior rather than bare source-owned target handles, camera
-up-vector defaults, basic camera readouts, simple key-release callbacks,
-headlight checkboxes, basic lifecycle hooks, no-world-step lifecycles, shadow
-toggles, basic color editors, simple panel plotting, UI display/font metrics,
-runtime frame recording, exact panel modals, source-owned grid controls,
-source-owned metric summaries, source-owned target activation, source-owned COM
-overlays, or Atlas/Hubo source-owned posture/balance solving.
+no-world-step kinematic app lifecycles, and public
+`RenderSettings::outputMode` covers depth render-output toggles. Remaining
+audit gaps are mostly articulated-body drag, TinyDNN/custom constraint
+restoration, and WAM drag-mode behavior rather than bare source-owned target
+handles, camera up-vector defaults, basic camera readouts, simple key-release
+callbacks, headlight checkboxes, basic lifecycle hooks, no-world-step
+lifecycles, shadow toggles, depth output toggles, basic color editors, simple
+panel plotting, UI display/font metrics, runtime frame recording, exact panel
+modals, source-owned grid controls, source-owned metric summaries,
+source-owned target activation, source-owned COM overlays, or Atlas/Hubo
+source-owned posture/balance solving.
 
 ## Live Supervisor Steering
 

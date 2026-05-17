@@ -123,6 +123,7 @@ struct AppOptions
   bool simulateWorld = true;
   std::optional<dart::gui::OrbitCamera> camera;
   dart::gui::RenderSettings renderSettings;
+  bool renderOutputModeExplicit = false;
   std::vector<dart::gui::Panel> panels;
   std::vector<dart::gui::Gizmo> gizmos;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;

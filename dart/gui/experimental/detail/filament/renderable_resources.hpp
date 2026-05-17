@@ -119,7 +119,9 @@ void destroyMaterialResources(
 void updateRenderableSelection(
     Renderable& renderable,
     const ::filament::math::float4& descriptorColor,
-    bool selected);
+    bool selected,
+    const std::optional<::filament::math::float4>& overrideColor
+    = std::nullopt);
 
 void configureLitMaterialInstance(
     ::filament::MaterialInstance& material,
