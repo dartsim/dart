@@ -10,14 +10,17 @@ benchmarks. The latest feature-code head is `08a3ee5555c`
 `03-evidence-gates.md`.
 
 This session completed the Round 20 documentation-hygiene slice for the largest
-native-collision side-channel files and refreshed this resume handoff:
+native-collision side-channel files plus the PR staging packet, then refreshed
+this resume handoff:
 
 - `21ea43cdc12` — `Compact native collision supervisor notes`
 - `01adba243b1` — `Compact native collision completion audit`
 - `f8e251ee1c8` — `Compact native collision evidence gates`
 - `de5a1695ea8` — `Refresh native collision resume handoff`
 - `d875b95e0a5` — `Compact native collision README`
-- this `RESUME.md` update may move `HEAD`; run `git log -8 --oneline` for the
+- `9d2017f73e7` — `Refresh native collision resume after README cleanup`
+- `b16165f5859` — `Compact native collision PR packet`
+- this `RESUME.md` update may move `HEAD`; run `git log -10 --oneline` for the
   exact current hash.
 
 The compaction preserved the active no-PR boundary, current completion
@@ -29,10 +32,10 @@ history.
 
 `feature/new_coll` tracks `origin/feature/new_coll`.
 
-Before this resume update, local `HEAD` was `d875b95e0a5` and
+Before this resume update, local `HEAD` was `b16165f5859` and
 `origin/feature/new_coll` was `e0304211446`. After committing this file, the
 local branch should be ahead by one additional docs-only handoff commit. Run
-`git log -8 --oneline --decorate` for the exact current local head. Do not push
+`git log -10 --oneline --decorate` for the exact current local head. Do not push
 without explicit maintainer/user approval.
 
 PR #2652 remains closed, draft, based on `main`, and anchored to old head
@@ -41,10 +44,10 @@ that PR is closed.
 
 ## Immediate Next Step
 
-If staying within the current no-PR scope, inspect whether any remaining
-working docs need a small current-state cleanup. Otherwise stop at the
-completion boundary: the remaining work requires explicit maintainer/user
-approval for the final review surface.
+Within the current no-PR scope, the branch-local evidence packet is current.
+Stop at the completion boundary unless another small local docs issue is found:
+the remaining work requires explicit maintainer/user approval for the final
+review surface.
 
 To finish the north-star task, the maintainer/user must choose a final PR/CI
 surface. After that, collect final CI/artifact evidence, transfer the evidence
@@ -69,6 +72,8 @@ Latest docs-compaction validation:
 - The lint gate reran `check-collision-runtime-isolation` and
   `audit-collision-compat-facades`; both passed.
 - `pixi run check-lint-md` passed during the compaction checks.
+- The PR staging packet now points to evidence-owner files instead of copying
+  long historical run lists.
 
 ## Context That Would Be Lost
 
@@ -91,7 +96,7 @@ Latest docs-compaction validation:
 ```bash
 git checkout feature/new_coll
 git status --short --branch
-git log -8 --oneline --decorate
+git log -10 --oneline --decorate
 git rev-parse HEAD
 git rev-parse origin/feature/new_coll
 gh pr list --repo dartsim/dart --head feature/new_coll --state all \
