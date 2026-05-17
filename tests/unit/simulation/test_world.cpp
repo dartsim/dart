@@ -39,6 +39,7 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <numbers>
 #include <vector>
 
 #include <cmath>
@@ -431,6 +432,8 @@ TEST(WorldTests, BasicSimulation)
 }
 
 namespace {
+
+constexpr double kPi = std::numbers::pi_v<double>;
 
 struct NativeBoxGroundRunResult
 {
@@ -927,7 +930,7 @@ TEST(WorldTests, DefaultNativeRotatedBoxSettlesOnFace)
 
   EXPECT_TRUE(result.sawContact);
   EXPECT_TRUE(hasLocalAxisAlignedWithWorldZ(
-      result.finalTransform.linear(), 5.0 * M_PI / 180.0))
+      result.finalTransform.linear(), 5.0 * kPi / 180.0))
       << "rotation=\n"
       << result.finalTransform.linear();
 }
@@ -1002,7 +1005,7 @@ TEST(WorldTests, DefaultNativeHelloWorldBoxDoesNotTunnel)
   EXPECT_TRUE(sawContact);
   EXPECT_GE(lowestVertexZ, groundTop - 0.005);
   EXPECT_TRUE(hasLocalAxisAlignedWithWorldZ(
-      body->getWorldTransform().linear(), 5.0 * M_PI / 180.0))
+      body->getWorldTransform().linear(), 5.0 * kPi / 180.0))
       << "rotation=\n"
       << body->getWorldTransform().linear();
 }
@@ -1024,7 +1027,7 @@ TEST(WorldTests, DefaultNativeThinBoxDoesNotTunnel)
 TEST(WorldTests, DefaultNativeSlenderCapsuleDoesNotTunnel)
 {
   const auto result = runDefaultNativeCapsuleOnGround(
-      Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitY()).toRotationMatrix()
+      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix()
           * math::expMapRot(Eigen::Vector3d(0.0, 0.0, 0.25)),
       3000,
       0.035,
@@ -1192,7 +1195,7 @@ TEST(WorldTests, DefaultNativeCapsulePileDoesNotTunnel)
   world->addSkeleton(ground);
 
   const std::array<double, kNumLayers> yawOffsets{
-      0.0, 0.5 * M_PI, 0.25 * M_PI, -0.25 * M_PI};
+      0.0, 0.5 * kPi, 0.25 * kPi, -0.25 * kPi};
 
   std::vector<NativePrimitiveBody> capsules;
   capsules.reserve(static_cast<std::size_t>(kNumColumns * kNumLayers));
@@ -1207,7 +1210,7 @@ TEST(WorldTests, DefaultNativeCapsulePileDoesNotTunnel)
       tf.linear() = Eigen::AngleAxisd(
                         yawOffsets[static_cast<std::size_t>(layer)],
                         Eigen::Vector3d::UnitZ())
-                    * Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitY())
+                    * Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY())
                           .toRotationMatrix();
 
       capsules.push_back(createNativeFreePrimitive(
@@ -1445,7 +1448,7 @@ TEST(WorldTests, DefaultNativeMixedPrimitiveStackDoesNotTunnel)
 
   Eigen::Isometry3d capsuleTf = Eigen::Isometry3d::Identity();
   capsuleTf.translation() = Eigen::Vector3d(0.0, 0.0, groundTop + 0.43);
-  capsuleTf.linear() = Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitY())
+  capsuleTf.linear() = Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY())
                            .toRotationMatrix();
   primitives.push_back(createNativeFreePrimitive(
       world.get(),

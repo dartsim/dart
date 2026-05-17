@@ -36,13 +36,17 @@
 #include <dart/collision/collision_fwd.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
+#include <dart/export.hpp>
+
 #include <memory>
 
 namespace dart {
 namespace collision {
 
-std::unique_ptr<native::Shape> adaptShape(const dynamics::ShapePtr& shape);
-std::unique_ptr<native::Shape> adaptShape(const dynamics::ConstShapePtr& shape);
+DART_API std::unique_ptr<native::Shape> adaptShape(
+    const dynamics::ShapePtr& shape);
+DART_API std::unique_ptr<native::Shape> adaptShape(
+    const dynamics::ConstShapePtr& shape);
 
 } // namespace collision
 } // namespace dart

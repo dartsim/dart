@@ -48,7 +48,7 @@ class PersistentManifoldCache;
 
 class DartCollisionScene;
 
-class DartCollisionGroup : public CollisionGroup
+class DART_API DartCollisionGroup : public CollisionGroup
 {
 public:
   friend class DartCollisionDetector;
