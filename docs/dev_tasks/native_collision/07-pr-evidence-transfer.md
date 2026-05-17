@@ -95,6 +95,12 @@ Latest feature-code validation recorded by the task:
 
 Additional local evidence recorded in `03-evidence-gates.md`:
 
+- Pre-record docs-packet head `23dbbccc6c0`
+  (`Refresh native collision resume after PR packet cleanup`) passed
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  with all 6 top-level gates green. C++ unit tests reported 266/266 passing,
+  including the native collision labels, and the final report printed
+  `All tests passed!`.
 - `pixi run -e gazebo test-gz` passed 65/65 against fresh gz-physics checkouts.
 - Native compatibility package smoke passed with retained
   `collision-fcl`/`collision-bullet`/`collision-ode` package components routing

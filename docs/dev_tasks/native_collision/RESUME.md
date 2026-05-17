@@ -74,6 +74,9 @@ Latest docs-compaction validation:
 - `pixi run check-lint-md` passed during the compaction checks.
 - The PR staging packet now points to evidence-owner files instead of copying
   long historical run lists.
+- Pre-record docs-packet head `23dbbccc6c0` passed
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  with all 6 top-level gates green and `All tests passed!`.
 
 ## Context That Would Be Lost
 

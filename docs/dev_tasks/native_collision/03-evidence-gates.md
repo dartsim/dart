@@ -25,7 +25,7 @@ of this file per Round 20; use git history for the pre-compaction transcript.
 | Performance guard     | Comparative benchmark guards check native/reference and public adapter paths.                                    | Local pass, final benchmark artifact open.                                     |
 | Dependency removal    | Normal builds/packages/wheels avoid old collision runtime deps.                                                  | Local pass plus repaired-head workflow evidence, final PR-state evidence open. |
 | Source isolation      | Lint blocks old-engine runtime include/source leakage.                                                           | Local pass.                                                                    |
-| Full validation       | `pixi run test-all` passes on the feature-code state.                                                            | Local pass on latest feature-code head.                                        |
+| Full validation       | `pixi run test-all` passes on the feature-code state and current local packet.                                   | Local pass on latest feature-code head and docs-packet head.                   |
 
 ## North-Star Progress Scale
 
@@ -66,11 +66,19 @@ Current docs-compaction validation:
   - `pixi run lint`
   - `pixi run check-lint-md`
   - `git diff --check`
+  - `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
 - Observed output:
   - Markdown formatting passed.
   - `check-collision-runtime-isolation` passed.
   - `audit-collision-compat-facades` passed.
   - API boundary and AI command sync checks passed.
+  - `test-all` passed on pre-record docs-packet head `23dbbccc6c0`
+    (`Refresh native collision resume after PR packet cleanup`) with all 6
+    top-level gates green: linting, build, unit tests,
+    simulation-experimental tests, Python tests, and documentation. The C++
+    unit-test phase reported 266/266 tests passing, including 29
+    `collision-native` tests and 2 `collision-native-stability` tests, and the
+    final report printed `All tests passed!`.
 
 ## Current Source And Facade Guards
 

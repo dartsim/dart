@@ -62,6 +62,12 @@ Latest branch-local evidence packet:
 - `RESUME.md` records the no-PR boundary and exact commands for resuming.
 - `SUPERVISOR.md` has been compacted per Round 20 so current guidance is not
   buried under historical side-channel detail.
+- Pre-record docs-packet head `23dbbccc6c0`
+  (`Refresh native collision resume after PR packet cleanup`) passed
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  with all 6 top-level gates green and `All tests passed!`. The C++ unit-test
+  phase reported 266/266 passing tests, including `collision-native` and
+  `collision-native-stability`.
 
 Latest local guard evidence from the compaction pass:
 

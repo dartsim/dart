@@ -107,6 +107,12 @@ Branch-local evidence currently staged in `docs/dev_tasks/native_collision/`:
 - Docs-only cleanup commits after the feature-code head have run `pixi run lint`
   and `git diff --check`; the lint gate reran runtime-isolation and
   compatibility-facade audits.
+- Pre-record docs-packet head `23dbbccc6c0`
+  (`Refresh native collision resume after PR packet cleanup`) passed
+  `DART_PARALLEL_JOBS=5 CTEST_PARALLEL_LEVEL=5 CMAKE_BUILD_PARALLEL_LEVEL=5 pixi run test-all`
+  with all 6 top-level gates green. C++ unit tests reported 266/266 passing,
+  including the native collision labels, and the final report printed
+  `All tests passed!`.
 - Prior manual workflow-dispatch evidence on pushed head `1e1faf6feb1` passed
   native-only CI, gz-physics CI, the full dartpy wheel matrix, and collision
   benchmark artifact upload. Treat this as reference evidence only until the
