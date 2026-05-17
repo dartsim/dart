@@ -600,10 +600,13 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `ApplicationOptions`, renders them privately as debug-line overlays, and
     attaches them to Atlas Puppet targets.
 64. R24-2 is committed locally as `bb90788bbd2`. It wires X/Y/Z gizmo arrow
-    handles to axis-drag math for `SimpleFrame` targets. The active
-    implementation slice is now R24-3: add X/Y/Z rotation rings and wire them
-    to target rotation while keeping plane handles, hover highlight, and
-    replacing the old target-sphere affordance for later R24 slices.
+    handles to axis-drag math for `SimpleFrame` targets.
+65. R24-3 is committed locally as `a5f776f6eb1`. It adds X/Y/Z rotation rings
+    and wires them to target rotation.
+66. The latest local R24 checkpoint adds XY/YZ/XZ plane handles and wires them
+    to target translation. The active implementation slice is now R24-5:
+    hover/active highlighting, followed by replacing the old target-sphere
+    affordance in a later R24 slice.
 
 ## Checkpoint Rule
 

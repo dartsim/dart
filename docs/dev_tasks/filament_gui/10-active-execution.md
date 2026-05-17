@@ -141,11 +141,11 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   image-sequence path, and `9d5dc251b43 Add public GUI gizmo affordances` adds
   the R24-1 `dart::gui::Gizmo` public API with Atlas Puppet render-only
   registration. These local checkpoints are not pushed.
-- Current R24-3 implementation slice: add X/Y/Z gizmo rotation rings and wire
-  them to the existing rotation-drag behavior through renderer-neutral
-  hit-testing and `SimpleFrame` target rotation. Keep plane handles,
-  hover/active highlighting, and replacing the remaining example-owned target
-  spheres as follow-up R24 slices.
+- Latest local R24 checkpoint adds XY/YZ/XZ gizmo plane handles and wires them
+  to the existing plane-drag behavior through renderer-neutral hit-testing and
+  `SimpleFrame` target translation. The next R24 slice is hover/active
+  highlighting, followed by replacing the remaining Atlas target-sphere
+  affordance with public gizmos.
 - Latest pushed strict re-open checkpoint: `examples/joint_constraints/`
   restores the missing README, 640x480 launch default, loaded SKEL
   names/visuals, historical perturbation and harness console messages, and

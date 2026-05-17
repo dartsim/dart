@@ -148,6 +148,13 @@ bool isRotationGizmoHandle(dart::gui::GizmoHandleKind handle)
          || handle == dart::gui::GizmoHandleKind::RotateZ;
 }
 
+bool isPlaneTranslationGizmoHandle(dart::gui::GizmoHandleKind handle)
+{
+  return handle == dart::gui::GizmoHandleKind::TranslateXY
+         || handle == dart::gui::GizmoHandleKind::TranslateYZ
+         || handle == dart::gui::GizmoHandleKind::TranslateXZ;
+}
+
 } // namespace
 
 IkHandle* findIkHandle(DartScene& scene, RenderableId targetRenderableId)
@@ -314,9 +321,13 @@ void SelectionController::updateMouseSelection(
       if (const auto gizmoHit
           = pickNearestGizmoHandle(scene.gizmos, pressRay, guiScale)) {
         mLeftMouseStartedDrag = true;
-        mSelectedDragMode = isRotationGizmoHandle(gizmoHit->handle)
-                                ? DragMode::GizmoRotateAxis
-                                : DragMode::GizmoTranslateAxis;
+        if (isRotationGizmoHandle(gizmoHit->handle)) {
+          mSelectedDragMode = DragMode::GizmoRotateAxis;
+        } else if (isPlaneTranslationGizmoHandle(gizmoHit->handle)) {
+          mSelectedDragMode = DragMode::GizmoTranslatePlane;
+        } else {
+          mSelectedDragMode = DragMode::GizmoTranslateAxis;
+        }
         mSelectedDragIsAxisConstrained = true;
         mActiveGizmoIndex = gizmoHit->gizmoIndex;
         mSelectedDragLastRay = pressRay;
@@ -324,6 +335,7 @@ void SelectionController::updateMouseSelection(
         mSelectedDragLastCursorY = cursorY;
         mSelectedDragPlanePoint = gizmoHit->point;
         mSelectedDragAxisDirection = gizmoHit->axis;
+        mSelectedDragPlaneNormal = gizmoHit->axis;
         mSelectedRotationAxis = gizmoHit->axis;
         mSelectedRenderableId = 0;
         mSelectedPoint = gizmoHit->point;
@@ -400,6 +412,25 @@ void SelectionController::updateMouseSelection(
           ray,
           mSelectedDragPlanePoint,
           mSelectedDragAxisDirection);
+      if (translation && translation->squaredNorm() > 1e-12
+          && mActiveGizmoIndex < scene.gizmos.size()
+          && translateGizmoTarget(
+              scene.gizmos[mActiveGizmoIndex], *translation)) {
+        mSelectedDragLastRay = ray;
+        mSelectedPoint = scene.gizmos[mActiveGizmoIndex]
+                             .target->getWorldTransform()
+                             .translation();
+        lifecycle.paused = true;
+        descriptors = extractRenderables(*scene.world);
+      }
+    } else if (mSelectedDragMode == DragMode::GizmoTranslatePlane) {
+      const PickRay ray = makePerspectivePickRay(
+          camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
+      const auto translation = computePlaneDragTranslation(
+          mSelectedDragLastRay,
+          ray,
+          mSelectedDragPlanePoint,
+          mSelectedDragPlaneNormal);
       if (translation && translation->squaredNorm() > 1e-12
           && mActiveGizmoIndex < scene.gizmos.size()
           && translateGizmoTarget(

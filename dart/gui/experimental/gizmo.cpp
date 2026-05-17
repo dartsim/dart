@@ -47,6 +47,8 @@ namespace {
 
 constexpr int kRingSegments = 48;
 constexpr double kRingRadiusScale = 0.72;
+constexpr double kPlaneHandleOffsetScale = 0.22;
+constexpr double kPlaneHandleSizeScale = 0.18;
 constexpr double kTwoPi = 6.2831853071795864769;
 
 void appendLine(
@@ -168,11 +170,54 @@ void appendRingLines(
   }
 }
 
+void appendPlaneHandleLines(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& firstAxis,
+    const Eigen::Vector3d& secondAxis,
+    double offset,
+    double size,
+    const Eigen::Vector4d& color,
+    const std::string& label)
+{
+  if (!origin.allFinite() || !firstAxis.allFinite() || !secondAxis.allFinite()
+      || offset <= 0.0 || !std::isfinite(offset) || size <= 0.0
+      || !std::isfinite(size)) {
+    return;
+  }
+
+  const double firstNorm = firstAxis.norm();
+  const double secondNorm = secondAxis.norm();
+  if (!std::isfinite(firstNorm) || firstNorm < 1e-12
+      || !std::isfinite(secondNorm) || secondNorm < 1e-12) {
+    return;
+  }
+
+  const Eigen::Vector3d first = firstAxis / firstNorm;
+  const Eigen::Vector3d second = secondAxis / secondNorm;
+  const Eigen::Vector3d corner = origin + (first + second) * offset;
+  const Eigen::Vector3d a = corner;
+  const Eigen::Vector3d b = corner + first * size;
+  const Eigen::Vector3d c = corner + first * size + second * size;
+  const Eigen::Vector3d d = corner + second * size;
+  appendLine(lines, a, b, color, label);
+  appendLine(lines, b, c, color, label);
+  appendLine(lines, c, d, color, label);
+  appendLine(lines, d, a, color, label);
+}
+
 struct RaySegmentHit
 {
   double rayDistance = 0.0;
   double separation = 0.0;
   Eigen::Vector3d segmentPoint = Eigen::Vector3d::Zero();
+};
+
+struct PlaneHandleHit
+{
+  double rayDistance = 0.0;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
 };
 
 std::string makeGizmoLabel(const Gizmo& gizmo)
@@ -189,6 +234,20 @@ GizmoHandleKind handleKindForAxisIndex(int axisIndex)
       return GizmoHandleKind::TranslateY;
     case 2:
       return GizmoHandleKind::TranslateZ;
+    default:
+      return GizmoHandleKind::None;
+  }
+}
+
+GizmoHandleKind planeHandleKindForNormalAxisIndex(int axisIndex)
+{
+  switch (axisIndex) {
+    case 0:
+      return GizmoHandleKind::TranslateYZ;
+    case 1:
+      return GizmoHandleKind::TranslateXZ;
+    case 2:
+      return GizmoHandleKind::TranslateXY;
     default:
       return GizmoHandleKind::None;
   }
@@ -274,6 +333,68 @@ std::optional<RaySegmentHit> intersectRaySegment(
   return hit;
 }
 
+std::optional<PlaneHandleHit> intersectRayPlaneHandle(
+    const PickRay& ray,
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& firstAxis,
+    const Eigen::Vector3d& secondAxis,
+    double offset,
+    double size)
+{
+  if (!ray.origin.allFinite() || !ray.direction.allFinite()
+      || !origin.allFinite() || !firstAxis.allFinite()
+      || !secondAxis.allFinite() || offset <= 0.0 || !std::isfinite(offset)
+      || size <= 0.0 || !std::isfinite(size)) {
+    return std::nullopt;
+  }
+
+  const double rayNorm = ray.direction.norm();
+  const double firstNorm = firstAxis.norm();
+  const double secondNorm = secondAxis.norm();
+  if (!std::isfinite(rayNorm) || rayNorm < 1e-12 || !std::isfinite(firstNorm)
+      || firstNorm < 1e-12 || !std::isfinite(secondNorm)
+      || secondNorm < 1e-12) {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d direction = ray.direction / rayNorm;
+  const Eigen::Vector3d first = firstAxis / firstNorm;
+  const Eigen::Vector3d second = secondAxis / secondNorm;
+  Eigen::Vector3d normal = first.cross(second);
+  const double normalNorm = normal.norm();
+  if (!std::isfinite(normalNorm) || normalNorm < 1e-12) {
+    return std::nullopt;
+  }
+  normal /= normalNorm;
+
+  const Eigen::Vector3d corner = origin + (first + second) * offset;
+  const double denom = direction.dot(normal);
+  if (!std::isfinite(denom) || std::abs(denom) < 1e-12) {
+    return std::nullopt;
+  }
+
+  const double rayDistance = (corner - ray.origin).dot(normal) / denom;
+  if (!std::isfinite(rayDistance) || rayDistance < 0.0) {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d point = ray.origin + direction * rayDistance;
+  const Eigen::Vector3d local = point - corner;
+  const double firstParameter = local.dot(first);
+  const double secondParameter = local.dot(second);
+  if (!std::isfinite(firstParameter) || !std::isfinite(secondParameter)
+      || firstParameter < 0.0 || firstParameter > size || secondParameter < 0.0
+      || secondParameter > size) {
+    return std::nullopt;
+  }
+
+  PlaneHandleHit hit;
+  hit.rayDistance = rayDistance;
+  hit.point = point;
+  hit.normal = normal;
+  return hit;
+}
+
 } // namespace
 
 std::vector<DebugLineDescriptor> makeGizmoDebugLines(
@@ -314,6 +435,38 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
     }
     appendFreeMoveHandle(
         lines, origin, length * 0.18, gizmo.colors.highlight, label);
+
+    const double planeOffset = length * kPlaneHandleOffsetScale;
+    const double planeSize = length * kPlaneHandleSizeScale;
+    appendPlaneHandleLines(
+        lines,
+        origin,
+        rotation.col(0),
+        rotation.col(1),
+        planeOffset,
+        planeSize,
+        gizmo.colors.z,
+        label + ".translate_xy");
+    if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)) {
+      appendPlaneHandleLines(
+          lines,
+          origin,
+          rotation.col(1),
+          rotation.col(2),
+          planeOffset,
+          planeSize,
+          gizmo.colors.x,
+          label + ".translate_yz");
+      appendPlaneHandleLines(
+          lines,
+          origin,
+          rotation.col(0),
+          rotation.col(2),
+          planeOffset,
+          planeSize,
+          gizmo.colors.y,
+          label + ".translate_xz");
+    }
   }
 
   if (hasGizmoFlag(gizmo.flags, GizmoFlags::Rotate)) {
@@ -409,6 +562,20 @@ std::optional<GizmoHandleHit> pickNearestGizmoHandle(
         nearestSeparation = hit.separation;
       }
     };
+    const auto considerPlaneHit = [&](const PlaneHandleHit& hit,
+                                      GizmoHandleKind handle,
+                                      const Eigen::Vector3d& normal) {
+      if (!nearest || hit.rayDistance < nearest->distance) {
+        GizmoHandleHit gizmoHit;
+        gizmoHit.gizmoIndex = gizmoIndex;
+        gizmoHit.handle = handle;
+        gizmoHit.distance = hit.rayDistance;
+        gizmoHit.point = hit.point;
+        gizmoHit.axis = normal;
+        nearest = gizmoHit;
+        nearestSeparation = 0.0;
+      }
+    };
 
     const int axisCount
         = hasGizmoFlag(gizmo.flags, GizmoFlags::Translate) ? 3 : 2;
@@ -427,6 +594,38 @@ std::optional<GizmoHandleHit> pickNearestGizmoHandle(
         if (hit) {
           considerHit(*hit, handleKindForAxisIndex(axisIndex), axis);
         }
+      }
+
+      const double planeOffset = length * kPlaneHandleOffsetScale;
+      const double planeSize = length * kPlaneHandleSizeScale;
+      const auto considerPlane = [&](int normalAxisIndex,
+                                     int firstAxisIndex,
+                                     int secondAxisIndex) {
+        Eigen::Vector3d normal = rotation.col(normalAxisIndex);
+        const double normalNorm = normal.norm();
+        if (!normal.allFinite() || !std::isfinite(normalNorm)
+            || normalNorm < 1e-12) {
+          return;
+        }
+        normal /= normalNorm;
+
+        const auto hit = intersectRayPlaneHandle(
+            ray,
+            origin,
+            rotation.col(firstAxisIndex),
+            rotation.col(secondAxisIndex),
+            planeOffset,
+            planeSize);
+        if (hit) {
+          considerPlaneHit(
+              *hit, planeHandleKindForNormalAxisIndex(normalAxisIndex), normal);
+        }
+      };
+
+      considerPlane(2, 0, 1);
+      if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)) {
+        considerPlane(0, 1, 2);
+        considerPlane(1, 0, 2);
       }
     }
 

@@ -102,6 +102,7 @@ private:
     Translate,
     Rotate,
     GizmoTranslateAxis,
+    GizmoTranslatePlane,
     GizmoRotateAxis,
   };
 

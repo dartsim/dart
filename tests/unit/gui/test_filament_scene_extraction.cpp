@@ -834,6 +834,14 @@ TEST(FilamentSceneExtraction, GizmoDebugLinesFollowTargetFrame)
             return line.label == "atlas_target.rotate_x";
           }),
       lines.end());
+  EXPECT_NE(
+      std::find_if(
+          lines.begin(),
+          lines.end(),
+          [](const dart::gui::DebugLineDescriptor& line) {
+            return line.label == "atlas_target.translate_xy";
+          }),
+      lines.end());
 
   dart::gui::Gizmo invalid;
   EXPECT_TRUE(dart::gui::makeGizmoDebugLines(invalid).empty());
@@ -893,6 +901,42 @@ TEST(FilamentSceneExtraction, GizmoAxisHandlePickingDrivesTargetFrame)
   dart::gui::Gizmo invalid;
   EXPECT_FALSE(
       dart::gui::translateGizmoTarget(invalid, Eigen::Vector3d::UnitX()));
+}
+
+TEST(FilamentSceneExtraction, GizmoPlaneHandlePickingDrivesTargetFrame)
+{
+  auto target = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "gizmo_target");
+
+  dart::gui::Gizmo gizmo;
+  gizmo.label = "plane_target";
+  gizmo.target = target;
+  gizmo.size = 1.0;
+
+  std::vector<dart::gui::Gizmo> gizmos{gizmo};
+  const dart::gui::PickRay xyHandleRay{
+      Eigen::Vector3d(0.30, 0.30, 1.0), Eigen::Vector3d(0.0, 0.0, -1.0)};
+  const auto hit
+      = dart::gui::pickNearestGizmoHandle(gizmos, xyHandleRay, 1.0, 0.05);
+
+  ASSERT_TRUE(hit.has_value());
+  EXPECT_EQ(hit->gizmoIndex, 0u);
+  EXPECT_EQ(hit->handle, dart::gui::GizmoHandleKind::TranslateXY);
+  EXPECT_TRUE(hit->axis.isApprox(Eigen::Vector3d::UnitZ()));
+  EXPECT_TRUE(hit->point.isApprox(Eigen::Vector3d(0.30, 0.30, 0.0)));
+
+  const dart::gui::PickRay previousRay{
+      Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 0.0, -1.0)};
+  const dart::gui::PickRay currentRay{
+      Eigen::Vector3d(1.0, 2.0, 1.0), Eigen::Vector3d(0.0, 0.0, -1.0)};
+  const auto translation = dart::gui::computePlaneDragTranslation(
+      previousRay, currentRay, hit->point, hit->axis);
+  ASSERT_TRUE(translation.has_value());
+  EXPECT_TRUE(translation->isApprox(Eigen::Vector3d(1.0, 2.0, 0.0)));
+
+  EXPECT_TRUE(dart::gui::translateGizmoTarget(gizmo, *translation));
+  EXPECT_TRUE(target->getWorldTransform().translation().isApprox(
+      Eigen::Vector3d(1.0, 2.0, 0.0)));
 }
 
 TEST(FilamentSceneExtraction, GizmoRotationHandleDrivesTargetFrame)
@@ -2385,6 +2429,7 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("axis-arrow dragging"), std::string::npos);
   EXPECT_NE(readmeSource.find("rotation"), std::string::npos);
   EXPECT_NE(readmeSource.find("ring dragging"), std::string::npos);
+  EXPECT_NE(readmeSource.find("plane handles"), std::string::npos);
   EXPECT_NE(readmeSource.find("pixi run ex atlas_puppet"), std::string::npos);
   EXPECT_NE(readmeSource.find("1280"), std::string::npos);
   EXPECT_NE(

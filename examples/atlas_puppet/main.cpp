@@ -590,7 +590,7 @@ dart::gui::Panel createAtlasPuppetPanel()
                               dart::gui::PanelContext& context) {
     builder.text("Atlas whole-body IK puppet");
     builder.text("Press 1-4 or select a target handle.");
-    builder.text("Left-drag gizmo arrows/rings or Ctrl-left drag a handle.");
+    builder.text("Left-drag gizmo arrows/planes/rings or Ctrl-left drag.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text("WASD moves the root; Q/E yaw; F/Z height.");

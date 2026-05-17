@@ -11,17 +11,18 @@ The branch is `feature/filament-gui-full-execution`, tracking
 of the tracked remote with the Fetch image-sequence capture checkpoint
 `de1873ddab7 Document Fetch image-sequence capture`, and this handoff includes
 the R24-1 public gizmo-affordance checkpoint, the R24-2 gizmo axis-handle drag
-checkpoint, and the current R24-3 rotation-ring checkpoint. Do not push these
-local checkpoints without
+checkpoint, the R24-3 rotation-ring checkpoint, and the current R24-4
+plane-handle checkpoint. Do not push these local checkpoints without
 explicit maintainer/user approval in the active session. Leave the pre-existing
 local `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the
 maintainer explicitly asks to include them.
 
-Immediate next slice after R24-3: continue the R24 Gizmo work from
-`STEERING.md`. The public `dart::gui::Gizmo` registration surface, render-only
-debug-line affordances, X/Y/Z axis-arrow dragging, and X/Y/Z rotation-ring
-dragging are in place for `SimpleFrame` targets, but plane handles,
-hover/active highlighting, and replacing the remaining example-owned
+Immediate next slice after R24-4: continue the R24 Gizmo work from
+`STEERING.md` with R24-5 hover/active highlighting. The public
+`dart::gui::Gizmo` registration surface, render-only debug-line affordances,
+X/Y/Z axis-arrow dragging, X/Y/Z rotation-ring dragging, and XY/YZ/XZ
+plane-handle dragging are in place for `SimpleFrame` targets, but
+hover/active highlighting and replacing the remaining example-owned
 target-sphere controls with public gizmos are still follow-up work.
 
 ## Live Supervisor Steering
