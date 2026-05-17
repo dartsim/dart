@@ -166,6 +166,16 @@ struct PanelContext
     RenderSettings* settings = nullptr;
   };
 
+  struct UiState
+  {
+    Eigen::Vector2d displaySize = Eigen::Vector2d::Zero();
+    Eigen::Vector2d framebufferScale = Eigen::Vector2d::Ones();
+    double fontSize = 0.0;
+    double fontGlobalScale = 1.0;
+    double uiScale = 1.0;
+    std::optional<std::array<int, 2>> fontTextureSize;
+  };
+
   dart::simulation::World* world = nullptr;
   ViewerLifecycleState* lifecycle = nullptr;
   std::string selectedLabel;
@@ -176,6 +186,7 @@ struct PanelContext
   CameraViewState camera;
   LightingState lighting;
   RenderingState rendering;
+  UiState ui;
 };
 
 struct Panel

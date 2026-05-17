@@ -288,12 +288,12 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   guards through public `dart::gui`; a later checkpoint also restores
   source-owned render FPS, rendered/skipped frame counts, and rolling step-time
   summaries. The current local follow-up adds public `PanelBuilder::plotLines`
-  and restores the step-time history plot; backend display/font debug metrics
-  remain a named backend-debug API gap. Its validation passed focused
-  `lcp_physics` and `UNIT_gui_FilamentSceneExtraction` build, focused CTest,
-  mandatory `pixi run lint`, post-lint focused build/CTest, and post-lint
-  LCP pixi headless screenshot analyzer smoke with 307200/307200 nonzero
-  pixels.
+  and restores the step-time history plot; the next local follow-up adds public
+  `PanelContext::UiState` metrics and restores display/font debug diagnostics
+  without backend hooks. Its validation passed focused `lcp_physics` and
+  `UNIT_gui_FilamentSceneExtraction` build, focused CTest, mandatory
+  `pixi run lint`, post-lint focused build/CTest, and post-lint LCP pixi
+  headless screenshot analyzer smoke with 307200/307200 nonzero pixels.
 - Latest pushed strict re-open checkpoint: `examples/mimic_pendulums/`
   restores live reset/ODE-collision/PGS-solver controls, original rig names
   with base colors, a source-owned XY grid,

@@ -178,6 +178,12 @@ std::string formatFixed(double value, int precision)
   return stream.str();
 }
 
+std::string formatPair(const Eigen::Vector2d& value, int precision)
+{
+  return formatFixed(value.x(), precision) + " x "
+         + formatFixed(value.y(), precision);
+}
+
 double elapsedMilliseconds(std::chrono::steady_clock::time_point start)
 {
   return std::chrono::duration<double, std::milli>(
@@ -927,7 +933,21 @@ dart::gui::Panel createLcpPanel(const std::shared_ptr<LcpPhysicsState>& state)
       const std::vector<double> stepTimeValues
           = copyMetricHistory(state->stepTimeHistory);
       builder.plotLines("Step time (ms)", stepTimeValues);
-      builder.text("Display/font metrics need backend debug access.");
+    }
+
+    if (builder.collapsingHeader("UI Debug")) {
+      builder.text("DisplaySize: " + formatPair(context.ui.displaySize, 0));
+      builder.text(
+          "FramebufferScale: " + formatPair(context.ui.framebufferScale, 2));
+      builder.text("FontSize: " + formatFixed(context.ui.fontSize, 1));
+      builder.text(
+          "FontGlobalScale: " + formatFixed(context.ui.fontGlobalScale, 3));
+      builder.text("UiScale: " + formatFixed(context.ui.uiScale, 2));
+      if (context.ui.fontTextureSize.has_value()) {
+        builder.text(
+            "FontTex: " + std::to_string((*context.ui.fontTextureSize)[0])
+            + " x " + std::to_string((*context.ui.fontTextureSize)[1]));
+      }
     }
 
     if (builder.collapsingHeader("About This Scenario")) {

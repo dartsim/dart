@@ -136,6 +136,8 @@
     examples.
   - Added public `dart::gui::PanelBuilder` line plotting and restored the
     `lcp_physics` step-time history plot.
+  - Added public `dart::gui::PanelContext` UI metrics and restored the
+    `lcp_physics` display/font debug diagnostics.
   - Restored the Heightmap and Point Cloud examples' fine-grained scene-grid
     controls with source-owned DART line geometry.
   - Restored the `hubo_puppet` support overlay's blue/red center-of-mass

@@ -771,6 +771,13 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
     selectedLabel = context.selectedLabel;
     builder.text("selected:" + context.selectedLabel);
     builder.text("eye-x:" + std::to_string(context.camera.eye.x()));
+    builder.text(
+        "ui-display-width:" + std::to_string(context.ui.displaySize.x()));
+    if (context.ui.fontTextureSize.has_value()) {
+      builder.text(
+          "ui-font-texture-width:"
+          + std::to_string((*context.ui.fontTextureSize)[0]));
+    }
     if (context.lighting.headlightsEnabled != nullptr) {
       bool enabled = *context.lighting.headlightsEnabled;
       if (builder.checkbox("Headlights On/Off", enabled)) {
@@ -793,6 +800,12 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   context.camera.eye = Eigen::Vector3d(4.0, 5.0, 6.0);
   context.camera.target = Eigen::Vector3d(1.0, 2.0, 3.0);
   context.camera.up = Eigen::Vector3d::UnitY();
+  context.ui.displaySize = Eigen::Vector2d(640.0, 480.0);
+  context.ui.framebufferScale = Eigen::Vector2d(2.0, 2.0);
+  context.ui.fontSize = 14.0;
+  context.ui.fontGlobalScale = 1.25;
+  context.ui.uiScale = 1.5;
+  context.ui.fontTextureSize = std::array<int, 2>{512, 256};
   context.lighting.headlightsEnabled = &headlights;
   context.rendering.settings = &renderSettings;
   panel.build(builder);
@@ -809,6 +822,14 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(context.camera.eye.isApprox(Eigen::Vector3d(4.0, 5.0, 6.0)));
   EXPECT_TRUE(context.camera.target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_TRUE(context.camera.up.isApprox(Eigen::Vector3d::UnitY()));
+  EXPECT_TRUE(context.ui.displaySize.isApprox(Eigen::Vector2d(640.0, 480.0)));
+  EXPECT_TRUE(context.ui.framebufferScale.isApprox(Eigen::Vector2d(2.0, 2.0)));
+  EXPECT_DOUBLE_EQ(context.ui.fontSize, 14.0);
+  EXPECT_DOUBLE_EQ(context.ui.fontGlobalScale, 1.25);
+  EXPECT_DOUBLE_EQ(context.ui.uiScale, 1.5);
+  ASSERT_TRUE(context.ui.fontTextureSize.has_value());
+  EXPECT_EQ((*context.ui.fontTextureSize)[0], 512);
+  EXPECT_EQ((*context.ui.fontTextureSize)[1], 256);
   EXPECT_TRUE(headlights);
   EXPECT_TRUE(tint.isApprox(Eigen::Vector4d(0.25, 0.5, 0.75, 0.85)));
   EXPECT_TRUE(renderSettings.shadowsEnabled);
@@ -846,6 +867,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "end-table",
           "text:selected:box",
           "text:eye-x:4.000000",
+          "text:ui-display-width:640.000000",
+          "text:ui-font-texture-width:512",
           "checkbox:Headlights On/Off",
           "checkbox:Shadow On/Off"}));
 
@@ -3546,6 +3569,15 @@ TEST(FilamentSceneExtraction, LcpAndMimicExamplesPreserveParityMarkers)
       lcpSource.find("builder.plotLines(\"Step time (ms)\""),
       std::string::npos);
   EXPECT_NE(
+      lcpSource.find("builder.collapsingHeader(\"UI Debug\""),
+      std::string::npos);
+  EXPECT_NE(lcpSource.find("DisplaySize:"), std::string::npos);
+  EXPECT_NE(lcpSource.find("FramebufferScale:"), std::string::npos);
+  EXPECT_NE(lcpSource.find("FontSize:"), std::string::npos);
+  EXPECT_NE(lcpSource.find("FontGlobalScale:"), std::string::npos);
+  EXPECT_NE(lcpSource.find("UiScale:"), std::string::npos);
+  EXPECT_NE(lcpSource.find("FontTex:"), std::string::npos);
+  EXPECT_EQ(
       lcpSource.find("Display/font metrics need backend debug access"),
       std::string::npos);
   EXPECT_EQ(

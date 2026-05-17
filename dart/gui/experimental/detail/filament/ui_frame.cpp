@@ -47,6 +47,7 @@
 
 #include <imgui.h>
 
+#include <array>
 #include <string>
 #include <vector>
 
@@ -80,6 +81,18 @@ void updateFrameUi(
   const std::string selectedLabel = selectionController.selectedLabel();
   const auto cameraBasis
       = dart::gui::makeOrbitCameraBasis(cameraController.camera);
+  dart::gui::PanelContext::UiState uiState;
+  uiState.displaySize
+      = Eigen::Vector2d(imguiIo.DisplaySize.x, imguiIo.DisplaySize.y);
+  uiState.framebufferScale = Eigen::Vector2d(
+      imguiIo.DisplayFramebufferScale.x, imguiIo.DisplayFramebufferScale.y);
+  uiState.fontSize = ImGui::GetFontSize();
+  uiState.fontGlobalScale = imguiIo.FontGlobalScale;
+  uiState.uiScale = guiScale;
+  if (imguiIo.Fonts != nullptr && imguiIo.Fonts->TexData != nullptr) {
+    uiState.fontTextureSize = std::array<int, 2>{
+        imguiIo.Fonts->TexData->Width, imguiIo.Fonts->TexData->Height};
+  }
   dart::gui::PanelContext panelContext{
       dartScene.world.get(),
       &lifecycle,
@@ -90,7 +103,8 @@ void updateFrameUi(
       dartScene.world->getLastCollisionResult().getNumContacts(),
       {cameraBasis.eye, cameraController.camera.target, cameraBasis.up},
       {&headlightsEnabled},
-      {&dartScene.renderSettings}};
+      {&dartScene.renderSettings},
+      uiState};
   const bool debugOptionsChanged = renderBuiltInStatusPanel(
       sceneName(exampleScene),
       panelContext.simulationTime,

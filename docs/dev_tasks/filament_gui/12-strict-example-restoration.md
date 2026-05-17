@@ -408,9 +408,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     README option inventory, and marker guards now. A later checkpoint restored
     source-owned render FPS, rendered/skipped frame counts, and rolling
     step-time summaries. Another local checkpoint restores the step-time plot
-    through public `PanelBuilder::plotLines`. Keep backend-specific display/font
-    debug metrics as a named backend-debug API gap. Implementation and pre-lint
-    validation are
+    through public `PanelBuilder::plotLines`. The next local checkpoint adds
+    public `PanelContext::UiState` metrics and restores display/font debug
+    diagnostics without backend hooks. Implementation and pre-lint validation
+    are
     complete: focused `lcp_physics` and `UNIT_gui_FilamentSceneExtraction`
     build, focused CTest, direct `--list`, software-GL screenshot and `--out`
     image-sequence analyzer checks, pixi runner screenshot analyzer check,
@@ -423,7 +424,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `UNIT_gui_FilamentSceneExtraction` build, focused CTest, mandatory
     `pixi run lint`, post-lint focused build/CTest, and post-lint
     LCP pixi headless screenshot analyzer smoke with 307200/307200 nonzero
-    pixels.
+    pixels. UI metrics follow-up validation passed: focused `lcp_physics` and
+    `UNIT_gui_FilamentSceneExtraction` build, focused CTest, mandatory
+    `pixi run lint`, post-lint focused build/CTest, and post-lint LCP pixi
+    headless screenshot analyzer smoke with 307200/307200 nonzero pixels.
 41. The active strict re-open cursor is now `examples/mimic_pendulums/`;
     compare it against `520993d7301^:examples/mimic_pendulums` before coding
     past that slice.
