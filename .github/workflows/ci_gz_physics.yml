@@ -5,8 +5,7 @@ name: CI gz-physics
 on:
   push:
     branches:
-      - "main"
-      - "release-*"
+      - "**"
   pull_request:
     branches:
       - "**"
@@ -22,9 +21,13 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
+      core_branch_push: ${{ steps.scope.outputs.core_branch_push }}
       code: ${{ steps.filter.outputs.code }}
+      full_ci: ${{ steps.scope.outputs.full_ci }}
     steps:
       - uses: actions/checkout@v6
+      - uses: ./.github/actions/ci-scope
+        id: scope
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -32,7 +35,12 @@ jobs:
 
   test_gazebo:
     needs: changes
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
+    if: >-
+      (needs.changes.outputs.full_ci == 'true' ||
+      needs.changes.outputs.core_branch_push == 'true') &&
+      (github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.code == 'true')
     name: GZ Physics Tests
     runs-on: ubuntu-latest
     env:
