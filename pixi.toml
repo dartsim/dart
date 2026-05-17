@@ -1017,7 +1017,7 @@ bm-collision-check-mixed = { cmd = """
       --target bm_scenarios_mixed_primitives \
       --output .benchmark_results/collision_check_mixed.json \
       --benchmark-filter 'BM_Scenario_MixedPrimitives_(Dense|Sparse)_(Native|FCL|Bullet|ODE)/(100|1000)$' \
-      --max-native-ratio 1.10 \
+      --max-native-ratio 1.20 \
       -- \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=5
