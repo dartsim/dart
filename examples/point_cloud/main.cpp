@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../gui_source_grid.hpp"
+
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
@@ -102,7 +104,7 @@ struct PointCloudState
   dart::dynamics::VisualAspect* pointCloudVisual = nullptr;
   std::shared_ptr<dart::dynamics::SimpleFrame> sensorFrame;
   dart::dynamics::VisualAspect* sensorVisual = nullptr;
-  dart::dynamics::VisualAspect* gridVisual = nullptr;
+  dart::examples::SourceOwnedGridState grid;
 #if DART_HAVE_OCTOMAP
   std::shared_ptr<dart::dynamics::SimpleFrame> voxelGridFrame;
   std::shared_ptr<dart::dynamics::VoxelGridShape> voxelGridShape;
@@ -116,7 +118,6 @@ struct PointCloudState
   bool updateRobot = true;
   bool pointCloudVisible = true;
   bool sensorVisible = true;
-  bool gridVisible = true;
   bool voxelGridVisible = true;
   double visualSize = 0.035;
   Eigen::Vector4d pointCloudColor = Eigen::Vector4d(0.20, 0.38, 0.94, 0.78);
@@ -264,38 +265,6 @@ std::shared_ptr<dart::dynamics::SimpleFrame> createSensorFrame()
   frame->setShape(std::make_shared<dart::dynamics::SphereShape>(0.05));
   frame->getVisualAspect(true)->setRGBA(Eigen::Vector4d(0.95, 0.18, 0.12, 1.0));
   return frame;
-}
-
-std::shared_ptr<dart::dynamics::LineSegmentShape> createGridShape()
-{
-  auto grid = std::make_shared<dart::dynamics::LineSegmentShape>(1.5f);
-  constexpr double halfExtent = 1.6;
-  constexpr int lineCount = 16;
-  for (int i = 0; i <= lineCount; ++i) {
-    const double coordinate
-        = -halfExtent + 2.0 * halfExtent * static_cast<double>(i) / lineCount;
-    const auto startX
-        = grid->addVertex(Eigen::Vector3d(-halfExtent, coordinate, -0.01));
-    grid->addVertex(Eigen::Vector3d(halfExtent, coordinate, -0.01), startX);
-    const auto startY
-        = grid->addVertex(Eigen::Vector3d(coordinate, -halfExtent, -0.01));
-    grid->addVertex(Eigen::Vector3d(coordinate, halfExtent, -0.01), startY);
-  }
-  return grid;
-}
-
-dart::dynamics::SkeletonPtr createPointCloudGrid()
-{
-  auto grid = dart::dynamics::Skeleton::create(kGridName);
-  auto pair = grid->createJointAndBodyNodePair<dart::dynamics::WeldJoint>();
-  auto* body = pair.second;
-  body->setName("point_cloud_grid_body");
-  auto* shapeNode = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
-      createGridShape());
-  shapeNode->setName("point_cloud_grid_shape");
-  shapeNode->getVisualAspect()->setRGBA(
-      Eigen::Vector4d(0.44, 0.52, 0.47, 0.46));
-  return grid;
 }
 
 Vector3List generatePointCloudInBox(double time, std::size_t numPoints)
@@ -619,9 +588,6 @@ dart::gui::Panel createPointCloudPanel(std::shared_ptr<PointCloudState> state)
     if (builder.checkbox("Sensor Origin", state->sensorVisible)) {
       applyVisibility(state->sensorVisual, state->sensorVisible);
     }
-    if (builder.checkbox("Show Grid", state->gridVisible)) {
-      applyVisibility(state->gridVisual, state->gridVisible);
-    }
 
 #if DART_HAVE_OCTOMAP
     if (builder.checkbox("Voxel Grid", state->voxelGridVisible)) {
@@ -657,10 +623,11 @@ dart::gui::Panel createPointCloudPanel(std::shared_ptr<PointCloudState> state)
     }
 
     builder.separator();
+    dart::examples::addSourceOwnedGridPanelControls(builder, state->grid);
+    builder.separator();
     builder.text("User Guide");
     builder.text("Select a frame, then Ctrl-left drag or use arrow keys.");
-    builder.text(
-        "Detailed debug-grid API controls are a follow-up public gap.");
+    builder.text("Grid controls edit source-owned DART line geometry.");
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("contacts: " + std::to_string(context.contactCount));
     builder.text("selected: " + context.selectedLabel);
@@ -679,11 +646,14 @@ std::shared_ptr<PointCloudState> createPointCloudState()
   state->initialRobotPositions = state->robot->getPositions();
   state->world->addSkeleton(state->robot);
   state->world->addSkeleton(createGround());
-  state->world->addSkeleton(createPointCloudGrid());
-  state->gridVisual = state->world->getSkeleton(kGridName)
-                          ->getBodyNode("point_cloud_grid_body")
-                          ->getShapeNodeWith<dart::dynamics::VisualAspect>(0)
-                          ->getVisualAspect();
+  state->grid.lineCount = 16.0;
+  state->grid.lineStepSize = 0.2;
+  state->grid.zOffset = -0.01;
+  state->grid.minorLineColor = Eigen::Vector4d(0.38, 0.48, 0.42, 0.36);
+  state->grid.majorLineColor = Eigen::Vector4d(0.48, 0.58, 0.50, 0.52);
+  state->grid.axisLineColor = Eigen::Vector4d(0.20, 0.30, 0.24, 0.76);
+  dart::examples::attachSourceOwnedGridFrames(
+      state->world, state->grid, kGridName);
 
   state->pointCloudShape = createPointCloudShape();
   state->pointCloudFrame = createPointCloudFrame(state->pointCloudShape);

@@ -796,6 +796,16 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     screenshot analyzer smoke for `hardcoded_design`, aggregate `examples`
     build, mandatory `pixi run lint`, post-lint focused rebuild/CTest, and
     post-lint pixi screenshot smoke.
+85. The current R24-24 implementation restores the historical Heightmap and
+    Point Cloud fine-grained grid controls without reviving OSG `GridVisual` or
+    backend debug-overlay hooks. Both examples now consume a shared
+    source-owned grid helper that rebuilds DART `LineSegmentShape` frames for
+    grid plane, offset, line count, step size, major/minor/axis widths, and
+    line colors. Validation passed focused build for `heightmap`,
+    `point_cloud`, and `UNIT_gui_FilamentSceneExtraction`, focused CTest, pixi
+    software-GL screenshot analyzer smokes for both examples, aggregate
+    `examples` build, mandatory `pixi run lint`, post-lint focused
+    rebuild/CTest, and post-lint pixi screenshot smokes.
 
 ## Checkpoint Rule
 

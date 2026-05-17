@@ -3235,6 +3235,19 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
       std::string::npos);
   EXPECT_EQ(hardcodedSource.find("options.defaultScene"), std::string::npos);
 
+  const auto sourceGridHeader = readSourceFile(
+      std::filesystem::path("examples") / "gui_source_grid.hpp");
+  EXPECT_NE(sourceGridHeader.find("SourceOwnedGridState"), std::string::npos);
+  EXPECT_NE(sourceGridHeader.find("SourceOwnedGridPlane"), std::string::npos);
+  EXPECT_NE(sourceGridHeader.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(
+      sourceGridHeader.find("addSourceOwnedGridPanelControls"),
+      std::string::npos);
+  EXPECT_NE(sourceGridHeader.find("Show Grid"), std::string::npos);
+  EXPECT_NE(sourceGridHeader.find("Major Line Color"), std::string::npos);
+  EXPECT_NE(sourceGridHeader.find("Minor Line Color"), std::string::npos);
+  EXPECT_EQ(sourceGridHeader.find("GridVisual"), std::string::npos);
+
   const auto heightmapSource = readSourceFile(
       std::filesystem::path("examples") / "heightmap" / "main.cpp");
   const auto heightmapReadmeSource = readSourceFile(
@@ -3256,8 +3269,13 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
       heightmapSource.find("Heightmap rendering example"), std::string::npos);
   EXPECT_NE(heightmapSource.find("builder.slider"), std::string::npos);
   EXPECT_NE(heightmapSource.find("Show Terrain"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("Show Grid"), std::string::npos);
   EXPECT_NE(heightmapSource.find("Terrain Color"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("SourceOwnedGridState"), std::string::npos);
+  EXPECT_NE(
+      heightmapSource.find("attachSourceOwnedGridFrames"), std::string::npos);
+  EXPECT_NE(
+      heightmapSource.find("addSourceOwnedGridPanelControls"),
+      std::string::npos);
   EXPECT_NE(heightmapSource.find("Regenerate"), std::string::npos);
   EXPECT_NE(heightmapSource.find("requestSingleStep"), std::string::npos);
   EXPECT_NE(heightmapSource.find("requestExit"), std::string::npos);
@@ -3266,11 +3284,13 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
   EXPECT_NE(heightmapSource.find("heightmap_ball_"), std::string::npos);
   EXPECT_NE(heightmapSource.find("box_ball_"), std::string::npos);
   EXPECT_NE(heightmapSource.find("reference_box"), std::string::npos);
-  EXPECT_NE(heightmapSource.find("debug-grid API"), std::string::npos);
+  EXPECT_EQ(heightmapSource.find("debug-grid API"), std::string::npos);
   EXPECT_NE(heightmapReadmeSource.find("Heightmap Example"), std::string::npos);
   EXPECT_NE(heightmapReadmeSource.find("dart::gui"), std::string::npos);
   EXPECT_NE(
       heightmapReadmeSource.find("edit the terrain color"), std::string::npos);
+  EXPECT_NE(heightmapReadmeSource.find("line count"), std::string::npos);
+  EXPECT_NE(heightmapReadmeSource.find("major/minor/axis"), std::string::npos);
   EXPECT_NE(heightmapReadmeSource.find("--demo alignment"), std::string::npos);
   EXPECT_EQ(heightmapSource.find("options.defaultScene"), std::string::npos);
 
@@ -3296,7 +3316,9 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
   EXPECT_NE(pointCloudSource.find("VoxelGridShape"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("visual_voxel_grid"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("point_cloud_grid"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("LineSegmentShape"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("SourceOwnedGridState"), std::string::npos);
+  EXPECT_NE(
+      pointCloudSource.find("attachSourceOwnedGridFrames"), std::string::npos);
   EXPECT_NE(
       pointCloudSource.find("Point Cloud & Voxel Grid Demo"),
       std::string::npos);
@@ -3311,7 +3333,7 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
   EXPECT_NE(pointCloudSource.find("Voxel Grid Color"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("Cycle Point Shape Type"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("Visual Size"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("debug-grid API"), std::string::npos);
+  EXPECT_EQ(pointCloudSource.find("debug-grid API"), std::string::npos);
   EXPECT_EQ(
       pointCloudSource.find("Color editors and detailed debug-grid"),
       std::string::npos);
@@ -3327,6 +3349,9 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
   EXPECT_NE(pointCloudReadmeSource.find("1280x720"), std::string::npos);
   EXPECT_NE(
       pointCloudReadmeSource.find("Point Cloud Color"), std::string::npos);
+  EXPECT_NE(
+      pointCloudReadmeSource.find("Scene-grid controls"), std::string::npos);
+  EXPECT_NE(pointCloudReadmeSource.find("line count"), std::string::npos);
   EXPECT_EQ(pointCloudSource.find("options.defaultScene"), std::string::npos);
 
   const auto polyhedronSource = readSourceFile(

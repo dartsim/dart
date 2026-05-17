@@ -10,7 +10,9 @@
   or an alignment scene with falling ball grids.
 - Controls: use the panel to play, pause, step, exit, toggle the terrain/grid,
   edit the terrain color, and adjust heightmap resolution, size, and Z range.
-  `--demo alignment` opens the contact-alignment scene.
+  Grid controls expose plane, offset, line count, step size, major/minor/axis
+  widths, and line colors. `--demo alignment` opens the contact-alignment
+  scene.
 
 ## Run
 

@@ -165,8 +165,16 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   Mimic Pendulums rig legend plus diagnostics table. R24-22 adds shifted-slash
   `KeyboardAction` handling and restores the Simulation Event Handler `?` help
   alias. R24-23 restores the Hardcoded Design wireframe link appearance with
-  source-owned DART line geometry. These local checkpoints are not pushed.
-- Latest local R24-23 validation passed focused build for `hardcoded_design`
+  source-owned DART line geometry. R24-24 restores Heightmap and Point Cloud
+  fine-grained scene-grid controls with shared source-owned DART line geometry.
+  These local checkpoints are not pushed.
+- Latest local R24-24 validation passed focused build for `heightmap`,
+  `point_cloud`, and `UNIT_gui_FilamentSceneExtraction`; focused CTest;
+  pixi software-GL screenshot analyzer smokes for `heightmap` (307200/307200
+  nonzero pixels) and `point_cloud` (307096/307200); aggregate `examples`
+  build; mandatory `pixi run lint`; post-lint focused build/CTest; and
+  post-lint pixi screenshot smokes with the same nonzero counts.
+  R24-23 validation passed focused build for `hardcoded_design`
   and `UNIT_gui_FilamentSceneExtraction`; focused CTest; pixi software-GL
   screenshot analyzer smoke for `hardcoded_design` (307200/307200 nonzero
   pixels); aggregate `examples` build; mandatory `pixi run lint`; post-lint

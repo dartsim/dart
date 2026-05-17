@@ -49,10 +49,11 @@ Eye/Center/Up panel readouts in `box_stacking` and `imgui`. Public
 covers historical headlight checkboxes. Public `ApplicationOptions` callbacks
 now cover post-step and pre/post-render lifecycle hooks for `empty` and
 `imgui`, public `RenderSettings` now covers shadow toggles, and public
-`PanelBuilder::colorEdit` now covers basic RGBA panel color editors. Remaining
-audit gaps are mostly depth render outputs, panel plotting/render metrics,
-debug-grid controls, and example-specific simulation or posture controls
-rather than bare source-owned target handles, camera up-vector
+`PanelBuilder::colorEdit` now covers basic RGBA panel color editors, and the
+local source-owned grid helper covers the Heightmap and Point Cloud
+fine-grained grid controls. Remaining audit gaps are mostly depth render
+outputs, panel plotting/render metrics, and example-specific simulation or
+posture controls rather than bare source-owned target handles, camera up-vector
 defaults, basic camera readouts, simple key-release callbacks, headlight
 checkboxes, basic lifecycle hooks, or shadow toggles.
 

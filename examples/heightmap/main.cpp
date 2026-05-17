@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "../gui_source_grid.hpp"
+
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
@@ -114,7 +116,7 @@ struct HeightmapAlignmentDemoConfig
 struct HeightmapPanelState
 {
   std::shared_ptr<dart::dynamics::SimpleFrame> terrain;
-  std::shared_ptr<dart::dynamics::SimpleFrame> grid;
+  dart::examples::SourceOwnedGridState grid;
   double xResolution = 100.0;
   double yResolution = 100.0;
   double xSize = 2.0;
@@ -123,7 +125,6 @@ struct HeightmapPanelState
   double zMax = 0.4;
   Eigen::Vector4d terrainColor = Eigen::Vector4d(0.24, 0.58, 0.88, 1.0);
   bool terrainVisible = true;
-  bool gridVisible = true;
   int generation = 0;
 };
 
@@ -301,24 +302,6 @@ void regenerateHeightmap(const std::shared_ptr<HeightmapPanelState>& state)
       state->generation));
   applyTerrainColor(state);
   applyVisibility(state->terrain, state->terrainVisible);
-  applyVisibility(state->grid, state->gridVisible);
-}
-
-std::shared_ptr<dart::dynamics::LineSegmentShape> createGridShape(
-    double halfExtent = 1.0, int lineCount = 20)
-{
-  auto grid = std::make_shared<dart::dynamics::LineSegmentShape>(1.5f);
-  for (int i = 0; i <= lineCount; ++i) {
-    const double coordinate
-        = -halfExtent + 2.0 * halfExtent * static_cast<double>(i) / lineCount;
-    const auto startX
-        = grid->addVertex(Eigen::Vector3d(-halfExtent, coordinate, -0.01));
-    grid->addVertex(Eigen::Vector3d(halfExtent, coordinate, -0.01), startX);
-    const auto startY
-        = grid->addVertex(Eigen::Vector3d(coordinate, -halfExtent, -0.01));
-    grid->addVertex(Eigen::Vector3d(coordinate, halfExtent, -0.01), startY);
-  }
-  return grid;
 }
 
 std::shared_ptr<dart::dynamics::SimpleFrame> createInteractiveFrame(
@@ -499,17 +482,22 @@ HeightmapScene createInteractiveHeightmapScene()
       kInteractiveTerrainName,
       std::make_shared<dart::dynamics::HeightmapShaped>(),
       Eigen::Vector4d(0.24, 0.58, 0.88, 1.0));
-  auto grid = createInteractiveFrame(
-      kInteractiveGridName,
-      createGridShape(),
-      Eigen::Vector4d(0.45, 0.45, 0.45, 0.58));
   scene.world->addSimpleFrame(terrain);
-  scene.world->addSimpleFrame(grid);
   addReferenceMarkers(scene.world);
 
   scene.panelState = std::make_shared<HeightmapPanelState>();
   scene.panelState->terrain = terrain;
-  scene.panelState->grid = grid;
+  scene.panelState->grid.lineCount = 20.0;
+  scene.panelState->grid.lineStepSize = 0.1;
+  scene.panelState->grid.zOffset = -0.01;
+  scene.panelState->grid.minorLineColor
+      = Eigen::Vector4d(0.42, 0.42, 0.42, 0.42);
+  scene.panelState->grid.majorLineColor
+      = Eigen::Vector4d(0.56, 0.56, 0.56, 0.58);
+  scene.panelState->grid.axisLineColor
+      = Eigen::Vector4d(0.18, 0.24, 0.32, 0.82);
+  dart::examples::attachSourceOwnedGridFrames(
+      scene.world, scene.panelState->grid, kInteractiveGridName);
   regenerateHeightmap(scene.panelState);
   return scene;
 }
@@ -647,9 +635,6 @@ dart::gui::Panel createHeightmapPanel(
     if (builder.checkbox("Show Terrain", state->terrainVisible)) {
       applyVisibility(state->terrain, state->terrainVisible);
     }
-    if (builder.checkbox("Show Grid", state->gridVisible)) {
-      applyVisibility(state->grid, state->gridVisible);
-    }
     if (builder.colorEdit("Terrain Color", state->terrainColor)) {
       applyTerrainColor(state);
     }
@@ -667,7 +652,9 @@ dart::gui::Panel createHeightmapPanel(
       regenerateHeightmap(state);
     }
     builder.separator();
-    builder.text("Grid style controls are a follow-up public debug-grid API.");
+    dart::examples::addSourceOwnedGridPanelControls(builder, state->grid);
+    builder.separator();
+    builder.text("Grid controls edit source-owned DART line geometry.");
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("selected: " + context.selectedLabel);
   };

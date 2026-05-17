@@ -35,6 +35,9 @@ handled by the shared `dart::gui` runner.
 - `Sample on robot` and `Sample in box` switch the sample source.
 - The panel can show or hide the point cloud, sensor origin, scene grid, and
   voxel grid when OctoMap support is enabled.
+- Scene-grid controls expose plane, offset, line count, step size,
+  major/minor/axis widths, and line colors through source-owned DART line
+  geometry.
 - `Cycle Color Mode`, `Cycle Point Shape Type`, and `Visual Size` adjust the
   point-cloud rendering through public DART shape APIs.
 - `Point Cloud Color` and `Voxel Grid Color` edit the renderer-neutral visual
