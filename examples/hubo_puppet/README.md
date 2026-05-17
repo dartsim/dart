@@ -28,6 +28,9 @@
   while preserving the root x/y/yaw placement.
 - Whole-body IK continuously resolves active targets with the source-owned
   relaxed-posture objective and public balance constraint.
+- The hand, foot, and peg targets use the historical source-owned analytical
+  arm and leg IK methods, including post-analytical extra DOF use on hand
+  targets.
 - The support overlay is source-owned DART line geometry. The polygon and
   centroid are green; the COM marker is blue when its support projection is
   inside the active support polygon and red otherwise.

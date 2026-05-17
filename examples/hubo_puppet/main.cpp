@@ -58,6 +58,7 @@
 #include <dart/math/optimization/gradient_descent_solver.hpp>
 #include <dart/math/optimization/problem.hpp>
 
+#include <dart/common/macros.hpp>
 #include <dart/common/uri.hpp>
 
 #include <dart/io/read.hpp>
@@ -66,10 +67,13 @@
 
 #include <algorithm>
 #include <array>
+#include <complex>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -173,6 +177,525 @@ struct HuboWholeBodySolverState
 {
   std::shared_ptr<RelaxedPosture> posture;
   std::shared_ptr<dart::constraint::BalanceConstraint> balance;
+};
+
+using dart::dynamics::BodyNode;
+using dart::dynamics::BodyNodePtr;
+using dart::dynamics::DegreeOfFreedom;
+using dart::dynamics::InverseKinematics;
+using dart::dynamics::JacobianNode;
+using dart::dynamics::Joint;
+using dart::dynamics::SkeletonPtr;
+using dart::dynamics::WeakBodyNodePtr;
+using IK = dart::dynamics::InverseKinematics;
+
+bool checkDist(Eigen::Vector3d& point, double a, double b)
+{
+  const double distance = point.norm();
+  const double maxDistance = a + b;
+  const double minDistance = std::abs(a - b);
+
+  if (distance > maxDistance) {
+    point *= maxDistance / distance;
+    return false;
+  }
+  if (distance < minDistance) {
+    point *= minDistance / distance;
+    return false;
+  }
+  return true;
+}
+
+void clampSineCosine(double& value, bool& valid)
+{
+  if (value < -1.0) {
+    valid = false;
+    value = -1.0;
+  } else if (value > 1.0) {
+    valid = false;
+    value = 1.0;
+  }
+}
+
+Eigen::Vector3d flipEuler3Axis(const Eigen::Vector3d& u)
+{
+  Eigen::Vector3d v;
+  v[0] = u[0] - dart::math::pi;
+  v[1] = dart::math::pi - u[1];
+  v[2] = u[2] - dart::math::pi;
+  return v;
+}
+
+class HuboArmIK final : public InverseKinematics::Analytical
+{
+public:
+  HuboArmIK(
+      InverseKinematics* ik,
+      const std::string& baseLinkName,
+      const Analytical::Properties& properties = Analytical::Properties())
+    : Analytical(ik, "HuboArmIK_" + baseLinkName, properties),
+      mBaseLinkName(baseLinkName)
+  {
+  }
+
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIk) const override
+  {
+    return std::make_unique<HuboArmIK>(
+        newIk, mBaseLinkName, getAnalyticalProperties());
+  }
+
+  std::span<const Solution> computeSolutions(
+      const Eigen::Isometry3d& desiredBodyTransform) override
+  {
+    mSolutions.clear();
+    mSolutions.reserve(8);
+
+    if (!mConfigured) {
+      configure();
+      if (!mConfigured) {
+        DART_WARN(
+            "This analytical IK was not able to configure properly, so it will "
+            "not be able to compute solutions");
+        return mSolutions;
+      }
+    }
+
+    const BodyNodePtr& base = mBaseLink.lock();
+    if (base == nullptr) {
+      DART_ERROR(
+          "Attempting to perform an IK on a limb that no longer exists [{}]!",
+          getMethodName());
+      DART_ASSERT(false);
+      return mSolutions;
+    }
+    if (mWristEnd == nullptr) {
+      DART_ERROR("Attempting to perform IK without a wrist!");
+      DART_ASSERT(false);
+      return mSolutions;
+    }
+
+    constexpr std::size_t SP = 0;
+    constexpr std::size_t SR = 1;
+    constexpr std::size_t SY = 2;
+    constexpr std::size_t EP = 3;
+    constexpr std::size_t WY = 4;
+    constexpr std::size_t WP = 5;
+
+    const SkeletonPtr& skeleton = base->getSkeleton();
+    const Eigen::Isometry3d targetInBase
+        = base->getParentBodyNode()->getWorldTransform().inverse()
+          * desiredBodyTransform * mWristEnd->getTransform(mIK->getNode());
+    Eigen::Vector3d p
+        = (mShoulderTransform.inverse() * targetInBase).inverse().translation();
+
+    const double aSquared = mL5 * mL5 + mL4 * mL4;
+    const double bSquared = mL3 * mL3 + mL4 * mL4;
+    const double a = std::sqrt(aSquared);
+    const double b = std::sqrt(bSquared);
+    const double alpha = std::atan2(mL5, mL4);
+    const double beta = std::atan2(mL3, mL4);
+    const bool startValid = checkDist(p, a, b);
+
+    const double cSquared = p.dot(p);
+    const double x = p.x();
+    const double y = p.y();
+    const double z = p.z();
+
+    for (std::size_t i = 0; i < 8; ++i) {
+      const int flipEP = mAlternatives(i, 0);
+      const int incWY = mAlternatives(i, 1);
+      const int flipShoulder = mAlternatives(i, 2);
+
+      Eigen::Vector6d testQ;
+      bool isValid = startValid;
+
+      double cosGamma = (aSquared + bSquared - cSquared) / (2.0 * a * b);
+      clampSineCosine(cosGamma, isValid);
+      const double gamma = flipEP * std::acos(cosGamma);
+      const double theta3 = alpha + beta + gamma - 2.0 * dart::math::pi;
+      testQ(EP) = theta3;
+
+      const double c3 = std::cos(theta3);
+      const double s3 = std::sin(theta3);
+      const double denom = (-mL4 * c3 - mL3 * s3 + mL4);
+
+      double theta2;
+      if (std::abs(denom) < kZeroSize) {
+        isValid = false;
+        const double& prevWY = skeleton->getPosition(mDofs[WY]);
+        theta2 = incWY ? prevWY : dart::math::pi - prevWY;
+      } else {
+        double s2 = -y / denom;
+        clampSineCosine(s2, isValid);
+        theta2 = incWY ? dart::math::pi - std::asin(s2) : std::asin(s2);
+      }
+      testQ(WY) = theta2;
+
+      const double c2 = std::cos(theta2);
+      const double r = mL4 * c2 - mL4 * c2 * c3 - mL3 * s3 * c2;
+      const double q = -mL4 * s3 + mL3 * c3 + mL5;
+      const double det = -(q * q + r * r);
+      if (std::abs(det) < kZeroSize) {
+        isValid = false;
+      }
+      const double k = det < 0.0 ? -1.0 : 1.0;
+      testQ(WP) = std::atan2(k * (q * x - r * z), k * (-r * x - q * z));
+
+      Eigen::Quaterniond lowerRotation
+          = Eigen::Quaterniond(
+                Eigen::AngleAxisd(testQ(EP), Eigen::Vector3d::UnitY()))
+            * Eigen::Quaterniond(
+                Eigen::AngleAxisd(testQ(WY), Eigen::Vector3d::UnitZ()))
+            * Eigen::Quaterniond(
+                Eigen::AngleAxisd(testQ(WP), Eigen::Vector3d::UnitY()));
+      Eigen::Vector3d euler
+          = (targetInBase.rotation() * lowerRotation.inverse().matrix())
+                .eulerAngles(1, 0, 2);
+      if (flipShoulder != 0) {
+        euler = flipEuler3Axis(euler);
+      }
+
+      testQ(SP) = euler[0];
+      testQ(SR) = euler[1];
+      testQ(SY) = euler[2];
+      for (std::size_t j = 0; j < 6; ++j) {
+        testQ[j] = dart::math::wrapToPi(testQ[j]);
+        if (std::abs(testQ[j]) < kZeroSize) {
+          testQ[j] = 0.0;
+        }
+      }
+
+      const int validity = isValid ? VALID : OUT_OF_REACH;
+      mSolutions.emplace_back(testQ, validity);
+    }
+
+    checkSolutionJointLimits();
+    return mSolutions;
+  }
+
+  std::span<const std::size_t> getDofs() const override
+  {
+    if (!mConfigured) {
+      configure();
+    }
+    return mDofs;
+  }
+
+private:
+  void configure() const
+  {
+    mConfigured = false;
+    mBaseLink = mIK->getNode()->getSkeleton()->getBodyNode(mBaseLinkName);
+
+    BodyNode* base = mBaseLink.lock();
+    if (base == nullptr) {
+      DART_ERROR("base link is a nullptr");
+      DART_ASSERT(false);
+      return;
+    }
+
+    const SkeletonPtr& skeleton = base->getSkeleton();
+    const BodyNodePtr& pelvis = skeleton->getBodyNode("Body_TSY");
+    if (pelvis == nullptr) {
+      DART_ERROR("Could not find Hubo's pelvis (Body_TSY)");
+      DART_ASSERT(false);
+      return;
+    }
+
+    Eigen::Vector6d savedPositions;
+    DegreeOfFreedom* dofs[6];
+    BodyNode* body = base;
+    for (std::size_t i = 0; i < 6; ++i) {
+      Joint* joint = body->getParentJoint();
+      if (joint->getNumDofs() != 1) {
+        DART_ERROR(
+            "Invalid number of DOFs ({}) in the Joint [{}]",
+            joint->getNumDofs(),
+            joint->getName());
+        DART_ASSERT(false);
+        return;
+      }
+
+      dofs[i] = joint->getDof(0);
+      savedPositions[i] = dofs[i]->getPosition();
+      dofs[i]->setPosition(0.0);
+      body = body->getChildBodyNode(0);
+    }
+
+    BodyNode* elbow = dofs[3]->getChildBodyNode();
+    mL3 = std::abs(
+        elbow->getTransform(dofs[2]->getParentBodyNode()).translation()[2]);
+    mL4 = std::abs(
+        elbow->getTransform(dofs[3]->getParentBodyNode()).translation()[0]);
+
+    BodyNode* wrist = dofs[5]->getChildBodyNode();
+    mL5 = std::abs(wrist->getTransform(elbow).translation()[2]);
+
+    mShoulderTransform = Eigen::Isometry3d::Identity();
+    mShoulderTransform.translate(
+        dofs[3]->getParentBodyNode()->getTransform(pelvis).translation()[0]
+        * Eigen::Vector3d::UnitX());
+    mShoulderTransform.translate(
+        dofs[2]->getParentBodyNode()->getTransform(pelvis).translation()[1]
+        * Eigen::Vector3d::UnitY());
+    mShoulderTransform.translate(
+        dofs[2]->getParentBodyNode()->getTransform(pelvis).translation()[2]
+        * Eigen::Vector3d::UnitZ());
+
+    mWristEnd = dofs[5]->getChildBodyNode();
+    mAlternatives << 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, -1, 1, 1, -1, 1, 0, -1,
+        0, 1, -1, 0, 0;
+
+    mDofs.clear();
+    for (std::size_t i = 0; i < 6; ++i) {
+      dofs[i]->setPosition(savedPositions[i]);
+      mDofs.push_back(dofs[i]->getIndexInSkeleton());
+    }
+    mConfigured = true;
+  }
+
+  static constexpr double kZeroSize = 1e-8;
+  mutable bool mConfigured = false;
+  mutable Eigen::Isometry3d mShoulderTransform = Eigen::Isometry3d::Identity();
+  mutable double mL3 = 0.0;
+  mutable double mL4 = 0.0;
+  mutable double mL5 = 0.0;
+  mutable Eigen::Matrix<int, 8, 3> mAlternatives;
+  mutable std::vector<std::size_t> mDofs;
+  std::string mBaseLinkName;
+  mutable WeakBodyNodePtr mBaseLink;
+  mutable JacobianNode* mWristEnd = nullptr;
+};
+
+class HuboLegIK final : public InverseKinematics::Analytical
+{
+public:
+  HuboLegIK(
+      InverseKinematics* ik,
+      const std::string& baseLinkName,
+      const Analytical::Properties& properties = Analytical::Properties())
+    : Analytical(ik, "HuboLegIK_" + baseLinkName, properties),
+      mBaseLinkName(baseLinkName)
+  {
+  }
+
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIk) const override
+  {
+    return std::make_unique<HuboLegIK>(
+        newIk, mBaseLinkName, getAnalyticalProperties());
+  }
+
+  std::span<const Solution> computeSolutions(
+      const Eigen::Isometry3d& desiredBodyTransform) override
+  {
+    mSolutions.clear();
+    mSolutions.reserve(8);
+
+    if (!mConfigured) {
+      configure();
+      if (!mConfigured) {
+        DART_WARN(
+            "This analytical IK was not able to configure properly, so it will "
+            "not be able to compute solutions");
+        return mSolutions;
+      }
+    }
+
+    const BodyNodePtr& base = mBaseLink.lock();
+    if (base == nullptr) {
+      DART_ERROR("Attempting to perform IK on a limb that no longer exists!");
+      DART_ASSERT(false);
+      return mSolutions;
+    }
+
+    const Eigen::Isometry3d target
+        = (base->getParentBodyNode()->getWorldTransform() * mWaist).inverse()
+          * desiredBodyTransform * mFootTransformInverse;
+    const Eigen::Isometry3d targetInverse = target.inverse();
+
+    const double nx = targetInverse(0, 0);
+    const double sx = targetInverse(0, 1);
+    const double ax = targetInverse(0, 2);
+    const double px = targetInverse(0, 3);
+    const double ny = targetInverse(1, 0);
+    const double sy = targetInverse(1, 1);
+    const double ay = targetInverse(1, 2);
+    const double py = targetInverse(1, 3);
+    const double az = targetInverse(2, 2);
+    const double pz = targetInverse(2, 3);
+
+    for (std::size_t i = 0; i < 8; ++i) {
+      bool isValid = true;
+
+      const double c4 = ((px + mL6) * (px + mL6) - mL4 * mL4 - mL5 * mL5
+                         + py * py + pz * pz)
+                        / (2.0 * mL4 * mL5);
+      std::complex<double> radical = 1.0 - c4 * c4;
+      std::complex<double> sqrtRadical = std::sqrt(radical);
+      if (sqrtRadical.imag() != 0.0) {
+        isValid = false;
+      }
+      const double q4
+          = std::atan2(mAlternatives(i, 0) * sqrtRadical.real(), c4);
+
+      const double s4 = std::sin(q4);
+      const double psi = std::atan2(s4 * mL4, c4 * mL4 + mL5);
+      radical = (px + mL6) * (px + mL6) + py * py;
+      sqrtRadical = std::sqrt(radical);
+      if (sqrtRadical.imag() != 0.0) {
+        isValid = false;
+      }
+
+      const double q5 = dart::math::wrapToPi(
+          std::atan2(-pz, mAlternatives(i, 1) * sqrtRadical.real()) - psi);
+
+      double q6 = std::atan2(py, -(px + mL6));
+      const double c45 = std::cos(q4 + q5);
+      const double c5 = std::cos(q5);
+      if (c45 * mL4 + c5 * mL5 < 0.0) {
+        q6 = dart::math::wrapToPi(q6 + dart::math::pi);
+      }
+
+      const double s6 = std::sin(q6);
+      const double c6 = std::cos(q6);
+      const double s2 = c6 * ay + s6 * ax;
+      radical = 1.0 - s2 * s2;
+      sqrtRadical = std::sqrt(radical);
+      if (sqrtRadical.imag() != 0.0) {
+        isValid = false;
+      }
+      const double q2
+          = std::atan2(s2, mAlternatives(i, 2) * sqrtRadical.real());
+
+      double q1 = std::atan2(c6 * sy + s6 * sx, c6 * ny + s6 * nx);
+      const double c2 = std::cos(q2);
+      if (c2 < 0.0) {
+        q1 = dart::math::wrapToPi(q1 + dart::math::pi);
+      }
+
+      const double q345 = std::atan2(-az / c2, -(c6 * ax - s6 * ay) / c2);
+      const double q3 = dart::math::wrapToPi(q345 - q4 - q5);
+
+      Eigen::Vector6d testQ;
+      testQ[0] = q1;
+      testQ[1] = q2;
+      testQ[2] = q3;
+      testQ[3] = q4;
+      testQ[4] = q5;
+      testQ[5] = q6;
+
+      for (std::size_t j = 0; j < 6; ++j) {
+        if (std::abs(testQ[j]) < kZeroSize) {
+          testQ[j] = 0.0;
+        }
+      }
+
+      const int validity = isValid ? VALID : OUT_OF_REACH;
+      mSolutions.emplace_back(testQ, validity);
+    }
+
+    checkSolutionJointLimits();
+    return mSolutions;
+  }
+
+  std::span<const std::size_t> getDofs() const override
+  {
+    if (!mConfigured) {
+      configure();
+    }
+    return mDofs;
+  }
+
+private:
+  void configure() const
+  {
+    mConfigured = false;
+    mBaseLink = mIK->getNode()->getSkeleton()->getBodyNode(mBaseLinkName);
+
+    BodyNode* base = mBaseLink.lock();
+    if (base == nullptr) {
+      DART_ERROR("base link is a nullptr");
+      DART_ASSERT(false);
+      return;
+    }
+
+    const SkeletonPtr& skeleton = mIK->getNode()->getSkeleton();
+    BodyNode* pelvis = skeleton->getBodyNode("Body_TSY");
+    if (pelvis == nullptr) {
+      DART_ERROR("Could not find Hubo's pelvis (Body_TSY)");
+      DART_ASSERT(false);
+      return;
+    }
+
+    Eigen::Vector6d savedPositions;
+    DegreeOfFreedom* dofs[6];
+    BodyNode* body = base;
+    for (std::size_t i = 0; i < 6; ++i) {
+      Joint* joint = body->getParentJoint();
+      if (joint->getNumDofs() != 1) {
+        DART_ERROR(
+            "Invalid number of DOFs ({}) in the Joint [{}]",
+            joint->getNumDofs(),
+            joint->getName());
+        DART_ASSERT(false);
+        return;
+      }
+
+      dofs[i] = joint->getDof(0);
+      savedPositions[i] = dofs[i]->getPosition();
+      dofs[i]->setPosition(0.0);
+      if (body->getNumChildBodyNodes() > 0) {
+        body = body->getChildBodyNode(0);
+      }
+    }
+
+    mL4 = std::abs(
+        dofs[3]->getChildBodyNode()->getRelativeTransform().translation()[2]);
+    mL5 = std::abs(
+        dofs[4]->getChildBodyNode()->getRelativeTransform().translation()[2]);
+    mL6 = 0.0;
+
+    mHipRotation = Eigen::Isometry3d::Identity();
+    mHipRotation.rotate(
+        Eigen::AngleAxisd(
+            90.0 * dart::math::pi / 180.0, Eigen::Vector3d::UnitZ()));
+    mWaist = dofs[2]->getChildBodyNode()->getTransform(
+                 dofs[0]->getParentBodyNode())
+             * mHipRotation;
+
+    mFootTransformInverse = Eigen::Isometry3d::Identity();
+    mFootTransformInverse.rotate(
+        Eigen::AngleAxisd(
+            -90.0 * dart::math::pi / 180.0, Eigen::Vector3d::UnitY()));
+    mFootTransformInverse
+        = mFootTransformInverse
+          * mIK->getNode()->getTransform(dofs[5]->getChildBodyNode());
+    mFootTransformInverse = mFootTransformInverse.inverse();
+
+    mAlternatives << 1, 1, 1, 1, 1, -1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1,
+        -1, -1, -1, 1, -1, -1, -1;
+
+    mDofs.clear();
+    for (std::size_t i = 0; i < 6; ++i) {
+      dofs[i]->setPosition(savedPositions[i]);
+      mDofs.push_back(dofs[i]->getIndexInSkeleton());
+    }
+    mConfigured = true;
+  }
+
+  static constexpr double kZeroSize = 1e-8;
+  mutable double mL4 = 0.0;
+  mutable double mL5 = 0.0;
+  mutable double mL6 = 0.0;
+  mutable Eigen::Isometry3d mWaist = Eigen::Isometry3d::Identity();
+  mutable Eigen::Isometry3d mHipRotation = Eigen::Isometry3d::Identity();
+  mutable Eigen::Isometry3d mFootTransformInverse
+      = Eigen::Isometry3d::Identity();
+  mutable Eigen::Matrix<int, 8, 3> mAlternatives;
+  mutable std::vector<std::size_t> mDofs;
+  mutable bool mConfigured = false;
+  std::string mBaseLinkName;
+  mutable WeakBodyNodePtr mBaseLink;
 };
 
 void disableSkeletonCollisionAndGravity(
@@ -682,6 +1205,12 @@ struct HuboPuppetScene
 void addHuboPuppetIkTargets(
     HuboPuppetScene& scene, const dart::dynamics::SkeletonPtr& hubo)
 {
+  enum class AnalyticalIkKind
+  {
+    Arm,
+    Leg,
+  };
+
   struct Config
   {
     const char* bodyNode;
@@ -690,6 +1219,10 @@ void addHuboPuppetIkTargets(
     const char* label;
     int hotkey;
     Eigen::Isometry3d relativeTransform;
+    AnalyticalIkKind analyticalKind;
+    const char* analyticalBase;
+    bool useWholeBody;
+    bool usePostAnalyticalDofs;
     bool supportContact;
   };
 
@@ -709,6 +1242,10 @@ void addHuboPuppetIkTargets(
        "1 left hand",
        '1',
        hand,
+       AnalyticalIkKind::Arm,
+       "Body_LSP",
+       true,
+       true,
        false},
       {"Body_RWR",
        "r_hand",
@@ -716,6 +1253,10 @@ void addHuboPuppetIkTargets(
        "2 right hand",
        '2',
        hand,
+       AnalyticalIkKind::Arm,
+       "Body_RSP",
+       true,
+       true,
        false},
       {"Body_LAR",
        "l_foot",
@@ -723,6 +1264,10 @@ void addHuboPuppetIkTargets(
        "3 left foot",
        '3',
        foot,
+       AnalyticalIkKind::Leg,
+       "Body_LHY",
+       false,
+       false,
        true},
       {"Body_RAR",
        "r_foot",
@@ -730,6 +1275,10 @@ void addHuboPuppetIkTargets(
        "4 right foot",
        '4',
        foot,
+       AnalyticalIkKind::Leg,
+       "Body_RHY",
+       false,
+       false,
        true},
       {"Body_LWP",
        "l_peg",
@@ -737,6 +1286,10 @@ void addHuboPuppetIkTargets(
        "5 left peg",
        '5',
        peg,
+       AnalyticalIkKind::Arm,
+       "Body_LSP",
+       false,
+       false,
        false},
       {"Body_RWP",
        "r_peg",
@@ -744,10 +1297,16 @@ void addHuboPuppetIkTargets(
        "6 right peg",
        '6',
        peg,
+       AnalyticalIkKind::Arm,
+       "Body_RSP",
+       false,
+       false,
        false},
   }};
 
   const auto footSupportGeometry = makeHuboPuppetFootSupportGeometry();
+  const Eigen::VectorXd rootJointWeights = 0.01 * Eigen::VectorXd::Ones(7);
+  constexpr double extraErrorClamp = 0.1;
   for (const Config& config : configs) {
     auto* bodyNode = hubo->getBodyNode(config.bodyNode);
     if (bodyNode == nullptr) {
@@ -765,9 +1324,20 @@ void addHuboPuppetIkTargets(
     }
 
     auto ik = endEffector->getIK(true);
-    ik->useWholeBody();
-    ik->setGradientMethod<
-        dart::dynamics::InverseKinematics::JacobianTranspose>();
+    if (config.useWholeBody) {
+      ik->useWholeBody();
+    }
+    if (config.analyticalKind == AnalyticalIkKind::Arm) {
+      ik->setGradientMethod<HuboArmIK>(config.analyticalBase);
+      if (config.usePostAnalyticalDofs) {
+        ik->getAnalytical()->setExtraDofUtilization(
+            IK::Analytical::POST_ANALYTICAL);
+        ik->getAnalytical()->setExtraErrorLengthClamp(extraErrorClamp);
+        ik->getGradientMethod().setComponentWeights(rootJointWeights);
+      }
+    } else {
+      ik->setGradientMethod<HuboLegIK>(config.analyticalBase);
+    }
     ik->getSolver()->setNumMaxIterations(30);
     if (config.supportContact) {
       ik->setHierarchyLevel(1);

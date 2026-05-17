@@ -2879,6 +2879,14 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("setupHuboWholeBodySolver"), std::string::npos);
   EXPECT_NE(mainSource.find("GradientDescentSolver"), std::string::npos);
   EXPECT_NE(mainSource.find("BalanceConstraint"), std::string::npos);
+  EXPECT_NE(mainSource.find("HuboArmIK"), std::string::npos);
+  EXPECT_NE(mainSource.find("HuboLegIK"), std::string::npos);
+  EXPECT_NE(mainSource.find("setGradientMethod<HuboArmIK>"), std::string::npos);
+  EXPECT_NE(mainSource.find("setGradientMethod<HuboLegIK>"), std::string::npos);
+  EXPECT_NE(mainSource.find("POST_ANALYTICAL"), std::string::npos);
+  EXPECT_NE(mainSource.find("setExtraErrorLengthClamp"), std::string::npos);
+  EXPECT_NE(mainSource.find("Body_LSP"), std::string::npos);
+  EXPECT_NE(mainSource.find("Body_RHY"), std::string::npos);
   EXPECT_NE(mainSource.find("OPTIMIZE_BALANCE"), std::string::npos);
   EXPECT_NE(mainSource.find("FROM_CENTROID"), std::string::npos);
   EXPECT_NE(mainSource.find("SHIFT_SUPPORT"), std::string::npos);
@@ -2943,6 +2951,8 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("balance"), std::string::npos);
   EXPECT_NE(readmeSource.find("relaxed-posture objective"), std::string::npos);
   EXPECT_NE(readmeSource.find("balance constraint"), std::string::npos);
+  EXPECT_NE(readmeSource.find("analytical"), std::string::npos);
+  EXPECT_NE(readmeSource.find("arm and leg IK"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
