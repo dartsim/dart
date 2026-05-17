@@ -13,8 +13,8 @@
   Q, Left, or Right to exercise the promoted keyboard callbacks. `--gui-scale`
   adjusts the GUI scale, and `--width` / `--height` override the default 640x480
   window size.
-- Remaining gaps: headlight toggles and pre/post render or post-step hooks need
-  public renderer-neutral APIs.
+- Remaining gaps: pre/post render or post-step hooks need public
+  renderer-neutral APIs.
 
 ## Run
 

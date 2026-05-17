@@ -17,9 +17,8 @@
   force target; Tab resets the camera. Space toggles simulation and `n` steps
   once while paused.
 
-Runtime Enter-key recording and viewer headlight toggles remain public
-`dart::gui` API gaps. Use the promoted capture flags below for maintained image
-sequence output.
+Runtime Enter-key recording remains a public `dart::gui` API gap. Use the
+promoted capture flags below for maintained image sequence output.
 
 ## Run
 

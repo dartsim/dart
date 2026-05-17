@@ -209,6 +209,7 @@ int runFilamentGuiApplicationImpl(
   std::optional<Renderable> selectionDebugOverlay;
 
   bool orbitLight = appOptions.orbitLight;
+  bool headlightsEnabled = true;
   SceneLights lights = createSceneLights(
       *engine,
       runOptions.headless,
@@ -295,12 +296,14 @@ int runFilamentGuiApplicationImpl(
           cameraController,
           selectionController,
           orbitLight,
+          headlightsEnabled,
           debugOverlays,
           appOptions.panels,
           lifecycle,
           guiScale,
           profile);
     }
+    setSceneLightsEnabled(*engine, lights, headlightsEnabled);
 
     const FrameRenderResult frameRenderResult = renderApplicationFrame(
         renderContext,

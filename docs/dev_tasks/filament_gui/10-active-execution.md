@@ -152,13 +152,23 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   readouts in `box_stacking` and `imgui`. R24-16 adds promoted
   `KeyboardActionTrigger::Release`, makes shifted character shortcuts distinct,
   and restores keydown/key-release callbacks in `box_stacking`, `empty`, and
-  `imgui`. These local checkpoints are not pushed.
-- Latest local R24-16 validation passed focused build for `empty`, `imgui`,
-  `box_stacking`, and `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct
-  software-GL screenshot analyzer smokes for `empty`, `imgui`, and
-  `box_stacking`; aggregate `examples` build; mandatory `pixi run lint`;
-  post-lint focused rebuild/CTest; post-lint direct screenshot smokes; stale
-  key-release gap text scan; and `git diff --check`.
+  `imgui`. R24-17 adds promoted `PanelContext::lighting` headlight state and
+  restores historical headlight panel checkboxes in the migrated examples that
+  had been blocked on lighting state. These local checkpoints are not pushed.
+- Latest local R24-17 validation passed focused build for `atlas_simbicon`,
+  `box_stacking`, `imgui`, `tinkertoy`, and
+  `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct software-GL
+  screenshot analyzer smokes for `atlas_simbicon` (1228564/1228800 nonzero
+  pixels), `box_stacking` (512000/512000), `imgui` (307200/307200), and
+  `tinkertoy` (921600/921600); aggregate `examples` build; mandatory
+  `pixi run lint`; post-lint focused rebuild/CTest; and post-lint direct
+  screenshot smokes with the same nonzero counts.
+  R24-16 validation passed focused build for `empty`, `imgui`, `box_stacking`,
+  and `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct software-GL
+  screenshot analyzer smokes for `empty`, `imgui`, and `box_stacking`;
+  aggregate `examples` build; mandatory `pixi run lint`; post-lint focused
+  rebuild/CTest; post-lint direct screenshot smokes; stale key-release gap text
+  scan; and `git diff --check`.
   R24-15 validation passed focused build for `imgui`,
   `box_stacking`, and `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct
   software-GL screenshot analyzer smokes for `imgui` and `box_stacking`;
@@ -312,8 +322,10 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   force target at the clicked point plus surface-normal offset, restores the
   historical panel title/window geometry/menu/help/control labels, explicit
   1280x720 defaults, console force/edit messages, README, and marker coverage.
-  Runtime Enter recording and the headlight checkbox remain named public API
-  gaps; the maintained capture path is `--screenshot` and `--out`.
+  Runtime Enter recording remains a named public API gap; the maintained
+  capture path is `--screenshot` and `--out`. The later local R24-17
+  lighting-state checkpoint restores the headlight checkbox through public
+  `PanelContext::lighting`.
 - Tinkertoy pre-lint validation: focused build for `tinkertoy` and
   `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed after fixing
   a README marker-string mismatch, direct and pixi software-GL screenshots
@@ -565,9 +577,10 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   keydown callbacks, panel title/sections, gravity control, viewer help,
   run/camera defaults, README, and marker guards. Keep direct backend UI types
   out of source. The local R24-15 checkpoint restores live camera-inspector text
-  through public `PanelContext::camera`; headlight toggles, key-release
-  callbacks, and pre/post render or post-step hooks remain public `dart::gui`
-  API gaps unless their APIs are added.
+  through public `PanelContext::camera`; key-release callbacks and pre/post
+  render or post-step hooks remain public `dart::gui` API gaps unless their
+  APIs are added. The later local R24-17 lighting-state checkpoint restores the
+  headlight toggle.
 - Implementation state for this panel-extension slice:
   `examples/imgui/main.cpp` now owns an empty world with a selectable target
   frame, restores the historical panel title, Play/Pause/Time, gravity
@@ -575,8 +588,9 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   callback demonstration, 640x480 default size, and camera home through public
   `dart::gui`. The local R24-15 checkpoint restores the live camera readout
   through public `PanelContext::camera`. The README and marker guards are in
-  place. Headlight toggles, key-release callbacks, shifted-`Q` distinction, and
-  pre/post render or post-step hooks remain named public API gaps.
+  place. Key-release callbacks, shifted-`Q` distinction, and pre/post render or
+  post-step hooks remain named public API gaps. The later local R24-17
+  lighting-state checkpoint restores the headlight toggle.
 - Panel-extension validation completed before checkpoint commit: focused C++
   build for `imgui` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
   `UNIT_gui_FilamentSceneExtraction`, direct and pixi `imgui` headless
@@ -697,8 +711,8 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   code, migrate the OSG `WorldNode`/event-handler/widget responsibilities to
   public `dart::gui::ApplicationOptions` pre-step callbacks, panels, and
   keyboard actions, restore the README, and record remaining public API gaps
-  only for backend-specific headlight/depth/shadow toggles that cannot be
-  expressed without renderer hooks.
+  only for backend-specific depth/shadow toggles that cannot be expressed
+  without renderer hooks.
 - Atlas Simbicon implementation state: `controller`, `state`,
   `state_machine`, and `terminal_condition` are restored as example-owned
   non-OSG source files; `main.cpp` now creates the historical loaded
@@ -706,8 +720,9 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   controller pre-step updates and temporary pelvis perturbations, exposes
   reset/perturb/state-machine keyboard actions, restores gravity/harness/
   stride/reset panel controls, sets 1280x960 run defaults and the historical
-  camera target, and restores the README. Headlight, shadow-toggle, and depth
-  camera controls remain explicit public render-settings API gaps.
+  camera target, and restores the README. The later local R24-17
+  lighting-state checkpoint restores the headlight checkbox; shadow-toggle and
+  depth camera controls remain explicit public render-settings API gaps.
 - Atlas Simbicon validation completed before lint: focused C++ build for
   `atlas_simbicon` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
   `UNIT_gui_FilamentSceneExtraction`, direct and pixi Atlas Simbicon headless
@@ -921,16 +936,17 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   `z=0.75`, uses deterministic box colors instead of historical random colors,
   uses a `0.02` floor instead of the historical `0.01` floor, and omits
   historical panel/README text. Repair those now through public
-  `dart::gui`, extend marker guards, and track headlight toggles, camera
-  Eye/Center/Up panel readout, and key-release callbacks until later local
-  public API slices restore or classify them.
+  `dart::gui`, extend marker guards, and track camera Eye/Center/Up panel
+  readout and key-release callbacks until later local public API slices restore
+  or classify them. The later local R24-17 lighting-state checkpoint restores
+  the headlight toggle.
 - Box Stacking implementation state: source now restores historical random
   colors, stack placement, 0.01 light-gray floor, `Gravity On/Off`,
   `LCP solver:`, `Box stacking demo`, `User Guide`, README build/execute
   sections, and marker coverage. The local R24-15/R24-16 checkpoints restore
-  live camera Eye/Center/Up readout and key-release callbacks through public
-  `dart::gui`; exact OSG menu-bar placement and the headlight toggle remain
-  named public API gaps.
+  live camera Eye/Center/Up readout, key-release callbacks, and the headlight
+  toggle through public `dart::gui`; exact OSG menu-bar placement remains a
+  named public API gap.
 - Box Stacking pre-lint validation: focused build for `box_stacking` and
   `UNIT_gui_FilamentSceneExtraction` passed, focused CTest passed, direct
   llvmpipe screenshot passed analyzer coverage
@@ -2757,9 +2773,10 @@ Forty-third box-stacking parity checkpoint:
   panel buttons plus launch-time `--solver`, keep split-impulse state when the
   solver changes, restore camera/run defaults through public
   `ApplicationOptions`, restore the README with promoted `dart::gui` wording,
-  and update tests/changelog. Keep headlights, raw camera matrices, and the
-  old OSG custom event-handler sample out of scope unless future public
-  DART-owned concepts need them.
+  and update tests/changelog. Keep raw camera matrices and the old OSG custom
+  event-handler sample out of scope unless future public DART-owned concepts
+  need them. The later local R24-17 lighting-state checkpoint restores the
+  headlight checkbox through public `PanelContext::lighting`.
 - Implementation status: box-stacking now restores launch-time `--solver`,
   renderer-neutral Dantzig/PGS panel buttons, split-impulse preservation across
   solver changes, 800x640 run defaults, historical camera home, and the example

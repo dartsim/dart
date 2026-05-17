@@ -390,6 +390,12 @@ dart::gui::Panel createControlsPanel(const BoxStackingConfig& config)
           solver->setSplitImpulseEnabled(splitImpulseEnabled);
         }
       }
+      if (context.lighting.headlightsEnabled != nullptr) {
+        bool headlights = *context.lighting.headlightsEnabled;
+        if (panel.checkbox("Headlights On/Off", headlights)) {
+          *context.lighting.headlightsEnabled = headlights;
+        }
+      }
     }
 
     panel.text("Time: " + std::to_string(context.simulationTime));

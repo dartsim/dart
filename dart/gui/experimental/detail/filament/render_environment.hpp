@@ -102,6 +102,9 @@ void detachSceneEnvironment(
 
 void destroySceneLights(::filament::Engine& engine, const SceneLights& lights);
 
+void setSceneLightsEnabled(
+    ::filament::Engine& engine, const SceneLights& lights, bool enabled);
+
 void destroyRenderEnvironmentResources(
     ::filament::Engine& engine,
     ::filament::IndirectLight* indirectLight,

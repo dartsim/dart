@@ -230,7 +230,12 @@ dart::gui::Panel createPanelExtensionControls(const PanelExtensionScene& scene)
         setPanelWorldGravity(scene.world, gravity);
       }
     }
-    panel.text("Headlights need a public lighting control API.");
+    if (context.lighting.headlightsEnabled != nullptr) {
+      bool headlights = *context.lighting.headlightsEnabled;
+      if (panel.checkbox("Headlights On/Off", headlights)) {
+        *context.lighting.headlightsEnabled = headlights;
+      }
+    }
 
     panel.separator();
     panel.text("View");

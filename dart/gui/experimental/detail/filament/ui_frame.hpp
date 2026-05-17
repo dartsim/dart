@@ -75,6 +75,7 @@ void updateFrameUi(
     const dart::gui::OrbitCameraController& cameraController,
     const SelectionController& selectionController,
     bool& orbitLight,
+    bool& headlightsEnabled,
     DebugOverlayController& debugOverlays,
     std::vector<dart::gui::Panel>& panels,
     dart::gui::ViewerLifecycleState& lifecycle,

@@ -826,6 +826,12 @@ int main(int argc, char* argv[])
       if (panel.checkbox("Gravity On/Off", gravityEnabled)) {
         state->setGravityEnabled(gravityEnabled);
       }
+      if (context.lighting.headlightsEnabled != nullptr) {
+        bool headlights = *context.lighting.headlightsEnabled;
+        if (panel.checkbox("Headlights On/Off", headlights)) {
+          *context.lighting.headlightsEnabled = headlights;
+        }
+      }
     }
 
     if (panel.collapsingHeader("Tinkertoy Options", true)) {

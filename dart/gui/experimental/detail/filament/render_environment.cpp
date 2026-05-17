@@ -59,6 +59,10 @@ namespace {
 
 using ::filament::math::float3;
 
+constexpr float kKeyLightIntensity = 82000.0f;
+constexpr float kFillLightIntensity = 62000.0f;
+constexpr float kRimLightIntensity = 42000.0f;
+
 float3 normalizeOr(const float3& vector, const float3& fallback)
 {
   const float lengthSquared
@@ -225,7 +229,7 @@ SceneLights createSceneLights(
                    : float3{-0.30f, -0.42f, -1.0f};
   ::filament::LightManager::Builder(::filament::LightManager::Type::SUN)
       .color({1.0f, 0.96f, 0.88f})
-      .intensity(82000.0f)
+      .intensity(kKeyLightIntensity)
       .direction(keyLightDirection)
       .castShadows(true)
       .shadowOptions(shadowOptions)
@@ -233,14 +237,14 @@ SceneLights createSceneLights(
 
   ::filament::LightManager::Builder(::filament::LightManager::Type::DIRECTIONAL)
       .color({0.80f, 0.88f, 1.0f})
-      .intensity(62000.0f)
+      .intensity(kFillLightIntensity)
       .direction({0.42f, 0.18f, -0.7f})
       .castShadows(false)
       .build(engine, lights.fill);
 
   ::filament::LightManager::Builder(::filament::LightManager::Type::DIRECTIONAL)
       .color({0.88f, 0.93f, 1.0f})
-      .intensity(42000.0f)
+      .intensity(kRimLightIntensity)
       .direction({-0.65f, 0.40f, -0.45f})
       .castShadows(false)
       .build(engine, lights.rim);
@@ -278,6 +282,19 @@ void destroySceneLights(::filament::Engine& engine, const SceneLights& lights)
   utils::EntityManager::get().destroy(lights.key);
   utils::EntityManager::get().destroy(lights.fill);
   utils::EntityManager::get().destroy(lights.rim);
+}
+
+void setSceneLightsEnabled(
+    ::filament::Engine& engine, const SceneLights& sceneLights, bool enabled)
+{
+  auto& lights = engine.getLightManager();
+  const float enabledScale = enabled ? 1.0f : 0.0f;
+  lights.setIntensity(
+      lights.getInstance(sceneLights.key), enabledScale * kKeyLightIntensity);
+  lights.setIntensity(
+      lights.getInstance(sceneLights.fill), enabledScale * kFillLightIntensity);
+  lights.setIntensity(
+      lights.getInstance(sceneLights.rim), enabledScale * kRimLightIntensity);
 }
 
 void destroyRenderEnvironmentResources(

@@ -122,6 +122,8 @@
     Eye/Center/Up panel readouts in migrated GUI examples.
   - Added public key-release triggers for `dart::gui::KeyboardAction` and
     restored historical keydown/key-release callbacks in migrated GUI examples.
+  - Added public `dart::gui::PanelContext` lighting state and restored
+    historical headlight panel checkboxes in migrated GUI examples.
   - Restored the `atlas_simbicon` example's Simbicon controller/state files,
     pre-step control loop, perturbation and state-machine keyboard actions,
     gravity/harness/stride panel controls, native window title,

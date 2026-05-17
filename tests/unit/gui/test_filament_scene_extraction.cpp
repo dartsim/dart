@@ -674,6 +674,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   double gain = 0.0;
   int clicks = 0;
   std::string selectedLabel;
+  bool headlights = false;
   dart::gui::Panel panel;
   panel.title = "Controls";
   panel.build = [&](dart::gui::PanelBuilder& builder) {
@@ -703,6 +704,12 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
     selectedLabel = context.selectedLabel;
     builder.text("selected:" + context.selectedLabel);
     builder.text("eye-x:" + std::to_string(context.camera.eye.x()));
+    if (context.lighting.headlightsEnabled != nullptr) {
+      bool enabled = *context.lighting.headlightsEnabled;
+      if (builder.checkbox("Headlights On/Off", enabled)) {
+        *context.lighting.headlightsEnabled = enabled;
+      }
+    }
   };
 
   RecordingPanelBuilder builder;
@@ -713,6 +720,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   context.camera.eye = Eigen::Vector3d(4.0, 5.0, 6.0);
   context.camera.target = Eigen::Vector3d(1.0, 2.0, 3.0);
   context.camera.up = Eigen::Vector3d::UnitY();
+  context.lighting.headlightsEnabled = &headlights;
   panel.build(builder);
   panel.buildWithContext(builder, context);
 
@@ -727,6 +735,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(context.camera.eye.isApprox(Eigen::Vector3d(4.0, 5.0, 6.0)));
   EXPECT_TRUE(context.camera.target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_TRUE(context.camera.up.isApprox(Eigen::Vector3d::UnitY()));
+  EXPECT_TRUE(headlights);
   bool preStepCalled = false;
   EXPECT_EQ(
       builder.events,
@@ -745,7 +754,8 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "checkbox:Diagnostics",
           "slider:Gain",
           "text:selected:box",
-          "text:eye-x:4.000000"}));
+          "text:eye-x:4.000000",
+          "checkbox:Headlights On/Off"}));
 
   dart::gui::ApplicationOptions options;
   options.world = World::create("panel_test");
@@ -1802,6 +1812,9 @@ TEST(FilamentSceneExtraction, BoxStackingExamplePreservesParityMarkers)
   EXPECT_NE(mainSource.find("setSplitImpulseEnabled"), std::string::npos);
   EXPECT_NE(mainSource.find("Box stacking demo"), std::string::npos);
   EXPECT_NE(mainSource.find("Gravity On/Off"), std::string::npos);
+  EXPECT_NE(mainSource.find("Headlights On/Off"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("context.lighting.headlightsEnabled"), std::string::npos);
   EXPECT_NE(mainSource.find("LCP solver:"), std::string::npos);
   EXPECT_NE(
       mainSource.find("createBoxStackingKeyboardActions"), std::string::npos);
@@ -2068,7 +2081,9 @@ TEST(FilamentSceneExtraction, PanelExtensionExamplePreservesLegacyParityMarkers)
   EXPECT_NE(
       mainSource.find("Left-drag target gizmo arrows/planes/rings"),
       std::string::npos);
-  EXPECT_NE(mainSource.find("public lighting control API"), std::string::npos);
+  EXPECT_NE(mainSource.find("Headlights On/Off"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("context.lighting.headlightsEnabled"), std::string::npos);
   EXPECT_NE(mainSource.find("context.camera.eye"), std::string::npos);
   EXPECT_NE(mainSource.find("Eye   : "), std::string::npos);
   EXPECT_NE(mainSource.find("Center: "), std::string::npos);
@@ -2519,11 +2534,10 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
   EXPECT_NE(mainSource.find("Atlas Control"), std::string::npos);
   EXPECT_NE(mainSource.find("Gravity Acc."), std::string::npos);
   EXPECT_NE(mainSource.find("Harness pelvis"), std::string::npos);
+  EXPECT_NE(mainSource.find("Headlights On/Off"), std::string::npos);
   EXPECT_NE(mainSource.find("Normal-Stride Walking"), std::string::npos);
   EXPECT_NE(mainSource.find("Short-Stride Walking"), std::string::npos);
-  EXPECT_NE(
-      mainSource.find("Headlights, shadow toggle, and depth mode"),
-      std::string::npos);
+  EXPECT_NE(mainSource.find("Shadow toggle and depth mode"), std::string::npos);
   EXPECT_NE(mainSource.find("makeAtlasSimbiconCamera"), std::string::npos);
   EXPECT_NE(
       mainSource.find("camera.target = Eigen::Vector3d(1.0, 0.0, 0.0)"),
@@ -2985,6 +2999,8 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
       tinkertoySource.find("kDefaultBlockWidth / 2.0"), std::string::npos);
   EXPECT_NE(panelHeader.find("selectedPoint"), std::string::npos);
   EXPECT_NE(panelHeader.find("selectedNormal"), std::string::npos);
+  EXPECT_NE(panelHeader.find("LightingState"), std::string::npos);
+  EXPECT_NE(panelHeader.find("headlightsEnabled"), std::string::npos);
   EXPECT_NE(
       tinkertoySource.find("Left-drag target gizmo arrows/planes/rings"),
       std::string::npos);
@@ -3002,6 +3018,10 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
       tinkertoySource.find("horizontalScrollbar = true"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("menuBar = true"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("Gravity On/Off"), std::string::npos);
+  EXPECT_NE(tinkertoySource.find("Headlights On/Off"), std::string::npos);
+  EXPECT_NE(
+      tinkertoySource.find("context.lighting.headlightsEnabled"),
+      std::string::npos);
   EXPECT_NE(tinkertoySource.find("Force Coeff"), std::string::npos);
   EXPECT_NE(tinkertoySource.find("Add a Weld-Joint Block"), std::string::npos);
   EXPECT_NE(
@@ -3028,6 +3048,7 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(tinkertoyReadmeSource.find("--out"), std::string::npos);
   EXPECT_NE(
       tinkertoyReadmeSource.find("Enter-key recording"), std::string::npos);
+  EXPECT_EQ(tinkertoyReadmeSource.find("viewer headlight"), std::string::npos);
   EXPECT_EQ(tinkertoySource.find("options.defaultScene"), std::string::npos);
 }
 

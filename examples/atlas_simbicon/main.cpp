@@ -382,6 +382,12 @@ dart::gui::Panel createAtlasSimbiconPanel(
     if (builder.checkbox("Harness right foot", rightFoot)) {
       runtime->setRightFootHarnessed(rightFoot);
     }
+    if (context.lighting.headlightsEnabled != nullptr) {
+      bool headlights = *context.lighting.headlightsEnabled;
+      if (builder.checkbox("Headlights On/Off", headlights)) {
+        *context.lighting.headlightsEnabled = headlights;
+      }
+    }
 
     builder.separator();
     if (builder.button("Reset Atlas")) {
@@ -407,8 +413,7 @@ dart::gui::Panel createAtlasSimbiconPanel(
 
     builder.separator();
     builder.text(
-        "Headlights, shadow toggle, and depth mode need public render "
-        "settings APIs.");
+        "Shadow toggle and depth mode need public render settings APIs.");
     builder.text("state machine: " + runtime->currentStateMachineName());
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("contacts: " + std::to_string(context.contactCount));

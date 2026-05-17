@@ -112,6 +112,11 @@ struct PanelContext
     Eigen::Vector3d up = Eigen::Vector3d::UnitZ();
   };
 
+  struct LightingState
+  {
+    bool* headlightsEnabled = nullptr;
+  };
+
   dart::simulation::World* world = nullptr;
   ViewerLifecycleState* lifecycle = nullptr;
   std::string selectedLabel;
@@ -120,6 +125,7 @@ struct PanelContext
   double simulationTime = 0.0;
   std::size_t contactCount = 0;
   CameraViewState camera;
+  LightingState lighting;
 };
 
 struct Panel

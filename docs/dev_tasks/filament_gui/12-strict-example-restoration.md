@@ -117,9 +117,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
    box/slider panel, while the historical example demonstrated panel
    extension, an empty target frame with drag controls, custom key handling,
    gravity controls, viewer help, and camera/run defaults. Restore everything
-   expressible through public `dart::gui`; record headlight toggles,
-   key-release callbacks, camera-inspector text, and pre/post render or
-   post-step hooks as public API gaps.
+   expressible through public `dart::gui`; record key-release callbacks,
+   camera-inspector text, and pre/post render or post-step hooks as public API
+   gaps. The later local R24-17 lighting-state checkpoint restores headlight
+   toggles through public `dart::gui`.
    This checkpoint was pushed as
    `63f990d5251 Restore panel extension example`.
 4. Audit `examples/csv_logger/` next. The historical source and README are
@@ -196,9 +197,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
 11. Continue through the remaining `Needs strict audit` and
     `Recent parity checkpoint; still subject to strict audit re-open` rows.
     The Atlas Simbicon checkpoint has been committed and pushed as
-    `82e39c45558 Restore Atlas Simbicon controller example`; exact headlight,
-    shadow-toggle, depth-camera, and native window-title parity remain named
-    public API gaps. `examples/free_joint_cases/` was already restored and
+    `82e39c45558 Restore Atlas Simbicon controller example`; exact
+    shadow-toggle and depth-camera parity remain named public API gaps after
+    later local headlight and native window-title repairs.
+    `examples/free_joint_cases/` was already restored and
     pushed as `f4963df00cd Restore free joint cases controls`, so the next
     strict-audit cursor is `examples/gui_scene_diagnostics/`.
 12. `examples/gui_scene_diagnostics/` has been compared against
@@ -266,9 +268,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     README gaps after the earlier solver-controls checkpoint. Repair the stack
     height, floor thickness/color, historical panel labels/help, standalone
     README sections, and marker guards now. Keep OSG-specific menu-bar
-    placement, headlight toggles, camera Eye/Center/Up readout, and key-release
-    callbacks explicit as public `dart::gui` API follow-ups unless the missing
-    renderer-neutral APIs are added.
+    placement, camera Eye/Center/Up readout, and key-release callbacks explicit
+    as public `dart::gui` API follow-ups unless the missing renderer-neutral
+    APIs are added. The later local R24-17 lighting-state checkpoint restores
+    headlight toggles through public `dart::gui`.
 23. The Box Stacking scene-parity checkpoint was pushed as
     `7af2ad1228d Restore box stacking scene parity`. The active cursor is now
     `examples/boxes/`; compare it against `520993d7301^:examples/boxes`
@@ -533,8 +536,9 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     messages, and exact pick-point/normal behavior. The current source repairs
     those gaps by extending public `PanelContext` with selected hit
     point/normal, using that in Tinkertoy, restoring panel/README/default
-    markers, and keeping runtime Enter recording plus headlight toggles as
-    named public API gaps. Pre-lint validation includes focused builds, focused
+    markers, and keeping runtime Enter recording as a named public API gap. The
+    later local R24-17 lighting-state checkpoint restores the headlight toggle.
+    Pre-lint validation includes focused builds, focused
     CTest, direct and pixi software-GL screenshot basic analyzer checks,
     image-sequence analyzer check, aggregate `build-examples`, and Python C++
     example-runner tests. Mandatory `pixi run lint`, post-lint focused
@@ -674,7 +678,7 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `dart::gui::RunOptions` and uses it from `examples/atlas_simbicon` to
     restore the historical `Atlas Simbicon` window title. This removes the
     window-title public API gap from Atlas Simbicon while keeping the remaining
-    headlight, shadow, and depth-mode render-settings gaps explicit. Validation
+    shadow and depth-mode render-settings gaps explicit. Validation
     passed focused build for `atlas_simbicon` plus
     `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct 1280x960
     software-GL screenshot analyzer smoke for `atlas_simbicon`, aggregate
@@ -716,6 +720,17 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     aggregate `examples` build, mandatory `pixi run lint`, post-lint focused
     rebuild/CTest, post-lint direct screenshot smokes, stale key-release gap text
     scan, and `git diff --check`.
+78. The current R24-17 implementation promotes
+    `dart::gui::PanelContext::lighting` with renderer-neutral headlight state
+    owned by the application frame, applies the state to Filament scene-light
+    intensities before rendering, and restores historical `Headlights On/Off`
+    panel checkboxes in `atlas_simbicon`, `box_stacking`, `imgui`, and
+    `tinkertoy` without exposing backend viewer hooks. Validation passed
+    focused build for those four examples plus
+    `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct software-GL
+    screenshot analyzer smokes for all four examples, aggregate `examples`
+    build, mandatory `pixi run lint`, post-lint focused rebuild/CTest, and
+    post-lint direct screenshot smokes.
 
 ## Checkpoint Rule
 
