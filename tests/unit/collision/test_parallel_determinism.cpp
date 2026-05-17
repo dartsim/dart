@@ -121,6 +121,7 @@ TEST(ParallelNarrowPhase, FallsBackWhenPairsBelowGrain)
 {
   CollisionWorld world;
   auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+  EXPECT_TRUE(obj1.isValid());
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(1.5, 0, 0);
   world.createObject(std::make_unique<SphereShape>(1.0), tf);
