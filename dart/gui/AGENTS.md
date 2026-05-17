@@ -25,9 +25,8 @@ than renderer or windowing types.
 - Promote concepts only when they are stable DART concepts such as viewer
   options, renderables, debug draws, selections, tools, panels, screenshots,
   cameras, or simulation run control.
-- See `docs/dev_tasks/filament_gui/08-north-star-migration.md` and
-  `docs/dev_tasks/filament_gui/09-legacy-surface-audit.md` before changing the
-  public GUI boundary.
+- See `docs/onboarding/gui-rendering.md` before changing the public GUI
+  boundary.
 
 ## Testing
 
@@ -43,5 +42,3 @@ Examples: `apps/dartsim/`, restored GUI example launchers, and
 ## See Also
 
 - @docs/onboarding/gui-rendering.md - Filament GUI architecture and workflow
-- @docs/dev_tasks/filament_gui/08-north-star-migration.md - Filament replacement plan
-- @docs/dev_tasks/filament_gui/09-legacy-surface-audit.md - Legacy surface audit

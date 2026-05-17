@@ -96,7 +96,10 @@ world attachment, simulation stepping, camera state, picking, debug drawing,
 selection, manipulation, screenshots, and diagnostics; do not preserve public
 renderer object ownership.
 
-Historical planning and audit details live in:
-
-- `docs/dev_tasks/filament_gui/08-north-star-migration.md`
-- `docs/dev_tasks/filament_gui/09-legacy-surface-audit.md`
+Historical GUI example parity is guarded by source-marker tests and the
+examples themselves, not by long-lived working notes. Restored examples should
+own their scene setup, controls, camera defaults, capture behavior, and README
+documentation through public `dart::gui` APIs. If an old renderer behavior
+does not map directly to Filament, prefer a DART-owned replacement such as
+debug lines, gizmos, panel state, or run options rather than exposing backend
+types.

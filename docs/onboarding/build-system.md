@@ -232,9 +232,9 @@ active build.
   - **Fetch Mode** (`DART_FETCH_FILAMENT=ON`): Explicitly fetches the pinned
     Linux x86_64 Filament archive for source builds and smoke testing
 - **Migration:** The full replacement plan lives in
-  [`docs/dev_tasks/filament_gui/08-north-star-migration.md`](../dev_tasks/filament_gui/08-north-star-migration.md).
-  New public GUI APIs should describe DART concepts and keep Filament, GLFW,
-  Dear ImGui, OpenGL, Vulkan, Metal, OSG, and Raylib types private.
+  [gui-rendering.md](gui-rendering.md). New public GUI APIs should describe
+  DART concepts and keep Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal,
+  OSG, and Raylib types private.
 
 #### OpenGL
 

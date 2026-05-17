@@ -80,12 +80,14 @@ its own line so status updates remain git-history friendly.
 ### PLAN-060: Backend-Hidden GUI Roadmap
 
 - Owner doc:
-  [`../dev_tasks/filament_gui/08-north-star-migration.md`](../dev_tasks/filament_gui/08-north-star-migration.md)
+  [`../onboarding/gui-rendering.md`](../onboarding/gui-rendering.md)
 - Status: Active
 - Horizon: Next
 - Dimension: Easy start
-- Next step: Keep GUI API promotion aligned with Filament gates.
-- Gate: GUI promotion stays aligned with the Filament dev-task migration plan.
+- Next step: Keep restored GUI examples and public APIs aligned with the
+  renderer-hidden boundary.
+- Gate: Maintained GUI examples use public `dart::gui` concepts without
+  reviving OSG, Raylib, Filament, GLFW, or raw ImGui public contracts.
 
 ### PLAN-070: DART 8 Compatibility Cleanup
 

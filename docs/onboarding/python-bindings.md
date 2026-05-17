@@ -129,8 +129,8 @@ draws, screenshot options, and viewer lifecycle state.
 `dartpy.gui.experimental` remains import-compatible for the current promotion
 checkpoint, but new Python code should use `dartpy.gui`. Filament, GLFW, Dear
 ImGui, OpenGL, Vulkan, Metal, OSG, and Raylib implementation types stay out of
-public Python-facing contracts. See
-`docs/dev_tasks/filament_gui/08-north-star-migration.md` for the promotion plan.
+public Python-facing contracts. See [gui-rendering.md](gui-rendering.md) for
+the promoted GUI boundary.
 
 ## Fast Iteration Loop
 

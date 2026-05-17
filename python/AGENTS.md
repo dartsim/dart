@@ -56,6 +56,5 @@ pixi run test-py         # Run Python tests
 
 - @docs/onboarding/python-bindings.md - Binding architecture
 - @docs/onboarding/gui-rendering.md - Filament GUI architecture and workflow
-- @docs/dev_tasks/filament_gui/08-north-star-migration.md - Filament replacement plan
 - @python/examples/README.md - Example index
 - @pyproject.toml - Python package configuration

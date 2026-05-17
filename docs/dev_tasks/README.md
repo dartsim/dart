@@ -118,7 +118,6 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 ### Examples (Active Tasks)
 
-- `filament_gui/` - Filament + GLFW + Dear ImGui GUI replacement plan (MVP, architecture, visual quality, milestones, migration, testing docs)
 - `world_split/` - ECS world separation (design, migration docs)
 
 ## Structure
