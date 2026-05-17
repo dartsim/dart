@@ -91,13 +91,21 @@ in place, and Shift-drag restricts solving to the dragged body's parent joint.
 Focused build for `g1_puppet`, `wam_ikfast`, and
 `UNIT_gui_FilamentSceneExtraction`, focused CTest, and WAM/G1 headless
 screenshot analyzer smokes pass locally.
+R24-39 restores the human-joint-limits neural arm/leg custom constraints
+without adding TinyDNN back as a package dependency. The example-local reader
+loads the checked-in TinyDNN-serialized arm/leg model files and installs four
+custom constraints into DART's public constraint solver. Focused build for
+`human_joint_limits` and `UNIT_gui_FilamentSceneExtraction`, focused CTest,
+mandatory lint, post-lint rebuild/CTest, and human-joint-limits headless
+screenshot analyzer smoke pass locally.
 Do not push these local checkpoints without explicit maintainer/user approval
 in the active session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
 explicitly asks to include them.
 
-Immediate next slice after the R24-36 WAM IKFast no-world-step rollout:
-continue reducing the named public API gaps in `11-example-parity-audit.md`.
+Immediate next slice after the R24-39 human-joint-limits custom-constraint
+rollout: run the completion sweep, move durable lessons to onboarding docs, and
+delete `docs/dev_tasks/filament_gui/` if no maintained parity gaps remain.
 Public
 `dart::gui::Gizmo` now covers the source-owned manipulation affordances for the
 recently re-opened target examples, public `OrbitCamera::up` covers historical
@@ -118,8 +126,9 @@ workflows. Public `ApplicationOptions::simulateWorld` covers explicit
 no-world-step kinematic app lifecycles, and public
 `RenderSettings::outputMode` covers depth render-output toggles, and
 `BodyNodeDragHandle` covers articulated-body drag plus the WAM Alt/Ctrl/Shift
-drag-mode split. Remaining audit gaps are mostly TinyDNN/custom constraint
-restoration rather than bare source-owned target
+drag-mode split. The `human_joint_limits` follow-up restores the neural
+arm/leg custom constraints with a source-owned reader for the checked-in
+serialized models. Remaining audit gaps are no longer bare source-owned target
 handles, camera up-vector defaults, basic camera readouts, simple key-release
 callbacks, headlight checkboxes, basic lifecycle hooks, no-world-step
 lifecycles, shadow toggles, depth output toggles, basic color editors, simple
@@ -775,8 +784,8 @@ for numeric checks and reference-model controls. It routes
 `pixi run ex human_joint_limits` through the Filament example's selectable
 `--scene human-joint-limits` fixture, which loads the legacy Kima human SKEL,
 enables DART joint-limit enforcement, and renders mesh, multi-sphere, box, and
-ground descriptors while keeping the standalone source as legacy comparison
-material for the custom TinyDNN-backed arm and leg constraints. It routes
+ground descriptors while the standalone source restores the neural arm and leg
+custom constraints with the checked-in serialized models. It routes
 `pixi run ex lcp_physics` through the Filament example's selectable
 `--scene lcp-physics` fixture, which renders the legacy contact benchmark's
 mass-ratio boxes, stack boxes, dominoes, falling spheres, and ground

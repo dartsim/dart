@@ -25,6 +25,8 @@
  *   EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "human_joint_limit_constraints.hpp"
+
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
@@ -49,10 +51,18 @@
 #include <stdexcept>
 #include <string>
 
+#include <cstddef>
+
 namespace {
 
 constexpr const char* kGroundSkeletonName = "human_joint_limits_ground";
 constexpr const char* kHumanSkeletonName = "human_joint_limits_human";
+
+struct HumanJointLimitsScene
+{
+  dart::simulation::WorldPtr world;
+  std::size_t customConstraintCount = 0;
+};
 
 void makeStaticGround(const dart::dynamics::SkeletonPtr& skeleton)
 {
@@ -96,7 +106,7 @@ void colorHuman(const dart::dynamics::SkeletonPtr& human)
   }
 }
 
-dart::simulation::WorldPtr createHumanJointLimitsWorld()
+HumanJointLimitsScene createHumanJointLimitsScene()
 {
   const dart::common::Uri worldUri = dart::common::Uri::createFromPath(
       dart::config::dataPath("skel/kima/kima_human_edited.skel"));
@@ -124,9 +134,11 @@ dart::simulation::WorldPtr createHumanJointLimitsWorld()
   human->setMobile(true);
   human->eachJoint(
       [](dart::dynamics::Joint* joint) { joint->setLimitEnforcement(true); });
+  const std::size_t customConstraintCount
+      = installHumanJointLimitConstraints(*world, human);
 
   colorHuman(human);
-  return world;
+  return {world, customConstraintCount};
 }
 
 dart::gui::RunOptions makeHumanJointLimitsRunDefaults()
@@ -137,15 +149,18 @@ dart::gui::RunOptions makeHumanJointLimitsRunDefaults()
   return options;
 }
 
-dart::gui::Panel createHumanJointLimitsPanel()
+dart::gui::Panel createHumanJointLimitsPanel(std::size_t customConstraintCount)
 {
   dart::gui::Panel panel;
   panel.title = "Human Joint Limits";
-  panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
-                              dart::gui::PanelContext& context) {
+  panel.buildWithContext = [customConstraintCount](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
     builder.text("Kima human skeleton with DART joint-limit enforcement");
+    builder.text(
+        "Neural arm/leg custom constraints: "
+        + std::to_string(customConstraintCount));
     builder.text("space bar: simulation on/off");
-    builder.text("TinyDNN custom constraints are tracked as follow-up.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -166,6 +181,7 @@ dart::gui::Panel createHumanJointLimitsPanel()
 void printHumanJointLimitsInstructions()
 {
   std::cout << "Human joint limits example\n";
+  std::cout << "Neural arm/leg custom constraints are installed\n";
   std::cout << "space bar: simulation on/off\n";
 }
 
@@ -174,13 +190,14 @@ void printHumanJointLimitsInstructions()
 int main(int argc, char* argv[])
 {
   try {
-    auto world = createHumanJointLimitsWorld();
+    auto scene = createHumanJointLimitsScene();
     printHumanJointLimitsInstructions();
 
     dart::gui::ApplicationOptions options;
-    options.world = world;
+    options.world = scene.world;
     options.runDefaults = makeHumanJointLimitsRunDefaults();
-    options.panels.push_back(createHumanJointLimitsPanel());
+    options.panels.push_back(
+        createHumanJointLimitsPanel(scene.customConstraintCount));
 
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {

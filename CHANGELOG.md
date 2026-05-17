@@ -184,9 +184,8 @@
   - Restored the `lcp_physics` panel's render FPS, rendered/skipped frame
     counts, and rolling step-time diagnostics using source-owned metrics.
   - Restored the `human_joint_limits` example's live SKEL world, joint-limit
-    enforcement, run defaults, README, and marker coverage through public
-    `dart::gui`, with the historical TinyDNN-backed custom constraints tracked
-    as a dependency follow-up.
+    enforcement, neural custom arm/leg constraints, run defaults, README, and
+    marker coverage through public `dart::gui`.
   - Moved `drag_and_drop` off the private named-scene fixture path so the
     example source owns its DART world and passes it through
     `dart::gui::ApplicationOptions::world`.

@@ -443,6 +443,14 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   build for `g1_puppet`, `wam_ikfast`, and
   `UNIT_gui_FilamentSceneExtraction`, focused CTest, and WAM/G1 headless
   screenshot analyzer smokes pass locally.
+- R24-39 human-joint-limits follow-up restores the historical neural
+  `HumanArmJointLimitConstraint` and `HumanLegJointLimitConstraint` instances
+  without adding TinyDNN back as a package dependency. The example-local reader
+  loads the checked-in TinyDNN-serialized arm/leg model files and drives DART's
+  public constraint solver. Focused build for `human_joint_limits` and
+  `UNIT_gui_FilamentSceneExtraction`, focused CTest, mandatory lint, post-lint
+  rebuild/CTest, and human-joint-limits headless screenshot analyzer smoke pass
+  locally.
 - Active strict re-open cursor: `examples/vehicle/`. A previous parity
   checkpoint restored command keys and camera defaults, but the strict itemized
   inventory is still missing. Compare current source/README against
@@ -655,9 +663,9 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   keeps the ground static, enables joint-limit enforcement on every human
   joint, restores the 640x480 default launch size, prints Space instructions,
   adds README coverage, and adds marker guards through public `dart::gui`.
-  The removed TinyDNN dependency/custom neural-network constraint path remains
-  a named follow-up unless a maintained dependency or replacement public
-  constraint implementation is added.
+  A later local follow-up restores the historical neural arm/leg custom
+  constraints with a source-owned reader for the checked-in serialized models,
+  so the example no longer needs a TinyDNN package dependency.
 - Latest Fetch target-bar checkpoint state: committed and pushed as
   `ce8ba83d2f3 Restore Fetch target affordance`. Validation covered focused
   C++ build/CTest, direct and pixi Fetch headless screenshots with analyzer

@@ -5,8 +5,8 @@
 - Goal: run the Kima human skeleton with DART joint-limit enforcement in the
   promoted `dart::gui` viewer.
 - Concepts/APIs: `dart::io::readWorld`, `Joint::setLimitEnforcement`,
-  `ConstraintSolver`, renderer-neutral panels, and
-  `dart::gui::ApplicationOptions`.
+  `ConstraintSolver`, source-owned neural arm/leg custom constraints,
+  renderer-neutral panels, and `dart::gui::ApplicationOptions`.
 - Expected output: a live humanoid skeleton and ground loaded from
   `kima_human_edited.skel`.
 - Controls: Space toggles simulation, `n` steps once while paused, and Escape
@@ -32,11 +32,11 @@ pixi run ex human_joint_limits --headless --frames 2 --width 640 --height 480 --
 
 ## Notes
 
-- The historical OSG example installed TinyDNN-backed
+- The historical OSG example installed neural
   `HumanArmJointLimitConstraint` and `HumanLegJointLimitConstraint` objects.
-- The current maintained dependency stack no longer carries TinyDNN, so the
-  neural-network custom constraint path is tracked as a follow-up rather than
-  replaced by OSG or private renderer hooks.
+  The promoted source restores those constraints with an example-local reader
+  for the checked-in TinyDNN-serialized model files, without adding TinyDNN
+  back as a package dependency.
 - The live `dart::gui` version still loads the original SKEL world, preserves
   its timestep and gravity, keeps the ground static, and enables DART
   joint-limit enforcement on every human joint.

@@ -2521,6 +2521,9 @@ TEST(FilamentSceneExtraction, HumanJointLimitsExamplePreservesParityMarkers)
 {
   const auto mainSource = readSourceFile(
       std::filesystem::path("examples") / "human_joint_limits" / "main.cpp");
+  const auto constraintSource = readSourceFile(
+      std::filesystem::path("examples") / "human_joint_limits"
+      / "human_joint_limit_constraints.cpp");
   const auto readmeSource = readSourceFile(
       std::filesystem::path("examples") / "human_joint_limits" / "README.md");
 
@@ -2536,15 +2539,31 @@ TEST(FilamentSceneExtraction, HumanJointLimitsExamplePreservesParityMarkers)
   EXPECT_NE(
       mainSource.find("printHumanJointLimitsInstructions"), std::string::npos);
   EXPECT_NE(mainSource.find("space bar: simulation on/off"), std::string::npos);
-  EXPECT_NE(mainSource.find("TinyDNN custom constraints"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("installHumanJointLimitConstraints"), std::string::npos);
+  EXPECT_NE(mainSource.find("customConstraintCount"), std::string::npos);
   EXPECT_NE(mainSource.find("options.runDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
+  EXPECT_NE(
+      constraintSource.find("HumanArmJointLimitConstraint"), std::string::npos);
+  EXPECT_NE(
+      constraintSource.find("HumanLegJointLimitConstraint"), std::string::npos);
+  EXPECT_NE(
+      constraintSource.find("humanJointLimits/neuralnets/net-larm"),
+      std::string::npos);
+  EXPECT_NE(
+      constraintSource.find("humanJointLimits/neuralnets/net-lleg"),
+      std::string::npos);
+  EXPECT_NE(
+      constraintSource.find("TinyDnnSequentialNetwork"), std::string::npos);
   EXPECT_NE(readmeSource.find("Human Joint Limits Example"), std::string::npos);
   EXPECT_NE(
       readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);
   EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
-  EXPECT_NE(readmeSource.find("TinyDNN-backed"), std::string::npos);
-  EXPECT_NE(readmeSource.find("custom constraint path"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("HumanArmJointLimitConstraint"), std::string::npos);
+  EXPECT_NE(readmeSource.find("TinyDNN-serialized"), std::string::npos);
+  EXPECT_EQ(readmeSource.find("tracked as a follow-up"), std::string::npos);
   EXPECT_EQ(
       mainSource.find("setGravity(Eigen::Vector3d::Zero())"),
       std::string::npos);

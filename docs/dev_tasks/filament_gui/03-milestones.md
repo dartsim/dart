@@ -239,8 +239,8 @@ surfaces have been removed.
   joint-limit enforcement, and renders the posed humanoid plus ground through
   descriptor-owned mesh, multi-sphere, and box renderables.
   `pixi run ex human_joint_limits` routes to this Filament scene by default
-  while the standalone source remains as legacy comparison material for the
-  custom TinyDNN-backed arm and leg constraints.
+  while the standalone source restores the neural arm and leg custom
+  constraints with a source-owned reader for the checked-in serialized models.
 - The Filament example includes a selectable `--scene lcp-physics` fixture
   that builds a deterministic contact benchmark layout with mass-ratio boxes,
   a box stack, dominoes, falling spheres, and ground through descriptor-owned

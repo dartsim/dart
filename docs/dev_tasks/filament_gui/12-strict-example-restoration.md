@@ -188,12 +188,12 @@ restored. Do not rely on earlier restored-state wording in the inventory.
    `1297aca1fe6 Restore drag and drop affordances`.
 10. `examples/human_joint_limits/` was committed and pushed as
     `cf0ed62209e Restore human joint limits live example`. The historical
-    example depended on TinyDNN-backed custom arm/leg constraints and required
-    ODE/Bullet; the current branch no longer carries TinyDNN. Restore the live
-    world, joint-limit enforcement, default size, instructions, README, and
-    marker guards now, and record the TinyDNN/custom neural-network constraint
-    path as a named dependency/API follow-up unless a maintained replacement is
-    added.
+    example depended on neural custom arm/leg constraints and required
+    ODE/Bullet. Restore the live world, joint-limit enforcement, default size,
+    instructions, README, and marker guards now. A later local follow-up
+    restores the neural custom constraints with a source-owned reader for the
+    checked-in TinyDNN-serialized model files, avoiding a TinyDNN package
+    dependency.
 11. Continue through the remaining `Needs strict audit` and
     `Recent parity checkpoint; still subject to strict audit re-open` rows.
     The Atlas Simbicon checkpoint has been committed and pushed as

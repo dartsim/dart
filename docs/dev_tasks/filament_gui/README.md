@@ -109,9 +109,9 @@ manipulator.
 The current strict-audit slice is `examples/human_joint_limits`: restore the
 historical live SKEL world, joint-limit enforcement, 640x480 default launch
 size, instructions, README, and marker guards through public `dart::gui`.
-The historical TinyDNN-backed custom arm/leg constraints remain a named
-dependency/API follow-up because the current maintained dependency stack no
-longer carries TinyDNN.
+The historical neural arm/leg custom constraints are restored with a
+source-owned reader for the checked-in TinyDNN-serialized model files, avoiding
+a TinyDNN package dependency.
 That checkpoint was pushed as
 `cf0ed62209e Restore human joint limits live example`. The active slice is now
 re-opened `examples/fetch/` again because maintainer steering explicitly warned
@@ -611,8 +611,8 @@ the source tree.
   descriptor-owned mesh, multi-sphere, box, and ground renderables with DART
   joint-limit enforcement enabled. The in-tree
   `pixi run ex human_joint_limits` runner now routes to that Filament scene
-  while the legacy standalone source remains available for the custom
-  TinyDNN-backed arm and leg constraint comparison.
+  while the standalone source restores the neural arm and leg custom
+  constraints with the checked-in serialized models.
 - The Filament example includes `--scene lcp-physics`, a deterministic contact
   benchmark fixture that carries the legacy `lcp_physics` visual workflow
   through descriptor-owned mass-ratio boxes, stack boxes, dominoes, falling
