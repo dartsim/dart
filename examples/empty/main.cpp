@@ -45,6 +45,14 @@
 
 namespace {
 
+struct EmptyHookState
+{
+  int preStepCount = 0;
+  int postStepCount = 0;
+  int preRenderCount = 0;
+  int postRenderCount = 0;
+};
+
 void colorFrame(
     const std::shared_ptr<dart::dynamics::SimpleFrame>& frame,
     const Eigen::Vector3d& color)
@@ -113,18 +121,28 @@ dart::simulation::WorldPtr createEmptyWorld()
   return world;
 }
 
-dart::gui::Panel createEmptyPanel()
+dart::gui::Panel createEmptyPanel(const std::shared_ptr<EmptyHookState>& state)
 {
   dart::gui::Panel panel;
   panel.title = "Empty";
-  panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
-                              dart::gui::PanelContext& context) {
+  panel.buildWithContext = [state](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
     builder.text("Minimal public frame viewer scaffold");
     builder.text("selectable anchor, draggable child, and axis markers");
     builder.text("Keyboard actions print q, Q, Left, and Right keydown events");
     builder.text(
         "Key-release actions print q, Q, Left, and Right release events.");
-    builder.text("Pre/post render hooks remain public API follow-up.");
+    if (state != nullptr) {
+      builder.text(
+          "Pre-step callbacks: " + std::to_string(state->preStepCount));
+      builder.text(
+          "Post-step callbacks: " + std::to_string(state->postStepCount));
+      builder.text(
+          "Pre-render callbacks: " + std::to_string(state->preRenderCount));
+      builder.text(
+          "Post-render callbacks: " + std::to_string(state->postRenderCount));
+    }
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -140,9 +158,32 @@ dart::gui::Panel createEmptyPanel()
   return panel;
 }
 
-void emptyPreStepScaffold()
+void emptyPreStepScaffold(const std::shared_ptr<EmptyHookState>& state)
 {
-  // Preserves the promoted pre-step hook shape from the historical scaffold.
+  if (state != nullptr) {
+    ++state->preStepCount;
+  }
+}
+
+void emptyPostStepScaffold(const std::shared_ptr<EmptyHookState>& state)
+{
+  if (state != nullptr) {
+    ++state->postStepCount;
+  }
+}
+
+void emptyPreRenderScaffold(const std::shared_ptr<EmptyHookState>& state)
+{
+  if (state != nullptr) {
+    ++state->preRenderCount;
+  }
+}
+
+void emptyPostRenderScaffold(const std::shared_ptr<EmptyHookState>& state)
+{
+  if (state != nullptr) {
+    ++state->postRenderCount;
+  }
 }
 
 dart::gui::RunOptions makeEmptyRunDefaults()
@@ -228,12 +269,25 @@ std::vector<dart::gui::KeyboardAction> createEmptyKeyboardActions()
 
 int main(int argc, char* argv[])
 {
+  auto hookState = std::make_shared<EmptyHookState>();
+
   dart::gui::ApplicationOptions options;
   options.world = createEmptyWorld();
-  options.preStep = emptyPreStepScaffold;
+  options.preStep = [hookState]() {
+    emptyPreStepScaffold(hookState);
+  };
+  options.postStep = [hookState]() {
+    emptyPostStepScaffold(hookState);
+  };
+  options.preRender = [hookState]() {
+    emptyPreRenderScaffold(hookState);
+  };
+  options.postRender = [hookState]() {
+    emptyPostRenderScaffold(hookState);
+  };
   options.runDefaults = makeEmptyRunDefaults();
   options.camera = makeEmptyCamera();
-  options.panels.push_back(createEmptyPanel());
+  options.panels.push_back(createEmptyPanel(hookState));
   options.keyboardActions = createEmptyKeyboardActions();
   return dart::gui::runApplication(argc, argv, options);
 }

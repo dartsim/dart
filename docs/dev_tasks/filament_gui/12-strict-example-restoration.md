@@ -117,10 +117,10 @@ restored. Do not rely on earlier restored-state wording in the inventory.
    box/slider panel, while the historical example demonstrated panel
    extension, an empty target frame with drag controls, custom key handling,
    gravity controls, viewer help, and camera/run defaults. Restore everything
-   expressible through public `dart::gui`; record key-release callbacks,
-   camera-inspector text, and pre/post render or post-step hooks as public API
-   gaps. The later local R24-17 lighting-state checkpoint restores headlight
-   toggles through public `dart::gui`.
+   expressible through public `dart::gui`; the later local R24-15/R24-16/R24-18
+   checkpoints restore camera-inspector text, key-release callbacks, and
+   post-step plus pre/post-render hooks. The later local R24-17 lighting-state
+   checkpoint restores headlight toggles through public `dart::gui`.
    This checkpoint was pushed as
    `63f990d5251 Restore panel extension example`.
 4. Audit `examples/csv_logger/` next. The historical source and README are
@@ -731,6 +731,17 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     screenshot analyzer smokes for all four examples, aggregate `examples`
     build, mandatory `pixi run lint`, post-lint focused rebuild/CTest, and
     post-lint direct screenshot smokes.
+79. The current R24-18 implementation promotes
+    `dart::gui::ApplicationOptions::postStep`, `preRender`, and `postRender`
+    alongside the existing `preStep` callback. The private Filament runner
+    invokes post-step callbacks after each simulated world step and render
+    callbacks around each successful frame-render attempt, restoring the
+    historical lifecycle-hook demonstrations in `empty` and `imgui` without
+    exposing backend world-node or viewer types. Validation passed focused
+    build for `empty`, `imgui`, and `UNIT_gui_FilamentSceneExtraction`,
+    focused CTest, direct software-GL screenshot analyzer smokes for `empty`
+    and `imgui`, aggregate `examples` build, mandatory `pixi run lint`,
+    post-lint focused rebuild/CTest, and post-lint direct screenshot smokes.
 
 ## Checkpoint Rule
 

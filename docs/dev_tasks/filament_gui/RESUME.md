@@ -18,17 +18,19 @@ R24-9 `imgui` panel target gizmo cleanup, the R24-10 Tinkertoy force-target
 gizmo cleanup, the R24-11 drag-and-drop frame-gizmo cleanup, and the R24-12
 Fetch target-gizmo cleanup, the R24-13 native window-title cleanup, the R24-14
 camera up-vector cleanup, the R24-15 panel camera-inspection cleanup, the
-R24-16 key-release cleanup, and the R24-17 panel lighting cleanup. R24-16 adds
-key-release triggers for promoted keyboard actions and restores
-keydown/key-release callbacks in the affected migrated examples. R24-17 adds
-`PanelContext::lighting` headlight state and restores historical headlight
-checkboxes through public `dart::gui`. Do not push these local checkpoints
-without explicit maintainer/user approval in the active session. Leave the
-pre-existing local
+R24-16 key-release cleanup, the R24-17 panel lighting cleanup, and the R24-18
+application-callback cleanup. R24-16 adds key-release triggers for promoted
+keyboard actions and restores keydown/key-release callbacks in the affected
+migrated examples. R24-17 adds `PanelContext::lighting` headlight state and
+restores historical headlight checkboxes through public `dart::gui`. R24-18
+adds public `ApplicationOptions::postStep`, `preRender`, and `postRender`
+callbacks and restores the historical lifecycle-hook demos in `empty` and
+`imgui`. Do not push these local checkpoints without explicit maintainer/user
+approval in the active session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
 explicitly asks to include them.
 
-Immediate next slice after the R24-17 panel-lighting rollout: continue
+Immediate next slice after the R24-18 application-callback rollout: continue
 reducing the named public API gaps in `11-example-parity-audit.md`. Public
 `dart::gui::Gizmo` now covers the source-owned manipulation affordances for the
 recently re-opened target examples, public `OrbitCamera::up` covers historical
@@ -36,12 +38,13 @@ custom camera up-vector defaults, and public `PanelContext::camera` covers the
 Eye/Center/Up panel readouts in `box_stacking` and `imgui`. Public
 `KeyboardActionTrigger::Release` now covers the historical keyup messages in
 `box_stacking`, `empty`, and `imgui`, and public `PanelContext::lighting` now
-covers historical headlight checkboxes. Remaining audit gaps are mostly shadow
-or depth render settings, render hooks, panel plotting/table widgets, color
-editors/debug-grid controls, and example-specific simulation or posture
-controls rather than bare source-owned target handles, camera up-vector
-defaults, basic camera readouts, simple key-release callbacks, or headlight
-checkboxes.
+covers historical headlight checkboxes. Public `ApplicationOptions` callbacks
+now cover post-step and pre/post-render lifecycle hooks for `empty` and
+`imgui`. Remaining audit gaps are mostly shadow or depth render settings, panel
+plotting/table widgets, color editors/debug-grid controls, and example-specific
+simulation or posture controls rather than bare source-owned target handles,
+camera up-vector defaults, basic camera readouts, simple key-release callbacks,
+headlight checkboxes, or basic lifecycle hooks.
 
 ## Live Supervisor Steering
 
@@ -186,8 +189,8 @@ source-marker guards while tracking headlight toggles, camera-inspector text,
 keyboard release behavior, and render/post-step hooks for follow-up. Later local
 R24-15/R24-16 checkpoints restore camera-inspector text and keyboard release
 callbacks through public `dart::gui`; the later local R24-17 checkpoint
-restores headlight toggles, and render/post-step hooks remain. The current
-heightmap checkpoint restores
+restores headlight toggles, and the local R24-18 callback checkpoint restores
+render/post-step hooks. The current heightmap checkpoint restores
 `--demo interactive|alignment`, a mutable `HeightmapShaped` `SimpleFrame`,
 renderer-neutral panel controls, the ODE-backed alignment scene, camera/run
 defaults, README, changelog, and source-marker tests. The old OSG grid style

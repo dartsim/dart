@@ -154,8 +154,17 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   and restores keydown/key-release callbacks in `box_stacking`, `empty`, and
   `imgui`. R24-17 adds promoted `PanelContext::lighting` headlight state and
   restores historical headlight panel checkboxes in the migrated examples that
-  had been blocked on lighting state. These local checkpoints are not pushed.
-- Latest local R24-17 validation passed focused build for `atlas_simbicon`,
+  had been blocked on lighting state. R24-18 adds promoted
+  `ApplicationOptions::postStep`, `preRender`, and `postRender` callbacks and
+  restores the historical lifecycle-hook demos in `empty` and `imgui`. These
+  local checkpoints are not pushed.
+- Latest local R24-18 validation passed focused build for `empty`, `imgui`, and
+  `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct software-GL
+  screenshot analyzer smokes for `empty` (307200/307200 nonzero pixels) and
+  `imgui` (307200/307200); aggregate `examples` build; mandatory
+  `pixi run lint`; post-lint focused rebuild/CTest; and post-lint direct
+  screenshot smokes with the same nonzero counts.
+  R24-17 validation passed focused build for `atlas_simbicon`,
   `box_stacking`, `imgui`, `tinkertoy`, and
   `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct software-GL
   screenshot analyzer smokes for `atlas_simbicon` (1228564/1228800 nonzero
@@ -577,10 +586,11 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   keydown callbacks, panel title/sections, gravity control, viewer help,
   run/camera defaults, README, and marker guards. Keep direct backend UI types
   out of source. The local R24-15 checkpoint restores live camera-inspector text
-  through public `PanelContext::camera`; key-release callbacks and pre/post
-  render or post-step hooks remain public `dart::gui` API gaps unless their
-  APIs are added. The later local R24-17 lighting-state checkpoint restores the
-  headlight toggle.
+  through public `PanelContext::camera`. The local R24-16 checkpoint restores
+  key-release callbacks and shifted-`Q` distinction, the later local R24-17
+  lighting-state checkpoint restores the headlight toggle, and the local R24-18
+  application-callback checkpoint restores the post-step and pre/post-render
+  hooks.
 - Implementation state for this panel-extension slice:
   `examples/imgui/main.cpp` now owns an empty world with a selectable target
   frame, restores the historical panel title, Play/Pause/Time, gravity
@@ -588,9 +598,10 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   callback demonstration, 640x480 default size, and camera home through public
   `dart::gui`. The local R24-15 checkpoint restores the live camera readout
   through public `PanelContext::camera`. The README and marker guards are in
-  place. Key-release callbacks, shifted-`Q` distinction, and pre/post render or
-  post-step hooks remain named public API gaps. The later local R24-17
-  lighting-state checkpoint restores the headlight toggle.
+  place. The later local R24-16 checkpoint restores key-release callbacks and
+  shifted-`Q` distinction, the later local R24-17 lighting-state checkpoint
+  restores the headlight toggle, and the local R24-18 application-callback
+  checkpoint restores the post-step and pre/post-render hooks.
 - Panel-extension validation completed before checkpoint commit: focused C++
   build for `imgui` and `UNIT_gui_FilamentSceneExtraction`, focused CTest for
   `UNIT_gui_FilamentSceneExtraction`, direct and pixi `imgui` headless

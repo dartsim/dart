@@ -71,6 +71,7 @@ struct DartScene
   std::vector<dart::gui::Gizmo> gizmos;
   std::vector<dart::gui::KeyboardAction> keyboardActions;
   std::function<void()> preStep;
+  std::function<void()> postStep;
 };
 
 enum class ExampleScene
@@ -114,6 +115,9 @@ struct AppOptions
   dart::gui::RunOptions run;
   dart::simulation::WorldPtr world;
   std::function<void()> preStep;
+  std::function<void()> postStep;
+  std::function<void()> preRender;
+  std::function<void()> postRender;
   std::optional<dart::gui::OrbitCamera> camera;
   std::vector<dart::gui::Panel> panels;
   std::vector<dart::gui::Gizmo> gizmos;

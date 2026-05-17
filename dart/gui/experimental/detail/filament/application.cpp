@@ -136,10 +136,13 @@ int runFilamentGuiApplicationImpl(
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;
     appOptions.preStep = applicationOptions.preStep;
+    appOptions.postStep = applicationOptions.postStep;
     appOptions.gizmos = applicationOptions.gizmos;
     appOptions.ikHandles = applicationOptions.ikHandles;
     appOptions.keyboardActions = applicationOptions.keyboardActions;
   }
+  appOptions.preRender = applicationOptions.preRender;
+  appOptions.postRender = applicationOptions.postRender;
   appOptions.panels = applicationOptions.panels;
   const RunOptions& runOptions = appOptions.run;
 
@@ -305,6 +308,9 @@ int runFilamentGuiApplicationImpl(
     }
     setSceneLightsEnabled(*engine, lights, headlightsEnabled);
 
+    if (appOptions.preRender) {
+      appOptions.preRender();
+    }
     const FrameRenderResult frameRenderResult = renderApplicationFrame(
         renderContext,
         appOptions.showUi ? imguiOverlay.view : nullptr,
@@ -315,6 +321,9 @@ int runFilamentGuiApplicationImpl(
         screenshotCapture,
         lifecycle,
         profile);
+    if (!frameRenderResult.failed && appOptions.postRender) {
+      appOptions.postRender();
+    }
     if (frameRenderResult.failed) {
       frameCaptureSucceeded = false;
       break;

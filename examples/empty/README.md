@@ -5,7 +5,8 @@
 - Goal: show a minimal source-owned `dart::gui` viewer scaffold with public
   frame selection, drag/nudge controls, panel controls, and keyboard actions.
 - Concepts/APIs: `dart::gui::ApplicationOptions`, `SimpleFrame`,
-  renderer-neutral panels, `KeyboardAction`, run defaults, and camera defaults.
+  renderer-neutral panels, lifecycle/render callbacks, `KeyboardAction`, run
+  defaults, and camera defaults.
 - Expected output: a selectable anchor, draggable child frame, and axis markers
   in the Filament-backed `dart::gui` viewer.
 
@@ -35,6 +36,7 @@ command-line overrides handled by the shared `dart::gui` runner.
 - `q`, `Q`, Left, and Right print the historical keydown and key-release
   messages through
   renderer-neutral `KeyboardAction` callbacks.
+- The panel reports pre-step, post-step, pre-render, and post-render callback
+  counts through the promoted application callback hooks.
 
-The legacy pre/post render hooks remain public API follow-ups; the example does
-not include backend event-handler types.
+The example does not include backend event-handler types.

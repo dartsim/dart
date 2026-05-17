@@ -60,6 +60,9 @@ struct PanelExtensionScene
   std::shared_ptr<dart::dynamics::SimpleFrame> target;
   std::vector<dart::gui::Gizmo> gizmos;
   std::shared_ptr<int> preStepCount;
+  std::shared_ptr<int> postStepCount;
+  std::shared_ptr<int> preRenderCount;
+  std::shared_ptr<int> postRenderCount;
   std::shared_ptr<bool> gravityEnabled;
 };
 
@@ -82,6 +85,9 @@ PanelExtensionScene createPanelExtensionScene()
   gizmo.size = 0.24;
   scene.gizmos.push_back(std::move(gizmo));
   scene.preStepCount = std::make_shared<int>(0);
+  scene.postStepCount = std::make_shared<int>(0);
+  scene.preRenderCount = std::make_shared<int>(0);
+  scene.postRenderCount = std::make_shared<int>(0);
   scene.gravityEnabled = std::make_shared<bool>(true);
   return scene;
 }
@@ -219,6 +225,18 @@ dart::gui::Panel createPanelExtensionControls(const PanelExtensionScene& scene)
     if (scene.preStepCount != nullptr) {
       panel.text("Pre-step callbacks: " + std::to_string(*scene.preStepCount));
     }
+    if (scene.postStepCount != nullptr) {
+      panel.text(
+          "Post-step callbacks: " + std::to_string(*scene.postStepCount));
+    }
+    if (scene.preRenderCount != nullptr) {
+      panel.text(
+          "Pre-render callbacks: " + std::to_string(*scene.preRenderCount));
+    }
+    if (scene.postRenderCount != nullptr) {
+      panel.text(
+          "Post-render callbacks: " + std::to_string(*scene.postRenderCount));
+    }
 
     panel.separator();
     panel.text("World Options");
@@ -267,6 +285,21 @@ int main(int argc, char* argv[])
   options.camera = makePanelExtensionCamera();
   options.gizmos = scene.gizmos;
   options.preStep = [count = scene.preStepCount]() {
+    if (count != nullptr) {
+      ++*count;
+    }
+  };
+  options.postStep = [count = scene.postStepCount]() {
+    if (count != nullptr) {
+      ++*count;
+    }
+  };
+  options.preRender = [count = scene.preRenderCount]() {
+    if (count != nullptr) {
+      ++*count;
+    }
+  };
+  options.postRender = [count = scene.postRenderCount]() {
     if (count != nullptr) {
       ++*count;
     }

@@ -5,16 +5,15 @@
 - Goal: demonstrate the promoted `dart::gui` panel-extension surface with a
   selectable target frame and source-owned controls.
 - Concepts/APIs: `dart::gui::ApplicationOptions`, custom panels, keyboard
-  actions, public `dart::gui::Gizmo` target affordances, per-step callbacks,
-  run defaults, and camera defaults.
+  actions, public `dart::gui::Gizmo` target affordances, per-step and render
+  callbacks, run defaults, and camera defaults.
 - Expected output: an empty world with a target transform gizmo and a
   `Tinkertoy Control` panel.
 - Controls: left-drag the target gizmo arrows/planes/rings. Press and release q,
   Q, Left, or Right to exercise the promoted keyboard callbacks. `--gui-scale`
   adjusts the GUI scale, and `--width` / `--height` override the default 640x480
-  window size.
-- Remaining gaps: pre/post render or post-step hooks need public
-  renderer-neutral APIs.
+  window size. The panel reports pre-step, post-step, pre-render, and
+  post-render callback counts.
 
 ## Run
 

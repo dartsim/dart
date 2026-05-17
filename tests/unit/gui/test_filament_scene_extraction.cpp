@@ -737,6 +737,9 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(context.camera.up.isApprox(Eigen::Vector3d::UnitY()));
   EXPECT_TRUE(headlights);
   bool preStepCalled = false;
+  bool postStepCalled = false;
+  bool preRenderCalled = false;
+  bool postRenderCalled = false;
   EXPECT_EQ(
       builder.events,
       (std::vector<std::string>{
@@ -762,6 +765,15 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   options.preStep = [&preStepCalled]() {
     preStepCalled = true;
   };
+  options.postStep = [&postStepCalled]() {
+    postStepCalled = true;
+  };
+  options.preRender = [&preRenderCalled]() {
+    preRenderCalled = true;
+  };
+  options.postRender = [&postRenderCalled]() {
+    postRenderCalled = true;
+  };
   options.runDefaults = dart::gui::RunOptions{};
   options.runDefaults->width = 640;
   options.runDefaults->height = 480;
@@ -773,6 +785,12 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_EQ(options.world->getName(), "panel_test");
   options.preStep();
   EXPECT_TRUE(preStepCalled);
+  options.postStep();
+  EXPECT_TRUE(postStepCalled);
+  options.preRender();
+  EXPECT_TRUE(preRenderCalled);
+  options.postRender();
+  EXPECT_TRUE(postRenderCalled);
   ASSERT_TRUE(options.runDefaults.has_value());
   EXPECT_EQ(options.runDefaults->width, 640);
   EXPECT_EQ(options.runDefaults->height, 480);
@@ -2062,6 +2080,12 @@ TEST(FilamentSceneExtraction, PanelExtensionExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("Pre-step callbacks"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.postStep"), std::string::npos);
+  EXPECT_NE(mainSource.find("Post-step callbacks"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.preRender"), std::string::npos);
+  EXPECT_NE(mainSource.find("Pre-render callbacks"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.postRender"), std::string::npos);
+  EXPECT_NE(mainSource.find("Post-render callbacks"), std::string::npos);
   EXPECT_NE(
       mainSource.find("makePanelExtensionRunDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
@@ -2093,6 +2117,7 @@ TEST(FilamentSceneExtraction, PanelExtensionExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("Tinkertoy Control"), std::string::npos);
   EXPECT_NE(readmeSource.find("640x480"), std::string::npos);
   EXPECT_NE(readmeSource.find("keyboard callbacks"), std::string::npos);
+  EXPECT_EQ(readmeSource.find("Remaining gaps"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
   EXPECT_EQ(mainSource.find("ImGuiViewer"), std::string::npos);
   EXPECT_EQ(mainSource.find("WorldNode"), std::string::npos);
@@ -3319,6 +3344,9 @@ TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
   EXPECT_NE(emptySource.find("draggable"), std::string::npos);
   EXPECT_NE(emptySource.find("createEmptyWorld"), std::string::npos);
   EXPECT_NE(emptySource.find("emptyPreStepScaffold"), std::string::npos);
+  EXPECT_NE(emptySource.find("emptyPostStepScaffold"), std::string::npos);
+  EXPECT_NE(emptySource.find("emptyPreRenderScaffold"), std::string::npos);
+  EXPECT_NE(emptySource.find("emptyPostRenderScaffold"), std::string::npos);
   EXPECT_NE(emptySource.find("createEmptyKeyboardActions"), std::string::npos);
   EXPECT_NE(
       emptySource.find("KeyboardShortcut::characterKey('q')"),
@@ -3338,7 +3366,10 @@ TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
   EXPECT_NE(emptySource.find("Left arrow key released"), std::string::npos);
   EXPECT_NE(emptySource.find("Right arrow key pressed"), std::string::npos);
   EXPECT_NE(emptySource.find("Right arrow key released"), std::string::npos);
-  EXPECT_NE(emptySource.find("Pre/post render hooks"), std::string::npos);
+  EXPECT_NE(emptySource.find("Pre-step callbacks"), std::string::npos);
+  EXPECT_NE(emptySource.find("Post-step callbacks"), std::string::npos);
+  EXPECT_NE(emptySource.find("Pre-render callbacks"), std::string::npos);
+  EXPECT_NE(emptySource.find("Post-render callbacks"), std::string::npos);
   EXPECT_NE(emptySource.find("makeEmptyRunDefaults"), std::string::npos);
   EXPECT_NE(emptySource.find("options.width = 640"), std::string::npos);
   EXPECT_NE(emptySource.find("options.height = 480"), std::string::npos);
@@ -3351,12 +3382,17 @@ TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
       std::string::npos);
   EXPECT_NE(emptySource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(emptySource.find("options.preStep"), std::string::npos);
+  EXPECT_NE(emptySource.find("options.postStep"), std::string::npos);
+  EXPECT_NE(emptySource.find("options.preRender"), std::string::npos);
+  EXPECT_NE(emptySource.find("options.postRender"), std::string::npos);
   EXPECT_NE(emptySource.find("options.world"), std::string::npos);
   EXPECT_NE(emptyReadmeSource.find("Empty Viewer Example"), std::string::npos);
   EXPECT_NE(emptyReadmeSource.find("dart::gui"), std::string::npos);
   EXPECT_NE(emptyReadmeSource.find("640x480"), std::string::npos);
   EXPECT_NE(
       emptyReadmeSource.find("keydown and key-release"), std::string::npos);
+  EXPECT_NE(emptyReadmeSource.find("render callbacks"), std::string::npos);
+  EXPECT_EQ(emptyReadmeSource.find("public API follow-up"), std::string::npos);
   EXPECT_EQ(emptySource.find("options.defaultScene"), std::string::npos);
 
   const auto eventSource = readSourceFile(

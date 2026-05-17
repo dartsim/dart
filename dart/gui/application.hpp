@@ -121,6 +121,9 @@ struct ApplicationOptions
   dart::simulation::WorldPtr world;
   std::optional<RunOptions> runDefaults;
   std::function<void()> preStep;
+  std::function<void()> postStep;
+  std::function<void()> preRender;
+  std::function<void()> postRender;
   std::optional<OrbitCamera> camera;
   std::string defaultScene;
   std::vector<Panel> panels;
