@@ -225,10 +225,23 @@ OrbitCameraBasis makeOrbitCameraBasis(const OrbitCamera& camera)
     basis.forward.normalize();
   }
 
-  const Eigen::Vector3d worldUp = Eigen::Vector3d::UnitZ();
-  basis.right = basis.forward.cross(worldUp);
+  Eigen::Vector3d upReference = camera.up;
+  if (!upReference.allFinite() || upReference.squaredNorm() < 1e-12) {
+    upReference = Eigen::Vector3d::UnitZ();
+  } else {
+    upReference.normalize();
+  }
+
+  basis.right = basis.forward.cross(upReference);
   if (basis.right.squaredNorm() < 1e-12) {
-    basis.right = Eigen::Vector3d::UnitX();
+    const Eigen::Vector3d fallbackUp
+        = std::abs(basis.forward.dot(Eigen::Vector3d::UnitZ())) < 0.95
+              ? Eigen::Vector3d::UnitZ()
+              : Eigen::Vector3d::UnitY();
+    basis.right = basis.forward.cross(fallbackUp);
+  }
+  if (basis.right.squaredNorm() < 1e-12) {
+    basis.right = Eigen::Vector3d::UnitY();
   } else {
     basis.right.normalize();
   }

@@ -153,6 +153,7 @@ dart::gui::OrbitCamera makeHelloWorldCamera()
 {
   dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d(0.0, 0.0, 0.50);
+  camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94);
   camera.yaw = 0.8848934155088675;
   camera.pitch = 0.27389034471171636;
   camera.distance = 4.214747916542578;

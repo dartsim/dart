@@ -178,11 +178,12 @@ void configureViewportCamera(
       projection.nearPlane,
       projection.farPlane,
       ::filament::Camera::Fov::VERTICAL);
-  const Eigen::Vector3d eye = dart::gui::cameraEye(orbitCamera);
+  const auto basis = dart::gui::makeOrbitCameraBasis(orbitCamera);
+  const Eigen::Vector3d& eye = basis.eye;
   camera.lookAt(
       {eye.x(), eye.y(), eye.z()},
       {orbitCamera.target.x(), orbitCamera.target.y(), orbitCamera.target.z()},
-      {0.0, 0.0, 1.0});
+      {basis.up.x(), basis.up.y(), basis.up.z()});
 }
 
 float3 orbitingKeyLightDirection(

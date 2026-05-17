@@ -271,6 +271,7 @@ dart::gui::OrbitCamera makeCapsuleCamera()
 {
   dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d(0.0, 0.0, 0.2);
+  camera.up = Eigen::Vector3d(-0.2, -0.2, 0.95);
   camera.yaw = 0.7853981633974483;
   camera.pitch = 0.3523514203703505;
   camera.distance = 3.7669616403674726;

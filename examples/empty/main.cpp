@@ -157,6 +157,7 @@ dart::gui::OrbitCamera makeEmptyCamera()
 {
   dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d::Zero();
+  camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94);
   camera.yaw = 0.8848934155088675;
   camera.pitch = 0.38410042777133657;
   camera.distance = 4.376539729055364;

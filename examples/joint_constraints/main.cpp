@@ -254,6 +254,7 @@ dart::gui::OrbitCamera makeJointConstraintsCamera()
 {
   dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d::Zero();
+  camera.up = Eigen::Vector3d::UnitY();
   camera.yaw = 0.5404195002705842;
   camera.pitch = 0.4758822496604165;
   camera.distance = 6.557438524302;

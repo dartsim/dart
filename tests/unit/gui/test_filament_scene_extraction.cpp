@@ -1451,6 +1451,9 @@ TEST(FilamentSceneExtraction, HelloWorldExamplePreservesParityMarkers)
   EXPECT_NE(
       mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.50)"),
       std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94)"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("options.panels"), std::string::npos);
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
   EXPECT_NE(readmeSource.find("Hello World Example"), std::string::npos);
@@ -1492,6 +1495,9 @@ TEST(FilamentSceneExtraction, CapsuleGroundContactPreservesParityMarkers)
   EXPECT_NE(mainSource.find("makeCapsuleCamera"), std::string::npos);
   EXPECT_NE(
       mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.2)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.up = Eigen::Vector3d(-0.2, -0.2, 0.95)"),
       std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("options.world"), std::string::npos);
@@ -2020,6 +2026,9 @@ TEST(FilamentSceneExtraction, PanelExtensionExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
   EXPECT_NE(mainSource.find("makePanelExtensionCamera"), std::string::npos);
   EXPECT_NE(
+      mainSource.find("camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94)"),
+      std::string::npos);
+  EXPECT_NE(
       mainSource.find("camera.yaw = 0.8848934155088675"), std::string::npos);
   EXPECT_NE(
       mainSource.find("camera.pitch = 0.38410042777133657"), std::string::npos);
@@ -2077,6 +2086,9 @@ TEST(FilamentSceneExtraction, RigidShapesExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("makeRigidShapesCamera"), std::string::npos);
   EXPECT_NE(
       mainSource.find("camera.target = Eigen::Vector3d::Zero()"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.up = Eigen::Vector3d::UnitY()"),
       std::string::npos);
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
@@ -2343,6 +2355,9 @@ TEST(FilamentSceneExtraction, HybridDynamicsExamplePreservesLegacyParityMarkers)
       mainSource.find("printHybridDynamicsInstructions"), std::string::npos);
   EXPECT_NE(mainSource.find("makeHybridDynamicsCamera"), std::string::npos);
   EXPECT_NE(
+      mainSource.find("camera.up = Eigen::Vector3d::UnitY()"),
+      std::string::npos);
+  EXPECT_NE(
       mainSource.find("makeHybridDynamicsRunDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
   EXPECT_NE(mainSource.find("options.height = 480"), std::string::npos);
@@ -2391,6 +2406,9 @@ TEST(
   EXPECT_EQ(mainSource.find("colorBiped"), std::string::npos);
   EXPECT_EQ(mainSource.find("setColor("), std::string::npos);
   EXPECT_NE(mainSource.find("makeJointConstraintsCamera"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("camera.up = Eigen::Vector3d::UnitY()"),
+      std::string::npos);
   EXPECT_NE(
       mainSource.find("makeJointConstraintsRunDefaults"), std::string::npos);
   EXPECT_NE(mainSource.find("options.width = 640"), std::string::npos);
@@ -2651,6 +2669,9 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, 0.50)"),
       std::string::npos);
   EXPECT_NE(
+      mainSource.find("camera.up = Eigen::Vector3d(-0.20, -0.08, 0.98)"),
+      std::string::npos);
+  EXPECT_NE(
       mainSource.find("camera.yaw = 0.5118558424318241"), std::string::npos);
   EXPECT_NE(mainSource.find("options.camera"), std::string::npos);
   EXPECT_EQ(mainSource.find("options.defaultScene"), std::string::npos);
@@ -2813,6 +2834,9 @@ TEST(FilamentSceneExtraction, TargetHandleExamplesPreserveParityMarkers)
   EXPECT_NE(operationalSource.find("options.height = 480"), std::string::npos);
   EXPECT_NE(
       operationalSource.find("makeOperationalSpaceCamera"), std::string::npos);
+  EXPECT_NE(
+      operationalSource.find("camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94)"),
+      std::string::npos);
   EXPECT_NE(
       operationalSource.find("camera.yaw = 0.8848934155088675"),
       std::string::npos);
@@ -3263,6 +3287,9 @@ TEST(FilamentSceneExtraction, InteractionEventExamplesPreserveParityMarkers)
   EXPECT_NE(emptySource.find("makeEmptyCamera"), std::string::npos);
   EXPECT_NE(
       emptySource.find("camera.target = Eigen::Vector3d::Zero()"),
+      std::string::npos);
+  EXPECT_NE(
+      emptySource.find("camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94)"),
       std::string::npos);
   EXPECT_NE(emptySource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(emptySource.find("options.preStep"), std::string::npos);
@@ -5331,6 +5358,14 @@ TEST(FilamentSceneExtraction, OrbitCamera_UpdateBasisAndPickingAreStable)
   EXPECT_TRUE(basis.forward.isApprox(-Eigen::Vector3d::UnitX()));
   EXPECT_TRUE(basis.right.isApprox(Eigen::Vector3d::UnitY()));
   EXPECT_TRUE(basis.up.isApprox(Eigen::Vector3d::UnitZ()));
+
+  dart::gui::OrbitCamera yUpCamera = camera;
+  yUpCamera.up = Eigen::Vector3d::UnitY();
+  const auto yUpBasis = dart::gui::makeOrbitCameraBasis(yUpCamera);
+  EXPECT_TRUE(yUpBasis.eye.isApprox(Eigen::Vector3d(2.0, 0.0, 0.0)));
+  EXPECT_TRUE(yUpBasis.forward.isApprox(-Eigen::Vector3d::UnitX()));
+  EXPECT_TRUE(yUpBasis.right.isApprox(-Eigen::Vector3d::UnitZ()));
+  EXPECT_TRUE(yUpBasis.up.isApprox(Eigen::Vector3d::UnitY()));
 
   dart::gui::DirectionalNudgeInput nudgeInput;
   nudgeInput.right = true;

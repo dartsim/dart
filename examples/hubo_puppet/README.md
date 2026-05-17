@@ -26,8 +26,9 @@
 - X/C toggles left/right foot support, P prints the current DOF positions, and T
   resets the relaxed posture while preserving the root x/y/yaw placement.
 - The historical OpenSceneGraph example also supported Shift movement
-  amplification, hold/release R balance optimization, exact COM marker colors,
-  and a custom camera up vector. Those remain promoted API or solver follow-ups.
+  amplification, hold/release R balance optimization, and exact COM marker
+  colors. Those remain promoted API or solver follow-ups. The historical custom
+  camera up vector is restored through public `dart::gui::OrbitCamera`.
 
 ## Run In Tree
 

@@ -314,9 +314,9 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     camera home, and missing renderer-neutral replacements for the historical
     `X`/`C` support toggles, `P` DOF print, and `T` relaxed-pose reset. Repair
     those now. Keep Shift movement amplification, hold/release `R` posture
-    optimization with balance mode, exact COM marker colors, and historical
-    camera roll/up-vector parity as named promoted API or solver follow-ups
-    unless those surfaces are added in this checkpoint.
+    optimization with balance mode, and exact COM marker colors as named
+    promoted API or solver follow-ups. Historical camera roll/up-vector parity
+    is restored by the later R24-14 public `OrbitCamera::up` checkpoint.
     Implementation and pre-lint validation are complete: focused build/CTest,
     direct Hubo headless screenshot, Python C++ example-runner tests, aggregate
     `examples` build, and `git diff --check` passed locally.
@@ -349,9 +349,8 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     README, missing 640x480 `ApplicationOptions::runDefaults`, renamed and
     recolored loaded SKEL skeletons/body visuals, missing historical harness
     console messages, and missing source-marker coverage for those restored
-    contracts. Restore those now; keep the historical `(0, 1, 0)` camera up
-    vector as a named public camera API gap unless a promoted camera roll/up
-    surface is added in this checkpoint.
+    contracts. Restore those now. The later R24-14 public `OrbitCamera::up`
+    checkpoint restores the historical `(0, 1, 0)` camera up vector.
     Implementation and pre-lint validation are complete: focused build/CTest,
     direct and pixi headless screenshot smokes, Python C++ example-runner tests,
     aggregate `examples` build, and `git diff --check` passed locally.
@@ -364,9 +363,9 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     README, missing 640x480 `ApplicationOptions::runDefaults`, renamed and
     recolored loaded SKEL skeletons/body visuals, missing historical
     perturbation and harness console messages, and missing source-marker
-    coverage for those restored contracts. Restore those now; keep the
-    historical `(0, 1, 0)` camera up vector as a named public camera API gap
-    unless a promoted camera roll/up surface is added in this checkpoint.
+    coverage for those restored contracts. Restore those now. The later R24-14
+    public `OrbitCamera::up` checkpoint restores the historical `(0, 1, 0)`
+    camera up vector.
     Implementation and validation are complete: focused build/CTest, direct
     and pixi headless screenshot smokes, Python C++ example-runner tests,
     aggregate `examples` build, `git diff --check`, mandatory
@@ -453,8 +452,9 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     effector, 640x480 defaults, camera home, console/panel instructions,
     README/capture docs, and marker coverage. 1/2/3 aliases were added to
     promoted axis-constrained drag so the historical constraint keys work
-    without reintroducing OSG. The hidden shadow toggle and exact custom camera
-    up vector remain public API gaps. Pre-lint validation includes focused
+    without reintroducing OSG. The hidden shadow toggle remains a public API gap;
+    the exact custom camera up vector is restored by the later R24-14 public
+    `OrbitCamera::up` checkpoint. Pre-lint validation includes focused
     builds, focused CTest, direct and pixi software-GL screenshot analyzer
     checks, image-sequence analyzer checks, aggregate `build-examples`, Python
     C++ example runner tests, and direct visual inspection of the KR5 capture.
@@ -681,6 +681,19 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `examples` build, mandatory `pixi run lint`, post-lint focused
     rebuild/CTest, post-lint direct screenshot smoke, stale window-title/text
     scan, and `git diff --check`.
+75. The current R24-14 implementation promotes `dart::gui::OrbitCamera::up` and
+    routes orbit camera basis construction plus Filament `lookAt` calls through
+    the configured up vector. This restores historical custom camera up-vector
+    defaults for `hello_world`, `capsule_ground_contact`, `empty`, `imgui`,
+    `hubo_puppet`, `hybrid_dynamics`, `joint_constraints`,
+    `operational_space_control`, and `rigid_shapes` while keeping true render
+    settings and example-specific solver/control gaps explicit. Validation
+    passed focused build for `UNIT_gui_FilamentSceneExtraction`,
+    `operational_space_control`, and `hybrid_dynamics`, focused CTest, direct
+    software-GL screenshot analyzer smokes for `operational_space_control` and
+    `hybrid_dynamics`, aggregate `examples` build, mandatory `pixi run lint`,
+    post-lint focused rebuild/CTest, post-lint direct screenshot smokes, stale
+    camera-up gap text scan, and `git diff --check`.
 
 ## Checkpoint Rule
 

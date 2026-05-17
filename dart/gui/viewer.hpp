@@ -77,6 +77,7 @@ struct ViewerLifecycleState
 struct OrbitCamera
 {
   Eigen::Vector3d target = Eigen::Vector3d(0.0, 0.0, 0.45);
+  Eigen::Vector3d up = Eigen::Vector3d::UnitZ();
   double yaw = -1.03;
   double pitch = 0.29;
   double distance = 6.1;

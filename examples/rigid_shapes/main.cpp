@@ -596,6 +596,7 @@ dart::gui::OrbitCamera makeRigidShapesCamera()
 {
   dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d::Zero();
+  camera.up = Eigen::Vector3d::UnitY();
   camera.yaw = 0.7853981633974483;
   camera.pitch = 0.6154797086703874;
   camera.distance = 3.4641016151377544;

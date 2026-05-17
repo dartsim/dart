@@ -839,6 +839,7 @@ dart::gui::OrbitCamera makeHuboPuppetCamera()
 {
   dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d(0.0, 0.0, 0.50);
+  camera.up = Eigen::Vector3d(-0.20, -0.08, 0.98);
   camera.yaw = 0.5118558424318241;
   camera.pitch = 0.22626228031830078;
   camera.distance = 6.285196894290584;

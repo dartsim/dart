@@ -145,8 +145,18 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   Puppet, G1 Puppet, operational-space control, WAM IKFast, the panel-extension
   `imgui` example, Tinkertoy's force target, and the drag-and-drop interactive
   frame, and R24-13 adds promoted `RunOptions::windowTitle` support for native
-  GLFW windows and Atlas Simbicon. These local checkpoints are not pushed.
-- Latest local R24-13 validation passed focused build for `atlas_simbicon` plus
+  GLFW windows and Atlas Simbicon. R24-14 adds promoted `OrbitCamera::up`
+  support and restores historical camera up-vector defaults across the migrated
+  examples that carried custom OSG up vectors. These local checkpoints are not
+  pushed.
+- Latest local R24-14 validation passed focused build for
+  `UNIT_gui_FilamentSceneExtraction`, `operational_space_control`, and
+  `hybrid_dynamics`; focused CTest; direct software-GL screenshot analyzer
+  smokes for `operational_space_control` and `hybrid_dynamics`; aggregate
+  `examples` build; mandatory `pixi run lint`; post-lint focused rebuild/CTest;
+  post-lint direct screenshot smokes; stale camera-up gap text scan; and
+  `git diff --check`.
+  R24-13 validation passed focused build for `atlas_simbicon` plus
   `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct 1280x960
   software-GL screenshot analyzer smoke for `atlas_simbicon`, aggregate
   `examples` build, mandatory `pixi run lint`, post-lint focused
@@ -179,8 +189,8 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
 - Latest pushed strict re-open checkpoint: `examples/joint_constraints/`
   restores the missing README, 640x480 launch default, loaded SKEL
   names/visuals, historical perturbation and harness console messages, and
-  source-marker guards. The old custom camera up vector remains a public camera
-  roll/up-vector API gap.
+  source-marker guards. The old custom camera up vector is restored by the local
+  R24-14 public `OrbitCamera::up` checkpoint.
 - Active strict re-open cursor: `examples/lcp_physics/`. Compare it against
   `520993d7301^:examples/lcp_physics` before coding, then restore or explicitly
   classify every historical scenario/solver, command-line, camera/default,
@@ -217,8 +227,9 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   camera home, console/panel instructions, README/capture docs, and marker
   coverage. 1/2/3 aliases were added to the promoted selection drag axis
   constraints so the old axis-control keys work alongside the existing X/Y/Z
-  aliases. Shadow toggling and exact custom camera up-vector/roll remain public
-  API gaps.
+  aliases. Shadow toggling remains a public API gap; the exact custom camera
+  up-vector/roll is restored by the local R24-14 public `OrbitCamera::up`
+  checkpoint.
 - Operational-space-control pre-lint validation has passed: focused target and
   marker-test build, focused `UNIT_gui_FilamentSceneExtraction` CTest, direct
   and pixi software-GL screenshot analyzer checks, image-sequence analyzer
@@ -453,8 +464,9 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   reset, always-on support-polygon overlay, 1280x960 run defaults, camera home,
   README, and marker guards through public `dart::gui`. Shift movement
   amplification, hold/release R balance optimization, exact COM marker colors,
-  and historical camera up-vector/roll remain named promoted API or solver
-  follow-ups.
+  and deeper posture/balance behavior remain named promoted API or solver
+  follow-ups. Historical camera up-vector/roll is restored by the local R24-14
+  public `OrbitCamera::up` checkpoint.
 - Latest maintainer correction after the Hubo work: there are still many more
   incompletely restored examples, and `examples/fetch/` remains the concrete
   warning case. After the Hubo checkpoint is committed and pushed, re-open
@@ -1076,8 +1088,8 @@ fetch` llvmpipe screenshots
   of preserving the historical `fullbody1.skel` visuals, and the promoted
   harness action no longer prints "The pelvis is locked/unlocked." Restore those
   now through public `dart::gui`. The historical custom camera up vector
-  `(0, 1, 0)` remains a named `OrbitCamera` API gap unless a public roll/up
-  vector surface is added in this checkpoint.
+  `(0, 1, 0)` is restored by the local R24-14 public `OrbitCamera::up`
+  checkpoint.
 - Active `examples/hybrid_dynamics/` implementation state: README, 640x480
   run defaults, loaded SKEL names/visuals, console instructions, and
   pelvis-lock/unlock console messages are restored. Pre-lint validation passed:

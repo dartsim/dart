@@ -38,6 +38,5 @@ pixi run ex operational_space_control --headless --frames 3 --out /tmp/operation
 
 - The historical OSG shadow toggle is tracked as a public renderer-neutral
   shadow-control API gap.
-- The historical camera home used a custom up vector; the promoted camera
-  restores the same eye/target framing, while exact roll/up-vector control is a
-  public camera API gap.
+- The historical camera home and custom up vector are restored through public
+  `dart::gui::OrbitCamera`.

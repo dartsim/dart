@@ -116,6 +116,8 @@
   - Restored the joint/dynamics example batch (`hybrid_dynamics`,
     `biped_stand`, `joint_constraints`, `free_joint_cases`, and
     `human_joint_limits`) as source-defined `dart::gui` examples.
+  - Added public `dart::gui::OrbitCamera` up-vector control and restored
+    historical camera roll/up-vector defaults across migrated GUI examples.
   - Restored the `atlas_simbicon` example's Simbicon controller/state files,
     pre-step control loop, perturbation and state-machine keyboard actions,
     gravity/harness/stride panel controls, native window title,
