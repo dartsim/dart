@@ -141,6 +141,8 @@
   - Restored the `atlas_puppet` example's number-key target activation,
     support toggles, DOF print/reset shortcuts, and source-owned support
     polygon/center-of-mass validity overlays.
+  - Restored the `atlas_puppet` example's relaxed-posture objective, balance
+    constraint, whole-body IK solve path, and hold/release R balance controls.
   - Added public `dart::gui::PanelBuilder` table and color-swatch controls and
     restored the Mimic Pendulums diagnostics table and rig legend.
   - Restored the `hardcoded_design` example's historical wireframe link

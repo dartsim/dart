@@ -2735,6 +2735,14 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("r_arm_shx"), std::string::npos);
   EXPECT_NE(mainSource.find("l_arm_shx"), std::string::npos);
   EXPECT_NE(mainSource.find("setUnconstrainedIkBounds"), std::string::npos);
+  EXPECT_NE(mainSource.find("RelaxedPosture"), std::string::npos);
+  EXPECT_NE(mainSource.find("enforceIdealPosture"), std::string::npos);
+  EXPECT_NE(mainSource.find("setupAtlasWholeBodySolver"), std::string::npos);
+  EXPECT_NE(mainSource.find("GradientDescentSolver"), std::string::npos);
+  EXPECT_NE(mainSource.find("BalanceConstraint"), std::string::npos);
+  EXPECT_NE(mainSource.find("OPTIMIZE_BALANCE"), std::string::npos);
+  EXPECT_NE(mainSource.find("FROM_CENTROID"), std::string::npos);
+  EXPECT_NE(mainSource.find("SHIFT_SUPPORT"), std::string::npos);
   EXPECT_NE(
       mainSource.find("Left-drag active target gizmo handles"),
       std::string::npos);
@@ -2745,7 +2753,7 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("options.preStep"), std::string::npos);
   EXPECT_NE(mainSource.find("options.keyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("applyRootTeleoperationStep"), std::string::npos);
-  EXPECT_NE(mainSource.find("solveActiveAtlasTargets"), std::string::npos);
+  EXPECT_NE(mainSource.find("solveAtlasWholeBody"), std::string::npos);
   EXPECT_NE(mainSource.find("WASD moves the root"), std::string::npos);
   EXPECT_NE(
       mainSource.find("Toggle left Atlas foot support"), std::string::npos);
@@ -2753,6 +2761,16 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("Toggle right Atlas foot support"), std::string::npos);
   EXPECT_NE(mainSource.find("Print Atlas DOFs"), std::string::npos);
   EXPECT_NE(mainSource.find("Reset Atlas relaxed posture"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Optimize Atlas posture and balance"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Restore Atlas centroid balance mode"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("KeyboardActionTrigger::Release"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Hold R to optimize whole-body posture and balance"),
+      std::string::npos);
   EXPECT_NE(
       mainSource.find("Blue/red COM marker shows support-polygon validity"),
       std::string::npos);
@@ -2780,13 +2798,14 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("rotation ring"), std::string::npos);
   EXPECT_NE(readmeSource.find("plane handles"), std::string::npos);
   EXPECT_NE(readmeSource.find("COM validity"), std::string::npos);
-  EXPECT_NE(readmeSource.find("Only active targets solve"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("whole-body posture and balance"), std::string::npos);
+  EXPECT_NE(readmeSource.find("relaxed-posture objective"), std::string::npos);
+  EXPECT_NE(readmeSource.find("balance"), std::string::npos);
+  EXPECT_NE(readmeSource.find("constraint"), std::string::npos);
   EXPECT_NE(readmeSource.find("COM marker is blue"), std::string::npos);
   EXPECT_NE(readmeSource.find("pixi run ex atlas_puppet"), std::string::npos);
   EXPECT_NE(readmeSource.find("1280"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("hold/release R whole-body posture"),
-      std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)

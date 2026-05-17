@@ -25,8 +25,9 @@ Simulation Event Handler help-alias cleanup, the R24-23 `hardcoded_design`
 wireframe cleanup, the R24-24 Heightmap/Point Cloud source-owned grid cleanup,
 the R24-25 `lcp_physics` metric-diagnostics cleanup, and the R24-26
 `hubo_puppet` COM-overlay cleanup, and the R24-27 `atlas_puppet`
-target/support cleanup. R24-16 adds key-release triggers for promoted keyboard
-actions and restores
+target/support cleanup, and the R24-28 `atlas_puppet` whole-body solver
+cleanup. R24-16 adds key-release triggers for promoted keyboard actions and
+restores
 keydown/key-release callbacks in the affected migrated examples. R24-17 adds
 `PanelContext::lighting` headlight state and restores historical headlight
 checkboxes through public `dart::gui`. R24-18 adds public
@@ -49,13 +50,15 @@ R24-27 restores `atlas_puppet` target activation/deactivation, active-target
 solving, X/C support toggles, P/T diagnostics, and source-owned
 support-polygon/COM overlays. Its focused build, marker CTest, mandatory lint,
 post-lint rebuild/CTest, and Atlas headless smoke analyzer validation pass
-locally.
+locally. R24-28 restores the Atlas source-owned `RelaxedPosture` objective,
+public `BalanceConstraint`, whole-body IK solve path, and hold/release R
+posture/balance optimization.
 Do not push these local checkpoints without explicit maintainer/user approval
 in the active session. Leave the pre-existing local
 `docs/dev_tasks/filament_gui/STEERING.md` edits unstaged unless the maintainer
 explicitly asks to include them.
 
-Immediate next slice after the R24-27 Atlas target/support rollout: continue
+Immediate next slice after the R24-28 Atlas solver rollout: continue
 reducing the named public API gaps in `11-example-parity-audit.md`. Public
 `dart::gui::Gizmo` now covers the source-owned manipulation affordances for the
 recently re-opened target examples, public `OrbitCamera::up` covers historical
@@ -70,11 +73,12 @@ now cover post-step and pre/post-render lifecycle hooks for `empty` and
 local source-owned grid helper covers the Heightmap and Point Cloud
 fine-grained grid controls. Remaining audit gaps are mostly depth render
 outputs, exact panel line plotting/backend debug metrics, and example-specific
-simulation or posture controls rather than bare source-owned target handles,
-camera up-vector defaults, basic camera readouts, simple key-release callbacks,
+simulation controls rather than bare source-owned target handles, camera
+up-vector defaults, basic camera readouts, simple key-release callbacks,
 headlight checkboxes, basic lifecycle hooks, shadow toggles, basic color
 editors, source-owned grid controls, source-owned metric summaries,
-source-owned target activation, or source-owned COM overlays.
+source-owned target activation, source-owned COM overlays, or Atlas
+source-owned posture/balance solving.
 
 ## Live Supervisor Steering
 
@@ -151,7 +155,7 @@ collision/dynamics block construction, and the `1`/`2`/`3`, Backspace, Delete,
 Up/Down, and backtick hotkeys are implemented through public `dart::gui`
 panels, `ApplicationOptions::preStep`, and
 `ApplicationOptions::keyboardActions`. Later local checkpoints restore
-Atlas/Hubo target activation semantics; Atlas relaxed-posture/balance, Hubo
+Atlas/Hubo target activation semantics and Atlas relaxed-posture/balance; Hubo
 analytical IK, Hubo relaxed-posture/balance, and the legacy Enter recording
 toggle remain explicit follow-ups.
 
@@ -333,10 +337,9 @@ the aggregate `examples` build, and `git diff --check`. Mandatory
 `pixi run lint` and post-lint focused build/CTest/direct screenshot smoke also
 pass. The checkpoint has been committed and pushed as
 `9f4af05ef1c Restore rigid cubes controls`.
-Keep Atlas relaxed-posture/balance optimization, Hubo analytical IK, Hubo
-relaxed-posture/balance, and Enter recording as explicit parity gaps unless a
-later slice adds the narrow renderer-neutral public API or source-owned state
-needed for them.
+Keep Hubo analytical IK, Hubo relaxed-posture/balance, and Enter recording as
+explicit parity gaps unless a later slice adds the narrow renderer-neutral
+public API or source-owned state needed for them.
 
 ## Context That Would Be Lost
 

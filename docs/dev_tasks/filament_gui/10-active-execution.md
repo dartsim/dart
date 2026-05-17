@@ -567,6 +567,14 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   pixels).
   Post-lint validation passed with the same focused build/CTest and Atlas
   headless smoke analyzer coverage (`304623/307200` nonzero pixels).
+- Active local implementation checkpoint: `examples/atlas_puppet/` whole-body
+  solver follow-up. This slice restores the historical source-owned
+  `RelaxedPosture` objective, public `BalanceConstraint`, whole-body IK solving
+  path, and hold/release R posture/balance optimization. This is intended to
+  close the remaining Atlas Puppet solver gap without backend or private
+  renderer APIs. Post-lint validation passed: focused `atlas_puppet` and
+  `UNIT_gui_FilamentSceneExtraction` build, focused CTest, and Atlas headless
+  smoke analyzer coverage (`304624/307200` nonzero pixels).
 - Latest maintainer correction after the Hubo work: there are still many more
   incompletely restored examples, and `examples/fetch/` remains the concrete
   warning case. After the Hubo checkpoint is committed and pushed, re-open

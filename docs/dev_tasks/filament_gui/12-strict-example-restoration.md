@@ -255,8 +255,8 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     polygon/COM visualization as explicit follow-up gaps until implemented.
     A later local checkpoint restores target activation/deactivation, support
     toggles, P/T diagnostics, and source-owned support-polygon/COM overlays;
-    only the hold/release R whole-body posture/balance solver behavior remains
-    a named Atlas solver follow-up.
+    the following local checkpoint restores hold/release R whole-body
+    posture/balance solver behavior through public DART whole-body IK APIs.
 19. The Atlas Puppet defaults checkpoint was pushed as
     `3ca9f65c9bb Restore Atlas Puppet defaults`. The active cursor is now the
     fresh `examples/fetch/` re-open requested by maintainer correction.

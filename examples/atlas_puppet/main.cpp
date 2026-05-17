@@ -38,6 +38,8 @@
 
 #include <dart/simulation/world.hpp>
 
+#include <dart/constraint/balance_constraint.hpp>
+
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/end_effector.hpp>
@@ -50,6 +52,9 @@
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/math/geometry.hpp>
+#include <dart/math/optimization/function.hpp>
+#include <dart/math/optimization/gradient_descent_solver.hpp>
+#include <dart/math/optimization/problem.hpp>
 
 #include <dart/common/uri.hpp>
 
@@ -57,6 +62,7 @@
 
 #include <Eigen/Geometry>
 
+#include <algorithm>
 #include <array>
 #include <iostream>
 #include <limits>
@@ -95,6 +101,79 @@ enum class PuppetMotion
   Down,
   YawLeft,
   YawRight,
+};
+
+class RelaxedPosture final : public dart::math::Function
+{
+public:
+  RelaxedPosture(
+      const Eigen::VectorXd& idealPosture,
+      const Eigen::VectorXd& lower,
+      const Eigen::VectorXd& upper,
+      const Eigen::VectorXd& weights,
+      bool enforceIdeal = false)
+    : enforceIdealPosture(enforceIdeal),
+      mIdeal(idealPosture),
+      mLower(lower),
+      mUpper(upper),
+      mWeights(weights)
+  {
+    const Eigen::Index dofCount = mIdeal.size();
+    if (mLower.size() != dofCount || mUpper.size() != dofCount
+        || mWeights.size() != dofCount) {
+      throw std::runtime_error(
+          "Atlas relaxed-posture objective has mismatched vector sizes");
+    }
+    mResultVector.setZero(dofCount);
+  }
+
+  double eval(const Eigen::VectorXd& x) override
+  {
+    computeResultVector(x);
+    return 0.5 * mResultVector.dot(mResultVector);
+  }
+
+  void evalGradient(
+      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
+  {
+    computeResultVector(x);
+
+    grad.setZero();
+    const Eigen::Index count = std::min(mResultVector.size(), grad.size());
+    for (Eigen::Index i = 0; i < count; ++i) {
+      grad[i] = mResultVector[i];
+    }
+  }
+
+  void computeResultVector(const Eigen::VectorXd& x)
+  {
+    mResultVector.setZero();
+    const Eigen::Index count = std::min(mIdeal.size(), x.size());
+    for (Eigen::Index i = 0; i < count; ++i) {
+      if (enforceIdealPosture) {
+        mResultVector[i] = mWeights[i] * (x[i] - mIdeal[i]);
+      } else if (x[i] < mLower[i]) {
+        mResultVector[i] = mWeights[i] * (x[i] - mLower[i]);
+      } else if (mUpper[i] < x[i]) {
+        mResultVector[i] = mWeights[i] * (x[i] - mUpper[i]);
+      }
+    }
+  }
+
+  bool enforceIdealPosture;
+
+private:
+  Eigen::VectorXd mResultVector;
+  Eigen::VectorXd mIdeal;
+  Eigen::VectorXd mLower;
+  Eigen::VectorXd mUpper;
+  Eigen::VectorXd mWeights;
+};
+
+struct AtlasWholeBodySolverState
+{
+  std::shared_ptr<RelaxedPosture> posture;
+  std::shared_ptr<dart::constraint::BalanceConstraint> balance;
 };
 
 void disableSkeletonCollisionAndGravity(
@@ -448,6 +527,75 @@ void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)
   ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
 }
 
+void setVectorEntry(Eigen::VectorXd& values, Eigen::Index index, double value)
+{
+  if (0 <= index && index < values.size()) {
+    values[index] = value;
+  }
+}
+
+void scaleVectorEntry(Eigen::VectorXd& values, Eigen::Index index, double scale)
+{
+  if (0 <= index && index < values.size()) {
+    values[index] *= scale;
+  }
+}
+
+AtlasWholeBodySolverState setupAtlasWholeBodySolver(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  AtlasWholeBodySolverState state;
+  if (atlas == nullptr) {
+    return state;
+  }
+
+  auto wholeBodyIk = atlas->getIK(true);
+  auto solver = std::dynamic_pointer_cast<dart::math::GradientDescentSolver>(
+      wholeBodyIk->getSolver());
+  if (solver != nullptr) {
+    solver->setNumMaxIterations(10);
+  }
+
+  const Eigen::Index dofCount = static_cast<Eigen::Index>(atlas->getNumDofs());
+  constexpr double defaultWeight = 0.01;
+  Eigen::VectorXd weights = defaultWeight * Eigen::VectorXd::Ones(dofCount);
+  setVectorEntry(weights, 2, 0.0);
+  setVectorEntry(weights, 3, 0.0);
+  setVectorEntry(weights, 4, 0.0);
+  scaleVectorEntry(weights, 6, 0.2);
+  scaleVectorEntry(weights, 7, 0.2);
+  scaleVectorEntry(weights, 8, 0.2);
+
+  Eigen::VectorXd lowerPosture = Eigen::VectorXd::Constant(
+      dofCount, -std::numeric_limits<double>::infinity());
+  setVectorEntry(lowerPosture, 0, -0.35);
+  setVectorEntry(lowerPosture, 1, -0.35);
+  setVectorEntry(lowerPosture, 5, 0.600);
+  setVectorEntry(lowerPosture, 6, -0.1);
+  setVectorEntry(lowerPosture, 7, -0.1);
+  setVectorEntry(lowerPosture, 8, -0.1);
+
+  Eigen::VectorXd upperPosture = Eigen::VectorXd::Constant(
+      dofCount, std::numeric_limits<double>::infinity());
+  setVectorEntry(upperPosture, 0, 0.35);
+  setVectorEntry(upperPosture, 1, 0.35);
+  setVectorEntry(upperPosture, 5, 0.885);
+  setVectorEntry(upperPosture, 6, 0.1);
+  setVectorEntry(upperPosture, 7, 0.1);
+  setVectorEntry(upperPosture, 8, 0.1);
+
+  state.posture = std::make_shared<RelaxedPosture>(
+      atlas->getPositions(), lowerPosture, upperPosture, weights);
+  wholeBodyIk->setObjective(state.posture);
+
+  state.balance = std::make_shared<dart::constraint::BalanceConstraint>(
+      wholeBodyIk,
+      dart::constraint::BalanceConstraint::SHIFT_SUPPORT,
+      dart::constraint::BalanceConstraint::FROM_CENTROID);
+  wholeBodyIk->getProblem()->addEqConstraint(state.balance);
+  return state;
+}
+
 dart::dynamics::SkeletonPtr createGround()
 {
   auto ground = dart::dynamics::Skeleton::create(kGroundSkeletonName);
@@ -469,6 +617,7 @@ struct AtlasPuppetScene
   dart::dynamics::SimpleFramePtr supportComOverlay;
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
   std::vector<dart::gui::Gizmo> gizmos;
+  AtlasWholeBodySolverState wholeBodySolver;
   struct TargetState
   {
     dart::simulation::WorldPtr world;
@@ -493,7 +642,6 @@ struct AtlasPuppetScene
       world->addSimpleFrame(target);
       active = true;
       std::cout << "Activated IK target '" << effector->getName() << "'.\n";
-      solve();
     }
 
     void deactivate()
@@ -515,13 +663,6 @@ struct AtlasPuppetScene
         deactivate();
       } else {
         activate();
-      }
-    }
-
-    void solve()
-    {
-      if (active && ik != nullptr) {
-        ik->solveAndApply(true);
       }
     }
   };
@@ -674,6 +815,7 @@ AtlasPuppetScene createAtlasPuppetScene()
   scene.atlas = atlas;
   scene.world->addSkeleton(atlas);
   addAtlasPuppetIkTargets(scene, atlas);
+  scene.wholeBodySolver = setupAtlasWholeBodySolver(scene.atlas);
   scene.restConfiguration = atlas->getPositions();
   scene.supportOverlay = createAtlasSupportPolygonOverlay(scene.atlas);
   scene.world->addSimpleFrame(scene.supportOverlay);
@@ -682,14 +824,11 @@ AtlasPuppetScene createAtlasPuppetScene()
   return scene;
 }
 
-void solveActiveAtlasTargets(
-    const std::vector<std::shared_ptr<AtlasPuppetScene::TargetState>>&
-        targetStates)
+void solveAtlasWholeBody(const dart::dynamics::SkeletonPtr& atlas)
 {
-  for (const auto& state : targetStates) {
-    if (state != nullptr) {
-      state->solve();
-    }
+  const auto wholeBodyIk = atlas ? atlas->getIK() : nullptr;
+  if (wholeBodyIk != nullptr) {
+    wholeBodyIk->solveAndApply(true);
   }
 }
 
@@ -763,7 +902,8 @@ std::vector<dart::gui::KeyboardAction> createAtlasPuppetKeyboardActions(
     const dart::dynamics::SkeletonPtr& atlas,
     const std::vector<std::shared_ptr<AtlasPuppetScene::TargetState>>&
         targetStates,
-    const Eigen::VectorXd& restConfiguration)
+    const Eigen::VectorXd& restConfiguration,
+    const AtlasWholeBodySolverState& wholeBodySolver)
 {
   struct Config
   {
@@ -783,20 +923,17 @@ std::vector<dart::gui::KeyboardAction> createAtlasPuppetKeyboardActions(
       {'e', "Yaw Atlas right", PuppetMotion::YawRight},
   }};
 
-  auto states = std::make_shared<
-      std::vector<std::shared_ptr<AtlasPuppetScene::TargetState>>>(
-      targetStates);
   std::vector<dart::gui::KeyboardAction> actions;
-  actions.reserve(configs.size() + targetStates.size() + 4);
+  actions.reserve(configs.size() + targetStates.size() + 6);
   for (const Config& config : configs) {
     dart::gui::KeyboardAction action;
     action.label = config.label;
     action.shortcut = dart::gui::KeyboardShortcut::characterKey(config.key);
     action.repeat = true;
-    action.callback = [atlas, states, motion = config.motion](
+    action.callback = [atlas, motion = config.motion](
                           dart::gui::KeyboardActionContext& context) {
       if (applyRootTeleoperationStep(atlas, motion)) {
-        solveActiveAtlasTargets(*states);
+        solveAtlasWholeBody(atlas);
         if (context.lifecycle != nullptr) {
           context.lifecycle->paused = true;
         }
@@ -813,12 +950,14 @@ std::vector<dart::gui::KeyboardAction> createAtlasPuppetKeyboardActions(
     dart::gui::KeyboardAction action;
     action.label = "Toggle Atlas target " + state->label;
     action.shortcut = dart::gui::KeyboardShortcut::characterKey(state->hotkey);
-    action.callback = [state](dart::gui::KeyboardActionContext& context) {
-      state->toggle();
-      if (context.lifecycle != nullptr) {
-        context.lifecycle->paused = true;
-      }
-    };
+    action.callback
+        = [atlas, state](dart::gui::KeyboardActionContext& context) {
+            state->toggle();
+            solveAtlasWholeBody(atlas);
+            if (context.lifecycle != nullptr) {
+              context.lifecycle->paused = true;
+            }
+          };
     actions.push_back(std::move(action));
   }
 
@@ -863,7 +1002,7 @@ std::vector<dart::gui::KeyboardAction> createAtlasPuppetKeyboardActions(
   dart::gui::KeyboardAction resetPosture;
   resetPosture.label = "Reset Atlas relaxed posture";
   resetPosture.shortcut = dart::gui::KeyboardShortcut::characterKey('t');
-  resetPosture.callback = [atlas, restConfiguration, states](
+  resetPosture.callback = [atlas, restConfiguration](
                               dart::gui::KeyboardActionContext& context) {
     if (atlas == nullptr
         || static_cast<std::size_t>(restConfiguration.size())
@@ -876,12 +1015,51 @@ std::vector<dart::gui::KeyboardAction> createAtlasPuppetKeyboardActions(
         atlas->getDof(i)->setPosition(restConfiguration[static_cast<int>(i)]);
       }
     }
-    solveActiveAtlasTargets(*states);
+    solveAtlasWholeBody(atlas);
     if (context.lifecycle != nullptr) {
       context.lifecycle->paused = true;
     }
   };
   actions.push_back(std::move(resetPosture));
+
+  dart::gui::KeyboardAction optimizePosture;
+  optimizePosture.label = "Optimize Atlas posture and balance";
+  optimizePosture.shortcut = dart::gui::KeyboardShortcut::characterKey('r');
+  optimizePosture.callback
+      = [wholeBodySolver, atlas](dart::gui::KeyboardActionContext& context) {
+          if (wholeBodySolver.posture != nullptr) {
+            wholeBodySolver.posture->enforceIdealPosture = true;
+          }
+          if (wholeBodySolver.balance != nullptr) {
+            wholeBodySolver.balance->setErrorMethod(
+                dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+          }
+          solveAtlasWholeBody(atlas);
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  actions.push_back(std::move(optimizePosture));
+
+  dart::gui::KeyboardAction restoreBalanceMode;
+  restoreBalanceMode.label = "Restore Atlas centroid balance mode";
+  restoreBalanceMode.shortcut = dart::gui::KeyboardShortcut::characterKey('r');
+  restoreBalanceMode.trigger = dart::gui::KeyboardActionTrigger::Release;
+  restoreBalanceMode.callback
+      = [wholeBodySolver, atlas](dart::gui::KeyboardActionContext& context) {
+          if (wholeBodySolver.posture != nullptr) {
+            wholeBodySolver.posture->enforceIdealPosture = false;
+          }
+          if (wholeBodySolver.balance != nullptr) {
+            wholeBodySolver.balance->setErrorMethod(
+                dart::constraint::BalanceConstraint::FROM_CENTROID);
+          }
+          solveAtlasWholeBody(atlas);
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  actions.push_back(std::move(restoreBalanceMode));
   return actions;
 }
 
@@ -898,8 +1076,9 @@ dart::gui::Panel createAtlasPuppetPanel()
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text("WASD moves the root; Q/E yaw; F/Z height.");
     builder.text("X/C toggles foot support; P prints DOFs; T resets posture.");
+    builder.text("Hold R to optimize whole-body posture and balance.");
     builder.text("Blue/red COM marker shows support-polygon validity.");
-    builder.text("Only active targets solve each simulation step.");
+    builder.text("Whole-body IK solves active targets and balance each step.");
     builder.separator();
     if (context.lifecycle != nullptr) {
       if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
@@ -947,16 +1126,18 @@ int main(int argc, char* argv[])
     options.gizmos = scene.gizmos;
     options.runDefaults = makeAtlasPuppetRunDefaults();
     options.camera = makeAtlasPuppetCamera();
-    options.preStep = [targetStates = scene.targetStates,
-                       atlas = scene.atlas,
+    options.preStep = [atlas = scene.atlas,
                        supportOverlay = scene.supportOverlay,
                        supportComOverlay = scene.supportComOverlay]() {
-      solveActiveAtlasTargets(targetStates);
+      solveAtlasWholeBody(atlas);
       updateAtlasSupportPolygonOverlay(atlas, supportOverlay);
       updateAtlasSupportComOverlay(atlas, supportComOverlay);
     };
     options.keyboardActions = createAtlasPuppetKeyboardActions(
-        scene.atlas, scene.targetStates, scene.restConfiguration);
+        scene.atlas,
+        scene.targetStates,
+        scene.restConfiguration,
+        scene.wholeBodySolver);
     options.panels.push_back(createAtlasPuppetPanel());
     return dart::gui::runApplication(argc, argv, options);
   } catch (const std::exception& e) {

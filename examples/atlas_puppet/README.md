@@ -12,13 +12,14 @@
 - Controls: press 1-4 to toggle/select a target for keyboard nudges; left-drag
   a gizmo axis arrow or plane handle to move it, or a rotation ring to orient
   it; WASD moves the root; Q/E yaw; F/Z adjusts height; X/C toggles left/right
-  foot support; P prints DOFs; T resets the relaxed posture; space toggles
-  simulation.
+  foot support; hold R to optimize whole-body posture and balance; P prints
+  DOFs; T resets the relaxed posture; space toggles simulation.
 
 ## Notes
 
-- This example runs in kinematic mode and continuously resolves the promoted IK
-  handles.
+- This example runs in kinematic mode and continuously resolves promoted
+  whole-body IK with the source-owned relaxed-posture objective and balance
+  constraint.
 - The transform gizmos support X/Y/Z axis-arrow dragging and rotation ring
   dragging plus XY/YZ/XZ plane handles. Hovered and actively dragged handles use
   the configured highlight color.
@@ -30,8 +31,6 @@
   inside the active support polygon and red otherwise.
 - The default launch size is 1280x960, matching the historical standalone
   viewer.
-- The historical hold/release R whole-body posture and balance optimization
-  remains a solver follow-up.
 
 ## Build Instructions
 
