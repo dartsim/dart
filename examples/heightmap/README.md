@@ -9,8 +9,8 @@
 - Expected output: an interactive heightmap surface, grid, reference markers,
   or an alignment scene with falling ball grids.
 - Controls: use the panel to play, pause, step, exit, toggle the terrain/grid,
-  and adjust heightmap resolution, size, and Z range. `--demo alignment` opens
-  the contact-alignment scene.
+  edit the terrain color, and adjust heightmap resolution, size, and Z range.
+  `--demo alignment` opens the contact-alignment scene.
 
 ## Run
 

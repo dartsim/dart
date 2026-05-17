@@ -265,6 +265,13 @@ public:
     return true;
   }
 
+  bool colorEdit(std::string_view label, Eigen::Vector4d& rgba) override
+  {
+    events.emplace_back("color:" + std::string(label));
+    rgba = colorValue;
+    return true;
+  }
+
   bool collapsingHeader(std::string_view label, bool defaultOpen) override
   {
     events.emplace_back(
@@ -303,6 +310,7 @@ public:
 
   bool buttonPressed = true;
   bool checkboxValue = true;
+  Eigen::Vector4d colorValue = Eigen::Vector4d(0.25, 0.5, 0.75, 0.85);
   std::vector<std::string> events;
 };
 
@@ -675,6 +683,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   int clicks = 0;
   std::string selectedLabel;
   bool headlights = false;
+  Eigen::Vector4d tint = Eigen::Vector4d::Ones();
   dart::gui::RenderSettings renderSettings;
   renderSettings.shadowsEnabled = false;
   dart::gui::Panel panel;
@@ -700,6 +709,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
     builder.sameLine();
     builder.checkbox("Diagnostics", diagnostics);
     builder.slider("Gain", gain, 0.0, 2.0);
+    builder.colorEdit("Tint", tint);
   };
   panel.buildWithContext = [&](dart::gui::PanelBuilder& builder,
                                dart::gui::PanelContext& context) {
@@ -745,6 +755,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
   EXPECT_TRUE(context.camera.target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
   EXPECT_TRUE(context.camera.up.isApprox(Eigen::Vector3d::UnitY()));
   EXPECT_TRUE(headlights);
+  EXPECT_TRUE(tint.isApprox(Eigen::Vector4d(0.25, 0.5, 0.75, 0.85)));
   EXPECT_TRUE(renderSettings.shadowsEnabled);
   bool preStepCalled = false;
   bool postStepCalled = false;
@@ -766,6 +777,7 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
           "same-line",
           "checkbox:Diagnostics",
           "slider:Gain",
+          "color:Tint",
           "text:selected:box",
           "text:eye-x:4.000000",
           "checkbox:Headlights On/Off",
@@ -3182,6 +3194,7 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
   EXPECT_NE(heightmapSource.find("builder.slider"), std::string::npos);
   EXPECT_NE(heightmapSource.find("Show Terrain"), std::string::npos);
   EXPECT_NE(heightmapSource.find("Show Grid"), std::string::npos);
+  EXPECT_NE(heightmapSource.find("Terrain Color"), std::string::npos);
   EXPECT_NE(heightmapSource.find("Regenerate"), std::string::npos);
   EXPECT_NE(heightmapSource.find("requestSingleStep"), std::string::npos);
   EXPECT_NE(heightmapSource.find("requestExit"), std::string::npos);
@@ -3193,6 +3206,8 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
   EXPECT_NE(heightmapSource.find("debug-grid API"), std::string::npos);
   EXPECT_NE(heightmapReadmeSource.find("Heightmap Example"), std::string::npos);
   EXPECT_NE(heightmapReadmeSource.find("dart::gui"), std::string::npos);
+  EXPECT_NE(
+      heightmapReadmeSource.find("edit the terrain color"), std::string::npos);
   EXPECT_NE(heightmapReadmeSource.find("--demo alignment"), std::string::npos);
   EXPECT_EQ(heightmapSource.find("options.defaultScene"), std::string::npos);
 
@@ -3229,9 +3244,14 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
   EXPECT_NE(pointCloudSource.find("Sample on robot"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("Sample in box"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("Cycle Color Mode"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("Point Cloud Color"), std::string::npos);
+  EXPECT_NE(pointCloudSource.find("Voxel Grid Color"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("Cycle Point Shape Type"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("Visual Size"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("debug-grid API"), std::string::npos);
+  EXPECT_EQ(
+      pointCloudSource.find("Color editors and detailed debug-grid"),
+      std::string::npos);
   EXPECT_NE(
       pointCloudSource.find("makePointCloudRunDefaults"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("options.width = 1280"), std::string::npos);
@@ -3242,6 +3262,8 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
       pointCloudReadmeSource.find("Point Cloud Example"), std::string::npos);
   EXPECT_NE(pointCloudReadmeSource.find("dart::gui"), std::string::npos);
   EXPECT_NE(pointCloudReadmeSource.find("1280x720"), std::string::npos);
+  EXPECT_NE(
+      pointCloudReadmeSource.find("Point Cloud Color"), std::string::npos);
   EXPECT_EQ(pointCloudSource.find("options.defaultScene"), std::string::npos);
 
   const auto polyhedronSource = readSourceFile(

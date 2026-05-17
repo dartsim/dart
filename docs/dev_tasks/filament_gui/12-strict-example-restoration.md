@@ -756,6 +756,17 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     `atlas_simbicon` and `operational_space_control`, aggregate `examples`
     build, mandatory `pixi run lint`, post-lint focused rebuild/CTest, and
     post-lint direct screenshot smokes.
+81. The current R24-20 implementation promotes
+    `dart::gui::PanelBuilder::colorEdit` as a renderer-neutral RGBA color
+    editing primitive and implements it in the private Filament ImGui panel
+    bridge. `examples/heightmap` now restores the historical terrain color
+    editor, and `examples/point_cloud` restores point-cloud and voxel-grid
+    color editors without exposing backend widgets. Validation passed focused
+    build for `heightmap`, `point_cloud`, and
+    `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct software-GL
+    screenshot analyzer smokes for `heightmap` and `point_cloud`, aggregate
+    `examples` build, mandatory `pixi run lint`, post-lint focused
+    rebuild/CTest, and post-lint direct screenshot smokes.
 
 ## Checkpoint Rule
 

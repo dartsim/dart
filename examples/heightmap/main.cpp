@@ -121,6 +121,7 @@ struct HeightmapPanelState
   double ySize = 2.0;
   double zMin = -0.1;
   double zMax = 0.4;
+  Eigen::Vector4d terrainColor = Eigen::Vector4d(0.24, 0.58, 0.88, 1.0);
   bool terrainVisible = true;
   bool gridVisible = true;
   int generation = 0;
@@ -268,6 +269,15 @@ void applyVisibility(
   }
 }
 
+void applyTerrainColor(const std::shared_ptr<HeightmapPanelState>& state)
+{
+  if (state == nullptr || state->terrain == nullptr) {
+    return;
+  }
+
+  state->terrain->getVisualAspect(true)->setRGBA(state->terrainColor);
+}
+
 void regenerateHeightmap(const std::shared_ptr<HeightmapPanelState>& state)
 {
   if (state == nullptr || state->terrain == nullptr) {
@@ -289,8 +299,7 @@ void regenerateHeightmap(const std::shared_ptr<HeightmapPanelState>& state)
       state->zMin,
       state->zMax,
       state->generation));
-  state->terrain->getVisualAspect(true)->setRGBA(
-      Eigen::Vector4d(0.24, 0.58, 0.88, 1.0));
+  applyTerrainColor(state);
   applyVisibility(state->terrain, state->terrainVisible);
   applyVisibility(state->grid, state->gridVisible);
 }
@@ -640,6 +649,9 @@ dart::gui::Panel createHeightmapPanel(
     }
     if (builder.checkbox("Show Grid", state->gridVisible)) {
       applyVisibility(state->grid, state->gridVisible);
+    }
+    if (builder.colorEdit("Terrain Color", state->terrainColor)) {
+      applyTerrainColor(state);
     }
     changed |= builder.slider("X Resolution", state->xResolution, 5.0, 100.0);
     changed |= builder.slider("Y Resolution", state->yResolution, 5.0, 100.0);

@@ -37,3 +37,5 @@ handled by the shared `dart::gui` runner.
   voxel grid when OctoMap support is enabled.
 - `Cycle Color Mode`, `Cycle Point Shape Type`, and `Visual Size` adjust the
   point-cloud rendering through public DART shape APIs.
+- `Point Cloud Color` and `Voxel Grid Color` edit the renderer-neutral visual
+  colors used by the point-cloud and voxel-grid fixtures.

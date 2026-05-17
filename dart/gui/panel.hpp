@@ -73,6 +73,13 @@ public:
       std::string_view label, double& value, double minimum, double maximum)
       = 0;
 
+  virtual bool colorEdit(std::string_view label, Eigen::Vector4d& rgba)
+  {
+    (void)label;
+    (void)rgba;
+    return false;
+  }
+
   virtual bool collapsingHeader(std::string_view, bool = false)
   {
     return true;

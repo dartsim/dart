@@ -119,6 +119,8 @@ struct PointCloudState
   bool gridVisible = true;
   bool voxelGridVisible = true;
   double visualSize = 0.035;
+  Eigen::Vector4d pointCloudColor = Eigen::Vector4d(0.20, 0.38, 0.94, 0.78);
+  Eigen::Vector4d voxelGridColor = Eigen::Vector4d(0.94, 0.52, 0.20, 0.52);
   double elapsedTime = 0.0;
 };
 
@@ -134,6 +136,26 @@ void applyVisibility(dart::dynamics::VisualAspect* aspect, bool visible)
     aspect->hide();
   }
 }
+
+void applyPointCloudColor(PointCloudState& state)
+{
+  if (state.pointCloudVisual != nullptr) {
+    state.pointCloudVisual->setRGBA(state.pointCloudColor);
+  }
+  if (state.pointCloudShape != nullptr
+      && state.colorMode == dart::dynamics::PointCloudShape::BIND_OVERALL) {
+    state.pointCloudShape->setOverallColor(state.pointCloudColor);
+  }
+}
+
+#if DART_HAVE_OCTOMAP
+void applyVoxelGridColor(PointCloudState& state)
+{
+  if (state.voxelGridVisual != nullptr) {
+    state.voxelGridVisual->setRGBA(state.voxelGridColor);
+  }
+}
+#endif
 
 dart::dynamics::SkeletonPtr createFallbackRobot()
 {
@@ -503,8 +525,7 @@ void cycleColorMode(PointCloudState& state)
       = static_cast<dart::dynamics::PointCloudShape::ColorMode>(next);
   state.pointCloudShape->setColorMode(state.colorMode);
   if (state.colorMode == dart::dynamics::PointCloudShape::BIND_OVERALL) {
-    state.pointCloudShape->setOverallColor(
-        Eigen::Vector4d(0.22, 0.44, 0.95, 0.78));
+    state.pointCloudShape->setOverallColor(state.pointCloudColor);
   }
 }
 
@@ -616,6 +637,14 @@ dart::gui::Panel createPointCloudPanel(std::shared_ptr<PointCloudState> state)
     if (builder.button("Cycle Color Mode")) {
       cycleColorMode(*state);
     }
+    if (builder.colorEdit("Point Cloud Color", state->pointCloudColor)) {
+      applyPointCloudColor(*state);
+    }
+#if DART_HAVE_OCTOMAP
+    if (builder.colorEdit("Voxel Grid Color", state->voxelGridColor)) {
+      applyVoxelGridColor(*state);
+    }
+#endif
     builder.text(
         std::string("Point Shape Type: ")
         + pointShapeTypeLabel(state->pointShapeType));
@@ -631,8 +660,7 @@ dart::gui::Panel createPointCloudPanel(std::shared_ptr<PointCloudState> state)
     builder.text("User Guide");
     builder.text("Select a frame, then Ctrl-left drag or use arrow keys.");
     builder.text(
-        "Color editors and detailed debug-grid API controls are follow-up "
-        "public GUI gaps.");
+        "Detailed debug-grid API controls are a follow-up public gap.");
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("contacts: " + std::to_string(context.contactCount));
     builder.text("selected: " + context.selectedLabel);
@@ -660,6 +688,7 @@ std::shared_ptr<PointCloudState> createPointCloudState()
   state->pointCloudShape = createPointCloudShape();
   state->pointCloudFrame = createPointCloudFrame(state->pointCloudShape);
   state->pointCloudVisual = state->pointCloudFrame->getVisualAspect();
+  applyPointCloudColor(*state);
   state->world->addSimpleFrame(state->pointCloudFrame);
 
 #if DART_HAVE_OCTOMAP
@@ -667,6 +696,7 @@ std::shared_ptr<PointCloudState> createPointCloudState()
       = std::make_shared<dart::dynamics::VoxelGridShape>(0.05);
   state->voxelGridFrame = createVoxelGridFrame(state->voxelGridShape);
   state->voxelGridVisual = state->voxelGridFrame->getVisualAspect();
+  applyVoxelGridColor(*state);
   state->world->addSimpleFrame(state->voxelGridFrame);
 #endif
 

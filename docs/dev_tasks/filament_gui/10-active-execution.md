@@ -158,9 +158,17 @@ capture` updates Fetch README/audit/marker coverage for the promoted `--out`
   `ApplicationOptions::postStep`, `preRender`, and `postRender` callbacks and
   restores the historical lifecycle-hook demos in `empty` and `imgui`. R24-19
   adds promoted `RenderSettings::shadowsEnabled` and restores historical shadow
-  toggles in `atlas_simbicon` and `operational_space_control`. These local
+  toggles in `atlas_simbicon` and `operational_space_control`. R24-20 adds
+  promoted `PanelBuilder::colorEdit` and restores terrain, point-cloud, and
+  voxel-grid color editors in `heightmap` and `point_cloud`. These local
   checkpoints are not pushed.
-- Latest local R24-19 validation passed focused build for `atlas_simbicon`,
+- Latest local R24-20 validation passed focused build for `heightmap`,
+  `point_cloud`, and `UNIT_gui_FilamentSceneExtraction`; focused CTest; direct
+  software-GL screenshot analyzer smokes for `heightmap` (307200/307200
+  nonzero pixels) and `point_cloud` (307096/307200); aggregate `examples`
+  build; mandatory `pixi run lint`; post-lint focused rebuild/CTest; and
+  post-lint direct screenshot smokes with the same nonzero counts.
+  R24-19 validation passed focused build for `atlas_simbicon`,
   `operational_space_control`, and `UNIT_gui_FilamentSceneExtraction`; focused
   CTest; direct software-GL screenshot analyzer smokes for `atlas_simbicon`
   (1228564/1228800 nonzero pixels) and `operational_space_control`

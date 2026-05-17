@@ -129,6 +129,9 @@
     examples.
   - Added public `dart::gui::RenderSettings` shadow control and restored
     historical shadow toggles in migrated GUI examples.
+  - Added public `dart::gui::PanelBuilder` color-edit controls and restored
+    terrain, point-cloud, and voxel-grid color editors in migrated GUI
+    examples.
   - Restored the `atlas_simbicon` example's Simbicon controller/state files,
     pre-step control loop, perturbation and state-machine keyboard actions,
     gravity/harness/stride panel controls, native window title,

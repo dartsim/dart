@@ -80,6 +80,22 @@ public:
         labelValue.c_str(), ImGuiDataType_Double, &value, &minimum, &maximum);
   }
 
+  bool colorEdit(std::string_view label, Eigen::Vector4d& rgba) override
+  {
+    const std::string labelValue(label);
+    float color[4]
+        = {static_cast<float>(rgba[0]),
+           static_cast<float>(rgba[1]),
+           static_cast<float>(rgba[2]),
+           static_cast<float>(rgba[3])};
+    if (!ImGui::ColorEdit4(labelValue.c_str(), color)) {
+      return false;
+    }
+
+    rgba = Eigen::Vector4d(color[0], color[1], color[2], color[3]);
+    return true;
+  }
+
   bool collapsingHeader(std::string_view label, bool defaultOpen) override
   {
     const std::string labelValue(label);
