@@ -659,6 +659,17 @@ restored. Do not rely on earlier restored-state wording in the inventory.
     aggregate `examples` build, mandatory `pixi run lint`, post-lint focused
     rebuild/CTest, post-lint direct screenshot smoke, stale-handle text scan,
     and `git diff --check`.
+73. The current R24-12 implementation applies the same public-gizmo cleanup to
+    `examples/fetch` without removing the historical Fetch-specific target cue:
+    the transparent green bars remain source-owned scene geometry on the target
+    frame, but mouse translation/rotation now uses a public
+    `dart::gui::Gizmo` registered through `ApplicationOptions::gizmos`.
+    Validation passed focused build for `fetch` plus
+    `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct 1280x960
+    software-GL screenshot analyzer smoke for `fetch`, aggregate `examples`
+    build, mandatory `pixi run lint`, post-lint focused rebuild/CTest,
+    post-lint direct screenshot smoke, stale-handle text scan, and
+    `git diff --check`.
 
 ## Checkpoint Rule
 

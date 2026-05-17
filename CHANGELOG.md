@@ -85,11 +85,11 @@
     source-owned public DART line geometry at the original grid offset.
   - Restored the `fetch` example panel title and instructional copy against
     the historical example source.
-  - Restored the `fetch` example's draggable target as a selectable
-    source-owned mesh cross made from two transparent green bars, matching the
-    historical end-effector affordance while retaining renderer-neutral drag,
-    rotation, reset controls, and image-sequence capture docs through promoted
-    `dart::gui`.
+  - Restored the `fetch` example's target cue as a source-owned mesh cross made
+    from two transparent green bars, matching the historical end-effector
+    affordance, while moving mouse translation/rotation to a public
+    `dart::gui::Gizmo` and retaining reset controls and image-sequence capture
+    docs through promoted `dart::gui`.
   - Restored the `biped_stand` example's historical space/start and push
     instruction text plus standalone README build/execute instructions.
   - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
@@ -169,12 +169,12 @@
     visualization, X/Y/Z axis-handle dragging, plane-handle dragging,
     rotation-ring dragging, and per-target visibility, plus hover/active handle
     highlighting for source-owned transform target affordances. Gizmo-only
-    scenes can start without dummy renderable geometry, and `drag_and_drop`,
-    `atlas_puppet`, `hubo_puppet`, `g1_puppet`, `operational_space_control`,
-    `wam_ikfast`, and `imgui` now use those public gizmos instead of
-    source-owned frame-handle, target-handle, or target-ball geometry;
-    Tinkertoy uses the same public gizmo for its force target while keeping its
-    source-owned axes and force-line geometry.
+    scenes can start without dummy renderable geometry, and `fetch`,
+    `drag_and_drop`, `atlas_puppet`, `hubo_puppet`, `g1_puppet`,
+    `operational_space_control`, `wam_ikfast`, and `imgui` now use those public
+    gizmos instead of source-owned frame-handle, target-handle, or target-ball
+    geometry; Tinkertoy uses the same public gizmo for its force target while
+    keeping its source-owned axes and force-line geometry.
   - Moved `atlas_puppet` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground/root handle/IK targets, and
     passes public `dart::gui` IK handles directly.

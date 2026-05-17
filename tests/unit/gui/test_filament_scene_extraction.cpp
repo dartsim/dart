@@ -1833,6 +1833,9 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("addBoxToMesh"), std::string::npos);
   EXPECT_NE(mainSource.find("two transparent green bars"), std::string::npos);
   EXPECT_NE(mainSource.find("MeshShape::SHAPE_ALPHA"), std::string::npos);
+  EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
+  EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
+  EXPECT_NE(mainSource.find("targetGizmo.size = 0.24"), std::string::npos);
   EXPECT_NE(mainSource.find("kTargetRotationStep"), std::string::npos);
   EXPECT_NE(mainSource.find("rotateFetchTarget"), std::string::npos);
   EXPECT_NE(mainSource.find("createFetchKeyboardActions"), std::string::npos);
@@ -1883,9 +1886,11 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
       mainSource.find("whole body motion of the Fetch robot"),
       std::string::npos);
   EXPECT_NE(mainSource.find("Left drag orbits"), std::string::npos);
-  EXPECT_NE(mainSource.find("Ctrl-Shift-left drag rotates"), std::string::npos);
   EXPECT_NE(
-      mainSource.find("public selected-frame manipulation"), std::string::npos);
+      mainSource.find("Left-drag target gizmo arrows/planes/rings"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("public target gizmo handles"), std::string::npos);
+  EXPECT_EQ(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("u/j, i/k, o/l rotate"), std::string::npos);
   EXPECT_NE(mainSource.find("builder.button(\"Play\")"), std::string::npos);
   EXPECT_NE(mainSource.find("builder.button(\"Pause\")"), std::string::npos);
@@ -1917,12 +1922,11 @@ TEST(FilamentSceneExtraction, FetchExamplePreservesLegacyParityMarkers)
   EXPECT_NE(panelSource.find("ImGui::CollapsingHeader"), std::string::npos);
   EXPECT_NE(readmeSource.find("Fetch MJCF Example"), std::string::npos);
   EXPECT_NE(readmeSource.find("two transparent green bars"), std::string::npos);
-  EXPECT_NE(readmeSource.find("select the green cross"), std::string::npos);
+  EXPECT_NE(readmeSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(
-      readmeSource.find("Ctrl-Shift-left drag rotates"), std::string::npos);
-  EXPECT_NE(
-      readmeSource.find("promoted renderer-neutral selection API"),
-      std::string::npos);
+      readmeSource.find("target gizmo arrows/planes/rings"), std::string::npos);
+  EXPECT_NE(readmeSource.find("public target gizmo"), std::string::npos);
+  EXPECT_EQ(readmeSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_EQ(readmeSource.find("Remaining gap"), std::string::npos);
   EXPECT_NE(
       readmeSource.find("dart::gui::ApplicationOptions"), std::string::npos);

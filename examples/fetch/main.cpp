@@ -33,6 +33,7 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -85,6 +86,7 @@ struct FetchScene
 {
   dart::simulation::WorldPtr world;
   std::shared_ptr<dart::dynamics::SimpleFrame> target;
+  std::vector<dart::gui::Gizmo> gizmos;
   dart::dynamics::BodyNode* mocapRoot = nullptr;
 };
 
@@ -310,6 +312,11 @@ FetchScene createFetchScene()
   resetFirstWeldConstraint(scene.world);
 
   scene.target = createTargetFrame();
+  dart::gui::Gizmo targetGizmo;
+  targetGizmo.label = kFetchTargetName;
+  targetGizmo.target = scene.target;
+  targetGizmo.size = 0.24;
+  scene.gizmos.push_back(std::move(targetGizmo));
   scene.world->addSkeleton(createFetchGrid());
   scene.world->addSimpleFrame(scene.target);
   return scene;
@@ -461,10 +468,8 @@ dart::gui::Panel createFetchPanel()
     if (builder.collapsingHeader("Help")) {
       builder.text("User Guid:");
       builder.text(
-          "Select the green cross, then Ctrl-left drag or use arrows.");
-      builder.text("X/Y/Z constrain Ctrl-left drag to one world axis.");
-      builder.text("Ctrl-Shift-left drag rotates the selected handle.");
-      builder.text("Hold X/Y/Z while rotating to use a local target axis.");
+          "Left-drag target gizmo arrows/planes/rings at the green cross.");
+      builder.text("Arrow/PageUp/PageDown nudge the selected target.");
       builder.text("u/j, i/k, o/l rotate the target about local X/Y/Z.");
       builder.text("r resets the target pose.");
       builder.text("Left drag orbits; right or middle drag pans; wheel zooms.");
@@ -494,7 +499,7 @@ dart::gui::Panel createFetchPanel()
 
     builder.separator();
     builder.text("The end-effector follows the interactive target.");
-    builder.text("Mouse rotation uses public selected-frame manipulation.");
+    builder.text("Mouse manipulation uses public target gizmo handles.");
     if (*showAbout) {
       builder.text("About DART: project and libdart simulation libraries.");
     }
@@ -514,6 +519,7 @@ int main(int argc, char* argv[])
 
     dart::gui::ApplicationOptions options;
     options.world = scene.world;
+    options.gizmos = scene.gizmos;
     options.runDefaults = makeFetchRunDefaults();
     options.camera = makeFetchCamera();
     options.preStep = [scene]() {

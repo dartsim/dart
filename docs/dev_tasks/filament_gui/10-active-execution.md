@@ -138,14 +138,19 @@ history but are not guaranteed to be in chronological order.
   explicitly asks to include it.
 - Latest committed local checkpoints: `de1873ddab7 Document Fetch image-sequence
 capture` updates Fetch README/audit/marker coverage for the promoted `--out`
-  image-sequence path, and R24-1 through R24-11 add public
+  image-sequence path, and R24-1 through R24-12 add public
   `dart::gui::Gizmo` registration, axis/plane/ring dragging, handle
   highlighting, per-target visibility, Atlas Puppet public-gizmo IK target
-  affordances, and the same public-gizmo target affordances for Hubo Puppet,
-  G1 Puppet, operational-space control, WAM IKFast, the panel-extension
+  affordances, and the same public-gizmo target affordances for Fetch, Hubo
+  Puppet, G1 Puppet, operational-space control, WAM IKFast, the panel-extension
   `imgui` example, Tinkertoy's force target, and the drag-and-drop interactive
   frame. These local checkpoints are not pushed.
-- Latest local R24-11 validation passed focused build for `drag_and_drop` plus
+- Latest local R24-12 validation passed focused build for `fetch` plus
+  `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct 1280x960
+  software-GL screenshot analyzer smoke for `fetch`, aggregate `examples`
+  build, mandatory `pixi run lint`, post-lint focused rebuild/CTest, post-lint
+  direct screenshot smoke, stale-handle text scan, and `git diff --check`.
+  R24-11 validation passed focused build for `drag_and_drop` plus
   `UNIT_gui_FilamentSceneExtraction`, focused CTest, direct 640x480
   software-GL screenshot analyzer smoke for `drag_and_drop`, aggregate
   `examples` build, mandatory `pixi run lint`, post-lint focused
