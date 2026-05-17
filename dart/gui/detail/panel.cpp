@@ -34,6 +34,7 @@
 
 #include <imgui.h>
 
+#include <algorithm>
 #include <limits>
 #include <string>
 
@@ -266,7 +267,8 @@ bool renderBuiltInStatusPanel(
       "Keys: Space pause, N step, arrows/Pg or Ctrl-left drag selected, "
       "Esc exit.");
   if (showIkHint) {
-    ImGui::TextWrapped("IK: press 1-4 or drag a target gizmo to move it.");
+    ImGui::TextWrapped(
+        "IK: press 1-4 to show/select a target, then drag its gizmo.");
   }
   ImGui::PopTextWrapPos();
   ImGui::Separator();
@@ -325,6 +327,7 @@ void renderApplicationPanels(
     double guiScale)
 {
   ImGuiPanelBuilder builder;
+  std::size_t defaultPositionIndex = 0u;
   for (auto& panel : panels) {
     if (!panel.build && !panel.buildWithContext) {
       continue;
@@ -332,11 +335,24 @@ void renderApplicationPanels(
 
     const char* title
         = panel.title.empty() ? "DART Controls" : panel.title.c_str();
+    const float scale = static_cast<float>(guiScale);
     if (panel.initialPosition.has_value()) {
       ImGui::SetNextWindowPos(
-          {static_cast<float>((*panel.initialPosition)[0] * guiScale),
-           static_cast<float>((*panel.initialPosition)[1] * guiScale)},
+          {static_cast<float>((*panel.initialPosition)[0] * scale),
+           static_cast<float>((*panel.initialPosition)[1] * scale)},
           ImGuiCond_Always);
+    } else {
+      const float panelWidth = static_cast<float>(
+          panel.initialSize.has_value() ? (*panel.initialSize)[0] * guiScale
+                                        : 320.0 * guiScale);
+      const float margin = 20.0f * scale;
+      const float x = std::max(
+          margin,
+          static_cast<float>(context.ui.displaySize.x()) - panelWidth - margin);
+      const float y
+          = margin + static_cast<float>(defaultPositionIndex) * 96.0f * scale;
+      ImGui::SetNextWindowPos({x, y}, ImGuiCond_FirstUseEver);
+      ++defaultPositionIndex;
     }
     ImGui::SetNextWindowBgAlpha(
         static_cast<float>(panel.backgroundAlpha.value_or(0.72)));
@@ -346,9 +362,7 @@ void renderApplicationPanels(
            static_cast<float>((*panel.initialSize)[1] * guiScale)},
           ImGuiCond_Always);
     } else {
-      ImGui::SetNextWindowSize(
-          {320.0f * static_cast<float>(guiScale), 0.0f},
-          ImGuiCond_FirstUseEver);
+      ImGui::SetNextWindowSize({320.0f * scale, 0.0f}, ImGuiCond_FirstUseEver);
     }
 
     ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoSavedSettings;

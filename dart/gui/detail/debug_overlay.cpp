@@ -98,14 +98,25 @@ void refreshDebugLineOverlay(
     ::filament::Scene& scene,
     ::filament::Material& material,
     const std::vector<dart::gui::DebugLineDescriptor>& lines,
+    const std::vector<dart::gui::DebugTriangleDescriptor>& triangles,
     std::optional<Renderable>& overlay)
 {
   clearDebugLineOverlay(engine, scene, overlay);
 
-  overlay = createDebugLineRenderable(engine, material, lines);
+  overlay = createDebugLineRenderable(engine, material, lines, triangles);
   if (overlay) {
     addRenderableToScene(scene, *overlay);
   }
+}
+
+void refreshDebugLineOverlay(
+    ::filament::Engine& engine,
+    ::filament::Scene& scene,
+    ::filament::Material& material,
+    const std::vector<dart::gui::DebugLineDescriptor>& lines,
+    std::optional<Renderable>& overlay)
+{
+  refreshDebugLineOverlay(engine, scene, material, lines, {}, overlay);
 }
 
 void refreshStaticDebugOverlay(
@@ -152,6 +163,8 @@ void refreshGizmoDebugOverlay(
       scene,
       material,
       dart::gui::makeGizmoDebugLines(
+          gizmos, kGizmoWorldScale, highlightedGizmoHandle),
+      dart::gui::makeGizmoDebugTriangles(
           gizmos, kGizmoWorldScale, highlightedGizmoHandle),
       controller.gizmoOverlay);
 }

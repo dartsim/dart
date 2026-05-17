@@ -229,6 +229,10 @@
     gizmos instead of source-owned frame-handle, target-handle, or target-ball
     geometry; Tinkertoy uses the same public gizmo for its force target while
     keeping its source-owned axes and force-line geometry.
+  - Improved Filament GUI puppet interaction and rendering parity with
+    OSG-style active IK target gizmos, patterned filled rotation rings,
+    non-overlapping default ImGui panels, close-camera clipping tolerance, and
+    faithful textured mesh colors.
   - Moved `atlas_puppet` off the private named-scene fixture launcher so the
     example source loads Atlas, creates its ground/root handle/IK targets, and
     passes public `dart::gui` IK handles directly.

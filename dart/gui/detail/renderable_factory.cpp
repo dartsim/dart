@@ -61,6 +61,7 @@ namespace dart::gui::detail {
 
 using dart::gui::appendBoxMeshGeometry;
 using dart::gui::DebugLineDescriptor;
+using dart::gui::DebugTriangleDescriptor;
 using dart::gui::GeometryDescriptor;
 using dart::gui::makeCapsuleMeshGeometry;
 using dart::gui::makeConeMeshGeometry;
@@ -603,6 +604,27 @@ bool appendThickDebugLine(
   return true;
 }
 
+bool appendDebugTriangle(
+    std::vector<DebugVertex>& vertices,
+    std::vector<std::uint32_t>& triangleIndices,
+    const DebugTriangleDescriptor& triangle)
+{
+  if (!triangle.a.allFinite() || !triangle.b.allFinite()
+      || !triangle.c.allFinite()) {
+    return false;
+  }
+
+  const auto start = static_cast<std::uint32_t>(vertices.size());
+  const std::uint32_t color = packColor(triangle.rgba);
+  vertices.push_back({toFloat3(triangle.a), color});
+  vertices.push_back({toFloat3(triangle.b), color});
+  vertices.push_back({toFloat3(triangle.c), color});
+  triangleIndices.push_back(start);
+  triangleIndices.push_back(start + 1u);
+  triangleIndices.push_back(start + 2u);
+  return true;
+}
+
 } // namespace
 
 std::optional<Renderable> createDebugLineRenderable(
@@ -610,15 +632,25 @@ std::optional<Renderable> createDebugLineRenderable(
     ::filament::Material& material,
     const std::vector<DebugLineDescriptor>& lines)
 {
-  if (lines.empty()) {
+  return createDebugLineRenderable(engine, material, lines, {});
+}
+
+std::optional<Renderable> createDebugLineRenderable(
+    ::filament::Engine& engine,
+    ::filament::Material& material,
+    const std::vector<DebugLineDescriptor>& lines,
+    const std::vector<DebugTriangleDescriptor>& triangles)
+{
+  if (lines.empty() && triangles.empty()) {
     return std::nullopt;
   }
 
   std::vector<DebugVertex> vertices;
   std::vector<std::uint32_t> lineIndices;
   std::vector<std::uint32_t> triangleIndices;
-  vertices.reserve(lines.size() * 2u);
+  vertices.reserve(lines.size() * 2u + triangles.size() * 3u);
   lineIndices.reserve(lines.size() * 2u);
+  triangleIndices.reserve(triangles.size() * 3u);
 
   for (const DebugLineDescriptor& line : lines) {
     if (line.thickness > 0.0
@@ -626,6 +658,12 @@ std::optional<Renderable> createDebugLineRenderable(
       continue;
     }
     appendThinDebugLine(vertices, lineIndices, line);
+  }
+  for (const DebugTriangleDescriptor& triangle : triangles) {
+    appendDebugTriangle(vertices, triangleIndices, triangle);
+  }
+  if (vertices.empty()) {
+    return std::nullopt;
   }
 
   const Bounds bounds = computeDebugBounds(vertices);
@@ -1297,7 +1335,6 @@ std::optional<Renderable> createMeshRenderable(
       }
     }
 
-    state.baseColor = ensureReadableDisplayColor(state.baseColor);
     return state;
   };
 

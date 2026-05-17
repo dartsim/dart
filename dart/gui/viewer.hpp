@@ -157,9 +157,9 @@ struct ProjectionOptions
   double verticalFovDegrees = 45.0;
   std::optional<double> nearPlane;
   std::optional<double> farPlane;
-  double nearScale = 0.004;
-  double minNearPlane = 0.002;
-  double maxNearPlane = 0.025;
+  double nearScale = 0.001;
+  double minNearPlane = 0.0005;
+  double maxNearPlane = 0.010;
   double minFarPlane = 30.0;
   double farPadding = 35.0;
 };

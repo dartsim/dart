@@ -39,6 +39,7 @@ namespace gui {
 struct ActiveRenderableState;
 struct ApplicationOptions;
 struct DebugLineDescriptor;
+struct DebugTriangleDescriptor;
 struct Gizmo;
 struct GizmoAxisColors;
 struct GizmoHandleHit;

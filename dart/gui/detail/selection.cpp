@@ -428,9 +428,9 @@ bool SelectionController::beginBodyNodeDrag(
   bodyDrag.pivot = bodyNode->getWorldTransform().translation();
   bodyDrag.savedRotation = bodyNode->getWorldTransform().rotation();
   bodyDrag.savedGlobalOffset = Eigen::Vector3d::Zero();
-  if (mSelectedPoint) {
-    bodyDrag.savedGlobalOffset = *mSelectedPoint - bodyDrag.pivot;
-  }
+  const Eigen::Vector3d dragPoint
+      = mSelectedPoint.value_or(descriptor.worldTransform.translation());
+  bodyDrag.savedGlobalOffset = dragPoint - bodyDrag.pivot;
   bodyDrag.savedLocalOffset
       = bodyDrag.savedRotation.transpose() * bodyDrag.savedGlobalOffset;
   bodyDrag.targetTransform = bodyNode->getWorldTransform();
@@ -449,7 +449,7 @@ bool SelectionController::beginBodyNodeDrag(
   mSelectedDragLastCursorX = cursorX;
   mSelectedDragLastCursorY = cursorY;
   mSelectedDragLastRay = cursorRay;
-  mSelectedDragPlanePoint = descriptor.worldTransform.translation();
+  mSelectedDragPlanePoint = bodyDrag.targetTransform.translation();
   mSelectedDragIsAxisConstrained = false;
 
   if (isBodyNodeRotationModifierDown(window)) {

@@ -45,11 +45,14 @@
 namespace dart::gui {
 namespace {
 
-constexpr int kRingSegments = 48;
-constexpr double kRingRadiusScale = 0.62;
+constexpr int kRingSegments = 72;
+constexpr int kRingPatternSegments = 24;
+constexpr double kRingOuterRadiusScale = 0.70;
+constexpr double kRingInnerRadiusScale = 0.56;
+constexpr double kArrowTailScale = kRingInnerRadiusScale;
 constexpr double kPlaneHandleOffsetScale = 0.18;
-constexpr double kPlaneHandleSizeScale = 0.15;
-constexpr double kHandleThicknessScale = 0.022;
+constexpr double kPlaneHandleSizeScale = 0.24;
+constexpr double kHandleThicknessScale = 0.038;
 constexpr double kTwoPi = 6.2831853071795864769;
 
 void appendLine(
@@ -69,16 +72,36 @@ void appendLine(
   lines.push_back(std::move(line));
 }
 
+void appendTriangle(
+    std::vector<DebugTriangleDescriptor>& triangles,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c,
+    const Eigen::Vector4d& color,
+    std::string label)
+{
+  DebugTriangleDescriptor triangle;
+  triangle.a = a;
+  triangle.b = b;
+  triangle.c = c;
+  triangle.rgba = color;
+  triangle.label = std::move(label);
+  triangles.push_back(std::move(triangle));
+}
+
 void appendArrowLines(
     std::vector<DebugLineDescriptor>& lines,
     const Eigen::Vector3d& origin,
     const Eigen::Vector3d& axis,
-    double length,
+    double tailDistance,
+    double tipDistance,
     const Eigen::Vector4d& color,
     double thickness,
     const std::string& label)
 {
-  if (length <= 0.0 || !std::isfinite(length) || !axis.allFinite()) {
+  if (tailDistance < 0.0 || tipDistance <= tailDistance
+      || !std::isfinite(tailDistance) || !std::isfinite(tipDistance)
+      || !axis.allFinite()) {
     return;
   }
 
@@ -87,8 +110,9 @@ void appendArrowLines(
     return;
   }
 
-  const Eigen::Vector3d tip = origin + direction * length;
-  appendLine(lines, origin, tip, color, thickness, label);
+  const Eigen::Vector3d tail = origin + direction * tailDistance;
+  const Eigen::Vector3d tip = origin + direction * tipDistance;
+  appendLine(lines, tail, tip, color, thickness, label);
 
   const Eigen::Vector3d seed = std::abs(direction.z()) < 0.9
                                    ? Eigen::Vector3d::UnitZ()
@@ -98,7 +122,7 @@ void appendArrowLines(
     return;
   }
 
-  const double headLength = length * 0.18;
+  const double headLength = (tipDistance - tailDistance) * 0.40;
   const double headWidth = headLength * 0.65;
   const Eigen::Vector3d base = tip - direction * headLength;
   appendLine(
@@ -181,6 +205,49 @@ void appendRingLines(
   }
 }
 
+void appendRingPatternLines(
+    std::vector<DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& firstAxis,
+    const Eigen::Vector3d& secondAxis,
+    double innerRadius,
+    double outerRadius,
+    const Eigen::Vector4d& color,
+    double thickness,
+    const std::string& label)
+{
+  if (!origin.allFinite() || !firstAxis.allFinite() || !secondAxis.allFinite()
+      || innerRadius <= 0.0 || outerRadius <= innerRadius
+      || !std::isfinite(innerRadius) || !std::isfinite(outerRadius)) {
+    return;
+  }
+
+  const double firstNorm = firstAxis.norm();
+  const double secondNorm = secondAxis.norm();
+  if (!std::isfinite(firstNorm) || firstNorm < 1e-12
+      || !std::isfinite(secondNorm) || secondNorm < 1e-12) {
+    return;
+  }
+
+  const Eigen::Vector3d first = firstAxis / firstNorm;
+  const Eigen::Vector3d second = secondAxis / secondNorm;
+  Eigen::Vector4d patternColor = color;
+  patternColor.w() = std::min(color.w(), 0.82);
+  for (int segment = 0; segment < kRingPatternSegments; ++segment) {
+    const double angle = kTwoPi * static_cast<double>(segment)
+                         / static_cast<double>(kRingPatternSegments);
+    const Eigen::Vector3d radial
+        = first * std::cos(angle) + second * std::sin(angle);
+    appendLine(
+        lines,
+        origin + radial * innerRadius,
+        origin + radial * outerRadius,
+        patternColor,
+        thickness,
+        label);
+  }
+}
+
 void appendPlaneHandleLines(
     std::vector<DebugLineDescriptor>& lines,
     const Eigen::Vector3d& origin,
@@ -217,6 +284,99 @@ void appendPlaneHandleLines(
   appendLine(lines, c, d, color, thickness, label);
   appendLine(lines, d, a, color, thickness, label);
   appendLine(lines, a, c, color, thickness * 0.65, label + ".diagonal");
+}
+
+Eigen::Vector4d translucentHandleColor(
+    const Eigen::Vector4d& color, double alpha)
+{
+  Eigen::Vector4d result = color;
+  result.w() = std::min(color.w(), alpha);
+  return result;
+}
+
+void appendRingTriangles(
+    std::vector<DebugTriangleDescriptor>& triangles,
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& firstAxis,
+    const Eigen::Vector3d& secondAxis,
+    double innerRadius,
+    double outerRadius,
+    const Eigen::Vector4d& color,
+    const std::string& label)
+{
+  if (!origin.allFinite() || !firstAxis.allFinite() || !secondAxis.allFinite()
+      || innerRadius <= 0.0 || outerRadius <= innerRadius
+      || !std::isfinite(innerRadius) || !std::isfinite(outerRadius)) {
+    return;
+  }
+
+  const double firstNorm = firstAxis.norm();
+  const double secondNorm = secondAxis.norm();
+  if (!std::isfinite(firstNorm) || firstNorm < 1e-12
+      || !std::isfinite(secondNorm) || secondNorm < 1e-12) {
+    return;
+  }
+
+  const Eigen::Vector3d first = firstAxis / firstNorm;
+  const Eigen::Vector3d second = secondAxis / secondNorm;
+  for (int segment = 0; segment < kRingSegments; ++segment) {
+    const double angle0 = kTwoPi * static_cast<double>(segment)
+                          / static_cast<double>(kRingSegments);
+    const double angle1 = kTwoPi * static_cast<double>(segment + 1)
+                          / static_cast<double>(kRingSegments);
+    const Eigen::Vector3d inner0
+        = origin
+          + (first * std::cos(angle0) + second * std::sin(angle0))
+                * innerRadius;
+    const Eigen::Vector3d outer0
+        = origin
+          + (first * std::cos(angle0) + second * std::sin(angle0))
+                * outerRadius;
+    const Eigen::Vector3d inner1
+        = origin
+          + (first * std::cos(angle1) + second * std::sin(angle1))
+                * innerRadius;
+    const Eigen::Vector3d outer1
+        = origin
+          + (first * std::cos(angle1) + second * std::sin(angle1))
+                * outerRadius;
+    appendTriangle(triangles, inner0, outer0, outer1, color, label);
+    appendTriangle(triangles, inner0, outer1, inner1, color, label);
+  }
+}
+
+void appendPlaneHandleTriangles(
+    std::vector<DebugTriangleDescriptor>& triangles,
+    const Eigen::Vector3d& origin,
+    const Eigen::Vector3d& firstAxis,
+    const Eigen::Vector3d& secondAxis,
+    double offset,
+    double size,
+    const Eigen::Vector4d& color,
+    const std::string& label)
+{
+  if (!origin.allFinite() || !firstAxis.allFinite() || !secondAxis.allFinite()
+      || offset <= 0.0 || !std::isfinite(offset) || size <= 0.0
+      || !std::isfinite(size)) {
+    return;
+  }
+
+  const double firstNorm = firstAxis.norm();
+  const double secondNorm = secondAxis.norm();
+  if (!std::isfinite(firstNorm) || firstNorm < 1e-12
+      || !std::isfinite(secondNorm) || secondNorm < 1e-12) {
+    return;
+  }
+
+  const Eigen::Vector3d first = firstAxis / firstNorm;
+  const Eigen::Vector3d second = secondAxis / secondNorm;
+  const Eigen::Vector3d corner = origin + (first + second) * offset;
+  const Eigen::Vector3d a = corner;
+  const Eigen::Vector3d b = corner + first * size;
+  const Eigen::Vector3d c = corner + first * size + second * size;
+  const Eigen::Vector3d d = corner + second * size;
+  appendTriangle(triangles, a, b, c, color, label);
+  appendTriangle(triangles, a, c, d, color, label);
 }
 
 struct RaySegmentHit
@@ -463,16 +623,18 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
   const Eigen::Vector3d origin = transform.translation();
   const Eigen::Matrix3d rotation = transform.linear();
   const double length = gizmo.size * scale;
+  const double arrowTail = length * kArrowTailScale;
   const double thickness = length * kHandleThicknessScale;
   const std::string label = makeGizmoLabel(gizmo);
 
-  lines.reserve(12 + kRingSegments * 3);
+  lines.reserve(24 + (kRingSegments * 2 + kRingPatternSegments) * 3);
   if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)
       || hasGizmoFlag(gizmo.flags, GizmoFlags::TranslateXY)) {
     appendArrowLines(
         lines,
         origin,
         rotation.col(0),
+        arrowTail,
         length,
         colorForHandle(
             gizmo,
@@ -484,7 +646,21 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
     appendArrowLines(
         lines,
         origin,
+        -rotation.col(0),
+        arrowTail,
+        length,
+        colorForHandle(
+            gizmo,
+            highlightedHandle,
+            GizmoHandleKind::TranslateX,
+            gizmo.colors.x),
+        thickness,
+        label + ".x_negative");
+    appendArrowLines(
+        lines,
+        origin,
         rotation.col(1),
+        arrowTail,
         length,
         colorForHandle(
             gizmo,
@@ -493,11 +669,25 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
             gizmo.colors.y),
         thickness,
         label + ".y");
+    appendArrowLines(
+        lines,
+        origin,
+        -rotation.col(1),
+        arrowTail,
+        length,
+        colorForHandle(
+            gizmo,
+            highlightedHandle,
+            GizmoHandleKind::TranslateY,
+            gizmo.colors.y),
+        thickness,
+        label + ".y_negative");
     if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)) {
       appendArrowLines(
           lines,
           origin,
           rotation.col(2),
+          arrowTail,
           length,
           colorForHandle(
               gizmo,
@@ -506,6 +696,19 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
               gizmo.colors.z),
           thickness,
           label + ".z");
+      appendArrowLines(
+          lines,
+          origin,
+          -rotation.col(2),
+          arrowTail,
+          length,
+          colorForHandle(
+              gizmo,
+              highlightedHandle,
+              GizmoHandleKind::TranslateZ,
+              gizmo.colors.z),
+          thickness,
+          label + ".z_negative");
     }
     appendFreeMoveHandle(
         lines,
@@ -564,36 +767,58 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
   }
 
   if (hasGizmoFlag(gizmo.flags, GizmoFlags::Rotate)) {
-    const double ringRadius = length * kRingRadiusScale;
-    appendRingLines(
-        lines,
-        origin,
+    const double ringOuterRadius = length * kRingOuterRadiusScale;
+    const double ringInnerRadius = length * kRingInnerRadiusScale;
+    const auto appendRotationRing = [&](const Eigen::Vector3d& firstAxis,
+                                        const Eigen::Vector3d& secondAxis,
+                                        const Eigen::Vector4d& color,
+                                        const std::string& ringLabel) {
+      appendRingLines(
+          lines,
+          origin,
+          firstAxis,
+          secondAxis,
+          ringOuterRadius,
+          color,
+          thickness,
+          ringLabel);
+      appendRingLines(
+          lines,
+          origin,
+          firstAxis,
+          secondAxis,
+          ringInnerRadius,
+          color,
+          thickness * 0.72,
+          ringLabel + ".inner");
+      appendRingPatternLines(
+          lines,
+          origin,
+          firstAxis,
+          secondAxis,
+          ringInnerRadius,
+          ringOuterRadius,
+          color,
+          thickness * 0.64,
+          ringLabel + ".pattern");
+    };
+    appendRotationRing(
         rotation.col(1),
         rotation.col(2),
-        ringRadius,
         colorForHandle(
             gizmo, highlightedHandle, GizmoHandleKind::RotateX, gizmo.colors.x),
-        thickness,
         label + ".rotate_x");
-    appendRingLines(
-        lines,
-        origin,
+    appendRotationRing(
         rotation.col(2),
         rotation.col(0),
-        ringRadius,
         colorForHandle(
             gizmo, highlightedHandle, GizmoHandleKind::RotateY, gizmo.colors.y),
-        thickness,
         label + ".rotate_y");
-    appendRingLines(
-        lines,
-        origin,
+    appendRotationRing(
         rotation.col(0),
         rotation.col(1),
-        ringRadius,
         colorForHandle(
             gizmo, highlightedHandle, GizmoHandleKind::RotateZ, gizmo.colors.z),
-        thickness,
         label + ".rotate_z");
   }
 
@@ -619,6 +844,160 @@ std::vector<DebugLineDescriptor> makeGizmoDebugLines(
         std::make_move_iterator(gizmoLines.end()));
   }
   return lines;
+}
+
+std::vector<DebugTriangleDescriptor> makeGizmoDebugTriangles(
+    const Gizmo& gizmo, double scale, GizmoHandleKind highlightedHandle)
+{
+  std::vector<DebugTriangleDescriptor> triangles;
+  if (!isGizmoVisible(gizmo) || gizmo.target == nullptr || gizmo.size <= 0.0
+      || !std::isfinite(gizmo.size) || scale <= 0.0 || !std::isfinite(scale)) {
+    return triangles;
+  }
+
+  if (!hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)
+      && !hasGizmoFlag(gizmo.flags, GizmoFlags::TranslateXY)
+      && !hasGizmoFlag(gizmo.flags, GizmoFlags::Rotate)) {
+    return triangles;
+  }
+
+  const Eigen::Isometry3d transform = gizmo.target->getWorldTransform();
+  if (!transform.matrix().allFinite()) {
+    return triangles;
+  }
+
+  const Eigen::Vector3d origin = transform.translation();
+  const Eigen::Matrix3d rotation = transform.linear();
+  const double length = gizmo.size * scale;
+  const std::string label = makeGizmoLabel(gizmo);
+
+  triangles.reserve(kRingSegments * 6 + 6);
+  if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)
+      || hasGizmoFlag(gizmo.flags, GizmoFlags::TranslateXY)) {
+    const double planeOffset = length * kPlaneHandleOffsetScale;
+    const double planeSize = length * kPlaneHandleSizeScale;
+    appendPlaneHandleTriangles(
+        triangles,
+        origin,
+        rotation.col(0),
+        rotation.col(1),
+        planeOffset,
+        planeSize,
+        translucentHandleColor(
+            colorForHandle(
+                gizmo,
+                highlightedHandle,
+                GizmoHandleKind::TranslateXY,
+                gizmo.colors.z),
+            0.32),
+        label + ".translate_xy.surface");
+    if (hasGizmoFlag(gizmo.flags, GizmoFlags::Translate)) {
+      appendPlaneHandleTriangles(
+          triangles,
+          origin,
+          rotation.col(1),
+          rotation.col(2),
+          planeOffset,
+          planeSize,
+          translucentHandleColor(
+              colorForHandle(
+                  gizmo,
+                  highlightedHandle,
+                  GizmoHandleKind::TranslateYZ,
+                  gizmo.colors.x),
+              0.32),
+          label + ".translate_yz.surface");
+      appendPlaneHandleTriangles(
+          triangles,
+          origin,
+          rotation.col(0),
+          rotation.col(2),
+          planeOffset,
+          planeSize,
+          translucentHandleColor(
+              colorForHandle(
+                  gizmo,
+                  highlightedHandle,
+                  GizmoHandleKind::TranslateXZ,
+                  gizmo.colors.y),
+              0.32),
+          label + ".translate_xz.surface");
+    }
+  }
+
+  if (hasGizmoFlag(gizmo.flags, GizmoFlags::Rotate)) {
+    const double innerRadius = length * kRingInnerRadiusScale;
+    const double outerRadius = length * kRingOuterRadiusScale;
+    appendRingTriangles(
+        triangles,
+        origin,
+        rotation.col(1),
+        rotation.col(2),
+        innerRadius,
+        outerRadius,
+        translucentHandleColor(
+            colorForHandle(
+                gizmo,
+                highlightedHandle,
+                GizmoHandleKind::RotateX,
+                gizmo.colors.x),
+            0.30),
+        label + ".rotate_x.surface");
+    appendRingTriangles(
+        triangles,
+        origin,
+        rotation.col(2),
+        rotation.col(0),
+        innerRadius,
+        outerRadius,
+        translucentHandleColor(
+            colorForHandle(
+                gizmo,
+                highlightedHandle,
+                GizmoHandleKind::RotateY,
+                gizmo.colors.y),
+            0.30),
+        label + ".rotate_y.surface");
+    appendRingTriangles(
+        triangles,
+        origin,
+        rotation.col(0),
+        rotation.col(1),
+        innerRadius,
+        outerRadius,
+        translucentHandleColor(
+            colorForHandle(
+                gizmo,
+                highlightedHandle,
+                GizmoHandleKind::RotateZ,
+                gizmo.colors.z),
+            0.30),
+        label + ".rotate_z.surface");
+  }
+
+  return triangles;
+}
+
+std::vector<DebugTriangleDescriptor> makeGizmoDebugTriangles(
+    const std::vector<Gizmo>& gizmos,
+    double scale,
+    std::optional<GizmoHandleHit> highlightedHandle)
+{
+  std::vector<DebugTriangleDescriptor> triangles;
+  for (std::size_t gizmoIndex = 0; gizmoIndex < gizmos.size(); ++gizmoIndex) {
+    const Gizmo& gizmo = gizmos[gizmoIndex];
+    const GizmoHandleKind handleToHighlight
+        = (highlightedHandle && highlightedHandle->gizmoIndex == gizmoIndex)
+              ? highlightedHandle->handle
+              : GizmoHandleKind::None;
+    auto gizmoTriangles
+        = makeGizmoDebugTriangles(gizmo, scale, handleToHighlight);
+    triangles.insert(
+        triangles.end(),
+        std::make_move_iterator(gizmoTriangles.begin()),
+        std::make_move_iterator(gizmoTriangles.end()));
+  }
+  return triangles;
 }
 
 std::optional<GizmoHandleHit> pickNearestGizmoHandle(
@@ -652,6 +1031,7 @@ std::optional<GizmoHandleHit> pickNearestGizmoHandle(
     const Eigen::Vector3d origin = transform.translation();
     const Eigen::Matrix3d rotation = transform.linear();
     const double length = gizmo.size * scale;
+    const double arrowTail = length * kArrowTailScale;
     const double radius = handleRadius * scale;
     const auto considerHit = [&](const RaySegmentHit& hit,
                                  GizmoHandleKind handle,
@@ -696,10 +1076,17 @@ std::optional<GizmoHandleHit> pickNearestGizmoHandle(
         }
         axis /= axisNorm;
 
-        const auto hit
-            = intersectRaySegment(ray, origin, origin + axis * length, radius);
-        if (hit) {
-          considerHit(*hit, handleKindForAxisIndex(axisIndex), axis);
+        const GizmoHandleKind handle = handleKindForAxisIndex(axisIndex);
+        for (const double sign : {1.0, -1.0}) {
+          const Eigen::Vector3d signedAxis = axis * sign;
+          const auto hit = intersectRaySegment(
+              ray,
+              origin + signedAxis * arrowTail,
+              origin + signedAxis * length,
+              radius);
+          if (hit) {
+            considerHit(*hit, handle, signedAxis);
+          }
         }
       }
 
@@ -737,7 +1124,7 @@ std::optional<GizmoHandleHit> pickNearestGizmoHandle(
     }
 
     if (hasGizmoFlag(gizmo.flags, GizmoFlags::Rotate)) {
-      const double ringRadius = length * kRingRadiusScale;
+      const double ringRadius = length * kRingOuterRadiusScale;
       const std::array<std::pair<int, int>, 3> ringPlaneAxes{
           {{1, 2}, {2, 0}, {0, 1}}};
       for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {

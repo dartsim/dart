@@ -10,10 +10,10 @@
   foot transform gizmos plus an always-visible support-polygon and COM validity
   overlay.
 - Controls: press 1-4 to toggle/select a target for keyboard nudges; left-drag
-  a target gizmo axis arrow or plane handle to move it, or a rotation ring to orient
-  it; WASD moves the root; Q/E yaw; F/Z adjusts height; X/C toggles left/right
-  foot support; hold R to optimize whole-body posture and balance; P prints
-  DOFs; T resets the relaxed posture; space toggles simulation.
+  an active target gizmo axis arrow or plane handle to move it, or a rotation
+  ring to orient it; WASD moves the root; Q/E yaw; F/Z adjusts height; X/C
+  toggles left/right foot support; hold R to optimize whole-body posture and balance;
+  P prints DOFs; T resets the relaxed posture; space toggles simulation.
 
 ## Notes
 
@@ -23,9 +23,8 @@
 - The transform gizmos support X/Y/Z axis-arrow dragging and rotation ring
   dragging plus XY/YZ/XZ plane handles. Hovered and actively dragged handles use
   the configured highlight color.
-- Only active targets solve each simulation step. Target gizmos stay visible as
-  public drag affordances; moving one activates it and solves the corresponding
-  IK chain.
+- Only active targets solve each simulation step. Target gizmos appear when their
+  target is active and solve the corresponding IK chain as they move.
 - The support overlay is source-owned DART line geometry. The polygon and
   centroid are green; the COM marker is blue when its support projection is
   inside the active support polygon and red otherwise.

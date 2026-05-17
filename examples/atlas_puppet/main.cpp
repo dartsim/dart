@@ -813,14 +813,11 @@ void addAtlasPuppetIkTargets(
     dart::gui::Gizmo gizmo;
     gizmo.label = config.targetName;
     gizmo.target = target;
-    gizmo.size = 0.24;
-    gizmo.isVisible = []() {
-      return true;
+    gizmo.size = 0.20;
+    gizmo.isVisible = [state]() {
+      return state->active;
     };
     gizmo.onChanged = [state](const Eigen::Isometry3d&) {
-      if (!state->active) {
-        state->activate(false);
-      }
       state->solve();
     };
 
@@ -1097,7 +1094,7 @@ dart::gui::Panel createAtlasPuppetPanel()
                               dart::gui::PanelContext& context) {
     builder.text("Atlas whole-body IK puppet");
     builder.text("Press 1-4 to toggle/select active targets.");
-    builder.text("Left-drag target gizmo handles.");
+    builder.text("Left-drag active target gizmo handles.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");
     builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
     builder.text("WASD moves the root; Q/E yaw; F/Z height.");

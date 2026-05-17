@@ -194,6 +194,71 @@ void disableSkeletonCollisionAndGravity(
   }
 }
 
+std::optional<std::pair<Eigen::Vector3d, Eigen::Vector3d>>
+computeVisualWorldBounds(const dart::dynamics::SkeletonPtr& skeleton)
+{
+  if (skeleton == nullptr) {
+    return std::nullopt;
+  }
+
+  bool hasBounds = false;
+  Eigen::Vector3d min = Eigen::Vector3d::Zero();
+  Eigen::Vector3d max = Eigen::Vector3d::Zero();
+
+  const auto includePoint = [&](const Eigen::Vector3d& point) {
+    if (!hasBounds) {
+      min = point;
+      max = point;
+      hasBounds = true;
+      return;
+    }
+    min = min.cwiseMin(point);
+    max = max.cwiseMax(point);
+  };
+
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* body = skeleton->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
+    }
+
+    body->eachShapeNodeWith<dart::dynamics::VisualAspect>(
+        [&](const dart::dynamics::ShapeNode* shapeNode) {
+          if (shapeNode == nullptr || shapeNode->getShape() == nullptr
+              || shapeNode->getVisualAspect()->isHidden()) {
+            return;
+          }
+
+          const auto& bounds = shapeNode->getShape()->getBoundingBox();
+          const Eigen::Vector3d localMin = bounds.getMin();
+          const Eigen::Vector3d localMax = bounds.getMax();
+          if (!localMin.allFinite() || !localMax.allFinite()) {
+            return;
+          }
+
+          const Eigen::Isometry3d transform = shapeNode->getWorldTransform();
+          for (int x = 0; x < 2; ++x) {
+            for (int y = 0; y < 2; ++y) {
+              for (int z = 0; z < 2; ++z) {
+                includePoint(
+                    transform
+                    * Eigen::Vector3d(
+                        x == 0 ? localMin.x() : localMax.x(),
+                        y == 0 ? localMin.y() : localMax.y(),
+                        z == 0 ? localMin.z() : localMax.z()));
+              }
+            }
+          }
+        });
+  }
+
+  if (!hasBounds) {
+    return std::nullopt;
+  }
+
+  return std::make_pair(min, max);
+}
+
 dart::common::ResourceRetrieverPtr createG1ResourceRetriever(
     const G1Options& options)
 {
@@ -301,12 +366,18 @@ dart::dynamics::SkeletonPtr loadG1Skeleton(const G1Options& options)
   }
 
   robot->setName(kG1SkeletonName);
-  if (auto* rootBody = robot->getRootBodyNode()) {
-    if (auto* freeJoint = dynamic_cast<dart::dynamics::FreeJoint*>(
-            rootBody->getParentJoint())) {
-      Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-      transform.translation().z() = 0.75;
-      dart::dynamics::FreeJoint::setTransformOf(freeJoint, transform);
+  auto* rootBody = robot->getRootBodyNode();
+  if (rootBody != nullptr
+      && dynamic_cast<dart::dynamics::FreeJoint*>(rootBody->getParentJoint())
+             != nullptr) {
+    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    transform.translation().z() = 0.75;
+    dart::dynamics::FreeJoint::setTransformOf(rootBody, transform);
+    if (const auto bounds = computeVisualWorldBounds(robot)) {
+      constexpr double groundClearance = 0.015;
+      transform = rootBody->getWorldTransform();
+      transform.translation().z() += groundClearance - bounds->first.z();
+      dart::dynamics::FreeJoint::setTransformOf(rootBody, transform);
     }
   }
 
@@ -517,14 +588,11 @@ void addG1IkTargets(G1Scene& scene, const dart::dynamics::SkeletonPtr& robot)
     dart::gui::Gizmo gizmo;
     gizmo.label = config.targetName;
     gizmo.target = target;
-    gizmo.size = 0.24;
-    gizmo.isVisible = []() {
-      return true;
+    gizmo.size = 0.15;
+    gizmo.isVisible = [state]() {
+      return state->active;
     };
     gizmo.onChanged = [state](const Eigen::Isometry3d&) {
-      if (!state->active) {
-        state->activate(false);
-      }
       state->solve();
     };
     scene.gizmos.push_back(std::move(gizmo));
@@ -618,7 +686,7 @@ dart::gui::Panel createG1Panel(const G1Options& options)
                                dart::gui::PanelContext& context) {
     builder.text("G1 whole-body IK puppet");
     builder.text("Press 1-4 to toggle/select targets.");
-    builder.text("Left-drag target gizmo handles.");
+    builder.text("Left-drag active target gizmo handles.");
     builder.text("Alt-drag translates body nodes; Ctrl-drag rotates them.");
     builder.text("Shift-drag moves a body with only its parent joint.");
     builder.text("Arrow keys and PageUp/PageDown nudge it.");

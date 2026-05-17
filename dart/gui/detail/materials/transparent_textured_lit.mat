@@ -96,11 +96,6 @@ fragment {
         if (materialParams.useBaseColorTexture > 0.5) {
             baseColor *= texture(materialParams_baseColorTexture, uv);
         }
-        float baseLuminance = dot(baseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-        if (baseLuminance < 0.16) {
-            float blend = clamp((0.16 - baseLuminance) / 0.16, 0.0, 1.0);
-            baseColor.rgb = mix(baseColor.rgb, vec3(0.46, 0.48, 0.52), blend);
-        }
 
         float metallic = materialParams.metallic;
         float roughness = materialParams.roughness;

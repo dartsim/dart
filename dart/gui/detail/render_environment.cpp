@@ -95,10 +95,10 @@ float3 normalizeOr(const float3& vector, const float3& fallback)
     ::filament::Engine& engine)
 {
   static constexpr std::array<float3, 9> kDiffuseIrradiance = {{
-      {0.30f, 0.32f, 0.36f},
+      {0.27f, 0.29f, 0.33f},
       {-0.01f, -0.01f, -0.01f},
-      {0.046f, 0.050f, 0.058f},
-      {0.022f, 0.024f, 0.028f},
+      {0.042f, 0.046f, 0.054f},
+      {0.020f, 0.022f, 0.026f},
       {0.000f, 0.000f, 0.000f},
       {0.000f, 0.000f, 0.000f},
       {0.000f, 0.000f, 0.000f},
@@ -108,14 +108,14 @@ float3 normalizeOr(const float3& vector, const float3& fallback)
 
   return ::filament::IndirectLight::Builder()
       .irradiance(3, kDiffuseIrradiance.data())
-      .intensity(60000.0f)
+      .intensity(56000.0f)
       .build(engine);
 }
 
 ::filament::Skybox* createNeutralSkybox(::filament::Engine& engine)
 {
   return ::filament::Skybox::Builder()
-      .color({0.48f, 0.51f, 0.56f, 1.0f})
+      .color({0.42f, 0.46f, 0.52f, 1.0f})
       .showSun(true)
       .build(engine);
 }
@@ -125,11 +125,11 @@ void configureNeutralViewportAtmosphere(::filament::View& view)
   ::filament::FogOptions fogOptions;
   fogOptions.enabled = true;
   fogOptions.distance = 24.0f;
-  fogOptions.maximumOpacity = 0.28f;
+  fogOptions.maximumOpacity = 0.22f;
   fogOptions.height = -0.6f;
   fogOptions.heightFalloff = 0.04f;
-  fogOptions.color = {0.46f, 0.50f, 0.55f};
-  fogOptions.density = 0.012f;
+  fogOptions.color = {0.42f, 0.46f, 0.51f};
+  fogOptions.density = 0.008f;
   fogOptions.inScatteringSize = 16.0f;
   view.setFogOptions(fogOptions);
 }
@@ -145,7 +145,7 @@ void configureWindowedViewQuality(::filament::View& view)
   ambientOcclusionOptions.aoType
       = ::filament::AmbientOcclusionOptions::AmbientOcclusionType::GTAO;
   ambientOcclusionOptions.radius = 0.34f;
-  ambientOcclusionOptions.intensity = 0.30f;
+  ambientOcclusionOptions.intensity = 0.34f;
   ambientOcclusionOptions.quality = ::filament::QualityLevel::MEDIUM;
   ambientOcclusionOptions.lowPassFilter = ::filament::QualityLevel::HIGH;
   view.setAmbientOcclusionOptions(ambientOcclusionOptions);
@@ -166,8 +166,8 @@ void configureMainView(
   view.setColorGrading(colorGrading);
   applyRenderSettings(view, dart::gui::RenderSettings{});
   view.setShadowType(::filament::ShadowType::PCF);
-  configureNeutralViewportAtmosphere(view);
   if (!headless) {
+    configureNeutralViewportAtmosphere(view);
     configureWindowedViewQuality(view);
   }
 }

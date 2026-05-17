@@ -11,17 +11,16 @@
 - Expected output: a kinematic Hubo model with toggleable hand, foot, and peg IK
   target gizmos plus an always-visible support-polygon and COM validity overlay.
 - Controls: left drag orbits, right/middle drag pans, wheel zooms, press `1`-`6`
-  to toggle/select targets, left-drag target gizmo handles, arrow/PageUp/PageDown
-  nudges selected targets, and Escape exits.
+  to toggle/select targets, left-drag active target gizmo handles,
+  arrow/PageUp/PageDown nudges selected targets, and Escape exits.
 
 ## Notes
 
 - This example runs in kinematic mode. The world keeps gravity for support
   polygon computation, while the Hubo body nodes ignore gravity and collision so
   target manipulation is stable.
-- Press `1`-`6` to toggle the hand, foot, and peg IK targets. Target gizmos stay
-  visible as public drag affordances; moving one activates it and solves the
-  corresponding IK chain.
+- Press `1`-`6` to toggle the hand, foot, and peg IK targets. Target gizmos appear
+  when their target is active and solve the corresponding IK chain as they move.
 - WASD moves the root, Q/E yaws the root, and F/Z changes root height. Hold
   Shift with those keys for the historical 2x movement amplification.
 - X/C toggles left/right foot support, hold R optimizes whole-body posture and

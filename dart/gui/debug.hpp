@@ -61,6 +61,15 @@ struct DebugLineDescriptor
   std::string label;
 };
 
+struct DebugTriangleDescriptor
+{
+  Eigen::Vector3d a = Eigen::Vector3d::Zero();
+  Eigen::Vector3d b = Eigen::Vector3d::Zero();
+  Eigen::Vector3d c = Eigen::Vector3d::Zero();
+  Eigen::Vector4d rgba = Eigen::Vector4d::Ones();
+  std::string label;
+};
+
 struct DebugDrawOptions
 {
   bool drawGrid = true;

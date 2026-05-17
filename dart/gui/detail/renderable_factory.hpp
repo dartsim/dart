@@ -52,6 +52,12 @@ std::optional<Renderable> createDebugLineRenderable(
     ::filament::Material& material,
     const std::vector<dart::gui::DebugLineDescriptor>& lines);
 
+std::optional<Renderable> createDebugLineRenderable(
+    ::filament::Engine& engine,
+    ::filament::Material& material,
+    const std::vector<dart::gui::DebugLineDescriptor>& lines,
+    const std::vector<dart::gui::DebugTriangleDescriptor>& triangles);
+
 std::optional<Renderable> createRenderableFromDescriptor(
     ::filament::Engine& engine,
     const MaterialSet& materials,
