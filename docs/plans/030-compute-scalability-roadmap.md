@@ -28,11 +28,21 @@ Out of scope for this plan:
 
 - `dart/simd/` provides explicit SIMD types and geometry helpers.
 - `tests/benchmark/simd/` provides SIMD benchmark coverage.
+- `docs/design/scalable_compute_decisions.md` owns durable CPU, SIMD, and GPU
+  decision rules.
 - `docs/design/hierarchical_allocator.md` documents allocator direction for
   cache-friendly simulation.
 - `docs/onboarding/build-system.md` documents build options and dependency
   structure.
 - `.github/workflows/ci_simd.yml` validates SIMD-oriented CI coverage.
+
+## Open Gaps
+
+- Rank candidate accelerated workloads from examples, benchmarks, issue/PR
+  evidence, and research use cases.
+- Name benchmark gates for the first workload.
+- List CPU/SIMD prerequisites before any GPU prototype.
+- Tie CUDA/SYCL decision evidence to concrete workload and package constraints.
 
 ## Workload Candidates
 
@@ -60,6 +70,9 @@ The ranking favors workloads with existing tests and benchmark surfaces before
 workloads that need new public API commitments. GPU backend selection remains
 blocked until at least one top-ranked workload has benchmark evidence that
 includes transfer/setup costs and package impact.
+
+Durable CPU, SIMD, GPU, and CUDA/SYCL decision rules live in
+`docs/design/scalable_compute_decisions.md`.
 
 ## Decision Framework
 
@@ -206,6 +219,8 @@ First-milestone decision:
 Acceleration should normally be selected through high-level algorithm options
 or backend policies. Avoid exposing raw kernel, stream, memory pool, or device
 types unless there is a clear long-term public contract.
+
+Use `docs/design/scalable_compute_decisions.md` for backend-leakage constraints.
 
 ### 4. Packaging And CI Constraints
 

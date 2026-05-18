@@ -33,6 +33,8 @@ Out of scope for this plan:
 - `docs/onboarding/architecture.md` describes DART's layered simulation core.
 - `docs/onboarding/api-boundaries.md` defines supported, compatibility,
   experimental, and internal API boundaries.
+- `docs/design/algorithm_extension_contracts.md` owns durable extension-point
+  contract principles and baseline-comparison rules.
 - `docs/background/lcp/` already documents solver theory and selection context.
 - `dart/math/lcp/` and `dart/constraint/` contain existing solver boundaries.
 - `tests/benchmark/` contains benchmark infrastructure for baseline
@@ -85,6 +87,9 @@ Initial LCP/contact inventory:
 | `dart::constraint::BoxedLcpSolver` and constraint solver integration               | Integration contract candidate                    | `dart/constraint/` wraps LCP solving for contact and joint constraints; onboarding constraint docs describe solver use.               | Separate user-selectable solver policy from internal constraint grouping and contact storage details.                                       |
 | `dart/math/lcp/pivoting/dantzig/*` helper APIs                                     | Internal or exposed implementation debt candidate | Dantzig detail helpers are in public-looking headers and have focused tests, but they expose algorithm storage and matrix operations. | Apply the API-boundary checklist before documenting or changing these as extension points.                                                  |
 | `tests/common/lcpsolver` and `tests/benchmark/lcpsolver`                           | Internal harness and baseline evidence            | The benchmark docs point to the solver-agnostic `BM_LCP_COMPARE` path.                                                                | Keep harness output under the build tree and document representative benchmark filters for reproducible comparisons.                        |
+
+Durable classification rules live in
+`docs/design/algorithm_extension_contracts.md`.
 
 ### 2. Baseline Comparison Harness
 
@@ -160,6 +165,10 @@ Completed bounded task: LCP extension-contract v0
 - Escalation: create `docs/dev_tasks/lcp_extension_contract/` only if future
   work expands into API changes, benchmark fixture redesign, or Python
   exposure.
+
+Use `docs/onboarding/api-boundaries.md` for the general policy and
+`docs/design/algorithm_extension_contracts.md` for this plan's application of
+that policy.
 
 ### 4. Research Example Path
 

@@ -1,0 +1,44 @@
+name: Determine CI scope
+description: Classify the current GitHub Actions event into DART CI tiers.
+
+outputs:
+  full_ci:
+    description: "true for PRs, protected branch/tag pushes, schedules, and manual runs"
+    value: ${{ steps.scope.outputs.full_ci }}
+  core_branch_push:
+    description: "true for ordinary branch pushes that should run only core CI"
+    value: ${{ steps.scope.outputs.core_branch_push }}
+
+runs:
+  using: composite
+  steps:
+    - id: scope
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        full_ci=false
+        core_branch_push=false
+
+        if [[ "$GITHUB_EVENT_NAME" == "pull_request" \
+          || "$GITHUB_EVENT_NAME" == "schedule" \
+          || "$GITHUB_EVENT_NAME" == "workflow_dispatch" \
+          || "$GITHUB_REF" == "refs/heads/main" \
+          || "$GITHUB_REF" == refs/heads/release-* \
+          || "$GITHUB_REF" == refs/tags/v* ]]; then
+          full_ci=true
+        elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+          core_branch_push=true
+        fi
+
+        {
+          echo "full_ci=$full_ci"
+          echo "core_branch_push=$core_branch_push"
+        } >> "$GITHUB_OUTPUT"
+
+        {
+          echo "### CI scope"
+          echo
+          echo "- full_ci: $full_ci"
+          echo "- core_branch_push: $core_branch_push"
+        } >> "$GITHUB_STEP_SUMMARY"

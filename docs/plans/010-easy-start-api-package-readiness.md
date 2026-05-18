@@ -34,7 +34,23 @@ Out of scope for this plan:
 - `docs/onboarding/python-bindings.md` documents the Python-first API direction.
 - `docs/onboarding/api-boundaries.md` defines public API expectations and
   Python binding boundaries.
+- `docs/readthedocs/dartpy/user_guide/installation.rst` documents the current
+  pre-release PyPI wheel shape and supported Python versions.
+- `examples/headless_simulation/` provides a non-GUI C++ first simulation path.
+- `python/examples/hello_world/` provides a dartpy first simulation path.
 - `pixi.toml` owns reproducible source-build and test tasks.
+
+## Open Gaps
+
+Keep this list focused on unresolved work. Move durable instructions, examples,
+and package details to the owner docs as each gap closes.
+
+| Gap                                   | Why it matters                                                          | Durable output when closed                                  |
+| ------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Reconcile Python install commands     | README and ReadTheDocs currently differ on whether PyPI needs `--pre`.  | `README.md` and dartpy installation docs agree.             |
+| Modernize dartpy hello-world path     | The current first source example runs but emits camelCase deprecations. | Python examples and docs use recommended snake_case names.  |
+| Add C++ package consumer path         | Package install docs do not yet show a minimal CMake first simulation.  | C++ user docs include a verified installed-package example. |
+| Add source first-simulation checklist | Pixi source commands exist but are scattered by language and audience.  | User or onboarding docs show the shortest source path.      |
 
 ## Workstreams
 
@@ -195,6 +211,18 @@ Track whether the first-success workflow is available through:
 For each package path, record the supported platform and the verification
 command. Do not duplicate package version tables here; link to the authoritative
 package or build docs.
+
+Initial readiness:
+
+- PyPI / uv / pip: blocked on clean-environment verification and install-command
+  reconciliation.
+- Python conda/Pixi: blocked on clean-environment package verification.
+- C++ conda/Pixi: blocked on minimal installed-package CMake consumer
+  verification.
+- Native packages: track platform availability through Repology and
+  platform-specific install docs, not this plan.
+- Pixi source: source-tree first simulations have focused smoke commands; move
+  the durable instructions to user or onboarding docs.
 
 ## Acceptance Criteria
 

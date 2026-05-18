@@ -59,6 +59,10 @@ Route durable learnings to one owner:
 - Project, problem, component, or plan-specific learning: the relevant
   `docs/` owner, such as `docs/plans/`, `docs/onboarding/`, or a module
   `AGENTS.md`.
+- Plan lifecycle policy: `docs/plans/README.md` and `docs/plans/AGENTS.md`.
+  Plans should drive current work and then move durable output to
+  `docs/readthedocs/`, `docs/onboarding/`, `docs/design/`, code, tests,
+  examples, or release docs.
 
 Prefer improving or consolidating an existing component over adding a new
 surface. If two docs would need the same changing fact, pick one owner and make
@@ -92,6 +96,10 @@ faster; it must not be the only path.
 - approval-boundary wording around GitHub, CI, branch, and review-thread
   mutations;
 - private-path references in `docs/ai/`.
+
+`pixi run check-docs-policy` also enforces documentation lifecycle rules that
+are outside generated-adapter sync, including docs bucket visibility,
+dev-task shape, and plan cleanup invariants.
 
 These checks are structural. The principle audit in `docs/ai/principles.md`
 owns judgment calls such as source-of-truth placement, public path quality, and
