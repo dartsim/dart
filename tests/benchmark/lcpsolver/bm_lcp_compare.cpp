@@ -38,12 +38,15 @@
 #include <Eigen/Dense>
 #include <benchmark/benchmark.h>
 
+#include <algorithm>
 #include <iterator>
 #include <limits>
 #include <random>
 #include <ranges>
 #include <sstream>
 #include <string>
+#include <thread>
+#include <vector>
 
 #include <cstddef>
 
@@ -245,6 +248,173 @@ void AddShockPropagationCounters(
   state.counters["max_blocks_per_layer"] = maxBlocksPerLayer;
 }
 
+struct ValidationCounters
+{
+  double residual{0.0};
+  double complementarity{0.0};
+  double boundViolation{0.0};
+};
+
+double ComplementarityViolation(
+    double xi, double wi, double lo, double hi, double tol)
+{
+  double violation = 0.0;
+  if (std::isfinite(lo) && xi < lo - tol) {
+    violation = std::max(violation, lo - xi);
+  }
+  if (std::isfinite(hi) && xi > hi + tol) {
+    violation = std::max(violation, xi - hi);
+  }
+
+  const bool hasLo = std::isfinite(lo);
+  const bool hasUpper = std::isfinite(hi);
+  const bool atLo = hasLo && std::abs(xi - lo) <= tol;
+  const bool atHi = hasUpper && std::abs(xi - hi) <= tol;
+  const bool fixed = atLo && atHi;
+  const bool interior = (!atLo && !atHi) && (!hasLo || xi > lo + tol)
+                        && (!hasUpper || xi < hi - tol);
+
+  if (fixed) {
+    violation = std::max(violation, std::abs(wi));
+  } else if (atLo) {
+    violation = std::max(violation, std::max(0.0, -wi));
+  } else if (atHi) {
+    violation = std::max(violation, std::max(0.0, wi));
+  } else if (interior) {
+    violation = std::max(violation, std::abs(wi));
+  }
+
+  return violation;
+}
+
+ValidationCounters ComputeValidationRange(
+    const LcpProblem& problem,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& loEff,
+    const Eigen::VectorXd& hiEff,
+    double tol,
+    Eigen::Index begin,
+    Eigen::Index end)
+{
+  ValidationCounters counters;
+
+  for (Eigen::Index i = begin; i < end; ++i) {
+    const double xi = x[i];
+    const double wi = problem.A.row(i).dot(x) - problem.b[i];
+    const double projected
+        = dart::math::detail::projectToBounds(xi - wi, loEff[i], hiEff[i]);
+    counters.residual = std::max(counters.residual, std::abs(xi - projected));
+    counters.complementarity = std::max(
+        counters.complementarity,
+        ComplementarityViolation(xi, wi, loEff[i], hiEff[i], tol));
+
+    if (std::isfinite(loEff[i])) {
+      counters.boundViolation
+          = std::max(counters.boundViolation, loEff[i] - xi);
+    }
+    if (std::isfinite(hiEff[i])) {
+      counters.boundViolation
+          = std::max(counters.boundViolation, xi - hiEff[i]);
+    }
+  }
+
+  counters.boundViolation = std::max(0.0, counters.boundViolation);
+  return counters;
+}
+
+void MergeValidationCounters(
+    ValidationCounters& target, const ValidationCounters& source)
+{
+  target.residual = std::max(target.residual, source.residual);
+  target.complementarity
+      = std::max(target.complementarity, source.complementarity);
+  target.boundViolation
+      = std::max(target.boundViolation, source.boundViolation);
+}
+
+int ChooseWorkerCount(Eigen::Index problemSize)
+{
+  const auto hardwareWorkers = std::thread::hardware_concurrency();
+  const int availableWorkers
+      = hardwareWorkers > 0 ? static_cast<int>(hardwareWorkers) : 2;
+  return std::max(
+      1, std::min({availableWorkers, 8, static_cast<int>(problemSize)}));
+}
+
+ValidationCounters ComputeValidationCountersSerial(
+    const LcpProblem& problem,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& loEff,
+    const Eigen::VectorXd& hiEff,
+    double tol)
+{
+  return ComputeValidationRange(problem, x, loEff, hiEff, tol, 0, x.size());
+}
+
+ValidationCounters ComputeValidationCountersThreaded(
+    const LcpProblem& problem,
+    const Eigen::VectorXd& x,
+    const Eigen::VectorXd& loEff,
+    const Eigen::VectorXd& hiEff,
+    double tol,
+    int workerCount)
+{
+  std::vector<ValidationCounters> partials(workerCount);
+  std::vector<std::thread> workers;
+  workers.reserve(workerCount);
+
+  const Eigen::Index n = x.size();
+  const Eigen::Index chunkSize
+      = (n + static_cast<Eigen::Index>(workerCount) - 1) / workerCount;
+
+  for (int worker = 0; worker < workerCount; ++worker) {
+    const Eigen::Index begin = static_cast<Eigen::Index>(worker) * chunkSize;
+    const Eigen::Index end = std::min(n, begin + chunkSize);
+    workers.emplace_back([&, worker, begin, end]() {
+      partials[worker]
+          = ComputeValidationRange(problem, x, loEff, hiEff, tol, begin, end);
+    });
+  }
+
+  for (auto& worker : workers) {
+    worker.join();
+  }
+
+  ValidationCounters counters;
+  for (const auto& partial : partials) {
+    MergeValidationCounters(counters, partial);
+  }
+  return counters;
+}
+
+Eigen::VectorXd SolveBenchmarkProblem(const LcpProblem& problem)
+{
+  dart::math::DantzigSolver solver;
+  Eigen::VectorXd x = Eigen::VectorXd::Zero(problem.b.size());
+  auto options = MakeBenchmarkOptions(100);
+  options.validateSolution = false;
+  solver.solve(problem, x, options);
+  return x;
+}
+
+void AddValidationBenchmarkCounters(
+    benchmark::State& state,
+    const LcpProblem& problem,
+    const Eigen::VectorXd& x,
+    const LcpOptions& options,
+    const ValidationCounters& counters,
+    int workerCount,
+    const std::string& label)
+{
+  const auto check = dart::test::CheckLcpSolution(problem, x, options);
+  state.counters["worker_count"] = workerCount;
+  state.counters["residual"] = counters.residual;
+  state.counters["complementarity"] = counters.complementarity;
+  state.counters["bound_violation"] = counters.boundViolation;
+  state.counters["contract_ok"] = check.ok ? 1.0 : 0.0;
+  state.SetLabel(label);
+}
+
 template <typename Solver>
 void RunBenchmark(
     benchmark::State& state,
@@ -270,6 +440,80 @@ void RunBenchmark(
   state.counters["bound_violation"] = check.boundViolation;
   state.counters["contract_ok"] = check.ok ? 1.0 : 0.0;
   state.SetLabel(label);
+}
+
+static void BM_LcpValidation_Serial_FrictionIndex(benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 5000u + static_cast<unsigned>(numContacts));
+  const auto options = MakeBenchmarkOptions(100);
+  const Eigen::VectorXd x = SolveBenchmarkProblem(problem);
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  benchmark::DoNotOptimize(
+      dart::math::detail::computeEffectiveBounds(
+          problem.lo, problem.hi, problem.findex, x, loEff, hiEff, &message));
+
+  ValidationCounters counters;
+  for (auto _ : state) {
+    counters = ComputeValidationCountersSerial(
+        problem, x, loEff, hiEff, options.complementarityTolerance);
+    benchmark::DoNotOptimize(counters.residual);
+  }
+  counters = ComputeValidationCountersSerial(
+      problem, x, loEff, hiEff, options.complementarityTolerance);
+
+  AddValidationBenchmarkCounters(
+      state,
+      problem,
+      x,
+      options,
+      counters,
+      1,
+      MakeLabel("SerialValidation", "FrictionIndex"));
+}
+
+static void BM_LcpValidation_Threaded_FrictionIndex(benchmark::State& state)
+{
+  const int numContacts = static_cast<int>(state.range(0));
+  const auto problem = MakeFrictionIndexProblem(
+      numContacts, 5000u + static_cast<unsigned>(numContacts));
+  const auto options = MakeBenchmarkOptions(100);
+  const Eigen::VectorXd x = SolveBenchmarkProblem(problem);
+  const int workerCount = ChooseWorkerCount(x.size());
+
+  Eigen::VectorXd loEff;
+  Eigen::VectorXd hiEff;
+  std::string message;
+  benchmark::DoNotOptimize(
+      dart::math::detail::computeEffectiveBounds(
+          problem.lo, problem.hi, problem.findex, x, loEff, hiEff, &message));
+
+  ValidationCounters counters;
+  for (auto _ : state) {
+    counters = ComputeValidationCountersThreaded(
+        problem,
+        x,
+        loEff,
+        hiEff,
+        options.complementarityTolerance,
+        workerCount);
+    benchmark::DoNotOptimize(counters.residual);
+  }
+  counters = ComputeValidationCountersThreaded(
+      problem, x, loEff, hiEff, options.complementarityTolerance, workerCount);
+
+  AddValidationBenchmarkCounters(
+      state,
+      problem,
+      x,
+      options,
+      counters,
+      workerCount,
+      MakeLabel("ThreadedValidation", "FrictionIndex"));
 }
 
 static void BM_LcpCompare_Dantzig_Standard(benchmark::State& state)
@@ -1047,5 +1291,8 @@ BENCHMARK(BM_LcpCompare_BoxedSemiSmoothNewton_FrictionIndex)
 
 BENCHMARK(BM_LcpCompare_Dantzig_Scaled)->Args({12, 0})->Args({12, 1});
 BENCHMARK(BM_LcpCompare_Pgs_Scaled)->Args({12, 0})->Args({12, 1});
+
+BENCHMARK(BM_LcpValidation_Serial_FrictionIndex)->Arg(16)->Arg(64);
+BENCHMARK(BM_LcpValidation_Threaded_FrictionIndex)->Arg(16)->Arg(64);
 
 BENCHMARK(BM_LCP_COMPARE_SMOKE);

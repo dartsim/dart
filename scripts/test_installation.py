@@ -30,18 +30,20 @@ def test_basic_functionality():
     try:
         import dartpy as dart
 
-        # Test creating a world
+        # Exercise the DART 7 README quick-start surface.
         world = dart.World()
         print(f"✓ Created World: {world}")
 
-        # Test creating a skeleton
-        skel = dart.dynamics.Skeleton()
-        skel.setName("test_skeleton")
-        print(f"✓ Created Skeleton: {skel.getName()}")
+        parser = dart.io.UrdfParser()
+        robot = parser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+        if robot is None:
+            raise RuntimeError("URDF parser returned no skeleton")
+        print(f"✓ Loaded Skeleton: {robot.get_name()}")
 
-        # Test adding skeleton to world
-        world.addSkeleton(skel)
-        print(f"✓ Added skeleton to world: {world.getNumSkeletons()} skeleton(s)")
+        world.add_skeleton(robot)
+        world.step()
+        positions = robot.get_positions()
+        print(f"✓ Stepped world with {positions.shape[0]} position(s)")
 
         return True
     except ImportError as e:

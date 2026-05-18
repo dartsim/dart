@@ -163,3 +163,21 @@ next bounded task from the dashboard and other tracked evidence.
 Plan discussions can be exploratory. Plan edits should leave the files in a
 state where the next agent can immediately tell what changed, why it changed,
 and what to do next.
+
+## Structural Checks
+
+The living plan system relies on repository checks instead of manual memory:
+
+- `pixi run check-ai-commands` verifies generated Codex/OpenCode adapter sync,
+  workflow capability parity, workflow public paths, required-reading path
+  existence, required-reading coverage in `docs/ai/workflows.md`, and
+  approval-boundary wording.
+- `pixi run check-docs-policy` verifies docs index coverage and active
+  `docs/dev_tasks/<task>/` shape, including required `README.md` and
+  `RESUME.md` files.
+- `pixi run sync-ai-commands` regenerates AI adapters from the `.claude/`
+  workflow and skill sources before the non-mutating checks run.
+
+Run the AI docs/adapters gate set from `docs/ai/verification.md` after changing
+plan workflow sources, AI workflow docs, generated adapter sources, or active
+dev-task shape rules.
