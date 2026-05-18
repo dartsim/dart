@@ -135,9 +135,42 @@ jobs:
           path: ./dist/*.whl
           name: ${{ matrix.os }}-py${{ matrix.python-version }}
 
+  wheels:
+    name: Wheels
+    needs: [changes, build_wheels]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check wheel matrix result
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          WHEEL_RESULT: ${{ needs.build_wheels.result }}
+          CODE_CHANGED: ${{ needs.changes.outputs.code }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref }}
+        run: |
+          if [[ "$CHANGES_RESULT" != "success" ]]; then
+            echo "::error::changes job result was '$CHANGES_RESULT'"
+            exit 1
+          fi
+
+          if [[ "$WHEEL_RESULT" == "success" ]]; then
+            exit 0
+          fi
+
+          if [[ "$WHEEL_RESULT" == "skipped" && "$CODE_CHANGED" != "true" ]]; then
+            if [[ "$EVENT_NAME" == "pull_request" || "$REF_NAME" == refs/heads/* ]]; then
+              echo "Wheel build skipped because this update does not affect wheel-relevant code."
+              exit 0
+            fi
+          fi
+
+          echo "::error::build_wheels job result was '$WHEEL_RESULT'"
+          exit 1
+
   upload_pypi:
     name: Wheels | Publish to PyPI
-    needs: [build_wheels]
+    needs: [build_wheels, wheels]
     runs-on: ubuntu-latest
     # Publish all tagged versions (stable and dev) to production PyPI
     # Examples: v7.0.0, v7.0.0.dev0, v7.0.0.alpha1, v7.0.0.beta1, v7.0.0.rc1
