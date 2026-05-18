@@ -3,8 +3,7 @@ name: CI Lint
 on:
   push:
     branches:
-      - "main"
-      - "release-*"
+      - "**"
     paths-ignore:
       - ".github/workflows/cache_*.yml"
   pull_request:
@@ -21,6 +20,7 @@ concurrency:
 jobs:
   lint:
     name: Lint
+    if: github.event.deleted != true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,6 +36,11 @@ jobs:
 
   docs:
     name: Documentation
+    if: >-
+      github.event.deleted != true &&
+      (github.event_name != 'push' ||
+      github.ref == 'refs/heads/main' ||
+      startsWith(github.ref, 'refs/heads/release-'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
