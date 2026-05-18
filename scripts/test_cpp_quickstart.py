@@ -123,6 +123,22 @@ def prepend_runtime_paths(env: dict[str, str], prefixes: list[str]) -> None:
     env[name] = os.pathsep.join(values)
 
 
+def executable_path(build_dir: Path, build_type: str) -> Path:
+    name = (
+        "dart_readme_cpp_quickstart.exe"
+        if os.name == "nt"
+        else "dart_readme_cpp_quickstart"
+    )
+    candidates = [
+        build_dir / build_type / name,
+        build_dir / name,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
 def main() -> int:
     args = parse_args()
     if not shutil.which("cmake"):
@@ -153,12 +169,21 @@ def main() -> int:
             f"-DCMAKE_BUILD_TYPE={args.build_type}",
         ]
         run(configure, cwd=root, env=env)
-        run(["cmake", "--build", str(build_dir), "--parallel", "2"], cwd=root, env=env)
+        run(
+            [
+                "cmake",
+                "--build",
+                str(build_dir),
+                "--config",
+                args.build_type,
+                "--parallel",
+                "2",
+            ],
+            cwd=root,
+            env=env,
+        )
 
-        executable = build_dir / "dart_readme_cpp_quickstart"
-        if os.name == "nt":
-            executable = build_dir / "Release" / "dart_readme_cpp_quickstart.exe"
-        run([str(executable)], cwd=root, env=env)
+        run([str(executable_path(build_dir, args.build_type))], cwd=root, env=env)
 
     print("C++ quick-start package check passed")
     return 0

@@ -97,6 +97,22 @@ def run(cmd: list[str], *, cwd: Path | None = None) -> None:
     subprocess.run(cmd, cwd=cwd, check=True)
 
 
+def executable_path(build_dir: Path, build_type: str) -> Path:
+    name = (
+        "dart_published_package_quickstart.exe"
+        if os.name == "nt"
+        else "dart_published_package_quickstart"
+    )
+    candidates = [
+        build_dir / build_type / name,
+        build_dir / name,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
 def test_python_package(python_version: str) -> None:
     if not shutil.which("uv"):
         raise RuntimeError("uv is required to create the temporary dartpy environment")
@@ -120,14 +136,10 @@ def test_cpp_package() -> None:
     if not shutil.which("pixi"):
         raise RuntimeError("pixi is required to create the temporary C++ environment")
 
+    build_type = "Release"
     with tempfile.TemporaryDirectory(prefix="dartsim-cpp-current-package-") as tmp:
         root = Path(tmp)
         build = root / "build"
-        executable = build / (
-            "dart_published_package_quickstart.exe"
-            if os.name == "nt"
-            else "dart_published_package_quickstart"
-        )
         (root / "main.cpp").write_text(CPP_SOURCE, encoding="utf-8")
         (root / "CMakeLists.txt").write_text(CMAKE_LISTS, encoding="utf-8")
 
@@ -141,9 +153,32 @@ def test_cpp_package() -> None:
             "-s",
             "cxx-compiler",
         ]
-        run([*pixi_env, "--", "cmake", "-S", str(root), "-B", str(build)])
-        run([*pixi_env, "--", "cmake", "--build", str(build), "--parallel", "2"])
-        run([*pixi_env, "--", str(executable)])
+        run(
+            [
+                *pixi_env,
+                "--",
+                "cmake",
+                "-S",
+                str(root),
+                "-B",
+                str(build),
+                f"-DCMAKE_BUILD_TYPE={build_type}",
+            ]
+        )
+        run(
+            [
+                *pixi_env,
+                "--",
+                "cmake",
+                "--build",
+                str(build),
+                "--config",
+                build_type,
+                "--parallel",
+                "2",
+            ]
+        )
+        run([*pixi_env, "--", str(executable_path(build, build_type))])
 
     print("Published dartsim-cpp package quick-start passed")
 
