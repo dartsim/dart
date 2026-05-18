@@ -74,6 +74,10 @@ class CollisionAspect;
 class EndEffector;
 class Marker;
 
+namespace detail {
+class SkeletonDynamicsView;
+} // namespace detail
+
 /// BodyNode class represents a single node of the skeleton.
 ///
 /// BodyNode is a basic element of the skeleton. BodyNodes are hierarchically
@@ -907,6 +911,7 @@ public:
   friend class SoftBodyNode;
   friend class PointMass;
   friend class Node;
+  friend class detail::SkeletonDynamicsView;
 
 protected:
   /// Constructor called by Skeleton class

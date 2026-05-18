@@ -38,7 +38,9 @@
 #include "dart/common/stl_helpers.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/degree_of_freedom.hpp"
+#include "dart/dynamics/detail/articulated_dynamics_algorithms.hpp"
 #include "dart/dynamics/detail/body_node_pool.hpp"
+#include "dart/dynamics/detail/skeleton_dynamics_view.hpp"
 #include "dart/dynamics/end_effector.hpp"
 #include "dart/dynamics/inverse_kinematics.hpp"
 #include "dart/dynamics/joint.hpp"
@@ -3819,38 +3821,23 @@ void Skeleton::computeForwardKinematics(
 //==============================================================================
 void Skeleton::computeForwardDynamics()
 {
-  // Note: Articulated Inertias will be updated automatically when
-  // getArtInertiaImplicit() is called in BodyNode::updateBiasForce()
-
-  for (auto* bodyNode : std::views::reverse(mSkelCache.mBodyNodes)) {
-    bodyNode->updateBiasForce(
-        mAspectProperties.mGravity, mAspectProperties.mTimeStep);
-  }
-
-  // Forward recursion
-  for (auto& bodyNode : mSkelCache.mBodyNodes) {
-    bodyNode->updateAccelerationFD();
-    bodyNode->updateTransmittedForceFD();
-    bodyNode->updateJointForceFD(mAspectProperties.mTimeStep, true, true);
-  }
+  detail::SkeletonDynamicsView model(*this);
+  detail::aba(model);
 }
 
 //==============================================================================
 void Skeleton::computeInverseDynamics(
     bool _withExternalForces, bool _withDampingForces, bool _withSpringForces)
 {
-  // Skip immobile or 0-dof skeleton
-  if (getNumDofs() == 0) {
+  if (mSkelCache.mDofs.empty()) {
     return;
   }
 
-  // Backward recursion
-  for (auto* bodyNode : std::views::reverse(mSkelCache.mBodyNodes)) {
-    bodyNode->updateTransmittedForceID(
-        mAspectProperties.mGravity, _withExternalForces);
-    bodyNode->updateJointForceID(
-        mAspectProperties.mTimeStep, _withDampingForces, _withSpringForces);
-  }
+  detail::SkeletonDynamicsView model(*this);
+  detail::rnea(
+      model,
+      detail::RneaOptions{
+          _withExternalForces, _withDampingForces, _withSpringForces});
 }
 
 //==============================================================================
