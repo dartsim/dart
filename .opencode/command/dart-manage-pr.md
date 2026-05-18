@@ -104,8 +104,8 @@ gh pr checks <PR_NUMBER>
    - Apply AI-review fixes silently. After explicit maintainer/user approval
      and after the branch is ready, push, resolve reviewed and addressed
      threads, and request a fresh AI review only when the automatic first review
-     did not appear after a reasonable wait, or after a follow-up push needs a
-     new review:
+     did not appear after a reasonable wait, or when the approved follow-up push
+     addressed Codex review comments:
      ```bash
      gh pr comment <PR_NUMBER> --body "@codex review"
      ```

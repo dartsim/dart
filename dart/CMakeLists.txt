@@ -327,6 +327,7 @@ if(DART_BUILD_PROFILE)
 
   if(DART_PROFILE_TRACY)
     target_link_libraries(dart PUBLIC Tracy::TracyClient)
+    add_component_dependency_packages(${PROJECT_NAME} dart Tracy)
   endif()
 endif()
 

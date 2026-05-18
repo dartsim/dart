@@ -19,6 +19,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+INSTALLATION_TEST = Path(__file__).resolve().parent / "test_installation.py"
+
 
 def run_command(cmd, check=True):
     """Run a shell command and return the result."""
@@ -185,12 +187,11 @@ else:
         )
         print(result.stdout.strip())
 
-        print(f"\nTesting basic functionality...")
+        print(f"\nTesting DART 7 quick-start functionality...")
         result = run_command(
             [
                 str(python_path),
-                "-c",
-                "import dartpy.dynamics; world = dartpy.simulation.World(); print('✓ Basic functionality works')",
+                str(INSTALLATION_TEST),
             ]
         )
         print(result.stdout.strip())

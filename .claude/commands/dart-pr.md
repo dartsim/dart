@@ -94,4 +94,4 @@ Codex review to start; the PR body may show a small Codex activity indicator
 before the submitted review appears. Make fixes silently. Push and ask for a new
 AI review with `@codex review` only after explicit maintainer/user approval and
 only when the automatic first review did not appear after a reasonable wait, or
-after a follow-up push needs a new review.
+when the approved follow-up push addressed Codex review comments.

@@ -50,25 +50,29 @@ world = dart.World()
 
 # Load a robot from URDF
 urdf = dart.io.UrdfParser()
-robot = urdf.parseSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
-world.addSkeleton(robot)
+robot = urdf.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
+world.add_skeleton(robot)
 
 # Simulate 100 steps
 for _ in range(100):
     world.step()
-    print(f"Positions: {robot.getPositions()}")
+    print(f"Positions: {robot.get_positions()}")
 ```
 
 **C++**
 
 ```cpp
-#include <dart/dart.hpp>
+#include <dart/all.hpp>
+#include <dart/io/read.hpp>
+
+#include <iostream>
 
 int main() {
   auto world = dart::simulation::World::create();
 
   // Load a robot from URDF
-  auto robot = dart::io::urdf::readSkeleton("path/to/robot.urdf");
+  auto robot = dart::io::readSkeleton(
+      "dart://sample/urdf/KR5/KR5 sixx R650.urdf");
   world->addSkeleton(robot);
 
   // Simulate 100 steps
@@ -81,6 +85,12 @@ int main() {
 ```
 
 ## Installation
+
+The quick-start snippets above target the current `main` branch and DART 7 API.
+Until DART 7 package artifacts are published, package managers may resolve the
+latest DART 6.16 packages instead. Use the file-free package smoke checks below
+for currently published packages, or use the source checkout path for the DART 7
+quick starts.
 
 ### Python (Recommended)
 
@@ -103,6 +113,49 @@ int main() {
 | Windows                          | `vcpkg install dartsim:x64-windows`                                  |
 
 [All distributions →](https://repology.org/project/dart-sim/versions)
+
+### Current Package Smoke Checks
+
+These snippets create a tiny model in code, so they do not depend on sample data
+files being present in the installed package.
+
+**Python package**
+
+```python
+import dartpy as dart
+
+world = dart.simulation.World()
+skeleton = dart.dynamics.Skeleton("box")
+skeleton.createFreeJointAndBodyNodePair()
+world.addSkeleton(skeleton)
+world.step()
+print(f"Positions: {skeleton.getPositions()}")
+```
+
+**C++ package**
+
+```cpp
+#include <dart/dart.hpp>
+
+#include <iostream>
+
+int main() {
+  auto world = dart::simulation::World::create();
+  auto skeleton = dart::dynamics::Skeleton::create("box");
+  skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  world->addSkeleton(skeleton);
+  world->step();
+  std::cout << "Positions: " << skeleton->getPositions().transpose() << "\n";
+  return 0;
+}
+```
+
+### Source checkout
+
+```bash
+pixi install
+pixi run ex headless_simulation --steps 1
+```
 
 ## Documentation
 
