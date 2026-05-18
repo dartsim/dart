@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   changes:
+    if: github.event.deleted != true
     runs-on: ubuntu-latest
     outputs:
       core_branch_push: ${{ steps.scope.outputs.core_branch_push }}
