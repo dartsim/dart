@@ -32,15 +32,25 @@
 
 #include "dart/dynamics/voxel_grid_shape.hpp"
 
-#if DART_HAVE_OCTOMAP
+#include "dart/common/logging.hpp"
 
-  #include "dart/common/logging.hpp"
-  #include "dart/math/helpers.hpp"
+#include <limits>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace dart {
 namespace dynamics {
 
 namespace {
+
+//==============================================================================
+std::shared_ptr<SparseOccupancyGrid> makeDefaultGrid()
+{
+  return std::make_shared<SparseOccupancyGrid>(0.01);
+}
+
+#if DART_HAVE_OCTOMAP
 
 //==============================================================================
 octomap::point3d toPoint3f(const Eigen::Vector3f& point)
@@ -52,6 +62,12 @@ octomap::point3d toPoint3f(const Eigen::Vector3f& point)
 octomap::point3d toPoint3d(const Eigen::Vector3d& point)
 {
   return toPoint3f(point.cast<float>());
+}
+
+//==============================================================================
+Eigen::Vector3d toVector3d(const octomap::point3d& point)
+{
+  return Eigen::Vector3f(point.x(), point.y(), point.z()).cast<double>();
 }
 
 //==============================================================================
@@ -74,16 +90,58 @@ octomap::pose6d toPose6d(const Eigen::Isometry3d& frame)
       toPoint3d(frame.translation()), toQuaterniond(frame.linear()));
 }
 
+//==============================================================================
+std::vector<Eigen::Vector3d> toVector3d(const octomap::Pointcloud& pointCloud)
+{
+  std::vector<Eigen::Vector3d> points;
+  points.reserve(pointCloud.size());
+  for (const auto& point : pointCloud) {
+    points.emplace_back(toVector3d(point));
+  }
+
+  return points;
+}
+
+//==============================================================================
+void importOctree(SparseOccupancyGrid& grid, const octomap::OcTree& octree)
+{
+  grid.clear();
+  for (auto it = octree.begin_leafs(), end = octree.end_leafs(); it != end;
+       ++it) {
+    const Eigen::Vector3d center(it.getX(), it.getY(), it.getZ());
+    grid.setOccupancy(grid.worldToCell(center), it->getOccupancy());
+  }
+}
+
+#endif // DART_HAVE_OCTOMAP
+
 } // namespace
 
 //==============================================================================
 VoxelGridShape::VoxelGridShape(double resolution) : Shape()
 {
-  setOctree(std::make_shared<octomap::OcTree>(resolution));
+  setOccupancyGrid(std::make_shared<SparseOccupancyGrid>(resolution));
 
   mVariance = DYNAMIC_ELEMENTS;
 }
 
+//==============================================================================
+VoxelGridShape::VoxelGridShape(std::shared_ptr<SparseOccupancyGrid> grid)
+  : Shape()
+{
+  if (!grid) {
+    DART_WARN(
+        "[VoxelGridShape] Attempting to assign null occupancy grid. Creating "
+        "an empty grid with resolution 0.01 instead.");
+    grid = makeDefaultGrid();
+  }
+
+  setOccupancyGrid(std::move(grid));
+
+  mVariance = DYNAMIC_ELEMENTS;
+}
+
+#if DART_HAVE_OCTOMAP
 //==============================================================================
 VoxelGridShape::VoxelGridShape(std::shared_ptr<octomap::OcTree> octree)
   : Shape()
@@ -92,12 +150,14 @@ VoxelGridShape::VoxelGridShape(std::shared_ptr<octomap::OcTree> octree)
     DART_WARN(
         "[VoxelGridShape] Attempting to assign null octree. Creating an empty "
         "octree with resolution 0.01 instead.");
-    setOctree(std::make_shared<octomap::OcTree>(0.01));
-    return;
+    octree = std::make_shared<octomap::OcTree>(0.01);
   }
 
   setOctree(std::move(octree));
+
+  mVariance = DYNAMIC_ELEMENTS;
 }
+#endif
 
 //==============================================================================
 std::string_view VoxelGridShape::getType() const
@@ -113,6 +173,43 @@ std::string_view VoxelGridShape::getStaticType()
 }
 
 //==============================================================================
+void VoxelGridShape::setOccupancyGrid(std::shared_ptr<SparseOccupancyGrid> grid)
+{
+  if (!grid) {
+    DART_WARN(
+        "[VoxelGridShape] Attempting to assign null occupancy grid. Ignoring "
+        "this query.");
+    return;
+  }
+
+  if (grid == mOccupancyGrid) {
+    return;
+  }
+
+  mOccupancyGrid = std::move(grid);
+
+#if DART_HAVE_OCTOMAP
+  rebuildOctreeFromOccupancyGrid();
+#endif
+
+  markDataDirty();
+}
+
+//==============================================================================
+std::shared_ptr<SparseOccupancyGrid> VoxelGridShape::getOccupancyGrid()
+{
+  return mOccupancyGrid;
+}
+
+//==============================================================================
+std::shared_ptr<const SparseOccupancyGrid> VoxelGridShape::getOccupancyGrid()
+    const
+{
+  return mOccupancyGrid;
+}
+
+#if DART_HAVE_OCTOMAP
+//==============================================================================
 void VoxelGridShape::setOctree(std::shared_ptr<octomap::OcTree> octree)
 {
   if (!octree) {
@@ -127,11 +224,11 @@ void VoxelGridShape::setOctree(std::shared_ptr<octomap::OcTree> octree)
   }
 
   mOctree = std::move(octree);
+  mOccupancyGrid
+      = std::make_shared<SparseOccupancyGrid>(mOctree->getResolution());
+  importOctree(*mOccupancyGrid, *mOctree);
 
-  mIsBoundingBoxDirty = true;
-  mIsVolumeDirty = true;
-
-  incrementVersion();
+  markDataDirty();
 }
 
 //==============================================================================
@@ -145,37 +242,91 @@ std::shared_ptr<const octomap::OcTree> VoxelGridShape::getOctree() const
 {
   return mOctree;
 }
+#endif
 
 //==============================================================================
 void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& point, bool occupied)
 {
-  mOctree->updateNode(toPoint3d(point), occupied);
+  mOccupancyGrid->updateOccupancy(point, occupied);
 
-  incrementVersion();
+#if DART_HAVE_OCTOMAP
+  if (mOctree) {
+    mOctree->updateNode(toPoint3d(point), occupied);
+  }
+#endif
+
+  markDataDirty();
 }
 
 //==============================================================================
 void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& from, const Eigen::Vector3d& to)
 {
-  mOctree->insertRay(toPoint3d(from), toPoint3d(to));
+  mOccupancyGrid->insertRay(from, to);
 
-  incrementVersion();
+#if DART_HAVE_OCTOMAP
+  if (mOctree) {
+    mOctree->insertRay(toPoint3d(from), toPoint3d(to));
+  }
+#endif
+
+  markDataDirty();
 }
 
+//==============================================================================
+void VoxelGridShape::updateOccupancy(
+    std::span<const Eigen::Vector3d> pointCloud,
+    const Eigen::Vector3d& sensorOrigin,
+    const Frame* relativeTo)
+{
+  if (!relativeTo || relativeTo == Frame::World()) {
+    updateOccupancy(pointCloud, sensorOrigin, Eigen::Isometry3d::Identity());
+    return;
+  }
+
+  updateOccupancy(pointCloud, sensorOrigin, relativeTo->getWorldTransform());
+}
+
+//==============================================================================
+void VoxelGridShape::updateOccupancy(
+    std::span<const Eigen::Vector3d> pointCloud,
+    const Eigen::Vector3d& sensorOrigin,
+    const Eigen::Isometry3d& relativeTo)
+{
+  mOccupancyGrid->insertPointCloud(pointCloud, sensorOrigin, relativeTo);
+
+#if DART_HAVE_OCTOMAP
+  if (mOctree) {
+    octomap::Pointcloud octomapPointCloud;
+    for (const auto& point : pointCloud) {
+      octomapPointCloud.push_back(
+          static_cast<float>(point.x()),
+          static_cast<float>(point.y()),
+          static_cast<float>(point.z()));
+    }
+
+    mOctree->insertPointCloud(
+        octomapPointCloud, toPoint3d(sensorOrigin), toPose6d(relativeTo));
+  }
+#endif
+
+  markDataDirty();
+}
+
+#if DART_HAVE_OCTOMAP
 //==============================================================================
 void VoxelGridShape::updateOccupancy(
     const octomap::Pointcloud& pointCloud,
     const Eigen::Vector3d& sensorOrigin,
     const Frame* relativeTo)
 {
-  if (relativeTo == Frame::World()) {
-    mOctree->insertPointCloud(pointCloud, toPoint3d(sensorOrigin));
-    incrementVersion();
-  } else {
-    updateOccupancy(pointCloud, sensorOrigin, relativeTo->getWorldTransform());
+  if (!relativeTo || relativeTo == Frame::World()) {
+    updateOccupancy(pointCloud, sensorOrigin, Eigen::Isometry3d::Identity());
+    return;
   }
+
+  updateOccupancy(pointCloud, sensorOrigin, relativeTo->getWorldTransform());
 }
 
 //==============================================================================
@@ -184,21 +335,29 @@ void VoxelGridShape::updateOccupancy(
     const Eigen::Vector3d& sensorOrigin,
     const Eigen::Isometry3d& relativeTo)
 {
-  mOctree->insertPointCloud(
-      pointCloud, toPoint3d(sensorOrigin), toPose6d(relativeTo));
+  const auto points = toVector3d(pointCloud);
+  mOccupancyGrid->insertPointCloud(points, sensorOrigin, relativeTo);
 
-  incrementVersion();
+  if (mOctree) {
+    mOctree->insertPointCloud(
+        pointCloud, toPoint3d(sensorOrigin), toPose6d(relativeTo));
+  }
+
+  markDataDirty();
 }
+#endif
 
 //==============================================================================
 double VoxelGridShape::getOccupancy(const Eigen::Vector3d& point) const
 {
-  const auto node = mOctree->search(point.x(), point.y(), point.z());
-  if (node) {
-    return node->getOccupancy();
-  } else {
-    return 0.0;
-  }
+  return mOccupancyGrid->getOccupancy(point);
+}
+
+//==============================================================================
+std::vector<SparseOccupancyGrid::OccupiedCell>
+VoxelGridShape::getOccupiedCells() const
+{
+  return mOccupancyGrid->getOccupiedCells();
 }
 
 //==============================================================================
@@ -218,25 +377,76 @@ void VoxelGridShape::notifyColorUpdated(const Eigen::Vector4d& /*color*/)
 //==============================================================================
 ShapePtr VoxelGridShape::clone() const
 {
-  return std::make_shared<VoxelGridShape>(
-      std::make_shared<octomap::OcTree>(*mOctree));
+  auto clone = std::make_shared<VoxelGridShape>(
+      std::make_shared<SparseOccupancyGrid>(*mOccupancyGrid));
+
+#if DART_HAVE_OCTOMAP
+  if (mOctree) {
+    clone->mOctree = std::make_shared<octomap::OcTree>(*mOctree);
+  }
+#endif
+
+  return clone;
 }
 
 //==============================================================================
 void VoxelGridShape::updateBoundingBox() const
 {
-  // TODO(JS): Not implemented.
+  const auto cells = mOccupancyGrid->getOccupiedCells();
+  if (cells.empty()) {
+    mBoundingBox.setMin(Eigen::Vector3d::Zero());
+    mBoundingBox.setMax(Eigen::Vector3d::Zero());
+    mIsBoundingBoxDirty = false;
+    return;
+  }
+
+  Eigen::Vector3d min
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d max
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+
+  for (const auto& cell : cells) {
+    const Eigen::Vector3d halfSize = Eigen::Vector3d::Constant(cell.size * 0.5);
+    min = min.cwiseMin(cell.center - halfSize);
+    max = max.cwiseMax(cell.center + halfSize);
+  }
+
+  mBoundingBox.setMin(min);
+  mBoundingBox.setMax(max);
   mIsBoundingBoxDirty = false;
 }
 
 //==============================================================================
 void VoxelGridShape::updateVolume() const
 {
-  // TODO(JS): Not implemented.
+  mVolume = 0.0;
+  for (const auto& cell : mOccupancyGrid->getOccupiedCells()) {
+    mVolume += cell.size * cell.size * cell.size;
+  }
+
   mIsVolumeDirty = false;
 }
 
+//==============================================================================
+void VoxelGridShape::markDataDirty()
+{
+  mIsBoundingBoxDirty = true;
+  mIsVolumeDirty = true;
+
+  incrementVersion();
+}
+
+#if DART_HAVE_OCTOMAP
+//==============================================================================
+void VoxelGridShape::rebuildOctreeFromOccupancyGrid()
+{
+  mOctree = std::make_shared<octomap::OcTree>(mOccupancyGrid->getResolution());
+
+  for (const auto& cell : mOccupancyGrid->getOccupiedCells()) {
+    mOctree->updateNode(toPoint3d(cell.center), true);
+  }
+}
+#endif
+
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_HAVE_OCTOMAP

@@ -167,22 +167,23 @@ dart/
 - **CMake Module:** `cmake/DARTFindfmt.cmake`
 - **Targets:** `fmt::fmt` or `fmt::fmt-header-only`
 
-#### 5. octomap (Octree-based 3D mapping)
-
-- **Version:** ≥ 1.10.0, < 2
-- **Purpose:** VoxelGridShape support
-- **CMake Module:** `cmake/DARTFindoctomap.cmake`
-- **Optional:** Warning if not found
-
 ### Optional Dependencies
 
-#### 6. spdlog (Logging)
+#### 5. spdlog (Logging)
 
 - **Version:** ≥ 1.15.3, < 2
 - **Purpose:** Fast C++ logging library
 - **CMake Module:** `cmake/DARTFindspdlog.cmake`
 - **Targets:** `spdlog::spdlog` or `spdlog::spdlog_header_only`
 - **Skip Option:** `DART_SKIP_spdlog`
+
+#### 6. octomap (Octree-based 3D mapping)
+
+- **Version:** ≥ 1.10.0, < 2
+- **Purpose:** Test and benchmark comparisons for native occupancy-grid
+  behavior
+- **CMake Module:** `cmake/DARTFindoctomap.cmake`
+- **Scope:** Not discovered or linked by core DART libraries
 
 ### GUI-Specific Dependencies
 
@@ -457,7 +458,6 @@ Component Dependency Tree:
     ├── assimp
     ├── fmt
     ├── spdlog (optional)
-    ├── octomap (optional)
     ├── collision-fcl (native-backed compatibility facade; no FCL dependency)
     ├── collision-bullet (native-backed compatibility facade; no Bullet dependency)
     └── collision-ode (native-backed compatibility facade; no ODE collision dependency)
@@ -465,7 +465,8 @@ Component Dependency Tree:
 Reference test/benchmark targets, when enabled:
     ├── dart-test-reference-fcl (optional; reference tests/benchmarks only)
     ├── dart-test-reference-bullet (optional; reference tests/benchmarks only)
-    └── dart-test-reference-ode (optional; reference tests/benchmarks only)
+    ├── dart-test-reference-ode (optional; reference tests/benchmarks only)
+    └── octomap (optional; occupancy-grid tests/benchmarks only)
 
     ├── utils
     │   └── depends: dart, tinyxml2, libsdformat

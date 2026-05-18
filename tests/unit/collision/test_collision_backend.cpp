@@ -50,10 +50,7 @@
 #include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
 #include "dart/dynamics/simple_frame.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
-
-#if DART_HAVE_OCTOMAP
-  #include "dart/dynamics/voxel_grid_shape.hpp"
-#endif
+#include "dart/dynamics/voxel_grid_shape.hpp"
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -627,7 +624,6 @@ TEST(CollisionBackend, MultiSphereConvexHullShapeAdapter)
 }
 
 //==============================================================================
-#if DART_HAVE_OCTOMAP
 TEST(CollisionBackend, VoxelGridShapeAdapter)
 {
   auto voxelGrid = std::make_shared<VoxelGridShape>(0.1);
@@ -673,4 +669,3 @@ TEST(CollisionBackend, VoxelGridCollidesAfterOccupancyUpdate)
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
 }
-#endif

@@ -31,12 +31,9 @@
 #include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/soft_mesh_shape.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
+#include <dart/dynamics/voxel_grid_shape.hpp>
 
 #include <dart/math/tri_mesh.hpp>
-
-#if DART_HAVE_OCTOMAP
-  #include <dart/dynamics/voxel_grid_shape.hpp>
-#endif
 
 #include <gtest/gtest.h>
 
@@ -964,7 +961,6 @@ TEST(DartCollisionGroup, PersistentSceneRebuildsAfterHeightmapMutation)
   EXPECT_LT(0u, result.getNumContacts());
 }
 
-#if DART_HAVE_OCTOMAP
 TEST(DartCollisionGroup, PersistentSceneRebuildsAfterVoxelGridMutation)
 {
   auto detector = DartCollisionDetector::create();
@@ -989,7 +985,6 @@ TEST(DartCollisionGroup, PersistentSceneRebuildsAfterVoxelGridMutation)
   EXPECT_TRUE(group->collide(option, &result));
   EXPECT_LT(0u, result.getNumContacts());
 }
-#endif
 
 TEST(DartCollisionGroup, PointCloudShapeIsExplicitlyNonCollidable)
 {

@@ -54,9 +54,9 @@ sudo apt install \
   opencl-clhpp-headers
 ```
 
-FCL, Bullet, and ODE are optional reference-comparison dependencies for
-collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
-not require per-engine collision dependencies.
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
 
 ### macOS
 
@@ -77,9 +77,9 @@ brew install fcl bullet ipopt nlopt octomap ode \
   spdlog tinyxml2 urdfdom yaml-cpp
 ```
 
-FCL, Bullet, and ODE are optional reference-comparison dependencies for
-collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
-not require per-engine collision dependencies.
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
 
 ### Windows
 
@@ -97,9 +97,9 @@ vcpkg install --triplet x64-windows \
   opencl opengl osg pagmo2 nanobind tinyxml2 urdfdom yaml-cpp
 ```
 
-FCL, Bullet, and ODE are optional reference-comparison dependencies for
-collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
-not require per-engine collision dependencies.
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
 
 ### Arch Linux (experimental)
 
@@ -118,9 +118,9 @@ yay -S \
   urdfdom nanobind
 ```
 
-FCL, Bullet, and ODE are optional reference-comparison dependencies for
-collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
-not require per-engine collision dependencies.
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
 
 ### FreeBSD (experimental)
 

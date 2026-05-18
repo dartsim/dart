@@ -204,11 +204,6 @@ endif()
 # Boost gdb helper scripts embed inline asm that breaks GCC with our flags.
 target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 
-# octomap settings
-if(TARGET octomap)
-  target_link_libraries(dart PUBLIC octomap)
-endif()
-
 # C++ standard settings
 target_compile_features(dart PUBLIC cxx_std_20)
 
@@ -278,9 +273,6 @@ add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependency_packages(${PROJECT_NAME} dart
   assimp Eigen3 fmt
 )
-if(TARGET octomap)
-  add_component_dependency_packages(${PROJECT_NAME} dart octomap)
-endif()
 if(spdlog_FOUND)
   add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
 endif()
