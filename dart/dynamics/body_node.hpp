@@ -75,7 +75,7 @@ class EndEffector;
 class Marker;
 
 namespace detail {
-class SkeletonDynamicsView;
+class ArticulatedDynamicsAccess;
 } // namespace detail
 
 /// BodyNode class represents a single node of the skeleton.
@@ -911,7 +911,7 @@ public:
   friend class SoftBodyNode;
   friend class PointMass;
   friend class Node;
-  friend class detail::SkeletonDynamicsView;
+  friend class detail::ArticulatedDynamicsAccess;
 
 protected:
   /// Constructor called by Skeleton class

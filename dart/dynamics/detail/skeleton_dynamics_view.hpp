@@ -34,9 +34,8 @@
 #define DART_DYNAMICS_DETAIL_SKELETONDYNAMICSVIEW_HPP_
 
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/detail/articulated_dynamics_algorithms.hpp>
 #include <dart/dynamics/skeleton.hpp>
-
-#include <span>
 
 namespace dart {
 namespace dynamics {
@@ -48,22 +47,28 @@ class SkeletonDynamicsView
 {
 public:
   explicit SkeletonDynamicsView(Skeleton& skeleton) noexcept
-    : mSkeleton(skeleton),
-      mBodyNodes(
-          skeleton.mSkelCache.mBodyNodes.data(),
-          skeleton.mSkelCache.mBodyNodes.size())
+    : mBodyNodes(skeleton.mSkelCache.mBodyNodes.data()),
+      mNumBodyNodes(skeleton.mSkelCache.mBodyNodes.size()),
+      mNumDofs(skeleton.mSkelCache.mDofs.size()),
+      mGravity(skeleton.mAspectProperties.mGravity),
+      mTimeStep(skeleton.mAspectProperties.mTimeStep)
   {
     // Do nothing.
   }
 
   std::size_t getNumDofs() const noexcept
   {
-    return mSkeleton.getNumDofs();
+    return mNumDofs;
   }
 
   std::size_t getNumBodyNodes() const noexcept
   {
-    return mBodyNodes.size();
+    return mNumBodyNodes;
+  }
+
+  BodyNode* const* getBodyNodeData() const noexcept
+  {
+    return mBodyNodes;
   }
 
   BodyNode& getBodyNode(std::size_t index) const
@@ -73,28 +78,28 @@ public:
 
   const Eigen::Vector3d& getGravity() const noexcept
   {
-    return mSkeleton.getGravity();
+    return mGravity;
   }
 
   double getTimeStep() const noexcept
   {
-    return mSkeleton.getTimeStep();
+    return mTimeStep;
   }
 
   void updateBiasForce(
       BodyNode& bodyNode, const Eigen::Vector3d& gravity, double timeStep) const
   {
-    bodyNode.updateBiasForce(gravity, timeStep);
+    ArticulatedDynamicsAccess::updateBiasForce(bodyNode, gravity, timeStep);
   }
 
   void updateAccelerationFD(BodyNode& bodyNode) const
   {
-    bodyNode.updateAccelerationFD();
+    ArticulatedDynamicsAccess::updateAccelerationFD(bodyNode);
   }
 
   void updateTransmittedForceFD(BodyNode& bodyNode) const
   {
-    bodyNode.updateTransmittedForceFD();
+    ArticulatedDynamicsAccess::updateTransmittedForceFD(bodyNode);
   }
 
   void updateJointForceFD(
@@ -103,7 +108,8 @@ public:
       bool withDampingForces,
       bool withSpringForces) const
   {
-    bodyNode.updateJointForceFD(timeStep, withDampingForces, withSpringForces);
+    ArticulatedDynamicsAccess::updateJointForceFD(
+        bodyNode, timeStep, withDampingForces, withSpringForces);
   }
 
   void updateTransmittedForceID(
@@ -111,7 +117,8 @@ public:
       const Eigen::Vector3d& gravity,
       bool withExternalForces) const
   {
-    bodyNode.updateTransmittedForceID(gravity, withExternalForces);
+    ArticulatedDynamicsAccess::updateTransmittedForceID(
+        bodyNode, gravity, withExternalForces);
   }
 
   void updateJointForceID(
@@ -120,12 +127,16 @@ public:
       bool withDampingForces,
       bool withSpringForces) const
   {
-    bodyNode.updateJointForceID(timeStep, withDampingForces, withSpringForces);
+    ArticulatedDynamicsAccess::updateJointForceID(
+        bodyNode, timeStep, withDampingForces, withSpringForces);
   }
 
 private:
-  Skeleton& mSkeleton;
-  std::span<BodyNode* const> mBodyNodes;
+  BodyNode* const* mBodyNodes;
+  std::size_t mNumBodyNodes;
+  std::size_t mNumDofs;
+  const Eigen::Vector3d& mGravity;
+  double mTimeStep;
 };
 
 } // namespace detail

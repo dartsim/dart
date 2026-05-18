@@ -40,7 +40,6 @@
 #include "dart/dynamics/degree_of_freedom.hpp"
 #include "dart/dynamics/detail/articulated_dynamics_algorithms.hpp"
 #include "dart/dynamics/detail/body_node_pool.hpp"
-#include "dart/dynamics/detail/skeleton_dynamics_view.hpp"
 #include "dart/dynamics/end_effector.hpp"
 #include "dart/dynamics/inverse_kinematics.hpp"
 #include "dart/dynamics/joint.hpp"
@@ -3821,8 +3820,10 @@ void Skeleton::computeForwardKinematics(
 //==============================================================================
 void Skeleton::computeForwardDynamics()
 {
-  detail::SkeletonDynamicsView model(*this);
-  detail::aba(model);
+  detail::abaBodyNodes(
+      mSkelCache.mBodyNodes,
+      mAspectProperties.mGravity,
+      mAspectProperties.mTimeStep);
 }
 
 //==============================================================================
@@ -3833,9 +3834,18 @@ void Skeleton::computeInverseDynamics(
     return;
   }
 
-  detail::SkeletonDynamicsView model(*this);
-  detail::rnea(
-      model,
+  if (!_withExternalForces && !_withDampingForces && !_withSpringForces) {
+    detail::rneaBodyNodes(
+        mSkelCache.mBodyNodes,
+        mAspectProperties.mGravity,
+        mAspectProperties.mTimeStep);
+    return;
+  }
+
+  detail::rneaBodyNodes(
+      mSkelCache.mBodyNodes,
+      mAspectProperties.mGravity,
+      mAspectProperties.mTimeStep,
       detail::RneaOptions{
           _withExternalForces, _withDampingForces, _withSpringForces});
 }

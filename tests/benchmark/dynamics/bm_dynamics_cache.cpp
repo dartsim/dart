@@ -62,8 +62,6 @@
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
-#include <dart/math/random.hpp>
-
 #include <benchmark/benchmark.h>
 
 #include <atomic>
@@ -77,6 +75,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 
 // ============================================================================
@@ -377,13 +376,31 @@ inline SkeletonPtr makeG1Humanoid()
   return skel;
 }
 
-/// Randomize all DOF positions and velocities to defeat caching.
+inline double deterministicUniform(
+    std::uint64_t& state, double minValue, double maxValue)
+{
+  state = state * 6364136223846793005ULL + 1442695040888963407ULL;
+  const auto mantissa = state >> 11;
+  constexpr double invMaxMantissa = 1.0 / 9007199254740992.0;
+  const double unit = static_cast<double>(mantissa) * invMaxMantissa;
+  return minValue + (maxValue - minValue) * unit;
+}
+
+/// Assign deterministic representative DOF positions and velocities.
+///
+/// Benchmark comparisons need the same input states across runs and branches.
+/// A local generator avoids process-random seeds while still using non-trivial
+/// joint states to defeat zero-state shortcuts and keep caches dirty.
 inline void randomizeState(const SkeletonPtr& skel)
 {
+  std::uint64_t state = 0x9E3779B97F4A7C15ULL
+                        ^ (static_cast<std::uint64_t>(skel->getNumDofs())
+                           * 0xBF58476D1CE4E5B9ULL);
   for (std::size_t i = 0; i < skel->getNumDofs(); ++i) {
     auto* dof = skel->getDof(i);
-    dof->setPosition(math::Random::uniform(-0.5, 0.5));
-    dof->setVelocity(math::Random::uniform(-1.0, 1.0));
+    state ^= static_cast<std::uint64_t>(i + 1) * 0x94D049BB133111EBULL;
+    dof->setPosition(deterministicUniform(state, -0.5, 0.5));
+    dof->setVelocity(deterministicUniform(state, -1.0, 1.0));
   }
 }
 
