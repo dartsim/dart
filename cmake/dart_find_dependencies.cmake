@@ -25,26 +25,9 @@ dart_check_required_package(assimp "assimp")
 # Optional dependencies
 #=======================
 
-# octomap
-dart_find_package(octomap)
-if(OCTOMAP_FOUND OR octomap_FOUND)
-  if(NOT DEFINED octomap_VERSION)
-    set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
-    message(WARNING "Looking for octomap - octomap_VERSION is not defined, "
-        "please install octomap with version information"
-    )
-  else()
-    set(DART_HAVE_OCTOMAP TRUE CACHE BOOL "Check if octomap found." FORCE)
-    if(DART_VERBOSE)
-      message(STATUS "Looking for octomap - version ${octomap_VERSION} found")
-    endif()
-  endif()
-else()
-  set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
-  message(WARNING "Looking for octomap - NOT found, to use VoxelGridShape, "
-      "please install octomap"
-  )
-endif()
+# OctoMap is intentionally not discovered for core DART. Tests and benchmarks
+# may find it locally for correctness and performance comparisons.
+set(DART_HAVE_OCTOMAP FALSE CACHE BOOL "Check if octomap found." FORCE)
 
 if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
   if(DART_USE_SYSTEM_TRACY)

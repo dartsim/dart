@@ -113,7 +113,7 @@ set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSI
 # Already set above
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
-set(DART_PKG_EXTERNAL_DEPS "assimp, eigen3, entt, octomap")
+set(DART_PKG_EXTERNAL_DEPS "assimp, eigen3, entt")
 set_property(GLOBAL PROPERTY DART_PKG_LINK_LIBS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS "")
@@ -576,10 +576,10 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
     add_compile_options(-Wno-overloaded-virtual -Wno-alloc-size-larger-than -Wno-dangling-pointer)
   endif()
   if(GCC_VERSION VERSION_GREATER_EQUAL 15.0)
-    # TODO(GCC15): Remove once upstream dependencies (octomap, fcl) stop using
+    # TODO(GCC15): Remove once upstream reference dependencies stop using
     # <ciso646>, which is deprecated in C++20. GCC 15 emits a #warning that our
     # -Werror=cpp flag treats as an error.
-    # Tracking: octomap uses <ciso646> in OcTreeKey.h; fcl pulls it in transitively.
+    # Tracking: FCL and OctoMap reference targets can pull it transitively.
     add_compile_options(-Wno-error=cpp)
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")

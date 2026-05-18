@@ -50,6 +50,10 @@ sudo apt install \
   opencl-clhpp-headers
 ```
 
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
+
 ### macOS
 
 Add the OSRF tap and install required dependencies using `brew`:
@@ -68,6 +72,10 @@ brew install bullet glfw ipopt nlopt octomap ode \
   spdlog tinyxml2 urdfdom yaml-cpp
 ```
 
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
+
 ### Windows
 
 Install required dependencies using `vcpkg`:
@@ -83,6 +91,10 @@ vcpkg install --triplet x64-windows \
   assimp eigen3 fcl fmt spdlog bullet3 glfw3 nlopt ode \
   opencl opengl pagmo2 nanobind tinyxml2 urdfdom yaml-cpp
 ```
+
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
 
 ### Arch Linux (experimental)
 
@@ -100,6 +112,10 @@ yay -S \
   opencl-headers opencl-icd-loader pagmo spdlog tinyxml2 \
   urdfdom nanobind
 ```
+
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
 
 ### FreeBSD (experimental)
 

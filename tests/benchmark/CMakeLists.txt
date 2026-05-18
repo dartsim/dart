@@ -269,6 +269,21 @@ target_link_libraries(bm_dynamics_cache
 )
 dart_format_add(dynamics/bm_dynamics_cache.cpp)
 
+add_executable(bm_sparse_occupancy_grid dynamics/bm_sparse_occupancy_grid.cpp)
+target_link_libraries(bm_sparse_occupancy_grid
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+if(TARGET octomap)
+  target_link_libraries(bm_sparse_occupancy_grid octomap)
+  target_compile_definitions(
+    bm_sparse_occupancy_grid
+    PRIVATE DART_TESTS_HAVE_OCTOMAP=1
+  )
+endif()
+dart_format_add(dynamics/bm_sparse_occupancy_grid.cpp)
+
 if(TARGET dart-io)
   add_executable(bm_dynamics_cache_io dynamics/bm_dynamics_cache_io.cpp)
   target_link_libraries(bm_dynamics_cache_io

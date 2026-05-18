@@ -35,16 +35,21 @@
 
 #include <dart/config.hpp>
 
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/shape.hpp>
+#include <dart/dynamics/sparse_occupancy_grid.hpp>
+
+#include <dart/common/diagnostics.hpp>
+
+#include <memory>
+#include <span>
+#include <vector>
+
 #if DART_HAVE_OCTOMAP
-
-  #include <dart/dynamics/frame.hpp>
-  #include <dart/dynamics/shape.hpp>
-
-  #include <dart/common/diagnostics.hpp>
-
 DART_SUPPRESS_CPP_WARNING_BEGIN
   #include <octomap/octomap.h>
 DART_SUPPRESS_CPP_WARNING_END
+#endif // DART_HAVE_OCTOMAP
 
 namespace dart {
 namespace dynamics {
@@ -57,9 +62,14 @@ public:
   /// @param[in] resolution Size of voxel. Default is 0.01.
   explicit VoxelGridShape(double resolution = 0.01);
 
-  /// Constructs from a octomap::OcTree.
+  /// Constructs from native sparse occupancy-grid storage.
+  explicit VoxelGridShape(std::shared_ptr<SparseOccupancyGrid> grid);
+
+#if DART_HAVE_OCTOMAP
+  /// Constructs from an octomap::OcTree.
   /// @param[in] octree Octree.
   explicit VoxelGridShape(std::shared_ptr<octomap::OcTree> octree);
+#endif
 
   /// Destructor.
   ~VoxelGridShape() override = default;
@@ -70,46 +80,70 @@ public:
   /// Returns shape type for this class
   static std::string_view getStaticType();
 
-  /// Sets octree.
+  /// Sets native sparse occupancy-grid storage.
+  void setOccupancyGrid(std::shared_ptr<SparseOccupancyGrid> grid);
+
+  /// Returns native sparse occupancy-grid storage.
+  std::shared_ptr<SparseOccupancyGrid> getOccupancyGrid();
+
+  /// Returns native sparse occupancy-grid storage.
+  std::shared_ptr<const SparseOccupancyGrid> getOccupancyGrid() const;
+
+#if DART_HAVE_OCTOMAP
+  /// Sets octree and imports its leaves into native storage.
   void setOctree(std::shared_ptr<octomap::OcTree> octree);
 
-  /// Returns octree.
+  /// Returns octree compatibility storage.
   std::shared_ptr<octomap::OcTree> getOctree();
 
-  /// Returns octree.
+  /// Returns octree compatibility storage.
   std::shared_ptr<const octomap::OcTree> getOctree() const;
+#endif
 
-  /// Updates the occupancy probability of the voxels where @c point is located.
+  /// Updates the occupancy probability of the voxel containing @c point.
   ///
-  /// Note that the probability is computed by both of the current probability
+  /// Note that the probability is computed from both the current probability
   /// and the new sensor measurement.
   ///
   /// @param[in] point Location of the sensor measurement.
   /// @param[in] occupied True if the location was measured occupied.
   void updateOccupancy(const Eigen::Vector3d& point, bool occupied = true);
 
-  /// Updates the occupancy probability of the voxels given sensor measurement,
-  /// which is a single ray.
+  /// Updates occupancy from a single sensor ray.
   ///
-  /// Note that the probability is computed by both of the current probability
-  /// and the new sensor measurement.
-  ///
-  /// If you have a ray cloud, then using updateOccupancy(PointClout, ...) is
-  /// more efficient.
+  /// Traversed voxels are updated as free space, and the endpoint voxel is
+  /// updated as occupied.
   ///
   /// @param from Origin of sensor in global coordinates.
   /// @param to Endpoint of measurement in global coordinates.
   void updateOccupancy(const Eigen::Vector3d& from, const Eigen::Vector3d& to);
 
-  /// Updates the occupancy probability of the voxels given sensor measurement.
+  /// Updates occupancy from a point cloud.
   ///
-  /// Note that the probability is computed by both of the current probability
-  /// and the new sensor measurement.
+  /// @param[in] pointCloud Point cloud relative to frame. Points represent the
+  /// end points of the rays from the sensor origin.
+  /// @param[in] sensorOrigin Origin of sensor relative to frame.
+  /// @param[in] relativeTo Reference frame, determines transform to be
+  /// applied to point cloud and sensor origin.
+  void updateOccupancy(
+      std::span<const Eigen::Vector3d> pointCloud,
+      const Eigen::Vector3d& sensorOrigin = Eigen::Vector3d::Zero(),
+      const Frame* relativeTo = Frame::World());
+
+  /// Updates occupancy from a point cloud.
   ///
-  /// The voxels where the ray endpoints are located will increase the
-  /// probabilities because that’s where the rays hit objects. On the other
-  /// hand, the voxels that the rays pass through will decrease the
-  /// probabilities because it means there are no objects.
+  /// @param[in] pointCloud Point cloud relative to frame. Points represent the
+  /// end points of the rays from the sensor origin.
+  /// @param[in] sensorOrigin Origin of sensor relative to frame.
+  /// @param[in] relativeTo Reference transform applied to point cloud and
+  /// sensor origin.
+  void updateOccupancy(
+      std::span<const Eigen::Vector3d> pointCloud,
+      const Eigen::Vector3d& sensorOrigin,
+      const Eigen::Isometry3d& relativeTo);
+
+#if DART_HAVE_OCTOMAP
+  /// Updates occupancy from an octomap point cloud.
   ///
   /// @param[in] pointCloud Point cloud relative to frame. Points represent the
   /// end points of the rays from the sensor origin.
@@ -121,28 +155,24 @@ public:
       const Eigen::Vector3d& sensorOrigin = Eigen::Vector3d::Zero(),
       const Frame* relativeTo = Frame::World());
 
-  /// Updates the occupancy probability of the voxels given sensor measurement.
-  ///
-  /// Note that the probability is computed by both of the current probability
-  /// and the new sensor measurement.
-  ///
-  /// The voxels where the ray endpoints are located will increase the
-  /// probabilities because that’s where the rays hit objects. On the other
-  /// hand, the voxels that the rays pass through will decrease the
-  /// probabilities because it means there are no objects.
+  /// Updates occupancy from an octomap point cloud.
   ///
   /// @param[in] pointCloud Point cloud relative to frame. Points represent the
   /// end points of the rays from the sensor origin.
   /// @param[in] sensorOrigin Origin of sensor relative to frame.
-  /// @param[in] relativeTo Reference frame, determines transform to be
-  /// applied to point cloud and sensor origin.
+  /// @param[in] relativeTo Reference transform applied to point cloud and
+  /// sensor origin.
   void updateOccupancy(
       const octomap::Pointcloud& pointCloud,
       const Eigen::Vector3d& sensorOrigin,
       const Eigen::Isometry3d& relativeTo);
+#endif
 
-  /// Returns occupancy probability of a node that contains @c point.
+  /// Returns occupancy probability of the voxel that contains @c point.
   double getOccupancy(const Eigen::Vector3d& point) const;
+
+  /// Returns occupied cells with centers and probabilities.
+  std::vector<SparseOccupancyGrid::OccupiedCell> getOccupiedCells() const;
 
   // Documentation inherited.
   Eigen::Matrix3d computeInertia(double mass) const override;
@@ -160,14 +190,23 @@ protected:
   // Documentation inherited.
   void updateVolume() const override;
 
-  /// Octree.
+private:
+  void markDataDirty();
+
+#if DART_HAVE_OCTOMAP
+  void rebuildOctreeFromOccupancyGrid();
+#endif
+
+  /// Native sparse occupancy-grid storage.
+  std::shared_ptr<SparseOccupancyGrid> mOccupancyGrid;
+
+#if DART_HAVE_OCTOMAP
+  /// Octree compatibility storage.
   std::shared_ptr<octomap::OcTree> mOctree;
-  // TODO(JS): Use std::shared_ptr once we drop supporting FCL (< 0.5)
+#endif
 };
 
 } // namespace dynamics
 } // namespace dart
-
-#endif // DART_HAVE_OCTOMAP
 
 #endif // DART_DYNAMICS_VOXELGRIDSHAPE_HPP_

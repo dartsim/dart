@@ -94,8 +94,10 @@ function(dart_add_test test_type target_name) # ARGN for source files
     endif()
 
     if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
-      set(_dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>")
-      list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
+      # CTest applies path_list_prepend entries in order, so add lower
+      # priority paths first and the build-tree DART library last.
+      set(_dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
+      list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>")
       set_tests_properties(
         ${target_name}
         PROPERTIES
@@ -156,6 +158,13 @@ if(CMAKE_CONFIGURATION_TYPES)
   endforeach()
 else()
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin")
+endif()
+
+# OctoMap is a test/benchmark-only reference dependency. Core DART does not
+# discover or link it.
+dart_find_package(octomap)
+if(TARGET octomap AND DART_VERBOSE)
+  message(STATUS "Looking for octomap - found for test/benchmark comparisons")
 endif()
 
 # Common test utilities shared across test types
