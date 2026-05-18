@@ -83,8 +83,8 @@ inventory, or migration map. Keep the stable `.md` owner file in place and add
 the sidecar directory under the same initiative ID:
 
 ```text
-docs/plans/020-algorithm-extension-contracts.md
-docs/plans/020-algorithm-extension-contracts/
+docs/plans/NNN-active-initiative.md
+docs/plans/NNN-active-initiative/
 ├── baseline-harness.md
 └── api-inventory.md
 ```

@@ -12,9 +12,8 @@ DART should let researchers implement algorithms from new papers and compare
 them against built-in baselines without rebuilding shared foundations such as
 model loading, math, collision, memory, threading, SIMD, tests, or benchmarks.
 
-This design describes the contract shape for those extension points. It does
-not choose the next algorithm family or track implementation priority; that
-belongs to `docs/plans/020-algorithm-extension-contracts.md`.
+This design describes the contract shape for those extension points. Dashboard
+entry PLAN-020 tracks when to apply the rules to another algorithm family.
 
 ## Contract Principles
 

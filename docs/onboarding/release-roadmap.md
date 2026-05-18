@@ -29,7 +29,7 @@ source of truth once it is locked.
 
 | Gate                         | Required evidence                                                                                       | Local or CI command                                                                                                                                             |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| First simulation works       | README Python, C++ package-project, and Pixi source first-success commands are verified or blocked.     | See `docs/plans/010-easy-start-api-package-readiness.md`; run the documented snippet/example commands.                                                          |
+| First simulation works       | README Python, C++ package-project, and Pixi source first-success commands are verified or blocked.     | Run the README quick starts, `pixi run test-published-package-quickstarts`, and `pixi run check-dart7-artifacts`.                                               |
 | Core build and tests         | Lint, C++ build, Python build, and focused or full test suites pass for the changed release scope.      | `pixi run lint`, `pixi run build`, `pixi run test-unit`, `pixi run test-py`, or `pixi run test-all`.                                                            |
 | Public API boundaries        | New or promoted APIs are classified as supported, experimental, compatibility, or internal.             | `pixi run check-api-boundaries` plus review of `docs/onboarding/api-boundaries.md`.                                                                             |
 | LCP/contact baseline         | Solver contract and benchmark smoke evidence are recorded before algorithm or compute-scaling promises. | `ctest --test-dir build/default/cpp/Release -R UNIT_math_lcp_math_lcp_all_solvers_smoke`; `pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE`. |
@@ -48,7 +48,8 @@ changed scope before opening the PR:
 - Changelog: `CHANGELOG.md` has the release section, date, milestone link, and
   entries for user-visible fixes or changes.
 - Package exports: any changed CMake components configure, install, and work
-  from a temporary prefix with the PLAN-010 package-project command.
+  from a temporary prefix with `pixi run test-cpp-quickstart -- --prefix
+<installed-dart-prefix>`.
 - First-success paths: README Python, C++ package-project, and Pixi source
   commands either pass or name the current package-artifact blocker.
 - Compatibility: changes touching legacy release surfaces run

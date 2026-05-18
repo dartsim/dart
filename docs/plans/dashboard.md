@@ -28,8 +28,7 @@ its own line so status updates remain git-history friendly.
 
 ### PLAN-010: Easy-Start API And Package Readiness
 
-- Owner doc:
-  [`010-easy-start-api-package-readiness.md`](010-easy-start-api-package-readiness.md)
+- Owner doc: [`../../README.md#quick-start`](../../README.md#quick-start)
 - Status: Complete
 - Horizon: Later
 - Dimension: Easy start
@@ -43,7 +42,7 @@ its own line so status updates remain git-history friendly.
 ### PLAN-020: Algorithm Extension Contracts
 
 - Owner doc:
-  [`020-algorithm-extension-contracts.md`](020-algorithm-extension-contracts.md)
+  [`../design/algorithm_extension_contracts.md`](../design/algorithm_extension_contracts.md)
 - Status: Complete
 - Horizon: Later
 - Dimension: Algorithm extensibility
@@ -55,7 +54,7 @@ its own line so status updates remain git-history friendly.
 ### PLAN-030: Compute Scalability Roadmap
 
 - Owner doc:
-  [`030-compute-scalability-roadmap.md`](030-compute-scalability-roadmap.md)
+  [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md)
 - Status: Complete
 - Horizon: Later
 - Dimension: Scalable compute
