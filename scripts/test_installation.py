@@ -30,19 +30,18 @@ def test_basic_functionality():
     try:
         import dartpy as dart
 
-        # Exercise the DART 7 README quick-start surface.
+        # Exercise the DART 7 first-simulation surface without relying on
+        # sample assets being present in the installed package.
         world = dart.World()
         print(f"✓ Created World: {world}")
 
-        parser = dart.io.UrdfParser()
-        robot = parser.parse_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
-        if robot is None:
-            raise RuntimeError("URDF parser returned no skeleton")
-        print(f"✓ Loaded Skeleton: {robot.get_name()}")
+        skeleton = dart.Skeleton("box")
+        skeleton.create_free_joint_and_body_node_pair()
+        print(f"✓ Created Skeleton: {skeleton.get_name()}")
 
-        world.add_skeleton(robot)
+        world.add_skeleton(skeleton)
         world.step()
-        positions = robot.get_positions()
+        positions = skeleton.get_positions()
         print(f"✓ Stepped world with {positions.shape[0]} position(s)")
 
         return True

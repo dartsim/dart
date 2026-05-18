@@ -103,9 +103,9 @@ Published-artifact evidence from 2026-05-17 local verification:
   skipped because the run was a branch push rather than a `v*` tag push. That
   means current wheel build/test evidence is available, while public package
   publication remains blocked on a release tag and upload path.
-- `scripts/test_installation.py` now exercises the same DART 7 Python
-  first-success API as the README quick start. It passed against the local
-  in-tree Release dartpy build with
+- `scripts/test_installation.py` now exercises the DART 7 Python first-success
+  world/skeleton/step API without relying on sample assets being installed. It
+  passed against the local in-tree Release dartpy build with
   `PYTHONPATH=build/default/cpp/Release/python:${PYTHONPATH:-}`.
 - `scripts/test_wheel.py` now invokes `scripts/test_installation.py` after
   installing a wheel into its temporary environment, so wheel tests exercise the
@@ -142,7 +142,9 @@ Artifact unblock checklist:
   job successfully.
 - Installing that artifact into an isolated environment and running the README
   Python quick start succeeds with top-level `dart.World`, `dart.io`,
-  `parse_skeleton`, `add_skeleton`, and `get_positions`.
+  `parse_skeleton`, `add_skeleton`, and `get_positions`, or the release notes
+  explicitly defer sample-asset packaging and point users to the file-free
+  current-package smoke check.
 - Running `python scripts/test_installation.py` in that isolated environment
   passes all installation sanity checks.
 - Running the relevant `pixi run -e py<version>-wheel wheel-test` task passes
