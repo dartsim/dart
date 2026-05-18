@@ -216,6 +216,27 @@ TEST(Serialization, PreservesSimulationMode)
   EXPECT_TRUE(world2.isSimulationMode());
 }
 
+// Test save/load preserves world timing metadata
+TEST(Serialization, PreservesWorldTimingMetadata)
+{
+  dart::simulation::experimental::World world1;
+  world1.setTimeStep(0.125);
+  world1.setTime(2.0);
+  world1.enterSimulationMode();
+  world1.step();
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  dart::simulation::experimental::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_TRUE(world2.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world2.getTimeStep(), 0.125);
+  EXPECT_DOUBLE_EQ(world2.getTime(), 2.125);
+  EXPECT_EQ(world2.getFrame(), 1u);
+}
+
 // Test save/load preserves auto-generation counters
 TEST(Serialization, PreservesCounters)
 {

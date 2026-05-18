@@ -30,34 +30,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/simulation/experimental/compute/sequential_executor.hpp"
 
-#include <dart/simulation/experimental/export.hpp>
+#include "dart/simulation/experimental/compute/compute_graph.hpp"
+#include "dart/simulation/experimental/compute/execution_profile.hpp"
 
-namespace dart::simulation::experimental {
+namespace dart::simulation::experimental::compute {
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class MultiBody;
-class RigidBody;
-class World;
+//==============================================================================
+void SequentialExecutor::execute(const ComputeGraph& graph)
+{
+  for (auto* node : graph.getTopologicalOrder()) {
+    node->execute();
+  }
+}
 
-namespace compute {
-class ComputeExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
+//==============================================================================
+ComputeExecutionProfile SequentialExecutor::executeProfiled(
+    const ComputeGraph& graph)
+{
+  ComputeExecutionProfiler profiler(graph, getWorkerCount());
+  profiler.start();
+  for (auto* node : graph.getTopologicalOrder()) {
+    profiler.executeNode(*node);
+  }
+  return profiler.finish();
+}
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct LinkOptions;
-struct MultiBodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
-
-} // namespace dart::simulation::experimental
+} // namespace dart::simulation::experimental::compute

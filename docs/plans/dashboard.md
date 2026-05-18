@@ -51,12 +51,15 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`030-compute-scalability-roadmap.md`](030-compute-scalability-roadmap.md)
-- Status: Proposed
+- Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Rank candidate accelerated workloads.
-- Gate: Workload ranking names CPU/SIMD prerequisites and CUDA/SYCL decision
-  evidence.
+- Next step: Land resource-access metadata for compute nodes before dependency
+  inference, contact scheduling, or GPU/rendering backend work.
+- Gate: Focused graph/world tests and the compute-graph benchmark stay green;
+  Taskflow remains behind the experimental executor boundary; graph
+  metadata/profiling/DOT output remain backend-neutral; classic World behavior
+  stays untouched.
 
 ### PLAN-040: DART 7 Release Hardening
 

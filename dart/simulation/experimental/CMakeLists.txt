@@ -39,6 +39,15 @@ add_library(${target_name}
   common/diagnostics.cpp
   common/exceptions.cpp
   common/profiling.cpp
+  compute/compute_graph.cpp
+  compute/compute_graph_visualization.cpp
+  compute/compute_node.cpp
+  compute/compute_stage_metadata.cpp
+  compute/execution_profile.cpp
+  compute/sequential_executor.cpp
+  compute/taskflow_executor.cpp
+  compute/world_kinematics_graph.cpp
+  compute/world_step_stage.cpp
   comps/dynamics.cpp
   comps/frame_types.cpp
   comps/joint.cpp
@@ -76,6 +85,12 @@ target_link_libraries(${target_name}
     EnTT::EnTT
     spdlog::spdlog
 )
+
+if(TARGET Taskflow::Taskflow)
+  target_link_libraries(${target_name} PRIVATE Taskflow::Taskflow)
+elseif(TARGET Taskflow)
+  target_link_libraries(${target_name} PRIVATE Taskflow)
+endif()
 
 target_compile_definitions(${target_name}
   PRIVATE

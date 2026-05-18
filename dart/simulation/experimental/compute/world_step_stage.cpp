@@ -1,0 +1,256 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "dart/simulation/experimental/compute/world_step_stage.hpp"
+
+#include "dart/simulation/experimental/common/exceptions.hpp"
+#include "dart/simulation/experimental/comps/dynamics.hpp"
+#include "dart/simulation/experimental/comps/frame_types.hpp"
+#include "dart/simulation/experimental/comps/rigid_body.hpp"
+#include "dart/simulation/experimental/compute/compute_executor.hpp"
+#include "dart/simulation/experimental/compute/compute_graph.hpp"
+#include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
+#include "dart/simulation/experimental/world.hpp"
+
+#include <Eigen/Geometry>
+#include <entt/entt.hpp>
+
+#include <algorithm>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <cmath>
+
+namespace dart::simulation::experimental::compute {
+
+namespace {
+
+//==============================================================================
+Eigen::Quaterniond normalizeOrIdentity(const Eigen::Quaterniond& orientation)
+{
+  const auto norm = orientation.norm();
+  if (norm <= 0.0 || !std::isfinite(norm)) {
+    return Eigen::Quaterniond::Identity();
+  }
+
+  auto normalized = orientation;
+  normalized.coeffs() /= norm;
+  return normalized;
+}
+
+//==============================================================================
+Eigen::Isometry3d toIsometry(
+    const comps::Transform& transform, const Eigen::Quaterniond& orientation)
+{
+  Eigen::Isometry3d localTransform = Eigen::Isometry3d::Identity();
+  localTransform.linear() = orientation.toRotationMatrix();
+  localTransform.translation() = transform.position;
+  return localTransform;
+}
+
+//==============================================================================
+void integrateRigidBody(
+    entt::registry& registry, entt::entity entity, const double timeStep)
+{
+  auto& transform = registry.get<comps::Transform>(entity);
+  auto& velocity = registry.get<comps::Velocity>(entity);
+  const auto& mass = registry.get<comps::MassProperties>(entity);
+  const auto& force = registry.get<comps::Force>(entity);
+
+  if (mass.mass > 0.0 && std::isfinite(mass.mass)) {
+    velocity.linear += (force.force / mass.mass) * timeStep;
+  }
+
+  auto orientation = normalizeOrIdentity(transform.orientation);
+
+  transform.position += velocity.linear * timeStep;
+
+  const auto angularSpeed = velocity.angular.norm();
+  if (angularSpeed > 0.0 && std::isfinite(angularSpeed)) {
+    const auto rotation = Eigen::AngleAxisd(
+        angularSpeed * timeStep, velocity.angular.normalized());
+    orientation = rotation * orientation;
+    orientation.normalize();
+  }
+
+  transform.orientation = normalizeOrIdentity(orientation);
+
+  auto& props = registry.get<comps::FreeFrameProperties>(entity);
+  props.localTransform = toIsometry(transform, transform.orientation);
+
+  auto& cache = registry.get<comps::FrameCache>(entity);
+  cache.needTransformUpdate = true;
+}
+
+} // namespace
+
+//==============================================================================
+ComputeStageMetadata WorldStepStage::getMetadata() const noexcept
+{
+  return {};
+}
+
+//==============================================================================
+WorldStepPipeline& WorldStepPipeline::addStage(WorldStepStage& stage)
+{
+  m_stages.push_back(&stage);
+  return *this;
+}
+
+//==============================================================================
+void WorldStepPipeline::clear() noexcept
+{
+  m_stages.clear();
+}
+
+//==============================================================================
+std::size_t WorldStepPipeline::getStageCount() const noexcept
+{
+  return m_stages.size();
+}
+
+//==============================================================================
+bool WorldStepPipeline::isEmpty() const noexcept
+{
+  return m_stages.empty();
+}
+
+//==============================================================================
+WorldStepStage& WorldStepPipeline::getStage(std::size_t index) const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      index >= m_stages.size(),
+      OutOfRangeException,
+      "World step pipeline stage index {} is out of range",
+      index);
+
+  return *m_stages[index];
+}
+
+//==============================================================================
+void WorldStepPipeline::execute(World& world, ComputeExecutor& executor)
+{
+  for (auto* stage : m_stages) {
+    stage->execute(world, executor);
+  }
+}
+
+//==============================================================================
+std::string_view KinematicsStage::getName() const noexcept
+{
+  return "kinematics";
+}
+
+//==============================================================================
+ComputeStageMetadata KinematicsStage::getMetadata() const noexcept
+{
+  return {
+      ComputeStageDomain::Kinematics,
+      ComputeStageAcceleration::TaskParallel
+          | ComputeStageAcceleration::DataLocality};
+}
+
+//==============================================================================
+void KinematicsStage::execute(World& world, ComputeExecutor& executor)
+{
+  WorldKinematicsGraph graph(world);
+  graph.execute(executor);
+}
+
+//==============================================================================
+RigidBodyIntegrationStage::RigidBodyIntegrationStage(std::size_t batchSize)
+  : m_batchSize(std::max<std::size_t>(1, batchSize))
+{
+}
+
+//==============================================================================
+std::string_view RigidBodyIntegrationStage::getName() const noexcept
+{
+  return "rigid_body_integration";
+}
+
+//==============================================================================
+ComputeStageMetadata RigidBodyIntegrationStage::getMetadata() const noexcept
+{
+  return {
+      ComputeStageDomain::RigidBody,
+      ComputeStageAcceleration::TaskParallel
+          | ComputeStageAcceleration::DataParallel
+          | ComputeStageAcceleration::Simd
+          | ComputeStageAcceleration::DataLocality};
+}
+
+//==============================================================================
+void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
+{
+  auto& registry = world.getRegistry();
+  auto rigidBodyView = registry.view<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::Velocity,
+      comps::MassProperties,
+      comps::Force,
+      comps::FreeFrameProperties,
+      comps::FrameCache>();
+
+  auto entities = std::make_shared<std::vector<entt::entity>>();
+  entities->reserve(rigidBodyView.size_hint());
+  for (auto entity : rigidBodyView) {
+    entities->push_back(entity);
+  }
+
+  ComputeGraph graph;
+  const auto timeStep = world.getTimeStep();
+  for (std::size_t begin = 0; begin < entities->size(); begin += m_batchSize) {
+    const auto end = std::min(begin + m_batchSize, entities->size());
+    graph.addNode(
+        "rigid_body_batch_" + std::to_string(begin),
+        [&registry, entities, begin, end, timeStep]() {
+          for (auto i = begin; i < end; ++i) {
+            integrateRigidBody(
+                registry, (*entities)[static_cast<std::size_t>(i)], timeStep);
+          }
+        },
+        getMetadata());
+  }
+
+  executor.execute(graph);
+}
+
+//==============================================================================
+std::size_t RigidBodyIntegrationStage::getBatchSize() const noexcept
+{
+  return m_batchSize;
+}
+
+} // namespace dart::simulation::experimental::compute
