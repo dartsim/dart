@@ -37,6 +37,7 @@
 #include "dart/collision/collision_group.hpp"
 #include "dart/collision/collision_object.hpp"
 #include "dart/collision/contact.hpp"
+#include "dart/collision/dart/dart_collision_detector.hpp"
 #include "dart/common/frame_allocator.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
@@ -86,14 +87,17 @@ collision::CollisionDetectorPtr createDefaultCollisionDetector()
   if (factory->canCreate("fcl")) {
     return factory->create("fcl");
   }
-  return nullptr;
+  return collision::DartCollisionDetector::create();
 }
 
 } // namespace
 
 ConstraintSolver::ConstraintSolver()
   : mCollisionDetector(createDefaultCollisionDetector()),
-    mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
+    mCollisionGroup(
+        mCollisionDetector
+            ? mCollisionDetector->createCollisionGroupAsSharedPtr()
+            : nullptr),
     mCollisionOption(
         collision::CollisionOption(
             true,

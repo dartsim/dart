@@ -609,7 +609,7 @@ private:
       DistanceResult* result)
   {
     if (mEntries.empty() || other.mEntries.empty()) {
-      return std::max(0.0, option.distanceLowerBound);
+      return 0.0;
     }
 
     double bestDistance = std::numeric_limits<double>::max();
@@ -674,7 +674,7 @@ private:
     }
 
     if (!found) {
-      return std::max(0.0, option.distanceLowerBound);
+      return 0.0;
     }
 
     if (result) {

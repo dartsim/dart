@@ -120,6 +120,17 @@ private:
   std::string mExcludedName;
 };
 
+class RejectAllDistanceFilter : public DistanceFilter
+{
+public:
+  bool needDistance(
+      const CollisionObject* /*object1*/,
+      const CollisionObject* /*object2*/) const override
+  {
+    return false;
+  }
+};
+
 } // namespace
 
 //==============================================================================
@@ -425,6 +436,32 @@ TEST(CollisionBackend, DistanceWithFilter)
   ASSERT_TRUE(result.found());
   EXPECT_EQ(sphereA.get(), result.shapeFrame1);
   EXPECT_EQ(sphereC.get(), result.shapeFrame2);
+}
+
+//==============================================================================
+TEST(CollisionBackend, DistanceWithNoEvaluatedPairsReturnsDefault)
+{
+  auto detector = DartCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto sphereA = createSphereFrame("sphereA", 1.0, Eigen::Vector3d::Zero());
+  auto sphereB
+      = createSphereFrame("sphereB", 1.0, Eigen::Vector3d(2.5, 0.0, 0.0));
+
+  group->addShapeFrame(sphereA.get());
+  group->addShapeFrame(sphereB.get());
+
+  auto filter = std::make_shared<RejectAllDistanceFilter>();
+  DistanceResult result;
+  const double distance
+      = group->distance(DistanceOption(true, 0.5, filter), &result);
+
+  EXPECT_DOUBLE_EQ(0.0, distance);
+  EXPECT_FALSE(result.found());
+  EXPECT_DOUBLE_EQ(0.0, result.minDistance);
+  EXPECT_DOUBLE_EQ(0.0, result.unclampedMinDistance);
+  EXPECT_EQ(nullptr, result.shapeFrame1);
+  EXPECT_EQ(nullptr, result.shapeFrame2);
 }
 
 //==============================================================================
