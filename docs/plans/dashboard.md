@@ -29,19 +29,23 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`010-easy-start-api-package-readiness.md`](010-easy-start-api-package-readiness.md)
-- Status: Proposed
+- Status: Active
 - Horizon: Now
 - Dimension: Easy start
-- Next step: Build the first-success workflow matrix.
-- Gate: First-success commands are documented for Python, C++, packages, and
-  Pixi source builds.
+- Next step: Convert the first-success matrix gaps into bounded docs/example
+  tasks: reconcile Python package install commands, remove deprecation warnings
+  from the dartpy hello-world path, and add a minimal installed-package CMake
+  consumer path.
+- Gate: First-success commands are documented or explicitly blocked for Python,
+  C++, packages, and Pixi source builds, with verified source-tree smoke
+  commands recorded in the owner plan.
 
 ### PLAN-020: Algorithm Extension Contracts
 
 - Owner doc:
   [`020-algorithm-extension-contracts.md`](020-algorithm-extension-contracts.md)
 - Status: Proposed
-- Horizon: Now
+- Horizon: Next
 - Dimension: Algorithm extensibility
 - Next step: Choose the first algorithm family to formalize.
 - Gate: The selected family has an inventoried extension surface, baseline, and
@@ -52,7 +56,7 @@ its own line so status updates remain git-history friendly.
 - Owner doc:
   [`030-compute-scalability-roadmap.md`](030-compute-scalability-roadmap.md)
 - Status: Proposed
-- Horizon: Now
+- Horizon: Next
 - Dimension: Scalable compute
 - Next step: Rank candidate accelerated workloads.
 - Gate: Workload ranking names CPU/SIMD prerequisites and CUDA/SYCL decision

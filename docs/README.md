@@ -15,11 +15,11 @@ workflows.
 | [`ai/`](ai/README.md)                   | AI-native principles, north star, workflow map, sessions, and gates |
 | [`assets/`](assets/)                    | Source-controlled assets used by repository docs outside RTD static |
 | [`background/`](background/README.md)   | Theory and research foundations derived from preserved source PDFs  |
-| [`design/`](design/)                    | Durable design proposals that are not active dev-task state         |
+| [`design/`](design/README.md)           | Durable technical design proposals and decision rationale           |
 | [`dev_tasks/`](dev_tasks/README.md)     | Active multi-session implementation task tracking                   |
 | [`doxygen/`](doxygen/)                  | Doxygen inputs consumed by the published C++ API build              |
 | [`onboarding/`](onboarding/README.md)   | Developer knowledge base, onboarding, architecture, and workflows   |
-| [`plans/`](plans/README.md)             | Living roadmap, dashboard, and strategic plan docs                  |
+| [`plans/`](plans/README.md)             | Living roadmap, priority, open gaps, gates, and plan lifecycle      |
 | [`python_api/`](python_api/index.rst)   | Reusable dartpy API module pages for Sphinx autodoc                 |
 | [`readthedocs/`](readthedocs/README.md) | Published user documentation site source                            |
 
@@ -33,6 +33,7 @@ Markdown and owns end-user navigation.
 - **Building from source?** → [onboarding/building.md](onboarding/building.md)
 - **Contributing code?** → [onboarding/contributing.md](onboarding/contributing.md) + [onboarding/code-style.md](onboarding/code-style.md)
 - **Understanding architecture?** → [onboarding/architecture.md](onboarding/architecture.md)
+- **Writing durable design rationale?** → [design/README.md](design/README.md) + [onboarding/api-boundaries.md](onboarding/api-boundaries.md)
 - **Understanding theory?** → [background/README.md](background/README.md)
 - **Published docs/API site?** → [readthedocs/README.md](readthedocs/README.md) + [onboarding/api-documentation.md](onboarding/api-documentation.md)
 - **Revising project plans?** → [plans/README.md](plans/README.md) + [plans/dashboard.md](plans/dashboard.md) + [plans/north-star-roadmap.md](plans/north-star-roadmap.md)

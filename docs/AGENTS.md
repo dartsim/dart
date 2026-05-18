@@ -33,10 +33,10 @@ Knowledge Base
     ├── ai/                ← AI-native principles, mission, and workflow policy
     ├── assets/            ← Source-controlled docs assets outside RTD static
     ├── background/        ← Theory and research foundations
-    ├── design/            ← Durable design proposals
+    ├── design/            ← Durable technical design proposals
     ├── dev_tasks/         ← Active multi-session task tracking
     ├── doxygen/           ← C++ API Doxygen inputs
-    ├── plans/             ← Living roadmap from current state to north star
+    ├── plans/             ← Living roadmap, priority, open gaps, and gates
     ├── onboarding/        ← Developer knowledge base and onboarding
     │   └── ai-tools.md    ← Tool compatibility notes
     ├── python_api/        ← Reusable dartpy API module pages
@@ -50,14 +50,14 @@ Knowledge Base
 | `ai/`                              | AI-native mission, workflow policy, and verification    |
 | `assets/`                          | Shared docs assets outside RTD `_static/`               |
 | `background/`                      | Theory/research foundations                             |
-| `design/`                          | Durable design proposals                                |
+| `design/`                          | Durable technical design proposals                      |
 | `dev_tasks/`                       | Active development task tracking                        |
 | `doxygen/`                         | C++ API Doxygen inputs                                  |
 | `onboarding/`                      | Developer knowledge base (architecture, build, testing) |
 | `onboarding/ai-tools.md`           | AI tool compatibility notes                             |
 | `onboarding/api-boundaries.md`     | Public vs internal API policy                           |
 | `onboarding/release-management.md` | Release workflow guidance                               |
-| `plans/`                           | Living roadmap and planning rules                       |
+| `plans/`                           | Living roadmap, priority, gaps, gates, and lifecycle    |
 | `python_api/`                      | Reusable dartpy API module pages                        |
 | `readthedocs/`                     | Published user documentation (Sphinx/RST)               |
 
@@ -69,6 +69,8 @@ Knowledge Base
 - **Loading models?** → `onboarding/io-parsing.md` or load skill `dart-io`
 - **Working on dartpy?** → `onboarding/python-bindings.md` or load skill `dart-python`
 - **Understanding architecture?** → `onboarding/architecture.md`
+- **Writing durable design rationale?** → `design/README.md` +
+  `onboarding/api-boundaries.md`
 - **Understanding theory?** → `background/README.md`
 - **Designing public APIs?** → `onboarding/api-boundaries.md`
 - **Maintaining API docs?** → `onboarding/api-documentation.md`
