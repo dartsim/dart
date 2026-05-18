@@ -227,6 +227,9 @@ Guardrails:
   dispatch.
 - Run the full dartpy wheel matrix when `publish_dartpy.yml` itself changes so
   workflow edits validate both PR and continuous wheel tiers before merge.
+- Require stable aggregate check names for variable CI matrices. For dartpy
+  wheels, branch protection should require `Wheels`; individual wheel legs may
+  change by tier and should not be required directly.
 - `main`, release, release-tag, scheduled, and manual workflows must preserve
   the full coverage that PR tiering skips.
 
