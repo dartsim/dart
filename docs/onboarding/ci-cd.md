@@ -197,6 +197,33 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 | `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, main/release push, schedule     | Yes           |
 | `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule | Yes           |
 
+### CI Tiering Policy
+
+Use CI tiers to reduce PR feedback cost without removing coverage from the
+project's continuous validation surface.
+
+| Tier                      | Required before merge | Examples                                                                                |
+| ------------------------- | --------------------- | --------------------------------------------------------------------------------------- |
+| Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, gz-physics compatibility, baseline dartpy wheels |
+| Conditional PR            | When affected         | SIMD-only CI, path-filtered platform jobs for code changes                              |
+| Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags    |
+| Scheduled/manual coverage | No                    | FreeBSD VM, repeated full matrix, maintenance lockfile updates                          |
+
+Guardrails:
+
+- Keep gz-physics compatibility in the required PR tier. The Gazebo downstream
+  build/test catches integration breakages that core unit tests can miss.
+- Do not move a job from required PR coverage to continuous-only coverage
+  without evidence that it is expensive, redundant for most PRs, or better
+  suited to scheduled validation.
+- Keep at least one dartpy wheel per supported OS in PR CI. Expanded Python
+  version coverage can run on `main`, release tags, schedules, and manual
+  dispatch.
+- Run the full dartpy wheel matrix when `publish_dartpy.yml` itself changes so
+  workflow edits validate both PR and continuous wheel tiers before merge.
+- `main`, release, release-tag, scheduled, and manual workflows must preserve
+  the full coverage that PR tiering skips.
+
 ### Design Principles
 
 **Optimize for fast feedback on PRs:**
@@ -204,6 +231,8 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 - Essential validations run on every PR
 - Full matrix testing runs on main branch and releases
 - Debug builds run on schedule (2x per week)
+- Keep gz-physics compatibility in the required PR tier so downstream Gazebo
+  integration breakages are caught before merge.
 
 **Efficient resource usage:**
 
@@ -352,29 +381,33 @@ runners. Windows keeps Release-only tests to keep runtime acceptable.
 
 ### Python Wheel Builds
 
-Full wheel matrix is expensive (60-90 minutes), so branch pushes outside `main`
-run only the essential Python version. PRs, `main`, tags, schedules, and manual
-runs keep the full matrix.
+Full wheel matrix is expensive, so PRs and branch pushes outside `main` run only
+the baseline Python version on each OS. `main`, tags, schedules, and manual runs
+keep the full matrix. In a May 2026 PR run, the six non-baseline Py313/Py314
+wheel jobs consumed 146.6 job-minutes, while the three baseline Py312 wheel jobs
+kept Ubuntu, macOS, and Windows packaging coverage in the PR tier.
 
 **Pattern** (see `publish_dartpy.yml`):
 
 ```yaml
-RUN_WHEEL: >-
-  ${{ matrix.skip-on-commit != true ||
-      github.event_name == 'pull_request' ||
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.ref == 'refs/heads/main' ||
-      startsWith(github.ref, 'refs/tags/v') }}
+wheel_matrix:
+  outputs:
+    matrix: ${{ steps.matrix.outputs.matrix }}
+
+build_wheels:
+  needs: [changes, wheel_matrix]
+  strategy:
+    matrix: ${{ fromJSON(needs.wheel_matrix.outputs.matrix) }}
 ```
 
 **Behavior:**
 
-- **PRs**: Full matrix builds so wheel breakages are caught before merge
-- **Non-main branch pushes**: Only essential configurations build
-- **Main branch**: Full matrix builds
-- **Release tags**: Full matrix builds
-- **Scheduled/manual runs**: Full matrix builds
+- **PRs**: Baseline Python wheel builds on Ubuntu, macOS, and Windows
+- **PR workflow changes**: Full Python-version matrix builds
+- **Non-main branch pushes**: Baseline Python wheel builds on Ubuntu, macOS, and Windows
+- **Main branch**: Full Python-version matrix builds
+- **Release tags**: Full Python-version matrix builds
+- **Scheduled/manual runs**: Full Python-version matrix builds
 
 ### Documentation Builds
 
@@ -401,20 +434,37 @@ so platform test jobs do not each rebuild docs.
 - FreeBSD CI (`ci_freebsd.yml`) runs on schedule/manual only to reduce maintenance burden; Alt Linux also runs on PRs for distro repro coverage
 - Lint is removed from platform-specific workflows since it's covered by the dedicated job
 
-**Doc-only skip patterns** (used by platform CI, NOT by lint CI):
+**Shared code-change filter:** platform and integration workflows that use
+`dorny/paths-filter` read `.github/filters/ci-code.yml` for their `changes`
+job. Keep non-code skip policy there instead of copying path lists between
+workflows.
 
 ```yaml
-paths-ignore:
-  - "docs/**"
-  - ".readthedocs.yml"
-  - "tutorials/**"
-  - "**/*.md"
-  - "**/*.rst"
-  - "**/*.po"
-  - "**/*.pot"
+code:
+  - "**"
+  - "!docs/**"
+  - "!tutorials/**"
+  - "!**/*.md"
 ```
 
-**Savings:** 12-25 minutes per PR on platform jobs for doc-only changes
+The shared filter also excludes maintenance-only workflow files such as
+`.github/workflows/update_lockfiles.yml`; those changes should still run lint,
+but they do not need to launch the platform build/test or wheel matrix.
+
+Coverage guardrails:
+
+- Do not add broad `.github/workflows/**` exclusions. Changes to build, test,
+  packaging, and CI orchestration workflows should continue to run heavy CI.
+- Keep `.github/filters/ci-code.yml` itself covered by the filter so changes to
+  the trigger policy run the normal matrix.
+- Prefer job-level `changes` gates over top-level `pull_request.paths-ignore`
+  for required platform workflows so branch protection still receives stable
+  workflow/check contexts.
+- Use native `paths-ignore` only for workflows that cannot share the dorny
+  filter file, such as CodeQL trigger configuration.
+
+**Savings:** 12-25 minutes per PR on platform jobs for doc-only and
+maintenance-workflow-only changes
 
 ## Testing Strategy
 
@@ -428,11 +478,13 @@ paths-ignore:
 - macOS Debug: Debug C++ tests
 - Windows Release: Full tests
 - Gazebo integration: Integration tests
+- dartpy wheels: Baseline Python version on Ubuntu, macOS, and Windows
 
 **Scheduled runs:**
 
 - Repeat the PR validation on a fixed cadence
 - Ensure periodic full validation
+- Run expanded dartpy wheel Python-version coverage
 
 ### Test Execution
 
