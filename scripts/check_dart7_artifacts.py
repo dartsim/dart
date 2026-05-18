@@ -44,7 +44,7 @@ def major_version(version: str) -> int | None:
 
 def is_dart7(version: str) -> bool:
     major = major_version(version)
-    return major is not None and major >= 7
+    return major == 7
 
 
 def version_key(version: str) -> tuple[int, ...]:

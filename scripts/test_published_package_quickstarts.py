@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import shlex
 import shutil
 import subprocess
 import sys
@@ -124,32 +123,27 @@ def test_cpp_package() -> None:
     with tempfile.TemporaryDirectory(prefix="dartsim-cpp-current-package-") as tmp:
         root = Path(tmp)
         build = root / "build"
+        executable = build / (
+            "dart_published_package_quickstart.exe"
+            if os.name == "nt"
+            else "dart_published_package_quickstart"
+        )
         (root / "main.cpp").write_text(CPP_SOURCE, encoding="utf-8")
         (root / "CMakeLists.txt").write_text(CMAKE_LISTS, encoding="utf-8")
 
-        command = " && ".join(
-            [
-                f"cmake -S {shlex.quote(str(root))} -B {shlex.quote(str(build))}",
-                f"cmake --build {shlex.quote(str(build))} --parallel 2",
-                shlex.quote(str(build / "dart_published_package_quickstart")),
-            ]
-        )
-        run(
-            [
-                "pixi",
-                "exec",
-                "-s",
-                "dartsim-cpp",
-                "-s",
-                "cmake",
-                "-s",
-                "cxx-compiler",
-                "--",
-                "bash",
-                "-lc",
-                command,
-            ]
-        )
+        pixi_env = [
+            "pixi",
+            "exec",
+            "-s",
+            "dartsim-cpp",
+            "-s",
+            "cmake",
+            "-s",
+            "cxx-compiler",
+        ]
+        run([*pixi_env, "--", "cmake", "-S", str(root), "-B", str(build)])
+        run([*pixi_env, "--", "cmake", "--build", str(build), "--parallel", "2"])
+        run([*pixi_env, "--", str(executable)])
 
     print("Published dartsim-cpp package quick-start passed")
 
