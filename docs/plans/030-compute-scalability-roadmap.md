@@ -28,11 +28,21 @@ Out of scope for this plan:
 
 - `dart/simd/` provides explicit SIMD types and geometry helpers.
 - `tests/benchmark/simd/` provides SIMD benchmark coverage.
+- `docs/design/scalable_compute_decisions.md` owns durable CPU, SIMD, and GPU
+  decision rules.
 - `docs/design/hierarchical_allocator.md` documents allocator direction for
   cache-friendly simulation.
 - `docs/onboarding/build-system.md` documents build options and dependency
   structure.
 - `.github/workflows/ci_simd.yml` validates SIMD-oriented CI coverage.
+
+## Open Gaps
+
+- Rank candidate accelerated workloads from examples, benchmarks, issue/PR
+  evidence, and research use cases.
+- Name benchmark gates for the first workload.
+- List CPU/SIMD prerequisites before any GPU prototype.
+- Tie CUDA/SYCL decision evidence to concrete workload and package constraints.
 
 ## Workload Candidates
 
@@ -46,40 +56,8 @@ Rank candidate workloads before choosing backend architecture:
 | Differentiable or gradient-heavy workloads | Relevant to optimization and learning                | API expectations, precision requirements            |
 | Contact/constraint solving at scale        | Often dominates hard simulations                     | Solver structure, sparsity, data transfer costs     |
 
-## Decision Framework
-
-### Multi-Core CPU First
-
-Before public GPU commitments:
-
-- identify parallel units that do not break deterministic behavior;
-- benchmark thread scheduling overhead;
-- preserve single-threaded correctness tests;
-- avoid exposing thread pool internals as public API.
-
-### SIMD
-
-SIMD work should:
-
-- keep scalar fallbacks;
-- be benchmarked against realistic data sizes;
-- avoid forcing users into architecture-specific APIs;
-- preserve Eigen interoperability where it matters.
-
-### GPU: CUDA Versus SYCL
-
-Choose by evidence, not preference.
-
-| Criterion            | CUDA kernels                                     | SYCL portability                          |
-| -------------------- | ------------------------------------------------ | ----------------------------------------- |
-| Performance ceiling  | Likely stronger for NVIDIA-heavy research setups | Depends on compiler/runtime maturity      |
-| Packaging complexity | Higher for CUDA toolchains and wheels            | Higher for portability/runtime variance   |
-| Platform reach       | Narrower, but common in robotics/ML labs         | Broader in principle                      |
-| Maintenance cost     | Focused backend, fewer portability targets       | More backend variance to test             |
-| API risk             | Easier to overfit public API to CUDA concepts    | Risk of abstracting before workload facts |
-
-The first GPU milestone should be an internal prototype and benchmark report,
-not a public API.
+Durable CPU, SIMD, GPU, and CUDA/SYCL decision rules live in
+`docs/design/scalable_compute_decisions.md`.
 
 ## Workstreams
 
@@ -109,6 +87,8 @@ Define benchmark gates before implementation:
 Acceleration should normally be selected through high-level algorithm options
 or backend policies. Avoid exposing raw kernel, stream, memory pool, or device
 types unless there is a clear long-term public contract.
+
+Use `docs/design/scalable_compute_decisions.md` for backend-leakage constraints.
 
 ### 4. Packaging And CI Constraints
 

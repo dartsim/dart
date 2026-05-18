@@ -4,8 +4,8 @@ This is the consolidated status view for DART native collision against the FCL,
 Bullet, and ODE reference engines. It is intentionally a dashboard, not the
 full evidence log:
 
-- `035-native-collision-coverage-matrix.md` owns row-level test and benchmark
-  coverage.
+- [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)
+  owns row-level test and benchmark coverage.
 - `dashboard.md` owns this plan's operating state.
 - Local command output, CI artifacts, and the final PR description own
   per-run evidence after the dev-task folders are removed.
@@ -24,7 +24,8 @@ true:
 - Correctness parity is enforced by tests; performance parity and regressions
   are tracked by benchmarks. Any row without current performance evidence must
   be either closed before the PR or marked `DEFERRED` with a feature/performance
-  rationale in `035-native-collision-coverage-matrix.md`.
+  rationale in
+  [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md).
 - `docs/dev_tasks/native_collision/` and
   `docs/dev_tasks/experimental_collision/` must be absent before the PR is
   ready. This dashboard and the coverage matrix are the durable source of truth
@@ -46,8 +47,9 @@ true:
 ## Status Snapshot
 
 - **Feature coverage**
-  Current status: `035-native-collision-coverage-matrix.md` records 202 DONE,
-  0 PARTIAL, 0 GAP, and 24 DEFERRED rows.
+  Current status:
+  [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)
+  records 202 DONE, 0 PARTIAL, 0 GAP, and 24 DEFERRED rows.
   Gap signal: no active feature-level GAP/PARTIAL rows for this pass; deferred
   rows belong to later waves.
 - **Runtime selection**
@@ -93,8 +95,8 @@ true:
 
 This section is the pre-PR confidence view for "is every current DART collision
 use case covered?" It complements the taxonomy in
-`035-native-collision-coverage-matrix.md` by naming the repo surfaces that were
-inventoried.
+[`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)
+by naming the repo surfaces that were inventoried.
 
 - **Native collision unit tests**
   Inventory evidence: `tests/unit/collision/CMakeLists.txt` plus the
@@ -457,18 +459,21 @@ reference-engine names, when setting goals.
    evidence.
 4. Deferred feature/scope decisions: point BVH, OBB/RSS/k-DOP, non-linear CCD
    variants.
-   Closure path: `035-native-collision-coverage-matrix.md` section 2 deferred
-   rows.
+   Closure path:
+   [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)
+   section 2 deferred rows.
 5. Deferred performance waves: scale sweeps, scenario scale,
    BVH build/traversal, SIMD.
-   Closure path: `035-native-collision-coverage-matrix.md` section 4 and
-   section 4 Batch + SIMD deferred rows.
+   Closure path:
+   [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)
+   section 4 and section 4 Batch + SIMD deferred rows.
 6. Final evidence transfer.
    Closure path: final PR description and final CI artifacts after explicit
    maintainer/user approval.
 
 ## Maintenance Rule
 
-Update this dashboard whenever `035-native-collision-coverage-matrix.md` flips
-a row, final benchmark/CI artifact evidence changes, or the
+Update this dashboard whenever
+[`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)
+flips a row, final benchmark/CI artifact evidence changes, or the
 native-vs-reference gap status changes.
