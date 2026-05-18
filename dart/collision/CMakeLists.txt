@@ -44,6 +44,7 @@ install(
 dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/collision)
 
 # Add subdirectories
+add_subdirectory(native)
 add_subdirectory(dart)
 add_subdirectory(fcl)
 add_subdirectory(ode)

@@ -674,8 +674,6 @@ endif()
 # Add sub-directories
 #===============================================================================
 
-add_subdirectory(dart/collision/native)
-
 add_subdirectory(dart)
 
 if(DART_BUILD_SIMULATION_EXPERIMENTAL)
