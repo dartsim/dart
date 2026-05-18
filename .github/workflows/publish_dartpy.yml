@@ -137,13 +137,14 @@ jobs:
 
   wheels:
     name: Wheels
-    needs: [changes, build_wheels]
+    needs: [changes, wheel_matrix, build_wheels]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Check wheel matrix result
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
+          MATRIX_RESULT: ${{ needs.wheel_matrix.result }}
           WHEEL_RESULT: ${{ needs.build_wheels.result }}
           CODE_CHANGED: ${{ needs.changes.outputs.code }}
           EVENT_NAME: ${{ github.event_name }}
@@ -151,6 +152,11 @@ jobs:
         run: |
           if [[ "$CHANGES_RESULT" != "success" ]]; then
             echo "::error::changes job result was '$CHANGES_RESULT'"
+            exit 1
+          fi
+
+          if [[ "$MATRIX_RESULT" != "success" ]]; then
+            echo "::error::wheel_matrix job result was '$MATRIX_RESULT'"
             exit 1
           fi
 
