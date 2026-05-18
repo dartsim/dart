@@ -170,11 +170,51 @@ def _dashboard_entries(text: str) -> list[dict[str, str]]:
 
 
 def _normalize_plan_owner(owner: str) -> str:
-    return owner.split("#", maxsplit=1)[0]
+    return owner.split("#", maxsplit=1)[0].strip()
 
 
 def _is_external_link(link: str) -> bool:
     return "://" in link or link.startswith("mailto:")
+
+
+def _resolve_dashboard_owner(
+    owner: str, repo_root: Path, plans_dir: Path
+) -> Path | None:
+    target = _normalize_plan_owner(owner)
+    if not target or _is_external_link(target):
+        return None
+
+    target_path = Path(target)
+    if target_path.is_absolute():
+        return target_path.resolve()
+
+    if target_path.parts[:2] == ("docs", "plans"):
+        return (repo_root / target_path).resolve()
+    if target_path.parts[:1] == ("plans",):
+        return (repo_root / "docs" / target_path).resolve()
+    return (plans_dir / target_path).resolve()
+
+
+def _direct_numbered_plan_file(owner_path: Path, plans_dir: Path) -> str | None:
+    try:
+        rel_path = owner_path.relative_to(plans_dir.resolve())
+    except ValueError:
+        return None
+
+    if len(rel_path.parts) == 1 and PLAN_FILE_RE.match(rel_path.name):
+        return rel_path.name
+    return None
+
+
+def _resolve_markdown_link(link: str, base_dir: Path) -> Path | None:
+    target = _normalize_plan_owner(link)
+    if not target or _is_external_link(target):
+        return None
+
+    target_path = Path(target)
+    if target_path.is_absolute():
+        return target_path.resolve()
+    return (base_dir / target_path).resolve()
 
 
 def check_plan_lifecycle(repo_root: Path) -> list[str]:
@@ -210,8 +250,8 @@ def check_plan_lifecycle(repo_root: Path) -> list[str]:
                 f"{entry['id']} has unknown horizon `{entry['horizon']}`"
             )
         owner = _normalize_plan_owner(entry["owner"])
-        if owner and not _is_external_link(owner):
-            owner_path = (plans_dir / owner).resolve()
+        owner_path = _resolve_dashboard_owner(owner, repo_root, plans_dir)
+        if owner_path:
             try:
                 owner_path.relative_to(repo_root.resolve())
             except ValueError:
@@ -225,8 +265,11 @@ def check_plan_lifecycle(repo_root: Path) -> list[str]:
                         "docs/plans/dashboard.md: "
                         f"{entry['id']} owner doc does not exist: `{owner}`"
                     )
-        if PLAN_FILE_RE.match(owner):
-            referenced_plan_files.add(owner)
+        owner_plan_file = (
+            _direct_numbered_plan_file(owner_path, plans_dir) if owner_path else None
+        )
+        if owner_plan_file:
+            referenced_plan_files.add(owner_plan_file)
             if entry["status"] == "Complete":
                 failures.append(
                     "docs/plans/dashboard.md: completed "
@@ -273,10 +316,17 @@ def check_design_docs_index(repo_root: Path) -> list[str]:
     readme_text = (
         readme.read_text(encoding="utf-8", errors="replace") if readme.exists() else ""
     )
-    readme_links = {
-        _normalize_plan_owner(match.group("link"))
-        for match in re.finditer(r"\[[^\]]+\]\((?P<link>[^)]+)\)", readme_text)
-    }
+    readme_links: set[str] = set()
+    for match in re.finditer(r"\[[^\]]+\]\((?P<link>[^)]+)\)", readme_text):
+        linked_path = _resolve_markdown_link(match.group("link"), design_dir)
+        if not linked_path:
+            continue
+        try:
+            rel_path = linked_path.relative_to(design_dir.resolve())
+        except ValueError:
+            continue
+        if len(rel_path.parts) == 1:
+            readme_links.add(rel_path.name)
     for design_doc in sorted(design_dir.glob("*.md")):
         if design_doc.name in {"README.md", "AGENTS.md"}:
             continue
