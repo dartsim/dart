@@ -33,22 +33,21 @@ Out of scope for this plan:
 - `docs/onboarding/architecture.md` describes DART's layered simulation core.
 - `docs/onboarding/api-boundaries.md` defines supported, compatibility,
   experimental, and internal API boundaries.
+- `docs/design/algorithm_extension_contracts.md` owns durable extension-point
+  contract principles and baseline-comparison rules.
 - `docs/background/lcp/` already documents solver theory and selection context.
 - `dart/math/lcp/` and `dart/constraint/` contain existing solver boundaries.
 - `tests/benchmark/` contains benchmark infrastructure for baseline
   comparisons.
 
-## Design Criteria
+## Open Gaps
 
-Research-facing extension points should:
-
-- accept data through stable public contracts, not internal storage layouts;
-- expose enough hooks to implement a new paper faithfully;
-- make baseline selection explicit and reproducible;
-- support deterministic regression tests where possible;
-- provide benchmark harnesses that compare against built-in DART baselines;
-- keep threading, allocator, SIMD, and backend details behind internal
-  boundaries unless they are intentionally public.
+- Choose the first algorithm family to formalize.
+- Inventory the current extension surface for that family.
+- Name baseline algorithms, correctness metrics, performance metrics, and
+  benchmark commands.
+- List API-boundary risks and decide whether a family-specific design doc is
+  needed.
 
 ## Workstreams
 
@@ -66,6 +65,9 @@ Inventory candidate extension points and classify each as:
 The first inventory should prioritize one algorithm family rather than all of
 DART. LCP/contact solving is the initial candidate because it already has
 theory docs, implementations, and benchmark context.
+
+Durable classification rules live in
+`docs/design/algorithm_extension_contracts.md`.
 
 ### 2. Baseline Comparison Harness
 
@@ -86,6 +88,10 @@ Before promoting any extension point:
 - define replacement wrappers if needed;
 - decide whether Python exposure is appropriate;
 - document deprecation/removal conditions for compatibility-only APIs.
+
+Use `docs/onboarding/api-boundaries.md` for the general policy and
+`docs/design/algorithm_extension_contracts.md` for this plan's application of
+that policy.
 
 ### 4. Research Example Path
 

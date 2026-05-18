@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -30,6 +31,28 @@ FORBIDDEN_FOOTER_MARKERS = (
     "**DART Version:**",
     "**Analysis Complete**",
 )
+
+PLAN_FILE_RE = re.compile(r"^\d{3}-.+\.md$")
+PLAN_BLOCK_RE = re.compile(
+    r"^### (?P<id>PLAN-\d{3}):.*?(?=^### PLAN-\d{3}:|\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+DASHBOARD_FIELD_RE = re.compile(
+    r"^- (Status|Horizon|Dimension|Next step|Gate):", re.MULTILINE
+)
+DESIGN_DASHBOARD_FIELD_RE = re.compile(
+    r"^- (Priority|Horizon|Next step|Gate):", re.MULTILINE
+)
+DASHBOARD_REQUIRED_FIELDS = (
+    "owner",
+    "status",
+    "horizon",
+    "dimension",
+    "next_step",
+    "gate",
+)
+DASHBOARD_STATUS_VALUES = {"Proposed", "Active", "Blocked", "Complete", "Parked"}
+DASHBOARD_HORIZON_VALUES = {"Now", "Next", "Later", "Parked"}
 
 
 def iter_markdown_files(repo_root: Path) -> list[Path]:
@@ -102,6 +125,177 @@ def check_dev_task_shape(repo_root: Path) -> list[str]:
     return failures
 
 
+def _dashboard_entries(text: str) -> list[dict[str, str]]:
+    entries: list[dict[str, str]] = []
+    for match in PLAN_BLOCK_RE.finditer(text):
+        block = match.group(0)
+        status_match = re.search(r"^- Status:\s*(?P<status>.+)$", block, re.MULTILINE)
+        horizon_match = re.search(
+            r"^- Horizon:\s*(?P<horizon>.+)$", block, re.MULTILINE
+        )
+        dimension_match = re.search(
+            r"^- Dimension:\s*(?P<dimension>.+)$", block, re.MULTILINE
+        )
+        next_step_match = re.search(
+            r"^- Next step:\s*(?P<next_step>.+)$", block, re.MULTILINE
+        )
+        gate_match = re.search(r"^- Gate:\s*(?P<gate>.+)$", block, re.MULTILINE)
+        owner_match = re.search(
+            r"- Owner doc:.*?\]\((?P<owner>[^)]+)\)",
+            block,
+            re.DOTALL,
+        )
+        entries.append(
+            {
+                "id": match.group("id"),
+                "status": status_match.group("status").strip() if status_match else "",
+                "horizon": (
+                    horizon_match.group("horizon").strip() if horizon_match else ""
+                ),
+                "dimension": (
+                    dimension_match.group("dimension").strip()
+                    if dimension_match
+                    else ""
+                ),
+                "next_step": (
+                    next_step_match.group("next_step").strip()
+                    if next_step_match
+                    else ""
+                ),
+                "gate": gate_match.group("gate").strip() if gate_match else "",
+                "owner": owner_match.group("owner").strip() if owner_match else "",
+            }
+        )
+    return entries
+
+
+def _normalize_plan_owner(owner: str) -> str:
+    return owner.split("#", maxsplit=1)[0]
+
+
+def _is_external_link(link: str) -> bool:
+    return "://" in link or link.startswith("mailto:")
+
+
+def check_plan_lifecycle(repo_root: Path) -> list[str]:
+    """Ensure living plans stay current instead of becoming archival state."""
+    failures: list[str] = []
+    plans_dir = repo_root / "docs" / "plans"
+    dashboard = plans_dir / "dashboard.md"
+    if not plans_dir.exists() or not dashboard.exists():
+        return failures
+
+    plan_files = {
+        path.name for path in plans_dir.glob("*.md") if PLAN_FILE_RE.match(path.name)
+    }
+    dashboard_text = dashboard.read_text(encoding="utf-8", errors="replace")
+    entries = _dashboard_entries(dashboard_text)
+
+    referenced_plan_files: set[str] = set()
+    for entry in entries:
+        for field in DASHBOARD_REQUIRED_FIELDS:
+            if not entry[field]:
+                failures.append(
+                    "docs/plans/dashboard.md: "
+                    f"{entry['id']} is missing required `{field}` field"
+                )
+        if entry["status"] and entry["status"] not in DASHBOARD_STATUS_VALUES:
+            failures.append(
+                "docs/plans/dashboard.md: "
+                f"{entry['id']} has unknown status `{entry['status']}`"
+            )
+        if entry["horizon"] and entry["horizon"] not in DASHBOARD_HORIZON_VALUES:
+            failures.append(
+                "docs/plans/dashboard.md: "
+                f"{entry['id']} has unknown horizon `{entry['horizon']}`"
+            )
+        owner = _normalize_plan_owner(entry["owner"])
+        if owner and not _is_external_link(owner):
+            owner_path = (plans_dir / owner).resolve()
+            try:
+                owner_path.relative_to(repo_root.resolve())
+            except ValueError:
+                failures.append(
+                    "docs/plans/dashboard.md: "
+                    f"{entry['id']} owner doc escapes repository: `{owner}`"
+                )
+            else:
+                if not owner_path.exists():
+                    failures.append(
+                        "docs/plans/dashboard.md: "
+                        f"{entry['id']} owner doc does not exist: `{owner}`"
+                    )
+        if PLAN_FILE_RE.match(owner):
+            referenced_plan_files.add(owner)
+            if entry["status"] == "Complete":
+                failures.append(
+                    "docs/plans/dashboard.md: completed "
+                    f"{entry['id']} still points to numbered plan file "
+                    f"`{owner}`; move durable output to its owner doc and "
+                    "retarget or remove the plan entry"
+                )
+
+    for plan_file in sorted(plan_files - referenced_plan_files):
+        failures.append(
+            f"docs/plans/{plan_file}: numbered plan file is not referenced "
+            "from docs/plans/dashboard.md"
+        )
+
+    for plan_file in sorted(plan_files):
+        path = plans_dir / plan_file
+        text = path.read_text(encoding="utf-8", errors="replace")
+        repeated_field = DASHBOARD_FIELD_RE.search(text)
+        if repeated_field:
+            line = text.count("\n", 0, repeated_field.start()) + 1
+            failures.append(
+                f"docs/plans/{plan_file}:{line}: plan file repeats dashboard "
+                f"field `{repeated_field.group(1)}`"
+            )
+
+    return failures
+
+
+def check_design_docs_index(repo_root: Path) -> list[str]:
+    """Ensure durable design docs stay discoverable and non-roadmap-shaped."""
+    failures: list[str] = []
+    design_dir = repo_root / "docs" / "design"
+    if not design_dir.exists():
+        return failures
+
+    readme = design_dir / "README.md"
+    agents = design_dir / "AGENTS.md"
+    for required in (readme, agents):
+        if not required.exists():
+            failures.append(
+                f"{required.relative_to(repo_root)}: missing design index/rules file"
+            )
+
+    readme_text = (
+        readme.read_text(encoding="utf-8", errors="replace") if readme.exists() else ""
+    )
+    readme_links = {
+        _normalize_plan_owner(match.group("link"))
+        for match in re.finditer(r"\[[^\]]+\]\((?P<link>[^)]+)\)", readme_text)
+    }
+    for design_doc in sorted(design_dir.glob("*.md")):
+        if design_doc.name in {"README.md", "AGENTS.md"}:
+            continue
+        rel_path = design_doc.relative_to(repo_root)
+        if design_doc.name not in readme_links:
+            failures.append(f"{rel_path}: missing from docs/design/README.md")
+
+        text = design_doc.read_text(encoding="utf-8", errors="replace")
+        repeated_field = DESIGN_DASHBOARD_FIELD_RE.search(text)
+        if repeated_field:
+            line = text.count("\n", 0, repeated_field.start()) + 1
+            failures.append(
+                f"{rel_path}:{line}: design doc repeats dashboard field "
+                f"`{repeated_field.group(1)}`"
+            )
+
+    return failures
+
+
 def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     failures: list[str] = []
@@ -109,6 +303,8 @@ def main() -> int:
         failures.extend(check_file(path, repo_root))
     failures.extend(check_docs_indexes(repo_root))
     failures.extend(check_dev_task_shape(repo_root))
+    failures.extend(check_plan_lifecycle(repo_root))
+    failures.extend(check_design_docs_index(repo_root))
 
     if not failures:
         return 0
@@ -116,10 +312,7 @@ def main() -> int:
     print("Documentation policy check failed:", file=sys.stderr)
     for failure in failures:
         print(f"  - {failure}", file=sys.stderr)
-    print(
-        "\nRemove footer metadata blocks and affiliation claims from Markdown docs.",
-        file=sys.stderr,
-    )
+    print("\nFix the documentation policy failures listed above.", file=sys.stderr)
     return 1
 
 
