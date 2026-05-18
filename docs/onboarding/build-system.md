@@ -791,7 +791,9 @@ build/
 - `patch-gz` - Patch DART version requirement
 - `config-gz` - Configure gz-physics build
 - `build-gz` - Build gz-physics with dartsim plugin
-- `test-gz` - Run the full gz-physics test suite and verify DART integration
+- `test-gz` - Run the full gz-physics test suite and verify DART integration;
+  gz-physics `PERFORMANCE_*` tests run serially after the parallel
+  compatibility pass to avoid timing-threshold noise from CTest parallelism
 
 **Start here next time:**
 
@@ -813,7 +815,10 @@ This command downloads the pinned `gz-physics9_9.0.0` branch, applies only the
 DART version-requirement patch from `scripts/patch_gz_physics.py`, configures
 with tests enabled, builds gz-physics and the DART plugin, runs the full
 gz-physics CTest inventory, and checks that the generated
-`libgz-physics-dartsim-plugin` links to DART libraries.
+`libgz-physics-dartsim-plugin` links to DART libraries. The CTest inventory is
+split into parallel non-performance tests plus serial `PERFORMANCE_*` tests so
+upstream timing-threshold tests are not measured while other gz-physics tests
+are competing for the same runner.
 
 **Fast iteration loop (Suggested (Unverified)):**
 
@@ -824,7 +829,8 @@ gz-physics CTest inventory, and checks that the generated
 
 **What to look for (success signal):**
 
-- The full gz-physics CTest inventory passes with `CTEST_OUTPUT_ON_FAILURE=1`.
+- The full gz-physics CTest inventory passes with `CTEST_OUTPUT_ON_FAILURE=1`
+  (`PERFORMANCE_*` tests are still run, but serially).
 - The plugin linkage check prints a DART library from `ldd` or `otool -L`.
 - `test-gz` prints:
   `✓ Full gz-physics suite passed and DART plugin links successfully!`

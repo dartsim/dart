@@ -2001,6 +2001,7 @@ libode = ">=0.16.6,<0.17"
 # 2. Patching CMakeLists.txt to accept DART 7.0 (was hardcoded to 6.10)
 # 3. Building gz-physics with the dartsim plugin and test binaries
 # 4. Running the full gz-physics test suite and verifying the dartsim plugin links against DART libraries
+#    (gz-physics PERFORMANCE_* tests run serially to avoid timing-threshold noise under CTest parallelism)
 #
 # Usage (single command runs entire chain):
 #   pixi run -e gazebo test-gz
@@ -2116,7 +2117,10 @@ test-gz = { cmd = """
         ROOT_DIR=$PWD
         cd .deps/gz-physics/build
         python "$ROOT_DIR/scripts/cmake_build.py" --build-dir . --parallel ${DART_PARALLEL_JOBS} --target all
-        ctest --output-on-failure --parallel ${DART_PARALLEL_JOBS}
+        echo "Running gz-physics compatibility tests in parallel..."
+        ctest --output-on-failure --parallel ${DART_PARALLEL_JOBS} -E PERFORMANCE_
+        echo "Running gz-physics performance tests serially..."
+        ctest --output-on-failure --parallel 1 -R PERFORMANCE_
         cd lib
         (otool -L libgz-physics-dartsim-plugin*.dylib 2>/dev/null || ldd libgz-physics-dartsim-plugin.so 2>/dev/null) | grep dart
         echo "✓ Full gz-physics suite passed and DART plugin links successfully!"
