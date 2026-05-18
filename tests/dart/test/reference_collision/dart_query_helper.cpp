@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/dart/dart_query_helper.hpp"
+#include "dart/test/reference_collision/dart_query_helper.hpp"
 
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/collision_object.hpp"

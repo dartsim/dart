@@ -36,7 +36,7 @@
 #include "dart/collision/contact.hpp"
 #include "dart/collision/dart/dart_collision_detector.hpp"
 #if DART_ODE_HAS_DART
-  #include "dart/collision/dart/dart_query_helper.hpp"
+  #include "dart/test/reference_collision/dart_query_helper.hpp"
 #endif
 #include "dart/test/reference_collision/ode/ode_collision_group.hpp"
 #include "dart/test/reference_collision/ode/ode_collision_object.hpp"

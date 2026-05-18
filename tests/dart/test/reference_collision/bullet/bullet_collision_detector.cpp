@@ -43,7 +43,7 @@
 #include "dart/collision/collision_object.hpp"
 #include "dart/collision/dart/dart_collision_detector.hpp"
 #if DART_BULLET_HAS_DART
-  #include "dart/collision/dart/dart_query_helper.hpp"
+  #include "dart/test/reference_collision/dart_query_helper.hpp"
 #endif
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"

@@ -46,6 +46,10 @@ target_link_libraries(${target_name}
     ${_dart_bullet_link_items}
 )
 if(TARGET ${PROJECT_NAME}-collision-native)
+  target_sources(${target_name}
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/../dart_query_helper.cpp
+  )
   target_link_libraries(${target_name} PUBLIC ${PROJECT_NAME}-collision-native)
   target_compile_definitions(${target_name} PRIVATE DART_BULLET_HAS_DART=1)
 endif()

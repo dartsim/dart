@@ -42,7 +42,7 @@
 #include "dart/test/reference_collision/fcl/fcl_types.hpp"
 #include "dart/test/reference_collision/fcl/tri_tri_intersection_test.hpp"
 #if DART_FCL_HAS_DART
-  #include "dart/collision/dart/dart_query_helper.hpp"
+  #include "dart/test/reference_collision/dart_query_helper.hpp"
 #endif
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"

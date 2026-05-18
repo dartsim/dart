@@ -30,8 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_DART_DARTQUERYHELPER_HPP_
-#define DART_COLLISION_DART_DARTQUERYHELPER_HPP_
+#ifndef DART_TEST_REFERENCE_COLLISION_DARTQUERYHELPER_HPP_
+#define DART_TEST_REFERENCE_COLLISION_DARTQUERYHELPER_HPP_
 
 #include "dart/collision/collision_option.hpp"
 #include "dart/collision/collision_result.hpp"
@@ -71,4 +71,4 @@ bool dartRaycast(
 } // namespace collision
 } // namespace dart
 
-#endif // DART_COLLISION_DART_DARTQUERYHELPER_HPP_
+#endif // DART_TEST_REFERENCE_COLLISION_DARTQUERYHELPER_HPP_
