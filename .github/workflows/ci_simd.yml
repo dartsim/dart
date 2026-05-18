@@ -3,8 +3,7 @@ name: CI SIMD Multi-Arch
 on:
   push:
     branches:
-      - "main"
-      - "release-*"
+      - "**"
     paths:
       - "dart/simd/**"
       - "tests/unit/simd/**"
@@ -26,6 +25,7 @@ concurrency:
 
 jobs:
   simd-x86-levels:
+    if: github.event.deleted != true
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -91,6 +91,7 @@ jobs:
           cd build && ctest -R "UNIT_simd" --output-on-failure
 
   simd-arm64-neon:
+    if: github.event.deleted != true
     runs-on: macos-latest
     name: ARM64 NEON (macOS)
     env:
