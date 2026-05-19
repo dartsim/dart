@@ -388,6 +388,23 @@ def check_package_components(repo_root: Path) -> list[str]:
     return failures
 
 
+def check_pkg_config_external_deps(repo_root: Path) -> list[str]:
+    failures: list[str] = []
+    source = read_text(repo_root, "CMakeLists.txt")
+    match = re.search(r'set\(DART_PKG_EXTERNAL_DEPS\s+"([^"]*)"\)', source)
+    if not match:
+        failures.append("CMakeLists.txt: missing DART_PKG_EXTERNAL_DEPS")
+        return failures
+
+    deps = [dep.strip() for dep in match.group(1).split(",")]
+    if "ccd" in deps:
+        failures.append(
+            "CMakeLists.txt: dart pkg-config Requires must not advertise ccd "
+            "for the native-only runtime"
+        )
+    return failures
+
+
 def check_reference_tree(repo_root: Path) -> list[str]:
     failures: list[str] = []
     for facade in FACADES:
@@ -442,6 +459,7 @@ def main() -> int:
     failures.extend(check_python_clean_api(repo_root))
     failures.extend(check_legacy_facade_raycast_contract(repo_root))
     failures.extend(check_package_components(repo_root))
+    failures.extend(check_pkg_config_external_deps(repo_root))
     failures.extend(check_reference_tree(repo_root))
 
     if failures:
@@ -465,7 +483,7 @@ def main() -> int:
     )
     print("  package components: collision-fcl/bullet/ode -> dart")
     print("  link interface: dart -> dart-collision-native")
-    print("  pkg-config: dart -> -ldart-collision-native")
+    print("  pkg-config: dart -> -ldart-collision-native without ccd Requires")
     print("  reference engines: tests/dart/test/reference_collision only")
     return 0
 
