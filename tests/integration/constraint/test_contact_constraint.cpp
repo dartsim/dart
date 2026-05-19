@@ -111,3 +111,25 @@ TEST(ContactConstraint, ContactWithKinematicJoint)
   testContactWithKinematicJoint(std::make_shared<math::PgsSolver>(), 5e-3);
 #endif
 }
+
+//==============================================================================
+TEST(ContactConstraint, MalformedContactWithNullCollisionObjectsIsInactive)
+{
+  collision::Contact contact;
+  contact.collisionObject1 = nullptr;
+  contact.collisionObject2 = nullptr;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.force = Eigen::Vector3d::Zero();
+
+  constraint::ContactSurfaceParams params;
+  constraint::ContactConstraint constraint(contact, 0.001, params);
+
+  constraint::ConstraintBase& base = constraint;
+  EXPECT_EQ(0u, base.getDimension());
+  EXPECT_FALSE(base.isActive());
+
+  base.update();
+
+  EXPECT_FALSE(base.isActive());
+}

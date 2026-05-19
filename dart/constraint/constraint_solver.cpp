@@ -534,6 +534,15 @@ void ConstraintSolver::updateConstraints()
       continue;
     }
 
+    const auto bodyNode1 = contact.getBodyNodePtr1();
+    const auto bodyNode2 = contact.getBodyNodePtr2();
+    if (bodyNode1 == nullptr || bodyNode2 == nullptr) {
+      DART_WARN(
+          "[ConstraintSolver] Ignoring contact with a null collision object or "
+          "missing BodyNode.");
+      continue;
+    }
+
     // If penetration depth is negative, then the collision isn't really
     // happening and the contact point should be ignored.
     // TODO(MXG): Investigate ways to leverage the proximity information of a
@@ -569,6 +578,10 @@ void ConstraintSolver::updateConstraints()
 
     auto contactConstraint = mContactSurfaceHandler->createConstraint(
         *contact, numContacts, mTimeStep);
+    if (contactConstraint == nullptr) {
+      continue;
+    }
+
     mContactConstraints.push_back(contactConstraint);
 
     contactConstraint->update();
