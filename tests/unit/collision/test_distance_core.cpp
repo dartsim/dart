@@ -190,6 +190,25 @@ TEST(DistanceBoxBox, Separated)
   EXPECT_NEAR(dist, 2.0, 1e-6);
 }
 
+TEST(DistanceBoxBox, OverlappingSameOrientation)
+{
+  BoxShape b1(Eigen::Vector3d::Ones());
+  BoxShape b2(Eigen::Vector3d::Ones());
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(1.5, 0, 0);
+
+  DistanceResult result;
+  double dist = distanceBoxBox(b1, tf1, b2, tf2, result);
+
+  EXPECT_NEAR(dist, -0.5, 1e-6);
+  EXPECT_NEAR(result.distance, -0.5, 1e-6);
+  EXPECT_NEAR(result.normal.x(), 1.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject1.x(), 1.0, 1e-6);
+  EXPECT_NEAR(result.pointOnObject2.x(), 0.5, 1e-6);
+}
+
 TEST(DistanceBoxBox, ThinFeatureSeparated)
 {
   BoxShape b1(Eigen::Vector3d(1.0, 1.0, 1e-3));

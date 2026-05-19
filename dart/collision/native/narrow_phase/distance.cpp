@@ -143,9 +143,10 @@ bool distanceSameOrientationBoxes(
       = transform1.linear().transpose()
         * (transform2.translation() - transform1.translation());
   const Eigen::Vector3d combinedHalf = half1 + half2;
-  const Eigen::Vector3d separation
-      = (center2.cwiseAbs() - combinedHalf).cwiseMax(0.0);
-  const double dist = separation.norm();
+  const Eigen::Vector3d axisSeparations = center2.cwiseAbs() - combinedHalf;
+  const bool separated = (axisSeparations.array() > 0.0).any();
+  const double dist = separated ? axisSeparations.cwiseMax(0.0).norm()
+                                : axisSeparations.maxCoeff();
 
   result.distance = dist;
   if (dist > option.upperBound) {
@@ -159,8 +160,17 @@ bool distanceSameOrientationBoxes(
   Eigen::Vector3d point1Local = Eigen::Vector3d::Zero();
   Eigen::Vector3d point2Local = Eigen::Vector3d::Zero();
 
+  Eigen::Index penetrationAxis = 0;
+  if (!separated) {
+    axisSeparations.maxCoeff(&penetrationAxis);
+  }
+
   for (int axis = 0; axis < 3; ++axis) {
-    if (center2[axis] > combinedHalf[axis]) {
+    if (!separated && axis == penetrationAxis) {
+      const double direction = (center2[axis] >= 0.0) ? 1.0 : -1.0;
+      point1Local[axis] = direction * half1[axis];
+      point2Local[axis] = -direction * half2[axis];
+    } else if (center2[axis] > combinedHalf[axis]) {
       point1Local[axis] = half1[axis];
       point2Local[axis] = -half2[axis];
     } else if (center2[axis] < -combinedHalf[axis]) {
@@ -179,11 +189,16 @@ bool distanceSameOrientationBoxes(
   result.pointOnObject1 = transform1 * point1Local;
   result.pointOnObject2 = transform2 * point2Local;
 
-  const Eigen::Vector3d diff = result.pointOnObject2 - result.pointOnObject1;
-  if (diff.squaredNorm() > 1e-10) {
-    result.normal = diff.normalized();
+  if (!separated) {
+    const double direction = (center2[penetrationAxis] >= 0.0) ? 1.0 : -1.0;
+    result.normal = direction * transform1.linear().col(penetrationAxis);
   } else {
-    result.normal = Eigen::Vector3d::UnitX();
+    const Eigen::Vector3d diff = result.pointOnObject2 - result.pointOnObject1;
+    if (diff.squaredNorm() > 1e-10) {
+      result.normal = diff.normalized();
+    } else {
+      result.normal = Eigen::Vector3d::UnitX();
+    }
   }
 
   return true;
