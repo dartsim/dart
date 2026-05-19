@@ -45,6 +45,7 @@
   - Exported `DynamicJointConstraint` and `JointConstraint` on Windows so constraint unit tests link successfully.
   - Exported soft contact constraints, DART collision helpers, `computeIntersection`, and IK property types on Windows to fix shared-library unit test linking. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Exported existing FCL, joint Coulomb friction, and MJCF detail parser declarations on Windows so shared-library consumers and tests can link the header-declared symbols consistently. ([#2648](https://github.com/dartsim/dart/pull/2648))
+  - Exported `ZeroDofJoint` on Windows so shared-library consumers can link inherited zero-DoF joint symbols consistently.
   - Added support for assimp 6.x while maintaining backward compatibility with assimp 5.x
 
 - Tooling and Docs
