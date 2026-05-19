@@ -12,14 +12,28 @@
 #include <dart/collision/collision_detector.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
+#include <dart/collision/fwd.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
 #include <gtest/gtest.h>
 
 #include <memory>
 #include <string>
+#include <type_traits>
 
 namespace {
+
+static_assert(std::is_same_v<
+              dart::collision::DartCollisionDetectorPtr,
+              std::shared_ptr<dart::collision::DartCollisionDetector>>);
+static_assert(std::is_same_v<
+              dart::collision::DARTCollisionDetectorPtr,
+              std::shared_ptr<dart::collision::DARTCollisionDetector>>);
+DART_SUPPRESS_DEPRECATED_BEGIN
+static_assert(std::is_same_v<
+              dart::collision::FCLCollisionDetectorPtr,
+              std::shared_ptr<dart::collision::FCLCollisionDetector>>);
+DART_SUPPRESS_DEPRECATED_END
 
 template <typename Detector>
 void expectNativeBackedFacade(

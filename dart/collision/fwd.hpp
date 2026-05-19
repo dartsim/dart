@@ -33,8 +33,6 @@
 #ifndef DART_COLLISION_FWD_HPP_
 #define DART_COLLISION_FWD_HPP_
 
-#include <dart/config.hpp>
-
 #include <dart/common/smart_pointer.hpp>
 
 namespace dart {
@@ -58,10 +56,8 @@ struct RaycastResult;
 
 DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
 DART_COMMON_DECLARE_SHARED_WEAK(DartCollisionDetector)
-
-#if DART_HAVE_FCL
 DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
-#endif
+DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
 
 DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
 DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
