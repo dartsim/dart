@@ -517,16 +517,19 @@ std::vector<uint8_t> SimpleViewer::captureBuffer()
   vkGetPhysicalDeviceFormatProperties(
       *(physicalDevice), VK_FORMAT_R8G8B8A8_UNORM, &destFormatProperties);
 
-  bool supportsBlit = ((srcFormatProperties.optimalTilingFeatures
-                        & VK_FORMAT_FEATURE_BLIT_SRC_BIT)
-                       != 0)
-                      && ((destFormatProperties.linearTilingFeatures
-                           & VK_FORMAT_FEATURE_BLIT_DST_BIT)
-                          != 0);
+  const bool supportsBlit = ((srcFormatProperties.optimalTilingFeatures
+                              & VK_FORMAT_FEATURE_BLIT_SRC_BIT)
+                             != 0)
+                            && ((destFormatProperties.linearTilingFeatures
+                                 & VK_FORMAT_FEATURE_BLIT_DST_BIT)
+                                != 0);
 
   if (!supportsBlit) {
     targetImageFormat = sourceImageFormat;
   }
+
+  // Copy same-format images; reserve blits for format conversion.
+  const bool useBlit = supportsBlit && targetImageFormat != sourceImageFormat;
 
   auto destinationImage = ::vsg::Image::create();
   destinationImage->imageType = VK_IMAGE_TYPE_2D;
@@ -579,7 +582,7 @@ std::vector<uint8_t> SimpleViewer::captureBuffer()
           transitionDestToTransferDst,
           transitionSrcToTransferSrc));
 
-  if (supportsBlit) {
+  if (useBlit) {
     VkImageBlit region{};
     region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     region.srcSubresource.layerCount = 1;
