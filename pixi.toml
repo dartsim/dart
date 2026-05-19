@@ -873,10 +873,7 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE python scripts/cmak
 ], env = { BUILD_TYPE = "Debug" } }
 
 # Note: --rc flag is needed for lcov compatibility with gcc 13+
-coverage-report = { cmd = [
-  "bash",
-  "-lc",
-  """
+coverage-report = { cmd = ["bash", "-lc", """
 set -euo pipefail
 # Keep test objects during capture so library headers and templates exercised
 # from tests are counted. The lcov removal pass below filters test source files
@@ -889,7 +886,7 @@ lcov \
     --directory build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
     --output-file coverage.info \
     --rc geninfo_unexecuted_blocks=1 \
-    --rc 'lcov_excl_line=LCOV_EXCL_LINE|DART_ASSERT\\(false\\);|assert\\(false\\);|DART_ERROR|DART_WARN|DART_THROW' \
+    --rc 'lcov_excl_line=LCOV_EXCL_LINE' \
 && lcov \
     --remove coverage.info \
     '/usr/*' \
@@ -901,10 +898,7 @@ lcov \
     '*/dart/gui/*' \
     --output-file coverage.info \
 && lcov --list coverage.info
-""",
-], depends-on = [
-  "build-coverage",
-], env = { BUILD_TYPE = "Debug" } }
+"""], depends-on = ["build-coverage"], env = { BUILD_TYPE = "Debug" } }
 
 # Shared helper to build a target and run the produced binary. Defaults to a Release build;
 # run the matching config task manually before using other build types.
