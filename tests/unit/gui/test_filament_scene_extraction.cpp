@@ -614,7 +614,7 @@ TEST(FilamentSceneExtraction, ExtractDebugLines_ReturnsCenterOfMassMarker)
 
 TEST(FilamentSceneExtraction, ExtractContactDebugLines_ReturnsMarkersAndVectors)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto skeletonA = Skeleton::create("contact_a");
   auto skeletonB = Skeleton::create("contact_b");
   auto* bodyA = skeletonA->createJointAndBodyNodePair<FreeJoint>().second;

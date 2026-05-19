@@ -199,7 +199,7 @@ solve()
 - Uses `CollisionDetector` to find contacts
 - Creates `ContactConstraint` objects for each contact
 - Manages `ContactSurfaceHandler` for surface parameters
-- Supports multiple collision detection backends
+- Uses the built-in DART collision detector for normal runtime contacts
 
 **Key Features:**
 

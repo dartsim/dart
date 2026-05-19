@@ -36,7 +36,7 @@
 
   #include <dart/simulation/world.hpp>
 
-  #include <dart/collision/bullet/bullet_collision_detector.hpp>
+  #include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
 
   #include <dart/dynamics/box_shape.hpp>
   #include <dart/dynamics/ellipsoid_shape.hpp>
@@ -75,7 +75,7 @@ RollingResult runRollingTrial(
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setTimeStep(0.001);
   world->setCollisionDetector(
-      dart::collision::BulletCollisionDetector::create());
+      dart::collision::BulletCollisionDetector::createReference());
 
   // Ramp
   const double rampThickness = 0.1;

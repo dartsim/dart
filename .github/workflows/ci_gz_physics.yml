@@ -27,6 +27,8 @@ jobs:
       full_ci: ${{ steps.scope.outputs.full_ci }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/ci-scope
         id: scope
       - uses: dorny/paths-filter@v4

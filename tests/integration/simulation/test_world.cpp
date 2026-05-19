@@ -34,10 +34,14 @@
 
 #include "helpers/gtest_utils.hpp"
 
+#include "controller.hpp"
 #include "dart/collision/All.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/revolute_joint.hpp"
+#include "dart/dynamics/shape.hpp"
+#include "dart/dynamics/shape_frame.hpp"
+#include "dart/dynamics/shape_node.hpp"
 #include "dart/dynamics/simple_frame.hpp"
 #include "dart/dynamics/skeleton.hpp"
 #include "dart/io/read.hpp"
@@ -46,17 +50,27 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
-#if DART_HAVE_BULLET
-  #include "dart/collision/bullet/All.hpp"
+
+#ifndef DART_ENABLE_COLLISION_REFERENCE_TESTS
+  #define DART_ENABLE_COLLISION_REFERENCE_TESTS 0
+#endif
+
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
+  #include "dart/test/reference_collision/bullet/bullet_collision_detector.hpp"
 #endif
 #include "dart/collision/dart/dart_collision_detector.hpp"
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
+  #include "dart/test/reference_collision/fcl/fcl_collision_detector.hpp"
+#endif
 #include "dart/constraint/ball_joint_constraint.hpp"
 #include "dart/constraint/constraint_solver.hpp"
 #include "dart/constraint/revolute_joint_constraint.hpp"
@@ -160,6 +174,84 @@ private:
   Creator mRestorer;
   bool mOverridden{false};
 };
+
+struct AxisExtent
+{
+  double min = std::numeric_limits<double>::infinity();
+  double max = -std::numeric_limits<double>::infinity();
+  bool hasShape = false;
+};
+
+void accumulateShapeNodeAxisExtent(
+    const ShapeNode* shapeNode, int axis, AxisExtent& extent)
+{
+  if (!shapeNode || !shapeNode->getShape()) {
+    return;
+  }
+
+  const auto& bounds = shapeNode->getShape()->getBoundingBox();
+  const Eigen::Vector3d& min = bounds.getMin();
+  const Eigen::Vector3d& max = bounds.getMax();
+  const std::array<Eigen::Vector3d, 8> corners{
+      Eigen::Vector3d(min.x(), min.y(), min.z()),
+      Eigen::Vector3d(max.x(), min.y(), min.z()),
+      Eigen::Vector3d(min.x(), max.y(), min.z()),
+      Eigen::Vector3d(max.x(), max.y(), min.z()),
+      Eigen::Vector3d(min.x(), min.y(), max.z()),
+      Eigen::Vector3d(max.x(), min.y(), max.z()),
+      Eigen::Vector3d(min.x(), max.y(), max.z()),
+      Eigen::Vector3d(max.x(), max.y(), max.z())};
+
+  for (const auto& corner : corners) {
+    const double value = (shapeNode->getWorldTransform() * corner)[axis];
+    extent.min = std::min(extent.min, value);
+    extent.max = std::max(extent.max, value);
+  }
+  extent.hasShape = true;
+}
+
+AxisExtent collisionAxisExtent(const BodyNode* bodyNode, int axis)
+{
+  AxisExtent extent;
+  if (!bodyNode) {
+    return extent;
+  }
+
+  bodyNode->eachShapeNodeWith<CollisionAspect>([&](const ShapeNode* shapeNode) {
+    accumulateShapeNodeAxisExtent(shapeNode, axis, extent);
+  });
+  return extent;
+}
+
+AxisExtent collisionAxisExtent(const SkeletonPtr& skeleton, int axis)
+{
+  AxisExtent extent;
+  if (!skeleton) {
+    return extent;
+  }
+
+  for (auto i = 0u; i < skeleton->getNumBodyNodes(); ++i) {
+    auto bodyExtent = collisionAxisExtent(skeleton->getBodyNode(i), axis);
+    if (!bodyExtent.hasShape) {
+      continue;
+    }
+
+    extent.min = std::min(extent.min, bodyExtent.min);
+    extent.max = std::max(extent.max, bodyExtent.max);
+    extent.hasShape = true;
+  }
+
+  return extent;
+}
+
+AxisExtent mergedAxisExtent(const AxisExtent& first, const AxisExtent& second)
+{
+  AxisExtent merged;
+  merged.hasShape = first.hasShape || second.hasShape;
+  merged.min = std::min(first.min, second.min);
+  merged.max = std::max(first.max, second.max);
+  return merged;
+}
 
 } // namespace
 
@@ -556,7 +648,7 @@ TEST(World, ValidatingClones)
     worlds.push_back(dart::io::readWorld(fileList[i]));
 
     // Set non default collision detector
-#if DART_HAVE_BULLET
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
     worlds.back()->setCollisionDetector(CollisionDetectorType::Bullet);
 #else
     worlds.back()->setCollisionDetector(CollisionDetectorType::Dart);
@@ -617,26 +709,29 @@ TEST(World, ConfiguresCollisionDetectorViaConfig)
 }
 
 //==============================================================================
-TEST(World, DefaultWorldUsesFclPrimitive)
+TEST(World, DefaultWorldUsesDart)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
 
-  if (!factory->canCreate("fcl")) {
-    GTEST_SKIP() << "fcl collision detector is not available in this build";
-  }
-
   auto world = World::create();
-  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
-      world->getCollisionDetector());
-  ASSERT_TRUE(fclDetector);
-  EXPECT_EQ(
-      fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::PRIMITIVE);
+  auto detector = world->getCollisionDetector();
+  ASSERT_TRUE(detector);
+
+  const auto type = std::string(detector->getTypeView());
+  if (factory->canCreate("dart")) {
+    EXPECT_EQ(type, "dart");
+  } else if (factory->canCreate("experimental")) {
+    EXPECT_EQ(type, "dart");
+  } else if (factory->canCreate("fcl")) {
+    EXPECT_EQ(type, "fcl");
+  } else {
+    EXPECT_EQ(type, "dart");
+  }
 }
 
 //==============================================================================
-TEST(World, TypedSetterConfiguresFclPrimitive)
+TEST(World, TypedSetterFclAliasesToDart)
 {
   auto factory = collision::CollisionDetector::getFactory();
   ASSERT_NE(factory, nullptr);
@@ -649,21 +744,18 @@ TEST(World, TypedSetterConfiguresFclPrimitive)
   world->setCollisionDetector(CollisionDetectorType::Dart);
   world->setCollisionDetector(CollisionDetectorType::Fcl);
 
-  auto fclDetector = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(
-      world->getCollisionDetector());
-  ASSERT_TRUE(fclDetector);
-  EXPECT_EQ(
-      fclDetector->getPrimitiveShapeType(),
-      collision::FCLCollisionDetector::PRIMITIVE);
+  auto detector = world->getCollisionDetector();
+  ASSERT_TRUE(detector);
+  EXPECT_EQ(detector->getTypeView(), "dart");
 }
 
 //==============================================================================
 TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
 {
   ScopedCollisionFactoryDisabler disableDart(
-      collision::DARTCollisionDetector::getStaticType(),
+      collision::DartCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr {
-        return collision::DARTCollisionDetector::create();
+        return collision::DartCollisionDetector::create();
       });
 
   if (!disableDart.wasDisabled()) {
@@ -684,6 +776,10 @@ TEST(World, TypedSetterFallsBackWhenDetectorUnavailable)
 //==============================================================================
 TEST(World, TypedSetterKeepsCurrentDetectorWhenFactoryReturnsNull)
 {
+  auto world = World::create();
+  auto original = world->getCollisionDetector();
+  ASSERT_TRUE(original);
+
   ScopedCollisionFactoryOverride overrideDart(
       collision::DARTCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr { return nullptr; },
@@ -695,10 +791,6 @@ TEST(World, TypedSetterKeepsCurrentDetectorWhenFactoryReturnsNull)
     GTEST_SKIP() << "dart collision detector is not registered in this build";
   }
 
-  auto world = World::create();
-  auto original = world->getCollisionDetector();
-  ASSERT_TRUE(original);
-
   world->setCollisionDetector(CollisionDetectorType::Dart);
 
   EXPECT_EQ(world->getCollisionDetector(), original);
@@ -708,9 +800,9 @@ TEST(World, TypedSetterKeepsCurrentDetectorWhenFactoryReturnsNull)
 TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
 {
   ScopedCollisionFactoryDisabler disableDart(
-      collision::DARTCollisionDetector::getStaticType(),
+      collision::DartCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr {
-        return collision::DARTCollisionDetector::create();
+        return collision::DartCollisionDetector::create();
       });
 
   if (!disableDart.wasDisabled()) {
@@ -723,18 +815,19 @@ TEST(World, ConfigFallbacksWhenPreferredDetectorUnavailable)
 
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(
-      world->getCollisionDetector()->getTypeView(),
-      collision::FCLCollisionDetector::getStaticType());
+  const auto type = std::string(world->getCollisionDetector()->getTypeView());
+  EXPECT_TRUE(type == "dart" || type == "experimental" || type == "fcl")
+      << "Expected dart, experimental, or fcl fallback, got: " << type;
 }
 
 //==============================================================================
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
 {
   ScopedCollisionFactoryDisabler disableDart(
-      collision::DARTCollisionDetector::getStaticType(),
+      collision::DartCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr {
-        return collision::DARTCollisionDetector::create();
+        return collision::DartCollisionDetector::create();
       });
 
   if (!disableDart.wasDisabled()) {
@@ -744,7 +837,7 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
   ScopedCollisionFactoryDisabler disableFcl(
       collision::FCLCollisionDetector::getStaticType(),
       []() -> collision::CollisionDetectorPtr {
-        return collision::FCLCollisionDetector::create();
+        return collision::FCLCollisionDetector::createReference();
       });
 
   if (!disableFcl.wasDisabled()) {
@@ -757,9 +850,135 @@ TEST(World, ConfigWarnsWhenPreferredAndFallbackUnavailable)
 
   auto world = World::create(config);
   ASSERT_TRUE(world->getCollisionDetector());
-  EXPECT_EQ(
-      world->getCollisionDetector()->getTypeView(),
-      collision::FCLCollisionDetector::getStaticType());
+  const auto type = std::string(world->getCollisionDetector()->getTypeView());
+  EXPECT_TRUE(type == "dart" || type == "experimental" || type == "fcl")
+      << "Expected dart, experimental, or fcl fallback, got: " << type;
+}
+#endif
+
+//==============================================================================
+TEST(World, AtlasSimbiconFeetContactGroundWithNativeCollision)
+{
+  auto world = World::create();
+  ASSERT_NE(world, nullptr);
+  world->setTimeStep(0.001);
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+  ASSERT_NE(world->getCollisionDetector(), nullptr);
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  auto ground = dart::io::readSkeleton("dart://sample/sdf/atlas/ground.urdf");
+  auto atlas
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+  ASSERT_NE(ground, nullptr);
+  ASSERT_NE(atlas, nullptr);
+
+  atlas->setPosition(0, -0.5 * dart::math::pi);
+  world->addSkeleton(ground);
+  world->addSkeleton(atlas);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto* leftFoot = atlas->getBodyNode("l_foot");
+  auto* rightFoot = atlas->getBodyNode("r_foot");
+  ASSERT_NE(leftFoot, nullptr);
+  ASSERT_NE(rightFoot, nullptr);
+
+  constexpr int upAxis = 1;
+  const AxisExtent groundExtent = collisionAxisExtent(ground, upAxis);
+  ASSERT_TRUE(groundExtent.hasShape);
+  const double groundTop = groundExtent.max;
+
+  auto footGroup = world->getCollisionDetector()->createCollisionGroup();
+  auto groundGroup = world->getCollisionDetector()->createCollisionGroup();
+  ASSERT_NE(footGroup, nullptr);
+  ASSERT_NE(groundGroup, nullptr);
+  footGroup->addShapeFramesOf(leftFoot, rightFoot);
+  groundGroup->addShapeFramesOf(ground.get());
+  ASSERT_GT(footGroup->getNumShapeFrames(), 0u);
+  ASSERT_GT(groundGroup->getNumShapeFrames(), 0u);
+
+  collision::CollisionOption option(true, 100u);
+  collision::CollisionResult result;
+  const bool colliding = footGroup->collide(groundGroup.get(), option, &result);
+  ASSERT_TRUE(colliding);
+  ASSERT_GT(result.getNumContacts(), 0u);
+
+  bool sawUpwardFootNormal = false;
+  for (const auto& contact : result.getContacts()) {
+    sawUpwardFootNormal = sawUpwardFootNormal || contact.normal[upAxis] > 0.5;
+  }
+
+  EXPECT_TRUE(sawUpwardFootNormal);
+
+  const AxisExtent footExtent = mergedAxisExtent(
+      collisionAxisExtent(leftFoot, upAxis),
+      collisionAxisExtent(rightFoot, upAxis));
+  ASSERT_TRUE(footExtent.hasShape);
+  EXPECT_GE(footExtent.min, groundTop - 0.06);
+}
+
+//==============================================================================
+TEST(World, AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision)
+{
+  auto world = World::create();
+  ASSERT_NE(world, nullptr);
+  world->setTimeStep(0.001);
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+  ASSERT_NE(world->getCollisionDetector(), nullptr);
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  auto ground = dart::io::readSkeleton("dart://sample/sdf/atlas/ground.urdf");
+  auto atlas
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+  ASSERT_NE(ground, nullptr);
+  ASSERT_NE(atlas, nullptr);
+
+  atlas->setPosition(0, -0.5 * dart::math::pi);
+  world->addSkeleton(ground);
+  world->addSkeleton(atlas);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto* leftFoot = atlas->getBodyNode("l_foot");
+  auto* rightFoot = atlas->getBodyNode("r_foot");
+  ASSERT_NE(leftFoot, nullptr);
+  ASSERT_NE(rightFoot, nullptr);
+
+  constexpr int upAxis = 1;
+  const AxisExtent groundExtent = collisionAxisExtent(ground, upAxis);
+  ASSERT_TRUE(groundExtent.hasShape);
+  const double groundTop = groundExtent.max;
+
+  Controller controller(atlas, world->getConstraintSolver());
+  controller.changeStateMachine("running", world->getTime());
+
+  constexpr int kNumSteps = 600;
+  constexpr double kAllowedDynamicPenetration = 0.08;
+  bool sawFootContact = false;
+  double lowestFootMin = std::numeric_limits<double>::infinity();
+
+  for (int step = 0; step < kNumSteps; ++step) {
+    controller.update();
+    world->step();
+
+    ASSERT_TRUE(atlas->getPositions().array().allFinite()) << "step=" << step;
+    ASSERT_TRUE(atlas->getVelocities().array().allFinite()) << "step=" << step;
+
+    const AxisExtent footExtent = mergedAxisExtent(
+        collisionAxisExtent(leftFoot, upAxis),
+        collisionAxisExtent(rightFoot, upAxis));
+    ASSERT_TRUE(footExtent.hasShape);
+    lowestFootMin = std::min(lowestFootMin, footExtent.min);
+
+    const auto& collisionResult = world->getLastCollisionResult();
+    sawFootContact = sawFootContact || collisionResult.inCollision(leftFoot)
+                     || collisionResult.inCollision(rightFoot);
+
+    EXPECT_GE(footExtent.min, groundTop - kAllowedDynamicPenetration)
+        << "step=" << step << " groundTop=" << groundTop
+        << " footMin=" << footExtent.min;
+  }
+
+  EXPECT_TRUE(sawFootContact);
+  EXPECT_GE(lowestFootMin, groundTop - kAllowedDynamicPenetration);
 }
 
 //==============================================================================

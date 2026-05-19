@@ -64,6 +64,9 @@ public:
   /// Returns the underlying convex mesh.
   const std::shared_ptr<TriMeshType>& getMesh() const;
 
+  /// Returns true when the mesh has vertices and triangle indices.
+  bool hasValidMesh() const;
+
   /// Replaces the underlying convex mesh.
   void setMesh(const std::shared_ptr<TriMeshType>& mesh);
 

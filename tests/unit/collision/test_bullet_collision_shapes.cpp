@@ -6,8 +6,6 @@
 
 #if DART_HAVE_BULLET
 
-  #include "dart/collision/bullet/bullet_collision_detector.hpp"
-  #include "dart/collision/bullet/bullet_collision_object.hpp"
   #include "dart/collision/collision_filter.hpp"
   #include "dart/collision/collision_group.hpp"
   #include "dart/collision/collision_object.hpp"
@@ -28,6 +26,8 @@
   #include "dart/dynamics/simple_frame.hpp"
   #include "dart/dynamics/sphere_shape.hpp"
   #include "dart/math/tri_mesh.hpp"
+  #include "dart/test/reference_collision/bullet/bullet_collision_detector.hpp"
+  #include "dart/test/reference_collision/bullet/bullet_collision_object.hpp"
 
 using dart::collision::BulletCollisionDetector;
 using dart::collision::CollisionFilter;
@@ -124,7 +124,7 @@ std::shared_ptr<TriMeshd> makeSimpleTriMesh()
 
 TEST(BulletCollisionCoverage, CollideWithShapesAndFilter)
 {
-  auto detector = BulletCollisionDetector::create();
+  auto detector = BulletCollisionDetector::createReference();
   ASSERT_TRUE(detector);
 
   auto planeFrame = SimpleFrame::createShared(dart::dynamics::Frame::World());
@@ -196,7 +196,7 @@ TEST(BulletCollisionCoverage, CollideWithShapesAndFilter)
 
 TEST(BulletCollisionCoverage, DistanceAndRaycastPaths)
 {
-  auto detector = BulletCollisionDetector::create();
+  auto detector = BulletCollisionDetector::createReference();
   ASSERT_TRUE(detector);
 
   auto boxFrame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
@@ -254,7 +254,7 @@ TEST(BulletCollisionCoverage, DistanceAndRaycastPaths)
       &closestResult));
   EXPECT_EQ(closestResult.mRayHits.size(), 1u);
 
-  auto otherDetector = BulletCollisionDetector::create();
+  auto otherDetector = BulletCollisionDetector::createReference();
   auto foreignGroup = otherDetector->createCollisionGroup(boxFrame1.get());
   CollisionOption option;
   EXPECT_FALSE(detector->collide(foreignGroup.get(), option, nullptr));
@@ -268,7 +268,7 @@ TEST(BulletCollisionCoverage, DistanceAndRaycastPaths)
 
 TEST(BulletCollisionCoverage, TwoGroupCollide)
 {
-  auto detector = BulletCollisionDetector::create();
+  auto detector = BulletCollisionDetector::createReference();
   ASSERT_TRUE(detector);
 
   auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
@@ -296,7 +296,7 @@ TEST(BulletCollisionCoverage, TwoGroupCollide)
 
 TEST(BulletCollisionCoverage, MaxNumContactsZero)
 {
-  auto detector = BulletCollisionDetector::create();
+  auto detector = BulletCollisionDetector::createReference();
   ASSERT_TRUE(detector);
 
   auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
@@ -315,7 +315,7 @@ TEST(BulletCollisionCoverage, MaxNumContactsZero)
 
 TEST(BulletCollisionCoverage, CloneWithoutCollisionObjects)
 {
-  auto detector = BulletCollisionDetector::create();
+  auto detector = BulletCollisionDetector::createReference();
   ASSERT_TRUE(detector);
 
   auto cloned = detector->cloneWithoutCollisionObjects();
@@ -327,7 +327,7 @@ TEST(BulletCollisionCoverage, CloneWithoutCollisionObjects)
 
 TEST(BulletCollisionCoverage, RaycastNullResultWithFilter)
 {
-  auto detector = BulletCollisionDetector::create();
+  auto detector = BulletCollisionDetector::createReference();
   ASSERT_TRUE(detector);
 
   auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
@@ -390,7 +390,7 @@ TEST(BulletCollisionCoverage, RaycastNullResultWithFilter)
 
 TEST(BulletCollisionCoverage, RaycastFilterOnlyClosest)
 {
-  auto detector = BulletCollisionDetector::create();
+  auto detector = BulletCollisionDetector::createReference();
   ASSERT_TRUE(detector);
 
   auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
@@ -422,7 +422,7 @@ TEST(BulletCollisionCoverage, RaycastFilterOnlyClosest)
 
 TEST(BulletCollisionCoverage, TwoGroupCollideWithFilter)
 {
-  auto detector = BulletCollisionDetector::create();
+  auto detector = BulletCollisionDetector::createReference();
   ASSERT_TRUE(detector);
 
   auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());
@@ -448,8 +448,8 @@ TEST(BulletCollisionCoverage, TwoGroupCollideWithFilter)
 
 TEST(BulletCollisionCoverage, TwoGroupForeignDetector)
 {
-  auto detector1 = BulletCollisionDetector::create();
-  auto detector2 = BulletCollisionDetector::create();
+  auto detector1 = BulletCollisionDetector::createReference();
+  auto detector2 = BulletCollisionDetector::createReference();
   ASSERT_TRUE(detector1);
   ASSERT_TRUE(detector2);
 
@@ -533,7 +533,7 @@ TEST(BulletCollisionCoverage, EllipsoidFallbackToMeshShape)
 
 TEST(BulletCollisionCoverage, TwoGroupCollideNullResultUsesFilter)
 {
-  auto detector = BulletCollisionDetector::create();
+  auto detector = BulletCollisionDetector::createReference();
   ASSERT_TRUE(detector);
 
   auto frame1 = SimpleFrame::createShared(dart::dynamics::Frame::World());

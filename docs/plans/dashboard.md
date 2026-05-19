@@ -65,6 +65,23 @@ its own line so status updates remain git-history friendly.
   metadata/profiling/DOT output remain backend-neutral; classic World behavior
   stays untouched.
 
+### PLAN-035: Native Collision Feature Dashboard
+
+- Owner doc:
+  [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Keep native collision feature/use-case/benchmark coverage,
+  runtime-isolation proof, and DART 7/DART 8 abstraction cleanup planning
+  current through the completing local packet and final PR evidence transfer.
+- Gate:
+  [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)
+  has no active GAP/PARTIAL rows, runtime reference engines remain
+  test/benchmark-only, final
+  benchmark/CI evidence is attached to the completing review surface, and
+  temporary dev-task folders are removed.
+
 ### PLAN-040: DART 7 Release Hardening
 
 - Owner doc: [`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)

@@ -32,12 +32,12 @@
 
 #include "dart/constraint/constraint_solver.hpp"
 
+#include "dart/collision/collision_detector.hpp"
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/collision_group.hpp"
 #include "dart/collision/collision_object.hpp"
 #include "dart/collision/contact.hpp"
 #include "dart/collision/dart/dart_collision_detector.hpp"
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
 #include "dart/common/frame_allocator.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
@@ -73,9 +73,31 @@ namespace constraint {
 using namespace dynamics;
 
 //==============================================================================
+namespace {
+
+collision::CollisionDetectorPtr createDefaultCollisionDetector()
+{
+  auto* factory = collision::CollisionDetector::getFactory();
+  if (factory->canCreate("dart")) {
+    return factory->create("dart");
+  }
+  if (factory->canCreate("experimental")) {
+    return factory->create("experimental");
+  }
+  if (factory->canCreate("fcl")) {
+    return factory->create("fcl");
+  }
+  return collision::DartCollisionDetector::create();
+}
+
+} // namespace
+
 ConstraintSolver::ConstraintSolver()
-  : mCollisionDetector(collision::FCLCollisionDetector::create()),
-    mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
+  : mCollisionDetector(createDefaultCollisionDetector()),
+    mCollisionGroup(
+        mCollisionDetector
+            ? mCollisionDetector->createCollisionGroupAsSharedPtr()
+            : nullptr),
     mCollisionOption(
         collision::CollisionOption(
             true,
@@ -88,10 +110,6 @@ ConstraintSolver::ConstraintSolver()
     mOwnedFrameAllocator(std::make_unique<common::FrameAllocator>()),
     mFrameAllocator(mOwnedFrameAllocator.get())
 {
-  auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-      mCollisionDetector);
-
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================

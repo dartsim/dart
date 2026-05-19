@@ -225,7 +225,7 @@ To add a new DART-specific skill:
    pixi run lint  # Includes sync-ai-commands
    ```
 
-**Skill candidates** (create when needed): `dart-dynamics` (articulated bodies), `dart-collision` (collision backends), `dart-architecture` (core design).
+**Skill candidates** (create when needed): `dart-dynamics` (articulated bodies), `dart-collision` (collision detection), `dart-architecture` (core design).
 
 #### Cross-Agent Compatibility
 

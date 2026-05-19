@@ -36,17 +36,8 @@
 #include <dart/gui/im_gui_handler.hpp>
 #include <dart/gui/im_gui_viewer.hpp>
 #include <dart/gui/im_gui_widget.hpp>
-#include <dart/gui/real_time_world_node.hpp>
-
-#include <dart/io/read.hpp>
-
-#if DART_HAVE_BULLET
-  #include <dart/collision/bullet/bullet_collision_detector.hpp>
-#endif
-#if DART_HAVE_ODE
-  #include <dart/collision/ode/ode_collision_detector.hpp>
-#endif
 #include <dart/gui/include_im_gui.hpp>
+#include <dart/gui/real_time_world_node.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -62,6 +53,8 @@
 #include <dart/math/lcp/projection/pgs_solver.hpp>
 
 #include <dart/common/uri.hpp>
+
+#include <dart/io/read.hpp>
 
 #include <CLI/CLI.hpp>
 #include <Eigen/Core>
@@ -129,29 +122,8 @@ Eigen::Vector3d translationOf(const BodyNode* bn)
 
 struct SolverConfig
 {
-  bool useOdeCollision = true;
   bool usePgsSolver = false;
 };
-
-void applyCollisionDetector(
-    const SolverConfig& cfg, const dart::simulation::WorldPtr& world)
-{
-#if DART_HAVE_ODE
-  if (cfg.useOdeCollision) {
-    world->getConstraintSolver()->setCollisionDetector(
-        dart::collision::OdeCollisionDetector::create());
-    return;
-  }
-#endif
-
-#if DART_HAVE_BULLET
-  world->getConstraintSolver()->setCollisionDetector(
-      dart::collision::BulletCollisionDetector::create());
-#else
-  (void)cfg;
-  (void)world;
-#endif
-}
 
 void applyLcpSolver(
     const SolverConfig& cfg, const dart::simulation::WorldPtr& world)
@@ -312,7 +284,6 @@ public:
       mWorldPath(std::move(worldPath)),
       mConfig(std::move(cfg))
   {
-    applyCollisionDetector(mConfig, mWorld);
     applyLcpSolver(mConfig, mWorld);
   }
 
@@ -377,21 +348,8 @@ private:
   void renderSolverControls()
   {
     ImGui::Separator();
-    ImGui::Text("Collision / solver");
-
-    bool odeSelected = mConfig.useOdeCollision;
-#if DART_HAVE_ODE
-    if (ImGui::Checkbox(
-            "Use ODE collision (closer to Gazebo repro)", &odeSelected)) {
-      mConfig.useOdeCollision = odeSelected;
-      applyCollisionDetector(mConfig, mWorld);
-    }
-#else
-    (void)odeSelected;
-    ImGui::TextDisabled("ODE collision detector not built");
-#endif
+    ImGui::Text("Solver");
     bool pgs = mConfig.usePgsSolver;
-    ImGui::SameLine();
     if (ImGui::Checkbox("Force PGS solver", &pgs)) {
       mConfig.usePgsSolver = pgs;
       applyLcpSolver(mConfig, mWorld);
@@ -399,15 +357,6 @@ private:
 
     const auto contacts = mWorld->getLastCollisionResult().getNumContacts();
     ImGui::Text("Contacts last step: %zu", contacts);
-
-#if DART_HAVE_ODE
-    if (mConfig.useOdeCollision) {
-      ImGui::TextColored(
-          ImVec4(0.9f, 0.7f, 0.2f, 1.0f),
-          "ODE collision detector requested; requires "
-          "DART_BUILD_COLLISION_ODE.");
-    }
-#endif
   }
 
   void renderMimicTable()
@@ -530,6 +479,7 @@ int main(int argc, char* argv[])
     std::cerr << "Failed to load world from " << worldUri << "\n";
     return EXIT_FAILURE;
   }
+  world->setCollisionDetector(dart::simulation::CollisionDetectorType::Dart);
 
   retargetMimicsToBaseline(world, "pendulum_with_base");
   tintBases(world);

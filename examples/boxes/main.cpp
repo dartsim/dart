@@ -32,8 +32,6 @@
 
 #include <dart/gui/all.hpp>
 
-#include <dart/collision/bullet/All.hpp>
-
 #include <dart/all.hpp>
 
 #include <osgShadow/ShadowMap>
@@ -80,8 +78,8 @@ int main()
   // Create an empty world
   auto world = simulation::World::create();
 
-  // Set collision detector type
-  world->setCollisionDetector(collision::BulletCollisionDetector::create());
+  // Use the built-in DART collision detector.
+  world->setCollisionDetector(CollisionDetectorType::Dart);
 
   // Create dim x dim x dim boxes
   auto dim = 5;

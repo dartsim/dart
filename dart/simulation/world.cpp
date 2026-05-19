@@ -40,7 +40,6 @@
 
 #include "dart/collision/collision_detector.hpp"
 #include "dart/collision/collision_group.hpp"
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
 #include "dart/common/diagnostics.hpp"
 #include "dart/common/exception.hpp"
 #include "dart/common/logging.hpp"
@@ -70,23 +69,6 @@ namespace {
 using dart::collision::CollisionDetector;
 using dart::collision::CollisionDetectorPtr;
 
-void configureCollisionDetector(
-    const CollisionDetectorPtr& detector, const std::string& key)
-{
-  if (!detector) {
-    return;
-  }
-
-  if (key == "fcl") {
-    auto fclDetector
-        = std::dynamic_pointer_cast<collision::FCLCollisionDetector>(detector);
-    if (fclDetector) {
-      fclDetector->setPrimitiveShapeType(
-          collision::FCLCollisionDetector::PRIMITIVE);
-    }
-  }
-}
-
 std::string toCollisionDetectorKey(CollisionDetectorType type)
 {
   switch (type) {
@@ -98,12 +80,14 @@ std::string toCollisionDetectorKey(CollisionDetectorType type)
       return "bullet";
     case CollisionDetectorType::Ode:
       return "ode";
+    case CollisionDetectorType::Experimental:
+      return "experimental";
   }
 
   DART_FATAL(
       "Encountered unsupported CollisionDetectorType value: {}.",
       static_cast<int>(type));
-  return "fcl";
+  return "dart";
 }
 
 CollisionDetectorPtr tryCreateCollisionDetector(const std::string& requestedKey)
@@ -128,7 +112,6 @@ CollisionDetectorPtr tryCreateCollisionDetector(const std::string& requestedKey)
         key);
   }
 
-  configureCollisionDetector(detector, key);
   return detector;
 }
 
@@ -145,21 +128,35 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
     return detector;
   }
 
-  if (requestedType != CollisionDetectorType::Fcl) {
+  const auto tryFallback
+      = [&](CollisionDetectorType fallbackType) -> CollisionDetectorPtr {
+    if (requestedType == fallbackType) {
+      return nullptr;
+    }
+
+    const auto fallbackKey = toCollisionDetectorKey(fallbackType);
     DART_WARN(
         "WorldConfig requested collision detector '{}', but it is not "
-        "available. "
-        "Falling back to the default 'fcl' detector.",
-        requestedKey);
+        "available. Falling back to '{}'.",
+        requestedKey,
+        fallbackKey);
 
-    if (auto fallback
-        = tryCreateCollisionDetector(CollisionDetectorType::Fcl)) {
-      return fallback;
-    }
+    return tryCreateCollisionDetector(fallbackType);
+  };
+
+  // Fallback chain: requested -> dart -> experimental -> fcl
+  if (auto fallback = tryFallback(CollisionDetectorType::Dart)) {
+    return fallback;
+  }
+  if (auto fallback = tryFallback(CollisionDetectorType::Experimental)) {
+    return fallback;
+  }
+  if (auto fallback = tryFallback(CollisionDetectorType::Fcl)) {
+    return fallback;
   }
 
   DART_WARN(
-      "Collision detector '{}' is not available and fallback 'fcl' also "
+      "Collision detector '{}' is not available and fallbacks also "
       "failed. "
       "The world will keep its existing collision detector.",
       requestedKey);

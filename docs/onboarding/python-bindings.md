@@ -69,6 +69,15 @@ dartpy/
   `DARTPY_ENABLE_LEGACY_MODULES`.
 - `dartpy.simulation_experimental` is not promoted onto the top-level package
   and is not part of the legacy submodule compatibility layer.
+- Collision detector backend aliases are different: for the DART 7 native
+  collision transition, dartpy does not need to keep backward compatibility for
+  legacy `DARTCollisionDetector`, `FCLCollisionDetector`,
+  `BulletCollisionDetector`, or `OdeCollisionDetector` names. Prefer the clean
+  Python API: use `DartCollisionDetector` or the default detector, and do not
+  add compatibility shims for the old backend-specific spellings unless a
+  maintainer explicitly changes that policy. C++ keeps deprecated
+  native-backed facades for downstream source compatibility, but those names
+  should not be mirrored back into the Python API.
 
 **Source**: See `python/dartpy/` directory for module implementations
 

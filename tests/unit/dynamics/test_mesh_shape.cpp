@@ -86,20 +86,26 @@ class RecordingRetriever final : public common::ResourceRetriever
 public:
   bool exists(const common::Uri&) override
   {
+    ++existsCalls;
     return true;
   }
 
   common::ResourcePtr retrieve(const common::Uri&) override
   {
+    ++retrieveCalls;
     return nullptr;
   }
 
   std::string getFilePath(const common::Uri& uri) override
   {
+    ++getFilePathCalls;
     lastUri = uri.toString();
     return "/virtual/path/from/retriever";
   }
 
+  int existsCalls{0};
+  int retrieveCalls{0};
+  int getFilePathCalls{0};
   std::string lastUri;
 };
 
@@ -794,6 +800,20 @@ TEST(MeshShapeTest, TriMeshConstructorTracksUriMetadata)
 
   EXPECT_EQ(shape.getMeshUri(), fileUri.toString());
   EXPECT_EQ(shape.getMeshPath(), fileUri.getFilesystemPath());
+}
+
+TEST(MeshShapeTest, TriMeshConstructorSkipsMaterialLoadForEmptyUri)
+{
+  auto triMesh = createTetraMesh();
+  auto retriever = std::make_shared<RecordingRetriever>();
+
+  dynamics::MeshShape shape(Eigen::Vector3d::Ones(), triMesh, "", retriever);
+
+  EXPECT_TRUE(shape.getMeshPath().empty());
+  EXPECT_EQ(shape.getResourceRetriever(), retriever);
+  EXPECT_EQ(retriever->existsCalls, 0);
+  EXPECT_EQ(retriever->retrieveCalls, 0);
+  EXPECT_EQ(retriever->getFilePathCalls, 0);
 }
 
 TEST(MeshShapeTest, TriMeshConstructorPreservesMaterialsFromUri)

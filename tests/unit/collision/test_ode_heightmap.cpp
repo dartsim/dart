@@ -34,10 +34,11 @@
 
 #if DART_HAVE_ODE
 
+  #include <dart/test/reference_collision/ode/ode_collision_detector.hpp>
+
   #include <dart/collision/collision_group.hpp>
   #include <dart/collision/collision_option.hpp>
   #include <dart/collision/collision_result.hpp>
-  #include <dart/collision/ode/ode_collision_detector.hpp>
 
   #include <dart/dynamics/heightmap_shape.hpp>
   #include <dart/dynamics/simple_frame.hpp>
@@ -59,7 +60,7 @@ TEST(OdeHeightmap, CollisionCenteredInXY)
   using S = float;
   using Vector3 = Eigen::Matrix<S, 3, 1>;
 
-  auto ode = OdeCollisionDetector::create();
+  auto ode = OdeCollisionDetector::createReference();
   ASSERT_TRUE(ode);
 
   auto terrainFrame = SimpleFrame::createShared(Frame::World());

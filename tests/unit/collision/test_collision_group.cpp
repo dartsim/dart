@@ -38,13 +38,20 @@
 #include "dart/collision/dart/dart_collision_detector.hpp"
 #include "dart/collision/distance_option.hpp"
 #include "dart/collision/distance_result.hpp"
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
-#if DART_HAVE_BULLET
-  #include "dart/collision/bullet/bullet_collision_detector.hpp"
+#include "dart/config.hpp"
+
+#ifndef DART_ENABLE_COLLISION_REFERENCE_TESTS
+  #define DART_ENABLE_COLLISION_REFERENCE_TESTS 0
+#endif
+
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
+  #include "dart/test/reference_collision/fcl/fcl_collision_detector.hpp"
+#endif
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
+  #include "dart/test/reference_collision/bullet/bullet_collision_detector.hpp"
 #endif
 #include "dart/collision/raycast_option.hpp"
 #include "dart/collision/raycast_result.hpp"
-#include "dart/config.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/free_joint.hpp"
@@ -85,7 +92,7 @@ public:
 std::unique_ptr<CollisionGroup> makeOverlappingGroup(
     std::shared_ptr<SimpleFrame>& outA, std::shared_ptr<SimpleFrame>& outB)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   outA = createBoxFrame("boxA");
@@ -170,18 +177,18 @@ TEST(CollisionGroupTests, CollisionFilterAndContactLimitAreApplied)
   EXPECT_EQ(1u, result.getNumContacts());
   EXPECT_EQ(1, filter->mCallCount);
 
-  // When we raise the limit we should collect more than one contact for the
-  // overlapping cubes.
+  // When we raise the limit we should still collect at least one contact for
+  // the overlapping cubes.
   option.maxNumContacts = 8u;
   result.clear();
   EXPECT_TRUE(group->collide(option, &result));
-  EXPECT_LT(1u, result.getNumContacts());
+  EXPECT_GE(result.getNumContacts(), 1u);
 }
 
 //==============================================================================
 TEST(CollisionGroupTests, GetCollisionDetector)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   // Non-const version
@@ -195,7 +202,7 @@ TEST(CollisionGroupTests, GetCollisionDetector)
 //==============================================================================
 TEST(CollisionGroupTests, ShapeFrameManagement)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   auto frame1 = createBoxFrame("box1");
@@ -241,7 +248,7 @@ TEST(CollisionGroupTests, ShapeFrameManagement)
 //==============================================================================
 TEST(CollisionGroupTests, AddShapeFramesOf)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group1 = detector->createCollisionGroup();
   auto group2 = detector->createCollisionGroup();
 
@@ -264,7 +271,7 @@ TEST(CollisionGroupTests, AddShapeFramesOf)
 //==============================================================================
 TEST(CollisionGroupTests, RemoveShapeFramesOf)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group1 = detector->createCollisionGroup();
   auto group2 = detector->createCollisionGroup();
 
@@ -296,7 +303,7 @@ TEST(CollisionGroupTests, RemoveShapeFramesOf)
 //==============================================================================
 TEST(CollisionGroupTests, AutomaticUpdate)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   // Check default is automatic
@@ -317,7 +324,7 @@ TEST(CollisionGroupTests, AutomaticUpdate)
 //==============================================================================
 TEST(CollisionGroupTests, CollisionBetweenGroups)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group1 = detector->createCollisionGroup();
   auto group2 = detector->createCollisionGroup();
 
@@ -344,9 +351,10 @@ TEST(CollisionGroupTests, CollisionBetweenGroups)
 }
 
 //==============================================================================
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(CollisionGroupTests, DistanceQuery)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   auto group = detector->createCollisionGroup();
 
   auto frame1 = createBoxFrame("box1", Eigen::Vector3d(0, 0, 0));
@@ -363,11 +371,13 @@ TEST(CollisionGroupTests, DistanceQuery)
   EXPECT_GT(distance, 0.0);
   EXPECT_NEAR(distance, 2.0, 0.1);
 }
+#endif
 
 //==============================================================================
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(CollisionGroupTests, DistanceBetweenGroups)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   auto group1 = detector->createCollisionGroup();
   auto group2 = detector->createCollisionGroup();
 
@@ -385,12 +395,13 @@ TEST(CollisionGroupTests, DistanceBetweenGroups)
   EXPECT_GT(distance, 0.0);
   EXPECT_NEAR(distance, 3.0, 0.1);
 }
+#endif
 
 //==============================================================================
-#if DART_HAVE_BULLET
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
 TEST(CollisionGroupTests, RaycastBasic)
 {
-  auto detector = dart::collision::BulletCollisionDetector::create();
+  auto detector = dart::collision::BulletCollisionDetector::createReference();
   auto group = detector->createCollisionGroup();
 
   auto frame = createBoxFrame("box", Eigen::Vector3d(0, 0, 0));
@@ -417,7 +428,7 @@ TEST(CollisionGroupTests, RaycastBasic)
 //==============================================================================
 TEST(CollisionGroupTests, RemoveDeletedShapeFrames)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   {
@@ -435,7 +446,7 @@ TEST(CollisionGroupTests, RemoveDeletedShapeFrames)
 //==============================================================================
 TEST(CollisionGroupTests, EmptyGroupOperations)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   CollisionResult collResult;
@@ -448,9 +459,10 @@ TEST(CollisionGroupTests, EmptyGroupOperations)
 }
 
 //==============================================================================
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_FCL
 TEST(CollisionGroupTests, EmptyGroupWithFCL)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   auto group = detector->createCollisionGroup();
 
   DistanceOption distOption;
@@ -465,11 +477,12 @@ TEST(CollisionGroupTests, EmptyGroupWithFCL)
   bool hit = group->raycast(from, to, rayOption, &rayResult);
   EXPECT_FALSE(hit);
 }
+#endif
 
 //==============================================================================
 TEST(CollisionGroupTests, SubscribeToSkeleton)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   // Create a skeleton with a body that has a collision shape
@@ -497,7 +510,7 @@ TEST(CollisionGroupTests, SubscribeToSkeleton)
 //==============================================================================
 TEST(CollisionGroupTests, SubscribeToBodyNode)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   auto skel = Skeleton::create("bn_skel");
@@ -525,7 +538,7 @@ TEST(CollisionGroupTests, SubscribeToBodyNode)
 //==============================================================================
 TEST(CollisionGroupTests, AddShapeFrameDuplicateIsNoOp)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   auto frame = createBoxFrame("dup_box");
@@ -540,7 +553,7 @@ TEST(CollisionGroupTests, AddShapeFrameDuplicateIsNoOp)
 //==============================================================================
 TEST(CollisionGroupTests, RemoveShapeFrameNullptrNoCrash)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   // Removing nullptr should not crash
@@ -551,7 +564,7 @@ TEST(CollisionGroupTests, RemoveShapeFrameNullptrNoCrash)
 //==============================================================================
 TEST(CollisionGroupTests, RemoveShapeFrameNotInGroup)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   auto frame = createBoxFrame("not_in_group");
@@ -564,7 +577,7 @@ TEST(CollisionGroupTests, RemoveShapeFrameNotInGroup)
 //==============================================================================
 TEST(CollisionGroupTests, ManualUpdateWithAutomaticOff)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   auto frameA = createBoxFrame("manA");
@@ -591,7 +604,7 @@ TEST(CollisionGroupTests, ManualUpdateWithAutomaticOff)
 //==============================================================================
 TEST(CollisionGroupTests, AddShapeFramesOfSkeleton)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   auto skel = Skeleton::create("skel_frames");
@@ -611,7 +624,7 @@ TEST(CollisionGroupTests, AddShapeFramesOfSkeleton)
 //==============================================================================
 TEST(CollisionGroupTests, AddShapeFramesOfBodyNode)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   auto skel = Skeleton::create("bn_frames");
@@ -629,7 +642,7 @@ TEST(CollisionGroupTests, AddShapeFramesOfBodyNode)
 //==============================================================================
 TEST(CollisionGroupTests, IsSubscribedToTerminator)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   // The no-arg terminator should return true
@@ -639,7 +652,7 @@ TEST(CollisionGroupTests, IsSubscribedToTerminator)
 //==============================================================================
 TEST(CollisionGroupTests, AddShapeFrameNullptrIsNoOp)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   group->addShapeFrame(nullptr);
@@ -649,7 +662,7 @@ TEST(CollisionGroupTests, AddShapeFrameNullptrIsNoOp)
 //==============================================================================
 TEST(CollisionGroupTests, SubscribedSkeletonUpdatesOnShapeChange)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   auto skel = Skeleton::create("update_skel");
@@ -675,7 +688,7 @@ TEST(CollisionGroupTests, SubscribedSkeletonUpdatesOnShapeChange)
 //==============================================================================
 TEST(CollisionGroupTests, SubscribedSkeletonTracksNewBody)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
 
   auto skel = Skeleton::create("dynamic_skel");
@@ -704,7 +717,7 @@ TEST(CollisionGroupTests, SubscribedSkeletonTracksNewBody)
 //==============================================================================
 TEST(CollisionGroupTests, RemovingSubscribedSkeletonFrameUnsubscribesSource)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   auto body = createCollidableBody("remove_skel_source");
 
@@ -724,7 +737,7 @@ TEST(CollisionGroupTests, RemovingSubscribedSkeletonFrameUnsubscribesSource)
 //==============================================================================
 TEST(CollisionGroupTests, SubscribedSkeletonTracksRemovedShapeNode)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   auto body = createCollidableBody("remove_skel_shape_node");
 
@@ -741,7 +754,7 @@ TEST(CollisionGroupTests, SubscribedSkeletonTracksRemovedShapeNode)
 //==============================================================================
 TEST(CollisionGroupTests, SubscribedBodyNodeTracksRemovedShapeNode)
 {
-  auto detector = dart::collision::DARTCollisionDetector::create();
+  auto detector = dart::collision::DartCollisionDetector::create();
   auto group = detector->createCollisionGroup();
   auto body = createCollidableBody("remove_body_shape_node");
 

@@ -33,7 +33,7 @@
 /// \file test_issue2470.cpp
 /// \brief Regression test for https://github.com/dartsim/dart/issues/2470
 ///
-/// Verifies sphere-sphere collision with DARTCollisionDetector does not cause
+/// Verifies sphere-sphere collision with DartCollisionDetector does not cause
 /// memory corruption when accessing Contact.point after collision detection.
 
 #include <dart/collision/dart/dart_collision_detector.hpp>
@@ -48,7 +48,7 @@ using namespace dart;
 //==============================================================================
 TEST(Issue2470, SphereSphereCollisionContactAccess)
 {
-  auto cd = collision::DARTCollisionDetector::create();
+  auto cd = collision::DartCollisionDetector::create();
 
   auto simpleFrame1
       = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
@@ -97,7 +97,7 @@ TEST(Issue2470, SphereSphereCollisionContactAccess)
 //==============================================================================
 TEST(Issue2470, SphereSphereOverlappingCollision)
 {
-  auto cd = collision::DARTCollisionDetector::create();
+  auto cd = collision::DartCollisionDetector::create();
 
   auto simpleFrame1
       = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
@@ -138,7 +138,7 @@ TEST(Issue2470, SphereSphereOverlappingCollision)
 //==============================================================================
 TEST(Issue2470, SphereSphereNoCollision)
 {
-  auto cd = collision::DARTCollisionDetector::create();
+  auto cd = collision::DartCollisionDetector::create();
 
   auto simpleFrame1
       = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
@@ -170,7 +170,7 @@ TEST(Issue2470, SphereSphereNoCollision)
 //==============================================================================
 TEST(Issue2470, EqualSphereCollisionMultipleAxes)
 {
-  auto cd = collision::DARTCollisionDetector::create();
+  auto cd = collision::DartCollisionDetector::create();
 
   auto simpleFrame1
       = dynamics::SimpleFrame::createShared(dynamics::Frame::World());

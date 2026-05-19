@@ -37,12 +37,14 @@
 
 #if DART_HAVE_OCTOMAP
 
-  #include <dart/collision/fcl/backward_compatibility.hpp>
-
   #include <dart/dynamics/frame.hpp>
   #include <dart/dynamics/shape.hpp>
 
+  #include <dart/common/diagnostics.hpp>
+
+DART_SUPPRESS_CPP_WARNING_BEGIN
   #include <octomap/octomap.h>
+DART_SUPPRESS_CPP_WARNING_END
 
 namespace dart {
 namespace dynamics {

@@ -12,6 +12,8 @@
 #include <dart/collision/collision_object.hpp>
 #include <dart/collision/contact.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
+#include <dart/collision/native/persistent_manifold_cache.hpp>
+#include <dart/collision/ode/ode_collision_detector.hpp>
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
@@ -20,6 +22,8 @@
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/soft_mesh_shape.hpp>
+
+#include <dart/common/diagnostics.hpp>
 
 #include <gtest/gtest.h>
 
@@ -105,7 +109,7 @@ struct ContactFixture
 ContactFixture makeFixture(double friction, double restitution)
 {
   ContactFixture fixture;
-  fixture.detector = collision::DARTCollisionDetector::create();
+  fixture.detector = collision::DartCollisionDetector::create();
   fixture.softSkel = dynamics::Skeleton::create("soft");
   auto softPair = fixture.softSkel->createJointAndBodyNodePair<
       dynamics::FreeJoint,
@@ -352,7 +356,7 @@ TEST(SoftContactConstraint, CoefficientHelpers)
 TEST(SoftContactConstraint, ContactConstraintFrictionRestitutionPaths)
 {
   constexpr double timeStep = 0.001;
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto skelA = createBox(
@@ -704,7 +708,7 @@ TEST(SoftContactConstraint, PointMassImpulseBranches)
 TEST(SoftContactConstraint, SelfCollisionApplyUnitImpulsePath)
 {
   constexpr double timeStep = 0.001;
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto skel = dynamics::Skeleton::create("self");
@@ -781,7 +785,7 @@ TEST(SoftContactConstraint, RootSkeletonSelectionPaths)
   ExposedSoftContactConstraint softConstraint(softContact, timeStep);
   EXPECT_EQ(softConstraint.getRootSkeleton(), fixture.softSkel);
 
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   auto skelA = dynamics::Skeleton::create("rigidA");
   auto skelB = dynamics::Skeleton::create("rigidB");
   auto pairA = skelA->createJointAndBodyNodePair<dynamics::FreeJoint>();
@@ -1019,7 +1023,7 @@ TEST(SoftContactConstraint, WorldStepAfterClearingCollisionResult)
 TEST(ContactConstraint, FrictionlessRestitutionAndSurfaceMotion)
 {
   constexpr double timeStep = 0.01;
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA
@@ -1119,7 +1123,7 @@ TEST(ContactConstraint, FrictionlessRestitutionAndSurfaceMotion)
 TEST(ContactConstraint, SecondarySlipComplianceAffectsVelocityChange)
 {
   constexpr double timeStep = 0.01;
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA
@@ -1162,10 +1166,63 @@ TEST(ContactConstraint, SecondarySlipComplianceAffectsVelocityChange)
   EXPECT_GT(vel[2], 0.0);
 }
 
+TEST(ContactConstraint, NativeCacheUpdatesThroughCompatibilityFacade)
+{
+  constexpr double timeStep = 0.01;
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  auto detector = collision::OdeCollisionDetector::create();
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(detector, nullptr);
+  ASSERT_EQ("ode", detector->getType());
+
+  auto boxA
+      = createBox(Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d::Zero());
+  auto boxB = createBox(
+      Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.0, 0.0, 0.2));
+
+  auto* shapeA = boxA->getBodyNode(0)->getShapeNode(0);
+  auto* shapeB = boxB->getBodyNode(0)->getShapeNode(0);
+  ASSERT_NE(shapeA, nullptr);
+  ASSERT_NE(shapeB, nullptr);
+
+  TestCollisionObject objectA(detector.get(), shapeA);
+  TestCollisionObject objectB(detector.get(), shapeB);
+
+  collision::native::CachedContact cached;
+  collision::Contact contact;
+  contact.collisionObject1 = &objectA;
+  contact.collisionObject2 = &objectB;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.penetrationDepth = 0.02;
+  contact.triID1 = 0;
+  contact.triID2 = 0;
+  contact.userData = &cached;
+
+  constraint::ContactSurfaceParams params;
+  params.mPrimaryFrictionCoeff = 0.4;
+  params.mSecondaryFrictionCoeff = 0.2;
+  params.mFirstFrictionalDirection = Eigen::Vector3d::UnitX();
+
+  ExposedContactConstraint constraint(contact, timeStep, params);
+  constraint.update();
+  ASSERT_EQ(constraint.getDimension(), 3u);
+
+  std::vector<double> lambda = {0.7, -0.2, 0.1};
+  constraint.applyImpulse(lambda.data());
+
+  EXPECT_DOUBLE_EQ(lambda[0], contact.cachedNormalImpulse);
+  EXPECT_DOUBLE_EQ(lambda[1], contact.cachedFrictionImpulse1);
+  EXPECT_DOUBLE_EQ(lambda[2], contact.cachedFrictionImpulse2);
+  EXPECT_DOUBLE_EQ(lambda[0], cached.cachedNormalImpulse);
+  EXPECT_DOUBLE_EQ(lambda[1], cached.cachedFrictionImpulse1);
+  EXPECT_DOUBLE_EQ(lambda[2], cached.cachedFrictionImpulse2);
+}
+
 TEST(ContactConstraint, CustomSurfaceMaterialsParams)
 {
   constexpr double timeStep = 0.01;
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA

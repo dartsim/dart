@@ -2,14 +2,16 @@
 
 ## Summary
 
-- Goal: observe capsule-plane contact behavior with persistent manifolds.
-- Concepts/APIs: `collision::OdeCollisionDetector`, `dynamics::CapsuleShape`.
+- Goal: observe capsule-plane contact behavior with the built-in detector.
+- Concepts/APIs: `simulation::CollisionDetectorType::Dart`,
+  `dynamics::CapsuleShape`.
 - Expected output: a capsule resting on an infinite plane with a visible ground.
 - Controls: h/v reset pose; space clears velocities.
 
 ## Notes
 
-- Requires DART built with ODE collision (`DART_BUILD_COLLISION_ODE=ON`).
+- Uses DART's built-in collision detector; no reference collision backend is
+  required.
 
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.

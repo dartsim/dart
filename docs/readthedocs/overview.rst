@@ -38,7 +38,8 @@ General
 Collision Detection
 ~~~~~~~~~~~~~~~~~~~
 
-* Support for multiple collision detectors: FCL, Bullet, and ODE.
+* Built-in native collision detector for normal runtime use, with optional FCL,
+  Bullet, and ODE reference comparisons for tests and benchmarks.
 * Support for various collision shapes including primitive shapes, concave mesh, and probabilistic voxel grid.
 * Support for minimum distance computation.
 

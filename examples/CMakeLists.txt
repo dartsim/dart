@@ -69,3 +69,7 @@ if(DART_HAVE_OCTOMAP)
 endif()
 add_subdirectory(csv_logger)
 add_subdirectory(rerun)
+
+# Native collision visualization
+add_subdirectory(collision_viz)
+add_subdirectory(collision_sandbox)

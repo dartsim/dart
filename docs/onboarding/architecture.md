@@ -92,7 +92,8 @@ DART follows a **modular layered architecture** with clear separation of concern
 - **Factory Pattern**
   - `Factory.hpp` - Generic factory for creating objects by type string
   - `Singleton.hpp` - Singleton implementation
-  - Used for collision detector selection, constraint types, etc.
+  - Used for collision detector construction/compatibility aliases,
+    constraint types, etc.
 
 - **Composite Pattern**
   - `Composite.hpp` - Base for composable objects
@@ -218,18 +219,23 @@ selects solvers through the `math::LcpSolver` contract.
 **Core Architecture:**
 
 ```
-CollisionDetector (Factory)
-    ├── CollisionGroup (manages objects)
-    ├── CollisionObject (wraps shapes)
-    └── Contact (collision result)
+Public Collision API and compatibility facades
+    └── DartCollisionDetector adapter
+        ├── DartCollisionGroup persistent scene state
+        ├── CollisionObject / ShapeFrame adaptation
+        ├── Native geometry, broadphase, and query core
+        └── Contact / distance / raycast result assembly
 ```
 
 #### Key Classes:
 
 **1. CollisionDetector** (`dart/collision/CollisionDetector.hpp`)
 
-- Abstract base class for all collision engines
-- Factory pattern for runtime backend selection
+- Public DART collision query surface and detector factory
+- The canonical runtime detector key is `dart`
+- Legacy detector keys can remain as compatibility aliases, but normal runtime
+  construction should route to the built-in DART detector rather than selecting
+  FCL, Bullet, or ODE
 - Methods:
   - `createCollisionGroup()` - Create collision group
   - `collide(group1, group2, option, result)` - Collision detection
@@ -241,7 +247,9 @@ CollisionDetector (Factory)
 - Manages a collection of collision objects
 - Automatic tracking of BodyNodes/Skeletons
 - Observer pattern to track ShapeFrame destruction
-- Backend-specific implementations (FCL, Bullet, etc.)
+- The DART adapter group owns persistent native scene state, stable native IDs,
+  dirty transform/shape synchronization, deterministic result ordering, and
+  cache invalidation
 
 **3. Contact** (`dart/collision/Contact.hpp`)
 
@@ -254,7 +262,7 @@ CollisionDetector (Factory)
 
 **4. Supporting Classes:**
 
-- `CollisionObject` - Wraps backend collision geometry
+- `CollisionObject` - Connects DART shape frames to adapter/native scene state
 - `CollisionOption` - Query configuration (max contacts, filters)
 - `CollisionResult` - Stores all contacts from query
 - `DistanceOption/Result` - For distance queries
@@ -263,31 +271,83 @@ CollisionDetector (Factory)
 
 ---
 
-#### Collision Detection Backends:
+#### Built-In Detector And Reference Engines:
 
-DART supports **4 pluggable backends** via Strategy Pattern:
+DART's runtime collision path is the built-in detector. FCL, Bullet, and ODE
+are treated as optional reference engines for tests and benchmarks, plus
+temporary source-compatibility facades for downstream projects during
+migration.
 
-| Backend    | Directory | Purpose                    | Pros                                           | Cons                            |
-| ---------- | --------- | -------------------------- | ---------------------------------------------- | ------------------------------- |
-| **FCL**    | `fcl/`    | Flexible Collision Library | Fast, good broadphase (AABB tree), **default** | FCL bugs in contact computation |
-| **Bullet** | `bullet/` | Bullet Physics             | Robust, well-tested                            | Heavier dependency              |
-| **DART**   | `dart/`   | Native implementation      | No dependencies, lightweight                   | Limited features                |
-| **ODE**    | `ode/`    | Open Dynamics Engine       | Good for ODE integration                       | No distance queries             |
+| Layer                     | Directory / API                                                            | Runtime role                                                                  |
+| ------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Public DART API**       | `CollisionDetector`, groups, options                                       | Stable user-facing collision semantics                                        |
+| **Compatibility facades** | `fcl/`, `bullet/`, `ode/` public names                                     | Preserve source-compatible names while constructing/reporting built-in DART   |
+| **DART adapter**          | `dart/collision/dart/`                                                     | Shape/result/filter adaptation and persistent scene synchronization           |
+| **Native core**           | `dart/collision/native/`                                                   | Geometry, broadphase, narrowphase, distance, raycast, caches, and profiling   |
+| **Reference harnesses**   | `tests/dart/test/reference_collision/` and `dart-test-reference-*` targets | Optional correctness/performance comparison against FCL, Bullet, and ODE only |
 
-**Recommendation:** Use **FCL** with MESH mode and DART contact computation (default).
+**Default runtime:** The built-in DART detector is the default factory key
+(`"dart"`). Legacy keys such as `"experimental"` and retained FCL/Bullet/ODE
+names may exist during migration as compatibility aliases, but selecting them
+must still use the built-in detector in normal runtime builds. Any intentional
+call to an external engine belongs in explicit reference test/benchmark APIs
+and opt-in test-only reference targets.
 
-**Backend-specific implementations:**
+**Built-in component design:**
 
-- Each backend implements `CollisionDetector` and `CollisionGroup`
-- Factory registration allows runtime selection
-- Example: `FCLCollisionDetector`, `BulletCollisionDetector`
+- Public APIs expose DART collision semantics instead of backend-specific
+  knobs.
+- Compatibility facades carry no separate scene state; they delegate into the
+  DART adapter.
+- `DartCollisionGroup` owns persistent scene/query data so repeated collision,
+  distance, and raycast queries scale without rebuilding all native state.
+- The native core owns compact geometry, shape-specialized dispatch,
+  broadphase pruning, reusable scratch/cache lifetimes, contact persistence,
+  and profiler/benchmark labels.
+- FCL, Bullet, and ODE dependencies are optional and should be enabled only for
+  reference correctness tests and comparative benchmarks.
+
+**Native-readiness gates:**
+
+- Native must cover the DART collision feature surface previously supplied by
+  FCL, Bullet, and ODE, including primitive, convex, mesh, heightmap,
+  ellipsoid, cone, multi-sphere, soft mesh, voxel grid, collision filtering,
+  distance, raycast, and solver contact-manifold paths.
+- The durable feature/performance dashboard and row-level coverage matrix live
+  in `docs/plans/035-native-collision-dashboard.md` and
+  `docs/plans/035-native-collision/coverage-matrix.md`.
+- Native-vs-reference consistency tests remain the guardrail for contact sign,
+  normal direction, penetration depth, distance, nearest-point, and raycast
+  semantics when reference engines are available.
+- gz-physics compatibility is a release gate. Legacy detector names and
+  compatibility headers stay source-compatible while gz-physics still includes
+  or links against them, but those names must not select external engines in
+  normal runtime builds.
+- Default native builds must configure, build, test, and import through
+  `dartpy` with FCL, Bullet, and ODE disabled. Installed package exports should
+  include only the compatibility targets required for downstream packages that
+  still use `${DART_LIBRARIES}`.
+- Performance claims are evidence driven. The feature-level native-collision
+  pass must keep comparative benchmark/profiling guardrails for primitive,
+  narrow-phase, supported distance, raycast, batch-raycast, mesh-heavy, and
+  mixed-primitive workloads. Deeper optimization is a follow-up wave: first
+  single-CPU hot paths, then multi-core CPU parallelism, with GPU support as a
+  stretch goal.
+
+**Collision→Dynamics Dependency (Bridge Pattern):**
+
+- `dart/collision/` `.cpp` files have **zero** `dart/dynamics/` includes
+- Dynamics-dependent implementations (e.g., `getBodyNode()`, `addShapeFramesOf()`, shape adaptation) live in `dart/dynamics/detail/*_bridge.cpp`
+- This works because both modules compile into `libdart.so` via `dart_add_core_sources()`, so member functions can be defined in any `.cpp` within the same link target
+- Collision headers still use `dart/dynamics/fwd.hpp` forward declarations (acceptable interim)
 
 **Files:**
 
-- FCL: `dart/collision/fcl/FCLCollisionDetector.hpp`
-- Bullet: `dart/collision/bullet/BulletCollisionDetector.hpp`
-- DART: `dart/collision/dart/DARTCollisionDetector.hpp`
-- ODE: `dart/collision/ode/OdeCollisionDetector.hpp`
+- Public API and compatibility facades: `dart/collision/`
+- DART adapter: `dart/collision/dart/`
+- Native core: `dart/collision/native/`
+- Reference-only engines: `tests/dart/test/reference_collision/{fcl,bullet,ode}/`
+- Bridge files: `dart/dynamics/detail/*_bridge.cpp` (collision→dynamics glue)
 
 ---
 
@@ -750,13 +810,16 @@ DART employs numerous software design patterns throughout:
 
 ### 1. **Factory Pattern**
 
-- `CollisionDetector::Factory` - Create detectors by type string
+- `CollisionDetector::Factory` - Create the canonical `dart` detector and
+  compatibility aliases by type string
 - `constraint::ConstraintFactory` - Create constraints dynamically
-- Enables runtime polymorphism and plugin architectures
+- Enables runtime polymorphism without requiring multiple collision runtime
+  engines
 
 ### 2. **Strategy Pattern**
 
-- `CollisionDetector` - Different collision engines (FCL, Bullet, etc.)
+- `CollisionDetector` - Public collision-query interface around the built-in
+  DART adapter
 - `LcpSolver` (`dart/math/lcp`) - Pivoting vs projection solvers (Dantzig,
   Lemke, Pgs)
 - Allows swapping algorithms at runtime
@@ -934,9 +997,9 @@ CollisionDetector
 | Library                   | Purpose             | Usage                      |
 | ------------------------- | ------------------- | -------------------------- |
 | **Eigen**                 | Linear algebra      | Math operations throughout |
-| **FCL** (optional)        | Collision detection | Default collision backend  |
-| **Bullet** (optional)     | Collision detection | Alternative backend        |
-| **ODE** (optional)        | Collision/physics   | Alternative backend        |
+| **FCL** (optional)        | Collision detection | Reference engine           |
+| **Bullet** (optional)     | Collision detection | Reference engine           |
+| **ODE** (optional)        | Collision/physics   | Reference engine           |
 | **urdfdom** (optional)    | URDF parsing        | Robot model loading        |
 | **tinyxml2** (optional)   | XML parsing         | File I/O                   |
 | **OpenGL/OSG** (optional) | Visualization       | GUI applications           |
@@ -1003,14 +1066,15 @@ DART is a well-architected research-focused physics engine with:
 2. ✅ **Extensible** - Aspect system, factory pattern, plugin architecture
 3. ✅ **Efficient** - O(n) algorithms (ABA, RNEA), lazy evaluation
 4. ✅ **Accurate** - Featherstone's algorithms, constraint-based dynamics
-5. ✅ **Flexible** - Multiple collision backends, integrators, solvers
+5. ✅ **Focused** - Built-in collision stack with compatibility facades and
+   reference-only comparison engines
 6. ✅ **Well-tested** - Mature codebase with extensive testing
 7. ✅ **Standards-compliant** - Supports URDF, SDF robot models
 
 ### **Core Components:**
 
 - **Foundation:** Math, utilities, memory management, patterns
-- **Collision:** Pluggable detection (FCL, Bullet, ODE, native)
+- **Collision:** Built-in native detection with optional reference harnesses
 - **Dynamics:** Skeleton, BodyNode, Joint, efficient algorithms
 - **Constraints:** LCP-based contact resolution, joint limits, motors
 - **Simulation:** World container, time stepping, integration
@@ -1049,10 +1113,11 @@ This architecture makes DART suitable for:
 │   ├── math/                 # Mathematical utilities (includes math/optimization/)
 │   ├── lcpsolver/            # LCP solvers
 │   ├── collision/            # Collision detection
-│   │   ├── fcl/             # FCL backend
-│   │   ├── bullet/          # Bullet backend
-│   │   ├── dart/            # Native backend
-│   │   └── ode/             # ODE backend
+│   │   ├── dart/            # DART adapter for the built-in detector
+│   │   ├── native/          # Native geometry/query implementation
+│   │   ├── fcl/             # Compatibility facade
+│   │   ├── bullet/          # Compatibility facade
+│   │   └── ode/             # Compatibility facade
 │   ├── dynamics/             # Articulated body dynamics
 │   ├── constraint/           # Constraint solving
 │   ├── simulation/           # World and simulation loop / time stepping
@@ -1060,5 +1125,9 @@ This architecture makes DART suitable for:
 │   ├── optimizer/            # Deprecated headers forwarding to math/optimization
 │   └── gui/                  # Visualization (OSG, ImGui)
 ├── CMakeLists.txt            # Build configuration
+├── tests/dart/test/reference_collision/
+│   ├── fcl/                  # Test-only FCL reference harness
+│   ├── bullet/               # Test-only Bullet reference harness
+│   └── ode/                  # Test-only ODE reference harness
 └── README.md                 # Project overview
 ```

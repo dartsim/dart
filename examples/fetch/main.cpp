@@ -38,8 +38,6 @@
 
 #include <dart/utils/All.hpp>
 
-#include <dart/collision/bullet/All.hpp>
-
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
@@ -174,7 +172,7 @@ int main(int argc, char* argv[])
   auto world = dart::io::readWorld(
       "dart://sample/mjcf/openai/robotics/fetch/pick_and_place.xml");
   DART_ASSERT(world);
-  world->setCollisionDetector(CollisionDetectorType::Bullet);
+  world->setCollisionDetector(CollisionDetectorType::Dart);
 
   // Get Fetch robot and set properties
   auto robot = world->getSkeleton("robot0:base_link");

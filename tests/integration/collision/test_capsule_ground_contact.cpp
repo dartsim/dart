@@ -36,8 +36,8 @@
 
 #include <dart/constraint/constraint_solver.hpp>
 
-#include <dart/collision/bullet/bullet_collision_detector.hpp>
-#include <dart/collision/ode/ode_collision_detector.hpp>
+#include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
+#include <dart/test/reference_collision/ode/ode_collision_detector.hpp>
 
 #include <dart/dynamics/capsule_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -110,12 +110,12 @@ void runCapsuleGroundContactTest(const DetectorFactory& factory)
 TEST(Issue1654, BulletCapsuleGroundContact)
 {
   runCapsuleGroundContactTest(
-      [] { return dart::collision::BulletCollisionDetector::create(); });
+      [] { return dart::collision::BulletCollisionDetector::createReference(); });
 }
 
 //==============================================================================
 TEST(Issue1654, ODECapsuleGroundContact)
 {
   runCapsuleGroundContactTest(
-      [] { return dart::collision::OdeCollisionDetector::create(); });
+      [] { return dart::collision::OdeCollisionDetector::createReference(); });
 }

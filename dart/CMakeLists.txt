@@ -34,8 +34,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
 # dart - common, math (including math/optimization), lcpsolver, dynamics,
-#        collision (fcl + optional Bullet/ODE), constraint, simulation, sensor, utils,
-#        gui, [assimp, eigen3, fcl, fmt]
+#        collision (native with legacy FCL/Bullet/ODE facades), constraint, simulation,
+#        sensor, utils, gui, [assimp, eigen3, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
 # dart-gui - {dart-utils}, gui, gui/render, [openscenegraph]
@@ -47,19 +47,29 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # utils - (dart), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
 # gui - (utils), {dart-gui}
-# collision-bullet - (dart), {dart} [compat]
-# collision-ode - (dart), {dart} [compat]
+# collision-fcl - (dart), {dart-collision-fcl}
+# collision-bullet - (dart), {dart-collision-bullet}
+# collision-ode - (dart), {dart-collision-ode}
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
+add_component(${PROJECT_NAME} collision-fcl)
+add_component(${PROJECT_NAME} collision-bullet)
+add_component(${PROJECT_NAME} collision-ode)
 
-if(DART_BUILD_COLLISION_BULLET)
-  add_component(${PROJECT_NAME} collision-bullet)
-endif()
-
-if(DART_BUILD_COLLISION_ODE)
-  add_component(${PROJECT_NAME} collision-ode)
-endif()
+function(dart_remove_stale_legacy_collision_artifacts component)
+  # These components are now interface facades. Clean old shared/static
+  # artifacts from reused build directories so package/link audits see the
+  # current target graph instead of stale pre-facade libraries.
+  file(GLOB stale_legacy_collision_artifacts
+    "${DART_BINARY_DIR}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}dart-collision-${component}${CMAKE_SHARED_LIBRARY_SUFFIX}*"
+    "${DART_BINARY_DIR}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}dart-collision-${component}${CMAKE_STATIC_LIBRARY_SUFFIX}"
+    "${DART_BINARY_DIR}/bin/${CMAKE_SHARED_LIBRARY_PREFIX}dart-collision-${component}${CMAKE_SHARED_LIBRARY_SUFFIX}*"
+    "${DART_BINARY_DIR}/bin/${CMAKE_IMPORT_LIBRARY_PREFIX}dart-collision-${component}${CMAKE_IMPORT_LIBRARY_SUFFIX}"
+    "${DART_BINARY_DIR}/dart/collision/${component}/CMakeFiles/Export/*/dart_collision-${component}Targets*.cmake"
+  )
+  file(REMOVE ${stale_legacy_collision_artifacts})
+endfunction()
 
 function(dart_add_core_headers)
   dart_property_add(DART_CORE_HEADERS ${ARGN})
@@ -147,7 +157,6 @@ target_link_libraries(
   PUBLIC
     ${CMAKE_DL_LIBS}
     Eigen3::Eigen
-    fcl
     assimp
 )
 
@@ -267,7 +276,7 @@ endif()
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependency_packages(${PROJECT_NAME} dart
-  assimp Eigen3 fcl fmt
+  assimp Eigen3 fmt
 )
 if(TARGET octomap)
   add_component_dependency_packages(${PROJECT_NAME} dart octomap)
@@ -275,30 +284,33 @@ endif()
 if(spdlog_FOUND)
   add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
 endif()
+# Component dependencies do not create linker edges; libdart instantiates native
+# collision types directly and must carry this dependency itself.
+target_link_libraries(dart PUBLIC ${PROJECT_NAME}-collision-native)
+dart_pkgconfig_append_libraries("-l${PROJECT_NAME}-collision-native")
+add_component_dependencies(${PROJECT_NAME} dart collision-native)
 
-if(DART_BUILD_COLLISION_BULLET)
-  add_library(dart-collision-bullet INTERFACE)
-  target_link_libraries(dart-collision-bullet INTERFACE dart)
-  set_target_properties(
-    dart-collision-bullet PROPERTIES
-      DEPRECATION
-        "DART CMake component 'collision-bullet' is a deprecated stub in DART 7 and will be removed in DART 8; stop requesting it and depend on component 'dart' instead."
-  )
-  add_component_targets(${PROJECT_NAME} collision-bullet dart-collision-bullet)
-  add_component_dependencies(${PROJECT_NAME} collision-bullet dart)
-endif()
-
-if(DART_BUILD_COLLISION_ODE)
-  add_library(dart-collision-ode INTERFACE)
-  target_link_libraries(dart-collision-ode INTERFACE dart)
-  set_target_properties(
-    dart-collision-ode PROPERTIES
-      DEPRECATION
-        "DART CMake component 'collision-ode' is a deprecated stub in DART 7 and will be removed in DART 8; stop requesting it and depend on component 'dart' instead."
-  )
-  add_component_targets(${PROJECT_NAME} collision-ode dart-collision-ode)
-  add_component_dependencies(${PROJECT_NAME} collision-ode dart)
-endif()
+# Legacy collision component names are compatibility facades. They no longer
+# select external runtime backends; linking any of these components gives
+# downstream projects the canonical built-in DART collision stack.
+foreach(_dart_legacy_collision_component fcl bullet ode)
+  set(_dart_legacy_collision_target
+    "${PROJECT_NAME}-collision-${_dart_legacy_collision_component}")
+  add_library(${_dart_legacy_collision_target} INTERFACE)
+  target_link_libraries(${_dart_legacy_collision_target} INTERFACE dart)
+  add_component_targets(
+    ${PROJECT_NAME}
+    collision-${_dart_legacy_collision_component}
+    ${_dart_legacy_collision_target})
+  add_component_dependencies(
+    ${PROJECT_NAME}
+    collision-${_dart_legacy_collision_component}
+    dart)
+  dart_remove_stale_legacy_collision_artifacts(
+    ${_dart_legacy_collision_component})
+endforeach()
+unset(_dart_legacy_collision_component)
+unset(_dart_legacy_collision_target)
 
 if(MSVC)
   set_target_properties(

@@ -37,8 +37,6 @@
 #include <dart/config.hpp>
 #include <dart/gui/all.hpp>
 #include <dart/utils/All.hpp>
-#include <dart/collision/bullet/All.hpp>
-#include <dart/collision/ode/ode.hpp>
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
@@ -130,6 +128,7 @@ int main()
       dart::config::dataPath("skel/kima/kima_human_edited.skel"));
   WorldPtr world = dart::io::readWorld(worldUri);
   DART_ASSERT(world != nullptr);
+  world->setCollisionDetector(CollisionDetectorType::Dart);
 
   auto skel = world->getSkeleton("human");
   skel->eachJoint([](dart::dynamics::Joint* joint) {
