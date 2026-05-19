@@ -202,9 +202,15 @@ void SimpleViewer::setupHeadlessViewer()
 {
   ::vsg::Names instanceExtensions;
   ::vsg::Names requestedLayers;
+  if (::vsg::isExtensionSupported(
+          VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)) {
+    instanceExtensions.push_back(
+        VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+  }
   auto validatedNames = ::vsg::validateInstanceLayerNames(requestedLayers);
 
-  auto instance = ::vsg::Instance::create(instanceExtensions, validatedNames);
+  auto instance = ::vsg::Instance::create(
+      instanceExtensions, validatedNames, VK_API_VERSION_1_1);
   auto [physicalDevice, queueFamily]
       = instance->getPhysicalDeviceAndQueueFamily(VK_QUEUE_GRAPHICS_BIT);
 
@@ -216,6 +222,10 @@ void SimpleViewer::setupHeadlessViewer()
   m_queueFamily = queueFamily;
 
   ::vsg::Names deviceExtensions;
+  if (physicalDevice->supportsDeviceExtension(
+          VK_EXT_MEMORY_BUDGET_EXTENSION_NAME)) {
+    deviceExtensions.push_back(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+  }
   ::vsg::QueueSettings queueSettings{::vsg::QueueSetting{queueFamily, {1.0}}};
 
   auto deviceFeatures = ::vsg::DeviceFeatures::create();
@@ -289,16 +299,18 @@ void SimpleViewer::compile()
   if (m_headless) {
     auto renderGraph = ::vsg::RenderGraph::create();
     renderGraph->framebuffer = m_framebuffer;
+    renderGraph->renderPass = m_framebuffer->getRenderPass();
     renderGraph->renderArea.offset = {0, 0};
     renderGraph->renderArea.extent = VkExtent2D{
         static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height)};
+    renderGraph->viewportState = m_camera->viewportState;
 
     VkClearColorValue clearColor{
         {static_cast<float>(m_backgroundColor.x()),
          static_cast<float>(m_backgroundColor.y()),
          static_cast<float>(m_backgroundColor.z()),
          static_cast<float>(m_backgroundColor.w())}};
-    renderGraph->setClearValues(clearColor, VkClearDepthStencilValue{1.0f, 0});
+    renderGraph->setClearValues(clearColor, VkClearDepthStencilValue{0.0f, 0});
 
     auto view = ::vsg::View::create(m_camera, m_root);
     view->addChild(::vsg::createHeadlight());
@@ -306,16 +318,25 @@ void SimpleViewer::compile()
 
     m_commandGraph = ::vsg::CommandGraph::create(
         m_device, static_cast<uint32_t>(m_queueFamily));
+    m_commandGraph->framebuffer = m_framebuffer;
     m_commandGraph->addChild(renderGraph);
 
     m_viewer->assignRecordAndSubmitTaskAndPresentation({m_commandGraph});
-    m_viewer->compile();
+    auto compileResult = m_viewer->compile();
+    if (!compileResult) {
+      throw std::runtime_error(
+          "Failed to compile headless VSG viewer: " + compileResult.message);
+    }
   } else {
     auto commandGraph = ::vsg::createCommandGraphForView(
         m_window, m_camera, m_root, VK_SUBPASS_CONTENTS_INLINE, true);
 
     m_viewer->assignRecordAndSubmitTaskAndPresentation({commandGraph});
-    m_viewer->compile();
+    auto compileResult = m_viewer->compile();
+    if (!compileResult) {
+      throw std::runtime_error(
+          "Failed to compile VSG viewer: " + compileResult.message);
+    }
   }
 
   m_needsCompile = false;
@@ -447,6 +468,7 @@ std::vector<uint8_t> SimpleViewer::captureBuffer()
   if (!frame()) {
     return {};
   }
+  m_viewer->waitForFences(0, 1000000000);
 
   ::vsg::ref_ptr<::vsg::Device> device;
   ::vsg::ref_ptr<::vsg::PhysicalDevice> physicalDevice;
@@ -460,7 +482,7 @@ std::vector<uint8_t> SimpleViewer::captureBuffer()
 
   if (m_headless) {
     device = m_device;
-    physicalDevice = device->getInstance()->getPhysicalDevice(0);
+    physicalDevice = device->getPhysicalDevice();
     sourceImage = m_colorImageView->image;
     sourceImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
     width = static_cast<uint32_t>(m_width);
