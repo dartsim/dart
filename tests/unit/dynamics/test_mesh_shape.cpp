@@ -1,5 +1,7 @@
 #include "dart/common/diagnostics.hpp"
 
+#include <dart/dynamics/detail/assimp_input_resource_adaptor.hpp>
+
 #include <dart/all.hpp>
 
 #include <Eigen/Core>
@@ -482,7 +484,11 @@ public:
 class MeshHandleHarness final : public dynamics::MeshShape
 {
 public:
+  using dynamics::MeshShape::collectSubMeshRanges;
+  using dynamics::MeshShape::convertAssimpMesh;
+  using dynamics::MeshShape::makeMeshHandle;
   using dynamics::MeshShape::MeshShape;
+  using dynamics::MeshShape::SubMeshRange;
 
   MeshHandle& meshHandle()
   {
@@ -507,6 +513,11 @@ public:
   void clearTriMesh()
   {
     mTriMesh.reset();
+  }
+
+  aiScene* callCloneMesh() const
+  {
+    return cloneMesh();
   }
 };
 
@@ -1917,6 +1928,50 @@ TEST(MeshShapeTest, MeshHandleAccessorsAndOwnership)
   shape.meshHandle().reset();
 }
 
+TEST(MeshShapeTest, NullScenePathsClearMeshState)
+{
+  std::vector<MeshHandleHarness::SubMeshRange> ranges;
+  EXPECT_FALSE(
+      MeshHandleHarness::collectSubMeshRanges(nullptr, ranges, 0u, 0u));
+  EXPECT_TRUE(ranges.empty());
+  EXPECT_EQ(MeshHandleHarness::convertAssimpMesh(nullptr), nullptr);
+
+  const auto nullHandle = MeshHandleHarness::makeMeshHandle(
+      nullptr, dynamics::MeshShape::MeshOwnership::Imported);
+  EXPECT_EQ(nullHandle, nullptr);
+
+  auto* externalScene = new aiScene();
+  const auto externalHandle = MeshHandleHarness::makeMeshHandle(
+      externalScene, dynamics::MeshShape::MeshOwnership::None);
+  EXPECT_EQ(externalHandle.get(), externalScene);
+  delete externalScene;
+
+  MeshHandleHarness shape(
+      Eigen::Vector3d::Ones(), createTetraMesh(), common::Uri());
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  shape.setMesh(
+      nullptr,
+      dynamics::MeshShape::MeshOwnership::Imported,
+      common::Uri(),
+      nullptr);
+  DART_SUPPRESS_DEPRECATED_END
+
+  EXPECT_EQ(shape.getTriMesh(), nullptr);
+  EXPECT_TRUE(shape.getMeshUri().empty());
+  EXPECT_TRUE(shape.getMeshPath().empty());
+  EXPECT_TRUE(shape.getTextureCoords().empty());
+  EXPECT_EQ(shape.getTextureCoordComponents(), 0);
+  EXPECT_TRUE(shape.getSubMeshRanges().empty());
+  EXPECT_EQ(shape.callCloneMesh(), nullptr);
+
+  const std::string filePath = dart::config::dataPath("obj/BoxSmall.obj");
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  const aiScene* fileScene = dynamics::MeshShape::loadMesh(filePath);
+  DART_SUPPRESS_DEPRECATED_END
+  ASSERT_NE(fileScene, nullptr);
+  aiReleaseImport(const_cast<aiScene*>(fileScene));
+}
+
 TEST(MeshShapeTest, GetTriMeshUsesCachedScene)
 {
   const std::string objData
@@ -2209,6 +2264,56 @@ TEST(MeshShapeTest, LoadMeshFromMemoryResourceWithPathResolution)
   ASSERT_FALSE(shape.getMaterials().empty());
   const auto* material = shape.getMaterial(0u);
   ASSERT_NE(material, nullptr);
+}
+
+TEST(MeshShapeTest, AssimpInputResourceAdaptorDirectIO)
+{
+  std::unordered_map<std::string, std::string> data;
+  data.emplace("mesh.obj", "abcdef");
+  auto retriever = std::make_shared<StringResourceRetriever>(std::move(data));
+  dynamics::AssimpInputResourceRetrieverAdaptor io(retriever);
+
+  EXPECT_TRUE(io.Exists("mesh.obj"));
+  EXPECT_FALSE(io.Exists("missing.obj"));
+  EXPECT_EQ(io.getOsSeparator(), '/');
+  EXPECT_EQ(io.Open("mesh.obj", "w"), nullptr);
+  EXPECT_EQ(io.Open("missing.obj", "rb"), nullptr);
+
+  Assimp::IOStream* stream = io.Open("mesh.obj", "rb");
+  ASSERT_NE(stream, nullptr);
+
+  char buffer[4] = {};
+  EXPECT_EQ(stream->Read(buffer, 1u, 3u), 3u);
+  EXPECT_EQ(std::string(buffer, 3), "abc");
+  EXPECT_EQ(stream->Tell(), 3u);
+  EXPECT_EQ(stream->FileSize(), 6u);
+  EXPECT_EQ(stream->Seek(0u, aiOrigin_SET), aiReturn_SUCCESS);
+  EXPECT_EQ(stream->Tell(), 0u);
+  EXPECT_EQ(stream->Seek(2u, aiOrigin_CUR), aiReturn_SUCCESS);
+  EXPECT_EQ(stream->Tell(), 2u);
+  EXPECT_EQ(stream->Seek(0u, aiOrigin_END), aiReturn_SUCCESS);
+  EXPECT_EQ(stream->Tell(), 6u);
+  EXPECT_EQ(stream->Seek(100u, aiOrigin_SET), aiReturn_FAILURE);
+  EXPECT_EQ(stream->Seek(0u, static_cast<aiOrigin>(999)), aiReturn_FAILURE);
+  EXPECT_EQ(stream->Write(buffer, 1u, 1u), 0u);
+  stream->Flush();
+  io.Close(stream);
+  io.Close(nullptr);
+
+  aiFileIO fileIO = dynamics::createFileIO(&io);
+  aiFile* file = fileIO.OpenProc(&fileIO, "mesh.obj", "rb");
+  ASSERT_NE(file, nullptr);
+  char callbackBuffer[2] = {};
+  EXPECT_EQ(file->ReadProc(file, callbackBuffer, 1u, 2u), 2u);
+  EXPECT_EQ(std::string(callbackBuffer, 2), "ab");
+  EXPECT_EQ(file->TellProc(file), 2u);
+  EXPECT_EQ(file->SeekProc(file, 0u, aiOrigin_SET), aiReturn_SUCCESS);
+  EXPECT_EQ(file->FileSizeProc(file), 6u);
+  EXPECT_EQ(file->WriteProc(file, callbackBuffer, 1u, 1u), 0u);
+  file->FlushProc(file);
+  fileIO.CloseProc(&fileIO, file);
+
+  EXPECT_EQ(fileIO.OpenProc(&fileIO, "missing.obj", "rb"), nullptr);
 }
 
 TEST(MeshShapeTest, LoadMeshFromCustomUriWithMaterial)

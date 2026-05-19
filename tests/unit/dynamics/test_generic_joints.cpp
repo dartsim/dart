@@ -1535,6 +1535,72 @@ TEST(EulerJoint, ConstOverloads)
 }
 
 //==============================================================================
+TEST(PrismaticJoint, CopyPropertiesAndAxisNoOpPaths)
+{
+  auto skel = createSkeletonWithJoint<PrismaticJoint>("prismatic_copy");
+  auto* joint = getJoint<PrismaticJoint>(skel);
+
+  EXPECT_EQ(joint->getType(), PrismaticJoint::getStaticType());
+  EXPECT_FALSE(joint->isCyclic(0));
+
+  const Eigen::Vector3d axis = Eigen::Vector3d::UnitY();
+  joint->setAxis(axis);
+  joint->setAxis(axis);
+  EXPECT_TRUE(joint->getAxis().isApprox(axis));
+
+  auto props = joint->getPrismaticJointProperties();
+  props.mAxis = Eigen::Vector3d::UnitZ();
+  joint->setProperties(props);
+  EXPECT_TRUE(joint->getAxis().isApprox(Eigen::Vector3d::UnitZ()));
+  joint->setProperties(
+      static_cast<const PrismaticJoint::UniqueProperties&>(props));
+
+  joint->copy(*joint);
+  joint->copy(static_cast<const PrismaticJoint*>(nullptr));
+  *joint = *joint;
+
+  auto otherSkel = createSkeletonWithJoint<PrismaticJoint>("prismatic_other");
+  auto* other = getJoint<PrismaticJoint>(otherSkel);
+  other->setAxis(Eigen::Vector3d::UnitX());
+  joint->copy(other);
+  EXPECT_TRUE(joint->getAxis().isApprox(Eigen::Vector3d::UnitX()));
+}
+
+//==============================================================================
+TEST(EulerJoint, CopyPropertiesAndInvalidStaticConversion)
+{
+  auto skel = createSkeletonWithJoint<EulerJoint>("euler_copy");
+  auto* joint = getJoint<EulerJoint>(skel);
+
+  EXPECT_EQ(joint->getType(), EulerJoint::getStaticType());
+  EXPECT_TRUE(joint->isCyclic(0));
+
+  joint->setAxisOrder(EulerJoint::AxisOrder::XYZ, false);
+  EXPECT_EQ(joint->getAxisOrder(), EulerJoint::AxisOrder::XYZ);
+  joint->setAxisOrder(EulerJoint::AxisOrder::ZYX, true);
+  EXPECT_EQ(joint->getAxisOrder(), EulerJoint::AxisOrder::ZYX);
+
+  auto props = joint->getEulerJointProperties();
+  props.mAxisOrder = EulerJoint::AxisOrder::XYZ;
+  joint->setProperties(props);
+  EXPECT_EQ(joint->getAxisOrder(), EulerJoint::AxisOrder::XYZ);
+
+  joint->copy(*joint);
+  joint->copy(static_cast<const EulerJoint*>(nullptr));
+  *joint = *joint;
+
+  auto otherSkel = createSkeletonWithJoint<EulerJoint>("euler_other");
+  auto* other = getJoint<EulerJoint>(otherSkel);
+  other->setAxisOrder(EulerJoint::AxisOrder::ZYX, true);
+  joint->copy(other);
+  EXPECT_EQ(joint->getAxisOrder(), EulerJoint::AxisOrder::ZYX);
+
+  const auto identity = EulerJoint::convertToRotation(
+      Eigen::Vector3d::Ones(), static_cast<EulerJoint::AxisOrder>(999));
+  EXPECT_TRUE(identity.isApprox(Eigen::Matrix3d::Identity()));
+}
+
+//==============================================================================
 TEST(ScrewJoint, PropertiesAndConstAccess)
 {
   auto skel = Skeleton::create("screw_props");
