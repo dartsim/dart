@@ -31,6 +31,11 @@ else()
   list(APPEND link_libraries dart-imgui-lib)
 endif()
 
+if(APPLE)
+  find_library(DART_GUI_FOUNDATION_FRAMEWORK Foundation REQUIRED)
+  list(APPEND link_libraries "${DART_GUI_FOUNDATION_FRAMEWORK}")
+endif()
+
 # Search all header and source files
 file(GLOB hdrs "*.hpp")
 file(GLOB srcs "*.cpp")
