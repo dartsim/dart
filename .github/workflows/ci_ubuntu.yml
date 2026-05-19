@@ -518,6 +518,12 @@ jobs:
           BUILD_TYPE=Release \
           DART_BUILD_GUI_VSG_OVERRIDE=ON \
           pixi run build
+          pixi run cmake --build build/default/cpp/Release \
+            --parallel ${DART_PARALLEL_JOBS:-$(nproc)} \
+            --target UNIT_gui_vsg_geometry_builders \
+            --target UNIT_gui_vsg_debug_draw \
+            --target UNIT_gui_vsg_simple_viewer \
+            --target UNIT_gui_vsg_collision_scene_builder
 
       - name: Run VSG unit tests
         run: |
