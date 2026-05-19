@@ -2470,9 +2470,7 @@ function(dart_add_simulation_benchmark BENCHMARK_NAME BENCHMARK_PATH)
   endif()
 
   if(NOT DART_EXPERIMENTAL_BUILD_BENCHMARKS)
-    if(NOT TARGET benchmark::benchmark)
-      return()
-    endif()
+    return()
   endif()
 
   add_executable(${BENCHMARK_NAME} ${BENCHMARK_PATH})
