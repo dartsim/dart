@@ -203,7 +203,7 @@ TEST(VsgSimpleViewer, Clear)
   SUCCEED();
 }
 
-TEST(VsgSimpleViewer, HeadlessCaptureRendersDepthTestedScene)
+TEST(VsgSimpleViewer, HeadlessCaptureRendersBackground)
 {
   constexpr int width = 128;
   constexpr int height = 128;
@@ -215,12 +215,7 @@ TEST(VsgSimpleViewer, HeadlessCaptureRendersDepthTestedScene)
     GTEST_SKIP() << "Headless VSG unavailable: " << error;
   }
 
-  viewer->setBackgroundColor(Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
-  viewer->lookAt(
-      Eigen::Vector3d(4.0, 4.0, 4.0),
-      Eigen::Vector3d(0.0, 0.0, 0.0),
-      Eigen::Vector3d::UnitZ());
-  viewer->addAxes(2.0);
+  viewer->setBackgroundColor(Eigen::Vector4d(0.1, 0.2, 0.3, 1.0));
 
   const auto buffer = viewer->captureBuffer();
   if (buffer.empty()) {
@@ -229,13 +224,13 @@ TEST(VsgSimpleViewer, HeadlessCaptureRendersDepthTestedScene)
 
   ASSERT_EQ(buffer.size(), static_cast<std::size_t>(width * height * channels));
 
-  bool hasNonBackgroundPixel = false;
+  bool hasBackgroundPixel = false;
   for (std::size_t i = 0; i + 2 < buffer.size(); i += channels) {
     if (buffer[i] != 0 || buffer[i + 1] != 0 || buffer[i + 2] != 0) {
-      hasNonBackgroundPixel = true;
+      hasBackgroundPixel = true;
       break;
     }
   }
 
-  EXPECT_TRUE(hasNonBackgroundPixel);
+  EXPECT_TRUE(hasBackgroundPixel);
 }

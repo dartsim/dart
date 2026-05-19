@@ -14,6 +14,7 @@ set(
   header_names
   ${header_names}
   dart/All.hpp
+  fcl/All.hpp
 )
 set(collision_source_headers
   ${hdrs}
