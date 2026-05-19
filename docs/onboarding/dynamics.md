@@ -15,6 +15,25 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
 
 ## Core Dynamics Classes
 
+### Algorithm-Centric Articulated Dynamics
+
+RNEA and ABA traversal control flow lives in an internal algorithm layer that
+operates through `SkeletonDynamicsView`, an adapter over the existing
+`Skeleton`, `BodyNode`, and `Joint` pass kernels. Public `Skeleton` dynamics
+entry points dispatch through this internal layer, so traversal order is not
+duplicated across classes. The adapter keeps existing dirty caches and
+soft-body overrides in the object-backed path while exposing indexed phases
+that can be reused by future packed, cache-friendly, or SIMD-ready model
+layouts.
+
+Correctness and performance are evidence requirements for this layer. Unit
+tests compare direct and batched ABA/RNEA adapter execution against explicit
+legacy-recursion references and zero-DoF paths. The `bm_dynamics_cache`
+legacy-reference, direct, uniform-batch, and heterogeneous-batch ABA/RNEA
+benchmarks are the required local evidence before claiming a workload-specific
+performance win or migrating more algorithms onto the abstraction. Extend the
+adapter vocabulary before exposing new public `BodyNode` or `Joint` API.
+
 ### 1. Skeleton (`Skeleton.hpp`)
 
 **File Path:** `dart/dynamics/Skeleton.hpp`

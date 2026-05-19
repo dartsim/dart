@@ -230,6 +230,10 @@ dart_add_test("unit" UNIT_dynamics_SkeletonClone dynamics/test_skeleton_clone.cp
 dart_add_test("unit" UNIT_dynamics_SkeletonAccessors dynamics/test_skeleton_accessors.cpp)
 dart_add_test("unit" UNIT_dynamics_SkeletonProperties dynamics/test_skeleton_properties.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodeProperties dynamics/test_body_node_properties.cpp)
+dart_add_test(
+  "unit"
+  UNIT_dynamics_ArticulatedDynamicsAlgorithms
+  dynamics/test_articulated_dynamics_algorithms.cpp)
 dart_add_test("unit" UNIT_dynamics_BasicNodeManager dynamics/test_basic_node_manager.cpp)
 dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_noexcept.cpp)
 dart_add_test(
