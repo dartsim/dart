@@ -30,18 +30,19 @@ def test_basic_functionality():
     try:
         import dartpy as dart
 
-        # Test creating a world
+        # Exercise the DART 7 first-simulation surface without relying on
+        # sample assets being present in the installed package.
         world = dart.World()
         print(f"✓ Created World: {world}")
 
-        # Test creating a skeleton
-        skel = dart.dynamics.Skeleton()
-        skel.setName("test_skeleton")
-        print(f"✓ Created Skeleton: {skel.getName()}")
+        skeleton = dart.Skeleton("box")
+        skeleton.create_free_joint_and_body_node_pair()
+        print(f"✓ Created Skeleton: {skeleton.get_name()}")
 
-        # Test adding skeleton to world
-        world.addSkeleton(skel)
-        print(f"✓ Added skeleton to world: {world.getNumSkeletons()} skeleton(s)")
+        world.add_skeleton(skeleton)
+        world.step()
+        positions = skeleton.get_positions()
+        print(f"✓ Stepped world with {positions.shape[0]} position(s)")
 
         return True
     except ImportError as e:

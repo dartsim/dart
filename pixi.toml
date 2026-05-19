@@ -1138,6 +1138,15 @@ verify-wheel = { cmd = "bash -c 'python scripts/verify_wheel.py dist/dartpy-*.wh
 # Test dartpy installation (requires dartpy to be installed)
 test-installation = { cmd = "python scripts/test_installation.py" }
 
+# Test the README C++ quick-start against an installed DART prefix.
+test-cpp-quickstart = { cmd = "python scripts/test_cpp_quickstart.py" }
+
+# Check whether published DART 7 Python and C++ package artifacts are available.
+check-dart7-artifacts = { cmd = "python scripts/check_dart7_artifacts.py" }
+
+# Verify first-simulation snippets against the currently published packages.
+test-published-package-quickstarts = { cmd = "python scripts/test_published_package_quickstarts.py" }
+
 # Shared wheel helper tasks (reused by version-specific wheel features)
 wheel-build-core = { cmd = "python scripts/wheel_build.py {{ use_system_imgui }}", args = [
   { arg = "use_system_imgui", default = "ON" },

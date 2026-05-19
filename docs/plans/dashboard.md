@@ -18,54 +18,62 @@ its own line so status updates remain git-history friendly.
 ### PLAN-001: Living Plan System
 
 - Owner doc: [`README.md#plan-update-workflow`](README.md#plan-update-workflow)
-- Status: Active
-- Horizon: Next
+- Status: Complete
+- Horizon: Later
 - Dimension: AI-native execution
-- Next step: Keep structural checks covering workflow adapters, required-reading
-  paths, and dev-task shape.
-- Gate: AI docs/adapters gates stay green after each workflow change.
+- Next step: Use the recorded structural checks whenever plan workflows,
+  generated adapters, required-reading paths, or dev-task shape rules change.
+- Gate: `check-ai-commands`, `check-docs-policy`, and `sync-ai-commands` cover
+  adapter sync, required-reading coverage, and dev-task shape.
 
 ### PLAN-010: Easy-Start API And Package Readiness
 
-- Owner doc:
-  [`010-easy-start-api-package-readiness.md`](010-easy-start-api-package-readiness.md)
-- Status: Proposed
-- Horizon: Now
+- Owner doc: [`../../README.md#quick-start`](../../README.md#quick-start)
+- Status: Complete
+- Horizon: Later
 - Dimension: Easy start
-- Next step: Build the first-success workflow matrix.
-- Gate: First-success commands are documented for Python, C++, packages, and
-  Pixi source builds.
+- Next step: During DART 7 package publication, rerun the artifact recheck and
+  DART 7 README first-success verification against the published artifacts,
+  then remove or demote the current-package fallback snippets.
+- Gate: README first-success snippets pass for current published packages,
+  source checkout, and local DART 7 package installs; DART 7 public package
+  publication remains tracked by `check-dart7-artifacts`.
 
 ### PLAN-020: Algorithm Extension Contracts
 
 - Owner doc:
-  [`020-algorithm-extension-contracts.md`](020-algorithm-extension-contracts.md)
-- Status: Proposed
-- Horizon: Now
+  [`../design/algorithm_extension_contracts.md`](../design/algorithm_extension_contracts.md)
+- Status: Complete
+- Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Choose the first algorithm family to formalize.
-- Gate: The selected family has an inventoried extension surface, baseline, and
-  benchmark command.
+- Next step: Use the LCP v0 contract, tests, benchmark, and `lcp_physics`
+  example as the template when the next algorithm family is selected.
+- Gate: LCP contract docs, focused tests, smoke benchmark, API-boundary
+  exclusions, and baseline example evidence are recorded.
 
 ### PLAN-030: Compute Scalability Roadmap
 
 - Owner doc:
-  [`030-compute-scalability-roadmap.md`](030-compute-scalability-roadmap.md)
-- Status: Proposed
-- Horizon: Now
+  [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md)
+- Status: Complete
+- Horizon: Later
 - Dimension: Scalable compute
-- Next step: Rank candidate accelerated workloads.
-- Gate: Workload ranking names CPU/SIMD prerequisites and CUDA/SYCL decision
-  evidence.
+- Next step: Use the contact/constraint benchmark evidence to scope any future
+  worker-reuse, larger-contact-count, SIMD, or solver-level parallelism task.
+- Gate: Ranked workload gates, scalar and threaded validation evidence, API
+  boundary rules, and package/CI implications are recorded before any public
+  accelerator API commitment.
 
 ### PLAN-040: DART 7 Release Hardening
 
 - Owner doc: [`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)
-- Status: Proposed
-- Horizon: Next
+- Status: Complete
+- Horizon: Later
 - Dimension: Release transition
-- Next step: Convert release roadmap into checkable gates.
-- Gate: Release roadmap gates are mapped to local or CI evidence.
+- Next step: Use the DART 7 gate table and packaging checklist during release
+  packaging or release-hardening passes.
+- Gate: Release gate evidence names the relevant local or CI command, blocker,
+  or external compatibility check for each touched release surface.
 
 ### PLAN-050: Experimental World Split
 
@@ -84,17 +92,21 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`../dev_tasks/filament_gui/08-north-star-migration.md`](../dev_tasks/filament_gui/08-north-star-migration.md)
-- Status: Active
-- Horizon: Next
+- Status: Complete
+- Horizon: Later
 - Dimension: Easy start
-- Next step: Keep GUI API promotion aligned with Filament gates.
-- Gate: GUI promotion stays aligned with the Filament dev-task migration plan.
+- Next step: Use the Filament north-star migration plan as the gate for future
+  public GUI API promotion.
+- Gate: GUI promotion stays backend-hidden and aligned with the Filament
+  dev-task migration plan.
 
 ### PLAN-070: DART 8 Compatibility Cleanup
 
 - Owner doc: [`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)
-- Status: Proposed
+- Status: Complete
 - Horizon: Later
 - Dimension: Release transition
-- Next step: Maintain compatibility-debt inventory during DART 7.
-- Gate: Compatibility cleanup stays tied to the DART 7/8 release roadmap.
+- Next step: Use the compatibility-debt inventory and cleanup review checklist
+  during DART 7 packaging passes and DART 8 removal planning.
+- Gate: DART 8 cleanup decisions cite migration notes, changelog entries,
+  package/export status, and gz-physics compatibility where relevant.
