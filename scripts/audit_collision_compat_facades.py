@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import re
 import sys
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -405,6 +406,22 @@ def check_pkg_config_external_deps(repo_root: Path) -> list[str]:
     return failures
 
 
+def check_package_manifest_deps(repo_root: Path) -> list[str]:
+    failures: list[str] = []
+    source = read_text(repo_root, "package.xml")
+    root = ET.fromstring(source)
+    depends = {
+        element.text.strip()
+        for element in root.findall("depend")
+        if element.text and element.text.strip()
+    }
+    if "entt" not in depends:
+        failures.append(
+            "package.xml: EnTT must be listed for ROS/package native builds"
+        )
+    return failures
+
+
 def check_reference_tree(repo_root: Path) -> list[str]:
     failures: list[str] = []
     for facade in FACADES:
@@ -460,6 +477,7 @@ def main() -> int:
     failures.extend(check_legacy_facade_raycast_contract(repo_root))
     failures.extend(check_package_components(repo_root))
     failures.extend(check_pkg_config_external_deps(repo_root))
+    failures.extend(check_package_manifest_deps(repo_root))
     failures.extend(check_reference_tree(repo_root))
 
     if failures:
@@ -482,6 +500,7 @@ def main() -> int:
         "bullet uses native raycast"
     )
     print("  package components: collision-fcl/bullet/ode -> dart")
+    print("  package manifest: EnTT listed for native collision")
     print("  link interface: dart -> dart-collision-native")
     print("  pkg-config: dart -> -ldart-collision-native without ccd Requires")
     print("  reference engines: tests/dart/test/reference_collision only")

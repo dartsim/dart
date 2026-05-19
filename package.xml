@@ -24,6 +24,7 @@
   <build_depend>pkg-config</build_depend>
   <depend>assimp</depend>
   <depend>eigen</depend>
+  <depend>entt</depend>
   <depend>liburdfdom-dev</depend>
   <depend>tinyxml2</depend>
   <depend>sdformat</depend>
