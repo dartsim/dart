@@ -39,9 +39,13 @@
 
 #include <fstream>
 
+#include <cstddef>
+
 namespace dart::gui::vsg {
 
 namespace {
+
+constexpr std::size_t kScreenshotBytesPerPixel = 4;
 
 ::vsg::ref_ptr<::vsg::RenderPass> createOffscreenRenderPass(
     ::vsg::Device* device, VkFormat imageFormat, VkFormat depthFormat)
@@ -637,19 +641,21 @@ std::vector<uint8_t> SimpleViewer::captureBuffer()
       &subResource,
       &subResourceLayout);
 
-  size_t destRowWidth = width * 4;
-  std::vector<uint8_t> result(width * height * 4);
+  const auto pixelWidth = static_cast<std::size_t>(width);
+  const auto pixelHeight = static_cast<std::size_t>(height);
+  const std::size_t destRowWidth = pixelWidth * kScreenshotBytesPerPixel;
+  std::vector<uint8_t> result(pixelHeight * destRowWidth);
 
   auto mappedData = ::vsg::MappedData<::vsg::ubyteArray>::create(
       deviceMemory,
       subResourceLayout.offset,
       0,
       ::vsg::Data::Properties{targetImageFormat},
-      subResourceLayout.rowPitch * height);
+      subResourceLayout.rowPitch * static_cast<VkDeviceSize>(height));
 
   for (uint32_t row = 0; row < height; ++row) {
     std::memcpy(
-        result.data() + row * destRowWidth,
+        result.data() + static_cast<std::size_t>(row) * destRowWidth,
         mappedData->dataPointer(row * subResourceLayout.rowPitch),
         destRowWidth);
   }
@@ -672,10 +678,13 @@ bool SimpleViewer::saveScreenshot(const std::string& filename)
     if (!file) {
       return false;
     }
+    const auto pixelWidth = static_cast<std::size_t>(width);
     file << "P6\n" << width << " " << height << "\n255\n";
     for (uint32_t y = 0; y < height; ++y) {
       for (uint32_t x = 0; x < width; ++x) {
-        size_t idx = (y * width + x) * 4;
+        const std::size_t idx = (static_cast<std::size_t>(y) * pixelWidth
+                                 + static_cast<std::size_t>(x))
+                                * kScreenshotBytesPerPixel;
         file.put(static_cast<char>(buffer[idx]));
         file.put(static_cast<char>(buffer[idx + 1]));
         file.put(static_cast<char>(buffer[idx + 2]));
