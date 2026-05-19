@@ -681,16 +681,64 @@ TEST(DartCollisionDetector, MismatchedDetectorGroupReturnsFalse)
 
   auto setupA = makeShapeSetup("shape_a", std::make_shared<SphereShape>(0.5));
   auto setupB = makeShapeSetup("shape_b", std::make_shared<SphereShape>(0.5));
+  auto setupC = makeShapeSetup("shape_c", std::make_shared<SphereShape>(0.5));
 
   auto groupA = detectorA->createCollisionGroup();
   auto groupB = detectorB->createCollisionGroup();
   groupA->addShapeFrame(setupA.shapeNode);
+  groupA->addShapeFrame(setupB.shapeNode);
   groupB->addShapeFrame(setupB.shapeNode);
 
   CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 8u;
   CollisionResult result;
 
+  ASSERT_TRUE(detectorA->collide(groupA.get(), option, &result));
+  ASSERT_LT(0u, result.getNumContacts());
+  EXPECT_FALSE(detectorA->collide(groupB.get(), option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  ASSERT_TRUE(detectorA->collide(groupA.get(), option, &result));
+  ASSERT_LT(0u, result.getNumContacts());
   EXPECT_FALSE(groupA->collide(groupB.get(), option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  DistanceOption distanceOption;
+  DistanceResult distanceResult;
+  detectorA->distance(groupA.get(), distanceOption, &distanceResult);
+  ASSERT_TRUE(distanceResult.found());
+  EXPECT_DOUBLE_EQ(
+      detectorA->distance(groupB.get(), distanceOption, &distanceResult), 0.0);
+  EXPECT_FALSE(distanceResult.found());
+
+  detectorA->distance(groupA.get(), distanceOption, &distanceResult);
+  ASSERT_TRUE(distanceResult.found());
+  EXPECT_DOUBLE_EQ(
+      detectorA->distance(
+          groupA.get(), groupB.get(), distanceOption, &distanceResult),
+      0.0);
+  EXPECT_FALSE(distanceResult.found());
+
+  groupA->removeShapeFrame(setupB.shapeNode);
+  groupA->addShapeFrame(setupC.shapeNode);
+
+  RaycastOption raycastOption;
+  RaycastResult raycastResult;
+  ASSERT_TRUE(detectorA->raycast(
+      groupA.get(),
+      Eigen::Vector3d(-2.0, 0.0, 0.0),
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      raycastOption,
+      &raycastResult));
+  ASSERT_TRUE(raycastResult.hasHit());
+  EXPECT_FALSE(detectorA->raycast(
+      groupB.get(),
+      Eigen::Vector3d(-2.0, 0.0, 0.0),
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      raycastOption,
+      &raycastResult));
+  EXPECT_FALSE(raycastResult.hasHit());
 }
 
 TEST(DartCollisionDetector, DistanceQueriesReturnZero)

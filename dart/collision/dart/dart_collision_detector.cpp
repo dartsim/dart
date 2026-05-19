@@ -82,6 +82,14 @@ bool checkGroupValidity(DartCollisionDetector* cd, CollisionGroup* group)
   return true;
 }
 
+template <typename Result>
+void clearResult(Result* result)
+{
+  if (result) {
+    result->clear();
+  }
+}
+
 template <typename IdResolver>
 void warmStartContacts(
     CollisionResult* result,
@@ -298,6 +306,8 @@ bool DartCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  clearResult(result);
+
   if (!checkGroupValidity(this, group)) {
     return false;
   }
@@ -326,6 +336,8 @@ bool DartCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  clearResult(result);
+
   if (!checkGroupValidity(this, group1)) {
     return false;
   }
@@ -361,6 +373,8 @@ bool DartCollisionDetector::collide(
 double DartCollisionDetector::distance(
     CollisionGroup* group, const DistanceOption& option, DistanceResult* result)
 {
+  clearResult(result);
+
   if (!checkGroupValidity(this, group)) {
     return 0.0;
   }
@@ -376,6 +390,8 @@ double DartCollisionDetector::distance(
     const DistanceOption& option,
     DistanceResult* result)
 {
+  clearResult(result);
+
   if (!checkGroupValidity(this, group1)) {
     return 0.0;
   }
@@ -398,6 +414,8 @@ bool DartCollisionDetector::raycast(
     const RaycastOption& option,
     RaycastResult* result)
 {
+  clearResult(result);
+
   if (!checkGroupValidity(this, group)) {
     return false;
   }
