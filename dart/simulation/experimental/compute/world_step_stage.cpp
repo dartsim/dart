@@ -80,6 +80,45 @@ Eigen::Isometry3d toIsometry(
 }
 
 //==============================================================================
+Eigen::Isometry3d getLocalFrameTransform(
+    const entt::registry& registry, entt::entity entity)
+{
+  if (const auto* fixed
+      = registry.try_get<comps::FixedFrameProperties>(entity)) {
+    return fixed->localTransform;
+  }
+
+  if (const auto* free = registry.try_get<comps::FreeFrameProperties>(entity)) {
+    return free->localTransform;
+  }
+
+  return Eigen::Isometry3d::Identity();
+}
+
+//==============================================================================
+Eigen::Isometry3d computeFrameWorldTransform(
+    const entt::registry& registry, entt::entity entity)
+{
+  if (entity == entt::null) {
+    return Eigen::Isometry3d::Identity();
+  }
+
+  const auto* frameState = registry.try_get<comps::FrameState>(entity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !frameState,
+      InvalidOperationException,
+      "Frame entity is missing a FrameState component");
+
+  const auto localTransform = getLocalFrameTransform(registry, entity);
+  if (frameState->parentFrame == entt::null) {
+    return localTransform;
+  }
+
+  return computeFrameWorldTransform(registry, frameState->parentFrame)
+         * localTransform;
+}
+
+//==============================================================================
 bool isFinite(const Eigen::Vector3d& value)
 {
   return value.array().isFinite().all();
@@ -150,7 +189,11 @@ void integrateRigidBody(
   transform.orientation = normalizeOrIdentity(orientation);
 
   auto& props = registry.get<comps::FreeFrameProperties>(entity);
-  props.localTransform = toIsometry(transform, transform.orientation);
+  const auto worldTransform = toIsometry(transform, transform.orientation);
+  const auto& frameState = registry.get<comps::FrameState>(entity);
+  props.localTransform
+      = computeFrameWorldTransform(registry, frameState.parentFrame).inverse()
+        * worldTransform;
 
   auto& cache = registry.get<comps::FrameCache>(entity);
   cache.needTransformUpdate = true;
@@ -264,6 +307,7 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
       comps::Velocity,
       comps::MassProperties,
       comps::Force,
+      comps::FrameState,
       comps::FreeFrameProperties,
       comps::FrameCache>();
 

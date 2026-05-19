@@ -87,7 +87,7 @@ std::size_t computeMaxParallelism(
 
   std::ranges::sort(events, [](const auto& a, const auto& b) {
     if (a.time == b.time) {
-      return a.delta > b.delta;
+      return a.delta < b.delta;
     }
     return a.time < b.time;
   });

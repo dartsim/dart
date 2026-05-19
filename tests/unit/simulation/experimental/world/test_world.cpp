@@ -455,6 +455,48 @@ TEST(World, StepIntegratesRigidBodyTorque)
       body.getRotation().isApprox(expectedOrientation.toRotationMatrix()));
 }
 
+// Test that rigid-body integration keeps the integrated world pose
+// authoritative when a body has been reparented through the inherited frame
+// API.
+TEST(World, StepStoresReparentedRigidBodyPoseAsParentLocal)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto parent = world.addFreeFrame("parent");
+
+  Eigen::Isometry3d parentTransform = Eigen::Isometry3d::Identity();
+  parentTransform.translate(Eigen::Vector3d(10.0, 0.0, 0.0));
+  parent.setLocalTransform(parentTransform);
+
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+  options.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+
+  auto body = world.addRigidBody("body", options);
+  body.setParentFrame(parent);
+
+  world.setTimeStep(0.5);
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto expectedPosition = Eigen::Vector3d(2.0, 2.0, 3.0);
+  Eigen::Isometry3d expectedWorldTransform = Eigen::Isometry3d::Identity();
+  expectedWorldTransform.translation() = expectedPosition;
+  Eigen::Isometry3d expectedLocalTransform
+      = parentTransform.inverse() * expectedWorldTransform;
+
+  const auto& registry = world.getRegistry();
+  const auto& transform = registry.get<sx::comps::Transform>(body.getEntity());
+  const auto& props
+      = registry.get<sx::comps::FreeFrameProperties>(body.getEntity());
+
+  EXPECT_TRUE(transform.position.isApprox(expectedPosition));
+  EXPECT_TRUE(props.localTransform.isApprox(expectedLocalTransform));
+  EXPECT_TRUE(body.getTransform().isApprox(expectedWorldTransform));
+}
+
 // Test that the rigid-body integration stage produces the same state through
 // sequential and Taskflow graph executors.
 TEST(World, RigidBodyStepTaskflowMatchesSequential)
