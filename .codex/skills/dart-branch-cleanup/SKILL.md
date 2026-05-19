@@ -56,13 +56,27 @@ Default to `analyze` if the requested mode is ambiguous.
    git diff --stat <TARGET>..<BRANCH>
    git cherry -v <TARGET> <BRANCH>
    ```
-5. Classify recommendations only; deleting a candidate requires explicit
+5. Before any explicitly approved local branch deletion, check whether the
+   branch is checked out by a linked worktree:
+   ```bash
+   git worktree list --porcelain
+   git -C <WORKTREE> status --short --branch
+   ```
+   Dirty linked worktrees must not be removed, detached, or reset during branch
+   cleanup. Only after explicit maintainer/user approval, switch that worktree
+   to a preservation branch at the same commit to free the obsolete branch name
+   before deleting the merged branch.
+6. The command `git branch --merged` may not prove ancestry for PR branches
+   that landed through a squash or merge commit. Use the merged PR state plus
+   an empty tree diff or equivalent `git cherry -v` output as the deletion
+   signal; if the history relationship is unclear, keep the branch.
+7. Classify recommendations only; deleting a candidate requires explicit
    maintainer/user approval:
    - `ahead=0`: safe deletion candidate
    - equivalent commits already landed: deletion candidate
    - small, current, useful diff: keep or rebase into PR
    - large or unclear diff: document follow-up before action
-6. Ask for explicit maintainer/user approval before pruning refs or deleting any
+8. Ask for explicit maintainer/user approval before pruning refs or deleting any
    local or remote branch, even when ownership, branch purpose, and remote
    impact look clear.
 

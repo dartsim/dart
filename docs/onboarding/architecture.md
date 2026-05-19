@@ -327,6 +327,9 @@ and opt-in test-only reference targets.
   `dartpy` with FCL, Bullet, and ODE disabled. Installed package exports should
   include only the compatibility targets required for downstream packages that
   still use `${DART_LIBRARIES}`.
+- For the native collision compatibility checklist, use
+  `dart/collision/AGENTS.md`. It owns the full installed-surface evidence list
+  so this architecture guide stays focused on the layer design.
 - Performance claims are evidence driven. The feature-level native-collision
   pass must keep comparative benchmark/profiling guardrails for primitive,
   narrow-phase, supported distance, raycast, batch-raycast, mesh-heavy, and
