@@ -53,6 +53,14 @@ std::string RigidBody::getName() const
   return "";
 }
 
+//==============================================================================
+const Eigen::Isometry3d& RigidBody::getLocalTransform() const
+{
+  const auto& props
+      = m_world->getRegistry().get<comps::FreeFrameProperties>(m_entity);
+  return props.localTransform;
+}
+
 // getEntity() and isValid() inherited from Frame
 
 } // namespace dart::simulation::experimental

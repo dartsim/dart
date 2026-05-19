@@ -32,32 +32,35 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/export.hpp>
+#include <dart/simulation/experimental/compute/compute_executor.hpp>
 
-namespace dart::simulation::experimental {
+#include <memory>
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class MultiBody;
-class RigidBody;
-class World;
+namespace tf {
+class Executor;
+}
 
-namespace compute {
-class ComputeExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
+namespace dart::simulation::experimental::compute {
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct LinkOptions;
-struct MultiBodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
+/// Experimental parallel executor backed by Taskflow.
+class DART_EXPERIMENTAL_API TaskflowExecutor final : public ComputeExecutor
+{
+public:
+  explicit TaskflowExecutor(std::size_t workerCount = 0);
+  ~TaskflowExecutor() override;
 
-} // namespace dart::simulation::experimental
+  TaskflowExecutor(const TaskflowExecutor&) = delete;
+  TaskflowExecutor& operator=(const TaskflowExecutor&) = delete;
+  TaskflowExecutor(TaskflowExecutor&&) noexcept;
+  TaskflowExecutor& operator=(TaskflowExecutor&&) noexcept;
+
+  void execute(const ComputeGraph& graph) override;
+  [[nodiscard]] ComputeExecutionProfile executeProfiled(
+      const ComputeGraph& graph) override;
+  [[nodiscard]] std::size_t getWorkerCount() const override;
+
+private:
+  std::unique_ptr<tf::Executor> m_executor;
+};
+
+} // namespace dart::simulation::experimental::compute

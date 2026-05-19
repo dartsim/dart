@@ -68,6 +68,20 @@
   - Miscellaneous repo hygiene: Docker build script fixes, Dependabot path cleanup, template updates, and badge/documentation cleanup. ([#2058](https://github.com/dartsim/dart/pull/2058), [#2291](https://github.com/dartsim/dart/pull/2291))
 
 - Simulation
+  - Added an experimental computation-graph substrate with sequential and
+    Taskflow executors, routed experimental `World::updateKinematics()` and
+    `World::step()` through graph-backed rigid-body linear-force integration
+    and kinematics stages, introduced the first swappable `WorldStepStage`
+    contract and domain-neutral `WorldStepPipeline`, added stage metadata for
+    solver domains and acceleration opportunities, added opt-in execution
+    profiles and DOT visualization for per-node load, observed parallelism, and
+    graph inspection, and added focused tests and benchmark coverage for graph
+    batching overhead.
+  - Fixed experimental Taskflow executor paths to propagate compute-node
+    exceptions instead of reporting graph execution success after failed tasks.
+  - Fixed experimental compute profiling and rigid-body stepping edge cases for
+    equal-timestamp profile events, reparented rigid bodies, and parented
+    rigid-body task dependencies.
   - Added `WorldConfig` support for collision detector selection plus multi-solver world scaffolding and sensor integration. ([#2168](https://github.com/dartsim/dart/pull/2168), [#2349](https://github.com/dartsim/dart/pull/2349), [#2352](https://github.com/dartsim/dart/pull/2352))
   - Joint and constraint enhancements: state-independent `Joint::integratePositions`, per-DoF mimic actuator modes, revolute joint constraint for closed-loop hinges, WeldJoint merge, PlanarJoint SE2 helpers, and joint coordinate charts. ([#2309](https://github.com/dartsim/dart/pull/2309), [#2222](https://github.com/dartsim/dart/pull/2222), [#2252](https://github.com/dartsim/dart/pull/2252), [#2242](https://github.com/dartsim/dart/pull/2242), [#2231](https://github.com/dartsim/dart/pull/2231), [#2351](https://github.com/dartsim/dart/pull/2351))
   - Coupler and mimic updates: new coupler constraint support, Gazebo-aligned mimic constraints, and URDF transmission coupling. ([#2212](https://github.com/dartsim/dart/pull/2212), [#2247](https://github.com/dartsim/dart/pull/2247), [#2281](https://github.com/dartsim/dart/pull/2281))
@@ -140,6 +154,8 @@
   - Core API organization updates: dart7 core library scaffold, per-module forward declaration headers, IkFast header relocation, and C++20 modernization. ([#2097](https://github.com/dartsim/dart/pull/2097), [#2195](https://github.com/dartsim/dart/pull/2195), [#2057](https://github.com/dartsim/dart/pull/2057), [#2073](https://github.com/dartsim/dart/pull/2073))
   - Core API fixes: BodyNode transform derivative APIs, frame transform helpers for Inertia, COM-based potential energy, signal thread-safety, trivial accessor noexcept annotations, and non-finite joint input asserts. ([#2131](https://github.com/dartsim/dart/pull/2131), [#2153](https://github.com/dartsim/dart/pull/2153), [#2224](https://github.com/dartsim/dart/pull/2224), [#2181](https://github.com/dartsim/dart/pull/2181), [#2218](https://github.com/dartsim/dart/pull/2218), [#2273](https://github.com/dartsim/dart/pull/2273))
   - Fixed `PoolAllocator` leaking old memory block tables when the table grows.
+  - Fixed `MultiLockableReference::try_lock()` leaving earlier acquired locks
+    held when a later lock acquisition fails.
   - Removed all APIs deprecated in DART 6.0 (legacy BodyNode collision flags, Skeleton self-collision aliases, Joint `getLocal*`/`updateLocal*` accessors, `World::checkCollision(bool)`, `ConstraintSolver::setCollisionDetector(raw*)`, Marker `getBodyNode()`, `SdfParser::readSdfFile`, and deprecated XML helpers). ([#2132](https://github.com/dartsim/dart/pull/2132))
   - Removed all APIs deprecated in DART 6.1. ([#2119](https://github.com/dartsim/dart/pull/2119))
   - Removed all APIs deprecated in DART 6.2 (legacy Entity/BodyNode/JacobianNode/Joints/Skeleton notifiers, `Shape::notify*Update`, `EllipsoidShape::getSize`/`setSize`, `MultiSphereShape` alias, and `Eigen::make_aligned_shared` alias). ([#2122](https://github.com/dartsim/dart/pull/2122))

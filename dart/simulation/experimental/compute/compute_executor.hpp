@@ -32,32 +32,32 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/compute/execution_profile.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
-namespace dart::simulation::experimental {
+#include <cstddef>
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class MultiBody;
-class RigidBody;
-class World;
+namespace dart::simulation::experimental::compute {
 
-namespace compute {
-class ComputeExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
+class ComputeGraph;
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct LinkOptions;
-struct MultiBodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
+/// Backend-neutral interface for executing experimental compute graphs.
+class DART_EXPERIMENTAL_API ComputeExecutor
+{
+public:
+  virtual ~ComputeExecutor() = default;
 
-} // namespace dart::simulation::experimental
+  ComputeExecutor() = default;
+  ComputeExecutor(const ComputeExecutor&) = delete;
+  ComputeExecutor& operator=(const ComputeExecutor&) = delete;
+  ComputeExecutor(ComputeExecutor&&) noexcept = default;
+  ComputeExecutor& operator=(ComputeExecutor&&) noexcept = default;
+
+  virtual void execute(const ComputeGraph& graph) = 0;
+  [[nodiscard]] virtual ComputeExecutionProfile executeProfiled(
+      const ComputeGraph& graph)
+      = 0;
+  [[nodiscard]] virtual std::size_t getWorkerCount() const = 0;
+};
+
+} // namespace dart::simulation::experimental::compute
