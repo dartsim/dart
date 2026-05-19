@@ -4,15 +4,13 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
-if(NOT DART_BUILD_COLLISION_BULLET)
-  if(DART_VERBOSE OR NOT DART_IN_SOURCE_BUILD)
-    message(STATUS "Skipping ${example_name} example (requires DART_BUILD_COLLISION_BULLET=ON)")
-  endif()
-  return()
-endif()
-
 set(required_components utils-urdf gui io)
-set(required_libraries dart dart-io dart-utils-urdf dart-gui)
+set(required_libraries
+  dart
+  dart-io
+  dart-utils-urdf
+  dart-gui
+)
 
 if(DART_IN_SOURCE_BUILD)
   dart_build_example_in_source(${example_name} LINK_LIBRARIES ${required_libraries})

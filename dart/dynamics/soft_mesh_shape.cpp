@@ -78,6 +78,12 @@ std::shared_ptr<math::TriMesh<double>> SoftMeshShape::getTriMesh() const
 }
 
 //==============================================================================
+bool SoftMeshShape::hasValidMesh() const
+{
+  return mTriMesh && mTriMesh->hasVertices() && mTriMesh->hasTriangles();
+}
+
+//==============================================================================
 const aiMesh* SoftMeshShape::getAssimpMesh() const
 {
   return mAssimpMesh.get();

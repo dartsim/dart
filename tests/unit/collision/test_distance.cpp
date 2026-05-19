@@ -30,13 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/fcl/All.hpp"
+#include "dart/test/reference_collision/fcl/fcl_collision_detector.hpp"
 
 #include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 #if DART_HAVE_BULLET
-  #include "dart/collision/bullet/All.hpp"
+  #include "dart/test/reference_collision/bullet/bullet_collision_detector.hpp"
 #endif
 #include "../../helpers/gtest_utils.hpp"
 
@@ -153,15 +153,15 @@ void testBasicInterface(
 //==============================================================================
 TEST(Distance, testBasicInterface)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   testBasicInterface(fcl);
 
 #if DART_HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
+  auto bullet = BulletCollisionDetector::createReference();
   testBasicInterface(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testBasicInterface(dart);
 }
 
@@ -265,15 +265,15 @@ void testOptions(
 //==============================================================================
 TEST(Distance, Options)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   testOptions(fcl);
 
 #if DART_HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
+  auto bullet = BulletCollisionDetector::createReference();
   testOptions(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testOptions(dart);
 }
 
@@ -325,22 +325,22 @@ void testSphereSphere(
 //==============================================================================
 TEST(Distance, SphereSphere)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   testSphereSphere(fcl);
 
 #if DART_HAVE_BULLET
-  auto bullet = BulletCollisionDetector::create();
+  auto bullet = BulletCollisionDetector::createReference();
   testSphereSphere(bullet);
 #endif
 
-  auto dart = DARTCollisionDetector::create();
+  auto dart = DartCollisionDetector::create();
   testSphereSphere(dart);
 }
 
 //==============================================================================
 TEST(Distance, UsesMinimumAcrossPairs)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
 
   auto frame1 = SimpleFrame::createShared(Frame::World());
   auto frame2 = SimpleFrame::createShared(Frame::World());
@@ -410,7 +410,7 @@ TEST(DistanceResult, ClearResetsAllMembers)
 //==============================================================================
 TEST(DistanceResult, FoundReturnsTrueWhenShapeFramesSet)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   auto frame1 = SimpleFrame::createShared(Frame::World());
   auto frame2 = SimpleFrame::createShared(Frame::World());
 
@@ -434,7 +434,7 @@ TEST(DistanceResult, FoundReturnsTrueWhenShapeFramesSet)
 //==============================================================================
 TEST(DistanceResult, ReportsWhetherDistanceMatchesUnclampedDistance)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   auto frame1 = SimpleFrame::createShared(Frame::World());
   auto frame2 = SimpleFrame::createShared(Frame::World());
 
@@ -467,7 +467,7 @@ TEST(DistanceResult, ReportsWhetherDistanceMatchesUnclampedDistance)
 //==============================================================================
 TEST(DistanceResult, NearestPointsComputedWhenEnabled)
 {
-  auto fcl = FCLCollisionDetector::create();
+  auto fcl = FCLCollisionDetector::createReference();
   auto frame1 = SimpleFrame::createShared(Frame::World());
   auto frame2 = SimpleFrame::createShared(Frame::World());
 

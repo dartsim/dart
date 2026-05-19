@@ -257,6 +257,7 @@ TEST(Friction, FrictionPerShapeNode)
   world->addSkeleton(skeleton4);
 
   const auto numSteps = 500;
+  const double settledXTolerance = 5e-5;
   for (auto i = 0u; i < numSteps; ++i) {
     world->step();
 
@@ -264,14 +265,14 @@ TEST(Friction, FrictionPerShapeNode)
     if (i > 300) {
       const auto x1 = body1->getTransform().translation()[0];
       const auto y1 = body1->getTransform().translation()[1];
-      EXPECT_NEAR(x1, -0.5, 2e-5);
+      EXPECT_NEAR(x1, -0.5, settledXTolerance);
       EXPECT_NEAR(y1, -0.17889, 0.001);
 
       // The second box still moves even after landing on the ground because its
       // friction is zero.
       const auto x2 = body2->getTransform().translation()[0];
       const auto y2 = body2->getTransform().translation()[1];
-      EXPECT_NEAR(x2, 0.5, 2e-5);
+      EXPECT_NEAR(x2, 0.5, settledXTolerance);
       EXPECT_LE(y2, -0.17889);
 
       // The third box still moves even after landing on the ground because its

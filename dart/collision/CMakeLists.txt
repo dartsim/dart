@@ -4,11 +4,6 @@ file(GLOB srcs "*.cpp")
 file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 file(GLOB dart_hdrs "dart/*.hpp")
-file(GLOB fcl_hdrs "fcl/*.hpp")
-file(GLOB ode_hdrs "ode/*.hpp")
-file(GLOB ode_detail_hdrs "ode/detail/*.hpp")
-file(GLOB bullet_hdrs "bullet/*.hpp")
-file(GLOB bullet_detail_hdrs "bullet/detail/*.hpp")
 dart_add_core_headers(${hdrs} ${detail_hdrs})
 dart_add_core_sources(${srcs} ${detail_srcs})
 
@@ -21,12 +16,17 @@ set(
   dart/All.hpp
   fcl/All.hpp
 )
+set(collision_source_headers
+  ${hdrs}
+  ${detail_hdrs}
+  ${dart_hdrs}
+)
 dart_generate_component_headers(
   COMPONENT_NAME collision
   TARGET_DIR "dart/collision/"
   OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
   HEADERS ${header_names}
-  SOURCE_HEADERS ${hdrs} ${detail_hdrs} ${dart_hdrs} ${fcl_hdrs} ${ode_hdrs} ${ode_detail_hdrs} ${bullet_hdrs} ${bullet_detail_hdrs}
+  SOURCE_HEADERS ${collision_source_headers}
 )
 
 # Install headers and generated component headers
@@ -45,6 +45,7 @@ install(
 dart_install_compat_headers(COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS} DESTINATION_PREFIX include/dart/collision)
 
 # Add subdirectories
+add_subdirectory(native)
 add_subdirectory(dart)
 add_subdirectory(fcl)
 add_subdirectory(ode)

@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 import argparse
 import os
+import re
 import shlex
 import subprocess
 import sys
 import time
+import urllib.request
+from html.parser import HTMLParser
 from pathlib import Path
 
 DEFAULT_IMAGE = "dartsim/freebsd-vm:15"
@@ -41,9 +44,12 @@ DEFAULT_PACKAGES = [
     "ros-urdfdom",
     "ros-urdfdom_headers",
 ]
+FREEBSD_SNAPSHOT_BASE_URL = "https://download.freebsd.org/ftp/snapshots/VM-IMAGES"
+DEFAULT_FREEBSD_MAJOR_VERSION = "15"
+FALLBACK_IMAGE_VERSION = "15.1-STABLE"
 DEFAULT_IMAGE_URL = (
-    "https://download.freebsd.org/ftp/snapshots/VM-IMAGES/15.0-STABLE/"
-    "amd64/Latest/FreeBSD-15.0-STABLE-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
+    f"{FREEBSD_SNAPSHOT_BASE_URL}/{FALLBACK_IMAGE_VERSION}/amd64/Latest/"
+    f"FreeBSD-{FALLBACK_IMAGE_VERSION}-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
 )
 SSH_OPTIONS = [
     "-o",
@@ -59,6 +65,65 @@ SSH_OPTIONS = [
     "-o",
     "ServerAliveCountMax=6",
 ]
+
+
+class _HrefParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.hrefs = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag != "a":
+            return
+        for name, value in attrs:
+            if name == "href" and value:
+                self.hrefs.append(value)
+
+
+def _fetch_text(url):
+    with urllib.request.urlopen(url, timeout=30) as response:
+        return response.read().decode("utf-8", errors="replace")
+
+
+def _image_url_for_version(version):
+    return (
+        f"{FREEBSD_SNAPSHOT_BASE_URL}/{version}/amd64/Latest/"
+        f"FreeBSD-{version}-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
+    )
+
+
+def _latest_stable_version(index_html, major_version):
+    parser = _HrefParser()
+    parser.feed(index_html)
+    pattern = re.compile(rf"^{re.escape(major_version)}\.(\d+)-STABLE/$")
+
+    versions = []
+    for href in parser.hrefs:
+        match = pattern.match(href)
+        if match:
+            versions.append((int(match.group(1)), href.rstrip("/")))
+
+    if not versions:
+        raise RuntimeError(
+            f"No FreeBSD {major_version}.x STABLE VM snapshots were listed"
+        )
+
+    return max(versions)[1]
+
+
+def resolve_default_image_url():
+    try:
+        index_html = _fetch_text(f"{FREEBSD_SNAPSHOT_BASE_URL}/")
+        version = _latest_stable_version(index_html, DEFAULT_FREEBSD_MAJOR_VERSION)
+    except Exception as exc:
+        print(
+            "Warning: failed to resolve latest FreeBSD VM snapshot; "
+            f"falling back to {FALLBACK_IMAGE_VERSION}: {exc}",
+            file=sys.stderr,
+        )
+        version = FALLBACK_IMAGE_VERSION
+
+    return _image_url_for_version(version)
 
 
 def env_default_int(name, fallback):
@@ -557,7 +622,14 @@ def parse_args():
         default=env_default_int("FREEBSD_VM_MEM", DEFAULT_MEM),
     )
     parser.add_argument("--user", default=DEFAULT_USER)
-    parser.add_argument("--image-url", default=DEFAULT_IMAGE_URL)
+    parser.add_argument(
+        "--image-url",
+        default=None,
+        help=(
+            "FreeBSD VM image URL. Defaults to the latest FreeBSD 15 STABLE "
+            f"snapshot, with {DEFAULT_IMAGE_URL} as a fallback."
+        ),
+    )
     parser.add_argument("--remote-dir", default=DEFAULT_REMOTE_DIR)
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -574,6 +646,15 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.image_url is None and args.command in {
+        "start",
+        "shell",
+        "sync",
+        "bootstrap",
+        "test",
+    }:
+        args.image_url = resolve_default_image_url()
+
     if args.command == "build-image":
         build_image(args)
     elif args.command == "start":

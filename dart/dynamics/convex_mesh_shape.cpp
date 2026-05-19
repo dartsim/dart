@@ -81,6 +81,12 @@ const std::shared_ptr<ConvexMeshShape::TriMeshType>& ConvexMeshShape::getMesh()
 }
 
 //==============================================================================
+bool ConvexMeshShape::hasValidMesh() const
+{
+  return mMesh && mMesh->hasVertices() && mMesh->hasTriangles();
+}
+
+//==============================================================================
 void ConvexMeshShape::setMesh(const std::shared_ptr<TriMeshType>& mesh)
 {
   mMesh = mesh;

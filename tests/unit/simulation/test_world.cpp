@@ -30,15 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/all.hpp>
 
 #include <gtest/gtest.h>
+
+#include <algorithm>
+#include <array>
+#include <limits>
+#include <numbers>
+#include <vector>
 
 #include <cmath>
 
 using namespace dart;
 using namespace dart::simulation;
 using namespace dart::dynamics;
+
+#ifndef DART_ENABLE_COLLISION_REFERENCE_TESTS
+  #define DART_ENABLE_COLLISION_REFERENCE_TESTS 0
+#endif
 
 //==============================================================================
 SkeletonPtr createSimpleSkeleton(const std::string& name)
@@ -419,6 +431,1077 @@ TEST(WorldTests, BasicSimulation)
   EXPECT_LT(finalZ, initialZ);
 }
 
+namespace {
+
+constexpr double kPi = std::numbers::pi_v<double>;
+
+struct NativeBoxGroundRunResult
+{
+  bool sawContact = false;
+  double lowestCenterZ = std::numeric_limits<double>::infinity();
+  double lowestVertexZ = std::numeric_limits<double>::infinity();
+  double highestCenterZAfterRest = -std::numeric_limits<double>::infinity();
+  double lowestCenterZAfterRest = std::numeric_limits<double>::infinity();
+  Eigen::Isometry3d finalTransform = Eigen::Isometry3d::Identity();
+};
+
+struct NativeCapsuleGroundRunResult
+{
+  bool sawContact = false;
+  double lowestPointZ = std::numeric_limits<double>::infinity();
+  double lowestCenterZ = std::numeric_limits<double>::infinity();
+  std::size_t maxContacts = 0;
+  double lastPenetrationDepth = 0.0;
+  Eigen::Vector3d lastContactPoint = Eigen::Vector3d::Zero();
+  Eigen::Vector3d lastContactNormal = Eigen::Vector3d::Zero();
+  Eigen::Isometry3d finalTransform = Eigen::Isometry3d::Identity();
+};
+
+enum class NativePrimitiveKind
+{
+  Box,
+  Sphere,
+  Capsule,
+  Cylinder,
+};
+
+struct NativePrimitiveBody
+{
+  BodyNode* body = nullptr;
+  NativePrimitiveKind kind = NativePrimitiveKind::Box;
+  Eigen::Vector3d boxSize = Eigen::Vector3d::Zero();
+  double radius = 0.0;
+  double height = 0.0;
+};
+
+struct NativeConvexBody
+{
+  BodyNode* body = nullptr;
+  std::shared_ptr<ConvexMeshShape> shape;
+};
+
+double measureBoxLowestVertexZ(
+    const BodyNode* body, const Eigen::Vector3d& boxSize)
+{
+  const auto tf = body->getWorldTransform();
+  const Eigen::Vector3d halfExtents = 0.5 * boxSize;
+  double lowest = std::numeric_limits<double>::infinity();
+  for (const double x : {-halfExtents.x(), halfExtents.x()}) {
+    for (const double y : {-halfExtents.y(), halfExtents.y()}) {
+      for (const double z : {-halfExtents.z(), halfExtents.z()}) {
+        const Eigen::Vector3d vertex = tf * Eigen::Vector3d(x, y, z);
+        lowest = std::min(lowest, vertex.z());
+      }
+    }
+  }
+  return lowest;
+}
+
+double measureCapsuleLowestPointZ(
+    const BodyNode* body, double radius, double height)
+{
+  const auto tf = body->getWorldTransform();
+  const double halfHeight = 0.5 * height;
+  const Eigen::Vector3d endpoint0 = tf * Eigen::Vector3d(0.0, 0.0, -halfHeight);
+  const Eigen::Vector3d endpoint1 = tf * Eigen::Vector3d(0.0, 0.0, halfHeight);
+
+  return std::min(endpoint0.z(), endpoint1.z()) - radius;
+}
+
+double measureCylinderLowestPointZ(
+    const BodyNode* body, double radius, double height)
+{
+  const auto tf = body->getWorldTransform();
+  const Eigen::Vector3d axis = tf.linear().col(2);
+  const double axialExtent = 0.5 * height * std::abs(axis.z());
+  const double radialExtent
+      = radius * std::sqrt(std::max(0.0, 1.0 - axis.z() * axis.z()));
+  return tf.translation().z() - axialExtent - radialExtent;
+}
+
+double measureNativePrimitiveLowestPointZ(const NativePrimitiveBody& primitive)
+{
+  switch (primitive.kind) {
+    case NativePrimitiveKind::Box:
+      return measureBoxLowestVertexZ(primitive.body, primitive.boxSize);
+    case NativePrimitiveKind::Sphere:
+      return primitive.body->getWorldTransform().translation().z()
+             - primitive.radius;
+    case NativePrimitiveKind::Capsule:
+      return measureCapsuleLowestPointZ(
+          primitive.body, primitive.radius, primitive.height);
+    case NativePrimitiveKind::Cylinder:
+      return measureCylinderLowestPointZ(
+          primitive.body, primitive.radius, primitive.height);
+  }
+  return std::numeric_limits<double>::infinity();
+}
+
+double measureConvexLowestPointZ(const NativeConvexBody& convex)
+{
+  const auto mesh = convex.shape ? convex.shape->getMesh() : nullptr;
+  if (!convex.body || !mesh) {
+    return std::numeric_limits<double>::infinity();
+  }
+
+  double lowest = std::numeric_limits<double>::infinity();
+  const auto tf = convex.body->getWorldTransform();
+  for (const auto& vertex : mesh->getVertices()) {
+    lowest = std::min(lowest, (tf * vertex).z());
+  }
+  return lowest;
+}
+
+std::shared_ptr<math::TriMesh<double>> makeNativeLandscapeTriMesh(
+    int resolution, double spacing, double heightScale)
+{
+  auto mesh = std::make_shared<math::TriMesh<double>>();
+  mesh->reserveVertices(
+      static_cast<std::size_t>((resolution + 1) * (resolution + 1)));
+  mesh->reserveTriangles(static_cast<std::size_t>(resolution * resolution * 2));
+
+  const double halfExtent = 0.5 * static_cast<double>(resolution) * spacing;
+  for (int y = 0; y <= resolution; ++y) {
+    for (int x = 0; x <= resolution; ++x) {
+      const double px = static_cast<double>(x) * spacing - halfExtent;
+      const double py = static_cast<double>(y) * spacing - halfExtent;
+      const double pz
+          = heightScale * (0.5 + 0.5 * std::sin(1.7 * px) * std::cos(1.3 * py));
+      mesh->addVertex(Eigen::Vector3d(px, py, pz));
+    }
+  }
+
+  const auto index = [resolution](int x, int y) {
+    return y * (resolution + 1) + x;
+  };
+
+  for (int y = 0; y < resolution; ++y) {
+    for (int x = 0; x < resolution; ++x) {
+      mesh->addTriangle(
+          math::TriMesh<double>::Triangle(
+              index(x, y), index(x + 1, y), index(x + 1, y + 1)));
+      mesh->addTriangle(
+          math::TriMesh<double>::Triangle(
+              index(x, y), index(x + 1, y + 1), index(x, y + 1)));
+    }
+  }
+
+  return mesh;
+}
+
+double computeTriMeshLowestZ(const math::TriMesh<double>& mesh)
+{
+  double lowest = std::numeric_limits<double>::infinity();
+  for (const auto& vertex : mesh.getVertices()) {
+    lowest = std::min(lowest, vertex.z());
+  }
+  return lowest;
+}
+
+std::shared_ptr<ConvexMeshShape> makeNativeTetraConvexShape(double scale)
+{
+  auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
+  mesh->addVertex(scale * Eigen::Vector3d(1.0, 1.0, 1.0));
+  mesh->addVertex(scale * Eigen::Vector3d(-1.0, -1.0, 1.0));
+  mesh->addVertex(scale * Eigen::Vector3d(-1.0, 1.0, -1.0));
+  mesh->addVertex(scale * Eigen::Vector3d(1.0, -1.0, -1.0));
+  mesh->addTriangle(ConvexMeshShape::TriMeshType::Triangle(0, 1, 2));
+  mesh->addTriangle(ConvexMeshShape::TriMeshType::Triangle(0, 1, 3));
+  mesh->addTriangle(ConvexMeshShape::TriMeshType::Triangle(0, 2, 3));
+  mesh->addTriangle(ConvexMeshShape::TriMeshType::Triangle(1, 2, 3));
+  return ConvexMeshShape::fromMesh(mesh, true);
+}
+
+std::shared_ptr<ConvexMeshShape> makeNativeFragmentConvexShape(
+    int variant, double scale)
+{
+  auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
+  const std::array<Eigen::Vector3d, 6> baseVertices{
+      Eigen::Vector3d(1.0, 0.15, 0.25),
+      Eigen::Vector3d(-0.85, -0.2, 0.35),
+      Eigen::Vector3d(0.2, 0.95, -0.1),
+      Eigen::Vector3d(-0.1, -0.9, -0.25),
+      Eigen::Vector3d(0.35, -0.25, 0.9),
+      Eigen::Vector3d(-0.25, 0.2, -0.85)};
+
+  const Eigen::Vector3d stretch(
+      1.0 + 0.06 * static_cast<double>(variant % 3),
+      0.92 + 0.05 * static_cast<double>((variant + 1) % 4),
+      0.88 + 0.04 * static_cast<double>((variant + 2) % 5));
+
+  mesh->reserveVertices(baseVertices.size());
+  for (const auto& vertex : baseVertices) {
+    mesh->addVertex(scale * vertex.cwiseProduct(stretch));
+  }
+
+  return ConvexMeshShape::fromMesh(mesh, true);
+}
+
+NativeBoxGroundRunResult runDefaultNativeBoxOnGroundWithSize(
+    const Eigen::Matrix3d& initialRotation,
+    int numSteps,
+    bool checkLongRunBounds,
+    const Eigen::Vector3d& boxSize)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  EXPECT_TRUE(world->getCollisionDetector());
+  if (!world->getCollisionDetector()) {
+    return {};
+  }
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  const double boxHalfExtent = 0.5 * boxSize.z();
+  const double groundTop = 0.05;
+  const double expectedCenterZ = groundTop + boxHalfExtent;
+
+  auto box = Skeleton::create("box");
+  auto boxPair = box->createJointAndBodyNodePair<FreeJoint>();
+  auto* boxJoint = boxPair.first;
+  auto* boxBody = boxPair.second;
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+  boxTf.linear() = initialRotation;
+  boxJoint->setTransform(boxTf);
+  auto* boxShapeNode
+      = boxBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          std::make_shared<BoxShape>(boxSize));
+
+  Inertia boxInertia;
+  boxInertia.setMass(1.0);
+  boxInertia.setMoment(boxShapeNode->getShape()->computeInertia(1.0));
+  boxBody->setInertia(boxInertia);
+
+  auto ground = Skeleton::create("ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  groundPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
+
+  world->addSkeleton(box);
+  world->addSkeleton(ground);
+
+  auto measureLowestVertexZ = [&]() {
+    return measureBoxLowestVertexZ(boxBody, boxSize);
+  };
+
+  NativeBoxGroundRunResult runResult;
+  double previousCenterZAfterRest = std::numeric_limits<double>::infinity();
+  for (int i = 0; i < numSteps; ++i) {
+    world->step();
+    const auto& collisionResult = world->getLastCollisionResult();
+    runResult.sawContact
+        = runResult.sawContact || collisionResult.getNumContacts() > 0u;
+    const double z = boxBody->getWorldTransform().translation().z();
+    const double lowestVertexZ = measureLowestVertexZ();
+    runResult.lowestCenterZ = std::min(runResult.lowestCenterZ, z);
+    runResult.lowestVertexZ = std::min(runResult.lowestVertexZ, lowestVertexZ);
+    if (i >= 2000) {
+      runResult.highestCenterZAfterRest
+          = std::max(runResult.highestCenterZAfterRest, z);
+      runResult.lowestCenterZAfterRest
+          = std::min(runResult.lowestCenterZAfterRest, z);
+      if (checkLongRunBounds && (i % 100 == 0)) {
+        EXPECT_LE(z, previousCenterZAfterRest + 0.002)
+            << "step=" << i << " previous=" << previousCenterZAfterRest;
+        previousCenterZAfterRest = z;
+      }
+    }
+
+    if (checkLongRunBounds && i >= 500 && (i % 100 == 0)) {
+      EXPECT_GE(lowestVertexZ, groundTop - 0.005) << "step=" << i;
+      EXPECT_GE(z, expectedCenterZ - 0.02) << "step=" << i;
+      EXPECT_LE(z, groundTop + boxHalfExtent * 1.74 + 0.02) << "step=" << i;
+    }
+  }
+
+  runResult.finalTransform = boxBody->getWorldTransform();
+  return runResult;
+}
+
+NativeCapsuleGroundRunResult runDefaultNativeCapsuleOnGround(
+    const Eigen::Matrix3d& initialRotation,
+    int numSteps,
+    double radius,
+    double height)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  EXPECT_TRUE(world->getCollisionDetector());
+  if (!world->getCollisionDetector()) {
+    return {};
+  }
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  auto capsule = Skeleton::create("capsule");
+  auto capsulePair = capsule->createJointAndBodyNodePair<FreeJoint>();
+  auto* capsuleJoint = capsulePair.first;
+  auto* capsuleBody = capsulePair.second;
+  Eigen::Isometry3d capsuleTf = Eigen::Isometry3d::Identity();
+  capsuleTf.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+  capsuleTf.linear() = initialRotation;
+  capsuleJoint->setTransform(capsuleTf);
+  auto* capsuleShapeNode
+      = capsuleBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          std::make_shared<CapsuleShape>(radius, height));
+
+  Inertia capsuleInertia;
+  capsuleInertia.setMass(1.0);
+  capsuleInertia.setMoment(capsuleShapeNode->getShape()->computeInertia(1.0));
+  capsuleBody->setInertia(capsuleInertia);
+
+  auto ground = Skeleton::create("capsule_ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  groundPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
+
+  world->addSkeleton(capsule);
+  world->addSkeleton(ground);
+
+  NativeCapsuleGroundRunResult runResult;
+  for (int i = 0; i < numSteps; ++i) {
+    world->step();
+    const auto& collisionResult = world->getLastCollisionResult();
+    runResult.sawContact
+        = runResult.sawContact || collisionResult.getNumContacts() > 0u;
+    runResult.maxContacts = std::max(
+        runResult.maxContacts,
+        static_cast<std::size_t>(collisionResult.getNumContacts()));
+    if (collisionResult.getNumContacts() > 0u) {
+      const auto& contact = collisionResult.getContact(0);
+      runResult.lastPenetrationDepth = contact.penetrationDepth;
+      runResult.lastContactPoint = contact.point;
+      runResult.lastContactNormal = contact.normal;
+    }
+    runResult.lowestCenterZ = std::min(
+        runResult.lowestCenterZ,
+        capsuleBody->getWorldTransform().translation().z());
+    runResult.lowestPointZ = std::min(
+        runResult.lowestPointZ,
+        measureCapsuleLowestPointZ(capsuleBody, radius, height));
+
+    EXPECT_TRUE(capsuleBody->getWorldTransform().matrix().array().allFinite())
+        << "step=" << i;
+  }
+
+  runResult.finalTransform = capsuleBody->getWorldTransform();
+  return runResult;
+}
+
+NativeBoxGroundRunResult runDefaultNativeBoxOnGround(
+    const Eigen::Matrix3d& initialRotation,
+    int numSteps,
+    bool checkLongRunBounds)
+{
+  return runDefaultNativeBoxOnGroundWithSize(
+      initialRotation,
+      numSteps,
+      checkLongRunBounds,
+      Eigen::Vector3d::Constant(0.3));
+}
+
+bool hasLocalAxisAlignedWithWorldZ(
+    const Eigen::Matrix3d& rotation, double angleToleranceRadians)
+{
+  const double threshold = std::cos(angleToleranceRadians);
+  for (int i = 0; i < 3; ++i) {
+    if (std::abs(rotation.col(i).dot(Eigen::Vector3d::UnitZ())) >= threshold) {
+      return true;
+    }
+  }
+  return false;
+}
+
+SkeletonPtr createNativeStackBox(
+    const std::string& name,
+    const Eigen::Vector3d& boxSize,
+    const Eigen::Vector3d& center)
+{
+  auto box = Skeleton::create(name);
+  auto pair = box->createJointAndBodyNodePair<FreeJoint>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = center;
+  joint->setTransform(tf);
+
+  auto* shapeNode = body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(boxSize));
+
+  Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(shapeNode->getShape()->computeInertia(1.0));
+  body->setInertia(inertia);
+
+  return box;
+}
+
+NativePrimitiveBody createNativeFreePrimitive(
+    World* world,
+    const std::string& name,
+    std::shared_ptr<Shape> shape,
+    const Eigen::Isometry3d& transform,
+    NativePrimitiveKind kind,
+    const Eigen::Vector3d& boxSize = Eigen::Vector3d::Zero(),
+    double radius = 0.0,
+    double height = 0.0)
+{
+  auto skel = Skeleton::create(name);
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  pair.first->setTransform(transform);
+
+  auto* shapeNode
+      = pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          std::move(shape));
+
+  Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(shapeNode->getShape()->computeInertia(1.0));
+  pair.second->setInertia(inertia);
+
+  NativePrimitiveBody primitive;
+  primitive.body = pair.second;
+  primitive.kind = kind;
+  primitive.boxSize = boxSize;
+  primitive.radius = radius;
+  primitive.height = height;
+
+  world->addSkeleton(skel);
+  return primitive;
+}
+
+NativeConvexBody createNativeFreeConvex(
+    World* world,
+    const std::string& name,
+    std::shared_ptr<ConvexMeshShape> shape,
+    const Eigen::Isometry3d& transform)
+{
+  auto skel = Skeleton::create(name);
+  auto pair = skel->createJointAndBodyNodePair<FreeJoint>();
+  pair.first->setTransform(transform);
+
+  auto* shapeNode
+      = pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          shape);
+
+  Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(shapeNode->getShape()->computeInertia(1.0));
+  pair.second->setInertia(inertia);
+
+  NativeConvexBody convex;
+  convex.body = pair.second;
+  convex.shape = std::move(shape);
+
+  world->addSkeleton(skel);
+  return convex;
+}
+
+} // namespace
+
+//==============================================================================
+void testDefaultNativeBoxRestsOnGround(const Eigen::Matrix3d& initialRotation)
+{
+  const auto result = runDefaultNativeBoxOnGround(initialRotation, 1500, false);
+
+  EXPECT_TRUE(result.sawContact);
+  EXPECT_GE(result.lowestCenterZ, 0.05 + 0.15 - 0.02);
+  EXPECT_GE(result.lowestVertexZ, 0.05 - 0.005);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeBoxRestsOnGround)
+{
+  testDefaultNativeBoxRestsOnGround(Eigen::Matrix3d::Identity());
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeRotatedBoxRestsOnGround)
+{
+  testDefaultNativeBoxRestsOnGround(
+      math::expMapRot(Eigen::Vector3d(0.4, -0.7, 0.2)));
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeRotatedBoxSettlesOnFace)
+{
+  const auto result = runDefaultNativeBoxOnGround(
+      math::expMapRot(Eigen::Vector3d(0.4, -0.7, 0.2)), 3000, false);
+
+  EXPECT_TRUE(result.sawContact);
+  EXPECT_TRUE(hasLocalAxisAlignedWithWorldZ(
+      result.finalTransform.linear(), 5.0 * kPi / 180.0))
+      << "rotation=\n"
+      << result.finalTransform.linear();
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeRotatedBoxStaysOnGround15s)
+{
+  const auto result = runDefaultNativeBoxOnGround(
+      math::expMapRot(Eigen::Vector3d(0.4, -0.7, 0.2)), 15000, true);
+
+  EXPECT_TRUE(result.sawContact);
+  EXPECT_GE(result.lowestCenterZ, 0.05 + 0.15 - 0.02);
+  EXPECT_GE(result.lowestVertexZ, 0.05 - 0.005);
+  EXPECT_LE(result.highestCenterZAfterRest, 0.05 + 0.15 * 1.74 + 0.02);
+  EXPECT_GE(result.lowestCenterZAfterRest, 0.05 + 0.15 - 0.02);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeHelloWorldBoxDoesNotTunnel)
+{
+  constexpr double groundTop = 0.05;
+  const Eigen::Vector3d boxSize(0.3, 0.3, 0.3);
+
+  auto skeleton = Skeleton::create();
+  auto jointAndBody = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  auto* body = jointAndBody.second;
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+  tf.linear() = math::expMapRot(Eigen::Vector3d(0.31, -0.62, 0.47));
+  body->getParentJoint()->setTransformFromParentBodyNode(tf);
+
+  auto* shapeNode = body->createShapeNodeWith<
+      VisualAspect,
+      CollisionAspect,
+      DynamicsAspect>(std::make_shared<BoxShape>(boxSize));
+  body->setInertia(Inertia(
+      1.0,
+      Eigen::Vector3d::Zero(),
+      shapeNode->getShape()->computeInertia(1.0)));
+
+  auto ground = Skeleton::create("ground");
+  auto* groundBody = ground->createJointAndBodyNodePair<WeldJoint>().second;
+  groundBody
+      ->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+          std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
+
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+  world->addSkeleton(skeleton);
+  world->addSkeleton(ground);
+
+  bool sawContact = false;
+  double lowestVertexZ = std::numeric_limits<double>::infinity();
+  for (int step = 0; step < 3000; ++step) {
+    world->step();
+    const auto& collisionResult = world->getLastCollisionResult();
+    sawContact = sawContact || collisionResult.getNumContacts() > 0u;
+    lowestVertexZ
+        = std::min(lowestVertexZ, measureBoxLowestVertexZ(body, boxSize));
+
+    EXPECT_TRUE(body->getWorldTransform().matrix().array().allFinite())
+        << "step=" << step;
+    if (step >= 500 && step % 100 == 0) {
+      EXPECT_GE(measureBoxLowestVertexZ(body, boxSize), groundTop - 0.005)
+          << "step=" << step;
+    }
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_GE(lowestVertexZ, groundTop - 0.005);
+  EXPECT_TRUE(hasLocalAxisAlignedWithWorldZ(
+      body->getWorldTransform().linear(), 5.0 * kPi / 180.0))
+      << "rotation=\n"
+      << body->getWorldTransform().linear();
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeThinBoxDoesNotTunnel)
+{
+  const auto result = runDefaultNativeBoxOnGroundWithSize(
+      math::expMapRot(Eigen::Vector3d(0.2, -0.1, 0.35)),
+      3000,
+      false,
+      Eigen::Vector3d(0.9, 0.08, 0.06));
+
+  EXPECT_TRUE(result.sawContact);
+  EXPECT_GE(result.lowestVertexZ, 0.05 - 0.005);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeSlenderCapsuleDoesNotTunnel)
+{
+  const auto result = runDefaultNativeCapsuleOnGround(
+      Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY()).toRotationMatrix()
+          * math::expMapRot(Eigen::Vector3d(0.0, 0.0, 0.25)),
+      3000,
+      0.035,
+      0.9);
+
+  EXPECT_TRUE(result.sawContact);
+  EXPECT_GE(result.lowestPointZ, 0.05 - 0.01)
+      << "sawContact=" << result.sawContact
+      << " maxContacts=" << result.maxContacts
+      << " lowestCenterZ=" << result.lowestCenterZ
+      << " lastDepth=" << result.lastPenetrationDepth
+      << " lastPoint=" << result.lastContactPoint.transpose()
+      << " lastNormal=" << result.lastContactNormal.transpose()
+      << " finalCenterZ=" << result.finalTransform.translation().z()
+      << " finalRotation=\n"
+      << result.finalTransform.linear();
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeTenBoxStackDoesNotTunnel)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  constexpr int kNumBoxes = 10;
+  const Eigen::Vector3d boxSize = Eigen::Vector3d::Constant(0.25);
+  const double boxHeight = boxSize.z();
+  const double groundTop = 0.05;
+
+  auto ground = Skeleton::create("stack_ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  groundPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(5.0, 5.0, 0.1)));
+  world->addSkeleton(ground);
+
+  std::vector<BodyNode*> boxBodies;
+  boxBodies.reserve(kNumBoxes);
+  for (int i = 0; i < kNumBoxes; ++i) {
+    const double z = groundTop + 0.5 * boxHeight + i * boxHeight;
+    auto box = createNativeStackBox(
+        "stack_box_" + std::to_string(i), boxSize, Eigen::Vector3d(0, 0, z));
+    boxBodies.push_back(box->getBodyNode(0));
+    world->addSkeleton(box);
+  }
+
+  bool sawContact = false;
+  double lowestVertexZ = std::numeric_limits<double>::infinity();
+  double highestFinalCenterZ = -std::numeric_limits<double>::infinity();
+  double finalKineticEnergy = 0.0;
+
+  for (int step = 0; step < 3000; ++step) {
+    world->step();
+    sawContact
+        = sawContact || world->getLastCollisionResult().getNumContacts() > 0u;
+
+    for (const auto* body : boxBodies) {
+      ASSERT_TRUE(body->getWorldTransform().matrix().array().allFinite())
+          << "step=" << step;
+      const double boxLowestVertexZ = measureBoxLowestVertexZ(body, boxSize);
+      lowestVertexZ = std::min(lowestVertexZ, boxLowestVertexZ);
+
+      if (step >= 500 && step % 100 == 0) {
+        EXPECT_GE(boxLowestVertexZ, groundTop - 0.01) << "step=" << step;
+      }
+    }
+  }
+
+  for (const auto* body : boxBodies) {
+    highestFinalCenterZ = std::max(
+        highestFinalCenterZ, body->getWorldTransform().translation().z());
+    finalKineticEnergy += body->getSkeleton()->computeKineticEnergy();
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_GE(lowestVertexZ, groundTop - 0.01);
+  EXPECT_GT(highestFinalCenterZ, groundTop + boxHeight * 7.0);
+  EXPECT_LT(finalKineticEnergy, 10.0);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeHundredBoxWallDoesNotTunnel)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  constexpr int kNumColumns = 10;
+  constexpr int kNumRows = 10;
+  const Eigen::Vector3d boxSize = Eigen::Vector3d::Constant(0.12);
+  const double groundTop = 0.05;
+  const double spacing = boxSize.x() * 1.01;
+
+  auto ground = Skeleton::create("hundred_box_wall_ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  groundPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(5.0, 5.0, 0.1)));
+  world->addSkeleton(ground);
+
+  std::vector<NativePrimitiveBody> boxes;
+  boxes.reserve(static_cast<std::size_t>(kNumColumns * kNumRows));
+  for (int row = 0; row < kNumRows; ++row) {
+    for (int col = 0; col < kNumColumns; ++col) {
+      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+      const double x
+          = (static_cast<double>(col) - 0.5 * (kNumColumns - 1)) * spacing;
+      const double y = 0.5 * (row % 2) * boxSize.y();
+      const double z
+          = groundTop + 0.5 * boxSize.z() + static_cast<double>(row) * spacing;
+      tf.translation() = Eigen::Vector3d(x, y, z);
+      boxes.push_back(createNativeFreePrimitive(
+          world.get(),
+          "hundred_box_wall_" + std::to_string(row) + "_" + std::to_string(col),
+          std::make_shared<BoxShape>(boxSize),
+          tf,
+          NativePrimitiveKind::Box,
+          boxSize));
+    }
+  }
+
+  bool sawContact = false;
+  double lowestVertexZ = std::numeric_limits<double>::infinity();
+
+  for (int step = 0; step < 1200; ++step) {
+    world->step();
+    sawContact
+        = sawContact || world->getLastCollisionResult().getNumContacts() > 0u;
+
+    for (const auto& box : boxes) {
+      ASSERT_TRUE(box.body->getWorldTransform().matrix().array().allFinite())
+          << "step=" << step;
+      const double boxLowestVertexZ
+          = measureBoxLowestVertexZ(box.body, box.boxSize);
+      lowestVertexZ = std::min(lowestVertexZ, boxLowestVertexZ);
+      if (step >= 100 && step % 100 == 0) {
+        EXPECT_GE(boxLowestVertexZ, groundTop - 0.02) << "step=" << step;
+      }
+    }
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_GE(lowestVertexZ, groundTop - 0.02);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeCapsulePileDoesNotTunnel)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  constexpr double groundTop = 0.05;
+  constexpr double radius = 0.04;
+  constexpr double height = 0.38;
+  constexpr int kNumColumns = 5;
+  constexpr int kNumLayers = 4;
+
+  auto ground = Skeleton::create("capsule_pile_ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  groundPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(5.0, 5.0, 0.1)));
+  world->addSkeleton(ground);
+
+  const std::array<double, kNumLayers> yawOffsets{
+      0.0, 0.5 * kPi, 0.25 * kPi, -0.25 * kPi};
+
+  std::vector<NativePrimitiveBody> capsules;
+  capsules.reserve(static_cast<std::size_t>(kNumColumns * kNumLayers));
+  for (int layer = 0; layer < kNumLayers; ++layer) {
+    for (int col = 0; col < kNumColumns; ++col) {
+      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+      const double x = (static_cast<double>(col) - 0.5 * (kNumColumns - 1))
+                       * (2.1 * radius);
+      const double y = (static_cast<double>(layer % 2) - 0.5) * radius;
+      const double z = groundTop + radius + static_cast<double>(layer) * 0.11;
+      tf.translation() = Eigen::Vector3d(x, y, z);
+      tf.linear() = Eigen::AngleAxisd(
+                        yawOffsets[static_cast<std::size_t>(layer)],
+                        Eigen::Vector3d::UnitZ())
+                    * Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY())
+                          .toRotationMatrix();
+
+      capsules.push_back(createNativeFreePrimitive(
+          world.get(),
+          "capsule_pile_" + std::to_string(layer) + "_" + std::to_string(col),
+          std::make_shared<CapsuleShape>(radius, height),
+          tf,
+          NativePrimitiveKind::Capsule,
+          Eigen::Vector3d::Zero(),
+          radius,
+          height));
+    }
+  }
+
+  bool sawContact = false;
+  double lowestPointZ = std::numeric_limits<double>::infinity();
+
+  for (int step = 0; step < 1600; ++step) {
+    world->step();
+    sawContact
+        = sawContact || world->getLastCollisionResult().getNumContacts() > 0u;
+
+    for (const auto& capsule : capsules) {
+      ASSERT_TRUE(
+          capsule.body->getWorldTransform().matrix().array().allFinite())
+          << "step=" << step;
+      const double capsuleLowestPointZ = measureCapsuleLowestPointZ(
+          capsule.body, capsule.radius, capsule.height);
+      lowestPointZ = std::min(lowestPointZ, capsuleLowestPointZ);
+      if (step >= 100 && step % 100 == 0) {
+        EXPECT_GE(capsuleLowestPointZ, groundTop - 0.025) << "step=" << step;
+      }
+    }
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_GE(lowestPointZ, groundTop - 0.025);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeConvexBodiesSettleOnStaticMeshLandscape)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  auto terrainMesh = makeNativeLandscapeTriMesh(8, 0.18, 0.05);
+  ASSERT_NE(terrainMesh, nullptr);
+  const double terrainLowestZ = computeTriMeshLowestZ(*terrainMesh);
+
+  auto terrain = Skeleton::create("convex_landscape");
+  auto terrainPair = terrain->createJointAndBodyNodePair<WeldJoint>();
+  auto* terrainBody = terrainPair.second;
+  terrainPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<MeshShape>(
+          Eigen::Vector3d::Ones(),
+          terrainMesh,
+          common::Uri("dart://native_collision/landscape")));
+  world->addSkeleton(terrain);
+
+  std::vector<NativeConvexBody> convexBodies;
+  convexBodies.reserve(9);
+  for (int row = 0; row < 3; ++row) {
+    for (int col = 0; col < 3; ++col) {
+      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+      tf.translation() = Eigen::Vector3d(
+          (static_cast<double>(col) - 1.0) * 0.18,
+          (static_cast<double>(row) - 1.0) * 0.18,
+          0.35 + 0.04 * static_cast<double>(row + col));
+      tf.linear() = math::expMapRot(
+          Eigen::Vector3d(
+              0.2 * static_cast<double>(row + 1),
+              -0.15 * static_cast<double>(col + 1),
+              0.1 * static_cast<double>(row - col)));
+      convexBodies.push_back(createNativeFreeConvex(
+          world.get(),
+          "convex_landscape_body_" + std::to_string(row) + "_"
+              + std::to_string(col),
+          makeNativeTetraConvexShape(0.045),
+          tf));
+    }
+  }
+
+  bool sawContact = false;
+  bool sawTerrainContact = false;
+  double lowestConvexPointZ = std::numeric_limits<double>::infinity();
+
+  for (int step = 0; step < 1600; ++step) {
+    world->step();
+    const auto& collisionResult = world->getLastCollisionResult();
+    sawContact = sawContact || collisionResult.getNumContacts() > 0u;
+    sawTerrainContact
+        = sawTerrainContact || collisionResult.inCollision(terrainBody);
+
+    for (const auto& convex : convexBodies) {
+      ASSERT_TRUE(convex.body->getWorldTransform().matrix().array().allFinite())
+          << "step=" << step;
+      const double convexLowestPointZ = measureConvexLowestPointZ(convex);
+      lowestConvexPointZ = std::min(lowestConvexPointZ, convexLowestPointZ);
+      if (step >= 100 && step % 100 == 0) {
+        EXPECT_GE(convexLowestPointZ, terrainLowestZ - 0.03) << "step=" << step;
+      }
+    }
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_TRUE(sawTerrainContact);
+  EXPECT_GE(lowestConvexPointZ, terrainLowestZ - 0.03);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeConvexFragmentsSettleOnMeshLandscape)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  auto terrainMesh = makeNativeLandscapeTriMesh(10, 0.16, 0.05);
+  ASSERT_NE(terrainMesh, nullptr);
+  const double terrainLowestZ = computeTriMeshLowestZ(*terrainMesh);
+
+  auto terrain = Skeleton::create("convex_fragment_landscape");
+  auto terrainPair = terrain->createJointAndBodyNodePair<WeldJoint>();
+  auto* terrainBody = terrainPair.second;
+  terrainPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<MeshShape>(
+          Eigen::Vector3d::Ones(),
+          terrainMesh,
+          common::Uri("dart://native_collision/fragment_landscape")));
+  world->addSkeleton(terrain);
+
+  constexpr int kRows = 5;
+  constexpr int kCols = 5;
+  std::vector<NativeConvexBody> fragments;
+  fragments.reserve(static_cast<std::size_t>(kRows * kCols));
+
+  for (int row = 0; row < kRows; ++row) {
+    for (int col = 0; col < kCols; ++col) {
+      const int index = row * kCols + col;
+      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+      tf.translation() = Eigen::Vector3d(
+          (static_cast<double>(col) - 0.5 * (kCols - 1)) * 0.13,
+          (static_cast<double>(row) - 0.5 * (kRows - 1)) * 0.13,
+          0.30 + 0.025 * static_cast<double>((row + col) % 3));
+      tf.linear() = math::expMapRot(
+          Eigen::Vector3d(
+              0.17 * static_cast<double>(index % 5),
+              -0.11 * static_cast<double>((index + 2) % 7),
+              0.13 * static_cast<double>((index + 3) % 6)));
+
+      fragments.push_back(createNativeFreeConvex(
+          world.get(),
+          "convex_fragment_" + std::to_string(index),
+          makeNativeFragmentConvexShape(index, 0.032),
+          tf));
+    }
+  }
+
+  bool sawContact = false;
+  bool sawTerrainContact = false;
+  std::size_t maxContacts = 0;
+  double lowestConvexPointZ = std::numeric_limits<double>::infinity();
+
+  for (int step = 0; step < 1600; ++step) {
+    world->step();
+    const auto& collisionResult = world->getLastCollisionResult();
+    sawContact = sawContact || collisionResult.getNumContacts() > 0u;
+    sawTerrainContact
+        = sawTerrainContact || collisionResult.inCollision(terrainBody);
+    maxContacts = std::max(
+        maxContacts,
+        static_cast<std::size_t>(collisionResult.getNumContacts()));
+
+    for (const auto& fragment : fragments) {
+      ASSERT_TRUE(
+          fragment.body->getWorldTransform().matrix().array().allFinite())
+          << "step=" << step;
+      const double fragmentLowestPointZ = measureConvexLowestPointZ(fragment);
+      lowestConvexPointZ = std::min(lowestConvexPointZ, fragmentLowestPointZ);
+      if (step >= 200 && step % 100 == 0) {
+        EXPECT_GE(fragmentLowestPointZ, terrainLowestZ - 0.035)
+            << "step=" << step;
+      }
+    }
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_TRUE(sawTerrainContact);
+  EXPECT_GT(maxContacts, 4u);
+  EXPECT_GE(lowestConvexPointZ, terrainLowestZ - 0.035);
+}
+
+//==============================================================================
+TEST(WorldTests, DefaultNativeMixedPrimitiveStackDoesNotTunnel)
+{
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  ASSERT_TRUE(world->getCollisionDetector());
+  ASSERT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
+
+  constexpr double groundTop = 0.05;
+
+  auto ground = Skeleton::create("mixed_stack_ground");
+  auto groundPair = ground->createJointAndBodyNodePair<WeldJoint>();
+  groundPair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(5.0, 5.0, 0.1)));
+  world->addSkeleton(ground);
+
+  std::vector<NativePrimitiveBody> primitives;
+  primitives.reserve(4);
+
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.translation() = Eigen::Vector3d(0.0, 0.0, groundTop + 0.09);
+  primitives.push_back(createNativeFreePrimitive(
+      world.get(),
+      "mixed_stack_box",
+      std::make_shared<BoxShape>(Eigen::Vector3d(0.6, 0.6, 0.18)),
+      boxTf,
+      NativePrimitiveKind::Box,
+      Eigen::Vector3d(0.6, 0.6, 0.18)));
+
+  Eigen::Isometry3d cylinderTf = Eigen::Isometry3d::Identity();
+  cylinderTf.translation() = Eigen::Vector3d(0.0, 0.0, groundTop + 0.28);
+  primitives.push_back(createNativeFreePrimitive(
+      world.get(),
+      "mixed_stack_cylinder",
+      std::make_shared<CylinderShape>(0.16, 0.20),
+      cylinderTf,
+      NativePrimitiveKind::Cylinder,
+      Eigen::Vector3d::Zero(),
+      0.16,
+      0.20));
+
+  Eigen::Isometry3d capsuleTf = Eigen::Isometry3d::Identity();
+  capsuleTf.translation() = Eigen::Vector3d(0.0, 0.0, groundTop + 0.43);
+  capsuleTf.linear() = Eigen::AngleAxisd(0.5 * kPi, Eigen::Vector3d::UnitY())
+                           .toRotationMatrix();
+  primitives.push_back(createNativeFreePrimitive(
+      world.get(),
+      "mixed_stack_capsule",
+      std::make_shared<CapsuleShape>(0.05, 0.35),
+      capsuleTf,
+      NativePrimitiveKind::Capsule,
+      Eigen::Vector3d::Zero(),
+      0.05,
+      0.35));
+
+  Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
+  sphereTf.translation() = Eigen::Vector3d(0.0, 0.0, groundTop + 0.58);
+  primitives.push_back(createNativeFreePrimitive(
+      world.get(),
+      "mixed_stack_sphere",
+      std::make_shared<SphereShape>(0.10),
+      sphereTf,
+      NativePrimitiveKind::Sphere,
+      Eigen::Vector3d::Zero(),
+      0.10));
+
+  bool sawContact = false;
+  double lowestPointZ = std::numeric_limits<double>::infinity();
+  double finalKineticEnergy = 0.0;
+
+  for (int step = 0; step < 2500; ++step) {
+    world->step();
+    sawContact
+        = sawContact || world->getLastCollisionResult().getNumContacts() > 0u;
+
+    for (const auto& primitive : primitives) {
+      ASSERT_TRUE(
+          primitive.body->getWorldTransform().matrix().array().allFinite())
+          << "step=" << step;
+      const double primitiveLowestPointZ
+          = measureNativePrimitiveLowestPointZ(primitive);
+      lowestPointZ = std::min(lowestPointZ, primitiveLowestPointZ);
+      if (step >= 500 && step % 100 == 0) {
+        EXPECT_GE(primitiveLowestPointZ, groundTop - 0.015) << "step=" << step;
+      }
+    }
+  }
+
+  for (const auto& primitive : primitives) {
+    finalKineticEnergy += primitive.body->getSkeleton()->computeKineticEnergy();
+  }
+
+  EXPECT_TRUE(sawContact);
+  EXPECT_GE(lowestPointZ, groundTop - 0.015);
+  EXPECT_LT(finalKineticEnergy, 10.0);
+}
+
 //==============================================================================
 TEST(WorldTests, Clone)
 {
@@ -468,6 +1551,7 @@ TEST(WorldTests, CollisionDetector)
 
   auto detector = world->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
+  EXPECT_EQ(detector->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -497,10 +1581,12 @@ TEST(WorldTests, SetCollisionDetector)
   world->setCollisionDetector(CollisionDetectorType::Fcl);
   auto fclDetector = world->getCollisionDetector();
   ASSERT_NE(fclDetector, nullptr);
+  EXPECT_EQ(fclDetector->getTypeView(), "dart");
 
   world->setCollisionDetector(CollisionDetectorType::Ode);
   auto odeDetector = world->getCollisionDetector();
   ASSERT_NE(odeDetector, nullptr);
+  EXPECT_EQ(odeDetector->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -1189,6 +2275,7 @@ TEST(WorldTests, GetSimpleFrameOutOfRange)
   EXPECT_EQ(world->getSimpleFrame(999), nullptr);
 }
 
+#if DART_ENABLE_COLLISION_REFERENCE_TESTS && DART_HAVE_BULLET
 //==============================================================================
 TEST(WorldTests, CreateWithBulletCollisionDetector)
 {
@@ -1199,6 +2286,7 @@ TEST(WorldTests, CreateWithBulletCollisionDetector)
   EXPECT_EQ(world->getName(), "bullet_world");
   EXPECT_NE(world->getCollisionDetector(), nullptr);
 }
+#endif
 
 TEST(WorldTests, AddDuplicateSimpleFrame)
 {
@@ -1294,10 +2382,12 @@ TEST(WorldTests, DartCollisionDetectorBoxContact)
   EXPECT_GT(result.getNumContacts(), 0u);
 }
 
-TEST(WorldTests, FclCollisionDetectorBoxContact)
+TEST(WorldTests, FclAliasUsesDartCollisionDetectorForBoxContact)
 {
   auto world = World::create();
   world->setCollisionDetector(CollisionDetectorType::Fcl);
+  ASSERT_NE(world->getCollisionDetector(), nullptr);
+  EXPECT_EQ(world->getCollisionDetector()->getTypeView(), "dart");
 
   auto skel1 = createBoxSkeleton("fcl_box1", Eigen::Vector3d::Zero());
   auto skel2 = createBoxSkeleton("fcl_box2", Eigen::Vector3d(0.3, 0.0, 0.0));

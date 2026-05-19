@@ -36,9 +36,9 @@
 
 #include <dart/constraint/constraint_solver.hpp>
 
-#include <dart/collision/bullet/bullet_collision_detector.hpp>
-#include <dart/collision/fcl/fcl_collision_detector.hpp>
-#include <dart/collision/ode/ode_collision_detector.hpp>
+#include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
+#include <dart/test/reference_collision/fcl/fcl_collision_detector.hpp>
+#include <dart/test/reference_collision/ode/ode_collision_detector.hpp>
 
 #include <dart/dynamics/All.hpp>
 #include <dart/dynamics/box_shape.hpp>
@@ -173,21 +173,21 @@ void runIssue1234Test(
 TEST(Issue1234, Bullet)
 {
   runIssue1234Test(
-      [] { return dart::collision::BulletCollisionDetector::create(); });
+      [] { return dart::collision::BulletCollisionDetector::createReference(); });
 }
 
 //==============================================================================
 TEST(Issue1234, Ode)
 {
   runIssue1234Test(
-      [] { return dart::collision::OdeCollisionDetector::create(); });
+      [] { return dart::collision::OdeCollisionDetector::createReference(); });
 }
 
 //==============================================================================
 TEST(Issue1234, Fcl)
 {
   runIssue1234Test([] {
-    auto detector = dart::collision::FCLCollisionDetector::create();
+    auto detector = dart::collision::FCLCollisionDetector::createReference();
     detector->setPrimitiveShapeType(
         dart::collision::FCLCollisionDetector::PRIMITIVE);
     return detector;
@@ -197,7 +197,7 @@ TEST(Issue1234, Fcl)
 //==============================================================================
 TEST(Issue426, FclThinBoxMeshModeUsesHalfspacePlane)
 {
-  auto detector = dart::collision::FCLCollisionDetector::create();
+  auto detector = dart::collision::FCLCollisionDetector::createReference();
   detector->setPrimitiveShapeType(dart::collision::FCLCollisionDetector::MESH);
 
   const double thickness = 5e-5;

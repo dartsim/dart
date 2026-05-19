@@ -26,6 +26,10 @@ Before you can build DART, you'll need to install the required and optional depe
 
 > **Note:** The dependencies and installation steps are subject to change. Please report any issues you encounter and contribute to keeping the instructions up-to-date.
 
+Native collision requires EnTT >= 3.14. The pixi workflow installs EnTT from
+`pixi.toml`; system builds need an installed EnTT package or network access so
+CMake can fetch EnTT during configure.
+
 ### Ubuntu
 
 Install required dependencies using `apt`:
@@ -33,7 +37,7 @@ Install required dependencies using `apt`:
 ```bash
 sudo apt install \
   build-essential cmake pkg-config git libassimp-dev \
-  libeigen3-dev libfcl-dev libfmt-dev \
+  libeigen3-dev libfmt-dev \
   libsdformat15 libgz-math8 libgz-utils2
 ```
 
@@ -43,12 +47,16 @@ Install optional dependencies:
 
 ```bash
 sudo apt install \
-  coinor-libipopt-dev libbullet-dev \
+  coinor-libipopt-dev libfcl-dev libbullet-dev \
   libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev \
   libopenscenegraph-dev libnlopt-cxx-dev liboctomap-dev libode-dev \
   libspdlog-dev libyaml-cpp-dev ocl-icd-opencl-dev opencl-headers \
   opencl-clhpp-headers
 ```
+
+FCL, Bullet, and ODE are optional reference-comparison dependencies for
+collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
+not require per-engine collision dependencies.
 
 ### macOS
 
@@ -56,7 +64,7 @@ Add the OSRF tap and install required dependencies using `brew`:
 
 ```bash
 brew tap osrf/simulation
-brew install assimp cmake eigen fmt fcl osrf/simulation/sdformat13
+brew install assimp cmake eigen fmt osrf/simulation/sdformat13
 ```
 
 > **Note:** Replace `sdformat13` with the latest formula published in the `osrf/simulation` tap.
@@ -64,17 +72,21 @@ brew install assimp cmake eigen fmt fcl osrf/simulation/sdformat13
 Install optional dependencies:
 
 ```bash
-brew install bullet ipopt nlopt octomap ode \
+brew install fcl bullet ipopt nlopt octomap ode \
   open-scene-graph --HEAD \
   spdlog tinyxml2 urdfdom yaml-cpp
 ```
+
+FCL, Bullet, and ODE are optional reference-comparison dependencies for
+collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
+not require per-engine collision dependencies.
 
 ### Windows
 
 Install required dependencies using `vcpkg`:
 
 ```bash
-vcpkg install --triplet x64-windows assimp eigen3 fcl fmt sdformat spdlog
+vcpkg install --triplet x64-windows assimp eigen3 fmt sdformat spdlog
 ```
 
 Install optional dependencies:
@@ -85,22 +97,30 @@ vcpkg install --triplet x64-windows \
   opencl opengl osg pagmo2 nanobind tinyxml2 urdfdom yaml-cpp
 ```
 
+FCL, Bullet, and ODE are optional reference-comparison dependencies for
+collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
+not require per-engine collision dependencies.
+
 ### Arch Linux (experimental)
 
 Install required dependencies using `yay`:
 
 ```bash
-yay -S assimp cmake eigen fcl fmt sdformat
+yay -S assimp cmake eigen fmt sdformat
 ```
 
 Install optional dependencies:
 
 ```bash
 yay -S \
-  bullet coin-or-ipopt nlopt octomap ode opencl-clhpp \
+  fcl bullet coin-or-ipopt nlopt octomap ode opencl-clhpp \
   opencl-headers opencl-icd-loader openscenegraph pagmo spdlog tinyxml2 \
   urdfdom nanobind
 ```
+
+FCL, Bullet, and ODE are optional reference-comparison dependencies for
+collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
+not require per-engine collision dependencies.
 
 ### FreeBSD (experimental)
 
@@ -274,6 +294,7 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 - `DART_BUILD_DARTPY` - Enable Python bindings
 - `DART_BUILD_GUI` - Enable OpenSceneGraph GUI
 - `DART_BUILD_GUI_RAYLIB` - Enable experimental Raylib integration (builds `raylib` example)
+- `DART_BUILD_GUI_VSG` - Enable VulkanSceneGraph visualization (requires Vulkan SDK; used by `collision_viz` example)
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
 - `DART_BUILD_EXAMPLES` - Build the GUI-based example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
 - `DART_BUILD_TUTORIALS` - Build the GUI-based tutorial targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)

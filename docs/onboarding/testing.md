@@ -96,7 +96,7 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 Signals to look for:
 
 - The full test run ends with `✓ All tests passed!`
-- The Gazebo integration workflow prints `✓ DART plugin built successfully with DART integration!`
+- The Gazebo integration workflow prints `✓ Full gz-physics suite passed and DART plugin links successfully!`
 
 ## Gotchas
 

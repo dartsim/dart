@@ -328,10 +328,6 @@ target_include_directories(dartpy
     ${CMAKE_BINARY_DIR}
 )
 
-if(BULLET_INCLUDE_DIR)
-  target_include_directories(dartpy SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})
-endif()
-
 set(dartpy_libraries
   dart
   dart-utils

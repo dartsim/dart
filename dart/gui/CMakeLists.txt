@@ -2,6 +2,8 @@ if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
   add_subdirectory(experimental)
 endif()
 
+add_subdirectory(vsg)
+
 if(NOT DART_BUILD_GUI)
   message(STATUS "Skipping GUI (DART_BUILD_GUI == ${DART_BUILD_GUI})")
   return()

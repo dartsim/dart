@@ -10,7 +10,6 @@ platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 assimp = ">=5.4.3,<7"
 benchmark = ">=1.9.4,<2"
 black = ">=25.12.0,<26"
-bullet-cpp = ">=3.25,<4"
 clang-format = ">=21.1.7,<22"
 cli11 = ">=2.6.0,<3"
 cmake = ">=4.2.1,<5"
@@ -19,7 +18,6 @@ console_bridge = ">=1.0.2,<2"
 doxygen = ">=1.13.2,<2"
 eigen = ">=3.4.0,<4"
 entt = ">=3.16.0,<4"
-fcl = ">=0.7.0,<0.8"
 foonathan-memory = ">=0.7.3,<0.8"
 fmt = ">=11.2.0,<13"
 gtest = ">=1.17.0,<2"
@@ -27,7 +25,6 @@ imgui = ">=1.92.3,<2"
 isort = ">=7.0.0,<8"
 jinja2 = ">=3.1.6,<4"
 libboost-devel = ">=1.88.0,<2"
-libode = ">=0.16.6,<0.17"
 libsdformat = ">=16.0.0,<17"
 myst-parser = ">=4.0.1,<5"
 nanobind = ">=2.10.2,<3"
@@ -54,6 +51,7 @@ taplo = ">=0.10.0,<0.11"
 taskflow = ">=4.0.0,<5"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
+vulkanscenegraph = ">=1.1.0,<2"
 
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
@@ -74,14 +72,15 @@ if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
 DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
-DART_BUILD_COLLISION_BULLET_VALUE=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON}
-DART_BUILD_COLLISION_ODE_VALUE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON}
+DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
 DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-OFF}
 DART_BUILD_GUI_RAYLIB_VALUE=${DART_BUILD_GUI_RAYLIB_OVERRIDE:-${DART_BUILD_RAYLIB_OVERRIDE:-OFF}}
+DART_BUILD_GUI_VSG_VALUE=${DART_BUILD_GUI_VSG_OVERRIDE:-ON}
 DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
 DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-OFF}
 DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_OVERRIDE:-OFF}
@@ -125,11 +124,12 @@ cmake \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
-  -DDART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET_VALUE} \
-  -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_VALUE} \
+  -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
+  -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
   -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
   -DDART_BUILD_GUI_FILAMENT=${DART_BUILD_GUI_FILAMENT_VALUE} \
   -DDART_BUILD_GUI_RAYLIB=${DART_BUILD_GUI_RAYLIB_VALUE} \
+  -DDART_BUILD_GUI_VSG=${DART_BUILD_GUI_VSG_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -172,6 +172,10 @@ lint-simulation-experimental = { cmd = """
     find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
 
+lint-collision-native = { cmd = """
+    find dart/collision/native tests/unit/collision tests/benchmark/collision/native -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
+""" }
+
 lint-py = { cmd = """
     black . --extend-exclude '/\\.[^/]+' && isort . --skip-glob '.*'
 """ }
@@ -190,6 +194,9 @@ lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
 
 lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 
+check-collision-runtime-isolation = { cmd = "python scripts/check_collision_runtime_isolation.py" }
+audit-collision-compat-facades = { cmd = "python scripts/audit_collision_compat_facades.py" }
+
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
 
 update-api-boundary-inventory = { cmd = [
@@ -201,12 +208,15 @@ lint = { depends-on = [
   "lint-spell",
   "lint-cpp",
   "lint-simulation-experimental",
+  "lint-collision-native",
   "lint-py",
   "lint-yaml",
   "lint-toml",
   "update-api-boundary-inventory",
   "lint-md",
   "lint-rst",
+  "check-collision-runtime-isolation",
+  "audit-collision-compat-facades",
   "lint-api-boundaries",
   "sync-ai-commands",
 ] }
@@ -263,6 +273,8 @@ check-lint = { depends-on = [
   "check-lint-md",
   "check-lint-rst",
   "check-lint-spell",
+  "check-collision-runtime-isolation",
+  "audit-collision-compat-facades",
   "check-docs-policy",
   "check-api-boundaries",
   "check-api-boundary-inventory",
@@ -315,11 +327,14 @@ if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
 DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
+DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
 DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-OFF}
 DART_BUILD_GUI_RAYLIB_VALUE=${DART_BUILD_GUI_RAYLIB_OVERRIDE:-${DART_BUILD_RAYLIB_OVERRIDE:-OFF}}
+DART_BUILD_GUI_VSG_VALUE=${DART_BUILD_GUI_VSG_OVERRIDE:-ON}
 DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
 DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-OFF}
 DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_OVERRIDE:-OFF}
@@ -362,8 +377,11 @@ cmake \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
+  -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
+  -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
   -DDART_BUILD_GUI_FILAMENT=${DART_BUILD_GUI_FILAMENT_VALUE} \
   -DDART_BUILD_GUI_RAYLIB=${DART_BUILD_GUI_RAYLIB_VALUE} \
+  -DDART_BUILD_GUI_VSG=${DART_BUILD_GUI_VSG_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -410,6 +428,30 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cm
   { arg = "dartpy", default = "ON" },
   { arg = "build_type", default = "Release" },
 ] }
+
+voxblox-bootstrap = { cmd = ["bash", "-lc", """
+set -euo pipefail
+VOXBLOX_ROOT=${VOXBLOX_ROOT:-/home/js/dev/physics/voxblox}
+VOXBLOX_WS=${VOXBLOX_WS:-/home/js/dev/physics/voxblox_ws}
+VOXBLOX_GIT_URL=${VOXBLOX_GIT_URL:-https://github.com/ethz-asl/voxblox.git}
+
+if [ -e "$VOXBLOX_ROOT" ] && [ ! -d "$VOXBLOX_ROOT/.git" ]; then
+  echo "VOXBLOX_ROOT exists but is not a git repo: $VOXBLOX_ROOT" >&2
+  exit 1
+fi
+
+if [ ! -d "$VOXBLOX_ROOT/.git" ]; then
+  git clone --recursive "$VOXBLOX_GIT_URL" "$VOXBLOX_ROOT"
+fi
+
+mkdir -p "$VOXBLOX_WS/src"
+if [ -e "$VOXBLOX_WS/src/voxblox" ]; then
+  rm -rf "$VOXBLOX_WS/src/voxblox"
+fi
+ln -s "$VOXBLOX_ROOT" "$VOXBLOX_WS/src/voxblox"
+echo "Voxblox cloned. ROS/catkin build is not run here."
+echo "If you need a build, use a ROS workspace and catkin_make."
+"""] }
 
 build-examples = { cmd = [
   "bash",
@@ -495,6 +537,8 @@ DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
 if [ -z "${DART_BUILD_DARTPY_VALUE}" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
+DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
@@ -519,7 +563,7 @@ if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
 NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
-cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
+cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
@@ -768,6 +812,8 @@ PIXI_ENVIRONMENT_NAME=${PIXI_ENVIRONMENT_NAME:-default}
 rm -rf "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
 echo "Configuring coverage build directory: build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
 DART_CODECOV_TEMP_DIR=${DART_CODECOV_TEMP_DIR:-build/$PIXI_ENVIRONMENT_NAME/cpp/coverage_temp}
+DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
@@ -802,8 +848,8 @@ cmake \
     -DDART_BUILD_PROFILE=OFF \
     -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
     -DDART_CODECOV=ON \
-    -DDART_BUILD_COLLISION_BULLET=ON \
-    -DDART_BUILD_COLLISION_ODE=ON \
+    -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
+    -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
@@ -893,6 +939,124 @@ bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }
 bm-check = { cmd = "python scripts/check_allocator_benchmarks.py", depends-on = [
   "config",
 ] }
+bm-collision-check = { depends-on = [
+  "bm-collision-check-narrow",
+  "bm-collision-check-narrow-adapter",
+  "bm-collision-check-narrow-raw-reference",
+  "bm-collision-check-distance",
+  "bm-collision-check-raycast",
+  "bm-collision-check-mixed",
+  "bm-collision-check-mesh",
+  "bm-collision-check-raycast-batch",
+  "bm-collision-check-adapter",
+] }
+bm-collision-check-narrow = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_comparative_narrow_phase \
+      --output .benchmark_results/collision_check_narrow.json \
+      --benchmark-filter 'BM_NarrowPhase_(SphereSphere|BoxBox|SphereBox)_(Native|FCL|Bullet|ODE)$' \
+      --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-narrow-adapter = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_comparative_narrow_phase \
+      --output .benchmark_results/collision_check_narrow_adapter.json \
+      --benchmark-filter 'BM_NarrowPhaseAdapter_EdgeCases_(Native|FCL|Bullet|ODE)/(SphereSphere|BoxBox|SphereBox)_Touching/1$' \
+      --max-native-ratio 1.10 \
+      --report-only \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-narrow-raw-reference = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_comparative_narrow_phase \
+      --output .benchmark_results/collision_check_narrow_raw_reference.json \
+      --benchmark-filter 'BM_NarrowPhaseRawReference_(SphereSphere|BoxBox|SphereBox)_(Native|FCL|Bullet|ODE)$|BM_NarrowPhaseRawReference_EdgeCases_(Native|FCL|Bullet|ODE)/(SphereSphere|BoxBox|CapsuleCapsule|SphereBox|CapsuleSphere|CapsuleBox)_(Touching|DeepPenetration|Grazing|ThinFeature)/1$' \
+      --max-native-ratio 1.10 \
+      --report-only \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-distance = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_comparative_distance \
+      --output .benchmark_results/collision_check_distance.json \
+      --benchmark-filter 'BM_Distance_(SphereSphere|BoxBox|CapsuleCapsule)_(Native|FCL|Bullet)$' \
+      --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-raycast = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_comparative_raycast \
+      --output .benchmark_results/collision_check_raycast.json \
+      --benchmark-filter 'BM_Raycast_(Sphere|Box|Capsule|Cylinder|Plane)_(Native|Bullet)$' \
+      --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-mixed = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_scenarios_mixed_primitives \
+      --output .benchmark_results/collision_check_mixed.json \
+      --benchmark-filter 'BM_Scenario_MixedPrimitives_(Dense|Sparse)_(Native|FCL|Bullet|ODE)/(100|1000)$' \
+      --max-native-ratio 1.20 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=5
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-mesh = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_scenarios_mesh_heavy \
+      --output .benchmark_results/collision_check_mesh.json \
+      --benchmark-filter 'BM_Scenario_MeshHeavy_(Native|FCL|Bullet)/1000$' \
+      --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = ["config"] }
+bm-collision-check-raycast-batch = { cmd = """
+    python scripts/check_collision_benchmarks.py \
+      --target bm_scenarios_raycast_batch \
+      --output .benchmark_results/collision_check_raycast_batch.json \
+      --benchmark-filter 'BM_Scenario_RaycastBatch_(Dense|Sparse)_(Native|Bullet)/1000$' \
+      --max-native-ratio 1.10 \
+      -- \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = [
+  "config",
+] }
+bm-collision-check-adapter = { cmd = """
+    python scripts/cmake_build.py \
+      --build-dir build/$PIXI_ENVIRONMENT_NAME/cpp/Release \
+      --target bm_scenarios_dart_adapter
+    build/$PIXI_ENVIRONMENT_NAME/cpp/Release/bin/bm_scenarios_dart_adapter \
+      --benchmark_filter='DartAdapter' \
+      --benchmark_out=.benchmark_results/collision_check_adapter.json \
+      --benchmark_out_format=json \
+      --benchmark_min_time=1ms \
+      --benchmark_repetitions=3
+""", depends-on = ["config"] }
 
 test-joints = { cmd = [
   "bash",
@@ -1069,8 +1233,8 @@ cmake \
     -DDART_BUILD_DARTPY={{ dartpy }} \
     -DDART_BUILD_SIMULATION_EXPERIMENTAL={{ dartpy }} \
     -DDART_BUILD_GUI=${DART_BUILD_GUI_OVERRIDE:-ON} \
-    -DDART_BUILD_COLLISION_BULLET=${DART_BUILD_COLLISION_BULLET_OVERRIDE:-ON} \
-    -DDART_BUILD_COLLISION_ODE=${DART_BUILD_COLLISION_ODE_OVERRIDE:-ON} \
+    -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF} \
+    -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF} \
     -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
     -DDART_BUILD_PROFILE=OFF \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -1088,7 +1252,7 @@ cmake \
 tracy = { cmd = "tracy-profiler" }
 
 # Python package build
-build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
+build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
 
 # Drop into a Python shell using an existing build tree dartpy (assumes dartpy has been built)
 shell-dartpy = { cmd = [
@@ -1128,7 +1292,7 @@ exec env PYTHONPATH="build/default/cpp/{{ build_type }}/python:${PYTHONPATH:-}" 
 ] }
 
 # Build wheel package (without installing)
-build-wheel = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF" } }
+build-wheel = { cmd = "pip wheel . --no-deps -w dist/ -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF" } }
 
 # Verify wheel contains dartpy module
 verify-wheel = { cmd = "bash -c 'python scripts/verify_wheel.py dist/dartpy-*.whl'", depends-on = [
@@ -1171,7 +1335,10 @@ wheel-repair-windows-core = { cmd = """
   { arg = "python_tag" },
 ] }
 
-wheel-verify-core = { cmd = "python scripts/verify_version.py dist/dartpy-*-{{ python_tag }}-*.whl", args = [
+wheel-verify-core = { cmd = """
+python scripts/verify_version.py dist/dartpy-*-{{ python_tag }}-*.whl
+python scripts/verify_wheel_collision_isolation.py dist/dartpy-*-{{ python_tag }}-*.whl
+""", args = [
   { arg = "python_tag" },
 ], env = { PYTHONIOENCODING = "utf-8" } }
 
@@ -1272,6 +1439,8 @@ DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-ON}
 DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
+DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
@@ -1301,6 +1470,8 @@ cmake \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
+  -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
+  -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
   -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
   -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} \
   -DDART_ENABLE_ASAN=ON \
@@ -1455,7 +1626,11 @@ tracy-profiler-gui = ">=0.12.2,<0.13"
 # Note: DART_MSVC_FORCE_RELEASE_RUNTIME defaults to ON, which forces /MD for all
 # configurations (including Debug) to match conda-forge packages and avoid LNK2038
 # runtime library mismatch errors. Set to OFF if building all deps from source.
-config = { cmd = """
+config = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
@@ -1465,6 +1640,8 @@ config = { cmd = """
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON \
+        -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF} \
+        -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF} \
         -DDART_BUILD_PROFILE={{ build_profile }} \
         -DDART_PROFILE_BUILTIN={{ profile_builtin }} \
         -DDART_PROFILE_TRACY={{ profile_tracy }} \
@@ -1476,7 +1653,8 @@ config = { cmd = """
         -DDART_USE_SYSTEM_NANOBIND=OFF \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF" }, args = [
+""",
+], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
@@ -1514,6 +1692,8 @@ lint = { depends-on = [
   "update-api-boundary-inventory",
   "lint-md",
   "lint-rst",
+  "check-collision-runtime-isolation",
+  "audit-collision-compat-facades",
   "lint-api-boundaries",
   "sync-ai-commands",
 ] }
@@ -1533,6 +1713,8 @@ check-lint = { depends-on = [
   "check-lint-md",
   "check-lint-rst",
   "check-lint-spell",
+  "check-collision-runtime-isolation",
+  "audit-collision-compat-facades",
   "check-docs-policy",
   "check-api-boundaries",
   "check-api-boundary-inventory",
@@ -1589,7 +1771,11 @@ build-py-dev = { cmd = """
   { arg = "build_type", default = "Release" },
 ] }
 
-config-py = { cmd = """
+config-py = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
@@ -1597,6 +1783,8 @@ config-py = { cmd = """
         -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY=ON \
+        -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF} \
+        -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF} \
         -DDART_BUILD_PROFILE={{ build_profile }} \
         -DDART_PROFILE_BUILTIN={{ profile_builtin }} \
         -DDART_PROFILE_TRACY={{ profile_tracy }} \
@@ -1606,7 +1794,8 @@ config-py = { cmd = """
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF" }, args = [
+""",
+], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
   { arg = "profile_tracy", default = "ON" },
@@ -1754,7 +1943,11 @@ install = { cmd = "python scripts/pixi_install.py {{ dartpy }}", depends-on = [
   { arg = "dartpy", default = "ON" },
 ] }
 
-config-install = { cmd = """
+config-install = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
     cmake \
         -S . \
         -B build/$PIXI_ENVIRONMENT_NAME/cpp \
@@ -1764,6 +1957,8 @@ config-install = { cmd = """
         -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
         -DDART_BUILD_DARTPY={{ dartpy }} \
         -DDART_BUILD_SIMULATION_EXPERIMENTAL={{ dartpy }} \
+        -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF} \
+        -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF} \
         -DDART_BUILD_PROFILE=OFF \
         -DDART_MSVC_DEFAULT_OPTIONS=ON \
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
@@ -1771,11 +1966,38 @@ config-install = { cmd = """
         -DDART_USE_SYSTEM_IMGUI=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
-""", env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
+""",
+], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
   { arg = "dartpy", default = "ON" },
 ] }
 
 tracy = { cmd = "tracy-profiler.exe" }
+
+#============================
+# Feature: Collision Reference
+#============================
+#
+# Optional reference engines for native collision correctness tests and
+# comparative benchmarks. These packages are intentionally not part of the base
+# environment because normal DART builds should use built-in collision only.
+#
+# Usage:
+#   pixi run -e collision-reference config
+#   pixi run -e collision-reference -- cmake --build build/collision-reference/cpp/Release --target test_reference_backends
+#
+
+[feature.collision-reference]
+channels = ["conda-forge"]
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+
+[feature.collision-reference.activation.env]
+DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE = "ON"
+DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE = "ON"
+
+[feature.collision-reference.dependencies]
+bullet-cpp = ">=3.25,<4"
+fcl = ">=0.7.0,<0.8"
+libode = ">=0.16.6,<0.17"
 
 #=================
 # Feature: Gazebo
@@ -1787,7 +2009,8 @@ tracy = { cmd = "tracy-profiler.exe" }
 # 1. Downloading gz-physics from source (gz-physics9_9.0.0 branch)
 # 2. Patching CMakeLists.txt to accept DART 7.0 (was hardcoded to 6.10)
 # 3. Building gz-physics with the dartsim plugin and test binaries
-# 4. Running the gz-physics test suite and verifying the dartsim plugin links against DART libraries
+# 4. Running the full gz-physics test suite and verifying the dartsim plugin links against DART libraries
+#    (gz-physics PERFORMANCE_* tests run serially to avoid timing-threshold noise under CTest parallelism)
 #
 # Usage (single command runs entire chain):
 #   pixi run -e gazebo test-gz
@@ -1800,16 +2023,12 @@ tracy = { cmd = "tracy-profiler.exe" }
 #   pixi run -e gazebo patch-gz     # Patch DART version requirement
 #   pixi run -e gazebo config-gz    # Configure CMake build
 #   pixi run -e gazebo build-gz     # Build gz-physics + dartsim plugin
-#   pixi run -e gazebo test-gz      # Verify DART integration
+#   pixi run -e gazebo test-gz      # Run full gz-physics suite + verify DART integration
 #
 
 [feature.gazebo]
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
-
-[feature.gazebo.activation.env]
-DART_BUILD_COLLISION_BULLET_OVERRIDE = "ON"
-DART_BUILD_COLLISION_ODE_OVERRIDE = "ON"
 
 [feature.gazebo.dependencies]
 git = ">=2.52.0,<3"
@@ -1821,6 +2040,7 @@ libgz-utils = ">=4.0.0,<5"
 libsdformat = ">=16.0.0,<17"
 eigen = ">=3.4.0,<4"
 assimp = ">=5.4.3,<6"
+fcl = ">=0.7.0,<0.8"
 libode = ">=0.16.6,<0.17"
 bullet-cpp = ">=3.25,<4"
 
@@ -1906,34 +2126,13 @@ test-gz = { cmd = """
         ROOT_DIR=$PWD
         cd .deps/gz-physics/build
         python "$ROOT_DIR/scripts/cmake_build.py" --build-dir . --parallel ${DART_PARALLEL_JOBS} --target all
-        python <<\"PY\"
-import os
-import subprocess
-from pathlib import Path
-
-build_dir = Path(\".\")
-ctest = subprocess.run([\"ctest\", \"-N\"], cwd=build_dir, text=True, capture_output=True, check=True)
-targets = set()
-for line in ctest.stdout.splitlines():
-    line = line.strip()
-    if not line.startswith(\"Test #\"):
-        continue
-    name = line.split(\":\", 1)[1].strip()
-    if name.startswith(\"UNIT_\"):
-        targets.add(name)
-        if name.startswith(\"check_UNIT_\"):
-            base = name[len(\"check_\"):]
-            targets.add(base)
-    elif name.startswith(\"COMMON_TEST_\") and name.endswith(\"_dartsim\"):
-        base = name.rsplit(\"_\", 1)[0]
-        targets.add(base)
-jobs = os.environ.get(\"DART_PARALLEL_JOBS\", \"1\")
-subprocess.check_call([\"ninja\", \"-j\", jobs, *sorted(targets)], cwd=build_dir)
-PY
-        ctest --output-on-failure --tests-regex \"^(UNIT_|check_UNIT_|COMMON_TEST_.*dartsim)\"
+        echo "Running gz-physics compatibility tests in parallel..."
+        ctest --output-on-failure --parallel ${DART_PARALLEL_JOBS} -E PERFORMANCE_
+        echo "Running gz-physics performance tests serially..."
+        ctest --output-on-failure --parallel 1 -R PERFORMANCE_
         cd lib
         (otool -L libgz-physics-dartsim-plugin*.dylib 2>/dev/null || ldd libgz-physics-dartsim-plugin.so 2>/dev/null) | grep dart
-        echo "✓ DART plugin built successfully with DART integration!"
+        echo "✓ Full gz-physics suite passed and DART plugin links successfully!"
     '
 """, depends-on = [
   "build-gz",
@@ -1962,10 +2161,8 @@ nanobind = ">=2.10.2,<3"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
-bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
-fcl = ">=0.7.0,<0.8"
 fmt = ">=12.0.0,<13"
 imgui = ">=1.92.3,<2"
 libboost-devel = ">=1.88.0,<2"
@@ -2090,10 +2287,8 @@ nanobind = ">=2.10.2,<3"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
-bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
-fcl = ">=0.7.0,<0.8"
 fmt = ">=12.0.0,<13"
 imgui = ">=1.92.3,<2"
 libboost-devel = ">=1.88.0,<2"
@@ -2218,10 +2413,8 @@ nanobind = ">=2.10.2,<3"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
-bullet-cpp = ">=3.25,<4"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
-fcl = ">=0.7.0,<0.8"
 fmt = ">=12.0.0,<13"
 imgui = ">=1.92.3,<2"
 libboost-devel = ">=1.88.0,<2"
@@ -2336,6 +2529,7 @@ wheel-repair = { depends-on = [
 
 [environments]
 default = ["py-default"]
+collision-reference = ["py-default", "collision-reference"]
 gazebo = ["gazebo"]
 py312-wheel = ["py312-wheel"]
 py313-wheel = ["py313-wheel"]

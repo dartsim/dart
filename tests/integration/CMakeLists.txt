@@ -1,34 +1,115 @@
 # Copyright (c) 2011, The DART development contributors
 
+# Reference collision libraries use static Registrar objects to keep legacy
+# factory keys available during comparison tests. Tests that do not directly
+# reference symbols from these libraries need --no-as-needed to prevent the
+# linker from stripping them.
+# Force-link a reference collision shared library even if no symbols are
+# directly referenced. Without this, --as-needed (default on Linux) strips the
+# library and prevents its static Registrar from running.
+#
+# Usage:
+#   dart_force_link_collision_backend(target backend)          # plain mode
+#   dart_force_link_collision_backend(target backend PRIVATE)  # keyword mode
+function(dart_force_link_collision_backend target backend)
+  if(NOT TARGET ${backend})
+    return()
+  endif()
+  set(keyword "${ARGV2}")  # optional: PRIVATE, PUBLIC, etc.
+  if(MSVC OR APPLE)
+    if(keyword)
+      target_link_libraries(${target} ${keyword} ${backend})
+    else()
+      target_link_libraries(${target} ${backend})
+    endif()
+  else()
+    if(keyword)
+      target_link_libraries(
+        ${target} ${keyword} -Wl,--no-as-needed ${backend} -Wl,--as-needed)
+    else()
+      target_link_libraries(
+        ${target} -Wl,--no-as-needed ${backend} -Wl,--as-needed)
+    endif()
+  endif()
+endfunction()
+
 # ==============================================================================
 # Collision Tests
 # ==============================================================================
 dart_add_test("integration" INTEGRATION_collision_CollisionGroups collision/test_collision_groups.cpp)
 dart_add_test("integration" INTEGRATION_collision_Issue2470 collision/test_issue2470.cpp)
-
-if(TARGET dart-io)
-  dart_add_test("integration" INTEGRATION_collision_Collision collision/test_collision.cpp)
-  target_link_libraries(INTEGRATION_collision_Collision dart-io)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+  if(TARGET dart-test-reference-fcl)
+    target_link_libraries(INTEGRATION_collision_CollisionGroups dart-test-reference-fcl)
+  endif()
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(INTEGRATION_collision_CollisionGroups dart-test-reference-bullet)
+  endif()
+  if(TARGET dart-test-reference-ode)
+    target_link_libraries(INTEGRATION_collision_CollisionGroups dart-test-reference-ode)
+  endif()
 endif()
 
-if(DART_BUILD_COLLISION_FCL)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-io AND TARGET dart-test-reference-fcl)
+  dart_add_test("integration" INTEGRATION_collision_Collision collision/test_collision.cpp)
+  target_link_libraries(INTEGRATION_collision_Collision dart-io)
+  target_link_libraries(INTEGRATION_collision_Collision dart-test-reference-fcl)
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(INTEGRATION_collision_Collision dart-test-reference-bullet)
+  endif()
+  if(TARGET dart-test-reference-ode)
+    target_link_libraries(INTEGRATION_collision_Collision dart-test-reference-ode)
+  endif()
+  target_link_libraries(INTEGRATION_collision_Collision dart-collision-native)
+  target_compile_definitions(INTEGRATION_collision_Collision PRIVATE DART_HAS_DART_COLLISION)
+endif()
+
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-test-reference-fcl)
   dart_add_test(
     "integration"
     INTEGRATION_collision_MeshContactRegression
     collision/test_mesh_contact_regression.cpp)
+  target_link_libraries(INTEGRATION_collision_MeshContactRegression dart-test-reference-fcl)
 endif()
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-test-reference-fcl)
+  dart_add_test(
+    "integration"
+    INTEGRATION_collision_FclPrimitiveContactMatrix
+    collision/test_fcl_primitive_contact_matrix.cpp)
+  target_link_libraries(INTEGRATION_collision_FclPrimitiveContactMatrix dart-test-reference-fcl)
+  dart_add_test(
+    "integration"
+    INTEGRATION_collision_FclPrimitiveContactMatrixFcl
+    collision/test_fcl_primitive_contact_matrix_fcl.cpp)
+  target_link_libraries(INTEGRATION_collision_FclPrimitiveContactMatrixFcl dart-test-reference-fcl)
+  # Suppress <ciso646> deprecation warning from octomap headers (GCC 15+)
+  # This file directly includes <fcl/fcl.h> which pulls in octomap's OcTreeKey.h
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
+    target_compile_options(INTEGRATION_collision_FclPrimitiveContactMatrixFcl PRIVATE -Wno-cpp)
+  endif()
+endif()
+
 dart_add_test(
   "integration"
-  INTEGRATION_collision_FclPrimitiveContactMatrix
-  collision/test_fcl_primitive_contact_matrix.cpp)
-dart_add_test(
-  "integration"
-  INTEGRATION_collision_FclPrimitiveContactMatrixFcl
-  collision/test_fcl_primitive_contact_matrix_fcl.cpp)
-# Suppress <ciso646> deprecation warning from octomap headers (GCC 15+)
-# This file directly includes <fcl/fcl.h> which pulls in octomap's OcTreeKey.h
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
-  target_compile_options(INTEGRATION_collision_FclPrimitiveContactMatrixFcl PRIVATE -Wno-cpp)
+  INTEGRATION_collision_native_collision_consistency
+  collision/test_native_collision_consistency.cpp)
+target_link_libraries(
+  INTEGRATION_collision_native_collision_consistency
+  dart-collision-native)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+  target_compile_definitions(
+    INTEGRATION_collision_native_collision_consistency
+    PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
+  )
+  if(TARGET dart-test-reference-fcl)
+    target_link_libraries(INTEGRATION_collision_native_collision_consistency dart-test-reference-fcl)
+  endif()
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(INTEGRATION_collision_native_collision_consistency dart-test-reference-bullet)
+  endif()
+  if(TARGET dart-test-reference-ode)
+    target_link_libraries(INTEGRATION_collision_native_collision_consistency dart-test-reference-ode)
+  endif()
 endif()
 
 # Additional collision tests
@@ -37,26 +118,57 @@ if(TARGET dart-utils-urdf)
   dart_add_test("integration" INTEGRATION_collision_NoFalseContacts collision/test_no_false_contacts.cpp)
 endif()
 
-if(DART_BUILD_COLLISION_BULLET)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-test-reference-bullet)
   dart_add_test("integration" INTEGRATION_collision_CollisionAccuracy collision/test_collision_accuracy.cpp)
+  target_link_libraries(INTEGRATION_collision_CollisionAccuracy dart-test-reference-bullet)
   dart_add_test("integration" INTEGRATION_collision_BulletCylinderRolling collision/test_bullet_cylinder_rolling.cpp)
+  target_link_libraries(INTEGRATION_collision_BulletCylinderRolling dart-test-reference-bullet)
   dart_add_test("integration" INTEGRATION_collision_BulletEllipsoidRolling collision/test_bullet_ellipsoid_rolling.cpp)
+  target_link_libraries(INTEGRATION_collision_BulletEllipsoidRolling dart-test-reference-bullet)
   dart_add_test("integration" INTEGRATION_collision_BulletBoxStack collision/test_bullet_box_stack.cpp)
+  target_link_libraries(INTEGRATION_collision_BulletBoxStack dart-test-reference-bullet)
 endif()
 
-if(DART_BUILD_COLLISION_BULLET AND DART_BUILD_COLLISION_ODE)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS
+   AND TARGET dart-test-reference-bullet
+   AND TARGET dart-test-reference-ode
+   AND TARGET dart-test-reference-fcl
+)
   dart_add_test("integration" INTEGRATION_collision_PlaneShapeCollision collision/test_plane_shape_collision.cpp)
-  target_link_libraries(INTEGRATION_collision_PlaneShapeCollision dart-utils)
+  target_link_libraries(
+    INTEGRATION_collision_PlaneShapeCollision
+    dart-utils
+    dart-test-reference-bullet
+    dart-test-reference-ode
+    dart-test-reference-fcl
+  )
 
   if(TARGET dart-io)
     dart_add_test("integration" INTEGRATION_collision_ContactGrouping collision/test_contact_grouping.cpp)
-    target_link_libraries(INTEGRATION_collision_ContactGrouping dart-io)
+    target_link_libraries(INTEGRATION_collision_ContactGrouping dart-io dart-test-reference-ode)
   endif()
 
   dart_add_test(
     "integration"
     INTEGRATION_collision_CapsuleGroundContact
     collision/test_capsule_ground_contact.cpp)
+  target_link_libraries(
+    INTEGRATION_collision_CapsuleGroundContact
+    dart-test-reference-bullet
+    dart-test-reference-ode
+  )
+
+  dart_add_test(
+    "integration"
+    INTEGRATION_collision_BoxGroundContactParity
+    collision/test_box_ground_contact_parity.cpp)
+  target_link_libraries(
+    INTEGRATION_collision_BoxGroundContactParity
+    dart-collision-native
+    dart-test-reference-bullet
+    dart-test-reference-ode
+    dart-test-reference-fcl
+  )
 endif()
 
 # ==============================================================================
@@ -70,12 +182,22 @@ dart_build_tests(
     constraint/test_constraint.cpp
     constraint/test_friction.cpp
 )
+if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+  dart_force_link_collision_backend(INTEGRATION_constraint_constraint dart-test-reference-fcl PRIVATE)
+  dart_force_link_collision_backend(INTEGRATION_constraint_friction dart-test-reference-fcl PRIVATE)
+endif()
 
 dart_add_test("integration" INTEGRATION_constraint_ContactConstraint constraint/test_contact_constraint.cpp)
 dart_add_test("integration" INTEGRATION_constraint_SplitImpulse constraint/test_split_impulse.cpp)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+  dart_force_link_collision_backend(INTEGRATION_constraint_ContactConstraint dart-test-reference-fcl)
+  dart_force_link_collision_backend(INTEGRATION_constraint_SplitImpulse dart-test-reference-fcl)
+endif()
 
-if(DART_BUILD_COLLISION_ODE)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-test-reference-ode)
   dart_add_test("integration" INTEGRATION_constraint_ForceDependentSlip constraint/test_force_dependent_slip.cpp)
+  target_link_libraries(INTEGRATION_constraint_ForceDependentSlip dart-test-reference-ode)
+  dart_force_link_collision_backend(INTEGRATION_constraint_ForceDependentSlip dart-test-reference-fcl)
 endif()
 
 # Additional constraint tests
@@ -144,6 +266,9 @@ if(TARGET dart-utils AND TARGET dart-io)
 
   dart_add_test("integration" INTEGRATION_dynamics_SoftDynamics dynamics/test_soft_dynamics.cpp)
   target_link_libraries(INTEGRATION_dynamics_SoftDynamics dart-io)
+  if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+    dart_force_link_collision_backend(INTEGRATION_dynamics_SoftDynamics dart-test-reference-fcl)
+  endif()
 
   # Additional dynamics tests requiring SDF support
   if(DART_ENABLE_SDFORMAT)
@@ -164,6 +289,9 @@ if(TARGET dart-utils AND TARGET dart-io)
     # Additional dynamics tests
     dart_add_test("integration" INTEGRATION_dynamics_SkeletonState dynamics/test_skeleton_state.cpp)
     dart_add_test("integration" INTEGRATION_dynamics_SkeletonTopology dynamics/test_skeleton_topology.cpp)
+    if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+      dart_force_link_collision_backend(INTEGRATION_dynamics_SkeletonTopology dart-test-reference-fcl)
+    endif()
   endif()
 endif()
 
@@ -186,6 +314,13 @@ if(TARGET dart-utils)
   target_link_libraries(INTEGRATION_io_SkelParser dart-utils)
   if(TARGET dart-io)
     target_link_libraries(INTEGRATION_io_SkelParser dart-io)
+  endif()
+  if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+    target_compile_definitions(
+      INTEGRATION_io_SkelParser
+      PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
+    )
+    dart_force_link_collision_backend(INTEGRATION_io_SkelParser dart-test-reference-fcl)
   endif()
 
 endif()
@@ -277,18 +412,63 @@ if(TARGET dart-utils AND TARGET dart-io)
   target_link_libraries(INTEGRATION_simulation_FileInfoWorld dart-io)
 
   dart_add_test("integration" INTEGRATION_simulation_World simulation/test_world.cpp)
+  set_property(
+    TEST INTEGRATION_simulation_World
+    APPEND PROPERTY LABELS collision-native-stability)
+  set_tests_properties(INTEGRATION_simulation_World PROPERTIES TIMEOUT 3600)
   target_link_libraries(INTEGRATION_simulation_World dart-io)
+  target_include_directories(
+    INTEGRATION_simulation_World
+    PRIVATE ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon)
+  target_sources(
+    INTEGRATION_simulation_World
+    PRIVATE
+      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/controller.cpp
+      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/state.cpp
+      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/state_machine.cpp
+      ${CMAKE_SOURCE_DIR}/examples/atlas_simbicon/terminal_condition.cpp)
+  if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+    target_compile_definitions(
+      INTEGRATION_simulation_World
+      PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
+    )
+    if(TARGET dart-test-reference-fcl)
+      target_link_libraries(INTEGRATION_simulation_World dart-test-reference-fcl)
+    endif()
+    if(TARGET dart-test-reference-bullet)
+      target_link_libraries(INTEGRATION_simulation_World dart-test-reference-bullet)
+    endif()
+    if(TARGET dart-test-reference-ode)
+      target_link_libraries(INTEGRATION_simulation_World dart-test-reference-ode)
+    endif()
+  endif()
 
   # Additional simulation tests
   dart_add_test("integration" INTEGRATION_simulation_Issue410 simulation/test_issue410.cpp)
   target_link_libraries(INTEGRATION_simulation_Issue410 dart-io)
+  if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+    dart_force_link_collision_backend(INTEGRATION_simulation_Issue410 dart-test-reference-fcl)
+  endif()
 
   if(DART_ENABLE_SDFORMAT)
     dart_add_test("integration" INTEGRATION_simulation_MomentumConservation simulation/test_momentum_conservation.cpp)
     target_link_libraries(INTEGRATION_simulation_MomentumConservation dart-io)
 
-    dart_add_test("integration" INTEGRATION_simulation_MimicConstraint simulation/test_mimic_constraint.cpp)
-    target_link_libraries(INTEGRATION_simulation_MimicConstraint dart-io)
+    if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+      dart_add_test(
+        "integration"
+        INTEGRATION_simulation_MimicConstraint
+        simulation/test_mimic_constraint.cpp
+      )
+      target_link_libraries(INTEGRATION_simulation_MimicConstraint dart-io)
+      target_compile_definitions(
+        INTEGRATION_simulation_MimicConstraint
+        PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
+      )
+      dart_force_link_collision_backend(INTEGRATION_simulation_MimicConstraint dart-test-reference-fcl)
+      dart_force_link_collision_backend(INTEGRATION_simulation_MimicConstraint dart-test-reference-bullet)
+      dart_force_link_collision_backend(INTEGRATION_simulation_MimicConstraint dart-test-reference-ode)
+    endif()
   endif()
 endif()
 

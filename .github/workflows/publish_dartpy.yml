@@ -27,6 +27,8 @@ jobs:
       wheel_workflow: ${{ steps.wheel_filter.outputs.wheel_workflow }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: dorny/paths-filter@v4
         id: code_filter
         with:

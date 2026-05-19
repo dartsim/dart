@@ -27,6 +27,8 @@ jobs:
       full_ci: ${{ steps.scope.outputs.full_ci }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/ci-scope
         id: scope
       - uses: dorny/paths-filter@v4
@@ -193,6 +195,119 @@ jobs:
           BUILD_TYPE=Release \
           pixi run install
 
+  native-collision-no-legacy:
+    needs: changes
+    if: >-
+      needs.changes.outputs.full_ci == 'true' &&
+      (github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.code == 'true')
+    name: Native Collision (no FCL/Bullet/ODE)
+    runs-on: ubuntu-latest
+    env:
+      BUILD_TYPE: Release
+      DART_PARALLEL_JOBS: 8
+      CTEST_PARALLEL_LEVEL: 8
+      DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE: OFF
+      DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE: OFF
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
+        with:
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 2
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
+      - name: Configure native-only collision build
+        run: |
+          DART_VERBOSE=ON \
+          pixi run config
+
+      - name: Build native collision and dartpy
+        run: |
+          pixi run -- cmake --build build/default/cpp/Release \
+            --target \
+              dart \
+              dartpy \
+              dart_collision_native_tests \
+              INTEGRATION_simulation_World \
+              UNIT_simulation_World \
+              UNIT_collision_CollisionGroup \
+              UNIT_collision_Raycast \
+              UNIT_collision_DartCollisionDetector \
+              UNIT_collision_CollisionBackend \
+            --parallel "${DART_PARALLEL_JOBS}"
+
+      - name: Test native collision and default detector paths
+        run: |
+          pixi run -- ctest --test-dir build/default/cpp/Release \
+            --output-on-failure \
+            -L collision-native
+          pixi run -- ctest --test-dir build/default/cpp/Release \
+            --output-on-failure \
+            -R '^(UNIT_collision_CollisionGroup|UNIT_collision_Raycast|UNIT_collision_DartCollisionDetector|UNIT_collision_CollisionBackend)$'
+
+      - name: Test dartpy native collision smoke
+        run: |
+          PYTHONPATH=build/default/cpp/Release/python \
+            pixi run -- pytest -q \
+              python/tests/unit/collision/test_collision.py \
+              python/tests/unit/simulation/test_world.py
+
+  collision-benchmark-guard:
+    needs: changes
+    if: >-
+      needs.changes.outputs.full_ci == 'true' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    name: Collision Benchmark Guard
+    runs-on: ubuntu-latest
+    env:
+      BUILD_TYPE: Release
+      DART_PARALLEL_JOBS: 8
+      CMAKE_BUILD_PARALLEL_LEVEL: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
+        with:
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+          install-args: -e collision-reference
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: 2
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
+      - name: Run collision benchmark guard
+        run: |
+          pixi run --locked -e collision-reference bm-collision-check
+
+      - name: Upload collision benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: collision-benchmark-guard-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .benchmark_results/collision_check_*.json
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14
+
   build-debug:
     needs: changes
     if: >-
@@ -281,7 +396,8 @@ jobs:
               -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
               -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
               -DDART_BUILD_DARTPY=ON \
-              -DDART_BUILD_COLLISION_BULLET=ON \
+              -DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF \
+              -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF \
               -DDART_BUILD_PROFILE=ON \
               -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
@@ -367,6 +483,77 @@ jobs:
           file /tmp/headless_output/frame_000000.png | grep -q "PNG image data"
           echo "Headless rendering test passed!"
 
+  vsg-rendering:
+    needs: changes
+    if: >-
+      needs.changes.outputs.full_ci == 'true' &&
+      (github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.code == 'true')
+    name: VSG Visualization Tests
+    runs-on: ubuntu-latest
+    env:
+      DART_PARALLEL_JOBS: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pixi (CI)
+        uses: ./.github/actions/setup-pixi-ci
+        with:
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Install system dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        with:
+          packages: libgl1-mesa-dev libglu1-mesa-dev libvulkan-dev vulkan-tools mesa-vulkan-drivers
+          version: 4
+
+      - name: Configure environment for compiler cache
+        uses: ./.github/actions/configure-compiler-cache
+
+      - name: Build with VSG enabled
+        run: |
+          DART_VERBOSE=ON \
+          BUILD_TYPE=Release \
+          DART_BUILD_GUI_VSG_OVERRIDE=ON \
+          pixi run build
+          pixi run cmake --build build/default/cpp/Release \
+            --parallel ${DART_PARALLEL_JOBS:-$(nproc)} \
+            --target UNIT_gui_vsg_geometry_builders \
+            --target UNIT_gui_vsg_debug_draw \
+            --target UNIT_gui_vsg_simple_viewer \
+            --target UNIT_gui_vsg_collision_scene_builder
+
+      - name: Run VSG unit tests
+        run: |
+          pixi run -- ctest --test-dir build/default/cpp/Release \
+            -R "UNIT_gui_vsg" \
+            --output-on-failure \
+            -j$(nproc)
+
+      - name: Run collision_viz headless test
+        run: |
+          if [ -x ./build/default/cpp/Release/bin/collision_viz ]; then
+            ./build/default/cpp/Release/bin/collision_viz --headless -o /tmp/collision_viz.ppm || \
+              echo "collision_viz headless may require GPU - skipping"
+            if [ -f /tmp/collision_viz.ppm ]; then
+              echo "collision_viz headless test passed!"
+              file /tmp/collision_viz.ppm
+            fi
+          else
+            echo "collision_viz not built - skipping"
+          fi
+
+      - name: Run collision_sandbox headless
+        run: |
+          if [ -x ./build/default/cpp/Release/bin/collision_sandbox ]; then
+            ./build/default/cpp/Release/bin/collision_sandbox --headless --frames 10 || \
+              ./build/default/cpp/Release/bin/collision_sandbox --headless
+          else
+            echo "collision_sandbox not built - skipping"
+          fi
+
   filament-gui-smoke:
     needs: changes
     if: >-
@@ -388,6 +575,7 @@ jobs:
             cxx: clang++
     env:
       DART_PARALLEL_JOBS: 2
+      LIBCXX_PREFIX: ${{ github.workspace }}/.pixi/envs/default
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -400,7 +588,7 @@ jobs:
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.0
         with:
-          packages: g++ clang libgl1-mesa-dev libglu1-mesa-dev mesa-utils libc++-dev libc++abi-dev xvfb
+          packages: g++ clang libgl1-mesa-dev libglu1-mesa-dev mesa-utils xvfb
           version: 2
 
       - name: Configure environment for compiler cache

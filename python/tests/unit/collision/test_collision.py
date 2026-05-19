@@ -4,18 +4,7 @@ import pytest
 
 
 def _collision_detector_factories():
-    detectors = [("fcl", dart.FCLCollisionDetector)]
-
-    if hasattr(dart, "DARTCollisionDetector"):
-        detectors.append(("dart", dart.DARTCollisionDetector))
-
-    if hasattr(dart, "BulletCollisionDetector"):
-        detectors.append(("bullet", dart.BulletCollisionDetector))
-
-    if hasattr(dart, "OdeCollisionDetector"):
-        detectors.append(("ode", dart.OdeCollisionDetector))
-
-    return detectors
+    return [("dart", dart.DartCollisionDetector)]
 
 
 _COLLISION_DETECTORS = _collision_detector_factories()
@@ -118,6 +107,16 @@ def collision_groups_tester(cd):
 _COLLISION_IDS = [name for name, _ in _COLLISION_DETECTORS]
 
 
+def test_legacy_collision_detector_names_are_not_exposed_in_dartpy():
+    for detector_name in (
+        "DARTCollisionDetector",
+        "FCLCollisionDetector",
+        "BulletCollisionDetector",
+        "OdeCollisionDetector",
+    ):
+        assert not hasattr(dart, detector_name)
+
+
 @pytest.mark.parametrize("name, cd_factory", _COLLISION_DETECTORS, ids=_COLLISION_IDS)
 def test_collision_groups(name, cd_factory):
     collision_groups_tester(cd_factory())
@@ -201,10 +200,7 @@ def test_filter(name, cd_factory):
 
 
 def test_raycast():
-    if not hasattr(dart, "BulletCollisionDetector"):
-        pytest.skip("Bullet collision detector is not available")
-
-    cd = dart.BulletCollisionDetector()
+    cd = dart.DartCollisionDetector()
 
     simple_frame = dart.SimpleFrame()
     sphere = dart.SphereShape(1)

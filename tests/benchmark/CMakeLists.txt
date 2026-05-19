@@ -41,18 +41,204 @@ else()
   FetchContent_MakeAvailable(benchmark)
 endif()
 
+include(dart_test_libccd)
+
 # ==============================================================================
 # Collision Benchmarks
 # ==============================================================================
-if(DART_BUILD_COLLISION_BULLET)
+if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-bullet)
   add_executable(bm_boxes collision/bm_boxes.cpp)
   target_link_libraries(bm_boxes
     dart
+    dart-test-reference-bullet
     benchmark::benchmark
     benchmark::benchmark_main
   )
   dart_format_add(collision/bm_boxes.cpp)
 endif()
+
+add_executable(bm_native collision/bm_native.cpp)
+target_link_libraries(bm_native
+  dart-collision-native
+  benchmark::benchmark
+)
+dart_format_add(collision/bm_native.cpp)
+add_executable(
+  bm_native_ccd
+  collision/native/bm_ccd.cpp
+)
+target_link_libraries(bm_native_ccd
+  dart-collision-native
+  benchmark::benchmark
+)
+dart_format_add(collision/native/bm_ccd.cpp)
+if(DART_TESTS_LIBCCD_FOUND)
+  add_executable(
+    bm_native_libccd
+    collision/native/bm_libccd.cpp
+  )
+  target_link_libraries(bm_native_libccd
+    dart-collision-native
+    dart_tests_libccd
+    benchmark::benchmark
+  )
+  dart_format_add(collision/native/bm_libccd.cpp)
+endif()
+add_executable(
+  bm_native_broadphase
+  collision/native/bm_broadphase.cpp
+)
+target_link_libraries(bm_native_broadphase
+  dart-collision-native
+  benchmark::benchmark
+)
+dart_format_add(collision/native/bm_broadphase.cpp)
+
+if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
+  add_executable(bm_comparative collision/bm_comparative.cpp)
+  target_link_libraries(bm_comparative
+    dart
+    dart-collision-native
+    benchmark::benchmark
+  )
+  target_link_libraries(bm_comparative dart-test-reference-fcl)
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(bm_comparative dart-test-reference-bullet)
+  endif()
+  if(TARGET dart-test-reference-ode)
+    target_link_libraries(bm_comparative dart-test-reference-ode)
+  endif()
+  dart_format_add(collision/bm_comparative.cpp)
+endif()
+
+if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
+  add_executable(
+    bm_comparative_narrow_phase
+    collision/comparative/bm_narrow_phase.cpp
+  )
+  target_link_libraries(bm_comparative_narrow_phase
+    dart
+    dart-collision-native
+    benchmark::benchmark
+  )
+  target_link_libraries(bm_comparative_narrow_phase dart-test-reference-fcl)
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(bm_comparative_narrow_phase dart-test-reference-bullet)
+  endif()
+  if(TARGET dart-test-reference-ode)
+    target_link_libraries(bm_comparative_narrow_phase dart-test-reference-ode)
+  endif()
+  dart_format_add(collision/comparative/bm_narrow_phase.cpp)
+endif()
+
+if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
+  add_executable(
+    bm_comparative_distance
+    collision/comparative/bm_distance.cpp
+  )
+  target_link_libraries(bm_comparative_distance
+    dart
+    dart-collision-native
+    benchmark::benchmark
+  )
+  target_link_libraries(bm_comparative_distance dart-test-reference-fcl)
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(bm_comparative_distance dart-test-reference-bullet)
+  endif()
+  if(TARGET dart-test-reference-ode)
+    target_link_libraries(bm_comparative_distance dart-test-reference-ode)
+  endif()
+  dart_format_add(collision/comparative/bm_distance.cpp)
+endif()
+if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS)
+  add_executable(
+    bm_comparative_raycast
+    collision/comparative/bm_raycast.cpp
+  )
+  target_link_libraries(bm_comparative_raycast
+    dart
+    dart-collision-native
+    benchmark::benchmark
+  )
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(bm_comparative_raycast dart-test-reference-bullet)
+  endif()
+  dart_format_add(collision/comparative/bm_raycast.cpp)
+endif()
+if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
+  add_executable(
+    bm_scenarios_mixed_primitives
+    collision/scenarios/bm_mixed_primitives.cpp
+  )
+  target_link_libraries(bm_scenarios_mixed_primitives
+    dart
+    dart-collision-native
+    benchmark::benchmark
+  )
+  target_link_libraries(bm_scenarios_mixed_primitives dart-test-reference-fcl)
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(bm_scenarios_mixed_primitives dart-test-reference-bullet)
+  endif()
+  if(TARGET dart-test-reference-ode)
+    target_link_libraries(bm_scenarios_mixed_primitives dart-test-reference-ode)
+  endif()
+  dart_format_add(collision/scenarios/bm_mixed_primitives.cpp)
+endif()
+add_executable(
+  bm_scenarios_raycast_batch
+  collision/scenarios/bm_raycast_batch.cpp
+)
+target_link_libraries(bm_scenarios_raycast_batch
+  dart
+  dart-collision-native
+  benchmark::benchmark
+)
+if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-bullet)
+  target_link_libraries(bm_scenarios_raycast_batch dart-test-reference-bullet)
+  target_compile_definitions(
+    bm_scenarios_raycast_batch
+    PRIVATE DART_ENABLE_COLLISION_REFERENCE_BENCHMARKS=1
+  )
+endif()
+dart_format_add(collision/scenarios/bm_raycast_batch.cpp)
+if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
+  add_executable(
+    bm_scenarios_mesh_heavy
+    collision/scenarios/bm_mesh_heavy.cpp
+  )
+  target_link_libraries(bm_scenarios_mesh_heavy
+    dart
+    dart-collision-native
+    benchmark::benchmark
+  )
+  target_link_libraries(bm_scenarios_mesh_heavy dart-test-reference-fcl)
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(bm_scenarios_mesh_heavy dart-test-reference-bullet)
+  endif()
+  dart_format_add(collision/scenarios/bm_mesh_heavy.cpp)
+endif()
+add_executable(
+  bm_scenarios_pipeline_breakdown
+  collision/scenarios/bm_pipeline_breakdown.cpp
+)
+target_link_libraries(bm_scenarios_pipeline_breakdown
+  dart
+  dart-collision-native
+  benchmark::benchmark
+)
+dart_format_add(collision/scenarios/bm_pipeline_breakdown.cpp)
+add_executable(
+  bm_scenarios_dart_adapter
+  collision/scenarios/bm_dart_adapter.cpp
+)
+target_link_libraries(bm_scenarios_dart_adapter
+  dart
+  benchmark::benchmark
+)
+dart_format_add(collision/scenarios/bm_dart_adapter.cpp)
+dart_format_add(collision/fixtures/shape_factories.hpp)
+dart_format_add(collision/fixtures/scene_builders.hpp)
+dart_format_add(collision/fixtures/edge_cases.hpp)
 
 # ==============================================================================
 # Dynamics Benchmarks
