@@ -464,6 +464,75 @@ TEST(ArticulatedDynamicsAlgorithms, BatchedAlgorithmsHandleHeterogeneousModels)
   }
 }
 
+TEST(ArticulatedDynamicsAlgorithms, BatchedViewsUseUpdatedSkeletonTimeStep)
+{
+  const detail::RneaOptions rneaOptions{false, true, true};
+  auto skeletons = makeRepresentativeSkeletons();
+
+  for (std::size_t i = 0; i < skeletons.size(); ++i) {
+    const auto& skeleton = skeletons[i];
+    configureState(skeleton, false, 1.0 + static_cast<double>(i));
+    skeleton->setCommands(
+        makeStateVector(static_cast<int>(skeleton->getNumDofs()), 0.2, -0.03));
+  }
+
+  auto models = makeViews(skeletons);
+  const auto modelSpan
+      = std::span<detail::SkeletonDynamicsView>(models.data(), models.size());
+
+  std::vector<double> updatedTimeSteps;
+  std::vector<Eigen::VectorXd> expectedForces;
+  updatedTimeSteps.reserve(skeletons.size());
+  expectedForces.reserve(skeletons.size());
+
+  for (std::size_t i = 0; i < skeletons.size(); ++i) {
+    const auto& skeleton = skeletons[i];
+    const double updatedTimeStep = 0.004 + 0.001 * static_cast<double>(i);
+    skeleton->setTimeStep(updatedTimeStep);
+    updatedTimeSteps.push_back(updatedTimeStep);
+
+    EXPECT_DOUBLE_EQ(models[i].getTimeStep(), updatedTimeStep)
+        << skeleton->getName();
+
+    runLegacyRnea(skeleton, rneaOptions);
+    expectedForces.push_back(skeleton->getForces());
+    skeleton->setForces(
+        Eigen::VectorXd::Constant(skeleton->getNumDofs(), 456.0));
+  }
+
+  detail::rneaBatch(modelSpan, rneaOptions);
+
+  for (std::size_t i = 0; i < skeletons.size(); ++i) {
+    EXPECT_TRUE(skeletons[i]->getForces().isApprox(expectedForces[i], 1e-12))
+        << skeletons[i]->getName();
+  }
+
+  std::vector<Eigen::VectorXd> expectedAccelerations;
+  expectedAccelerations.reserve(skeletons.size());
+
+  for (std::size_t i = 0; i < skeletons.size(); ++i) {
+    const auto& skeleton = skeletons[i];
+    configureState(skeleton, true, 1.0 + static_cast<double>(i));
+    skeleton->setCommands(
+        makeStateVector(static_cast<int>(skeleton->getNumDofs()), 0.2, -0.03));
+    skeleton->setTimeStep(updatedTimeSteps[i]);
+
+    runLegacyAba(skeleton);
+    expectedAccelerations.push_back(skeleton->getAccelerations());
+    skeleton->setAccelerations(
+        Eigen::VectorXd::Constant(skeleton->getNumDofs(), -456.0));
+  }
+
+  detail::abaBatch(modelSpan);
+
+  for (std::size_t i = 0; i < skeletons.size(); ++i) {
+    EXPECT_TRUE(
+        skeletons[i]->getAccelerations().isApprox(
+            expectedAccelerations[i], 1e-12))
+        << skeletons[i]->getName();
+  }
+}
+
 TEST(ArticulatedDynamicsAlgorithms, RneaAndAbaRoundTripRepresentativeJoints)
 {
   for (const auto& skeleton : makeRepresentativeSkeletons()) {

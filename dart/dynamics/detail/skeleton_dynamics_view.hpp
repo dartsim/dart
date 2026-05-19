@@ -136,7 +136,7 @@ private:
   std::size_t mNumBodyNodes;
   std::size_t mNumDofs;
   const Eigen::Vector3d& mGravity;
-  double mTimeStep;
+  const double& mTimeStep;
 };
 
 } // namespace detail
