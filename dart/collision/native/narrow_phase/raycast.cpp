@@ -54,8 +54,14 @@ double solveQuadratic(double a, double b, double c, double& t0, double& t1)
   double sqrtDisc = std::sqrt(discriminant);
   double q = (b > 0.0) ? -0.5 * (b + sqrtDisc) : -0.5 * (b - sqrtDisc);
 
-  t0 = q / a;
-  t1 = c / q;
+  if (std::abs(q) < kEpsilon) {
+    const double invTwoA = 0.5 / a;
+    t0 = (-b - sqrtDisc) * invTwoA;
+    t1 = (-b + sqrtDisc) * invTwoA;
+  } else {
+    t0 = q / a;
+    t1 = c / q;
+  }
 
   if (t0 > t1) {
     std::swap(t0, t1);
@@ -90,6 +96,9 @@ bool raycastSphere(
   }
 
   double t = t0;
+  if (c < 0.0 && t <= kEpsilon) {
+    t = t1;
+  }
   if (t < 0.0) {
     t = t1;
     if (t < 0.0) {

@@ -590,7 +590,7 @@ TEST(DartCollisionDetector, RaycastWorksForHeightmap)
   EXPECT_GT(rayHit.mNormal.z(), 0.99);
 }
 
-TEST(DartCollisionDetector, LegacyUppercaseHeaderUsesNativeRaycast)
+TEST(DartCollisionDetector, LegacyUppercaseHeaderPreservesUnsupportedRaycast)
 {
   auto detector = DARTCollisionDetector::create();
   auto sphere = std::make_shared<SphereShape>(0.5);
@@ -601,41 +601,53 @@ TEST(DartCollisionDetector, LegacyUppercaseHeaderUsesNativeRaycast)
 
   RaycastOption option;
   RaycastResult result;
+  result.mRayHits.emplace_back();
 
   const Eigen::Vector3d from(0.0, 0.0, 2.0);
   const Eigen::Vector3d to(0.0, 0.0, -2.0);
 
   const bool hit = group->raycast(from, to, option, &result);
   EXPECT_EQ("dart", detector->getTypeView());
-  EXPECT_TRUE(hit);
-  EXPECT_TRUE(result.hasHit());
+  EXPECT_FALSE(hit);
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(result.mRayHits.empty());
 }
 
-TEST(DartCollisionDetector, LegacyCompatFacadesUseNativeRaycast)
+TEST(DartCollisionDetector, LegacyCompatFacadesPreserveRaycastCompatibility)
 {
   DART_SUPPRESS_DEPRECATED_BEGIN
-  const std::array<std::shared_ptr<CollisionDetector>, 3> detectors{
-      FCLCollisionDetector::create(),
-      BulletCollisionDetector::create(),
-      OdeCollisionDetector::create()};
+  const auto bullet = BulletCollisionDetector::create();
+  const std::array<std::shared_ptr<CollisionDetector>, 2> unsupportedDetectors{
+      FCLCollisionDetector::create(), OdeCollisionDetector::create()};
   DART_SUPPRESS_DEPRECATED_END
 
-  for (const auto& detector : detectors) {
-    auto sphere = std::make_shared<SphereShape>(0.5);
-    auto setup = makeShapeSetup("sphere", sphere);
+  auto sphere = std::make_shared<SphereShape>(0.5);
+  auto setup = makeShapeSetup("sphere", sphere);
+  const Eigen::Vector3d from(0.0, 0.0, 2.0);
+  const Eigen::Vector3d to(0.0, 0.0, -2.0);
+  RaycastOption option;
 
+  {
+    auto group = bullet->createCollisionGroup();
+    group->addShapeFrame(setup.shapeNode);
+
+    RaycastResult result;
+    const bool hit = group->raycast(from, to, option, &result);
+    EXPECT_TRUE(hit) << bullet->getTypeView();
+    EXPECT_TRUE(result.hasHit()) << bullet->getTypeView();
+  }
+
+  for (const auto& detector : unsupportedDetectors) {
     auto group = detector->createCollisionGroup();
     group->addShapeFrame(setup.shapeNode);
 
-    RaycastOption option;
     RaycastResult result;
-
-    const Eigen::Vector3d from(0.0, 0.0, 2.0);
-    const Eigen::Vector3d to(0.0, 0.0, -2.0);
+    result.mRayHits.emplace_back();
 
     const bool hit = group->raycast(from, to, option, &result);
-    EXPECT_TRUE(hit) << detector->getTypeView();
-    EXPECT_TRUE(result.hasHit()) << detector->getTypeView();
+    EXPECT_FALSE(hit) << detector->getTypeView();
+    EXPECT_FALSE(result.hasHit()) << detector->getTypeView();
+    EXPECT_TRUE(result.mRayHits.empty()) << detector->getTypeView();
   }
 }
 

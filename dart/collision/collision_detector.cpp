@@ -61,8 +61,12 @@ bool CollisionDetector::raycast(
     const Eigen::Vector3d& /*from*/,
     const Eigen::Vector3d& /*to*/,
     const RaycastOption& /*option*/,
-    RaycastResult* /*result*/)
+    RaycastResult* result)
 {
+  if (result) {
+    result->clear();
+  }
+
   DART_WARN(
       "[CollisionDetector] Raycast is not supported by '{}'", getTypeView());
   return false;

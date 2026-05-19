@@ -10,10 +10,17 @@
 
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/collision/collision_detector.hpp>
+#include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/fwd.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
+#include <dart/collision/raycast_option.hpp>
+#include <dart/collision/raycast_result.hpp>
+
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
 #include <gtest/gtest.h>
 
@@ -47,6 +54,51 @@ void expectNativeBackedFacade(
   EXPECT_EQ(std::string(detector->getTypeView()), compatibilityType);
 }
 
+template <typename Detector>
+void expectRaycastHit(const std::shared_ptr<Detector>& detector)
+{
+  ASSERT_NE(detector, nullptr);
+
+  auto frame = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
+  frame->setShape(std::make_shared<dart::dynamics::SphereShape>(1.0));
+
+  auto group = detector->createCollisionGroup(frame.get());
+  dart::collision::RaycastResult result;
+
+  EXPECT_TRUE(detector->raycast(
+      group.get(),
+      Eigen::Vector3d(-2.0, 0.0, 0.0),
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      dart::collision::RaycastOption(),
+      &result));
+  EXPECT_TRUE(result.hasHit());
+}
+
+template <typename Detector>
+void expectUnsupportedRaycastClearsResult(
+    const std::shared_ptr<Detector>& detector)
+{
+  ASSERT_NE(detector, nullptr);
+
+  auto frame = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World());
+  frame->setShape(std::make_shared<dart::dynamics::SphereShape>(1.0));
+
+  auto group = detector->createCollisionGroup(frame.get());
+  dart::collision::RaycastResult result;
+  result.mRayHits.emplace_back();
+
+  EXPECT_FALSE(detector->raycast(
+      group.get(),
+      Eigen::Vector3d(-2.0, 0.0, 0.0),
+      Eigen::Vector3d(2.0, 0.0, 0.0),
+      dart::collision::RaycastOption(),
+      &result));
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(result.mRayHits.empty());
+}
+
 } // namespace
 
 TEST(LegacyCompatFacades, DirectClassesKeepDisplayNamesOnly)
@@ -72,4 +124,26 @@ TEST(LegacyCompatFacades, FactoryAliasesStillCanonicalizeToDart)
     ASSERT_NE(detector, nullptr) << key;
     EXPECT_EQ(std::string(detector->getTypeView()), "dart") << key;
   }
+}
+
+TEST(LegacyCompatFacades, CanonicalAndBulletDetectorsSupportRaycasts)
+{
+  expectRaycastHit(dart::collision::DartCollisionDetector::create());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  expectRaycastHit(dart::collision::BulletCollisionDetector::create());
+  DART_SUPPRESS_DEPRECATED_END
+}
+
+TEST(LegacyCompatFacades, GzUnsupportedFacadesKeepRaycastsUnsupported)
+{
+  expectUnsupportedRaycastClearsResult(
+      dart::collision::DARTCollisionDetector::create());
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  expectUnsupportedRaycastClearsResult(
+      dart::collision::FCLCollisionDetector::create());
+  expectUnsupportedRaycastClearsResult(
+      dart::collision::OdeCollisionDetector::create());
+  DART_SUPPRESS_DEPRECATED_END
 }

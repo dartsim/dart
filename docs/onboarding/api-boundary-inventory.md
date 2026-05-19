@@ -16,7 +16,7 @@ documented downstream migration or removal condition is satisfied.
 
 - C++ public headers scanned: 437
 - C++ headers with exposed implementation debt: 98
-- C++ headers with compatibility signals: 49
+- C++ headers with compatibility signals: 50
 - dartpy binding sources scanned: 168
 - dartpy binding sources with allowlisted compatibility debt: 8
 
@@ -24,7 +24,7 @@ documented downstream migration or removal condition is satisfied.
 
 | Module                  | Headers | Supported | Compatibility | Experimental | Exposed Debt |
 | ----------------------- | ------- | --------- | ------------- | ------------ | ------------ |
-| collision               | 98      | 89        | 2             | 0            | 7            |
+| collision               | 98      | 88        | 3             | 0            | 7            |
 | common                  | 52      | 21        | 4             | 0            | 27           |
 | constraint              | 23      | 16        | 6             | 0            | 1            |
 | dynamics                | 71      | 36        | 4             | 0            | 31           |
@@ -151,9 +151,10 @@ documented downstream migration or removal condition is satisfied.
 | dart/collision/collision_detector.hpp                      | collision  | 3       | exposed-implementation debt |
 | dart/collision/collision_filter.hpp                        | collision  | 1       | exposed-implementation debt |
 | dart/collision/contact.hpp                                 | collision  | 2       | exposed-implementation debt |
+| dart/collision/dart/DARTCollisionDetector.hpp              | collision  | 1       | compatibility               |
 | dart/collision/dart/dart_collision_detector.hpp            | collision  | 1       | compatibility               |
-| dart/collision/fcl/compat/fcl_collision_detector.hpp       | collision  | 2       | exposed-implementation debt |
-| dart/collision/ode/compat/ode_collision_detector.hpp       | collision  | 2       | exposed-implementation debt |
+| dart/collision/fcl/compat/fcl_collision_detector.hpp       | collision  | 3       | exposed-implementation debt |
+| dart/collision/ode/compat/ode_collision_detector.hpp       | collision  | 3       | exposed-implementation debt |
 | dart/collision/smart_pointer.hpp                           | collision  | 1       | compatibility               |
 | dart/common/class_with_virtual_base.hpp                    | common     | 1       | compatibility               |
 | dart/common/deprecated.hpp                                 | common     | 8       | compatibility               |

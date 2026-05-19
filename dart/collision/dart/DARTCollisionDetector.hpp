@@ -45,6 +45,18 @@ public:
     return std::shared_ptr<DARTCollisionDetector>(new DARTCollisionDetector());
   }
 
+  bool raycast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr) override
+  {
+    // Keep the legacy display-name facade aligned with gz-physics, where
+    // "dart" is still treated as an unsupported ray-intersection backend.
+    return CollisionDetector::raycast(group, from, to, option, result);
+  }
+
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
       const override
   {

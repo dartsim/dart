@@ -81,6 +81,17 @@ public:
     return type;
   }
 
+  bool raycast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& from,
+      const Eigen::Vector3d& to,
+      const RaycastOption& option = RaycastOption(),
+      RaycastResult* result = nullptr) override
+  {
+    // gz-physics treats the legacy "fcl" facade as unsupported for raycasts.
+    return CollisionDetector::raycast(group, from, to, option, result);
+  }
+
   std::shared_ptr<CollisionDetector> cloneWithoutCollisionObjects()
       const override
   {
