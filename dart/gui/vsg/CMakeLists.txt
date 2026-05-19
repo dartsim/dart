@@ -55,7 +55,7 @@ else()
     FetchContent_Populate(vsgImGui)
     cmake_policy(POP)
   endif()
-  
+
   if(NOT TARGET docs)
     add_custom_target(docs)
   endif()
@@ -65,7 +65,7 @@ else()
   if(NOT TARGET uninstall)
     add_custom_target(uninstall)
   endif()
-  
+
   if(NOT TARGET vsgImGui)
     set(CMAKE_CXX_STANDARD_SAVED ${CMAKE_CXX_STANDARD})
     set(BUILD_SHARED_LIBS_SAVED ${BUILD_SHARED_LIBS})
@@ -73,7 +73,7 @@ else()
     set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_SAVED})
     set(CMAKE_CXX_STANDARD ${CMAKE_CXX_STANDARD_SAVED})
   endif()
-  
+
   set(DART_HAS_VSGIMGUI TRUE)
   if(TARGET vsgImGui::vsgImGui)
     message(STATUS "dart-gui-vsg: Found vsgImGui::vsgImGui alias target")
