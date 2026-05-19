@@ -287,6 +287,7 @@ endif()
 # Component dependencies do not create linker edges; libdart instantiates native
 # collision types directly and must carry this dependency itself.
 target_link_libraries(dart PUBLIC ${PROJECT_NAME}-collision-native)
+dart_pkgconfig_append_libraries("-l${PROJECT_NAME}-collision-native")
 add_component_dependencies(${PROJECT_NAME} dart collision-native)
 
 # Legacy collision component names are compatibility facades. They no longer

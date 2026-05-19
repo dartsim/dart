@@ -313,6 +313,16 @@ def check_package_components(repo_root: Path) -> list[str]:
             "dart/CMakeLists.txt: dart must explicitly link "
             "${PROJECT_NAME}-collision-native"
         )
+    pkgconfig_link_pattern = re.compile(
+        r"dart_pkgconfig_append_libraries\(\s*"
+        r"\"-l\$\{PROJECT_NAME\}-collision-native\"\s*\)",
+        re.DOTALL,
+    )
+    if not pkgconfig_link_pattern.search(source):
+        failures.append(
+            "dart/CMakeLists.txt: dart pkg-config metadata must include "
+            "-ldart-collision-native"
+        )
     return failures
 
 
@@ -388,6 +398,7 @@ def main() -> int:
     print("  raycast facades: legacy detector classes use native raycast")
     print("  package components: collision-fcl/bullet/ode -> dart")
     print("  link interface: dart -> dart-collision-native")
+    print("  pkg-config: dart -> -ldart-collision-native")
     print("  reference engines: tests/dart/test/reference_collision only")
     return 0
 
