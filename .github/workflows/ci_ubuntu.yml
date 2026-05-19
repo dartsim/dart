@@ -524,7 +524,7 @@ jobs:
           ctest --test-dir build/default/cpp/Release \
             -R "UNIT_gui_vsg" \
             --output-on-failure \
-            -j$(nproc) || echo "VSG tests may require GPU - skipping failures"
+            -j$(nproc)
 
       - name: Run collision_viz headless test
         run: |
