@@ -168,7 +168,12 @@ SimpleViewer SimpleViewer::headless(int width, int height)
   return SimpleViewer(HeadlessTag{}, width, height);
 }
 
-SimpleViewer::~SimpleViewer() = default;
+SimpleViewer::~SimpleViewer()
+{
+  if (m_viewer) {
+    m_viewer->deviceWaitIdle();
+  }
+}
 
 bool SimpleViewer::isHeadless() const
 {
@@ -468,7 +473,7 @@ std::vector<uint8_t> SimpleViewer::captureBuffer()
   if (!frame()) {
     return {};
   }
-  m_viewer->waitForFences(0, 1000000000);
+  m_viewer->deviceWaitIdle();
 
   ::vsg::ref_ptr<::vsg::Device> device;
   ::vsg::ref_ptr<::vsg::PhysicalDevice> physicalDevice;
