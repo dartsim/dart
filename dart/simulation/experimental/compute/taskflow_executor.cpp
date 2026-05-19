@@ -77,7 +77,7 @@ void TaskflowExecutor::execute(const ComputeGraph& graph)
     tasks.at(edge.from).precede(tasks.at(edge.to));
   }
 
-  m_executor->run(taskflow).wait();
+  m_executor->run(taskflow).get();
 }
 
 //==============================================================================
@@ -100,7 +100,7 @@ ComputeExecutionProfile TaskflowExecutor::executeProfiled(
   }
 
   profiler.start();
-  m_executor->run(taskflow).wait();
+  m_executor->run(taskflow).get();
   return profiler.finish();
 }
 

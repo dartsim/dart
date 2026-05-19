@@ -42,6 +42,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
@@ -394,6 +395,28 @@ TEST(ExperimentalTaskflowExecutor, RespectsDependencies)
   EXPECT_TRUE(ok.load());
   EXPECT_TRUE(endDone.load());
   EXPECT_GE(executor.getWorkerCount(), 1u);
+}
+
+//==============================================================================
+TEST(ExperimentalTaskflowExecutor, PropagatesNodeExceptions)
+{
+  compute::ComputeGraph graph;
+  graph.addNode("throwing", []() { throw std::runtime_error("task failed"); });
+
+  compute::TaskflowExecutor executor(1);
+
+  EXPECT_THROW(executor.execute(graph), std::runtime_error);
+}
+
+//==============================================================================
+TEST(ExperimentalTaskflowExecutor, ProfiledPropagatesNodeExceptions)
+{
+  compute::ComputeGraph graph;
+  graph.addNode("throwing", []() { throw std::runtime_error("task failed"); });
+
+  compute::TaskflowExecutor executor(1);
+
+  EXPECT_THROW({ (void)executor.executeProfiled(graph); }, std::runtime_error);
 }
 
 //==============================================================================
