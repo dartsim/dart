@@ -44,6 +44,51 @@ using namespace dart::common;
 
 namespace {
 
+class TrackingLockable
+{
+public:
+  void lock()
+  {
+    mLocked = true;
+  }
+
+  bool try_lock()
+  {
+    if (!mCanTryLock || mLocked) {
+      return false;
+    }
+
+    mLocked = true;
+    return true;
+  }
+
+  void unlock()
+  {
+    mLocked = false;
+    ++mUnlockCount;
+  }
+
+  void setCanTryLock(bool canTryLock)
+  {
+    mCanTryLock = canTryLock;
+  }
+
+  bool isLocked() const
+  {
+    return mLocked;
+  }
+
+  int getUnlockCount() const
+  {
+    return mUnlockCount;
+  }
+
+private:
+  bool mCanTryLock = true;
+  bool mLocked = false;
+  int mUnlockCount = 0;
+};
+
 std::vector<std::mutex*> makeMutexPointers(std::vector<std::mutex>& mutexes)
 {
   std::vector<std::mutex*> mutexPtrs;
@@ -207,6 +252,27 @@ TEST(MultiLockableReference, TryLockFailsWhenOneLocked)
   EXPECT_FALSE(lockRef.try_lock());
 
   mutexes[1].unlock();
+}
+
+TEST(MultiLockableReference, TryLockReleasesAlreadyLockedMutexesOnFailure)
+{
+  auto holder = std::make_shared<int>(42);
+  std::vector<TrackingLockable> lockables(3);
+  std::vector<TrackingLockable*> lockablePtrs{
+      &lockables[0], &lockables[1], &lockables[2]};
+
+  lockables[1].setCanTryLock(false);
+
+  MultiLockableReference<TrackingLockable> lockRef(
+      holder, lockablePtrs.begin(), lockablePtrs.end());
+
+  EXPECT_FALSE(lockRef.try_lock());
+  EXPECT_FALSE(lockables[0].isLocked());
+  EXPECT_FALSE(lockables[1].isLocked());
+  EXPECT_FALSE(lockables[2].isLocked());
+  EXPECT_EQ(1, lockables[0].getUnlockCount());
+  EXPECT_EQ(0, lockables[1].getUnlockCount());
+  EXPECT_EQ(0, lockables[2].getUnlockCount());
 }
 
 TEST(MultiLockableReference, WorksWithStdLockGuard)

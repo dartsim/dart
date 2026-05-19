@@ -89,6 +89,15 @@ Experimental API can change faster, but it still needs docs, tests, and clear
 ownership. Do not expose implementation-only component storage or backend
 plumbing just because the surrounding module is experimental.
 
+For `dart::simulation::experimental::compute`, keep the stable-looking surface
+small and backend-neutral. The supported experimental concepts are graph nodes,
+explicit graph dependencies, executor injection, profiles, domain/acceleration
+metadata, DOT visualization, and stage/pipeline composition. Do not expose
+Taskflow types, GPU devices, streams, memory pools, SIMD storage requirements,
+solver registries, or rendering backends until a later plan and benchmark gate
+justify them. Future resource read/write declarations should start as
+diagnostic metadata and validation inputs before becoming scheduler contracts.
+
 ### Internal API
 
 Internal API may change without compatibility guarantees. It includes:

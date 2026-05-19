@@ -32,32 +32,48 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/compute/compute_graph.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
+#include <entt/entt.hpp>
+
+#include <string>
+#include <vector>
+
 namespace dart::simulation::experimental {
-
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class MultiBody;
-class RigidBody;
 class World;
+}
 
-namespace compute {
+namespace dart::simulation::experimental::compute {
+
 class ComputeExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct LinkOptions;
-struct MultiBodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
+/// Builds a graph for the experimental World's kinematic cache update stage.
+class DART_EXPERIMENTAL_API WorldKinematicsGraph
+{
+public:
+  explicit WorldKinematicsGraph(World& world);
 
-} // namespace dart::simulation::experimental
+  void rebuild();
+  void execute(ComputeExecutor& executor);
+
+  [[nodiscard]] const ComputeGraph& getGraph() const noexcept
+  {
+    return m_graph;
+  }
+
+private:
+  struct EntityNode
+  {
+    entt::entity entity;
+    ComputeNode* node;
+  };
+
+  [[nodiscard]] ComputeNode* findNode(entt::entity entity) const;
+
+  World& m_world;
+  ComputeGraph m_graph;
+  std::vector<EntityNode> m_entityNodes;
+};
+
+} // namespace dart::simulation::experimental::compute

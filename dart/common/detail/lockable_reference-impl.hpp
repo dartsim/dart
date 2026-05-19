@@ -116,8 +116,14 @@ bool MultiLockableReference<Lockable>::try_lock() noexcept
     return false;
   }
 
-  for (auto lockable : mLockables) {
-    if (!lockable->try_lock()) {
+  for (auto lockableIt = mLockables.begin(); lockableIt != mLockables.end();
+       ++lockableIt) {
+    if (!(*lockableIt)->try_lock()) {
+      for (auto lockedIt = std::make_reverse_iterator(lockableIt);
+           lockedIt != mLockables.rend();
+           ++lockedIt) {
+        (*lockedIt)->unlock();
+      }
       return false;
     }
   }

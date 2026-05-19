@@ -30,34 +30,31 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/simulation/experimental/compute/compute_node.hpp"
 
-#include <dart/simulation/experimental/export.hpp>
+#include "dart/simulation/experimental/common/exceptions.hpp"
 
-namespace dart::simulation::experimental {
+#include <utility>
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class MultiBody;
-class RigidBody;
-class World;
+namespace dart::simulation::experimental::compute {
 
-namespace compute {
-class ComputeExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
+//==============================================================================
+ComputeNode::ComputeNode(
+    std::string_view name, ExecuteFn fn, ComputeStageMetadata metadata)
+  : m_name(name), m_fn(std::move(fn)), m_metadata(metadata)
+{
+}
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct LinkOptions;
-struct MultiBodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
+//==============================================================================
+void ComputeNode::execute()
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !m_fn,
+      InvalidOperationException,
+      "Compute node '{}' has no executable body",
+      m_name);
 
-} // namespace dart::simulation::experimental
+  m_fn();
+}
+
+} // namespace dart::simulation::experimental::compute

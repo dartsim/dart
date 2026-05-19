@@ -36,6 +36,9 @@
 #include "dart/simulation/experimental/common/ecs_utils.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/compute/sequential_executor.hpp"
+#include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
+#include "dart/simulation/experimental/compute/world_step_stage.hpp"
 #include "dart/simulation/experimental/frame/fixed_frame.hpp"
 #include "dart/simulation/experimental/frame/frame.hpp"
 #include "dart/simulation/experimental/frame/free_frame.hpp"
@@ -49,6 +52,8 @@
 #include <ostream>
 #include <string>
 #include <utility>
+
+#include <cmath>
 
 namespace {
 
@@ -84,6 +89,40 @@ bool hasEntityWithName(const entt::registry& registry, std::string_view name)
 
 namespace dart::simulation::experimental {
 
+namespace {
+
+//==============================================================================
+void executeKinematicsGraph(World& world, compute::ComputeExecutor& executor)
+{
+  compute::WorldKinematicsGraph graph(world);
+  graph.execute(executor);
+}
+
+//==============================================================================
+Eigen::Quaterniond normalizeOrIdentity(const Eigen::Quaterniond& orientation)
+{
+  const auto norm = orientation.norm();
+  if (norm <= 0.0 || !std::isfinite(norm)) {
+    return Eigen::Quaterniond::Identity();
+  }
+
+  auto normalized = orientation;
+  normalized.coeffs() /= norm;
+  return normalized;
+}
+
+//==============================================================================
+Eigen::Isometry3d toIsometry(
+    const Eigen::Vector3d& position, const Eigen::Quaterniond& orientation)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = position;
+  transform.linear() = orientation.toRotationMatrix();
+  return transform;
+}
+
+} // namespace
+
 World::World() = default;
 
 //==============================================================================
@@ -103,6 +142,9 @@ void World::clear()
 {
   m_registry.clear();
   m_simulationMode = false;
+  m_timeStep = 0.001;
+  m_time = 0.0;
+  m_frame = 0;
   m_freeFrameCounter = 0;
   m_fixedFrameCounter = 0;
   m_multiBodyCounter = 0;
@@ -302,7 +344,6 @@ std::size_t World::getMultiBodyCount() const
 RigidBody World::addRigidBody(
     std::string_view name, const RigidBodyOptions& options)
 {
-  (void)options; // Placeholder for future use
   ensureDesignMode();
 
   std::string candidateName
@@ -316,18 +357,35 @@ RigidBody World::addRigidBody(
       candidateName);
 
   Frame parent = Frame(entt::null, this);
+  const auto orientation = normalizeOrIdentity(options.orientation);
+  const auto initialTransform = toIsometry(options.position, orientation);
 
   std::string actualName;
   auto entity = createFrameEntity(
       name,
       parent,
-      Eigen::Isometry3d::Identity(),
+      initialTransform,
       &m_rigidBodyCounter,
       "rigid_body",
       false,
       actualName);
 
   m_registry.emplace<comps::RigidBodyTag>(entity);
+
+  auto& transform = m_registry.emplace<comps::Transform>(entity);
+  transform.position = options.position;
+  transform.orientation = orientation;
+
+  auto& velocity = m_registry.emplace<comps::Velocity>(entity);
+  velocity.linear = options.linearVelocity;
+  velocity.angular = options.angularVelocity;
+
+  auto& mass = m_registry.emplace<comps::MassProperties>(entity);
+  mass.mass = options.mass;
+  mass.inertia = options.inertia;
+
+  m_registry.emplace<comps::Force>(entity);
+
   return RigidBody(entity, this);
 }
 
@@ -358,6 +416,46 @@ void World::enterSimulationMode()
 }
 
 //==============================================================================
+void World::setTimeStep(double timeStep)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(timeStep) || timeStep <= 0.0,
+      InvalidArgumentException,
+      "Time step must be positive and finite");
+
+  m_timeStep = timeStep;
+}
+
+//==============================================================================
+double World::getTimeStep() const noexcept
+{
+  return m_timeStep;
+}
+
+//==============================================================================
+void World::setTime(double time)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(time) || time < 0.0,
+      InvalidArgumentException,
+      "Time must be non-negative and finite");
+
+  m_time = time;
+}
+
+//==============================================================================
+double World::getTime() const noexcept
+{
+  return m_time;
+}
+
+//==============================================================================
+std::size_t World::getFrame() const noexcept
+{
+  return m_frame;
+}
+
+//==============================================================================
 void World::updateKinematics()
 {
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -365,19 +463,50 @@ void World::updateKinematics()
       InvalidArgumentException,
       "updateKinematics() requires simulation mode");
 
-  auto cacheView = m_registry.view<comps::FrameTag, comps::FrameCache>();
+  compute::SequentialExecutor executor;
+  executeKinematicsGraph(*this, executor);
+}
 
-  // Mark caches dirty
-  for (auto entity : cacheView) {
-    auto& cache = cacheView.get<comps::FrameCache>(entity);
-    cache.needTransformUpdate = true;
-  }
+//==============================================================================
+void World::step()
+{
+  compute::SequentialExecutor executor;
+  step(executor);
+}
 
-  // Recompute world transforms
-  for (auto entity : cacheView) {
-    Frame frame(entity, this);
-    (void)frame.getTransform();
-  }
+//==============================================================================
+void World::step(compute::ComputeExecutor& executor)
+{
+  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::KinematicsStage kinematics;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(rigidBodyIntegration).addStage(kinematics);
+  step(executor, pipeline);
+}
+
+//==============================================================================
+void World::step(
+    compute::ComputeExecutor& executor, compute::WorldStepStage& stage)
+{
+  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(rigidBodyIntegration).addStage(stage);
+  step(executor, pipeline);
+}
+
+//==============================================================================
+void World::step(
+    compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !m_simulationMode,
+      InvalidArgumentException,
+      "step() requires simulation mode");
+
+  pipeline.execute(*this, executor);
+
+  m_time += m_timeStep;
+  ++m_frame;
 }
 
 //==============================================================================
@@ -397,6 +526,9 @@ void World::saveBinary(std::ostream& output) const
   io::writePOD(output, m_rigidBodyCounter);
   io::writePOD(output, m_linkCounter);
   io::writePOD(output, m_jointCounter);
+  io::writePOD(output, m_timeStep);
+  io::writePOD(output, m_time);
+  io::writePOD(output, m_frame);
 }
 
 //==============================================================================
@@ -422,6 +554,12 @@ void World::loadBinary(std::istream& input)
     io::readPOD(input, m_rigidBodyCounter);
     io::readPOD(input, m_linkCounter);
     io::readPOD(input, m_jointCounter);
+
+    if (input.peek() != std::char_traits<char>::eof()) {
+      io::readPOD(input, m_timeStep);
+      io::readPOD(input, m_time);
+      io::readPOD(input, m_frame);
+    }
   }
 
   // Ensure all frame entities have cache components (not serialized)

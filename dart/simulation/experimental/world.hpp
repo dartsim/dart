@@ -97,7 +97,17 @@ public:
   }
 
   void enterSimulationMode();
+  void setTimeStep(double timeStep);
+  [[nodiscard]] double getTimeStep() const noexcept;
+  void setTime(double time);
+  [[nodiscard]] double getTime() const noexcept;
+  [[nodiscard]] std::size_t getFrame() const noexcept;
   void updateKinematics();
+  void step();
+  void step(compute::ComputeExecutor& executor);
+  void step(compute::ComputeExecutor& executor, compute::WorldStepStage& stage);
+  void step(
+      compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
 
   //--------------------------------------------------------------------------
   // Registry access
@@ -140,6 +150,9 @@ private:
 
   entt::registry m_registry;
   bool m_simulationMode{false};
+  double m_timeStep{0.001};
+  double m_time{0.0};
+  std::size_t m_frame{0};
 
   std::size_t m_freeFrameCounter{0};
   std::size_t m_fixedFrameCounter{0};
