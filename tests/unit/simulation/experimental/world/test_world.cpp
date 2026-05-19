@@ -418,6 +418,43 @@ TEST(World, StepIntegratesRigidBodyStateAndAdvancesClock)
   EXPECT_EQ(world.getFrame(), 1u);
 }
 
+// Test that torque integration uses the body-frame inertia tensor and updates
+// angular velocity before advancing orientation.
+TEST(World, StepIntegratesRigidBodyTorque)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  constexpr double kHalfPi = 1.57079632679489661923;
+  options.inertia = Eigen::Vector3d(2.0, 4.0, 8.0).asDiagonal();
+  options.orientation = Eigen::Quaterniond(
+      Eigen::AngleAxisd(kHalfPi, Eigen::Vector3d::UnitZ()));
+
+  auto body = world.addRigidBody("body", options);
+  auto& force = world.getRegistry().get<sx::comps::Force>(body.getEntity());
+  force.torque = Eigen::Vector3d(8.0, 0.0, 0.0);
+
+  world.setTimeStep(0.5);
+  world.enterSimulationMode();
+
+  world.step();
+
+  const auto expectedAngularVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  const Eigen::Quaterniond expectedOrientation
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitX()) * options.orientation;
+
+  const auto& transform
+      = world.getRegistry().get<sx::comps::Transform>(body.getEntity());
+  const auto& velocity
+      = world.getRegistry().get<sx::comps::Velocity>(body.getEntity());
+
+  EXPECT_TRUE(velocity.angular.isApprox(expectedAngularVelocity));
+  EXPECT_TRUE(transform.orientation.isApprox(expectedOrientation));
+  EXPECT_TRUE(
+      body.getRotation().isApprox(expectedOrientation.toRotationMatrix()));
+}
+
 // Test that the rigid-body integration stage produces the same state through
 // sequential and Taskflow graph executors.
 TEST(World, RigidBodyStepTaskflowMatchesSequential)

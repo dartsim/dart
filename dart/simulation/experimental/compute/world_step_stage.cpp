@@ -41,6 +41,7 @@
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
+#include <Eigen/Cholesky>
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
@@ -79,6 +80,47 @@ Eigen::Isometry3d toIsometry(
 }
 
 //==============================================================================
+bool isFinite(const Eigen::Vector3d& value)
+{
+  return value.array().isFinite().all();
+}
+
+//==============================================================================
+bool isFinite(const Eigen::Matrix3d& value)
+{
+  return value.array().isFinite().all();
+}
+
+//==============================================================================
+void integrateAngularVelocity(
+    comps::Velocity& velocity,
+    const comps::MassProperties& mass,
+    const comps::Force& force,
+    const Eigen::Quaterniond& orientation,
+    const double timeStep)
+{
+  if (!isFinite(force.torque) || !isFinite(mass.inertia)) {
+    return;
+  }
+
+  const auto rotation = orientation.toRotationMatrix();
+  const Eigen::Matrix3d worldInertia
+      = rotation * mass.inertia * rotation.transpose();
+
+  Eigen::LDLT<Eigen::Matrix3d> solver(worldInertia);
+  if (solver.info() != Eigen::Success || !solver.isPositive()) {
+    return;
+  }
+
+  const Eigen::Vector3d angularAcceleration = solver.solve(force.torque);
+  if (solver.info() != Eigen::Success || !isFinite(angularAcceleration)) {
+    return;
+  }
+
+  velocity.angular += angularAcceleration * timeStep;
+}
+
+//==============================================================================
 void integrateRigidBody(
     entt::registry& registry, entt::entity entity, const double timeStep)
 {
@@ -87,11 +129,13 @@ void integrateRigidBody(
   const auto& mass = registry.get<comps::MassProperties>(entity);
   const auto& force = registry.get<comps::Force>(entity);
 
+  auto orientation = normalizeOrIdentity(transform.orientation);
+
   if (mass.mass > 0.0 && std::isfinite(mass.mass)) {
     velocity.linear += (force.force / mass.mass) * timeStep;
   }
 
-  auto orientation = normalizeOrIdentity(transform.orientation);
+  integrateAngularVelocity(velocity, mass, force, orientation, timeStep);
 
   transform.position += velocity.linear * timeStep;
 
