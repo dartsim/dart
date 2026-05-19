@@ -35,6 +35,7 @@
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
+#include <dart/simulation/experimental/compute/compute_executor.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/taskflow_executor.hpp>
@@ -119,6 +120,47 @@ private:
   std::string m_name;
   dart::simulation::experimental::compute::ComputeStageMetadata m_metadata;
   std::vector<std::string>& m_executionOrder;
+};
+
+class RecordingExecutor final
+  : public dart::simulation::experimental::compute::ComputeExecutor
+{
+public:
+  void execute(
+      const dart::simulation::experimental::compute::ComputeGraph& graph)
+      override
+  {
+    record(graph);
+    sequential.execute(graph);
+  }
+
+  [[nodiscard]]
+  dart::simulation::experimental::compute::ComputeExecutionProfile
+  executeProfiled(
+      const dart::simulation::experimental::compute::ComputeGraph& graph)
+      override
+  {
+    record(graph);
+    return sequential.executeProfiled(graph);
+  }
+
+  [[nodiscard]] std::size_t getWorkerCount() const override
+  {
+    return sequential.getWorkerCount();
+  }
+
+  std::size_t nodeCount{0};
+  std::size_t edgeCount{0};
+
+private:
+  void record(
+      const dart::simulation::experimental::compute::ComputeGraph& graph)
+  {
+    nodeCount = graph.getNodeCount();
+    edgeCount = graph.getEdgeCount();
+  }
+
+  dart::simulation::experimental::compute::SequentialExecutor sequential;
 };
 
 } // namespace
@@ -495,6 +537,54 @@ TEST(World, StepStoresReparentedRigidBodyPoseAsParentLocal)
   EXPECT_TRUE(transform.position.isApprox(expectedPosition));
   EXPECT_TRUE(props.localTransform.isApprox(expectedLocalTransform));
   EXPECT_TRUE(body.getTransform().isApprox(expectedWorldTransform));
+}
+
+// Test that rigid-body frame ancestry is represented in the integration graph
+// so Taskflow cannot run a child integration while its parent rigid body is
+// updating frame properties.
+TEST(World, RigidBodyIntegrationStageOrdersRigidBodyFrameAncestry)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+  parentOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto parent = world.addRigidBody("parent", parentOptions);
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d(20.0, 0.0, 0.0);
+  childOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto child = world.addRigidBody("child", childOptions);
+  child.setParentFrame(parent);
+
+  world.setTimeStep(0.5);
+  world.enterSimulationMode();
+
+  RecordingExecutor executor;
+  compute::RigidBodyIntegrationStage stage(1);
+  stage.execute(world, executor);
+
+  EXPECT_EQ(executor.nodeCount, 2u);
+  EXPECT_EQ(executor.edgeCount, 1u);
+
+  const auto expectedParentPosition = Eigen::Vector3d(11.0, 0.0, 0.0);
+  const auto expectedChildPosition = Eigen::Vector3d(20.5, 0.0, 0.0);
+  Eigen::Isometry3d expectedChildLocalTransform = Eigen::Isometry3d::Identity();
+  expectedChildLocalTransform.translation()
+      = expectedChildPosition - expectedParentPosition;
+
+  const auto& registry = world.getRegistry();
+  const auto& parentProps
+      = registry.get<sx::comps::FreeFrameProperties>(parent.getEntity());
+  const auto& childProps
+      = registry.get<sx::comps::FreeFrameProperties>(child.getEntity());
+
+  EXPECT_TRUE(parentProps.localTransform.translation().isApprox(
+      expectedParentPosition));
+  EXPECT_TRUE(childProps.localTransform.isApprox(expectedChildLocalTransform));
 }
 
 // Test that the rigid-body integration stage produces the same state through

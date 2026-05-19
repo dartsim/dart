@@ -119,6 +119,75 @@ Eigen::Isometry3d computeFrameWorldTransform(
 }
 
 //==============================================================================
+bool containsEntity(
+    const std::vector<entt::entity>& entities, entt::entity entity)
+{
+  return std::find(entities.begin(), entities.end(), entity) != entities.end();
+}
+
+//==============================================================================
+entt::entity findNearestRigidBodyAncestor(
+    const entt::registry& registry,
+    entt::entity entity,
+    const std::vector<entt::entity>& rigidBodyEntities)
+{
+  while (entity != entt::null) {
+    if (containsEntity(rigidBodyEntities, entity)) {
+      return entity;
+    }
+
+    const auto* frameState = registry.try_get<comps::FrameState>(entity);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !frameState,
+        InvalidOperationException,
+        "Frame entity is missing a FrameState component");
+
+    entity = frameState->parentFrame;
+  }
+
+  return entt::null;
+}
+
+//==============================================================================
+bool hasRigidBodyFrameDependency(
+    const entt::registry& registry,
+    const std::vector<entt::entity>& rigidBodyEntities)
+{
+  for (const auto entity : rigidBodyEntities) {
+    const auto& frameState = registry.get<comps::FrameState>(entity);
+    if (findNearestRigidBodyAncestor(
+            registry, frameState.parentFrame, rigidBodyEntities)
+        != entt::null) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+//==============================================================================
+struct RigidBodyNode
+{
+  entt::entity entity;
+  ComputeNode* node;
+};
+
+//==============================================================================
+ComputeNode* findRigidBodyNode(
+    const std::vector<RigidBodyNode>& nodes, entt::entity entity)
+{
+  const auto it = std::find_if(
+      nodes.begin(), nodes.end(), [entity](const RigidBodyNode& entry) {
+        return entry.entity == entity;
+      });
+  if (it == nodes.end()) {
+    return nullptr;
+  }
+
+  return it->node;
+}
+
+//==============================================================================
 bool isFinite(const Eigen::Vector3d& value)
 {
   return value.array().isFinite().all();
@@ -319,6 +388,41 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
 
   ComputeGraph graph;
   const auto timeStep = world.getTimeStep();
+  if (hasRigidBodyFrameDependency(registry, *entities)) {
+    std::vector<RigidBodyNode> nodes;
+    nodes.reserve(entities->size());
+
+    for (const auto entity : *entities) {
+      auto& node = graph.addNode(
+          "rigid_body_entity_" + std::to_string(entt::to_integral(entity)),
+          [&registry, entity, timeStep]() {
+            integrateRigidBody(registry, entity, timeStep);
+          },
+          getMetadata());
+      nodes.push_back({entity, &node});
+    }
+
+    for (const auto& entry : nodes) {
+      const auto& frameState = registry.get<comps::FrameState>(entry.entity);
+      const auto parentRigidBody = findNearestRigidBodyAncestor(
+          registry, frameState.parentFrame, *entities);
+      if (parentRigidBody == entt::null) {
+        continue;
+      }
+
+      auto* parentNode = findRigidBodyNode(nodes, parentRigidBody);
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !parentNode,
+          InvalidOperationException,
+          "Rigid-body ancestor is missing an integration node");
+
+      graph.addDependency(*parentNode, *entry.node);
+    }
+
+    executor.execute(graph);
+    return;
+  }
+
   for (std::size_t begin = 0; begin < entities->size(); begin += m_batchSize) {
     const auto end = std::min(begin + m_batchSize, entities->size());
     graph.addNode(
