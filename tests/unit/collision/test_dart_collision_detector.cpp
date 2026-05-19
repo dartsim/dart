@@ -2,6 +2,7 @@
 
 #include <dart/config.hpp>
 
+#include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/collision/collision_group.hpp>
 #include <dart/collision/collision_object.hpp>
 #include <dart/collision/collision_option.hpp>
@@ -589,7 +590,7 @@ TEST(DartCollisionDetector, RaycastWorksForHeightmap)
   EXPECT_GT(rayHit.mNormal.z(), 0.99);
 }
 
-TEST(DartCollisionDetector, LegacyUppercaseHeaderKeepsRaycastUnsupported)
+TEST(DartCollisionDetector, LegacyUppercaseHeaderUsesNativeRaycast)
 {
   auto detector = DARTCollisionDetector::create();
   auto sphere = std::make_shared<SphereShape>(0.5);
@@ -606,15 +607,17 @@ TEST(DartCollisionDetector, LegacyUppercaseHeaderKeepsRaycastUnsupported)
 
   const bool hit = group->raycast(from, to, option, &result);
   EXPECT_EQ("dart", detector->getTypeView());
-  EXPECT_FALSE(hit);
-  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(hit);
+  EXPECT_TRUE(result.hasHit());
 }
 
-TEST(DartCollisionDetector, LegacyReferenceFacadesKeepRaycastUnsupported)
+TEST(DartCollisionDetector, LegacyCompatFacadesUseNativeRaycast)
 {
   DART_SUPPRESS_DEPRECATED_BEGIN
-  const std::array<std::shared_ptr<CollisionDetector>, 2> detectors{
-      FCLCollisionDetector::create(), OdeCollisionDetector::create()};
+  const std::array<std::shared_ptr<CollisionDetector>, 3> detectors{
+      FCLCollisionDetector::create(),
+      BulletCollisionDetector::create(),
+      OdeCollisionDetector::create()};
   DART_SUPPRESS_DEPRECATED_END
 
   for (const auto& detector : detectors) {
@@ -631,8 +634,8 @@ TEST(DartCollisionDetector, LegacyReferenceFacadesKeepRaycastUnsupported)
     const Eigen::Vector3d to(0.0, 0.0, -2.0);
 
     const bool hit = group->raycast(from, to, option, &result);
-    EXPECT_FALSE(hit) << detector->getTypeView();
-    EXPECT_FALSE(result.hasHit()) << detector->getTypeView();
+    EXPECT_TRUE(hit) << detector->getTypeView();
+    EXPECT_TRUE(result.hasHit()) << detector->getTypeView();
   }
 }
 

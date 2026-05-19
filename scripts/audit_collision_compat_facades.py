@@ -259,6 +259,24 @@ def check_python_clean_api(repo_root: Path) -> list[str]:
     return failures
 
 
+def check_native_facade_raycast(repo_root: Path) -> list[str]:
+    failures: list[str] = []
+    facade_headers = (
+        "dart/collision/dart/DARTCollisionDetector.hpp",
+        "dart/collision/fcl/compat/fcl_collision_detector.hpp",
+        "dart/collision/ode/compat/ode_collision_detector.hpp",
+    )
+    for relative_path in facade_headers:
+        source = read_text(repo_root, relative_path)
+        require_not_contains(
+            failures,
+            source,
+            "CollisionDetector::raycast(",
+            f"{relative_path} raycast facade",
+        )
+    return failures
+
+
 def check_package_components(repo_root: Path) -> list[str]:
     failures: list[str] = []
     source = read_text(repo_root, "dart/CMakeLists.txt")
@@ -349,6 +367,7 @@ def main() -> int:
     for facade in FACADES:
         failures.extend(check_cpp_facade(repo_root, facade))
     failures.extend(check_python_clean_api(repo_root))
+    failures.extend(check_native_facade_raycast(repo_root))
     failures.extend(check_package_components(repo_root))
     failures.extend(check_reference_tree(repo_root))
 
@@ -366,6 +385,7 @@ def main() -> int:
         "OdeCollisionDetector -> DartCollisionDetector"
     )
     print("  dartpy API: DartCollisionDetector only; legacy detector aliases absent")
+    print("  raycast facades: legacy detector classes use native raycast")
     print("  package components: collision-fcl/bullet/ode -> dart")
     print("  link interface: dart -> dart-collision-native")
     print("  reference engines: tests/dart/test/reference_collision only")
