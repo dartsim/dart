@@ -61,4 +61,9 @@ if(TARGET dart-external-imgui)
 
   dart_add_test("regression" test_Issue2668)
   target_link_libraries(test_Issue2668 dart-external-imgui)
+
+  dart_add_test("regression" test_Issue2671)
+  target_link_libraries(test_Issue2671
+    dart-external-imgui
+    ${CMAKE_DL_LIBS})
 endif()
