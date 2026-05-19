@@ -520,14 +520,32 @@ void ConstraintSolver::updateConstraints()
     }
 
     // Set colliding bodies
+    if (contact.collisionObject1 == nullptr
+        || contact.collisionObject2 == nullptr) {
+      dtwarn << "[ConstraintSolver] Ignoring contact with a null collision "
+             << "object.\n";
+      continue;
+    }
+
     auto shapeFrame1 = const_cast<dynamics::ShapeFrame*>(
         contact.collisionObject1->getShapeFrame());
     auto shapeFrame2 = const_cast<dynamics::ShapeFrame*>(
         contact.collisionObject2->getShapeFrame());
+    auto shapeNode1
+        = shapeFrame1 != nullptr ? shapeFrame1->asShapeNode() : nullptr;
+    auto shapeNode2
+        = shapeFrame2 != nullptr ? shapeFrame2->asShapeNode() : nullptr;
+    if (shapeNode1 == nullptr || shapeNode2 == nullptr
+        || shapeNode1->getBodyNodePtr() == nullptr
+        || shapeNode2->getBodyNodePtr() == nullptr) {
+      dtwarn << "[ConstraintSolver] Ignoring contact with a missing "
+             << "ShapeNode or BodyNode.\n";
+      continue;
+    }
 
     DART_SUPPRESS_DEPRECATED_BEGIN
-    shapeFrame1->asShapeNode()->getBodyNodePtr()->setColliding(true);
-    shapeFrame2->asShapeNode()->getBodyNodePtr()->setColliding(true);
+    shapeNode1->getBodyNodePtr()->setColliding(true);
+    shapeNode2->getBodyNodePtr()->setColliding(true);
     DART_SUPPRESS_DEPRECATED_END
 
     // If penetration depth is negative, then the collision isn't really
@@ -559,6 +577,9 @@ void ConstraintSolver::updateConstraints()
 
     auto contactConstraint = mContactSurfaceHandler->createConstraint(
         *contact, numContacts, mTimeStep);
+    if (contactConstraint == nullptr)
+      continue;
+
     mContactConstraints.push_back(contactConstraint);
 
     contactConstraint->update();
