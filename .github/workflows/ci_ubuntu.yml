@@ -527,7 +527,7 @@ jobs:
 
       - name: Run VSG unit tests
         run: |
-          ctest --test-dir build/default/cpp/Release \
+          pixi run -- ctest --test-dir build/default/cpp/Release \
             -R "UNIT_gui_vsg" \
             --output-on-failure \
             -j$(nproc)

@@ -26,6 +26,10 @@ Before you can build DART, you'll need to install the required and optional depe
 
 > **Note:** The dependencies and installation steps are subject to change. Please report any issues you encounter and contribute to keeping the instructions up-to-date.
 
+Native collision requires EnTT >= 3.14. The pixi workflow installs EnTT from
+`pixi.toml`; system builds need an installed EnTT package or network access so
+CMake can fetch EnTT during configure.
+
 ### Ubuntu
 
 Install required dependencies using `apt`:
