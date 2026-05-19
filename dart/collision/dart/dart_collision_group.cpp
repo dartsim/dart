@@ -133,6 +133,12 @@ bool addContacts(
     contact.penetrationDepth = cp.depth;
     contact.collisionObject1 = object1;
     contact.collisionObject2 = object2;
+    if (cp.featureIndex1 >= 0) {
+      contact.triID1 = cp.featureIndex1;
+    }
+    if (cp.featureIndex2 >= 0) {
+      contact.triID2 = cp.featureIndex2;
+    }
     result.addContact(contact);
 
     if (result.getNumContacts() >= option.maxNumContacts) {

@@ -42,6 +42,7 @@
 #include <algorithm>
 #include <array>
 #include <utility>
+#include <vector>
 
 using namespace dart;
 using namespace dart::collision;
@@ -160,6 +161,55 @@ std::shared_ptr<math::TriMesh<double>> makeCubeTriMesh()
   triangles.emplace_back(1, 6, 2);
   mesh->setTriangles(vertices, triangles);
 
+  return mesh;
+}
+
+std::shared_ptr<math::TriMesh<double>> makeSingleTriangleTriMesh()
+{
+  auto mesh = std::make_shared<math::TriMesh<double>>();
+  math::TriMesh<double>::Vertices vertices;
+  vertices.emplace_back(-0.5, -0.5, 0.0);
+  vertices.emplace_back(0.5, -0.5, 0.0);
+  vertices.emplace_back(0.0, 0.5, 0.0);
+
+  math::TriMesh<double>::Triangles triangles;
+  triangles.emplace_back(0, 1, 2);
+  mesh->setTriangles(vertices, triangles);
+
+  return mesh;
+}
+
+std::shared_ptr<math::TriMesh<double>> makeGridTriMesh(
+    int resolution, double scale)
+{
+  auto mesh = std::make_shared<math::TriMesh<double>>();
+  math::TriMesh<double>::Vertices vertices;
+  math::TriMesh<double>::Triangles triangles;
+
+  vertices.reserve(
+      static_cast<std::size_t>((resolution + 1) * (resolution + 1)));
+  triangles.reserve(static_cast<std::size_t>(resolution * resolution * 2));
+
+  for (int y = 0; y <= resolution; ++y) {
+    for (int x = 0; x <= resolution; ++x) {
+      const double px = (static_cast<double>(x) / resolution - 0.5) * scale;
+      const double py = (static_cast<double>(y) / resolution - 0.5) * scale;
+      vertices.emplace_back(px, py, 0.0);
+    }
+  }
+
+  const auto idx = [resolution](int x, int y) {
+    return y * (resolution + 1) + x;
+  };
+
+  for (int y = 0; y < resolution; ++y) {
+    for (int x = 0; x < resolution; ++x) {
+      triangles.emplace_back(idx(x, y), idx(x + 1, y), idx(x + 1, y + 1));
+      triangles.emplace_back(idx(x, y), idx(x + 1, y + 1), idx(x, y + 1));
+    }
+  }
+
+  mesh->setTriangles(vertices, triangles);
   return mesh;
 }
 
@@ -355,6 +405,29 @@ TEST(DartCollisionDetector, SphereMeshCollisionDetectsContact)
   ASSERT_GT(result.second.getNumContacts(), 0u);
   EXPECT_GT(result.second.getContact(0).normal.norm(), 0.9);
   EXPECT_GT(result.second.getContact(0).penetrationDepth, 0.0);
+}
+
+TEST(DartCollisionDetector, MeshMeshContactsPreserveTriangleIds)
+{
+  auto singleTriangle = std::make_shared<MeshShape>(
+      Eigen::Vector3d::Ones(), makeSingleTriangleTriMesh());
+  auto grid = std::make_shared<MeshShape>(
+      Eigen::Vector3d::Ones(), makeGridTriMesh(4, 4.0));
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const auto result
+      = runCollisionWithTransforms(singleTriangle, grid, identity, identity);
+
+  ASSERT_TRUE(result.first);
+  ASSERT_GT(result.second.getNumContacts(), 0u);
+
+  bool sawNonZeroGridTriangle = false;
+  for (const auto& contact : result.second.getContacts()) {
+    EXPECT_EQ(contact.triID1, 0);
+    EXPECT_GE(contact.triID2, 0);
+    sawNonZeroGridTriangle = sawNonZeroGridTriangle || contact.triID2 > 0;
+  }
+  EXPECT_TRUE(sawNonZeroGridTriangle);
 }
 
 TEST(DartCollisionDetector, PyramidShapeCollisionUsesNativeConvexGeometry)

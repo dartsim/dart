@@ -141,6 +141,8 @@
   - Fixed native sphere/capsule-vs-mesh CCD so casts against open or thin mesh
     triangles no longer miss direct hits.
   - Fixed native world-level raycast, sphere-cast, and capsule-cast results so returned collision-object handles remain valid after the query returns.
+  - Fixed native mesh contact adaptation so public DART contacts preserve mesh
+    triangle IDs for soft-contact consumers.
   - Fixed TriMesh-backed `MeshShape` construction with an empty URI so it does not probe `file://` for material metadata, eliminating spurious mesh-load warnings while preserving real URI/path material extraction.
   - Fixed PascalCase ODE compatibility headers to preserve legacy includes such as `OdeCollisionDetector.hpp`. ([#2475](https://github.com/dartsim/dart/pull/2475))
   - Fixed ODE contact history to snapshot current contacts before restoring cached contacts, preventing duplicate or invalid restored contacts from destabilizing capsule-ground simulations. ([#2648](https://github.com/dartsim/dart/pull/2648))
