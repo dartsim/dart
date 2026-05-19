@@ -319,10 +319,9 @@ TEST(ExperimentalSequentialExecutor, ProfilesNodeLoadAndParallelism)
   using namespace std::chrono_literals;
 
   compute::ComputeGraph graph;
-  auto& light
-      = graph.addNode("light", []() { std::this_thread::sleep_for(1ms); });
+  auto& light = graph.addNode("light", []() {});
   auto& heavy
-      = graph.addNode("heavy", []() { std::this_thread::sleep_for(4ms); });
+      = graph.addNode("heavy", []() { std::this_thread::sleep_for(20ms); });
   graph.addDependency(light, heavy);
 
   compute::SequentialExecutor executor;
