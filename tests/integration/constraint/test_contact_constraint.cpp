@@ -41,9 +41,74 @@
 
 #include <gtest/gtest.h>
 
+#include <vector>
+
 using namespace dart;
 using namespace dart::dynamics;
 using namespace dart::test;
+
+namespace {
+
+//==============================================================================
+collision::Contact createMalformedContactWithNullCollisionObjects()
+{
+  collision::Contact contact;
+  contact.collisionObject1 = nullptr;
+  contact.collisionObject2 = nullptr;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.force = Eigen::Vector3d::Zero();
+  return contact;
+}
+
+//==============================================================================
+struct ConstraintInfoStorage
+{
+  explicit ConstraintInfoStorage(std::size_t dim)
+  {
+    x.assign(dim, 0.0);
+    lo.assign(dim, 0.0);
+    hi.assign(dim, 0.0);
+    b.assign(dim, 0.0);
+    w.assign(dim, 0.0);
+    findex.assign(dim, -1);
+
+    info.x = x.data();
+    info.lo = lo.data();
+    info.hi = hi.data();
+    info.b = b.data();
+    info.w = w.data();
+    info.findex = findex.data();
+    info.invTimeStep = 1000.0;
+  }
+
+  constraint::ConstraintInfo info{};
+  std::vector<double> x;
+  std::vector<double> lo;
+  std::vector<double> hi;
+  std::vector<double> b;
+  std::vector<double> w;
+  std::vector<int> findex;
+};
+
+//==============================================================================
+class ExposedContactConstraint final : public constraint::ContactConstraint
+{
+public:
+  using ContactConstraint::applyImpulse;
+  using ContactConstraint::applyPositionImpulse;
+  using ContactConstraint::applyUnitImpulse;
+  using ContactConstraint::ContactConstraint;
+  using ContactConstraint::excite;
+  using ContactConstraint::getInformation;
+  using ContactConstraint::getVelocityChange;
+  using ContactConstraint::isActive;
+  using ContactConstraint::unexcite;
+  using ContactConstraint::uniteSkeletons;
+  using ContactConstraint::update;
+};
+
+} // namespace
 
 //==============================================================================
 void testContactWithKinematicJoint(
@@ -115,13 +180,7 @@ TEST(ContactConstraint, ContactWithKinematicJoint)
 //==============================================================================
 TEST(ContactConstraint, MalformedContactWithNullCollisionObjectsIsInactive)
 {
-  collision::Contact contact;
-  contact.collisionObject1 = nullptr;
-  contact.collisionObject2 = nullptr;
-  contact.point = Eigen::Vector3d::Zero();
-  contact.normal = Eigen::Vector3d::UnitZ();
-  contact.force = Eigen::Vector3d::Zero();
-
+  auto contact = createMalformedContactWithNullCollisionObjects();
   constraint::ContactSurfaceParams params;
   constraint::ContactConstraint constraint(contact, 0.001, params);
 
@@ -132,4 +191,32 @@ TEST(ContactConstraint, MalformedContactWithNullCollisionObjectsIsInactive)
   base.update();
 
   EXPECT_FALSE(base.isActive());
+}
+
+//==============================================================================
+TEST(ContactConstraint, MalformedContactGuardedCallbacksAreNoops)
+{
+  auto contact = createMalformedContactWithNullCollisionObjects();
+  constraint::ContactSurfaceParams params;
+  ExposedContactConstraint constraint(contact, 0.001, params);
+
+  EXPECT_EQ(0u, constraint.getDimension());
+  EXPECT_FALSE(constraint.isActive());
+
+  ConstraintInfoStorage storage(3u);
+  constraint.getInformation(&storage.info);
+
+  std::vector<double> values = {1.0, 2.0, 3.0};
+  constraint.applyUnitImpulse(0u);
+  constraint.getVelocityChange(values.data(), true);
+  constraint.excite();
+  constraint.unexcite();
+  constraint.applyImpulse(values.data());
+  constraint.applyPositionImpulse(values.data());
+  constraint.uniteSkeletons();
+
+  EXPECT_FALSE(constraint.isActive());
+  EXPECT_DOUBLE_EQ(values[0], 1.0);
+  EXPECT_DOUBLE_EQ(values[1], 2.0);
+  EXPECT_DOUBLE_EQ(values[2], 3.0);
 }
