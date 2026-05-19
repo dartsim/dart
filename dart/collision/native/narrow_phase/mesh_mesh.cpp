@@ -252,10 +252,56 @@ Eigen::Vector3d primitiveCenter(
   return transform.translation();
 }
 
+std::vector<int> makeVertexTriangleFeatureMap(const MeshShape& mesh)
+{
+  std::vector<int> featureIndices(mesh.getVertices().size(), -1);
+  const auto& triangles = mesh.getTriangles();
+  for (std::size_t triIndex = 0; triIndex < triangles.size(); ++triIndex) {
+    const auto& triangle = triangles[triIndex];
+    for (int i = 0; i < 3; ++i) {
+      const int vertexIndex = triangle[i];
+      if (vertexIndex < 0) {
+        continue;
+      }
+
+      const auto index = static_cast<std::size_t>(vertexIndex);
+      if (index < featureIndices.size() && featureIndices[index] < 0) {
+        featureIndices[index] = static_cast<int>(triIndex);
+      }
+    }
+  }
+
+  return featureIndices;
+}
+
+void setMeshTriangleFeature(ContactPoint& contact, int triangleIndex)
+{
+  if (triangleIndex < 0) {
+    return;
+  }
+
+  // These one-mesh helpers are dispatched with the mesh on either public
+  // collision-object side, so mirror the face id into both feature slots.
+  contact.featureIndex1 = triangleIndex;
+  contact.featureIndex2 = triangleIndex;
+}
+
+void appendContactsWithMeshTriangleFeature(
+    CollisionResult& result, const CollisionResult& contacts, int triangleIndex)
+{
+  const auto numContacts = contacts.numContacts();
+  for (std::size_t i = 0; i < numContacts; ++i) {
+    ContactPoint contact = contacts.getContact(i);
+    setMeshTriangleFeature(contact, triangleIndex);
+    result.addContact(contact);
+  }
+}
+
 struct FaceContactCandidate
 {
   Eigen::Vector3d point;
   double depth = 0.0;
+  int featureIndex = -1;
 };
 
 void addContactCandidate(
@@ -348,9 +394,12 @@ bool collideLargeBoxFaceMesh(
   const std::size_t contactLimit = std::min<std::size_t>(remaining, 32u);
   std::vector<FaceContactCandidate> contacts;
   contacts.reserve(contactLimit);
+  const std::vector<int> vertexFeatures = makeVertexTriangleFeatureMap(mesh);
 
   const double faceCoordinate = faceSign * boxHalfExtents[faceAxis];
-  for (const auto& vertexInBox : verticesInBox) {
+  for (std::size_t vertexIndex = 0; vertexIndex < verticesInBox.size();
+       ++vertexIndex) {
+    const auto& vertexInBox = verticesInBox[vertexIndex];
     bool insideFaceBounds = true;
     for (int axis = 0; axis < 3; ++axis) {
       if (axis == faceAxis) {
@@ -377,7 +426,8 @@ bool collideLargeBoxFaceMesh(
     addContactCandidate(
         contacts,
         contactLimit,
-        FaceContactCandidate{tfBox * vertexInBox, -signedDistance});
+        FaceContactCandidate{
+            tfBox * vertexInBox, -signedDistance, vertexFeatures[vertexIndex]});
   }
 
   if (contacts.empty()) {
@@ -391,6 +441,7 @@ bool collideLargeBoxFaceMesh(
     contact.position = candidate.point + worldNormal * (candidate.depth * 0.5);
     contact.normal = worldNormal;
     contact.depth = candidate.depth;
+    setMeshTriangleFeature(contact, candidate.featureIndex);
     result.addContact(contact);
   }
 
@@ -1138,12 +1189,14 @@ bool collidePrimitiveMesh(
       }
 
       if (spherePrimitive) {
+        CollisionResult localResult;
         if (collideSphereTriangle(
                 *spherePrimitive,
                 tfPrim.translation(),
                 triVertices,
-                result,
+                localResult,
                 localOption)) {
+          appendContactsWithMeshTriangleFeature(result, localResult, triIndex);
           hit = true;
           if (!option.enableContact) {
             return true;
@@ -1156,8 +1209,14 @@ bool collidePrimitiveMesh(
       }
 
       if (capsulePrimitive) {
+        CollisionResult localResult;
         if (collideCapsuleTriangle(
-                *capsulePrimitive, tfPrim, triVertices, result, localOption)) {
+                *capsulePrimitive,
+                tfPrim,
+                triVertices,
+                localResult,
+                localOption)) {
+          appendContactsWithMeshTriangleFeature(result, localResult, triIndex);
           hit = true;
           if (!option.enableContact) {
             return true;
@@ -1185,13 +1244,15 @@ bool collidePrimitiveMesh(
               return best;
             };
 
+      CollisionResult localResult;
       if (collideSupportFunctions(
               primitiveSupport,
               primitiveCenterWorld,
               triangleSupport,
               triCenter,
-              result,
+              localResult,
               localOption)) {
+        appendContactsWithMeshTriangleFeature(result, localResult, triIndex);
         hit = true;
         if (!option.enableContact) {
           return true;
@@ -1227,21 +1288,27 @@ bool collidePlaneMesh(
   {
     Eigen::Vector3d point;
     double depth = 0.0;
+    int featureIndex = -1;
   };
 
   std::vector<MeshPlaneContact> contacts;
   const std::size_t remaining = option.maxNumContacts - result.numContacts();
   const std::size_t contactLimit = std::min<std::size_t>(remaining, 4u);
   contacts.reserve(contactLimit);
+  const std::vector<int> vertexFeatures = makeVertexTriangleFeatureMap(mesh);
 
-  for (const auto& localVertex : mesh.getVertices()) {
+  const auto& vertices = mesh.getVertices();
+  for (std::size_t vertexIndex = 0; vertexIndex < vertices.size();
+       ++vertexIndex) {
+    const auto& localVertex = vertices[vertexIndex];
     const Eigen::Vector3d worldVertex = meshTransform * localVertex;
     const double signedDistance = worldNormal.dot(worldVertex - planePoint);
     if (signedDistance > 0.0) {
       continue;
     }
 
-    MeshPlaneContact candidate{worldVertex, -signedDistance};
+    MeshPlaneContact candidate{
+        worldVertex, -signedDistance, vertexFeatures[vertexIndex]};
     const auto insertPos = std::lower_bound(
         contacts.begin(),
         contacts.end(),
@@ -1271,6 +1338,7 @@ bool collidePlaneMesh(
         = meshContact.point + worldNormal * (meshContact.depth * 0.5);
     contact.normal = worldNormal;
     contact.depth = meshContact.depth;
+    setMeshTriangleFeature(contact, meshContact.featureIndex);
     result.addContact(contact);
   }
 

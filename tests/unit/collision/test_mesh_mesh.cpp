@@ -162,6 +162,16 @@ void expectCollisionResultExactlyEqual(
   }
 }
 
+void expectContactHasMirroredMeshFeatureId(
+    const ContactPoint& contact, std::size_t triangleCount)
+{
+  ASSERT_GE(contact.featureIndex1, 0);
+  ASSERT_GE(contact.featureIndex2, 0);
+  EXPECT_EQ(contact.featureIndex1, contact.featureIndex2);
+  EXPECT_LT(static_cast<std::size_t>(contact.featureIndex1), triangleCount);
+  EXPECT_LT(static_cast<std::size_t>(contact.featureIndex2), triangleCount);
+}
+
 } // namespace
 
 TEST(MeshMesh, BoxMeshesColliding)
@@ -291,8 +301,10 @@ TEST(MeshMesh, BoxMeshesSeparated)
 TEST(PrimitiveMesh, SphereVsMesh)
 {
   CollisionWorld world;
-  auto meshObj = world.createObject(
-      std::make_unique<MeshShape>(makeCubeVertices(1.0), makeCubeTriangles()));
+  auto mesh
+      = std::make_unique<MeshShape>(makeCubeVertices(1.0), makeCubeTriangles());
+  const std::size_t triangleCount = mesh->getTriangles().size();
+  auto meshObj = world.createObject(std::move(mesh));
 
   Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
   sphereTf.translation() = Eigen::Vector3d(0.0, 0.0, 1.3);
@@ -303,6 +315,7 @@ TEST(PrimitiveMesh, SphereVsMesh)
   EXPECT_TRUE(
       NarrowPhase::collide(meshObj, sphereObj, CollisionOption(), result));
   EXPECT_GE(result.numContacts(), 1u);
+  expectContactHasMirroredMeshFeatureId(result.getContact(0), triangleCount);
 }
 
 TEST(PrimitiveMesh, CapsuleVsMeshPairOrder)
@@ -326,6 +339,8 @@ TEST(PrimitiveMesh, CapsuleVsMeshPairOrder)
   EXPECT_GT(meshCapsule.getContact(0).depth, 0.0);
   EXPECT_TRUE(meshCapsule.getContact(0).position.allFinite());
   EXPECT_TRUE(meshCapsule.getContact(0).normal.allFinite());
+  expectContactHasMirroredMeshFeatureId(
+      meshCapsule.getContact(0), mesh.getTriangles().size());
 
   CollisionResult capsuleMesh;
   const bool capsuleMeshCollides = NarrowPhase::collide(
@@ -336,6 +351,8 @@ TEST(PrimitiveMesh, CapsuleVsMeshPairOrder)
   EXPECT_GT(capsuleMesh.getContact(0).depth, 0.0);
   EXPECT_TRUE(capsuleMesh.getContact(0).position.allFinite());
   EXPECT_TRUE(capsuleMesh.getContact(0).normal.allFinite());
+  expectContactHasMirroredMeshFeatureId(
+      capsuleMesh.getContact(0), mesh.getTriangles().size());
   EXPECT_NEAR(
       meshCapsule.getContact(0).depth, capsuleMesh.getContact(0).depth, 1e-10);
   EXPECT_NEAR(
@@ -371,6 +388,8 @@ TEST(PrimitiveMesh, CylinderVsMeshPairOrder)
   EXPECT_GT(meshCylinder.getContact(0).depth, 0.0);
   EXPECT_TRUE(meshCylinder.getContact(0).position.allFinite());
   EXPECT_TRUE(meshCylinder.getContact(0).normal.allFinite());
+  expectContactHasMirroredMeshFeatureId(
+      meshCylinder.getContact(0), mesh.getTriangles().size());
 
   CollisionResult cylinderMesh;
   const bool cylinderMeshCollides = NarrowPhase::collide(
@@ -381,6 +400,8 @@ TEST(PrimitiveMesh, CylinderVsMeshPairOrder)
   EXPECT_GT(cylinderMesh.getContact(0).depth, 0.0);
   EXPECT_TRUE(cylinderMesh.getContact(0).position.allFinite());
   EXPECT_TRUE(cylinderMesh.getContact(0).normal.allFinite());
+  expectContactHasMirroredMeshFeatureId(
+      cylinderMesh.getContact(0), mesh.getTriangles().size());
   EXPECT_NEAR(
       meshCylinder.getContact(0).depth,
       cylinderMesh.getContact(0).depth,
@@ -406,8 +427,9 @@ TEST(PrimitiveMesh, LargeFlatBoxMeshContactPatchIsCapped)
 
   Eigen::Isometry3d meshTf = Eigen::Isometry3d::Identity();
   meshTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.25);
-  auto meshObj = world.createObject(
-      std::make_unique<MeshShape>(makeGridMesh(40, 1.0)), meshTf);
+  auto mesh = std::make_unique<MeshShape>(makeGridMesh(40, 1.0));
+  const std::size_t triangleCount = mesh->getTriangles().size();
+  auto meshObj = world.createObject(std::move(mesh), meshTf);
 
   CollisionOption option;
   option.maxNumContacts = 1000;
@@ -420,7 +442,35 @@ TEST(PrimitiveMesh, LargeFlatBoxMeshContactPatchIsCapped)
     const auto& contact = result.getContact(i);
     EXPECT_LT(contact.normal.z(), -0.99);
     EXPECT_NEAR(contact.depth, 0.25, 1e-12);
+    expectContactHasMirroredMeshFeatureId(contact, triangleCount);
   }
+}
+
+TEST(PlaneMesh, ContactsCarryMeshFeatureIds)
+{
+  MeshShape mesh = makeGridMesh(1, 2.0);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+
+  Eigen::Isometry3d meshTf = Eigen::Isometry3d::Identity();
+  meshTf.translation() = Eigen::Vector3d(0.0, 0.0, -0.1);
+  const Eigen::Isometry3d planeTf = Eigen::Isometry3d::Identity();
+
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  CollisionResult meshPlane;
+  ASSERT_TRUE(
+      NarrowPhase::collide(&mesh, meshTf, &plane, planeTf, option, meshPlane));
+  ASSERT_EQ(meshPlane.numContacts(), 1u);
+  expectContactHasMirroredMeshFeatureId(
+      meshPlane.getContact(0), mesh.getTriangles().size());
+
+  CollisionResult planeMesh;
+  ASSERT_TRUE(
+      NarrowPhase::collide(&plane, planeTf, &mesh, meshTf, option, planeMesh));
+  ASSERT_EQ(planeMesh.numContacts(), 1u);
+  expectContactHasMirroredMeshFeatureId(
+      planeMesh.getContact(0), mesh.getTriangles().size());
 }
 
 TEST(RaycastMesh, BvhTraversalHit)
