@@ -47,19 +47,24 @@ void SpatialHashBroadPhase::clear()
 {
   objects_.clear();
   grid_.clear();
+  unboundedIds_.clear();
   orderedIds_.clear();
 }
 
 void SpatialHashBroadPhase::add(std::size_t id, const Aabb& aabb)
 {
-  auto cells = computeCells(aabb);
-
   ObjectEntry entry;
   entry.aabb = aabb;
-  entry.cells = cells;
 
-  objects_[id] = std::move(entry);
-  addToGrid(id, cells);
+  if (isFinite(aabb)) {
+    entry.cells = computeCells(aabb);
+    objects_[id] = std::move(entry);
+    addToGrid(id, objects_.at(id).cells);
+  } else {
+    objects_[id] = std::move(entry);
+    unboundedIds_.insert(id);
+  }
+
   rebuildOrderedIds();
 }
 
@@ -70,13 +75,25 @@ void SpatialHashBroadPhase::update(std::size_t id, const Aabb& aabb)
     return;
   }
 
-  auto newCells = computeCells(aabb);
   auto& entry = it->second;
+  const bool wasFinite = unboundedIds_.find(id) == unboundedIds_.end();
+  const bool isNowFinite = isFinite(aabb);
 
-  if (entry.cells != newCells) {
+  if (isNowFinite) {
+    auto newCells = computeCells(aabb);
+    if (!wasFinite) {
+      unboundedIds_.erase(id);
+      entry.cells = std::move(newCells);
+      addToGrid(id, entry.cells);
+    } else if (entry.cells != newCells) {
+      removeFromGrid(id, entry.cells);
+      entry.cells = std::move(newCells);
+      addToGrid(id, entry.cells);
+    }
+  } else if (wasFinite) {
     removeFromGrid(id, entry.cells);
-    entry.cells = newCells;
-    addToGrid(id, newCells);
+    entry.cells.clear();
+    unboundedIds_.insert(id);
   }
 
   entry.aabb = aabb;
@@ -90,6 +107,7 @@ void SpatialHashBroadPhase::remove(std::size_t id)
   }
 
   removeFromGrid(id, it->second.cells);
+  unboundedIds_.erase(id);
   objects_.erase(it);
   rebuildOrderedIds();
 }
@@ -121,22 +139,46 @@ std::vector<BroadPhasePair> SpatialHashBroadPhase::queryPairs() const
     }
   }
 
+  for (std::size_t id1 : orderedIds_) {
+    if (unboundedIds_.find(id1) == unboundedIds_.end()) {
+      continue;
+    }
+
+    const auto& aabb1 = objects_.at(id1).aabb;
+    for (std::size_t id2 : orderedIds_) {
+      if (id1 == id2) {
+        continue;
+      }
+
+      const auto& aabb2 = objects_.at(id2).aabb;
+      if (aabb1.overlaps(aabb2)) {
+        uniquePairs.emplace(std::min(id1, id2), std::max(id1, id2));
+      }
+    }
+  }
+
   return std::vector<BroadPhasePair>(uniquePairs.begin(), uniquePairs.end());
 }
 
 std::vector<std::size_t> SpatialHashBroadPhase::queryOverlapping(
     const Aabb& aabb) const
 {
-  auto cells = computeCells(aabb);
   std::set<std::size_t> candidates;
 
-  for (const auto& cell : cells) {
-    auto it = grid_.find(cell);
-    if (it != grid_.end()) {
-      for (std::size_t id : it->second) {
-        candidates.insert(id);
+  if (isFinite(aabb)) {
+    auto cells = computeCells(aabb);
+    for (const auto& cell : cells) {
+      auto it = grid_.find(cell);
+      if (it != grid_.end()) {
+        for (std::size_t id : it->second) {
+          candidates.insert(id);
+        }
       }
     }
+
+    candidates.insert(unboundedIds_.begin(), unboundedIds_.end());
+  } else {
+    candidates.insert(orderedIds_.begin(), orderedIds_.end());
   }
 
   std::vector<std::size_t> result;
@@ -184,6 +226,11 @@ double SpatialHashBroadPhase::averageObjectsPerCell() const
   }
 
   return static_cast<double>(totalObjects) / static_cast<double>(grid_.size());
+}
+
+bool SpatialHashBroadPhase::isFinite(const Aabb& aabb)
+{
+  return aabb.min.allFinite() && aabb.max.allFinite();
 }
 
 SpatialHashBroadPhase::CellCoord SpatialHashBroadPhase::computeCell(

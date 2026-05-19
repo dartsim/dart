@@ -128,6 +128,8 @@
   - Native collision: added MPR convex penetration and optional libccd parity tests/bench.
   - Native collision: handle degenerate triangle cases in GJK/MPR for robust convex queries.
   - Native collision: improved broad-phase early exit, contact-count tracking, box-box distance, cylinder-box narrow phase, and primitive-mesh traversal performance.
+  - Native collision: fixed the spatial hash broad phase so unbounded
+    `PlaneShape` AABBs are paired without hashing infinite cell coordinates.
   - Native collision: stabilized tilted cylinder contacts against plane-like large boxes, matching gz-physics plane fallback behavior without selecting external collision backends.
   - Native collision: stabilized capsule contacts against plane-like large boxes so slender capsules no longer tunnel through the default world ground path.
   - Native collision: capped large flat box/mesh contact patches to keep gz-physics max-contact selection tests expressive without overwhelming the solver, and preserved gz-required unsupported raycast behavior on FCL/ODE compatibility facades while keeping the built-in native detector behind those names.

@@ -36,9 +36,21 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <limits>
 #include <random>
 
 using namespace dart::collision::native;
+
+namespace {
+
+Aabb makeUnboundedAabb()
+{
+  constexpr double inf = std::numeric_limits<double>::infinity();
+  return Aabb(
+      Eigen::Vector3d(-inf, -inf, -inf), Eigen::Vector3d(inf, inf, inf));
+}
+
+} // namespace
 
 TEST(SpatialHashBroadPhase, DefaultConstruction)
 {
@@ -404,6 +416,64 @@ TEST(SpatialHashBroadPhase, LargeObjectSpanningManyCells)
 
   auto pairs = bp.queryPairs();
   ASSERT_EQ(pairs.size(), 1);
+}
+
+TEST(SpatialHashBroadPhase, UnboundedAabbPairsWithFiniteObjects)
+{
+  SpatialHashBroadPhase bp;
+
+  bp.add(2, Aabb(Eigen::Vector3d(10, 10, 10), Eigen::Vector3d(11, 11, 11)));
+  bp.add(1, makeUnboundedAabb());
+  bp.add(3, Aabb(Eigen::Vector3d(-10, -10, -10), Eigen::Vector3d(-9, -9, -9)));
+
+  auto pairs = bp.queryPairs();
+  ASSERT_EQ(pairs.size(), 2);
+  EXPECT_EQ(pairs[0].first, 1);
+  EXPECT_EQ(pairs[0].second, 2);
+  EXPECT_EQ(pairs[1].first, 1);
+  EXPECT_EQ(pairs[1].second, 3);
+}
+
+TEST(SpatialHashBroadPhase, QueryOverlappingHandlesUnboundedAabbs)
+{
+  SpatialHashBroadPhase bp;
+
+  bp.add(0, makeUnboundedAabb());
+  bp.add(1, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 1, 1)));
+  bp.add(2, Aabb(Eigen::Vector3d(10, 10, 10), Eigen::Vector3d(11, 11, 11)));
+
+  auto finiteQuery = bp.queryOverlapping(Aabb(
+      Eigen::Vector3d(0.25, 0.25, 0.25), Eigen::Vector3d(0.75, 0.75, 0.75)));
+  ASSERT_EQ(finiteQuery.size(), 2);
+  EXPECT_EQ(finiteQuery[0], 0);
+  EXPECT_EQ(finiteQuery[1], 1);
+
+  auto unboundedQuery = bp.queryOverlapping(makeUnboundedAabb());
+  ASSERT_EQ(unboundedQuery.size(), 3);
+  EXPECT_EQ(unboundedQuery[0], 0);
+  EXPECT_EQ(unboundedQuery[1], 1);
+  EXPECT_EQ(unboundedQuery[2], 2);
+}
+
+TEST(SpatialHashBroadPhase, UpdateHandlesUnboundedAabbs)
+{
+  SpatialHashBroadPhase bp;
+
+  const Aabb finiteAabb(
+      Eigen::Vector3d(10, 10, 10), Eigen::Vector3d(11, 11, 11));
+  bp.add(0, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 1, 1)));
+  bp.add(1, finiteAabb);
+
+  EXPECT_TRUE(bp.queryPairs().empty());
+
+  bp.update(1, makeUnboundedAabb());
+  auto pairs = bp.queryPairs();
+  ASSERT_EQ(pairs.size(), 1);
+  EXPECT_EQ(pairs[0].first, 0);
+  EXPECT_EQ(pairs[0].second, 1);
+
+  bp.update(1, finiteAabb);
+  EXPECT_TRUE(bp.queryPairs().empty());
 }
 
 TEST(SpatialHashBroadPhase, AverageObjectsPerCell)

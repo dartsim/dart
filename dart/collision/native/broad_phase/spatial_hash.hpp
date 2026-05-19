@@ -128,6 +128,9 @@ private:
     std::vector<CellCoord> cells; // Cells this object occupies
   };
 
+  /// Returns true if the AABB can be represented by finite grid cells
+  [[nodiscard]] static bool isFinite(const Aabb& aabb);
+
   /// Compute the cell coordinate for a point
   [[nodiscard]] CellCoord computeCell(const Eigen::Vector3d& point) const;
 
@@ -149,6 +152,9 @@ private:
   /// Spatial grid: cell -> set of object ids
   std::unordered_map<CellCoord, std::unordered_set<std::size_t>, CellHash>
       grid_;
+
+  /// Objects with unbounded/non-finite AABBs that cannot be hashed into cells
+  std::unordered_set<std::size_t> unboundedIds_;
 
   /// Ordered object IDs for deterministic iteration
   std::vector<std::size_t> orderedIds_;
