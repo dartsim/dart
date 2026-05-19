@@ -32,32 +32,32 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/compute/execution_profile.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
-namespace dart::simulation::experimental {
+#include <string>
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class MultiBody;
-class RigidBody;
-class World;
+namespace dart::simulation::experimental::compute {
 
-namespace compute {
-class ComputeExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
+class ComputeGraph;
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct LinkOptions;
-struct MultiBodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
+/// Options for exporting a compute graph to Graphviz DOT.
+struct DART_EXPERIMENTAL_API ComputeGraphDotOptions
+{
+  bool includeMetadata = true;
+  bool includeProfile = true;
+  bool groupParallelLevels = true;
+};
 
-} // namespace dart::simulation::experimental
+/// Export a compute graph as Graphviz DOT for debugging and visualization.
+///
+/// The DOT output is backend-neutral and can include static metadata plus an
+/// optional execution profile. This is intentionally a text artifact instead of
+/// a renderer dependency, so future GUI/rendering tools can consume the same
+/// data without coupling the compute graph to a specific visualization stack.
+[[nodiscard]] DART_EXPERIMENTAL_API std::string toDot(
+    const ComputeGraph& graph,
+    const ComputeExecutionProfile* profile = nullptr,
+    const ComputeGraphDotOptions& options = {});
+
+} // namespace dart::simulation::experimental::compute

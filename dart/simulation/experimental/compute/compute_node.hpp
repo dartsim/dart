@@ -32,32 +32,51 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
-namespace dart::simulation::experimental {
+#include <functional>
+#include <string>
+#include <string_view>
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class MultiBody;
-class RigidBody;
-class World;
+namespace dart::simulation::experimental::compute {
 
-namespace compute {
-class ComputeExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
+/// A named unit of work in an experimental computation graph.
+class DART_EXPERIMENTAL_API ComputeNode
+{
+public:
+  using ExecuteFn = std::function<void()>;
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct LinkOptions;
-struct MultiBodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
+  ComputeNode(
+      std::string_view name, ExecuteFn fn, ComputeStageMetadata metadata = {});
+  ~ComputeNode() = default;
 
-} // namespace dart::simulation::experimental
+  ComputeNode(const ComputeNode&) = delete;
+  ComputeNode& operator=(const ComputeNode&) = delete;
+  ComputeNode(ComputeNode&&) noexcept = default;
+  ComputeNode& operator=(ComputeNode&&) noexcept = default;
+
+  [[nodiscard]] const std::string& getName() const noexcept
+  {
+    return m_name;
+  }
+
+  [[nodiscard]] bool isValid() const noexcept
+  {
+    return static_cast<bool>(m_fn);
+  }
+
+  [[nodiscard]] const ComputeStageMetadata& getMetadata() const noexcept
+  {
+    return m_metadata;
+  }
+
+  void execute();
+
+private:
+  std::string m_name;
+  ExecuteFn m_fn;
+  ComputeStageMetadata m_metadata;
+};
+
+} // namespace dart::simulation::experimental::compute

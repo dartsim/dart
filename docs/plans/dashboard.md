@@ -55,14 +55,15 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md)
-- Status: Complete
-- Horizon: Later
+- Status: Active
+- Horizon: Now
 - Dimension: Scalable compute
-- Next step: Use the contact/constraint benchmark evidence to scope any future
-  worker-reuse, larger-contact-count, SIMD, or solver-level parallelism task.
-- Gate: Ranked workload gates, scalar and threaded validation evidence, API
-  boundary rules, and package/CI implications are recorded before any public
-  accelerator API commitment.
+- Next step: Land resource-access metadata for compute nodes before dependency
+  inference, contact scheduling, or GPU/rendering backend work.
+- Gate: Focused graph/world tests and the compute-graph benchmark stay green;
+  Taskflow remains behind the experimental executor boundary; graph
+  metadata/profiling/DOT output remain backend-neutral; classic World behavior
+  stays untouched.
 
 ### PLAN-035: Native Collision Feature Dashboard
 

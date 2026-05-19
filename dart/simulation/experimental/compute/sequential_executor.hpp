@@ -32,32 +32,22 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/export.hpp>
+#include <dart/simulation/experimental/compute/compute_executor.hpp>
 
-namespace dart::simulation::experimental {
+namespace dart::simulation::experimental::compute {
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class MultiBody;
-class RigidBody;
-class World;
+/// Reference executor that runs graph nodes in topological order.
+class DART_EXPERIMENTAL_API SequentialExecutor final : public ComputeExecutor
+{
+public:
+  void execute(const ComputeGraph& graph) override;
+  [[nodiscard]] ComputeExecutionProfile executeProfiled(
+      const ComputeGraph& graph) override;
 
-namespace compute {
-class ComputeExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
+  [[nodiscard]] std::size_t getWorkerCount() const override
+  {
+    return 1;
+  }
+};
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct LinkOptions;
-struct MultiBodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
-
-} // namespace dart::simulation::experimental
+} // namespace dart::simulation::experimental::compute

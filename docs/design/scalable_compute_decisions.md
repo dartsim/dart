@@ -28,11 +28,48 @@ For each candidate workload, collect:
 The first GPU milestone should be an internal prototype and benchmark report,
 not a public API.
 
+## Experimental Compute Graph Boundary
+
+The experimental compute graph is the current CPU-first substrate for scalable
+simulation work. It belongs under `dart::simulation::experimental`, keeps
+classic `dart::simulation::World` untouched, and uses a backend-neutral
+`compute::ComputeExecutor` boundary. Sequential execution is the reference path;
+Taskflow is the first parallel backend but should not appear in stable public
+APIs.
+
+The first milestone includes graph nodes and explicit dependencies, static
+parallel-level inspection, opt-in execution profiles, domain/acceleration
+metadata, DOT visualization, graph-backed experimental kinematics and
+rigid-body stages, and `compute::WorldStepPipeline` for composing multiple
+experimental solver stages. The graph core should stay domain-neutral so
+articulated-body, deformable-body, fluid, control, sensor, rendering-prep,
+SIMD/data-locality, and GPU-candidate work can share the same inspection and
+profiling surface.
+
+## Resource Access Metadata
+
+The next compute milestone is descriptive resource access metadata for graph
+nodes. It should declare whether a node reads, writes, mutates, reduces, or uses
+scratch resources, and it should improve validation, DOT output, profiling
+context, and future graph-shaping decisions.
+
+Keep the first resource-access PR conservative:
+
+- explicit graph edges remain the correctness source of truth;
+- resource access metadata starts as diagnostics and validation input;
+- obvious read/write and write/write hazards should be detected before
+  dependency inference is attempted;
+- reductions need explicit declarations instead of being treated as ordinary
+  multi-writer access;
+- no GPU residency, stream, memory-transfer, solver registry, or rendering API
+  should be introduced as part of resource access metadata.
+
 ## Multi-Core CPU Constraints
 
 Multi-core CPU work should:
 
 - identify parallel units that do not break deterministic behavior;
+- batch small work units when per-node scheduling overhead dominates;
 - preserve single-threaded correctness tests;
 - include scheduling overhead in benchmark results;
 - avoid exposing thread pools, task graphs, or worker ownership as public API

@@ -10,6 +10,11 @@ include(dart_experimental_dependencies)
 
 if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
   dart_experimental_add_benchmark(
+    bm_compute_graph
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_compute_graph.cpp
+  )
+
+  dart_experimental_add_benchmark(
     bm_ecs_safety
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_ecs_safety.cpp
   )

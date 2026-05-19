@@ -707,11 +707,26 @@ World (simulation environment)
 
 DART includes lightweight sensor scaffolding that is updated by the World to keep time and step context consistent. Sensors are managed centrally to keep naming and lifecycle coherent across world objects, while leaving concrete sensor types to downstream code.
 
+#### Experimental Compute Graph
+
+`dart::simulation::experimental` owns the compute-graph-backed research path.
+The graph substrate is intentionally separate from classic
+`dart::simulation::World`: sequential execution is the reference path,
+Taskflow is hidden behind `compute::ComputeExecutor`, and default
+experimental stepping stays small. Advanced solver composition uses
+experimental-only hooks such as `compute::WorldStepStage`,
+`compute::WorldStepPipeline`, domain/acceleration metadata, execution profiles,
+and DOT export. These hooks are designed for articulated, deformable, fluid,
+GPU/SIMD-candidate, and future rendering-prep experiments without committing
+classic World, Taskflow, GPU, or rendering APIs.
+
 ---
 
 **Key Files:**
 
 - World: `dart/simulation/World.hpp`
+- Experimental compute graph:
+  `dart/simulation/experimental/compute/`
 - Recording: `dart/simulation/Recording.hpp`
 
 ---

@@ -121,6 +121,8 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 ### Examples (Active Tasks)
 
+- `compute_resource_access/` - Follow-up compute graph metadata task for
+  resource read/write declarations, validation, and visualization
 - `filament_gui/` - Filament + GLFW + Dear ImGui GUI replacement plan (MVP, architecture, visual quality, milestones, migration, testing docs)
 
 ## Structure
