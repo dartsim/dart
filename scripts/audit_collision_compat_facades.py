@@ -237,6 +237,42 @@ def check_cpp_facade(repo_root: Path, facade: EngineFacade) -> list[str]:
     return failures
 
 
+def check_facade_header_installs(repo_root: Path, facade: EngineFacade) -> list[str]:
+    failures: list[str] = []
+    cmake_path = f"dart/collision/{facade.engine}/CMakeLists.txt"
+    source = read_text(repo_root, cmake_path)
+
+    facade_install_pattern = re.compile(
+        r"install\(\s*"
+        r"FILES\s+\$\{facade_hdrs\}\s+"
+        rf"DESTINATION\s+include/dart/collision/{facade.engine}\s+"
+        r"COMPONENT\s+headers\s*"
+        r"\)",
+        re.DOTALL,
+    )
+    if not facade_install_pattern.search(source):
+        failures.append(
+            f"{cmake_path}: public facade headers must install to "
+            f"include/dart/collision/{facade.engine}"
+        )
+
+    compat_install_pattern = re.compile(
+        r"install\(\s*"
+        r"FILES\s+\$\{compat_hdrs\}\s+"
+        rf"DESTINATION\s+include/dart/collision/{facade.engine}/compat\s+"
+        r"COMPONENT\s+headers\s*"
+        r"\)",
+        re.DOTALL,
+    )
+    if not compat_install_pattern.search(source):
+        failures.append(
+            f"{cmake_path}: compat implementation headers must install to "
+            f"include/dart/collision/{facade.engine}/compat"
+        )
+
+    return failures
+
+
 def check_python_clean_api(repo_root: Path) -> list[str]:
     failures: list[str] = []
     source = read_text(repo_root, "python/dartpy/collision/collision_detector.cpp")
@@ -402,6 +438,7 @@ def main() -> int:
     failures.extend(check_deprecation_policy(repo_root))
     for facade in FACADES:
         failures.extend(check_cpp_facade(repo_root, facade))
+        failures.extend(check_facade_header_installs(repo_root, facade))
     failures.extend(check_python_clean_api(repo_root))
     failures.extend(check_legacy_facade_raycast_contract(repo_root))
     failures.extend(check_package_components(repo_root))
@@ -420,6 +457,7 @@ def main() -> int:
         "  C++ facades: FCLCollisionDetector, BulletCollisionDetector, "
         "OdeCollisionDetector -> DartCollisionDetector"
     )
+    print("  C++ facade headers: public and compat headers install in place")
     print("  dartpy API: DartCollisionDetector only; legacy detector aliases absent")
     print(
         "  raycast facades: dart/fcl/ode preserve gz unsupported behavior; "
