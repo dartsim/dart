@@ -106,16 +106,16 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
         PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
       )
       if(TARGET dart-test-reference-fcl)
-        target_link_libraries(${test_name} PRIVATE
-          -Wl,--no-as-needed dart-test-reference-fcl -Wl,--as-needed)
+        dart_force_link_collision_backend(
+          ${test_name} dart-test-reference-fcl PRIVATE)
       endif()
       if(TARGET dart-test-reference-bullet)
-        target_link_libraries(${test_name} PRIVATE
-          -Wl,--no-as-needed dart-test-reference-bullet -Wl,--as-needed)
+        dart_force_link_collision_backend(
+          ${test_name} dart-test-reference-bullet PRIVATE)
       endif()
       if(TARGET dart-test-reference-ode)
-        target_link_libraries(${test_name} PRIVATE
-          -Wl,--no-as-needed dart-test-reference-ode -Wl,--as-needed)
+        dart_force_link_collision_backend(
+          ${test_name} dart-test-reference-ode PRIVATE)
       endif()
     endif()
     if(test_name STREQUAL "test_sdf_compare" AND VOXBLOX_FOUND)
