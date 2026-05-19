@@ -771,6 +771,44 @@ TEST(DartCollisionDetector, DistanceQueriesReturnZero)
   EXPECT_DOUBLE_EQ(groupA->distance(groupB.get(), option, &result), 0.0);
 }
 
+TEST(DartCollisionDetector, DistanceKeepsSearchingAfterPenetration)
+{
+  auto detector = DartCollisionDetector::create();
+  auto setupA = makeShapeSetup("shape_a", std::make_shared<SphereShape>(0.5));
+  auto setupB = makeShapeSetup("shape_b", std::make_shared<SphereShape>(0.5));
+  auto setupC = makeShapeSetup("shape_c", std::make_shared<SphereShape>(0.5));
+  auto setupD = makeShapeSetup("shape_d", std::make_shared<SphereShape>(0.5));
+
+  FreeJoint::setTransformOf(setupA.body, Eigen::Isometry3d::Identity());
+
+  Eigen::Isometry3d shallowOverlap = Eigen::Isometry3d::Identity();
+  shallowOverlap.translation() = Eigen::Vector3d(0.9, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, shallowOverlap);
+
+  Eigen::Isometry3d deepA = Eigen::Isometry3d::Identity();
+  deepA.translation() = Eigen::Vector3d(5.0, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupC.body, deepA);
+
+  Eigen::Isometry3d deepB = Eigen::Isometry3d::Identity();
+  deepB.translation() = Eigen::Vector3d(5.2, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupD.body, deepB);
+
+  auto group = detector->createCollisionGroup(
+      setupA.shapeNode, setupB.shapeNode, setupC.shapeNode, setupD.shapeNode);
+
+  DistanceResult result;
+  const double distance = group->distance(DistanceOption(), &result);
+
+  EXPECT_DOUBLE_EQ(0.0, distance);
+  ASSERT_TRUE(result.found());
+  EXPECT_NEAR(-0.8, result.unclampedMinDistance, 1e-12);
+  EXPECT_TRUE(
+      (result.shapeFrame1 == setupC.shapeNode
+       && result.shapeFrame2 == setupD.shapeNode)
+      || (result.shapeFrame1 == setupD.shapeNode
+          && result.shapeFrame2 == setupC.shapeNode));
+}
+
 TEST(DartCollisionGroup, PersistentSceneTracksMovedObjects)
 {
   auto detector = DartCollisionDetector::create();

@@ -625,7 +625,8 @@ private:
     bool found = false;
 
     auto shouldStop = [&]() {
-      return found && bestDistance <= option.distanceLowerBound;
+      return found && bestDistance >= 0.0
+             && bestDistance <= option.distanceLowerBound;
     };
 
     for (auto i = 0u; i < mObjectsInOrder.size(); ++i) {
@@ -648,7 +649,7 @@ private:
           continue;
         }
 
-        if (found
+        if (found && bestDistance >= 0.0
             && aabbDistance(aabb1, entry2->nativeObject.computeAabb())
                    > bestDistance) {
           continue;
