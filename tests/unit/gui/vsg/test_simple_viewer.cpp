@@ -33,6 +33,8 @@
 #include <optional>
 #include <string>
 
+#include <cstddef>
+
 namespace dart_vsg = dart::gui::vsg;
 
 namespace {
@@ -199,4 +201,41 @@ TEST(VsgSimpleViewer, Clear)
   viewer->addGrid(5.0, 1.0);
   viewer->clear();
   SUCCEED();
+}
+
+TEST(VsgSimpleViewer, HeadlessCaptureRendersDepthTestedScene)
+{
+  constexpr int width = 128;
+  constexpr int height = 128;
+  constexpr int channels = 4;
+
+  std::string error;
+  auto viewer = tryCreateHeadlessViewer(width, height, error);
+  if (!viewer) {
+    GTEST_SKIP() << "Headless VSG unavailable: " << error;
+  }
+
+  viewer->setBackgroundColor(Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
+  viewer->lookAt(
+      Eigen::Vector3d(4.0, 4.0, 4.0),
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d::UnitZ());
+  viewer->addAxes(2.0);
+
+  const auto buffer = viewer->captureBuffer();
+  if (buffer.empty()) {
+    GTEST_SKIP() << "Headless VSG capture unavailable";
+  }
+
+  ASSERT_EQ(buffer.size(), static_cast<std::size_t>(width * height * channels));
+
+  bool hasNonBackgroundPixel = false;
+  for (std::size_t i = 0; i + 2 < buffer.size(); i += channels) {
+    if (buffer[i] != 0 || buffer[i + 1] != 0 || buffer[i + 2] != 0) {
+      hasNonBackgroundPixel = true;
+      break;
+    }
+  }
+
+  EXPECT_TRUE(hasNonBackgroundPixel);
 }

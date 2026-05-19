@@ -298,7 +298,7 @@ void SimpleViewer::compile()
          static_cast<float>(m_backgroundColor.y()),
          static_cast<float>(m_backgroundColor.z()),
          static_cast<float>(m_backgroundColor.w())}};
-    renderGraph->setClearValues(clearColor, VkClearDepthStencilValue{0.0f, 0});
+    renderGraph->setClearValues(clearColor, VkClearDepthStencilValue{1.0f, 0});
 
     auto view = ::vsg::View::create(m_camera, m_root);
     view->addChild(::vsg::createHeadlight());
