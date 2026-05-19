@@ -48,6 +48,7 @@
   - Exported `ZeroDofJoint` on Windows so shared-library consumers can link inherited zero-DoF joint symbols consistently.
   - Linked `dart-gui` to Foundation on Apple platforms so OpenSceneGraph's macOS resource-path initialization has the Objective-C Foundation runtime it requires.
   - Removed the Filament GUI smoke CI job's distro libc++ package dependency and made its example runner use Pixi-provided libc++/libc++abi libraries when available.
+  - Limited Codecov CI uploads to the generated `coverage.info` report so the uploader does not rescan gcov files after the coverage task has already produced lcov output.
   - Added support for assimp 6.x while maintaining backward compatibility with assimp 5.x
 
 - Tooling and Docs
