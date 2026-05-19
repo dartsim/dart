@@ -51,6 +51,8 @@
 #include <dart/dynamics/ball_joint.hpp>
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/detail/articulated_dynamics_algorithms.hpp>
+#include <dart/dynamics/detail/skeleton_dynamics_view.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/inertia.hpp>
 #include <dart/dynamics/joint.hpp>
@@ -60,19 +62,20 @@
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
-#include <dart/math/random.hpp>
-
 #include <benchmark/benchmark.h>
 
 #include <atomic>
 #include <numbers>
 #include <queue>
+#include <span>
 #include <thread>
+#include <utility>
 #include <vector>
 #include <version>
 
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 
 // ============================================================================
@@ -373,13 +376,31 @@ inline SkeletonPtr makeG1Humanoid()
   return skel;
 }
 
-/// Randomize all DOF positions and velocities to defeat caching.
+inline double deterministicUniform(
+    std::uint64_t& state, double minValue, double maxValue)
+{
+  state = state * 6364136223846793005ULL + 1442695040888963407ULL;
+  const auto mantissa = state >> 11;
+  constexpr double invMaxMantissa = 1.0 / 9007199254740992.0;
+  const double unit = static_cast<double>(mantissa) * invMaxMantissa;
+  return minValue + (maxValue - minValue) * unit;
+}
+
+/// Assign deterministic representative DOF positions and velocities.
+///
+/// Benchmark comparisons need the same input states across runs and branches.
+/// A local generator avoids process-random seeds while still using non-trivial
+/// joint states to defeat zero-state shortcuts and keep caches dirty.
 inline void randomizeState(const SkeletonPtr& skel)
 {
+  std::uint64_t state = 0x9E3779B97F4A7C15ULL
+                        ^ (static_cast<std::uint64_t>(skel->getNumDofs())
+                           * 0xBF58476D1CE4E5B9ULL);
   for (std::size_t i = 0; i < skel->getNumDofs(); ++i) {
     auto* dof = skel->getDof(i);
-    dof->setPosition(math::Random::uniform(-0.5, 0.5));
-    dof->setVelocity(math::Random::uniform(-1.0, 1.0));
+    state ^= static_cast<std::uint64_t>(i + 1) * 0x94D049BB133111EBULL;
+    dof->setPosition(deterministicUniform(state, -0.5, 0.5));
+    dof->setVelocity(deterministicUniform(state, -1.0, 1.0));
   }
 }
 
@@ -703,6 +724,394 @@ DEFINE_DYNAMICS_BM(
     InverseDynamics,
     skel->computeInverseDynamics(false, false, false))
 REGISTER_DYNAMICS_BM(Star, Revolute, InverseDynamics);
+
+// ============================================================================
+// Section E2: Direct Algorithm Adapter Benchmarks
+// ============================================================================
+
+static void runLegacyAba(Skeleton& skeleton)
+{
+  detail::SkeletonDynamicsView model(skeleton);
+  const auto numBodyNodes = model.getNumBodyNodes();
+  const auto& gravity = model.getGravity();
+  const auto timeStep = model.getTimeStep();
+
+  for (std::size_t i = numBodyNodes; i > 0; --i) {
+    model.updateBiasForce(model.getBodyNode(i - 1), gravity, timeStep);
+  }
+
+  for (std::size_t i = 0; i < numBodyNodes; ++i) {
+    auto& bodyNode = model.getBodyNode(i);
+    model.updateAccelerationFD(bodyNode);
+    model.updateTransmittedForceFD(bodyNode);
+    model.updateJointForceFD(bodyNode, timeStep, true, true);
+  }
+}
+
+static void runLegacyRnea(
+    Skeleton& skeleton, const detail::RneaOptions& options)
+{
+  detail::SkeletonDynamicsView model(skeleton);
+  if (model.getNumDofs() == 0) {
+    return;
+  }
+
+  const auto numBodyNodes = model.getNumBodyNodes();
+  const auto& gravity = model.getGravity();
+  const auto timeStep = model.getTimeStep();
+  for (std::size_t i = numBodyNodes; i > 0; --i) {
+    auto& bodyNode = model.getBodyNode(i - 1);
+    model.updateTransmittedForceID(
+        bodyNode, gravity, options.mWithExternalForces);
+    model.updateJointForceID(
+        bodyNode,
+        timeStep,
+        options.mWithDampingForces,
+        options.mWithSpringForces);
+  }
+}
+
+DEFINE_DYNAMICS_BM(
+    Serial, makeSerialChain, RevoluteJoint, Revolute, LegacyAba, {
+      runLegacyAba(*skel);
+    })
+REGISTER_DYNAMICS_BM_FULL(Serial, Revolute, LegacyAba);
+
+DEFINE_DYNAMICS_BM(
+    BinaryTree, makeBinaryTree, RevoluteJoint, Revolute, LegacyAba, {
+      runLegacyAba(*skel);
+    })
+REGISTER_DYNAMICS_BM_FULL(BinaryTree, Revolute, LegacyAba);
+
+DEFINE_DYNAMICS_BM(Star, makeStar, RevoluteJoint, Revolute, LegacyAba, {
+  runLegacyAba(*skel);
+})
+REGISTER_DYNAMICS_BM_FULL(Star, Revolute, LegacyAba);
+
+DEFINE_DYNAMICS_BM(
+    Serial, makeSerialChain, RevoluteJoint, Revolute, DirectAba, {
+      detail::SkeletonDynamicsView model(*skel);
+      detail::aba(model);
+    })
+REGISTER_DYNAMICS_BM_FULL(Serial, Revolute, DirectAba);
+
+DEFINE_DYNAMICS_BM(
+    BinaryTree, makeBinaryTree, RevoluteJoint, Revolute, DirectAba, {
+      detail::SkeletonDynamicsView model(*skel);
+      detail::aba(model);
+    })
+REGISTER_DYNAMICS_BM_FULL(BinaryTree, Revolute, DirectAba);
+
+DEFINE_DYNAMICS_BM(Star, makeStar, RevoluteJoint, Revolute, DirectAba, {
+  detail::SkeletonDynamicsView model(*skel);
+  detail::aba(model);
+})
+REGISTER_DYNAMICS_BM_FULL(Star, Revolute, DirectAba);
+
+DEFINE_DYNAMICS_BM(
+    Serial, makeSerialChain, RevoluteJoint, Revolute, LegacyRnea, {
+      runLegacyRnea(*skel, detail::RneaOptions{false, false, false});
+    })
+REGISTER_DYNAMICS_BM_FULL(Serial, Revolute, LegacyRnea);
+
+DEFINE_DYNAMICS_BM(
+    BinaryTree, makeBinaryTree, RevoluteJoint, Revolute, LegacyRnea, {
+      runLegacyRnea(*skel, detail::RneaOptions{false, false, false});
+    })
+REGISTER_DYNAMICS_BM(BinaryTree, Revolute, LegacyRnea);
+
+DEFINE_DYNAMICS_BM(Star, makeStar, RevoluteJoint, Revolute, LegacyRnea, {
+  runLegacyRnea(*skel, detail::RneaOptions{false, false, false});
+})
+REGISTER_DYNAMICS_BM(Star, Revolute, LegacyRnea);
+
+DEFINE_DYNAMICS_BM(
+    Serial, makeSerialChain, RevoluteJoint, Revolute, DirectRnea, {
+      detail::SkeletonDynamicsView model(*skel);
+      detail::rnea(model, detail::RneaOptions{false, false, false});
+    })
+REGISTER_DYNAMICS_BM_FULL(Serial, Revolute, DirectRnea);
+
+DEFINE_DYNAMICS_BM(
+    BinaryTree, makeBinaryTree, RevoluteJoint, Revolute, DirectRnea, {
+      detail::SkeletonDynamicsView model(*skel);
+      detail::rnea(model, detail::RneaOptions{false, false, false});
+    })
+REGISTER_DYNAMICS_BM(BinaryTree, Revolute, DirectRnea);
+
+DEFINE_DYNAMICS_BM(Star, makeStar, RevoluteJoint, Revolute, DirectRnea, {
+  detail::SkeletonDynamicsView model(*skel);
+  detail::rnea(model, detail::RneaOptions{false, false, false});
+})
+REGISTER_DYNAMICS_BM(Star, Revolute, DirectRnea);
+
+// ============================================================================
+// Section E3: Batched Algorithm Benchmarks
+// ============================================================================
+
+static constexpr int kBatchBodiesPerSkeleton = 20;
+
+static std::vector<SkeletonPtr> makeSerialRevoluteBatch(int numSkeletons)
+{
+  std::vector<SkeletonPtr> skeletons;
+  skeletons.reserve(numSkeletons);
+  for (int i = 0; i < numSkeletons; ++i) {
+    auto skel = makeSerialChain<RevoluteJoint>(
+        kBatchBodiesPerSkeleton, "batch_" + std::to_string(i));
+    randomizeState(skel);
+    skeletons.push_back(std::move(skel));
+  }
+  return skeletons;
+}
+
+static std::vector<SkeletonPtr> makeHeterogeneousRevoluteBatch(int numSkeletons)
+{
+  std::vector<SkeletonPtr> skeletons;
+  skeletons.reserve(numSkeletons);
+  for (int i = 0; i < numSkeletons; ++i) {
+    const int numBodies = 5 + (i * 7) % 32;
+    auto skel = makeSerialChain<RevoluteJoint>(
+        numBodies, "heterogeneous_batch_" + std::to_string(i));
+    randomizeState(skel);
+    skeletons.push_back(std::move(skel));
+  }
+  return skeletons;
+}
+
+static std::vector<detail::SkeletonDynamicsView> makeSkeletonDynamicsViews(
+    std::vector<SkeletonPtr>& skeletons)
+{
+  std::vector<detail::SkeletonDynamicsView> models;
+  models.reserve(skeletons.size());
+  for (auto& skeleton : skeletons) {
+    models.emplace_back(*skeleton);
+  }
+  return models;
+}
+
+static void randomizeBatchState(std::vector<SkeletonPtr>& skeletons)
+{
+  for (auto& skeleton : skeletons) {
+    dirtyAllJoints(skeleton);
+    randomizeState(skeleton);
+  }
+}
+
+static void BM_BatchSerial_Revolute_ForwardDynamics(benchmark::State& state)
+{
+  auto skeletons = makeSerialRevoluteBatch(static_cast<int>(state.range(0)));
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    randomizeBatchState(skeletons);
+    state.ResumeTiming();
+
+    for (auto& skeleton : skeletons) {
+      skeleton->computeForwardDynamics();
+    }
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations()) * skeletons.size());
+  state.counters["skeletons"] = static_cast<double>(skeletons.size());
+  state.counters["bodies_per_skel"] = kBatchBodiesPerSkeleton;
+}
+BENCHMARK(BM_BatchSerial_Revolute_ForwardDynamics)
+    ->Arg(1)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(25)
+    ->Arg(50)
+    ->Arg(100) BM_OPTS;
+
+static void BM_BatchSerial_Revolute_DirectAba(benchmark::State& state)
+{
+  auto skeletons = makeSerialRevoluteBatch(static_cast<int>(state.range(0)));
+  auto models = makeSkeletonDynamicsViews(skeletons);
+  const auto modelSpan
+      = std::span<detail::SkeletonDynamicsView>(models.data(), models.size());
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    randomizeBatchState(skeletons);
+    state.ResumeTiming();
+
+    detail::abaBatch(modelSpan);
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations()) * skeletons.size());
+  state.counters["skeletons"] = static_cast<double>(skeletons.size());
+  state.counters["bodies_per_skel"] = kBatchBodiesPerSkeleton;
+}
+BENCHMARK(BM_BatchSerial_Revolute_DirectAba)
+    ->Arg(1)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(25)
+    ->Arg(50)
+    ->Arg(100) BM_OPTS;
+
+static void BM_BatchSerial_Revolute_InverseDynamics(benchmark::State& state)
+{
+  auto skeletons = makeSerialRevoluteBatch(static_cast<int>(state.range(0)));
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    randomizeBatchState(skeletons);
+    state.ResumeTiming();
+
+    for (auto& skeleton : skeletons) {
+      skeleton->computeInverseDynamics(false, false, false);
+    }
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations()) * skeletons.size());
+  state.counters["skeletons"] = static_cast<double>(skeletons.size());
+  state.counters["bodies_per_skel"] = kBatchBodiesPerSkeleton;
+}
+BENCHMARK(BM_BatchSerial_Revolute_InverseDynamics)
+    ->Arg(1)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(25)
+    ->Arg(50)
+    ->Arg(100) BM_OPTS;
+
+static void BM_BatchSerial_Revolute_DirectRnea(benchmark::State& state)
+{
+  auto skeletons = makeSerialRevoluteBatch(static_cast<int>(state.range(0)));
+  auto models = makeSkeletonDynamicsViews(skeletons);
+  const auto modelSpan
+      = std::span<detail::SkeletonDynamicsView>(models.data(), models.size());
+  const detail::RneaOptions options{false, false, false};
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    randomizeBatchState(skeletons);
+    state.ResumeTiming();
+
+    detail::rneaBatch(modelSpan, options);
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations()) * skeletons.size());
+  state.counters["skeletons"] = static_cast<double>(skeletons.size());
+  state.counters["bodies_per_skel"] = kBatchBodiesPerSkeleton;
+}
+BENCHMARK(BM_BatchSerial_Revolute_DirectRnea)
+    ->Arg(1)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(25)
+    ->Arg(50)
+    ->Arg(100) BM_OPTS;
+
+static void BM_BatchHeterogeneous_Revolute_ForwardDynamics(
+    benchmark::State& state)
+{
+  auto skeletons
+      = makeHeterogeneousRevoluteBatch(static_cast<int>(state.range(0)));
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    randomizeBatchState(skeletons);
+    state.ResumeTiming();
+
+    for (auto& skeleton : skeletons) {
+      skeleton->computeForwardDynamics();
+    }
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations()) * skeletons.size());
+  state.counters["skeletons"] = static_cast<double>(skeletons.size());
+}
+BENCHMARK(BM_BatchHeterogeneous_Revolute_ForwardDynamics)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(25)
+    ->Arg(50) BM_OPTS;
+
+static void BM_BatchHeterogeneous_Revolute_DirectAba(benchmark::State& state)
+{
+  auto skeletons
+      = makeHeterogeneousRevoluteBatch(static_cast<int>(state.range(0)));
+  auto models = makeSkeletonDynamicsViews(skeletons);
+  const auto modelSpan
+      = std::span<detail::SkeletonDynamicsView>(models.data(), models.size());
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    randomizeBatchState(skeletons);
+    state.ResumeTiming();
+
+    detail::abaBatch(modelSpan);
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations()) * skeletons.size());
+  state.counters["skeletons"] = static_cast<double>(skeletons.size());
+}
+BENCHMARK(BM_BatchHeterogeneous_Revolute_DirectAba)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(25)
+    ->Arg(50) BM_OPTS;
+
+static void BM_BatchHeterogeneous_Revolute_InverseDynamics(
+    benchmark::State& state)
+{
+  auto skeletons
+      = makeHeterogeneousRevoluteBatch(static_cast<int>(state.range(0)));
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    randomizeBatchState(skeletons);
+    state.ResumeTiming();
+
+    for (auto& skeleton : skeletons) {
+      skeleton->computeInverseDynamics(false, false, false);
+    }
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations()) * skeletons.size());
+  state.counters["skeletons"] = static_cast<double>(skeletons.size());
+}
+BENCHMARK(BM_BatchHeterogeneous_Revolute_InverseDynamics)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(25)
+    ->Arg(50) BM_OPTS;
+
+static void BM_BatchHeterogeneous_Revolute_DirectRnea(benchmark::State& state)
+{
+  auto skeletons
+      = makeHeterogeneousRevoluteBatch(static_cast<int>(state.range(0)));
+  auto models = makeSkeletonDynamicsViews(skeletons);
+  const auto modelSpan
+      = std::span<detail::SkeletonDynamicsView>(models.data(), models.size());
+  const detail::RneaOptions options{false, false, false};
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    randomizeBatchState(skeletons);
+    state.ResumeTiming();
+
+    detail::rneaBatch(modelSpan, options);
+  }
+
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations()) * skeletons.size());
+  state.counters["skeletons"] = static_cast<double>(skeletons.size());
+}
+BENCHMARK(BM_BatchHeterogeneous_Revolute_DirectRnea)
+    ->Arg(5)
+    ->Arg(10)
+    ->Arg(25)
+    ->Arg(50) BM_OPTS;
 
 // ============================================================================
 // Section F: Mass Matrix Benchmarks (CRB)
