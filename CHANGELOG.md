@@ -78,6 +78,7 @@
   - Fixed intermittent SEGFAULT in TranslationalJoint2D on macOS ARM64 (Release mode) caused by missing `EIGEN_MAKE_ALIGNED_OPERATOR_NEW` on `TranslationalJoint2DUniqueProperties` which contains `Eigen::Matrix<double, 3, 2>`. NEON vectorized instructions require 16-byte alignment that was not guaranteed without this macro.
   - Fixed `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and `UniversalJoint::copy(const UniversalJoint*)` performing self-copy instead of copying from the argument.
   - Fixed weak inverse-kinematics pointer lifetime tracking and `SharedLibraryIkFast` forward-kinematics symbol loading.
+  - Fixed `MeshShape::loadMesh(filePath)` so Windows drive-letter paths are converted to valid file URIs before Assimp loading.
   - Fixed intermittent SEGFAULT in `Icosphere::computeIcosahedron()` on macOS ARM64 (Release mode) by removing `static` from the triangles vector, which can cause alignment issues during static initialization when using Eigen aligned allocators.
   - Fix assertion failure crash in JointConstraint when joint limits are invalid (lower > upper). Now emits a warning and skips limit enforcement for that DOF instead of crashing. ([gz-physics#846](https://github.com/gazebosim/gz-physics/issues/846))
   - Added split impulse contact correction and clarified zero-contact handling. ([#2354](https://github.com/dartsim/dart/pull/2354), [#2220](https://github.com/dartsim/dart/pull/2220), [#201](https://github.com/dartsim/dart/issues/201))
