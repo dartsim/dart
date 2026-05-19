@@ -315,6 +315,7 @@ void SimpleViewer::compile()
          static_cast<float>(m_backgroundColor.y()),
          static_cast<float>(m_backgroundColor.z()),
          static_cast<float>(m_backgroundColor.w())}};
+    // VSG defaults to reversed depth (GREATER compare), so 0.0 is far.
     renderGraph->setClearValues(clearColor, VkClearDepthStencilValue{0.0f, 0});
 
     auto view = ::vsg::View::create(m_camera, m_root);

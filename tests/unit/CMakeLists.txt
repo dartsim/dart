@@ -386,6 +386,13 @@ if(TARGET dart-gui-vsg)
 
   dart_add_test("unit" UNIT_gui_vsg_collision_scene_builder gui/vsg/test_collision_scene_builder.cpp)
   target_link_libraries(UNIT_gui_vsg_collision_scene_builder dart-gui-vsg dart-collision-native)
+
+  set_tests_properties(
+    UNIT_gui_vsg_geometry_builders
+    UNIT_gui_vsg_debug_draw
+    UNIT_gui_vsg_simple_viewer
+    UNIT_gui_vsg_collision_scene_builder
+    PROPERTIES RESOURCE_LOCK vsg)
 endif()
 
 # ==============================================================================
