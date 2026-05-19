@@ -285,6 +285,16 @@ def check_package_components(repo_root: Path) -> list[str]:
             "dart/CMakeLists.txt: legacy collision package components must be "
             "INTERFACE targets that link only dart"
         )
+    native_link_pattern = re.compile(
+        r"target_link_libraries\(\s*"
+        r"dart\s+PUBLIC\s+\$\{PROJECT_NAME\}-collision-native\s*\)",
+        re.DOTALL,
+    )
+    if not native_link_pattern.search(source):
+        failures.append(
+            "dart/CMakeLists.txt: dart must explicitly link "
+            "${PROJECT_NAME}-collision-native"
+        )
     return failures
 
 
@@ -357,6 +367,7 @@ def main() -> int:
     )
     print("  dartpy API: DartCollisionDetector only; legacy detector aliases absent")
     print("  package components: collision-fcl/bullet/ode -> dart")
+    print("  link interface: dart -> dart-collision-native")
     print("  reference engines: tests/dart/test/reference_collision only")
     return 0
 
