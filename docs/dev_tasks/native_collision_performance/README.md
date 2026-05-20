@@ -5,8 +5,12 @@
 - [x] Phase 0: Feature-complete native runtime is merged and available as the
       default collision path.
 - [ ] Phase 1: Single-core CPU benchmark inventory and reproducibility gate.
+      First manifest generated from the current collision benchmark JSON;
+      final acceptance still needs a quieter controlled rerun.
 - [ ] Phase 2: Single-core CPU optimization until every comparable benchmark
-      family exceeds the strongest comparison baseline.
+      family exceeds the strongest comparison baseline. The first public
+      adapter edge-case slice now leads in the current noisy inventory run;
+      raw pair narrow phase rows remain the largest measured gaps.
 - [ ] Phase 3: Regression guardrails and release-ready evidence transfer.
 - [ ] Phase 4: Multi-core CPU roadmap and prototype gate.
 - [ ] Phase 5: Single-GPU roadmap and prototype gate.
@@ -106,14 +110,15 @@ define comparable behavior and performance bars.
 
 ## Immediate Next Steps
 
-1. Add a benchmark inventory document from current benchmark names and coverage
-   matrix rows.
-2. Run the existing broad collision benchmark guard once on a controlled
-   single-core configuration and save the JSON outputs for classification.
-3. Build a row-level performance gap table with one owner row per
-   feature/algorithm family.
-4. Pick the first single-core hot-path slice from measured total runtime, not
-   from intuition.
+1. Use `05-benchmark-manifest.md` as the current row-level inventory and gap
+   table.
+2. Re-run the broad collision benchmark guard on a quieter controlled
+   single-core configuration before using any result as final acceptance
+   evidence.
+3. Continue with the largest remaining measured raw pair narrow-phase gaps,
+   then verify the targeted row and the broad collision guard.
+4. Keep the manifest generated from JSON until durable dashboard data is
+   promoted out of this task folder.
 
 ## Completion Criteria
 

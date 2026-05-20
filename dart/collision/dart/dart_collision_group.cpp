@@ -115,34 +115,33 @@ bool addContacts(
     return result.getNumContacts() >= option.maxNumContacts;
   }
 
-  const auto numContacts = nativeResult.numContacts();
-  for (auto i = 0u; i < numContacts; ++i) {
-    const auto& cp = nativeResult.getContact(i);
+  for (const auto& manifold : nativeResult.getManifolds()) {
+    for (const auto& cp : manifold.getContacts()) {
+      if (!option.allowNegativePenetrationDepthContacts && cp.depth < 0.0) {
+        continue;
+      }
 
-    if (!option.allowNegativePenetrationDepthContacts && cp.depth < 0.0) {
-      continue;
-    }
+      if (Contact::isZeroNormal(cp.normal)) {
+        continue;
+      }
 
-    if (Contact::isZeroNormal(cp.normal)) {
-      continue;
-    }
+      Contact contact;
+      contact.point = cp.position;
+      contact.normal = cp.normal;
+      contact.penetrationDepth = cp.depth;
+      contact.collisionObject1 = object1;
+      contact.collisionObject2 = object2;
+      if (cp.featureIndex1 >= 0) {
+        contact.triID1 = cp.featureIndex1;
+      }
+      if (cp.featureIndex2 >= 0) {
+        contact.triID2 = cp.featureIndex2;
+      }
+      result.addContact(contact);
 
-    Contact contact;
-    contact.point = cp.position;
-    contact.normal = cp.normal;
-    contact.penetrationDepth = cp.depth;
-    contact.collisionObject1 = object1;
-    contact.collisionObject2 = object2;
-    if (cp.featureIndex1 >= 0) {
-      contact.triID1 = cp.featureIndex1;
-    }
-    if (cp.featureIndex2 >= 0) {
-      contact.triID2 = cp.featureIndex2;
-    }
-    result.addContact(contact);
-
-    if (result.getNumContacts() >= option.maxNumContacts) {
-      return true;
+      if (result.getNumContacts() >= option.maxNumContacts) {
+        return true;
+      }
     }
   }
 
@@ -196,32 +195,39 @@ class DartCollisionScene
 public:
   void sync(const std::vector<CollisionObject*>& objects)
   {
-    std::unordered_set<CollisionObject*> activeObjects;
-    activeObjects.reserve(objects.size());
-    for (auto* object : objects) {
-      if (object) {
-        activeObjects.insert(object);
+    const bool objectListUnchanged = hasMatchingObjectList(objects);
+    if (!objectListUnchanged) {
+      std::unordered_set<CollisionObject*> activeObjects;
+      activeObjects.reserve(objects.size());
+      for (auto* object : objects) {
+        if (object) {
+          activeObjects.insert(object);
+        }
       }
-    }
 
-    for (auto it = mEntries.begin(); it != mEntries.end();) {
-      if (!activeObjects.contains(it->first)) {
-        it = removeEntry(it);
-      } else {
-        ++it;
+      for (auto it = mEntries.begin(); it != mEntries.end();) {
+        if (!activeObjects.contains(it->first)) {
+          it = removeEntry(it);
+        } else {
+          ++it;
+        }
       }
-    }
 
-    mWorld.reserveObjects(activeObjects.size());
+      mWorld.reserveObjects(activeObjects.size());
+      mObjectsInOrder.clear();
+      mObjectsInOrder.reserve(objects.size());
+    }
 
     std::vector<native::ObjectId> dirtyIds;
     dirtyIds.reserve(objects.size());
 
-    mObjectsInOrder.clear();
-    mObjectsInOrder.reserve(objects.size());
     for (auto* object : objects) {
       if (syncObject(object, dirtyIds)) {
-        mObjectsInOrder.push_back(object);
+        if (!objectListUnchanged) {
+          mObjectsInOrder.push_back(object);
+        }
+      } else if (objectListUnchanged) {
+        std::erase(mObjectsInOrder, object);
       }
     }
 
@@ -264,11 +270,29 @@ public:
       return false;
     }
 
-    const auto snapshot = mWorld.buildBroadPhaseSnapshot();
     const DartCollisionFilterAdapter filterAdapter(
         option.collisionFilter.get());
     const auto nativeFilter = option.collisionFilter ? &filterAdapter : nullptr;
     const auto nativeOption = makeNativeCollisionOption(option, nativeFilter);
+
+    if (mObjectsInOrder.size() == 2u) {
+      const auto* entry1 = findEntry(mObjectsInOrder[0]);
+      const auto* entry2 = findEntry(mObjectsInOrder[1]);
+      if (entry1 && entry2) {
+        auto& pairResult = nextPairResult();
+        if (!collideNativePair(*entry1, *entry2, nativeOption, pairResult)) {
+          return false;
+        }
+
+        if (result) {
+          (void)addContacts(
+              option, entry1->object, entry2->object, pairResult, *result);
+        }
+        return true;
+      }
+    }
+
+    const auto snapshot = mWorld.buildBroadPhaseSnapshot();
     bool collisionFound = false;
 
     for (const auto& pair : snapshot.pairs) {
@@ -278,12 +302,8 @@ public:
         continue;
       }
 
-      native::CollisionResult pairResult;
-      if (!mWorld.collide(
-              entry1->nativeObject,
-              entry2->nativeObject,
-              nativeOption,
-              pairResult)) {
+      auto& pairResult = nextPairResult();
+      if (!collideNativePair(*entry1, *entry2, nativeOption, pairResult)) {
         continue;
       }
 
@@ -345,12 +365,8 @@ public:
           continue;
         }
 
-        native::CollisionResult pairResult;
-        if (!mWorld.collide(
-                entry1->nativeObject,
-                entry2->nativeObject,
-                nativeOption,
-                pairResult)) {
+        auto& pairResult = nextPairResult();
+        if (!collideNativePair(*entry1, *entry2, nativeOption, pairResult)) {
           continue;
         }
 
@@ -506,10 +522,26 @@ private:
 
   using EntryMap = std::unordered_map<CollisionObject*, Entry>;
 
+  bool hasMatchingObjectList(const std::vector<CollisionObject*>& objects) const
+  {
+    if (objects.size() != mObjectsInOrder.size()
+        || objects.size() != mEntries.size()) {
+      return false;
+    }
+
+    return std::equal(objects.begin(), objects.end(), mObjectsInOrder.begin());
+  }
+
   bool syncObject(
       CollisionObject* object, std::vector<native::ObjectId>& dirtyIds)
   {
-    if (!object || !object->getShapeFrame()) {
+    if (!object) {
+      remove(object);
+      return false;
+    }
+
+    const auto* shapeFrame = object->getShapeFrame();
+    if (!shapeFrame) {
       remove(object);
       return false;
     }
@@ -561,6 +593,10 @@ private:
     }
 
     auto& nativeObject = it->second.nativeObject;
+    if (!shapeFrame->needsTransformUpdate()) {
+      return true;
+    }
+
     const auto& transform = object->getTransform();
     if (!isSameTransform(nativeObject.getTransform(), transform)) {
       nativeObject.setTransform(transform);
@@ -606,6 +642,31 @@ private:
       return false;
     }
     return true;
+  }
+
+  native::CollisionResult& nextPairResult()
+  {
+    mPairResultScratch.clear();
+    return mPairResultScratch;
+  }
+
+  bool collideNativePair(
+      const Entry& entry1,
+      const Entry& entry2,
+      const native::CollisionOption& option,
+      native::CollisionResult& result) const
+  {
+    if (!native::shouldCollide(
+            entry1.nativeObject.getCollisionFilterData(),
+            entry2.nativeObject.getCollisionFilterData(),
+            entry1.nativeObject,
+            entry2.nativeObject,
+            option.collisionFilter)) {
+      return false;
+    }
+
+    return native::NarrowPhase::collide(
+        entry1.nativeObject, entry2.nativeObject, option, result);
   }
 
   double distanceImpl(
@@ -702,6 +763,7 @@ private:
   EntryMap mEntries;
   std::unordered_map<native::ObjectId, CollisionObject*> mObjectsByNativeId;
   std::vector<CollisionObject*> mObjectsInOrder;
+  native::CollisionResult mPairResultScratch;
 };
 
 //==============================================================================
