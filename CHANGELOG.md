@@ -15,6 +15,10 @@
 
   * Hide bundled ImGui internal formatting helpers from shared library exports: [#2671](https://github.com/dartsim/dart/issues/2671)
 
+* Parsers
+
+  * Return safe defaults from XML attribute helpers when callers pass a null element: [#2678](https://github.com/dartsim/dart/issues/2678)
+
 * Common
 
   * Fix iterator invalidation in Subject/Observer notification loops that caused non-deterministic SEGFAULT on macOS arm64 Debug builds

@@ -46,6 +46,25 @@
 namespace dart {
 namespace utils {
 
+namespace {
+
+bool warnIfNullAttributeElement(
+    const tinyxml2::XMLElement* element,
+    const std::string& attributeName,
+    const char* typeName,
+    const char* fallback)
+{
+  if (element != nullptr)
+    return false;
+
+  dtwarn << "[getAttribute] Error in parsing " << typeName
+         << " type attribute [" << attributeName
+         << "] of a null element. Returning " << fallback << ".\n";
+  return true;
+}
+
+} // namespace
+
 //==============================================================================
 std::string toString(bool v)
 {
@@ -695,6 +714,9 @@ bool readXmlFile(
 //==============================================================================
 bool hasAttribute(const tinyxml2::XMLElement* element, const char* const name)
 {
+  if (element == nullptr || name == nullptr)
+    return false;
+
   const char* const result = element->Attribute(name);
   return result != nullptr;
 }
@@ -716,6 +738,10 @@ void getAttribute(
 std::string getAttributeString(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(
+          element, attributeName, "string", "empty string"))
+    return std::string();
+
   const char* const result = element->Attribute(attributeName.c_str());
 
   if (nullptr == result) {
@@ -732,6 +758,9 @@ std::string getAttributeString(
 bool getAttributeBool(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(element, attributeName, "bool", "false"))
+    return false;
+
   bool val = false;
   const int result = element->QueryBoolAttribute(attributeName.c_str(), &val);
 
@@ -749,6 +778,9 @@ bool getAttributeBool(
 int getAttributeInt(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(element, attributeName, "int", "zero"))
+    return 0;
+
   int val = 0;
   const int result = element->QueryIntAttribute(attributeName.c_str(), &val);
 
@@ -766,6 +798,10 @@ int getAttributeInt(
 unsigned int getAttributeUInt(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(
+          element, attributeName, "unsigned int", "zero"))
+    return 0u;
+
   unsigned int val = 0u;
   const int result
       = element->QueryUnsignedAttribute(attributeName.c_str(), &val);
@@ -784,6 +820,9 @@ unsigned int getAttributeUInt(
 float getAttributeFloat(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(element, attributeName, "float", "zero"))
+    return 0.0f;
+
   float val = 0.0f;
   const int result = element->QueryFloatAttribute(attributeName.c_str(), &val);
 
@@ -801,6 +840,9 @@ float getAttributeFloat(
 double getAttributeDouble(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(element, attributeName, "double", "zero"))
+    return 0.0;
+
   double val = 0.0;
   const int result = element->QueryDoubleAttribute(attributeName.c_str(), &val);
 
@@ -827,6 +869,10 @@ char getAttributeChar(
 Eigen::Vector2i getAttributeVector2i(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(
+          element, attributeName, "Eigen::Vector2i", "zero vector"))
+    return Eigen::Vector2i::Zero();
+
   const std::string val = getAttributeString(element, attributeName);
 
   return toVector2i(val);
@@ -836,6 +882,10 @@ Eigen::Vector2i getAttributeVector2i(
 Eigen::Vector2d getAttributeVector2d(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(
+          element, attributeName, "Eigen::Vector2d", "zero vector"))
+    return Eigen::Vector2d::Zero();
+
   const std::string val = getAttributeString(element, attributeName);
 
   return toVector2d(val);
@@ -845,6 +895,10 @@ Eigen::Vector2d getAttributeVector2d(
 Eigen::Vector3d getAttributeVector3d(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(
+          element, attributeName, "Eigen::Vector3d", "zero vector"))
+    return Eigen::Vector3d::Zero();
+
   const std::string val = getAttributeString(element, attributeName);
 
   return toVector3d(val);
@@ -854,6 +908,10 @@ Eigen::Vector3d getAttributeVector3d(
 Eigen::Vector4d getAttributeVector4d(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(
+          element, attributeName, "Eigen::Vector4d", "zero vector"))
+    return Eigen::Vector4d::Zero();
+
   const std::string val = getAttributeString(element, attributeName);
 
   return toVector4d(val);
@@ -863,6 +921,10 @@ Eigen::Vector4d getAttributeVector4d(
 Eigen::Vector6d getAttributeVector6d(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(
+          element, attributeName, "Eigen::Vector6d", "zero vector"))
+    return Eigen::Vector6d::Zero();
+
   const std::string val = getAttributeString(element, attributeName);
 
   return toVector6d(val);
@@ -872,6 +934,10 @@ Eigen::Vector6d getAttributeVector6d(
 Eigen::VectorXd getAttributeVectorXd(
     const tinyxml2::XMLElement* element, const std::string& attributeName)
 {
+  if (warnIfNullAttributeElement(
+          element, attributeName, "Eigen::VectorXd", "empty vector"))
+    return Eigen::VectorXd();
+
   const std::string val = getAttributeString(element, attributeName);
 
   return toVectorXd(val);
