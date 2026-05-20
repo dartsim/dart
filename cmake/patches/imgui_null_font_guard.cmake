@@ -1,11 +1,16 @@
-# Patch: Add null pointer validation to ImGui functions
+# Patch: Apply DART fixes to fetched ImGui sources
 # Fixes: https://github.com/dartsim/dart/issues/2516
 # Fixes: https://github.com/dartsim/dart/issues/2668
+# Fixes: https://github.com/dartsim/dart/issues/2671
 #
 # ImGui v1.84.2 does not validate input pointers in AddFontFromMemory*
 # functions, causing SEGV when nullptr is passed (e.g., from a failed
 # resource load). It also assumes ColorPicker4 has a current context and window.
 # This patch adds early-return guards.
+#
+# ImGui also declares internal formatting helpers with IMGUI_API, which exports
+# them from DART's fetched shared library. Keep those helpers hidden from the
+# dynamic ABI while preserving ImGui's internal uses.
 #
 # Usage: cmake -DIMGUI_SOURCE_DIR=<path> -P imgui_null_font_guard.cmake
 
@@ -14,9 +19,52 @@ if(NOT DEFINED IMGUI_SOURCE_DIR)
 endif()
 
 set(file "${IMGUI_SOURCE_DIR}/imgui_draw.cpp")
+set(internal_file "${IMGUI_SOURCE_DIR}/imgui_internal.h")
 
 if(NOT EXISTS "${file}")
   message(FATAL_ERROR "imgui_draw.cpp not found at ${file}")
+endif()
+
+if(NOT EXISTS "${internal_file}")
+  message(FATAL_ERROR "imgui_internal.h not found at ${internal_file}")
+endif()
+
+file(READ "${internal_file}" internal_content)
+
+string(FIND "${internal_content}" "IMGUI_INTERNAL_FORMAT_API" internal_already_patched)
+if(internal_already_patched EQUAL -1)
+  string(REPLACE
+    "IMGUI_API int           ImFormatString(char* buf, size_t buf_size, const char* fmt, ...) IM_FMTARGS(3);"
+    "#ifndef IMGUI_INTERNAL_FORMAT_API
+#if defined(__GNUC__) || defined(__clang__)
+#define IMGUI_INTERNAL_FORMAT_API __attribute__((visibility(\"hidden\")))
+#else
+#define IMGUI_INTERNAL_FORMAT_API IMGUI_API
+#endif
+#endif
+IMGUI_INTERNAL_FORMAT_API int ImFormatString(char* buf, size_t buf_size, const char* fmt, ...) IM_FMTARGS(3);"
+    internal_content "${internal_content}"
+  )
+
+  string(REPLACE
+    "IMGUI_API int           ImFormatStringV(char* buf, size_t buf_size, const char* fmt, va_list args) IM_FMTLIST(3);"
+    "IMGUI_INTERNAL_FORMAT_API int ImFormatStringV(char* buf, size_t buf_size, const char* fmt, va_list args) IM_FMTLIST(3);"
+    internal_content "${internal_content}"
+  )
+
+  string(FIND "${internal_content}" "IMGUI_INTERNAL_FORMAT_API int ImFormatString(" _format_patch_found)
+  if(_format_patch_found EQUAL -1)
+    message(FATAL_ERROR
+      "ImGui internal format symbol patch failed: expected declarations were "
+      "not found in ${internal_file}. The ImGui source may have changed. "
+      "Update the patch patterns to match the current ImGui version."
+    )
+  endif()
+
+  file(WRITE "${internal_file}" "${internal_content}")
+  message(STATUS "Patched imgui_internal.h to hide internal format helpers (issue #2671)")
+else()
+  message(STATUS "imgui_internal.h already patched, skipping")
 endif()
 
 file(READ "${file}" content)
