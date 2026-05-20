@@ -101,3 +101,26 @@ TEST(ContactConstraint, ContactWithKinematicJoint)
       std::make_shared<constraint::PgsBoxedLcpSolver>(), 1e-4);
 #endif
 }
+
+//==============================================================================
+TEST(ContactConstraint, MalformedContactWithNullCollisionObjectsIsInactive)
+{
+  collision::Contact contact;
+  contact.collisionObject1 = nullptr;
+  contact.collisionObject2 = nullptr;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.force = Eigen::Vector3d::Zero();
+
+  DART_SUPPRESS_DEPRECATED_BEGIN
+  constraint::ContactConstraint constraint(contact, 0.001);
+  DART_SUPPRESS_DEPRECATED_END
+
+  constraint::ConstraintBase& base = constraint;
+  EXPECT_EQ(0u, base.getDimension());
+  EXPECT_FALSE(base.isActive());
+
+  base.update();
+
+  EXPECT_FALSE(base.isActive());
+}

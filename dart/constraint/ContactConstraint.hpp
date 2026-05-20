@@ -180,6 +180,9 @@ private:
   void getRelVelocity(double* relVel);
 
   ///
+  bool hasValidBodyNodes() const;
+
+  ///
   void updateFirstFrictionalDirection();
 
   ///

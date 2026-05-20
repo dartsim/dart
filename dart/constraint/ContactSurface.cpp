@@ -45,6 +45,25 @@
 namespace dart {
 namespace constraint {
 
+namespace {
+
+//==============================================================================
+dynamics::ShapeNode* getContactShapeNode(
+    const collision::CollisionObject* collisionObject)
+{
+  if (collisionObject == nullptr)
+    return nullptr;
+
+  auto* shapeFrame
+      = const_cast<dynamics::ShapeFrame*>(collisionObject->getShapeFrame());
+  if (shapeFrame == nullptr)
+    return nullptr;
+
+  return shapeFrame->asShapeNode();
+}
+
+} // namespace
+
 //==============================================================================
 ContactSurfaceHandler::ContactSurfaceHandler(ContactSurfaceHandlerPtr parent)
   : mParent(std::move(parent))
@@ -95,12 +114,13 @@ ContactSurfaceParams DefaultContactSurfaceHandler::createParams(
   ContactSurfaceParams params = ContactSurfaceHandler::createParams(
       contact, numContactsOnCollisionObject);
 
-  const auto* shapeNodeA = const_cast<dynamics::ShapeFrame*>(
-                               contact.collisionObject1->getShapeFrame())
-                               ->asShapeNode();
-  const auto* shapeNodeB = const_cast<dynamics::ShapeFrame*>(
-                               contact.collisionObject2->getShapeFrame())
-                               ->asShapeNode();
+  const auto* shapeNodeA = getContactShapeNode(contact.collisionObject1);
+  const auto* shapeNodeB = getContactShapeNode(contact.collisionObject2);
+  if (shapeNodeA == nullptr || shapeNodeB == nullptr) {
+    dtwarn << "[ContactConstraint] Ignoring contact surface parameters for "
+           << "a contact with a null collision object or missing ShapeNode.\n";
+    return params;
+  }
 
   const double restitutionCoeffA = computeRestitutionCoefficient(shapeNodeA);
   const double restitutionCoeffB = computeRestitutionCoefficient(shapeNodeB);
@@ -182,6 +202,9 @@ ContactConstraintPtr DefaultContactSurfaceHandler::createConstraint(
 {
   auto constraint = ContactSurfaceHandler::createConstraint(
       contact, numContactsOnCollisionObject, timeStep);
+
+  if (constraint == nullptr)
+    return nullptr;
 
   constraint->setPrimarySlipCompliance(
       constraint->getPrimarySlipCompliance()

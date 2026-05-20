@@ -119,6 +119,31 @@ CollisionSetup createCollidingBoxes(
 
 } // namespace
 
+TEST(ContactSurface, MalformedContactWithNullCollisionObjectsUsesDefaults)
+{
+  Contact contact;
+  contact.collisionObject1 = nullptr;
+  contact.collisionObject2 = nullptr;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.force = Eigen::Vector3d::Zero();
+
+  DefaultContactSurfaceHandler handler;
+  auto params = handler.createParams(contact, 1);
+
+  EXPECT_DOUBLE_EQ(
+      params.mPrimaryFrictionCoeff, constraint::DART_DEFAULT_FRICTION_COEFF);
+  EXPECT_DOUBLE_EQ(
+      params.mSecondaryFrictionCoeff, constraint::DART_DEFAULT_FRICTION_COEFF);
+  EXPECT_DOUBLE_EQ(
+      params.mRestitutionCoeff, constraint::DART_DEFAULT_RESTITUTION_COEFF);
+  EXPECT_DOUBLE_EQ(
+      params.mPrimarySlipCompliance, constraint::DART_DEFAULT_SLIP_COMPLIANCE);
+  EXPECT_DOUBLE_EQ(
+      params.mSecondarySlipCompliance,
+      constraint::DART_DEFAULT_SLIP_COMPLIANCE);
+}
+
 //==============================================================================
 // Friction Coefficient Validation Tests
 //==============================================================================
