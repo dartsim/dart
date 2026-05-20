@@ -149,6 +149,35 @@ BENCHMARK(BM_NativePointCloudInsert)
     ->Unit(benchmark::kMicrosecond);
 
 //==============================================================================
+static void BM_NativePointCloudInsertThreaded(benchmark::State& state)
+{
+  const auto points = makePointCloud(static_cast<std::size_t>(state.range(0)));
+  const auto numThreads = static_cast<std::size_t>(state.range(1));
+  dart::dynamics::SparseOccupancyGrid grid(0.05);
+
+  for (auto _ : state) {
+    grid.clear();
+    grid.insertPointCloud(
+        asSpan(points),
+        Eigen::Vector3d::Zero(),
+        Eigen::Isometry3d::Identity(),
+        numThreads);
+    benchmark::DoNotOptimize(grid.getNumCells());
+  }
+
+  state.counters["threads"]
+      = benchmark::Counter(static_cast<double>(numThreads));
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::int64_t>(points.size()));
+}
+BENCHMARK(BM_NativePointCloudInsertThreaded)
+    ->Args({1024, 2})
+    ->Args({8192, 2})
+    ->Args({8192, 4})
+    ->Args({8192, 8})
+    ->Unit(benchmark::kMicrosecond);
+
+//==============================================================================
 static void BM_NativeOccupancyQueries(benchmark::State& state)
 {
   const auto points = makePointCloud(static_cast<std::size_t>(state.range(0)));
@@ -200,15 +229,66 @@ BENCHMARK(BM_NativeOccupiedCellExtraction)
 
 #if DART_TESTS_HAVE_OCTOMAP
 //==============================================================================
+octomap::point3d toPoint3d(const Eigen::Vector3d& point)
+{
+  return octomap::point3d(
+      static_cast<float>(point.x()),
+      static_cast<float>(point.y()),
+      static_cast<float>(point.z()));
+}
+
+//==============================================================================
+static void BM_ReferencePointUpdates(benchmark::State& state)
+{
+  const auto points = makePointCloud(static_cast<std::size_t>(state.range(0)));
+
+  for (auto _ : state) {
+    octomap::OcTree tree(0.05);
+    for (const auto& point : points) {
+      tree.updateNode(toPoint3d(point), true);
+    }
+    benchmark::DoNotOptimize(tree.size());
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::int64_t>(points.size()));
+}
+BENCHMARK(BM_ReferencePointUpdates)
+    ->Arg(128)
+    ->Arg(1024)
+    ->Arg(8192)
+    ->Unit(benchmark::kMicrosecond);
+
+//==============================================================================
+static void BM_ReferenceRayInsertions(benchmark::State& state)
+{
+  const auto points = makePointCloud(static_cast<std::size_t>(state.range(0)));
+  const octomap::point3d sensorOrigin(0.0, 0.0, 0.0);
+
+  for (auto _ : state) {
+    octomap::OcTree tree(0.05);
+    for (const auto& point : points) {
+      tree.insertRay(sensorOrigin, toPoint3d(point));
+    }
+    benchmark::DoNotOptimize(tree.size());
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::int64_t>(points.size()));
+}
+BENCHMARK(BM_ReferenceRayInsertions)
+    ->Arg(128)
+    ->Arg(1024)
+    ->Arg(8192)
+    ->Unit(benchmark::kMicrosecond);
+
+//==============================================================================
 static void BM_ReferencePointCloudInsert(benchmark::State& state)
 {
   const auto points = makePointCloud(static_cast<std::size_t>(state.range(0)));
   octomap::Pointcloud pointCloud;
   for (const auto& point : points) {
-    pointCloud.push_back(
-        static_cast<float>(point.x()),
-        static_cast<float>(point.y()),
-        static_cast<float>(point.z()));
+    pointCloud.push_back(toPoint3d(point));
   }
 
   for (auto _ : state) {
@@ -221,6 +301,69 @@ static void BM_ReferencePointCloudInsert(benchmark::State& state)
       state.iterations() * static_cast<std::int64_t>(points.size()));
 }
 BENCHMARK(BM_ReferencePointCloudInsert)
+    ->Arg(128)
+    ->Arg(1024)
+    ->Arg(8192)
+    ->Unit(benchmark::kMicrosecond);
+
+//==============================================================================
+static void BM_ReferenceOccupancyQueries(benchmark::State& state)
+{
+  const auto points = makePointCloud(static_cast<std::size_t>(state.range(0)));
+  octomap::OcTree tree(0.05);
+  for (const auto& point : points) {
+    tree.updateNode(toPoint3d(point), true);
+  }
+
+  for (auto _ : state) {
+    double occupancy = 0.0;
+    for (const auto& point : points) {
+      const auto* node = tree.search(toPoint3d(point));
+      occupancy += node ? node->getOccupancy() : 0.0;
+    }
+    benchmark::DoNotOptimize(occupancy);
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::int64_t>(points.size()));
+}
+BENCHMARK(BM_ReferenceOccupancyQueries)
+    ->Arg(128)
+    ->Arg(1024)
+    ->Arg(8192)
+    ->Unit(benchmark::kMicrosecond);
+
+//==============================================================================
+static void BM_ReferenceOccupiedCellExtraction(benchmark::State& state)
+{
+  const auto points = makePointCloud(static_cast<std::size_t>(state.range(0)));
+  octomap::OcTree tree(0.05);
+  for (const auto& point : points) {
+    tree.updateNode(toPoint3d(point), true);
+  }
+
+  for (auto _ : state) {
+    std::vector<dart::dynamics::SparseOccupancyGrid::OccupiedCell> cells;
+    cells.reserve(tree.getNumLeafNodes());
+    for (auto it = tree.begin_leafs(), end = tree.end_leafs(); it != end;
+         ++it) {
+      if (tree.isNodeOccupied(*it)) {
+        cells.push_back(
+            dart::dynamics::SparseOccupancyGrid::OccupiedCell{
+                dart::dynamics::SparseOccupancyGrid::CellKey{},
+                Eigen::Vector3d(it.getX(), it.getY(), it.getZ()),
+                tree.getResolution(),
+                it->getOccupancy()});
+      }
+    }
+    benchmark::DoNotOptimize(cells.data());
+    benchmark::DoNotOptimize(cells.size());
+  }
+
+  state.SetItemsProcessed(
+      state.iterations() * static_cast<std::int64_t>(points.size()));
+}
+BENCHMARK(BM_ReferenceOccupiedCellExtraction)
     ->Arg(128)
     ->Arg(1024)
     ->Arg(8192)

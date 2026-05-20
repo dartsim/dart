@@ -135,10 +135,14 @@ public:
   void insertRay(const Eigen::Vector3d& from, const Eigen::Vector3d& to);
 
   /// Inserts a point cloud relative to an optional transform.
+  /// @param numThreads Number of worker threads used for ray classification.
+  /// Use 1 for deterministic single-threaded insertion, or 0 to use hardware
+  /// concurrency.
   void insertPointCloud(
       std::span<const Eigen::Vector3d> pointCloud,
       const Eigen::Vector3d& sensorOrigin = Eigen::Vector3d::Zero(),
-      const Eigen::Isometry3d& relativeTo = Eigen::Isometry3d::Identity());
+      const Eigen::Isometry3d& relativeTo = Eigen::Isometry3d::Identity(),
+      std::size_t numThreads = 1);
 
   /// Returns the grid cells traversed by a ray, including the endpoint cell.
   std::vector<CellKey> traceRay(
@@ -154,6 +158,8 @@ private:
   static double probabilityToLogOdds(double probability);
   static double logOddsToProbability(double logOdds);
   static void validateProbability(double probability, const char* name);
+  void markOccupiedCellsDirty();
+  void rebuildOccupiedCellsCache() const;
 
   double mResolution;
   double mOccupancyThresholdLogOdds;
@@ -162,6 +168,8 @@ private:
   double mMinLogOdds;
   double mMaxLogOdds;
   std::unordered_map<CellKey, double, CellKeyHash> mLogOdds;
+  mutable bool mOccupiedCellsDirty;
+  mutable std::vector<OccupiedCell> mOccupiedCellsCache;
 };
 
 } // namespace dynamics

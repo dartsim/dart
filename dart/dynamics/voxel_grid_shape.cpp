@@ -278,23 +278,28 @@ void VoxelGridShape::updateOccupancy(
 void VoxelGridShape::updateOccupancy(
     std::span<const Eigen::Vector3d> pointCloud,
     const Eigen::Vector3d& sensorOrigin,
-    const Frame* relativeTo)
+    const Frame* relativeTo,
+    std::size_t numThreads)
 {
   if (!relativeTo || relativeTo == Frame::World()) {
-    updateOccupancy(pointCloud, sensorOrigin, Eigen::Isometry3d::Identity());
+    updateOccupancy(
+        pointCloud, sensorOrigin, Eigen::Isometry3d::Identity(), numThreads);
     return;
   }
 
-  updateOccupancy(pointCloud, sensorOrigin, relativeTo->getWorldTransform());
+  updateOccupancy(
+      pointCloud, sensorOrigin, relativeTo->getWorldTransform(), numThreads);
 }
 
 //==============================================================================
 void VoxelGridShape::updateOccupancy(
     std::span<const Eigen::Vector3d> pointCloud,
     const Eigen::Vector3d& sensorOrigin,
-    const Eigen::Isometry3d& relativeTo)
+    const Eigen::Isometry3d& relativeTo,
+    std::size_t numThreads)
 {
-  mOccupancyGrid->insertPointCloud(pointCloud, sensorOrigin, relativeTo);
+  mOccupancyGrid->insertPointCloud(
+      pointCloud, sensorOrigin, relativeTo, numThreads);
 
 #if DART_HAVE_OCTOMAP
   if (mOctree) {
