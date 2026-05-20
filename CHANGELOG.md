@@ -19,6 +19,10 @@
 
   * Return safe defaults from XML attribute helpers when callers pass a null element: [#2678](https://github.com/dartsim/dart/issues/2678)
 
+* Utils
+
+  * Reject mismatched C3D frame or marker counts in `saveC3DFile()` instead of indexing past point data: [#2681](https://github.com/dartsim/dart/issues/2681)
+
 * Common
 
   * Fix iterator invalidation in Subject/Observer notification loops that caused non-deterministic SEGFAULT on macOS arm64 Debug builds
