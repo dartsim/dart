@@ -80,6 +80,17 @@ public:
   void setObjects(const CollisionObject* o1, const CollisionObject* o2);
 
 private:
+  friend class CollisionResult;
+
+  void setSingleContact(const ContactPoint& contact, ContactType type)
+  {
+    contacts_[0] = contact;
+    numContacts_ = 1;
+    type_ = type;
+    object1_ = contact.object1;
+    object2_ = contact.object2;
+  }
+
   std::array<ContactPoint, kMaxContacts> contacts_{};
   std::size_t numContacts_ = 0;
   ContactType type_ = ContactType::Unknown;

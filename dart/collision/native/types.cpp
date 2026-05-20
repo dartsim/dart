@@ -50,11 +50,7 @@ ContactManifold& CollisionResult::nextManifold()
 void CollisionResult::addContact(const ContactPoint& contact)
 {
   auto& manifold = nextManifold();
-  manifold.addContact(contact);
-  manifold.setType(ContactType::Point);
-  if (contact.object1 != nullptr || contact.object2 != nullptr) {
-    manifold.setObjects(contact.object1, contact.object2);
-  }
+  manifold.setSingleContact(contact, ContactType::Point);
   ++contactCount_;
   invalidateCache();
 }

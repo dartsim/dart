@@ -39,6 +39,22 @@
 
 namespace dart::collision::native {
 
+namespace {
+
+[[nodiscard]] bool isIdentityTransform(const Eigen::Isometry3d& transform)
+{
+  const auto& rotation = transform.linear();
+  const auto& translation = transform.translation();
+  return translation.x() == 0.0 && translation.y() == 0.0
+         && translation.z() == 0.0 && rotation(0, 0) == 1.0
+         && rotation(0, 1) == 0.0 && rotation(0, 2) == 0.0
+         && rotation(1, 0) == 0.0 && rotation(1, 1) == 1.0
+         && rotation(1, 2) == 0.0 && rotation(2, 0) == 0.0
+         && rotation(2, 1) == 0.0 && rotation(2, 2) == 1.0;
+}
+
+} // namespace
+
 bool collideSphereBox(
     const Eigen::Vector3d& sphereCenter,
     double sphereRadius,
@@ -51,7 +67,13 @@ bool collideSphereBox(
     return false;
   }
 
-  Eigen::Vector3d localSphereCenter = boxTransform.inverse() * sphereCenter;
+  const Eigen::Matrix3d& boxRotation = boxTransform.linear();
+  const Eigen::Vector3d& boxTranslation = boxTransform.translation();
+  const bool identityBoxTransform = isIdentityTransform(boxTransform);
+  Eigen::Vector3d localSphereCenter
+      = identityBoxTransform
+            ? sphereCenter
+            : boxRotation.transpose() * (sphereCenter - boxTranslation);
 
   Eigen::Vector3d closestPointLocal;
   closestPointLocal.x() = std::clamp(
@@ -93,22 +115,26 @@ bool collideSphereBox(
     Eigen::Vector3d localNormal = Eigen::Vector3d::Zero();
     localNormal[minAxis] = (localSphereCenter[minAxis] >= 0) ? 1.0 : -1.0;
 
-    normal = boxTransform.rotation() * localNormal;
+    normal = identityBoxTransform ? localNormal : boxRotation * localNormal;
     penetration = sphereRadius + minDist;
 
     Eigen::Vector3d localContactPoint = localSphereCenter;
     localContactPoint[minAxis] = (localSphereCenter[minAxis] >= 0)
                                      ? boxHalfExtents[minAxis]
                                      : -boxHalfExtents[minAxis];
-    contactPoint = boxTransform * localContactPoint;
+    contactPoint = identityBoxTransform
+                       ? localContactPoint
+                       : boxTranslation + boxRotation * localContactPoint;
   } else {
     double dist = std::sqrt(distSquared);
 
     Eigen::Vector3d localNormal = diff / dist;
-    normal = boxTransform.rotation() * localNormal;
+    normal = identityBoxTransform ? localNormal : boxRotation * localNormal;
 
     penetration = sphereRadius - dist;
-    contactPoint = boxTransform * closestPointLocal;
+    contactPoint = identityBoxTransform
+                       ? closestPointLocal
+                       : boxTranslation + boxRotation * closestPointLocal;
   }
 
   normal = -normal;
