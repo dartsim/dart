@@ -173,7 +173,7 @@ private:
 
 void makeAtlasMeshVisualsReadable(const dart::dynamics::SkeletonPtr& atlas)
 {
-  const Eigen::Vector4d readableAtlasColor(0.28, 0.29, 0.32, 1.0);
+  const Eigen::Vector4d readableAtlasColor(0.18, 0.19, 0.21, 1.0);
 
   for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i) {
     auto* body = atlas->getBodyNode(i);

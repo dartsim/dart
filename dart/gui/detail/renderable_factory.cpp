@@ -85,6 +85,8 @@ namespace {
 
 constexpr int kDebugLineTubeSegments = 8;
 constexpr double kTwoPi = 6.2831853071795864769;
+constexpr float kDefaultDielectricMetallic = 0.0f;
+constexpr float kDefaultMatteRoughness = 0.82f;
 
 struct Vertex
 {
@@ -793,8 +795,8 @@ Renderable createTriangleMeshRenderable(
     const float3& maxBounds,
     const PbrTextureBindings& textures = {},
     const TextureBinding* fallbackTexture = nullptr,
-    float metallic = 0.0f,
-    float roughness = 0.58f,
+    float metallic = kDefaultDielectricMetallic,
+    float roughness = kDefaultMatteRoughness,
     float3 emissiveColor = {0.0f, 0.0f, 0.0f},
     bool followsDescriptorColor = true)
 {
@@ -1281,8 +1283,8 @@ std::optional<Renderable> createMeshRenderable(
   {
     float4 baseColor;
     PbrTextureBindings textures;
-    float metallic = 0.0f;
-    float roughness = 0.58f;
+    float metallic = kDefaultDielectricMetallic;
+    float roughness = kDefaultMatteRoughness;
     float3 emissiveColor{0.0f, 0.0f, 0.0f};
     bool followsDescriptorColor = true;
     bool sourceWasDark = false;
