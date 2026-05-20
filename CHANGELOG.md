@@ -13,6 +13,10 @@
 
   * Ignore malformed contacts with null collision objects instead of dereferencing them while creating `ContactConstraint`: [#2669](https://github.com/dartsim/dart/issues/2669)
 
+* Parsers
+
+  * Return safe defaults from XML attribute helpers when callers pass a null element: [#2678](https://github.com/dartsim/dart/issues/2678)
+
 * Common
 
   * Fix iterator invalidation in Subject/Observer notification loops that caused non-deterministic SEGFAULT on macOS arm64 Debug builds

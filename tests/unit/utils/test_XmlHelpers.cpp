@@ -235,6 +235,30 @@ TEST(XmlHelpers, GetValueStringWithMissingChildThrows)
   EXPECT_THROW(getValueString(root, "missing"), std::runtime_error);
 }
 
+TEST(XmlHelpers, GetAttributeHelpersWithNullElementReturnDefaults)
+{
+  const tinyxml2::XMLElement* element = nullptr;
+
+  EXPECT_FALSE(hasAttribute(element, "position"));
+  EXPECT_EQ(getAttributeString(element, "position"), "");
+  EXPECT_FALSE(getAttributeBool(element, "flag"));
+  EXPECT_EQ(getAttributeInt(element, "count"), 0);
+  EXPECT_EQ(getAttributeUInt(element, "count"), 0u);
+  EXPECT_FLOAT_EQ(getAttributeFloat(element, "value"), 0.0f);
+  EXPECT_DOUBLE_EQ(getAttributeDouble(element, "value"), 0.0);
+  EXPECT_EQ(getAttributeChar(element, "letter"), '\0');
+  EXPECT_EQ(getAttributeVector2i(element, "position"), Eigen::Vector2i::Zero());
+  EXPECT_TRUE(getAttributeVector2d(element, "position")
+                  .isApprox(Eigen::Vector2d::Zero()));
+  EXPECT_TRUE(getAttributeVector3d(element, "position")
+                  .isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_TRUE(getAttributeVector4d(element, "position")
+                  .isApprox(Eigen::Vector4d::Zero()));
+  EXPECT_TRUE(getAttributeVector6d(element, "position")
+                  .isApprox(Eigen::Vector6d::Zero()));
+  EXPECT_EQ(getAttributeVectorXd(element, "position").size(), 0);
+}
+
 TEST(XmlHelpers, GetValueIntWithMissingChildThrows)
 {
   tinyxml2::XMLDocument doc;
