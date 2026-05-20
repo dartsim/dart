@@ -357,6 +357,11 @@ if(TARGET dart-gui)
       UNIT_gui_ImGuiColorPickerGuard
       gui/test_imgui_color_picker_guard.cpp)
     target_link_libraries(UNIT_gui_ImGuiColorPickerGuard dart-gui)
+    dart_add_test(
+      "unit" UNIT_gui_ImGuiInternalFormatSymbols
+      gui/test_imgui_internal_format_symbols.cpp)
+    target_link_libraries(
+      UNIT_gui_ImGuiInternalFormatSymbols dart-imgui-lib ${CMAKE_DL_LIBS})
   endif()
   dart_add_test(
     "unit" UNIT_gui_HeadlessViewer gui/test_headless_viewer.cpp)
