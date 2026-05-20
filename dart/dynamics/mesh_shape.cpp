@@ -46,6 +46,9 @@
 #include <assimp/cexport.h>
 #include <assimp/cimport.h>
 #include <assimp/config.h>
+#if __has_include(<assimp/GltfMaterial.h>)
+  #include <assimp/GltfMaterial.h>
+#endif
 #include <assimp/postprocess.h>
 
 #include <algorithm>
@@ -1502,7 +1505,7 @@ void MeshShape::extractMaterialsFromScene(
     material.metallicTexturePath = getFirstTexturePath(aiTextureType_METALNESS);
     material.roughnessTexturePath
         = getFirstTexturePath(aiTextureType_DIFFUSE_ROUGHNESS);
-#if DART_ASSIMP_VERSION_MAJOR >= 6
+#if defined(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE)
     material.metallicRoughnessTexturePath
         = getFirstTexturePath(aiTextureType_GLTF_METALLIC_ROUGHNESS);
 #endif
@@ -1543,10 +1546,22 @@ void MeshShape::extractMaterialsFromScene(
         aiTextureType_METALNESS,
         aiTextureType_DIFFUSE_ROUGHNESS,
         aiTextureType_AMBIENT_OCCLUSION,
-#if DART_ASSIMP_VERSION_MAJOR >= 6
-        aiTextureType_GLTF_METALLIC_ROUGHNESS,
-#endif
     });
+#if defined(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE)
+    for (auto j = 0u;
+         j < aiMat->GetTextureCount(aiTextureType_GLTF_METALLIC_ROUGHNESS);
+         ++j) {
+      aiString imagePath;
+      if (aiMat->GetTexture(
+              aiTextureType_GLTF_METALLIC_ROUGHNESS, j, &imagePath)
+          == AI_SUCCESS) {
+        const std::string resolvedPath = resolveTexturePath(imagePath.C_Str());
+        if (!resolvedPath.empty()) {
+          material.textureImagePaths.emplace_back(resolvedPath);
+        }
+      }
+    }
+#endif
 
     for (const auto& type : textureTypes) {
       const auto count = aiMat->GetTextureCount(type);

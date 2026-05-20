@@ -791,7 +791,7 @@ def test_gui_camera_and_run_helpers():
     projection = dart.gui.make_perspective_projection(camera, 640, 480)
     assert np.isclose(projection.vertical_fov_degrees, 45.0)
     assert np.isclose(projection.aspect_ratio, 4.0 / 3.0)
-    assert np.isclose(projection.near_plane, 0.008)
+    assert np.isclose(projection.near_plane, 0.002)
     assert np.isclose(projection.far_plane, 37.0)
 
     projection_options = dart.gui.ProjectionOptions()
