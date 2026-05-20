@@ -35,14 +35,14 @@
 
 #include <dart/config.hpp>
 
-#if DART_HAVE_OCTOMAP
+#include <dart/gui/render/shape_node.hpp>
 
-  #include <dart/gui/render/shape_node.hpp>
+#include <Eigen/Core>
+#include <osg/Geode>
+#include <osg/MatrixTransform>
+#include <osg/ShapeDrawable>
 
-  #include <Eigen/Core>
-  #include <osg/Geode>
-  #include <osg/MatrixTransform>
-  #include <osg/ShapeDrawable>
+#include <vector>
 
 namespace dart {
 
@@ -104,7 +104,5 @@ protected:
 } // namespace render
 } // namespace gui
 } // namespace dart
-
-#endif // DART_HAVE_OCTOMAP
 
 #endif // DART_GUI_RENDER_VOXELGRIDSHAPENODE_HPP_

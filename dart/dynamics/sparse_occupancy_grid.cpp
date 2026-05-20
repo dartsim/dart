@@ -37,7 +37,9 @@
 #include <algorithm>
 #include <array>
 #include <limits>
-#include <unordered_set>
+#include <thread>
+#include <unordered_map>
+#include <vector>
 
 #include <cmath>
 
@@ -88,6 +90,70 @@ double clamp(double value, double lower, double upper)
   return std::min(std::max(value, lower), upper);
 }
 
+//==============================================================================
+template <typename Visitor>
+void visitRayFreeCells(
+    SparseOccupancyGrid::CellKey key,
+    const SparseOccupancyGrid::CellKey& end,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    double resolution,
+    Visitor&& visitor)
+{
+  if (key == end) {
+    return;
+  }
+
+  const Eigen::Vector3d direction = to - from;
+  const std::array<int, 3> step{
+      sign(direction.x()), sign(direction.y()), sign(direction.z())};
+
+  std::array<double, 3> tMax;
+  std::array<double, 3> tDelta;
+  const auto inf = std::numeric_limits<double>::infinity();
+
+  const std::array<std::int64_t, 3> startKey{key.x, key.y, key.z};
+  for (auto axis = 0u; axis < 3u; ++axis) {
+    if (step[axis] == 0) {
+      tMax[axis] = inf;
+      tDelta[axis] = inf;
+      continue;
+    }
+
+    const double boundary
+        = (static_cast<double>(startKey[axis] + (step[axis] > 0 ? 1 : 0))
+           * resolution);
+    tMax[axis] = (boundary - from[static_cast<Eigen::Index>(axis)])
+                 / direction[static_cast<Eigen::Index>(axis)];
+    tDelta[axis]
+        = resolution / std::abs(direction[static_cast<Eigen::Index>(axis)]);
+  }
+
+  const auto maxSteps = static_cast<std::size_t>(
+      std::abs(end.x - key.x) + std::abs(end.y - key.y)
+      + std::abs(end.z - key.z) + 3);
+
+  for (std::size_t steps = 0; steps < maxSteps && !(key == end); ++steps) {
+    visitor(key);
+
+    const double nextT = std::min({tMax[0], tMax[1], tMax[2]});
+    constexpr double tolerance = 1e-12;
+
+    if (tMax[0] <= nextT + tolerance) {
+      key.x += step[0];
+      tMax[0] += tDelta[0];
+    }
+    if (tMax[1] <= nextT + tolerance) {
+      key.y += step[1];
+      tMax[1] += tDelta[1];
+    }
+    if (tMax[2] <= nextT + tolerance) {
+      key.z += step[2];
+      tMax[2] += tDelta[2];
+    }
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -107,7 +173,8 @@ SparseOccupancyGrid::SparseOccupancyGrid(double resolution)
     mHitLogOdds(probabilityToLogOdds(0.7)),
     mMissLogOdds(probabilityToLogOdds(0.4)),
     mMinLogOdds(probabilityToLogOdds(0.1192)),
-    mMaxLogOdds(probabilityToLogOdds(0.971))
+    mMaxLogOdds(probabilityToLogOdds(0.971)),
+    mOccupiedCellsDirty(true)
 {
   validateResolution(resolution);
 }
@@ -123,6 +190,7 @@ void SparseOccupancyGrid::setOccupancyThreshold(double probability)
 {
   validateProbability(probability, "occupancy threshold");
   mOccupancyThresholdLogOdds = probabilityToLogOdds(probability);
+  markOccupiedCellsDirty();
 }
 
 //==============================================================================
@@ -161,6 +229,8 @@ double SparseOccupancyGrid::getMissProbability() const
 void SparseOccupancyGrid::clear()
 {
   mLogOdds.clear();
+  mOccupiedCellsCache.clear();
+  mOccupiedCellsDirty = false;
 }
 
 //==============================================================================
@@ -223,6 +293,7 @@ void SparseOccupancyGrid::setOccupancy(const CellKey& key, double probability)
 {
   validateProbability(probability, "occupancy probability");
   mLogOdds[key] = probabilityToLogOdds(probability);
+  markOccupiedCellsDirty();
 }
 
 //==============================================================================
@@ -238,6 +309,7 @@ void SparseOccupancyGrid::updateOccupancy(const CellKey& key, bool occupied)
   auto& logOdds = mLogOdds[key];
   logOdds += occupied ? mHitLogOdds : mMissLogOdds;
   logOdds = clamp(logOdds, mMinLogOdds, mMaxLogOdds);
+  markOccupiedCellsDirty();
 }
 
 //==============================================================================
@@ -308,84 +380,102 @@ void SparseOccupancyGrid::insertRay(
 void SparseOccupancyGrid::insertPointCloud(
     std::span<const Eigen::Vector3d> pointCloud,
     const Eigen::Vector3d& sensorOrigin,
-    const Eigen::Isometry3d& relativeTo)
+    const Eigen::Isometry3d& relativeTo,
+    std::size_t numThreads)
 {
   const Eigen::Vector3d origin = relativeTo * sensorOrigin;
-  std::unordered_set<CellKey, CellKeyHash> freeCells;
-  std::unordered_set<CellKey, CellKeyHash> occupiedCells;
-  freeCells.reserve(pointCloud.size() * 16);
-  occupiedCells.reserve(pointCloud.size());
+
+  struct Endpoint
+  {
+    Eigen::Vector3d point;
+    CellKey key;
+  };
+
+  const CellKey originKey = worldToCell(origin);
+  std::vector<Endpoint> endpoints;
+  endpoints.reserve(pointCloud.size());
 
   for (const auto& point : pointCloud) {
-    CellKey key = worldToCell(origin);
     const Eigen::Vector3d endpoint = relativeTo * point;
     const CellKey end = worldToCell(endpoint);
-    occupiedCells.insert(end);
+    endpoints.push_back(Endpoint{endpoint, end});
+  }
 
-    if (key == end) {
-      continue;
+  constexpr unsigned char freeCell = 1u << 0u;
+  constexpr unsigned char occupiedCell = 1u << 1u;
+
+  using ScanCells = std::unordered_map<CellKey, unsigned char, CellKeyHash>;
+
+  const auto buildScanCells =
+      [&](std::size_t begin, std::size_t end, ScanCells& scanCells) {
+        scanCells.reserve((end - begin) * 16);
+        for (std::size_t i = begin; i < end; ++i) {
+          const auto& endpoint = endpoints[i];
+          scanCells[endpoint.key] |= occupiedCell;
+          if (originKey == endpoint.key) {
+            continue;
+          }
+
+          visitRayFreeCells(
+              originKey,
+              endpoint.key,
+              origin,
+              endpoint.point,
+              mResolution,
+              [&scanCells](const CellKey& key) { scanCells[key] |= freeCell; });
+        }
+      };
+
+  if (numThreads == 0) {
+    numThreads = std::thread::hardware_concurrency();
+  }
+
+  numThreads = std::max<std::size_t>(numThreads, 1u);
+  numThreads = std::min<std::size_t>(numThreads, endpoints.size());
+
+  ScanCells scanCells;
+  if (numThreads == 1 || endpoints.size() < 512u) {
+    buildScanCells(0, endpoints.size(), scanCells);
+  } else {
+    std::vector<ScanCells> threadScanCells(numThreads);
+    std::vector<std::thread> threads;
+    threads.reserve(numThreads);
+
+    const std::size_t chunkSize
+        = (endpoints.size() + numThreads - 1u) / numThreads;
+    for (std::size_t threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
+      const std::size_t begin = threadIndex * chunkSize;
+      const std::size_t end = std::min(endpoints.size(), begin + chunkSize);
+      if (begin >= end) {
+        break;
+      }
+
+      threads.emplace_back([&, begin, end, threadIndex]() {
+        buildScanCells(begin, end, threadScanCells[threadIndex]);
+      });
     }
 
-    const Eigen::Vector3d direction = endpoint - origin;
-    const std::array<int, 3> step{
-        sign(direction.x()), sign(direction.y()), sign(direction.z())};
-
-    std::array<double, 3> tMax;
-    std::array<double, 3> tDelta;
-    const auto inf = std::numeric_limits<double>::infinity();
-
-    const std::array<std::int64_t, 3> startKey{key.x, key.y, key.z};
-    for (auto axis = 0u; axis < 3u; ++axis) {
-      if (step[axis] == 0) {
-        tMax[axis] = inf;
-        tDelta[axis] = inf;
-        continue;
-      }
-
-      const double boundary
-          = (static_cast<double>(startKey[axis] + (step[axis] > 0 ? 1 : 0))
-             * mResolution);
-      tMax[axis] = (boundary - origin[static_cast<Eigen::Index>(axis)])
-                   / direction[static_cast<Eigen::Index>(axis)];
-      tDelta[axis]
-          = mResolution / std::abs(direction[static_cast<Eigen::Index>(axis)]);
+    for (auto& thread : threads) {
+      thread.join();
     }
 
-    const auto maxSteps = static_cast<std::size_t>(
-        std::abs(end.x - key.x) + std::abs(end.y - key.y)
-        + std::abs(end.z - key.z) + 3);
+    std::size_t mergedSize = 0;
+    for (const auto& localScanCells : threadScanCells) {
+      mergedSize += localScanCells.size();
+    }
 
-    for (std::size_t steps = 0; steps < maxSteps && !(key == end); ++steps) {
-      freeCells.insert(key);
-
-      const double nextT = std::min({tMax[0], tMax[1], tMax[2]});
-      constexpr double tolerance = 1e-12;
-
-      if (tMax[0] <= nextT + tolerance) {
-        key.x += step[0];
-        tMax[0] += tDelta[0];
-      }
-      if (tMax[1] <= nextT + tolerance) {
-        key.y += step[1];
-        tMax[1] += tDelta[1];
-      }
-      if (tMax[2] <= nextT + tolerance) {
-        key.z += step[2];
-        tMax[2] += tDelta[2];
+    scanCells.reserve(mergedSize);
+    for (const auto& localScanCells : threadScanCells) {
+      for (const auto& [key, state] : localScanCells) {
+        scanCells[key] |= state;
       }
     }
   }
 
-  for (const auto& key : occupiedCells) {
-    freeCells.erase(key);
-  }
+  mLogOdds.reserve(mLogOdds.size() + scanCells.size());
 
-  for (const auto& key : freeCells) {
-    updateOccupancy(key, false);
-  }
-
-  for (const auto& key : occupiedCells) {
-    updateOccupancy(key, true);
+  for (const auto& [key, state] : scanCells) {
+    updateOccupancy(key, (state & occupiedCell) != 0u);
   }
 }
 
@@ -470,15 +560,32 @@ bool SparseOccupancyGrid::isOccupied(const CellKey& key) const
 std::vector<SparseOccupancyGrid::OccupiedCell>
 SparseOccupancyGrid::getOccupiedCells() const
 {
-  std::vector<OccupiedCell> cells;
-  cells.reserve(getNumOccupiedCells());
+  rebuildOccupiedCellsCache();
+  return mOccupiedCellsCache;
+}
+
+//==============================================================================
+void SparseOccupancyGrid::markOccupiedCellsDirty()
+{
+  mOccupiedCellsDirty = true;
+}
+
+//==============================================================================
+void SparseOccupancyGrid::rebuildOccupiedCellsCache() const
+{
+  if (!mOccupiedCellsDirty) {
+    return;
+  }
+
+  mOccupiedCellsCache.clear();
+  mOccupiedCellsCache.reserve(mLogOdds.size());
 
   for (const auto& [key, logOdds] : mLogOdds) {
     if (logOdds < mOccupancyThresholdLogOdds) {
       continue;
     }
 
-    cells.push_back(
+    mOccupiedCellsCache.push_back(
         OccupiedCell{
             key,
             getCellCenter(key),
@@ -486,7 +593,7 @@ SparseOccupancyGrid::getOccupiedCells() const
             logOddsToProbability(logOdds)});
   }
 
-  return cells;
+  mOccupiedCellsDirty = false;
 }
 
 //==============================================================================

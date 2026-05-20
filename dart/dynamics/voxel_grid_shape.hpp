@@ -125,10 +125,14 @@ public:
   /// @param[in] sensorOrigin Origin of sensor relative to frame.
   /// @param[in] relativeTo Reference frame, determines transform to be
   /// applied to point cloud and sensor origin.
+  /// @param[in] numThreads Number of worker threads used for native
+  /// occupancy-grid ray classification. Use 1 for single-threaded updates, or
+  /// 0 to use hardware concurrency.
   void updateOccupancy(
       std::span<const Eigen::Vector3d> pointCloud,
       const Eigen::Vector3d& sensorOrigin = Eigen::Vector3d::Zero(),
-      const Frame* relativeTo = Frame::World());
+      const Frame* relativeTo = Frame::World(),
+      std::size_t numThreads = 1);
 
   /// Updates occupancy from a point cloud.
   ///
@@ -137,10 +141,14 @@ public:
   /// @param[in] sensorOrigin Origin of sensor relative to frame.
   /// @param[in] relativeTo Reference transform applied to point cloud and
   /// sensor origin.
+  /// @param[in] numThreads Number of worker threads used for native
+  /// occupancy-grid ray classification. Use 1 for single-threaded updates, or
+  /// 0 to use hardware concurrency.
   void updateOccupancy(
       std::span<const Eigen::Vector3d> pointCloud,
       const Eigen::Vector3d& sensorOrigin,
-      const Eigen::Isometry3d& relativeTo);
+      const Eigen::Isometry3d& relativeTo,
+      std::size_t numThreads = 1);
 
 #if DART_HAVE_OCTOMAP
   /// Updates occupancy from an octomap point cloud.

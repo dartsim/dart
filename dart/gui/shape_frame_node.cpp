@@ -32,29 +32,6 @@
 
 #include "dart/gui/shape_frame_node.hpp"
 
-#include "dart/gui/render/box_shape_node.hpp"
-#include "dart/gui/render/capsule_shape_node.hpp"
-#include "dart/gui/render/cone_shape_node.hpp"
-#include "dart/gui/render/convex_mesh_shape_node.hpp"
-#include "dart/gui/render/cylinder_shape_node.hpp"
-#include "dart/gui/render/ellipsoid_shape_node.hpp"
-#include "dart/gui/render/line_segment_shape_node.hpp"
-#include "dart/gui/render/mesh_shape_node.hpp"
-#include "dart/gui/render/multi_sphere_shape_node.hpp"
-#include "dart/gui/render/plane_shape_node.hpp"
-#include "dart/gui/render/point_cloud_shape_node.hpp"
-#include "dart/gui/render/pyramid_shape_node.hpp"
-#include "dart/gui/render/shape_node.hpp"
-#include "dart/gui/render/soft_mesh_shape_node.hpp"
-#include "dart/gui/render/sphere_shape_node.hpp"
-#include "dart/gui/utils.hpp"
-
-#include <osg/Geode>
-#include <osg/Group>
-#include <osg/Node>
-#if DART_HAVE_OCTOMAP
-  #include "dart/gui/render/voxel_grid_shape_node.hpp"
-#endif
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/capsule_shape.hpp"
 #include "dart/dynamics/cone_shape.hpp"
@@ -72,8 +49,30 @@
 #include "dart/dynamics/shape_frame.hpp"
 #include "dart/dynamics/soft_mesh_shape.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
+#include "dart/dynamics/voxel_grid_shape.hpp"
+#include "dart/gui/render/box_shape_node.hpp"
+#include "dart/gui/render/capsule_shape_node.hpp"
+#include "dart/gui/render/cone_shape_node.hpp"
+#include "dart/gui/render/convex_mesh_shape_node.hpp"
+#include "dart/gui/render/cylinder_shape_node.hpp"
+#include "dart/gui/render/ellipsoid_shape_node.hpp"
 #include "dart/gui/render/heightmap_shape_node.hpp"
+#include "dart/gui/render/line_segment_shape_node.hpp"
+#include "dart/gui/render/mesh_shape_node.hpp"
+#include "dart/gui/render/multi_sphere_shape_node.hpp"
+#include "dart/gui/render/plane_shape_node.hpp"
+#include "dart/gui/render/point_cloud_shape_node.hpp"
+#include "dart/gui/render/pyramid_shape_node.hpp"
+#include "dart/gui/render/shape_node.hpp"
+#include "dart/gui/render/soft_mesh_shape_node.hpp"
+#include "dart/gui/render/sphere_shape_node.hpp"
+#include "dart/gui/render/voxel_grid_shape_node.hpp"
 #include "dart/gui/render/warning_shape_node.hpp"
+#include "dart/gui/utils.hpp"
+
+#include <osg/Geode>
+#include <osg/Group>
+#include <osg/Node>
 #if DART_HAVE_OCTOMAP
   #include "dart/dynamics/voxel_grid_shape.hpp"
 #endif
@@ -319,9 +318,7 @@ void ShapeFrameNode::createShapeNode(
     } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
     }
-  }
-#if DART_HAVE_OCTOMAP
-  else if (VoxelGridShape::getStaticType() == shapeType) {
+  } else if (VoxelGridShape::getStaticType() == shapeType) {
     std::shared_ptr<VoxelGridShape> lss
         = std::dynamic_pointer_cast<VoxelGridShape>(shape);
     if (lss) {
@@ -329,9 +326,7 @@ void ShapeFrameNode::createShapeNode(
     } else {
       warnAboutUnsuccessfulCast(shapeType, mShapeFrame->getName());
     }
-  }
-#endif // DART_HAVE_OCTOMAP
-  else if (HeightmapShapef::getStaticType() == shapeType) {
+  } else if (HeightmapShapef::getStaticType() == shapeType) {
     std::shared_ptr<HeightmapShapef> lss
         = std::dynamic_pointer_cast<HeightmapShapef>(shape);
     if (lss) {

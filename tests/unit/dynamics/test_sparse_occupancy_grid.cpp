@@ -133,6 +133,14 @@ TEST(SparseOccupancyGrid, PointCloudUpdates)
 
   EXPECT_GT(transformedGrid.getOccupancy(Eigen::Vector3d(2.0, 2.0, 3.0)), 0.5);
   EXPECT_LT(transformedGrid.getOccupancy(Eigen::Vector3d(1.5, 2.0, 3.0)), 0.5);
+
+  SparseOccupancyGrid threadedGrid(0.1);
+  threadedGrid.insertPointCloud(
+      points, Eigen::Vector3d::Zero(), Eigen::Isometry3d::Identity(), 2);
+
+  EXPECT_EQ(threadedGrid.getNumOccupiedCells(), grid.getNumOccupiedCells());
+  EXPECT_GT(threadedGrid.getOccupancy(Eigen::Vector3d(1.0, 0.0, 0.0)), 0.5);
+  EXPECT_GT(threadedGrid.getOccupancy(Eigen::Vector3d(0.0, 1.0, 0.0)), 0.5);
 }
 
 //==============================================================================
@@ -151,11 +159,18 @@ TEST(SparseOccupancyGrid, OccupiedCellExtractionAndCopy)
   EXPECT_DOUBLE_EQ(cells.front().size, 0.1);
   EXPECT_DOUBLE_EQ(cells.front().occupancy, 0.9);
 
+  const SparseOccupancyGrid::CellKey secondOccupiedKey{2, 0, 0};
+  grid.setOccupancy(secondOccupiedKey, 0.9);
+  EXPECT_EQ(grid.getOccupiedCells().size(), 2u);
+
+  grid.setOccupancyThreshold(0.95);
+  EXPECT_TRUE(grid.getOccupiedCells().empty());
+
   const SparseOccupancyGrid copied = grid;
   grid.clear();
   EXPECT_EQ(grid.getNumCells(), 0u);
-  EXPECT_EQ(copied.getNumCells(), 2u);
-  EXPECT_EQ(copied.getNumOccupiedCells(), 1u);
+  EXPECT_EQ(copied.getNumCells(), 3u);
+  EXPECT_EQ(copied.getNumOccupiedCells(), 0u);
 }
 
 #if DART_TESTS_HAVE_OCTOMAP

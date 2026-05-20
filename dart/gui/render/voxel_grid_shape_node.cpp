@@ -32,18 +32,16 @@
 
 #include "dart/gui/render/voxel_grid_shape_node.hpp"
 
-#if DART_HAVE_OCTOMAP
+#include "dart/dynamics/simple_frame.hpp"
+#include "dart/dynamics/voxel_grid_shape.hpp"
+#include "dart/gui/utils.hpp"
 
-  #include "dart/dynamics/simple_frame.hpp"
-  #include "dart/dynamics/voxel_grid_shape.hpp"
-  #include "dart/gui/utils.hpp"
-
-  #include <osg/CullFace>
-  #include <osg/Depth>
-  #include <osg/Geode>
-  #include <osg/Light>
-  #include <osg/Material>
-  #include <osg/ShapeDrawable>
+#include <osg/CullFace>
+#include <osg/Depth>
+#include <osg/Geode>
+#include <osg/Light>
+#include <osg/Material>
+#include <osg/ShapeDrawable>
 
 namespace dart {
 namespace gui {
@@ -161,43 +159,25 @@ void VoxelGridShapeNode::refresh()
 }
 
 //==============================================================================
-Eigen::Vector3d toVector3d(const octomap::point3d& point)
-{
-  return Eigen::Vector3d(
-      static_cast<double>(point.x()),
-      static_cast<double>(point.y()),
-      static_cast<double>(point.z()));
-}
-
-//==============================================================================
 void VoxelGridShapeNode::extractData(bool /*firstTime*/)
 {
-  auto tree = mVoxelGridShape->getOctree();
-  const auto visualSize = tree->getResolution();
+  const auto cells = mVoxelGridShape->getOccupiedCells();
   const auto& color = mVisualAspect->getRGBA();
 
   // Pre-allocate for the case that the size of new points are greater than
   // previous update
-  const auto newVoxels = tree->getNumLeafNodes();
-  mVoxelNodes.reserve(newVoxels);
+  mVoxelNodes.reserve(cells.size());
 
   // Update position of cache boxes.
   std::size_t boxIndex = 0u;
-  for (auto it = tree->begin_leafs(), end = tree->end_leafs(); it != end;
-       ++it) {
-    auto threshold = tree->getOccupancyThres();
-
-    if (it->getOccupancy() < threshold) {
-      continue;
-    }
-
+  for (const auto& cell : cells) {
     if (boxIndex < mVoxelNodes.size()) {
-      mVoxelNodes[boxIndex]->updateCenter(toVector3d(it.getCoordinate()));
-      mVoxelNodes[boxIndex]->updateSize(visualSize);
+      mVoxelNodes[boxIndex]->updateCenter(cell.center);
+      mVoxelNodes[boxIndex]->updateSize(cell.size);
       mVoxelNodes[boxIndex]->updateColor(color);
     } else {
       ::osg::ref_ptr<VoxelNode> voxelNode
-          = new VoxelNode(toVector3d(it.getCoordinate()), visualSize, color);
+          = new VoxelNode(cell.center, cell.size, color);
       mVoxelNodes.emplace_back(voxelNode);
       addChild(mVoxelNodes.back());
     }
@@ -224,5 +204,3 @@ VoxelGridShapeNode::~VoxelGridShapeNode()
 } // namespace render
 } // namespace gui
 } // namespace dart
-
-#endif // DART_HAVE_OCTOMAP

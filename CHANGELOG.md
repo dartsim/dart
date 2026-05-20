@@ -147,6 +147,7 @@
   - Added built-in native collision module (`dart/collision/native/`) with 575+ tests covering all primitive shape pairs, GJK/EPA, distance queries, raycast, CCD, four broad-phase algorithms, collision filtering, compound shapes, and parallel narrowphase.
   - Wired the native DART backend as a full `CollisionDetector` implementation with distance queries, raycast, and expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere). The legacy `"experimental"` factory key remains as an alias for compatibility.
   - Added native sparse occupancy-grid storage for `VoxelGridShape`, including native voxel collision support when OctoMap is unavailable while preserving OctoMap compatibility APIs when the dependency is present.
+  - Optimized native sparse occupancy-grid point-cloud insertion and occupied-cell extraction, added opt-in threaded point-cloud insertion, expanded OctoMap comparison benchmarks, and enabled native `VoxelGridShape` GUI rendering without OctoMap.
   - Fixed native capsule-box duplicate filtering to stay pair-local so accumulated collision results do not suppress new contacts in dense worlds.
   - Native collision: added MPR convex penetration and optional libccd parity tests/bench.
   - Native collision: handle degenerate triangle cases in GJK/MPR for robust convex queries.
