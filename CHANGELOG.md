@@ -205,6 +205,7 @@
     CI validation.
     ([#2647](https://github.com/dartsim/dart/pull/2647))
   - Fix SEGV in `ImFontAtlas::AddFontFromMemoryCompressedTTF` when null pointer is passed as compressed font data. ([#2516](https://github.com/dartsim/dart/issues/2516))
+  - Fix `ImGui::ColorPicker3`/`ColorPicker4` crashes when called without an active ImGui context or window. ([#2668](https://github.com/dartsim/dart/issues/2668))
   - Added headless rendering support via `ViewerConfig` and pbuffer graphics context for CI pipelines and batch frame capture. Includes `Viewer::captureBuffer()` for raw RGBA pixel readback and a new `headless-rendering` CI job. ([#2466](https://github.com/dartsim/dart/pull/2466))
   - Added headless and screenshot capture support to `dart::gui::vsg::SimpleViewer`, including buffer readback for offscreen validation.
   - Added `ImGuiViewer` construction from `ViewerConfig` to support headless ImGui rendering and example frame capture workflows.
