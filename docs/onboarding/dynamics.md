@@ -15,6 +15,25 @@ This document provides an exploration of the core dynamics classes in DART (Dyna
 
 ## Core Dynamics Classes
 
+### Algorithm-Centric Articulated Dynamics
+
+RNEA and ABA traversal control flow lives in an internal algorithm layer that
+operates through `SkeletonDynamicsView`, an adapter over the existing
+`Skeleton`, `BodyNode`, and `Joint` pass kernels. Public `Skeleton` dynamics
+entry points dispatch through this internal layer, so traversal order is not
+duplicated across classes. The adapter keeps existing dirty caches and
+soft-body overrides in the object-backed path while exposing indexed phases
+that can be reused by future packed, cache-friendly, or SIMD-ready model
+layouts.
+
+Correctness and performance are evidence requirements for this layer. Unit
+tests compare direct and batched ABA/RNEA adapter execution against explicit
+legacy-recursion references and zero-DoF paths. The `bm_dynamics_cache`
+legacy-reference, direct, uniform-batch, and heterogeneous-batch ABA/RNEA
+benchmarks are the required local evidence before claiming a workload-specific
+performance win or migrating more algorithms onto the abstraction. Extend the
+adapter vocabulary before exposing new public `BodyNode` or `Joint` API.
+
 ### 1. Skeleton (`Skeleton.hpp`)
 
 **File Path:** `dart/dynamics/Skeleton.hpp`
@@ -532,7 +551,7 @@ const Eigen::VectorXd& g = skeleton->getGravityForces();
 
 **Design Decision:** MeshShape internally uses `dart::math::TriMesh<double>` for mesh representation instead of Assimp's `aiScene*`. This decouples mesh data from the loading library (Assimp), enabling format-agnostic mesh handling. The deprecated `aiScene*` API is maintained for backward compatibility via lazy on-demand conversion and is scheduled for removal in DART 8.0. For Filament rendering, materials/textures are accessed through `getMaterials()` (Assimp-free), while scene graph hierarchy uses the deprecated `getMesh()` only where source formats still require it. See `dart/dynamics/MeshShape.hpp` and `dart/utils/MeshLoader.hpp` for implementation.
 
-**PolygonMesh:** `dart::math::PolygonMesh<S>` stores variable-length polygon faces (quads, n-gons) and provides deterministic triangulation via ear clipping. This preserves original mesh topology for rendering/export while collision backends use the triangulated `TriMesh`. See `dart/math/PolygonMesh.hpp`.
+**PolygonMesh:** `dart::math::PolygonMesh<S>` stores variable-length polygon faces (quads, n-gons) and provides deterministic triangulation via ear clipping. This preserves original mesh topology for rendering/export while the collision layer uses the triangulated `TriMesh`. See `dart/math/PolygonMesh.hpp`.
 
 ## Summary
 

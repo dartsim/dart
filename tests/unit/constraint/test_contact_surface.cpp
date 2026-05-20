@@ -34,7 +34,7 @@
 
 #include "dart/collision/collision_detector.hpp"
 #include "dart/collision/collision_group.hpp"
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
+#include "dart/collision/dart/dart_collision_detector.hpp"
 #include "dart/constraint/contact_constraint.hpp"
 #include "dart/constraint/contact_surface.hpp"
 #include "dart/dynamics/body_node.hpp"
@@ -180,7 +180,7 @@ CollisionSetup createCollidingBoxes(
   setup.skel2
       = createBox("skel2", Eigen::Vector3d(0.9, 0, 0), friction2, restitution2);
 
-  setup.detector = FCLCollisionDetector::create();
+  setup.detector = DartCollisionDetector::create();
   setup.group = setup.detector->createCollisionGroup();
   setup.group->addShapeFramesOf(setup.skel1.get());
   setup.group->addShapeFramesOf(setup.skel2.get());
@@ -211,7 +211,7 @@ CollisionSetup createCollidingBoxesWithPrimarySecondaryFriction(
       secondaryFriction2,
       restitution2);
 
-  setup.detector = FCLCollisionDetector::create();
+  setup.detector = DartCollisionDetector::create();
   setup.group = setup.detector->createCollisionGroup();
   setup.group->addShapeFramesOf(setup.skel1.get());
   setup.group->addShapeFramesOf(setup.skel2.get());
@@ -232,7 +232,7 @@ CollisionSetup createCollidingBoxesWithSlipCompliance(
   setup.skel2 = createBoxWithSlipCompliance(
       "skel2", Eigen::Vector3d(0.9, 0, 0), primarySlip2, secondarySlip2);
 
-  setup.detector = FCLCollisionDetector::create();
+  setup.detector = DartCollisionDetector::create();
   setup.group = setup.detector->createCollisionGroup();
   setup.group->addShapeFramesOf(setup.skel1.get());
   setup.group->addShapeFramesOf(setup.skel2.get());
@@ -241,6 +241,31 @@ CollisionSetup createCollidingBoxesWithSlipCompliance(
 }
 
 } // namespace
+
+TEST(ContactSurface, MalformedContactWithNullCollisionObjectsUsesDefaults)
+{
+  Contact contact;
+  contact.collisionObject1 = nullptr;
+  contact.collisionObject2 = nullptr;
+  contact.point = Eigen::Vector3d::Zero();
+  contact.normal = Eigen::Vector3d::UnitZ();
+  contact.force = Eigen::Vector3d::Zero();
+
+  DefaultContactSurfaceHandler handler;
+  auto params = handler.createParams(contact, 1);
+
+  EXPECT_DOUBLE_EQ(
+      params.mPrimaryFrictionCoeff, constraint::DART_DEFAULT_FRICTION_COEFF);
+  EXPECT_DOUBLE_EQ(
+      params.mSecondaryFrictionCoeff, constraint::DART_DEFAULT_FRICTION_COEFF);
+  EXPECT_DOUBLE_EQ(
+      params.mRestitutionCoeff, constraint::DART_DEFAULT_RESTITUTION_COEFF);
+  EXPECT_DOUBLE_EQ(
+      params.mPrimarySlipCompliance, constraint::DART_DEFAULT_SLIP_COMPLIANCE);
+  EXPECT_DOUBLE_EQ(
+      params.mSecondarySlipCompliance,
+      constraint::DART_DEFAULT_SLIP_COMPLIANCE);
+}
 
 //==============================================================================
 // Friction Coefficient Validation Tests

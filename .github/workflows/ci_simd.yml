@@ -3,8 +3,7 @@ name: CI SIMD Multi-Arch
 on:
   push:
     branches:
-      - "main"
-      - "release-*"
+      - "**"
     paths:
       - "dart/simd/**"
       - "tests/unit/simd/**"
@@ -26,6 +25,7 @@ concurrency:
 
 jobs:
   simd-x86-levels:
+    if: github.event.deleted != true
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -70,8 +70,9 @@ jobs:
             -DDART_BUILD_TUTORIALS=OFF \
             -DDART_BUILD_SIMULATION_EXPERIMENTAL=OFF \
             -DDART_BUILD_GUI=OFF \
-            -DDART_BUILD_COLLISION_BULLET=OFF \
-            -DDART_BUILD_COLLISION_ODE=OFF \
+            -DDART_BUILD_GUI_FILAMENT=OFF \
+            -DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF \
+            -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF \
             ${{ matrix.simd_level.cmake_flags }}
 
       - name: Build SIMD tests
@@ -93,6 +94,7 @@ jobs:
           cd build && ctest -R "UNIT_simd" --output-on-failure
 
   simd-arm64-neon:
+    if: github.event.deleted != true
     runs-on: macos-latest
     name: ARM64 NEON (macOS)
     env:
@@ -121,8 +123,9 @@ jobs:
             -DDART_BUILD_TUTORIALS=OFF \
             -DDART_BUILD_SIMULATION_EXPERIMENTAL=OFF \
             -DDART_BUILD_GUI=OFF \
-            -DDART_BUILD_COLLISION_BULLET=OFF \
-            -DDART_BUILD_COLLISION_ODE=OFF
+            -DDART_BUILD_GUI_FILAMENT=OFF \
+            -DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF \
+            -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF
 
       - name: Build SIMD tests
         run: |

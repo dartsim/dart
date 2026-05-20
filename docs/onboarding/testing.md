@@ -96,7 +96,7 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 Signals to look for:
 
 - The full test run ends with `✓ All tests passed!`
-- The Gazebo integration workflow prints `✓ DART plugin built successfully with DART integration!`
+- The Gazebo integration workflow prints `✓ Full gz-physics suite passed and DART plugin links successfully!`
 
 ## Gotchas
 
@@ -515,6 +515,13 @@ fixture shape. Keep coverage targets focused on meaningful public behavior and
 backend dispatch paths; do not chase brittle coverage for GUI/OpenGL paths,
 experimental simulation code, debug-only fatal assertions, or unreachable
 defensive branches unless the task explicitly calls for them.
+
+When auditing core coverage, treat test binary coverage as part of the capture
+phase and filter test sources only after lcov records the data. This keeps
+template-heavy library headers and smart pointer wrappers counted when they are
+instantiated only from focused tests. Use aggregate headless-core metrics for
+planning, then pick the next suite slice from real workflow gaps rather than
+per-file percentage chasing.
 
 ### Coverage Patterns
 

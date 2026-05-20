@@ -131,14 +131,14 @@ public:
 
 Default: delegates to `allocate(bytes)` -- backward compatible for existing subclasses.
 
-## 5. Migration Path
+## 5. Migration Considerations
 
-| Phase | Description                                                         | Status   |
-| ----- | ------------------------------------------------------------------- | -------- |
-| 1     | BodyNodePool and FrameAllocator standalone                          | **Done** |
-| 2     | World owns MemoryManager, passes to Skeleton and ConstraintSolver   | Planned  |
-| 3     | MemoryAllocator gains alignment; FrameAllocator derives from it     | Planned  |
-| 4     | Per-World memory budgets, thread-local allocators for parallel step | Future   |
+| Step | Change                                                                           | Rationale                                      |
+| ---- | -------------------------------------------------------------------------------- | ---------------------------------------------- |
+| 1    | Keep BodyNodePool and FrameAllocator standalone until ownership lands            | Preserves current behavior during refactoring  |
+| 2    | Let World own MemoryManager and pass it to Skeleton and ConstraintSolver         | Creates one configuration point                |
+| 3    | Add aligned allocation to MemoryAllocator before deriving FrameAllocator         | Avoids losing FrameAllocator alignment support |
+| 4    | Add per-World budgets and thread-local allocators only after ownership is stable | Keeps parallel allocation policy evidence-led  |
 
 ## 6. Benefits
 

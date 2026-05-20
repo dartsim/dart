@@ -20,9 +20,75 @@ class ExposedPointCloudShape final : public PointCloudShape
 public:
   using PointCloudShape::PointCloudShape;
   using PointCloudShape::updateBoundingBox;
+  using PointCloudShape::updateVolume;
+};
+
+class ShapeHarness final : public Shape
+{
+public:
+  ShapeHarness() : Shape(UNSUPPORTED)
+  {
+    // Do nothing
+  }
+
+  std::string_view getType() const override
+  {
+    return "ShapeHarness";
+  }
+
+  Eigen::Matrix3d computeInertia(double mass) const override
+  {
+    return Eigen::Matrix3d::Identity() * mass;
+  }
+
+  ShapePtr clone() const override
+  {
+    return std::make_shared<ShapeHarness>();
+  }
+
+protected:
+  void updateVolume() const override
+  {
+    mVolume = 2.0;
+    mIsVolumeDirty = false;
+  }
+
+  void updateBoundingBox() const override
+  {
+    mBoundingBox.setMin(Eigen::Vector3d(-1.0, -2.0, -3.0));
+    mBoundingBox.setMax(Eigen::Vector3d(1.0, 2.0, 3.0));
+    mIsBoundingBoxDirty = false;
+  }
 };
 
 } // namespace
+
+TEST(Shape, BaseBookkeepingAccessors)
+{
+  ShapeHarness shape;
+
+  EXPECT_TRUE(shape.getBoundingBox().getMin().isApprox(
+      Eigen::Vector3d(-1.0, -2.0, -3.0)));
+  EXPECT_DOUBLE_EQ(shape.getVolume(), 2.0);
+  EXPECT_TRUE(shape.computeInertiaFromMass(3.0).isApprox(
+      Eigen::Matrix3d::Identity() * 3.0));
+  EXPECT_TRUE(shape.computeInertiaFromDensity(4.0).isApprox(
+      Eigen::Matrix3d::Identity() * 8.0));
+  EXPECT_GT(shape.getID(), 0u);
+
+  shape.setDataVariance(Shape::STATIC);
+  EXPECT_EQ(shape.getDataVariance(), Shape::STATIC);
+  EXPECT_TRUE(shape.checkDataVariance(Shape::STATIC));
+  shape.addDataVariance(Shape::DYNAMIC_COLOR);
+  EXPECT_TRUE(shape.checkDataVariance(Shape::DYNAMIC_COLOR));
+  shape.removeDataVariance(Shape::DYNAMIC_COLOR);
+  EXPECT_FALSE(shape.checkDataVariance(Shape::DYNAMIC_COLOR));
+
+  shape.refreshData();
+  shape.notifyAlphaUpdated(0.25);
+  shape.notifyColorUpdated(Eigen::Vector4d::Ones());
+  EXPECT_NE(shape.clone(), nullptr);
+}
 
 TEST(PointCloudShape, PointsAndBoundingBox)
 {
@@ -53,6 +119,8 @@ TEST(PointCloudShape, PointsAndBoundingBox)
   EXPECT_TRUE(shape.getPoints()[0].isApprox(replacement[0]));
 
   shape.removeAllPoints();
+  shape.updateVolume();
+  EXPECT_DOUBLE_EQ(shape.getVolume(), 0.0);
   shape.updateBoundingBox();
   EXPECT_EQ(shape.getNumPoints(), 0u);
   const auto emptyBox = shape.getBoundingBox();
@@ -100,3 +168,26 @@ TEST(PointCloudShape, ColorsAndClone)
   EXPECT_EQ(clone->getColors().size(), shape.getColors().size());
   EXPECT_DOUBLE_EQ(clone->getVisualSize(), shape.getVisualSize());
 }
+
+#if DART_HAVE_OCTOMAP
+TEST(PointCloudShape, OctomapPointCloudImport)
+{
+  PointCloudShape shape;
+
+  octomap::Pointcloud pointCloud;
+  pointCloud.push_back(1.0, 2.0, 3.0);
+  pointCloud.push_back(-1.0, -2.0, -3.0);
+  shape.setPoints(pointCloud);
+
+  ASSERT_EQ(shape.getNumPoints(), 2u);
+  EXPECT_TRUE(shape.getPoints()[0].isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_TRUE(shape.getPoints()[1].isApprox(Eigen::Vector3d(-1.0, -2.0, -3.0)));
+
+  octomap::Pointcloud extraPoints;
+  extraPoints.push_back(0.5, 0.25, 0.125);
+  shape.addPoints(extraPoints);
+
+  ASSERT_EQ(shape.getNumPoints(), 3u);
+  EXPECT_TRUE(shape.getPoints()[2].isApprox(Eigen::Vector3d(0.5, 0.25, 0.125)));
+}
+#endif

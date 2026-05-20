@@ -34,6 +34,29 @@ mutations: $ARGUMENTS
 @docs/onboarding/ci-cd.md
 @docs/onboarding/ai-tools.md
 
+## Invocation Contract
+
+When the user says `manage <PR>` or `continue managing <PR>` without limiting
+the request to status-only, treat that as approval to run the full PR-management
+loop to the next terminal state:
+
+- required policy metadata checked and corrected when stale;
+- CI monitored until green, failed, or blocked;
+- merge conflicts reproduced and resolved locally;
+- review comments addressed, pushed, resolved, and re-reviewed when appropriate;
+- PR body/testing evidence refreshed when it no longer matches the branch.
+
+This explicit approval covers routine PR-maintenance mutations needed for that
+loop: additive fix commits and pushes, PR description/metadata corrections,
+resolving already-addressed review threads, rerunning failed CI jobs, and
+requesting a fresh AI review after follow-up fixes. It does **not** cover merges,
+force-pushes, branch deletion, PR closure, base-branch changes, or human
+reviewer requests; ask separately for those.
+
+Do not call the PR managed just because checks are green. Continue until the PR
+is mergeable with required checks complete and addressed review threads are
+resolved, or until a concrete blocker remains.
+
 ## Identify the PR
 
 Use the PR number or URL from `$ARGUMENTS`. If none is provided, infer the PR
@@ -55,6 +78,8 @@ gh pr checks <PR_NUMBER>
 1. Confirm scope and policy:
    - Check that the base branch, milestone, title, and PR template are correct.
    - For bug fixes, verify the required `release-6.16` and `main` dual-PR flow.
+   - Confirm the PR body's testing/status section matches the current head and
+     does not point reviewers to deleted dev-task evidence as still pending.
    - Inspect local state before editing:
      ```bash
      git status --short --branch
@@ -67,6 +92,12 @@ gh pr checks <PR_NUMBER>
    ```
    If checks are still queued or running, report the current jobs and keep
    watching unless the user asked only for status.
+   Also poll mergeability:
+   ```bash
+   gh pr view <PR_NUMBER> --json mergeStateStatus,headRefOid,isDraft,reviewDecision
+   ```
+   If GitHub reports conflicts, fetch the target branch and resolve them before
+   treating green checks as sufficient.
 3. Fix failures:
    - Inspect the newest failed run or job, not an older cancelled run.
    - Use the `dart-fix-ci` workflow for non-trivial CI debugging.
@@ -90,13 +121,15 @@ gh pr checks <PR_NUMBER>
    - Apply AI-review fixes silently. After explicit maintainer/user approval
      and after the branch is ready, push, resolve reviewed and addressed
      threads, and request a fresh AI review only when the automatic first review
-     did not appear after a reasonable wait, or after a follow-up push needs a
-     new review:
+     did not appear after a reasonable wait, or when the approved follow-up push
+     addressed Codex review comments:
      ```bash
      gh pr comment <PR_NUMBER> --body "@codex review"
      ```
    - For human reviewers, reply only when a response is useful after a fix or
      when a question needs clarification.
+   - After posting `@codex review`, keep monitoring until a submitted review,
+     a visible activity signal, or a concrete timeout/blocker is observed.
 5. Mark ready or merge only when appropriate:
    - Confirm required checks are passing and review requirements are satisfied.
    - If the PR is draft and ready, mark it ready only when the user or task asks.

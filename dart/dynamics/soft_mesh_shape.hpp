@@ -68,6 +68,9 @@ public:
   /// Returns the TriMesh representation of this soft mesh.
   std::shared_ptr<math::TriMesh<double>> getTriMesh() const;
 
+  /// Returns true when the mesh has vertices and triangle indices.
+  bool hasValidMesh() const;
+
   /// Returns the aiMesh representation (deprecated, for backward
   /// compatibility).
   [[deprecated(

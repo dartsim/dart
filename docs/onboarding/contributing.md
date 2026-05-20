@@ -299,7 +299,7 @@ Before submitting your pull request, verify:
 - [ ] Bug fixes that apply to the release line have a `release-6.16` PR first,
       then a `main` PR
 - [ ] Any `docs/dev_tasks/<task>/` folder used for tracking is removed after
-      durable notes move to onboarding docs
+      durable notes move to developer docs
 
 ## Getting Help
 

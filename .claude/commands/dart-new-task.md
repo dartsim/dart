@@ -12,6 +12,8 @@ Read these files first:
 @docs/onboarding/building.md
 @docs/onboarding/contributing.md
 @docs/onboarding/code-style.md
+@docs/dev_tasks/README.md
+@docs/ai/sessions.md
 
 ## Workflow
 
@@ -27,7 +29,11 @@ Read these files first:
    then `gh pr create --draft --base <target-branch> --milestone "<milestone>"`
    (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`); follow
    `.github/PULL_REQUEST_TEMPLATE.md`
-7. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, remove the folder (include in this PR, not after merge)
+7. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, first
+   promote durable dashboards, evidence matrices, API inventories, migration
+   maps, or long-lived decisions into `docs/plans/` or `docs/onboarding/`.
+   Then remove the dev-task folder completely (include the deletion in this PR,
+   not after merge).
 
 ## Type-Specific
 

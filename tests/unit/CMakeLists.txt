@@ -1,44 +1,120 @@
 # Copyright (c) 2011, The DART development contributors
 
+# See tests/integration/CMakeLists.txt for documentation on why this is needed.
+function(dart_force_link_collision_backend target backend)
+  if(NOT TARGET ${backend})
+    return()
+  endif()
+  set(keyword "${ARGV2}")
+  if(MSVC OR APPLE)
+    if(keyword)
+      target_link_libraries(${target} ${keyword} ${backend})
+    else()
+      target_link_libraries(${target} ${backend})
+    endif()
+  else()
+    if(keyword)
+      target_link_libraries(
+        ${target} ${keyword} -Wl,--no-as-needed ${backend} -Wl,--as-needed)
+    else()
+      target_link_libraries(
+        ${target} -Wl,--no-as-needed ${backend} -Wl,--as-needed)
+    endif()
+  endif()
+endfunction()
+
 # ==============================================================================
 # Collision Tests
 # ==============================================================================
-dart_add_test("unit" UNIT_collision_Distance collision/test_distance.cpp)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-test-reference-fcl)
+  dart_add_test("unit" UNIT_collision_Distance collision/test_distance.cpp)
+  target_link_libraries(UNIT_collision_Distance dart-test-reference-fcl)
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(UNIT_collision_Distance dart-test-reference-bullet)
+  endif()
+endif()
 
 dart_add_test("unit" UNIT_collision_DistanceFilter collision/test_distance_filter.cpp)
 
 dart_add_test("unit" UNIT_collision_CollisionGroup collision/test_collision_group.cpp)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+  target_compile_definitions(
+    UNIT_collision_CollisionGroup
+    PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
+  )
+  if(TARGET dart-test-reference-fcl)
+    target_link_libraries(UNIT_collision_CollisionGroup dart-test-reference-fcl)
+  endif()
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(UNIT_collision_CollisionGroup dart-test-reference-bullet)
+  endif()
+endif()
 
 dart_add_test(
-  "unit" UNIT_collision_DARTCollisionDetector collision/test_dart_collision_detector.cpp)
+  "unit" UNIT_collision_DartCollisionDetector collision/test_dart_collision_detector.cpp)
 dart_add_test("unit" UNIT_collision_DARTCollide collision/test_dart_collide.cpp)
 
 dart_add_test("unit" UNIT_collision_Raycast collision/test_raycast.cpp)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+  target_compile_definitions(
+    UNIT_collision_Raycast
+    PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
+  )
+  if(TARGET dart-test-reference-fcl)
+    target_link_libraries(UNIT_collision_Raycast dart-test-reference-fcl)
+  endif()
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(UNIT_collision_Raycast dart-test-reference-bullet)
+  endif()
+endif()
 
 dart_add_test("unit" UNIT_collision_CollisionResult collision/test_collision_result.cpp)
 dart_add_test(
-  "unit"
-  UNIT_collision_ConvexMesh
-  collision/test_convex_mesh_shape_collision.cpp)
+  "unit" UNIT_collision_CollisionBackend collision/test_collision_backend.cpp)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS
+   AND (TARGET dart-test-reference-fcl OR TARGET dart-test-reference-bullet OR TARGET dart-test-reference-ode)
+)
+  dart_add_test(
+    "unit"
+    UNIT_collision_ConvexMesh
+    collision/test_convex_mesh_shape_collision.cpp)
+  if(TARGET dart-test-reference-fcl)
+    target_link_libraries(UNIT_collision_ConvexMesh dart-test-reference-fcl)
+  endif()
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(UNIT_collision_ConvexMesh dart-test-reference-bullet)
+  endif()
+  if(TARGET dart-test-reference-ode)
+    target_link_libraries(UNIT_collision_ConvexMesh dart-test-reference-ode)
+  endif()
+endif()
 
 dart_add_test("unit" UNIT_collision_Contact collision/test_contact.cpp)
 
-if(DART_HAVE_BULLET)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND DART_HAVE_BULLET)
   dart_add_test("unit" UNIT_collision_BulletContact collision/test_bullet_contact.cpp)
+  target_link_libraries(UNIT_collision_BulletContact dart-test-reference-bullet)
   dart_add_test(
     "unit" UNIT_collision_BulletCollisionShapes collision/test_bullet_collision_shapes.cpp)
+  target_link_libraries(UNIT_collision_BulletCollisionShapes dart-test-reference-bullet)
 endif()
 
-if(DART_HAVE_ODE)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND DART_HAVE_ODE)
   dart_add_test("unit" UNIT_collision_OdeHeightmap collision/test_ode_heightmap.cpp)
+  target_link_libraries(UNIT_collision_OdeHeightmap dart-test-reference-ode)
   dart_add_test(
     "unit" UNIT_collision_OdeCylinderMesh collision/test_ode_cylinder_mesh.cpp)
+  target_link_libraries(UNIT_collision_OdeCylinderMesh dart-test-reference-ode)
 endif()
 
-dart_add_test(
-  "unit" UNIT_collision_FCLCollisionObject collision/test_fcl_collision_object.cpp)
-dart_add_test(
-  "unit" UNIT_collision_FCLCollisionDetector collision/test_fcl_collision_detector.cpp)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS AND TARGET dart-test-reference-fcl)
+  dart_add_test(
+    "unit" UNIT_collision_FCLCollisionObject collision/test_fcl_collision_object.cpp)
+  dart_add_test(
+    "unit" UNIT_collision_FCLCollisionDetector collision/test_fcl_collision_detector.cpp)
+  target_link_libraries(UNIT_collision_FCLCollisionObject dart-test-reference-fcl)
+  target_link_libraries(UNIT_collision_FCLCollisionDetector dart-test-reference-fcl)
+endif()
 dart_add_test("unit" UNIT_collision_CollisionOption collision/test_collision_option.cpp)
 dart_add_test("unit" UNIT_collision_CollisionFilter collision/test_collision_filter.cpp)
 dart_add_test("unit" UNIT_collision_DistanceOption collision/test_distance_option.cpp)
@@ -97,6 +173,9 @@ dart_build_tests(
 # Constraint Tests
 # ==============================================================================
 dart_add_test("unit" UNIT_constraint_ConstraintSolver constraint/test_constraint_solver.cpp)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+  dart_force_link_collision_backend(UNIT_constraint_ConstraintSolver dart-test-reference-fcl)
+endif()
 dart_add_test(
   "unit" UNIT_constraint_BoxedLcpConstraintSolver constraint/test_boxed_lcp_constraint_solver.cpp)
 dart_add_test(
@@ -107,6 +186,9 @@ dart_add_test(
   "unit" UNIT_constraint_BalanceConstraint constraint/test_balance_constraint.cpp)
 dart_add_test(
   "unit" UNIT_constraint_ContactSurface constraint/test_contact_surface.cpp)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+  dart_force_link_collision_backend(UNIT_constraint_ContactSurface dart-test-reference-fcl)
+endif()
 dart_add_test("unit" UNIT_constraint_JointConstraints constraint/test_joint_constraints.cpp)
 dart_add_test("unit" UNIT_constraint_MotorConstraints constraint/test_motor_constraints.cpp)
 dart_add_test("unit" UNIT_constraint_WeldJointConstraint constraint/test_weld_joint_constraint.cpp)
@@ -115,6 +197,9 @@ dart_add_test("unit" UNIT_constraint_ServoMotorConstraint constraint/test_servo_
 dart_add_test("unit" UNIT_constraint_ConstrainedGroup constraint/test_constrained_group.cpp)
 dart_add_test(
   "unit" UNIT_constraint_SoftContactConstraint constraint/test_soft_contact_constraint.cpp)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+  dart_force_link_collision_backend(UNIT_constraint_SoftContactConstraint dart-test-reference-fcl)
+endif()
 dart_add_test(
   "unit" UNIT_constraint_CouplerConstraint constraint/test_coupler_constraint.cpp)
 
@@ -145,6 +230,10 @@ dart_add_test("unit" UNIT_dynamics_SkeletonClone dynamics/test_skeleton_clone.cp
 dart_add_test("unit" UNIT_dynamics_SkeletonAccessors dynamics/test_skeleton_accessors.cpp)
 dart_add_test("unit" UNIT_dynamics_SkeletonProperties dynamics/test_skeleton_properties.cpp)
 dart_add_test("unit" UNIT_dynamics_BodyNodeProperties dynamics/test_body_node_properties.cpp)
+dart_add_test(
+  "unit"
+  UNIT_dynamics_ArticulatedDynamicsAlgorithms
+  dynamics/test_articulated_dynamics_algorithms.cpp)
 dart_add_test("unit" UNIT_dynamics_BasicNodeManager dynamics/test_basic_node_manager.cpp)
 dart_add_test("unit" UNIT_dynamics_Noexcept dynamics/test_noexcept.cpp)
 dart_add_test(
@@ -254,6 +343,20 @@ if(TARGET dart-gui-core)
   target_link_libraries(UNIT_gui_FilamentSceneExtraction dart-gui-core)
 endif()
 
+if(TARGET dart-gui AND NOT DART_USE_SYSTEM_IMGUI)
+  # DART-patched ImGui guard tests only work with fetched ImGui, not system ImGui.
+  dart_add_test(
+    "unit"
+    UNIT_gui_ImGuiColorPickerGuard
+    gui/test_imgui_color_picker_guard.cpp)
+  target_link_libraries(UNIT_gui_ImGuiColorPickerGuard dart-gui)
+  dart_add_test(
+    "unit" UNIT_gui_ImGuiInternalFormatSymbols
+    gui/test_imgui_internal_format_symbols.cpp)
+  target_link_libraries(
+    UNIT_gui_ImGuiInternalFormatSymbols dart-imgui-lib ${CMAKE_DL_LIBS})
+endif()
+
 # ==============================================================================
 # Utils Tests
 # ==============================================================================
@@ -302,6 +405,19 @@ dart_add_test("unit" UNIT_sensor_SensorManager sensor/test_sensor_manager.cpp)
 # Simulation Tests
 # ==============================================================================
 dart_add_test("unit" UNIT_simulation_World simulation/test_world.cpp)
+set_property(
+  TEST UNIT_simulation_World
+  APPEND PROPERTY LABELS collision-native-stability)
+set_tests_properties(UNIT_simulation_World PROPERTIES TIMEOUT 3600)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS)
+  target_compile_definitions(
+    UNIT_simulation_World
+    PRIVATE DART_ENABLE_COLLISION_REFERENCE_TESTS=1
+  )
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(UNIT_simulation_World dart-test-reference-bullet)
+  endif()
+endif()
 dart_add_test("unit" UNIT_simulation_Recording simulation/test_recording.cpp)
 dart_add_test("unit" UNIT_simulation_WorldConfig simulation/test_world_config.cpp)
 
@@ -311,6 +427,11 @@ dart_add_test("unit" UNIT_simulation_WorldConfig simulation/test_world_config.cp
 if(DART_BUILD_SIMULATION_EXPERIMENTAL)
   add_subdirectory(simulation/experimental)
 endif()
+
+# ==============================================================================
+# Collision-Native Tests
+# ==============================================================================
+add_subdirectory(collision)
 
 # ==============================================================================
 # SIMD Tests

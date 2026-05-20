@@ -35,6 +35,9 @@
 #include "dart/collision/collision_object.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
+#include "dart/dynamics/shape_frame.hpp"
+#include "dart/dynamics/shape_node.hpp"
+#include "dart/dynamics/skeleton.hpp"
 
 namespace dart {
 namespace collision {
@@ -48,32 +51,38 @@ bool BodyNodeDistanceFilter::needDistance(
     return false;
   }
 
-  auto shapeNode1 = object1->getShapeFrame()->asShapeNode();
-  auto shapeNode2 = object2->getShapeFrame()->asShapeNode();
+  const auto* shapeFrame1 = object1->getShapeFrame();
+  const auto* shapeFrame2 = object2->getShapeFrame();
+  if (!shapeFrame1 || !shapeFrame2) {
+    return true;
+  }
 
+  auto shapeNode1 = shapeFrame1->asShapeNode();
+  auto shapeNode2 = shapeFrame2->asShapeNode();
   if (!shapeNode1 || !shapeNode2) {
     return true;
   }
-  // We assume that non-ShapeNode is always being checked collision.
 
   auto bodyNode1 = shapeNode1->getBodyNodePtr();
   auto bodyNode2 = shapeNode2->getBodyNodePtr();
+  if (!bodyNode1 || !bodyNode2) {
+    return true;
+  }
 
   if (!bodyNode1->isCollidable() || !bodyNode2->isCollidable()) {
     return false;
   }
 
   if (bodyNode1->getSkeleton() == bodyNode2->getSkeleton()) {
-    auto skeleton = bodyNode1->getSkeleton();
+    const auto& skeleton = bodyNode1->getSkeleton();
 
     if (!skeleton->isEnabledSelfCollisionCheck()) {
       return false;
     }
 
-    if (!skeleton->isEnabledAdjacentBodyCheck()) {
-      if (areAdjacentBodies(bodyNode1, bodyNode2)) {
-        return false;
-      }
+    if (!skeleton->isEnabledAdjacentBodyCheck()
+        && areAdjacentBodies(bodyNode1, bodyNode2)) {
+      return false;
     }
   }
 

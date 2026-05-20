@@ -404,6 +404,19 @@ def extract_required_reading(command_path: Path) -> list[str]:
     return extract_required_reading_from_content(command_path.read_text())
 
 
+def required_reading_path_errors(repo_root: Path, command_path: Path) -> list[str]:
+    """Return errors for @file required-reading entries that do not exist."""
+    errors: list[str] = []
+    for required in extract_required_reading(command_path):
+        required_path = repo_root / required
+        if not required_path.exists():
+            errors.append(
+                f"{display_path(command_path)}: required reading `{required}` "
+                "does not exist"
+            )
+    return errors
+
+
 def missing_required_reading_errors(
     workflow_path_label: str,
     name: str,
@@ -787,6 +800,7 @@ def validate_ai_docs(repo_root: Path) -> bool:
     required_files = [
         docs_dir / "README.md",
         docs_dir / "principles.md",
+        docs_dir / "north-star.md",
         docs_dir / "workflows.md",
         docs_dir / "verification.md",
         docs_dir / "sessions.md",
@@ -850,6 +864,7 @@ def validate_ai_docs(repo_root: Path) -> bool:
                 )
 
         for name in sorted(command_names):
+            command_path = repo_root / ".claude" / "commands" / f"{name}.md"
             cells = workflow_rows.get(name)
             if not cells:
                 errors.append(
@@ -867,14 +882,13 @@ def validate_ai_docs(repo_root: Path) -> bool:
                     f"{display_path(workflows_path)}: `{name}` missing gate evidence"
                 )
 
+            errors.extend(required_reading_path_errors(repo_root, command_path))
             errors.extend(
                 missing_required_reading_errors(
                     display_path(workflows_path),
                     name,
                     public_path,
-                    extract_required_reading(
-                        repo_root / ".claude" / "commands" / f"{name}.md"
-                    ),
+                    extract_required_reading(command_path),
                 )
             )
 
@@ -890,6 +904,7 @@ def validate_ai_docs(repo_root: Path) -> bool:
             "dart-merge-pr",
             "dart-mechanical-refactor",
             "dart-new-task",
+            "dart-next",
             "dart-pr",
             "dart-release-ci-fix",
             "dart-release-merge-main",

@@ -225,7 +225,7 @@ To add a new DART-specific skill:
    pixi run lint  # Includes sync-ai-commands
    ```
 
-**Skill candidates** (create when needed): `dart-dynamics` (articulated bodies), `dart-collision` (collision backends), `dart-architecture` (core design).
+**Skill candidates** (create when needed): `dart-dynamics` (articulated bodies), `dart-collision` (collision detection), `dart-architecture` (core design).
 
 #### Cross-Agent Compatibility
 
@@ -284,7 +284,7 @@ editable workflow source currently lives in `.claude/commands/`.
   `pixi run ...` tasks; AI workflows can route work, but must not be the only
   way to complete it.
 - Treat `docs/dev_tasks/<task>/` folders as temporary working state. When the
-  task completes, move only durable decisions into onboarding docs and delete
+  task completes, move only durable decisions into developer docs and delete
   the task folder in the same PR.
 
 **Effective capability parity**:
@@ -508,9 +508,12 @@ as an eyes/count badge, before the submitted review appears.
 
 Do not immediately post `@codex review` for the first review. Wait a reasonable
 time for either the activity indicator or a submitted Codex review. Consider a
-manual `@codex review` only after that wait if neither signal appears, or when a
-follow-up push needs a fresh review. A manual trigger is a PR comment and still
-requires explicit maintainer/user approval.
+manual `@codex review` only after that wait if neither signal appears.
+
+After an approved follow-up push that addresses Codex review comments, request a
+fresh top-level Codex review with `@codex review`. This is the normal completion
+step for a Codex review-fix round, not an inline reply. A manual trigger is a PR
+comment and still requires explicit maintainer/user approval.
 
 ### Updating Published PRs
 
@@ -531,7 +534,9 @@ After identifying an AI-generated review comment to address:
 3. **Ask for explicit maintainer/user approval before external mutations**
 4. **If approved, commit and push** silently (no reply to the comment)
 5. **If approved, resolve the thread** using GraphQL (see commands below)
-6. **If approved and needed after a follow-up push, re-trigger the review**:
+6. **If the addressed review was Codex, after the approved push, ask for
+   explicit maintainer/user approval for the PR comment, then re-trigger the
+   review**:
    `gh pr comment <PR> --body "@codex review"`
 7. **Monitor for results**:
    - New review comments → repeat from step 1
@@ -592,7 +597,8 @@ For agents iterating on automated reviews, the complete loop is:
    d. Ask for explicit maintainer/user approval before push or PR mutation
 3. If approved, commit and push silently (no reply to bot comment)
 4. If approved, resolve addressed threads via GraphQL
-5. If approved and needed after a follow-up push, re-trigger:
+5. If the addressed review was Codex, after the approved push, ask for explicit
+   maintainer/user approval for the PR comment, then re-trigger:
    `gh pr comment <PR> --body "@codex review"`
 6. Monitor CI: `gh pr checks <PR>`
 7. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)

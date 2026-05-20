@@ -507,6 +507,16 @@ TEST(ConstraintSolver, SetNullCollisionDetectorIgnored)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, DefaultCollisionDetectorUsesNativeDart)
+{
+  constraint::ConstraintSolver solver;
+  auto detector = solver.getCollisionDetector();
+
+  ASSERT_NE(detector, nullptr);
+  EXPECT_EQ("dart", detector->getTypeView());
+}
+
+//==============================================================================
 TEST(ConstraintSolver, ContactSurfaceHandlerChain)
 {
   constraint::ConstraintSolver solver;
@@ -859,7 +869,7 @@ TEST(ConstraintSolver, SetCollisionDetectorWithValidDetector)
   ASSERT_NE(originalDetector, nullptr);
 
   // Create a different collision detector (DART collision detector)
-  auto newDetector = collision::DARTCollisionDetector::create();
+  auto newDetector = collision::DartCollisionDetector::create();
   ASSERT_NE(newDetector, nullptr);
   ASSERT_NE(newDetector, originalDetector);
 
@@ -1245,6 +1255,234 @@ WorldContactFixture makeGroundBoxWorld(bool addSecondBox)
   return fixture;
 }
 
+dynamics::FreeJoint* detachJointLikeGzPhysics(dynamics::Joint* joint)
+{
+  if (joint == nullptr
+      || joint->getType() == dynamics::FreeJoint::getStaticType()) {
+    return dynamic_cast<dynamics::FreeJoint*>(joint);
+  }
+
+  auto* child = joint->getChildBodyNode();
+  if (child == nullptr) {
+    return nullptr;
+  }
+
+  const Eigen::Isometry3d transform = child->getWorldTransform();
+  const Eigen::Vector6d spatialVelocity = child->getSpatialVelocity(
+      dynamics::Frame::World(), dynamics::Frame::World());
+
+  auto* freeJoint = child->moveTo<dynamics::FreeJoint>(nullptr);
+  freeJoint->setTransform(transform);
+  freeJoint->setSpatialVelocity(
+      spatialVelocity, dynamics::Frame::World(), dynamics::Frame::World());
+  child->incrementVersion();
+
+  return freeJoint;
+}
+
+Eigen::Isometry3d makeTransform(
+    const Eigen::Vector3d& translation,
+    const Eigen::Vector3d& eulerXyz = Eigen::Vector3d::Zero())
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = translation;
+  tf.linear() = eulerXYZToMatrix(eulerXyz);
+  return tf;
+}
+
+dynamics::ShapeNode* addCollisionShape(
+    dynamics::BodyNode* bodyNode,
+    const dynamics::ShapePtr& shape,
+    const std::string& name,
+    const Eigen::Isometry3d& relativeTransform,
+    double primaryFriction = 1.0,
+    double secondaryFriction = 1.0)
+{
+  auto* shapeNode = bodyNode->createShapeNodeWith<
+      dynamics::VisualAspect,
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape, name);
+  shapeNode->setRelativeTransform(relativeTransform);
+
+  auto* dynamicsAspect = shapeNode->getDynamicsAspect();
+  dynamicsAspect->setPrimaryFrictionCoeff(primaryFriction);
+  dynamicsAspect->setSecondaryFrictionCoeff(secondaryFriction);
+  dynamicsAspect->setFrictionCoeff(0.5 * (primaryFriction + secondaryFriction));
+
+  return shapeNode;
+}
+
+std::pair<dynamics::FreeJoint*, dynamics::BodyNode*> createFreeBody(
+    const dynamics::SkeletonPtr& skeleton,
+    const std::string& bodyName,
+    const Eigen::Isometry3d& worldTransform,
+    double mass,
+    const Eigen::Vector3d& localCom)
+{
+  dynamics::FreeJoint::Properties jointProperties;
+  jointProperties.mName = bodyName + "_FreeJoint";
+
+  dynamics::BodyNode::Properties bodyProperties{
+      dynamics::BodyNode::AspectProperties(bodyName)};
+  bodyProperties.mInertia.setMass(mass);
+  bodyProperties.mInertia.setLocalCOM(localCom);
+  bodyProperties.mInertia.setMoment(Eigen::Matrix3d::Identity());
+
+  auto pair = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr, jointProperties, bodyProperties);
+  pair.first->setTransform(worldTransform);
+
+  return pair;
+}
+
+dynamics::RevoluteJoint* connectRevoluteJointLikeGzPhysics(
+    dynamics::BodyNode* parent,
+    dynamics::BodyNode* child,
+    const std::string& name,
+    const Eigen::Vector3d& axis,
+    double damping)
+{
+  const Eigen::Isometry3d parentTransform = parent->getWorldTransform();
+  const Eigen::Isometry3d childTransform = child->getWorldTransform();
+  const Eigen::Isometry3d jointTransform = childTransform;
+
+  dynamics::RevoluteJoint::Properties properties;
+  properties.mAxis = axis;
+  properties.mDampingCoefficients[0] = damping;
+
+  auto* joint = child->moveTo<dynamics::RevoluteJoint>(parent, properties);
+  joint->setName(name);
+  joint->setTransformFromParentBodyNode(
+      parentTransform.inverse() * jointTransform);
+  joint->setTransformFromChildBodyNode(
+      childTransform.inverse() * jointTransform);
+  child->incrementVersion();
+
+  return joint;
+}
+
+struct GzJointDetachFixture
+{
+  simulation::WorldPtr world;
+  dynamics::SkeletonPtr model;
+  dynamics::BodyNode* upperLink{nullptr};
+  dynamics::BodyNode* lowerLink{nullptr};
+  dynamics::RevoluteJoint* upperJoint{nullptr};
+  dynamics::RevoluteJoint* lowerJoint{nullptr};
+};
+
+GzJointDetachFixture makeGzJointDetachFixture()
+{
+  GzJointDetachFixture fixture;
+  fixture.world = simulation::World::create("gz_joint_detach");
+  fixture.world->setTimeStep(0.001);
+  fixture.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+
+  constexpr double planeDim = 2100.0;
+  auto ground = createGround(
+      Eigen::Vector3d::Constant(planeDim),
+      Eigen::Vector3d(0.0, 0.0, -0.5 * planeDim));
+  ground->setName("ground_plane");
+  ground->setMobile(false);
+  setFrictionCoefficients(ground, 100.0, 50.0);
+  fixture.world->addSkeleton(ground);
+
+  fixture.model = dynamics::Skeleton::create("double_pendulum_with_base");
+
+  const Eigen::Isometry3d modelTransform
+      = makeTransform(Eigen::Vector3d(1.0, 0.0, 0.0));
+  auto [baseJoint, base] = createFreeBody(
+      fixture.model,
+      "base",
+      modelTransform,
+      /*mass=*/100.0,
+      Eigen::Vector3d::Zero());
+  (void)baseJoint;
+
+  addCollisionShape(
+      base,
+      std::make_shared<dynamics::CylinderShape>(0.8, 0.02),
+      "col_plate_on_ground",
+      makeTransform(Eigen::Vector3d(0.0, 0.0, 0.01)));
+  addCollisionShape(
+      base,
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.2, 0.2, 2.2)),
+      "col_pole",
+      makeTransform(Eigen::Vector3d(-0.275, 0.0, 1.1)),
+      /*primaryFriction=*/1.1,
+      /*secondaryFriction=*/1.1);
+  auto [upperFreeJoint, upperLink] = createFreeBody(
+      fixture.model,
+      "upper_link",
+      modelTransform
+          * makeTransform(
+              Eigen::Vector3d(0.0, 0.0, 2.1),
+              Eigen::Vector3d(-1.5708, 0.0, 0.0)),
+      /*mass=*/1.0,
+      Eigen::Vector3d(0.0, 0.0, 0.5));
+  (void)upperFreeJoint;
+
+  addCollisionShape(
+      upperLink,
+      std::make_shared<dynamics::CylinderShape>(0.1, 0.3),
+      "col_upper_joint",
+      makeTransform(
+          Eigen::Vector3d(-0.05, 0.0, 0.0), Eigen::Vector3d(0.0, 1.5708, 0.0)),
+      /*primaryFriction=*/0.1,
+      /*secondaryFriction=*/0.1);
+  addCollisionShape(
+      upperLink,
+      std::make_shared<dynamics::CylinderShape>(0.1, 0.2),
+      "col_lower_joint",
+      makeTransform(
+          Eigen::Vector3d(0.0, 0.0, 1.0), Eigen::Vector3d(0.0, 1.5708, 0.0)));
+  addCollisionShape(
+      upperLink,
+      std::make_shared<dynamics::CylinderShape>(0.1, 0.9),
+      "col_cylinder",
+      makeTransform(Eigen::Vector3d(0.0, 0.0, 0.5)));
+
+  auto [lowerFreeJoint, lowerLink] = createFreeBody(
+      fixture.model,
+      "lower_link",
+      modelTransform
+          * makeTransform(
+              Eigen::Vector3d(0.25, 1.0, 2.1), Eigen::Vector3d(-2.0, 0.0, 0.0)),
+      /*mass=*/1.0,
+      Eigen::Vector3d(0.0, 0.0, 0.5));
+  (void)lowerFreeJoint;
+
+  addCollisionShape(
+      lowerLink,
+      std::make_shared<dynamics::CylinderShape>(0.08, 0.3),
+      "col_lower_joint",
+      makeTransform(
+          Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 1.5708, 0.0)));
+  addCollisionShape(
+      lowerLink,
+      std::make_shared<dynamics::CylinderShape>(0.1, 0.9),
+      "col_cylinder",
+      makeTransform(Eigen::Vector3d(0.0, 0.0, 0.5)));
+
+  fixture.upperJoint = connectRevoluteJointLikeGzPhysics(
+      base,
+      upperLink,
+      "upper_joint",
+      Eigen::Vector3d::UnitX(),
+      /*damping=*/3.0);
+  fixture.lowerJoint = connectRevoluteJointLikeGzPhysics(
+      upperLink,
+      lowerLink,
+      "lower_joint",
+      Eigen::Vector3d::UnitX(),
+      /*damping=*/3.0);
+  fixture.upperLink = upperLink;
+  fixture.lowerLink = lowerLink;
+
+  fixture.world->addSkeleton(fixture.model);
+  return fixture;
+}
+
 } // namespace
 
 TEST(ConstraintSolver, WorldStepGeneratesContacts)
@@ -1438,6 +1676,50 @@ TEST(ConstraintSolver, WorldStepDynamicDynamicContact)
   EXPECT_GT(solver->getLastCollisionResult().getNumContacts(), 0u);
 }
 
+TEST(ConstraintSolver, GzPlaneBoxJointDetachKeepsSupportVelocitySymmetric)
+{
+  auto fixture = makeGzJointDetachFixture();
+  auto world = fixture.world;
+  ASSERT_NE(world, nullptr);
+
+  auto model = fixture.model;
+  ASSERT_NE(model, nullptr);
+
+  auto* upperLink = fixture.upperLink;
+  auto* lowerLink = fixture.lowerLink;
+  auto* upperJoint = fixture.upperJoint;
+  auto* lowerJoint = fixture.lowerJoint;
+  ASSERT_NE(upperLink, nullptr);
+  ASSERT_NE(lowerLink, nullptr);
+  ASSERT_NE(upperJoint, nullptr);
+  ASSERT_NE(lowerJoint, nullptr);
+
+  auto* detachedLowerJoint = detachJointLikeGzPhysics(lowerJoint);
+  ASSERT_NE(detachedLowerJoint, nullptr);
+
+  for (std::size_t i = 0; i < 10; ++i) {
+    world->step();
+
+    EXPECT_LT(upperJoint->getVelocity(0), 0.0);
+    EXPECT_NEAR(0.0, lowerLink->getLinearVelocity().x(), 1e-10);
+    EXPECT_NEAR(0.0, lowerLink->getLinearVelocity().y(), 1e-10);
+    EXPECT_GT(0.0, lowerLink->getLinearVelocity().z());
+    EXPECT_TRUE(lowerLink->getAngularVelocity().isZero(1e-12));
+  }
+
+  const Eigen::Vector3d upperLinearVelocity = upperLink->getLinearVelocity(
+      dynamics::Frame::World(), dynamics::Frame::World());
+  const Eigen::Vector3d upperAngularVelocity = upperLink->getAngularVelocity(
+      dynamics::Frame::World(), dynamics::Frame::World());
+
+  EXPECT_LT(1e-5, upperLinearVelocity.z());
+  EXPECT_GT(-0.03, upperAngularVelocity.x());
+  EXPECT_NEAR(0.0, upperLinearVelocity.x(), 1e-6);
+  EXPECT_NEAR(0.0, upperLinearVelocity.y(), 1e-6);
+  EXPECT_NEAR(0.0, upperAngularVelocity.y(), 1e-6);
+  EXPECT_NEAR(0.0, upperAngularVelocity.z(), 1e-6);
+}
+
 TEST(ContactConstraint, FrictionImpulseVelocityChangeWithSlip)
 {
   class VelocityContactConstraint final : public constraint::ContactConstraint
@@ -1459,7 +1741,7 @@ TEST(ContactConstraint, FrictionImpulseVelocityChangeWithSlip)
     using constraint::ContactConstraint::update;
   };
 
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA
@@ -1559,7 +1841,7 @@ TEST(ContactConstraint, StaticSettersAndGetters)
 
 TEST(ContactConstraint, FrictionDirectionSetGet)
 {
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA
@@ -1617,7 +1899,7 @@ TEST(ContactConstraint, ApplyImpulseAndPositionImpulse)
     using constraint::ContactConstraint::update;
   };
 
-  auto detector = collision::DARTCollisionDetector::create();
+  auto detector = collision::DartCollisionDetector::create();
   ASSERT_NE(detector, nullptr);
 
   auto boxA

@@ -551,8 +551,8 @@ dart::gui::Panel createMimicPendulumsPanel(
 
     builder.separator();
     builder.text("Collision / solver");
-    bool useOdeCollision = state->config.collisionDetector == "ode";
 #if DART_HAVE_ODE
+    bool useOdeCollision = state->config.collisionDetector == "ode";
     if (builder.checkbox(
             "Use ODE collision (closer to Gazebo repro)", useOdeCollision)) {
       state->config.collisionDetector = useOdeCollision ? "ode" : "file";

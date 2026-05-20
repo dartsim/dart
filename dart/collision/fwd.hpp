@@ -55,6 +55,7 @@ struct RaycastOption;
 struct RaycastResult;
 
 DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
+DART_COMMON_DECLARE_SHARED_WEAK(DartCollisionDetector)
 DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
 DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
 

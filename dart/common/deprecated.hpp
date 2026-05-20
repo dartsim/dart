@@ -43,12 +43,15 @@
 
 #if defined(__GNUC__) || defined(__clang__)
   #define DART_DEPRECATED(version) __attribute__((deprecated))
+  #define DART_DEPRECATED_MESSAGE(message) __attribute__((deprecated(message)))
   #define DART_FORCEINLINE __attribute__((always_inline))
 #elif defined(_MSC_VER)
   #define DART_DEPRECATED(version) __declspec(deprecated)
+  #define DART_DEPRECATED_MESSAGE(message) __declspec(deprecated(message))
   #define DART_FORCEINLINE _forceinline
 #else
   #define DART_DEPRECATED(version) ()
+  #define DART_DEPRECATED_MESSAGE(message)
   #define DART_FORCEINLINE
 #endif
 

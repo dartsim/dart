@@ -350,6 +350,9 @@
   - Preserved the `unified_loading` example's non-GUI shared `ReadOptions`
     loading contract and added strict-audit marker coverage so renderer
     promotion does not pull it into the GUI dependency surface.
+  - Removed dartpy legacy collision detector aliases `DARTCollisionDetector`,
+    `FCLCollisionDetector`, `BulletCollisionDetector`, and
+    `OdeCollisionDetector`; use `DartCollisionDetector` or the default detector.
 
 - Minimum Compiler Requirements
   - Linux: GCC 11.0+
@@ -373,10 +376,15 @@
     simulation-experimental tests remain covered by their dedicated task.
   - Added ASan build mode and example install destination controls. ([#2101](https://github.com/dartsim/dart/pull/2101), [#2100](https://github.com/dartsim/dart/pull/2100))
   - GUI dependency handling updates: switched ImGui to FetchContent, prefer local Vulkan loader, and removed bundled lodepng. ([#2056](https://github.com/dartsim/dart/pull/2056), [#2085](https://github.com/dartsim/dart/pull/2085), [#2051](https://github.com/dartsim/dart/pull/2051))
+  - Hide fetched ImGui internal formatting helpers from shared library exports. ([#2671](https://github.com/dartsim/dart/issues/2671))
   - Pixi tasks and helper scripts now guard optional targets (dartpy, GUI examples) automatically, detect missing generator targets before invoking `cmake --build`, and expose `DART_BUILD_*_OVERRIDE` environment hooks so CI and local workflows can toggle bindings/apps without editing `pixi.toml`.
   - Exported `DynamicJointConstraint` and `JointConstraint` on Windows so constraint unit tests link successfully.
   - Exported soft contact constraints, DART collision helpers, `computeIntersection`, and IK property types on Windows to fix shared-library unit test linking. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Exported existing FCL, joint Coulomb friction, and MJCF detail parser declarations on Windows so shared-library consumers and tests can link the header-declared symbols consistently. ([#2648](https://github.com/dartsim/dart/pull/2648))
+  - Exported `ZeroDofJoint` on Windows so shared-library consumers can link inherited zero-DoF joint symbols consistently.
+  - Linked `dart-gui` to Foundation on Apple platforms so OpenSceneGraph's macOS resource-path initialization has the Objective-C Foundation runtime it requires.
+  - Removed the Filament GUI smoke CI job's distro libc++ package dependency and made its example runner use Pixi-provided libc++/libc++abi libraries when available.
+  - Limited Codecov CI uploads to the generated `coverage.info` report so the uploader does not rescan gcov files after the coverage task has already produced lcov output.
   - Added support for assimp 6.x while maintaining backward compatibility with assimp 5.x
 
 - Tooling and Docs
@@ -392,6 +400,7 @@
   - Tightened GitHub Actions CI workflows with granular platform checks, single-pass docs validation, targeted pixi environment installs, shared SIMD compiler-cache setup, protected-branch push triggers, retrying Alt Linux package bootstrap, importable Ubuntu Debug dartpy test builds, and macOS Debug C++ coverage without multi-hour Debug dartpy rebuilds. ([#2539](https://github.com/dartsim/dart/pull/2539))
   - CI workflow optimizations, caching, and scheduling controls (including compiler cache guards). ([#2055](https://github.com/dartsim/dart/pull/2055), [#2079](https://github.com/dartsim/dart/pull/2079), [#2135](https://github.com/dartsim/dart/pull/2135), [#2160](https://github.com/dartsim/dart/pull/2160), [#2165](https://github.com/dartsim/dart/pull/2165), [#2192](https://github.com/dartsim/dart/pull/2192), [#2313](https://github.com/dartsim/dart/pull/2313), [#2129](https://github.com/dartsim/dart/pull/2129), [#2265](https://github.com/dartsim/dart/pull/2265), [#2267](https://github.com/dartsim/dart/pull/2267), [#2180](https://github.com/dartsim/dart/pull/2180))
   - Added an Eigen 64-byte over-alignment CI/local test task to catch allocator, placement-new, and Eigen storage assumptions without requiring AVX-512 hardware. ([#2541](https://github.com/dartsim/dart/pull/2541))
+  - Fixed the scheduled/manual collision benchmark guard artifact upload so `.benchmark_results/collision_check_*.json` files are retained by GitHub Actions.
   - CodeQL scope updates and coverage workflow fixes. ([#2121](https://github.com/dartsim/dart/pull/2121), [#2128](https://github.com/dartsim/dart/pull/2128), [#2144](https://github.com/dartsim/dart/pull/2144), [#2147](https://github.com/dartsim/dart/pull/2147), [#2197](https://github.com/dartsim/dart/pull/2197), [#2198](https://github.com/dartsim/dart/pull/2198))
   - Documented scalable coverage organization and memory-bounded validation guidance for targeted local builds. ([#2648](https://github.com/dartsim/dart/pull/2648))
   - GitHub Actions and tooling dependency bumps. ([#2049](https://github.com/dartsim/dart/pull/2049), [#2050](https://github.com/dartsim/dart/pull/2050), [#2063](https://github.com/dartsim/dart/pull/2063), [#2064](https://github.com/dartsim/dart/pull/2064), [#2065](https://github.com/dartsim/dart/pull/2065), [#2074](https://github.com/dartsim/dart/pull/2074), [#2075](https://github.com/dartsim/dart/pull/2075), [#2076](https://github.com/dartsim/dart/pull/2076), [#2102](https://github.com/dartsim/dart/pull/2102), [#2103](https://github.com/dartsim/dart/pull/2103), [#2200](https://github.com/dartsim/dart/pull/2200), [#2264](https://github.com/dartsim/dart/pull/2264), [#2344](https://github.com/dartsim/dart/pull/2344), [#2345](https://github.com/dartsim/dart/pull/2345), [#2346](https://github.com/dartsim/dart/pull/2346))
@@ -402,24 +411,97 @@
   - Miscellaneous repo hygiene: Docker build script fixes, Dependabot path cleanup, template updates, and badge/documentation cleanup. ([#2058](https://github.com/dartsim/dart/pull/2058), [#2291](https://github.com/dartsim/dart/pull/2291))
 
 - Simulation
+  - Added an experimental computation-graph substrate with sequential and
+    Taskflow executors, routed experimental `World::updateKinematics()` and
+    `World::step()` through graph-backed rigid-body linear-force integration
+    and kinematics stages, introduced the first swappable `WorldStepStage`
+    contract and domain-neutral `WorldStepPipeline`, added stage metadata for
+    solver domains and acceleration opportunities, added opt-in execution
+    profiles and DOT visualization for per-node load, observed parallelism, and
+    graph inspection, and added focused tests and benchmark coverage for graph
+    batching overhead.
+  - Fixed experimental Taskflow executor paths to propagate compute-node
+    exceptions instead of reporting graph execution success after failed tasks.
+  - Fixed experimental compute profiling and rigid-body stepping edge cases for
+    equal-timestamp profile events, reparented rigid bodies, and parented
+    rigid-body task dependencies.
   - Added `WorldConfig` support for collision detector selection plus multi-solver world scaffolding and sensor integration. ([#2168](https://github.com/dartsim/dart/pull/2168), [#2349](https://github.com/dartsim/dart/pull/2349), [#2352](https://github.com/dartsim/dart/pull/2352))
   - Joint and constraint enhancements: state-independent `Joint::integratePositions`, per-DoF mimic actuator modes, revolute joint constraint for closed-loop hinges, WeldJoint merge, PlanarJoint SE2 helpers, and joint coordinate charts. ([#2309](https://github.com/dartsim/dart/pull/2309), [#2222](https://github.com/dartsim/dart/pull/2222), [#2252](https://github.com/dartsim/dart/pull/2252), [#2242](https://github.com/dartsim/dart/pull/2242), [#2231](https://github.com/dartsim/dart/pull/2231), [#2351](https://github.com/dartsim/dart/pull/2351))
   - Coupler and mimic updates: new coupler constraint support, Gazebo-aligned mimic constraints, and URDF transmission coupling. ([#2212](https://github.com/dartsim/dart/pull/2212), [#2247](https://github.com/dartsim/dart/pull/2247), [#2281](https://github.com/dartsim/dart/pull/2281))
   - Dynamics fixes: FreeJoint world Jacobian translation, joint impulse statefulness, Aspect lifecycle replacement, servo limit recovery, stale joint command handling, RealTimeWorldNode stall fixes, and graceful handling of invalid (negative/NaN/Inf) joint physics parameters. ([#2298](https://github.com/dartsim/dart/pull/2298), [#2308](https://github.com/dartsim/dart/pull/2308), [#2304](https://github.com/dartsim/dart/pull/2304), [#2094](https://github.com/dartsim/dart/pull/2094), [#2098](https://github.com/dartsim/dart/pull/2098), [#2088](https://github.com/dartsim/dart/pull/2088), [#2431](https://github.com/dartsim/dart/pull/2431))
   - Reject invalid `World::setTimeStep()` values (NaN, infinity, zero, and negative) at the API boundary to prevent invalid timesteps from reaching constraint solvers. ([#2533](https://github.com/dartsim/dart/pull/2533), [#2531](https://github.com/dartsim/dart/issues/2531), [#2532](https://github.com/dartsim/dart/pull/2532))
   - Fixed `BodyNodePool` alignment handling for over-aligned body nodes so AVX-512 builds no longer fail when Eigen raises `BodyNode` alignment to 64 bytes. ([#2537](https://github.com/dartsim/dart/pull/2537), [#2535](https://github.com/dartsim/dart/issues/2535))
+  - Fixed simulation-experimental Debug logging source context so builds without `DART_EXPERIMENTAL_SOURCE_DIR` still report the source file name.
   - Fixed intermittent SEGFAULT in TranslationalJoint2D on macOS ARM64 (Release mode) caused by missing `EIGEN_MAKE_ALIGNED_OPERATOR_NEW` on `TranslationalJoint2DUniqueProperties` which contains `Eigen::Matrix<double, 3, 2>`. NEON vectorized instructions require 16-byte alignment that was not guaranteed without this macro.
   - Fixed `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and `UniversalJoint::copy(const UniversalJoint*)` performing self-copy instead of copying from the argument.
+  - Fixed weak inverse-kinematics pointer lifetime tracking and `SharedLibraryIkFast` forward-kinematics symbol loading.
+  - Fixed `MeshShape::loadMesh(filePath)` so Windows drive-letter paths are converted to valid file URIs before Assimp loading.
   - Fixed intermittent SEGFAULT in `Icosphere::computeIcosahedron()` on macOS ARM64 (Release mode) by removing `static` from the triangles vector, which can cause alignment issues during static initialization when using Eigen aligned allocators.
   - Fix assertion failure crash in JointConstraint when joint limits are invalid (lower > upper). Now emits a warning and skips limit enforcement for that DOF instead of crashing. ([gz-physics#846](https://github.com/gazebosim/gz-physics/issues/846))
   - Added split impulse contact correction and clarified zero-contact handling. ([#2354](https://github.com/dartsim/dart/pull/2354), [#2220](https://github.com/dartsim/dart/pull/2220), [#201](https://github.com/dartsim/dart/issues/201))
   - Added validation for invalid contact surface parameters (NaN/Inf/negative friction, restitution, and slip compliance) to prevent LCP solver crashes. ([gazebosim/gz-physics#841](https://github.com/gazebosim/gz-physics/issues/841))
+  - Ignore malformed contacts with null collision objects instead of dereferencing them while creating `ContactConstraint`. ([#2669](https://github.com/dartsim/dart/issues/2669))
   - Fixed slip compliance validation to silently handle the -1.0 sentinel value (meaning "use default") instead of logging spurious warnings. Also use `DART_WARN_ONCE` for genuine NaN/Inf warnings to prevent log spam. ([gazebosim/gz-sim#3289](https://github.com/gazebosim/gz-sim/issues/3289))
   - Warn and continue when LCP matrices are non-symmetric to avoid assertion failures with invalid contacts. ([gz-physics#848](https://github.com/gazebosim/gz-physics/issues/848))
   - Guard against non-finite articulated body computations from zero/epsilon mass or extreme spring values. ([gz-physics#849](https://github.com/gazebosim/gz-physics/issues/849), [gz-physics#850](https://github.com/gazebosim/gz-physics/issues/850), [gz-physics#851](https://github.com/gazebosim/gz-physics/issues/851), [gz-physics#854](https://github.com/gazebosim/gz-physics/issues/854), [gz-physics#856](https://github.com/gazebosim/gz-physics/issues/856))
   - Replace crash-causing `DART_ASSERT` with `DART_WARN` + graceful recovery for non-finite transforms in Joint setters, BodyNode update pipeline, GenericJoint inertia propagation, and MJCF parser validation. ([gz-physics#861](https://github.com/gazebosim/gz-physics/issues/861), [gz-physics#862](https://github.com/gazebosim/gz-physics/issues/862))
 
 - Collision and Geometry
+  - Decoupled FCL, Bullet, and ODE collision backends from `libdart.so` into
+    explicit test/benchmark reference targets (`dart-test-reference-fcl`,
+    `dart-test-reference-bullet`, `dart-test-reference-ode`) while promoting the
+    native DART backend to the default detector (`"dart"` factory key). The
+    legacy `collision-fcl`, `collision-bullet`, and `collision-ode` package
+    components plus installed/source-tree detector headers are native-backed
+    compatibility facades; direct C++ legacy facade objects may preserve legacy
+    display type strings for gz-physics compatibility, but old engines remain
+    available only through `tests/dart/test/reference_collision/` targets and
+    `createReference()` APIs for tests and benchmarks during the migration.
+  - Marked retained C++ FCL/Bullet/ODE detector facades and legacy factory keys
+    as deprecated native-backed compatibility paths through
+    `DART_COLLISION_DEPRECATE_LEGACY_NAMES` while keeping explicit
+    `dart-test-reference-*` targets for tests and benchmarks.
+  - Added native plane/mesh collision dispatch, unbounded PlaneShape AABB transform handling, and regression coverage for mesh-plane contacts through both native tests and the public DART collision group path.
+  - Fixed GLTF PBR material import with Assimp 5.x so `MeshShape` preserves
+    combined metallic-roughness texture paths on GLTF fixtures.
+  - Fixed public DART raycast adapter paths to query mesh-adapted surfaces
+    double-sided, including heightmap raycasts through `DartCollisionGroup`.
+  - Fixed Atlas Simbicon state terminal-condition ownership so the native
+    collision stability integration path exits cleanly under AddressSanitizer.
+  - Added collision benchmark regression checks that parse Google Benchmark JSON and compare native collision timings against the best enabled FCL, Bullet, or ODE reference result across narrowphase, distance, raycast, mixed primitive, mesh-heavy, raycast-batch, and public DART adapter scenarios, with a scheduled/manual CI Linux guard that uploads the JSON artifacts.
+  - Added dartpy wheel verification that rejects legacy collision runtime libraries, reference collision libraries, and old reference collision component exports from wheel artifacts while allowing native-backed compatibility component facades.
+  - Added a runtime source isolation check that fails if non-reference DART source paths include FCL, Bullet, ODE, libccd, or explicit collision reference backend headers.
+  - Removed per-engine FCL/Bullet/ODE collision build switches from the normal
+    build surface. Explicit reference test/benchmark gates now build the
+    optional `dart-test-reference-*` targets; core `dart`, `dartpy`,
+    gz-physics runtime integration, and native-backed
+    `collision-fcl`/`collision-bullet`/`collision-ode` compatibility facades
+    do not depend on those reference gates.
+  - Broke the collision→dynamics source dependency using a bridge pattern: dynamics-dependent implementations moved from `dart/collision/*.cpp` to `dart/dynamics/detail/*_bridge.cpp`. Collision `.cpp` files no longer include any `dart/dynamics/` headers.
+  - Added built-in native collision module (`dart/collision/native/`) with 575+ tests covering all primitive shape pairs, GJK/EPA, distance queries, raycast, CCD, four broad-phase algorithms, collision filtering, compound shapes, and parallel narrowphase.
+  - Wired the native DART backend as a full `CollisionDetector` implementation with distance queries, raycast, and expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere). The legacy `"experimental"` factory key remains as an alias for compatibility.
+  - Fixed native capsule-box duplicate filtering to stay pair-local so accumulated collision results do not suppress new contacts in dense worlds.
+  - Native collision: added MPR convex penetration and optional libccd parity tests/bench.
+  - Native collision: handle degenerate triangle cases in GJK/MPR for robust convex queries.
+  - Native collision: improved broad-phase early exit, contact-count tracking, box-box distance, cylinder-box narrow phase, and primitive-mesh traversal performance.
+  - Native collision: fixed the spatial hash broad phase so unbounded
+    `PlaneShape` AABBs are paired without hashing infinite cell coordinates.
+  - Native collision: stabilized tilted cylinder contacts against plane-like large boxes, matching gz-physics plane fallback behavior without selecting external collision backends.
+  - Native collision: stabilized capsule contacts against plane-like large boxes so slender capsules no longer tunnel through the default world ground path.
+  - Native collision: capped large flat box/mesh contact patches to keep gz-physics max-contact selection tests expressive without overwhelming the solver, and preserved gz-required unsupported raycast behavior on FCL/ODE compatibility facades while keeping the built-in native detector behind those names.
+  - Native collision: fixed primitive-vs-mesh contact normal orientation for primitive-first query order and added pair-order coverage for capsule/cylinder mesh and convex contacts.
+  - Native collision: added cylinder-, convex-, and mesh-vs-SDF distance support with pair-order coverage through the native narrow-phase distance dispatcher.
+  - Native collision: fixed box-box contact points for large ground boxes so default DART worlds keep upright and rotated boxes resting on the ground, added stable SAT/face-clipping contact patches for rotated box-ground contacts, and made invalid convex/soft mesh data non-collidable with a warning instead of synthesizing native fallback geometry.
+  - Native collision: added scalar-matching batch entry points and benchmark coverage for box-box, sphere-sphere, capsule-capsule, cylinder-cylinder, convex-convex, mesh-mesh, and mixed narrow-phase dispatcher pairs.
+  - Restored `BodyNodeDistanceFilter` so distance queries honor body collidability, self-collision, and adjacent-body filtering, and made `DistanceFilter` safely deletable through its base interface.
+  - Fixed native sphere-box CCD when the sphere starts inside the expanded box so Debug builds no longer assert before reporting an initial overlap.
+  - Fixed native capsule-vs-convex CCD so casts use the full capsule support shape instead of relying on numerically fragile endpoint-sphere hits.
+  - Fixed native sphere/capsule-vs-mesh CCD so casts against open or thin mesh
+    triangles no longer miss direct hits.
+  - Fixed native world-level raycast, sphere-cast, and capsule-cast results so returned collision-object handles remain valid after the query returns.
+  - Fixed native mesh contact adaptation so public DART contacts preserve mesh
+    triangle IDs for soft-contact consumers.
+  - Fixed TriMesh-backed `MeshShape` construction with an empty URI so it does not probe `file://` for material metadata, eliminating spurious mesh-load warnings while preserving real URI/path material extraction.
   - Fixed PascalCase ODE compatibility headers to preserve legacy includes such as `OdeCollisionDetector.hpp`. ([#2475](https://github.com/dartsim/dart/pull/2475))
   - Fixed ODE contact history to snapshot current contacts before restoring cached contacts, preventing duplicate or invalid restored contacts from destabilizing capsule-ground simulations. ([#2648](https://github.com/dartsim/dart/pull/2648))
   - Validate `SphereShape::setRadius()` to reject NaN, infinity, and non-positive values with a warning instead of crashing via assertion. ([#2442](https://github.com/dartsim/dart/pull/2442), [gz-physics#843](https://github.com/gazebosim/gz-physics/issues/843))
@@ -445,6 +527,7 @@
   - Fixed `Option::getApiRate()` and `Option::getImpRatio()` returning the wrong value (both returned timestep).
   - Fixed MJCF default weld inheritance, `noslip_iterations` parsing, and worldbody site parsing/processing. Also fixed unsupported-root fallback and Windows relative include resolution in SDF parsing, removed incomplete HTTP cache files after failed downloads, and added SKEL recognition for screw and translational2d joints. ([#2648](https://github.com/dartsim/dart/pull/2648))
   - Fix null pointer dereference in XmlHelpers getValue\* functions when child element is missing. ([#2428](https://github.com/dartsim/dart/pull/2428))
+  - Return safe defaults from XML attribute helpers when callers pass a null element. ([#2678](https://github.com/dartsim/dart/issues/2678))
   - Unified model loading under `dart::io` and added HTTP retriever support. ([#2316](https://github.com/dartsim/dart/pull/2316), [#2138](https://github.com/dartsim/dart/pull/2138), [#604](https://github.com/dartsim/dart/issues/604))
   - SDF/URDF parsing improvements: libsdformat integration, SDF mimic metadata, SDF joint limits, tiny inertial handling, URDF multi-DoF limits, and transmission coupling. ([#2154](https://github.com/dartsim/dart/pull/2154), [#2254](https://github.com/dartsim/dart/pull/2254), [#2232](https://github.com/dartsim/dart/pull/2232), [#2284](https://github.com/dartsim/dart/pull/2284), [#2233](https://github.com/dartsim/dart/pull/2233), [#2281](https://github.com/dartsim/dart/pull/2281), [#264](https://github.com/dartsim/dart/issues/264))
   - Parser naming cleanup: renamed `DartLoader` to `UrdfParser` and standardized parser variable names. ([#2269](https://github.com/dartsim/dart/pull/2269), [#2270](https://github.com/dartsim/dart/pull/2270))
@@ -604,6 +687,7 @@
     overlays, equivalent inertia-box overlays, and collision-shape bounds for
     collision-only shape nodes.
   - Fix SEGV in `ImFontAtlas::AddFontFromMemoryCompressedTTF` when null pointer is passed as compressed font data. ([#2516](https://github.com/dartsim/dart/issues/2516))
+  - Fix `ImGui::ColorPicker3`/`ColorPicker4` crashes when called without an active ImGui context or window. ([#2668](https://github.com/dartsim/dart/issues/2668))
   - Added headless rendering support via `ViewerConfig` and pbuffer graphics context for CI pipelines and batch frame capture. Includes `Viewer::captureBuffer()` for raw RGBA pixel readback and a new `headless-rendering` CI job. ([#2466](https://github.com/dartsim/dart/pull/2466))
   - Added `ImGuiViewer` construction from `ViewerConfig` to support headless ImGui rendering and example frame capture workflows.
   - GUI naming updates and backend cleanup (including the osg suffix removal). ([#2209](https://github.com/dartsim/dart/pull/2209), [#2257](https://github.com/dartsim/dart/pull/2257))
@@ -619,6 +703,8 @@
   - Core API organization updates: dart7 core library scaffold, per-module forward declaration headers, IkFast header relocation, and C++20 modernization. ([#2097](https://github.com/dartsim/dart/pull/2097), [#2195](https://github.com/dartsim/dart/pull/2195), [#2057](https://github.com/dartsim/dart/pull/2057), [#2073](https://github.com/dartsim/dart/pull/2073))
   - Core API fixes: BodyNode transform derivative APIs, frame transform helpers for Inertia, COM-based potential energy, signal thread-safety, trivial accessor noexcept annotations, and non-finite joint input asserts. ([#2131](https://github.com/dartsim/dart/pull/2131), [#2153](https://github.com/dartsim/dart/pull/2153), [#2224](https://github.com/dartsim/dart/pull/2224), [#2181](https://github.com/dartsim/dart/pull/2181), [#2218](https://github.com/dartsim/dart/pull/2218), [#2273](https://github.com/dartsim/dart/pull/2273))
   - Fixed `PoolAllocator` leaking old memory block tables when the table grows.
+  - Fixed `MultiLockableReference::try_lock()` leaving earlier acquired locks
+    held when a later lock acquisition fails.
   - Removed all APIs deprecated in DART 6.0 (legacy BodyNode collision flags, Skeleton self-collision aliases, Joint `getLocal*`/`updateLocal*` accessors, `World::checkCollision(bool)`, `ConstraintSolver::setCollisionDetector(raw*)`, Marker `getBodyNode()`, `SdfParser::readSdfFile`, and deprecated XML helpers). ([#2132](https://github.com/dartsim/dart/pull/2132))
   - Removed all APIs deprecated in DART 6.1. ([#2119](https://github.com/dartsim/dart/pull/2119))
   - Removed all APIs deprecated in DART 6.2 (legacy Entity/BodyNode/JacobianNode/Joints/Skeleton notifiers, `Shape::notify*Update`, `EllipsoidShape::getSize`/`setSize`, `MultiSphereShape` alias, and `Eigen::make_aligned_shared` alias). ([#2122](https://github.com/dartsim/dart/pull/2122))

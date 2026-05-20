@@ -54,6 +54,32 @@ Header Names: PascalCase → snake_case
    #define DART_SUPPRESS_DEPRECATED_HEADER_WARNING
    #include <dart/dynamics/BodyNode.hpp>  // No warning
 
+Collision Detector Runtime
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Change**: the built-in DART collision detector is the normal runtime
+collision stack. Use the ``dart`` factory key, ``DartCollisionDetector``, or
+the default detector instead of selecting FCL, Bullet, or ODE as runtime
+backends.
+
+The C++ factory keys ``fcl``, ``fcl_mesh``, ``bullet``, and ``ode`` and the C++
+classes ``FCLCollisionDetector``, ``BulletCollisionDetector``, and
+``OdeCollisionDetector`` remain as DART 7 migration facades for downstream
+source compatibility. These names route to the built-in DART detector; they do
+not select external runtime engines.
+
+The dartpy API intentionally keeps the cleaner DART 7 surface. Python code
+should use ``dartpy.DartCollisionDetector`` or the default detector. The legacy
+dartpy detector aliases ``DARTCollisionDetector``, ``FCLCollisionDetector``,
+``BulletCollisionDetector``, and ``OdeCollisionDetector`` are not retained as
+compatibility shims.
+
+FCL, Bullet, and ODE remain available only as explicit reference-comparison
+dependencies for tests and benchmarks. Enable those through the reference
+test/benchmark gates, normally via the ``collision-reference`` Pixi
+environment; normal core DART, dartpy, package, and downstream runtime builds
+do not use per-engine collision build switches.
+
 Need another migration?
 -----------------------
 

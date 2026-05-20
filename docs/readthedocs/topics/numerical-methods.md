@@ -59,7 +59,7 @@ However, contact problems are still numerically delicate. If you observe
 jittering stacks or friction artifacts, experiment with:
 
 - Smaller `dt`
-- Different collision backends (FCL / Bullet / ODE) depending on your setup
+- Collision shape approximations and contact surface parameters
 - Constraint solver settings (through `World::getConstraintSolver()`)
 
 ## Stiffness and implicit joint springs

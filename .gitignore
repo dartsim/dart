@@ -71,6 +71,7 @@ docs/python_api/_build/
 
 # Data files
 data/screencap/*
+*.ppm
 
 # Headless rendering artifacts
 /*.png
@@ -104,6 +105,14 @@ imgui.ini
 
 # Profiling logs
 profiling/*.txt
+rp3d_profiling_*.txt
+*_profile_*.txt
+
+# Generated testing images
+*.png
+
+# Benchmark results
+docs/**/results/*.json
 
 # AI tool local state
 .omc/
@@ -118,17 +127,66 @@ profiling/*.txt
 compile_commands.json
 compile_flags.txt
 
-# OpenCode project commands are source-controlled AI workflow files.
-.opencode/
-!.opencode/
-!.opencode/command/
-!.opencode/command/*.md
+# --- AI agent project files ---
+# Convention: every AI agent's project-folder uses an "ignore-all-then-allowlist"
+# pattern. Team-shared workflows (commands, skills, agents, hooks, top-level
+# settings.json, AGENTS.md) ARE source-controlled. Per-developer ephemera
+# (session logs, scheduled-task locks, settings.local.json, runtime caches)
+# MUST NOT be.
 
-# Codex project skills are source-controlled AI workflow files.
-!.codex/
+# OpenCode project commands.
+.opencode/*
+!.opencode/command/
+!.opencode/command/**/*.md
+!.opencode/AGENTS.md
+
+# Codex project skills.
+.codex/*
 !.codex/skills/
 !.codex/skills/**/
 !.codex/skills/**/SKILL.md
+!.codex/AGENTS.md
+
+.omc/
+
+# Claude Code project files: team-shared commands + skills ARE
+# source-controlled (so every contributor gets the same DART workflows).
+# Per-developer ephemera (session state, scheduled-task locks, local
+# settings overrides, project-scoped agent runtime caches) MUST NOT be.
+.claude/*
+!.claude/commands/
+!.claude/commands/**/*.md
+!.claude/skills/
+!.claude/skills/**/
+!.claude/skills/**/SKILL.md
+!.claude/agents/
+!.claude/agents/**/*.md
+!.claude/hooks/
+!.claude/hooks/**/*
+!.claude/settings.json
+# Explicitly NOT included (per-developer ephemera):
+#   .claude/scheduled_tasks.json   (in-flight cron jobs for this session)
+#   .claude/scheduled_tasks.lock   (cron daemon lock file)
+#   .claude/settings.local.json    (per-developer permission overrides)
+#   .claude/projects/              (per-developer session logs / memory)
+#   .claude/statsig/               (per-developer feature-flag cache)
+#   .claude/todos/                 (per-developer TaskCreate state)
+#   .claude/ide/                   (per-developer IDE integration)
+
+# Other AI agents — defensive ignores so per-developer caches from these
+# tools don't accidentally land in the repo. If we adopt one and want to
+# track team workflows, add an allowlist following the pattern above.
+.aider*
+.cursor/
+.cursor-tutor/
+.cursorignore
+.gemini/
+.windsurf/
+.continue/
+.sourcegraph/
+.codeium/
+.tabnine/
+.cody*
 
 # Temporary apt downloads
 .tmp_apt/

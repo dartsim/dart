@@ -244,6 +244,8 @@ def patch_nanobind_if_needed() -> None:
     nb_type = nb_root / "src" / "nb_type.cpp"
     nb_func = nb_root / "src" / "nb_func.cpp"
     nb_error = nb_root / "src" / "error.cpp"
+    nb_internals_cpp = nb_root / "src" / "nb_internals.cpp"
+    nb_internals_h = nb_root / "src" / "nb_internals.h"
     nb_version = getattr(nanobind, "__version__", "main")
     base_url = f"https://raw.githubusercontent.com/wjakob/nanobind/v{nb_version}/src/"
 
@@ -267,6 +269,35 @@ def patch_nanobind_if_needed() -> None:
         except Exception:
             return False
 
+    def refresh_internals_from_upstream() -> None:
+        refresh_from_upstream(nb_internals_cpp, "nb_internals.cpp", (), force=True)
+        refresh_from_upstream(nb_internals_h, "nb_internals.h", (), force=True)
+
+    def touch_internals_if_func_is_newer() -> None:
+        if not nb_func.is_file() or not nb_internals_cpp.is_file():
+            return
+
+        try:
+            func_text = nb_func.read_text(encoding="utf-8")
+            internals_text = nb_internals_cpp.read_text(encoding="utf-8")
+            func_mtime = nb_func.stat().st_mtime
+            internals_mtime = nb_internals_cpp.stat().st_mtime
+        except OSError:
+            return
+
+        if (
+            "internals_inc_ref()" in func_text
+            and "void internals_inc_ref()" in internals_text
+            and func_mtime > internals_mtime
+        ):
+            nb_internals_cpp.touch()
+            if nb_internals_h.is_file():
+                nb_internals_h.touch()
+            print_warning(
+                f"Touched nanobind internals source at {nb_internals_cpp} "
+                "to keep static build objects in sync."
+            )
+
     refreshed = False
     refreshed |= refresh_from_upstream(
         nb_type, "nb_type.cpp", ('\\"%s")', '(")', '("['), force=force_refresh
@@ -274,7 +305,7 @@ def patch_nanobind_if_needed() -> None:
     refreshed |= refresh_from_upstream(
         nb_func,
         "nb_func.cpp",
-        ('\\"%s")', 'buf.put(" = \\");', 'buf.put(" = ");'),
+        ('\\"%s")', 'buf.put(" = \\");'),
         force=force_refresh,
     )
     refreshed |= refresh_from_upstream(
@@ -285,6 +316,8 @@ def patch_nanobind_if_needed() -> None:
     )
 
     if refreshed:
+        refresh_internals_from_upstream()
+        touch_internals_if_func_is_newer()
         return
 
     # Fallback: minimal in-place fixes when network refresh fails.
@@ -301,13 +334,9 @@ def patch_nanobind_if_needed() -> None:
 
     if nb_func.is_file():
         func_text = nb_func.read_text(encoding="utf-8")
-        func_fixed = (
-            func_text.replace(
-                '\\"%s"): function not found!', '\\"%s\\"): function not found!'
-            )
-            .replace('buf.put(" = \\");', 'buf.put(" = \\\\");')
-            .replace('buf.put(" = ");', 'buf.put(" = \\\\");')
-        )
+        func_fixed = func_text.replace(
+            '\\"%s"): function not found!', '\\"%s\\"): function not found!'
+        ).replace('buf.put(" = \\");', 'buf.put(" = \\\\");')
         if func_fixed != func_text:
             nb_func.write_text(func_fixed, encoding="utf-8")
             print_warning(f"Patched nanobind source at {nb_func} to fix bad escapes.")
@@ -323,6 +352,8 @@ def patch_nanobind_if_needed() -> None:
         if err_fixed != err_text:
             nb_error.write_text(err_fixed, encoding="utf-8")
             print_warning(f"Patched nanobind source at {nb_error} to fix bad escapes.")
+
+    touch_internals_if_func_is_newer()
 
 
 def check_pixi() -> bool:

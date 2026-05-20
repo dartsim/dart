@@ -60,6 +60,7 @@ namespace dynamics {
 namespace detail {
 template <typename T>
 class BodyNodePool;
+class SkeletonDynamicsView;
 } // namespace detail
 
 /// class Skeleton
@@ -1007,6 +1008,7 @@ public:
   friend class Node;
   friend class ShapeNode;
   friend class EndEffector;
+  friend class detail::SkeletonDynamicsView;
 
 protected:
   struct DataCache;

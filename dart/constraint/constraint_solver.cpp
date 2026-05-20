@@ -32,12 +32,12 @@
 
 #include "dart/constraint/constraint_solver.hpp"
 
+#include "dart/collision/collision_detector.hpp"
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/collision_group.hpp"
 #include "dart/collision/collision_object.hpp"
 #include "dart/collision/contact.hpp"
 #include "dart/collision/dart/dart_collision_detector.hpp"
-#include "dart/collision/fcl/fcl_collision_detector.hpp"
 #include "dart/common/frame_allocator.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
@@ -73,9 +73,31 @@ namespace constraint {
 using namespace dynamics;
 
 //==============================================================================
+namespace {
+
+collision::CollisionDetectorPtr createDefaultCollisionDetector()
+{
+  auto* factory = collision::CollisionDetector::getFactory();
+  if (factory->canCreate("dart")) {
+    return factory->create("dart");
+  }
+  if (factory->canCreate("experimental")) {
+    return factory->create("experimental");
+  }
+  if (factory->canCreate("fcl")) {
+    return factory->create("fcl");
+  }
+  return collision::DartCollisionDetector::create();
+}
+
+} // namespace
+
 ConstraintSolver::ConstraintSolver()
-  : mCollisionDetector(collision::FCLCollisionDetector::create()),
-    mCollisionGroup(mCollisionDetector->createCollisionGroupAsSharedPtr()),
+  : mCollisionDetector(createDefaultCollisionDetector()),
+    mCollisionGroup(
+        mCollisionDetector
+            ? mCollisionDetector->createCollisionGroupAsSharedPtr()
+            : nullptr),
     mCollisionOption(
         collision::CollisionOption(
             true,
@@ -88,10 +110,6 @@ ConstraintSolver::ConstraintSolver()
     mOwnedFrameAllocator(std::make_unique<common::FrameAllocator>()),
     mFrameAllocator(mOwnedFrameAllocator.get())
 {
-  auto cd = std::static_pointer_cast<collision::FCLCollisionDetector>(
-      mCollisionDetector);
-
-  cd->setPrimitiveShapeType(collision::FCLCollisionDetector::PRIMITIVE);
 }
 
 //==============================================================================
@@ -516,6 +534,15 @@ void ConstraintSolver::updateConstraints()
       continue;
     }
 
+    const auto bodyNode1 = contact.getBodyNodePtr1();
+    const auto bodyNode2 = contact.getBodyNodePtr2();
+    if (bodyNode1 == nullptr || bodyNode2 == nullptr) {
+      DART_WARN(
+          "[ConstraintSolver] Ignoring contact with a null collision object or "
+          "missing BodyNode.");
+      continue;
+    }
+
     // If penetration depth is negative, then the collision isn't really
     // happening and the contact point should be ignored.
     // TODO(MXG): Investigate ways to leverage the proximity information of a
@@ -551,6 +578,10 @@ void ConstraintSolver::updateConstraints()
 
     auto contactConstraint = mContactSurfaceHandler->createConstraint(
         *contact, numContacts, mTimeStep);
+    if (contactConstraint == nullptr) {
+      continue;
+    }
+
     mContactConstraints.push_back(contactConstraint);
 
     contactConstraint->update();

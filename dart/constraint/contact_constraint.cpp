@@ -33,6 +33,7 @@
 #include "dart/constraint/contact_constraint.hpp"
 
 #include "dart/collision/collision_object.hpp"
+#include "dart/collision/native/persistent_manifold_cache.hpp"
 #include "dart/common/logging.hpp"
 #include "dart/common/macros.hpp"
 #include "dart/dynamics/body_node.hpp"
@@ -57,6 +58,32 @@ namespace constraint {
 #define DART_MAX_BOUNCING_VELOCITY 1e+2
 #define DART_CONTACT_CONSTRAINT_EPSILON 1e-6
 
+namespace {
+
+//==============================================================================
+dynamics::BodyNode* getContactBodyNode(
+    const collision::CollisionObject* collisionObject)
+{
+  if (collisionObject == nullptr) {
+    return nullptr;
+  }
+
+  auto* shapeFrame
+      = const_cast<dynamics::ShapeFrame*>(collisionObject->getShapeFrame());
+  if (shapeFrame == nullptr) {
+    return nullptr;
+  }
+
+  auto* shapeNode = shapeFrame->asShapeNode();
+  if (shapeNode == nullptr) {
+    return nullptr;
+  }
+
+  return shapeNode->getBodyNodePtr().get();
+}
+
+} // namespace
+
 double ContactConstraint::mErrorAllowance = DART_ERROR_ALLOWANCE;
 double ContactConstraint::mErrorReductionParameter = DART_ERP;
 double ContactConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
@@ -69,27 +96,29 @@ ContactConstraint::ContactConstraint(
     const ContactSurfaceParams& contactSurfaceParams)
   : ConstraintBase(),
     mTimeStep(timeStep),
-    mBodyNodeA(
-        const_cast<dynamics::ShapeFrame*>(
-            contact.collisionObject1->getShapeFrame())
-            ->asShapeNode()
-            ->getBodyNodePtr()
-            .get()),
-    mBodyNodeB(
-        const_cast<dynamics::ShapeFrame*>(
-            contact.collisionObject2->getShapeFrame())
-            ->asShapeNode()
-            ->getBodyNodePtr()
-            .get()),
+    mBodyNodeA(getContactBodyNode(contact.collisionObject1)),
+    mBodyNodeB(getContactBodyNode(contact.collisionObject2)),
     mContact(contact),
     mFirstFrictionalDirection(DART_DEFAULT_FRICTION_DIR),
+    mPrimaryFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
+    mSecondaryFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
     mPrimarySlipCompliance(DART_DEFAULT_SLIP_COMPLIANCE),
     mSecondarySlipCompliance(DART_DEFAULT_SLIP_COMPLIANCE),
+    mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
+    mContactSurfaceMotionVelocity(DART_DEFAULT_CONTACT_SURFACE_MOTION_VELOCITY),
+    mIsSelfCollision(false),
     mIsFrictionOn(true),
     mAppliedImpulseIndex(dynamics::INVALID_INDEX),
     mIsBounceOn(false),
     mActive(false)
 {
+  if (!hasValidBodyNodes()) {
+    DART_WARN(
+        "[ContactConstraint] Ignoring contact with a null collision object or "
+        "missing ShapeNode.");
+    return;
+  }
+
   DART_ASSERT(
       contact.normal.squaredNorm() >= DART_CONTACT_CONSTRAINT_EPSILON_SQUARED);
 
@@ -339,6 +368,11 @@ const Eigen::Vector3d& ContactConstraint::getFrictionDirection1() const
 //==============================================================================
 void ContactConstraint::update()
 {
+  if (!hasValidBodyNodes()) {
+    mActive = false;
+    return;
+  }
+
   if (mBodyNodeA->isReactive() || mBodyNodeB->isReactive()) {
     mActive = true;
   } else {
@@ -349,6 +383,10 @@ void ContactConstraint::update()
 //==============================================================================
 void ContactConstraint::getInformation(ConstraintInfo* info)
 {
+  if (!hasValidBodyNodes()) {
+    return;
+  }
+
   const bool isPositionPhase = info->phase == ConstraintPhase::Position;
   const bool useSplitImpulse = info->useSplitImpulse;
   const auto computeErrorReductionVelocity = [&](double errorAllowance) {
@@ -448,11 +486,9 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
       info->b[2] += mContactSurfaceMotionVelocity.z();
     }
 
-    // TODO(JS): Initial guess
-    // x
-    info->x[0] = 0.0;
-    info->x[1] = 0.0;
-    info->x[2] = 0.0;
+    info->x[0] = std::max(0.0, mContact.cachedNormalImpulse);
+    info->x[1] = mContact.cachedFrictionImpulse1;
+    info->x[2] = mContact.cachedFrictionImpulse2;
   }
   //----------------------------------------------------------------------------
   // Frictionless case
@@ -504,15 +540,17 @@ void ContactConstraint::getInformation(ConstraintInfo* info)
       info->b[0] += mContactSurfaceMotionVelocity.x();
     }
 
-    // TODO(JS): Initial guess
-    // x
-    info->x[0] = 0.0;
+    info->x[0] = std::max(0.0, mContact.cachedNormalImpulse);
   }
 }
 
 //==============================================================================
 void ContactConstraint::applyUnitImpulse(std::size_t index)
 {
+  if (!hasValidBodyNodes()) {
+    return;
+  }
+
   DART_ASSERT(index < mDim && "Invalid Index.");
   // assert(isActive());
   DART_ASSERT(mBodyNodeA->isReactive() || mBodyNodeB->isReactive());
@@ -574,6 +612,10 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
 {
   DART_ASSERT(vel != nullptr && "Null pointer is not allowed.");
 
+  if (!hasValidBodyNodes()) {
+    return;
+  }
+
   Eigen::Map<Eigen::VectorXd> velMap(vel, static_cast<int>(mDim));
   velMap.setZero();
 
@@ -608,6 +650,10 @@ void ContactConstraint::getVelocityChange(double* vel, bool withCfm)
 //==============================================================================
 void ContactConstraint::excite()
 {
+  if (!hasValidBodyNodes()) {
+    return;
+  }
+
   if (mBodyNodeA->isReactive()) {
     mBodyNodeA->getSkeleton()->setImpulseApplied(true);
   }
@@ -620,6 +666,10 @@ void ContactConstraint::excite()
 //==============================================================================
 void ContactConstraint::unexcite()
 {
+  if (!hasValidBodyNodes()) {
+    return;
+  }
+
   if (mBodyNodeA->isReactive()) {
     mBodyNodeA->getSkeleton()->setImpulseApplied(false);
   }
@@ -632,6 +682,26 @@ void ContactConstraint::unexcite()
 //==============================================================================
 void ContactConstraint::applyImpulse(double* lambda)
 {
+  if (!hasValidBodyNodes()) {
+    return;
+  }
+
+  const auto updateCachedUserData = [&](double normalImpulse,
+                                        double frictionImpulse1,
+                                        double frictionImpulse2) {
+    if (!mContact.userData) {
+      return;
+    }
+
+    // Native-backed compatibility facades may preserve legacy detector type
+    // strings while still using DartCollisionDetector's manifold cache.
+    auto* cached
+        = static_cast<collision::native::CachedContact*>(mContact.userData);
+    cached->cachedNormalImpulse = normalImpulse;
+    cached->cachedFrictionImpulse1 = frictionImpulse1;
+    cached->cachedFrictionImpulse2 = frictionImpulse2;
+  };
+
   //----------------------------------------------------------------------------
   // Friction case
   //----------------------------------------------------------------------------
@@ -673,6 +743,11 @@ void ContactConstraint::applyImpulse(double* lambda)
     if (mBodyNodeB->isReactive()) {
       mBodyNodeB->addConstraintImpulse(mSpatialNormalB.col(2) * lambda[2]);
     }
+
+    mContact.cachedNormalImpulse = lambda[0];
+    mContact.cachedFrictionImpulse1 = lambda[1];
+    mContact.cachedFrictionImpulse2 = lambda[2];
+    updateCachedUserData(lambda[0], lambda[1], lambda[2]);
   }
   //----------------------------------------------------------------------------
   // Frictionless case
@@ -689,12 +764,20 @@ void ContactConstraint::applyImpulse(double* lambda)
 
     // Store contact impulse (force) toward the normal w.r.t. world frame
     mContact.force = mContact.normal * lambda[0] / mTimeStep;
+    mContact.cachedNormalImpulse = lambda[0];
+    mContact.cachedFrictionImpulse1 = 0.0;
+    mContact.cachedFrictionImpulse2 = 0.0;
+    updateCachedUserData(lambda[0], 0.0, 0.0);
   }
 }
 
 //==============================================================================
 void ContactConstraint::applyPositionImpulse(double* lambda)
 {
+  if (!hasValidBodyNodes()) {
+    return;
+  }
+
   if (mBodyNodeA->isReactive()) {
     mBodyNodeA->addPositionConstraintImpulse(
         mSpatialNormalA.col(0) * lambda[0]);
@@ -718,6 +801,10 @@ void ContactConstraint::getRelVelocity(double* relVel)
 {
   DART_ASSERT(relVel != nullptr && "Null pointer is not allowed.");
 
+  if (!hasValidBodyNodes()) {
+    return;
+  }
+
   Eigen::Map<Eigen::VectorXd> relVelMap(relVel, static_cast<int>(mDim));
   relVelMap.setZero();
   relVelMap -= mSpatialNormalA.transpose() * mBodyNodeA->getSpatialVelocity();
@@ -735,6 +822,10 @@ bool ContactConstraint::isActive() const
 dynamics::SkeletonPtr ContactConstraint::getRootSkeleton() const
 {
   DART_ASSERT(isActive());
+
+  if (!hasValidBodyNodes()) {
+    return nullptr;
+  }
 
   if (mBodyNodeA->isReactive()) {
     return ConstraintBase::getRootSkeleton(mBodyNodeA->getSkeleton());
@@ -815,6 +906,10 @@ ContactConstraint::getTangentBasisMatrixODE(const Eigen::Vector3d& n)
 //==============================================================================
 void ContactConstraint::uniteSkeletons()
 {
+  if (!hasValidBodyNodes()) {
+    return;
+  }
+
   if (!mBodyNodeA->isReactive() || !mBodyNodeB->isReactive()) {
     return;
   }
@@ -871,6 +966,12 @@ void ContactConstraint::setSecondarySlipCompliance(double slip)
 const collision::Contact& ContactConstraint::getContact() const
 {
   return mContact;
+}
+
+//==============================================================================
+bool ContactConstraint::hasValidBodyNodes() const
+{
+  return mBodyNodeA != nullptr && mBodyNodeB != nullptr;
 }
 
 } // namespace constraint

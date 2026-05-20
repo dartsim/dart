@@ -11,8 +11,14 @@ implementation trackers.
 ## Rules
 
 - Start with `docs/ai/north-star.md`, then `docs/plans/README.md`.
-- Keep plans concise and evidence-based; link deeper design to onboarding docs
+- Keep plans concise and evidence-based; link deeper design to developer docs
   or `docs/dev_tasks/`.
+- Keep plans lifecycle-oriented: they should name current open gaps,
+  sequencing, gates, and acceptance criteria, then be removed, consolidated, or
+  retargeted after durable output lands elsewhere.
+- Put durable architecture/API tradeoffs in `docs/design/`, landed developer
+  knowledge in `docs/onboarding/`, user instructions in `docs/readthedocs/` or
+  `README.md`, and active multi-session handoff state in `docs/dev_tasks/`.
 - Prefer revising existing initiatives over adding duplicate plan entries.
 - Use stable initiative IDs when renaming, reprioritizing, splitting, or
   consolidating work.
@@ -27,6 +33,9 @@ implementation trackers.
   horizon, or north-star dimension.
 - Do not use plan docs as a running changelog. Git history records past plan
   shapes; the files should describe the current intended path.
+- Completed dashboard entries should point to durable owner docs outside
+  numbered plan files. If a numbered plan file no longer guides current work,
+  remove it or fold its durable content into the appropriate owner doc.
 
 ## Verification
 

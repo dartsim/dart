@@ -36,7 +36,7 @@
 
 #include <dart/constraint/constraint_solver.hpp>
 
-#include <dart/collision/bullet/bullet_collision_detector.hpp>
+#include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
 
 #include <dart/dynamics/skeleton.hpp>
 
@@ -92,7 +92,7 @@ TEST(Issue867, BulletBoxStackingStaysStable)
 
   auto lcpSolver = std::make_shared<math::DantzigSolver>();
   auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
-  solver->setCollisionDetector(collision::BulletCollisionDetector::create());
+  solver->setCollisionDetector(collision::BulletCollisionDetector::createReference());
   world->setConstraintSolver(std::move(solver));
 
   auto boxes = createStack(*world);

@@ -35,6 +35,8 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <memory>
+#include <string>
 
 #include <cmath>
 
@@ -47,6 +49,65 @@ using dart::dynamics::RevoluteJoint;
 using dart::dynamics::Skeleton;
 using dart::dynamics::SkeletonPtr;
 using dart::dynamics::TranslationalJoint;
+
+class BareNode final : public dart::dynamics::Node,
+                       public dart::dynamics::AccessoryNode<BareNode>
+{
+public:
+  explicit BareNode(BodyNode* bodyNode, std::string name = "bare_node")
+    : Node(bodyNode), mName(std::move(name))
+  {
+    // Do nothing
+  }
+
+  const std::string& setName(const std::string& newName) override
+  {
+    mName = registerNameChange(newName);
+    return mName;
+  }
+
+  const std::string& getName() const override
+  {
+    return mName;
+  }
+
+protected:
+  dart::dynamics::Node* cloneNode(BodyNode* bodyNode) const override
+  {
+    return new BareNode(bodyNode, mName);
+  }
+
+private:
+  std::string mName;
+};
+
+class BareNodeState final : public dart::dynamics::Node::State
+{
+public:
+  std::unique_ptr<State> clone() const override
+  {
+    return std::make_unique<BareNodeState>();
+  }
+
+  void copy(const State&) override
+  {
+    // Do nothing
+  }
+};
+
+class BareNodeProperties final : public dart::dynamics::Node::Properties
+{
+public:
+  std::unique_ptr<Properties> clone() const override
+  {
+    return std::make_unique<BareNodeProperties>();
+  }
+
+  void copy(const Properties&) override
+  {
+    // Do nothing
+  }
+};
 
 double finiteDifferenceStep(double value)
 {
@@ -446,4 +507,54 @@ TEST(BodyNodeDerivatives, NodeStatePropertyCoverage)
   const BodyNode* constBody = bodyA;
   const auto constNodes = constBody->getNodes();
   EXPECT_EQ(nodes.size(), constNodes.size());
+}
+
+TEST(BodyNodeDerivatives, BareNodeDefaultStatePropertiesAndLifetime)
+{
+  auto skeleton = Skeleton::create("bare_node_defaults");
+  auto rootPair = skeleton->createJointAndBodyNodePair<FreeJoint>();
+  BodyNode* body = rootPair.second;
+
+  {
+    dart::dynamics::NodeDestructor destructor(new BareNode(body, "orphan"));
+    EXPECT_NE(destructor.getNode(), nullptr);
+  }
+
+  auto* node = new BareNode(body);
+  node->reattach();
+  dart::dynamics::TemplateNodePtr<BareNode, BodyNode> strong(node);
+
+  EXPECT_FALSE(node->isRemoved());
+  EXPECT_EQ(node->getBodyNodePtr().get(), body);
+  const BareNode* constNode = node;
+  EXPECT_EQ(constNode->getBodyNodePtr().get(), body);
+  EXPECT_EQ(node->getSkeleton(), skeleton);
+  EXPECT_EQ(
+      static_cast<const dart::dynamics::Node*>(node)->getSkeleton(), skeleton);
+
+  BareNodeState state;
+  node->setNodeState(state);
+  EXPECT_EQ(node->getNodeState(), nullptr);
+  std::unique_ptr<dart::dynamics::Node::State> copiedState;
+  node->copyNodeStateTo(copiedState);
+  EXPECT_EQ(copiedState, nullptr);
+
+  BareNodeProperties properties;
+  node->setNodeProperties(properties);
+  EXPECT_EQ(node->getNodeProperties(), nullptr);
+  std::unique_ptr<dart::dynamics::Node::Properties> copiedProperties;
+  node->copyNodePropertiesTo(copiedProperties);
+  EXPECT_EQ(copiedProperties, nullptr);
+
+  EXPECT_EQ(node->setName("bare_node_renamed"), "bare_node_renamed");
+  EXPECT_EQ(node->getName(), "bare_node_renamed");
+  EXPECT_EQ(node->getIndexInBodyNode(), 0u);
+  EXPECT_NE(node->getIndexInSkeleton(), dart::dynamics::INVALID_INDEX);
+  EXPECT_NE(node->getIndexInTree(), dart::dynamics::INVALID_INDEX);
+  EXPECT_EQ(node->getTreeIndex(), body->getTreeIndex());
+
+  node->remove();
+  EXPECT_TRUE(node->isRemoved());
+  node->reattach();
+  EXPECT_FALSE(node->isRemoved());
 }

@@ -244,12 +244,27 @@ set(dartpy_gui_sources
   gui/descriptors.cpp
 )
 
+set(dartpy_simulation_experimental_headers
+  simulation_experimental/module.hpp
+)
+
+set(dartpy_simulation_experimental_sources
+  simulation_experimental/module.cpp
+)
+
 set(_dartpy_has_gui FALSE)
+set(_dartpy_has_simulation_experimental FALSE)
 
 if(TARGET dart-gui-core)
   list(APPEND dartpy_headers ${dartpy_gui_headers})
   list(APPEND dartpy_sources ${dartpy_gui_sources})
   set(_dartpy_has_gui TRUE)
+endif()
+
+if(TARGET dart-simulation-experimental)
+  list(APPEND dartpy_headers ${dartpy_simulation_experimental_headers})
+  list(APPEND dartpy_sources ${dartpy_simulation_experimental_sources})
+  set(_dartpy_has_simulation_experimental TRUE)
 endif()
 
 if(_dartpy_has_gui)
@@ -287,10 +302,6 @@ target_include_directories(dartpy
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}
 )
-
-if(BULLET_INCLUDE_DIR)
-  target_include_directories(dartpy SYSTEM PRIVATE ${BULLET_INCLUDE_DIR})
-endif()
 
 set(dartpy_libraries
   dart
@@ -331,6 +342,20 @@ if(TARGET dart-gui-core)
   endforeach()
 endif()
 
+if(TARGET dart-simulation-experimental)
+  target_link_libraries(dartpy PRIVATE dart-simulation-experimental)
+  foreach(prop INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
+    get_target_property(
+      _simulation_experimental_includes dart-simulation-experimental ${prop}
+    )
+    if(_simulation_experimental_includes)
+      target_include_directories(
+        dartpy PRIVATE ${_simulation_experimental_includes}
+      )
+    endif()
+  endforeach()
+endif()
+
 # Surface a version string to Python.
 target_compile_definitions(dartpy
   PRIVATE
@@ -340,6 +365,11 @@ target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
 
 if(_dartpy_has_gui)
   target_compile_definitions(dartpy PRIVATE DARTPY_HAS_GUI=1)
+endif()
+if(_dartpy_has_simulation_experimental)
+  target_compile_definitions(
+    dartpy PRIVATE DARTPY_HAS_SIMULATION_EXPERIMENTAL=1
+  )
 endif()
 
 set_target_properties(dartpy PROPERTIES

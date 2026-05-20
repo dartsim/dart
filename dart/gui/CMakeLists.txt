@@ -66,7 +66,6 @@ if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
 
   dart_format_add(${dart_gui_core_hdrs} ${dart_gui_core_srcs})
 endif()
-
 if(NOT DART_BUILD_GUI)
   message(STATUS "Skipping GUI (DART_BUILD_GUI == ${DART_BUILD_GUI})")
   return()

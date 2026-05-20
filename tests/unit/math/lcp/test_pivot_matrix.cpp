@@ -6,6 +6,7 @@
 #include "dart/math/lcp/pivoting/dantzig/matrix.hpp"
 #include "dart/math/lcp/pivoting/dantzig/pivot_matrix.hpp"
 
+#include <Eigen/Dense>
 #include <gtest/gtest.h>
 
 #include <vector>
@@ -13,6 +14,36 @@
 #include <cmath>
 
 using namespace dart::math;
+
+namespace {
+
+std::vector<double> makePaddedSpdMatrix(int n, int nskip)
+{
+  std::vector<double> matrix(static_cast<std::size_t>(n * nskip), 0.0);
+  for (int row = 0; row < n; ++row) {
+    for (int col = 0; col <= row; ++col) {
+      const double value = row == col
+                               ? static_cast<double>(n + row + 1)
+                               : 0.05 / static_cast<double>(row + col + 1);
+      matrix[static_cast<std::size_t>(row * nskip + col)] = value;
+      matrix[static_cast<std::size_t>(col * nskip + row)] = value;
+    }
+  }
+  return matrix;
+}
+
+Eigen::MatrixXd toDense(const std::vector<double>& padded, int n, int nskip)
+{
+  Eigen::MatrixXd dense(n, n);
+  for (int row = 0; row < n; ++row) {
+    for (int col = 0; col < n; ++col) {
+      dense(row, col) = padded[static_cast<std::size_t>(row * nskip + col)];
+    }
+  }
+  return dense;
+}
+
+} // namespace
 
 //==============================================================================
 TEST(PivotMatrix, Construction)
@@ -552,4 +583,131 @@ TEST(DantzigMatrixImpl, FactorLDLTLargeOddSizeUsesBlockedTail)
     EXPECT_TRUE(std::isfinite(d[i]));
     EXPECT_NE(d[i], 0.0);
   }
+}
+
+//==============================================================================
+TEST(DantzigMatrixImpl, CholeskyInvertsLargeSpdMatrixWithAndWithoutScratch)
+{
+  constexpr int n = 7;
+  const int nskip = padding(n);
+  auto matrix = makePaddedSpdMatrix(n, nskip);
+  const Eigen::MatrixXd dense = toDense(matrix, n, nskip);
+
+  std::vector<double> inverseOwned(static_cast<std::size_t>(n * nskip), 0.0);
+  EXPECT_EQ(dInvertPDMatrix(matrix.data(), inverseOwned.data(), n, nullptr), 1);
+  EXPECT_TRUE((dense * toDense(inverseOwned, n, nskip))
+                  .isApprox(Eigen::MatrixXd::Identity(n, n), 1e-8));
+
+  const auto scratchBytes = dEstimateInvertPDMatrixTmpbufSize<double>(n);
+  std::vector<double> scratch(scratchBytes / sizeof(double), 0.0);
+  std::vector<double> inverseProvided(static_cast<std::size_t>(n * nskip), 0.0);
+  EXPECT_EQ(
+      dInvertPDMatrix(matrix.data(), inverseProvided.data(), n, scratch.data()),
+      1);
+  EXPECT_TRUE((dense * toDense(inverseProvided, n, nskip))
+                  .isApprox(Eigen::MatrixXd::Identity(n, n), 1e-8));
+}
+
+//==============================================================================
+TEST(DantzigMatrixImpl, PositiveDefiniteProbeUsesOwnedAndProvidedScratch)
+{
+  constexpr int n = 6;
+  const int nskip = padding(n);
+  auto matrix = makePaddedSpdMatrix(n, nskip);
+
+  EXPECT_EQ(dIsPositiveDefinite(matrix.data(), n, nullptr), 1);
+
+  const auto scratchBytes = dEstimateIsPositiveDefiniteTmpbufSize<double>(n);
+  std::vector<double> scratch(scratchBytes / sizeof(double), 0.0);
+  EXPECT_EQ(dIsPositiveDefinite(matrix.data(), n, scratch.data()), 1);
+
+  matrix[static_cast<std::size_t>(2 * nskip + 2)] = -1.0;
+  EXPECT_EQ(dIsPositiveDefinite(matrix.data(), n, scratch.data()), 0);
+}
+
+//==============================================================================
+TEST(DantzigMatrixImpl, LDLTBlockedSolveAndRemoveStayFinite)
+{
+  constexpr int n = 8;
+  const int nskip = padding(n);
+  auto matrix = makePaddedSpdMatrix(n, nskip);
+  const Eigen::MatrixXd dense = toDense(matrix, n, nskip);
+
+  std::vector<double> factor = matrix;
+  std::vector<double> d(n, 0.0);
+  dFactorLDLT(factor.data(), d.data(), n, nskip);
+
+  Eigen::VectorXd target(n);
+  for (int i = 0; i < n; ++i) {
+    target[i] = 0.1 * static_cast<double>(i + 1);
+  }
+  Eigen::VectorXd rhsEigen = dense * target;
+  std::vector<double> rhs(rhsEigen.data(), rhsEigen.data() + rhsEigen.size());
+
+  dSolveLDLT(factor.data(), d.data(), rhs.data(), n, nskip);
+  for (int i = 0; i < n; ++i) {
+    EXPECT_NEAR(rhs[static_cast<std::size_t>(i)], target[i], 1e-8);
+  }
+
+  std::vector<double*> rows(n);
+  for (int i = 0; i < n; ++i) {
+    rows[static_cast<std::size_t>(i)] = matrix.data() + i * nskip;
+  }
+  std::vector<int> permutation(n);
+  for (int i = 0; i < n; ++i) {
+    permutation[static_cast<std::size_t>(i)] = i;
+  }
+
+  const auto scratchBytes = dEstimateLDLTRemoveTmpbufSize<double>(n, nskip);
+  std::vector<double> scratch(scratchBytes / sizeof(double), 0.0);
+  dLDLTRemove(
+      rows.data(),
+      permutation.data(),
+      factor.data(),
+      d.data(),
+      n,
+      n,
+      3,
+      nskip,
+      scratch.data());
+
+  for (int i = 0; i < n - 1; ++i) {
+    EXPECT_TRUE(std::isfinite(d[static_cast<std::size_t>(i)]));
+  }
+}
+
+//==============================================================================
+TEST(DantzigMatrixImpl, RemoveRowColCompactsInteriorEntry)
+{
+  constexpr int n = 4;
+  constexpr int nskip = 4;
+  std::vector<double> matrix
+      = {1.0,
+         2.0,
+         3.0,
+         4.0,
+         5.0,
+         6.0,
+         7.0,
+         8.0,
+         9.0,
+         10.0,
+         11.0,
+         12.0,
+         13.0,
+         14.0,
+         15.0,
+         16.0};
+
+  dRemoveRowCol(matrix.data(), n, nskip, 1);
+
+  EXPECT_DOUBLE_EQ(matrix[0], 1.0);
+  EXPECT_DOUBLE_EQ(matrix[1], 3.0);
+  EXPECT_DOUBLE_EQ(matrix[2], 4.0);
+  EXPECT_DOUBLE_EQ(matrix[4], 9.0);
+  EXPECT_DOUBLE_EQ(matrix[5], 11.0);
+  EXPECT_DOUBLE_EQ(matrix[6], 12.0);
+  EXPECT_DOUBLE_EQ(matrix[8], 13.0);
+  EXPECT_DOUBLE_EQ(matrix[9], 15.0);
+  EXPECT_DOUBLE_EQ(matrix[10], 16.0);
 }

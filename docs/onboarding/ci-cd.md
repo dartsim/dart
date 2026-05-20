@@ -19,7 +19,9 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Suggested (Unverified): `gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast`
   - Suggested (Unverified): `gh run view --job <JOB_ID> --log-failed`
 - Gotchas:
-  - PR branch CI should run from `pull_request`; push-triggered CI is reserved for `main`, `release-*`, tags, schedules, and manual runs.
+  - Feature branch pushes run a core pre-PR tier only; full required coverage
+    still runs from `pull_request`, protected branch pushes, release tags,
+    schedules, and manual runs.
   - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
   - `gh run view --job <JOB_ID> --log-failed` only works after the job completes; use the REST logs endpoint (or wait) when a run is still in progress.
   - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early (including AppVeyor); resolve conflicts locally and push before re-running CI.
@@ -30,11 +32,11 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Example reorganizations can conflict in `examples/CMakeLists.txt`; reconcile any new example entries and keep the category layout aligned before pushing.
   - GitHub Actions API calls can return `HTTP 406` if you omit required headers; include an explicit `Accept` header.
   - `gh api` writes to stdout and does not support `--output`; redirect to a file when you need to search logs.
-  - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; pass required build toggles explicitly (e.g., Bullet collision).
+  - The asserts-enabled CI job uses a custom CMake configure (`CMAKE_BUILD_TYPE=None`) instead of pixi tasks; keep native-only collision toggles explicit unless the job also installs a reference-engine Pixi environment.
   - The Eigen over-alignment job forces `EIGEN_MAX_ALIGN_BYTES=64` and `EIGEN_MAX_STATIC_ALIGN_BYTES=64`; failures usually indicate allocator, placement-new, or storage code assuming a smaller Eigen alignment.
   - Deprecated headers that emit `#warning` fail under `-Werror=cpp` (e.g., use `dart/utils/urdf/All.hpp` instead of deprecated `dart/utils/urdf/urdf.hpp`).
   - dartpy test failures can show up as a Python abort with minimal traceback when a C++ `DART_ASSERT` triggers; rerun the single test locally and inspect the C++ assert.
-  - Bullet-backed raycast tests require Bullet to be built; skip or enable Bullet if the backend is intentionally disabled.
+  - Reference collision raycast tests require the relevant reference target and dependency to be available; skip those checks or use the `collision-reference` environment when FCL/Bullet/ODE are intentionally disabled in a native-only build.
   - `gh pr status --json ...` can error with `Unknown JSON field: ...` if you request unsupported fields; use `gh pr status` (no JSON) or `gh pr view --json ...`.
   - `gh run view --json ...` only accepts supported fields; prefer the `url` field instead of guessing `htmlURL`.
   - `gh run rerun --job` expects the job `databaseId` (not the numeric ID from the job URL); if `gh run view --json jobs` shows `id: null`, use `databaseId`. Suggested (Unverified): `gh run view <RUN_ID> --json jobs --jq '.jobs[] | {name, databaseId}'`.
@@ -154,7 +156,10 @@ rg -n "FAILED|SegFault|Exception|\\bError\\b|✗" /tmp/<RUN_ID>
 The asserts-enabled job uses a custom CMake configure with `CMAKE_BUILD_TYPE=None`
 to keep assertions enabled outside a Debug build.
 
-- Pass build toggles explicitly when bypassing pixi tasks (e.g., `DART_BUILD_COLLISION_BULLET=ON` if Bullet-backed tests are expected).
+- Pass build toggles explicitly when bypassing pixi tasks. The default
+  asserts-enabled job should keep FCL/Bullet/ODE and reference collision
+  harnesses `OFF`; enable them only in a Pixi environment that installs those
+  reference engines.
 - Expect `-Werror=cpp`; any deprecated headers that emit `#warning` will fail the build.
 - If a dartpy test aborts without a Python traceback, the C++ assert message is usually the first useful clue.
 
@@ -188,22 +193,60 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 
 | Workflow             | Purpose               | Platforms      | Trigger                             | Doc-only skip |
 | -------------------- | --------------------- | -------------- | ----------------------------------- | ------------- |
-| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | PR, main/release push               | No            |
-| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | PR, main/release push, schedule     | Yes           |
+| `ci_lint.yml`        | Lint + docs build     | Ubuntu         | Any branch push, PR, manual         | No            |
+| `ci_ubuntu.yml`      | Build, test, coverage | Ubuntu         | Branch push core; PR/main full      | Yes           |
 | `ci_macos.yml`       | Build, test           | macOS          | PR, main/release push, schedule     | Yes           |
 | `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule     | Yes           |
 | `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                    | N/A           |
 | `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                | N/A           |
-| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | PR, main/release push, schedule     | Yes           |
+| `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | Branch push core; PR/main full      | Yes           |
+| `ci_simd.yml`        | SIMD multi-arch       | Ubuntu         | Branch/PR path-scoped, manual       | N/A           |
 | `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule | Yes           |
+
+### CI Tiering Policy
+
+Use CI tiers to reduce PR feedback cost without removing coverage from the
+project's continuous validation surface.
+
+| Tier                      | Required before merge | Examples                                                                                |
+| ------------------------- | --------------------- | --------------------------------------------------------------------------------------- |
+| Core branch push          | No                    | Lint, Ubuntu core release tests, gz-physics compatibility, path-scoped SIMD             |
+| Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, gz-physics compatibility, baseline dartpy wheels |
+| Conditional PR            | When affected         | SIMD-only CI, path-filtered platform jobs for code changes                              |
+| Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags    |
+| Scheduled/manual coverage | No                    | FreeBSD VM, repeated full matrix, maintenance lockfile updates                          |
+
+Guardrails:
+
+- Keep gz-physics compatibility in the required PR tier. The Gazebo downstream
+  build/test catches integration breakages that core unit tests can miss.
+- Treat core branch-push CI as early feedback only. It should be useful enough
+  before a PR exists, but it is not a substitute for the required PR tier.
+- Do not move a job from required PR coverage to continuous-only coverage
+  without evidence that it is expensive, redundant for most PRs, or better
+  suited to scheduled validation.
+- Keep at least one dartpy wheel per supported OS in PR CI. Expanded Python
+  version coverage can run on `main`, release tags, schedules, and manual
+  dispatch.
+- Run the full dartpy wheel matrix when `publish_dartpy.yml` itself changes so
+  workflow edits validate both PR and continuous wheel tiers before merge.
+- Require stable aggregate check names for variable CI matrices. For dartpy
+  wheels, branch protection should require `Wheels`; individual wheel legs may
+  change by tier and should not be required directly.
+- `main`, release, release-tag, scheduled, and manual workflows must preserve
+  the full coverage that PR tiering skips.
 
 ### Design Principles
 
-**Optimize for fast feedback on PRs:**
+**Optimize for fast feedback on branches and PRs:**
 
+- Feature branch pushes run a small core tier so contributors can get useful CI
+  signal before opening a PR.
 - Essential validations run on every PR
 - Full matrix testing runs on main branch and releases
 - Debug builds run on schedule (2x per week)
+- Keep gz-physics compatibility in the required PR tier so downstream Gazebo
+  integration breakages are caught before merge.
 
 **Efficient resource usage:**
 
@@ -347,34 +390,41 @@ runners. Windows keeps Release-only tests to keep runtime acceptable.
 **Behavior:**
 
 - **PRs**: Release and Debug jobs run on Ubuntu/macOS when code paths change
-- **Windows**: Release-only tests run on PRs, pushes, schedules, and manual dispatch
+- **Windows**: Release-only tests run on PRs, protected branch pushes,
+  schedules, and manual dispatch
 - **Doc-only changes**: Platform jobs are skipped by path filters; lint/docs still run
 
 ### Python Wheel Builds
 
-Full wheel matrix is expensive (60-90 minutes), so branch pushes outside `main`
-run only the essential Python version. PRs, `main`, tags, schedules, and manual
-runs keep the full matrix.
+Full wheel matrix is expensive, so PRs outside `main` run only the baseline
+Python version on each OS. Feature branch pushes skip wheel builds in the core
+pre-PR tier; open a PR for baseline wheel coverage or use manual dispatch for
+the full matrix. `main`, tags, schedules, and manual runs keep the full matrix.
+In a May 2026 PR run, the six non-baseline Py313/Py314 wheel jobs consumed
+146.6 job-minutes, while the three baseline Py312 wheel jobs kept Ubuntu,
+macOS, and Windows packaging coverage in the PR tier.
 
 **Pattern** (see `publish_dartpy.yml`):
 
 ```yaml
-RUN_WHEEL: >-
-  ${{ matrix.skip-on-commit != true ||
-      github.event_name == 'pull_request' ||
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
-      github.ref == 'refs/heads/main' ||
-      startsWith(github.ref, 'refs/tags/v') }}
+wheel_matrix:
+  outputs:
+    matrix: ${{ steps.matrix.outputs.matrix }}
+
+build_wheels:
+  needs: [changes, wheel_matrix]
+  strategy:
+    matrix: ${{ fromJSON(needs.wheel_matrix.outputs.matrix) }}
 ```
 
 **Behavior:**
 
-- **PRs**: Full matrix builds so wheel breakages are caught before merge
-- **Non-main branch pushes**: Only essential configurations build
-- **Main branch**: Full matrix builds
-- **Release tags**: Full matrix builds
-- **Scheduled/manual runs**: Full matrix builds
+- **PRs**: Baseline Python wheel builds on Ubuntu, macOS, and Windows
+- **PR workflow changes**: Full Python-version matrix builds
+- **Feature branch pushes**: Wheel builds are skipped by the core branch-push tier
+- **Main branch**: Full Python-version matrix builds
+- **Release tags**: Full Python-version matrix builds
+- **Scheduled/manual runs**: Full Python-version matrix builds
 
 ### Documentation Builds
 
@@ -397,24 +447,44 @@ so platform test jobs do not each rebuild docs.
 
 **Key design:**
 
-- `ci_lint.yml` runs on ALL changes (including doc-only changes) to catch formatting and documentation issues early
+- `ci_lint.yml` runs lint on all branch pushes and PRs, including doc-only
+  changes. The documentation build runs on PRs, protected branch pushes, and
+  manual dispatch, but is skipped for ordinary feature branch pushes to keep
+  the pre-PR tier small.
 - FreeBSD CI (`ci_freebsd.yml`) runs on schedule/manual only to reduce maintenance burden; Alt Linux also runs on PRs for distro repro coverage
 - Lint is removed from platform-specific workflows since it's covered by the dedicated job
 
-**Doc-only skip patterns** (used by platform CI, NOT by lint CI):
+**Shared code-change filter:** platform and integration workflows that use
+`dorny/paths-filter` read `.github/filters/ci-code.yml` for their `changes`
+job. Keep non-code skip policy there instead of copying path lists between
+workflows.
 
 ```yaml
-paths-ignore:
-  - "docs/**"
-  - ".readthedocs.yml"
-  - "tutorials/**"
-  - "**/*.md"
-  - "**/*.rst"
-  - "**/*.po"
-  - "**/*.pot"
+code:
+  - "**"
+  - "!docs/**"
+  - "!tutorials/**"
+  - "!**/*.md"
 ```
 
-**Savings:** 12-25 minutes per PR on platform jobs for doc-only changes
+The shared filter also excludes maintenance-only workflow files such as
+`.github/workflows/update_lockfiles.yml`; those changes should still run lint,
+but they do not need to launch the platform build/test or wheel matrix.
+
+Coverage guardrails:
+
+- Do not add broad `.github/workflows/**` exclusions. Changes to build, test,
+  packaging, and CI orchestration workflows should continue to run heavy CI.
+- Keep `.github/filters/ci-code.yml` itself covered by the filter so changes to
+  the trigger policy run the normal matrix.
+- Prefer job-level `changes` gates over top-level `pull_request.paths-ignore`
+  for required platform workflows so branch protection still receives stable
+  workflow/check contexts.
+- Use native `paths-ignore` only for workflows that cannot share the dorny
+  filter file, such as CodeQL trigger configuration.
+
+**Savings:** 12-25 minutes per PR on platform jobs for doc-only and
+maintenance-workflow-only changes
 
 ## Testing Strategy
 
@@ -428,11 +498,21 @@ paths-ignore:
 - macOS Debug: Debug C++ tests
 - Windows Release: Full tests
 - Gazebo integration: Integration tests
+- dartpy wheels: Baseline Python version on Ubuntu, macOS, and Windows
+
+**Feature branch pushes:**
+
+- Lint
+- Ubuntu core release path: Release C++ tests, Release Python tests, examples,
+  and install
+- Gazebo integration: gz-physics compatibility tests when code paths change
+- SIMD multi-arch tests when SIMD paths change
 
 **Scheduled runs:**
 
 - Repeat the PR validation on a fixed cadence
 - Ensure periodic full validation
+- Run expanded dartpy wheel Python-version coverage
 
 ### Test Execution
 
@@ -440,7 +520,8 @@ GitHub Actions uses granular pixi tasks instead of `pixi run test-all` so CI
 does not repeat local-only validation in every platform job:
 
 - `pixi run check-lint` runs once in `ci_lint.yml`
-- `pixi run docs-build` runs once in `ci_lint.yml`
+- `pixi run docs-build` runs once in `ci_lint.yml` for PRs, protected branch
+  pushes, and manual runs
 - Platform jobs run explicit C++ and dartpy test tasks for their selected
   coverage slice
 - Release jobs build examples and install where that platform covers the path

@@ -56,6 +56,9 @@ portable source of truth.
 
 Use `/dart-*` commands in Claude Code/OpenCode and generated `$dart-*` skills in
 Codex. `docs/ai/workflows.md` owns the workflow and skill catalog.
+Use `/dart-next` or `$dart-next` when an agent should select the next bounded
+task from the north star, plan dashboard, dev-task state, issues, PRs, or CI;
+pass `focus=<topic>` to prefer an area without hard-coding the outcome.
 
 Editable sources live in `.claude/commands/` and `.claude/skills/`. Generated
 OpenCode and Codex entrypoints live in `.opencode/command/` and
@@ -64,7 +67,7 @@ OpenCode and Codex entrypoints live in `.opencode/command/` and
 ## Key Rules
 
 - **Bug fixes**: Require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
-- **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. See `docs/dev_tasks/README.md` for criteria.
+- **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. Promote durable artifacts before completion and delete the task folder in the completing PR. See `docs/dev_tasks/README.md` for criteria and cleanup rules.
 - **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-actions[bot]`, `copilot[bot]`). No inline replies and no acknowledgment comments. Make local fixes silently. Pushes, PR comments, thread resolution, review re-triggers, and other GitHub mutations require explicit maintainer/user approval. See `docs/onboarding/ai-tools.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
@@ -80,7 +83,7 @@ OpenCode and Codex entrypoints live in `.opencode/command/` and
 - [ ] `pixi run build` — If C++/Python code changed
 - [ ] `pixi run test-unit` — If behavior could be affected
 - [ ] **CHANGELOG.md** — Update if adding features, fixing bugs, or making breaking changes
-- [ ] **Dev task cleanup** — If task used `docs/dev_tasks/<task>/`, remove folder in this PR (not after merge)
+- [ ] **Dev task cleanup** — If task used `docs/dev_tasks/<task>/`, promote durable artifacts and remove the folder in this PR (not after merge)
 
 Shortcut: `pixi run test-all` runs lint + build + all tests.
 

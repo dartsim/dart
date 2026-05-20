@@ -35,6 +35,8 @@
 
 #include <dart/dynamics/joint.hpp>
 
+#include <dart/export.hpp>
+
 #include <string>
 
 namespace dart {
@@ -44,10 +46,10 @@ class BodyNode;
 class Skeleton;
 
 /// class ZeroDofJoint
-class ZeroDofJoint : public Joint
+class DART_API ZeroDofJoint : public Joint
 {
 public:
-  struct Properties : Joint::Properties
+  struct DART_API Properties : Joint::Properties
   {
     Properties(const Joint::Properties& _properties = Joint::Properties());
     virtual ~Properties() = default;

@@ -36,7 +36,7 @@
 
 #include <dart/constraint/constraint_solver.hpp>
 
-#include <dart/collision/bullet/bullet_collision_detector.hpp>
+#include <dart/test/reference_collision/bullet/bullet_collision_detector.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/free_joint.hpp>
@@ -111,7 +111,7 @@ TEST(Issue1184, Accuracy)
         for (const bool falling : fallingModes) {
           auto world = dart::simulation::World::create("test");
           world->setCollisionDetector(
-              dart::collision::BulletCollisionDetector::create());
+              dart::collision::BulletCollisionDetector::createReference());
 
           Eigen::Isometry3d tf_object = Eigen::Isometry3d::Identity();
           const double initialHeight

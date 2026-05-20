@@ -113,7 +113,7 @@ set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSI
 # Already set above
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
-set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, fcl, octomap")
+set(DART_PKG_EXTERNAL_DEPS "assimp, eigen3, entt, octomap")
 set_property(GLOBAL PROPERTY DART_PKG_LINK_LIBS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS "")
@@ -238,11 +238,32 @@ unset(DART_BUILD_RAYLIB CACHE)
 unset(DART_USE_SYSTEM_RAYLIB CACHE)
 unset(DART_RAYLIB_GIT_TAG CACHE)
 set(DART_BUILD_GUI_RAYLIB OFF)
+unset(_dart_user_set_build_gui_raylib)
 dart_option(DART_STRICT_SYMBOL_VISIBILITY
   "Build shared libraries with hidden default symbol visibility so exported public ABI must use component *_API macros" OFF
   CATEGORY build)
-dart_option(DART_BUILD_COLLISION_BULLET "Embed the Bullet collision backend into the core dart target" OFF CATEGORY build)
-dart_option(DART_BUILD_COLLISION_ODE "Embed the ODE collision backend into the core dart target" OFF CATEGORY build)
+dart_option(
+  DART_COLLISION_DEPRECATE_LEGACY_NAMES
+  "Emit deprecation warnings for legacy collision detector names that now route to the built-in DART detector"
+  ON
+  CATEGORY build
+)
+dart_option(
+  DART_BUILD_COLLISION_REFERENCE_TESTS
+  "Build collision tests that use FCL, Bullet, or ODE as reference engines"
+  OFF
+  CATEGORY build
+)
+dart_option(
+  DART_BUILD_COLLISION_REFERENCE_BENCHMARKS
+  "Build collision benchmarks that compare native collision against FCL, Bullet, or ODE"
+  OFF
+  CATEGORY build
+)
+set(_dart_build_collision_references OFF)
+if(DART_BUILD_COLLISION_REFERENCE_TESTS OR DART_BUILD_COLLISION_REFERENCE_BENCHMARKS)
+  set(_dart_build_collision_references ON)
+endif()
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)
@@ -318,6 +339,7 @@ dart_option(
   OFF
   CATEGORY build
 )
+
 
 dart_configure_compiler_cache()
 
@@ -496,7 +518,8 @@ if(MSVC)
   endif()
   # /MP - Multi-processor compilation (uses all available cores)
   # /FS - Force synchronous PDB writes (prevents PDB conflicts in parallel builds with /MP)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase- /MP /FS")
+  # /utf-8 - Required by fmt's Unicode support on MSVC.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /permissive- /Zc:twoPhase- /utf-8 /MP /FS")
   set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/INCREMENTAL:NO")
   if(NOT DART_MSVC_DEFAULT_OPTIONS)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${DART_RUNTIME_LIBRARY}d /Zi /Gy /W1 /EHsc")
@@ -1023,7 +1046,14 @@ if(DOXYGEN_FOUND)
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/docs/doxygen
     DEPENDS ${DOXYGEN_DOXYFILE}
   )
-  add_custom_target(docs DEPENDS ${DOXYGEN_HTML_INDEX})
+  # Use dart-docs as the internal target name so an existing docs target can
+  # depend on it without target-name conflicts.
+  add_custom_target(dart-docs DEPENDS ${DOXYGEN_HTML_INDEX})
+  if(NOT TARGET docs)
+    add_custom_target(docs DEPENDS dart-docs)
+  else()
+    add_dependencies(docs dart-docs)
+  endif()
   add_custom_target(
     docs_forced
     COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."

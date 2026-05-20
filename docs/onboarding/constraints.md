@@ -56,6 +56,54 @@ document algorithm tradeoffs in `docs/background/lcp/`. The ODE-derived
 principal pivoting BLCP implementation lives under the Dantzig pivoting solver
 and remains the default exact boxed-LCP path for constraint solving.
 
+#### LCP Solver Extension Contract (v0)
+
+The supported research-facing contract is the solver boundary in
+`dart/math/lcp/`:
+
+- Input data is `dart::math::LcpProblem`, using DART's boxed convention
+  `w = A*x - b`, lower and upper bounds, and optional friction-index coupling.
+- Solver configuration is `dart::math::LcpOptions`. Solvers may expose typed
+  parameter structs, but callers pass them through `customOptions` only for the
+  matching solver implementation.
+- Solve results are `dart::math::LcpResult` plus the output vector `x`. New
+  solvers should report `LcpSolverStatus`, iteration count, residual,
+  complementarity, validation state, and a diagnostic message when failing.
+- Algorithm identity comes from `LcpSolver::getName()` and
+  `LcpSolver::getCategory()`. Baseline comparisons should use those names in
+  test and benchmark output.
+- Built-in baseline algorithms are the concrete solvers under
+  `dart/math/lcp/{pivoting,projection,newton,other}/`; they are comparison
+  points, not extension APIs that expose their internal storage.
+
+API-boundary exclusions:
+
+- Do not require researchers to depend on Dantzig pivot matrices, row pointers,
+  basis bookkeeping, or other helper headers under solver-specific internals.
+- Do not expose `constraint::ConstrainedGroup`, contact caches, collision
+  backend objects, or constraint assembly storage as part of the first
+  research-facing solver contract.
+- Do not add Python bindings for LCP internals until there is a documented
+  Python user workflow and lifetime-safe value wrappers.
+- Do not expose threading, SIMD, allocator, GPU stream, or device-memory
+  details through the solver contract; route those through future high-level
+  solver options after benchmark evidence exists.
+
+Verification for new or changed LCP solver contracts:
+
+- Use `tests/common/lcpsolver` fixtures for standard, boxed active-bound, and
+  friction-index problems.
+- Run focused contract tests such as
+  `UNIT_math_lcp_math_lcp_all_solvers_smoke`,
+  `UNIT_math_lcp_math_lcp_lcp_validation_and_solvers`, and the solver-specific
+  unit target that owns the changed implementation.
+- Run the baseline smoke benchmark with
+  `pixi run bm lcp_compare -- --benchmark_filter=BM_LCP_COMPARE_SMOKE` and
+  record solver status, iteration count, bound violation, residual, and
+  complementarity before using the numbers for roadmap decisions.
+- Apply `docs/onboarding/api-boundaries.md` before documenting any helper API as
+  public or compatibility-only.
+
 **Utilities:**
 
 - ContactSurface.hpp/cpp - Contact surface parameters
@@ -151,7 +199,7 @@ solve()
 - Uses `CollisionDetector` to find contacts
 - Creates `ContactConstraint` objects for each contact
 - Manages `ContactSurfaceHandler` for surface parameters
-- Supports multiple collision detection backends
+- Uses the built-in DART collision detector for normal runtime contacts
 
 **Key Features:**
 

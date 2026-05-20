@@ -31,15 +31,16 @@
  */
 
 #include <dart/collision/collision_result.hpp>
-#include <dart/collision/fcl/fcl_collision_detector.hpp>
+#include <dart/test/reference_collision/fcl/fcl_collision_detector.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
 #include <Eigen/Core>
-#include <cmath>
 #include <gtest/gtest.h>
+
+#include <cmath>
 
 using dart::collision::FCLCollisionDetector;
 
@@ -49,12 +50,12 @@ using dart::collision::FCLCollisionDetector;
 // touching face.
 TEST(CollisionRegression, MeshMeshContactPointsStayOnContactPlane)
 {
-  auto detector = FCLCollisionDetector::create();
+  auto detector = FCLCollisionDetector::createReference();
   detector->setPrimitiveShapeType(FCLCollisionDetector::MESH);
   detector->setContactPointComputationMethod(FCLCollisionDetector::FCL);
 
-  auto shape = std::make_shared<dart::dynamics::BoxShape>(
-      Eigen::Vector3d::Ones());
+  auto shape
+      = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d::Ones());
 
   auto bottom = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World());

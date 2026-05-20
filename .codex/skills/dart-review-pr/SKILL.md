@@ -71,7 +71,8 @@ appears after a reasonable wait.
 4. If approved, push the fix silently
 5. If approved, resolve only reviewed and addressed thread IDs via GraphQL (see
    ai-tools.md)
-6. If approved and a new review is needed after fixes, re-trigger:
+6. After the approved push, if the fixes addressed Codex review comments, ask
+   for explicit maintainer/user approval for the PR comment, then re-trigger:
    `gh pr comment $1 --body "@codex review"`
 7. Monitor CI: `gh pr checks $1`
 8. Check for new review, repeat until no comments + CI green

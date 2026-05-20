@@ -332,9 +332,14 @@ MeshShape::MeshShape(
     mAlphaMode(BLEND),
     mColorIndex(0)
 {
-  if (uri.mScheme.get_value_or("file") == "file" && uri.mPath) {
+  const std::string uriString = uri.toString();
+  const bool isFileUri = uri.mScheme.get_value_or("file") == "file";
+  const bool hasMeshResource
+      = !uriString.empty() && !(isFileUri && uri.getFilesystemPath().empty());
+
+  if (isFileUri && uri.mPath && hasMeshResource) {
     mMeshPath = uri.getFilesystemPath();
-  } else if (mResourceRetriever) {
+  } else if (mResourceRetriever && hasMeshResource) {
     DART_SUPPRESS_DEPRECATED_BEGIN
     mMeshPath = mResourceRetriever->getFilePath(uri);
     DART_SUPPRESS_DEPRECATED_END
@@ -344,8 +349,7 @@ MeshShape::MeshShape(
 
   mMaterials.clear();
 
-  const bool hasMaterialSource = uri.mPath && !uri.getPath().empty();
-  if (hasMaterialSource) {
+  if (hasMeshResource) {
     common::ResourceRetrieverPtr materialRetriever = mResourceRetriever;
     if (!materialRetriever && uri.mScheme.get_value_or("file") == "file"
         && uri.mPath) {
@@ -1429,18 +1433,22 @@ void MeshShape::extractMaterialsFromScene(
     assert(aiMat);
 
     MeshMaterial material;
-    const auto getFirstTexturePath
-        = [&](const aiTextureType type) -> std::string {
-      if (aiMat->GetTextureCount(type) == 0u) {
+    const auto getTexturePath = [&](const aiTextureType type,
+                                    const unsigned int index) -> std::string {
+      if (aiMat->GetTextureCount(type) <= index) {
         return {};
       }
 
       aiString imagePath;
-      if (aiMat->GetTexture(type, 0u, &imagePath) != AI_SUCCESS) {
+      if (aiMat->GetTexture(type, index, &imagePath) != AI_SUCCESS) {
         return {};
       }
 
       return resolveTexturePath(imagePath.C_Str());
+    };
+    const auto getFirstTexturePath
+        = [&](const aiTextureType type) -> std::string {
+      return getTexturePath(type, 0u);
     };
 
     // Extract colors
@@ -1563,19 +1571,28 @@ void MeshShape::extractMaterialsFromScene(
     }
 #endif
 
+    const auto appendTextureImagePaths
+        = [&](const aiTextureType type, const unsigned int /*index*/ = 0u) {
+            const auto count = aiMat->GetTextureCount(type);
+            for (auto j = 0u; j < count; ++j) {
+              aiString imagePath;
+              if (aiMat->GetTexture(type, j, &imagePath) == AI_SUCCESS) {
+                const std::string resolvedPath
+                    = resolveTexturePath(imagePath.C_Str());
+                if (!resolvedPath.empty()) {
+                  material.textureImagePaths.emplace_back(resolvedPath);
+                }
+              }
+            }
+          };
+
     for (const auto& type : textureTypes) {
-      const auto count = aiMat->GetTextureCount(type);
-      for (auto j = 0u; j < count; ++j) {
-        aiString imagePath;
-        if (aiMat->GetTexture(type, j, &imagePath) == AI_SUCCESS) {
-          const std::string resolvedPath
-              = resolveTexturePath(imagePath.C_Str());
-          if (!resolvedPath.empty()) {
-            material.textureImagePaths.emplace_back(resolvedPath);
-          }
-        }
-      }
+      appendTextureImagePaths(type);
     }
+#ifdef AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE
+    appendTextureImagePaths(
+        AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE);
+#endif
 
     mMaterials.emplace_back(std::move(material));
   }
@@ -1812,7 +1829,8 @@ const aiScene* MeshShape::loadMesh(const std::string& filePath)
 {
   const auto retriever = std::make_shared<common::LocalResourceRetriever>();
   DART_SUPPRESS_DEPRECATED_BEGIN
-  const aiScene* scene = loadMesh("file://" + filePath, retriever);
+  const aiScene* scene
+      = loadMesh(common::Uri::createFromPath(filePath).toString(), retriever);
   DART_SUPPRESS_DEPRECATED_END
   return scene;
 }

@@ -1,0 +1,471 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/compute/compute_graph.hpp>
+#include <dart/simulation/experimental/compute/compute_graph_visualization.hpp>
+#include <dart/simulation/experimental/compute/compute_node.hpp>
+#include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
+#include <dart/simulation/experimental/compute/sequential_executor.hpp>
+#include <dart/simulation/experimental/compute/taskflow_executor.hpp>
+
+#include <gtest/gtest.h>
+
+#include <atomic>
+#include <chrono>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <vector>
+
+namespace compute = dart::simulation::experimental::compute;
+namespace sx = dart::simulation::experimental;
+
+//==============================================================================
+TEST(ExperimentalComputeNode, ExecutesCallable)
+{
+  int counter = 0;
+  compute::ComputeNode node("increment", [&counter]() { ++counter; });
+
+  EXPECT_EQ(node.getName(), "increment");
+  EXPECT_TRUE(node.isValid());
+
+  node.execute();
+  node.execute();
+
+  EXPECT_EQ(counter, 2);
+}
+
+//==============================================================================
+TEST(ExperimentalComputeNode, EmptyCallableThrows)
+{
+  compute::ComputeNode node("empty", nullptr);
+
+  EXPECT_FALSE(node.isValid());
+  EXPECT_THROW(node.execute(), sx::InvalidOperationException);
+}
+
+//==============================================================================
+TEST(ExperimentalComputeStageMetadata, SupportsMultipleDomainsAndAccelerators)
+{
+  const compute::ComputeStageMetadata articulated{
+      compute::ComputeStageDomain::ArticulatedBody,
+      compute::ComputeStageAcceleration::TaskParallel
+          | compute::ComputeStageAcceleration::DataLocality};
+  const compute::ComputeStageMetadata deformable{
+      compute::ComputeStageDomain::DeformableBody,
+      compute::ComputeStageAcceleration::DataParallel
+          | compute::ComputeStageAcceleration::Simd};
+  const compute::ComputeStageMetadata fluid{
+      compute::ComputeStageDomain::Fluid,
+      compute::ComputeStageAcceleration::DataParallel
+          | compute::ComputeStageAcceleration::Gpu};
+  const compute::ComputeStageMetadata rendering{
+      compute::ComputeStageDomain::Rendering,
+      compute::ComputeStageAcceleration::TaskParallel
+          | compute::ComputeStageAcceleration::Gpu};
+
+  EXPECT_EQ(compute::toString(articulated.domain), "articulated_body");
+  EXPECT_TRUE(
+      compute::hasAcceleration(
+          articulated.acceleration,
+          compute::ComputeStageAcceleration::TaskParallel));
+  EXPECT_TRUE(
+      compute::hasAcceleration(
+          articulated.acceleration,
+          compute::ComputeStageAcceleration::DataLocality));
+  EXPECT_EQ(compute::toString(deformable.domain), "deformable_body");
+  EXPECT_TRUE(
+      compute::hasAcceleration(
+          deformable.acceleration, compute::ComputeStageAcceleration::Simd));
+  EXPECT_EQ(compute::toString(fluid.domain), "fluid");
+  EXPECT_TRUE(
+      compute::hasAcceleration(
+          fluid.acceleration, compute::ComputeStageAcceleration::Gpu));
+  EXPECT_EQ(compute::toString(rendering.domain), "rendering");
+  EXPECT_NE(
+      compute::formatAccelerationMask(rendering.acceleration).find("gpu"),
+      std::string::npos);
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraph, EmptyGraphIsValid)
+{
+  compute::ComputeGraph graph;
+
+  EXPECT_TRUE(graph.isEmpty());
+  EXPECT_EQ(graph.getNodeCount(), 0u);
+  EXPECT_EQ(graph.getEdgeCount(), 0u);
+  EXPECT_TRUE(graph.getParallelLevels().empty());
+  EXPECT_TRUE(graph.validate());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraph, RejectsDuplicateNodeNames)
+{
+  compute::ComputeGraph graph;
+  graph.addNode("same", []() {});
+
+  EXPECT_THROW(graph.addNode("same", []() {}), sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraph, RejectsEmptyNodeNames)
+{
+  compute::ComputeGraph graph;
+
+  EXPECT_THROW(graph.addNode("", []() {}), sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraph, TracksDependenciesAndDependents)
+{
+  compute::ComputeGraph graph;
+  auto& start = graph.addNode("start", []() {});
+  auto& middle = graph.addNode("middle", []() {});
+  auto& end = graph.addNode("end", []() {});
+
+  graph.addDependency(start, middle);
+  graph.addDependency(middle, end);
+
+  auto dependencies = graph.getDependencies(end);
+  ASSERT_EQ(dependencies.size(), 1u);
+  EXPECT_EQ(dependencies.front(), &middle);
+
+  auto dependents = graph.getDependents(start);
+  ASSERT_EQ(dependents.size(), 1u);
+  EXPECT_EQ(dependents.front(), &middle);
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraph, DuplicateDependencyIsNoOp)
+{
+  compute::ComputeGraph graph;
+  auto& start = graph.addNode("start", []() {});
+  auto& end = graph.addNode("end", []() {});
+
+  graph.addDependency(start, end);
+  graph.addDependency(start, end);
+
+  EXPECT_EQ(graph.getEdgeCount(), 1u);
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraph, RejectsExternalDependencies)
+{
+  compute::ComputeGraph graph1;
+  compute::ComputeGraph graph2;
+
+  auto& start = graph1.addNode("start", []() {});
+  auto& external = graph2.addNode("external", []() {});
+
+  EXPECT_THROW(
+      graph1.addDependency(start, external), sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraph, RejectsCycles)
+{
+  compute::ComputeGraph graph;
+  auto& a = graph.addNode("a", []() {});
+  auto& b = graph.addNode("b", []() {});
+  auto& c = graph.addNode("c", []() {});
+
+  graph.addDependency(a, b);
+  graph.addDependency(b, c);
+
+  EXPECT_THROW(graph.addDependency(c, a), sx::InvalidOperationException);
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraph, TopologicalOrderUsesConstructionOrderTieBreaker)
+{
+  compute::ComputeGraph graph;
+  auto& a = graph.addNode("a", []() {});
+  auto& b = graph.addNode("b", []() {});
+  auto& c = graph.addNode("c", []() {});
+  auto& d = graph.addNode("d", []() {});
+
+  graph.addDependency(a, d);
+  graph.addDependency(b, d);
+  graph.addDependency(c, d);
+
+  auto order = graph.getTopologicalOrder();
+  ASSERT_EQ(order.size(), 4u);
+  EXPECT_EQ(order[0]->getName(), "a");
+  EXPECT_EQ(order[1]->getName(), "b");
+  EXPECT_EQ(order[2]->getName(), "c");
+  EXPECT_EQ(order[3]->getName(), "d");
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraph, ReportsStaticParallelLevels)
+{
+  compute::ComputeGraph graph;
+  auto& start = graph.addNode("start", []() {});
+  auto& left = graph.addNode("left", []() {});
+  auto& right = graph.addNode("right", []() {});
+  auto& end = graph.addNode("end", []() {});
+
+  graph.addDependency(start, left);
+  graph.addDependency(start, right);
+  graph.addDependency(left, end);
+  graph.addDependency(right, end);
+
+  const auto levels = graph.getParallelLevels();
+  ASSERT_EQ(levels.size(), 3u);
+  ASSERT_EQ(levels[0].size(), 1u);
+  ASSERT_EQ(levels[1].size(), 2u);
+  ASSERT_EQ(levels[2].size(), 1u);
+  EXPECT_EQ(levels[0][0], &start);
+  EXPECT_EQ(levels[1][0], &left);
+  EXPECT_EQ(levels[1][1], &right);
+  EXPECT_EQ(levels[2][0], &end);
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraph, ExportsDotWithMetadataAndProfile)
+{
+  using namespace std::chrono_literals;
+
+  compute::ComputeGraph graph;
+  auto& simulate = graph.addNode(
+      "simulate",
+      []() { std::this_thread::sleep_for(1ms); },
+      {compute::ComputeStageDomain::RigidBody,
+       compute::ComputeStageAcceleration::TaskParallel
+           | compute::ComputeStageAcceleration::DataLocality});
+  auto& render = graph.addNode(
+      "render",
+      []() { std::this_thread::sleep_for(1ms); },
+      {compute::ComputeStageDomain::Rendering,
+       compute::ComputeStageAcceleration::TaskParallel
+           | compute::ComputeStageAcceleration::Gpu});
+  graph.addDependency(simulate, render);
+
+  compute::SequentialExecutor executor;
+  const auto profile = executor.executeProfiled(graph);
+  const auto dot = compute::toDot(graph, &profile);
+
+  EXPECT_NE(dot.find("digraph ComputeGraph"), std::string::npos);
+  EXPECT_NE(dot.find("simulate"), std::string::npos);
+  EXPECT_NE(dot.find("render"), std::string::npos);
+  EXPECT_NE(dot.find("domain=rigid_body"), std::string::npos);
+  EXPECT_NE(dot.find("domain=rendering"), std::string::npos);
+  EXPECT_NE(dot.find("gpu"), std::string::npos);
+  EXPECT_NE(dot.find("duration_us="), std::string::npos);
+  EXPECT_NE(dot.find("rank=same"), std::string::npos);
+}
+
+//==============================================================================
+TEST(ExperimentalSequentialExecutor, ExecutesInDependencyOrder)
+{
+  compute::ComputeGraph graph;
+  std::vector<std::string> order;
+
+  auto& start = graph.addNode("start", [&]() { order.push_back("start"); });
+  auto& left = graph.addNode("left", [&]() { order.push_back("left"); });
+  auto& right = graph.addNode("right", [&]() { order.push_back("right"); });
+  auto& end = graph.addNode("end", [&]() { order.push_back("end"); });
+
+  graph.addDependency(start, left);
+  graph.addDependency(start, right);
+  graph.addDependency(left, end);
+  graph.addDependency(right, end);
+
+  compute::SequentialExecutor executor;
+  executor.execute(graph);
+
+  ASSERT_EQ(order.size(), 4u);
+  EXPECT_EQ(order[0], "start");
+  EXPECT_EQ(order[1], "left");
+  EXPECT_EQ(order[2], "right");
+  EXPECT_EQ(order[3], "end");
+  EXPECT_EQ(executor.getWorkerCount(), 1u);
+}
+
+//==============================================================================
+TEST(ExperimentalSequentialExecutor, ProfilesNodeLoadAndParallelism)
+{
+  using namespace std::chrono_literals;
+
+  compute::ComputeGraph graph;
+  auto& light = graph.addNode("light", []() {});
+  auto& heavy
+      = graph.addNode("heavy", []() { std::this_thread::sleep_for(20ms); });
+  graph.addDependency(light, heavy);
+
+  compute::SequentialExecutor executor;
+  auto profile = executor.executeProfiled(graph);
+
+  ASSERT_EQ(profile.nodes.size(), 2u);
+  EXPECT_FALSE(profile.isEmpty());
+  EXPECT_EQ(profile.workerCount, 1u);
+  EXPECT_EQ(profile.maxParallelism, 1u);
+  EXPECT_GT(profile.wallTime.count(), 0);
+  EXPECT_GT(profile.totalNodeTime.count(), 0);
+  EXPECT_GT(profile.criticalPathTime.count(), 0);
+  EXPECT_GT(profile.getAverageParallelism(), 0.0);
+
+  const auto* lightProfile = profile.getNode("light");
+  const auto* heavyProfile = profile.getNode("heavy");
+  ASSERT_NE(lightProfile, nullptr);
+  ASSERT_NE(heavyProfile, nullptr);
+  EXPECT_EQ(profile.getNode("missing"), nullptr);
+
+  EXPECT_EQ(lightProfile->dependencyCount, 0u);
+  EXPECT_EQ(lightProfile->dependentCount, 1u);
+  EXPECT_EQ(lightProfile->level, 0u);
+  EXPECT_EQ(lightProfile->workerIndex, 0u);
+  EXPECT_EQ(heavyProfile->dependencyCount, 1u);
+  EXPECT_EQ(heavyProfile->dependentCount, 0u);
+  EXPECT_EQ(heavyProfile->level, 1u);
+  EXPECT_EQ(heavyProfile->workerIndex, 0u);
+  EXPECT_GT(heavyProfile->duration, lightProfile->duration);
+  EXPECT_GE(heavyProfile->startTime, lightProfile->endTime);
+}
+
+//==============================================================================
+TEST(ExperimentalTaskflowExecutor, RespectsDependencies)
+{
+  compute::ComputeGraph graph;
+  std::atomic<bool> ok{true};
+  std::atomic<bool> startDone{false};
+  std::atomic<int> workersDone{0};
+  std::atomic<bool> endDone{false};
+
+  auto& start = graph.addNode("start", [&]() { startDone.store(true); });
+
+  auto addWorker = [&](std::string name) -> compute::ComputeNode& {
+    return graph.addNode(name, [&]() {
+      if (!startDone.load()) {
+        ok.store(false);
+      }
+      workersDone.fetch_add(1);
+    });
+  };
+
+  auto& left = addWorker("left");
+  auto& right = addWorker("right");
+  auto& end = graph.addNode("end", [&]() {
+    if (workersDone.load() != 2) {
+      ok.store(false);
+    }
+    endDone.store(true);
+  });
+
+  graph.addDependency(start, left);
+  graph.addDependency(start, right);
+  graph.addDependency(left, end);
+  graph.addDependency(right, end);
+
+  compute::TaskflowExecutor executor(2);
+  executor.execute(graph);
+
+  EXPECT_TRUE(ok.load());
+  EXPECT_TRUE(endDone.load());
+  EXPECT_GE(executor.getWorkerCount(), 1u);
+}
+
+//==============================================================================
+TEST(ExperimentalTaskflowExecutor, PropagatesNodeExceptions)
+{
+  compute::ComputeGraph graph;
+  graph.addNode("throwing", []() { throw std::runtime_error("task failed"); });
+
+  compute::TaskflowExecutor executor(1);
+
+  EXPECT_THROW(executor.execute(graph), std::runtime_error);
+}
+
+//==============================================================================
+TEST(ExperimentalTaskflowExecutor, ProfiledPropagatesNodeExceptions)
+{
+  compute::ComputeGraph graph;
+  graph.addNode("throwing", []() { throw std::runtime_error("task failed"); });
+
+  compute::TaskflowExecutor executor(1);
+
+  EXPECT_THROW({ (void)executor.executeProfiled(graph); }, std::runtime_error);
+}
+
+//==============================================================================
+TEST(ExperimentalTaskflowExecutor, ProfileReportsObservedParallelism)
+{
+  using namespace std::chrono_literals;
+
+  compute::ComputeGraph graph;
+  std::atomic<int> active{0};
+  std::atomic<int> maxActive{0};
+
+  auto updateMax = [&](int value) {
+    auto observed = maxActive.load();
+    while (observed < value
+           && !maxActive.compare_exchange_weak(observed, value)) {
+    }
+  };
+
+  auto parallelWork = [&]() {
+    const auto current = active.fetch_add(1) + 1;
+    updateMax(current);
+    std::this_thread::sleep_for(20ms);
+    active.fetch_sub(1);
+  };
+
+  auto& start = graph.addNode("start", []() {});
+  auto& left = graph.addNode("left", parallelWork);
+  auto& right = graph.addNode("right", parallelWork);
+  auto& end = graph.addNode("end", []() {});
+
+  graph.addDependency(start, left);
+  graph.addDependency(start, right);
+  graph.addDependency(left, end);
+  graph.addDependency(right, end);
+
+  compute::TaskflowExecutor executor(2);
+  auto profile = executor.executeProfiled(graph);
+
+  ASSERT_EQ(profile.nodes.size(), 4u);
+  EXPECT_GE(profile.workerCount, 2u);
+  EXPECT_GE(maxActive.load(), 2);
+  EXPECT_GE(profile.maxParallelism, 2u);
+  EXPECT_GT(profile.getAverageParallelism(), 1.0);
+
+  const auto* leftProfile = profile.getNode("left");
+  const auto* rightProfile = profile.getNode("right");
+  ASSERT_NE(leftProfile, nullptr);
+  ASSERT_NE(rightProfile, nullptr);
+  EXPECT_EQ(leftProfile->level, 1u);
+  EXPECT_EQ(rightProfile->level, 1u);
+  EXPECT_LT(leftProfile->workerIndex, profile.workerCount);
+  EXPECT_LT(rightProfile->workerIndex, profile.workerCount);
+}

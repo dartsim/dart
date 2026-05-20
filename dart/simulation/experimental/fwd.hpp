@@ -45,6 +45,12 @@ class MultiBody;
 class RigidBody;
 class World;
 
+namespace compute {
+class ComputeExecutor;
+class WorldStepPipeline;
+class WorldStepStage;
+} // namespace compute
+
 // Options structs
 struct FixedFrameOptions;
 struct FreeFrameOptions;

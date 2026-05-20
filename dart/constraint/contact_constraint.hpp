@@ -152,6 +152,9 @@ private:
   /// two colliding bodies.
   void getRelVelocity(double* relVel);
 
+  /// Returns whether both contact body nodes are available.
+  bool hasValidBodyNodes() const;
+
   ///
   void updateFirstFrictionalDirection();
 

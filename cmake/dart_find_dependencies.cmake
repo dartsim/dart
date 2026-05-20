@@ -17,10 +17,6 @@ dart_check_required_package(fmt "libfmt")
 dart_find_package(Eigen3)
 dart_check_required_package(EIGEN3 "eigen3")
 
-# FCL
-dart_find_package(fcl)
-dart_check_required_package(fcl "fcl")
-
 # ASSIMP
 dart_find_package(assimp)
 dart_check_required_package(assimp "assimp")
@@ -72,6 +68,15 @@ endif()
 
 find_package(Python3 COMPONENTS Interpreter Development)
 
+# Optional collision reference dependencies. Core DART does not require these.
+if(_dart_build_collision_references)
+  dart_find_package(fcl)
+  dart_check_required_package(fcl "fcl")
+  set(DART_HAVE_FCL TRUE CACHE BOOL "Check if fcl found." FORCE)
+else()
+  set(DART_HAVE_FCL FALSE CACHE BOOL "Check if fcl found." FORCE)
+endif()
+
 option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
 mark_as_advanced(DART_SKIP_spdlog)
 dart_find_package(spdlog)
@@ -79,10 +84,10 @@ dart_find_package(spdlog)
 # Only fetch ODE/Bullet if the corresponding collision module is enabled
 # and system libraries are not being used.
 set(_dart_need_fetch_content OFF)
-if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
+if(_dart_build_collision_references AND NOT DART_USE_SYSTEM_ODE)
   set(_dart_need_fetch_content ON)
 endif()
-if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
+if(_dart_build_collision_references AND NOT DART_USE_SYSTEM_BULLET)
   set(_dart_need_fetch_content ON)
 endif()
 if(_dart_need_fetch_content)
@@ -90,7 +95,7 @@ if(_dart_need_fetch_content)
 endif()
 unset(_dart_need_fetch_content)
 
-if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
+if(_dart_build_collision_references AND NOT DART_USE_SYSTEM_ODE)
   # Match Ubuntu/conda-forge libode settings (libccd enabled, box-cylinder disabled).
   set(_dart_build_shared_libs "${BUILD_SHARED_LIBS}")
   set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
@@ -132,7 +137,7 @@ if(DART_BUILD_COLLISION_ODE AND NOT DART_USE_SYSTEM_ODE)
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
-elseif(DART_BUILD_COLLISION_ODE)
+elseif(_dart_build_collision_references)
   # Using system ODE - clear any stale FetchContent cache values so dart_find_package runs fresh
   unset(ODE_FOUND CACHE)
   unset(ODE_LIBRARIES CACHE)
@@ -141,7 +146,38 @@ elseif(DART_BUILD_COLLISION_ODE)
   unset(DART_ODE_BINARY_DIR CACHE)
 endif()
 
-if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
+if(_dart_build_collision_references)
+  # Skip find_package when ODE was already provided via FetchContent
+  # (ODE_FOUND and ODE::ODE target already set above).
+  if(NOT ODE_FOUND OR NOT TARGET ODE::ODE)
+    dart_find_package(ODE)
+    if(NOT ODE_FOUND)
+      message(
+        FATAL_ERROR
+        "Collision reference tests or benchmarks are enabled but ODE (>= 0.13) "
+        "was not found. Please install libode-dev or disable the collision "
+        "reference test/benchmark options."
+      )
+    endif()
+  endif()
+  set(DART_HAVE_ODE TRUE CACHE BOOL "Check if ODE found." FORCE)
+  set(_dart_ode_public_link ${ODE_LIBRARIES})
+  if(NOT _dart_ode_public_link)
+    if(TARGET ODE::ODE)
+      set(_dart_ode_public_link ODE::ODE)
+    else()
+      message(
+        FATAL_ERROR
+        "ODE was found but did not export ODE::ODE or populate ODE_LIBRARIES. "
+        "Please install a complete ODE package."
+      )
+    endif()
+  endif()
+else()
+  set(DART_HAVE_ODE FALSE CACHE BOOL "Check if ODE found." FORCE)
+endif()
+
+if(_dart_build_collision_references AND NOT DART_USE_SYSTEM_BULLET)
   # Match conda-forge Bullet float64 build flags.
   set(_dart_build_shared_libs "${BUILD_SHARED_LIBS}")
   set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
@@ -187,7 +223,7 @@ if(DART_BUILD_COLLISION_BULLET AND NOT DART_USE_SYSTEM_BULLET)
 
   set(BUILD_SHARED_LIBS "${_dart_build_shared_libs}" CACHE BOOL "" FORCE)
   unset(_dart_build_shared_libs)
-elseif(DART_BUILD_COLLISION_BULLET)
+elseif(_dart_build_collision_references)
   # Using system Bullet - clear any stale FetchContent cache values so dart_find_package
   # and the precision probe run fresh
   unset(Bullet_FOUND CACHE)
@@ -199,6 +235,61 @@ elseif(DART_BUILD_COLLISION_BULLET)
   unset(DART_BULLET_BINARY_DIR CACHE)
   # Clear BT_USE_DOUBLE_PRECISION so the probe in dart/collision/bullet runs
   unset(BT_USE_DOUBLE_PRECISION CACHE)
+endif()
+
+if(_dart_build_collision_references)
+  # Skip find_package when Bullet was already provided via FetchContent
+  # (BULLET_FOUND and BULLET_LIBRARIES already set above).
+  if(NOT BULLET_FOUND)
+    # Force MODULE mode via dart_find_package to avoid BulletConfig.cmake
+    # relative-path issues from some package distributions.
+    dart_find_package(Bullet)
+    if(NOT BULLET_FOUND)
+      message(
+        FATAL_ERROR
+        "Collision reference tests or benchmarks are enabled but Bullet was not "
+        "found. Please install libbullet-dev (>= 3.25) or disable the "
+        "collision reference test/benchmark options."
+      )
+    endif()
+  endif()
+
+  # Test whether Bullet was built with double precision. If so, define
+  # BT_USE_DOUBLE_PRECISION before including any Bullet headers. Skip the probe
+  # if FetchContent already set the precision flag.
+  if(NOT DEFINED BT_USE_DOUBLE_PRECISION)
+    include(CheckCXXSourceCompiles)
+    set(CMAKE_REQUIRED_FLAGS "-w")
+    set(CMAKE_REQUIRED_DEFINITIONS "-DBT_USE_DOUBLE_PRECISION")
+    set(CMAKE_REQUIRED_INCLUDES "${BULLET_INCLUDE_DIRS}")
+    set(CMAKE_REQUIRED_LIBRARIES "${BULLET_LIBRARIES}")
+    check_cxx_source_compiles(
+      "
+      #include <btBulletCollisionCommon.h>
+      int main()
+      {
+        btVector3 v(0., 0., 1.);
+        btStaticPlaneShape planeShape(v, 0.);
+        return 0;
+      }
+      "
+      BT_USE_DOUBLE_PRECISION
+    )
+  endif()
+
+  if(DART_VERBOSE)
+    if(BT_USE_DOUBLE_PRECISION)
+      message(STATUS "Looking for Bullet - found (double precision)")
+    else()
+      message(STATUS "Looking for Bullet - found (single precision)")
+    endif()
+  endif()
+
+  set(DART_HAVE_BULLET TRUE CACHE BOOL "Check if BULLET found." FORCE)
+else()
+  set(DART_HAVE_BULLET FALSE CACHE BOOL "Check if BULLET found." FORCE)
+  unset(BT_USE_DOUBLE_PRECISION CACHE)
+  unset(BT_USE_DOUBLE_PRECISION)
 endif()
 
 #--------------------

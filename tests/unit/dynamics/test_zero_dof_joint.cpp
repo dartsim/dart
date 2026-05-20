@@ -175,6 +175,45 @@ JointType* getJoint(const SkeletonPtr& skel)
   return static_cast<JointType*>(skel->getJoint(0));
 }
 
+class ZeroDofJointHarness final : public WeldJoint
+{
+public:
+  using Properties = WeldJoint::Properties;
+
+  explicit ZeroDofJointHarness(const Properties& properties)
+    : WeldJoint(properties)
+  {
+    // Do nothing
+  }
+
+  using ZeroDofJoint::addAccelerationTo;
+  using ZeroDofJoint::addChildArtInertiaImplicitTo;
+  using ZeroDofJoint::addChildArtInertiaTo;
+  using ZeroDofJoint::addChildBiasForceForInvAugMassMatrix;
+  using ZeroDofJoint::addChildBiasForceForInvMassMatrix;
+  using ZeroDofJoint::addInvMassMatrixSegmentTo;
+  using ZeroDofJoint::addVelocityChangeTo;
+  using ZeroDofJoint::addVelocityTo;
+  using ZeroDofJoint::getInvAugMassMatrixSegment;
+  using ZeroDofJoint::getInvMassMatrixSegment;
+  using ZeroDofJoint::getRelativeJacobian;
+  using ZeroDofJoint::getRelativeJacobianTimeDeriv;
+  using ZeroDofJoint::getSpatialToGeneralized;
+  using ZeroDofJoint::registerDofs;
+  using ZeroDofJoint::setPartialAccelerationTo;
+  using ZeroDofJoint::updateAcceleration;
+  using ZeroDofJoint::updateConstrainedTerms;
+  using ZeroDofJoint::updateDegreeOfFreedomNames;
+  using ZeroDofJoint::updateForceFD;
+  using ZeroDofJoint::updateForceID;
+  using ZeroDofJoint::updateImpulseFD;
+  using ZeroDofJoint::updateImpulseID;
+  using ZeroDofJoint::updateInvProjArtInertia;
+  using ZeroDofJoint::updateInvProjArtInertiaImplicit;
+  using ZeroDofJoint::updateTotalForceForInvMassMatrix;
+  using ZeroDofJoint::updateVelocityChange;
+};
+
 } // namespace
 
 TEST(ZeroDofJoint, ZeroDofAccessorsReturnEmpty)
@@ -255,4 +294,76 @@ TEST(ZeroDofJoint, ConstAccessorsAndMatrices)
   const auto invAug = skel->getInvAugMassMatrix();
   EXPECT_EQ(invAug.rows(), 0);
   EXPECT_EQ(invAug.cols(), 0);
+}
+
+TEST(ZeroDofJoint, RecursiveHooksRemainNoOpsForZeroDofJoint)
+{
+  auto skel = createSkeletonWithJoint<ZeroDofJointHarness>(
+      "zero_dof_recursive_hooks");
+  auto* joint = getJoint<ZeroDofJointHarness>(skel);
+
+  joint->registerDofs();
+  joint->updateDegreeOfFreedomNames();
+
+  EXPECT_EQ(joint->getRelativeJacobian().rows(), 6);
+  EXPECT_EQ(joint->getRelativeJacobian().cols(), 0);
+  EXPECT_EQ(joint->getRelativeJacobian(Eigen::VectorXd::Zero(0)).rows(), 6);
+  EXPECT_EQ(joint->getRelativeJacobian(Eigen::VectorXd::Zero(0)).cols(), 0);
+  EXPECT_EQ(joint->getRelativeJacobianTimeDeriv().rows(), 6);
+  EXPECT_EQ(joint->getRelativeJacobianTimeDeriv().cols(), 0);
+
+  Eigen::Vector6d spatial = Eigen::Vector6d::LinSpaced(1.0, 6.0);
+  const Eigen::Vector6d originalSpatial = spatial;
+  joint->addVelocityTo(spatial);
+  EXPECT_TRUE(spatial.isApprox(originalSpatial));
+  joint->addVelocityChangeTo(spatial);
+  EXPECT_TRUE(spatial.isApprox(originalSpatial));
+  joint->addAccelerationTo(spatial);
+  EXPECT_TRUE(spatial.isApprox(originalSpatial));
+
+  Eigen::Vector6d partial = Eigen::Vector6d::Ones();
+  joint->setPartialAccelerationTo(partial, originalSpatial);
+  EXPECT_TRUE(partial.isZero());
+
+  Eigen::Matrix6d parentArtInertia = Eigen::Matrix6d::Zero();
+  const Eigen::Matrix6d childArtInertia = Eigen::Matrix6d::Identity();
+  joint->addChildArtInertiaTo(parentArtInertia, childArtInertia);
+  EXPECT_TRUE(parentArtInertia.isApprox(childArtInertia));
+
+  parentArtInertia.setZero();
+  joint->addChildArtInertiaImplicitTo(parentArtInertia, childArtInertia);
+  EXPECT_TRUE(parentArtInertia.isApprox(childArtInertia));
+
+  joint->updateInvProjArtInertia(childArtInertia);
+  joint->updateInvProjArtInertiaImplicit(childArtInertia, 0.01);
+  joint->updateAcceleration(childArtInertia, originalSpatial);
+  joint->updateVelocityChange(childArtInertia, originalSpatial);
+  joint->updateForceID(originalSpatial, 0.01, true, true);
+  joint->updateForceFD(originalSpatial, 0.01, true, true);
+  joint->updateImpulseID(originalSpatial);
+  joint->updateImpulseFD(originalSpatial);
+  joint->updateConstrainedTerms(0.01);
+
+  Eigen::Vector6d parentBias = originalSpatial;
+  joint->addChildBiasForceForInvMassMatrix(
+      parentBias, childArtInertia, Eigen::Vector6d::Ones());
+  EXPECT_TRUE(parentBias.isApprox(originalSpatial));
+  joint->addChildBiasForceForInvAugMassMatrix(
+      parentBias, childArtInertia, Eigen::Vector6d::Ones());
+  EXPECT_TRUE(parentBias.isApprox(originalSpatial));
+  joint->updateTotalForceForInvMassMatrix(originalSpatial);
+
+  Eigen::MatrixXd invMass = Eigen::MatrixXd::Constant(2, 2, 3.0);
+  const Eigen::MatrixXd originalInvMass = invMass;
+  joint->getInvMassMatrixSegment(invMass, 0, childArtInertia, originalSpatial);
+  EXPECT_TRUE(invMass.isApprox(originalInvMass));
+  joint->getInvAugMassMatrixSegment(
+      invMass, 0, childArtInertia, originalSpatial);
+  EXPECT_TRUE(invMass.isApprox(originalInvMass));
+
+  spatial = originalSpatial;
+  joint->addInvMassMatrixSegmentTo(spatial);
+  EXPECT_TRUE(spatial.isApprox(originalSpatial));
+
+  EXPECT_EQ(joint->getSpatialToGeneralized(originalSpatial).size(), 0);
 }

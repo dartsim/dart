@@ -33,12 +33,17 @@
 #ifndef DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_HPP_
 #define DART_DYNAMICS_DETAIL_INVERSEKINEMATICSPTR_HPP_
 #include <dart/dynamics/detail/body_node_ptr.hpp>
+#include <dart/dynamics/detail/node_ptr.hpp>
 #include <dart/dynamics/invalid_index.hpp>
 
 #include <compare>
+#include <type_traits>
 
 namespace dart {
 namespace dynamics {
+
+class BodyNode;
+class JacobianNode;
 
 /// TemplateInverseKinematicsPtr is a templated class that enables users to
 /// create a reference-counting InverseKinematicsPtr. Holding onto an
@@ -241,6 +246,15 @@ public:
   friend class TemplateWeakInverseKinematicsPtr;
 
   using element_type = InverseKinematicsT;
+  using JacobianNodeT = std::conditional_t<
+      std::is_const_v<InverseKinematicsT>,
+      const JacobianNode,
+      JacobianNode>;
+  using BodyNodeT = std::conditional_t<
+      std::is_const_v<InverseKinematicsT>,
+      const BodyNode,
+      BodyNode>;
+  using WeakJacobianNodePtrT = TemplateWeakNodePtr<JacobianNodeT, BodyNodeT>;
 
   /// Default constructor
   TemplateWeakInverseKinematicsPtr() = default;
@@ -266,7 +280,7 @@ public:
   TemplateInverseKinematicsPtr<InverseKinematicsT, JacobianNodePtrT> lock()
       const
   {
-    JacobianNodePtrT jacNode = mWeakJacNode.lock();
+    const auto jacNode = mWeakJacNode.lock();
     if (nullptr == jacNode) {
       return nullptr;
     }
@@ -280,13 +294,13 @@ public:
   void set(const TemplateInverseKinematicsPtr<OtherIkT, OtherJacNodePtrT>& _ptr)
   {
     if (nullptr == _ptr) {
-      mWeakIK = nullptr;
+      mWeakIK.reset();
       mWeakJacNode = nullptr;
       return;
     }
 
-    mWeakIK = _ptr.get();
-    mWeakJacNode = _ptr.get()->getEntity();
+    mWeakIK = _ptr.get_shared();
+    mWeakJacNode = _ptr.get()->getAffiliation();
   }
 
   /// Set using a weak pointer
@@ -303,7 +317,7 @@ protected:
   std::weak_ptr<InverseKinematicsT> mWeakIK;
 
   /// Weak pointer to the JacobianNode
-  JacobianNodePtrT mWeakJacNode;
+  WeakJacobianNodePtrT mWeakJacNode;
 };
 
 } // namespace dynamics

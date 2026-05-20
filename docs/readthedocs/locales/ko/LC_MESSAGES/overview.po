@@ -148,8 +148,12 @@ msgid "Collision Detection"
 msgstr "충돌 감지"
 
 #: ../../overview.rst:37 e1b3d0a8018441dab1b0fdc5471b75ff
-msgid "Support for multiple collision detectors: FCL, Bullet, and ODE."
-msgstr "FCL, Bullet 및 ODE와 같은 다중 충돌 감지기를 지원합니다."
+msgid ""
+"Built-in native collision detector for normal runtime use, with optional FCL, "
+"Bullet, and ODE reference comparisons for tests and benchmarks."
+msgstr ""
+"일반 런타임용 내장 네이티브 충돌 감지기와 테스트 및 벤치마크를 위한 선택적 "
+"FCL, Bullet, ODE 참조 비교를 지원합니다."
 
 #: ../../overview.rst:38 5998018cccd8400385fcbdd8c6a25bfb
 msgid ""

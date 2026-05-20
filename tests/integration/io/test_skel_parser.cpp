@@ -34,6 +34,8 @@
 
 #include "dart/utils/All.hpp"
 
+#include <dart/config.hpp>
+
 #include <dart/utils/skel_parser.hpp>
 
 #include <dart/all.hpp>
@@ -698,7 +700,7 @@ TEST(SkelParser, SoftBodiesWorldProperties)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-  EXPECT_EQ(detector->getTypeView(), "fcl");
+  EXPECT_EQ(detector->getTypeView(), "dart");
 
   const auto skel = world->getSkeleton("skeleton 1");
   ASSERT_NE(skel, nullptr);
@@ -855,7 +857,7 @@ TEST(SkelParser, ReadWorldXmlPhysicsAndCollisionDetector)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-  EXPECT_EQ(detector->getTypeView(), "fcl");
+  EXPECT_EQ(detector->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -1053,7 +1055,7 @@ TEST(SkelParser, ReadWorldXmlFclMeshCollisionDetector)
 
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-  EXPECT_EQ(detector->getTypeView(), "fcl");
+  EXPECT_EQ(detector->getTypeView(), "dart");
 }
 
 //==============================================================================
@@ -1092,7 +1094,7 @@ TEST(SkelParser, ReadWorldXmlUnknownCollisionDetectorFallsBack)
   ASSERT_NE(world, nullptr);
   const auto detector = world->getConstraintSolver()->getCollisionDetector();
   ASSERT_NE(detector, nullptr);
-  EXPECT_EQ(detector->getTypeView(), "fcl");
+  EXPECT_EQ(detector->getTypeView(), "dart");
 }
 
 //==============================================================================

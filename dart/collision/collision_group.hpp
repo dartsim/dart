@@ -33,6 +33,7 @@
 #ifndef DART_COLLISION_COLLISIONGROUP_HPP_
 #define DART_COLLISION_COLLISIONGROUP_HPP_
 
+#include <dart/collision/collision_fwd.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/distance_option.hpp>
@@ -40,8 +41,6 @@
 #include <dart/collision/fwd.hpp>
 #include <dart/collision/raycast_option.hpp>
 #include <dart/collision/raycast_result.hpp>
-
-#include <dart/dynamics/fwd.hpp>
 
 #include <dart/common/observer.hpp>
 
@@ -551,7 +550,6 @@ private:
   /// BodyNode sources that this group is susbscribed to
   BodyNodeSources mBodyNodeSources;
 
-  /// The object that observes the Shape Frames that this group cares about
   ShapeFrameObserver mObserver;
 };
 

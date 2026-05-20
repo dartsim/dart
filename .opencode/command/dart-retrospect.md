@@ -36,16 +36,23 @@ command as the hindsight workflow; do not duplicate the routing table here.
 ## Workflow
 
 1. Search existing docs before adding content.
-2. Decide whether the lesson is general enough for shared AI infra. Do not
+2. Inventory the completed work before routing lessons. Consider domain/design
+   choices, public API or package compatibility, CI/review failure modes,
+   workflow friction, and cleanup or handoff steps separately so a late
+   operational task does not hide feature-level learnings.
+3. Decide whether each lesson is general enough for shared AI infra. Do not
    update AI components after every session.
-3. Prefer update, remove, consolidate, or restructure over adding new files.
-4. Keep `docs/ai/principles.md` compact; put procedures in the owner docs it
+4. Prefer update, remove, consolidate, or restructure over adding new files.
+5. Keep `docs/ai/principles.md` compact; put procedures in the owner docs it
    links to.
-5. Avoid ephemeral branch, PR, commit, or username details.
-6. If adding a workflow command or skill, edit `.claude/` source files and run
+6. Avoid ephemeral branch, PR, commit, or username details.
+7. If adding a workflow command or skill, edit `.claude/` source files and run
    `pixi run sync-ai-commands`.
-7. Run `pixi run lint`; for AI workflow changes, also run
-   `pixi run check-ai-commands`.
+8. Run `pixi run lint` before committing. For AI docs or adapter changes, also
+   run the verification gates from `docs/ai/verification.md`: `pixi run
+lint-md`, `pixi run check-lint-md`, `pixi run sync-ai-commands`, `pixi run
+check-ai-commands`, `pixi run check-docs-policy`, and `pixi run
+check-lint-spell`.
 
 ## Output
 

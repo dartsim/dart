@@ -99,12 +99,14 @@ ContactSurfaceParams DefaultContactSurfaceHandler::createParams(
   ContactSurfaceParams params = ContactSurfaceHandler::createParams(
       contact, numContactsOnCollisionObject);
 
-  const auto* shapeNodeA = const_cast<dynamics::ShapeFrame*>(
-                               contact.collisionObject1->getShapeFrame())
-                               ->asShapeNode();
-  const auto* shapeNodeB = const_cast<dynamics::ShapeFrame*>(
-                               contact.collisionObject2->getShapeFrame())
-                               ->asShapeNode();
+  const auto* shapeNodeA = contact.getShapeNode1();
+  const auto* shapeNodeB = contact.getShapeNode2();
+  if (shapeNodeA == nullptr || shapeNodeB == nullptr) {
+    DART_WARN(
+        "[ContactConstraint] Ignoring contact surface parameters for a contact "
+        "with a null collision object or missing ShapeNode.");
+    return params;
+  }
 
   const double restitutionCoeffA = computeRestitutionCoefficient(shapeNodeA);
   const double restitutionCoeffB = computeRestitutionCoefficient(shapeNodeB);
@@ -186,6 +188,10 @@ ContactConstraintPtr DefaultContactSurfaceHandler::createConstraint(
 {
   auto constraint = ContactSurfaceHandler::createConstraint(
       contact, numContactsOnCollisionObject, timeStep);
+
+  if (constraint == nullptr) {
+    return nullptr;
+  }
 
   constraint->setPrimarySlipCompliance(
       constraint->getPrimarySlipCompliance()
