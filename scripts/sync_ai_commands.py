@@ -30,6 +30,37 @@ CODEX_NAME_LIMIT = 100
 CODEX_DESC_LIMIT = 500
 MAX_SKILL_LINES = 500
 MAX_COMMAND_LINES = 200
+CAPABILITY_SCHEMA_VERSION = 1
+CAPABILITY_STATUS_VALUES = {"active", "deprecated", "parked", "proposed"}
+CAPABILITY_WORKFLOW_GATE_PROFILE_VALUES = {
+    "approval-boundary",
+    "code-gate",
+    "docs-ai",
+    "draft-only",
+    "maintainer-only",
+    "pr-ready",
+    "read-only",
+    "release-gate",
+    "reproduction",
+    "routed",
+    "state-check",
+    "task-specific",
+}
+CAPABILITY_DOMAIN_GATE_PROFILE_VALUES = {"command", "reference"}
+CAPABILITY_WORKFLOW_GATE_PROFILE_MARKERS = {
+    "approval-boundary": ("explicit approval",),
+    "code-gate": ("`pixi run lint`", "focused build/test", "regression test"),
+    "docs-ai": ("docs/AI checks", "docs/ai/verification.md", "principle audit"),
+    "draft-only": ("draft text",),
+    "maintainer-only": ("Maintainer-only",),
+    "pr-ready": ("CHANGELOG", "milestone"),
+    "read-only": ("Read-only", "read-only"),
+    "release-gate": ("release verification", "release-target", "release gates"),
+    "reproduction": ("local reproduction", "reproduction command"),
+    "routed": ("task-specific gates",),
+    "state-check": ("`git status --short --branch`",),
+    "task-specific": ("task-specific gates",),
+}
 
 # Header added to auto-generated files
 AUTO_GEN_HEADER = """\
@@ -378,6 +409,30 @@ def parse_workflow_rows(workflow_content: str) -> dict[str, list[str]]:
     return rows
 
 
+def parse_domain_skill_rows(workflow_content: str) -> dict[str, list[str]]:
+    """Extract domain skill table rows keyed by capability name."""
+    rows: dict[str, list[str]] = {}
+    in_domain_table = False
+
+    for line in workflow_content.splitlines():
+        if line.startswith("## Domain Skills"):
+            in_domain_table = True
+            continue
+        if in_domain_table and line.startswith("## "):
+            break
+        if not in_domain_table or not line.startswith("| `dart-"):
+            continue
+
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        match = re.fullmatch(r"`(dart-[a-z0-9-]+)`", cells[0])
+        if match:
+            rows[match.group(1)] = cells
+
+    return rows
+
+
 def extract_required_reading_from_content(content: str) -> list[str]:
     """Extract @file entries from a command Required Reading section."""
     readings: list[str] = []
@@ -452,6 +507,163 @@ def has_gate_evidence(gate_cell: str) -> bool:
         "Relevant docs/AI checks",
     ]
     return any(marker in gate_cell for marker in accepted_markers)
+
+
+def _validate_capability_entries(
+    section: str, entries: object, expected_names: set[str]
+) -> tuple[dict[str, str], list[str]]:
+    """Validate one capability manifest section and return declared profiles."""
+    errors: list[str] = []
+    declared_profiles: dict[str, str] = {}
+
+    if not isinstance(entries, list):
+        return declared_profiles, [
+            f"docs/ai/capabilities.json: `{section}` must be a list"
+        ]
+
+    allowed_gate_profiles = (
+        CAPABILITY_DOMAIN_GATE_PROFILE_VALUES
+        if section == "domain_skills"
+        else CAPABILITY_WORKFLOW_GATE_PROFILE_VALUES
+    )
+
+    for index, entry in enumerate(entries, start=1):
+        label = f"docs/ai/capabilities.json:{section}[{index}]"
+        if not isinstance(entry, dict):
+            errors.append(f"{label}: entry must be an object")
+            continue
+
+        name = entry.get("name")
+        category = entry.get("category")
+        status = entry.get("status")
+        gate_profile = entry.get("gate_profile")
+
+        if not isinstance(name, str) or not name:
+            errors.append(f"{label}: missing string `name`")
+            continue
+        if not re.fullmatch(r"dart-[a-z0-9-]+", name):
+            errors.append(f"{label}: invalid capability name `{name}`")
+        if name in declared_profiles:
+            errors.append(f"{label}: duplicate capability `{name}`")
+        declared_profiles[name] = gate_profile if isinstance(gate_profile, str) else ""
+
+        if not isinstance(category, str) or not re.fullmatch(
+            r"[a-z][a-z0-9-]*", category or ""
+        ):
+            errors.append(f"{label}: missing or invalid `category`")
+        if status not in CAPABILITY_STATUS_VALUES:
+            errors.append(
+                f"{label}: status must be one of "
+                f"{format_names(CAPABILITY_STATUS_VALUES)}"
+            )
+        if gate_profile not in allowed_gate_profiles:
+            errors.append(
+                f"{label}: gate_profile must be one of "
+                f"{format_names(allowed_gate_profiles)}"
+            )
+
+    declared_names = set(declared_profiles)
+    missing = expected_names - declared_names
+    extra = declared_names - expected_names
+    if missing:
+        errors.append(
+            f"docs/ai/capabilities.json: `{section}` missing "
+            f"{format_names(missing)}"
+        )
+    if extra:
+        errors.append(
+            f"docs/ai/capabilities.json: `{section}` has unknown "
+            f"{format_names(extra)}"
+        )
+
+    return declared_profiles, errors
+
+
+def validate_capability_manifest(
+    repo_root: Path,
+    command_names: set[str],
+    skill_names: set[str],
+    workflow_rows: dict[str, list[str]],
+    domain_skill_rows: dict[str, list[str]],
+) -> list[str]:
+    """Validate the machine-readable AI capability manifest."""
+    manifest_path = repo_root / "docs" / "ai" / "capabilities.json"
+    if not manifest_path.exists():
+        return [f"{display_path(manifest_path)}: missing capability manifest"]
+
+    try:
+        manifest = json.loads(manifest_path.read_text())
+    except json.JSONDecodeError as error:
+        return [f"{display_path(manifest_path)}:{error.lineno}: invalid JSON"]
+
+    errors: list[str] = []
+    if not isinstance(manifest, dict):
+        return [f"{display_path(manifest_path)}: manifest must be an object"]
+    if manifest.get("schema_version") != CAPABILITY_SCHEMA_VERSION:
+        errors.append(
+            f"{display_path(manifest_path)}: schema_version must be "
+            f"{CAPABILITY_SCHEMA_VERSION}"
+        )
+
+    workflow_profiles, workflow_errors = _validate_capability_entries(
+        "workflows", manifest.get("workflows"), command_names
+    )
+    skill_profiles, skill_errors = _validate_capability_entries(
+        "domain_skills", manifest.get("domain_skills"), skill_names
+    )
+    errors.extend(workflow_errors)
+    errors.extend(skill_errors)
+
+    for name in sorted(workflow_profiles):
+        cells = workflow_rows.get(name)
+        if not cells:
+            errors.append(
+                f"{display_path(manifest_path)}: workflow `{name}` lacks "
+                "docs/ai/workflows.md row"
+            )
+            continue
+        if not cells[3] or cells[3] == "-":
+            errors.append(
+                f"{display_path(manifest_path)}: workflow `{name}` lacks public path"
+            )
+        if not cells[4] or not has_gate_evidence(cells[4]):
+            errors.append(
+                f"{display_path(manifest_path)}: workflow `{name}` lacks gate evidence"
+            )
+        profile_markers = CAPABILITY_WORKFLOW_GATE_PROFILE_MARKERS.get(
+            workflow_profiles[name]
+        )
+        if profile_markers and not any(
+            marker in cells[4] for marker in profile_markers
+        ):
+            errors.append(
+                f"{display_path(manifest_path)}: workflow `{name}` gate evidence "
+                f"does not match `{workflow_profiles[name]}` profile"
+            )
+
+    for name in sorted(skill_profiles):
+        cells = domain_skill_rows.get(name)
+        if not cells:
+            errors.append(
+                f"{display_path(manifest_path)}: domain skill `{name}` lacks "
+                "docs/ai/workflows.md row"
+            )
+            continue
+        public_path = cells[2] if len(cells) > 2 else ""
+        if not public_path or public_path == "-":
+            errors.append(
+                f"{display_path(manifest_path)}: domain skill `{name}` lacks "
+                "required docs/command path"
+            )
+        elif not any(
+            marker in public_path for marker in ("docs/", "CONTRIBUTING.md", "pixi run")
+        ):
+            errors.append(
+                f"{display_path(manifest_path)}: domain skill `{name}` lacks "
+                "usable docs/command path"
+            )
+
+    return errors
 
 
 def validate_approval_boundary(repo_root: Path) -> list[str]:
@@ -805,6 +1017,7 @@ def validate_ai_docs(repo_root: Path) -> bool:
         docs_dir / "verification.md",
         docs_dir / "sessions.md",
         docs_dir / "components.md",
+        docs_dir / "capabilities.json",
     ]
 
     for path in required_files:
@@ -828,6 +1041,7 @@ def validate_ai_docs(repo_root: Path) -> bool:
         errors.extend(skill_errors)
         expected = command_names | skill_names
         workflow_rows = parse_workflow_rows(workflow_content)
+        domain_skill_rows = parse_domain_skill_rows(workflow_content)
 
         if has_gate_evidence("explicit approval before push"):
             errors.append(
@@ -891,6 +1105,22 @@ def validate_ai_docs(repo_root: Path) -> bool:
                     extract_required_reading(command_path),
                 )
             )
+
+        for name in sorted(skill_names):
+            if name not in domain_skill_rows:
+                errors.append(
+                    f"{display_path(workflows_path)}: missing domain skill row `{name}`"
+                )
+
+        errors.extend(
+            validate_capability_manifest(
+                repo_root,
+                command_names,
+                skill_names,
+                workflow_rows,
+                domain_skill_rows,
+            )
+        )
 
         approval_workflows = {
             "dart-backport-pr",
