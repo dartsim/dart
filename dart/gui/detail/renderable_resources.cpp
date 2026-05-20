@@ -72,6 +72,32 @@ bool isTransparent(const float4& color)
   return color.w < 0.999f;
 }
 
+float luminance(const float3& color)
+{
+  return 0.2126f * color.x + 0.7152f * color.y + 0.0722f * color.z;
+}
+
+float4 ensureReadableDisplayColor(const float4& color)
+{
+  constexpr float kMinLuminance = 0.22f;
+  const float currentLuminance = luminance(rgb(color));
+  if (currentLuminance >= kMinLuminance || color.w <= 0.0f) {
+    return color;
+  }
+
+  constexpr float3 kNeutralMeshColor{0.46f, 0.48f, 0.52f};
+  const float blend = std::clamp(
+      (kMinLuminance - currentLuminance) / kMinLuminance, 0.0f, 1.0f);
+  return {
+      std::clamp(
+          color.x * (1.0f - blend) + kNeutralMeshColor.x * blend, 0.0f, 1.0f),
+      std::clamp(
+          color.y * (1.0f - blend) + kNeutralMeshColor.y * blend, 0.0f, 1.0f),
+      std::clamp(
+          color.z * (1.0f - blend) + kNeutralMeshColor.z * blend, 0.0f, 1.0f),
+      color.w};
+}
+
 float3 selectionTint(const float3& color)
 {
   return {
@@ -179,7 +205,7 @@ void updateRenderableSelection(
       continue;
     }
     if (material.followsDescriptorColor) {
-      material.baseColor = descriptorColor;
+      material.baseColor = ensureReadableDisplayColor(descriptorColor);
     }
     const float4 displayColor = overrideColor.value_or(material.baseColor);
     material.instance->setParameter(

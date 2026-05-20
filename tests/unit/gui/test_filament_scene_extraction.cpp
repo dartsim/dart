@@ -618,6 +618,8 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       std::filesystem::path("dart") / "gui" / "detail" / "frame_viewport.cpp");
   const auto sceneFrameSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "scene_frame.cpp");
+  const auto sceneFixturesSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "scene_fixtures.cpp");
   const auto selectionSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "selection.cpp");
   const auto debugOverlaySource = readSourceFile(
@@ -625,6 +627,9 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
   const auto renderableFactorySource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail"
       / "renderable_factory.cpp");
+  const auto renderableResourcesSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail"
+      / "renderable_resources.cpp");
   const auto panelSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "panel.cpp");
   const auto renderEnvironmentSource = readSourceFile(
@@ -647,6 +652,18 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
           "isSceneMouseInputCapturedByUi(showUi, imguiIo)"),
       std::string::npos);
   EXPECT_NE(sceneFrameSource.find("uiCapturesMouse"), std::string::npos);
+  EXPECT_NE(
+      sceneFixturesSource.find("makeAtlasMeshVisualsReadable(atlas)"),
+      std::string::npos);
+  EXPECT_NE(
+      sceneFixturesSource.find("Eigen::Vector3d(5.5, 4.0, groundThickness)"),
+      std::string::npos);
+  EXPECT_NE(
+      sceneFixturesSource.find("transform.translation().z() = -0.95"),
+      std::string::npos);
+  EXPECT_EQ(
+      sceneFixturesSource.find("atlas->setPosition(0, -halfPi)"),
+      std::string::npos);
   EXPECT_NE(selectionSource.find("uiCapturesMouse"), std::string::npos);
   EXPECT_NE(
       sceneFrameSource.find("selectionDebugRenderableId()"), std::string::npos);
@@ -660,9 +677,16 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
   EXPECT_NE(
       renderableFactorySource.find("PrimitiveType::TRIANGLES"),
       std::string::npos);
-  EXPECT_EQ(
+  EXPECT_NE(
       renderableFactorySource.find(
           "state.baseColor = ensureReadableDisplayColor(state.baseColor)"),
+      std::string::npos);
+  EXPECT_NE(
+      renderableFactorySource.find("ensureReadableEmissiveColor"),
+      std::string::npos);
+  EXPECT_NE(
+      renderableResourcesSource.find(
+          "material.baseColor = ensureReadableDisplayColor(descriptorColor)"),
       std::string::npos);
   EXPECT_NE(
       selectionSource.find("const Eigen::Vector3d dragPoint"),
@@ -676,19 +700,27 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       panelSource.find("context.ui.displaySize.x()) - panelWidth"),
       std::string::npos);
   EXPECT_NE(viewerHeader.find("nearScale = 0.001"), std::string::npos);
-  EXPECT_EQ(texturedLitSource.find("baseLuminance"), std::string::npos);
-  EXPECT_EQ(
+  EXPECT_NE(texturedLitSource.find("baseLuminance"), std::string::npos);
+  EXPECT_NE(
       transparentTexturedLitSource.find("baseLuminance"), std::string::npos);
+  EXPECT_NE(texturedLitSource.find("readableDisplayColor"), std::string::npos);
+  EXPECT_NE(
+      transparentTexturedLitSource.find("readableDisplayColor"),
+      std::string::npos);
 
   EXPECT_NE(
       renderEnvironmentSource.find("{0.27f, 0.29f, 0.33f}"), std::string::npos);
   EXPECT_NE(
-      renderEnvironmentSource.find(".intensity(56000.0f)"), std::string::npos);
+      renderEnvironmentSource.find(".intensity(92000.0f)"), std::string::npos);
   EXPECT_NE(
       renderEnvironmentSource.find("fogOptions.enabled = true"),
       std::string::npos);
   EXPECT_NE(
-      renderEnvironmentSource.find("ambientOcclusionOptions.intensity = 0.34f"),
+      renderEnvironmentSource.find("ambientOcclusionOptions.intensity = 0.18f"),
+      std::string::npos);
+  EXPECT_NE(
+      renderEnvironmentSource.find(
+          "shadowOptions.shadowFar = headless ? 32.0f : 48.0f"),
       std::string::npos);
 }
 
@@ -2918,17 +2950,23 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
   const auto readmeSource = readSourceFile(
       std::filesystem::path("examples") / "atlas_simbicon" / "README.md");
 
-  EXPECT_NE(
-      mainSource.find("dart://sample/sdf/atlas/ground.urdf"),
-      std::string::npos);
+  EXPECT_NE(mainSource.find("createZUpGround"), std::string::npos);
   EXPECT_NE(
       mainSource.find("dart://sample/sdf/atlas/atlas_v3_no_head.sdf"),
       std::string::npos);
   EXPECT_NE(
-      mainSource.find("scene.atlas->setPosition(0, -0.5 * dart::math::pi)"),
-      std::string::npos);
-  EXPECT_NE(
       mainSource.find("scene.world->setGravity(-kDefaultGravity"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("Eigen::Vector3d::UnitZ()"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("makeAtlasMeshVisualsReadable(scene.atlas)"),
+      std::string::npos);
+  EXPECT_EQ(mainSource.find("setPosition(0, -0.5"), std::string::npos);
+  EXPECT_EQ(
+      mainSource.find("-kDefaultGravity * Eigen::Vector3d::UnitY()"),
+      std::string::npos);
+  EXPECT_EQ(
+      mainSource.find("-mGravity * Eigen::Vector3d::UnitY()"),
       std::string::npos);
   EXPECT_NE(mainSource.find("std::make_unique<Controller>"), std::string::npos);
   EXPECT_NE(mainSource.find("runtime->preStep()"), std::string::npos);
@@ -2952,7 +2990,7 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
       std::string::npos);
   EXPECT_NE(mainSource.find("makeAtlasSimbiconCamera"), std::string::npos);
   EXPECT_NE(
-      mainSource.find("camera.target = Eigen::Vector3d(1.0, 0.0, 0.0)"),
+      mainSource.find("camera.target = Eigen::Vector3d(0.0, 0.0, -0.25)"),
       std::string::npos);
   EXPECT_NE(
       mainSource.find("options.windowTitle = \"Atlas Simbicon\""),
@@ -2966,7 +3004,13 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
       controllerSource.find("_createWalkingStateMachine"), std::string::npos);
   EXPECT_NE(controllerSource.find("harnessPelvis"), std::string::npos);
   EXPECT_NE(controllerSource.find("keyboard"), std::string::npos);
+  EXPECT_NE(controllerSource.find("const auto z = pos[2]"), std::string::npos);
   EXPECT_NE(stateSource.find("computeControlForce"), std::string::npos);
+  EXPECT_NE(
+      stateSource.find(
+          "const Eigen::Vector3d zAxis = Eigen::Vector3d::UnitZ()"),
+      std::string::npos);
+  EXPECT_NE(stateSource.find("projPelvisZ[1] = 0.0"), std::string::npos);
   EXPECT_NE(readmeSource.find("Atlas Simbicon Example"), std::string::npos);
   EXPECT_NE(
       readmeSource.find("dart::gui::ApplicationOptions::preStep"),
@@ -3005,6 +3049,9 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("atlas_puppet_ik_target_left_foot"), std::string::npos);
   EXPECT_NE(
       mainSource.find("atlas_puppet_ik_target_right_foot"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("makeAtlasMeshVisualsReadable(atlas)"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
   EXPECT_NE(
       mainSource.find(

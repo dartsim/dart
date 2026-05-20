@@ -148,6 +148,9 @@
     the WAM IKFast example's kinematic no-world-step workflow.
   - Added public `dart::gui::RenderOutputMode::Depth` and restored the Atlas
     Simbicon example's depth output toggle and capture path.
+  - Fixed Atlas GUI example readability and up-axis consistency by keeping
+    Atlas Simbicon z-up, lifting overly dark Atlas mesh visuals, and widening
+    Filament shadow coverage for large orbit-camera views.
   - Added public `dart::gui::BodyNodeDragHandle` and restored the G1 Puppet and
     WAM IKFast examples' articulated body-node drag workflows.
   - Restored the Heightmap and Point Cloud examples' fine-grained scene-grid

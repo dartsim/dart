@@ -166,9 +166,9 @@ bool Controller::isAllowingControl() const
   auto pelvis = mAtlasRobot->getBodyNode("pelvis");
   const Eigen::Isometry3d tf = pelvis->getTransform();
   const Eigen::Vector3d pos = tf.translation();
-  const auto y = pos[1];
+  const auto z = pos[2];
 
-  if (y < mMinPelvisHeight || mMaxPelvisHeight < y) {
+  if (z < mMinPelvisHeight || mMaxPelvisHeight < z) {
     return false;
   } else {
     return true;

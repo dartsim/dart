@@ -251,7 +251,7 @@ float luminance(const float3& color)
 
 float4 ensureReadableDisplayColor(const float4& color)
 {
-  constexpr float kMinLuminance = 0.18f;
+  constexpr float kMinLuminance = 0.22f;
   const float3 colorRgb = rgb(color);
   const float currentLuminance = luminance(colorRgb);
   if (currentLuminance >= kMinLuminance || color.w <= 0.0f) {
@@ -269,6 +269,15 @@ float4 ensureReadableDisplayColor(const float4& color)
       std::clamp(
           color.z * (1.0f - blend) + kNeutralMeshColor.z * blend, 0.0f, 1.0f),
       color.w};
+}
+
+float3 ensureReadableEmissiveColor(const float3& emissive, bool sourceWasDark)
+{
+  if (!sourceWasDark || luminance(emissive) > 0.0f) {
+    return emissive;
+  }
+
+  return {0.025f, 0.027f, 0.030f};
 }
 
 float resolveMeshMaterialAlpha(
@@ -1276,13 +1285,17 @@ std::optional<Renderable> createMeshRenderable(
     float roughness = 0.58f;
     float3 emissiveColor{0.0f, 0.0f, 0.0f};
     bool followsDescriptorColor = true;
+    bool sourceWasDark = false;
   };
 
   const auto makeMaterialState = [&](unsigned int materialIndex) {
     MeshMaterialState state;
-    state.baseColor = color;
+    state.sourceWasDark = luminance(rgb(color)) < 0.12f;
+    state.baseColor = ensureReadableDisplayColor(color);
 
     if (!geometry.meshUsesMaterialColors || geometry.meshMaterials.empty()) {
+      state.emissiveColor = ensureReadableEmissiveColor(
+          state.emissiveColor, state.sourceWasDark);
       return state;
     }
 
@@ -1291,6 +1304,8 @@ std::optional<Renderable> createMeshRenderable(
           = geometry.meshMaterials[materialIndex];
       state.followsDescriptorColor = false;
       state.baseColor = toFloat4(meshMaterial.diffuse);
+      state.sourceWasDark = luminance(rgb(state.baseColor)) < 0.12f;
+      state.baseColor = ensureReadableDisplayColor(state.baseColor);
       state.baseColor.w = resolveMeshMaterialAlpha(
           color.w, state.baseColor.w, geometry.meshAlphaMode);
       state.metallic = static_cast<float>(meshMaterial.metallicFactor);
@@ -1335,6 +1350,8 @@ std::optional<Renderable> createMeshRenderable(
       }
     }
 
+    state.emissiveColor
+        = ensureReadableEmissiveColor(state.emissiveColor, state.sourceWasDark);
     return state;
   };
 

@@ -46,6 +46,7 @@
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/inverse_kinematics.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
@@ -169,6 +170,34 @@ private:
   Eigen::VectorXd mUpper;
   Eigen::VectorXd mWeights;
 };
+
+void makeAtlasMeshVisualsReadable(const dart::dynamics::SkeletonPtr& atlas)
+{
+  const Eigen::Vector4d readableAtlasColor(0.28, 0.29, 0.32, 1.0);
+
+  for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i) {
+    auto* body = atlas->getBodyNode(i);
+    for (std::size_t j = 0; j < body->getNumShapeNodes(); ++j) {
+      auto* shapeNode = body->getShapeNode(j);
+      auto* visual = shapeNode->getVisualAspect();
+      if (visual == nullptr) {
+        continue;
+      }
+
+      const auto mesh = std::dynamic_pointer_cast<dart::dynamics::MeshShape>(
+          shapeNode->getShape());
+      if (mesh == nullptr) {
+        continue;
+      }
+
+      mesh->setColorMode(dart::dynamics::MeshShape::SHAPE_COLOR);
+      const Eigen::Vector4d rgba = visual->getRGBA();
+      Eigen::Vector4d readable = readableAtlasColor;
+      readable.w() = rgba.w();
+      visual->setRGBA(readable);
+    }
+  }
+}
 
 struct AtlasWholeBodySolverState
 {
@@ -313,6 +342,7 @@ dart::dynamics::SkeletonPtr loadAtlasPuppetSkeleton()
 
   atlas->setName(kAtlasSkeletonName);
   setupAtlasPuppetStartConfiguration(atlas);
+  makeAtlasMeshVisualsReadable(atlas);
 
   auto* rootBody = atlas->getRootBodyNode();
   if (rootBody != nullptr

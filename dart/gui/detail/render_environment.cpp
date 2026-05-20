@@ -59,9 +59,9 @@ namespace {
 
 using ::filament::math::float3;
 
-constexpr float kKeyLightIntensity = 82000.0f;
-constexpr float kFillLightIntensity = 62000.0f;
-constexpr float kRimLightIntensity = 42000.0f;
+constexpr float kKeyLightIntensity = 90000.0f;
+constexpr float kFillLightIntensity = 88000.0f;
+constexpr float kRimLightIntensity = 56000.0f;
 
 float3 normalizeOr(const float3& vector, const float3& fallback)
 {
@@ -108,7 +108,7 @@ float3 normalizeOr(const float3& vector, const float3& fallback)
 
   return ::filament::IndirectLight::Builder()
       .irradiance(3, kDiffuseIrradiance.data())
-      .intensity(56000.0f)
+      .intensity(92000.0f)
       .build(engine);
 }
 
@@ -144,8 +144,8 @@ void configureWindowedViewQuality(::filament::View& view)
   ambientOcclusionOptions.enabled = true;
   ambientOcclusionOptions.aoType
       = ::filament::AmbientOcclusionOptions::AmbientOcclusionType::GTAO;
-  ambientOcclusionOptions.radius = 0.34f;
-  ambientOcclusionOptions.intensity = 0.34f;
+  ambientOcclusionOptions.radius = 0.28f;
+  ambientOcclusionOptions.intensity = 0.18f;
   ambientOcclusionOptions.quality = ::filament::QualityLevel::MEDIUM;
   ambientOcclusionOptions.lowPassFilter = ::filament::QualityLevel::HIGH;
   view.setAmbientOcclusionOptions(ambientOcclusionOptions);
@@ -241,8 +241,8 @@ SceneLights createSceneLights(
   shadowOptions.cascadeSplitPositions[0] = 0.10f;
   shadowOptions.cascadeSplitPositions[1] = 0.30f;
   shadowOptions.cascadeSplitPositions[2] = 0.62f;
-  shadowOptions.shadowFar = headless ? 10.0f : 14.0f;
-  shadowOptions.shadowFarHint = headless ? 4.5f : 5.5f;
+  shadowOptions.shadowFar = headless ? 32.0f : 48.0f;
+  shadowOptions.shadowFarHint = headless ? 16.0f : 24.0f;
   shadowOptions.screenSpaceContactShadows = false;
 
   const float3 keyLightDirection

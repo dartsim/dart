@@ -88,6 +88,20 @@ material {
 }
 
 fragment {
+    float displayLuminance(vec3 color) {
+        return dot(color, vec3(0.2126, 0.7152, 0.0722));
+    }
+
+    vec3 readableDisplayColor(vec3 color) {
+        float baseLuminance = displayLuminance(color);
+        if (baseLuminance >= 0.16) {
+            return color;
+        }
+
+        float lift = clamp((0.16 - baseLuminance) / 0.16, 0.0, 1.0);
+        return mix(color, vec3(0.28, 0.30, 0.34), lift);
+    }
+
     void material(inout MaterialInputs material) {
         prepareMaterial(material);
         vec2 uv = getUV0();
@@ -96,6 +110,7 @@ fragment {
         if (materialParams.useBaseColorTexture > 0.5) {
             baseColor *= texture(materialParams_baseColorTexture, uv);
         }
+        baseColor.rgb = readableDisplayColor(baseColor.rgb);
 
         float metallic = materialParams.metallic;
         float roughness = materialParams.roughness;

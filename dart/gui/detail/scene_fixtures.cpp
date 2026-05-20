@@ -350,6 +350,38 @@ void makeVisualOnlySkeleton(const dart::dynamics::SkeletonPtr& skeleton)
   disableSkeletonCollisionAndGravity(skeleton);
 }
 
+void makeAtlasMeshVisualsReadable(const dart::dynamics::SkeletonPtr& atlas)
+{
+  const Eigen::Vector4d readableAtlasColor(0.28, 0.29, 0.32, 1.0);
+
+  if (!atlas) {
+    return;
+  }
+
+  for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i) {
+    auto* body = atlas->getBodyNode(i);
+    for (std::size_t j = 0; j < body->getNumShapeNodes(); ++j) {
+      auto* shapeNode = body->getShapeNode(j);
+      auto* visual = shapeNode->getVisualAspect();
+      if (visual == nullptr) {
+        continue;
+      }
+
+      const auto mesh
+          = std::dynamic_pointer_cast<MeshShape>(shapeNode->getShape());
+      if (mesh == nullptr) {
+        continue;
+      }
+
+      mesh->setColorMode(MeshShape::SHAPE_COLOR);
+      const Eigen::Vector4d rgba = visual->getRGBA();
+      Eigen::Vector4d readable = readableAtlasColor;
+      readable.w() = rgba.w();
+      visual->setRGBA(readable);
+    }
+  }
+}
+
 void setRequiredJointPositions(
     const dart::dynamics::SkeletonPtr& skeleton,
     const char* jointName,
@@ -583,6 +615,7 @@ dart::dynamics::SkeletonPtr loadRequiredAtlasRobotSkeleton()
   }
 
   atlas->setName(kAtlasRobotFixtureSkeletonName);
+  makeAtlasMeshVisualsReadable(atlas);
   auto* rootBody = atlas->getRootBodyNode();
   if (rootBody != nullptr
       && dynamic_cast<FreeJoint*>(rootBody->getParentJoint()) != nullptr) {
@@ -610,16 +643,7 @@ dart::dynamics::SkeletonPtr loadAtlasSimbiconSkeleton()
     throw std::runtime_error("Atlas Simbicon fixture has no root DOF");
   }
 
-  constexpr double halfPi = 1.5707963267948966;
-  atlas->setPosition(0, -halfPi);
-  if (auto* rootBody = atlas->getRootBodyNode();
-      rootBody != nullptr
-      && dynamic_cast<FreeJoint*>(rootBody->getParentJoint()) != nullptr) {
-    Eigen::Isometry3d transform = rootBody->getWorldTransform();
-    transform.translation() = Eigen::Vector3d(0.0, 0.92, 0.0);
-    FreeJoint::setTransformOf(rootBody, transform);
-  }
-
+  makeAtlasMeshVisualsReadable(atlas);
   makeVisualOnlySkeleton(atlas);
   return atlas;
 }
@@ -674,6 +698,7 @@ dart::dynamics::SkeletonPtr loadAtlasPuppetSkeleton()
 
   atlas->setName(kAtlasRobotFixtureSkeletonName);
   setupAtlasPuppetStartConfiguration(atlas);
+  makeAtlasMeshVisualsReadable(atlas);
 
   auto* rootBody = atlas->getRootBodyNode();
   if (rootBody != nullptr
@@ -3470,11 +3495,11 @@ DartScene createAtlasSimbiconScene()
   constexpr double groundThickness = 0.08;
   auto ground = createBoxGroundSkeleton(
       kAtlasSimbiconFixtureGroundSkeletonName,
-      Eigen::Vector3d(5.5, groundThickness, 4.0),
+      Eigen::Vector3d(5.5, 4.0, groundThickness),
       Eigen::Vector3d(0.74, 0.76, 0.72));
   if (auto* groundBody = ground->getBodyNode(0)) {
     Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-    transform.translation().y() = -0.5 * groundThickness;
+    transform.translation().z() = -0.95;
     groundBody->getParentJoint()->setTransformFromParentBodyNode(transform);
   }
   scene.world->addSkeleton(ground);

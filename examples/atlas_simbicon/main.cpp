@@ -40,9 +40,11 @@
 #include <dart/simulation/world.hpp>
 
 #include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
-
-#include <dart/math/constants.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/io/read.hpp>
 
@@ -60,12 +62,14 @@
 
 namespace {
 
-constexpr const char* kAtlasGroundUri = "dart://sample/sdf/atlas/ground.urdf";
 constexpr const char* kAtlasUri
     = "dart://sample/sdf/atlas/atlas_v3_no_head.sdf";
 constexpr double kDefaultGravity = 9.81;
 constexpr double kDefaultPushForce = 500.0;
 constexpr int kDefaultPushFrames = 100;
+constexpr double kGroundHalfExtent = 12.5;
+constexpr double kGroundThickness = 0.05;
+constexpr double kGroundCenterZ = -0.95;
 
 dart::dynamics::SkeletonPtr readRequiredSkeleton(const char* uri)
 {
@@ -74,6 +78,53 @@ dart::dynamics::SkeletonPtr readRequiredSkeleton(const char* uri)
     throw std::runtime_error(std::string("Failed to load ") + uri);
   }
   return skeleton;
+}
+
+void makeAtlasMeshVisualsReadable(const dart::dynamics::SkeletonPtr& atlas)
+{
+  const Eigen::Vector4d readableAtlasColor(0.28, 0.29, 0.32, 1.0);
+
+  for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i) {
+    auto* body = atlas->getBodyNode(i);
+    for (std::size_t j = 0; j < body->getNumShapeNodes(); ++j) {
+      auto* shapeNode = body->getShapeNode(j);
+      auto* visual = shapeNode->getVisualAspect();
+      if (visual == nullptr) {
+        continue;
+      }
+
+      const auto mesh = std::dynamic_pointer_cast<dart::dynamics::MeshShape>(
+          shapeNode->getShape());
+      if (mesh == nullptr) {
+        continue;
+      }
+
+      mesh->setColorMode(dart::dynamics::MeshShape::SHAPE_COLOR);
+      const Eigen::Vector4d rgba = visual->getRGBA();
+      Eigen::Vector4d readable = readableAtlasColor;
+      readable.w() = rgba.w();
+      visual->setRGBA(readable);
+    }
+  }
+}
+
+dart::dynamics::SkeletonPtr createZUpGround()
+{
+  auto ground = dart::dynamics::Skeleton::create("atlas_simbicon_ground");
+  auto* body
+      = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
+  body->setName("ground_link");
+
+  auto shape = std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(
+      2.0 * kGroundHalfExtent, 2.0 * kGroundHalfExtent, kGroundThickness));
+  auto* shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
+  shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, kGroundCenterZ));
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.82, 0.84, 0.86, 1.0));
+  ground->setMobile(false);
+  return ground;
 }
 
 struct AtlasSimbiconScene
@@ -87,11 +138,11 @@ AtlasSimbiconScene createAtlasSimbiconScene()
   AtlasSimbiconScene scene;
   scene.world = dart::simulation::World::create("dartsim_atlas_simbicon");
 
-  auto ground = readRequiredSkeleton(kAtlasGroundUri);
+  auto ground = createZUpGround();
   scene.atlas = readRequiredSkeleton(kAtlasUri);
+  makeAtlasMeshVisualsReadable(scene.atlas);
 
-  scene.atlas->setPosition(0, -0.5 * dart::math::pi);
-  scene.world->setGravity(-kDefaultGravity * Eigen::Vector3d::UnitY());
+  scene.world->setGravity(-kDefaultGravity * Eigen::Vector3d::UnitZ());
   scene.world->addSkeleton(ground);
   scene.world->addSkeleton(scene.atlas);
   return scene;
@@ -148,12 +199,12 @@ public:
 
   void pushLeft()
   {
-    push(Eigen::Vector3d::UnitZ() * kDefaultPushForce);
+    push(Eigen::Vector3d::UnitY() * kDefaultPushForce);
   }
 
   void pushRight()
   {
-    push(-Eigen::Vector3d::UnitZ() * kDefaultPushForce);
+    push(-Eigen::Vector3d::UnitY() * kDefaultPushForce);
   }
 
   void nextState()
@@ -186,7 +237,7 @@ public:
   void setGravity(double gravity)
   {
     mGravity = gravity;
-    mScene.world->setGravity(-mGravity * Eigen::Vector3d::UnitY());
+    mScene.world->setGravity(-mGravity * Eigen::Vector3d::UnitZ());
   }
 
   double gravity() const
@@ -282,10 +333,10 @@ dart::gui::RunOptions makeAtlasSimbiconRunDefaults()
 dart::gui::OrbitCamera makeAtlasSimbiconCamera()
 {
   dart::gui::OrbitCamera camera;
-  camera.target = Eigen::Vector3d(1.0, 0.0, 0.0);
-  camera.yaw = 0.6151443797099871;
-  camera.pitch = 0.8343461220361607;
-  camera.distance = 16.948781666542255;
+  camera.target = Eigen::Vector3d(0.0, 0.0, -0.25);
+  camera.yaw = 0.55;
+  camera.pitch = 0.32;
+  camera.distance = 4.8;
   return camera;
 }
 
