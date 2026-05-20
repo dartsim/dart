@@ -50,6 +50,7 @@ still require explicit maintainer/user approval.
 | `AGENTS.md`                   | Root pointer board and mandatory high-level rules                                     |
 | `docs/ai/principles.md`       | AI-infra axioms and manual audit checklist                                            |
 | `docs/ai/`                    | Durable AI-native mission, workflow map, session rules, and verification expectations |
+| `docs/ai/capabilities.json`   | Machine-readable capability status, category, and gate profile                        |
 | `docs/onboarding/ai-tools.md` | Tool compatibility and adapter maintenance details                                    |
 | `.claude/commands/`           | Temporary editable source for DART workflow command bodies                            |
 | `.claude/skills/`             | Editable source for DART domain skills                                                |

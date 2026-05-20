@@ -90,6 +90,7 @@ The `@path/to/file` syntax tells agents to automatically load referenced files i
 | ----------------------------- | ---------------------------- | ------------------------------- |
 | `AGENTS.md`                   | Root pointer board           | When workflows or gates change  |
 | `docs/ai/`                    | Durable AI-native policy     | When AI workflow policy changes |
+| `docs/ai/capabilities.json`   | Capability status/category   | When workflows or skills change |
 | `CLAUDE.md`, `GEMINI.md`      | Redirects only               | Rarely (keep minimal)           |
 | `.claude/commands/`           | Editable workflow source     | When adding workflows           |
 | `.opencode/command/`          | Generated OpenCode commands  | Auto-synced from `.claude/`     |
