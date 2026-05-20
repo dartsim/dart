@@ -13,6 +13,8 @@
 
   * Ignore malformed contacts with null collision objects instead of dereferencing them while creating `ContactConstraint`: [#2669](https://github.com/dartsim/dart/issues/2669)
 
+  * Hide bundled ImGui internal formatting helpers from shared library exports: [#2671](https://github.com/dartsim/dart/issues/2671)
+
 * Parsers
 
   * Return safe defaults from XML attribute helpers when callers pass a null element: [#2678](https://github.com/dartsim/dart/issues/2678)
