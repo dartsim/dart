@@ -324,6 +324,43 @@ TEST(CollisionResult, GetContactFlat)
   EXPECT_EQ(result.getContact(2).position, Eigen::Vector3d(3, 0, 0));
 }
 
+TEST(CollisionResult, CacheInvalidatesAcrossReuse)
+{
+  CollisionResult result;
+
+  ContactPoint cp1;
+  cp1.position = Eigen::Vector3d(1, 0, 0);
+  result.addContact(cp1);
+  EXPECT_EQ(result.getManifolds().size(), 1u);
+  EXPECT_EQ(result.getContact(0).position, Eigen::Vector3d(1, 0, 0));
+
+  ContactPoint cp2;
+  cp2.position = Eigen::Vector3d(2, 0, 0);
+  result.addContact(cp2);
+  EXPECT_EQ(result.numContacts(), 2u);
+  EXPECT_EQ(result.getContact(1).position, Eigen::Vector3d(2, 0, 0));
+  EXPECT_EQ(result.getManifolds().size(), 2u);
+
+  ContactManifold manifold;
+  ContactPoint cp3;
+  cp3.position = Eigen::Vector3d(3, 0, 0);
+  manifold.addContact(cp3);
+  result.addManifold(std::move(manifold));
+  EXPECT_EQ(result.numContacts(), 3u);
+  EXPECT_EQ(result.getContact(2).position, Eigen::Vector3d(3, 0, 0));
+
+  result.clear();
+  EXPECT_TRUE(result.getManifolds().empty());
+  EXPECT_EQ(result.numContacts(), 0u);
+
+  ContactPoint cp4;
+  cp4.position = Eigen::Vector3d(4, 0, 0);
+  result.addContact(cp4);
+  EXPECT_EQ(result.numContacts(), 1u);
+  EXPECT_EQ(result.getContact(0).position, Eigen::Vector3d(4, 0, 0));
+  EXPECT_EQ(result.getManifolds().size(), 1u);
+}
+
 TEST(CollisionOption, Defaults)
 {
   CollisionOption opt;

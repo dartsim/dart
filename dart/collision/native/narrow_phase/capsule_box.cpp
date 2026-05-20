@@ -43,6 +43,15 @@ namespace dart::collision::native {
 
 namespace {
 
+[[nodiscard]] bool hasIdentityRotation(const Eigen::Isometry3d& transform)
+{
+  const auto& rotation = transform.linear();
+  return rotation(0, 0) == 1.0 && rotation(0, 1) == 0.0 && rotation(0, 2) == 0.0
+         && rotation(1, 0) == 0.0 && rotation(1, 1) == 1.0
+         && rotation(1, 2) == 0.0 && rotation(2, 0) == 0.0
+         && rotation(2, 1) == 0.0 && rotation(2, 2) == 1.0;
+}
+
 Eigen::Vector3d closestPointOnBox(
     const Eigen::Vector3d& point, const Eigen::Vector3d& halfExtents)
 {
@@ -169,6 +178,108 @@ Eigen::Vector3d closestPointOnSegmentInBoxSpace(
   return bestOnBox;
 }
 
+bool collideTranslatedVerticalCapsuleBox(
+    double capsuleRadius,
+    double halfHeight,
+    const Eigen::Vector3d& capsuleTranslation,
+    const Eigen::Vector3d& halfExtents,
+    const Eigen::Vector3d& boxTranslation,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  const Eigen::Vector3d capsuleCenterLocal
+      = capsuleTranslation - boxTranslation;
+
+  const double segmentMinZ = capsuleCenterLocal.z() - halfHeight;
+  const double segmentMaxZ = capsuleCenterLocal.z() + halfHeight;
+
+  double axisZ = 0.0;
+  if (segmentMinZ > halfExtents.z()) {
+    axisZ = segmentMinZ;
+  } else if (segmentMaxZ < -halfExtents.z()) {
+    axisZ = segmentMaxZ;
+  } else {
+    const double overlapMin = std::max(segmentMinZ, -halfExtents.z());
+    const double overlapMax = std::min(segmentMaxZ, halfExtents.z());
+    axisZ = std::clamp(0.0, overlapMin, overlapMax);
+  }
+
+  std::array<ContactPoint, 3> pairContacts;
+  std::size_t numPairContacts = 0;
+
+  auto addContactForAxisPoint = [&](const Eigen::Vector3d& axisPointLocal) {
+    if (result.numContacts() >= option.maxNumContacts) {
+      return false;
+    }
+
+    Eigen::Vector3d contactOnBoxLocal(
+        std::clamp(axisPointLocal.x(), -halfExtents.x(), halfExtents.x()),
+        std::clamp(axisPointLocal.y(), -halfExtents.y(), halfExtents.y()),
+        std::clamp(axisPointLocal.z(), -halfExtents.z(), halfExtents.z()));
+
+    const Eigen::Vector3d diff = axisPointLocal - contactOnBoxLocal;
+    const double distSquared = diff.squaredNorm();
+    if (distSquared > capsuleRadius * capsuleRadius) {
+      return false;
+    }
+
+    Eigen::Vector3d normalLocal;
+    double penetration = 0.0;
+    const double dist = std::sqrt(distSquared);
+    if (dist < 1e-10) {
+      const Eigen::Vector3d absAxisPoint = axisPointLocal.cwiseAbs();
+      const Eigen::Vector3d distToFace = halfExtents - absAxisPoint;
+      int minAxis = 0;
+      if (distToFace.y() < distToFace.x()) {
+        minAxis = 1;
+      }
+      if (distToFace.z() < distToFace[minAxis]) {
+        minAxis = 2;
+      }
+
+      normalLocal = Eigen::Vector3d::Zero();
+      normalLocal[minAxis] = (axisPointLocal[minAxis] >= 0.0) ? 1.0 : -1.0;
+      contactOnBoxLocal[minAxis] = (normalLocal[minAxis] > 0.0)
+                                       ? halfExtents[minAxis]
+                                       : -halfExtents[minAxis];
+      penetration = capsuleRadius + distToFace[minAxis];
+    } else {
+      normalLocal = diff / dist;
+      penetration = capsuleRadius - dist;
+    }
+
+    ContactPoint contact;
+    contact.position = boxTranslation + contactOnBoxLocal
+                       + normalLocal * (penetration * 0.5);
+    contact.normal = -normalLocal;
+    contact.depth = penetration;
+
+    for (std::size_t i = 0; i < numPairContacts; ++i) {
+      const auto& existing = pairContacts[i];
+      if ((existing.position - contact.position).squaredNorm() < 1e-12
+          && existing.normal.dot(contact.normal) > 0.999) {
+        return false;
+      }
+    }
+
+    result.addContact(contact);
+    pairContacts[numPairContacts++] = contact;
+    return true;
+  };
+
+  bool hit = addContactForAxisPoint(
+      Eigen::Vector3d(capsuleCenterLocal.x(), capsuleCenterLocal.y(), axisZ));
+  hit = addContactForAxisPoint(
+            Eigen::Vector3d(
+                capsuleCenterLocal.x(), capsuleCenterLocal.y(), segmentMinZ))
+        || hit;
+  hit = addContactForAxisPoint(
+            Eigen::Vector3d(
+                capsuleCenterLocal.x(), capsuleCenterLocal.y(), segmentMaxZ))
+        || hit;
+  return hit;
+}
+
 } // namespace
 
 bool collideCapsuleBox(
@@ -183,9 +294,21 @@ bool collideCapsuleBox(
     return false;
   }
 
-  const double capsuleRadius = capsule.getRadius();
-  const double halfHeight = capsule.getHeight() * 0.5;
-  const Eigen::Vector3d& halfExtents = box.getHalfExtents();
+  const double capsuleRadius = detail::getRadius(capsule);
+  const double halfHeight = detail::getHeight(capsule) * 0.5;
+  const Eigen::Vector3d& halfExtents = detail::getHalfExtents(box);
+
+  if (hasIdentityRotation(capsuleTransform)
+      && hasIdentityRotation(boxTransform)) {
+    return collideTranslatedVerticalCapsuleBox(
+        capsuleRadius,
+        halfHeight,
+        capsuleTransform.translation(),
+        halfExtents,
+        boxTransform.translation(),
+        result,
+        option);
+  }
 
   const Eigen::Vector3d localTop(0, 0, halfHeight);
   const Eigen::Vector3d localBottom(0, 0, -halfHeight);

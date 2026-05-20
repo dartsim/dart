@@ -39,7 +39,55 @@
 
 namespace dart::collision::native {
 
-bool collideSpheres(
+namespace {
+
+bool collideSpheresOnAxis(
+    double center1X,
+    double center1Y,
+    double center1Z,
+    double radius1,
+    double radius2,
+    double delta,
+    int axis,
+    CollisionResult& result)
+{
+  const double sumRadii = radius1 + radius2;
+  const double dist = std::abs(delta);
+  if (dist > sumRadii) {
+    return false;
+  }
+
+  const double penetration = sumRadii - dist;
+
+  Eigen::Vector3d normal;
+  Eigen::Vector3d point;
+  if (dist < 1e-10) {
+    normal = Eigen::Vector3d::UnitZ();
+    point = Eigen::Vector3d(center1X, center1Y, center1Z);
+  } else {
+    const double normalSign = (delta > 0.0) ? -1.0 : 1.0;
+    const double pointOffset = normalSign * (-radius1 + penetration * 0.5);
+    switch (axis) {
+      case 0:
+        normal = Eigen::Vector3d(normalSign, 0.0, 0.0);
+        point = Eigen::Vector3d(center1X + pointOffset, center1Y, center1Z);
+        break;
+      case 1:
+        normal = Eigen::Vector3d(0.0, normalSign, 0.0);
+        point = Eigen::Vector3d(center1X, center1Y + pointOffset, center1Z);
+        break;
+      default:
+        normal = Eigen::Vector3d(0.0, 0.0, normalSign);
+        point = Eigen::Vector3d(center1X, center1Y, center1Z + pointOffset);
+        break;
+    }
+  }
+
+  result.addContact(point, normal, penetration);
+  return true;
+}
+
+bool collideSphereCenters(
     const Eigen::Vector3d& center1,
     double radius1,
     const Eigen::Vector3d& center2,
@@ -51,8 +99,25 @@ bool collideSpheres(
     return false;
   }
 
-  const Eigen::Vector3d diff = center2 - center1;
-  const double distSquared = diff.squaredNorm();
+  const double dx = center2.x() - center1.x();
+  const double dy = center2.y() - center1.y();
+  const double dz = center2.z() - center1.z();
+
+  if (dy == 0.0 && dz == 0.0 && std::isfinite(dx)) {
+    return collideSpheresOnAxis(
+        center1.x(), center1.y(), center1.z(), radius1, radius2, dx, 0, result);
+  }
+  if (dx == 0.0 && dz == 0.0 && std::isfinite(dy)) {
+    return collideSpheresOnAxis(
+        center1.x(), center1.y(), center1.z(), radius1, radius2, dy, 1, result);
+  }
+  if (dx == 0.0 && dy == 0.0 && std::isfinite(dz)) {
+    return collideSpheresOnAxis(
+        center1.x(), center1.y(), center1.z(), radius1, radius2, dz, 2, result);
+  }
+
+  const Eigen::Vector3d diff(dx, dy, dz);
+  const double distSquared = dx * dx + dy * dy + dz * dz;
   const double sumRadii = radius1 + radius2;
 
   if (distSquared > sumRadii * sumRadii) {
@@ -73,14 +138,23 @@ bool collideSpheres(
     point = center1 + normal * (-radius1 + penetration * 0.5);
   }
 
-  ContactPoint contact;
-  contact.position = point;
-  contact.normal = normal;
-  contact.depth = penetration;
-
-  result.addContact(contact);
+  result.addContact(point, normal, penetration);
 
   return true;
+}
+
+} // namespace
+
+bool collideSpheres(
+    const Eigen::Vector3d& center1,
+    double radius1,
+    const Eigen::Vector3d& center2,
+    double radius2,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  return collideSphereCenters(
+      center1, radius1, center2, radius2, result, option);
 }
 
 bool collideSpheres(
@@ -91,13 +165,54 @@ bool collideSpheres(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  return collideSpheres(
-      transform1.translation(),
-      sphere1.getRadius(),
-      transform2.translation(),
-      sphere2.getRadius(),
-      result,
-      option);
+  if (result.numContacts() >= option.maxNumContacts) {
+    return false;
+  }
+
+  const auto& translation1 = transform1.translation();
+  const auto& translation2 = transform2.translation();
+  const double dx = translation2.x() - translation1.x();
+  const double dy = translation2.y() - translation1.y();
+  const double dz = translation2.z() - translation1.z();
+  const double radius1 = detail::getRadius(sphere1);
+  const double radius2 = detail::getRadius(sphere2);
+
+  if (dy == 0.0 && dz == 0.0 && std::isfinite(dx)) {
+    return collideSpheresOnAxis(
+        translation1.x(),
+        translation1.y(),
+        translation1.z(),
+        radius1,
+        radius2,
+        dx,
+        0,
+        result);
+  }
+  if (dx == 0.0 && dz == 0.0 && std::isfinite(dy)) {
+    return collideSpheresOnAxis(
+        translation1.x(),
+        translation1.y(),
+        translation1.z(),
+        radius1,
+        radius2,
+        dy,
+        1,
+        result);
+  }
+  if (dx == 0.0 && dy == 0.0 && std::isfinite(dz)) {
+    return collideSpheresOnAxis(
+        translation1.x(),
+        translation1.y(),
+        translation1.z(),
+        radius1,
+        radius2,
+        dz,
+        2,
+        result);
+  }
+
+  return collideSphereCenters(
+      translation1, radius1, translation2, radius2, result, option);
 }
 
 void collideSpheresBatch(
