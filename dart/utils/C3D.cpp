@@ -32,6 +32,7 @@
 
 #include "dart/utils/C3D.hpp"
 
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
 
@@ -193,6 +194,17 @@ bool saveC3DFile(
   c3d_head hdr;
   c3d_param parm;
   c3d_frame frame;
+
+  if (_nFrame < 0 || _nMarker < 0)
+    return false;
+
+  if (static_cast<std::size_t>(_nFrame) > _pointData.size())
+    return false;
+
+  for (int i = 0; i < _nFrame; ++i) {
+    if (static_cast<std::size_t>(_nMarker) > _pointData[i].size())
+      return false;
+  }
 
   if ((file = fopen(_fileName, "wb")) == nullptr)
     return false;
