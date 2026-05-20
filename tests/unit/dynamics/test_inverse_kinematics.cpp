@@ -1,9 +1,13 @@
 // Copyright (c) 2011, The DART development contributors
 
+#include <dart/dynamics/ik_fast.hpp>
+#include <dart/dynamics/shared_library_ik_fast.hpp>
+
 #include <dart/all.hpp>
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -166,6 +170,62 @@ TEST(InverseKinematics, ConfigurationAndClone)
   auto clone = ik->clone(fixture.root);
   ASSERT_NE(clone, nullptr);
   EXPECT_EQ(clone->getNode(), fixture.root);
+}
+
+TEST(InverseKinematics, PointerWrappersTrackStrongAndWeakLifetimes)
+{
+  auto fixture = makeIkSkeleton();
+  InverseKinematicsPtr ik = fixture.end->getOrCreateIK();
+  ASSERT_NE(ik, nullptr);
+  EXPECT_TRUE(ik);
+  EXPECT_EQ((*ik).getNode(), fixture.end);
+  EXPECT_EQ(ik->getNode(), fixture.end);
+
+  const auto shared = ik.get_shared();
+  ASSERT_NE(shared, nullptr);
+  EXPECT_EQ(shared.get(), ik.get());
+  std::shared_ptr<InverseKinematics> converted = ik;
+  EXPECT_EQ(converted, shared);
+
+  InverseKinematicsPtr copied(ik);
+  EXPECT_EQ(copied, ik);
+  InverseKinematicsPtr assigned;
+  assigned = shared;
+  EXPECT_EQ(assigned.get(), ik.get());
+
+  ConstInverseKinematicsPtr constPtr(shared);
+  EXPECT_EQ(constPtr.get(), ik.get());
+
+  InverseKinematicsPtr nullPtr(nullptr);
+  EXPECT_FALSE(nullPtr);
+  EXPECT_EQ(nullPtr.get(), nullptr);
+  EXPECT_EQ(nullPtr.get_shared(), nullptr);
+  EXPECT_EQ(nullPtr, nullptr);
+  EXPECT_EQ(nullptr, nullPtr);
+  EXPECT_FALSE(nullPtr != nullptr);
+  EXPECT_FALSE(nullptr != nullPtr);
+
+  assigned = nullptr;
+  EXPECT_EQ(assigned.get(), nullptr);
+  EXPECT_EQ(assigned.get_shared(), nullptr);
+
+  WeakInverseKinematicsPtr weak(ik);
+  EXPECT_EQ(weak.lock().get(), ik.get());
+
+  WeakInverseKinematicsPtr weakCopy;
+  weakCopy = weak;
+  EXPECT_EQ(weakCopy.lock().get(), ik.get());
+
+  WeakInverseKinematicsPtr weakFromNull(nullPtr);
+  EXPECT_EQ(weakFromNull.lock(), nullptr);
+
+  WeakInverseKinematicsPtr expired;
+  {
+    auto localFixture = makeIkSkeleton();
+    expired = InverseKinematicsPtr(localFixture.end->getOrCreateIK());
+    EXPECT_NE(expired.lock(), nullptr);
+  }
+  EXPECT_EQ(expired.lock(), nullptr);
 }
 
 TEST(InverseKinematics, FindSolutionPaths)
@@ -887,6 +947,199 @@ public:
 
 private:
   std::vector<std::size_t> mDofs;
+};
+
+class FakeIkFast final : public IkFast
+{
+public:
+  using IkFast::computeFk;
+
+  FakeIkFast(
+      InverseKinematics* ik,
+      std::span<const std::size_t> dofMap,
+      std::span<const std::size_t> freeDofMap,
+      int ikType = 0x67000001,
+      bool succeeds = true,
+      int reportedNumJoints = -1,
+      int reportedNumFreeParameters = -1)
+    : IkFast(ik, dofMap, freeDofMap, "FakeIkFast"),
+      mIkType(ikType),
+      mSucceeds(succeeds),
+      mReportedNumJoints(reportedNumJoints),
+      mReportedNumFreeParameters(reportedNumFreeParameters)
+  {
+    mFreeParameters.reserve(freeDofMap.size());
+    for (const auto dof : freeDofMap) {
+      mFreeParameters.push_back(static_cast<int>(dof));
+    }
+  }
+
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIK) const override
+  {
+    return std::make_unique<FakeIkFast>(
+        newIK,
+        mDofs,
+        mFreeDofs,
+        mIkType,
+        mSucceeds,
+        mReportedNumJoints,
+        mReportedNumFreeParameters);
+  }
+
+  void setIkType(int ikType)
+  {
+    mIkType = ikType;
+  }
+
+protected:
+  int getNumFreeParameters() const override
+  {
+    if (mReportedNumFreeParameters >= 0) {
+      return mReportedNumFreeParameters;
+    }
+    return static_cast<int>(mFreeParameters.size());
+  }
+
+  int* getFreeParameters() const override
+  {
+    return const_cast<int*>(mFreeParameters.data());
+  }
+
+  int getNumJoints() const override
+  {
+    if (mReportedNumJoints >= 0) {
+      return mReportedNumJoints;
+    }
+    return static_cast<int>(mDofs.size() + mFreeDofs.size());
+  }
+
+  int getIkRealSize() const override
+  {
+    return sizeof(IkReal);
+  }
+
+  int getIkType() const override
+  {
+    return mIkType;
+  }
+
+  bool computeIk(
+      const IkReal* targetTranspose,
+      const IkReal* targetRotation,
+      const IkReal* pfree,
+      ikfast::IkSolutionListBase<IkReal>& solutions) override
+  {
+    mLastTargetTranspose
+        = {targetTranspose[0], targetTranspose[1], targetTranspose[2]};
+    mLastTargetRotation
+        = {targetRotation[0],
+           targetRotation[1],
+           targetRotation[2],
+           targetRotation[3],
+           targetRotation[4],
+           targetRotation[5],
+           targetRotation[6],
+           targetRotation[7],
+           targetRotation[8]};
+    mLastFreeParameter = pfree ? pfree[0] : 0.0;
+
+    if (!mSucceeds) {
+      return false;
+    }
+
+    std::vector<ikfast::IkSingleDOFSolutionBase<IkReal>> infos(
+        static_cast<std::size_t>(getNumJoints()));
+    infos[0].foffset = 0.25;
+    infos[0].maxsolutions = 2;
+    infos[0].indices[0] = 1;
+
+    if (!mFreeParameters.empty()) {
+      infos[1].freeind = 0;
+      infos[1].fmul = 1.0;
+      infos[1].foffset = 0.1;
+      infos[1].maxsolutions = 0;
+    }
+
+    infos.back().foffset = -0.5;
+    infos.back().maxsolutions = 2;
+    infos.back().indices[0] = 0;
+    infos.back().indices[1] = 1;
+
+    solutions.AddSolution(infos, mFreeParameters);
+
+    infos.front().foffset = 100.0;
+    solutions.AddSolution(infos, mFreeParameters);
+    return true;
+  }
+
+  void computeFk(
+      const IkReal* parameters,
+      IkReal* targetTranspose,
+      IkReal* targetRotation) override
+  {
+    targetTranspose[0] = parameters[0];
+    targetTranspose[1] = parameters[1];
+    targetTranspose[2] = parameters[0] + parameters[1];
+
+    for (int i = 0; i < 9; ++i) {
+      targetRotation[i] = 0.0;
+    }
+    targetRotation[0] = 1.0;
+    targetRotation[4] = 1.0;
+    targetRotation[8] = 1.0;
+  }
+
+  const char* getKinematicsHash() override
+  {
+    return "fake_hash";
+  }
+
+  const char* getIkFastVersion() override
+  {
+    return "fake_71";
+  }
+
+private:
+  int mIkType;
+  bool mSucceeds;
+  int mReportedNumJoints;
+  int mReportedNumFreeParameters;
+  std::vector<int> mFreeParameters;
+
+public:
+  std::array<IkReal, 3> mLastTargetTranspose{};
+  std::array<IkReal, 9> mLastTargetRotation{};
+  IkReal mLastFreeParameter{0.0};
+};
+
+class SharedLibraryIkFastHarness final : public SharedLibraryIkFast
+{
+public:
+  using IkFast::computeFk;
+  using SharedLibraryIkFast::getFreeParameters;
+  using SharedLibraryIkFast::getIkFastVersion;
+  using SharedLibraryIkFast::getIkRealSize;
+  using SharedLibraryIkFast::getIkType;
+  using SharedLibraryIkFast::getKinematicsHash;
+  using SharedLibraryIkFast::getNumFreeParameters;
+  using SharedLibraryIkFast::getNumJoints;
+  using SharedLibraryIkFast::SharedLibraryIkFast;
+
+  bool callComputeIk(
+      const IkReal* targetTranspose,
+      const IkReal* targetRotation,
+      const IkReal* freeParams,
+      ikfast::IkSolutionListBase<IkReal>& solutions)
+  {
+    return SharedLibraryIkFast::computeIk(
+        targetTranspose, targetRotation, freeParams, solutions);
+  }
+
+  void callRawComputeFk(
+      const IkReal* parameters, IkReal* targetTranspose, IkReal* targetRotation)
+  {
+    SharedLibraryIkFast::computeFk(parameters, targetTranspose, targetRotation);
+  }
 };
 
 } // namespace
@@ -1925,4 +2178,223 @@ TEST(HierarchicalIK, NullspaceCachingAndZeroed)
   const auto nullspacesThird = composite->computeNullSpaces();
   EXPECT_EQ(nullspacesThird.size(), composite->getIKHierarchy().size());
   EXPECT_TRUE(nullspacesThird.back().allFinite());
+}
+
+TEST(IkFastSolutionContainers, SolutionValuesValidationAndIndices)
+{
+  using SolutionInfo = ikfast::IkSingleDOFSolutionBase<IkReal>;
+
+  std::vector<SolutionInfo> infos(2);
+  infos[0].foffset = 0.25;
+  infos[0].maxsolutions = 3;
+  infos[0].indices[0] = 1;
+  infos[0].indices[1] = 2;
+
+  infos[1].freeind = 0;
+  infos[1].fmul = 1.0;
+  infos[1].foffset = 0.0;
+  infos[1].maxsolutions = 2;
+  infos[1].indices[0] = 0;
+
+  ikfast::IkSolution<IkReal> solution(infos, {1});
+  EXPECT_EQ(solution.GetDOF(), 2);
+  EXPECT_EQ(solution.GetFree().size(), 1u);
+  EXPECT_NO_THROW(solution.Validate());
+
+  std::vector<IkReal> values;
+  solution.GetSolution(values, {4.0});
+  ASSERT_EQ(values.size(), 2u);
+  EXPECT_DOUBLE_EQ(values[0], 0.25);
+  EXPECT_NEAR(values[1], 4.0 - math::two_pi, 1e-12);
+
+  solution.GetSolution(values, {-4.0});
+  EXPECT_NEAR(values[1], -4.0 + math::two_pi, 1e-12);
+
+  std::vector<unsigned int> indices;
+  solution.GetSolutionIndices(indices);
+  EXPECT_EQ(indices.size(), 2u);
+  EXPECT_NE(indices[0], indices[1]);
+
+  auto invalidInfos = infos;
+  invalidInfos[0].maxsolutions = static_cast<unsigned char>(-1);
+  EXPECT_THROW(
+      ikfast::IkSolution<IkReal>(invalidInfos, {}).Validate(),
+      std::runtime_error);
+
+  invalidInfos = infos;
+  invalidInfos[0].indices[0] = invalidInfos[0].maxsolutions;
+  EXPECT_THROW(
+      ikfast::IkSolution<IkReal>(invalidInfos, {}).Validate(),
+      std::runtime_error);
+
+  invalidInfos = infos;
+  invalidInfos[0].indices[1] = invalidInfos[0].maxsolutions;
+  EXPECT_THROW(
+      ikfast::IkSolution<IkReal>(invalidInfos, {}).Validate(),
+      std::runtime_error);
+
+  invalidInfos = infos;
+  invalidInfos[0].foffset = std::numeric_limits<IkReal>::infinity();
+  EXPECT_THROW(
+      ikfast::IkSolution<IkReal>(invalidInfos, {}).Validate(),
+      std::runtime_error);
+
+  ikfast::IkSolutionList<IkReal> list;
+  EXPECT_EQ(list.AddSolution(infos, {1}), 0u);
+  EXPECT_EQ(list.GetNumSolutions(), 1u);
+  EXPECT_EQ(list.GetSolution(0).GetDOF(), 2);
+  EXPECT_THROW(list.GetSolution(1), std::runtime_error);
+  list.Clear();
+  EXPECT_EQ(list.GetNumSolutions(), 0u);
+}
+
+TEST(IkFast, FakeAdapterConfigurationSolutionsAndFk)
+{
+  auto chain = makeIkChain();
+  auto ik = InverseKinematics::create(chain.endEffector);
+  ASSERT_NE(ik, nullptr);
+
+  chain.skeleton->setPositionLowerLimits(Eigen::Vector3d::Constant(-0.5));
+  chain.skeleton->setPositionUpperLimits(Eigen::Vector3d::Constant(0.5));
+  chain.skeleton->setPosition(1, 0.4);
+
+  std::vector<std::size_t> dofs{0, 2};
+  std::vector<std::size_t> freeDofs{1};
+  auto& fake = ik->setGradientMethod<FakeIkFast>(dofs, freeDofs);
+
+  EXPECT_TRUE(fake.isConfigured());
+  EXPECT_EQ(fake.getDofs().size(), dofs.size());
+  EXPECT_EQ(fake.getFreeDofs().size(), freeDofs.size());
+  EXPECT_EQ(fake.getNumJoints2(), 3u);
+  EXPECT_EQ(fake.getNumFreeParameters2(), 1u);
+  EXPECT_EQ(fake.getKinematicsHash2(), "fake_hash");
+  EXPECT_EQ(fake.getIkFastVersion2(), "fake_71");
+  EXPECT_EQ(fake.getIkType2(), IkFast::TRANSFORM_6D);
+
+  auto target = Eigen::Isometry3d::Identity();
+  target.translation() = Eigen::Vector3d(0.1, 0.2, 0.3);
+  target.linear()
+      = Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+
+  const auto solutions = fake.computeSolutions(target);
+  ASSERT_EQ(solutions.size(), 2u);
+  EXPECT_EQ(solutions[0].mConfig.size(), 2);
+  EXPECT_EQ(solutions[0].mValidity, InverseKinematics::Analytical::VALID);
+  EXPECT_TRUE(
+      solutions[1].mValidity & InverseKinematics::Analytical::LIMIT_VIOLATED);
+  EXPECT_NEAR(fake.mLastTargetTranspose[0], target.translation().x(), 1e-12);
+  EXPECT_NEAR(fake.mLastTargetRotation[0], target.linear()(0, 0), 1e-12);
+  EXPECT_NEAR(fake.mLastFreeParameter, 0.4, 1e-12);
+
+  Eigen::VectorXd fkParams(2);
+  fkParams << 0.3, -0.2;
+  const auto fk = fake.computeFk(fkParams);
+  EXPECT_TRUE(fk.linear().isApprox(Eigen::Matrix3d::Identity()));
+
+  Eigen::VectorXd wrongSize(1);
+  wrongSize << 0.0;
+  EXPECT_TRUE(
+      fake.computeFk(wrongSize).isApprox(Eigen::Isometry3d::Identity()));
+
+  constexpr std::array<int, 16> typeCodes
+      = {0,
+         0x67000001,
+         0x34000002,
+         0x34000003,
+         0x34000004,
+         0x34000005,
+         0x34000006,
+         0x34000007,
+         0x34000008,
+         0x34000009,
+         0x3400000a,
+         0x3400000b,
+         0x3400000c,
+         0x3400000d,
+         0x3400000e,
+         0x3400000f};
+  for (const int code : typeCodes) {
+    fake.setIkType(code);
+    EXPECT_NE(fake.getIkType2(), IkFast::TRANSLATION_Z_AXIS_ANGLE_Y_NORM_4D);
+  }
+  fake.setIkType(0x34000010);
+  EXPECT_EQ(fake.getIkType2(), IkFast::TRANSLATION_Z_AXIS_ANGLE_Y_NORM_4D);
+  fake.setIkType(0x12345678);
+  EXPECT_EQ(fake.getIkType2(), IkFast::UNKNOWN);
+}
+
+TEST(IkFast, InvalidConfigurationReturnsNoSolutions)
+{
+  auto chain = makeIkChain();
+  auto ik = InverseKinematics::create(chain.endEffector);
+  ASSERT_NE(ik, nullptr);
+
+  std::vector<std::size_t> missingDofMap;
+  std::vector<std::size_t> noFreeDofs;
+  auto& wrongDofCount = ik->setGradientMethod<FakeIkFast>(
+      missingDofMap, noFreeDofs, 0x67000001, true, 1);
+  EXPECT_FALSE(wrongDofCount.isConfigured());
+  EXPECT_TRUE(
+      wrongDofCount.computeSolutions(Eigen::Isometry3d::Identity()).empty());
+
+  std::vector<std::size_t> validDofMap;
+  std::vector<std::size_t> tooManyFreeDofs{1, 2};
+  auto& wrongFreeCount = ik->setGradientMethod<FakeIkFast>(
+      validDofMap, tooManyFreeDofs, 0x67000001, true, 1, 1);
+  EXPECT_FALSE(wrongFreeCount.isConfigured());
+  EXPECT_TRUE(
+      wrongFreeCount.computeSolutions(Eigen::Isometry3d::Identity()).empty());
+
+  std::vector<std::size_t> invalidFreeDofMap{99};
+  auto& invalidFreeDof = ik->setGradientMethod<FakeIkFast>(
+      validDofMap, invalidFreeDofMap, 0x67000001, true, 1, 1);
+  EXPECT_FALSE(invalidFreeDof.isConfigured());
+  EXPECT_TRUE(
+      invalidFreeDof.computeSolutions(Eigen::Isometry3d::Identity()).empty());
+}
+
+TEST(SharedLibraryIkFast, MissingLibraryKeepsSafeNoOpContract)
+{
+  auto chain = makeIkChain();
+  auto ik = InverseKinematics::create(chain.endEffector);
+  ASSERT_NE(ik, nullptr);
+
+  std::vector<std::size_t> dofs;
+  std::vector<std::size_t> freeDofs;
+  SharedLibraryIkFastHarness missing(
+      ik.get(), "missing_ikfast_library.so", dofs, freeDofs, "missing_ikfast");
+
+  EXPECT_FALSE(missing.isConfigured());
+  EXPECT_TRUE(missing.getDofs().empty());
+  EXPECT_EQ(missing.getNumFreeParameters(), 0);
+  EXPECT_EQ(missing.getFreeParameters(), nullptr);
+  EXPECT_EQ(missing.getNumJoints(), 0);
+  EXPECT_EQ(missing.getIkRealSize(), 0);
+  EXPECT_EQ(missing.getIkType(), 0);
+  EXPECT_EQ(missing.getIkType2(), IkFast::UNKNOWN);
+  EXPECT_EQ(missing.getKinematicsHash(), nullptr);
+  EXPECT_EQ(missing.getIkFastVersion(), nullptr);
+
+  auto clone = missing.clone(ik.get());
+  ASSERT_NE(clone, nullptr);
+  auto* clonedIkFast = dynamic_cast<SharedLibraryIkFast*>(clone.get());
+  ASSERT_NE(clonedIkFast, nullptr);
+  EXPECT_FALSE(clonedIkFast->isConfigured());
+
+  ikfast::IkSolutionList<IkReal> solutions;
+  std::array<IkReal, 3> targetTranspose{0.0, 0.0, 0.0};
+  std::array<IkReal, 9> targetRotation{
+      1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+  EXPECT_FALSE(missing.callComputeIk(
+      targetTranspose.data(), targetRotation.data(), nullptr, solutions));
+
+  std::array<IkReal, 2> params{0.1, -0.2};
+  missing.callRawComputeFk(
+      params.data(), targetTranspose.data(), targetRotation.data());
+
+  Eigen::VectorXd wrongSize(1);
+  wrongSize << 0.0;
+  EXPECT_TRUE(
+      missing.computeFk(wrongSize).isApprox(Eigen::Isometry3d::Identity()));
+  EXPECT_TRUE(missing.computeSolutions(Eigen::Isometry3d::Identity()).empty());
 }

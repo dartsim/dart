@@ -88,6 +88,7 @@ SharedLibraryIkFast::SharedLibraryIkFast(
     mGetIkRealSize{nullptr},
     mGetIkType{nullptr},
     mComputeIk{nullptr},
+    mComputeFk{nullptr},
     mGetKinematicsHash{nullptr},
     mGetIkFastVersion{nullptr}
 {
@@ -118,6 +119,8 @@ SharedLibraryIkFast::SharedLibraryIkFast(
   loadFunction<IkFastFuncGetInt>(lib, "GetIkType", mFilePath, mGetIkType);
 
   loadFunction<IkFastFuncComputeIk>(lib, "ComputeIk", mFilePath, mComputeIk);
+
+  loadFunction<IkFastFuncComputeFk>(lib, "ComputeFk", mFilePath, mComputeFk);
 
   loadFunction<IkFastFuncGetConstCharPtr>(
       lib, "GetKinematicsHash", mFilePath, mGetKinematicsHash);

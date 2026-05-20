@@ -147,6 +147,12 @@ def _prepend_env_path(env: dict[str, str], name: str, value: Path) -> None:
 def _apply_libcxx_prefix(env: dict[str, str]) -> None:
     prefix = env.get("LIBCXX_PREFIX")
     if not prefix:
+        conda_prefix = env.get("CONDA_PREFIX")
+        if conda_prefix:
+            lib_dir = Path(conda_prefix) / "lib"
+            if any(lib_dir.glob("libc++.*")) and any(lib_dir.glob("libc++abi.*")):
+                prefix = conda_prefix
+    if not prefix:
         return
 
     lib_dir = Path(prefix) / "lib"

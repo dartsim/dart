@@ -513,6 +513,13 @@ backend dispatch paths; do not chase brittle coverage for GUI/OpenGL paths,
 experimental simulation code, debug-only fatal assertions, or unreachable
 defensive branches unless the task explicitly calls for them.
 
+When auditing core coverage, treat test binary coverage as part of the capture
+phase and filter test sources only after lcov records the data. This keeps
+template-heavy library headers and smart pointer wrappers counted when they are
+instantiated only from focused tests. Use aggregate headless-core metrics for
+planning, then pick the next suite slice from real workflow gaps rather than
+per-file percentage chasing.
+
 ### Coverage Patterns
 
 Areas that commonly need additional test coverage (identified from test-coverage-audit):
