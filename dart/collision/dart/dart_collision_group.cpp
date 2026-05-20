@@ -42,7 +42,9 @@
 #include "dart/collision/native/collision_world.hpp"
 #include "dart/collision/native/narrow_phase/narrow_phase.hpp"
 #include "dart/common/logging.hpp"
+#include "dart/common/signal.hpp"
 #include "dart/dynamics/shape.hpp"
+#include "dart/dynamics/shape_frame.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -193,6 +195,11 @@ std::size_t allocateManifoldCacheId()
 class DartCollisionScene
 {
 public:
+  ~DartCollisionScene()
+  {
+    clear();
+  }
+
   void sync(const std::vector<CollisionObject*>& objects)
   {
     const bool objectListUnchanged = hasMatchingObjectList(objects);
@@ -247,6 +254,10 @@ public:
 
   void clear()
   {
+    for (auto& [object, entry] : mEntries) {
+      (void)object;
+      entry.transformConnection.disconnect();
+    }
     mEntries.clear();
     mObjectsByNativeId.clear();
     mObjectsInOrder.clear();
@@ -518,6 +529,8 @@ private:
     std::size_t shapeId = 0u;
     std::size_t shapeVersion = 0u;
     std::size_t shapeRevision = 0u;
+    common::Connection transformConnection;
+    bool transformDirty = false;
   };
 
   using EntryMap = std::unordered_map<CollisionObject*, Entry>;
@@ -580,7 +593,7 @@ private:
       nativeObject.setUserData(object);
       const auto nativeId = nativeObject.getId();
       mObjectsByNativeId[nativeId] = object;
-      mEntries.emplace(
+      auto [entryIt, inserted] = mEntries.emplace(
           object,
           Entry{
               object,
@@ -588,31 +601,52 @@ private:
               allocateManifoldCacheId(),
               shapeId,
               shapeVersion,
-              shapeRevision});
+              shapeRevision,
+              common::Connection{},
+              false});
+      (void)inserted;
+      // Slot registration is observer state; ShapeFrame exposes it non-const.
+      auto* transformNotifier = const_cast<dynamics::ShapeFrame*>(shapeFrame);
+      entryIt->second.transformConnection
+          = transformNotifier->onTransformUpdated.connect(
+              [this, object](const dynamics::Entity*) {
+                markObjectTransformDirty(object);
+              });
       return true;
     }
 
-    auto& nativeObject = it->second.nativeObject;
-    if (!shapeFrame->needsTransformUpdate()) {
+    auto& entry = it->second;
+    if (!entry.transformDirty) {
       return true;
     }
 
+    auto& nativeObject = entry.nativeObject;
     const auto& transform = object->getTransform();
     if (!isSameTransform(nativeObject.getTransform(), transform)) {
       nativeObject.setTransform(transform);
       dirtyIds.push_back(nativeObject.getId());
     }
+    entry.transformDirty = false;
 
     return true;
   }
 
   EntryMap::iterator removeEntry(EntryMap::iterator it)
   {
+    it->second.transformConnection.disconnect();
     if (it->second.nativeObject.isValid()) {
       mObjectsByNativeId.erase(it->second.nativeObject.getId());
       mWorld.destroyObject(it->second.nativeObject);
     }
     return mEntries.erase(it);
+  }
+
+  void markObjectTransformDirty(CollisionObject* object)
+  {
+    const auto it = mEntries.find(object);
+    if (it != mEntries.end()) {
+      it->second.transformDirty = true;
+    }
   }
 
   const Entry* findEntry(native::ObjectId id) const

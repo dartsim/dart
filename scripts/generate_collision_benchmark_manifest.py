@@ -5,18 +5,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
 _UNIT_TO_NS = {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
-_BACKEND_RE = re.compile(
-    r"^(?P<prefix>.+)_(?P<backend>Native|FCL|Bullet|ODE)(?P<params>/.*)?$"
-)
 _NATIVE_BACKEND = "Native"
-_COMPARISON_BACKENDS = {"FCL", "Bullet", "ODE"}
 
 
 @dataclass
@@ -47,10 +42,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path(
-            "docs/dev_tasks/native_collision_performance/05-benchmark-manifest.md"
+        required=True,
+        help=(
+            "Markdown manifest output path. Use an explicit path so task "
+            "completion can delete or promote temporary dev-task artifacts "
+            "without this script recreating them by default."
         ),
-        help="Markdown manifest output path.",
     )
     return parser.parse_args()
 
@@ -64,11 +61,14 @@ def _row_name(row: dict) -> str:
 
 
 def _comparison_key(name: str) -> tuple[str, str] | None:
-    match = _BACKEND_RE.match(name)
-    if not match:
+    head, separator, params = name.partition("/")
+    prefix, backend_separator, backend = head.rpartition("_")
+    if not backend_separator:
         return None
-    params = match.group("params") or ""
-    return match.group("prefix") + params, match.group("backend")
+    key = prefix
+    if separator:
+        key += separator + params
+    return key, backend
 
 
 def _display_key(key: str) -> str:
@@ -111,11 +111,48 @@ def _ensure_measurement(
     return rows[key].measurements.setdefault(backend, Measurement())
 
 
+def _collect_backend_groups(paths: Iterable[Path]) -> dict[str, set[str]]:
+    groups: dict[str, set[str]] = {}
+    for path in paths:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for row in data.get("benchmarks", []):
+            run_type = row.get("run_type")
+            if run_type == "iteration":
+                continue
+            aggregate = row.get("aggregate_name")
+            if run_type == "aggregate" and aggregate not in {
+                "mean",
+                "median",
+                "stddev",
+            }:
+                continue
+            comparison = _comparison_key(_row_name(row))
+            if comparison is None:
+                continue
+            key, backend = comparison
+            groups.setdefault(key, set()).add(backend)
+    return groups
+
+
+def _is_backend_row(
+    comparison: tuple[str, str] | None, backend_groups: dict[str, set[str]]
+) -> bool:
+    if comparison is None:
+        return False
+    key, backend = comparison
+    if backend == _NATIVE_BACKEND:
+        return True
+    group = backend_groups.get(key, set())
+    return _NATIVE_BACKEND in group and len(group) > 1
+
+
 def _load_rows(paths: Iterable[Path]) -> tuple[dict[str, BenchmarkRow], list[dict]]:
     rows: dict[str, BenchmarkRow] = {}
     contexts: list[dict] = []
+    input_paths = list(paths)
+    backend_groups = _collect_backend_groups(input_paths)
 
-    for path in paths:
+    for path in input_paths:
         data = json.loads(path.read_text(encoding="utf-8"))
         contexts.append({"path": path, **data.get("context", {})})
 
@@ -137,7 +174,7 @@ def _load_rows(paths: Iterable[Path]) -> tuple[dict[str, BenchmarkRow], list[dic
                 continue
 
             comparison = _comparison_key(name)
-            if comparison is None:
+            if not _is_backend_row(comparison, backend_groups):
                 key = name
                 backend = _NATIVE_BACKEND
             else:
@@ -179,7 +216,7 @@ def _row_status(row: BenchmarkRow) -> tuple[str, float | None, Measurement | Non
     comparison_measurements = [
         measurement
         for backend, measurement in row.measurements.items()
-        if backend in _COMPARISON_BACKENDS and measurement.median_ns is not None
+        if backend != _NATIVE_BACKEND and measurement.median_ns is not None
     ]
     if not comparison_measurements:
         return "non-comparable", None, None
@@ -338,7 +375,8 @@ def _write_manifest(
             + " |"
         )
 
-    output.parent.mkdir(parents=True, exist_ok=True)
+    if not output.parent.exists():
+        raise SystemExit(f"Output directory does not exist: {output.parent}")
     output.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 

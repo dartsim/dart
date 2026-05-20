@@ -118,7 +118,8 @@ define comparable behavior and performance bars.
 3. Continue with the largest remaining measured raw pair narrow-phase gaps,
    then verify the targeted row and the broad collision guard.
 4. Keep the manifest generated from JSON until durable dashboard data is
-   promoted out of this task folder.
+   promoted out of this task folder. Generate it with an explicit output path:
+   `pixi run python scripts/generate_collision_benchmark_manifest.py --output docs/dev_tasks/native_collision_performance/05-benchmark-manifest.md`.
 
 ## Completion Criteria
 
@@ -133,6 +134,8 @@ The single-core wave is complete only when:
 - benchmark evidence includes variance and environment details;
 - the durable performance dashboard or matrix is promoted out of this
   `docs/dev_tasks/` folder; and
+- `scripts/generate_collision_benchmark_manifest.py` is removed with the
+  temporary task evidence or retargeted to a durable dashboard output; and
 - this task folder is deleted in the completing change.
 
 ## Verification
