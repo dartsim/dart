@@ -50,7 +50,7 @@ Reference implementations live in:
 
 ## Lesson 1 – Load Atlas and define a resting pose
 
-We load `atlas_v3_no_head.urdf`, bend the knees into a natural crouch, and raise
+We load `atlas_v5_no_head.urdf`, bend the knees into a natural crouch, and raise
 the knee joint limits to prevent hyperextension.
 
 ```{eval-rst}

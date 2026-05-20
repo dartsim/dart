@@ -1052,7 +1052,7 @@ dart::dynamics::SkeletonPtr loadRequiredWamRobotSkeleton()
 dart::dynamics::SkeletonPtr loadRequiredAtlasRobotSkeleton()
 {
   const auto atlasUri = dart::common::Uri::createFromString(
-      "dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+      "dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   auto atlas = dart::io::readSkeleton(atlasUri);
   if (!atlas) {
     throw std::runtime_error(
