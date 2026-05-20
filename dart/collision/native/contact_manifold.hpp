@@ -91,6 +91,26 @@ private:
     object2_ = contact.object2;
   }
 
+  void setSingleContact(
+      const Eigen::Vector3d& position,
+      const Eigen::Vector3d& normal,
+      double depth,
+      ContactType type)
+  {
+    auto& contact = contacts_[0];
+    contact.position = position;
+    contact.normal = normal;
+    contact.depth = depth;
+    contact.object1 = nullptr;
+    contact.object2 = nullptr;
+    contact.featureIndex1 = -1;
+    contact.featureIndex2 = -1;
+    numContacts_ = 1;
+    type_ = type;
+    object1_ = nullptr;
+    object2_ = nullptr;
+  }
+
   std::array<ContactPoint, kMaxContacts> contacts_{};
   std::size_t numContacts_ = 0;
   ContactType type_ = ContactType::Unknown;

@@ -413,6 +413,22 @@ TEST(CapsuleBox, HorizontalLineSupportHasEndpointContacts)
   EXPECT_GE(result.numContacts(), 2u);
 }
 
+TEST(CapsuleBox, VerticalLineSupportHasEndpointContacts)
+{
+  CapsuleShape capsule(0.035, 0.9);
+  BoxShape box(Eigen::Vector3d(0.1, 10.0, 10.0));
+
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  tfCapsule.translation() = Eigen::Vector3d(0.12, 0.0, 0.0);
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+
+  CollisionResult result;
+  bool collided = collideCapsuleBox(capsule, tfCapsule, box, tfBox, result);
+
+  EXPECT_TRUE(collided);
+  EXPECT_GE(result.numContacts(), 2u);
+}
+
 TEST(CapsuleBox, DuplicateFilteringIsPairLocal)
 {
   CapsuleShape capsule(0.035, 0.9);

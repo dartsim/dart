@@ -41,16 +41,103 @@ namespace dart::collision::native {
 
 namespace {
 
-[[nodiscard]] bool isIdentityTransform(const Eigen::Isometry3d& transform)
+[[nodiscard]] bool hasIdentityRotation(const Eigen::Isometry3d& transform)
 {
   const auto& rotation = transform.linear();
-  const auto& translation = transform.translation();
-  return translation.x() == 0.0 && translation.y() == 0.0
-         && translation.z() == 0.0 && rotation(0, 0) == 1.0
-         && rotation(0, 1) == 0.0 && rotation(0, 2) == 0.0
+  return rotation(0, 0) == 1.0 && rotation(0, 1) == 0.0 && rotation(0, 2) == 0.0
          && rotation(1, 0) == 0.0 && rotation(1, 1) == 1.0
          && rotation(1, 2) == 0.0 && rotation(2, 0) == 0.0
          && rotation(2, 1) == 0.0 && rotation(2, 2) == 1.0;
+}
+
+bool collideSphereTranslatedBox(
+    const Eigen::Vector3d& sphereCenter,
+    double sphereRadius,
+    const Eigen::Vector3d& boxHalfExtents,
+    const Eigen::Vector3d& boxTranslation,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d localSphereCenter = sphereCenter - boxTranslation;
+
+  const double closestX = std::clamp(
+      localSphereCenter.x(), -boxHalfExtents.x(), boxHalfExtents.x());
+  const double closestY = std::clamp(
+      localSphereCenter.y(), -boxHalfExtents.y(), boxHalfExtents.y());
+  const double closestZ = std::clamp(
+      localSphereCenter.z(), -boxHalfExtents.z(), boxHalfExtents.z());
+
+  const double dx = localSphereCenter.x() - closestX;
+  const double dy = localSphereCenter.y() - closestY;
+  const double dz = localSphereCenter.z() - closestZ;
+  const double distSquared = dx * dx + dy * dy + dz * dz;
+  const bool sphereCenterInside = dx == 0.0 && dy == 0.0 && dz == 0.0;
+
+  if (!sphereCenterInside && distSquared > sphereRadius * sphereRadius) {
+    return false;
+  }
+
+  if (localSphereCenter.x() == 0.0 && localSphereCenter.y() == 0.0
+      && localSphereCenter.z() == 0.0) {
+    double minDist = boxHalfExtents.x();
+    int minAxis = 0;
+    if (boxHalfExtents.y() < minDist) {
+      minDist = boxHalfExtents.y();
+      minAxis = 1;
+    }
+    if (boxHalfExtents.z() < minDist) {
+      minDist = boxHalfExtents.z();
+      minAxis = 2;
+    }
+
+    Eigen::Vector3d localNormal = Eigen::Vector3d::Zero();
+    localNormal[minAxis] = 1.0;
+    Eigen::Vector3d localContactPoint = Eigen::Vector3d::Zero();
+    localContactPoint[minAxis] = boxHalfExtents[minAxis];
+    result.addContact(
+        boxTranslation + localContactPoint,
+        -localNormal,
+        sphereRadius + minDist);
+    return true;
+  }
+
+  Eigen::Vector3d localNormal;
+  Eigen::Vector3d localContactPoint;
+  double penetration = 0.0;
+
+  if (sphereCenterInside) {
+    double minDist = boxHalfExtents.x() - std::abs(localSphereCenter.x());
+    int minAxis = 0;
+
+    const double distY = boxHalfExtents.y() - std::abs(localSphereCenter.y());
+    if (distY < minDist) {
+      minDist = distY;
+      minAxis = 1;
+    }
+
+    const double distZ = boxHalfExtents.z() - std::abs(localSphereCenter.z());
+    if (distZ < minDist) {
+      minDist = distZ;
+      minAxis = 2;
+    }
+
+    localNormal = Eigen::Vector3d::Zero();
+    localNormal[minAxis] = (localSphereCenter[minAxis] >= 0.0) ? 1.0 : -1.0;
+    penetration = sphereRadius + minDist;
+
+    localContactPoint = localSphereCenter;
+    localContactPoint[minAxis] = (localSphereCenter[minAxis] >= 0.0)
+                                     ? boxHalfExtents[minAxis]
+                                     : -boxHalfExtents[minAxis];
+  } else {
+    const double dist = std::sqrt(distSquared);
+    localNormal = Eigen::Vector3d(dx / dist, dy / dist, dz / dist);
+    localContactPoint = Eigen::Vector3d(closestX, closestY, closestZ);
+    penetration = sphereRadius - dist;
+  }
+
+  result.addContact(
+      boxTranslation + localContactPoint, -localNormal, penetration);
+  return true;
 }
 
 } // namespace
@@ -67,13 +154,19 @@ bool collideSphereBox(
     return false;
   }
 
+  if (hasIdentityRotation(boxTransform)) {
+    return collideSphereTranslatedBox(
+        sphereCenter,
+        sphereRadius,
+        boxHalfExtents,
+        boxTransform.translation(),
+        result);
+  }
+
   const Eigen::Matrix3d& boxRotation = boxTransform.linear();
   const Eigen::Vector3d& boxTranslation = boxTransform.translation();
-  const bool identityBoxTransform = isIdentityTransform(boxTransform);
   Eigen::Vector3d localSphereCenter
-      = identityBoxTransform
-            ? sphereCenter
-            : boxRotation.transpose() * (sphereCenter - boxTranslation);
+      = boxRotation.transpose() * (sphereCenter - boxTranslation);
 
   Eigen::Vector3d closestPointLocal;
   closestPointLocal.x() = std::clamp(
@@ -115,37 +208,27 @@ bool collideSphereBox(
     Eigen::Vector3d localNormal = Eigen::Vector3d::Zero();
     localNormal[minAxis] = (localSphereCenter[minAxis] >= 0) ? 1.0 : -1.0;
 
-    normal = identityBoxTransform ? localNormal : boxRotation * localNormal;
+    normal = boxRotation * localNormal;
     penetration = sphereRadius + minDist;
 
     Eigen::Vector3d localContactPoint = localSphereCenter;
     localContactPoint[minAxis] = (localSphereCenter[minAxis] >= 0)
                                      ? boxHalfExtents[minAxis]
                                      : -boxHalfExtents[minAxis];
-    contactPoint = identityBoxTransform
-                       ? localContactPoint
-                       : boxTranslation + boxRotation * localContactPoint;
+    contactPoint = boxTranslation + boxRotation * localContactPoint;
   } else {
     double dist = std::sqrt(distSquared);
 
     Eigen::Vector3d localNormal = diff / dist;
-    normal = identityBoxTransform ? localNormal : boxRotation * localNormal;
+    normal = boxRotation * localNormal;
 
     penetration = sphereRadius - dist;
-    contactPoint = identityBoxTransform
-                       ? closestPointLocal
-                       : boxTranslation + boxRotation * closestPointLocal;
+    contactPoint = boxTranslation + boxRotation * closestPointLocal;
   }
 
   normal = -normal;
 
-  ContactPoint contact;
-  contact.position = contactPoint;
-  contact.normal = normal;
-  contact.depth = penetration;
-
-  result.addContact(contact);
-
+  result.addContact(contactPoint, normal, penetration);
   return true;
 }
 
@@ -159,8 +242,8 @@ bool collideSphereBox(
 {
   return collideSphereBox(
       sphereTransform.translation(),
-      sphere.getRadius(),
-      box.getHalfExtents(),
+      detail::getRadius(sphere),
+      detail::getHalfExtents(box),
       boxTransform,
       result,
       option);

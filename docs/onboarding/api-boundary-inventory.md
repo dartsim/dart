@@ -15,7 +15,7 @@ documented downstream migration or removal condition is satisfied.
 ## Summary
 
 - C++ public headers scanned: 447
-- C++ headers with exposed implementation debt: 98
+- C++ headers with exposed implementation debt: 99
 - C++ headers with compatibility signals: 50
 - dartpy binding sources scanned: 168
 - dartpy binding sources with allowlisted compatibility debt: 8
@@ -24,7 +24,7 @@ documented downstream migration or removal condition is satisfied.
 
 | Module                  | Headers | Supported | Compatibility | Experimental | Exposed Debt |
 | ----------------------- | ------- | --------- | ------------- | ------------ | ------------ |
-| collision               | 98      | 88        | 3             | 0            | 7            |
+| collision               | 98      | 87        | 3             | 0            | 8            |
 | common                  | 52      | 21        | 4             | 0            | 27           |
 | constraint              | 23      | 16        | 6             | 0            | 1            |
 | dynamics                | 71      | 36        | 4             | 0            | 31           |
@@ -50,6 +50,7 @@ documented downstream migration or removal condition is satisfied.
 | dart/collision/collision_group.hpp                         | collision               | 1                | 0                  | `#include <dart/collision/detail/collision_group.hpp>`                                                                                               |
 | dart/collision/contact.hpp                                 | collision               | 1                | 0                  | `#include <dart/collision/detail/contact-impl.hpp>`                                                                                                  |
 | dart/collision/fcl/compat/fcl_collision_detector.hpp       | collision               | 1                | 0                  | `#include <dart/collision/detail/legacy_deprecation.hpp>`                                                                                            |
+| dart/collision/native/shapes/shape.hpp                     | collision               | 0                | 6                  | `friend double detail::getRadius(const SphereShape& shape);`<br>`friend const Eigen::Vector3d& detail::getHalfExtents(const BoxShape& shape);`       |
 | dart/collision/ode/compat/ode_collision_detector.hpp       | collision               | 1                | 0                  | `#include <dart/collision/detail/legacy_deprecation.hpp>`                                                                                            |
 | dart/common/aspect.hpp                                     | common                  | 2                | 0                  | `#include <dart/common/detail/no_op.hpp>`<br>`#include <dart/common/detail/aspect.hpp>`                                                              |
 | dart/common/aspect_with_version.hpp                        | common                  | 1                | 7                  | `#include <dart/common/detail/aspect_with_version.hpp>`<br>`void (*updateState)(DerivedT*) = &detail::NoOp<DerivedT*>>`                              |
