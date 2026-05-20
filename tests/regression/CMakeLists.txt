@@ -58,4 +58,7 @@ endif()
 if(TARGET dart-external-imgui)
   dart_add_test("regression" test_Issue2516)
   target_link_libraries(test_Issue2516 dart-external-imgui)
+
+  dart_add_test("regression" test_Issue2668)
+  target_link_libraries(test_Issue2668 dart-external-imgui)
 endif()

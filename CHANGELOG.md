@@ -7,6 +7,7 @@
 * GUI
 
   * Fix SEGV in ImFontAtlas::AddFontFromMemoryCompressedTTF when null pointer is passed as compressed font data: [#2516](https://github.com/dartsim/dart/issues/2516)
+  * Fix `ImGui::ColorPicker3`/`ColorPicker4` crashes when called without an active ImGui context or window: [#2668](https://github.com/dartsim/dart/issues/2668)
 
 * Common
 
