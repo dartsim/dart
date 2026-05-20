@@ -89,19 +89,41 @@ bool collideSphereTranslatedBox(
       minAxis = 2;
     }
 
-    Eigen::Vector3d localNormal = Eigen::Vector3d::Zero();
-    localNormal[minAxis] = 1.0;
-    Eigen::Vector3d localContactPoint = Eigen::Vector3d::Zero();
-    localContactPoint[minAxis] = boxHalfExtents[minAxis];
-    result.addContact(
-        boxTranslation + localContactPoint,
-        -localNormal,
-        sphereRadius + minDist);
+    switch (minAxis) {
+      case 0:
+        result.addContact(
+            boxTranslation.x() + boxHalfExtents.x(),
+            boxTranslation.y(),
+            boxTranslation.z(),
+            -1.0,
+            0.0,
+            0.0,
+            sphereRadius + minDist);
+        break;
+      case 1:
+        result.addContact(
+            boxTranslation.x(),
+            boxTranslation.y() + boxHalfExtents.y(),
+            boxTranslation.z(),
+            0.0,
+            -1.0,
+            0.0,
+            sphereRadius + minDist);
+        break;
+      default:
+        result.addContact(
+            boxTranslation.x(),
+            boxTranslation.y(),
+            boxTranslation.z() + boxHalfExtents.z(),
+            0.0,
+            0.0,
+            -1.0,
+            sphereRadius + minDist);
+        break;
+    }
     return true;
   }
 
-  Eigen::Vector3d localNormal;
-  Eigen::Vector3d localContactPoint;
   double penetration = 0.0;
 
   if (sphereCenterInside) {
@@ -120,23 +142,53 @@ bool collideSphereTranslatedBox(
       minAxis = 2;
     }
 
-    localNormal = Eigen::Vector3d::Zero();
-    localNormal[minAxis] = (localSphereCenter[minAxis] >= 0.0) ? 1.0 : -1.0;
+    const double normalSign = (localSphereCenter[minAxis] >= 0.0) ? 1.0 : -1.0;
     penetration = sphereRadius + minDist;
 
-    localContactPoint = localSphereCenter;
-    localContactPoint[minAxis] = (localSphereCenter[minAxis] >= 0.0)
-                                     ? boxHalfExtents[minAxis]
-                                     : -boxHalfExtents[minAxis];
+    switch (minAxis) {
+      case 0:
+        result.addContact(
+            boxTranslation.x() + normalSign * boxHalfExtents.x(),
+            boxTranslation.y() + localSphereCenter.y(),
+            boxTranslation.z() + localSphereCenter.z(),
+            -normalSign,
+            0.0,
+            0.0,
+            penetration);
+        break;
+      case 1:
+        result.addContact(
+            boxTranslation.x() + localSphereCenter.x(),
+            boxTranslation.y() + normalSign * boxHalfExtents.y(),
+            boxTranslation.z() + localSphereCenter.z(),
+            0.0,
+            -normalSign,
+            0.0,
+            penetration);
+        break;
+      default:
+        result.addContact(
+            boxTranslation.x() + localSphereCenter.x(),
+            boxTranslation.y() + localSphereCenter.y(),
+            boxTranslation.z() + normalSign * boxHalfExtents.z(),
+            0.0,
+            0.0,
+            -normalSign,
+            penetration);
+        break;
+    }
   } else {
     const double dist = std::sqrt(distSquared);
-    localNormal = Eigen::Vector3d(dx / dist, dy / dist, dz / dist);
-    localContactPoint = Eigen::Vector3d(closestX, closestY, closestZ);
     penetration = sphereRadius - dist;
+    result.addContact(
+        boxTranslation.x() + closestX,
+        boxTranslation.y() + closestY,
+        boxTranslation.z() + closestZ,
+        -dx / dist,
+        -dy / dist,
+        -dz / dist,
+        penetration);
   }
-
-  result.addContact(
-      boxTranslation + localContactPoint, -localNormal, penetration);
   return true;
 }
 

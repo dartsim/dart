@@ -34,6 +34,8 @@
 
 #include <gtest/gtest.h>
 
+#include <stdexcept>
+
 using namespace dart::collision::native;
 
 TEST(ContactPoint, DefaultConstruction)
@@ -278,6 +280,7 @@ TEST(CollisionResult, Clear)
   EXPECT_FALSE(result.isCollision());
   EXPECT_EQ(result.numContacts(), 0u);
   EXPECT_EQ(result.numManifolds(), 0u);
+  EXPECT_THROW(static_cast<void>(result.getContact(0)), std::out_of_range);
 }
 
 TEST(CollisionResult, GetManifolds)

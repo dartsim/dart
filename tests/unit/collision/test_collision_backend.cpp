@@ -304,6 +304,52 @@ TEST(CollisionBackend, PersistentManifoldCacheWarmStartAcrossGroupOrder)
 }
 
 //==============================================================================
+TEST(CollisionBackend, PersistentManifoldCacheWarmStartMultipleContacts)
+{
+  auto detector = DartCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto boxA = createBoxFrame(
+      "boxA", Eigen::Vector3d::Ones(), Eigen::Vector3d::Zero());
+  auto boxB = createBoxFrame(
+      "boxB", Eigen::Vector3d::Ones(), Eigen::Vector3d(0.8, 0.0, 0.0));
+  group->addShapeFrame(boxA.get());
+  group->addShapeFrame(boxB.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  CollisionResult first;
+  ASSERT_TRUE(group->collide(option, &first));
+  ASSERT_GT(first.getNumContacts(), 1u);
+
+  std::vector<double> expectedImpulses;
+  expectedImpulses.reserve(first.getNumContacts());
+  for (auto i = 0u; i < first.getNumContacts(); ++i) {
+    auto& contact = first.getContact(i);
+    ASSERT_NE(nullptr, contact.userData);
+    auto* cached = static_cast<native::CachedContact*>(contact.userData);
+    cached->cachedNormalImpulse = static_cast<double>(i + 1u);
+    expectedImpulses.push_back(cached->cachedNormalImpulse);
+  }
+  std::sort(expectedImpulses.begin(), expectedImpulses.end());
+
+  CollisionResult second;
+  ASSERT_TRUE(group->collide(option, &second));
+  ASSERT_EQ(first.getNumContacts(), second.getNumContacts());
+
+  std::vector<double> actualImpulses;
+  actualImpulses.reserve(second.getNumContacts());
+  for (auto i = 0u; i < second.getNumContacts(); ++i) {
+    actualImpulses.push_back(second.getContact(i).cachedNormalImpulse);
+  }
+  std::sort(actualImpulses.begin(), actualImpulses.end());
+
+  EXPECT_EQ(expectedImpulses, actualImpulses);
+}
+
+//==============================================================================
 TEST(CollisionBackend, SphereSphereCollide)
 {
   auto detector = DartCollisionDetector::create();

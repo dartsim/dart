@@ -64,10 +64,16 @@ bool isSameTransform(const Eigen::Isometry3d& lhs, const Eigen::Isometry3d& rhs)
   return lhs.matrix().isApprox(rhs.matrix(), 1e-12);
 }
 
-bool requiresDynamicGeometrySync(const dynamics::Shape& shape)
+unsigned int getGeometryVariance(const dynamics::Shape& shape)
 {
-  return shape.checkDataVariance(dynamics::Shape::DYNAMIC_VERTICES)
-         || shape.checkDataVariance(dynamics::Shape::DYNAMIC_ELEMENTS);
+  return shape.getDataVariance()
+         & (dynamics::Shape::DYNAMIC_VERTICES
+            | dynamics::Shape::DYNAMIC_ELEMENTS);
+}
+
+bool requiresDynamicGeometrySync(unsigned int geometryVariance)
+{
+  return geometryVariance != 0u;
 }
 
 class DartCollisionFilterAdapter final : public native::CollisionFilter
@@ -269,10 +275,6 @@ public:
       CollisionResult* result,
       native::PersistentManifoldCache* /*manifoldCache*/)
   {
-    if (result) {
-      result->clear();
-    }
-
     if (!checkMaxContacts(option)) {
       return false;
     }
@@ -342,10 +344,6 @@ public:
       return collideSelf(option, result, manifoldCache);
     }
 
-    if (result) {
-      result->clear();
-    }
-
     if (!checkMaxContacts(option)) {
       return false;
     }
@@ -398,10 +396,6 @@ public:
 
   double distanceSelf(const DistanceOption& option, DistanceResult* result)
   {
-    if (result) {
-      result->clear();
-    }
-
     return distanceImpl(*this, true, option, result);
   }
 
@@ -414,10 +408,6 @@ public:
       return distanceSelf(option, result);
     }
 
-    if (result) {
-      result->clear();
-    }
-
     return distanceImpl(other, false, option, result);
   }
 
@@ -427,10 +417,6 @@ public:
       const RaycastOption& option,
       RaycastResult* result)
   {
-    if (result) {
-      result->clear();
-    }
-
     const auto delta = to - from;
     const auto totalLength = delta.norm();
     if (totalLength <= 0.0) {
@@ -529,7 +515,9 @@ private:
     std::size_t shapeId = 0u;
     std::size_t shapeVersion = 0u;
     std::size_t shapeRevision = 0u;
+    unsigned int geometryVariance = 0u;
     common::Connection transformConnection;
+    bool dynamicGeometry = false;
     bool transformDirty = false;
   };
 
@@ -569,11 +557,37 @@ private:
     const auto shapeId = shape->getID();
     const auto shapeVersion = shape->getVersion();
     const auto shapeRevision = dartObject->getNativeShapeRevision();
-    const bool dynamicGeometry = requiresDynamicGeometrySync(*shape);
+    const auto geometryVariance = getGeometryVariance(*shape);
+    const bool dynamicGeometry = requiresDynamicGeometrySync(geometryVariance);
+
     auto it = mEntries.find(object);
-    if (it == mEntries.end() || dynamicGeometry || it->second.shapeId != shapeId
+    if (it != mEntries.end() && it->second.nativeObject.isValid()
+        && !dynamicGeometry && !it->second.dynamicGeometry
+        && it->second.shapeId == shapeId
+        && it->second.shapeVersion == shapeVersion
+        && it->second.shapeRevision == shapeRevision
+        && it->second.geometryVariance == geometryVariance) {
+      auto& entry = it->second;
+      if (!entry.transformDirty) {
+        return true;
+      }
+
+      auto& nativeObject = entry.nativeObject;
+      const auto& transform = object->getTransform();
+      if (!isSameTransform(nativeObject.getTransform(), transform)) {
+        nativeObject.setTransform(transform);
+        dirtyIds.push_back(nativeObject.getId());
+      }
+      entry.transformDirty = false;
+
+      return true;
+    }
+
+    if (it == mEntries.end() || dynamicGeometry || it->second.dynamicGeometry
+        || it->second.shapeId != shapeId
         || it->second.shapeVersion != shapeVersion
         || it->second.shapeRevision != shapeRevision
+        || it->second.geometryVariance != geometryVariance
         || !it->second.nativeObject.isValid()) {
       if (it != mEntries.end()) {
         removeEntry(it);
@@ -602,7 +616,9 @@ private:
               shapeId,
               shapeVersion,
               shapeRevision,
+              geometryVariance,
               common::Connection{},
+              dynamicGeometry,
               false});
       (void)inserted;
       // Slot registration is observer state; ShapeFrame exposes it non-const.

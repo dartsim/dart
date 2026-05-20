@@ -95,6 +95,44 @@ public:
     invalidateCache();
   }
 
+  void addContact(
+      double positionX,
+      double positionY,
+      double positionZ,
+      double normalX,
+      double normalY,
+      double normalZ,
+      double depth)
+  {
+    if (manifoldCount_ == 0u) {
+      firstContact_.position.x() = positionX;
+      firstContact_.position.y() = positionY;
+      firstContact_.position.z() = positionZ;
+      firstContact_.normal.x() = normalX;
+      firstContact_.normal.y() = normalY;
+      firstContact_.normal.z() = normalZ;
+      firstContact_.depth = depth;
+      firstContact_.object1 = nullptr;
+      firstContact_.object2 = nullptr;
+      firstContact_.featureIndex1 = -1;
+      firstContact_.featureIndex2 = -1;
+      firstEntryIsContact_ = true;
+      manifoldCount_ = 1u;
+      contactCount_ = 1u;
+      invalidateCache();
+      return;
+    }
+
+    auto& manifold = nextExtraManifold();
+    manifold.setSingleContact(
+        Eigen::Vector3d(positionX, positionY, positionZ),
+        Eigen::Vector3d(normalX, normalY, normalZ),
+        depth,
+        ContactType::Point);
+    ++contactCount_;
+    invalidateCache();
+  }
+
   void addManifold(ContactManifold manifold);
   void clear()
   {

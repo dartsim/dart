@@ -69,6 +69,10 @@ std::span<const ContactManifold> CollisionResult::getManifolds() const
 
 const ContactPoint& CollisionResult::getContact(std::size_t i) const
 {
+  if (i >= contactCount_) {
+    throw std::out_of_range("CollisionResult::getContact");
+  }
+
   if (firstEntryIsContact_ && i == 0u) {
     return firstContact_;
   }

@@ -42,6 +42,7 @@
 
 #include <algorithm>
 #include <array>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -77,6 +78,7 @@ public:
   }
 
   using CollisionDetector::claimCollisionObject;
+  using DartCollisionDetector::refreshCollisionObject;
 
 private:
   TestDartCollisionDetector() = default;
@@ -163,6 +165,14 @@ std::shared_ptr<math::TriMesh<double>> makeCubeTriMesh()
   mesh->setTriangles(vertices, triangles);
 
   return mesh;
+}
+
+void scaleVertices(
+    const std::shared_ptr<math::TriMesh<double>>& mesh, double scale)
+{
+  for (auto& vertex : mesh->getVertices()) {
+    vertex *= scale;
+  }
 }
 
 std::shared_ptr<math::TriMesh<double>> makeSingleTriangleTriMesh()
@@ -429,6 +439,67 @@ TEST(DartCollisionDetector, MeshMeshContactsPreserveTriangleIds)
     sawNonZeroGridTriangle = sawNonZeroGridTriangle || contact.triID2 > 0;
   }
   EXPECT_TRUE(sawNonZeroGridTriangle);
+}
+
+TEST(DartCollisionGroup, PersistentManifoldWarmStartManyContactsUsesStableSlots)
+{
+  auto detector = DartCollisionDetector::create();
+  auto singleTriangle = std::make_shared<MeshShape>(
+      Eigen::Vector3d::Ones(), makeSingleTriangleTriMesh());
+  auto grid = std::make_shared<MeshShape>(
+      Eigen::Vector3d::Ones(), makeGridTriMesh(4, 4.0));
+  auto setupA = makeShapeSetup("single_triangle", singleTriangle);
+  auto setupB = makeShapeSetup("grid", grid);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  CollisionResult first;
+  ASSERT_TRUE(group->collide(option, &first));
+  ASSERT_GT(
+      first.getNumContacts(),
+      static_cast<std::size_t>(native::PersistentManifold::kMaxContacts));
+
+  std::unordered_set<const void*> firstSlots;
+  for (auto i = 0u; i < first.getNumContacts(); ++i) {
+    auto& contact = first.getContact(i);
+    if (!contact.userData) {
+      continue;
+    }
+
+    const bool inserted = firstSlots.insert(contact.userData).second;
+    EXPECT_TRUE(inserted);
+    auto* cached = static_cast<native::CachedContact*>(contact.userData);
+    cached->cachedNormalImpulse = static_cast<double>(firstSlots.size());
+  }
+  ASSERT_GT(firstSlots.size(), 0u);
+  EXPECT_LE(
+      firstSlots.size(),
+      static_cast<std::size_t>(native::PersistentManifold::kMaxContacts));
+
+  CollisionResult second;
+  ASSERT_TRUE(group->collide(option, &second));
+  ASSERT_GT(
+      second.getNumContacts(),
+      static_cast<std::size_t>(native::PersistentManifold::kMaxContacts));
+
+  std::unordered_set<const void*> secondSlots;
+  for (auto i = 0u; i < second.getNumContacts(); ++i) {
+    const auto& contact = second.getContact(i);
+    if (!contact.userData) {
+      continue;
+    }
+
+    const bool inserted = secondSlots.insert(contact.userData).second;
+    EXPECT_TRUE(inserted);
+    EXPECT_GT(contact.cachedNormalImpulse, 0.0);
+  }
+  EXPECT_EQ(firstSlots.size(), secondSlots.size());
 }
 
 TEST(DartCollisionDetector, PyramidShapeCollisionUsesNativeConvexGeometry)
@@ -924,6 +995,71 @@ TEST(DartCollisionGroup, PersistentSceneRebuildsAfterMeshScaleMutation)
   EXPECT_EQ(0u, result.getNumContacts());
 
   meshShape->setScale(Eigen::Vector3d::Constant(2.0));
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_LT(0u, result.getNumContacts());
+}
+
+TEST(DartCollisionGroup, PersistentSceneRebuildsAfterDynamicMeshDataVariance)
+{
+  auto detector = DartCollisionDetector::create();
+  auto triMesh = makeCubeTriMesh();
+  auto meshShape
+      = std::make_shared<MeshShape>(Eigen::Vector3d::Constant(0.2), triMesh);
+  auto setupA = makeShapeSetup("mesh", meshShape);
+  auto setupB = makeShapeSetup("sphere", std::make_shared<SphereShape>(0.25));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.9, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  scaleVertices(triMesh, 8.0);
+  meshShape->addDataVariance(Shape::DYNAMIC_VERTICES);
+
+  result.clear();
+  EXPECT_TRUE(group->collide(option, &result));
+  EXPECT_LT(0u, result.getNumContacts());
+}
+
+TEST(DartCollisionGroup, PersistentSceneRebuildsAfterPublicRefresh)
+{
+  auto detector = TestDartCollisionDetector::create();
+  auto triMesh = makeCubeTriMesh();
+  auto meshShape
+      = std::make_shared<MeshShape>(Eigen::Vector3d::Constant(0.2), triMesh);
+  auto setupA = makeShapeSetup("mesh", meshShape);
+  auto setupB = makeShapeSetup("sphere", std::make_shared<SphereShape>(0.25));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.9, 0.0, 0.0);
+  FreeJoint::setTransformOf(setupB.body, tf);
+
+  auto object = detector->claimCollisionObject(setupA.shapeNode);
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setupA.shapeNode);
+  group->addShapeFrame(setupB.shapeNode);
+
+  CollisionOption option;
+  option.maxNumContacts = 10u;
+
+  CollisionResult result;
+  EXPECT_FALSE(group->collide(option, &result));
+  EXPECT_EQ(0u, result.getNumContacts());
+
+  scaleVertices(triMesh, 8.0);
+  detector->refreshCollisionObject(object.get());
 
   result.clear();
   EXPECT_TRUE(group->collide(option, &result));

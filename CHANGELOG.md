@@ -154,9 +154,12 @@
   - Native collision: handle degenerate triangle cases in GJK/MPR for robust convex queries.
   - Native collision: improved broad-phase early exit, contact-count tracking, box-box distance, cylinder-box narrow phase, and primitive-mesh traversal performance.
   - Native collision: reduced single-contact result overhead, optimized
-    sphere-box, capsule-sphere, and capsule-box primitive hot paths, and kept
-    public DART collision object transforms synchronized through shape-frame
-    transform notifications.
+    sphere-sphere, sphere-box, capsule-sphere, and capsule-box primitive hot
+    paths, batched public DART contact-manifold warm starts, cached unchanged
+    public-adapter geometry, and kept public DART collision object transforms
+    synchronized through shape-frame transform notifications.
+  - Fixed native `CollisionResult::getContact()` to reject stale indices after
+    the result is cleared.
   - Native collision: fixed the spatial hash broad phase so unbounded
     `PlaneShape` AABBs are paired without hashing infinite cell coordinates.
   - Native collision: stabilized tilted cylinder contacts against plane-like large boxes, matching gz-physics plane fallback behavior without selecting external collision backends.

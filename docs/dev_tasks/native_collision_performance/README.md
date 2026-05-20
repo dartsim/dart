@@ -8,11 +8,10 @@
       First manifest generated from the current collision benchmark JSON;
       final acceptance still needs a quieter controlled rerun.
 - [ ] Phase 2: Single-core CPU optimization until every comparable benchmark
-      family exceeds the strongest comparison baseline. The first public
-      adapter edge-case slice now leads in the current noisy inventory run;
-      raw capsule-sphere, capsule-box, and most sphere-box edge rows now lead,
-      while raw sphere-sphere, sphere-box deep penetration, and two public
-      adapter edge rows remain measured gaps.
+      family exceeds the strongest comparison baseline. The current manifest
+      has no `behind` rows after primitive narrow-phase and public adapter
+      pipeline hot-path work; final acceptance still needs a controlled rerun
+      before promoting durable evidence.
 - [ ] Phase 3: Regression guardrails and release-ready evidence transfer.
 - [ ] Phase 4: Multi-core CPU roadmap and prototype gate.
 - [ ] Phase 5: Single-GPU roadmap and prototype gate.
@@ -117,10 +116,13 @@ define comparable behavior and performance bars.
 2. Re-run the broad collision benchmark guard on a quieter controlled
    single-core configuration before using any result as final acceptance
    evidence.
-3. Continue with the remaining measured gaps: raw sphere-sphere, raw
-   sphere-box deep penetration, and the two public adapter edge rows; verify
-   each targeted row and the broad collision guard.
-4. Keep the manifest generated from JSON until durable dashboard data is
+3. Audit the optimized contact manifold and public adapter pipeline changes for
+   cache-friendly data flow, backward compatibility, and gz-physics package
+   isolation before widening the refactor.
+4. For the next profiling pass, prefer profile builds and scoped
+   `dart/common/profile.hpp` markers around candidate pipeline stages instead
+   of leaving instrumentation in the default hot path.
+5. Keep the manifest generated from JSON until durable dashboard data is
    promoted out of this task folder. Generate it with an explicit output path:
    `pixi run python scripts/generate_collision_benchmark_manifest.py --output docs/dev_tasks/native_collision_performance/05-benchmark-manifest.md`.
 
