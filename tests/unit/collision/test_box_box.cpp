@@ -186,6 +186,39 @@ void expectCollisionResultExactlyEqual(
   }
 }
 
+Eigen::Isometry3d makeBoxPose(
+    const Eigen::Vector3d& translation,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ(),
+    double angle = 0.0)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = Eigen::AngleAxisd(angle, axis.normalized()).toRotationMatrix();
+  tf.translation() = translation;
+  return tf;
+}
+
+void expectBoxBoxFiniteHit(
+    const char* name,
+    const Eigen::Vector3d& halfExtents1,
+    const Eigen::Isometry3d& tf1,
+    const Eigen::Vector3d& halfExtents2,
+    const Eigen::Isometry3d& tf2)
+{
+  SCOPED_TRACE(name);
+  CollisionResult result;
+  const bool hit = collideBoxes(halfExtents1, tf1, halfExtents2, tf2, result);
+  ASSERT_TRUE(hit);
+  ASSERT_GE(result.numContacts(), 1u);
+
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    EXPECT_GE(contact.depth, 0.0);
+    EXPECT_TRUE(contact.position.allFinite());
+    EXPECT_TRUE(contact.normal.allFinite());
+    EXPECT_NEAR(contact.normal.norm(), 1.0, 1e-8);
+  }
+}
+
 } // namespace
 
 TEST(BoxBox, Separated_AlongX)
@@ -353,6 +386,181 @@ TEST(BoxBox, DifferentSizes)
   EXPECT_TRUE(collided);
   ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 1.0, 1e-10);
+}
+
+TEST(BoxBox, AxisSweepTransitionsAcrossSizesAndOffsets)
+{
+  struct SweepSpec
+  {
+    Eigen::Vector3d halfExtents1;
+    Eigen::Vector3d halfExtents2;
+    Eigen::Vector3d lateralOffset;
+    double start;
+    double step;
+  };
+
+  const std::array<SweepSpec, 3> specs{{
+      {Eigen::Vector3d(0.5, 1.0, 0.5),
+       Eigen::Vector3d(1.0, 0.5, 1.0),
+       Eigen::Vector3d::Zero(),
+       -5.0,
+       0.1},
+      {Eigen::Vector3d(0.05, 0.1, 0.05),
+       Eigen::Vector3d(0.1, 0.05, 0.1),
+       Eigen::Vector3d::Zero(),
+       -0.5,
+       0.01},
+      {Eigen::Vector3d(0.5, 1.0, 0.5),
+       Eigen::Vector3d(1.0, 0.5, 1.0),
+       Eigen::Vector3d(0.0, -0.1, 0.0),
+       -5.0,
+       0.1},
+  }};
+
+  for (const auto& spec : specs) {
+    for (int axisIndex = 0; axisIndex < 3; ++axisIndex) {
+      if (axisIndex != 0 && spec.lateralOffset.norm() > 0.0) {
+        continue;
+      }
+
+      Eigen::Vector3d axis = Eigen::Vector3d::Zero();
+      axis[axisIndex] = 1.0;
+      const double threshold
+          = spec.halfExtents1[axisIndex] + spec.halfExtents2[axisIndex];
+
+      for (int i = 0; i < 100; ++i) {
+        const double offset = spec.start + spec.step * i;
+        SCOPED_TRACE(offset);
+
+        CollisionResult result;
+        const bool hit = collideBoxes(
+            spec.halfExtents1,
+            makeBoxPose(offset * axis + spec.lateralOffset),
+            spec.halfExtents2,
+            Eigen::Isometry3d::Identity(),
+            result);
+        const bool expectedHit = std::abs(offset) <= threshold;
+        EXPECT_EQ(hit, expectedHit);
+
+        if (!expectedHit) {
+          EXPECT_EQ(result.numContacts(), 0u);
+          continue;
+        }
+
+        ASSERT_GE(result.numContacts(), 1u);
+        const auto& contact = result.getContact(0);
+        EXPECT_GE(contact.depth, 0.0);
+        EXPECT_TRUE(contact.position.allFinite());
+        EXPECT_TRUE(contact.normal.allFinite());
+      }
+    }
+  }
+}
+
+TEST(BoxBox, RotationSweepTransitionsAtNearTouchingOffset)
+{
+  const Eigen::Vector3d halfExtents(0.5, 0.5, 0.5);
+  const Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+
+  struct RotationCase
+  {
+    double angle;
+    bool expectedHit;
+  };
+
+  const std::array<RotationCase, 5> cases{{
+      {0.0, false},
+      {std::numbers::pi_v<double> / 20.0, true},
+      {std::numbers::pi_v<double> / 4.0, true},
+      {std::numbers::pi_v<double> / 2.0, false},
+      {std::numbers::pi_v<double>, false},
+  }};
+
+  for (const auto& testCase : cases) {
+    SCOPED_TRACE(testCase.angle);
+    CollisionResult result;
+    const bool hit = collideBoxes(
+        halfExtents,
+        makeBoxPose(
+            Eigen::Vector3d(-1.01, 0.0, 0.0),
+            Eigen::Vector3d::UnitY(),
+            testCase.angle),
+        halfExtents,
+        tf2,
+        result);
+    EXPECT_EQ(hit, testCase.expectedHit);
+    if (testCase.expectedHit) {
+      ASSERT_GE(result.numContacts(), 1u);
+      EXPECT_TRUE(result.getContact(0).position.allFinite());
+      EXPECT_TRUE(result.getContact(0).normal.allFinite());
+    } else {
+      EXPECT_EQ(result.numContacts(), 0u);
+    }
+  }
+}
+
+TEST(BoxBox, TranslatedAndRotatedPenetrationsReportFiniteContacts)
+{
+  const Eigen::Vector3d unitBox(0.5, 0.5, 0.5);
+  const Eigen::Vector3d rectangularBox(0.25, 0.5, 0.75);
+
+  expectBoxBoxFiniteHit(
+      "offset rectangular box",
+      unitBox,
+      Eigen::Isometry3d::Identity(),
+      rectangularBox,
+      makeBoxPose(Eigen::Vector3d(0.1, 0.0, 0.0)));
+
+  expectBoxBoxFiniteHit(
+      "translated unit box against rectangular box",
+      unitBox,
+      makeBoxPose(Eigen::Vector3d(-0.3, 0.5, 1.0)),
+      rectangularBox,
+      makeBoxPose(Eigen::Vector3d(0.1, 0.0, 0.0)));
+
+  expectBoxBoxFiniteHit(
+      "rotated shallow cube overlap",
+      unitBox,
+      makeBoxPose(
+          Eigen::Vector3d(0.1, 0.0, 0.1),
+          Eigen::Vector3d::UnitZ(),
+          std::numbers::pi_v<double> / 4.0),
+      unitBox,
+      Eigen::Isometry3d::Identity());
+
+  expectBoxBoxFiniteHit(
+      "rotated edge-biased overlap",
+      unitBox,
+      makeBoxPose(
+          Eigen::Vector3d(-0.5, 0.5, 0.0),
+          Eigen::Vector3d::UnitZ(),
+          std::numbers::pi_v<double> / 4.0),
+      unitBox,
+      Eigen::Isometry3d::Identity());
+
+  expectBoxBoxFiniteHit(
+      "oblique rotated overlap",
+      unitBox,
+      makeBoxPose(
+          Eigen::Vector3d(-0.5, 0.1, 0.4),
+          Eigen::Vector3d(0.0, 1.0, 1.0),
+          std::numbers::pi_v<double> / 4.0),
+      unitBox,
+      makeBoxPose(Eigen::Vector3d(0.1, 0.0, 0.0)));
+
+  expectBoxBoxFiniteHit(
+      "small shallow face overlap",
+      unitBox,
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3d(0.25, 0.25, 0.25),
+      makeBoxPose(Eigen::Vector3d(0.0, 0.73, 0.0)));
+
+  expectBoxBoxFiniteHit(
+      "small shallow corner overlap",
+      unitBox,
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3d(0.25, 0.25, 0.25),
+      makeBoxPose(Eigen::Vector3d(0.3, 0.738, 0.0)));
 }
 
 TEST(BoxBox, Rotated90_AlongX)

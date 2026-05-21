@@ -1530,6 +1530,41 @@ def classify_case(case: Case, scope: Scope) -> tuple[str, str, str]:
             )
 
         if case.suite in {
+            "boxboxAlignedX",
+            "boxboxAlignedY",
+            "boxboxAlignedZ",
+            "mprBoxboxAlignedX",
+            "mprBoxboxAlignedY",
+            "mprBoxboxAlignedZ",
+        }:
+            return (
+                "covered",
+                "tests/unit/collision/test_box_box.cpp::BoxBox.AxisSweepTransitionsAcrossSizesAndOffsets",
+                "Checks box-box collision transitions while sweeping boxes of two size scales along coordinate axes, including an off-axis overlap case.",
+            )
+
+        if case.suite in {"boxboxRot", "mprBoxboxRot"}:
+            return (
+                "covered",
+                "tests/unit/collision/test_box_box.cpp::BoxBox.RotationSweepTransitionsAtNearTouchingOffset; tests/unit/collision/test_box_box.cpp::BoxBox.Rotated45_Diagonal",
+                "Checks near-touching box-box transitions as one box rotates through separated and colliding orientations, plus an existing diagonal rotated overlap case.",
+            )
+
+        if case.suite in {"boxboxSeparate", "mprBoxboxSeparate"}:
+            return (
+                "not-applicable",
+                "libccd separation-vector API",
+                "These rows exercise libccd's raw GJK separation-vector output. DART native collision exposes public contacts and signed distance rather than this helper API; box-box contact, penetration, and signed-distance behavior are covered by native tests.",
+            )
+
+        if case.suite in {"boxboxPenetration", "mprBoxboxPenetration"}:
+            return (
+                "covered",
+                "tests/unit/collision/test_box_box.cpp::BoxBox.TranslatedAndRotatedPenetrationsReportFiniteContacts; tests/unit/collision/test_box_box.cpp::BoxBox.RotatedFacePatchReductionRespectsContactLimit; tests/unit/collision/test_box_box.cpp::BoxBox.EdgeEdgeContactAcrossEquivalentCubeOrientations",
+                "Checks box-box penetration contact point, depth, and normal data for translated, rotated, shallow face, shallow corner, face-patch, and edge-edge configurations.",
+            )
+
+        if case.suite in {
             "mprCylcylAlignedX",
             "mprCylcylAlignedY",
             "mprCylcylAlignedZ",
