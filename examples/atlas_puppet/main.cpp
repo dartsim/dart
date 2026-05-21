@@ -38,8 +38,13 @@
 #include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <algorithm>
+#include <filesystem>
 #include <iterator>
+#include <memory>
 #include <string_view>
+
+#include <cstdlib>
 
 using namespace dart::common;
 using namespace dart::dynamics;
@@ -48,6 +53,82 @@ using namespace dart::utils;
 using namespace dart::math;
 
 const double display_elevation = 0.05;
+
+struct RunOptions
+{
+  bool headless = false;
+  int frames = 10;
+  int width = 1280;
+  int height = 960;
+  std::string screenshotPath;
+};
+
+void printUsage(const char* executable)
+{
+  std::cout << "Usage: " << executable
+            << " [--headless] [--frames N] [--width N] [--height N]"
+               " [--screenshot PATH]\n";
+}
+
+RunOptions parseOptions(int argc, char* argv[])
+{
+  RunOptions options;
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view arg(argv[i]);
+    if (arg == "--headless") {
+      options.headless = true;
+    } else if (arg == "--frames" && i + 1 < argc) {
+      options.frames = std::max(1, std::atoi(argv[++i]));
+    } else if (arg == "--width" && i + 1 < argc) {
+      options.width = std::max(1, std::atoi(argv[++i]));
+    } else if (arg == "--height" && i + 1 < argc) {
+      options.height = std::max(1, std::atoi(argv[++i]));
+    } else if (arg == "--screenshot" && i + 1 < argc) {
+      options.screenshotPath = argv[++i];
+      options.headless = true;
+    } else if (arg == "--help" || arg == "-h") {
+      printUsage(argv[0]);
+      std::exit(EXIT_SUCCESS);
+    } else {
+      std::cerr << "Unknown argument: " << arg << "\n";
+      printUsage(argv[0]);
+      std::exit(EXIT_FAILURE);
+    }
+  }
+  return options;
+}
+
+bool prepareScreenshotPath(const std::filesystem::path& path)
+{
+  std::error_code ec;
+
+  if (path.has_parent_path()) {
+    std::filesystem::create_directories(path.parent_path(), ec);
+    if (ec) {
+      std::cerr << "Failed to create screenshot directory '"
+                << path.parent_path() << "': " << ec.message() << "\n";
+      return false;
+    }
+  }
+
+  const bool screenshotExists = std::filesystem::exists(path, ec);
+  if (ec) {
+    std::cerr << "Failed to inspect screenshot path '" << path
+              << "': " << ec.message() << "\n";
+    return false;
+  }
+
+  if (screenshotExists) {
+    std::filesystem::remove(path, ec);
+    if (ec) {
+      std::cerr << "Failed to remove existing screenshot '" << path
+                << "': " << ec.message() << "\n";
+      return false;
+    }
+  }
+
+  return true;
+}
 
 class RelaxedPosture : public dart::math::Function
 {
@@ -885,8 +966,10 @@ void enableDragAndDrops(dart::gui::Viewer& viewer, const SkeletonPtr& atlas)
   });
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+  const auto options = parseOptions(argc, argv);
+
   // Create and configure the physics world
   WorldPtr world = World::create();
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
@@ -907,7 +990,17 @@ int main()
       = new TeleoperationWorld(world, atlas);
 
   // Create the OSG viewer
-  dart::gui::Viewer viewer;
+  std::unique_ptr<dart::gui::Viewer> viewerPtr;
+  if (options.headless) {
+    viewerPtr = std::make_unique<dart::gui::Viewer>(
+        dart::gui::ViewerConfig::headless(options.width, options.height));
+  } else {
+    viewerPtr = std::make_unique<dart::gui::Viewer>();
+  }
+  dart::gui::Viewer& viewer = *viewerPtr;
+  if (options.headless) {
+    viewer.setThreadingModel(::osgViewer::Viewer::SingleThreaded);
+  }
   viewer.allowSimulation(false); // Kinematic control only
   viewer.addWorldNode(worldNode);
 
@@ -924,12 +1017,44 @@ int main()
       new dart::gui::SupportPolygonVisual(atlas, display_elevation));
 
   // Configure viewer window
-  viewer.setUpViewInWindow(0, 0, 1280, 960);
+  if (!options.headless) {
+    viewer.setUpViewInWindow(0, 0, options.width, options.height);
+  }
   viewer.getCameraManipulator()->setHomePosition(
       ::osg::Vec3(5.34, 3.00, 2.41),
       ::osg::Vec3(0.00, 0.00, 1.00),
       ::osg::Vec3(-0.20, -0.08, 0.98));
   viewer.setCameraManipulator(viewer.getCameraManipulator());
+
+  if (options.headless) {
+    const int warmupFrames
+        = options.screenshotPath.empty() ? options.frames : options.frames - 1;
+    for (int i = 0; i < warmupFrames; ++i) {
+      viewer.frame();
+    }
+
+    if (!options.screenshotPath.empty()) {
+      const std::filesystem::path screenshotPath(options.screenshotPath);
+      if (!prepareScreenshotPath(screenshotPath)) {
+        return EXIT_FAILURE;
+      }
+
+      viewer.captureScreen(options.screenshotPath);
+      viewer.frame();
+
+      std::error_code ec;
+      const bool screenshotExists = std::filesystem::exists(screenshotPath, ec);
+      const auto screenshotSize
+          = screenshotExists ? std::filesystem::file_size(screenshotPath, ec)
+                             : 0u;
+      if (ec || !screenshotExists || screenshotSize == 0) {
+        std::cerr << "Failed to write screenshot: " << screenshotPath << "\n";
+        return EXIT_FAILURE;
+      }
+    }
+
+    return EXIT_SUCCESS;
+  }
 
   // Display usage instructions
   std::cout << viewer.getInstructions() << std::endl;
