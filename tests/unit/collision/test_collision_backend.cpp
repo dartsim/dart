@@ -619,6 +619,9 @@ TEST(CollisionBackend, ConeShapeAdapter)
 
   const auto* convex = static_cast<const native::ConvexShape*>(adapted.get());
   EXPECT_EQ(33u, convex->getVertices().size());
+  const auto localAabb = convex->computeLocalAabb();
+  EXPECT_TRUE(localAabb.min.isApprox(Eigen::Vector3d(-0.5, -0.5, -0.6)));
+  EXPECT_TRUE(localAabb.max.isApprox(Eigen::Vector3d(0.5, 0.5, 0.6)));
 }
 
 //==============================================================================
@@ -635,6 +638,27 @@ TEST(CollisionBackend, EllipsoidShapeAdapter)
 
   const auto* convex = static_cast<const native::ConvexShape*>(adapted.get());
   EXPECT_LT(0u, convex->getVertices().size());
+  const auto localAabb = convex->computeLocalAabb();
+  EXPECT_TRUE(localAabb.min.isApprox(Eigen::Vector3d(-1.0, -1.5, -2.0)));
+  EXPECT_TRUE(localAabb.max.isApprox(Eigen::Vector3d(1.0, 1.5, 2.0)));
+}
+
+//==============================================================================
+TEST(CollisionBackend, SphericalEllipsoidShapeAdapter)
+{
+  auto ellipsoid
+      = std::make_shared<EllipsoidShape>(Eigen::Vector3d(2.0, 2.0, 2.0));
+  ASSERT_TRUE(ellipsoid->isSphere());
+
+  dynamics::ShapePtr ellipsoidShape = ellipsoid;
+  auto adapted = adaptShape(ellipsoidShape);
+  ASSERT_NE(nullptr, adapted);
+  EXPECT_EQ(native::ShapeType::Sphere, adapted->getType());
+
+  const auto* sphere = static_cast<const native::SphereShape*>(adapted.get());
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), 1.0);
+  EXPECT_EQ(sphere->computeLocalAabb().min, Eigen::Vector3d(-1.0, -1.0, -1.0));
+  EXPECT_EQ(sphere->computeLocalAabb().max, Eigen::Vector3d(1.0, 1.0, 1.0));
 }
 
 //==============================================================================

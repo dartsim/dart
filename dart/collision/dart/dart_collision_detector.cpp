@@ -39,6 +39,7 @@
 #include "dart/collision/detail/legacy_deprecation.hpp"
 #include "dart/collision/native/persistent_manifold_cache.hpp"
 #include "dart/common/logging.hpp"
+#include "dart/common/profile.hpp"
 #include "dart/dynamics/shape_frame.hpp"
 
 #include <array>
@@ -97,6 +98,8 @@ void warmStartContacts(
     native::PersistentManifoldCache* manifoldCache,
     IdResolver&& resolveId)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionDetector::warmStartContacts");
+
   if (!result || !manifoldCache) {
     return;
   }
@@ -131,6 +134,15 @@ void warmStartContacts(
 
     auto& manifold = manifoldCache->getOrCreate(id1, id2);
     manifold.addOrReplace(cached);
+    if (manifold.numContacts == 1) {
+      auto& manifoldContact = manifold.contacts[0];
+      contact.cachedNormalImpulse = manifoldContact.cachedNormalImpulse;
+      contact.cachedFrictionImpulse1 = manifoldContact.cachedFrictionImpulse1;
+      contact.cachedFrictionImpulse2 = manifoldContact.cachedFrictionImpulse2;
+      contact.userData = &manifoldContact;
+      return;
+    }
+
     manifold.refresh(swapped ? tf2 : tf1, swapped ? tf1 : tf2);
     if (manifold.numContacts == 0) {
       manifoldCache->remove(id1, id2);
@@ -258,6 +270,8 @@ void refreshManifoldCache(
     native::PersistentManifoldCache* manifoldCache,
     IdResolver&& resolveId)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionDetector::refreshManifoldCache");
+
   if (!manifoldCache) {
     return;
   }
@@ -291,6 +305,8 @@ void refreshManifoldCache(
     native::PersistentManifoldCache* manifoldCache,
     IdResolver&& resolveId)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionDetector::refreshManifoldCache");
+
   if (!manifoldCache) {
     return;
   }
@@ -409,6 +425,8 @@ bool DartCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionDetector::collideSelf");
+
   clearResult(result);
 
   if (!checkGroupValidity(this, group)) {
@@ -446,6 +464,8 @@ bool DartCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionDetector::collideGroups");
+
   clearResult(result);
 
   if (!checkGroupValidity(this, group1)) {

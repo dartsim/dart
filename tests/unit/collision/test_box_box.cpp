@@ -37,6 +37,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <limits>
 #include <numbers>
 #include <random>
@@ -48,6 +49,12 @@ using namespace dart::collision::native;
 
 namespace {
 
+struct BoxSpec
+{
+  Eigen::Vector3d halfExtents;
+  Eigen::Isometry3d transform;
+};
+
 Eigen::Isometry3d makeBoxBatchTransform(
     double x, double y, double z, double angle)
 {
@@ -58,6 +65,85 @@ Eigen::Isometry3d makeBoxBatchTransform(
                     .toRotationMatrix();
   tf.translation() = Eigen::Vector3d(x, y, z);
   return tf;
+}
+
+Eigen::Isometry3d makeRotationTransform(
+    double angle, const Eigen::Vector3d& axis)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.linear() = Eigen::AngleAxisd(angle, axis).toRotationMatrix();
+  return transform;
+}
+
+std::array<Eigen::Isometry3d, 6> makeCubeEquivalentOrientations()
+{
+  constexpr double pi = std::numbers::pi_v<double>;
+  return {
+      Eigen::Isometry3d::Identity(),
+      makeRotationTransform(pi, Eigen::Vector3d::UnitX()),
+      makeRotationTransform(0.5 * pi, Eigen::Vector3d::UnitX()),
+      makeRotationTransform(1.5 * pi, Eigen::Vector3d::UnitX()),
+      makeRotationTransform(0.5 * pi, Eigen::Vector3d::UnitY()),
+      makeRotationTransform(1.5 * pi, Eigen::Vector3d::UnitY())};
+}
+
+template <typename ResultExpectation>
+void expectBoxCubeSymmetryCases(
+    const BoxSpec& fixedBox,
+    const BoxSpec& cubeBox,
+    double expectedDepth,
+    const CollisionOption& option,
+    const ResultExpectation& expectResult)
+{
+  for (const auto& cubeOrientation : makeCubeEquivalentOrientations()) {
+    BoxSpec posedCube = cubeBox;
+    posedCube.transform = cubeBox.transform * cubeOrientation;
+
+    CollisionResult result;
+    ASSERT_TRUE(collideBoxes(
+        fixedBox.halfExtents,
+        fixedBox.transform,
+        posedCube.halfExtents,
+        posedCube.transform,
+        result,
+        option));
+    expectResult(
+        result,
+        fixedBox,
+        posedCube,
+        Eigen::Vector3d::UnitZ(),
+        expectedDepth,
+        "fixed-cube");
+
+    CollisionResult swappedResult;
+    ASSERT_TRUE(collideBoxes(
+        posedCube.halfExtents,
+        posedCube.transform,
+        fixedBox.halfExtents,
+        fixedBox.transform,
+        swappedResult,
+        option));
+    expectResult(
+        swappedResult,
+        posedCube,
+        fixedBox,
+        -Eigen::Vector3d::UnitZ(),
+        expectedDepth,
+        "cube-fixed");
+  }
+}
+
+void expectPointInsideBox(
+    const Eigen::Vector3d& point,
+    const BoxSpec& box,
+    double tolerance,
+    const char* label)
+{
+  const Eigen::Vector3d local = box.transform.inverse() * point;
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_LE(std::abs(local[i]), box.halfExtents[i] + tolerance)
+        << label << " local=" << local.transpose();
+  }
 }
 
 void expectVectorExactlyEqual(
@@ -434,6 +520,164 @@ TEST(BoxBox, UsingShapeObjects)
   EXPECT_TRUE(collided);
   ASSERT_GE(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.5, 1e-10);
+}
+
+TEST(BoxBox, CubeFacePatchSingleContactAcrossEquivalentOrientations)
+{
+  constexpr double pi = std::numbers::pi_v<double>;
+  const double smallCubeHalfExtent = 0.5;
+  const BoxSpec rotatedCube{
+      Eigen::Vector3d::Constant(smallCubeHalfExtent),
+      makeRotationTransform(0.25 * pi, Eigen::Vector3d::UnitY())};
+
+  BoxSpec largeCube{
+      Eigen::Vector3d::Constant(1.5), Eigen::Isometry3d::Identity()};
+  largeCube.transform.translation() = Eigen::Vector3d(0.0, 0.0, -1.5);
+
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  const double expectedDepth = std::sqrt(2.0) * smallCubeHalfExtent;
+  const double expectedContactZ = -0.5 * std::sqrt(2.0) * smallCubeHalfExtent;
+
+  expectBoxCubeSymmetryCases(
+      rotatedCube,
+      largeCube,
+      expectedDepth,
+      option,
+      [&](const CollisionResult& result,
+          const BoxSpec& boxA,
+          const BoxSpec& boxB,
+          const Eigen::Vector3d& expectedNormal,
+          double depth,
+          const char* label) {
+        ASSERT_EQ(result.numContacts(), 1u) << label;
+        const auto& contact = result.getContact(0);
+        EXPECT_TRUE(contact.normal.isApprox(expectedNormal, 1e-12))
+            << label << " normal=" << contact.normal.transpose();
+        EXPECT_NEAR(contact.depth, depth, 1e-12) << label;
+        expectPointInsideBox(contact.position, boxA, 1e-12, label);
+        expectPointInsideBox(contact.position, boxB, 1e-12, label);
+        EXPECT_GE(contact.position.z(), expectedContactZ - 1e-12) << label;
+      });
+}
+
+TEST(BoxBox, RotatedFacePatchReductionRespectsContactLimit)
+{
+  constexpr double pi = std::numbers::pi_v<double>;
+  const double halfExtent = 0.5;
+  const double tilt = 0.125 * pi;
+
+  const BoxSpec tiltedCube{
+      Eigen::Vector3d::Constant(halfExtent),
+      makeRotationTransform(tilt, Eigen::Vector3d::UnitX())};
+
+  BoxSpec diagonalCube{
+      Eigen::Vector3d::Constant(halfExtent),
+      makeRotationTransform(0.25 * pi, Eigen::Vector3d::UnitZ())};
+  diagonalCube.transform.translation() = Eigen::Vector3d(0.0, 0.0, -0.75);
+
+  CollisionOption option;
+  option.maxNumContacts = 4;
+
+  const double expectedDepth
+      = std::sqrt(2.0) * halfExtent * std::cos(0.25 * pi - tilt) - 0.25;
+  const double expectedContactZ = -0.25 - 0.5 * expectedDepth;
+
+  expectBoxCubeSymmetryCases(
+      tiltedCube,
+      diagonalCube,
+      expectedDepth,
+      option,
+      [&](const CollisionResult& result,
+          const BoxSpec& boxA,
+          const BoxSpec& boxB,
+          const Eigen::Vector3d& expectedNormal,
+          double depth,
+          const char* label) {
+        ASSERT_GE(result.numContacts(), 1u) << label;
+        ASSERT_LE(result.numContacts(), option.maxNumContacts) << label;
+        for (std::size_t i = 0; i < result.numContacts(); ++i) {
+          const auto& contact = result.getContact(i);
+          EXPECT_TRUE(contact.normal.isApprox(expectedNormal, 1e-12))
+              << label << " normal=" << contact.normal.transpose();
+          EXPECT_NEAR(contact.depth, depth, 1e-12) << label;
+          expectPointInsideBox(contact.position, boxA, 1e-2, label);
+          expectPointInsideBox(contact.position, boxB, 1e-2, label);
+          EXPECT_GE(contact.position.z(), expectedContactZ - 1e-12) << label;
+          EXPECT_LE(contact.position.x(), halfExtent + 1e-12) << label;
+          EXPECT_GE(contact.position.x(), -halfExtent - 1e-12) << label;
+        }
+      });
+}
+
+TEST(BoxBox, EdgeEdgeContactAcrossEquivalentCubeOrientations)
+{
+  constexpr double pi = std::numbers::pi_v<double>;
+  const double halfExtent = 0.5;
+  const double expectedDepth = 0.1;
+  const Eigen::Vector3d expectedNormal
+      = Eigen::Vector3d(std::sqrt(0.5), 0.0, std::sqrt(0.5));
+
+  BoxSpec tiltedCube{
+      Eigen::Vector3d::Constant(halfExtent),
+      makeRotationTransform(-0.25 * pi, Eigen::Vector3d::UnitY())
+          * makeRotationTransform(0.25 * pi, Eigen::Vector3d::UnitZ())};
+  tiltedCube.transform.translation()
+      = expectedNormal * (2.0 * halfExtent * std::sqrt(2.0) - expectedDepth);
+
+  const BoxSpec axisAlignedCube{
+      Eigen::Vector3d::Constant(halfExtent), Eigen::Isometry3d::Identity()};
+
+  CollisionOption option;
+  option.maxNumContacts = 4;
+
+  const double expectedContactDistance
+      = halfExtent * std::sqrt(2.0) - 0.5 * expectedDepth;
+  const Eigen::Vector3d expectedPosition
+      = expectedNormal * expectedContactDistance;
+
+  for (const auto& cubeOrientation : makeCubeEquivalentOrientations()) {
+    BoxSpec posedAxisAlignedCube = axisAlignedCube;
+    posedAxisAlignedCube.transform
+        = axisAlignedCube.transform * cubeOrientation;
+
+    CollisionResult result;
+    ASSERT_TRUE(collideBoxes(
+        tiltedCube.halfExtents,
+        tiltedCube.transform,
+        posedAxisAlignedCube.halfExtents,
+        posedAxisAlignedCube.transform,
+        result,
+        option));
+    ASSERT_EQ(result.numManifolds(), 1u);
+    EXPECT_EQ(result.getManifold(0).getType(), ContactType::Edge);
+    ASSERT_EQ(result.numContacts(), 1u);
+    EXPECT_TRUE(result.getContact(0).normal.isApprox(expectedNormal, 1e-12))
+        << "normal=" << result.getContact(0).normal.transpose();
+    EXPECT_NEAR(result.getContact(0).depth, expectedDepth, 1e-12);
+    EXPECT_TRUE(result.getContact(0).position.isApprox(expectedPosition, 1e-12))
+        << "position=" << result.getContact(0).position.transpose();
+
+    CollisionResult swappedResult;
+    ASSERT_TRUE(collideBoxes(
+        posedAxisAlignedCube.halfExtents,
+        posedAxisAlignedCube.transform,
+        tiltedCube.halfExtents,
+        tiltedCube.transform,
+        swappedResult,
+        option));
+    ASSERT_EQ(swappedResult.numManifolds(), 1u);
+    EXPECT_EQ(swappedResult.getManifold(0).getType(), ContactType::Edge);
+    ASSERT_EQ(swappedResult.numContacts(), 1u);
+    EXPECT_TRUE(
+        swappedResult.getContact(0).normal.isApprox(-expectedNormal, 1e-12))
+        << "normal=" << swappedResult.getContact(0).normal.transpose();
+    EXPECT_NEAR(swappedResult.getContact(0).depth, expectedDepth, 1e-12);
+    EXPECT_TRUE(
+        swappedResult.getContact(0).position.isApprox(expectedPosition, 1e-12))
+        << "position=" << swappedResult.getContact(0).position.transpose();
+  }
 }
 
 TEST(BoxBox, RotatedSmallBoxOnLargeGroundHasLocalContactPoint)

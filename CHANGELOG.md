@@ -158,6 +158,10 @@
     paths, batched public DART contact-manifold warm starts, cached unchanged
     public-adapter geometry, and kept public DART collision object transforms
     synchronized through shape-frame transform notifications.
+  - Native collision: skipped redundant one-contact public-adapter manifold
+    refresh work, fixed scoped profiling macros so profile ranges span the
+    caller scope, and made the collision benchmark guard collect production
+    timing evidence with profiling instrumentation disabled.
   - Fixed native `CollisionResult::getContact()` to reject stale indices after
     the result is cleared.
   - Native collision: fixed the spatial hash broad phase so unbounded

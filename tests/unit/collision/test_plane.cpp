@@ -31,14 +31,139 @@
  */
 
 #include <dart/collision/native/narrow_phase/mesh_mesh.hpp>
+#include <dart/collision/native/narrow_phase/narrow_phase.hpp>
 #include <dart/collision/native/narrow_phase/plane_sphere.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <numbers>
+#include <vector>
+
+#include <cmath>
 
 using namespace dart::collision::native;
+
+namespace {
+
+Eigen::Isometry3d makePlaneShapeTestFrame()
+{
+  Eigen::Isometry3d frame = Eigen::Isometry3d::Identity();
+  frame.linear()
+      = (Eigen::AngleAxisd(
+             std::numbers::pi_v<double> / 7.0,
+             Eigen::Vector3d(1.0, 2.0, -1.0).normalized())
+         * Eigen::AngleAxisd(
+             std::numbers::pi_v<double> / 9.0, Eigen::Vector3d::UnitZ()))
+            .toRotationMatrix();
+  frame.translation() = Eigen::Vector3d(0.25, -0.5, 0.75);
+  return frame;
+}
+
+double maxContactDepth(const CollisionResult& result)
+{
+  double maxDepth = 0.0;
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    maxDepth = std::max(maxDepth, result.getContact(i).depth);
+  }
+  return maxDepth;
+}
+
+void expectFiniteContacts(const CollisionResult& result)
+{
+  ASSERT_GT(result.numContacts(), 0u);
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    EXPECT_TRUE(contact.position.allFinite());
+    EXPECT_TRUE(contact.normal.allFinite());
+    EXPECT_GT(contact.normal.norm(), 0.9);
+    EXPECT_GE(contact.depth, 0.0);
+  }
+}
+
+void expectHalfspaceCollisionAndSeparation(
+    const Shape& shape,
+    const Eigen::Isometry3d& collidingShapeInPlaneFrame,
+    const Eigen::Isometry3d& separatedShapeInPlaneFrame,
+    double expectedMaxDepth)
+{
+  const PlaneShape plane(Eigen::Vector3d::UnitX(), 0.0);
+  CollisionOption option;
+  option.maxNumContacts = 8u;
+
+  const std::array<Eigen::Isometry3d, 2> commonFrames{
+      Eigen::Isometry3d::Identity(), makePlaneShapeTestFrame()};
+
+  for (const auto& commonFrame : commonFrames) {
+    const Eigen::Isometry3d planeTransform = commonFrame;
+    const Eigen::Isometry3d collidingTransform
+        = commonFrame * collidingShapeInPlaneFrame;
+    const Eigen::Isometry3d separatedTransform
+        = commonFrame * separatedShapeInPlaneFrame;
+
+    CollisionResult shapePlane;
+    ASSERT_TRUE(
+        NarrowPhase::collide(
+            &shape,
+            collidingTransform,
+            &plane,
+            planeTransform,
+            option,
+            shapePlane));
+    expectFiniteContacts(shapePlane);
+    EXPECT_NEAR(maxContactDepth(shapePlane), expectedMaxDepth, 1e-9);
+
+    CollisionResult planeShape;
+    ASSERT_TRUE(
+        NarrowPhase::collide(
+            &plane,
+            planeTransform,
+            &shape,
+            collidingTransform,
+            option,
+            planeShape));
+    expectFiniteContacts(planeShape);
+    EXPECT_NEAR(maxContactDepth(planeShape), expectedMaxDepth, 1e-9);
+
+    CollisionResult separatedShapePlane;
+    EXPECT_FALSE(
+        NarrowPhase::collide(
+            &shape,
+            separatedTransform,
+            &plane,
+            planeTransform,
+            option,
+            separatedShapePlane));
+    EXPECT_EQ(separatedShapePlane.numContacts(), 0u);
+
+    CollisionResult separatedPlaneShape;
+    EXPECT_FALSE(
+        NarrowPhase::collide(
+            &plane,
+            planeTransform,
+            &shape,
+            separatedTransform,
+            option,
+            separatedPlaneShape));
+    EXPECT_EQ(separatedPlaneShape.numContacts(), 0u);
+  }
+}
+
+std::vector<Eigen::Vector3d> makeAxisSupportHull(
+    double xExtent, double yExtent, double zExtent)
+{
+  return {
+      {-xExtent, 0.0, 0.0},
+      {xExtent, 0.0, 0.0},
+      {0.0, -yExtent, 0.0},
+      {0.0, yExtent, 0.0},
+      {0.0, 0.0, -zExtent},
+      {0.0, 0.0, zExtent},
+  };
+}
+
+} // namespace
 
 TEST(PlaneShape, Construction)
 {
@@ -54,6 +179,56 @@ TEST(PlaneShape, NormalNormalization)
   PlaneShape plane(Eigen::Vector3d(0, 0, 2), 1.0);
 
   EXPECT_TRUE(plane.getNormal().isApprox(Eigen::Vector3d::UnitZ()));
+}
+
+TEST(PlaneShape, LocalAabbIsUnbounded)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitY(), 4.5);
+
+  const auto aabb = plane.computeLocalAabb();
+
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_TRUE(std::isinf(aabb.min[i]));
+    EXPECT_TRUE(std::isinf(aabb.max[i]));
+    EXPECT_LT(aabb.min[i], 0.0);
+    EXPECT_GT(aabb.max[i], 0.0);
+  }
+}
+
+TEST(PlaneShape, HalfspacePrimitiveContactsAcrossTransforms)
+{
+  Eigen::Isometry3d colliding = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d separated = Eigen::Isometry3d::Identity();
+
+  SphereShape sphere(10.0);
+  separated.translation() = Eigen::Vector3d(10.1, 0.0, 0.0);
+  expectHalfspaceCollisionAndSeparation(sphere, colliding, separated, 10.0);
+
+  BoxShape box(Eigen::Vector3d(2.5, 5.0, 10.0));
+  separated.translation() = Eigen::Vector3d(2.51, 0.0, 0.0);
+  expectHalfspaceCollisionAndSeparation(box, colliding, separated, 2.5);
+
+  CapsuleShape capsule(5.0, 10.0);
+  separated.translation() = Eigen::Vector3d(5.1, 0.0, 0.0);
+  expectHalfspaceCollisionAndSeparation(capsule, colliding, separated, 5.0);
+
+  CylinderShape cylinder(5.0, 10.0);
+  separated.translation() = Eigen::Vector3d(5.1, 0.0, 0.0);
+  expectHalfspaceCollisionAndSeparation(cylinder, colliding, separated, 5.0);
+
+  MeshShape crossingTriangle(
+      {Eigen::Vector3d(20.0, 0.0, 0.0),
+       Eigen::Vector3d(-20.0, 0.0, 0.0),
+       Eigen::Vector3d(0.0, 20.0, 0.0)},
+      {{0, 1, 2}});
+  separated.translation() = Eigen::Vector3d(20.1, 0.0, 0.0);
+  expectHalfspaceCollisionAndSeparation(
+      crossingTriangle, colliding, separated, 20.0);
+
+  ConvexShape anisotropicSupportHull(makeAxisSupportHull(5.0, 10.0, 20.0));
+  separated.translation() = Eigen::Vector3d(5.1, 0.0, 0.0);
+  expectHalfspaceCollisionAndSeparation(
+      anisotropicSupportHull, colliding, separated, 5.0);
 }
 
 TEST(PlaneSphere, NoCollision)

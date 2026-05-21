@@ -485,19 +485,72 @@ bool collideCylinderSphere(
   const Eigen::Isometry3d cylInv = cylinderTransform.inverse();
   const Eigen::Vector3d sphereCenterLocal
       = cylInv * sphereTransform.translation();
+  const double lateralDistSq = sphereCenterLocal.x() * sphereCenterLocal.x()
+                               + sphereCenterLocal.y() * sphereCenterLocal.y();
+  const double lateralDist = std::sqrt(lateralDistSq);
+  const bool insideCylinder = lateralDist <= cylRadius
+                              && sphereCenterLocal.z() >= -cylHalfHeight
+                              && sphereCenterLocal.z() <= cylHalfHeight;
+
+  if (insideCylinder) {
+    const double distanceToTop = cylHalfHeight - sphereCenterLocal.z();
+    const double distanceToBottom = cylHalfHeight + sphereCenterLocal.z();
+    const double distanceToBarrel = cylRadius - lateralDist;
+
+    Eigen::Vector3d closestLocal;
+    Eigen::Vector3d normalLocal;
+    double distanceToSurface = distanceToTop;
+
+    if (distanceToTop <= distanceToBottom
+        && distanceToTop <= distanceToBarrel) {
+      closestLocal = Eigen::Vector3d(
+          sphereCenterLocal.x(), sphereCenterLocal.y(), cylHalfHeight);
+      normalLocal = -Eigen::Vector3d::UnitZ();
+    } else if (distanceToBottom <= distanceToBarrel) {
+      closestLocal = Eigen::Vector3d(
+          sphereCenterLocal.x(), sphereCenterLocal.y(), -cylHalfHeight);
+      normalLocal = Eigen::Vector3d::UnitZ();
+      distanceToSurface = distanceToBottom;
+    } else {
+      const Eigen::Vector3d radialDirection
+          = lateralDist > 1e-10 ? Eigen::Vector3d(
+                                      sphereCenterLocal.x() / lateralDist,
+                                      sphereCenterLocal.y() / lateralDist,
+                                      0.0)
+                                : Eigen::Vector3d::UnitX();
+      closestLocal = Eigen::Vector3d(
+          radialDirection.x() * cylRadius,
+          radialDirection.y() * cylRadius,
+          sphereCenterLocal.z());
+      normalLocal = -radialDirection;
+      distanceToSurface = distanceToBarrel;
+    }
+
+    const double penetration = sphereRadius + distanceToSurface;
+    const Eigen::Vector3d normalWorld
+        = cylinderTransform.rotation() * normalLocal;
+    const Eigen::Vector3d closestWorld = cylinderTransform * closestLocal;
+    const Eigen::Vector3d contactPoint
+        = closestWorld + normalWorld * (penetration * 0.5);
+
+    ContactPoint contact;
+    contact.position = contactPoint;
+    contact.normal = -normalWorld;
+    contact.depth = penetration;
+
+    result.addContact(contact);
+    return true;
+  }
 
   const double clampedZ
       = std::clamp(sphereCenterLocal.z(), -cylHalfHeight, cylHalfHeight);
 
   Eigen::Vector3d closestLocal;
-  const double lateralDistSq = sphereCenterLocal.x() * sphereCenterLocal.x()
-                               + sphereCenterLocal.y() * sphereCenterLocal.y();
 
   if (lateralDistSq <= cylRadius * cylRadius) {
     closestLocal = Eigen::Vector3d(
         sphereCenterLocal.x(), sphereCenterLocal.y(), clampedZ);
   } else {
-    const double lateralDist = std::sqrt(lateralDistSq);
     const double scale = cylRadius / lateralDist;
     closestLocal = Eigen::Vector3d(
         sphereCenterLocal.x() * scale, sphereCenterLocal.y() * scale, clampedZ);

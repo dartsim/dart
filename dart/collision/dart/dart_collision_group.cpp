@@ -42,6 +42,7 @@
 #include "dart/collision/native/collision_world.hpp"
 #include "dart/collision/native/narrow_phase/narrow_phase.hpp"
 #include "dart/common/logging.hpp"
+#include "dart/common/profile.hpp"
 #include "dart/common/signal.hpp"
 #include "dart/dynamics/shape.hpp"
 #include "dart/dynamics/shape_frame.hpp"
@@ -878,6 +879,8 @@ bool DartCollisionGroup::collideSelf(
     CollisionResult* result,
     native::PersistentManifoldCache* manifoldCache)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionGroup::collideSelf");
+
   mScene->sync(mCollisionObjects);
   return mScene->collideSelf(option, result, manifoldCache);
 }
@@ -889,6 +892,8 @@ bool DartCollisionGroup::collideWith(
     CollisionResult* result,
     native::PersistentManifoldCache* manifoldCache)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionGroup::collideWith");
+
   mScene->sync(mCollisionObjects);
   other.mScene->sync(other.mCollisionObjects);
   return mScene->collideAgainst(*other.mScene, option, result, manifoldCache);

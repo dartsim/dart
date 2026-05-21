@@ -120,16 +120,12 @@
     } while (false)
 
   #define DART_PROFILE_SCOPED                                                  \
-    do {                                                                       \
-      DART_PROFILE_TRACY_SCOPED;                                               \
-      DART_PROFILE_TEXT_SCOPED_F();                                            \
-    } while (false)
+    DART_PROFILE_TRACY_SCOPED;                                                 \
+    DART_PROFILE_TEXT_SCOPED_F()
 
   #define DART_PROFILE_SCOPED_N(name_literal)                                  \
-    do {                                                                       \
-      DART_PROFILE_TRACY_SCOPED_N(name_literal);                               \
-      DART_PROFILE_TEXT_SCOPED(name_literal);                                  \
-    } while (false)
+    DART_PROFILE_TRACY_SCOPED_N(name_literal);                                 \
+    DART_PROFILE_TEXT_SCOPED(name_literal)
 
 #else // no-op
 

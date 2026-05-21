@@ -661,6 +661,58 @@ TEST(DartCollisionDetector, RaycastWorksForHeightmap)
   EXPECT_GT(rayHit.mNormal.z(), 0.99);
 }
 
+TEST(DartCollisionDetector, RaycastHeightmapMissesOutsideVerticalExtent)
+{
+  auto detector = DartCollisionDetector::create();
+
+  auto heightmap = std::make_shared<HeightmapShaped>();
+  HeightmapShaped::HeightField heights(2, 2);
+  heights.setConstant(10.0);
+  heightmap->setHeightField(heights);
+
+  auto setup = makeShapeSetup("heightmap", heightmap);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setup.shapeNode);
+
+  RaycastOption option;
+  RaycastResult result;
+
+  const Eigen::Vector3d from(0.25, 0.25, 0.0);
+  const Eigen::Vector3d to(0.25, 0.25, 5.0);
+
+  const bool hit = group->raycast(from, to, option, &result);
+  EXPECT_FALSE(hit);
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(result.mRayHits.empty());
+}
+
+TEST(DartCollisionDetector, RaycastHeightmapMissesOutsideGridBounds)
+{
+  auto detector = DartCollisionDetector::create();
+
+  auto heightmap = std::make_shared<HeightmapShaped>();
+  HeightmapShaped::HeightField heights(4, 4);
+  heights.setZero();
+  heightmap->setHeightField(heights);
+
+  auto setup = makeShapeSetup("heightmap", heightmap);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setup.shapeNode);
+
+  RaycastOption option;
+  RaycastResult result;
+
+  const Eigen::Vector3d from(5.0, 0.25, 1.0);
+  const Eigen::Vector3d to(5.0, 0.25, -1.0);
+
+  const bool hit = group->raycast(from, to, option, &result);
+  EXPECT_FALSE(hit);
+  EXPECT_FALSE(result.hasHit());
+  EXPECT_TRUE(result.mRayHits.empty());
+}
+
 TEST(DartCollisionDetector, LegacyUppercaseHeaderPreservesUnsupportedRaycast)
 {
   auto detector = DARTCollisionDetector::create();

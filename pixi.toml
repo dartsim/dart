@@ -952,6 +952,13 @@ bm-collision-check = { depends-on = [
   "bm-collision-check-raycast-batch",
   "bm-collision-check-adapter",
 ] }
+config-bm-collision = { depends-on = [
+  { task = "config", args = [
+    "ON",
+    "Release",
+    "OFF",
+  ] },
+] }
 bm-collision-check-narrow = { cmd = """
     python scripts/check_collision_benchmarks.py \
       --target bm_comparative_narrow_phase \
@@ -962,7 +969,7 @@ bm-collision-check-narrow = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-narrow-adapter = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -975,7 +982,7 @@ bm-collision-check-narrow-adapter = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-narrow-raw-reference = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -988,7 +995,7 @@ bm-collision-check-narrow-raw-reference = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-distance = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1000,7 +1007,7 @@ bm-collision-check-distance = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-raycast = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1012,7 +1019,7 @@ bm-collision-check-raycast = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-mixed = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1024,7 +1031,7 @@ bm-collision-check-mixed = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=5
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-mesh = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1035,7 +1042,7 @@ bm-collision-check-mesh = { cmd = """
       -- \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
-""", depends-on = ["config"] }
+""", depends-on = ["config-bm-collision"] }
 bm-collision-check-raycast-batch = { cmd = """
     python scripts/check_collision_benchmarks.py \
       --target bm_scenarios_raycast_batch \
@@ -1046,7 +1053,7 @@ bm-collision-check-raycast-batch = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-adapter = { cmd = """
     python scripts/cmake_build.py \
@@ -1058,7 +1065,7 @@ bm-collision-check-adapter = { cmd = """
       --benchmark_out_format=json \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
-""", depends-on = ["config"] }
+""", depends-on = ["config-bm-collision"] }
 
 test-joints = { cmd = [
   "bash",

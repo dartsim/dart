@@ -36,6 +36,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <numbers>
 #include <random>
 #include <stdexcept>
@@ -44,6 +45,25 @@
 using namespace dart::collision::native;
 
 namespace {
+
+Eigen::Isometry3d makeSphereSphereCommonFrame()
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = (Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitX())
+                 * Eigen::AngleAxisd(-0.7, Eigen::Vector3d::UnitY())
+                 * Eigen::AngleAxisd(0.4, Eigen::Vector3d::UnitZ()))
+                    .toRotationMatrix();
+  tf.translation() = Eigen::Vector3d(8.40188, 3.94383, 7.83099);
+  return tf;
+}
+
+Eigen::Isometry3d makeSphereSphereLocalTranslation(
+    const Eigen::Vector3d& translation)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = translation;
+  return tf;
+}
 
 void expectVectorExactlyEqual(
     const Eigen::Vector3d& expected, const Eigen::Vector3d& actual)
@@ -82,6 +102,45 @@ void expectCollisionResultExactlyEqual(
       expectContactExactlyEqual(
           expectedManifold.getContact(j), actualManifold.getContact(j));
     }
+  }
+}
+
+void expectLargeSphereSphereBoundaryCase(
+    const char* name,
+    const Eigen::Isometry3d& worldFromCase,
+    const Eigen::Vector3d& secondCenterInCase,
+    bool expectedHit,
+    double expectedDepth)
+{
+  SCOPED_TRACE(name);
+  SphereShape sphere1(20.0);
+  SphereShape sphere2(10.0);
+
+  const Eigen::Isometry3d tf1 = worldFromCase;
+  const Eigen::Isometry3d tf2
+      = worldFromCase * makeSphereSphereLocalTranslation(secondCenterInCase);
+
+  CollisionResult result;
+  const bool hit = collideSpheres(sphere1, tf1, sphere2, tf2, result);
+  EXPECT_EQ(hit, expectedHit);
+
+  if (!expectedHit) {
+    EXPECT_EQ(result.numContacts(), 0u);
+    return;
+  }
+
+  ASSERT_EQ(result.numContacts(), 1u);
+  const auto& contact = result.getContact(0);
+  EXPECT_NEAR(contact.depth, expectedDepth, 1e-9);
+  EXPECT_TRUE(contact.position.allFinite());
+  EXPECT_TRUE(contact.normal.allFinite());
+
+  if (secondCenterInCase.norm() > 0.0) {
+    const Eigen::Vector3d expectedNormal
+        = worldFromCase.linear() * (-secondCenterInCase.normalized());
+    EXPECT_NEAR((contact.normal - expectedNormal).norm(), 0.0, 1e-9);
+  } else {
+    EXPECT_NEAR(contact.normal.norm(), 1.0, 1e-9);
   }
 }
 
@@ -412,6 +471,63 @@ TEST(SphereSphere, ShapeObjectsWithRotation)
   EXPECT_TRUE(collided);
   ASSERT_EQ(result.numContacts(), 1);
   EXPECT_NEAR(result.getContact(0).depth, 0.5, 1e-10);
+}
+
+TEST(SphereSphere, LargeRadiiBoundaryAndPenetrationAcrossFrames)
+{
+  const std::array<Eigen::Isometry3d, 2> worldFromCases{
+      Eigen::Isometry3d::Identity(), makeSphereSphereCommonFrame()};
+
+  for (const auto& worldFromCase : worldFromCases) {
+    expectLargeSphereSphereBoundaryCase(
+        "clearly-separated",
+        worldFromCase,
+        Eigen::Vector3d(40.0, 0.0, 0.0),
+        false,
+        0.0);
+    expectLargeSphereSphereBoundaryCase(
+        "positive-axis-touching",
+        worldFromCase,
+        Eigen::Vector3d(30.0, 0.0, 0.0),
+        true,
+        0.0);
+    expectLargeSphereSphereBoundaryCase(
+        "positive-axis-epsilon-separated",
+        worldFromCase,
+        Eigen::Vector3d(30.01, 0.0, 0.0),
+        false,
+        0.0);
+    expectLargeSphereSphereBoundaryCase(
+        "positive-axis-shallow-penetration",
+        worldFromCase,
+        Eigen::Vector3d(29.9, 0.0, 0.0),
+        true,
+        0.1);
+    expectLargeSphereSphereBoundaryCase(
+        "coincident-centers",
+        worldFromCase,
+        Eigen::Vector3d::Zero(),
+        true,
+        30.0);
+    expectLargeSphereSphereBoundaryCase(
+        "negative-axis-shallow-penetration",
+        worldFromCase,
+        Eigen::Vector3d(-29.9, 0.0, 0.0),
+        true,
+        0.1);
+    expectLargeSphereSphereBoundaryCase(
+        "negative-axis-touching",
+        worldFromCase,
+        Eigen::Vector3d(-30.0, 0.0, 0.0),
+        true,
+        0.0);
+    expectLargeSphereSphereBoundaryCase(
+        "negative-axis-epsilon-separated",
+        worldFromCase,
+        Eigen::Vector3d(-30.01, 0.0, 0.0),
+        false,
+        0.0);
+  }
 }
 
 TEST(SphereSphere, Determinism)

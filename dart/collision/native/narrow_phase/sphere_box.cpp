@@ -34,6 +34,7 @@
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <algorithm>
+#include <limits>
 
 #include <cmath>
 
@@ -48,6 +49,31 @@ namespace {
          && rotation(1, 0) == 0.0 && rotation(1, 1) == 1.0
          && rotation(1, 2) == 0.0 && rotation(2, 0) == 0.0
          && rotation(2, 1) == 0.0 && rotation(2, 2) == 1.0;
+}
+
+[[nodiscard]] double computeBoundaryTolerance(
+    const Eigen::Vector3d& boxHalfExtents,
+    const Eigen::Vector3d& localSphereCenter)
+{
+  const double boundaryScale = std::max(
+      {1.0,
+       boxHalfExtents.cwiseAbs().maxCoeff(),
+       localSphereCenter.cwiseAbs().maxCoeff()});
+  return 64.0 * std::numeric_limits<double>::epsilon() * boundaryScale;
+}
+
+void snapNearBoxBoundary(
+    Eigen::Vector3d& localPoint,
+    const Eigen::Vector3d& boxHalfExtents,
+    double tolerance)
+{
+  for (int axis = 0; axis < 3; ++axis) {
+    const double extent = boxHalfExtents[axis];
+    const double coordinate = localPoint[axis];
+    if (std::abs(std::abs(coordinate) - extent) <= tolerance) {
+      localPoint[axis] = std::copysign(extent, coordinate);
+    }
+  }
 }
 
 bool collideSphereTranslatedBox(
@@ -70,14 +96,24 @@ bool collideSphereTranslatedBox(
   const double dy = localSphereCenter.y() - closestY;
   const double dz = localSphereCenter.z() - closestZ;
   const double distSquared = dx * dx + dy * dy + dz * dz;
-  const bool sphereCenterInside = dx == 0.0 && dy == 0.0 && dz == 0.0;
+  const double boundaryTolerance
+      = computeBoundaryTolerance(boxHalfExtents, localSphereCenter);
+  const bool sphereCenterInside
+      = distSquared <= boundaryTolerance * boundaryTolerance;
 
   if (!sphereCenterInside && distSquared > sphereRadius * sphereRadius) {
     return false;
   }
 
-  if (localSphereCenter.x() == 0.0 && localSphereCenter.y() == 0.0
-      && localSphereCenter.z() == 0.0) {
+  Eigen::Vector3d insideLocalSphereCenter = localSphereCenter;
+  if (sphereCenterInside) {
+    snapNearBoxBoundary(
+        insideLocalSphereCenter, boxHalfExtents, boundaryTolerance);
+  }
+
+  if (sphereCenterInside
+      && insideLocalSphereCenter.squaredNorm()
+             <= boundaryTolerance * boundaryTolerance) {
     double minDist = boxHalfExtents.x();
     int minAxis = 0;
     if (boxHalfExtents.y() < minDist) {
@@ -127,30 +163,33 @@ bool collideSphereTranslatedBox(
   double penetration = 0.0;
 
   if (sphereCenterInside) {
-    double minDist = boxHalfExtents.x() - std::abs(localSphereCenter.x());
+    double minDist = boxHalfExtents.x() - std::abs(insideLocalSphereCenter.x());
     int minAxis = 0;
 
-    const double distY = boxHalfExtents.y() - std::abs(localSphereCenter.y());
+    const double distY
+        = boxHalfExtents.y() - std::abs(insideLocalSphereCenter.y());
     if (distY < minDist) {
       minDist = distY;
       minAxis = 1;
     }
 
-    const double distZ = boxHalfExtents.z() - std::abs(localSphereCenter.z());
+    const double distZ
+        = boxHalfExtents.z() - std::abs(insideLocalSphereCenter.z());
     if (distZ < minDist) {
       minDist = distZ;
       minAxis = 2;
     }
 
-    const double normalSign = (localSphereCenter[minAxis] >= 0.0) ? 1.0 : -1.0;
+    const double normalSign
+        = (insideLocalSphereCenter[minAxis] >= 0.0) ? 1.0 : -1.0;
     penetration = sphereRadius + minDist;
 
     switch (minAxis) {
       case 0:
         result.addContact(
             boxTranslation.x() + normalSign * boxHalfExtents.x(),
-            boxTranslation.y() + localSphereCenter.y(),
-            boxTranslation.z() + localSphereCenter.z(),
+            boxTranslation.y() + insideLocalSphereCenter.y(),
+            boxTranslation.z() + insideLocalSphereCenter.z(),
             -normalSign,
             0.0,
             0.0,
@@ -158,9 +197,9 @@ bool collideSphereTranslatedBox(
         break;
       case 1:
         result.addContact(
-            boxTranslation.x() + localSphereCenter.x(),
+            boxTranslation.x() + insideLocalSphereCenter.x(),
             boxTranslation.y() + normalSign * boxHalfExtents.y(),
-            boxTranslation.z() + localSphereCenter.z(),
+            boxTranslation.z() + insideLocalSphereCenter.z(),
             0.0,
             -normalSign,
             0.0,
@@ -168,8 +207,8 @@ bool collideSphereTranslatedBox(
         break;
       default:
         result.addContact(
-            boxTranslation.x() + localSphereCenter.x(),
-            boxTranslation.y() + localSphereCenter.y(),
+            boxTranslation.x() + insideLocalSphereCenter.x(),
+            boxTranslation.y() + insideLocalSphereCenter.y(),
             boxTranslation.z() + normalSign * boxHalfExtents.z(),
             0.0,
             0.0,
@@ -231,7 +270,10 @@ bool collideSphereBox(
   Eigen::Vector3d diff = localSphereCenter - closestPointLocal;
   double distSquared = diff.squaredNorm();
 
-  bool sphereCenterInside = (closestPointLocal == localSphereCenter);
+  const double boundaryTolerance
+      = computeBoundaryTolerance(boxHalfExtents, localSphereCenter);
+  bool sphereCenterInside
+      = distSquared <= boundaryTolerance * boundaryTolerance;
 
   if (!sphereCenterInside && distSquared > sphereRadius * sphereRadius) {
     return false;
@@ -242,29 +284,33 @@ bool collideSphereBox(
   Eigen::Vector3d contactPoint;
 
   if (sphereCenterInside) {
-    double minDist = boxHalfExtents.x() - std::abs(localSphereCenter.x());
+    Eigen::Vector3d insideLocalSphereCenter = localSphereCenter;
+    snapNearBoxBoundary(
+        insideLocalSphereCenter, boxHalfExtents, boundaryTolerance);
+
+    double minDist = boxHalfExtents.x() - std::abs(insideLocalSphereCenter.x());
     int minAxis = 0;
 
-    double distY = boxHalfExtents.y() - std::abs(localSphereCenter.y());
+    double distY = boxHalfExtents.y() - std::abs(insideLocalSphereCenter.y());
     if (distY < minDist) {
       minDist = distY;
       minAxis = 1;
     }
 
-    double distZ = boxHalfExtents.z() - std::abs(localSphereCenter.z());
+    double distZ = boxHalfExtents.z() - std::abs(insideLocalSphereCenter.z());
     if (distZ < minDist) {
       minDist = distZ;
       minAxis = 2;
     }
 
     Eigen::Vector3d localNormal = Eigen::Vector3d::Zero();
-    localNormal[minAxis] = (localSphereCenter[minAxis] >= 0) ? 1.0 : -1.0;
+    localNormal[minAxis] = (insideLocalSphereCenter[minAxis] >= 0) ? 1.0 : -1.0;
 
     normal = boxRotation * localNormal;
     penetration = sphereRadius + minDist;
 
-    Eigen::Vector3d localContactPoint = localSphereCenter;
-    localContactPoint[minAxis] = (localSphereCenter[minAxis] >= 0)
+    Eigen::Vector3d localContactPoint = insideLocalSphereCenter;
+    localContactPoint[minAxis] = (insideLocalSphereCenter[minAxis] >= 0)
                                      ? boxHalfExtents[minAxis]
                                      : -boxHalfExtents[minAxis];
     contactPoint = boxTranslation + boxRotation * localContactPoint;

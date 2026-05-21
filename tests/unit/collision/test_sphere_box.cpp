@@ -36,9 +36,52 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <numbers>
+#include <vector>
 
 using namespace dart::collision::native;
+
+namespace {
+
+Eigen::Isometry3d makeBoxTransform(const Eigen::Vector3d& translation)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = translation;
+  return tf;
+}
+
+Eigen::Isometry3d makeBoxTransform(
+    const Eigen::Vector3d& translation,
+    double angle,
+    const Eigen::Vector3d& axis)
+{
+  Eigen::Isometry3d tf = makeBoxTransform(translation);
+  tf.linear() = Eigen::AngleAxisd(angle, axis.normalized()).toRotationMatrix();
+  return tf;
+}
+
+Eigen::Isometry3d makeSphereTransformInBoxFrame(
+    const Eigen::Vector3d& translation, double angle)
+{
+  Eigen::Isometry3d tf = makeBoxTransform(translation);
+  tf.linear()
+      = Eigen::AngleAxisd(angle, Eigen::Vector3d(1.0, 2.0, 3.0).normalized())
+            .toRotationMatrix();
+  return tf;
+}
+
+void expectVectorNear(
+    const Eigen::Vector3d& actual,
+    const Eigen::Vector3d& expected,
+    double tolerance)
+{
+  EXPECT_NEAR(actual.x(), expected.x(), tolerance);
+  EXPECT_NEAR(actual.y(), expected.y(), tolerance);
+  EXPECT_NEAR(actual.z(), expected.z(), tolerance);
+}
+
+} // namespace
 
 TEST(SphereBox, Separated_AlongX)
 {
@@ -358,6 +401,302 @@ TEST(SphereBox, MaxContactsRespected)
 
   EXPECT_FALSE(collided);
   EXPECT_EQ(result.numContacts(), 0);
+}
+
+TEST(SphereBox, SeparatedAcrossBoxFramesAndSphereOrientations)
+{
+  constexpr double sphereRadius = 0.7;
+  const Eigen::Vector3d halfSize(0.3, 0.6, 1.8);
+  const BoxShape box(halfSize);
+  const SphereShape sphere(sphereRadius);
+
+  struct Case
+  {
+    const char* name;
+    Eigen::Vector3d sphereCenterInBox;
+  };
+
+  const std::array<Case, 2> cases{{
+      {"separated from +z face",
+       Eigen::Vector3d(
+           halfSize.x() * 0.5,
+           halfSize.y() * 0.5,
+           halfSize.z() + sphereRadius * 1.1)},
+      {"separated from +x,+y,+z corner",
+       halfSize + Eigen::Vector3d::Ones() * sphereRadius * 1.25},
+  }};
+
+  const std::array<Eigen::Isometry3d, 4> boxTransforms{{
+      Eigen::Isometry3d::Identity(),
+      makeBoxTransform(Eigen::Vector3d(1.3, 2.7, 6.5)),
+      makeBoxTransform(
+          Eigen::Vector3d(1.3, 2.7, 6.5),
+          std::numbers::pi_v<double> / 2.0,
+          Eigen::Vector3d::UnitY()),
+      makeBoxTransform(
+          Eigen::Vector3d(1.3, 2.7, 6.5),
+          std::numbers::pi_v<double> / 3.0,
+          Eigen::Vector3d(1.0, 2.0, 3.0)),
+  }};
+  constexpr std::array<double, 2> sphereRotationAngles{
+      0.0, std::numbers::pi_v<double> / 3.0};
+
+  for (const auto& testCase : cases) {
+    for (const auto& tfBox : boxTransforms) {
+      for (const double sphereRotationAngle : sphereRotationAngles) {
+        SCOPED_TRACE(testCase.name);
+        CollisionResult result;
+        const bool collided = collideSphereBox(
+            sphere,
+            tfBox
+                * makeSphereTransformInBoxFrame(
+                    testCase.sphereCenterInBox, sphereRotationAngle),
+            box,
+            tfBox,
+            result);
+
+        EXPECT_FALSE(collided);
+        EXPECT_EQ(result.numContacts(), 0u);
+      }
+    }
+  }
+}
+
+TEST(SphereBox, ContactsAcrossBoxFramesAndSphereOrientations)
+{
+  constexpr double sphereRadius = 0.7;
+  const Eigen::Vector3d halfSize(0.3, 0.6, 1.8);
+  const BoxShape box(halfSize);
+  const SphereShape sphere(sphereRadius);
+
+  struct Case
+  {
+    const char* name;
+    Eigen::Vector3d sphereCenterInBox;
+    Eigen::Vector3d expectedNormalInBox;
+    double expectedDepth;
+  };
+
+  std::vector<Case> cases;
+
+  const double externalDepth = sphereRadius * 0.5;
+  cases.push_back(
+      {"external +z face",
+       halfSize + Eigen::Vector3d(0.0, 0.0, sphereRadius - externalDepth),
+       -Eigen::Vector3d::UnitZ(),
+       externalDepth});
+
+  const Eigen::Vector3d vertexNormalToBox
+      = Eigen::Vector3d(-1.0, -2.0, -3.0).normalized();
+  cases.push_back(
+      {"external +x,+y,+z vertex",
+       halfSize - vertexNormalToBox * (sphereRadius - externalDepth),
+       vertexNormalToBox,
+       externalDepth});
+
+  const double centerInset = halfSize.minCoeff() * 0.5;
+  for (int axis = 0; axis < 3; ++axis) {
+    for (double sign : {-1.0, 1.0}) {
+      const Eigen::Vector3d direction = sign * Eigen::Vector3d::Unit(axis);
+      cases.push_back(
+          {"internal nearest face",
+           direction * (centerInset - halfSize[axis]),
+           direction,
+           sphereRadius + centerInset});
+    }
+  }
+
+  cases.push_back(
+      {"center on +z face",
+       Eigen::Vector3d(0.0, 0.0, halfSize.z()),
+       -Eigen::Vector3d::UnitZ(),
+       sphereRadius});
+  cases.push_back(
+      {"center on +x,+y,+z corner",
+       halfSize,
+       -Eigen::Vector3d::UnitX(),
+       sphereRadius});
+
+  const std::array<Case, 6> coincidentCases{{
+      {"coincident cube",
+       Eigen::Vector3d::Zero(),
+       -Eigen::Vector3d::UnitX(),
+       15.0},
+      {"coincident x and z minimum",
+       Eigen::Vector3d::Zero(),
+       -Eigen::Vector3d::UnitX(),
+       15.0},
+      {"coincident x minimum",
+       Eigen::Vector3d::Zero(),
+       -Eigen::Vector3d::UnitX(),
+       15.0},
+      {"coincident y and z minimum",
+       Eigen::Vector3d::Zero(),
+       -Eigen::Vector3d::UnitY(),
+       15.0},
+      {"coincident y minimum",
+       Eigen::Vector3d::Zero(),
+       -Eigen::Vector3d::UnitY(),
+       15.0},
+      {"coincident z minimum",
+       Eigen::Vector3d::Zero(),
+       -Eigen::Vector3d::UnitZ(),
+       15.0},
+  }};
+  const std::array<Eigen::Vector3d, 6> coincidentHalfSizes{{
+      Eigen::Vector3d(10.0, 10.0, 10.0),
+      Eigen::Vector3d(10.0, 15.0, 10.0),
+      Eigen::Vector3d(10.0, 12.0, 14.0),
+      Eigen::Vector3d(15.0, 10.0, 10.0),
+      Eigen::Vector3d(15.0, 10.0, 14.0),
+      Eigen::Vector3d(15.0, 12.0, 10.0),
+  }};
+
+  const std::array<Eigen::Isometry3d, 4> boxTransforms{{
+      Eigen::Isometry3d::Identity(),
+      makeBoxTransform(Eigen::Vector3d(1.3, 2.7, 6.5)),
+      makeBoxTransform(
+          Eigen::Vector3d(1.3, 2.7, 6.5),
+          std::numbers::pi_v<double> / 2.0,
+          Eigen::Vector3d::UnitX()),
+      makeBoxTransform(
+          Eigen::Vector3d(1.3, 2.7, 6.5),
+          std::numbers::pi_v<double> / 3.0,
+          Eigen::Vector3d(1.0, 2.0, 3.0)),
+  }};
+  constexpr std::array<double, 2> sphereRotationAngles{
+      0.0, std::numbers::pi_v<double> / 3.0};
+
+  for (const auto& testCase : cases) {
+    for (const auto& tfBox : boxTransforms) {
+      for (const double sphereRotationAngle : sphereRotationAngles) {
+        SCOPED_TRACE(testCase.name);
+        CollisionResult result;
+        const bool collided = collideSphereBox(
+            sphere,
+            tfBox
+                * makeSphereTransformInBoxFrame(
+                    testCase.sphereCenterInBox, sphereRotationAngle),
+            box,
+            tfBox,
+            result);
+        ASSERT_TRUE(collided);
+        ASSERT_EQ(result.numContacts(), 1u);
+        EXPECT_NEAR(result.getContact(0).depth, testCase.expectedDepth, 1e-9);
+        expectVectorNear(
+            tfBox.rotation().transpose() * result.getContact(0).normal,
+            testCase.expectedNormalInBox,
+            1e-9);
+      }
+    }
+  }
+
+  for (std::size_t i = 0; i < coincidentCases.size(); ++i) {
+    const auto& testCase = coincidentCases[i];
+    const BoxShape coincidentBox(coincidentHalfSizes[i]);
+    const SphereShape coincidentSphere(5.0);
+
+    for (const auto& tfBox : boxTransforms) {
+      SCOPED_TRACE(testCase.name);
+      CollisionResult result;
+      const bool collided = collideSphereBox(
+          coincidentSphere,
+          tfBox * makeSphereTransformInBoxFrame(testCase.sphereCenterInBox, 0),
+          coincidentBox,
+          tfBox,
+          result);
+
+      ASSERT_TRUE(collided);
+      ASSERT_EQ(result.numContacts(), 1u);
+      EXPECT_NEAR(result.getContact(0).depth, testCase.expectedDepth, 1e-9);
+      expectVectorNear(
+          tfBox.rotation().transpose() * result.getContact(0).normal,
+          testCase.expectedNormalInBox,
+          1e-9);
+    }
+  }
+}
+
+TEST(SphereBox, ContactsWithIncompatibleScaleRatios)
+{
+  struct Case
+  {
+    const char* name;
+    Eigen::Vector3d halfSize;
+    double sphereRadius;
+    Eigen::Vector3d sphereCenterInBox;
+    Eigen::Vector3d expectedNormalInBox;
+    double expectedDepth;
+    bool expectedCollision;
+  };
+
+  const Eigen::Vector3d largeSphereNormalToBox
+      = Eigen::Vector3d(-1.0, -2.0, -3.0).normalized();
+  const std::array<Case, 4> cases{{
+      {"long skinny box collides with small sphere",
+       Eigen::Vector3d(15.0, 1.0, 1.0),
+       0.01,
+       Eigen::Vector3d(15.0 * 0.95, 0.0, 1.0 + 0.01 * 0.5),
+       -Eigen::Vector3d::UnitZ(),
+       0.005,
+       true},
+      {"long skinny box separated from small sphere",
+       Eigen::Vector3d(15.0, 1.0, 1.0),
+       0.01,
+       Eigen::Vector3d(15.0 * 0.95, 0.0, 1.0 + 0.01 + 0.001),
+       -Eigen::Vector3d::UnitZ(),
+       0.0,
+       false},
+      {"large sphere collides with tiny box",
+       Eigen::Vector3d(0.1, 0.15, 0.2),
+       10.0,
+       Eigen::Vector3d(0.1, 0.15, 0.2) - largeSphereNormalToBox * (10.0 - 0.05),
+       largeSphereNormalToBox,
+       0.05,
+       true},
+      {"large sphere separated from tiny box",
+       Eigen::Vector3d(0.1, 0.15, 0.2),
+       10.0,
+       Eigen::Vector3d(0.1, 0.15, 0.2) - largeSphereNormalToBox * (10.0 + 0.01),
+       largeSphereNormalToBox,
+       0.0,
+       false},
+  }};
+
+  const std::array<Eigen::Isometry3d, 2> boxTransforms{{
+      Eigen::Isometry3d::Identity(),
+      makeBoxTransform(
+          Eigen::Vector3d(1.3, 2.7, 6.5),
+          std::numbers::pi_v<double> / 3.0,
+          Eigen::Vector3d(1.0, 2.0, 3.0)),
+  }};
+
+  for (const auto& testCase : cases) {
+    for (const auto& tfBox : boxTransforms) {
+      SCOPED_TRACE(testCase.name);
+      const BoxShape box(testCase.halfSize);
+      const SphereShape sphere(testCase.sphereRadius);
+      CollisionResult result;
+      const bool collided = collideSphereBox(
+          sphere,
+          tfBox * makeSphereTransformInBoxFrame(testCase.sphereCenterInBox, 0),
+          box,
+          tfBox,
+          result);
+
+      EXPECT_EQ(collided, testCase.expectedCollision);
+      if (testCase.expectedCollision) {
+        ASSERT_EQ(result.numContacts(), 1u);
+        EXPECT_NEAR(result.getContact(0).depth, testCase.expectedDepth, 1e-9);
+        expectVectorNear(
+            tfBox.rotation().transpose() * result.getContact(0).normal,
+            testCase.expectedNormalInBox,
+            1e-9);
+      } else {
+        EXPECT_EQ(result.numContacts(), 0u);
+      }
+    }
+  }
 }
 
 TEST(SphereBox, UsingShapeObjects)

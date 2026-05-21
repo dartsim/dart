@@ -318,6 +318,59 @@ TEST(PrimitiveMesh, SphereVsMesh)
   expectContactHasMirroredMeshFeatureId(result.getContact(0), triangleCount);
 }
 
+TEST(PrimitiveMesh, SphereTouchesSharedTriangleEdgeAtZeroDepth)
+{
+  std::vector<Eigen::Vector3d> vertices{
+      {-1.0, -1.0, 0.0}, {1.0, -1.0, 0.0}, {1.0, 1.0, 0.0}, {-1.0, 1.0, 0.0}};
+  std::vector<MeshShape::Triangle> triangles{{0, 1, 2}, {0, 2, 3}};
+
+  const SphereShape sphere(4.0);
+  CollisionOption option;
+  option.maxNumContacts = 4u;
+
+  auto expectTouchingContacts = [&](const Eigen::Isometry3d& meshTransform,
+                                    const Eigen::Vector3d& sphereCenter,
+                                    const Eigen::Vector3d& expectedNormal) {
+    CollisionWorld world;
+    auto meshObj = world.createObject(
+        std::make_unique<MeshShape>(vertices, triangles), meshTransform);
+
+    Eigen::Isometry3d sphereTransform = Eigen::Isometry3d::Identity();
+    sphereTransform.translation() = sphereCenter;
+    auto sphereObj = world.createObject(
+        std::make_unique<SphereShape>(sphere), sphereTransform);
+
+    CollisionResult result;
+    ASSERT_TRUE(NarrowPhase::collide(meshObj, sphereObj, option, result));
+    ASSERT_EQ(result.numContacts(), 2u);
+    for (std::size_t i = 0; i < result.numContacts(); ++i) {
+      const auto& contact = result.getContact(i);
+      EXPECT_NEAR(contact.depth, 0.0, 1e-12);
+      EXPECT_NEAR(contact.position.x(), meshTransform.translation().x(), 1e-12);
+      EXPECT_NEAR(contact.position.y(), meshTransform.translation().y(), 1e-12);
+      EXPECT_NEAR(contact.position.z(), meshTransform.translation().z(), 1e-12);
+      EXPECT_NEAR(contact.normal.x(), expectedNormal.x(), 1e-12);
+      EXPECT_NEAR(contact.normal.y(), expectedNormal.y(), 1e-12);
+      EXPECT_NEAR(contact.normal.z(), expectedNormal.z(), 1e-12);
+    }
+  };
+
+  Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  expectTouchingContacts(
+      identity, Eigen::Vector3d(0.0, 0.0, 4.0), -Eigen::Vector3d::UnitZ());
+
+  Eigen::Isometry3d translated = Eigen::Isometry3d::Identity();
+  translated.translation() = Eigen::Vector3d(10.0, 30.0, 40.0);
+  expectTouchingContacts(
+      translated, Eigen::Vector3d(10.0, 30.0, 44.0), -Eigen::Vector3d::UnitZ());
+
+  Eigen::Isometry3d rotated = Eigen::Isometry3d::Identity();
+  rotated.linear() << 1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0;
+  rotated.translation() = Eigen::Vector3d(10.0, 30.0, 40.0);
+  expectTouchingContacts(
+      rotated, Eigen::Vector3d(10.0, 26.0, 40.0), Eigen::Vector3d::UnitY());
+}
+
 TEST(PrimitiveMesh, CapsuleVsMeshPairOrder)
 {
   MeshShape mesh = makeGridMesh(1, 2.0);

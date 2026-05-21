@@ -37,6 +37,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <numbers>
 #include <random>
 #include <stdexcept>
@@ -54,6 +55,19 @@ Eigen::Isometry3d makeCapsuleBatchTransform(
                  * Eigen::AngleAxisd(0.5 * angle, Eigen::Vector3d::UnitY()))
                     .toRotationMatrix();
   tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
+
+Eigen::Isometry3d makeCapsuleSphereCommonFrame()
+{
+  return makeCapsuleBatchTransform(8.40188, 3.94383, 7.83099, 0.37);
+}
+
+Eigen::Isometry3d makeCapsuleSphereLocalTranslation(
+    const Eigen::Vector3d& translation)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = translation;
   return tf;
 }
 
@@ -95,6 +109,38 @@ void expectCollisionResultExactlyEqual(
           expectedManifold.getContact(j), actualManifold.getContact(j));
     }
   }
+}
+
+void expectLargeCapsuleSphereBoundaryCase(
+    const char* name,
+    const Eigen::Isometry3d& worldFromCase,
+    const Eigen::Vector3d& sphereCenterInCase,
+    bool expectedHit,
+    double expectedDepth)
+{
+  SCOPED_TRACE(name);
+  CapsuleShape capsule(5.0, 10.0);
+  SphereShape sphere(20.0);
+
+  const Eigen::Isometry3d tfCapsule = worldFromCase;
+  const Eigen::Isometry3d tfSphere
+      = worldFromCase * makeCapsuleSphereLocalTranslation(sphereCenterInCase);
+
+  CollisionResult result;
+  const bool hit
+      = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+  EXPECT_EQ(hit, expectedHit);
+
+  if (!expectedHit) {
+    EXPECT_EQ(result.numContacts(), 0u);
+    return;
+  }
+
+  ASSERT_EQ(result.numContacts(), 1u);
+  const auto& contact = result.getContact(0);
+  EXPECT_NEAR(contact.depth, expectedDepth, 1e-9);
+  EXPECT_TRUE(contact.position.allFinite());
+  EXPECT_TRUE(contact.normal.allFinite());
 }
 
 } // namespace
@@ -308,6 +354,39 @@ TEST(CapsuleSphere, SphereAtBottom)
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
+}
+
+TEST(CapsuleSphere, LargeRadiusBoundaryAndSeparationAcrossFrames)
+{
+  const std::array<Eigen::Isometry3d, 2> worldFromCases{
+      Eigen::Isometry3d::Identity(), makeCapsuleSphereCommonFrame()};
+
+  for (const auto& worldFromCase : worldFromCases) {
+    expectLargeCapsuleSphereBoundaryCase(
+        "coincident-centers",
+        worldFromCase,
+        Eigen::Vector3d::Zero(),
+        true,
+        25.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "shallow-side-penetration",
+        worldFromCase,
+        Eigen::Vector3d(24.9, 0.0, 0.0),
+        true,
+        0.1);
+    expectLargeCapsuleSphereBoundaryCase(
+        "side-touching",
+        worldFromCase,
+        Eigen::Vector3d(25.0, 0.0, 0.0),
+        true,
+        0.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "side-separated",
+        worldFromCase,
+        Eigen::Vector3d(25.1, 0.0, 0.0),
+        false,
+        0.0);
+  }
 }
 
 TEST(CapsuleBox, NoCollision)

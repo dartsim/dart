@@ -83,16 +83,18 @@ its own line so status updates remain git-history friendly.
 
 ### PLAN-036: Native Collision Performance Wave
 
-- Owner doc: [`../dev_tasks/native_collision_performance/README.md`](../dev_tasks/native_collision_performance/README.md)
-- Status: Active
-- Horizon: Now
+- Owner doc:
+  [`035-native-collision-dashboard.md#performance-follow-up-plan`](035-native-collision-dashboard.md#performance-follow-up-plan)
+- Status: Complete
+- Horizon: Later
 - Dimension: Scalable compute
-- Next step: Generate the single-core benchmark manifest and classify every
-  collision benchmark row by feature/algorithm family before choosing the first
-  hot-path slice.
-- Gate: Every comparable collision benchmark row has current single-core JSON
-  evidence and exceeds the strongest comparison baseline, while multi-core CPU
-  and single-GPU work remain behind prototype gates.
+- Next step: Use the durable benchmark manifest and follow-up plan to choose
+  the next profiled hot-path slice without restoring reference-engine runtime
+  dependencies.
+- Gate: The durable manifest records 45 comparable native leads, 0 behind rows,
+  8 native-only rows, and 0 rerun-needed rows from the local single-worker
+  benchmark packet; multi-core CPU and single-GPU work remain behind prototype
+  gates.
 
 ### PLAN-040: DART 7 Release Hardening
 

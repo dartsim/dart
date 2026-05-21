@@ -37,6 +37,8 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <limits>
+#include <vector>
 
 #include <cmath>
 
@@ -65,6 +67,96 @@ SupportFunction makeBoxSupport(
   };
 }
 
+SupportFunction makeOrientedBoxSupport(
+    const Eigen::Isometry3d& transform, const Eigen::Vector3d& halfExtents)
+{
+  return [transform, halfExtents](const Eigen::Vector3d& dir) {
+    const Eigen::Vector3d localDir = transform.linear().transpose() * dir;
+    Eigen::Vector3d localSupport;
+    localSupport.x()
+        = (localDir.x() >= 0.0) ? halfExtents.x() : -halfExtents.x();
+    localSupport.y()
+        = (localDir.y() >= 0.0) ? halfExtents.y() : -halfExtents.y();
+    localSupport.z()
+        = (localDir.z() >= 0.0) ? halfExtents.z() : -halfExtents.z();
+    return transform * localSupport;
+  };
+}
+
+Eigen::Isometry3d makeBoxSignedDistanceFrame(
+    const Eigen::Vector3d& translation = Eigen::Vector3d::Zero(),
+    double angle = 0.0,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ())
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = translation;
+  if (angle != 0.0) {
+    tf.linear()
+        = Eigen::AngleAxisd(angle, axis.normalized()).toRotationMatrix();
+  }
+  return tf;
+}
+
+void expectRotatedBoxEdgeFaceSignedDistance(
+    const char* name,
+    const Eigen::Isometry3d& worldFromFrame,
+    const Eigen::Vector3d& secondBoxTranslation,
+    double expectedSignedDistance)
+{
+  SCOPED_TRACE(name);
+  const Eigen::Vector3d halfExtents1(0.5, 0.5, 0.5);
+  const Eigen::Vector3d halfExtents2(0.3, 0.4, 0.5);
+
+  Eigen::Isometry3d frameFromBox1 = Eigen::Isometry3d::Identity();
+  frameFromBox1.translation() = Eigen::Vector3d(0.0, 0.0, 0.5);
+
+  Eigen::Isometry3d frameFromBox2 = Eigen::Isometry3d::Identity();
+  frameFromBox2.linear() << 0.6, -0.8, 0.0, 0.8, 0.6, 0.0, 0.0, 0.0, 1.0;
+  frameFromBox2.translation() = secondBoxTranslation;
+
+  const Eigen::Isometry3d worldFromBox1 = worldFromFrame * frameFromBox1;
+  const Eigen::Isometry3d worldFromBox2 = worldFromFrame * frameFromBox2;
+
+  auto supportA = makeOrientedBoxSupport(worldFromBox1, halfExtents1);
+  auto supportB = makeOrientedBoxSupport(worldFromBox2, halfExtents2);
+  const Eigen::Vector3d initialDirection
+      = worldFromBox2.translation() - worldFromBox1.translation();
+
+  const GjkResult gjk = Gjk::query(supportA, supportB, initialDirection);
+  if (expectedSignedDistance > 0.0) {
+    ASSERT_FALSE(gjk.intersecting);
+    EXPECT_NEAR(gjk.distance, expectedSignedDistance, 1e-6);
+    EXPECT_TRUE(gjk.closestPointA.allFinite());
+    EXPECT_TRUE(gjk.closestPointB.allFinite());
+    return;
+  }
+
+  if (expectedSignedDistance == 0.0) {
+    if (!gjk.intersecting) {
+      EXPECT_NEAR(gjk.distance, 0.0, 1e-6);
+      EXPECT_TRUE(gjk.closestPointA.allFinite());
+      EXPECT_TRUE(gjk.closestPointB.allFinite());
+    }
+    return;
+  }
+
+  ASSERT_TRUE(gjk.intersecting);
+  const MprResult mpr = Mpr::penetration(
+      supportA,
+      supportB,
+      worldFromBox1.translation(),
+      worldFromBox2.translation());
+  ASSERT_TRUE(mpr.success);
+  EXPECT_NEAR(mpr.depth, -expectedSignedDistance, 1e-5);
+  EXPECT_TRUE(mpr.pointOnA.allFinite());
+  EXPECT_TRUE(mpr.pointOnB.allFinite());
+  EXPECT_TRUE(mpr.position.allFinite());
+  EXPECT_GT(
+      std::abs(mpr.normal.normalized().dot(
+          worldFromFrame.linear() * Eigen::Vector3d::UnitX())),
+      0.99);
+}
+
 SupportPoint makeSupportPoint(
     const SupportFunction& supportA,
     const SupportFunction& supportB,
@@ -82,6 +174,15 @@ SupportFunction makeConvexSupport(const ConvexShape& convex)
 {
   return [&convex](const Eigen::Vector3d& dir) {
     return convex.support(dir);
+  };
+}
+
+SupportFunction makeTransformedConvexSupport(
+    const ConvexShape& convex, const Eigen::Isometry3d& transform)
+{
+  return [&convex, transform](const Eigen::Vector3d& dir) {
+    const Eigen::Vector3d localDir = transform.linear().transpose() * dir;
+    return transform * convex.support(localDir);
   };
 }
 
@@ -201,6 +302,53 @@ TEST(Gjk, ConvexConvexSeparated)
   EXPECT_FALSE(Gjk::intersect(supportA, supportB));
 }
 
+TEST(Gjk, TransformedConvexSupportMatchesVertexSearch)
+{
+  const std::vector<Eigen::Vector3d> vertices{
+      {-1, -1, -1},
+      {1, -1, -1},
+      {1, 1, -1},
+      {-1, 1, -1},
+      {-1, -1, 1},
+      {1, -1, 1},
+      {1, 1, 1},
+      {-1, 1, 1}};
+  const ConvexShape convex(vertices);
+
+  std::array<Eigen::Isometry3d, 3> transforms;
+  transforms[0] = Eigen::Isometry3d::Identity();
+  transforms[1] = Eigen::Isometry3d::Identity();
+  transforms[1].translation() = Eigen::Vector3d(-1.0, 2.0, -3.0);
+  transforms[2] = Eigen::Isometry3d::Identity();
+  transforms[2].linear()
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d(1.0, -2.0, 3.0).normalized())
+            .toRotationMatrix();
+
+  const std::array<Eigen::Vector3d, 3> directions{{
+      {-2.0, -2.0, -2.0},
+      {-2.0, 3.0, -2.0},
+      {7.0, 1.0, -1.0},
+  }};
+
+  for (const auto& transform : transforms) {
+    const auto support = makeTransformedConvexSupport(convex, transform);
+    for (const auto& direction : directions) {
+      Eigen::Vector3d expected = Eigen::Vector3d::Zero();
+      double expectedDot = -std::numeric_limits<double>::infinity();
+      for (const auto& vertex : vertices) {
+        const Eigen::Vector3d transformedVertex = transform * vertex;
+        const double dot = transformedVertex.dot(direction);
+        if (dot > expectedDot) {
+          expectedDot = dot;
+          expected = transformedVertex;
+        }
+      }
+
+      EXPECT_TRUE(support(direction).isApprox(expected, 1e-12));
+    }
+  }
+}
+
 TEST(Gjk, IdenticalShapes)
 {
   auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
@@ -296,6 +444,37 @@ TEST(Gjk, WarmStartEmptySimplexFallsBack)
 
   EXPECT_FALSE(result.intersecting);
   EXPECT_NEAR(result.distance, 1.0, 1e-6);
+}
+
+TEST(GjkSignedDistance, RotatedBoxEdgeFaceCases)
+{
+  const std::array<Eigen::Isometry3d, 4> frames{{
+      Eigen::Isometry3d::Identity(),
+      makeBoxSignedDistanceFrame(Eigen::Vector3d(0.0, 0.0, 1.0)),
+      makeBoxSignedDistanceFrame(Eigen::Vector3d(0.0, 1.0, 0.0)),
+      makeBoxSignedDistanceFrame(
+          Eigen::Vector3d(0.1, 0.2, 0.3),
+          std::numbers::pi_v<double> * 0.1,
+          Eigen::Vector3d::UnitZ()),
+  }};
+
+  for (const auto& frame : frames) {
+    expectRotatedBoxEdgeFaceSignedDistance(
+        "rotated edge separated from face",
+        frame,
+        Eigen::Vector3d(-1.1, 0.0, 0.5),
+        0.1);
+    expectRotatedBoxEdgeFaceSignedDistance(
+        "rotated edge touching face",
+        frame,
+        Eigen::Vector3d(-1.0, 0.1, 0.5),
+        0.0);
+    expectRotatedBoxEdgeFaceSignedDistance(
+        "rotated edge penetrating face",
+        frame,
+        Eigen::Vector3d(-0.9, -0.05, 0.5),
+        -0.1);
+  }
 }
 
 TEST(Epa, SphereSphereIntersecting)

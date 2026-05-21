@@ -35,6 +35,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <numbers>
 #include <random>
 #include <stdexcept>
@@ -52,6 +53,28 @@ Eigen::Isometry3d makeCylinderBatchTransform(
                  * Eigen::AngleAxisd(0.5 * angle, Eigen::Vector3d::UnitY()))
                     .toRotationMatrix();
   tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
+
+Eigen::Isometry3d makeTranslation(const Eigen::Vector3d& translation)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = translation;
+  return tf;
+}
+
+Eigen::Isometry3d makeCylinderCylinderCommonFrame()
+{
+  return makeCylinderBatchTransform(8.40188, 3.94383, 7.83099, 0.37);
+}
+
+Eigen::Isometry3d makeSphereTransformInCylinderFrame(
+    const Eigen::Vector3d& translation, double angle)
+{
+  Eigen::Isometry3d tf = makeTranslation(translation);
+  tf.linear()
+      = Eigen::AngleAxisd(angle, Eigen::Vector3d(1.0, -2.0, 3.0).normalized())
+            .toRotationMatrix();
   return tf;
 }
 
@@ -93,6 +116,37 @@ void expectCollisionResultExactlyEqual(
           expectedManifold.getContact(j), actualManifold.getContact(j));
     }
   }
+}
+
+void expectEqualCylinderBoundaryCase(
+    const char* name,
+    const Eigen::Isometry3d& worldFromCase,
+    const Eigen::Vector3d& secondCylinderCenterInCase,
+    bool expectedHit,
+    double expectedDepth)
+{
+  SCOPED_TRACE(name);
+  CylinderShape cylinder1(5.0, 10.0);
+  CylinderShape cylinder2(5.0, 10.0);
+
+  const Eigen::Isometry3d tf1 = worldFromCase;
+  const Eigen::Isometry3d tf2
+      = worldFromCase * makeTranslation(secondCylinderCenterInCase);
+
+  CollisionResult result;
+  const bool hit = collideCylinders(cylinder1, tf1, cylinder2, tf2, result);
+  EXPECT_EQ(hit, expectedHit);
+
+  if (!expectedHit) {
+    EXPECT_EQ(result.numContacts(), 0u);
+    return;
+  }
+
+  ASSERT_GE(result.numContacts(), 1u);
+  const auto& contact = result.getContact(0);
+  EXPECT_NEAR(contact.depth, expectedDepth, 1e-7);
+  EXPECT_TRUE(contact.position.allFinite());
+  EXPECT_TRUE(contact.normal.allFinite());
 }
 
 } // namespace
@@ -167,6 +221,39 @@ TEST(CylinderCylinder, Perpendicular)
 
   EXPECT_TRUE(collided);
   EXPECT_GE(result.numContacts(), 1u);
+}
+
+TEST(CylinderCylinder, EqualRadiusBoundaryAndSeparationAcrossFrames)
+{
+  const std::array<Eigen::Isometry3d, 2> worldFromCases{
+      Eigen::Isometry3d::Identity(), makeCylinderCylinderCommonFrame()};
+
+  for (const auto& worldFromCase : worldFromCases) {
+    expectEqualCylinderBoundaryCase(
+        "coincident-cylinders",
+        worldFromCase,
+        Eigen::Vector3d::Zero(),
+        true,
+        10.0);
+    expectEqualCylinderBoundaryCase(
+        "shallow-side-penetration",
+        worldFromCase,
+        Eigen::Vector3d(9.9, 0.0, 0.0),
+        true,
+        0.1);
+    expectEqualCylinderBoundaryCase(
+        "side-touching",
+        worldFromCase,
+        Eigen::Vector3d(10.0, 0.0, 0.0),
+        true,
+        0.0);
+    expectEqualCylinderBoundaryCase(
+        "side-separated",
+        worldFromCase,
+        Eigen::Vector3d(10.01, 0.0, 0.0),
+        false,
+        0.0);
+  }
 }
 
 TEST(CylinderCylinderBatch, cylinder_cylinder_batch_determinism_vs_single)
@@ -295,6 +382,314 @@ TEST(CylinderSphere, SphereAtTopEdge)
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
+}
+
+TEST(CylinderSphere, SphereSeparatedAcrossFramesAndOrientations)
+{
+  constexpr double cylinderRadius = 1.2;
+  constexpr double cylinderHeight = 0.6;
+  constexpr double cylinderHalfHeight = cylinderHeight * 0.5;
+  constexpr double sphereRadius = 0.7;
+
+  const Eigen::Vector3d barrelNormalToCylinder
+      = Eigen::Vector3d(-1.0, -1.0, 0.0).normalized();
+  const Eigen::Vector3d edgeNormalToCylinder
+      = Eigen::Vector3d(-1.0, -1.0, -1.0).normalized();
+  const Eigen::Vector3d edgePoint
+      = Eigen::Vector3d(0.0, 0.0, cylinderHalfHeight)
+        + Eigen::Vector3d(
+              -edgeNormalToCylinder.x(), -edgeNormalToCylinder.y(), 0.0)
+                  .normalized()
+              * cylinderRadius;
+
+  struct Case
+  {
+    const char* name;
+    Eigen::Vector3d sphereCenter;
+  };
+
+  const std::array<Case, 3> cases{{
+      {"separated from cap face",
+       Eigen::Vector3d(
+           cylinderRadius * 0.25,
+           cylinderRadius * 0.25,
+           cylinderHalfHeight + sphereRadius * 1.1)},
+      {"separated from barrel",
+       Eigen::Vector3d(0.0, 0.0, cylinderHalfHeight * 0.5)
+           - barrelNormalToCylinder * (sphereRadius + cylinderRadius + 0.1)},
+      {"separated from barrel edge",
+       edgePoint - edgeNormalToCylinder * (sphereRadius + 0.1)},
+  }};
+
+  const CylinderShape cylinder(cylinderRadius, cylinderHeight);
+  const SphereShape sphere(sphereRadius);
+  const std::array<Eigen::Isometry3d, 2> cylinderTransforms{{
+      Eigen::Isometry3d::Identity(),
+      makeCylinderBatchTransform(1.0, -2.0, 0.5, 0.37),
+  }};
+  constexpr std::array<double, 2> sphereRotationAngles{
+      0.0, std::numbers::pi_v<double> / 5.0};
+
+  for (const auto& testCase : cases) {
+    for (const auto& tfCylinder : cylinderTransforms) {
+      for (const double sphereRotationAngle : sphereRotationAngles) {
+        SCOPED_TRACE(testCase.name);
+        CollisionResult result;
+        const bool collided = collideCylinderSphere(
+            cylinder,
+            tfCylinder,
+            sphere,
+            tfCylinder
+                * makeSphereTransformInCylinderFrame(
+                    testCase.sphereCenter, sphereRotationAngle),
+            result);
+
+        EXPECT_FALSE(collided);
+        EXPECT_EQ(result.numContacts(), 0u);
+      }
+    }
+  }
+}
+
+TEST(CylinderSphere, SphereContactsAcrossFramesAndOrientations)
+{
+  constexpr double cylinderRadius = 1.2;
+  constexpr double cylinderHeight = 0.6;
+  constexpr double cylinderHalfHeight = cylinderHeight * 0.5;
+  constexpr double sphereRadius = 0.7;
+  constexpr double targetDepth = sphereRadius * 0.25;
+
+  const Eigen::Vector3d capPoint(
+      cylinderRadius * 0.25, cylinderRadius * 0.25, cylinderHalfHeight);
+  const Eigen::Vector3d capNormalToCylinder = -Eigen::Vector3d::UnitZ();
+  const Eigen::Vector3d barrelPoint(
+      cylinderRadius, 0.0, cylinderHalfHeight * 0.1);
+  const Eigen::Vector3d edgePoint(cylinderRadius, 0.0, cylinderHalfHeight);
+  const Eigen::Vector3d edgeNormalFromCylinder = edgePoint.normalized();
+
+  struct Case
+  {
+    const char* name;
+    double cylinderRadius;
+    double cylinderHeight;
+    Eigen::Vector3d sphereCenter;
+    double expectedDepth;
+  };
+
+  const std::array<Case, 7> cases{{
+      {"external cap face",
+       cylinderRadius,
+       cylinderHeight,
+       capPoint - capNormalToCylinder * (sphereRadius - targetDepth),
+       targetDepth},
+      {"external barrel",
+       cylinderRadius,
+       cylinderHeight,
+       barrelPoint + Eigen::Vector3d::UnitX() * (sphereRadius - targetDepth),
+       targetDepth},
+      {"external barrel edge",
+       cylinderRadius,
+       cylinderHeight,
+       edgePoint + edgeNormalFromCylinder * (sphereRadius - targetDepth),
+       targetDepth},
+      {"internal cap face",
+       cylinderRadius,
+       cylinderHeight,
+       capPoint + capNormalToCylinder * 0.1,
+       sphereRadius + 0.1},
+      {"internal barrel",
+       cylinderRadius,
+       cylinderHeight,
+       barrelPoint - Eigen::Vector3d::UnitX() * 0.1,
+       sphereRadius + 0.1},
+      {"origin with cap nearest",
+       cylinderHeight * 2.0,
+       cylinderHeight,
+       Eigen::Vector3d::Zero(),
+       sphereRadius + cylinderHalfHeight},
+      {"origin with barrel nearest",
+       cylinderRadius,
+       cylinderRadius * 4.0,
+       Eigen::Vector3d::Zero(),
+       sphereRadius + cylinderRadius},
+  }};
+
+  const SphereShape sphere(sphereRadius);
+  const std::array<Eigen::Isometry3d, 2> cylinderTransforms{{
+      Eigen::Isometry3d::Identity(),
+      makeCylinderBatchTransform(1.0, -2.0, 0.5, 0.37),
+  }};
+  constexpr std::array<double, 2> sphereRotationAngles{
+      0.0, std::numbers::pi_v<double> / 5.0};
+
+  for (const auto& testCase : cases) {
+    for (const auto& tfCylinder : cylinderTransforms) {
+      for (const double sphereRotationAngle : sphereRotationAngles) {
+        SCOPED_TRACE(testCase.name);
+        const CylinderShape cylinder(
+            testCase.cylinderRadius, testCase.cylinderHeight);
+        CollisionResult result;
+        const bool collided = collideCylinderSphere(
+            cylinder,
+            tfCylinder,
+            sphere,
+            tfCylinder
+                * makeSphereTransformInCylinderFrame(
+                    testCase.sphereCenter, sphereRotationAngle),
+            result);
+
+        ASSERT_TRUE(collided);
+        ASSERT_EQ(result.numContacts(), 1u);
+        EXPECT_NEAR(result.getContact(0).depth, testCase.expectedDepth, 1e-9);
+      }
+    }
+  }
+}
+
+TEST(CylinderSphere, ContactsWithIncompatibleScaleRatios)
+{
+  const Eigen::Vector3d obliqueRadial
+      = Eigen::Vector3d(1.0, 2.0, 0.0).normalized();
+
+  struct Case
+  {
+    const char* name;
+    double cylinderRadius;
+    double cylinderHeight;
+    double sphereRadius;
+    Eigen::Vector3d sphereCenter;
+    double expectedDepth;
+    bool expectedCollision;
+  };
+
+  const double largeDiskRadius = 9.0;
+  const double largeDiskHeight = 0.1;
+  const double tinySphereRadius = 0.025;
+  const double largeDiskTargetDepth = tinySphereRadius * 0.5;
+  const Eigen::Vector3d largeDiskFacePoint
+      = obliqueRadial * (largeDiskRadius - tinySphereRadius)
+        + Eigen::Vector3d::UnitZ() * (largeDiskHeight * 0.5);
+  const Eigen::Vector3d largeDiskBarrelPoint
+      = obliqueRadial * largeDiskRadius
+        + Eigen::Vector3d::UnitZ() * (tinySphereRadius * 0.1);
+
+  const double tinyDiskRadius = 0.025;
+  const double tinyDiskHeight = 0.1;
+  const double largeSphereRadius = 9.0;
+  const double tinyDiskTargetDepth = tinyDiskRadius * 0.5;
+  const Eigen::Vector3d tinyDiskFacePoint
+      = obliqueRadial * (tinyDiskRadius * 0.5)
+        + Eigen::Vector3d::UnitZ() * (tinyDiskHeight * 0.5);
+  const Eigen::Vector3d tinyDiskBarrelPoint
+      = obliqueRadial * tinyDiskRadius
+        + Eigen::Vector3d::UnitZ() * (tinyDiskHeight * 0.1);
+
+  const std::array<Case, 8> cases{{
+      {"large disk and tiny sphere touching face",
+       largeDiskRadius,
+       largeDiskHeight,
+       tinySphereRadius,
+       largeDiskFacePoint
+           + Eigen::Vector3d::UnitZ()
+                 * (tinySphereRadius - largeDiskTargetDepth),
+       largeDiskTargetDepth,
+       true},
+      {"large disk and tiny sphere separated from face",
+       largeDiskRadius,
+       largeDiskHeight,
+       tinySphereRadius,
+       largeDiskFacePoint
+           + Eigen::Vector3d::UnitZ()
+                 * (tinySphereRadius + largeDiskTargetDepth),
+       0.0,
+       false},
+      {"large disk and tiny sphere touching barrel",
+       largeDiskRadius,
+       largeDiskHeight,
+       tinySphereRadius,
+       largeDiskBarrelPoint
+           + obliqueRadial * (tinySphereRadius - largeDiskTargetDepth),
+       largeDiskTargetDepth,
+       true},
+      {"large disk and tiny sphere separated from barrel",
+       largeDiskRadius,
+       largeDiskHeight,
+       tinySphereRadius,
+       largeDiskBarrelPoint
+           + obliqueRadial * (tinySphereRadius + largeDiskTargetDepth),
+       0.0,
+       false},
+      {"large sphere and tiny disk touching face",
+       tinyDiskRadius,
+       tinyDiskHeight,
+       largeSphereRadius,
+       tinyDiskFacePoint
+           + Eigen::Vector3d::UnitZ()
+                 * (largeSphereRadius - tinyDiskTargetDepth),
+       tinyDiskTargetDepth,
+       true},
+      {"large sphere and tiny disk separated from face",
+       tinyDiskRadius,
+       tinyDiskHeight,
+       largeSphereRadius,
+       tinyDiskFacePoint
+           + Eigen::Vector3d::UnitZ()
+                 * (largeSphereRadius + tinyDiskTargetDepth),
+       0.0,
+       false},
+      {"large sphere and tiny disk touching barrel",
+       tinyDiskRadius,
+       tinyDiskHeight,
+       largeSphereRadius,
+       tinyDiskBarrelPoint
+           + obliqueRadial * (largeSphereRadius - tinyDiskTargetDepth),
+       tinyDiskTargetDepth,
+       true},
+      {"large sphere and tiny disk separated from barrel",
+       tinyDiskRadius,
+       tinyDiskHeight,
+       largeSphereRadius,
+       tinyDiskBarrelPoint
+           + obliqueRadial * (largeSphereRadius + tinyDiskTargetDepth),
+       0.0,
+       false},
+  }};
+
+  const std::array<Eigen::Isometry3d, 2> cylinderTransforms{{
+      Eigen::Isometry3d::Identity(),
+      makeCylinderBatchTransform(1.0, -2.0, 0.5, 0.37),
+  }};
+  constexpr std::array<double, 2> sphereRotationAngles{
+      0.0, std::numbers::pi_v<double> / 5.0};
+
+  for (const auto& testCase : cases) {
+    for (const auto& tfCylinder : cylinderTransforms) {
+      for (const double sphereRotationAngle : sphereRotationAngles) {
+        SCOPED_TRACE(testCase.name);
+        const CylinderShape cylinder(
+            testCase.cylinderRadius, testCase.cylinderHeight);
+        const SphereShape sphere(testCase.sphereRadius);
+
+        CollisionResult result;
+        const bool collided = collideCylinderSphere(
+            cylinder,
+            tfCylinder,
+            sphere,
+            tfCylinder
+                * makeSphereTransformInCylinderFrame(
+                    testCase.sphereCenter, sphereRotationAngle),
+            result);
+
+        EXPECT_EQ(collided, testCase.expectedCollision);
+        if (testCase.expectedCollision) {
+          ASSERT_EQ(result.numContacts(), 1u);
+          EXPECT_NEAR(result.getContact(0).depth, testCase.expectedDepth, 1e-9);
+        } else {
+          EXPECT_EQ(result.numContacts(), 0u);
+        }
+      }
+    }
+  }
 }
 
 TEST(CylinderBox, NoCollision)
