@@ -98,6 +98,28 @@ TEST(RaycastSphere, GrazingHit)
   EXPECT_NEAR(result.normal.z(), 0.0, 1e-10);
 }
 
+TEST(RaycastSphere, TangentAtRayOrigin)
+{
+  SphereShape sphere(1.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 1, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastSphere(ray, sphere, transform, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_TRUE(result.isHit());
+  EXPECT_NEAR(result.distance, 0.0, 1e-10);
+  EXPECT_NEAR(result.point.x(), 0.0, 1e-10);
+  EXPECT_NEAR(result.point.y(), 1.0, 1e-10);
+  EXPECT_NEAR(result.point.z(), 0.0, 1e-10);
+  EXPECT_NEAR(result.normal.x(), 0.0, 1e-10);
+  EXPECT_NEAR(result.normal.y(), 1.0, 1e-10);
+  EXPECT_NEAR(result.normal.z(), 0.0, 1e-10);
+}
+
 TEST(RaycastSphere, HitFromInside)
 {
   SphereShape sphere(2.0);
@@ -128,6 +150,21 @@ TEST(RaycastSphere, MaxDistanceRespected)
   bool hit = raycastSphere(ray, sphere, transform, option, result);
 
   EXPECT_FALSE(hit);
+}
+
+TEST(RaycastSphere, IntersectionBehindRay)
+{
+  SphereShape sphere(1.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(5, 0, 0), Eigen::Vector3d(1, 0, 0));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastSphere(ray, sphere, transform, option, result);
+
+  EXPECT_FALSE(hit);
+  EXPECT_FALSE(result.isHit());
 }
 
 TEST(RaycastSphere, DiagonalRay)
@@ -177,6 +214,21 @@ TEST(RaycastBox, HitFrontFace)
   EXPECT_NEAR(result.distance, 4.0, 1e-10);
   EXPECT_NEAR(result.point.z(), -1.0, 1e-10);
   EXPECT_NEAR(result.normal.z(), -1.0, 1e-10);
+}
+
+TEST(RaycastBox, SlabIntervalsRejectDiagonalMiss)
+{
+  BoxShape box(Eigen::Vector3d(1, 1, 1));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(-5, 2, 0), Eigen::Vector3d(1, -0.1, 0).normalized());
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastBox(ray, box, transform, option, result);
+
+  EXPECT_FALSE(hit);
+  EXPECT_FALSE(result.isHit());
 }
 
 TEST(RaycastBox, ThinSlabHit)
@@ -464,6 +516,21 @@ TEST(RaycastPlane, Miss_BackfaceCulling)
   EXPECT_FALSE(hit);
 }
 
+TEST(RaycastPlane, MaxDistanceRespected)
+{
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 0, 5), Eigen::Vector3d(0, 0, -1));
+  RaycastOption option = RaycastOption::withMaxDistance(2.0);
+  RaycastResult result;
+
+  bool hit = raycastPlane(ray, plane, transform, option, result);
+
+  EXPECT_FALSE(hit);
+  EXPECT_FALSE(result.isHit());
+}
+
 TEST(RaycastPlane, HitFromAbove)
 {
   PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
@@ -657,6 +724,21 @@ TEST(RaycastMesh, HitTopFace)
   EXPECT_NEAR(result.distance, 4.0, 1e-10);
   EXPECT_NEAR(result.point.z(), 1.0, 1e-10);
   EXPECT_NEAR(std::abs(result.normal.z()), 1.0, 1e-10);
+}
+
+TEST(RaycastMesh, EmptyMeshMiss)
+{
+  MeshShape mesh({}, {});
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  Ray ray(Eigen::Vector3d(0, 0, 1), Eigen::Vector3d(0, 0, -1));
+  RaycastOption option;
+  RaycastResult result;
+
+  bool hit = raycastMesh(ray, mesh, transform, option, result);
+
+  EXPECT_FALSE(hit);
+  EXPECT_FALSE(result.isHit());
 }
 
 TEST(RaycastMesh, TransformedMesh)

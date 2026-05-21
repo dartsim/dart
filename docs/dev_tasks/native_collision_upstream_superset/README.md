@@ -16,15 +16,16 @@
       benchmark/demo scenario to an existing DART benchmark or new benchmark.
 - [x] Phase 4: Implement correctness coverage expansion without losing existing
       reference/native coverage.
-- [ ] Phase 5: Implement benchmark expansion and rerun native-vs-reference
+- [x] Phase 5: Implement benchmark expansion and rerun native-vs-reference
       performance optimization against the expanded benchmark packet.
-      Comparable rows now pass in the current run, including the raw-reference
-      micro-path packet; the native-only stacked-scene packet still needs a
-      deliberate comparison or profiling-scope decision.
-- [ ] Phase 6: After performance optimization, run native collision detector
+      Comparable rows pass in the current run, including the main comparative,
+      adapter, and raw primitive/edge-case packets. The stacked-scene packet is
+      documented as native-only profiling coverage for this checkpoint, so no
+      fastest-reference claim is made from those rows.
+- [x] Phase 6: After performance optimization, run native collision detector
       code coverage and raise the native detector implementation to 95%+ line
-      coverage. Current native line coverage is 90.0% and function coverage is
-      96.0% after the first targeted coverage-test tranche.
+      coverage. Current native line coverage is 95.1% and function coverage is
+      98.0% from the native-only `coverage_native.info` extraction.
 - [ ] Phase 7: Consider or implement a GUI collision-pair debugger example
       that can exercise supported native pairs, pose objects, and render
       contact point/depth/normal data. If the Filament renderer branch is used,
@@ -76,24 +77,31 @@ optimization expansion by benchmarks.
 
 ## Immediate Next Steps
 
-1. Continue native detector line-coverage expansion from 90.0% to 95%+ before
-   completing this task. Current remaining gaps are mostly GJK, distance,
-   cylinder, mesh, MPR, residual collision-world branches, CCD, and small
-   helper paths.
-2. Add reference variants for the stacked-scene benchmarks, or document why
-   those rows are native-only profiling coverage rather than backend-comparison
-   rows.
-3. Decide whether the raw-reference packet should become enforced after
+1. Decide whether the raw-reference packet should become enforced after
    evaluating nanosecond-scale benchmark noise.
-4. Keep new DART test and benchmark names focused on the algorithm, query, and
+2. Keep new DART test and benchmark names focused on the algorithm, query, and
    edge condition, not on the upstream library that inspired the case.
-5. Keep the later GUI collision-pair debugger example scoped around the native
+3. Keep the later GUI collision-pair debugger example scoped around the native
    pair matrix, pose controls, and contact point/depth/normal rendering.
-6. Regenerate the inventory and case map after any upstream clone refresh:
+4. Promote durable artifacts out of this dev-task folder before completion,
+   including the feature/performance summary and coverage evidence.
+5. Regenerate the inventory and case map after any upstream clone refresh:
    `pixi run python scripts/inventory_upstream_collision_coverage.py`.
 
 ## Verification Log
 
+- `pixi run cmake --build build/default/cpp/Debug --target test_sphere_box test_collision_world test_mesh_mesh test_ccd test_narrow_phase`
+  passed after the first post-optimization coverage expansion tranche.
+- `pixi run ctest --test-dir build/default/cpp/Debug --output-on-failure -R '^(test_sphere_box|test_collision_world|test_mesh_mesh|test_ccd|test_narrow_phase)$'`
+  passed.
+- `pixi run cmake --build build/default/cpp/Debug --target test_raycast_core test_collision_world`
+  passed after adding raycast, collision-world, and invalid-handle coverage
+  cases.
+- `pixi run ctest --test-dir build/default/cpp/Debug --output-on-failure -R '^(test_raycast_core|test_collision_world)$'`
+  passed.
+- Native-only lcov extraction from `build/default/cpp/Debug/dart/collision/native`
+  now reports 95.1% line coverage (8,395/8,827) and 98.0% function coverage
+  (640/653).
 - `pixi run cmake --build build/default/cpp/Release --target test_shapes`
   passed after adding capsule AABB aspect-ratio and convex support tie tests.
 - `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_shapes$'`

@@ -247,6 +247,58 @@ TEST(CollisionBackend, PersistentManifoldCacheRefreshRemovesDrifted)
 }
 
 //==============================================================================
+TEST(CollisionBackend, PersistentManifoldCacheRefreshAllKeepsAndDropsPairs)
+{
+  native::PersistentManifoldCache cache;
+
+  native::CachedContact stable;
+  stable.localPointA = Eigen::Vector3d::Zero();
+  stable.localPointB = Eigen::Vector3d::Zero();
+  stable.normal = Eigen::Vector3d::Zero();
+  cache.getOrCreate(1u, 2u).addOrReplace(stable);
+
+  native::CachedContact missing;
+  missing.localPointA = Eigen::Vector3d::Zero();
+  missing.localPointB = Eigen::Vector3d::Zero();
+  cache.getOrCreate(3u, 4u).addOrReplace(missing);
+
+  native::CachedContact drifting;
+  drifting.localPointA = Eigen::Vector3d::Zero();
+  drifting.localPointB = Eigen::Vector3d::Zero();
+  drifting.normal = Eigen::Vector3d::UnitX();
+  cache.getOrCreate(5u, 6u).addOrReplace(drifting);
+
+  cache.refreshAll(
+      [](std::size_t idA, std::size_t idB) {
+        if (idA == 3u || idB == 3u) {
+          return std::optional<
+              std::pair<Eigen::Isometry3d, Eigen::Isometry3d>>();
+        }
+
+        Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+        Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+        if (idA == 5u || idB == 5u) {
+          tfB.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+        }
+        return std::optional<std::pair<Eigen::Isometry3d, Eigen::Isometry3d>>(
+            std::make_pair(tfA, tfB));
+      },
+      0.04);
+
+  EXPECT_EQ(1u, cache.size());
+  auto& kept = cache.getOrCreate(2u, 1u);
+  ASSERT_EQ(1, kept.numContacts);
+  EXPECT_EQ(1, kept.contacts[0].lifetime);
+
+  cache.remove(1u, 2u);
+  EXPECT_EQ(0u, cache.size());
+  cache.getOrCreate(7u, 8u);
+  EXPECT_EQ(1u, cache.size());
+  cache.clear();
+  EXPECT_EQ(0u, cache.size());
+}
+
+//==============================================================================
 TEST(CollisionBackend, PersistentManifoldCacheWarmStartInCollide)
 {
   auto detector = DartCollisionDetector::create();

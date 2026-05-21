@@ -39,6 +39,7 @@
 
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -599,4 +600,327 @@ TEST(MeshMesh, SeparatedDistanceWitnessesAcrossPairOrder)
   EXPECT_NEAR((ba.pointOnObject2 - ba.pointOnObject1).norm(), 1.0, 1e-9);
   EXPECT_NEAR((ab.pointOnObject1 - ba.pointOnObject2).norm(), 0.0, 1e-9);
   EXPECT_NEAR((ab.pointOnObject2 - ba.pointOnObject1).norm(), 0.0, 1e-9);
+}
+
+TEST(MeshMesh, EmptyMeshesReturnNoContactsAndMaxDistance)
+{
+  MeshShape emptyMesh({}, {});
+  MeshShape cubeMesh(makeCubeVertices(1.0), makeCubeTriangles());
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+
+  CollisionOption collisionOption;
+  CollisionResult collision;
+  EXPECT_FALSE(collideMeshMesh(
+      emptyMesh, identity, cubeMesh, identity, collision, collisionOption));
+
+  DistanceResult distance;
+  EXPECT_EQ(
+      distanceMeshMesh(
+          emptyMesh, identity, cubeMesh, identity, distance, DistanceOption()),
+      std::numeric_limits<double>::max());
+
+  SphereShape sphere(0.5);
+  CollisionResult primitiveMesh;
+  EXPECT_FALSE(collidePrimitiveMesh(
+      sphere, identity, emptyMesh, identity, primitiveMesh, collisionOption));
+
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  CollisionResult planeMesh;
+  EXPECT_FALSE(
+      collidePlaneMesh(plane, identity, emptyMesh, identity, planeMesh));
+}
+
+TEST(MeshMesh, BinaryContactTraversalStopsAfterFirstTriangleHit)
+{
+  MeshShape meshA(makeCubeVertices(1.0), makeCubeTriangles());
+  MeshShape meshB(makeCubeVertices(1.0), makeCubeTriangles());
+
+  CollisionOption option = CollisionOption::binaryCheck();
+  CollisionResult result;
+  EXPECT_TRUE(collideMeshMesh(
+      meshA,
+      Eigen::Isometry3d::Identity(),
+      meshB,
+      Eigen::Isometry3d::Identity(),
+      result,
+      option));
+  EXPECT_EQ(result.numContacts(), 0u);
+}
+
+TEST(PrimitiveMesh, DegenerateTriangleContactsStayFinite)
+{
+  MeshShape degenerateMesh(
+      {Eigen::Vector3d::Zero(),
+       Eigen::Vector3d::Zero(),
+       Eigen::Vector3d::Zero()},
+      {{0, 1, 2}});
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+
+  CollisionOption option;
+  option.maxNumContacts = 4;
+
+  {
+    SphereShape sphere(0.2);
+    CollisionResult result;
+    ASSERT_TRUE(collidePrimitiveMesh(
+        sphere, identity, degenerateMesh, identity, result, option));
+    ASSERT_EQ(result.numContacts(), 1u);
+    EXPECT_TRUE(result.getContact(0).position.allFinite());
+    EXPECT_TRUE(result.getContact(0).normal.allFinite());
+    EXPECT_NEAR(result.getContact(0).normal.z(), 1.0, 1e-12);
+    expectContactHasMirroredMeshFeatureId(
+        result.getContact(0), degenerateMesh.getTriangles().size());
+  }
+
+  {
+    CapsuleShape capsule(0.2, 1.0);
+    CollisionResult result;
+    ASSERT_TRUE(collidePrimitiveMesh(
+        capsule, identity, degenerateMesh, identity, result, option));
+    ASSERT_EQ(result.numContacts(), 1u);
+    EXPECT_TRUE(result.getContact(0).position.allFinite());
+    EXPECT_TRUE(result.getContact(0).normal.allFinite());
+    EXPECT_NEAR(result.getContact(0).normal.z(), 1.0, 1e-12);
+    expectContactHasMirroredMeshFeatureId(
+        result.getContact(0), degenerateMesh.getTriangles().size());
+  }
+}
+
+TEST(PrimitiveMesh, BinaryPrimitiveTriangleQueriesStopAfterHit)
+{
+  MeshShape mesh = makeGridMesh(1, 2.0);
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  CollisionOption option = CollisionOption::binaryCheck();
+
+  {
+    SphereShape sphere(0.5);
+    Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+    tfSphere.translation() = Eigen::Vector3d(0.0, 0.0, 0.25);
+
+    CollisionResult result;
+    EXPECT_TRUE(
+        collidePrimitiveMesh(sphere, tfSphere, mesh, identity, result, option));
+    EXPECT_LE(result.numContacts(), 1u);
+  }
+
+  {
+    CapsuleShape capsule(0.25, 0.4);
+    Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+    tfCapsule.translation() = Eigen::Vector3d(0.0, 0.0, 0.25);
+
+    CollisionResult result;
+    EXPECT_TRUE(collidePrimitiveMesh(
+        capsule, tfCapsule, mesh, identity, result, option));
+    EXPECT_LE(result.numContacts(), 1u);
+  }
+
+  {
+    BoxShape box(Eigen::Vector3d(0.25, 0.25, 0.25));
+    Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+    tfBox.translation() = Eigen::Vector3d(0.0, 0.0, 0.1);
+
+    CollisionResult result;
+    EXPECT_TRUE(
+        collidePrimitiveMesh(box, tfBox, mesh, identity, result, option));
+    EXPECT_LE(result.numContacts(), 1u);
+  }
+}
+
+TEST(PrimitiveMesh, CapsuleSegmentPiercesTriangleUsesFaceNormal)
+{
+  MeshShape triangleMesh(
+      {Eigen::Vector3d(-1.0, -1.0, 0.0),
+       Eigen::Vector3d(1.0, -1.0, 0.0),
+       Eigen::Vector3d(0.0, 1.0, 0.0)},
+      {{0, 1, 2}});
+  CapsuleShape capsule(0.25, 1.0);
+
+  Eigen::Isometry3d capsuleTf = Eigen::Isometry3d::Identity();
+  capsuleTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.1);
+
+  CollisionResult result;
+  ASSERT_TRUE(collidePrimitiveMesh(
+      capsule,
+      capsuleTf,
+      triangleMesh,
+      Eigen::Isometry3d::Identity(),
+      result,
+      CollisionOption()));
+  ASSERT_EQ(result.numContacts(), 1u);
+  EXPECT_NEAR(result.getContact(0).depth, capsule.getRadius(), 1e-12);
+  EXPECT_NEAR(result.getContact(0).normal.z(), -1.0, 1e-12);
+  expectContactHasMirroredMeshFeatureId(
+      result.getContact(0), triangleMesh.getTriangles().size());
+}
+
+TEST(PrimitiveMesh, PrimitiveAabbAndContactLimitsSkipTriangles)
+{
+  MeshShape mesh(makeCubeVertices(1.0), makeCubeTriangles());
+  SphereShape farSphere(0.25);
+  SphereShape nearSphere(0.75);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+
+  Eigen::Isometry3d farTf = Eigen::Isometry3d::Identity();
+  farTf.translation() = Eigen::Vector3d(10.0, 0.0, 0.0);
+
+  CollisionOption option;
+  CollisionResult farResult;
+  EXPECT_FALSE(collidePrimitiveMesh(
+      farSphere,
+      farTf,
+      mesh,
+      Eigen::Isometry3d::Identity(),
+      farResult,
+      option));
+
+  CollisionOption limitedOption;
+  limitedOption.maxNumContacts = 0;
+  CollisionResult limitedPrimitive;
+  EXPECT_FALSE(collidePrimitiveMesh(
+      nearSphere,
+      Eigen::Isometry3d::Identity(),
+      mesh,
+      Eigen::Isometry3d::Identity(),
+      limitedPrimitive,
+      limitedOption));
+
+  CollisionResult limitedPlane;
+  EXPECT_FALSE(collidePlaneMesh(
+      plane,
+      Eigen::Isometry3d::Identity(),
+      mesh,
+      Eigen::Isometry3d::Identity(),
+      limitedPlane,
+      limitedOption));
+}
+
+TEST(PrimitiveMesh, DirectHelperRejectsUnsupportedAndLargeFaceLimits)
+{
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  MeshShape mesh(makeCubeVertices(1.0), makeCubeTriangles());
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+
+  CollisionResult unsupported;
+  EXPECT_FALSE(collidePrimitiveMesh(
+      plane, identity, mesh, identity, unsupported, CollisionOption()));
+
+  BoxShape box(Eigen::Vector3d(50.0, 50.0, 0.5));
+  CollisionOption noContacts;
+  noContacts.maxNumContacts = 0;
+  CollisionResult limited;
+  EXPECT_FALSE(
+      collidePrimitiveMesh(box, identity, mesh, identity, limited, noContacts));
+
+  BoxShape tooSmallFace(Eigen::Vector3d(0.1, 0.1, 0.5));
+  CollisionResult smallFace;
+  EXPECT_FALSE(collidePrimitiveMesh(
+      tooSmallFace, identity, mesh, identity, smallFace, CollisionOption()));
+}
+
+TEST(PrimitiveMesh, SphereTriangleInteriorUsesBarycentricClosestPoint)
+{
+  MeshShape triangleMesh(
+      {Eigen::Vector3d(-1.0, -1.0, 0.0),
+       Eigen::Vector3d(1.0, -1.0, 0.0),
+       Eigen::Vector3d(0.0, 1.0, 0.0)},
+      {{0, 1, 2}});
+  SphereShape sphere(0.5);
+
+  Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
+  sphereTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.25);
+
+  CollisionResult result;
+  ASSERT_TRUE(collidePrimitiveMesh(
+      sphere,
+      sphereTf,
+      triangleMesh,
+      Eigen::Isometry3d::Identity(),
+      result,
+      CollisionOption()));
+  ASSERT_EQ(result.numContacts(), 1u);
+  EXPECT_NEAR(result.getContact(0).position.x(), 0.0, 1e-12);
+  EXPECT_NEAR(result.getContact(0).position.y(), 0.0, 1e-12);
+  EXPECT_NEAR(result.getContact(0).position.z(), 0.0, 1e-12);
+  EXPECT_NEAR(result.getContact(0).depth, 0.25, 1e-12);
+}
+
+TEST(PrimitiveMesh, SphereOnTrianglePlaneUsesFaceNormal)
+{
+  MeshShape triangleMesh(
+      {Eigen::Vector3d(-1.0, -1.0, 0.0),
+       Eigen::Vector3d(1.0, -1.0, 0.0),
+       Eigen::Vector3d(0.0, 1.0, 0.0)},
+      {{0, 1, 2}});
+  SphereShape sphere(0.25);
+
+  Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
+  sphereTf.translation() = Eigen::Vector3d(0.0, 0.0, 0.0);
+
+  CollisionResult result;
+  ASSERT_TRUE(collidePrimitiveMesh(
+      sphere,
+      sphereTf,
+      triangleMesh,
+      Eigen::Isometry3d::Identity(),
+      result,
+      CollisionOption()));
+  ASSERT_EQ(result.numContacts(), 1u);
+  EXPECT_NEAR(result.getContact(0).depth, sphere.getRadius(), 1e-12);
+  EXPECT_TRUE(result.getContact(0).normal.allFinite());
+  EXPECT_NEAR(result.getContact(0).normal.z(), 1.0, 1e-12);
+}
+
+TEST(PrimitiveMesh, ConvexPrimitiveUsesTriangleSupportPath)
+{
+  MeshShape triangleMesh(
+      {Eigen::Vector3d(-1.0, -1.0, 0.0),
+       Eigen::Vector3d(1.0, -1.0, 0.0),
+       Eigen::Vector3d(0.0, 1.0, 0.0)},
+      {{0, 1, 2}});
+  ConvexShape convex(
+      {Eigen::Vector3d(0.0, 0.0, -0.25),
+       Eigen::Vector3d(0.25, 0.0, 0.25),
+       Eigen::Vector3d(-0.25, 0.0, 0.25),
+       Eigen::Vector3d(0.0, 0.25, 0.25)});
+
+  CollisionResult result;
+  ASSERT_TRUE(collidePrimitiveMesh(
+      convex,
+      Eigen::Isometry3d::Identity(),
+      triangleMesh,
+      Eigen::Isometry3d::Identity(),
+      result,
+      CollisionOption()));
+  ASSERT_GT(result.numContacts(), 0u);
+  EXPECT_TRUE(result.getContact(0).position.allFinite());
+  EXPECT_TRUE(result.getContact(0).normal.allFinite());
+}
+
+TEST(PrimitiveMesh, CapsuleTriangleContactLimitAndSeparatedTriangle)
+{
+  MeshShape triangleMesh(
+      {Eigen::Vector3d(-1.0, -1.0, 0.0),
+       Eigen::Vector3d(1.0, -1.0, 0.0),
+       Eigen::Vector3d(0.0, 1.0, 0.0)},
+      {{0, 1, 2}});
+  CapsuleShape capsule(0.25, 1.0);
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+
+  CollisionOption noContacts;
+  noContacts.maxNumContacts = 0u;
+  CollisionResult limited;
+  EXPECT_FALSE(collidePrimitiveMesh(
+      capsule, identity, triangleMesh, identity, limited, noContacts));
+
+  Eigen::Isometry3d separatedTf = Eigen::Isometry3d::Identity();
+  separatedTf.translation() = Eigen::Vector3d(0.0, 1.2, 0.0);
+  CapsuleShape thinCapsule(0.05, 0.25);
+  CollisionResult separated;
+  EXPECT_FALSE(collidePrimitiveMesh(
+      thinCapsule,
+      separatedTf,
+      triangleMesh,
+      identity,
+      separated,
+      CollisionOption()));
 }

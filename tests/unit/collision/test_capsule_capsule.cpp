@@ -230,6 +230,55 @@ TEST(CapsuleCapsule, Concentric)
   EXPECT_NEAR(result.getContact(0).depth, 0.8, 1e-6);
 }
 
+TEST(CapsuleCapsule, VerticalFastPathCoversLateralAndAxialBranches)
+{
+  CapsuleShape capsule1(0.5, 2.0);
+  CapsuleShape capsule2(0.4, 1.0);
+
+  {
+    CollisionResult result;
+    const bool collided = collideCapsules(
+        capsule1,
+        Eigen::Isometry3d::Identity(),
+        capsule2,
+        makeCapsuleSphereLocalTranslation(Eigen::Vector3d(0.0, 0.7, 0.0)),
+        result);
+
+    ASSERT_TRUE(collided);
+    ASSERT_EQ(result.numContacts(), 1u);
+    EXPECT_NEAR(result.getContact(0).depth, 0.2, 1e-12);
+    EXPECT_NEAR(result.getContact(0).normal.y(), -1.0, 1e-12);
+  }
+
+  {
+    CollisionResult result;
+    const bool collided = collideCapsules(
+        capsule1,
+        makeCapsuleSphereLocalTranslation(Eigen::Vector3d(0.0, 0.0, 2.0)),
+        capsule2,
+        Eigen::Isometry3d::Identity(),
+        result);
+
+    ASSERT_TRUE(collided);
+    ASSERT_EQ(result.numContacts(), 1u);
+    EXPECT_NEAR(result.getContact(0).depth, 0.4, 1e-12);
+    EXPECT_NEAR(result.getContact(0).normal.z(), 1.0, 1e-12);
+  }
+
+  {
+    CollisionOption option;
+    option.maxNumContacts = 0;
+    CollisionResult result;
+    EXPECT_FALSE(collideCapsules(
+        capsule1,
+        Eigen::Isometry3d::Identity(),
+        capsule2,
+        Eigen::Isometry3d::Identity(),
+        result,
+        option));
+  }
+}
+
 TEST(CapsuleCapsuleBatch, capsule_capsule_batch_determinism_vs_single)
 {
   CapsuleShape capsuleA(0.35, 1.2);

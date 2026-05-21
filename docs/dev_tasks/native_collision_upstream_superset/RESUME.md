@@ -90,18 +90,17 @@ now has no slower native reports in the current run.
 
 `task/native-collision-performance-complete` — ahead of origin by local
 checkpoint commits; latest milestones optimize native primitive fast paths,
-update the feature/performance summary tables, and start the native detector
-coverage expansion.
+update the feature/performance summary tables, and raise native detector line
+coverage above 95%.
 
 ## Immediate Next Step
 
-Continue targeted native detector line-coverage expansion from 90.0% to 95%+
-before completion. Prioritize the remaining high-miss files: GJK, distance,
-cylinder, mesh, MPR, residual collision-world branches, CCD, and small
-manifold/object helper paths. Also decide whether the stacked-scene rows need
-reference variants or should stay native-only profiling coverage. The row-level
-map now has 0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed`
-rows.
+Run lint and checkpoint the post-optimization coverage milestone. After that,
+decide whether to enforce the raw-reference packet despite nanosecond-scale
+noise, then either promote durable artifacts out of this dev-task folder or
+start the later GUI pair-debugger scope. The stacked-scene rows are documented
+as native-only profiling coverage for this checkpoint, and the row-level map
+has 0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
 
 ## Context That Would Be Lost
 
@@ -117,17 +116,18 @@ rows.
 - New DART tests and benchmarks should be named for the algorithm, query, and
   case explanation. The upstream project stays in the coverage map source
   column; it should not be baked into new DART test or benchmark names.
-- After expanded benchmark optimization is complete, run native collision
-  detector code coverage and raise the native detector implementation to 95%+
-  line coverage before completing the task.
+- After expanded benchmark optimization, native collision detector coverage was
+  raised to 95.1% line coverage and 98.0% function coverage from the
+  native-only `coverage_native.info` extraction.
 - Post-optimization coverage has started. A full `pixi run coverage-report`
   run was interrupted after `UNIT_simulation_World` ran too long under coverage
   instrumentation, so native-only lcov extraction was captured from
   `build/default/cpp/Debug/dart/collision/native`.
 - Initial full native coverage was 84.6% line / 90.8% function. Targeted SDF,
-  collision-world, dispatcher, AABB-tree, and GJK/EPA/MPR tests raised it to
-  90.0% line (7,945/8,827) and 96.0% function (627/653). Phase 6 remains open
-  until native line coverage reaches 95%+.
+  collision-world, dispatcher, AABB-tree, GJK/EPA/MPR, raycast, mesh, CCD,
+  narrow-phase, and invalid-handle tests raised it to 95.1% line
+  (8,395/8,827) and 98.0% function (640/653). Phase 6 is satisfied for this
+  checkpoint.
 - The user also asked to consider a later GUI example for debugging every
   supported native collision pair with pair selection, object pose controls,
   and rendered contact point/depth/normal data.

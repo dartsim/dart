@@ -38,6 +38,8 @@
 
 #include <array>
 #include <limits>
+#include <span>
+#include <utility>
 #include <vector>
 
 #include <cmath>
@@ -184,6 +186,59 @@ SupportFunction makeTransformedConvexSupport(
     const Eigen::Vector3d localDir = transform.linear().transpose() * dir;
     return transform * convex.support(localDir);
   };
+}
+
+struct ScriptedSupportEntry
+{
+  Eigen::Vector3d direction;
+  Eigen::Vector3d point;
+};
+
+SupportFunction makeScriptedSupport(
+    std::vector<ScriptedSupportEntry> entries, double fallbackScale = 1000.0)
+{
+  return [entries = std::move(entries),
+          fallbackScale](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
+    Eigen::Vector3d direction = dir;
+    if (direction.squaredNorm() < 1e-20) {
+      direction = Eigen::Vector3d::UnitX();
+    } else {
+      direction.normalize();
+    }
+
+    for (const auto& entry : entries) {
+      Eigen::Vector3d key = entry.direction;
+      if (key.squaredNorm() < 1e-20) {
+        key = Eigen::Vector3d::UnitX();
+      } else {
+        key.normalize();
+      }
+      if (direction.isApprox(key, 1e-9)) {
+        return entry.point;
+      }
+    }
+
+    return -fallbackScale * direction;
+  };
+}
+
+SupportFunction makeZeroSupport()
+{
+  return [](const Eigen::Vector3d&) {
+    return Eigen::Vector3d::Zero();
+  };
+}
+
+GjkSimplex makeWarmStartDirections(std::span<const Eigen::Vector3d> directions)
+{
+  GjkSimplex simplex;
+  for (const auto& direction : directions) {
+    SupportPoint point;
+    point.direction = direction;
+    point.v = direction;
+    simplex.push(point);
+  }
+  return simplex;
 }
 
 TEST(Gjk, SpheresIntersecting)
@@ -477,6 +532,105 @@ TEST(Gjk, WarmStartSimplexReductionCasesRemainFinite)
   }
 }
 
+TEST(Gjk, ScriptedLineSimplexReductionsRemainFinite)
+{
+  const auto supportB = makeZeroSupport();
+  const std::array<Eigen::Vector3d, 2> directions{
+      Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY()};
+
+  const std::array<std::array<Eigen::Vector3d, 2>, 3> lineCases{{
+      {Eigen::Vector3d(2.0, 0.0, 0.0), Eigen::Vector3d(2.0, 0.0, 0.0)},
+      {Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d(2.0, 0.0, 0.0)},
+      {Eigen::Vector3d(1.0, -1.0, 0.0), Eigen::Vector3d(1.0, 1.0, 0.0)},
+  }};
+
+  for (const auto& lineCase : lineCases) {
+    auto supportA = makeScriptedSupport({
+        {directions[0], lineCase[0]},
+        {directions[1], lineCase[1]},
+    });
+    const GjkResult result = Gjk::query(
+        supportA,
+        supportB,
+        makeWarmStartDirections(directions),
+        Eigen::Vector3d::Zero());
+
+    EXPECT_FALSE(result.intersecting);
+    EXPECT_TRUE(std::isfinite(result.distance));
+    EXPECT_TRUE(result.closestPointA.allFinite());
+    EXPECT_TRUE(result.closestPointB.allFinite());
+    EXPECT_TRUE(result.separationAxis.allFinite());
+  }
+}
+
+TEST(Gjk, ScriptedTriangleSimplexReductionsRemainFinite)
+{
+  const auto supportB = makeZeroSupport();
+  const std::array<Eigen::Vector3d, 3> directions{
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ()};
+
+  const std::array<std::array<Eigen::Vector3d, 3>, 3> triangleCases{{
+      {Eigen::Vector3d(1.0, 0.0, 0.0),
+       Eigen::Vector3d(2.0, -1.0, 0.0),
+       Eigen::Vector3d(2.0, 1.0, 0.0)},
+      {Eigen::Vector3d(1.0, -1.0, 0.0),
+       Eigen::Vector3d(1.0, 1.0, 0.0),
+       Eigen::Vector3d(3.0, 0.0, 0.0)},
+      {Eigen::Vector3d(
+           1.339155159085458, -1.8612700724644577, 3.0873592851850828),
+       Eigen::Vector3d(
+           0.96698692094859917, -0.24585782282486157, 2.7090516856147455),
+       Eigen::Vector3d(
+           -0.15173670634136016, 4.6100102129124449, 1.5718733703952394)},
+  }};
+
+  for (const auto& triangleCase : triangleCases) {
+    auto supportA = makeScriptedSupport({
+        {directions[0], triangleCase[0]},
+        {directions[1], triangleCase[1]},
+        {directions[2], triangleCase[2]},
+    });
+    const GjkResult result = Gjk::query(
+        supportA,
+        supportB,
+        makeWarmStartDirections(directions),
+        Eigen::Vector3d::Zero());
+
+    EXPECT_FALSE(result.intersecting);
+    EXPECT_TRUE(std::isfinite(result.distance));
+    EXPECT_TRUE(result.closestPointA.allFinite());
+    EXPECT_TRUE(result.closestPointB.allFinite());
+    EXPECT_TRUE(result.separationAxis.allFinite());
+  }
+}
+
+TEST(Gjk, ScriptedTetrahedronContainingOriginReportsIntersection)
+{
+  const auto supportA = makeScriptedSupport({
+      {Eigen::Vector3d::UnitX(), Eigen::Vector3d(1.0, 0.0, 0.0)},
+      {Eigen::Vector3d::UnitY(), Eigen::Vector3d(0.0, 1.0, 0.0)},
+      {Eigen::Vector3d::UnitZ(), Eigen::Vector3d(0.0, 0.0, 1.0)},
+      {Eigen::Vector3d(-1.0, -1.0, -1.0), Eigen::Vector3d(-1.0, -1.0, -1.0)},
+  });
+  const auto supportB = makeZeroSupport();
+  const std::array<Eigen::Vector3d, 4> directions{
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d(-1.0, -1.0, -1.0)};
+
+  const GjkResult result = Gjk::query(
+      supportA,
+      supportB,
+      makeWarmStartDirections(directions),
+      Eigen::Vector3d::Zero());
+
+  EXPECT_TRUE(result.intersecting);
+  EXPECT_EQ(result.simplex.size, 4);
+}
+
 TEST(GjkSignedDistance, RotatedBoxEdgeFaceCases)
 {
   const std::array<Eigen::Isometry3d, 4> frames{{
@@ -532,6 +686,28 @@ TEST(Epa, RejectsIncompleteSimplex)
   GjkSimplex simplex;
   simplex.push(makeSupportPoint(supportA, supportB, Eigen::Vector3d::UnitX()));
   simplex.push(makeSupportPoint(supportA, supportB, Eigen::Vector3d::UnitY()));
+
+  const EpaResult epa = Epa::penetration(supportA, supportB, simplex);
+  EXPECT_FALSE(epa.success);
+  EXPECT_EQ(epa.depth, 0.0);
+}
+
+TEST(Epa, DegenerateInitialTetrahedronReturnsNoPenetration)
+{
+  const auto supportA = makeZeroSupport();
+  const auto supportB = makeZeroSupport();
+
+  GjkSimplex simplex;
+  for (const Eigen::Vector3d& point :
+       {Eigen::Vector3d(1.0, 0.0, 0.0),
+        Eigen::Vector3d(2.0, 0.0, 0.0),
+        Eigen::Vector3d(3.0, 0.0, 0.0),
+        Eigen::Vector3d(4.0, 0.0, 0.0)}) {
+    SupportPoint supportPoint;
+    supportPoint.v = point;
+    supportPoint.v1 = point;
+    simplex.push(supportPoint);
+  }
 
   const EpaResult epa = Epa::penetration(supportA, supportB, simplex);
   EXPECT_FALSE(epa.success);
@@ -609,6 +785,40 @@ TEST(Mpr, SphereSpherePenetrationDepthAnalytic)
   EXPECT_TRUE(mpr.pointOnA.allFinite());
   EXPECT_TRUE(mpr.pointOnB.allFinite());
   EXPECT_TRUE(mpr.position.allFinite());
+}
+
+TEST(Mpr, ScriptedTouchAndSegmentPortalCases)
+{
+  const SupportFunction zero = makeZeroSupport();
+
+  {
+    const auto supportA = makeScriptedSupport(
+        {{-Eigen::Vector3d::UnitX(), -1e-7 * Eigen::Vector3d::UnitX()}});
+
+    const MprResult mpr = Mpr::penetration(
+        supportA, zero, Eigen::Vector3d::UnitX(), Eigen::Vector3d::Zero());
+
+    ASSERT_TRUE(mpr.success);
+    EXPECT_NEAR(mpr.depth, 0.0, 1e-12);
+    EXPECT_TRUE(mpr.pointOnA.allFinite());
+    EXPECT_TRUE(mpr.pointOnB.allFinite());
+    EXPECT_TRUE(mpr.position.allFinite());
+  }
+
+  {
+    const auto supportA = makeScriptedSupport(
+        {{-Eigen::Vector3d::UnitX(), -Eigen::Vector3d::UnitX()}});
+
+    const MprResult mpr = Mpr::penetration(
+        supportA, zero, Eigen::Vector3d::UnitX(), Eigen::Vector3d::Zero());
+
+    ASSERT_TRUE(mpr.success);
+    EXPECT_NEAR(mpr.depth, 1.0, 1e-12);
+    EXPECT_GT(mpr.normal.dot(-Eigen::Vector3d::UnitX()), 0.99);
+    EXPECT_TRUE(mpr.pointOnA.allFinite());
+    EXPECT_TRUE(mpr.pointOnB.allFinite());
+    EXPECT_TRUE(mpr.position.allFinite());
+  }
 }
 
 TEST(Mpr, ReportsSeparatedAndConcentricCases)

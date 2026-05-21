@@ -242,6 +242,71 @@ TEST(SphereBox, SphereCenterAtBoxCenter)
   EXPECT_NEAR(result.getContact(0).depth, 2.0, 1e-10);
 }
 
+TEST(SphereBox, NearCenterTranslatedBoxChoosesShortestAxis)
+{
+  const Eigen::Isometry3d boxTransform
+      = makeBoxTransform(Eigen::Vector3d(3.0, -2.0, 5.0));
+  const SphereShape sphere(0.25);
+
+  const std::array<std::pair<Eigen::Vector3d, Eigen::Vector3d>, 3> cases{{
+      {Eigen::Vector3d(1.0, 2.0, 3.0), -Eigen::Vector3d::UnitX()},
+      {Eigen::Vector3d(2.0, 1.0, 3.0), -Eigen::Vector3d::UnitY()},
+      {Eigen::Vector3d(2.0, 3.0, 1.0), -Eigen::Vector3d::UnitZ()},
+  }};
+
+  for (const auto& [halfExtents, expectedNormal] : cases) {
+    SCOPED_TRACE(halfExtents.transpose());
+    const BoxShape box(halfExtents);
+    Eigen::Isometry3d sphereTransform = boxTransform;
+    sphereTransform.translation() += Eigen::Vector3d(1e-14, -1e-14, 1e-14);
+
+    CollisionResult result;
+    const bool collided
+        = collideSphereBox(sphere, sphereTransform, box, boxTransform, result);
+
+    ASSERT_TRUE(collided);
+    ASSERT_EQ(result.numContacts(), 1u);
+    expectVectorNear(result.getContact(0).normal, expectedNormal, 1e-12);
+    EXPECT_NEAR(
+        result.getContact(0).depth,
+        sphere.getRadius() + halfExtents.minCoeff(),
+        1e-12);
+  }
+}
+
+TEST(SphereBox, TranslatedNearOriginInsideChoosesShortestAxis)
+{
+  const Eigen::Isometry3d boxTransform
+      = makeBoxTransform(Eigen::Vector3d(3.0, -2.0, 5.0));
+  constexpr double sphereRadius = 0.25;
+  const Eigen::Vector3d nearOrigin(1e-14, -1e-14, 1e-14);
+
+  const std::array<std::pair<Eigen::Vector3d, Eigen::Vector3d>, 3> cases{{
+      {Eigen::Vector3d(1.0, 2.0, 3.0), -Eigen::Vector3d::UnitX()},
+      {Eigen::Vector3d(2.0, 1.0, 3.0), -Eigen::Vector3d::UnitY()},
+      {Eigen::Vector3d(2.0, 3.0, 1.0), -Eigen::Vector3d::UnitZ()},
+  }};
+
+  for (const auto& [halfExtents, expectedNormal] : cases) {
+    SCOPED_TRACE(halfExtents.transpose());
+    CollisionResult result;
+    const bool collided = collideSphereBox(
+        boxTransform.translation() + nearOrigin,
+        sphereRadius,
+        halfExtents,
+        boxTransform,
+        result);
+
+    ASSERT_TRUE(collided);
+    ASSERT_EQ(result.numContacts(), 1u);
+    expectVectorNear(result.getContact(0).normal, expectedNormal, 1e-12);
+    EXPECT_NEAR(
+        result.getContact(0).depth,
+        sphereRadius + halfExtents.minCoeff(),
+        1e-12);
+  }
+}
+
 TEST(SphereBox, Corner)
 {
   CollisionResult result;

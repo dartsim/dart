@@ -40,6 +40,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <limits>
 #include <numbers>
 #include <utility>
 #include <vector>
@@ -3232,4 +3233,70 @@ TEST(NarrowPhaseDistance, IsDistanceSupportedConvex)
       NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Mesh));
   EXPECT_TRUE(
       NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Convex));
+}
+
+TEST(DistanceCore, OptionShortCircuitsRemainFinite)
+{
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d far = Eigen::Isometry3d::Identity();
+  far.translation() = Eigen::Vector3d(5.0, 0.0, 0.0);
+
+  const DistanceOption bounded = DistanceOption::withUpperBound(0.25);
+  DistanceOption noNearest = DistanceOption::unlimited();
+  noNearest.enableNearestPoints = false;
+
+  const BoxShape box(Eigen::Vector3d::Ones());
+  DistanceResult result;
+  EXPECT_GT(distanceBoxBox(box, identity, box, far, result, bounded), 0.25);
+  EXPECT_TRUE(std::isfinite(result.distance));
+
+  result.clear();
+  EXPECT_GT(distanceBoxBox(box, identity, box, far, result, noNearest), 0.0);
+  EXPECT_EQ(result.pointOnObject1, Eigen::Vector3d::Zero());
+  EXPECT_EQ(result.pointOnObject2, Eigen::Vector3d::Zero());
+
+  const SphereShape sphere(0.5);
+  result.clear();
+  EXPECT_GT(
+      distanceSphereBox(sphere, far, box, identity, result, bounded), 0.25);
+
+  const CapsuleShape capsule(0.25, 1.0);
+  result.clear();
+  EXPECT_GT(
+      distanceCapsuleCapsule(capsule, identity, capsule, far, result, bounded),
+      0.25);
+
+  result.clear();
+  EXPECT_GT(
+      distanceCapsuleSphere(capsule, identity, sphere, far, result, bounded),
+      0.25);
+
+  result.clear();
+  EXPECT_GT(
+      distanceCapsuleBox(capsule, far, box, identity, result, bounded), 0.25);
+
+  const PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  Eigen::Isometry3d farAbove = Eigen::Isometry3d::Identity();
+  farAbove.translation() = Eigen::Vector3d(0.0, 0.0, 5.0);
+  result.clear();
+  EXPECT_GT(
+      distancePlaneShape(plane, identity, sphere, farAbove, result, bounded),
+      0.25);
+}
+
+TEST(DistanceCore, PlaneCylinderSupportUsesRadialDirection)
+{
+  const CylinderShape cylinder(0.5, 1.0);
+  const PlaneShape plane(Eigen::Vector3d::UnitX(), 0.0);
+  Eigen::Isometry3d cylinderTf = Eigen::Isometry3d::Identity();
+  cylinderTf.translation() = Eigen::Vector3d(2.0, 0.0, 0.0);
+
+  DistanceResult result;
+  const double distance = distancePlaneShape(
+      plane, Eigen::Isometry3d::Identity(), cylinder, cylinderTf, result);
+
+  EXPECT_NEAR(distance, 1.5, 1e-12);
+  EXPECT_TRUE(result.pointOnObject1.allFinite());
+  EXPECT_TRUE(result.pointOnObject2.allFinite());
+  EXPECT_GT(result.normal.dot(Eigen::Vector3d::UnitX()), 0.99);
 }

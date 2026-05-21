@@ -36,6 +36,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <limits>
 #include <random>
 
 using namespace dart::collision::native;
@@ -75,6 +76,27 @@ TEST(CollisionWorld, ObjectAccessAndInvalidHandles)
   CollisionWorld world(BroadPhaseType::BruteForce);
   world.reserveObjects(8);
 
+  CollisionObject invalid;
+  EXPECT_FALSE(invalid.isValid());
+  EXPECT_EQ(invalid.getShape(), nullptr);
+  EXPECT_EQ(invalid.getShapeType(), ShapeType::Sphere);
+  EXPECT_TRUE(invalid.getTransform().isApprox(Eigen::Isometry3d::Identity()));
+  invalid.setTransform(Eigen::Isometry3d::Identity());
+  EXPECT_TRUE(invalid.computeAabb().min.isZero());
+  int userData = 0;
+  invalid.setUserData(&userData);
+  EXPECT_EQ(invalid.getUserData(), nullptr);
+  EXPECT_EQ(invalid.getCollisionGroup(), kCollisionGroupAll);
+  EXPECT_EQ(invalid.getCollisionMask(), kCollisionMaskAll);
+  invalid.setCollisionGroup(FilterGroup::Static);
+  invalid.setCollisionMask(FilterGroup::Dynamic);
+  invalid.setCollisionFilter(FilterGroup::Static, FilterGroup::Dynamic);
+  invalid.setCollisionFilterData(CollisionFilterData::none());
+  EXPECT_EQ(
+      invalid.getCollisionFilterData().collisionGroup,
+      CollisionFilterData::all().collisionGroup);
+  EXPECT_EQ(invalid.getId(), std::numeric_limits<std::size_t>::max());
+
   EXPECT_FALSE(world.createObject(nullptr).isValid());
   EXPECT_FALSE(world.getObject(0).isValid());
   EXPECT_FALSE(world.getObjectById(42).isValid());
@@ -100,6 +122,7 @@ TEST(CollisionWorld, ObjectAccessAndInvalidHandles)
   EXPECT_EQ(world.updateAll(BatchSettings(), &stats), 0u);
   EXPECT_EQ(stats.numObjects, 2u);
   EXPECT_EQ(stats.numAabbUpdates, 0u);
+  EXPECT_EQ(world.updateAll(), 0u);
 
   std::vector<ObjectId> dirtyIds{obj1.getId(), 999u};
   EXPECT_EQ(world.updateDirty(dirtyIds, BatchSettings(), &stats), 0u);
@@ -154,6 +177,135 @@ TEST(CollisionWorld, SnapshotSphereBoxNormalFollowsPairOrder)
   EXPECT_GT(result.getContact(0).normal.x(), 0.9);
 }
 
+TEST(CollisionWorld, SnapshotPrimitiveDispatcherCoversSpecializedPairs)
+{
+  auto expectSnapshotHit = [](std::unique_ptr<Shape> shapeA,
+                              const Eigen::Isometry3d& tfA,
+                              std::unique_ptr<Shape> shapeB,
+                              const Eigen::Isometry3d& tfB) {
+    CollisionWorld world;
+    auto objA = world.createObject(std::move(shapeA), tfA);
+    auto objB = world.createObject(std::move(shapeB), tfB);
+
+    BroadPhaseSnapshot snapshot;
+    snapshot.numObjects = 2u;
+    snapshot.pairs.push_back({objA.getId(), objB.getId()});
+
+    CollisionOption option;
+    option.maxNumContacts = 8;
+    CollisionResult result;
+    EXPECT_TRUE(world.collideAll(snapshot, option, result));
+    EXPECT_GT(result.numContacts(), 0u);
+  };
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d shifted = Eigen::Isometry3d::Identity();
+  shifted.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
+
+  expectSnapshotHit(
+      std::make_unique<SphereShape>(1.0),
+      identity,
+      std::make_unique<SphereShape>(1.0),
+      shifted);
+  expectSnapshotHit(
+      std::make_unique<BoxShape>(Eigen::Vector3d::Ones()),
+      identity,
+      std::make_unique<SphereShape>(0.75),
+      shifted);
+  expectSnapshotHit(
+      std::make_unique<BoxShape>(Eigen::Vector3d::Ones()),
+      identity,
+      std::make_unique<BoxShape>(Eigen::Vector3d::Ones()),
+      shifted);
+  expectSnapshotHit(
+      std::make_unique<CapsuleShape>(0.5, 1.0),
+      identity,
+      std::make_unique<CapsuleShape>(0.5, 1.0),
+      shifted);
+  expectSnapshotHit(
+      std::make_unique<CapsuleShape>(0.5, 1.0),
+      identity,
+      std::make_unique<SphereShape>(0.75),
+      shifted);
+  expectSnapshotHit(
+      std::make_unique<SphereShape>(0.75),
+      shifted,
+      std::make_unique<CapsuleShape>(0.5, 1.0),
+      identity);
+  expectSnapshotHit(
+      std::make_unique<CapsuleShape>(0.5, 1.0),
+      identity,
+      std::make_unique<BoxShape>(Eigen::Vector3d::Ones()),
+      shifted);
+  expectSnapshotHit(
+      std::make_unique<BoxShape>(Eigen::Vector3d::Ones()),
+      shifted,
+      std::make_unique<CapsuleShape>(0.5, 1.0),
+      identity);
+
+  CollisionWorld world;
+  auto sphere
+      = world.createObject(std::make_unique<SphereShape>(0.5), identity);
+  Eigen::Isometry3d farBoxTf = Eigen::Isometry3d::Identity();
+  farBoxTf.translation() = Eigen::Vector3d(10.0, 0.0, 0.0);
+  auto box = world.createObject(
+      std::make_unique<BoxShape>(Eigen::Vector3d::Ones()), farBoxTf);
+
+  BroadPhaseSnapshot snapshot;
+  snapshot.numObjects = 2u;
+  snapshot.pairs.push_back({sphere.getId(), box.getId()});
+  CollisionResult result;
+  EXPECT_FALSE(world.collideAll(snapshot, CollisionOption(), result));
+}
+
+TEST(CollisionWorld, SnapshotPairLimitsAndCachedCollidePaths)
+{
+  CollisionWorld world;
+
+  Eigen::Isometry3d sphereTf = Eigen::Isometry3d::Identity();
+  sphereTf.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
+  auto sphere
+      = world.createObject(std::make_unique<SphereShape>(1.0), sphereTf);
+  auto box
+      = world.createObject(std::make_unique<BoxShape>(Eigen::Vector3d::Ones()));
+
+  BroadPhaseSnapshot snapshot;
+  snapshot.numObjects = 2u;
+  snapshot.pairs.push_back({sphere.getId(), box.getId()});
+
+  CollisionOption noContacts;
+  noContacts.maxNumContacts = 0u;
+  CollisionResult limited;
+  EXPECT_FALSE(world.collideAll(snapshot, noContacts, limited));
+  EXPECT_EQ(limited.numContacts(), 0u);
+
+  auto cachedSnapshot = world.buildBroadPhaseSnapshot();
+  ASSERT_EQ(cachedSnapshot.pairs.size(), 1u);
+
+  CollisionResult cached;
+  EXPECT_TRUE(world.collide(CollisionOption(), cached));
+  EXPECT_GT(cached.numContacts(), 0u);
+}
+
+TEST(CollisionWorld, DirectCollideRejectsInvalidAndCallbackFilteredPairs)
+{
+  CollisionWorld world;
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(1.5, 0.0, 0.0);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+  CollisionResult result;
+  EXPECT_FALSE(
+      world.collide(CollisionObject(), obj2, CollisionOption(), result));
+
+  CallbackCollisionFilter rejectAll(
+      [](const CollisionObject&, const CollisionObject&) { return true; });
+  CollisionOption filtered = CollisionOption::withFilter(&rejectAll);
+  EXPECT_FALSE(world.collide(obj1, obj2, filtered, result));
+  EXPECT_EQ(result.numContacts(), 0u);
+}
+
 TEST(CollisionWorld, TwoSpheres_Separated)
 {
   CollisionWorld world;
@@ -173,6 +325,26 @@ TEST(CollisionWorld, TwoSpheres_Separated)
 
   EXPECT_FALSE(hasCollision);
   EXPECT_EQ(result.numContacts(), 0u);
+}
+
+TEST(CollisionWorld, BroadPhaseVariantsCreateAndQuery)
+{
+  for (BroadPhaseType type :
+       {BroadPhaseType::BruteForce,
+        BroadPhaseType::AabbTree,
+        BroadPhaseType::SpatialHash,
+        BroadPhaseType::SweepAndPrune}) {
+    CollisionWorld world(type);
+    auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+    Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+    tf2.translation() = Eigen::Vector3d(1.5, 0.0, 0.0);
+    auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+    ASSERT_TRUE(obj1.isValid());
+    ASSERT_TRUE(obj2.isValid());
+    CollisionResult result;
+    EXPECT_TRUE(world.collide(CollisionOption(), result));
+  }
 }
 
 TEST(CollisionWorld, MultipleObjects)
@@ -606,6 +778,75 @@ TEST(CollisionWorld, ParallelCollideStatsFiltersAndLimits)
   EXPECT_GT(result.numContacts(), 0u);
 }
 
+TEST(CollisionWorld, CollideAllBinaryCheckStopsSequentialAndDirtyPaths)
+{
+  CollisionWorld world;
+
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(1.5, 0.0, 0.0);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+  Eigen::Isometry3d tf3 = Eigen::Isometry3d::Identity();
+  tf3.translation() = Eigen::Vector3d(-1.5, 0.0, 0.0);
+  auto obj3 = world.createObject(std::make_unique<SphereShape>(1.0), tf3);
+
+  BroadPhaseSnapshot snapshot;
+  snapshot.numObjects = 3u;
+  snapshot.pairs.push_back({obj1.getId(), obj2.getId()});
+  snapshot.pairs.push_back({obj1.getId(), obj3.getId()});
+
+  BatchStats stats;
+  CollisionResult result;
+  EXPECT_TRUE(world.collideAll(
+      snapshot, CollisionOption::binaryCheck(), result, &stats));
+  EXPECT_EQ(stats.numPairsTested, 1u);
+  EXPECT_LE(result.numContacts(), 1u);
+
+  CollisionWorld dirtyWorld;
+  dirtyWorld.createObject(std::make_unique<SphereShape>(1.0));
+  dirtyWorld.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+  result.clear();
+  EXPECT_TRUE(dirtyWorld.collide(CollisionOption::binaryCheck(), result));
+  EXPECT_LE(result.numContacts(), 1u);
+}
+
+TEST(CollisionWorld, ParallelCollideSkipsInvalidAndCallbackFilteredPairs)
+{
+  CollisionWorld world;
+
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(1.5, 0.0, 0.0);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+  BroadPhaseSnapshot snapshot;
+  snapshot.numObjects = 2u;
+  snapshot.pairs.push_back({obj1.getId(), obj2.getId()});
+  snapshot.pairs.push_back({999u, obj2.getId()});
+
+  BatchSettings settings;
+  settings.maxThreads = 4;
+  settings.grainSize = 1;
+  settings.deterministic = true;
+
+  BatchStats stats;
+  CollisionResult result;
+  EXPECT_TRUE(
+      world.collideAll(snapshot, CollisionOption(), result, settings, &stats));
+  EXPECT_EQ(stats.numPairs, 2u);
+  EXPECT_EQ(stats.numPairsTested, 1u);
+  EXPECT_GT(result.numContacts(), 0u);
+
+  CallbackCollisionFilter rejectAll(
+      [](const CollisionObject&, const CollisionObject&) { return true; });
+  CollisionOption filtered = CollisionOption::withFilter(&rejectAll);
+  result.clear();
+  EXPECT_FALSE(world.collideAll(snapshot, filtered, result, settings, &stats));
+  EXPECT_EQ(stats.numPairsTested, 0u);
+  EXPECT_EQ(result.numContacts(), 0u);
+}
+
 TEST(CollisionWorld, ObjectIdRoundTrip)
 {
   CollisionWorld world;
@@ -629,6 +870,8 @@ TEST(CollisionWorld, ObjectIdRoundTrip)
   world.destroyObject(obj1);
   auto missing = world.getObjectById(id1);
   EXPECT_FALSE(missing.isValid());
+  std::vector<ObjectId> staleIds{id1};
+  EXPECT_EQ(world.updateDirty(staleIds), 0u);
 
   auto obj3 = world.createObject(std::make_unique<SphereShape>(1.0));
   const std::size_t id3 = obj3.getId();

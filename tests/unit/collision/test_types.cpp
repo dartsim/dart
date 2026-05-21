@@ -223,6 +223,57 @@ TEST(ContactManifold, TypeCompatibility)
   EXPECT_TRUE(unknownManifold.isTypeCompatible());
 }
 
+TEST(ContactManifold, SaturatedReductionKeepsDeepAndWideContacts)
+{
+  ContactManifold manifold;
+
+  for (int i = 0; i < 5; ++i) {
+    ContactPoint cp;
+    cp.position = Eigen::Vector3d(
+        static_cast<double>(i % 2),
+        static_cast<double>((i / 2) % 2),
+        static_cast<double>(i));
+    cp.normal = Eigen::Vector3d::UnitZ();
+    if (i == 4) {
+      cp.normal = Eigen::Vector3d::Zero();
+    }
+    cp.depth = (i == 4) ? 10.0 : static_cast<double>(i);
+    manifold.addContact(cp);
+  }
+
+  ASSERT_EQ(manifold.numContacts(), ContactManifold::kMaxContacts);
+  bool keptDeepest = false;
+  for (const auto& contact : manifold.getContacts()) {
+    if (contact.depth == 10.0) {
+      keptDeepest = true;
+    }
+  }
+  EXPECT_TRUE(keptDeepest);
+  EXPECT_THROW(static_cast<void>(manifold.getContact(4)), std::out_of_range);
+}
+
+TEST(ContactManifold, ObjectPointersAndIncompatibleTypes)
+{
+  ContactManifold manifold;
+  ContactPoint cp;
+  cp.normal = Eigen::Vector3d::Zero();
+  cp.object1 = reinterpret_cast<const CollisionObject*>(0x1);
+  cp.object2 = reinterpret_cast<const CollisionObject*>(0x2);
+  manifold.addContact(cp);
+
+  EXPECT_EQ(manifold.getObject1(), cp.object1);
+  EXPECT_EQ(manifold.getObject2(), cp.object2);
+
+  manifold.setType(ContactType::Face);
+  EXPECT_FALSE(manifold.isTypeCompatible());
+  manifold.setType(ContactType::Patch);
+  EXPECT_FALSE(manifold.isTypeCompatible());
+
+  manifold.setObjects(nullptr, nullptr);
+  EXPECT_EQ(manifold.getObject1(), nullptr);
+  EXPECT_EQ(manifold.getObject2(), nullptr);
+}
+
 TEST(CollisionResult, DefaultConstruction)
 {
   CollisionResult result;

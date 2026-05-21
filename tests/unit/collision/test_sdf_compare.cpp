@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <memory>
 #include <random>
 #include <vector>
@@ -69,6 +70,27 @@ std::shared_ptr<dart::collision::native::DenseSdfField> buildDenseField()
               + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
         field->setDistance(Eigen::Vector3i(x, y, z), sphereDistance(pos));
         field->setObserved(Eigen::Vector3i(x, y, z), true);
+      }
+    }
+  }
+
+  return field;
+}
+
+std::shared_ptr<dart::collision::native::DenseSdfField> buildConstantDenseField(
+    double distance)
+{
+  using dart::collision::native::DenseSdfField;
+  const Eigen::Vector3d origin(-1.0, -1.0, -1.0);
+  const Eigen::Vector3i dims(12, 12, 12);
+  auto field = std::make_shared<DenseSdfField>(origin, dims, 0.25);
+
+  for (int z = 0; z < dims.z(); ++z) {
+    for (int y = 0; y < dims.y(); ++y) {
+      for (int x = 0; x < dims.x(); ++x) {
+        const Eigen::Vector3i index(x, y, z);
+        field->setDistance(index, distance);
+        field->setObserved(index, true);
       }
     }
   }
@@ -398,6 +420,151 @@ TEST(SdfDistance, SphereVsSdf)
   const double expected
       = sphereDistance(sphere_tf.translation()) - sphere.getRadius();
   EXPECT_NEAR(dist, expected, kDistTol);
+}
+
+TEST(SdfDistance, ConstantFieldZeroGradientAndUpperBounds)
+{
+  using namespace dart::collision::native;
+
+  auto field = buildConstantDenseField(0.4);
+  SdfShape sdf(field);
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+
+  {
+    SphereShape sphere(0.1);
+    DistanceResult result;
+    const double distance
+        = distanceSphereSdf(sphere, identity, sdf, identity, result);
+
+    EXPECT_NEAR(distance, 0.3, 1e-12);
+    EXPECT_NEAR(result.distance, 0.3, 1e-12);
+    EXPECT_EQ(result.pointOnObject2, Eigen::Vector3d::Zero());
+    EXPECT_EQ(result.normal, Eigen::Vector3d::UnitX());
+  }
+
+  {
+    CapsuleShape capsule(0.1, 0.5);
+    DistanceResult result;
+    const double distance
+        = distanceCapsuleSdf(capsule, identity, sdf, identity, result);
+
+    EXPECT_NEAR(distance, 0.3, 1e-12);
+    EXPECT_NEAR(result.distance, 0.3, 1e-12);
+    EXPECT_TRUE(result.pointOnObject1.allFinite());
+    EXPECT_TRUE(result.pointOnObject2.allFinite());
+    EXPECT_EQ(result.normal, Eigen::Vector3d::UnitX());
+  }
+
+  {
+    CylinderShape cylinder(0.1, 0.5);
+    DistanceResult result;
+    const double distance
+        = distanceCylinderSdf(cylinder, identity, sdf, identity, result);
+
+    EXPECT_NEAR(distance, 0.4, 1e-12);
+    EXPECT_NEAR(result.distance, 0.4, 1e-12);
+    EXPECT_TRUE(result.pointOnObject1.allFinite());
+    EXPECT_TRUE(result.pointOnObject2.allFinite());
+    EXPECT_EQ(result.normal, Eigen::Vector3d::UnitX());
+
+    DistanceResult boundedResult;
+    EXPECT_NEAR(
+        distanceCylinderSdf(
+            cylinder,
+            identity,
+            sdf,
+            identity,
+            boundedResult,
+            DistanceOption::withUpperBound(0.2)),
+        0.4,
+        1e-12);
+  }
+
+  {
+    MeshShape emptyMesh({}, {});
+    DistanceResult result;
+    EXPECT_EQ(
+        distanceMeshSdf(emptyMesh, identity, sdf, identity, result),
+        std::numeric_limits<double>::max());
+  }
+}
+
+TEST(SdfDistance, NullFieldReturnsMaxDistance)
+{
+  using namespace dart::collision::native;
+
+  SdfShape nullSdf{std::shared_ptr<const SignedDistanceField>()};
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const double maxDistance = std::numeric_limits<double>::max();
+
+  DistanceResult result;
+  DistanceOption option;
+
+  const SphereShape sphere(0.2);
+  EXPECT_EQ(
+      distanceSphereSdf(sphere, identity, nullSdf, identity, result, option),
+      maxDistance);
+
+  const CapsuleShape capsule(0.2, 0.8);
+  result.clear();
+  EXPECT_EQ(
+      distanceCapsuleSdf(capsule, identity, nullSdf, identity, result, option),
+      maxDistance);
+
+  const CylinderShape cylinder(0.2, 0.8);
+  result.clear();
+  EXPECT_EQ(
+      distanceCylinderSdf(
+          cylinder, identity, nullSdf, identity, result, option),
+      maxDistance);
+
+  const ConvexShape convex(makeOctahedronVertices(0.2));
+  result.clear();
+  EXPECT_EQ(
+      distanceConvexSdf(convex, identity, nullSdf, identity, result, option),
+      maxDistance);
+
+  const MeshShape mesh(makeOctahedronVertices(0.2), makeOctahedronTriangles());
+  result.clear();
+  EXPECT_EQ(
+      distanceMeshSdf(mesh, identity, nullSdf, identity, result, option),
+      maxDistance);
+
+  result.clear();
+  EXPECT_EQ(
+      distanceSdfSdf(nullSdf, identity, nullSdf, identity, result, option),
+      maxDistance);
+}
+
+TEST(SdfDistance, CapsuleVsSdf)
+{
+  using namespace dart::collision::native;
+
+  auto field = buildDenseField();
+  SdfShape sdf(field);
+  CapsuleShape capsule(0.2, 0.6);
+
+  Eigen::Isometry3d capsule_tf = Eigen::Isometry3d::Identity();
+  capsule_tf.translation() = gridCenter() + Eigen::Vector3d(1.2, 0.0, 0.0);
+
+  Eigen::Isometry3d sdf_tf = Eigen::Isometry3d::Identity();
+
+  DistanceResult result;
+  DistanceOption option;
+  double dist
+      = distanceCapsuleSdf(capsule, capsule_tf, sdf, sdf_tf, result, option);
+
+  EXPECT_NEAR(dist, 0.2, kDistTol);
+  EXPECT_TRUE(result.pointOnObject1.allFinite());
+  EXPECT_TRUE(result.pointOnObject2.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
+
+  capsule_tf.translation() = gridCenter() + Eigen::Vector3d(0.9, 0.0, 0.0);
+  result.clear();
+  dist = distanceCapsuleSdf(capsule, capsule_tf, sdf, sdf_tf, result, option);
+
+  EXPECT_LT(dist, 0.0);
+  EXPECT_NEAR(dist, -0.1, kDistTol);
 }
 
 TEST(SdfDistance, CylinderVsSdf)
