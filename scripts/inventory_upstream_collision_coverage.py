@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Generate an upstream collision coverage inventory.
+"""Generate the upstream collision coverage inventory.
 
-The inventory is a working artifact for long-running native-collision coverage
-work. It records upstream FCL, Bullet, and ODE tests/benchmarks from local
+The inventory records upstream FCL, Bullet, and ODE tests/benchmarks from local
 clones under .deps so DART coverage can be mapped without relying on memory.
 """
 
@@ -16,12 +15,8 @@ from datetime import datetime
 from pathlib import Path
 
 DEFAULT_SOURCE_ROOT = Path(".deps/upstream-collision-sources")
-DEFAULT_OUTPUT = Path(
-    "docs/dev_tasks/native_collision_upstream_superset/01-upstream-inventory.md"
-)
-DEFAULT_CASE_MAP_OUTPUT = Path(
-    "docs/dev_tasks/native_collision_upstream_superset/03-case-map.md"
-)
+DEFAULT_OUTPUT = Path("docs/plans/035-native-collision/upstream-inventory.md")
+DEFAULT_CASE_MAP_OUTPUT = Path("docs/plans/035-native-collision/upstream-case-map.md")
 SOURCE_EXTENSIONS = {".c", ".cc", ".cpp", ".h", ".hpp"}
 CASE_PATTERN = re.compile(
     r"\b(GTEST_TEST|TEST|TEST_F|TEST_P|TYPED_TEST|TEST_FIXTURE)"
@@ -2333,7 +2328,7 @@ def render(source_root: Path, inventory: list[ScopeInventory]) -> str:
         "",
         "## Inventory Policy",
         "",
-        "- This is a working inventory for a dev task, not durable project state.",
+        "- This is the durable upstream inventory for the native collision plan.",
         "- FCL's test tree is treated as collision-library coverage.",
         "- Bullet and ODE contain non-collision tests; those are still catalogued",
         "  so the task can prove they were considered instead of silently ignored.",

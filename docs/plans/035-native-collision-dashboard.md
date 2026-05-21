@@ -9,6 +9,12 @@ full evidence log:
 - [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)
   owns the generated local benchmark manifest for the completed performance
   wave.
+- [`035-native-collision/upstream-inventory.md`](035-native-collision/upstream-inventory.md)
+  owns the generated inventory of collected FCL, Bullet, and ODE source tests,
+  demos, kernels, and benchmark scenarios.
+- [`035-native-collision/upstream-case-map.md`](035-native-collision/upstream-case-map.md)
+  owns the row-level mapping from those collected upstream cases to DART tests,
+  benchmarks, fixtures, or explicit non-applicability decisions.
 - `dashboard.md` owns this plan's operating state.
 - Local command output, CI artifacts, and the final PR description own
   per-run evidence after the dev-task folders are removed.
@@ -36,6 +42,8 @@ true:
 - Completed performance-wave task folders must be removed once their durable
   evidence is promoted here and under
   [`035-native-collision/`](035-native-collision/).
+- The upstream-superset dev task folder must be removed once final validation
+  proves the durable upstream inventory and case map are current.
 
 ## Reading Rules
 
@@ -58,6 +66,14 @@ true:
   records 202 DONE, 0 PARTIAL, 0 GAP, and 24 DEFERRED rows.
   Gap signal: no active feature-level GAP/PARTIAL rows for this pass; deferred
   rows belong to later waves.
+- **Upstream superset map**
+  Current status:
+  [`035-native-collision/upstream-case-map.md`](035-native-collision/upstream-case-map.md)
+  records 207 covered rows and 382 not-applicable rows from the generated FCL,
+  Bullet, and ODE inventory, with no mapping-needed, fixture-needed, or
+  new-benchmark-needed rows.
+  Gap signal: regenerate the map after any upstream clone refresh or before
+  deleting the temporary dev-task folder.
 - **Runtime selection**
   Current status: `dart` is the normal detector; retained old names are
   native-backed compatibility facades.
@@ -87,14 +103,15 @@ true:
 
 ## Feature Summary
 
-| Feature content                               | Native runtime status                                                                                                                | Comparison/reference scope                                    | Remaining gate                                                     |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Detector factory and public runtime selection | `dart` is the canonical runtime detector; legacy names route to native-backed facades.                                               | Reference detectors are opt-in test/benchmark fixtures only.  | Final review-head factory/runtime validation.                      |
-| Primitive contacts and signed distance        | Sphere, box, capsule, cylinder, plane, convex, compound, SDF, contact symmetry, and pair-order behavior are covered by native tests. | Reference rows validate parity where the query is comparable. | Keep expanding the upstream row map before final benchmark claims. |
-| Broadphase and collision groups               | Native world/group updates, deterministic pair ordering, empty scenes, self-collision, filters, and persistent scenes are covered.   | Reference group behavior remains a comparison surface.        | Finish remaining upstream broadphase row mapping.                  |
-| Ray and cast queries                          | Native closest/all/filter raycast behavior is covered and benchmarked.                                                               | Comparable raycast references are benchmark-only.             | Deeper closest-hit traversal tuning is deferred.                   |
-| Mesh, convex, and field-heavy scenes          | Mesh, convex, plane/mesh, heightmap/field adaptation, and mesh-heavy scenes are covered by tests and benchmark guards.               | Mesh-heavy references remain comparison-only.                 | Larger dynamic mesh and BVH scale sweeps are deferred.             |
-| Adapter-only DART shapes                      | Cone, pyramid, ellipsoid, heightmap, multi-sphere, and voxel-grid shapes adapt into explicit native geometry.                        | Comparison engines do not define the runtime contract.        | Direct heightfield/sparse voxel acceleration remains deferred.     |
+| Feature content                               | Native runtime status                                                                                                                | Comparison/reference scope                                                                                   | Remaining gate                                                     |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Detector factory and public runtime selection | `dart` is the canonical runtime detector; legacy names route to native-backed facades.                                               | Reference detectors are opt-in test/benchmark fixtures only.                                                 | Final review-head factory/runtime validation.                      |
+| Primitive contacts and signed distance        | Sphere, box, capsule, cylinder, plane, convex, compound, SDF, contact symmetry, and pair-order behavior are covered by native tests. | Reference rows validate parity where the query is comparable.                                                | Keep expanding the upstream row map before final benchmark claims. |
+| Broadphase and collision groups               | Native world/group updates, deterministic pair ordering, empty scenes, self-collision, filters, and persistent scenes are covered.   | Reference group behavior remains a comparison surface.                                                       | Finish remaining upstream broadphase row mapping.                  |
+| Ray and cast queries                          | Native closest/all/filter raycast behavior is covered and benchmarked.                                                               | Comparable raycast references are benchmark-only.                                                            | Deeper closest-hit traversal tuning is deferred.                   |
+| Mesh, convex, and field-heavy scenes          | Mesh, convex, plane/mesh, heightmap/field adaptation, and mesh-heavy scenes are covered by tests and benchmark guards.               | Mesh-heavy references remain comparison-only.                                                                | Larger dynamic mesh and BVH scale sweeps are deferred.             |
+| Adapter-only DART shapes                      | Cone, pyramid, ellipsoid, heightmap, multi-sphere, and voxel-grid shapes adapt into explicit native geometry.                        | Comparison engines do not define the runtime contract.                                                       | Direct heightfield/sparse voxel acceleration remains deferred.     |
+| Upstream FCL/Bullet/ODE case map              | Every generated upstream row maps to covered DART behavior or a concrete non-applicability decision.                                 | GPU/prototype kernels and non-collision tests are catalogued but outside current CPU native collision scope. | Regenerate the inventory before final task cleanup.                |
 
 ## Performance Summary
 

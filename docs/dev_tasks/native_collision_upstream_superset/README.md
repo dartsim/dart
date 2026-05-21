@@ -26,12 +26,20 @@
       code coverage and raise the native detector implementation to 95%+ line
       coverage. Current native line coverage is 95.1% and function coverage is
       98.0% from the native-only `coverage_native.info` extraction.
-- [ ] Phase 7: Consider or implement a GUI collision-pair debugger example
+- [x] Phase 7: Consider or implement a GUI collision-pair debugger example
       that can exercise supported native pairs, pose objects, and render
       contact point/depth/normal data. If the Filament renderer branch is used,
       do it with an explicit rebase/integration decision.
-- [ ] Phase 8: Promote durable coverage artifacts to `docs/plans/` or
+      Decision for this upstream-superset checkpoint: defer implementation
+      until the renderer path is selected, keep the target scoped to supported
+      pair selection, pose controls, and contact point/depth/normal rendering,
+      and do not rebase to the Filament branch without an explicit integration
+      reason.
+- [x] Phase 8: Promote durable coverage artifacts to `docs/plans/` or
       `docs/onboarding/`, then delete this dev-task folder in the completion PR.
+      The generated upstream inventory and row-level case map now live under
+      `docs/plans/035-native-collision/`; folder deletion remains a completion
+      step after final validation.
 
 ## Goal
 
@@ -51,15 +59,15 @@ optimization expansion by benchmarks.
 ## Source Of Truth
 
 - Generated inventory:
-  [`01-upstream-inventory.md`](01-upstream-inventory.md)
+  [`upstream-inventory.md`](../../plans/035-native-collision/upstream-inventory.md)
 - Inventory generator:
   [`scripts/inventory_upstream_collision_coverage.py`](../../../scripts/inventory_upstream_collision_coverage.py)
 - Coverage map scaffold:
   [`02-coverage-map.md`](02-coverage-map.md)
 - Generated row-level case map:
-  [`03-case-map.md`](03-case-map.md) currently records 207 covered rows, 382
-  not-applicable rows, 0 fixture-needed rows, 0 new-benchmark-needed rows, and 0
-  mapping-needed rows.
+  [`upstream-case-map.md`](../../plans/035-native-collision/upstream-case-map.md)
+  currently records 207 covered rows, 382 not-applicable rows, 0 fixture-needed
+  rows, 0 new-benchmark-needed rows, and 0 mapping-needed rows.
 
 ## Key Decisions
 
@@ -77,16 +85,17 @@ optimization expansion by benchmarks.
 
 ## Immediate Next Steps
 
-1. Decide whether the raw-reference packet should become enforced after
+1. Run final validation on the current review head, including the generated
+   upstream inventory/map and the strongest feasible test gate.
+2. Decide whether the raw-reference packet should become enforced after
    evaluating nanosecond-scale benchmark noise.
-2. Keep new DART test and benchmark names focused on the algorithm, query, and
+3. Keep new DART test and benchmark names focused on the algorithm, query, and
    edge condition, not on the upstream library that inspired the case.
-3. Keep the later GUI collision-pair debugger example scoped around the native
+4. Keep the later GUI collision-pair debugger example scoped around the native
    pair matrix, pose controls, and contact point/depth/normal rendering.
-4. Promote durable artifacts out of this dev-task folder before completion,
-   including the feature/performance summary and coverage evidence.
 5. Regenerate the inventory and case map after any upstream clone refresh:
    `pixi run python scripts/inventory_upstream_collision_coverage.py`.
+6. After final validation, delete this dev-task folder in the completion PR.
 
 ## Verification Log
 
@@ -102,6 +111,12 @@ optimization expansion by benchmarks.
 - Native-only lcov extraction from `build/default/cpp/Debug/dart/collision/native`
   now reports 95.1% line coverage (8,395/8,827) and 98.0% function coverage
   (640/653).
+- Promoted generated upstream inventory and row-level case map to
+  `docs/plans/035-native-collision/upstream-inventory.md` and
+  `docs/plans/035-native-collision/upstream-case-map.md`.
+- `pixi run test-all` passed after promoting the generated upstream inventory
+  and row-level case map.
+- `git diff --check` passed after the full validation gate.
 - `pixi run cmake --build build/default/cpp/Release --target test_shapes`
   passed after adding capsule AABB aspect-ratio and convex support tie tests.
 - `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_shapes$'`

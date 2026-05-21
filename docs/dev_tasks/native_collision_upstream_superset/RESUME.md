@@ -134,9 +134,10 @@ has 0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
 - `origin/feature/filament-gui-full-execution` exists and may be useful for
   that example, but no rebase has been done. Rebase/integration should wait for
   an explicit renderer decision.
-- `03-case-map.md` is generated and currently reports 207 `covered` rows, 382
-  `not-applicable` rows, 0 `fixture-needed` rows, 0 `new-benchmark-needed`
-  rows, and 0 `mapping-needed` rows.
+- `docs/plans/035-native-collision/upstream-case-map.md` is generated and
+  currently reports 207 `covered` rows, 382 `not-applicable` rows, 0
+  `fixture-needed` rows, 0 `new-benchmark-needed` rows, and 0
+  `mapping-needed` rows.
 - `pixi run -e collision-reference bm-collision-check` previously passed the
   enforced comparative packet: 18 main native-vs-reference rows and 3 adapter
   rows passed. The latest raw-reference rerun now reports
