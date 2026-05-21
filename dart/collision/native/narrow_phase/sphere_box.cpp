@@ -85,6 +85,54 @@ bool collideSphereTranslatedBox(
 {
   const Eigen::Vector3d localSphereCenter = sphereCenter - boxTranslation;
 
+  if (localSphereCenter.x() == 0.0 && localSphereCenter.y() == 0.0
+      && localSphereCenter.z() == 0.0) {
+    double minDist = boxHalfExtents.x();
+    int minAxis = 0;
+    if (boxHalfExtents.y() < minDist) {
+      minDist = boxHalfExtents.y();
+      minAxis = 1;
+    }
+    if (boxHalfExtents.z() < minDist) {
+      minDist = boxHalfExtents.z();
+      minAxis = 2;
+    }
+
+    switch (minAxis) {
+      case 0:
+        result.addContact(
+            boxTranslation.x() + boxHalfExtents.x(),
+            boxTranslation.y(),
+            boxTranslation.z(),
+            -1.0,
+            0.0,
+            0.0,
+            sphereRadius + minDist);
+        break;
+      case 1:
+        result.addContact(
+            boxTranslation.x(),
+            boxTranslation.y() + boxHalfExtents.y(),
+            boxTranslation.z(),
+            0.0,
+            -1.0,
+            0.0,
+            sphereRadius + minDist);
+        break;
+      default:
+        result.addContact(
+            boxTranslation.x(),
+            boxTranslation.y(),
+            boxTranslation.z() + boxHalfExtents.z(),
+            0.0,
+            0.0,
+            -1.0,
+            sphereRadius + minDist);
+        break;
+    }
+    return true;
+  }
+
   const double closestX = std::clamp(
       localSphereCenter.x(), -boxHalfExtents.x(), boxHalfExtents.x());
   const double closestY = std::clamp(

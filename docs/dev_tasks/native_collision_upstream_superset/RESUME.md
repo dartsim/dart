@@ -81,20 +81,24 @@ compound box structures, scaled mixed primitive stacks, elongated convex hull
 stacks, mixed primitive terrain stacks, convex terrain contact snapshots, 500
 moving raycasts, and Halton-seeded convex cells. The generated benchmark rows
 now map to DART benchmark targets; ODE libccd benchmark programs map to
-existing native GJK/EPA/MPR and narrowphase benchmark rows.
+existing native GJK/EPA/MPR and narrowphase benchmark rows. Added scalar
+fast paths for axis-aligned sphere-sphere, capsule-sphere, capsule-capsule, and
+centered sphere-box contacts so the raw primitive/edge-case benchmark packet
+now has no slower native reports in the current run.
 
 ## Current Branch
 
 `task/native-collision-performance-complete` — ahead of origin by local
-checkpoint commits; latest milestone adds deterministic scenario benchmark
-coverage and updates the generated maps.
+checkpoint commits; latest milestone optimizes native primitive fast paths and
+updates the feature/performance summary tables.
 
 ## Immediate Next Step
 
-Optimize or explicitly scope the five report-only raw-reference micro-path rows
-where ODE remains faster, then decide whether stacked-scene rows need reference
-variants or should stay native-only profiling coverage. The row-level map now
-has 0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
+Run final post-optimization validation, then run native detector coverage and
+raise line coverage to 95%+ before completion. Also decide whether the
+stacked-scene rows need reference variants or should stay native-only profiling
+coverage. The row-level map now has 0 `mapping-needed`, `fixture-needed`, or
+`new-benchmark-needed` rows.
 
 ## Context That Would Be Lost
 
@@ -122,12 +126,19 @@ has 0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
 - `03-case-map.md` is generated and currently reports 207 `covered` rows, 382
   `not-applicable` rows, 0 `fixture-needed` rows, 0 `new-benchmark-needed`
   rows, and 0 `mapping-needed` rows.
-- `pixi run -e collision-reference bm-collision-check` passed the enforced
-  comparative packet: 18 main native-vs-reference rows and 3 adapter rows
-  passed. The report-only raw-reference packet still reported five ODE-faster
-  micro-path rows: capsule-capsule touching, capsule-sphere touching,
-  sphere-box deep penetration, sphere-sphere deep penetration, and
-  sphere-sphere touching.
+- `pixi run -e collision-reference bm-collision-check` previously passed the
+  enforced comparative packet: 18 main native-vs-reference rows and 3 adapter
+  rows passed. The latest raw-reference rerun now reports
+  `24 passed, 0 failed, 0 skipped`; the five previously ODE-faster micro-path
+  rows now pass, with the tightest current raw-reference ratio at 0.973 for
+  sphere-box grazing.
+- Focused verification for the fast paths has run:
+  `pixi run cmake --build build/default/cpp/Release --target test_sphere_sphere test_sphere_box test_capsule_capsule`
+  and
+  `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_sphere_sphere|test_sphere_box|test_capsule_capsule)$'`.
+- Final checkpoint validation for the fast-path batch has run:
+  `pixi run lint`, `pixi run build`, `pixi run test-unit` (281/281 tests), and
+  `git diff --check`.
 - The stacked-scene benchmark packet is currently native-only. The latest
   baseline lives in ignored JSON at
   `.benchmark_results/collision_check_stacked_scenes.json`; add reference

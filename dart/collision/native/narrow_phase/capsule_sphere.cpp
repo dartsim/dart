@@ -78,12 +78,62 @@ bool collideVerticalCapsuleSphere(
   const Eigen::Vector3d localSphereCenter = sphereCenter - capsuleTranslation;
   const double closestZ
       = std::clamp(localSphereCenter.z(), -halfHeight, halfHeight);
-  const Eigen::Vector3d diff(
-      localSphereCenter.x(),
-      localSphereCenter.y(),
-      localSphereCenter.z() - closestZ);
-  const double distSquared = diff.squaredNorm();
+  const double dx = localSphereCenter.x();
+  const double dy = localSphereCenter.y();
+  const double dz = localSphereCenter.z() - closestZ;
   const double sumRadii = capsuleRadius + sphereRadius;
+
+  if (dy == 0.0 && dz == 0.0) {
+    const double dist = std::abs(dx);
+    if (dist > sumRadii) {
+      return false;
+    }
+
+    const double penetration = sumRadii - dist;
+    if (dist < 1e-10) {
+      result.addContact(
+          capsuleTranslation.x(),
+          capsuleTranslation.y(),
+          capsuleTranslation.z() + closestZ - capsuleRadius + penetration * 0.5,
+          0.0,
+          0.0,
+          1.0,
+          penetration);
+    } else {
+      const double normalX = (dx > 0.0) ? -1.0 : 1.0;
+      result.addContact(
+          capsuleTranslation.x()
+              - normalX * (capsuleRadius - penetration * 0.5),
+          capsuleTranslation.y(),
+          capsuleTranslation.z() + closestZ,
+          normalX,
+          0.0,
+          0.0,
+          penetration);
+    }
+    return true;
+  }
+
+  if (dx == 0.0 && dz == 0.0) {
+    const double dist = std::abs(dy);
+    if (dist > sumRadii) {
+      return false;
+    }
+
+    const double penetration = sumRadii - dist;
+    const double normalY = (dy > 0.0) ? -1.0 : 1.0;
+    result.addContact(
+        capsuleTranslation.x(),
+        capsuleTranslation.y() - normalY * (capsuleRadius - penetration * 0.5),
+        capsuleTranslation.z() + closestZ,
+        0.0,
+        normalY,
+        0.0,
+        penetration);
+    return true;
+  }
+
+  const double distSquared = dx * dx + dy * dy + dz * dz;
 
   if (distSquared > sumRadii * sumRadii) {
     return false;
@@ -96,7 +146,7 @@ bool collideVerticalCapsuleSphere(
   if (dist < 1e-10) {
     normal = Eigen::Vector3d::UnitZ();
   } else {
-    normal = -diff / dist;
+    normal = Eigen::Vector3d(-dx, -dy, -dz) / dist;
   }
 
   const Eigen::Vector3d closestOnCapsule

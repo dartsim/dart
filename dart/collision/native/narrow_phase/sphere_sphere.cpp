@@ -191,15 +191,34 @@ bool collideSpheres(
   const double radius2 = detail::getRadius(sphere2);
 
   if (dy == 0.0 && dz == 0.0) {
-    return collideSpheresOnAxis(
-        translation1.x(),
-        translation1.y(),
-        translation1.z(),
-        radius1,
-        radius2,
-        dx,
-        0,
-        result);
+    const double sumRadii = radius1 + radius2;
+    const double dist = std::abs(dx);
+    if (dist > sumRadii) {
+      return false;
+    }
+
+    const double penetration = sumRadii - dist;
+    if (dist < 1e-10) {
+      result.addContact(
+          translation1.x(),
+          translation1.y(),
+          translation1.z(),
+          0.0,
+          0.0,
+          1.0,
+          penetration);
+    } else {
+      const double normalX = (dx > 0.0) ? -1.0 : 1.0;
+      result.addContact(
+          translation1.x() + normalX * (-radius1 + penetration * 0.5),
+          translation1.y(),
+          translation1.z(),
+          normalX,
+          0.0,
+          0.0,
+          penetration);
+    }
+    return true;
   }
   if (dx == 0.0 && dz == 0.0) {
     return collideSpheresOnAxis(
