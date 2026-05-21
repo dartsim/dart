@@ -138,6 +138,9 @@
   - Fixed Atlas Simbicon state terminal-condition ownership so the native
     collision stability integration path exits cleanly under AddressSanitizer.
   - Added collision benchmark regression checks that parse Google Benchmark JSON and compare native collision timings against the best enabled FCL, Bullet, or ODE reference result across narrowphase, distance, raycast, mixed primitive, mesh-heavy, raycast-batch, and public DART adapter scenarios, with a scheduled/manual CI Linux guard that uploads the JSON artifacts.
+  - Added deterministic native collision scenario benchmarks for stacked box
+    grids, compound box structures, scaled mixed primitives, convex hull stacks,
+    terrain contacts, moving raycasts, and Halton-seeded convex cell packs.
   - Added dartpy wheel verification that rejects legacy collision runtime libraries, reference collision libraries, and old reference collision component exports from wheel artifacts while allowing native-backed compatibility component facades.
   - Added a runtime source isolation check that fails if non-reference DART source paths include FCL, Bullet, ODE, libccd, or explicit collision reference backend headers.
   - Removed per-engine FCL/Bullet/ODE collision build switches from the normal

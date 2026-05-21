@@ -12,7 +12,7 @@
       generator, or explicit non-applicability decision. The generated row-level
       map now has 0 `mapping-needed` rows; fixture/prototype decisions remain
       for follow-up.
-- [ ] Phase 3: Build a benchmark coverage map from every in-scope upstream
+- [x] Phase 3: Build a benchmark coverage map from every in-scope upstream
       benchmark/demo scenario to an existing DART benchmark or new benchmark.
 - [ ] Phase 4: Implement correctness coverage expansion without losing existing
       reference/native coverage.
@@ -52,9 +52,9 @@ optimization expansion by benchmarks.
 - Coverage map scaffold:
   [`02-coverage-map.md`](02-coverage-map.md)
 - Generated row-level case map:
-  [`03-case-map.md`](03-case-map.md) currently records 197 covered rows, 25
-  fixture-needed rows, 10 new-benchmark-needed rows, 357 not-applicable rows,
-  and 0 mapping-needed rows.
+  [`03-case-map.md`](03-case-map.md) currently records 207 covered rows, 25
+  fixture-needed rows, 357 not-applicable rows, 0 new-benchmark-needed rows, and
+  0 mapping-needed rows.
 
 ## Key Decisions
 
@@ -74,8 +74,8 @@ optimization expansion by benchmarks.
 
 1. Convert the 25 `fixture-needed` Bullet OpenCL GPU/prototype rows into an
    explicit prototype gate decision or follow-up fixture.
-2. Start converting the 10 `new-benchmark-needed` Bullet/ODE benchmark rows
-   into deterministic DART benchmark fixtures.
+2. Run the expanded benchmark packet, optimize the native detector against the
+   new scenario rows, and only then make fastest-backend claims.
 3. Keep new DART test and benchmark names focused on the algorithm, query, and
    edge condition, not on the upstream library that inspired the case.
 4. Keep the later GUI collision-pair debugger example scoped around the native
@@ -252,6 +252,24 @@ optimization expansion by benchmarks.
 - `pixi run python scripts/inventory_upstream_collision_coverage.py` updated
   the generated inventory and row map.
 - `pixi run lint` passed.
+- `pixi run build` passed.
+- `git diff --check` passed.
+- Added content-named deterministic scenario benchmarks for tall box grid
+  stacks, compound box structures, scaled mixed primitive stacks, elongated
+  convex hull stacks, mixed primitive terrain stacks, convex terrain contact
+  snapshots, 500 moving raycasts, and Halton-seeded convex cells.
+- `pixi run cmake --build build/default/cpp/Release --target bm_scenarios_stacked_scenes`
+  passed.
+- `build/default/cpp/Release/bin/bm_scenarios_stacked_scenes --benchmark_min_time=0.001s --benchmark_filter='BM_BoxGridStack_ContactPipeline/16$|BM_CompoundBoxStructures_ContactPipeline$|BM_ScaledPrimitiveStack_ContactPipeline/8$|BM_ElongatedConvexHullStack_ContactPipeline/6$|BM_MixedPrimitiveStackWithTerrain_ContactPipeline/8$|BM_ConvexHullTerrainSnapshot_ContactPipeline/400$|BM_ConvexHullTerrainSnapshot_MovingRaycasts/400$|BM_HaltonConvexCellPack_ContactPipeline/45$'`
+  completed a smoke sample for the smallest new benchmark cases.
+- `pixi run python scripts/inventory_upstream_collision_coverage.py` updated
+  the generated inventory and row map; no rows remain
+  `new-benchmark-needed`.
+- `pixi run lint` passed.
+- `pixi run cmake --build build/default/cpp/Release --target bm_scenarios_stacked_scenes`
+  passed after formatting.
+- `build/default/cpp/Release/bin/bm_scenarios_stacked_scenes --benchmark_min_time=0.001s --benchmark_filter='BM_BoxGridStack_ContactPipeline/16$|BM_CompoundBoxStructures_ContactPipeline$|BM_ScaledPrimitiveStack_ContactPipeline/8$|BM_ElongatedConvexHullStack_ContactPipeline/6$|BM_MixedPrimitiveStackWithTerrain_ContactPipeline/8$|BM_ConvexHullTerrainSnapshot_ContactPipeline/400$|BM_ConvexHullTerrainSnapshot_MovingRaycasts/400$|BM_HaltonConvexCellPack_ContactPipeline/45$'`
+  passed after formatting.
 - `pixi run build` passed.
 - `git diff --check` passed.
 - Fixed native convex-convex penetration witness reconstruction so signed

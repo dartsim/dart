@@ -75,20 +75,26 @@ Fixed native convex-convex penetration witness reconstruction and added exact
 convex-convex signed-distance regression tests for the remaining prism and
 dense-patch real-world witness cases, then mapped the corresponding FCL
 RealWorldRegression10 through RealWorldRegression17 rows.
+Added content-named deterministic scenario benchmarks for tall box grid stacks,
+compound box structures, scaled mixed primitive stacks, elongated convex hull
+stacks, mixed primitive terrain stacks, convex terrain contact snapshots, 500
+moving raycasts, and Halton-seeded convex cells. The generated benchmark rows
+now map to DART benchmark targets; ODE libccd benchmark programs map to
+existing native GJK/EPA/MPR and narrowphase benchmark rows.
 
 ## Current Branch
 
 `task/native-collision-performance-complete` — ahead of origin by local
-checkpoint commits; latest checkpoint maps the remaining FCL convex-convex
-signed-distance real-world regression rows and leaves the worktree expected
-clean after commit.
+checkpoint commits; latest milestone adds deterministic scenario benchmark
+coverage and updates the generated maps.
 
 ## Immediate Next Step
 
 Continue filling `docs/dev_tasks/native_collision_upstream_superset/02-coverage-map.md`
-and `03-case-map.md` by converting remaining `fixture-needed` prototype rows
-and `new-benchmark-needed` scenario rows. The row-level correctness map now has
-0 `mapping-needed` rows.
+and `03-case-map.md` by converting the remaining 25 `fixture-needed`
+GPU/prototype rows into an explicit gate decision or follow-up fixture. The
+row-level map now has 0 `mapping-needed` rows and 0
+`new-benchmark-needed` rows.
 
 ## Context That Would Be Lost
 
@@ -113,9 +119,9 @@ and `new-benchmark-needed` scenario rows. The row-level correctness map now has
 - `origin/feature/filament-gui-full-execution` exists and may be useful for
   that example, but no rebase has been done. Rebase/integration should wait for
   an explicit renderer decision.
-- `03-case-map.md` is generated and currently reports 197 `covered` rows, 25
-  `fixture-needed` rows, 10 `new-benchmark-needed` rows, 357
-  `not-applicable` rows, and 0 `mapping-needed` rows.
+- `03-case-map.md` is generated and currently reports 207 `covered` rows, 25
+  `fixture-needed` rows, 357 `not-applicable` rows, 0
+  `new-benchmark-needed` rows, and 0 `mapping-needed` rows.
 - `collideCylinderSphere()` now handles sphere centers inside the cylinder by
   choosing the nearest cap or barrel surface; this is required by the FCL
   sphere-cylinder internal-contact cases.

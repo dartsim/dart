@@ -187,15 +187,108 @@ SCOPES = (
 )
 
 BULLET_BENCHMARK_CASES = (
-    "Benchmark 1: large box grid/stack stress scenario",
-    "Benchmark 2: pyramid, wall, and tower compound box scenario",
-    "Benchmark 3: scaled stack scenario",
-    "Benchmark 4: convex hull Taru stack scenario",
-    "Benchmark 5: mixed box/sphere/capsule stacks",
-    "Benchmark 6: convex hull fall scenario",
-    "Benchmark 7: convex hull fall plus 500 moving raycasts",
-    "Benchmark 8: Halton Voronoi convex-cell scenario",
+    "Large box grid stack stress scenario",
+    "Compound pyramid, wall, and tower box structures",
+    "Scaled mixed-primitive stack scenario",
+    "Elongated convex-hull stack scenario",
+    "Mixed box, sphere, and capsule stack over terrain",
+    "Convex-hull terrain contact snapshot",
+    "Convex-hull terrain snapshot plus 500 moving raycasts",
+    "Halton-seeded convex-cell pack scenario",
 )
+
+BENCHMARK_CASE_MAP_OVERRIDES = {
+    (
+        "Bullet",
+        "Bullet benchmark examples",
+        "Large box grid stack stress scenario",
+    ): (
+        "covered",
+        "tests/benchmark/collision/scenarios/bm_stacked_scenes.cpp::BM_BoxGridStack_ContactPipeline",
+        "Runs deterministic native contact-pipeline benchmarks for a tall, lightly interpenetrating box grid stack with broadphase pair, tested-pair, contact, and AABB-update counters.",
+    ),
+    (
+        "Bullet",
+        "Bullet benchmark examples",
+        "Compound pyramid, wall, and tower box structures",
+    ): (
+        "covered",
+        "tests/benchmark/collision/scenarios/bm_stacked_scenes.cpp::BM_CompoundBoxStructures_ContactPipeline",
+        "Runs a deterministic native box scene with pyramid, staggered wall, and circular tower structures, using content-named benchmark rows and contact/pair counters.",
+    ),
+    (
+        "Bullet",
+        "Bullet benchmark examples",
+        "Scaled mixed-primitive stack scenario",
+    ): (
+        "covered",
+        "tests/benchmark/collision/scenarios/bm_stacked_scenes.cpp::BM_ScaledPrimitiveStack_ContactPipeline",
+        "Runs deterministic scaled box, sphere, and capsule stacks to exercise primitive-size variation through the native contact pipeline.",
+    ),
+    (
+        "Bullet",
+        "Bullet benchmark examples",
+        "Elongated convex-hull stack scenario",
+    ): (
+        "covered",
+        "tests/benchmark/collision/scenarios/bm_stacked_scenes.cpp::BM_ElongatedConvexHullStack_ContactPipeline",
+        "Runs deterministic elongated convex-hull stacks through native convex support, broadphase, contact generation, and contact merge counters.",
+    ),
+    (
+        "Bullet",
+        "Bullet benchmark examples",
+        "Mixed box, sphere, and capsule stack over terrain",
+    ): (
+        "covered",
+        "tests/benchmark/collision/scenarios/bm_stacked_scenes.cpp::BM_MixedPrimitiveStackWithTerrain_ContactPipeline",
+        "Runs deterministic mixed primitive stacks with a ripple mesh terrain object to cover primitive-terrain benchmark behavior.",
+    ),
+    (
+        "Bullet",
+        "Bullet benchmark examples",
+        "Convex-hull terrain contact snapshot",
+    ): (
+        "covered",
+        "tests/benchmark/collision/scenarios/bm_stacked_scenes.cpp::BM_ConvexHullTerrainSnapshot_ContactPipeline",
+        "Runs deterministic convex-hull contact snapshots against ripple terrain with moving object AABBs and native contact counters.",
+    ),
+    (
+        "Bullet",
+        "Bullet benchmark examples",
+        "Convex-hull terrain snapshot plus 500 moving raycasts",
+    ): (
+        "covered",
+        "tests/benchmark/collision/scenarios/bm_stacked_scenes.cpp::BM_ConvexHullTerrainSnapshot_MovingRaycasts",
+        "Runs the convex terrain snapshot while casting 500 deterministic moving rays per iteration, recording contacts, broadphase pairs, and ray hits.",
+    ),
+    (
+        "Bullet",
+        "Bullet benchmark examples",
+        "Halton-seeded convex-cell pack scenario",
+    ): (
+        "covered",
+        "tests/benchmark/collision/scenarios/bm_stacked_scenes.cpp::BM_HaltonConvexCellPack_ContactPipeline",
+        "Runs deterministic Halton-seeded convex-cell packs against ground to cover packed convex-cell contact-pipeline behavior.",
+    ),
+    (
+        "ODE",
+        "ODE libccd benchmarks",
+        "bench.c",
+    ): (
+        "covered",
+        "tests/benchmark/collision/native/bm_libccd.cpp::BM_Dart_GjkEpa_SphereSphere; tests/benchmark/collision/native/bm_libccd.cpp::BM_Dart_GjkIntersect_BoxBox; tests/benchmark/collision/comparative/bm_narrow_phase.cpp::BM_NarrowPhase_CylinderCylinder_Native; tests/benchmark/collision/comparative/bm_narrow_phase.cpp::BM_NarrowPhase_CylinderBox_Native",
+        "Covers deterministic native GJK/EPA-style penetration and overlap benchmark rows for sphere, box, cylinder-cylinder, and cylinder-box families represented by the libccd benchmark program.",
+    ),
+    (
+        "ODE",
+        "ODE libccd benchmarks",
+        "bench2.c",
+    ): (
+        "covered",
+        "tests/benchmark/collision/native/bm_libccd.cpp::BM_Dart_Mpr_SphereSphere; tests/benchmark/collision/comparative/bm_narrow_phase.cpp::BM_NarrowPhase_ConvexConvex_Native; tests/benchmark/collision/comparative/bm_narrow_phase.cpp::BM_NarrowPhase_CylinderCylinder_Native; tests/benchmark/collision/comparative/bm_narrow_phase.cpp::BM_NarrowPhase_CylinderBox_Native",
+        "Covers deterministic native MPR/convex contact benchmark rows for the sphere, box/convex, cylinder-cylinder, and cylinder-box families represented by the libccd MPR benchmark program.",
+    ),
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -2146,6 +2239,18 @@ def classify_case(case: Case, scope: Scope) -> tuple[str, str, str]:
     )
 
 
+def classify_benchmark_case(benchmark: str, scope: Scope) -> tuple[str, str, str]:
+    override = BENCHMARK_CASE_MAP_OVERRIDES.get((scope.project, scope.name, benchmark))
+    if override is not None:
+        return override
+
+    return (
+        "new-benchmark-needed",
+        "tests/benchmark/collision/",
+        "Benchmark scenario needs a deterministic DART row.",
+    )
+
+
 def render_case_map(source_root: Path, inventory: list[ScopeInventory]) -> str:
     lines = [
         "# Upstream Collision Case Map",
@@ -2170,13 +2275,14 @@ def render_case_map(source_root: Path, inventory: list[ScopeInventory]) -> str:
             status, target, note = classify_case(case, item.scope)
             row_data.append((status, item, case, target, note))
         for benchmark in item.benchmark_cases:
+            status, target, note = classify_benchmark_case(benchmark, item.scope)
             row_data.append(
                 (
-                    "new-benchmark-needed",
+                    status,
                     item,
                     benchmark,
-                    "tests/benchmark/collision/",
-                    "Benchmark scenario needs a deterministic DART row.",
+                    target,
+                    note,
                 )
             )
 
