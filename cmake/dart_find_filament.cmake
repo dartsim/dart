@@ -89,6 +89,16 @@ set(_dart_filament_library_suffixes
   lib/aarch64
   lib/${CMAKE_SYSTEM_PROCESSOR}
 )
+if(MSVC)
+  list(
+    PREPEND
+    _dart_filament_library_suffixes
+    lib/x86_64/md
+    lib/${CMAKE_SYSTEM_PROCESSOR}/md
+    lib/x86_64/mt
+    lib/${CMAKE_SYSTEM_PROCESSOR}/mt
+  )
+endif()
 
 foreach(_lib IN ITEMS filament backend filabridge filaflat utils geometry bluegl bluevk smol-v shaders)
   string(REPLACE "-" "_" _lib_var "${_lib}")
