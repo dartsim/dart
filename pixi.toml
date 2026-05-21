@@ -1251,6 +1251,57 @@ cmake \
   { arg = "dartpy", default = "ON" },
 ] }
 
+tracy-build = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE=Release
+DART_TRACY_CMAKE_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
+DART_TRACY_SRC_DIR=${DART_TRACY_CMAKE_DIR}/_deps/tracy-src/profiler
+DART_TRACY_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/${BUILD_TYPE}
+if [ ! -d "${DART_TRACY_SRC_DIR}" ]; then
+  echo "Tracy source was not fetched. Run DART_PROFILE_TRACY=ON pixi run config ON ${BUILD_TYPE}." >&2
+  exit 1
+fi
+cmake \
+  -G Ninja \
+  -S "${DART_TRACY_SRC_DIR}" \
+  -B "${DART_TRACY_BUILD_DIR}" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+  -DLEGACY=ON \
+  -DNO_PARALLEL_STL=ON \
+  -DNO_ISA_EXTENSIONS=ON
+cmake --build "${DART_TRACY_BUILD_DIR}" --target tracy-profiler --parallel "${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}"
+""",
+], depends-on = [
+  { task = "config", args = [
+    "ON",
+    "Release",
+    "ON",
+    "ON",
+    "ON",
+  ] },
+] }
+
+tracy = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE=Release
+DART_TRACY_BIN=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/${BUILD_TYPE}/tracy-profiler
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built. Run pixi run tracy-build first." >&2
+  exit 1
+fi
+exec "${DART_TRACY_BIN}"
+""",
+], depends-on = [
+  "tracy-build",
+] }
+
 # Python package build
 build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
 
@@ -1961,6 +2012,52 @@ set -euo pipefail
 """,
 ], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
   { arg = "dartpy", default = "ON" },
+] }
+
+tracy-build = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+DART_TRACY_CMAKE_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp
+DART_TRACY_SRC_DIR=${DART_TRACY_CMAKE_DIR}/_deps/tracy-src/profiler
+DART_TRACY_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler
+if [ ! -d "${DART_TRACY_SRC_DIR}" ]; then
+  echo "Tracy source was not fetched. Run DART_PROFILE_TRACY=ON pixi run config." >&2
+  exit 1
+fi
+cmake \
+  -S "${DART_TRACY_SRC_DIR}" \
+  -B "${DART_TRACY_BUILD_DIR}" \
+  -G 'Visual Studio 17 2022' \
+  -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+  -DNO_PARALLEL_STL=ON \
+  -DNO_ISA_EXTENSIONS=ON
+cmake --build "${DART_TRACY_BUILD_DIR}" --config Release --target tracy-profiler
+""",
+], depends-on = [
+  { task = "config", args = [
+    "ON",
+    "ON",
+    "ON",
+    "ON",
+  ] },
+] }
+
+tracy = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+DART_TRACY_BIN=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/Release/tracy-profiler.exe
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built. Run pixi run tracy-build first." >&2
+  exit 1
+fi
+exec "${DART_TRACY_BIN}"
+""",
+], depends-on = [
+  "tracy-build",
 ] }
 
 #============================

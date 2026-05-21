@@ -343,7 +343,8 @@ builds.
 - **Default:** CMake default is `OFF`. Pixi development configure tasks opt in
   with `DART_PROFILE_TRACY=ON`, but keep `DART_USE_SYSTEM_TRACY=OFF` so Tracy is
   not installed through package-manager dependencies. Install/package
-  configurations keep profiling off.
+  configurations keep profiling off. `pixi run tracy-build` builds the Tracy GUI
+  client from the fetched development source, and `pixi run tracy` launches it.
 
 ### Additional Platform Dependencies
 
@@ -719,6 +720,13 @@ pixi run docs-build      # Build user documentation
 pixi run docs-serve      # Serve documentation (port 8000)
 pixi run api-docs-cpp    # Build C++ API docs
 pixi run api-docs-py     # Build Python API docs
+```
+
+#### Profiling Tasks
+
+```bash
+pixi run tracy-build     # Build the Tracy GUI client from fetched source
+pixi run tracy           # Build and launch the Tracy GUI client
 ```
 
 #### Utility Tasks

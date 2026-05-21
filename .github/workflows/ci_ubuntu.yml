@@ -382,10 +382,12 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
-      - name: Build with assertions (no -DNDEBUG)
+      - name: Build with assertions and Tracy profiling (no -DNDEBUG)
         run: |
           # NOTE: pixi tasks set BUILD_TYPE internally, so configure this
-          # variant explicitly to ensure NDEBUG is not defined.
+          # variant explicitly to ensure NDEBUG is not defined. This also
+          # smoke-tests the fetched Tracy client path without installing Tracy
+          # through Pixi package dependencies.
           pixi run -- bash -lc '
             set -euo pipefail
             BUILD_TYPE=None
@@ -401,6 +403,7 @@ jobs:
               -DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF \
               -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF \
               -DDART_BUILD_PROFILE=ON \
+              -DDART_PROFILE_TRACY=ON \
               -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
               -DDART_USE_SYSTEM_IMGUI=ON \
