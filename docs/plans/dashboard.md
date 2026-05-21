@@ -27,7 +27,7 @@ its own line so status updates remain git-history friendly.
 ### PLAN-010: Easy-Start API And Package Readiness
 
 - Owner doc:
-  [`010-easy-start-api-package-readiness.md`](010-easy-start-api-package-readiness.md)
+  [`north-star-roadmap.md#roadmap-dimensions`](north-star-roadmap.md#roadmap-dimensions)
 - Status: Proposed
 - Horizon: Now
 - Dimension: Easy start
@@ -38,7 +38,7 @@ its own line so status updates remain git-history friendly.
 ### PLAN-020: Algorithm Extension Contracts
 
 - Owner doc:
-  [`020-algorithm-extension-contracts.md`](020-algorithm-extension-contracts.md)
+  [`../design/algorithm_extension_contracts.md`](../design/algorithm_extension_contracts.md)
 - Status: Proposed
 - Horizon: Now
 - Dimension: Algorithm extensibility
@@ -49,12 +49,24 @@ its own line so status updates remain git-history friendly.
 ### PLAN-030: Compute Scalability Roadmap
 
 - Owner doc:
-  [`030-compute-scalability-roadmap.md`](030-compute-scalability-roadmap.md)
+  [`../design/scalable_compute_decisions.md`](../design/scalable_compute_decisions.md)
 - Status: Proposed
 - Horizon: Now
 - Dimension: Scalable compute
 - Next step: Rank candidate accelerated workloads.
 - Gate: Workload ranking names CPU/SIMD prerequisites and CUDA/SYCL decision
+  evidence.
+
+### PLAN-035: Native Collision Runtime Migration
+
+- Owner doc:
+  [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Close final review-head CI and benchmark evidence for the native
+  collision migration.
+- Gate: The native collision dashboard and coverage matrix match the final PR
   evidence.
 
 ### PLAN-040: DART 7 Release Hardening
@@ -68,8 +80,7 @@ its own line so status updates remain git-history friendly.
 
 ### PLAN-050: Experimental World Split
 
-- Owner doc:
-  [`../dev_tasks/world_split/00_design.md`](../dev_tasks/world_split/00_design.md)
+- Owner doc: [`../dev_tasks/README.md`](../dev_tasks/README.md)
 - Status: Blocked
 - Horizon: Next
 - Dimension: Algorithm extensibility

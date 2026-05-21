@@ -30,6 +30,15 @@ planning guides for developers and agents:**
 
 _Format: Markdown (GitHub/LLM-friendly) for internal codebase understanding_
 
+### Supporting Documentation Buckets
+
+- `assets/` - Shared documentation images and generated visual assets
+- `background/` - Theory and research foundations
+- `design/` - Durable architecture and design decision records
+- `dev_tasks/` - Active multi-session implementation task state
+- `doxygen/` - API documentation generation inputs
+- `python_api/` - Generated or staged Python API documentation
+
 ### User Documentation (ReadTheDocs)
 
 Located in `readthedocs/` - **Published documentation for end users:**
