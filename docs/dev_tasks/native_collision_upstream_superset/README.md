@@ -7,10 +7,11 @@
 - [x] Phase 1: Generate the first upstream inventory with source revisions,
       source files, extracted test cases, benchmark scenarios, and explicit
       non-collision accounting.
-- [ ] Phase 2: Build a DART coverage map from every in-scope upstream
+- [x] Phase 2: Build a DART coverage map from every in-scope upstream
       correctness case to an existing DART test, new DART test, fixture
-      generator, or explicit non-applicability decision. A generated row-level
-      scaffold now exists; file-by-file ownership is still in progress.
+      generator, or explicit non-applicability decision. The generated row-level
+      map now has 0 `mapping-needed` rows; fixture/prototype decisions remain
+      for follow-up.
 - [ ] Phase 3: Build a benchmark coverage map from every in-scope upstream
       benchmark/demo scenario to an existing DART benchmark or new benchmark.
 - [ ] Phase 4: Implement correctness coverage expansion without losing existing
@@ -51,9 +52,9 @@ optimization expansion by benchmarks.
 - Coverage map scaffold:
   [`02-coverage-map.md`](02-coverage-map.md)
 - Generated row-level case map:
-  [`03-case-map.md`](03-case-map.md) currently records 189 covered rows, 25
-  fixture-needed rows, 8 mapping-needed rows, 10 new-benchmark-needed rows,
-  and 357 not-applicable rows.
+  [`03-case-map.md`](03-case-map.md) currently records 197 covered rows, 25
+  fixture-needed rows, 10 new-benchmark-needed rows, 357 not-applicable rows,
+  and 0 mapping-needed rows.
 
 ## Key Decisions
 
@@ -71,18 +72,15 @@ optimization expansion by benchmarks.
 
 ## Immediate Next Steps
 
-1. Continue mapping the remaining FCL convex-convex signed-distance real-world
-   regression rows, adding native tests only where exact behavior is not
-   already covered.
-2. Convert the 25 `fixture-needed` Bullet OpenCL GPU/prototype rows into an
+1. Convert the 25 `fixture-needed` Bullet OpenCL GPU/prototype rows into an
    explicit prototype gate decision or follow-up fixture.
-3. Start converting the 10 `new-benchmark-needed` Bullet/ODE benchmark rows
+2. Start converting the 10 `new-benchmark-needed` Bullet/ODE benchmark rows
    into deterministic DART benchmark fixtures.
-4. Keep new DART test and benchmark names focused on the algorithm, query, and
+3. Keep new DART test and benchmark names focused on the algorithm, query, and
    edge condition, not on the upstream library that inspired the case.
-5. Keep the later GUI collision-pair debugger example scoped around the native
+4. Keep the later GUI collision-pair debugger example scoped around the native
    pair matrix, pose controls, and contact point/depth/normal rendering.
-6. Regenerate the inventory and case map after any upstream clone refresh:
+5. Regenerate the inventory and case map after any upstream clone refresh:
    `pixi run python scripts/inventory_upstream_collision_coverage.py`.
 
 ## Verification Log
@@ -251,6 +249,20 @@ optimization expansion by benchmarks.
   non-applicability decisions because they test FCL's generated BVH
   approximation pipeline, BV-family traversal, and solver-selection tolerance
   contracts rather than DART native public APIs.
+- `pixi run python scripts/inventory_upstream_collision_coverage.py` updated
+  the generated inventory and row map.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `git diff --check` passed.
+- Fixed native convex-convex penetration witness reconstruction so signed
+  distance reports nearest points separated by the reported penetration depth.
+- Added exact convex-convex signed-distance regression coverage for swept,
+  skew, long rotated, flat octagonal, hexagonal, pentagonal, triangular, and
+  dense-patch convex witness cases.
+- `pixi run cmake --build build/default/cpp/Release --target test_distance_core`
+  passed.
+- `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_distance_core$'`
+  passed.
 - `pixi run python scripts/inventory_upstream_collision_coverage.py` updated
   the generated inventory and row map.
 - `pixi run lint` passed.

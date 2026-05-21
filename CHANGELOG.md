@@ -178,6 +178,9 @@
   - Fixed native capsule-vs-convex CCD so casts use the full capsule support shape instead of relying on numerically fragile endpoint-sphere hits.
   - Fixed native sphere/capsule-vs-mesh CCD so casts against open or thin mesh
     triangles no longer miss direct hits.
+  - Fixed native convex-convex signed-distance penetration witnesses so
+    reported nearest points remain finite and separated by the reported
+    penetration depth.
   - Fixed native world-level raycast, sphere-cast, and capsule-cast results so returned collision-object handles remain valid after the query returns.
   - Fixed native mesh contact adaptation so public DART contacts preserve mesh
     triangle IDs for soft-contact consumers.

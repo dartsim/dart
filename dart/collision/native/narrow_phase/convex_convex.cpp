@@ -201,6 +201,35 @@ Eigen::Vector3d computeShapeCenter(
   }
 }
 
+void alignPenetrationWitnesses(
+    double depth,
+    const Eigen::Vector3d& penetrationNormal,
+    Eigen::Vector3d& pointA,
+    Eigen::Vector3d& pointB)
+{
+  if (!(depth > 0.0) || !std::isfinite(depth)) {
+    return;
+  }
+
+  const double witnessDistance = (pointB - pointA).norm();
+  if (std::abs(witnessDistance - depth) <= 1e-6) {
+    return;
+  }
+
+  Eigen::Vector3d normal = penetrationNormal;
+  if (!normal.allFinite() || normal.squaredNorm() < 1e-12) {
+    normal = pointA - pointB;
+  }
+  if (!normal.allFinite() || normal.squaredNorm() < 1e-12) {
+    return;
+  }
+
+  normal.normalize();
+  const Eigen::Vector3d midpoint = 0.5 * (pointA + pointB);
+  pointA = midpoint + 0.5 * depth * normal;
+  pointB = midpoint - 0.5 * depth * normal;
+}
+
 } // namespace
 
 bool collideSupportFunctions(
@@ -348,14 +377,13 @@ double distanceConvexConvex(
   Eigen::Vector3d pointA = tf1.translation();
   Eigen::Vector3d pointB = tf2.translation();
   Eigen::Vector3d normal = Eigen::Vector3d::UnitX();
+  Eigen::Vector3d penetrationNormal = Eigen::Vector3d::UnitX();
 
   if (epaResult.success) {
     depth = epaResult.depth;
     pointA = epaResult.pointOnA;
     pointB = epaResult.pointOnB;
-    if ((pointB - pointA).squaredNorm() > 1e-12) {
-      normal = (pointB - pointA).normalized();
-    }
+    penetrationNormal = epaResult.normal;
   } else {
     const Eigen::Vector3d centerA = computeShapeCenter(shape1, tf1);
     const Eigen::Vector3d centerB = computeShapeCenter(shape2, tf2);
@@ -365,12 +393,15 @@ double distanceConvexConvex(
       depth = mprResult.depth;
       pointA = mprResult.pointOnA;
       pointB = mprResult.pointOnB;
-      if ((pointB - pointA).squaredNorm() > 1e-12) {
-        normal = (pointB - pointA).normalized();
-      } else if (mprResult.normal.squaredNorm() > 1e-12) {
-        normal = mprResult.normal.normalized();
-      }
+      penetrationNormal = mprResult.normal;
     }
+  }
+
+  alignPenetrationWitnesses(depth, penetrationNormal, pointA, pointB);
+  if ((pointB - pointA).squaredNorm() > 1e-12) {
+    normal = (pointB - pointA).normalized();
+  } else if (penetrationNormal.squaredNorm() > 1e-12) {
+    normal = -penetrationNormal.normalized();
   }
 
   result.distance = -depth;

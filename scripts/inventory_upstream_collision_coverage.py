@@ -1297,6 +1297,78 @@ CASE_MAP_OVERRIDES = {
     ),
     (
         "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression10)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::NarrowPhaseDistance.ConvexConvexPrismWitnessRegressions",
+        "Checks the exact swept-prism/triangular-prism convex-convex signed-distance regression with finite witnesses and witness-depth consistency.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression11)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::NarrowPhaseDistance.ConvexConvexPrismWitnessRegressions",
+        "Checks the exact skew-prism/triangular-prism convex-convex signed-distance regression with finite witnesses and witness-depth consistency.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression12)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::NarrowPhaseDistance.ConvexConvexPrismWitnessRegressions",
+        "Checks the exact long rotated-prism/triangular-prism convex-convex signed-distance regression with finite witnesses and witness-depth consistency.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression13)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::NarrowPhaseDistance.ConvexConvexPrismWitnessRegressions",
+        "Checks the exact flat octagonal-prism/triangular-prism convex-convex signed-distance regression with finite witnesses and witness-depth consistency.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression14)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::NarrowPhaseDistance.ConvexConvexPrismWitnessRegressions",
+        "Checks the exact hexagonal-prism/triangular-prism convex-convex signed-distance regression with finite witnesses and witness-depth consistency.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression15)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::NarrowPhaseDistance.ConvexConvexPrismWitnessRegressions",
+        "Checks the exact pentagonal-prism/triangular-prism convex-convex signed-distance regression with finite witnesses and witness-depth consistency.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression16)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::NarrowPhaseDistance.ConvexConvexPrismWitnessRegressions",
+        "Checks the exact triangular-prism/triangular-prism convex-convex signed-distance regression with finite witnesses and witness-depth consistency.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression17)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::NarrowPhaseDistance.ConvexConvexDensePatchWitnessRegression",
+        "Checks the exact dense-patch convex-convex signed-distance regression with nearly coincident features, finite witnesses, and witness-depth consistency.",
+    ),
+    (
+        "FCL",
         "fcl/test/test_fcl_capsule_capsule.cpp",
         "TYPED_TEST(SegmentSegmentNearestPtTest, BothZeroLength)",
     ): (

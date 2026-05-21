@@ -71,20 +71,24 @@ rather than DART native public APIs.
 Added exact box-box and sphere-box signed-distance real-world regression tests
 with finite witness validation, then mapped the corresponding FCL
 RealWorldRegression1 through RealWorldRegression9 rows.
+Fixed native convex-convex penetration witness reconstruction and added exact
+convex-convex signed-distance regression tests for the remaining prism and
+dense-patch real-world witness cases, then mapped the corresponding FCL
+RealWorldRegression10 through RealWorldRegression17 rows.
 
 ## Current Branch
 
 `task/native-collision-performance-complete` — ahead of origin by local
-checkpoint commits; latest checkpoint maps FCL box/sphere signed-distance
-real-world regression rows and leaves the worktree expected clean after commit.
+checkpoint commits; latest checkpoint maps the remaining FCL convex-convex
+signed-distance real-world regression rows and leaves the worktree expected
+clean after commit.
 
 ## Immediate Next Step
 
 Continue filling `docs/dev_tasks/native_collision_upstream_superset/02-coverage-map.md`
-and `03-case-map.md` by mapping remaining FCL convex-convex signed-distance
-regression rows to existing DART tests, new DART tests, or a concrete
-non-applicability reason. Benchmark scenario rows remain later until the
-correctness map is closer to closed.
+and `03-case-map.md` by converting remaining `fixture-needed` prototype rows
+and `new-benchmark-needed` scenario rows. The row-level correctness map now has
+0 `mapping-needed` rows.
 
 ## Context That Would Be Lost
 
@@ -109,9 +113,9 @@ correctness map is closer to closed.
 - `origin/feature/filament-gui-full-execution` exists and may be useful for
   that example, but no rebase has been done. Rebase/integration should wait for
   an explicit renderer decision.
-- `03-case-map.md` is generated and currently reports 189 `covered` rows, 25
-  `fixture-needed` rows, 8 `mapping-needed` rows, 10
-  `new-benchmark-needed` rows, and 357 `not-applicable` rows.
+- `03-case-map.md` is generated and currently reports 197 `covered` rows, 25
+  `fixture-needed` rows, 10 `new-benchmark-needed` rows, 357
+  `not-applicable` rows, and 0 `mapping-needed` rows.
 - `collideCylinderSphere()` now handles sphere centers inside the cylinder by
   choosing the nearest cap or barrel surface; this is required by the FCL
   sphere-cylinder internal-contact cases.
@@ -343,6 +347,19 @@ correctness map is closer to closed.
   `pixi run cmake --build build/default/cpp/Release --target test_distance_core`
   and
   `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_distance_core$'`.
+- `pixi run lint`, `pixi run build`, and `git diff --check` passed for the
+  box/sphere signed-distance checkpoint.
+- Native convex-convex signed-distance penetration now realigns witness points
+  when EPA/MPR reports a finite depth but coincident points, preserving the
+  contact midpoint while making nearest-point separation match `abs(distance)`.
+- FCL convex-convex signed-distance real-world rows now map to DART tests named
+  for swept-prism, skew-prism, long-rotated-prism, flat-octagonal-prism,
+  hexagonal-prism, pentagonal-prism, triangular-prism, and dense-patch witness
+  cases.
+- Focused verification already run:
+  `pixi run cmake --build build/default/cpp/Release --target test_distance_core`
+  and
+  `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_distance_core$'`.
 - `pixi run lint`, `pixi run build`, and `git diff --check` passed for this
   checkpoint.
 
@@ -354,6 +371,5 @@ git status --short --branch
 pixi run python scripts/inventory_upstream_collision_coverage.py
 ```
 
-Then continue the coverage-map pass with remaining FCL convex-convex
-signed-distance or benchmark rows before using expanded benchmark rows for
-performance claims.
+Then continue with the remaining fixture/prototype and benchmark rows before
+using expanded benchmark rows for performance claims.
