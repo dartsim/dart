@@ -54,11 +54,13 @@
 #include <dart/dynamics/cone_shape.hpp>
 #include <dart/dynamics/convex_mesh_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
+#include <dart/dynamics/degree_of_freedom.hpp>
 #include <dart/dynamics/ellipsoid_shape.hpp>
 #include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/heightmap_shape.hpp>
 #include <dart/dynamics/inverse_kinematics.hpp>
+#include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/mesh_material.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
@@ -676,6 +678,10 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       std::string::npos);
   EXPECT_NE(selectionSource.find("kGizmoWorldScale = 1.0"), std::string::npos);
   EXPECT_NE(selectionSource.find("solveIkHandle"), std::string::npos);
+  EXPECT_NE(selectionSource.find("handle.solveMode"), std::string::npos);
+  EXPECT_NE(
+      selectionSource.find("InverseKinematicsSolveMode::SkeletonHierarchy"),
+      std::string::npos);
   EXPECT_NE(selectionSource.find("skeleton->getIK(true)"), std::string::npos);
   EXPECT_NE(
       debugOverlaySource.find("kGizmoWorldScale = 1.0"), std::string::npos);
@@ -1141,12 +1147,39 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresIkHandles)
   dart::gui::InverseKinematicsHandle handle;
   handle.label = "left hand";
   handle.hotkey = '1';
+  handle.solveMode = dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy;
 
   options.ikHandles.push_back(handle);
 
   ASSERT_EQ(options.ikHandles.size(), 1u);
   EXPECT_EQ(options.ikHandles.front().label, "left hand");
   EXPECT_EQ(options.ikHandles.front().hotkey, '1');
+  EXPECT_EQ(
+      options.ikHandles.front().solveMode,
+      dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy);
+}
+
+TEST(FilamentSceneExtraction, ApplicationOptionsCopiesIkHandleSolveMode)
+{
+  dart::gui::detail::AppOptions appOptions;
+  appOptions.world = World::create("ik_handle_solve_mode_scene");
+  auto target
+      = SimpleFrame::createShared(dart::dynamics::Frame::World(), "target");
+  appOptions.world->addSimpleFrame(target);
+
+  dart::gui::InverseKinematicsHandle handle;
+  handle.label = "whole body target";
+  handle.target = target;
+  handle.solveMode = dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy;
+  appOptions.ikHandles.push_back(handle);
+
+  const dart::gui::detail::DartScene scene
+      = dart::gui::detail::createDartScene(appOptions);
+  ASSERT_EQ(scene.ikHandles.size(), 1u);
+  EXPECT_EQ(scene.ikHandles.front().label, "whole body target");
+  EXPECT_EQ(
+      scene.ikHandles.front().solveMode,
+      dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy);
 }
 
 TEST(
@@ -1171,6 +1204,9 @@ TEST(
   ASSERT_NE(handle->ik, nullptr);
   ASSERT_NE(handle->target, nullptr);
   ASSERT_NE(handle->targetRenderableId, 0u);
+  EXPECT_EQ(
+      handle->solveMode,
+      dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy);
 
   auto* node = handle->ik->getNode();
   ASSERT_NE(node, nullptr);
@@ -1178,6 +1214,30 @@ TEST(
   ASSERT_NE(bodyNode, nullptr);
   const auto skeleton = bodyNode->getSkeleton();
   ASSERT_NE(skeleton, nullptr);
+  const auto* rootBody = skeleton->getRootBodyNode();
+  ASSERT_NE(rootBody, nullptr);
+  const auto* rootJoint = rootBody->getParentJoint();
+  ASSERT_NE(rootJoint, nullptr);
+
+  const auto dofs = handle->ik->getDofs();
+  const Eigen::VectorXd& componentWeights
+      = handle->ik->getGradientMethod().getComponentWeights();
+  ASSERT_EQ(componentWeights.size(), static_cast<Eigen::Index>(dofs.size()));
+  bool sawRootDof = false;
+  bool sawNonRootDof = false;
+  for (std::size_t i = 0; i < dofs.size(); ++i) {
+    const auto* dof = skeleton->getDof(dofs[i]);
+    ASSERT_NE(dof, nullptr);
+    if (dof->getJoint() == rootJoint) {
+      EXPECT_DOUBLE_EQ(componentWeights[static_cast<Eigen::Index>(i)], 1e-3);
+      sawRootDof = true;
+    } else {
+      EXPECT_DOUBLE_EQ(componentWeights[static_cast<Eigen::Index>(i)], 1.0);
+      sawNonRootDof = true;
+    }
+  }
+  EXPECT_TRUE(sawRootDof);
+  EXPECT_TRUE(sawNonRootDof);
 
   Eigen::Vector3d linearBounds
       = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
@@ -1206,10 +1266,15 @@ TEST(
 
   const double before = distanceToTarget();
   ASSERT_GT(before, 1e-3);
+  const Eigen::Isometry3d rootBefore = rootBody->getWorldTransform();
   const auto wholeBodyIk = skeleton->getIK(true);
   ASSERT_NE(wholeBodyIk, nullptr);
   EXPECT_TRUE(wholeBodyIk->solveAndApply(true));
   EXPECT_LT(distanceToTarget(), 0.75 * before);
+  EXPECT_LT(
+      (rootBody->getWorldTransform().translation() - rootBefore.translation())
+          .norm(),
+      0.01);
 }
 
 TEST(FilamentSceneExtraction, ApplicationOptionsCanSkipWorldStepping)
@@ -3214,6 +3279,11 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("Left-drag active target gizmo handles"),
       std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("InverseKinematicsSolveMode::SkeletonHierarchy"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find("applyAtlasRootGradientWeights"), std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
   EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
@@ -3330,6 +3400,9 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("setUnconstrainedIkBounds"), std::string::npos);
   EXPECT_EQ(mainSource.find("Ctrl-left drag"), std::string::npos);
   EXPECT_NE(mainSource.find("InverseKinematicsHandle"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("InverseKinematicsSolveMode::SkeletonHierarchy"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("options.ikHandles"), std::string::npos);
   EXPECT_NE(mainSource.find("dart::gui::Gizmo"), std::string::npos);
   EXPECT_NE(mainSource.find("options.gizmos"), std::string::npos);
@@ -3512,6 +3585,9 @@ TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(mainSource.find("TargetState"), std::string::npos);
   EXPECT_NE(mainSource.find("createG1KeyboardActions"), std::string::npos);
   EXPECT_NE(mainSource.find("solveActiveG1Targets"), std::string::npos);
+  EXPECT_EQ(
+      mainSource.find("InverseKinematicsSolveMode::SkeletonHierarchy"),
+      std::string::npos);
   EXPECT_NE(
       mainSource.find("world->addSimpleFrame(target)"), std::string::npos);
   EXPECT_NE(

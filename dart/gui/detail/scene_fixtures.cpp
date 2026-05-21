@@ -744,6 +744,35 @@ dart::math::SupportGeometry makeAtlasPuppetFootSupportGeometry()
   return support;
 }
 
+void applyAtlasRootGradientWeights(
+    const dart::dynamics::SkeletonPtr& atlas,
+    const dart::dynamics::InverseKinematicsPtr& ik)
+{
+  constexpr double kAtlasHandRootGradientWeight = 1e-3;
+
+  if (atlas == nullptr || ik == nullptr) {
+    return;
+  }
+
+  const auto* rootBody = atlas->getRootBodyNode();
+  const auto* rootJoint = rootBody ? rootBody->getParentJoint() : nullptr;
+  if (rootJoint == nullptr) {
+    return;
+  }
+
+  const auto dofs = ik->getDofs();
+  Eigen::VectorXd weights
+      = Eigen::VectorXd::Ones(static_cast<Eigen::Index>(dofs.size()));
+  for (std::size_t i = 0; i < dofs.size(); ++i) {
+    const auto* dof = atlas->getDof(dofs[i]);
+    if (dof != nullptr && dof->getJoint() == rootJoint) {
+      weights[static_cast<Eigen::Index>(i)] = kAtlasHandRootGradientWeight;
+    }
+  }
+
+  ik->getGradientMethod().setComponentWeights(weights);
+}
+
 void addAtlasPuppetIkTargets(
     DartScene& scene, const dart::dynamics::SkeletonPtr& atlas)
 {
@@ -845,6 +874,8 @@ void addAtlasPuppetIkTargets(
       angularBounds.y() = 1e-8;
       ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
       ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
+    } else {
+      applyAtlasRootGradientWeights(atlas, ik);
     }
 
     auto target = SimpleFrame::createShared(
@@ -862,6 +893,7 @@ void addAtlasPuppetIkTargets(
     handle.hotkey = config.hotkey;
     handle.target = std::move(target);
     handle.ik = std::move(ik);
+    handle.solveMode = dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy;
     scene.ikHandles.push_back(std::move(handle));
   }
 }
@@ -1383,6 +1415,7 @@ void addHuboPuppetIkTargets(
     handle.hotkey = config.hotkey;
     handle.target = std::move(target);
     handle.ik = std::move(ik);
+    handle.solveMode = dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy;
     scene.ikHandles.push_back(std::move(handle));
   }
 }

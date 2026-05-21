@@ -42,9 +42,11 @@
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/degree_of_freedom.hpp>
 #include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/inverse_kinematics.hpp>
+#include <dart/dynamics/joint.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
 #include <dart/dynamics/shape_node.hpp>
@@ -91,6 +93,7 @@ constexpr double kTeleopElevationStep = 0.2 * kTeleopLinearStep;
 constexpr double kTeleopYawStep = 2.0 * 3.14159265358979323846 / 180.0;
 constexpr double kSupportVisualElevation = 0.05;
 constexpr double kSupportComMarkerRadius = 0.06;
+constexpr double kAtlasHandRootGradientWeight = 1e-3;
 
 enum class PuppetMotion
 {
@@ -742,6 +745,33 @@ bool solveOwningSkeletonIk(const dart::dynamics::InverseKinematicsPtr& ik)
   return ik->solveAndApply(true);
 }
 
+void applyAtlasRootGradientWeights(
+    const dart::dynamics::SkeletonPtr& atlas,
+    const dart::dynamics::InverseKinematicsPtr& ik)
+{
+  if (atlas == nullptr || ik == nullptr) {
+    return;
+  }
+
+  const auto* rootBody = atlas->getRootBodyNode();
+  const auto* rootJoint = rootBody ? rootBody->getParentJoint() : nullptr;
+  if (rootJoint == nullptr) {
+    return;
+  }
+
+  const auto dofs = ik->getDofs();
+  Eigen::VectorXd weights
+      = Eigen::VectorXd::Ones(static_cast<Eigen::Index>(dofs.size()));
+  for (std::size_t i = 0; i < dofs.size(); ++i) {
+    const auto* dof = atlas->getDof(dofs[i]);
+    if (dof != nullptr && dof->getJoint() == rootJoint) {
+      weights[static_cast<Eigen::Index>(i)] = kAtlasHandRootGradientWeight;
+    }
+  }
+
+  ik->getGradientMethod().setComponentWeights(weights);
+}
+
 void addAtlasPuppetIkTargets(
     AtlasPuppetScene& scene, const dart::dynamics::SkeletonPtr& atlas)
 {
@@ -835,6 +865,7 @@ void addAtlasPuppetIkTargets(
       ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
       ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
     } else {
+      applyAtlasRootGradientWeights(atlas, ik);
       setUnconstrainedIkBounds(ik);
     }
 
@@ -859,6 +890,7 @@ void addAtlasPuppetIkTargets(
     handle.hotkey = config.hotkey;
     handle.target = target;
     handle.ik = std::move(ik);
+    handle.solveMode = dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy;
 
     dart::gui::Gizmo gizmo;
     gizmo.label = config.targetName;

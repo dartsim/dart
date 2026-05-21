@@ -62,6 +62,8 @@ struct IkHandle
   int hotkey = 0;
   std::shared_ptr<dart::dynamics::SimpleFrame> target;
   dart::dynamics::InverseKinematicsPtr ik;
+  dart::gui::InverseKinematicsSolveMode solveMode
+      = dart::gui::InverseKinematicsSolveMode::Target;
 };
 
 struct DartScene

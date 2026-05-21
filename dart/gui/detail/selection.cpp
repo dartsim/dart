@@ -71,6 +71,8 @@ using dart::gui::translateFrameRenderable;
 using dart::gui::translateGizmoTarget;
 using dart::gui::ViewerLifecycleState;
 
+bool solveIkHandle(IkHandle& handle);
+
 namespace {
 
 constexpr double kRotationRadiansPerPixel = 0.01;
@@ -227,10 +229,7 @@ bool rotateRenderableAndApplyIk(
   }
 
   if (auto* handle = findIkHandle(scene, descriptor.id)) {
-    if (handle->ik) {
-      handle->ik->getSolver()->setNumMaxIterations(30);
-      handle->ik->solveAndApply(true);
-    }
+    solveIkHandle(*handle);
   }
 
   return true;
@@ -280,8 +279,6 @@ const IkHandle* findIkHandle(
   return handle == scene.ikHandles.end() ? nullptr : &*handle;
 }
 
-bool solveIkHandle(IkHandle& handle);
-
 std::string selectionLabelForRenderable(
     const DartScene& scene, const RenderableDescriptor& descriptor)
 {
@@ -324,13 +321,16 @@ bool solveIkHandle(IkHandle& handle)
     return true;
   }
 
-  auto* node = handle.ik->getNode();
-  const auto bodyNode = node ? node->getBodyNodePtr() : nullptr;
-  const auto skeleton = bodyNode ? bodyNode->getSkeleton() : nullptr;
-  if (skeleton) {
-    const auto wholeBodyIk = skeleton->getIK(true);
-    if (wholeBodyIk) {
-      return wholeBodyIk->solveAndApply(true);
+  if (handle.solveMode
+      == dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy) {
+    auto* node = handle.ik->getNode();
+    const auto bodyNode = node ? node->getBodyNodePtr() : nullptr;
+    const auto skeleton = bodyNode ? bodyNode->getSkeleton() : nullptr;
+    if (skeleton) {
+      const auto wholeBodyIk = skeleton->getIK(true);
+      if (wholeBodyIk) {
+        return wholeBodyIk->solveAndApply(true);
+      }
     }
   }
 

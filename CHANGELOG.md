@@ -87,6 +87,10 @@
   - Fixed Atlas/whole-body puppet target dragging to solve through the owning
     skeleton IK hierarchy with damped least-squares, avoiding regressions where
     active target drags moved end-effectors away from the target.
+  - Fixed `dart::gui` IK handle solving to distinguish local target handles
+    from whole-body puppet handles and restored Atlas hand root-gradient
+    weighting, keeping G1/simple IK interaction local while Atlas and Hubo
+    puppet targets use the skeleton hierarchy consistently.
   - Restored the `fetch` example's historical pick-and-place work-area grid as
     source-owned public DART line geometry at the original grid offset.
   - Restored the `fetch` example panel title and instructional copy against
