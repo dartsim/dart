@@ -887,6 +887,30 @@ TEST(CylinderPlane, CylinderStandingOnPlane)
   EXPECT_GE(result.numContacts(), 1u);
 }
 
+TEST(CylinderPlane, HalfspaceDepthAcrossAxisDirections)
+{
+  CylinderShape cylinder(0.05, 0.2);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  const Eigen::Isometry3d tfPlane = Eigen::Isometry3d::Identity();
+
+  for (const double angle : {0.0, std::numbers::pi_v<double>}) {
+    Eigen::Isometry3d tfCylinder = Eigen::Isometry3d::Identity();
+    tfCylinder.linear()
+        = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitX()).toRotationMatrix();
+    tfCylinder.translation() = Eigen::Vector3d(0.0, 0.0, 0.049);
+
+    CollisionResult result;
+    const bool collided
+        = collideCylinderPlane(cylinder, tfCylinder, plane, tfPlane, result);
+
+    ASSERT_TRUE(collided);
+    ASSERT_EQ(result.numContacts(), 1u);
+    EXPECT_NEAR(result.getContact(0).depth, 0.051, 1e-12);
+    EXPECT_TRUE(result.getContact(0).position.allFinite());
+    EXPECT_TRUE(result.getContact(0).normal.allFinite());
+  }
+}
+
 TEST(CylinderPlane, CylinderLyingOnPlane)
 {
   CylinderShape cylinder(0.5, 2.0);

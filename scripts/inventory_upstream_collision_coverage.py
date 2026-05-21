@@ -505,6 +505,78 @@ CASE_MAP_OVERRIDES = {
     ),
     (
         "FCL",
+        "fcl/test/test_fcl_cylinder_half_space.cpp",
+        "GTEST_TEST(FCL_GEOMETRIC_SHAPES, collision_cylinder_half_space_libccd)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_cylinder.cpp::CylinderPlane.HalfspaceDepthAcrossAxisDirections; tests/unit/collision/test_plane.cpp::PlaneShape.HalfspacePrimitiveContactsAcrossTransforms",
+        "Checks cylinder penetration depth against DART's one-sided contact plane/halfspace with the cylinder axis in both directions. DART has one native dispatcher rather than FCL's solver split.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_cylinder_half_space.cpp",
+        "GTEST_TEST(FCL_GEOMETRIC_SHAPES, collision_cylinder_half_space_indep)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_cylinder.cpp::CylinderPlane.HalfspaceDepthAcrossAxisDirections; tests/unit/collision/test_plane.cpp::PlaneShape.HalfspacePrimitiveContactsAcrossTransforms",
+        "Checks cylinder penetration depth against DART's one-sided contact plane/halfspace with the cylinder axis in both directions. DART uses a single native dispatcher instead of FCL's independent/libccd solver split.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_distance.cpp",
+        "GTEST_TEST(FCL_DISTANCE, mesh_distance)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_mesh_mesh.cpp::MeshMesh.SingleTriangleAndLargeMesh; tests/unit/collision/test_mesh_mesh.cpp::MeshMesh.SeparatedDistanceWitnessesAcrossPairOrder",
+        "Checks native mesh-mesh distance for overlapping and separated meshes with finite witnesses and swapped pair order. FCL's BV-family and split-method knobs are implementation details not exposed by DART native collision.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_distance.cpp",
+        "GTEST_TEST(FCL_DISTANCE, NearestPointFromDegenerateSimplex)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceBoxBox.DegenerateSimplexWitnessRegression; tests/unit/collision/test_gjk.cpp::GjkSignedDistance.RotatedBoxEdgeFaceCases",
+        "Checks the historical degenerate-simplex rotated box-box distance configuration with finite witness points and the expected positive separation.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_geometric_shapes.cpp",
+        "GTEST_TEST(FCL_GEOMETRIC_SHAPES, shapeIntersection_spheretriangle)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_mesh_mesh.cpp::PrimitiveMesh.SphereVsMesh; tests/unit/collision/test_mesh_mesh.cpp::PrimitiveMesh.SphereTouchesSharedTriangleEdgeAtZeroDepth",
+        "DART exposes triangle collision through MeshShape; checks sphere/triangle-mesh penetration, transformed mesh frames, and exact zero-depth edge contact.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_geometric_shapes.cpp",
+        "GTEST_TEST(FCL_GEOMETRIC_SHAPES, shapeIntersectionGJK_spheretriangle)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_mesh_mesh.cpp::PrimitiveMesh.SphereVsMesh; tests/unit/collision/test_mesh_mesh.cpp::PrimitiveMesh.SphereTouchesSharedTriangleEdgeAtZeroDepth",
+        "DART exposes triangle collision through MeshShape rather than FCL's direct shape-triangle GJK helper; public sphere/triangle-mesh contact behavior is covered with penetration and exact edge-touching cases.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_geometric_shapes.cpp",
+        "GTEST_TEST(FCL_GEOMETRIC_SHAPES, shapeIntersectionGJK_halfspacetriangle)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_plane.cpp::PlaneShape.HalfspacePrimitiveContactsAcrossTransforms; tests/unit/collision/test_plane.cpp::PlaneMesh.Penetrating",
+        "Checks triangle collision against DART's one-sided contact plane/halfspace across transformed common frames.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_geometric_shapes.cpp",
+        "GTEST_TEST(FCL_GEOMETRIC_SHAPES, shapeIntersectionGJK_planetriangle)",
+    ): (
+        "not-applicable",
+        "DART native PlaneShape halfspace semantics",
+        "FCL Plane is a two-sided infinite plane in this direct shape-triangle GJK row. DART native PlaneShape is a one-sided contact plane/halfspace, so the exact two-sided plane semantic is outside the native public primitive set.",
+    ),
+    (
+        "FCL",
         "fcl/test/test_fcl_sphere_box.cpp",
         "GTEST_TEST(FCL_SPHERE_BOX, LargBoxSmallSphere_ccd)",
     ): (

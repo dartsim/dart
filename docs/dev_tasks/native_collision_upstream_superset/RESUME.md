@@ -48,7 +48,11 @@ sphere-box, cylinder-sphere, and capsule-sphere contacts, extended
 capsule-sphere large-radius endpoint collision/separation coverage, added
 capsule-sphere signed distance along the capsule axis, and mapped the upstream
 large box/sphere, large cylinder/sphere, and large capsule/sphere rows to those
-DART-native anchors.
+DART-native anchors. Added exact cylinder-plane halfspace depth coverage,
+separated mesh-mesh distance witnesses with swapped pair order, and a rotated
+box-box degenerate-simplex distance regression with finite witnesses, then
+mapped the corresponding upstream rows plus direct sphere/triangle and
+halfspace/triangle rows.
 
 ## Current Branch
 
@@ -87,9 +91,9 @@ remaining world/query rows, and benchmark scenario rows.
 - `origin/feature/filament-gui-full-execution` exists and may be useful for
   that example, but no rebase has been done. Rebase/integration should wait for
   an explicit renderer decision.
-- `03-case-map.md` is generated and currently reports 127 `covered` rows, 25
-  `fixture-needed` rows, 124 `mapping-needed` rows, 10
-  `new-benchmark-needed` rows, and 303 `not-applicable` rows.
+- `03-case-map.md` is generated and currently reports 134 `covered` rows, 25
+  `fixture-needed` rows, 116 `mapping-needed` rows, 10
+  `new-benchmark-needed` rows, and 304 `not-applicable` rows.
 - `collideCylinderSphere()` now handles sphere centers inside the cylinder by
   choosing the nearest cap or barrel surface; this is required by the FCL
   sphere-cylinder internal-contact cases.
@@ -248,6 +252,17 @@ remaining world/query rows, and benchmark scenario rows.
   `pixi run cmake --build build/default/cpp/Release --target test_narrow_phase test_capsule_capsule test_distance_core`
   and
   `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_narrow_phase|test_capsule_capsule|test_distance_core)$'`.
+- FCL cylinder-halfspace, mesh-distance, degenerate-simplex, direct
+  sphere/triangle, and GJK halfspace/triangle rows now map to DART tests named
+  for the geometry/query behavior:
+  `CylinderPlane.HalfspaceDepthAcrossAxisDirections`,
+  `MeshMesh.SeparatedDistanceWitnessesAcrossPairOrder`,
+  `DistanceBoxBox.DegenerateSimplexWitnessRegression`, and existing
+  sphere/mesh plus halfspace/mesh anchors.
+- Focused verification also run:
+  `pixi run cmake --build build/default/cpp/Release --target test_cylinder test_distance_core test_mesh_mesh`
+  and
+  `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_cylinder|test_distance_core|test_mesh_mesh)$'`.
 
 ## How To Resume
 

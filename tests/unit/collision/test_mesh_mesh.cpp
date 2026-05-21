@@ -566,3 +566,37 @@ TEST(MeshMesh, SingleTriangleAndLargeMesh)
       singleTriangle, largeGrid, DistanceOption(), distance);
   EXPECT_LE(d, 0.0);
 }
+
+TEST(MeshMesh, SeparatedDistanceWitnessesAcrossPairOrder)
+{
+  CollisionWorld world;
+  auto meshA = world.createObject(
+      std::make_unique<MeshShape>(makeCubeVertices(1.0), makeCubeTriangles()));
+
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.translation() = Eigen::Vector3d(3.0, 0.0, 0.0);
+  auto meshB = world.createObject(
+      std::make_unique<MeshShape>(makeCubeVertices(1.0), makeCubeTriangles()),
+      tfB);
+
+  DistanceResult ab;
+  const double distanceAB
+      = NarrowPhase::distance(meshA, meshB, DistanceOption(), ab);
+  EXPECT_NEAR(distanceAB, 1.0, 1e-9);
+  EXPECT_NEAR(ab.distance, distanceAB, 1e-12);
+  EXPECT_TRUE(ab.pointOnObject1.allFinite());
+  EXPECT_TRUE(ab.pointOnObject2.allFinite());
+  EXPECT_TRUE(ab.normal.allFinite());
+  EXPECT_NEAR((ab.pointOnObject2 - ab.pointOnObject1).norm(), 1.0, 1e-9);
+
+  DistanceResult ba;
+  const double distanceBA
+      = NarrowPhase::distance(meshB, meshA, DistanceOption(), ba);
+  EXPECT_NEAR(distanceBA, distanceAB, 1e-9);
+  EXPECT_TRUE(ba.pointOnObject1.allFinite());
+  EXPECT_TRUE(ba.pointOnObject2.allFinite());
+  EXPECT_TRUE(ba.normal.allFinite());
+  EXPECT_NEAR((ba.pointOnObject2 - ba.pointOnObject1).norm(), 1.0, 1e-9);
+  EXPECT_NEAR((ab.pointOnObject1 - ba.pointOnObject2).norm(), 0.0, 1e-9);
+  EXPECT_NEAR((ab.pointOnObject2 - ba.pointOnObject1).norm(), 0.0, 1e-9);
+}

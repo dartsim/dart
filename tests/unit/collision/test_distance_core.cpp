@@ -1090,6 +1090,32 @@ TEST(DistanceBoxBox, ThinFeatureSeparated)
   EXPECT_NEAR(dist, gap, 1e-6);
 }
 
+TEST(DistanceBoxBox, DegenerateSimplexWitnessRegression)
+{
+  BoxShape box1(Eigen::Vector3d(1.375, 3.0, 0.025));
+  BoxShape box2(Eigen::Vector3d(0.212, 0.075, 0.0843));
+
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  tf1.translation() = Eigen::Vector3d(1.625, 0.0, 0.5);
+
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.linear() = Eigen::Quaterniond(0.672811, 0.340674, 0.155066, 0.638138)
+                     .normalized()
+                     .toRotationMatrix();
+  tf2.translation() = Eigen::Vector3d(0.192074, -0.277870, 0.273546);
+
+  DistanceResult result;
+  const double dist = distanceBoxBox(box1, tf1, box2, tf2, result);
+
+  EXPECT_NEAR(dist, 0.053516162824549, 1e-9);
+  EXPECT_NEAR(result.distance, dist, 1e-12);
+  EXPECT_TRUE(result.pointOnObject1.allFinite());
+  EXPECT_TRUE(result.pointOnObject2.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
+  EXPECT_NEAR(
+      (result.pointOnObject2 - result.pointOnObject1).norm(), dist, 1e-9);
+}
+
 TEST(DistanceBoxBox, SignedDistanceWithCommonFrames)
 {
   const Eigen::Vector3d halfExtents1(10.0, 20.0, 25.0);

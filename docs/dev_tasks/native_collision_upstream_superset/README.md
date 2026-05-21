@@ -51,9 +51,9 @@ optimization expansion by benchmarks.
 - Coverage map scaffold:
   [`02-coverage-map.md`](02-coverage-map.md)
 - Generated row-level case map:
-  [`03-case-map.md`](03-case-map.md) currently records 127 covered rows, 25
-  fixture-needed rows, 124 mapping-needed rows, 10 new-benchmark-needed rows,
-  and 303 not-applicable rows.
+  [`03-case-map.md`](03-case-map.md) currently records 134 covered rows, 25
+  fixture-needed rows, 116 mapping-needed rows, 10 new-benchmark-needed rows,
+  and 304 not-applicable rows.
 
 ## Key Decisions
 
@@ -214,4 +214,13 @@ optimization expansion by benchmarks.
 - `pixi run cmake --build build/default/cpp/Release --target test_narrow_phase test_capsule_capsule test_distance_core`
   passed.
 - `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_narrow_phase|test_capsule_capsule|test_distance_core)$'`
+  passed.
+- Added exact cylinder-plane halfspace depth coverage, separated mesh-mesh
+  distance witnesses with swapped pair order, and a rotated box-box
+  degenerate-simplex distance regression with finite witnesses. These map the
+  corresponding upstream cylinder-halfspace, mesh-distance, and degenerate
+  simplex rows.
+- `pixi run cmake --build build/default/cpp/Release --target test_cylinder test_distance_core test_mesh_mesh`
+  passed.
+- `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_cylinder|test_distance_core|test_mesh_mesh)$'`
   passed.
