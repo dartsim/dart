@@ -1260,10 +1260,24 @@ BUILD_TYPE=Release
 DART_TRACY_CMAKE_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
 DART_TRACY_SRC_DIR=${DART_TRACY_CMAKE_DIR}/_deps/tracy-src/profiler
 DART_TRACY_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/${BUILD_TYPE}
+DART_TRACY_BIN=${DART_TRACY_BUILD_DIR}/tracy-profiler
+DART_TRACY_VERSION=0.13.1
 if [ ! -d "${DART_TRACY_SRC_DIR}" ]; then
   echo "Tracy source was not fetched. Run DART_PROFILE_TRACY=ON pixi run config ON ${BUILD_TYPE}." >&2
   exit 1
 fi
+DART_TRACY_STAMP=${DART_TRACY_BUILD_DIR}/.dart-tracy-version
+DART_TRACY_BUILT_VERSION=""
+if [ -f "${DART_TRACY_STAMP}" ]; then
+  IFS= read -r DART_TRACY_BUILT_VERSION < "${DART_TRACY_STAMP}"
+fi
+if [ -x "${DART_TRACY_BIN}" ] \
+  && [ "${DART_TRACY_BUILT_VERSION}" = "${DART_TRACY_VERSION}" ] \
+  && [ "${DART_TRACY_REBUILD:-OFF}" != "ON" ]; then
+  echo "Tracy GUI client ${DART_TRACY_VERSION} is already built at ${DART_TRACY_BIN}."
+  exit 0
+fi
+rm -rf "${DART_TRACY_BUILD_DIR}"
 cmake \
   -G Ninja \
   -S "${DART_TRACY_SRC_DIR}" \
@@ -1274,6 +1288,7 @@ cmake \
   -DNO_PARALLEL_STL=ON \
   -DNO_ISA_EXTENSIONS=ON
 cmake --build "${DART_TRACY_BUILD_DIR}" --target tracy-profiler --parallel "${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}"
+printf "%s\n" "${DART_TRACY_VERSION}" > "${DART_TRACY_STAMP}"
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -1296,8 +1311,10 @@ if [ ! -x "${DART_TRACY_BIN}" ]; then
   echo "Tracy GUI client was not built. Run pixi run tracy-build first." >&2
   exit 1
 fi
-exec "${DART_TRACY_BIN}"
+export TRACY_DPI_SCALE=${TRACY_DPI_SCALE:-1}
+exec "${DART_TRACY_BIN}" "$@"
 """,
+  "tracy",
 ], depends-on = [
   "tracy-build",
 ] }
@@ -2022,10 +2039,24 @@ set -euo pipefail
 DART_TRACY_CMAKE_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp
 DART_TRACY_SRC_DIR=${DART_TRACY_CMAKE_DIR}/_deps/tracy-src/profiler
 DART_TRACY_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler
+DART_TRACY_BIN=${DART_TRACY_BUILD_DIR}/Release/tracy-profiler.exe
+DART_TRACY_VERSION=0.13.1
 if [ ! -d "${DART_TRACY_SRC_DIR}" ]; then
   echo "Tracy source was not fetched. Run DART_PROFILE_TRACY=ON pixi run config." >&2
   exit 1
 fi
+DART_TRACY_STAMP=${DART_TRACY_BUILD_DIR}/.dart-tracy-version
+DART_TRACY_BUILT_VERSION=""
+if [ -f "${DART_TRACY_STAMP}" ]; then
+  IFS= read -r DART_TRACY_BUILT_VERSION < "${DART_TRACY_STAMP}"
+fi
+if [ -x "${DART_TRACY_BIN}" ] \
+  && [ "${DART_TRACY_BUILT_VERSION}" = "${DART_TRACY_VERSION}" ] \
+  && [ "${DART_TRACY_REBUILD:-OFF}" != "ON" ]; then
+  echo "Tracy GUI client ${DART_TRACY_VERSION} is already built at ${DART_TRACY_BIN}."
+  exit 0
+fi
+rm -rf "${DART_TRACY_BUILD_DIR}"
 cmake \
   -S "${DART_TRACY_SRC_DIR}" \
   -B "${DART_TRACY_BUILD_DIR}" \
@@ -2034,6 +2065,7 @@ cmake \
   -DNO_PARALLEL_STL=ON \
   -DNO_ISA_EXTENSIONS=ON
 cmake --build "${DART_TRACY_BUILD_DIR}" --config Release --target tracy-profiler
+printf "%s\n" "${DART_TRACY_VERSION}" > "${DART_TRACY_STAMP}"
 """,
 ], depends-on = [
   { task = "config", args = [
@@ -2054,8 +2086,10 @@ if [ ! -x "${DART_TRACY_BIN}" ]; then
   echo "Tracy GUI client was not built. Run pixi run tracy-build first." >&2
   exit 1
 fi
-exec "${DART_TRACY_BIN}"
+export TRACY_DPI_SCALE=${TRACY_DPI_SCALE:-1}
+exec "${DART_TRACY_BIN}" "$@"
 """,
+  "tracy",
 ], depends-on = [
   "tracy-build",
 ] }

@@ -345,6 +345,8 @@ builds.
   not installed through package-manager dependencies. Install/package
   configurations keep profiling off. `pixi run tracy-build` builds the Tracy GUI
   client from the fetched development source, and `pixi run tracy` launches it.
+  The launcher defaults `TRACY_DPI_SCALE=1` to avoid oversized Linux DPI
+  auto-scaling; set `TRACY_DPI_SCALE` explicitly to override it.
 
 ### Additional Platform Dependencies
 
@@ -727,6 +729,7 @@ pixi run api-docs-py     # Build Python API docs
 ```bash
 pixi run tracy-build     # Build the Tracy GUI client from fetched source
 pixi run tracy           # Build and launch the Tracy GUI client
+TRACY_DPI_SCALE=1.5 pixi run tracy
 ```
 
 #### Utility Tasks
