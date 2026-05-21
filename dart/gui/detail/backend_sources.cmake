@@ -320,6 +320,10 @@ function(dart_gui_filament_configure_backend_target target_name)
       glfw
       ${_imgui_target}
   )
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
+     AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_link_options(${target_name} PRIVATE "-Wl,-z,noexecstack")
+  endif()
   target_compile_features(${target_name} PRIVATE cxx_std_20)
 endfunction()
 

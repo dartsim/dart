@@ -142,8 +142,9 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    Note: Official dartpy wheels include the Filament-backed GUI surface; keep
    `DART_BUILD_GUI` enabled when validating dartpy GUI changes. The default
    Pixi GUI build is enabled on Linux x86_64 where the pinned Filament archive
-   is available; other platforms should provide `Filament_ROOT` or set
-   `DART_BUILD_GUI_OVERRIDE=OFF` until packaged Filament is available there.
+   is fetched by default; other supported platforms should provide
+   `Filament_ROOT`, set `DART_FETCH_FILAMENT_OVERRIDE=ON`, or set
+   `DART_BUILD_GUI_OVERRIDE=OFF` for a headless-only build.
 
 3. Build and test:
 
@@ -275,11 +276,12 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 
 - `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.). Only applies to single-config generators (e.g., Ninja, Unix Makefiles). Multi-config generators (Visual Studio, Xcode) expose the configuration inside the IDE or via `cmake --build` `--config`.
 - `DART_BUILD_DARTPY` - Enable Python bindings
-- `DART_BUILD_GUI` - Enable the Filament-backed GUI library. Defaults to `ON` on Linux x86_64 source builds where the pinned Filament archive is supported, and `OFF` elsewhere unless explicitly enabled.
-- `DART_BUILD_GUI_FILAMENT` - Enable the Filament-backed DART GUI executable
-  and smoke-test target
+- `DART_BUILD_GUI` - Enable the Filament-backed GUI library, `dartsim`
+  executable, and smoke-test target. Defaults to `ON` on Linux x86_64 source
+  builds where the pinned Filament archive is supported, and `OFF` elsewhere
+  unless explicitly enabled.
 - `DART_USE_SYSTEM_FILAMENT` - Discover Filament from an installed package or `Filament_ROOT`
-- `DART_FETCH_FILAMENT` - Fetch the pinned Linux x86_64 Filament archive when no packaged Filament install is available
+- `DART_FETCH_FILAMENT` - Fetch a pinned Filament archive for supported platforms when no packaged Filament install is available
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
 - `DART_BUILD_EXAMPLES` - Build the maintained example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
 - `DART_BUILD_TUTORIALS` - Kept for compatibility; legacy OSG tutorials are skipped while Filament is the active renderer

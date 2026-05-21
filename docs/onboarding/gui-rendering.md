@@ -4,8 +4,7 @@
 
 The maintained DART GUI renderer is Filament, with GLFW3 for windowing and
 Dear ImGui for built-in overlays. `DART_BUILD_GUI=ON` builds the public
-`dart-gui` component, and `DART_BUILD_GUI_FILAMENT=ON` builds the
-`dartsim` executable and smoke-test target.
+`dart-gui` component, the `dartsim` executable, and the smoke-test target.
 
 The public GUI surface should describe DART concepts rather than renderer
 objects. Public headers must not expose Filament, GLFW, raw Dear ImGui,
@@ -51,16 +50,15 @@ implementation.
 
 ## Build Options
 
-- `DART_BUILD_GUI=ON`: builds the official Filament-backed GUI library.
+- `DART_BUILD_GUI=ON`: builds the official Filament-backed GUI library,
+  `dartsim` executable, and smoke-test target.
   Defaults to `ON` on Linux x86_64 source builds where DART can fetch the
   pinned Filament archive; other platforms need an explicit Filament install or
   `Filament_ROOT`.
-- `DART_BUILD_GUI_FILAMENT=ON`: builds `dartsim` and related smoke-test
-  plumbing. This is selected automatically when `DART_BUILD_GUI=ON`.
 - `DART_USE_SYSTEM_FILAMENT=ON`: discovers an installed Filament tree, usually
   through `Filament_ROOT`.
-- `DART_FETCH_FILAMENT=ON`: fetches the pinned Linux x86_64 Filament archive
-  when no packaged Filament install is available.
+- `DART_FETCH_FILAMENT=ON`: fetches the pinned Filament archive for supported
+  platforms when no packaged Filament install is available.
 - `DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=ON`: registers bounded headless
   screenshot smoke tests for the DART GUI executable.
 
