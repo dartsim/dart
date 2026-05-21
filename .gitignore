@@ -110,6 +110,7 @@ rp3d_profiling_*.txt
 
 # Generated testing images
 *.png
+!data/sdf/atlas/materials/textures/*.png
 
 # Benchmark results
 docs/**/results/*.json

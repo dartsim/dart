@@ -54,7 +54,7 @@ TEST(AtlasIK, HandReachesTarget)
 {
   // Load Atlas
   SkeletonPtr atlas
-      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   ASSERT_NE(atlas, nullptr);
 
   // Set standing pose
@@ -129,7 +129,7 @@ TEST(AtlasIK, TightBoundsProduceNonZeroError)
   // This test shows the FIX: tight bounds produce non-zero error
 
   SkeletonPtr atlas
-      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   ASSERT_NE(atlas, nullptr);
 
   BodyNode* l_hand_bn = atlas->getBodyNode("l_hand");

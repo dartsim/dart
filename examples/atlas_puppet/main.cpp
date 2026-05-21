@@ -79,7 +79,7 @@
 namespace {
 
 constexpr const char* kAtlasUri
-    = "dart://sample/sdf/atlas/atlas_v3_no_head.urdf";
+    = "dart://sample/sdf/atlas/atlas_v5_no_head.urdf";
 constexpr const char* kAtlasSkeletonName = "visual_atlas_robot";
 constexpr const char* kGroundSkeletonName = "visual_atlas_puppet_ground";
 constexpr const char* kAtlasSupportOverlayName
@@ -173,7 +173,7 @@ private:
 
 void makeAtlasMeshVisualsReadable(const dart::dynamics::SkeletonPtr& atlas)
 {
-  const Eigen::Vector4d readableAtlasColor(0.18, 0.19, 0.21, 1.0);
+  const Eigen::Vector4d readableAtlasColor(0.15, 0.16, 0.18, 1.0);
 
   for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i) {
     auto* body = atlas->getBodyNode(i);
@@ -646,7 +646,7 @@ dart::dynamics::SkeletonPtr createGround()
       std::make_shared<dart::dynamics::BoxShape>(
           Eigen::Vector3d(4.0, 4.0, 0.04)));
   shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, -0.02));
-  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.86, 0.88, 0.90, 1.0));
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.66, 0.68, 0.70, 1.0));
   return ground;
 }
 

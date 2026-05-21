@@ -682,6 +682,13 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
           "state.baseColor = ensureReadableDisplayColor(state.baseColor)"),
       std::string::npos);
   EXPECT_NE(
+      renderableFactorySource.find("constexpr float kMinLuminance = 0.16f"),
+      std::string::npos);
+  EXPECT_NE(
+      renderableFactorySource.find(
+          "constexpr float3 kNeutralMeshColor{0.28f, 0.30f, 0.34f}"),
+      std::string::npos);
+  EXPECT_NE(
       renderableFactorySource.find("ensureReadableEmissiveColor"),
       std::string::npos);
   EXPECT_NE(
@@ -711,12 +718,24 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
   EXPECT_NE(
       renderEnvironmentSource.find("{0.27f, 0.29f, 0.33f}"), std::string::npos);
   EXPECT_NE(
-      renderEnvironmentSource.find(".intensity(92000.0f)"), std::string::npos);
+      renderEnvironmentSource.find("kKeyLightIntensity = 82000.0f"),
+      std::string::npos);
+  EXPECT_NE(
+      renderEnvironmentSource.find("kFillLightIntensity = 26000.0f"),
+      std::string::npos);
+  EXPECT_NE(
+      renderEnvironmentSource.find("kRimLightIntensity = 18000.0f"),
+      std::string::npos);
+  EXPECT_NE(
+      renderEnvironmentSource.find(".intensity(38000.0f)"), std::string::npos);
+  EXPECT_NE(
+      renderEnvironmentSource.find(".color({0.30f, 0.33f, 0.38f, 1.0f})"),
+      std::string::npos);
   EXPECT_NE(
       renderEnvironmentSource.find("fogOptions.enabled = true"),
       std::string::npos);
   EXPECT_NE(
-      renderEnvironmentSource.find("ambientOcclusionOptions.intensity = 0.18f"),
+      renderEnvironmentSource.find("ambientOcclusionOptions.intensity = 0.32f"),
       std::string::npos);
   EXPECT_NE(
       renderEnvironmentSource.find(
@@ -2952,7 +2971,7 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
 
   EXPECT_NE(mainSource.find("createZUpGround"), std::string::npos);
   EXPECT_NE(
-      mainSource.find("dart://sample/sdf/atlas/atlas_v3_no_head.sdf"),
+      mainSource.find("dart://sample/sdf/atlas/atlas_v5_no_head.urdf"),
       std::string::npos);
   EXPECT_NE(
       mainSource.find("scene.world->setGravity(-kDefaultGravity"),
@@ -3036,7 +3055,7 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
       std::filesystem::path("examples") / "atlas_puppet" / "README.md");
 
   EXPECT_NE(
-      mainSource.find("dart://sample/sdf/atlas/atlas_v3_no_head.urdf"),
+      mainSource.find("dart://sample/sdf/atlas/atlas_v5_no_head.urdf"),
       std::string::npos);
   EXPECT_NE(mainSource.find("atlas_puppet_root_handle"), std::string::npos);
   EXPECT_EQ(mainSource.find("createIkTargetHandleShape"), std::string::npos);

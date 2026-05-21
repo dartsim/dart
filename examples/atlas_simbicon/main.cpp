@@ -63,7 +63,7 @@
 namespace {
 
 constexpr const char* kAtlasUri
-    = "dart://sample/sdf/atlas/atlas_v3_no_head.sdf";
+    = "dart://sample/sdf/atlas/atlas_v5_no_head.urdf";
 constexpr double kDefaultGravity = 9.81;
 constexpr double kDefaultPushForce = 500.0;
 constexpr int kDefaultPushFrames = 100;
@@ -82,7 +82,7 @@ dart::dynamics::SkeletonPtr readRequiredSkeleton(const char* uri)
 
 void makeAtlasMeshVisualsReadable(const dart::dynamics::SkeletonPtr& atlas)
 {
-  const Eigen::Vector4d readableAtlasColor(0.18, 0.19, 0.21, 1.0);
+  const Eigen::Vector4d readableAtlasColor(0.15, 0.16, 0.18, 1.0);
 
   for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i) {
     auto* body = atlas->getBodyNode(i);
@@ -122,7 +122,7 @@ dart::dynamics::SkeletonPtr createZUpGround()
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(shape);
   shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, kGroundCenterZ));
-  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.82, 0.84, 0.86, 1.0));
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.54, 0.56, 0.52, 1.0));
   ground->setMobile(false);
   return ground;
 }

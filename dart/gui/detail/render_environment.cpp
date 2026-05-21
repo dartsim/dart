@@ -59,9 +59,9 @@ namespace {
 
 using ::filament::math::float3;
 
-constexpr float kKeyLightIntensity = 90000.0f;
-constexpr float kFillLightIntensity = 88000.0f;
-constexpr float kRimLightIntensity = 56000.0f;
+constexpr float kKeyLightIntensity = 82000.0f;
+constexpr float kFillLightIntensity = 26000.0f;
+constexpr float kRimLightIntensity = 18000.0f;
 
 float3 normalizeOr(const float3& vector, const float3& fallback)
 {
@@ -108,14 +108,14 @@ float3 normalizeOr(const float3& vector, const float3& fallback)
 
   return ::filament::IndirectLight::Builder()
       .irradiance(3, kDiffuseIrradiance.data())
-      .intensity(92000.0f)
+      .intensity(38000.0f)
       .build(engine);
 }
 
 ::filament::Skybox* createNeutralSkybox(::filament::Engine& engine)
 {
   return ::filament::Skybox::Builder()
-      .color({0.42f, 0.46f, 0.52f, 1.0f})
+      .color({0.30f, 0.33f, 0.38f, 1.0f})
       .showSun(true)
       .build(engine);
 }
@@ -125,10 +125,10 @@ void configureNeutralViewportAtmosphere(::filament::View& view)
   ::filament::FogOptions fogOptions;
   fogOptions.enabled = true;
   fogOptions.distance = 24.0f;
-  fogOptions.maximumOpacity = 0.22f;
+  fogOptions.maximumOpacity = 0.16f;
   fogOptions.height = -0.6f;
   fogOptions.heightFalloff = 0.04f;
-  fogOptions.color = {0.42f, 0.46f, 0.51f};
+  fogOptions.color = {0.32f, 0.35f, 0.39f};
   fogOptions.density = 0.008f;
   fogOptions.inScatteringSize = 16.0f;
   view.setFogOptions(fogOptions);
@@ -145,7 +145,7 @@ void configureWindowedViewQuality(::filament::View& view)
   ambientOcclusionOptions.aoType
       = ::filament::AmbientOcclusionOptions::AmbientOcclusionType::GTAO;
   ambientOcclusionOptions.radius = 0.28f;
-  ambientOcclusionOptions.intensity = 0.18f;
+  ambientOcclusionOptions.intensity = 0.32f;
   ambientOcclusionOptions.quality = ::filament::QualityLevel::MEDIUM;
   ambientOcclusionOptions.lowPassFilter = ::filament::QualityLevel::HIGH;
   view.setAmbientOcclusionOptions(ambientOcclusionOptions);

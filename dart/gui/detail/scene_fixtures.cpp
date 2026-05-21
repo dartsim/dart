@@ -352,7 +352,7 @@ void makeVisualOnlySkeleton(const dart::dynamics::SkeletonPtr& skeleton)
 
 void makeAtlasMeshVisualsReadable(const dart::dynamics::SkeletonPtr& atlas)
 {
-  const Eigen::Vector4d readableAtlasColor(0.18, 0.19, 0.21, 1.0);
+  const Eigen::Vector4d readableAtlasColor(0.15, 0.16, 0.18, 1.0);
 
   if (!atlas) {
     return;
@@ -607,7 +607,7 @@ private:
 dart::dynamics::SkeletonPtr loadRequiredAtlasRobotSkeleton()
 {
   const auto atlasUri = dart::common::Uri::createFromString(
-      "dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+      "dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   auto atlas = dart::io::readSkeleton(atlasUri);
   if (!atlas) {
     throw std::runtime_error(
@@ -631,7 +631,7 @@ dart::dynamics::SkeletonPtr loadRequiredAtlasRobotSkeleton()
 dart::dynamics::SkeletonPtr loadAtlasSimbiconSkeleton()
 {
   const auto atlasUri = dart::common::Uri::createFromString(
-      "dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+      "dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   auto atlas = dart::io::readSkeleton(atlasUri);
   if (!atlas) {
     throw std::runtime_error(
@@ -689,7 +689,7 @@ void setupAtlasPuppetStartConfiguration(
 dart::dynamics::SkeletonPtr loadAtlasPuppetSkeleton()
 {
   const auto atlasUri = dart::common::Uri::createFromString(
-      "dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+      "dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   auto atlas = dart::io::readSkeleton(atlasUri);
   if (!atlas) {
     throw std::runtime_error(
@@ -3459,7 +3459,7 @@ DartScene createAtlasPuppetScene()
       kAtlasPuppetFixtureGroundSkeletonName,
       std::make_shared<BoxShape>(Eigen::Vector3d(4.0, 4.0, 0.04)),
       Eigen::Vector3d(0.0, 0.0, -0.02),
-      Eigen::Vector3d(0.86, 0.88, 0.90)));
+      Eigen::Vector3d(0.66, 0.68, 0.70)));
 
   auto atlas = loadAtlasPuppetSkeleton();
   scene.world->addSkeleton(atlas);
@@ -3496,7 +3496,7 @@ DartScene createAtlasSimbiconScene()
   auto ground = createBoxGroundSkeleton(
       kAtlasSimbiconFixtureGroundSkeletonName,
       Eigen::Vector3d(5.5, 4.0, groundThickness),
-      Eigen::Vector3d(0.74, 0.76, 0.72));
+      Eigen::Vector3d(0.54, 0.56, 0.52));
   if (auto* groundBody = ground->getBodyNode(0)) {
     Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
     transform.translation().z() = -0.95;

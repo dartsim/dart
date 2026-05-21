@@ -868,7 +868,7 @@ TEST(World, AtlasSimbiconFeetContactGroundWithNativeCollision)
 
   auto ground = dart::io::readSkeleton("dart://sample/sdf/atlas/ground.urdf");
   auto atlas
-      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   ASSERT_NE(ground, nullptr);
   ASSERT_NE(atlas, nullptr);
 
@@ -928,7 +928,7 @@ TEST(World, AtlasSimbiconControllerFeetStayAboveGroundWithNativeCollision)
 
   auto ground = dart::io::readSkeleton("dart://sample/sdf/atlas/ground.urdf");
   auto atlas
-      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   ASSERT_NE(ground, nullptr);
   ASSERT_NE(atlas, nullptr);
 
