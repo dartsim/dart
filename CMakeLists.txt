@@ -210,16 +210,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_
   set(_dart_default_gui_filament ON)
 endif()
 dart_option(DART_BUILD_GUI "Build the Filament-backed GUI library" ${_dart_default_gui_filament} CATEGORY build)
-dart_option(DART_BUILD_GUI_FILAMENT "Build the DART GUI application and smoke-test target" OFF CATEGORY build)
-if(DART_BUILD_GUI AND NOT DART_BUILD_GUI_FILAMENT)
-  set(DART_BUILD_GUI_FILAMENT ON)
-  set(
-    DART_BUILD_GUI_FILAMENT
-    ON
-    CACHE BOOL
-    "Build the DART GUI application and smoke-test target"
-    FORCE
-  )
+if(DEFINED DART_BUILD_GUI_FILAMENT)
+  message(DEPRECATION "DART_BUILD_GUI_FILAMENT is deprecated; use DART_BUILD_GUI. Filament is the only supported GUI backend.")
+  if(DART_BUILD_GUI_FILAMENT AND NOT DART_BUILD_GUI)
+    set(DART_BUILD_GUI ON CACHE BOOL "Build the Filament-backed GUI library" FORCE)
+  endif()
+  unset(DART_BUILD_GUI_FILAMENT CACHE)
+  unset(DART_BUILD_GUI_FILAMENT)
 endif()
 if(DEFINED DART_BUILD_GUI_RAYLIB AND DART_BUILD_GUI_RAYLIB)
   message(FATAL_ERROR "DART_BUILD_GUI_RAYLIB has been removed. Use the Filament-backed DART GUI instead.")
@@ -759,7 +756,7 @@ if(TARGET dart)
     message(STATUS "Skipping tutorials (DART_BUILD_TUTORIALS == OFF)")
   endif()
 
-  if(DART_BUILD_GUI_FILAMENT)
+  if(DART_BUILD_GUI)
     if(MSVC)
       add_subdirectory(apps/dartsim)
     else()
@@ -769,7 +766,7 @@ if(TARGET dart)
       add_dependencies(examples dartsim)
     endif()
   else()
-    message(STATUS "Skipping dartsim application (DART_BUILD_GUI_FILAMENT == OFF)")
+    message(STATUS "Skipping dartsim application (DART_BUILD_GUI == OFF)")
   endif()
 
 endif()

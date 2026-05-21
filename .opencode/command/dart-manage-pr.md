@@ -63,6 +63,14 @@ gh pr checks <PR_NUMBER>
    - For bug fixes, verify the required `release-6.16` and `main` dual-PR flow.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
+   - For visual PR evidence, ensure transient screenshots, headless renders,
+     GIFs, and videos are hosted as GitHub PR/issue Markdown attachments
+     (`https://github.com/user-attachments/assets/...`) rather than committed to
+     the branch. If evidence files were committed only for the PR description,
+     remove them and replace the PR body entry with a GitHub attachment URL. If
+     the current tooling cannot upload an attachment, ask a maintainer to upload
+     the local artifact through the PR editor instead of keeping it under
+     `docs/assets/`.
    - Inspect local state before editing:
      ```bash
      git status --short --branch

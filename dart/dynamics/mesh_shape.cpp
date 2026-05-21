@@ -1451,8 +1451,9 @@ void MeshShape::extractMaterialsFromScene(
       return resolveTexturePath(imagePath.C_Str());
     };
     const auto getFirstTexturePath
-        = [&](const aiTextureType type) -> std::string {
-      return getTexturePath(type, 0u);
+        = [&](const aiTextureType type,
+              const unsigned int index = 0u) -> std::string {
+      return getTexturePath(type, index);
     };
 
     // Extract colors
@@ -1518,8 +1519,8 @@ void MeshShape::extractMaterialsFromScene(
     material.roughnessTexturePath
         = getFirstTexturePath(aiTextureType_DIFFUSE_ROUGHNESS);
 #if defined(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE)
-    material.metallicRoughnessTexturePath
-        = getFirstTexturePath(aiTextureType_GLTF_METALLIC_ROUGHNESS);
+    material.metallicRoughnessTexturePath = getFirstTexturePath(
+        AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE);
 #endif
     material.normalTexturePath = getFirstTexturePath(aiTextureType_NORMALS);
     if (material.normalTexturePath.empty()) {
@@ -1559,22 +1560,6 @@ void MeshShape::extractMaterialsFromScene(
         aiTextureType_DIFFUSE_ROUGHNESS,
         aiTextureType_AMBIENT_OCCLUSION,
     });
-#if defined(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE)
-    for (auto j = 0u;
-         j < aiMat->GetTextureCount(aiTextureType_GLTF_METALLIC_ROUGHNESS);
-         ++j) {
-      aiString imagePath;
-      if (aiMat->GetTexture(
-              aiTextureType_GLTF_METALLIC_ROUGHNESS, j, &imagePath)
-          == AI_SUCCESS) {
-        const std::string resolvedPath = resolveTexturePath(imagePath.C_Str());
-        if (!resolvedPath.empty()) {
-          material.textureImagePaths.emplace_back(resolvedPath);
-        }
-      }
-    }
-#endif
-
     const auto appendTextureImagePaths
         = [&](const aiTextureType type, const unsigned int /*index*/ = 0u) {
             const auto count = aiMat->GetTextureCount(type);

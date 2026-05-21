@@ -85,7 +85,6 @@ DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
-DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-${DART_BUILD_GUI_VALUE}}
 DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
 DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
 if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
@@ -129,7 +128,6 @@ cmake \
   -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
   -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
-  -DDART_BUILD_GUI_FILAMENT=${DART_BUILD_GUI_FILAMENT_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -337,7 +335,6 @@ DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
-DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-${DART_BUILD_GUI_VALUE}}
 DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
 DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
 if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
@@ -380,7 +377,6 @@ cmake \
   -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
   -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
-  -DDART_BUILD_GUI_FILAMENT=${DART_BUILD_GUI_FILAMENT_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -777,7 +773,7 @@ test-dart-gui-smoke = { cmd = [
   "--pixi-smoke",
 ], depends-on = [
   "config",
-], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_BUILD_GUI_FILAMENT_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF" } }
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF" } }
 
 test-filament-gui-smoke = { depends-on = ["test-dart-gui-smoke"] }
 
@@ -821,7 +817,6 @@ case "$(uname -s)-$(uname -m)" in
     ;;
 esac
 DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
-DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-${DART_BUILD_GUI_VALUE}}
 DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
@@ -1216,7 +1211,6 @@ case "$(uname -s)-$(uname -m)" in
     ;;
 esac
 DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
-DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-${DART_BUILD_GUI_VALUE}}
 DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
 if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
   DART_FETCH_FILAMENT_VALUE=${DART_FILAMENT_PLATFORM_DEFAULT}
@@ -1255,7 +1249,6 @@ cmake \
     -DDART_BUILD_DARTPY={{ dartpy }} \
     -DDART_BUILD_SIMULATION_EXPERIMENTAL={{ dartpy }} \
     -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
-    -DDART_BUILD_GUI_FILAMENT=${DART_BUILD_GUI_FILAMENT_VALUE} \
     -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF} \
     -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF} \
     -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
@@ -1337,7 +1330,7 @@ test-published-package-quickstarts = { cmd = "python scripts/test_published_pack
 
 # Shared wheel helper tasks (reused by version-specific wheel features)
 wheel-build-core = { cmd = "python scripts/wheel_build.py {{ use_system_imgui }}", args = [
-  { arg = "use_system_imgui", default = "ON" },
+  { arg = "use_system_imgui", default = "OFF" },
 ] }
 
 wheel-repair-linux-core = { cmd = "auditwheel repair dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl -w dist/ && rm dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl", args = [
@@ -2104,7 +2097,8 @@ test-gz = { cmd = """
 # - All CMake configuration MUST be done via CMAKE_ARGS environment variable
 # - DO NOT use --config-settings=cmake.define.XXX (it doesn't work reliably with scikit-build-core)
 # - DART_BUILD_GUI controls whether dartpy.gui submodule is included (see python/dartpy/CMakeLists.txt)
-# - DART_BUILD_GUI=ON enables the Filament-backed dartpy.gui Python surface
+# - Wheel builds enable the Filament-backed dartpy.gui surface and fetch the
+#   pinned upstream Filament SDK when a packaged Filament provider is not used.
 
 [feature.py312-wheel]
 channels = ["conda-forge"]
@@ -2121,6 +2115,7 @@ assimp = ">=6.0.4,<7"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fmt = ">=12.0.0,<13"
+glfw = ">=3.4,<4"
 imgui = ">=1.92.3,<2"
 libboost-devel = ">=1.88.0,<2"
 libjpeg-turbo = ">=3.1.2,<4"
@@ -2149,7 +2144,7 @@ delocate = ">=0.13.0,<0.14"
 delvewheel = ">=1.11.2,<2"
 
 [feature.py312-wheel.target.linux-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
 
 # auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
 wheel-repair = { depends-on = [
@@ -2159,7 +2154,7 @@ wheel-repair = { depends-on = [
 ] }
 
 [feature.py312-wheel.target.win-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
 
 wheel-repair = { depends-on = [
   { task = "wheel-repair-windows-core", args = [
@@ -2245,6 +2240,7 @@ assimp = ">=6.0.4,<7"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fmt = ">=12.0.0,<13"
+glfw = ">=3.4,<4"
 imgui = ">=1.92.3,<2"
 libboost-devel = ">=1.88.0,<2"
 libjpeg-turbo = ">=3.1.2,<4"
@@ -2264,7 +2260,7 @@ mesalib = ">=25.0.5,<26"
 libglvnd = ">=1.7.0,<2"
 
 [feature.py313-wheel.target.linux-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
 
 # auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
 wheel-repair = { depends-on = [
@@ -2291,7 +2287,7 @@ wheel-repair = { depends-on = [
 delvewheel = ">=1.11.2,<2"
 
 [feature.py313-wheel.target.win-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
 
 wheel-repair = { depends-on = [
   { task = "wheel-repair-windows-core", args = [

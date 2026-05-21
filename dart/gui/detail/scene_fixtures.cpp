@@ -1981,7 +1981,8 @@ DartScene createMvpDartScene()
   scene.world->addSkeleton(createStaticVisual(
       kAtlasFixtureSkeletonName,
       loadRequiredExampleMeshShape(
-          "data/sdf/atlas/utorso.dae", Eigen::Vector3d(0.75, 0.75, 0.75)),
+          "data/sdf/atlas/meshes_unplugged/utorso.dae",
+          Eigen::Vector3d(0.75, 0.75, 0.75)),
       Eigen::Vector3d(2.2, 0.25, 1.1),
       Eigen::Vector3d(0.72, 0.72, 0.78)));
   if (auto wamBaseMesh = loadExampleMeshShape(
