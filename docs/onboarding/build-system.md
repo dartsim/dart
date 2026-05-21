@@ -53,6 +53,7 @@ DART_BUILD_GUI          = ON   # Build OpenSceneGraph GUI
 DART_BUILD_GUI_RAYLIB       = OFF  # Build experimental Raylib integration
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
+DART_PROFILE_TRACY          = OFF  # Enable Tracy profiler backend (developer-only)
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
 DART_USE_SYSTEM_IMGUI       = OFF  # Use system ImGui vs fetch from GitHub
 DART_USE_SYSTEM_RAYLIB      = OFF  # Use system Raylib vs fetch from GitHub
@@ -336,12 +337,13 @@ builds.
 
 #### 17. Tracy Profiler
 
-- **Version:** ≥ 0.11.1, < 0.12
-- **Purpose:** Frame profiling
+- **Purpose:** Optional local developer frame profiling
+- **Backend option:** `DART_PROFILE_TRACY`
 - **Option:** `DART_USE_SYSTEM_TRACY`
-- **Components:**
-  - `tracy-profiler-client` (runtime)
-  - `tracy-profiler-gui` (build-time)
+- **Default:** CMake default is `OFF`. Pixi development configure tasks opt in
+  with `DART_PROFILE_TRACY=ON`, but keep `DART_USE_SYSTEM_TRACY=OFF` so Tracy is
+  not installed through package-manager dependencies. Install/package
+  configurations keep profiling off.
 
 ### Additional Platform Dependencies
 
@@ -719,12 +721,6 @@ pixi run api-docs-cpp    # Build C++ API docs
 pixi run api-docs-py     # Build Python API docs
 ```
 
-#### Profiling Tasks
-
-```bash
-pixi run tracy           # Launch Tracy profiler GUI
-```
-
 #### Utility Tasks
 
 ```bash
@@ -748,7 +744,9 @@ pixi run generate-stubs  # Generate Python stub files
 - `DART_USE_SYSTEM_GOOGLEBENCHMARK` - `ON`
 - `DART_USE_SYSTEM_GOOGLETEST` - `ON`
 - `DART_USE_SYSTEM_IMGUI` - `ON`
-- `DART_USE_SYSTEM_TRACY` - `ON`
+- `DART_PROFILE_TRACY` - `ON` for Pixi development configure tasks; `OFF` for
+  CMake/package defaults
+- `DART_USE_SYSTEM_TRACY` - `OFF`
 - `DART_VERBOSE` - `OFF` (configurable)
 
 #### Python Environment

@@ -404,7 +404,7 @@ jobs:
               -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
               -DDART_USE_SYSTEM_IMGUI=ON \
-              -DDART_USE_SYSTEM_TRACY=ON \
+              -DDART_USE_SYSTEM_TRACY=OFF \
               -DDART_VERBOSE=$DART_VERBOSE
             cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j
           '

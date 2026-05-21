@@ -258,7 +258,7 @@ dart_option(DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS
   CATEGORY diagnostics)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF CATEGORY performance)
 dart_option(DART_PROFILE_BUILTIN "Enable built-in text profiling backend" ON CATEGORY performance)
-dart_option(DART_PROFILE_TRACY "Enable Tracy profiling backend" ON CATEGORY performance)
+dart_option(DART_PROFILE_TRACY "Enable Tracy profiling backend for local developer profiling" OFF CATEGORY performance)
 dart_option(DART_CODECOV "Turn on codecov support" OFF CATEGORY performance)
 
 # Backward compatibility: accept legacy DART_PROFILE_TEXT if provided.
