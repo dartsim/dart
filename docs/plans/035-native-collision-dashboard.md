@@ -15,7 +15,7 @@ full evidence log:
 - [`035-native-collision/upstream-case-map.md`](035-native-collision/upstream-case-map.md)
   owns the row-level mapping from those collected upstream cases to DART tests,
   benchmarks, fixtures, or explicit non-applicability decisions.
-- `dashboard.md` owns this plan's operating state.
+- `dashboard.md` owns this plan's operating state and final validation evidence.
 - Local command output, CI artifacts, and the final PR description own
   per-run evidence after the dev-task folders are removed.
 
@@ -42,7 +42,7 @@ true:
 - Completed performance-wave task folders must be removed once their durable
   evidence is promoted here and under
   [`035-native-collision/`](035-native-collision/).
-- The upstream-superset dev task folder must be removed once final validation
+- Completed upstream-superset task state must be removed once final validation
   proves the durable upstream inventory and case map are current.
 
 ## Reading Rules
@@ -72,8 +72,8 @@ true:
   records 207 covered rows and 382 not-applicable rows from the generated FCL,
   Bullet, and ODE inventory, with no mapping-needed, fixture-needed, or
   new-benchmark-needed rows.
-  Gap signal: regenerate the map after any upstream clone refresh or before
-  deleting the temporary dev-task folder.
+  Gap signal: regenerate the map after any upstream clone refresh before
+  accepting a refreshed superset claim.
 - **Runtime selection**
   Current status: `dart` is the normal detector; retained old names are
   native-backed compatibility facades.
@@ -97,9 +97,30 @@ true:
   after push.
 - **Completion packaging**
   Current status: persistent dashboard/matrix and generated upstream inventory
-  artifacts are promoted. The upstream-superset dev-task folder remains only as
-  active handoff state until the completing change reruns final validation.
-  Gap signal: final validation and dev-task folder cleanup are still open.
+  artifacts are promoted. The upstream-superset working docs have been removed
+  after final local validation.
+  Gap signal: final PR-state CI evidence remains open until the branch is
+  published for review.
+
+## Upstream Superset Completion Evidence
+
+| Requirement                         | Durable evidence                                                                                                                                               | Current result                                                                                                                                    |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Upstream collection                 | Generated [`upstream-inventory.md`](035-native-collision/upstream-inventory.md) records FCL, Bullet, and ODE origins, revisions, scoped files, and row counts. | FCL test tree, Bullet collision/tests/examples/benchmarks/kernels, and ODE tests/demos/libccd benchmarks are catalogued.                          |
+| Row categorization                  | Generated [`upstream-case-map.md`](035-native-collision/upstream-case-map.md) maps every extracted row to DART coverage or explicit non-applicability.         | 207 rows are covered, 382 rows are not applicable to the current CPU native detector or native public API, and 0 rows remain unresolved.          |
+| Correctness expansion               | Coverage anchors live in `tests/unit/collision/`, `tests/integration/collision/`, and the DART/reference compatibility tests named in the generated map.       | `pixi run test-all` passed locally after the durable artifacts and status checker were added.                                                     |
+| Benchmark expansion and performance | Generated [`benchmark-manifest.md`](035-native-collision/benchmark-manifest.md) owns the latest local native-vs-reference packet summary.                      | 45 comparable rows are strict native leads, 0 rows are behind, 24 rows are native-only profiling coverage, and 0 rows need rerun.                 |
+| Native detector coverage            | Native-only `coverage_native.info` extraction is summarized in the coverage matrix and status snapshot.                                                        | Full `dart/collision/native` line coverage is 95.1% and function coverage is 98.0%.                                                               |
+| Repeatable status gate              | `pixi run check-native-collision-superset` runs `scripts/check_native_collision_superset_status.py` and is part of `pixi run lint`.                            | The gate validates source revisions, required upstream scopes, row-map counts, unresolved statuses, and zero benchmark rows behind the reference. |
+
+## Later GUI Debugger Scope
+
+A native collision-pair debugger example remains later scope. The useful target
+is a backend-hidden GUI example that selects supported native pair types, poses
+objects, and renders contact point, depth, and normal data. Do not rebase onto a
+Filament branch for this unless the chosen renderer path needs that integration;
+the general GUI promotion plan remains under
+[`PLAN-060`](dashboard.md#plan-060-backend-hidden-gui-roadmap).
 
 ## Feature Summary
 
