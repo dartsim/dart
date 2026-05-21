@@ -34,21 +34,35 @@ ray/convex transform handling, and sphere/box point-depth via zero-radius
 signed distance. Mapped FCL halfspace primitive intersection rows to
 one-sided DART `PlaneShape` tests across sphere, box, capsule, cylinder,
 triangle, and convex-support shapes, and classified FCL two-sided `Plane`
-intersection rows as native-scope non-applicability decisions.
+intersection rows as native-scope non-applicability decisions. Created
+checkpoint commit `6a25838ad51` after lint, build, full unit tests, focused
+plane tests, and whitespace checks. Mapped FCL collision-matrix, print-only
+rotated box, and mesh-mesh split-method rows to existing native coverage, and
+classified FCL diagnostic formatting, autodiff/constants, BVH build,
+continuous spline collision, OBB predicate, front-list traversal, and deferred
+BVH conversion rows as outside DART native collision public scope. Classified
+FCL sphere volume, cached GJK guess, VectorN/sampler, and standalone
+line/triangle/tetrahedron projection helper rows as outside native collision
+detector scope. Added dispatcher pair-order coverage for scale-sensitive
+sphere-box, cylinder-sphere, and capsule-sphere contacts, extended
+capsule-sphere large-radius endpoint collision/separation coverage, added
+capsule-sphere signed distance along the capsule axis, and mapped the upstream
+large box/sphere, large cylinder/sphere, and large capsule/sphere rows to those
+DART-native anchors.
 
 ## Current Branch
 
-`task/native-collision-performance-complete` — uncommitted changes include the
-previous native collision performance completion work plus this new dev-task
-setup.
+`task/native-collision-performance-complete` — ahead of origin by checkpoint
+commit `6a25838ad51`; current uncommitted changes are post-checkpoint native
+collision test additions plus generated coverage-map updates.
 
 ## Immediate Next Step
 
 Continue filling `docs/dev_tasks/native_collision_upstream_superset/02-coverage-map.md`
 and `03-case-map.md` by mapping remaining FCL primitive-pair rows to existing
 DART tests, new DART tests, or a concrete non-applicability reason. The next
-high-value slices are remaining cone/ellipsoid distance rows, triangle/plane
-rows, the remaining OBB/AABB broadphase row, and benchmark scenario rows.
+high-value slices are remaining cone/ellipsoid distance rows, triangle rows,
+remaining world/query rows, and benchmark scenario rows.
 
 ## Context That Would Be Lost
 
@@ -73,9 +87,9 @@ rows, the remaining OBB/AABB broadphase row, and benchmark scenario rows.
 - `origin/feature/filament-gui-full-execution` exists and may be useful for
   that example, but no rebase has been done. Rebase/integration should wait for
   an explicit renderer decision.
-- `03-case-map.md` is generated and currently reports 111 `covered` rows, 25
-  `fixture-needed` rows, 157 `mapping-needed` rows, 10
-  `new-benchmark-needed` rows, and 286 `not-applicable` rows.
+- `03-case-map.md` is generated and currently reports 127 `covered` rows, 25
+  `fixture-needed` rows, 124 `mapping-needed` rows, 10
+  `new-benchmark-needed` rows, and 303 `not-applicable` rows.
 - `collideCylinderSphere()` now handles sphere centers inside the cylinder by
   choosing the nearest cap or barrel surface; this is required by the FCL
   sphere-cylinder internal-contact cases.
@@ -213,6 +227,27 @@ rows, the remaining OBB/AABB broadphase row, and benchmark scenario rows.
 - Focused verification also run:
   `pixi run cmake --build build/default/cpp/Release --target test_plane` and
   `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_plane$'`.
+- Checkpoint commit `6a25838ad51` was created after `pixi run lint`,
+  `pixi run build`, `pixi run test-unit`, focused `test_plane`, and
+  `git diff --check` all passed.
+- FCL collision matrix rows now map to DART's native pair support/adapted-shape
+  coverage, FCL `mesh_mesh` and print-only rotated box rows map to existing
+  asserted native box/mesh tests, and FCL diagnostic/autodiff/constants/BVH/OBB
+  predicate/front-list/continuous-spline rows are explicit non-applicability
+  decisions.
+- FCL sphere volume, cached GJK guess, VectorN/sampler, and standalone
+  projection-helper rows are also explicit non-applicability decisions because
+  they target upstream helper APIs rather than DART native collision detector
+  behavior.
+- FCL large box/sphere, large cylinder/sphere, and large capsule/sphere rows
+  now map to DART tests named for the geometry/query behavior:
+  `PrimitiveDispatcherPreservesScaleContactsUnderPairOrder`,
+  `CapsuleSphere.LargeRadiusBoundaryAndSeparationAcrossFrames`, and
+  `DistanceCapsuleSphere.LargeSphereSignedDistanceAlongCapsuleAxis`.
+- Focused verification also run:
+  `pixi run cmake --build build/default/cpp/Release --target test_narrow_phase test_capsule_capsule test_distance_core`
+  and
+  `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_narrow_phase|test_capsule_capsule|test_distance_core)$'`.
 
 ## How To Resume
 
@@ -223,5 +258,5 @@ pixi run python scripts/inventory_upstream_collision_coverage.py
 ```
 
 Then continue the coverage-map pass with remaining primitive distance,
-triangle/plane, remaining broadphase, or benchmark rows before using expanded
+triangle, remaining world/query, or benchmark rows before using expanded
 benchmark rows for performance claims.

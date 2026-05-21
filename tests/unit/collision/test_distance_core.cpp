@@ -1566,6 +1566,57 @@ TEST(DistanceCapsuleSphere, LargeSphereSignedDistanceAlongCapsuleSide)
   }
 }
 
+TEST(DistanceCapsuleSphere, LargeSphereSignedDistanceAlongCapsuleAxis)
+{
+  CapsuleShape capsule(50.0, 200.0);
+  SphereShape sphere(50.0);
+
+  struct Case
+  {
+    const char* name;
+    Eigen::Vector3d sphereCenterInCapsuleFrame;
+    double expectedDistance;
+  };
+
+  const std::array<Case, 4> cases{{
+      {"bottom-endcap-separated", Eigen::Vector3d(0.0, 0.0, -225.0), 25.0},
+      {"bottom-endcap-penetrating", Eigen::Vector3d(0.0, 0.0, -150.0), -50.0},
+      {"top-endcap-separated", Eigen::Vector3d(0.0, 0.0, 225.0), 25.0},
+      {"top-endcap-penetrating", Eigen::Vector3d(0.0, 0.0, 150.0), -50.0},
+  }};
+
+  const std::array<Eigen::Isometry3d, 2> capsuleTransforms{{
+      Eigen::Isometry3d::Identity(),
+      makeDistanceBoxTransform(
+          Eigen::Vector3d(1.3, 2.7, 6.5),
+          std::numbers::pi_v<double> / 2.0,
+          Eigen::Vector3d::UnitX()),
+  }};
+
+  for (const auto& testCase : cases) {
+    for (const auto& tfCapsule : capsuleTransforms) {
+      SCOPED_TRACE(testCase.name);
+      const Eigen::Isometry3d tfSphere
+          = tfCapsule
+            * makeDistanceBoxTransform(testCase.sphereCenterInCapsuleFrame);
+
+      DistanceResult result;
+      const double dist
+          = distanceCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+
+      EXPECT_NEAR(dist, testCase.expectedDistance, 1e-9);
+      EXPECT_NEAR(result.distance, testCase.expectedDistance, 1e-9);
+      EXPECT_NEAR(
+          (result.pointOnObject2 - result.pointOnObject1).norm(),
+          std::abs(testCase.expectedDistance),
+          1e-9);
+      EXPECT_TRUE(result.pointOnObject1.allFinite());
+      EXPECT_TRUE(result.pointOnObject2.allFinite());
+      EXPECT_TRUE(result.normal.allFinite());
+    }
+  }
+}
+
 TEST(DistanceCapsuleSphere, ZeroHeight)
 {
   CapsuleShape capsule(0.5, 0.0);

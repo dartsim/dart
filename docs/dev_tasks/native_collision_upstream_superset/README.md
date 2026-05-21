@@ -51,9 +51,9 @@ optimization expansion by benchmarks.
 - Coverage map scaffold:
   [`02-coverage-map.md`](02-coverage-map.md)
 - Generated row-level case map:
-  [`03-case-map.md`](03-case-map.md) currently records 111 covered rows, 25
-  fixture-needed rows, 157 mapping-needed rows, 10 new-benchmark-needed rows,
-  and 286 not-applicable rows.
+  [`03-case-map.md`](03-case-map.md) currently records 127 covered rows, 25
+  fixture-needed rows, 124 mapping-needed rows, 10 new-benchmark-needed rows,
+  and 303 not-applicable rows.
 
 ## Key Decisions
 
@@ -72,9 +72,9 @@ optimization expansion by benchmarks.
 ## Immediate Next Steps
 
 1. Continue FCL primitive pair mapping with the remaining cone/ellipsoid
-   distance rows, triangle/plane rows, and broader pair rows.
-2. Continue broadphase mapping from the remaining OBB/AABB and world/query
-   rows, adding explicit generator overrides only when DART coverage is proven.
+   distance rows, triangle rows, and broader pair rows.
+2. Continue broadphase mapping from the remaining world/query rows, adding
+   explicit generator overrides only when DART coverage is proven.
 3. Convert the 25 `fixture-needed` Bullet OpenCL GPU/prototype rows into an
    explicit prototype gate decision or follow-up fixture.
 4. Start converting the 10 `new-benchmark-needed` Bullet/ODE benchmark rows
@@ -204,4 +204,14 @@ optimization expansion by benchmarks.
 - `pixi run cmake --build build/default/cpp/Release --target test_distance_core`
   passed.
 - `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_distance_core$'`
+  passed.
+- Added dispatcher pair-order coverage for scale-sensitive sphere-box,
+  cylinder-sphere, and capsule-sphere contact cases, plus capsule-sphere
+  endcap collision/separation and signed-distance axis cases. These map the
+  corresponding upstream large-box/sphere, large-cylinder/sphere, and
+  large-capsule/sphere rows without putting upstream library names into DART
+  test names.
+- `pixi run cmake --build build/default/cpp/Release --target test_narrow_phase test_capsule_capsule test_distance_core`
+  passed.
+- `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_narrow_phase|test_capsule_capsule|test_distance_core)$'`
   passed.

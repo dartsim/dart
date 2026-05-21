@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <numbers>
 #include <stdexcept>
 #include <vector>
 
@@ -104,6 +105,16 @@ void expectVectorExactlyEqual(
   EXPECT_EQ(expected.z(), actual.z());
 }
 
+void expectVectorNear(
+    const Eigen::Vector3d& actual,
+    const Eigen::Vector3d& expected,
+    double tolerance)
+{
+  EXPECT_NEAR(actual.x(), expected.x(), tolerance);
+  EXPECT_NEAR(actual.y(), expected.y(), tolerance);
+  EXPECT_NEAR(actual.z(), expected.z(), tolerance);
+}
+
 void expectContactExactlyEqual(
     const ContactPoint& expected, const ContactPoint& actual)
 {
@@ -134,6 +145,26 @@ void expectCollisionResultExactlyEqual(
           expectedManifold.getContact(j), actualManifold.getContact(j));
     }
   }
+}
+
+void expectSingleContactPairOrder(
+    const CollisionResult& forward,
+    const CollisionResult& swapped,
+    double tolerance)
+{
+  ASSERT_EQ(forward.numContacts(), 1u);
+  ASSERT_EQ(swapped.numContacts(), 1u);
+
+  const ContactPoint& forwardContact = forward.getContact(0);
+  const ContactPoint& swappedContact = swapped.getContact(0);
+
+  EXPECT_NEAR(forwardContact.depth, swappedContact.depth, tolerance);
+  expectVectorNear(forwardContact.position, swappedContact.position, tolerance);
+  expectVectorNear(forwardContact.normal, -swappedContact.normal, tolerance);
+  EXPECT_TRUE(forwardContact.position.allFinite());
+  EXPECT_TRUE(swappedContact.position.allFinite());
+  EXPECT_TRUE(forwardContact.normal.allFinite());
+  EXPECT_TRUE(swappedContact.normal.allFinite());
 }
 
 void expectFiniteCollisionResult(const CollisionResult& result)
@@ -184,6 +215,110 @@ TEST(NarrowPhase, IsSupported)
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Mesh));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Sphere));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Convex));
+}
+
+TEST(NarrowPhase, PrimitiveDispatcherPreservesScaleContactsUnderPairOrder)
+{
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  {
+    const SphereShape sphere(0.01);
+    const BoxShape box(Eigen::Vector3d(15.0, 1.0, 1.0));
+    const Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
+    const Eigen::Isometry3d sphereTransform
+        = translated(15.0 * 0.95, 0.0, 1.0 + 0.01 * 0.5);
+
+    CollisionResult sphereBox;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &sphere, sphereTransform, &box, boxTransform, option, sphereBox));
+
+    CollisionResult boxSphere;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &box, boxTransform, &sphere, sphereTransform, option, boxSphere));
+
+    expectSingleContactPairOrder(sphereBox, boxSphere, 1e-9);
+    EXPECT_NEAR(sphereBox.getContact(0).depth, 0.005, 1e-9);
+  }
+
+  {
+    const CylinderShape cylinder(9.0, 0.1);
+    const SphereShape sphere(0.025);
+    const Eigen::Vector3d obliqueRadial
+        = Eigen::Vector3d(1.0, 2.0, 0.0).normalized();
+    const Eigen::Vector3d sphereCenter
+        = obliqueRadial * (cylinder.getRadius() - sphere.getRadius())
+          + Eigen::Vector3d::UnitZ()
+                * (0.5 * cylinder.getHeight() + 0.5 * sphere.getRadius());
+
+    const Eigen::Isometry3d cylinderTransform = translated(1.0, -2.0, 0.5);
+    const Eigen::Isometry3d sphereTransform
+        = cylinderTransform
+          * translated(sphereCenter.x(), sphereCenter.y(), sphereCenter.z());
+
+    CollisionResult cylinderSphere;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &cylinder,
+            cylinderTransform,
+            &sphere,
+            sphereTransform,
+            option,
+            cylinderSphere));
+
+    CollisionResult sphereCylinder;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &sphere,
+            sphereTransform,
+            &cylinder,
+            cylinderTransform,
+            option,
+            sphereCylinder));
+
+    expectSingleContactPairOrder(cylinderSphere, sphereCylinder, 1e-9);
+    EXPECT_NEAR(
+        cylinderSphere.getContact(0).depth, 0.5 * sphere.getRadius(), 1e-9);
+  }
+
+  {
+    const CapsuleShape capsule(50.0, 200.0);
+    const SphereShape sphere(50.0);
+
+    Eigen::Isometry3d capsuleTransform = Eigen::Isometry3d::Identity();
+    capsuleTransform.linear()
+        = Eigen::AngleAxisd(
+              std::numbers::pi_v<double> * 0.5, Eigen::Vector3d::UnitX())
+              .toRotationMatrix();
+    capsuleTransform.translation() = Eigen::Vector3d(0.0, 50.0, 75.0);
+
+    const Eigen::Isometry3d sphereTransform = Eigen::Isometry3d::Identity();
+
+    CollisionResult capsuleSphere;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &capsule,
+            capsuleTransform,
+            &sphere,
+            sphereTransform,
+            option,
+            capsuleSphere));
+
+    CollisionResult sphereCapsule;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &sphere,
+            sphereTransform,
+            &capsule,
+            capsuleTransform,
+            option,
+            sphereCapsule));
+
+    expectSingleContactPairOrder(capsuleSphere, sphereCapsule, 1e-9);
+    EXPECT_NEAR(capsuleSphere.getContact(0).depth, 25.0, 1e-9);
+  }
 }
 
 TEST(NarrowPhase, collide_batch_dispatcher_matches_scalar_loop)

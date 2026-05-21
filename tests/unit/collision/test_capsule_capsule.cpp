@@ -386,6 +386,42 @@ TEST(CapsuleSphere, LargeRadiusBoundaryAndSeparationAcrossFrames)
         Eigen::Vector3d(25.1, 0.0, 0.0),
         false,
         0.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "bottom-endcap-shallow-penetration",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, -29.9),
+        true,
+        0.1);
+    expectLargeCapsuleSphereBoundaryCase(
+        "bottom-endcap-touching",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, -30.0),
+        true,
+        0.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "bottom-endcap-separated",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, -30.1),
+        false,
+        0.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "top-endcap-shallow-penetration",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, 29.9),
+        true,
+        0.1);
+    expectLargeCapsuleSphereBoundaryCase(
+        "top-endcap-touching",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, 30.0),
+        true,
+        0.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "top-endcap-separated",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, 30.1),
+        false,
+        0.0);
   }
 }
 

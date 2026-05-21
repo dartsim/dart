@@ -315,6 +315,303 @@ def case_display(case: Case) -> str:
 
 CASE_MAP_OVERRIDES = {
     (
+        "FCL",
+        "fcl/test/narrowphase/detail/test_collision_func_matrix.cpp",
+        "GTEST_TEST(CollisionFuncMatrix, LibCccdSolverSupport)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_narrow_phase.cpp::NarrowPhase.IsSupported; tests/unit/collision/test_dart_collision_detector.cpp::DartCollisionDetector.SupportedShapePairs; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.ConeShapeAdapter; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.EllipsoidShapeAdapter",
+        "DART has one native dispatcher rather than FCL's solver-specific collision matrix. Native pair support is checked by the public isSupported matrix, supported-shape collision tests, and adapter tests for shapes represented as native convex/sphere geometry.",
+    ),
+    (
+        "FCL",
+        "fcl/test/narrowphase/detail/test_collision_func_matrix.cpp",
+        "GTEST_TEST(CollisionFuncMatrix, IndepSolverSupport)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_narrow_phase.cpp::NarrowPhase.IsSupported; tests/unit/collision/test_dart_collision_detector.cpp::DartCollisionDetector.SupportedShapePairs; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.ConeShapeAdapter; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.EllipsoidShapeAdapter",
+        "DART uses a single native narrowphase dispatcher instead of FCL's independent/libccd solver split; the public native support matrix and adapted shape coverage exercise the equivalent supported-pair surface.",
+    ),
+    (
+        "FCL",
+        "fcl/test/narrowphase/detail/test_failed_at_this_configuration.cpp",
+        "GTEST_TEST(ConfigurationFailureTest, ConfirmFormatting)",
+    ): (
+        "not-applicable",
+        "FCL diagnostic formatting API",
+        "This row checks FCL's internal exception message formatter for failed configurations, not collision detector behavior exposed by DART native collision.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_auto_diff.cpp",
+        "GTEST_TEST(FCL_AUTO_DIFF, basic)",
+    ): (
+        "not-applicable",
+        "native collision scalar contract",
+        "FCL validates AutoDiffScalar support in its templated distance solver. DART native collision exposes double-precision public collision, distance, and raycast queries, not an autodiff collision API.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_bvh_models.cpp",
+        "GTEST_TEST(FCL_BVH_MODELS, building_bvh_models)",
+    ): (
+        "not-applicable",
+        "FCL BVHModel build API",
+        "This row checks FCL BVHModel construction states for multiple bounding-volume families. DART native collision does not expose that BVHModel API; public mesh construction and mesh collision are covered separately.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_collision.cpp",
+        "GTEST_TEST(FCL_COLLISION, test_SplineMotion_rotated_spline_collide_test)",
+    ): (
+        "not-applicable",
+        "continuous spline collision API",
+        "This row exercises FCL continuous collision between spline-motion objects. DART native collision currently exposes discrete collision, distance, and raycast queries, not FCL's continuous spline-motion API.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_collision.cpp",
+        "GTEST_TEST(FCL_COLLISION, OBB_Box_test)",
+    ): (
+        "not-applicable",
+        "FCL OBB bounding-volume predicate",
+        "This row compares FCL OBB overlap predicates with exact box collision. DART native broadphase uses AABBs and does not expose FCL OBB predicates; exact rotated box collision is covered by native box-box tests.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_collision.cpp",
+        "GTEST_TEST(FCL_COLLISION, OBB_shape_test)",
+    ): (
+        "not-applicable",
+        "FCL OBB bounding-volume predicate",
+        "This row checks conservative FCL OBB overlap predicates for primitive envelopes. DART native collision does not expose OBB bounding-volume tests; exact primitive collision and adapter rows cover the public behavior.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_collision.cpp",
+        "GTEST_TEST(FCL_COLLISION, OBB_AABB_test)",
+    ): (
+        "not-applicable",
+        "FCL OBB bounding-volume predicate",
+        "This row compares FCL OBB and AABB overlap predicates. DART native exposes AABB broadphase behavior, but not FCL OBB predicates, so the OBB comparison is outside native collision scope.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_collision.cpp",
+        "GTEST_TEST(FCL_COLLISION, mesh_mesh)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_mesh_mesh.cpp::MeshMesh.SingleTriangleAndLargeMesh; tests/unit/collision/test_mesh_mesh.cpp::MeshMeshBatch.mesh_mesh_batch_determinism_vs_single; tests/unit/collision/test_dart_collision_detector.cpp::DartCollisionDetector.MeshMeshContactsPreserveTriangleIds",
+        "Checks native mesh-mesh collision on single-triangle and larger meshes, preserves triangle identifiers, and verifies batch traversal matches scalar mesh collision. FCL split-method and BV-family variants are implementation details.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_constant_eps.cpp",
+        "GTEST_TEST(FCL_CONSTANTS_EPS, precision_dependent)",
+    ): (
+        "not-applicable",
+        "FCL math constants API",
+        "This row validates FCL's scalar-specific epsilon constants, not native collision detector geometry, query, or dispatch behavior.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_constant_eps.cpp",
+        "GTEST_TEST(FCL_CONSTANTS_EPS, autodiff_compatibility)",
+    ): (
+        "not-applicable",
+        "FCL math constants API",
+        "This row validates FCL constants return types for AutoDiffScalar, while DART native collision exposes double-precision collision APIs and no autodiff constants contract.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_frontlist.cpp",
+        "GTEST_TEST(FCL_FRONT_LIST, front_list)",
+    ): (
+        "not-applicable",
+        "FCL front-list traversal cache",
+        "This row checks FCL's BVH front-list acceleration path against ordinary traversal. DART native mesh collision does not expose front-list traversal state; public mesh collision behavior is covered by mesh-mesh tests.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_general.cpp",
+        "GTEST_TEST(FCL_GENERAL, general)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_box_box.cpp::BoxBox.Rotated45_Diagonal; tests/unit/collision/test_box_box.cpp::BoxBox.RotatedFacePatchReductionRespectsContactLimit; tests/unit/collision/test_dart_collision_detector.cpp::DartCollisionDetector.BoxBoxEdgeEdgeContact",
+        "The upstream row only prints contacts from a rotated box-box collision. DART native rotated box contact behavior is covered with asserted collision, contact depth, normal, and edge/face cases.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_generate_bvh_model_deferred_finalize.cpp",
+        "GTEST_TEST(FCL_GENERATE_BVH_MODELS, generating_bvh_models_from_primitives)",
+    ): (
+        "not-applicable",
+        "FCL geometric_shape_to_BVH_model API",
+        "This row checks FCL's deferred BVHModel finalization API while converting primitives into mesh data. DART native collision does not expose deferred BVH model construction; primitive adapters and mesh construction are covered separately.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_geometric_shapes.cpp",
+        "GTEST_TEST(FCL_GEOMETRIC_SHAPES, sphere_shape)",
+    ): (
+        "not-applicable",
+        "native collision shape API",
+        "This row checks FCL Sphere::computeVolume. DART native collision shapes expose query geometry and bounds for collision, not a native collision volume API.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_geometric_shapes.cpp",
+        "GTEST_TEST(FCL_GEOMETRIC_SHAPES, gjkcache)",
+    ): (
+        "not-applicable",
+        "FCL cached GJK guess API",
+        "This row compares FCL collision results with and without a cached GJK guess. DART native collision does not expose cached GJK guesses as a public correctness contract.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_simple.cpp",
+        "GTEST_TEST(FCL_SIMPLE, Vec_nf_test)",
+    ): (
+        "not-applicable",
+        "FCL math and sampler utilities",
+        "This row exercises FCL VectorN and sampler helper utilities, not DART native collision detector behavior.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_simple.cpp",
+        "GTEST_TEST(FCL_SIMPLE, projection_test_line)",
+    ): (
+        "not-applicable",
+        "FCL private projection helper",
+        "This row checks FCL's standalone line projection helper. DART native collision exposes public distance and witness queries instead of this helper API.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_simple.cpp",
+        "GTEST_TEST(FCL_SIMPLE, projection_test_triangle)",
+    ): (
+        "not-applicable",
+        "FCL private projection helper",
+        "This row checks FCL's standalone triangle projection helper. DART native collision exposes public distance and witness queries instead of this helper API.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_simple.cpp",
+        "GTEST_TEST(FCL_SIMPLE, projection_test_tetrahedron)",
+    ): (
+        "not-applicable",
+        "FCL private projection helper",
+        "This row checks FCL's standalone tetrahedron projection helper. DART native collision exposes public distance and witness queries instead of this helper API.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_box.cpp",
+        "GTEST_TEST(FCL_SPHERE_BOX, LargBoxSmallSphere_ccd)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_sphere_box.cpp::SphereBox.ContactsWithIncompatibleScaleRatios; tests/unit/collision/test_narrow_phase.cpp::NarrowPhase.PrimitiveDispatcherPreservesScaleContactsUnderPairOrder",
+        "Checks long-skinny-box/small-sphere face contact depth/normal and verifies the native dispatcher preserves the same scale-sensitive contact when the pair order is swapped. DART has one native dispatcher rather than FCL's solver split.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_box.cpp",
+        "GTEST_TEST(FCL_SPHERE_BOX, LargBoxSmallSphere_indep)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_sphere_box.cpp::SphereBox.ContactsWithIncompatibleScaleRatios; tests/unit/collision/test_narrow_phase.cpp::NarrowPhase.PrimitiveDispatcherPreservesScaleContactsUnderPairOrder",
+        "Checks long-skinny-box/small-sphere face contact depth/normal and verifies the native dispatcher preserves the same scale-sensitive contact when the pair order is swapped. DART uses a single native dispatcher instead of FCL's independent/libccd solver split.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_capsule.cpp",
+        "GTEST_TEST(FCL_SPHERE_CAPSULE, Sphere_Capsule_Intersect_test_separated_z)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_capsule_capsule.cpp::CapsuleSphere.LargeRadiusBoundaryAndSeparationAcrossFrames",
+        "Checks large capsule-sphere endcap separation along the capsule axis across identity and transformed capsule frames.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_capsule.cpp",
+        "GTEST_TEST(FCL_SPHERE_CAPSULE, Sphere_Capsule_Intersect_test_separated_z_negative)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_capsule_capsule.cpp::CapsuleSphere.LargeRadiusBoundaryAndSeparationAcrossFrames",
+        "Checks large capsule-sphere endcap separation on the opposite capsule axis side across identity and transformed capsule frames.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_capsule.cpp",
+        "GTEST_TEST(FCL_SPHERE_CAPSULE, Sphere_Capsule_Intersect_test_separated_x)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_capsule_capsule.cpp::CapsuleSphere.LargeRadiusBoundaryAndSeparationAcrossFrames",
+        "Checks large capsule-sphere side separation in identity and transformed common frames.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_capsule.cpp",
+        "GTEST_TEST(FCL_SPHERE_CAPSULE, Sphere_Capsule_Intersect_test_separated_capsule_rotated)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_capsule_capsule.cpp::CapsuleSphere.LargeRadiusBoundaryAndSeparationAcrossFrames; tests/unit/collision/test_narrow_phase.cpp::NarrowPhase.PrimitiveDispatcherPreservesScaleContactsUnderPairOrder",
+        "Checks large capsule-sphere separation under transformed capsule frames and verifies rotated capsule-sphere dispatcher contact behavior with swapped pair order.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_capsule.cpp",
+        "GTEST_TEST(FCL_SPHERE_CAPSULE, Sphere_Capsule_Intersect_test_penetration_z)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_capsule_capsule.cpp::CapsuleSphere.LargeRadiusBoundaryAndSeparationAcrossFrames; tests/unit/collision/test_narrow_phase.cpp::NarrowPhase.PrimitiveDispatcherPreservesScaleContactsUnderPairOrder",
+        "Checks large capsule-sphere endcap penetration depth/finite contacts and dispatcher pair-order preservation for the same scale-sensitive primitive family.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_capsule.cpp",
+        "GTEST_TEST(FCL_SPHERE_CAPSULE, Sphere_Capsule_Intersect_test_penetration_z_rotated)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_capsule_capsule.cpp::CapsuleSphere.LargeRadiusBoundaryAndSeparationAcrossFrames; tests/unit/collision/test_narrow_phase.cpp::NarrowPhase.PrimitiveDispatcherPreservesScaleContactsUnderPairOrder",
+        "Checks large capsule-sphere endcap penetration across transformed capsule frames and a rotated capsule dispatcher case with asserted depth and swapped-order normal handling.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_capsule.cpp",
+        "GTEST_TEST(FCL_SPHERE_CAPSULE, Sphere_Capsule_Distance_test_collision)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceCapsuleSphere.LargeSphereSignedDistanceAlongCapsuleAxis",
+        "DART reports capsule-sphere collision through negative signed distance; this test checks large-radius axis-aligned endcap penetration under identity and rotated capsule frames.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_capsule.cpp",
+        "GTEST_TEST(FCL_SPHERE_CAPSULE, Sphere_Capsule_Distance_test_separated)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceCapsuleSphere.LargeSphereSignedDistanceAlongCapsuleAxis",
+        "Checks the corresponding large-radius capsule-sphere positive signed distance along both capsule-axis endcaps under identity and rotated frames.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_cylinder.cpp",
+        "GTEST_TEST(FCL_SPHERE_CYLINDER, LargCylinderSmallSphere_ccd)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_cylinder.cpp::CylinderSphere.ContactsWithIncompatibleScaleRatios; tests/unit/collision/test_narrow_phase.cpp::NarrowPhase.PrimitiveDispatcherPreservesScaleContactsUnderPairOrder",
+        "Checks large-disk/tiny-sphere face and barrel contacts/separations across frames and verifies dispatcher pair-order preservation for the scale-sensitive face-contact case. DART has one native dispatcher rather than FCL's solver split.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_sphere_cylinder.cpp",
+        "GTEST_TEST(FCL_SPHERE_CYLINDER, LargBoxSmallSphere_indep)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_cylinder.cpp::CylinderSphere.ContactsWithIncompatibleScaleRatios; tests/unit/collision/test_narrow_phase.cpp::NarrowPhase.PrimitiveDispatcherPreservesScaleContactsUnderPairOrder",
+        "Checks large-disk/tiny-sphere face and barrel contacts/separations across frames and verifies dispatcher pair-order preservation for the scale-sensitive face-contact case. DART uses a single native dispatcher instead of FCL's independent/libccd solver split.",
+    ),
+    (
         "Bullet",
         "bullet3/test/collision/main.cpp",
         "TEST(BulletCollisionTest, GjkMPRSphereSphereDistance)",
