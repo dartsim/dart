@@ -882,4 +882,32 @@ TEST(CollisionBackend, VoxelGridCollidesAfterOccupancyUpdate)
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
 }
+
+//==============================================================================
+TEST(CollisionBackend, VoxelGridDistanceAfterOccupancyUpdate)
+{
+  auto detector = DartCollisionDetector::create();
+
+  auto voxelGrid = std::make_shared<VoxelGridShape>(0.1);
+  voxelGrid->updateOccupancy(Eigen::Vector3d::Zero(), true);
+
+  auto voxelFrame
+      = createShapeFrame("voxel_grid", voxelGrid, Eigen::Vector3d::Zero());
+  auto sphereFrame
+      = createSphereFrame("sphere", 0.02, Eigen::Vector3d(0.3, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(voxelFrame.get());
+  group->addShapeFrame(sphereFrame.get());
+
+  DistanceResult result;
+  const double distance
+      = group->distance(DistanceOption(true, 0.0, nullptr), &result);
+
+  ASSERT_TRUE(result.found());
+  EXPECT_GT(distance, 0.0);
+  EXPECT_NEAR(result.unclampedMinDistance, distance, 1e-9);
+  EXPECT_TRUE(result.nearestPoint1.allFinite());
+  EXPECT_TRUE(result.nearestPoint2.allFinite());
+}
 #endif

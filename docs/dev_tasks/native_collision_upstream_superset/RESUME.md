@@ -91,9 +91,9 @@ remaining world/query rows, and benchmark scenario rows.
 - `origin/feature/filament-gui-full-execution` exists and may be useful for
   that example, but no rebase has been done. Rebase/integration should wait for
   an explicit renderer decision.
-- `03-case-map.md` is generated and currently reports 149 `covered` rows, 25
-  `fixture-needed` rows, 94 `mapping-needed` rows, 10
-  `new-benchmark-needed` rows, and 311 `not-applicable` rows.
+- `03-case-map.md` is generated and currently reports 155 `covered` rows, 25
+  `fixture-needed` rows, 81 `mapping-needed` rows, 10
+  `new-benchmark-needed` rows, and 318 `not-applicable` rows.
 - `collideCylinderSphere()` now handles sphere centers inside the cylinder by
   choosing the nearest cap or barrel surface; this is required by the FCL
   sphere-cylinder internal-contact cases.
@@ -271,6 +271,16 @@ remaining world/query rows, and benchmark scenario rows.
 - FCL math/profiler helper rows are explicit non-applicability decisions
   because they target upstream vector, Morton-code, RSS, and profiler utility
   APIs rather than DART native collision detector behavior.
+- Focused verification also run:
+  `pixi run cmake --build build/default/cpp/Release --target UNIT_collision_CollisionBackend`
+  and
+  `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_collision_CollisionBackend$'`.
+- FCL octomap collision/distance rows now map to DART's public
+  `VoxelGridShape` equivalent, including occupied-cell collision, occupied-cell
+  distance, adapter shape, and persistent scene mutation coverage. FCL
+  octomap cost-source, primitive-id, and BV-family traversal rows are explicit
+  non-applicability decisions because those FCL knobs are not exposed by DART
+  native collision.
 - Focused verification also run:
   `pixi run cmake --build build/default/cpp/Release --target UNIT_collision_CollisionBackend`
   and

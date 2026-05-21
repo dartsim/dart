@@ -1506,6 +1506,42 @@ def classify_case(case: Case, scope: Scope) -> tuple[str, str, str]:
             "This row checks FCL's internal profiler helper, not DART native collision geometry, query, dispatch, or broadphase behavior.",
         )
 
+    if scope.project == "FCL" and source.startswith("fcl/test/test_fcl_octomap_"):
+        if source.endswith("test_fcl_octomap_cost.cpp"):
+            return (
+                "not-applicable",
+                "FCL octomap cost-source API",
+                "This row checks FCL cost-source reporting for octomap collisions. DART native collision exposes contacts, distance, raycast, and broadphase behavior, not an octomap cost-source API.",
+            )
+
+        if any(token in case.name for token in ("bvh_", "_rss", "_obb", "_kios")):
+            return (
+                "not-applicable",
+                "FCL octomap BV-family implementation detail",
+                "This row compares FCL octomap traversal against generated BVH models using specific BV families. DART native VoxelGridShape adapts occupied cells to compound native boxes and does not expose FCL BV-family traversal choices.",
+            )
+
+        if "contact_primitive_id" in case.name:
+            return (
+                "not-applicable",
+                "FCL octomap primitive-id reporting",
+                "This row checks FCL primitive IDs from generated octomap mesh/box approximations. DART native VoxelGridShape exposes public shape-frame contacts rather than FCL octomap primitive IDs.",
+            )
+
+        if "collision" in case.name:
+            return (
+                "covered",
+                "tests/unit/collision/test_collision_backend.cpp::CollisionBackend.VoxelGridShapeAdapter; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.VoxelGridCollidesAfterOccupancyUpdate; tests/unit/collision/test_dart_collision_detector.cpp::DartCollisionGroup.PersistentSceneRebuildsAfterVoxelGridMutation",
+                "Checks DART's public voxel-grid equivalent for octomap-style occupied-cell collision: occupied cells adapt to native compound boxes, collide after occupancy updates, and persistent scenes rebuild after grid mutation. FCL's octree-as-geometry and generated mesh/box traversal knobs are not exposed.",
+            )
+
+        if "distance" in case.name:
+            return (
+                "covered",
+                "tests/unit/collision/test_collision_backend.cpp::CollisionBackend.VoxelGridShapeAdapter; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.VoxelGridDistanceAfterOccupancyUpdate",
+                "Checks DART's public voxel-grid equivalent for octomap-style occupied-cell distance: occupied cells adapt to native compound boxes and report finite positive distance with nearest points. FCL's octree-as-geometry and generated mesh/box traversal knobs are not exposed.",
+            )
+
     if (
         scope.project == "FCL"
         and source == "fcl/test/broadphase/test_broadphase_dynamic_aabb_tree.cpp"
