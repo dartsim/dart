@@ -89,6 +89,13 @@ public:
   /// Returns native sparse occupancy-grid storage.
   std::shared_ptr<const SparseOccupancyGrid> getOccupancyGrid() const;
 
+  /// Notifies this shape that shared native occupancy-grid storage changed.
+  ///
+  /// Call this after mutating the object returned by getOccupancyGrid() so the
+  /// shape can refresh cached bounds, volume, renderer state, and any optional
+  /// compatibility storage.
+  void notifyOccupancyGridUpdated();
+
 #if DART_HAVE_OCTOMAP
   /// Sets octree and imports its leaves into native storage.
   void setOctree(std::shared_ptr<octomap::OcTree> octree);

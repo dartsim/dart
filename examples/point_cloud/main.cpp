@@ -113,7 +113,7 @@ struct PointCloudState
   bool sensorVisible = true;
   bool voxelGridVisible = true;
   double visualSize = 0.035;
-  Eigen::Vector4d pointCloudColor = Eigen::Vector4d(0.20, 0.38, 0.94, 0.78);
+  Eigen::Vector4d pointCloudColor = Eigen::Vector4d(0.20, 0.38, 0.94, 1.0);
   Eigen::Vector4d voxelGridColor = Eigen::Vector4d(0.94, 0.52, 0.20, 0.22);
   double elapsedTime = 0.0;
   std::size_t lastPointCount = 0u;
@@ -359,7 +359,7 @@ Vector4List generatePointCloudColors(const Vector3List& points)
 
   for (const Eigen::Vector3d& point : points) {
     const double mix = std::clamp((point.z() - minZ) / diffZ, 0.1, 0.9);
-    colors.emplace_back(mix, 0.10, 1.0 - mix, 0.75);
+    colors.emplace_back(mix, 0.10, 1.0 - mix, 1.0);
   }
   return colors;
 }
@@ -405,11 +405,15 @@ void refreshPointCloud(PointCloudState& state)
             ? generatePointCloudOnRobot(
                   state.robot, state.elapsedTime, kPointCount)
             : generatePointCloudInBox(state.elapsedTime, kPointCount);
-  const Vector4List colors = generatePointCloudColors(points);
   state.pointCloudShape->setPoint(
       std::span<const Eigen::Vector3d>(points.data(), points.size()));
-  state.pointCloudShape->setColors(
-      std::span<const Eigen::Vector4d>(colors.data(), colors.size()));
+  if (state.colorMode == dart::dynamics::PointCloudShape::BIND_PER_POINT) {
+    const Vector4List colors = generatePointCloudColors(points);
+    state.pointCloudShape->setColors(
+        std::span<const Eigen::Vector4d>(colors.data(), colors.size()));
+  } else if (state.colorMode == dart::dynamics::PointCloudShape::BIND_OVERALL) {
+    state.pointCloudShape->setOverallColor(state.pointCloudColor);
+  }
   state.lastPointCount = points.size();
 
   if (state.voxelGridShape != nullptr) {

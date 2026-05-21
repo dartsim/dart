@@ -1,31 +1,33 @@
 #!/usr/bin/env python3
-"""
-Patch gz-physics CMakeLists.txt to accept DART 7.0.
+"""Validate gz-physics' DART version requirement for DART 7 package config.
 
-This script intentionally limits its scope to the CMake version requirement only.
-For DART 7.0, we want to preserve backward compatibility for the APIs currently
-used by Gazebo/gz-physics, so we should not carry local source patches here. If
-gz-physics fails to build against DART 7, fix the compatibility in DART or
-upstream in gz-physics instead of modifying their sources in this repository.
+DART 7's generated DARTConfigVersion.cmake intentionally satisfies legacy
+DART 6.10+ find_package requests used by pinned gz-physics checkouts. This
+script keeps the gazebo pixi workflow shape intact while avoiding local
+gz-physics source mutation.
 """
 
 import re
 import sys
 from pathlib import Path
 
-OLD_DART_VERSION = "6.10"
-NEW_DART_VERSION = "7.0"
+MIN_COMPATIBLE_VERSION = (6, 10)
+MAX_COMPATIBLE_VERSION = (7, 0)
 
 
-def patch_gz_physics_cmake(
-    cmake_file: Path, old_version: str, new_version: str
-) -> bool:
-    """
-    Update the DART version requirement in gz-physics' top-level CMakeLists.txt.
+def parse_major_minor(version: str) -> tuple[int, int] | None:
+    parts = version.split(".")
+    if len(parts) < 2:
+        return None
 
-    Returns:
-        True if patching succeeded or is already applied, False otherwise.
-    """
+    try:
+        return int(parts[0]), int(parts[1])
+    except ValueError:
+        return None
+
+
+def validate_gz_physics_cmake(cmake_file: Path) -> bool:
+    """Return True when gz-physics asks for a DART version DART 7 supports."""
     if not cmake_file.exists():
         print(f"Error: CMakeLists.txt not found at {cmake_file}", file=sys.stderr)
         return False
@@ -45,29 +47,33 @@ def patch_gz_physics_cmake(
         return False
 
     current_version = match.group(2)
-    if current_version == new_version:
-        print(f"✓ Patch already applied (DART VERSION {new_version} found)")
-        return True
-
-    if current_version != old_version:
+    parsed_version = parse_major_minor(current_version)
+    if parsed_version is None:
         print(
-            f"Warning: Expected DART VERSION {old_version} but found {current_version} in {cmake_file}",
+            f"Error: Unsupported DART VERSION {current_version} in {cmake_file}",
             file=sys.stderr,
         )
-        print("File may have been updated upstream", file=sys.stderr)
         return False
 
-    new_content = dart_version_pattern.sub(
-        rf"\g<1>{new_version}\g<3>", content, count=1
+    if parsed_version < MIN_COMPATIBLE_VERSION:
+        print(
+            "Error: gz-physics requires DART VERSION "
+            f"{current_version}, below DART 7's compatibility floor",
+            file=sys.stderr,
+        )
+        return False
+
+    if parsed_version > MAX_COMPATIBLE_VERSION:
+        print(
+            "Error: gz-physics requires DART VERSION "
+            f"{current_version}, above the DART 7 package version",
+            file=sys.stderr,
+        )
+        return False
+
+    print(
+        f"✓ DART VERSION {current_version} is compatible with DART 7 " "package config"
     )
-
-    backup_file = cmake_file.with_suffix(".txt.bak")
-    backup_file.write_text(content)
-    cmake_file.write_text(new_content)
-
-    print(f"✓ Successfully patched {cmake_file}")
-    print(f"  Changed: DART VERSION {old_version} → {new_version}")
-    print(f"  Backup saved to: {backup_file}")
     return True
 
 
@@ -75,7 +81,7 @@ def main() -> None:
     repo_root = Path(__file__).parent.parent
     cmake_file = repo_root / ".deps" / "gz-physics" / "CMakeLists.txt"
 
-    success = patch_gz_physics_cmake(cmake_file, OLD_DART_VERSION, NEW_DART_VERSION)
+    success = validate_gz_physics_cmake(cmake_file)
     raise SystemExit(0 if success else 1)
 
 

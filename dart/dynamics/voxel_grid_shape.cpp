@@ -208,6 +208,16 @@ std::shared_ptr<const SparseOccupancyGrid> VoxelGridShape::getOccupancyGrid()
   return mOccupancyGrid;
 }
 
+//==============================================================================
+void VoxelGridShape::notifyOccupancyGridUpdated()
+{
+#if DART_HAVE_OCTOMAP
+  rebuildOctreeFromOccupancyGrid();
+#endif
+
+  markDataDirty();
+}
+
 #if DART_HAVE_OCTOMAP
 //==============================================================================
 void VoxelGridShape::setOctree(std::shared_ptr<octomap::OcTree> octree)

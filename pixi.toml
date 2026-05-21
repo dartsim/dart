@@ -1978,7 +1978,7 @@ libode = ">=0.16.6,<0.17"
 #
 # Individual tasks can also be run separately if needed:
 #   pixi run -e gazebo download-gz  # Download gz-physics source
-#   pixi run -e gazebo patch-gz     # Patch DART version requirement
+#   pixi run -e gazebo patch-gz     # Validate DART version requirement
 #   pixi run -e gazebo config-gz    # Configure CMake build
 #   pixi run -e gazebo build-gz     # Build gz-physics + dartsim plugin
 #   pixi run -e gazebo test-gz      # Run full gz-physics suite + verify DART integration

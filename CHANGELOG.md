@@ -81,6 +81,10 @@
     and restored `fetch` as a source-defined `dart::gui` example with its live
     mocap target-following behavior, Bullet preference when available, and
     public-API target affordance.
+  - Replaced OctoMap-backed `VoxelGridShape` storage with native
+    `SparseOccupancyGrid` storage. OctoMap is no longer discovered or linked by
+    core DART libraries and remains available only to tests and benchmarks for
+    reference comparisons.
   - Fixed Filament mesh material extraction so legacy textured meshes without
     PBR metalness import as dielectric surfaces, restoring visible Atlas
     texture detail in `dartsim`, `atlas_puppet`, and `atlas_simbicon`.
@@ -489,8 +493,8 @@
   - Broke the collision→dynamics source dependency using a bridge pattern: dynamics-dependent implementations moved from `dart/collision/*.cpp` to `dart/dynamics/detail/*_bridge.cpp`. Collision `.cpp` files no longer include any `dart/dynamics/` headers.
   - Added built-in native collision module (`dart/collision/native/`) with 575+ tests covering all primitive shape pairs, GJK/EPA, distance queries, raycast, CCD, four broad-phase algorithms, collision filtering, compound shapes, and parallel narrowphase.
   - Wired the native DART backend as a full `CollisionDetector` implementation with distance queries, raycast, and expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere). The legacy `"experimental"` factory key remains as an alias for compatibility.
-  - Added native sparse occupancy-grid storage for `VoxelGridShape`, including native voxel collision support when OctoMap is unavailable while preserving OctoMap compatibility APIs when the dependency is present.
-  - Optimized native sparse occupancy-grid point-cloud insertion and occupied-cell extraction, added opt-in threaded point-cloud insertion, expanded OctoMap comparison benchmarks, and enabled native `VoxelGridShape` GUI rendering without OctoMap.
+  - Added native sparse occupancy-grid storage for `VoxelGridShape`, including native voxel collision support without requiring OctoMap.
+  - Optimized native sparse occupancy-grid point-cloud insertion and occupied-cell extraction, added opt-in threaded point-cloud insertion, expanded OctoMap reference-comparison benchmarks, and enabled native `VoxelGridShape` GUI rendering without OctoMap.
   - Updated the `point_cloud` GUI example to use native voxel-grid point-cloud APIs without requiring OctoMap.
   - Allowed installed DART 7 CMake packages to satisfy legacy DART 6.10+ `find_package(DART ...)` requests so pinned gz-physics checkouts can configure without a local source patch.
   - Fixed native capsule-box duplicate filtering to stay pair-local so accumulated collision results do not suppress new contacts in dense worlds.

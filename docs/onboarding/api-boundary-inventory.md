@@ -175,7 +175,7 @@ documented downstream migration or removal condition is satisfied.
 | dart/dynamics/skeleton.hpp                                 | dynamics   | 19      | exposed-implementation debt |
 | dart/dynamics/smart_pointer.hpp                            | dynamics   | 1       | compatibility               |
 | dart/dynamics/soft_mesh_shape.hpp                          | dynamics   | 4       | compatibility               |
-| dart/dynamics/voxel_grid_shape.hpp                         | dynamics   | 3       | compatibility               |
+| dart/dynamics/voxel_grid_shape.hpp                         | dynamics   | 4       | compatibility               |
 | dart/math/constants.hpp                                    | math       | 3       | exposed-implementation debt |
 | dart/math/geometry.hpp                                     | math       | 1       | exposed-implementation debt |
 | dart/math/lcp/all.hpp                                      | math       | 1       | compatibility               |

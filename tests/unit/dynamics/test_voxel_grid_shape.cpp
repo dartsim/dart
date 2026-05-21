@@ -81,6 +81,24 @@ TEST(VoxelGridShape, ConstructorWithNullNativeStorage)
   EXPECT_DOUBLE_EQ(shape.getOccupancyGrid()->getResolution(), 0.01);
 }
 
+//==============================================================================
+TEST(VoxelGridShape, NotifyOccupancyGridUpdatedRefreshesShapeCaches)
+{
+  VoxelGridShape shape(0.1);
+  (void)shape.getBoundingBox();
+  (void)shape.getVolume();
+
+  auto grid = shape.getOccupancyGrid();
+  ASSERT_NE(grid, nullptr);
+  grid->setOccupancy(SparseOccupancyGrid::CellKey{2, 0, 0}, 0.9);
+  shape.notifyOccupancyGridUpdated();
+
+  const auto& boundingBox = shape.getBoundingBox();
+  EXPECT_TRUE(boundingBox.getMin().isApprox(Eigen::Vector3d(0.2, 0.0, 0.0)));
+  EXPECT_TRUE(boundingBox.getMax().isApprox(Eigen::Vector3d(0.3, 0.1, 0.1)));
+  EXPECT_NEAR(shape.getVolume(), 0.001, 1e-15);
+}
+
 #if DART_HAVE_OCTOMAP
 //==============================================================================
 TEST(VoxelGridShape, ConstructorWithNullOctree)

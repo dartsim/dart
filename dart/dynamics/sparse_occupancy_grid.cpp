@@ -401,30 +401,34 @@ void SparseOccupancyGrid::insertPointCloud(
     endpoints.push_back(Endpoint{endpoint, end});
   }
 
-  constexpr unsigned char freeCell = 1u << 0u;
-  constexpr unsigned char occupiedCell = 1u << 1u;
+  struct CellUpdateCounts
+  {
+    std::size_t freeUpdates = 0u;
+    std::size_t occupiedUpdates = 0u;
+  };
 
-  using ScanCells = std::unordered_map<CellKey, unsigned char, CellKeyHash>;
+  using ScanCells = std::unordered_map<CellKey, CellUpdateCounts, CellKeyHash>;
 
-  const auto buildScanCells =
-      [&](std::size_t begin, std::size_t end, ScanCells& scanCells) {
-        scanCells.reserve((end - begin) * 16);
-        for (std::size_t i = begin; i < end; ++i) {
-          const auto& endpoint = endpoints[i];
-          scanCells[endpoint.key] |= occupiedCell;
-          if (originKey == endpoint.key) {
-            continue;
-          }
+  const auto buildScanCells = [&](std::size_t begin,
+                                  std::size_t end,
+                                  ScanCells& scanCells) {
+    scanCells.reserve((end - begin) * 16);
+    for (std::size_t i = begin; i < end; ++i) {
+      const auto& endpoint = endpoints[i];
+      ++scanCells[endpoint.key].occupiedUpdates;
+      if (originKey == endpoint.key) {
+        continue;
+      }
 
-          visitRayFreeCells(
-              originKey,
-              endpoint.key,
-              origin,
-              endpoint.point,
-              mResolution,
-              [&scanCells](const CellKey& key) { scanCells[key] |= freeCell; });
-        }
-      };
+      visitRayFreeCells(
+          originKey,
+          endpoint.key,
+          origin,
+          endpoint.point,
+          mResolution,
+          [&scanCells](const CellKey& key) { ++scanCells[key].freeUpdates; });
+    }
+  };
 
   if (numThreads == 0) {
     numThreads = std::thread::hardware_concurrency();
@@ -466,16 +470,34 @@ void SparseOccupancyGrid::insertPointCloud(
 
     scanCells.reserve(mergedSize);
     for (const auto& localScanCells : threadScanCells) {
-      for (const auto& [key, state] : localScanCells) {
-        scanCells[key] |= state;
+      for (const auto& [key, counts] : localScanCells) {
+        auto& mergedCounts = scanCells[key];
+        mergedCounts.freeUpdates += counts.freeUpdates;
+        mergedCounts.occupiedUpdates += counts.occupiedUpdates;
       }
     }
   }
 
   mLogOdds.reserve(mLogOdds.size() + scanCells.size());
 
-  for (const auto& [key, state] : scanCells) {
-    updateOccupancy(key, (state & occupiedCell) != 0u);
+  for (const auto& [key, counts] : scanCells) {
+    auto& logOdds = mLogOdds[key];
+    if (counts.freeUpdates > 0u) {
+      logOdds = clamp(
+          logOdds + mMissLogOdds * static_cast<double>(counts.freeUpdates),
+          mMinLogOdds,
+          mMaxLogOdds);
+    }
+    if (counts.occupiedUpdates > 0u) {
+      logOdds = clamp(
+          logOdds + mHitLogOdds * static_cast<double>(counts.occupiedUpdates),
+          mMinLogOdds,
+          mMaxLogOdds);
+    }
+  }
+
+  if (!scanCells.empty()) {
+    markOccupiedCellsDirty();
   }
 }
 
@@ -592,6 +614,19 @@ void SparseOccupancyGrid::rebuildOccupiedCellsCache() const
             mResolution,
             logOddsToProbability(logOdds)});
   }
+
+  std::sort(
+      mOccupiedCellsCache.begin(),
+      mOccupiedCellsCache.end(),
+      [](const OccupiedCell& lhs, const OccupiedCell& rhs) {
+        if (lhs.key.x != rhs.key.x) {
+          return lhs.key.x < rhs.key.x;
+        }
+        if (lhs.key.y != rhs.key.y) {
+          return lhs.key.y < rhs.key.y;
+        }
+        return lhs.key.z < rhs.key.z;
+      });
 
   mOccupiedCellsDirty = false;
 }

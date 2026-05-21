@@ -144,6 +144,41 @@ TEST(SparseOccupancyGrid, PointCloudUpdates)
 }
 
 //==============================================================================
+TEST(SparseOccupancyGrid, PointCloudAccumulatesRepeatedObservations)
+{
+  const Eigen::Vector3d origin(0.05, 0.05, 0.05);
+  const Eigen::Vector3d endpoint(0.95, 0.05, 0.05);
+  const Eigen::Vector3d freePoint(0.35, 0.05, 0.05);
+
+  SparseOccupancyGrid singleGrid(0.1);
+  const std::array<Eigen::Vector3d, 1> singlePoint{endpoint};
+  singleGrid.insertPointCloud(singlePoint, origin);
+
+  SparseOccupancyGrid repeatedGrid(0.1);
+  const std::array<Eigen::Vector3d, 2> repeatedPoints{endpoint, endpoint};
+  repeatedGrid.insertPointCloud(repeatedPoints, origin);
+
+  EXPECT_GT(
+      repeatedGrid.getOccupancy(endpoint), singleGrid.getOccupancy(endpoint));
+  EXPECT_LT(
+      repeatedGrid.getOccupancy(freePoint), singleGrid.getOccupancy(freePoint));
+
+  std::vector<Eigen::Vector3d> densePoints(600, endpoint);
+  SparseOccupancyGrid serialGrid(0.1);
+  serialGrid.insertPointCloud(
+      densePoints, origin, Eigen::Isometry3d::Identity(), 1);
+
+  SparseOccupancyGrid threadedGrid(0.1);
+  threadedGrid.insertPointCloud(
+      densePoints, origin, Eigen::Isometry3d::Identity(), 4);
+
+  EXPECT_DOUBLE_EQ(
+      threadedGrid.getOccupancy(endpoint), serialGrid.getOccupancy(endpoint));
+  EXPECT_DOUBLE_EQ(
+      threadedGrid.getOccupancy(freePoint), serialGrid.getOccupancy(freePoint));
+}
+
+//==============================================================================
 TEST(SparseOccupancyGrid, OccupiedCellExtractionAndCopy)
 {
   SparseOccupancyGrid grid(0.1);
@@ -161,7 +196,10 @@ TEST(SparseOccupancyGrid, OccupiedCellExtractionAndCopy)
 
   const SparseOccupancyGrid::CellKey secondOccupiedKey{2, 0, 0};
   grid.setOccupancy(secondOccupiedKey, 0.9);
-  EXPECT_EQ(grid.getOccupiedCells().size(), 2u);
+  const auto sortedCells = grid.getOccupiedCells();
+  ASSERT_EQ(sortedCells.size(), 2u);
+  EXPECT_TRUE((sortedCells[0].key == occupiedKey));
+  EXPECT_TRUE((sortedCells[1].key == secondOccupiedKey));
 
   grid.setOccupancyThreshold(0.95);
   EXPECT_TRUE(grid.getOccupiedCells().empty());
