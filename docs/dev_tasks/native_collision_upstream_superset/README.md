@@ -10,11 +10,11 @@
 - [x] Phase 2: Build a DART coverage map from every in-scope upstream
       correctness case to an existing DART test, new DART test, fixture
       generator, or explicit non-applicability decision. The generated row-level
-      map now has 0 `mapping-needed` rows; fixture/prototype decisions remain
-      for follow-up.
+      map now has 0 `mapping-needed`, `fixture-needed`, or
+      `new-benchmark-needed` rows.
 - [x] Phase 3: Build a benchmark coverage map from every in-scope upstream
       benchmark/demo scenario to an existing DART benchmark or new benchmark.
-- [ ] Phase 4: Implement correctness coverage expansion without losing existing
+- [x] Phase 4: Implement correctness coverage expansion without losing existing
       reference/native coverage.
 - [ ] Phase 5: Implement benchmark expansion and rerun native-vs-reference
       performance optimization against the expanded benchmark packet.
@@ -52,9 +52,9 @@ optimization expansion by benchmarks.
 - Coverage map scaffold:
   [`02-coverage-map.md`](02-coverage-map.md)
 - Generated row-level case map:
-  [`03-case-map.md`](03-case-map.md) currently records 207 covered rows, 25
-  fixture-needed rows, 357 not-applicable rows, 0 new-benchmark-needed rows, and
-  0 mapping-needed rows.
+  [`03-case-map.md`](03-case-map.md) currently records 207 covered rows, 382
+  not-applicable rows, 0 fixture-needed rows, 0 new-benchmark-needed rows, and 0
+  mapping-needed rows.
 
 ## Key Decisions
 
@@ -72,15 +72,13 @@ optimization expansion by benchmarks.
 
 ## Immediate Next Steps
 
-1. Convert the 25 `fixture-needed` Bullet OpenCL GPU/prototype rows into an
-   explicit prototype gate decision or follow-up fixture.
-2. Run the expanded benchmark packet, optimize the native detector against the
+1. Run the expanded benchmark packet, optimize the native detector against the
    new scenario rows, and only then make fastest-backend claims.
-3. Keep new DART test and benchmark names focused on the algorithm, query, and
+2. Keep new DART test and benchmark names focused on the algorithm, query, and
    edge condition, not on the upstream library that inspired the case.
-4. Keep the later GUI collision-pair debugger example scoped around the native
+3. Keep the later GUI collision-pair debugger example scoped around the native
    pair matrix, pose controls, and contact point/depth/normal rendering.
-5. Regenerate the inventory and case map after any upstream clone refresh:
+4. Regenerate the inventory and case map after any upstream clone refresh:
    `pixi run python scripts/inventory_upstream_collision_coverage.py`.
 
 ## Verification Log
@@ -160,7 +158,8 @@ optimization expansion by benchmarks.
 - Generator broadphase pass mapped FCL broadphase update, duplicate-pair,
   empty-query, collision/self-collision, and distance/self-distance rows to
   native broadphase, world, distance, and mesh coverage anchors. Bullet OpenCL
-  rows now classify as `fixture-needed` prototype follow-up rows.
+  rows are now explicit non-applicability decisions for the current CPU native
+  detector until DART adds a native GPU collision prototype.
 - Generator shape pass mapped primitive representation rows to native shape
   construction/bounds tests, cone/ellipsoid rows to adapter envelope tests, and
   mass-property/topology rows to explicit native-scope non-applicability
@@ -254,6 +253,13 @@ optimization expansion by benchmarks.
 - `pixi run lint` passed.
 - `pixi run build` passed.
 - `git diff --check` passed.
+- Converted Bullet OpenCL GPU kernel rows from unresolved fixture follow-up to
+  explicit non-applicability decisions for the current CPU native detector
+  gate; they become relevant only if DART adds a native GPU collision
+  prototype.
+- `pixi run python scripts/inventory_upstream_collision_coverage.py` updated
+  the generated inventory and row map; no rows remain `fixture-needed`,
+  `new-benchmark-needed`, or `mapping-needed`.
 - Added content-named deterministic scenario benchmarks for tall box grid
   stacks, compound box structures, scaled mixed primitive stacks, elongated
   convex hull stacks, mixed primitive terrain stacks, convex terrain contact

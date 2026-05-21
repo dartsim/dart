@@ -19,12 +19,13 @@ intersection boundary cases across identity and transformed common frames.
 Mapped FCL broadphase update, duplicate-pair, empty-query,
 collision/self-collision, and distance/self-distance rows to native broadphase,
 world, distance, and mesh coverage anchors; Bullet OpenCL rows now classify as
-prototype fixture follow-up. Mapped FCL shape representation rows to native
-shape construction/bounds tests and adapter envelope checks, with explicit
-native-scope non-applicability decisions for mass-property and face-topology
-rows. Mapped the transformed convex support initializer row to a DART native
-test and classified upstream-only simplex/EPA helper rows as outside DART's
-public native API. Added direct plane-convex collision coverage with
+explicit non-applicability decisions for the current CPU native detector gate.
+Mapped FCL shape representation rows to native shape construction/bounds tests
+and adapter envelope checks, with explicit native-scope non-applicability
+decisions for mass-property and face-topology rows. Mapped the transformed
+convex support initializer row to a DART native test and classified
+upstream-only simplex/EPA helper rows as outside DART's public native API.
+Added direct plane-convex collision coverage with
 tetrahedron halfspace configurations, and added cylinder-sphere
 incompatible-scale collision plus separated distance witness coverage. Mapped
 the Bullet collision unit rows to native sphere-sphere distance/GJK/MPR anchors
@@ -90,11 +91,9 @@ coverage and updates the generated maps.
 
 ## Immediate Next Step
 
-Continue filling `docs/dev_tasks/native_collision_upstream_superset/02-coverage-map.md`
-and `03-case-map.md` by converting the remaining 25 `fixture-needed`
-GPU/prototype rows into an explicit gate decision or follow-up fixture. The
-row-level map now has 0 `mapping-needed` rows and 0
-`new-benchmark-needed` rows.
+Run the expanded benchmark packet, optimize the native detector against the new
+scenario rows, and only then make fastest-backend claims. The row-level map now
+has 0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
 
 ## Context That Would Be Lost
 
@@ -119,9 +118,9 @@ row-level map now has 0 `mapping-needed` rows and 0
 - `origin/feature/filament-gui-full-execution` exists and may be useful for
   that example, but no rebase has been done. Rebase/integration should wait for
   an explicit renderer decision.
-- `03-case-map.md` is generated and currently reports 207 `covered` rows, 25
-  `fixture-needed` rows, 357 `not-applicable` rows, 0
-  `new-benchmark-needed` rows, and 0 `mapping-needed` rows.
+- `03-case-map.md` is generated and currently reports 207 `covered` rows, 382
+  `not-applicable` rows, 0 `fixture-needed` rows, 0 `new-benchmark-needed`
+  rows, and 0 `mapping-needed` rows.
 - `collideCylinderSphere()` now handles sphere centers inside the cylinder by
   choosing the nearest cap or barrel surface; this is required by the FCL
   sphere-cylinder internal-contact cases.
@@ -179,8 +178,9 @@ row-level map now has 0 `mapping-needed` rows and 0
   common transformed frames.
 - FCL broadphase update, duplicate-pair, empty-query,
   collision/self-collision, and distance/self-distance rows map to native
-  broadphase/world/distance/mesh tests; Bullet OpenCL kernel rows remain
-  `fixture-needed` until a GPU/prototype gate decision is made.
+  broadphase/world/distance/mesh tests; Bullet OpenCL kernel rows are explicit
+  non-applicability decisions for the current CPU native detector until DART
+  adds a native GPU collision prototype.
 - FCL shape representation rows map to native shape construction/local-bound
   tests, plane half-space bounds, and cone/ellipsoid adapter envelope tests;
   FCL mass-property and convex topology rows are out of native collision shape
@@ -377,5 +377,5 @@ git status --short --branch
 pixi run python scripts/inventory_upstream_collision_coverage.py
 ```
 
-Then continue with the remaining fixture/prototype and benchmark rows before
+Then run the expanded benchmark packet and optimize native collision before
 using expanded benchmark rows for performance claims.

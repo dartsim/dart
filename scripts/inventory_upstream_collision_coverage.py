@@ -1733,9 +1733,9 @@ def classify_case(case: Case, scope: Scope) -> tuple[str, str, str]:
 
     if "gpu/prototype" in native_scope:
         return (
-            "fixture-needed",
-            "future native GPU/prototype coverage",
-            "Catalogue now; completion needs an explicit prototype gate decision.",
+            "not-applicable",
+            "future native GPU collision prototype gate",
+            "This row compiles or executes Bullet OpenCL kernels. DART native collision currently exposes a CPU detector, so GPU kernel coverage is outside the current detector completion gate until DART adds an explicit native GPU collision prototype.",
         )
 
     if scope.project == "ODE" and source.startswith("ode/libccd/src/testsuites/"):
