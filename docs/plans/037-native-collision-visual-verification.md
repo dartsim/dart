@@ -13,7 +13,10 @@
   sandbox with primitive scenes, contacts, AABBs, distance, raycast, CCD, and
   picking; `dart/gui/vsg/collision_scene_builder.*` already draws collision
   objects, contact points/normals, AABBs, distance results, raycasts, and
-  sphere casts.
+  sphere casts; `examples/collision_sandbox/pair_registry.*` now drives a
+  pair selector for every unordered native shape pair and
+  `test_collision_sandbox_pair_registry` verifies registry coverage against the
+  native narrow-phase support table.
 
 ## Scope
 

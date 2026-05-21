@@ -3,7 +3,7 @@
 ## Current Status
 
 - [x] Phase 0: Create PLAN-037 and this implementation tracker.
-- [ ] Phase 1: Define the pair registry and fixture model.
+- [x] Phase 1: Define the pair registry and fixture model.
 - [ ] Phase 2: Extend `examples/collision_sandbox` into the consolidated
       pair-by-pair debugger.
 - [ ] Phase 3: Add contact/manifold/depth visualization and raw-value panels.
@@ -41,6 +41,9 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
 - `dart/collision/native/broad_phase/aabb_tree.hpp` keeps tree nodes private,
   so BVH/AABB-tree rendering needs an explicit copied debug snapshot rather
   than direct example access to internals.
+- `examples/collision_sandbox/pair_registry.*` now owns the current
+  pair-case registry, shape fixture factory, default pair poses, and pair
+  classification for the dropdown and tests.
 
 ## Key Decisions
 
@@ -52,22 +55,22 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
 - Treat pair coverage as data. The pair registry should drive the dropdown,
   UI status, headless smoke coverage, and tests so future native pair changes
   cannot silently drift away from the visual verifier.
+- Keep `examples/collision_sandbox/pair_registry.*` as the source of truth for
+  visual pair cases while the example remains example-local.
 - Broad-phase visualization should use copied debug snapshots. That keeps tree
   internals inspectable without exposing mutable implementation state to the
   GUI example.
 
 ## Immediate Next Steps
 
-1. Add a `PairCase` registry for the current native contact matrix, including
-   supported, adapted/fallback, distance-only, and unsupported-placeholder
-   states.
-2. Replace the collision sandbox demo-mode radio group with a pair selector and
-   object A/object B parameter panels while preserving the existing headless
-   screenshot path.
-3. Add focused tests that validate the registry covers the expected native pair
-   matrix before expanding rendering.
-4. Design the broad-phase debug snapshot structure and add tests before using
+1. Replace the remaining mode-oriented contact UI with richer object A/object B
+   shape-parameter inspectors instead of the current uniform scale controls.
+2. Add manifold-aware rendering in `dart/gui/vsg/collision_scene_builder.*`
+   so the scene groups raw contact points by manifold and visualizes depth.
+3. Design the broad-phase debug snapshot structure and add tests before using
    it in the GUI overlay.
+4. Expand the headless smoke into a deterministic sweep over representative
+   pair and broad-phase overlay presets.
 
 ## Completion Checklist
 

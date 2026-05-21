@@ -103,10 +103,9 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Build the pair-by-pair visual debugger from the existing VSG
-  collision sandbox, starting with a data-driven pair registry, object
-  parameter and pose controls, contact/manifold inspection, and the broad-phase
-  debug snapshot API needed for AABB tree and Morton-code overlays.
+- Next step: Extend the new collision sandbox pair registry and selector with
+  richer per-shape parameter inspectors, manifold/depth rendering, and the
+  broad-phase debug snapshot API needed for AABB tree and Morton-code overlays.
 - Gate: The completed example must build with GUI/VSG enabled, pass a headless
   screenshot smoke that proves nonblank geometry and overlays, cover every
   supported native pair with explicit unsupported placeholders, and have focused
