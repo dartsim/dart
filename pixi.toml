@@ -196,6 +196,7 @@ lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 
 check-collision-runtime-isolation = { cmd = "python scripts/check_collision_runtime_isolation.py" }
 audit-collision-compat-facades = { cmd = "python scripts/audit_collision_compat_facades.py" }
+check-native-collision-superset = { cmd = "python scripts/check_native_collision_superset_status.py" }
 
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
 
@@ -217,6 +218,7 @@ lint = { depends-on = [
   "lint-rst",
   "check-collision-runtime-isolation",
   "audit-collision-compat-facades",
+  "check-native-collision-superset",
   "lint-api-boundaries",
   "sync-ai-commands",
 ] }
@@ -952,6 +954,13 @@ bm-collision-check = { depends-on = [
   "bm-collision-check-raycast-batch",
   "bm-collision-check-adapter",
 ] }
+config-bm-collision = { depends-on = [
+  { task = "config", args = [
+    "ON",
+    "Release",
+    "OFF",
+  ] },
+] }
 bm-collision-check-narrow = { cmd = """
     python scripts/check_collision_benchmarks.py \
       --target bm_comparative_narrow_phase \
@@ -962,7 +971,7 @@ bm-collision-check-narrow = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-narrow-adapter = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -970,12 +979,11 @@ bm-collision-check-narrow-adapter = { cmd = """
       --output .benchmark_results/collision_check_narrow_adapter.json \
       --benchmark-filter 'BM_NarrowPhaseAdapter_EdgeCases_(Native|FCL|Bullet|ODE)/(SphereSphere|BoxBox|SphereBox)_Touching/1$' \
       --max-native-ratio 1.10 \
-      --report-only \
       -- \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-narrow-raw-reference = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -983,12 +991,11 @@ bm-collision-check-narrow-raw-reference = { cmd = """
       --output .benchmark_results/collision_check_narrow_raw_reference.json \
       --benchmark-filter 'BM_NarrowPhaseRawReference_(SphereSphere|BoxBox|SphereBox)_(Native|FCL|Bullet|ODE)$|BM_NarrowPhaseRawReference_EdgeCases_(Native|FCL|Bullet|ODE)/(SphereSphere|BoxBox|CapsuleCapsule|SphereBox|CapsuleSphere|CapsuleBox)_(Touching|DeepPenetration|Grazing|ThinFeature)/1$' \
       --max-native-ratio 1.10 \
-      --report-only \
       -- \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-distance = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1000,7 +1007,7 @@ bm-collision-check-distance = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-raycast = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1012,7 +1019,7 @@ bm-collision-check-raycast = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-mixed = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1024,7 +1031,7 @@ bm-collision-check-mixed = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=5
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-mesh = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1035,7 +1042,7 @@ bm-collision-check-mesh = { cmd = """
       -- \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
-""", depends-on = ["config"] }
+""", depends-on = ["config-bm-collision"] }
 bm-collision-check-raycast-batch = { cmd = """
     python scripts/check_collision_benchmarks.py \
       --target bm_scenarios_raycast_batch \
@@ -1046,7 +1053,7 @@ bm-collision-check-raycast-batch = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-adapter = { cmd = """
     python scripts/cmake_build.py \
@@ -1058,7 +1065,7 @@ bm-collision-check-adapter = { cmd = """
       --benchmark_out_format=json \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
-""", depends-on = ["config"] }
+""", depends-on = ["config-bm-collision"] }
 
 test-joints = { cmd = [
   "bash",

@@ -46,6 +46,9 @@
   - GUI dependency handling updates: switched ImGui to FetchContent, prefer local Vulkan loader, and removed bundled lodepng. ([#2056](https://github.com/dartsim/dart/pull/2056), [#2085](https://github.com/dartsim/dart/pull/2085), [#2051](https://github.com/dartsim/dart/pull/2051))
   - Hide fetched ImGui internal formatting helpers from shared library exports. ([#2671](https://github.com/dartsim/dart/issues/2671))
   - Pixi tasks and helper scripts now guard optional targets (dartpy, GUI examples) automatically, detect missing generator targets before invoking `cmake --build`, and expose `DART_BUILD_*_OVERRIDE` environment hooks so CI and local workflows can toggle bindings/apps without editing `pixi.toml`.
+  - Ensured the aggregate CMake `tests` target builds simulation-experimental
+    test executables when that component is enabled, so local and CI test runs
+    do not execute stale or missing binaries.
   - Exported `DynamicJointConstraint` and `JointConstraint` on Windows so constraint unit tests link successfully.
   - Exported soft contact constraints, DART collision helpers, `computeIntersection`, and IK property types on Windows to fix shared-library unit test linking. ([#2462](https://github.com/dartsim/dart/pull/2462))
   - Exported existing FCL, joint Coulomb friction, and MJCF detail parser declarations on Windows so shared-library consumers and tests can link the header-declared symbols consistently. ([#2648](https://github.com/dartsim/dart/pull/2648))
@@ -135,6 +138,9 @@
   - Fixed Atlas Simbicon state terminal-condition ownership so the native
     collision stability integration path exits cleanly under AddressSanitizer.
   - Added collision benchmark regression checks that parse Google Benchmark JSON and compare native collision timings against the best enabled FCL, Bullet, or ODE reference result across narrowphase, distance, raycast, mixed primitive, mesh-heavy, raycast-batch, and public DART adapter scenarios, with a scheduled/manual CI Linux guard that uploads the JSON artifacts.
+  - Added deterministic native collision scenario benchmarks for stacked box
+    grids, compound box structures, scaled mixed primitives, convex hull stacks,
+    terrain contacts, moving raycasts, and Halton-seeded convex cell packs.
   - Added dartpy wheel verification that rejects legacy collision runtime libraries, reference collision libraries, and old reference collision component exports from wheel artifacts while allowing native-backed compatibility component facades.
   - Added a runtime source isolation check that fails if non-reference DART source paths include FCL, Bullet, ODE, libccd, or explicit collision reference backend headers.
   - Removed per-engine FCL/Bullet/ODE collision build switches from the normal
@@ -150,6 +156,17 @@
   - Native collision: added MPR convex penetration and optional libccd parity tests/bench.
   - Native collision: handle degenerate triangle cases in GJK/MPR for robust convex queries.
   - Native collision: improved broad-phase early exit, contact-count tracking, box-box distance, cylinder-box narrow phase, and primitive-mesh traversal performance.
+  - Native collision: reduced single-contact result overhead, optimized
+    sphere-sphere, sphere-box, capsule-sphere, and capsule-box primitive hot
+    paths, batched public DART contact-manifold warm starts, cached unchanged
+    public-adapter geometry, and kept public DART collision object transforms
+    synchronized through shape-frame transform notifications.
+  - Native collision: skipped redundant one-contact public-adapter manifold
+    refresh work, fixed scoped profiling macros so profile ranges span the
+    caller scope, and made the collision benchmark guard collect production
+    timing evidence with profiling instrumentation disabled.
+  - Fixed native `CollisionResult::getContact()` to reject stale indices after
+    the result is cleared.
   - Native collision: fixed the spatial hash broad phase so unbounded
     `PlaneShape` AABBs are paired without hashing infinite cell coordinates.
   - Native collision: stabilized tilted cylinder contacts against plane-like large boxes, matching gz-physics plane fallback behavior without selecting external collision backends.
@@ -164,6 +181,9 @@
   - Fixed native capsule-vs-convex CCD so casts use the full capsule support shape instead of relying on numerically fragile endpoint-sphere hits.
   - Fixed native sphere/capsule-vs-mesh CCD so casts against open or thin mesh
     triangles no longer miss direct hits.
+  - Fixed native convex-convex signed-distance penetration witnesses so
+    reported nearest points remain finite and separated by the reported
+    penetration depth.
   - Fixed native world-level raycast, sphere-cast, and capsule-cast results so returned collision-object handles remain valid after the query returns.
   - Fixed native mesh contact adaptation so public DART contacts preserve mesh
     triangle IDs for soft-contact consumers.

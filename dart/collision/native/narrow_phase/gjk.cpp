@@ -113,6 +113,35 @@ SegmentClosestResult closestPointSegmentToOrigin(
   return result;
 }
 
+std::array<double, 3> barycentricCoordinatesOnTriangle(
+    const Eigen::Vector3d& p,
+    const Eigen::Vector3d& a,
+    const Eigen::Vector3d& b,
+    const Eigen::Vector3d& c)
+{
+  const Eigen::Vector3d v0 = b - a;
+  const Eigen::Vector3d v1 = c - a;
+  const Eigen::Vector3d v2 = p - a;
+
+  const double d00 = v0.dot(v0);
+  const double d01 = v0.dot(v1);
+  const double d11 = v1.dot(v1);
+  const double d20 = v2.dot(v0);
+  const double d21 = v2.dot(v1);
+  const double denom = d00 * d11 - d01 * d01;
+
+  if (std::abs(denom) < kEpsilon) {
+    return {
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::quiet_NaN()};
+  }
+
+  const double v = (d11 * d20 - d01 * d21) / denom;
+  const double w = (d00 * d21 - d01 * d20) / denom;
+  return {1.0 - v - w, v, w};
+}
+
 TriangleClosestResult closestPointTriangleToOrigin(
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,
@@ -723,15 +752,22 @@ EpaResult Epa::penetration(
       const SupportPoint& va = vertices[fv[0]];
       const SupportPoint& vb = vertices[fv[1]];
       const SupportPoint& vc = vertices[fv[2]];
-      TriangleClosestResult tri
-          = closestPointTriangleToOrigin(va.v, vb.v, vc.v);
+      const Eigen::Vector3d projected = closestDist * faceNormal;
+      std::array<double, 3> weights
+          = barycentricCoordinatesOnTriangle(projected, va.v, vb.v, vc.v);
+      if (!std::isfinite(weights[0]) || !std::isfinite(weights[1])
+          || !std::isfinite(weights[2])) {
+        TriangleClosestResult tri
+            = closestPointTriangleToOrigin(va.v, vb.v, vc.v);
+        weights = tri.weights;
+      }
 
       result.depth = closestDist;
       result.normal = faceNormal;
-      result.pointOnA = tri.weights[0] * va.v1 + tri.weights[1] * vb.v1
-                        + tri.weights[2] * vc.v1;
-      result.pointOnB = tri.weights[0] * va.v2 + tri.weights[1] * vb.v2
-                        + tri.weights[2] * vc.v2;
+      result.pointOnA
+          = weights[0] * va.v1 + weights[1] * vb.v1 + weights[2] * vc.v1;
+      result.pointOnB
+          = weights[0] * va.v2 + weights[1] * vb.v2 + weights[2] * vc.v2;
       result.success = true;
       return result;
     }

@@ -60,19 +60,20 @@ they should not own priority, timeline, or active implementation state.
 
 ## Files
 
-| File                                                                                 | Purpose                                                         |
-| ------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| [`README.md`](README.md)                                                             | Planning rules, structure, and revision workflow                |
-| [`dashboard.md`](dashboard.md)                                                       | Single source of truth for plan operating state                 |
-| [`north-star-roadmap.md`](north-star-roadmap.md)                                     | Strategic framing and sequencing principles                     |
-| [`030-compute-resource-access/`](030-compute-resource-access/)                       | PLAN-030 resource-access mission and evaluator contract         |
-| [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)             | Durable native-collision feature/performance dashboard          |
-| [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md) | Durable row-level native-collision coverage matrix sidecar      |
-| Numbered initiative files, such as `010-*.md`                                        | Active plan scope, evidence, open gaps, and acceptance criteria |
-| [`AGENTS.md`](AGENTS.md)                                                             | Local rules for agents editing plan docs                        |
-| [`../ai/north-star.md`](../ai/north-star.md)                                         | Mission, current state, missing capabilities, and readiness bar |
-| [`../ai/verification.md`](../ai/verification.md)                                     | Completion audit and gate-selection rules                       |
-| External owner docs linked from `dashboard.md`                                       | Source docs for initiatives that do not need a plan file yet    |
+| File                                                                                       | Purpose                                                         |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| [`README.md`](README.md)                                                                   | Planning rules, structure, and revision workflow                |
+| [`dashboard.md`](dashboard.md)                                                             | Single source of truth for plan operating state                 |
+| [`north-star-roadmap.md`](north-star-roadmap.md)                                           | Strategic framing and sequencing principles                     |
+| [`030-compute-resource-access/`](030-compute-resource-access/)                             | PLAN-030 resource-access mission and evaluator contract         |
+| [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)                   | Durable native-collision feature/performance dashboard          |
+| [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)       | Durable row-level native-collision coverage matrix sidecar      |
+| [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md) | Generated native-collision benchmark evidence manifest          |
+| Numbered initiative files, such as `010-*.md`                                              | Active plan scope, evidence, open gaps, and acceptance criteria |
+| [`AGENTS.md`](AGENTS.md)                                                                   | Local rules for agents editing plan docs                        |
+| [`../ai/north-star.md`](../ai/north-star.md)                                               | Mission, current state, missing capabilities, and readiness bar |
+| [`../ai/verification.md`](../ai/verification.md)                                           | Completion audit and gate-selection rules                       |
+| External owner docs linked from `dashboard.md`                                             | Source docs for initiatives that do not need a plan file yet    |
 
 ## Directory Structure
 

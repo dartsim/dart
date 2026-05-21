@@ -2180,15 +2180,18 @@ void RunNarrowPhaseCaseNative(
       return;
     }
     case PairKind::kSphereBox: {
-      SphereShape sphere(sphereSpec.radius);
-      BoxShape box(boxSpec.halfExtents);
       const auto tfs = MakeSphereBoxTransforms(
           sphereSpec.radius, boxSpec.halfExtents, edge);
 
       for (auto _ : state) {
         result.clear();
-        DART_BENCHMARK_NATIVE_COLLIDE(
-            collideSphereBox(sphere, tfs.tf1, box, tfs.tf2, result, option));
+        DART_BENCHMARK_NATIVE_COLLIDE(collideSphereBox(
+            tfs.tf1.translation(),
+            sphereSpec.radius,
+            boxSpec.halfExtents,
+            tfs.tf2,
+            result,
+            option));
       }
       return;
     }

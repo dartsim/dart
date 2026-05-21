@@ -39,7 +39,14 @@ after explicit maintainer/user approval and only when the user explicitly
 requests it or when there is a clear reason such as removing sensitive content
 or repairing broken branch history.
 
-## AI-Generated Reviews (Codex, Copilot, etc.)
+If a published PR branch needs the latest target branch while addressing
+feedback, use explicit maintainer/user approval to update that published branch
+by merging the target branch and pushing normally. Do not rebase a published PR
+branch by default because it invalidates existing CI runs and makes PR
+review/comment history harder to follow. Rebase or force-push only when the
+maintainer explicitly requests it.
+
+## Automated Reviews (Codex, Code Quality, Copilot, etc.)
 
 When a draft PR is first published, wait a reasonable time for the automatic
 Codex review to start. The PR body may show a small Codex activity indicator
@@ -57,7 +64,11 @@ appears after a reasonable wait.
 6. After the approved push, if the fixes addressed Codex review comments, ask
    for explicit maintainer/user approval for the PR comment, then re-trigger:
    `gh pr comment $1 --body "@codex review"`
-7. Monitor CI: `gh pr checks $1`
-8. Check for new review, repeat until no comments + CI green
+7. Also handle `github-code-quality[bot]` review comments with the same
+   no-inline-reply loop. Fix valid findings locally and push silently after
+   approval; do not re-trigger Codex solely for non-Codex bot findings unless
+   Codex comments were also addressed.
+8. Monitor CI: `gh pr checks $1`
+9. Check for new review, repeat until no comments + CI green
 
 Full iterative loop: `docs/onboarding/ai-tools.md` § "Autonomous Review-Fix-Monitor Loop"

@@ -34,6 +34,12 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <array>
+#include <limits>
+
+#include <cmath>
+
 using namespace dart::collision::native;
 
 namespace {
@@ -106,6 +112,50 @@ void expectValidMeshBvh(const MeshShape& mesh, bool enforceLeafSizeLimit)
   for (const int count : visitCounts) {
     EXPECT_EQ(count, 1);
   }
+}
+
+std::vector<Eigen::Vector3d> makeCubeVertices(double scale)
+{
+  const double half = 0.5 * scale;
+  return {
+      {-half, -half, -half},
+      {half, -half, -half},
+      {-half, half, -half},
+      {half, half, -half},
+      {-half, -half, half},
+      {half, -half, half},
+      {-half, half, half},
+      {half, half, half},
+  };
+}
+
+std::vector<Eigen::Vector3d> makeCenteredTetrahedronVertices(double scale)
+{
+  const double zBase = -1.0 / (2.0 * std::sqrt(6.0));
+  return {
+      scale * Eigen::Vector3d(0.5, -0.5 / std::sqrt(3.0), zBase),
+      scale * Eigen::Vector3d(-0.5, -0.5 / std::sqrt(3.0), zBase),
+      scale * Eigen::Vector3d(0.0, 1.0 / std::sqrt(3.0), zBase),
+      scale * Eigen::Vector3d(0.0, 0.0, std::sqrt(3.0 / 8.0)),
+  };
+}
+
+void expectLocalAabbMatchesVertices(
+    const std::vector<Eigen::Vector3d>& vertices, double tolerance)
+{
+  ASSERT_FALSE(vertices.empty());
+  ConvexShape convex(vertices);
+
+  Eigen::Vector3d expectedMin = vertices.front();
+  Eigen::Vector3d expectedMax = vertices.front();
+  for (const auto& vertex : vertices) {
+    expectedMin = expectedMin.cwiseMin(vertex);
+    expectedMax = expectedMax.cwiseMax(vertex);
+  }
+
+  const auto aabb = convex.computeLocalAabb();
+  EXPECT_TRUE(aabb.min.isApprox(expectedMin, tolerance));
+  EXPECT_TRUE(aabb.max.isApprox(expectedMax, tolerance));
 }
 
 } // namespace
@@ -214,6 +264,27 @@ TEST(CapsuleShape, ComputeLocalAabb)
   EXPECT_EQ(aabb.max, Eigen::Vector3d(0.5, 0.5, 1.5));
 }
 
+TEST(CapsuleShape, ComputeLocalAabbAcrossRadiusHeightCases)
+{
+  const std::array<std::pair<double, double>, 4> cases{{
+      {2.0, 3.0},
+      {20.0, 30.0},
+      {3.0, 2.0},
+      {30.0, 20.0},
+  }};
+
+  for (const auto& [radius, height] : cases) {
+    CapsuleShape capsule(radius, height);
+
+    const auto aabb = capsule.computeLocalAabb();
+
+    const Eigen::Vector3d expectedHalfExtents(
+        radius, radius, 0.5 * height + radius);
+    EXPECT_EQ(aabb.center(), Eigen::Vector3d::Zero());
+    EXPECT_EQ(aabb.halfExtents(), expectedHalfExtents);
+  }
+}
+
 TEST(CapsuleShape, ZeroHeight)
 {
   CapsuleShape capsule(1.0, 0.0);
@@ -287,6 +358,18 @@ TEST(ConvexShape, ComputeLocalAabb)
   EXPECT_EQ(aabb.max, Eigen::Vector3d(2, 3, 4));
 }
 
+TEST(ConvexShape, ScaledPolytopeLocalBounds)
+{
+  const std::array<double, 3> scales{{0.001, 1.0, 1000.0}};
+
+  for (const double scale : scales) {
+    const double tolerance = 1e-12 * std::max(1.0, scale);
+    expectLocalAabbMatchesVertices(makeCubeVertices(scale), tolerance);
+    expectLocalAabbMatchesVertices(
+        makeCenteredTetrahedronVertices(scale), tolerance);
+  }
+}
+
 TEST(ConvexShape, SupportFunction)
 {
   std::vector<Eigen::Vector3d> vertices
@@ -313,6 +396,57 @@ TEST(ConvexShape, SupportDiagonalDirection)
   EXPECT_EQ(
       convex.support(Eigen::Vector3d(-1, -1, -1).normalized()),
       Eigen::Vector3d(-1, -1, -1));
+}
+
+TEST(ConvexShape, SupportMatchesExhaustiveVertexSearch)
+{
+  const std::vector<Eigen::Vector3d> vertices{
+      {-1, -1, -1},
+      {1, -1, -1},
+      {1, 1, -1},
+      {-1, 1, -1},
+      {-1, -1, 1},
+      {1, -1, 1},
+      {1, 1, 1},
+      {-1, 1, 1}};
+  const ConvexShape convex(vertices);
+  const std::array<Eigen::Vector3d, 5> directions{{
+      {1, 0, 0},
+      {0, 1, 0},
+      {0, 0, 1},
+      {1, 1, 0},
+      {-1, 1, 1},
+  }};
+
+  for (const auto& direction : directions) {
+    const Eigen::Vector3d support = convex.support(direction);
+    const double supportDot = support.dot(direction);
+
+    double expectedDot = -std::numeric_limits<double>::infinity();
+    for (const auto& vertex : vertices) {
+      const double vertexDot = vertex.dot(direction);
+      if (vertexDot > expectedDot) {
+        expectedDot = vertexDot;
+      }
+    }
+
+    EXPECT_DOUBLE_EQ(supportDot, expectedDot);
+  }
+}
+
+TEST(ConvexShape, TetrahedronSupportVerticesAcrossScales)
+{
+  const std::array<double, 3> scales{{0.001, 1.0, 1000.0}};
+
+  for (const double scale : scales) {
+    const auto vertices = makeCenteredTetrahedronVertices(scale);
+    const ConvexShape convex(vertices);
+    const double tolerance = 1e-12 * std::max(1.0, scale);
+
+    for (const auto& vertex : vertices) {
+      EXPECT_TRUE(convex.support(vertex).isApprox(vertex, tolerance));
+    }
+  }
 }
 
 TEST(ConvexShape, EmptyVertices)
