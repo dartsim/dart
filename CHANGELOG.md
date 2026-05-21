@@ -699,6 +699,9 @@
     and support-centroid markers, plus arrowheads for contact normal and force
     overlays, equivalent inertia-box overlays, and collision-shape bounds for
     collision-only shape nodes.
+  - Fixed Filament renderable bounds and voxel-grid transparency handling, and
+    cleaned up the `point_cloud` example so native voxel occupancy is visible
+    without the optional source-owned grid overlay by default.
   - Fix SEGV in `ImFontAtlas::AddFontFromMemoryCompressedTTF` when null pointer is passed as compressed font data. ([#2516](https://github.com/dartsim/dart/issues/2516))
   - Fix `ImGui::ColorPicker3`/`ColorPicker4` crashes when called without an active ImGui context or window. ([#2668](https://github.com/dartsim/dart/issues/2668))
   - Added headless rendering support via `ViewerConfig` and pbuffer graphics context for CI pipelines and batch frame capture. Includes `Viewer::captureBuffer()` for raw RGBA pixel readback and a new `headless-rendering` CI job. ([#2466](https://github.com/dartsim/dart/pull/2466))

@@ -72,9 +72,8 @@
 #include <dart/dynamics/soft_body_node.hpp>
 #include <dart/dynamics/soft_mesh_shape.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
-#include <dart/dynamics/weld_joint.hpp>
-
 #include <dart/dynamics/voxel_grid_shape.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/math/geometry.hpp>
 #include <dart/math/tri_mesh.hpp>
@@ -3874,7 +3873,7 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
   EXPECT_NE(
       sourceGridHeader.find("addSourceOwnedGridPanelControls"),
       std::string::npos);
-  EXPECT_NE(sourceGridHeader.find("Show Grid"), std::string::npos);
+  EXPECT_NE(sourceGridHeader.find("Show Source Grid"), std::string::npos);
   EXPECT_NE(sourceGridHeader.find("Major Line Color"), std::string::npos);
   EXPECT_NE(sourceGridHeader.find("Minor Line Color"), std::string::npos);
   EXPECT_EQ(sourceGridHeader.find("GridVisual"), std::string::npos);
@@ -3947,6 +3946,8 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
   EXPECT_NE(pointCloudSource.find("VoxelGridShape"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("visual_voxel_grid"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("point_cloud_grid"), std::string::npos);
+  EXPECT_NE(
+      pointCloudSource.find("state->grid.visible = false"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("SourceOwnedGridState"), std::string::npos);
   EXPECT_NE(
       pointCloudSource.find("attachSourceOwnedGridFrames"), std::string::npos);

@@ -305,7 +305,7 @@ inline void addSourceOwnedGridPanelControls(
     dart::gui::PanelBuilder& builder, SourceOwnedGridState& state)
 {
   bool changed = false;
-  if (builder.checkbox("Show Grid", state.visible)) {
+  if (builder.checkbox("Show Source Grid", state.visible)) {
     changed = true;
   }
 

@@ -52,9 +52,9 @@
 #include <dart/dynamics/voxel_grid_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
-#include <dart/io/read.hpp>
-
 #include <dart/math/constants.hpp>
+
+#include <dart/io/read.hpp>
 
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
@@ -103,9 +103,9 @@ struct PointCloudState
   std::shared_ptr<dart::dynamics::SimpleFrame> voxelGridFrame;
   std::shared_ptr<dart::dynamics::VoxelGridShape> voxelGridShape;
   dart::dynamics::VisualAspect* voxelGridVisual = nullptr;
-  PointSamplingMode samplingMode = PointSamplingMode::SampleInBox;
+  PointSamplingMode samplingMode = PointSamplingMode::SampleOnRobot;
   dart::dynamics::PointCloudShape::ColorMode colorMode
-      = dart::dynamics::PointCloudShape::BIND_PER_POINT;
+      = dart::dynamics::PointCloudShape::BIND_OVERALL;
   dart::dynamics::PointCloudShape::PointShapeType pointShapeType
       = dart::dynamics::PointCloudShape::BOX;
   bool updateRobot = true;
@@ -114,7 +114,7 @@ struct PointCloudState
   bool voxelGridVisible = true;
   double visualSize = 0.035;
   Eigen::Vector4d pointCloudColor = Eigen::Vector4d(0.20, 0.38, 0.94, 0.78);
-  Eigen::Vector4d voxelGridColor = Eigen::Vector4d(0.94, 0.52, 0.20, 1.0);
+  Eigen::Vector4d voxelGridColor = Eigen::Vector4d(0.94, 0.52, 0.20, 0.22);
   double elapsedTime = 0.0;
   std::size_t lastPointCount = 0u;
   std::size_t lastOccupiedVoxelCount = 0u;
@@ -223,7 +223,8 @@ std::shared_ptr<dart::dynamics::PointCloudShape> createPointCloudShape()
 {
   auto shape = std::make_shared<dart::dynamics::PointCloudShape>(0.035);
   shape->setPointShapeType(dart::dynamics::PointCloudShape::BOX);
-  shape->setColorMode(dart::dynamics::PointCloudShape::BIND_PER_POINT);
+  shape->setColorMode(dart::dynamics::PointCloudShape::BIND_OVERALL);
+  shape->setOverallColor(Eigen::Vector4d(0.20, 0.38, 0.94, 0.78));
   return shape;
 }
 
@@ -245,7 +246,8 @@ std::shared_ptr<dart::dynamics::SimpleFrame> createVoxelGridFrame(
       dart::dynamics::Frame::World(), kVoxelGridFrameName);
   frame->setShape(shape);
   frame->getVisualAspect(true)->setRGBA(
-      Eigen::Vector4d(0.94, 0.52, 0.20, 1.0));
+      Eigen::Vector4d(0.94, 0.52, 0.20, 0.22));
+  frame->getVisualAspect()->setShadowed(false);
   return frame;
 }
 
@@ -269,9 +271,7 @@ Vector3List generatePointCloudInBox(double time, std::size_t numPoints)
     const double wave
         = 0.04 * std::sin(time * 2.0 + static_cast<double>(i) * 0.17);
     points.emplace_back(
-        -0.90 + 0.60 * xMix,
-        -0.30 + 0.60 * yMix,
-        0.55 + 0.55 * zMix + wave);
+        -0.90 + 0.60 * xMix, -0.30 + 0.60 * yMix, 0.55 + 0.55 * zMix + wave);
   }
   return points;
 }
@@ -604,7 +604,7 @@ dart::gui::Panel createPointCloudPanel(std::shared_ptr<PointCloudState> state)
     builder.separator();
     builder.text("User Guide");
     builder.text("Select a frame, then Ctrl-left drag or use arrow keys.");
-    builder.text("Grid controls edit source-owned DART line geometry.");
+    builder.text("Source grid controls edit optional DART line geometry.");
     builder.text("time: " + std::to_string(context.simulationTime));
     builder.text("contacts: " + std::to_string(context.contactCount));
     builder.text("selected: " + context.selectedLabel);
@@ -623,6 +623,7 @@ std::shared_ptr<PointCloudState> createPointCloudState()
   state->initialRobotPositions = state->robot->getPositions();
   state->world->addSkeleton(state->robot);
   state->world->addSkeleton(createGround());
+  state->grid.visible = false;
   state->grid.lineCount = 16.0;
   state->grid.lineStepSize = 0.2;
   state->grid.zOffset = -0.01;
