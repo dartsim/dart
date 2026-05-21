@@ -372,6 +372,12 @@ if(DART_CODECOV)
 
   # Code Coverage Configuration
   add_library(coverage_config INTERFACE)
+  set(DART_COVERAGE_COMPILE_OPTIONS
+    -O0        # no optimization
+    -g         # generate debug info
+    --coverage # sets all required flags
+  )
+  set(DART_COVERAGE_LINK_OPTIONS --coverage)
 
   # CodeCov can only be enabled in Debug mode
   if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -385,13 +391,13 @@ if(DART_CODECOV)
 
   # Add required flags (GCC & LLVM/Clang)
   target_compile_options(coverage_config INTERFACE
-    -O0        # no optimization
-    -g         # generate debug info
-    --coverage # sets all required flags
+    ${DART_COVERAGE_COMPILE_OPTIONS}
   )
 
   # Add required flags (GCC & LLVM/Clang)
-  target_link_options(coverage_config INTERFACE --coverage)
+  target_link_options(coverage_config INTERFACE
+    ${DART_COVERAGE_LINK_OPTIONS}
+  )
 
   # Export CodeCov configuration
   install(TARGETS coverage_config DESTINATION lib EXPORT coverage_config)

@@ -68,6 +68,7 @@ add_library(${target_name}
   world.cpp
 )
 dart_apply_strict_symbol_visibility(${target_name})
+dart_maybe_apply_coverage_config(${target_name})
 
 target_include_directories(${target_name}
   PUBLIC

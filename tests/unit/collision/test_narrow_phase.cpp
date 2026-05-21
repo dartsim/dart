@@ -33,11 +33,14 @@
 #include <dart/collision/native/collision_object.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
+#include <dart/collision/native/sdf/dense_sdf_field.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <gtest/gtest.h>
 
 #include <array>
+#include <memory>
+#include <numbers>
 #include <stdexcept>
 #include <vector>
 
@@ -104,6 +107,16 @@ void expectVectorExactlyEqual(
   EXPECT_EQ(expected.z(), actual.z());
 }
 
+void expectVectorNear(
+    const Eigen::Vector3d& actual,
+    const Eigen::Vector3d& expected,
+    double tolerance)
+{
+  EXPECT_NEAR(actual.x(), expected.x(), tolerance);
+  EXPECT_NEAR(actual.y(), expected.y(), tolerance);
+  EXPECT_NEAR(actual.z(), expected.z(), tolerance);
+}
+
 void expectContactExactlyEqual(
     const ContactPoint& expected, const ContactPoint& actual)
 {
@@ -134,6 +147,26 @@ void expectCollisionResultExactlyEqual(
           expectedManifold.getContact(j), actualManifold.getContact(j));
     }
   }
+}
+
+void expectSingleContactPairOrder(
+    const CollisionResult& forward,
+    const CollisionResult& swapped,
+    double tolerance)
+{
+  ASSERT_EQ(forward.numContacts(), 1u);
+  ASSERT_EQ(swapped.numContacts(), 1u);
+
+  const ContactPoint& forwardContact = forward.getContact(0);
+  const ContactPoint& swappedContact = swapped.getContact(0);
+
+  EXPECT_NEAR(forwardContact.depth, swappedContact.depth, tolerance);
+  expectVectorNear(forwardContact.position, swappedContact.position, tolerance);
+  expectVectorNear(forwardContact.normal, -swappedContact.normal, tolerance);
+  EXPECT_TRUE(forwardContact.position.allFinite());
+  EXPECT_TRUE(swappedContact.position.allFinite());
+  EXPECT_TRUE(forwardContact.normal.allFinite());
+  EXPECT_TRUE(swappedContact.normal.allFinite());
 }
 
 void expectFiniteCollisionResult(const CollisionResult& result)
@@ -184,6 +217,654 @@ TEST(NarrowPhase, IsSupported)
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Mesh));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Sphere));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Convex));
+}
+
+TEST(NarrowPhase, IsDistanceSupported)
+{
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Sphere));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Sdf));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sdf, ShapeType::Sphere));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Sdf, ShapeType::Sdf));
+  EXPECT_TRUE(NarrowPhase::isDistanceSupported(ShapeType::Box, ShapeType::Box));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Sphere, ShapeType::Box));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Capsule));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Sdf));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Cylinder, ShapeType::Sdf));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Convex, ShapeType::Sdf));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Sdf));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Sphere));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Capsule, ShapeType::Box));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Sphere));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Mesh));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Cylinder, ShapeType::Box));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Convex, ShapeType::Box));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Mesh, ShapeType::Sphere));
+  EXPECT_TRUE(
+      NarrowPhase::isDistanceSupported(ShapeType::Compound, ShapeType::Plane));
+
+  EXPECT_FALSE(
+      NarrowPhase::isDistanceSupported(ShapeType::Plane, ShapeType::Sdf));
+}
+
+TEST(NarrowPhase, DispatchesSupportedCollisionPairs)
+{
+  SphereShape sphere(0.75);
+  BoxShape box(Eigen::Vector3d::Constant(1.0));
+  CapsuleShape capsule(0.45, 1.0);
+  CylinderShape cylinder(0.5, 1.0);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  ConvexShape convex(makeOctahedronVertices(0.75));
+  MeshShape mesh(makeCubeMeshVertices(0.75), makeCubeMeshTriangles());
+
+  CompoundShape compoundA;
+  compoundA.addChild(std::make_unique<SphereShape>(0.5));
+  CompoundShape compoundB;
+  compoundB.addChild(std::make_unique<BoxShape>(Eigen::Vector3d::Ones()));
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const std::array<std::pair<const Shape*, const Shape*>, 36> supportedPairs{{
+      {&sphere, &sphere},       {&box, &box},
+      {&sphere, &box},          {&box, &sphere},
+      {&capsule, &capsule},     {&capsule, &sphere},
+      {&sphere, &capsule},      {&capsule, &box},
+      {&box, &capsule},         {&plane, &sphere},
+      {&sphere, &plane},        {&plane, &box},
+      {&box, &plane},           {&plane, &capsule},
+      {&capsule, &plane},       {&cylinder, &cylinder},
+      {&cylinder, &sphere},     {&sphere, &cylinder},
+      {&cylinder, &box},        {&box, &cylinder},
+      {&cylinder, &capsule},    {&capsule, &cylinder},
+      {&cylinder, &plane},      {&plane, &cylinder},
+      {&plane, &convex},        {&convex, &plane},
+      {&mesh, &mesh},           {&mesh, &plane},
+      {&plane, &mesh},          {&mesh, &sphere},
+      {&sphere, &mesh},         {&convex, &convex},
+      {&convex, &sphere},       {&sphere, &convex},
+      {&compoundA, &compoundB}, {&compoundA, &sphere},
+  }};
+
+  CollisionOption option;
+  option.maxNumContacts = 8;
+  for (const auto& pair : supportedPairs) {
+    SCOPED_TRACE(
+        static_cast<int>(pair.first->getType()) * 100
+        + static_cast<int>(pair.second->getType()));
+    EXPECT_TRUE(
+        NarrowPhase::isSupported(
+            pair.first->getType(), pair.second->getType()));
+
+    CollisionResult result;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            pair.first, identity, pair.second, identity, option, result));
+    EXPECT_GT(result.numContacts(), 0u);
+  }
+
+  CollisionResult result;
+  EXPECT_FALSE(
+      NarrowPhase::collide(
+          nullptr, identity, &sphere, identity, option, result));
+  EXPECT_FALSE(
+      NarrowPhase::collide(&plane, identity, &plane, identity, option, result));
+}
+
+TEST(NarrowPhase, CompoundCollisionTraversesChildrenAndEarlyStops)
+{
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  SphereShape sphere(0.5);
+  BoxShape box(Eigen::Vector3d::Ones());
+
+  CompoundShape compoundA;
+  compoundA.addChild(nullptr);
+  compoundA.addChild(std::make_unique<SphereShape>(0.5));
+
+  CompoundShape compoundB;
+  compoundB.addChild(nullptr);
+  compoundB.addChild(std::make_unique<SphereShape>(0.5), translated(0.75));
+
+  CollisionResult compoundPair;
+  EXPECT_TRUE(
+      NarrowPhase::collide(
+          &compoundA,
+          identity,
+          &compoundB,
+          identity,
+          CollisionOption::binaryCheck(),
+          compoundPair));
+  EXPECT_GE(compoundPair.numContacts(), 1u);
+
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  CollisionResult compoundShape;
+  EXPECT_TRUE(
+      NarrowPhase::collide(
+          &compoundA,
+          identity,
+          &sphere,
+          translated(0.75),
+          option,
+          compoundShape));
+  EXPECT_EQ(compoundShape.numContacts(), 1u);
+
+  CollisionResult shapeCompound;
+  EXPECT_TRUE(
+      NarrowPhase::collide(
+          &sphere,
+          translated(0.75),
+          &compoundA,
+          identity,
+          option,
+          shapeCompound));
+  EXPECT_EQ(shapeCompound.numContacts(), 1u);
+
+  CompoundShape emptyCompound;
+  emptyCompound.addChild(nullptr);
+  CollisionResult noChildHit;
+  EXPECT_FALSE(
+      NarrowPhase::collide(
+          &sphere, identity, &emptyCompound, identity, option, noChildHit));
+
+  CollisionResult prefilled;
+  prefilled.addContact(ContactPoint{});
+  EXPECT_FALSE(
+      NarrowPhase::collide(
+          &sphere, identity, &box, identity, option, prefilled));
+}
+
+TEST(NarrowPhase, DispatchesSupportedDistancePairs)
+{
+  auto makeDenseField = []() {
+    const Eigen::Vector3d origin = Eigen::Vector3d::Constant(-0.5);
+    const Eigen::Vector3i dims(4, 4, 4);
+    auto field = std::make_shared<DenseSdfField>(origin, dims, 0.25, 10.0);
+    for (int z = 0; z < dims.z(); ++z) {
+      for (int y = 0; y < dims.y(); ++y) {
+        for (int x = 0; x < dims.x(); ++x) {
+          const Eigen::Vector3i index(x, y, z);
+          const Eigen::Vector3d point
+              = origin + Eigen::Vector3d(x, y, z) * 0.25;
+          field->setDistance(index, point.norm() - 0.25);
+          field->setObserved(index, true);
+        }
+      }
+    }
+    return field;
+  };
+
+  auto expectFiniteDistance = [](auto makeShapeA, auto makeShapeB) {
+    CollisionWorld world;
+    auto objA = world.createObject(makeShapeA());
+    auto objB = world.createObject(makeShapeB());
+    ASSERT_TRUE(objA.isValid());
+    ASSERT_TRUE(objB.isValid());
+
+    DistanceResult result;
+    const double distance = NarrowPhase::distance(
+        objA, objB, DistanceOption::unlimited(), result);
+    EXPECT_TRUE(std::isfinite(distance));
+    EXPECT_TRUE(result.pointOnObject1.allFinite());
+    EXPECT_TRUE(result.pointOnObject2.allFinite());
+    EXPECT_TRUE(result.normal.allFinite());
+  };
+
+  auto sphere = []() {
+    return std::make_unique<SphereShape>(0.5);
+  };
+  auto box = []() {
+    return std::make_unique<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  };
+  auto capsule = []() {
+    return std::make_unique<CapsuleShape>(0.35, 0.8);
+  };
+  auto cylinder = []() {
+    return std::make_unique<CylinderShape>(0.4, 0.9);
+  };
+  auto plane = []() {
+    return std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  };
+  auto convex = []() {
+    return std::make_unique<ConvexShape>(makeOctahedronVertices(0.5));
+  };
+  auto mesh = []() {
+    return std::make_unique<MeshShape>(
+        makeCubeMeshVertices(0.5), makeCubeMeshTriangles());
+  };
+  auto sdf = [&]() {
+    return std::make_unique<SdfShape>(makeDenseField());
+  };
+  auto compound = []() {
+    auto shape = std::make_unique<CompoundShape>();
+    shape->addChild(std::make_unique<SphereShape>(0.4));
+    return shape;
+  };
+
+  expectFiniteDistance(sphere, sphere);
+  expectFiniteDistance(sphere, box);
+  expectFiniteDistance(box, sphere);
+  expectFiniteDistance(box, box);
+  expectFiniteDistance(capsule, capsule);
+  expectFiniteDistance(capsule, sphere);
+  expectFiniteDistance(sphere, capsule);
+  expectFiniteDistance(capsule, box);
+  expectFiniteDistance(box, capsule);
+  expectFiniteDistance(plane, sphere);
+  expectFiniteDistance(sphere, plane);
+  expectFiniteDistance(plane, box);
+  expectFiniteDistance(box, plane);
+  expectFiniteDistance(plane, capsule);
+  expectFiniteDistance(capsule, plane);
+  expectFiniteDistance(plane, cylinder);
+  expectFiniteDistance(cylinder, plane);
+  expectFiniteDistance(plane, mesh);
+  expectFiniteDistance(mesh, plane);
+  expectFiniteDistance(cylinder, cylinder);
+  expectFiniteDistance(cylinder, sphere);
+  expectFiniteDistance(sphere, cylinder);
+  expectFiniteDistance(cylinder, box);
+  expectFiniteDistance(box, cylinder);
+  expectFiniteDistance(cylinder, capsule);
+  expectFiniteDistance(capsule, cylinder);
+  expectFiniteDistance(mesh, mesh);
+  expectFiniteDistance(convex, sphere);
+  expectFiniteDistance(sphere, convex);
+  expectFiniteDistance(mesh, convex);
+  expectFiniteDistance(convex, mesh);
+  expectFiniteDistance(sphere, sdf);
+  expectFiniteDistance(sdf, sphere);
+  expectFiniteDistance(capsule, sdf);
+  expectFiniteDistance(sdf, capsule);
+  expectFiniteDistance(cylinder, sdf);
+  expectFiniteDistance(sdf, cylinder);
+  expectFiniteDistance(convex, sdf);
+  expectFiniteDistance(sdf, convex);
+  expectFiniteDistance(mesh, sdf);
+  expectFiniteDistance(sdf, mesh);
+  expectFiniteDistance(sdf, sdf);
+  expectFiniteDistance(compound, sphere);
+  expectFiniteDistance(sphere, compound);
+  expectFiniteDistance(compound, compound);
+
+  CollisionWorld world;
+  auto objA = world.createObject(
+      std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  auto objB = world.createObject(
+      std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 1.0));
+  DistanceResult unsupported;
+  EXPECT_EQ(
+      NarrowPhase::distance(
+          objA, objB, DistanceOption::unlimited(), unsupported),
+      std::numeric_limits<double>::max());
+}
+
+TEST(NarrowPhase, CompoundDistanceHandlesEmptyAndNullChildren)
+{
+  CollisionWorld world;
+  auto sphere = world.createObject(std::make_unique<SphereShape>(0.5));
+
+  auto emptyCompoundShape = std::make_unique<CompoundShape>();
+  emptyCompoundShape->addChild(nullptr);
+  auto emptyCompound = world.createObject(std::move(emptyCompoundShape));
+
+  DistanceResult missing;
+  EXPECT_EQ(
+      NarrowPhase::distance(
+          emptyCompound, sphere, DistanceOption::unlimited(), missing),
+      std::numeric_limits<double>::max());
+
+  auto compoundShape = std::make_unique<CompoundShape>();
+  compoundShape->addChild(nullptr);
+  compoundShape->addChild(std::make_unique<SphereShape>(0.5), translated(0.75));
+  compoundShape->addChild(std::make_unique<SphereShape>(0.5), translated(2.0));
+  auto compound = world.createObject(std::move(compoundShape));
+
+  DistanceResult forward;
+  const double distanceForward = NarrowPhase::distance(
+      compound, sphere, DistanceOption::unlimited(), forward);
+  EXPECT_LT(distanceForward, 0.0);
+  EXPECT_EQ(forward.object1, &compound);
+  EXPECT_EQ(forward.object2, &sphere);
+
+  DistanceResult reverse;
+  const double distanceReverse = NarrowPhase::distance(
+      sphere, compound, DistanceOption::unlimited(), reverse);
+  EXPECT_NEAR(distanceReverse, distanceForward, 1e-12);
+  EXPECT_EQ(reverse.object1, &sphere);
+  EXPECT_EQ(reverse.object2, &compound);
+}
+
+TEST(NarrowPhase, CompoundRayAndCastQueriesPickClosestChild)
+{
+  auto compoundShape = std::make_unique<CompoundShape>();
+  compoundShape->addChild(nullptr);
+  compoundShape->addChild(
+      std::make_unique<SphereShape>(0.5), translated(0, 0, 5));
+  compoundShape->addChild(
+      std::make_unique<SphereShape>(0.5), translated(0, 0, 2));
+
+  CollisionWorld world;
+  auto target = world.createObject(std::move(compoundShape));
+
+  RaycastResult raycast;
+  ASSERT_TRUE(
+      NarrowPhase::raycast(
+          Ray(Eigen::Vector3d(0.0, 0.0, -2.0), Eigen::Vector3d::UnitZ()),
+          target,
+          RaycastOption::unlimited(),
+          raycast));
+  EXPECT_EQ(raycast.object, &target);
+  EXPECT_LT(raycast.distance, 4.0);
+
+  CcdResult sphereCast;
+  ASSERT_TRUE(
+      NarrowPhase::sphereCast(
+          Eigen::Vector3d(0.0, 0.0, -2.0),
+          Eigen::Vector3d(0.0, 0.0, 6.0),
+          0.25,
+          target,
+          CcdOption::standard(),
+          sphereCast));
+  EXPECT_EQ(sphereCast.object, &target);
+  EXPECT_LT(sphereCast.timeOfImpact, 0.5);
+
+  CapsuleShape capsule(0.2, 0.5);
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  capsuleStart.translation() = Eigen::Vector3d(0.0, 0.0, -2.0);
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(0.0, 0.0, 6.0);
+
+  CcdResult capsuleCast;
+  ASSERT_TRUE(
+      NarrowPhase::capsuleCast(
+          capsuleStart,
+          capsuleEnd,
+          capsule,
+          target,
+          CcdOption::standard(),
+          capsuleCast));
+  EXPECT_EQ(capsuleCast.object, &target);
+  EXPECT_LT(capsuleCast.timeOfImpact, 0.5);
+
+  EXPECT_TRUE(NarrowPhase::isRaycastSupported(ShapeType::Compound));
+  EXPECT_FALSE(NarrowPhase::isRaycastSupported(ShapeType::Sdf));
+  EXPECT_TRUE(NarrowPhase::isSphereCastSupported(ShapeType::Compound));
+  EXPECT_FALSE(NarrowPhase::isSphereCastSupported(ShapeType::Sdf));
+  EXPECT_TRUE(NarrowPhase::isCapsuleCastSupported(ShapeType::Compound));
+  EXPECT_FALSE(NarrowPhase::isCapsuleCastSupported(ShapeType::Sdf));
+}
+
+TEST(NarrowPhase, RayAndCastDispatchReachPrimitiveTargets)
+{
+  auto expectRayHit = [](const char* name, std::unique_ptr<Shape> shape) {
+    SCOPED_TRACE(name);
+    CollisionWorld world;
+    auto target = world.createObject(std::move(shape));
+    RaycastResult result;
+    EXPECT_TRUE(
+        NarrowPhase::raycast(
+            Ray(Eigen::Vector3d(0.0, 0.0, -3.0), Eigen::Vector3d::UnitZ(), 8.0),
+            target,
+            RaycastOption::unlimited(),
+            result));
+    EXPECT_EQ(result.object, &target);
+  };
+
+  expectRayHit("capsule ray", std::make_unique<CapsuleShape>(0.4, 1.0));
+  expectRayHit("cylinder ray", std::make_unique<CylinderShape>(0.4, 1.0));
+  expectRayHit(
+      "mesh ray",
+      std::make_unique<MeshShape>(
+          makeCubeMeshVertices(0.5), makeCubeMeshTriangles()));
+  expectRayHit(
+      "convex ray", std::make_unique<ConvexShape>(makeOctahedronVertices(0.5)));
+
+  {
+    SCOPED_TRACE("plane ray");
+    CollisionWorld world;
+    auto target = world.createObject(
+        std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+    RaycastResult result;
+    EXPECT_TRUE(
+        NarrowPhase::raycast(
+            Ray(Eigen::Vector3d(0.0, 0.0, 3.0), -Eigen::Vector3d::UnitZ(), 8.0),
+            target,
+            RaycastOption::unlimited(),
+            result));
+    EXPECT_EQ(result.object, &target);
+  }
+
+  auto expectSphereCastHit = [](std::unique_ptr<Shape> shape) {
+    CollisionWorld world;
+    auto target = world.createObject(std::move(shape));
+    CcdResult result;
+    EXPECT_TRUE(
+        NarrowPhase::sphereCast(
+            Eigen::Vector3d(0.0, 0.0, -3.0),
+            Eigen::Vector3d(0.0, 0.0, 3.0),
+            0.1,
+            target,
+            CcdOption::standard(),
+            result));
+    EXPECT_EQ(result.object, &target);
+  };
+
+  expectSphereCastHit(std::make_unique<CapsuleShape>(0.4, 1.0));
+  expectSphereCastHit(std::make_unique<CylinderShape>(0.4, 1.0));
+  expectSphereCastHit(
+      std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  expectSphereCastHit(
+      std::make_unique<MeshShape>(
+          makeCubeMeshVertices(0.5), makeCubeMeshTriangles()));
+  expectSphereCastHit(
+      std::make_unique<ConvexShape>(makeOctahedronVertices(0.5)));
+
+  auto expectCapsuleCastHit = [](std::unique_ptr<Shape> shape) {
+    CollisionWorld world;
+    auto target = world.createObject(std::move(shape));
+    CapsuleShape capsule(0.1, 0.4);
+    Eigen::Isometry3d start = Eigen::Isometry3d::Identity();
+    start.translation() = Eigen::Vector3d(0.0, 0.0, -3.0);
+    Eigen::Isometry3d end = Eigen::Isometry3d::Identity();
+    end.translation() = Eigen::Vector3d(0.0, 0.0, 3.0);
+
+    CcdResult result;
+    EXPECT_TRUE(
+        NarrowPhase::capsuleCast(
+            start, end, capsule, target, CcdOption::standard(), result));
+    EXPECT_EQ(result.object, &target);
+  };
+
+  expectCapsuleCastHit(std::make_unique<SphereShape>(0.5));
+  expectCapsuleCastHit(
+      std::make_unique<BoxShape>(Eigen::Vector3d::Ones() * 0.5));
+  expectCapsuleCastHit(std::make_unique<CapsuleShape>(0.4, 1.0));
+  expectCapsuleCastHit(
+      std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  expectCapsuleCastHit(std::make_unique<CylinderShape>(0.4, 1.0));
+  expectCapsuleCastHit(
+      std::make_unique<ConvexShape>(makeOctahedronVertices(0.5)));
+  expectCapsuleCastHit(
+      std::make_unique<MeshShape>(
+          makeCubeMeshVertices(0.5), makeCubeMeshTriangles()));
+
+  CollisionObject invalid;
+  RaycastResult raycast;
+  EXPECT_FALSE(
+      NarrowPhase::raycast(
+          Ray(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ()),
+          invalid,
+          RaycastOption::unlimited(),
+          raycast));
+
+  CcdResult sphereCast;
+  EXPECT_FALSE(
+      NarrowPhase::sphereCast(
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d::UnitZ(),
+          0.1,
+          invalid,
+          CcdOption::standard(),
+          sphereCast));
+
+  CcdResult capsuleCast;
+  const CapsuleShape capsule(0.1, 0.4);
+  EXPECT_FALSE(
+      NarrowPhase::capsuleCast(
+          Eigen::Isometry3d::Identity(),
+          Eigen::Isometry3d::Identity(),
+          capsule,
+          invalid,
+          CcdOption::standard(),
+          capsuleCast));
+
+  CollisionWorld sdfWorld;
+  auto sdfTarget = sdfWorld.createObject(
+      std::make_unique<SdfShape>(std::make_shared<DenseSdfField>(
+          Eigen::Vector3d::Constant(-0.5), Eigen::Vector3i(2, 2, 2), 1.0)));
+  ASSERT_TRUE(sdfTarget.isValid());
+
+  EXPECT_FALSE(
+      NarrowPhase::raycast(
+          Ray(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ()),
+          sdfTarget,
+          RaycastOption::unlimited(),
+          raycast));
+  EXPECT_FALSE(
+      NarrowPhase::sphereCast(
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d::UnitZ(),
+          0.1,
+          sdfTarget,
+          CcdOption::standard(),
+          sphereCast));
+  EXPECT_FALSE(
+      NarrowPhase::capsuleCast(
+          Eigen::Isometry3d::Identity(),
+          Eigen::Isometry3d::Identity(),
+          capsule,
+          sdfTarget,
+          CcdOption::standard(),
+          capsuleCast));
+}
+
+TEST(NarrowPhase, PrimitiveDispatcherPreservesScaleContactsUnderPairOrder)
+{
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  {
+    const SphereShape sphere(0.01);
+    const BoxShape box(Eigen::Vector3d(15.0, 1.0, 1.0));
+    const Eigen::Isometry3d boxTransform = Eigen::Isometry3d::Identity();
+    const Eigen::Isometry3d sphereTransform
+        = translated(15.0 * 0.95, 0.0, 1.0 + 0.01 * 0.5);
+
+    CollisionResult sphereBox;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &sphere, sphereTransform, &box, boxTransform, option, sphereBox));
+
+    CollisionResult boxSphere;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &box, boxTransform, &sphere, sphereTransform, option, boxSphere));
+
+    expectSingleContactPairOrder(sphereBox, boxSphere, 1e-9);
+    EXPECT_NEAR(sphereBox.getContact(0).depth, 0.005, 1e-9);
+  }
+
+  {
+    const CylinderShape cylinder(9.0, 0.1);
+    const SphereShape sphere(0.025);
+    const Eigen::Vector3d obliqueRadial
+        = Eigen::Vector3d(1.0, 2.0, 0.0).normalized();
+    const Eigen::Vector3d sphereCenter
+        = obliqueRadial * (cylinder.getRadius() - sphere.getRadius())
+          + Eigen::Vector3d::UnitZ()
+                * (0.5 * cylinder.getHeight() + 0.5 * sphere.getRadius());
+
+    const Eigen::Isometry3d cylinderTransform = translated(1.0, -2.0, 0.5);
+    const Eigen::Isometry3d sphereTransform
+        = cylinderTransform
+          * translated(sphereCenter.x(), sphereCenter.y(), sphereCenter.z());
+
+    CollisionResult cylinderSphere;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &cylinder,
+            cylinderTransform,
+            &sphere,
+            sphereTransform,
+            option,
+            cylinderSphere));
+
+    CollisionResult sphereCylinder;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &sphere,
+            sphereTransform,
+            &cylinder,
+            cylinderTransform,
+            option,
+            sphereCylinder));
+
+    expectSingleContactPairOrder(cylinderSphere, sphereCylinder, 1e-9);
+    EXPECT_NEAR(
+        cylinderSphere.getContact(0).depth, 0.5 * sphere.getRadius(), 1e-9);
+  }
+
+  {
+    const CapsuleShape capsule(50.0, 200.0);
+    const SphereShape sphere(50.0);
+
+    Eigen::Isometry3d capsuleTransform = Eigen::Isometry3d::Identity();
+    capsuleTransform.linear()
+        = Eigen::AngleAxisd(
+              std::numbers::pi_v<double> * 0.5, Eigen::Vector3d::UnitX())
+              .toRotationMatrix();
+    capsuleTransform.translation() = Eigen::Vector3d(0.0, 50.0, 75.0);
+
+    const Eigen::Isometry3d sphereTransform = Eigen::Isometry3d::Identity();
+
+    CollisionResult capsuleSphere;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &capsule,
+            capsuleTransform,
+            &sphere,
+            sphereTransform,
+            option,
+            capsuleSphere));
+
+    CollisionResult sphereCapsule;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            &sphere,
+            sphereTransform,
+            &capsule,
+            capsuleTransform,
+            option,
+            sphereCapsule));
+
+    expectSingleContactPairOrder(capsuleSphere, sphereCapsule, 1e-9);
+    EXPECT_NEAR(capsuleSphere.getContact(0).depth, 25.0, 1e-9);
+  }
 }
 
 TEST(NarrowPhase, collide_batch_dispatcher_matches_scalar_loop)

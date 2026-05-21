@@ -465,9 +465,10 @@ When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter rev
 
 - `chatgpt-codex-connector[bot]` — Codex automated reviews
 - `github-actions[bot]` — GitHub Actions automated comments
+- `github-code-quality[bot]` — GitHub code-quality review comments
 - `copilot[bot]` — GitHub Copilot suggestions
 
-**If the reviewer username ends in `[bot]`, it is an AI-generated review.**
+**If the reviewer username ends in `[bot]`, treat it as an automated review.**
 
 ### Rules for AI Agents (CRITICAL)
 
@@ -521,6 +522,12 @@ comment and still requires explicit maintainer/user approval.
 Prefer additive follow-up commits for updates to already-published PRs. This
 keeps review history inspectable and makes each review round clear.
 
+When a published PR branch needs the latest target branch, use explicit
+maintainer/user approval to update that published branch by merging the target
+branch and pushing normally. Do not rebase published PR branches by default:
+rebasing invalidates existing CI runs and makes PR review/comment history harder
+to follow. Rebase or force-push only when the maintainer explicitly requests it.
+
 Amend or force-push only when the user explicitly requests it or when there is a
 clear reason, such as removing sensitive content, repairing broken branch
 history, or cleaning up noisy local work before the PR is first published.
@@ -542,6 +549,11 @@ After identifying an AI-generated review comment to address:
 7. **Monitor for results**:
    - New review comments → repeat from step 1
    - "No issues" or 👍 reaction → done, PR is ready for human review
+
+Apply the same no-inline-reply handling to `github-code-quality[bot]` findings:
+fix valid findings locally, push only after approval, and do not post an
+acknowledgment reply. The `@codex review` re-trigger is only for Codex review
+rounds.
 
 **Agents MUST:**
 
@@ -601,10 +613,13 @@ For agents iterating on automated reviews, the complete loop is:
 5. If the addressed review was Codex, after the approved push, ask for explicit
    maintainer/user approval for the PR comment, then re-trigger:
    `gh pr comment <PR> --body "@codex review"`
-6. Monitor CI: `gh pr checks <PR>`
-7. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
-8. If new review has comments → go to step 2
-9. If no new comments AND CI is green → done
+6. For non-Codex bot findings, including `github-code-quality[bot]`, do not
+   re-trigger Codex solely for those fixes unless Codex review comments were
+   also addressed in the same push
+7. Monitor CI: `gh pr checks <PR>`
+8. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
+9. If new review has comments → go to step 2
+10. If no new comments AND CI is green → done
 ```
 
 **Checking for new reviews:**

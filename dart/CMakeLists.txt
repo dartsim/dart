@@ -322,10 +322,6 @@ if(MSVC)
   )
 endif()
 
-if(DART_CODECOV)
-  target_link_libraries(dart PUBLIC coverage_config)
-endif()
-
 if(DART_BUILD_PROFILE)
   target_compile_definitions(dart PUBLIC
     DART_PROFILE_ENABLE_TEXT=$<BOOL:${DART_PROFILE_BUILTIN}>

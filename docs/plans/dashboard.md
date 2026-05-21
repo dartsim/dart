@@ -72,18 +72,29 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)
-- Status: Active
-- Horizon: Now
+- Status: Parked
+- Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Keep native collision feature/use-case/benchmark coverage,
-  runtime-isolation proof, and DART 7/DART 8 abstraction cleanup planning
-  current through the completing local packet and final PR evidence transfer.
-- Gate:
-  [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)
-  has no active GAP/PARTIAL rows, runtime reference engines remain
-  test/benchmark-only, final
-  benchmark/CI evidence is attached to the completing review surface, and
-  temporary dev-task folders are removed.
+- Next step: Use the durable feature dashboard and coverage matrix as the
+  feature-complete baseline for the native collision performance wave.
+- Gate: Coverage matrix has no active feature-level GAP/PARTIAL rows, runtime
+  comparison-only implementations remain test/benchmark-only, and
+  compatibility/package isolation audits remain part of `pixi run lint`.
+
+### PLAN-036: Native Collision Performance Wave
+
+- Owner doc:
+  [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)
+- Status: Complete
+- Horizon: Later
+- Dimension: Scalable compute
+- Next step: Use the durable benchmark manifest and follow-up plan to choose
+  the next profiled hot-path slice without restoring reference-engine runtime
+  dependencies.
+- Gate: The durable manifest records 45 comparable native leads, 0 behind rows,
+  24 native-only rows, and 0 rerun-needed rows from the local single-worker
+  benchmark packet; multi-core CPU and single-GPU work remain behind prototype
+  gates.
 
 ### PLAN-040: DART 7 Release Hardening
 

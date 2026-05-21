@@ -109,10 +109,22 @@ Use these practices:
    explicit maintainer/user approval and only when the user explicitly requests
    it or when there is a clear reason such as removing sensitive content or
    repairing broken branch history.
-10. If `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
+10. If a published PR branch needs the latest target branch, use explicit
+    maintainer/user approval to update that published branch by merging the
+    target branch and pushing normally:
+    ```bash
+    # After explicit maintainer/user approval:
+    git fetch origin <target-branch>
+    git merge --no-ff origin/<target-branch>
+    git push
+    ```
+    Do not rebase a published PR branch by default because it invalidates
+    existing CI runs and makes PR review/comment history harder to follow.
+    Rebase or force-push only when the maintainer explicitly requests it.
+11. If `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
     local until explicit maintainer/user approval is given for the additional
     push or PR update.
-11. Monitor CI:
+12. Monitor CI:
     ```bash
     gh pr checks <PR_NUMBER>
     ```

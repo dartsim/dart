@@ -28,9 +28,10 @@ loop to the next terminal state:
 This explicit approval covers routine PR-maintenance mutations needed for that
 loop: additive fix commits and pushes, PR description/metadata corrections,
 resolving already-addressed review threads, rerunning failed CI jobs, and
-requesting a fresh AI review after follow-up fixes. It does **not** cover merges,
-force-pushes, branch deletion, PR closure, base-branch changes, or human
-reviewer requests; ask separately for those.
+requesting a fresh AI review after follow-up fixes. It does **not** cover
+merging the PR into the target branch, force-pushes, branch deletion, PR
+closure, base-branch changes, or human reviewer requests; ask separately for
+those.
 
 Do not call the PR managed just because checks are green. Continue until the PR
 is mergeable with required checks complete and addressed review threads are
@@ -98,6 +99,18 @@ gh pr checks <PR_NUMBER>
      maintainer/user approval and only when the user explicitly requests it or
      when there is a clear reason such as removing sensitive content or
      repairing broken branch history.
+   - If a published PR branch needs the latest target branch, use explicit
+     maintainer/user approval to update that published branch by merging the
+     target branch and pushing normally:
+     ```bash
+     # After explicit maintainer/user approval:
+     git fetch origin <base-branch>
+     git merge --no-ff origin/<base-branch>
+     git push
+     ```
+     Do not rebase a published PR branch by default because it invalidates
+     existing CI runs and makes PR review/comment history harder to follow.
+     Rebase or force-push only when the maintainer explicitly requests it.
 4. Address reviews:
    - Use the `dart-review-pr` workflow for substantive review feedback.
    - Never reply to AI-generated review comments from bot users such as

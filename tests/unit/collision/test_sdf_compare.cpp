@@ -25,6 +25,8 @@
 #endif
 
 #include <algorithm>
+#include <array>
+#include <limits>
 #include <memory>
 #include <random>
 #include <vector>
@@ -68,6 +70,27 @@ std::shared_ptr<dart::collision::native::DenseSdfField> buildDenseField()
               + (Eigen::Vector3d(x + 0.5, y + 0.5, z + 0.5) * kVoxelSize);
         field->setDistance(Eigen::Vector3i(x, y, z), sphereDistance(pos));
         field->setObserved(Eigen::Vector3i(x, y, z), true);
+      }
+    }
+  }
+
+  return field;
+}
+
+std::shared_ptr<dart::collision::native::DenseSdfField> buildConstantDenseField(
+    double distance)
+{
+  using dart::collision::native::DenseSdfField;
+  const Eigen::Vector3d origin(-1.0, -1.0, -1.0);
+  const Eigen::Vector3i dims(12, 12, 12);
+  auto field = std::make_shared<DenseSdfField>(origin, dims, 0.25);
+
+  for (int z = 0; z < dims.z(); ++z) {
+    for (int y = 0; y < dims.y(); ++y) {
+      for (int x = 0; x < dims.x(); ++x) {
+        const Eigen::Vector3i index(x, y, z);
+        field->setDistance(index, distance);
+        field->setObserved(index, true);
       }
     }
   }
@@ -197,6 +220,185 @@ TEST(SdfDenseField, MatchesAnalyticDistance)
   }
 }
 
+TEST(SdfDenseField, AccessorsAndQueryEdgeCases)
+{
+  using dart::collision::native::DenseSdfField;
+  using dart::collision::native::SdfQueryOptions;
+
+  const Eigen::Vector3d origin(1.0, -2.0, 0.5);
+  const Eigen::Vector3i dims(4, 4, 4);
+  DenseSdfField field(origin, dims, 0.25, 9.0);
+
+  EXPECT_EQ(field.origin(), origin);
+  EXPECT_EQ(field.dims(), dims);
+  EXPECT_EQ(field.voxelSize(), 0.25);
+  EXPECT_EQ(field.maxDistance(), 9.0);
+  EXPECT_EQ(field.localAabb().min, origin);
+  EXPECT_EQ(field.localAabb().max, origin + Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  field.setDistance(Eigen::Vector3i(-1, 0, 0), 4.0);
+  field.setObserved(Eigen::Vector3i(0, -1, 0), true);
+
+  for (int z = 0; z < dims.z(); ++z) {
+    for (int y = 0; y < dims.y(); ++y) {
+      for (int x = 0; x < dims.x(); ++x) {
+        const Eigen::Vector3i index(x, y, z);
+        field.setDistance(index, static_cast<double>(x + 2 * y + 3 * z));
+        field.setObserved(index, true);
+      }
+    }
+  }
+
+  SdfQueryOptions nearest;
+  nearest.interpolate = false;
+  nearest.requireObserved = true;
+  nearest.maxDistance = 100.0;
+
+  double distance = 0.0;
+  EXPECT_TRUE(field.distance(
+      origin + Eigen::Vector3d(0.25, 0.25, 0.25), &distance, nearest));
+  EXPECT_EQ(distance, 6.0);
+  EXPECT_TRUE(field.distance(
+      origin + Eigen::Vector3d(0.25, 0.25, 0.25), nullptr, nearest));
+
+  field.setObserved(Eigen::Vector3i(1, 1, 1), false);
+  EXPECT_FALSE(field.distance(
+      origin + Eigen::Vector3d(0.25, 0.25, 0.25), &distance, nearest));
+  nearest.requireObserved = false;
+  EXPECT_TRUE(field.distance(
+      origin + Eigen::Vector3d(0.25, 0.25, 0.25), &distance, nearest));
+
+  nearest.maxDistance = 1.0;
+  EXPECT_FALSE(field.distance(
+      origin + Eigen::Vector3d(0.25, 0.25, 0.25), &distance, nearest));
+  nearest.maxDistance = 100.0;
+  EXPECT_FALSE(field.distance(
+      origin + Eigen::Vector3d(-0.5, 0.0, 0.0), &distance, nearest));
+
+  field.setObserved(Eigen::Vector3i(1, 1, 1), true);
+
+  SdfQueryOptions interpolated;
+  interpolated.interpolate = true;
+  interpolated.requireObserved = true;
+  interpolated.maxDistance = 100.0;
+  const Eigen::Vector3d query = origin + Eigen::Vector3d(0.375, 0.375, 0.375);
+  Eigen::Vector3d gradient = Eigen::Vector3d::Zero();
+  EXPECT_TRUE(
+      field.distanceAndGradient(query, &distance, &gradient, interpolated));
+  EXPECT_TRUE(std::isfinite(distance));
+  EXPECT_TRUE(gradient.allFinite());
+  EXPECT_FALSE(
+      field.distanceAndGradient(query, &distance, nullptr, interpolated));
+  EXPECT_FALSE(field.distanceAndGradient(
+      origin + Eigen::Vector3d(1.0, 1.0, 1.0),
+      &distance,
+      &gradient,
+      interpolated));
+
+  std::array<Eigen::Vector3d, 2> points{
+      query, origin + Eigen::Vector3d(-1.0, 0.0, 0.0)};
+  std::array<double, 2> distances{};
+  std::array<Eigen::Vector3d, 2> gradients{};
+  std::array<std::uint8_t, 2> observed{};
+  field.batchDistanceAndGradient(
+      points, distances, gradients, observed, interpolated);
+  EXPECT_EQ(observed[0], 1);
+  EXPECT_EQ(observed[1], 0);
+  EXPECT_TRUE(std::isfinite(distances[0]));
+  EXPECT_TRUE(std::isinf(distances[1]));
+}
+
+TEST(SdfDenseField, TsdfAccessorsAndQueryEdgeCases)
+{
+  using dart::collision::native::DenseTsdfField;
+  using dart::collision::native::SdfQueryOptions;
+
+  const Eigen::Vector3d origin(-0.5, 0.25, 1.0);
+  const Eigen::Vector3i dims(4, 4, 4);
+  DenseTsdfField field(origin, dims, 0.25, 0.5, 2.0);
+
+  EXPECT_EQ(field.origin(), origin);
+  EXPECT_EQ(field.dims(), dims);
+  EXPECT_EQ(field.voxelSize(), 0.25);
+  EXPECT_EQ(field.truncationDistance(), 0.5);
+  EXPECT_EQ(field.maxDistance(), 0.5);
+  EXPECT_EQ(field.localAabb().min, origin);
+  EXPECT_EQ(field.localAabb().max, origin + Eigen::Vector3d(1.0, 1.0, 1.0));
+
+  const Eigen::Vector3i invalid(-1, 0, 0);
+  field.setDistance(invalid, 3.0);
+  field.setWeight(invalid, 4.0);
+  field.setObserved(invalid, true);
+  EXPECT_EQ(field.getDistance(invalid), field.truncationDistance());
+  EXPECT_EQ(field.getWeight(invalid), 0.0);
+  EXPECT_FALSE(field.isObserved(invalid));
+
+  for (int z = 0; z < dims.z(); ++z) {
+    for (int y = 0; y < dims.y(); ++y) {
+      for (int x = 0; x < dims.x(); ++x) {
+        const Eigen::Vector3i index(x, y, z);
+        field.setDistance(index, 0.1 * static_cast<double>(x - y + z));
+        field.setWeight(index, 1.0);
+      }
+    }
+  }
+
+  field.setDistance(Eigen::Vector3i(1, 1, 1), 10.0);
+  EXPECT_EQ(field.getDistance(Eigen::Vector3i(1, 1, 1)), 0.5);
+  field.setWeight(Eigen::Vector3i(1, 1, 1), 0.0);
+  EXPECT_FALSE(field.isObserved(Eigen::Vector3i(1, 1, 1)));
+  field.setObserved(Eigen::Vector3i(1, 1, 1), true);
+  EXPECT_TRUE(field.isObserved(Eigen::Vector3i(1, 1, 1)));
+
+  SdfQueryOptions nearest;
+  nearest.interpolate = false;
+  nearest.requireObserved = true;
+  nearest.maxDistance = 100.0;
+
+  double distance = 0.0;
+  EXPECT_TRUE(field.distance(
+      origin + Eigen::Vector3d(0.25, 0.25, 0.25), &distance, nearest));
+  EXPECT_EQ(distance, 0.5);
+  EXPECT_TRUE(field.distance(
+      origin + Eigen::Vector3d(0.25, 0.25, 0.25), nullptr, nearest));
+  nearest.maxDistance = 0.1;
+  EXPECT_FALSE(field.distance(
+      origin + Eigen::Vector3d(0.25, 0.25, 0.25), &distance, nearest));
+  nearest.maxDistance = 100.0;
+  EXPECT_FALSE(field.distance(
+      origin + Eigen::Vector3d(-1.0, 0.0, 0.0), &distance, nearest));
+
+  SdfQueryOptions interpolated;
+  interpolated.interpolate = true;
+  interpolated.requireObserved = true;
+  interpolated.maxDistance = 100.0;
+  const Eigen::Vector3d query = origin + Eigen::Vector3d(0.375, 0.375, 0.375);
+  Eigen::Vector3d gradient = Eigen::Vector3d::Zero();
+  EXPECT_TRUE(
+      field.distanceAndGradient(query, &distance, &gradient, interpolated));
+  EXPECT_TRUE(std::isfinite(distance));
+  EXPECT_TRUE(gradient.allFinite());
+  EXPECT_FALSE(
+      field.distanceAndGradient(query, &distance, nullptr, interpolated));
+  EXPECT_FALSE(field.distanceAndGradient(
+      origin + Eigen::Vector3d(1.0, 1.0, 1.0),
+      &distance,
+      &gradient,
+      interpolated));
+
+  std::array<Eigen::Vector3d, 2> points{
+      query, origin + Eigen::Vector3d(-1.0, 0.0, 0.0)};
+  std::array<double, 2> distances{};
+  std::array<Eigen::Vector3d, 2> gradients{};
+  std::array<std::uint8_t, 2> observed{};
+  field.batchDistanceAndGradient(
+      points, distances, gradients, observed, interpolated);
+  EXPECT_EQ(observed[0], 1);
+  EXPECT_EQ(observed[1], 0);
+  EXPECT_TRUE(std::isfinite(distances[0]));
+  EXPECT_TRUE(std::isinf(distances[1]));
+}
+
 TEST(SdfDistance, SphereVsSdf)
 {
   using namespace dart::collision::native;
@@ -218,6 +420,151 @@ TEST(SdfDistance, SphereVsSdf)
   const double expected
       = sphereDistance(sphere_tf.translation()) - sphere.getRadius();
   EXPECT_NEAR(dist, expected, kDistTol);
+}
+
+TEST(SdfDistance, ConstantFieldZeroGradientAndUpperBounds)
+{
+  using namespace dart::collision::native;
+
+  auto field = buildConstantDenseField(0.4);
+  SdfShape sdf(field);
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+
+  {
+    SphereShape sphere(0.1);
+    DistanceResult result;
+    const double distance
+        = distanceSphereSdf(sphere, identity, sdf, identity, result);
+
+    EXPECT_NEAR(distance, 0.3, 1e-12);
+    EXPECT_NEAR(result.distance, 0.3, 1e-12);
+    EXPECT_EQ(result.pointOnObject2, Eigen::Vector3d::Zero());
+    EXPECT_EQ(result.normal, Eigen::Vector3d::UnitX());
+  }
+
+  {
+    CapsuleShape capsule(0.1, 0.5);
+    DistanceResult result;
+    const double distance
+        = distanceCapsuleSdf(capsule, identity, sdf, identity, result);
+
+    EXPECT_NEAR(distance, 0.3, 1e-12);
+    EXPECT_NEAR(result.distance, 0.3, 1e-12);
+    EXPECT_TRUE(result.pointOnObject1.allFinite());
+    EXPECT_TRUE(result.pointOnObject2.allFinite());
+    EXPECT_EQ(result.normal, Eigen::Vector3d::UnitX());
+  }
+
+  {
+    CylinderShape cylinder(0.1, 0.5);
+    DistanceResult result;
+    const double distance
+        = distanceCylinderSdf(cylinder, identity, sdf, identity, result);
+
+    EXPECT_NEAR(distance, 0.4, 1e-12);
+    EXPECT_NEAR(result.distance, 0.4, 1e-12);
+    EXPECT_TRUE(result.pointOnObject1.allFinite());
+    EXPECT_TRUE(result.pointOnObject2.allFinite());
+    EXPECT_EQ(result.normal, Eigen::Vector3d::UnitX());
+
+    DistanceResult boundedResult;
+    EXPECT_NEAR(
+        distanceCylinderSdf(
+            cylinder,
+            identity,
+            sdf,
+            identity,
+            boundedResult,
+            DistanceOption::withUpperBound(0.2)),
+        0.4,
+        1e-12);
+  }
+
+  {
+    MeshShape emptyMesh({}, {});
+    DistanceResult result;
+    EXPECT_EQ(
+        distanceMeshSdf(emptyMesh, identity, sdf, identity, result),
+        std::numeric_limits<double>::max());
+  }
+}
+
+TEST(SdfDistance, NullFieldReturnsMaxDistance)
+{
+  using namespace dart::collision::native;
+
+  SdfShape nullSdf{std::shared_ptr<const SignedDistanceField>()};
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const double maxDistance = std::numeric_limits<double>::max();
+
+  DistanceResult result;
+  DistanceOption option;
+
+  const SphereShape sphere(0.2);
+  EXPECT_EQ(
+      distanceSphereSdf(sphere, identity, nullSdf, identity, result, option),
+      maxDistance);
+
+  const CapsuleShape capsule(0.2, 0.8);
+  result.clear();
+  EXPECT_EQ(
+      distanceCapsuleSdf(capsule, identity, nullSdf, identity, result, option),
+      maxDistance);
+
+  const CylinderShape cylinder(0.2, 0.8);
+  result.clear();
+  EXPECT_EQ(
+      distanceCylinderSdf(
+          cylinder, identity, nullSdf, identity, result, option),
+      maxDistance);
+
+  const ConvexShape convex(makeOctahedronVertices(0.2));
+  result.clear();
+  EXPECT_EQ(
+      distanceConvexSdf(convex, identity, nullSdf, identity, result, option),
+      maxDistance);
+
+  const MeshShape mesh(makeOctahedronVertices(0.2), makeOctahedronTriangles());
+  result.clear();
+  EXPECT_EQ(
+      distanceMeshSdf(mesh, identity, nullSdf, identity, result, option),
+      maxDistance);
+
+  result.clear();
+  EXPECT_EQ(
+      distanceSdfSdf(nullSdf, identity, nullSdf, identity, result, option),
+      maxDistance);
+}
+
+TEST(SdfDistance, CapsuleVsSdf)
+{
+  using namespace dart::collision::native;
+
+  auto field = buildDenseField();
+  SdfShape sdf(field);
+  CapsuleShape capsule(0.2, 0.6);
+
+  Eigen::Isometry3d capsule_tf = Eigen::Isometry3d::Identity();
+  capsule_tf.translation() = gridCenter() + Eigen::Vector3d(1.2, 0.0, 0.0);
+
+  Eigen::Isometry3d sdf_tf = Eigen::Isometry3d::Identity();
+
+  DistanceResult result;
+  DistanceOption option;
+  double dist
+      = distanceCapsuleSdf(capsule, capsule_tf, sdf, sdf_tf, result, option);
+
+  EXPECT_NEAR(dist, 0.2, kDistTol);
+  EXPECT_TRUE(result.pointOnObject1.allFinite());
+  EXPECT_TRUE(result.pointOnObject2.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
+
+  capsule_tf.translation() = gridCenter() + Eigen::Vector3d(0.9, 0.0, 0.0);
+  result.clear();
+  dist = distanceCapsuleSdf(capsule, capsule_tf, sdf, sdf_tf, result, option);
+
+  EXPECT_LT(dist, 0.0);
+  EXPECT_NEAR(dist, -0.1, kDistTol);
 }
 
 TEST(SdfDistance, CylinderVsSdf)
@@ -546,6 +893,107 @@ TEST(EsdfDenseField, BuildsFromTsdf)
     ASSERT_TRUE(esdf.distance(point, &dist, query));
     EXPECT_NEAR(dist, sphereDistance(point), kEsdfTol);
   }
+}
+
+TEST(EsdfDenseField, BuildValidationAndQueryEdgeCases)
+{
+  using dart::collision::native::DenseEsdfField;
+  using dart::collision::native::DenseTsdfField;
+  using dart::collision::native::EsdfBuildOptions;
+  using dart::collision::native::SdfQueryOptions;
+
+  const Eigen::Vector3d origin(0.25, -0.5, 1.0);
+  const Eigen::Vector3i dims(4, 4, 4);
+  constexpr double voxel = 0.25;
+
+  DenseTsdfField tsdf(origin, dims, voxel, 0.5, 2.0);
+  for (int z = 0; z < dims.z(); ++z) {
+    for (int y = 0; y < dims.y(); ++y) {
+      for (int x = 0; x < dims.x(); ++x) {
+        const Eigen::Vector3i index(x, y, z);
+        tsdf.setDistance(index, (x < 2) ? -0.1 : 0.1);
+        tsdf.setWeight(index, 1.0);
+      }
+    }
+  }
+
+  EsdfBuildOptions options;
+  options.surfaceDistance = 0.0;
+  options.maxDistance = 1.0;
+  options.minWeight = 0.5;
+  options.useDiagonalNeighbors = false;
+
+  DenseEsdfField mismatchedDims(origin, Eigen::Vector3i(3, 4, 4), voxel, 2.0);
+  EXPECT_FALSE(mismatchedDims.buildFromTsdf(tsdf, options));
+
+  DenseEsdfField mismatchedVoxel(origin, dims, voxel * 2.0, 2.0);
+  EXPECT_FALSE(mismatchedVoxel.buildFromTsdf(tsdf, options));
+
+  DenseEsdfField mismatchedOrigin(
+      origin + Eigen::Vector3d::UnitX(), dims, voxel, 2.0);
+  EXPECT_FALSE(mismatchedOrigin.buildFromTsdf(tsdf, options));
+
+  DenseEsdfField esdf(origin, dims, voxel, 2.0);
+  ASSERT_TRUE(esdf.buildFromTsdf(tsdf, options));
+  ASSERT_TRUE(esdf.buildFromTsdf(tsdf, options));
+
+  EXPECT_EQ(esdf.origin(), origin);
+  EXPECT_EQ(esdf.dims(), dims);
+  EXPECT_EQ(esdf.voxelSize(), voxel);
+  EXPECT_EQ(esdf.maxDistance(), 1.0);
+  EXPECT_EQ(esdf.localAabb().min, origin);
+  EXPECT_EQ(esdf.localAabb().max, origin + Eigen::Vector3d::Constant(1.0));
+
+  esdf.setDistance(Eigen::Vector3i(-1, 0, 0), 3.0);
+  esdf.setObserved(Eigen::Vector3i(0, -1, 0), true);
+
+  SdfQueryOptions nearest;
+  nearest.interpolate = false;
+  nearest.requireObserved = true;
+  nearest.maxDistance = 100.0;
+
+  double distance = 0.0;
+  EXPECT_TRUE(esdf.distance(
+      origin + Eigen::Vector3d(0.25, 0.25, 0.25), &distance, nearest));
+  EXPECT_TRUE(std::isfinite(distance));
+  EXPECT_TRUE(esdf.distance(
+      origin + Eigen::Vector3d(0.25, 0.25, 0.25), nullptr, nearest));
+  nearest.maxDistance = -1.0;
+  EXPECT_FALSE(esdf.distance(
+      origin + Eigen::Vector3d(0.75, 0.25, 0.25), &distance, nearest));
+  nearest.maxDistance = 100.0;
+  EXPECT_FALSE(esdf.distance(
+      origin + Eigen::Vector3d(-1.0, 0.0, 0.0), &distance, nearest));
+
+  SdfQueryOptions interpolated;
+  interpolated.interpolate = true;
+  interpolated.requireObserved = true;
+  interpolated.maxDistance = 100.0;
+  const Eigen::Vector3d query = origin + Eigen::Vector3d(0.375, 0.375, 0.375);
+  Eigen::Vector3d gradient = Eigen::Vector3d::Zero();
+  EXPECT_TRUE(
+      esdf.distanceAndGradient(query, &distance, &gradient, interpolated));
+  EXPECT_TRUE(std::isfinite(distance));
+  EXPECT_TRUE(gradient.allFinite());
+  EXPECT_FALSE(
+      esdf.distanceAndGradient(query, &distance, nullptr, interpolated));
+  EXPECT_FALSE(esdf.distanceAndGradient(
+      origin + Eigen::Vector3d(1.0, 1.0, 1.0),
+      &distance,
+      &gradient,
+      interpolated));
+
+  std::array<Eigen::Vector3d, 2> points{
+      query, origin + Eigen::Vector3d(-1.0, 0.0, 0.0)};
+  std::array<double, 2> distances{};
+  std::array<Eigen::Vector3d, 2> gradients{};
+  std::array<std::uint8_t, 2> observed{};
+  esdf.batchDistanceAndGradient(
+      points, distances, gradients, observed, interpolated);
+  EXPECT_EQ(observed[0], 1);
+  EXPECT_EQ(observed[1], 0);
+  EXPECT_TRUE(std::isfinite(distances[0]));
+  EXPECT_TRUE(std::isinf(distances[1]));
 }
 
 #ifdef DART_NATIVE_HAVE_VOXBLOX
