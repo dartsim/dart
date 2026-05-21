@@ -446,6 +446,37 @@ TEST(Gjk, WarmStartEmptySimplexFallsBack)
   EXPECT_NEAR(result.distance, 1.0, 1e-6);
 }
 
+TEST(Gjk, WarmStartSimplexReductionCasesRemainFinite)
+{
+  auto supportA
+      = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+  auto supportB = makeBoxSupport(
+      Eigen::Vector3d(3.0, 2.0, 1.0), Eigen::Vector3d(0.5, 0.4, 0.3));
+
+  const std::array<Eigen::Vector3d, 4> directions{{
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d(-1.0, -1.0, -1.0),
+  }};
+
+  for (int simplexSize = 1; simplexSize <= 4; ++simplexSize) {
+    GjkSimplex simplex;
+    for (int i = 0; i < simplexSize; ++i) {
+      simplex.push(makeSupportPoint(supportA, supportB, directions[i]));
+    }
+    simplex.points[0].direction = Eigen::Vector3d::Zero();
+
+    const GjkResult result
+        = Gjk::query(supportA, supportB, simplex, Eigen::Vector3d::Zero());
+    EXPECT_FALSE(result.intersecting);
+    EXPECT_TRUE(std::isfinite(result.distance));
+    EXPECT_TRUE(result.closestPointA.allFinite());
+    EXPECT_TRUE(result.closestPointB.allFinite());
+    EXPECT_TRUE(result.separationAxis.allFinite());
+  }
+}
+
 TEST(GjkSignedDistance, RotatedBoxEdgeFaceCases)
 {
   const std::array<Eigen::Isometry3d, 4> frames{{
@@ -491,6 +522,20 @@ TEST(Epa, SphereSphereIntersecting)
   } else {
     EXPECT_LT(gjk.simplex.size, 4);
   }
+}
+
+TEST(Epa, RejectsIncompleteSimplex)
+{
+  auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
+  auto supportB = makeSphereSupport(Eigen::Vector3d(0.5, 0.0, 0.0), 1.0);
+
+  GjkSimplex simplex;
+  simplex.push(makeSupportPoint(supportA, supportB, Eigen::Vector3d::UnitX()));
+  simplex.push(makeSupportPoint(supportA, supportB, Eigen::Vector3d::UnitY()));
+
+  const EpaResult epa = Epa::penetration(supportA, supportB, simplex);
+  EXPECT_FALSE(epa.success);
+  EXPECT_EQ(epa.depth, 0.0);
 }
 
 TEST(Epa, BoxBoxPenetrationDepthAnalytic)
@@ -564,4 +609,35 @@ TEST(Mpr, SphereSpherePenetrationDepthAnalytic)
   EXPECT_TRUE(mpr.pointOnA.allFinite());
   EXPECT_TRUE(mpr.pointOnB.allFinite());
   EXPECT_TRUE(mpr.position.allFinite());
+}
+
+TEST(Mpr, ReportsSeparatedAndConcentricCases)
+{
+  auto separatedA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
+  auto separatedB = makeSphereSupport(Eigen::Vector3d(3.0, 0.0, 0.0), 1.0);
+  EXPECT_FALSE(
+      Mpr::intersect(
+          separatedA,
+          separatedB,
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d(3.0, 0.0, 0.0)));
+  EXPECT_FALSE(
+      Mpr::penetration(
+          separatedA,
+          separatedB,
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d(3.0, 0.0, 0.0))
+          .success);
+
+  auto concentricA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
+  auto concentricB = makeSphereSupport(Eigen::Vector3d::Zero(), 0.25);
+  const MprResult contained = Mpr::penetration(
+      concentricA,
+      concentricB,
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::Zero());
+  EXPECT_TRUE(contained.success);
+  EXPECT_TRUE(contained.pointOnA.allFinite());
+  EXPECT_TRUE(contained.pointOnB.allFinite());
+  EXPECT_TRUE(contained.position.allFinite());
 }

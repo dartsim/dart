@@ -60,6 +60,35 @@ TEST(AabbTreeBroadPhase, AddSingle)
   EXPECT_TRUE(bp.validate());
 }
 
+TEST(AabbTreeBroadPhase, EmptyAndMissingOperationsAreNoOps)
+{
+  AabbTreeBroadPhase bp;
+
+  bp.remove(123);
+  bp.update(7, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 1, 1)));
+  EXPECT_EQ(bp.size(), 1u);
+  EXPECT_TRUE(bp.validate());
+
+  bp.add(7, Aabb(Eigen::Vector3d(2, 2, 2), Eigen::Vector3d(3, 3, 3)));
+  EXPECT_EQ(bp.size(), 1u);
+  EXPECT_TRUE(bp.queryPairs().empty());
+
+  std::vector<std::size_t> ids;
+  std::vector<Aabb> aabbs;
+  bp.build(ids, aabbs);
+  EXPECT_EQ(bp.size(), 0u);
+  EXPECT_TRUE(bp.queryOverlapping(
+                    Aabb(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()))
+                  .empty());
+
+  bool visited = false;
+  EXPECT_TRUE(bp.visitPairs([&](std::size_t, std::size_t) {
+    visited = true;
+    return true;
+  }));
+  EXPECT_FALSE(visited);
+}
+
 TEST(AabbTreeBroadPhase, AddTwo_NoOverlap)
 {
   AabbTreeBroadPhase bp;
@@ -460,6 +489,33 @@ TEST(AabbTreeBroadPhase, QueryPairsWithOutput)
   ASSERT_EQ(out.size(), 1);
   EXPECT_EQ(out[0].first, 0);
   EXPECT_EQ(out[0].second, 1);
+}
+
+TEST(AabbTreeBroadPhase, VisitPairsCanStopEarly)
+{
+  AabbTreeBroadPhase bp;
+
+  bp.add(0, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(4, 4, 4)));
+  bp.add(1, Aabb(Eigen::Vector3d(1, 1, 1), Eigen::Vector3d(5, 5, 5)));
+  bp.add(2, Aabb(Eigen::Vector3d(2, 2, 2), Eigen::Vector3d(6, 6, 6)));
+  bp.add(3, Aabb(Eigen::Vector3d(20, 20, 20), Eigen::Vector3d(21, 21, 21)));
+
+  std::vector<BroadPhasePair> visited;
+  const bool completed = bp.visitPairs([&](std::size_t id1, std::size_t id2) {
+    visited.emplace_back(id1, id2);
+    return false;
+  });
+
+  EXPECT_FALSE(completed);
+  ASSERT_EQ(visited.size(), 1u);
+  EXPECT_LT(visited[0].first, visited[0].second);
+
+  visited.clear();
+  EXPECT_TRUE(bp.visitPairs([&](std::size_t id1, std::size_t id2) {
+    visited.emplace_back(id1, id2);
+    return true;
+  }));
+  EXPECT_EQ(visited.size(), 3u);
 }
 
 TEST(AabbTreeBroadPhase, QueryPairsFiltered)

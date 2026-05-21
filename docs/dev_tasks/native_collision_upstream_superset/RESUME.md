@@ -89,16 +89,19 @@ now has no slower native reports in the current run.
 ## Current Branch
 
 `task/native-collision-performance-complete` — ahead of origin by local
-checkpoint commits; latest milestone optimizes native primitive fast paths and
-updates the feature/performance summary tables.
+checkpoint commits; latest milestones optimize native primitive fast paths,
+update the feature/performance summary tables, and start the native detector
+coverage expansion.
 
 ## Immediate Next Step
 
-Run final post-optimization validation, then run native detector coverage and
-raise line coverage to 95%+ before completion. Also decide whether the
-stacked-scene rows need reference variants or should stay native-only profiling
-coverage. The row-level map now has 0 `mapping-needed`, `fixture-needed`, or
-`new-benchmark-needed` rows.
+Continue targeted native detector line-coverage expansion from 90.0% to 95%+
+before completion. Prioritize the remaining high-miss files: GJK, distance,
+cylinder, mesh, MPR, residual collision-world branches, CCD, and small
+manifold/object helper paths. Also decide whether the stacked-scene rows need
+reference variants or should stay native-only profiling coverage. The row-level
+map now has 0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed`
+rows.
 
 ## Context That Would Be Lost
 
@@ -117,6 +120,14 @@ coverage. The row-level map now has 0 `mapping-needed`, `fixture-needed`, or
 - After expanded benchmark optimization is complete, run native collision
   detector code coverage and raise the native detector implementation to 95%+
   line coverage before completing the task.
+- Post-optimization coverage has started. A full `pixi run coverage-report`
+  run was interrupted after `UNIT_simulation_World` ran too long under coverage
+  instrumentation, so native-only lcov extraction was captured from
+  `build/default/cpp/Debug/dart/collision/native`.
+- Initial full native coverage was 84.6% line / 90.8% function. Targeted SDF,
+  collision-world, dispatcher, AABB-tree, and GJK/EPA/MPR tests raised it to
+  90.0% line (7,945/8,827) and 96.0% function (627/653). Phase 6 remains open
+  until native line coverage reaches 95%+.
 - The user also asked to consider a later GUI example for debugging every
   supported native collision pair with pair selection, object pose controls,
   and rendered contact point/depth/normal data.

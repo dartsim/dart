@@ -23,7 +23,8 @@
       deliberate comparison or profiling-scope decision.
 - [ ] Phase 6: After performance optimization, run native collision detector
       code coverage and raise the native detector implementation to 95%+ line
-      coverage.
+      coverage. Current native line coverage is 90.0% and function coverage is
+      96.0% after the first targeted coverage-test tranche.
 - [ ] Phase 7: Consider or implement a GUI collision-pair debugger example
       that can exercise supported native pairs, pose objects, and render
       contact point/depth/normal data. If the Filament renderer branch is used,
@@ -75,8 +76,10 @@ optimization expansion by benchmarks.
 
 ## Immediate Next Steps
 
-1. Run final post-optimization validation, then run native detector coverage
-   and raise line coverage to 95%+ before completing this task.
+1. Continue native detector line-coverage expansion from 90.0% to 95%+ before
+   completing this task. Current remaining gaps are mostly GJK, distance,
+   cylinder, mesh, MPR, residual collision-world branches, CCD, and small
+   helper paths.
 2. Add reference variants for the stacked-scene benchmarks, or document why
    those rows are native-only profiling coverage rather than backend-comparison
    rows.
@@ -328,6 +331,24 @@ optimization expansion by benchmarks.
 - `pixi run lint` passed.
 - `pixi run build` passed.
 - `git diff --check` passed.
+- Post-optimization native coverage check has started. A full-suite
+  `pixi run coverage-report` attempt was interrupted after
+  `UNIT_simulation_World` ran too long under instrumentation, then native-only
+  extraction was captured from `build/default/cpp/Debug/dart/collision/native`.
+  Initial full native scope was 84.6% line / 90.8% function coverage.
+- Added targeted tests for SDF field access/query/batch/validation paths,
+  collision-world object access, update stats, serial/parallel collide stats,
+  filters, batch output, raycast closest/miss, supported collision and distance
+  dispatch pairs, AABB-tree no-op/visitor paths, and GJK/EPA/MPR warm-start and
+  degenerate cases.
+- Focused verification already run:
+  `pixi run cmake --build build/default/cpp/Debug --target test_sdf_compare test_collision_world test_narrow_phase`,
+  `pixi run ctest --test-dir build/default/cpp/Debug --output-on-failure -R '^(test_sdf_compare|test_collision_world|test_narrow_phase)$'`,
+  `pixi run cmake --build build/default/cpp/Debug --target test_aabb_tree test_gjk`, and
+  `pixi run ctest --test-dir build/default/cpp/Debug --output-on-failure -R '^(test_aabb_tree|test_gjk)$'`.
+- Native-only coverage extraction now reports 90.0% line coverage
+  (7,945/8,827) and 96.0% function coverage (627/653). Phase 6 remains open
+  until full native line coverage reaches 95%+.
 - Added exact box-box signed-distance regression coverage for edge-nearest,
   thin tilted, colinear-edge, thin-plate, offset-asymmetric, expected-touching,
   and near-perpendicular witness cases, plus tilted near-touching box stacks

@@ -33,11 +33,13 @@
 #include <dart/collision/native/collision_object.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
+#include <dart/collision/native/sdf/dense_sdf_field.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <gtest/gtest.h>
 
 #include <array>
+#include <memory>
 #include <numbers>
 #include <stdexcept>
 #include <vector>
@@ -215,6 +217,193 @@ TEST(NarrowPhase, IsSupported)
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Mesh));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Sphere));
   EXPECT_TRUE(NarrowPhase::isSupported(ShapeType::Mesh, ShapeType::Convex));
+}
+
+TEST(NarrowPhase, DispatchesSupportedCollisionPairs)
+{
+  SphereShape sphere(0.75);
+  BoxShape box(Eigen::Vector3d::Constant(1.0));
+  CapsuleShape capsule(0.45, 1.0);
+  CylinderShape cylinder(0.5, 1.0);
+  PlaneShape plane(Eigen::Vector3d::UnitZ(), 0.0);
+  ConvexShape convex(makeOctahedronVertices(0.75));
+  MeshShape mesh(makeCubeMeshVertices(0.75), makeCubeMeshTriangles());
+
+  CompoundShape compoundA;
+  compoundA.addChild(std::make_unique<SphereShape>(0.5));
+  CompoundShape compoundB;
+  compoundB.addChild(std::make_unique<BoxShape>(Eigen::Vector3d::Ones()));
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const std::array<std::pair<const Shape*, const Shape*>, 36> supportedPairs{{
+      {&sphere, &sphere},       {&box, &box},
+      {&sphere, &box},          {&box, &sphere},
+      {&capsule, &capsule},     {&capsule, &sphere},
+      {&sphere, &capsule},      {&capsule, &box},
+      {&box, &capsule},         {&plane, &sphere},
+      {&sphere, &plane},        {&plane, &box},
+      {&box, &plane},           {&plane, &capsule},
+      {&capsule, &plane},       {&cylinder, &cylinder},
+      {&cylinder, &sphere},     {&sphere, &cylinder},
+      {&cylinder, &box},        {&box, &cylinder},
+      {&cylinder, &capsule},    {&capsule, &cylinder},
+      {&cylinder, &plane},      {&plane, &cylinder},
+      {&plane, &convex},        {&convex, &plane},
+      {&mesh, &mesh},           {&mesh, &plane},
+      {&plane, &mesh},          {&mesh, &sphere},
+      {&sphere, &mesh},         {&convex, &convex},
+      {&convex, &sphere},       {&sphere, &convex},
+      {&compoundA, &compoundB}, {&compoundA, &sphere},
+  }};
+
+  CollisionOption option;
+  option.maxNumContacts = 8;
+  for (const auto& pair : supportedPairs) {
+    SCOPED_TRACE(
+        static_cast<int>(pair.first->getType()) * 100
+        + static_cast<int>(pair.second->getType()));
+    EXPECT_TRUE(
+        NarrowPhase::isSupported(
+            pair.first->getType(), pair.second->getType()));
+
+    CollisionResult result;
+    EXPECT_TRUE(
+        NarrowPhase::collide(
+            pair.first, identity, pair.second, identity, option, result));
+    EXPECT_GT(result.numContacts(), 0u);
+  }
+
+  CollisionResult result;
+  EXPECT_FALSE(
+      NarrowPhase::collide(
+          nullptr, identity, &sphere, identity, option, result));
+  EXPECT_FALSE(
+      NarrowPhase::collide(&plane, identity, &plane, identity, option, result));
+}
+
+TEST(NarrowPhase, DispatchesSupportedDistancePairs)
+{
+  auto makeDenseField = []() {
+    const Eigen::Vector3d origin = Eigen::Vector3d::Constant(-0.5);
+    const Eigen::Vector3i dims(4, 4, 4);
+    auto field = std::make_shared<DenseSdfField>(origin, dims, 0.25, 10.0);
+    for (int z = 0; z < dims.z(); ++z) {
+      for (int y = 0; y < dims.y(); ++y) {
+        for (int x = 0; x < dims.x(); ++x) {
+          const Eigen::Vector3i index(x, y, z);
+          const Eigen::Vector3d point
+              = origin + Eigen::Vector3d(x, y, z) * 0.25;
+          field->setDistance(index, point.norm() - 0.25);
+          field->setObserved(index, true);
+        }
+      }
+    }
+    return field;
+  };
+
+  auto expectFiniteDistance = [](auto makeShapeA, auto makeShapeB) {
+    CollisionWorld world;
+    auto objA = world.createObject(makeShapeA());
+    auto objB = world.createObject(makeShapeB());
+    ASSERT_TRUE(objA.isValid());
+    ASSERT_TRUE(objB.isValid());
+
+    DistanceResult result;
+    const double distance = NarrowPhase::distance(
+        objA, objB, DistanceOption::unlimited(), result);
+    EXPECT_TRUE(std::isfinite(distance));
+    EXPECT_TRUE(result.pointOnObject1.allFinite());
+    EXPECT_TRUE(result.pointOnObject2.allFinite());
+    EXPECT_TRUE(result.normal.allFinite());
+  };
+
+  auto sphere = []() {
+    return std::make_unique<SphereShape>(0.5);
+  };
+  auto box = []() {
+    return std::make_unique<BoxShape>(Eigen::Vector3d::Constant(1.0));
+  };
+  auto capsule = []() {
+    return std::make_unique<CapsuleShape>(0.35, 0.8);
+  };
+  auto cylinder = []() {
+    return std::make_unique<CylinderShape>(0.4, 0.9);
+  };
+  auto plane = []() {
+    return std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0);
+  };
+  auto convex = []() {
+    return std::make_unique<ConvexShape>(makeOctahedronVertices(0.5));
+  };
+  auto mesh = []() {
+    return std::make_unique<MeshShape>(
+        makeCubeMeshVertices(0.5), makeCubeMeshTriangles());
+  };
+  auto sdf = [&]() {
+    return std::make_unique<SdfShape>(makeDenseField());
+  };
+  auto compound = []() {
+    auto shape = std::make_unique<CompoundShape>();
+    shape->addChild(std::make_unique<SphereShape>(0.4));
+    return shape;
+  };
+
+  expectFiniteDistance(sphere, sphere);
+  expectFiniteDistance(sphere, box);
+  expectFiniteDistance(box, sphere);
+  expectFiniteDistance(box, box);
+  expectFiniteDistance(capsule, capsule);
+  expectFiniteDistance(capsule, sphere);
+  expectFiniteDistance(sphere, capsule);
+  expectFiniteDistance(capsule, box);
+  expectFiniteDistance(box, capsule);
+  expectFiniteDistance(plane, sphere);
+  expectFiniteDistance(sphere, plane);
+  expectFiniteDistance(plane, box);
+  expectFiniteDistance(box, plane);
+  expectFiniteDistance(plane, capsule);
+  expectFiniteDistance(capsule, plane);
+  expectFiniteDistance(plane, cylinder);
+  expectFiniteDistance(cylinder, plane);
+  expectFiniteDistance(plane, mesh);
+  expectFiniteDistance(mesh, plane);
+  expectFiniteDistance(cylinder, cylinder);
+  expectFiniteDistance(cylinder, sphere);
+  expectFiniteDistance(sphere, cylinder);
+  expectFiniteDistance(cylinder, box);
+  expectFiniteDistance(box, cylinder);
+  expectFiniteDistance(cylinder, capsule);
+  expectFiniteDistance(capsule, cylinder);
+  expectFiniteDistance(mesh, mesh);
+  expectFiniteDistance(convex, sphere);
+  expectFiniteDistance(sphere, convex);
+  expectFiniteDistance(mesh, convex);
+  expectFiniteDistance(convex, mesh);
+  expectFiniteDistance(sphere, sdf);
+  expectFiniteDistance(sdf, sphere);
+  expectFiniteDistance(capsule, sdf);
+  expectFiniteDistance(sdf, capsule);
+  expectFiniteDistance(cylinder, sdf);
+  expectFiniteDistance(sdf, cylinder);
+  expectFiniteDistance(convex, sdf);
+  expectFiniteDistance(sdf, convex);
+  expectFiniteDistance(mesh, sdf);
+  expectFiniteDistance(sdf, mesh);
+  expectFiniteDistance(sdf, sdf);
+  expectFiniteDistance(compound, sphere);
+  expectFiniteDistance(sphere, compound);
+  expectFiniteDistance(compound, compound);
+
+  CollisionWorld world;
+  auto objA = world.createObject(
+      std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  auto objB = world.createObject(
+      std::make_unique<PlaneShape>(Eigen::Vector3d::UnitZ(), 1.0));
+  DistanceResult unsupported;
+  EXPECT_EQ(
+      NarrowPhase::distance(
+          objA, objB, DistanceOption::unlimited(), unsupported),
+      std::numeric_limits<double>::max());
 }
 
 TEST(NarrowPhase, PrimitiveDispatcherPreservesScaleContactsUnderPairOrder)
