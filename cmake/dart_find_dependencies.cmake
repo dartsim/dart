@@ -429,7 +429,13 @@ endif()
 
 # Filament GUI
 if(DART_BUILD_GUI)
-  if(DART_FETCH_FILAMENT)
+  if(DART_USE_SYSTEM_FILAMENT)
+    dart_find_package(Filament)
+  elseif(NOT DART_FETCH_FILAMENT)
+    message(FATAL_ERROR "DART_BUILD_GUI=ON requires DART_USE_SYSTEM_FILAMENT=ON unless DART_FETCH_FILAMENT=ON is explicitly set.")
+  endif()
+
+  if(NOT Filament_FOUND AND DART_FETCH_FILAMENT)
     if(NOT DART_FILAMENT_VERSION STREQUAL "1.71.3")
       message(FATAL_ERROR "DART_FETCH_FILAMENT has a pinned hash only for DART_FILAMENT_VERSION=1.71.3. Update the URL hash before changing the version.")
     endif()
@@ -503,11 +509,10 @@ if(DART_BUILD_GUI)
     unset(_dart_filament_arch_candidate)
     unset(_dart_filament_target_arch)
     unset(_dart_filament_target_arch_lower)
-  elseif(NOT DART_USE_SYSTEM_FILAMENT)
-    message(FATAL_ERROR "DART_BUILD_GUI=ON requires DART_USE_SYSTEM_FILAMENT=ON unless DART_FETCH_FILAMENT=ON is explicitly set.")
+
+    dart_find_package(Filament)
   endif()
 
-  dart_find_package(Filament)
   if(NOT Filament_FOUND)
     message(FATAL_ERROR "Filament GUI was requested (DART_BUILD_GUI=ON) but Filament could not be found. Set Filament_ROOT to a Filament install tree that contains include/, lib/, and bin/matc.")
   endif()
