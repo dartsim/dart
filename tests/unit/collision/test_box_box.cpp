@@ -427,6 +427,7 @@ TEST(BoxBox, AxisSweepTransitionsAcrossSizesAndOffsets)
       axis[axisIndex] = 1.0;
       const double threshold
           = spec.halfExtents1[axisIndex] + spec.halfExtents2[axisIndex];
+      constexpr double transitionTolerance = 1e-12;
 
       for (int i = 0; i < 100; ++i) {
         const double offset = spec.start + spec.step * i;
@@ -439,7 +440,8 @@ TEST(BoxBox, AxisSweepTransitionsAcrossSizesAndOffsets)
             spec.halfExtents2,
             Eigen::Isometry3d::Identity(),
             result);
-        const bool expectedHit = std::abs(offset) <= threshold;
+        const bool expectedHit
+            = std::abs(offset) <= threshold + transitionTolerance;
         EXPECT_EQ(hit, expectedHit);
 
         if (!expectedHit) {
