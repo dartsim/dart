@@ -977,7 +977,6 @@ bm-collision-check-narrow-adapter = { cmd = """
       --output .benchmark_results/collision_check_narrow_adapter.json \
       --benchmark-filter 'BM_NarrowPhaseAdapter_EdgeCases_(Native|FCL|Bullet|ODE)/(SphereSphere|BoxBox|SphereBox)_Touching/1$' \
       --max-native-ratio 1.10 \
-      --report-only \
       -- \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
@@ -990,7 +989,6 @@ bm-collision-check-narrow-raw-reference = { cmd = """
       --output .benchmark_results/collision_check_narrow_raw_reference.json \
       --benchmark-filter 'BM_NarrowPhaseRawReference_(SphereSphere|BoxBox|SphereBox)_(Native|FCL|Bullet|ODE)$|BM_NarrowPhaseRawReference_EdgeCases_(Native|FCL|Bullet|ODE)/(SphereSphere|BoxBox|CapsuleCapsule|SphereBox|CapsuleSphere|CapsuleBox)_(Touching|DeepPenetration|Grazing|ThinFeature)/1$' \
       --max-native-ratio 1.10 \
-      --report-only \
       -- \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3

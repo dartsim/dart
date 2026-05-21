@@ -184,9 +184,12 @@ bool collideSpheres(
 
   const auto& translation1 = transform1.translation();
   const auto& translation2 = transform2.translation();
-  const double dx = translation2.x() - translation1.x();
-  const double dy = translation2.y() - translation1.y();
-  const double dz = translation2.z() - translation1.z();
+  const double center1X = translation1.x();
+  const double center1Y = translation1.y();
+  const double center1Z = translation1.z();
+  const double dx = translation2.x() - center1X;
+  const double dy = translation2.y() - center1Y;
+  const double dz = translation2.z() - center1Z;
   const double radius1 = detail::getRadius(sphere1);
   const double radius2 = detail::getRadius(sphere2);
 
@@ -200,19 +203,13 @@ bool collideSpheres(
     const double penetration = sumRadii - dist;
     if (dist < 1e-10) {
       result.addContact(
-          translation1.x(),
-          translation1.y(),
-          translation1.z(),
-          0.0,
-          0.0,
-          1.0,
-          penetration);
+          center1X, center1Y, center1Z, 0.0, 0.0, 1.0, penetration);
     } else {
       const double normalX = (dx > 0.0) ? -1.0 : 1.0;
       result.addContact(
-          translation1.x() + normalX * (-radius1 + penetration * 0.5),
-          translation1.y(),
-          translation1.z(),
+          center1X + normalX * (-radius1 + penetration * 0.5),
+          center1Y,
+          center1Z,
           normalX,
           0.0,
           0.0,

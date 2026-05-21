@@ -144,14 +144,15 @@ bool collideSphereTranslatedBox(
   const double dy = localSphereCenter.y() - closestY;
   const double dz = localSphereCenter.z() - closestZ;
   const double distSquared = dx * dx + dy * dy + dz * dz;
+
+  if (distSquared > sphereRadius * sphereRadius) {
+    return false;
+  }
+
   const double boundaryTolerance
       = computeBoundaryTolerance(boxHalfExtents, localSphereCenter);
   const bool sphereCenterInside
       = distSquared <= boundaryTolerance * boundaryTolerance;
-
-  if (!sphereCenterInside && distSquared > sphereRadius * sphereRadius) {
-    return false;
-  }
 
   Eigen::Vector3d insideLocalSphereCenter = localSphereCenter;
   if (sphereCenterInside) {
@@ -318,14 +319,14 @@ bool collideSphereBox(
   Eigen::Vector3d diff = localSphereCenter - closestPointLocal;
   double distSquared = diff.squaredNorm();
 
+  if (distSquared > sphereRadius * sphereRadius) {
+    return false;
+  }
+
   const double boundaryTolerance
       = computeBoundaryTolerance(boxHalfExtents, localSphereCenter);
   bool sphereCenterInside
       = distSquared <= boundaryTolerance * boundaryTolerance;
-
-  if (!sphereCenterInside && distSquared > sphereRadius * sphereRadius) {
-    return false;
-  }
 
   Eigen::Vector3d normal;
   double penetration;

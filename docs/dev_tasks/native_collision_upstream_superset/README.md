@@ -18,10 +18,13 @@
       reference/native coverage.
 - [x] Phase 5: Implement benchmark expansion and rerun native-vs-reference
       performance optimization against the expanded benchmark packet.
-      Comparable rows pass in the current run, including the main comparative,
-      adapter, and raw primitive/edge-case packets. The stacked-scene packet is
-      documented as native-only profiling coverage for this checkpoint, so no
-      fastest-reference claim is made from those rows.
+      Comparable rows pass in the current run and are enforced by
+      `bm-collision-check`, including the main comparative, adapter, and raw
+      primitive/edge-case packets. The latest strict `1.0` manifest records
+      43 comparable native leads and 2 raw sphere-sphere edge rows that remain
+      within the enforced `1.10` guard but are not strict leads. The
+      stacked-scene packet is documented as native-only profiling coverage for
+      this checkpoint, so no fastest-reference claim is made from those rows.
 - [x] Phase 6: After performance optimization, run native collision detector
       code coverage and raise the native detector implementation to 95%+ line
       coverage. Current native line coverage is 95.1% and function coverage is
@@ -85,17 +88,21 @@ optimization expansion by benchmarks.
 
 ## Immediate Next Steps
 
-1. Run final validation on the current review head, including the generated
-   upstream inventory/map and the strongest feasible test gate.
-2. Decide whether the raw-reference packet should become enforced after
-   evaluating nanosecond-scale benchmark noise.
+1. Decide whether to delete this dev-task folder in the next completion PR now
+   that durable artifacts have moved to `docs/plans/`.
+2. Keep the raw-reference and adapter packets enforced with the existing
+   `1.10` ratio guard. The aggregate check now hard-fails those packets, while
+   the latest strict `1.0` analysis reports 43 comparable native leads and
+   2 report-only raw sphere-sphere edge rows behind the strongest reference by
+   3.3%-6.0%.
 3. Keep new DART test and benchmark names focused on the algorithm, query, and
    edge condition, not on the upstream library that inspired the case.
 4. Keep the later GUI collision-pair debugger example scoped around the native
    pair matrix, pose controls, and contact point/depth/normal rendering.
 5. Regenerate the inventory and case map after any upstream clone refresh:
    `pixi run python scripts/inventory_upstream_collision_coverage.py`.
-6. After final validation, delete this dev-task folder in the completion PR.
+6. Before completion, rerun the strongest feasible validation gate after any
+   new edits.
 
 ## Verification Log
 
@@ -386,3 +393,23 @@ optimization expansion by benchmarks.
 - `pixi run lint` passed.
 - `pixi run build` passed.
 - `git diff --check` passed.
+- `pixi run test-all` passed after durable upstream inventory and case-map
+  artifacts were promoted to `docs/plans/`.
+- `pixi run -e collision-reference bm-collision-check` passed with the raw
+  primitive and adapter packets enforced under the configured `1.10` ratio
+  guard.
+- Added a no-contact sphere-box early-out so grazing sphere-box raw primitive
+  rows skip boundary-tolerance work before returning no collision.
+- Added a sphere-sphere axis fast-path cleanup that keeps center coordinates in
+  scalar locals before writing the contact.
+- `pixi run cmake --build build/default/cpp/Release --target test_sphere_sphere test_sphere_box`
+  passed.
+- `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_sphere_sphere|test_sphere_box)$'`
+  passed.
+- `pixi run -e collision-reference bm-collision-check-narrow-raw-reference`
+  passed with `24 passed, 0 failed, 0 skipped` after the sphere-box early-out.
+- Strict `1.0` report-only analysis over the official comparable benchmark
+  packet reported 43 native leads, 2 report-only raw sphere-sphere edge rows,
+  0 failed rows, and 0 skipped rows.
+- `pixi run python scripts/generate_collision_benchmark_manifest.py`
+  regenerated the durable benchmark manifest from the official packet outputs.

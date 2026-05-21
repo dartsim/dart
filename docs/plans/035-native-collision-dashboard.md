@@ -86,8 +86,9 @@ true:
 - **Performance guardrails**
   Current status:
   [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)
-  records 45 comparable native leads, 0 behind rows, 8 native-only rows, and 0
-  rerun-needed rows from the local single-worker benchmark packet.
+  records 43 comparable native leads, 2 raw sphere-sphere edge rows within the
+  enforced guard but behind the strongest reference, 24 native-only rows, and
+  0 rerun-needed rows from the local single-worker benchmark packet.
   Gap signal: host CPU scaling remained enabled for the local packet; deeper
   single-CPU, data-layout, multi-core, and GPU work is later.
 - **CI follow-up**
@@ -369,8 +370,9 @@ into DART-owned feature/performance rows.
   JSON guards, promoted through
   [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md).
   Reference comparison: FCL/Bullet/ODE where the query is comparable.
-  Current bar: the local single-worker packet has 45 comparable native leads,
-  0 behind rows, 8 native-only rows, and 0 rerun-needed rows.
+  Current bar: the local single-worker packet has 43 comparable native leads,
+  2 raw sphere-sphere edge rows within the enforced guard but behind the
+  strongest reference, 24 native-only rows, and 0 rerun-needed rows.
   Open performance gap: rerun the guard before accepting future performance
   claims, ideally with CPU scaling controlled.
 - **Raw narrowphase**

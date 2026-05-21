@@ -14,6 +14,18 @@ from typing import Iterable
 _UNIT_TO_NS = {"ns": 1.0, "us": 1e3, "ms": 1e6, "s": 1e9}
 _NATIVE_BACKEND = "Native"
 _DEFAULT_OUTPUT = Path("docs/plans/035-native-collision/benchmark-manifest.md")
+_DEFAULT_INPUTS = [
+    Path(".benchmark_results/collision_check_adapter.json"),
+    Path(".benchmark_results/collision_check_distance.json"),
+    Path(".benchmark_results/collision_check_mesh.json"),
+    Path(".benchmark_results/collision_check_mixed.json"),
+    Path(".benchmark_results/collision_check_narrow.json"),
+    Path(".benchmark_results/collision_check_narrow_adapter.json"),
+    Path(".benchmark_results/collision_check_narrow_raw_reference.json"),
+    Path(".benchmark_results/collision_check_raycast.json"),
+    Path(".benchmark_results/collision_check_raycast_batch.json"),
+    Path(".benchmark_results/collision_check_stacked_scenes.json"),
+]
 
 
 @dataclass
@@ -39,7 +51,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         action="append",
         default=[],
-        help="Google Benchmark JSON input. Defaults to collision_check*.json.",
+        help="Google Benchmark JSON input. Defaults to the official collision-check packets.",
     )
     parser.add_argument(
         "--output",
@@ -84,6 +96,18 @@ def _taxonomy_family(key: str) -> str:
         return "Mesh, Convex, And Field Heavy Scenes"
     if key.startswith("BM_Scenario_MixedPrimitives_"):
         return "Broadphase And Pair Generation"
+    if key.startswith(
+        (
+            "BM_BoxGridStack_",
+            "BM_CompoundBoxStructures_",
+            "BM_ConvexHullTerrainSnapshot_",
+            "BM_ElongatedConvexHullStack_",
+            "BM_HaltonConvexCellPack_",
+            "BM_MixedPrimitiveStackWithTerrain_",
+            "BM_ScaledPrimitiveStack_",
+        )
+    ):
+        return "Stacked And Terrain Profiling"
     if key.startswith("BM_NarrowPhase_") or key.startswith(
         "BM_NarrowPhaseRawReference_"
     ):
@@ -94,6 +118,9 @@ def _taxonomy_family(key: str) -> str:
 def _collect_inputs(inputs: list[Path]) -> list[Path]:
     if inputs:
         return sorted(inputs)
+    official_inputs = [path for path in _DEFAULT_INPUTS if path.exists()]
+    if official_inputs:
+        return official_inputs
     return sorted(Path(".benchmark_results").glob("collision_check*.json"))
 
 

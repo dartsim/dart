@@ -84,23 +84,25 @@ now map to DART benchmark targets; ODE libccd benchmark programs map to
 existing native GJK/EPA/MPR and narrowphase benchmark rows. Added scalar
 fast paths for axis-aligned sphere-sphere, capsule-sphere, capsule-capsule, and
 centered sphere-box contacts so the raw primitive/edge-case benchmark packet
-now has no slower native reports in the current run.
+passes the enforced guard in the current run.
 
 ## Current Branch
 
 `task/native-collision-performance-complete` — ahead of origin by local
 checkpoint commits; latest milestones optimize native primitive fast paths,
-update the feature/performance summary tables, and raise native detector line
-coverage above 95%.
+update the feature/performance summary tables, raise native detector line
+coverage above 95%, and promote durable upstream coverage artifacts into
+`docs/plans/`.
 
 ## Immediate Next Step
 
-Run lint and checkpoint the post-optimization coverage milestone. After that,
-decide whether to enforce the raw-reference packet despite nanosecond-scale
-noise, then either promote durable artifacts out of this dev-task folder or
-start the later GUI pair-debugger scope. The stacked-scene rows are documented
-as native-only profiling coverage for this checkpoint, and the row-level map
-has 0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
+Run lint and checkpoint the benchmark-policy update that makes the raw
+primitive and adapter packets enforced under the configured `1.10` guard. Then
+decide whether the next completion PR should delete this dev-task folder now
+that durable artifacts live in `docs/plans/`, or start the later GUI
+pair-debugger scope. The stacked-scene rows are documented as native-only
+profiling coverage for this checkpoint, and the row-level map has 0
+`mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
 
 ## Context That Would Be Lost
 
@@ -138,12 +140,14 @@ has 0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
   currently reports 207 `covered` rows, 382 `not-applicable` rows, 0
   `fixture-needed` rows, 0 `new-benchmark-needed` rows, and 0
   `mapping-needed` rows.
-- `pixi run -e collision-reference bm-collision-check` previously passed the
-  enforced comparative packet: 18 main native-vs-reference rows and 3 adapter
-  rows passed. The latest raw-reference rerun now reports
-  `24 passed, 0 failed, 0 skipped`; the five previously ODE-faster micro-path
-  rows now pass, with the tightest current raw-reference ratio at 0.973 for
-  sphere-box grazing.
+- `pixi run -e collision-reference bm-collision-check` now enforces the main,
+  adapter, and raw primitive packets under the configured `1.10` guard. A
+  no-contact sphere-box early-out keeps the raw sphere-box grazing path inside
+  the guard, and a sphere-sphere axis fast-path cleanup improves the raw
+  sphere-sphere packet.
+  Strict `1.0` report-only analysis over the official comparable packet reports
+  43 native leads and 2 raw sphere-sphere edge rows that are within `1.10` but
+  not strict leads.
 - Focused verification for the fast paths has run:
   `pixi run cmake --build build/default/cpp/Release --target test_sphere_sphere test_sphere_box test_capsule_capsule`
   and
