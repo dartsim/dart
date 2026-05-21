@@ -37,6 +37,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <numbers>
 #include <random>
 #include <stdexcept>
@@ -86,6 +87,21 @@ std::vector<MeshShape::Triangle> makeCubeTriangles()
       {1, 6, 2}};
 }
 
+std::vector<Eigen::Vector3d> makeUnitTetrahedronVertices()
+{
+  return {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+}
+
+std::vector<Eigen::Vector3d> makeTransformedTetrahedronVertices(
+    const Eigen::Isometry3d& transform)
+{
+  std::vector<Eigen::Vector3d> vertices = makeUnitTetrahedronVertices();
+  for (auto& vertex : vertices) {
+    vertex = transform * vertex;
+  }
+  return vertices;
+}
+
 Eigen::Isometry3d makeConvexBatchTransform(
     double x, double y, double z, double angle)
 {
@@ -97,12 +113,31 @@ Eigen::Isometry3d makeConvexBatchTransform(
   return tf;
 }
 
+Eigen::Isometry3d makePlaneConvexTransform(
+    const Eigen::AngleAxisd& rotation, const Eigen::Vector3d& translation)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.linear() = rotation.toRotationMatrix();
+  transform.translation() = translation;
+  return transform;
+}
+
 void expectVectorExactlyEqual(
     const Eigen::Vector3d& expected, const Eigen::Vector3d& actual)
 {
   EXPECT_EQ(expected.x(), actual.x());
   EXPECT_EQ(expected.y(), actual.y());
   EXPECT_EQ(expected.z(), actual.z());
+}
+
+void expectVectorNear(
+    const Eigen::Vector3d& actual,
+    const Eigen::Vector3d& expected,
+    double tolerance)
+{
+  EXPECT_NEAR(actual.x(), expected.x(), tolerance);
+  EXPECT_NEAR(actual.y(), expected.y(), tolerance);
+  EXPECT_NEAR(actual.z(), expected.z(), tolerance);
 }
 
 void expectContactExactlyEqual(
@@ -310,6 +345,149 @@ TEST(ConvexCollision, PlaneConvexPairOrder)
           .norm(),
       0.0,
       1e-10);
+}
+
+TEST(ConvexCollision, PlaneTetrahedronHalfspaceConfigurations)
+{
+  struct Case
+  {
+    const char* name;
+    Eigen::Isometry3d convexInConfig;
+    Eigen::Isometry3d planeInConfig;
+    bool expectedCollision;
+    double expectedDepth;
+    Eigen::Vector3d expectedPlaneFirstNormalInConfig;
+    Eigen::Vector3d expectedPositionInConfig;
+  };
+
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const Eigen::Isometry3d pointDown = makePlaneConvexTransform(
+      Eigen::AngleAxisd(std::numbers::pi_v<double>, Eigen::Vector3d::UnitX()),
+      Eigen::Vector3d(0.0, 0.0, 0.5));
+
+  const Eigen::Isometry3d rotatedPlane = makePlaneConvexTransform(
+      Eigen::AngleAxisd(
+          std::numbers::pi_v<double> / 5.0,
+          Eigen::Vector3d(1.0, 2.0, 3.0).normalized()),
+      Eigen::Vector3d(0.25, 0.5, 0.75));
+  const Eigen::Isometry3d separatedInPlaneFrame = makePlaneConvexTransform(
+      Eigen::AngleAxisd(std::numbers::pi_v<double>, Eigen::Vector3d::UnitX()),
+      Eigen::Vector3d(0.0, 0.0, 1.01));
+  const Eigen::Isometry3d collidingInPlaneFrame = makePlaneConvexTransform(
+      Eigen::AngleAxisd(std::numbers::pi_v<double>, Eigen::Vector3d::UnitX()),
+      Eigen::Vector3d(0.0, 0.0, 0.5));
+  const Eigen::Isometry3d rotatedConvexColliding
+      = rotatedPlane * collidingInPlaneFrame;
+  const Eigen::Vector3d rotatedPlaneNormal = rotatedPlane.linear().col(2);
+  const Eigen::Vector3d rotatedDeepestVertex
+      = rotatedConvexColliding * Eigen::Vector3d::UnitZ();
+  constexpr double rotatedDepth = 0.5;
+
+  const std::array<Case, 4> cases{{
+      {"axis-aligned separated tetrahedron",
+       makePlaneConvexTransform(
+           Eigen::AngleAxisd(0.0, Eigen::Vector3d::UnitX()),
+           Eigen::Vector3d(0.0, 0.0, 0.1)),
+       identity,
+       false,
+       0.0,
+       Eigen::Vector3d::Zero(),
+       Eigen::Vector3d::Zero()},
+      {"axis-aligned penetrating tetrahedron",
+       pointDown,
+       identity,
+       true,
+       0.5,
+       -Eigen::Vector3d::UnitZ(),
+       Eigen::Vector3d(0.0, 0.0, -0.25)},
+      {"rotated halfspace separated tetrahedron",
+       rotatedPlane * separatedInPlaneFrame,
+       rotatedPlane,
+       false,
+       0.0,
+       Eigen::Vector3d::Zero(),
+       Eigen::Vector3d::Zero()},
+      {"rotated halfspace penetrating tetrahedron",
+       rotatedConvexColliding,
+       rotatedPlane,
+       true,
+       rotatedDepth,
+       -rotatedPlaneNormal,
+       rotatedDeepestVertex + rotatedPlaneNormal * (rotatedDepth * 0.5)},
+  }};
+
+  const std::array<Eigen::Isometry3d, 2> worldFrames{{
+      Eigen::Isometry3d::Identity(),
+      makePlaneConvexTransform(
+          Eigen::AngleAxisd(
+              std::numbers::pi_v<double> / 7.0,
+              Eigen::Vector3d(1.0, -2.0, -1.3).normalized()),
+          Eigen::Vector3d(-0.25, 0.5, -0.75)),
+  }};
+
+  const PlaneShape canonicalPlane(Eigen::Vector3d::UnitZ(), 0.0);
+  const ConvexShape canonicalTetrahedron(makeUnitTetrahedronVertices());
+  CollisionOption option;
+  option.maxNumContacts = 1;
+
+  for (const auto& testCase : cases) {
+    for (const auto& worldFrame : worldFrames) {
+      SCOPED_TRACE(testCase.name);
+
+      const Eigen::Isometry3d planeTransform
+          = worldFrame * testCase.planeInConfig;
+      const Eigen::Isometry3d convexTransform
+          = worldFrame * testCase.convexInConfig;
+      const Eigen::Vector3d expectedNormalWorld
+          = worldFrame.rotation() * testCase.expectedPlaneFirstNormalInConfig;
+      const Eigen::Vector3d expectedPositionWorld
+          = worldFrame * testCase.expectedPositionInConfig;
+
+      CollisionResult canonicalResult;
+      const bool canonicalCollided = NarrowPhase::collide(
+          &canonicalPlane,
+          planeTransform,
+          &canonicalTetrahedron,
+          convexTransform,
+          option,
+          canonicalResult);
+      EXPECT_EQ(canonicalCollided, testCase.expectedCollision);
+
+      const Eigen::Vector3d planeNormalInConfig
+          = testCase.planeInConfig.linear().col(2);
+      const double planeOffsetInConfig
+          = planeNormalInConfig.dot(testCase.planeInConfig.translation());
+      const PlaneShape planeInConfig(planeNormalInConfig, planeOffsetInConfig);
+      const ConvexShape tetrahedronInConfig(
+          makeTransformedTetrahedronVertices(testCase.convexInConfig));
+
+      CollisionResult embeddedResult;
+      const bool embeddedCollided = NarrowPhase::collide(
+          &planeInConfig,
+          worldFrame,
+          &tetrahedronInConfig,
+          worldFrame,
+          option,
+          embeddedResult);
+      EXPECT_EQ(embeddedCollided, testCase.expectedCollision);
+
+      if (!testCase.expectedCollision) {
+        EXPECT_EQ(canonicalResult.numContacts(), 0u);
+        EXPECT_EQ(embeddedResult.numContacts(), 0u);
+        continue;
+      }
+
+      ASSERT_EQ(canonicalResult.numContacts(), 1u);
+      ASSERT_EQ(embeddedResult.numContacts(), 1u);
+
+      for (const auto* result : {&canonicalResult, &embeddedResult}) {
+        const ContactPoint& contact = result->getContact(0);
+        EXPECT_NEAR(contact.depth, testCase.expectedDepth, 1e-9);
+        expectVectorNear(contact.normal, expectedNormalWorld, 1e-9);
+        expectVectorNear(contact.position, expectedPositionWorld, 1e-9);
+      }
+    }
+  }
 }
 
 TEST(ConvexCollision, CapsuleConvexPairOrder)

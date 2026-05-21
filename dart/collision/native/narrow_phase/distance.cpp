@@ -125,6 +125,28 @@ Eigen::Vector3d closestPointOnBox(
       std::clamp(point.z(), -halfExtents.z(), halfExtents.z()));
 }
 
+[[nodiscard]] double computeBoxBoundaryTolerance(
+    const Eigen::Vector3d& halfExtents, const Eigen::Vector3d& point)
+{
+  const double boundaryScale = std::max(
+      {1.0, halfExtents.cwiseAbs().maxCoeff(), point.cwiseAbs().maxCoeff()});
+  return 64.0 * std::numeric_limits<double>::epsilon() * boundaryScale;
+}
+
+void snapNearBoxBoundary(
+    Eigen::Vector3d& point,
+    const Eigen::Vector3d& halfExtents,
+    double tolerance)
+{
+  for (int axis = 0; axis < 3; ++axis) {
+    const double extent = halfExtents[axis];
+    const double coordinate = point[axis];
+    if (std::abs(std::abs(coordinate) - extent) <= tolerance) {
+      point[axis] = std::copysign(extent, coordinate);
+    }
+  }
+}
+
 bool distanceSameOrientationBoxes(
     const Eigen::Vector3d& half1,
     const Eigen::Isometry3d& transform1,
@@ -610,7 +632,42 @@ double distanceSphereBox(
       = closestPointOnBox(sphereCenterLocal, boxHalf);
   const Eigen::Vector3d diffLocal = sphereCenterLocal - closestOnBoxLocal;
   const double distToSurface = diffLocal.norm();
-  const double dist = distToSurface - sphereRadius;
+  const double boundaryTolerance
+      = computeBoxBoundaryTolerance(boxHalf, sphereCenterLocal);
+
+  Eigen::Vector3d normalLocal;
+  Eigen::Vector3d pointOnBoxLocal = closestOnBoxLocal;
+  double dist = distToSurface - sphereRadius;
+
+  if (distToSurface > boundaryTolerance) {
+    normalLocal = diffLocal / distToSurface;
+  } else {
+    Eigen::Vector3d insideLocalSphereCenter = sphereCenterLocal;
+    snapNearBoxBoundary(insideLocalSphereCenter, boxHalf, boundaryTolerance);
+
+    double minDist = boxHalf.x() - std::abs(insideLocalSphereCenter.x());
+    int minAxis = 0;
+
+    const double distY = boxHalf.y() - std::abs(insideLocalSphereCenter.y());
+    if (distY < minDist) {
+      minDist = distY;
+      minAxis = 1;
+    }
+
+    const double distZ = boxHalf.z() - std::abs(insideLocalSphereCenter.z());
+    if (distZ < minDist) {
+      minDist = distZ;
+      minAxis = 2;
+    }
+
+    normalLocal = Eigen::Vector3d::Zero();
+    normalLocal[minAxis]
+        = (insideLocalSphereCenter[minAxis] >= 0.0) ? 1.0 : -1.0;
+    pointOnBoxLocal = insideLocalSphereCenter;
+    pointOnBoxLocal[minAxis]
+        = normalLocal[minAxis] > 0.0 ? boxHalf[minAxis] : -boxHalf[minAxis];
+    dist = -(sphereRadius + minDist);
+  }
 
   if (dist > option.upperBound) {
     result.distance = dist;
@@ -620,14 +677,7 @@ double distanceSphereBox(
   result.distance = dist;
 
   if (option.enableNearestPoints) {
-    Eigen::Vector3d normalLocal;
-    if (distToSurface > 1e-10) {
-      normalLocal = diffLocal / distToSurface;
-    } else {
-      normalLocal = Eigen::Vector3d::UnitX();
-    }
-
-    result.pointOnObject2 = boxTransform * closestOnBoxLocal;
+    result.pointOnObject2 = boxTransform * pointOnBoxLocal;
     result.pointOnObject1
         = sphereTransform.translation()
           - (boxTransform.rotation() * normalLocal) * sphereRadius;

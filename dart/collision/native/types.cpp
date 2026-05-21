@@ -36,61 +36,17 @@
 
 namespace dart::collision::native {
 
-ContactManifold& CollisionResult::nextManifold()
-{
-  if (manifoldCount_ == manifolds_.size()) {
-    manifolds_.emplace_back();
-  }
-
-  auto& manifold = manifolds_[manifoldCount_++];
-  manifold.clear();
-  return manifold;
-}
-
-void CollisionResult::addContact(const ContactPoint& contact)
-{
-  auto& manifold = nextManifold();
-  manifold.addContact(contact);
-  manifold.setType(ContactType::Point);
-  if (contact.object1 != nullptr || contact.object2 != nullptr) {
-    manifold.setObjects(contact.object1, contact.object2);
-  }
-  ++contactCount_;
-  invalidateCache();
-}
-
 void CollisionResult::addManifold(ContactManifold manifold)
 {
   contactCount_ += manifold.numContacts();
-  nextManifold() = std::move(manifold);
+  if (manifoldCount_ == 0u) {
+    firstManifold_ = std::make_unique<ContactManifold>(std::move(manifold));
+    firstEntryIsContact_ = false;
+    manifoldCount_ = 1u;
+  } else {
+    nextExtraManifold() = std::move(manifold);
+  }
   invalidateCache();
-}
-
-void CollisionResult::clear()
-{
-  manifoldCount_ = 0;
-  contactCount_ = 0;
-  invalidateCache();
-}
-
-bool CollisionResult::isCollision() const
-{
-  return manifoldCount_ > 0;
-}
-
-CollisionResult::operator bool() const
-{
-  return isCollision();
-}
-
-std::size_t CollisionResult::numContacts() const
-{
-  return contactCount_;
-}
-
-std::size_t CollisionResult::numManifolds() const
-{
-  return manifoldCount_;
 }
 
 const ContactManifold& CollisionResult::getManifold(std::size_t i) const
@@ -98,23 +54,65 @@ const ContactManifold& CollisionResult::getManifold(std::size_t i) const
   if (i >= manifoldCount_) {
     throw std::out_of_range("CollisionResult::getManifold");
   }
-  return manifolds_[i];
+  return manifoldAt(i);
 }
 
 std::span<const ContactManifold> CollisionResult::getManifolds() const
 {
-  return {manifolds_.data(), manifoldCount_};
+  if (manifoldCount_ == 0u) {
+    return {};
+  }
+
+  updateManifoldsCache();
+  return {manifoldsCache_.data(), manifoldsCache_.size()};
 }
 
 const ContactPoint& CollisionResult::getContact(std::size_t i) const
 {
+  if (i >= contactCount_) {
+    throw std::out_of_range("CollisionResult::getContact");
+  }
+
+  if (firstEntryIsContact_ && i == 0u) {
+    return firstContact_;
+  }
+
   updateFlatCache();
   return *flatContactsCache_.at(i);
 }
 
-void CollisionResult::invalidateCache()
+const ContactManifold& CollisionResult::manifoldAt(std::size_t i) const
 {
-  flatCacheValid_ = false;
+  if (i == 0u) {
+    if (firstEntryIsContact_) {
+      updateManifoldsCache();
+      return manifoldsCache_[0];
+    }
+    return *firstManifold_;
+  }
+  return extraManifolds_[i - 1u];
+}
+
+void CollisionResult::updateManifoldsCache() const
+{
+  if (manifoldsCacheValid_) {
+    return;
+  }
+
+  manifoldsCache_.clear();
+  manifoldsCache_.reserve(manifoldCount_);
+  if (firstEntryIsContact_) {
+    ContactManifold manifold;
+    manifold.setSingleContact(firstContact_, ContactType::Point);
+    manifoldsCache_.push_back(manifold);
+  } else {
+    manifoldsCache_.push_back(*firstManifold_);
+  }
+
+  for (std::size_t i = 1u; i < manifoldCount_; ++i) {
+    manifoldsCache_.push_back(extraManifolds_[i - 1u]);
+  }
+  manifoldsCacheValid_ = true;
 }
 
 void CollisionResult::updateFlatCache() const
@@ -124,8 +122,17 @@ void CollisionResult::updateFlatCache() const
   }
 
   flatContactsCache_.clear();
-  for (std::size_t i = 0; i < manifoldCount_; ++i) {
-    const auto& manifold = manifolds_[i];
+  if (firstEntryIsContact_) {
+    flatContactsCache_.push_back(&firstContact_);
+  } else {
+    const auto& manifold = *firstManifold_;
+    for (const auto& contact : manifold.getContacts()) {
+      flatContactsCache_.push_back(&contact);
+    }
+  }
+
+  for (std::size_t i = 1u; i < manifoldCount_; ++i) {
+    const auto& manifold = extraManifolds_[i - 1u];
     for (const auto& contact : manifold.getContacts()) {
       flatContactsCache_.push_back(&contact);
     }

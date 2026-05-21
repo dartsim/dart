@@ -228,6 +228,16 @@ target_link_libraries(bm_scenarios_pipeline_breakdown
 )
 dart_format_add(collision/scenarios/bm_pipeline_breakdown.cpp)
 add_executable(
+  bm_scenarios_stacked_scenes
+  collision/scenarios/bm_stacked_scenes.cpp
+)
+target_link_libraries(bm_scenarios_stacked_scenes
+  dart
+  dart-collision-native
+  benchmark::benchmark
+)
+dart_format_add(collision/scenarios/bm_stacked_scenes.cpp)
+add_executable(
   bm_scenarios_dart_adapter
   collision/scenarios/bm_dart_adapter.cpp
 )

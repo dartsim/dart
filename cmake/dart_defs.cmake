@@ -333,6 +333,35 @@ function(dart_apply_strict_symbol_visibility _target_name)
   endif()
 endfunction()
 
+function(dart_maybe_apply_coverage_config _target_name)
+  if(NOT TARGET ${_target_name})
+    message(
+      FATAL_ERROR
+      "dart_maybe_apply_coverage_config: target "
+      "'${_target_name}' does not exist")
+  endif()
+
+  if(NOT DART_CODECOV OR NOT TARGET coverage_config)
+    return()
+  endif()
+
+  set(_dart_first_party_source_dir "${DART_SOURCE_DIR}/dart")
+  cmake_path(
+    IS_PREFIX
+    _dart_first_party_source_dir
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    NORMALIZE
+    _dart_is_first_party_source
+  )
+
+  if(_dart_is_first_party_source)
+    target_compile_options(
+      ${_target_name} PUBLIC ${DART_COVERAGE_COMPILE_OPTIONS})
+    target_link_options(
+      ${_target_name} PUBLIC ${DART_COVERAGE_LINK_OPTIONS})
+  endif()
+endfunction()
+
 function(dart_library)
   set(prefix _ARG)
   set(options
@@ -373,6 +402,7 @@ function(dart_library)
     ${_ARG_SOURCES}
   )
   dart_apply_strict_symbol_visibility(${_ARG_NAME})
+  dart_maybe_apply_coverage_config(${_ARG_NAME})
 
   target_include_directories(${_ARG_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
@@ -1406,6 +1436,7 @@ macro(dart_add_library _name)
   endif()
   add_library(${_name} ${ARGN})
   dart_apply_strict_symbol_visibility(${_name})
+  dart_maybe_apply_coverage_config(${_name})
   string(REPLACE "-" "_" _dart_export_macro "${_name}")
   string(REPLACE ":" "_" _dart_export_macro "${_dart_export_macro}")
   string(REPLACE "/" "_" _dart_export_macro "${_dart_export_macro}")
@@ -2060,6 +2091,7 @@ function(dart_create_library)
   # Create library
   add_library(${ARG_NAME} SHARED ${ARG_SOURCES})
   dart_apply_strict_symbol_visibility(${ARG_NAME})
+  dart_maybe_apply_coverage_config(${ARG_NAME})
 
   # Set C++20 standard (modern CMake approach)
   target_compile_features(${ARG_NAME} PUBLIC cxx_std_20)

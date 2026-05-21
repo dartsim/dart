@@ -41,6 +41,15 @@ namespace dart::collision::native {
 
 namespace {
 
+[[nodiscard]] bool hasIdentityRotation(const Eigen::Isometry3d& transform)
+{
+  const auto& rotation = transform.linear();
+  return rotation(0, 0) == 1.0 && rotation(0, 1) == 0.0 && rotation(0, 2) == 0.0
+         && rotation(1, 0) == 0.0 && rotation(1, 1) == 1.0
+         && rotation(1, 2) == 0.0 && rotation(2, 0) == 0.0
+         && rotation(2, 1) == 0.0 && rotation(2, 2) == 1.0;
+}
+
 Eigen::Vector3d closestPointOnSegment(
     const Eigen::Vector3d& point,
     const Eigen::Vector3d& segmentStart,
@@ -58,6 +67,97 @@ Eigen::Vector3d closestPointOnSegment(
   return segmentStart + segment * t;
 }
 
+bool collideVerticalCapsuleSphere(
+    double capsuleRadius,
+    double sphereRadius,
+    double halfHeight,
+    const Eigen::Vector3d& capsuleTranslation,
+    const Eigen::Vector3d& sphereCenter,
+    CollisionResult& result)
+{
+  const Eigen::Vector3d localSphereCenter = sphereCenter - capsuleTranslation;
+  const double closestZ
+      = std::clamp(localSphereCenter.z(), -halfHeight, halfHeight);
+  const double dx = localSphereCenter.x();
+  const double dy = localSphereCenter.y();
+  const double dz = localSphereCenter.z() - closestZ;
+  const double sumRadii = capsuleRadius + sphereRadius;
+
+  if (dy == 0.0 && dz == 0.0) {
+    const double dist = std::abs(dx);
+    if (dist > sumRadii) {
+      return false;
+    }
+
+    const double penetration = sumRadii - dist;
+    if (dist < 1e-10) {
+      result.addContact(
+          capsuleTranslation.x(),
+          capsuleTranslation.y(),
+          capsuleTranslation.z() + closestZ - capsuleRadius + penetration * 0.5,
+          0.0,
+          0.0,
+          1.0,
+          penetration);
+    } else {
+      const double normalX = (dx > 0.0) ? -1.0 : 1.0;
+      result.addContact(
+          capsuleTranslation.x()
+              - normalX * (capsuleRadius - penetration * 0.5),
+          capsuleTranslation.y(),
+          capsuleTranslation.z() + closestZ,
+          normalX,
+          0.0,
+          0.0,
+          penetration);
+    }
+    return true;
+  }
+
+  if (dx == 0.0 && dz == 0.0) {
+    const double dist = std::abs(dy);
+    if (dist > sumRadii) {
+      return false;
+    }
+
+    const double penetration = sumRadii - dist;
+    const double normalY = (dy > 0.0) ? -1.0 : 1.0;
+    result.addContact(
+        capsuleTranslation.x(),
+        capsuleTranslation.y() - normalY * (capsuleRadius - penetration * 0.5),
+        capsuleTranslation.z() + closestZ,
+        0.0,
+        normalY,
+        0.0,
+        penetration);
+    return true;
+  }
+
+  const double distSquared = dx * dx + dy * dy + dz * dz;
+
+  if (distSquared > sumRadii * sumRadii) {
+    return false;
+  }
+
+  const double dist = std::sqrt(distSquared);
+  const double penetration = sumRadii - dist;
+
+  Eigen::Vector3d normal;
+  if (dist < 1e-10) {
+    normal = Eigen::Vector3d::UnitZ();
+  } else {
+    normal = Eigen::Vector3d(-dx, -dy, -dz) / dist;
+  }
+
+  const Eigen::Vector3d closestOnCapsule
+      = capsuleTranslation + Eigen::Vector3d(0.0, 0.0, closestZ);
+  const Eigen::Vector3d contactPoint
+      = closestOnCapsule + (-normal) * (capsuleRadius - penetration * 0.5);
+
+  result.addContact(contactPoint, normal, penetration);
+  return true;
+}
+
 } // namespace
 
 bool collideCapsuleSphere(
@@ -72,9 +172,19 @@ bool collideCapsuleSphere(
     return false;
   }
 
-  const double capsuleRadius = capsule.getRadius();
-  const double sphereRadius = sphere.getRadius();
-  const double halfHeight = capsule.getHeight() * 0.5;
+  const double capsuleRadius = detail::getRadius(capsule);
+  const double sphereRadius = detail::getRadius(sphere);
+  const double halfHeight = detail::getHeight(capsule) * 0.5;
+
+  if (hasIdentityRotation(capsuleTransform)) {
+    return collideVerticalCapsuleSphere(
+        capsuleRadius,
+        sphereRadius,
+        halfHeight,
+        capsuleTransform.translation(),
+        sphereTransform.translation(),
+        result);
+  }
 
   const Eigen::Vector3d localTop(0, 0, halfHeight);
   const Eigen::Vector3d localBottom(0, 0, -halfHeight);

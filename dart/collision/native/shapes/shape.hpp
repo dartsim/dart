@@ -41,6 +41,23 @@
 
 namespace dart::collision::native {
 
+class SphereShape;
+class BoxShape;
+class CapsuleShape;
+class CylinderShape;
+
+namespace detail {
+
+[[nodiscard]] inline double getRadius(const SphereShape& shape);
+[[nodiscard]] inline const Eigen::Vector3d& getHalfExtents(
+    const BoxShape& shape);
+[[nodiscard]] inline double getRadius(const CapsuleShape& shape);
+[[nodiscard]] inline double getHeight(const CapsuleShape& shape);
+[[nodiscard]] inline double getRadius(const CylinderShape& shape);
+[[nodiscard]] inline double getHeight(const CylinderShape& shape);
+
+} // namespace detail
+
 enum class ShapeType
 {
   Sphere,
@@ -74,6 +91,8 @@ public:
   [[nodiscard]] double getRadius() const;
 
 private:
+  friend double detail::getRadius(const SphereShape& shape);
+
   double radius_;
 };
 
@@ -88,6 +107,8 @@ public:
   [[nodiscard]] const Eigen::Vector3d& getHalfExtents() const;
 
 private:
+  friend const Eigen::Vector3d& detail::getHalfExtents(const BoxShape& shape);
+
   Eigen::Vector3d halfExtents_;
 };
 
@@ -100,9 +121,13 @@ public:
   [[nodiscard]] Aabb computeLocalAabb() const override;
 
   [[nodiscard]] double getRadius() const;
+
   [[nodiscard]] double getHeight() const;
 
 private:
+  friend double detail::getRadius(const CapsuleShape& shape);
+  friend double detail::getHeight(const CapsuleShape& shape);
+
   double radius_;
   double height_;
 };
@@ -116,12 +141,50 @@ public:
   [[nodiscard]] Aabb computeLocalAabb() const override;
 
   [[nodiscard]] double getRadius() const;
+
   [[nodiscard]] double getHeight() const;
 
 private:
+  friend double detail::getRadius(const CylinderShape& shape);
+  friend double detail::getHeight(const CylinderShape& shape);
+
   double radius_;
   double height_;
 };
+
+namespace detail {
+
+inline double getRadius(const SphereShape& shape)
+{
+  return shape.radius_;
+}
+
+inline const Eigen::Vector3d& getHalfExtents(const BoxShape& shape)
+{
+  return shape.halfExtents_;
+}
+
+inline double getRadius(const CapsuleShape& shape)
+{
+  return shape.radius_;
+}
+
+inline double getHeight(const CapsuleShape& shape)
+{
+  return shape.height_;
+}
+
+inline double getRadius(const CylinderShape& shape)
+{
+  return shape.radius_;
+}
+
+inline double getHeight(const CylinderShape& shape)
+{
+  return shape.height_;
+}
+
+} // namespace detail
 
 class DART_COLLISION_NATIVE_API PlaneShape : public Shape
 {

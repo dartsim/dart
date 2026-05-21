@@ -51,6 +51,13 @@ Use `.github/PULL_REQUEST_TEMPLATE.md` and ensure the PR description covers Summ
 
 Use plain descriptive commit messages and PR titles. Do not prefix them with agent tags such as `[codex]`, `[claude]`, or `[opencode]`.
 
+For already-published PRs, keep history inspectable with additive commits. If
+the PR branch needs the latest target branch, use explicit maintainer/user
+approval to update that published branch by merging the target branch and
+pushing normally. Do not rebase published PR branches by default because that
+invalidates existing CI runs and makes PR review/comment history harder to
+follow. Rebase or force-push only when the maintainer explicitly requests it.
+
 ## Milestones (Required)
 
 Always set a milestone when creating PRs after explicit maintainer/user

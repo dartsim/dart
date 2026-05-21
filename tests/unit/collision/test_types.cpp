@@ -34,6 +34,8 @@
 
 #include <gtest/gtest.h>
 
+#include <stdexcept>
+
 using namespace dart::collision::native;
 
 TEST(ContactPoint, DefaultConstruction)
@@ -221,6 +223,57 @@ TEST(ContactManifold, TypeCompatibility)
   EXPECT_TRUE(unknownManifold.isTypeCompatible());
 }
 
+TEST(ContactManifold, SaturatedReductionKeepsDeepAndWideContacts)
+{
+  ContactManifold manifold;
+
+  for (int i = 0; i < 5; ++i) {
+    ContactPoint cp;
+    cp.position = Eigen::Vector3d(
+        static_cast<double>(i % 2),
+        static_cast<double>((i / 2) % 2),
+        static_cast<double>(i));
+    cp.normal = Eigen::Vector3d::UnitZ();
+    if (i == 4) {
+      cp.normal = Eigen::Vector3d::Zero();
+    }
+    cp.depth = (i == 4) ? 10.0 : static_cast<double>(i);
+    manifold.addContact(cp);
+  }
+
+  ASSERT_EQ(manifold.numContacts(), ContactManifold::kMaxContacts);
+  bool keptDeepest = false;
+  for (const auto& contact : manifold.getContacts()) {
+    if (contact.depth == 10.0) {
+      keptDeepest = true;
+    }
+  }
+  EXPECT_TRUE(keptDeepest);
+  EXPECT_THROW(static_cast<void>(manifold.getContact(4)), std::out_of_range);
+}
+
+TEST(ContactManifold, ObjectPointersAndIncompatibleTypes)
+{
+  ContactManifold manifold;
+  ContactPoint cp;
+  cp.normal = Eigen::Vector3d::Zero();
+  cp.object1 = reinterpret_cast<const CollisionObject*>(0x1);
+  cp.object2 = reinterpret_cast<const CollisionObject*>(0x2);
+  manifold.addContact(cp);
+
+  EXPECT_EQ(manifold.getObject1(), cp.object1);
+  EXPECT_EQ(manifold.getObject2(), cp.object2);
+
+  manifold.setType(ContactType::Face);
+  EXPECT_FALSE(manifold.isTypeCompatible());
+  manifold.setType(ContactType::Patch);
+  EXPECT_FALSE(manifold.isTypeCompatible());
+
+  manifold.setObjects(nullptr, nullptr);
+  EXPECT_EQ(manifold.getObject1(), nullptr);
+  EXPECT_EQ(manifold.getObject2(), nullptr);
+}
+
 TEST(CollisionResult, DefaultConstruction)
 {
   CollisionResult result;
@@ -278,6 +331,7 @@ TEST(CollisionResult, Clear)
   EXPECT_FALSE(result.isCollision());
   EXPECT_EQ(result.numContacts(), 0u);
   EXPECT_EQ(result.numManifolds(), 0u);
+  EXPECT_THROW(static_cast<void>(result.getContact(0)), std::out_of_range);
 }
 
 TEST(CollisionResult, GetManifolds)
@@ -322,6 +376,43 @@ TEST(CollisionResult, GetContactFlat)
   EXPECT_EQ(result.getContact(0).position, Eigen::Vector3d(1, 0, 0));
   EXPECT_EQ(result.getContact(1).position, Eigen::Vector3d(2, 0, 0));
   EXPECT_EQ(result.getContact(2).position, Eigen::Vector3d(3, 0, 0));
+}
+
+TEST(CollisionResult, CacheInvalidatesAcrossReuse)
+{
+  CollisionResult result;
+
+  ContactPoint cp1;
+  cp1.position = Eigen::Vector3d(1, 0, 0);
+  result.addContact(cp1);
+  EXPECT_EQ(result.getManifolds().size(), 1u);
+  EXPECT_EQ(result.getContact(0).position, Eigen::Vector3d(1, 0, 0));
+
+  ContactPoint cp2;
+  cp2.position = Eigen::Vector3d(2, 0, 0);
+  result.addContact(cp2);
+  EXPECT_EQ(result.numContacts(), 2u);
+  EXPECT_EQ(result.getContact(1).position, Eigen::Vector3d(2, 0, 0));
+  EXPECT_EQ(result.getManifolds().size(), 2u);
+
+  ContactManifold manifold;
+  ContactPoint cp3;
+  cp3.position = Eigen::Vector3d(3, 0, 0);
+  manifold.addContact(cp3);
+  result.addManifold(std::move(manifold));
+  EXPECT_EQ(result.numContacts(), 3u);
+  EXPECT_EQ(result.getContact(2).position, Eigen::Vector3d(3, 0, 0));
+
+  result.clear();
+  EXPECT_TRUE(result.getManifolds().empty());
+  EXPECT_EQ(result.numContacts(), 0u);
+
+  ContactPoint cp4;
+  cp4.position = Eigen::Vector3d(4, 0, 0);
+  result.addContact(cp4);
+  EXPECT_EQ(result.numContacts(), 1u);
+  EXPECT_EQ(result.getContact(0).position, Eigen::Vector3d(4, 0, 0));
+  EXPECT_EQ(result.getManifolds().size(), 1u);
 }
 
 TEST(CollisionOption, Defaults)

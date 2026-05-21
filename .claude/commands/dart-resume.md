@@ -45,6 +45,12 @@ and ask.
   force-push only after explicit maintainer/user approval and only when the user
   explicitly requests it or when there is a clear reason such as removing
   sensitive content or repairing broken branch history.
+- If an already-published PR needs the latest target branch, use explicit
+  maintainer/user approval to update that published branch by merging the
+  target branch and pushing normally. Do not rebase published PR branches by
+  default because that invalidates existing CI runs and makes PR review/comment
+  history harder to follow. Rebase or force-push only when the maintainer
+  explicitly requests it.
 
 ## Safety
 

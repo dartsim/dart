@@ -37,6 +37,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <numbers>
 #include <random>
 #include <stdexcept>
@@ -54,6 +55,19 @@ Eigen::Isometry3d makeCapsuleBatchTransform(
                  * Eigen::AngleAxisd(0.5 * angle, Eigen::Vector3d::UnitY()))
                     .toRotationMatrix();
   tf.translation() = Eigen::Vector3d(x, y, z);
+  return tf;
+}
+
+Eigen::Isometry3d makeCapsuleSphereCommonFrame()
+{
+  return makeCapsuleBatchTransform(8.40188, 3.94383, 7.83099, 0.37);
+}
+
+Eigen::Isometry3d makeCapsuleSphereLocalTranslation(
+    const Eigen::Vector3d& translation)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = translation;
   return tf;
 }
 
@@ -95,6 +109,38 @@ void expectCollisionResultExactlyEqual(
           expectedManifold.getContact(j), actualManifold.getContact(j));
     }
   }
+}
+
+void expectLargeCapsuleSphereBoundaryCase(
+    const char* name,
+    const Eigen::Isometry3d& worldFromCase,
+    const Eigen::Vector3d& sphereCenterInCase,
+    bool expectedHit,
+    double expectedDepth)
+{
+  SCOPED_TRACE(name);
+  CapsuleShape capsule(5.0, 10.0);
+  SphereShape sphere(20.0);
+
+  const Eigen::Isometry3d tfCapsule = worldFromCase;
+  const Eigen::Isometry3d tfSphere
+      = worldFromCase * makeCapsuleSphereLocalTranslation(sphereCenterInCase);
+
+  CollisionResult result;
+  const bool hit
+      = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+  EXPECT_EQ(hit, expectedHit);
+
+  if (!expectedHit) {
+    EXPECT_EQ(result.numContacts(), 0u);
+    return;
+  }
+
+  ASSERT_EQ(result.numContacts(), 1u);
+  const auto& contact = result.getContact(0);
+  EXPECT_NEAR(contact.depth, expectedDepth, 1e-9);
+  EXPECT_TRUE(contact.position.allFinite());
+  EXPECT_TRUE(contact.normal.allFinite());
 }
 
 } // namespace
@@ -182,6 +228,55 @@ TEST(CapsuleCapsule, Concentric)
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
   EXPECT_NEAR(result.getContact(0).depth, 0.8, 1e-6);
+}
+
+TEST(CapsuleCapsule, VerticalFastPathCoversLateralAndAxialBranches)
+{
+  CapsuleShape capsule1(0.5, 2.0);
+  CapsuleShape capsule2(0.4, 1.0);
+
+  {
+    CollisionResult result;
+    const bool collided = collideCapsules(
+        capsule1,
+        Eigen::Isometry3d::Identity(),
+        capsule2,
+        makeCapsuleSphereLocalTranslation(Eigen::Vector3d(0.0, 0.7, 0.0)),
+        result);
+
+    ASSERT_TRUE(collided);
+    ASSERT_EQ(result.numContacts(), 1u);
+    EXPECT_NEAR(result.getContact(0).depth, 0.2, 1e-12);
+    EXPECT_NEAR(result.getContact(0).normal.y(), -1.0, 1e-12);
+  }
+
+  {
+    CollisionResult result;
+    const bool collided = collideCapsules(
+        capsule1,
+        makeCapsuleSphereLocalTranslation(Eigen::Vector3d(0.0, 0.0, 2.0)),
+        capsule2,
+        Eigen::Isometry3d::Identity(),
+        result);
+
+    ASSERT_TRUE(collided);
+    ASSERT_EQ(result.numContacts(), 1u);
+    EXPECT_NEAR(result.getContact(0).depth, 0.4, 1e-12);
+    EXPECT_NEAR(result.getContact(0).normal.z(), 1.0, 1e-12);
+  }
+
+  {
+    CollisionOption option;
+    option.maxNumContacts = 0;
+    CollisionResult result;
+    EXPECT_FALSE(collideCapsules(
+        capsule1,
+        Eigen::Isometry3d::Identity(),
+        capsule2,
+        Eigen::Isometry3d::Identity(),
+        result,
+        option));
+  }
 }
 
 TEST(CapsuleCapsuleBatch, capsule_capsule_batch_determinism_vs_single)
@@ -276,6 +371,34 @@ TEST(CapsuleSphere, SphereAtMiddle)
   EXPECT_NEAR(result.getContact(0).depth, 0.2, 1e-6);
 }
 
+TEST(CapsuleSphere, SphereAtMiddleAlongYAxis)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  SphereShape sphere(0.5);
+
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.8, 0.0);
+
+  CollisionResult result;
+  const bool collided
+      = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+
+  ASSERT_TRUE(collided);
+  ASSERT_EQ(result.numContacts(), 1u);
+  const auto& contact = result.getContact(0);
+  EXPECT_NEAR(contact.depth, 0.2, 1e-6);
+  EXPECT_DOUBLE_EQ(contact.normal.x(), 0.0);
+  EXPECT_DOUBLE_EQ(contact.normal.y(), -1.0);
+  EXPECT_DOUBLE_EQ(contact.normal.z(), 0.0);
+
+  CollisionResult separatedResult;
+  tfSphere.translation() = Eigen::Vector3d(0.0, 1.01, 0.0);
+  EXPECT_FALSE(collideCapsuleSphere(
+      capsule, tfCapsule, sphere, tfSphere, separatedResult));
+  EXPECT_EQ(separatedResult.numContacts(), 0u);
+}
+
 TEST(CapsuleSphere, SphereAtTop)
 {
   CapsuleShape capsule(0.5, 2.0);
@@ -308,6 +431,75 @@ TEST(CapsuleSphere, SphereAtBottom)
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 1u);
+}
+
+TEST(CapsuleSphere, LargeRadiusBoundaryAndSeparationAcrossFrames)
+{
+  const std::array<Eigen::Isometry3d, 2> worldFromCases{
+      Eigen::Isometry3d::Identity(), makeCapsuleSphereCommonFrame()};
+
+  for (const auto& worldFromCase : worldFromCases) {
+    expectLargeCapsuleSphereBoundaryCase(
+        "coincident-centers",
+        worldFromCase,
+        Eigen::Vector3d::Zero(),
+        true,
+        25.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "shallow-side-penetration",
+        worldFromCase,
+        Eigen::Vector3d(24.9, 0.0, 0.0),
+        true,
+        0.1);
+    expectLargeCapsuleSphereBoundaryCase(
+        "side-touching",
+        worldFromCase,
+        Eigen::Vector3d(25.0, 0.0, 0.0),
+        true,
+        0.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "side-separated",
+        worldFromCase,
+        Eigen::Vector3d(25.1, 0.0, 0.0),
+        false,
+        0.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "bottom-endcap-shallow-penetration",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, -29.9),
+        true,
+        0.1);
+    expectLargeCapsuleSphereBoundaryCase(
+        "bottom-endcap-touching",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, -30.0),
+        true,
+        0.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "bottom-endcap-separated",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, -30.1),
+        false,
+        0.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "top-endcap-shallow-penetration",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, 29.9),
+        true,
+        0.1);
+    expectLargeCapsuleSphereBoundaryCase(
+        "top-endcap-touching",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, 30.0),
+        true,
+        0.0);
+    expectLargeCapsuleSphereBoundaryCase(
+        "top-endcap-separated",
+        worldFromCase,
+        Eigen::Vector3d(0.0, 0.0, 30.1),
+        false,
+        0.0);
+  }
 }
 
 TEST(CapsuleBox, NoCollision)
@@ -404,6 +596,22 @@ TEST(CapsuleBox, HorizontalLineSupportHasEndpointContacts)
             std::numbers::pi_v<double> / 2, Eigen::Vector3d::UnitY())
             .toRotationMatrix();
   tfCapsule.translation() = Eigen::Vector3d(0.0, 0.0, 0.08);
+  Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
+
+  CollisionResult result;
+  bool collided = collideCapsuleBox(capsule, tfCapsule, box, tfBox, result);
+
+  EXPECT_TRUE(collided);
+  EXPECT_GE(result.numContacts(), 2u);
+}
+
+TEST(CapsuleBox, VerticalLineSupportHasEndpointContacts)
+{
+  CapsuleShape capsule(0.035, 0.9);
+  BoxShape box(Eigen::Vector3d(0.1, 10.0, 10.0));
+
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  tfCapsule.translation() = Eigen::Vector3d(0.12, 0.0, 0.0);
   Eigen::Isometry3d tfBox = Eigen::Isometry3d::Identity();
 
   CollisionResult result;
