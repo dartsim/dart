@@ -1308,15 +1308,17 @@ set -euo pipefail
 BUILD_TYPE=Release
 DART_TRACY_BIN=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/${BUILD_TYPE}/tracy-profiler
 if [ ! -x "${DART_TRACY_BIN}" ]; then
-  echo "Tracy GUI client was not built. Run pixi run tracy-build first." >&2
+  echo "Tracy GUI client was not built; building it now." >&2
+  pixi run tracy-build
+fi
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built at ${DART_TRACY_BIN}." >&2
   exit 1
 fi
 export TRACY_DPI_SCALE=${TRACY_DPI_SCALE:-1}
 exec "${DART_TRACY_BIN}" "$@"
 """,
   "tracy",
-], depends-on = [
-  "tracy-build",
 ] }
 
 # Python package build
@@ -2083,15 +2085,17 @@ tracy = { cmd = [
 set -euo pipefail
 DART_TRACY_BIN=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/Release/tracy-profiler.exe
 if [ ! -x "${DART_TRACY_BIN}" ]; then
-  echo "Tracy GUI client was not built. Run pixi run tracy-build first." >&2
+  echo "Tracy GUI client was not built; building it now." >&2
+  pixi run tracy-build
+fi
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built at ${DART_TRACY_BIN}." >&2
   exit 1
 fi
 export TRACY_DPI_SCALE=${TRACY_DPI_SCALE:-1}
 exec "${DART_TRACY_BIN}" "$@"
 """,
   "tracy",
-], depends-on = [
-  "tracy-build",
 ] }
 
 #============================
