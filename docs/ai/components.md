@@ -8,6 +8,9 @@ This document defines how DART maintains AI-facing components.
 `docs/onboarding/ai-tools.md` owns compatibility details. The current editable
 workflow source is `.claude/commands/`, and the current editable domain-skill
 source is `.claude/skills/`.
+`docs/ai/capabilities.json` owns machine-readable capability status, category,
+and gate profile; `docs/ai/workflows.md` owns the human-readable public paths
+and gate details.
 
 Generated surfaces are first-class entrypoints for their tools:
 
@@ -21,16 +24,18 @@ Generated files include source metadata and must not be hand-edited.
 1. Add the concise workflow source under `.claude/commands/dart-<name>.md`.
 2. Keep detailed policy in `docs/ai/` or `docs/onboarding/`.
 3. Add the workflow to `docs/ai/workflows.md`.
-4. Run `pixi run sync-ai-commands`.
-5. Run `pixi run check-ai-commands`.
+4. Add the workflow to `docs/ai/capabilities.json`.
+5. Run `pixi run sync-ai-commands`.
+6. Run `pixi run check-ai-commands`.
 
 ## Adding A Domain Skill
 
 1. Add `.claude/skills/dart-<name>/SKILL.md`.
 2. Keep the skill lightweight and point to full docs.
 3. Add the skill to `docs/ai/workflows.md`.
-4. Run `pixi run sync-ai-commands`.
-5. Run `pixi run check-ai-commands`.
+4. Add the skill to `docs/ai/capabilities.json`.
+5. Run `pixi run sync-ai-commands`.
+6. Run `pixi run check-ai-commands`.
 
 ## Improving AI Infra From Learnings
 
@@ -47,6 +52,8 @@ Route durable learnings to one owner:
   compact.
 - Gate selection and evidence expectations: `docs/ai/verification.md`.
 - Workflow routing and public paths: `docs/ai/workflows.md`.
+- Machine-readable capability status, category, and gate profile:
+  `docs/ai/capabilities.json`.
 - AI component mechanics, source surfaces, and structural checks: this file.
 - Tool compatibility and generated-adapter caveats:
   `docs/onboarding/ai-tools.md`.
@@ -85,6 +92,7 @@ faster; it must not be the only path.
 `pixi run check-ai-commands` is the non-mutating CI check. It verifies:
 
 - generated adapter sync;
+- machine-readable capability manifest coverage;
 - effective capability parity across Claude Code, OpenCode, and Codex;
 - command and skill frontmatter, descriptions, and size budgets;
 - required `docs/ai/` policy documents exist;

@@ -36,6 +36,26 @@ Use these practices:
 - For CI, performance, or infrastructure work, include evidence such as CI run
   observations, timing, reruns, benchmark output, or why a skipped check is
   expected.
+- For rendering, model, mesh, texture, GUI, or visual-example changes, include
+  a before/after visual comparison when practical:
+  - Prefer an existing headless example path such as `--headless`,
+    `--frames`, `--width`, `--height`, and `--screenshot` over manual
+    screenshots.
+  - Capture the before image from the base branch or by temporarily restoring
+    the replaced sample/assets, then capture the after image from the final
+    branch with the same camera, dimensions, frame count, and renderer.
+  - Inspect the images yourself and include the commands plus any environment
+    variables such as software rendering flags in the PR body.
+  - Prefer uploading transient comparison images to the GitHub PR description
+    editor and embedding the resulting attachment URLs. Do not commit
+    screenshots/headless-render images solely as PR evidence. Commit images only
+    when they are durable documentation, fixtures, or source assets that should
+    live in the repository.
+  - If the current tool cannot upload PR attachments, leave the local artifact
+    paths and ask a maintainer to upload them, or use another maintainer-approved
+    non-repository hosting path.
+  - If no headless path exists, either add a narrowly scoped capture mode when
+    it fits the example or document why visual comparison is not practical.
 - Mark non-applicable checklist items as "N/A" with a short reason.
 - Mention related PRs, issues, backports, and follow-ups explicitly, including
   "None" when there is no related work.

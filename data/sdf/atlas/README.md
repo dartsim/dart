@@ -1,9 +1,6 @@
-# Atlas Sample Models
+# Atlas Sample Model
 
-This directory contains Atlas sample models used by DART examples and tests.
-Maintained Atlas GUI examples load `atlas_v5_no_head.urdf`; legacy Atlas v3
-files remain in this branch for existing parser coverage while the full Atlas
-v5 cleanup lands separately.
+This directory contains the Atlas sample model used by DART examples and tests.
 
 `atlas_v5_no_head.urdf` and the files under `meshes_unplugged/` and
 `materials/textures/` are derived from the DRCSim `atlas_description` package.
@@ -24,3 +21,7 @@ multisense description include. Mesh references were also rewritten from
 `package://atlas_description/...` URIs to paths relative to this directory so
 the sample can load from DART's installed `data/` tree without a ROS package
 index.
+
+The older Atlas v3 sample files were removed for DART 7 so maintained examples
+and parser tests use current, purpose-specific fixtures instead of preserving
+unused legacy sample paths.

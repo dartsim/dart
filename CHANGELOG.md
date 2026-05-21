@@ -749,7 +749,7 @@
 - Examples and Tutorials
   - Added a new HTTP retriever and G1 puppet example, plus refreshed demo media. ([#2138](https://github.com/dartsim/dart/pull/2138))
   - Added the experimental Raylib example, PolyhedronVisual example, and rolling cylinder demo. ([#2310](https://github.com/dartsim/dart/pull/2310), [#2214](https://github.com/dartsim/dart/pull/2214), [#2353](https://github.com/dartsim/dart/pull/2353))
-  - Added an Atlas v5 no-head URDF sample model and moved the Atlas puppet, Simbicon, IK, benchmark, and visual smoke fixtures to the newer model.
+  - Replaced the legacy Atlas v3 sample data with an Atlas v5 no-head URDF sample model and moved the Atlas puppet, Simbicon, whole-body IK, benchmark, and visual smoke fixtures to it.
   - Added Atlas IK dartpy bindings/tutorials and control theory + servo primers. ([#2176](https://github.com/dartsim/dart/pull/2176), [#2303](https://github.com/dartsim/dart/pull/2303), [#2156](https://github.com/dartsim/dart/pull/2156))
   - Fixed python example discovery and added the Issue #743 regression. ([#2311](https://github.com/dartsim/dart/pull/2311), [#743](https://github.com/dartsim/dart/issues/743))
   - Added explicit placeholder bodies to unfinished domino and biped Python tutorials so users can import/run the scaffolds without `IndentationError`s.

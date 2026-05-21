@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="two_link_revolute_model">
+    <link name="base">
+      <pose>0 0 0.5 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.02</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.02</iyy>
+          <iyz>0</iyz>
+          <izz>0.02</izz>
+        </inertia>
+      </inertial>
+      <collision name="base_collision">
+        <geometry>
+          <box>
+            <size>0.4 0.4 0.2</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="base_visual">
+        <geometry>
+          <box>
+            <size>0.4 0.4 0.2</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+    <link name="link">
+      <pose>0 0 0.85 0 0 0</pose>
+      <inertial>
+        <mass>0.5</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.005</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_collision">
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.5</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_visual">
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.5</length>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+    <joint name="hinge" type="revolute">
+      <pose>0 0 0.65 0 0 0</pose>
+      <parent>base</parent>
+      <child>link</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1.57</lower>
+          <upper>1.57</upper>
+          <effort>10</effort>
+          <velocity>10</velocity>
+        </limit>
+      </axis>
+    </joint>
+  </model>
+</sdf>
