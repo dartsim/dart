@@ -21,8 +21,7 @@
       Comparable rows pass in the current run and are enforced by
       `bm-collision-check`, including the main comparative, adapter, and raw
       primitive/edge-case packets. The latest strict `1.0` manifest records
-      43 comparable native leads and 2 raw sphere-sphere edge rows that remain
-      within the enforced `1.10` guard but are not strict leads. The
+      45 comparable native leads, 0 behind rows, and 0 rerun-needed rows. The
       stacked-scene packet is documented as native-only profiling coverage for
       this checkpoint, so no fastest-reference claim is made from those rows.
 - [x] Phase 6: After performance optimization, run native collision detector
@@ -92,9 +91,8 @@ optimization expansion by benchmarks.
    that durable artifacts have moved to `docs/plans/`.
 2. Keep the raw-reference and adapter packets enforced with the existing
    `1.10` ratio guard. The aggregate check now hard-fails those packets, while
-   the latest strict `1.0` analysis reports 43 comparable native leads and
-   2 report-only raw sphere-sphere edge rows behind the strongest reference by
-   3.3%-6.0%.
+   the latest strict `1.0` analysis reports 45 comparable native leads,
+   0 behind rows, and 0 rerun-needed rows.
 3. Keep new DART test and benchmark names focused on the algorithm, query, and
    edge condition, not on the upstream library that inspired the case.
 4. Keep the later GUI collision-pair debugger example scoped around the native
@@ -409,12 +407,15 @@ optimization expansion by benchmarks.
 - `pixi run -e collision-reference bm-collision-check-narrow-raw-reference`
   passed with `24 passed, 0 failed, 0 skipped` after the sphere-box early-out.
 - Strict `1.0` report-only analysis over the official comparable benchmark
-  packet reported 43 native leads, 2 report-only raw sphere-sphere edge rows,
-  0 failed rows, and 0 skipped rows.
+  packet previously reported 43 native leads, 2 report-only raw sphere-sphere
+  edge rows, 0 failed rows, and 0 skipped rows.
 - `pixi run python scripts/generate_collision_benchmark_manifest.py`
   regenerated the durable benchmark manifest from the official packet outputs.
 - Synced the durable dashboard performance summary with the generated manifest:
-  43 strict native leads, 2 guarded raw sphere-sphere edge rows, and 24
-  native-only benchmark rows.
+  45 strict native leads, 0 behind rows, and 24 native-only benchmark rows.
+- Added `scripts/check_native_collision_superset_status.py` and wired
+  `pixi run check-native-collision-superset` into `pixi run lint`; the check
+  enforces current upstream inventory/case-map integrity plus the 45/0
+  benchmark status.
 - `pixi run lint` passed after the dashboard synchronization.
 - `git diff --check` passed.

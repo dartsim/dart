@@ -92,7 +92,7 @@ its own line so status updates remain git-history friendly.
   the next profiled hot-path slice without restoring reference-engine runtime
   dependencies.
 - Gate: The durable manifest records 45 comparable native leads, 0 behind rows,
-  8 native-only rows, and 0 rerun-needed rows from the local single-worker
+  24 native-only rows, and 0 rerun-needed rows from the local single-worker
   benchmark packet; multi-core CPU and single-GPU work remain behind prototype
   gates.
 

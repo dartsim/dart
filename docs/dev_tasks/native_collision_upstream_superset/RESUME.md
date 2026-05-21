@@ -145,12 +145,14 @@ native-only profiling coverage for this checkpoint, and the row-level map has
   no-contact sphere-box early-out keeps the raw sphere-box grazing path inside
   the guard, and a sphere-sphere axis fast-path cleanup improves the raw
   sphere-sphere packet.
-  Strict `1.0` report-only analysis over the official comparable packet reports
-  43 native leads and 2 raw sphere-sphere edge rows that are within `1.10` but
-  not strict leads.
+  Strict `1.0` analysis over the official comparable packet now reports
+  45 native leads, 0 behind rows, and 0 rerun-needed rows.
 - `docs/plans/035-native-collision-dashboard.md` is synchronized with the
-  generated benchmark manifest: 43 strict native leads, 2 guarded raw
-  sphere-sphere edge rows, and 24 native-only benchmark rows.
+  generated benchmark manifest: 45 strict native leads, 0 behind rows, and
+  24 native-only benchmark rows.
+- `scripts/check_native_collision_superset_status.py` is wired into
+  `pixi run lint` as `pixi run check-native-collision-superset`; it validates
+  the durable upstream inventory/case map plus the benchmark manifest status.
 - Focused verification for the fast paths has run:
   `pixi run cmake --build build/default/cpp/Release --target test_sphere_sphere test_sphere_box test_capsule_capsule`
   and

@@ -86,8 +86,7 @@ true:
 - **Performance guardrails**
   Current status:
   [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)
-  records 43 comparable native leads, 2 raw sphere-sphere edge rows within the
-  enforced guard but behind the strongest reference, 24 native-only rows, and
+  records 45 comparable native leads, 0 behind rows, 24 native-only rows, and
   0 rerun-needed rows from the local single-worker benchmark packet.
   Gap signal: host CPU scaling remained enabled for the local packet; deeper
   single-CPU, data-layout, multi-core, and GPU work is later.
@@ -119,16 +118,16 @@ true:
 Ratio is native median divided by the strongest comparable median; values below
 `1.0` mean native is faster in the local single-worker benchmark packet.
 
-| Benchmark content                                                             | Comparable rows | Native result                                          |     Ratio range | Current caveat                                                       |
-| ----------------------------------------------------------------------------- | --------------: | ------------------------------------------------------ | --------------: | -------------------------------------------------------------------- |
-| Primitive pair narrowphase, including touching/grazing/deep-penetration cases |              27 | 25 strict native leads; all 27 pass the enforced guard | `0.015`-`1.060` | Two raw sphere-sphere edge rows are behind by 3.3%-6.0%.             |
-| Public adapter and package collision paths                                    |               3 | Leads every comparable row                             | `0.626`-`0.918` | Add recurring JSON regression checks on the final CI surface.        |
-| Signed distance queries                                                       |               3 | Leads every comparable row                             | `0.070`-`0.422` | Ordered broadphase distance traversal remains a later optimization.  |
-| Ray and ray-batch queries                                                     |               7 | Leads every comparable row                             | `0.101`-`0.730` | Batch/SIMD throughput is deferred.                                   |
-| Mixed broadphase and pair-generation scenarios                                |               4 | Leads every comparable row                             | `0.038`-`0.806` | Larger stacked/ragdoll/landscape sweeps are deferred.                |
-| Mesh, convex, and field-heavy scenarios                                       |               1 | Leads the comparable row                               |         `0.166` | Dynamic mesh update and BVH profiling remain later work.             |
-| Native-only persistent scene and dirty-subset paths                           |               8 | Non-comparable native guardrails                       |             n/a | Retain as native regression guards, not comparison claims.           |
-| Native-only stacked and terrain profiling scenes                              |              16 | Non-comparable native workload coverage                |             n/a | Add reference variants only if that scope becomes part of the claim. |
+| Benchmark content                                                             | Comparable rows | Native result                           |     Ratio range | Current caveat                                                       |
+| ----------------------------------------------------------------------------- | --------------: | --------------------------------------- | --------------: | -------------------------------------------------------------------- |
+| Primitive pair narrowphase, including touching/grazing/deep-penetration cases |              27 | Leads every comparable row              | `0.015`-`0.976` | Keep recurring JSON regression checks on the final CI surface.       |
+| Public adapter and package collision paths                                    |               3 | Leads every comparable row              | `0.619`-`0.894` | Keep recurring JSON regression checks on the final CI surface.       |
+| Signed distance queries                                                       |               3 | Leads every comparable row              | `0.077`-`0.410` | Ordered broadphase distance traversal remains a later optimization.  |
+| Ray and ray-batch queries                                                     |               7 | Leads every comparable row              | `0.104`-`0.606` | Batch/SIMD throughput is deferred.                                   |
+| Mixed broadphase and pair-generation scenarios                                |               4 | Leads every comparable row              | `0.041`-`0.957` | Larger stacked/ragdoll/landscape sweeps are deferred.                |
+| Mesh, convex, and field-heavy scenarios                                       |               1 | Leads the comparable row                |         `0.144` | Dynamic mesh update and BVH profiling remain later work.             |
+| Native-only persistent scene and dirty-subset paths                           |               8 | Non-comparable native guardrails        |             n/a | Retain as native regression guards, not comparison claims.           |
+| Native-only stacked and terrain profiling scenes                              |              16 | Non-comparable native workload coverage |             n/a | Add reference variants only if that scope becomes part of the claim. |
 
 ## Runtime Dependency Contract
 
@@ -372,9 +371,8 @@ into DART-owned feature/performance rows.
   JSON guards, promoted through
   [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md).
   Reference comparison: FCL/Bullet/ODE where the query is comparable.
-  Current bar: the local single-worker packet has 43 comparable native leads,
-  2 raw sphere-sphere edge rows within the enforced guard but behind the
-  strongest reference, 24 native-only rows, and 0 rerun-needed rows.
+  Current bar: the local single-worker packet has 45 comparable native leads,
+  0 behind rows, 24 native-only rows, and 0 rerun-needed rows.
   Open performance gap: rerun the guard before accepting future performance
   claims, ideally with CPU scaling controlled.
 - **Raw narrowphase**

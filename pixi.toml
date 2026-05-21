@@ -196,6 +196,7 @@ lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 
 check-collision-runtime-isolation = { cmd = "python scripts/check_collision_runtime_isolation.py" }
 audit-collision-compat-facades = { cmd = "python scripts/audit_collision_compat_facades.py" }
+check-native-collision-superset = { cmd = "python scripts/check_native_collision_superset_status.py" }
 
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
 
@@ -217,6 +218,7 @@ lint = { depends-on = [
   "lint-rst",
   "check-collision-runtime-isolation",
   "audit-collision-compat-facades",
+  "check-native-collision-superset",
   "lint-api-boundaries",
   "sync-ai-commands",
 ] }
