@@ -118,7 +118,10 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 ### Examples (Active Tasks)
 
-- `world_split/` - ECS world separation (design, migration docs)
+- `compute_resource_access/` - Follow-up compute graph metadata task for
+  resource read/write declarations, validation, and visualization
+- `native_collision_visual_verification/` - Native collision pair debugger and
+  broad-phase visualization follow-up
 
 ## Structure
 

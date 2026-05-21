@@ -115,12 +115,12 @@ true:
 
 ## Later GUI Debugger Scope
 
-A native collision-pair debugger example remains later scope. The useful target
-is a backend-hidden GUI example that selects supported native pair types, poses
-objects, and renders contact point, depth, and normal data. Do not rebase onto a
-Filament branch for this unless the chosen renderer path needs that integration;
-the general GUI promotion plan remains under
-[`PLAN-060`](dashboard.md#plan-060-backend-hidden-gui-roadmap).
+A native collision-pair debugger example is now tracked as
+[`PLAN-037`](dashboard.md#plan-037-native-collision-visual-verification). That
+follow-up keeps this completed feature/performance dashboard focused on durable
+coverage and benchmark evidence while the visual verification work owns
+pair-by-pair runtime controls, contact/manifold rendering, and broad-phase
+overlays.
 
 ## Feature Summary
 

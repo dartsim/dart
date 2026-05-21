@@ -96,6 +96,22 @@ its own line so status updates remain git-history friendly.
   benchmark packet; multi-core CPU and single-GPU work remain behind prototype
   gates.
 
+### PLAN-037: Native Collision Visual Verification
+
+- Owner doc:
+  [`037-native-collision-visual-verification.md`](037-native-collision-visual-verification.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Build the pair-by-pair visual debugger from the existing VSG
+  collision sandbox, starting with a data-driven pair registry, object
+  parameter and pose controls, contact/manifold inspection, and the broad-phase
+  debug snapshot API needed for AABB tree and Morton-code overlays.
+- Gate: The completed example must build with GUI/VSG enabled, pass a headless
+  screenshot smoke that proves nonblank geometry and overlays, cover every
+  supported native pair with explicit unsupported placeholders, and have focused
+  native-collision tests for any new broad-phase debug snapshot API.
+
 ### PLAN-040: DART 7 Release Hardening
 
 - Owner doc: [`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)
