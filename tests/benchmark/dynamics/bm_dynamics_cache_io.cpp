@@ -329,7 +329,7 @@ BENCHMARK(BM_Robot_DRCHubo_WorldStep)->MinTime(0.1);
 
 static void BM_Robot_Atlas_ForwardKinematics(benchmark::State& state)
 {
-  auto skel = loadModel("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+  auto skel = loadModel("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   if (!skel) {
     state.SkipWithError("Failed to load Atlas model");
     return;
@@ -351,7 +351,7 @@ BENCHMARK(BM_Robot_Atlas_ForwardKinematics)->MinTime(0.1);
 
 static void BM_Robot_Atlas_ForwardDynamics(benchmark::State& state)
 {
-  auto skel = loadModel("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+  auto skel = loadModel("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   if (!skel) {
     state.SkipWithError("Failed to load Atlas model");
     return;
@@ -373,7 +373,7 @@ BENCHMARK(BM_Robot_Atlas_ForwardDynamics)->MinTime(0.1);
 
 static void BM_Robot_Atlas_WorldStep(benchmark::State& state)
 {
-  auto skel = loadModel("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+  auto skel = loadModel("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   if (!skel) {
     state.SkipWithError("Failed to load Atlas model");
     return;

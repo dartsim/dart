@@ -49,7 +49,6 @@
 #if DART_IO_HAS_URDF
   #include "dart/config.hpp"
   #include "dart/dynamics/revolute_joint.hpp"
-  #include "dart/io/read.hpp"
 #endif
 
 #include <Eigen/Core>
@@ -1484,7 +1483,6 @@ TEST(UrdfParser, Options)
       options.mDefaultInertia.getSpatialTensor()));
 }
 
-#if DART_IO_HAS_URDF
 namespace {
 
 template <typename ShapeType>
@@ -1515,6 +1513,8 @@ bool hasShapeType(const dynamics::SkeletonPtr& skeleton)
 }
 
 } // namespace
+
+#if DART_IO_HAS_URDF
 
 //==============================================================================
 TEST(UrdfParser, WamMeshMaterialAndLimits)
@@ -1568,6 +1568,23 @@ TEST(UrdfParser, DrchuboStructure)
   EXPECT_TRUE(hasShapeType<dynamics::MeshShape>(skeleton));
 }
 #endif
+
+//==============================================================================
+TEST(UrdfParser, AtlasV5NoHeadLoadsMeshesAndExpectedStructure)
+{
+  UrdfParser parser;
+  const auto skeleton
+      = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
+  ASSERT_NE(skeleton, nullptr);
+
+  EXPECT_EQ(skeleton->getNumBodyNodes(), 36u);
+  EXPECT_EQ(skeleton->getNumDofs(), 35u);
+  EXPECT_NE(skeleton->getBodyNode("pelvis"), nullptr);
+  EXPECT_NE(skeleton->getBodyNode("l_hand"), nullptr);
+  EXPECT_NE(skeleton->getBodyNode("r_hand"), nullptr);
+  EXPECT_EQ(skeleton->getJoint("neck_ry"), nullptr);
+  EXPECT_TRUE(hasShapeType<dynamics::MeshShape>(skeleton));
+}
 
 //==============================================================================
 TEST(UrdfParser, ParseSkeletonStringEmptyReturnsNull)

@@ -1052,7 +1052,7 @@ dart::dynamics::SkeletonPtr loadRequiredWamRobotSkeleton()
 dart::dynamics::SkeletonPtr loadRequiredAtlasRobotSkeleton()
 {
   const auto atlasUri = dart::common::Uri::createFromString(
-      "dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+      "dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   auto atlas = dart::io::readSkeleton(atlasUri);
   if (!atlas) {
     throw std::runtime_error(
@@ -1447,7 +1447,8 @@ DartScene createMvpDartScene()
   scene.world->addSkeleton(createStaticVisual(
       kAtlasFixtureSkeletonName,
       loadRequiredExampleMeshShape(
-          "data/sdf/atlas/utorso.dae", Eigen::Vector3d(0.75, 0.75, 0.75)),
+          "data/sdf/atlas/meshes_unplugged/utorso.dae",
+          Eigen::Vector3d(0.75, 0.75, 0.75)),
       Eigen::Vector3d(2.2, 0.25, 1.1),
       Eigen::Vector3d(0.72, 0.72, 0.78)));
   if (auto wamBaseMesh = loadExampleMeshShape(
