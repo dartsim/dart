@@ -67,6 +67,13 @@ Project Stats
 
 Track GitHub interest over time with
 `Star History <https://star-history.com/#dartsim/dart&type=date&legend=top-left>`_.
+Benchmark history, freshness, and native/reference comparison guidance are
+covered by the :doc:`DART Performance Dashboard <community/performance_dashboard>`.
+After the first dashboard publication, the hosted benchmark dashboard is
+available at `dartsim.github.io/dart/performance/
+<https://dartsim.github.io/dart/performance/>`_ with a compact
+`status.json <https://dartsim.github.io/dart/performance/status.json>`_
+health endpoint.
 
 Social Media
 ------------
@@ -163,4 +170,5 @@ If you use DART in an academic publication, please consider citing this
    :caption: Community
 
    community/who_uses_dart
+   community/performance_dashboard
    license

@@ -85,6 +85,22 @@ its own line so status updates remain git-history friendly.
   benchmark/CI evidence is attached to the completing review surface, and
   temporary dev-task folders are removed.
 
+### PLAN-080: Performance Dashboard
+
+- Owner doc: [`080-performance-dashboard.md`](080-performance-dashboard.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Scalable compute
+- Next step: Review/merge the scheduled/manual CI publisher for
+  `scripts/generate_performance_dashboard.py`, run it once from `main`, then
+  add maintainer-approved Bencher reporting after the DART-owned dashboard path
+  is accepted.
+- Gate:
+  `docs/dev_tasks/performance_dashboard/README.md` tracks implementation;
+  dashboard history must survive GitHub artifact expiration, collision
+  native/reference rows must show time history and strongest-reference ratios,
+  and Bencher reporting requires maintainer-approved project/secrets setup.
+
 ### PLAN-040: DART 7 Release Hardening
 
 - Owner doc: [`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)

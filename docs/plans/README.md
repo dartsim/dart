@@ -68,6 +68,7 @@ they should not own priority, timeline, or active implementation state.
 | [`030-compute-resource-access/`](030-compute-resource-access/)                       | PLAN-030 resource-access mission and evaluator contract         |
 | [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)             | Durable native-collision feature/performance dashboard          |
 | [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md) | Durable row-level native-collision coverage matrix sidecar      |
+| [`080-performance-dashboard.md`](080-performance-dashboard.md)                       | Repo-wide performance dashboard plan and service decision       |
 | Numbered initiative files, such as `010-*.md`                                        | Active plan scope, evidence, open gaps, and acceptance criteria |
 | [`AGENTS.md`](AGENTS.md)                                                             | Local rules for agents editing plan docs                        |
 | [`../ai/north-star.md`](../ai/north-star.md)                                         | Mission, current state, missing capabilities, and readiness bar |
