@@ -37,6 +37,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -123,6 +124,45 @@ TEST(VoxelGridShape, SetOctreeImportsNativeStorage)
   EXPECT_EQ(shape.getOctree(), octree);
   EXPECT_DOUBLE_EQ(shape.getOccupancyGrid()->getResolution(), 0.2);
   EXPECT_GT(shape.getOccupancy(Eigen::Vector3d(0.4, 0.0, 0.0)), 0.5);
+}
+
+//==============================================================================
+TEST(VoxelGridShape, SetOctreeImportsPrunedLeafVolume)
+{
+  auto octree = std::make_shared<octomap::OcTree>(0.1);
+  constexpr std::array<double, 2> coords{-0.05, 0.05};
+  for (const double x : coords) {
+    for (const double y : coords) {
+      for (const double z : coords) {
+        octree->updateNode(x, y, z, true);
+      }
+    }
+  }
+  octree->updateInnerOccupancy();
+  octree->prune();
+
+  bool hasCoarseLeaf = false;
+  for (auto it = octree->begin_leafs(), end = octree->end_leafs(); it != end;
+       ++it) {
+    if (it.getSize() > octree->getResolution()) {
+      hasCoarseLeaf = true;
+      break;
+    }
+  }
+  ASSERT_TRUE(hasCoarseLeaf);
+
+  VoxelGridShape shape(0.1);
+  shape.setOctree(octree);
+
+  ASSERT_NE(shape.getOccupancyGrid(), nullptr);
+  EXPECT_EQ(shape.getOccupancyGrid()->getNumOccupiedCells(), 8u);
+  for (const double x : coords) {
+    for (const double y : coords) {
+      for (const double z : coords) {
+        EXPECT_GT(shape.getOccupancy(Eigen::Vector3d(x, y, z)), 0.5);
+      }
+    }
+  }
 }
 #endif
 

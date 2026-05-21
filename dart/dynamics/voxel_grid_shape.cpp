@@ -39,6 +39,8 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
+
 namespace dart {
 namespace dynamics {
 
@@ -109,7 +111,25 @@ void importOctree(SparseOccupancyGrid& grid, const octomap::OcTree& octree)
   for (auto it = octree.begin_leafs(), end = octree.end_leafs(); it != end;
        ++it) {
     const Eigen::Vector3d center(it.getX(), it.getY(), it.getZ());
-    grid.setOccupancy(grid.worldToCell(center), it->getOccupancy());
+    const double halfSize = 0.5 * static_cast<double>(it.getSize());
+    const Eigen::Vector3d minCorner = center.array() - halfSize;
+    const Eigen::Vector3d maxCorner = center.array() + halfSize;
+    Eigen::Vector3d maxIncludedCorner;
+    for (auto axis = 0; axis < 3; ++axis) {
+      maxIncludedCorner[axis]
+          = std::nextafter(maxCorner[axis], minCorner[axis]);
+    }
+
+    const auto minKey = grid.worldToCell(minCorner);
+    const auto maxKey = grid.worldToCell(maxIncludedCorner);
+    const double occupancy = it->getOccupancy();
+    for (auto x = minKey.x; x <= maxKey.x; ++x) {
+      for (auto y = minKey.y; y <= maxKey.y; ++y) {
+        for (auto z = minKey.z; z <= maxKey.z; ++z) {
+          grid.setOccupancy(SparseOccupancyGrid::CellKey{x, y, z}, occupancy);
+        }
+      }
+    }
   }
 }
 
