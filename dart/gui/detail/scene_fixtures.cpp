@@ -95,9 +95,7 @@ using dart::dynamics::SphereShape;
 using dart::dynamics::VisualAspect;
 using dart::dynamics::WeldJoint;
 
-#if DART_HAVE_OCTOMAP
 using dart::dynamics::VoxelGridShape;
-#endif
 
 using dart::gui::makeRenderableId;
 using dart::simulation::World;
@@ -1797,7 +1795,6 @@ DartScene createMvpDartScene()
     return shape;
   };
 
-#if DART_HAVE_OCTOMAP
   auto createVoxelGridShape = [] {
     auto shape = std::make_shared<VoxelGridShape>(0.12);
     const std::array<Eigen::Vector3d, 7> occupiedVoxels{
@@ -1813,7 +1810,6 @@ DartScene createMvpDartScene()
     }
     return shape;
   };
-#endif
 
   auto createSoftMeshSkeleton = [] {
     auto skeleton = Skeleton::create(kSoftMeshFixtureSkeletonName);
@@ -1922,14 +1918,12 @@ DartScene createMvpDartScene()
       Eigen::Vector3d(-0.75, 0.55, 0.65),
       Eigen::Vector3d(0.42, 0.74, 0.36)));
   scene.world->addSkeleton(createSoftMeshSkeleton());
-#if DART_HAVE_OCTOMAP
   scene.world->addSkeleton(createStaticVisual(
       kVoxelGridFixtureSkeletonName,
       createVoxelGridShape(),
       Eigen::Vector3d(0.55, 0.55, 0.72),
       Eigen::Vector3d(0.94, 0.55, 0.24),
       0.78));
-#endif
   scene.world->addSkeleton(createStaticVisual(
       "visual_ellipsoid",
       std::make_shared<dart::dynamics::EllipsoidShape>(
@@ -3857,7 +3851,6 @@ DartScene createPointCloudScene()
       Eigen::Vector3d(0.25, 0.48, 0.95),
       0.82));
 
-#if DART_HAVE_OCTOMAP
   auto voxelGridShape = std::make_shared<VoxelGridShape>(0.11);
   const std::array<Eigen::Vector3d, 9> voxelCenters{{
       Eigen::Vector3d(-0.22, -0.10, 0.00),
@@ -3879,7 +3872,6 @@ DartScene createPointCloudScene()
       Eigen::Vector3d(0.45, 0.06, 0.48),
       Eigen::Vector3d(0.94, 0.52, 0.20),
       0.72));
-#endif
 
   Eigen::Isometry3d sensorTransform = Eigen::Isometry3d::Identity();
   sensorTransform.translation() = Eigen::Vector3d(0.72, -0.42, 0.76);

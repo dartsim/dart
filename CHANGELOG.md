@@ -491,6 +491,8 @@
   - Wired the native DART backend as a full `CollisionDetector` implementation with distance queries, raycast, and expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere). The legacy `"experimental"` factory key remains as an alias for compatibility.
   - Added native sparse occupancy-grid storage for `VoxelGridShape`, including native voxel collision support when OctoMap is unavailable while preserving OctoMap compatibility APIs when the dependency is present.
   - Optimized native sparse occupancy-grid point-cloud insertion and occupied-cell extraction, added opt-in threaded point-cloud insertion, expanded OctoMap comparison benchmarks, and enabled native `VoxelGridShape` GUI rendering without OctoMap.
+  - Updated the `point_cloud` GUI example to use native voxel-grid point-cloud APIs without requiring OctoMap.
+  - Allowed installed DART 7 CMake packages to satisfy legacy DART 6.10+ `find_package(DART ...)` requests so pinned gz-physics checkouts can configure without a local source patch.
   - Fixed native capsule-box duplicate filtering to stay pair-local so accumulated collision results do not suppress new contacts in dense worlds.
   - Native collision: added MPR convex penetration and optional libccd parity tests/bench.
   - Native collision: handle degenerate triangle cases in GJK/MPR for robust convex queries.

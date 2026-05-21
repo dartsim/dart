@@ -74,9 +74,7 @@
 #include <dart/dynamics/sphere_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
-#if DART_HAVE_OCTOMAP
-  #include <dart/dynamics/voxel_grid_shape.hpp>
-#endif
+#include <dart/dynamics/voxel_grid_shape.hpp>
 
 #include <dart/math/geometry.hpp>
 #include <dart/math/tri_mesh.hpp>
@@ -136,9 +134,7 @@ using dart::gui::ShapeKind;
 using dart::math::SupportGeometry;
 using dart::simulation::World;
 
-#if DART_HAVE_OCTOMAP
 using dart::dynamics::VoxelGridShape;
-#endif
 
 class UnsupportedTestShape final : public Shape
 {
@@ -3947,7 +3943,7 @@ TEST(FilamentSceneExtraction, StaticGeometryExamplesPreserveParityMarkers)
       pointCloudSource.find("generatePointCloudInBox"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("updateRobotPose"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("updateSensor"), std::string::npos);
-  EXPECT_NE(pointCloudSource.find("DART_HAVE_OCTOMAP"), std::string::npos);
+  EXPECT_EQ(pointCloudSource.find("DART_HAVE_OCTOMAP"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("VoxelGridShape"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("visual_voxel_grid"), std::string::npos);
   EXPECT_NE(pointCloudSource.find("point_cloud_grid"), std::string::npos);
@@ -4948,7 +4944,6 @@ TEST(
   EXPECT_FALSE(softMesh->triangleVertices.empty());
   EXPECT_FALSE(softMesh->triangleIndices.empty());
 
-#if DART_HAVE_OCTOMAP
   VoxelGridShape voxelGrid(0.1);
   voxelGrid.updateOccupancy(Eigen::Vector3d(0.05, 0.05, 0.05));
   voxelGrid.updateOccupancy(Eigen::Vector3d(0.25, -0.05, 0.15));
@@ -4962,7 +4957,6 @@ TEST(
   EXPECT_GT(voxels->size.x(), 0.0);
   EXPECT_GT(voxels->size.y(), 0.0);
   EXPECT_GT(voxels->size.z(), 0.0);
-#endif
 
   const auto unsupported = describeShape(UnsupportedTestShape());
   ASSERT_TRUE(unsupported.has_value());

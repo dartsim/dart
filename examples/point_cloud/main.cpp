@@ -49,15 +49,10 @@
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/skeleton.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
+#include <dart/dynamics/voxel_grid_shape.hpp>
 #include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/io/read.hpp>
-
-#if DART_HAVE_OCTOMAP
-  #include <dart/dynamics/voxel_grid_shape.hpp>
-
-  #include <octomap/Pointcloud.h>
-#endif
 
 #include <dart/math/constants.hpp>
 
@@ -105,12 +100,10 @@ struct PointCloudState
   std::shared_ptr<dart::dynamics::SimpleFrame> sensorFrame;
   dart::dynamics::VisualAspect* sensorVisual = nullptr;
   dart::examples::SourceOwnedGridState grid;
-#if DART_HAVE_OCTOMAP
   std::shared_ptr<dart::dynamics::SimpleFrame> voxelGridFrame;
   std::shared_ptr<dart::dynamics::VoxelGridShape> voxelGridShape;
   dart::dynamics::VisualAspect* voxelGridVisual = nullptr;
-#endif
-  PointSamplingMode samplingMode = PointSamplingMode::SampleOnRobot;
+  PointSamplingMode samplingMode = PointSamplingMode::SampleInBox;
   dart::dynamics::PointCloudShape::ColorMode colorMode
       = dart::dynamics::PointCloudShape::BIND_PER_POINT;
   dart::dynamics::PointCloudShape::PointShapeType pointShapeType
@@ -121,8 +114,10 @@ struct PointCloudState
   bool voxelGridVisible = true;
   double visualSize = 0.035;
   Eigen::Vector4d pointCloudColor = Eigen::Vector4d(0.20, 0.38, 0.94, 0.78);
-  Eigen::Vector4d voxelGridColor = Eigen::Vector4d(0.94, 0.52, 0.20, 0.52);
+  Eigen::Vector4d voxelGridColor = Eigen::Vector4d(0.94, 0.52, 0.20, 1.0);
   double elapsedTime = 0.0;
+  std::size_t lastPointCount = 0u;
+  std::size_t lastOccupiedVoxelCount = 0u;
 };
 
 void applyVisibility(dart::dynamics::VisualAspect* aspect, bool visible)
@@ -149,14 +144,12 @@ void applyPointCloudColor(PointCloudState& state)
   }
 }
 
-#if DART_HAVE_OCTOMAP
 void applyVoxelGridColor(PointCloudState& state)
 {
   if (state.voxelGridVisual != nullptr) {
     state.voxelGridVisual->setRGBA(state.voxelGridColor);
   }
 }
-#endif
 
 dart::dynamics::SkeletonPtr createFallbackRobot()
 {
@@ -245,7 +238,6 @@ std::shared_ptr<dart::dynamics::SimpleFrame> createPointCloudFrame(
   return frame;
 }
 
-#if DART_HAVE_OCTOMAP
 std::shared_ptr<dart::dynamics::SimpleFrame> createVoxelGridFrame(
     const std::shared_ptr<dart::dynamics::VoxelGridShape>& shape)
 {
@@ -253,10 +245,9 @@ std::shared_ptr<dart::dynamics::SimpleFrame> createVoxelGridFrame(
       dart::dynamics::Frame::World(), kVoxelGridFrameName);
   frame->setShape(shape);
   frame->getVisualAspect(true)->setRGBA(
-      Eigen::Vector4d(0.94, 0.52, 0.20, 0.52));
+      Eigen::Vector4d(0.94, 0.52, 0.20, 1.0));
   return frame;
 }
-#endif
 
 std::shared_ptr<dart::dynamics::SimpleFrame> createSensorFrame()
 {
@@ -277,7 +268,10 @@ Vector3List generatePointCloudInBox(double time, std::size_t numPoints)
     const double zMix = static_cast<double>((i / 100u) % 5u) / 4.0;
     const double wave
         = 0.04 * std::sin(time * 2.0 + static_cast<double>(i) * 0.17);
-    points.emplace_back(-0.5 + xMix, -0.5 + yMix, -0.25 + 0.75 * zMix + wave);
+    points.emplace_back(
+        -0.90 + 0.60 * xMix,
+        -0.30 + 0.60 * yMix,
+        0.55 + 0.55 * zMix + wave);
   }
   return points;
 }
@@ -403,21 +397,6 @@ void updateSensor(PointCloudState& state)
   state.sensorFrame->setTranslation(sensorPosition);
 }
 
-#if DART_HAVE_OCTOMAP
-octomap::Pointcloud toOctomapPointCloud(const Vector3List& points)
-{
-  octomap::Pointcloud pointCloud;
-  pointCloud.reserve(points.size());
-  for (const Eigen::Vector3d& point : points) {
-    pointCloud.push_back(
-        static_cast<float>(point.x()),
-        static_cast<float>(point.y()),
-        static_cast<float>(point.z()));
-  }
-  return pointCloud;
-}
-#endif
-
 void refreshPointCloud(PointCloudState& state)
 {
   updateSensor(state);
@@ -431,14 +410,15 @@ void refreshPointCloud(PointCloudState& state)
       std::span<const Eigen::Vector3d>(points.data(), points.size()));
   state.pointCloudShape->setColors(
       std::span<const Eigen::Vector4d>(colors.data(), colors.size()));
+  state.lastPointCount = points.size();
 
-#if DART_HAVE_OCTOMAP
   if (state.voxelGridShape != nullptr) {
-    const auto pointCloud = toOctomapPointCloud(points);
     state.voxelGridShape->updateOccupancy(
-        pointCloud, state.sensorFrame->getWorldTransform().translation());
+        std::span<const Eigen::Vector3d>(points.data(), points.size()),
+        state.sensorFrame->getWorldTransform().translation());
+    state.lastOccupiedVoxelCount
+        = state.voxelGridShape->getOccupiedCells().size();
   }
-#endif
 }
 
 void stepPointCloud(PointCloudState& state)
@@ -571,6 +551,9 @@ dart::gui::Panel createPointCloudPanel(std::shared_ptr<PointCloudState> state)
 
     builder.text(
         std::string("Sampling: ") + samplingModeLabel(state->samplingMode));
+    builder.text("Points: " + std::to_string(state->lastPointCount));
+    builder.text(
+        "Occupied voxels: " + std::to_string(state->lastOccupiedVoxelCount));
     if (builder.button("Sample on robot")) {
       state->samplingMode = PointSamplingMode::SampleOnRobot;
       refreshPointCloud(*state);
@@ -589,13 +572,9 @@ dart::gui::Panel createPointCloudPanel(std::shared_ptr<PointCloudState> state)
       applyVisibility(state->sensorVisual, state->sensorVisible);
     }
 
-#if DART_HAVE_OCTOMAP
     if (builder.checkbox("Voxel Grid", state->voxelGridVisible)) {
       applyVisibility(state->voxelGridVisual, state->voxelGridVisible);
     }
-#else
-    builder.text("Voxel Grid: unavailable because DART_HAVE_OCTOMAP is off");
-#endif
 
     builder.separator();
     builder.text(
@@ -606,11 +585,9 @@ dart::gui::Panel createPointCloudPanel(std::shared_ptr<PointCloudState> state)
     if (builder.colorEdit("Point Cloud Color", state->pointCloudColor)) {
       applyPointCloudColor(*state);
     }
-#if DART_HAVE_OCTOMAP
     if (builder.colorEdit("Voxel Grid Color", state->voxelGridColor)) {
       applyVoxelGridColor(*state);
     }
-#endif
     builder.text(
         std::string("Point Shape Type: ")
         + pointShapeTypeLabel(state->pointShapeType));
@@ -661,14 +638,12 @@ std::shared_ptr<PointCloudState> createPointCloudState()
   applyPointCloudColor(*state);
   state->world->addSimpleFrame(state->pointCloudFrame);
 
-#if DART_HAVE_OCTOMAP
   state->voxelGridShape
-      = std::make_shared<dart::dynamics::VoxelGridShape>(0.05);
+      = std::make_shared<dart::dynamics::VoxelGridShape>(0.10);
   state->voxelGridFrame = createVoxelGridFrame(state->voxelGridShape);
   state->voxelGridVisual = state->voxelGridFrame->getVisualAspect();
   applyVoxelGridColor(*state);
   state->world->addSimpleFrame(state->voxelGridFrame);
-#endif
 
   state->sensorFrame = createSensorFrame();
   state->sensorVisual = state->sensorFrame->getVisualAspect();
