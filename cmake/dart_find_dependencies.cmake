@@ -434,6 +434,26 @@ if(DART_BUILD_GUI)
       message(FATAL_ERROR "DART_FETCH_FILAMENT has a pinned hash only for DART_FILAMENT_VERSION=1.71.3. Update the URL hash before changing the version.")
     endif()
 
+    set(_dart_filament_target_arch "${CMAKE_SYSTEM_PROCESSOR}")
+    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      set(_dart_filament_target_arch "")
+      foreach(_dart_filament_arch_candidate IN ITEMS
+          CMAKE_CXX_COMPILER_ARCHITECTURE_ID
+          CMAKE_GENERATOR_PLATFORM
+          CMAKE_VS_PLATFORM_NAME)
+        if(NOT _dart_filament_target_arch
+            AND DEFINED ${_dart_filament_arch_candidate}
+            AND NOT "${${_dart_filament_arch_candidate}}" STREQUAL "")
+          set(_dart_filament_target_arch "${${_dart_filament_arch_candidate}}")
+        endif()
+      endforeach()
+
+      if(NOT _dart_filament_target_arch)
+        set(_dart_filament_target_arch "${CMAKE_SYSTEM_PROCESSOR}")
+      endif()
+    endif()
+    string(TOLOWER "${_dart_filament_target_arch}" _dart_filament_target_arch_lower)
+
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
       set(_dart_filament_archive_platform "linux")
       set(_dart_filament_archive_hash "d41963799c156e2eceff6c8f89d76ce26c3213972f63aa90add5e446a712e12e")
@@ -443,9 +463,16 @@ if(DART_BUILD_GUI)
     elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
       set(_dart_filament_archive_platform "mac")
       set(_dart_filament_archive_hash "d8f253e262d731fb60f8be7d5ae6af76651bdc597d564171790bc78ac3696e04")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows"
+        AND _dart_filament_target_arch_lower MATCHES "^(x64|x86_64|amd64)$")
       set(_dart_filament_archive_platform "windows")
       set(_dart_filament_archive_hash "67c08eb259aec39061b02b06f56bf7910ab78c97a95da03b1f83b86b61d1d7e2")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      message(FATAL_ERROR
+        "DART_FETCH_FILAMENT has a pinned Windows Filament archive only for "
+        "x64 targets, but the configured target architecture is "
+        "'${_dart_filament_target_arch}'. Provide Filament_ROOT for this "
+        "target architecture or disable DART_BUILD_GUI.")
     else()
       message(FATAL_ERROR "DART_FETCH_FILAMENT does not have a pinned Filament archive for ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}. Provide Filament_ROOT or disable DART_BUILD_GUI.")
     endif()
@@ -473,6 +500,9 @@ if(DART_BUILD_GUI)
     set(Filament_ROOT "${_dart_fetched_filament_root}" CACHE PATH "Fetched Filament install tree" FORCE)
     unset(_dart_filament_archive_hash)
     unset(_dart_filament_archive_platform)
+    unset(_dart_filament_arch_candidate)
+    unset(_dart_filament_target_arch)
+    unset(_dart_filament_target_arch_lower)
   elseif(NOT DART_USE_SYSTEM_FILAMENT)
     message(FATAL_ERROR "DART_BUILD_GUI=ON requires DART_USE_SYSTEM_FILAMENT=ON unless DART_FETCH_FILAMENT=ON is explicitly set.")
   endif()
