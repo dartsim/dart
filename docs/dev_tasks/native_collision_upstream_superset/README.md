@@ -17,7 +17,10 @@
 - [x] Phase 4: Implement correctness coverage expansion without losing existing
       reference/native coverage.
 - [ ] Phase 5: Implement benchmark expansion and rerun native-vs-reference
-      performance optimization against the expanded benchmark packet.
+      performance optimization against the expanded benchmark packet. The
+      established comparative guard has been rerun; raw-reference micro-paths
+      and the native-only stacked-scene packet still need follow-up before any
+      fastest-everywhere claim.
 - [ ] Phase 6: After performance optimization, run native collision detector
       code coverage and raise the native detector implementation to 95%+ line
       coverage.
@@ -72,13 +75,16 @@ optimization expansion by benchmarks.
 
 ## Immediate Next Steps
 
-1. Run the expanded benchmark packet, optimize the native detector against the
-   new scenario rows, and only then make fastest-backend claims.
-2. Keep new DART test and benchmark names focused on the algorithm, query, and
+1. Optimize or explicitly scope the five raw-reference micro-paths where ODE
+   remains faster in report-only benchmark rows.
+2. Add reference variants for the stacked-scene benchmarks, or document why
+   those rows are native-only profiling coverage rather than backend-comparison
+   rows.
+3. Keep new DART test and benchmark names focused on the algorithm, query, and
    edge condition, not on the upstream library that inspired the case.
-3. Keep the later GUI collision-pair debugger example scoped around the native
+4. Keep the later GUI collision-pair debugger example scoped around the native
    pair matrix, pose controls, and contact point/depth/normal rendering.
-4. Regenerate the inventory and case map after any upstream clone refresh:
+5. Regenerate the inventory and case map after any upstream clone refresh:
    `pixi run python scripts/inventory_upstream_collision_coverage.py`.
 
 ## Verification Log
@@ -278,6 +284,16 @@ optimization expansion by benchmarks.
   passed after formatting.
 - `pixi run build` passed.
 - `git diff --check` passed.
+- `pixi run -e collision-reference bm-collision-check` passed the enforced
+  comparative packet: 18 main native-vs-reference rows and 3 adapter rows
+  passed with the configured ratio limits. The report-only raw-reference packet
+  still reported five ODE-faster micro-path rows, so the blanket
+  fastest-backend claim remains open.
+- `pixi run -e collision-reference -- cmake --build build/collision-reference/cpp/Release --target bm_scenarios_stacked_scenes`
+  passed.
+- `build/collision-reference/cpp/Release/bin/bm_scenarios_stacked_scenes --benchmark_out=.benchmark_results/collision_check_stacked_scenes.json --benchmark_out_format=json --benchmark_min_time=1ms --benchmark_repetitions=3`
+  captured the current native-only baseline for the stacked-scene benchmark
+  packet.
 - Fixed native convex-convex penetration witness reconstruction so signed
   distance reports nearest points separated by the reported penetration depth.
 - Added exact convex-convex signed-distance regression coverage for swept,

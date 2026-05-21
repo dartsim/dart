@@ -91,8 +91,9 @@ coverage and updates the generated maps.
 
 ## Immediate Next Step
 
-Run the expanded benchmark packet, optimize the native detector against the new
-scenario rows, and only then make fastest-backend claims. The row-level map now
+Optimize or explicitly scope the five report-only raw-reference micro-path rows
+where ODE remains faster, then decide whether stacked-scene rows need reference
+variants or should stay native-only profiling coverage. The row-level map now
 has 0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
 
 ## Context That Would Be Lost
@@ -121,6 +122,17 @@ has 0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
 - `03-case-map.md` is generated and currently reports 207 `covered` rows, 382
   `not-applicable` rows, 0 `fixture-needed` rows, 0 `new-benchmark-needed`
   rows, and 0 `mapping-needed` rows.
+- `pixi run -e collision-reference bm-collision-check` passed the enforced
+  comparative packet: 18 main native-vs-reference rows and 3 adapter rows
+  passed. The report-only raw-reference packet still reported five ODE-faster
+  micro-path rows: capsule-capsule touching, capsule-sphere touching,
+  sphere-box deep penetration, sphere-sphere deep penetration, and
+  sphere-sphere touching.
+- The stacked-scene benchmark packet is currently native-only. The latest
+  baseline lives in ignored JSON at
+  `.benchmark_results/collision_check_stacked_scenes.json`; add reference
+  variants or document native-only scope before making fastest-backend claims
+  from those rows.
 - `collideCylinderSphere()` now handles sphere centers inside the cylinder by
   choosing the nearest cap or barrel surface; this is required by the FCL
   sphere-cylinder internal-contact cases.
@@ -377,5 +389,6 @@ git status --short --branch
 pixi run python scripts/inventory_upstream_collision_coverage.py
 ```
 
-Then run the expanded benchmark packet and optimize native collision before
-using expanded benchmark rows for performance claims.
+Then continue with raw-reference optimization/scope decisions and stacked-scene
+reference-variant decisions before using expanded benchmark rows for
+fastest-backend claims.
