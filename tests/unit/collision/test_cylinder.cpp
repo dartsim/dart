@@ -185,6 +185,29 @@ void expectUnequalCylinderHit(
   }
 }
 
+void expectCylinderBoxFiniteHit(
+    const char* name,
+    const Eigen::Isometry3d& tfCylinder,
+    const Eigen::Isometry3d& tfBox)
+{
+  SCOPED_TRACE(name);
+  CylinderShape cylinder(0.4, 0.7);
+  BoxShape box(Eigen::Vector3d(0.25, 0.5, 0.75));
+
+  CollisionResult result;
+  const bool hit = collideCylinderBox(cylinder, tfCylinder, box, tfBox, result);
+  ASSERT_TRUE(hit);
+  ASSERT_GE(result.numContacts(), 1u);
+
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    EXPECT_GE(contact.depth, 0.0);
+    EXPECT_TRUE(contact.position.allFinite());
+    EXPECT_TRUE(contact.normal.allFinite());
+    EXPECT_NEAR(contact.normal.norm(), 1.0, 1e-8);
+  }
+}
+
 } // namespace
 
 TEST(CylinderCylinder, NoCollision)
@@ -915,6 +938,126 @@ TEST(CylinderBox, AxialCapPatchRespectsMaxContacts)
 
   EXPECT_TRUE(collided);
   EXPECT_EQ(result.numContacts(), 2u);
+}
+
+TEST(CylinderBox, TranslatedAndRotatedIntersections)
+{
+  const CylinderShape cylinder(0.4, 0.7);
+  const BoxShape box(Eigen::Vector3d(0.25, 0.5, 0.75));
+
+  struct PoseCase
+  {
+    const char* name;
+    Eigen::Isometry3d tfCylinder;
+    Eigen::Isometry3d tfBox;
+  };
+
+  const std::array<PoseCase, 8> cases{{
+      {"center offset",
+       makeTranslation(Eigen::Vector3d(0.1, 0.0, 0.0)),
+       Eigen::Isometry3d::Identity()},
+      {"side overlap",
+       makeTranslation(Eigen::Vector3d(0.6, 0.0, 0.0)),
+       Eigen::Isometry3d::Identity()},
+      {"edge overlap",
+       makeTranslation(Eigen::Vector3d(0.6, 0.6, 0.0)),
+       Eigen::Isometry3d::Identity()},
+      {"corner overlap",
+       makeTranslation(Eigen::Vector3d(0.6, 0.6, 0.5)),
+       Eigen::Isometry3d::Identity()},
+      {"cylinder tilted around y axis",
+       makeRotatedCylinderPose(
+           Eigen::Vector3d(0.6, 0.6, 0.5),
+           Eigen::Vector3d::UnitY(),
+           std::numbers::pi_v<double> / 3.0),
+       Eigen::Isometry3d::Identity()},
+      {"cylinder tilted around oblique axis",
+       makeRotatedCylinderPose(
+           Eigen::Vector3d(0.6, 0.0, 0.5),
+           Eigen::Vector3d(0.67, 1.1, 0.12),
+           std::numbers::pi_v<double> / 4.0),
+       Eigen::Isometry3d::Identity()},
+      {"coincident oblique rotations",
+       makeRotatedCylinderPose(
+           Eigen::Vector3d(0.6, 0.0, 0.5),
+           Eigen::Vector3d(-0.1, 2.2, -1.0),
+           std::numbers::pi_v<double> / 5.0),
+       makeRotatedCylinderPose(
+           Eigen::Vector3d(0.6, 0.0, 0.5),
+           Eigen::Vector3d(1.0, 1.0, 0.0),
+           -std::numbers::pi_v<double> / 4.0)},
+      {"offset oblique rotations",
+       makeRotatedCylinderPose(
+           Eigen::Vector3d(0.6, 0.0, 0.5),
+           Eigen::Vector3d(-0.1, 2.2, -1.0),
+           std::numbers::pi_v<double> / 5.0),
+       makeRotatedCylinderPose(
+           Eigen::Vector3d(0.9, 0.8, 0.5),
+           Eigen::Vector3d(1.0, 1.0, 0.0),
+           -std::numbers::pi_v<double> / 4.0)},
+  }};
+
+  for (const auto& testCase : cases) {
+    SCOPED_TRACE(testCase.name);
+    CollisionResult result;
+    const bool hit = collideCylinderBox(
+        cylinder, testCase.tfCylinder, box, testCase.tfBox, result);
+    EXPECT_TRUE(hit);
+  }
+}
+
+TEST(CylinderBox, TranslatedAndRotatedPenetrationsReportFiniteContacts)
+{
+  expectCylinderBoxFiniteHit(
+      "center offset",
+      makeTranslation(Eigen::Vector3d(0.1, 0.0, 0.0)),
+      Eigen::Isometry3d::Identity());
+  expectCylinderBoxFiniteHit(
+      "side overlap",
+      makeTranslation(Eigen::Vector3d(0.6, 0.0, 0.0)),
+      Eigen::Isometry3d::Identity());
+  expectCylinderBoxFiniteHit(
+      "edge overlap",
+      makeTranslation(Eigen::Vector3d(0.6, 0.6, 0.0)),
+      Eigen::Isometry3d::Identity());
+  expectCylinderBoxFiniteHit(
+      "corner overlap",
+      makeTranslation(Eigen::Vector3d(0.6, 0.6, 0.5)),
+      Eigen::Isometry3d::Identity());
+  expectCylinderBoxFiniteHit(
+      "cylinder tilted around y axis",
+      makeRotatedCylinderPose(
+          Eigen::Vector3d(0.6, 0.6, 0.5),
+          Eigen::Vector3d::UnitY(),
+          std::numbers::pi_v<double> / 3.0),
+      Eigen::Isometry3d::Identity());
+  expectCylinderBoxFiniteHit(
+      "cylinder tilted around oblique axis",
+      makeRotatedCylinderPose(
+          Eigen::Vector3d(0.6, 0.0, 0.5),
+          Eigen::Vector3d(0.67, 1.1, 0.12),
+          std::numbers::pi_v<double> / 4.0),
+      Eigen::Isometry3d::Identity());
+  expectCylinderBoxFiniteHit(
+      "coincident oblique rotations",
+      makeRotatedCylinderPose(
+          Eigen::Vector3d(0.6, 0.0, 0.5),
+          Eigen::Vector3d(-0.1, 2.2, -1.0),
+          std::numbers::pi_v<double> / 5.0),
+      makeRotatedCylinderPose(
+          Eigen::Vector3d(0.6, 0.0, 0.5),
+          Eigen::Vector3d(1.0, 1.0, 0.0),
+          -std::numbers::pi_v<double> / 4.0));
+  expectCylinderBoxFiniteHit(
+      "offset oblique rotations",
+      makeRotatedCylinderPose(
+          Eigen::Vector3d(0.6, 0.0, 0.5),
+          Eigen::Vector3d(-0.1, 2.2, -1.0),
+          std::numbers::pi_v<double> / 5.0),
+      makeRotatedCylinderPose(
+          Eigen::Vector3d(0.9, 0.8, 0.5),
+          Eigen::Vector3d(1.0, 1.0, 0.0),
+          -std::numbers::pi_v<double> / 4.0));
 }
 
 TEST(CylinderCapsule, NoCollision)

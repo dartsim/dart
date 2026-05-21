@@ -1582,6 +1582,20 @@ def classify_case(case: Case, scope: Scope) -> tuple[str, str, str]:
                 "Checks unequal-cylinder penetration reports finite contact point, depth, and normal data for translated and rotated cylinder poses.",
             )
 
+        if case.suite in {"boxcylIntersect", "mprBoxcylIntersect"}:
+            return (
+                "covered",
+                "tests/unit/collision/test_cylinder.cpp::CylinderBox.TranslatedAndRotatedIntersections",
+                "Checks cylinder-box intersections across center, side, edge, corner, tilted-cylinder, and oblique two-body rotation poses.",
+            )
+
+        if case.suite in {"boxcylPenEPA", "mprBoxcylPen"}:
+            return (
+                "covered",
+                "tests/unit/collision/test_cylinder.cpp::CylinderBox.TranslatedAndRotatedPenetrationsReportFiniteContacts",
+                "Checks cylinder-box penetration contact point, depth, and normal data across center, side, edge, corner, tilted-cylinder, and oblique two-body rotation poses.",
+            )
+
         if source.endswith("polytope.c"):
             return (
                 "not-applicable",

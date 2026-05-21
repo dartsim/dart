@@ -51,8 +51,8 @@ optimization expansion by benchmarks.
 - Coverage map scaffold:
   [`02-coverage-map.md`](02-coverage-map.md)
 - Generated row-level case map:
-  [`03-case-map.md`](03-case-map.md) currently records 176 covered rows, 25
-  fixture-needed rows, 43 mapping-needed rows, 10 new-benchmark-needed rows,
+  [`03-case-map.md`](03-case-map.md) currently records 180 covered rows, 25
+  fixture-needed rows, 39 mapping-needed rows, 10 new-benchmark-needed rows,
   and 335 not-applicable rows.
 
 ## Key Decisions
@@ -73,9 +73,8 @@ optimization expansion by benchmarks.
 
 1. Continue mapping the remaining FCL shape/mesh consistency rows to native
    shape-vs-mesh, GJK, and signed-distance anchors.
-2. Continue mapping FCL signed-distance real-world regression rows and ODE
-   box-cylinder libccd rows, adding native tests only where exact behavior is
-   not already covered.
+2. Continue mapping FCL signed-distance real-world regression rows, adding
+   native tests only where exact behavior is not already covered.
 3. Convert the 25 `fixture-needed` Bullet OpenCL GPU/prototype rows into an
    explicit prototype gate decision or follow-up fixture.
 4. Start converting the 10 `new-benchmark-needed` Bullet/ODE benchmark rows
@@ -241,6 +240,13 @@ optimization expansion by benchmarks.
 - `pixi run cmake --build build/default/cpp/Release --target test_box_box`
   passed.
 - `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_box_box$'`
+  passed.
+- Added cylinder-box translated/rotated intersection and finite-contact
+  penetration coverage. These map ODE libccd box-cylinder GJK/MPR/EPA rows
+  without putting upstream library names into DART test names.
+- `pixi run cmake --build build/default/cpp/Release --target test_cylinder`
+  passed.
+- `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_cylinder$'`
   passed.
 - `pixi run lint` passed.
 - `pixi run build` passed.
