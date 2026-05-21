@@ -308,9 +308,11 @@ def _context_lines(contexts: list[dict]) -> list[str]:
         f"- Profiling instrumentation: `DART_BUILD_PROFILE={os.environ.get('DART_BUILD_PROFILE', 'unknown')}`",
         f"- CPU scaling enabled: `{cpu_scaling}`",
         f"- ASLR enabled: `{aslr}`",
-        "- Status caveat: this manifest is generated from ignored local JSON. "
-        "Rerun the collision benchmark guard before accepting new performance "
-        "claims; the current host still reports CPU scaling enabled.",
+        (
+            "- Status caveat: this manifest is generated from ignored local JSON. "
+            + "Rerun the collision benchmark guard before accepting new performance "
+            + "claims; the current host still reports CPU scaling enabled."
+        ),
     ]
 
 

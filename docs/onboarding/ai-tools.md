@@ -465,9 +465,10 @@ When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter rev
 
 - `chatgpt-codex-connector[bot]` — Codex automated reviews
 - `github-actions[bot]` — GitHub Actions automated comments
+- `github-code-quality[bot]` — GitHub code-quality review comments
 - `copilot[bot]` — GitHub Copilot suggestions
 
-**If the reviewer username ends in `[bot]`, it is an AI-generated review.**
+**If the reviewer username ends in `[bot]`, treat it as an automated review.**
 
 ### Rules for AI Agents (CRITICAL)
 
@@ -543,6 +544,11 @@ After identifying an AI-generated review comment to address:
    - New review comments → repeat from step 1
    - "No issues" or 👍 reaction → done, PR is ready for human review
 
+Apply the same no-inline-reply handling to `github-code-quality[bot]` findings:
+fix valid findings locally, push only after approval, and do not post an
+acknowledgment reply. The `@codex review` re-trigger is only for Codex review
+rounds.
+
 **Agents MUST:**
 
 - Run `pixi run lint` before EVERY commit (CI will fail otherwise)
@@ -601,10 +607,13 @@ For agents iterating on automated reviews, the complete loop is:
 5. If the addressed review was Codex, after the approved push, ask for explicit
    maintainer/user approval for the PR comment, then re-trigger:
    `gh pr comment <PR> --body "@codex review"`
-6. Monitor CI: `gh pr checks <PR>`
-7. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
-8. If new review has comments → go to step 2
-9. If no new comments AND CI is green → done
+6. For non-Codex bot findings, including `github-code-quality[bot]`, do not
+   re-trigger Codex solely for those fixes unless Codex review comments were
+   also addressed in the same push
+7. Monitor CI: `gh pr checks <PR>`
+8. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
+9. If new review has comments → go to step 2
+10. If no new comments AND CI is green → done
 ```
 
 **Checking for new reviews:**

@@ -67,6 +67,9 @@
 
   #if DART_PROFILE_HAS_TRACY
     #include <tracy/Tracy.hpp>
+
+    #include <cstdint>
+    #include <cstring>
   #endif
 
   // Built-in text backend (readable console summaries)
@@ -87,12 +90,8 @@
 
   #if DART_PROFILE_HAS_TRACY
     #define DART_PROFILE_TRACY_FRAME FrameMark
-    #define DART_PROFILE_TRACY_SCOPED ZoneScoped
-    #define DART_PROFILE_TRACY_SCOPED_N(name_literal) ZoneScopedN(name_literal)
   #else
     #define DART_PROFILE_TRACY_FRAME
-    #define DART_PROFILE_TRACY_SCOPED
-    #define DART_PROFILE_TRACY_SCOPED_N(name_literal)
   #endif
 
   #if DART_PROFILE_ENABLE_TEXT
@@ -113,19 +112,85 @@
     #define DART_PROFILE_TEXT_DUMP()
   #endif
 
+  #if DART_PROFILE_HAS_TRACY || DART_PROFILE_ENABLE_TEXT
+
+namespace dart::common::profile::detail {
+
+class ScopedProfile
+{
+public:
+  ScopedProfile(
+      const char* name, const char* file, int line, const char* function)
+    #if DART_PROFILE_HAS_TRACY && DART_PROFILE_ENABLE_TEXT
+    : m_tracy(
+          static_cast<std::uint32_t>(line),
+          file,
+          std::strlen(file),
+          function,
+          std::strlen(function),
+          name,
+          std::strlen(name),
+          TRACY_CALLSTACK,
+          true),
+      m_text(name, file, line)
+    #elif DART_PROFILE_HAS_TRACY
+    : m_tracy(
+          static_cast<std::uint32_t>(line),
+          file,
+          std::strlen(file),
+          function,
+          std::strlen(function),
+          name,
+          std::strlen(name),
+          TRACY_CALLSTACK,
+          true)
+    #elif DART_PROFILE_ENABLE_TEXT
+    : m_text(name, file, line)
+    #endif
+  {
+    #if !DART_PROFILE_HAS_TRACY
+    (void)function;
+    #endif
+  }
+
+  ScopedProfile(const ScopedProfile&) = delete;
+  ScopedProfile& operator=(const ScopedProfile&) = delete;
+
+private:
+    #if DART_PROFILE_HAS_TRACY
+  tracy::ScopedZone m_tracy;
+    #endif
+    #if DART_PROFILE_ENABLE_TEXT
+  ProfileScope m_text;
+    #endif
+};
+
+} // namespace dart::common::profile::detail
+
+  #endif
+
   #define DART_PROFILE_FRAME                                                   \
     do {                                                                       \
       DART_PROFILE_TRACY_FRAME;                                                \
       DART_PROFILE_TEXT_FRAME;                                                 \
     } while (false)
 
-  #define DART_PROFILE_SCOPED                                                  \
-    DART_PROFILE_TRACY_SCOPED;                                                 \
-    DART_PROFILE_TEXT_SCOPED_F()
+  #if DART_PROFILE_HAS_TRACY || DART_PROFILE_ENABLE_TEXT
 
-  #define DART_PROFILE_SCOPED_N(name_literal)                                  \
-    DART_PROFILE_TRACY_SCOPED_N(name_literal);                                 \
-    DART_PROFILE_TEXT_SCOPED(name_literal)
+    #define DART_PROFILE_SCOPED                                                \
+      ::dart::common::profile::detail::ScopedProfile DART_PROFILE_SCOPE_NAME(  \
+          _dart_profile_scope_)(__func__, __FILE__, __LINE__, __func__)
+
+    #define DART_PROFILE_SCOPED_N(name_literal)                                \
+      ::dart::common::profile::detail::ScopedProfile DART_PROFILE_SCOPE_NAME(  \
+          _dart_profile_scope_)(name_literal, __FILE__, __LINE__, __func__)
+
+  #else
+
+    #define DART_PROFILE_SCOPED
+    #define DART_PROFILE_SCOPED_N(name_literal)
+
+  #endif
 
 #else // no-op
 
