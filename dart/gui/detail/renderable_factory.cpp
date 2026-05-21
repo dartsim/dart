@@ -251,6 +251,11 @@ float luminance(const float3& color)
   return 0.2126f * color.x + 0.7152f * color.y + 0.0722f * color.z;
 }
 
+bool isNearBlackTextureTint(const float4& color)
+{
+  return luminance(rgb(color)) < 0.05f;
+}
+
 float4 ensureReadableDisplayColor(const float4& color)
 {
   constexpr float kMinLuminance = 0.16f;
@@ -1307,7 +1312,6 @@ std::optional<Renderable> createMeshRenderable(
       state.followsDescriptorColor = false;
       state.baseColor = toFloat4(meshMaterial.diffuse);
       state.sourceWasDark = luminance(rgb(state.baseColor)) < 0.12f;
-      state.baseColor = ensureReadableDisplayColor(state.baseColor);
       state.baseColor.w = resolveMeshMaterialAlpha(
           color.w, state.baseColor.w, geometry.meshAlphaMode);
       state.metallic = static_cast<float>(meshMaterial.metallicFactor);
@@ -1349,6 +1353,13 @@ std::optional<Renderable> createMeshRenderable(
             meshMaterial.occlusionTexturePath, TextureColorSpace::Linear);
         state.textures.emissive = loadBinding(
             meshMaterial.emissiveTexturePath, TextureColorSpace::Srgb);
+      }
+
+      if (state.textures.baseColor != nullptr
+          && isNearBlackTextureTint(state.baseColor)) {
+        state.baseColor = {1.0f, 1.0f, 1.0f, state.baseColor.w};
+      } else {
+        state.baseColor = ensureReadableDisplayColor(state.baseColor);
       }
     }
 

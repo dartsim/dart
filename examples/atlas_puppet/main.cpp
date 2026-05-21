@@ -190,7 +190,7 @@ void makeAtlasMeshVisualsReadable(const dart::dynamics::SkeletonPtr& atlas)
         continue;
       }
 
-      mesh->setColorMode(dart::dynamics::MeshShape::SHAPE_COLOR);
+      mesh->setColorMode(dart::dynamics::MeshShape::MATERIAL_COLOR);
       const Eigen::Vector4d rgba = visual->getRGBA();
       Eigen::Vector4d readable = readableAtlasColor;
       readable.w() = rgba.w();
@@ -204,6 +204,8 @@ struct AtlasWholeBodySolverState
   std::shared_ptr<RelaxedPosture> posture;
   std::shared_ptr<dart::constraint::BalanceConstraint> balance;
 };
+
+bool solveOwningSkeletonIk(const dart::dynamics::InverseKinematicsPtr& ik);
 
 void disableSkeletonCollisionAndGravity(
     const dart::dynamics::SkeletonPtr& skeleton)
@@ -703,7 +705,7 @@ struct AtlasPuppetScene
     void solve()
     {
       if (active && ik != nullptr) {
-        ik->solveAndApply(true);
+        solveOwningSkeletonIk(ik);
       }
     }
 
@@ -720,6 +722,25 @@ struct AtlasPuppetScene
   std::vector<std::shared_ptr<TargetState>> targetStates;
   Eigen::VectorXd restConfiguration;
 };
+
+bool solveOwningSkeletonIk(const dart::dynamics::InverseKinematicsPtr& ik)
+{
+  if (ik == nullptr) {
+    return true;
+  }
+
+  auto* node = ik->getNode();
+  const auto bodyNode = node ? node->getBodyNodePtr() : nullptr;
+  const auto skeleton = bodyNode ? bodyNode->getSkeleton() : nullptr;
+  if (skeleton != nullptr) {
+    const auto wholeBodyIk = skeleton->getIK(true);
+    if (wholeBodyIk != nullptr) {
+      return wholeBodyIk->solveAndApply(true);
+    }
+  }
+
+  return ik->solveAndApply(true);
+}
 
 void addAtlasPuppetIkTargets(
     AtlasPuppetScene& scene, const dart::dynamics::SkeletonPtr& atlas)
@@ -800,8 +821,7 @@ void addAtlasPuppetIkTargets(
 
     auto ik = endEffector->getIK(true);
     ik->useWholeBody();
-    ik->setGradientMethod<
-        dart::dynamics::InverseKinematics::JacobianTranspose>();
+    ik->setGradientMethod<dart::dynamics::InverseKinematics::JacobianDLS>();
     ik->getSolver()->setNumMaxIterations(30);
     if (config.supportContact) {
       ik->setHierarchyLevel(1);

@@ -81,6 +81,12 @@
     and restored `fetch` as a source-defined `dart::gui` example with its live
     mocap target-following behavior, Bullet preference when available, and
     public-API target affordance.
+  - Fixed Filament mesh material extraction so legacy textured meshes without
+    PBR metalness import as dielectric surfaces, restoring visible Atlas
+    texture detail in `dartsim`, `atlas_puppet`, and `atlas_simbicon`.
+  - Fixed Atlas/whole-body puppet target dragging to solve through the owning
+    skeleton IK hierarchy with damped least-squares, avoiding regressions where
+    active target drags moved end-effectors away from the target.
   - Restored the `fetch` example's historical pick-and-place work-area grid as
     source-owned public DART line geometry at the original grid offset.
   - Restored the `fetch` example panel title and instructional copy against

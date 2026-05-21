@@ -373,7 +373,7 @@ void makeAtlasMeshVisualsReadable(const dart::dynamics::SkeletonPtr& atlas)
         continue;
       }
 
-      mesh->setColorMode(MeshShape::SHAPE_COLOR);
+      mesh->setColorMode(MeshShape::MATERIAL_COLOR);
       const Eigen::Vector4d rgba = visual->getRGBA();
       Eigen::Vector4d readable = readableAtlasColor;
       readable.w() = rgba.w();
@@ -832,7 +832,7 @@ void addAtlasPuppetIkTargets(
 
     auto ik = endEffector->getIK(true);
     ik->useWholeBody();
-    ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
+    ik->setGradientMethod<InverseKinematics::JacobianDLS>();
     ik->getSolver()->setNumMaxIterations(30);
     if (config.supportContact) {
       ik->setHierarchyLevel(1);
@@ -1112,7 +1112,7 @@ void addG1IkTargets(DartScene& scene, const dart::dynamics::SkeletonPtr& robot)
     }
 
     auto ik = endEffector->getIK(true);
-    ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
+    ik->setGradientMethod<InverseKinematics::JacobianDLS>();
     ik->getSolver()->setNumMaxIterations(30);
 
     auto target = SimpleFrame::createShared(
@@ -1351,7 +1351,7 @@ void addHuboPuppetIkTargets(
 
     auto ik = endEffector->getIK(true);
     ik->useWholeBody();
-    ik->setGradientMethod<InverseKinematics::JacobianTranspose>();
+    ik->setGradientMethod<InverseKinematics::JacobianDLS>();
     ik->getSolver()->setNumMaxIterations(30);
     if (config.supportContact) {
       ik->setHierarchyLevel(1);

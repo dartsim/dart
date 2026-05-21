@@ -99,7 +99,7 @@ void makeAtlasMeshVisualsReadable(const dart::dynamics::SkeletonPtr& atlas)
         continue;
       }
 
-      mesh->setColorMode(dart::dynamics::MeshShape::SHAPE_COLOR);
+      mesh->setColorMode(dart::dynamics::MeshShape::MATERIAL_COLOR);
       const Eigen::Vector4d rgba = visual->getRGBA();
       Eigen::Vector4d readable = readableAtlasColor;
       readable.w() = rgba.w();

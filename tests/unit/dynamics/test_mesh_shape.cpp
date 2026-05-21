@@ -2439,6 +2439,7 @@ TEST(MeshShapeTest, TriMeshConstructorPreservesTexturePaths)
   const auto* material = shape.getMaterial(0u);
   ASSERT_NE(material, nullptr);
   ASSERT_FALSE(material->textureImagePaths.empty());
+  EXPECT_FLOAT_EQ(material->metallicFactor, 0.0f);
 
   bool foundTexture = false;
   for (const auto& path : material->textureImagePaths) {

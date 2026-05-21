@@ -58,6 +58,7 @@
 #include <dart/dynamics/end_effector.hpp>
 #include <dart/dynamics/free_joint.hpp>
 #include <dart/dynamics/heightmap_shape.hpp>
+#include <dart/dynamics/inverse_kinematics.hpp>
 #include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/mesh_material.hpp>
 #include <dart/dynamics/mesh_shape.hpp>
@@ -656,6 +657,9 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       sceneFixturesSource.find("makeAtlasMeshVisualsReadable(atlas)"),
       std::string::npos);
   EXPECT_NE(
+      sceneFixturesSource.find("mesh->setColorMode(MeshShape::MATERIAL_COLOR)"),
+      std::string::npos);
+  EXPECT_NE(
       sceneFixturesSource.find("Eigen::Vector3d(5.5, 4.0, groundThickness)"),
       std::string::npos);
   EXPECT_NE(
@@ -671,6 +675,8 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       selectionSource.find("mSelectionBoundsVisible = false"),
       std::string::npos);
   EXPECT_NE(selectionSource.find("kGizmoWorldScale = 1.0"), std::string::npos);
+  EXPECT_NE(selectionSource.find("solveIkHandle"), std::string::npos);
+  EXPECT_NE(selectionSource.find("skeleton->getIK(true)"), std::string::npos);
   EXPECT_NE(
       debugOverlaySource.find("kGizmoWorldScale = 1.0"), std::string::npos);
   EXPECT_NE(renderableFactorySource.find("line.thickness"), std::string::npos);
@@ -680,6 +686,16 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
   EXPECT_NE(
       renderableFactorySource.find(
           "state.baseColor = ensureReadableDisplayColor(state.baseColor)"),
+      std::string::npos);
+  EXPECT_NE(
+      renderableFactorySource.find("isNearBlackTextureTint"),
+      std::string::npos);
+  EXPECT_NE(
+      renderableFactorySource.find("state.textures.baseColor != nullptr"),
+      std::string::npos);
+  EXPECT_NE(
+      renderableFactorySource.find(
+          "state.baseColor = {1.0f, 1.0f, 1.0f, state.baseColor.w}"),
       std::string::npos);
   EXPECT_NE(
       renderableFactorySource.find("constexpr float kMinLuminance = 0.16f"),
@@ -1131,6 +1147,69 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresIkHandles)
   ASSERT_EQ(options.ikHandles.size(), 1u);
   EXPECT_EQ(options.ikHandles.front().label, "left hand");
   EXPECT_EQ(options.ikHandles.front().hotkey, '1');
+}
+
+TEST(
+    FilamentSceneExtraction,
+    AtlasPuppetSceneWholeBodyIkMovesEndEffectorTowardTarget)
+{
+  dart::gui::detail::AppOptions appOptions;
+  appOptions.scene = dart::gui::detail::ExampleScene::AtlasPuppet;
+
+  dart::gui::detail::DartScene scene
+      = dart::gui::detail::createDartScene(appOptions);
+  ASSERT_NE(scene.world, nullptr);
+  ASSERT_GE(scene.ikHandles.size(), 4u);
+
+  auto handle = std::find_if(
+      scene.ikHandles.begin(),
+      scene.ikHandles.end(),
+      [](const dart::gui::detail::IkHandle& candidate) {
+        return candidate.label == "1 left hand";
+      });
+  ASSERT_NE(handle, scene.ikHandles.end());
+  ASSERT_NE(handle->ik, nullptr);
+  ASSERT_NE(handle->target, nullptr);
+  ASSERT_NE(handle->targetRenderableId, 0u);
+
+  auto* node = handle->ik->getNode();
+  ASSERT_NE(node, nullptr);
+  const auto bodyNode = node->getBodyNodePtr();
+  ASSERT_NE(bodyNode, nullptr);
+  const auto skeleton = bodyNode->getSkeleton();
+  ASSERT_NE(skeleton, nullptr);
+
+  Eigen::Vector3d linearBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d angularBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  for (auto& candidate : scene.ikHandles) {
+    if (&candidate == &*handle || candidate.ik == nullptr) {
+      continue;
+    }
+    candidate.ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
+    candidate.ik->getErrorMethod().setAngularBounds(
+        -angularBounds, angularBounds);
+  }
+  handle->ik->getErrorMethod().setBounds(
+      Eigen::Vector6d::Constant(-1e-8), Eigen::Vector6d::Constant(1e-8));
+
+  Eigen::Isometry3d target = handle->target->getWorldTransform();
+  target.translation() += Eigen::Vector3d(0.10, 0.0, 0.0);
+  handle->target->setTransform(target);
+
+  const auto distanceToTarget = [&] {
+    return (node->getWorldTransform().translation()
+            - handle->target->getWorldTransform().translation())
+        .norm();
+  };
+
+  const double before = distanceToTarget();
+  ASSERT_GT(before, 1e-3);
+  const auto wholeBodyIk = skeleton->getIK(true);
+  ASSERT_NE(wholeBodyIk, nullptr);
+  EXPECT_TRUE(wholeBodyIk->solveAndApply(true));
+  EXPECT_LT(distanceToTarget(), 0.75 * before);
 }
 
 TEST(FilamentSceneExtraction, ApplicationOptionsCanSkipWorldStepping)
@@ -2987,6 +3066,10 @@ TEST(FilamentSceneExtraction, AtlasSimbiconPreservesLegacyControllerMarkers)
   EXPECT_NE(
       mainSource.find("makeAtlasMeshVisualsReadable(scene.atlas)"),
       std::string::npos);
+  EXPECT_NE(
+      mainSource.find(
+          "mesh->setColorMode(dart::dynamics::MeshShape::MATERIAL_COLOR)"),
+      std::string::npos);
   EXPECT_EQ(mainSource.find("setPosition(0, -0.5"), std::string::npos);
   EXPECT_EQ(
       mainSource.find("-kDefaultGravity * Eigen::Vector3d::UnitY()"),
@@ -3077,6 +3160,10 @@ TEST(FilamentSceneExtraction, AtlasPuppetExamplePreservesLegacyParityMarkers)
       mainSource.find("atlas_puppet_ik_target_right_foot"), std::string::npos);
   EXPECT_NE(
       mainSource.find("makeAtlasMeshVisualsReadable(atlas)"),
+      std::string::npos);
+  EXPECT_NE(
+      mainSource.find(
+          "mesh->setColorMode(dart::dynamics::MeshShape::MATERIAL_COLOR)"),
       std::string::npos);
   EXPECT_NE(mainSource.find("support->setActive(true)"), std::string::npos);
   EXPECT_NE(

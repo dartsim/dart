@@ -90,7 +90,7 @@ struct MeshMaterialDescriptor
   Eigen::Vector4d specular{0.0, 0.0, 0.0, 1.0};
   Eigen::Vector4d emissive{0.0, 0.0, 0.0, 1.0};
   double shininess = 0.0;
-  double metallicFactor = 1.0;
+  double metallicFactor = 0.0;
   double roughnessFactor = 1.0;
   std::string baseColorTexturePath;
   std::string metallicTexturePath;

@@ -1433,6 +1433,10 @@ void MeshShape::extractMaterialsFromScene(
     assert(aiMat);
 
     MeshMaterial material;
+    // Legacy mesh formats such as Collada usually do not define PBR
+    // metalness. Treat imported materials as dielectric unless Assimp
+    // provides an explicit metallic factor below.
+    material.metallicFactor = 0.0f;
     const auto getTexturePath = [&](const aiTextureType type,
                                     const unsigned int index) -> std::string {
       if (aiMat->GetTextureCount(type) <= index) {

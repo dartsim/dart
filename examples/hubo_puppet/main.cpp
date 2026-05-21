@@ -188,6 +188,25 @@ using dart::dynamics::JacobianNode;
 using dart::dynamics::Joint;
 using dart::dynamics::SkeletonPtr;
 using dart::dynamics::WeakBodyNodePtr;
+
+bool solveOwningSkeletonIk(const dart::dynamics::InverseKinematicsPtr& ik)
+{
+  if (ik == nullptr) {
+    return true;
+  }
+
+  auto* node = ik->getNode();
+  const auto bodyNode = node ? node->getBodyNodePtr() : nullptr;
+  const auto skeleton = bodyNode ? bodyNode->getSkeleton() : nullptr;
+  if (skeleton != nullptr) {
+    const auto wholeBodyIk = skeleton->getIK(true);
+    if (wholeBodyIk != nullptr) {
+      return wholeBodyIk->solveAndApply(true);
+    }
+  }
+
+  return ik->solveAndApply(true);
+}
 using IK = dart::dynamics::InverseKinematics;
 
 bool checkDist(Eigen::Vector3d& point, double a, double b)
@@ -1205,7 +1224,7 @@ struct HuboPuppetScene
     void solve()
     {
       if (active && ik != nullptr) {
-        ik->solveAndApply(true);
+        solveOwningSkeletonIk(ik);
       }
     }
 

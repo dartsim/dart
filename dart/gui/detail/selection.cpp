@@ -280,6 +280,8 @@ const IkHandle* findIkHandle(
   return handle == scene.ikHandles.end() ? nullptr : &*handle;
 }
 
+bool solveIkHandle(IkHandle& handle);
+
 std::string selectionLabelForRenderable(
     const DartScene& scene, const RenderableDescriptor& descriptor)
 {
@@ -310,13 +312,30 @@ bool translateRenderableAndApplyIk(
   }
 
   if (auto* handle = findIkHandle(scene, descriptor.id)) {
-    if (handle->ik) {
-      handle->ik->getSolver()->setNumMaxIterations(30);
-      handle->ik->solveAndApply(true);
-    }
+    solveIkHandle(*handle);
   }
 
   return true;
+}
+
+bool solveIkHandle(IkHandle& handle)
+{
+  if (!handle.ik) {
+    return true;
+  }
+
+  auto* node = handle.ik->getNode();
+  const auto bodyNode = node ? node->getBodyNodePtr() : nullptr;
+  const auto skeleton = bodyNode ? bodyNode->getSkeleton() : nullptr;
+  if (skeleton) {
+    const auto wholeBodyIk = skeleton->getIK(true);
+    if (wholeBodyIk) {
+      return wholeBodyIk->solveAndApply(true);
+    }
+  }
+
+  handle.ik->getSolver()->setNumMaxIterations(30);
+  return handle.ik->solveAndApply(true);
 }
 
 bool translateIkHandleTargetAndApplyIk(
@@ -332,12 +351,7 @@ bool translateIkHandleTargetAndApplyIk(
     return false;
   }
 
-  if (handle.ik) {
-    handle.ik->getSolver()->setNumMaxIterations(30);
-    handle.ik->solveAndApply(true);
-  }
-
-  return true;
+  return solveIkHandle(handle);
 }
 
 RenderableId SelectionController::selectedRenderableId() const
