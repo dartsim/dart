@@ -54,6 +54,10 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Local lint may fail if clang-format is missing or a stale CMake cache references an old version; clean the build directory (`rm -rf build/`) and reconfigure to pick up the pixi-provided clang-format.
   - Codecov patch failures usually mean new lines or branches are uncovered; add targeted tests and re-run coverage.
   - Codecov patch status can lag until coverage jobs complete; confirm Coverage (Debug) finished before acting.
+  - CodeQL alerts under generated dependency paths like `build/**/_deps` need
+    SARIF filtering before upload; CodeQL config `paths-ignore` is not enough.
+    Confirm Code Scanning has processed the relevant C++ analysis for the target
+    commit before treating the open-alert count as final.
 
 ## Common CI Failure Modes
 
@@ -68,6 +72,12 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - RTD build failures: Sphinx extension compatibility issues; use defensive `.get(key, default)` patterns.
 - Case-colliding files after branch merge: When merging `release-*` into `main`, PascalCase files from the release branch can collide with snake_case files in main on case-insensitive filesystems (macOS, Windows). Check for duplicates with `find tests -name "*.cpp" | sort -f | uniq -di` and remove the PascalCase version. Also verify new tests are registered in the appropriate `CMakeLists.txt`.
 - Eigen over-alignment failures: reproduce with `pixi run test-eigen-overalignment`. These failures do not require AVX-512 hardware; the job forces Eigen's 64-byte static alignment contract at compile time.
+- CodeQL generated dependency alerts: `paths-ignore` can miss findings emitted
+  from C++ manual-build SARIF, especially under generated dependency build
+  trees like `build/**/_deps`. Keep CodeQL analysis limited to first-party
+  sources, drop SARIF results whose primary location is under generated or
+  vendored paths before upload, confirm the Code Scanning analyses include the
+  target commit and language, then require the open-alert count to reach zero.
 
 ## Task Recap (General)
 
