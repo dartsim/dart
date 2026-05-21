@@ -522,6 +522,12 @@ comment and still requires explicit maintainer/user approval.
 Prefer additive follow-up commits for updates to already-published PRs. This
 keeps review history inspectable and makes each review round clear.
 
+When a published PR branch needs the latest target branch, use explicit
+maintainer/user approval to update that published branch by merging the target
+branch and pushing normally. Do not rebase published PR branches by default:
+rebasing invalidates existing CI runs and makes PR review/comment history harder
+to follow. Rebase or force-push only when the maintainer explicitly requests it.
+
 Amend or force-push only when the user explicitly requests it or when there is a
 clear reason, such as removing sensitive content, repairing broken branch
 history, or cleaning up noisy local work before the PR is first published.

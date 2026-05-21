@@ -35,6 +35,13 @@ after explicit maintainer/user approval and only when the user explicitly
 requests it or when there is a clear reason such as removing sensitive content
 or repairing broken branch history.
 
+If a published PR branch needs the latest target branch while addressing
+feedback, use explicit maintainer/user approval to update that published branch
+by merging the target branch and pushing normally. Do not rebase a published PR
+branch by default because it invalidates existing CI runs and makes PR
+review/comment history harder to follow. Rebase or force-push only when the
+maintainer explicitly requests it.
+
 ## Automated Reviews (Codex, Code Quality, Copilot, etc.)
 
 When a draft PR is first published, wait a reasonable time for the automatic
