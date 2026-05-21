@@ -413,3 +413,8 @@ optimization expansion by benchmarks.
   0 failed rows, and 0 skipped rows.
 - `pixi run python scripts/generate_collision_benchmark_manifest.py`
   regenerated the durable benchmark manifest from the official packet outputs.
+- Synced the durable dashboard performance summary with the generated manifest:
+  43 strict native leads, 2 guarded raw sphere-sphere edge rows, and 24
+  native-only benchmark rows.
+- `pixi run lint` passed after the dashboard synchronization.
+- `git diff --check` passed.

@@ -97,37 +97,38 @@ true:
   Gap signal: review-head CI must prove the Atlas Simbicon ownership repair
   after push.
 - **Completion packaging**
-  Current status: persistent dashboard/matrix are promoted and completed
-  native collision dev-task folders are removed locally.
-  Gap signal: maintainer-selected PR/CI surface and evidence transfer are still
-  approval-gated.
+  Current status: persistent dashboard/matrix and generated upstream inventory
+  artifacts are promoted. The upstream-superset dev-task folder remains only as
+  active handoff state until the completing change reruns final validation.
+  Gap signal: final validation and dev-task folder cleanup are still open.
 
 ## Feature Summary
 
-| Feature content                               | Native runtime status                                                                                                                | Comparison/reference scope                                                                                   | Remaining gate                                                     |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| Detector factory and public runtime selection | `dart` is the canonical runtime detector; legacy names route to native-backed facades.                                               | Reference detectors are opt-in test/benchmark fixtures only.                                                 | Final review-head factory/runtime validation.                      |
-| Primitive contacts and signed distance        | Sphere, box, capsule, cylinder, plane, convex, compound, SDF, contact symmetry, and pair-order behavior are covered by native tests. | Reference rows validate parity where the query is comparable.                                                | Keep expanding the upstream row map before final benchmark claims. |
-| Broadphase and collision groups               | Native world/group updates, deterministic pair ordering, empty scenes, self-collision, filters, and persistent scenes are covered.   | Reference group behavior remains a comparison surface.                                                       | Finish remaining upstream broadphase row mapping.                  |
-| Ray and cast queries                          | Native closest/all/filter raycast behavior is covered and benchmarked.                                                               | Comparable raycast references are benchmark-only.                                                            | Deeper closest-hit traversal tuning is deferred.                   |
-| Mesh, convex, and field-heavy scenes          | Mesh, convex, plane/mesh, heightmap/field adaptation, and mesh-heavy scenes are covered by tests and benchmark guards.               | Mesh-heavy references remain comparison-only.                                                                | Larger dynamic mesh and BVH scale sweeps are deferred.             |
-| Adapter-only DART shapes                      | Cone, pyramid, ellipsoid, heightmap, multi-sphere, and voxel-grid shapes adapt into explicit native geometry.                        | Comparison engines do not define the runtime contract.                                                       | Direct heightfield/sparse voxel acceleration remains deferred.     |
-| Upstream FCL/Bullet/ODE case map              | Every generated upstream row maps to covered DART behavior or a concrete non-applicability decision.                                 | GPU/prototype kernels and non-collision tests are catalogued but outside current CPU native collision scope. | Regenerate the inventory before final task cleanup.                |
+| Feature content                               | Native runtime status                                                                                                                | Comparison/reference scope                                                                                   | Remaining gate                                                                           |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Detector factory and public runtime selection | `dart` is the canonical runtime detector; legacy names route to native-backed facades.                                               | Reference detectors are opt-in test/benchmark fixtures only.                                                 | Final review-head factory/runtime validation.                                            |
+| Primitive contacts and signed distance        | Sphere, box, capsule, cylinder, plane, convex, compound, SDF, contact symmetry, and pair-order behavior are covered by native tests. | Reference rows validate parity where the query is comparable.                                                | Keep the generated upstream map and benchmark manifest synchronized before final claims. |
+| Broadphase and collision groups               | Native world/group updates, deterministic pair ordering, empty scenes, self-collision, filters, and persistent scenes are covered.   | Reference group behavior remains a comparison surface.                                                       | No active upstream broadphase mapping gap; final validation remains.                     |
+| Ray and cast queries                          | Native closest/all/filter raycast behavior is covered and benchmarked.                                                               | Comparable raycast references are benchmark-only.                                                            | Deeper closest-hit traversal tuning is deferred.                                         |
+| Mesh, convex, and field-heavy scenes          | Mesh, convex, plane/mesh, heightmap/field adaptation, and mesh-heavy scenes are covered by tests and benchmark guards.               | Mesh-heavy references remain comparison-only.                                                                | Larger dynamic mesh and BVH scale sweeps are deferred.                                   |
+| Adapter-only DART shapes                      | Cone, pyramid, ellipsoid, heightmap, multi-sphere, and voxel-grid shapes adapt into explicit native geometry.                        | Comparison engines do not define the runtime contract.                                                       | Direct heightfield/sparse voxel acceleration remains deferred.                           |
+| Upstream FCL/Bullet/ODE case map              | Every generated upstream row maps to covered DART behavior or a concrete non-applicability decision.                                 | GPU/prototype kernels and non-collision tests are catalogued but outside current CPU native collision scope. | Regenerate the inventory before final task cleanup.                                      |
 
 ## Performance Summary
 
 Ratio is native median divided by the strongest comparable median; values below
 `1.0` mean native is faster in the local single-worker benchmark packet.
 
-| Benchmark content                                                             | Comparable rows | Native result                    |     Ratio range | Current caveat                                                      |
-| ----------------------------------------------------------------------------- | --------------: | -------------------------------- | --------------: | ------------------------------------------------------------------- |
-| Primitive pair narrowphase, including touching/grazing/deep-penetration cases |              27 | Leads every comparable row       | `0.019`-`0.966` | Keep raw rows current as new pair kernels land.                     |
-| Public adapter and package collision paths                                    |               3 | Leads every comparable row       | `0.586`-`0.935` | Add recurring JSON regression checks on the final CI surface.       |
-| Signed distance queries                                                       |               3 | Leads every comparable row       | `0.088`-`0.437` | Ordered broadphase distance traversal remains a later optimization. |
-| Ray and ray-batch queries                                                     |               7 | Leads every comparable row       | `0.101`-`0.541` | Batch/SIMD throughput is deferred.                                  |
-| Mixed broadphase and pair-generation scenarios                                |               4 | Leads every comparable row       | `0.036`-`0.700` | Larger stacked/ragdoll/landscape sweeps are deferred.               |
-| Mesh, convex, and field-heavy scenarios                                       |               1 | Leads the comparable row         |         `0.172` | Dynamic mesh update and BVH profiling remain later work.            |
-| Native-only persistent scene and dirty-subset paths                           |               8 | Non-comparable native guardrails |             n/a | Retain as native regression guards, not comparison claims.          |
+| Benchmark content                                                             | Comparable rows | Native result                                          |     Ratio range | Current caveat                                                       |
+| ----------------------------------------------------------------------------- | --------------: | ------------------------------------------------------ | --------------: | -------------------------------------------------------------------- |
+| Primitive pair narrowphase, including touching/grazing/deep-penetration cases |              27 | 25 strict native leads; all 27 pass the enforced guard | `0.015`-`1.060` | Two raw sphere-sphere edge rows are behind by 3.3%-6.0%.             |
+| Public adapter and package collision paths                                    |               3 | Leads every comparable row                             | `0.626`-`0.918` | Add recurring JSON regression checks on the final CI surface.        |
+| Signed distance queries                                                       |               3 | Leads every comparable row                             | `0.070`-`0.422` | Ordered broadphase distance traversal remains a later optimization.  |
+| Ray and ray-batch queries                                                     |               7 | Leads every comparable row                             | `0.101`-`0.730` | Batch/SIMD throughput is deferred.                                   |
+| Mixed broadphase and pair-generation scenarios                                |               4 | Leads every comparable row                             | `0.038`-`0.806` | Larger stacked/ragdoll/landscape sweeps are deferred.                |
+| Mesh, convex, and field-heavy scenarios                                       |               1 | Leads the comparable row                               |         `0.166` | Dynamic mesh update and BVH profiling remain later work.             |
+| Native-only persistent scene and dirty-subset paths                           |               8 | Non-comparable native guardrails                       |             n/a | Retain as native regression guards, not comparison claims.           |
+| Native-only stacked and terrain profiling scenes                              |              16 | Non-comparable native workload coverage                |             n/a | Add reference variants only if that scope becomes part of the claim. |
 
 ## Runtime Dependency Contract
 
@@ -152,8 +153,9 @@ by naming the repo surfaces that were inventoried.
 
 - **Native collision unit tests**
   Inventory evidence: `tests/unit/collision/CMakeLists.txt` plus the
-  `collision-native` CTest label; full `pixi run test-all` reported 266/266
-  C++ tests passing.
+  `collision-native` CTest label; recent local validation includes a passing
+  `pixi run test-all` after artifact promotion and `pixi run test-unit`
+  reporting 281/281 unit tests passing.
   Coverage status: covered by native pair, algorithm, broadphase, filter,
   distance, raycast, CCD, and adapter rows.
   Remaining pre-PR gate: re-run final validation on the completing review head.

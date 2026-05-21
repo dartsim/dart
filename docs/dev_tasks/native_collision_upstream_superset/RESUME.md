@@ -96,13 +96,13 @@ coverage above 95%, and promote durable upstream coverage artifacts into
 
 ## Immediate Next Step
 
-Run lint and checkpoint the benchmark-policy update that makes the raw
-primitive and adapter packets enforced under the configured `1.10` guard. Then
-decide whether the next completion PR should delete this dev-task folder now
-that durable artifacts live in `docs/plans/`, or start the later GUI
-pair-debugger scope. The stacked-scene rows are documented as native-only
-profiling coverage for this checkpoint, and the row-level map has 0
-`mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
+Regenerate the upstream inventory/map if the external clones have moved, then
+run the strongest feasible final validation gate for the upstream-superset
+scope. After that, decide whether the next completion PR should delete this
+dev-task folder now that durable artifacts live in `docs/plans/`, or start the
+later GUI pair-debugger scope. The stacked-scene rows are documented as
+native-only profiling coverage for this checkpoint, and the row-level map has
+0 `mapping-needed`, `fixture-needed`, or `new-benchmark-needed` rows.
 
 ## Context That Would Be Lost
 
@@ -148,6 +148,9 @@ profiling coverage for this checkpoint, and the row-level map has 0
   Strict `1.0` report-only analysis over the official comparable packet reports
   43 native leads and 2 raw sphere-sphere edge rows that are within `1.10` but
   not strict leads.
+- `docs/plans/035-native-collision-dashboard.md` is synchronized with the
+  generated benchmark manifest: 43 strict native leads, 2 guarded raw
+  sphere-sphere edge rows, and 24 native-only benchmark rows.
 - Focused verification for the fast paths has run:
   `pixi run cmake --build build/default/cpp/Release --target test_sphere_sphere test_sphere_box test_capsule_capsule`
   and
