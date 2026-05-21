@@ -119,7 +119,7 @@ SkeletonPtr loadAtlasRobot()
 {
   // Lesson 1: Load the Atlas robot and configure it for a standing pose
   SkeletonPtr atlas
-      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
 
   if (!atlas) {
     std::cerr << "Failed to load Atlas robot!" << std::endl;

@@ -868,9 +868,8 @@ TEST(SdfParser, ParsingSDFFiles)
   // Create another list of sdf files to test with where the sdf files contains
   // Skeleton
   std::vector<common::Uri> skeletonFiles;
-  skeletonFiles.push_back("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
-  skeletonFiles.push_back(
-      "dart://sample/sdf/atlas/atlas_v3_no_head_soft_feet.sdf");
+  skeletonFiles.push_back("dart://sample/sdf/quad.sdf");
+  skeletonFiles.push_back("dart://sample/sdf/test/two_link_revolute_model.sdf");
 
   auto world = std::make_shared<World>();
   std::vector<SkeletonPtr> skeletons;

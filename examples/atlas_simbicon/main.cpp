@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
   // Load ground and Atlas robot and add them to the world
   auto ground = dart::io::readSkeleton("dart://sample/sdf/atlas/ground.urdf");
   auto atlas
-      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.sdf");
+      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
   world->addSkeleton(ground);
   world->addSkeleton(atlas);
 

@@ -75,7 +75,7 @@ def parse_args() -> argparse.Namespace:
 def load_atlas_robot():
     """Load the Atlas humanoid robot and configure initial pose."""
     parser = dart.io.UrdfParser()
-    atlas = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v3_no_head.urdf")
+    atlas = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf")
 
     if not atlas:
         raise RuntimeError("Failed to load Atlas robot!")

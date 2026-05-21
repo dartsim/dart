@@ -480,8 +480,8 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state0->setDesiredJointPosition("l_leg_kny", -stk02); // left knee
   state0->setDesiredJointPosition("l_leg_aky", -sta02); // left ankle
   //---- arm
-  state0->setDesiredJointPosition("l_arm_shy", -20.00_deg); // left arm
-  state0->setDesiredJointPosition("r_arm_shy", +10.00_deg); // right arm
+  state0->setDesiredJointPosition("l_arm_shz", -20.00_deg); // left arm
+  state0->setDesiredJointPosition("r_arm_shz", +10.00_deg); // right arm
   state0->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
   state0->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
@@ -514,8 +514,8 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state1->setDesiredJointPosition("r_leg_kny", -stk13); // right knee
   state1->setDesiredJointPosition("r_leg_aky", -sta13); // right ankle
   //---- arm
-  state1->setDesiredJointPosition("l_arm_shy", +10.00_deg); // left arm
-  state1->setDesiredJointPosition("r_arm_shy", -20.00_deg); // right arm
+  state1->setDesiredJointPosition("l_arm_shz", +10.00_deg); // left arm
+  state1->setDesiredJointPosition("r_arm_shz", -20.00_deg); // right arm
   state1->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
   state1->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
@@ -548,8 +548,8 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state2->setDesiredJointPosition("r_leg_kny", -stk02); // right knee
   state2->setDesiredJointPosition("r_leg_aky", -sta02); // right ankle
   //---- arm
-  state2->setDesiredJointPosition("l_arm_shy", +10.00_deg); // left arm
-  state2->setDesiredJointPosition("r_arm_shy", -20.00_deg); // right arm
+  state2->setDesiredJointPosition("l_arm_shz", +10.00_deg); // left arm
+  state2->setDesiredJointPosition("r_arm_shz", -20.00_deg); // right arm
   state2->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
   state2->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
@@ -582,8 +582,8 @@ StateMachine* Controller::_createWalkingInPlaceStateMachine()
   state3->setDesiredJointPosition("l_leg_kny", -stk13); // left knee
   state3->setDesiredJointPosition("l_leg_aky", -sta13); // left ankle
   //---- arm
-  state3->setDesiredJointPosition("l_arm_shy", -20.00_deg); // left arm
-  state3->setDesiredJointPosition("r_arm_shy", +10.00_deg); // right arm
+  state3->setDesiredJointPosition("l_arm_shz", -20.00_deg); // left arm
+  state3->setDesiredJointPosition("r_arm_shz", +10.00_deg); // right arm
   state3->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
   state3->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
@@ -689,8 +689,8 @@ StateMachine* Controller::_createWalkingStateMachine()
   state0->setDesiredJointPosition("l_leg_kny", -stk02); // left knee
   state0->setDesiredJointPosition("l_leg_aky", -sta02); // left ankle
   //---- arm
-  state0->setDesiredJointPosition("l_arm_shy", -20.00_deg); // left arm
-  state0->setDesiredJointPosition("r_arm_shy", +10.00_deg); // right arm
+  state0->setDesiredJointPosition("l_arm_shz", -20.00_deg); // left arm
+  state0->setDesiredJointPosition("r_arm_shz", +10.00_deg); // right arm
   state0->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
   state0->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
@@ -723,8 +723,8 @@ StateMachine* Controller::_createWalkingStateMachine()
   state1->setDesiredJointPosition("r_leg_kny", -stk13); // right knee
   state1->setDesiredJointPosition("r_leg_aky", -sta13); // right ankle
   //---- arm
-  state1->setDesiredJointPosition("l_arm_shy", +10.00_deg); // left arm
-  state1->setDesiredJointPosition("r_arm_shy", -20.00_deg); // right arm
+  state1->setDesiredJointPosition("l_arm_shz", +10.00_deg); // left arm
+  state1->setDesiredJointPosition("r_arm_shz", -20.00_deg); // right arm
   state1->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
   state1->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
@@ -757,8 +757,8 @@ StateMachine* Controller::_createWalkingStateMachine()
   state2->setDesiredJointPosition("r_leg_kny", -stk02); // right knee
   state2->setDesiredJointPosition("r_leg_aky", -sta02); // right ankle
   //---- arm
-  state2->setDesiredJointPosition("l_arm_shy", +10.00_deg); // left arm
-  state2->setDesiredJointPosition("r_arm_shy", -20.00_deg); // right arm
+  state2->setDesiredJointPosition("l_arm_shz", +10.00_deg); // left arm
+  state2->setDesiredJointPosition("r_arm_shz", -20.00_deg); // right arm
   state2->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
   state2->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
@@ -791,8 +791,8 @@ StateMachine* Controller::_createWalkingStateMachine()
   state3->setDesiredJointPosition("l_leg_kny", -stk13); // left knee
   state3->setDesiredJointPosition("l_leg_aky", -sta13); // left ankle
   //---- arm
-  state3->setDesiredJointPosition("l_arm_shy", -20.00_deg); // left arm
-  state3->setDesiredJointPosition("r_arm_shy", +10.00_deg); // right arm
+  state3->setDesiredJointPosition("l_arm_shz", -20.00_deg); // left arm
+  state3->setDesiredJointPosition("r_arm_shz", +10.00_deg); // right arm
   state3->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
   state3->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //---- feedback gain for hip joints
@@ -876,8 +876,8 @@ StateMachine* Controller::_createRunningStateMachine()
   state0->setDesiredJointPosition("l_leg_kny", -stk01); // left knee
   state0->setDesiredJointPosition("l_leg_aky", -sta01); // left ankle
   //---- arm
-  state0->setDesiredJointPosition("l_arm_shy", -45.00_deg); // left arm
-  state0->setDesiredJointPosition("r_arm_shy", +15.00_deg); // right arm
+  state0->setDesiredJointPosition("l_arm_shz", -45.00_deg); // left arm
+  state0->setDesiredJointPosition("r_arm_shz", +15.00_deg); // right arm
   state0->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
   state0->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //  state0->setDesiredJointPosition(23, DART_RADIAN * +90.00); // left arm
@@ -914,8 +914,8 @@ StateMachine* Controller::_createRunningStateMachine()
   state1->setDesiredJointPosition("r_leg_kny", -stk01); // right knee
   state1->setDesiredJointPosition("r_leg_aky", -sta01); // right ankle
   //---- arm
-  state1->setDesiredJointPosition("l_arm_shy", +15.00_deg); // left arm
-  state1->setDesiredJointPosition("r_arm_shy", -45.00_deg); // right arm
+  state1->setDesiredJointPosition("l_arm_shz", +15.00_deg); // left arm
+  state1->setDesiredJointPosition("r_arm_shz", -45.00_deg); // right arm
   state1->setDesiredJointPosition("l_arm_shx", -80.00_deg); // left arm
   state1->setDesiredJointPosition("r_arm_shx", +80.00_deg); // right arm
   //  state1->setDesiredJointPosition(23, DART_RADIAN * +90.00); // left arm
