@@ -79,13 +79,13 @@ float luminance(const float3& color)
 
 float4 ensureReadableDisplayColor(const float4& color)
 {
-  constexpr float kMinLuminance = 0.22f;
+  constexpr float kMinLuminance = 0.16f;
   const float currentLuminance = luminance(rgb(color));
   if (currentLuminance >= kMinLuminance || color.w <= 0.0f) {
     return color;
   }
 
-  constexpr float3 kNeutralMeshColor{0.46f, 0.48f, 0.52f};
+  constexpr float3 kNeutralMeshColor{0.28f, 0.30f, 0.34f};
   const float blend = std::clamp(
       (kMinLuminance - currentLuminance) / kMinLuminance, 0.0f, 1.0f);
   return {

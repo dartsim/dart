@@ -696,6 +696,13 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
           "material.baseColor = ensureReadableDisplayColor(descriptorColor)"),
       std::string::npos);
   EXPECT_NE(
+      renderableResourcesSource.find("constexpr float kMinLuminance = 0.16f"),
+      std::string::npos);
+  EXPECT_NE(
+      renderableResourcesSource.find(
+          "constexpr float3 kNeutralMeshColor{0.28f, 0.30f, 0.34f}"),
+      std::string::npos);
+  EXPECT_NE(
       selectionSource.find("const Eigen::Vector3d dragPoint"),
       std::string::npos);
   EXPECT_NE(
