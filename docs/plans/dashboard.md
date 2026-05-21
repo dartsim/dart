@@ -84,7 +84,7 @@ its own line so status updates remain git-history friendly.
 ### PLAN-036: Native Collision Performance Wave
 
 - Owner doc:
-  [`035-native-collision-dashboard.md#performance-follow-up-plan`](035-native-collision-dashboard.md#performance-follow-up-plan)
+  [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)
 - Status: Complete
 - Horizon: Later
 - Dimension: Scalable compute
