@@ -371,6 +371,34 @@ TEST(CapsuleSphere, SphereAtMiddle)
   EXPECT_NEAR(result.getContact(0).depth, 0.2, 1e-6);
 }
 
+TEST(CapsuleSphere, SphereAtMiddleAlongYAxis)
+{
+  CapsuleShape capsule(0.5, 2.0);
+  SphereShape sphere(0.5);
+
+  Eigen::Isometry3d tfCapsule = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfSphere = Eigen::Isometry3d::Identity();
+  tfSphere.translation() = Eigen::Vector3d(0.0, 0.8, 0.0);
+
+  CollisionResult result;
+  const bool collided
+      = collideCapsuleSphere(capsule, tfCapsule, sphere, tfSphere, result);
+
+  ASSERT_TRUE(collided);
+  ASSERT_EQ(result.numContacts(), 1u);
+  const auto& contact = result.getContact(0);
+  EXPECT_NEAR(contact.depth, 0.2, 1e-6);
+  EXPECT_DOUBLE_EQ(contact.normal.x(), 0.0);
+  EXPECT_DOUBLE_EQ(contact.normal.y(), -1.0);
+  EXPECT_DOUBLE_EQ(contact.normal.z(), 0.0);
+
+  CollisionResult separatedResult;
+  tfSphere.translation() = Eigen::Vector3d(0.0, 1.01, 0.0);
+  EXPECT_FALSE(collideCapsuleSphere(
+      capsule, tfCapsule, sphere, tfSphere, separatedResult));
+  EXPECT_EQ(separatedResult.numContacts(), 0u);
+}
+
 TEST(CapsuleSphere, SphereAtTop)
 {
   CapsuleShape capsule(0.5, 2.0);
