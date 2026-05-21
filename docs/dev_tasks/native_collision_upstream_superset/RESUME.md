@@ -52,21 +52,25 @@ DART-native anchors. Added exact cylinder-plane halfspace depth coverage,
 separated mesh-mesh distance witnesses with swapped pair order, and a rotated
 box-box degenerate-simplex distance regression with finite witnesses, then
 mapped the corresponding upstream rows plus direct sphere/triangle and
-halfspace/triangle rows.
+halfspace/triangle rows. Added sphere-sphere and unequal cylinder axis-sweep
+collision-transition tests, added unequal-cylinder finite-contact penetration
+poses, mapped the corresponding ODE libccd sphere/cylinder GJK/MPR/EPA rows,
+and classified libccd polytope/vector helper rows as private-helper
+non-applicability rows.
 
 ## Current Branch
 
-`task/native-collision-performance-complete` — ahead of origin by checkpoint
-commit `6a25838ad51`; current uncommitted changes are post-checkpoint native
-collision test additions plus generated coverage-map updates.
+`task/native-collision-performance-complete` — ahead of origin by local
+checkpoint commits; latest checkpoint maps the ODE libccd sphere/cylinder
+axis-sweep rows and leaves the worktree expected clean after commit.
 
 ## Immediate Next Step
 
 Continue filling `docs/dev_tasks/native_collision_upstream_superset/02-coverage-map.md`
-and `03-case-map.md` by mapping remaining FCL primitive-pair rows to existing
-DART tests, new DART tests, or a concrete non-applicability reason. The next
-high-value slices are remaining cone/ellipsoid distance rows, triangle rows,
-remaining world/query rows, and benchmark scenario rows.
+and `03-case-map.md` by mapping remaining FCL signed-distance regression rows
+and ODE libccd box/cylinder rows to existing DART tests, new DART tests, or a
+concrete non-applicability reason. Benchmark scenario rows remain later until
+the correctness map is closer to closed.
 
 ## Context That Would Be Lost
 
@@ -91,9 +95,9 @@ remaining world/query rows, and benchmark scenario rows.
 - `origin/feature/filament-gui-full-execution` exists and may be useful for
   that example, but no rebase has been done. Rebase/integration should wait for
   an explicit renderer decision.
-- `03-case-map.md` is generated and currently reports 155 `covered` rows, 25
-  `fixture-needed` rows, 81 `mapping-needed` rows, 10
-  `new-benchmark-needed` rows, and 318 `not-applicable` rows.
+- `03-case-map.md` is generated and currently reports 166 `covered` rows, 25
+  `fixture-needed` rows, 55 `mapping-needed` rows, 10
+  `new-benchmark-needed` rows, and 333 `not-applicable` rows.
 - `collideCylinderSphere()` now handles sphere centers inside the cylinder by
   choosing the nearest cap or barrel surface; this is required by the FCL
   sphere-cylinder internal-contact cases.
@@ -285,6 +289,17 @@ remaining world/query rows, and benchmark scenario rows.
   `pixi run cmake --build build/default/cpp/Release --target UNIT_collision_CollisionBackend`
   and
   `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^UNIT_collision_CollisionBackend$'`.
+- ODE libccd sphere-sphere and cylinder-cylinder GJK/MPR/EPA rows now map to
+  DART tests named for the geometry/query behavior:
+  `SphereSphere.AxisSweepTransitionsAcrossCoordinates`,
+  `CylinderCylinder.AxisSweepTransitionsAcrossCoordinates`, and
+  `CylinderCylinder.UnequalRadiusPenetrationReportsFiniteContacts`.
+- Focused verification also run:
+  `pixi run cmake --build build/default/cpp/Release --target test_sphere_sphere test_cylinder`
+  and
+  `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_sphere_sphere|test_cylinder)$'`.
+- `pixi run lint`, `pixi run build`, and `git diff --check` passed for this
+  checkpoint.
 
 ## How To Resume
 
@@ -294,6 +309,6 @@ git status --short --branch
 pixi run python scripts/inventory_upstream_collision_coverage.py
 ```
 
-Then continue the coverage-map pass with remaining primitive distance,
-triangle, remaining world/query, or benchmark rows before using expanded
-benchmark rows for performance claims.
+Then continue the coverage-map pass with remaining FCL shape/mesh consistency,
+FCL signed-distance regression, ODE box/box-cylinder libccd, or benchmark rows
+before using expanded benchmark rows for performance claims.

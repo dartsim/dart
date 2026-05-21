@@ -41,6 +41,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include <cmath>
+
 using namespace dart::collision::native;
 
 namespace {
@@ -149,6 +151,40 @@ void expectEqualCylinderBoundaryCase(
   EXPECT_TRUE(contact.normal.allFinite());
 }
 
+Eigen::Isometry3d makeRotatedCylinderPose(
+    const Eigen::Vector3d& translation,
+    const Eigen::Vector3d& axis,
+    double angle)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = Eigen::AngleAxisd(angle, axis.normalized()).toRotationMatrix();
+  tf.translation() = translation;
+  return tf;
+}
+
+void expectUnequalCylinderHit(
+    const char* name,
+    const Eigen::Isometry3d& tf1,
+    const Eigen::Isometry3d& tf2)
+{
+  SCOPED_TRACE(name);
+  CylinderShape cylinder1(0.35, 0.5);
+  CylinderShape cylinder2(0.5, 1.0);
+
+  CollisionResult result;
+  const bool hit = collideCylinders(cylinder1, tf1, cylinder2, tf2, result);
+  ASSERT_TRUE(hit);
+  ASSERT_GE(result.numContacts(), 1u);
+
+  for (std::size_t i = 0; i < result.numContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    EXPECT_GE(contact.depth, 0.0);
+    EXPECT_TRUE(contact.position.allFinite());
+    EXPECT_TRUE(contact.normal.allFinite());
+    EXPECT_NEAR(contact.normal.norm(), 1.0, 1e-8);
+  }
+}
+
 } // namespace
 
 TEST(CylinderCylinder, NoCollision)
@@ -254,6 +290,85 @@ TEST(CylinderCylinder, EqualRadiusBoundaryAndSeparationAcrossFrames)
         false,
         0.0);
   }
+}
+
+TEST(CylinderCylinder, AxisSweepTransitionsAcrossCoordinates)
+{
+  CylinderShape cylinder1(0.35, 0.5);
+  CylinderShape cylinder2(0.5, 1.0);
+  const std::array<Eigen::Vector3d, 3> axes{
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ()};
+
+  for (const auto& axis : axes) {
+    const double contactThreshold
+        = axis.z() == 0.0
+              ? cylinder1.getRadius() + cylinder2.getRadius()
+              : 0.5 * (cylinder1.getHeight() + cylinder2.getHeight());
+
+    for (int i = 0; i < 100; ++i) {
+      const double offset = -5.0 + 0.1 * i;
+      SCOPED_TRACE(offset);
+
+      CollisionResult result;
+      const bool hit = collideCylinders(
+          cylinder1,
+          Eigen::Isometry3d::Identity(),
+          cylinder2,
+          makeTranslation(offset * axis),
+          result);
+      const bool expectedHit = std::abs(offset) <= contactThreshold;
+      EXPECT_EQ(hit, expectedHit);
+
+      if (!expectedHit) {
+        EXPECT_EQ(result.numContacts(), 0u);
+        continue;
+      }
+
+      ASSERT_GE(result.numContacts(), 1u);
+      const auto& contact = result.getContact(0);
+      EXPECT_GE(contact.depth, 0.0);
+      EXPECT_TRUE(contact.position.allFinite());
+      EXPECT_TRUE(contact.normal.allFinite());
+      EXPECT_NEAR(contact.normal.norm(), 1.0, 1e-8);
+    }
+  }
+}
+
+TEST(CylinderCylinder, UnequalRadiusPenetrationReportsFiniteContacts)
+{
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf2 = makeTranslation(Eigen::Vector3d(0.0, 0.0, 0.3));
+  expectUnequalCylinderHit("axial offset", tf1, tf2);
+
+  tf1 = makeTranslation(Eigen::Vector3d(0.3, 0.1, 0.1));
+  tf2 = Eigen::Isometry3d::Identity();
+  expectUnequalCylinderHit("translated first cylinder", tf1, tf2);
+
+  tf2 = makeRotatedCylinderPose(
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.0, 1.0, 1.0),
+      std::numbers::pi_v<double> / 4.0);
+  expectUnequalCylinderHit("tilted second cylinder", tf1, tf2);
+
+  tf2 = makeRotatedCylinderPose(
+      Eigen::Vector3d(-0.2, 0.7, 0.2),
+      Eigen::Vector3d(0.0, 1.0, 1.0),
+      std::numbers::pi_v<double> / 4.0);
+  expectUnequalCylinderHit("translated tilted second cylinder", tf1, tf2);
+
+  tf2 = makeRotatedCylinderPose(
+      Eigen::Vector3d(0.6, -0.7, 0.2),
+      Eigen::Vector3d(0.567, 1.2, 1.0),
+      std::numbers::pi_v<double> / 4.0);
+  expectUnequalCylinderHit("oblique second cylinder", tf1, tf2);
+
+  tf2 = makeRotatedCylinderPose(
+      Eigen::Vector3d(0.6, -0.7, 0.2),
+      Eigen::Vector3d(-4.567, 1.2, 0.0),
+      std::numbers::pi_v<double> / 3.0);
+  expectUnequalCylinderHit("steep oblique second cylinder", tf1, tf2);
 }
 
 TEST(CylinderCylinderBatch, cylinder_cylinder_batch_determinism_vs_single)

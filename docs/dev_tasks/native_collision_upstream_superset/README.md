@@ -51,9 +51,9 @@ optimization expansion by benchmarks.
 - Coverage map scaffold:
   [`02-coverage-map.md`](02-coverage-map.md)
 - Generated row-level case map:
-  [`03-case-map.md`](03-case-map.md) currently records 155 covered rows, 25
-  fixture-needed rows, 81 mapping-needed rows, 10 new-benchmark-needed rows,
-  and 318 not-applicable rows.
+  [`03-case-map.md`](03-case-map.md) currently records 166 covered rows, 25
+  fixture-needed rows, 55 mapping-needed rows, 10 new-benchmark-needed rows,
+  and 333 not-applicable rows.
 
 ## Key Decisions
 
@@ -224,3 +224,14 @@ optimization expansion by benchmarks.
   passed.
 - `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_cylinder|test_distance_core|test_mesh_mesh)$'`
   passed.
+- Added sphere-sphere and unequal-cylinder axis-sweep transition coverage,
+  plus translated/rotated unequal-cylinder finite-contact penetration cases.
+  These map ODE libccd sphere/cylinder GJK/MPR/EPA rows without putting
+  upstream library names into DART test names.
+- `pixi run cmake --build build/default/cpp/Release --target test_sphere_sphere test_cylinder`
+  passed.
+- `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^(test_sphere_sphere|test_cylinder)$'`
+  passed.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `git diff --check` passed.

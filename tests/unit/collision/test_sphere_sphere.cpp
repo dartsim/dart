@@ -42,6 +42,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include <cmath>
+
 using namespace dart::collision::native;
 
 namespace {
@@ -216,6 +218,42 @@ TEST(SphereSphere, Concentric)
   const auto& contact = result.getContact(0);
   EXPECT_NEAR(contact.depth, 2.0, 1e-10);
   EXPECT_NEAR(contact.normal.norm(), 1.0, 1e-10);
+}
+
+TEST(SphereSphere, AxisSweepTransitionsAcrossCoordinates)
+{
+  const double radius1 = 0.35;
+  const double radius2 = 0.5;
+  const double radiusSum = radius1 + radius2;
+  const std::array<Eigen::Vector3d, 3> axes{
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ()};
+
+  for (const auto& axis : axes) {
+    for (int i = 0; i < 100; ++i) {
+      const double offset = -5.0 + 0.1 * i;
+      SCOPED_TRACE(offset);
+
+      CollisionResult result;
+      const bool hit = collideSpheres(
+          Eigen::Vector3d::Zero(), radius2, offset * axis, radius1, result);
+      const bool expectedHit = std::abs(offset) <= radiusSum;
+      EXPECT_EQ(hit, expectedHit);
+
+      if (!expectedHit) {
+        EXPECT_EQ(result.numContacts(), 0u);
+        continue;
+      }
+
+      ASSERT_EQ(result.numContacts(), 1u);
+      const auto& contact = result.getContact(0);
+      EXPECT_NEAR(contact.depth, radiusSum - std::abs(offset), 1e-12);
+      EXPECT_TRUE(contact.position.allFinite());
+      EXPECT_TRUE(contact.normal.allFinite());
+      EXPECT_NEAR(contact.normal.norm(), 1.0, 1e-12);
+    }
+  }
 }
 
 TEST(SphereSphere, ZeroRadius)

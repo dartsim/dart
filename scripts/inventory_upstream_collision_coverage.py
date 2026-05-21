@@ -1492,6 +1492,75 @@ def classify_case(case: Case, scope: Scope) -> tuple[str, str, str]:
             "Catalogue now; completion needs an explicit prototype gate decision.",
         )
 
+    if scope.project == "ODE" and source.startswith("ode/libccd/src/testsuites/"):
+        if case.suite.endswith(("SetUp", "TearDown")):
+            return (
+                "not-applicable",
+                "libccd fixture lifecycle",
+                "This row is an empty libccd test-suite setup/teardown hook, not native collision detector behavior.",
+            )
+
+        if case.suite in {
+            "spheresphereAlignedX",
+            "spheresphereAlignedY",
+            "spheresphereAlignedZ",
+        }:
+            return (
+                "covered",
+                "tests/unit/collision/test_sphere_sphere.cpp::SphereSphere.AxisSweepTransitionsAcrossCoordinates; tests/unit/collision/test_distance_core.cpp::DistanceSphereSphere.SignedDistanceWitnessesAcrossSphereSets; tests/unit/collision/test_libccd_algorithms.cpp::GjkLibccd.SphereSphereSeparationDistance",
+                "Checks sphere-sphere collision transitions while sweeping one sphere along each coordinate axis, plus public signed-distance witnesses and a direct GJK separation anchor.",
+            )
+
+        if case.suite in {
+            "cylcylAlignedX",
+            "cylcylAlignedY",
+            "cylcylAlignedZ",
+        }:
+            return (
+                "covered",
+                "tests/unit/collision/test_cylinder.cpp::CylinderCylinder.AxisSweepTransitionsAcrossCoordinates",
+                "Checks unequal cylinder collision transitions while sweeping one cylinder along the lateral and axial coordinate directions through DART's public native collision path.",
+            )
+
+        if case.suite == "cylcylPenetrationEPA":
+            return (
+                "covered",
+                "tests/unit/collision/test_cylinder.cpp::CylinderCylinder.UnequalRadiusPenetrationReportsFiniteContacts",
+                "Checks unequal-cylinder penetration reports finite contact point, depth, and normal data for translated and rotated cylinder poses.",
+            )
+
+        if case.suite in {
+            "mprCylcylAlignedX",
+            "mprCylcylAlignedY",
+            "mprCylcylAlignedZ",
+        }:
+            return (
+                "covered",
+                "tests/unit/collision/test_cylinder.cpp::CylinderCylinder.AxisSweepTransitionsAcrossCoordinates",
+                "Checks unequal cylinder collision transitions while sweeping one cylinder along the lateral and axial coordinate directions.",
+            )
+
+        if case.suite == "mprCylcylPenetration":
+            return (
+                "covered",
+                "tests/unit/collision/test_cylinder.cpp::CylinderCylinder.UnequalRadiusPenetrationReportsFiniteContacts",
+                "Checks unequal-cylinder penetration reports finite contact point, depth, and normal data for translated and rotated cylinder poses.",
+            )
+
+        if source.endswith("polytope.c"):
+            return (
+                "not-applicable",
+                "libccd private polytope data structure",
+                "These rows exercise libccd's internal polytope vertex/edge/face container. DART native collision exposes public GJK/EPA/MPR query results instead, covered by test_gjk.cpp, test_gjk_degenerate.cpp, and test_libccd_algorithms.cpp.",
+            )
+
+        if source.endswith("vec3.c"):
+            return (
+                "not-applicable",
+                "libccd private vector projection helpers",
+                "These rows exercise standalone libccd point-segment and point-triangle projection helpers. DART native collision exposes public distance/contact witness queries instead; capsule center-line, mesh, and primitive distance tests cover the corresponding observable feature behavior.",
+            )
+
     if scope.project == "FCL" and source == "fcl/test/test_fcl_math.cpp":
         return (
             "not-applicable",
