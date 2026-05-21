@@ -38,6 +38,7 @@
 
 #include <array>
 #include <limits>
+#include <numbers>
 #include <span>
 #include <utility>
 #include <vector>
