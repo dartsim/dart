@@ -65,6 +65,17 @@ Eigen::Isometry3d makeDistanceBoxTransform(
   return tf;
 }
 
+Eigen::Isometry3d makeDistanceTransform(const std::array<double, 16>& values)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  for (int r = 0; r < 4; ++r) {
+    for (int c = 0; c < 4; ++c) {
+      tf.matrix()(r, c) = values[static_cast<std::size_t>(4 * r + c)];
+    }
+  }
+  return tf;
+}
+
 Eigen::Isometry3d makeDistanceSphereTransformInBoxFrame(
     const Eigen::Vector3d& translation,
     double angle,
@@ -360,6 +371,42 @@ void expectBoxBoxSignedDistanceCase(
     EXPECT_GT(result.distance, 0.0);
   } else {
     EXPECT_LT(result.distance, 0.0);
+  }
+}
+
+void expectBoxBoxRegressionWitnesses(
+    const char* name,
+    const Eigen::Vector3d& boxSize1,
+    const Eigen::Isometry3d& transform1,
+    const Eigen::Vector3d& boxSize2,
+    const Eigen::Isometry3d& transform2,
+    const double* expectedDistance = nullptr)
+{
+  SCOPED_TRACE(name);
+  const BoxShape box1(0.5 * boxSize1);
+  const BoxShape box2(0.5 * boxSize2);
+
+  DistanceResult result;
+  const double distance
+      = distanceBoxBox(box1, transform1, box2, transform2, result);
+
+  EXPECT_TRUE(std::isfinite(distance));
+  EXPECT_TRUE(result.pointOnObject1.allFinite());
+  EXPECT_TRUE(result.pointOnObject2.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
+  EXPECT_NEAR(result.distance, distance, 1e-12);
+  EXPECT_NEAR(
+      (result.pointOnObject2 - result.pointOnObject1).norm(),
+      std::abs(distance),
+      1e-6);
+
+  const Eigen::Vector3d p1 = transform1.inverse() * result.pointOnObject1;
+  const Eigen::Vector3d p2 = transform2.inverse() * result.pointOnObject2;
+  EXPECT_TRUE((p1.array().abs() <= (0.5 * boxSize1).array() + 1e-9).all());
+  EXPECT_TRUE((p2.array().abs() <= (0.5 * boxSize2).array() + 1e-9).all());
+
+  if (expectedDistance != nullptr) {
+    EXPECT_NEAR(distance, *expectedDistance, 1e-9);
   }
 }
 
@@ -1114,6 +1161,318 @@ TEST(DistanceBoxBox, DegenerateSimplexWitnessRegression)
   EXPECT_TRUE(result.normal.allFinite());
   EXPECT_NEAR(
       (result.pointOnObject2 - result.pointOnObject1).norm(), dist, 1e-9);
+}
+
+TEST(DistanceBoxBox, RealWorldWitnessRegressions)
+{
+  expectBoxBoxRegressionWitnesses(
+      "edge nearest-feature regression",
+      Eigen::Vector3d(0.03, 0.12, 0.1),
+      makeDistanceTransform({
+          -3.0627937852578681533e-08,
+          -0.99999999999999888978,
+          -2.8893865161583314238e-08,
+          0.63499979627350811029,
+          0.9999999999999980016,
+          -3.0627939739957803544e-08,
+          6.4729926918527511769e-08,
+          -0.48500002215636439651,
+          -6.4729927722963847085e-08,
+          -2.8893863029448751323e-08,
+          0.99999999999999711342,
+          1.0778146458339641356,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+      }),
+      Eigen::Vector3d(0.025, 0.35, 1.845),
+      makeDistanceTransform({
+          0.0,
+          -1.0,
+          0.0,
+          0.8,
+          1.0,
+          0.0,
+          0.0,
+          -0.4575,
+          0.0,
+          0.0,
+          1.0,
+          1.0225,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+      }));
+
+  expectBoxBoxRegressionWitnesses(
+      "thin tilted triangle-size regression",
+      Eigen::Vector3d(0.46, 0.48, 0.01),
+      makeDistanceTransform({
+          1.0,
+          0.0,
+          0.0,
+          -0.72099999999999997424,
+          0.0,
+          1.0,
+          0.0,
+          -0.77200000000000001954,
+          0.0,
+          0.0,
+          1.0,
+          0.81000000000000005329,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+      }),
+      Eigen::Vector3d(0.049521, 0.146, 0.0725),
+      makeDistanceTransform({
+          0.10758262492983036718,
+          -0.6624881850015212903,
+          -0.74130653817877356637,
+          -0.42677133002999478872,
+          0.22682184885125472595,
+          -0.709614040775253474,
+          0.6670830248314786326,
+          -0.76596851247746788882,
+          -0.96797615037608542021,
+          -0.23991106241273435495,
+          0.07392465377049164954,
+          0.80746731400091054098,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+      }));
+
+  expectBoxBoxRegressionWitnesses(
+      "colinear edge query regression",
+      Eigen::Vector3d(0.49, 0.05, 0.21),
+      makeDistanceTransform({
+          4.8966386501092529215e-12,
+          -1.0,
+          0.0,
+          -0.43999999999999994671,
+          1.0,
+          4.8966386501092529215e-12,
+          0.0,
+          -0.61499999999858001587,
+          0.0,
+          0.0,
+          1.0,
+          0.35499999999999998224,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+      }),
+      Eigen::Vector3d(0.035, 0.12, 0.03),
+      makeDistanceTransform({
+          0.83512153565236335595,
+          -0.55006546945762568868,
+          -9.4542360608233572896e-16,
+          -0.40653441507331000704,
+          0.55006546945762568868,
+          0.83512153565236313391,
+          1.1787444236552387666e-15,
+          -0.69166166923735727945,
+          1.2902271444330665572e-16,
+          -1.4878153530113264589e-15,
+          1.0,
+          0.43057093858718892276,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+      }));
+
+  expectBoxBoxRegressionWitnesses(
+      "thin plate overlap regression",
+      Eigen::Vector3d(0.614, 3.0, 0.37),
+      makeDistanceBoxTransform(Eigen::Vector3d(-0.675, 0.0, 0.9115)),
+      Eigen::Vector3d(0.494, 0.552, 0.01),
+      makeDistanceBoxTransform(Eigen::Vector3d(-0.692, 0.0, 0.935)));
+
+  expectBoxBoxRegressionWitnesses(
+      "offset asymmetric box regression",
+      Eigen::Vector3d(0.2, 0.33, 0.1),
+      makeDistanceBoxTransform(
+          Eigen::Vector3d(
+              -0.071000000000000035305,
+              -0.77200000000000001954,
+              0.79999999999999993339)),
+      Eigen::Vector3d(0.452, 0.27, 0.6),
+      makeDistanceBoxTransform(
+          Eigen::Vector3d(
+              0.12099999999999999645,
+              -0.78769605692727695523,
+              0.53422044196125151316)));
+
+  const double expectedTouchingDistance = 0.0;
+  expectBoxBoxRegressionWitnesses(
+      "rotated expected-touching regression",
+      Eigen::Vector3d(
+          0.31650000000000000355,
+          0.22759999999999999676,
+          0.1768000000000000127),
+      makeDistanceTransform({
+          0.44540578475530234748,
+          0.89532881496493399442,
+          -8.8937407685638678971e-09,
+          1.2652949075960071568,
+          -0.89532881496493377238,
+          0.44540578475530190339,
+          -2.8948680226084145336e-08,
+          1.4551012423210101243,
+          -2.1957263975186326105e-08,
+          2.0856732016652919226e-08,
+          0.99999999999999955591,
+          0.49480006232932938204,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+      }),
+      Eigen::Vector3d(
+          0.49430000000000001714,
+          0.35460000000000002629,
+          0.075200000000000002953),
+      makeDistanceTransform({
+          0.44171122913485860728,
+          0.8971572827861190591,
+          -1.622764514865468214e-09,
+          1.1304016226141906376,
+          -0.8971572827861190591,
+          0.44171122913485860728,
+          -5.1621053952306079594e-09,
+          1.8410802645284281009,
+          -3.9144271413829990148e-09,
+          3.7360349218094348098e-09,
+          1.0,
+          0.44400006232932492933,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+      }),
+      &expectedTouchingDistance);
+
+  expectBoxBoxRegressionWitnesses(
+      "near-perpendicular Drake regression",
+      Eigen::Vector3d(
+          0.050000000000000002776,
+          0.55000000000000004441,
+          0.2999999999999999889),
+      makeDistanceTransform({
+          0.00079632671073326442932,
+          -0.99999968293183538748,
+          0.0,
+          0.75000000000000055511,
+          0.99999968293183538748,
+          0.00079632671073326442932,
+          0.0,
+          -2.4083553715553102684e-15,
+          0.0,
+          0.0,
+          1.0,
+          0.14999999999999999445,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+      }),
+      Eigen::Vector3d(0.25, 0.2000000000000000111, 0.14999999999999999445),
+      makeDistanceTransform({
+          6.1232339957367660359e-17,
+          0.0,
+          1.0,
+          0.75,
+          -1.0,
+          6.1232339957367660359e-17,
+          6.1232339957367660359e-17,
+          0.0,
+          -6.1232339957367660359e-17,
+          -1.0,
+          3.7493994566546440196e-33,
+          0.14999999999999999445,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+      }));
+}
+
+TEST(DistanceBoxBox, TiltedKissingContactAcrossScales)
+{
+  Eigen::Matrix3d rotation;
+  rotation << 0.94096063217417758029, 0.29296840037289501035,
+      0.16959541586174811667, -0.23569836841299879326, 0.92661523595848427348,
+      -0.29296840037289506586, -0.2429801799032638987, 0.23569836841299884878,
+      0.94096063217417758029;
+
+  for (const double dim : {0.01, 0.25, 0.5, 10.0, 1000.0}) {
+    const Eigen::Vector3d boxSize(dim, dim, dim);
+    const Eigen::Vector3d origin(0.0, 0.0, 5.0 * dim);
+
+    Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+    tf1.linear() = rotation;
+    tf1.translation() = origin;
+
+    for (const double relativeDistance :
+         {-1e-15, -2.5e-16, -1e-16, 0.0, 1e-16, 2.5e-16, 1e-15}) {
+      const double scaledDistance = relativeDistance * std::max(1.0, dim);
+      Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+      tf2.linear() = rotation;
+      tf2.translation()
+          = origin + rotation * Eigen::Vector3d(0.0, dim + scaledDistance, 0.0);
+
+      expectBoxBoxRegressionWitnesses(
+          "tilted same-orientation near-touching stack",
+          boxSize,
+          tf1,
+          boxSize,
+          tf2);
+    }
+  }
+}
+
+TEST(DistanceSphereBox, NearBoundaryRegression)
+{
+  const SphereShape sphere(0.06);
+  const BoxShape box(Eigen::Vector3d(0.05, 0.05, 0.05));
+
+  const Eigen::Isometry3d sphereTf = makeDistanceTransform({
+      -0.99999999999999955591,
+      -4.4637642593504144998e-09,
+      0.0,
+      1.7855056639081962376e-10,
+      4.4637642593504144998e-09,
+      -0.99999999999999955591,
+      0.0,
+      0.039999999999999993894,
+      0.0,
+      0.0,
+      1.0000000000000008882,
+      0.33000000000000012657,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+  });
+  const Eigen::Isometry3d boxTf
+      = makeDistanceBoxTransform(Eigen::Vector3d(0.05, 0.15, 0.35));
+
+  DistanceResult result;
+  const double distance
+      = distanceSphereBox(sphere, sphereTf, box, boxTf, result);
+
+  EXPECT_NEAR(distance, 0.0, 1e-9);
+  EXPECT_NEAR(result.distance, distance, 1e-12);
+  EXPECT_TRUE(result.pointOnObject1.allFinite());
+  EXPECT_TRUE(result.pointOnObject2.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
 }
 
 TEST(DistanceBoxBox, SignedDistanceWithCommonFrames)

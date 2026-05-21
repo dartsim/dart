@@ -51,8 +51,8 @@ optimization expansion by benchmarks.
 - Coverage map scaffold:
   [`02-coverage-map.md`](02-coverage-map.md)
 - Generated row-level case map:
-  [`03-case-map.md`](03-case-map.md) currently records 180 covered rows, 25
-  fixture-needed rows, 17 mapping-needed rows, 10 new-benchmark-needed rows,
+  [`03-case-map.md`](03-case-map.md) currently records 189 covered rows, 25
+  fixture-needed rows, 8 mapping-needed rows, 10 new-benchmark-needed rows,
   and 357 not-applicable rows.
 
 ## Key Decisions
@@ -71,8 +71,9 @@ optimization expansion by benchmarks.
 
 ## Immediate Next Steps
 
-1. Continue mapping FCL signed-distance real-world regression rows, adding
-   native tests only where exact behavior is not already covered.
+1. Continue mapping the remaining FCL convex-convex signed-distance real-world
+   regression rows, adding native tests only where exact behavior is not
+   already covered.
 2. Convert the 25 `fixture-needed` Bullet OpenCL GPU/prototype rows into an
    explicit prototype gate decision or follow-up fixture.
 3. Start converting the 10 `new-benchmark-needed` Bullet/ODE benchmark rows
@@ -250,6 +251,20 @@ optimization expansion by benchmarks.
   non-applicability decisions because they test FCL's generated BVH
   approximation pipeline, BV-family traversal, and solver-selection tolerance
   contracts rather than DART native public APIs.
+- `pixi run python scripts/inventory_upstream_collision_coverage.py` updated
+  the generated inventory and row map.
+- `pixi run lint` passed.
+- `pixi run build` passed.
+- `git diff --check` passed.
+- Added exact box-box signed-distance regression coverage for edge-nearest,
+  thin tilted, colinear-edge, thin-plate, offset-asymmetric, expected-touching,
+  and near-perpendicular witness cases, plus tilted near-touching box stacks
+  across scales.
+- Added exact near-boundary sphere-box signed-distance regression coverage.
+- `pixi run cmake --build build/default/cpp/Release --target test_distance_core`
+  passed.
+- `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_distance_core$'`
+  passed.
 - `pixi run python scripts/inventory_upstream_collision_coverage.py` updated
   the generated inventory and row map.
 - `pixi run lint` passed.

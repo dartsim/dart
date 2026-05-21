@@ -68,20 +68,23 @@ Classified FCL primitive-to-BVH shape/mesh consistency rows as explicit
 non-applicability decisions because they target FCL's generated BVH
 approximation, BV-family traversal, and solver-selection tolerance contracts
 rather than DART native public APIs.
+Added exact box-box and sphere-box signed-distance real-world regression tests
+with finite witness validation, then mapped the corresponding FCL
+RealWorldRegression1 through RealWorldRegression9 rows.
 
 ## Current Branch
 
 `task/native-collision-performance-complete` — ahead of origin by local
-checkpoint commits; latest checkpoint classifies FCL primitive-to-BVH
-shape/mesh consistency rows and leaves the worktree expected clean after commit.
+checkpoint commits; latest checkpoint maps FCL box/sphere signed-distance
+real-world regression rows and leaves the worktree expected clean after commit.
 
 ## Immediate Next Step
 
 Continue filling `docs/dev_tasks/native_collision_upstream_superset/02-coverage-map.md`
-and `03-case-map.md` by mapping remaining FCL signed-distance regression rows
-to existing DART tests, new DART tests, or a concrete non-applicability reason.
-Benchmark scenario rows remain later until the correctness map is closer to
-closed.
+and `03-case-map.md` by mapping remaining FCL convex-convex signed-distance
+regression rows to existing DART tests, new DART tests, or a concrete
+non-applicability reason. Benchmark scenario rows remain later until the
+correctness map is closer to closed.
 
 ## Context That Would Be Lost
 
@@ -106,8 +109,8 @@ closed.
 - `origin/feature/filament-gui-full-execution` exists and may be useful for
   that example, but no rebase has been done. Rebase/integration should wait for
   an explicit renderer decision.
-- `03-case-map.md` is generated and currently reports 180 `covered` rows, 25
-  `fixture-needed` rows, 17 `mapping-needed` rows, 10
+- `03-case-map.md` is generated and currently reports 189 `covered` rows, 25
+  `fixture-needed` rows, 8 `mapping-needed` rows, 10
   `new-benchmark-needed` rows, and 357 `not-applicable` rows.
 - `collideCylinderSphere()` now handles sphere centers inside the cylinder by
   choosing the nearest cap or barrel surface; this is required by the FCL
@@ -329,6 +332,17 @@ closed.
   non-applicability decisions because DART native does not expose FCL's
   generated BVH approximation pipeline, BV-family traversal knobs, or
   libccd/GJK solver-selection tolerance contract.
+- `pixi run lint`, `pixi run build`, and `git diff --check` passed for the
+  primitive-to-BVH checkpoint.
+- FCL box-box signed-distance real-world rows now map to exact DART tests named
+  for edge-nearest, thin tilted, colinear-edge, thin-plate, offset-asymmetric,
+  expected-touching, near-perpendicular, and tilted near-touching scale cases.
+- FCL sphere-box signed-distance real-world row now maps to exact DART
+  near-boundary witness coverage.
+- Focused verification already run:
+  `pixi run cmake --build build/default/cpp/Release --target test_distance_core`
+  and
+  `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_distance_core$'`.
 - `pixi run lint`, `pixi run build`, and `git diff --check` passed for this
   checkpoint.
 
@@ -340,6 +354,6 @@ git status --short --branch
 pixi run python scripts/inventory_upstream_collision_coverage.py
 ```
 
-Then continue the coverage-map pass with remaining FCL signed-distance
-regression or benchmark rows before using expanded benchmark rows for
+Then continue the coverage-map pass with remaining FCL convex-convex
+signed-distance or benchmark rows before using expanded benchmark rows for
 performance claims.

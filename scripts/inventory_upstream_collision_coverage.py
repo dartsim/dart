@@ -1216,6 +1216,87 @@ CASE_MAP_OVERRIDES = {
     ),
     (
         "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression1)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceBoxBox.RealWorldWitnessRegressions",
+        "Checks the exact wild box-box edge-nearest signed-distance regression with finite distance/witnesses, witness-distance consistency, and witnesses inside both boxes.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression2)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceBoxBox.RealWorldWitnessRegressions",
+        "Checks the exact wild thin tilted box-box signed-distance regression with finite distance/witnesses, witness-distance consistency, and witnesses inside both boxes.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression3)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceBoxBox.RealWorldWitnessRegressions",
+        "Checks the exact wild colinear-edge box-box signed-distance regression with finite distance/witnesses, witness-distance consistency, and witnesses inside both boxes.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression4)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceBoxBox.RealWorldWitnessRegressions",
+        "Checks the exact wild thin-plate box-box signed-distance regression with finite distance/witnesses, witness-distance consistency, and witnesses inside both boxes.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression5)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceBoxBox.RealWorldWitnessRegressions",
+        "Checks the exact wild offset-asymmetric box-box signed-distance regression with finite distance/witnesses, witness-distance consistency, and witnesses inside both boxes.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression6)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceBoxBox.RealWorldWitnessRegressions",
+        "Checks the exact wild rotated expected-touching box-box signed-distance regression with a zero distance assertion and valid witnesses inside both boxes.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression7)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceBoxBox.RealWorldWitnessRegressions",
+        "Checks the exact wild near-perpendicular box-box signed-distance regression with finite distance/witnesses, witness-distance consistency, and witnesses inside both boxes.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression8)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceBoxBox.TiltedKissingContactAcrossScales",
+        "Checks tilted same-orientation box stacks across multiple scales and near-zero separations/penetrations with finite signed-distance witnesses.",
+    ),
+    (
+        "FCL",
+        "fcl/test/test_fcl_signed_distance.cpp",
+        "GTEST_TEST(FCL_SIGNED_DISTANCE, RealWorldRegression9)",
+    ): (
+        "covered",
+        "tests/unit/collision/test_distance_core.cpp::DistanceSphereBox.NearBoundaryRegression",
+        "Checks the exact near-boundary sphere-box signed-distance regression with zero distance and finite nearest-point witnesses.",
+    ),
+    (
+        "FCL",
         "fcl/test/test_fcl_capsule_capsule.cpp",
         "TYPED_TEST(SegmentSegmentNearestPtTest, BothZeroLength)",
     ): (
