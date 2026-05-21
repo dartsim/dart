@@ -1617,6 +1617,24 @@ def classify_case(case: Case, scope: Scope) -> tuple[str, str, str]:
             "This row targets FCL vector, Morton-code, and RSS bounding-volume helper APIs. DART native collision uses Eigen vectors plus native AABB/broadphase structures and does not expose those FCL utility contracts.",
         )
 
+    if (
+        scope.project == "FCL"
+        and source == "fcl/test/test_fcl_shape_mesh_consistency.cpp"
+    ):
+        if case.name.startswith("consistency_distance_"):
+            return (
+                "not-applicable",
+                "FCL primitive-to-BVH distance consistency",
+                "This row compares FCL analytic primitives against FCL-generated BVH mesh approximations under specific libccd/GJK solver and RSS BV settings. DART native collision does not expose FCL's primitive-to-BVH conversion, solver selection, or RSS tolerance contract; public primitive distances, mesh distance witnesses, and cone/ellipsoid adapter behavior are covered by native tests.",
+            )
+
+        if case.name.startswith("consistency_collision_"):
+            return (
+                "not-applicable",
+                "FCL primitive-to-BVH collision consistency",
+                "This row compares FCL analytic primitives against FCL-generated BVH mesh approximations under specific libccd/GJK solver and AABB/OBB BV settings. DART native collision does not expose FCL's primitive-to-BVH conversion, solver selection, or BV-family traversal contract; public primitive contacts, primitive-mesh dispatch, mesh-mesh contacts, and cone/ellipsoid adapter behavior are covered by native tests.",
+            )
+
     if scope.project == "FCL" and source == "fcl/test/test_fcl_profiler.cpp":
         return (
             "not-applicable",

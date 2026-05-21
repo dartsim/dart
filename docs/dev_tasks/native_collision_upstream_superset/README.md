@@ -52,8 +52,8 @@ optimization expansion by benchmarks.
   [`02-coverage-map.md`](02-coverage-map.md)
 - Generated row-level case map:
   [`03-case-map.md`](03-case-map.md) currently records 180 covered rows, 25
-  fixture-needed rows, 39 mapping-needed rows, 10 new-benchmark-needed rows,
-  and 335 not-applicable rows.
+  fixture-needed rows, 17 mapping-needed rows, 10 new-benchmark-needed rows,
+  and 357 not-applicable rows.
 
 ## Key Decisions
 
@@ -71,19 +71,17 @@ optimization expansion by benchmarks.
 
 ## Immediate Next Steps
 
-1. Continue mapping the remaining FCL shape/mesh consistency rows to native
-   shape-vs-mesh, GJK, and signed-distance anchors.
-2. Continue mapping FCL signed-distance real-world regression rows, adding
+1. Continue mapping FCL signed-distance real-world regression rows, adding
    native tests only where exact behavior is not already covered.
-3. Convert the 25 `fixture-needed` Bullet OpenCL GPU/prototype rows into an
+2. Convert the 25 `fixture-needed` Bullet OpenCL GPU/prototype rows into an
    explicit prototype gate decision or follow-up fixture.
-4. Start converting the 10 `new-benchmark-needed` Bullet/ODE benchmark rows
+3. Start converting the 10 `new-benchmark-needed` Bullet/ODE benchmark rows
    into deterministic DART benchmark fixtures.
-5. Keep new DART test and benchmark names focused on the algorithm, query, and
+4. Keep new DART test and benchmark names focused on the algorithm, query, and
    edge condition, not on the upstream library that inspired the case.
-6. Keep the later GUI collision-pair debugger example scoped around the native
+5. Keep the later GUI collision-pair debugger example scoped around the native
    pair matrix, pose controls, and contact point/depth/normal rendering.
-7. Regenerate the inventory and case map after any upstream clone refresh:
+6. Regenerate the inventory and case map after any upstream clone refresh:
    `pixi run python scripts/inventory_upstream_collision_coverage.py`.
 
 ## Verification Log
@@ -248,6 +246,12 @@ optimization expansion by benchmarks.
   passed.
 - `pixi run ctest --test-dir build/default/cpp/Release --output-on-failure -R '^test_cylinder$'`
   passed.
+- FCL primitive-to-BVH shape/mesh consistency rows are explicit
+  non-applicability decisions because they test FCL's generated BVH
+  approximation pipeline, BV-family traversal, and solver-selection tolerance
+  contracts rather than DART native public APIs.
+- `pixi run python scripts/inventory_upstream_collision_coverage.py` updated
+  the generated inventory and row map.
 - `pixi run lint` passed.
 - `pixi run build` passed.
 - `git diff --check` passed.
