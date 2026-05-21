@@ -45,6 +45,7 @@
 #include "dart/config.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/cone_shape.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/ellipsoid_shape.hpp"
 #include "dart/dynamics/heightmap_shape.hpp"
 #include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
@@ -86,6 +87,17 @@ std::shared_ptr<SimpleFrame> createBoxFrame(
 {
   auto frame = std::make_shared<SimpleFrame>(Frame::World(), name);
   frame->setShape(std::make_shared<BoxShape>(size));
+  frame->setTranslation(translation);
+  return frame;
+}
+
+std::shared_ptr<SimpleFrame> createShapeFrame(
+    const std::string& name,
+    const ShapePtr& shape,
+    const Eigen::Vector3d& translation)
+{
+  auto frame = std::make_shared<SimpleFrame>(Frame::World(), name);
+  frame->setShape(shape);
   frame->setTranslation(translation);
   return frame;
 }
@@ -454,6 +466,133 @@ TEST(CollisionBackend, DistanceCrossGroup)
   ASSERT_TRUE(result.found());
   EXPECT_EQ(sphereA.get(), result.shapeFrame1);
   EXPECT_EQ(sphereB.get(), result.shapeFrame2);
+}
+
+//==============================================================================
+TEST(CollisionBackend, PrimitiveAndAdaptedConvexPairsCollideAcrossPairOrder)
+{
+  struct PairCase
+  {
+    const char* name;
+    ShapePtr shapeA;
+    ShapePtr shapeB;
+    Eigen::Vector3d offsetB;
+  };
+
+  const std::vector<PairCase> cases{
+      {"cylinder-cylinder",
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       Eigen::Vector3d(0.4, 0.0, 0.0)},
+      {"cone-cone",
+       std::make_shared<ConeShape>(0.5, 1.0),
+       std::make_shared<ConeShape>(0.5, 1.0),
+       Eigen::Vector3d(0.4, 0.0, 0.0)},
+      {"cylinder-cone",
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       std::make_shared<ConeShape>(0.5, 1.0),
+       Eigen::Vector3d(0.4, 0.0, 0.0)},
+      {"ellipsoid-ellipsoid",
+       std::make_shared<EllipsoidShape>(Eigen::Vector3d(1.0, 0.8, 0.6)),
+       std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.5, 0.4)),
+       Eigen::Vector3d(0.4, 0.0, 0.0)},
+  };
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 4u;
+
+  for (const auto& testCase : cases) {
+    SCOPED_TRACE(testCase.name);
+
+    auto detector = DartCollisionDetector::create();
+    auto frameA
+        = createShapeFrame("shape_a", testCase.shapeA, Eigen::Vector3d::Zero());
+    auto frameB
+        = createShapeFrame("shape_b", testCase.shapeB, testCase.offsetB);
+    auto groupA = detector->createCollisionGroup(frameA.get());
+    auto groupB = detector->createCollisionGroup(frameB.get());
+
+    CollisionResult resultAB;
+    ASSERT_TRUE(
+        detector->collide(groupA.get(), groupB.get(), option, &resultAB));
+    ASSERT_GT(resultAB.getNumContacts(), 0u);
+    EXPECT_TRUE(resultAB.getContact(0).point.allFinite());
+    EXPECT_TRUE(resultAB.getContact(0).normal.allFinite());
+    EXPECT_GE(resultAB.getContact(0).penetrationDepth, 0.0);
+
+    CollisionResult resultBA;
+    ASSERT_TRUE(
+        detector->collide(groupB.get(), groupA.get(), option, &resultBA));
+    ASSERT_GT(resultBA.getNumContacts(), 0u);
+    EXPECT_TRUE(resultBA.getContact(0).point.allFinite());
+    EXPECT_TRUE(resultBA.getContact(0).normal.allFinite());
+    EXPECT_GE(resultBA.getContact(0).penetrationDepth, 0.0);
+  }
+}
+
+//==============================================================================
+TEST(CollisionBackend, PrimitiveAndAdaptedConvexDistancesAcrossPairOrder)
+{
+  struct PairCase
+  {
+    const char* name;
+    ShapePtr shapeA;
+    ShapePtr shapeB;
+    Eigen::Vector3d offsetB;
+  };
+
+  const std::vector<PairCase> cases{
+      {"cylinder-cylinder",
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       Eigen::Vector3d(1.25, 0.0, 0.0)},
+      {"cone-cone",
+       std::make_shared<ConeShape>(0.5, 1.0),
+       std::make_shared<ConeShape>(0.5, 1.0),
+       Eigen::Vector3d(1.25, 0.0, 0.0)},
+      {"cylinder-cone",
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       std::make_shared<ConeShape>(0.5, 1.0),
+       Eigen::Vector3d(1.25, 0.0, 0.0)},
+      {"ellipsoid-ellipsoid",
+       std::make_shared<EllipsoidShape>(Eigen::Vector3d(1.0, 0.8, 0.6)),
+       std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.5, 0.4)),
+       Eigen::Vector3d(1.1, 0.0, 0.0)},
+  };
+
+  const DistanceOption option(true, -10.0, nullptr);
+
+  for (const auto& testCase : cases) {
+    SCOPED_TRACE(testCase.name);
+
+    auto detector = DartCollisionDetector::create();
+    auto frameA
+        = createShapeFrame("shape_a", testCase.shapeA, Eigen::Vector3d::Zero());
+    auto frameB
+        = createShapeFrame("shape_b", testCase.shapeB, testCase.offsetB);
+    auto groupA = detector->createCollisionGroup(frameA.get());
+    auto groupB = detector->createCollisionGroup(frameB.get());
+
+    DistanceResult resultAB;
+    const double distanceAB
+        = detector->distance(groupA.get(), groupB.get(), option, &resultAB);
+    ASSERT_TRUE(resultAB.found());
+    EXPECT_GT(distanceAB, 0.0);
+    EXPECT_NEAR(resultAB.unclampedMinDistance, distanceAB, 1e-9);
+    EXPECT_TRUE(resultAB.nearestPoint1.allFinite());
+    EXPECT_TRUE(resultAB.nearestPoint2.allFinite());
+
+    DistanceResult resultBA;
+    const double distanceBA
+        = detector->distance(groupB.get(), groupA.get(), option, &resultBA);
+    ASSERT_TRUE(resultBA.found());
+    EXPECT_NEAR(distanceAB, distanceBA, 1e-9);
+    EXPECT_TRUE(resultBA.nearestPoint1.allFinite());
+    EXPECT_TRUE(resultBA.nearestPoint2.allFinite());
+    EXPECT_TRUE(resultAB.nearestPoint1.isApprox(resultBA.nearestPoint2, 1e-6));
+    EXPECT_TRUE(resultAB.nearestPoint2.isApprox(resultBA.nearestPoint1, 1e-6));
+  }
 }
 
 //==============================================================================

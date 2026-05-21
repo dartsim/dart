@@ -51,9 +51,9 @@ optimization expansion by benchmarks.
 - Coverage map scaffold:
   [`02-coverage-map.md`](02-coverage-map.md)
 - Generated row-level case map:
-  [`03-case-map.md`](03-case-map.md) currently records 134 covered rows, 25
-  fixture-needed rows, 116 mapping-needed rows, 10 new-benchmark-needed rows,
-  and 304 not-applicable rows.
+  [`03-case-map.md`](03-case-map.md) currently records 149 covered rows, 25
+  fixture-needed rows, 94 mapping-needed rows, 10 new-benchmark-needed rows,
+  and 311 not-applicable rows.
 
 ## Key Decisions
 

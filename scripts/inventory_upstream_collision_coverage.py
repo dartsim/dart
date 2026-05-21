@@ -1492,6 +1492,20 @@ def classify_case(case: Case, scope: Scope) -> tuple[str, str, str]:
             "Catalogue now; completion needs an explicit prototype gate decision.",
         )
 
+    if scope.project == "FCL" and source == "fcl/test/test_fcl_math.cpp":
+        return (
+            "not-applicable",
+            "FCL math and bounding-volume utilities",
+            "This row targets FCL vector, Morton-code, and RSS bounding-volume helper APIs. DART native collision uses Eigen vectors plus native AABB/broadphase structures and does not expose those FCL utility contracts.",
+        )
+
+    if scope.project == "FCL" and source == "fcl/test/test_fcl_profiler.cpp":
+        return (
+            "not-applicable",
+            "FCL profiler utility",
+            "This row checks FCL's internal profiler helper, not DART native collision geometry, query, dispatch, or broadphase behavior.",
+        )
+
     if (
         scope.project == "FCL"
         and source == "fcl/test/broadphase/test_broadphase_dynamic_aabb_tree.cpp"
@@ -1653,6 +1667,85 @@ def classify_case(case: Case, scope: Scope) -> tuple[str, str, str]:
                 "covered",
                 "tests/unit/collision/test_shapes.cpp::ConvexShape.Construction; tests/unit/collision/test_shapes.cpp::ConvexShape.SupportMatchesExhaustiveVertexSearch",
                 "Checks native convex construction, vertex storage, and support-query behavior; DART native does not expose a string-representation API.",
+            )
+
+    if scope.project == "FCL" and source == "fcl/test/test_fcl_geometric_shapes.cpp":
+        if case.name in {
+            "shapeIntersection_conecone",
+            "shapeIntersectionGJK_conecone",
+        }:
+            return (
+                "covered",
+                "tests/unit/collision/test_collision_backend.cpp::CollisionBackend.PrimitiveAndAdaptedConvexPairsCollideAcrossPairOrder; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.ConeShapeAdapter",
+                "DART adapts ConeShape to a native convex shape. The public dispatcher checks cone-cone collision in both pair orders with finite contact data; the adapter test checks the cone envelope used by native collision.",
+            )
+
+        if case.name in {
+            "shapeIntersection_cylindercone",
+            "shapeIntersectionGJK_cylindercone",
+        }:
+            return (
+                "covered",
+                "tests/unit/collision/test_collision_backend.cpp::CollisionBackend.PrimitiveAndAdaptedConvexPairsCollideAcrossPairOrder; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.ConeShapeAdapter",
+                "Checks cylinder-cone collision in both pair orders through the public native dispatcher. ConeShape is represented by the native convex adapter; CylinderShape remains a native cylinder primitive.",
+            )
+
+        if case.name in {
+            "shapeIntersection_ellipsoidellipsoid",
+            "shapeIntersectionGJK_ellipsoidellipsoid",
+        }:
+            return (
+                "covered",
+                "tests/unit/collision/test_collision_backend.cpp::CollisionBackend.PrimitiveAndAdaptedConvexPairsCollideAcrossPairOrder; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.EllipsoidShapeAdapter; tests/unit/collision/test_dart_collide.cpp::DARTCollide.MainDispatcherEllipsoidEllipsoid",
+                "DART adapts non-spherical EllipsoidShape to a native convex shape. The public dispatcher checks ellipsoid-ellipsoid collision in both pair orders, and existing dispatcher coverage checks a direct ellipsoid pair.",
+            )
+
+        if case.name in {
+            "shapeDistance_cylindercylinder",
+            "shapeDistanceGJK_cylindercylinder",
+        }:
+            return (
+                "covered",
+                "tests/unit/collision/test_collision_backend.cpp::CollisionBackend.PrimitiveAndAdaptedConvexDistancesAcrossPairOrder; tests/unit/collision/test_distance_core.cpp::NarrowPhaseDistance.CylinderCylinderThinHeight",
+                "Checks positive cylinder-cylinder native distance in both pair orders and a thin-height cylinder distance regression.",
+            )
+
+        if case.name in {"shapeDistance_conecone", "shapeDistanceGJK_conecone"}:
+            return (
+                "covered",
+                "tests/unit/collision/test_collision_backend.cpp::CollisionBackend.PrimitiveAndAdaptedConvexDistancesAcrossPairOrder; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.ConeShapeAdapter",
+                "Checks positive cone-cone distance in both pair orders through the public native dispatcher using DART's convex cone adapter.",
+            )
+
+        if case.name == "shapeDistance_conecylinder":
+            return (
+                "covered",
+                "tests/unit/collision/test_collision_backend.cpp::CollisionBackend.PrimitiveAndAdaptedConvexDistancesAcrossPairOrder; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.ConeShapeAdapter",
+                "Checks positive cylinder-cone distance in both pair orders through the public native dispatcher.",
+            )
+
+        if case.name in {
+            "shapeDistance_ellipsoidellipsoid",
+            "shapeDistanceGJK_ellipsoidellipsoid",
+        }:
+            return (
+                "covered",
+                "tests/unit/collision/test_collision_backend.cpp::CollisionBackend.PrimitiveAndAdaptedConvexDistancesAcrossPairOrder; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.EllipsoidShapeAdapter; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.SphericalEllipsoidShapeAdapter",
+                "Checks positive ellipsoid-ellipsoid distance in both pair orders through DART's convex ellipsoid adapter, plus adapter rows for spherical and non-spherical ellipsoid representations.",
+            )
+
+        if case.name == "reversibleShapeIntersection_allshapes":
+            return (
+                "covered",
+                "tests/unit/collision/test_narrow_phase.cpp::NarrowPhase.IsSupported; tests/unit/collision/test_dart_collision_detector.cpp::DartCollisionDetector.SupportedShapePairs; tests/unit/collision/test_collision_backend.cpp::CollisionBackend.PrimitiveAndAdaptedConvexPairsCollideAcrossPairOrder; tests/unit/collision/test_plane.cpp::PlaneShape.HalfspacePrimitiveContactsAcrossTransforms",
+                "Checks native support-matrix symmetry and public pair-order collision for primitive and adapted-convex rows. Plane/halfspace pair-order behavior is covered by the plane contact suite.",
+            )
+
+        if case.name == "reversibleShapeDistance_allshapes":
+            return (
+                "covered",
+                "tests/unit/collision/test_collision_backend.cpp::CollisionBackend.PrimitiveAndAdaptedConvexDistancesAcrossPairOrder; tests/unit/collision/test_distance_core.cpp::NarrowPhaseDistance.CylinderSphereSeparatedAcrossFramesAndOrientations",
+                "Checks public native distance symmetry by comparing distances and swapped witness points across pair order for cylinder, cone, and ellipsoid rows; primitive sphere/capsule and cylinder/sphere distance rows are covered separately.",
             )
 
     if scope.project == "FCL" and source.startswith(
