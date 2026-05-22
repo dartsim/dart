@@ -550,6 +550,20 @@ TEST(World, RigidBodyOptionsInitializeDynamicsComponents)
   EXPECT_DOUBLE_EQ(mass.mass, updatedMass);
   EXPECT_TRUE(mass.inertia.isApprox(updatedInertia));
 
+  EXPECT_TRUE(body.getForce().isApprox(Eigen::Vector3d::Zero()));
+  body.setForce(Eigen::Vector3d(0.0, 2.0, 0.0));
+  body.applyForce(Eigen::Vector3d(0.0, 3.0, 0.0));
+  EXPECT_TRUE(body.getForce().isApprox(Eigen::Vector3d(0.0, 5.0, 0.0)));
+  body.clearForce();
+  EXPECT_TRUE(body.getForce().isApprox(Eigen::Vector3d::Zero()));
+
+  EXPECT_TRUE(body.getTorque().isApprox(Eigen::Vector3d::Zero()));
+  body.setTorque(Eigen::Vector3d(1.0, 0.0, 0.0));
+  body.applyTorque(Eigen::Vector3d(2.0, 0.0, 0.0));
+  EXPECT_TRUE(body.getTorque().isApprox(Eigen::Vector3d(3.0, 0.0, 0.0)));
+  body.clearTorque();
+  EXPECT_TRUE(body.getTorque().isApprox(Eigen::Vector3d::Zero()));
+
   world.enterSimulationMode();
   EXPECT_TRUE(body.getTransform().translation().isApprox(options.position));
   EXPECT_TRUE(
@@ -618,6 +632,19 @@ TEST(World, RigidBodyOptionsRejectInvalidValues)
   asymmetricInertia(0, 1) = 0.1;
   EXPECT_THROW(
       body.setInertia(asymmetricInertia), sx::InvalidArgumentException);
+
+  EXPECT_THROW(
+      body.setForce(Eigen::Vector3d(infinity, 0.0, 0.0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      body.applyForce(Eigen::Vector3d(0.0, quietNaN, 0.0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      body.setTorque(Eigen::Vector3d(0.0, infinity, 0.0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      body.applyTorque(Eigen::Vector3d(0.0, 0.0, quietNaN)),
+      sx::InvalidArgumentException);
 }
 
 // Test that World::step() runs the rigid-body integration graph before the
@@ -633,8 +660,7 @@ TEST(World, StepIntegratesRigidBodyStateAndAdvancesClock)
   options.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
 
   auto body = world.addRigidBody("body", options);
-  auto& force = world.getRegistry().get<sx::comps::Force>(body.getEntity());
-  force.force = Eigen::Vector3d(0.0, 4.0, 0.0);
+  body.setForce(Eigen::Vector3d(0.0, 4.0, 0.0));
 
   world.setTimeStep(0.5);
   world.enterSimulationMode();
@@ -688,8 +714,7 @@ TEST(World, StepIntegratesRigidBodyTorque)
       Eigen::AngleAxisd(kHalfPi, Eigen::Vector3d::UnitZ()));
 
   auto body = world.addRigidBody("body", options);
-  auto& force = world.getRegistry().get<sx::comps::Force>(body.getEntity());
-  force.torque = Eigen::Vector3d(8.0, 0.0, 0.0);
+  body.setTorque(Eigen::Vector3d(8.0, 0.0, 0.0));
 
   world.setTimeStep(0.5);
   world.enterSimulationMode();
@@ -818,8 +843,7 @@ TEST(World, RigidBodyStepTaskflowMatchesSequential)
         = Eigen::Vector3d(0.01 * index, 0.02 * index, 0.03 * index);
 
     auto body = world.addRigidBody("body_" + std::to_string(index), options);
-    auto& force = world.getRegistry().get<sx::comps::Force>(body.getEntity());
-    force.force = Eigen::Vector3d(0.1 * index, 0.2, -0.3);
+    body.setForce(Eigen::Vector3d(0.1 * index, 0.2, -0.3));
     return body;
   };
 

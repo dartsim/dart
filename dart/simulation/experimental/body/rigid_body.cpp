@@ -231,6 +231,86 @@ void RigidBody::setInertia(const Eigen::Matrix3d& inertia)
       = inertia;
 }
 
+//==============================================================================
+Eigen::Vector3d RigidBody::getForce() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->getRegistry().get<comps::Force>(getEntity()).force;
+}
+
+//==============================================================================
+void RigidBody::setForce(const Eigen::Vector3d& force)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  validateFiniteVector(force, "force");
+
+  getWorld()->getRegistry().get<comps::Force>(getEntity()).force = force;
+}
+
+//==============================================================================
+void RigidBody::applyForce(const Eigen::Vector3d& force)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  validateFiniteVector(force, "force");
+
+  getWorld()->getRegistry().get<comps::Force>(getEntity()).force += force;
+}
+
+//==============================================================================
+void RigidBody::clearForce()
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  getWorld()->getRegistry().get<comps::Force>(getEntity()).force.setZero();
+}
+
+//==============================================================================
+Eigen::Vector3d RigidBody::getTorque() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->getRegistry().get<comps::Force>(getEntity()).torque;
+}
+
+//==============================================================================
+void RigidBody::setTorque(const Eigen::Vector3d& torque)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  validateFiniteVector(torque, "torque");
+
+  getWorld()->getRegistry().get<comps::Force>(getEntity()).torque = torque;
+}
+
+//==============================================================================
+void RigidBody::applyTorque(const Eigen::Vector3d& torque)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  validateFiniteVector(torque, "torque");
+
+  getWorld()->getRegistry().get<comps::Force>(getEntity()).torque += torque;
+}
+
+//==============================================================================
+void RigidBody::clearTorque()
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  getWorld()->getRegistry().get<comps::Force>(getEntity()).torque.setZero();
+}
+
 // getEntity() and isValid() inherited from Frame
 
 } // namespace dart::simulation::experimental

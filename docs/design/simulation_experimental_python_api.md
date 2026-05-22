@@ -559,16 +559,16 @@ public API exposes dirty flags.
 
 ## Public Object Model
 
-| Object        | Role                                                                  | Initial Python shape                                                                                            |
-| ------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.                               |
-| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform, velocity, mass, and inertia reads/writes, and broader dynamics properties as accessors mature. |
-| `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                                          |
-| `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                                    |
-| `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links; state access after public C++ accessors exist.                        |
-| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint loop-closure handle once C++ owns solver behavior.                                           |
-| `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                                             |
-| `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                                             |
+| Object        | Role                                                                  | Initial Python shape                                                                                                           |
+| ------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.                                              |
+| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform, velocity, mass, inertia, force, and torque reads/writes, and broader dynamics properties as accessors mature. |
+| `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                                                         |
+| `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                                                   |
+| `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links; state access after public C++ accessors exist.                                       |
+| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint loop-closure handle once C++ owns solver behavior.                                                          |
+| `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                                                            |
+| `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                                                            |
 
 `MultiBody` is the DART 7 experimental name because it matches the C++ concept.
 An `Articulation` alias can be considered during later promotion if the stable
@@ -1114,8 +1114,8 @@ they have public C++ owner APIs and objective-specific verification:
 
 - file loading directly into the experimental world;
 - collision geometry, shape materials, contacts, constraints, and actuators;
-- rigid-body force, torque, collision coupling, and broader pose/state
-  accessors beyond the currently public transform, velocity, mass, and inertia
+- rigid-body collision coupling and broader pose/state accessors beyond the
+  currently public transform, velocity, mass, inertia, force, and torque
   wrapper set;
 - multibody dynamics state, joint limits, effort limits, and control commands;
 - sensors and the create-attach-read lifecycle;

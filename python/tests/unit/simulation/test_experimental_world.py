@@ -115,6 +115,14 @@ def test_experimental_api_exposes_python_names_only():
             "setMass",
             "getInertia",
             "setInertia",
+            "getForce",
+            "setForce",
+            "applyForce",
+            "clearForce",
+            "getTorque",
+            "setTorque",
+            "applyTorque",
+            "clearTorque",
         ),
         sx.World: (
             "addRigidBody",
@@ -272,6 +280,8 @@ def test_experimental_world_common_path_properties_and_step_count():
     assert box.inertia.reshape(9).tolist() == pytest.approx(
         [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
     )
+    assert box.force.tolist() == pytest.approx([0.0, 0.0, 0.0])
+    assert box.torque.tolist() == pytest.approx([0.0, 0.0, 0.0])
     assert world.has_rigid_body("box")
     assert world.get_rigid_body("box") == box
     assert world.get_rigid_body("missing") is None
@@ -300,6 +310,18 @@ def test_experimental_world_common_path_properties_and_step_count():
         [3.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 5.0]
     )
     box.mass = 2.0
+
+    box.set_force((0.0, 2.0, 0.0))
+    box.apply_force((0.0, 3.0, 0.0))
+    assert box.get_force().tolist() == pytest.approx([0.0, 5.0, 0.0])
+    box.clear_force()
+    assert box.force.tolist() == pytest.approx([0.0, 0.0, 0.0])
+
+    box.torque = (1.0, 0.0, 0.0)
+    box.apply_torque((2.0, 0.0, 0.0))
+    assert box.get_torque().tolist() == pytest.approx([3.0, 0.0, 0.0])
+    box.clear_torque()
+    assert box.torque.tolist() == pytest.approx([0.0, 0.0, 0.0])
 
     world.step(n=0)
     assert not world.is_simulation_mode
@@ -382,3 +404,11 @@ def test_experimental_rigid_body_options_reject_invalid_values():
         body.mass = 0.0
     with pytest.raises(Exception, match="RigidBody inertia"):
         body.inertia = ((1.0, 0.0, 0.0), (0.0, -1.0, 0.0), (0.0, 0.0, 1.0))
+    with pytest.raises(Exception, match="RigidBody force"):
+        body.force = (math.nan, 0.0, 0.0)
+    with pytest.raises(Exception, match="RigidBody force"):
+        body.apply_force((0.0, math.inf, 0.0))
+    with pytest.raises(Exception, match="RigidBody torque"):
+        body.torque = (0.0, math.inf, 0.0)
+    with pytest.raises(Exception, match="RigidBody torque"):
+        body.apply_torque((0.0, 0.0, math.nan))

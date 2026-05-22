@@ -208,6 +208,8 @@ class RigidBody(Frame):
     angular_velocity: NDArray[np.float64]
     mass: float
     inertia: NDArray[np.float64]
+    force: NDArray[np.float64]
+    torque: NDArray[np.float64]
 
     def get_name(self) -> str:
         ...
@@ -237,6 +239,30 @@ class RigidBody(Frame):
         ...
 
     def set_inertia(self, inertia: ArrayLike) -> None:
+        ...
+
+    def get_force(self) -> NDArray[np.float64]:
+        ...
+
+    def set_force(self, force: ArrayLike) -> None:
+        ...
+
+    def apply_force(self, force: ArrayLike) -> None:
+        ...
+
+    def clear_force(self) -> None:
+        ...
+
+    def get_torque(self) -> NDArray[np.float64]:
+        ...
+
+    def set_torque(self, torque: ArrayLike) -> None:
+        ...
+
+    def apply_torque(self, torque: ArrayLike) -> None:
+        ...
+
+    def clear_torque(self) -> None:
         ...
 
 

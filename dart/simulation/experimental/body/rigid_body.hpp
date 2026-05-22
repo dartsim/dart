@@ -54,9 +54,8 @@ namespace dart::simulation::experimental {
 /// computations (future), and can be used as a reference frame.
 ///
 /// The initial public surface exposes name, transform, world-frame velocity,
-/// and inertial state. Future enhancements will add:
+/// inertial state, and force/torque accumulators. Future enhancements will add:
 /// - Collision shapes
-/// - Force application
 /// - Collision detection integration
 ///
 /// @note RigidBody objects are owned by World and accessed via handles.
@@ -116,10 +115,43 @@ public:
   /// physics steps use this inertia directly.
   void setInertia(const Eigen::Matrix3d& inertia);
 
+  /// Get the body's accumulated world-frame force.
+  [[nodiscard]] Eigen::Vector3d getForce() const;
+
+  /// Set the body's accumulated world-frame force.
+  ///
+  /// The value must contain only finite coordinates. Subsequent physics steps
+  /// use this force directly until it is changed.
+  void setForce(const Eigen::Vector3d& force);
+
+  /// Add to the body's accumulated world-frame force.
+  ///
+  /// The value must contain only finite coordinates.
+  void applyForce(const Eigen::Vector3d& force);
+
+  /// Clear the body's accumulated force.
+  void clearForce();
+
+  /// Get the body's accumulated world-frame torque.
+  [[nodiscard]] Eigen::Vector3d getTorque() const;
+
+  /// Set the body's accumulated world-frame torque.
+  ///
+  /// The value must contain only finite coordinates. Subsequent physics steps
+  /// use this torque directly until it is changed.
+  void setTorque(const Eigen::Vector3d& torque);
+
+  /// Add to the body's accumulated world-frame torque.
+  ///
+  /// The value must contain only finite coordinates.
+  void applyTorque(const Eigen::Vector3d& torque);
+
+  /// Clear the body's accumulated torque.
+  void clearTorque();
+
   // Note: getEntity(), getWorld(), isValid() inherited from Frame
 
   // TODO: Add methods for:
-  // - Applying forces/torques
   // - Accessing collision shapes
   // - Enabling/disabling physics
 };

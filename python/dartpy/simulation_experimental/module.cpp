@@ -682,6 +682,34 @@ void defSimulationExperimentalModule(nb::module_& m)
             self.setInertia(toMatrix3(inertia));
           },
           nb::arg("inertia"))
+      .def("get_force", &sim::RigidBody::getForce)
+      .def(
+          "set_force",
+          [](sim::RigidBody& self, const nb::handle& force) {
+            self.setForce(toVector3(force));
+          },
+          nb::arg("force"))
+      .def(
+          "apply_force",
+          [](sim::RigidBody& self, const nb::handle& force) {
+            self.applyForce(toVector3(force));
+          },
+          nb::arg("force"))
+      .def("clear_force", &sim::RigidBody::clearForce)
+      .def("get_torque", &sim::RigidBody::getTorque)
+      .def(
+          "set_torque",
+          [](sim::RigidBody& self, const nb::handle& torque) {
+            self.setTorque(toVector3(torque));
+          },
+          nb::arg("torque"))
+      .def(
+          "apply_torque",
+          [](sim::RigidBody& self, const nb::handle& torque) {
+            self.applyTorque(toVector3(torque));
+          },
+          nb::arg("torque"))
+      .def("clear_torque", &sim::RigidBody::clearTorque)
       .def_prop_ro(
           "name", [](const sim::RigidBody& self) { return self.getName(); })
       .def_prop_ro("translation", &sim::RigidBody::getTranslation)
@@ -715,6 +743,18 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::RigidBody::getInertia,
           [](sim::RigidBody& self, const nb::handle& inertia) {
             self.setInertia(toMatrix3(inertia));
+          })
+      .def_prop_rw(
+          "force",
+          &sim::RigidBody::getForce,
+          [](sim::RigidBody& self, const nb::handle& force) {
+            self.setForce(toVector3(force));
+          })
+      .def_prop_rw(
+          "torque",
+          &sim::RigidBody::getTorque,
+          [](sim::RigidBody& self, const nb::handle& torque) {
+            self.setTorque(toVector3(torque));
           })
       .def("__repr__", [](const sim::RigidBody& self) {
         std::vector<std::pair<std::string, std::string>> fields;
