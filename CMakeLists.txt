@@ -113,7 +113,7 @@ set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSI
 # Already set above
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
-set(DART_PKG_EXTERNAL_DEPS "assimp, eigen3, entt, octomap")
+set(DART_PKG_EXTERNAL_DEPS "assimp, eigen3, entt")
 set_property(GLOBAL PROPERTY DART_PKG_LINK_LIBS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS "")
@@ -571,10 +571,10 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
     add_compile_options(-Wno-overloaded-virtual -Wno-alloc-size-larger-than -Wno-dangling-pointer)
   endif()
   if(GCC_VERSION VERSION_GREATER_EQUAL 15.0)
-    # TODO(GCC15): Remove once upstream dependencies (octomap, fcl) stop using
+    # TODO(GCC15): Remove once upstream reference dependencies stop using
     # <ciso646>, which is deprecated in C++20. GCC 15 emits a #warning that our
     # -Werror=cpp flag treats as an error.
-    # Tracking: octomap uses <ciso646> in OcTreeKey.h; fcl pulls it in transitively.
+    # Tracking: FCL and OctoMap reference targets can pull it transitively.
     add_compile_options(-Wno-error=cpp)
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
@@ -828,6 +828,7 @@ get_property(PACKAGE_INCLUDE_DIRS GLOBAL
 include(CMakePackageConfigHelpers)
 set(DART_CONFIG_IN ${DART_SOURCE_DIR}/cmake/${PROJECT_NAME_UPPERCASE}Config.cmake.in)
 set(DART_CONFIG_OUT ${DART_BINARY_DIR}/${PROJECT_NAME_UPPERCASE}Config.cmake)
+set(DART_VERSION_IN ${DART_SOURCE_DIR}/cmake/${PROJECT_NAME_UPPERCASE}ConfigVersion.cmake.in)
 set(DART_VERSION_OUT ${DART_BINARY_DIR}/cmake/${PROJECT_NAME_UPPERCASE}ConfigVersion.cmake)
 if(DART_VERBOSE)
   message(STATUS ${DART_CONFIG_OUT})
@@ -839,10 +840,11 @@ configure_package_config_file(
   INSTALL_DESTINATION "${CONFIG_INSTALL_DIR}"
   PATH_VARS INCLUDE_INSTALL_DIR
 )
-write_basic_config_version_file(
+set(DART_CMAKE_MIN_COMPATIBLE_VERSION "6.10.0")
+configure_file(
+  ${DART_VERSION_IN}
   ${DART_VERSION_OUT}
-  VERSION ${${PROJECT_NAME_UPPERCASE}_VERSION}
-  COMPATIBILITY SameMajorVersion
+  @ONLY
 )
 install(
   FILES ${DART_CONFIG_OUT} ${DART_VERSION_OUT}

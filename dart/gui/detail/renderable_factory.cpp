@@ -36,8 +36,11 @@
 
 #include <Eigen/Core>
 #include <backend/BufferDescriptor.h>
+#include <backend/DriverEnums.h>
+#include <filament/Box.h>
 #include <filament/Engine.h>
 #include <filament/IndexBuffer.h>
+#include <filament/MaterialInstance.h>
 #include <filament/RenderableManager.h>
 #include <filament/VertexBuffer.h>
 #include <geometry/SurfaceOrientation.h>
@@ -100,6 +103,13 @@ struct DebugVertex
   ::filament::math::float3 position;
   std::uint32_t color = 0;
 };
+
+::filament::Box makeFilamentBounds(const float3& min, const float3& max)
+{
+  ::filament::Box box;
+  box.set(min, max);
+  return box;
+}
 
 template <typename T, std::size_t Size>
 ::filament::backend::BufferDescriptor makeBufferDescriptor(
@@ -400,9 +410,9 @@ Renderable createBoxRenderable(
 
   renderable.entity = EntityManager::get().create();
   ::filament::RenderableManager::Builder(1)
-      .boundingBox(
-          {{-halfExtents.x, -halfExtents.y, -halfExtents.z},
-           {halfExtents.x, halfExtents.y, halfExtents.z}})
+      .boundingBox(makeFilamentBounds(
+          {-halfExtents.x, -halfExtents.y, -halfExtents.z},
+          {halfExtents.x, halfExtents.y, halfExtents.z}))
       .material(0, materialInstance)
       .geometry(
           0,
@@ -725,7 +735,7 @@ std::optional<Renderable> createDebugLineRenderable(
   const std::uint8_t primitiveCount
       = static_cast<std::uint8_t>((hasLines ? 1 : 0) + (hasTriangles ? 1 : 0));
   ::filament::RenderableManager::Builder builder(primitiveCount);
-  builder.boundingBox({bounds.min, bounds.max})
+  builder.boundingBox(makeFilamentBounds(bounds.min, bounds.max))
       .castShadows(false)
       .receiveShadows(false);
 
@@ -803,7 +813,8 @@ Renderable createTriangleMeshRenderable(
     float metallic = kDefaultDielectricMetallic,
     float roughness = kDefaultMatteRoughness,
     float3 emissiveColor = {0.0f, 0.0f, 0.0f},
-    bool followsDescriptorColor = true)
+    bool followsDescriptorColor = true,
+    bool doubleSided = true)
 {
   const std::size_t indexCount = indices.size();
   generateTangentFrames(vertices, triangles, normals);
@@ -854,10 +865,14 @@ Renderable createTriangleMeshRenderable(
       emissiveColor,
       textures,
       fallbackTexture);
+  materialInstance->setDoubleSided(doubleSided);
+  if (!doubleSided) {
+    materialInstance->setCullingMode(::filament::backend::CullingMode::BACK);
+  }
 
   renderable.entity = EntityManager::get().create();
   ::filament::RenderableManager::Builder(1)
-      .boundingBox({minBounds, maxBounds})
+      .boundingBox(makeFilamentBounds(minBounds, maxBounds))
       .material(0, materialInstance)
       .geometry(
           0,
@@ -1128,7 +1143,7 @@ std::optional<Renderable> createPointCloudRenderable(
 
     renderable.entity = EntityManager::get().create();
     auto builder = ::filament::RenderableManager::Builder(pointRanges.size());
-    builder.boundingBox({bounds.min, bounds.max})
+    builder.boundingBox(makeFilamentBounds(bounds.min, bounds.max))
         .castShadows(true)
         .receiveShadows(true);
     for (std::size_t i = 0; i < pointRanges.size(); ++i) {
@@ -1202,7 +1217,14 @@ std::optional<Renderable> createVoxelGridRenderable(
       std::move(buffers.normals),
       color,
       bounds.min,
-      bounds.max);
+      bounds.max,
+      {},
+      nullptr,
+      0.0f,
+      0.58f,
+      {0.0f, 0.0f, 0.0f},
+      true,
+      false);
 }
 
 std::optional<Renderable> createMeshRenderable(
@@ -1467,7 +1489,7 @@ std::optional<Renderable> createMeshRenderable(
 
   renderable.entity = EntityManager::get().create();
   auto builder = ::filament::RenderableManager::Builder(parts.size());
-  builder.boundingBox({bounds.min, bounds.max})
+  builder.boundingBox(makeFilamentBounds(bounds.min, bounds.max))
       .castShadows(true)
       .receiveShadows(true);
   for (std::size_t partIndex = 0; partIndex < parts.size(); ++partIndex) {

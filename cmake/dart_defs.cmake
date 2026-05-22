@@ -1850,8 +1850,10 @@ function(dart_build_tests)
       endif()
 
       if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
-        set(_dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>")
-        list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
+        # CTest applies path_list_prepend entries in order, so add lower
+        # priority paths first and the build-tree DART library last.
+        set(_dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
+        list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>")
         set_tests_properties(
           ${target_name}
           PROPERTIES
@@ -2354,12 +2356,14 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
     endif()
 
     if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.22")
-      set(_dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:${ARG_LIBRARY}>")
+      # CTest applies path_list_prepend entries in order, so add lower
+      # priority paths first and the tested build-tree libraries last.
+      set(_dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
       # Also include main dart library path (some tests link against it transitively)
       if(TARGET dart)
         list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:dart>")
       endif()
-      list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:GTest::gtest>")
+      list(APPEND _dart_env_mods "${_dart_lib_path_var}=path_list_prepend:$<TARGET_FILE_DIR:${ARG_LIBRARY}>")
       set_tests_properties(
         ${TEST_NAME}
         PROPERTIES

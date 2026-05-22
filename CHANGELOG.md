@@ -81,6 +81,10 @@
     and restored `fetch` as a source-defined `dart::gui` example with its live
     mocap target-following behavior, Bullet preference when available, and
     public-API target affordance.
+  - Replaced OctoMap-backed `VoxelGridShape` storage with native
+    `SparseOccupancyGrid` storage. OctoMap is no longer discovered or linked by
+    core DART libraries and remains available only to tests and benchmarks for
+    reference comparisons.
   - Fixed Filament mesh material extraction so legacy textured meshes without
     PBR metalness import as dielectric surfaces, restoring visible Atlas
     texture detail in `dartsim`, `atlas_puppet`, and `atlas_simbicon`.
@@ -514,6 +518,10 @@
     opt-out debug name tags for collision sandbox overlays, and annotated the
     GUI render loop with built-in profiling scopes.
   - Wired the native DART backend as a full `CollisionDetector` implementation with distance queries, raycast, and expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere). The legacy `"experimental"` factory key remains as an alias for compatibility.
+  - Added native sparse occupancy-grid storage for `VoxelGridShape`, including native voxel collision support without requiring OctoMap.
+  - Optimized native sparse occupancy-grid point-cloud insertion and occupied-cell extraction, added opt-in threaded point-cloud insertion, expanded OctoMap reference-comparison benchmarks, and enabled native `VoxelGridShape` GUI rendering without OctoMap.
+  - Updated the `point_cloud` GUI example to use native voxel-grid point-cloud APIs without requiring OctoMap.
+  - Allowed installed DART 7 CMake packages to satisfy legacy DART 6.10+ `find_package(DART ...)` requests so pinned gz-physics checkouts can configure without a local source patch.
   - Fixed native capsule-box duplicate filtering to stay pair-local so accumulated collision results do not suppress new contacts in dense worlds.
   - Native collision: added MPR convex penetration and optional libccd parity tests/bench.
   - Native collision: handle degenerate triangle cases in GJK/MPR for robust convex queries.
@@ -734,6 +742,9 @@
     and support-centroid markers, plus arrowheads for contact normal and force
     overlays, equivalent inertia-box overlays, and collision-shape bounds for
     collision-only shape nodes.
+  - Fixed Filament renderable bounds and voxel-grid transparency handling, and
+    cleaned up the `point_cloud` example so native voxel occupancy is visible
+    without the optional source-owned grid overlay by default.
   - Fix SEGV in `ImFontAtlas::AddFontFromMemoryCompressedTTF` when null pointer is passed as compressed font data. ([#2516](https://github.com/dartsim/dart/issues/2516))
   - Fix `ImGui::ColorPicker3`/`ColorPicker4` crashes when called without an active ImGui context or window. ([#2668](https://github.com/dartsim/dart/issues/2668))
   - Added headless rendering support via `ViewerConfig` and pbuffer graphics context for CI pipelines and batch frame capture. Includes `Viewer::captureBuffer()` for raw RGBA pixel readback and a new `headless-rendering` CI job. ([#2466](https://github.com/dartsim/dart/pull/2466))
