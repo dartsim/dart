@@ -282,6 +282,10 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
   topology-changing operations remain methods, but parallel getter/setter-style
   aliases for those data properties are intentionally not part of the staging
   surface for dartpy 8.
+- `StateSpace` is exposed as a storage-independent metadata value object in
+  dartpy, with Pythonic variable names, dimensions, bounds, finalization state,
+  and optional lookup by variable name. World-state extraction, write-back,
+  component mapping, and rollout remain deferred until public owner APIs exist.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and

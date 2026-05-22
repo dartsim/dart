@@ -229,6 +229,8 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "LoopClosureRuntimePolicy",
         "LoopClosureResidual",
         "LoopClosureResidualCoordinates",
+        "StateSpace",
+        "StateVariable",
     )
     for symbol in public_symbols:
         assert hasattr(sx, symbol), symbol
@@ -240,6 +242,8 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "compute_residual",
         "def sync(",
         "force_available",
+        "add_variable",
+        "variable_names",
     ):
         assert member in stub
 
@@ -254,6 +258,62 @@ def test_experimental_stub_tracks_public_runtime_symbols():
     )
     for member in forbidden_stub_members:
         assert member not in stub
+
+
+def test_experimental_state_space_metadata_value_object():
+    sx = _simulation_experimental()
+
+    space = sx.StateSpace()
+    assert space.dimension == 0
+    assert space.num_variables == 0
+    assert not space.is_finalized
+    assert space.variable_names == []
+    assert space.lower_bounds.tolist() == []
+    assert space.upper_bounds.tolist() == []
+
+    space.add_variable("arm.q", 2, lower=-1.0, upper=1.0).add_variables(
+        ("arm.dq0", "arm.dq1"), lower=-10.0, upper=10.0
+    )
+
+    assert space.dimension == 4
+    assert space.num_variables == 3
+    assert space.variable_names == ["arm.q", "arm.dq0", "arm.dq1"]
+    assert space.lower_bounds.tolist() == pytest.approx(
+        [-1.0, -1.0, -10.0, -10.0]
+    )
+    assert space.upper_bounds.tolist() == pytest.approx(
+        [1.0, 1.0, 10.0, 10.0]
+    )
+    assert space.has_variable("arm.q")
+    assert not space.has_variable("missing")
+    assert space.get_variable_index("arm.q") == 0
+    assert space.get_variable_index("missing") is None
+
+    variable = space.get_variable("arm.q")
+    assert variable is not None
+    assert variable.name == "arm.q"
+    assert variable.start_index == 0
+    assert variable.dimension == 2
+    assert variable.lower_bound == pytest.approx(-1.0)
+    assert variable.upper_bound == pytest.approx(1.0)
+    assert space.get_variable("missing") is None
+
+    variables = space.variables
+    assert [entry.name for entry in variables] == ["arm.q", "arm.dq0", "arm.dq1"]
+    assert [entry.start_index for entry in variables] == [0, 2, 3]
+
+    space.finalize()
+    assert space.is_finalized
+    space.finalize()
+    with pytest.raises(Exception, match="finalized"):
+        space.add_variable("late", 1)
+
+    with pytest.raises(Exception, match="already exists"):
+        sx.StateSpace().add_variable("dup", 1).add_variable("dup", 1)
+    with pytest.raises(Exception, match="dimension"):
+        sx.StateSpace().add_variable("bad", 0)
+    with pytest.raises(Exception, match="lower bound"):
+        sx.StateSpace().add_variable("bad_bounds", 1, lower=2.0, upper=1.0)
 
 
 def test_experimental_world_smoke():

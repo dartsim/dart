@@ -46,6 +46,7 @@
 #include <dart/simulation/experimental/multi_body/joint.hpp>
 #include <dart/simulation/experimental/multi_body/link.hpp>
 #include <dart/simulation/experimental/multi_body/multi_body.hpp>
+#include <dart/simulation/experimental/space/state_space.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <Eigen/Cholesky>
@@ -54,8 +55,11 @@
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/array.h>
 #include <nanobind/stl/string.h>
+#include <nanobind/stl/vector.h>
 
 #include <array>
+#include <limits>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -183,6 +187,15 @@ Eigen::VectorXd toVectorX(const nb::handle& value)
   }
 
   return nb::cast<Eigen::VectorXd>(value);
+}
+
+Eigen::VectorXd toVectorX(const std::vector<double>& values)
+{
+  Eigen::VectorXd vector(static_cast<Eigen::Index>(values.size()));
+  for (Eigen::Index i = 0; i < vector.size(); ++i) {
+    vector[i] = values[static_cast<std::size_t>(i)];
+  }
+  return vector;
 }
 
 Eigen::Isometry3d toIsometry(const nb::handle& value)
@@ -410,6 +423,113 @@ void defSimulationExperimentalModule(nb::module_& m)
   nb::enum_<sim::ClosureDynamicsPolicy>(m, "ClosureDynamicsPolicy")
       .value("RESIDUAL_ONLY", sim::ClosureDynamicsPolicy::ResidualOnly)
       .value("SOLVE", sim::ClosureDynamicsPolicy::Solve);
+
+  nb::class_<sim::StateSpace::Variable>(m, "StateVariable")
+      .def_prop_ro(
+          "name",
+          [](const sim::StateSpace::Variable& self) { return self.name; })
+      .def_prop_ro(
+          "start_index",
+          [](const sim::StateSpace::Variable& self) { return self.startIndex; })
+      .def_prop_ro(
+          "dimension",
+          [](const sim::StateSpace::Variable& self) { return self.dimension; })
+      .def_prop_ro(
+          "lower_bound",
+          [](const sim::StateSpace::Variable& self) { return self.lowerBound; })
+      .def_prop_ro(
+          "upper_bound",
+          [](const sim::StateSpace::Variable& self) { return self.upperBound; })
+      .def("__repr__", [](const sim::StateSpace::Variable& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("name", repr_string(self.name));
+        fields.emplace_back("start_index", std::to_string(self.startIndex));
+        fields.emplace_back("dimension", std::to_string(self.dimension));
+        fields.emplace_back("lower_bound", repr_double(self.lowerBound));
+        fields.emplace_back("upper_bound", repr_double(self.upperBound));
+        return format_repr("StateVariable", fields);
+      });
+
+  nb::class_<sim::StateSpace>(m, "StateSpace")
+      .def(nb::init<>())
+      .def(
+          "add_variable",
+          [](sim::StateSpace& self,
+             const std::string& name,
+             std::size_t dimension,
+             double lower,
+             double upper) -> sim::StateSpace& {
+            return self.addVariable(name, dimension, lower, upper);
+          },
+          nb::arg("name"),
+          nb::arg("dimension"),
+          nb::kw_only(),
+          nb::arg("lower") = -std::numeric_limits<double>::infinity(),
+          nb::arg("upper") = std::numeric_limits<double>::infinity(),
+          nb::rv_policy::reference_internal)
+      .def(
+          "add_variables",
+          [](sim::StateSpace& self,
+             const std::vector<std::string>& names,
+             double lower,
+             double upper) -> sim::StateSpace& {
+            return self.addVariables(
+                std::span<const std::string>(names.data(), names.size()),
+                lower,
+                upper);
+          },
+          nb::arg("names"),
+          nb::kw_only(),
+          nb::arg("lower") = -std::numeric_limits<double>::infinity(),
+          nb::arg("upper") = std::numeric_limits<double>::infinity(),
+          nb::rv_policy::reference_internal)
+      .def("finalize", &sim::StateSpace::finalize)
+      .def("has_variable", &sim::StateSpace::hasVariable, nb::arg("name"))
+      .def(
+          "get_variable",
+          [](const sim::StateSpace& self,
+             const std::string& name) -> nb::object {
+            auto variable = self.getVariable(name);
+            if (!variable.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*variable, nb::rv_policy::move);
+          },
+          nb::arg("name"))
+      .def(
+          "get_variable_index",
+          [](const sim::StateSpace& self,
+             const std::string& name) -> nb::object {
+            auto index = self.getVariableIndex(name);
+            if (!index.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*index);
+          },
+          nb::arg("name"))
+      .def_prop_ro("dimension", &sim::StateSpace::getDimension)
+      .def_prop_ro("num_variables", &sim::StateSpace::getNumVariables)
+      .def_prop_ro("is_finalized", &sim::StateSpace::isFinalized)
+      .def_prop_ro("variables", &sim::StateSpace::getVariables)
+      .def_prop_ro("variable_names", &sim::StateSpace::getVariableNames)
+      .def_prop_ro(
+          "lower_bounds",
+          [](const sim::StateSpace& self) {
+            return toVectorX(self.getLowerBounds());
+          })
+      .def_prop_ro(
+          "upper_bounds",
+          [](const sim::StateSpace& self) {
+            return toVectorX(self.getUpperBounds());
+          })
+      .def("__repr__", [](const sim::StateSpace& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("dimension", std::to_string(self.getDimension()));
+        fields.emplace_back(
+            "variables", std::to_string(self.getNumVariables()));
+        fields.emplace_back("finalized", self.isFinalized() ? "True" : "False");
+        return format_repr("StateSpace", fields);
+      });
 
   nb::class_<sim::JointSpec>(m, "JointSpec")
       .def(

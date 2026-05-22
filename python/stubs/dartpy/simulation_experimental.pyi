@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import overload
+from typing import Sequence, overload
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -25,6 +25,8 @@ __all__: list[str] = [
     "MultiBody",
     "RigidBody",
     "RigidBodyOptions",
+    "StateSpace",
+    "StateVariable",
     "World",
     "WorldSyncStage",
 ]
@@ -64,6 +66,58 @@ class ClosureKinematicsPolicy(Enum):
 class ClosureDynamicsPolicy(Enum):
     RESIDUAL_ONLY = 0
     SOLVE = 1
+
+
+class StateVariable:
+    name: str
+    start_index: int
+    dimension: int
+    lower_bound: float
+    upper_bound: float
+
+
+class StateSpace:
+    def __init__(self) -> None:
+        ...
+
+    dimension: int
+    num_variables: int
+    is_finalized: bool
+    variables: list[StateVariable]
+    variable_names: list[str]
+    lower_bounds: NDArray[np.float64]
+    upper_bounds: NDArray[np.float64]
+
+    def add_variable(
+        self,
+        name: str,
+        dimension: int,
+        *,
+        lower: float = ...,
+        upper: float = ...,
+    ) -> StateSpace:
+        ...
+
+    def add_variables(
+        self,
+        names: Sequence[str],
+        *,
+        lower: float = ...,
+        upper: float = ...,
+    ) -> StateSpace:
+        ...
+
+    def finalize(self) -> None:
+        ...
+
+    def has_variable(self, name: str) -> bool:
+        ...
+
+    def get_variable(self, name: str) -> StateVariable | None:
+        ...
+
+    def get_variable_index(self, name: str) -> int | None:
+        ...
 
 
 class JointSpec:
