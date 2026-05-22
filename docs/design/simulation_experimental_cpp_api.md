@@ -239,12 +239,15 @@ the release roadmap.
   topology construction, stepping, compute-executor overloads, serialization,
   and registry-backed storage.
 - `World::updateKinematics()` executes the kinematics graph without the default
-  rigid-body integration stage. In DART 7 this remains an explicit
-  simulation-mode synchronization hook; the DART 8 target is fresh-by-default
-  ordinary queries plus named synchronization hooks for predictable batching.
+  rigid-body integration stage, and its executor overload lets the same
+  kinematics-only path use backend-neutral compute execution. In DART 7 this
+  remains an explicit simulation-mode synchronization hook; the DART 8 target
+  is fresh-by-default ordinary queries plus named synchronization hooks for
+  predictable batching.
 - Default `World::step()` composes rigid-body integration followed by
-  kinematics through `WorldStepPipeline`, and pipeline overloads already allow
-  selected stage execution.
+  kinematics through `WorldStepPipeline`, and executor/pipeline overloads
+  already allow selected stage execution and repeated stepping with
+  caller-owned execution policy.
 - `RigidBodyOptions` already represents user-facing rigid-body initialization
   data: mass, inertia, pose, and velocity.
 - `Frame`, `FreeFrame`, `FixedFrame`, `MultiBody`, `Link`, and `Joint` provide
@@ -601,6 +604,14 @@ The public distinction should be pipeline intent, not a separate world type:
 world.enterSimulationMode();
 joint.setPosition(q);
 world.updateKinematics();
+```
+
+When callers need predictable work placement or alternate execution policy,
+the same kinematics-only path accepts the backend-neutral executor facade:
+
+```cpp
+compute::TaskflowExecutor executor;
+world.updateKinematics(executor);
 ```
 
 A future convenience wrapper may name a kinematics-only tick or pipeline, but

@@ -284,9 +284,15 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
   and semantics, not the DART 7/8 Python API shape.
 - `World::updateKinematics()` already executes a kinematics graph without the
   default rigid-body integration stage, and the current dartpy module exposes
-  that operation through the experimental binding.
+  that operation through the experimental binding. C++ also has an executor
+  overload for backend-neutral kinematics-only execution; dartpy should expose
+  executor customization only after Python compute wrappers are deliberately
+  promoted.
 - The C++ `WorldStepPipeline` can execute selected stages, while default
   `World::step()` composes rigid-body integration followed by kinematics.
+  C++ repeated-step overloads can reuse caller-owned executor and pipeline
+  state; dartpy's common `world.step(n=...)` remains the Pythonic synchronous
+  path until compute wrappers are promoted.
 - `dart/simulation/experimental/space/state_space.hpp` provides a bindable
   value object for named state-vector metadata.
 - Native collision already has standalone world/query concepts with explicit

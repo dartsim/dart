@@ -669,12 +669,18 @@ std::size_t World::getFrame() const noexcept
 //==============================================================================
 void World::updateKinematics()
 {
+  compute::SequentialExecutor executor;
+  updateKinematics(executor);
+}
+
+//==============================================================================
+void World::updateKinematics(compute::ComputeExecutor& executor)
+{
   DART_EXPERIMENTAL_THROW_T_IF(
       !m_simulationMode,
       InvalidArgumentException,
       "updateKinematics() requires simulation mode");
 
-  compute::SequentialExecutor executor;
   executeKinematicsGraph(*this, executor);
 }
 
@@ -688,9 +694,8 @@ void World::step()
 //==============================================================================
 void World::step(std::size_t count)
 {
-  for (std::size_t i = 0; i < count; ++i) {
-    step();
-  }
+  compute::SequentialExecutor executor;
+  step(count, executor);
 }
 
 //==============================================================================
@@ -701,6 +706,16 @@ void World::step(compute::ComputeExecutor& executor)
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(rigidBodyIntegration).addStage(kinematics);
   step(executor, pipeline);
+}
+
+//==============================================================================
+void World::step(std::size_t count, compute::ComputeExecutor& executor)
+{
+  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::KinematicsStage kinematics;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(rigidBodyIntegration).addStage(kinematics);
+  step(count, executor, pipeline);
 }
 
 //==============================================================================
@@ -715,6 +730,18 @@ void World::step(
 
 //==============================================================================
 void World::step(
+    std::size_t count,
+    compute::ComputeExecutor& executor,
+    compute::WorldStepStage& stage)
+{
+  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(rigidBodyIntegration).addStage(stage);
+  step(count, executor, pipeline);
+}
+
+//==============================================================================
+void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
   if (!m_simulationMode) {
@@ -725,6 +752,17 @@ void World::step(
 
   m_time += m_timeStep;
   ++m_frame;
+}
+
+//==============================================================================
+void World::step(
+    std::size_t count,
+    compute::ComputeExecutor& executor,
+    compute::WorldStepPipeline& pipeline)
+{
+  for (std::size_t i = 0; i < count; ++i) {
+    step(executor, pipeline);
+  }
 }
 
 //==============================================================================

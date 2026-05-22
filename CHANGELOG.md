@@ -447,6 +447,10 @@
   - Added public experimental C++ `JointSpec` construction and reused it in the
     dartpy `JointSpec` binding, including finite, non-zero joint-axis
     validation at the API boundary.
+  - Added executor overloads for experimental C++ `World::updateKinematics()`
+    and repeated `World::step(...)` calls so kinematics-only updates and
+    multi-step simulation can reuse caller-owned backend-neutral execution
+    policy.
   - Added experimental joint DOF count, generalized position, and generalized
     velocity accessors in C++ and snake_case dartpy bindings.
   - Rejected invalid experimental `RigidBodyOptions` at the C++ and dartpy API

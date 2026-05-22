@@ -114,12 +114,22 @@ public:
   [[nodiscard]] double getTime() const noexcept;
   [[nodiscard]] std::size_t getFrame() const noexcept;
   void updateKinematics();
+  void updateKinematics(compute::ComputeExecutor& executor);
   void step();
   void step(std::size_t count);
   void step(compute::ComputeExecutor& executor);
+  void step(std::size_t count, compute::ComputeExecutor& executor);
   void step(compute::ComputeExecutor& executor, compute::WorldStepStage& stage);
   void step(
+      std::size_t count,
+      compute::ComputeExecutor& executor,
+      compute::WorldStepStage& stage);
+  void step(
       compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
+  void step(
+      std::size_t count,
+      compute::ComputeExecutor& executor,
+      compute::WorldStepPipeline& pipeline);
 
   //--------------------------------------------------------------------------
   // Registry access

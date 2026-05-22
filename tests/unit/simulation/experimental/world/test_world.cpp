@@ -153,11 +153,13 @@ public:
 
   std::size_t nodeCount{0};
   std::size_t edgeCount{0};
+  std::size_t executeCount{0};
 
 private:
   void record(
       const dart::simulation::experimental::compute::ComputeGraph& graph)
   {
+    ++executeCount;
     nodeCount = graph.getNodeCount();
     edgeCount = graph.getEdgeCount();
   }
@@ -519,6 +521,37 @@ TEST(World, UpdateKinematicsRefreshesFrameHierarchy)
       child.getTransform().isApprox(updatedParentTransform * childOffset));
 }
 
+// Test that kinematics-only synchronization can use an injected executor
+// without advancing the simulation clock.
+TEST(World, UpdateKinematicsAcceptsExecutorWithoutAdvancingClock)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto parent = world.addFreeFrame("parent");
+
+  Eigen::Isometry3d childOffset = Eigen::Isometry3d::Identity();
+  childOffset.translate(Eigen::Vector3d(0.0, 4.0, 0.0));
+  auto child = world.addFixedFrame("child", parent, childOffset);
+
+  world.enterSimulationMode();
+
+  Eigen::Isometry3d updatedParentTransform = Eigen::Isometry3d::Identity();
+  updatedParentTransform.translate(Eigen::Vector3d(5.0, 6.0, 7.0));
+  parent.setLocalTransform(updatedParentTransform);
+
+  RecordingExecutor executor;
+  world.updateKinematics(executor);
+
+  EXPECT_EQ(executor.executeCount, 1u);
+  EXPECT_EQ(executor.nodeCount, 2u);
+  EXPECT_EQ(executor.edgeCount, 1u);
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_TRUE(
+      child.getTransform().isApprox(updatedParentTransform * childOffset));
+}
+
 // Test that ordinary frame reads stay fresh after mutating an ancestor frame,
 // without requiring users to know cache invalidation details.
 TEST(World, FrameReadsRefreshDescendantsAfterParentLocalTransformChange)
@@ -799,6 +832,33 @@ TEST(World, StepCountAdvancesClockAndFrame)
   EXPECT_TRUE(world.isSimulationMode());
   EXPECT_DOUBLE_EQ(world.getTime(), 1.0);
   EXPECT_EQ(world.getFrame(), 4u);
+}
+
+// Test that repeated stepping can use an injected executor and reuse the
+// default pipeline state across steps.
+TEST(World, StepCountAcceptsExecutor)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto body = world.addRigidBody("body", options);
+
+  world.setTimeStep(0.25);
+
+  RecordingExecutor executor;
+  world.step(0, executor);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_EQ(executor.executeCount, 0u);
+
+  world.step(2, executor);
+
+  EXPECT_TRUE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.5);
+  EXPECT_EQ(world.getFrame(), 2u);
+  EXPECT_TRUE(body.getTranslation().isApprox(Eigen::Vector3d(0.5, 0.0, 0.0)));
+  EXPECT_GT(executor.executeCount, 0u);
 }
 
 // Test that torque integration uses the body-frame inertia tensor and updates
@@ -1101,4 +1161,44 @@ TEST(World, StepAcceptsMultiDomainSolverPipeline)
   EXPECT_EQ(order, expected);
   EXPECT_DOUBLE_EQ(world.getTime(), 0.25);
   EXPECT_EQ(world.getFrame(), 1u);
+}
+
+// Test that repeated stepping can reuse a caller-owned executor and pipeline.
+TEST(World, StepCountAcceptsMultiDomainSolverPipeline)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  world.setTimeStep(0.1);
+
+  std::vector<std::string> order;
+  RecordingWorldStage kinematics(
+      "kinematics",
+      {compute::ComputeStageDomain::Kinematics,
+       compute::toMask(compute::ComputeStageAcceleration::TaskParallel)},
+      order);
+  RecordingWorldStage sensor(
+      "sensor",
+      {compute::ComputeStageDomain::Sensor,
+       compute::toMask(compute::ComputeStageAcceleration::TaskParallel)},
+      order);
+
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(kinematics).addStage(sensor);
+
+  RecordingExecutor executor;
+  world.step(0, executor, pipeline);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_TRUE(order.empty());
+  EXPECT_EQ(executor.executeCount, 0u);
+
+  world.step(3, executor, pipeline);
+
+  const std::vector<std::string> expected{
+      "kinematics", "sensor", "kinematics", "sensor", "kinematics", "sensor"};
+  EXPECT_EQ(order, expected);
+  EXPECT_EQ(executor.executeCount, expected.size());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.3);
+  EXPECT_EQ(world.getFrame(), 3u);
 }
