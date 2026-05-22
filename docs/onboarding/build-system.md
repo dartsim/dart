@@ -314,13 +314,13 @@ active build.
 - **Purpose:** Optional local developer frame profiling
 - **Backend option:** `DART_PROFILE_TRACY`
 - **Option:** `DART_USE_SYSTEM_TRACY`
-- **Default:** CMake default is `OFF`. Pixi development configure tasks opt in
-  with `DART_PROFILE_TRACY=ON`, but keep `DART_USE_SYSTEM_TRACY=OFF` so Tracy is
-  not installed through package-manager dependencies. Install/package
-  configurations keep profiling off. `pixi run tracy-build` builds the Tracy GUI
-  client from the fetched development source, and `pixi run tracy` launches it.
-  The launcher defaults `TRACY_DPI_SCALE=1` to avoid oversized Linux DPI
-  auto-scaling; set `TRACY_DPI_SCALE` explicitly to override it.
+- **Default:** `OFF` for CMake, Pixi development, and package builds.
+  `pixi run tracy-build` opts into `DART_PROFILE_TRACY=ON` only for the
+  developer profiling build and keeps `DART_USE_SYSTEM_TRACY=OFF`, so Tracy is
+  not installed through package-manager dependencies. `pixi run tracy` launches
+  the fetched GUI client. The launcher defaults `TRACY_DPI_SCALE=1` to avoid
+  oversized Linux DPI auto-scaling; set `TRACY_DPI_SCALE` explicitly to override
+  it.
 
 ### Additional Platform Dependencies
 
@@ -708,8 +708,8 @@ pixi run generate-stubs  # Generate Python stub files
 - `DART_USE_SYSTEM_GOOGLEBENCHMARK` - `ON`
 - `DART_USE_SYSTEM_GOOGLETEST` - `ON`
 - `DART_USE_SYSTEM_IMGUI` - `ON`
-- `DART_PROFILE_TRACY` - `ON` for Pixi development configure tasks; `OFF` for
-  CMake/package defaults
+- `DART_PROFILE_TRACY` - `OFF` by default; `pixi run tracy-build` opts in for
+  the developer profiling build
 - `DART_USE_SYSTEM_TRACY` - `OFF`
 - `DART_VERBOSE` - `OFF` (configurable)
 

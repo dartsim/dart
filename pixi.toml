@@ -30,7 +30,7 @@ libode = ">=0.16.6,<0.17"
 libpng = ">=1.6.54,<2"
 libsdformat = ">=16.0.0,<17"
 myst-parser = ">=4.0.1,<5"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 ninja = ">=1.13.2,<2"
 numpy = ">=2.4.0,<3"
 octomap = ">=1.10.0,<2"
@@ -154,7 +154,7 @@ cmake \
   { arg = "build_type", default = "Release" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 # Auto-fix formatting issues (runs black and isort to format code)
@@ -317,7 +317,7 @@ set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-Debug}
 DART_BUILD_PROFILE={{ build_profile }}
 DART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN:-ON}
-DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-ON}
+DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-OFF}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
@@ -403,7 +403,7 @@ cmake \
   { arg = "dartpy", default = "ON" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 build-tests = { cmd = [
@@ -525,7 +525,7 @@ set -euo pipefail
 BUILD_TYPE={{ build_type }}
 DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN:-ON}
-DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-ON}
+DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-OFF}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
@@ -1678,7 +1678,7 @@ set -euo pipefail
   { arg = "dartpy", default = "ON" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 # Multi-config generator uses same build directory for all configurations
@@ -1818,7 +1818,7 @@ set -euo pipefail
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 test = { cmd = [
@@ -2240,7 +2240,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.12.*"
 pip = ">=25.3,<26"
 scikit-build-core = ">=0.11.6,<0.12"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
@@ -2365,7 +2365,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.13.*"
 pip = ">=25.3,<26"
 scikit-build-core = ">=0.11.6,<0.12"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
@@ -2490,7 +2490,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.14.*"
 pip = ">=25.3,<26"
 scikit-build-core = ">=0.11.6,<0.12"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
