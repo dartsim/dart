@@ -246,6 +246,15 @@ dart_add_test("unit" UNIT_dynamics_CylinderShape dynamics/test_cylinder_shape.cp
 dart_add_test("unit" UNIT_dynamics_EllipsoidShape dynamics/test_ellipsoid_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_PlaneShape dynamics/test_plane_shape.cpp)
 dart_add_test("unit" UNIT_dynamics_PointCloudShape dynamics/test_point_cloud_shape.cpp)
+dart_add_test(
+  "unit" UNIT_dynamics_SparseOccupancyGrid dynamics/test_sparse_occupancy_grid.cpp)
+if(TARGET octomap)
+  target_link_libraries(UNIT_dynamics_SparseOccupancyGrid octomap)
+  target_compile_definitions(
+    UNIT_dynamics_SparseOccupancyGrid
+    PRIVATE DART_TESTS_HAVE_OCTOMAP=1
+  )
+endif()
 dart_add_test("unit" UNIT_dynamics_EndEffector dynamics/test_end_effector.cpp)
 dart_add_test("unit" UNIT_dynamics_Marker dynamics/test_marker.cpp)
 dart_add_test("unit" UNIT_dynamics_PointMass dynamics/test_point_mass.cpp)

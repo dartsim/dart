@@ -66,6 +66,9 @@ DebugOverlayController makeDebugOverlayController(bool drawSupportPolygons)
   controller.contactOptions.drawWorldFrame = false;
   controller.contactOptions.drawBodyFrames = false;
   controller.contactOptions.drawCentersOfMass = false;
+  controller.contactOptions.drawContacts = false;
+  controller.contactOptions.drawContactNormals = false;
+  controller.contactOptions.drawContactForces = false;
   return controller;
 }
 

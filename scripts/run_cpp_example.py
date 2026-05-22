@@ -456,9 +456,22 @@ def _prepare_filament_run_args(
     return args
 
 
-def _runtime_env(env: dict[str, str], software_gl: bool) -> dict[str, str]:
+def _prepend_runtime_library_path(env: dict[str, str], build_dir: Path) -> None:
+    lib_dir = build_dir / "lib"
+    if sys.platform.startswith("linux"):
+        _prepend_env_path(env, "LD_LIBRARY_PATH", lib_dir)
+    elif sys.platform == "darwin":
+        _prepend_env_path(env, "DYLD_LIBRARY_PATH", lib_dir)
+    elif os.name == "nt":
+        _prepend_env_path(env, "PATH", lib_dir)
+
+
+def _runtime_env(
+    env: dict[str, str], build_dir: Path, software_gl: bool
+) -> dict[str, str]:
     runtime_env = env.copy()
     _apply_libcxx_prefix(runtime_env)
+    _prepend_runtime_library_path(runtime_env, build_dir)
     if software_gl:
         runtime_env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
         runtime_env.setdefault("MESA_LOADER_DRIVER_OVERRIDE", "llvmpipe")
@@ -539,7 +552,7 @@ def _validate_filament_smoke_tests_discovered(
 
 
 def _run_filament_smoke(build_dir: Path, env: dict[str, str]) -> None:
-    runtime_env = _runtime_env(env, software_gl=True)
+    runtime_env = _runtime_env(env, build_dir, software_gl=True)
     command = [
         "ctest",
         "--test-dir",
@@ -568,7 +581,8 @@ def _run_example_binary(
         raise SystemExit(f"Binary not found: {binary}")
 
     if "filament" not in spec.requirements:
-        subprocess.run([str(binary), *run_args], check=True, env=env)
+        runtime_env = _runtime_env(env, build_dir, software_gl=False)
+        subprocess.run([str(binary), *run_args], check=True, env=runtime_env)
         return
 
     scenes, base_args = _split_filament_scenes(run_args)
@@ -576,7 +590,7 @@ def _run_example_binary(
     for scene in scenes:
         prepared_args = _prepare_filament_run_args(base_args, scene, multiple_scenes)
         headless = _uses_headless_filament(prepared_args)
-        runtime_env = _runtime_env(env, software_gl=headless)
+        runtime_env = _runtime_env(env, build_dir, software_gl=headless)
         command = [str(binary), *prepared_args]
         print("Running:", " ".join(command))
         use_xvfb = (

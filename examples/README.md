@@ -34,6 +34,7 @@
 ### 03 Integration and Tools
 
 - `csv_logger`
+- `point_cloud`
 
 ## Build Each Example
 

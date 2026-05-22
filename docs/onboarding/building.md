@@ -33,7 +33,7 @@ Install required dependencies using `apt`:
 ```bash
 sudo apt install \
   build-essential cmake pkg-config git libassimp-dev \
-  libeigen3-dev libfcl-dev libfmt-dev \
+  libeigen3-dev libfmt-dev \
   libsdformat15 libgz-math8 libgz-utils2
 ```
 
@@ -43,12 +43,16 @@ Install optional dependencies:
 
 ```bash
 sudo apt install \
-  coinor-libipopt-dev libbullet-dev \
+  coinor-libipopt-dev libbullet-dev libfcl-dev \
   libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev \
   libglfw3-dev libnlopt-cxx-dev liboctomap-dev libode-dev \
   libspdlog-dev libyaml-cpp-dev ocl-icd-opencl-dev opencl-headers \
   opencl-clhpp-headers
 ```
+
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
 
 ### macOS
 
@@ -56,7 +60,7 @@ Add the OSRF tap and install required dependencies using `brew`:
 
 ```bash
 brew tap osrf/simulation
-brew install assimp cmake eigen fmt fcl osrf/simulation/sdformat13
+brew install assimp cmake eigen fmt osrf/simulation/sdformat13
 ```
 
 > **Note:** Replace `sdformat13` with the latest formula published in the `osrf/simulation` tap.
@@ -64,16 +68,20 @@ brew install assimp cmake eigen fmt fcl osrf/simulation/sdformat13
 Install optional dependencies:
 
 ```bash
-brew install bullet glfw ipopt nlopt octomap ode \
+brew install bullet fcl glfw ipopt nlopt octomap ode \
   spdlog tinyxml2 urdfdom yaml-cpp
 ```
+
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
 
 ### Windows
 
 Install required dependencies using `vcpkg`:
 
 ```bash
-vcpkg install --triplet x64-windows assimp eigen3 fcl fmt sdformat spdlog
+vcpkg install --triplet x64-windows assimp eigen3 fmt sdformat spdlog
 ```
 
 Install optional dependencies:
@@ -84,22 +92,30 @@ vcpkg install --triplet x64-windows \
   opencl opengl pagmo2 nanobind tinyxml2 urdfdom yaml-cpp
 ```
 
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
+
 ### Arch Linux (experimental)
 
 Install required dependencies using `yay`:
 
 ```bash
-yay -S assimp cmake eigen fcl fmt sdformat
+yay -S assimp cmake eigen fmt sdformat
 ```
 
 Install optional dependencies:
 
 ```bash
 yay -S \
-  bullet coin-or-ipopt glfw nlopt octomap ode opencl-clhpp \
+  bullet coin-or-ipopt fcl glfw nlopt octomap ode opencl-clhpp \
   opencl-headers opencl-icd-loader pagmo spdlog tinyxml2 \
   urdfdom nanobind
 ```
+
+FCL, Bullet, ODE, and OctoMap are optional reference-comparison dependencies
+for tests and benchmarks. Core DART, dartpy, and normal runtime builds do not
+require per-engine collision dependencies or OctoMap.
 
 ### FreeBSD (experimental)
 
