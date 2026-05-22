@@ -436,6 +436,10 @@
     profiles and DOT visualization for per-node load, observed parallelism, and
     graph inspection, and added focused tests and benchmark coverage for graph
     batching overhead.
+  - Added public experimental multibody joint/link API surface for DART 7 and
+    dartpy 7, including `JointType`, `JointSpec`, `Link`, `Joint`, Python
+    link/joint lookup, and design guidance for closed-chain topology as
+    symmetric graph constraints over a tree-shaped multibody.
   - Fixed experimental Taskflow executor paths to propagate compute-node
     exceptions instead of reporting graph execution success after failed tasks.
   - Fixed experimental compute profiling and rigid-body stepping edge cases for

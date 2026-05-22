@@ -34,7 +34,6 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
-#include <dart/simulation/experimental/comps/joint.hpp> // For JointType
 #include <dart/simulation/experimental/multi_body/link.hpp> // Need complete type for LinkOptions
 
 #include <Eigen/Core>
@@ -61,7 +60,7 @@ namespace dart::simulation::experimental {
 ///   auto link1 = robot.addLink("link1", {
 ///       .parentLink = root,
 ///       .jointName = "shoulder",
-///       .jointType = comps::JointType::Revolute,
+///       .jointType = JointType::Revolute,
 ///       .axis = {0, 0, 1}
 ///   });
 ///
@@ -69,15 +68,15 @@ namespace dart::simulation::experimental {
 ///   auto link2 = robot.addLink("link2", {
 ///       .parentLink = link1,
 ///       .jointName = "slider",
-///       .jointType = comps::JointType::Prismatic,
+///       .jointType = JointType::Prismatic,
 ///       .axis = {1, 0, 0}
 ///   });
 /// @endcode
 struct LinkOptions
 {
-  Link parentLink;       ///< Parent link handle
-  std::string jointName; ///< Name of connecting joint
-  comps::JointType jointType = comps::JointType::Revolute; ///< Type of joint
+  Link parentLink;                           ///< Parent link handle
+  std::string jointName;                     ///< Name of connecting joint
+  JointType jointType = JointType::Revolute; ///< Type of joint
   Eigen::Vector3d axis
       = Eigen::Vector3d::UnitZ(); ///< Joint axis (rotation or translation)
 

@@ -123,6 +123,20 @@ should configure physics intent, algorithm family, accuracy/performance policy,
 and fallback behavior through DART-owned value objects and capability queries.
 Adding a backend should be an implementation improvement, not an API fork.
 
+### Tree Topology Plus Constraint Graph
+
+Python users should build ordinary serial chains and branched robots through
+`MultiBody`, `Link`, `Joint`, and `JointSpec`. Closed-chain mechanisms should
+then be added as explicit graph constraints between symmetric public
+endpoints, not by assigning a second parent link or exposing internal solver
+rows.
+
+This gives a small common path for tree-shaped robots while preserving a
+natural extension for four-bars, parallel mechanisms, cable or gear couplings,
+and frame-to-frame closure constraints. The closure API should separate the
+topology definition from runtime choices such as enabled state, residual-only
+diagnostics, kinematic projection, and dynamic constraint solving.
+
 ### Fresh Results Without Dirty-Flag API
 
 The long-term API should not make users manually reason about dirty flags.
@@ -642,6 +656,11 @@ diagnostic concepts; Bullet exposes generic typed constraints between rigid
 bodies. DART should keep the pattern of explicit closure handles and
 diagnostics, but use DART-owned names and value objects for the public Python
 API. See the companion C++ design for source links and lower-level constraints.
+
+For Python, the user-facing lesson is that `add_loop_closure(...)` should look
+like normal object construction, while lower-level residual rows, solver
+backend data, and maximal-coordinate implementation choices stay behind the
+C++ facade.
 
 ## Programmatic Construction
 

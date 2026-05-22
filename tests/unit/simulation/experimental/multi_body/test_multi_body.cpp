@@ -31,7 +31,6 @@
  */
 
 #include <dart/simulation/experimental/common/exceptions.hpp>
-#include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/multi_body/multi_body.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -178,8 +177,7 @@ TEST(MultiBody, SimpleTwoLinkChain)
       "link1",
       {.parentLink = baseLink,
        .jointName = "joint1",
-       .jointType
-       = dart::simulation::experimental::comps::JointType::Revolute});
+       .jointType = dart::simulation::experimental::JointType::Revolute});
 
   EXPECT_EQ(robot.getLinkCount(), 2u);
   EXPECT_EQ(robot.getJointCount(), 1u);
@@ -221,19 +219,19 @@ TEST(MultiBody, PrismaticJoints)
       "link_x",
       {.parentLink = base,
        .jointName = "joint_x",
-       .jointType = dart::simulation::experimental::comps::JointType::Prismatic,
+       .jointType = dart::simulation::experimental::JointType::Prismatic,
        .axis = Eigen::Vector3d::UnitX()});
   auto linkY = robot.addLink(
       "link_y",
       {.parentLink = linkX,
        .jointName = "joint_y",
-       .jointType = dart::simulation::experimental::comps::JointType::Prismatic,
+       .jointType = dart::simulation::experimental::JointType::Prismatic,
        .axis = Eigen::Vector3d::UnitY()});
   robot.addLink(
       "link_z",
       {.parentLink = linkY,
        .jointName = "joint_z",
-       .jointType = dart::simulation::experimental::comps::JointType::Prismatic,
+       .jointType = dart::simulation::experimental::JointType::Prismatic,
        .axis = Eigen::Vector3d::UnitZ()});
 
   EXPECT_EQ(robot.getLinkCount(), 4u);
@@ -262,7 +260,7 @@ TEST(MultiBody, MixedJointTypes)
       "link3",
       {.parentLink = link2,
        .jointName = "joint3",
-       .jointType = dart::simulation::experimental::comps::JointType::Prismatic,
+       .jointType = dart::simulation::experimental::JointType::Prismatic,
        .axis = Eigen::Vector3d::UnitZ()});
   robot.addLink(
       "link4",
@@ -293,7 +291,7 @@ TEST(MultiBody, CustomJointAxes)
       "link2",
       {.parentLink = link1,
        .jointName = "joint2",
-       .jointType = dart::simulation::experimental::comps::JointType::Prismatic,
+       .jointType = dart::simulation::experimental::JointType::Prismatic,
        .axis = customDir});
 
   EXPECT_EQ(robot.getLinkCount(), 3u);

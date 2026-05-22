@@ -121,7 +121,7 @@ TEST(Serialization, TwoLinkChain)
       "link1",
       {.parentLink = base,
        .jointName = "joint1",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::experimental::JointType::Revolute,
        .axis = {0, 0, 1}});
 
   std::stringstream ss;
@@ -152,7 +152,7 @@ TEST(Serialization, TwoLinkChain)
   EXPECT_EQ(joint1_restored->getName(), "joint1");
   EXPECT_EQ(
       joint1_restored->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      dart::simulation::experimental::JointType::Revolute);
 
   // Verify joint axis
   auto axis = joint1_restored->getAxis();
@@ -310,7 +310,7 @@ TEST(Serialization, JointTypeRevolute)
       "link1",
       {.parentLink = base,
        .jointName = "j1",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::experimental::JointType::Revolute,
        .axis = {0, 0, 1}});
 
   std::stringstream ss;
@@ -334,7 +334,7 @@ TEST(Serialization, JointTypePrismatic)
       "link1",
       {.parentLink = base,
        .jointName = "j1",
-       .jointType = dart::simulation::experimental::comps::JointType::Prismatic,
+       .jointType = dart::simulation::experimental::JointType::Prismatic,
        .axis = {1, 0, 0}});
 
   std::stringstream ss;
@@ -358,37 +358,37 @@ TEST(Serialization, ComplexHierarchy)
       "shoulder_link",
       {.parentLink = base,
        .jointName = "shoulder_pan",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::experimental::JointType::Revolute,
        .axis = {0, 0, 1}});
   auto link2 = robot.addLink(
       "upper_arm_link",
       {.parentLink = link1,
        .jointName = "shoulder_lift",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::experimental::JointType::Revolute,
        .axis = {0, 1, 0}});
   auto link3 = robot.addLink(
       "forearm_link",
       {.parentLink = link2,
        .jointName = "elbow",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::experimental::JointType::Revolute,
        .axis = {0, 1, 0}});
   auto link4 = robot.addLink(
       "wrist_1_link",
       {.parentLink = link3,
        .jointName = "wrist_1",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::experimental::JointType::Revolute,
        .axis = {0, 1, 0}});
   auto link5 = robot.addLink(
       "wrist_2_link",
       {.parentLink = link4,
        .jointName = "wrist_2",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::experimental::JointType::Revolute,
        .axis = {0, 0, 1}});
   [[maybe_unused]] auto link6 = robot.addLink(
       "wrist_3_link",
       {.parentLink = link5,
        .jointName = "wrist_3",
-       .jointType = dart::simulation::experimental::comps::JointType::Revolute,
+       .jointType = dart::simulation::experimental::JointType::Revolute,
        .axis = {0, 1, 0}});
 
   std::stringstream ss;
@@ -416,7 +416,7 @@ TEST(Serialization, ComplexHierarchy)
   ASSERT_TRUE(shoulder_pan.has_value());
   EXPECT_EQ(
       shoulder_pan->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      dart::simulation::experimental::JointType::Revolute);
   auto axis1 = shoulder_pan->getAxis();
   EXPECT_DOUBLE_EQ(axis1[0], 0.0);
   EXPECT_DOUBLE_EQ(axis1[1], 0.0);
@@ -426,7 +426,7 @@ TEST(Serialization, ComplexHierarchy)
   ASSERT_TRUE(shoulder_lift.has_value());
   EXPECT_EQ(
       shoulder_lift->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      dart::simulation::experimental::JointType::Revolute);
   auto axis2 = shoulder_lift->getAxis();
   EXPECT_DOUBLE_EQ(axis2[0], 0.0);
   EXPECT_DOUBLE_EQ(axis2[1], 1.0);
@@ -435,8 +435,7 @@ TEST(Serialization, ComplexHierarchy)
   auto elbow = robot_restored->getJoint("elbow");
   ASSERT_TRUE(elbow.has_value());
   EXPECT_EQ(
-      elbow->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      elbow->getType(), dart::simulation::experimental::JointType::Revolute);
   auto axis3 = elbow->getAxis();
   EXPECT_DOUBLE_EQ(axis3[0], 0.0);
   EXPECT_DOUBLE_EQ(axis3[1], 1.0);
@@ -445,14 +444,12 @@ TEST(Serialization, ComplexHierarchy)
   auto wrist_1 = robot_restored->getJoint("wrist_1");
   ASSERT_TRUE(wrist_1.has_value());
   EXPECT_EQ(
-      wrist_1->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      wrist_1->getType(), dart::simulation::experimental::JointType::Revolute);
 
   auto wrist_2 = robot_restored->getJoint("wrist_2");
   ASSERT_TRUE(wrist_2.has_value());
   EXPECT_EQ(
-      wrist_2->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      wrist_2->getType(), dart::simulation::experimental::JointType::Revolute);
   auto axis5 = wrist_2->getAxis();
   EXPECT_DOUBLE_EQ(axis5[0], 0.0);
   EXPECT_DOUBLE_EQ(axis5[1], 0.0);
@@ -461,8 +458,7 @@ TEST(Serialization, ComplexHierarchy)
   auto wrist_3 = robot_restored->getJoint("wrist_3");
   ASSERT_TRUE(wrist_3.has_value());
   EXPECT_EQ(
-      wrist_3->getType(),
-      dart::simulation::experimental::comps::JointType::Revolute);
+      wrist_3->getType(), dart::simulation::experimental::JointType::Revolute);
   auto axis6 = wrist_3->getAxis();
   EXPECT_DOUBLE_EQ(axis6[0], 0.0);
   EXPECT_DOUBLE_EQ(axis6[1], 1.0);

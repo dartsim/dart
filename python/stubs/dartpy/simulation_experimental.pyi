@@ -1,9 +1,47 @@
 from __future__ import annotations
 
+from enum import Enum
+from typing import overload
+
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-__all__: list[str] = ["MultiBody", "RigidBody", "RigidBodyOptions", "World"]
+__all__: list[str] = [
+    "Joint",
+    "JointSpec",
+    "JointType",
+    "Link",
+    "MultiBody",
+    "RigidBody",
+    "RigidBodyOptions",
+    "World",
+]
+
+
+class JointType(Enum):
+    FIXED = 0
+    REVOLUTE = 1
+    PRISMATIC = 2
+    SCREW = 3
+    UNIVERSAL = 4
+    BALL = 5
+    PLANAR = 6
+    FREE = 7
+    CUSTOM = 8
+
+
+class JointSpec:
+    def __init__(
+        self,
+        name: str = "",
+        type: JointType = ...,
+        axis: ArrayLike | None = None,
+    ) -> None:
+        ...
+
+    name: str
+    type: JointType
+    axis: NDArray[np.float64]
 
 
 class RigidBodyOptions:
@@ -47,6 +85,25 @@ class MultiBody:
     def getDOFCount(self) -> int:
         ...
 
+    def addLink(self, name: str = "") -> Link:
+        ...
+
+    @overload
+    def add_link(self, name: str = "") -> Link:
+        ...
+
+    @overload
+    def add_link(
+        self, name: str, *, parent: Link, joint: JointSpec = ...
+    ) -> Link:
+        ...
+
+    def getLink(self, name: str) -> Link | None:
+        ...
+
+    def getJoint(self, name: str) -> Joint | None:
+        ...
+
     def get_name(self) -> str:
         ...
 
@@ -60,6 +117,79 @@ class MultiBody:
         ...
 
     def get_dof_count(self) -> int:
+        ...
+
+    def get_link(self, name: str) -> Link | None:
+        ...
+
+    def get_joint(self, name: str) -> Joint | None:
+        ...
+
+
+class Link:
+    name: str
+    parent_joint: Joint
+    translation: NDArray[np.float64]
+    rotation: NDArray[np.float64]
+    quaternion: NDArray[np.float64]
+    transform: NDArray[np.float64]
+    is_valid: bool
+
+    def getName(self) -> str:
+        ...
+
+    def get_name(self) -> str:
+        ...
+
+    def getParentJoint(self) -> Joint:
+        ...
+
+    def get_parent_joint(self) -> Joint:
+        ...
+
+    def isValid(self) -> bool:
+        ...
+
+
+class Joint:
+    name: str
+    type: JointType
+    axis: NDArray[np.float64]
+    parent_link: Link
+    child_link: Link
+    is_valid: bool
+
+    def getName(self) -> str:
+        ...
+
+    def get_name(self) -> str:
+        ...
+
+    def getType(self) -> JointType:
+        ...
+
+    def get_type(self) -> JointType:
+        ...
+
+    def getAxis(self) -> NDArray[np.float64]:
+        ...
+
+    def get_axis(self) -> NDArray[np.float64]:
+        ...
+
+    def getParentLink(self) -> Link:
+        ...
+
+    def get_parent_link(self) -> Link:
+        ...
+
+    def getChildLink(self) -> Link:
+        ...
+
+    def get_child_link(self) -> Link:
+        ...
+
+    def isValid(self) -> bool:
         ...
 
 

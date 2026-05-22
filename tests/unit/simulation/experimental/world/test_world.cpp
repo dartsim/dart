@@ -257,8 +257,7 @@ TEST(World, BakingWithMultibodies)
       "link2",
       {.parentLink = link2,
        .jointName = "joint2",
-       .jointType
-       = dart::simulation::experimental::comps::JointType::Prismatic});
+       .jointType = dart::simulation::experimental::JointType::Prismatic});
 
   // Baking should succeed
   EXPECT_NO_THROW(world.enterSimulationMode());

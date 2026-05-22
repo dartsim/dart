@@ -37,6 +37,8 @@
 
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/multi_body/joint.hpp>
+#include <dart/simulation/experimental/multi_body/link.hpp>
 #include <dart/simulation/experimental/multi_body/multi_body.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -58,6 +60,13 @@ namespace {
 
 namespace sim = dart::simulation::experimental;
 
+struct JointSpec
+{
+  std::string name;
+  sim::JointType type = sim::JointType::Revolute;
+  Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
+};
+
 Eigen::Quaterniond toQuaternionWxyz(const nb::handle& value)
 {
   const auto data = nb::cast<std::array<double, 4>>(value);
@@ -69,6 +78,17 @@ Eigen::Vector4d toWxyz(const Eigen::Quaterniond& quaternion)
   Eigen::Vector4d out;
   out << quaternion.w(), quaternion.x(), quaternion.y(), quaternion.z();
   return out;
+}
+
+sim::LinkOptions makeLinkOptions(
+    const sim::Link& parent, const JointSpec& joint)
+{
+  return sim::LinkOptions{
+      .parentLink = parent,
+      .jointName = joint.name,
+      .jointType = joint.type,
+      .axis = joint.axis,
+  };
 }
 
 sim::RigidBodyOptions makeRigidBodyOptions(
@@ -136,6 +156,120 @@ sim::RigidBodyOptions mergeRigidBodyOptions(
 
 void defSimulationExperimentalModule(nb::module_& m)
 {
+  nb::enum_<sim::JointType>(m, "JointType")
+      .value("FIXED", sim::JointType::Fixed)
+      .value("REVOLUTE", sim::JointType::Revolute)
+      .value("PRISMATIC", sim::JointType::Prismatic)
+      .value("SCREW", sim::JointType::Screw)
+      .value("UNIVERSAL", sim::JointType::Universal)
+      .value("BALL", sim::JointType::Ball)
+      .value("PLANAR", sim::JointType::Planar)
+      .value("FREE", sim::JointType::Free)
+      .value("CUSTOM", sim::JointType::Custom);
+
+  nb::class_<JointSpec>(m, "JointSpec")
+      .def(
+          nb::new_([](std::string name,
+                      sim::JointType type,
+                      const nb::handle& axis) {
+            JointSpec spec;
+            spec.name = std::move(name);
+            spec.type = type;
+            if (!axis.is_none()) {
+              spec.axis = toVector3(axis);
+            }
+            return spec;
+          }),
+          nb::arg("name") = "",
+          nb::arg("type") = sim::JointType::Revolute,
+          nb::arg("axis") = nb::none())
+      .def_rw("name", &JointSpec::name)
+      .def_rw("type", &JointSpec::type)
+      .def_prop_rw(
+          "axis",
+          [](const JointSpec& self) { return self.axis; },
+          [](JointSpec& self, const nb::handle& axis) {
+            self.axis = toVector3(axis);
+          })
+      .def("__repr__", [](const JointSpec& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("name", repr_string(self.name));
+        fields.emplace_back(
+            "type", nb::cast<std::string>(nb::repr(nb::cast(self.type))));
+        fields.emplace_back(
+            "axis", nb::cast<std::string>(nb::repr(nb::cast(self.axis))));
+        return format_repr("JointSpec", fields);
+      });
+
+  auto jointClass = nb::class_<sim::Joint>(m, "Joint");
+  auto linkClass = nb::class_<sim::Link>(m, "Link");
+
+  jointClass
+      .def(
+          "getName",
+          [](const sim::Joint& self) { return std::string(self.getName()); })
+      .def(
+          "get_name",
+          [](const sim::Joint& self) { return std::string(self.getName()); })
+      .def("getType", &sim::Joint::getType)
+      .def("get_type", &sim::Joint::getType)
+      .def("getAxis", &sim::Joint::getAxis)
+      .def("get_axis", &sim::Joint::getAxis)
+      .def("getParentLink", &sim::Joint::getParentLink)
+      .def("get_parent_link", &sim::Joint::getParentLink)
+      .def("getChildLink", &sim::Joint::getChildLink)
+      .def("get_child_link", &sim::Joint::getChildLink)
+      .def("isValid", &sim::Joint::isValid)
+      .def_prop_ro(
+          "name",
+          [](const sim::Joint& self) { return std::string(self.getName()); })
+      .def_prop_ro("type", &sim::Joint::getType)
+      .def_prop_ro("axis", &sim::Joint::getAxis)
+      .def_prop_ro("parent_link", &sim::Joint::getParentLink)
+      .def_prop_ro("child_link", &sim::Joint::getChildLink)
+      .def_prop_ro("is_valid", &sim::Joint::isValid)
+      .def("__repr__", [](const sim::Joint& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("valid", self.isValid() ? "True" : "False");
+        if (self.isValid()) {
+          fields.emplace_back("name", repr_string(std::string(self.getName())));
+          fields.emplace_back(
+              "type",
+              nb::cast<std::string>(nb::repr(nb::cast(self.getType()))));
+        }
+        return format_repr("Joint", fields);
+      });
+
+  linkClass
+      .def(
+          "getName",
+          [](const sim::Link& self) { return std::string(self.getName()); })
+      .def(
+          "get_name",
+          [](const sim::Link& self) { return std::string(self.getName()); })
+      .def("getParentJoint", &sim::Link::getParentJoint)
+      .def("get_parent_joint", &sim::Link::getParentJoint)
+      .def("isValid", &sim::Link::isValid)
+      .def_prop_ro(
+          "name",
+          [](const sim::Link& self) { return std::string(self.getName()); })
+      .def_prop_ro("parent_joint", &sim::Link::getParentJoint)
+      .def_prop_ro("translation", &sim::Link::getTranslation)
+      .def_prop_ro("rotation", &sim::Link::getRotation)
+      .def_prop_ro(
+          "quaternion",
+          [](const sim::Link& self) { return toWxyz(self.getQuaternion()); })
+      .def_prop_ro("transform", &sim::Link::getTransformMatrix)
+      .def_prop_ro("is_valid", &sim::Link::isValid)
+      .def("__repr__", [](const sim::Link& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("valid", self.isValid() ? "True" : "False");
+        if (self.isValid()) {
+          fields.emplace_back("name", repr_string(std::string(self.getName())));
+        }
+        return format_repr("Link", fields);
+      });
+
   nb::class_<sim::MultiBody>(m, "MultiBody")
       .def(
           "getName",
@@ -151,6 +285,77 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def("getLinkCount", &sim::MultiBody::getLinkCount)
       .def("getJointCount", &sim::MultiBody::getJointCount)
       .def("getDOFCount", &sim::MultiBody::getDOFCount)
+      .def(
+          "addLink",
+          [](sim::MultiBody& self, const std::string& name) {
+            return self.addLink(name);
+          },
+          nb::arg("name") = "",
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_link",
+          [](sim::MultiBody& self, const std::string& name) {
+            return self.addLink(name);
+          },
+          nb::arg("name") = "",
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_link",
+          [](sim::MultiBody& self,
+             const std::string& name,
+             const sim::Link& parent,
+             const JointSpec& joint) {
+            return self.addLink(name, makeLinkOptions(parent, joint));
+          },
+          nb::arg("name"),
+          nb::kw_only(),
+          nb::arg("parent"),
+          nb::arg("joint") = JointSpec{},
+          nb::keep_alive<0, 1>())
+      .def(
+          "getLink",
+          [](sim::MultiBody& self, const std::string& name) -> nb::object {
+            auto link = self.getLink(name);
+            if (!link.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*link, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "get_link",
+          [](sim::MultiBody& self, const std::string& name) -> nb::object {
+            auto link = self.getLink(name);
+            if (!link.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*link, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "getJoint",
+          [](sim::MultiBody& self, const std::string& name) -> nb::object {
+            auto joint = self.getJoint(name);
+            if (!joint.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*joint, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "get_joint",
+          [](sim::MultiBody& self, const std::string& name) -> nb::object {
+            auto joint = self.getJoint(name);
+            if (!joint.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*joint, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
       .def_prop_rw(
           "name",
           [](const sim::MultiBody& self) {

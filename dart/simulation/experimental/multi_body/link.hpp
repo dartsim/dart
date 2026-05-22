@@ -67,9 +67,9 @@ namespace dart::simulation::experimental {
 /// @code
 ///   auto root = robot.addLink("base");
 ///   auto link1 = robot.addLink("link1", {
-///       .parentLink = root.getEntity(),
+///       .parentLink = root,
 ///       .jointName = "shoulder",
-///       .jointType = JointType::REVOLUTE
+///       .jointType = JointType::Revolute
 ///   });
 ///   std::cout << link1.getName() << std::endl;
 /// @endcode

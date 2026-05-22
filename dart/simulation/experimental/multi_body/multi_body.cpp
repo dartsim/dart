@@ -45,6 +45,36 @@
 
 namespace dart::simulation::experimental {
 
+namespace {
+
+comps::JointType toComponentJointType(JointType type)
+{
+  switch (type) {
+    case JointType::Fixed:
+      return comps::JointType::Fixed;
+    case JointType::Revolute:
+      return comps::JointType::Revolute;
+    case JointType::Prismatic:
+      return comps::JointType::Prismatic;
+    case JointType::Screw:
+      return comps::JointType::Screw;
+    case JointType::Universal:
+      return comps::JointType::Universal;
+    case JointType::Ball:
+      return comps::JointType::Ball;
+    case JointType::Planar:
+      return comps::JointType::Planar;
+    case JointType::Free:
+      return comps::JointType::Free;
+    case JointType::Custom:
+      return comps::JointType::Custom;
+  }
+
+  return comps::JointType::Custom;
+}
+
+} // namespace
+
 //==============================================================================
 MultiBody::MultiBody(entt::entity entity, World* world)
   : m_entity(entity), m_world(world)
@@ -245,7 +275,7 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
 
   // Add Joint with type-specific configuration
   auto& jointComp = registry.emplace<comps::Joint>(jointEntity);
-  jointComp.type = options.jointType;
+  jointComp.type = toComponentJointType(options.jointType);
   jointComp.name = std::move(actualJointName);
 
   const double axisNorm = options.axis.norm();

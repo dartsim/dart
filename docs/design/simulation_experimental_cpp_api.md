@@ -108,6 +108,19 @@ kinematics-only updates, collision query preparation, sensor sampling, or
 rendering synchronization. Runtime shortcuts should not fork the user-facing
 object model.
 
+### Tree Topology Plus Constraint Graph
+
+Articulated systems should keep a tree-shaped `MultiBody` as the owner for
+links, joints, names, and state indexing, then represent closed chains as
+explicit graph constraints between symmetric public endpoints.
+
+This keeps the common serial-chain and branched-tree API simple while allowing
+closed-chain mechanisms to participate in kinematic projection, residual
+diagnostics, and dynamic constraint solving. A closure is not a second parent,
+a fake child joint, or an exposed solver row. It is public topology plus
+runtime policy, with the implementation free to choose the constraint
+formulation behind that facade.
+
 ### Fresh Results Without Dirty-Flag API
 
 The long-term API should preserve the safety of DART 6 lazy evaluation without
@@ -371,6 +384,13 @@ implicit-dynamics stage, not to ordinary frame-cache refresh.
 
 The API should keep the useful lessons from existing engines without inheriting
 their public vocabulary:
+
+| Engine/API pattern      | Lesson for DART's public API                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| MuJoCo equality models  | Keep loop closures outside the kinematic tree as named residuals that can feed dynamics.                       |
+| Drake multibody plant   | Separate topology construction from finalization so closed-chain dimensions, constraints, and ports are known. |
+| Project Chrono links    | Return public constraint/link handles with relative-motion and reaction diagnostics.                           |
+| Bullet typed constraint | Support enable/disable, feedback, and solver policy without making a generic backend constraint the API.       |
 
 - MuJoCo models loop joints through equality constraints with residuals
   `r(q) = 0`, including connect and weld constraints outside the kinematic

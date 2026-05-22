@@ -39,6 +39,36 @@
 
 namespace dart::simulation::experimental {
 
+namespace {
+
+JointType toPublicJointType(comps::JointType type)
+{
+  switch (type) {
+    case comps::JointType::Fixed:
+      return JointType::Fixed;
+    case comps::JointType::Revolute:
+      return JointType::Revolute;
+    case comps::JointType::Prismatic:
+      return JointType::Prismatic;
+    case comps::JointType::Screw:
+      return JointType::Screw;
+    case comps::JointType::Universal:
+      return JointType::Universal;
+    case comps::JointType::Ball:
+      return JointType::Ball;
+    case comps::JointType::Planar:
+      return JointType::Planar;
+    case comps::JointType::Free:
+      return JointType::Free;
+    case comps::JointType::Custom:
+      return JointType::Custom;
+  }
+
+  return JointType::Custom;
+}
+
+} // namespace
+
 //==============================================================================
 Joint::Joint(entt::entity entity, World* world)
   : m_entity(entity), m_world(world)
@@ -53,10 +83,10 @@ std::string_view Joint::getName() const
 }
 
 //==============================================================================
-comps::JointType Joint::getType() const
+JointType Joint::getType() const
 {
   const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
-  return jointComp.type;
+  return toPublicJointType(jointComp.type);
 }
 
 //==============================================================================

@@ -34,7 +34,7 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
-#include <dart/simulation/experimental/comps/joint.hpp> // For JointType
+#include <dart/simulation/experimental/multi_body/joint_type.hpp>
 
 #include <Eigen/Core>
 #include <entt/entt.hpp>
@@ -66,7 +66,7 @@ namespace dart::simulation::experimental {
 ///   auto link = robot.addLink("link1", {
 ///       .parentLink = root,
 ///       .jointName = "shoulder",
-///       .jointType = JointType::REVOLUTE
+///       .jointType = JointType::Revolute
 ///   });
 ///
 ///   Joint joint = link.getParentJoint();
@@ -93,8 +93,8 @@ public:
 
   /// Get the joint type
   ///
-  /// @return JointType enum (REVOLUTE, PRISMATIC, etc.)
-  [[nodiscard]] comps::JointType getType() const;
+  /// @return JointType enum (Revolute, Prismatic, etc.)
+  [[nodiscard]] JointType getType() const;
 
   /// Get the primary joint axis
   ///

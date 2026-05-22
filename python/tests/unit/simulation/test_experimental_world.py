@@ -110,6 +110,58 @@ def test_experimental_world_smoke():
     assert world.num_rigid_bodies == 0
 
 
+def test_experimental_multibody_link_joint_common_path():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    arm = world.add_multi_body("arm")
+
+    base = arm.add_link("base")
+    assert base.name == "base"
+    assert base.is_valid
+    assert not base.parent_joint.is_valid
+    assert base.translation.tolist() == pytest.approx([0.0, 0.0, 0.0])
+    assert base.quaternion.tolist() == pytest.approx([1.0, 0.0, 0.0, 0.0])
+    assert arm.num_links == 1
+    assert arm.num_joints == 0
+    assert arm.num_dofs == 0
+
+    spec = sx.JointSpec(
+        name="elbow",
+        type=sx.JointType.REVOLUTE,
+        axis=(0.0, 0.0, 2.0),
+    )
+    forearm = arm.add_link("forearm", parent=base, joint=spec)
+
+    assert forearm.name == "forearm"
+    assert forearm.get_name() == "forearm"
+    assert arm.num_links == 2
+    assert arm.num_joints == 1
+    assert arm.num_dofs == 1
+    assert arm.get_link("base").name == "base"
+    assert arm.get_link("missing") is None
+
+    joint = forearm.parent_joint
+    assert joint.is_valid
+    assert joint.name == "elbow"
+    assert joint.get_name() == "elbow"
+    assert joint.type == sx.JointType.REVOLUTE
+    assert joint.get_type() == sx.JointType.REVOLUTE
+    assert joint.axis.tolist() == pytest.approx([0.0, 0.0, 1.0])
+    assert joint.get_axis().tolist() == pytest.approx([0.0, 0.0, 1.0])
+    assert joint.parent_link.name == "base"
+    assert joint.get_parent_link().name == "base"
+    assert joint.child_link.name == "forearm"
+    assert joint.get_child_link().name == "forearm"
+    assert arm.get_joint("elbow").child_link.name == "forearm"
+    assert arm.get_joint("missing") is None
+
+    world.step()
+
+    assert world.is_simulation_mode
+    assert forearm.translation.tolist() == pytest.approx([0.0, 0.0, 0.0])
+
+
 def test_experimental_world_common_path_properties_and_step_count():
     sx = _simulation_experimental()
 
