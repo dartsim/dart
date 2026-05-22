@@ -3,6 +3,9 @@
 Filament-backed native collision visual debugger for pair-by-pair contact and
 broad-phase inspection.
 
+The pair coverage table lists every registered case and marks unsupported rows
+as placeholders.
+
 Useful smoke command:
 
 ```bash

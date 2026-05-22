@@ -12,8 +12,9 @@ contact/manifold/result values in the panel, contact point/normal/depth
 rendering, AABB-tree/candidate-pair overlays, a `--pair` headless selector, a
 CMake-driven headless screenshot sweep, a broad-phase selector with AABB-tree,
 spatial-hash, sweep-and-prune, and brute-force modes, a native group/mask
-filter toggle, and focused tests for the registry and broad-phase debug
-snapshot API.
+filter toggle, an explicit pair coverage table that marks unsupported rows as
+placeholders, and focused tests for the registry and broad-phase debug snapshot
+API.
 
 ## Current Branch
 
@@ -22,8 +23,8 @@ worktree should be clean after the checkpoint commit.
 
 ## Immediate Next Step
 
-Check whether unsupported placeholder rows need richer disabled-state rendering
-before the completion PR, then decide when to remove this dev-task folder.
+Decide when to remove this dev-task folder, then run the final PR-ready
+verification sweep.
 
 ## Context That Would Be Lost
 
@@ -34,7 +35,8 @@ before the completion PR, then decide when to remove this dev-task folder.
   object posing, contact point/normal/depth rendering, and
   AABB-tree/candidate-pair overlays, spatial-hash cell overlays, and
   sweep-and-prune endpoint-order overlays. The `Filter Pair` toggle applies
-  mismatched native group/mask bits and tints filtered objects.
+  mismatched native group/mask bits and tints filtered objects; the pair
+  coverage table marks unsupported rows as placeholders.
 - `examples/collision_sandbox/run_headless_sweep.cmake` drives the
   deterministic smoke sweep for representative pair screenshots, spatial-hash
   and sweep-and-prune overlay screenshots, plus a wide UI screenshot that keeps

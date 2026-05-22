@@ -501,7 +501,8 @@
   - Added a Filament-backed native collision sandbox with pair selection, shape
     parameter and pose controls, contact/manifold overlays, broad-phase
     selection, native group/mask filtering, AABB-tree, spatial-hash,
-    sweep-and-prune debug rendering, and headless screenshot smoke coverage.
+    sweep-and-prune debug rendering, unsupported-pair placeholders, and
+    headless screenshot smoke coverage.
   - Wired the native DART backend as a full `CollisionDetector` implementation with distance queries, raycast, and expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere). The legacy `"experimental"` factory key remains as an alias for compatibility.
   - Fixed native capsule-box duplicate filtering to stay pair-local so accumulated collision results do not suppress new contacts in dense worlds.
   - Native collision: added MPR convex penetration and optional libccd parity tests/bench.

@@ -92,6 +92,12 @@ constexpr std::array<BroadPhaseOption, 4> kBroadPhaseOptions{{
     {collision::BroadPhaseType::BruteForce, "brute_force", "Brute Force"},
 }};
 
+constexpr std::array<std::string_view, 3> kPairCoverageColumns{{
+    "Pair",
+    "Status",
+    "Mode",
+}};
+
 Eigen::Vector4d rgba(double r, double g, double b, double a = 1.0)
 {
   return {r, g, b, a};
@@ -164,6 +170,21 @@ const BroadPhaseOption& selectedBroadPhase(const SandboxState& state)
 {
   return kBroadPhaseOptions[std::min(
       state.broadPhaseIndex, kBroadPhaseOptions.size() - 1)];
+}
+
+std::string_view pairCoverageMode(const sandbox::PairCase& pair)
+{
+  switch (pair.status) {
+    case sandbox::PairStatus::Contact:
+      return "direct contact";
+    case sandbox::PairStatus::AdaptedFallback:
+      return "fallback contact";
+    case sandbox::PairStatus::DistanceOnly:
+      return "distance";
+    case sandbox::PairStatus::Unsupported:
+      return "placeholder";
+  }
+  return "unknown";
 }
 
 const BroadPhaseOption* findBroadPhaseOption(std::string_view id)
@@ -816,6 +837,9 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
         pair.label + " [" + std::string(sandbox::pairStatusLabel(pair.status))
         + "]");
     panelBuilder.text(pair.note);
+    panelBuilder.text(
+        "Mode: " + std::string(pairCoverageMode(pair)) + " - "
+        + std::string(sandbox::pairStatusDescription(pair.status)));
     if (panelBuilder.button("Previous")) {
       state->pairCaseIndex
           = (state->pairCaseIndex + pairs.size() - 1) % pairs.size();
@@ -837,6 +861,37 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
         }
       }
       panelBuilder.endMenu();
+    }
+    if (panelBuilder.collapsingHeader("Pair Coverage", false)) {
+      const bool useTable
+          = panelBuilder.beginTable("pair_coverage", kPairCoverageColumns);
+      if (!useTable) {
+        panelBuilder.text("Pair | Status | Mode");
+      }
+      for (const sandbox::PairCase& candidate : pairs) {
+        std::string pairLabel = candidate.label;
+        if (candidate.index == state->pairCaseIndex) {
+          pairLabel += " (current)";
+        }
+        const std::string statusLabel
+            = std::string(sandbox::pairStatusLabel(candidate.status));
+        const std::string modeLabel = std::string(pairCoverageMode(candidate));
+        if (useTable) {
+          panelBuilder.tableNextRow();
+          panelBuilder.tableNextColumn();
+          panelBuilder.text(pairLabel);
+          panelBuilder.tableNextColumn();
+          panelBuilder.text(statusLabel);
+          panelBuilder.tableNextColumn();
+          panelBuilder.text(modeLabel);
+        } else {
+          panelBuilder.text(
+              pairLabel + " | " + statusLabel + " | " + modeLabel);
+        }
+      }
+      if (useTable) {
+        panelBuilder.endTable();
+      }
     }
 
     panelBuilder.separator();
