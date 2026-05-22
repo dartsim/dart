@@ -52,12 +52,17 @@ function(_dart_collision_sandbox_check_ppm screenshot width height)
   endif()
 endfunction()
 
-function(_dart_collision_sandbox_run_pair pair broad_phase show_ui width height)
+function(_dart_collision_sandbox_run_pair pair broad_phase filter_pair show_ui width height)
   set(_suffix "${pair}")
   set(_broad_phase_args "")
   if(NOT "${broad_phase}" STREQUAL "")
     set(_suffix "${pair}_${broad_phase}")
     set(_broad_phase_args --broad-phase "${broad_phase}")
+  endif()
+  set(_filter_args "")
+  if(filter_pair)
+    set(_suffix "${_suffix}_filtered")
+    set(_filter_args --filter-pair)
   endif()
   set(_ui_args "")
   if(show_ui)
@@ -77,6 +82,7 @@ function(_dart_collision_sandbox_run_pair pair broad_phase show_ui width height)
       --height "${height}"
       --pair "${pair}"
       ${_broad_phase_args}
+      ${_filter_args}
       --screenshot "${_screenshot}"
     RESULT_VARIABLE _result
     OUTPUT_VARIABLE _stdout
@@ -101,17 +107,20 @@ endfunction()
 
 foreach(_pair IN LISTS _pairs)
   _dart_collision_sandbox_run_pair(
-    "${_pair}" "" FALSE "${_width}" "${_height}"
+    "${_pair}" "" FALSE FALSE "${_width}" "${_height}"
   )
 endforeach()
 _dart_collision_sandbox_run_pair(
-  sphere_box spatial_hash FALSE "${_width}" "${_height}"
+  sphere_box spatial_hash FALSE FALSE "${_width}" "${_height}"
 )
 _dart_collision_sandbox_run_pair(
-  sphere_box sweep_and_prune FALSE "${_width}" "${_height}"
+  sphere_box sweep_and_prune FALSE FALSE "${_width}" "${_height}"
 )
 _dart_collision_sandbox_run_pair(
-  sphere_box "" TRUE "${_ui_width}" "${_ui_height}"
+  sphere_box "" TRUE FALSE "${_width}" "${_height}"
+)
+_dart_collision_sandbox_run_pair(
+  sphere_box "" FALSE TRUE "${_ui_width}" "${_ui_height}"
 )
 
 message(

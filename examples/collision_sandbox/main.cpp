@@ -124,6 +124,7 @@ struct QuerySummary
   bool broadPhaseHasTreeTopology = false;
   bool broadPhaseHasSpatialHashCells = false;
   bool broadPhaseHasSweepEndpoints = false;
+  bool pairFiltered = false;
   std::vector<ContactRow> contacts;
 };
 
@@ -148,6 +149,7 @@ struct SandboxState
   bool showCandidatePairs = true;
   bool showSpatialHashCells = true;
   bool showSweepEndpoints = true;
+  bool filterPair = false;
   bool dirty = true;
   QuerySummary summary;
 };
@@ -223,8 +225,11 @@ std::string formatVec3(const Eigen::Vector3d& value)
 }
 
 Eigen::Vector4d objectColor(
-    const sandbox::PairCase& pair, bool objectA, bool hit)
+    const sandbox::PairCase& pair, bool objectA, bool hit, bool filtered)
 {
+  if (filtered) {
+    return objectA ? rgba(0.62, 0.62, 0.68) : rgba(0.48, 0.5, 0.56);
+  }
   if (pair.status == sandbox::PairStatus::Unsupported) {
     return rgba(0.42, 0.44, 0.46);
   }
@@ -599,6 +604,17 @@ void rebuildScene(SandboxState& state)
       sandbox::makeShape(pair.shapeA, state.objectAParams), tfA);
   auto objB = nativeWorld.createObject(
       sandbox::makeShape(pair.shapeB, state.objectBParams), tfB);
+  if (state.filterPair) {
+    objA.setCollisionFilter(
+        collision::FilterGroup::Static, collision::FilterGroup::Static);
+    objB.setCollisionFilter(
+        collision::FilterGroup::Dynamic, collision::FilterGroup::Dynamic);
+  } else {
+    objA.setCollisionFilterData(collision::CollisionFilterData::all());
+    objB.setCollisionFilterData(collision::CollisionFilterData::all());
+  }
+  state.summary.pairFiltered = !collision::shouldCollide(
+      objA.getCollisionFilterData(), objB.getCollisionFilterData());
 
   collision::CollisionResult collisionResult;
   collision::DistanceResult distanceResult;
@@ -621,13 +637,13 @@ void rebuildScene(SandboxState& state)
       "object_a",
       makeVisualShape(pair.shapeA, state.objectAParams),
       tfA,
-      objectColor(pair, true, state.summary.hit));
+      objectColor(pair, true, state.summary.hit, state.summary.pairFiltered));
   addFrame(
       state.world,
       "object_b",
       makeVisualShape(pair.shapeB, state.objectBParams),
       tfB,
-      objectColor(pair, false, state.summary.hit));
+      objectColor(pair, false, state.summary.hit, state.summary.pairFiltered));
 
   if (pair.supportsContact()) {
     for (const ContactRow& contact : state.summary.contacts) {
@@ -712,6 +728,9 @@ bool parseExampleArgs(int argc, char* argv[], SandboxState& state)
       }
       state.broadPhaseIndex
           = static_cast<std::size_t>(option - kBroadPhaseOptions.data());
+      state.dirty = true;
+    } else if (arg == "--filter-pair") {
+      state.filterPair = true;
       state.dirty = true;
     }
   }
@@ -853,6 +872,7 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
         panelBuilder, "B", pair.shapeB, state->objectBParams);
     state->dirty
         |= panelBuilder.slider("Max Contacts", state->maxContacts, 1.0, 64.0);
+    state->dirty |= panelBuilder.checkbox("Filter Pair", state->filterPair);
     if (panelBuilder.button("Reset Pair")) {
       resetPairControls(*state);
     }
@@ -874,6 +894,8 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
     const QuerySummary& summary = state->summary;
     panelBuilder.text(
         std::string("Collision: ") + (summary.hit ? "yes" : "no"));
+    panelBuilder.text(
+        std::string("Filtered: ") + (summary.pairFiltered ? "yes" : "no"));
     panelBuilder.text(
         "Manifolds: " + std::to_string(summary.numManifolds)
         + " Contacts: " + std::to_string(summary.numContacts));

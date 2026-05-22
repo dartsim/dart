@@ -10,6 +10,7 @@
 - [x] Phase 4: Add broad-phase debug snapshots and overlays.
 - [x] Phase 5: Add deterministic headless visual smoke sweeps.
 - [x] Phase 6: Add spatial-order broad-phase overlays.
+- [x] Phase 7: Add collision filtering controls.
 
 ## Goal
 
@@ -58,17 +59,17 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
 
 ## Immediate Next Steps
 
-1. Consider whether collision filtering controls belong in the first completion
-   pass or should remain a follow-up.
-2. Decide whether unsupported placeholder rows need richer disabled-state
+1. Decide whether unsupported placeholder rows need richer disabled-state
    rendering before the completion PR.
+2. Decide whether dev-task cleanup should happen in the next checkpoint or wait
+   until a final maintainer review pass.
 
 ## Completion Checklist
 
 - [ ] The example covers every supported native pair or shows an explicit
       placeholder for unsupported/not-yet-visualized rows.
 - [x] Users can move and pose both objects and adjust shape parameters at
-      runtime.
+      runtime, including a native group/mask filter toggle.
 - [x] Contact overlays and panels show raw point, normal, depth, and manifold
       membership.
 - [x] Broad-phase overlays show object AABBs, candidate pairs, and AABB tree

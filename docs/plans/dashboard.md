@@ -103,9 +103,9 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Decide whether collision filtering controls belong in the first
-  completion pass, then check unsupported placeholder rows for any missing
-  disabled-state rendering.
+- Next step: Check unsupported placeholder rows for any missing disabled-state
+  rendering, then decide when to remove the dev-task folder in the completion
+  PR.
 - Gate: The completed example must build with Filament-backed `dart-gui`, pass
   `EXAMPLE_collision_sandbox_headless_sweep`, cover every supported native pair
   with explicit unsupported placeholders, and have focused native-collision

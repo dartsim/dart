@@ -16,3 +16,6 @@ Broad-phase overlays can be selected from the panel or headless command line:
 pixi run ex collision_sandbox --headless --frames 2 --pair sphere_box \
   --broad-phase spatial_hash --screenshot /tmp/collision_sandbox_hash.ppm
 ```
+
+Use `--filter-pair` to apply mismatched native collision group/mask bits and
+inspect the filtered rendering state.

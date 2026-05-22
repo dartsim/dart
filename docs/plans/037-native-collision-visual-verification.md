@@ -17,6 +17,7 @@
   native narrow-phase support table and shape parameter factory behavior; and
   `BroadPhaseDebugSnapshot` exposes copied AABB-tree topology, spatial-hash
   cells, and sweep-and-prune endpoint order for GUI overlays;
+  the sandbox includes a native group/mask filter toggle; and
   `examples/collision_sandbox/run_headless_sweep.cmake` provides the current
   CTest-gated representative pair, broad-phase overlay, and UI screenshot
   smoke.
