@@ -7,8 +7,7 @@
 - Concepts/APIs: `dart::gui::ApplicationOptions`, `PointCloudShape`,
   `VoxelGridShape`, source-owned DART worlds, and renderer-neutral panels.
 - Expected output: the KR5 robot and ground with blue point samples, an orange
-  voxel grid when OctoMap is available, a red moving sensor sphere, and a
-  small scene grid.
+  native voxel grid, a red moving sensor sphere, and a small scene grid.
 
 ## Run In Tree
 
@@ -34,7 +33,7 @@ handled by the shared `dart::gui` runner.
 - `Run Robot Updating` toggles the live point-cloud update loop.
 - `Sample on robot` and `Sample in box` switch the sample source.
 - The panel can show or hide the point cloud, sensor origin, scene grid, and
-  voxel grid when OctoMap support is enabled.
+  native voxel grid.
 - Scene-grid controls expose plane, offset, line count, step size,
   major/minor/axis widths, and line colors through source-owned DART line
   geometry.

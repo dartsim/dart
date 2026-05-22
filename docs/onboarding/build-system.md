@@ -151,43 +151,46 @@ dart/
 - **CMake Module:** `cmake/DARTFindEigen3.cmake`
 - **Find Package:** `Eigen3` (CONFIG mode)
 
-#### 2. FCL (Flexible Collision Library)
-
-- **Version:** ≥ 0.7.0, < 0.8
-- **Purpose:** Collision detection
-- **CMake Module:** `cmake/DARTFindfcl.cmake`
-- **ROS Dependency:** `libfcl-dev`
-
-#### 3. assimp (Asset Importer)
+#### 2. assimp (Asset Importer)
 
 - **Version:** ≥ 5.4.3, < 6
 - **Purpose:** 3D model loading (meshes, skeletons)
 - **CMake Module:** `cmake/DARTFindassimp.cmake`
 - **Special Checks:** Constructor/destructor availability for `aiScene` and `aiMaterial`
 
-#### 4. fmt (Formatting Library)
+#### 3. fmt (Formatting Library)
 
 - **Version:** ≥ 11.1.4, < 12
 - **Purpose:** String formatting
 - **CMake Module:** `cmake/DARTFindfmt.cmake`
 - **Targets:** `fmt::fmt` or `fmt::fmt-header-only`
 
-#### 5. octomap (Octree-based 3D mapping)
-
-- **Version:** ≥ 1.10.0, < 2
-- **Purpose:** VoxelGridShape support
-- **CMake Module:** `cmake/DARTFindoctomap.cmake`
-- **Optional:** Warning if not found
-
 ### Optional Dependencies
 
-#### 6. spdlog (Logging)
+#### 4. spdlog (Logging)
 
 - **Version:** ≥ 1.15.3, < 2
 - **Purpose:** Fast C++ logging library
 - **CMake Module:** `cmake/DARTFindspdlog.cmake`
 - **Targets:** `spdlog::spdlog` or `spdlog::spdlog_header_only`
 - **Skip Option:** `DART_SKIP_spdlog`
+
+#### 5. FCL (Flexible Collision Library)
+
+- **Version:** ≥ 0.7.0, < 0.8
+- **Purpose:** Reference collision tests and benchmarks only
+- **CMake Module:** `cmake/DARTFindfcl.cmake`
+- **ROS Dependency:** `libfcl-dev`
+- **Scope:** Not discovered or linked by core DART libraries unless reference
+  collision tests or benchmarks are enabled
+
+#### 6. octomap (Octree-based 3D mapping)
+
+- **Version:** ≥ 1.10.0, < 2
+- **Purpose:** Test and benchmark comparisons for native occupancy-grid
+  behavior
+- **CMake Module:** `cmake/DARTFindoctomap.cmake`
+- **Scope:** Not discovered or linked by core DART libraries
 
 ### GUI-Specific Dependencies
 
@@ -436,9 +439,15 @@ Component Dependency Tree:
     ├── assimp
     ├── fmt
     ├── spdlog (optional)
-    ├── octomap (optional)
-    ├── Bullet (optional; via `DART_BUILD_COLLISION_BULLET`)
-    └── ODE (optional; via `DART_BUILD_COLLISION_ODE`)
+    ├── collision-fcl (native-backed compatibility facade; no FCL dependency)
+    ├── collision-bullet (native-backed compatibility facade; no Bullet dependency)
+    └── collision-ode (native-backed compatibility facade; no ODE collision dependency)
+
+Reference test/benchmark targets, when enabled:
+    ├── dart-test-reference-fcl (optional; reference tests/benchmarks only)
+    ├── dart-test-reference-bullet (optional; reference tests/benchmarks only)
+    ├── dart-test-reference-ode (optional; reference tests/benchmarks only)
+    └── octomap (optional; occupancy-grid tests/benchmarks only)
 
     ├── utils
     │   └── depends: dart, tinyxml2, libsdformat
@@ -745,12 +754,12 @@ build/
 
 **Purpose:** Test DART integration with Gazebo Physics
 
-**Context (why this exists):** This workflow is the compatibility gate for a pinned gz-physics checkout (`gz-physics9_9.0.0`) built against the DART installed from this repository. When updating DART (e.g., DART 7), keep downstream compatibility by fixing issues in DART (or upstream gz-physics) rather than carrying local gz-physics source patches here. The only intended “patching” is bumping the DART CMake package version requirement so gz-physics will configure against DART 7.
+**Context (why this exists):** This workflow is the compatibility gate for a pinned gz-physics checkout (`gz-physics9_9.0.0`) built against the DART installed from this repository. When updating DART (e.g., DART 7), keep downstream compatibility by fixing issues in DART (or upstream gz-physics) rather than carrying local gz-physics source patches here. DART 7's generated package-version file satisfies the pinned DART 6.10+ CMake requirement, so the local workflow validates that requirement instead of editing downstream sources.
 
 **Tasks:**
 
 - `download-gz` - Download gz-physics source
-- `patch-gz` - Patch DART version requirement
+- `patch-gz` - Validate DART version requirement compatibility
 - `config-gz` - Configure gz-physics build
 - `build-gz` - Build gz-physics with dartsim plugin
 - `test-gz` - Verify DART integration
@@ -758,7 +767,7 @@ build/
 **Start here next time:**
 
 - [`pixi.toml`](../../pixi.toml) (`[feature.gazebo]`) - task chain + env overrides
-- [`scripts/patch_gz_physics.py`](../../scripts/patch_gz_physics.py) - intentionally limited patch scope (DART version only)
+- [`scripts/patch_gz_physics.py`](../../scripts/patch_gz_physics.py) - validates the pinned DART version requirement without mutating gz-physics sources
 - [`cmake/gz_physics_force_vendor_gtest.cmake`](../../cmake/gz_physics_force_vendor_gtest.cmake) - ensures gz-physics uses its vendored GoogleTest headers
 - [`.github/workflows/ci_gz_physics.yml`](../../.github/workflows/ci_gz_physics.yml) - CI entry point for this workflow
 
@@ -769,9 +778,9 @@ N=${DART_SAFE_JOBS:-$(python scripts/parallel_jobs.py)}
 DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 
-This command downloads the pinned `gz-physics9_9.0.0` branch, applies only the
-DART version-requirement patch from `scripts/patch_gz_physics.py`, configures
-with tests enabled, builds the DART plugin and selected gz-physics tests, runs
+This command downloads the pinned `gz-physics9_9.0.0` branch, validates the
+DART version requirement through `scripts/patch_gz_physics.py`, configures with
+tests enabled, builds the DART plugin and selected gz-physics tests, runs
 `ctest --tests-regex "^(UNIT_|check_UNIT_|COMMON_TEST_.*dartsim)"`, and checks
 that the generated `libgz-physics-dartsim-plugin` links to DART libraries.
 
@@ -800,12 +809,15 @@ change skips this gate, state the deferral reason in the PR description.
   - `Could NOT find DART (missing: collision-bullet collision-ode) (Required is at least version "7.0")`
   - `... but it set DART_FOUND to FALSE ...`
   - **Resolution:** The downstream is requesting legacy components. In DART 7, Bullet/ODE backends are part of the core `dart` component; `collision-bullet` / `collision-ode` exist only as deprecated compatibility components and are planned for removal in DART 8. Prefer to update downstream to depend on `dart`, but keep this workflow passing for existing consumers.
-- **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.
+- **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py`
+  limited to validating the DART version requirement; otherwise this workflow
+  stops catching real compatibility breaks.
 - **gtest header mismatches.** Symptom: link errors like `undefined reference to testing::internal::MakeAndRegisterTestInfo(std::string, ...)` when building gz-physics tests. The `config-gz` task passes `-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake` to ensure gz-physics compiles against the vendored headers that match its vendored gtest library; keep that behavior.
 - **Deprecation noise is expected.** When gz-physics links the deprecated compatibility targets, CMake may emit deprecation warnings; these are intentional and should be treated as migration pressure for downstreams.
 - **Type-name API compatibility.** `CollisionDetector::getType()` and `BoxedLcpSolver::getType()` return `const std::string&` for gz-physics compatibility; prefer `getTypeView()` in DART code, and keep `test-gz` green before changing signatures.
 - **Constraint solver type compatibility.** gz-physics does `dynamic_cast<BoxedLcpConstraintSolver*>` on the solver returned by `World::getConstraintSolver()`. If `World` creates a base `ConstraintSolver` instead of `BoxedLcpConstraintSolver`, the cast fails and gz-physics tests break (`COMMON_TEST_world_features_dartsim`, `UNIT_WorldFeatures_TEST`). Always use `BoxedLcpConstraintSolver` (deprecated but required) when constructing the solver in `createConstraintSolver()` in `world.cpp`.
-- **The gz-physics checkout is ephemeral.** `download-gz` clones into `.deps/gz-physics`, and `patch-gz` writes a `.bak` backup in that directory; both are expected and should remain untracked.
+- **The gz-physics checkout is ephemeral.** `download-gz` clones into
+  `.deps/gz-physics`; those files are expected and should remain untracked.
 
 **Dependencies:**
 

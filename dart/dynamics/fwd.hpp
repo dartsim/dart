@@ -105,6 +105,7 @@ class Skeleton;
 class SoftBodyNode;
 class SoftMeshShape;
 class SphereShape;
+class SparseOccupancyGrid;
 template <class NodeType>
 class TemplatedJacobianNode;
 class TranslationalJoint;
