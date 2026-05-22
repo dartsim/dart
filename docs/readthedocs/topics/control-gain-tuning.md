@@ -84,6 +84,6 @@ computed `tau`.
 See also:
 
 - :doc:`../topics/control-theory` (PD and inverse-dynamics overview)
-- :doc:`../tutorials/biped` (full PD controller example)
-- :doc:`../tutorials/multi-pendulum` (implicit stiffness/damping as a stable alternative to huge gains)
+- :doc:`../topics/simulation-stability` (stability checklist for high gains)
+- :doc:`../gallery` (maintained Filament simulation scenes)
 ```

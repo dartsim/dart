@@ -30,105 +30,151 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/macros.hpp"
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/gui/all.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/utils/All.hpp>
+#include <dart/constraint/ball_joint_constraint.hpp>
+#include <dart/constraint/constraint_solver.hpp>
 
-#include <dart/all.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+
+#include <dart/math/constants.hpp>
+
 #include <dart/io/read.hpp>
 
-#include <ranges>
+#include <Eigen/Core>
 
-using namespace dart;
-using namespace math;
-using namespace dynamics;
-using namespace simulation;
-using namespace constraint;
+#include <array>
+#include <iostream>
+#include <stdexcept>
 
-class RigidLoopWorldNode : public dart::gui::WorldNode
+namespace {
+
+constexpr const char* kRigidLoopUri = "dart://sample/skel/chain.skel";
+constexpr const char* kRigidLoopName = "rigid_loop";
+
+void printRigidLoopInstructions()
 {
-public:
-  RigidLoopWorldNode(dart::simulation::WorldPtr world)
-    : dart::gui::WorldNode(world), mWorld(world)
-  {
+  std::cout << "Rigid Loop Chain Simulation\n"
+            << "Red links are connected by a ball joint constraint to form a "
+               "closed loop\n"
+            << "Space bar: Play/pause simulation\n"
+            << "ESC: Exit\n"
+            << std::endl;
+}
+
+void applyChainDamping(const dart::dynamics::SkeletonPtr& chain)
+{
+  if (chain == nullptr) {
+    return;
   }
 
-  void customPreStep() override
-  {
-    Eigen::VectorXd damping = computeDamping();
-    mWorld->getSkeleton(0)->setForces(damping);
+  Eigen::VectorXd damping = -0.01 * chain->getVelocities();
+  for (Eigen::Index i = 0; i < damping.size(); ++i) {
+    if (i % 3 == 1) {
+      damping[i] *= 0.1;
+    }
+  }
+  chain->setForces(damping);
+}
+
+dart::simulation::WorldPtr createRigidLoopWorld()
+{
+  auto world = dart::io::readWorld(kRigidLoopUri);
+  if (world == nullptr) {
+    throw std::runtime_error("Failed to load dart://sample/skel/chain.skel");
   }
 
-private:
-  Eigen::VectorXd computeDamping()
-  {
-    int nDof = mWorld->getSkeleton(0)->getNumDofs();
-    // add damping to each joint; twist-dof has smaller damping
-    Eigen::VectorXd damping = -0.01 * mWorld->getSkeleton(0)->getVelocities();
-    for (const auto i : std::views::iota(0, nDof)) {
-      if (i % 3 == 1) {
-        damping[i] *= 0.1;
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  world->setTimeStep(1.0 / 2000.0);
+
+  auto chain = world->getSkeleton(0);
+  if (chain == nullptr) {
+    throw std::runtime_error("Rigid loop world did not contain a skeleton");
+  }
+  chain->setName(kRigidLoopName);
+
+  Eigen::VectorXd initialPose = Eigen::VectorXd::Zero(chain->getNumDofs());
+  for (const int index : std::array{20, 23, 26, 29}) {
+    if (index < initialPose.size()) {
+      initialPose[index] = 0.4 * dart::math::pi;
+    }
+  }
+  chain->setPositions(initialPose);
+
+  auto* link6 = chain->getBodyNode("link 6");
+  auto* link10 = chain->getBodyNode("link 10");
+  if (link6 == nullptr || link10 == nullptr) {
+    throw std::runtime_error("Rigid loop world is missing link 6 or link 10");
+  }
+
+  link6->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
+  link10->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
+
+  const Eigen::Vector3d offset(0.0, 0.025, 0.0);
+  const Eigen::Vector3d jointPosition = link6->getTransform() * offset;
+  world->getConstraintSolver()->addConstraint(
+      std::make_shared<dart::constraint::BallJointConstraint>(
+          link6, link10, jointPosition));
+
+  return world;
+}
+
+dart::gui::Panel createStatusPanel()
+{
+  dart::gui::Panel panel;
+  panel.title = "Rigid Loop";
+  panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
+                              dart::gui::PanelContext& context) {
+    builder.text("Red links are connected by a ball joint constraint.");
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
       }
     }
-    return damping;
-  }
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("contacts: " + std::to_string(context.contactCount));
+  };
+  return panel;
+}
 
-  dart::simulation::WorldPtr mWorld;
-};
-
-int main()
+dart::gui::RunOptions makeRigidLoopRunDefaults()
 {
-  // load a skeleton file
-  // create and initialize the world
-  dart::simulation::WorldPtr myWorld
-      = dart::io::readWorld("dart://sample/skel/chain.skel");
-  DART_ASSERT(myWorld != nullptr);
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
 
-  // create and initialize the world
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
-  myWorld->setTimeStep(1.0 / 2000);
+} // namespace
 
-  int dof = myWorld->getSkeleton(0)->getNumDofs();
+int main(int argc, char* argv[])
+{
+  try {
+    printRigidLoopInstructions();
 
-  Eigen::VectorXd initPose(dof);
-  initPose.setZero();
-  initPose[20] = 0.4 * pi;
-  initPose[23] = 0.4 * pi;
-  initPose[26] = 0.4 * pi;
-  initPose[29] = 0.4 * pi;
-  myWorld->getSkeleton(0)->setPositions(initPose);
+    auto world = createRigidLoopWorld();
+    auto chain = world->getSkeleton(kRigidLoopName);
 
-  // create a ball joint constraint
-  BodyNode* bd1 = myWorld->getSkeleton(0)->getBodyNode("link 6");
-  BodyNode* bd2 = myWorld->getSkeleton(0)->getBodyNode("link 10");
-  bd1->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
-  bd2->setColor(Eigen::Vector3d(1.0, 0.0, 0.0));
-  Eigen::Vector3d offset(0.0, 0.025, 0.0);
-  Eigen::Vector3d jointPos = bd1->getTransform() * offset;
-  BallJointConstraintPtr cl
-      = std::make_shared<BallJointConstraint>(bd1, bd2, jointPos);
-  // WeldJointConstraint *cl = new WeldJointConstraint(bd1, bd2);
-  myWorld->getConstraintSolver()->addConstraint(cl);
-
-  // Create OSG viewer
-  dart::gui::Viewer viewer;
-  viewer.addWorldNode(new RigidLoopWorldNode(myWorld));
-
-  // Print instructions
-  std::cout << "Rigid Loop Chain Simulation\n";
-  std::cout << "Red links are connected by a ball joint constraint to form a "
-               "closed loop\n";
-  std::cout << "Space bar: Play/pause simulation\n";
-  std::cout << "ESC: Exit\n" << std::endl;
-
-  // Set up the window
-  viewer.setUpViewInWindow(0, 0, 640, 480);
-
-  // Run the viewer
-  viewer.run();
-
-  return 0;
+    dart::gui::ApplicationOptions options;
+    options.world = world;
+    options.runDefaults = makeRigidLoopRunDefaults();
+    options.preStep = [chain]() {
+      applyChainDamping(chain);
+    };
+    options.panels.push_back(createStatusPanel());
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "rigid_loop: " << e.what() << "\n";
+    return 1;
+  }
 }

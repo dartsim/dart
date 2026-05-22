@@ -30,201 +30,320 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/utils/All.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/all.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+
+#include <dart/common/composite.hpp>
+
 #include <dart/io/read.hpp>
 
-#include <osgViewer/Viewer>
+#include <algorithm>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include <ranges>
+#include <cstddef>
 
-using namespace dart::dynamics;
+namespace {
 
-class RecordingWorld : public dart::gui::RealTimeWorldNode
+constexpr const char* kWorldUri = "dart://sample/skel/softBodies.skel";
+
+std::string makeStatusLine(const char* label, std::size_t value)
+{
+  std::ostringstream stream;
+  stream << label << value;
+  return stream.str();
+}
+
+class SoftBodyHistory
 {
 public:
-  RecordingWorld(const dart::simulation::WorldPtr& world)
-    : dart::gui::RealTimeWorldNode(world)
+  explicit SoftBodyHistory(dart::simulation::WorldPtr world)
+    : mWorld(std::move(world))
   {
-    grabTimeSlice();
-    mCurrentIndex = 0;
+    captureCurrentState();
   }
 
-  void grabTimeSlice()
+  void captureStepStart()
   {
-    TimeSlice slice;
-    slice.reserve(mWorld->getNumSkeletons());
-
-    for (const auto i :
-         std::views::iota(std::size_t{0}, mWorld->getNumSkeletons())) {
-      const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
-      State state;
-      state.mConfig = skeleton->getConfiguration();
-      state.mAspectStates.reserve(skeleton->getNumBodyNodes());
-
-      for (const auto j :
-           std::views::iota(std::size_t{0}, skeleton->getNumBodyNodes())) {
-        BodyNode* bn = skeleton->getBodyNode(j);
-        state.mAspectStates.push_back(bn->getCompositeState());
-      }
-
-      slice.push_back(state);
+    if (mHistory.empty()) {
+      captureCurrentState();
+      return;
     }
 
-    mHistory.push_back(slice);
-  }
-
-  void customPostStep() override
-  {
-    if (mCurrentIndex < mHistory.size() - 1) {
+    if (mCurrentIndex + 1 < mHistory.size()) {
       mHistory.resize(mCurrentIndex + 1);
     }
 
-    grabTimeSlice();
-    ++mCurrentIndex;
+    captureCurrentState();
+    mCurrentIndex = mHistory.size() - 1;
   }
 
-  void moveTo(std::size_t index)
+  void moveBackward(std::size_t delta)
   {
-    mViewer->simulate(false);
-
     if (mHistory.empty()) {
       return;
     }
 
-    if (index >= mHistory.size()) {
-      index = mHistory.size() - 1;
+    restoreIndex(mCurrentIndex > delta ? mCurrentIndex - delta : 0);
+  }
+
+  void moveForward(std::size_t delta)
+  {
+    if (mHistory.empty()) {
+      return;
     }
 
-    std::cout << "Moving to time step #" << index << std::endl;
+    restoreIndex(std::min(mCurrentIndex + delta, mHistory.size() - 1));
+  }
 
+  void restart()
+  {
+    restoreIndex(0);
+  }
+
+  void moveToEnd()
+  {
+    if (!mHistory.empty()) {
+      restoreIndex(mHistory.size() - 1);
+    }
+  }
+
+  std::size_t historySize() const
+  {
+    return mHistory.size();
+  }
+
+  std::size_t currentIndex() const
+  {
+    return mCurrentIndex;
+  }
+
+private:
+  struct SkeletonState
+  {
+    dart::dynamics::Skeleton::Configuration configuration;
+    std::vector<dart::common::Composite::State> bodyStates;
+  };
+
+  using TimeSlice = std::vector<SkeletonState>;
+
+  void captureCurrentState()
+  {
+    TimeSlice slice;
+    slice.reserve(mWorld->getNumSkeletons());
+
+    for (std::size_t i = 0; i < mWorld->getNumSkeletons(); ++i) {
+      const auto& skeleton = mWorld->getSkeleton(i);
+      SkeletonState state;
+      state.configuration = skeleton->getConfiguration();
+      state.bodyStates.reserve(skeleton->getNumBodyNodes());
+
+      for (std::size_t j = 0; j < skeleton->getNumBodyNodes(); ++j) {
+        state.bodyStates.push_back(
+            skeleton->getBodyNode(j)->getCompositeState());
+      }
+
+      slice.push_back(std::move(state));
+    }
+
+    mHistory.push_back(std::move(slice));
+  }
+
+  void restoreIndex(std::size_t index)
+  {
+    if (mHistory.empty()) {
+      return;
+    }
+
+    index = std::min(index, mHistory.size() - 1);
     const TimeSlice& slice = mHistory[index];
-    for (const auto i : std::views::iota(std::size_t{0}, slice.size())) {
-      const State& state = slice[i];
-      const SkeletonPtr& skeleton = mWorld->getSkeleton(i);
+    const std::size_t skeletonCount
+        = std::min(slice.size(), mWorld->getNumSkeletons());
 
-      skeleton->setConfiguration(state.mConfig);
+    for (std::size_t i = 0; i < skeletonCount; ++i) {
+      const auto& state = slice[i];
+      const auto& skeleton = mWorld->getSkeleton(i);
+      skeleton->setConfiguration(state.configuration);
 
-      for (const auto j :
-           std::views::iota(std::size_t{0}, skeleton->getNumBodyNodes())) {
-        BodyNode* bn = skeleton->getBodyNode(j);
-        bn->setCompositeState(state.mAspectStates[j]);
+      const std::size_t bodyCount
+          = std::min(state.bodyStates.size(), skeleton->getNumBodyNodes());
+      for (std::size_t j = 0; j < bodyCount; ++j) {
+        skeleton->getBodyNode(j)->setCompositeState(state.bodyStates[j]);
       }
     }
 
     mCurrentIndex = index;
   }
 
-  void moveForward(int delta)
-  {
-    moveTo(mCurrentIndex + delta);
+  dart::simulation::WorldPtr mWorld;
+  std::vector<TimeSlice> mHistory;
+  std::size_t mCurrentIndex = 0;
+};
+
+dart::simulation::WorldPtr createSoftBodiesWorld()
+{
+  auto world = dart::io::readWorld(kWorldUri);
+  if (world == nullptr) {
+    throw std::runtime_error(
+        "Failed to load soft_bodies world from " + std::string(kWorldUri));
   }
 
-  void moveBackward(int delta)
-  {
-    if (mCurrentIndex > 0) {
-      moveTo(mCurrentIndex - delta);
-    }
-  }
+  return world;
+}
 
-  void restart()
-  {
-    moveTo(0);
-  }
-
-  void moveToEnd()
-  {
-    moveTo(mHistory.size() - 1);
-  }
-
-  struct State
-  {
-    Skeleton::Configuration mConfig;
-    std::vector<dart::common::Composite::State> mAspectStates;
+template <typename Callback>
+dart::gui::KeyboardAction makePlaybackAction(
+    const std::shared_ptr<SoftBodyHistory>& history,
+    char key,
+    std::string label,
+    Callback callback)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback = [history, callback = std::move(callback)](
+                        dart::gui::KeyboardActionContext&) {
+    callback(*history);
   };
+  return action;
+}
 
-  using TimeSlice = std::vector<State>;
-  using History = std::vector<TimeSlice>;
-
-  History mHistory;
-
-  std::size_t mCurrentIndex;
-};
-
-class RecordingEventHandler : public osgGA::GUIEventHandler
+std::vector<dart::gui::KeyboardAction> createSoftBodiesKeyboardActions(
+    const std::shared_ptr<SoftBodyHistory>& history)
 {
-public:
-  RecordingEventHandler(RecordingWorld* rec) : mRecWorld(rec)
-  {
-    // Do nothing
-  }
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(6);
+  actions.push_back(makePlaybackAction(
+      history,
+      '[',
+      "Move soft-body playback backward one frame",
+      [](SoftBodyHistory& state) { state.moveBackward(1); }));
+  actions.push_back(makePlaybackAction(
+      history,
+      ']',
+      "Move soft-body playback forward one frame",
+      [](SoftBodyHistory& state) { state.moveForward(1); }));
+  actions.push_back(makePlaybackAction(
+      history,
+      '{',
+      "Move soft-body playback backward ten frames",
+      [](SoftBodyHistory& state) { state.moveBackward(10); }));
+  actions.push_back(makePlaybackAction(
+      history,
+      '}',
+      "Move soft-body playback forward ten frames",
+      [](SoftBodyHistory& state) { state.moveForward(10); }));
+  actions.push_back(makePlaybackAction(
+      history, 'r', "Restart soft-body playback", [](SoftBodyHistory& state) {
+        state.restart();
+      }));
+  actions.push_back(makePlaybackAction(
+      history,
+      '\\',
+      "Jump soft-body playback to latest frame",
+      [](SoftBodyHistory& state) { state.moveToEnd(); }));
+  return actions;
+}
 
-  virtual bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
-  {
-    if (!mRecWorld) {
-      return false;
-    }
-
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
-      if (ea.getKey() == '[') {
-        mRecWorld->moveBackward(1);
-        return true;
-      }
-
-      if (ea.getKey() == ']') {
-        mRecWorld->moveForward(1);
-        return true;
-      }
-
-      if (ea.getKey() == '{') {
-        mRecWorld->moveBackward(10);
-        return true;
-      }
-
-      if (ea.getKey() == '}') {
-        mRecWorld->moveForward(10);
-        return true;
-      }
-
-      if (ea.getKey() == 'r') {
-        mRecWorld->restart();
-        return true;
-      }
-
-      if (ea.getKey() == '\\') {
-        mRecWorld->moveToEnd();
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  RecordingWorld* mRecWorld;
-};
-
-int main()
+dart::gui::Panel createSoftBodiesPanel(
+    const std::shared_ptr<SoftBodyHistory>& history)
 {
-  using namespace dart::dynamics;
+  dart::gui::Panel panel;
+  panel.title = "Soft Bodies";
+  panel.buildWithContext = [history](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    builder.text("Recorded soft-body state playback");
+    builder.text("'['/']': move backward/forward one frame");
+    builder.text("'{'/'}': move backward/forward ten frames");
+    builder.text("'r': restart playback");
+    builder.text("'\\': jump to latest frame");
+    builder.separator();
+    builder.text(makeStatusLine("history frames: ", history->historySize()));
+    builder.text(makeStatusLine("current frame: ", history->currentIndex()));
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    if (builder.button("Restart")) {
+      history->restart();
+    }
+    builder.sameLine();
+    if (builder.button("-10")) {
+      history->moveBackward(10);
+    }
+    builder.sameLine();
+    if (builder.button("-1")) {
+      history->moveBackward(1);
+    }
+    builder.sameLine();
+    if (builder.button("+1")) {
+      history->moveForward(1);
+    }
+    builder.sameLine();
+    if (builder.button("+10")) {
+      history->moveForward(10);
+    }
+    builder.sameLine();
+    if (builder.button("Latest")) {
+      history->moveToEnd();
+    }
+  };
+  return panel;
+}
 
-  dart::simulation::WorldPtr world
-      = dart::io::readWorld("dart://sample/skel/softBodies.skel");
+dart::gui::RunOptions makeSoftBodiesRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
 
-  osg::ref_ptr<RecordingWorld> node = new RecordingWorld(world);
+void printSoftBodiesInstructions()
+{
+  std::cout << "Soft Bodies Example Controls:\n"
+            << "space bar: simulation on/off\n"
+            << "'[': move playback backward one frame\n"
+            << "']': move playback forward one frame\n"
+            << "'{': move playback backward ten frames\n"
+            << "'}': move playback forward ten frames\n"
+            << "'r': restart playback\n"
+            << "'\\': jump playback to latest frame\n";
+}
 
-  node->simulate(true);
+} // namespace
 
-  dart::gui::Viewer viewer;
-  viewer.addWorldNode(node);
-  viewer.addEventHandler(new RecordingEventHandler(node));
+int main(int argc, char* argv[])
+{
+  auto world = createSoftBodiesWorld();
+  auto history = std::make_shared<SoftBodyHistory>(world);
 
-  std::cout << viewer.getInstructions() << std::endl;
+  dart::gui::ApplicationOptions options;
+  options.world = std::move(world);
+  options.runDefaults = makeSoftBodiesRunDefaults();
+  options.preStep = [history]() {
+    history->captureStepStart();
+  };
+  options.keyboardActions = createSoftBodiesKeyboardActions(history);
+  options.panels.push_back(createSoftBodiesPanel(history));
 
-  viewer.setUpViewInWindow(0, 0, 640, 480);
-
-  viewer.run();
+  printSoftBodiesInstructions();
+  return dart::gui::runApplication(argc, argv, options);
 }

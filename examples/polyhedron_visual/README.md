@@ -3,26 +3,30 @@
 ## Summary
 
 - Goal: render a convex polyhedron from a vertex list.
-- Concepts/APIs: `gui::PolyhedronVisual`, `gui::GridVisual`.
-- Expected output: a translucent convex hull displayed over a grid.
-- Controls: none.
+- Concepts/APIs: `dart::gui::ApplicationOptions`, `ConvexMeshShape`,
+  `LineSegmentShape`, source-owned DART worlds, and promoted GUI run defaults.
+- Expected output: a translucent convex hull, dark wireframe, and reference
+  grid in the Filament-backed `dart::gui` viewer.
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+## Run In Tree
 
-## Build Instructions
+From the repository root:
 
-From this directory:
+```bash
+pixi run ex polyhedron_visual
+```
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+Useful promoted runner options:
 
-## Execute Instructions
+```bash
+pixi run ex polyhedron_visual --headless --frames 2 --screenshot /tmp/polyhedron.ppm
+pixi run ex polyhedron_visual --width 960 --height 540
+```
 
-Launch the executable from the build directory above:
+The example defaults to the historical 640x480 viewer and preserves
+command-line overrides handled by the shared `dart::gui` runner.
 
-    $ ./{generated_executable}
+## Controls
 
-Follow the instructions detailed in the console.
+Use the standard promoted viewer controls: left drag orbits, right or middle
+drag pans, the wheel zooms, and Escape exits.

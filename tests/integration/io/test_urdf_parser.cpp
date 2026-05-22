@@ -1567,6 +1567,23 @@ TEST(UrdfParser, DrchuboStructure)
   EXPECT_GT(skeleton->getNumDofs(), 20u);
   EXPECT_TRUE(hasShapeType<dynamics::MeshShape>(skeleton));
 }
+
+//==============================================================================
+TEST(UrdfParser, AtlasV5NoHeadLoadsMeshesAndExpectedStructure)
+{
+  UrdfParser parser;
+  const auto skeleton
+      = parser.parseSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
+  ASSERT_NE(skeleton, nullptr);
+
+  EXPECT_EQ(skeleton->getNumBodyNodes(), 36u);
+  EXPECT_EQ(skeleton->getNumDofs(), 35u);
+  EXPECT_NE(skeleton->getBodyNode("pelvis"), nullptr);
+  EXPECT_NE(skeleton->getBodyNode("l_hand"), nullptr);
+  EXPECT_NE(skeleton->getBodyNode("r_hand"), nullptr);
+  EXPECT_EQ(skeleton->getJoint("neck_ry"), nullptr);
+  EXPECT_TRUE(hasShapeType<dynamics::MeshShape>(skeleton));
+}
 #endif
 
 //==============================================================================

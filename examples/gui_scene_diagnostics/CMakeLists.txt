@@ -4,13 +4,13 @@ get_filename_component(example_name ${CMAKE_CURRENT_LIST_DIR} NAME)
 
 project(${example_name})
 
-set(required_components gui-experimental)
-set(required_libraries dart dart-gui-experimental)
+set(required_components gui)
+set(required_libraries dart dart-gui)
 
 if(DART_IN_SOURCE_BUILD)
-  if(NOT TARGET dart-gui-experimental)
+  if(NOT TARGET dart-gui)
     if(DART_VERBOSE)
-      message(STATUS "Skipping ${example_name} example (dart-gui-experimental unavailable)")
+      message(STATUS "Skipping ${example_name} example (dart-gui unavailable)")
     endif()
     return()
   endif()
@@ -20,8 +20,8 @@ if(DART_IN_SOURCE_BUILD)
 endif()
 
 find_package(DART 7.0.0 QUIET COMPONENTS ${required_components} CONFIG)
-if(NOT TARGET dart-gui-experimental)
-  message(STATUS "Skipping ${example_name} example (dart-gui-experimental unavailable)")
+if(NOT TARGET dart-gui)
+  message(STATUS "Skipping ${example_name} example (dart-gui unavailable)")
   return()
 endif()
 

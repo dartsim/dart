@@ -335,74 +335,26 @@ dart_build_tests(
 # ==============================================================================
 # GUI Tests
 # ==============================================================================
-if(TARGET dart-gui-experimental)
+if(TARGET dart-gui-core)
   dart_add_test(
     "unit"
     UNIT_gui_FilamentSceneExtraction
     gui/test_filament_scene_extraction.cpp)
-  target_link_libraries(UNIT_gui_FilamentSceneExtraction dart-gui-experimental)
+  target_link_libraries(UNIT_gui_FilamentSceneExtraction dart-gui-core)
 endif()
 
-if(TARGET dart-gui)
-  dart_add_test("unit" UNIT_gui_HeightmapShapeNode gui/test_heightmap_shape_node.cpp)
+if(TARGET dart-gui AND TARGET dart-imgui-lib)
+  # DART-patched ImGui guard tests only work with the fetched ImGui target.
   dart_add_test(
-    "unit" UNIT_gui_ImGuiWindowScaling gui/test_im_gui_window_scaling.cpp)
-  # DART-patched ImGui guard tests only work with fetched ImGui, not system ImGui.
-  if(NOT DART_USE_SYSTEM_IMGUI)
-    dart_add_test(
-      "unit" UNIT_gui_ImGuiNullFontGuard gui/test_imgui_null_font_guard.cpp)
-    target_link_libraries(UNIT_gui_ImGuiNullFontGuard dart-gui)
-    dart_add_test(
-      "unit"
-      UNIT_gui_ImGuiColorPickerGuard
-      gui/test_imgui_color_picker_guard.cpp)
-    target_link_libraries(UNIT_gui_ImGuiColorPickerGuard dart-gui)
-    dart_add_test(
-      "unit" UNIT_gui_ImGuiInternalFormatSymbols
-      gui/test_imgui_internal_format_symbols.cpp)
-    target_link_libraries(
-      UNIT_gui_ImGuiInternalFormatSymbols dart-imgui-lib ${CMAKE_DL_LIBS})
-  endif()
+    "unit"
+    UNIT_gui_ImGuiColorPickerGuard
+    gui/test_imgui_color_picker_guard.cpp)
+  target_link_libraries(UNIT_gui_ImGuiColorPickerGuard dart-gui dart-imgui-lib)
   dart_add_test(
-    "unit" UNIT_gui_HeadlessViewer gui/test_headless_viewer.cpp)
-  target_link_libraries(UNIT_gui_HeadlessViewer dart-gui)
-  # System ImGui builds can depend on SDL3, which is not available in ASAN CI.
-  if(NOT (DART_ENABLE_ASAN AND DART_USE_SYSTEM_IMGUI))
-    dart_add_test(
-      "unit" UNIT_gui_MeshShapeNodeMaterialUpdates
-      gui/test_mesh_shape_node_material_updates.cpp)
-    target_link_libraries(UNIT_gui_MeshShapeNodeMaterialUpdates dart-gui)
-    dart_add_test(
-      "unit" UNIT_gui_ConvexMeshShapeNode gui/test_convex_mesh_shape_node.cpp)
-    target_link_libraries(UNIT_gui_ConvexMeshShapeNode dart-gui)
-    dart_add_test(
-      "unit" UNIT_gui_PlaneShapeNode gui/test_plane_shape_node.cpp)
-    target_link_libraries(UNIT_gui_PlaneShapeNode dart-gui)
-  endif()
-endif()
-
-# ==============================================================================
-# GUI VSG Tests
-# ==============================================================================
-if(TARGET dart-gui-vsg)
-  dart_add_test("unit" UNIT_gui_vsg_geometry_builders gui/vsg/test_geometry_builders.cpp)
-  target_link_libraries(UNIT_gui_vsg_geometry_builders dart-gui-vsg dart-collision-native)
-
-  dart_add_test("unit" UNIT_gui_vsg_debug_draw gui/vsg/test_debug_draw.cpp)
-  target_link_libraries(UNIT_gui_vsg_debug_draw dart-gui-vsg)
-
-  dart_add_test("unit" UNIT_gui_vsg_simple_viewer gui/vsg/test_simple_viewer.cpp)
-  target_link_libraries(UNIT_gui_vsg_simple_viewer dart-gui-vsg)
-
-  dart_add_test("unit" UNIT_gui_vsg_collision_scene_builder gui/vsg/test_collision_scene_builder.cpp)
-  target_link_libraries(UNIT_gui_vsg_collision_scene_builder dart-gui-vsg dart-collision-native)
-
-  set_tests_properties(
-    UNIT_gui_vsg_geometry_builders
-    UNIT_gui_vsg_debug_draw
-    UNIT_gui_vsg_simple_viewer
-    UNIT_gui_vsg_collision_scene_builder
-    PROPERTIES RESOURCE_LOCK vsg)
+    "unit" UNIT_gui_ImGuiInternalFormatSymbols
+    gui/test_imgui_internal_format_symbols.cpp)
+  target_link_libraries(
+    UNIT_gui_ImGuiInternalFormatSymbols dart-imgui-lib ${CMAKE_DL_LIBS})
 endif()
 
 # ==============================================================================

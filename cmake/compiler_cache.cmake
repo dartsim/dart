@@ -54,6 +54,30 @@ endfunction()
 
 function(dart_configure_compiler_cache)
   if(DART_DISABLE_COMPILER_CACHE)
+    set(
+      CMAKE_C_COMPILER_LAUNCHER
+      ""
+      CACHE STRING
+      "C compiler launcher used for caching"
+      FORCE
+    )
+    set(
+      CMAKE_CXX_COMPILER_LAUNCHER
+      ""
+      CACHE STRING
+      "CXX compiler launcher used for caching"
+      FORCE
+    )
+    if(CMAKE_CUDA_COMPILER)
+      set(
+        CMAKE_CUDA_COMPILER_LAUNCHER
+        ""
+        CACHE STRING
+        "CUDA compiler launcher used for caching"
+        FORCE
+      )
+    endif()
+    unset(DART_ACTIVE_COMPILER_CACHE CACHE)
     message(STATUS "Compiler cache auto-detection disabled (DART_DISABLE_COMPILER_CACHE=ON)")
     return()
   endif()

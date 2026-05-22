@@ -17,148 +17,277 @@
  *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *   POSSIBILITY OF SUCH DAMAGE.
+ *   INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ *   SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ *   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ *   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *   EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/all.hpp>
+#include <dart/simulation/world.hpp>
 
-//==============================================================================
-class CustomWorldNode : public dart::gui::RealTimeWorldNode
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+
+#include <Eigen/Geometry>
+
+#include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace {
+
+struct EmptyHookState
 {
-public:
-  CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
-    : dart::gui::RealTimeWorldNode(world)
-  {
-    // Set up the customized WorldNode
-  }
-
-  void customPreRefresh()
-  {
-    // Use this function to execute custom code before each time that the
-    // window is rendered. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void customPostRefresh()
-  {
-    // Use this function to execute custom code after each time that the
-    // window is rendered. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void customPreStep()
-  {
-    // Use this function to execute custom code before each simulation time
-    // step is performed. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void customPostStep()
-  {
-    // Use this function to execute custom code after each simulation time
-    // step is performed. This function can be deleted if it does not need
-    // to be used.
-  }
+  int preStepCount = 0;
+  int postStepCount = 0;
+  int preRenderCount = 0;
+  int postRenderCount = 0;
 };
 
-//==============================================================================
-class CustomEventHandler : public osgGA::GUIEventHandler
+void colorFrame(
+    const std::shared_ptr<dart::dynamics::SimpleFrame>& frame,
+    const Eigen::Vector3d& color)
 {
-public:
-  CustomEventHandler(/*Pass in any necessary arguments*/)
-  {
-    // Set up the customized event handler
-  }
+  frame->getVisualAspect(true)->setColor(color);
+}
 
-  virtual bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
-  {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
-      if (ea.getKey() == 'q') {
-        std::cout << "Lowercase q pressed" << std::endl;
-        return true;
-      } else if (ea.getKey() == 'Q') {
-        std::cout << "Capital Q pressed" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
-        std::cout << "Left arrow key pressed" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
-        std::cout << "Right arrow key pressed" << std::endl;
-        return true;
+std::shared_ptr<dart::dynamics::SimpleFrame> createBoxFrame(
+    const std::string& name,
+    dart::dynamics::Frame* parent,
+    const Eigen::Vector3d& translation,
+    const Eigen::Vector3d& size,
+    const Eigen::Vector3d& color)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = translation;
+  auto frame = dart::dynamics::SimpleFrame::createShared(
+      parent == nullptr ? dart::dynamics::Frame::World() : parent,
+      name,
+      transform);
+  frame->setShape(std::make_shared<dart::dynamics::BoxShape>(size));
+  colorFrame(frame, color);
+  return frame;
+}
+
+dart::simulation::WorldPtr createEmptyWorld()
+{
+  auto world = dart::simulation::World::create("dartsim_empty");
+  world->setGravity(Eigen::Vector3d::Zero());
+
+  auto anchor = createBoxFrame(
+      "interactive frame",
+      nullptr,
+      Eigen::Vector3d(4.0, -4.0, 0.0),
+      Eigen::Vector3d(0.45, 0.45, 0.45),
+      Eigen::Vector3d(0.95, 0.70, 0.15));
+  world->addSimpleFrame(anchor);
+
+  auto draggable = createBoxFrame(
+      "draggable",
+      anchor.get(),
+      Eigen::Vector3d(-4.0, 4.0, 0.0),
+      Eigen::Vector3d(1.0, 1.0, 1.0),
+      Eigen::Vector3d(0.90, 0.00, 0.00));
+  world->addSimpleFrame(draggable);
+
+  world->addSimpleFrame(createBoxFrame(
+      "X",
+      nullptr,
+      Eigen::Vector3d(8.0, 0.0, 0.0),
+      Eigen::Vector3d(0.25, 0.25, 0.25),
+      Eigen::Vector3d(0.90, 0.00, 0.00)));
+  world->addSimpleFrame(createBoxFrame(
+      "Y",
+      nullptr,
+      Eigen::Vector3d(0.0, 8.0, 0.0),
+      Eigen::Vector3d(0.25, 0.25, 0.25),
+      Eigen::Vector3d(0.00, 0.90, 0.00)));
+  world->addSimpleFrame(createBoxFrame(
+      "Z",
+      nullptr,
+      Eigen::Vector3d(0.0, 0.0, 8.0),
+      Eigen::Vector3d(0.25, 0.25, 0.25),
+      Eigen::Vector3d(0.00, 0.00, 0.90)));
+
+  return world;
+}
+
+dart::gui::Panel createEmptyPanel(const std::shared_ptr<EmptyHookState>& state)
+{
+  dart::gui::Panel panel;
+  panel.title = "Empty";
+  panel.buildWithContext = [state](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    builder.text("Minimal public frame viewer scaffold");
+    builder.text("selectable anchor, draggable child, and axis markers");
+    builder.text("Keyboard actions print q, Q, Left, and Right keydown events");
+    builder.text(
+        "Key-release actions print q, Q, Left, and Right release events.");
+    if (state != nullptr) {
+      builder.text(
+          "Pre-step callbacks: " + std::to_string(state->preStepCount));
+      builder.text(
+          "Post-step callbacks: " + std::to_string(state->postStepCount));
+      builder.text(
+          "Pre-render callbacks: " + std::to_string(state->preRenderCount));
+      builder.text(
+          "Post-render callbacks: " + std::to_string(state->postRenderCount));
+    }
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
       }
-    } else if (ea.getEventType() == osgGA::GUIEventAdapter::KEYUP) {
-      if (ea.getKey() == 'q') {
-        std::cout << "Lowercase q released" << std::endl;
-        return true;
-      } else if (ea.getKey() == 'Q') {
-        std::cout << "Capital Q released" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
-        std::cout << "Left arrow key released" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
-        std::cout << "Right arrow key released" << std::endl;
-        return true;
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
       }
     }
+    builder.text("selected: " + context.selectedLabel);
+  };
+  return panel;
+}
 
-    // The return value should be 'true' if the input has been fully handled
-    // and should not be visible to any remaining event handlers. It should be
-    // false if the input has not been fully handled and should be viewed by
-    // any remaining event handlers.
-    return false;
-  }
-};
-
-//==============================================================================
-int main()
+void emptyPreStepScaffold(const std::shared_ptr<EmptyHookState>& state)
 {
-  // Create a world
-  dart::simulation::WorldPtr world(new dart::simulation::World);
+  if (state != nullptr) {
+    ++state->preStepCount;
+  }
+}
 
-  // Add a target object to the world
-  dart::gui::InteractiveFramePtr target(
-      new dart::gui::InteractiveFrame(dart::dynamics::Frame::World()));
-  world->addSimpleFrame(target);
+void emptyPostStepScaffold(const std::shared_ptr<EmptyHookState>& state)
+{
+  if (state != nullptr) {
+    ++state->postStepCount;
+  }
+}
 
-  // Wrap a WorldNode around it
-  osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
+void emptyPreRenderScaffold(const std::shared_ptr<EmptyHookState>& state)
+{
+  if (state != nullptr) {
+    ++state->preRenderCount;
+  }
+}
 
-  // Create a Viewer and set it up with the WorldNode
-  dart::gui::Viewer viewer;
-  viewer.addWorldNode(node);
+void emptyPostRenderScaffold(const std::shared_ptr<EmptyHookState>& state)
+{
+  if (state != nullptr) {
+    ++state->postRenderCount;
+  }
+}
 
-  // Active the drag-and-drop feature for the target
-  viewer.enableDragAndDrop(target.get());
+dart::gui::RunOptions makeEmptyRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
 
-  // Pass in the custom event handler
-  viewer.addEventHandler(new CustomEventHandler);
+dart::gui::OrbitCamera makeEmptyCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94);
+  camera.yaw = 0.8848934155088675;
+  camera.pitch = 0.38410042777133657;
+  camera.distance = 4.376539729055364;
+  return camera;
+}
 
-  // Set up the window to be 640x480
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+dart::gui::KeyboardAction makePrintAction(
+    std::string label,
+    dart::gui::KeyboardShortcut shortcut,
+    std::string message,
+    dart::gui::KeyboardActionTrigger trigger
+    = dart::gui::KeyboardActionTrigger::Press)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = shortcut;
+  action.trigger = trigger;
+  action.callback
+      = [message = std::move(message)](dart::gui::KeyboardActionContext&) {
+          std::cout << message << std::endl;
+        };
+  return action;
+}
 
-  // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.57, 3.14, 1.64),
-      ::osg::Vec3(0.00, 0.00, 0.00),
-      ::osg::Vec3(-0.24, -0.25, 0.94));
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
+std::vector<dart::gui::KeyboardAction> createEmptyKeyboardActions()
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makePrintAction(
+      "Lowercase q pressed",
+      dart::gui::KeyboardShortcut::characterKey('q'),
+      "Lowercase q pressed"));
+  actions.push_back(makePrintAction(
+      "Capital Q pressed",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q pressed"));
+  actions.push_back(makePrintAction(
+      "Left arrow key pressed",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
+      "Left arrow key pressed"));
+  actions.push_back(makePrintAction(
+      "Right arrow key pressed",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
+      "Right arrow key pressed"));
+  actions.push_back(makePrintAction(
+      "Lowercase q released",
+      dart::gui::KeyboardShortcut::characterKey('q'),
+      "Lowercase q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Capital Q released",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Left arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
+      "Left arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Right arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
+      "Right arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
+  return actions;
+}
 
-  // Begin running the application loop
-  viewer.run();
+} // namespace
+
+int main(int argc, char* argv[])
+{
+  auto hookState = std::make_shared<EmptyHookState>();
+
+  dart::gui::ApplicationOptions options;
+  options.world = createEmptyWorld();
+  options.preStep = [hookState]() {
+    emptyPreStepScaffold(hookState);
+  };
+  options.postStep = [hookState]() {
+    emptyPostStepScaffold(hookState);
+  };
+  options.preRender = [hookState]() {
+    emptyPreRenderScaffold(hookState);
+  };
+  options.postRender = [hookState]() {
+    emptyPostRenderScaffold(hookState);
+  };
+  options.runDefaults = makeEmptyRunDefaults();
+  options.camera = makeEmptyCamera();
+  options.panels.push_back(createEmptyPanel(hookState));
+  options.keyboardActions = createEmptyKeyboardActions();
+  return dart::gui::runApplication(argc, argv, options);
 }

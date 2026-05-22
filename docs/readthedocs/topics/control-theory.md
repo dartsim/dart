@@ -59,8 +59,8 @@ tau = Kp * (q_des - q) + Kd * (dq_des - dq)
 For floating-base systems, some DOFs are unactuated (typically the first six).
 Set their gains (or the corresponding entries in `tau`) to zero.
 
-The DART biped tutorial shows a full PD controller and discusses gain choices
-for floating-base models.
+The Atlas Simbicon scene in the gallery shows a floating-base humanoid
+controlled through a walking controller.
 
 ## Feedforward + inverse dynamics (“computed torque”)
 
@@ -83,8 +83,8 @@ loop” even when using inverse dynamics.
 
 ## Impedance, stiffness, and damping
 
-DART joints support implicit springs and damping (see the multi-pendulum
-tutorial). This is often a convenient way to get “soft” behavior without
+DART joints support implicit springs and damping. This is often a convenient
+way to get “soft” behavior without
 explicitly writing a controller:
 
 - Rest pose: `DegreeOfFreedom::setRestPosition(...)`
@@ -97,6 +97,6 @@ stable than explicit high-gain PD for the same timestep.
 ```{eval-rst}
 See also:
 
-- :doc:`../tutorials/biped` (PD control in a full example)
-- :doc:`../tutorials/multi-pendulum` (implicit spring + damping)
+- :doc:`../topics/control-gain-tuning` (discrete-time gain tuning)
+- :doc:`../gallery` (maintained Filament simulation scenes)
 ```

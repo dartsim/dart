@@ -30,26 +30,84 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/macros.hpp"
-
 #include <dart/config.hpp>
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/debug.hpp>
+#include <dart/gui/gizmo.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/utils/All.hpp>
-#include <dart/utils/urdf/All.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/all.hpp>
+#include <dart/constraint/balance_constraint.hpp>
+
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/end_effector.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/inverse_kinematics.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
+
+#include <dart/math/geometry.hpp>
+#include <dart/math/optimization/function.hpp>
+#include <dart/math/optimization/gradient_descent_solver.hpp>
+#include <dart/math/optimization/problem.hpp>
+
+#include <dart/common/macros.hpp>
+#include <dart/common/uri.hpp>
+
 #include <dart/io/read.hpp>
 
+#include <Eigen/Geometry>
+
+#include <algorithm>
+#include <array>
+#include <complex>
+#include <iostream>
 #include <iterator>
+#include <limits>
+#include <memory>
+#include <optional>
 #include <span>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-using namespace dart::math;
-using namespace dart::dynamics;
-using namespace dart::simulation;
+#include <cmath>
 
-class RelaxedPosture : public dart::math::Function
+namespace {
+
+constexpr const char* kHuboSkeletonName = "hubo_copy";
+constexpr const char* kGroundSkeletonName = "ground";
+constexpr const char* kHuboSupportOverlayName = "hubo_support_polygon_overlay";
+constexpr const char* kHuboSupportComOverlayName = "hubo_support_com_overlay";
+constexpr double kDegrees = 3.14159265358979323846 / 180.0;
+constexpr double kTeleopLinearStep = 0.01;
+constexpr double kTeleopElevationStep = 0.2 * kTeleopLinearStep;
+constexpr double kTeleopYawStep = 2.0 * 3.14159265358979323846 / 180.0;
+constexpr double kTeleopAmplifiedScale = 2.0;
+constexpr double kSupportVisualElevation = 0.05;
+constexpr double kSupportComMarkerRadius = 0.06;
+
+enum class PuppetMotion
+{
+  Forward,
+  Backward,
+  Left,
+  Right,
+  Up,
+  Down,
+  YawLeft,
+  YawRight,
+};
+
+class RelaxedPosture final : public dart::math::Function
 {
 public:
   RelaxedPosture(
@@ -64,147 +122,157 @@ public:
       mUpper(upper),
       mWeights(weights)
   {
-    int dofs = mIdeal.size();
-    DART_ERROR_IF(
-        mLower.size() != dofs || mWeights.size() != dofs
-            || mUpper.size() != dofs,
-        "Dimension mismatch:\\n  ideal:   {}\\n  lower:   {}\\n  upper:   "
-        "{}\\n  weights: {}",
-        mIdeal.size(),
-        mLower.size(),
-        mUpper.size(),
-        mWeights.size());
-    mResultVector.setZero(dofs);
+    const Eigen::Index dofCount = mIdeal.size();
+    if (mLower.size() != dofCount || mUpper.size() != dofCount
+        || mWeights.size() != dofCount) {
+      throw std::runtime_error(
+          "Hubo relaxed-posture objective has mismatched vector sizes");
+    }
+    mResultVector.setZero(dofCount);
   }
 
-  double eval(const Eigen::VectorXd& _x) override
+  double eval(const Eigen::VectorXd& x) override
   {
-    computeResultVector(_x);
+    computeResultVector(x);
     return 0.5 * mResultVector.dot(mResultVector);
   }
 
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override
+      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
   {
-    computeResultVector(_x);
+    computeResultVector(x);
 
-    _grad.setZero();
-    int smaller = std::min(mResultVector.size(), _grad.size());
-    for (int i = 0; i < smaller; ++i) {
-      _grad[i] = mResultVector[i];
+    grad.setZero();
+    const Eigen::Index count = std::min(mResultVector.size(), grad.size());
+    for (Eigen::Index i = 0; i < count; ++i) {
+      grad[i] = mResultVector[i];
     }
   }
 
-  void computeResultVector(const Eigen::VectorXd& _x)
+  void computeResultVector(const Eigen::VectorXd& x)
   {
     mResultVector.setZero();
-
-    if (enforceIdealPosture) {
-      for (auto i = 0; i < std::ssize(_x); ++i) {
-        if (mIdeal.size() <= i) {
-          break;
-        }
-
-        mResultVector[i] = mWeights[i] * (_x[i] - mIdeal[i]);
-      }
-    } else {
-      for (auto i = 0; i < std::ssize(_x); ++i) {
-        if (mIdeal.size() <= i) {
-          break;
-        }
-
-        if (_x[i] < mLower[i]) {
-          mResultVector[i] = mWeights[i] * (_x[i] - mLower[i]);
-        } else if (mUpper[i] < _x[i]) {
-          mResultVector[i] = mWeights[i] * (_x[i] - mUpper[i]);
-        }
+    const Eigen::Index count = std::min(mIdeal.size(), x.size());
+    for (Eigen::Index i = 0; i < count; ++i) {
+      if (enforceIdealPosture) {
+        mResultVector[i] = mWeights[i] * (x[i] - mIdeal[i]);
+      } else if (x[i] < mLower[i]) {
+        mResultVector[i] = mWeights[i] * (x[i] - mLower[i]);
+      } else if (mUpper[i] < x[i]) {
+        mResultVector[i] = mWeights[i] * (x[i] - mUpper[i]);
       }
     }
   }
 
   bool enforceIdealPosture;
 
-protected:
+private:
   Eigen::VectorXd mResultVector;
-
   Eigen::VectorXd mIdeal;
-
   Eigen::VectorXd mLower;
-
   Eigen::VectorXd mUpper;
-
   Eigen::VectorXd mWeights;
 };
 
-static inline bool checkDist(Eigen::Vector3d& p, double a, double b)
+struct HuboWholeBodySolverState
 {
-  double d = p.norm();
-  double dmax = a + b;
-  double dmin = fabs(a - b);
+  std::shared_ptr<RelaxedPosture> posture;
+  std::shared_ptr<dart::constraint::BalanceConstraint> balance;
+};
 
-  if (d > dmax) {
-    p *= dmax / d;
-    return false;
-  } else if (d < dmin) {
-    p *= dmin / d;
-    return false;
-  } else {
+using dart::dynamics::BodyNode;
+using dart::dynamics::BodyNodePtr;
+using dart::dynamics::DegreeOfFreedom;
+using dart::dynamics::InverseKinematics;
+using dart::dynamics::JacobianNode;
+using dart::dynamics::Joint;
+using dart::dynamics::SkeletonPtr;
+using dart::dynamics::WeakBodyNodePtr;
+
+bool solveOwningSkeletonIk(const dart::dynamics::InverseKinematicsPtr& ik)
+{
+  if (ik == nullptr) {
     return true;
   }
+
+  auto* node = ik->getNode();
+  const auto bodyNode = node ? node->getBodyNodePtr() : nullptr;
+  const auto skeleton = bodyNode ? bodyNode->getSkeleton() : nullptr;
+  if (skeleton != nullptr) {
+    const auto wholeBodyIk = skeleton->getIK(true);
+    if (wholeBodyIk != nullptr) {
+      return wholeBodyIk->solveAndApply(true);
+    }
+  }
+
+  return ik->solveAndApply(true);
+}
+using IK = dart::dynamics::InverseKinematics;
+
+bool checkDist(Eigen::Vector3d& point, double a, double b)
+{
+  const double distance = point.norm();
+  const double maxDistance = a + b;
+  const double minDistance = std::abs(a - b);
+
+  if (distance > maxDistance) {
+    point *= maxDistance / distance;
+    return false;
+  }
+  if (distance < minDistance) {
+    point *= minDistance / distance;
+    return false;
+  }
+  return true;
 }
 
-static inline void clamp_sincos(double& sincos, bool& valid)
+void clampSineCosine(double& value, bool& valid)
 {
-  if (sincos < -1) {
+  if (value < -1.0) {
     valid = false;
-    sincos = -1;
-  } else if (sincos > 1) {
+    value = -1.0;
+  } else if (value > 1.0) {
     valid = false;
-    sincos = 1;
+    value = 1.0;
   }
 }
 
-static inline Eigen::Vector3d flipEuler3Axis(const Eigen::Vector3d& u)
+Eigen::Vector3d flipEuler3Axis(const Eigen::Vector3d& u)
 {
   Eigen::Vector3d v;
-  v[0] = u[0] - pi;
-  v[1] = pi - u[1];
-  v[2] = u[2] - pi;
+  v[0] = u[0] - dart::math::pi;
+  v[1] = dart::math::pi - u[1];
+  v[2] = u[2] - dart::math::pi;
   return v;
 }
 
-/// The HuboArmIK is based on the derivation of Hubo's arm IK by Matt Zucker.
-class HuboArmIK : public InverseKinematics::Analytical
+class HuboArmIK final : public InverseKinematics::Analytical
 {
 public:
   HuboArmIK(
-      InverseKinematics* _ik,
+      InverseKinematics* ik,
       const std::string& baseLinkName,
       const Analytical::Properties& properties = Analytical::Properties())
-    : Analytical(_ik, "HuboArmIK_" + baseLinkName, properties),
-      configured(false),
+    : Analytical(ik, "HuboArmIK_" + baseLinkName, properties),
       mBaseLinkName(baseLinkName)
   {
-    // Do nothing
   }
 
-  std::unique_ptr<GradientMethod> clone(
-      InverseKinematics* _newIK) const override
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIk) const override
   {
     return std::make_unique<HuboArmIK>(
-        _newIK, mBaseLinkName, getAnalyticalProperties());
+        newIk, mBaseLinkName, getAnalyticalProperties());
   }
 
   std::span<const Solution> computeSolutions(
-      const Eigen::Isometry3d& _desiredBodyTf) override
+      const Eigen::Isometry3d& desiredBodyTransform) override
   {
     mSolutions.clear();
     mSolutions.reserve(8);
 
-    if (!configured) {
+    if (!mConfigured) {
       configure();
-
-      if (!configured) {
+      if (!mConfigured) {
         DART_WARN(
             "This analytical IK was not able to configure properly, so it will "
             "not be able to compute solutions");
@@ -213,182 +281,152 @@ public:
     }
 
     const BodyNodePtr& base = mBaseLink.lock();
-    if (nullptr == base) {
+    if (base == nullptr) {
       DART_ERROR(
           "Attempting to perform an IK on a limb that no longer exists [{}]!",
           getMethodName());
       DART_ASSERT(false);
       return mSolutions;
     }
-
-    if (nullptr == mWristEnd) {
+    if (mWristEnd == nullptr) {
       DART_ERROR("Attempting to perform IK without a wrist!");
       DART_ASSERT(false);
       return mSolutions;
     }
 
-    const std::size_t SP = 0;
-    const std::size_t SR = 1;
-    const std::size_t SY = 2;
-    const std::size_t EP = 3;
-    const std::size_t WY = 4;
-    const std::size_t WP = 5;
+    constexpr std::size_t SP = 0;
+    constexpr std::size_t SR = 1;
+    constexpr std::size_t SY = 2;
+    constexpr std::size_t EP = 3;
+    constexpr std::size_t WY = 4;
+    constexpr std::size_t WP = 5;
 
-    const SkeletonPtr& skel = base->getSkeleton();
-
-    Eigen::Isometry3d B
+    const SkeletonPtr& skeleton = base->getSkeleton();
+    const Eigen::Isometry3d targetInBase
         = base->getParentBodyNode()->getWorldTransform().inverse()
-          * _desiredBodyTf * mWristEnd->getTransform(mIK->getNode());
+          * desiredBodyTransform * mWristEnd->getTransform(mIK->getNode());
+    Eigen::Vector3d p
+        = (mShoulderTransform.inverse() * targetInBase).inverse().translation();
 
-    Eigen::Isometry3d shoulder_from_wrist = shoulderTf.inverse() * B;
-    Eigen::Vector3d p = shoulder_from_wrist.inverse().translation();
+    const double aSquared = mL5 * mL5 + mL4 * mL4;
+    const double bSquared = mL3 * mL3 + mL4 * mL4;
+    const double a = std::sqrt(aSquared);
+    const double b = std::sqrt(bSquared);
+    const double alpha = std::atan2(mL5, mL4);
+    const double beta = std::atan2(mL3, mL4);
+    const bool startValid = checkDist(p, a, b);
 
-    const double a2 = L5 * L5 + L4 * L4;
-    const double b2 = L3 * L3 + L4 * L4;
-    const double a = sqrt(a2);
-    const double b = sqrt(b2);
-
-    const double alpha = atan2(L5, L4);
-    const double beta = atan2(L3, L4);
-
-    bool startValid = checkDist(p, a, b);
-
-    double c2 = p.dot(p);
-    double x = p.x();
-    double y = p.y();
-    double z = p.z();
+    const double cSquared = p.dot(p);
+    const double x = p.x();
+    const double y = p.y();
+    const double z = p.z();
 
     for (std::size_t i = 0; i < 8; ++i) {
-      const int flipEP = alternatives(i, 0);
-      const int incWY = alternatives(i, 1);
-      const int flipShoulder = alternatives(i, 2);
+      const int flipEP = mAlternatives(i, 0);
+      const int incWY = mAlternatives(i, 1);
+      const int flipShoulder = mAlternatives(i, 2);
 
       Eigen::Vector6d testQ;
       bool isValid = startValid;
 
-      double cosGamma = (a2 + b2 - c2) / (2 * a * b);
-      clamp_sincos(cosGamma, isValid);
-
-      double gamma = flipEP * acos(cosGamma);
-      double theta3 = alpha + beta + gamma - 2 * pi;
-
+      double cosGamma = (aSquared + bSquared - cSquared) / (2.0 * a * b);
+      clampSineCosine(cosGamma, isValid);
+      const double gamma = flipEP * std::acos(cosGamma);
+      const double theta3 = alpha + beta + gamma - 2.0 * dart::math::pi;
       testQ(EP) = theta3;
 
-      double c3 = cos(theta3);
-      double s3 = sin(theta3);
+      const double c3 = std::cos(theta3);
+      const double s3 = std::sin(theta3);
+      const double denom = (-mL4 * c3 - mL3 * s3 + mL4);
 
-      double number = -y;
-      double denom = (-L4 * c3 - L3 * s3 + L4);
-
-      double s2, theta2;
-
-      if (std::abs(denom) < zeroSize) {
+      double theta2;
+      if (std::abs(denom) < kZeroSize) {
         isValid = false;
-        const double& prevWY = skel->getPosition(mDofs[WY]);
-        theta2 = incWY ? prevWY : pi - prevWY;
-        s2 = sin(theta2);
+        const double& prevWY = skeleton->getPosition(mDofs[WY]);
+        theta2 = incWY ? prevWY : dart::math::pi - prevWY;
       } else {
-        s2 = number / denom;
-        clamp_sincos(s2, isValid);
-        theta2 = incWY ? pi - asin(s2) : asin(s2);
+        double s2 = -y / denom;
+        clampSineCosine(s2, isValid);
+        theta2 = incWY ? dart::math::pi - std::asin(s2) : std::asin(s2);
       }
-
       testQ(WY) = theta2;
 
-      double c2 = cos(theta2);
-
-      double r = L4 * c2 - L4 * c2 * c3 - L3 * s3 * c2;
-      double q = -L4 * s3 + L3 * c3 + L5;
-
-      double det = -(q * q + r * r);
-
-      if (std::abs(det) < zeroSize) {
+      const double c2 = std::cos(theta2);
+      const double r = mL4 * c2 - mL4 * c2 * c3 - mL3 * s3 * c2;
+      const double q = -mL4 * s3 + mL3 * c3 + mL5;
+      const double det = -(q * q + r * r);
+      if (std::abs(det) < kZeroSize) {
         isValid = false;
       }
+      const double k = det < 0.0 ? -1.0 : 1.0;
+      testQ(WP) = std::atan2(k * (q * x - r * z), k * (-r * x - q * z));
 
-      double k = det < 0 ? -1 : 1;
-
-      double ks1 = k * (q * x - r * z);
-      double kc1 = k * (-r * x - q * z);
-
-      double theta1 = atan2(ks1, kc1);
-      testQ(WP) = theta1;
-
-      Eigen::Quaterniond Rlower
+      Eigen::Quaterniond lowerRotation
           = Eigen::Quaterniond(
                 Eigen::AngleAxisd(testQ(EP), Eigen::Vector3d::UnitY()))
             * Eigen::Quaterniond(
                 Eigen::AngleAxisd(testQ(WY), Eigen::Vector3d::UnitZ()))
             * Eigen::Quaterniond(
                 Eigen::AngleAxisd(testQ(WP), Eigen::Vector3d::UnitY()));
-
-      Eigen::Matrix3d Rupper = B.rotation() * Rlower.inverse().matrix();
-
-      Eigen::Vector3d euler = Rupper.eulerAngles(1, 0, 2);
-
-      if (flipShoulder) {
+      Eigen::Vector3d euler
+          = (targetInBase.rotation() * lowerRotation.inverse().matrix())
+                .eulerAngles(1, 0, 2);
+      if (flipShoulder != 0) {
         euler = flipEuler3Axis(euler);
       }
 
       testQ(SP) = euler[0];
       testQ(SR) = euler[1];
       testQ(SY) = euler[2];
-
       for (std::size_t j = 0; j < 6; ++j) {
         testQ[j] = dart::math::wrapToPi(testQ[j]);
-        if (std::abs(testQ[j]) < zeroSize) {
+        if (std::abs(testQ[j]) < kZeroSize) {
           testQ[j] = 0.0;
         }
       }
 
-      int validity = isValid ? VALID : OUT_OF_REACH;
-      mSolutions.push_back(Solution(testQ, validity));
+      const int validity = isValid ? VALID : OUT_OF_REACH;
+      mSolutions.emplace_back(testQ, validity);
     }
 
     checkSolutionJointLimits();
-
     return mSolutions;
   }
 
   std::span<const std::size_t> getDofs() const override
   {
-    if (!configured) {
+    if (!mConfigured) {
       configure();
     }
-
     return mDofs;
   }
 
-  const double zeroSize = 1e-8;
-
-protected:
+private:
   void configure() const
   {
-    configured = false;
-
+    mConfigured = false;
     mBaseLink = mIK->getNode()->getSkeleton()->getBodyNode(mBaseLinkName);
 
     BodyNode* base = mBaseLink.lock();
-    if (nullptr == base) {
+    if (base == nullptr) {
       DART_ERROR("base link is a nullptr");
       DART_ASSERT(false);
       return;
     }
 
-    const SkeletonPtr& skel = base->getSkeleton();
-    const BodyNodePtr& pelvis = skel->getBodyNode("Body_TSY");
-    if (nullptr == pelvis) {
+    const SkeletonPtr& skeleton = base->getSkeleton();
+    const BodyNodePtr& pelvis = skeleton->getBodyNode("Body_TSY");
+    if (pelvis == nullptr) {
       DART_ERROR("Could not find Hubo's pelvis (Body_TSY)");
       DART_ASSERT(false);
       return;
     }
 
-    Eigen::Vector6d saved_q;
-
+    Eigen::Vector6d savedPositions;
     DegreeOfFreedom* dofs[6];
-    BodyNode* bn = base;
+    BodyNode* body = base;
     for (std::size_t i = 0; i < 6; ++i) {
-      Joint* joint = bn->getParentJoint();
+      Joint* joint = body->getParentJoint();
       if (joint->getNumDofs() != 1) {
         DART_ERROR(
             "Invalid number of DOFs ({}) in the Joint [{}]",
@@ -399,94 +437,83 @@ protected:
       }
 
       dofs[i] = joint->getDof(0);
-      saved_q[i] = dofs[i]->getPosition();
+      savedPositions[i] = dofs[i]->getPosition();
       dofs[i]->setPosition(0.0);
-      bn = bn->getChildBodyNode(0);
+      body = body->getChildBodyNode(0);
     }
 
     BodyNode* elbow = dofs[3]->getChildBodyNode();
-    L3 = std::abs(
+    mL3 = std::abs(
         elbow->getTransform(dofs[2]->getParentBodyNode()).translation()[2]);
-    L4 = std::abs(
+    mL4 = std::abs(
         elbow->getTransform(dofs[3]->getParentBodyNode()).translation()[0]);
 
     BodyNode* wrist = dofs[5]->getChildBodyNode();
-    Eigen::Isometry3d wrist_tf = wrist->getTransform(elbow);
-    L5 = std::abs(wrist_tf.translation()[2]);
+    mL5 = std::abs(wrist->getTransform(elbow).translation()[2]);
 
-    shoulderTf = Eigen::Isometry3d::Identity();
-    shoulderTf.translate(
+    mShoulderTransform = Eigen::Isometry3d::Identity();
+    mShoulderTransform.translate(
         dofs[3]->getParentBodyNode()->getTransform(pelvis).translation()[0]
         * Eigen::Vector3d::UnitX());
-    shoulderTf.translate(
+    mShoulderTransform.translate(
         dofs[2]->getParentBodyNode()->getTransform(pelvis).translation()[1]
         * Eigen::Vector3d::UnitY());
-    shoulderTf.translate(
+    mShoulderTransform.translate(
         dofs[2]->getParentBodyNode()->getTransform(pelvis).translation()[2]
         * Eigen::Vector3d::UnitZ());
 
     mWristEnd = dofs[5]->getChildBodyNode();
-
-    alternatives << 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, -1, 1, 1, -1, 1, 0, -1,
+    mAlternatives << 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, -1, 1, 1, -1, 1, 0, -1,
         0, 1, -1, 0, 0;
 
+    mDofs.clear();
     for (std::size_t i = 0; i < 6; ++i) {
-      dofs[i]->setPosition(saved_q[i]);
+      dofs[i]->setPosition(savedPositions[i]);
       mDofs.push_back(dofs[i]->getIndexInSkeleton());
     }
-
-    configured = true;
+    mConfigured = true;
   }
 
-  mutable bool configured;
-
-  mutable Eigen::Isometry3d shoulderTf;
-  mutable Eigen::Isometry3d wristTfInv;
-  mutable Eigen::Isometry3d mNodeOffsetTfInv;
-  mutable double L3, L4, L5;
-
-  mutable Eigen::Matrix<int, 8, 3> alternatives;
-
+  static constexpr double kZeroSize = 1e-8;
+  mutable bool mConfigured = false;
+  mutable Eigen::Isometry3d mShoulderTransform = Eigen::Isometry3d::Identity();
+  mutable double mL3 = 0.0;
+  mutable double mL4 = 0.0;
+  mutable double mL5 = 0.0;
+  mutable Eigen::Matrix<int, 8, 3> mAlternatives;
   mutable std::vector<std::size_t> mDofs;
-
   std::string mBaseLinkName;
   mutable WeakBodyNodePtr mBaseLink;
-
-  mutable JacobianNode* mWristEnd;
+  mutable JacobianNode* mWristEnd = nullptr;
 };
 
-class HuboLegIK : public InverseKinematics::Analytical
+class HuboLegIK final : public InverseKinematics::Analytical
 {
 public:
-  /// baseLink should be Body_LHY or Body_RHY
   HuboLegIK(
-      InverseKinematics* _ik,
+      InverseKinematics* ik,
       const std::string& baseLinkName,
       const Analytical::Properties& properties = Analytical::Properties())
-    : Analytical(_ik, "HuboLegIK_" + baseLinkName, properties),
-      configured(false),
+    : Analytical(ik, "HuboLegIK_" + baseLinkName, properties),
       mBaseLinkName(baseLinkName)
   {
-    // Do nothing
   }
 
-  std::unique_ptr<GradientMethod> clone(
-      InverseKinematics* _newIK) const override
+  std::unique_ptr<GradientMethod> clone(InverseKinematics* newIk) const override
   {
     return std::make_unique<HuboLegIK>(
-        _newIK, mBaseLinkName, getAnalyticalProperties());
+        newIk, mBaseLinkName, getAnalyticalProperties());
   }
 
   std::span<const Solution> computeSolutions(
-      const Eigen::Isometry3d& _desiredBodyTf) override
+      const Eigen::Isometry3d& desiredBodyTransform) override
   {
     mSolutions.clear();
     mSolutions.reserve(8);
 
-    if (!configured) {
+    if (!mConfigured) {
       configure();
-
-      if (!configured) {
+      if (!mConfigured) {
         DART_WARN(
             "This analytical IK was not able to configure properly, so it will "
             "not be able to compute solutions");
@@ -495,88 +522,81 @@ public:
     }
 
     const BodyNodePtr& base = mBaseLink.lock();
-    if (nullptr == base) {
+    if (base == nullptr) {
       DART_ERROR("Attempting to perform IK on a limb that no longer exists!");
       DART_ASSERT(false);
       return mSolutions;
     }
 
-    double nx, ny, sx, sy, ax, ay, az, px, py, pz;
-    double q1, q2, q3, q4, q5, q6;
-    double S2, S4, S6;
-    double C2, C4, C5, C6;
-    double C45, psi, q345;
-    std::complex<double> radical;
-    std::complex<double> sqrt_radical;
-    Eigen::Isometry3d B, Binv;
+    const Eigen::Isometry3d target
+        = (base->getParentBodyNode()->getWorldTransform() * mWaist).inverse()
+          * desiredBodyTransform * mFootTransformInverse;
+    const Eigen::Isometry3d targetInverse = target.inverse();
 
-    Eigen::Vector6d testQ;
-
-    B = (base->getParentBodyNode()->getWorldTransform() * waist).inverse()
-        * _desiredBodyTf * footTfInv;
-    Binv = B.inverse();
-
-    nx = Binv(0, 0);
-    sx = Binv(0, 1);
-    ax = Binv(0, 2);
-    px = Binv(0, 3);
-    ny = Binv(1, 0);
-    sy = Binv(1, 1);
-    ay = Binv(1, 2);
-    py = Binv(1, 3);
-    az = Binv(2, 2);
-    pz = Binv(2, 3);
+    const double nx = targetInverse(0, 0);
+    const double sx = targetInverse(0, 1);
+    const double ax = targetInverse(0, 2);
+    const double px = targetInverse(0, 3);
+    const double ny = targetInverse(1, 0);
+    const double sy = targetInverse(1, 1);
+    const double ay = targetInverse(1, 2);
+    const double py = targetInverse(1, 3);
+    const double az = targetInverse(2, 2);
+    const double pz = targetInverse(2, 3);
 
     for (std::size_t i = 0; i < 8; ++i) {
       bool isValid = true;
 
-      C4 = ((px + L6) * (px + L6) - L4 * L4 - L5 * L5 + py * py + pz * pz)
-           / (2 * L4 * L5);
-      radical = 1 - C4 * C4;
-      sqrt_radical = std::sqrt(radical);
-      if (sqrt_radical.imag() != 0) {
+      const double c4 = ((px + mL6) * (px + mL6) - mL4 * mL4 - mL5 * mL5
+                         + py * py + pz * pz)
+                        / (2.0 * mL4 * mL5);
+      std::complex<double> radical = 1.0 - c4 * c4;
+      std::complex<double> sqrtRadical = std::sqrt(radical);
+      if (sqrtRadical.imag() != 0.0) {
         isValid = false;
       }
-      q4 = atan2(alternatives(i, 0) * sqrt_radical.real(), C4);
+      const double q4
+          = std::atan2(mAlternatives(i, 0) * sqrtRadical.real(), c4);
 
-      S4 = sin(q4);
-      psi = atan2(S4 * L4, C4 * L4 + L5);
-      radical = (px + L6) * (px + L6) + py * py;
-      sqrt_radical = std::sqrt(radical);
-      if (sqrt_radical.imag() != 0) {
+      const double s4 = std::sin(q4);
+      const double psi = std::atan2(s4 * mL4, c4 * mL4 + mL5);
+      radical = (px + mL6) * (px + mL6) + py * py;
+      sqrtRadical = std::sqrt(radical);
+      if (sqrtRadical.imag() != 0.0) {
         isValid = false;
       }
 
-      q5 = dart::math::wrapToPi(
-          atan2(-pz, alternatives(i, 1) * sqrt_radical.real()) - psi);
+      const double q5 = dart::math::wrapToPi(
+          std::atan2(-pz, mAlternatives(i, 1) * sqrtRadical.real()) - psi);
 
-      q6 = atan2(py, -(px + L6));
-      C45 = cos(q4 + q5);
-      C5 = cos(q5);
-      if (C45 * L4 + C5 * L5 < 0) {
-        q6 = dart::math::wrapToPi(q6 + pi);
+      double q6 = std::atan2(py, -(px + mL6));
+      const double c45 = std::cos(q4 + q5);
+      const double c5 = std::cos(q5);
+      if (c45 * mL4 + c5 * mL5 < 0.0) {
+        q6 = dart::math::wrapToPi(q6 + dart::math::pi);
       }
 
-      S6 = sin(q6);
-      C6 = cos(q6);
-
-      S2 = C6 * ay + S6 * ax;
-      radical = 1 - S2 * S2;
-      sqrt_radical = std::sqrt(radical);
-      if (sqrt_radical.imag() != 0) {
+      const double s6 = std::sin(q6);
+      const double c6 = std::cos(q6);
+      const double s2 = c6 * ay + s6 * ax;
+      radical = 1.0 - s2 * s2;
+      sqrtRadical = std::sqrt(radical);
+      if (sqrtRadical.imag() != 0.0) {
         isValid = false;
       }
-      q2 = atan2(S2, alternatives(i, 2) * sqrt_radical.real());
+      const double q2
+          = std::atan2(s2, mAlternatives(i, 2) * sqrtRadical.real());
 
-      q1 = atan2(C6 * sy + S6 * sx, C6 * ny + S6 * nx);
-      C2 = cos(q2);
-      if (C2 < 0) {
-        q1 = dart::math::wrapToPi(q1 + pi);
+      double q1 = std::atan2(c6 * sy + s6 * sx, c6 * ny + s6 * nx);
+      const double c2 = std::cos(q2);
+      if (c2 < 0.0) {
+        q1 = dart::math::wrapToPi(q1 + dart::math::pi);
       }
 
-      q345 = atan2(-az / C2, -(C6 * ax - S6 * ay) / C2);
-      q3 = dart::math::wrapToPi(q345 - q4 - q5);
+      const double q345 = std::atan2(-az / c2, -(c6 * ax - s6 * ay) / c2);
+      const double q3 = dart::math::wrapToPi(q345 - q4 - q5);
 
+      Eigen::Vector6d testQ;
       testQ[0] = q1;
       testQ[1] = q2;
       testQ[2] = q3;
@@ -584,60 +604,54 @@ public:
       testQ[4] = q5;
       testQ[5] = q6;
 
-      for (auto k = 0; k < std::ssize(testQ); ++k) {
-        if (fabs(testQ[k]) < zeroSize) {
-          testQ[k] = 0;
+      for (std::size_t j = 0; j < 6; ++j) {
+        if (std::abs(testQ[j]) < kZeroSize) {
+          testQ[j] = 0.0;
         }
       }
 
-      int validity = isValid ? VALID : OUT_OF_REACH;
-      mSolutions.push_back(Solution(testQ, validity));
+      const int validity = isValid ? VALID : OUT_OF_REACH;
+      mSolutions.emplace_back(testQ, validity);
     }
 
     checkSolutionJointLimits();
-
     return mSolutions;
   }
 
   std::span<const std::size_t> getDofs() const override
   {
-    if (!configured) {
+    if (!mConfigured) {
       configure();
     }
-
     return mDofs;
   }
 
-  const double zeroSize = 1e-8;
-
-protected:
+private:
   void configure() const
   {
-    configured = false;
-
+    mConfigured = false;
     mBaseLink = mIK->getNode()->getSkeleton()->getBodyNode(mBaseLinkName);
 
     BodyNode* base = mBaseLink.lock();
-    if (nullptr == base) {
+    if (base == nullptr) {
       DART_ERROR("base link is a nullptr");
       DART_ASSERT(false);
       return;
     }
 
-    const SkeletonPtr& skel = mIK->getNode()->getSkeleton();
-    BodyNode* pelvis = skel->getBodyNode("Body_TSY");
-    if (nullptr == pelvis) {
+    const SkeletonPtr& skeleton = mIK->getNode()->getSkeleton();
+    BodyNode* pelvis = skeleton->getBodyNode("Body_TSY");
+    if (pelvis == nullptr) {
       DART_ERROR("Could not find Hubo's pelvis (Body_TSY)");
       DART_ASSERT(false);
       return;
     }
 
-    Eigen::Vector6d saved_q;
-
+    Eigen::Vector6d savedPositions;
     DegreeOfFreedom* dofs[6];
-    BodyNode* bn = base;
+    BodyNode* body = base;
     for (std::size_t i = 0; i < 6; ++i) {
-      Joint* joint = bn->getParentJoint();
+      Joint* joint = body->getParentJoint();
       if (joint->getNumDofs() != 1) {
         DART_ERROR(
             "Invalid number of DOFs ({}) in the Joint [{}]",
@@ -648,864 +662,1128 @@ protected:
       }
 
       dofs[i] = joint->getDof(0);
-      saved_q[i] = dofs[i]->getPosition();
+      savedPositions[i] = dofs[i]->getPosition();
       dofs[i]->setPosition(0.0);
-
-      if (bn->getNumChildBodyNodes() > 0) {
-        bn = bn->getChildBodyNode(0);
+      if (body->getNumChildBodyNodes() > 0) {
+        body = body->getChildBodyNode(0);
       }
     }
 
-    L4 = std::abs(
+    mL4 = std::abs(
         dofs[3]->getChildBodyNode()->getRelativeTransform().translation()[2]);
-
-    L5 = std::abs(
+    mL5 = std::abs(
         dofs[4]->getChildBodyNode()->getRelativeTransform().translation()[2]);
+    mL6 = 0.0;
 
-    // This offset will be taken care of with footTfInv
-    L6 = 0.0;
+    mHipRotation = Eigen::Isometry3d::Identity();
+    mHipRotation.rotate(
+        Eigen::AngleAxisd(
+            90.0 * dart::math::pi / 180.0, Eigen::Vector3d::UnitZ()));
+    mWaist = dofs[2]->getChildBodyNode()->getTransform(
+                 dofs[0]->getParentBodyNode())
+             * mHipRotation;
 
-    hipRotation = Eigen::Isometry3d::Identity();
-    hipRotation.rotate(
-        Eigen::AngleAxisd(90 * pi / 180.0, Eigen::Vector3d::UnitZ()));
+    mFootTransformInverse = Eigen::Isometry3d::Identity();
+    mFootTransformInverse.rotate(
+        Eigen::AngleAxisd(
+            -90.0 * dart::math::pi / 180.0, Eigen::Vector3d::UnitY()));
+    mFootTransformInverse
+        = mFootTransformInverse
+          * mIK->getNode()->getTransform(dofs[5]->getChildBodyNode());
+    mFootTransformInverse = mFootTransformInverse.inverse();
 
-    waist = dofs[2]->getChildBodyNode()->getTransform(
-                dofs[0]->getParentBodyNode())
-            * hipRotation;
+    mAlternatives << 1, 1, 1, 1, 1, -1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1,
+        -1, -1, -1, 1, -1, -1, -1;
 
-    footTfInv = Eigen::Isometry3d::Identity();
-    footTfInv.rotate(
-        Eigen::AngleAxisd(-90 * pi / 180.0, Eigen::Vector3d::UnitY()));
-    footTfInv
-        = footTfInv * mIK->getNode()->getTransform(dofs[5]->getChildBodyNode());
-    footTfInv = footTfInv.inverse();
-
-    alternatives << 1, 1, 1, 1, 1, -1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1,
-        -1, -1, 1, -1, -1, -1;
-
+    mDofs.clear();
     for (std::size_t i = 0; i < 6; ++i) {
-      dofs[i]->setPosition(saved_q[i]);
+      dofs[i]->setPosition(savedPositions[i]);
       mDofs.push_back(dofs[i]->getIndexInSkeleton());
     }
-
-    configured = true;
+    mConfigured = true;
   }
 
-  mutable double L4, L5, L6;
-  mutable Eigen::Isometry3d waist;
-  mutable Eigen::Isometry3d hipRotation;
-  mutable Eigen::Isometry3d footTfInv;
-  mutable Eigen::Matrix<int, 8, 3> alternatives;
-
+  static constexpr double kZeroSize = 1e-8;
+  mutable double mL4 = 0.0;
+  mutable double mL5 = 0.0;
+  mutable double mL6 = 0.0;
+  mutable Eigen::Isometry3d mWaist = Eigen::Isometry3d::Identity();
+  mutable Eigen::Isometry3d mHipRotation = Eigen::Isometry3d::Identity();
+  mutable Eigen::Isometry3d mFootTransformInverse
+      = Eigen::Isometry3d::Identity();
+  mutable Eigen::Matrix<int, 8, 3> mAlternatives;
   mutable std::vector<std::size_t> mDofs;
-
-  mutable bool configured;
-
+  mutable bool mConfigured = false;
   std::string mBaseLinkName;
-
   mutable WeakBodyNodePtr mBaseLink;
 };
 
-class TeleoperationWorld : public dart::gui::WorldNode
+void disableSkeletonCollisionAndGravity(
+    const dart::dynamics::SkeletonPtr& skeleton)
 {
-public:
-  enum MoveEnum_t
-  {
-    MOVE_Q = 0,
-    MOVE_W,
-    MOVE_E,
-    MOVE_A,
-    MOVE_S,
-    MOVE_D,
-    MOVE_F,
-    MOVE_Z,
-
-    NUM_MOVE
-  };
-
-  TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
-    : dart::gui::WorldNode(_world),
-      mHubo(_robot),
-      iter(0),
-      l_foot(_robot->getEndEffector("l_foot")),
-      r_foot(_robot->getEndEffector("r_foot")),
-      l_hand(_robot->getEndEffector("l_hand")),
-      r_hand(_robot->getEndEffector("r_hand"))
-  {
-    mMoveComponents.resize(NUM_MOVE, false);
-    mAnyMovement = false;
-    mAmplifyMovement = false;
+  if (skeleton == nullptr) {
+    return;
   }
 
-  void setMovement(const std::vector<bool>& moveComponents)
-  {
-    mMoveComponents = moveComponents;
-
-    mAnyMovement = false;
-
-    for (bool move : mMoveComponents) {
-      if (move) {
-        mAnyMovement = true;
-        break;
-      }
+  skeleton->disableSelfCollisionCheck();
+  skeleton->setAdjacentBodyCheck(false);
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* body = skeleton->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
     }
+    body->setCollidable(false);
+    body->setGravityMode(false);
+    body->eachShapeNodeWith<dart::dynamics::CollisionAspect>(
+        [](dart::dynamics::ShapeNode* shapeNode) {
+          shapeNode->getCollisionAspect()->setCollidable(false);
+        });
   }
-
-  void customPreRefresh() override
-  {
-    if (mAnyMovement) {
-      Eigen::Isometry3d old_tf = mHubo->getBodyNode(0)->getWorldTransform();
-      Eigen::Isometry3d new_tf = Eigen::Isometry3d::Identity();
-      Eigen::Vector3d forward = old_tf.linear().col(0);
-      forward[2] = 0.0;
-      if (forward.norm() > 1e-10) {
-        forward.normalize();
-      } else {
-        forward.setZero();
-      }
-
-      Eigen::Vector3d left = old_tf.linear().col(1);
-      left[2] = 0.0;
-      if (left.norm() > 1e-10) {
-        left.normalize();
-      } else {
-        left.setZero();
-      }
-
-      const Eigen::Vector3d& up = Eigen::Vector3d::UnitZ();
-
-      double linearStep = 0.01;
-      double elevationStep = 0.2 * linearStep;
-      double rotationalStep = 2.0 * pi / 180.0;
-
-      if (mAmplifyMovement) {
-        linearStep *= 2.0;
-        elevationStep *= 2.0;
-        rotationalStep *= 2.0;
-      }
-
-      if (mMoveComponents[MOVE_W]) {
-        new_tf.translate(linearStep * forward);
-      }
-
-      if (mMoveComponents[MOVE_S]) {
-        new_tf.translate(-linearStep * forward);
-      }
-
-      if (mMoveComponents[MOVE_A]) {
-        new_tf.translate(linearStep * left);
-      }
-
-      if (mMoveComponents[MOVE_D]) {
-        new_tf.translate(-linearStep * left);
-      }
-
-      if (mMoveComponents[MOVE_F]) {
-        new_tf.translate(elevationStep * up);
-      }
-
-      if (mMoveComponents[MOVE_Z]) {
-        new_tf.translate(-elevationStep * up);
-      }
-
-      if (mMoveComponents[MOVE_Q]) {
-        new_tf.rotate(Eigen::AngleAxisd(rotationalStep, up));
-      }
-
-      if (mMoveComponents[MOVE_E]) {
-        new_tf.rotate(Eigen::AngleAxisd(-rotationalStep, up));
-      }
-
-      new_tf.pretranslate(old_tf.translation());
-      new_tf.rotate(old_tf.rotation());
-
-      mHubo->getJoint(0)->setPositions(FreeJoint::convertToPositions(new_tf));
-    }
-
-    mHubo->getIK(true)->solveAndApply(true);
-  }
-
-  bool mAmplifyMovement;
-
-protected:
-  SkeletonPtr mHubo;
-  std::size_t iter;
-
-  EndEffectorPtr l_foot;
-  EndEffectorPtr r_foot;
-
-  EndEffectorPtr l_hand;
-  EndEffectorPtr r_hand;
-
-  std::vector<IK::Analytical::Solution> mSolutions;
-
-  Eigen::VectorXd grad;
-
-  // Order: q, w, e, a, s, d
-  std::vector<bool> mMoveComponents;
-
-  bool mAnyMovement;
-};
-
-class InputHandler : public ::osgGA::GUIEventHandler
-{
-public:
-  InputHandler(
-      dart::gui::Viewer* viewer,
-      TeleoperationWorld* teleop,
-      const SkeletonPtr& hubo,
-      const WorldPtr& world)
-    : mViewer(viewer), mTeleop(teleop), mHubo(hubo), mWorld(world)
-  {
-    initialize();
-  }
-
-  void initialize()
-  {
-    mRestConfig = mHubo->getPositions();
-
-    for (std::size_t i = 0; i < mHubo->getNumEndEffectors(); ++i) {
-      const InverseKinematicsPtr ik = mHubo->getEndEffector(i)->getIK();
-      if (ik) {
-        mDefaultBounds.push_back(ik->getErrorMethod().getBounds());
-        mDefaultTargetTf.push_back(ik->getTarget()->getRelativeTransform());
-        mConstraintActive.push_back(false);
-        mEndEffectorIndex.push_back(i);
-      }
-    }
-
-    mPosture = std::dynamic_pointer_cast<RelaxedPosture>(
-        mHubo->getIK(true)->getObjective());
-
-    mBalance = std::dynamic_pointer_cast<dart::constraint::BalanceConstraint>(
-        mHubo->getIK(true)->getProblem()->getEqConstraint(1));
-
-    mOptimizationKey = 'r';
-
-    mMoveComponents.resize(TeleoperationWorld::NUM_MOVE, false);
-  }
-
-  bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
-  {
-    if (nullptr == mHubo) {
-      return false;
-    }
-
-    if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
-      if (ea.getKey() == 'p') {
-        for (std::size_t i = 0; i < mHubo->getNumDofs(); ++i) {
-          std::cout << mHubo->getDof(i)->getName() << ": "
-                    << mHubo->getDof(i)->getPosition() << std::endl;
-        }
-        return true;
-      }
-
-      if (ea.getKey() == 't') {
-        // Reset all the positions except for x, y, and yaw
-        for (std::size_t i = 0; i < mHubo->getNumDofs(); ++i) {
-          if (i < 2 || 4 < i) {
-            mHubo->getDof(i)->setPosition(mRestConfig[i]);
-          }
-        }
-        return true;
-      }
-
-      if ('1' <= ea.getKey() && ea.getKey() <= '9') {
-        std::size_t index = ea.getKey() - '1';
-        if (index < mConstraintActive.size()) {
-          EndEffector* ee = mHubo->getEndEffector(mEndEffectorIndex[index]);
-          const InverseKinematicsPtr& ik = ee->getIK();
-          if (ik && mConstraintActive[index]) {
-            mConstraintActive[index] = false;
-
-            ik->getErrorMethod().setBounds(mDefaultBounds[index]);
-            ik->getTarget()->setRelativeTransform(mDefaultTargetTf[index]);
-            mWorld->removeSimpleFrame(ik->getTarget());
-          } else if (ik) {
-            mConstraintActive[index] = true;
-
-            // Use the standard default bounds instead of our custom default
-            // bounds
-            ik->getErrorMethod().setBounds();
-            ik->getTarget()->setTransform(ee->getTransform());
-            mWorld->addSimpleFrame(ik->getTarget());
-          }
-        }
-        return true;
-      }
-
-      if ('x' == ea.getKey()) {
-        EndEffector* ee = mHubo->getEndEffector("l_foot");
-        ee->getSupport()->setActive(!ee->getSupport()->isActive());
-        return true;
-      }
-
-      if ('c' == ea.getKey()) {
-        EndEffector* ee = mHubo->getEndEffector("r_foot");
-        ee->getSupport()->setActive(!ee->getSupport()->isActive());
-        return true;
-      }
-
-      if (ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L) {
-        mTeleop->mAmplifyMovement = true;
-      }
-
-      switch (ea.getKey()) {
-        case 'w':
-        case 'W':
-          mMoveComponents[TeleoperationWorld::MOVE_W] = true;
-          break;
-        case 'a':
-        case 'A':
-          mMoveComponents[TeleoperationWorld::MOVE_A] = true;
-          break;
-        case 's':
-        case 'S':
-          mMoveComponents[TeleoperationWorld::MOVE_S] = true;
-          break;
-        case 'd':
-        case 'D':
-          mMoveComponents[TeleoperationWorld::MOVE_D] = true;
-          break;
-        case 'q':
-        case 'Q':
-          mMoveComponents[TeleoperationWorld::MOVE_Q] = true;
-          break;
-        case 'e':
-        case 'E':
-          mMoveComponents[TeleoperationWorld::MOVE_E] = true;
-          break;
-        case 'f':
-        case 'F':
-          mMoveComponents[TeleoperationWorld::MOVE_F] = true;
-          break;
-        case 'z':
-        case 'Z':
-          mMoveComponents[TeleoperationWorld::MOVE_Z] = true;
-          break;
-      }
-
-      switch (ea.getKey()) {
-        case 'w':
-        case 'a':
-        case 's':
-        case 'd':
-        case 'q':
-        case 'e':
-        case 'f':
-        case 'z':
-        case 'W':
-        case 'A':
-        case 'S':
-        case 'D':
-        case 'Q':
-        case 'E':
-        case 'F':
-        case 'Z': {
-          mTeleop->setMovement(mMoveComponents);
-          return true;
-        }
-      }
-
-      if (mOptimizationKey == ea.getKey()) {
-        if (mPosture) {
-          mPosture->enforceIdealPosture = true;
-        }
-
-        if (mBalance) {
-          mBalance->setErrorMethod(
-              dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
-        }
-
-        return true;
-      }
-    }
-
-    if (::osgGA::GUIEventAdapter::KEYUP == ea.getEventType()) {
-      if (ea.getKey() == mOptimizationKey) {
-        if (mPosture) {
-          mPosture->enforceIdealPosture = false;
-        }
-
-        if (mBalance) {
-          mBalance->setErrorMethod(
-              dart::constraint::BalanceConstraint::FROM_CENTROID);
-        }
-
-        return true;
-      }
-
-      if (ea.getKey() == ::osgGA::GUIEventAdapter::KEY_Shift_L) {
-        mTeleop->mAmplifyMovement = false;
-      }
-
-      switch (ea.getKey()) {
-        case 'w':
-        case 'W':
-          mMoveComponents[TeleoperationWorld::MOVE_W] = false;
-          break;
-        case 'a':
-        case 'A':
-          mMoveComponents[TeleoperationWorld::MOVE_A] = false;
-          break;
-        case 's':
-        case 'S':
-          mMoveComponents[TeleoperationWorld::MOVE_S] = false;
-          break;
-        case 'd':
-        case 'D':
-          mMoveComponents[TeleoperationWorld::MOVE_D] = false;
-          break;
-        case 'q':
-        case 'Q':
-          mMoveComponents[TeleoperationWorld::MOVE_Q] = false;
-          break;
-        case 'e':
-        case 'E':
-          mMoveComponents[TeleoperationWorld::MOVE_E] = false;
-          break;
-        case 'f':
-        case 'F':
-          mMoveComponents[TeleoperationWorld::MOVE_F] = false;
-          break;
-        case 'z':
-        case 'Z':
-          mMoveComponents[TeleoperationWorld::MOVE_Z] = false;
-          break;
-      }
-
-      switch (ea.getKey()) {
-        case 'w':
-        case 'a':
-        case 's':
-        case 'd':
-        case 'q':
-        case 'e':
-        case 'f':
-        case 'z':
-        case 'W':
-        case 'A':
-        case 'S':
-        case 'D':
-        case 'Q':
-        case 'E':
-        case 'F':
-        case 'Z': {
-          mTeleop->setMovement(mMoveComponents);
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-protected:
-  dart::gui::Viewer* mViewer;
-
-  TeleoperationWorld* mTeleop;
-
-  SkeletonPtr mHubo;
-
-  WorldPtr mWorld;
-
-  Eigen::VectorXd mRestConfig;
-
-  std::vector<bool> mConstraintActive;
-
-  std::vector<std::size_t> mEndEffectorIndex;
-
-  std::vector<std::pair<Eigen::Vector6d, Eigen::Vector6d>> mDefaultBounds;
-
-  dart::common::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
-
-  std::shared_ptr<RelaxedPosture> mPosture;
-
-  std::shared_ptr<dart::constraint::BalanceConstraint> mBalance;
-
-  char mOptimizationKey;
-
-  std::vector<bool> mMoveComponents;
-};
-
-SkeletonPtr createGround()
-{
-  // Create a Skeleton to represent the ground
-  SkeletonPtr ground = Skeleton::create("ground");
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  double thickness = 0.01;
-  tf.translation() = Eigen::Vector3d(0, 0, -thickness / 2.0);
-  WeldJoint::Properties joint;
-  joint.mT_ParentBodyToJoint = tf;
-  ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
-  ShapePtr groundShape
-      = std::make_shared<BoxShape>(Eigen::Vector3d(10, 10, thickness));
-
-  auto shapeNode = ground->getBodyNode(0)
-                       ->createShapeNodeWith<
-                           VisualAspect,
-                           CollisionAspect,
-                           DynamicsAspect>(groundShape);
-  shapeNode->getVisualAspect()->setColor(dart::Color::Blue(0.2));
-
-  return ground;
 }
 
-SkeletonPtr createHubo()
+std::optional<std::pair<Eigen::Vector3d, Eigen::Vector3d>>
+computeVisualWorldBounds(const dart::dynamics::SkeletonPtr& skeleton)
+{
+  if (skeleton == nullptr) {
+    return std::nullopt;
+  }
+
+  bool hasBounds = false;
+  Eigen::Vector3d min = Eigen::Vector3d::Zero();
+  Eigen::Vector3d max = Eigen::Vector3d::Zero();
+
+  const auto includePoint = [&](const Eigen::Vector3d& point) {
+    if (!hasBounds) {
+      min = point;
+      max = point;
+      hasBounds = true;
+      return;
+    }
+    min = min.cwiseMin(point);
+    max = max.cwiseMax(point);
+  };
+
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* body = skeleton->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
+    }
+
+    body->eachShapeNodeWith<dart::dynamics::VisualAspect>(
+        [&](const dart::dynamics::ShapeNode* shapeNode) {
+          if (shapeNode == nullptr || shapeNode->getShape() == nullptr
+              || shapeNode->getVisualAspect()->isHidden()) {
+            return;
+          }
+
+          const auto& bounds = shapeNode->getShape()->getBoundingBox();
+          const Eigen::Vector3d localMin = bounds.getMin();
+          const Eigen::Vector3d localMax = bounds.getMax();
+          if (!localMin.allFinite() || !localMax.allFinite()) {
+            return;
+          }
+
+          const Eigen::Isometry3d transform = shapeNode->getWorldTransform();
+          for (int x = 0; x < 2; ++x) {
+            for (int y = 0; y < 2; ++y) {
+              for (int z = 0; z < 2; ++z) {
+                includePoint(
+                    transform
+                    * Eigen::Vector3d(
+                        x == 0 ? localMin.x() : localMax.x(),
+                        y == 0 ? localMin.y() : localMax.y(),
+                        z == 0 ? localMin.z() : localMax.z()));
+              }
+            }
+          }
+        });
+  }
+
+  if (!hasBounds) {
+    return std::nullopt;
+  }
+
+  return std::make_pair(min, max);
+}
+
+void setRequiredDofPosition(
+    const dart::dynamics::SkeletonPtr& hubo, const char* name, double position)
+{
+  auto* dof = hubo ? hubo->getDof(name) : nullptr;
+  if (dof == nullptr) {
+    throw std::runtime_error(
+        "Hubo puppet model is missing expected DOF " + std::string(name));
+  }
+  dof->setPosition(position);
+}
+
+void setRequiredDofLimits(
+    const dart::dynamics::SkeletonPtr& hubo,
+    const char* name,
+    double lower,
+    double upper)
+{
+  auto* dof = hubo ? hubo->getDof(name) : nullptr;
+  if (dof == nullptr) {
+    throw std::runtime_error(
+        "Hubo puppet model is missing expected DOF " + std::string(name));
+  }
+  dof->setPositionLowerLimit(lower);
+  dof->setPositionUpperLimit(upper);
+}
+
+void setupHuboPuppetStartConfiguration(const dart::dynamics::SkeletonPtr& hubo)
+{
+  const std::array<std::pair<const char*, double>, 10> jointPositions{{
+      {"LHP", -45.0},
+      {"LKP", 90.0},
+      {"LAP", -45.0},
+      {"RHP", -45.0},
+      {"RKP", 90.0},
+      {"RAP", -45.0},
+      {"LSP", 30.0},
+      {"LEP", -120.0},
+      {"RSP", 30.0},
+      {"REP", -120.0},
+  }};
+  for (const auto& [name, degrees] : jointPositions) {
+    setRequiredDofPosition(hubo, name, degrees * kDegrees);
+  }
+
+  const std::array<const char*, 4> limitedDofs{{"LSY", "LWY", "RSY", "RWY"}};
+  for (const char* name : limitedDofs) {
+    setRequiredDofLimits(hubo, name, -90.0 * kDegrees, 90.0 * kDegrees);
+  }
+}
+
+void removeHuboPuppetFingerBodyNodes(const dart::dynamics::SkeletonPtr& hubo)
+{
+  if (hubo == nullptr) {
+    return;
+  }
+
+  for (std::size_t i = 0; i < hubo->getNumBodyNodes();) {
+    auto* body = hubo->getBodyNode(i);
+    if (body == nullptr) {
+      ++i;
+      continue;
+    }
+
+    const std::string name = body->getName();
+    if (name.starts_with("Body_LF") || name.starts_with("Body_RF")) {
+      body->remove();
+      continue;
+    }
+    ++i;
+  }
+}
+
+dart::dynamics::SkeletonPtr loadHuboPuppetSkeleton()
 {
   dart::io::ReadOptions options;
   options.addPackageDirectory(
       "drchubo", dart::config::dataPath("urdf/drchubo"));
   const dart::common::Uri huboUri = dart::common::Uri::createFromPath(
       dart::config::dataPath("urdf/drchubo/drchubo.urdf"));
-  SkeletonPtr hubo = dart::io::readSkeleton(huboUri, options);
+  auto hubo = dart::io::readSkeleton(huboUri, options);
+  if (hubo == nullptr) {
+    throw std::runtime_error(
+        "Failed to load Hubo puppet model from " + huboUri.toString());
+  }
 
-  for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i) {
-    BodyNode* bn = hubo->getBodyNode(i);
-    const auto& name = bn->getName();
-    if (name.starts_with("Body_LF") || name.starts_with("Body_RF")) {
-      bn->remove();
-      --i;
+  hubo->setName(kHuboSkeletonName);
+  removeHuboPuppetFingerBodyNodes(hubo);
+  setupHuboPuppetStartConfiguration(hubo);
+
+  auto* rootBody = hubo->getRootBodyNode();
+  if (rootBody != nullptr
+      && dynamic_cast<dart::dynamics::FreeJoint*>(rootBody->getParentJoint())
+             != nullptr) {
+    Eigen::Isometry3d transform = rootBody->getWorldTransform();
+    transform.translation().x() = 0.0;
+    transform.translation().y() = 0.0;
+    dart::dynamics::FreeJoint::setTransformOf(rootBody, transform);
+    if (const auto bounds = computeVisualWorldBounds(hubo)) {
+      constexpr double groundClearance = 0.015;
+      transform = rootBody->getWorldTransform();
+      transform.translation().z() += groundClearance - bounds->first.z();
+      dart::dynamics::FreeJoint::setTransformOf(rootBody, transform);
     }
   }
 
+  disableSkeletonCollisionAndGravity(hubo);
   return hubo;
 }
 
-void setStartupConfiguration(const SkeletonPtr& hubo)
+dart::math::SupportGeometry makeHuboPuppetFootSupportGeometry()
 {
-  hubo->getDof("LHP")->setPosition(toRadian(-45.0));
-  hubo->getDof("LKP")->setPosition(toRadian(90.0));
-  hubo->getDof("LAP")->setPosition(toRadian(-45.0));
-
-  hubo->getDof("RHP")->setPosition(toRadian(-45.0));
-  hubo->getDof("RKP")->setPosition(toRadian(90.0));
-  hubo->getDof("RAP")->setPosition(toRadian(-45.0));
-
-  hubo->getDof("LSP")->setPosition(toRadian(30.0));
-  hubo->getDof("LEP")->setPosition(toRadian(-120.0));
-
-  hubo->getDof("RSP")->setPosition(toRadian(30.0));
-  hubo->getDof("REP")->setPosition(toRadian(-120.0));
-
-  hubo->getDof("LSY")->setPositionLowerLimit(toRadian(-90.0));
-  hubo->getDof("LSY")->setPositionUpperLimit(toRadian(90.0));
-  hubo->getDof("LWY")->setPositionLowerLimit(toRadian(-90.0));
-  hubo->getDof("LWY")->setPositionUpperLimit(toRadian(90.0));
-
-  hubo->getDof("RSY")->setPositionLowerLimit(toRadian(-90.0));
-  hubo->getDof("RSY")->setPositionUpperLimit(toRadian(90.0));
-  hubo->getDof("RWY")->setPositionLowerLimit(toRadian(-90.0));
-  hubo->getDof("RWY")->setPositionUpperLimit(toRadian(90.0));
+  dart::math::SupportGeometry support;
+  support.emplace_back(-0.08, 0.05, 0.0);
+  support.emplace_back(-0.18, 0.05, 0.0);
+  support.emplace_back(-0.18, -0.05, 0.0);
+  support.emplace_back(-0.08, -0.05, 0.0);
+  return support;
 }
 
-void setupEndEffectors(const SkeletonPtr& hubo)
+void addDisconnectedLine(
+    dart::dynamics::LineSegmentShape& shape,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to)
 {
-  Eigen::VectorXd rootjoint_weights = Eigen::VectorXd::Ones(7);
-  rootjoint_weights = 0.01 * rootjoint_weights;
-
-  double extra_error_clamp = 0.1;
-
-  Eigen::Vector3d linearBounds
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
-
-  Eigen::Vector3d angularBounds
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
-
-  Eigen::Isometry3d tf_hand(Eigen::Isometry3d::Identity());
-  tf_hand.translate(Eigen::Vector3d(0.0, 0.0, -0.09));
-
-  EndEffector* l_hand
-      = hubo->getBodyNode("Body_LWR")->createEndEffector("l_hand");
-  l_hand->setDefaultRelativeTransform(tf_hand, true);
-
-  dart::gui::InteractiveFramePtr lh_target(
-      new dart::gui::InteractiveFrame(Frame::World(), "lh_target"));
-
-  l_hand->getIK(true)->setTarget(lh_target);
-  l_hand->getIK()->useWholeBody();
-
-  l_hand->getIK()->setGradientMethod<HuboArmIK>("Body_LSP");
-
-  l_hand->getIK()->getAnalytical()->setExtraDofUtilization(
-      IK::Analytical::POST_ANALYTICAL);
-
-  l_hand->getIK()->getAnalytical()->setExtraErrorLengthClamp(extra_error_clamp);
-
-  l_hand->getIK()->getGradientMethod().setComponentWeights(rootjoint_weights);
-
-  l_hand->getIK()->getErrorMethod().setLinearBounds(
-      -linearBounds, linearBounds);
-
-  l_hand->getIK()->getErrorMethod().setAngularBounds(
-      -angularBounds, angularBounds);
-
-  EndEffector* r_hand
-      = hubo->getBodyNode("Body_RWR")->createEndEffector("r_hand");
-  r_hand->setDefaultRelativeTransform(tf_hand, true);
-
-  dart::gui::InteractiveFramePtr rh_target(
-      new dart::gui::InteractiveFrame(Frame::World(), "rh_target"));
-
-  r_hand->getIK(true)->setTarget(rh_target);
-  r_hand->getIK()->useWholeBody();
-
-  r_hand->getIK()->setGradientMethod<HuboArmIK>("Body_RSP");
-
-  r_hand->getIK()->getAnalytical()->setExtraDofUtilization(
-      IK::Analytical::POST_ANALYTICAL);
-
-  r_hand->getIK()->getAnalytical()->setExtraErrorLengthClamp(extra_error_clamp);
-
-  r_hand->getIK()->getGradientMethod().setComponentWeights(rootjoint_weights);
-
-  r_hand->getIK()->getErrorMethod().setLinearBounds(
-      -linearBounds, linearBounds);
-
-  r_hand->getIK()->getErrorMethod().setAngularBounds(
-      -angularBounds, angularBounds);
-
-  dart::math::SupportGeometry foot_support;
-  foot_support.push_back(Eigen::Vector3d(-0.08, 0.05, 0.0));
-  foot_support.push_back(Eigen::Vector3d(-0.18, 0.05, 0.0));
-  foot_support.push_back(Eigen::Vector3d(-0.18, -0.05, 0.0));
-  foot_support.push_back(Eigen::Vector3d(-0.08, -0.05, 0.0));
-
-  Eigen::Isometry3d tf_foot(Eigen::Isometry3d::Identity());
-  double ground_dist = 0.01;
-  tf_foot.translation() = Eigen::Vector3d(0.14, 0.0, -0.136 + ground_dist);
-
-  linearBounds[2] = 1e-8;
-  Eigen::Vector3d ground_offset = ground_dist * Eigen::Vector3d::UnitZ();
-
-  angularBounds[0] = 1e-8;
-  angularBounds[1] = 1e-8;
-
-  EndEffector* l_foot
-      = hubo->getBodyNode("Body_LAR")->createEndEffector("l_foot");
-  l_foot->setDefaultRelativeTransform(tf_foot, true);
-
-  dart::gui::InteractiveFramePtr lf_target(
-      new dart::gui::InteractiveFrame(Frame::World(), "lf_target"));
-
-  l_foot->getIK(true)->setTarget(lf_target);
-
-  l_foot->getIK()->setHierarchyLevel(1);
-
-  l_foot->getIK()->getErrorMethod().setLinearBounds(
-      -linearBounds + ground_offset, linearBounds + ground_offset);
-  l_foot->getIK()->getErrorMethod().setAngularBounds(
-      -angularBounds, angularBounds);
-
-  l_foot->getIK()->setGradientMethod<HuboLegIK>("Body_LHY");
-
-  l_foot->getSupport(true)->setGeometry(foot_support);
-  l_foot->getSupport()->setActive();
-
-  EndEffector* r_foot
-      = hubo->getBodyNode("Body_RAR")->createEndEffector("r_foot");
-  r_foot->setDefaultRelativeTransform(tf_foot, true);
-
-  dart::gui::InteractiveFramePtr rf_target(
-      new dart::gui::InteractiveFrame(Frame::World(), "rf_target"));
-
-  r_foot->getIK(true)->setTarget(rf_target);
-
-  r_foot->getIK()->setHierarchyLevel(1);
-
-  r_foot->getIK()->getErrorMethod().setLinearBounds(
-      -linearBounds + ground_offset, linearBounds + ground_offset);
-  r_foot->getIK()->getErrorMethod().setAngularBounds(
-      -angularBounds, angularBounds);
-
-  r_foot->getIK()->setGradientMethod<HuboLegIK>("Body_RHY");
-
-  r_foot->getSupport(true)->setGeometry(foot_support);
-  r_foot->getSupport()->setActive();
-
-  dart::math::SupportGeometry peg_support;
-  peg_support.push_back(Eigen::Vector3d::Zero());
-
-  linearBounds
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
-  angularBounds = linearBounds;
-
-  Eigen::Isometry3d tf_peg(Eigen::Isometry3d::Identity());
-  tf_peg.translation() = Eigen::Vector3d(0.0, 0.0, 0.09);
-
-  EndEffector* l_peg
-      = hubo->getBodyNode("Body_LWP")->createEndEffector("l_peg");
-  l_peg->setDefaultRelativeTransform(tf_peg, true);
-
-  dart::gui::InteractiveFramePtr lp_target(
-      new dart::gui::InteractiveFrame(Frame::World(), "lp_target"));
-
-  l_peg->getIK(true)->setTarget(lp_target);
-
-  l_peg->getIK()->setGradientMethod<HuboArmIK>("Body_LSP");
-
-  l_peg->getIK()->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
-  l_peg->getIK()->getErrorMethod().setAngularBounds(
-      -angularBounds, angularBounds);
-
-  l_peg->getSupport(true)->setGeometry(peg_support);
-
-  EndEffector* r_peg
-      = hubo->getBodyNode("Body_RWP")->createEndEffector("r_peg");
-  r_peg->setDefaultRelativeTransform(tf_peg, true);
-
-  dart::gui::InteractiveFramePtr rp_target(
-      new dart::gui::InteractiveFrame(Frame::World(), "rp_target"));
-
-  r_peg->getIK(true)->setTarget(rp_target);
-
-  r_peg->getIK()->setGradientMethod<HuboArmIK>("Body_RSP");
-
-  r_peg->getIK()->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
-  r_peg->getIK()->getErrorMethod().setAngularBounds(
-      -angularBounds, angularBounds);
-
-  r_peg->getSupport(true)->setGeometry(peg_support);
-
-  double heightChange
-      = -r_foot->getWorldTransform().translation()[2] + ground_dist;
-  hubo->getDof("rootJoint_pos_z")->setPosition(heightChange);
-
-  l_foot->getIK()->getTarget()->setTransform(l_foot->getTransform());
-  r_foot->getIK()->getTarget()->setTransform(r_foot->getTransform());
+  const auto start = shape.addVertex(from);
+  if (start > 0u) {
+    shape.removeConnection(start - 1u, start);
+  }
+  shape.addVertex(to, start);
 }
 
-void enableDragAndDrops(dart::gui::Viewer& viewer, const SkeletonPtr& hubo)
+std::shared_ptr<dart::dynamics::LineSegmentShape> createLineShape(
+    const std::vector<dart::gui::DebugLineDescriptor>& lines)
 {
-  // Turn on drag-and-drop for the whole Skeleton
-  for (std::size_t i = 0; i < hubo->getNumBodyNodes(); ++i) {
-    viewer.enableDragAndDrop(hubo->getBodyNode(i), false, false);
+  auto shape = std::make_shared<dart::dynamics::LineSegmentShape>(3.0f);
+  for (const auto& line : lines) {
+    addDisconnectedLine(*shape, line.from, line.to);
+  }
+  return shape;
+}
+
+void appendMarkerAxisLines(
+    std::vector<dart::gui::DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& center,
+    double radius,
+    const std::string& label)
+{
+  dart::gui::DebugLineDescriptor x;
+  x.from = center - Eigen::Vector3d::UnitX() * radius;
+  x.to = center + Eigen::Vector3d::UnitX() * radius;
+  x.label = label + ".x";
+  lines.push_back(x);
+
+  dart::gui::DebugLineDescriptor y;
+  y.from = center - Eigen::Vector3d::UnitY() * radius;
+  y.to = center + Eigen::Vector3d::UnitY() * radius;
+  y.label = label + ".y";
+  lines.push_back(y);
+
+  dart::gui::DebugLineDescriptor z;
+  z.from = center - Eigen::Vector3d::UnitZ() * radius;
+  z.to = center + Eigen::Vector3d::UnitZ() * radius;
+  z.label = label + ".z";
+  lines.push_back(z);
+}
+
+std::vector<dart::gui::DebugLineDescriptor> makeHuboSupportPolygonLines(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  if (hubo == nullptr) {
+    return {};
   }
 
-  for (std::size_t i = 0; i < hubo->getNumEndEffectors(); ++i) {
-    EndEffector* ee = hubo->getEndEffector(i);
-    if (!ee->getIK()) {
+  dart::gui::DebugDrawOptions options;
+  options.drawGrid = false;
+  options.drawWorldFrame = false;
+  options.drawSupportPolygons = true;
+  options.supportPolygonElevation = kSupportVisualElevation;
+  return dart::gui::makeSupportPolygonDebugLines(*hubo, options, "hubo");
+}
+
+std::optional<Eigen::Vector2d> computeHuboComSupportProjection(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  if (hubo == nullptr || hubo->getMass() <= 0.0
+      || !std::isfinite(hubo->getMass())) {
+    return std::nullopt;
+  }
+
+  const auto& axes = hubo->getSupportAxes();
+  if (!axes.first.allFinite() || !axes.second.allFinite()) {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d com = hubo->getCOM();
+  if (!com.allFinite()) {
+    return std::nullopt;
+  }
+
+  return Eigen::Vector2d(com.dot(axes.first), com.dot(axes.second));
+}
+
+std::vector<dart::gui::DebugLineDescriptor> makeHuboSupportComLines(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  if (hubo == nullptr) {
+    return {};
+  }
+
+  const auto projectedCom = computeHuboComSupportProjection(hubo);
+  if (!projectedCom) {
+    return {};
+  }
+
+  const auto& axes = hubo->getSupportAxes();
+  const Eigen::Vector3d up = axes.first.cross(axes.second);
+  if (!up.allFinite() || up.squaredNorm() <= 1e-18) {
+    return {};
+  }
+
+  const Eigen::Vector3d center = axes.first * projectedCom->x()
+                                 + axes.second * projectedCom->y()
+                                 + up.normalized() * kSupportVisualElevation;
+  std::vector<dart::gui::DebugLineDescriptor> lines;
+  lines.reserve(3);
+  appendMarkerAxisLines(
+      lines, center, kSupportComMarkerRadius, "hubo.support_com");
+  return lines;
+}
+
+Eigen::Vector4d huboSupportComColor(const dart::dynamics::SkeletonPtr& hubo)
+{
+  const auto projectedCom = computeHuboComSupportProjection(hubo);
+  if (hubo == nullptr || !projectedCom) {
+    return Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
+  }
+
+  return dart::math::isInsideSupportPolygon(
+             *projectedCom, hubo->getSupportPolygon())
+             ? Eigen::Vector4d(0.0, 0.0, 1.0, 1.0)
+             : Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
+}
+
+dart::dynamics::SimpleFramePtr createHuboSupportPolygonOverlay(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  auto overlay = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), kHuboSupportOverlayName);
+  overlay->setShape(createLineShape(makeHuboSupportPolygonLines(hubo)));
+  overlay->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.22, 0.86, 0.38, 0.86));
+  return overlay;
+}
+
+dart::dynamics::SimpleFramePtr createHuboSupportComOverlay(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  auto overlay = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), kHuboSupportComOverlayName);
+  overlay->setShape(createLineShape(makeHuboSupportComLines(hubo)));
+  overlay->getVisualAspect(true)->setRGBA(huboSupportComColor(hubo));
+  return overlay;
+}
+
+void updateHuboSupportPolygonOverlay(
+    const dart::dynamics::SkeletonPtr& hubo,
+    const dart::dynamics::SimpleFramePtr& overlay)
+{
+  if (overlay == nullptr) {
+    return;
+  }
+
+  overlay->setShape(createLineShape(makeHuboSupportPolygonLines(hubo)));
+}
+
+void updateHuboSupportComOverlay(
+    const dart::dynamics::SkeletonPtr& hubo,
+    const dart::dynamics::SimpleFramePtr& overlay)
+{
+  if (overlay == nullptr) {
+    return;
+  }
+
+  overlay->setShape(createLineShape(makeHuboSupportComLines(hubo)));
+  overlay->getVisualAspect(true)->setRGBA(huboSupportComColor(hubo));
+}
+
+void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)
+{
+  Eigen::Vector3d linearBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d angularBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
+  ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
+}
+
+void setVectorEntry(Eigen::VectorXd& values, Eigen::Index index, double value)
+{
+  if (0 <= index && index < values.size()) {
+    values[index] = value;
+  }
+}
+
+HuboWholeBodySolverState setupHuboWholeBodySolver(
+    const dart::dynamics::SkeletonPtr& hubo)
+{
+  HuboWholeBodySolverState state;
+  if (hubo == nullptr) {
+    return state;
+  }
+
+  auto wholeBodyIk = hubo->getIK(true);
+  auto solver = std::dynamic_pointer_cast<dart::math::GradientDescentSolver>(
+      wholeBodyIk->getSolver());
+  if (solver != nullptr) {
+    solver->setNumMaxIterations(5);
+  }
+
+  const Eigen::Index dofCount = static_cast<Eigen::Index>(hubo->getNumDofs());
+  constexpr double defaultWeight = 0.01;
+  Eigen::VectorXd weights = defaultWeight * Eigen::VectorXd::Ones(dofCount);
+  setVectorEntry(weights, 2, 0.0);
+  setVectorEntry(weights, 3, 0.0);
+  setVectorEntry(weights, 4, 0.0);
+
+  Eigen::VectorXd lowerPosture = Eigen::VectorXd::Constant(
+      dofCount, -std::numeric_limits<double>::infinity());
+  setVectorEntry(lowerPosture, 0, -0.35);
+  setVectorEntry(lowerPosture, 1, -0.35);
+  setVectorEntry(lowerPosture, 5, 0.55);
+
+  Eigen::VectorXd upperPosture = Eigen::VectorXd::Constant(
+      dofCount, std::numeric_limits<double>::infinity());
+  setVectorEntry(upperPosture, 0, 0.35);
+  setVectorEntry(upperPosture, 1, 0.50);
+  setVectorEntry(upperPosture, 5, 0.95);
+
+  state.posture = std::make_shared<RelaxedPosture>(
+      hubo->getPositions(), lowerPosture, upperPosture, weights);
+  wholeBodyIk->setObjective(state.posture);
+
+  state.balance = std::make_shared<dart::constraint::BalanceConstraint>(
+      wholeBodyIk,
+      dart::constraint::BalanceConstraint::SHIFT_SUPPORT,
+      dart::constraint::BalanceConstraint::FROM_CENTROID);
+  wholeBodyIk->getProblem()->addEqConstraint(state.balance);
+  return state;
+}
+
+dart::dynamics::SkeletonPtr createGround()
+{
+  auto ground = dart::dynamics::Skeleton::create(kGroundSkeletonName);
+  auto* body
+      = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
+  constexpr double thickness = 0.01;
+  auto* shapeNode = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(10.0, 10.0, thickness)));
+  shapeNode->setRelativeTranslation(
+      Eigen::Vector3d(0.0, 0.0, -thickness / 2.0));
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.0, 0.0, 0.2, 1.0));
+  return ground;
+}
+
+struct HuboPuppetScene
+{
+  dart::simulation::WorldPtr world;
+  dart::dynamics::SkeletonPtr hubo;
+  dart::dynamics::SimpleFramePtr supportOverlay;
+  dart::dynamics::SimpleFramePtr supportComOverlay;
+  std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  std::vector<dart::gui::Gizmo> gizmos;
+  HuboWholeBodySolverState wholeBodySolver;
+  struct TargetState
+  {
+    dart::simulation::WorldPtr world;
+    dart::dynamics::EndEffector* effector = nullptr;
+    dart::dynamics::InverseKinematicsPtr ik;
+    dart::dynamics::SimpleFramePtr target;
+    std::pair<Eigen::Vector6d, Eigen::Vector6d> defaultBounds;
+    Eigen::Isometry3d defaultTargetTransform = Eigen::Isometry3d::Identity();
+    std::string label;
+    char hotkey = '\0';
+    bool active = false;
+
+    void activate(bool resetTargetTransform = true)
+    {
+      if (active || world == nullptr || effector == nullptr || target == nullptr
+          || ik == nullptr) {
+        return;
+      }
+
+      ik->getErrorMethod().setBounds();
+      if (resetTargetTransform) {
+        target->setTransform(effector->getWorldTransform());
+      }
+      world->addSimpleFrame(target);
+      active = true;
+      std::cout << "Activated IK target '" << effector->getName() << "'.\n";
+    }
+
+    void deactivate()
+    {
+      if (!active || world == nullptr || target == nullptr || ik == nullptr) {
+        return;
+      }
+
+      ik->getErrorMethod().setBounds(defaultBounds);
+      target->setTransform(defaultTargetTransform);
+      world->removeSimpleFrame(target);
+      active = false;
+      std::cout << "Deactivated IK target '" << effector->getName() << "'.\n";
+    }
+
+    void solve()
+    {
+      if (active && ik != nullptr) {
+        solveOwningSkeletonIk(ik);
+      }
+    }
+
+    void toggle()
+    {
+      if (active) {
+        deactivate();
+      } else {
+        activate();
+      }
+    }
+  };
+
+  std::vector<std::shared_ptr<TargetState>> targetStates;
+  Eigen::VectorXd restConfiguration;
+};
+
+void addHuboPuppetIkTargets(
+    HuboPuppetScene& scene, const dart::dynamics::SkeletonPtr& hubo)
+{
+  enum class AnalyticalIkKind
+  {
+    Arm,
+    Leg,
+  };
+
+  struct Config
+  {
+    const char* bodyNode;
+    const char* effectorName;
+    const char* targetName;
+    const char* label;
+    int hotkey;
+    Eigen::Isometry3d relativeTransform;
+    AnalyticalIkKind analyticalKind;
+    const char* analyticalBase;
+    bool useWholeBody;
+    bool usePostAnalyticalDofs;
+    bool supportContact;
+  };
+
+  Eigen::Isometry3d hand = Eigen::Isometry3d::Identity();
+  hand.translation() = Eigen::Vector3d(0.0, 0.0, -0.09);
+
+  Eigen::Isometry3d foot = Eigen::Isometry3d::Identity();
+  foot.translation() = Eigen::Vector3d(0.14, 0.0, -0.126);
+
+  Eigen::Isometry3d peg = Eigen::Isometry3d::Identity();
+  peg.translation() = Eigen::Vector3d(0.0, 0.0, 0.09);
+
+  const std::array<Config, 6> configs{{
+      {"Body_LWR",
+       "l_hand",
+       "hubo_puppet_ik_target_left_hand",
+       "1 left hand",
+       '1',
+       hand,
+       AnalyticalIkKind::Arm,
+       "Body_LSP",
+       true,
+       true,
+       false},
+      {"Body_RWR",
+       "r_hand",
+       "hubo_puppet_ik_target_right_hand",
+       "2 right hand",
+       '2',
+       hand,
+       AnalyticalIkKind::Arm,
+       "Body_RSP",
+       true,
+       true,
+       false},
+      {"Body_LAR",
+       "l_foot",
+       "hubo_puppet_ik_target_left_foot",
+       "3 left foot",
+       '3',
+       foot,
+       AnalyticalIkKind::Leg,
+       "Body_LHY",
+       false,
+       false,
+       true},
+      {"Body_RAR",
+       "r_foot",
+       "hubo_puppet_ik_target_right_foot",
+       "4 right foot",
+       '4',
+       foot,
+       AnalyticalIkKind::Leg,
+       "Body_RHY",
+       false,
+       false,
+       true},
+      {"Body_LWP",
+       "l_peg",
+       "hubo_puppet_ik_target_left_peg",
+       "5 left peg",
+       '5',
+       peg,
+       AnalyticalIkKind::Arm,
+       "Body_LSP",
+       false,
+       false,
+       false},
+      {"Body_RWP",
+       "r_peg",
+       "hubo_puppet_ik_target_right_peg",
+       "6 right peg",
+       '6',
+       peg,
+       AnalyticalIkKind::Arm,
+       "Body_RSP",
+       false,
+       false,
+       false},
+  }};
+
+  const auto footSupportGeometry = makeHuboPuppetFootSupportGeometry();
+  const Eigen::VectorXd rootJointWeights = 0.01 * Eigen::VectorXd::Ones(7);
+  constexpr double extraErrorClamp = 0.1;
+  for (const Config& config : configs) {
+    auto* bodyNode = hubo->getBodyNode(config.bodyNode);
+    if (bodyNode == nullptr) {
+      throw std::runtime_error(
+          "Hubo puppet model is missing body node "
+          + std::string(config.bodyNode));
+    }
+
+    auto* endEffector = bodyNode->createEndEffector(config.effectorName);
+    endEffector->setDefaultRelativeTransform(config.relativeTransform, true);
+    if (config.supportContact) {
+      auto* support = endEffector->getSupport(true);
+      support->setGeometry(footSupportGeometry);
+      support->setActive(true);
+    }
+
+    auto ik = endEffector->getIK(true);
+    if (config.useWholeBody) {
+      ik->useWholeBody();
+    }
+    if (config.analyticalKind == AnalyticalIkKind::Arm) {
+      ik->setGradientMethod<HuboArmIK>(config.analyticalBase);
+      if (config.usePostAnalyticalDofs) {
+        ik->getAnalytical()->setExtraDofUtilization(
+            IK::Analytical::POST_ANALYTICAL);
+        ik->getAnalytical()->setExtraErrorLengthClamp(extraErrorClamp);
+        ik->getGradientMethod().setComponentWeights(rootJointWeights);
+      }
+    } else {
+      ik->setGradientMethod<HuboLegIK>(config.analyticalBase);
+    }
+    ik->getSolver()->setNumMaxIterations(30);
+    if (config.supportContact) {
+      ik->setHierarchyLevel(1);
+      Eigen::Vector3d linearBounds
+          = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+      Eigen::Vector3d angularBounds
+          = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+      linearBounds.z() = 1e-8;
+      angularBounds.x() = 1e-8;
+      angularBounds.y() = 1e-8;
+      ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
+      ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
+    } else {
+      setUnconstrainedIkBounds(ik);
+    }
+
+    auto target = dart::dynamics::SimpleFrame::createShared(
+        dart::dynamics::Frame::World(),
+        config.targetName,
+        endEffector->getWorldTransform());
+    ik->setTarget(target);
+
+    auto state = std::make_shared<HuboPuppetScene::TargetState>();
+    state->world = scene.world;
+    state->effector = endEffector;
+    state->ik = ik;
+    state->target = target;
+    state->defaultBounds = ik->getErrorMethod().getBounds();
+    state->defaultTargetTransform = target->getRelativeTransform();
+    state->label = config.label;
+    state->hotkey = config.hotkey;
+
+    dart::gui::InverseKinematicsHandle handle;
+    handle.label = config.label;
+    handle.hotkey = config.hotkey;
+    handle.target = target;
+    handle.ik = ik;
+    handle.solveMode = dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy;
+    scene.ikHandles.push_back(std::move(handle));
+
+    dart::gui::Gizmo gizmo;
+    gizmo.label = config.targetName;
+    gizmo.target = target;
+    gizmo.size = 0.20;
+    gizmo.isVisible = [state]() {
+      return state->active;
+    };
+    gizmo.onChanged = [state](const Eigen::Isometry3d&) {
+      state->solve();
+    };
+    scene.gizmos.push_back(std::move(gizmo));
+    scene.targetStates.push_back(std::move(state));
+  }
+}
+
+HuboPuppetScene createHuboPuppetScene()
+{
+  HuboPuppetScene scene;
+  scene.world = dart::simulation::World::create("dartsim_hubo_puppet");
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  scene.world->addSkeleton(createGround());
+
+  auto hubo = loadHuboPuppetSkeleton();
+  scene.hubo = hubo;
+  scene.world->addSkeleton(hubo);
+  addHuboPuppetIkTargets(scene, hubo);
+  scene.wholeBodySolver = setupHuboWholeBodySolver(scene.hubo);
+  scene.restConfiguration = hubo->getPositions();
+  scene.supportOverlay = createHuboSupportPolygonOverlay(scene.hubo);
+  scene.world->addSimpleFrame(scene.supportOverlay);
+  scene.supportComOverlay = createHuboSupportComOverlay(scene.hubo);
+  scene.world->addSimpleFrame(scene.supportComOverlay);
+  return scene;
+}
+
+void solveHuboWholeBody(const dart::dynamics::SkeletonPtr& hubo)
+{
+  const auto wholeBodyIk = hubo ? hubo->getIK() : nullptr;
+  if (wholeBodyIk != nullptr) {
+    wholeBodyIk->solveAndApply(true);
+  }
+}
+
+bool applyRootTeleoperationStep(
+    const dart::dynamics::SkeletonPtr& hubo, PuppetMotion motion, double scale)
+{
+  auto* rootBody = hubo ? hubo->getRootBodyNode() : nullptr;
+  if (rootBody == nullptr
+      || dynamic_cast<dart::dynamics::FreeJoint*>(rootBody->getParentJoint())
+             == nullptr) {
+    return false;
+  }
+
+  const Eigen::Isometry3d current = rootBody->getWorldTransform();
+  Eigen::Isometry3d next = current;
+
+  Eigen::Vector3d forward = current.linear().col(0);
+  forward.z() = 0.0;
+  if (forward.norm() > 1e-10) {
+    forward.normalize();
+  } else {
+    forward.setZero();
+  }
+
+  Eigen::Vector3d left = current.linear().col(1);
+  left.z() = 0.0;
+  if (left.norm() > 1e-10) {
+    left.normalize();
+  } else {
+    left.setZero();
+  }
+
+  const double linearStep = scale * kTeleopLinearStep;
+  const double elevationStep = scale * kTeleopElevationStep;
+  const double yawStep = scale * kTeleopYawStep;
+
+  switch (motion) {
+    case PuppetMotion::Forward:
+      next.translation() += linearStep * forward;
+      break;
+    case PuppetMotion::Backward:
+      next.translation() -= linearStep * forward;
+      break;
+    case PuppetMotion::Left:
+      next.translation() += linearStep * left;
+      break;
+    case PuppetMotion::Right:
+      next.translation() -= linearStep * left;
+      break;
+    case PuppetMotion::Up:
+      next.translation() += elevationStep * Eigen::Vector3d::UnitZ();
+      break;
+    case PuppetMotion::Down:
+      next.translation() -= elevationStep * Eigen::Vector3d::UnitZ();
+      break;
+    case PuppetMotion::YawLeft:
+      next.linear() = Eigen::AngleAxisd(yawStep, Eigen::Vector3d::UnitZ())
+                          .toRotationMatrix()
+                      * current.linear();
+      break;
+    case PuppetMotion::YawRight:
+      next.linear() = Eigen::AngleAxisd(-yawStep, Eigen::Vector3d::UnitZ())
+                          .toRotationMatrix()
+                      * current.linear();
+      break;
+  }
+
+  dart::dynamics::FreeJoint::setTransformOf(rootBody, next);
+  return true;
+}
+
+std::vector<dart::gui::KeyboardAction> createHuboPuppetKeyboardActions(
+    const dart::dynamics::SkeletonPtr& hubo,
+    const std::vector<std::shared_ptr<HuboPuppetScene::TargetState>>&
+        targetStates,
+    const Eigen::VectorXd& restConfiguration,
+    const HuboWholeBodySolverState& wholeBodySolver)
+{
+  struct Config
+  {
+    char key;
+    char amplifiedKey;
+    const char* label;
+    PuppetMotion motion;
+  };
+
+  const std::array<Config, 8> configs{{
+      {'w', 'W', "Move Hubo forward", PuppetMotion::Forward},
+      {'s', 'S', "Move Hubo backward", PuppetMotion::Backward},
+      {'a', 'A', "Move Hubo left", PuppetMotion::Left},
+      {'d', 'D', "Move Hubo right", PuppetMotion::Right},
+      {'f', 'F', "Raise Hubo root", PuppetMotion::Up},
+      {'z', 'Z', "Lower Hubo root", PuppetMotion::Down},
+      {'q', 'Q', "Yaw Hubo left", PuppetMotion::YawLeft},
+      {'e', 'E', "Yaw Hubo right", PuppetMotion::YawRight},
+  }};
+
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(configs.size() * 2 + targetStates.size() + 6);
+  const auto addTeleoperationAction
+      = [&](char key, std::string label, PuppetMotion motion, double scale) {
+          dart::gui::KeyboardAction action;
+          action.label = std::move(label);
+          action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+          action.repeat = true;
+          action.callback =
+              [hubo, motion, scale](dart::gui::KeyboardActionContext& context) {
+                if (applyRootTeleoperationStep(hubo, motion, scale)) {
+                  solveHuboWholeBody(hubo);
+                  if (context.lifecycle != nullptr) {
+                    context.lifecycle->paused = true;
+                  }
+                }
+              };
+          actions.push_back(std::move(action));
+        };
+
+  for (const Config& config : configs) {
+    addTeleoperationAction(config.key, config.label, config.motion, 1.0);
+    addTeleoperationAction(
+        config.amplifiedKey,
+        std::string("Amplified ") + config.label,
+        config.motion,
+        kTeleopAmplifiedScale);
+  }
+
+  for (const auto& state : targetStates) {
+    if (state == nullptr || state->hotkey == '\0') {
       continue;
     }
 
-    // Check whether the target is an interactive frame, and add it if it is
-    if (const auto& frame
-        = std::dynamic_pointer_cast<dart::gui::InteractiveFrame>(
-            ee->getIK()->getTarget())) {
-      viewer.enableDragAndDrop(frame.get());
-    }
+    dart::gui::KeyboardAction action;
+    action.label = "Toggle Hubo target " + state->label;
+    action.shortcut = dart::gui::KeyboardShortcut::characterKey(state->hotkey);
+    action.callback = [hubo, state](dart::gui::KeyboardActionContext& context) {
+      state->toggle();
+      solveHuboWholeBody(hubo);
+      if (context.lifecycle != nullptr) {
+        context.lifecycle->paused = true;
+      }
+    };
+    actions.push_back(std::move(action));
   }
+
+  const auto addSupportToggle
+      = [&](char key, const char* effectorName, const char* label) {
+          dart::gui::KeyboardAction action;
+          action.label = label;
+          action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+          action.callback =
+              [hubo, effectorName](dart::gui::KeyboardActionContext& context) {
+                auto* effector
+                    = hubo ? hubo->getEndEffector(effectorName) : nullptr;
+                auto* support = effector ? effector->getSupport() : nullptr;
+                if (support != nullptr) {
+                  support->setActive(!support->isActive());
+                  solveHuboWholeBody(hubo);
+                  if (context.lifecycle != nullptr) {
+                    context.lifecycle->paused = true;
+                  }
+                }
+              };
+          actions.push_back(std::move(action));
+        };
+  addSupportToggle('x', "l_foot", "Toggle left Hubo foot support");
+  addSupportToggle('c', "r_foot", "Toggle right Hubo foot support");
+
+  dart::gui::KeyboardAction printDofs;
+  printDofs.label = "Print Hubo DOFs";
+  printDofs.shortcut = dart::gui::KeyboardShortcut::characterKey('p');
+  printDofs.callback = [hubo](dart::gui::KeyboardActionContext&) {
+    if (hubo == nullptr) {
+      return;
+    }
+    for (std::size_t i = 0; i < hubo->getNumDofs(); ++i) {
+      auto* dof = hubo->getDof(i);
+      std::cout << dof->getName() << ": " << dof->getPosition() << "\n";
+    }
+  };
+  actions.push_back(std::move(printDofs));
+
+  dart::gui::KeyboardAction resetPosture;
+  resetPosture.label = "Reset Hubo relaxed posture";
+  resetPosture.shortcut = dart::gui::KeyboardShortcut::characterKey('t');
+  resetPosture.callback = [hubo, restConfiguration](
+                              dart::gui::KeyboardActionContext& context) {
+    if (hubo == nullptr
+        || static_cast<std::size_t>(restConfiguration.size())
+               != hubo->getNumDofs()) {
+      return;
+    }
+
+    for (std::size_t i = 0; i < hubo->getNumDofs(); ++i) {
+      if (i < 2 || 4 < i) {
+        hubo->getDof(i)->setPosition(restConfiguration[static_cast<int>(i)]);
+      }
+    }
+    solveHuboWholeBody(hubo);
+    if (context.lifecycle != nullptr) {
+      context.lifecycle->paused = true;
+    }
+  };
+  actions.push_back(std::move(resetPosture));
+
+  dart::gui::KeyboardAction optimizePosture;
+  optimizePosture.label = "Optimize Hubo posture and balance";
+  optimizePosture.shortcut = dart::gui::KeyboardShortcut::characterKey('r');
+  optimizePosture.callback
+      = [wholeBodySolver, hubo](dart::gui::KeyboardActionContext& context) {
+          if (wholeBodySolver.posture != nullptr) {
+            wholeBodySolver.posture->enforceIdealPosture = true;
+          }
+          if (wholeBodySolver.balance != nullptr) {
+            wholeBodySolver.balance->setErrorMethod(
+                dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+          }
+          solveHuboWholeBody(hubo);
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  actions.push_back(std::move(optimizePosture));
+
+  dart::gui::KeyboardAction restoreBalanceMode;
+  restoreBalanceMode.label = "Restore Hubo centroid balance mode";
+  restoreBalanceMode.shortcut = dart::gui::KeyboardShortcut::characterKey('r');
+  restoreBalanceMode.trigger = dart::gui::KeyboardActionTrigger::Release;
+  restoreBalanceMode.callback
+      = [wholeBodySolver, hubo](dart::gui::KeyboardActionContext& context) {
+          if (wholeBodySolver.posture != nullptr) {
+            wholeBodySolver.posture->enforceIdealPosture = false;
+          }
+          if (wholeBodySolver.balance != nullptr) {
+            wholeBodySolver.balance->setErrorMethod(
+                dart::constraint::BalanceConstraint::FROM_CENTROID);
+          }
+          solveHuboWholeBody(hubo);
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  actions.push_back(std::move(restoreBalanceMode));
+  return actions;
 }
 
-void setupWholeBodySolver(const SkeletonPtr& hubo)
+dart::gui::Panel createHuboPuppetPanel()
 {
-  std::shared_ptr<dart::math::GradientDescentSolver> solver
-      = std::dynamic_pointer_cast<dart::math::GradientDescentSolver>(
-          hubo->getIK(true)->getSolver());
-
-  std::size_t nDofs = hubo->getNumDofs();
-
-  double default_weight = 0.01;
-  Eigen::VectorXd weights = default_weight * Eigen::VectorXd::Ones(nDofs);
-  weights[2] = 0.0;
-  weights[3] = 0.0;
-  weights[4] = 0.0;
-
-  Eigen::VectorXd lower_posture = Eigen::VectorXd::Constant(
-      nDofs, -std::numeric_limits<double>::infinity());
-  lower_posture[0] = -0.35;
-  lower_posture[1] = -0.35;
-  lower_posture[5] = 0.55;
-
-  Eigen::VectorXd upper_posture = Eigen::VectorXd::Constant(
-      nDofs, std::numeric_limits<double>::infinity());
-  upper_posture[0] = 0.35;
-  upper_posture[1] = 0.50;
-  upper_posture[5] = 0.95;
-
-  std::shared_ptr<RelaxedPosture> objective = std::make_shared<RelaxedPosture>(
-      hubo->getPositions(), lower_posture, upper_posture, weights);
-
-  hubo->getIK()->setObjective(objective);
-
-  std::shared_ptr<dart::constraint::BalanceConstraint> balance
-      = std::make_shared<dart::constraint::BalanceConstraint>(hubo->getIK());
-  hubo->getIK()->getProblem()->addEqConstraint(balance);
-
-  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
-  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
-
-  solver->setNumMaxIterations(5);
+  dart::gui::Panel panel;
+  panel.title = "Hubo Puppet";
+  panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
+                              dart::gui::PanelContext& context) {
+    builder.text("Hubo whole-body IK puppet");
+    builder.text("Press 1-6 to toggle/select targets.");
+    builder.text("Left-drag active target gizmo handles.");
+    builder.text("Arrow keys and PageUp/PageDown nudge it.");
+    builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
+    builder.text("WASD moves the root; Q/E yaw; F/Z height.");
+    builder.text("X/C toggles foot support; P prints DOFs; T resets posture.");
+    builder.text("Hold R to optimize whole-body posture and balance.");
+    builder.text("The support polygon overlay follows active foot support.");
+    builder.text("Blue/red COM marker shows support-polygon validity.");
+    builder.text("Whole-body IK solves active targets and balance each step.");
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("selected: " + context.selectedLabel);
+  };
+  return panel;
 }
 
-int main()
+dart::gui::RunOptions makeHuboPuppetRunDefaults()
 {
-  dart::simulation::WorldPtr world(new dart::simulation::World);
+  dart::gui::RunOptions options;
+  options.width = 1280;
+  options.height = 960;
+  return options;
+}
 
-  SkeletonPtr hubo = createHubo();
-  setStartupConfiguration(hubo);
-  setupEndEffectors(hubo);
+dart::gui::OrbitCamera makeHuboPuppetCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.50);
+  camera.up = Eigen::Vector3d(-0.20, -0.08, 0.98);
+  camera.yaw = 0.5118558424318241;
+  camera.pitch = 0.22626228031830078;
+  camera.distance = 6.285196894290584;
+  return camera;
+}
 
-  Eigen::VectorXd positions = hubo->getPositions();
-  // We make a clone to test whether the cloned version behaves the exact same
-  // as the original version.
-  hubo = hubo->cloneSkeleton("hubo_copy");
-  hubo->setPositions(positions);
+} // namespace
 
-  world->addSkeleton(hubo);
-  world->addSkeleton(createGround());
+int main(int argc, char* argv[])
+{
+  try {
+    HuboPuppetScene scene = createHuboPuppetScene();
 
-  setupWholeBodySolver(hubo);
-
-  ::osg::ref_ptr<TeleoperationWorld> node = new TeleoperationWorld(world, hubo);
-
-  dart::gui::Viewer viewer;
-  viewer.allowSimulation(false);
-  viewer.addWorldNode(node);
-
-  enableDragAndDrops(viewer, hubo);
-
-  viewer.addEventHandler(new InputHandler(&viewer, node, hubo, world));
-
-  double display_elevation = 0.05;
-  viewer.addAttachment(
-      new dart::gui::SupportPolygonVisual(hubo, display_elevation));
-
-  std::cout << viewer.getInstructions() << std::endl;
-
-  std::cout
-      << "Alt + Click:   Try to translate a body without changing its "
-         "orientation\n"
-      << "Ctrl + Click:  Try to rotate a body without changing its "
-         "translation\n"
-      << "Shift + Click: Move a body using only its parent joint\n"
-      << "1 -> 6:        Toggle the interactive target of an EndEffector\n"
-      << "W A S D:       Move the robot around the scene\n"
-      << "Q E:           Rotate the robot counter-clockwise and clockwise\n"
-      << "F Z:           Shift the robot's elevation up and down\n"
-      << "X C:           Toggle support on the left and right foot\n"
-      << "R:             Optimize the robot's posture\n"
-      << "T:             Reset the robot to its relaxed posture\n\n"
-      << "  The green polygon is the support polygon of the robot, and the "
-         "blue/red ball is\n"
-      << "  the robot's center of mass. The green ball is the centroid of the "
-         "polygon.\n\n"
-      << "Note that this is purely kinematic. Physical simulation is not "
-         "allowed in this app.\n"
-      << std::endl;
-
-  // Set up the window
-  viewer.setUpViewInWindow(0, 0, 1280, 960);
-
-  // Set up the default viewing position
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(5.34, 3.00, 1.91),
-      ::osg::Vec3(0.00, 0.00, 0.50),
-      ::osg::Vec3(-0.20, -0.08, 0.98));
-
-  // Reset the camera manipulator so that it starts in the new viewing position
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  viewer.run();
+    dart::gui::ApplicationOptions options;
+    options.world = scene.world;
+    options.ikHandles = scene.ikHandles;
+    options.gizmos = scene.gizmos;
+    options.runDefaults = makeHuboPuppetRunDefaults();
+    options.camera = makeHuboPuppetCamera();
+    options.preStep = [hubo = scene.hubo,
+                       supportOverlay = scene.supportOverlay,
+                       supportComOverlay = scene.supportComOverlay]() {
+      solveHuboWholeBody(hubo);
+      updateHuboSupportPolygonOverlay(hubo, supportOverlay);
+      updateHuboSupportComOverlay(hubo, supportComOverlay);
+    };
+    options.keyboardActions = createHuboPuppetKeyboardActions(
+        scene.hubo,
+        scene.targetStates,
+        scene.restConfiguration,
+        scene.wholeBodySolver);
+    options.panels.push_back(createHuboPuppetPanel());
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "hubo_puppet: " << e.what() << "\n";
+    return 1;
+  }
 }

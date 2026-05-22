@@ -1,28 +1,24 @@
 # Hello World Example
 
-## Summary
+This example creates a single blue rigid box above a gray ground plane and
+visualizes it through the promoted `dart::gui` runner.
 
-- Goal: create a single rigid body and ground plane, then visualize the world.
-- Concepts/APIs: `dynamics::Skeleton`, `simulation::World`, `gui::Viewer`.
-- Expected output: a blue box falls onto a gray ground plane in an OSG viewer.
-- Controls: press space to start the simulation.
+Run it with:
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+```bash
+pixi run ex hello_world
+```
 
-## Build Instructions
+Headless capture:
 
-From this directory:
+```bash
+pixi run ex hello_world --headless --frames 2 --screenshot /tmp/hello_world.ppm
+```
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+Controls:
 
-## Execute Instructions
+- Space: play/pause through the shared viewer control
+- `n`: step one frame while paused
+- Escape: exit
 
-Launch the executable from the build directory above:
-
-    $ ./{generated_executable}
-
-Follow the instructions detailed in the console.
+The default launch size is 640x480, matching the historical viewer example.

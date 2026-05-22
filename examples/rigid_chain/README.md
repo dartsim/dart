@@ -1,28 +1,25 @@
 # Rigid Chain Example
 
-## Summary
+This example loads `dart://sample/skel/chain.skel`, gives the articulated chain
+a random initial pose, applies damping before each simulation step, and
+visualizes the result through the promoted `dart::gui` runner.
 
-- Goal: simulate a multi-link chain with per-joint damping.
-- Concepts/APIs: `dart::io::readWorld`, `gui::RealTimeWorldNode`, joint damping.
-- Expected output: an OSG viewer with a falling chain that settles under damping.
-- Controls: space toggles simulation.
+Run it with:
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+```bash
+pixi run ex rigid_chain
+```
 
-## Build Instructions
+Headless capture:
 
-From this directory:
+```bash
+pixi run ex rigid_chain --headless --frames 2 --screenshot /tmp/rigid_chain.ppm
+```
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+Controls:
 
-## Execute Instructions
+- Space: play/pause
+- `n`: step one frame while paused
+- Escape: exit
 
-Launch the executable from the build directory above:
-
-    $ ./{generated_executable}
-
-Follow the instructions detailed in the console.
+The default launch size is 640x480, matching the historical viewer example.

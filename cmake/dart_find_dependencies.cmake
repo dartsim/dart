@@ -297,7 +297,7 @@ endif()
 #--------------------
 
 # ImGui
-if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
+if(DART_BUILD_GUI)
   if(DART_USE_SYSTEM_IMGUI)
     # Use system-installed ImGui
     dart_find_package(imgui)
@@ -339,10 +339,6 @@ if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
       FetchContent_MakeAvailable(imgui)
     endif()
 
-    # Check OpenGL dependency for ImGui
-    dart_find_package(OpenGL)
-    dart_check_optional_package(OPENGL "imgui" "OpenGL")
-
     # Define the imgui source files
     # Core imgui files
     set(IMGUI_CORE_SOURCES
@@ -361,15 +357,6 @@ if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
       ${imgui_SOURCE_DIR}/imstb_truetype.h
     )
 
-    # Backend files - OpenGL2 backend for OSG compatibility
-    set(IMGUI_BACKEND_SOURCES
-      ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.cpp
-    )
-
-    set(IMGUI_BACKEND_HEADERS
-      ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl2.h
-    )
-
     # Create the ImGui library target
     # Use a unique name to avoid conflicts with example executables
     # Note: We use dart-imgui-lib as the real target name (not an alias)
@@ -380,8 +367,6 @@ if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
     dart_add_library(${imgui_library_name}
       ${IMGUI_CORE_SOURCES}
       ${IMGUI_CORE_HEADERS}
-      ${IMGUI_BACKEND_SOURCES}
-      ${IMGUI_BACKEND_HEADERS}
     )
 
     if(WIN32 AND BUILD_SHARED_LIBS)
@@ -399,16 +384,8 @@ if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
     target_include_directories(${imgui_library_name}
       PUBLIC
         $<BUILD_INTERFACE:${imgui_SOURCE_DIR}>
-        $<BUILD_INTERFACE:${imgui_SOURCE_DIR}/backends>
         $<INSTALL_INTERFACE:include>
-        $<INSTALL_INTERFACE:include/backends>
     )
-
-    # Link against OpenGL
-    target_link_libraries(${imgui_library_name} PUBLIC OpenGL::GL)
-    if(APPLE)
-      target_link_libraries(${imgui_library_name} PUBLIC "-framework Cocoa")
-    endif()
 
     # Compiler options - suppress warnings for third-party code
     if(CMAKE_COMPILER_IS_GNUCXX)
@@ -442,11 +419,6 @@ if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
       DESTINATION include
       COMPONENT headers
     )
-    install(
-      FILES ${IMGUI_BACKEND_HEADERS}
-      DESTINATION include/backends
-      COMPONENT headers
-    )
 
     message(STATUS "ImGui ${IMGUI_TARGET_VERSION} fetched successfully")
 
@@ -455,93 +427,66 @@ if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
   endif()
 endif()
 
-# Raylib (experimental)
-if(DART_BUILD_GUI_RAYLIB)
-  if(DART_USE_SYSTEM_RAYLIB)
-    dart_find_package(raylib)
-    if(NOT raylib_FOUND)
-      message(FATAL_ERROR "Raylib was requested (DART_BUILD_GUI_RAYLIB=ON, DART_USE_SYSTEM_RAYLIB=ON) but could not be found. Install raylib or set DART_USE_SYSTEM_RAYLIB=OFF to fetch it.")
-    endif()
-    if(DART_VERBOSE)
-      message(STATUS "Using system-installed Raylib")
-    endif()
-  else()
-    include(FetchContent)
-
-    set(DART_RAYLIB_GIT_TAG "latest" CACHE STRING "Raylib git tag to fetch when DART_USE_SYSTEM_RAYLIB=OFF")
-    mark_as_advanced(DART_RAYLIB_GIT_TAG)
-
-    set(_dart_raylib_git_tag "${DART_RAYLIB_GIT_TAG}")
-    if(_dart_raylib_git_tag STREQUAL "" OR _dart_raylib_git_tag STREQUAL "latest")
-      set(_dart_raylib_git_tag_resolved "")
-      find_package(Git QUIET)
-      if(Git_FOUND)
-        execute_process(
-          COMMAND "${GIT_EXECUTABLE}" ls-remote --tags --refs https://github.com/raysan5/raylib.git
-          OUTPUT_VARIABLE _dart_raylib_ls_remote
-          RESULT_VARIABLE _dart_raylib_ls_remote_result
-          OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        if(_dart_raylib_ls_remote_result EQUAL 0 AND _dart_raylib_ls_remote)
-          string(REGEX MATCHALL "refs/tags/[^\n\r]+" _dart_raylib_refs "${_dart_raylib_ls_remote}")
-          set(_dart_raylib_tags)
-          foreach(_dart_raylib_ref IN LISTS _dart_raylib_refs)
-            string(REPLACE "refs/tags/" "" _dart_raylib_tag "${_dart_raylib_ref}")
-            if(_dart_raylib_tag MATCHES "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$")
-              list(APPEND _dart_raylib_tags "${_dart_raylib_tag}")
-            endif()
-          endforeach()
-          if(_dart_raylib_tags)
-            list(SORT _dart_raylib_tags COMPARE NATURAL ORDER DESCENDING)
-            list(GET _dart_raylib_tags 0 _dart_raylib_git_tag_resolved)
-          endif()
-        endif()
-      endif()
-      if(_dart_raylib_git_tag_resolved)
-        set(_dart_raylib_git_tag "${_dart_raylib_git_tag_resolved}")
-      endif()
-    endif()
-
-    if(_dart_raylib_git_tag STREQUAL "" OR _dart_raylib_git_tag STREQUAL "latest")
-      set(_dart_raylib_git_tag "5.5")
-      message(WARNING "Failed to determine the latest Raylib tag; falling back to ${_dart_raylib_git_tag}. Set -DDART_RAYLIB_GIT_TAG=<tag> to override.")
-    endif()
-
-    message(STATUS "Fetching Raylib ${_dart_raylib_git_tag} from GitHub...")
-    FetchContent_Declare(raylib
-      GIT_REPOSITORY https://github.com/raysan5/raylib.git
-      GIT_TAG ${_dart_raylib_git_tag}
-      GIT_SHALLOW TRUE
-      GIT_PROGRESS TRUE
-    )
-    FetchContent_MakeAvailable(raylib)
+# Filament GUI
+if(DART_BUILD_GUI)
+  if(DART_USE_SYSTEM_FILAMENT)
+    dart_find_package(Filament)
+  elseif(NOT DART_FETCH_FILAMENT)
+    message(FATAL_ERROR "DART_BUILD_GUI=ON requires DART_USE_SYSTEM_FILAMENT=ON unless DART_FETCH_FILAMENT=ON is explicitly set.")
   endif()
 
-  if(NOT TARGET raylib::raylib)
-    if(TARGET raylib)
-      add_library(raylib::raylib ALIAS raylib)
-    endif()
-  endif()
-
-  if(NOT TARGET raylib::raylib)
-    message(FATAL_ERROR "Raylib was requested (DART_BUILD_GUI_RAYLIB=ON) but no CMake target was provided by the dependency.")
-  endif()
-endif()
-
-# Filament GUI example (experimental)
-if(DART_BUILD_GUI_FILAMENT)
-  if(DART_FETCH_FILAMENT)
-    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
-      message(FATAL_ERROR "DART_FETCH_FILAMENT currently supports only Linux x86_64 prebuilt Filament archives. Provide Filament_ROOT or use a packaged Filament build on this platform.")
-    endif()
+  if(NOT Filament_FOUND AND DART_FETCH_FILAMENT)
     if(NOT DART_FILAMENT_VERSION STREQUAL "1.71.3")
       message(FATAL_ERROR "DART_FETCH_FILAMENT has a pinned hash only for DART_FILAMENT_VERSION=1.71.3. Update the URL hash before changing the version.")
     endif()
 
+    set(_dart_filament_target_arch "${CMAKE_SYSTEM_PROCESSOR}")
+    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      set(_dart_filament_target_arch "")
+      foreach(_dart_filament_arch_candidate IN ITEMS
+          CMAKE_CXX_COMPILER_ARCHITECTURE_ID
+          CMAKE_GENERATOR_PLATFORM
+          CMAKE_VS_PLATFORM_NAME)
+        if(NOT _dart_filament_target_arch
+            AND DEFINED ${_dart_filament_arch_candidate}
+            AND NOT "${${_dart_filament_arch_candidate}}" STREQUAL "")
+          set(_dart_filament_target_arch "${${_dart_filament_arch_candidate}}")
+        endif()
+      endforeach()
+
+      if(NOT _dart_filament_target_arch)
+        set(_dart_filament_target_arch "${CMAKE_SYSTEM_PROCESSOR}")
+      endif()
+    endif()
+    string(TOLOWER "${_dart_filament_target_arch}" _dart_filament_target_arch_lower)
+
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
+      set(_dart_filament_archive_platform "linux")
+      set(_dart_filament_archive_hash "d41963799c156e2eceff6c8f89d76ce26c3213972f63aa90add5e446a712e12e")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)$")
+      set(_dart_filament_archive_platform "arm-linux")
+      set(_dart_filament_archive_hash "048b5bffffcafcec7fcfa718fe65ef512514c65c00ed954e7bf340e003c146c2")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+      set(_dart_filament_archive_platform "mac")
+      set(_dart_filament_archive_hash "d8f253e262d731fb60f8be7d5ae6af76651bdc597d564171790bc78ac3696e04")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows"
+        AND _dart_filament_target_arch_lower MATCHES "^(x64|x86_64|amd64)$")
+      set(_dart_filament_archive_platform "windows")
+      set(_dart_filament_archive_hash "67c08eb259aec39061b02b06f56bf7910ab78c97a95da03b1f83b86b61d1d7e2")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+      message(FATAL_ERROR
+        "DART_FETCH_FILAMENT has a pinned Windows Filament archive only for "
+        "x64 targets, but the configured target architecture is "
+        "'${_dart_filament_target_arch}'. Provide Filament_ROOT for this "
+        "target architecture or disable DART_BUILD_GUI.")
+    else()
+      message(FATAL_ERROR "DART_FETCH_FILAMENT does not have a pinned Filament archive for ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}. Provide Filament_ROOT or disable DART_BUILD_GUI.")
+    endif()
+
     include(FetchContent)
     FetchContent_Declare(filament_prebuilt
-      URL "https://github.com/google/filament/releases/download/v${DART_FILAMENT_VERSION}/filament-v${DART_FILAMENT_VERSION}-linux.tgz"
-      URL_HASH SHA256=d41963799c156e2eceff6c8f89d76ce26c3213972f63aa90add5e446a712e12e
+      URL "https://github.com/google/filament/releases/download/v${DART_FILAMENT_VERSION}/filament-v${DART_FILAMENT_VERSION}-${_dart_filament_archive_platform}.tgz"
+      URL_HASH SHA256=${_dart_filament_archive_hash}
       DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_GetProperties(filament_prebuilt)
@@ -559,13 +504,17 @@ if(DART_BUILD_GUI_FILAMENT)
       set(_dart_fetched_filament_root "${_dart_fetched_filament_root}/filament")
     endif()
     set(Filament_ROOT "${_dart_fetched_filament_root}" CACHE PATH "Fetched Filament install tree" FORCE)
-  elseif(NOT DART_USE_SYSTEM_FILAMENT)
-    message(FATAL_ERROR "DART_BUILD_GUI_FILAMENT=ON requires DART_USE_SYSTEM_FILAMENT=ON unless DART_FETCH_FILAMENT=ON is explicitly set.")
+    unset(_dart_filament_archive_hash)
+    unset(_dart_filament_archive_platform)
+    unset(_dart_filament_arch_candidate)
+    unset(_dart_filament_target_arch)
+    unset(_dart_filament_target_arch_lower)
+
+    dart_find_package(Filament)
   endif()
 
-  dart_find_package(Filament)
   if(NOT Filament_FOUND)
-    message(FATAL_ERROR "Filament GUI was requested (DART_BUILD_GUI_FILAMENT=ON) but Filament could not be found. Set Filament_ROOT to a Filament install tree that contains include/, lib/, and bin/matc.")
+    message(FATAL_ERROR "Filament GUI was requested (DART_BUILD_GUI=ON) but Filament could not be found. Set Filament_ROOT to a Filament install tree that contains include/, lib/, and bin/matc.")
   endif()
 
   find_package(glfw3 CONFIG REQUIRED)

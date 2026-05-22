@@ -17,276 +17,365 @@
  *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *   POSSIBILITY OF SUCH DAMAGE.
+ *   INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ *   SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ *   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ *   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *   EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/utils/All.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/all.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/degree_of_freedom.hpp>
+#include <dart/dynamics/skeleton.hpp>
+
 #include <dart/io/read.hpp>
 
+#include <Eigen/Core>
+
 #include <algorithm>
-#include <ranges>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
-using namespace dart;
+namespace {
 
-//==============================================================================
-class CustomWorldNode : public dart::gui::RealTimeWorldNode
+constexpr const char* kBipedStandWorldUri = "dart://sample/skel/fullbody1.skel";
+constexpr const char* kBipedStandGroundName = "biped_stand_ground";
+constexpr const char* kBipedStandSkeletonName = "biped_stand_biped";
+
+dart::dynamics::DegreeOfFreedom* getRequiredDof(
+    const dart::dynamics::SkeletonPtr& skeleton, const char* name)
+{
+  auto* dof = skeleton == nullptr ? nullptr : skeleton->getDof(name);
+  if (dof == nullptr) {
+    throw std::runtime_error(
+        "biped_stand world is missing DOF: " + std::string(name));
+  }
+  return dof;
+}
+
+void setRequiredDofPosition(
+    const dart::dynamics::SkeletonPtr& skeleton, const char* name, double value)
+{
+  getRequiredDof(skeleton, name)->setPosition(value);
+}
+
+void colorBiped(const dart::dynamics::SkeletonPtr& biped)
+{
+  const std::size_t numBodies = biped->getNumBodyNodes();
+  for (std::size_t i = 0; i < numBodies; ++i) {
+    auto* body = biped->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
+    }
+    const double t = numBodies <= 1 ? 0.0
+                                    : static_cast<double>(i)
+                                          / static_cast<double>(numBodies - 1);
+    body->setColor(
+        Eigen::Vector3d(0.30 + 0.34 * t, 0.48 + 0.18 * t, 0.78 - 0.30 * t));
+  }
+
+  if (auto* head = biped->getBodyNode("h_head")) {
+    head->setColor(Eigen::Vector3d(0.86, 0.68, 0.50));
+  }
+  if (auto* spine = biped->getBodyNode("h_spine")) {
+    spine->setColor(Eigen::Vector3d(0.34, 0.50, 0.76));
+  }
+}
+
+dart::simulation::WorldPtr createBipedStandWorld()
+{
+  auto world = dart::io::readWorld(kBipedStandWorldUri);
+  if (world == nullptr) {
+    throw std::runtime_error(
+        "Failed to load biped_stand world from "
+        + std::string(kBipedStandWorldUri));
+  }
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto ground = world->getSkeleton("ground skeleton");
+  if (ground == nullptr) {
+    throw std::runtime_error("biped_stand world is missing ground");
+  }
+  ground->setName(kBipedStandGroundName);
+  if (auto* body = ground->getBodyNode("ground")) {
+    body->setColor(Eigen::Vector3d(0.48, 0.50, 0.48));
+  }
+
+  auto biped = world->getSkeleton("fullbody1");
+  if (biped == nullptr) {
+    throw std::runtime_error("biped_stand world is missing fullbody1");
+  }
+  biped->setName(kBipedStandSkeletonName);
+
+  setRequiredDofPosition(biped, "j_pelvis_rot_y", -0.20);
+  setRequiredDofPosition(biped, "j_thigh_left_z", 0.15);
+  setRequiredDofPosition(biped, "j_shin_left", -0.40);
+  setRequiredDofPosition(biped, "j_heel_left_1", 0.25);
+  setRequiredDofPosition(biped, "j_thigh_right_z", 0.15);
+  setRequiredDofPosition(biped, "j_shin_right", -0.40);
+  setRequiredDofPosition(biped, "j_heel_right_1", 0.25);
+  setRequiredDofPosition(biped, "j_abdomen_2", 0.00);
+
+  colorBiped(biped);
+  return world;
+}
+
+class BipedStandController
 {
 public:
-  CustomWorldNode(
-      dart::simulation::WorldPtr world,
-      dart::dynamics::SkeletonPtr biped,
-      ::osg::ref_ptr<osgShadow::ShadowTechnique> shadow = nullptr)
-    : dart::gui::RealTimeWorldNode(std::move(world), std::move(shadow)),
-      mBiped(std::move(biped))
+  BipedStandController(
+      dart::simulation::WorldPtr world, dart::dynamics::SkeletonPtr biped)
+    : mWorld(std::move(world)), mBiped(std::move(biped))
   {
+    if (mWorld == nullptr || mBiped == nullptr) {
+      throw std::runtime_error("biped_stand controller is missing world state");
+    }
+
     mLeftHeel = mBiped->getBodyNode("h_heel_left");
+    if (mLeftHeel == nullptr) {
+      throw std::runtime_error("biped_stand world is missing h_heel_left");
+    }
 
-    mLeftFoot[0] = mBiped->getDof("j_heel_left_1")->getIndexInSkeleton();
-    mLeftFoot[1] = mBiped->getDof("j_toe_left")->getIndexInSkeleton();
+    mLeftFoot0 = getRequiredDof(mBiped, "j_heel_left_1")->getIndexInSkeleton();
+    mLeftFoot1 = getRequiredDof(mBiped, "j_toe_left")->getIndexInSkeleton();
+    mRightFoot0
+        = getRequiredDof(mBiped, "j_heel_right_1")->getIndexInSkeleton();
+    mRightFoot1 = getRequiredDof(mBiped, "j_toe_right")->getIndexInSkeleton();
 
-    mRightFoot[0] = mBiped->getDof("j_heel_right_1")->getIndexInSkeleton();
-    mRightFoot[1] = mBiped->getDof("j_toe_right")->getIndexInSkeleton();
-
-    mTimestep = mWorld->getTimeStep();
-    mFrame = 0;
-    const int nDof = static_cast<int>(mBiped->getNumDofs());
-    mKp = Eigen::MatrixXd::Identity(nDof, nDof);
-    mKd = Eigen::MatrixXd::Identity(nDof, nDof);
-
-    mTorques.resize(nDof);
-    mTorques.setZero();
-
+    const Eigen::Index dofs = static_cast<Eigen::Index>(mBiped->getNumDofs());
+    mKp = Eigen::MatrixXd::Identity(dofs, dofs);
+    mKd = Eigen::MatrixXd::Identity(dofs, dofs);
+    mTorques = Eigen::VectorXd::Zero(dofs);
     mDesiredDofs = mBiped->getPositions();
 
-    // using SPD results in simple Kp coefficients
-    for (const auto i : std::views::iota(0, 6)) {
+    for (Eigen::Index i = 0; i < std::min<Eigen::Index>(6, dofs); ++i) {
       mKp(i, i) = 0.0;
       mKd(i, i) = 0.0;
     }
-    for (const auto i : std::views::iota(6, std::max(6, nDof))) {
+    for (Eigen::Index i = 6; i < dofs; ++i) {
       mKp(i, i) = 400.0;
-    }
-    for (const auto i : std::views::iota(6, std::max(6, nDof))) {
       mKd(i, i) = 40.0;
     }
-
-    mPreOffset = 0.0;
-
-    mForce.setZero();
-    mImpulseDuration = 0;
   }
 
-  void customPreRefresh()
+  void preStep()
   {
-    // Use this function to execute custom code before each time that the
-    // window is rendered. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void customPostRefresh()
-  {
-    // Use this function to execute custom code after each time that the
-    // window is rendered. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void customPreStep()
-  {
-    // Perturbation
-    mBiped->getBodyNode("h_spine")->addExtForce(mForce);
-    mImpulseDuration--;
+    if (auto* spine = mBiped->getBodyNode("h_spine")) {
+      spine->addExtForce(mForce);
+    }
+    if (mImpulseDuration > 0) {
+      --mImpulseDuration;
+    }
     if (mImpulseDuration <= 0) {
       mImpulseDuration = 0;
       mForce.setZero();
     }
 
-    const Eigen::VectorXd dof = mBiped->getPositions();
-    const Eigen::VectorXd dofVel = mBiped->getVelocities();
-    const Eigen::VectorXd constrForces = mBiped->getConstraintForces();
+    const double dt = mWorld->getTimeStep();
+    const Eigen::VectorXd positions = mBiped->getPositions();
+    const Eigen::VectorXd velocities = mBiped->getVelocities();
+    const Eigen::VectorXd constraintForces = mBiped->getConstraintForces();
+    const Eigen::MatrixXd inverseMass
+        = (mBiped->getMassMatrix() + mKd * dt).inverse();
+    const Eigen::VectorXd proportional
+        = -mKp * (positions + velocities * dt - mDesiredDofs);
+    const Eigen::VectorXd derivative = -mKd * velocities;
+    const Eigen::VectorXd acceleration
+        = inverseMass
+          * (-mBiped->getCoriolisAndGravityForces() + proportional + derivative
+             + constraintForces);
+    mTorques = proportional + derivative - mKd * acceleration * dt;
 
-    // SPD tracking
-    // std::size_t nDof = mSkel->getNumDofs();
-    const Eigen::MatrixXd invM
-        = (mBiped->getMassMatrix() + mKd * mTimestep).inverse();
-    const Eigen::VectorXd p = -mKp * (dof + dofVel * mTimestep - mDesiredDofs);
-    const Eigen::VectorXd d = -mKd * dofVel;
-    const Eigen::VectorXd qddot
-        = invM
-          * (-mBiped->getCoriolisAndGravityForces() + p + d + constrForces);
-
-    mTorques = p + d - mKd * qddot * mTimestep;
-
-    // ankle strategy for sagittal plane
-    const Eigen::Vector3d com = mBiped->getCOM();
-    const Eigen::Vector3d cop
-        = mLeftHeel->getTransform() * Eigen::Vector3d(0.05, 0, 0);
-
-    double offset = com[0] - cop[0];
+    const Eigen::Vector3d centerOfMass = mBiped->getCOM();
+    const Eigen::Vector3d centerOfPressure
+        = mLeftHeel->getTransform() * Eigen::Vector3d(0.05, 0.0, 0.0);
+    const double offset = centerOfMass[0] - centerOfPressure[0];
     if (offset < 0.1 && offset > 0.0) {
-      double k1 = 200.0;
-      double k2 = 100.0;
-      double kd = 10.0;
-      mTorques[mLeftFoot[0]] += -k1 * offset + kd * (mPreOffset - offset);
-      mTorques[mLeftFoot[1]] += -k2 * offset + kd * (mPreOffset - offset);
-      mTorques[mRightFoot[0]] += -k1 * offset + kd * (mPreOffset - offset);
-      mTorques[mRightFoot[1]] += -k2 * offset + kd * (mPreOffset - offset);
-      mPreOffset = offset;
+      applyAnkleStrategy(offset, 200.0, 100.0, 10.0);
     } else if (offset > -0.2 && offset < -0.05) {
-      double k1 = 2000.0;
-      double k2 = 100.0;
-      double kd = 100.0;
-      mTorques[mLeftFoot[0]] += -k1 * offset + kd * (mPreOffset - offset);
-      mTorques[mLeftFoot[1]] += -k2 * offset + kd * (mPreOffset - offset);
-      mTorques[mRightFoot[0]] += -k1 * offset + kd * (mPreOffset - offset);
-      mTorques[mRightFoot[1]] += -k2 * offset + kd * (mPreOffset - offset);
-      mPreOffset = offset;
+      applyAnkleStrategy(offset, 2000.0, 100.0, 100.0);
     }
 
-    // Just to make sure no illegal torque is used
-    for (const auto i : std::views::iota(0, 6)) {
+    for (Eigen::Index i = 0; i < std::min<Eigen::Index>(6, mTorques.size());
+         ++i) {
       mTorques[i] = 0.0;
     }
-
     mBiped->setForces(mTorques);
-
-    mFrame++;
   }
 
-  void customPostStep()
-  {
-    // Use this function to execute custom code after each simulation time
-    // step is performed. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void perturbBiped(const Eigen::Vector3d& force, int frames = 100)
+  void perturb(const Eigen::Vector3d& force, int frames = 100)
   {
     mForce = force;
     mImpulseDuration = frames;
   }
 
-protected:
-  dart::dynamics::SkeletonPtr mBiped;
+  int impulseDuration() const
+  {
+    return mImpulseDuration;
+  }
 
-  dart::dynamics::BodyNodePtr mLeftHeel;
+private:
+  void applyAnkleStrategy(
+      double offset, double ankleGain, double toeGain, double derivativeGain)
+  {
+    const double correction = derivativeGain * (mPreviousOffset - offset);
+    mTorques[static_cast<Eigen::Index>(mLeftFoot0)]
+        += -ankleGain * offset + correction;
+    mTorques[static_cast<Eigen::Index>(mLeftFoot1)]
+        += -toeGain * offset + correction;
+    mTorques[static_cast<Eigen::Index>(mRightFoot0)]
+        += -ankleGain * offset + correction;
+    mTorques[static_cast<Eigen::Index>(mRightFoot1)]
+        += -toeGain * offset + correction;
+    mPreviousOffset = offset;
+  }
+
+  dart::simulation::WorldPtr mWorld;
+  dart::dynamics::SkeletonPtr mBiped;
+  dart::dynamics::BodyNode* mLeftHeel = nullptr;
   Eigen::VectorXd mTorques;
   Eigen::VectorXd mDesiredDofs;
   Eigen::MatrixXd mKp;
   Eigen::MatrixXd mKd;
-  std::size_t mLeftFoot[2];
-  std::size_t mRightFoot[2];
-  int mFrame;
-  double mTimestep;
-  double mPreOffset;
-
-  int mImpulseDuration;
-  Eigen::Vector3d mForce;
+  std::size_t mLeftFoot0 = 0;
+  std::size_t mLeftFoot1 = 0;
+  std::size_t mRightFoot0 = 0;
+  std::size_t mRightFoot1 = 0;
+  double mPreviousOffset = 0.0;
+  int mImpulseDuration = 0;
+  Eigen::Vector3d mForce = Eigen::Vector3d::Zero();
 };
 
-//==============================================================================
-class CustomEventHandler : public osgGA::GUIEventHandler
+dart::gui::Panel createBipedStandPanel(
+    const std::shared_ptr<BipedStandController>& controller)
 {
-public:
-  CustomEventHandler(CustomWorldNode* worldNode)
-  {
-    mWorldNode = worldNode;
-  }
-
-  bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
-  {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
-      if (ea.getKey() == '1') {
-        mWorldNode->perturbBiped(Eigen::Vector3d(50, 0, 0), 100);
-        return true;
-      } else if (ea.getKey() == '2') {
-        mWorldNode->perturbBiped(Eigen::Vector3d(-50, 0, 0), 100);
-        return true;
-      } else if (ea.getKey() == '3') {
-        mWorldNode->perturbBiped(Eigen::Vector3d(0, 0, 50), 100);
-        return true;
-      } else if (ea.getKey() == '4') {
-        mWorldNode->perturbBiped(Eigen::Vector3d(0, 0, -50), 100);
-        return true;
+  dart::gui::Panel panel;
+  panel.title = "Biped Stand";
+  panel.buildWithContext = [controller](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    builder.text("SPD standing controller with panel perturbations");
+    builder.text("Press space to start simulation.");
+    builder.text("Keys: 1 +X, 2 -X, 3 +Z, 4 -Z push for 100 frames.");
+    builder.text("1: Push robot with +50 along x-axis N for 100 frames");
+    builder.text("2: Push robot with -50 along x-axis N for 100 frames");
+    builder.text("3: Push robot with +50 along z-axis N for 100 frames");
+    builder.text("4: Push robot with -50 along z-axis N for 100 frames");
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
       }
     }
+    if (builder.button("Push +X")) {
+      controller->perturb(Eigen::Vector3d(50.0, 0.0, 0.0));
+    }
+    builder.sameLine();
+    if (builder.button("Push -X")) {
+      controller->perturb(Eigen::Vector3d(-50.0, 0.0, 0.0));
+    }
+    if (builder.button("Push +Z")) {
+      controller->perturb(Eigen::Vector3d(0.0, 0.0, 50.0));
+    }
+    builder.sameLine();
+    if (builder.button("Push -Z")) {
+      controller->perturb(Eigen::Vector3d(0.0, 0.0, -50.0));
+    }
+    builder.text(
+        "impulse frames: " + std::to_string(controller->impulseDuration()));
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("contacts: " + std::to_string(context.contactCount));
+  };
+  return panel;
+}
 
-    // The return value should be 'true' if the input has been fully handled
-    // and should not be visible to any remaining event handlers. It should be
-    // false if the input has not been fully handled and should be viewed by
-    // any remaining event handlers.
-    return false;
-  }
-
-private:
-  CustomWorldNode* mWorldNode;
-};
-
-//==============================================================================
-int main()
+dart::gui::OrbitCamera makeBipedStandCamera()
 {
-  // Create a world and add the rigid body
-  auto world = dart::io::readWorld("dart://sample/skel/fullbody1.skel");
-  world->setGravity(Eigen::Vector3d(0, -9.81, 0));
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.4636476090008061;
+  camera.pitch = 0.7297276562269663;
+  camera.distance = 4.5;
+  return camera;
+}
 
-  auto biped = world->getSkeleton("fullbody1");
-  biped = world->getSkeleton("fullbody1");
-  biped->getDof("j_pelvis_rot_y")->setPosition(-0.20);
-  biped->getDof("j_thigh_left_z")->setPosition(0.15);
-  biped->getDof("j_shin_left")->setPosition(-0.40);
-  biped->getDof("j_heel_left_1")->setPosition(0.25);
-  biped->getDof("j_thigh_right_z")->setPosition(0.15);
-  biped->getDof("j_shin_right")->setPosition(-0.40);
-  biped->getDof("j_heel_right_1")->setPosition(0.25);
-  biped->getDof("j_abdomen_2")->setPosition(0.00);
+dart::gui::RunOptions makeBipedStandRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
 
-  // Create a Viewer and set it up with the WorldNode
-  auto viewer = gui::Viewer();
-  auto shadow = gui::WorldNode::createDefaultShadowTechnique(&viewer);
+dart::gui::KeyboardAction makeBipedStandAction(
+    std::shared_ptr<BipedStandController> controller,
+    char key,
+    std::string label,
+    const Eigen::Vector3d& force)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback = [controller = std::move(controller),
+                     force](dart::gui::KeyboardActionContext&) {
+    if (controller != nullptr) {
+      controller->perturb(force);
+    }
+  };
+  return action;
+}
 
-  // Wrap a WorldNode around it
-  ::osg::ref_ptr<CustomWorldNode> node
-      = new CustomWorldNode(world, biped, shadow);
-  viewer.addWorldNode(node);
-  viewer.addEventHandler(new CustomEventHandler(node.get()));
+std::vector<dart::gui::KeyboardAction> createBipedStandKeyboardActions(
+    const std::shared_ptr<BipedStandController>& controller)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makeBipedStandAction(
+      controller, '1', "Push +X", Eigen::Vector3d(50.0, 0.0, 0.0)));
+  actions.push_back(makeBipedStandAction(
+      controller, '2', "Push -X", Eigen::Vector3d(-50.0, 0.0, 0.0)));
+  actions.push_back(makeBipedStandAction(
+      controller, '3', "Push +Z", Eigen::Vector3d(0.0, 0.0, 50.0)));
+  actions.push_back(makeBipedStandAction(
+      controller, '4', "Push -Z", Eigen::Vector3d(0.0, 0.0, -50.0)));
+  return actions;
+}
 
-  viewer.addInstructionText("Press space to start simulation.\n");
-  std::cout << viewer.getInstructions() << std::endl;
-  std::cout << "1: Push robot with +50 along x-axis N for 100 frames\n"
-            << "2: Push robot with -50 along x-axis N for 100 frames\n"
-            << "3: Push robot with +50 along z-axis N for 100 frames\n"
-            << "4: Push robot with -50 along z-axis N for 100 frames\n"
-            << std::endl;
+} // namespace
 
-  // Set up the window to be 640x480
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+int main(int argc, char* argv[])
+{
+  try {
+    auto world = createBipedStandWorld();
+    auto biped = world->getSkeleton(kBipedStandSkeletonName);
+    auto controller = std::make_shared<BipedStandController>(world, biped);
 
-  // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(3.0f, 1.5f, 3.0f),
-      ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 1.0f, 0.0f));
+    dart::gui::ApplicationOptions options;
+    options.world = world;
+    options.runDefaults = makeBipedStandRunDefaults();
+    options.camera = makeBipedStandCamera();
+    options.preStep = [controller]() {
+      controller->preStep();
+    };
+    options.keyboardActions = createBipedStandKeyboardActions(controller);
+    options.panels.push_back(createBipedStandPanel(controller));
 
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  // Begin running the application loop
-  viewer.run();
-
-  return 0;
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "biped_stand: " << e.what() << "\n";
+    return 1;
+  }
 }

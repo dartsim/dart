@@ -1,45 +1,15 @@
 # DART Tutorials README
 
-The purpose of this set of tutorials is to provide a quick introduction to
-using DART. We designed many hands-on exercises to make the learning
-effective and fun. To follow along with this tutorial, first locate
-the tutorial code in the directory:
-[dart/tutorials](https://github.com/dartsim/dart/blob/main/tutorials).
-For broader example coverage, see the category index in `examples/README.md`.
-For each of the four tutorials, we provide the skeleton code as the starting
-point (e.g. [tutorial_multi_pendulum.cpp]
-(https://github.com/dartsim/dart/blob/main/tutorials/
-tutorial_multi_pendulum.cpp)) and the final code as the answer to the tutorial
-(e.g. [tutorial_multi_pendulum_finished.cpp](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum_finished.cpp)).
+The legacy OpenSceneGraph tutorial executables were removed with the renderer
+replacement. Maintained visualization coverage now lives in the Filament GUI
+implementation behind `dart::gui` and the restored GUI examples.
 
-## Build Each Example
+From a source checkout, run:
 
-Copy the subdirectory to your workspace and follow the instruction of README.md
-in the subdirectory.
+```bash
+pixi run ex dartsim
+```
 
-## Build Examples as One Project
-
-### Build Instructions
-
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
-
-Copy this directory to your workspace (e.g., in Linux):
-
-    $ cp -r tutorials /your/workspace/directory/dart_tutorials
-    $ cd /your/workspace/directory/dart_tutorials
-
-From the workspace directory:
-
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
-
-### Execute Instructions
-
-Launch the each executable from the build directory above (e.g.,):
-
-    $ ./tutorial_biped/tutorial_biped
-
-Follow the instructions detailed in the console.
+Pass `--scene <name>` for migrated scenes such as `atlas-simbicon`,
+`tinkertoy`, `mimic-pendulums`, `rigid-chain`, and contact examples. For the
+current example catalog, see `examples/README.md`.

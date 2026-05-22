@@ -1,28 +1,30 @@
-# ImGui Viewer Example
+# Panel Extension Example
 
 ## Summary
 
-- Goal: embed ImGui widgets into a DART OSG viewer.
-- Concepts/APIs: `gui::ImGuiViewer`, custom ImGui widgets.
-- Expected output: an ImGui-driven viewer with toggles for world options.
-- Controls: use the ImGui panel; `--gui-scale` adjusts widget sizing.
+- Goal: demonstrate the promoted `dart::gui` panel-extension surface with a
+  selectable target frame and source-owned controls.
+- Concepts/APIs: `dart::gui::ApplicationOptions`, custom panels, keyboard
+  actions, public `dart::gui::Gizmo` target affordances, per-step and render
+  callbacks, run defaults, and camera defaults.
+- Expected output: an empty world with a target transform gizmo and a
+  `Tinkertoy Control` panel.
+- Controls: left-drag the target gizmo arrows/planes/rings. Press and release q,
+  Q, Left, or Right to exercise the promoted keyboard callbacks. `--gui-scale`
+  adjusts the GUI scale, and `--width` / `--height` override the default 640x480
+  window size. The panel reports pre-step, post-step, pre-render, and
+  post-render callback counts.
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+## Run
 
-## Build Instructions
+From the source tree:
 
-From this directory:
+```bash
+pixi run ex imgui
+```
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+Headless capture is also supported through the promoted `dart::gui` runner:
 
-## Execute Instructions
-
-Launch the executable from the build directory above:
-
-    $ ./{generated_executable}
-
-Follow the instructions detailed in the console.
+```bash
+pixi run ex imgui --headless --frames 2 --screenshot /tmp/panel_extension.ppm
+```

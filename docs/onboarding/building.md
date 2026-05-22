@@ -26,10 +26,6 @@ Before you can build DART, you'll need to install the required and optional depe
 
 > **Note:** The dependencies and installation steps are subject to change. Please report any issues you encounter and contribute to keeping the instructions up-to-date.
 
-Native collision requires EnTT >= 3.14. The pixi workflow installs EnTT from
-`pixi.toml`; system builds need an installed EnTT package or network access so
-CMake can fetch EnTT during configure.
-
 ### Ubuntu
 
 Install required dependencies using `apt`:
@@ -37,7 +33,7 @@ Install required dependencies using `apt`:
 ```bash
 sudo apt install \
   build-essential cmake pkg-config git libassimp-dev \
-  libeigen3-dev libfmt-dev \
+  libeigen3-dev libfcl-dev libfmt-dev \
   libsdformat15 libgz-math8 libgz-utils2
 ```
 
@@ -47,16 +43,12 @@ Install optional dependencies:
 
 ```bash
 sudo apt install \
-  coinor-libipopt-dev libfcl-dev libbullet-dev \
+  coinor-libipopt-dev libbullet-dev \
   libtinyxml2-dev liburdfdom-dev liburdfdom-headers-dev \
-  libopenscenegraph-dev libnlopt-cxx-dev liboctomap-dev libode-dev \
+  libglfw3-dev libnlopt-cxx-dev liboctomap-dev libode-dev \
   libspdlog-dev libyaml-cpp-dev ocl-icd-opencl-dev opencl-headers \
   opencl-clhpp-headers
 ```
-
-FCL, Bullet, and ODE are optional reference-comparison dependencies for
-collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
-not require per-engine collision dependencies.
 
 ### macOS
 
@@ -64,7 +56,7 @@ Add the OSRF tap and install required dependencies using `brew`:
 
 ```bash
 brew tap osrf/simulation
-brew install assimp cmake eigen fmt osrf/simulation/sdformat13
+brew install assimp cmake eigen fmt fcl osrf/simulation/sdformat13
 ```
 
 > **Note:** Replace `sdformat13` with the latest formula published in the `osrf/simulation` tap.
@@ -72,21 +64,16 @@ brew install assimp cmake eigen fmt osrf/simulation/sdformat13
 Install optional dependencies:
 
 ```bash
-brew install fcl bullet ipopt nlopt octomap ode \
-  open-scene-graph --HEAD \
+brew install bullet glfw ipopt nlopt octomap ode \
   spdlog tinyxml2 urdfdom yaml-cpp
 ```
-
-FCL, Bullet, and ODE are optional reference-comparison dependencies for
-collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
-not require per-engine collision dependencies.
 
 ### Windows
 
 Install required dependencies using `vcpkg`:
 
 ```bash
-vcpkg install --triplet x64-windows assimp eigen3 fmt sdformat spdlog
+vcpkg install --triplet x64-windows assimp eigen3 fcl fmt sdformat spdlog
 ```
 
 Install optional dependencies:
@@ -94,33 +81,25 @@ Install optional dependencies:
 ```bash
 vcpkg install --triplet x64-windows \
   assimp eigen3 fcl fmt spdlog bullet3 glfw3 nlopt ode \
-  opencl opengl osg pagmo2 nanobind tinyxml2 urdfdom yaml-cpp
+  opencl opengl pagmo2 nanobind tinyxml2 urdfdom yaml-cpp
 ```
-
-FCL, Bullet, and ODE are optional reference-comparison dependencies for
-collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
-not require per-engine collision dependencies.
 
 ### Arch Linux (experimental)
 
 Install required dependencies using `yay`:
 
 ```bash
-yay -S assimp cmake eigen fmt sdformat
+yay -S assimp cmake eigen fcl fmt sdformat
 ```
 
 Install optional dependencies:
 
 ```bash
 yay -S \
-  fcl bullet coin-or-ipopt nlopt octomap ode opencl-clhpp \
-  opencl-headers opencl-icd-loader openscenegraph pagmo spdlog tinyxml2 \
+  bullet coin-or-ipopt glfw nlopt octomap ode opencl-clhpp \
+  opencl-headers opencl-icd-loader pagmo spdlog tinyxml2 \
   urdfdom nanobind
 ```
-
-FCL, Bullet, and ODE are optional reference-comparison dependencies for
-collision tests and benchmarks. Core DART, dartpy, and normal runtime builds do
-not require per-engine collision dependencies.
 
 ### FreeBSD (experimental)
 
@@ -157,10 +136,15 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    ```bash
    DART_BUILD_DARTPY_OVERRIDE=OFF pixi run config
    DART_BUILD_GUI_OVERRIDE=OFF pixi run config
-   DART_BUILD_GUI_RAYLIB_OVERRIDE=ON DART_USE_SYSTEM_RAYLIB_OVERRIDE=OFF pixi run config
+   DART_FETCH_FILAMENT_OVERRIDE=ON pixi run config
    ```
 
-   Note: Official dartpy wheels include OSG/GUI; keep `DART_BUILD_GUI` enabled when validating dartpy changes.
+   Note: Official dartpy wheels include the Filament-backed GUI surface; keep
+   `DART_BUILD_GUI` enabled when validating dartpy GUI changes. The default
+   Pixi GUI build is enabled on Linux x86_64 where the pinned Filament archive
+   is fetched by default; other supported platforms should provide
+   `Filament_ROOT`, set `DART_FETCH_FILAMENT_OVERRIDE=ON`, or set
+   `DART_BUILD_GUI_OVERRIDE=OFF` for a headless-only build.
 
 3. Build and test:
 
@@ -230,14 +214,14 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
 
    Example:
 
-   ```bash
-   pixi run ex hello_world
-   pixi run ex filament_gui
-   ```
+```bash
+pixi run ex hello_world
+pixi run ex dartsim
+```
 
-   `scripts/run_cpp_example.py` centralizes example-specific CMake
-   requirements so examples such as `raylib` and `filament_gui` can still use
-   the same command shape.
+`scripts/run_cpp_example.py` centralizes example-specific CMake
+requirements so restored GUI examples and `dartsim` can use the same command
+shape.
 
 5. (Optional) Gazebo / gz-physics integration test:
 
@@ -292,12 +276,18 @@ For all available CMake configuration options and their defaults, refer to [`CMa
 
 - `CMAKE_BUILD_TYPE` - Build configuration (Release, Debug, etc.). Only applies to single-config generators (e.g., Ninja, Unix Makefiles). Multi-config generators (Visual Studio, Xcode) expose the configuration inside the IDE or via `cmake --build` `--config`.
 - `DART_BUILD_DARTPY` - Enable Python bindings
-- `DART_BUILD_GUI` - Enable OpenSceneGraph GUI
-- `DART_BUILD_GUI_RAYLIB` - Enable experimental Raylib integration (builds `raylib` example)
-- `DART_BUILD_GUI_VSG` - Enable VulkanSceneGraph visualization (requires Vulkan SDK; used by `collision_viz` example)
+- `DART_BUILD_GUI` - Enable the Filament-backed GUI library, `dartsim`
+  executable, and smoke-test target. Defaults to `ON` on Linux x86_64 source
+  builds where the pinned Filament archive is supported, and `OFF` elsewhere
+  unless explicitly enabled.
+- `DART_USE_SYSTEM_FILAMENT` - Discover Filament from an installed package or `Filament_ROOT`
+- `DART_FETCH_FILAMENT` - Fetch a pinned Filament archive for supported platforms when no packaged Filament install is available
 - `DART_BUILD_TESTS` - Build C++ tests (wraps the standard `BUILD_TESTING` option)
-- `DART_BUILD_EXAMPLES` - Build the GUI-based example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
-- `DART_BUILD_TUTORIALS` - Build the GUI-based tutorial targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
+- `DART_BUILD_EXAMPLES` - Build the maintained example targets (defaults to `ON`; automatically skip when disabled or when `DART_BUILD_GUI=OFF`)
+- `DART_BUILD_TUTORIALS` - Kept for compatibility; legacy OSG tutorials are skipped while Filament is the active renderer
+
+Filament with GLFW3 and Dear ImGui is the maintained renderer path. The OSG GUI
+and Raylib smoke path are no longer buildable renderer options.
 
 ### Platform-Specific Configuration Examples
 

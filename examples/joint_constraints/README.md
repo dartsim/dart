@@ -3,12 +3,15 @@
 ## Summary
 
 - Goal: apply SPD tracking control and toggle a harness constraint on a humanoid.
-- Concepts/APIs: `constraint::WeldJointConstraint`, custom controller,
-  `gui::RealTimeWorldNode`.
-- Expected output: a humanoid model that balances while you apply impulses.
-- Controls: 1/2/3/4 apply pushes, h toggles the harness, space toggles simulation.
-
-## Details
+- Concepts/APIs: `dart::io::readWorld`,
+  `dart::constraint::WeldJointConstraint`,
+  `dart::gui::ApplicationOptions::preStep`, renderer-neutral keyboard actions,
+  and promoted panels.
+- Expected output: a `fullbody1.skel` humanoid and ground plane at the
+  historical 640x480 launch size.
+- Controls: press `1`/`2`/`3`/`4` for programmed perturbations, press `h` to
+  toggle the pelvis harness, use the panel buttons for the same actions, and
+  press space to pause or resume simulation.
 
 The controller computes torques to maintain desired joint configurations while
 the character responds to external forces. The harness feature welds the pelvis
@@ -28,8 +31,20 @@ From this directory:
 
 ## Execute Instructions
 
-Launch the executable from the build directory above:
+From the repository root:
 
-    $ ./{generated_executable}
+```bash
+pixi run ex joint_constraints
+```
 
-Follow the instructions detailed in the console.
+From a standalone build directory:
+
+```bash
+./joint_constraints
+```
+
+Headless capture is also supported through the promoted `dart::gui` runner:
+
+```bash
+pixi run ex joint_constraints --headless --frames 2 --screenshot /tmp/joint_constraints.ppm
+```

@@ -17,228 +17,396 @@
  *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *   POSSIBILITY OF SUCH DAMAGE.
+ *   INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ *   SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ *   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ *   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *   EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "controller.hpp"
-#include "dart/common/macros.hpp"
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/gui/all.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/utils/All.hpp>
+#include <dart/constraint/constraint_solver.hpp>
+#include <dart/constraint/weld_joint_constraint.hpp>
 
-#include <dart/all.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+
 #include <dart/io/read.hpp>
 
+#include <Eigen/Core>
+
+#include <algorithm>
 #include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::gui;
-using namespace dart::gui;
-using namespace dart::utils;
-using namespace dart::constraint;
+namespace {
 
-class JointConstraintsEventHandler : public ::osgGA::GUIEventHandler
+constexpr const char* kJointConstraintsWorldUri
+    = "dart://sample/skel/fullbody1.skel";
+constexpr const char* kGroundSkeletonName = "ground skeleton";
+constexpr const char* kBipedSkeletonName = "fullbody1";
+
+dart::simulation::WorldPtr createJointConstraintsWorld()
+{
+  auto world = dart::io::readWorld(kJointConstraintsWorldUri);
+  if (world == nullptr) {
+    throw std::runtime_error(
+        "Failed to load joint_constraints world from "
+        + std::string(kJointConstraintsWorldUri));
+  }
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto ground = world->getSkeleton("ground skeleton");
+  if (ground == nullptr) {
+    throw std::runtime_error("joint_constraints world is missing ground");
+  }
+
+  auto biped = world->getSkeleton(kBipedSkeletonName);
+  if (biped == nullptr) {
+    throw std::runtime_error("joint_constraints world is missing fullbody1");
+  }
+
+  const std::vector<std::size_t> genCoordIds{
+      1,  // global orientation y
+      4,  // global position y
+      6,  // left hip
+      9,  // left knee
+      10, // left ankle
+      13, // right hip
+      16, // right knee
+      17, // right ankle
+      21, // lower back
+  };
+  Eigen::VectorXd initConfig(9);
+  initConfig << -0.1, 0.2, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
+  biped->setPositions(genCoordIds, initConfig);
+  return world;
+}
+
+class JointConstraintsController
 {
 public:
-  JointConstraintsEventHandler(const WorldPtr& world, Controller* controller)
-    : mWorld(world),
-      mController(controller),
-      mHarnessOn(false),
-      mForce(Eigen::Vector3d::Zero()),
-      mImpulseDuration(0)
+  JointConstraintsController(
+      dart::simulation::WorldPtr world, dart::dynamics::SkeletonPtr biped)
+    : mWorld(std::move(world)), mBiped(std::move(biped))
   {
-  }
-
-  bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
-  {
-    if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
-      switch (ea.getKey()) {
-        case '1':
-          mForce[0] = 40;
-          mImpulseDuration = 100.0;
-          std::cout << "push forward" << std::endl;
-          return true;
-        case '2':
-          mForce[0] = -40;
-          mImpulseDuration = 100.0;
-          std::cout << "push backward" << std::endl;
-          return true;
-        case '3':
-          mForce[2] = 50;
-          mImpulseDuration = 100.0;
-          std::cout << "push right" << std::endl;
-          return true;
-        case '4':
-          mForce[2] = -50;
-          mImpulseDuration = 100.0;
-          std::cout << "push left" << std::endl;
-          return true;
-        case 'h':
-        case 'H':
-          toggleHarness();
-          return true;
-        default:
-          return false;
-      }
+    if (mWorld == nullptr || mBiped == nullptr) {
+      throw std::runtime_error(
+          "joint_constraints controller is missing world state");
     }
-    return false;
-  }
 
-  void toggleHarness()
-  {
-    mHarnessOn = !mHarnessOn;
-    if (mHarnessOn) {
-      BodyNode* bd = mWorld->getSkeleton(1)->getBodyNode("h_pelvis");
-      mWeldJoint = std::make_shared<WeldJointConstraint>(bd);
-      mWorld->getConstraintSolver()->addConstraint(mWeldJoint);
-      std::cout << "Harness on" << std::endl;
-    } else {
-      mWorld->getConstraintSolver()->removeConstraint(mWeldJoint);
-      std::cout << "Harness off" << std::endl;
+    mHeelLeft = mBiped->getBodyNode("h_heel_left");
+    if (mHeelLeft == nullptr) {
+      throw std::runtime_error(
+          "joint_constraints world is missing h_heel_left");
+    }
+
+    const Eigen::Index dofs = static_cast<Eigen::Index>(mBiped->getNumDofs());
+    mKp = Eigen::MatrixXd::Identity(dofs, dofs);
+    mKd = Eigen::MatrixXd::Identity(dofs, dofs);
+    mTorques = Eigen::VectorXd::Zero(dofs);
+    mDesiredDofs = mBiped->getPositions();
+
+    for (Eigen::Index i = 0; i < std::min<Eigen::Index>(6, dofs); ++i) {
+      mKp(i, i) = 0.0;
+      mKd(i, i) = 0.0;
+    }
+    for (Eigen::Index i = 6; i < std::min<Eigen::Index>(22, dofs); ++i) {
+      mKp(i, i) = 200.0;
+      mKd(i, i) = 100.0;
+    }
+    for (Eigen::Index i = 22; i < dofs; ++i) {
+      mKp(i, i) = 20.0;
+      mKd(i, i) = 10.0;
     }
   }
 
-  Eigen::Vector3d getForce() const
+  void preStep()
   {
-    return mForce;
-  }
-
-  int getImpulseDuration() const
-  {
-    return mImpulseDuration;
-  }
-
-  void decrementImpulseDuration()
-  {
-    mImpulseDuration--;
+    if (auto* spine = mBiped->getBodyNode("h_spine")) {
+      spine->addExtForce(mForce);
+    }
+    if (mImpulseDuration > 0) {
+      --mImpulseDuration;
+    }
     if (mImpulseDuration <= 0) {
       mImpulseDuration = 0;
       mForce.setZero();
     }
+
+    computeTorques(mBiped->getPositions(), mBiped->getVelocities());
+    mBiped->setForces(mTorques);
   }
 
-protected:
-  WorldPtr mWorld;
-  Controller* mController;
-  bool mHarnessOn;
-  std::shared_ptr<WeldJointConstraint> mWeldJoint;
-  Eigen::Vector3d mForce;
-  int mImpulseDuration;
+  void perturb(
+      const Eigen::Vector3d& force, const char* message, int frames = 100)
+  {
+    mForce = force;
+    mImpulseDuration = frames;
+    if (message != nullptr) {
+      std::cout << message << std::endl;
+    }
+  }
+
+  void toggleHarness()
+  {
+    auto* solver = mWorld->getConstraintSolver();
+    auto* pelvis = mBiped->getBodyNode("h_pelvis");
+    if (solver == nullptr || pelvis == nullptr) {
+      return;
+    }
+
+    if (mHarnessOn) {
+      if (mWeldJoint != nullptr) {
+        solver->removeConstraint(mWeldJoint);
+      }
+      mWeldJoint.reset();
+      mHarnessOn = false;
+      std::cout << "Harness off" << std::endl;
+      return;
+    }
+
+    mWeldJoint
+        = std::make_shared<dart::constraint::WeldJointConstraint>(pelvis);
+    solver->addConstraint(mWeldJoint);
+    mHarnessOn = true;
+    std::cout << "Harness on" << std::endl;
+  }
+
+  bool harnessOn() const
+  {
+    return mHarnessOn;
+  }
+
+  int impulseDuration() const
+  {
+    return mImpulseDuration;
+  }
+
+private:
+  void computeTorques(
+      const Eigen::VectorXd& positions, const Eigen::VectorXd& velocities)
+  {
+    const double dt = mWorld->getTimeStep();
+    const Eigen::VectorXd constraintForces = mBiped->getConstraintForces();
+    const Eigen::MatrixXd inverseMass
+        = (mBiped->getMassMatrix() + mKd * dt).inverse();
+    const Eigen::VectorXd proportional
+        = -mKp * (positions + velocities * dt - mDesiredDofs);
+    const Eigen::VectorXd derivative = -mKd * velocities;
+    const Eigen::VectorXd acceleration
+        = inverseMass
+          * (-mBiped->getCoriolisAndGravityForces() + proportional + derivative
+             + constraintForces);
+    mTorques = proportional + derivative - mKd * acceleration * dt;
+
+    const Eigen::Vector3d centerOfMass = mBiped->getCOM();
+    const Eigen::Vector3d centerOfPressure
+        = mHeelLeft->getTransform() * Eigen::Vector3d(0.05, 0.0, 0.0);
+    const Eigen::Vector2d offset(
+        centerOfMass[0] - centerOfPressure[0],
+        centerOfMass[2] - centerOfPressure[2]);
+    if (mTorques.size() > 26 && offset[0] < 0.1) {
+      const double sagittalOffset = centerOfMass[0] - centerOfPressure[0];
+      constexpr double kAnkleHipGain = 20.0;
+      constexpr double kBackGain = 10.0;
+      constexpr double kDerivativeGain = 100.0;
+      const double correction
+          = kDerivativeGain * (mPreviousSagittalOffset - sagittalOffset);
+      mTorques[17] += -kAnkleHipGain * sagittalOffset + correction;
+      mTorques[25] += -kBackGain * sagittalOffset + correction;
+      mTorques[19] += -kAnkleHipGain * sagittalOffset + correction;
+      mTorques[26] += -kBackGain * sagittalOffset + correction;
+      mPreviousSagittalOffset = sagittalOffset;
+    }
+
+    for (Eigen::Index i = 0; i < std::min<Eigen::Index>(6, mTorques.size());
+         ++i) {
+      mTorques[i] = 0.0;
+    }
+  }
+
+  dart::simulation::WorldPtr mWorld;
+  dart::dynamics::SkeletonPtr mBiped;
+  dart::dynamics::BodyNode* mHeelLeft = nullptr;
+  double mPreviousSagittalOffset = 0.0;
+  Eigen::VectorXd mTorques;
+  Eigen::VectorXd mDesiredDofs;
+  Eigen::MatrixXd mKp;
+  Eigen::MatrixXd mKd;
+  int mImpulseDuration = 0;
+  Eigen::Vector3d mForce = Eigen::Vector3d::Zero();
+  bool mHarnessOn = false;
+  std::shared_ptr<dart::constraint::WeldJointConstraint> mWeldJoint;
 };
 
-class JointConstraintsWorld : public RealTimeWorldNode
+dart::gui::OrbitCamera makeJointConstraintsCamera()
 {
-public:
-  JointConstraintsWorld(
-      const WorldPtr& world,
-      Controller* controller,
-      JointConstraintsEventHandler* handler)
-    : RealTimeWorldNode(world), mController(controller), mHandler(handler)
-  {
-  }
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.up = Eigen::Vector3d::UnitY();
+  camera.yaw = 0.5404195002705842;
+  camera.pitch = 0.4758822496604165;
+  camera.distance = 6.557438524302;
+  return camera;
+}
 
-  void customPreStep() override
-  {
-    mWorld->getSkeleton(1)->getBodyNode("h_spine")->addExtForce(
-        mHandler->getForce());
-
-    mController->computeTorques(
-        mWorld->getSkeleton(1)->getPositions(),
-        mWorld->getSkeleton(1)->getVelocities());
-    mWorld->getSkeleton(1)->setForces(mController->getTorques());
-
-    mHandler->decrementImpulseDuration();
-  }
-
-  void customPostStep() override
-  {
-    // Note: Arrow visualization for force could be added through OSG mechanisms
-    // For now, we just apply the force in customPreStep
-  }
-
-protected:
-  Controller* mController;
-  JointConstraintsEventHandler* mHandler;
-};
-
-int main(int /*argc*/, char* /*argv*/[])
+dart::gui::RunOptions makeJointConstraintsRunDefaults()
 {
-  // Create and initialize the world
-  WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/fullbody1.skel");
-  DART_ASSERT(myWorld != nullptr);
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
 
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+void printJointConstraintsInstructions()
+{
+  std::cout << "'1'-'4': programmed perturbations\n"
+            << "'h': toggle harness on/off\n"
+            << "space bar: simulation on/off\n";
+}
 
-  std::vector<std::size_t> genCoordIds;
-  genCoordIds.push_back(1);  // global orientation y
-  genCoordIds.push_back(4);  // global position y
-  genCoordIds.push_back(6);  // left hip
-  genCoordIds.push_back(9);  // left knee
-  genCoordIds.push_back(10); // left ankle
-  genCoordIds.push_back(13); // right hip
-  genCoordIds.push_back(16); // right knee
-  genCoordIds.push_back(17); // right ankle
-  genCoordIds.push_back(21); // lower back
-  Eigen::VectorXd initConfig(9);
-  initConfig << -0.1, 0.2, 0.2, -0.5, 0.3, 0.2, -0.5, 0.3, -0.1;
-  myWorld->getSkeleton(1)->setPositions(genCoordIds, initConfig);
+dart::gui::KeyboardAction makePerturbAction(
+    const std::shared_ptr<JointConstraintsController>& controller,
+    char key,
+    std::string label,
+    const Eigen::Vector3d& force,
+    const char* message)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback
+      = [controller, force, message](dart::gui::KeyboardActionContext&) {
+          controller->perturb(force, message);
+        };
+  return action;
+}
 
-  // Create controller
-  Controller* myController = new Controller(
-      myWorld->getSkeleton(1),
-      myWorld->getConstraintSolver(),
-      myWorld->getTimeStep());
+std::vector<dart::gui::KeyboardAction> createJointConstraintsKeyboardActions(
+    const std::shared_ptr<JointConstraintsController>& controller)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(5);
+  actions.push_back(makePerturbAction(
+      controller,
+      '1',
+      "Apply joint-constraints forward perturbation",
+      Eigen::Vector3d(40.0, 0.0, 0.0),
+      "push forward"));
+  actions.push_back(makePerturbAction(
+      controller,
+      '2',
+      "Apply joint-constraints backward perturbation",
+      Eigen::Vector3d(-40.0, 0.0, 0.0),
+      "push backward"));
+  actions.push_back(makePerturbAction(
+      controller,
+      '3',
+      "Apply joint-constraints right perturbation",
+      Eigen::Vector3d(0.0, 0.0, 50.0),
+      "push right"));
+  actions.push_back(makePerturbAction(
+      controller,
+      '4',
+      "Apply joint-constraints left perturbation",
+      Eigen::Vector3d(0.0, 0.0, -50.0),
+      "push left"));
 
-  // Create event handler
-  auto handler = new JointConstraintsEventHandler(myWorld, myController);
+  dart::gui::KeyboardAction toggleHarness;
+  toggleHarness.label = "Toggle joint-constraints harness";
+  toggleHarness.shortcut = dart::gui::KeyboardShortcut::characterKey('h');
+  toggleHarness.callback = [controller](dart::gui::KeyboardActionContext&) {
+    controller->toggleHarness();
+  };
+  actions.push_back(std::move(toggleHarness));
+  return actions;
+}
 
-  // Create a custom WorldNode with joint constraints behavior
-  ::osg::ref_ptr<JointConstraintsWorld> node
-      = new JointConstraintsWorld(myWorld, myController, handler);
+dart::gui::Panel createJointConstraintsPanel(
+    const std::shared_ptr<JointConstraintsController>& controller)
+{
+  dart::gui::Panel panel;
+  panel.title = "Joint Constraints";
+  panel.buildWithContext = [controller](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    builder.text("Balanced fullbody controller with constraint perturbations");
+    builder.text("'1'-'4': programmed perturbations");
+    builder.text("'h': toggle harness on/off");
+    builder.text("space bar: simulation on/off");
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    if (builder.button("Push forward")) {
+      controller->perturb(Eigen::Vector3d(40.0, 0.0, 0.0), "push forward");
+    }
+    builder.sameLine();
+    if (builder.button("Push backward")) {
+      controller->perturb(Eigen::Vector3d(-40.0, 0.0, 0.0), "push backward");
+    }
+    if (builder.button("Push right")) {
+      controller->perturb(Eigen::Vector3d(0.0, 0.0, 50.0), "push right");
+    }
+    builder.sameLine();
+    if (builder.button("Push left")) {
+      controller->perturb(Eigen::Vector3d(0.0, 0.0, -50.0), "push left");
+    }
+    if (builder.button(
+            controller->harnessOn() ? "Remove harness" : "Add harness")) {
+      controller->toggleHarness();
+    }
+    builder.text(
+        "harness: " + std::string(controller->harnessOn() ? "on" : "off"));
+    builder.text(
+        "impulse frames: " + std::to_string(controller->impulseDuration()));
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("contacts: " + std::to_string(context.contactCount));
+  };
+  return panel;
+}
 
-  // Create a Viewer and set it up with the WorldNode
-  auto viewer = Viewer();
-  viewer.addWorldNode(node);
-  viewer.addEventHandler(handler);
+} // namespace
 
-  // Print instructions
-  viewer.addInstructionText("'1'-'4': programmed perturbations\n");
-  viewer.addInstructionText("'h': toggle harness on/off\n");
-  viewer.addInstructionText("space bar: simulation on/off\n");
-  std::cout << viewer.getInstructions() << std::endl;
+int main(int argc, char* argv[])
+{
+  try {
+    auto world = createJointConstraintsWorld();
+    auto biped = world->getSkeleton(kBipedSkeletonName);
+    auto controller
+        = std::make_shared<JointConstraintsController>(world, biped);
 
-  // Set up the window to be 640x480
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+    dart::gui::ApplicationOptions options;
+    options.world = world;
+    options.camera = makeJointConstraintsCamera();
+    options.runDefaults = makeJointConstraintsRunDefaults();
+    options.preStep = [controller]() {
+      controller->preStep();
+    };
+    options.keyboardActions = createJointConstraintsKeyboardActions(controller);
+    options.panels.push_back(createJointConstraintsPanel(controller));
 
-  // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(5.0f, 3.0f, 3.0f),
-      ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 1.0f, 0.0f));
-
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  // Begin running the application loop
-  viewer.run();
-
-  delete myController;
-
-  return 0;
+    printJointConstraintsInstructions();
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "joint_constraints: " << e.what() << "\n";
+    return 1;
+  }
 }
