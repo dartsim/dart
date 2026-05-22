@@ -1055,8 +1055,8 @@ dart::dynamics::SimpleFramePtr createHuboSupportPolygonOverlay(
   auto overlay = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kHuboSupportOverlayName);
   overlay->setShape(createLineShape(makeHuboSupportPolygonLines(hubo)));
-  dart::gui::applyDebugVisualStyle(
-      *overlay, Eigen::Vector4d(0.22, 0.86, 0.38, 0.86));
+  overlay->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.22, 0.86, 0.38, 0.86));
   return overlay;
 }
 
@@ -1066,7 +1066,7 @@ dart::dynamics::SimpleFramePtr createHuboSupportComOverlay(
   auto overlay = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kHuboSupportComOverlayName);
   overlay->setShape(createLineShape(makeHuboSupportComLines(hubo)));
-  dart::gui::applyDebugVisualStyle(*overlay, huboSupportComColor(hubo));
+  overlay->getVisualAspect(true)->setRGBA(huboSupportComColor(hubo));
   return overlay;
 }
 
@@ -1090,7 +1090,7 @@ void updateHuboSupportComOverlay(
   }
 
   overlay->setShape(createLineShape(makeHuboSupportComLines(hubo)));
-  dart::gui::applyDebugVisualStyle(*overlay, huboSupportComColor(hubo));
+  overlay->getVisualAspect(true)->setRGBA(huboSupportComColor(hubo));
 }
 
 void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)

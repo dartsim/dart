@@ -33,7 +33,6 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
-#include <dart/gui/debug.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -236,7 +235,7 @@ TinkertoyReferenceFrames addTinkertoyReferenceFrames(
   auto forceLineShape = std::make_shared<dart::dynamics::LineSegmentShape>(
       Eigen::Vector3d(0.08, -0.15, 0.18), targetTransform.translation(), 3.0f);
   forceLine->setShape(forceLineShape);
-  dart::gui::applyDebugVisualStyle(*forceLine, kForceLineColor);
+  forceLine->getVisualAspect(true)->setRGBA(kForceLineColor);
   world.addSimpleFrame(forceLine);
   return {target, forceLineShape};
 }

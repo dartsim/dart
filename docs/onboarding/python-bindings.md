@@ -210,6 +210,12 @@ pixi run -e py312-wheel wheel-upload
 pixi run -e py313-wheel wheel-upload
 ```
 
+Run Linux wheel import tests after `wheel-repair`, not against the raw
+`linux_x86_64` wheel produced by `wheel-build`. The raw wheel can still depend
+on shared libraries from the build environment, while the repaired
+`manylinux_*` wheel is the artifact that should import in a fresh virtual
+environment and prove `dartpy.gui` is present.
+
 ### Version Management
 
 **Source of truth**: `package.xml`

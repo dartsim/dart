@@ -525,8 +525,8 @@ dart::dynamics::SimpleFramePtr createAtlasSupportPolygonOverlay(
   auto overlay = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kAtlasSupportOverlayName);
   overlay->setShape(createLineShape(makeAtlasSupportPolygonLines(atlas)));
-  dart::gui::applyDebugVisualStyle(
-      *overlay, Eigen::Vector4d(0.22, 0.86, 0.38, 0.86));
+  overlay->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.22, 0.86, 0.38, 0.86));
   return overlay;
 }
 
@@ -536,7 +536,7 @@ dart::dynamics::SimpleFramePtr createAtlasSupportComOverlay(
   auto overlay = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kAtlasSupportComOverlayName);
   overlay->setShape(createLineShape(makeAtlasSupportComLines(atlas)));
-  dart::gui::applyDebugVisualStyle(*overlay, atlasSupportComColor(atlas));
+  overlay->getVisualAspect(true)->setRGBA(atlasSupportComColor(atlas));
   return overlay;
 }
 
@@ -560,7 +560,7 @@ void updateAtlasSupportComOverlay(
   }
 
   overlay->setShape(createLineShape(makeAtlasSupportComLines(atlas)));
-  dart::gui::applyDebugVisualStyle(*overlay, atlasSupportComColor(atlas));
+  overlay->getVisualAspect(true)->setRGBA(atlasSupportComColor(atlas));
 }
 
 void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)

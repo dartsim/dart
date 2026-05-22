@@ -426,8 +426,8 @@ dart::dynamics::SimpleFramePtr createG1SupportPolygonOverlay(
   auto overlay = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), kG1SupportOverlayName);
   overlay->setShape(createLineShape(makeG1SupportPolygonLines(robot)));
-  dart::gui::applyDebugVisualStyle(
-      *overlay, Eigen::Vector4d(0.97, 0.78, 0.24, 0.86));
+  overlay->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.97, 0.78, 0.24, 0.86));
   return overlay;
 }
 

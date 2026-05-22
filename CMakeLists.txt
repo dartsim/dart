@@ -209,9 +209,6 @@ set(_dart_default_gui OFF)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
   set(_dart_default_gui ON)
 endif()
-if(DEFINED DART_BUILD_GUI_FILAMENT)
-  message(FATAL_ERROR "DART_BUILD_GUI_FILAMENT has been removed. Use DART_BUILD_GUI; Filament is the only supported GUI backend.")
-endif()
 dart_option(DART_BUILD_GUI "Build the Filament-backed GUI library" ${_dart_default_gui} CATEGORY build)
 if(DEFINED DART_BUILD_GUI_RAYLIB AND DART_BUILD_GUI_RAYLIB)
   message(FATAL_ERROR "DART_BUILD_GUI_RAYLIB has been removed. Use the Filament-backed DART GUI instead.")
@@ -264,7 +261,7 @@ dart_option(DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS
   CATEGORY diagnostics)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF CATEGORY performance)
 dart_option(DART_PROFILE_BUILTIN "Enable built-in text profiling backend" ON CATEGORY performance)
-dart_option(DART_PROFILE_TRACY "Enable Tracy profiling backend" ON CATEGORY performance)
+dart_option(DART_PROFILE_TRACY "Enable Tracy profiling backend for local developer profiling" OFF CATEGORY performance)
 dart_option(DART_CODECOV "Turn on codecov support" OFF CATEGORY performance)
 
 # Backward compatibility: accept legacy DART_PROFILE_TEXT if provided.

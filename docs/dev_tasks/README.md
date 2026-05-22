@@ -118,8 +118,7 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 ### Examples (Active Tasks)
 
-- `compute_resource_access/` - Follow-up compute graph metadata task for
-  resource read/write declarations, validation, and visualization
+- `world_split/` - ECS world separation (design, migration docs)
 
 ## Structure
 

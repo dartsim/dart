@@ -33,7 +33,6 @@
 #ifndef DART_EXAMPLES_GUI_SOURCE_GRID_HPP_
 #define DART_EXAMPLES_GUI_SOURCE_GRID_HPP_
 
-#include <dart/gui/debug.hpp>
 #include <dart/gui/panel.hpp>
 
 #include <dart/simulation/world.hpp>
@@ -190,7 +189,7 @@ inline std::shared_ptr<dart::dynamics::SimpleFrame> makeSourceOwnedGridFrame(
   auto frame = dart::dynamics::SimpleFrame::createShared(
       dart::dynamics::Frame::World(), name);
   frame->setShape(std::make_shared<dart::dynamics::LineSegmentShape>());
-  dart::gui::applyDebugVisualStyle(*frame, color);
+  frame->getVisualAspect(true)->setRGBA(color);
   return frame;
 }
 
@@ -240,7 +239,7 @@ inline void updateSourceOwnedGrid(SourceOwnedGridState& state)
               thickness);
           frame->setShape(shape);
           frame->setTranslation(offset);
-          dart::gui::applyDebugVisualStyle(*frame, color);
+          frame->getVisualAspect(true)->setRGBA(color);
           detail::setSourceOwnedGridFrameVisible(
               frame, state.visible && !shape->getConnections().empty());
         };

@@ -53,11 +53,13 @@ if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
     include(FetchContent)
     FetchContent_Declare(tracy
       GIT_REPOSITORY https://github.com/wolfpld/tracy.git
-      GIT_TAG v0.11.1
+      GIT_TAG v0.13.1
       GIT_SHALLOW TRUE
       GIT_PROGRESS TRUE
     )
+    set(TRACY_STATIC ON CACHE BOOL "Build fetched Tracy client as a static library" FORCE)
     FetchContent_MakeAvailable(tracy)
+    set_target_properties(TracyClient PROPERTIES POSITION_INDEPENDENT_CODE ON)
     if(MSVC)
       target_compile_options(TracyClient PRIVATE /W0)
     else()
