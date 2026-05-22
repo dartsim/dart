@@ -239,6 +239,9 @@ def test_experimental_stub_tracks_public_runtime_symbols():
 
     for member in (
         "runtime_policy",
+        "enabled",
+        "kinematics",
+        "dynamics",
         "compute_residual",
         "def sync(",
         "force_available",
@@ -504,6 +507,16 @@ def test_experimental_loop_closure_topology_api():
     assert updated_policy.enabled is False
     assert updated_policy.kinematics == sx.ClosureKinematicsPolicy.PROJECT
     assert updated_policy.dynamics == sx.ClosureDynamicsPolicy.SOLVE
+    assert closure.enabled is False
+    assert closure.kinematics == sx.ClosureKinematicsPolicy.PROJECT
+    assert closure.dynamics == sx.ClosureDynamicsPolicy.SOLVE
+
+    closure.enabled = True
+    closure.kinematics = sx.ClosureKinematicsPolicy.RESIDUAL_ONLY
+    closure.dynamics = sx.ClosureDynamicsPolicy.RESIDUAL_ONLY
+    assert closure.runtime_policy.enabled is True
+    assert closure.runtime_policy.kinematics == sx.ClosureKinematicsPolicy.RESIDUAL_ONLY
+    assert closure.runtime_policy.dynamics == sx.ClosureDynamicsPolicy.RESIDUAL_ONLY
 
     closure.runtime_policy = sx.LoopClosureRuntimePolicy(
         enabled=True,
@@ -518,14 +531,23 @@ def test_experimental_loop_closure_topology_api():
     assert world.get_loop_closure("missing") is None
 
     auto_closure = world.add_loop_closure(
-        "",
         frame_a=base,
         frame_b=ground,
         family=sx.LoopClosureFamily.POINT,
     )
     assert auto_closure.name == "loop_closure_001"
     assert auto_closure.family == sx.LoopClosureFamily.POINT
-    assert world.num_loop_closures == 2
+
+    spec_auto_closure = world.add_loop_closure(
+        sx.LoopClosureSpec(
+            frame_a=base,
+            frame_b=ground,
+            family=sx.LoopClosureFamily.DISTANCE,
+        )
+    )
+    assert spec_auto_closure.name == "loop_closure_002"
+    assert spec_auto_closure.family == sx.LoopClosureFamily.DISTANCE
+    assert world.num_loop_closures == 3
 
     world.enter_simulation_mode()
     residual = closure.compute_residual()

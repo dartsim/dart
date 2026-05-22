@@ -198,6 +198,14 @@ Eigen::VectorXd toVectorX(const std::vector<double>& values)
   return vector;
 }
 
+std::string toOptionalName(const nb::handle& value)
+{
+  if (value.is_none()) {
+    return "";
+  }
+  return nb::cast<std::string>(value);
+}
+
 Eigen::Isometry3d toIsometry(const nb::handle& value)
 {
   Eigen::Matrix4d matrix;
@@ -873,6 +881,36 @@ void defSimulationExperimentalModule(nb::module_& m)
           "runtime_policy",
           &sim::LoopClosure::getRuntimePolicy,
           &sim::LoopClosure::setRuntimePolicy)
+      .def_prop_rw(
+          "enabled",
+          [](const sim::LoopClosure& self) {
+            return self.getRuntimePolicy().enabled;
+          },
+          [](sim::LoopClosure& self, bool enabled) {
+            auto policy = self.getRuntimePolicy();
+            policy.enabled = enabled;
+            self.setRuntimePolicy(policy);
+          })
+      .def_prop_rw(
+          "kinematics",
+          [](const sim::LoopClosure& self) {
+            return self.getRuntimePolicy().kinematics;
+          },
+          [](sim::LoopClosure& self, sim::ClosureKinematicsPolicy kinematics) {
+            auto policy = self.getRuntimePolicy();
+            policy.kinematics = kinematics;
+            self.setRuntimePolicy(policy);
+          })
+      .def_prop_rw(
+          "dynamics",
+          [](const sim::LoopClosure& self) {
+            return self.getRuntimePolicy().dynamics;
+          },
+          [](sim::LoopClosure& self, sim::ClosureDynamicsPolicy dynamics) {
+            auto policy = self.getRuntimePolicy();
+            policy.dynamics = dynamics;
+            self.setRuntimePolicy(policy);
+          })
       .def_prop_ro("is_valid", &sim::LoopClosure::isValid)
       .def("__repr__", [](const sim::LoopClosure& self) {
         std::vector<std::pair<std::string, std::string>> fields;
@@ -1163,9 +1201,20 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def(
           "add_loop_closure",
           [](sim::World& self,
-             const std::string& name,
+             const sim::LoopClosureSpec& spec,
+             const nb::handle& name) {
+            return self.addLoopClosure(toOptionalName(name), spec);
+          },
+          nb::arg("spec"),
+          nb::kw_only(),
+          nb::arg("name") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_loop_closure",
+          [](sim::World& self,
+             const nb::handle& name,
              const sim::LoopClosureSpec& spec) {
-            return self.addLoopClosure(name, spec);
+            return self.addLoopClosure(toOptionalName(name), spec);
           },
           nb::arg("name"),
           nb::arg("spec"),
@@ -1173,17 +1222,17 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def(
           "add_loop_closure",
           [](sim::World& self,
-             const std::string& name,
+             const nb::handle& name,
              const nb::handle& frameA,
              const nb::handle& frameB,
              sim::LoopClosureFamily family,
              const nb::handle& offsetA,
              const nb::handle& offsetB) {
             return self.addLoopClosure(
-                name,
+                toOptionalName(name),
                 makeLoopClosureSpec(frameA, frameB, family, offsetA, offsetB));
           },
-          nb::arg("name"),
+          nb::arg("name") = nb::none(),
           nb::kw_only(),
           nb::arg("frame_a"),
           nb::arg("frame_b"),

@@ -286,6 +286,9 @@ class LoopClosure:
     offset_a: NDArray[np.float64]
     offset_b: NDArray[np.float64]
     runtime_policy: LoopClosureRuntimePolicy
+    enabled: bool
+    kinematics: ClosureKinematicsPolicy
+    dynamics: ClosureDynamicsPolicy
     is_valid: bool
 
     def compute_residual(self) -> LoopClosureResidual:
@@ -351,14 +354,20 @@ class World:
 
     @overload
     def add_loop_closure(
-        self, name: str, spec: LoopClosureSpec
+        self, spec: LoopClosureSpec, *, name: str | None = ...
+    ) -> LoopClosure:
+        ...
+
+    @overload
+    def add_loop_closure(
+        self, name: str | None, spec: LoopClosureSpec
     ) -> LoopClosure:
         ...
 
     @overload
     def add_loop_closure(
         self,
-        name: str,
+        name: str | None = ...,
         *,
         frame_a: Frame,
         frame_b: Frame,

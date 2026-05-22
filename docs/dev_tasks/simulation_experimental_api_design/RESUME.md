@@ -9,9 +9,9 @@ data-style getter/setter aliases from `dartpy.simulation_experimental`, added
 `Frame.relative_transform(...)`, updated stubs/docs/tests, and passed
 `pixi run lint`, focused experimental Python tests, and `pixi run test-py`.
 
-The current slice bound `StateSpace` into `dartpy.simulation_experimental`,
-because the Python design doc lists it as an intended public symbol and the C++
-`StateSpace` already exists as a storage-independent value object.
+The latest completed slices bound `StateSpace` into
+`dartpy.simulation_experimental` and improved loop-closure ergonomics with
+optional auto-named construction plus direct runtime participation properties.
 
 ## Current Branch
 
@@ -51,7 +51,7 @@ docs.
     `getDimension`, `getNumVariables`, `getVariables`, `getVariable`,
     `getVariableIndex`, `getVariableNames`, lower/upper bounds, and
     `hasVariable`.
-- Python binding surface:
+- Python `StateSpace` binding surface:
   - Exposes `StateVariable` read-only metadata properties: `name`,
     `start_index`, `dimension`, `lower_bound`, and `upper_bound`.
   - Exposes `StateSpace` metadata methods/properties:
@@ -63,6 +63,12 @@ docs.
 - Keep `StateSpace` binding metadata-only. Do not expose `AutoMapper`,
   `VectorMapper`, component mappers, raw registry state, or world-state
   storage yet.
+- Python loop-closure ergonomics:
+  - `world.add_loop_closure(frame_a=..., frame_b=...)` and
+    `world.add_loop_closure(spec)` can request an auto-generated closure name.
+  - `closure.enabled`, `closure.kinematics`, and `closure.dynamics` update the
+    stored `LoopClosureRuntimePolicy` one field at a time.
+  - `closure.runtime_policy` remains available for batch assignment.
 - Existing lookup-style `get_*` methods such as `get_link`, `get_joint`,
   `get_multi_body`, `get_loop_closure`, and `get_rigid_body` remain allowed
   until collection views and uniqueness policy are designed.

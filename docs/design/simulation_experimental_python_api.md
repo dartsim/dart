@@ -740,12 +740,13 @@ add graph edges on top of that tree.
 DART 7 now stages the topology, runtime-intent, and residual-diagnostic part
 of this model:
 `world.add_loop_closure(...)` returns a first-class `LoopClosure` handle with
-symmetric endpoint frames, semantic family, endpoint offsets, name lookup,
-count queries, validation, serialization, and a Pythonic
-`LoopClosureRuntimePolicy`. `closure.compute_residual()` returns explicit
+symmetric endpoint frames, optional auto-naming, semantic family, endpoint
+offsets, name lookup, count queries, validation, serialization, direct runtime
+participation properties, and a Pythonic `LoopClosureRuntimePolicy` value
+object for batch assignment. `closure.compute_residual()` returns explicit
 closed-chain residual diagnostics without exposing solver rows. Constrained
-kinematic projection and dynamic solving remain DART 8 target concepts to
-stage behind the experimental module before promotion.
+kinematic projection and dynamic solving remain DART 8 target concepts to stage
+behind the experimental module before promotion.
 
 The staged Python shape uses compact value objects or keyword construction and
 returned public handles:
@@ -768,11 +769,9 @@ closure = world.add_loop_closure(
 Runtime policy is public metadata while projection and solving remain staged:
 
 ```python
-closure.runtime_policy = sx.LoopClosureRuntimePolicy(
-    enabled=True,
-    kinematics=sx.ClosureKinematicsPolicy.PROJECT,
-    dynamics=sx.ClosureDynamicsPolicy.SOLVE,
-)
+closure.enabled = True
+closure.kinematics = sx.ClosureKinematicsPolicy.PROJECT
+closure.dynamics = sx.ClosureDynamicsPolicy.SOLVE
 ```
 
 Residual diagnostics are explicit queries rather than implicit properties:

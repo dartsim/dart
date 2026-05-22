@@ -472,6 +472,8 @@
   - Added dartpy bindings for experimental `StateSpace` metadata so Python
     users can define named flat-vector dimensions and bounds without exposing
     ECS storage or component mappers.
+  - Added Pythonic loop-closure conveniences for auto-named construction and
+    direct runtime participation properties.
   - Rejected invalid experimental `RigidBodyOptions` at the C++ and dartpy API
     boundaries, including non-positive mass, non-finite pose or velocity data,
     zero orientation quaternions, and non-symmetric-positive-definite inertia.

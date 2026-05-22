@@ -15,6 +15,8 @@
       Python properties instead of parallel getter/setter aliases.
 - [x] Bound `StateSpace` into `dartpy.simulation_experimental` as a
       storage-independent metadata value object.
+- [x] Improved dartpy loop-closure ergonomics with optional auto-naming and
+      direct runtime participation properties.
 - [ ] Continue closing API gaps from
       `docs/design/simulation_experimental_cpp_api.md` and
       `docs/design/simulation_experimental_python_api.md`.
