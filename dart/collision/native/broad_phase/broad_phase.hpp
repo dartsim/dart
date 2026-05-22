@@ -36,6 +36,7 @@
 #include <dart/collision/native/export.hpp>
 
 #include <functional>
+#include <limits>
 #include <span>
 #include <utility>
 #include <vector>
@@ -47,6 +48,44 @@ namespace dart::collision::native {
 using BroadPhasePair = std::pair<std::size_t, std::size_t>;
 using BroadPhasePairVisitor
     = std::function<bool(std::size_t first, std::size_t second)>;
+
+struct DART_COLLISION_NATIVE_API BroadPhaseDebugNode
+{
+  static constexpr std::size_t kInvalidIndex
+      = std::numeric_limits<std::size_t>::max();
+
+  std::size_t nodeId = kInvalidIndex;
+  std::size_t parent = kInvalidIndex;
+  std::size_t left = kInvalidIndex;
+  std::size_t right = kInvalidIndex;
+  std::size_t objectId = kInvalidIndex;
+  Aabb aabb;
+  Aabb tightAabb;
+  std::size_t height = 0;
+
+  [[nodiscard]] bool isLeaf() const
+  {
+    return objectId != kInvalidIndex;
+  }
+};
+
+struct DART_COLLISION_NATIVE_API BroadPhaseDebugSnapshot
+{
+  std::vector<BroadPhaseDebugNode> nodes;
+  std::vector<BroadPhasePair> candidatePairs;
+  std::size_t rootNode = BroadPhaseDebugNode::kInvalidIndex;
+  std::size_t numObjects = 0;
+  bool hasTreeTopology = false;
+
+  void clear()
+  {
+    nodes.clear();
+    candidatePairs.clear();
+    rootNode = BroadPhaseDebugNode::kInvalidIndex;
+    numObjects = 0;
+    hasTreeTopology = false;
+  }
+};
 
 class DART_COLLISION_NATIVE_API BroadPhase
 {
@@ -63,6 +102,13 @@ public:
       const Aabb& aabb) const
       = 0;
   [[nodiscard]] virtual std::size_t size() const = 0;
+
+  virtual void buildDebugSnapshot(BroadPhaseDebugSnapshot& out) const
+  {
+    out.clear();
+    out.candidatePairs = queryPairs();
+    out.numObjects = size();
+  }
 
   virtual void queryPairs(std::vector<BroadPhasePair>& out) const
   {

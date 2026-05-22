@@ -4,10 +4,10 @@
 
 - [x] Phase 0: Create PLAN-037 and this implementation tracker.
 - [x] Phase 1: Define the pair registry and fixture model.
-- [ ] Phase 2: Extend `examples/collision_sandbox` into the consolidated
+- [x] Phase 2: Extend `examples/collision_sandbox` into the consolidated
       pair-by-pair debugger.
-- [ ] Phase 3: Add contact/manifold/depth visualization and raw-value panels.
-- [ ] Phase 4: Add broad-phase debug snapshots and overlays.
+- [x] Phase 3: Add contact/manifold/depth visualization and raw-value panels.
+- [x] Phase 4: Add broad-phase debug snapshots and overlays.
 - [ ] Phase 5: Add deterministic headless visual smoke and focused tests.
 
 ## Goal
@@ -20,21 +20,16 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
 
 - Do not restore FCL, Bullet, or ODE as runtime GUI dependencies.
 - Do not make a stable public GUI API from the example-local controls.
-- Do not rebase onto a Filament feature branch unless the chosen renderer path
-  requires it; the current main-branch VSG collision sandbox is the starting
-  point.
 - Do not use visual smoke tests as a substitute for focused unit tests on new
   collision or broad-phase APIs.
 
 ## Existing Starting Points
 
-- `examples/collision_sandbox` already has VSG/ImGui controls for primitive
-  shape scenes, contacts, filtering, distance, raycast, CCD, picking, AABBs,
-  and headless screenshot output.
+- `examples/collision_sandbox` was rebased onto
+  `feature/filament-gui-full-execution` and now uses the public
+  Filament-backed `dart::gui` application/panel path.
 - `examples/collision_viz` is a static demonstration of native collision
   overlays and is useful as smoke-test reference material.
-- `dart/gui/vsg/collision_scene_builder.*` already draws collision objects,
-  contact points/normals, AABBs, distance results, raycasts, and sphere casts.
 - `dart/collision/native/collision_world.hpp` exposes batch snapshots and the
   selected broad-phase implementation, but the current `BroadPhaseSnapshot`
   records only candidate pairs and object count.
@@ -49,9 +44,8 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
 
 - Use PLAN-037 as the durable roadmap owner; use this folder only for active
   multi-session implementation tracking.
-- Start from `examples/collision_sandbox` instead of creating another example,
-  because it already has the right VSG/ImGui viewer, picking, headless capture,
-  and native-collision runtime path.
+- Keep `examples/collision_sandbox` as the consolidated verifier, now on the
+  Filament-backed `dart::gui` path rather than the removed VSG path.
 - Treat pair coverage as data. The pair registry should drive the dropdown,
   UI status, headless smoke coverage, and tests so future native pair changes
   cannot silently drift away from the visual verifier.
@@ -63,14 +57,15 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
 
 ## Immediate Next Steps
 
-1. Replace the remaining mode-oriented contact UI with richer object A/object B
-   shape-parameter inspectors instead of the current uniform scale controls.
-2. Add manifold-aware rendering in `dart/gui/vsg/collision_scene_builder.*`
-   so the scene groups raw contact points by manifold and visualizes depth.
-3. Design the broad-phase debug snapshot structure and add tests before using
-   it in the GUI overlay.
-4. Expand the headless smoke into a deterministic sweep over representative
+1. Replace the current uniform scale controls with richer object A/object B
+   shape-parameter inspectors.
+2. Expand the headless smoke into a deterministic sweep over representative
    pair and broad-phase overlay presets.
+3. Add spatial-order overlays for broad-phase implementations that expose
+   ordering data; AABB-tree boxes, tree edges, and candidate pairs are already
+   covered.
+4. Consider whether collision filtering controls belong in the first completion
+   pass or should remain a follow-up.
 
 ## Completion Checklist
 
@@ -78,14 +73,14 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
       placeholder for unsupported/not-yet-visualized rows.
 - [ ] Users can move and pose both objects and adjust shape parameters at
       runtime.
-- [ ] Contact overlays and panels show raw point, normal, depth, and manifold
+- [x] Contact overlays and panels show raw point, normal, depth, and manifold
       membership.
 - [ ] Broad-phase overlays show object AABBs, candidate pairs, and AABB tree
       node/edge visualization; Morton-code or spatial-order visualization is
       present when the selected broad phase uses it.
-- [ ] Focused tests cover pair-registry invariants and any new broad-phase
+- [x] Focused tests cover pair-registry invariants and any new broad-phase
       debug snapshot API.
-- [ ] A headless smoke proves deterministic rendering of pair and broad-phase
+- [x] A headless smoke proves deterministic rendering of pair and broad-phase
       overlays.
 - [ ] Durable lessons are promoted to the appropriate plan/onboarding docs and
       this folder is removed in the completion PR.

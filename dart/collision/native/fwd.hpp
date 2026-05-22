@@ -80,5 +80,7 @@ struct BatchTimings;
 struct BatchStats;
 struct BatchOutput;
 struct BroadPhaseSnapshot;
+struct BroadPhaseDebugNode;
+struct BroadPhaseDebugSnapshot;
 
 } // namespace dart::collision::native

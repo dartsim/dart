@@ -103,13 +103,13 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Extend the new collision sandbox pair registry and selector with
-  richer per-shape parameter inspectors, manifold/depth rendering, and the
-  broad-phase debug snapshot API needed for AABB tree and Morton-code overlays.
-- Gate: The completed example must build with GUI/VSG enabled, pass a headless
-  screenshot smoke that proves nonblank geometry and overlays, cover every
-  supported native pair with explicit unsupported placeholders, and have focused
-  native-collision tests for any new broad-phase debug snapshot API.
+- Next step: Continue the Filament-backed collision sandbox with richer
+  per-shape parameter inspectors, broader headless preset sweeps, and
+  spatial-order overlays for broad phases that expose such ordering.
+- Gate: The completed example must build with Filament-backed `dart-gui`, pass
+  a headless screenshot smoke that proves nonblank geometry and overlays, cover
+  every supported native pair with explicit unsupported placeholders, and have
+  focused native-collision tests for any new broad-phase debug snapshot API.
 
 ### PLAN-040: DART 7 Release Hardening
 

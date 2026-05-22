@@ -9,14 +9,12 @@
 - Current evidence: native collision feature and performance coverage is
   complete in
   [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md);
-  `examples/collision_sandbox` already provides a VSG/ImGui native collision
-  sandbox with primitive scenes, contacts, AABBs, distance, raycast, CCD, and
-  picking; `dart/gui/vsg/collision_scene_builder.*` already draws collision
-  objects, contact points/normals, AABBs, distance results, raycasts, and
-  sphere casts; `examples/collision_sandbox/pair_registry.*` now drives a
-  pair selector for every unordered native shape pair and
-  `test_collision_sandbox_pair_registry` verifies registry coverage against the
-  native narrow-phase support table.
+  `examples/collision_sandbox` is now being rebuilt on the Filament-backed
+  `dart::gui` path from `feature/filament-gui-full-execution`;
+  `examples/collision_sandbox/pair_registry.*` drives a pair selector for every
+  unordered native shape pair; `test_collision_sandbox_pair_registry` verifies
+  registry coverage against the native narrow-phase support table; and
+  `BroadPhaseDebugSnapshot` exposes copied AABB-tree topology for GUI overlays.
 
 ## Scope
 
@@ -65,9 +63,9 @@ code, examples, tests, this plan, and any needed onboarding notes.
      contact options, and reset presets.
    - Preserve deterministic presets for headless smoke tests.
 3. **Contact and manifold visualization**
-   - Extend the VSG collision scene builder to render per-manifold groups,
-     contact point identity, normal direction, penetration depth, and textual or
-     panel-side raw values.
+   - Extend the Filament-backed collision sandbox to render per-manifold
+     groups, contact point identity, normal direction, penetration depth, and
+     textual or panel-side raw values.
    - Use tinting to separate non-colliding, colliding, selected, filtered, and
      unsupported states.
 4. **Broad-phase diagnostics**
@@ -84,8 +82,9 @@ code, examples, tests, this plan, and any needed onboarding notes.
    - Add a headless example smoke that renders deterministic pair and
      broad-phase overlay presets, writes screenshots, and verifies nonblank
      geometry plus overlay-region contrast or sampled pixels.
-   - Keep `pixi run lint`, `pixi run build`, focused native-collision tests,
-     and the example smoke as the minimum local gate before completion.
+   - Keep `pixi run lint`, `pixi run config`, focused native-collision tests,
+     the Filament GUI example build, and the example smoke as the minimum local
+     gate before completion.
 
 ## Acceptance Criteria
 
