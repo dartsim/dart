@@ -30,7 +30,7 @@ libode = ">=0.16.6,<0.17"
 libpng = ">=1.6.54,<2"
 libsdformat = ">=16.0.0,<17"
 myst-parser = ">=4.0.1,<5"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 ninja = ">=1.13.2,<2"
 numpy = ">=2.4.0,<3"
 octomap = ">=1.10.0,<2"
@@ -144,7 +144,7 @@ cmake \
   -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
   -DDART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE} \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
-  -DDART_USE_SYSTEM_TRACY=ON \
+  -DDART_USE_SYSTEM_TRACY=OFF \
   -DDART_VERBOSE=${DART_VERBOSE} \
   -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} \
   $LAUNCHER_DEFS
@@ -154,7 +154,7 @@ cmake \
   { arg = "build_type", default = "Release" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 # Auto-fix formatting issues (runs black and isort to format code)
@@ -317,7 +317,7 @@ set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-Debug}
 DART_BUILD_PROFILE={{ build_profile }}
 DART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN:-ON}
-DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-ON}
+DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-OFF}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
@@ -395,7 +395,7 @@ cmake \
   -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
   -DDART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE} \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
-  -DDART_USE_SYSTEM_TRACY=ON \
+  -DDART_USE_SYSTEM_TRACY=OFF \
   -DDART_VERBOSE=${DART_VERBOSE} \
   $LAUNCHER_DEFS
 """,
@@ -403,7 +403,7 @@ cmake \
   { arg = "dartpy", default = "ON" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 build-tests = { cmd = [
@@ -525,7 +525,7 @@ set -euo pipefail
 BUILD_TYPE={{ build_type }}
 DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN:-ON}
-DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-ON}
+DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-OFF}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
@@ -558,7 +558,7 @@ if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
 NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
-cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
+cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=OFF -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
@@ -858,7 +858,7 @@ cmake \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
-    -DDART_USE_SYSTEM_TRACY=ON \
+    -DDART_USE_SYSTEM_TRACY=OFF \
     -DDART_VERBOSE=$DART_VERBOSE \
     $LAUNCHER_DEFS
 """,
@@ -1265,7 +1265,7 @@ cmake \
     -DDART_USE_SYSTEM_IMGUI=ON \
     -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
     -DDART_USE_SYSTEM_NANOBIND=OFF \
-    -DDART_USE_SYSTEM_TRACY=ON \
+    -DDART_USE_SYSTEM_TRACY=OFF \
     -DDART_VERBOSE=$DART_VERBOSE \
     $LAUNCHER_DEFS
 """,
@@ -1273,7 +1273,75 @@ cmake \
   { arg = "dartpy", default = "ON" },
 ] }
 
-tracy = { cmd = "tracy-profiler" }
+tracy-build = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE=Release
+DART_TRACY_CMAKE_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
+DART_TRACY_SRC_DIR=${DART_TRACY_CMAKE_DIR}/_deps/tracy-src/profiler
+DART_TRACY_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/${BUILD_TYPE}
+DART_TRACY_BIN=${DART_TRACY_BUILD_DIR}/tracy-profiler
+DART_TRACY_VERSION=0.13.1
+if [ ! -d "${DART_TRACY_SRC_DIR}" ]; then
+  echo "Tracy source was not fetched. Run DART_PROFILE_TRACY=ON pixi run config ON ${BUILD_TYPE}." >&2
+  exit 1
+fi
+DART_TRACY_STAMP=${DART_TRACY_BUILD_DIR}/.dart-tracy-version
+DART_TRACY_BUILT_VERSION=""
+if [ -f "${DART_TRACY_STAMP}" ]; then
+  IFS= read -r DART_TRACY_BUILT_VERSION < "${DART_TRACY_STAMP}"
+fi
+if [ -x "${DART_TRACY_BIN}" ] \
+  && [ "${DART_TRACY_BUILT_VERSION}" = "${DART_TRACY_VERSION}" ] \
+  && [ "${DART_TRACY_REBUILD:-OFF}" != "ON" ]; then
+  echo "Tracy GUI client ${DART_TRACY_VERSION} is already built at ${DART_TRACY_BIN}."
+  exit 0
+fi
+rm -rf "${DART_TRACY_BUILD_DIR}"
+cmake \
+  -G Ninja \
+  -S "${DART_TRACY_SRC_DIR}" \
+  -B "${DART_TRACY_BUILD_DIR}" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+  -DLEGACY=ON \
+  -DNO_PARALLEL_STL=ON \
+  -DNO_ISA_EXTENSIONS=ON
+cmake --build "${DART_TRACY_BUILD_DIR}" --target tracy-profiler --parallel "${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}"
+printf "%s\n" "${DART_TRACY_VERSION}" > "${DART_TRACY_STAMP}"
+""",
+], depends-on = [
+  { task = "config", args = [
+    "ON",
+    "Release",
+    "ON",
+    "ON",
+    "ON",
+  ] },
+] }
+
+tracy = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE=Release
+DART_TRACY_BIN=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/${BUILD_TYPE}/tracy-profiler
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built; building it now." >&2
+  pixi run tracy-build
+fi
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built at ${DART_TRACY_BIN}." >&2
+  exit 1
+fi
+export TRACY_DPI_SCALE=${TRACY_DPI_SCALE:-1}
+exec "${DART_TRACY_BIN}" "$@"
+""",
+  "tracy",
+] }
 
 # Python package build
 build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
@@ -1503,7 +1571,7 @@ cmake \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
   -DDART_USE_SYSTEM_IMGUI=ON \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
-  -DDART_USE_SYSTEM_TRACY=ON \
+  -DDART_USE_SYSTEM_TRACY=OFF \
   -DDART_VERBOSE=${DART_VERBOSE} \
   $LAUNCHER_DEFS
 """,
@@ -1547,8 +1615,6 @@ mesalib = ">=25.0.5,<26"
 libglvnd = ">=1.7.0,<2"
 libgl-devel = ">=1.7.0,<2"
 libglu = ">=9.0.3,<10"
-tracy-profiler-client = ">=0.12.2,<0.13"
-tracy-profiler-gui = ">=0.11.1,<0.12"
 vulkan-headers = ">=1.3.231.1,<2"
 libcxx = ">=22.1.5,<23"
 libcxxabi = ">=22.1.5,<23"
@@ -1559,16 +1625,14 @@ libcxx-devel = ">=22.1.5,<23"
 ################################################################################
 
 [target.osx-64.dependencies]
-tracy-profiler-client = ">=0.12.2,<0.13"
-tracy-profiler-gui = ">=0.11.1,<0.12"
+git = ">=2.52.0,<3"
 
 ################################################################################
 # osx-arm64
 ################################################################################
 
 [target.osx-arm64.dependencies]
-tracy-profiler-client = ">=0.12.2,<0.13"
-tracy-profiler-gui = ">=0.11.1,<0.12"
+git = ">=2.52.0,<3"
 
 ################################################################################
 # win-64
@@ -1577,8 +1641,6 @@ tracy-profiler-gui = ">=0.11.1,<0.12"
 [target.win-64.dependencies]
 # Note: Vulkan packages are not available in conda-forge for Windows
 # System imgui that requires Vulkan will automatically fallback to fetching imgui from GitHub
-tracy-profiler-client = ">=0.12.2,<0.13"
-tracy-profiler-gui = ">=0.12.2,<0.13"
 
 [target.win-64.tasks]
 # Note: DART_MSVC_FORCE_RELEASE_RUNTIME defaults to ON, which forces /MD for all
@@ -1609,14 +1671,14 @@ set -euo pipefail
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
         -DDART_USE_SYSTEM_NANOBIND=OFF \
-        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_USE_SYSTEM_TRACY=OFF \
         -DDART_VERBOSE=$DART_VERBOSE
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 # Multi-config generator uses same build directory for all configurations
@@ -1750,13 +1812,13 @@ set -euo pipefail
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_USE_SYSTEM_TRACY=OFF \
         -DDART_VERBOSE=$DART_VERBOSE
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 test = { cmd = [
@@ -1922,14 +1984,77 @@ set -euo pipefail
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_USE_SYSTEM_TRACY=OFF \
         -DDART_VERBOSE=$DART_VERBOSE
 """,
 ], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
   { arg = "dartpy", default = "ON" },
 ] }
 
-tracy = { cmd = "tracy-profiler.exe" }
+tracy-build = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+DART_TRACY_CMAKE_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp
+DART_TRACY_SRC_DIR=${DART_TRACY_CMAKE_DIR}/_deps/tracy-src/profiler
+DART_TRACY_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler
+DART_TRACY_BIN=${DART_TRACY_BUILD_DIR}/Release/tracy-profiler.exe
+DART_TRACY_VERSION=0.13.1
+if [ ! -d "${DART_TRACY_SRC_DIR}" ]; then
+  echo "Tracy source was not fetched. Run DART_PROFILE_TRACY=ON pixi run config." >&2
+  exit 1
+fi
+DART_TRACY_STAMP=${DART_TRACY_BUILD_DIR}/.dart-tracy-version
+DART_TRACY_BUILT_VERSION=""
+if [ -f "${DART_TRACY_STAMP}" ]; then
+  IFS= read -r DART_TRACY_BUILT_VERSION < "${DART_TRACY_STAMP}"
+fi
+if [ -x "${DART_TRACY_BIN}" ] \
+  && [ "${DART_TRACY_BUILT_VERSION}" = "${DART_TRACY_VERSION}" ] \
+  && [ "${DART_TRACY_REBUILD:-OFF}" != "ON" ]; then
+  echo "Tracy GUI client ${DART_TRACY_VERSION} is already built at ${DART_TRACY_BIN}."
+  exit 0
+fi
+rm -rf "${DART_TRACY_BUILD_DIR}"
+cmake \
+  -S "${DART_TRACY_SRC_DIR}" \
+  -B "${DART_TRACY_BUILD_DIR}" \
+  -G 'Visual Studio 17 2022' \
+  -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+  -DNO_PARALLEL_STL=ON \
+  -DNO_ISA_EXTENSIONS=ON
+cmake --build "${DART_TRACY_BUILD_DIR}" --config Release --target tracy-profiler
+printf "%s\n" "${DART_TRACY_VERSION}" > "${DART_TRACY_STAMP}"
+""",
+], depends-on = [
+  { task = "config", args = [
+    "ON",
+    "ON",
+    "ON",
+    "ON",
+  ] },
+] }
+
+tracy = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+DART_TRACY_BIN=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/Release/tracy-profiler.exe
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built; building it now." >&2
+  pixi run tracy-build
+fi
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built at ${DART_TRACY_BIN}." >&2
+  exit 1
+fi
+export TRACY_DPI_SCALE=${TRACY_DPI_SCALE:-1}
+exec "${DART_TRACY_BIN}" "$@"
+""",
+  "tracy",
+] }
 
 #============================
 # Feature: Collision Reference
@@ -2115,7 +2240,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.12.*"
 pip = ">=25.3,<26"
 scikit-build-core = ">=0.11.6,<0.12"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
@@ -2240,7 +2365,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.13.*"
 pip = ">=25.3,<26"
 scikit-build-core = ">=0.11.6,<0.12"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
@@ -2365,7 +2490,7 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.14.*"
 pip = ">=25.3,<26"
 scikit-build-core = ">=0.11.6,<0.12"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
