@@ -466,6 +466,9 @@
     standard tree joints.
   - Added experimental joint DOF count, generalized position, and generalized
     velocity accessors in C++ and snake_case dartpy bindings.
+  - Tightened the experimental dartpy API so data-like frame, joint,
+    loop-closure, and rigid-body state is exposed through Python properties
+    instead of parallel getter/setter-style aliases.
   - Rejected invalid experimental `RigidBodyOptions` at the C++ and dartpy API
     boundaries, including non-positive mass, non-finite pose or velocity data,
     zero orientation quaternions, and non-symmetric-positive-definite inertia.

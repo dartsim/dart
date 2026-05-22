@@ -90,6 +90,12 @@ def test_experimental_api_exposes_python_names_only():
 
     forbidden_names = {
         sx.Frame: (
+            "get_name",
+            "get_parent_frame",
+            "set_parent_frame",
+            "get_local_transform",
+            "get_transform",
+            "is_valid_handle",
             "getName",
             "getParentFrame",
             "setParentFrame",
@@ -107,6 +113,20 @@ def test_experimental_api_exposes_python_names_only():
             "getDOFCount",
         ),
         sx.RigidBody: (
+            "get_name",
+            "set_transform",
+            "get_linear_velocity",
+            "set_linear_velocity",
+            "get_angular_velocity",
+            "set_angular_velocity",
+            "get_mass",
+            "set_mass",
+            "get_inertia",
+            "set_inertia",
+            "get_force",
+            "set_force",
+            "get_torque",
+            "set_torque",
             "setTransform",
             "getLinearVelocity",
             "setLinearVelocity",
@@ -126,6 +146,16 @@ def test_experimental_api_exposes_python_names_only():
             "clearTorque",
         ),
         sx.Joint: (
+            "get_name",
+            "get_type",
+            "get_axis",
+            "get_num_dofs",
+            "get_position",
+            "set_position",
+            "get_velocity",
+            "set_velocity",
+            "get_parent_link",
+            "get_child_link",
             "getName",
             "getType",
             "getAxis",
@@ -145,10 +175,21 @@ def test_experimental_api_exposes_python_names_only():
             "getLoopClosure",
             "hasLoopClosure",
             "getLoopClosureCount",
+            "get_multi_body_count",
+            "get_loop_closure_count",
+            "get_rigid_body_count",
             "updateKinematics",
             "enterSimulationMode",
         ),
         sx.LoopClosure: (
+            "get_name",
+            "get_family",
+            "get_frame_a",
+            "get_frame_b",
+            "get_offset_a",
+            "get_offset_b",
+            "get_runtime_policy",
+            "set_runtime_policy",
             "getName",
             "getFamily",
             "getFrameA",
@@ -165,6 +206,13 @@ def test_experimental_api_exposes_python_names_only():
     for target, names in forbidden_names.items():
         for name in names:
             assert not hasattr(target, name), f"{target.__name__}.{name}"
+
+    assert not hasattr(sx.Link, "get_name")
+    assert not hasattr(sx.Link, "get_parent_joint")
+    assert not hasattr(sx.FreeFrame, "get_local_transform")
+    assert not hasattr(sx.FreeFrame, "set_local_transform")
+    assert not hasattr(sx.FixedFrame, "get_local_transform")
+    assert not hasattr(sx.FixedFrame, "set_local_transform")
 
 
 def test_experimental_stub_tracks_public_runtime_symbols():
@@ -194,6 +242,18 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "force_available",
     ):
         assert member in stub
+
+    forbidden_stub_members = (
+        "def get_name(",
+        "def set_transform(",
+        "def get_position(",
+        "def set_position(",
+        "def get_runtime_policy(",
+        "def set_runtime_policy(",
+        "def get_rigid_body_count(",
+    )
+    for member in forbidden_stub_members:
+        assert member not in stub
 
 
 def test_experimental_world_smoke():
@@ -273,7 +333,6 @@ def test_experimental_multibody_link_joint_common_path():
     )
 
     assert forearm.name == "forearm"
-    assert forearm.get_name() == "forearm"
     assert arm.num_links == 3
     assert arm.num_joints == 2
     assert arm.num_dofs == 2
@@ -283,34 +342,26 @@ def test_experimental_multibody_link_joint_common_path():
     joint = forearm.parent_joint
     assert joint.is_valid
     assert joint.name == "elbow"
-    assert joint.get_name() == "elbow"
     assert joint.type == sx.JointType.REVOLUTE
-    assert joint.get_type() == sx.JointType.REVOLUTE
     assert joint.axis.tolist() == pytest.approx([0.0, 0.0, 1.0])
-    assert joint.get_axis().tolist() == pytest.approx([0.0, 0.0, 1.0])
     assert joint.num_dofs == 1
-    assert joint.get_num_dofs() == 1
     assert joint.position.tolist() == pytest.approx([0.0])
-    assert joint.get_position().tolist() == pytest.approx([0.0])
     assert joint.velocity.tolist() == pytest.approx([0.0])
-    assert joint.get_velocity().tolist() == pytest.approx([0.0])
     assert joint.parent_link.name == "base"
-    assert joint.get_parent_link().name == "base"
     assert joint.child_link.name == "forearm"
-    assert joint.get_child_link().name == "forearm"
     assert arm.get_joint("elbow").child_link.name == "forearm"
     assert arm.get_joint("missing") is None
 
-    joint.set_position([0.25])
+    joint.position = [0.25]
     assert joint.position.tolist() == pytest.approx([0.25])
     joint.position = np.asarray([0.5], dtype=float)
-    assert joint.get_position().tolist() == pytest.approx([0.5])
+    assert joint.position.tolist() == pytest.approx([0.5])
     joint.position = [math.pi / 2.0]
 
-    joint.set_velocity((-0.75,))
+    joint.velocity = (-0.75,)
     assert joint.velocity.tolist() == pytest.approx([-0.75])
     joint.velocity = [1.25]
-    assert joint.get_velocity().tolist() == pytest.approx([1.25])
+    assert joint.velocity.tolist() == pytest.approx([1.25])
 
     slider_joint = slider.parent_joint
     slider_joint.position = [2.0]
@@ -318,6 +369,12 @@ def test_experimental_multibody_link_joint_common_path():
     world.enter_simulation_mode()
     world.sync(sx.WorldSyncStage.KINEMATICS)
     assert tool.translation.tolist() == pytest.approx([0.0, 1.0, 0.0])
+    base_to_tool = tool.relative_transform(base)
+    assert base_to_tool[:3, 3].tolist() == pytest.approx([0.0, 1.0, 0.0])
+    assert base_to_tool[:3, :3].reshape(9).tolist() == pytest.approx(
+        [0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+        abs=1e-12,
+    )
     assert slider.translation.tolist() == pytest.approx([2.0, 0.0, 0.0])
     assert world.time == pytest.approx(0.0)
     assert world.frame == 0
@@ -363,17 +420,13 @@ def test_experimental_loop_closure_topology_api():
 
     assert closure.is_valid
     assert closure.name == "closing_bar"
-    assert closure.get_name() == "closing_bar"
     assert closure.family == sx.LoopClosureFamily.RIGID
-    assert closure.get_family() == sx.LoopClosureFamily.RIGID
     assert closure.frame_a == coupler
-    assert closure.get_frame_a() == coupler
     assert closure.frame_b == ground
-    assert closure.get_frame_b() == ground
     assert closure.offset_a.reshape(16).tolist() == pytest.approx(
         np.asarray(offset_a).reshape(16).tolist()
     )
-    assert closure.get_offset_b().reshape(16).tolist() == pytest.approx(
+    assert closure.offset_b.reshape(16).tolist() == pytest.approx(
         np.asarray(offset_b).reshape(16).tolist()
     )
 
@@ -387,22 +440,19 @@ def test_experimental_loop_closure_topology_api():
     runtime_policy.dynamics = sx.ClosureDynamicsPolicy.SOLVE
     closure.runtime_policy = runtime_policy
 
-    updated_policy = closure.get_runtime_policy()
+    updated_policy = closure.runtime_policy
     assert updated_policy.enabled is False
     assert updated_policy.kinematics == sx.ClosureKinematicsPolicy.PROJECT
     assert updated_policy.dynamics == sx.ClosureDynamicsPolicy.SOLVE
 
-    closure.set_runtime_policy(
-        sx.LoopClosureRuntimePolicy(
-            enabled=True,
-            kinematics=sx.ClosureKinematicsPolicy.RESIDUAL_ONLY,
-            dynamics=sx.ClosureDynamicsPolicy.RESIDUAL_ONLY,
-        )
+    closure.runtime_policy = sx.LoopClosureRuntimePolicy(
+        enabled=True,
+        kinematics=sx.ClosureKinematicsPolicy.RESIDUAL_ONLY,
+        dynamics=sx.ClosureDynamicsPolicy.RESIDUAL_ONLY,
     )
     assert closure.runtime_policy.enabled is True
 
     assert world.num_loop_closures == 1
-    assert world.get_loop_closure_count() == 1
     assert world.has_loop_closure("closing_bar")
     assert world.get_loop_closure("closing_bar").frame_a == coupler
     assert world.get_loop_closure("missing") is None
@@ -508,31 +558,29 @@ def test_experimental_world_common_path_properties_and_step_count():
     assert box.translation.tolist() == pytest.approx([4.0, 5.0, 6.0])
     assert sensor.translation.tolist() == pytest.approx([4.0, 6.0, 6.0])
 
-    box.set_linear_velocity((2.0, 0.0, 0.0))
-    box.set_angular_velocity((0.0, 0.0, 0.5))
-    assert box.get_linear_velocity().tolist() == pytest.approx([2.0, 0.0, 0.0])
-    assert box.get_angular_velocity().tolist() == pytest.approx(
-        [0.0, 0.0, 0.5]
-    )
+    box.linear_velocity = (2.0, 0.0, 0.0)
+    box.angular_velocity = (0.0, 0.0, 0.5)
+    assert box.linear_velocity.tolist() == pytest.approx([2.0, 0.0, 0.0])
+    assert box.angular_velocity.tolist() == pytest.approx([0.0, 0.0, 0.5])
     box.angular_velocity = (0.0, 0.0, 0.0)
 
-    box.set_mass(5.0)
-    box.set_inertia(((3.0, 0.0, 0.0), (0.0, 4.0, 0.0), (0.0, 0.0, 5.0)))
-    assert box.get_mass() == pytest.approx(5.0)
-    assert box.get_inertia().reshape(9).tolist() == pytest.approx(
+    box.mass = 5.0
+    box.inertia = ((3.0, 0.0, 0.0), (0.0, 4.0, 0.0), (0.0, 0.0, 5.0))
+    assert box.mass == pytest.approx(5.0)
+    assert box.inertia.reshape(9).tolist() == pytest.approx(
         [3.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 5.0]
     )
     box.mass = 2.0
 
-    box.set_force((0.0, 2.0, 0.0))
+    box.force = (0.0, 2.0, 0.0)
     box.apply_force((0.0, 3.0, 0.0))
-    assert box.get_force().tolist() == pytest.approx([0.0, 5.0, 0.0])
+    assert box.force.tolist() == pytest.approx([0.0, 5.0, 0.0])
     box.clear_force()
     assert box.force.tolist() == pytest.approx([0.0, 0.0, 0.0])
 
     box.torque = (1.0, 0.0, 0.0)
     box.apply_torque((2.0, 0.0, 0.0))
-    assert box.get_torque().tolist() == pytest.approx([3.0, 0.0, 0.0])
+    assert box.torque.tolist() == pytest.approx([3.0, 0.0, 0.0])
     box.clear_torque()
     assert box.torque.tolist() == pytest.approx([0.0, 0.0, 0.0])
 
@@ -643,11 +691,11 @@ def test_experimental_rigid_body_options_reject_invalid_values():
     with pytest.raises(Exception, match="Joint position dimension"):
         joint.position = [0.0, 1.0]
     with pytest.raises(Exception, match="Joint position"):
-        joint.set_position([math.inf])
+        joint.position = [math.inf]
     with pytest.raises(Exception, match="Joint velocity dimension"):
         joint.velocity = []
     with pytest.raises(Exception, match="Joint velocity"):
-        joint.set_velocity([math.nan])
+        joint.velocity = [math.nan]
     with pytest.raises(Exception):
         joint.position = 0.0
     with pytest.raises(Exception, match="1-D vector"):

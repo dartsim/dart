@@ -277,6 +277,11 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
   participation policy, explicit residual diagnostics, lookup, validation, and
   serialization. Closure kinematic projection and dynamic closure solving
   remain staged design targets.
+- The experimental dartpy facade now exposes data-like frame, joint,
+  loop-closure, and rigid-body state through Python properties. Lookup and
+  topology-changing operations remain methods, but parallel getter/setter-style
+  aliases for those data properties are intentionally not part of the staging
+  surface for dartpy 8.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and
@@ -663,14 +668,16 @@ Use methods for operations:
 world.step()
 world.clear()
 world.sync(sx.WorldSyncStage.KINEMATICS)
+tool.relative_transform(base)
 robot.add_link("base")
 body.apply_force((1.0, 0.0, 0.0))
 ```
 
 Getter-style C++ methods may exist underneath, but the experimental Python
-binding should expose only native `snake_case` names and properties. Runtime
-camelCase compatibility belongs to legacy modules, not to the DART 7
-experimental staging surface for dartpy 8.
+binding should expose native `snake_case` methods only for real operations and
+lookups, and should expose data-like state through properties. Runtime
+camelCase compatibility and parallel data getter/setter aliases belong to
+legacy modules, not to the DART 7 experimental staging surface for dartpy 8.
 
 ## Collections And Lookup
 

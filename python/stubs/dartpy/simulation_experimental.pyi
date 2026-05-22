@@ -157,33 +157,14 @@ class Frame:
     def world() -> Frame:
         ...
 
-    def get_name(self) -> str:
-        ...
-
-    def get_parent_frame(self) -> Frame:
-        ...
-
-    def set_parent_frame(self, parent: Frame) -> None:
-        ...
-
-    def get_local_transform(self) -> NDArray[np.float64]:
+    @overload
+    def relative_transform(self, relative_to: Frame) -> NDArray[np.float64]:
         ...
 
     @overload
-    def get_transform(self) -> NDArray[np.float64]:
-        ...
-
-    @overload
-    def get_transform(self, relative_to: Frame) -> NDArray[np.float64]:
-        ...
-
-    @overload
-    def get_transform(
-        self, to: Frame, expressed_in: Frame
+    def relative_transform(
+        self, relative_to: Frame, expressed_in: Frame
     ) -> NDArray[np.float64]:
-        ...
-
-    def is_valid_handle(self) -> bool:
         ...
 
     def is_same_instance_as(self, other: Frame) -> bool:
@@ -193,21 +174,9 @@ class Frame:
 class FreeFrame(Frame):
     local_transform: NDArray[np.float64]
 
-    def set_local_transform(self, transform: ArrayLike) -> None:
-        ...
-
-    def get_local_transform(self) -> NDArray[np.float64]:
-        ...
-
 
 class FixedFrame(Frame):
     local_transform: NDArray[np.float64]
-
-    def set_local_transform(self, transform: ArrayLike) -> None:
-        ...
-
-    def get_local_transform(self) -> NDArray[np.float64]:
-        ...
 
 
 class MultiBody:
@@ -242,12 +211,6 @@ class Link(Frame):
     transform: NDArray[np.float64]
     is_valid: bool
 
-    def get_name(self) -> str:
-        ...
-
-    def get_parent_joint(self) -> Joint:
-        ...
-
 
 class Joint:
     name: str
@@ -260,36 +223,6 @@ class Joint:
     child_link: Link
     is_valid: bool
 
-    def get_name(self) -> str:
-        ...
-
-    def get_type(self) -> JointType:
-        ...
-
-    def get_axis(self) -> NDArray[np.float64]:
-        ...
-
-    def get_num_dofs(self) -> int:
-        ...
-
-    def get_position(self) -> NDArray[np.float64]:
-        ...
-
-    def set_position(self, position: ArrayLike) -> None:
-        ...
-
-    def get_velocity(self) -> NDArray[np.float64]:
-        ...
-
-    def set_velocity(self, velocity: ArrayLike) -> None:
-        ...
-
-    def get_parent_link(self) -> Link:
-        ...
-
-    def get_child_link(self) -> Link:
-        ...
-
 
 class LoopClosure:
     name: str
@@ -300,30 +233,6 @@ class LoopClosure:
     offset_b: NDArray[np.float64]
     runtime_policy: LoopClosureRuntimePolicy
     is_valid: bool
-
-    def get_name(self) -> str:
-        ...
-
-    def get_family(self) -> LoopClosureFamily:
-        ...
-
-    def get_frame_a(self) -> Frame:
-        ...
-
-    def get_frame_b(self) -> Frame:
-        ...
-
-    def get_offset_a(self) -> NDArray[np.float64]:
-        ...
-
-    def get_offset_b(self) -> NDArray[np.float64]:
-        ...
-
-    def get_runtime_policy(self) -> LoopClosureRuntimePolicy:
-        ...
-
-    def set_runtime_policy(self, policy: LoopClosureRuntimePolicy) -> None:
-        ...
 
     def compute_residual(self) -> LoopClosureResidual:
         ...
@@ -342,52 +251,10 @@ class RigidBody(Frame):
     force: NDArray[np.float64]
     torque: NDArray[np.float64]
 
-    def get_name(self) -> str:
-        ...
-
-    def set_transform(self, transform: ArrayLike) -> None:
-        ...
-
-    def get_linear_velocity(self) -> NDArray[np.float64]:
-        ...
-
-    def set_linear_velocity(self, velocity: ArrayLike) -> None:
-        ...
-
-    def get_angular_velocity(self) -> NDArray[np.float64]:
-        ...
-
-    def set_angular_velocity(self, velocity: ArrayLike) -> None:
-        ...
-
-    def get_mass(self) -> float:
-        ...
-
-    def set_mass(self, mass: float) -> None:
-        ...
-
-    def get_inertia(self) -> NDArray[np.float64]:
-        ...
-
-    def set_inertia(self, inertia: ArrayLike) -> None:
-        ...
-
-    def get_force(self) -> NDArray[np.float64]:
-        ...
-
-    def set_force(self, force: ArrayLike) -> None:
-        ...
-
     def apply_force(self, force: ArrayLike) -> None:
         ...
 
     def clear_force(self) -> None:
-        ...
-
-    def get_torque(self) -> NDArray[np.float64]:
-        ...
-
-    def set_torque(self, torque: ArrayLike) -> None:
         ...
 
     def apply_torque(self, torque: ArrayLike) -> None:
@@ -428,9 +295,6 @@ class World:
     def get_multi_body(self, name: str) -> MultiBody | None:
         ...
 
-    def get_multi_body_count(self) -> int:
-        ...
-
     @overload
     def add_loop_closure(
         self, name: str, spec: LoopClosureSpec
@@ -456,9 +320,6 @@ class World:
     def get_loop_closure(self, name: str) -> LoopClosure | None:
         ...
 
-    def get_loop_closure_count(self) -> int:
-        ...
-
     def add_rigid_body(
         self,
         name: str,
@@ -477,9 +338,6 @@ class World:
         ...
 
     def get_rigid_body(self, name: str) -> RigidBody | None:
-        ...
-
-    def get_rigid_body_count(self) -> int:
         ...
 
     def enter_simulation_mode(self) -> None:

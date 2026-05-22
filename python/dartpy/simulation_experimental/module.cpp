@@ -458,31 +458,13 @@ void defSimulationExperimentalModule(nb::module_& m)
 
   frameClass.def_static("world", &sim::Frame::world)
       .def(
-          "get_name",
-          [](const sim::Frame& self) { return std::string(self.getName()); })
-      .def("get_parent_frame", &sim::Frame::getParentFrame)
-      .def(
-          "set_parent_frame",
-          [](sim::Frame& self, const nb::handle& parent) {
-            self.setParentFrame(toFrameHandle(parent));
-          },
-          nb::arg("parent"))
-      .def(
-          "get_local_transform",
-          [](const sim::Frame& self) {
-            return self.getLocalTransform().matrix();
-          })
-      .def(
-          "get_transform",
-          [](const sim::Frame& self) { return self.getTransformMatrix(); })
-      .def(
-          "get_transform",
+          "relative_transform",
           [](const sim::Frame& self, const nb::handle& relativeTo) {
             return self.getTransform(toFrameHandle(relativeTo)).matrix();
           },
           nb::arg("relative_to"))
       .def(
-          "get_transform",
+          "relative_transform",
           [](const sim::Frame& self,
              const nb::handle& to,
              const nb::handle& expressedIn) {
@@ -490,9 +472,8 @@ void defSimulationExperimentalModule(nb::module_& m)
                 .getTransform(toFrameHandle(to), toFrameHandle(expressedIn))
                 .matrix();
           },
-          nb::arg("to"),
+          nb::arg("relative_to"),
           nb::arg("expressed_in"))
-      .def("is_valid_handle", &sim::Frame::isValid)
       .def(
           "is_same_instance_as",
           [](const sim::Frame& self, const nb::handle& other) {
@@ -551,17 +532,6 @@ void defSimulationExperimentalModule(nb::module_& m)
       });
 
   freeFrameClass
-      .def(
-          "set_local_transform",
-          [](sim::FreeFrame& self, const nb::handle& transform) {
-            self.setLocalTransform(toIsometry(transform));
-          },
-          nb::arg("transform"))
-      .def(
-          "get_local_transform",
-          [](const sim::FreeFrame& self) {
-            return self.getLocalTransform().matrix();
-          })
       .def_prop_rw(
           "local_transform",
           [](const sim::FreeFrame& self) {
@@ -580,17 +550,6 @@ void defSimulationExperimentalModule(nb::module_& m)
       });
 
   fixedFrameClass
-      .def(
-          "set_local_transform",
-          [](sim::FixedFrame& self, const nb::handle& transform) {
-            self.setLocalTransform(toIsometry(transform));
-          },
-          nb::arg("transform"))
-      .def(
-          "get_local_transform",
-          [](const sim::FixedFrame& self) {
-            return self.getLocalTransform().matrix();
-          })
       .def_prop_rw(
           "local_transform",
           [](const sim::FixedFrame& self) {
@@ -609,28 +568,6 @@ void defSimulationExperimentalModule(nb::module_& m)
       });
 
   jointClass
-      .def(
-          "get_name",
-          [](const sim::Joint& self) { return std::string(self.getName()); })
-      .def("get_type", &sim::Joint::getType)
-      .def("get_axis", &sim::Joint::getAxis)
-      .def("get_num_dofs", &sim::Joint::getDOFCount)
-      .def("get_position", &sim::Joint::getPosition)
-      .def(
-          "set_position",
-          [](sim::Joint& self, const nb::handle& position) {
-            self.setPosition(toVectorX(position));
-          },
-          nb::arg("position"))
-      .def("get_velocity", &sim::Joint::getVelocity)
-      .def(
-          "set_velocity",
-          [](sim::Joint& self, const nb::handle& velocity) {
-            self.setVelocity(toVectorX(velocity));
-          },
-          nb::arg("velocity"))
-      .def("get_parent_link", &sim::Joint::getParentLink)
-      .def("get_child_link", &sim::Joint::getChildLink)
       .def_prop_ro(
           "name",
           [](const sim::Joint& self) { return std::string(self.getName()); })
@@ -665,10 +602,6 @@ void defSimulationExperimentalModule(nb::module_& m)
       });
 
   linkClass
-      .def(
-          "get_name",
-          [](const sim::Link& self) { return std::string(self.getName()); })
-      .def("get_parent_joint", &sim::Link::getParentJoint)
       .def_prop_ro(
           "name",
           [](const sim::Link& self) { return std::string(self.getName()); })
@@ -797,31 +730,7 @@ void defSimulationExperimentalModule(nb::module_& m)
         return format_repr("LoopClosureResidual", fields);
       });
 
-  loopClosureClass
-      .def(
-          "get_name",
-          [](const sim::LoopClosure& self) {
-            return std::string(self.getName());
-          })
-      .def("get_family", &sim::LoopClosure::getFamily)
-      .def("get_frame_a", &sim::LoopClosure::getFrameA)
-      .def("get_frame_b", &sim::LoopClosure::getFrameB)
-      .def(
-          "get_offset_a",
-          [](const sim::LoopClosure& self) {
-            return self.getOffsetA().matrix();
-          })
-      .def(
-          "get_offset_b",
-          [](const sim::LoopClosure& self) {
-            return self.getOffsetB().matrix();
-          })
-      .def("get_runtime_policy", &sim::LoopClosure::getRuntimePolicy)
-      .def(
-          "set_runtime_policy",
-          &sim::LoopClosure::setRuntimePolicy,
-          nb::arg("policy"))
-      .def("compute_residual", &sim::LoopClosure::computeResidual)
+  loopClosureClass.def("compute_residual", &sim::LoopClosure::computeResidual)
       .def_prop_ro(
           "name",
           [](const sim::LoopClosure& self) {
@@ -922,57 +831,12 @@ void defSimulationExperimentalModule(nb::module_& m)
 
   nb::class_<sim::RigidBody, sim::Frame>(m, "RigidBody")
       .def(
-          "get_name", [](const sim::RigidBody& self) { return self.getName(); })
-      .def(
-          "set_transform",
-          [](sim::RigidBody& self, const nb::handle& transform) {
-            self.setTransform(toIsometry(transform));
-          },
-          nb::arg("transform"))
-      .def("get_linear_velocity", &sim::RigidBody::getLinearVelocity)
-      .def(
-          "set_linear_velocity",
-          [](sim::RigidBody& self, const nb::handle& velocity) {
-            self.setLinearVelocity(toVector3(velocity));
-          },
-          nb::arg("velocity"))
-      .def("get_angular_velocity", &sim::RigidBody::getAngularVelocity)
-      .def(
-          "set_angular_velocity",
-          [](sim::RigidBody& self, const nb::handle& velocity) {
-            self.setAngularVelocity(toVector3(velocity));
-          },
-          nb::arg("velocity"))
-      .def("get_mass", &sim::RigidBody::getMass)
-      .def("set_mass", &sim::RigidBody::setMass, nb::arg("mass"))
-      .def("get_inertia", &sim::RigidBody::getInertia)
-      .def(
-          "set_inertia",
-          [](sim::RigidBody& self, const nb::handle& inertia) {
-            self.setInertia(toMatrix3(inertia));
-          },
-          nb::arg("inertia"))
-      .def("get_force", &sim::RigidBody::getForce)
-      .def(
-          "set_force",
-          [](sim::RigidBody& self, const nb::handle& force) {
-            self.setForce(toVector3(force));
-          },
-          nb::arg("force"))
-      .def(
           "apply_force",
           [](sim::RigidBody& self, const nb::handle& force) {
             self.applyForce(toVector3(force));
           },
           nb::arg("force"))
       .def("clear_force", &sim::RigidBody::clearForce)
-      .def("get_torque", &sim::RigidBody::getTorque)
-      .def(
-          "set_torque",
-          [](sim::RigidBody& self, const nb::handle& torque) {
-            self.setTorque(toVector3(torque));
-          },
-          nb::arg("torque"))
       .def(
           "apply_torque",
           [](sim::RigidBody& self, const nb::handle& torque) {
@@ -1176,7 +1040,6 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           nb::arg("name"),
           nb::keep_alive<0, 1>())
-      .def("get_multi_body_count", &sim::World::getMultiBodyCount)
       .def(
           "add_loop_closure",
           [](sim::World& self,
@@ -1225,7 +1088,6 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           nb::arg("name"),
           nb::keep_alive<0, 1>())
-      .def("get_loop_closure_count", &sim::World::getLoopClosureCount)
       .def(
           "add_rigid_body",
           [](sim::World& self,
@@ -1275,7 +1137,6 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           nb::arg("name"),
           nb::keep_alive<0, 1>())
-      .def("get_rigid_body_count", &sim::World::getRigidBodyCount)
       .def_prop_ro("is_simulation_mode", &sim::World::isSimulationMode)
       .def("enter_simulation_mode", &sim::World::enterSimulationMode)
       .def(
