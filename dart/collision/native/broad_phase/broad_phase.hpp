@@ -35,6 +35,7 @@
 #include <dart/collision/native/aabb.hpp>
 #include <dart/collision/native/export.hpp>
 
+#include <array>
 #include <functional>
 #include <limits>
 #include <span>
@@ -69,21 +70,48 @@ struct DART_COLLISION_NATIVE_API BroadPhaseDebugNode
   }
 };
 
+struct DART_COLLISION_NATIVE_API BroadPhaseDebugCell
+{
+  std::array<int, 3> coordinates = {0, 0, 0};
+  Aabb aabb;
+  std::vector<std::size_t> objectIds;
+  std::size_t hash = 0;
+};
+
+struct DART_COLLISION_NATIVE_API BroadPhaseDebugEndpoint
+{
+  int axis = 0;
+  std::size_t objectId = BroadPhaseDebugNode::kInvalidIndex;
+  double value = 0.0;
+  bool isMin = true;
+  std::size_t order = 0;
+};
+
 struct DART_COLLISION_NATIVE_API BroadPhaseDebugSnapshot
 {
   std::vector<BroadPhaseDebugNode> nodes;
+  std::vector<BroadPhaseDebugCell> cells;
+  std::vector<BroadPhaseDebugEndpoint> endpoints;
   std::vector<BroadPhasePair> candidatePairs;
   std::size_t rootNode = BroadPhaseDebugNode::kInvalidIndex;
   std::size_t numObjects = 0;
+  double spatialHashCellSize = 0.0;
   bool hasTreeTopology = false;
+  bool hasSpatialHashCells = false;
+  bool hasSweepEndpoints = false;
 
   void clear()
   {
     nodes.clear();
+    cells.clear();
+    endpoints.clear();
     candidatePairs.clear();
     rootNode = BroadPhaseDebugNode::kInvalidIndex;
     numObjects = 0;
+    spatialHashCellSize = 0.0;
     hasTreeTopology = false;
+    hasSpatialHashCells = false;
+    hasSweepEndpoints = false;
   }
 };
 

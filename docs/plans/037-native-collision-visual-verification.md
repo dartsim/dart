@@ -15,9 +15,11 @@
   unordered native shape pair and type-aware shape parameters;
   `test_collision_sandbox_pair_registry` verifies registry coverage against the
   native narrow-phase support table and shape parameter factory behavior; and
-  `BroadPhaseDebugSnapshot` exposes copied AABB-tree topology for GUI overlays;
+  `BroadPhaseDebugSnapshot` exposes copied AABB-tree topology, spatial-hash
+  cells, and sweep-and-prune endpoint order for GUI overlays;
   `examples/collision_sandbox/run_headless_sweep.cmake` provides the current
-  CTest-gated representative pair, UI, and overlay screenshot smoke.
+  CTest-gated representative pair, broad-phase overlay, and UI screenshot
+  smoke.
 
 ## Scope
 
@@ -76,9 +78,10 @@ code, examples, tests, this plan, and any needed onboarding notes.
      coarse. The API should expose copied debug data such as leaf AABBs,
      internal node AABBs, parent/child edges, candidate pairs, object ids, and
      spatial ordering codes without exposing mutable tree internals.
-   - Keep the first implementation useful for the current AABB tree while
-     leaving room for sweep-and-prune, spatial hash, and brute-force
-     diagnostics.
+
+- Keep the first implementation useful for the current AABB tree,
+  sweep-and-prune, spatial hash, and brute-force diagnostics.
+
 5. **Verification**
    - Add focused unit tests for any new broad-phase debug snapshot API and pair
      registry invariants.

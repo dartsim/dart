@@ -9,6 +9,7 @@
 - [x] Phase 3: Add contact/manifold/depth visualization and raw-value panels.
 - [x] Phase 4: Add broad-phase debug snapshots and overlays.
 - [x] Phase 5: Add deterministic headless visual smoke sweeps.
+- [x] Phase 6: Add spatial-order broad-phase overlays.
 
 ## Goal
 
@@ -57,13 +58,10 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
 
 ## Immediate Next Steps
 
-1. Add spatial-order overlays for broad-phase implementations that expose
-   ordering data; AABB-tree boxes, tree edges, and candidate pairs are already
-   covered.
-2. Consider whether collision filtering controls belong in the first completion
+1. Consider whether collision filtering controls belong in the first completion
    pass or should remain a follow-up.
-3. Decide whether the example should expose broad-phase selection or keep the
-   first pass focused on the current default broad-phase path.
+2. Decide whether unsupported placeholder rows need richer disabled-state
+   rendering before the completion PR.
 
 ## Completion Checklist
 
@@ -73,7 +71,7 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
       runtime.
 - [x] Contact overlays and panels show raw point, normal, depth, and manifold
       membership.
-- [ ] Broad-phase overlays show object AABBs, candidate pairs, and AABB tree
+- [x] Broad-phase overlays show object AABBs, candidate pairs, and AABB tree
       node/edge visualization; Morton-code or spatial-order visualization is
       present when the selected broad phase uses it.
 - [x] Focused tests cover pair-registry invariants and any new broad-phase

@@ -36,6 +36,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <random>
 
@@ -64,6 +65,34 @@ TEST(SpatialHashBroadPhase, CustomCellSize)
 {
   SpatialHashBroadPhase bp(2.0);
   EXPECT_DOUBLE_EQ(bp.getCellSize(), 2.0);
+}
+
+TEST(SpatialHashBroadPhase, DebugSnapshotExposesHashCells)
+{
+  SpatialHashBroadPhase bp(1.0);
+
+  bp.add(
+      5, Aabb(Eigen::Vector3d(0.1, 0.1, 0.1), Eigen::Vector3d(0.9, 0.9, 0.9)));
+  bp.add(
+      7, Aabb(Eigen::Vector3d(0.2, 0.2, 0.2), Eigen::Vector3d(0.8, 0.8, 0.8)));
+
+  BroadPhaseDebugSnapshot snapshot;
+  bp.buildDebugSnapshot(snapshot);
+
+  EXPECT_TRUE(snapshot.hasSpatialHashCells);
+  EXPECT_FALSE(snapshot.hasTreeTopology);
+  EXPECT_FALSE(snapshot.hasSweepEndpoints);
+  EXPECT_DOUBLE_EQ(snapshot.spatialHashCellSize, 1.0);
+  EXPECT_EQ(snapshot.numObjects, 2u);
+  ASSERT_EQ(snapshot.candidatePairs.size(), 1u);
+  EXPECT_EQ(snapshot.candidatePairs[0], std::make_pair(5u, 7u));
+
+  ASSERT_EQ(snapshot.cells.size(), 1u);
+  const BroadPhaseDebugCell& cell = snapshot.cells[0];
+  EXPECT_EQ(cell.coordinates, (std::array<int, 3>{0, 0, 0}));
+  EXPECT_TRUE(cell.aabb.min.isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_TRUE(cell.aabb.max.isApprox(Eigen::Vector3d::Ones()));
+  EXPECT_EQ(cell.objectIds, (std::vector<std::size_t>{5u, 7u}));
 }
 
 TEST(SpatialHashBroadPhase, AddSingle)

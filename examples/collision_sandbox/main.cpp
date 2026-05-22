@@ -78,6 +78,20 @@ namespace {
 using ShapeParameters = sandbox::ShapeParameters;
 using ShapeType = collision::ShapeType;
 
+struct BroadPhaseOption
+{
+  collision::BroadPhaseType type;
+  std::string_view id;
+  std::string_view label;
+};
+
+constexpr std::array<BroadPhaseOption, 4> kBroadPhaseOptions{{
+    {collision::BroadPhaseType::AabbTree, "aabb_tree", "AABB Tree"},
+    {collision::BroadPhaseType::SpatialHash, "spatial_hash", "Spatial Hash"},
+    {collision::BroadPhaseType::SweepAndPrune, "sweep_and_prune", "Sweep"},
+    {collision::BroadPhaseType::BruteForce, "brute_force", "Brute Force"},
+}};
+
 Eigen::Vector4d rgba(double r, double g, double b, double a = 1.0)
 {
   return {r, g, b, a};
@@ -105,7 +119,11 @@ struct QuerySummary
   std::size_t broadPhaseLeaves = 0;
   std::size_t broadPhaseInternals = 0;
   std::size_t broadPhaseCandidatePairs = 0;
+  std::size_t broadPhaseCells = 0;
+  std::size_t broadPhaseEndpoints = 0;
   bool broadPhaseHasTreeTopology = false;
+  bool broadPhaseHasSpatialHashCells = false;
+  bool broadPhaseHasSweepEndpoints = false;
   std::vector<ContactRow> contacts;
 };
 
@@ -113,6 +131,7 @@ struct SandboxState
 {
   simulation::WorldPtr world = simulation::World::create("collision_sandbox");
   std::size_t pairCaseIndex = 0;
+  std::size_t broadPhaseIndex = 0;
   std::array<double, 3> objectATranslation = {0.0, 0.0, 0.0};
   std::array<double, 3> objectBTranslation = {0.55, 0.0, 0.0};
   std::array<double, 3> objectARotation = {0.0, 0.0, 0.0};
@@ -127,6 +146,8 @@ struct SandboxState
   bool showBvhNodes = true;
   bool showBvhEdges = true;
   bool showCandidatePairs = true;
+  bool showSpatialHashCells = true;
+  bool showSweepEndpoints = true;
   bool dirty = true;
   QuerySummary summary;
 };
@@ -135,6 +156,24 @@ const sandbox::PairCase& selectedPair(const SandboxState& state)
 {
   const auto pairs = sandbox::pairCases();
   return pairs[std::min(state.pairCaseIndex, pairs.size() - 1)];
+}
+
+const BroadPhaseOption& selectedBroadPhase(const SandboxState& state)
+{
+  return kBroadPhaseOptions[std::min(
+      state.broadPhaseIndex, kBroadPhaseOptions.size() - 1)];
+}
+
+const BroadPhaseOption* findBroadPhaseOption(std::string_view id)
+{
+  const auto it = std::find_if(
+      kBroadPhaseOptions.begin(),
+      kBroadPhaseOptions.end(),
+      [id](const BroadPhaseOption& option) { return option.id == id; });
+  if (it == kBroadPhaseOptions.end()) {
+    return nullptr;
+  }
+  return &*it;
 }
 
 Eigen::Isometry3d makeTransform(
@@ -346,6 +385,76 @@ void addAabbLines(
   }
 }
 
+Eigen::Vector4d sweepAxisColor(int axis, bool isMin)
+{
+  const double intensity = isMin ? 0.95 : 0.55;
+  switch (axis) {
+    case 0:
+      return rgba(intensity, 0.16, 0.16);
+    case 1:
+      return rgba(0.16, intensity, 0.16);
+    case 2:
+      return rgba(0.16, 0.35, intensity);
+  }
+  return rgba(0.85, 0.85, 0.85);
+}
+
+void addSweepEndpointOverlay(
+    const simulation::WorldPtr& world,
+    const collision::BroadPhaseDebugSnapshot& snapshot)
+{
+  if (!snapshot.hasSweepEndpoints || snapshot.endpoints.empty()) {
+    return;
+  }
+
+  for (int axis = 0; axis < 3; ++axis) {
+    std::vector<const collision::BroadPhaseDebugEndpoint*> endpoints;
+    for (const auto& endpoint : snapshot.endpoints) {
+      if (endpoint.axis == axis && std::isfinite(endpoint.value)) {
+        endpoints.push_back(&endpoint);
+      }
+    }
+
+    if (endpoints.empty()) {
+      continue;
+    }
+
+    double minValue = endpoints.front()->value;
+    double maxValue = endpoints.front()->value;
+    for (const auto* endpoint : endpoints) {
+      minValue = std::min(minValue, endpoint->value);
+      maxValue = std::max(maxValue, endpoint->value);
+    }
+
+    const double span = std::max(maxValue - minValue, 1.0);
+    const double railY = -1.15 - static_cast<double>(axis) * 0.16;
+    constexpr double railZ = -0.55;
+    constexpr double railMinX = -1.25;
+    constexpr double railMaxX = 1.25;
+    const Eigen::Vector4d railColor = sweepAxisColor(axis, true);
+    addLine(
+        world,
+        "sweep.axis." + std::to_string(axis),
+        Eigen::Vector3d(railMinX, railY, railZ),
+        Eigen::Vector3d(railMaxX, railY, railZ),
+        railColor,
+        1.0f);
+
+    for (const auto* endpoint : endpoints) {
+      const double t = (endpoint->value - minValue) / span;
+      const double x = railMinX + t * (railMaxX - railMinX);
+      addLine(
+          world,
+          "sweep.endpoint." + std::to_string(axis) + "."
+              + std::to_string(endpoint->order),
+          Eigen::Vector3d(x, railY, railZ - 0.065),
+          Eigen::Vector3d(x, railY, railZ + 0.065),
+          sweepAxisColor(axis, endpoint->isMin),
+          endpoint->isMin ? 2.5f : 1.5f);
+    }
+  }
+}
+
 void addBroadPhaseOverlay(
     const simulation::WorldPtr& world,
     const SandboxState& state,
@@ -418,6 +527,20 @@ void addBroadPhaseOverlay(
       }
     }
   }
+
+  if (state.showSpatialHashCells && snapshot.hasSpatialHashCells) {
+    for (std::size_t i = 0; i < snapshot.cells.size(); ++i) {
+      addAabbLines(
+          world,
+          "spatial_hash.cell." + std::to_string(i),
+          snapshot.cells[i].aabb,
+          rgba(0.1, 0.85, 0.95));
+    }
+  }
+
+  if (state.showSweepEndpoints) {
+    addSweepEndpointOverlay(world, snapshot);
+  }
 }
 
 void summarizeContacts(
@@ -441,8 +564,12 @@ void summarizeBroadPhase(
 {
   summary.broadPhaseObjects = snapshot.numObjects;
   summary.broadPhaseNodes = snapshot.nodes.size();
+  summary.broadPhaseCells = snapshot.cells.size();
+  summary.broadPhaseEndpoints = snapshot.endpoints.size();
   summary.broadPhaseCandidatePairs = snapshot.candidatePairs.size();
   summary.broadPhaseHasTreeTopology = snapshot.hasTreeTopology;
+  summary.broadPhaseHasSpatialHashCells = snapshot.hasSpatialHashCells;
+  summary.broadPhaseHasSweepEndpoints = snapshot.hasSweepEndpoints;
   summary.broadPhaseLeaves = 0;
   summary.broadPhaseInternals = 0;
   for (const auto& node : snapshot.nodes) {
@@ -467,7 +594,7 @@ void rebuildScene(SandboxState& state)
   const Eigen::Isometry3d tfB
       = makeTransform(state.objectBTranslation, state.objectBRotation);
 
-  collision::CollisionWorld nativeWorld;
+  collision::CollisionWorld nativeWorld(selectedBroadPhase(state).type);
   auto objA = nativeWorld.createObject(
       sandbox::makeShape(pair.shapeA, state.objectAParams), tfA);
   auto objB = nativeWorld.createObject(
@@ -576,6 +703,16 @@ bool parseExampleArgs(int argc, char* argv[], SandboxState& state)
       }
       state.pairCaseIndex = pair->index;
       resetPairControls(state);
+    } else if (arg == "--broad-phase" && i + 1 < argc) {
+      const std::string_view id(argv[++i]);
+      const BroadPhaseOption* option = findBroadPhaseOption(id);
+      if (!option) {
+        std::cerr << "Unknown broad-phase id: " << id << "\n";
+        return false;
+      }
+      state.broadPhaseIndex
+          = static_cast<std::size_t>(option - kBroadPhaseOptions.data());
+      state.dirty = true;
     }
   }
   return true;
@@ -684,6 +821,20 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
     }
 
     panelBuilder.separator();
+    panelBuilder.text(
+        "Broad-phase: " + std::string(selectedBroadPhase(*state).label));
+    if (panelBuilder.beginMenu("Broad-phase Selector")) {
+      for (std::size_t i = 0; i < kBroadPhaseOptions.size(); ++i) {
+        const BroadPhaseOption& option = kBroadPhaseOptions[i];
+        if (panelBuilder.menuItem(std::string(option.label))) {
+          state->broadPhaseIndex = i;
+          state->dirty = true;
+        }
+      }
+      panelBuilder.endMenu();
+    }
+
+    panelBuilder.separator();
     panelBuilder.text("Object A");
     state->dirty |= slider3(
         panelBuilder, "A Position", state->objectATranslation, -2.0, 2.0);
@@ -714,6 +865,10 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
     state->dirty |= panelBuilder.checkbox("BVH Edges", state->showBvhEdges);
     state->dirty
         |= panelBuilder.checkbox("Candidate Pairs", state->showCandidatePairs);
+    state->dirty |= panelBuilder.checkbox(
+        "Spatial Hash Cells", state->showSpatialHashCells);
+    state->dirty
+        |= panelBuilder.checkbox("Sweep Endpoints", state->showSweepEndpoints);
 
     panelBuilder.separator();
     const QuerySummary& summary = state->summary;
@@ -745,9 +900,18 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
           "Nodes: " + std::to_string(summary.broadPhaseNodes) + " ("
           + std::to_string(summary.broadPhaseLeaves) + " leaf, "
           + std::to_string(summary.broadPhaseInternals) + " internal)");
+      panelBuilder.text("Cells: " + std::to_string(summary.broadPhaseCells));
+      panelBuilder.text(
+          "Endpoints: " + std::to_string(summary.broadPhaseEndpoints));
       panelBuilder.text(
           std::string("Tree topology: ")
           + (summary.broadPhaseHasTreeTopology ? "yes" : "no"));
+      panelBuilder.text(
+          std::string("Spatial cells: ")
+          + (summary.broadPhaseHasSpatialHashCells ? "yes" : "no"));
+      panelBuilder.text(
+          std::string("Sweep order: ")
+          + (summary.broadPhaseHasSweepEndpoints ? "yes" : "no"));
     }
   };
   return panel;

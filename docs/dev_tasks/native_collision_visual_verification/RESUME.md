@@ -10,8 +10,9 @@ Filament-backed `dart::gui` application path from
 parameter controls and pose controls for both objects, raw
 contact/manifold/result values in the panel, contact point/normal/depth
 rendering, AABB-tree/candidate-pair overlays, a `--pair` headless selector, a
-CMake-driven headless screenshot sweep, and focused tests for the registry and
-broad-phase debug snapshot API.
+CMake-driven headless screenshot sweep, a broad-phase selector with AABB-tree,
+spatial-hash, sweep-and-prune, and brute-force modes, and focused tests for the
+registry and broad-phase debug snapshot API.
 
 ## Current Branch
 
@@ -20,9 +21,9 @@ worktree should be clean after the checkpoint commit.
 
 ## Immediate Next Step
 
-Add spatial-order overlays for broad-phase implementations that expose ordering
-data, then decide whether collision filtering or broad-phase selection controls
-belong in the first completion pass.
+Decide whether collision filtering controls belong in the first completion pass,
+then check whether unsupported placeholder rows need richer disabled-state
+rendering before the completion PR.
 
 ## Context That Would Be Lost
 
@@ -31,10 +32,12 @@ belong in the first completion pass.
 - Existing `collision_sandbox` is now Filament-backed and supports headless
   screenshot output, pair selection, type-aware shape parameter controls,
   object posing, contact point/normal/depth rendering, and
-  AABB-tree/candidate-pair overlays.
+  AABB-tree/candidate-pair overlays, spatial-hash cell overlays, and
+  sweep-and-prune endpoint-order overlays.
 - `examples/collision_sandbox/run_headless_sweep.cmake` drives the
-  deterministic smoke sweep for representative pair screenshots plus a wide UI
-  screenshot that keeps the Native Collision panel visible.
+  deterministic smoke sweep for representative pair screenshots, spatial-hash
+  and sweep-and-prune overlay screenshots, plus a wide UI screenshot that keeps
+  the Native Collision panel visible.
 - The pair registry lives in `examples/collision_sandbox/pair_registry.*` and
   is tested by `test_collision_sandbox_pair_registry`.
 - `BroadPhaseSnapshot` records only candidate pairs and object count;

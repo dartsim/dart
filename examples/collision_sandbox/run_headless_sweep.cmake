@@ -52,8 +52,13 @@ function(_dart_collision_sandbox_check_ppm screenshot width height)
   endif()
 endfunction()
 
-function(_dart_collision_sandbox_run_pair pair show_ui width height)
+function(_dart_collision_sandbox_run_pair pair broad_phase show_ui width height)
   set(_suffix "${pair}")
+  set(_broad_phase_args "")
+  if(NOT "${broad_phase}" STREQUAL "")
+    set(_suffix "${pair}_${broad_phase}")
+    set(_broad_phase_args --broad-phase "${broad_phase}")
+  endif()
   set(_ui_args "")
   if(show_ui)
     set(_suffix "${pair}_ui")
@@ -71,6 +76,7 @@ function(_dart_collision_sandbox_run_pair pair show_ui width height)
       --width "${width}"
       --height "${height}"
       --pair "${pair}"
+      ${_broad_phase_args}
       --screenshot "${_screenshot}"
     RESULT_VARIABLE _result
     OUTPUT_VARIABLE _stdout
@@ -78,15 +84,15 @@ function(_dart_collision_sandbox_run_pair pair show_ui width height)
   )
 
   if(NOT _stdout STREQUAL "")
-    message(STATUS "collision_sandbox ${pair} stdout:\n${_stdout}")
+    message(STATUS "collision_sandbox ${_suffix} stdout:\n${_stdout}")
   endif()
   if(NOT _stderr STREQUAL "")
-    message(STATUS "collision_sandbox ${pair} stderr:\n${_stderr}")
+    message(STATUS "collision_sandbox ${_suffix} stderr:\n${_stderr}")
   endif()
   if(NOT _result STREQUAL "0")
     message(
       FATAL_ERROR
-      "collision_sandbox ${pair} failed with exit code ${_result}"
+      "collision_sandbox ${_suffix} failed with exit code ${_result}"
     )
   endif()
 
@@ -94,10 +100,18 @@ function(_dart_collision_sandbox_run_pair pair show_ui width height)
 endfunction()
 
 foreach(_pair IN LISTS _pairs)
-  _dart_collision_sandbox_run_pair("${_pair}" FALSE "${_width}" "${_height}")
+  _dart_collision_sandbox_run_pair(
+    "${_pair}" "" FALSE "${_width}" "${_height}"
+  )
 endforeach()
 _dart_collision_sandbox_run_pair(
-  sphere_box TRUE "${_ui_width}" "${_ui_height}"
+  sphere_box spatial_hash FALSE "${_width}" "${_height}"
+)
+_dart_collision_sandbox_run_pair(
+  sphere_box sweep_and_prune FALSE "${_width}" "${_height}"
+)
+_dart_collision_sandbox_run_pair(
+  sphere_box "" TRUE "${_ui_width}" "${_ui_height}"
 )
 
 message(
