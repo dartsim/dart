@@ -53,9 +53,9 @@ namespace dart::simulation::experimental {
 /// frame-related operations such as transform queries, velocity/acceleration
 /// computations (future), and can be used as a reference frame.
 ///
-/// The initial public surface exposes name, transform, and world-frame velocity
-/// state. Future enhancements will add:
-/// - Physics properties (mass, inertia, collision shapes)
+/// The initial public surface exposes name, transform, world-frame velocity,
+/// and inertial state. Future enhancements will add:
+/// - Collision shapes
 /// - Force application
 /// - Collision detection integration
 ///
@@ -97,6 +97,24 @@ public:
   /// The value must contain only finite coordinates. Subsequent physics steps
   /// use this velocity directly.
   void setAngularVelocity(const Eigen::Vector3d& velocity);
+
+  /// Get the body's mass.
+  [[nodiscard]] double getMass() const;
+
+  /// Set the body's mass.
+  ///
+  /// The value must be positive and finite. Subsequent physics steps use this
+  /// mass directly.
+  void setMass(double mass);
+
+  /// Get the body's body-frame inertia tensor.
+  [[nodiscard]] Eigen::Matrix3d getInertia() const;
+
+  /// Set the body's body-frame inertia tensor.
+  ///
+  /// The value must be finite, symmetric, and positive definite. Subsequent
+  /// physics steps use this inertia directly.
+  void setInertia(const Eigen::Matrix3d& inertia);
 
   // Note: getEntity(), getWorld(), isValid() inherited from Frame
 

@@ -673,6 +673,15 @@ void defSimulationExperimentalModule(nb::module_& m)
             self.setAngularVelocity(toVector3(velocity));
           },
           nb::arg("velocity"))
+      .def("get_mass", &sim::RigidBody::getMass)
+      .def("set_mass", &sim::RigidBody::setMass, nb::arg("mass"))
+      .def("get_inertia", &sim::RigidBody::getInertia)
+      .def(
+          "set_inertia",
+          [](sim::RigidBody& self, const nb::handle& inertia) {
+            self.setInertia(toMatrix3(inertia));
+          },
+          nb::arg("inertia"))
       .def_prop_ro(
           "name", [](const sim::RigidBody& self) { return self.getName(); })
       .def_prop_ro("translation", &sim::RigidBody::getTranslation)
@@ -699,6 +708,13 @@ void defSimulationExperimentalModule(nb::module_& m)
           &sim::RigidBody::getAngularVelocity,
           [](sim::RigidBody& self, const nb::handle& velocity) {
             self.setAngularVelocity(toVector3(velocity));
+          })
+      .def_prop_rw("mass", &sim::RigidBody::getMass, &sim::RigidBody::setMass)
+      .def_prop_rw(
+          "inertia",
+          &sim::RigidBody::getInertia,
+          [](sim::RigidBody& self, const nb::handle& inertia) {
+            self.setInertia(toMatrix3(inertia));
           })
       .def("__repr__", [](const sim::RigidBody& self) {
         std::vector<std::pair<std::string, std::string>> fields;

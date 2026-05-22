@@ -111,6 +111,10 @@ def test_experimental_api_exposes_python_names_only():
             "setLinearVelocity",
             "getAngularVelocity",
             "setAngularVelocity",
+            "getMass",
+            "setMass",
+            "getInertia",
+            "setInertia",
         ),
         sx.World: (
             "addRigidBody",
@@ -264,6 +268,10 @@ def test_experimental_world_common_path_properties_and_step_count():
     assert box.quaternion.tolist() == pytest.approx([1.0, 0.0, 0.0, 0.0])
     assert box.linear_velocity.tolist() == pytest.approx([1.0, 0.0, 0.0])
     assert box.angular_velocity.tolist() == pytest.approx([0.0, 0.0, 0.0])
+    assert box.mass == pytest.approx(2.0)
+    assert box.inertia.reshape(9).tolist() == pytest.approx(
+        [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+    )
     assert world.has_rigid_body("box")
     assert world.get_rigid_body("box") == box
     assert world.get_rigid_body("missing") is None
@@ -284,6 +292,14 @@ def test_experimental_world_common_path_properties_and_step_count():
         [0.0, 0.0, 0.5]
     )
     box.angular_velocity = (0.0, 0.0, 0.0)
+
+    box.set_mass(5.0)
+    box.set_inertia(((3.0, 0.0, 0.0), (0.0, 4.0, 0.0), (0.0, 0.0, 5.0)))
+    assert box.get_mass() == pytest.approx(5.0)
+    assert box.get_inertia().reshape(9).tolist() == pytest.approx(
+        [3.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 5.0]
+    )
+    box.mass = 2.0
 
     world.step(n=0)
     assert not world.is_simulation_mode
@@ -362,3 +378,7 @@ def test_experimental_rigid_body_options_reject_invalid_values():
         body.linear_velocity = (math.nan, 0.0, 0.0)
     with pytest.raises(Exception, match="RigidBody angular velocity"):
         body.angular_velocity = (0.0, math.inf, 0.0)
+    with pytest.raises(Exception, match="RigidBody mass"):
+        body.mass = 0.0
+    with pytest.raises(Exception, match="RigidBody inertia"):
+        body.inertia = ((1.0, 0.0, 0.0), (0.0, -1.0, 0.0), (0.0, 0.0, 1.0))

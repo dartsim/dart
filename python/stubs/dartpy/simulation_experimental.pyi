@@ -206,6 +206,8 @@ class RigidBody(Frame):
     transform: NDArray[np.float64]
     linear_velocity: NDArray[np.float64]
     angular_velocity: NDArray[np.float64]
+    mass: float
+    inertia: NDArray[np.float64]
 
     def get_name(self) -> str:
         ...
@@ -223,6 +225,18 @@ class RigidBody(Frame):
         ...
 
     def set_angular_velocity(self, velocity: ArrayLike) -> None:
+        ...
+
+    def get_mass(self) -> float:
+        ...
+
+    def set_mass(self, mass: float) -> None:
+        ...
+
+    def get_inertia(self) -> NDArray[np.float64]:
+        ...
+
+    def set_inertia(self, inertia: ArrayLike) -> None:
         ...
 
 

@@ -456,6 +456,8 @@
     kinematics-only pose updates through the public `RigidBody` facade.
   - Added experimental rigid-body velocity accessors in C++ and dartpy so
     velocity-driven stepping no longer requires direct ECS component access.
+  - Added experimental rigid-body mass and inertia accessors in C++ and dartpy
+    so inertial properties are available through the public `RigidBody` facade.
   - Fixed experimental Taskflow executor paths to propagate compute-node
     exceptions instead of reporting graph execution success after failed tasks.
   - Fixed experimental compute profiling and rigid-body stepping edge cases for

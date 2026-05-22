@@ -36,6 +36,8 @@
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
+#include <Eigen/Cholesky>
+
 #include <cmath>
 
 namespace {
@@ -48,6 +50,35 @@ void validateFiniteVector(const Eigen::Vector3d& value, const char* fieldName)
       dart::simulation::experimental::InvalidArgumentException,
       "RigidBody {} must contain only finite values",
       fieldName);
+}
+
+//==============================================================================
+bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
+{
+  if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
+    return false;
+  }
+
+  Eigen::LLT<Eigen::Matrix3d> factorization(matrix);
+  return factorization.info() == Eigen::Success;
+}
+
+//==============================================================================
+void validateMass(double mass)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(mass) || mass <= 0.0,
+      dart::simulation::experimental::InvalidArgumentException,
+      "RigidBody mass must be positive and finite");
+}
+
+//==============================================================================
+void validateInertia(const Eigen::Matrix3d& inertia)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isSymmetricPositiveDefinite(inertia),
+      dart::simulation::experimental::InvalidArgumentException,
+      "RigidBody inertia must be symmetric positive definite");
 }
 
 } // namespace
@@ -154,6 +185,50 @@ void RigidBody::setAngularVelocity(const Eigen::Vector3d& velocity)
 
   getWorld()->getRegistry().get<comps::Velocity>(getEntity()).angular
       = velocity;
+}
+
+//==============================================================================
+double RigidBody::getMass() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->getRegistry().get<comps::MassProperties>(getEntity()).mass;
+}
+
+//==============================================================================
+void RigidBody::setMass(double mass)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  validateMass(mass);
+
+  getWorld()->getRegistry().get<comps::MassProperties>(getEntity()).mass = mass;
+}
+
+//==============================================================================
+Eigen::Matrix3d RigidBody::getInertia() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()
+      ->getRegistry()
+      .get<comps::MassProperties>(getEntity())
+      .inertia;
+}
+
+//==============================================================================
+void RigidBody::setInertia(const Eigen::Matrix3d& inertia)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  validateInertia(inertia);
+
+  getWorld()->getRegistry().get<comps::MassProperties>(getEntity()).inertia
+      = inertia;
 }
 
 // getEntity() and isValid() inherited from Frame

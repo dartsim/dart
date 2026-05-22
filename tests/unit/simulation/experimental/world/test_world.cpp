@@ -536,6 +536,19 @@ TEST(World, RigidBodyOptionsInitializeDynamicsComponents)
   EXPECT_TRUE(velocity.angular.isApprox(options.angularVelocity));
   EXPECT_DOUBLE_EQ(mass.mass, options.mass);
   EXPECT_TRUE(mass.inertia.isApprox(options.inertia));
+  EXPECT_DOUBLE_EQ(body.getMass(), options.mass);
+  EXPECT_TRUE(body.getInertia().isApprox(options.inertia));
+
+  const double updatedMass = 5.0;
+  const Eigen::Matrix3d updatedInertia
+      = Eigen::Vector3d(3.0, 4.0, 5.0).asDiagonal();
+  body.setMass(updatedMass);
+  body.setInertia(updatedInertia);
+
+  EXPECT_DOUBLE_EQ(body.getMass(), updatedMass);
+  EXPECT_TRUE(body.getInertia().isApprox(updatedInertia));
+  EXPECT_DOUBLE_EQ(mass.mass, updatedMass);
+  EXPECT_TRUE(mass.inertia.isApprox(updatedInertia));
 
   world.enterSimulationMode();
   EXPECT_TRUE(body.getTransform().translation().isApprox(options.position));
@@ -591,6 +604,20 @@ TEST(World, RigidBodyOptionsRejectInvalidValues)
   options = sx::RigidBodyOptions{};
   options.angularVelocity.x() = infinity;
   expectInvalid(options);
+
+  sx::World world;
+  auto body = world.addRigidBody("body");
+  EXPECT_THROW(body.setMass(0.0), sx::InvalidArgumentException);
+  EXPECT_THROW(body.setMass(infinity), sx::InvalidArgumentException);
+
+  EXPECT_THROW(
+      body.setInertia(Eigen::Vector3d(1.0, -1.0, 1.0).asDiagonal()),
+      sx::InvalidArgumentException);
+
+  Eigen::Matrix3d asymmetricInertia = Eigen::Matrix3d::Identity();
+  asymmetricInertia(0, 1) = 0.1;
+  EXPECT_THROW(
+      body.setInertia(asymmetricInertia), sx::InvalidArgumentException);
 }
 
 // Test that World::step() runs the rigid-body integration graph before the
