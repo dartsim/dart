@@ -52,7 +52,7 @@ class DART_EXPERIMENTAL_API World
 {
 public:
   World();
-  ~World() = default;
+  ~World();
 
   World(const World&) = delete;
   World& operator=(const World&) = delete;
@@ -104,6 +104,7 @@ public:
   [[nodiscard]] std::size_t getFrame() const noexcept;
   void updateKinematics();
   void step();
+  void step(std::size_t count);
   void step(compute::ComputeExecutor& executor);
   void step(compute::ComputeExecutor& executor, compute::WorldStepStage& stage);
   void step(

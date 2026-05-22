@@ -28,39 +28,107 @@ The core design sentence is:
 > official DART 8 simulation API, not a public contract for the underlying ECS
 > implementation.
 
-## Current Evidence
+## Design Principles
 
-- `dart::simulation::experimental::World` owns the new world lifecycle,
-  topology construction, stepping, compute-executor overloads, serialization,
-  and registry-backed storage.
-- `World::updateKinematics()` executes the kinematics graph without the default
-  rigid-body integration stage.
-- Default `World::step()` composes rigid-body integration followed by
-  kinematics through `WorldStepPipeline`, and pipeline overloads already allow
-  selected stage execution.
-- `RigidBodyOptions` already represents user-facing rigid-body initialization
-  data: mass, inertia, pose, and velocity.
-- `Frame`, `FreeFrame`, `FixedFrame`, `MultiBody`, `Link`, and `Joint` provide
-  first-class handle concepts over the experimental storage.
-- `StateSpace` provides a bindable, storage-independent value object for named
-  flat-vector metadata.
-- The experimental compute benchmark includes both world kinematics updates and
-  full world stepping, which is the right evidence shape for measuring
-  kinematics-only performance gains against full physics.
-- Native collision already has standalone world/query concepts with explicit
-  update and query operations; the experimental simulation API still needs a
-  public owner bridge before those become part of the new world contract.
-- The legacy DART 6-era dynamics API uses lazy forward-kinematics updates:
-  transform getters compute on demand after position/velocity/acceleration
-  writes mark dirty caches. That gives safe fresh reads, but it also spreads
-  dirty-flag bookkeeping across frames, joints, body nodes, Jacobians, skeleton
-  caches, shape caches, and support caches.
-- `docs/onboarding/api-boundaries.md` requires experimental APIs to have docs,
-  tests, and ownership while keeping component storage, backend plumbing, and
-  implementation namespaces out of public contracts.
-- `docs/onboarding/release-roadmap.md` defines DART 8 as the clean break that
-  removes the legacy DART 6 API and promotes the new simulation API after
-  parity gates pass.
+### Progressive Disclosure
+
+The common C++ path should fit in a short example:
+
+```cpp
+namespace sx = dart::simulation::experimental;
+
+sx::World world;
+auto box = world.addRigidBody("box", sx::RigidBodyOptions{});
+
+world.enterSimulationMode();
+world.step(100);
+```
+
+Advanced users can still opt into explicit validation, state spaces, custom
+pipelines, executor injection, and diagnostics. Common users should not need to
+understand storage, scheduling, component categories, or backend plumbing
+before they can run a simulation.
+
+### DART Vocabulary
+
+Use DART and robotics vocabulary: worlds, bodies, multibodies, links, joints,
+frames, DOFs, actuators, state, control, and compute stages. Public names
+should describe physics concepts and algorithm families rather than
+implementation containers.
+
+Solver, backend, preset, and example names should use algorithm, approach,
+paper, or DART-owned domain names instead of other engine or project names.
+Prefer names that describe the method, such as articulated-body,
+semi-implicit integration, projected Gauss-Seidel, XPBD, implicit time
+stepping, sequential execution, or parallel execution. A compatibility bridge
+may document what it imports or exports, but the primary C++ API name should
+describe the method rather than the originating engine.
+
+### Public Facade Before Implementation Coverage
+
+The API should expose stable simulation concepts, not every type used by the
+implementation. If the only available implementation type is a component,
+registry handle, scheduler object, backend resource, or `detail` type, the
+public API waits for a wrapper, value object, view, or handle with documented
+ownership and lifetime.
+
+### Stable Facade, Replaceable Internals
+
+DART 7 treats this namespace as experimental. DART 8 should promote a stable
+facade: public headers, exported symbols, Doxygen behavior, examples, dartpy
+bindings, and migration notes become the compatibility contract.
+
+That stable facade should leave DART free to change implementation details:
+
+- add algorithms, solvers, or multi-physics stages behind existing public
+  concepts;
+- improve scalar CPU, SIMD, multi-core, or accelerator implementations;
+- choose internal compute paths such as CUDA, Metal, Vulkan compute, ROCm/HIP,
+  LLVM/JIT code generation, or future backends from benchmark evidence;
+- replace storage, scheduling, collision, sensor, rendering-prep, or solver
+  internals without changing user object names;
+- preserve source compatibility, or follow the deprecation, migration, and
+  removal policy for the active major release line.
+
+Backend and runtime names may appear in build options, diagnostics, profiles,
+benchmark reports, or developer docs. They should not become required public
+type names, solver names, namespace names, or object identities unless a later
+design promotes a backend API intentionally.
+
+### One World, Multiple Runtime Intents
+
+The same `World` should support full physics and kinematics-only workflows.
+Motion-planning collision checks, externally driven robot playback, digital
+twins, visualization, camera or marker sensors, and controllers should reuse
+the same topology, frame, and object model instead of forcing users into a
+separate kinematic scene API.
+
+The public distinction should be pipeline intent: full dynamics stepping,
+kinematics-only updates, collision query preparation, sensor sampling, or
+rendering synchronization. Runtime shortcuts should not fork the user-facing
+object model.
+
+### Fresh Results Without Dirty-Flag API
+
+The long-term API should preserve the safety of DART 6 lazy evaluation without
+making the DART 6 dirty-flag network the public or required implementation.
+Users should be able to set state and then read transforms, query collisions,
+or render without remembering an implementation-specific cache update order.
+
+The best long-term shape is a hybrid:
+
+- ordinary object queries return fresh values by default;
+- `World::step()` and kinematics-only tick/sync methods guarantee freshness for
+  the stage bundle they execute;
+- explicit synchronization methods remain available for controllers,
+  planners, rendering loops, and batched reads that want predictable work
+  placement;
+- advanced unchecked reads, if added, are visibly named and documented as
+  possibly stale.
+
+This preserves intuitive reads while allowing the implementation to use dirty
+flags, generation counters, dependency graphs, staged cache owners, or
+backend-specific batch updates internally.
 
 ## Scope
 
@@ -72,6 +140,7 @@ It includes:
 - namespace and header transition rules;
 - public object model and ownership semantics;
 - design-mode and simulation-mode lifecycle;
+- closed-chain kinematic and dynamic structure;
 - naming rules for solvers, backends, presets, and examples;
 - state and array ownership expectations;
 - kinematics-only execution for collision queries, kinematic state updates,
@@ -104,6 +173,45 @@ the release roadmap.
   promoted.
 - Do not expose dirty flags, cache bits, registry versions, or backend cache
   ownership as user-facing API.
+
+## Current Evidence
+
+- `dart::simulation::experimental::World` owns the new world lifecycle,
+  topology construction, stepping, compute-executor overloads, serialization,
+  and registry-backed storage.
+- `World::updateKinematics()` executes the kinematics graph without the default
+  rigid-body integration stage. In DART 7 this remains an explicit
+  simulation-mode synchronization hook; the DART 8 target is fresh-by-default
+  ordinary queries plus named synchronization hooks for predictable batching.
+- Default `World::step()` composes rigid-body integration followed by
+  kinematics through `WorldStepPipeline`, and pipeline overloads already allow
+  selected stage execution.
+- `RigidBodyOptions` already represents user-facing rigid-body initialization
+  data: mass, inertia, pose, and velocity.
+- `Frame`, `FreeFrame`, `FixedFrame`, `MultiBody`, `Link`, and `Joint` provide
+  first-class handle concepts over the experimental storage.
+- `World::getRegistry()` is a DART 7 implementation escape hatch for tests and
+  internal bring-up. It is explicitly excluded from DART 8 promotion unless a
+  later design creates a stable storage-inspection API.
+- `StateSpace` provides a bindable, storage-independent value object for named
+  flat-vector metadata.
+- The experimental compute benchmark includes both world kinematics updates and
+  full world stepping, which is the right evidence shape for measuring
+  kinematics-only performance gains against full physics.
+- Native collision already has standalone world/query concepts with explicit
+  update and query operations; the experimental simulation API still needs a
+  public owner bridge before those become part of the new world contract.
+- The legacy DART 6-era dynamics API uses lazy forward-kinematics updates:
+  transform getters compute on demand after position/velocity/acceleration
+  writes mark dirty caches. That gives safe fresh reads, but it also spreads
+  dirty-flag bookkeeping across frames, joints, body nodes, Jacobians, skeleton
+  caches, shape caches, and support caches.
+- `docs/onboarding/api-boundaries.md` requires experimental APIs to have docs,
+  tests, and ownership while keeping component storage, backend plumbing, and
+  implementation namespaces out of public contracts.
+- `docs/onboarding/release-roadmap.md` defines DART 8 as the clean break that
+  removes the legacy DART 6 API and promotes the new simulation API after
+  parity gates pass.
 
 ## Namespace And Header Plan
 
@@ -159,6 +267,7 @@ promotion, but public examples should never require implementation folders.
 | `MultiBody`            | World-owned handle for articulated rigid-body topology.                              | Official articulated-body concept, with final naming chosen during promotion.                         |
 | `Link`                 | Body in a multibody kinematic tree and frame participant.                            | Public link handle.                                                                                   |
 | `Joint`                | Connection between links with type, axes, and parent/child access.                   | Public joint handle with state/control APIs once wrappers exist.                                      |
+| `LoopClosure`          | Explicit spatial closure between two public frames, links, or bodies.                | Public closed-chain handle with symmetric endpoints, diagnostics, and runtime solve policy separated. |
 | `Frame`                | Spatial reference frame with transform queries.                                      | Stable frame concept for bodies, links, and user frames.                                              |
 | `StateSpace`           | Named flat-vector metadata independent of storage.                                   | Stable state metadata surface for optimization and control workflows.                                 |
 | Compute graph concepts | Experimental graph, executor, metadata, profile, and pipeline hooks.                 | Stable extension points only for backend-neutral concepts that pass benchmark and API-boundary gates. |
@@ -197,9 +306,93 @@ For DART 8 promotion, public names should follow the DART 7/8 public API naming
 policy for the target namespace and headers. Compatibility wrappers for the
 legacy DART 6 simulation API are not part of the stable DART 8 surface.
 
-Design-mode errors, invalid handles, parent/child mismatches, and cross-world
+Design-mode errors, invalid handles, topology mismatches, and cross-world
 object use should fail through documented exceptions or status-returning
 functions rather than assertions in user paths.
+
+### Closed-Chain Structure
+
+Closed-chain mechanisms should be modeled as explicit loop-closure structure,
+not as duplicated bodies, fake tree edges, or exposed internal constraint
+components. The initial tree of `MultiBody`, `Link`, and `Joint` remains useful
+for ownership, naming, state indexing, and articulated-body algorithms; closure
+edges add graph structure on top of that tree.
+
+The future public C++ shape should be a DART-owned handle and spec, for
+example:
+
+```cpp
+auto closure = world.addLoopClosure(
+    "four_bar_closure",
+    sx::LoopClosureSpec{
+        .frameA = groundFrame,
+        .frameB = couplerLink,
+        .relativeTransform = Eigen::Isometry3d::Identity(),
+        .enabled = true,
+        .projection = sx::LoopProjectionPolicy::Kinematic,
+    });
+```
+
+The exact type names can change before promotion, but the public contract
+should distinguish:
+
+- symmetric closure endpoints from tree parent/child relationships;
+- closure topology, which names the endpoint frames and residual family;
+- runtime participation, such as enabled/disabled state, kinematic projection,
+  residual-only reporting, and full dynamic constraint solving;
+- spatial closure families such as rigid, distance, point, and axis closures
+  without naming them after an implementation engine;
+- scalar multibody coupling families, such as joint couplers and gear
+  constraints, as related but separate public concepts rather than overloading
+  every constraint as a `LoopClosure`;
+- activation, enable/disable, tolerance, stabilization, and diagnostic
+  metadata as public value fields rather than backend component fields.
+
+Closed-chain APIs must define ownership and lifetime. World-owned closures are
+the conservative default because endpoints may span multibodies, rigid bodies,
+and the world frame. A `MultiBody` convenience method may forward to the world
+only when both endpoints are in the same owner. Cross-world endpoints must be
+rejected, and removal, serialization, topology rebuilds, and `World::clear()`
+must document handle invalidation.
+
+Closed-chain APIs must define how closures affect DOF counting, state-space
+metadata, loop validation, serialization, collision filtering, and diagnostics.
+The expected baseline is that `MultiBody::getDOFCount()` reports the
+underlying tree generalized-coordinate dimension; closures add residual rows,
+constraint metadata, active flags, tolerances, convergence status, and
+force/impulse diagnostics. If a future API exposes independent constrained
+coordinates, that should be a separate state-space view rather than silently
+changing tree DOF counts.
+
+A kinematics-only pipeline should state whether it projects closure errors,
+reports residuals only, or requires the caller to select an explicit projection
+stage. Dynamic closure behavior belongs to a named constraint or
+implicit-dynamics stage, not to ordinary frame-cache refresh.
+
+The API should keep the useful lessons from existing engines without inheriting
+their public vocabulary:
+
+- MuJoCo models loop joints through equality constraints with residuals
+  `r(q) = 0`, including connect and weld constraints outside the kinematic
+  tree. That supports the DART distinction between tree joints and explicit
+  closure residuals while keeping closure forces available to dynamics.
+  See
+  [MuJoCo computation: equality constraints](https://mujoco.readthedocs.io/en/stable/computation/index.html#equality).
+- Drake exposes named multibody constraints such as ball, distance, and coupler
+  constraints and locks topology at finalization. That supports design-mode
+  closure creation, explicit topology validation, and state/port sizing after
+  finalization. See
+  [Drake MultibodyPlant](https://drake.mit.edu/pydrake/pydrake.multibody.plant.html).
+- Project Chrono exposes link objects that constrain relative motion between
+  bodies and can report relative displacement and force-like diagnostics. That
+  supports public closure handles with diagnostic queries instead of anonymous
+  solver rows. See
+  [Project Chrono links](https://api.projectchrono.org/6.0.0/links.html).
+- Bullet exposes a generic typed-constraint base between rigid bodies with
+  enable flags, feedback, and solver-iteration overrides. That is useful
+  backend evidence, but DART should expose DART-owned closure families rather
+  than making a generic backend constraint object the primary API. See
+  [Bullet typed constraints](https://pybullet.org/Bullet/BulletFull/classbtTypedConstraint.html).
 
 ### Topology And Runtime Separation
 
@@ -218,6 +411,15 @@ world.enterSimulationMode();
 world.reset();
 world.step(100);
 ```
+
+For DART 7, `World::step()` and `World::step(count)` may enter simulation mode
+as a common-path convenience, while `World::updateKinematics()` remains an
+explicit simulation-mode synchronization hook. DART 8 promotion must make the
+C++ and Python lifecycle rules identical: zero-count repeated stepping is a
+no-op, positive-count stepping validates/finalizes once before the first step,
+and topology mutation after finalization requires documented reset, rebuild, or
+clear behavior. Repeated stepping should reuse the same executor and pipeline
+state when an overload exposes them.
 
 Rendering or application event loops should not be prerequisites for physics
 stepping. Future viewer and renderer objects must own their own synchronization
@@ -278,42 +480,6 @@ This hybrid keeps the easy path intuitive while allowing the implementation to
 avoid recursive per-object dirty propagation in scalable workloads. Internally,
 epoch or generation counters can make no-op freshness checks cheap, and compute
 pipelines can refresh only the stage outputs requested by the workload.
-
-## Naming Rules
-
-Use DART and robotics vocabulary: worlds, bodies, multibodies, links, joints,
-frames, DOFs, actuators, state, control, and compute stages.
-
-Solver, backend, preset, and example names should use algorithm, approach,
-paper, or DART-owned domain names instead of other engine or project names.
-Prefer names that describe the method, such as articulated-body,
-semi-implicit integration, projected Gauss-Seidel, XPBD, implicit time
-stepping, sequential execution, or parallel execution. A compatibility bridge
-may document what it imports or exports, but the primary C++ API name should
-describe the method rather than the originating engine.
-
-## Stable API And Replaceable Internals
-
-DART 7 can change the experimental namespace while the API matures. DART 8
-promotion changes the bar: public headers, exported symbols, Doxygen, examples,
-dartpy bindings, and documented behavior become the compatibility contract.
-
-Within that contract, implementation details should remain replaceable:
-
-- storage, scheduling, collision, sensor, rendering-prep, and solver internals
-  may change;
-- new algorithms, solvers, and multi-physics stages may be added behind
-  DART-owned concepts;
-- scalar CPU, SIMD, multi-core, CUDA, Metal, Vulkan compute, ROCm/HIP,
-  LLVM/JIT code generation, or future backends may improve performance without
-  changing user object names;
-- source compatibility is preserved, or changes follow the deprecation,
-  migration, and removal policy for the active major release line.
-
-Backend names may appear in build options, diagnostics, profiles, benchmark
-reports, or developer docs. They should not become required public type names,
-solver names, namespace names, or object identities unless a later design
-promotes a backend API intentionally.
 
 ## Public Facade Rules
 

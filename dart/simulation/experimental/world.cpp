@@ -126,6 +126,9 @@ Eigen::Isometry3d toIsometry(
 World::World() = default;
 
 //==============================================================================
+World::~World() = default;
+
+//==============================================================================
 entt::registry& World::getRegistry()
 {
   return m_registry;
@@ -475,6 +478,14 @@ void World::step()
 }
 
 //==============================================================================
+void World::step(std::size_t count)
+{
+  for (std::size_t i = 0; i < count; ++i) {
+    step();
+  }
+}
+
+//==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
   compute::RigidBodyIntegrationStage rigidBodyIntegration;
@@ -498,10 +509,9 @@ void World::step(
 void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !m_simulationMode,
-      InvalidArgumentException,
-      "step() requires simulation mode");
+  if (!m_simulationMode) {
+    enterSimulationMode();
+  }
 
   pipeline.execute(*this, executor);
 

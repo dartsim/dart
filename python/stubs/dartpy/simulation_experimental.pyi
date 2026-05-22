@@ -1,9 +1,37 @@
 from __future__ import annotations
 
-__all__: list[str] = ["MultiBody", "RigidBody", "World"]
+import numpy as np
+from numpy.typing import ArrayLike, NDArray
+
+__all__: list[str] = ["MultiBody", "RigidBody", "RigidBodyOptions", "World"]
+
+
+class RigidBodyOptions:
+    def __init__(
+        self,
+        mass: float = 1.0,
+        position: ArrayLike | None = None,
+        orientation: ArrayLike | None = None,
+        linear_velocity: ArrayLike | None = None,
+        angular_velocity: ArrayLike | None = None,
+        inertia: ArrayLike | None = None,
+    ) -> None:
+        ...
+
+    mass: float
+    position: NDArray[np.float64]
+    orientation: NDArray[np.float64]
+    linear_velocity: NDArray[np.float64]
+    angular_velocity: NDArray[np.float64]
+    inertia: NDArray[np.float64]
 
 
 class MultiBody:
+    name: str
+    num_links: int
+    num_joints: int
+    num_dofs: int
+
     def getName(self) -> str:
         ...
 
@@ -36,6 +64,12 @@ class MultiBody:
 
 
 class RigidBody:
+    name: str
+    translation: NDArray[np.float64]
+    rotation: NDArray[np.float64]
+    quaternion: NDArray[np.float64]
+    transform: NDArray[np.float64]
+
     def getName(self) -> str:
         ...
 
@@ -44,8 +78,15 @@ class RigidBody:
 
 
 class World:
-    def __init__(self) -> None:
+    def __init__(self, time_step: float = 0.001) -> None:
         ...
+
+    time_step: float
+    time: float
+    frame: int
+    is_simulation_mode: bool
+    num_multi_bodies: int
+    num_rigid_bodies: int
 
     def addMultiBody(self, name: str) -> MultiBody:
         ...
@@ -57,6 +98,20 @@ class World:
         ...
 
     def addRigidBody(self, name: str) -> RigidBody:
+        ...
+
+    def add_rigid_body(
+        self,
+        name: str,
+        options: RigidBodyOptions = ...,
+        *,
+        mass: float | None = None,
+        position: ArrayLike | None = None,
+        orientation: ArrayLike | None = None,
+        linear_velocity: ArrayLike | None = None,
+        angular_velocity: ArrayLike | None = None,
+        inertia: ArrayLike | None = None,
+    ) -> RigidBody:
         ...
 
     def hasRigidBody(self, name: str) -> bool:
@@ -74,6 +129,9 @@ class World:
     def updateKinematics(self) -> None:
         ...
 
+    def step(self, n: int = 1) -> None:
+        ...
+
     def clear(self) -> None:
         ...
 
@@ -86,16 +144,10 @@ class World:
     def get_multi_body_count(self) -> int:
         ...
 
-    def add_rigid_body(self, name: str) -> RigidBody:
-        ...
-
     def has_rigid_body(self, name: str) -> bool:
         ...
 
     def get_rigid_body_count(self) -> int:
-        ...
-
-    def is_simulation_mode(self) -> bool:
         ...
 
     def enter_simulation_mode(self) -> None:

@@ -326,8 +326,8 @@ TEST(World, UpdateKinematicsRefreshesFrameHierarchy)
       child.getTransform().isApprox(updatedParentTransform * childOffset));
 }
 
-// Test that the experimental step path refreshes kinematics using the default
-// sequential graph executor.
+// Test that the experimental step path enters simulation mode and refreshes
+// kinematics using the default sequential graph executor.
 TEST(World, StepRefreshesFrameHierarchy)
 {
   namespace sx = dart::simulation::experimental;
@@ -343,15 +343,13 @@ TEST(World, StepRefreshesFrameHierarchy)
   childOffset.translate(Eigen::Vector3d(0.0, 2.0, 0.0));
   auto child = world.addFixedFrame("child", parent, childOffset);
 
-  EXPECT_THROW(world.step(), sx::InvalidArgumentException);
-
-  world.enterSimulationMode();
-
   Eigen::Isometry3d updatedParentTransform = Eigen::Isometry3d::Identity();
   updatedParentTransform.translate(Eigen::Vector3d(3.0, 0.0, 0.0));
   parent.setLocalTransform(updatedParentTransform);
 
   world.step();
+
+  EXPECT_TRUE(world.isSimulationMode());
 
   auto& registry = world.getRegistry();
   EXPECT_FALSE(registry.get<sx::comps::FrameCache>(parent.getEntity())
@@ -458,6 +456,24 @@ TEST(World, StepIntegratesRigidBodyStateAndAdvancesClock)
   EXPECT_TRUE(body.getTransform().translation().isApprox(expectedPosition));
   EXPECT_DOUBLE_EQ(world.getTime(), 0.5);
   EXPECT_EQ(world.getFrame(), 1u);
+}
+
+// Test that World::step(count) provides the common repeated-step API.
+TEST(World, StepCountAdvancesClockAndFrame)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setTimeStep(0.25);
+
+  world.step(0);
+  EXPECT_FALSE(world.isSimulationMode());
+
+  world.step(4);
+
+  EXPECT_TRUE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 1.0);
+  EXPECT_EQ(world.getFrame(), 4u);
 }
 
 // Test that torque integration uses the body-frame inertia tensor and updates

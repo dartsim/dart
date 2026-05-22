@@ -32,73 +32,6 @@ The core design sentence is:
 > experimental simulation concepts, not a binding mirror of the C++ ECS
 > implementation.
 
-## Current Evidence
-
-- `dartpy.simulation_experimental` already exists as an opt-in module with
-  `World`, `MultiBody`, and `RigidBody` smoke coverage.
-- `docs/onboarding/python-bindings.md` requires this module to remain separate
-  from legacy `dartpy.simulation` during DART 7.
-- `docs/onboarding/api-boundaries.md` classifies experimental APIs as public
-  enough to need docs, tests, and ownership, but not public enough to expose
-  storage, scheduler, backend, or component internals.
-- `dart/simulation/experimental/world.hpp` already has world lifecycle,
-  stepping, frame, multibody, rigid-body, and compute-executor hooks.
-- `World::updateKinematics()` already executes a kinematics graph without the
-  default rigid-body integration stage, and the current dartpy module exposes
-  that operation through the experimental binding.
-- The C++ `WorldStepPipeline` can execute selected stages, while default
-  `World::step()` composes rigid-body integration followed by kinematics.
-- `dart/simulation/experimental/space/state_space.hpp` provides a bindable
-  value object for named state-vector metadata.
-- Native collision already has standalone world/query concepts with explicit
-  update and query operations; the experimental simulation API still needs a
-  public owner bridge before exposing those from dartpy.
-- The legacy DART 6-era dynamics API uses lazy forward-kinematics updates: many
-  transform getters compute on demand after position/velocity/acceleration
-  writes mark dirty caches. That gives safe fresh reads, but it also spreads
-  dirty-flag bookkeeping across frames, joints, body nodes, Jacobians, skeleton
-  caches, shape caches, and support caches.
-
-## Scope
-
-This design covers the Python API users should see when working with
-`dart/simulation/experimental/**` through dartpy.
-
-It includes:
-
-- module placement and import style;
-- common world creation and stepping;
-- first-class handles for worlds, rigid bodies, multibodies, links, joints, and
-  frames;
-- Python naming, properties, collection views, and optional lookup behavior;
-- state, control, and array semantics;
-- kinematics-only execution for collision queries, kinematic state updates,
-  visualization, and visual or kinematic sensors;
-- compute-graph exposure boundaries;
-- staged adoption rules for capabilities that require new C++ owner APIs.
-
-It does not include implementation tracking, release priority, dashboard state,
-or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
-
-## Non-Goals
-
-- Do not create a new top-level package. The public import remains
-  `dartpy.simulation_experimental` while the API is experimental.
-- Do not promote experimental symbols onto the top-level `dartpy` namespace in
-  DART 7.
-- Do not expose `entt::registry`, `entt::entity`, `comps`, component category
-  types, raw component storage, `detail`, `internal`, backend task systems, GPU
-  devices, streams, memory pools, or solver registries.
-- Do not hide meaningful simulation content behind implicit world defaults.
-  Examples should prefer explicit ground, gravity, and loaded model choices
-  until maintainers intentionally choose a default policy.
-- Do not require a full dynamics step for workflows that only need frame
-  updates, collision queries, visualization, or visual/kinematic sensors.
-- Do not promise differentiable simulation, tensor backends, sensors, rendering,
-  model loading into the experimental world, batched environments, soft bodies,
-  fluids, or Python custom compute callbacks before the C++ API provides stable
-  public wrappers and focused verification.
-
 ## Design Principles
 
 ### Progressive Disclosure
@@ -210,6 +143,74 @@ the DART 6 dirty-flag implementation. Internally, DART may use dirty flags,
 generation counters, dependency graphs, staged cache owners, or backend-specific
 batch updates. The public API should expose freshness guarantees and stage
 boundaries, not the cache-invalidation mechanism.
+
+## Scope
+
+This design covers the Python API users should see when working with
+`dart/simulation/experimental/**` through dartpy.
+
+It includes:
+
+- module placement and import style;
+- common world creation and stepping;
+- first-class handles for worlds, rigid bodies, multibodies, links, joints, and
+  frames;
+- closed-chain kinematic and dynamic structure;
+- Python naming, properties, collection views, and optional lookup behavior;
+- state, control, and array semantics;
+- kinematics-only execution for collision queries, kinematic state updates,
+  visualization, and visual or kinematic sensors;
+- compute-graph exposure boundaries;
+- staged adoption rules for capabilities that require new C++ owner APIs.
+
+It does not include implementation tracking, release priority, dashboard state,
+or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
+
+## Non-Goals
+
+- Do not create a new top-level package. The public import remains
+  `dartpy.simulation_experimental` while the API is experimental.
+- Do not promote experimental symbols onto the top-level `dartpy` namespace in
+  DART 7.
+- Do not expose `entt::registry`, `entt::entity`, `comps`, component category
+  types, raw component storage, `detail`, `internal`, backend task systems, GPU
+  devices, streams, memory pools, or solver registries.
+- Do not hide meaningful simulation content behind implicit world defaults.
+  Examples should prefer explicit ground, gravity, and loaded model choices
+  until maintainers intentionally choose a default policy.
+- Do not require a full dynamics step for workflows that only need frame
+  updates, collision queries, visualization, or visual/kinematic sensors.
+- Do not promise differentiable simulation, tensor backends, sensors, rendering,
+  model loading into the experimental world, batched environments, soft bodies,
+  fluids, or Python custom compute callbacks before the C++ API provides stable
+  public wrappers and focused verification.
+
+## Current Evidence
+
+- `dartpy.simulation_experimental` already exists as an opt-in module with
+  `World`, `MultiBody`, and `RigidBody` smoke coverage.
+- `docs/onboarding/python-bindings.md` requires this module to remain separate
+  from legacy `dartpy.simulation` during DART 7.
+- `docs/onboarding/api-boundaries.md` classifies experimental APIs as public
+  enough to need docs, tests, and ownership, but not public enough to expose
+  storage, scheduler, backend, or component internals.
+- `dart/simulation/experimental/world.hpp` already has world lifecycle,
+  stepping, frame, multibody, rigid-body, and compute-executor hooks.
+- `World::updateKinematics()` already executes a kinematics graph without the
+  default rigid-body integration stage, and the current dartpy module exposes
+  that operation through the experimental binding.
+- The C++ `WorldStepPipeline` can execute selected stages, while default
+  `World::step()` composes rigid-body integration followed by kinematics.
+- `dart/simulation/experimental/space/state_space.hpp` provides a bindable
+  value object for named state-vector metadata.
+- Native collision already has standalone world/query concepts with explicit
+  update and query operations; the experimental simulation API still needs a
+  public owner bridge before exposing those from dartpy.
+- The legacy DART 6-era dynamics API uses lazy forward-kinematics updates: many
+  transform getters compute on demand after position/velocity/acceleration
+  writes mark dirty caches. That gives safe fresh reads, but it also spreads
+  dirty-flag bookkeeping across frames, joints, body nodes, Jacobians, skeleton
+  caches, shape caches, and support caches.
 
 ## Layered API Shape
 
@@ -324,11 +325,15 @@ world.clear()
 
 `step(n=...)` is the Python common path for repeated stepping. The
 implementation may call the C++ step loop internally and should release the GIL
-when no Python callback is involved.
+when no Python callback is involved. DART 7 exposes `n`; DART 8 promotion
+should decide whether `count` or `steps` is clearer before freezing the
+official signature.
 
 Topology mutation remains design-mode only. Stepping and kinematics updates
-operate in simulation mode. Python should surface mode errors as clear Python
-exceptions.
+operate in simulation mode. Positive-count stepping may enter simulation mode
+after validation; zero-count stepping is a no-op. Python and C++ should share
+the same DART 8 lifecycle semantics so users do not learn different rules by
+language.
 
 ### Lifecycle And Finalization
 
@@ -445,15 +450,16 @@ public API exposes dirty flags.
 
 ## Public Object Model
 
-| Object       | Role                                                      | Initial Python shape                                                                     |
-| ------------ | --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `World`      | Owns simulation objects, time, frame count, and stepping. | Constructor, lifecycle methods, time properties, add methods, object collections.        |
-| `RigidBody`  | Single rigid object and frame handle.                     | Name, transform queries, pose properties once public C++ accessors exist.                |
-| `MultiBody`  | Articulated rigid-body system.                            | Name, counts, link and joint construction, link and joint collections.                   |
-| `Link`       | Body in a multibody kinematic tree.                       | Name, parent joint, frame transform queries.                                             |
-| `Joint`      | Connection between links.                                 | Name, type, axes, parent and child links; state access after public C++ accessors exist. |
-| `Frame`      | Spatial reference frame.                                  | Transform, translation, rotation, quaternion, parent-frame queries.                      |
-| `StateSpace` | Named flat-vector metadata.                               | Variables, dimensions, bounds, finalization, names.                                      |
+| Object        | Role                                                                  | Initial Python shape                                                                     |
+| ------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.        |
+| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform queries, pose properties once public C++ accessors exist.                |
+| `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                   |
+| `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                             |
+| `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links; state access after public C++ accessors exist. |
+| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint loop-closure handle once C++ owns solver behavior.                    |
+| `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                      |
+| `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                      |
 
 `MultiBody` is the DART 7 experimental name because it matches the C++ concept.
 An `Articulation` alias can be considered during later promotion if the stable
@@ -461,7 +467,9 @@ Python API needs a more robotics-oriented name. Until that decision is made,
 examples should teach `MultiBody` and make the relationship to links and joints
 obvious.
 
-Creation methods return objects owned by a world or by another public object:
+Creation methods return objects owned by a world or by another public object.
+This is a future target shape once fixed rigid bodies, link construction
+options, and collection owners are fully bound:
 
 ```python
 world = sx.World()
@@ -484,6 +492,11 @@ The public model should expose physics concepts, not storage entities:
 - a `RigidBody` owns a body frame and rigid-body properties;
 - a `Link` participates in a kinematic tree and owns or references a frame;
 - a `Joint` connects parent and child links and owns state/control dimensions;
+- a `LoopClosure` closes a spatial loop between two public frames, links, or
+  bodies without exposing solver rows or ECS components;
+- future joint couplers, gear constraints, and scalar multibody constraints
+  should use their own family or a broader multibody-constraint umbrella rather
+  than overloading `LoopClosure`;
 - future sensors attach to frames, rigid bodies, links, joints, or named
   selections through public handles;
 - future geometry APIs separate source geometry, physical/contact properties,
@@ -579,6 +592,57 @@ robot.joints.target_position = targets
 Until then, the design records this as an API goal rather than a binding of
 internal component fields.
 
+## Closed-Chain Structure
+
+Closed-chain mechanisms should be first-class API concepts, not workarounds
+that duplicate links, add fake tree edges, or expose internal constraint
+components. The tree structure of a `MultiBody` remains the owner for names,
+links, joints, state indexing, and articulated-body algorithms. Loop closures
+add graph edges on top of that tree.
+
+The eventual Python shape should use compact value objects and returned public
+handles. This is a target shape, not a DART 7 binding promise:
+
+```python
+closure = world.add_loop_closure(
+    "four_bar_closure",
+    frame_a=ground_frame,
+    frame_b=coupler,
+    transform=sx.Transform.identity(),
+    enabled=True,
+    projection=sx.LoopProjectionPolicy.KINEMATIC,
+)
+```
+
+The exact names can change before promotion, but the API should distinguish:
+
+- symmetric closure endpoints from tree parent/child relationships;
+- closure topology from runtime participation policy;
+- kinematic projection, residual-only diagnostics, and full dynamic constraint
+  solving as selectable runtime behavior;
+- spatial closure families such as rigid, point, distance, and axis closures;
+- public tolerance, stabilization, enable/disable, and diagnostic fields
+  without exposing backend solver rows.
+
+Closed-chain APIs must define how closures affect DOF counts, state-space
+metadata, serialization, collision filtering, handle validity, and residual
+reporting. `MultiBody.num_dofs` should continue to mean the underlying tree
+coordinate dimension; closures add residual rows, active flags, tolerances,
+convergence status, and force/impulse diagnostics. A kinematics-only pipeline
+should state whether it projects closure errors, reports residuals only, or
+requires an explicit projection stage. Dynamic closure behavior belongs to a
+named constraint or implicit-dynamics stage, not to ordinary frame-cache
+refresh.
+
+Existing engine APIs point to the same broad shape. MuJoCo models loop joints
+as equality constraints such as connect and weld constraints outside the
+kinematic tree; Drake exposes named multibody constraints and locks topology at
+finalization; Project Chrono exposes link handles with relative-motion and
+diagnostic concepts; Bullet exposes generic typed constraints between rigid
+bodies. DART should keep the pattern of explicit closure handles and
+diagnostics, but use DART-owned names and value objects for the public Python
+API. See the companion C++ design for source links and lower-level constraints.
+
 ## Programmatic Construction
 
 The Python construction API should use compact value objects or keyword
@@ -627,6 +691,7 @@ Configuration should use validated value objects for stable concepts and
 keyword shortcuts for the common path. Examples:
 
 ```python
+# Future target shape; DART 7 currently accepts World(time_step=...).
 world = sx.World(
     sx.WorldOptions(
         time_step=0.001,
