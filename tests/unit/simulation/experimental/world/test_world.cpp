@@ -289,6 +289,34 @@ TEST(World, RigidBodyLookupByName)
   EXPECT_FALSE(world.getRigidBody("missing").has_value());
 }
 
+// Test that rigid bodies can be driven kinematically through the public
+// transform API and that attached frames observe fresh transforms immediately.
+TEST(World, RigidBodySetTransformRefreshesAttachedFrames)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto body = world.addRigidBody("body");
+
+  Eigen::Isometry3d sensorOffset = Eigen::Isometry3d::Identity();
+  sensorOffset.translate(Eigen::Vector3d(0.0, 1.0, 0.0));
+  auto sensor = world.addFixedFrame("sensor", body, sensorOffset);
+
+  world.enterSimulationMode();
+
+  Eigen::Isometry3d drivenPose = Eigen::Isometry3d::Identity();
+  drivenPose.translate(Eigen::Vector3d(4.0, 0.0, 0.0));
+  body.setTransform(drivenPose);
+
+  EXPECT_TRUE(body.getTransform().isApprox(drivenPose));
+  EXPECT_TRUE(sensor.getTransform().isApprox(drivenPose * sensorOffset));
+
+  world.step();
+
+  EXPECT_TRUE(body.getTransform().isApprox(drivenPose));
+  EXPECT_TRUE(sensor.getTransform().isApprox(drivenPose * sensorOffset));
+}
+
 // Test that simulation operations require simulation mode
 TEST(World, UpdateKinematicsRequiresSimulationMode)
 {

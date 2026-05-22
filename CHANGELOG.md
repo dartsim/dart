@@ -452,6 +452,8 @@
     local transform changes.
   - Added experimental rigid-body lookup by name in C++ and dartpy so users can
     retrieve first-class `RigidBody` handles without touching ECS storage.
+  - Added experimental rigid-body transform setters in C++ and dartpy for
+    kinematics-only pose updates through the public `RigidBody` facade.
   - Fixed experimental Taskflow executor paths to propagate compute-node
     exceptions instead of reporting graph execution success after failed tasks.
   - Fixed experimental compute profiling and rigid-body stepping edge cases for

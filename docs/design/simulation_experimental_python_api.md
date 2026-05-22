@@ -143,6 +143,20 @@ to define a closed-chain topology once, then choose whether a pipeline reports
 residuals, projects kinematic state, or participates in dynamic constraint
 solving without rebuilding the topology.
 
+### Constraint Semantics Before Solver Mechanics
+
+Python users should see semantic DART names first: loop closures, rigid
+closures, point or distance closures, joint couplers, gear constraints, contact
+queries, and limits. Solver options should use algorithm or approach names such
+as position projection, velocity projection, Baumgarte stabilization,
+compliance, damping, tolerance, maximum iterations, range-space solve,
+null-space projection, or sequential impulse.
+
+The Python API should not expose engine-named solvers or backend-named
+constraint families. Model importers and diagnostics can mention source
+formats or internal backends, but stable user code should configure physics
+intent and algorithm family through DART-owned value objects.
+
 ### Fresh Results Without Dirty-Flag API
 
 The long-term API should not make users manually reason about dirty flags.
@@ -216,6 +230,10 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
   storage, scheduler, backend, or component internals.
 - `dart/simulation/experimental/world.hpp` already has world lifecycle,
   stepping, frame, multibody, rigid-body, and compute-executor hooks.
+- The implemented DART 7 `MultiBody`, `Link`, and `Joint` binding is currently
+  tree-shaped. `LoopClosure`, closure residual diagnostics, kinematic closure
+  projection, and dynamic closure solving remain design targets rather than
+  implemented public Python APIs.
 - `World::updateKinematics()` already executes a kinematics graph without the
   default rigid-body integration stage, and the current dartpy module exposes
   that operation through the experimental binding.
@@ -267,7 +285,7 @@ The matching C++ surface remains opt-in under
 move into the official stable simulation namespace while the DART 6-era C++
 simulation surface is removed.
 
-The intended public symbols are:
+The intended DART 8 public symbols are:
 
 ```text
 dartpy.simulation_experimental
@@ -279,6 +297,11 @@ dartpy.simulation_experimental
   Joint
   JointType
   JointSpec
+  LoopClosure
+  LoopClosureFamily
+  LoopClosureRuntimePolicy
+  ClosureKinematicsPolicy
+  ClosureDynamicsPolicy
   Frame
   FreeFrame
   FixedFrame
@@ -479,7 +502,7 @@ public API exposes dirty flags.
 | Object        | Role                                                                  | Initial Python shape                                                                     |
 | ------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.        |
-| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform queries, pose properties once public C++ accessors exist.                |
+| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform reads/writes, and broader pose properties as C++ accessors mature.       |
 | `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                   |
 | `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                             |
 | `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links; state access after public C++ accessors exist. |
@@ -626,6 +649,10 @@ components. The tree structure of a `MultiBody` remains the owner for names,
 links, joints, state indexing, and articulated-body algorithms. Loop closures
 add graph edges on top of that tree.
 
+DART 7 currently exposes tree-shaped `MultiBody` topology only. `LoopClosure`
+and constrained kinematic/dynamic execution are DART 8 target concepts to stage
+behind the experimental module before promotion.
+
 The eventual Python shape should use compact value objects and returned public
 handles. This is a target shape, not a DART 7 binding promise:
 
@@ -648,6 +675,14 @@ closure.runtime_policy = sx.LoopClosureRuntimePolicy(
     kinematics=sx.ClosureKinematicsPolicy.PROJECT,
     dynamics=sx.ClosureDynamicsPolicy.SOLVE,
 )
+```
+
+The minimal world-owned construction surface should be:
+
+```python
+closure = world.add_loop_closure("four_bar_closure", spec)
+closure = world.get_loop_closure("four_bar_closure")
+count = world.num_loop_closures
 ```
 
 The exact names can change before promotion, but the API should distinguish:
@@ -681,20 +716,23 @@ projects closure errors, reports residuals only, or requires an explicit
 projection stage. Dynamic closure behavior belongs to a named constraint or
 implicit-dynamics stage, not to ordinary frame-cache refresh.
 
-Existing engine APIs point to the same broad shape. MuJoCo models loop joints
-as equality constraints such as connect and weld constraints outside the
-kinematic tree; Drake exposes named spatial constraints and separate coupler
-constraints with topology locked at finalization; Project Chrono exposes link
-handles with relative-motion, enable/disable, and diagnostic concepts; Bullet
-exposes generic typed constraints between rigid bodies. DART should keep the
-pattern of explicit closure handles, runtime activation, and diagnostics, but
-use DART-owned names and value objects for the public Python API. See the
-companion C++ design for source links and lower-level constraints.
+Existing engine APIs point to the same broad shape:
 
-For Python, the user-facing lesson is that `add_loop_closure(...)` should look
-like normal object construction, while lower-level residual rows, solver
-backend data, and maximal-coordinate implementation choices stay behind the
-C++ facade.
+| Engine/API pattern     | Python-facing lesson                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| MuJoCo equality models | Keep loop closures outside the tree as named residuals, with closure forces available only when solved.       |
+| Drake multibody plant  | Use named spatial constraints and make them reusable by kinematics-only optimization/projection workflows.    |
+| PhysX articulations    | Preserve tree articulations and close loops with constraints, while documenting approximation limits.         |
+| Isaac Sim rigging      | Importers may cut a closed CAD loop and add couplers, but user code should see closures and couplers.         |
+| Gazebo/SDFormat graphs | Graph model formats need explicit runtime validation, cut-joint, and residual policy in the API.              |
+| PyBullet facade        | A stable Python facade can hide engine replacement, but DART should use typed objects instead of integer IDs. |
+| CoppeliaSim routines   | Kinematics-only loop solving should be first-class, separate from dynamic stepping.                           |
+
+The key Python lesson is that `add_loop_closure(...)` should look like normal
+object construction, while lower-level residual rows, solver backend data,
+integer constraint IDs, cut-joint heuristics, and maximal-coordinate
+implementation choices stay behind the C++ facade. The companion C++ design
+records the source links and lower-level engine constraints.
 
 ## Programmatic Construction
 

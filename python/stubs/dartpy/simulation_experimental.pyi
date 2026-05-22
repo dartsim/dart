@@ -313,6 +313,12 @@ class RigidBody(Frame):
     def get_name(self) -> str:
         ...
 
+    def setTransform(self, transform: ArrayLike) -> None:
+        ...
+
+    def set_transform(self, transform: ArrayLike) -> None:
+        ...
+
 
 class World:
     def __init__(self, time_step: float = 0.001) -> None:

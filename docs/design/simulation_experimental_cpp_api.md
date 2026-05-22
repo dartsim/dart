@@ -127,6 +127,20 @@ state, residual-only reporting, kinematic projection, and dynamic solving
 should be separate from topology so a closed-chain definition can stay stable
 while solver participation changes by pipeline stage.
 
+### Constraint Semantics Before Solver Mechanics
+
+Closed-chain, contact, limit, and coupling APIs should name the physical or
+kinematic relation first: rigid closure, point coincidence, distance closure,
+axis alignment, joint coupler, gear constraint, contact, or limit. Solver
+controls should use algorithmic terms such as position projection, velocity
+projection, Baumgarte stabilization, compliance, damping, tolerance, maximum
+iterations, range-space solve, null-space projection, or sequential impulse.
+
+The public API should not name a constraint or solver after another engine. A
+runtime may import a model format or choose an internal implementation inspired
+by an engine, paper, or backend, but users should configure DART concepts and
+algorithm families rather than implementation ancestry.
+
 ### Fresh Results Without Dirty-Flag API
 
 The long-term API should preserve the safety of DART 6 lazy evaluation without
@@ -209,6 +223,10 @@ the release roadmap.
   data: mass, inertia, pose, and velocity.
 - `Frame`, `FreeFrame`, `FixedFrame`, `MultiBody`, `Link`, and `Joint` provide
   first-class handle concepts over the experimental storage.
+- The implemented DART 7 `MultiBody`, `Link`, and `Joint` API is currently
+  tree-shaped. `LoopClosure`, closure residual diagnostics, kinematic closure
+  projection, and dynamic closure solving remain design targets rather than
+  implemented public APIs.
 - `World::getRegistry()` is a DART 7 implementation escape hatch for tests and
   internal bring-up. It is explicitly excluded from DART 8 promotion unless a
   later design creates a stable storage-inspection API.
@@ -281,7 +299,7 @@ promotion, but public examples should never require implementation folders.
 | Concept                | DART 7 experimental owner                                                            | DART 8 promotion target                                                                               |
 | ---------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
 | `World`                | Owns topology, time, frame count, stepping, serialization, and compute entry points. | Official simulation world.                                                                            |
-| `RigidBody`            | World-owned handle for a single rigid object and frame.                              | Public rigid body handle with pose, velocity, inertia, and force APIs once wrappers exist.            |
+| `RigidBody`            | World-owned handle for a single rigid object and frame.                              | Public rigid body handle with transform, velocity, inertia, and force APIs once wrappers exist.       |
 | `RigidBodyOptions`     | Public value object for mass, inertia, pose, and velocity initialization.            | Stable construction/configuration value object.                                                       |
 | `MultiBody`            | World-owned handle for articulated rigid-body topology.                              | Official articulated-body concept, with final naming chosen during promotion.                         |
 | `Link`                 | Body in a multibody kinematic tree and frame participant.                            | Public link handle.                                                                                   |
@@ -337,6 +355,10 @@ components. The initial tree of `MultiBody`, `Link`, and `Joint` remains useful
 for ownership, naming, state indexing, and articulated-body algorithms; closure
 edges add graph structure on top of that tree.
 
+DART 7 currently exposes tree-shaped `MultiBody` topology only. `LoopClosure`
+and constrained kinematic/dynamic execution are DART 8 target concepts to stage
+behind the experimental namespace before promotion.
+
 The future public C++ shape should be a DART-owned handle and spec, for
 example:
 
@@ -355,6 +377,16 @@ closure.setRuntimePolicy(sx::LoopClosureRuntimePolicy{
     .kinematics = sx::ClosureKinematicsPolicy::Project,
     .dynamics = sx::ClosureDynamicsPolicy::Solve,
 });
+```
+
+The minimal world-owned construction surface should be:
+
+```cpp
+sx::LoopClosure World::addLoopClosure(
+    std::string_view name, const sx::LoopClosureSpec& spec);
+std::optional<sx::LoopClosure> World::getLoopClosure(
+    std::string_view name) const;
+std::size_t World::getLoopClosureCount() const;
 ```
 
 The exact type names can change before promotion, but the public contract
@@ -412,34 +444,62 @@ and impulse fields should be absent or explicitly marked unavailable.
 The API should keep the useful lessons from existing engines without inheriting
 their public vocabulary:
 
-| Engine/API pattern      | Lesson for DART's public API                                                                                     |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| MuJoCo equality models  | Keep loop closures outside the kinematic tree as named residuals that can feed dynamics.                         |
-| Drake multibody plant   | Separate topology construction from finalization, and keep scalar couplers distinct from spatial closures.       |
-| Project Chrono links    | Return public constraint/link handles with relative-motion, enable/disable, and reaction diagnostics.            |
-| Bullet typed constraint | Support enable/disable, feedback, and solver policy without making a generic backend constraint the primary API. |
+| Engine/API pattern     | Lesson for DART's public API                                                                                         |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| MuJoCo equality models | Keep loop closures outside the kinematic tree as named residuals that can feed dynamics.                             |
+| Drake multibody plant  | Expose named constraints and IDs, and make the same model constraints usable by kinematics-only optimization paths.  |
+| PhysX articulations    | Preserve a reduced-coordinate tree and close loops with constraints, but document approximation and topology limits. |
+| Isaac Sim rigging      | Importers may need to cut a closed CAD loop and add mimic/coupling structure, but that should be importer policy.    |
+| Gazebo/SDFormat graphs | Model formats can express graph loops; runtime APIs still need explicit validation, cut-joint, and residual policy.  |
+| PyBullet facade        | A stable client API can hide physics/render engine replacement, but DART should expose typed closure concepts.       |
+| CoppeliaSim routines   | Kinematics-only loop solving should be first-class, separate from dynamic stepping.                                  |
 
 - MuJoCo models loop joints through equality constraints with residuals
   `r(q) = 0`, including connect and weld constraints outside the kinematic
-  tree. That supports the DART distinction between tree joints and explicit
-  closure residuals while keeping closure forces available to dynamics.
-  See
-  [MuJoCo computation: equality constraints](https://mujoco.readthedocs.io/en/stable/computation/index.html#equality).
-- Drake exposes named multibody constraints such as ball, distance, and coupler
-  constraints and locks topology at finalization. That supports design-mode
-  closure creation, explicit topology validation, and state/port sizing after
-  finalization. See
-  [Drake MultibodyPlant](https://drake.mit.edu/pydrake/pydrake.multibody.plant.html).
-- Project Chrono exposes link objects that constrain relative motion between
-  bodies and can report relative displacement and force-like diagnostics. That
-  supports public closure handles with diagnostic queries instead of anonymous
-  solver rows. See
-  [Project Chrono links](https://api.projectchrono.org/6.0.0/links.html).
-- Bullet exposes a generic typed-constraint base between rigid bodies with
-  enable flags, feedback, and solver-iteration overrides. That is useful
-  backend evidence, but DART should expose DART-owned closure families rather
-  than making a generic backend constraint object the primary API. See
-  [Bullet typed constraints](https://pybullet.org/Bullet/BulletFull/classbtTypedConstraint.html).
+  tree. The same documentation warns that using equality constraints as normal
+  tree joints is slower and less accurate. That supports the DART distinction
+  between tree joints and explicit closure residuals while keeping closure
+  forces available to dynamics. See
+  [MuJoCo computation: equality constraints](https://mujoco.readthedocs.io/en/stable/computation/index.html#equality)
+  and the
+  [MuJoCo XML equality reference](https://mujoco.readthedocs.io/en/stable/XMLreference.html#equality).
+- Drake exposes named multibody constraints such as ball, weld, distance, and
+  coupler constraints with stable IDs. Its inverse-kinematics API can add
+  supported plant constraints into a mathematical program, which supports
+  DART's goal that the same closure topology can serve kinematics-only
+  projection and full dynamics. See
+  [Drake MultibodyPlant](https://drake.mit.edu/pydrake/pydrake.multibody.plant.html)
+  and
+  [Drake inverse kinematics](https://drake.mit.edu/pydrake/pydrake.multibody.inverse_kinematics.html).
+- PhysX articulations are reduced-coordinate trees; loops are closed by adding
+  rigid-body joints between articulation links. PhysX also documents that
+  articulation topology changes require rebuilding scene data and that stiff
+  coupled constraints can fail to satisfy every constraint. That supports
+  explicit DART topology finalization and honest approximation diagnostics. See
+  [PhysX articulations](https://nvidia-omniverse.github.io/PhysX/physx/5.6.0/docs/Articulations.html).
+- Isaac Sim's closed-loop rigging guidance teaches users to break a closed
+  articulation chain and add mimic joints or other coupling. That supports DART
+  importers choosing cut joints while keeping the public API expressed as
+  closures and couplers. See
+  [Isaac Sim closed-loop rigging](https://docs.isaacsim.omniverse.nvidia.com/latest/robot_setup_tutorials/rig_closed_loop_structures.html).
+- Gazebo's four-bar tutorial states that URDF's tree structure cannot express
+  closed loops while SDFormat can because it is graph structured. SDFormat's
+  joint schema also exposes `must_be_loop_joint` to force a cut in the
+  multibody graph. That supports explicit DART graph validation and cut-policy
+  import diagnostics. See
+  [Gazebo kinematic loop tutorial](https://classic.gazebosim.org/tutorials?cat=&tut=kinematic_loop)
+  and
+  [SDFormat joint physics](https://sdformat.org/spec/1.11/joint/).
+- PyBullet's quickstart describes a Python facade over a C API intended to be
+  independent of the underlying physics and render engines. That supports
+  DART's stable facade principle, while DART should prefer typed closure
+  handles over generic integer constraint IDs. See
+  [PyBullet quickstart](https://github.com/bulletphysics/bullet3/blob/master/docs/pybullet_quickstart_guide/PyBulletQuickstartGuide.md.html).
+- CoppeliaSim's standalone kinematics routines support Jacobian-based
+  forward/inverse kinematics for mechanisms containing nested loops. That
+  supports a DART kinematics-only closure projection API independent of full
+  dynamic stepping. See
+  [Coppelia kinematics routines](https://manual.coppeliarobotics.com/en/coppeliaKinematicsRoutines.htm).
 
 ### Topology And Runtime Separation
 

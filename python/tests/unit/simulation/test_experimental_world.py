@@ -226,6 +226,15 @@ def test_experimental_world_common_path_properties_and_step_count():
     assert world.getRigidBody("box").name == "box"
     assert world.get_rigid_body("missing") is None
 
+    sensor = world.add_fixed_frame(
+        "box_sensor",
+        box,
+        offset=_translation_transform(0.0, 1.0, 0.0),
+    )
+    box.transform = _translation_transform(4.0, 5.0, 6.0)
+    assert box.translation.tolist() == pytest.approx([4.0, 5.0, 6.0])
+    assert sensor.translation.tolist() == pytest.approx([4.0, 6.0, 6.0])
+
     world.step(n=0)
     assert not world.is_simulation_mode
     assert world.time == pytest.approx(0.0)
@@ -236,7 +245,8 @@ def test_experimental_world_common_path_properties_and_step_count():
     assert world.is_simulation_mode
     assert world.time == pytest.approx(0.03)
     assert world.frame == 3
-    assert box.translation.tolist() == pytest.approx([1.03, 2.0, 3.0])
+    assert box.translation.tolist() == pytest.approx([4.03, 5.0, 6.0])
+    assert sensor.translation.tolist() == pytest.approx([4.03, 6.0, 6.0])
 
 
 def test_experimental_rigid_body_options_value_object():

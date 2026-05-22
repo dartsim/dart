@@ -32,8 +32,11 @@
 
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 
+#include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/world.hpp"
+
+#include <cmath>
 
 namespace dart::simulation::experimental {
 
@@ -59,6 +62,43 @@ const Eigen::Isometry3d& RigidBody::getLocalTransform() const
   const auto& props
       = m_world->getRegistry().get<comps::FreeFrameProperties>(m_entity);
   return props.localTransform;
+}
+
+//==============================================================================
+void RigidBody::setTransform(const Eigen::Isometry3d& transform)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !transform.matrix().allFinite(),
+      InvalidArgumentException,
+      "RigidBody transform must contain only finite values");
+
+  constexpr double tolerance = 1e-9;
+  const auto rotation = transform.rotation();
+  const double orthonormalError
+      = (rotation * rotation.transpose() - Eigen::Matrix3d::Identity())
+            .cwiseAbs()
+            .maxCoeff();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      orthonormalError > tolerance
+          || std::abs(rotation.determinant() - 1.0) > tolerance,
+      InvalidArgumentException,
+      "RigidBody transform rotation must be orthonormal");
+
+  auto& registry = getWorld()->getRegistry();
+  auto& freeFrame = registry.get<comps::FreeFrameProperties>(getEntity());
+  auto& rigidTransform = registry.get<comps::Transform>(getEntity());
+
+  const Eigen::Isometry3d parentTransform = getParentFrame().getTransform();
+  freeFrame.localTransform = parentTransform.inverse() * transform;
+
+  rigidTransform.position = transform.translation();
+  rigidTransform.orientation = Eigen::Quaterniond(transform.rotation());
+  rigidTransform.orientation.normalize();
+
+  markSubtreeTransformCacheDirty();
 }
 
 // getEntity() and isValid() inherited from Frame

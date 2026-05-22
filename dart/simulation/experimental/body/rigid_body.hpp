@@ -75,10 +75,16 @@ public:
   /// Get the rigid body's local transform relative to the world frame.
   [[nodiscard]] const Eigen::Isometry3d& getLocalTransform() const override;
 
+  /// Set the rigid body's world transform.
+  ///
+  /// This updates the public frame transform and the internal rigid-body
+  /// dynamics pose so kinematics-only reads and subsequent physics steps start
+  /// from the same pose.
+  void setTransform(const Eigen::Isometry3d& transform);
+
   // Note: getEntity(), getWorld(), isValid() inherited from Frame
 
   // TODO: Add methods for:
-  // - Getting/setting pose
   // - Getting/setting velocity
   // - Applying forces/torques
   // - Accessing collision shapes

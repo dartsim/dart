@@ -756,6 +756,18 @@ void defSimulationExperimentalModule(nb::module_& m)
 
   nb::class_<sim::RigidBody, sim::Frame>(m, "RigidBody")
       .def("getName", [](const sim::RigidBody& self) { return self.getName(); })
+      .def(
+          "setTransform",
+          [](sim::RigidBody& self, const nb::handle& transform) {
+            self.setTransform(toIsometry(transform));
+          },
+          nb::arg("transform"))
+      .def(
+          "set_transform",
+          [](sim::RigidBody& self, const nb::handle& transform) {
+            self.setTransform(toIsometry(transform));
+          },
+          nb::arg("transform"))
       .def_prop_ro(
           "name", [](const sim::RigidBody& self) { return self.getName(); })
       .def_prop_ro("translation", &sim::RigidBody::getTranslation)
@@ -765,7 +777,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](const sim::RigidBody& self) {
             return toWxyz(self.getQuaternion());
           })
-      .def_prop_ro("transform", &sim::RigidBody::getTransformMatrix)
+      .def_prop_rw(
+          "transform",
+          &sim::RigidBody::getTransformMatrix,
+          [](sim::RigidBody& self, const nb::handle& transform) {
+            self.setTransform(toIsometry(transform));
+          })
       .def("__repr__", [](const sim::RigidBody& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back("name", repr_string(self.getName()));
