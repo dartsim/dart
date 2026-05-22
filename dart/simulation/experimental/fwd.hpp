@@ -56,6 +56,7 @@ class WorldStepStage;
 struct FixedFrameOptions;
 struct FreeFrameOptions;
 struct JointOptions;
+struct JointSpec;
 struct LinkOptions;
 struct LoopClosureSpec;
 struct MultiBodyOptions;

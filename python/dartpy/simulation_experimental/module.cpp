@@ -70,13 +70,6 @@ namespace {
 
 namespace sim = dart::simulation::experimental;
 
-struct JointSpec
-{
-  std::string name;
-  sim::JointType type = sim::JointType::Revolute;
-  Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
-};
-
 Eigen::Quaterniond toQuaternionWxyz(const nb::handle& value)
 {
   const auto data = nb::cast<std::array<double, 4>>(value);
@@ -257,6 +250,19 @@ void validateFiniteVector(const Eigen::Vector3d& value, const char* fieldName)
       fieldName);
 }
 
+void validateJointSpecAxis(const Eigen::Vector3d& axis)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !axis.allFinite(),
+      sim::InvalidArgumentException,
+      "JointSpec.axis must contain only finite values");
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      axis.norm() <= 1e-9,
+      sim::InvalidArgumentException,
+      "JointSpec.axis must be non-zero");
+}
+
 void validateOrientation(const Eigen::Quaterniond& orientation)
 {
   const auto orientationNorm = orientation.norm();
@@ -283,17 +289,6 @@ void validateRigidBodyOptions(const sim::RigidBodyOptions& options)
   validateFiniteVector(options.linearVelocity, "linear_velocity");
   validateFiniteVector(options.angularVelocity, "angular_velocity");
   validateOrientation(options.orientation);
-}
-
-sim::LinkOptions makeLinkOptions(
-    const sim::Link& parent, const JointSpec& joint)
-{
-  return sim::LinkOptions{
-      .parentLink = parent,
-      .jointName = joint.name,
-      .jointType = joint.type,
-      .axis = joint.axis,
-  };
 }
 
 sim::LoopClosureSpec makeLoopClosureSpec(
@@ -401,31 +396,34 @@ void defSimulationExperimentalModule(nb::module_& m)
       .value("POINT", sim::LoopClosureFamily::Point)
       .value("DISTANCE", sim::LoopClosureFamily::Distance);
 
-  nb::class_<JointSpec>(m, "JointSpec")
+  nb::class_<sim::JointSpec>(m, "JointSpec")
       .def(
           nb::new_([](std::string name,
                       sim::JointType type,
                       const nb::handle& axis) {
-            JointSpec spec;
+            sim::JointSpec spec;
             spec.name = std::move(name);
             spec.type = type;
             if (!axis.is_none()) {
               spec.axis = toVector3(axis);
+              validateJointSpecAxis(spec.axis);
             }
             return spec;
           }),
           nb::arg("name") = "",
           nb::arg("type") = sim::JointType::Revolute,
           nb::arg("axis") = nb::none())
-      .def_rw("name", &JointSpec::name)
-      .def_rw("type", &JointSpec::type)
+      .def_rw("name", &sim::JointSpec::name)
+      .def_rw("type", &sim::JointSpec::type)
       .def_prop_rw(
           "axis",
-          [](const JointSpec& self) { return self.axis; },
-          [](JointSpec& self, const nb::handle& axis) {
-            self.axis = toVector3(axis);
+          [](const sim::JointSpec& self) { return self.axis; },
+          [](sim::JointSpec& self, const nb::handle& axis) {
+            auto value = toVector3(axis);
+            validateJointSpecAxis(value);
+            self.axis = value;
           })
-      .def("__repr__", [](const JointSpec& self) {
+      .def("__repr__", [](const sim::JointSpec& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back("name", repr_string(self.name));
         fields.emplace_back(
@@ -795,13 +793,13 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::MultiBody& self,
              const std::string& name,
              const sim::Link& parent,
-             const JointSpec& joint) {
-            return self.addLink(name, makeLinkOptions(parent, joint));
+             const sim::JointSpec& joint) {
+            return self.addLink(name, parent, joint);
           },
           nb::arg("name"),
           nb::kw_only(),
           nb::arg("parent"),
-          nb::arg("joint") = JointSpec{},
+          nb::arg("joint") = sim::JointSpec{},
           nb::keep_alive<0, 1>())
       .def(
           "get_link",

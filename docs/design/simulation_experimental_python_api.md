@@ -270,12 +270,13 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
 - `dart/simulation/experimental/world.hpp` already has world lifecycle,
   stepping, frame, multibody, rigid-body, and compute-executor hooks.
 - The implemented DART 7 `MultiBody`, `Link`, and `Joint` binding is currently
-  tree-shaped, with Python-style joint type, axis, parent/child, DOF count, and
-  generalized position/velocity access. `World` now exposes topology-only
-  `LoopClosure` handles with symmetric frame endpoints, semantic closure
-  families, offsets, lookup, validation, and serialization. Closure residual
-  diagnostics, kinematic projection, and dynamic closure solving remain staged
-  design targets.
+  tree-shaped, with Python-style `JointSpec` construction backed by the public
+  C++ value object, joint type, axis, parent/child, DOF count, and generalized
+  position/velocity access. `World` now exposes topology-only `LoopClosure`
+  handles with symmetric frame endpoints, semantic closure families, offsets,
+  lookup, validation, and serialization. Closure residual diagnostics,
+  kinematic projection, and dynamic closure solving remain staged design
+  targets.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and
@@ -355,9 +356,9 @@ dartpy.simulation_experimental
   StateSpace
 ```
 
-`JointSpec` is the Python-facing construction value object. It avoids exposing
-raw C++ link-option structures while still giving users a compact way to define
-a parent joint.
+`JointSpec` is the shared C++/Python construction value object. It avoids
+exposing raw link-option or component structures while still giving users a
+compact way to define a parent joint.
 
 Future submodules should be introduced only after their C++ owner APIs are
 stable enough to document. The expected grouping is:

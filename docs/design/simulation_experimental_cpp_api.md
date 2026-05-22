@@ -250,12 +250,12 @@ the release roadmap.
 - `Frame`, `FreeFrame`, `FixedFrame`, `MultiBody`, `Link`, and `Joint` provide
   first-class handle concepts over the experimental storage.
 - The implemented DART 7 `MultiBody`, `Link`, and `Joint` API is currently
-  tree-shaped, with public joint type, axis, parent/child, DOF count, and
-  generalized position/velocity access. `World` now owns topology-only
-  `LoopClosure` handles with symmetric frame endpoints, semantic closure
-  families, offsets, lookup, validation, and serialization. Closure residual
-  diagnostics, kinematic projection, and dynamic closure solving remain staged
-  design targets.
+  tree-shaped, with public `JointSpec` construction, joint type, axis,
+  parent/child, DOF count, and generalized position/velocity access. `World`
+  now owns topology-only `LoopClosure` handles with symmetric frame endpoints,
+  semantic closure families, offsets, lookup, validation, and serialization.
+  Closure residual diagnostics, kinematic projection, and dynamic closure
+  solving remain staged design targets.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and
@@ -658,7 +658,8 @@ fields:
   examples rely on it; users should not include component headers for joint
   enum values.
 - Link and joint construction should use public option/spec value objects, not
-  raw component structs.
+  raw component structs; `JointSpec` now covers the parent-joint construction
+  data shared by C++ and dartpy.
 - Rigid-body pose, velocity, mass, inertia, force, torque, collision shape, and
   material access should be added through public methods before examples use
   those concepts; transform, velocity, mass, inertia, force, and torque now
@@ -677,8 +678,9 @@ Public construction should use DART-owned value objects rather than exposing
 component structs. Examples include:
 
 - `RigidBodyOptions` for mass, inertia, pose, and velocity;
-- a future `JointSpec` or equivalent for joint type, axis, limits, and parent
-  relationship;
+- `JointSpec` for joint type and axis; future extensions should add joint
+  limits and other joint-specific construction data here rather than exposing
+  component storage;
 - future material/contact/geometry/appearance value objects that keep source
   geometry, physical/contact behavior, inertial data, and visualization data as
   separate concepts;

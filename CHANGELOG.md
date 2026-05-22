@@ -444,6 +444,9 @@
     dartpy 7, including `JointType`, `JointSpec`, `Link`, `Joint`, Python
     link/joint lookup, and design guidance for closed-chain topology as
     symmetric graph constraints over a tree-shaped multibody.
+  - Added public experimental C++ `JointSpec` construction and reused it in the
+    dartpy `JointSpec` binding, including finite, non-zero joint-axis
+    validation at the API boundary.
   - Added experimental joint DOF count, generalized position, and generalized
     velocity accessors in C++ and snake_case dartpy bindings.
   - Rejected invalid experimental `RigidBodyOptions` at the C++ and dartpy API

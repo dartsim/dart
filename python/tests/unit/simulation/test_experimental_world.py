@@ -503,6 +503,16 @@ def test_experimental_rigid_body_options_reject_invalid_values():
     with pytest.raises(Exception, match="angular_velocity must contain only finite"):
         options.angular_velocity = (0.0, math.inf, 0.0)
 
+    with pytest.raises(Exception, match="JointSpec.axis must be non-zero"):
+        sx.JointSpec(axis=(0.0, 0.0, 0.0))
+
+    with pytest.raises(Exception, match="JointSpec.axis must contain only finite"):
+        sx.JointSpec(axis=(math.nan, 0.0, 0.0))
+
+    joint_spec = sx.JointSpec()
+    with pytest.raises(Exception, match="JointSpec.axis must contain only finite"):
+        joint_spec.axis = (0.0, math.inf, 0.0)
+
     world = sx.World()
     with pytest.raises(Exception, match="mass must be positive and finite"):
         world.add_rigid_body("box", mass=math.inf)

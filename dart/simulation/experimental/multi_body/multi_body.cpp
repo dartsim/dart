@@ -278,6 +278,10 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   jointComp.type = toComponentJointType(options.jointType);
   jointComp.name = std::move(actualJointName);
 
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !options.axis.allFinite(),
+      InvalidArgumentException,
+      "Joint axis must contain only finite values");
   const double axisNorm = options.axis.norm();
   DART_EXPERIMENTAL_THROW_T_IF(
       axisNorm <= 1e-9,
@@ -307,6 +311,20 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   structure.joints.push_back(jointEntity);
 
   return Link(linkEntity, m_world);
+}
+
+//==============================================================================
+Link MultiBody::addLink(
+    std::string_view name, const Link& parentLink, const JointSpec& joint)
+{
+  return addLink(
+      name,
+      LinkOptions{
+          .parentLink = parentLink,
+          .jointName = joint.name,
+          .jointType = joint.type,
+          .axis = joint.axis,
+      });
 }
 
 } // namespace dart::simulation::experimental

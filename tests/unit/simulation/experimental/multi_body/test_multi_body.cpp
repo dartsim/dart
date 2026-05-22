@@ -34,7 +34,10 @@
 #include <dart/simulation/experimental/multi_body/multi_body.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
+
+#include <limits>
 
 // Test MultiBody creation with explicit name
 TEST(MultiBody, CreationWithName)
@@ -181,6 +184,63 @@ TEST(MultiBody, SimpleTwoLinkChain)
 
   EXPECT_EQ(robot.getLinkCount(), 2u);
   EXPECT_EQ(robot.getJointCount(), 1u);
+}
+
+// Test creating a link with the shared JointSpec construction value object
+TEST(MultiBody, JointSpecConstruction)
+{
+  namespace sim = dart::simulation::experimental;
+
+  sim::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  auto child = robot.addLink(
+      "forearm",
+      base,
+      sim::JointSpec{
+          .name = "elbow",
+          .type = sim::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitY()});
+
+  auto joint = child.getParentJoint();
+  EXPECT_TRUE(joint.isValid());
+  EXPECT_EQ(joint.getName(), "elbow");
+  EXPECT_EQ(joint.getType(), sim::JointType::Revolute);
+  EXPECT_TRUE(joint.getAxis().isApprox(Eigen::Vector3d::UnitY()));
+  EXPECT_EQ(robot.getLinkCount(), 2u);
+  EXPECT_EQ(robot.getJointCount(), 1u);
+  EXPECT_EQ(robot.getDOFCount(), 1u);
+}
+
+TEST(MultiBody, RejectsInvalidJointSpecAxis)
+{
+  namespace sim = dart::simulation::experimental;
+
+  sim::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  EXPECT_THROW(
+      robot.addLink(
+          "zero_axis",
+          base,
+          sim::JointSpec{
+              .name = "zero_axis_joint",
+              .type = sim::JointType::Revolute,
+              .axis = Eigen::Vector3d::Zero()}),
+      sim::InvalidArgumentException);
+
+  EXPECT_THROW(
+      robot.addLink(
+          "nan_axis",
+          base,
+          sim::JointSpec{
+              .name = "nan_axis_joint",
+              .type = sim::JointType::Revolute,
+              .axis = Eigen::Vector3d(
+                  std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0)}),
+      sim::InvalidArgumentException);
 }
 
 // Test creating a serial manipulator (typical robot arm)

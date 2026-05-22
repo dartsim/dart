@@ -47,6 +47,34 @@
 
 namespace dart::simulation::experimental {
 
+/// Joint construction value object.
+///
+/// JointSpec describes the public joint configuration used when connecting a
+/// child link to a parent link. It intentionally contains joint concepts only;
+/// the parent link remains part of the link-construction call so the same
+/// joint spec can be reused for multiple construction sites.
+///
+/// Usage:
+/// @code
+///   auto base = robot.addLink("base");
+///   auto forearm = robot.addLink("forearm", base, JointSpec{
+///       .name = "elbow",
+///       .type = JointType::Revolute,
+///       .axis = Eigen::Vector3d::UnitZ(),
+///   });
+/// @endcode
+struct JointSpec
+{
+  std::string name;                     ///< Name of connecting joint
+  JointType type = JointType::Revolute; ///< Type of joint
+  Eigen::Vector3d axis
+      = Eigen::Vector3d::UnitZ(); ///< Joint axis (rotation or translation)
+
+  // Future: Add more joint-specific parameters.
+  // Eigen::Vector3d axis2;  // For Universal, Planar
+  // double pitch;           // For Screw
+};
+
 /// Options for creating a link with parent joint
 ///
 /// Specifies how a link connects to its parent via a joint.
@@ -183,6 +211,23 @@ public:
   /// @return Link handle (use getParentJoint() to access the created joint)
   /// @throws InvalidArgumentException if in simulation mode or parent invalid
   Link addLink(std::string_view name, const LinkOptions& options);
+
+  /// Create a link with parent joint
+  ///
+  /// Creates a link and its parent joint atomically using a parent Link and
+  /// JointSpec. This is the preferred DART 7 experimental construction shape
+  /// because JointSpec can be shared by C++ and dartpy.
+  ///
+  /// @param name Link name (empty = auto-generate "link_NNN")
+  /// @param parentLink Parent link handle
+  /// @param joint JointSpec describing the parent joint
+  /// @return Link handle (use getParentJoint() to access the created joint)
+  /// @throws InvalidArgumentException if in simulation mode, parent invalid, or
+  /// joint parameters invalid
+  Link addLink(
+      std::string_view name,
+      const Link& parentLink,
+      const JointSpec& joint = {});
 
 private:
   entt::entity m_entity; ///< Entity ID in the registry
