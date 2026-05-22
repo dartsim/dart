@@ -15,7 +15,9 @@
   unordered native shape pair and type-aware shape parameters;
   `test_collision_sandbox_pair_registry` verifies registry coverage against the
   native narrow-phase support table and shape parameter factory behavior; and
-  `BroadPhaseDebugSnapshot` exposes copied AABB-tree topology for GUI overlays.
+  `BroadPhaseDebugSnapshot` exposes copied AABB-tree topology for GUI overlays;
+  `examples/collision_sandbox/run_headless_sweep.cmake` provides the current
+  CTest-gated representative pair, UI, and overlay screenshot smoke.
 
 ## Scope
 
@@ -82,7 +84,8 @@ code, examples, tests, this plan, and any needed onboarding notes.
      registry invariants.
    - Add a headless example smoke that renders deterministic pair and
      broad-phase overlay presets, writes screenshots, and verifies nonblank
-     geometry plus overlay-region contrast or sampled pixels.
+     geometry plus overlay-region contrast or sampled pixels. The current smoke
+     is `EXAMPLE_collision_sandbox_headless_sweep`.
    - Keep `pixi run lint`, `pixi run config`, focused native-collision tests,
      the Filament GUI example build, and the example smoke as the minimum local
      gate before completion.

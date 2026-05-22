@@ -9,8 +9,9 @@ Filament-backed `dart::gui` application path from
 `feature/filament-gui-full-execution`. It has a pair selector, type-aware shape
 parameter controls and pose controls for both objects, raw
 contact/manifold/result values in the panel, contact point/normal/depth
-rendering, AABB-tree/candidate-pair overlays, a `--pair` headless selector, and
-focused tests for the registry and broad-phase debug snapshot API.
+rendering, AABB-tree/candidate-pair overlays, a `--pair` headless selector, a
+CMake-driven headless screenshot sweep, and focused tests for the registry and
+broad-phase debug snapshot API.
 
 ## Current Branch
 
@@ -19,7 +20,9 @@ worktree should be clean after the checkpoint commit.
 
 ## Immediate Next Step
 
-Update the headless smoke to cover representative pair and overlay presets.
+Add spatial-order overlays for broad-phase implementations that expose ordering
+data, then decide whether collision filtering or broad-phase selection controls
+belong in the first completion pass.
 
 ## Context That Would Be Lost
 
@@ -29,6 +32,9 @@ Update the headless smoke to cover representative pair and overlay presets.
   screenshot output, pair selection, type-aware shape parameter controls,
   object posing, contact point/normal/depth rendering, and
   AABB-tree/candidate-pair overlays.
+- `examples/collision_sandbox/run_headless_sweep.cmake` drives the
+  deterministic smoke sweep for representative pair screenshots plus a wide UI
+  screenshot that keeps the Native Collision panel visible.
 - The pair registry lives in `examples/collision_sandbox/pair_registry.*` and
   is tested by `test_collision_sandbox_pair_registry`.
 - `BroadPhaseSnapshot` records only candidate pairs and object count;
@@ -48,6 +54,15 @@ sed -n '1,220p' docs/plans/037-native-collision-visual-verification.md
 sed -n '1,220p' docs/dev_tasks/native_collision_visual_verification/README.md
 ```
 
-Then continue Phase 2 in `examples/collision_sandbox` and
+Then continue the remaining PLAN-037 work in `examples/collision_sandbox` and
 keep any new collision or broad-phase API tests focused under
 `tests/unit/collision/`.
+
+To rerun the current visual smoke directly:
+
+```bash
+cmake \
+  -DDART_COLLISION_SANDBOX_EXECUTABLE=$PWD/build/default/cpp/Release/bin/collision_sandbox \
+  -DDART_COLLISION_SANDBOX_OUTPUT_DIR=/tmp/collision_sandbox_sweep \
+  -P examples/collision_sandbox/run_headless_sweep.cmake
+```

@@ -103,13 +103,13 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Extend the Filament-backed collision sandbox smoke coverage into
-  broader deterministic pair/overlay preset sweeps, and add spatial-order
-  overlays for broad phases that expose such ordering.
+- Next step: Add spatial-order overlays for broad phases that expose such
+  ordering, then decide whether collision filtering or broad-phase selection
+  controls belong in the first completion pass.
 - Gate: The completed example must build with Filament-backed `dart-gui`, pass
-  a headless screenshot smoke that proves nonblank geometry and overlays, cover
-  every supported native pair with explicit unsupported placeholders, and have
-  focused native-collision tests for any new broad-phase debug snapshot API.
+  `EXAMPLE_collision_sandbox_headless_sweep`, cover every supported native pair
+  with explicit unsupported placeholders, and have focused native-collision
+  tests for any new broad-phase debug snapshot API.
 
 ### PLAN-040: DART 7 Release Hardening
 

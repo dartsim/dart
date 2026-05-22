@@ -46,7 +46,6 @@
 #include <dart/dynamics/capsule_shape.hpp>
 #include <dart/dynamics/cylinder_shape.hpp>
 #include <dart/dynamics/frame.hpp>
-#include <dart/dynamics/line_segment_shape.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
 
@@ -259,10 +258,27 @@ void addLine(
   if (!from.allFinite() || !to.allFinite()) {
     return;
   }
+  if ((to - from).squaredNorm() < 1e-12) {
+    return;
+  }
+
+  const Eigen::Vector3d segment = to - from;
+  const double length = segment.norm();
+  if (!std::isfinite(length) || length < 1e-9) {
+    return;
+  }
+
+  const Eigen::Vector3d direction = segment / length;
+  const Eigen::Quaterniond rotation
+      = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(), direction);
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = rotation.toRotationMatrix();
+  tf.translation() = (from + to) * 0.5;
+
+  const double radius = std::clamp<double>(thickness * 0.003, 0.003, 0.02);
   auto frame = dynamics::SimpleFrame::createShared(
-      dynamics::Frame::World(), std::move(name));
-  frame->setShape(
-      std::make_shared<dynamics::LineSegmentShape>(from, to, thickness));
+      dynamics::Frame::World(), std::move(name), tf);
+  frame->setShape(std::make_shared<dynamics::CylinderShape>(radius, length));
   frame->getVisualAspect(true)->setRGBA(color);
   world->addSimpleFrame(frame);
 }

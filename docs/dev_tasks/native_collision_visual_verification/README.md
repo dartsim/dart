@@ -8,7 +8,7 @@
       pair-by-pair debugger.
 - [x] Phase 3: Add contact/manifold/depth visualization and raw-value panels.
 - [x] Phase 4: Add broad-phase debug snapshots and overlays.
-- [ ] Phase 5: Add deterministic headless visual smoke sweeps.
+- [x] Phase 5: Add deterministic headless visual smoke sweeps.
 
 ## Goal
 
@@ -57,13 +57,13 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
 
 ## Immediate Next Steps
 
-1. Expand the headless smoke into a deterministic sweep over representative
-   pair and broad-phase overlay presets.
-2. Add spatial-order overlays for broad-phase implementations that expose
+1. Add spatial-order overlays for broad-phase implementations that expose
    ordering data; AABB-tree boxes, tree edges, and candidate pairs are already
    covered.
-3. Consider whether collision filtering controls belong in the first completion
+2. Consider whether collision filtering controls belong in the first completion
    pass or should remain a follow-up.
+3. Decide whether the example should expose broad-phase selection or keep the
+   first pass focused on the current default broad-phase path.
 
 ## Completion Checklist
 
@@ -78,7 +78,7 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
       present when the selected broad phase uses it.
 - [x] Focused tests cover pair-registry invariants and any new broad-phase
       debug snapshot API.
-- [x] A headless smoke proves deterministic rendering of pair and broad-phase
-      overlays.
+- [x] A headless CTest-gated smoke sweep proves deterministic rendering of
+      representative pair, UI, and broad-phase overlay presets.
 - [ ] Durable lessons are promoted to the appropriate plan/onboarding docs and
       this folder is removed in the completion PR.
