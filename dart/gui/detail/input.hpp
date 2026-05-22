@@ -75,8 +75,6 @@ void updateImGuiMouseInput(
     int framebufferWidth,
     int framebufferHeight);
 
-bool isInsideStatusPanel(double cursorX, double cursorY, double guiScale);
-
 bool isSceneMouseInputCapturedByUi(bool showUi, const ImGuiIO& io);
 
 bool isDragModifierDown(GLFWwindow* window);

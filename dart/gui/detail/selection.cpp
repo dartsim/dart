@@ -588,15 +588,15 @@ void SelectionController::updateMouseSelection(
   if (window == nullptr) {
     return;
   }
+  (void)showUi;
+  (void)guiScale;
 
   double cursorX = 0.0;
   double cursorY = 0.0;
   glfwGetCursorPos(window, &cursorX, &cursorY);
   const bool isLeftMousePressed
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-  const bool cursorOverPanel
-      = uiCapturesMouse
-        || (showUi && isInsideStatusPanel(cursorX, cursorY, guiScale));
+  const bool cursorOverPanel = uiCapturesMouse;
   const PickRay cursorRay = makePerspectivePickRay(
       camera, cursorX, cursorY, framebufferWidth, framebufferHeight);
   const bool gizmoDragActive

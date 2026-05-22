@@ -11,6 +11,9 @@ shape. The panel keeps pair, shape-size, filtering, contact-limit, and
 broad-phase controls, while pose edits happen through the scene gizmos.
 When a contact query produces contact points, the colliding object visuals are
 rendered translucent so the point, normal, and depth overlays remain visible.
+Minimal name tags are enabled by default for contact, distance, AABB,
+broad-phase tree, candidate-pair, spatial-cell, and sweep-axis overlays; turn
+off `Name Tags` in the panel when the scene needs less annotation.
 
 Useful smoke command:
 

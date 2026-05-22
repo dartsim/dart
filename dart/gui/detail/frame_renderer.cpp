@@ -34,6 +34,8 @@
 #include <dart/gui/detail/render_context.hpp>
 #include <dart/gui/detail/screenshot.hpp>
 
+#include <dart/common/profile.hpp>
+
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
@@ -97,6 +99,7 @@ FrameRenderResult renderApplicationFrame(
     ViewerLifecycleState& lifecycle,
     ProfileAccumulator& profile)
 {
+  DART_PROFILE_SCOPED_N("renderApplicationFrame");
   const bool shouldCaptureScreenshot
       = shouldRequestScreenshot(options, lifecycle);
   const bool shouldCaptureFrame = shouldCaptureFrameOutput(options, lifecycle);
@@ -104,7 +107,11 @@ FrameRenderResult renderApplicationFrame(
       = shouldCaptureScreenshot || shouldCaptureFrame;
 
   const auto renderFrameStart = ProfileAccumulator::Clock::now();
-  const bool shouldRenderFrame = beginFilamentFrame(renderContext);
+  bool shouldRenderFrame = false;
+  {
+    DART_PROFILE_SCOPED_N("beginFilamentFrame");
+    shouldRenderFrame = beginFilamentFrame(renderContext);
+  }
   profile.beginFrameMs += elapsedMs(renderFrameStart);
   if (!shouldRenderFrame) {
     markFrameSkipped(lifecycle);
@@ -123,7 +130,10 @@ FrameRenderResult renderApplicationFrame(
   }
 
   const auto renderStart = ProfileAccumulator::Clock::now();
-  renderFilamentViews(renderContext, overlayView);
+  {
+    DART_PROFILE_SCOPED_N("renderFilamentViews");
+    renderFilamentViews(renderContext, overlayView);
+  }
   if (shouldCaptureRenderedFrame) {
     requestScreenshot(
         renderContext,

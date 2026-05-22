@@ -45,15 +45,138 @@
 
 #include <dart/collision/collision_result.hpp>
 
+#include <dart/common/profile.hpp>
+
 #include <imgui.h>
 
+#include <algorithm>
 #include <array>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include <cmath>
 #include <cstdint>
 
 namespace dart::gui::detail {
+namespace {
+
+constexpr std::size_t kMaxDebugLabels = 96u;
+constexpr double kPi = 3.14159265358979323846;
+
+std::optional<ImVec2> projectDebugLabel(
+    const dart::gui::OrbitCamera& camera,
+    const FrameViewport& viewport,
+    const Eigen::Vector3d& position)
+{
+  if (!position.allFinite() || viewport.width <= 0 || viewport.height <= 0) {
+    return std::nullopt;
+  }
+
+  const dart::gui::OrbitCameraBasis basis
+      = dart::gui::makeOrbitCameraBasis(camera);
+  const Eigen::Vector3d cameraSpace = position - basis.eye;
+  const double depth = cameraSpace.dot(basis.forward);
+  const dart::gui::PerspectiveProjection projection
+      = dart::gui::makePerspectiveProjection(
+          camera, viewport.width, viewport.height);
+  if (!std::isfinite(depth) || depth <= projection.nearPlane
+      || depth >= projection.farPlane) {
+    return std::nullopt;
+  }
+
+  const double verticalFovRadians = projection.verticalFovDegrees * kPi / 180.0;
+  const double halfHeight = std::tan(verticalFovRadians * 0.5) * depth;
+  const double halfWidth = halfHeight * projection.aspectRatio;
+  if (!std::isfinite(halfWidth) || !std::isfinite(halfHeight)
+      || halfWidth <= 1e-12 || halfHeight <= 1e-12) {
+    return std::nullopt;
+  }
+
+  const double ndcX = cameraSpace.dot(basis.right) / halfWidth;
+  const double ndcY = cameraSpace.dot(basis.up) / halfHeight;
+  if (!std::isfinite(ndcX) || !std::isfinite(ndcY) || ndcX < -1.0 || ndcX > 1.0
+      || ndcY < -1.0 || ndcY > 1.0) {
+    return std::nullopt;
+  }
+
+  return ImVec2(
+      static_cast<float>((ndcX + 1.0) * 0.5 * viewport.width),
+      static_cast<float>((1.0 - ndcY) * 0.5 * viewport.height));
+}
+
+ImU32 toImGuiColor(const Eigen::Vector4d& rgba, double alphaScale = 1.0)
+{
+  return ImGui::ColorConvertFloat4ToU32(ImVec4(
+      static_cast<float>(std::clamp(rgba.x(), 0.0, 1.0)),
+      static_cast<float>(std::clamp(rgba.y(), 0.0, 1.0)),
+      static_cast<float>(std::clamp(rgba.z(), 0.0, 1.0)),
+      static_cast<float>(std::clamp(rgba.w() * alphaScale, 0.0, 1.0))));
+}
+
+std::string compactDebugLabel(std::string text)
+{
+  constexpr std::size_t kMaxLabelLength = 32u;
+  if (text.size() <= kMaxLabelLength) {
+    return text;
+  }
+  text.resize(kMaxLabelLength - 3u);
+  text += "...";
+  return text;
+}
+
+void renderDebugLabels(
+    const std::vector<dart::gui::DebugLabelDescriptor>& labels,
+    const dart::gui::OrbitCamera& camera,
+    const FrameViewport& viewport,
+    double guiScale)
+{
+  if (labels.empty()) {
+    return;
+  }
+
+  auto* drawList = ImGui::GetBackgroundDrawList();
+  if (drawList == nullptr) {
+    return;
+  }
+
+  const float scale = static_cast<float>(std::max(0.5, guiScale));
+  const ImVec2 padding(4.0f * scale, 2.0f * scale);
+  const ImU32 background
+      = ImGui::ColorConvertFloat4ToU32(ImVec4(0.02f, 0.02f, 0.02f, 0.58f));
+  const ImU32 border
+      = ImGui::ColorConvertFloat4ToU32(ImVec4(0.95f, 0.95f, 0.95f, 0.20f));
+
+  std::size_t rendered = 0u;
+  for (const dart::gui::DebugLabelDescriptor& label : labels) {
+    if (rendered >= kMaxDebugLabels || label.text.empty()) {
+      break;
+    }
+
+    const std::optional<ImVec2> anchor
+        = projectDebugLabel(camera, viewport, label.position);
+    if (!anchor.has_value()) {
+      continue;
+    }
+
+    const std::string text = compactDebugLabel(label.text);
+    const ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
+    const ImVec2 textPos(
+        anchor->x + 6.0f * scale, anchor->y - textSize.y * 0.5f);
+    const ImVec2 rectMin(textPos.x - padding.x, textPos.y - padding.y);
+    const ImVec2 rectMax(
+        textPos.x + textSize.x + padding.x, textPos.y + textSize.y + padding.y);
+
+    drawList->AddCircleFilled(
+        *anchor, 2.5f * scale, toImGuiColor(label.rgba, 0.95));
+    drawList->AddRectFilled(rectMin, rectMax, background, 3.0f * scale);
+    drawList->AddRect(rectMin, rectMax, border, 3.0f * scale);
+    drawList->AddText(textPos, toImGuiColor(label.rgba), text.c_str());
+    ++rendered;
+  }
+}
+
+} // namespace
 
 void updateFrameUi(
     GLFWwindow* window,
@@ -75,6 +198,7 @@ void updateFrameUi(
     double guiScale,
     dart::gui::ProfileAccumulator& profile)
 {
+  DART_PROFILE_SCOPED_N("updateFrameUi");
   auto phaseStart = dart::gui::ProfileAccumulator::Clock::now();
   updateImGuiMouseInput(window, imguiIo, viewport.width, viewport.height);
   ImGui::NewFrame();
@@ -132,6 +256,10 @@ void updateFrameUi(
         debugOverlays);
   }
   renderApplicationPanels(panels, panelContext, guiScale);
+  if (dartScene.debugLabels) {
+    renderDebugLabels(
+        dartScene.debugLabels(), cameraController.camera, viewport, guiScale);
+  }
   ImGui::Render();
   updateImGuiOverlay(
       engine,

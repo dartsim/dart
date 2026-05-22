@@ -510,6 +510,9 @@
     collision sandbox, to use consistent no-shadow debug styling.
   - Updated Filament debug overlays so gizmos, contacts, AABB edges, and
     selection lines draw through solid scene geometry without writing depth.
+  - Made Filament ImGui panels movable after their initial placement, added
+    opt-out debug name tags for collision sandbox overlays, and annotated the
+    GUI render loop with built-in profiling scopes.
   - Wired the native DART backend as a full `CollisionDetector` implementation with distance queries, raycast, and expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere). The legacy `"experimental"` factory key remains as an alias for compatibility.
   - Fixed native capsule-box duplicate filtering to stay pair-local so accumulated collision results do not suppress new contacts in dense worlds.
   - Native collision: added MPR convex penetration and optional libccd parity tests/bench.

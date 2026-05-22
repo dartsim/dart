@@ -161,10 +161,29 @@ struct SandboxState
   bool showCandidatePairs = true;
   bool showSpatialHashCells = true;
   bool showSweepEndpoints = true;
+  bool showDebugLabels = true;
   bool filterPair = false;
   bool dirty = true;
   QuerySummary summary;
+  std::vector<gui::DebugLabelDescriptor> debugLabels;
 };
+
+void addDebugLabel(
+    SandboxState& state,
+    std::string text,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector4d& color)
+{
+  if (!position.allFinite() || text.empty()) {
+    return;
+  }
+
+  gui::DebugLabelDescriptor label;
+  label.text = std::move(text);
+  label.position = position;
+  label.rgba = color;
+  state.debugLabels.push_back(std::move(label));
+}
 
 const sandbox::PairCase& selectedPair(const SandboxState& state)
 {
@@ -456,6 +475,11 @@ void addSweepEndpointOverlay(
         Eigen::Vector3d(railMaxX, railY, railZ),
         railColor,
         1.0f);
+    addDebugLabel(
+        state,
+        std::string("Sweep ") + static_cast<char>('X' + axis),
+        Eigen::Vector3d(railMinX, railY, railZ),
+        railColor);
 
     for (const auto* endpoint : endpoints) {
       const double t = (endpoint->value - minValue) / span;
@@ -485,18 +509,30 @@ void addBroadPhaseOverlay(
     if (node.isLeaf()) {
       leafCentersByObjectId.emplace(node.objectId, node.tightAabb.center());
       if (state.showAabbs) {
+        const Eigen::Vector4d aabbColor = rgba(0.95, 0.62, 0.18);
         addAabbLines(
             state,
             "broadphase.leaf." + std::to_string(node.objectId),
             node.tightAabb,
-            rgba(0.95, 0.62, 0.18));
+            aabbColor);
+        addDebugLabel(
+            state,
+            "AABB " + std::to_string(node.objectId),
+            node.tightAabb.center(),
+            aabbColor);
       }
     } else if (state.showBvhNodes) {
+      const Eigen::Vector4d nodeColor = rgba(0.16, 0.36, 0.95);
       addAabbLines(
           state,
           "broadphase.internal." + std::to_string(node.nodeId),
           node.aabb,
-          rgba(0.16, 0.36, 0.95));
+          nodeColor);
+      addDebugLabel(
+          state,
+          "BVH " + std::to_string(node.nodeId),
+          node.aabb.center(),
+          nodeColor);
     }
   }
 
@@ -532,24 +568,36 @@ void addBroadPhaseOverlay(
       const auto second = leafCentersByObjectId.find(pair.second);
       if (first != leafCentersByObjectId.end()
           && second != leafCentersByObjectId.end()) {
+        const Eigen::Vector4d pairColor = rgba(0.95, 0.1, 0.85);
         addLine(
             state,
             "broadphase.candidate." + std::to_string(i),
             first->second,
             second->second,
-            rgba(0.95, 0.1, 0.85),
+            pairColor,
             2.5f);
+        addDebugLabel(
+            state,
+            "Pair " + std::to_string(i),
+            (first->second + second->second) * 0.5,
+            pairColor);
       }
     }
   }
 
   if (state.showSpatialHashCells && snapshot.hasSpatialHashCells) {
     for (std::size_t i = 0; i < snapshot.cells.size(); ++i) {
+      const Eigen::Vector4d cellColor = rgba(0.1, 0.85, 0.95);
       addAabbLines(
           state,
           "spatial_hash.cell." + std::to_string(i),
           snapshot.cells[i].aabb,
-          rgba(0.1, 0.85, 0.95));
+          cellColor);
+      addDebugLabel(
+          state,
+          "Cell " + std::to_string(i),
+          snapshot.cells[i].aabb.center(),
+          cellColor);
     }
   }
 
@@ -632,6 +680,7 @@ void rebuildScene(SandboxState& state)
 {
   attachObjectFrames(state);
   clearDebugFrames(state);
+  state.debugLabels.clear();
 
   const sandbox::PairCase& pair = selectedPair(state);
   state.summary = QuerySummary{};
@@ -686,6 +735,12 @@ void rebuildScene(SandboxState& state)
           contact.point,
           rgba(0.95, 0.12, 0.12),
           kContactMarkerRadius);
+      addDebugLabel(
+          state,
+          "Contact " + std::to_string(contact.manifoldIndex) + ":"
+              + std::to_string(contact.contactIndex),
+          contact.point,
+          rgba(0.95, 0.12, 0.12));
       if (contact.normal.squaredNorm() > 1e-12) {
         addLine(
             state,
@@ -712,6 +767,11 @@ void rebuildScene(SandboxState& state)
         distanceResult.pointOnObject2,
         rgba(0.1, 0.82, 0.92),
         2.5f);
+    addDebugLabel(
+        state,
+        "Distance",
+        (distanceResult.pointOnObject1 + distanceResult.pointOnObject2) * 0.5,
+        rgba(0.1, 0.82, 0.92));
     addPointMarker(
         state,
         "distance.point_a",
@@ -966,6 +1026,7 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
         "Spatial Hash Cells", state->showSpatialHashCells);
     state->dirty
         |= panelBuilder.checkbox("Sweep Endpoints", state->showSweepEndpoints);
+    panelBuilder.checkbox("Name Tags", state->showDebugLabels);
 
     panelBuilder.separator();
     const QuerySummary& summary = state->summary;
@@ -1053,6 +1114,10 @@ int main(int argc, char* argv[])
   options.camera = makeCamera();
   options.simulateWorld = false;
   options.gizmos = createObjectGizmos(state);
+  options.debugLabels = [state] {
+    return state->showDebugLabels ? state->debugLabels
+                                  : std::vector<gui::DebugLabelDescriptor>{};
+  };
   options.panels.push_back(createControlsPanel(state));
   options.preRender = [state] {
     if (state->dirty) {
