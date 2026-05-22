@@ -206,6 +206,9 @@ class Joint:
     name: str
     type: JointType
     axis: NDArray[np.float64]
+    num_dofs: int
+    position: NDArray[np.float64]
+    velocity: NDArray[np.float64]
     parent_link: Link
     child_link: Link
     is_valid: bool
@@ -217,6 +220,21 @@ class Joint:
         ...
 
     def get_axis(self) -> NDArray[np.float64]:
+        ...
+
+    def get_num_dofs(self) -> int:
+        ...
+
+    def get_position(self) -> NDArray[np.float64]:
+        ...
+
+    def set_position(self, position: ArrayLike) -> None:
+        ...
+
+    def get_velocity(self) -> NDArray[np.float64]:
+        ...
+
+    def set_velocity(self, velocity: ArrayLike) -> None:
         ...
 
     def get_parent_link(self) -> Link:

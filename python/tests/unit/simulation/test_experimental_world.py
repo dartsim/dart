@@ -125,6 +125,19 @@ def test_experimental_api_exposes_python_names_only():
             "applyTorque",
             "clearTorque",
         ),
+        sx.Joint: (
+            "getName",
+            "getType",
+            "getAxis",
+            "getDOFCount",
+            "getPosition",
+            "setPosition",
+            "getVelocity",
+            "setVelocity",
+            "getParentLink",
+            "getChildLink",
+            "isValid",
+        ),
         sx.World: (
             "addRigidBody",
             "getRigidBody",
@@ -229,6 +242,12 @@ def test_experimental_multibody_link_joint_common_path():
     assert joint.get_type() == sx.JointType.REVOLUTE
     assert joint.axis.tolist() == pytest.approx([0.0, 0.0, 1.0])
     assert joint.get_axis().tolist() == pytest.approx([0.0, 0.0, 1.0])
+    assert joint.num_dofs == 1
+    assert joint.get_num_dofs() == 1
+    assert joint.position.tolist() == pytest.approx([0.0])
+    assert joint.get_position().tolist() == pytest.approx([0.0])
+    assert joint.velocity.tolist() == pytest.approx([0.0])
+    assert joint.get_velocity().tolist() == pytest.approx([0.0])
     assert joint.parent_link.name == "base"
     assert joint.get_parent_link().name == "base"
     assert joint.child_link.name == "forearm"
@@ -236,9 +255,21 @@ def test_experimental_multibody_link_joint_common_path():
     assert arm.get_joint("elbow").child_link.name == "forearm"
     assert arm.get_joint("missing") is None
 
+    joint.set_position([0.25])
+    assert joint.position.tolist() == pytest.approx([0.25])
+    joint.position = np.asarray([0.5], dtype=float)
+    assert joint.get_position().tolist() == pytest.approx([0.5])
+
+    joint.set_velocity((-0.75,))
+    assert joint.velocity.tolist() == pytest.approx([-0.75])
+    joint.velocity = [1.25]
+    assert joint.get_velocity().tolist() == pytest.approx([1.25])
+
     world.step()
 
     assert world.is_simulation_mode
+    assert joint.position.tolist() == pytest.approx([0.5])
+    assert joint.velocity.tolist() == pytest.approx([1.25])
     assert forearm.translation.tolist() == pytest.approx([0.0, 0.0, 0.0])
 
 
@@ -493,6 +524,23 @@ def test_experimental_rigid_body_options_reject_invalid_values():
         body.torque = (0.0, math.inf, 0.0)
     with pytest.raises(Exception, match="RigidBody torque"):
         body.apply_torque((0.0, 0.0, math.nan))
+
+    arm = world.add_multi_body("arm")
+    base = arm.add_link("base")
+    link = arm.add_link("link", parent=base, joint=sx.JointSpec(name="joint"))
+    joint = link.parent_joint
+    with pytest.raises(Exception, match="Joint position dimension"):
+        joint.position = [0.0, 1.0]
+    with pytest.raises(Exception, match="Joint position"):
+        joint.set_position([math.inf])
+    with pytest.raises(Exception, match="Joint velocity dimension"):
+        joint.velocity = []
+    with pytest.raises(Exception, match="Joint velocity"):
+        joint.set_velocity([math.nan])
+    with pytest.raises(Exception):
+        joint.position = 0.0
+    with pytest.raises(Exception, match="1-D vector"):
+        joint.velocity = np.zeros((1, 1), dtype=float)
 
 
 def test_experimental_loop_closure_rejects_invalid_topology():

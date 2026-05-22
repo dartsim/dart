@@ -161,6 +161,37 @@ Eigen::Matrix4d toMatrix4(const nb::handle& value)
   return matrix;
 }
 
+Eigen::VectorXd toVectorX(const nb::handle& value)
+{
+  if (nb::isinstance<nb::ndarray<double>>(value)) {
+    const auto array = nb::cast<nb::ndarray<double>>(value);
+    if (array.ndim() != 1) {
+      throw nb::type_error("Expected a 1-D vector");
+    }
+
+    const auto length = static_cast<Eigen::Index>(array.shape(0));
+    const int64_t stride = array.stride_ptr() ? array.stride(0) : 1;
+    const double* base = array.data();
+
+    Eigen::VectorXd vector(length);
+    for (Eigen::Index i = 0; i < length; ++i) {
+      vector[i] = base[i * stride];
+    }
+    return vector;
+  }
+
+  if (nb::isinstance<nb::sequence>(value)) {
+    const auto sequence = nb::cast<nb::sequence>(value);
+    Eigen::VectorXd vector(static_cast<Eigen::Index>(nb::len(sequence)));
+    for (Eigen::Index i = 0; i < vector.size(); ++i) {
+      vector[i] = nb::cast<double>(sequence[static_cast<nb::ssize_t>(i)]);
+    }
+    return vector;
+  }
+
+  return nb::cast<Eigen::VectorXd>(value);
+}
+
 Eigen::Isometry3d toIsometry(const nb::handle& value)
 {
   Eigen::Matrix4d matrix;
@@ -570,6 +601,21 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](const sim::Joint& self) { return std::string(self.getName()); })
       .def("get_type", &sim::Joint::getType)
       .def("get_axis", &sim::Joint::getAxis)
+      .def("get_num_dofs", &sim::Joint::getDOFCount)
+      .def("get_position", &sim::Joint::getPosition)
+      .def(
+          "set_position",
+          [](sim::Joint& self, const nb::handle& position) {
+            self.setPosition(toVectorX(position));
+          },
+          nb::arg("position"))
+      .def("get_velocity", &sim::Joint::getVelocity)
+      .def(
+          "set_velocity",
+          [](sim::Joint& self, const nb::handle& velocity) {
+            self.setVelocity(toVectorX(velocity));
+          },
+          nb::arg("velocity"))
       .def("get_parent_link", &sim::Joint::getParentLink)
       .def("get_child_link", &sim::Joint::getChildLink)
       .def_prop_ro(
@@ -577,6 +623,19 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](const sim::Joint& self) { return std::string(self.getName()); })
       .def_prop_ro("type", &sim::Joint::getType)
       .def_prop_ro("axis", &sim::Joint::getAxis)
+      .def_prop_ro("num_dofs", &sim::Joint::getDOFCount)
+      .def_prop_rw(
+          "position",
+          &sim::Joint::getPosition,
+          [](sim::Joint& self, const nb::handle& position) {
+            self.setPosition(toVectorX(position));
+          })
+      .def_prop_rw(
+          "velocity",
+          &sim::Joint::getVelocity,
+          [](sim::Joint& self, const nb::handle& velocity) {
+            self.setVelocity(toVectorX(velocity));
+          })
       .def_prop_ro("parent_link", &sim::Joint::getParentLink)
       .def_prop_ro("child_link", &sim::Joint::getChildLink)
       .def_prop_ro("is_valid", &sim::Joint::isValid)

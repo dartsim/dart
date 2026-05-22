@@ -270,10 +270,12 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
 - `dart/simulation/experimental/world.hpp` already has world lifecycle,
   stepping, frame, multibody, rigid-body, and compute-executor hooks.
 - The implemented DART 7 `MultiBody`, `Link`, and `Joint` binding is currently
-  tree-shaped, and `World` now exposes topology-only `LoopClosure` handles with
-  symmetric frame endpoints, semantic closure families, offsets, lookup,
-  validation, and serialization. Closure residual diagnostics, kinematic
-  projection, and dynamic closure solving remain staged design targets.
+  tree-shaped, with Python-style joint type, axis, parent/child, DOF count, and
+  generalized position/velocity access. `World` now exposes topology-only
+  `LoopClosure` handles with symmetric frame endpoints, semantic closure
+  families, offsets, lookup, validation, and serialization. Closure residual
+  diagnostics, kinematic projection, and dynamic closure solving remain staged
+  design targets.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and
@@ -494,7 +496,7 @@ stage composition:
 
 ```python
 world.enter_simulation_mode()
-robot.joints.position = q
+joint.position = q
 world.update_kinematics()
 ```
 
@@ -528,7 +530,7 @@ The durable contract is more important than the exact name:
 Freshness is part of the user contract:
 
 ```python
-robot.joints.position = q
+joint.position = q
 tool_pose = robot.links["tool"].transform  # Fresh by default.
 ```
 
@@ -536,6 +538,9 @@ The API should define these rules:
 
 - state writes invalidate derived kinematics, collision, rendering, and sensor
   data as needed;
+- `joint.position` and `joint.velocity` are vector properties with length
+  `joint.num_dofs`; they expose state storage today, while closed-chain
+  projection and full joint-state-driven forward kinematics remain staged work;
 - ordinary object properties and query methods produce fresh results by
   default, even if that triggers internal synchronization;
 - bulk workloads can call `world.update_kinematics()` or a future
@@ -560,16 +565,16 @@ public API exposes dirty flags.
 
 ## Public Object Model
 
-| Object        | Role                                                                  | Initial Python shape                                                                                                           |
-| ------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.                                              |
-| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform, velocity, mass, inertia, force, and torque reads/writes, and broader dynamics properties as accessors mature. |
-| `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                                                         |
-| `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                                                   |
-| `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links; state access after public C++ accessors exist.                                       |
-| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint topology handle now; diagnostics and runtime solve policy remain staged work.                               |
-| `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                                                            |
-| `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                                                            |
+| Object        | Role                                                                  | Initial Python shape                                                                                                              |
+| ------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.                                                 |
+| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform, velocity, mass, inertia, force, and torque reads/writes, and broader dynamics properties as accessors mature.    |
+| `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                                                            |
+| `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                                                      |
+| `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links, DOF count, generalized position and velocity; broader state/control APIs remain staged. |
+| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint topology handle now; diagnostics and runtime solve policy remain staged work.                                  |
+| `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                                                               |
+| `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                                                               |
 
 `MultiBody` is the DART 7 experimental name because it matches the C++ concept.
 An `Articulation` alias can be considered during later promotion if the stable

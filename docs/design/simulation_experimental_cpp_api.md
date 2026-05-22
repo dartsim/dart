@@ -250,10 +250,12 @@ the release roadmap.
 - `Frame`, `FreeFrame`, `FixedFrame`, `MultiBody`, `Link`, and `Joint` provide
   first-class handle concepts over the experimental storage.
 - The implemented DART 7 `MultiBody`, `Link`, and `Joint` API is currently
-  tree-shaped, and `World` now owns topology-only `LoopClosure` handles with
-  symmetric frame endpoints, semantic closure families, offsets, lookup,
-  validation, and serialization. Closure residual diagnostics, kinematic
-  projection, and dynamic closure solving remain staged design targets.
+  tree-shaped, with public joint type, axis, parent/child, DOF count, and
+  generalized position/velocity access. `World` now owns topology-only
+  `LoopClosure` handles with symmetric frame endpoints, semantic closure
+  families, offsets, lookup, validation, and serialization. Closure residual
+  diagnostics, kinematic projection, and dynamic closure solving remain staged
+  design targets.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and
@@ -328,18 +330,18 @@ promotion, but public examples should never require implementation folders.
 
 ## Public Object Model
 
-| Concept                | DART 7 experimental owner                                                            | DART 8 promotion target                                                                                                               |
-| ---------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `World`                | Owns topology, time, frame count, stepping, serialization, and compute entry points. | Official simulation world.                                                                                                            |
-| `RigidBody`            | World-owned handle for a single rigid object and frame.                              | Public rigid body handle with transform, velocity, inertial, force, and torque APIs, plus geometry/material APIs once wrappers exist. |
-| `RigidBodyOptions`     | Public value object for mass, inertia, pose, and velocity initialization.            | Stable construction/configuration value object.                                                                                       |
-| `MultiBody`            | World-owned handle for articulated rigid-body topology.                              | Official articulated-body concept, with final naming chosen during promotion.                                                         |
-| `Link`                 | Body in a multibody kinematic tree and frame participant.                            | Public link handle.                                                                                                                   |
-| `Joint`                | Connection between links with type, axes, and parent/child access.                   | Public joint handle with state/control APIs once wrappers exist.                                                                      |
-| `LoopClosure`          | Explicit spatial closure between two public frames, links, or bodies.                | Public closed-chain handle with symmetric endpoints, diagnostics, and runtime solve policy separated.                                 |
-| `Frame`                | Spatial reference frame with transform queries.                                      | Stable frame concept for bodies, links, and user frames.                                                                              |
-| `StateSpace`           | Named flat-vector metadata independent of storage.                                   | Stable state metadata surface for optimization and control workflows.                                                                 |
-| Compute graph concepts | Experimental graph, executor, metadata, profile, and pipeline hooks.                 | Stable extension points only for backend-neutral concepts that pass benchmark and API-boundary gates.                                 |
+| Concept                | DART 7 experimental owner                                                                                            | DART 8 promotion target                                                                                                               |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `World`                | Owns topology, time, frame count, stepping, serialization, and compute entry points.                                 | Official simulation world.                                                                                                            |
+| `RigidBody`            | World-owned handle for a single rigid object and frame.                                                              | Public rigid body handle with transform, velocity, inertial, force, and torque APIs, plus geometry/material APIs once wrappers exist. |
+| `RigidBodyOptions`     | Public value object for mass, inertia, pose, and velocity initialization.                                            | Stable construction/configuration value object.                                                                                       |
+| `MultiBody`            | World-owned handle for articulated rigid-body topology.                                                              | Official articulated-body concept, with final naming chosen during promotion.                                                         |
+| `Link`                 | Body in a multibody kinematic tree and frame participant.                                                            | Public link handle.                                                                                                                   |
+| `Joint`                | Connection between links with type, axes, parent/child access, DOF count, and generalized position/velocity vectors. | Public joint handle with complete state/control, limits, transforms, and diagnostics once wrappers exist.                             |
+| `LoopClosure`          | Explicit spatial closure between two public frames, links, or bodies.                                                | Public closed-chain handle with symmetric endpoints, diagnostics, and runtime solve policy separated.                                 |
+| `Frame`                | Spatial reference frame with transform queries.                                                                      | Stable frame concept for bodies, links, and user frames.                                                                              |
+| `StateSpace`           | Named flat-vector metadata independent of storage.                                                                   | Stable state metadata surface for optimization and control workflows.                                                                 |
+| Compute graph concepts | Experimental graph, executor, metadata, profile, and pipeline hooks.                                                 | Stable extension points only for backend-neutral concepts that pass benchmark and API-boundary gates.                                 |
 
 The public API should use explicit C++ concepts even when the implementation
 stores data in ECS components. Component names are implementation details.
@@ -597,7 +599,7 @@ The public distinction should be pipeline intent, not a separate world type:
 
 ```cpp
 world.enterSimulationMode();
-robot.setPositions(q);
+joint.setPosition(q);
 world.updateKinematics();
 ```
 
@@ -627,6 +629,11 @@ backend-specific batch updates.
 The C++ public contract should be:
 
 - ordinary object queries return fresh values by default;
+- joint position writes invalidate affected kinematic outputs internally; users
+  do not observe dirty flags, cache bits, or registry versions;
+- the current DART 7 joint position/velocity wrappers expose state storage, but
+  they do not yet promise closed-chain projection or full joint-state-driven
+  forward kinematics until those solver stages are implemented;
 - `World::step()` and kinematics-only tick/sync methods guarantee freshness for
   the stage bundle they execute;
 - explicit synchronization methods remain available for controllers,
@@ -656,6 +663,9 @@ fields:
   material access should be added through public methods before examples use
   those concepts; transform, velocity, mass, inertia, force, and torque now
   have public wrappers.
+- Joint state, limits, effort/control commands, and transforms should be added
+  through public methods before examples use those concepts; joint DOF count
+  and generalized position/velocity now have public wrappers.
 - World state access should use public state views or explicit copy/write-back
   APIs, not direct registry mappers.
 - Public handles must document validity after `World::clear()`, entity removal,
