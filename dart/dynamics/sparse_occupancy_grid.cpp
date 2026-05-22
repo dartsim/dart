@@ -507,7 +507,7 @@ void SparseOccupancyGrid::insertPointCloud(
 
   for (const auto& [key, counts] : scanCells) {
     auto& logOdds = mLogOdds[key];
-    if (counts.freeUpdates > 0u) {
+    if (counts.freeUpdates > 0u && counts.occupiedUpdates == 0u) {
       logOdds = clamp(
           logOdds + mMissLogOdds * static_cast<double>(counts.freeUpdates),
           mMinLogOdds,

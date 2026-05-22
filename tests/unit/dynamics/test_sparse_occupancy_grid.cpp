@@ -56,12 +56,10 @@ TEST(SparseOccupancyGrid, ConstructionAndCoordinates)
 {
   EXPECT_THROW(SparseOccupancyGrid(0.0), common::InvalidArgumentException);
   EXPECT_THROW(SparseOccupancyGrid(-0.1), common::InvalidArgumentException);
-  EXPECT_THROW(
-      SparseOccupancyGrid(std::numeric_limits<double>::infinity()),
-      common::InvalidArgumentException);
-  EXPECT_THROW(
-      SparseOccupancyGrid(std::numeric_limits<double>::quiet_NaN()),
-      common::InvalidArgumentException);
+  const double inf = std::numeric_limits<double>::infinity();
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(SparseOccupancyGrid{inf}, common::InvalidArgumentException);
+  EXPECT_THROW(SparseOccupancyGrid{nan}, common::InvalidArgumentException);
 
   SparseOccupancyGrid grid(0.25);
   EXPECT_DOUBLE_EQ(grid.getResolution(), 0.25);
@@ -257,6 +255,28 @@ TEST(SparseOccupancyGrid, PointCloudAccumulatesRepeatedObservations)
       threadedGrid.getOccupancy(endpoint), serialGrid.getOccupancy(endpoint));
   EXPECT_DOUBLE_EQ(
       threadedGrid.getOccupancy(freePoint), serialGrid.getOccupancy(freePoint));
+}
+
+//==============================================================================
+TEST(SparseOccupancyGrid, PointCloudEndpointCellsWinOverFreeUpdates)
+{
+  const Eigen::Vector3d origin(0.05, 0.05, 0.05);
+  const Eigen::Vector3d nearEndpoint(0.35, 0.05, 0.05);
+  const Eigen::Vector3d farEndpoint(0.75, 0.05, 0.05);
+
+  SparseOccupancyGrid hitOnlyGrid(0.1);
+  const std::array<Eigen::Vector3d, 1> nearOnly{nearEndpoint};
+  hitOnlyGrid.insertPointCloud(nearOnly, origin);
+
+  SparseOccupancyGrid mixedGrid(0.1);
+  const std::array<Eigen::Vector3d, 2> mixedPoints{nearEndpoint, farEndpoint};
+  mixedGrid.insertPointCloud(mixedPoints, origin);
+
+  EXPECT_DOUBLE_EQ(
+      mixedGrid.getOccupancy(nearEndpoint),
+      hitOnlyGrid.getOccupancy(nearEndpoint));
+  EXPECT_GT(mixedGrid.getOccupancy(farEndpoint), 0.5);
+  EXPECT_LT(mixedGrid.getOccupancy(Eigen::Vector3d(0.25, 0.05, 0.05)), 0.5);
 }
 
 //==============================================================================

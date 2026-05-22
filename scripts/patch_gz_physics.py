@@ -15,15 +15,22 @@ MIN_COMPATIBLE_VERSION = (6, 10)
 MAX_COMPATIBLE_VERSION = (7, 0)
 
 
-def parse_major_minor(version: str) -> tuple[int, int] | None:
+def parse_version(version: str) -> tuple[int, ...] | None:
     parts = version.split(".")
     if len(parts) < 2:
         return None
 
     try:
-        return int(parts[0]), int(parts[1])
+        return tuple(int(part) for part in parts)
     except ValueError:
         return None
+
+
+def compare_versions(lhs: tuple[int, ...], rhs: tuple[int, ...]) -> int:
+    width = max(len(lhs), len(rhs))
+    lhs_normalized = lhs + (0,) * (width - len(lhs))
+    rhs_normalized = rhs + (0,) * (width - len(rhs))
+    return (lhs_normalized > rhs_normalized) - (lhs_normalized < rhs_normalized)
 
 
 def validate_gz_physics_cmake(cmake_file: Path) -> bool:
@@ -35,7 +42,7 @@ def validate_gz_physics_cmake(cmake_file: Path) -> bool:
     content = cmake_file.read_text()
 
     dart_version_pattern = re.compile(
-        r"(gz_find_package\(\s*DART\b.*?\bVERSION\s+)(\d+\.\d+)(\b)",
+        r"(gz_find_package\(\s*DART\b.*?\bVERSION\s+)(\d+(?:\.\d+)+)(?=\s|\))",
         re.DOTALL,
     )
     match = dart_version_pattern.search(content)
@@ -47,7 +54,7 @@ def validate_gz_physics_cmake(cmake_file: Path) -> bool:
         return False
 
     current_version = match.group(2)
-    parsed_version = parse_major_minor(current_version)
+    parsed_version = parse_version(current_version)
     if parsed_version is None:
         print(
             f"Error: Unsupported DART VERSION {current_version} in {cmake_file}",
@@ -55,7 +62,7 @@ def validate_gz_physics_cmake(cmake_file: Path) -> bool:
         )
         return False
 
-    if parsed_version < MIN_COMPATIBLE_VERSION:
+    if compare_versions(parsed_version, MIN_COMPATIBLE_VERSION) < 0:
         print(
             "Error: gz-physics requires DART VERSION "
             f"{current_version}, below DART 7's compatibility floor",
@@ -63,7 +70,7 @@ def validate_gz_physics_cmake(cmake_file: Path) -> bool:
         )
         return False
 
-    if parsed_version > MAX_COMPATIBLE_VERSION:
+    if compare_versions(parsed_version, MAX_COMPATIBLE_VERSION) > 0:
         print(
             "Error: gz-physics requires DART VERSION "
             f"{current_version}, above the DART 7 package version",
