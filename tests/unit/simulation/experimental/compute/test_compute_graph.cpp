@@ -35,8 +35,8 @@
 #include <dart/simulation/experimental/compute/compute_graph_visualization.hpp>
 #include <dart/simulation/experimental/compute/compute_node.hpp>
 #include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
+#include <dart/simulation/experimental/compute/parallel_executor.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
-#include <dart/simulation/experimental/compute/taskflow_executor.hpp>
 
 #include <gtest/gtest.h>
 
@@ -355,7 +355,7 @@ TEST(ExperimentalSequentialExecutor, ProfilesNodeLoadAndParallelism)
 }
 
 //==============================================================================
-TEST(ExperimentalTaskflowExecutor, RespectsDependencies)
+TEST(ExperimentalParallelExecutor, RespectsDependencies)
 {
   compute::ComputeGraph graph;
   std::atomic<bool> ok{true};
@@ -388,7 +388,7 @@ TEST(ExperimentalTaskflowExecutor, RespectsDependencies)
   graph.addDependency(left, end);
   graph.addDependency(right, end);
 
-  compute::TaskflowExecutor executor(2);
+  compute::ParallelExecutor executor(2);
   executor.execute(graph);
 
   EXPECT_TRUE(ok.load());
@@ -397,29 +397,29 @@ TEST(ExperimentalTaskflowExecutor, RespectsDependencies)
 }
 
 //==============================================================================
-TEST(ExperimentalTaskflowExecutor, PropagatesNodeExceptions)
+TEST(ExperimentalParallelExecutor, PropagatesNodeExceptions)
 {
   compute::ComputeGraph graph;
   graph.addNode("throwing", []() { throw std::runtime_error("task failed"); });
 
-  compute::TaskflowExecutor executor(1);
+  compute::ParallelExecutor executor(1);
 
   EXPECT_THROW(executor.execute(graph), std::runtime_error);
 }
 
 //==============================================================================
-TEST(ExperimentalTaskflowExecutor, ProfiledPropagatesNodeExceptions)
+TEST(ExperimentalParallelExecutor, ProfiledPropagatesNodeExceptions)
 {
   compute::ComputeGraph graph;
   graph.addNode("throwing", []() { throw std::runtime_error("task failed"); });
 
-  compute::TaskflowExecutor executor(1);
+  compute::ParallelExecutor executor(1);
 
   EXPECT_THROW({ (void)executor.executeProfiled(graph); }, std::runtime_error);
 }
 
 //==============================================================================
-TEST(ExperimentalTaskflowExecutor, ProfileReportsObservedParallelism)
+TEST(ExperimentalParallelExecutor, ProfileReportsObservedParallelism)
 {
   using namespace std::chrono_literals;
 
@@ -451,7 +451,7 @@ TEST(ExperimentalTaskflowExecutor, ProfileReportsObservedParallelism)
   graph.addDependency(left, end);
   graph.addDependency(right, end);
 
-  compute::TaskflowExecutor executor(2);
+  compute::ParallelExecutor executor(2);
   auto profile = executor.executeProfiled(graph);
 
   ASSERT_EQ(profile.nodes.size(), 4u);

@@ -44,8 +44,8 @@ add_library(${target_name}
   compute/compute_node.cpp
   compute/compute_stage_metadata.cpp
   compute/execution_profile.cpp
+  compute/parallel_executor.cpp
   compute/sequential_executor.cpp
-  compute/taskflow_executor.cpp
   compute/world_kinematics_graph.cpp
   compute/world_step_stage.cpp
   constraint/loop_closure.cpp

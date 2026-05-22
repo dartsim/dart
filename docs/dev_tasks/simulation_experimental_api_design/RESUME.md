@@ -3,18 +3,22 @@
 ## Last Session Summary
 
 Work is continuing on `docs/simulation-api-design`, which is a pushed branch
-tracking `origin/docs/simulation-api-design`. The previous completed commit was
-`93bb43f6ae6` (`Tighten experimental dartpy property API`), which removed
-data-style getter/setter aliases from `dartpy.simulation_experimental`, added
-`Frame.relative_transform(...)`, updated stubs/docs/tests, and passed
-`pixi run lint`, focused experimental Python tests, and `pixi run test-py`.
+tracking `origin/docs/simulation-api-design`. The previous pushed base before
+the current executor-naming slice was `6ce3f83eb93` (`Guard unsupported loop
+closure runtime policies`).
 
-The latest completed slices bound `StateSpace` into
-`dartpy.simulation_experimental` and improved loop-closure ergonomics with
-optional auto-named construction plus direct runtime participation properties.
-The runtime also rejects active loop-closure projection/solve policies until
-compatible stages exist, while disabled closures may retain future policy
-metadata.
+Completed slices on this branch include:
+
+- `StateSpace` bound into `dartpy.simulation_experimental` as a Pythonic
+  metadata value object.
+- Data-like dartpy state tightened to Python properties without parallel
+  getter/setter aliases.
+- Loop-closure ergonomics improved with optional auto-naming and direct
+  `enabled`, `kinematics`, and `dynamics` runtime participation properties.
+- Unsupported active loop-closure projection/solve policies rejected until
+  compatible runtime stages exist.
+- `World::sync(WorldSyncStage::Kinematics)` / `world.sync(...)` added for
+  explicit kinematics-only work placement.
 
 ## Current Branch
 
@@ -23,9 +27,11 @@ metadata.
 
 ## Immediate Next Step
 
-Merge the latest `origin/main` into `docs/simulation-api-design`, push the
-current branch, and continue with the next narrow public API gap from the design
-docs.
+After the current `compute::ParallelExecutor` slice is committed and pushed,
+continue auditing the next narrow public API gap from the design docs. This
+slice replaces preferred Taskflow-branded executor usage with the
+backend-neutral `ParallelExecutor` name while keeping a DART 7 compatibility
+alias for existing `TaskflowExecutor` source users.
 
 ## Context That Would Be Lost
 
@@ -75,6 +81,22 @@ docs.
 - Existing lookup-style `get_*` methods such as `get_link`, `get_joint`,
   `get_multi_body`, `get_loop_closure`, and `get_rigid_body` remain allowed
   until collection views and uniqueness policy are designed.
+- Current compute-executor slice:
+  - Added `dart/simulation/experimental/compute/parallel_executor.hpp` and
+    `.cpp` with `compute::ParallelExecutor`.
+  - Converted `taskflow_executor.hpp` to a compatibility include/alias for
+    DART 7 source users.
+  - Updated docs, tests, benchmarks, forward declarations, CMake, and
+    changelog wording to prefer the backend-neutral public name.
+  - The Taskflow implementation dependency remains private to
+    `parallel_executor.cpp`.
+- Current compute-executor slice validation completed:
+  - `pixi run ninja -C build/default/cpp/Release test_compute_graph test_world`
+  - Focused CTest for `test_compute_graph` and `test_world`
+  - `pixi run lint`
+  - `pixi run build`
+  - `pixi run test-unit`
+  - `git diff --check`
 
 ## How To Resume
 
@@ -102,8 +124,7 @@ pixi run lint
 pixi run test-py
 ```
 
-Before pushing or continuing a new slice, merge the latest main branch into this
-branch:
+Before pushing a new slice, merge the latest main branch into this branch:
 
 ```bash
 git fetch origin main

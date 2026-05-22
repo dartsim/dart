@@ -32,39 +32,34 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/export.hpp>
+#include <dart/simulation/experimental/compute/compute_executor.hpp>
 
-namespace dart::simulation::experimental {
+#include <memory>
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class LoopClosure;
-class MultiBody;
-class RigidBody;
-class World;
-enum class WorldSyncStage;
+#include <cstddef>
 
-namespace compute {
-class ComputeExecutor;
-class ParallelExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
+namespace dart::simulation::experimental::compute {
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct JointSpec;
-struct LinkOptions;
-struct LoopClosureRuntimePolicy;
-struct LoopClosureResidual;
-struct LoopClosureSpec;
-struct MultiBodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
+/// Experimental executor that runs ready graph nodes in parallel.
+class DART_EXPERIMENTAL_API ParallelExecutor final : public ComputeExecutor
+{
+public:
+  explicit ParallelExecutor(std::size_t workerCount = 0);
+  ~ParallelExecutor() override;
 
-} // namespace dart::simulation::experimental
+  ParallelExecutor(const ParallelExecutor&) = delete;
+  ParallelExecutor& operator=(const ParallelExecutor&) = delete;
+  ParallelExecutor(ParallelExecutor&&) noexcept;
+  ParallelExecutor& operator=(ParallelExecutor&&) noexcept;
+
+  void execute(const ComputeGraph& graph) override;
+  [[nodiscard]] ComputeExecutionProfile executeProfiled(
+      const ComputeGraph& graph) override;
+  [[nodiscard]] std::size_t getWorkerCount() const override;
+
+private:
+  class Impl;
+  std::unique_ptr<Impl> m_impl;
+};
+
+} // namespace dart::simulation::experimental::compute

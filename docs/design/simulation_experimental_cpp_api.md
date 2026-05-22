@@ -626,7 +626,7 @@ When callers need predictable work placement or alternate execution policy,
 the same kinematics-only path accepts the backend-neutral executor facade:
 
 ```cpp
-compute::TaskflowExecutor executor;
+compute::ParallelExecutor executor;
 world.sync(sx::WorldSyncStage::Kinematics, executor);
 ```
 

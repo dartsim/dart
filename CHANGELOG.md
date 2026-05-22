@@ -432,7 +432,7 @@
 
 - Simulation
   - Added an experimental computation-graph substrate with sequential and
-    Taskflow executors, routed experimental `World::updateKinematics()` and
+    parallel executors, routed experimental `World::updateKinematics()` and
     `World::step()` through graph-backed rigid-body linear-force integration
     and kinematics stages, introduced the first swappable `WorldStepStage`
     contract and domain-neutral `WorldStepPipeline`, added stage metadata for
@@ -451,6 +451,9 @@
     and repeated `World::step(...)` calls so kinematics-only updates and
     multi-step simulation can reuse caller-owned backend-neutral execution
     policy.
+  - Added `compute::ParallelExecutor` as the preferred experimental C++
+    parallel compute-graph executor name, keeping the implementation backend
+    behind the public executor facade.
   - Added experimental C++ and dartpy `LoopClosureRuntimePolicy` metadata for
     closed-chain runtime intent, including residual-only, kinematic projection,
     and dynamic solving policy selections without exposing solver internals.
@@ -494,7 +497,7 @@
     so force-driven stepping no longer requires direct ECS component access.
   - Added topology-only experimental loop-closure APIs in C++ and dartpy for
     named closed-chain relations between public frames, links, and rigid bodies.
-  - Fixed experimental Taskflow executor paths to propagate compute-node
+  - Fixed experimental parallel executor paths to propagate compute-node
     exceptions instead of reporting graph execution success after failed tasks.
   - Fixed experimental compute profiling and rigid-body stepping edge cases for
     equal-timestamp profile events, reparented rigid bodies, and parented

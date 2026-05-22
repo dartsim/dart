@@ -37,8 +37,8 @@
 #include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/compute/compute_executor.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
+#include <dart/simulation/experimental/compute/parallel_executor.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
-#include <dart/simulation/experimental/compute/taskflow_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
@@ -844,7 +844,7 @@ TEST(World, StepRefreshesFrameHierarchy)
 }
 
 // Test that the experimental step path accepts alternate graph executors.
-TEST(World, StepAcceptsTaskflowExecutor)
+TEST(World, StepAcceptsParallelExecutor)
 {
   namespace sx = dart::simulation::experimental;
   namespace compute = dart::simulation::experimental::compute;
@@ -862,7 +862,7 @@ TEST(World, StepAcceptsTaskflowExecutor)
   updatedParentTransform.translate(Eigen::Vector3d(2.0, 0.0, 0.0));
   parent.setLocalTransform(updatedParentTransform);
 
-  compute::TaskflowExecutor executor(1);
+  compute::ParallelExecutor executor(1);
   world.step(executor);
 
   EXPECT_TRUE(
@@ -1168,8 +1168,8 @@ TEST(World, StepStoresReparentedRigidBodyPoseAsParentLocal)
 }
 
 // Test that rigid-body frame ancestry is represented in the integration graph
-// so Taskflow cannot run a child integration while its parent rigid body is
-// updating frame properties.
+// so a parallel executor cannot run a child integration while its parent rigid
+// body is updating frame properties.
 TEST(World, RigidBodyIntegrationStageOrdersRigidBodyFrameAncestry)
 {
   namespace sx = dart::simulation::experimental;
@@ -1216,8 +1216,8 @@ TEST(World, RigidBodyIntegrationStageOrdersRigidBodyFrameAncestry)
 }
 
 // Test that the rigid-body integration stage produces the same state through
-// sequential and Taskflow graph executors.
-TEST(World, RigidBodyStepTaskflowMatchesSequential)
+// sequential and parallel graph executors.
+TEST(World, RigidBodyStepParallelMatchesSequential)
 {
   namespace sx = dart::simulation::experimental;
   namespace compute = dart::simulation::experimental::compute;
@@ -1237,65 +1237,65 @@ TEST(World, RigidBodyStepTaskflowMatchesSequential)
   };
 
   sx::World sequentialWorld;
-  sx::World taskflowWorld;
+  sx::World parallelWorld;
   std::vector<sx::RigidBody> sequentialBodies;
-  std::vector<sx::RigidBody> taskflowBodies;
+  std::vector<sx::RigidBody> parallelBodies;
 
   for (int i = 0; i < 8; ++i) {
     sequentialBodies.push_back(addBody(sequentialWorld, i));
-    taskflowBodies.push_back(addBody(taskflowWorld, i));
+    parallelBodies.push_back(addBody(parallelWorld, i));
   }
 
   sequentialWorld.setTimeStep(0.01);
-  taskflowWorld.setTimeStep(0.01);
+  parallelWorld.setTimeStep(0.01);
   sequentialWorld.enterSimulationMode();
-  taskflowWorld.enterSimulationMode();
+  parallelWorld.enterSimulationMode();
 
-  compute::TaskflowExecutor executor(2);
+  compute::ParallelExecutor executor(2);
   for (int i = 0; i < 4; ++i) {
     sequentialWorld.step();
-    taskflowWorld.step(executor);
+    parallelWorld.step(executor);
   }
 
-  EXPECT_DOUBLE_EQ(sequentialWorld.getTime(), taskflowWorld.getTime());
-  EXPECT_EQ(sequentialWorld.getFrame(), taskflowWorld.getFrame());
+  EXPECT_DOUBLE_EQ(sequentialWorld.getTime(), parallelWorld.getTime());
+  EXPECT_EQ(sequentialWorld.getFrame(), parallelWorld.getFrame());
 
   constexpr double tolerance = 1e-10;
   for (std::size_t i = 0; i < sequentialBodies.size(); ++i) {
     const auto& sequentialTransform
         = sequentialWorld.getRegistry().get<sx::comps::Transform>(
             sequentialBodies[i].getEntity());
-    const auto& taskflowTransform
-        = taskflowWorld.getRegistry().get<sx::comps::Transform>(
-            taskflowBodies[i].getEntity());
+    const auto& parallelTransform
+        = parallelWorld.getRegistry().get<sx::comps::Transform>(
+            parallelBodies[i].getEntity());
     const auto& sequentialVelocity
         = sequentialWorld.getRegistry().get<sx::comps::Velocity>(
             sequentialBodies[i].getEntity());
-    const auto& taskflowVelocity
-        = taskflowWorld.getRegistry().get<sx::comps::Velocity>(
-            taskflowBodies[i].getEntity());
+    const auto& parallelVelocity
+        = parallelWorld.getRegistry().get<sx::comps::Velocity>(
+            parallelBodies[i].getEntity());
 
     EXPECT_TRUE(sequentialTransform.position.isApprox(
-        taskflowTransform.position, tolerance))
+        parallelTransform.position, tolerance))
         << "position diff: "
-        << (sequentialTransform.position - taskflowTransform.position).norm();
+        << (sequentialTransform.position - parallelTransform.position).norm();
     EXPECT_TRUE(sequentialTransform.orientation.isApprox(
-        taskflowTransform.orientation, tolerance))
+        parallelTransform.orientation, tolerance))
         << "orientation diff: "
         << (sequentialTransform.orientation.coeffs()
-            - taskflowTransform.orientation.coeffs())
+            - parallelTransform.orientation.coeffs())
                .norm();
     EXPECT_TRUE(
-        sequentialVelocity.linear.isApprox(taskflowVelocity.linear, tolerance))
+        sequentialVelocity.linear.isApprox(parallelVelocity.linear, tolerance))
         << "linear velocity diff: "
-        << (sequentialVelocity.linear - taskflowVelocity.linear).norm();
+        << (sequentialVelocity.linear - parallelVelocity.linear).norm();
     EXPECT_TRUE(sequentialVelocity.angular.isApprox(
-        taskflowVelocity.angular, tolerance))
+        parallelVelocity.angular, tolerance))
         << "angular velocity diff: "
-        << (sequentialVelocity.angular - taskflowVelocity.angular).norm();
+        << (sequentialVelocity.angular - parallelVelocity.angular).norm();
     EXPECT_TRUE(
         sequentialBodies[i].getTransform().isApprox(
-            taskflowBodies[i].getTransform(), tolerance));
+            parallelBodies[i].getTransform(), tolerance));
   }
 }
 
