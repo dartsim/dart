@@ -34,6 +34,7 @@
 
 #include <dart/gui/application.hpp>
 #include <dart/gui/debug.hpp>
+#include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -49,8 +50,6 @@
 #include <dart/dynamics/frame.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 #include <dart/dynamics/sphere_shape.hpp>
-
-#include <dart/math/constants.hpp>
 
 #include <Eigen/Geometry>
 
@@ -99,6 +98,10 @@ constexpr std::array<std::string_view, 3> kPairCoverageColumns{{
     "Mode",
 }};
 
+constexpr double kObjectGizmoSize = 0.65;
+constexpr double kContactMarkerRadius = 0.018;
+constexpr double kDistanceMarkerRadius = 0.04;
+
 Eigen::Vector4d rgba(double r, double g, double b, double a = 1.0)
 {
   return {r, g, b, a};
@@ -138,12 +141,13 @@ struct QuerySummary
 struct SandboxState
 {
   simulation::WorldPtr world = simulation::World::create("collision_sandbox");
+  dynamics::SimpleFramePtr objectAFrame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), "object_a");
+  dynamics::SimpleFramePtr objectBFrame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), "object_b");
+  std::vector<dynamics::SimpleFramePtr> debugFrames;
   std::size_t pairCaseIndex = 0;
   std::size_t broadPhaseIndex = 0;
-  std::array<double, 3> objectATranslation = {0.0, 0.0, 0.0};
-  std::array<double, 3> objectBTranslation = {0.55, 0.0, 0.0};
-  std::array<double, 3> objectARotation = {0.0, 0.0, 0.0};
-  std::array<double, 3> objectBRotation = {0.0, 0.0, 0.0};
   ShapeParameters objectAParams
       = sandbox::defaultShapeParameters(ShapeType::Sphere);
   ShapeParameters objectBParams
@@ -200,36 +204,21 @@ const BroadPhaseOption* findBroadPhaseOption(std::string_view id)
   return &*it;
 }
 
-Eigen::Isometry3d makeTransform(
-    const std::array<double, 3>& translation,
-    const std::array<double, 3>& rotationDegrees)
+void attachObjectFrames(SandboxState& state)
 {
-  const double roll = rotationDegrees[0] * dart::math::pi / 180.0;
-  const double pitch = rotationDegrees[1] * dart::math::pi / 180.0;
-  const double yaw = rotationDegrees[2] * dart::math::pi / 180.0;
-
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.linear() = (Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ())
-                 * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
-                 * Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()))
-                    .toRotationMatrix();
-  tf.translation()
-      = Eigen::Vector3d(translation[0], translation[1], translation[2]);
-  return tf;
-}
-
-void copyTranslation(std::array<double, 3>& out, const Eigen::Vector3d& in)
-{
-  out = {in.x(), in.y(), in.z()};
+  if (state.world->getSimpleFrame(state.objectAFrame->getName()) == nullptr) {
+    state.world->addSimpleFrame(state.objectAFrame);
+  }
+  if (state.world->getSimpleFrame(state.objectBFrame->getName()) == nullptr) {
+    state.world->addSimpleFrame(state.objectBFrame);
+  }
 }
 
 void resetPairControls(SandboxState& state)
 {
   const sandbox::PairPose pose = sandbox::defaultPairPose(selectedPair(state));
-  copyTranslation(state.objectATranslation, pose.transformA.translation());
-  copyTranslation(state.objectBTranslation, pose.transformB.translation());
-  state.objectARotation = {0.0, 0.0, 0.0};
-  state.objectBRotation = {0.0, 0.0, 0.0};
+  state.objectAFrame->setTransform(pose.transformA);
+  state.objectBFrame->setTransform(pose.transformB);
   state.objectAParams
       = sandbox::defaultShapeParameters(selectedPair(state).shapeA);
   state.objectBParams
@@ -244,6 +233,14 @@ std::string formatVec3(const Eigen::Vector3d& value)
   out << std::fixed << std::setprecision(3) << value.x() << " " << value.y()
       << " " << value.z();
   return out.str();
+}
+
+std::string formatFramePosition(const dynamics::SimpleFramePtr& frame)
+{
+  if (frame == nullptr) {
+    return "unavailable";
+  }
+  return formatVec3(frame->getWorldTransform().translation());
 }
 
 Eigen::Vector4d objectColor(
@@ -299,22 +296,8 @@ std::shared_ptr<dynamics::Shape> makeVisualShape(
   return std::make_shared<dynamics::SphereShape>(params.radius);
 }
 
-void addFrame(
-    const simulation::WorldPtr& world,
-    std::string name,
-    const std::shared_ptr<dynamics::Shape>& shape,
-    const Eigen::Isometry3d& transform,
-    const Eigen::Vector4d& color)
-{
-  auto frame = dynamics::SimpleFrame::createShared(
-      dynamics::Frame::World(), std::move(name), transform);
-  frame->setShape(shape);
-  frame->getVisualAspect(true)->setRGBA(color);
-  world->addSimpleFrame(frame);
-}
-
 void addLine(
-    const simulation::WorldPtr& world,
+    SandboxState& state,
     std::string name,
     const Eigen::Vector3d& from,
     const Eigen::Vector3d& to,
@@ -346,11 +329,12 @@ void addLine(
       dynamics::Frame::World(), std::move(name), tf);
   frame->setShape(std::make_shared<dynamics::CylinderShape>(radius, length));
   gui::applyDebugVisualStyle(*frame, color);
-  world->addSimpleFrame(frame);
+  state.world->addSimpleFrame(frame);
+  state.debugFrames.push_back(std::move(frame));
 }
 
 void addPointMarker(
-    const simulation::WorldPtr& world,
+    SandboxState& state,
     std::string name,
     const Eigen::Vector3d& point,
     const Eigen::Vector4d& color,
@@ -362,11 +346,12 @@ void addPointMarker(
       dynamics::Frame::World(), std::move(name), tf);
   frame->setShape(std::make_shared<dynamics::SphereShape>(radius));
   gui::applyDebugVisualStyle(*frame, color);
-  world->addSimpleFrame(frame);
+  state.world->addSimpleFrame(frame);
+  state.debugFrames.push_back(std::move(frame));
 }
 
 void addAabbLines(
-    const simulation::WorldPtr& world,
+    SandboxState& state,
     const std::string& prefix,
     const collision::Aabb& aabb,
     const Eigen::Vector4d& color)
@@ -402,7 +387,7 @@ void addAabbLines(
 
   for (std::size_t i = 0; i < edges.size(); ++i) {
     addLine(
-        world,
+        state,
         prefix + ".edge." + std::to_string(i),
         corners[edges[i].first],
         corners[edges[i].second],
@@ -426,8 +411,7 @@ Eigen::Vector4d sweepAxisColor(int axis, bool isMin)
 }
 
 void addSweepEndpointOverlay(
-    const simulation::WorldPtr& world,
-    const collision::BroadPhaseDebugSnapshot& snapshot)
+    SandboxState& state, const collision::BroadPhaseDebugSnapshot& snapshot)
 {
   if (!snapshot.hasSweepEndpoints || snapshot.endpoints.empty()) {
     return;
@@ -459,7 +443,7 @@ void addSweepEndpointOverlay(
     constexpr double railMaxX = 1.25;
     const Eigen::Vector4d railColor = sweepAxisColor(axis, true);
     addLine(
-        world,
+        state,
         "sweep.axis." + std::to_string(axis),
         Eigen::Vector3d(railMinX, railY, railZ),
         Eigen::Vector3d(railMaxX, railY, railZ),
@@ -470,7 +454,7 @@ void addSweepEndpointOverlay(
       const double t = (endpoint->value - minValue) / span;
       const double x = railMinX + t * (railMaxX - railMinX);
       addLine(
-          world,
+          state,
           "sweep.endpoint." + std::to_string(axis) + "."
               + std::to_string(endpoint->order),
           Eigen::Vector3d(x, railY, railZ - 0.065),
@@ -482,9 +466,7 @@ void addSweepEndpointOverlay(
 }
 
 void addBroadPhaseOverlay(
-    const simulation::WorldPtr& world,
-    const SandboxState& state,
-    const collision::BroadPhaseDebugSnapshot& snapshot)
+    SandboxState& state, const collision::BroadPhaseDebugSnapshot& snapshot)
 {
   std::unordered_map<std::size_t, Eigen::Vector3d> nodeCenters;
   std::unordered_map<std::size_t, Eigen::Vector3d> leafCentersByObjectId;
@@ -497,14 +479,14 @@ void addBroadPhaseOverlay(
       leafCentersByObjectId.emplace(node.objectId, node.tightAabb.center());
       if (state.showAabbs) {
         addAabbLines(
-            world,
+            state,
             "broadphase.leaf." + std::to_string(node.objectId),
             node.tightAabb,
             rgba(0.95, 0.62, 0.18));
       }
     } else if (state.showBvhNodes) {
       addAabbLines(
-          world,
+          state,
           "broadphase.internal." + std::to_string(node.nodeId),
           node.aabb,
           rgba(0.16, 0.36, 0.95));
@@ -524,7 +506,7 @@ void addBroadPhaseOverlay(
         const auto childCenter = nodeCenters.find(child);
         if (childCenter != nodeCenters.end()) {
           addLine(
-              world,
+              state,
               "broadphase.edge." + std::to_string(node.nodeId) + "."
                   + std::to_string(child),
               parentCenter->second,
@@ -544,7 +526,7 @@ void addBroadPhaseOverlay(
       if (first != leafCentersByObjectId.end()
           && second != leafCentersByObjectId.end()) {
         addLine(
-            world,
+            state,
             "broadphase.candidate." + std::to_string(i),
             first->second,
             second->second,
@@ -557,7 +539,7 @@ void addBroadPhaseOverlay(
   if (state.showSpatialHashCells && snapshot.hasSpatialHashCells) {
     for (std::size_t i = 0; i < snapshot.cells.size(); ++i) {
       addAabbLines(
-          world,
+          state,
           "spatial_hash.cell." + std::to_string(i),
           snapshot.cells[i].aabb,
           rgba(0.1, 0.85, 0.95));
@@ -565,8 +547,31 @@ void addBroadPhaseOverlay(
   }
 
   if (state.showSweepEndpoints) {
-    addSweepEndpointOverlay(world, snapshot);
+    addSweepEndpointOverlay(state, snapshot);
   }
+}
+
+void clearDebugFrames(SandboxState& state)
+{
+  for (const auto& frame : state.debugFrames) {
+    if (frame != nullptr) {
+      state.world->removeSimpleFrame(frame);
+    }
+  }
+  state.debugFrames.clear();
+}
+
+void updateObjectVisuals(SandboxState& state)
+{
+  const sandbox::PairCase& pair = selectedPair(state);
+  state.objectAFrame->setShape(
+      makeVisualShape(pair.shapeA, state.objectAParams));
+  state.objectBFrame->setShape(
+      makeVisualShape(pair.shapeB, state.objectBParams));
+  state.objectAFrame->getVisualAspect(true)->setRGBA(
+      objectColor(pair, true, state.summary.hit, state.summary.pairFiltered));
+  state.objectBFrame->getVisualAspect(true)->setRGBA(
+      objectColor(pair, false, state.summary.hit, state.summary.pairFiltered));
 }
 
 void summarizeContacts(
@@ -609,16 +614,15 @@ void summarizeBroadPhase(
 
 void rebuildScene(SandboxState& state)
 {
-  state.world->removeAllSimpleFrames();
+  attachObjectFrames(state);
+  clearDebugFrames(state);
 
   const sandbox::PairCase& pair = selectedPair(state);
   state.summary = QuerySummary{};
   state.summary.pair = &pair;
 
-  const Eigen::Isometry3d tfA
-      = makeTransform(state.objectATranslation, state.objectARotation);
-  const Eigen::Isometry3d tfB
-      = makeTransform(state.objectBTranslation, state.objectBRotation);
+  const Eigen::Isometry3d tfA = state.objectAFrame->getWorldTransform();
+  const Eigen::Isometry3d tfB = state.objectBFrame->getWorldTransform();
 
   collision::CollisionWorld nativeWorld(selectedBroadPhase(state).type);
   auto objA = nativeWorld.createObject(
@@ -653,18 +657,7 @@ void rebuildScene(SandboxState& state)
     state.summary.distance = distanceResult.distance;
   }
 
-  addFrame(
-      state.world,
-      "object_a",
-      makeVisualShape(pair.shapeA, state.objectAParams),
-      tfA,
-      objectColor(pair, true, state.summary.hit, state.summary.pairFiltered));
-  addFrame(
-      state.world,
-      "object_b",
-      makeVisualShape(pair.shapeB, state.objectBParams),
-      tfB,
-      objectColor(pair, false, state.summary.hit, state.summary.pairFiltered));
+  updateObjectVisuals(state);
 
   if (pair.supportsContact()) {
     for (const ContactRow& contact : state.summary.contacts) {
@@ -672,21 +665,21 @@ void rebuildScene(SandboxState& state)
                                  + std::to_string(contact.manifoldIndex) + ".c"
                                  + std::to_string(contact.contactIndex);
       addPointMarker(
-          state.world,
+          state,
           prefix + ".point",
           contact.point,
           rgba(0.95, 0.12, 0.12),
-          0.018);
+          kContactMarkerRadius);
       if (contact.normal.squaredNorm() > 1e-12) {
         addLine(
-            state.world,
+            state,
             prefix + ".normal",
             contact.point,
             contact.point + contact.normal.normalized() * 0.32,
             rgba(0.95, 0.9, 0.12),
             2.5f);
         addLine(
-            state.world,
+            state,
             prefix + ".depth",
             contact.point,
             contact.point
@@ -697,31 +690,31 @@ void rebuildScene(SandboxState& state)
     }
   } else if (distanceResult.isValid()) {
     addLine(
-        state.world,
+        state,
         "distance.segment",
         distanceResult.pointOnObject1,
         distanceResult.pointOnObject2,
         rgba(0.1, 0.82, 0.92),
         2.5f);
     addPointMarker(
-        state.world,
+        state,
         "distance.point_a",
         distanceResult.pointOnObject1,
         rgba(0.95, 0.82, 0.12),
-        0.04);
+        kDistanceMarkerRadius);
     addPointMarker(
-        state.world,
+        state,
         "distance.point_b",
         distanceResult.pointOnObject2,
         rgba(0.95, 0.82, 0.12),
-        0.04);
+        kDistanceMarkerRadius);
   }
 
   const collision::BroadPhaseDebugSnapshot broadPhase
       = nativeWorld.buildBroadPhaseDebugSnapshot();
   summarizeBroadPhase(state.summary, broadPhase);
   if (state.showBroadPhase) {
-    addBroadPhaseOverlay(state.world, state, broadPhase);
+    addBroadPhaseOverlay(state, broadPhase);
   }
 
   state.dirty = false;
@@ -756,20 +749,6 @@ bool parseExampleArgs(int argc, char* argv[], SandboxState& state)
     }
   }
   return true;
-}
-
-bool slider3(
-    gui::PanelBuilder& panel,
-    const char* prefix,
-    std::array<double, 3>& values,
-    double min,
-    double max)
-{
-  bool changed = false;
-  changed |= panel.slider(std::string(prefix) + " X", values[0], min, max);
-  changed |= panel.slider(std::string(prefix) + " Y", values[1], min, max);
-  changed |= panel.slider(std::string(prefix) + " Z", values[2], min, max);
-  return changed;
 }
 
 bool slider3(
@@ -823,6 +802,38 @@ bool shapeParameterControls(
   return changed;
 }
 
+std::vector<gui::Gizmo> createObjectGizmos(
+    const std::shared_ptr<SandboxState>& state)
+{
+  const auto makeGizmo = [state](
+                             std::string label,
+                             const dynamics::SimpleFramePtr& target,
+                             const gui::GizmoAxisColors& colors) {
+    gui::Gizmo gizmo;
+    gizmo.label = std::move(label);
+    gizmo.target = target;
+    gizmo.flags = gui::GizmoFlags::All;
+    gizmo.size = kObjectGizmoSize;
+    gizmo.colors = colors;
+    gizmo.onChanged = [state](const Eigen::Isometry3d&) {
+      state->dirty = true;
+    };
+    return gizmo;
+  };
+
+  gui::GizmoAxisColors colorsA;
+  colorsA.highlight = rgba(1.0, 0.82, 0.18);
+  gui::GizmoAxisColors colorsB;
+  colorsB.x = rgba(0.95, 0.22, 0.55);
+  colorsB.y = rgba(0.18, 0.75, 0.45);
+  colorsB.z = rgba(0.35, 0.55, 0.98);
+  colorsB.highlight = rgba(1.0, 0.82, 0.18);
+
+  return {
+      makeGizmo("Object A", state->objectAFrame, colorsA),
+      makeGizmo("Object B", state->objectBFrame, colorsB)};
+}
+
 gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
 {
   gui::Panel panel;
@@ -840,6 +851,7 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
     panelBuilder.text(
         "Support: " + std::string(sandbox::pairStatusDescription(pair.status)));
     panelBuilder.text("Path: " + std::string(pairCoverageMode(pair)));
+    panelBuilder.text("Left-drag object gizmo arrows, planes, and rings.");
     if (panelBuilder.button("Previous")) {
       state->pairCaseIndex
           = (state->pairCaseIndex + pairs.size() - 1) % pairs.size();
@@ -910,19 +922,13 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
 
     panelBuilder.separator();
     panelBuilder.text("Object A");
-    state->dirty |= slider3(
-        panelBuilder, "A Position", state->objectATranslation, -2.0, 2.0);
-    state->dirty |= slider3(
-        panelBuilder, "A Rotation", state->objectARotation, -180.0, 180.0);
+    panelBuilder.text("Position: " + formatFramePosition(state->objectAFrame));
     state->dirty |= shapeParameterControls(
         panelBuilder, "A", pair.shapeA, state->objectAParams);
 
     panelBuilder.separator();
     panelBuilder.text("Object B");
-    state->dirty |= slider3(
-        panelBuilder, "B Position", state->objectBTranslation, -2.0, 2.0);
-    state->dirty |= slider3(
-        panelBuilder, "B Rotation", state->objectBRotation, -180.0, 180.0);
+    panelBuilder.text("Position: " + formatFramePosition(state->objectBFrame));
     state->dirty |= shapeParameterControls(
         panelBuilder, "B", pair.shapeB, state->objectBParams);
     state->dirty
@@ -1018,9 +1024,11 @@ gui::OrbitCamera makeCamera()
 int main(int argc, char* argv[])
 {
   auto state = std::make_shared<SandboxState>();
+  resetPairControls(*state);
   if (!parseExampleArgs(argc, argv, *state)) {
     return 2;
   }
+  attachObjectFrames(*state);
   rebuildScene(*state);
 
   gui::ApplicationOptions options;
@@ -1028,6 +1036,7 @@ int main(int argc, char* argv[])
   options.runDefaults = makeRunDefaults();
   options.camera = makeCamera();
   options.simulateWorld = false;
+  options.gizmos = createObjectGizmos(state);
   options.panels.push_back(createControlsPanel(state));
   options.preRender = [state] {
     if (state->dirty) {

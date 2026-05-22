@@ -99,6 +99,9 @@ Persistent debug geometry attached to a `World` should call
 `dart::gui::applyDebugVisualStyle` rather than setting visual aspect color and
 shadow state ad hoc. Built-in `DebugLineDescriptor` renderables and
 world-backed debug `ShapeFrame`s should share the same no-shadow policy.
+Collision object posing should use public `dart::gui::Gizmo` handles so visual
+pair checks stay mouse-driven; keep ImGui panels for mode and parameter
+controls rather than as the primary transform editor.
 
 ## Migration Notes
 

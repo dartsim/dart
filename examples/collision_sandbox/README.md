@@ -6,6 +6,10 @@ broad-phase inspection.
 The pair coverage table lists every registered case and marks unsupported rows
 as placeholders.
 
+Left-drag object gizmo arrows, planes, and rings to translate or rotate each
+shape. The panel keeps pair, shape-size, filtering, contact-limit, and
+broad-phase controls, while pose edits happen through the scene gizmos.
+
 Useful smoke command:
 
 ```bash

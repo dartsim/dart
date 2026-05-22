@@ -503,6 +503,8 @@
     selection, native group/mask filtering, AABB-tree, spatial-hash,
     sweep-and-prune debug rendering, unsupported-pair placeholders, and
     headless screenshot smoke coverage.
+  - Added mouse-driven object transform gizmos to the native collision sandbox
+    so pair poses can be translated and rotated directly in the scene.
   - Added `dart::gui::applyDebugVisualStyle` for persistent debug
     `ShapeFrame` visuals and updated GUI overlays, including the native
     collision sandbox, to use consistent no-shadow debug styling.

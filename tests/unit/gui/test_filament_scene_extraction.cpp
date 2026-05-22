@@ -3509,6 +3509,30 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("arm and leg IK"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, CollisionSandboxUsesMouseDrivenObjectGizmos)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "collision_sandbox" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "collision_sandbox" / "README.md");
+
+  EXPECT_NE(
+      mainSource.find("#include <dart/gui/gizmo.hpp>"), std::string::npos);
+  EXPECT_NE(mainSource.find("createObjectGizmos"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("options.gizmos = createObjectGizmos(state)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("gizmo.onChanged"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Left-drag object gizmo arrows, planes, and rings"),
+      std::string::npos);
+  EXPECT_EQ(mainSource.find("\"A Position\""), std::string::npos);
+  EXPECT_EQ(mainSource.find("\"B Position\""), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("Left-drag object gizmo arrows, planes, and rings"),
+      std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(
