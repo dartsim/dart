@@ -54,6 +54,7 @@ TEST(VoxelGridShape, BasicProperties)
 
   auto grid = std::make_shared<SparseOccupancyGrid>(0.1);
   shape.setOccupancyGrid(grid);
+  shape.setOccupancyGrid(grid);
   EXPECT_EQ(shape.getOccupancyGrid(), grid);
   EXPECT_EQ(
       static_cast<const VoxelGridShape*>(&shape)->getOccupancyGrid(), grid);

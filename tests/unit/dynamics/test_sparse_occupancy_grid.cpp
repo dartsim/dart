@@ -37,6 +37,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <limits>
 #include <vector>
 
 #ifndef DART_TESTS_HAVE_OCTOMAP
@@ -55,6 +56,12 @@ TEST(SparseOccupancyGrid, ConstructionAndCoordinates)
 {
   EXPECT_THROW(SparseOccupancyGrid(0.0), common::InvalidArgumentException);
   EXPECT_THROW(SparseOccupancyGrid(-0.1), common::InvalidArgumentException);
+  EXPECT_THROW(
+      SparseOccupancyGrid(std::numeric_limits<double>::infinity()),
+      common::InvalidArgumentException);
+  EXPECT_THROW(
+      SparseOccupancyGrid(std::numeric_limits<double>::quiet_NaN()),
+      common::InvalidArgumentException);
 
   SparseOccupancyGrid grid(0.25);
   EXPECT_DOUBLE_EQ(grid.getResolution(), 0.25);
@@ -65,6 +72,50 @@ TEST(SparseOccupancyGrid, ConstructionAndCoordinates)
   const auto center
       = grid.getCellCenter(SparseOccupancyGrid::CellKey{2, -1, 0});
   EXPECT_TRUE(center.isApprox(Eigen::Vector3d(0.625, -0.125, 0.125)));
+}
+
+//==============================================================================
+TEST(SparseOccupancyGrid, RejectsNonFiniteCoordinates)
+{
+  SparseOccupancyGrid grid(0.1);
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double inf = std::numeric_limits<double>::infinity();
+  const Eigen::Vector3d finite(0.05, 0.05, 0.05);
+
+  EXPECT_THROW(
+      grid.worldToCell(Eigen::Vector3d(nan, 0.0, 0.0)),
+      common::InvalidArgumentException);
+  EXPECT_THROW(
+      grid.getOccupancy(Eigen::Vector3d(0.0, inf, 0.0)),
+      common::InvalidArgumentException);
+  EXPECT_THROW(
+      grid.updateOccupancy(Eigen::Vector3d(0.0, 0.0, -inf)),
+      common::InvalidArgumentException);
+  EXPECT_THROW(
+      grid.insertRay(finite, Eigen::Vector3d(inf, 0.0, 0.0)),
+      common::InvalidArgumentException);
+  EXPECT_THROW(
+      grid.traceRay(Eigen::Vector3d(0.0, nan, 0.0), finite),
+      common::InvalidArgumentException);
+
+  const std::array<Eigen::Vector3d, 3> points{
+      Eigen::Vector3d(0.25, 0.05, 0.05),
+      Eigen::Vector3d(nan, 0.05, 0.05),
+      Eigen::Vector3d(0.05, inf, 0.05)};
+
+  grid.insertPointCloud(points, finite);
+  EXPECT_EQ(grid.getNumOccupiedCells(), 1u);
+  EXPECT_GT(grid.getOccupancy(Eigen::Vector3d(0.25, 0.05, 0.05)), 0.5);
+
+  SparseOccupancyGrid invalidOnlyGrid(0.1);
+  const std::array<Eigen::Vector3d, 1> invalidPoints{
+      Eigen::Vector3d(nan, 0.0, 0.0)};
+  invalidOnlyGrid.insertPointCloud(invalidPoints, finite);
+  EXPECT_EQ(invalidOnlyGrid.getNumCells(), 0u);
+
+  EXPECT_THROW(
+      grid.insertPointCloud(points, Eigen::Vector3d(0.0, 0.0, inf)),
+      common::InvalidArgumentException);
 }
 
 //==============================================================================
@@ -90,6 +141,22 @@ TEST(SparseOccupancyGrid, ProbabilityUpdates)
   EXPECT_FALSE(grid.isOccupied(key));
 
   EXPECT_THROW(grid.setOccupancy(key, 1.0), common::InvalidArgumentException);
+  EXPECT_THROW(
+      grid.setOccupancy(key, std::numeric_limits<double>::quiet_NaN()),
+      common::InvalidArgumentException);
+
+  grid.setOccupancyThreshold(0.6);
+  grid.setHitProbability(0.8);
+  grid.setMissProbability(0.3);
+  EXPECT_DOUBLE_EQ(grid.getOccupancyThreshold(), 0.6);
+  EXPECT_DOUBLE_EQ(grid.getHitProbability(), 0.8);
+  EXPECT_DOUBLE_EQ(grid.getMissProbability(), 0.3);
+  EXPECT_THROW(
+      grid.setOccupancyThreshold(0.0), common::InvalidArgumentException);
+  EXPECT_THROW(grid.setHitProbability(1.0), common::InvalidArgumentException);
+  EXPECT_THROW(
+      grid.setMissProbability(std::numeric_limits<double>::infinity()),
+      common::InvalidArgumentException);
 }
 
 //==============================================================================
@@ -108,6 +175,15 @@ TEST(SparseOccupancyGrid, RayUpdatesAndTracing)
   EXPECT_LT(grid.getOccupancy(from), 0.5);
   EXPECT_LT(grid.getOccupancy(Eigen::Vector3d(0.55, 0.05, 0.05)), 0.5);
   EXPECT_GT(grid.getOccupancy(to), 0.5);
+
+  SparseOccupancyGrid sameCellGrid(0.1);
+  const auto sameCellTrace = sameCellGrid.traceRay(from, from);
+  ASSERT_EQ(sameCellTrace.size(), 1u);
+  EXPECT_TRUE((sameCellTrace.front() == SparseOccupancyGrid::CellKey{0, 0, 0}));
+
+  sameCellGrid.insertRay(from, from);
+  EXPECT_EQ(sameCellGrid.getNumCells(), 1u);
+  EXPECT_GT(sameCellGrid.getOccupancy(from), 0.5);
 }
 
 //==============================================================================
@@ -141,6 +217,11 @@ TEST(SparseOccupancyGrid, PointCloudUpdates)
   EXPECT_EQ(threadedGrid.getNumOccupiedCells(), grid.getNumOccupiedCells());
   EXPECT_GT(threadedGrid.getOccupancy(Eigen::Vector3d(1.0, 0.0, 0.0)), 0.5);
   EXPECT_GT(threadedGrid.getOccupancy(Eigen::Vector3d(0.0, 1.0, 0.0)), 0.5);
+
+  SparseOccupancyGrid autoThreadGrid(0.1);
+  autoThreadGrid.insertPointCloud(
+      points, Eigen::Vector3d::Zero(), Eigen::Isometry3d::Identity(), 0);
+  EXPECT_EQ(autoThreadGrid.getNumOccupiedCells(), grid.getNumOccupiedCells());
 }
 
 //==============================================================================
@@ -196,10 +277,20 @@ TEST(SparseOccupancyGrid, OccupiedCellExtractionAndCopy)
 
   const SparseOccupancyGrid::CellKey secondOccupiedKey{2, 0, 0};
   grid.setOccupancy(secondOccupiedKey, 0.9);
+  const SparseOccupancyGrid::CellKey thirdOccupiedKey{0, 1, 0};
+  const SparseOccupancyGrid::CellKey fourthOccupiedKey{0, 1, 1};
+  grid.setOccupancy(thirdOccupiedKey, 0.9);
+  grid.setOccupancy(fourthOccupiedKey, 0.9);
   const auto sortedCells = grid.getOccupiedCells();
-  ASSERT_EQ(sortedCells.size(), 2u);
+  ASSERT_EQ(sortedCells.size(), 4u);
   EXPECT_TRUE((sortedCells[0].key == occupiedKey));
-  EXPECT_TRUE((sortedCells[1].key == secondOccupiedKey));
+  EXPECT_TRUE((sortedCells[1].key == thirdOccupiedKey));
+  EXPECT_TRUE((sortedCells[2].key == fourthOccupiedKey));
+  EXPECT_TRUE((sortedCells[3].key == secondOccupiedKey));
+
+  const auto cachedCells = grid.getOccupiedCells();
+  ASSERT_EQ(cachedCells.size(), sortedCells.size());
+  EXPECT_TRUE((cachedCells[2].key == fourthOccupiedKey));
 
   grid.setOccupancyThreshold(0.95);
   EXPECT_TRUE(grid.getOccupiedCells().empty());
@@ -207,7 +298,7 @@ TEST(SparseOccupancyGrid, OccupiedCellExtractionAndCopy)
   const SparseOccupancyGrid copied = grid;
   grid.clear();
   EXPECT_EQ(grid.getNumCells(), 0u);
-  EXPECT_EQ(copied.getNumCells(), 3u);
+  EXPECT_EQ(copied.getNumCells(), 5u);
   EXPECT_EQ(copied.getNumOccupiedCells(), 0u);
 }
 

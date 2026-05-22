@@ -91,6 +91,24 @@ double clamp(double value, double lower, double upper)
 }
 
 //==============================================================================
+bool isFinite(const Eigen::Vector3d& point)
+{
+  return std::isfinite(point.x()) && std::isfinite(point.y())
+         && std::isfinite(point.z());
+}
+
+//==============================================================================
+void validateFinitePoint(const Eigen::Vector3d& point, const char* name)
+{
+  if (!isFinite(point)) {
+    DART_THROW_T(
+        ::dart::common::InvalidArgumentException,
+        "SparseOccupancyGrid {} coordinates must be finite.",
+        name);
+  }
+}
+
+//==============================================================================
 template <typename Visitor>
 void visitRayFreeCells(
     SparseOccupancyGrid::CellKey key,
@@ -256,6 +274,8 @@ std::size_t SparseOccupancyGrid::getNumOccupiedCells() const
 SparseOccupancyGrid::CellKey SparseOccupancyGrid::worldToCell(
     const Eigen::Vector3d& point) const
 {
+  validateFinitePoint(point, "point");
+
   return CellKey{
       floorToInteger(point.x() / mResolution),
       floorToInteger(point.y() / mResolution),
@@ -384,6 +404,7 @@ void SparseOccupancyGrid::insertPointCloud(
     std::size_t numThreads)
 {
   const Eigen::Vector3d origin = relativeTo * sensorOrigin;
+  validateFinitePoint(origin, "sensor origin");
 
   struct Endpoint
   {
@@ -397,6 +418,10 @@ void SparseOccupancyGrid::insertPointCloud(
 
   for (const auto& point : pointCloud) {
     const Eigen::Vector3d endpoint = relativeTo * point;
+    if (!isFinite(endpoint)) {
+      continue;
+    }
+
     const CellKey end = worldToCell(endpoint);
     endpoints.push_back(Endpoint{endpoint, end});
   }
