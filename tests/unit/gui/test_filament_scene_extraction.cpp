@@ -641,6 +641,9 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       / "render_environment.cpp");
   const auto viewerHeader
       = readSourceFile(std::filesystem::path("dart") / "gui" / "viewer.hpp");
+  const auto debugColorSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "materials"
+      / "debug_color.mat");
   const auto texturedLitSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "materials"
       / "textured_lit.mat");
@@ -686,6 +689,8 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
   EXPECT_NE(selectionSource.find("skeleton->getIK(true)"), std::string::npos);
   EXPECT_NE(
       debugOverlaySource.find("kGizmoWorldScale = 1.0"), std::string::npos);
+  EXPECT_NE(debugColorSource.find("depthWrite : false"), std::string::npos);
+  EXPECT_NE(debugColorSource.find("depthCulling : false"), std::string::npos);
   EXPECT_NE(renderableFactorySource.find("line.thickness"), std::string::npos);
   EXPECT_NE(
       renderableFactorySource.find("PrimitiveType::TRIANGLES"),
@@ -3523,6 +3528,9 @@ TEST(FilamentSceneExtraction, CollisionSandboxUsesMouseDrivenObjectGizmos)
       mainSource.find("options.gizmos = createObjectGizmos(state)"),
       std::string::npos);
   EXPECT_NE(mainSource.find("gizmo.onChanged"), std::string::npos);
+  EXPECT_NE(mainSource.find("kContactObjectAlpha"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("const bool showContactOverlay"), std::string::npos);
   EXPECT_NE(
       mainSource.find("Left-drag object gizmo arrows, planes, and rings"),
       std::string::npos);
@@ -3530,6 +3538,10 @@ TEST(FilamentSceneExtraction, CollisionSandboxUsesMouseDrivenObjectGizmos)
   EXPECT_EQ(mainSource.find("\"B Position\""), std::string::npos);
   EXPECT_NE(
       readmeSource.find("Left-drag object gizmo arrows, planes, and rings"),
+      std::string::npos);
+  EXPECT_NE(readmeSource.find("rendered translucent"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("point, normal, and depth overlays"),
       std::string::npos);
 }
 

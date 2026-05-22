@@ -99,6 +99,7 @@ constexpr std::array<std::string_view, 3> kPairCoverageColumns{{
 }};
 
 constexpr double kObjectGizmoSize = 0.65;
+constexpr double kContactObjectAlpha = 0.45;
 constexpr double kContactMarkerRadius = 0.018;
 constexpr double kDistanceMarkerRadius = 0.04;
 
@@ -244,8 +245,13 @@ std::string formatFramePosition(const dynamics::SimpleFramePtr& frame)
 }
 
 Eigen::Vector4d objectColor(
-    const sandbox::PairCase& pair, bool objectA, bool hit, bool filtered)
+    const sandbox::PairCase& pair,
+    bool objectA,
+    bool hit,
+    bool filtered,
+    bool showContactOverlay)
 {
+  const double alpha = showContactOverlay ? kContactObjectAlpha : 1.0;
   if (filtered) {
     return objectA ? rgba(0.62, 0.62, 0.68) : rgba(0.48, 0.5, 0.56);
   }
@@ -256,7 +262,8 @@ Eigen::Vector4d objectColor(
     return objectA ? rgba(0.1, 0.75, 0.9) : rgba(0.95, 0.85, 0.25);
   }
   if (hit) {
-    return objectA ? rgba(0.95, 0.18, 0.18) : rgba(0.95, 0.18, 0.78);
+    return objectA ? rgba(0.95, 0.18, 0.18, alpha)
+                   : rgba(0.95, 0.18, 0.78, alpha);
   }
   if (pair.status == sandbox::PairStatus::AdaptedFallback) {
     return objectA ? rgba(0.95, 0.52, 0.16) : rgba(0.18, 0.75, 0.9);
@@ -564,14 +571,23 @@ void clearDebugFrames(SandboxState& state)
 void updateObjectVisuals(SandboxState& state)
 {
   const sandbox::PairCase& pair = selectedPair(state);
+  const bool showContactOverlay = state.summary.numContacts > 0;
   state.objectAFrame->setShape(
       makeVisualShape(pair.shapeA, state.objectAParams));
   state.objectBFrame->setShape(
       makeVisualShape(pair.shapeB, state.objectBParams));
-  state.objectAFrame->getVisualAspect(true)->setRGBA(
-      objectColor(pair, true, state.summary.hit, state.summary.pairFiltered));
-  state.objectBFrame->getVisualAspect(true)->setRGBA(
-      objectColor(pair, false, state.summary.hit, state.summary.pairFiltered));
+  state.objectAFrame->getVisualAspect(true)->setRGBA(objectColor(
+      pair,
+      true,
+      state.summary.hit,
+      state.summary.pairFiltered,
+      showContactOverlay));
+  state.objectBFrame->getVisualAspect(true)->setRGBA(objectColor(
+      pair,
+      false,
+      state.summary.hit,
+      state.summary.pairFiltered,
+      showContactOverlay));
 }
 
 void summarizeContacts(

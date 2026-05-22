@@ -9,6 +9,8 @@ as placeholders.
 Left-drag object gizmo arrows, planes, and rings to translate or rotate each
 shape. The panel keeps pair, shape-size, filtering, contact-limit, and
 broad-phase controls, while pose edits happen through the scene gizmos.
+When a contact query produces contact points, the colliding object visuals are
+rendered translucent so the point, normal, and depth overlays remain visible.
 
 Useful smoke command:
 
