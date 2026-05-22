@@ -54,6 +54,7 @@ DART_USE_SYSTEM_FILAMENT = ON  # Use installed Filament or Filament_ROOT
 DART_FETCH_FILAMENT     = ON   # Fetch pinned Filament archive fallback
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
+DART_PROFILE_TRACY          = OFF  # Enable Tracy profiler backend (developer-only)
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
 DART_USE_SYSTEM_IMGUI       = OFF  # Use system ImGui vs fetch from GitHub
 DART_USE_SYSTEM_GOOGLEBENCHMARK = OFF
@@ -313,12 +314,16 @@ active build.
 
 #### 17. Tracy Profiler
 
-- **Version:** ≥ 0.11.1, < 0.12
-- **Purpose:** Frame profiling
+- **Purpose:** Optional local developer frame profiling
+- **Backend option:** `DART_PROFILE_TRACY`
 - **Option:** `DART_USE_SYSTEM_TRACY`
-- **Components:**
-  - `tracy-profiler-client` (runtime)
-  - `tracy-profiler-gui` (build-time)
+- **Default:** `OFF` for CMake, Pixi development, and package builds.
+  `pixi run tracy-build` opts into `DART_PROFILE_TRACY=ON` only for the
+  developer profiling build and keeps `DART_USE_SYSTEM_TRACY=OFF`, so Tracy is
+  not installed through package-manager dependencies. `pixi run tracy` launches
+  the fetched GUI client. The launcher defaults `TRACY_DPI_SCALE=1` to avoid
+  oversized Linux DPI auto-scaling; set `TRACY_DPI_SCALE` explicitly to override
+  it.
 
 ### Additional Platform Dependencies
 
@@ -684,7 +689,9 @@ pixi run api-docs-py     # Build Python API docs
 #### Profiling Tasks
 
 ```bash
-pixi run tracy           # Launch Tracy profiler GUI
+pixi run tracy-build     # Build the Tracy GUI client from fetched source
+pixi run tracy           # Build and launch the Tracy GUI client
+TRACY_DPI_SCALE=1.5 pixi run tracy
 ```
 
 #### Utility Tasks
@@ -710,7 +717,9 @@ pixi run generate-stubs  # Generate Python stub files
 - `DART_USE_SYSTEM_GOOGLEBENCHMARK` - `ON`
 - `DART_USE_SYSTEM_GOOGLETEST` - `ON`
 - `DART_USE_SYSTEM_IMGUI` - `ON`
-- `DART_USE_SYSTEM_TRACY` - `ON`
+- `DART_PROFILE_TRACY` - `OFF` by default; `pixi run tracy-build` opts in for
+  the developer profiling build
+- `DART_USE_SYSTEM_TRACY` - `OFF`
 - `DART_VERBOSE` - `OFF` (configurable)
 
 #### Python Environment
