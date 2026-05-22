@@ -82,31 +82,16 @@ class Frame:
     def world() -> Frame:
         ...
 
-    def getName(self) -> str:
-        ...
-
     def get_name(self) -> str:
-        ...
-
-    def getParentFrame(self) -> Frame:
         ...
 
     def get_parent_frame(self) -> Frame:
         ...
 
-    def setParentFrame(self, parent: Frame) -> None:
-        ...
-
     def set_parent_frame(self, parent: Frame) -> None:
         ...
 
-    def getLocalTransform(self) -> NDArray[np.float64]:
-        ...
-
     def get_local_transform(self) -> NDArray[np.float64]:
-        ...
-
-    def getTransform(self) -> NDArray[np.float64]:
         ...
 
     @overload
@@ -123,32 +108,17 @@ class Frame:
     ) -> NDArray[np.float64]:
         ...
 
-    def isValid(self) -> bool:
-        ...
-
     def is_valid_handle(self) -> bool:
         ...
 
-    def isWorld(self) -> bool:
-        ...
-
     def is_same_instance_as(self, other: Frame) -> bool:
-        ...
-
-    def isSameInstanceAs(self, other: Frame) -> bool:
         ...
 
 
 class FreeFrame(Frame):
     local_transform: NDArray[np.float64]
 
-    def setLocalTransform(self, transform: ArrayLike) -> None:
-        ...
-
     def set_local_transform(self, transform: ArrayLike) -> None:
-        ...
-
-    def getLocalTransform(self) -> NDArray[np.float64]:
         ...
 
     def get_local_transform(self) -> NDArray[np.float64]:
@@ -158,13 +128,7 @@ class FreeFrame(Frame):
 class FixedFrame(Frame):
     local_transform: NDArray[np.float64]
 
-    def setLocalTransform(self, transform: ArrayLike) -> None:
-        ...
-
     def set_local_transform(self, transform: ArrayLike) -> None:
-        ...
-
-    def getLocalTransform(self) -> NDArray[np.float64]:
         ...
 
     def get_local_transform(self) -> NDArray[np.float64]:
@@ -177,24 +141,6 @@ class MultiBody:
     num_joints: int
     num_dofs: int
 
-    def getName(self) -> str:
-        ...
-
-    def setName(self, name: str) -> None:
-        ...
-
-    def getLinkCount(self) -> int:
-        ...
-
-    def getJointCount(self) -> int:
-        ...
-
-    def getDOFCount(self) -> int:
-        ...
-
-    def addLink(self, name: str = "") -> Link:
-        ...
-
     @overload
     def add_link(self, name: str = "") -> Link:
         ...
@@ -203,27 +149,6 @@ class MultiBody:
     def add_link(
         self, name: str, *, parent: Link, joint: JointSpec = ...
     ) -> Link:
-        ...
-
-    def getLink(self, name: str) -> Link | None:
-        ...
-
-    def getJoint(self, name: str) -> Joint | None:
-        ...
-
-    def get_name(self) -> str:
-        ...
-
-    def set_name(self, name: str) -> None:
-        ...
-
-    def get_link_count(self) -> int:
-        ...
-
-    def get_joint_count(self) -> int:
-        ...
-
-    def get_dof_count(self) -> int:
         ...
 
     def get_link(self, name: str) -> Link | None:
@@ -242,19 +167,10 @@ class Link(Frame):
     transform: NDArray[np.float64]
     is_valid: bool
 
-    def getName(self) -> str:
-        ...
-
     def get_name(self) -> str:
         ...
 
-    def getParentJoint(self) -> Joint:
-        ...
-
     def get_parent_joint(self) -> Joint:
-        ...
-
-    def isValid(self) -> bool:
         ...
 
 
@@ -266,37 +182,19 @@ class Joint:
     child_link: Link
     is_valid: bool
 
-    def getName(self) -> str:
-        ...
-
     def get_name(self) -> str:
-        ...
-
-    def getType(self) -> JointType:
         ...
 
     def get_type(self) -> JointType:
         ...
 
-    def getAxis(self) -> NDArray[np.float64]:
-        ...
-
     def get_axis(self) -> NDArray[np.float64]:
-        ...
-
-    def getParentLink(self) -> Link:
         ...
 
     def get_parent_link(self) -> Link:
         ...
 
-    def getChildLink(self) -> Link:
-        ...
-
     def get_child_link(self) -> Link:
-        ...
-
-    def isValid(self) -> bool:
         ...
 
 
@@ -306,17 +204,25 @@ class RigidBody(Frame):
     rotation: NDArray[np.float64]
     quaternion: NDArray[np.float64]
     transform: NDArray[np.float64]
-
-    def getName(self) -> str:
-        ...
+    linear_velocity: NDArray[np.float64]
+    angular_velocity: NDArray[np.float64]
 
     def get_name(self) -> str:
         ...
 
-    def setTransform(self, transform: ArrayLike) -> None:
+    def set_transform(self, transform: ArrayLike) -> None:
         ...
 
-    def set_transform(self, transform: ArrayLike) -> None:
+    def get_linear_velocity(self) -> NDArray[np.float64]:
+        ...
+
+    def set_linear_velocity(self, velocity: ArrayLike) -> None:
+        ...
+
+    def get_angular_velocity(self) -> NDArray[np.float64]:
+        ...
+
+    def set_angular_velocity(self, velocity: ArrayLike) -> None:
         ...
 
 
@@ -331,33 +237,9 @@ class World:
     num_multi_bodies: int
     num_rigid_bodies: int
 
-    def addMultiBody(self, name: str) -> MultiBody:
-        ...
-
-    @overload
-    def addFreeFrame(self, name: str = "") -> FreeFrame:
-        ...
-
-    @overload
-    def addFreeFrame(self, name: str, parent: Frame) -> FreeFrame:
-        ...
-
-    @overload
-    def add_free_frame(self, name: str = "") -> FreeFrame:
-        ...
-
-    @overload
     def add_free_frame(
         self, name: str = "", *, parent: Frame | None = None
     ) -> FreeFrame:
-        ...
-
-    def addFixedFrame(
-        self,
-        name: str,
-        parent: Frame,
-        offset: ArrayLike | None = None,
-    ) -> FixedFrame:
         ...
 
     def add_fixed_frame(
@@ -368,13 +250,13 @@ class World:
     ) -> FixedFrame:
         ...
 
-    def getMultiBody(self, name: str) -> MultiBody | None:
+    def add_multi_body(self, name: str) -> MultiBody:
         ...
 
-    def getMultiBodyCount(self) -> int:
+    def get_multi_body(self, name: str) -> MultiBody | None:
         ...
 
-    def addRigidBody(self, name: str) -> RigidBody:
+    def get_multi_body_count(self) -> int:
         ...
 
     def add_rigid_body(
@@ -391,39 +273,6 @@ class World:
     ) -> RigidBody:
         ...
 
-    def hasRigidBody(self, name: str) -> bool:
-        ...
-
-    def getRigidBody(self, name: str) -> RigidBody | None:
-        ...
-
-    def getRigidBodyCount(self) -> int:
-        ...
-
-    def isSimulationMode(self) -> bool:
-        ...
-
-    def enterSimulationMode(self) -> None:
-        ...
-
-    def updateKinematics(self) -> None:
-        ...
-
-    def step(self, n: int = 1) -> None:
-        ...
-
-    def clear(self) -> None:
-        ...
-
-    def add_multi_body(self, name: str) -> MultiBody:
-        ...
-
-    def get_multi_body(self, name: str) -> MultiBody | None:
-        ...
-
-    def get_multi_body_count(self) -> int:
-        ...
-
     def has_rigid_body(self, name: str) -> bool:
         ...
 
@@ -437,4 +286,10 @@ class World:
         ...
 
     def update_kinematics(self) -> None:
+        ...
+
+    def step(self, n: int = 1) -> None:
+        ...
+
+    def clear(self) -> None:
         ...

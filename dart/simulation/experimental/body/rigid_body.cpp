@@ -38,6 +38,20 @@
 
 #include <cmath>
 
+namespace {
+
+//==============================================================================
+void validateFiniteVector(const Eigen::Vector3d& value, const char* fieldName)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !value.allFinite(),
+      dart::simulation::experimental::InvalidArgumentException,
+      "RigidBody {} must contain only finite values",
+      fieldName);
+}
+
+} // namespace
+
 namespace dart::simulation::experimental {
 
 //==============================================================================
@@ -99,6 +113,47 @@ void RigidBody::setTransform(const Eigen::Isometry3d& transform)
   rigidTransform.orientation.normalize();
 
   markSubtreeTransformCacheDirty();
+}
+
+//==============================================================================
+Eigen::Vector3d RigidBody::getLinearVelocity() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->getRegistry().get<comps::Velocity>(getEntity()).linear;
+}
+
+//==============================================================================
+void RigidBody::setLinearVelocity(const Eigen::Vector3d& velocity)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  validateFiniteVector(velocity, "linear velocity");
+
+  getWorld()->getRegistry().get<comps::Velocity>(getEntity()).linear = velocity;
+}
+
+//==============================================================================
+Eigen::Vector3d RigidBody::getAngularVelocity() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->getRegistry().get<comps::Velocity>(getEntity()).angular;
+}
+
+//==============================================================================
+void RigidBody::setAngularVelocity(const Eigen::Vector3d& velocity)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  validateFiniteVector(velocity, "angular velocity");
+
+  getWorld()->getRegistry().get<comps::Velocity>(getEntity()).angular
+      = velocity;
 }
 
 // getEntity() and isValid() inherited from Frame

@@ -108,11 +108,36 @@ kinematics-only updates, collision query preparation, sensor sampling, or
 rendering synchronization. Runtime shortcuts should not fork the user-facing
 object model.
 
-### Tree Topology Plus Constraint Graph
+### Deterministic Sync, Optional Async
+
+Synchronous stepping is the reference behavior. `World::step()` must remain
+deterministic, easy to test, and complete when it returns, with fresh outputs
+for the stages it executed.
+
+Asynchronous stepping may be added for throughput, UI responsiveness, server
+workloads, or batched simulation, but it must compose around the same world,
+pipeline, state, and synchronization concepts. Async APIs should make
+ownership, completion, cancellation, and result visibility explicit. They
+should not become the only path to high-performance simulation or change the
+semantics of synchronous stepping.
+
+This matches the useful external split between deterministic stepping and
+runtime scheduling policy. Drake's `Simulator::AdvanceTo`, MuJoCo's `mj_step`
+and `mj_forward`, PyBullet's `stepSimulation` versus real-time mode, Gazebo
+server run control, and Isaac's sync/async application modes all keep
+advancement semantics distinct from event-loop or background execution. See
+[Drake Simulator](https://drake.mit.edu/pydrake/pydrake.systems.analysis.html),
+[MuJoCo functions](https://mujoco.readthedocs.io/en/stable/APIreference/APIfunctions.html),
+[PyBullet quickstart](https://github.com/bulletphysics/bullet3/blob/master/docs/pybullet_quickstart_guide/PyBulletQuickstartGuide.md.html),
+[Gazebo Server](https://gazebosim.org/api/sim/7/classgz_1_1sim_1_1Server.html),
+and
+[Isaac Lab SimulationContext](https://isaac-sim.github.io/IsaacLab/v2.0.0/_modules/isaaclab/sim/simulation_context.html).
+
+### Tree Topology Plus First-Class Closures
 
 Articulated systems should keep a tree-shaped `MultiBody` as the owner for
 links, joints, names, and state indexing, then represent closed chains as
-explicit graph constraints between symmetric public endpoints.
+explicit first-class closure constraints between symmetric public endpoints.
 
 This keeps the common serial-chain and branched-tree API simple while allowing
 closed-chain mechanisms to participate in kinematic projection, residual
@@ -141,12 +166,13 @@ runtime may import a model format or choose an internal implementation inspired
 by an engine, paper, or backend, but users should configure DART concepts and
 algorithm families rather than implementation ancestry.
 
-### Fresh Results Without Dirty-Flag API
+### Fresh Results, Explicit Work Placement
 
 The long-term API should preserve the safety of DART 6 lazy evaluation without
 making the DART 6 dirty-flag network the public or required implementation.
 Users should be able to set state and then read transforms, query collisions,
 or render without remembering an implementation-specific cache update order.
+The overall rule is implicit freshness with explicit work placement.
 
 The best long-term shape is a hybrid:
 
@@ -227,6 +253,11 @@ the release roadmap.
   tree-shaped. `LoopClosure`, closure residual diagnostics, kinematic closure
   projection, and dynamic closure solving remain design targets rather than
   implemented public APIs.
+- DART 6-style downstream closed-chain examples use a tree skeleton plus
+  solver constraints or mimic/coupler metadata. Examples such as
+  `examples/rigid_loop`, `examples/coupler_constraint`, and
+  `examples/mimic_pendulums` are reference material for import compatibility
+  and semantics, not the DART 7/8 API shape.
 - `World::getRegistry()` is a DART 7 implementation escape hatch for tests and
   internal bring-up. It is explicitly excluded from DART 8 promotion unless a
   later design creates a stable storage-inspection API.
@@ -296,18 +327,18 @@ promotion, but public examples should never require implementation folders.
 
 ## Public Object Model
 
-| Concept                | DART 7 experimental owner                                                            | DART 8 promotion target                                                                               |
-| ---------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| `World`                | Owns topology, time, frame count, stepping, serialization, and compute entry points. | Official simulation world.                                                                            |
-| `RigidBody`            | World-owned handle for a single rigid object and frame.                              | Public rigid body handle with transform, velocity, inertia, and force APIs once wrappers exist.       |
-| `RigidBodyOptions`     | Public value object for mass, inertia, pose, and velocity initialization.            | Stable construction/configuration value object.                                                       |
-| `MultiBody`            | World-owned handle for articulated rigid-body topology.                              | Official articulated-body concept, with final naming chosen during promotion.                         |
-| `Link`                 | Body in a multibody kinematic tree and frame participant.                            | Public link handle.                                                                                   |
-| `Joint`                | Connection between links with type, axes, and parent/child access.                   | Public joint handle with state/control APIs once wrappers exist.                                      |
-| `LoopClosure`          | Explicit spatial closure between two public frames, links, or bodies.                | Public closed-chain handle with symmetric endpoints, diagnostics, and runtime solve policy separated. |
-| `Frame`                | Spatial reference frame with transform queries.                                      | Stable frame concept for bodies, links, and user frames.                                              |
-| `StateSpace`           | Named flat-vector metadata independent of storage.                                   | Stable state metadata surface for optimization and control workflows.                                 |
-| Compute graph concepts | Experimental graph, executor, metadata, profile, and pipeline hooks.                 | Stable extension points only for backend-neutral concepts that pass benchmark and API-boundary gates. |
+| Concept                | DART 7 experimental owner                                                            | DART 8 promotion target                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `World`                | Owns topology, time, frame count, stepping, serialization, and compute entry points. | Official simulation world.                                                                                  |
+| `RigidBody`            | World-owned handle for a single rigid object and frame.                              | Public rigid body handle with transform and velocity APIs, plus inertia and force APIs once wrappers exist. |
+| `RigidBodyOptions`     | Public value object for mass, inertia, pose, and velocity initialization.            | Stable construction/configuration value object.                                                             |
+| `MultiBody`            | World-owned handle for articulated rigid-body topology.                              | Official articulated-body concept, with final naming chosen during promotion.                               |
+| `Link`                 | Body in a multibody kinematic tree and frame participant.                            | Public link handle.                                                                                         |
+| `Joint`                | Connection between links with type, axes, and parent/child access.                   | Public joint handle with state/control APIs once wrappers exist.                                            |
+| `LoopClosure`          | Explicit spatial closure between two public frames, links, or bodies.                | Public closed-chain handle with symmetric endpoints, diagnostics, and runtime solve policy separated.       |
+| `Frame`                | Spatial reference frame with transform queries.                                      | Stable frame concept for bodies, links, and user frames.                                                    |
+| `StateSpace`           | Named flat-vector metadata independent of storage.                                   | Stable state metadata surface for optimization and control workflows.                                       |
+| Compute graph concepts | Experimental graph, executor, metadata, profile, and pipeline hooks.                 | Stable extension points only for backend-neutral concepts that pass benchmark and API-boundary gates.       |
 
 The public API should use explicit C++ concepts even when the implementation
 stores data in ECS components. Component names are implementation details.
@@ -531,6 +562,20 @@ state when an overload exposes them.
 Rendering or application event loops should not be prerequisites for physics
 stepping. Future viewer and renderer objects must own their own synchronization
 and lifetime contracts.
+
+### Async Stepping Shape
+
+The synchronous `World::step()` path remains the semantic reference. A future
+async API should be an explicit scheduling layer around the same stage and
+state model, for example a DART-owned step handle or future-like object that
+documents completion, cancellation, error propagation, and when outputs become
+visible.
+
+Async execution should be backend-neutral. Public names should describe
+runtime policy such as synchronous, asynchronous, real-time, fixed-rate, or
+batched execution rather than naming CUDA, Metal, Vulkan, ROCm, LLVM, or
+external engines. Backend details belong in capability queries, diagnostics,
+profiles, and intentionally designed backend APIs.
 
 ### Kinematics-Only Runtime
 

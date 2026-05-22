@@ -95,6 +95,18 @@ print(robot.num_dofs)
 world.step()
 ```
 
+### Python Names Are Pythonic
+
+The experimental Python API exposes Python spelling only. Methods, properties,
+keyword arguments, enum values, and value-object fields should use
+`snake_case` where Python convention expects it. Class names stay `PascalCase`,
+as normal Python types do.
+
+DART 7 may keep legacy naming compatibility in legacy modules, but
+`dartpy.simulation_experimental` is the staging surface for dartpy 8. It should
+not bind C++ `camelCase` aliases into the experimental module. Examples,
+stubs, tests, and docs should teach only the Pythonic names.
+
 ### Public Facade Before Binding Coverage
 
 The binding should expose the useful Python concept, not every C++ method that
@@ -123,11 +135,37 @@ should configure physics intent, algorithm family, accuracy/performance policy,
 and fallback behavior through DART-owned value objects and capability queries.
 Adding a backend should be an implementation improvement, not an API fork.
 
-### Tree Topology Plus Constraint Graph
+### One World, Multiple Runtime Intents
+
+The same `World` should support full physics and kinematics-only workflows.
+Motion-planning collision checks, externally driven robot playback, digital
+twins, visualization, camera or marker sensors, and controllers should reuse
+the same topology, frame, and object model instead of forcing users into a
+separate kinematic scene API.
+
+The public distinction should be pipeline intent: full dynamics stepping,
+kinematics-only updates, collision query preparation, sensor sampling, or
+rendering synchronization. Runtime shortcuts should not fork the user-facing
+object model.
+
+### Deterministic Sync, Optional Async
+
+Synchronous stepping is the reference behavior. `world.step()` must remain
+deterministic, easy to test, and complete when it returns, with fresh outputs
+for the stages it executed.
+
+Asynchronous stepping may be added for throughput, UI responsiveness, server
+workloads, or batched simulation, but it must compose around the same world,
+pipeline, state, and synchronization concepts. Async APIs should make
+ownership, completion, cancellation, and result visibility explicit. Python
+`async` naming should be reserved for genuinely nonblocking or awaitable
+behavior, not for a synchronous wrapper.
+
+### Tree Topology Plus First-Class Closures
 
 Python users should build ordinary serial chains and branched robots through
 `MultiBody`, `Link`, `Joint`, and `JointSpec`. Closed-chain mechanisms should
-then be added as explicit graph constraints between symmetric public
+then be added as explicit first-class closure constraints between symmetric
 endpoints, not by assigning a second parent link or exposing internal solver
 rows.
 
@@ -157,11 +195,12 @@ constraint families. Model importers and diagnostics can mention source
 formats or internal backends, but stable user code should configure physics
 intent and algorithm family through DART-owned value objects.
 
-### Fresh Results Without Dirty-Flag API
+### Fresh Results, Explicit Work Placement
 
 The long-term API should not make users manually reason about dirty flags.
 Users should be able to set state and then read transforms, query collisions,
 or render without remembering an implementation-specific cache update order.
+The overall rule is implicit freshness with explicit work placement.
 
 The best long-term shape is a hybrid:
 
@@ -234,6 +273,11 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
   tree-shaped. `LoopClosure`, closure residual diagnostics, kinematic closure
   projection, and dynamic closure solving remain design targets rather than
   implemented public Python APIs.
+- DART 6-style downstream closed-chain examples use a tree skeleton plus
+  solver constraints or mimic/coupler metadata. Examples such as
+  `examples/rigid_loop`, `examples/coupler_constraint`, and
+  `examples/mimic_pendulums` are reference material for import compatibility
+  and semantics, not the DART 7/8 Python API shape.
 - `World::updateKinematics()` already executes a kinematics graph without the
   default rigid-body integration stage, and the current dartpy module exposes
   that operation through the experimental binding.
@@ -411,6 +455,22 @@ Rendering or viewer event loops must remain separate from physics stepping. A
 future viewer may have its own `sync()`, lock, close, or lifetime rules, but
 those rules should not be prerequisites for `World.step()`.
 
+### Async Stepping Shape
+
+The synchronous `world.step()` path remains the semantic reference. A future
+async API should be an explicit scheduling layer around the same stage and
+state model. A true Python async surface should be awaitable, for example:
+
+```python
+# Future shape, not a DART 7 API promise.
+await world.step_async(n=100)
+```
+
+If the implementation exposes a non-awaitable background job instead, the API
+should use a DART-owned job or handle object with explicit completion,
+cancellation, error propagation, and result-visibility rules. Backend names
+belong in diagnostics and capability queries, not in public stepping methods.
+
 ### Kinematics-Only Runtime
 
 The same `World` should support runtime workflows that do not integrate
@@ -499,16 +559,16 @@ public API exposes dirty flags.
 
 ## Public Object Model
 
-| Object        | Role                                                                  | Initial Python shape                                                                     |
-| ------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.        |
-| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform reads/writes, and broader pose properties as C++ accessors mature.       |
-| `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                   |
-| `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                             |
-| `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links; state access after public C++ accessors exist. |
-| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint loop-closure handle once C++ owns solver behavior.                    |
-| `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                      |
-| `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                      |
+| Object        | Role                                                                  | Initial Python shape                                                                            |
+| ------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.               |
+| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform and velocity reads/writes, and broader dynamics properties as accessors mature. |
+| `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                          |
+| `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                    |
+| `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links; state access after public C++ accessors exist.        |
+| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint loop-closure handle once C++ owns solver behavior.                           |
+| `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                             |
+| `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                             |
 
 `MultiBody` is the DART 7 experimental name because it matches the C++ concept.
 An `Articulation` alias can be considered during later promotion if the stable
@@ -590,10 +650,10 @@ robot.add_link("base")
 body.apply_force((1.0, 0.0, 0.0))
 ```
 
-Getter-style C++ methods may exist underneath, but new Python examples and
-stubs should prefer native snake_case names and properties. Runtime
-camelCase-to-snake_case aliases are a migration aid, not the design target for
-new experimental bindings.
+Getter-style C++ methods may exist underneath, but the experimental Python
+binding should expose only native `snake_case` names and properties. Runtime
+camelCase compatibility belongs to legacy modules, not to the DART 7
+experimental staging surface for dartpy 8.
 
 ## Collections And Lookup
 
@@ -1054,8 +1114,8 @@ they have public C++ owner APIs and objective-specific verification:
 
 - file loading directly into the experimental world;
 - collision geometry, shape materials, contacts, constraints, and actuators;
-- rigid-body pose, velocity, mass, inertia, force, and torque accessors beyond
-  the currently public wrapper set;
+- rigid-body mass, inertia, force, torque, and broader pose/state accessors
+  beyond the currently public transform and velocity wrapper set;
 - multibody dynamics state, joint limits, effort limits, and control commands;
 - sensors and the create-attach-read lifecycle;
 - rendering and viewer integration;

@@ -317,6 +317,53 @@ TEST(World, RigidBodySetTransformRefreshesAttachedFrames)
   EXPECT_TRUE(sensor.getTransform().isApprox(drivenPose * sensorOffset));
 }
 
+// Test that rigid bodies expose public velocity state and that stepping uses
+// it without requiring direct ECS component access.
+TEST(World, RigidBodyVelocityAccessorsDriveStep)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.linearVelocity = Eigen::Vector3d(0.1, 0.2, 0.3);
+  options.angularVelocity = Eigen::Vector3d(0.4, 0.5, 0.6);
+  auto body = world.addRigidBody("body", options);
+
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(options.linearVelocity));
+  EXPECT_TRUE(body.getAngularVelocity().isApprox(options.angularVelocity));
+
+  const Eigen::Vector3d linearVelocity(2.0, 0.0, 0.0);
+  const Eigen::Vector3d angularVelocity(0.0, 0.0, 1.0);
+  body.setLinearVelocity(linearVelocity);
+  body.setAngularVelocity(angularVelocity);
+
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(linearVelocity));
+  EXPECT_TRUE(body.getAngularVelocity().isApprox(angularVelocity));
+
+  EXPECT_THROW(
+      body.setLinearVelocity(
+          Eigen::Vector3d(std::numeric_limits<double>::infinity(), 0.0, 0.0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      body.setAngularVelocity(
+          Eigen::Vector3d(0.0, std::numeric_limits<double>::quiet_NaN(), 0.0)),
+      sx::InvalidArgumentException);
+
+  world.setTimeStep(0.5);
+  world.enterSimulationMode();
+  world.step();
+
+  const Eigen::Vector3d expectedTranslation(1.0, 0.0, 0.0);
+  const Eigen::Quaterniond expectedOrientation(
+      Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()));
+
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(linearVelocity));
+  EXPECT_TRUE(body.getAngularVelocity().isApprox(angularVelocity));
+  EXPECT_TRUE(body.getTranslation().isApprox(expectedTranslation));
+  EXPECT_TRUE(
+      body.getRotation().isApprox(expectedOrientation.toRotationMatrix()));
+}
+
 // Test that simulation operations require simulation mode
 TEST(World, UpdateKinematicsRequiresSimulationMode)
 {

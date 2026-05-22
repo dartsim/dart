@@ -84,6 +84,47 @@ def test_experimental_world_module_is_separate_from_legacy_simulation():
     assert not hasattr(dart, "next")
 
 
+def test_experimental_api_exposes_python_names_only():
+    sx = _simulation_experimental()
+
+    forbidden_names = {
+        sx.Frame: (
+            "getName",
+            "getParentFrame",
+            "setParentFrame",
+            "getLocalTransform",
+            "getTransform",
+            "isValid",
+            "isWorld",
+        ),
+        sx.MultiBody: (
+            "addLink",
+            "getLink",
+            "getJoint",
+            "getLinkCount",
+            "getJointCount",
+            "getDOFCount",
+        ),
+        sx.RigidBody: (
+            "setTransform",
+            "getLinearVelocity",
+            "setLinearVelocity",
+            "getAngularVelocity",
+            "setAngularVelocity",
+        ),
+        sx.World: (
+            "addRigidBody",
+            "getRigidBody",
+            "updateKinematics",
+            "enterSimulationMode",
+        ),
+    }
+
+    for target, names in forbidden_names.items():
+        for name in names:
+            assert not hasattr(target, name), f"{target.__name__}.{name}"
+
+
 def test_experimental_world_smoke():
     sx = _simulation_experimental()
 
@@ -221,9 +262,10 @@ def test_experimental_world_common_path_properties_and_step_count():
     assert box.name == "box"
     assert box.translation.tolist() == pytest.approx([1.0, 2.0, 3.0])
     assert box.quaternion.tolist() == pytest.approx([1.0, 0.0, 0.0, 0.0])
+    assert box.linear_velocity.tolist() == pytest.approx([1.0, 0.0, 0.0])
+    assert box.angular_velocity.tolist() == pytest.approx([0.0, 0.0, 0.0])
     assert world.has_rigid_body("box")
     assert world.get_rigid_body("box") == box
-    assert world.getRigidBody("box").name == "box"
     assert world.get_rigid_body("missing") is None
 
     sensor = world.add_fixed_frame(
@@ -235,6 +277,14 @@ def test_experimental_world_common_path_properties_and_step_count():
     assert box.translation.tolist() == pytest.approx([4.0, 5.0, 6.0])
     assert sensor.translation.tolist() == pytest.approx([4.0, 6.0, 6.0])
 
+    box.set_linear_velocity((2.0, 0.0, 0.0))
+    box.set_angular_velocity((0.0, 0.0, 0.5))
+    assert box.get_linear_velocity().tolist() == pytest.approx([2.0, 0.0, 0.0])
+    assert box.get_angular_velocity().tolist() == pytest.approx(
+        [0.0, 0.0, 0.5]
+    )
+    box.angular_velocity = (0.0, 0.0, 0.0)
+
     world.step(n=0)
     assert not world.is_simulation_mode
     assert world.time == pytest.approx(0.0)
@@ -245,8 +295,8 @@ def test_experimental_world_common_path_properties_and_step_count():
     assert world.is_simulation_mode
     assert world.time == pytest.approx(0.03)
     assert world.frame == 3
-    assert box.translation.tolist() == pytest.approx([4.03, 5.0, 6.0])
-    assert sensor.translation.tolist() == pytest.approx([4.03, 6.0, 6.0])
+    assert box.translation.tolist() == pytest.approx([4.06, 5.0, 6.0])
+    assert sensor.translation.tolist() == pytest.approx([4.06, 6.0, 6.0])
 
 
 def test_experimental_rigid_body_options_value_object():
@@ -297,12 +347,18 @@ def test_experimental_rigid_body_options_reject_invalid_values():
 
     options = sx.RigidBodyOptions()
 
-    with pytest.raises(Exception, match="linearVelocity must contain only finite"):
+    with pytest.raises(Exception, match="linear_velocity must contain only finite"):
         options.linear_velocity = (math.nan, 0.0, 0.0)
 
-    with pytest.raises(Exception, match="angularVelocity must contain only finite"):
+    with pytest.raises(Exception, match="angular_velocity must contain only finite"):
         options.angular_velocity = (0.0, math.inf, 0.0)
 
     world = sx.World()
     with pytest.raises(Exception, match="mass must be positive and finite"):
         world.add_rigid_body("box", mass=math.inf)
+
+    body = world.add_rigid_body("body")
+    with pytest.raises(Exception, match="RigidBody linear velocity"):
+        body.linear_velocity = (math.nan, 0.0, 0.0)
+    with pytest.raises(Exception, match="RigidBody angular velocity"):
+        body.angular_velocity = (0.0, math.inf, 0.0)

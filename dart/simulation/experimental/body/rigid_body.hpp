@@ -53,11 +53,9 @@ namespace dart::simulation::experimental {
 /// frame-related operations such as transform queries, velocity/acceleration
 /// computations (future), and can be used as a reference frame.
 ///
-/// PLACEHOLDER: This is a minimal implementation to demonstrate World's
-/// ability to manage multiple object types (Multibody and RigidBody).
-/// Future enhancements will add:
+/// The initial public surface exposes name, transform, and world-frame velocity
+/// state. Future enhancements will add:
 /// - Physics properties (mass, inertia, collision shapes)
-/// - State access (pose, velocity)
 /// - Force application
 /// - Collision detection integration
 ///
@@ -82,10 +80,27 @@ public:
   /// from the same pose.
   void setTransform(const Eigen::Isometry3d& transform);
 
+  /// Get the body's world-frame linear velocity.
+  [[nodiscard]] Eigen::Vector3d getLinearVelocity() const;
+
+  /// Set the body's world-frame linear velocity.
+  ///
+  /// The value must contain only finite coordinates. Subsequent physics steps
+  /// use this velocity directly.
+  void setLinearVelocity(const Eigen::Vector3d& velocity);
+
+  /// Get the body's world-frame angular velocity.
+  [[nodiscard]] Eigen::Vector3d getAngularVelocity() const;
+
+  /// Set the body's world-frame angular velocity.
+  ///
+  /// The value must contain only finite coordinates. Subsequent physics steps
+  /// use this velocity directly.
+  void setAngularVelocity(const Eigen::Vector3d& velocity);
+
   // Note: getEntity(), getWorld(), isValid() inherited from Frame
 
   // TODO: Add methods for:
-  // - Getting/setting velocity
   // - Applying forces/torques
   // - Accessing collision shapes
   // - Enabling/disabling physics
