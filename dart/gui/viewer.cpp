@@ -30,1045 +30,497 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/gui/viewer.hpp"
-
-#include "dart/common/macros.hpp"
-#include "dart/dynamics/body_node.hpp"
-#include "dart/dynamics/shape.hpp"
-#include "dart/dynamics/simple_frame.hpp"
-#include "dart/gui/default_event_handler.hpp"
-#include "dart/gui/detail/camera_mode_callback.hpp"
-#include "dart/gui/drag_and_drop.hpp"
-#include "dart/gui/trackball_manipulator.hpp"
-#include "dart/gui/utils.hpp"
-#include "dart/gui/viewer_config.hpp"
-#include "dart/gui/world_node.hpp"
-#include "dart/simulation/world.hpp"
-
-#include <osg/OperationThread>
-#include <osgDB/WriteFile>
+#include <dart/gui/viewer.hpp>
 
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <iomanip>
-#include <ranges>
+#include <limits>
 #include <sstream>
+#include <string_view>
+#include <utility>
 
-namespace dart {
-namespace gui {
+#include <cmath>
 
-std::string toString(CameraMode mode)
+namespace dart::gui {
+
+namespace {
+
+std::string makeFrameOutputPath(
+    std::string_view outputDirectory, int frameNumber)
 {
-  switch (mode) {
-    case CameraMode::RGBA:
-      return "RGBA";
-    case CameraMode::DEPTH:
-      return "DEPTH";
-    default:
-      return "UNKNOWN";
-  }
-}
-
-class SaveScreen : public ::osg::Camera::DrawCallback
-{
-public:
-  SaveScreen(Viewer* viewer) : mViewer(viewer), mImage(new ::osg::Image)
-  {
-    // Do nothing
-  }
-
-  virtual void operator()(::osg::RenderInfo& renderInfo) const
-  {
-    ::osg::Camera::DrawCallback::operator()(renderInfo);
-
-    if (mViewer->mRecording || mViewer->mScreenCapture) {
-      const ::osg::Viewport* vp = mViewer->getCamera()->getViewport();
-      const int x = static_cast<int>(vp->x());
-      const int y = static_cast<int>(vp->y());
-      const int width = static_cast<int>(vp->width());
-      const int height = static_cast<int>(vp->height());
-
-      mImage->readPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE);
-    }
-
-    if (mViewer->mRecording) {
-      if (!mViewer->mImageDirectory.empty()) {
-        std::stringstream str;
-        str << mViewer->mImageDirectory << "/" << mViewer->mImagePrefix
-            << std::setfill('0') << std::setw(mViewer->mImageDigits)
-            << mViewer->mImageSequenceNum << std::setw(0) << ".png";
-        const auto path = str.str();
-
-        if (::osgDB::writeImageFile(*mImage, path)) {
-          ++mViewer->mImageSequenceNum;
-        } else {
-          DART_WARN("Unable to save image to file named: {}", path);
-
-          // Toggle off recording if the file cannot be saved.
-          mViewer->mRecording = false;
-        }
-      }
-    }
-
-    if (mViewer->mScreenCapture) {
-      if (!mViewer->mScreenCapName.empty()) {
-        DART_WARN_IF(
-            !::osgDB::writeImageFile(*mImage, mViewer->mScreenCapName),
-            "Unable to save image to file named: {}",
-            mViewer->mScreenCapName);
-
-        // Toggle off the screen capture after the image is grabbed (or the
-        // attempt is made).
-        mViewer->mScreenCapture = false;
-      }
-    }
-  }
-
-protected:
-  Viewer* mViewer;
-
-  ::osg::ref_ptr<::osg::Image> mImage;
-};
-
-//==============================================================================
-class ViewerAttachmentCallback : public ::osg::NodeCallback
-{
-public:
-  virtual void operator()(::osg::Node* node, ::osg::NodeVisitor* nv)
-  {
-    ::osg::ref_ptr<ViewerAttachment> attachment
-        = dynamic_cast<ViewerAttachment*>(node);
-
-    if (attachment) {
-      attachment->refresh();
-    }
-
-    traverse(node, nv);
-  }
-};
-
-//==============================================================================
-ViewerAttachment::ViewerAttachment() : mViewer(nullptr)
-{
-  setUpdateCallback(new ViewerAttachmentCallback);
-}
-
-//==============================================================================
-ViewerAttachment::~ViewerAttachment()
-{
-  if (mViewer) {
-    mViewer->removeAttachment(this);
-  }
-}
-
-//==============================================================================
-Viewer* ViewerAttachment::getViewer()
-{
-  return mViewer;
-}
-
-//==============================================================================
-const Viewer* ViewerAttachment::getViewer() const
-{
-  return mViewer;
-}
-
-//==============================================================================
-void ViewerAttachment::customAttach(Viewer* /*newViewer*/)
-{
-  // Do nothing
-}
-
-//==============================================================================
-void ViewerAttachment::attach(Viewer* newViewer)
-{
-  if (mViewer) {
-    mViewer->getRootGroup()->removeChild(this);
-  }
-
-  newViewer->getRootGroup()->addChild(this);
-  customAttach(newViewer);
-}
-
-//==============================================================================
-Viewer::Viewer(const ::osg::Vec4& clearColor)
-  : mImageSequenceNum(0),
-    mImageDigits(0),
-    mRecording(false),
-    mRootGroup(new ::osg::Group),
-    mLightGroup(new ::osg::Group),
-    mLight1(new ::osg::Light),
-    mLightSource1(new ::osg::LightSource),
-    mLight2(new ::osg::Light),
-    mLightSource2(new ::osg::LightSource),
-    mUpwards(::osg::Vec3(0, 0, 1)),
-    mOver(::osg::Vec3(0, 1, 0)),
-    mSimulating(false),
-    mAllowSimulation(true),
-    mHeadlights(true)
-{
-  setCameraManipulator(new TrackballManipulator);
-  addInstructionText("Left-click:   Interaction\n");
-  addInstructionText("Right-click:  Rotate view\n");
-  addInstructionText("Middle-click: Translate view\n");
-  addInstructionText("Wheel Scroll: Zoom in/out\n");
-
-  mDefaultEventHandler = new DefaultEventHandler(this);
-  // ^ Cannot construct this in the initialization list, because its constructor
-  // calls member functions of this object
-
-  setSceneData(mRootGroup);
-  addEventHandler(mDefaultEventHandler);
-  setupDefaultLights();
-  getCamera()->setClearColor(clearColor);
-
-  getCamera()->setFinalDrawCallback(new SaveScreen(this));
-
-  // Settings for camera mode (RGBA/Depth)
-  mCameraModeCallback = new detail::CameraModeCallback;
-  mCameraModeCallback->setCameraMode(CameraMode::RGBA);
-  mRootGroup->addUpdateCallback(mCameraModeCallback);
-}
-
-//==============================================================================
-Viewer::Viewer(const ViewerConfig& config)
-  : mImageSequenceNum(0),
-    mImageDigits(0),
-    mRecording(false),
-    mRootGroup(new ::osg::Group),
-    mLightGroup(new ::osg::Group),
-    mLight1(new ::osg::Light),
-    mLightSource1(new ::osg::LightSource),
-    mLight2(new ::osg::Light),
-    mLightSource2(new ::osg::LightSource),
-    mUpwards(::osg::Vec3(0, 0, 1)),
-    mOver(::osg::Vec3(0, 1, 0)),
-    mSimulating(false),
-    mAllowSimulation(true),
-    mHeadlights(true),
-    mHeadless(config.mode == RenderingMode::Headless)
-{
-  // Set up offscreen pbuffer context for headless mode
-  if (mHeadless) {
-    ::osg::ref_ptr<::osg::GraphicsContext::Traits> traits
-        = new ::osg::GraphicsContext::Traits;
-    traits->x = 0;
-    traits->y = 0;
-    traits->width = config.width;
-    traits->height = config.height;
-    traits->windowDecoration = false;
-    traits->doubleBuffer = false;
-    traits->pbuffer = true;
-    traits->samples = config.msaaSamples;
-    traits->readDISPLAY();
-    traits->setUndefinedScreenDetailsToDefaultScreen();
-
-    ::osg::ref_ptr<::osg::GraphicsContext> gc
-        = ::osg::GraphicsContext::createGraphicsContext(traits.get());
-
-    if (!gc.valid()) {
-      DART_WARN(
-          "Failed to create pbuffer graphics context for headless mode. "
-          "Falling back to default context.");
-    } else {
-      getCamera()->setGraphicsContext(gc.get());
-      getCamera()->setViewport(0, 0, config.width, config.height);
-      getCamera()->setProjectionMatrixAsPerspective(
-          45.0,
-          static_cast<double>(config.width)
-              / static_cast<double>(config.height),
-          0.1,
-          1000.0);
-    }
-  }
-
-  setCameraManipulator(new TrackballManipulator);
-  addInstructionText("Left-click:   Interaction\n");
-  addInstructionText("Right-click:  Rotate view\n");
-  addInstructionText("Middle-click: Translate view\n");
-  addInstructionText("Wheel Scroll: Zoom in/out\n");
-
-  mDefaultEventHandler = new DefaultEventHandler(this);
-
-  setSceneData(mRootGroup);
-  addEventHandler(mDefaultEventHandler);
-  setupDefaultLights();
-  getCamera()->setClearColor(config.clearColor);
-
-  getCamera()->setFinalDrawCallback(new SaveScreen(this));
-
-  // Settings for camera mode (RGBA/Depth)
-  mCameraModeCallback = new detail::CameraModeCallback;
-  mCameraModeCallback->setCameraMode(CameraMode::RGBA);
-  mRootGroup->addUpdateCallback(mCameraModeCallback);
-}
-
-//==============================================================================
-bool Viewer::isHeadless() const
-{
-  return mHeadless;
-}
-
-//==============================================================================
-std::shared_ptr<Viewer> Viewer::create(const ViewerConfig& config)
-{
-  return std::make_shared<Viewer>(config);
-}
-
-//==============================================================================
-std::vector<uint8_t> Viewer::captureBuffer(int* outWidth, int* outHeight)
-{
-  auto* camera = getCamera();
-  if (!camera) {
+  if (outputDirectory.empty()) {
     return {};
   }
 
-  const auto* vp = camera->getViewport();
-  if (!vp) {
-    return {};
-  }
-
-  // Ensure the graphics context is current before reading pixels.
-  // After frame() OSG may release the context, so we must reacquire it.
-  auto* gc = camera->getGraphicsContext();
-  if (!gc) {
-    DART_WARN("No graphics context available for pixel readback");
-    return {};
-  }
-
-  // Make context current for this thread
-  if (!gc->makeCurrent()) {
-    DART_WARN("Failed to make graphics context current for pixel readback");
-    return {};
-  }
-
-  const int width = static_cast<int>(vp->width());
-  const int height = static_cast<int>(vp->height());
-
-  if (outWidth) {
-    *outWidth = width;
-  }
-  if (outHeight) {
-    *outHeight = height;
-  }
-
-  ::osg::ref_ptr<::osg::Image> image = new ::osg::Image;
-  image->readPixels(
-      static_cast<int>(vp->x()),
-      static_cast<int>(vp->y()),
-      width,
-      height,
-      GL_RGBA,
-      GL_UNSIGNED_BYTE);
-
-  // Release the context
-  gc->releaseContext();
-
-  const unsigned char* data = image->data();
-  if (!data) {
-    return {};
-  }
-
-  const std::size_t byteCount
-      = static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4;
-  return std::vector<uint8_t>(data, data + byteCount);
+  std::ostringstream filename;
+  filename << "frame_" << std::setw(6) << std::setfill('0')
+           << std::max(0, frameNumber) << ".ppm";
+  return (std::filesystem::path(outputDirectory) / filename.str()).string();
 }
 
-//==============================================================================
-Viewer::~Viewer()
+std::string activeFrameOutputDirectory(
+    const RunOptions& options, const ViewerLifecycleState& state)
 {
-  std::unordered_set<ViewerAttachment*>::iterator it = mAttachments.begin(),
-                                                  end = mAttachments.end();
+  if (state.frameOutputEnabled && !state.frameOutputDirectory.empty()) {
+    return state.frameOutputDirectory;
+  }
+  return options.frameOutputDirectory;
+}
 
-  while (it != end) {
-    removeAttachment(*(it++));
+} // namespace
+
+void normalizeRunOptions(RunOptions& options)
+{
+  if (options.windowTitle.empty()) {
+    options.windowTitle = "dartsim";
+  }
+  options.width = std::max(1, options.width);
+  options.height = std::max(1, options.height);
+  if (!std::isfinite(options.guiScale) || options.guiScale <= 0.0) {
+    options.guiScale = 1.0;
+  }
+  options.guiScale = std::clamp(options.guiScale, 0.5, 4.0);
+  if (options.headless && options.maxFrames < 0) {
+    options.maxFrames = 1;
+  }
+  if ((!options.screenshotPath.empty() || !options.frameOutputDirectory.empty())
+      && options.maxFrames < 0) {
+    options.maxFrames = 1;
   }
 }
 
-//==============================================================================
-void Viewer::captureScreen(const std::string& filename)
+bool shouldRequestScreenshot(
+    const RunOptions& options, int renderedFrames, bool screenshotRequested)
 {
-  if (filename.empty()) {
-    DART_WARN(
-        "Passed in empty filename for screen capture. This is not allowed!");
-    return;
+  if (options.screenshotPath.empty() || screenshotRequested) {
+    return false;
   }
-
-  DART_INFO("Saving image to file: {}", filename);
-
-  mScreenCapName = filename;
-  mScreenCapture = true;
-}
-
-//==============================================================================
-void Viewer::record(
-    const std::string& directory,
-    const std::string& prefix,
-    bool restart,
-    std::size_t digits)
-{
-  if (directory.empty()) {
-    DART_WARN(
-        "Passed in empty directory name for screen recording. This is not "
-        "allowed!");
-    return;
+  if (options.maxFrames < 0) {
+    return true;
   }
+  return renderedFrames + 1 >= options.maxFrames;
+}
 
-  mImageDirectory = directory;
-  mImagePrefix = prefix;
+bool shouldCaptureFrameOutput(const RunOptions& options)
+{
+  return !options.frameOutputDirectory.empty();
+}
 
-  if (restart) {
-    mImageSequenceNum = 0;
+std::string makeFrameOutputPath(const RunOptions& options, int frameNumber)
+{
+  return makeFrameOutputPath(options.frameOutputDirectory, frameNumber);
+}
+
+void setFrameOutputCapture(
+    ViewerLifecycleState& state, std::string outputDirectory, bool enabled)
+{
+  state.frameOutputDirectory = std::move(outputDirectory);
+  state.frameOutputEnabled = enabled && !state.frameOutputDirectory.empty();
+}
+
+void toggleFrameOutputCapture(
+    ViewerLifecycleState& state, std::string outputDirectory)
+{
+  const bool enable = !state.frameOutputEnabled
+                      || state.frameOutputDirectory != outputDirectory;
+  setFrameOutputCapture(state, std::move(outputDirectory), enable);
+}
+
+bool shouldCaptureFrameOutput(
+    const RunOptions& options, const ViewerLifecycleState& state)
+{
+  return shouldCaptureFrameOutput(options)
+         || (state.frameOutputEnabled && !state.frameOutputDirectory.empty());
+}
+
+std::string makeFrameOutputPath(
+    const RunOptions& options,
+    const ViewerLifecycleState& state,
+    int frameNumber)
+{
+  return makeFrameOutputPath(
+      activeFrameOutputDirectory(options, state), frameNumber);
+}
+
+bool shouldStopAfterFrame(const RunOptions& options, int renderedFrames)
+{
+  return options.maxFrames >= 0 && renderedFrames >= options.maxFrames;
+}
+
+void togglePaused(ViewerLifecycleState& state)
+{
+  state.paused = !state.paused;
+}
+
+void requestSingleStep(ViewerLifecycleState& state, bool pause)
+{
+  if (pause) {
+    state.paused = true;
   }
-
-  mImageDigits = digits;
-
-  mRecording = true;
-
-  DART_INFO(
-      "Recording screen image sequence to directory [{}] with a prefix of [{}] "
-      "starting from sequence number [{}]",
-      mImageDirectory,
-      mImagePrefix,
-      mImageSequenceNum);
+  state.stepOnce = true;
 }
 
-//==============================================================================
-void Viewer::pauseRecording()
+void requestExit(ViewerLifecycleState& state)
 {
-  if (!mRecording) {
-    return;
+  state.exitRequested = true;
+}
+
+bool shouldAdvanceSimulation(const ViewerLifecycleState& state)
+{
+  return !state.paused || state.stepOnce;
+}
+
+void markSimulationAdvanced(ViewerLifecycleState& state)
+{
+  state.stepOnce = false;
+}
+
+bool shouldRequestScreenshot(
+    const RunOptions& options, const ViewerLifecycleState& state)
+{
+  return shouldRequestScreenshot(
+      options, state.renderedFrames, state.screenshotRequested);
+}
+
+void markScreenshotRequested(ViewerLifecycleState& state)
+{
+  state.screenshotRequested = true;
+}
+
+void markFrameRendered(ViewerLifecycleState& state)
+{
+  if (state.renderedFrames < std::numeric_limits<int>::max()) {
+    ++state.renderedFrames;
   }
-
-  mRecording = false;
-  DART_INFO(
-      "Screen recording is paused at image sequence number [{}]",
-      mImageSequenceNum);
+  state.skippedFrames = 0;
 }
 
-//==============================================================================
-bool Viewer::isRecording() const
+void markFrameSkipped(ViewerLifecycleState& state)
 {
-  return mRecording;
-}
-
-//==============================================================================
-void Viewer::switchDefaultEventHandler(bool _on)
-{
-  removeEventHandler(mDefaultEventHandler);
-  if (_on) {
-    addEventHandler(mDefaultEventHandler);
+  if (state.skippedFrames < std::numeric_limits<int>::max()) {
+    ++state.skippedFrames;
   }
 }
 
-//==============================================================================
-DefaultEventHandler* Viewer::getDefaultEventHandler() const
+bool shouldStopAfterFrame(
+    const RunOptions& options, const ViewerLifecycleState& state)
 {
-  return mDefaultEventHandler;
+  return shouldStopAfterFrame(options, state.renderedFrames);
 }
 
-//==============================================================================
-void Viewer::switchHeadlights(bool _on)
+bool writeRgbaPpm(
+    const std::string& path,
+    std::uint32_t width,
+    std::uint32_t height,
+    const std::vector<std::uint8_t>& rgbaPixels,
+    bool originBottomLeft,
+    std::string* errorMessage)
 {
-  mHeadlights = _on;
-
-  if (_on) {
-    if (getLight()) {
-      getLight()->setAmbient(::osg::Vec4(0.1, 0.1, 0.1, 1.0));
-      getLight()->setDiffuse(::osg::Vec4(0.8, 0.8, 0.8, 1.0));
-      getLight()->setSpecular(::osg::Vec4(1.0, 1.0, 1.0, 1.0));
+  const auto fail = [errorMessage](const std::string& message) {
+    if (errorMessage != nullptr) {
+      *errorMessage = message;
     }
+    return false;
+  };
 
-    if (mLight1) {
-      mLight1->setAmbient(::osg::Vec4(0.0, 0.0, 0.0, 1.0));
-      mLight1->setDiffuse(::osg::Vec4(0.0, 0.0, 0.0, 1.0));
-      mLight1->setSpecular(::osg::Vec4(0.0, 0.0, 0.0, 1.0));
-    }
+  if (width == 0 || height == 0) {
+    return fail("PPM dimensions must be nonzero");
+  }
 
-    if (mLight2) {
-      mLight2->setAmbient(::osg::Vec4(0.0, 0.0, 0.0, 1.0));
-      mLight2->setDiffuse(::osg::Vec4(0.0, 0.0, 0.0, 1.0));
-      mLight2->setSpecular(::osg::Vec4(0.0, 0.0, 0.0, 1.0));
+  constexpr std::size_t channels = 4;
+  const auto maxSize = std::numeric_limits<std::size_t>::max();
+  const auto imageWidth = static_cast<std::size_t>(width);
+  const auto imageHeight = static_cast<std::size_t>(height);
+  if (imageWidth > maxSize / imageHeight
+      || imageWidth * imageHeight > maxSize / channels) {
+    return fail("PPM image dimensions overflow the addressable buffer size");
+  }
+
+  const std::size_t expectedSize = imageWidth * imageHeight * channels;
+  if (rgbaPixels.size() != expectedSize) {
+    return fail("PPM RGBA buffer size does not match width * height * 4 bytes");
+  }
+
+  std::ofstream out(path, std::ios::binary);
+  if (!out) {
+    return fail("Failed to open PPM output path: " + path);
+  }
+
+  out << "P6\n" << width << " " << height << "\n255\n";
+  for (std::uint32_t y = 0; y < height; ++y) {
+    const std::uint32_t sourceY = originBottomLeft ? height - 1 - y : y;
+    const std::size_t row = static_cast<std::size_t>(sourceY) * imageWidth * 4;
+    for (std::uint32_t x = 0; x < width; ++x) {
+      const auto* pixel = &rgbaPixels[row + static_cast<std::size_t>(x) * 4];
+      out.write(reinterpret_cast<const char*>(pixel), 3);
     }
+  }
+
+  if (!out) {
+    return fail("Failed while writing PPM output path: " + path);
+  }
+
+  return true;
+}
+
+OrbitCameraBasis makeOrbitCameraBasis(const OrbitCamera& camera)
+{
+  OrbitCameraBasis basis;
+  basis.eye = cameraEye(camera);
+  basis.forward = camera.target - basis.eye;
+  if (basis.forward.squaredNorm() < 1e-12) {
+    basis.forward = -Eigen::Vector3d::UnitX();
   } else {
-    if (getLight()) {
-      getLight()->setAmbient(::osg::Vec4(0.1, 0.1, 0.1, 1.0));
-      getLight()->setDiffuse(::osg::Vec4(0.0, 0.0, 0.0, 1.0));
-      getLight()->setSpecular(::osg::Vec4(0.0, 0.0, 0.0, 1.0));
-    }
-
-    if (mLight1) {
-      mLight1->setAmbient(::osg::Vec4(0.0, 0.0, 0.0, 1.0));
-      mLight1->setDiffuse(::osg::Vec4(0.7, 0.7, 0.7, 1.0));
-      mLight1->setSpecular(::osg::Vec4(0.9, 0.9, 0.9, 1.0));
-    }
-
-    if (mLight2) {
-      mLight2->setAmbient(::osg::Vec4(0.0, 0.0, 0.0, 1.0));
-      mLight2->setDiffuse(::osg::Vec4(0.3, 0.3, 0.3, 1.0));
-      mLight2->setSpecular(::osg::Vec4(0.4, 0.4, 0.4, 1.0));
-    }
-  }
-}
-
-//==============================================================================
-bool Viewer::checkHeadlights() const
-{
-  return mHeadlights;
-}
-
-//==============================================================================
-void Viewer::addWorldNode(WorldNode* _newWorldNode, bool _active)
-{
-  if (mWorldNodes.contains(_newWorldNode)) {
-    return;
+    basis.forward.normalize();
   }
 
-  mWorldNodes[_newWorldNode] = _active;
-  mRootGroup->addChild(_newWorldNode);
-  mCameraModeCallback->setSceneData(
-      _newWorldNode); // TODO(JS): Change to addSceneData
-  if (_active) {
-    _newWorldNode->simulate(mSimulating);
-  }
-  _newWorldNode->mViewer = this;
-  _newWorldNode->setupViewer();
-  // set again the shadow technique to produce warning for ImGuiViewer
-  if (_newWorldNode->isShadowed()) {
-    _newWorldNode->setShadowTechnique(_newWorldNode->getShadowTechnique());
-  }
-}
-
-//==============================================================================
-void Viewer::removeWorldNode(WorldNode* _oldWorldNode)
-{
-  if (!mWorldNodes.contains(_oldWorldNode)) {
-    return;
-  }
-
-  mRootGroup->removeChild(_oldWorldNode);
-  mWorldNodes.erase(_oldWorldNode);
-}
-
-//==============================================================================
-void Viewer::removeWorldNode(std::shared_ptr<dart::simulation::World> _oldWorld)
-{
-  WorldNode* node = getWorldNode(_oldWorld);
-
-  if (nullptr == node) {
-    return;
-  }
-
-  mRootGroup->removeChild(node);
-  mWorldNodes.erase(node);
-}
-
-//==============================================================================
-WorldNode* Viewer::getWorldNode(
-    std::shared_ptr<dart::simulation::World> _world) const
-{
-  const auto it = std::ranges::find_if(mWorldNodes, [&](const auto& nodePair) {
-    return nodePair.first->getWorld() == _world;
-  });
-
-  return it != mWorldNodes.cend() ? it->first : nullptr;
-}
-
-//==============================================================================
-void Viewer::addAttachment(ViewerAttachment* _attachment)
-{
-  Viewer* oldViewer = _attachment->mViewer;
-  if (oldViewer) {
-    oldViewer->removeAttachment(_attachment);
-  }
-
-  _attachment->mViewer = this;
-  mAttachments.insert(_attachment);
-  _attachment->attach(this);
-}
-
-//==============================================================================
-void Viewer::removeAttachment(ViewerAttachment* _attachment)
-{
-  if (!mAttachments.contains(_attachment)) {
-    return;
-  }
-
-  _attachment->mViewer = nullptr;
-  mAttachments.erase(_attachment);
-}
-
-//==============================================================================
-const std::unordered_set<ViewerAttachment*>& Viewer::getAttachments() const
-{
-  return mAttachments;
-}
-
-//==============================================================================
-::osg::Group* Viewer::getLightGroup()
-{
-  return mLightGroup;
-}
-
-//==============================================================================
-const ::osg::Group* Viewer::getLightGroup() const
-{
-  return mLightGroup;
-}
-
-//==============================================================================
-const ::osg::ref_ptr<::osg::LightSource>& Viewer::getLightSource(
-    std::size_t index) const
-{
-  DART_ASSERT(index < 2);
-  if (index == 0) {
-    return mLightSource1;
-  }
-  return mLightSource2;
-}
-
-//==============================================================================
-void Viewer::setupDefaultLights()
-{
-  setUpwardsDirection(mUpwards);
-  switchHeadlights(true);
-
-  ::osg::ref_ptr<::osg::StateSet> lightSS = mRootGroup->getOrCreateStateSet();
-
-  mLight1->setLightNum(1);
-  mLightSource1->setLight(mLight1);
-  mLightSource1->setLocalStateSetModes(::osg::StateAttribute::ON);
-  mLightSource1->setStateSetModes(*lightSS, ::osg::StateAttribute::ON);
-  mLightGroup->removeChild(
-      mLightSource1); // Make sure the LightSource is not already present
-  mLightGroup->addChild(mLightSource1);
-
-  mLight2->setLightNum(2);
-  mLightSource2->setLight(mLight2);
-  mLightSource2->setLocalStateSetModes(::osg::StateAttribute::ON);
-  mLightSource2->setStateSetModes(*lightSS, ::osg::StateAttribute::ON);
-  mLightGroup->removeChild(mLightSource2);
-  mLightGroup->addChild(mLightSource2);
-
-  mRootGroup->removeChild(mLightGroup);
-  mRootGroup->addChild(mLightGroup);
-}
-
-//==============================================================================
-void Viewer::setUpwardsDirection(const ::osg::Vec3& _up)
-{
-  mUpwards = _up;
-  if (mUpwards.length() > 0) {
-    mUpwards.normalize();
+  Eigen::Vector3d upReference = camera.up;
+  if (!upReference.allFinite() || upReference.squaredNorm() < 1e-12) {
+    upReference = Eigen::Vector3d::UnitZ();
   } else {
-    mUpwards = ::osg::Vec3(0, 0, 1);
+    upReference.normalize();
   }
 
-  mOver = _up
-          ^ ::osg::Vec3(
-              1, 0, 0); // Note: operator^ is the cross product operator in OSG
-  if (mOver.length() < 1e-12) {
-    mOver = ::osg::Vec3(0, 0, 1) ^ _up;
+  basis.right = basis.forward.cross(upReference);
+  if (basis.right.squaredNorm() < 1e-12) {
+    const Eigen::Vector3d fallbackUp
+        = std::abs(basis.forward.dot(Eigen::Vector3d::UnitZ())) < 0.95
+              ? Eigen::Vector3d::UnitZ()
+              : Eigen::Vector3d::UnitY();
+    basis.right = basis.forward.cross(fallbackUp);
   }
-  mOver.normalize();
-
-  ::osg::Vec3 p1 = mUpwards + mOver;
-  mLight1->setPosition(::osg::Vec4(p1[0], p1[1], p1[2], 0.0));
-  ::osg::Vec3 p2 = mUpwards - mOver;
-  mLight2->setPosition(::osg::Vec4(p2[0], p2[1], p2[2], 0.0));
-}
-
-//==============================================================================
-void Viewer::setUpwardsDirection(const Eigen::Vector3d& _up)
-{
-  setUpwardsDirection(eigToOsgVec3(_up));
-}
-
-//==============================================================================
-void Viewer::setWorldNodeActive(WorldNode* _node, bool _active)
-{
-  auto it = mWorldNodes.find(_node);
-  if (it == mWorldNodes.end()) {
-    return;
+  if (basis.right.squaredNorm() < 1e-12) {
+    basis.right = Eigen::Vector3d::UnitY();
+  } else {
+    basis.right.normalize();
   }
-
-  it->second = _active;
+  basis.up = basis.right.cross(basis.forward).normalized();
+  return basis;
 }
 
-//==============================================================================
-void Viewer::setWorldNodeActive(
-    std::shared_ptr<dart::simulation::World> _world, bool _active)
+Eigen::Vector3d cameraEye(const OrbitCamera& camera)
 {
-  setWorldNodeActive(getWorldNode(_world), _active);
+  return camera.target
+         + Eigen::Vector3d(
+             camera.distance * std::cos(camera.pitch) * std::cos(camera.yaw),
+             camera.distance * std::cos(camera.pitch) * std::sin(camera.yaw),
+             camera.distance * std::sin(camera.pitch));
 }
 
-//==============================================================================
-void Viewer::simulate(bool _on)
+void updateOrbitCamera(OrbitCamera& camera, const OrbitCameraUpdate& update)
 {
-  if (!mAllowSimulation && _on) {
-    return;
+  if (update.orbit) {
+    camera.yaw -= update.deltaX * update.orbitScale;
+    camera.pitch += update.deltaY * update.orbitScale;
   }
 
-  mSimulating = _on;
-  for (auto& node_pair : mWorldNodes) {
-    if (node_pair.second) {
-      node_pair.first->simulate(_on);
+  const double minPitch = std::min(update.minPitch, update.maxPitch);
+  const double maxPitch = std::max(update.minPitch, update.maxPitch);
+  camera.pitch = std::clamp(camera.pitch, minPitch, maxPitch);
+
+  if (update.pan) {
+    const OrbitCameraBasis basis = makeOrbitCameraBasis(camera);
+    const double panScale = camera.distance * update.panScale;
+    camera.target -= basis.right * update.deltaX * panScale;
+    camera.target += basis.up * update.deltaY * panScale;
+  }
+
+  if (update.scrollDelta != 0.0) {
+    camera.distance *= std::exp(-update.scrollDelta * update.scrollScale);
+  }
+
+  const double minDistance = std::max(0.0, update.minDistance);
+  const double maxDistance = std::max(minDistance, update.maxDistance);
+  camera.distance = std::clamp(camera.distance, minDistance, maxDistance);
+}
+
+void addOrbitCameraScroll(OrbitCameraController& controller, double scrollDelta)
+{
+  if (std::isfinite(scrollDelta)) {
+    controller.scrollDelta += scrollDelta;
+  }
+}
+
+void resetOrbitCameraTracking(OrbitCameraController& controller)
+{
+  controller.hasLastCursor = false;
+}
+
+void updateOrbitCameraController(
+    OrbitCameraController& controller, const OrbitCameraControllerInput& input)
+{
+  const bool hasCursor = input.hasCursor && std::isfinite(input.cursorX)
+                         && std::isfinite(input.cursorY);
+  double dx = 0.0;
+  double dy = 0.0;
+  if (hasCursor) {
+    if (!controller.hasLastCursor) {
+      controller.lastCursorX = input.cursorX;
+      controller.lastCursorY = input.cursorY;
+      controller.hasLastCursor = true;
     }
+    dx = input.cursorX - controller.lastCursorX;
+    dy = input.cursorY - controller.lastCursorY;
+    controller.lastCursorX = input.cursorX;
+    controller.lastCursorY = input.cursorY;
+  } else {
+    resetOrbitCameraTracking(controller);
   }
+
+  OrbitCameraUpdate update;
+  update.deltaX = dx;
+  update.deltaY = dy;
+  update.scrollDelta = controller.scrollDelta;
+  update.orbit = hasCursor && input.orbit;
+  update.pan = hasCursor && input.pan;
+  updateOrbitCamera(controller.camera, update);
+  controller.scrollDelta = 0.0;
 }
 
-//==============================================================================
-bool Viewer::isSimulating() const
+Eigen::Vector3d computeCameraRelativeNudge(
+    const OrbitCamera& camera, const DirectionalNudgeInput& input)
 {
-  return mSimulating;
+  if (!std::isfinite(input.stepSize) || input.stepSize <= 0.0) {
+    return Eigen::Vector3d::Zero();
+  }
+
+  const double fastMultiplier
+      = std::isfinite(input.fastMultiplier) && input.fastMultiplier > 0.0
+            ? input.fastMultiplier
+            : 1.0;
+  const double step = input.stepSize * (input.fast ? fastMultiplier : 1.0);
+  if (!std::isfinite(step) || step <= 0.0) {
+    return Eigen::Vector3d::Zero();
+  }
+
+  const auto basis = makeOrbitCameraBasis(camera);
+  Eigen::Vector3d forward = basis.forward;
+  forward.z() = 0.0;
+  if (forward.squaredNorm() < 1e-12) {
+    forward = -Eigen::Vector3d::UnitY();
+  } else {
+    forward.normalize();
+  }
+
+  Eigen::Vector3d right = basis.right;
+  right.z() = 0.0;
+  if (right.squaredNorm() < 1e-12) {
+    right = Eigen::Vector3d::UnitX();
+  } else {
+    right.normalize();
+  }
+
+  Eigen::Vector3d nudge = Eigen::Vector3d::Zero();
+  if (input.left) {
+    nudge -= right * step;
+  }
+  if (input.right) {
+    nudge += right * step;
+  }
+  if (input.forward) {
+    nudge += forward * step;
+  }
+  if (input.backward) {
+    nudge -= forward * step;
+  }
+  if (input.up) {
+    nudge += Eigen::Vector3d::UnitZ() * step;
+  }
+  if (input.down) {
+    nudge -= Eigen::Vector3d::UnitZ() * step;
+  }
+  return nudge;
 }
 
-//==============================================================================
-void Viewer::allowSimulation(bool _allow)
+PickRay makePerspectivePickRay(
+    const OrbitCamera& camera,
+    double cursorX,
+    double cursorY,
+    int width,
+    int height,
+    double verticalFovRadians)
 {
-  mAllowSimulation = _allow;
-
-  if (!mAllowSimulation && mSimulating) {
-    simulate(false);
+  if (!std::isfinite(verticalFovRadians) || verticalFovRadians <= 0.0) {
+    verticalFovRadians = 0.7853981633974483;
   }
+
+  const int safeWidth = std::max(1, width);
+  const int safeHeight = std::max(1, height);
+  const OrbitCameraBasis basis = makeOrbitCameraBasis(camera);
+  const double aspect
+      = static_cast<double>(safeWidth) / static_cast<double>(safeHeight);
+  const double ndcX = (2.0 * cursorX / static_cast<double>(safeWidth)) - 1.0;
+  const double ndcY = 1.0 - (2.0 * cursorY / static_cast<double>(safeHeight));
+  const double halfHeight = std::tan(verticalFovRadians * 0.5);
+
+  PickRay ray;
+  ray.origin = basis.eye;
+  ray.direction = (basis.forward + basis.right * ndcX * aspect * halfHeight
+                   + basis.up * ndcY * halfHeight)
+                      .normalized();
+  return ray;
 }
 
-//==============================================================================
-bool Viewer::isAllowingSimulation() const
+PerspectiveProjection makePerspectiveProjection(
+    const OrbitCamera& camera,
+    int width,
+    int height,
+    const ProjectionOptions& options)
 {
-  return mAllowSimulation;
+  const int safeWidth = std::max(1, width);
+  const int safeHeight = std::max(1, height);
+  const double safeDistance
+      = std::isfinite(camera.distance) ? std::max(0.0, camera.distance) : 0.0;
+  const double defaultNearScale = ProjectionOptions{}.nearScale;
+  const double nearScale
+      = std::isfinite(options.nearScale) && options.nearScale > 0.0
+            ? options.nearScale
+            : defaultNearScale;
+  const double minNear = std::max(
+      1e-6,
+      std::isfinite(options.minNearPlane) && options.minNearPlane > 0.0
+          ? options.minNearPlane
+          : ProjectionOptions{}.minNearPlane);
+  const double maxNearCandidate
+      = std::isfinite(options.maxNearPlane) && options.maxNearPlane > 0.0
+            ? options.maxNearPlane
+            : ProjectionOptions{}.maxNearPlane;
+  const double maxNear = std::max(minNear, maxNearCandidate);
+  const double defaultNear
+      = std::clamp(safeDistance * nearScale, minNear, maxNear);
+
+  PerspectiveProjection projection;
+  projection.aspectRatio
+      = static_cast<double>(safeWidth) / static_cast<double>(safeHeight);
+  projection.verticalFovDegrees = std::isfinite(options.verticalFovDegrees)
+                                          && options.verticalFovDegrees > 0.0
+                                          && options.verticalFovDegrees < 180.0
+                                      ? options.verticalFovDegrees
+                                      : ProjectionOptions{}.verticalFovDegrees;
+  projection.nearPlane = options.nearPlane.has_value()
+                                 && std::isfinite(*options.nearPlane)
+                                 && *options.nearPlane > 0.0
+                             ? *options.nearPlane
+                             : defaultNear;
+
+  const double minFar
+      = std::isfinite(options.minFarPlane) && options.minFarPlane > 0.0
+            ? options.minFarPlane
+            : ProjectionOptions{}.minFarPlane;
+  const double farPadding
+      = std::isfinite(options.farPadding) && options.farPadding >= 0.0
+            ? options.farPadding
+            : ProjectionOptions{}.farPadding;
+  const double defaultFar = std::max(
+      std::max(minFar, safeDistance + farPadding), projection.nearPlane + 1.0);
+  projection.farPlane = options.farPlane.has_value()
+                                && std::isfinite(*options.farPlane)
+                                && *options.farPlane > projection.nearPlane
+                            ? *options.farPlane
+                            : defaultFar;
+  return projection;
 }
 
-//==============================================================================
-DragAndDrop* Viewer::enableDragAndDrop(dart::dynamics::Entity* _entity)
-{
-  if (dart::dynamics::BodyNode* bn
-      = dynamic_cast<dart::dynamics::BodyNode*>(_entity)) {
-    return enableDragAndDrop(bn);
-  }
-
-  if (dart::dynamics::SimpleFrame* sf
-      = dynamic_cast<dart::dynamics::SimpleFrame*>(_entity)) {
-    return enableDragAndDrop(sf);
-  }
-
-  return nullptr;
-}
-
-//==============================================================================
-SimpleFrameDnD* Viewer::enableDragAndDrop(dart::dynamics::SimpleFrame* _frame)
-{
-  if (nullptr == _frame) {
-    return nullptr;
-  }
-
-  std::map<dart::dynamics::SimpleFrame*, SimpleFrameDnD*>::iterator it
-      = mSimpleFrameDnDMap.find(_frame);
-  if (it != mSimpleFrameDnDMap.end()) {
-    return it->second;
-  }
-
-  SimpleFrameDnD* dnd = new SimpleFrameDnD(this, _frame);
-  mSimpleFrameDnDMap[_frame] = dnd;
-  return dnd;
-}
-
-//==============================================================================
-// Creating a type alias for a very long and ugly template
-namespace sfs_dnd {
-using iterator
-    = std::multimap<dart::dynamics::Shape*, SimpleFrameShapeDnD*>::iterator;
-} // namespace sfs_dnd
-
-//==============================================================================
-static sfs_dnd::iterator getSimpleFrameShapeDnDFromMultimap(
-    dart::dynamics::SimpleFrame* _frame,
-    dart::dynamics::Shape* _shape,
-    std::multimap<dart::dynamics::Shape*, SimpleFrameShapeDnD*>& map)
-{
-  using namespace sfs_dnd;
-
-  auto [first, last] = map.equal_range(_shape);
-  auto shapeDnDs = std::ranges::subrange(first, last);
-  auto it = std::ranges::find_if(shapeDnDs, [_frame](const auto& entry) {
-    return entry.second->getSimpleFrame() == _frame;
-  });
-
-  return it != shapeDnDs.end() ? it : map.end();
-}
-
-//==============================================================================
-SimpleFrameShapeDnD* Viewer::enableDragAndDrop(
-    dart::dynamics::SimpleFrame* _frame, dart::dynamics::Shape* _shape)
-{
-  if (nullptr == _frame || nullptr == _shape) {
-    return nullptr;
-  }
-
-  using namespace sfs_dnd;
-
-  iterator existingDnD = getSimpleFrameShapeDnDFromMultimap(
-      _frame, _shape, mSimpleFrameShapeDnDMap);
-  if (existingDnD != mSimpleFrameShapeDnDMap.end()) {
-    return existingDnD->second;
-  }
-
-  SimpleFrameShapeDnD* dnd = new SimpleFrameShapeDnD(this, _frame, _shape);
-  mSimpleFrameShapeDnDMap.insert(
-      std::pair<dart::dynamics::Shape*, SimpleFrameShapeDnD*>(_shape, dnd));
-
-  return dnd;
-}
-
-//==============================================================================
-InteractiveFrameDnD* Viewer::enableDragAndDrop(
-    dart::gui::InteractiveFrame* _frame)
-{
-  if (nullptr == _frame) {
-    return nullptr;
-  }
-
-  std::map<InteractiveFrame*, InteractiveFrameDnD*>::iterator it
-      = mInteractiveFrameDnDMap.find(_frame);
-  if (it != mInteractiveFrameDnDMap.end()) {
-    return it->second;
-  }
-
-  InteractiveFrameDnD* dnd = new InteractiveFrameDnD(this, _frame);
-  mInteractiveFrameDnDMap[_frame] = dnd;
-  return dnd;
-}
-
-//==============================================================================
-BodyNodeDnD* Viewer::enableDragAndDrop(
-    dart::dynamics::BodyNode* _bn, bool _useExternalIK, bool _useWholeBody)
-{
-  if (nullptr == _bn) {
-    return nullptr;
-  }
-
-  std::map<dart::dynamics::BodyNode*, BodyNodeDnD*>::iterator it
-      = mBodyNodeDnDMap.find(_bn);
-  if (it != mBodyNodeDnDMap.end()) {
-    return it->second;
-  }
-
-  BodyNodeDnD* dnd = new BodyNodeDnD(this, _bn, _useExternalIK, _useWholeBody);
-  mBodyNodeDnDMap[_bn] = dnd;
-  return dnd;
-}
-
-//==============================================================================
-bool Viewer::disableDragAndDrop(DragAndDrop* _dnd)
-{
-  if (disableDragAndDrop(dynamic_cast<SimpleFrameShapeDnD*>(_dnd))) {
-    return true;
-  }
-
-  if (disableDragAndDrop(dynamic_cast<SimpleFrameDnD*>(_dnd))) {
-    return true;
-  }
-
-  if (disableDragAndDrop(dynamic_cast<InteractiveFrameDnD*>(_dnd))) {
-    return true;
-  }
-
-  if (disableDragAndDrop(dynamic_cast<BodyNodeDnD*>(_dnd))) {
-    return true;
-  }
-
-  return false;
-}
-
-//==============================================================================
-bool Viewer::disableDragAndDrop(SimpleFrameDnD* _dnd)
-{
-  if (nullptr == _dnd) {
-    return false;
-  }
-
-  std::map<dart::dynamics::SimpleFrame*, SimpleFrameDnD*>::iterator it
-      = mSimpleFrameDnDMap.find(_dnd->getSimpleFrame());
-  if (it == mSimpleFrameDnDMap.end()) {
-    return false;
-  }
-
-  delete it->second;
-  mSimpleFrameDnDMap.erase(it);
-
-  return true;
-}
-
-//==============================================================================
-bool Viewer::disableDragAndDrop(SimpleFrameShapeDnD* _dnd)
-{
-  if (nullptr == _dnd) {
-    return false;
-  }
-
-  using namespace sfs_dnd;
-
-  iterator it = getSimpleFrameShapeDnDFromMultimap(
-      _dnd->getSimpleFrame(), _dnd->getShape(), mSimpleFrameShapeDnDMap);
-
-  if (it == mSimpleFrameShapeDnDMap.end()) {
-    return false;
-  }
-
-  delete it->second;
-  mSimpleFrameShapeDnDMap.erase(it);
-
-  return true;
-}
-
-//==============================================================================
-bool Viewer::disableDragAndDrop(InteractiveFrameDnD* _dnd)
-{
-  if (nullptr == _dnd) {
-    return false;
-  }
-
-  std::map<InteractiveFrame*, InteractiveFrameDnD*>::iterator it
-      = mInteractiveFrameDnDMap.find(_dnd->getFrame());
-  if (it == mInteractiveFrameDnDMap.end()) {
-    return false;
-  }
-
-  delete it->second;
-  mInteractiveFrameDnDMap.erase(it);
-
-  return true;
-}
-
-//==============================================================================
-bool Viewer::disableDragAndDrop(BodyNodeDnD* _dnd)
-{
-  if (nullptr == _dnd) {
-    return false;
-  }
-
-  std::map<dart::dynamics::BodyNode*, BodyNodeDnD*>::iterator it
-      = mBodyNodeDnDMap.find(_dnd->getBodyNode());
-  if (it == mBodyNodeDnDMap.end()) {
-    return false;
-  }
-
-  delete it->second;
-  mBodyNodeDnDMap.erase(it);
-
-  return true;
-}
-
-//==============================================================================
-const std::string& Viewer::getInstructions() const
-{
-  return mInstructions;
-}
-
-//==============================================================================
-void Viewer::addInstructionText(const std::string& _instruction)
-{
-  mInstructions.append(_instruction);
-}
-
-//==============================================================================
-void Viewer::updateViewer()
-{
-  updateDragAndDrops();
-}
-
-//==============================================================================
-void Viewer::updateDragAndDrops()
-{
-  for (SimpleFrameDnD* dnd : std::views::values(mSimpleFrameDnDMap)) {
-    dnd->update();
-  }
-
-  for (SimpleFrameShapeDnD* dnd : std::views::values(mSimpleFrameShapeDnDMap)) {
-    dnd->update();
-  }
-
-  for (InteractiveFrameDnD* dnd : std::views::values(mInteractiveFrameDnDMap)) {
-    dnd->update();
-  }
-
-  for (BodyNodeDnD* dnd : std::views::values(mBodyNodeDnDMap)) {
-    dnd->update();
-  }
-}
-
-//==============================================================================
-const ::osg::ref_ptr<::osg::Group>& Viewer::getRootGroup() const
-{
-  return mRootGroup;
-}
-
-//==============================================================================
-void Viewer::setVerticalFieldOfView(const double fov)
-{
-  double fovy;
-  double aspectRatio;
-  double zNear;
-  double zFar;
-
-  auto* camera = getCamera();
-
-  if (!camera) {
-    DART_WARN("This viewer doesn't have any cameras. Ignoring this request.");
-    return;
-  }
-
-  const bool result = camera->getProjectionMatrixAsPerspective(
-      fovy, aspectRatio, zNear, zFar);
-
-  if (!result) {
-    DART_WARN(
-        "Attempting to set vertical field of view while the camera isn't "
-        "perspective view. Ignoring this request.");
-    return;
-  }
-
-  camera->setProjectionMatrixAsPerspective(fov, aspectRatio, zNear, zFar);
-}
-
-//==============================================================================
-double Viewer::getVerticalFieldOfView() const
-{
-  double fovy;
-  double aspectRatio;
-  double zNear;
-  double zFar;
-
-  const auto* camera = getCamera();
-
-  if (!camera) {
-    DART_WARN("This viewer doesn't have any cameras. Returning 0.0.");
-    return 0.0;
-  }
-
-  const bool result = camera->getProjectionMatrixAsPerspective(
-      fovy, aspectRatio, zNear, zFar);
-
-  if (!result) {
-    DART_WARN(
-        "Vertical field of view is requested while the camera isn't "
-        "perspective view. Returning 0.0.");
-    return 0.0;
-  }
-
-  return fovy;
-}
-
-//==============================================================================
-void Viewer::setCameraMode(CameraMode mode)
-{
-  mCameraModeCallback->setCameraMode(mode);
-}
-
-//========================================================================================
-CameraMode Viewer::getCameraMode() const
-{
-  return mCameraModeCallback->getCameraMode();
-}
-
-} // namespace gui
-} // namespace dart
+} // namespace dart::gui

@@ -179,9 +179,8 @@ protected:
 
   /// @brief Get a frame such that:
   ///        1) The origin is at the COM
-  ///        2) The z-axis is perpendicular to the ground (y-axis by default)
-  ///        3) The x-axis is a projected x-axis of pelvis on to perpendicular
-  ///           plane against to the z-axis
+  ///        2) The z-axis is world up and perpendicular to the ground
+  ///        3) The x-axis is the pelvis x-axis projected onto the ground plane
   Eigen::Isometry3d getCOMFrame() const;
 
   /// @brief Get sagittal com distance

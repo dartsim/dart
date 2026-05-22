@@ -30,163 +30,263 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/macros.hpp"
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/gui/all.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/utils/All.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/soft_body_node.hpp>
 
-#include <dart/all.hpp>
+#include <dart/math/random.hpp>
+
 #include <dart/io/read.hpp>
 
+#include <Eigen/Core>
+
 #include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-#define FORCE_ON_RIGIDBODY 500.0
+namespace {
 
-class MixedChainEventHandler : public osgGA::GUIEventHandler
+constexpr const char* kMixedChainUri
+    = "dart://sample/skel/test/test_articulated_bodies_10bodies.skel";
+constexpr const char* kMixedChainName = "mixed_chain";
+constexpr double kForceMagnitude = 500.0;
+constexpr int kImpulseFrames = 100;
+
+dart::simulation::WorldPtr createMixedChainWorld()
 {
-public:
-  MixedChainEventHandler(dart::simulation::WorldPtr world)
-    : mWorld(world), mImpulseDuration(0)
-  {
-    mForceOnRigidBody.setZero();
+  auto world = dart::io::readWorld(kMixedChainUri);
+  if (world == nullptr) {
+    throw std::runtime_error(
+        "Failed to load test_articulated_bodies_10bodies.skel");
   }
 
-  bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto chain = world->getSkeleton(1);
+  if (chain == nullptr) {
+    throw std::runtime_error("Mixed chain world did not contain a chain");
+  }
+  chain->setName(kMixedChainName);
+
+  Eigen::VectorXd initialPose = Eigen::VectorXd::Zero(chain->getNumDofs());
+  for (Eigen::Index i = 0; i < std::min<Eigen::Index>(3, initialPose.size());
+       ++i) {
+    initialPose[i] = dart::math::Random::uniform(-0.5, 0.5);
+  }
+  chain->setPositions(initialPose);
+
+  for (std::size_t i = 0; i < chain->getNumBodyNodes(); ++i) {
+    auto* body = chain->getBodyNode(i);
+    const bool softLink
+        = dynamic_cast<const dart::dynamics::SoftBodyNode*>(body) != nullptr;
+    body->setColor(
+        softLink ? Eigen::Vector3d(0.90, 0.42, 0.18)
+                 : Eigen::Vector3d(0.30, 0.55, 0.85));
+  }
+
+  return world;
+}
+
+dart::gui::OrbitCamera makeMixedChainCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.4636476090008061;
+  camera.pitch = 0.7297276562269663;
+  camera.distance = 3.0;
+  return camera;
+}
+
+dart::gui::RunOptions makeMixedChainRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+void printMixedChainInstructions()
+{
+  std::cout << "Mixed Chain Example Controls:\n";
+  std::cout << "'q'/'w': Apply force in -X/+X direction\n";
+  std::cout << "'e'/'r': Apply force in -Y/+Y direction\n";
+  std::cout << "'t'/'y': Apply force in -Z/+Z direction\n";
+  std::cout << "Space: Toggle simulation\n";
+}
+
+struct MixedChainControls
+{
+  explicit MixedChainControls(dart::simulation::WorldPtr inputWorld)
+    : world(std::move(inputWorld))
   {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
-      switch (ea.getKey()) {
-        case 'q':
-          mForceOnRigidBody[0] = -FORCE_ON_RIGIDBODY;
-          mImpulseDuration = 100;
-          return true;
-        case 'w':
-          mForceOnRigidBody[0] = FORCE_ON_RIGIDBODY;
-          mImpulseDuration = 100;
-          return true;
-        case 'e':
-          mForceOnRigidBody[1] = -FORCE_ON_RIGIDBODY;
-          mImpulseDuration = 100;
-          return true;
-        case 'r':
-          mForceOnRigidBody[1] = FORCE_ON_RIGIDBODY;
-          mImpulseDuration = 100;
-          return true;
-        case 't':
-          mForceOnRigidBody[2] = -FORCE_ON_RIGIDBODY;
-          mImpulseDuration = 100;
-          return true;
-        case 'y':
-          mForceOnRigidBody[2] = FORCE_ON_RIGIDBODY;
-          mImpulseDuration = 100;
-          return true;
-        default:
-          return false;
+  }
+
+  void startImpulse(const Eigen::Vector3d& inputForce)
+  {
+    force = inputForce;
+    framesRemaining = kImpulseFrames;
+  }
+
+  void applyImpulse()
+  {
+    if (world == nullptr || framesRemaining <= 0) {
+      return;
+    }
+
+    auto chain = world->getSkeleton(kMixedChainName);
+    if (chain != nullptr && chain->getNumSoftBodyNodes() > 3) {
+      if (auto* softBody = chain->getSoftBodyNode(3)) {
+        softBody->addExtForce(force);
       }
     }
-    return false;
-  }
 
-  void applyForces()
-  {
-    if (mImpulseDuration > 0) {
-      dart::dynamics::SkeletonPtr skeleton = mWorld->getSkeleton(1);
-      if (skeleton && skeleton->getNumSoftBodyNodes() > 3) {
-        dart::dynamics::SoftBodyNode* softBodyNode
-            = skeleton->getSoftBodyNode(3);
-        if (softBodyNode) {
-          softBodyNode->addExtForce(mForceOnRigidBody);
-        }
-      }
-      mImpulseDuration--;
-      if (mImpulseDuration <= 0) {
-        mImpulseDuration = 0;
-        mForceOnRigidBody.setZero();
-      }
+    --framesRemaining;
+    if (framesRemaining == 0) {
+      force.setZero();
     }
   }
 
-private:
-  dart::simulation::WorldPtr mWorld;
-  Eigen::Vector3d mForceOnRigidBody;
-  int mImpulseDuration;
+  dart::simulation::WorldPtr world;
+  Eigen::Vector3d force = Eigen::Vector3d::Zero();
+  int framesRemaining = 0;
 };
 
-class MixedChainWorldNode : public dart::gui::RealTimeWorldNode
+dart::gui::KeyboardAction makeImpulseAction(
+    const std::shared_ptr<MixedChainControls>& controls,
+    char key,
+    std::string label,
+    const Eigen::Vector3d& force)
 {
-public:
-  MixedChainWorldNode(
-      dart::simulation::WorldPtr world,
-      ::osg::ref_ptr<MixedChainEventHandler> eventHandler)
-    : dart::gui::RealTimeWorldNode(world), mEventHandler(eventHandler)
-  {
-  }
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback = [controls, force](dart::gui::KeyboardActionContext&) {
+    controls->startImpulse(force);
+  };
+  return action;
+}
 
-protected:
-  void customPreStep() override
-  {
-    // Apply forces from the event handler
-    mEventHandler->applyForces();
-  }
-
-private:
-  ::osg::ref_ptr<MixedChainEventHandler> mEventHandler;
-};
-
-int main()
+std::vector<dart::gui::KeyboardAction> createMixedChainKeyboardActions(
+    const std::shared_ptr<MixedChainControls>& controls)
 {
-  // Load the skeleton file
-  dart::simulation::WorldPtr myWorld = dart::io::readWorld(
-      "dart://sample/skel/test/test_articulated_bodies_10bodies.skel");
-  DART_ASSERT(myWorld != nullptr);
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(6);
+  actions.push_back(makeImpulseAction(
+      controls,
+      'q',
+      "Apply mixed-chain impulse -X",
+      Eigen::Vector3d(-kForceMagnitude, 0.0, 0.0)));
+  actions.push_back(makeImpulseAction(
+      controls,
+      'w',
+      "Apply mixed-chain impulse +X",
+      Eigen::Vector3d(kForceMagnitude, 0.0, 0.0)));
+  actions.push_back(makeImpulseAction(
+      controls,
+      'e',
+      "Apply mixed-chain impulse -Y",
+      Eigen::Vector3d(0.0, -kForceMagnitude, 0.0)));
+  actions.push_back(makeImpulseAction(
+      controls,
+      'r',
+      "Apply mixed-chain impulse +Y",
+      Eigen::Vector3d(0.0, kForceMagnitude, 0.0)));
+  actions.push_back(makeImpulseAction(
+      controls,
+      't',
+      "Apply mixed-chain impulse -Z",
+      Eigen::Vector3d(0.0, 0.0, -kForceMagnitude)));
+  actions.push_back(makeImpulseAction(
+      controls,
+      'y',
+      "Apply mixed-chain impulse +Z",
+      Eigen::Vector3d(0.0, 0.0, kForceMagnitude)));
+  return actions;
+}
 
-  // Set initial pose for the skeleton
-  int dof = myWorld->getSkeleton(1)->getNumDofs();
-  Eigen::VectorXd initPose = Eigen::VectorXd::Zero(dof);
-  for (int i = 0; i < 3; i++) {
-    initPose[i] = dart::math::Random::uniform(-0.5, 0.5);
+dart::gui::Panel createControlsPanel(
+    const std::shared_ptr<MixedChainControls>& controls)
+{
+  dart::gui::Panel panel;
+  panel.title = "Mixed Chain";
+  panel.buildWithContext = [controls](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    builder.text("Apply a short impulse to the soft link.");
+    builder.text("'q'/'w': apply force in -X/+X direction");
+    builder.text("'e'/'r': apply force in -Y/+Y direction");
+    builder.text("'t'/'y': apply force in -Z/+Z direction");
+    builder.text("Space: Toggle simulation");
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+
+    if (builder.button("-X")) {
+      controls->startImpulse(Eigen::Vector3d(-kForceMagnitude, 0.0, 0.0));
+    }
+    builder.sameLine();
+    if (builder.button("+X")) {
+      controls->startImpulse(Eigen::Vector3d(kForceMagnitude, 0.0, 0.0));
+    }
+    if (builder.button("-Y")) {
+      controls->startImpulse(Eigen::Vector3d(0.0, -kForceMagnitude, 0.0));
+    }
+    builder.sameLine();
+    if (builder.button("+Y")) {
+      controls->startImpulse(Eigen::Vector3d(0.0, kForceMagnitude, 0.0));
+    }
+    if (builder.button("-Z")) {
+      controls->startImpulse(Eigen::Vector3d(0.0, 0.0, -kForceMagnitude));
+    }
+    builder.sameLine();
+    if (builder.button("+Z")) {
+      controls->startImpulse(Eigen::Vector3d(0.0, 0.0, kForceMagnitude));
+    }
+
+    builder.text(
+        "impulse frames: " + std::to_string(controls->framesRemaining));
+    builder.text("time: " + std::to_string(context.simulationTime));
+  };
+  return panel;
+}
+
+} // namespace
+
+int main(int argc, char* argv[])
+{
+  try {
+    auto world = createMixedChainWorld();
+    auto controls = std::make_shared<MixedChainControls>(world);
+
+    dart::gui::ApplicationOptions options;
+    options.world = world;
+    options.runDefaults = makeMixedChainRunDefaults();
+    options.camera = makeMixedChainCamera();
+    options.preStep = [controls]() {
+      controls->applyImpulse();
+    };
+    options.keyboardActions = createMixedChainKeyboardActions(controls);
+    options.panels.push_back(createControlsPanel(controls));
+    printMixedChainInstructions();
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "mixed_chain: " << e.what() << "\n";
+    return 1;
   }
-  myWorld->getSkeleton(1)->setPositions(initPose);
-
-  // Create event handler for keyboard input (using osg::ref_ptr for OSG
-  // compatibility)
-  ::osg::ref_ptr<MixedChainEventHandler> eventHandler
-      = new MixedChainEventHandler(myWorld);
-
-  // Create a WorldNode and wrap it around the world
-  ::osg::ref_ptr<MixedChainWorldNode> node
-      = new MixedChainWorldNode(myWorld, eventHandler);
-
-  // Create a Viewer and set it up with the WorldNode
-  dart::gui::Viewer viewer;
-  viewer.addWorldNode(node);
-
-  // Add the event handler to the viewer
-  viewer.addEventHandler(eventHandler);
-
-  // Set up the window to be 640x480
-  viewer.setUpViewInWindow(0, 0, 640, 480);
-
-  // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.0f, 1.0f, 2.0f),
-      ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f));
-
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  // Print controls
-  std::cout << "Mixed Chain Example Controls:" << std::endl;
-  std::cout << "'q'/'w': Apply force in -X/+X direction" << std::endl;
-  std::cout << "'e'/'r': Apply force in -Y/+Y direction" << std::endl;
-  std::cout << "'t'/'y': Apply force in -Z/+Z direction" << std::endl;
-  std::cout << "Space: Toggle simulation" << std::endl;
-
-  // Begin running the application
-  viewer.run();
-
-  return 0;
 }

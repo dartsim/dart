@@ -3,26 +3,53 @@
 ## Summary
 
 - Goal: demonstrate soft-body simulation with recorded playback.
-- Concepts/APIs: `dart::io::readWorld`, custom `RealTimeWorldNode`, event handling.
-- Expected output: soft bodies simulated in an OSG viewer with playback keys.
-- Controls: use bracket keys to step through recorded frames (see console output).
+- Concepts/APIs: SKEL loading, soft-body state recording, renderer-neutral
+  keyboard actions, public `dart::gui` panels, and headless capture.
+- Expected output: the historical `softBodies.skel` scene rendered in the
+  maintained Filament viewer.
+- Controls: `[` and `]` move playback backward/forward one frame, `{` and `}`
+  move backward/forward ten frames, `r` restarts playback, and `\` jumps to the
+  latest recorded frame. Space toggles simulation and `n` steps once while
+  paused.
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+## Run
+
+From the repository root:
+
+```bash
+pixi run ex soft_bodies
+```
+
+Headless capture is provided by the promoted `dart::gui` runner:
+
+```bash
+pixi run ex soft_bodies --headless --frames 2 --screenshot /tmp/soft_bodies.ppm
+```
+
+Image-sequence capture uses `--out`:
+
+```bash
+pixi run ex soft_bodies --headless --frames 3 --out /tmp/soft_bodies_frames
+```
 
 ## Build Instructions
 
 From this directory:
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
 
 ## Execute Instructions
 
 Launch the executable from the build directory above:
 
-    $ ./{generated_executable}
+```bash
+./soft_bodies
+```
 
-Follow the instructions detailed in the console.
+The standalone executable uses the same promoted `dart::gui` viewer and the
+same recorded-playback controls.

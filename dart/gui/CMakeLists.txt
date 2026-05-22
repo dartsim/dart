@@ -1,112 +1,137 @@
-if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
-  add_subdirectory(experimental)
+if(DART_BUILD_GUI)
+  set(core_target_name ${PROJECT_NAME}-gui-core)
+  set(core_component_name gui-core)
+
+  set(
+    dart_gui_core_hdrs
+    application.hpp
+    debug.hpp
+    export.hpp
+    fwd.hpp
+    gizmo.hpp
+    geometry.hpp
+    interaction.hpp
+    panel.hpp
+    profile.hpp
+    renderable.hpp
+    scene.hpp
+    viewer.hpp
+  )
+  set(
+    dart_gui_core_srcs
+    debug.cpp
+    geometry.cpp
+    gizmo.cpp
+    interaction.cpp
+    profile.cpp
+    renderable.cpp
+    shape_descriptions.cpp
+    viewer.cpp
+  )
+
+  dart_add_library(
+    ${core_target_name}
+    ${dart_gui_core_hdrs}
+    ${dart_gui_core_srcs}
+  )
+  target_include_directories(
+    ${core_target_name}
+    PUBLIC
+      $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${DART_BINARY_DIR}>
+      $<INSTALL_INTERFACE:include>
+  )
+  target_compile_features(${core_target_name} PUBLIC cxx_std_20)
+  target_compile_definitions(
+    ${core_target_name}
+    PRIVATE DART_BUILDING_DART_GUI
+  )
+  target_link_libraries(${core_target_name} PUBLIC dart)
+
+  include("${CMAKE_CURRENT_LIST_DIR}/detail/backend_sources.cmake")
+  dart_gui_filament_configure_backend_target(
+    ${core_target_name}
+    GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/filament_generated"
+  )
+
+  add_component(${PROJECT_NAME} ${core_component_name})
+  add_component_targets(
+    ${PROJECT_NAME}
+    ${core_component_name}
+    ${core_target_name}
+  )
+  add_component_dependencies(${PROJECT_NAME} ${core_component_name} dart)
+
+  dart_format_add(${dart_gui_core_hdrs} ${dart_gui_core_srcs})
 endif()
-
-add_subdirectory(vsg)
-
 if(NOT DART_BUILD_GUI)
   message(STATUS "Skipping GUI (DART_BUILD_GUI == ${DART_BUILD_GUI})")
   return()
 endif()
 
-# Set local target/component names
 set(target_name ${PROJECT_NAME}-gui)
 set(component_name gui)
-set(component_dependencies )
-set(component_dependency_packages )
-set(link_libraries )
 
-# Dependency checks
-dart_check_dependent_target(${target_name} dart-utils)
-
-# OpenSceneGraph
-dart_find_package(OpenSceneGraph)
-dart_check_required_package(OpenSceneGraph "dart-gui" "OpenSceneGraph")
-list(APPEND component_dependency_packages OpenSceneGraph)
-
-# ImGui
-if(DART_USE_SYSTEM_IMGUI)
-  list(APPEND component_dependency_packages imgui)
-  list(APPEND link_libraries imgui::imgui)
-else()
-  list(APPEND component_dependencies imgui)
-  list(APPEND link_libraries dart-imgui-lib)
+if(NOT TARGET dart-gui-core)
+  message(FATAL_ERROR "dart-gui requires the dart-gui-core target")
 endif()
 
-if(APPLE)
-  find_library(DART_GUI_FOUNDATION_FRAMEWORK Foundation REQUIRED)
-  list(APPEND link_libraries "${DART_GUI_FOUNDATION_FRAMEWORK}")
-endif()
+set(
+  dart_gui_hdrs
+  all.hpp
+  application.hpp
+  debug.hpp
+  export.hpp
+  fwd.hpp
+  gizmo.hpp
+  geometry.hpp
+  interaction.hpp
+  panel.hpp
+  profile.hpp
+  renderable.hpp
+  scene.hpp
+  viewer.hpp
+)
+set(dart_gui_srcs gui.cpp)
 
-# Search all header and source files
-file(GLOB hdrs "*.hpp")
-file(GLOB srcs "*.cpp")
-file(GLOB detail_hdrs "detail/*.hpp")
-file(GLOB detail_srcs "detail/*.cpp")
-
-set(dart_gui_hdrs ${hdrs} ${detail_hdrs})
-set(dart_gui_srcs ${srcs} ${detail_srcs})
-
-add_subdirectory(render)
-
-file(GLOB render_hdrs "render/*.hpp")
-
-# Add target
 dart_add_library(${target_name} ${dart_gui_hdrs} ${dart_gui_srcs})
-target_link_libraries(${target_name} dart-utils osg::osg ${link_libraries})
+target_link_libraries(${target_name} PUBLIC dart-gui-core)
+target_include_directories(
+  ${target_name}
+  PUBLIC
+    $<BUILD_INTERFACE:${DART_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${DART_BINARY_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
+target_compile_features(${target_name} PUBLIC cxx_std_20)
 
-if(MSVC AND BUILD_SHARED_LIBS)
-  if(CMAKE_CONFIGURATION_TYPES)
-    foreach(_cfg ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${_cfg}" _cfg_upper)
-      set_target_properties(
-        ${target_name}
-        PROPERTIES
-          ARCHIVE_OUTPUT_DIRECTORY_${_cfg_upper}
-            "${DART_BINARY_DIR}/lib/${_cfg}"
-      )
-    endforeach()
-  else()
-    set_target_properties(
-      ${target_name}
-      PROPERTIES
-        ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib/${CMAKE_BUILD_TYPE}"
-    )
-  endif()
-endif()
-
-# Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
-add_component_dependencies(${PROJECT_NAME} ${component_name} utils ${component_dependencies})
-add_component_dependency_packages(${PROJECT_NAME} ${component_name} ${component_dependency_packages})
+add_component_dependencies(${PROJECT_NAME} ${component_name} gui-core)
 
-# Generate header for this namespace
-dart_get_filename_components(header_names "gui headers" ${hdrs})
-dart_generate_component_headers(
-  COMPONENT_NAME gui
-  TARGET_DIR "dart/gui/"
-  OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
-  HEADERS ${header_names}
-  SOURCE_HEADERS ${hdrs} ${detail_hdrs} ${render_hdrs}
+configure_file(
+  "${CMAKE_CURRENT_LIST_DIR}/all.hpp"
+  "${CMAKE_CURRENT_BINARY_DIR}/gui.hpp"
+  COPYONLY
 )
-
-# Install (includes gui.hpp for component compatibility,
-# and generated PascalCase headers for case compatibility)
 install(
-  FILES ${hdrs} ${CMAKE_CURRENT_BINARY_DIR}/gui.hpp ${CMAKE_CURRENT_BINARY_DIR}/All.hpp
+  FILES
+    all.hpp
+    application.hpp
+    debug.hpp
+    export.hpp
+    fwd.hpp
+    gizmo.hpp
+    geometry.hpp
+    interaction.hpp
+    panel.hpp
+    profile.hpp
+    renderable.hpp
+    scene.hpp
+    viewer.hpp
+    "${CMAKE_CURRENT_BINARY_DIR}/gui.hpp"
   DESTINATION include/dart/gui
   COMPONENT headers
 )
-install(
-  FILES ${detail_hdrs}
-  DESTINATION include/dart/gui/detail
-  COMPONENT headers
-)
-# Install generated compatibility headers preserving subdirectory structure
-dart_install_compat_headers(
-  COMPAT_HEADERS ${DART_GENERATED_COMPAT_HEADERS}
-  DESTINATION_PREFIX include/dart/gui
-)
 
-dart_format_add(${hdrs} ${srcs} ${dart_gui_hdrs} ${dart_gui_srcs})
+dart_format_add(${dart_gui_hdrs} ${dart_gui_srcs})

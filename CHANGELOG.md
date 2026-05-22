@@ -20,6 +20,349 @@
   - Removed deprecated experimental example and benchmark directories.
   - Removed C3D/VSK utilities, parsers, and sample data. ([#2363](https://github.com/dartsim/dart/pull/2363))
   - Dropped the deprecated `docker/dev/v6.15` images; use the maintained v6.16 images instead.
+  - Promoted Filament with GLFW3 and Dear ImGui as the only maintained renderer,
+    replacing OpenSceneGraph and the Raylib experiment. The legacy OSG GUI
+    sources, OSG/Raylib CMake dependency discovery, legacy C++/Python GUI
+    examples and tutorials, and legacy dartpy GUI bindings/stubs were removed.
+  - Restored historical GUI example executable names as `dart::gui` launchers
+    backed by `dartsim`, and added `--out <dir>` PPM image-sequence capture
+    alongside the existing `--screenshot <path>` final-frame capture.
+  - Added a renderer-neutral `dart::gui` panel callback surface for examples
+    that need custom controls without including backend UI headers.
+  - Moved the `dartsim` viewer source to the application-level `apps/dartsim`
+    tree, added a public `dart::gui::ApplicationOptions::world` handoff for
+    example-owned worlds, and restored `hello_world` as a real public-API
+    `dart::gui` example source.
+  - Restored the `hello_world` example's instruction text, camera/run
+    defaults, deterministic non-axis-aligned box orientation, profiling
+    markers, and README through public `dart::gui`.
+  - Restored `boxes`, `rigid_cubes`, and `box_stacking` as real public-API
+    `dart::gui` example sources with source-defined DART worlds instead of
+    shared private scene-fixture launchers.
+  - Restored the `boxes` example's historical box labels, light-gray ground,
+    instruction text, standalone README build/execute instructions, and marker
+    coverage through public `dart::gui`.
+  - Restored the `box_stacking` example's historical stack placement, random
+    box colors, floor geometry, panel labels/help text, standalone README
+    build/execute instructions, and marker coverage through public
+    `dart::gui`.
+  - Restored `simple_frames` and `capsule_ground_contact` as public-API
+    `dart::gui` example sources using source-defined DART frame and contact
+    worlds.
+  - Restored the `simple_frames` example's historical frame names, marker
+    names, ArrowShape marker, standalone README build/execute instructions, and
+    marker coverage through public `dart::gui`.
+  - Stopped generated in-memory mesh shapes from attempting material loads from
+    empty file URIs, allowing examples such as `simple_frames` to use
+    `ArrowShape` without renderer startup warnings.
+  - Added promoted panel window/menu/collapsible helpers and used them to
+    restore the Fetch example panel geometry, menu bar, scrollbar, Help
+    section, and default-open Simulation controls.
+  - Restored the `g1_puppet` example's historical gravity, ground, root pose,
+    XY grid, support-polygon overlay, camera/run defaults, standalone README,
+    and IK target activation messages through public `dart::gui`.
+  - Restored the `hubo_puppet` example's historical ground, target activation
+    toggles, support toggles, posture reset, DOF print action,
+    support-polygon overlay, camera/run defaults, and standalone README through
+    public `dart::gui`.
+  - Restored the `capsule_ground_contact` example's pose-reset keyboard
+    controls, velocity-clear action, camera/run defaults, persistent-manifold
+    instructions, and README through public `dart::gui`.
+  - Restored the `rigid_chain` example's historical random initial pose,
+    camera/run defaults, README, and marker coverage while keeping its damping
+    callback on public `dart::gui`.
+  - Restored the `rigid_loop` example's constrained-link colors, console
+    instructions, run defaults, README, and marker coverage while keeping its
+    damping callback on public `dart::gui`.
+  - Restored the `rigid_cubes` example's shipped `cubes.skel` world, Y-down
+    gravity, decaying directional force keys, camera/run defaults, README, and
+    marker coverage through public `dart::gui`.
+  - Added a public `dart::gui::ApplicationOptions::preStep` lifecycle callback
+    and restored `fetch` as a source-defined `dart::gui` example with its live
+    mocap target-following behavior, Bullet preference when available, and
+    public-API target affordance.
+  - Fixed Filament mesh material extraction so legacy textured meshes without
+    PBR metalness import as dielectric surfaces, restoring visible Atlas
+    texture detail in `dartsim`, `atlas_puppet`, and `atlas_simbicon`.
+  - Fixed Atlas/whole-body puppet target dragging to solve through the owning
+    skeleton IK hierarchy with damped least-squares, avoiding regressions where
+    active target drags moved end-effectors away from the target.
+  - Fixed `dart::gui` IK handle solving to distinguish local target handles
+    from whole-body puppet handles and restored Atlas hand root-gradient
+    weighting, keeping G1/simple IK interaction local while Atlas and Hubo
+    puppet targets use the skeleton hierarchy consistently.
+  - Restored the `fetch` example's historical pick-and-place work-area grid as
+    source-owned public DART line geometry at the original grid offset.
+  - Restored the `fetch` example panel title and instructional copy against
+    the historical example source.
+  - Restored the `fetch` example's target cue as a source-owned mesh cross made
+    from two transparent green bars, matching the historical end-effector
+    affordance, while moving mouse translation/rotation to a public
+    `dart::gui::Gizmo` and retaining reset controls and image-sequence capture
+    docs through promoted `dart::gui`.
+  - Restored the `biped_stand` example's historical space/start and push
+    instruction text plus standalone README build/execute instructions.
+  - Restored the rigid/constraint example batch (`rigid_chain`, `rigid_loop`,
+    `mixed_chain`, `coupler_constraint`, `add_delete_skels`, and
+    `rigid_shapes`) as source-defined `dart::gui` examples.
+  - Restored the `mixed_chain` example's random startup pose, 640x480 launch
+    default, console instructions, README, and marker coverage through public
+    `dart::gui`.
+  - Restored the `rigid_shapes` example's historical `shapes.skel` startup
+    scene, random spawn behavior, console instructions, collision-detector
+    printout, README, and marker coverage through public `dart::gui`.
+  - Restored the `soft_bodies` example's historical 640x480 launch default,
+    console playback instructions, README, and marker coverage through public
+    `dart::gui`.
+  - Restored the `tinkertoy` example's historical panel layout, selected
+    pick-point behavior, explicit 1280x720 launch default, README, and marker
+    coverage through public `dart::gui`.
+  - Restored the `add_delete_skels` example's README, historical 640x480
+    launch default, and spawn-only-on-command startup behavior through public
+    `dart::gui`.
+  - Restored the `coupler_constraint` example's controller-driven mimic
+    comparison, reset key, live diagnostics, grid, camera/run defaults, README,
+    and marker coverage through public `dart::gui`.
+  - Restored the joint/dynamics example batch (`hybrid_dynamics`,
+    `biped_stand`, `joint_constraints`, `free_joint_cases`, and
+    `human_joint_limits`) as source-defined `dart::gui` examples.
+  - Added public `dart::gui::OrbitCamera` up-vector control and restored
+    historical camera roll/up-vector defaults across migrated GUI examples.
+  - Added public `dart::gui::PanelContext` camera inspection state and restored
+    Eye/Center/Up panel readouts in migrated GUI examples.
+  - Added public key-release triggers for `dart::gui::KeyboardAction` and
+    restored historical keydown/key-release callbacks in migrated GUI examples.
+  - Added shifted-slash shortcut handling for `dart::gui::KeyboardAction` and
+    restored the Simulation Event Handler `?` help alias.
+  - Added public `dart::gui::PanelContext` lighting state and restored
+    historical headlight panel checkboxes in migrated GUI examples.
+  - Added public `dart::gui::ApplicationOptions` post-step and render
+    callbacks and restored historical lifecycle-hook demos in migrated GUI
+    examples.
+  - Added public `dart::gui::RenderSettings` shadow control and restored
+    historical shadow toggles in migrated GUI examples.
+  - Added public `dart::gui::PanelBuilder` color-edit controls and restored
+    terrain, point-cloud, and voxel-grid color editors in migrated GUI
+    examples.
+  - Added public `dart::gui::PanelBuilder` line plotting and restored the
+    `lcp_physics` step-time history plot.
+  - Added public `dart::gui::PanelContext` UI metrics and restored the
+    `lcp_physics` display/font debug diagnostics.
+  - Added public runtime frame-output capture controls and restored the
+    Tinkertoy example's Enter-key recording workflow.
+  - Fixed the dartpy bindings for GUI frame-output capture helpers after
+    viewer-lifecycle overloads were added.
+  - Added public `dart::gui::PanelBuilder` modal helpers and restored
+    Tinkertoy's About DART modal workflow.
+  - Added public `dart::gui::ApplicationOptions::simulateWorld` and restored
+    the WAM IKFast example's kinematic no-world-step workflow.
+  - Added public `dart::gui::RenderOutputMode::Depth` and restored the Atlas
+    Simbicon example's depth output toggle and capture path.
+  - Fixed Atlas GUI example readability and up-axis consistency by keeping
+    Atlas Simbicon z-up, lifting overly dark Atlas mesh visuals, and widening
+    Filament shadow coverage for large orbit-camera views.
+  - Added public `dart::gui::BodyNodeDragHandle` and restored the G1 Puppet and
+    WAM IKFast examples' articulated body-node drag workflows.
+  - Restored the Heightmap and Point Cloud examples' fine-grained scene-grid
+    controls with source-owned DART line geometry.
+  - Restored the `hubo_puppet` support overlay's blue/red center-of-mass
+    validity marker with source-owned DART line geometry.
+  - Restored the `hubo_puppet` example's relaxed-posture objective, balance
+    constraint, whole-body IK solve path, and hold/release R balance controls.
+  - Restored the `hubo_puppet` example's source-owned analytical arm and leg IK
+    methods.
+  - Restored the `hubo_puppet` example's historical Shift-amplified root
+    movement controls.
+  - Restored the `atlas_puppet` example's number-key target activation,
+    support toggles, DOF print/reset shortcuts, and source-owned support
+    polygon/center-of-mass validity overlays.
+  - Restored the `atlas_puppet` example's relaxed-posture objective, balance
+    constraint, whole-body IK solve path, and hold/release R balance controls.
+  - Added public `dart::gui::PanelBuilder` table and color-swatch controls and
+    restored the Mimic Pendulums diagnostics table and rig legend.
+  - Restored the `hardcoded_design` example's historical wireframe link
+    appearance with source-owned DART line geometry.
+  - Restored the `atlas_simbicon` example's Simbicon controller/state files,
+    pre-step control loop, perturbation and state-machine keyboard actions,
+    gravity/harness/stride panel controls, native window title,
+    camera/run defaults, and README through public `dart::gui`.
+  - Audited `gui_scene_diagnostics` against its historical source and kept it
+    as a promoted `dart::gui` descriptor diagnostic example with marker
+    coverage for CLI options, descriptor extraction, debug/selection lines,
+    camera picking, README, and no renderer dependency.
+  - Removed the no-source `rerun` placeholder example because it had no
+    concrete integration workflow, executable, or known downstream user.
+  - Restored the `lcp_physics` example's historical scene counts, names,
+    placement, live scenario/solver switching, reset/timestep/gravity panel
+    controls, README option inventory, and marker coverage through public
+    `dart::gui`.
+  - Restored the `lcp_physics` panel's render FPS, rendered/skipped frame
+    counts, and rolling step-time diagnostics using source-owned metrics.
+  - Restored the `human_joint_limits` example's live SKEL world, joint-limit
+    enforcement, neural custom arm/leg constraints, run defaults, README, and
+    marker coverage through public `dart::gui`.
+  - Moved `drag_and_drop` off the private named-scene fixture path so the
+    example source owns its DART world and passes it through
+    `dart::gui::ApplicationOptions::world`.
+  - Restored the `drag_and_drop` example's public transform gizmo, historical
+    marker layout, camera/run defaults, README, and marker coverage through
+    public `dart::gui`.
+  - Moved `imgui` and `tinkertoy` off private named-scene fixture defaults so
+    their example sources own their DART worlds through
+    `dart::gui::ApplicationOptions::world`.
+  - Restored the `imgui` panel-extension example's target frame with a public
+    `dart::gui::Gizmo`, promoted keydown callbacks, gravity control, viewer
+    help, camera/run defaults, README, and marker coverage through public
+    `dart::gui`, with later public APIs covering the headlight,
+    camera-inspector, key-release, and render-hook parity paths.
+  - Moved `operational_space_control` and `wam_ikfast` off private named-scene
+    fixture launchers so their example sources load the WAM robot, create their
+    visible targets, and run through promoted `dart::gui` options directly.
+  - Restored the `operational_space_control` example's historical KR5 robot,
+    KR5 ground, target ball, task-space controller, 640x480 launch default,
+    camera framing, control instructions, README, and marker coverage through
+    public `dart::gui`.
+  - Restored the `wam_ikfast` example's generated IKFast shared library,
+    `SharedLibraryIkFast` setup, target activation workflow, relaxed-posture
+    reset, joint-value printing, 1280x960 launch default, camera framing,
+    README, and marker coverage through public `dart::gui`.
+  - Moved `atlas_simbicon` off the private named-scene fixture launcher so the
+    example source loads Atlas, creates its ground, and runs through promoted
+    `dart::gui` options directly.
+  - Added a promoted `dart::gui::ApplicationOptions` IK-handle handoff so
+    source-owned examples can preserve target hotkeys, selection labels, and
+    solve-on-drag behavior without depending on private renderer fixtures.
+  - Added a promoted `dart::gui::Gizmo` registration surface with debug-line
+    visualization, X/Y/Z axis-handle dragging, plane-handle dragging,
+    rotation-ring dragging, and per-target visibility, plus hover/active handle
+    highlighting for source-owned transform target affordances. Gizmo-only
+    scenes can start without dummy renderable geometry, and `fetch`,
+    `drag_and_drop`, `atlas_puppet`, `hubo_puppet`, `g1_puppet`,
+    `operational_space_control`, `wam_ikfast`, and `imgui` now use those public
+    gizmos instead of source-owned frame-handle, target-handle, or target-ball
+    geometry; Tinkertoy uses the same public gizmo for its force target while
+    keeping its source-owned axes and force-line geometry.
+  - Improved Filament GUI puppet interaction and rendering parity with
+    OSG-style active IK target gizmos, patterned filled rotation rings,
+    non-overlapping default ImGui panels, close-camera clipping tolerance, and
+    faithful textured mesh colors.
+  - Moved `atlas_puppet` off the private named-scene fixture launcher so the
+    example source loads Atlas, creates its ground/root handle/IK targets, and
+    passes public `dart::gui` IK handles directly.
+  - Restored the `atlas_puppet` example's README, historical 1280x960 launch
+    default, and camera home while keeping target activation, posture/balance,
+    and support visualization gaps explicit.
+  - Moved `hubo_puppet` and `g1_puppet` off private named-scene fixture
+    launchers so their example sources load the robots, create visible IK
+    targets, and pass public `dart::gui` IK handles directly.
+  - Moved the static geometry examples (`hardcoded_design`, `heightmap`,
+    `point_cloud`, and `polyhedron_visual`) off private named-scene fixture
+    launchers so their example sources own the visual DART worlds directly.
+  - Restored the `heightmap` example's local demo selector, interactive
+    regeneration panel, alignment scene, camera/run defaults, and README
+    through public `dart::gui`.
+  - Restored the `point_cloud` example's KR5 robot sampling workflow,
+    point-cloud and voxel-grid updates, sensor visualization, panel controls,
+    camera/run defaults, scene grid, and README through public `dart::gui`.
+  - Restored the `polyhedron_visual` example's scene grid, camera/run
+    defaults, and README through public `dart::gui`.
+  - Moved the LCP and mimic dynamics examples (`lcp_physics` and
+    `mimic_pendulums`) off private named-scene fixture launchers so their
+    example sources own solver setup, imported worlds, and public GUI panels.
+  - Restored the `mimic_pendulums` example's live reset/collision/solver
+    controls, XY reference grid, original rig names/base colors, diagnostics,
+    README options, and marker coverage through public `dart::gui`.
+  - Moved the interaction/event examples (`empty` and
+    `simulation_event_handler`) off private named-scene fixture launchers so
+    their example sources own public frames, sensors, and panels directly.
+  - Restored the `empty` example's public keyboard-action scaffold,
+    camera/run defaults, and README through public `dart::gui`.
+  - Restored the `simulation_event_handler` example's selected-body
+    force/torque controls, force-arrow visualization, camera/run defaults, and
+    README through public `dart::gui`.
+  - Moved the soft-body and vehicle examples (`soft_bodies` and `vehicle`) off
+    private named-scene fixture launchers so their example sources own imported
+    worlds, public panels, and simulation controls directly.
+  - Removed the unused GUI example scene-launcher shim so restored examples
+    must build real source files instead of private named-scene fixtures.
+  - Promoted the GUI extraction/rendering implementation into the official
+    `dart-gui-core` target and removed the old experimental C++ and Python
+    compatibility surfaces.
+  - Added a renderer-neutral `dart::gui::ApplicationOptions::camera` hook and
+    used it to restore the Fetch example's historical camera framing while
+    keeping the example on public `dart::gui` APIs.
+  - Added renderer-neutral `dart::gui::ApplicationOptions::runDefaults`,
+    restored the Fetch example's historical 1280x960 default launch size, and
+    restored its example README.
+  - Restored visible IK target controls and promoted control text for the G1,
+    Atlas, and Hubo puppet examples.
+  - Restored visible target controls and promoted control text for the
+    operational-space control, WAM IKFast, and Tinkertoy examples.
+  - Restored Tinkertoy builder state through public `dart::gui` panel controls,
+    including selected-block add/delete actions, gravity and force-coefficient
+    controls, public-gizmo target movement, target reorientation, force-line
+    updates, external force application, and collision/dynamics block
+    construction.
+  - Added renderer-neutral `dart::gui` keyboard actions and used them to
+    restore Tinkertoy add/delete, force coefficient, clear-pick, and target
+    reorientation hotkeys without exposing backend input headers.
+  - Restored Atlas and Hubo puppet continuous IK solving and WASD/QE/FZ root
+    teleoperation through renderer-neutral `dart::gui` keyboard actions.
+  - Added a renderer-neutral keyboard action camera reset callback and used it
+    to restore Tinkertoy's Tab camera-home hotkey.
+  - Restored G1 puppet number-key target activation/deactivation and
+    active-target IK solving through public `dart::gui` keyboard actions.
+  - Added a public `dart::gui` lifecycle exit request helper and used it to
+    restore Fetch example panel Exit, Play/Pause, Help, and About affordances.
+  - Restored add/delete skeleton example `q`/`w` keyboard controls, Bullet
+    preference, and camera defaults through public `dart::gui`.
+  - Restored mixed-chain example `q`/`w`, `e`/`r`, and `t`/`y` impulse
+    keyboard controls and camera defaults through public `dart::gui`.
+  - Restored vehicle example `w`/`s`/`x`/`a`/`d` command keys, camera
+    defaults, 640x480 run default, console instructions, and README through
+    public `dart::gui`.
+  - Restored soft-bodies example playback keys for frame stepping, restart, and
+    jump-to-latest through public `dart::gui` keyboard actions.
+  - Restored hybrid-dynamics example `h` harness toggle, historical
+    lock/unlock console messages, 640x480 launch default, loaded SKEL visuals,
+    camera defaults, and README through public `dart::gui`.
+  - Restored joint-constraints example perturbation keys, `h` harness toggle,
+    historical console messages, 640x480 launch default, loaded SKEL visuals,
+    README, and camera defaults through public `dart::gui`.
+  - Restored rigid-shapes example spawn/delete/contact keyboard controls,
+    convex mesh spawning, contact-point visualization, rigid-shapes-specific
+    command-line options, and camera/run defaults through public `dart::gui`.
+  - Restored biped-stand example perturbation keyboard controls, camera/run
+    defaults, and example README through public `dart::gui`.
+  - Restored free-joint-cases example numeric/reference controls, local
+    command-line flags, camera/run defaults, and example README through public
+    `dart::gui`.
+  - Restored LCP physics example scenario and solver command-line selection,
+    list mode, camera/run defaults, panel context, and example README through
+    public `dart::gui`.
+  - Restored mimic-pendulums example baseline retargeting, mimic diagnostics,
+    solver/collision launch flags, camera/run defaults, and example README
+    through public `dart::gui`.
+  - Restored box-stacking example solver selection, split-impulse controls,
+    camera/run defaults, and example README through public `dart::gui`.
+  - Restored boxes example Bullet preference, camera/run defaults, and example
+    README through public `dart::gui`.
+  - Restored simple-frames example camera/run defaults and example README
+    through public `dart::gui`.
+  - Restored hardcoded-design example joint keyboard controls, camera default,
+    and example README through public `dart::gui`.
+  - Preserved the `csv_logger` example's non-GUI command-line CSV logging
+    contract and added strict-audit marker coverage so renderer promotion does
+    not pull it into the GUI dependency surface.
+  - Preserved the `headless_simulation` example's non-GUI deterministic
+    batch-simulation contract and added strict-audit marker coverage so
+    renderer promotion does not pull it into the GUI dependency surface.
+  - Preserved the `speed_test` example's non-GUI timing benchmark contract and
+    added strict-audit marker coverage so renderer promotion does not pull it
+    into the GUI dependency surface.
+  - Preserved the `unified_loading` example's non-GUI shared `ReadOptions`
+    loading contract and added strict-audit marker coverage so renderer
+    promotion does not pull it into the GUI dependency surface.
   - Removed dartpy legacy collision detector aliases `DARTCollisionDetector`,
     `FCLCollisionDetector`, `BulletCollisionDetector`, and
     `OdeCollisionDetector`; use `DartCollisionDetector` or the default detector.
@@ -42,6 +385,8 @@
   - Introduced per-target export headers (`dart/<component>/Export.hpp`) that define `DART_<COMPONENT>_API` macros. Each library now controls symbol visibility independently on Windows instead of sharing the monolithic `DART_API`, which fixes long‑standing DLL import inconsistencies. ([#2163](https://github.com/dartsim/dart/pull/2163))
   - Packaging and distribution updates: migrated to `pyproject.toml`, switched dartpy wheel builds to pixi, added Windows wheel builds, standardized wheel cleanup, removed manylinux artifacts, and fixed the `package.xml` version. ([#2043](https://github.com/dartsim/dart/pull/2043), [#2072](https://github.com/dartsim/dart/pull/2072), [#2266](https://github.com/dartsim/dart/pull/2266), [#2268](https://github.com/dartsim/dart/pull/2268), [#2080](https://github.com/dartsim/dart/pull/2080), [#2207](https://github.com/dartsim/dart/pull/2207), [#2172](https://github.com/dartsim/dart/pull/2172))
   - Developer workflow updates: refactored pixi tasks, tuned pixi parallelism, simplified the devcontainer, and bumped the DART version to 7.0.0. ([#2083](https://github.com/dartsim/dart/pull/2083), [#2208](https://github.com/dartsim/dart/pull/2208), [#2255](https://github.com/dartsim/dart/pull/2255), [#2046](https://github.com/dartsim/dart/pull/2046))
+  - Limited `pixi run test-unit` to the built C++ `UNIT_` test set so
+    simulation-experimental tests remain covered by their dedicated task.
   - Added ASan build mode and example install destination controls. ([#2101](https://github.com/dartsim/dart/pull/2101), [#2100](https://github.com/dartsim/dart/pull/2100))
   - GUI dependency handling updates: switched ImGui to FetchContent, prefer local Vulkan loader, and removed bundled lodepng. ([#2056](https://github.com/dartsim/dart/pull/2056), [#2085](https://github.com/dartsim/dart/pull/2085), [#2051](https://github.com/dartsim/dart/pull/2051))
   - Hide fetched ImGui internal formatting helpers from shared library exports. ([#2671](https://github.com/dartsim/dart/issues/2671))
@@ -61,6 +406,8 @@
 - Tooling and Docs
   - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))
   - Added the shared `docs/ai/` agent entrypoint and tightened AI workflow verification, approval-boundary checks, and dev-task cleanup guidance. ([#2649](https://github.com/dartsim/dart/pull/2649))
+  - Updated GUI onboarding, module agent docs, ReadTheDocs pages, examples, and tutorial indexes to identify Filament as the maintained renderer and the removed OSG/Raylib paths as unsupported.
+  - Removed the OpenSceneGraph GUI implementation sources, Raylib experiment, legacy C++ and Python GUI examples/tutorials, legacy dartpy GUI bindings/stubs, and OSG/Raylib dependency discovery. Filament with GLFW3 and Dear ImGui is now the official renderer surface.
   - Added AI-infra principles, living plan dashboard, `dart-plan-update`, and `dart-retrospect` workflows to track research-focused roadmap work and durable session learnings from one source of truth, and aligned public and onboarding documentation entrypoints with that direction.
   - Extended AI command and skill synchronization so Claude Code, OpenCode, and Codex expose the same DART workflow capabilities with parity checks for generated command and skill files.
   - Promoted prompt-only AI workflows into synced workflow commands and removed the separate prompt-template folder.
@@ -221,16 +568,160 @@
   - Documented SKEL as a legacy format.
 
 - GUI and Rendering
-  - Added an optional experimental Filament GUI path with backend-hidden
-    `dart::gui::experimental` scene descriptors, bounded/headless smoke support,
+  - Added the Filament-backed GUI path with backend-hidden `dart::gui` scene
+    descriptors, bounded/headless smoke support,
     debug overlays, selection/manipulation helpers, constrained dartpy bindings,
     a pinned explicit fetch fallback, and GCC/Clang smoke coverage for local and
     CI validation.
     ([#2647](https://github.com/dartsim/dart/pull/2647))
+  - Added a Filament-rendered Unitree G1 scene and routed the in-tree
+    `g1_puppet` example runner through that Filament path with visible IK
+    targets for hand and foot manipulation.
+  - Extended Filament GUI descriptor and renderer coverage to
+    `PyramidShape`, `MultiSphereConvexHullShape`, `LineSegmentShape`, and
+    `ConvexMeshShape`, `PointCloudShape`, `HeightmapShape`, and
+    `SoftMeshShape`, plus `VoxelGridShape` when OctoMap is available, with the
+    MVP scene validating that all enabled shape fixtures are extracted and
+    rendered, `MeshShape` triangle, material, UV, normal, and submesh metadata
+    exposed through descriptors,
+    nearest-pick results reporting bounds hit normals plus primitive
+    sphere/ellipsoid/cylinder/capsule/cone/pyramid/multi-sphere/point-cloud/voxel-grid/plane
+    hit normals and triangle-backed convex-mesh/heightmap/soft-mesh/MeshShape
+    hit normals, descriptor-owned triangle rendering for convex-mesh,
+    heightmap, soft-mesh, and `MeshShape` descriptors, unsupported shapes producing diagnostic descriptors, and backend-hidden renderable set update planning
+    for add/remove/visibility and render-resource synchronization, including
+    dynamic soft-mesh vertex changes and diagnostics for supported descriptors
+    that cannot produce renderer resources, and retained Filament renderables
+    now synchronize changed descriptor shadow flags. `MeshShape` alpha-mode
+    policy is also exposed through descriptors and visual alpha changes now
+    invalidate renderer resources when material transparency can change. The
+    Filament point-cloud path also consumes per-point color descriptors, and
+    the public GUI headers now have unit coverage that guards against
+    leaking Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal, OSG, or Raylib
+    implementation tokens. The Filament example now includes the `dart::gui`
+    API directly instead of carrying an example-local namespace re-export
+    header, and checked-in dartpy stubs and API docs now expose `dartpy.gui`
+    without backend-specific names.
+    Orbit-camera controller state, perspective projection, near/far clipping
+    policy, GUI scale normalization, and camera-relative keyboard nudge math now
+    also live in a dedicated `dart/gui/viewer.hpp` runtime helper
+    and are consumed by the Filament example through `dart-gui-core`.
+    Axis-constrained drag translation now also lives in the backend-hidden
+    interaction helpers with C++ and Python coverage, and the Filament example
+    uses it for Ctrl-X/Y/Z-left constrained selection dragging.
+    The backend-hidden implementation is now split by responsibility across
+    `viewer.cpp`, `debug.cpp`, `geometry.cpp`, `interaction.cpp`,
+    `shape_descriptions.cpp`, and `profile.cpp`, with focused
+    headers for renderable, interaction, debug, geometry, and viewer concepts
+    while `scene.hpp` remains the scene descriptor aggregate. Filament renderer
+    setup, frame lifecycle, material
+    and texture resources, descriptor synchronization, selection state, input
+    translation, simulation stepping, smoke-test registration, material header
+    generation, and reusable scene fixtures now live under private
+    `dart/gui/detail` implementation units; scene option
+    parsing and dispatch remain in `scenes.cpp`, while fixture construction is
+    split into `scene_fixtures.cpp`. The `simple_frames` runner now routes to
+    a `--scene simple-frames` Filament fixture that renders its `SimpleFrame`
+    hierarchy, marker ellipsoids, and arrow marker through backend-hidden
+    descriptors, and the `soft_bodies` runner now routes to a
+    `--scene soft-bodies` fixture that loads `softBodies.skel` through
+    backend-hidden soft-mesh descriptors. The `point_cloud` runner now routes
+    to a `--scene point-cloud` fixture that renders point-cloud and voxel-grid
+    descriptors through Filament, and the `capsule_ground_contact` runner now
+    routes to a `--scene capsule-ground-contact` fixture that renders capsule
+    and ground descriptors through Filament. The `simulation_event_handler`
+    runner now routes to a `--scene simulation-event-handler` fixture that
+    renders falling bodies and sensor marker descriptors through Filament. The
+    `imgui` runner now routes to the same Filament viewer and private built-in
+    status panel. The `rigid_shapes` runner now routes to the default Filament
+    MVP fixture for broad primitive, mesh, point-cloud, heightmap, soft-mesh,
+    and robot visual coverage. The `rigid_cubes` runner now routes to the
+    `--scene boxes` Filament fixture for dynamic cube-grid coverage. The
+    `box_stacking` runner now routes to the same Filament boxes fixture. The example tree is left as a minimal
+    `main.cpp` entry point plus CMake and README files. The `empty` runner now
+    routes to the `--scene drag-and-drop` Filament fixture for minimal
+    interactive-frame coverage. The `hardcoded_design` runner now routes to a
+    `--scene hardcoded-design` Filament fixture for a hand-built three-link
+    skeleton. The `rigid_chain` runner now routes to a `--scene rigid-chain`
+    Filament fixture for SKEL-loaded chain renderables. The `rigid_loop`
+    runner now routes to a `--scene rigid-loop` Filament fixture for
+    constrained SKEL-loaded chain renderables. The `mixed_chain` runner now
+    routes to a `--scene mixed-chain` Filament fixture for mixed rigid and soft
+    chain renderables. The `coupler_constraint` runner now routes to a
+    `--scene coupler-constraint` Filament fixture for paired mimic/coupler rig
+    renderables. The `add_delete_skels` runner now routes to a
+    `--scene add-delete-skels` Filament fixture for deterministic
+    add/delete-style cube skeleton renderables. The `vehicle` runner now routes
+    to a `--scene vehicle` Filament fixture for the SKEL-loaded car, wheel,
+    ground, and obstacle renderables. The `hybrid_dynamics` runner now routes
+    to a `--scene hybrid-dynamics` Filament fixture for the posed fullbody
+    humanoid and ground renderables. The `biped_stand` runner also routes to
+    that Filament fixture for a standing fullbody visual workflow.
+    The `mimic_pendulums` runner now routes to a `--scene mimic-pendulums`
+    Filament fixture for the SDF-loaded pendulum rigs, base poles, and ground
+    renderables. The `atlas_puppet` runner now routes to a
+    `--scene atlas-puppet` Filament fixture that loads Atlas, exposes generic
+    selectable IK targets for its hands and feet.
+    The `hubo_puppet` runner now routes to a `--scene hubo-puppet` Filament
+    fixture that loads Hubo, exposes selectable IK targets for its hands, feet,
+    and wrist pegs.
+    The `atlas_simbicon` runner now routes to a `--scene atlas-simbicon`
+    Filament fixture that loads the legacy Atlas SDF and ground in the
+    Simbicon start orientation.
+    The `operational_space_control` runner now routes to a
+    `--scene operational-space-control` Filament fixture that loads the WAM arm,
+    runs the task-space controller through a private scene pre-step hook, and
+    exposes the red target as a selectable `SimpleFrame`.
+    The `wam_ikfast` runner now routes to a `--scene wam-ikfast` Filament
+    fixture that loads the WAM arm, ground, and end-effector target through
+    descriptor-owned renderables.
+    The `fetch` runner now routes to a `--scene fetch` Filament fixture that
+    loads the legacy MJCF pick-and-place world, applies the initial robot and
+    object pose, and exposes the target frame through descriptor-owned
+    renderables.
+    The `tinkertoy` runner now routes to a `--scene tinkertoy` Filament fixture
+    that recreates the legacy builder's initial block assemblies, target
+    marker, force line, and reference axes through descriptor-owned renderables.
+    The `joint_constraints` runner now routes to a `--scene joint-constraints`
+    Filament fixture that loads the legacy fullbody world and runs the SPD
+    balance controller through the same private scene pre-step hook.
+    The `free_joint_cases` runner now routes to a `--scene free-joint-cases`
+    Filament fixture for the zero-gravity free-joint bodies and transparent
+    torque-free reference boxes.
+    The `human_joint_limits` runner now routes to a
+    `--scene human-joint-limits` Filament fixture for the Kima human visual,
+    DART joint-limit enforcement, and descriptor-owned mesh, multi-sphere,
+    box, and ground renderables.
+    The `lcp_physics` runner now routes to a `--scene lcp-physics` Filament
+    fixture for deterministic mass-ratio, stacking, domino, ball-drop, and
+    ground contact renderables.
+    The focused GUI unit test now checks that `examples/dartsim` contains
+    no C++ source/header files other than `main.cpp`, that the example has no
+    direct Filament header includes, and that `main.cpp` stays a single-include
+    delegated entry point without backend implementation tokens. The Filament
+    example CMake helper now also compiles only that entry point and rejects
+    unexpected example-tree regular files or direct Filament entry-point
+    includes at configure time. The
+    `run_cpp_example.py` unit coverage now also checks that migrated visual
+    runners resolve to their Filament scenes instead of stale legacy binaries,
+    and that the `--scene all` runner list, smoke-test regex, and
+    loop-generated CMake Filament smoke scene registrations stay aligned.
+    All generated Filament headless scene smokes now run the screenshot
+    analyzer in a basic full-image nonzero mode, while the default shadowed
+    fixture keeps its stricter luminance-contrast gate. Focused Python unit
+    coverage now checks the analyzer's basic mode, contrast mode, and default
+    CLI mode against synthetic PPM fixtures, and the example-runner tests guard
+    that the CMake smoke registration keeps those analysis modes wired.
+    The north-star audit now records the removed OSG/Raylib GUI surfaces and
+    the remaining Filament-only renderer ownership boundary. The renderer-hidden debug descriptor path
+    also covers
+    support-polygon outlines
+    and support-centroid markers, plus arrowheads for contact normal and force
+    overlays, equivalent inertia-box overlays, and collision-shape bounds for
+    collision-only shape nodes.
   - Fix SEGV in `ImFontAtlas::AddFontFromMemoryCompressedTTF` when null pointer is passed as compressed font data. ([#2516](https://github.com/dartsim/dart/issues/2516))
   - Fix `ImGui::ColorPicker3`/`ColorPicker4` crashes when called without an active ImGui context or window. ([#2668](https://github.com/dartsim/dart/issues/2668))
   - Added headless rendering support via `ViewerConfig` and pbuffer graphics context for CI pipelines and batch frame capture. Includes `Viewer::captureBuffer()` for raw RGBA pixel readback and a new `headless-rendering` CI job. ([#2466](https://github.com/dartsim/dart/pull/2466))
-  - Added headless and screenshot capture support to `dart::gui::vsg::SimpleViewer`, including buffer readback for offscreen validation.
   - Added `ImGuiViewer` construction from `ViewerConfig` to support headless ImGui rendering and example frame capture workflows.
   - GUI naming updates and backend cleanup (including the osg suffix removal). ([#2209](https://github.com/dartsim/dart/pull/2209), [#2257](https://github.com/dartsim/dart/pull/2257))
   - ImGui integration updates: FetchContent, Vulkan detection/loader fixes, GUI scale controls, and ImGuiWidget subclassing. ([#2056](https://github.com/dartsim/dart/pull/2056), [#2085](https://github.com/dartsim/dart/pull/2085), [#2261](https://github.com/dartsim/dart/pull/2261), [#2280](https://github.com/dartsim/dart/pull/2280), [#2356](https://github.com/dartsim/dart/pull/2356))

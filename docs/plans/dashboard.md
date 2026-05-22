@@ -139,14 +139,14 @@ its own line so status updates remain git-history friendly.
 ### PLAN-060: Backend-Hidden GUI Roadmap
 
 - Owner doc:
-  [`../dev_tasks/filament_gui/08-north-star-migration.md`](../dev_tasks/filament_gui/08-north-star-migration.md)
+  [`../onboarding/gui-rendering.md`](../onboarding/gui-rendering.md)
 - Status: Complete
 - Horizon: Later
 - Dimension: Easy start
-- Next step: Use the Filament north-star migration plan as the gate for future
-  public GUI API promotion.
-- Gate: GUI promotion stays backend-hidden and aligned with the Filament
-  dev-task migration plan.
+- Next step: Keep future public GUI API promotion aligned with the durable
+  backend-hidden renderer guidance.
+- Gate: GUI promotion stays backend-hidden and aligned with the maintained
+  Filament renderer onboarding guidance.
 
 ### PLAN-070: DART 8 Compatibility Cleanup
 

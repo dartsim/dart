@@ -42,11 +42,13 @@
 #include "dart/dynamics/detail/assimp_input_resource_adaptor.hpp"
 #include "dart/dynamics/mesh_material.hpp"
 
-#include <assimp/GltfMaterial.h>
 #include <assimp/Importer.hpp>
 #include <assimp/cexport.h>
 #include <assimp/cimport.h>
 #include <assimp/config.h>
+#if __has_include(<assimp/GltfMaterial.h>)
+  #include <assimp/GltfMaterial.h>
+#endif
 #include <assimp/postprocess.h>
 
 #include <algorithm>
@@ -1431,6 +1433,10 @@ void MeshShape::extractMaterialsFromScene(
     assert(aiMat);
 
     MeshMaterial material;
+    // Legacy mesh formats such as Collada usually do not define PBR
+    // metalness. Treat imported materials as dielectric unless Assimp
+    // provides an explicit metallic factor below.
+    material.metallicFactor = 0.0f;
     const auto getTexturePath = [&](const aiTextureType type,
                                     const unsigned int index) -> std::string {
       if (aiMat->GetTextureCount(type) <= index) {
@@ -1445,8 +1451,9 @@ void MeshShape::extractMaterialsFromScene(
       return resolveTexturePath(imagePath.C_Str());
     };
     const auto getFirstTexturePath
-        = [&](const aiTextureType type) -> std::string {
-      return getTexturePath(type, 0u);
+        = [&](const aiTextureType type,
+              const unsigned int index = 0u) -> std::string {
+      return getTexturePath(type, index);
     };
 
     // Extract colors
@@ -1511,8 +1518,8 @@ void MeshShape::extractMaterialsFromScene(
     material.metallicTexturePath = getFirstTexturePath(aiTextureType_METALNESS);
     material.roughnessTexturePath
         = getFirstTexturePath(aiTextureType_DIFFUSE_ROUGHNESS);
-#ifdef AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE
-    material.metallicRoughnessTexturePath = getTexturePath(
+#if defined(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE)
+    material.metallicRoughnessTexturePath = getFirstTexturePath(
         AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE);
 #endif
     material.normalTexturePath = getFirstTexturePath(aiTextureType_NORMALS);
@@ -1553,7 +1560,6 @@ void MeshShape::extractMaterialsFromScene(
         aiTextureType_DIFFUSE_ROUGHNESS,
         aiTextureType_AMBIENT_OCCLUSION,
     });
-
     const auto appendTextureImagePaths
         = [&](const aiTextureType type, const unsigned int /*index*/ = 0u) {
             const auto count = aiMat->GetTextureCount(type);

@@ -13,9 +13,52 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-FILAMENT_SMOKE_PATTERN = (
-    "EXAMPLE_filament_gui_headless_smoke|"
-    "EXAMPLE_filament_gui_drag_and_drop_headless_smoke"
+FILAMENT_ALL_SCENES = (
+    "mvp",
+    "hello-world",
+    "boxes",
+    "hardcoded-design",
+    "rigid-chain",
+    "rigid-loop",
+    "mixed-chain",
+    "coupler-constraint",
+    "add-delete-skels",
+    "vehicle",
+    "hybrid-dynamics",
+    "joint-constraints",
+    "free-joint-cases",
+    "human-joint-limits",
+    "lcp-physics",
+    "mimic-pendulums",
+    "atlas-puppet",
+    "hubo-puppet",
+    "atlas-simbicon",
+    "operational-space-control",
+    "wam-ikfast",
+    "fetch",
+    "tinkertoy",
+    "drag-and-drop",
+    "simple-frames",
+    "soft-bodies",
+    "point-cloud",
+    "capsule-ground-contact",
+    "simulation-event-handler",
+    "polyhedron",
+    "heightmap",
+)
+FILAMENT_EXTRA_KNOWN_SCENES = ("g1",)
+FILAMENT_KNOWN_SCENES = (*FILAMENT_ALL_SCENES, *FILAMENT_EXTRA_KNOWN_SCENES)
+
+
+def _filament_smoke_test_name(scene: str) -> str:
+    if scene == "mvp":
+        return "EXAMPLE_dartsim_headless_smoke"
+    suffix = scene.replace("-", "_")
+    return f"EXAMPLE_dartsim_{suffix}_headless_smoke"
+
+
+FILAMENT_SMOKE_PATTERN = "|".join(
+    _filament_smoke_test_name(scene) for scene in FILAMENT_ALL_SCENES
 )
 
 
@@ -24,12 +67,68 @@ class ExampleSpec:
     build_target: str
     binary_name: str
     requirements: tuple[str, ...] = ()
+    default_args: tuple[str, ...] = ()
 
+
+GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
+    "imgui": (),
+    "rigid_shapes": (),
+    "hello_world": (),
+    "boxes": (),
+    "box_stacking": (),
+    "rigid_cubes": (),
+    "hardcoded_design": (),
+    "rigid_chain": (),
+    "rigid_loop": (),
+    "mixed_chain": (),
+    "coupler_constraint": (),
+    "add_delete_skels": (),
+    "vehicle": (),
+    "hybrid_dynamics": (),
+    "biped_stand": (),
+    "joint_constraints": (),
+    "free_joint_cases": (),
+    "human_joint_limits": (),
+    "lcp_physics": (),
+    "mimic_pendulums": (),
+    "atlas_puppet": (),
+    "hubo_puppet": (),
+    "atlas_simbicon": (),
+    "operational_space_control": (),
+    "wam_ikfast": (),
+    "fetch": (),
+    "tinkertoy": (),
+    "drag_and_drop": (),
+    "empty": (),
+    "simple_frames": (),
+    "soft_bodies": (),
+    "point_cloud": (),
+    "capsule_ground_contact": (),
+    "simulation_event_handler": (),
+    "polyhedron_visual": (),
+    "heightmap": (),
+    "g1_puppet": (),
+}
 
 EXAMPLE_SPECS = {
-    "raylib": ExampleSpec("dart_raylib", "raylib", ("raylib",)),
-    "dart_raylib": ExampleSpec("dart_raylib", "raylib", ("raylib",)),
-    "filament_gui": ExampleSpec("dart_filament_gui", "filament_gui", ("filament",)),
+    "dartsim": ExampleSpec("dartsim", "dartsim", ("filament",)),
+    **{
+        name: ExampleSpec(name, name, ("filament",), default_args)
+        for name, default_args in GUI_SCENE_EXAMPLE_DEFAULT_ARGS.items()
+    },
+}
+
+REMOVED_EXAMPLES = {
+    "raylib": "The Raylib GUI example has been removed. Use `pixi run ex dartsim` "
+    "or one of the DART GUI example names instead.",
+    "dart_raylib": "The Raylib GUI example has been removed. Use `pixi run ex dartsim` "
+    "or one of the DART GUI example names instead.",
+    "raylib_gui": "The Raylib GUI example has been removed. Use `pixi run ex dartsim` "
+    "or one of the DART GUI example names instead.",
+    "filament_gui": "The backend-named GUI example has been renamed. Use "
+    "`pixi run ex dartsim` or one of the DART GUI example names instead.",
+    "dart_filament_gui": "The backend-named GUI example has been renamed. Use "
+    "`pixi run ex dartsim` or one of the DART GUI example names instead.",
 }
 
 
@@ -75,9 +174,8 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
 
 
 def _normalize_target(target: str) -> str:
-    if target == "raylib_gui":
-        print("NOTE: example `raylib_gui` was renamed to `raylib`.", file=sys.stderr)
-        return "raylib"
+    if target in REMOVED_EXAMPLES:
+        raise SystemExit(REMOVED_EXAMPLES[target])
     return target
 
 
@@ -173,17 +271,6 @@ def _configure(
     subprocess.run(cmd, check=True, env=env)
 
 
-def _ensure_raylib(build_dir: Path, env: dict[str, str]) -> None:
-    if _cache_bool_matches(build_dir, "DART_BUILD_GUI_RAYLIB", "ON"):
-        return
-
-    print(
-        "Enabling experimental Raylib backend (DART_BUILD_GUI_RAYLIB=ON) for this build...",
-        file=sys.stderr,
-    )
-    _configure(build_dir, {"DART_BUILD_GUI_RAYLIB": "ON"}, env)
-
-
 def _option_override(
     definitions: dict[str, str], env: dict[str, str], option: str, env_name: str
 ) -> None:
@@ -202,7 +289,7 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
     )
 
     desired = {
-        "DART_BUILD_GUI_FILAMENT": "ON",
+        "DART_BUILD_GUI": "ON",
         "DART_BUILD_EXAMPLES": "ON",
         "DART_BUILD_TUTORIALS": "OFF",
         "DART_USE_SYSTEM_FILAMENT": use_system_filament,
@@ -210,10 +297,9 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
     }
     if smoke:
         desired["DART_BUILD_TESTS"] = "ON"
-        desired["DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS"] = "ON"
+        desired["DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS"] = "ON"
 
     _option_override(desired, env, "DART_BUILD_DARTPY", "DART_BUILD_DARTPY_OVERRIDE")
-    _option_override(desired, env, "DART_BUILD_GUI", "DART_BUILD_GUI_OVERRIDE")
     _option_override(desired, env, "DART_BUILD_TESTS", "DART_BUILD_TESTS_OVERRIDE")
 
     definitions = {
@@ -225,7 +311,7 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
         return
 
     print(
-        "Configuring Filament example requirements "
+        "Configuring DART GUI example requirements "
         f"({', '.join(f'{k}={v}' for k, v in definitions.items())})...",
         file=sys.stderr,
     )
@@ -235,8 +321,6 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
 def _ensure_target_requirements(
     build_dir: Path, spec: ExampleSpec, env: dict[str, str], smoke: bool
 ) -> None:
-    if "raylib" in spec.requirements:
-        _ensure_raylib(build_dir, env)
     if "filament" in spec.requirements:
         _ensure_filament(build_dir, env, smoke)
 
@@ -277,10 +361,23 @@ def _has_arg(run_args: list[str], *names: str) -> bool:
     return any(arg in names for arg in run_args)
 
 
+def _run_args_with_defaults(spec: ExampleSpec, run_args: list[str]) -> list[str]:
+    if not spec.default_args:
+        return list(run_args)
+
+    default_args = list(spec.default_args)
+    if _has_arg(run_args, "--scene") and _has_arg(default_args, "--scene"):
+        for index, arg in enumerate(default_args):
+            if arg == "--scene":
+                del default_args[index : index + 2]
+                break
+    return [*default_args, *run_args]
+
+
 def _filament_screenshot_path(scene: str) -> Path:
     env_name = os.environ.get("PIXI_ENVIRONMENT_NAME", "default")
     scene_suffix = scene.replace("-", "_")
-    return Path("build") / env_name / f"filament_gui_{scene_suffix}.ppm"
+    return Path("build") / env_name / f"dartsim_{scene_suffix}.ppm"
 
 
 def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
@@ -291,7 +388,7 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
         scene = args[index + 1]
         del args[index : index + 2]
         if scene == "all":
-            return ["mvp", "drag-and-drop"], args
+            return list(FILAMENT_ALL_SCENES), args
         return [scene], args
     return ["mvp"], args
 
@@ -320,13 +417,13 @@ def _prepare_filament_run_args(
     if headless and not _has_arg(args, "--headless"):
         args.append("--headless")
     if headless and not _has_arg(args, "--frames"):
-        args.extend(["--frames", os.environ.get("DART_FILAMENT_GUI_FRAMES", "10")])
+        args.extend(["--frames", os.environ.get("DART_GUI_FILAMENT_FRAMES", "10")])
     if not _has_arg(args, "--width"):
         args.extend(
             [
                 "--width",
                 os.environ.get(
-                    "DART_FILAMENT_GUI_WIDTH", "640" if headless else "1280"
+                    "DART_GUI_FILAMENT_WIDTH", "640" if headless else "1280"
                 ),
             ]
         )
@@ -335,12 +432,12 @@ def _prepare_filament_run_args(
             [
                 "--height",
                 os.environ.get(
-                    "DART_FILAMENT_GUI_HEIGHT", "480" if headless else "720"
+                    "DART_GUI_FILAMENT_HEIGHT", "480" if headless else "720"
                 ),
             ]
         )
     if headless:
-        screenshot = os.environ.get("DART_FILAMENT_GUI_SCREENSHOT")
+        screenshot = os.environ.get("DART_GUI_FILAMENT_SCREENSHOT")
         if _has_arg(args, "--screenshot"):
             if multiple_scenes:
                 for index, arg in enumerate(args):
@@ -385,8 +482,8 @@ def _run_with_optional_xvfb(
         xvfb_run = shutil.which("xvfb-run")
         if not xvfb_run:
             raise SystemExit(
-                "Filament GUI examples need DISPLAY or xvfb-run for "
-                "Filament's OpenGL backend on Linux."
+                "DART GUI examples need DISPLAY or xvfb-run for the "
+                "Filament OpenGL backend on Linux."
             )
         final_command = [
             xvfb_run,
@@ -438,7 +535,7 @@ def _validate_filament_smoke_tests_discovered(
     output = result.stdout + result.stderr
     match = re.search(r"Total Tests:\s*(\d+)", output)
     if match is None or int(match.group(1)) == 0:
-        raise SystemExit("No Filament GUI smoke tests were discovered.")
+        raise SystemExit("No DART GUI smoke tests were discovered.")
 
 
 def _run_filament_smoke(build_dir: Path, env: dict[str, str]) -> None:
@@ -465,6 +562,7 @@ def _run_example_binary(
     run_args: list[str],
     env: dict[str, str],
 ) -> None:
+    run_args = _run_args_with_defaults(spec, run_args)
     binary = _binary_path(build_dir, spec.binary_name)
     if not binary.exists():
         raise SystemExit(f"Binary not found: {binary}")

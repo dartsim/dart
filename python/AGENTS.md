@@ -24,7 +24,7 @@ import dartpy as dart
 dart.World()
 dart.Skeleton.create()
 dart.io.read_skeleton()  # Unified loader
-dart.gui.Viewer()        # Visualization
+dart.gui                 # Backend-hidden GUI descriptors and helpers
 ```
 
 ## Code Patterns
@@ -32,6 +32,11 @@ dart.gui.Viewer()        # Visualization
 - Eigen ↔ NumPy automatic conversion
 - Use `dart.io.read_skeleton()` for model loading
 - Factory methods: `Skeleton.create()`, `World.create()`
+- Keep dartpy GUI APIs aligned with DART-owned C++ concepts.
+  `dartpy.gui` exposes the constrained descriptor, debug, picking, and run-loop
+  bridge.
+- Do not expose Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal, OSG, or
+  Raylib implementation types through new Python-facing contracts.
 
 ## Building
 
@@ -49,5 +54,6 @@ pixi run test-py         # Run Python tests
 ## See Also
 
 - @docs/onboarding/python-bindings.md - Binding architecture
+- @docs/onboarding/gui-rendering.md - Filament GUI architecture and workflow
 - @python/examples/README.md - Example index
 - @pyproject.toml - Python package configuration

@@ -2,32 +2,37 @@
 
 ## Summary
 
-- Goal: interactively sculpt a heightmap and observe contact alignment.
-- Concepts/APIs: `dynamics::HeightmapShape`, ImGui viewer controls.
-- Expected output: an ImGui-driven OSG viewer with a heightmap surface.
-- Controls: use the ImGui panel; optional `--demo alignment` mode.
+- Goal: regenerate a DART heightmap interactively and compare heightmap contact
+  alignment against a reference box.
+- Concepts/APIs: `dart::dynamics::HeightmapShaped`, world-owned
+  `SimpleFrame`s, collision heightmaps, and `dart::gui` panels.
+- Expected output: an interactive heightmap surface, grid, reference markers,
+  or an alignment scene with falling ball grids.
+- Controls: use the panel to play, pause, step, exit, toggle the terrain/grid,
+  edit the terrain color, and adjust heightmap resolution, size, and Z range.
+  Grid controls expose plane, offset, line count, step size, major/minor/axis
+  widths, and line colors. `--demo alignment` opens the contact-alignment
+  scene.
 
-## Notes
+## Run
 
-- Use `--gui-scale` to scale the ImGui widgets.
-- Use `--demo alignment` to compare heightmap alignment with a reference box.
+From the source tree:
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+```bash
+pixi run ex heightmap
+```
 
-## Build Instructions
+Alignment mode:
 
-From this directory:
+```bash
+pixi run ex heightmap --demo alignment
+```
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+Headless capture is supported through the promoted `dart::gui` runner:
 
-## Execute Instructions
+```bash
+pixi run ex heightmap --headless --frames 2 --screenshot /tmp/heightmap.ppm
+```
 
-Launch the executable from the build directory above:
-
-    $ ./{generated_executable}
-
-Follow the instructions detailed in the console.
+Common `dart::gui` flags such as `--width`, `--height`, `--gui-scale`,
+`--hide-ui`, and `--out` also apply.

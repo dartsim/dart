@@ -30,100 +30,137 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/all.hpp>
+#include <dart/simulation/world.hpp>
 
-using namespace dart::dynamics;
-using namespace dart::gui;
-using namespace dart::gui;
+#include <dart/dynamics/arrow_shape.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/ellipsoid_shape.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
-int main()
+#include <Eigen/Geometry>
+
+#include <memory>
+#include <string>
+
+namespace {
+
+void setColor(
+    const std::shared_ptr<dart::dynamics::SimpleFrame>& frame,
+    const Eigen::Vector4d& color)
 {
-  dart::simulation::WorldPtr myWorld(new dart::simulation::World);
+  frame->getVisualAspect(true)->setRGBA(color);
+}
 
-  Eigen::Isometry3d tf1(Eigen::Isometry3d::Identity());
-  tf1.translate(Eigen::Vector3d(0.1, -0.1, 0));
+std::shared_ptr<dart::dynamics::SimpleFrame> addFrame(
+    dart::simulation::World& world,
+    const std::shared_ptr<dart::dynamics::SimpleFrame>& frame)
+{
+  world.addSimpleFrame(frame);
+  return frame;
+}
 
-  Eigen::Isometry3d tf2(Eigen::Isometry3d::Identity());
-  tf2.translate(Eigen::Vector3d(0, 0.1, 0));
-  tf2.rotate(
-      Eigen::AngleAxisd(dart::math::toRadian(45.0), Eigen::Vector3d(1, 0, 0)));
+dart::simulation::WorldPtr createSimpleFramesWorld()
+{
+  auto world = dart::simulation::World::create("simple_frames");
+  world->setGravity(Eigen::Vector3d::Zero());
 
-  Eigen::Isometry3d tf3(Eigen::Isometry3d::Identity());
-  tf3.translate(Eigen::Vector3d(0, 0, 0.1));
-  tf3.rotate(
-      Eigen::AngleAxisd(dart::math::toRadian(60.0), Eigen::Vector3d(0, 1, 0)));
+  Eigen::Isometry3d tf1 = Eigen::Isometry3d::Identity();
+  tf1.translate(Eigen::Vector3d(0.1, -0.1, 0.0));
 
-  SimpleFramePtr F1(new SimpleFrame(Frame::World(), "F1", tf1));
-  F1->setShape(
-      std::shared_ptr<Shape>(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
-  SimpleFrame F2(F1.get(), "F2", tf2);
-  F2.setShape(
-      std::shared_ptr<Shape>(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
-  SimpleFrame F3(&F2, "F3", tf3);
-  F3.setShape(
-      std::shared_ptr<Shape>(new BoxShape(Eigen::Vector3d(0.05, 0.05, 0.02))));
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translate(Eigen::Vector3d(0.0, 0.1, 0.0));
+  tf2.rotate(Eigen::AngleAxisd(0.7853981633974483, Eigen::Vector3d::UnitX()));
 
-  // Note: Adding a Frame to the world will also cause all Entities that descend
-  // from that Frame to be rendered.
-  myWorld->addSimpleFrame(F1);
+  Eigen::Isometry3d tf3 = Eigen::Isometry3d::Identity();
+  tf3.translate(Eigen::Vector3d(0.0, 0.0, 0.1));
+  tf3.rotate(Eigen::AngleAxisd(1.0471975511965976, Eigen::Vector3d::UnitY()));
 
-  SimpleFramePtr A(new SimpleFrame(Frame::World(), "A"));
-  A->setShape(
-      std::shared_ptr<Shape>(
-          new EllipsoidShape(Eigen::Vector3d(0.02, 0.02, 0.02))));
-  SimpleFrame A1(A.get(), "A1", F1->getTransform(A.get()));
-  A1.setShape(
-      std::shared_ptr<Shape>(
-          new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
-  SimpleFrame A2(A.get(), "A2", F2.getTransform(A.get()));
-  A2.setShape(
-      std::shared_ptr<Shape>(
-          new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
-  SimpleFrame A3(A.get(), "A3", F3.getTransform(A.get()));
-  A3.setShape(
-      std::shared_ptr<Shape>(
-          new EllipsoidShape(Eigen::Vector3d(0.01, 0.01, 0.01))));
+  auto f1 = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "F1", tf1);
+  f1->setShape(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(0.05, 0.05, 0.02)));
+  setColor(f1, Eigen::Vector4d(0.92, 0.32, 0.24, 1.0));
+  addFrame(*world, f1);
 
-  myWorld->addSimpleFrame(A);
+  auto f2 = f1->spawnChildSimpleFrame("F2", tf2);
+  f2->setShape(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(0.05, 0.05, 0.02)));
+  setColor(f2, Eigen::Vector4d(0.24, 0.58, 0.92, 1.0));
+  addFrame(*world, f2);
 
-  SimpleFramePtr arrow(new SimpleFrame(Frame::World(), "arrow"));
-  arrow->setShape(
-      std::shared_ptr<Shape>(new ArrowShape(
-          Eigen::Vector3d(0.1, -0.1, 0.0),
-          Eigen::Vector3d(0.1, 0.0, 0.0),
-          ArrowShape::Properties(0.002, 1.8),
-          Eigen::Vector4d(1.0, 0.5, 0.5, 1.0))));
-  myWorld->addSimpleFrame(arrow);
+  auto f3 = f2->spawnChildSimpleFrame("F3", tf3);
+  f3->setShape(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(0.05, 0.05, 0.02)));
+  setColor(f3, Eigen::Vector4d(0.28, 0.76, 0.34, 1.0));
+  addFrame(*world, f3);
 
-  // CAREFUL: For a Frame that gets added to the world to be
-  // rendered correctly, it must be a child of the World Frame
-  // TODO(MXG): Fix this issue ^
+  auto markerRoot = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "A");
+  markerRoot->setShape(
+      std::make_shared<dart::dynamics::EllipsoidShape>(
+          Eigen::Vector3d(0.02, 0.02, 0.02)));
+  setColor(markerRoot, Eigen::Vector4d(0.95, 0.75, 0.20, 1.0));
+  addFrame(*world, markerRoot);
 
-  // Create a WorldNode and wrap it around the world
-  ::osg::ref_ptr<dart::gui::RealTimeWorldNode> node
-      = new dart::gui::RealTimeWorldNode(myWorld);
+  const auto addMarker
+      = [&](const std::string& name, const Eigen::Isometry3d& transform) {
+          auto marker = markerRoot->spawnChildSimpleFrame(name, transform);
+          marker->setShape(
+              std::make_shared<dart::dynamics::EllipsoidShape>(
+                  Eigen::Vector3d(0.01, 0.01, 0.01)));
+          setColor(marker, Eigen::Vector4d(0.95, 0.75, 0.20, 1.0));
+          addFrame(*world, marker);
+        };
+  addMarker("A1", f1->getTransform(markerRoot.get()));
+  addMarker("A2", f2->getTransform(markerRoot.get()));
+  addMarker("A3", f3->getTransform(markerRoot.get()));
 
-  // Create a Viewer and set it up with the WorldNode
-  auto viewer = Viewer();
-  viewer.addWorldNode(node);
+  auto arrow = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "arrow");
+  auto arrowShape = std::make_shared<dart::dynamics::ArrowShape>(
+      Eigen::Vector3d(0.1, -0.1, 0.0),
+      Eigen::Vector3d(0.1, 0.0, 0.0),
+      dart::dynamics::ArrowShape::Properties(0.002, 1.8),
+      Eigen::Vector4d(1.0, 0.5, 0.5, 1.0));
+  arrow->setShape(arrowShape);
+  setColor(arrow, Eigen::Vector4d(1.0, 0.5, 0.5, 1.0));
+  addFrame(*world, arrow);
 
-  // Set up the window to be 640x480
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+  return world;
+}
 
-  // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.0f, 1.0f, 2.0f),
-      ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+dart::gui::RunOptions makeSimpleFramesRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
 
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
+dart::gui::OrbitCamera makeSimpleFramesCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.0);
+  camera.yaw = 0.4636476090008061;
+  camera.pitch = 0.7297276562269663;
+  camera.distance = 3.0;
+  return camera;
+}
 
-  // Begin running the application loop
-  viewer.run();
+} // namespace
 
-  return 0;
+int main(int argc, char* argv[])
+{
+  dart::gui::ApplicationOptions options;
+  options.world = createSimpleFramesWorld();
+  options.runDefaults = makeSimpleFramesRunDefaults();
+  options.camera = makeSimpleFramesCamera();
+  return dart::gui::runApplication(argc, argv, options);
 }

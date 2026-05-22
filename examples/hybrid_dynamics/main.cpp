@@ -17,176 +17,265 @@
  *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *   POSSIBILITY OF SUCH DAMAGE.
+ *   INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ *   SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ *   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ *   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *   EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/macros.hpp"
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/gui/all.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/utils/All.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <Eigen/Core>
+
 #include <iostream>
-#include <ranges>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::gui;
-using namespace dart::gui;
-using namespace dart::utils;
+#include <cmath>
 
-class HybridDynamicsEventHandler : public ::osgGA::GUIEventHandler
+namespace {
+
+constexpr const char* kHybridWorldUri = "dart://sample/skel/fullbody1.skel";
+constexpr const char* kGroundSkeletonName = "ground skeleton";
+constexpr const char* kBipedSkeletonName = "fullbody1";
+
+dart::dynamics::Joint* getRequiredJoint(
+    const dart::dynamics::SkeletonPtr& skeleton, const char* name)
 {
-public:
-  HybridDynamicsEventHandler(const WorldPtr& world)
-    : mWorld(world), mHarnessOn(false)
-  {
+  auto* joint = skeleton == nullptr ? nullptr : skeleton->getJoint(name);
+  if (joint == nullptr) {
+    throw std::runtime_error(
+        "hybrid_dynamics world is missing joint: " + std::string(name));
+  }
+  return joint;
+}
+
+std::size_t getRequiredCommandIndex(
+    const dart::dynamics::SkeletonPtr& skeleton, const char* jointName)
+{
+  return getRequiredJoint(skeleton, jointName)->getIndexInSkeleton(0);
+}
+
+dart::simulation::WorldPtr createHybridDynamicsWorld()
+{
+  auto world = dart::io::readWorld(kHybridWorldUri);
+  if (world == nullptr) {
+    throw std::runtime_error(
+        "Failed to load hybrid_dynamics world from "
+        + std::string(kHybridWorldUri));
+  }
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+
+  auto ground = world->getSkeleton("ground skeleton");
+  if (ground == nullptr) {
+    throw std::runtime_error("hybrid_dynamics world is missing ground");
   }
 
-  bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
-  {
-    if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
-      switch (ea.getKey()) {
-        case 'h':
-        case 'H':
-          toggleHarness();
-          return true;
-        default:
-          return false;
-      }
+  auto biped = world->getSkeleton(kBipedSkeletonName);
+  if (biped == nullptr) {
+    throw std::runtime_error("hybrid_dynamics world is missing fullbody1");
+  }
+
+  const std::vector<std::size_t> genCoordIds{
+      1,  // global orientation y
+      6,  // left hip
+      9,  // left knee
+      10, // left ankle
+      13, // right hip
+      16, // right knee
+      17, // right ankle
+      21, // lower back
+  };
+  Eigen::VectorXd initConfig(8);
+  initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
+  biped->setPositions(genCoordIds, initConfig);
+
+  if (auto* rootJoint = biped->getJoint(0)) {
+    rootJoint->setActuatorType(dart::dynamics::Joint::ActuatorType::PASSIVE);
+  }
+  for (std::size_t i = 1; i < biped->getNumJoints(); ++i) {
+    if (auto* joint = biped->getJoint(i)) {
+      joint->setActuatorType(dart::dynamics::Joint::ActuatorType::VELOCITY);
     }
-    return false;
+  }
+  return world;
+}
+
+class HybridDynamicsController
+{
+public:
+  explicit HybridDynamicsController(dart::simulation::WorldPtr world)
+    : mWorld(std::move(world))
+  {
+    if (mWorld == nullptr) {
+      throw std::runtime_error("hybrid_dynamics controller is missing world");
+    }
+    mBiped = mWorld->getSkeleton(kBipedSkeletonName);
+    if (mBiped == nullptr) {
+      throw std::runtime_error("hybrid_dynamics controller is missing biped");
+    }
+
+    mScapulaLeft = getRequiredCommandIndex(mBiped, "j_scapula_left");
+    mScapulaRight = getRequiredCommandIndex(mBiped, "j_scapula_right");
+    mForearmLeft = getRequiredCommandIndex(mBiped, "j_forearm_left");
+    mForearmRight = getRequiredCommandIndex(mBiped, "j_forearm_right");
+    mShinLeft = getRequiredCommandIndex(mBiped, "j_shin_left");
+    mShinRight = getRequiredCommandIndex(mBiped, "j_shin_right");
+  }
+
+  void preStep()
+  {
+    const double armCycle = std::sin(mWorld->getTime() * 4.0);
+    const double legCycle = std::sin(mWorld->getTime() * 2.0);
+    mBiped->setCommand(mScapulaLeft, armCycle);
+    mBiped->setCommand(mScapulaRight, -armCycle);
+    mBiped->setCommand(mForearmLeft, 0.8 * armCycle);
+    mBiped->setCommand(mForearmRight, 0.8 * armCycle);
+    mBiped->setCommand(mShinLeft, 0.1 * legCycle);
+    mBiped->setCommand(mShinRight, 0.1 * legCycle);
   }
 
   void toggleHarness()
   {
-    mHarnessOn = !mHarnessOn;
-    if (mHarnessOn) {
-      Joint* joint
-          = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
-      joint->setActuatorType(Joint::LOCKED);
-      std::cout << "The pelvis is locked." << std::endl;
-    } else {
-      Joint* joint
-          = mWorld->getSkeleton(1)->getBodyNode("h_pelvis")->getParentJoint();
-      joint->setActuatorType(Joint::PASSIVE);
-      std::cout << "The pelvis is unlocked." << std::endl;
+    auto* pelvis = mBiped->getBodyNode("h_pelvis");
+    auto* joint = pelvis == nullptr ? nullptr : pelvis->getParentJoint();
+    if (joint == nullptr) {
+      return;
     }
+
+    mHarnessOn = !mHarnessOn;
+    joint->setActuatorType(
+        mHarnessOn ? dart::dynamics::Joint::ActuatorType::LOCKED
+                   : dart::dynamics::Joint::ActuatorType::PASSIVE);
+    std::cout
+        << (mHarnessOn ? "The pelvis is locked." : "The pelvis is unlocked.")
+        << std::endl;
   }
 
-protected:
-  WorldPtr mWorld;
-  bool mHarnessOn;
-};
-
-class HybridDynamicsWorld : public RealTimeWorldNode
-{
-public:
-  HybridDynamicsWorld(const WorldPtr& world) : RealTimeWorldNode(world) {}
-
-  void customPreStep() override
+  bool harnessOn() const
   {
-    SkeletonPtr skel = mWorld->getSkeleton(1);
-
-    std::size_t index0
-        = skel->getJoint("j_scapula_left")->getIndexInSkeleton(0);
-    std::size_t index1
-        = skel->getJoint("j_scapula_right")->getIndexInSkeleton(0);
-    std::size_t index2
-        = skel->getJoint("j_forearm_left")->getIndexInSkeleton(0);
-    std::size_t index3
-        = skel->getJoint("j_forearm_right")->getIndexInSkeleton(0);
-
-    std::size_t index6 = skel->getJoint("j_shin_left")->getIndexInSkeleton(0);
-    std::size_t index7 = skel->getJoint("j_shin_right")->getIndexInSkeleton(0);
-
-    skel->setCommand(index0, 1.0 * std::sin(mWorld->getTime() * 4.0));
-    skel->setCommand(index1, -1.0 * std::sin(mWorld->getTime() * 4.0));
-    skel->setCommand(index2, 0.8 * std::sin(mWorld->getTime() * 4.0));
-    skel->setCommand(index3, 0.8 * std::sin(mWorld->getTime() * 4.0));
-
-    skel->setCommand(index6, 0.1 * std::sin(mWorld->getTime() * 2.0));
-    skel->setCommand(index7, 0.1 * std::sin(mWorld->getTime() * 2.0));
+    return mHarnessOn;
   }
+
+private:
+  dart::simulation::WorldPtr mWorld;
+  dart::dynamics::SkeletonPtr mBiped;
+  std::size_t mScapulaLeft = 0;
+  std::size_t mScapulaRight = 0;
+  std::size_t mForearmLeft = 0;
+  std::size_t mForearmRight = 0;
+  std::size_t mShinLeft = 0;
+  std::size_t mShinRight = 0;
+  bool mHarnessOn = false;
 };
 
-int main(int /*argc*/, char* /*argv*/[])
+dart::gui::OrbitCamera makeHybridDynamicsCamera()
 {
-  // Create and initialize the world
-  WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/fullbody1.skel");
-  DART_ASSERT(myWorld != nullptr);
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.up = Eigen::Vector3d::UnitY();
+  camera.yaw = 0.5404195002705842;
+  camera.pitch = 0.4758822496604165;
+  camera.distance = 6.557438524302;
+  return camera;
+}
 
-  SkeletonPtr skel = myWorld->getSkeleton(1);
+dart::gui::RunOptions makeHybridDynamicsRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
 
-  std::vector<std::size_t> genCoordIds;
-  genCoordIds.push_back(1);
-  genCoordIds.push_back(6);  // left hip
-  genCoordIds.push_back(9);  // left knee
-  genCoordIds.push_back(10); // left ankle
-  genCoordIds.push_back(13); // right hip
-  genCoordIds.push_back(16); // right knee
-  genCoordIds.push_back(17); // right ankle
-  genCoordIds.push_back(21); // lower back
-  Eigen::VectorXd initConfig(8);
-  initConfig << -0.2, 0.15, -0.4, 0.25, 0.15, -0.4, 0.25, 0.0;
-  skel->setPositions(genCoordIds, initConfig);
+void printHybridDynamicsInstructions()
+{
+  std::cout << "'h': toggle harness on/off\n"
+            << "space bar: simulation on/off\n";
+}
 
-  Joint* joint0 = skel->getJoint(0);
-  joint0->setActuatorType(Joint::PASSIVE);
-  for (const auto i :
-       std::views::iota(std::size_t{1}, skel->getNumBodyNodes())) {
-    Joint* joint = skel->getJoint(i);
-    joint->setActuatorType(Joint::VELOCITY);
+std::vector<dart::gui::KeyboardAction> createHybridDynamicsKeyboardActions(
+    const std::shared_ptr<HybridDynamicsController>& controller)
+{
+  dart::gui::KeyboardAction toggleHarness;
+  toggleHarness.label = "Toggle hybrid-dynamics harness";
+  toggleHarness.shortcut = dart::gui::KeyboardShortcut::characterKey('h');
+  toggleHarness.callback = [controller](dart::gui::KeyboardActionContext&) {
+    controller->toggleHarness();
+  };
+  return {std::move(toggleHarness)};
+}
+
+dart::gui::Panel createHybridDynamicsPanel(
+    const std::shared_ptr<HybridDynamicsController>& controller)
+{
+  dart::gui::Panel panel;
+  panel.title = "Hybrid Dynamics";
+  panel.buildWithContext = [controller](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    builder.text("Scripted velocity commands on the fullbody biped");
+    builder.text("'h': toggle harness on/off");
+    builder.text("space bar: simulation on/off");
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    if (builder.button(
+            controller->harnessOn() ? "Unlock pelvis" : "Lock pelvis")) {
+      controller->toggleHarness();
+    }
+    builder.text(
+        "harness: " + std::string(controller->harnessOn() ? "on" : "off"));
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("contacts: " + std::to_string(context.contactCount));
+  };
+  return panel;
+}
+
+} // namespace
+
+int main(int argc, char* argv[])
+{
+  try {
+    auto world = createHybridDynamicsWorld();
+    auto controller = std::make_shared<HybridDynamicsController>(world);
+
+    dart::gui::ApplicationOptions options;
+    options.world = world;
+    options.camera = makeHybridDynamicsCamera();
+    options.runDefaults = makeHybridDynamicsRunDefaults();
+    options.preStep = [controller]() {
+      controller->preStep();
+    };
+    options.keyboardActions = createHybridDynamicsKeyboardActions(controller);
+    options.panels.push_back(createHybridDynamicsPanel(controller));
+
+    printHybridDynamicsInstructions();
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "hybrid_dynamics: " << e.what() << "\n";
+    return 1;
   }
-
-  // Create event handler
-  auto handler = new HybridDynamicsEventHandler(myWorld);
-
-  // Create a custom WorldNode with hybrid dynamics behavior
-  ::osg::ref_ptr<HybridDynamicsWorld> node = new HybridDynamicsWorld(myWorld);
-
-  // Create a Viewer and set it up with the WorldNode
-  auto viewer = Viewer();
-  viewer.addWorldNode(node);
-  viewer.addEventHandler(handler);
-
-  // Print instructions
-  viewer.addInstructionText("'h': toggle harness on/off\n");
-  viewer.addInstructionText("space bar: simulation on/off\n");
-  std::cout << viewer.getInstructions() << std::endl;
-
-  // Set up the window to be 640x480
-  viewer.setUpViewInWindow(0, 0, 640, 480);
-
-  // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(5.0f, 3.0f, 3.0f),
-      ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 1.0f, 0.0f));
-
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  // Begin running the application loop
-  viewer.run();
-
-  return 0;
 }

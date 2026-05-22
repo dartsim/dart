@@ -29,7 +29,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/experimental/scene.hpp>
+#include <dart/gui/scene.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -59,7 +59,7 @@ namespace {
 
 struct ExampleOptions
 {
-  dart::gui::experimental::RunOptions run;
+  dart::gui::RunOptions run;
 };
 
 void printUsage(const char* argv0)
@@ -132,7 +132,7 @@ bool parseArgs(int argc, char* argv[], ExampleOptions& options)
     return false;
   }
 
-  dart::gui::experimental::normalizeRunOptions(options.run);
+  dart::gui::normalizeRunOptions(options.run);
   return true;
 }
 
@@ -189,9 +189,8 @@ std::shared_ptr<dart::simulation::World> createDiagnosticWorld()
 }
 
 std::string describeHit(
-    const std::vector<dart::gui::experimental::RenderableDescriptor>&
-        renderables,
-    const std::optional<dart::gui::experimental::PickHit>& hit)
+    const std::vector<dart::gui::RenderableDescriptor>& renderables,
+    const std::optional<dart::gui::PickHit>& hit)
 {
   if (!hit) {
     return "none";
@@ -217,35 +216,32 @@ int main(int argc, char* argv[])
   auto world = createDiagnosticWorld();
 
   int renderedFrames = 0;
-  while (!dart::gui::experimental::shouldStopAfterFrame(
-      options.run, renderedFrames)) {
+  while (!dart::gui::shouldStopAfterFrame(options.run, renderedFrames)) {
     world->step();
     ++renderedFrames;
   }
 
-  const auto renderables = dart::gui::experimental::extractRenderables(*world);
+  const auto renderables = dart::gui::extractRenderables(*world);
 
-  dart::gui::experimental::DebugDrawOptions debugOptions;
+  dart::gui::DebugDrawOptions debugOptions;
   debugOptions.drawBodyFrames = true;
   debugOptions.drawCentersOfMass = true;
-  const auto debugLines
-      = dart::gui::experimental::extractDebugLines(*world, debugOptions);
+  const auto debugLines = dart::gui::extractDebugLines(*world, debugOptions);
 
-  dart::gui::experimental::OrbitCamera camera;
+  dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d(0.0, 0.0, 0.45);
-  const auto basis = dart::gui::experimental::makeOrbitCameraBasis(camera);
-  const auto centerRay = dart::gui::experimental::makePerspectivePickRay(
+  const auto basis = dart::gui::makeOrbitCameraBasis(camera);
+  const auto centerRay = dart::gui::makePerspectivePickRay(
       camera,
       options.run.width * 0.5,
       options.run.height * 0.5,
       options.run.width,
       options.run.height);
-  const auto hit
-      = dart::gui::experimental::pickNearestRenderable(renderables, centerRay);
-  std::vector<dart::gui::experimental::DebugLineDescriptor> selectionLines;
+  const auto hit = dart::gui::pickNearestRenderable(renderables, centerRay);
+  std::vector<dart::gui::DebugLineDescriptor> selectionLines;
   if (hit) {
-    selectionLines = dart::gui::experimental::makeSelectionDebugLines(
-        renderables[hit->renderableIndex]);
+    selectionLines
+        = dart::gui::makeSelectionDebugLines(renderables[hit->renderableIndex]);
   }
 
   std::cout << "frames: " << renderedFrames << "\n"

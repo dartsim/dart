@@ -32,8 +32,8 @@ Workflow overview
    (``ik.solveAndApply(True)`` in dartpy when you want to apply the result) to
    update the skeleton.
 
-For a full walkthrough see :doc:`/tutorials/wholebody-ik`, which pairs the
-API with runnable Atlas examples in C++ and Python.
+For analytical solver integration, see :doc:`ikfast`, which pairs the API with
+the maintained Filament ``wam-ikfast`` scene.
 
 Quick example
 -------------

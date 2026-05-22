@@ -30,353 +30,272 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/utils/All.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/all.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+
 #include <dart/io/read.hpp>
 
-#include <filesystem>
+#include <Eigen/Core>
+
+#include <functional>
 #include <iostream>
+#include <memory>
+#include <stdexcept>
 #include <string>
-#include <string_view>
-
-#include <cstdlib>
-
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::gui;
-using namespace dart::utils;
-using namespace dart::math;
+#include <utility>
+#include <vector>
 
 namespace {
 
-//==============================================================================
-// Command-line options
-//==============================================================================
-struct Options
+constexpr const char* kRigidCubesUri = "dart://sample/skel/cubes.skel";
+constexpr double kRigidCubesForceMagnitude = 500.0;
+
+struct RigidCubesState
 {
-  bool headless = false;
-  int frames = -1;
-  std::string outDir;
-  int width = 640;
-  int height = 480;
-  bool help = false;
+  Eigen::Vector3d pendingForce = Eigen::Vector3d::Zero();
+  bool visualizationMarkersVisible = true;
 };
 
-//==============================================================================
-void printUsage(const char* argv0)
+void printRigidCubesInstructions()
 {
-  std::cout
-      << "Usage: " << argv0 << " [options]\n\n"
-      << "Options:\n"
-      << "  --headless        Run without display window (for CI/testing)\n"
-      << "  --frames <n>      Run for n frames then exit (default: "
-         "interactive)\n"
-      << "  --out <dir>       Output directory for captured frames\n"
-      << "  --width <n>       Viewport width (default: 640)\n"
-      << "  --height <n>      Viewport height (default: 480)\n"
-      << "  -h, --help        Show this help\n\n"
-      << "Interactive controls (when not headless):\n"
-      << "  space bar: simulation on/off\n"
-      << "  'p': playback/stop\n"
-      << "  'v': visualization on/off\n"
-      << "  '1'-'4': apply directional forces\n";
+  std::cout << "Rigid Cubes Example\n"
+            << "Controls:\n"
+            << "  space bar: simulation on/off\n"
+            << "  'p': playback/stop\n"
+            << "  'v': visualization on/off\n"
+            << "  '1'-'4': apply directional forces\n"
+            << "    '1': -X force    '2': +X force\n"
+            << "    '3': -Z force    '4': +Z force\n";
 }
 
-//==============================================================================
-bool parseInt(std::string_view value, int& output)
+dart::simulation::WorldPtr createRigidCubesWorld()
 {
-  if (value.empty()) {
-    return false;
+  auto world = dart::io::readWorld(kRigidCubesUri);
+  if (world == nullptr) {
+    throw std::runtime_error("Failed to load dart://sample/skel/cubes.skel");
   }
 
-  const std::string str(value);
-  char* end = nullptr;
-  const long result = std::strtol(str.c_str(), &end, 10);
-  if (!end || *end != '\0') {
-    return false;
-  }
-
-  output = static_cast<int>(result);
-  return true;
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  return world;
 }
 
-//==============================================================================
-enum class ParseResult
+dart::dynamics::BodyNode* getForceTargetBody(dart::simulation::World* world)
 {
-  Ok,
-  Help,
-  Error
-};
-
-//==============================================================================
-ParseResult parseArgs(int argc, char* argv[], Options& options)
-{
-  for (int i = 1; i < argc; ++i) {
-    const std::string_view arg(argv[i]);
-
-    if (arg == "-h" || arg == "--help") {
-      printUsage(argv[0]);
-      return ParseResult::Help;
-    }
-
-    if (arg == "--headless") {
-      options.headless = true;
-      continue;
-    }
-
-    if (arg == "--frames" && i + 1 < argc) {
-      if (!parseInt(argv[++i], options.frames) || options.frames < 0) {
-        std::cerr << "Invalid frames value: " << argv[i] << "\n";
-        printUsage(argv[0]);
-        return ParseResult::Error;
-      }
-      continue;
-    }
-
-    if (arg == "--out" && i + 1 < argc) {
-      options.outDir = argv[++i];
-      continue;
-    }
-
-    if (arg == "--width" && i + 1 < argc) {
-      if (!parseInt(argv[++i], options.width) || options.width <= 0) {
-        std::cerr << "Invalid width: " << argv[i] << "\n";
-        printUsage(argv[0]);
-        return ParseResult::Error;
-      }
-      continue;
-    }
-
-    if (arg == "--height" && i + 1 < argc) {
-      if (!parseInt(argv[++i], options.height) || options.height <= 0) {
-        std::cerr << "Invalid height: " << argv[i] << "\n";
-        printUsage(argv[0]);
-        return ParseResult::Error;
-      }
-      continue;
-    }
-
-    std::cerr << "Unknown argument: " << arg << "\n";
-    printUsage(argv[0]);
-    return ParseResult::Error;
+  if (world == nullptr) {
+    return nullptr;
   }
 
-  return ParseResult::Ok;
+  if (world->getNumSkeletons() <= 1) {
+    return nullptr;
+  }
+
+  const auto cube = world->getSkeleton(1);
+  if (cube == nullptr || cube->getNumBodyNodes() == 0) {
+    return nullptr;
+  }
+
+  return cube->getBodyNode(0);
+}
+
+void applyPendingForce(
+    const dart::simulation::WorldPtr& world,
+    const std::shared_ptr<RigidCubesState>& state)
+{
+  if (state == nullptr) {
+    return;
+  }
+
+  auto* body = getForceTargetBody(world.get());
+  if (body != nullptr) {
+    body->addExtForce(state->pendingForce);
+  }
+
+  state->pendingForce /= 2.0;
+}
+
+void setDirectionalForce(
+    const std::shared_ptr<RigidCubesState>& state,
+    const Eigen::Vector3d& force,
+    const char* label)
+{
+  if (state == nullptr) {
+    return;
+  }
+
+  state->pendingForce = force;
+  std::cout << "Applied " << label << " force\n";
+}
+
+void toggleVisualizationMarkers(const std::shared_ptr<RigidCubesState>& state)
+{
+  if (state == nullptr) {
+    return;
+  }
+
+  state->visualizationMarkersVisible = !state->visualizationMarkersVisible;
+  std::cout << "Visualization markers "
+            << (state->visualizationMarkersVisible ? "on" : "off") << "\n";
+}
+
+dart::gui::Panel createControlsPanel(
+    const std::shared_ptr<RigidCubesState>& state)
+{
+  dart::gui::Panel controls;
+  controls.title = "Rigid Cube Forces";
+  controls.buildWithContext = [state](
+                                  dart::gui::PanelBuilder& panel,
+                                  dart::gui::PanelContext& context) mutable {
+    panel.text("Rigid Cubes Example");
+    panel.text("1/2: -X/+X force, 3/4: -Z/+Z force");
+    panel.text("P: playback/stop, V: visualization on/off");
+    if (state != nullptr) {
+      panel.text(
+          std::string("markers: ")
+          + (state->visualizationMarkersVisible ? "on" : "off"));
+    }
+    panel.separator();
+    panel.text("Apply one-frame force to the center cube");
+    panel.separator();
+    if (context.lifecycle != nullptr) {
+      if (panel.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      panel.sameLine();
+      if (panel.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    if (panel.button("-X")) {
+      setDirectionalForce(
+          state, Eigen::Vector3d(-kRigidCubesForceMagnitude, 0.0, 0.0), "-X");
+    }
+    panel.sameLine();
+    if (panel.button("+X")) {
+      setDirectionalForce(
+          state, Eigen::Vector3d(kRigidCubesForceMagnitude, 0.0, 0.0), "+X");
+    }
+    panel.sameLine();
+    if (panel.button("-Z")) {
+      setDirectionalForce(
+          state, Eigen::Vector3d(0.0, 0.0, -kRigidCubesForceMagnitude), "-Z");
+    }
+    panel.sameLine();
+    if (panel.button("+Z")) {
+      setDirectionalForce(
+          state, Eigen::Vector3d(0.0, 0.0, kRigidCubesForceMagnitude), "+Z");
+    }
+    panel.text("time: " + std::to_string(context.simulationTime));
+  };
+  return controls;
+}
+
+dart::gui::KeyboardAction makeRigidCubesAction(
+    std::string label,
+    dart::gui::KeyboardShortcut shortcut,
+    std::function<void(dart::gui::KeyboardActionContext&)> callback)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = shortcut;
+  action.callback = std::move(callback);
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createRigidCubesKeyboardActions(
+    const std::shared_ptr<RigidCubesState>& state)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makeRigidCubesAction(
+      "Toggle playback",
+      dart::gui::KeyboardShortcut::characterKey('p'),
+      [](dart::gui::KeyboardActionContext& context) {
+        if (context.lifecycle != nullptr) {
+          dart::gui::togglePaused(*context.lifecycle);
+        }
+      }));
+  actions.push_back(makeRigidCubesAction(
+      "Toggle visualization markers",
+      dart::gui::KeyboardShortcut::characterKey('v'),
+      [state](dart::gui::KeyboardActionContext&) {
+        toggleVisualizationMarkers(state);
+      }));
+  actions.push_back(makeRigidCubesAction(
+      "Apply -X force",
+      dart::gui::KeyboardShortcut::characterKey('1'),
+      [state](dart::gui::KeyboardActionContext&) {
+        setDirectionalForce(
+            state, Eigen::Vector3d(-kRigidCubesForceMagnitude, 0.0, 0.0), "-X");
+      }));
+  actions.push_back(makeRigidCubesAction(
+      "Apply +X force",
+      dart::gui::KeyboardShortcut::characterKey('2'),
+      [state](dart::gui::KeyboardActionContext&) {
+        setDirectionalForce(
+            state, Eigen::Vector3d(kRigidCubesForceMagnitude, 0.0, 0.0), "+X");
+      }));
+  actions.push_back(makeRigidCubesAction(
+      "Apply -Z force",
+      dart::gui::KeyboardShortcut::characterKey('3'),
+      [state](dart::gui::KeyboardActionContext&) {
+        setDirectionalForce(
+            state, Eigen::Vector3d(0.0, 0.0, -kRigidCubesForceMagnitude), "-Z");
+      }));
+  actions.push_back(makeRigidCubesAction(
+      "Apply +Z force",
+      dart::gui::KeyboardShortcut::characterKey('4'),
+      [state](dart::gui::KeyboardActionContext&) {
+        setDirectionalForce(
+            state, Eigen::Vector3d(0.0, 0.0, kRigidCubesForceMagnitude), "+Z");
+      }));
+  return actions;
+}
+
+dart::gui::RunOptions makeRigidCubesRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makeRigidCubesCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.7853981633974483;
+  camera.pitch = 0.6154797086703874;
+  camera.distance = 8.660254037844387;
+  return camera;
 }
 
 } // namespace
 
-//==============================================================================
-class RigidCubesWorldNode : public dart::gui::RealTimeWorldNode
-{
-public:
-  RigidCubesWorldNode(
-      dart::simulation::WorldPtr world,
-      ::osg::ref_ptr<osgShadow::ShadowTechnique> shadow = nullptr)
-    : dart::gui::RealTimeWorldNode(std::move(world), std::move(shadow)),
-      mForce(Eigen::Vector3d::Zero())
-  {
-  }
-
-  void customPreStep() override
-  {
-    // Apply the force to the second skeleton (index 1), first body node
-    if (mWorld->getNumSkeletons() > 1) {
-      mWorld->getSkeleton(1)->getBodyNode(0)->addExtForce(mForce);
-    }
-
-    // Decay the force by half each step (as in original)
-    mForce /= 2.0;
-  }
-
-  void setForce(const Eigen::Vector3d& force)
-  {
-    mForce = force;
-  }
-
-protected:
-  Eigen::Vector3d mForce;
-};
-
-//==============================================================================
-class RigidCubesEventHandler : public ::osgGA::GUIEventHandler
-{
-public:
-  RigidCubesEventHandler(
-      dart::gui::Viewer* viewer,
-      RigidCubesWorldNode* worldNode,
-      const WorldPtr& world)
-    : mViewer(viewer), mWorldNode(worldNode), mWorld(world)
-  {
-  }
-
-  virtual bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
-  {
-    if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
-      static bool eventHandlerOn = true;
-      switch (ea.getKey()) {
-        case ' ': // Space bar: toggle simulation
-          mViewer->simulate(!mViewer->isSimulating());
-          return true;
-        case 'p': // Toggle playback mode
-          eventHandlerOn = !eventHandlerOn;
-          mViewer->switchDefaultEventHandler(eventHandlerOn);
-          return true;
-        case 'v': // Toggle visualization markers
-          if (mWorldNode) {
-            // Toggle marker visibility (implementation would depend on specific
-            // markers)
-            std::cout << "Toggling visualization markers\n";
-          }
-          return true;
-        case '1': // Apply negative X force
-          if (mWorldNode) {
-            mWorldNode->setForce(Eigen::Vector3d(-500, 0, 0));
-            std::cout << "Applied -X force\n";
-          }
-          return true;
-        case '2': // Apply positive X force
-          if (mWorldNode) {
-            mWorldNode->setForce(Eigen::Vector3d(500, 0, 0));
-            std::cout << "Applied +X force\n";
-          }
-          return true;
-        case '3': // Apply negative Z force
-          if (mWorldNode) {
-            mWorldNode->setForce(Eigen::Vector3d(0, 0, -500));
-            std::cout << "Applied -Z force\n";
-          }
-          return true;
-        case '4': // Apply positive Z force
-          if (mWorldNode) {
-            mWorldNode->setForce(Eigen::Vector3d(0, 0, 500));
-            std::cout << "Applied +Z force\n";
-          }
-          return true;
-        default:
-          return false;
-      }
-    }
-    return false;
-  }
-
-protected:
-  dart::gui::Viewer* mViewer;
-  RigidCubesWorldNode* mWorldNode;
-  WorldPtr mWorld;
-};
-
-//==============================================================================
 int main(int argc, char* argv[])
 {
-  // Parse command-line arguments
-  Options options;
-  const ParseResult parseResult = parseArgs(argc, argv, options);
-  if (parseResult == ParseResult::Help) {
-    return EXIT_SUCCESS;
+  try {
+    printRigidCubesInstructions();
+
+    auto state = std::make_shared<RigidCubesState>();
+    auto world = createRigidCubesWorld();
+
+    dart::gui::ApplicationOptions options;
+    options.world = world;
+    options.runDefaults = makeRigidCubesRunDefaults();
+    options.camera = makeRigidCubesCamera();
+    options.preStep = [world, state]() {
+      applyPendingForce(world, state);
+    };
+    options.panels.push_back(createControlsPanel(state));
+    options.keyboardActions = createRigidCubesKeyboardActions(state);
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "rigid_cubes: " << e.what() << "\n";
+    return 1;
   }
-  if (parseResult == ParseResult::Error) {
-    return EXIT_FAILURE;
-  }
-
-  // Validate headless options
-  if (options.headless && options.frames < 0) {
-    std::cerr << "Error: --headless requires --frames to be specified\n";
-    printUsage(argv[0]);
-    return EXIT_FAILURE;
-  }
-
-  // Create output directory if specified
-  if (!options.outDir.empty()) {
-    std::error_code ec;
-    std::filesystem::create_directories(options.outDir, ec);
-    if (ec) {
-      std::cerr << "Failed to create output directory '" << options.outDir
-                << "': " << ec.message() << "\n";
-      return EXIT_FAILURE;
-    }
-  }
-
-  // Create and initialize the world
-  auto world = dart::io::readWorld("dart://sample/skel/cubes.skel");
-  if (!world) {
-    DART_ERROR("Failed to load world.");
-    return EXIT_FAILURE;
-  }
-  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
-
-  std::unique_ptr<dart::gui::Viewer> viewerPtr;
-  if (options.headless) {
-    viewerPtr = std::make_unique<dart::gui::Viewer>(
-        dart::gui::ViewerConfig::headless(options.width, options.height));
-  } else {
-    viewerPtr = std::make_unique<dart::gui::Viewer>();
-  }
-  dart::gui::Viewer& viewer = *viewerPtr;
-
-  auto shadow = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
-
-  ::osg::ref_ptr<RigidCubesWorldNode> worldNode
-      = new RigidCubesWorldNode(world, shadow);
-  viewer.addWorldNode(worldNode);
-
-  ::osg::ref_ptr<RigidCubesEventHandler> eventHandler
-      = new RigidCubesEventHandler(&viewer, worldNode, world);
-  viewer.addEventHandler(eventHandler);
-
-  if (!options.headless) {
-    viewer.setUpViewInWindow(0, 0, options.width, options.height);
-  }
-
-  // Set up camera position
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(5.0f, 5.0f, 5.0f),
-      ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f));
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  if (options.headless) {
-    std::cout << "Running in headless mode for " << options.frames
-              << " frames\n";
-    if (!options.outDir.empty()) {
-      std::cout << "Saving frames to: " << options.outDir << "\n";
-    }
-
-    // Start recording if output directory specified
-    if (!options.outDir.empty()) {
-      viewer.record(options.outDir, "frame_", false, 6);
-    }
-
-    // Enable simulation
-    viewer.simulate(true);
-
-    // Run the specified number of frames
-    for (int i = 0; i < options.frames; ++i) {
-      viewer.frame();
-    }
-
-    std::cout << "Headless rendering complete.\n";
-    return EXIT_SUCCESS;
-  }
-
-  // Interactive mode: add instruction text and run viewer loop
-  viewer.addInstructionText("Rigid Cubes Example\n");
-  viewer.addInstructionText("Controls:\n");
-  viewer.addInstructionText("  space bar: simulation on/off\n");
-  viewer.addInstructionText("  'p': playback/stop\n");
-  viewer.addInstructionText("  'v': visualization on/off\n");
-  viewer.addInstructionText("  '1'-'4': apply directional forces\n");
-  viewer.addInstructionText("    '1': -X force    '2': +X force\n");
-  viewer.addInstructionText("    '3': -Z force    '4': +Z force\n");
-
-  // Print instructions to console
-  std::cout << viewer.getInstructions() << std::endl;
-
-  // Run the simulation
-  return viewer.run();
 }

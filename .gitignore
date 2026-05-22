@@ -71,7 +71,6 @@ docs/python_api/_build/
 
 # Data files
 data/screencap/*
-*.vsgt
 *.ppm
 
 # Headless rendering artifacts
@@ -111,6 +110,7 @@ rp3d_profiling_*.txt
 
 # Generated testing images
 *.png
+!data/sdf/atlas/materials/textures/*.png
 
 # Benchmark results
 docs/**/results/*.json

@@ -2,13 +2,14 @@
 
 ## Summary
 
-- Goal: spawn and remove skeletons at runtime via keyboard input.
-- Concepts/APIs: `simulation::World`, event handlers, dynamic skeleton creation.
-- Expected output: a viewer where you can add/remove cubes on demand.
-- Controls: q spawns a cube; w deletes the most recent cube; space toggles sim.
-
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+- Goal: spawn and remove skeletons at runtime through promoted `dart::gui`
+  controls.
+- Concepts/APIs: `simulation::World`, dynamic skeleton creation,
+  `ApplicationOptions::keyboardActions`, and `PanelBuilder`.
+- Expected output: a DART GUI viewer with the ground world loaded; press `q` or
+  the panel button to spawn cube skeletons.
+- Controls: `q` spawns a cube; `w` deletes the most recent cube; space toggles
+  simulation.
 
 ## Build Instructions
 
@@ -21,8 +22,14 @@ From this directory:
 
 ## Execute Instructions
 
-Launch the executable from the build directory above:
+From the DART repository root:
 
-    $ ./{generated_executable}
+```bash
+pixi run ex add_delete_skels
+```
 
-Follow the instructions detailed in the console.
+For an automated smoke run:
+
+```bash
+pixi run ex add_delete_skels --headless --frames 2 --screenshot add_delete_skels.ppm
+```

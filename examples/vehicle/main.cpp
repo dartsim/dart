@@ -30,171 +30,335 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/macros.hpp"
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/gui/all.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/utils/All.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/all.hpp>
 #include <dart/io/read.hpp>
 
+#include <Eigen/Core>
+
+#include <algorithm>
+#include <array>
 #include <iostream>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::gui;
-using namespace dart::gui;
-using namespace dart::utils;
-using namespace dart::math::suffixes;
+#include <cmath>
+#include <cstddef>
 
-class VehicleEventHandler : public ::osgGA::GUIEventHandler
+namespace {
+
+constexpr const char* kWorldUri = "dart://sample/skel/vehicle.skel";
+constexpr const char* kVehicleCarName = "visual_vehicle_car";
+constexpr const char* kVehicleGroundName = "visual_vehicle_ground";
+constexpr const char* kVehicleObstaclePrefix = "visual_vehicle_obstacle_";
+constexpr double kPi = 3.14159265358979323846;
+constexpr double kDegreesToRadians = kPi / 180.0;
+constexpr double kWheelSpeedCommand = 420.0 * kDegreesToRadians;
+constexpr double kSteeringStep = 10.0 * kDegreesToRadians;
+constexpr double kMaxSteeringAngle = 30.0 * kDegreesToRadians;
+
+std::string makeStatusLine(const char* label, double value)
+{
+  std::ostringstream stream;
+  stream << label << value;
+  return stream.str();
+}
+
+class VehicleController
 {
 public:
-  VehicleEventHandler() : mBackWheelVelocity(0.0), mSteeringWheelAngle(0.0) {}
-
-  bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
+  explicit VehicleController(dart::dynamics::SkeletonPtr vehicle)
+    : mVehicle(std::move(vehicle))
   {
-    if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
-      switch (ea.getKey()) {
-        case 'w':
-        case 'W':
-          mBackWheelVelocity = -420.0_deg;
-          std::cout << "Moving forward" << std::endl;
-          return true;
-        case 's':
-        case 'S':
-          mBackWheelVelocity = 0.0_deg;
-          std::cout << "Stop" << std::endl;
-          return true;
-        case 'x':
-        case 'X':
-          mBackWheelVelocity = +420.0_deg;
-          std::cout << "Moving backward" << std::endl;
-          return true;
-        case 'a':
-        case 'A':
-          mSteeringWheelAngle += +10_deg;
-          if (mSteeringWheelAngle > 30.0_deg) {
-            mSteeringWheelAngle = 30.0_deg;
-          }
-          std::cout << "Steering left, angle: " << mSteeringWheelAngle
-                    << std::endl;
-          return true;
-        case 'd':
-        case 'D':
-          mSteeringWheelAngle += -10_deg;
-          if (mSteeringWheelAngle < -30.0_deg) {
-            mSteeringWheelAngle = -30.0_deg;
-          }
-          std::cout << "Steering right, angle: " << mSteeringWheelAngle
-                    << std::endl;
-          return true;
-        default:
-          return false;
-      }
+    if (mVehicle == nullptr) {
+      throw std::runtime_error(
+          "vehicle controller requires a vehicle skeleton");
     }
-    return false;
   }
 
-  double getBackWheelVelocity() const
+  void preStep()
+  {
+    if (mVehicle->getNumDofs() < 12) {
+      return;
+    }
+
+    const auto positions = mVehicle->getPositions();
+    const auto velocities = mVehicle->getVelocities();
+    Eigen::VectorXd forces = Eigen::VectorXd::Zero(mVehicle->getNumDofs());
+
+    forces[6] = -mSteeringStiffness * (positions[6] - mSteeringWheelAngle)
+                - mSteeringDamping * velocities[6];
+    forces[8] = -mSteeringStiffness * (positions[8] - mSteeringWheelAngle)
+                - mSteeringDamping * velocities[8];
+    forces[7] = -mWheelDamping * (velocities[7] - mBackWheelVelocity);
+    forces[9] = -mWheelDamping * (velocities[9] - mBackWheelVelocity);
+    forces[10] = -mWheelDamping * (velocities[10] - mBackWheelVelocity);
+    forces[11] = -mWheelDamping * (velocities[11] - mBackWheelVelocity);
+
+    mVehicle->setForces(forces);
+  }
+
+  void moveForward()
+  {
+    mBackWheelVelocity = -kWheelSpeedCommand;
+  }
+
+  void stop()
+  {
+    mBackWheelVelocity = 0.0;
+  }
+
+  void moveBackward()
+  {
+    mBackWheelVelocity = kWheelSpeedCommand;
+  }
+
+  void steerLeft()
+  {
+    mSteeringWheelAngle
+        = std::min(mSteeringWheelAngle + kSteeringStep, kMaxSteeringAngle);
+  }
+
+  void steerRight()
+  {
+    mSteeringWheelAngle
+        = std::max(mSteeringWheelAngle - kSteeringStep, -kMaxSteeringAngle);
+  }
+
+  double& wheelVelocity()
   {
     return mBackWheelVelocity;
   }
 
-  double getSteeringWheelAngle() const
+  double& steeringAngle()
   {
     return mSteeringWheelAngle;
   }
 
-protected:
-  double mBackWheelVelocity;
-  double mSteeringWheelAngle;
+private:
+  dart::dynamics::SkeletonPtr mVehicle;
+  double mBackWheelVelocity = 0.0;
+  double mSteeringWheelAngle = 0.0;
+  double mSteeringStiffness = 0.01;
+  double mSteeringDamping = 0.005;
+  double mWheelDamping = 0.005;
 };
 
-class VehicleWorld : public RealTimeWorldNode
+dart::dynamics::SkeletonPtr requireSkeleton(
+    const dart::simulation::WorldPtr& world, const std::string& name)
 {
-public:
-  VehicleWorld(const WorldPtr& world, VehicleEventHandler* handler)
-    : RealTimeWorldNode(world), mHandler(handler), mK(0.01), mD(0.005)
-  {
+  auto skeleton = world->getSkeleton(name);
+  if (skeleton == nullptr) {
+    throw std::runtime_error("vehicle world is missing skeleton: " + name);
+  }
+  return skeleton;
+}
+
+dart::simulation::WorldPtr createVehicleWorld()
+{
+  auto world = dart::io::readWorld(kWorldUri);
+  if (world == nullptr) {
+    throw std::runtime_error(
+        "Failed to load vehicle world from " + std::string(kWorldUri));
   }
 
-  void customPreStep() override
-  {
-    SkeletonPtr vehicle = mWorld->getSkeleton("car_skeleton");
-    DART_ASSERT(vehicle != nullptr);
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
 
-    std::size_t dof = vehicle->getNumDofs();
-
-    Eigen::VectorXd q = vehicle->getPositions();
-    Eigen::VectorXd dq = vehicle->getVelocities();
-    Eigen::VectorXd tau = Eigen::VectorXd::Zero(dof);
-
-    double steeringAngle = mHandler->getSteeringWheelAngle();
-    double wheelVelocity = mHandler->getBackWheelVelocity();
-
-    tau[6] = -mK * (q[6] - steeringAngle) - mD * dq[6];
-    tau[8] = -mK * (q[8] - steeringAngle) - mD * dq[8];
-    tau[7] = -mD * (dq[7] - wheelVelocity);
-    tau[9] = -mD * (dq[9] - wheelVelocity);
-    tau[10] = -mD * (dq[10] - wheelVelocity);
-    tau[11] = -mD * (dq[11] - wheelVelocity);
-
-    vehicle->setForces(tau);
+  auto ground = requireSkeleton(world, "ground skeleton");
+  ground->setName(kVehicleGroundName);
+  if (auto* body = ground->getBodyNode("ground")) {
+    body->setColor(Eigen::Vector3d(0.45, 0.50, 0.45));
   }
 
-protected:
-  VehicleEventHandler* mHandler;
-  double mK;
-  double mD;
-};
+  auto car = requireSkeleton(world, "car_skeleton");
+  car->setName(kVehicleCarName);
+  if (auto* body = car->getBodyNode("main_body")) {
+    body->setColor(Eigen::Vector3d(0.18, 0.36, 0.82));
+  }
 
-int main(int /*argc*/, char* /*argv*/[])
+  const std::array<const char*, 4> wheelNames{
+      "wheel_front_left",
+      "wheel_front_right",
+      "wheel_back_left",
+      "wheel_back_right"};
+  for (const char* wheelName : wheelNames) {
+    if (auto* wheel = car->getBodyNode(wheelName)) {
+      wheel->setColor(Eigen::Vector3d(0.06, 0.06, 0.07));
+    }
+  }
+
+  const std::array<const char*, 2> obstacles{"skeleton_box1", "skeleton_box2"};
+  for (std::size_t i = 0; i < obstacles.size(); ++i) {
+    auto obstacle = requireSkeleton(world, obstacles[i]);
+    obstacle->setName(std::string(kVehicleObstaclePrefix) + std::to_string(i));
+    if (auto* body = obstacle->getBodyNode("box")) {
+      body->setColor(
+          i == 0 ? Eigen::Vector3d(0.86, 0.42, 0.20)
+                 : Eigen::Vector3d(0.78, 0.64, 0.18));
+    }
+  }
+
+  return world;
+}
+
+dart::gui::OrbitCamera makeVehicleCamera()
 {
-  // Create and initialize the world
-  WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/vehicle.skel");
-  DART_ASSERT(myWorld != nullptr);
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.5404195002705842;
+  camera.pitch = 0.4758822496604165;
+  camera.distance = 6.557438524302;
+  return camera;
+}
 
-  // Create event handler
-  auto handler = new VehicleEventHandler();
+dart::gui::KeyboardAction makeVehicleAction(
+    const std::shared_ptr<VehicleController>& controller,
+    char key,
+    std::string label,
+    void (VehicleController::*command)())
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback = [controller, command](dart::gui::KeyboardActionContext&) {
+    ((*controller).*command)();
+  };
+  return action;
+}
 
-  // Create a custom WorldNode with vehicle behavior
-  ::osg::ref_ptr<VehicleWorld> node = new VehicleWorld(myWorld, handler);
+std::vector<dart::gui::KeyboardAction> createVehicleKeyboardActions(
+    const std::shared_ptr<VehicleController>& controller)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(5);
+  actions.push_back(makeVehicleAction(
+      controller,
+      'w',
+      "Move vehicle forward",
+      &VehicleController::moveForward));
+  actions.push_back(makeVehicleAction(
+      controller, 's', "Stop vehicle", &VehicleController::stop));
+  actions.push_back(makeVehicleAction(
+      controller,
+      'x',
+      "Move vehicle backward",
+      &VehicleController::moveBackward));
+  actions.push_back(makeVehicleAction(
+      controller, 'a', "Steer vehicle left", &VehicleController::steerLeft));
+  actions.push_back(makeVehicleAction(
+      controller, 'd', "Steer vehicle right", &VehicleController::steerRight));
+  return actions;
+}
 
-  // Create a Viewer and set it up with the WorldNode
-  auto viewer = Viewer();
-  viewer.addWorldNode(node);
-  viewer.addEventHandler(handler);
+dart::gui::Panel createVehiclePanel(
+    const std::shared_ptr<VehicleController>& controller)
+{
+  dart::gui::Panel panel;
+  panel.title = "Vehicle";
+  panel.buildWithContext = [controller](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    builder.text("Vehicle steering and wheel commands");
+    builder.text("'w': move forward");
+    builder.text("'s': stop");
+    builder.text("'x': move backward");
+    builder.text("'a': rotate steering wheels to left");
+    builder.text("'d': rotate steering wheels to right");
+    builder.text("space bar: simulation on/off");
+    builder.separator();
+    builder.text(
+        makeStatusLine("wheel velocity: ", controller->wheelVelocity()));
+    builder.text(
+        makeStatusLine("steering angle: ", controller->steeringAngle()));
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    if (builder.button("Forward")) {
+      controller->moveForward();
+    }
+    builder.sameLine();
+    if (builder.button("Stop")) {
+      controller->stop();
+    }
+    builder.sameLine();
+    if (builder.button("Reverse")) {
+      controller->moveBackward();
+    }
+    if (builder.button("Left")) {
+      controller->steerLeft();
+    }
+    builder.sameLine();
+    if (builder.button("Right")) {
+      controller->steerRight();
+    }
+    builder.slider(
+        "wheel velocity",
+        controller->wheelVelocity(),
+        -kWheelSpeedCommand,
+        kWheelSpeedCommand);
+    builder.slider(
+        "steering angle",
+        controller->steeringAngle(),
+        -kMaxSteeringAngle,
+        kMaxSteeringAngle);
+  };
+  return panel;
+}
 
-  // Print instructions
-  viewer.addInstructionText("'w': move forward\n");
-  viewer.addInstructionText("'s': stop\n");
-  viewer.addInstructionText("'x': move backward\n");
-  viewer.addInstructionText("'a': rotate steering wheels to left\n");
-  viewer.addInstructionText("'d': rotate steering wheels to right\n");
-  viewer.addInstructionText("space bar: simulation on/off\n");
-  std::cout << viewer.getInstructions() << std::endl;
+dart::gui::RunOptions makeVehicleRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
 
-  // Set up the window to be 640x480
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+void printVehicleInstructions()
+{
+  std::cout << "'w': move forward\n"
+            << "'s': stop\n"
+            << "'x': move backward\n"
+            << "'a': rotate steering wheels to left\n"
+            << "'d': rotate steering wheels to right\n"
+            << "space bar: simulation on/off\n";
+}
 
-  // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(5.0f, 3.0f, 3.0f),
-      ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 1.0f, 0.0f));
+} // namespace
 
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
+int main(int argc, char* argv[])
+{
+  auto world = createVehicleWorld();
+  auto controller = std::make_shared<VehicleController>(
+      requireSkeleton(world, kVehicleCarName));
 
-  // Begin running the application loop
-  viewer.run();
+  dart::gui::ApplicationOptions options;
+  options.world = std::move(world);
+  options.runDefaults = makeVehicleRunDefaults();
+  options.camera = makeVehicleCamera();
+  options.preStep = [controller]() {
+    controller->preStep();
+  };
+  options.keyboardActions = createVehicleKeyboardActions(controller);
+  options.panels.push_back(createVehiclePanel(controller));
 
-  return 0;
+  printVehicleInstructions();
+  return dart::gui::runApplication(argc, argv, options);
 }

@@ -2,32 +2,68 @@
 
 ## Summary
 
-- Goal: interactively solve IK targets for a WAM arm using IKFast.
-- Concepts/APIs: analytic IK, drag-and-drop targets, kinematic mode.
-- Expected output: a WAM arm that follows interactive targets.
-- Controls: Alt/Ctrl/Shift click for drag modes; 1 toggles target; P prints
-  joints; T resets posture.
+- Goal: interactively solve a WAM arm end-effector target using IKFast.
+- Concepts/APIs: analytic IK, source-owned target frames, public
+  `dart::gui::Gizmo` target affordances, public `dart::gui` keyboard actions,
+  and kinematic target manipulation.
+- Expected output: a WAM arm above a blue ground plane. Press `1` to show the
+  active target gizmo, then move it to solve the active IK target.
+- Controls:
+  - `1`: toggle the end-effector target
+  - `P`: print current joint values
+  - `T`: reset the robot to its relaxed posture
+  - Left-drag active target gizmo arrows/planes/rings: move the selected target
+  - Alt-left-drag a body: translate without changing orientation
+  - Ctrl-left-drag a body: rotate without changing translation
+  - Shift-left-drag a body: move using only that body's parent joint
+  - Arrow keys / PageUp / PageDown: nudge the selected target after pressing
+    `1`
 
 ## Notes
 
-- This example runs in kinematic mode (no physics simulation).
+- This example runs as a kinematic target scene. The promoted `dart::gui` runner
+  disables world stepping through `ApplicationOptions::simulateWorld = false`,
+  matching the old OSG `allowSimulation(false)` workflow while still running
+  the active target solve callback.
+- Public `dart::gui::BodyNodeDragHandle` restores the old Alt/Ctrl/Shift
+  body-node drag modes without reintroducing OSG viewer types.
+
+## Run
+
+From the repository root, use the in-tree runner:
+
+```bash
+pixi run ex wam_ikfast
+```
+
+The example defaults to a 1280x960 window. Shared GUI options such as
+`--width`, `--height`, `--gui-scale`, `--screenshot`, and `--out` are supported:
+
+```bash
+pixi run ex wam_ikfast --headless --frames 5 --screenshot /tmp/wam_ikfast.ppm
+pixi run ex wam_ikfast --headless --frames 5 --out /tmp/wam_ikfast_frames
+```
+
+## Build Instructions
 
 This project is dependent on DART. Please make sure a proper version of DART is
 installed before building this project.
 
-## Build Instructions
-
 From this directory:
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
 
 ## Execute Instructions
 
-Launch the executable from the build directory above:
+From the build directory above:
 
-    $ ./{generated_executable}
+```bash
+./{generated_executable}
+```
 
 Follow the instructions detailed in the console.

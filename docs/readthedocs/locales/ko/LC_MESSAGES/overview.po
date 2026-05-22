@@ -134,8 +134,8 @@ msgid "Provides comprehensive event recording in the simulation history."
 msgstr "시뮬레이션 기록에서 포괄적인 이벤트 기록을 제공합니다."
 
 #: ../../overview.rst:31 d7f233e77cd84ec0b7df6f96965a2706
-msgid "3D visualization API using OpenGL and OpenSceneGraph with ImGui support."
-msgstr "OpenGL 및 OpenSceneGraph와 ImGui 지원을 사용한 3D 시각화 API."
+msgid "3D visualization API using Filament with GLFW3 and Dear ImGui support."
+msgstr "GLFW3 및 Dear ImGui를 지원하는 Filament 기반 3D 시각화 API."
 
 #: ../../overview.rst:32 819dd3bc098a48afa3b60a3edee3da5c
 msgid ""

@@ -2,32 +2,54 @@
 
 ## Summary
 
-- Goal: visualize mimic joint behavior across multiple pendulum rigs.
-- Concepts/APIs: mimic joints, constraint solver selection, ImGui viewer.
-- Expected output: an OSG viewer with pendulum rigs and an ImGui overlay that
-  reports mimic errors and base drift.
-- Controls: space toggles simulation; other settings live in the ImGui panel.
+- Goal: visualize and inspect mimic joint behavior across multiple pendulum
+  rigs.
+- Concepts/APIs: SDF mimic joints, retargeted mimic references, LCP solver
+  selection, collision detector selection, custom `dart::gui` panels, and
+  per-frame mimic diagnostics.
+- Expected output: an uncoupled gray baseline pendulum plus red and blue mimic
+  pendulum rigs over an XY reference grid.
+- Controls: Space starts or pauses simulation. The panel can pause, step, and
+  reset the world, toggle ODE collision, toggle the PGS solver, show the rig
+  color legend, and display reference angle, follower angle, mimic position
+  error, mimic velocity error, and base drift for each retargeted pair.
 
-## Notes
+## Run
 
-- Use `--gui-scale` to scale the ImGui widgets.
+From the source tree:
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+```bash
+pixi run ex mimic_pendulums
+```
 
-## Build Instructions
+Select solver or collision settings at launch:
 
-From this directory:
+```bash
+pixi run ex mimic_pendulums --solver pgs --collision dart
+```
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+## Command-Line Options
 
-## Execute Instructions
+```text
+--solver <name>     Solver to use (default: dantzig)
+--collision <name>  Collision detector preference: file, dart, fcl, bullet, ode
+--headless          Run without display window
+--frames <n>        Number of frames
+--out <dir>         Output directory for image-sequence capture
+--screenshot <p>    Output path for a single screenshot
+--width <n>         Viewport width (default: 1280)
+--height <n>        Viewport height (default: 720)
+--gui-scale <n>     GUI scale factor (default: 1.0)
+```
 
-Launch the executable from the build directory above:
+Headless capture is provided by the promoted `dart::gui` runner:
 
-    $ ./{generated_executable} --gui-scale 1.0
+```bash
+pixi run ex mimic_pendulums --headless --frames 2 --screenshot /tmp/mimic_pendulums.ppm
+```
 
-Follow the instructions detailed in the console.
+Image-sequence capture uses `--out`:
+
+```bash
+pixi run ex mimic_pendulums --headless --frames 3 --out /tmp/mimic_pendulums_frames
+```

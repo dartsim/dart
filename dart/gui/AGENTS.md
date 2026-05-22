@@ -4,39 +4,40 @@ Agent guidelines for the GUI/rendering module.
 
 ## Overview
 
-3D visualization using OpenSceneGraph (OSG) and Dear ImGui.
-
-## Key Components
-
-| Component         | File                    | Purpose                                  |
-| ----------------- | ----------------------- | ---------------------------------------- |
-| Viewer            | `Viewer.hpp`            | Main window, camera, lighting            |
-| ViewerConfig      | `ViewerConfig.hpp`      | Configuration for headless/windowed mode |
-| ImGuiViewer       | `ImGuiViewer.hpp`       | Viewer + ImGui widgets                   |
-| WorldNode         | `WorldNode.hpp`         | Bridge World → OSG scene                 |
-| RealTimeWorldNode | `RealTimeWorldNode.hpp` | Real-time simulation loop                |
-| DragAndDrop       | `DragAndDrop.hpp`       | Interactive manipulation                 |
-| InteractiveFrame  | `InteractiveFrame.hpp`  | 3D manipulator handles                   |
+The maintained GUI is one Filament-backed `dart::gui` surface. Filament,
+GLFW3, and Dear ImGui are implementation dependencies; public headers should
+expose DART-owned scene, viewer, debug, picking, and run-loop concepts rather
+than renderer or windowing types.
 
 ## Subdirectories
 
-- `render/` - Shape-specific renderers (BoxShapeNode, MeshShapeNode, etc.)
-- `glut/` - Legacy GLUT-based viewer (deprecated)
+- `detail/` - Private Filament implementation. Maintained code should include
+  the public `dart/gui/*.hpp` headers.
 
-## Code Patterns
+## GUI Rules
 
-- Override `customPreStep()`/`customPostStep()` for control hooks
-- Use `viewer.enableDragAndDrop(bodyNode)` for IK manipulation
-- ImGui widgets: inherit `ImGuiWidget`, implement `render()`
-- Headless rendering: `ViewerConfig::headless(w, h)` → single-buffered pbuffer
-- Use `captureScreen()` for file output, `captureBuffer()` for raw RGBA (headless only)
+- Use `dart/gui/scene.hpp` for testable DART-owned scene concepts and
+  `dart/gui/viewer.hpp` for testable viewer-runtime concepts.
+- Do not add public OSG, Raylib, Filament, GLFW, or raw ImGui extension points.
+- Keep renderer resources private: materials, textures, buffers, entities,
+  windows, swap chains, and ImGui draw resources.
+- Promote concepts only when they are stable DART concepts such as viewer
+  options, renderables, debug draws, selections, tools, panels, screenshots,
+  cameras, or simulation run control.
+- See `docs/onboarding/gui-rendering.md` before changing the public GUI
+  boundary.
 
 ## Testing
 
-Unit tests: `tests/unit/gui/` (includes `test_HeadlessViewer.cpp`)
-Examples: `examples/imgui/`, `examples/drag_and_drop/`, `examples/rigid_cubes/` (headless CLI)
+Unit tests: `tests/unit/gui/` (Filament descriptor, scene extraction, and
+public-header boundary guards)
+
+DART GUI smoke: `pixi run test-dart-gui-smoke` when changing the explicit
+fetch path, renderer fixture behavior, or screenshot smoke coverage.
+
+Examples: `apps/dartsim/`, restored GUI example launchers, and
+`examples/gui_scene_diagnostics/`
 
 ## See Also
 
-- @docs/onboarding/gui-rendering.md - OSG integration details
-- @examples/imgui/README.md - ImGui usage example
+- @docs/onboarding/gui-rendering.md - Filament GUI architecture and workflow
