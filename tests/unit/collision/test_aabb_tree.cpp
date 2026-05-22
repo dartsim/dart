@@ -316,7 +316,7 @@ TEST(AabbTreeBroadPhase, DebugSnapshotExposesTreeTopology)
   EXPECT_NE(snapshot.rootNode, BroadPhaseDebugNode::kInvalidIndex);
   EXPECT_EQ(snapshot.nodes.size(), 2u * tightAabbs.size() - 1u);
   ASSERT_EQ(snapshot.candidatePairs.size(), 1u);
-  EXPECT_EQ(snapshot.candidatePairs[0], std::make_pair(10u, 20u));
+  EXPECT_EQ(snapshot.candidatePairs[0], BroadPhasePair(10u, 20u));
 
   std::unordered_map<std::size_t, const BroadPhaseDebugNode*> nodesById;
   std::unordered_map<std::size_t, const BroadPhaseDebugNode*> leavesByObject;
@@ -371,7 +371,7 @@ TEST(AabbTreeBroadPhase, GenericDebugSnapshotHasPairsWithoutTopology)
   EXPECT_TRUE(snapshot.nodes.empty());
   EXPECT_EQ(snapshot.numObjects, 2u);
   ASSERT_EQ(snapshot.candidatePairs.size(), 1u);
-  EXPECT_EQ(snapshot.candidatePairs[0], std::make_pair(0u, 1u));
+  EXPECT_EQ(snapshot.candidatePairs[0], BroadPhasePair(0u, 1u));
 }
 
 TEST(AabbTreeBroadPhase, FatAabbOptimization)

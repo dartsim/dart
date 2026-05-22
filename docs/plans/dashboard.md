@@ -115,7 +115,7 @@ its own line so status updates remain git-history friendly.
 ### PLAN-037: Native Collision Visual Verification
 
 - Owner doc:
-  [`037-native-collision-visual-verification.md`](037-native-collision-visual-verification.md)
+  [`../onboarding/gui-rendering.md#native-collision-visual-checks`](../onboarding/gui-rendering.md#native-collision-visual-checks)
 - Status: Complete
 - Horizon: Later
 - Dimension: Algorithm extensibility
