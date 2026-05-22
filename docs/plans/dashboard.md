@@ -39,6 +39,22 @@ its own line so status updates remain git-history friendly.
   source checkout, and local DART 7 package installs; DART 7 public package
   publication remains tracked by `check-dart7-artifacts`.
 
+### PLAN-012: Cloud Dartpy Tutorials
+
+- Owner doc:
+  [`012-cloud-dartpy-tutorials.md`](012-cloud-dartpy-tutorials.md)
+- Status: Active
+- Horizon: Next
+- Dimension: Easy start
+- Next step: Run a Colab runtime spike from a DART 7 dartpy wheel artifact and
+  the Filament GUI branch to prove import, headless simulation, and one
+  Filament-backed inline image or video before publishing stable tutorial links.
+- Gate: Cloud tutorial support is not complete until the notebook rejects DART
+  6 artifacts, installs only DART 7 dartpy artifacts in the cloud runtime,
+  runs a headless simulation, renders a nonblank Filament-backed image or
+  video inline, and passes both an automated Jupyter notebook smoke and a
+  documented Colab runtime smoke.
+
 ### PLAN-020: Algorithm Extension Contracts
 
 - Owner doc:
