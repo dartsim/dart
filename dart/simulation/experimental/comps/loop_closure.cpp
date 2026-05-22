@@ -30,13 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "loop_closure.hpp"
 
-#include <dart/simulation/experimental/comps/dynamics.hpp>
-#include <dart/simulation/experimental/comps/frame_types.hpp>
-#include <dart/simulation/experimental/comps/joint.hpp>
-#include <dart/simulation/experimental/comps/link.hpp>
-#include <dart/simulation/experimental/comps/loop_closure.hpp>
-#include <dart/simulation/experimental/comps/multi_body.hpp>
-#include <dart/simulation/experimental/comps/name.hpp>
-#include <dart/simulation/experimental/comps/rigid_body.hpp>
+#include "dart/simulation/experimental/io/category_serializer.hpp"
+
+namespace dart::simulation::experimental::comps {
+
+DART_EXPERIMENTAL_REGISTER_COMPONENT(LoopClosure)
+
+} // namespace dart::simulation::experimental::comps

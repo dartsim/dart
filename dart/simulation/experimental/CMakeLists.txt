@@ -48,10 +48,12 @@ add_library(${target_name}
   compute/taskflow_executor.cpp
   compute/world_kinematics_graph.cpp
   compute/world_step_stage.cpp
+  constraint/loop_closure.cpp
   comps/dynamics.cpp
   comps/frame_types.cpp
   comps/joint.cpp
   comps/link.cpp
+  comps/loop_closure.cpp
   comps/multi_body.cpp
   comps/name.cpp
   comps/rigid_body.cpp

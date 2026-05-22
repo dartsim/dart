@@ -35,6 +35,7 @@
 #include <dart/simulation/experimental/fwd.hpp>
 
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure.hpp>
 
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
@@ -78,6 +79,15 @@ public:
   MultiBody addMultiBody(std::string_view name);
   std::optional<MultiBody> getMultiBody(std::string_view name);
   std::size_t getMultiBodyCount() const;
+
+  //--------------------------------------------------------------------------
+  // Loop-closure management
+  //--------------------------------------------------------------------------
+  LoopClosure addLoopClosure(
+      std::string_view name, const LoopClosureSpec& spec);
+  std::optional<LoopClosure> getLoopClosure(std::string_view name);
+  bool hasLoopClosure(std::string_view name) const;
+  std::size_t getLoopClosureCount() const;
 
   //--------------------------------------------------------------------------
   // Rigid body management
@@ -134,6 +144,7 @@ private:
   friend class FixedFrame;
   friend class Link;
   friend class Joint;
+  friend class LoopClosure;
   friend class MultiBody;
   friend class RigidBody;
 
@@ -159,6 +170,7 @@ private:
   std::size_t m_freeFrameCounter{0};
   std::size_t m_fixedFrameCounter{0};
   std::size_t m_multiBodyCounter{0};
+  std::size_t m_loopClosureCounter{0};
   std::size_t m_rigidBodyCounter{0};
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};

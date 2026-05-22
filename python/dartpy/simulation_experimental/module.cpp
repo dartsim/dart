@@ -38,6 +38,8 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
@@ -263,6 +265,28 @@ sim::LinkOptions makeLinkOptions(
   };
 }
 
+sim::LoopClosureSpec makeLoopClosureSpec(
+    const nb::handle& frameA,
+    const nb::handle& frameB,
+    sim::LoopClosureFamily family,
+    const nb::handle& offsetA,
+    const nb::handle& offsetB)
+{
+  sim::LoopClosureSpec spec;
+  spec.frameA = toFrameHandle(frameA);
+  spec.frameB = toFrameHandle(frameB);
+  spec.family = family;
+
+  if (!offsetA.is_none()) {
+    spec.offsetA = toIsometry(offsetA);
+  }
+  if (!offsetB.is_none()) {
+    spec.offsetB = toIsometry(offsetB);
+  }
+
+  return spec;
+}
+
 sim::RigidBodyOptions makeRigidBodyOptions(
     double mass,
     const nb::handle& position,
@@ -341,6 +365,11 @@ void defSimulationExperimentalModule(nb::module_& m)
       .value("FREE", sim::JointType::Free)
       .value("CUSTOM", sim::JointType::Custom);
 
+  nb::enum_<sim::LoopClosureFamily>(m, "LoopClosureFamily")
+      .value("RIGID", sim::LoopClosureFamily::Rigid)
+      .value("POINT", sim::LoopClosureFamily::Point)
+      .value("DISTANCE", sim::LoopClosureFamily::Distance);
+
   nb::class_<JointSpec>(m, "JointSpec")
       .def(
           nb::new_([](std::string name,
@@ -381,6 +410,7 @@ void defSimulationExperimentalModule(nb::module_& m)
       = nb::class_<sim::FixedFrame, sim::Frame>(m, "FixedFrame");
   auto jointClass = nb::class_<sim::Joint>(m, "Joint");
   auto linkClass = nb::class_<sim::Link, sim::Frame>(m, "Link");
+  auto loopClosureClass = nb::class_<sim::LoopClosure>(m, "LoopClosure");
 
   frameClass.def_static("world", &sim::Frame::world)
       .def(
@@ -585,6 +615,112 @@ void defSimulationExperimentalModule(nb::module_& m)
           fields.emplace_back("name", repr_string(std::string(self.getName())));
         }
         return format_repr("Link", fields);
+      });
+
+  nb::class_<sim::LoopClosureSpec>(m, "LoopClosureSpec")
+      .def(
+          nb::new_([](const nb::handle& frameA,
+                      const nb::handle& frameB,
+                      sim::LoopClosureFamily family,
+                      const nb::handle& offsetA,
+                      const nb::handle& offsetB) {
+            return makeLoopClosureSpec(
+                frameA, frameB, family, offsetA, offsetB);
+          }),
+          nb::arg("frame_a"),
+          nb::arg("frame_b"),
+          nb::arg("family") = sim::LoopClosureFamily::Rigid,
+          nb::kw_only(),
+          nb::arg("offset_a") = nb::none(),
+          nb::arg("offset_b") = nb::none())
+      .def_prop_rw(
+          "frame_a",
+          [](const sim::LoopClosureSpec& self) { return self.frameA; },
+          [](sim::LoopClosureSpec& self, const nb::handle& frame) {
+            self.frameA = toFrameHandle(frame);
+          })
+      .def_prop_rw(
+          "frame_b",
+          [](const sim::LoopClosureSpec& self) { return self.frameB; },
+          [](sim::LoopClosureSpec& self, const nb::handle& frame) {
+            self.frameB = toFrameHandle(frame);
+          })
+      .def_rw("family", &sim::LoopClosureSpec::family)
+      .def_prop_rw(
+          "offset_a",
+          [](const sim::LoopClosureSpec& self) {
+            return self.offsetA.matrix();
+          },
+          [](sim::LoopClosureSpec& self, const nb::handle& offset) {
+            self.offsetA = toIsometry(offset);
+          })
+      .def_prop_rw(
+          "offset_b",
+          [](const sim::LoopClosureSpec& self) {
+            return self.offsetB.matrix();
+          },
+          [](sim::LoopClosureSpec& self, const nb::handle& offset) {
+            self.offsetB = toIsometry(offset);
+          })
+      .def("__repr__", [](const sim::LoopClosureSpec& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back(
+            "frame_a", nb::cast<std::string>(nb::repr(nb::cast(self.frameA))));
+        fields.emplace_back(
+            "frame_b", nb::cast<std::string>(nb::repr(nb::cast(self.frameB))));
+        fields.emplace_back(
+            "family", nb::cast<std::string>(nb::repr(nb::cast(self.family))));
+        return format_repr("LoopClosureSpec", fields);
+      });
+
+  loopClosureClass
+      .def(
+          "get_name",
+          [](const sim::LoopClosure& self) {
+            return std::string(self.getName());
+          })
+      .def("get_family", &sim::LoopClosure::getFamily)
+      .def("get_frame_a", &sim::LoopClosure::getFrameA)
+      .def("get_frame_b", &sim::LoopClosure::getFrameB)
+      .def(
+          "get_offset_a",
+          [](const sim::LoopClosure& self) {
+            return self.getOffsetA().matrix();
+          })
+      .def(
+          "get_offset_b",
+          [](const sim::LoopClosure& self) {
+            return self.getOffsetB().matrix();
+          })
+      .def_prop_ro(
+          "name",
+          [](const sim::LoopClosure& self) {
+            return std::string(self.getName());
+          })
+      .def_prop_ro("family", &sim::LoopClosure::getFamily)
+      .def_prop_ro("frame_a", &sim::LoopClosure::getFrameA)
+      .def_prop_ro("frame_b", &sim::LoopClosure::getFrameB)
+      .def_prop_ro(
+          "offset_a",
+          [](const sim::LoopClosure& self) {
+            return self.getOffsetA().matrix();
+          })
+      .def_prop_ro(
+          "offset_b",
+          [](const sim::LoopClosure& self) {
+            return self.getOffsetB().matrix();
+          })
+      .def_prop_ro("is_valid", &sim::LoopClosure::isValid)
+      .def("__repr__", [](const sim::LoopClosure& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("valid", self.isValid() ? "True" : "False");
+        if (self.isValid()) {
+          fields.emplace_back("name", repr_string(std::string(self.getName())));
+          fields.emplace_back(
+              "family",
+              nb::cast<std::string>(nb::repr(nb::cast(self.getFamily()))));
+        }
+        return format_repr("LoopClosure", fields);
       });
 
   nb::class_<sim::MultiBody>(m, "MultiBody")
@@ -908,6 +1044,55 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::keep_alive<0, 1>())
       .def("get_multi_body_count", &sim::World::getMultiBodyCount)
       .def(
+          "add_loop_closure",
+          [](sim::World& self,
+             const std::string& name,
+             const sim::LoopClosureSpec& spec) {
+            return self.addLoopClosure(name, spec);
+          },
+          nb::arg("name"),
+          nb::arg("spec"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_loop_closure",
+          [](sim::World& self,
+             const std::string& name,
+             const nb::handle& frameA,
+             const nb::handle& frameB,
+             sim::LoopClosureFamily family,
+             const nb::handle& offsetA,
+             const nb::handle& offsetB) {
+            return self.addLoopClosure(
+                name,
+                makeLoopClosureSpec(frameA, frameB, family, offsetA, offsetB));
+          },
+          nb::arg("name"),
+          nb::kw_only(),
+          nb::arg("frame_a"),
+          nb::arg("frame_b"),
+          nb::arg("family") = sim::LoopClosureFamily::Rigid,
+          nb::arg("offset_a") = nb::none(),
+          nb::arg("offset_b") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "has_loop_closure",
+          [](const sim::World& self, const std::string& name) {
+            return self.hasLoopClosure(name);
+          },
+          nb::arg("name"))
+      .def(
+          "get_loop_closure",
+          [](sim::World& self, const std::string& name) -> nb::object {
+            auto closure = self.getLoopClosure(name);
+            if (!closure.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*closure, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
+      .def("get_loop_closure_count", &sim::World::getLoopClosureCount)
+      .def(
           "add_rigid_body",
           [](sim::World& self,
              const std::string& name,
@@ -981,12 +1166,15 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_rw("time", &sim::World::getTime, &sim::World::setTime)
       .def_prop_ro("frame", &sim::World::getFrame)
       .def_prop_ro("num_multi_bodies", &sim::World::getMultiBodyCount)
+      .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)
       .def_prop_ro("num_rigid_bodies", &sim::World::getRigidBodyCount)
       .def("clear", &sim::World::clear)
       .def("__repr__", [](const sim::World& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back(
             "multi_bodies", std::to_string(self.getMultiBodyCount()));
+        fields.emplace_back(
+            "loop_closures", std::to_string(self.getLoopClosureCount()));
         fields.emplace_back(
             "rigid_bodies", std::to_string(self.getRigidBodyCount()));
         fields.emplace_back("time", repr_double(self.getTime()));

@@ -32,11 +32,23 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/comps/dynamics.hpp>
-#include <dart/simulation/experimental/comps/frame_types.hpp>
-#include <dart/simulation/experimental/comps/joint.hpp>
-#include <dart/simulation/experimental/comps/link.hpp>
-#include <dart/simulation/experimental/comps/loop_closure.hpp>
-#include <dart/simulation/experimental/comps/multi_body.hpp>
-#include <dart/simulation/experimental/comps/name.hpp>
-#include <dart/simulation/experimental/comps/rigid_body.hpp>
+namespace dart::simulation::experimental {
+
+/// Semantic family for an explicit loop closure.
+///
+/// The family names describe the physical relation, not a backend, engine, or
+/// solver implementation. Runtime participation in kinematic projection or
+/// dynamic solving is configured separately from this topology description.
+enum class LoopClosureFamily
+{
+  /// Match both position and orientation between two endpoint frames.
+  Rigid,
+
+  /// Match endpoint positions while allowing relative orientation.
+  Point,
+
+  /// Maintain a fixed distance between endpoint positions.
+  Distance,
+};
+
+} // namespace dart::simulation::experimental

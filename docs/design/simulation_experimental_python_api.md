@@ -270,9 +270,10 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
 - `dart/simulation/experimental/world.hpp` already has world lifecycle,
   stepping, frame, multibody, rigid-body, and compute-executor hooks.
 - The implemented DART 7 `MultiBody`, `Link`, and `Joint` binding is currently
-  tree-shaped. `LoopClosure`, closure residual diagnostics, kinematic closure
-  projection, and dynamic closure solving remain design targets rather than
-  implemented public Python APIs.
+  tree-shaped, and `World` now exposes topology-only `LoopClosure` handles with
+  symmetric frame endpoints, semantic closure families, offsets, lookup,
+  validation, and serialization. Closure residual diagnostics, kinematic
+  projection, and dynamic closure solving remain staged design targets.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and
@@ -566,7 +567,7 @@ public API exposes dirty flags.
 | `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                                                         |
 | `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                                                   |
 | `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links; state access after public C++ accessors exist.                                       |
-| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint loop-closure handle once C++ owns solver behavior.                                                          |
+| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint topology handle now; diagnostics and runtime solve policy remain staged work.                               |
 | `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                                                            |
 | `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                                                            |
 
@@ -709,19 +710,22 @@ components. The tree structure of a `MultiBody` remains the owner for names,
 links, joints, state indexing, and articulated-body algorithms. Loop closures
 add graph edges on top of that tree.
 
-DART 7 currently exposes tree-shaped `MultiBody` topology only. `LoopClosure`
-and constrained kinematic/dynamic execution are DART 8 target concepts to stage
-behind the experimental module before promotion.
+DART 7 now stages the topology part of this model: `world.add_loop_closure(...)`
+returns a first-class `LoopClosure` handle with symmetric endpoint frames,
+semantic family, endpoint offsets, name lookup, count queries, validation, and
+serialization. Constrained kinematic projection, residual diagnostics, runtime
+enable/disable policy, and dynamic solving remain DART 8 target concepts to
+stage behind the experimental module before promotion.
 
-The eventual Python shape should use compact value objects and returned public
-handles. This is a target shape, not a DART 7 binding promise:
+The staged Python shape uses compact value objects or keyword construction and
+returned public handles:
 
 ```python
 closure = world.add_loop_closure(
     "four_bar_closure",
     frame_a=ground_frame,
     frame_b=coupler,
-    relative_transform=(
+    offset_a=(
         (1.0, 0.0, 0.0, 0.0),
         (0.0, 1.0, 0.0, 0.0),
         (0.0, 0.0, 1.0, 0.0),
@@ -729,7 +733,11 @@ closure = world.add_loop_closure(
     ),
     family=sx.LoopClosureFamily.RIGID,
 )
+```
 
+Runtime policy remains future work, for example:
+
+```python
 closure.runtime_policy = sx.LoopClosureRuntimePolicy(
     enabled=True,
     kinematics=sx.ClosureKinematicsPolicy.PROJECT,
@@ -740,8 +748,10 @@ closure.runtime_policy = sx.LoopClosureRuntimePolicy(
 The minimal world-owned construction surface should be:
 
 ```python
+spec = sx.LoopClosureSpec(frame_a=ground_frame, frame_b=coupler)
 closure = world.add_loop_closure("four_bar_closure", spec)
 closure = world.get_loop_closure("four_bar_closure")
+exists = world.has_loop_closure("four_bar_closure")
 count = world.num_loop_closures
 ```
 
@@ -1114,6 +1124,7 @@ they have public C++ owner APIs and objective-specific verification:
 
 - file loading directly into the experimental world;
 - collision geometry, shape materials, contacts, constraints, and actuators;
+- loop-closure residual diagnostics, kinematic projection, and dynamic solving;
 - rigid-body collision coupling and broader pose/state accessors beyond the
   currently public transform, velocity, mass, inertia, force, and torque
   wrapper set;

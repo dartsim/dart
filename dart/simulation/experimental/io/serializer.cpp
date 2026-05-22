@@ -83,6 +83,8 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
   registerComponentIfNeeded<comps::MultiBodyTag>(registry);
   registerComponentIfNeeded<comps::MultiBodyStructure>(registry);
 
+  registerComponentIfNeeded<comps::LoopClosure>(registry);
+
   registerComponentIfNeeded<comps::Link>(registry);
   registerComponentIfNeeded<comps::Joint>(registry);
 
@@ -278,6 +280,17 @@ void SerializerRegistry::loadAllEntities(
       if (e != entt::null) {
         e = entityMap.at(e);
       }
+    }
+  }
+
+  auto loopClosureView = registry.view<comps::LoopClosure>();
+  for (auto entity : loopClosureView) {
+    auto& comp = loopClosureView.get<comps::LoopClosure>(entity);
+    if (comp.frameA != entt::null) {
+      comp.frameA = entityMap.at(comp.frameA);
+    }
+    if (comp.frameB != entt::null) {
+      comp.frameB = entityMap.at(comp.frameB);
     }
   }
 

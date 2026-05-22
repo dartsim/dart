@@ -32,11 +32,42 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/comps/dynamics.hpp>
-#include <dart/simulation/experimental/comps/frame_types.hpp>
-#include <dart/simulation/experimental/comps/joint.hpp>
-#include <dart/simulation/experimental/comps/link.hpp>
-#include <dart/simulation/experimental/comps/loop_closure.hpp>
-#include <dart/simulation/experimental/comps/multi_body.hpp>
-#include <dart/simulation/experimental/comps/name.hpp>
-#include <dart/simulation/experimental/comps/rigid_body.hpp>
+#include <dart/simulation/experimental/fwd.hpp>
+
+#include <dart/simulation/experimental/constraint/loop_closure_family.hpp>
+
+#include <Eigen/Geometry>
+#include <entt/entt.hpp>
+
+#include <string_view>
+
+namespace dart::simulation::experimental {
+
+/// World-owned handle for a closed-chain topology relation.
+///
+/// The DART 7 experimental API stores loop closures as named topology objects
+/// that can later participate in kinematic projection, residual diagnostics, or
+/// dynamic solving. This handle exposes the stable semantic relation without
+/// exposing solver rows or ECS storage.
+class DART_EXPERIMENTAL_API LoopClosure
+{
+public:
+  LoopClosure(entt::entity entity, World* world);
+
+  [[nodiscard]] std::string_view getName() const;
+  [[nodiscard]] LoopClosureFamily getFamily() const;
+  [[nodiscard]] Frame getFrameA() const;
+  [[nodiscard]] Frame getFrameB() const;
+  [[nodiscard]] const Eigen::Isometry3d& getOffsetA() const;
+  [[nodiscard]] const Eigen::Isometry3d& getOffsetB() const;
+
+  [[nodiscard]] entt::entity getEntity() const;
+  [[nodiscard]] World* getWorld() const;
+  [[nodiscard]] bool isValid() const;
+
+private:
+  entt::entity m_entity;
+  World* m_world;
+};
+
+} // namespace dart::simulation::experimental

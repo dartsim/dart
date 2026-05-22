@@ -36,6 +36,7 @@
 #include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/comps/multi_body.hpp>
 #include <dart/simulation/experimental/comps/name.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
@@ -197,6 +198,58 @@ TEST(Serialization, WithRigidBodies)
   EXPECT_EQ(world2.getRigidBodyCount(), 2);
   EXPECT_TRUE(world2.hasRigidBody("box1"));
   EXPECT_TRUE(world2.hasRigidBody("box2"));
+}
+
+TEST(Serialization, WithLoopClosures)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world1;
+  auto robot = world1.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto link = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
+  auto ground = world1.addRigidBody("ground");
+
+  Eigen::Isometry3d offsetA = Eigen::Isometry3d::Identity();
+  offsetA.translate(Eigen::Vector3d(0.25, 0.0, 0.0));
+  Eigen::Isometry3d offsetB = Eigen::Isometry3d::Identity();
+  offsetB.translate(Eigen::Vector3d(-0.25, 0.0, 0.0));
+
+  world1.addLoopClosure(
+      "closure",
+      {.frameA = link,
+       .frameB = ground,
+       .family = sx::LoopClosureFamily::Point,
+       .offsetA = offsetA,
+       .offsetB = offsetB});
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_EQ(world2.getLoopClosureCount(), 1u);
+  auto closure = world2.getLoopClosure("closure");
+  ASSERT_TRUE(closure.has_value());
+  EXPECT_EQ(closure->getFamily(), sx::LoopClosureFamily::Point);
+  EXPECT_TRUE(closure->getOffsetA().isApprox(offsetA));
+  EXPECT_TRUE(closure->getOffsetB().isApprox(offsetB));
+
+  auto restoredRobot = world2.getMultiBody("robot");
+  ASSERT_TRUE(restoredRobot.has_value());
+  auto restoredLink = restoredRobot->getLink("link");
+  ASSERT_TRUE(restoredLink.has_value());
+  auto restoredGround = world2.getRigidBody("ground");
+  ASSERT_TRUE(restoredGround.has_value());
+  EXPECT_TRUE(closure->getFrameA().isSameInstanceAs(*restoredLink));
+  EXPECT_TRUE(closure->getFrameB().isSameInstanceAs(*restoredGround));
+
+  auto restoredBase = restoredRobot->getLink("base");
+  ASSERT_TRUE(restoredBase.has_value());
+  auto nextClosure = world2.addLoopClosure(
+      "", {.frameA = *restoredBase, .frameB = *restoredGround});
+  EXPECT_EQ(nextClosure.getName(), "loop_closure_002");
 }
 
 // Test save/load preserves simulation mode

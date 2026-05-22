@@ -14,6 +14,9 @@ __all__: list[str] = [
     "JointSpec",
     "JointType",
     "Link",
+    "LoopClosure",
+    "LoopClosureFamily",
+    "LoopClosureSpec",
     "MultiBody",
     "RigidBody",
     "RigidBodyOptions",
@@ -33,6 +36,12 @@ class JointType(Enum):
     CUSTOM = 8
 
 
+class LoopClosureFamily(Enum):
+    RIGID = 0
+    POINT = 1
+    DISTANCE = 2
+
+
 class JointSpec:
     def __init__(
         self,
@@ -45,6 +54,25 @@ class JointSpec:
     name: str
     type: JointType
     axis: NDArray[np.float64]
+
+
+class LoopClosureSpec:
+    def __init__(
+        self,
+        frame_a: Frame,
+        frame_b: Frame,
+        family: LoopClosureFamily = ...,
+        *,
+        offset_a: ArrayLike | None = None,
+        offset_b: ArrayLike | None = None,
+    ) -> None:
+        ...
+
+    frame_a: Frame
+    frame_b: Frame
+    family: LoopClosureFamily
+    offset_a: NDArray[np.float64]
+    offset_b: NDArray[np.float64]
 
 
 class RigidBodyOptions:
@@ -198,6 +226,34 @@ class Joint:
         ...
 
 
+class LoopClosure:
+    name: str
+    family: LoopClosureFamily
+    frame_a: Frame
+    frame_b: Frame
+    offset_a: NDArray[np.float64]
+    offset_b: NDArray[np.float64]
+    is_valid: bool
+
+    def get_name(self) -> str:
+        ...
+
+    def get_family(self) -> LoopClosureFamily:
+        ...
+
+    def get_frame_a(self) -> Frame:
+        ...
+
+    def get_frame_b(self) -> Frame:
+        ...
+
+    def get_offset_a(self) -> NDArray[np.float64]:
+        ...
+
+    def get_offset_b(self) -> NDArray[np.float64]:
+        ...
+
+
 class RigidBody(Frame):
     name: str
     translation: NDArray[np.float64]
@@ -275,6 +331,7 @@ class World:
     frame: int
     is_simulation_mode: bool
     num_multi_bodies: int
+    num_loop_closures: int
     num_rigid_bodies: int
 
     def add_free_frame(
@@ -297,6 +354,34 @@ class World:
         ...
 
     def get_multi_body_count(self) -> int:
+        ...
+
+    @overload
+    def add_loop_closure(
+        self, name: str, spec: LoopClosureSpec
+    ) -> LoopClosure:
+        ...
+
+    @overload
+    def add_loop_closure(
+        self,
+        name: str,
+        *,
+        frame_a: Frame,
+        frame_b: Frame,
+        family: LoopClosureFamily = ...,
+        offset_a: ArrayLike | None = None,
+        offset_b: ArrayLike | None = None,
+    ) -> LoopClosure:
+        ...
+
+    def has_loop_closure(self, name: str) -> bool:
+        ...
+
+    def get_loop_closure(self, name: str) -> LoopClosure | None:
+        ...
+
+    def get_loop_closure_count(self) -> int:
         ...
 
     def add_rigid_body(

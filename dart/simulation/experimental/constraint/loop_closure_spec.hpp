@@ -32,11 +32,26 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/comps/dynamics.hpp>
-#include <dart/simulation/experimental/comps/frame_types.hpp>
-#include <dart/simulation/experimental/comps/joint.hpp>
-#include <dart/simulation/experimental/comps/link.hpp>
-#include <dart/simulation/experimental/comps/loop_closure.hpp>
-#include <dart/simulation/experimental/comps/multi_body.hpp>
-#include <dart/simulation/experimental/comps/name.hpp>
-#include <dart/simulation/experimental/comps/rigid_body.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure_family.hpp>
+#include <dart/simulation/experimental/frame/frame.hpp>
+
+#include <Eigen/Geometry>
+
+namespace dart::simulation::experimental {
+
+/// Value object describing a closed-chain relation between two public frames.
+///
+/// `frameA` and `frameB` are symmetric endpoints. `offsetA` and `offsetB`
+/// define the closure endpoint frames relative to those endpoint frames.
+/// Kinematic projection, residual reporting, and dynamic solving policies are
+/// intentionally not part of this topology object.
+struct LoopClosureSpec
+{
+  Frame frameA = Frame::world();
+  Frame frameB = Frame::world();
+  LoopClosureFamily family = LoopClosureFamily::Rigid;
+  Eigen::Isometry3d offsetA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d offsetB = Eigen::Isometry3d::Identity();
+};
+
+} // namespace dart::simulation::experimental

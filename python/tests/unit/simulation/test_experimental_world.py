@@ -5,6 +5,7 @@ import math
 import os
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 import dartpy as dart
@@ -127,8 +128,21 @@ def test_experimental_api_exposes_python_names_only():
         sx.World: (
             "addRigidBody",
             "getRigidBody",
+            "addLoopClosure",
+            "getLoopClosure",
+            "hasLoopClosure",
+            "getLoopClosureCount",
             "updateKinematics",
             "enterSimulationMode",
+        ),
+        sx.LoopClosure: (
+            "getName",
+            "getFamily",
+            "getFrameA",
+            "getFrameB",
+            "getOffsetA",
+            "getOffsetB",
+            "isValid",
         ),
     }
 
@@ -143,6 +157,7 @@ def test_experimental_world_smoke():
     world = sx.World()
     assert not world.is_simulation_mode
     assert world.num_multi_bodies == 0
+    assert world.num_loop_closures == 0
     assert world.num_rigid_bodies == 0
 
     multi_body = world.add_multi_body("robot")
@@ -156,6 +171,7 @@ def test_experimental_world_smoke():
     assert world.get_multi_body("renamed_robot").name == "renamed_robot"
     assert world.get_multi_body("missing") is None
     assert world.num_multi_bodies == 1
+    assert world.num_loop_closures == 0
 
     rigid_body = world.add_rigid_body("box")
     assert rigid_body.name == "box"
@@ -170,6 +186,7 @@ def test_experimental_world_smoke():
     world.clear()
     assert not world.is_simulation_mode
     assert world.num_multi_bodies == 0
+    assert world.num_loop_closures == 0
     assert world.num_rigid_bodies == 0
 
 
@@ -223,6 +240,70 @@ def test_experimental_multibody_link_joint_common_path():
 
     assert world.is_simulation_mode
     assert forearm.translation.tolist() == pytest.approx([0.0, 0.0, 0.0])
+
+
+def test_experimental_loop_closure_topology_api():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    arm = world.add_multi_body("four_bar")
+    base = arm.add_link("base")
+    coupler = arm.add_link(
+        "coupler",
+        parent=base,
+        joint=sx.JointSpec(name="shoulder", type=sx.JointType.REVOLUTE),
+    )
+    ground = world.add_rigid_body("ground")
+
+    offset_a = _translation_transform(0.5, 0.0, 0.0)
+    offset_b = _translation_transform(-0.5, 0.0, 0.0)
+    spec = sx.LoopClosureSpec(
+        frame_a=coupler,
+        frame_b=ground,
+        family=sx.LoopClosureFamily.RIGID,
+        offset_a=offset_a,
+        offset_b=offset_b,
+    )
+    assert spec.frame_a == coupler
+    assert spec.frame_b == ground
+    assert spec.family == sx.LoopClosureFamily.RIGID
+    assert spec.offset_a.reshape(16).tolist() == pytest.approx(
+        np.asarray(offset_a).reshape(16).tolist()
+    )
+
+    closure = world.add_loop_closure("closing_bar", spec)
+
+    assert closure.is_valid
+    assert closure.name == "closing_bar"
+    assert closure.get_name() == "closing_bar"
+    assert closure.family == sx.LoopClosureFamily.RIGID
+    assert closure.get_family() == sx.LoopClosureFamily.RIGID
+    assert closure.frame_a == coupler
+    assert closure.get_frame_a() == coupler
+    assert closure.frame_b == ground
+    assert closure.get_frame_b() == ground
+    assert closure.offset_a.reshape(16).tolist() == pytest.approx(
+        np.asarray(offset_a).reshape(16).tolist()
+    )
+    assert closure.get_offset_b().reshape(16).tolist() == pytest.approx(
+        np.asarray(offset_b).reshape(16).tolist()
+    )
+
+    assert world.num_loop_closures == 1
+    assert world.get_loop_closure_count() == 1
+    assert world.has_loop_closure("closing_bar")
+    assert world.get_loop_closure("closing_bar").frame_a == coupler
+    assert world.get_loop_closure("missing") is None
+
+    auto_closure = world.add_loop_closure(
+        "",
+        frame_a=base,
+        frame_b=ground,
+        family=sx.LoopClosureFamily.POINT,
+    )
+    assert auto_closure.name == "loop_closure_001"
+    assert auto_closure.family == sx.LoopClosureFamily.POINT
+    assert world.num_loop_closures == 2
 
 
 def test_experimental_frame_handles_support_kinematics_only_updates():
@@ -412,3 +493,34 @@ def test_experimental_rigid_body_options_reject_invalid_values():
         body.torque = (0.0, math.inf, 0.0)
     with pytest.raises(Exception, match="RigidBody torque"):
         body.apply_torque((0.0, 0.0, math.nan))
+
+
+def test_experimental_loop_closure_rejects_invalid_topology():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    arm = world.add_multi_body("arm")
+    base = arm.add_link("base")
+    link = arm.add_link("link", parent=base, joint=sx.JointSpec(name="joint"))
+
+    other_world = sx.World()
+    other_body = other_world.add_rigid_body("other")
+
+    with pytest.raises(Exception, match="distinct frames"):
+        world.add_loop_closure("same", frame_a=base, frame_b=base)
+
+    with pytest.raises(Exception, match="different world"):
+        world.add_loop_closure("cross_world", frame_a=base, frame_b=other_body)
+
+    bad_offset = np.asarray(_translation_transform(0.0, 0.0, 0.0), dtype=float)
+    bad_offset[0, 0] = math.nan
+    with pytest.raises(Exception, match="finite values"):
+        sx.LoopClosureSpec(frame_a=base, frame_b=link, offset_a=bad_offset)
+
+    world.add_loop_closure("valid", frame_a=base, frame_b=link)
+    with pytest.raises(Exception, match="already exists"):
+        world.add_loop_closure("valid", frame_a=link, frame_b=base)
+
+    world.enter_simulation_mode()
+    with pytest.raises(Exception, match="simulation mode"):
+        world.add_loop_closure("after_bake", frame_a=base, frame_b=link)

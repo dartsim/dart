@@ -250,9 +250,10 @@ the release roadmap.
 - `Frame`, `FreeFrame`, `FixedFrame`, `MultiBody`, `Link`, and `Joint` provide
   first-class handle concepts over the experimental storage.
 - The implemented DART 7 `MultiBody`, `Link`, and `Joint` API is currently
-  tree-shaped. `LoopClosure`, closure residual diagnostics, kinematic closure
-  projection, and dynamic closure solving remain design targets rather than
-  implemented public APIs.
+  tree-shaped, and `World` now owns topology-only `LoopClosure` handles with
+  symmetric frame endpoints, semantic closure families, offsets, lookup,
+  validation, and serialization. Closure residual diagnostics, kinematic
+  projection, and dynamic closure solving remain staged design targets.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and
@@ -386,12 +387,14 @@ components. The initial tree of `MultiBody`, `Link`, and `Joint` remains useful
 for ownership, naming, state indexing, and articulated-body algorithms; closure
 edges add graph structure on top of that tree.
 
-DART 7 currently exposes tree-shaped `MultiBody` topology only. `LoopClosure`
-and constrained kinematic/dynamic execution are DART 8 target concepts to stage
-behind the experimental namespace before promotion.
+DART 7 now stages the topology part of this model: `World::addLoopClosure(...)`
+returns a first-class `LoopClosure` handle with symmetric endpoint frames,
+semantic family, endpoint offsets, name lookup, count queries, validation, and
+serialization. Constrained kinematic projection, residual diagnostics, runtime
+enable/disable policy, and dynamic solving remain DART 8 target concepts to
+stage behind the experimental namespace before promotion.
 
-The future public C++ shape should be a DART-owned handle and spec, for
-example:
+The staged public C++ shape is a DART-owned handle and spec:
 
 ```cpp
 auto closure = world.addLoopClosure(
@@ -399,10 +402,15 @@ auto closure = world.addLoopClosure(
     sx::LoopClosureSpec{
         .frameA = groundFrame,
         .frameB = couplerLink,
-        .relativeTransform = Eigen::Isometry3d::Identity(),
         .family = sx::LoopClosureFamily::Rigid,
+        .offsetA = Eigen::Isometry3d::Identity(),
+        .offsetB = Eigen::Isometry3d::Identity(),
     });
+```
 
+Runtime policy remains future work, for example:
+
+```cpp
 closure.setRuntimePolicy(sx::LoopClosureRuntimePolicy{
     .enabled = true,
     .kinematics = sx::ClosureKinematicsPolicy::Project,
@@ -416,7 +424,8 @@ The minimal world-owned construction surface should be:
 sx::LoopClosure World::addLoopClosure(
     std::string_view name, const sx::LoopClosureSpec& spec);
 std::optional<sx::LoopClosure> World::getLoopClosure(
-    std::string_view name) const;
+    std::string_view name);
+bool World::hasLoopClosure(std::string_view name) const;
 std::size_t World::getLoopClosureCount() const;
 ```
 
@@ -833,6 +842,7 @@ the DART 8 contract:
 
 - direct loading from existing model formats into the new world;
 - collision geometry, shape materials, contacts, constraints, and actuators;
+- loop-closure residual diagnostics, kinematic projection, and dynamic solving;
 - complete rigid-body and multibody dynamics state access;
 - sensors and rendering integration;
 - batched worlds and accelerator-specific execution;

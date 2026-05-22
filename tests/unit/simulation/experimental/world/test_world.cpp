@@ -40,6 +40,7 @@
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/taskflow_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
 #include <dart/simulation/experimental/multi_body/multi_body.hpp>
@@ -287,6 +288,106 @@ TEST(World, RigidBodyLookupByName)
   EXPECT_EQ(found->getName(), "body");
 
   EXPECT_FALSE(world.getRigidBody("missing").has_value());
+}
+
+TEST(World, LoopClosureTopology)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultiBody("four_bar");
+  auto base = robot.addLink("base");
+  auto coupler = robot.addLink(
+      "coupler",
+      {.parentLink = base,
+       .jointName = "shoulder",
+       .jointType = sx::JointType::Revolute});
+  auto ground = world.addRigidBody("ground");
+
+  Eigen::Isometry3d offsetA = Eigen::Isometry3d::Identity();
+  offsetA.translate(Eigen::Vector3d(0.5, 0.0, 0.0));
+  Eigen::Isometry3d offsetB = Eigen::Isometry3d::Identity();
+  offsetB.translate(Eigen::Vector3d(-0.5, 0.0, 0.0));
+
+  auto closure = world.addLoopClosure(
+      "closing_bar",
+      {.frameA = coupler,
+       .frameB = ground,
+       .family = sx::LoopClosureFamily::Rigid,
+       .offsetA = offsetA,
+       .offsetB = offsetB});
+
+  EXPECT_TRUE(closure.isValid());
+  EXPECT_EQ(closure.getName(), "closing_bar");
+  EXPECT_EQ(closure.getFamily(), sx::LoopClosureFamily::Rigid);
+  EXPECT_TRUE(closure.getFrameA().isSameInstanceAs(coupler));
+  EXPECT_TRUE(closure.getFrameB().isSameInstanceAs(ground));
+  EXPECT_TRUE(closure.getOffsetA().isApprox(offsetA));
+  EXPECT_TRUE(closure.getOffsetB().isApprox(offsetB));
+  EXPECT_EQ(world.getLoopClosureCount(), 1u);
+  EXPECT_TRUE(world.hasLoopClosure("closing_bar"));
+
+  auto found = world.getLoopClosure("closing_bar");
+  ASSERT_TRUE(found.has_value());
+  EXPECT_TRUE(found->isValid());
+  EXPECT_TRUE(found->getFrameA().isSameInstanceAs(coupler));
+  EXPECT_FALSE(world.getLoopClosure("missing").has_value());
+
+  auto autoClosure = world.addLoopClosure(
+      "",
+      {.frameA = base,
+       .frameB = ground,
+       .family = sx::LoopClosureFamily::Point});
+  EXPECT_EQ(autoClosure.getName(), "loop_closure_001");
+  EXPECT_EQ(world.getLoopClosureCount(), 2u);
+}
+
+TEST(World, LoopClosureRejectsInvalidTopology)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto link = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
+
+  sx::World otherWorld;
+  auto otherBody = otherWorld.addRigidBody("other");
+
+  EXPECT_THROW(
+      world.addLoopClosure("same", {.frameA = base, .frameB = base}),
+      sx::InvalidArgumentException);
+
+  EXPECT_THROW(
+      world.addLoopClosure(
+          "cross_world", {.frameA = base, .frameB = otherBody}),
+      sx::InvalidArgumentException);
+
+  EXPECT_THROW(
+      world.addLoopClosure(
+          "bad_family",
+          {.frameA = base,
+           .frameB = link,
+           .family = static_cast<sx::LoopClosureFamily>(999)}),
+      sx::InvalidArgumentException);
+
+  Eigen::Isometry3d invalidOffset = Eigen::Isometry3d::Identity();
+  invalidOffset.linear()(0, 0) = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(
+      world.addLoopClosure(
+          "bad_offset",
+          {.frameA = base, .frameB = link, .offsetA = invalidOffset}),
+      sx::InvalidArgumentException);
+
+  world.addLoopClosure("valid", {.frameA = base, .frameB = link});
+  EXPECT_THROW(
+      world.addLoopClosure("valid", {.frameA = link, .frameB = base}),
+      sx::InvalidArgumentException);
+
+  world.enterSimulationMode();
+  EXPECT_THROW(
+      world.addLoopClosure("after_bake", {.frameA = base, .frameB = link}),
+      sx::InvalidOperationException);
 }
 
 // Test that rigid bodies can be driven kinematically through the public

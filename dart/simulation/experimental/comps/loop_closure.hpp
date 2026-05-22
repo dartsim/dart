@@ -32,11 +32,32 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/comps/dynamics.hpp>
-#include <dart/simulation/experimental/comps/frame_types.hpp>
-#include <dart/simulation/experimental/comps/joint.hpp>
-#include <dart/simulation/experimental/comps/link.hpp>
-#include <dart/simulation/experimental/comps/loop_closure.hpp>
-#include <dart/simulation/experimental/comps/multi_body.hpp>
-#include <dart/simulation/experimental/comps/name.hpp>
-#include <dart/simulation/experimental/comps/rigid_body.hpp>
+#include <dart/simulation/experimental/comps/component_category.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure_family.hpp>
+
+#include <Eigen/Geometry>
+#include <entt/entt.hpp>
+
+namespace dart::simulation::experimental::comps {
+
+/// Component storing an explicit loop-closure topology relation.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct LoopClosure
+{
+  DART_EXPERIMENTAL_STATE_COMPONENT(LoopClosure);
+
+  dart::simulation::experimental::LoopClosureFamily family
+      = dart::simulation::experimental::LoopClosureFamily::Rigid;
+  entt::entity frameA = entt::null;
+  entt::entity frameB = entt::null;
+  Eigen::Isometry3d offsetA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d offsetB = Eigen::Isometry3d::Identity();
+
+  static constexpr auto entityFields()
+  {
+    return std::tuple{&LoopClosure::frameA, &LoopClosure::frameB};
+  }
+};
+
+} // namespace dart::simulation::experimental::comps
