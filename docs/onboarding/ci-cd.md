@@ -12,7 +12,9 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
   - Asserts-enabled CI build (no `-DNDEBUG`): see [Asserts-Enabled CI Build](#asserts-enabled-ci-build-no--dndebug)
   - Eigen over-alignment CI build: see [Eigen Over-Alignment CI Build](#eigen-over-alignment-ci-build)
-  - ASAN testing (memory errors): `pixi run test-asan` (runs in CI for `release-6.16`)
+  - ASAN testing (memory errors): `pixi run test-asan`; the Linux
+    `Release Tests` CI job runs it after the Release C++ tests, Python tests,
+    and examples.
   - CI monitoring commands: see [CI Monitoring (CLI)](#ci-monitoring-cli) and [CI Monitoring (API)](#ci-monitoring-api)
   - Common CI failure fixes: see [Common CI Failure Modes](#common-ci-failure-modes)
 - Fast CI fail-fast loop:
@@ -26,6 +28,9 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `gh run view --job <JOB_ID> --log-failed` only works after the job completes; use the REST logs endpoint (or wait) when a run is still in progress.
   - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early (including AppVeyor); resolve conflicts locally and push before re-running CI.
   - FreeBSD VM tests can take over 1 hour to complete; this is expected, not a sign of failure.
+  - Linux `Release Tests` can be the last PR blocker because its
+    AddressSanitizer phase is long-running. Check the job step state and recent
+    successful `main` run durations before treating it as stuck.
   - FreeBSD VM startup can timeout (~5 min); this is transient—re-run the job.
   - `dynamic_cast` can fail silently on FreeBSD across shared library boundaries; use type enums + `static_cast`.
   - macOS ARM64 sporadic SEGFAULT from `alloca`/VLA alignment; use `std::vector<T>` instead.
