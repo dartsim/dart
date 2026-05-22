@@ -37,11 +37,13 @@
 
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/multi_body/joint.hpp>
 #include <dart/simulation/experimental/multi_body/link.hpp>
 #include <dart/simulation/experimental/multi_body/multi_body.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
+#include <Eigen/Cholesky>
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/array.h>
@@ -51,6 +53,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <cmath>
 
 namespace nb = nanobind;
 
@@ -78,6 +82,61 @@ Eigen::Vector4d toWxyz(const Eigen::Quaterniond& quaternion)
   Eigen::Vector4d out;
   out << quaternion.w(), quaternion.x(), quaternion.y(), quaternion.z();
   return out;
+}
+
+bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
+{
+  if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
+    return false;
+  }
+
+  Eigen::LLT<Eigen::Matrix3d> factorization(matrix);
+  return factorization.info() == Eigen::Success;
+}
+
+void validateMass(double mass)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(mass) || mass <= 0.0,
+      sim::InvalidArgumentException,
+      "RigidBodyOptions.mass must be positive and finite");
+}
+
+void validateFiniteVector(const Eigen::Vector3d& value, const char* fieldName)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !value.allFinite(),
+      sim::InvalidArgumentException,
+      "RigidBodyOptions.{} must contain only finite values",
+      fieldName);
+}
+
+void validateOrientation(const Eigen::Quaterniond& orientation)
+{
+  const auto orientationNorm = orientation.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !orientation.coeffs().allFinite() || !std::isfinite(orientationNorm)
+          || orientationNorm <= 0.0,
+      sim::InvalidArgumentException,
+      "RigidBodyOptions.orientation must be finite and non-zero");
+}
+
+void validateInertia(const Eigen::Matrix3d& inertia)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isSymmetricPositiveDefinite(inertia),
+      sim::InvalidArgumentException,
+      "RigidBodyOptions.inertia must be symmetric positive definite");
+}
+
+void validateRigidBodyOptions(const sim::RigidBodyOptions& options)
+{
+  validateMass(options.mass);
+  validateInertia(options.inertia);
+  validateFiniteVector(options.position, "position");
+  validateFiniteVector(options.linearVelocity, "linearVelocity");
+  validateFiniteVector(options.angularVelocity, "angularVelocity");
+  validateOrientation(options.orientation);
 }
 
 sim::LinkOptions makeLinkOptions(
@@ -118,6 +177,7 @@ sim::RigidBodyOptions makeRigidBodyOptions(
     options.inertia = toMatrix3(inertia);
   }
 
+  validateRigidBodyOptions(options);
   return options;
 }
 
@@ -149,6 +209,7 @@ sim::RigidBodyOptions mergeRigidBodyOptions(
     options.inertia = toMatrix3(inertia);
   }
 
+  validateRigidBodyOptions(options);
   return options;
 }
 
@@ -416,12 +477,20 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("linear_velocity") = nb::none(),
           nb::arg("angular_velocity") = nb::none(),
           nb::arg("inertia") = nb::none())
-      .def_rw("mass", &sim::RigidBodyOptions::mass)
+      .def_prop_rw(
+          "mass",
+          [](const sim::RigidBodyOptions& self) { return self.mass; },
+          [](sim::RigidBodyOptions& self, double mass) {
+            validateMass(mass);
+            self.mass = mass;
+          })
       .def_prop_rw(
           "position",
           [](const sim::RigidBodyOptions& self) { return self.position; },
           [](sim::RigidBodyOptions& self, const nb::handle& position) {
-            self.position = toVector3(position);
+            const auto value = toVector3(position);
+            validateFiniteVector(value, "position");
+            self.position = value;
           })
       .def_prop_rw(
           "orientation",
@@ -429,13 +498,17 @@ void defSimulationExperimentalModule(nb::module_& m)
             return toWxyz(self.orientation);
           },
           [](sim::RigidBodyOptions& self, const nb::handle& orientation) {
-            self.orientation = toQuaternionWxyz(orientation);
+            const auto value = toQuaternionWxyz(orientation);
+            validateOrientation(value);
+            self.orientation = value;
           })
       .def_prop_rw(
           "linear_velocity",
           [](const sim::RigidBodyOptions& self) { return self.linearVelocity; },
           [](sim::RigidBodyOptions& self, const nb::handle& linearVelocity) {
-            self.linearVelocity = toVector3(linearVelocity);
+            const auto value = toVector3(linearVelocity);
+            validateFiniteVector(value, "linearVelocity");
+            self.linearVelocity = value;
           })
       .def_prop_rw(
           "angular_velocity",
@@ -443,13 +516,17 @@ void defSimulationExperimentalModule(nb::module_& m)
             return self.angularVelocity;
           },
           [](sim::RigidBodyOptions& self, const nb::handle& angularVelocity) {
-            self.angularVelocity = toVector3(angularVelocity);
+            const auto value = toVector3(angularVelocity);
+            validateFiniteVector(value, "angularVelocity");
+            self.angularVelocity = value;
           })
       .def_prop_rw(
           "inertia",
           [](const sim::RigidBodyOptions& self) { return self.inertia; },
           [](sim::RigidBodyOptions& self, const nb::handle& inertia) {
-            self.inertia = toMatrix3(inertia);
+            const auto value = toMatrix3(inertia);
+            validateInertia(value);
+            self.inertia = value;
           })
       .def("__repr__", [](const sim::RigidBodyOptions& self) {
         std::vector<std::pair<std::string, std::string>> fields;

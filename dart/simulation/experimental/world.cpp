@@ -46,11 +46,14 @@
 #include "dart/simulation/experimental/io/serializer.hpp"
 #include "dart/simulation/experimental/multi_body/multi_body.hpp"
 
+#include <Eigen/Cholesky>
+
 #include <algorithm>
 #include <format>
 #include <istream>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include <cmath>
@@ -96,6 +99,53 @@ void executeKinematicsGraph(World& world, compute::ComputeExecutor& executor)
 {
   compute::WorldKinematicsGraph graph(world);
   graph.execute(executor);
+}
+
+//==============================================================================
+bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
+{
+  if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
+    return false;
+  }
+
+  Eigen::LLT<Eigen::Matrix3d> factorization(matrix);
+  return factorization.info() == Eigen::Success;
+}
+
+//==============================================================================
+void validateFiniteVector(
+    const Eigen::Vector3d& value, std::string_view fieldName)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !value.allFinite(),
+      InvalidArgumentException,
+      "RigidBodyOptions.{} must contain only finite values",
+      fieldName);
+}
+
+//==============================================================================
+void validateRigidBodyOptions(const RigidBodyOptions& options)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(options.mass) || options.mass <= 0.0,
+      InvalidArgumentException,
+      "RigidBodyOptions.mass must be positive and finite");
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isSymmetricPositiveDefinite(options.inertia),
+      InvalidArgumentException,
+      "RigidBodyOptions.inertia must be symmetric positive definite");
+
+  validateFiniteVector(options.position, "position");
+  validateFiniteVector(options.linearVelocity, "linearVelocity");
+  validateFiniteVector(options.angularVelocity, "angularVelocity");
+
+  const auto orientationNorm = options.orientation.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !options.orientation.coeffs().allFinite()
+          || !std::isfinite(orientationNorm) || orientationNorm <= 0.0,
+      InvalidArgumentException,
+      "RigidBodyOptions.orientation must be finite and non-zero");
 }
 
 //==============================================================================
@@ -358,6 +408,8 @@ RigidBody World::addRigidBody(
       InvalidArgumentException,
       "RigidBody '{}' already exists",
       candidateName);
+
+  validateRigidBodyOptions(options);
 
   Frame parent = Frame(entt::null, this);
   const auto orientation = normalizeOrIdentity(options.orientation);

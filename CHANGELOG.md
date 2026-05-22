@@ -440,6 +440,9 @@
     dartpy 7, including `JointType`, `JointSpec`, `Link`, `Joint`, Python
     link/joint lookup, and design guidance for closed-chain topology as
     symmetric graph constraints over a tree-shaped multibody.
+  - Rejected invalid experimental `RigidBodyOptions` at the C++ and dartpy API
+    boundaries, including non-positive mass, non-finite pose or velocity data,
+    zero orientation quaternions, and non-symmetric-positive-definite inertia.
   - Fixed experimental Taskflow executor paths to propagate compute-node
     exceptions instead of reporting graph execution success after failed tasks.
   - Fixed experimental compute profiling and rigid-body stepping edge cases for

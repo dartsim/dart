@@ -49,6 +49,7 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -419,6 +420,56 @@ TEST(World, RigidBodyOptionsInitializeDynamicsComponents)
   EXPECT_TRUE(body.getTransform().translation().isApprox(options.position));
   EXPECT_TRUE(
       body.getRotation().isApprox(options.orientation.toRotationMatrix()));
+}
+
+// Test that invalid rigid-body construction data is rejected before it reaches
+// ECS dynamics components.
+TEST(World, RigidBodyOptionsRejectInvalidValues)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const auto infinity = std::numeric_limits<double>::infinity();
+  const auto quietNaN = std::numeric_limits<double>::quiet_NaN();
+
+  auto expectInvalid = [](const sx::RigidBodyOptions& options) {
+    sx::World world;
+    EXPECT_THROW(
+        (void)world.addRigidBody("body", options),
+        sx::InvalidArgumentException);
+  };
+
+  sx::RigidBodyOptions options;
+
+  options.mass = 0.0;
+  expectInvalid(options);
+
+  options = sx::RigidBodyOptions{};
+  options.mass = infinity;
+  expectInvalid(options);
+
+  options = sx::RigidBodyOptions{};
+  options.inertia = Eigen::Vector3d(1.0, -1.0, 1.0).asDiagonal();
+  expectInvalid(options);
+
+  options = sx::RigidBodyOptions{};
+  options.inertia(0, 1) = 0.1;
+  expectInvalid(options);
+
+  options = sx::RigidBodyOptions{};
+  options.position.x() = infinity;
+  expectInvalid(options);
+
+  options = sx::RigidBodyOptions{};
+  options.orientation = Eigen::Quaterniond(0.0, 0.0, 0.0, 0.0);
+  expectInvalid(options);
+
+  options = sx::RigidBodyOptions{};
+  options.linearVelocity.x() = quietNaN;
+  expectInvalid(options);
+
+  options = sx::RigidBodyOptions{};
+  options.angularVelocity.x() = infinity;
+  expectInvalid(options);
 }
 
 // Test that World::step() runs the rigid-body integration graph before the

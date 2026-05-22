@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import math
 import os
 from pathlib import Path
 
@@ -220,3 +221,35 @@ def test_experimental_rigid_body_options_value_object():
     world.step()
 
     assert box.translation.tolist() == pytest.approx([2.1, 3.0, 4.0])
+
+
+def test_experimental_rigid_body_options_reject_invalid_values():
+    sx = _simulation_experimental()
+
+    with pytest.raises(Exception, match="mass must be positive and finite"):
+        sx.RigidBodyOptions(mass=0.0)
+
+    with pytest.raises(
+        Exception, match="inertia must be symmetric positive definite"
+    ):
+        sx.RigidBodyOptions(
+            inertia=((1.0, 0.0, 0.0), (0.0, -1.0, 0.0), (0.0, 0.0, 1.0))
+        )
+
+    with pytest.raises(Exception, match="position must contain only finite"):
+        sx.RigidBodyOptions(position=(math.inf, 0.0, 0.0))
+
+    with pytest.raises(Exception, match="orientation must be finite and non-zero"):
+        sx.RigidBodyOptions(orientation=(0.0, 0.0, 0.0, 0.0))
+
+    options = sx.RigidBodyOptions()
+
+    with pytest.raises(Exception, match="linearVelocity must contain only finite"):
+        options.linear_velocity = (math.nan, 0.0, 0.0)
+
+    with pytest.raises(Exception, match="angularVelocity must contain only finite"):
+        options.angular_velocity = (0.0, math.inf, 0.0)
+
+    world = sx.World()
+    with pytest.raises(Exception, match="mass must be positive and finite"):
+        world.add_rigid_body("box", mass=math.inf)
