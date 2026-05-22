@@ -92,7 +92,12 @@ experimental namespaces. C++ users opt in through
 only public experimental wrapper types and must not expose EnTT, `comps`, or
 other ECS internals until the C++ API provides public wrappers. The DART 8 path
 is to remove the classic world after the experimental world reaches parity and
-promote the experimental shape into the stable simulation namespace.
+promote the experimental shape into the official stable simulation namespace.
+dartpy 8 removes the legacy dartpy 6 API surface instead of carrying it beside
+the promoted API.
+
+Durable API-shape rationale for this surface lives in
+[simulation_experimental_python_api.md](../design/simulation_experimental_python_api.md).
 
 ### Eigen ↔ NumPy Integration
 
