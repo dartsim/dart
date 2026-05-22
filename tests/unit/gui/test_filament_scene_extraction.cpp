@@ -33,6 +33,7 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/debug.hpp>
 #include <dart/gui/detail/scenes.hpp>
 #include <dart/gui/detail/simulation_stepper.hpp>
 #include <dart/gui/geometry.hpp>
@@ -4829,6 +4830,27 @@ TEST(
       descriptor.renderResourceVersion,
       secondExtract.front().renderResourceVersion);
   EXPECT_NE(descriptor.renderResourceVersion, 0u);
+}
+
+TEST(FilamentSceneExtraction, ApplyDebugVisualStyle_SimpleFrame_DisablesShadows)
+{
+  auto world = World::create("world");
+  auto frame = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "debug_marker");
+  frame->setShape(std::make_shared<SphereShape>(0.12));
+  const Eigen::Vector4d color(0.95, 0.16, 0.12, 0.75);
+  dart::gui::applyDebugVisualStyle(*frame, color);
+  world->addSimpleFrame(frame);
+
+  ASSERT_NE(frame->getVisualAspect(), nullptr);
+  EXPECT_TRUE(frame->getVisualAspect()->getRGBA().isApprox(color));
+  EXPECT_FALSE(frame->getVisualAspect()->getShadowed());
+
+  const auto descriptors = dart::gui::extractRenderables(*world);
+  ASSERT_EQ(descriptors.size(), 1u);
+  EXPECT_TRUE(descriptors.front().material.rgba.isApprox(color));
+  EXPECT_FALSE(descriptors.front().material.castsShadows);
+  EXPECT_FALSE(descriptors.front().material.receivesShadows);
 }
 
 TEST(

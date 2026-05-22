@@ -100,6 +100,14 @@ struct DebugDrawOptions
   double contactForceMaxLength = 0.45;
 };
 
+/// Applies the standard debug visual styling to a world-backed shape frame.
+///
+/// Persistent debug visuals should not cast or receive shadows because they
+/// describe scene state rather than physical geometry.
+DART_GUI_API void applyDebugVisualStyle(
+    dynamics::ShapeFrame& shapeFrame,
+    const Eigen::Vector4d& rgba = Eigen::Vector4d::Ones());
+
 DART_GUI_API std::vector<DebugLineDescriptor> makeGridDebugLines(
     const DebugDrawOptions& options = {});
 

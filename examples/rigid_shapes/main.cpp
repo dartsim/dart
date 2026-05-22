@@ -39,6 +39,7 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/debug.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -328,8 +329,8 @@ struct RigidShapesState
     contactFrame = dart::dynamics::SimpleFrame::createShared(
         dart::dynamics::Frame::World(), kContactFrameName);
     contactFrame->setShape(contactPoints);
-    contactFrame->getVisualAspect(true)->setRGBA(
-        Eigen::Vector4d(0.9, 0.1, 0.1, 1.0));
+    dart::gui::applyDebugVisualStyle(
+        *contactFrame, Eigen::Vector4d(0.9, 0.1, 0.1, 1.0));
     setContactPointsVisible(false);
     if (world != nullptr) {
       world->addSimpleFrame(contactFrame);

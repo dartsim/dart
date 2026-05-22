@@ -91,22 +91,25 @@ constexpr std::array<ShapeFixture, 9> kShapeFixtures{{
 {
   if (status == PairStatus::AdaptedFallback) {
     if (shapeA == ShapeType::Compound || shapeB == ShapeType::Compound) {
-      return "Contact query uses compound child recursion.";
+      return "Contact generation runs by decomposing the compound into its "
+             "children.";
     }
-    return "Contact query uses a native convex, mesh, or adapter fallback "
-           "path.";
+    return "Contact generation runs by adapting this shape to a supported "
+           "native primitive or mesh path.";
   }
 
   if (status == PairStatus::DistanceOnly) {
-    return "Contact query is not implemented; distance query is available.";
+    return "Only signed distance is available for this pair; contact "
+           "generation is not implemented.";
   }
 
   if (status == PairStatus::Unsupported) {
-    return "Native contact and distance queries are not implemented for this "
-           "pair.";
+    return "This pair is listed for coverage inspection, but native contact "
+           "and distance queries are not implemented.";
   }
 
-  return "Contact query uses a direct native narrow-phase path.";
+  return "Contact generation runs through a dedicated native narrow-phase "
+         "algorithm for this exact shape pair.";
 }
 
 [[nodiscard]] PairStatus classifyPair(ShapeType shapeA, ShapeType shapeB)
@@ -283,9 +286,9 @@ std::string_view pairStatusLabel(PairStatus status)
 {
   switch (status) {
     case PairStatus::Contact:
-      return "Contact";
+      return "Native contact";
     case PairStatus::AdaptedFallback:
-      return "Adapted";
+      return "Adapter contact";
     case PairStatus::DistanceOnly:
       return "Distance-only";
     case PairStatus::Unsupported:
@@ -298,16 +301,16 @@ std::string_view pairStatusDescription(PairStatus status)
 {
   switch (status) {
     case PairStatus::Contact:
-      return "Native contact query runs directly for this pair.";
+      return "Dedicated contact generation is implemented for this exact "
+             "native shape pair.";
     case PairStatus::AdaptedFallback:
-      return "Native contact query runs through a compound, convex, mesh, or "
-             "adapter path.";
+      return "Contact generation is implemented through compound "
+             "decomposition or a native adapter path.";
     case PairStatus::DistanceOnly:
-      return "Native distance query is available, but contact generation is "
-             "not implemented.";
+      return "Signed distance is implemented, but contact generation is not.";
     case PairStatus::Unsupported:
-      return "Native contact and distance queries are not implemented for this "
-             "pair.";
+      return "Native contact generation and signed distance are not "
+             "implemented for this pair.";
   }
   return "Unknown pair status.";
 }

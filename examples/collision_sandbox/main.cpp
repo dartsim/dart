@@ -33,6 +33,7 @@
 #include "pair_registry.hpp"
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/debug.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -94,7 +95,7 @@ constexpr std::array<BroadPhaseOption, 4> kBroadPhaseOptions{{
 
 constexpr std::array<std::string_view, 3> kPairCoverageColumns{{
     "Pair",
-    "Status",
+    "Support",
     "Mode",
 }};
 
@@ -176,13 +177,13 @@ std::string_view pairCoverageMode(const sandbox::PairCase& pair)
 {
   switch (pair.status) {
     case sandbox::PairStatus::Contact:
-      return "direct contact";
+      return "dedicated native contact path";
     case sandbox::PairStatus::AdaptedFallback:
-      return "fallback contact";
+      return "native adapter contact path";
     case sandbox::PairStatus::DistanceOnly:
-      return "distance";
+      return "native distance query only";
     case sandbox::PairStatus::Unsupported:
-      return "placeholder";
+      return "unsupported placeholder";
   }
   return "unknown";
 }
@@ -344,7 +345,7 @@ void addLine(
   auto frame = dynamics::SimpleFrame::createShared(
       dynamics::Frame::World(), std::move(name), tf);
   frame->setShape(std::make_shared<dynamics::CylinderShape>(radius, length));
-  frame->getVisualAspect(true)->setRGBA(color);
+  gui::applyDebugVisualStyle(*frame, color);
   world->addSimpleFrame(frame);
 }
 
@@ -357,12 +358,11 @@ void addPointMarker(
 {
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = point;
-  addFrame(
-      world,
-      std::move(name),
-      std::make_shared<dynamics::SphereShape>(radius),
-      tf,
-      color);
+  auto frame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), std::move(name), tf);
+  frame->setShape(std::make_shared<dynamics::SphereShape>(radius));
+  gui::applyDebugVisualStyle(*frame, color);
+  world->addSimpleFrame(frame);
 }
 
 void addAabbLines(
@@ -676,7 +676,7 @@ void rebuildScene(SandboxState& state)
           prefix + ".point",
           contact.point,
           rgba(0.95, 0.12, 0.12),
-          0.045);
+          0.018);
       if (contact.normal.squaredNorm() > 1e-12) {
         addLine(
             state.world,
@@ -838,8 +838,8 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
         + "]");
     panelBuilder.text(pair.note);
     panelBuilder.text(
-        "Mode: " + std::string(pairCoverageMode(pair)) + " - "
-        + std::string(sandbox::pairStatusDescription(pair.status)));
+        "Support: " + std::string(sandbox::pairStatusDescription(pair.status)));
+    panelBuilder.text("Path: " + std::string(pairCoverageMode(pair)));
     if (panelBuilder.button("Previous")) {
       state->pairCaseIndex
           = (state->pairCaseIndex + pairs.size() - 1) % pairs.size();
@@ -866,7 +866,7 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
       const bool useTable
           = panelBuilder.beginTable("pair_coverage", kPairCoverageColumns);
       if (!useTable) {
-        panelBuilder.text("Pair | Status | Mode");
+        panelBuilder.text("Pair | Support | Mode");
       }
       for (const sandbox::PairCase& candidate : pairs) {
         std::string pairLabel = candidate.label;

@@ -38,6 +38,7 @@
 #include <gtest/gtest.h>
 
 #include <set>
+#include <string_view>
 
 namespace sandbox = dart::examples::collision_sandbox;
 namespace collision = dart::collision::native;
@@ -106,6 +107,28 @@ TEST(CollisionSandboxPairRegistry, MatchesNarrowPhaseSupport)
       EXPECT_EQ(pair.status, sandbox::PairStatus::Contact) << pair.id;
     }
   }
+}
+
+TEST(CollisionSandboxPairRegistry, PairStatusTextExplainsQuerySupport)
+{
+  EXPECT_EQ(
+      sandbox::pairStatusLabel(sandbox::PairStatus::Contact), "Native contact");
+  EXPECT_EQ(
+      sandbox::pairStatusLabel(sandbox::PairStatus::AdaptedFallback),
+      "Adapter contact");
+
+  EXPECT_NE(
+      sandbox::pairStatusDescription(sandbox::PairStatus::Contact)
+          .find("Dedicated contact generation"),
+      std::string_view::npos);
+  EXPECT_NE(
+      sandbox::pairStatusDescription(sandbox::PairStatus::AdaptedFallback)
+          .find("native adapter path"),
+      std::string_view::npos);
+  EXPECT_NE(
+      sandbox::pairStatusDescription(sandbox::PairStatus::DistanceOnly)
+          .find("Signed distance"),
+      std::string_view::npos);
 }
 
 TEST(CollisionSandboxPairRegistry, ShapeFactoryCreatesEveryFixture)

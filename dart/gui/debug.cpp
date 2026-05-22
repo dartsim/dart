@@ -39,6 +39,7 @@
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/shape.hpp>
+#include <dart/dynamics/shape_frame.hpp>
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
@@ -275,6 +276,14 @@ void appendTransformedBoundsEdges(
 }
 
 } // namespace
+
+void applyDebugVisualStyle(
+    dynamics::ShapeFrame& shapeFrame, const Eigen::Vector4d& rgba)
+{
+  auto* visualAspect = shapeFrame.getVisualAspect(true);
+  visualAspect->setRGBA(rgba);
+  visualAspect->setShadowed(false);
+}
 
 std::vector<DebugLineDescriptor> makeGridDebugLines(
     const DebugDrawOptions& options)

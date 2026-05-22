@@ -95,6 +95,11 @@ consume copied native debug snapshots, not mutable tree internals, and the GUI
 path should use public `dart::gui` APIs without adding FCL, Bullet, or ODE as
 runtime example dependencies.
 
+Persistent debug geometry attached to a `World` should call
+`dart::gui::applyDebugVisualStyle` rather than setting visual aspect color and
+shadow state ad hoc. Built-in `DebugLineDescriptor` renderables and
+world-backed debug `ShapeFrame`s should share the same no-shadow policy.
+
 ## Migration Notes
 
 The removed OSG and Raylib paths are not compatibility targets for new work.
