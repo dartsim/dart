@@ -255,10 +255,10 @@ the release roadmap.
 - The implemented DART 7 `MultiBody`, `Link`, and `Joint` API is currently
   tree-shaped, with public `JointSpec` construction, joint type, axis,
   parent/child, DOF count, and generalized position/velocity access. `World`
-  now owns topology-only `LoopClosure` handles with symmetric frame endpoints,
-  semantic closure families, offsets, lookup, validation, and serialization.
-  Closure residual diagnostics, kinematic projection, and dynamic closure
-  solving remain staged design targets.
+  now owns `LoopClosure` handles with symmetric frame endpoints, semantic
+  closure families, offsets, runtime participation policy, lookup, validation,
+  and serialization. Closure residual diagnostics, kinematic projection, and
+  dynamic closure solving remain staged design targets.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and
@@ -392,12 +392,13 @@ components. The initial tree of `MultiBody`, `Link`, and `Joint` remains useful
 for ownership, naming, state indexing, and articulated-body algorithms; closure
 edges add graph structure on top of that tree.
 
-DART 7 now stages the topology part of this model: `World::addLoopClosure(...)`
-returns a first-class `LoopClosure` handle with symmetric endpoint frames,
-semantic family, endpoint offsets, name lookup, count queries, validation, and
-serialization. Constrained kinematic projection, residual diagnostics, runtime
-enable/disable policy, and dynamic solving remain DART 8 target concepts to
-stage behind the experimental namespace before promotion.
+DART 7 now stages the topology and runtime-intent part of this model:
+`World::addLoopClosure(...)` returns a first-class `LoopClosure` handle with
+symmetric endpoint frames, semantic family, endpoint offsets, name lookup,
+count queries, validation, serialization, and a backend-neutral
+`LoopClosureRuntimePolicy`. Constrained kinematic projection, residual
+diagnostics, and dynamic solving remain DART 8 target concepts to stage behind
+the experimental namespace before promotion.
 
 The staged public C++ shape is a DART-owned handle and spec:
 
@@ -413,7 +414,7 @@ auto closure = world.addLoopClosure(
     });
 ```
 
-Runtime policy remains future work, for example:
+Runtime policy is public metadata while projection and solving remain staged:
 
 ```cpp
 closure.setRuntimePolicy(sx::LoopClosureRuntimePolicy{
@@ -479,12 +480,14 @@ reports residuals only, or requires the caller to select an explicit projection
 stage. Dynamic closure behavior belongs to a named constraint or
 implicit-dynamics stage, not to ordinary frame-cache refresh.
 
-Diagnostics should be queryable without exposing solver rows directly. A future
-diagnostic value can include the residual vector and norm, residual units and
-frame convention, active/enabled state, projection or solve convergence status,
-iteration count, tolerance used, and force or impulse estimates expressed in a
-documented endpoint frame. If the active pipeline only reports residuals, force
-and impulse fields should be absent or explicitly marked unavailable.
+Diagnostics should be queryable without exposing solver rows directly. The
+current runtime policy records enabled state plus residual-only, projection, or
+solve intent. A future diagnostic value can include the residual vector and
+norm, residual units and frame convention, active/enabled state, projection or
+solve convergence status, iteration count, tolerance used, and force or impulse
+estimates expressed in a documented endpoint frame. If the active pipeline only
+reports residuals, force and impulse fields should be absent or explicitly
+marked unavailable.
 
 The API should keep the useful lessons from existing engines without inheriting
 their public vocabulary:

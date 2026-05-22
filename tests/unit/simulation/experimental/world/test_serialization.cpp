@@ -215,13 +215,17 @@ TEST(Serialization, WithLoopClosures)
   Eigen::Isometry3d offsetB = Eigen::Isometry3d::Identity();
   offsetB.translate(Eigen::Vector3d(-0.25, 0.0, 0.0));
 
-  world1.addLoopClosure(
+  auto closure1 = world1.addLoopClosure(
       "closure",
       {.frameA = link,
        .frameB = ground,
        .family = sx::LoopClosureFamily::Point,
        .offsetA = offsetA,
        .offsetB = offsetB});
+  closure1.setRuntimePolicy(
+      {.enabled = false,
+       .kinematics = sx::ClosureKinematicsPolicy::Project,
+       .dynamics = sx::ClosureDynamicsPolicy::Solve});
 
   std::stringstream ss;
   world1.saveBinary(ss);
@@ -235,6 +239,10 @@ TEST(Serialization, WithLoopClosures)
   EXPECT_EQ(closure->getFamily(), sx::LoopClosureFamily::Point);
   EXPECT_TRUE(closure->getOffsetA().isApprox(offsetA));
   EXPECT_TRUE(closure->getOffsetB().isApprox(offsetB));
+  const auto runtimePolicy = closure->getRuntimePolicy();
+  EXPECT_FALSE(runtimePolicy.enabled);
+  EXPECT_EQ(runtimePolicy.kinematics, sx::ClosureKinematicsPolicy::Project);
+  EXPECT_EQ(runtimePolicy.dynamics, sx::ClosureDynamicsPolicy::Solve);
 
   auto restoredRobot = world2.getMultiBody("robot");
   ASSERT_TRUE(restoredRobot.has_value());

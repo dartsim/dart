@@ -155,6 +155,8 @@ def test_experimental_api_exposes_python_names_only():
             "getFrameB",
             "getOffsetA",
             "getOffsetB",
+            "getRuntimePolicy",
+            "setRuntimePolicy",
             "isValid",
         ),
     }
@@ -319,6 +321,30 @@ def test_experimental_loop_closure_topology_api():
     assert closure.get_offset_b().reshape(16).tolist() == pytest.approx(
         np.asarray(offset_b).reshape(16).tolist()
     )
+
+    runtime_policy = closure.runtime_policy
+    assert runtime_policy.enabled is True
+    assert runtime_policy.kinematics == sx.ClosureKinematicsPolicy.RESIDUAL_ONLY
+    assert runtime_policy.dynamics == sx.ClosureDynamicsPolicy.RESIDUAL_ONLY
+
+    runtime_policy.enabled = False
+    runtime_policy.kinematics = sx.ClosureKinematicsPolicy.PROJECT
+    runtime_policy.dynamics = sx.ClosureDynamicsPolicy.SOLVE
+    closure.runtime_policy = runtime_policy
+
+    updated_policy = closure.get_runtime_policy()
+    assert updated_policy.enabled is False
+    assert updated_policy.kinematics == sx.ClosureKinematicsPolicy.PROJECT
+    assert updated_policy.dynamics == sx.ClosureDynamicsPolicy.SOLVE
+
+    closure.set_runtime_policy(
+        sx.LoopClosureRuntimePolicy(
+            enabled=True,
+            kinematics=sx.ClosureKinematicsPolicy.RESIDUAL_ONLY,
+            dynamics=sx.ClosureDynamicsPolicy.RESIDUAL_ONLY,
+        )
+    )
+    assert closure.runtime_policy.enabled is True
 
     assert world.num_loop_closures == 1
     assert world.get_loop_closure_count() == 1

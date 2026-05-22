@@ -396,6 +396,14 @@ void defSimulationExperimentalModule(nb::module_& m)
       .value("POINT", sim::LoopClosureFamily::Point)
       .value("DISTANCE", sim::LoopClosureFamily::Distance);
 
+  nb::enum_<sim::ClosureKinematicsPolicy>(m, "ClosureKinematicsPolicy")
+      .value("RESIDUAL_ONLY", sim::ClosureKinematicsPolicy::ResidualOnly)
+      .value("PROJECT", sim::ClosureKinematicsPolicy::Project);
+
+  nb::enum_<sim::ClosureDynamicsPolicy>(m, "ClosureDynamicsPolicy")
+      .value("RESIDUAL_ONLY", sim::ClosureDynamicsPolicy::ResidualOnly)
+      .value("SOLVE", sim::ClosureDynamicsPolicy::Solve);
+
   nb::class_<sim::JointSpec>(m, "JointSpec")
       .def(
           nb::new_([](std::string name,
@@ -730,6 +738,34 @@ void defSimulationExperimentalModule(nb::module_& m)
         return format_repr("LoopClosureSpec", fields);
       });
 
+  nb::class_<sim::LoopClosureRuntimePolicy>(m, "LoopClosureRuntimePolicy")
+      .def(
+          nb::new_([](bool enabled,
+                      sim::ClosureKinematicsPolicy kinematics,
+                      sim::ClosureDynamicsPolicy dynamics) {
+            return sim::LoopClosureRuntimePolicy{
+                .enabled = enabled,
+                .kinematics = kinematics,
+                .dynamics = dynamics};
+          }),
+          nb::arg("enabled") = true,
+          nb::arg("kinematics") = sim::ClosureKinematicsPolicy::ResidualOnly,
+          nb::arg("dynamics") = sim::ClosureDynamicsPolicy::ResidualOnly)
+      .def_rw("enabled", &sim::LoopClosureRuntimePolicy::enabled)
+      .def_rw("kinematics", &sim::LoopClosureRuntimePolicy::kinematics)
+      .def_rw("dynamics", &sim::LoopClosureRuntimePolicy::dynamics)
+      .def("__repr__", [](const sim::LoopClosureRuntimePolicy& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("enabled", self.enabled ? "True" : "False");
+        fields.emplace_back(
+            "kinematics",
+            nb::cast<std::string>(nb::repr(nb::cast(self.kinematics))));
+        fields.emplace_back(
+            "dynamics",
+            nb::cast<std::string>(nb::repr(nb::cast(self.dynamics))));
+        return format_repr("LoopClosureRuntimePolicy", fields);
+      });
+
   loopClosureClass
       .def(
           "get_name",
@@ -749,6 +785,11 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](const sim::LoopClosure& self) {
             return self.getOffsetB().matrix();
           })
+      .def("get_runtime_policy", &sim::LoopClosure::getRuntimePolicy)
+      .def(
+          "set_runtime_policy",
+          &sim::LoopClosure::setRuntimePolicy,
+          nb::arg("policy"))
       .def_prop_ro(
           "name",
           [](const sim::LoopClosure& self) {
@@ -767,6 +808,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](const sim::LoopClosure& self) {
             return self.getOffsetB().matrix();
           })
+      .def_prop_rw(
+          "runtime_policy",
+          &sim::LoopClosure::getRuntimePolicy,
+          &sim::LoopClosure::setRuntimePolicy)
       .def_prop_ro("is_valid", &sim::LoopClosure::isValid)
       .def("__repr__", [](const sim::LoopClosure& self) {
         std::vector<std::pair<std::string, std::string>> fields;
@@ -1203,7 +1248,7 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def("enter_simulation_mode", &sim::World::enterSimulationMode)
       .def(
           "update_kinematics",
-          &sim::World::updateKinematics,
+          [](sim::World& self) { self.updateKinematics(); },
           nb::call_guard<nb::gil_scoped_release>())
       .def(
           "step",

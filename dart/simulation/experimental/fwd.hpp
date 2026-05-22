@@ -58,6 +58,7 @@ struct FreeFrameOptions;
 struct JointOptions;
 struct JointSpec;
 struct LinkOptions;
+struct LoopClosureRuntimePolicy;
 struct LoopClosureSpec;
 struct MultiBodyOptions;
 struct RigidBodyOptions;

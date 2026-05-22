@@ -32,34 +32,46 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/comps/component_category.hpp>
-#include <dart/simulation/experimental/constraint/loop_closure_family.hpp>
-#include <dart/simulation/experimental/constraint/loop_closure_runtime_policy.hpp>
+namespace dart::simulation::experimental {
 
-#include <Eigen/Geometry>
-#include <entt/entt.hpp>
-
-namespace dart::simulation::experimental::comps {
-
-/// Component storing an explicit loop-closure topology relation.
+/// Kinematics-stage participation for an explicit loop closure.
 ///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct LoopClosure
+/// The values describe the public algorithmic intent. They do not expose the
+/// internal projection method, solver rows, or backend implementation.
+enum class ClosureKinematicsPolicy
 {
-  DART_EXPERIMENTAL_STATE_COMPONENT(LoopClosure);
+  /// Track closure topology and allow residual diagnostics without projection.
+  ResidualOnly,
 
-  dart::simulation::experimental::LoopClosureFamily family
-      = dart::simulation::experimental::LoopClosureFamily::Rigid;
-  entt::entity frameA = entt::null;
-  entt::entity frameB = entt::null;
-  Eigen::Isometry3d offsetA = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d offsetB = Eigen::Isometry3d::Identity();
-  dart::simulation::experimental::LoopClosureRuntimePolicy runtimePolicy;
-
-  static constexpr auto entityFields()
-  {
-    return std::tuple{&LoopClosure::frameA, &LoopClosure::frameB};
-  }
+  /// Project kinematic state toward the closure relation when the active
+  /// pipeline includes a compatible projection stage.
+  Project,
 };
 
-} // namespace dart::simulation::experimental::comps
+/// Dynamics-stage participation for an explicit loop closure.
+///
+/// The values describe runtime intent independently from the constraint solver
+/// implementation chosen by a future dynamics pipeline.
+enum class ClosureDynamicsPolicy
+{
+  /// Track closure topology and allow residual diagnostics without solving.
+  ResidualOnly,
+
+  /// Solve the closure relation when the active dynamics pipeline supports it.
+  Solve,
+};
+
+/// Runtime participation policy for a loop closure.
+///
+/// LoopClosureSpec owns topology. LoopClosureRuntimePolicy owns whether that
+/// topology is active for residual reporting, kinematic projection, or dynamic
+/// solving. The current DART 7 implementation stores this policy as public
+/// metadata; projection and solving stages are staged separately.
+struct LoopClosureRuntimePolicy
+{
+  bool enabled = true;
+  ClosureKinematicsPolicy kinematics = ClosureKinematicsPolicy::ResidualOnly;
+  ClosureDynamicsPolicy dynamics = ClosureDynamicsPolicy::ResidualOnly;
+};
+
+} // namespace dart::simulation::experimental

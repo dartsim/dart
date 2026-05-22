@@ -272,11 +272,11 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
 - The implemented DART 7 `MultiBody`, `Link`, and `Joint` binding is currently
   tree-shaped, with Python-style `JointSpec` construction backed by the public
   C++ value object, joint type, axis, parent/child, DOF count, and generalized
-  position/velocity access. `World` now exposes topology-only `LoopClosure`
-  handles with symmetric frame endpoints, semantic closure families, offsets,
-  lookup, validation, and serialization. Closure residual diagnostics,
-  kinematic projection, and dynamic closure solving remain staged design
-  targets.
+  position/velocity access. `World` now exposes `LoopClosure` handles with
+  symmetric frame endpoints, semantic closure families, offsets, runtime
+  participation policy, lookup, validation, and serialization. Closure residual
+  diagnostics, kinematic projection, and dynamic closure solving remain staged
+  design targets.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and
@@ -579,7 +579,7 @@ public API exposes dirty flags.
 | `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                                                            |
 | `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                                                      |
 | `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links, DOF count, generalized position and velocity; broader state/control APIs remain staged. |
-| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint topology handle now; diagnostics and runtime solve policy remain staged work.                                  |
+| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint topology handle with runtime-intent policy now; diagnostics, projection, and dynamic solving remain staged.    |
 | `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                                                               |
 | `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                                                               |
 
@@ -722,12 +722,13 @@ components. The tree structure of a `MultiBody` remains the owner for names,
 links, joints, state indexing, and articulated-body algorithms. Loop closures
 add graph edges on top of that tree.
 
-DART 7 now stages the topology part of this model: `world.add_loop_closure(...)`
-returns a first-class `LoopClosure` handle with symmetric endpoint frames,
-semantic family, endpoint offsets, name lookup, count queries, validation, and
-serialization. Constrained kinematic projection, residual diagnostics, runtime
-enable/disable policy, and dynamic solving remain DART 8 target concepts to
-stage behind the experimental module before promotion.
+DART 7 now stages the topology and runtime-intent part of this model:
+`world.add_loop_closure(...)` returns a first-class `LoopClosure` handle with
+symmetric endpoint frames, semantic family, endpoint offsets, name lookup,
+count queries, validation, serialization, and a Pythonic
+`LoopClosureRuntimePolicy`. Constrained kinematic projection, residual
+diagnostics, and dynamic solving remain DART 8 target concepts to stage behind
+the experimental module before promotion.
 
 The staged Python shape uses compact value objects or keyword construction and
 returned public handles:
@@ -747,7 +748,7 @@ closure = world.add_loop_closure(
 )
 ```
 
-Runtime policy remains future work, for example:
+Runtime policy is public metadata while projection and solving remain staged:
 
 ```python
 closure.runtime_policy = sx.LoopClosureRuntimePolicy(

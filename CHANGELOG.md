@@ -451,6 +451,9 @@
     and repeated `World::step(...)` calls so kinematics-only updates and
     multi-step simulation can reuse caller-owned backend-neutral execution
     policy.
+  - Added experimental C++ and dartpy `LoopClosureRuntimePolicy` metadata for
+    closed-chain runtime intent, including residual-only, kinematic projection,
+    and dynamic solving policy selections without exposing solver internals.
   - Added experimental joint DOF count, generalized position, and generalized
     velocity accessors in C++ and snake_case dartpy bindings.
   - Rejected invalid experimental `RigidBodyOptions` at the C++ and dartpy API

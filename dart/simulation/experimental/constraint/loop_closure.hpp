@@ -35,6 +35,7 @@
 #include <dart/simulation/experimental/fwd.hpp>
 
 #include <dart/simulation/experimental/constraint/loop_closure_family.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure_runtime_policy.hpp>
 
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
@@ -60,6 +61,8 @@ public:
   [[nodiscard]] Frame getFrameB() const;
   [[nodiscard]] const Eigen::Isometry3d& getOffsetA() const;
   [[nodiscard]] const Eigen::Isometry3d& getOffsetB() const;
+  [[nodiscard]] LoopClosureRuntimePolicy getRuntimePolicy() const;
+  void setRuntimePolicy(const LoopClosureRuntimePolicy& policy);
 
   [[nodiscard]] entt::entity getEntity() const;
   [[nodiscard]] World* getWorld() const;

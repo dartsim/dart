@@ -326,6 +326,22 @@ TEST(World, LoopClosureTopology)
   EXPECT_TRUE(closure.getFrameB().isSameInstanceAs(ground));
   EXPECT_TRUE(closure.getOffsetA().isApprox(offsetA));
   EXPECT_TRUE(closure.getOffsetB().isApprox(offsetB));
+
+  auto runtimePolicy = closure.getRuntimePolicy();
+  EXPECT_TRUE(runtimePolicy.enabled);
+  EXPECT_EQ(
+      runtimePolicy.kinematics, sx::ClosureKinematicsPolicy::ResidualOnly);
+  EXPECT_EQ(runtimePolicy.dynamics, sx::ClosureDynamicsPolicy::ResidualOnly);
+
+  closure.setRuntimePolicy(
+      {.enabled = true,
+       .kinematics = sx::ClosureKinematicsPolicy::Project,
+       .dynamics = sx::ClosureDynamicsPolicy::Solve});
+  runtimePolicy = closure.getRuntimePolicy();
+  EXPECT_TRUE(runtimePolicy.enabled);
+  EXPECT_EQ(runtimePolicy.kinematics, sx::ClosureKinematicsPolicy::Project);
+  EXPECT_EQ(runtimePolicy.dynamics, sx::ClosureDynamicsPolicy::Solve);
+
   EXPECT_EQ(world.getLoopClosureCount(), 1u);
   EXPECT_TRUE(world.hasLoopClosure("closing_bar"));
 
@@ -390,6 +406,32 @@ TEST(World, LoopClosureRejectsInvalidTopology)
   EXPECT_THROW(
       world.addLoopClosure("after_bake", {.frameA = base, .frameB = link}),
       sx::InvalidOperationException);
+}
+
+TEST(World, LoopClosureRejectsInvalidRuntimePolicy)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto link = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
+  auto closure
+      = world.addLoopClosure("closure", {.frameA = base, .frameB = link});
+
+  EXPECT_THROW(
+      closure.setRuntimePolicy(
+          {.enabled = true,
+           .kinematics = static_cast<sx::ClosureKinematicsPolicy>(999),
+           .dynamics = sx::ClosureDynamicsPolicy::ResidualOnly}),
+      sx::InvalidArgumentException);
+
+  EXPECT_THROW(
+      closure.setRuntimePolicy(
+          {.enabled = true,
+           .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
+           .dynamics = static_cast<sx::ClosureDynamicsPolicy>(999)}),
+      sx::InvalidArgumentException);
 }
 
 // Test that rigid bodies can be driven kinematically through the public

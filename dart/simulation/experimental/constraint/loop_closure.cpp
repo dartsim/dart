@@ -53,6 +53,52 @@ const comps::LoopClosure& getLoopClosureComponent(const LoopClosure& closure)
       closure.getEntity());
 }
 
+comps::LoopClosure& getMutableLoopClosureComponent(const LoopClosure& closure)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !closure.isValid(),
+      InvalidArgumentException,
+      "Invalid loop closure handle");
+
+  return closure.getWorld()->getRegistry().get<comps::LoopClosure>(
+      closure.getEntity());
+}
+
+bool isValidClosureKinematicsPolicy(ClosureKinematicsPolicy policy)
+{
+  switch (policy) {
+    case ClosureKinematicsPolicy::ResidualOnly:
+    case ClosureKinematicsPolicy::Project:
+      return true;
+  }
+
+  return false;
+}
+
+bool isValidClosureDynamicsPolicy(ClosureDynamicsPolicy policy)
+{
+  switch (policy) {
+    case ClosureDynamicsPolicy::ResidualOnly:
+    case ClosureDynamicsPolicy::Solve:
+      return true;
+  }
+
+  return false;
+}
+
+void validateLoopClosureRuntimePolicy(const LoopClosureRuntimePolicy& policy)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValidClosureKinematicsPolicy(policy.kinematics),
+      InvalidArgumentException,
+      "LoopClosureRuntimePolicy.kinematics is invalid");
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValidClosureDynamicsPolicy(policy.dynamics),
+      InvalidArgumentException,
+      "LoopClosureRuntimePolicy.dynamics is invalid");
+}
+
 } // namespace
 
 //==============================================================================
@@ -99,6 +145,19 @@ const Eigen::Isometry3d& LoopClosure::getOffsetA() const
 const Eigen::Isometry3d& LoopClosure::getOffsetB() const
 {
   return getLoopClosureComponent(*this).offsetB;
+}
+
+//==============================================================================
+LoopClosureRuntimePolicy LoopClosure::getRuntimePolicy() const
+{
+  return getLoopClosureComponent(*this).runtimePolicy;
+}
+
+//==============================================================================
+void LoopClosure::setRuntimePolicy(const LoopClosureRuntimePolicy& policy)
+{
+  validateLoopClosureRuntimePolicy(policy);
+  getMutableLoopClosureComponent(*this).runtimePolicy = policy;
 }
 
 //==============================================================================
