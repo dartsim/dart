@@ -272,6 +272,23 @@ TEST(World, BakingWithMultibodies)
   EXPECT_EQ(robot2.getJointCount(), 2u);
 }
 
+// Test rigid body lookup by name returns first-class handles.
+TEST(World, RigidBodyLookupByName)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto body = world.addRigidBody("body");
+
+  auto found = world.getRigidBody("body");
+  ASSERT_TRUE(found.has_value());
+  EXPECT_TRUE(found->isValid());
+  EXPECT_TRUE(found->isSameInstanceAs(body));
+  EXPECT_EQ(found->getName(), "body");
+
+  EXPECT_FALSE(world.getRigidBody("missing").has_value());
+}
+
 // Test that simulation operations require simulation mode
 TEST(World, UpdateKinematicsRequiresSimulationMode)
 {

@@ -1015,11 +1015,33 @@ void defSimulationExperimentalModule(nb::module_& m)
           },
           nb::arg("name"))
       .def(
+          "getRigidBody",
+          [](sim::World& self, const std::string& name) -> nb::object {
+            auto body = self.getRigidBody(name);
+            if (!body.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*body, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
+      .def(
           "has_rigid_body",
           [](const sim::World& self, const std::string& name) {
             return self.hasRigidBody(name);
           },
           nb::arg("name"))
+      .def(
+          "get_rigid_body",
+          [](sim::World& self, const std::string& name) -> nb::object {
+            auto body = self.getRigidBody(name);
+            if (!body.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*body, nb::rv_policy::move);
+          },
+          nb::arg("name"),
+          nb::keep_alive<0, 1>())
       .def("getRigidBodyCount", &sim::World::getRigidBodyCount)
       .def("get_rigid_body_count", &sim::World::getRigidBodyCount)
       .def("isSimulationMode", &sim::World::isSimulationMode)

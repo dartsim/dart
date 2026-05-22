@@ -459,15 +459,12 @@ world.reset();
 world.step(100);
 ```
 
-For DART 7, `World::step()` and `World::step(count)` may enter simulation mode
-as a common-path convenience, while `World::updateKinematics()` remains an
-explicit simulation-mode synchronization hook. The current DART 7 C++ surface
-still requires explicit simulation-mode entry for stepping and kinematics
-updates, while dartpy currently auto-enters for `step(n)`. That mismatch is
-acceptable only during the experimental stage. DART 8 promotion must make the
-C++ and Python lifecycle rules identical: zero-count repeated stepping is a
-no-op, positive-count stepping validates/finalizes once before the first step,
-and topology mutation after finalization requires documented reset, rebuild, or
+For DART 7, `World::step()` and `World::step(count)` enter simulation mode as a
+common-path convenience, while `World::updateKinematics()` remains an explicit
+simulation-mode synchronization hook. DART 8 promotion must keep the C++ and
+Python lifecycle rules identical: zero-count repeated stepping is a no-op,
+positive-count stepping validates/finalizes once before the first step, and
+topology mutation after finalization requires documented reset, rebuild, or
 clear behavior. Repeated stepping should reuse the same executor and pipeline
 state when an overload exposes them.
 

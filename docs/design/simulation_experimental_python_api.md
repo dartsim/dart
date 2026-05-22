@@ -355,11 +355,11 @@ after validation; zero-count stepping is a no-op. Python and C++ should share
 the same DART 8 lifecycle semantics so users do not learn different rules by
 language.
 
-The current DART 7 binding already auto-enters simulation mode for
-`world.step(n=...)`, while the C++ experimental surface still requires
-explicit simulation-mode entry. That language difference should not survive
-DART 8 promotion. The official API should define the same validation,
-auto-finalization, zero-count, and topology-mutation rules in both languages.
+The current DART 7 C++ and Python common step paths both auto-enter simulation
+mode for positive-count stepping, while explicit kinematics synchronization
+still requires simulation mode. The official DART 8 API should define the same
+validation, auto-finalization, zero-count, and topology-mutation rules in both
+languages.
 
 ### Lifecycle And Finalization
 

@@ -388,6 +388,9 @@ class World:
     def hasRigidBody(self, name: str) -> bool:
         ...
 
+    def getRigidBody(self, name: str) -> RigidBody | None:
+        ...
+
     def getRigidBodyCount(self) -> int:
         ...
 
@@ -416,6 +419,9 @@ class World:
         ...
 
     def has_rigid_body(self, name: str) -> bool:
+        ...
+
+    def get_rigid_body(self, name: str) -> RigidBody | None:
         ...
 
     def get_rigid_body_count(self) -> int:

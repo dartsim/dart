@@ -445,6 +445,19 @@ RigidBody World::addRigidBody(
 }
 
 //==============================================================================
+std::optional<RigidBody> World::getRigidBody(std::string_view name)
+{
+  auto view = m_registry.view<comps::RigidBodyTag, comps::Name>();
+  for (auto entity : view) {
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name) {
+      return RigidBody(entity, this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
 bool World::hasRigidBody(std::string_view name) const
 {
   return hasEntityWithName<comps::RigidBodyTag>(m_registry, name);

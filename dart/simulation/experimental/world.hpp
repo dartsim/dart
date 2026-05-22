@@ -85,6 +85,7 @@ public:
   RigidBody addRigidBody(
       std::string_view name,
       const RigidBodyOptions& options = RigidBodyOptions{});
+  std::optional<RigidBody> getRigidBody(std::string_view name);
   bool hasRigidBody(std::string_view name) const;
   std::size_t getRigidBodyCount() const;
 

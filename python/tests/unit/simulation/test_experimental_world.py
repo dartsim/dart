@@ -221,6 +221,10 @@ def test_experimental_world_common_path_properties_and_step_count():
     assert box.name == "box"
     assert box.translation.tolist() == pytest.approx([1.0, 2.0, 3.0])
     assert box.quaternion.tolist() == pytest.approx([1.0, 0.0, 0.0, 0.0])
+    assert world.has_rigid_body("box")
+    assert world.get_rigid_body("box") == box
+    assert world.getRigidBody("box").name == "box"
+    assert world.get_rigid_body("missing") is None
 
     world.step(n=0)
     assert not world.is_simulation_mode

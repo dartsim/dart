@@ -450,6 +450,8 @@
   - Added first-class dartpy bindings for experimental `Frame`, `FreeFrame`,
     and `FixedFrame`, and kept descendant frame reads fresh after parent-frame
     local transform changes.
+  - Added experimental rigid-body lookup by name in C++ and dartpy so users can
+    retrieve first-class `RigidBody` handles without touching ECS storage.
   - Fixed experimental Taskflow executor paths to propagate compute-node
     exceptions instead of reporting graph execution success after failed tasks.
   - Fixed experimental compute profiling and rigid-body stepping edge cases for
