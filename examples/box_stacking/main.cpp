@@ -30,424 +30,410 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
-#include <dart/gui/include_im_gui.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/utils/All.hpp>
+#include <dart/simulation/world.hpp>
 
+#include <dart/constraint/constraint_solver.hpp>
+
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/inertia.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
+
+#include <dart/math/helpers.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 #include <dart/math/lcp/projection/pgs_solver.hpp>
+#include <dart/math/random.hpp>
 
-#include <dart/all.hpp>
+#include <Eigen/Geometry>
 
-#include <CLI/CLI.hpp>
-
+#include <algorithm>
+#include <iomanip>
 #include <iostream>
-#include <ranges>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
-using namespace dart;
+#include <cctype>
+#include <cstddef>
 
-//==============================================================================
-dynamics::SkeletonPtr createBox(const Eigen::Vector3d& position)
+namespace {
+
+enum class SolverType
 {
-  dynamics::SkeletonPtr boxSkel = dynamics::Skeleton::create("box");
+  Dantzig,
+  Pgs,
+};
 
-  // Give the floor a body
-  dynamics::BodyNodePtr boxBody
-      = boxSkel->createJointAndBodyNodePair<dynamics::FreeJoint>(nullptr)
-            .second;
+struct BoxStackingConfig
+{
+  SolverType solver = SolverType::Dantzig;
+};
 
-  // Give the body a shape
-  double boxWidth = 1.0;
-  double boxDepth = 1.0;
-  double boxHeight = 0.5;
-  auto boxShape = std::make_shared<dynamics::BoxShape>(
-      Eigen::Vector3d(boxWidth, boxDepth, boxHeight));
-  dynamics::ShapeNode* shapeNode = boxBody->createShapeNodeWith<
-      dynamics::VisualAspect,
-      dynamics::CollisionAspect,
-      dynamics::DynamicsAspect>(boxShape);
+std::string toLowerAscii(std::string_view value)
+{
+  std::string lowered(value);
+  std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](char c) {
+    return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  });
+  return lowered;
+}
+
+std::optional<std::string_view> getOptionValue(
+    std::string_view argument,
+    std::string_view option,
+    int& index,
+    int argc,
+    char* argv[])
+{
+  if (argument == option) {
+    if (index + 1 >= argc) {
+      throw std::runtime_error("Missing value for " + std::string(option));
+    }
+    return std::string_view(argv[++index]);
+  }
+
+  const std::string prefix = std::string(option) + "=";
+  if (argument.starts_with(prefix)) {
+    return argument.substr(prefix.size());
+  }
+
+  return std::nullopt;
+}
+
+std::optional<SolverType> parseSolver(std::string_view value)
+{
+  const std::string lowered = toLowerAscii(value);
+  if (lowered == "dantzig") {
+    return SolverType::Dantzig;
+  }
+  if (lowered == "pgs" || lowered == "projected-gauss-seidel") {
+    return SolverType::Pgs;
+  }
+  return std::nullopt;
+}
+
+std::string solverName(SolverType solver)
+{
+  return solver == SolverType::Pgs ? "pgs" : "dantzig";
+}
+
+void printBoxStackingUsage(const char* executable)
+{
+  std::cout << "Usage: " << executable << " [--solver dantzig|pgs]\n"
+            << "       [common dart::gui flags such as --headless, --frames,\n"
+            << "        --screenshot, --out, --width, --height, --gui-scale]\n";
+}
+
+enum class ParseResult
+{
+  Ok,
+  Help,
+};
+
+ParseResult parseBoxStackingConfig(
+    int argc, char* argv[], BoxStackingConfig& config)
+{
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view argument(argv[i] == nullptr ? "" : argv[i]);
+    if (argument == "--help" || argument == "-h") {
+      printBoxStackingUsage(argv[0]);
+      return ParseResult::Help;
+    }
+    if (auto value = getOptionValue(argument, "--solver", i, argc, argv)) {
+      if (auto solver = parseSolver(*value)) {
+        config.solver = *solver;
+      } else {
+        throw std::runtime_error(
+            "Unknown --solver value: " + std::string(*value));
+      }
+    }
+  }
+
+  return ParseResult::Ok;
+}
+
+void applyLcpSolver(
+    dart::simulation::World* world,
+    SolverType solverType,
+    bool splitImpulseEnabled)
+{
+  auto* solver = world == nullptr ? nullptr : world->getConstraintSolver();
+  if (solver == nullptr) {
+    return;
+  }
+
+  if (solverType == SolverType::Pgs) {
+    solver->setLcpSolver(std::make_shared<dart::math::PgsSolver>());
+    solver->setSecondaryLcpSolver(nullptr);
+  } else {
+    solver->setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
+    solver->setSecondaryLcpSolver(std::make_shared<dart::math::PgsSolver>());
+  }
+  solver->setSplitImpulseEnabled(splitImpulseEnabled);
+}
+
+dart::dynamics::SkeletonPtr createBox(
+    std::size_t index, const Eigen::Vector3d& position)
+{
+  auto skeleton
+      = dart::dynamics::Skeleton::create("stack_box_" + std::to_string(index));
+  auto jointAndBody
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto* body = jointAndBody.second;
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = position;
+  body->getParentJoint()->setTransformFromParentBodyNode(transform);
+
+  const auto shape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(1.0, 1.0, 0.5));
+  auto* shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
   shapeNode->getVisualAspect()->setColor(
       dart::math::Random::uniform<Eigen::Vector3d>(0.0, 1.0));
 
-  // Put the body into position
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = position;
-  boxBody->getParentJoint()->setTransformFromParentBodyNode(tf);
+  constexpr double mass = 1.0;
+  body->setInertia(
+      dart::dynamics::Inertia(
+          mass, Eigen::Vector3d::Zero(), shape->computeInertia(mass)));
 
-  return boxSkel;
+  return skeleton;
 }
 
-//==============================================================================
-std::vector<dynamics::SkeletonPtr> createBoxStack(
-    std::size_t numBoxes, double heightFromGround = 0.5)
+dart::dynamics::SkeletonPtr createFloor()
 {
-  std::vector<dynamics::SkeletonPtr> boxSkels(numBoxes);
+  auto floor = dart::dynamics::Skeleton::create("floor");
+  auto jointAndBody
+      = floor->createJointAndBodyNodePair<dart::dynamics::WeldJoint>();
+  auto* joint = jointAndBody.first;
+  auto* body = jointAndBody.second;
 
-  for (const auto i : std::views::iota(std::size_t{0}, numBoxes)) {
-    boxSkels[i] = createBox(
-        Eigen::Vector3d(0.0, 0.0, heightFromGround + 0.25 + i * 0.5));
-  }
+  constexpr double floorHeight = 0.01;
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(0.0, 0.0, -0.5 * floorHeight);
+  joint->setTransformFromParentBodyNode(transform);
 
-  return boxSkels;
-}
-
-//==============================================================================
-dynamics::SkeletonPtr createFloor()
-{
-  dynamics::SkeletonPtr floor = dynamics::Skeleton::create("floor");
-
-  // Give the floor a body
-  dynamics::BodyNodePtr body
-      = floor->createJointAndBodyNodePair<dynamics::WeldJoint>(nullptr).second;
-
-  // Give the body a shape
-  double floorWidth = 10.0;
-  double floorHeight = 0.01;
-  auto box = std::make_shared<dynamics::BoxShape>(
-      Eigen::Vector3d(floorWidth, floorWidth, floorHeight));
-  dynamics::ShapeNode* shapeNode = body->createShapeNodeWith<
-      dynamics::VisualAspect,
-      dynamics::CollisionAspect,
-      dynamics::DynamicsAspect>(box);
+  const auto shape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(10.0, 10.0, floorHeight));
+  auto* shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
   shapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
-
-  // Put the body into position
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, -floorHeight / 2.0);
-  body->getParentJoint()->setTransformFromParentBodyNode(tf);
 
   return floor;
 }
 
-//==============================================================================
-class CustomWorldNode : public dart::gui::RealTimeWorldNode
+dart::simulation::WorldPtr createBoxStackingWorld(
+    const BoxStackingConfig& config)
 {
-public:
-  explicit CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
-    : dart::gui::RealTimeWorldNode(world)
-  {
-    // Set up the customized WorldNode
-  }
-
-  void customPreRefresh()
-  {
-    // Use this function to execute custom code before each time that the
-    // window is rendered. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void customPostRefresh()
-  {
-    // Use this function to execute custom code after each time that the
-    // window is rendered. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void customPreStep()
-  {
-    // Use this function to execute custom code before each simulation time
-    // step is performed. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void customPostStep()
-  {
-    // Use this function to execute custom code after each simulation time
-    // step is performed. This function can be deleted if it does not need
-    // to be used.
-  }
-};
-
-//==============================================================================
-class CustomEventHandler : public osgGA::GUIEventHandler
-{
-public:
-  CustomEventHandler(/*Pass in any necessary arguments*/)
-  {
-    // Set up the customized event handler
-  }
-
-  virtual bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
-  {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
-      if (ea.getKey() == 'q') {
-        std::cout << "Lowercase q pressed" << std::endl;
-        return true;
-      } else if (ea.getKey() == 'Q') {
-        std::cout << "Capital Q pressed" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
-        std::cout << "Left arrow key pressed" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
-        std::cout << "Right arrow key pressed" << std::endl;
-        return true;
-      }
-    } else if (ea.getEventType() == osgGA::GUIEventAdapter::KEYUP) {
-      if (ea.getKey() == 'q') {
-        std::cout << "Lowercase q released" << std::endl;
-        return true;
-      } else if (ea.getKey() == 'Q') {
-        std::cout << "Capital Q released" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
-        std::cout << "Left arrow key released" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
-        std::cout << "Right arrow key released" << std::endl;
-        return true;
-      }
-    }
-
-    // The return value should be 'true' if the input has been fully handled
-    // and should not be visible to any remaining event handlers. It should be
-    // false if the input has not been fully handled and should be viewed by
-    // any remaining event handlers.
-    return false;
-  }
-};
-
-//==============================================================================
-class TestWidget : public dart::gui::ImGuiWidget
-{
-public:
-  /// Constructor
-  TestWidget(dart::gui::ImGuiViewer* viewer, dart::simulation::WorldPtr world)
-    : mViewer(viewer),
-      mWorld(std::move(world)),
-      mGuiGravity(true),
-      mGravity(true),
-      mGuiHeadlights(true),
-      mSplitImpulseEnabled(false),
-      mSolverType(-1)
-  {
-    if (auto* solver = mWorld->getConstraintSolver()) {
-      mSplitImpulseEnabled = solver->isSplitImpulseEnabled();
-    }
-  }
-
-  // Documentation inherited
-  void render() override
-  {
-    ImGui::SetNextWindowPos(ImVec2(10, 20));
-    ImGui::SetNextWindowSize(ImVec2(240, 320));
-    ImGui::SetNextWindowBgAlpha(0.5f);
-    if (!ImGui::Begin(
-            "Box Stacking",
-            nullptr,
-            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar
-                | ImGuiWindowFlags_HorizontalScrollbar)) {
-      // Early out if the window is collapsed, as an optimization.
-      ImGui::End();
-      return;
-    }
-
-    // Menu
-    if (ImGui::BeginMenuBar()) {
-      if (ImGui::BeginMenu("Menu")) {
-        if (ImGui::MenuItem("Exit")) {
-          mViewer->setDone(true);
-        }
-        ImGui::EndMenu();
-      }
-      if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About DART")) {
-          mViewer->showAbout();
-        }
-        ImGui::EndMenu();
-      }
-      ImGui::EndMenuBar();
-    }
-
-    ImGui::Text("Box stacking demo");
-    ImGui::Spacing();
-
-    ImGui::Separator();
-    ImGui::Text(
-        "%.3f ms/frame (%.1f FPS)",
-        1000.0f / ImGui::GetIO().Framerate,
-        ImGui::GetIO().Framerate);
-    ImGui::Spacing();
-
-    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
-      int e = mViewer->isSimulating() ? 0 : 1;
-      if (mViewer->isAllowingSimulation()) {
-        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating()) {
-          mViewer->simulate(true);
-        }
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating()) {
-          mViewer->simulate(false);
-        }
-      }
-
-      ImGui::Text("LCP solver:");
-
-      static int solverType = 0;
-      // ImGui::RadioButton("SI", &solverType, 0);
-      ImGui::RadioButton("Dantzig", &solverType, 0);
-      ImGui::SameLine();
-      ImGui::RadioButton("Dantzig", &solverType, 1);
-      ImGui::SameLine();
-      ImGui::RadioButton("PGS", &solverType, 2);
-      setLcpSolver(solverType);
-
-      if (ImGui::Checkbox("Split impulse", &mSplitImpulseEnabled)) {
-        setSplitImpulse(mSplitImpulseEnabled);
-      }
-
-      ImGui::Text("Time: %.3f", mWorld->getTime());
-    }
-
-    if (ImGui::CollapsingHeader(
-            "World Options", ImGuiTreeNodeFlags_DefaultOpen)) {
-      // Gravity
-      ImGui::Checkbox("Gravity On/Off", &mGuiGravity);
-      setGravity(mGuiGravity);
-
-      ImGui::Spacing();
-
-      // Headlights
-      mGuiHeadlights = mViewer->checkHeadlights();
-      ImGui::Checkbox("Headlights On/Off", &mGuiHeadlights);
-      mViewer->switchHeadlights(mGuiHeadlights);
-    }
-
-    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
-      osg::Vec3d eye;
-      osg::Vec3d center;
-      osg::Vec3d up;
-      mViewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
-
-      ImGui::Text("Eye   : (%.2f, %.2f, %.2f)", eye.x(), eye.y(), eye.z());
-      ImGui::Text(
-          "Center: (%.2f, %.2f, %.2f)", center.x(), center.y(), center.z());
-      ImGui::Text("Up    : (%.2f, %.2f, %.2f)", up.x(), up.y(), up.z());
-    }
-
-    if (ImGui::CollapsingHeader("Help")) {
-      ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
-      ImGui::Text("User Guide:\n");
-      ImGui::Text("%s", mViewer->getInstructions().c_str());
-      ImGui::PopTextWrapPos();
-    }
-
-    ImGui::End();
-  }
-
-protected:
-  void setLcpSolver(int solverType)
-  {
-    if (solverType == mSolverType) {
-      return;
-    }
-
-    if (solverType == 0) {
-      auto lcpSolver = std::make_shared<math::DantzigSolver>();
-      auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
-      solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
-      mWorld->setConstraintSolver(std::move(solver));
-    } else if (solverType == 1) {
-      auto lcpSolver = std::make_shared<math::DantzigSolver>();
-      auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
-      solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
-      mWorld->setConstraintSolver(std::move(solver));
-    } else if (solverType == 2) {
-      auto lcpSolver = std::make_shared<math::PgsSolver>();
-      auto solver = std::make_unique<constraint::ConstraintSolver>(lcpSolver);
-      solver->setSplitImpulseEnabled(mSplitImpulseEnabled);
-      mWorld->setConstraintSolver(std::move(solver));
-    } else {
-      DART_WARN("Unsupported boxed-LCP solver selected: {}", solverType);
-    }
-
-    mSolverType = solverType;
-  }
-
-  void setGravity(bool gravity)
-  {
-    if (mGravity == gravity) {
-      return;
-    }
-
-    mGravity = gravity;
-
-    if (mGravity) {
-      mWorld->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
-    } else {
-      mWorld->setGravity(Eigen::Vector3d::Zero());
-    }
-  }
-
-  void setSplitImpulse(bool enabled)
-  {
-    auto* solver = mWorld->getConstraintSolver();
-    if (!solver) {
-      return;
-    }
-
-    solver->setSplitImpulseEnabled(enabled);
-  }
-
-  ::osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
-  dart::simulation::WorldPtr mWorld;
-  bool mGuiGravity;
-  bool mGravity;
-  bool mGuiHeadlights;
-  bool mSplitImpulseEnabled;
-  int mSolverType;
-};
-
-//==============================================================================
-int main(int argc, char* argv[])
-{
-  CLI::App app("Box stacking example");
-  double guiScale = 1.0;
-  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
-      ->check(CLI::PositiveNumber);
-  CLI11_PARSE(app, argc, argv);
-
-  simulation::WorldPtr world = simulation::World::create();
+  auto world = dart::simulation::World::create("box_stacking");
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->addSkeleton(createFloor());
 
-  auto boxSkels = createBoxStack(5);
-  for (const auto& boxSkel : boxSkels) {
-    world->addSkeleton(boxSkel);
+  constexpr int numBoxes = 5;
+  for (int i = 0; i < numBoxes; ++i) {
+    world->addSkeleton(createBox(
+        static_cast<std::size_t>(i),
+        Eigen::Vector3d(0.0, 0.0, 0.5 + 0.25 + i * 0.5)));
   }
 
-  // Wrap a WorldNode around it
-  osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
+  applyLcpSolver(world.get(), config.solver, false);
+  return world;
+}
 
-  // Create a Viewer and set it up with the WorldNode
-  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
-  viewer->setImGuiScale(static_cast<float>(guiScale));
-  viewer->getImGuiHandler()->setFontScale(static_cast<float>(guiScale));
-  viewer->addWorldNode(node);
+dart::gui::RunOptions makeBoxStackingRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 800;
+  options.height = 640;
+  return options;
+}
 
-  // Add control widget for atlas
-  viewer->getImGuiHandler()->addWidget(
-      std::make_shared<TestWidget>(viewer, world));
+dart::gui::OrbitCamera makeBoxStackingCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 2.0);
+  camera.yaw = 0.7853981633974483;
+  camera.pitch = 0.39121759480759044;
+  camera.distance = 18.35755975068582;
+  return camera;
+}
 
-  // Pass in the custom event handler
-  viewer->addEventHandler(new CustomEventHandler);
+std::string formatCameraVector(const Eigen::Vector3d& value)
+{
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(2) << "(" << value.x() << ", "
+         << value.y() << ", " << value.z() << ")";
+  return stream.str();
+}
 
-  // Set up the window to be 800x640
-  viewer->setUpViewInWindow(0, 0, 800, 640);
+dart::gui::KeyboardAction makePrintAction(
+    std::string label,
+    dart::gui::KeyboardShortcut shortcut,
+    std::string message,
+    dart::gui::KeyboardActionTrigger trigger
+    = dart::gui::KeyboardActionTrigger::Press)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = shortcut;
+  action.trigger = trigger;
+  action.callback
+      = [message = std::move(message)](dart::gui::KeyboardActionContext&) {
+          std::cout << message << std::endl;
+        };
+  return action;
+}
 
-  // Adjust the viewpoint of the Viewer
-  viewer->getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(12.00f, 12.00f, 9.00f),
-      ::osg::Vec3(0.00f, 0.00f, 2.00f),
-      ::osg::Vec3(0.00f, 0.00f, 1.00f));
+std::vector<dart::gui::KeyboardAction> createBoxStackingKeyboardActions()
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makePrintAction(
+      "Lowercase q pressed",
+      dart::gui::KeyboardShortcut::characterKey('q'),
+      "Lowercase q pressed"));
+  actions.push_back(makePrintAction(
+      "Capital Q pressed",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q pressed"));
+  actions.push_back(makePrintAction(
+      "Left arrow key pressed",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
+      "Left arrow key pressed"));
+  actions.push_back(makePrintAction(
+      "Right arrow key pressed",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
+      "Right arrow key pressed"));
+  actions.push_back(makePrintAction(
+      "Lowercase q released",
+      dart::gui::KeyboardShortcut::characterKey('q'),
+      "Lowercase q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Capital Q released",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Left arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
+      "Left arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Right arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
+      "Right arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
+  return actions;
+}
 
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer->setCameraManipulator(viewer->getCameraManipulator());
+dart::gui::Panel createControlsPanel(const BoxStackingConfig& config)
+{
+  bool gravityEnabled = true;
+  bool splitImpulseEnabled = false;
+  SolverType solverType = config.solver;
 
-  // Begin running the application loop
-  viewer->run();
+  dart::gui::Panel controls;
+  controls.title = "Box Stacking";
+  controls.buildWithContext = [gravityEnabled, splitImpulseEnabled, solverType](
+                                  dart::gui::PanelBuilder& panel,
+                                  dart::gui::PanelContext& context) mutable {
+    panel.text("Box stacking demo");
+    panel.text("Stacked rigid-body contact demo");
+    panel.separator();
+    if (context.lifecycle != nullptr) {
+      if (panel.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      panel.sameLine();
+      if (panel.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
 
-  return 0;
+    if (context.world != nullptr) {
+      if (panel.checkbox("Gravity On/Off", gravityEnabled)) {
+        context.world->setGravity(
+            gravityEnabled ? Eigen::Vector3d(0.0, 0.0, -9.81)
+                           : Eigen::Vector3d::Zero());
+      }
+      panel.text("LCP solver:");
+      panel.text("selected: " + solverName(solverType));
+      if (panel.button(
+              solverType == SolverType::Dantzig ? "Dantzig (selected)"
+                                                : "Dantzig")) {
+        solverType = SolverType::Dantzig;
+        applyLcpSolver(context.world, solverType, splitImpulseEnabled);
+      }
+      panel.sameLine();
+      if (panel.button(
+              solverType == SolverType::Pgs ? "PGS (selected)" : "PGS")) {
+        solverType = SolverType::Pgs;
+        applyLcpSolver(context.world, solverType, splitImpulseEnabled);
+      }
+      if (auto* solver = context.world->getConstraintSolver()) {
+        if (panel.checkbox("Split impulse", splitImpulseEnabled)) {
+          solver->setSplitImpulseEnabled(splitImpulseEnabled);
+        }
+      }
+      if (context.lighting.headlightsEnabled != nullptr) {
+        bool headlights = *context.lighting.headlightsEnabled;
+        if (panel.checkbox("Headlights On/Off", headlights)) {
+          *context.lighting.headlightsEnabled = headlights;
+        }
+      }
+    }
+
+    panel.text("Time: " + std::to_string(context.simulationTime));
+    panel.text("Contacts: " + std::to_string(context.contactCount));
+    panel.separator();
+    panel.text("View");
+    panel.text("Eye   : " + formatCameraVector(context.camera.eye));
+    panel.text("Center: " + formatCameraVector(context.camera.target));
+    panel.text("Up    : " + formatCameraVector(context.camera.up));
+    panel.separator();
+    panel.text("User Guide:");
+    panel.text("Space toggles simulation; n steps once while paused.");
+    panel.text("Left drag orbits, right/middle drag pans, wheel zooms.");
+    panel.text("q, Q, Left, and Right print keydown/release messages.");
+    panel.text("Use --gui-scale to scale this panel.");
+  };
+  return controls;
+}
+
+} // namespace
+
+int main(int argc, char* argv[])
+{
+  try {
+    BoxStackingConfig config;
+    if (parseBoxStackingConfig(argc, argv, config) == ParseResult::Help) {
+      return 0;
+    }
+
+    dart::gui::ApplicationOptions options;
+    options.world = createBoxStackingWorld(config);
+    options.runDefaults = makeBoxStackingRunDefaults();
+    options.camera = makeBoxStackingCamera();
+    options.panels.push_back(createControlsPanel(config));
+    options.keyboardActions = createBoxStackingKeyboardActions();
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "box_stacking: " << e.what() << "\n";
+    return 1;
+  }
 }

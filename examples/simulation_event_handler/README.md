@@ -1,29 +1,30 @@
 # Simulation Event Handler Example
 
-## Summary
+This example demonstrates `dart::gui` keyboard actions, panels, world-owned
+sensors, and DART-owned force-arrow visuals for a simple rigid-body scene.
 
-- Goal: provide a reusable event handler for simulation control and forces.
-- Concepts/APIs: `gui::Viewer` input handling, force/torque visualization.
-- Expected output: a viewer with controllable rigid bodies and force arrows.
-- Controls: space toggles sim; S steps; R resets; Tab cycles bodies; arrows/QWE
-  apply forces/torques; V toggles force arrows.
+Run it with:
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+```bash
+pixi run ex simulation_event_handler
+```
 
-## Build Instructions
+Headless capture:
 
-From this directory:
+```bash
+pixi run ex simulation_event_handler --headless --frames 2 --screenshot /tmp/simulation_event_handler.ppm
+```
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+Controls:
 
-## Execute Instructions
-
-Launch the executable from the build directory above:
-
-    $ ./{generated_executable}
-
-Follow the instructions detailed in the console.
+- Space: play/pause through the shared viewer control
+- `s`: step one frame
+- `r`: reset the simulation
+- Tab / Backspace: select the next or previous rigid body
+- Arrow keys and `u`/`d`: apply forces to the selected body
+- `q`/`w`/`e` and `a`/`z`/`c`: apply positive and negative torques
+- `=` / `-`: adjust force and torque magnitudes
+- `.` / `,`: adjust the simulation timestep
+- `v`: toggle force-arrow visualization
+- `i`: print simulation state
+- `h` / `?`: print controls

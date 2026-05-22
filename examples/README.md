@@ -2,86 +2,38 @@
 
 ## Overview
 
-- Examples live flat under `examples/` for simpler discovery and tooling.
-- Category order is defined below; directory names stay short and stable.
-- Tutorials remain in `tutorials/`.
+- Maintained examples live flat under `examples/` for simpler discovery and
+  tooling.
+- Filament is the maintained visualization implementation behind `dart::gui`.
+  Legacy OpenSceneGraph example sources were removed; common historical GUI
+  example names are restored as thin `dart::gui` launchers where a replacement
+  scene exists.
+- The application-level viewer is `apps/dartsim/`, built as the `dartsim`
+  executable. It is intentionally not listed as an educational example.
+- Legacy OpenSceneGraph C++ tutorials were removed from `tutorials/`.
 
 ## Categories (Ordered)
 
 ### 00 Getting Started
 
-- `hello_world`
-- `simple_frames`
-
-### 01 Rigid Bodies and Frames
-
-- `boxes`
-- `hardcoded_design`
-- `rigid_cubes`
-
-### 02 Joints and Constraints
-
-- `coupler_constraint`
-- `free_joint_cases`
-- `human_joint_limits`
-- `joint_constraints`
-- `mimic_pendulums`
-- `rigid_chain`
-- `rigid_loop`
-
-### 03 Collisions and Contacts
-
-- `box_stacking`
-- `capsule_ground_contact`
-- `heightmap`
-- `lcp_physics`
-- `rigid_shapes`
-
-### 04 Control and IK
-
-- `atlas_puppet`
-- `atlas_simbicon`
-- `biped_stand`
-- `hubo_puppet`
-- `operational_space_control`
-- `vehicle`
-- `wam_ikfast`
-
-### 05 IO and Models
-
-- `fetch`
-- `g1_puppet`
 - `unified_loading`
 
-### 06 Soft and Hybrid
+### 01 Visualization and Interaction
 
-- `hybrid_dynamics`
-- `mixed_chain`
-- `soft_bodies`
-
-### 07 Visualization and Interaction
-
-- `add_delete_skels`
+- `hello_world`
+- `rigid_cubes`
 - `drag_and_drop`
-- `empty`
-- `filament_gui`
-- `gui_scene_diagnostics`
 - `imgui`
-- `polyhedron_visual`
-- `raylib`
-- `simulation_event_handler`
-- `tinkertoy`
+- `gui_scene_diagnostics`
 
-### 08 Performance and Scaling
+### 02 Performance and Scaling
 
 - `headless_simulation`
 - `speed_test`
 
-### 09 Integration and Tools
+### 03 Integration and Tools
 
 - `csv_logger`
-- `point_cloud` (requires OctoMap)
-- `rerun`
 
 ## Build Each Example
 
@@ -97,10 +49,10 @@ For C++ examples, the generic in-tree runner is:
 pixi run ex <example-target>
 ```
 
-For example, `pixi run ex hello_world` builds and runs `hello_world`. Examples
-with extra CMake requirements, such as `raylib` and `filament_gui`, declare
-those requirements in `scripts/run_cpp_example.py` so the same command shape can
-remain stable as more examples are added.
+For example, `pixi run ex csv_logger` builds and runs `csv_logger`. The
+`dartsim` application and GUI examples with extra CMake requirements, such as
+`hello_world`, `boxes`, `rigid_chain`, `atlas_simbicon`, and `heightmap`,
+declare those requirements in `scripts/run_cpp_example.py`.
 
 ## Build Examples as One Project
 
@@ -125,6 +77,6 @@ From the workspace directory:
 
 Launch the each executable from the build directory above (e.g.,):
 
-    $ ./hello_world
+    $ ./csv_logger
 
 Follow the instructions detailed in the console.

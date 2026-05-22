@@ -30,92 +30,149 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/all.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <osgShadow/ShadowMap>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/inertia.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
-using namespace dart;
+#include <dart/common/profile.hpp>
 
-int main()
+#include <Eigen/Geometry>
+
+#include <iostream>
+#include <memory>
+
+namespace {
+
+constexpr const char* kHelloWorldInstructions
+    = "Press space to start free falling the box.";
+
+dart::dynamics::SkeletonPtr createFallingBox()
+{
+  auto skeleton = dart::dynamics::Skeleton::create("falling_box");
+  auto jointAndBody
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto* body = jointAndBody.second;
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+  transform.linear() = (Eigen::AngleAxisd(0.35, Eigen::Vector3d::UnitX())
+                        * Eigen::AngleAxisd(-0.45, Eigen::Vector3d::UnitY())
+                        * Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()))
+                           .toRotationMatrix();
+  body->getParentJoint()->setTransformFromParentBodyNode(transform);
+
+  const auto shape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(0.3));
+  auto* shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.1, 0.2, 0.9));
+
+  constexpr double mass = 1.0;
+  body->setInertia(
+      dart::dynamics::Inertia(
+          mass, Eigen::Vector3d::Zero(), shape->computeInertia(mass)));
+
+  return skeleton;
+}
+
+dart::dynamics::SkeletonPtr createGround()
+{
+  auto ground = dart::dynamics::Skeleton::create("ground");
+  auto jointAndBody
+      = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>();
+  auto* joint = jointAndBody.first;
+  auto* body = jointAndBody.second;
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(0.0, 0.0, -0.05);
+  joint->setTransformFromParentBodyNode(transform);
+
+  const auto shape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d(10.0, 10.0, 0.1));
+  auto* shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.8, 0.8, 0.8));
+
+  return ground;
+}
+
+dart::simulation::WorldPtr createHelloWorld()
+{
+  auto world = dart::simulation::World::create("hello_world");
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->addSkeleton(createFallingBox());
+  world->addSkeleton(createGround());
+  return world;
+}
+
+dart::gui::Panel createHelloWorldPanel()
+{
+  dart::gui::Panel panel;
+  panel.title = "Hello World";
+  panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
+                              dart::gui::PanelContext& context) {
+    builder.text(kHelloWorldInstructions);
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("contacts: " + std::to_string(context.contactCount));
+  };
+  return panel;
+}
+
+dart::gui::RunOptions makeHelloWorldRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makeHelloWorldCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.50);
+  camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94);
+  camera.yaw = 0.8848934155088675;
+  camera.pitch = 0.27389034471171636;
+  camera.distance = 4.214747916542578;
+  return camera;
+}
+
+} // namespace
+
+int main(int argc, char* argv[])
 {
   DART_PROFILE_SCOPED_N("hello_world_main");
+  std::cout << kHelloWorldInstructions << std::endl;
 
-  // Create a box-shaped rigid body
-  auto skeleton = dynamics::Skeleton::create();
-  auto jointAndBody
-      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
-  auto body = jointAndBody.second;
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() << 0, 0, 1;
-  tf.linear() = math::expMapRot(Eigen::Vector3d::Random());
-  body->getParentJoint()->setTransformFromParentBodyNode(tf);
-  auto shapeNode = body->createShapeNodeWith<
-      dynamics::VisualAspect,
-      dynamics::CollisionAspect,
-      dynamics::DynamicsAspect>(
-      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(0.3, 0.3, 0.3)));
-  body->setInertia(
-      dynamics::Inertia(
-          1,
-          Eigen::Vector3d::Zero(),
-          shapeNode->getShape()->computeInertia(1.0)));
-  shapeNode->getVisualAspect()->setColor(dart::Color::Blue());
-
-  // Create ground
-  auto ground = dynamics::Skeleton::create("ground");
-  auto groundBody
-      = ground->createJointAndBodyNodePair<dynamics::WeldJoint>().second;
-  auto groundShapeNode = groundBody->createShapeNodeWith<
-      dynamics::VisualAspect,
-      dynamics::CollisionAspect,
-      dynamics::DynamicsAspect>(
-      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.1)));
-  groundShapeNode->getVisualAspect()->setColor(dart::Color::LightGray());
-
-  // Create a world and add the rigid body and ground to the world
-  auto world = simulation::World::create();
-  world->addSkeleton(skeleton);
-  world->addSkeleton(ground);
-
-  // Wrap a WorldNode around it
-  ::osg::ref_ptr<gui::RealTimeWorldNode> node
-      = new gui::RealTimeWorldNode(world);
-
-  // Create a Viewer and set it up with the WorldNode
-  auto viewer = gui::Viewer();
-  viewer.addWorldNode(node);
-
-  // Enable shadow
-  auto shadow = dart::gui::WorldNode::createDefaultShadowTechnique(&viewer);
-  if (auto sm = dynamic_cast<::osgShadow::ShadowMap*>(shadow.get())) {
-    auto mapResolution = static_cast<short>(std::pow(2, 12));
-    sm->setTextureSize(::osg::Vec2s(mapResolution, mapResolution));
-  }
-  node->setShadowTechnique(shadow);
-
-  viewer.addInstructionText("Press space to start free falling the box.\n");
-  std::cout << viewer.getInstructions() << std::endl;
-
-  // Set up the window to be 640x480
-  viewer.setUpViewInWindow(0, 0, 640, 480);
-
-  // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.57f, 3.14f, 1.64f),
-      ::osg::Vec3(0.00f, 0.00f, 0.50f),
-      ::osg::Vec3(-0.24f, -0.25f, 0.94f));
-
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  // Begin running the application loop
-  viewer.run();
-
-  // Emit a text profiling summary on exit.
+  dart::gui::ApplicationOptions options;
+  options.world = createHelloWorld();
+  options.panels.push_back(createHelloWorldPanel());
+  options.runDefaults = makeHelloWorldRunDefaults();
+  options.camera = makeHelloWorldCamera();
+  const int result = dart::gui::runApplication(argc, argv, options);
   DART_PROFILE_TEXT_DUMP();
-
-  return 0;
+  return result;
 }

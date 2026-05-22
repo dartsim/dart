@@ -480,84 +480,13 @@ jobs:
           mkdir -p /tmp/headless_output
           xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" \
             ./build/default/cpp/Release/bin/rigid_cubes \
-            --headless --frames 10 --out /tmp/headless_output
-          echo "Captured frames:"
+            --headless --frames 10 \
+            --screenshot /tmp/headless_output/rigid_cubes.ppm
+          echo "Captured image:"
           ls -la /tmp/headless_output/
-          test -f /tmp/headless_output/frame_000000.png
-          test -f /tmp/headless_output/frame_000008.png
-          file /tmp/headless_output/frame_000000.png | grep -q "PNG image data"
+          test -f /tmp/headless_output/rigid_cubes.ppm
+          test "$(head -c 2 /tmp/headless_output/rigid_cubes.ppm)" = "P6"
           echo "Headless rendering test passed!"
-
-  vsg-rendering:
-    needs: changes
-    if: >-
-      needs.changes.outputs.full_ci == 'true' &&
-      (github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
-      needs.changes.outputs.code == 'true')
-    name: VSG Visualization Tests
-    runs-on: ubuntu-latest
-    env:
-      DART_PARALLEL_JOBS: 8
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup pixi (CI)
-        uses: ./.github/actions/setup-pixi-ci
-        with:
-          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
-
-      - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
-        with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev libvulkan-dev vulkan-tools mesa-vulkan-drivers
-          version: 4
-
-      - name: Configure environment for compiler cache
-        uses: ./.github/actions/configure-compiler-cache
-
-      - name: Build with VSG enabled
-        run: |
-          DART_VERBOSE=ON \
-          BUILD_TYPE=Release \
-          DART_BUILD_GUI_VSG_OVERRIDE=ON \
-          pixi run build
-          pixi run cmake --build build/default/cpp/Release \
-            --parallel ${DART_PARALLEL_JOBS:-$(nproc)} \
-            --target UNIT_gui_vsg_geometry_builders \
-            --target UNIT_gui_vsg_debug_draw \
-            --target UNIT_gui_vsg_simple_viewer \
-            --target UNIT_gui_vsg_collision_scene_builder
-
-      - name: Run VSG unit tests
-        run: |
-          pixi run -- ctest --test-dir build/default/cpp/Release \
-            -R "UNIT_gui_vsg" \
-            --output-on-failure \
-            -j$(nproc)
-
-      - name: Run collision_viz headless test
-        run: |
-          if [ -x ./build/default/cpp/Release/bin/collision_viz ]; then
-            ./build/default/cpp/Release/bin/collision_viz --headless -o /tmp/collision_viz.ppm || \
-              echo "collision_viz headless may require GPU - skipping"
-            if [ -f /tmp/collision_viz.ppm ]; then
-              echo "collision_viz headless test passed!"
-              file /tmp/collision_viz.ppm
-            fi
-          else
-            echo "collision_viz not built - skipping"
-          fi
-
-      - name: Run collision_sandbox headless
-        run: |
-          if [ -x ./build/default/cpp/Release/bin/collision_sandbox ]; then
-            ./build/default/cpp/Release/bin/collision_sandbox --headless --frames 10 || \
-              ./build/default/cpp/Release/bin/collision_sandbox --headless
-          else
-            echo "collision_sandbox not built - skipping"
-          fi
 
   filament-gui-smoke:
     needs: changes
@@ -566,7 +495,7 @@ jobs:
       (github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
       needs.changes.outputs.code == 'true')
-    name: Filament GUI Smoke (${{ matrix.compiler.name }})
+    name: DART GUI Smoke (${{ matrix.compiler.name }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -599,10 +528,10 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
-      - name: Build and run Filament GUI smoke tests
+      - name: Build and run DART GUI smoke tests
         env:
           CC: ${{ matrix.compiler.cc }}
           CXX: ${{ matrix.compiler.cxx }}
         run: |
           DART_VERBOSE=ON \
-          pixi run test-filament-gui-smoke
+          pixi run test-dart-gui-smoke

@@ -1,0 +1,17 @@
+material {
+    name : dartDebugColor,
+    shadingModel : unlit,
+    blending : transparent,
+    depthWrite : false,
+    doubleSided : true,
+    requires : [
+        color
+    ]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        material.baseColor = getColor();
+    }
+}

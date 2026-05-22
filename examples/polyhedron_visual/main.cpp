@@ -30,48 +30,181 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
 
-#include <Eigen/Core>
+#include <dart/simulation/world.hpp>
 
-#include <span>
-#include <vector>
+#include <dart/dynamics/convex_mesh_shape.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
-int main()
+#include <dart/math/tri_mesh.hpp>
+
+#include <Eigen/Geometry>
+
+#include <array>
+#include <memory>
+#include <string>
+
+namespace {
+
+dart::dynamics::SkeletonPtr createStaticVisualSkeleton(
+    const std::string& name,
+    const dart::dynamics::ShapePtr& shape,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& color,
+    double alpha = 1.0)
 {
-  // Provide the V-representation of a convex polyhedron. The visual will build
-  // the convex hull automatically, so the vertices can be provided in any
-  // order.
-  std::vector<Eigen::Vector3d> vertices
-      = {Eigen::Vector3d(-0.5, -0.5, 0.0),
-         Eigen::Vector3d(0.5, -0.5, 0.2),
-         Eigen::Vector3d(0.6, 0.5, 0.1),
-         Eigen::Vector3d(-0.4, 0.6, 0.15),
-         Eigen::Vector3d(-0.2, -0.2, 0.9),
-         Eigen::Vector3d(0.35, -0.3, 0.8),
-         Eigen::Vector3d(0.4, 0.35, 0.75),
-         Eigen::Vector3d(-0.35, 0.4, 0.7)};
+  auto skeleton = dart::dynamics::Skeleton::create(name);
+  auto* body = skeleton->createJointAndBodyNodePair<dart::dynamics::WeldJoint>()
+                   .second;
+  auto* shapeNode
+      = body->createShapeNodeWith<dart::dynamics::VisualAspect>(shape);
+  shapeNode->setRelativeTranslation(position);
+  shapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(color.x(), color.y(), color.z(), alpha));
+  return skeleton;
+}
 
-  dart::gui::Viewer viewer;
+std::array<Eigen::Vector3d, 8> polyhedronVertices()
+{
+  return {
+      Eigen::Vector3d(-0.5, -0.5, 0.0),
+      Eigen::Vector3d(0.5, -0.5, 0.2),
+      Eigen::Vector3d(0.6, 0.5, 0.1),
+      Eigen::Vector3d(-0.4, 0.6, 0.15),
+      Eigen::Vector3d(-0.2, -0.2, 0.9),
+      Eigen::Vector3d(0.35, -0.3, 0.8),
+      Eigen::Vector3d(0.4, 0.35, 0.75),
+      Eigen::Vector3d(-0.35, 0.4, 0.7)};
+}
 
-  // Add a grid for reference.
-  auto grid = new dart::gui::GridVisual();
-  grid->setOffset(Eigen::Vector3d::Zero());
-  viewer.addAttachment(grid);
+std::shared_ptr<dart::math::TriMesh<double>> createPolyhedronMesh()
+{
+  auto mesh = std::make_shared<dart::math::TriMesh<double>>();
+  const auto vertices = polyhedronVertices();
+  mesh->reserveVertices(vertices.size());
+  mesh->reserveTriangles(12);
+  for (const auto& vertex : vertices) {
+    mesh->addVertex(vertex);
+  }
 
-  // Attach the polyhedron visual and customize its colors.
-  auto polyhedron = new dart::gui::PolyhedronVisual();
-  polyhedron->setVertices(vertices);
-  polyhedron->setSurfaceColor(Eigen::Vector4d(0.1, 0.8, 0.6, 0.5));
-  polyhedron->setWireframeColor(Eigen::Vector4d(0.05, 0.05, 0.05, 1.0));
-  viewer.addAttachment(polyhedron);
+  mesh->addTriangle(0, 2, 1);
+  mesh->addTriangle(0, 3, 2);
+  mesh->addTriangle(4, 5, 6);
+  mesh->addTriangle(4, 6, 7);
+  mesh->addTriangle(0, 1, 5);
+  mesh->addTriangle(0, 5, 4);
+  mesh->addTriangle(1, 2, 6);
+  mesh->addTriangle(1, 6, 5);
+  mesh->addTriangle(2, 3, 7);
+  mesh->addTriangle(2, 7, 6);
+  mesh->addTriangle(3, 0, 4);
+  mesh->addTriangle(3, 4, 7);
+  mesh->computeVertexNormals();
+  return mesh;
+}
 
-  viewer.setUpViewInWindow(0, 0, 640, 480);
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.0, 2.0, 1.5),
-      ::osg::Vec3(0.0, 0.0, 0.4),
-      ::osg::Vec3(0.0, 0.0, 1.0));
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
+std::shared_ptr<dart::dynamics::LineSegmentShape> createPolyhedronWireframe()
+{
+  auto shape = std::make_shared<dart::dynamics::LineSegmentShape>(2.0f);
+  const auto vertices = polyhedronVertices();
+  for (const auto& vertex : vertices) {
+    shape->addVertex(vertex);
+  }
+  while (!shape->getConnections().empty()) {
+    shape->removeConnection(0);
+  }
 
-  viewer.run();
+  const std::array<std::pair<std::size_t, std::size_t>, 12> edges{{
+      {0, 1},
+      {1, 2},
+      {2, 3},
+      {3, 0},
+      {4, 5},
+      {5, 6},
+      {6, 7},
+      {7, 4},
+      {0, 4},
+      {1, 5},
+      {2, 6},
+      {3, 7},
+  }};
+  for (const auto& edge : edges) {
+    shape->addConnection(edge.first, edge.second);
+  }
+  return shape;
+}
+
+std::shared_ptr<dart::dynamics::LineSegmentShape> createPolyhedronGridShape()
+{
+  auto grid = std::make_shared<dart::dynamics::LineSegmentShape>(1.5f);
+  constexpr double halfExtent = 1.25;
+  constexpr int lineCount = 10;
+  for (int i = 0; i <= lineCount; ++i) {
+    const double coordinate
+        = -halfExtent + 2.0 * halfExtent * static_cast<double>(i) / lineCount;
+    const auto startX
+        = grid->addVertex(Eigen::Vector3d(-halfExtent, coordinate, -0.02));
+    grid->addVertex(Eigen::Vector3d(halfExtent, coordinate, -0.02), startX);
+    const auto startY
+        = grid->addVertex(Eigen::Vector3d(coordinate, -halfExtent, -0.02));
+    grid->addVertex(Eigen::Vector3d(coordinate, halfExtent, -0.02), startY);
+  }
+  return grid;
+}
+
+dart::simulation::WorldPtr createPolyhedronWorld()
+{
+  auto world = dart::simulation::World::create("dartsim_polyhedron");
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->addSkeleton(createStaticVisualSkeleton(
+      "visual_polyhedron_surface",
+      std::make_shared<dart::dynamics::ConvexMeshShape>(createPolyhedronMesh()),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.1, 0.8, 0.6),
+      0.5));
+  world->addSkeleton(createStaticVisualSkeleton(
+      "visual_polyhedron_wireframe",
+      createPolyhedronWireframe(),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.05, 0.05, 0.05)));
+  world->addSkeleton(createStaticVisualSkeleton(
+      "visual_polyhedron_grid",
+      createPolyhedronGridShape(),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.42, 0.48, 0.44),
+      0.48));
+  return world;
+}
+
+dart::gui::RunOptions makePolyhedronRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makePolyhedronCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.4);
+  camera.yaw = 0.7853981633974483;
+  camera.pitch = 0.37090852303346045;
+  camera.distance = 3.034798181098704;
+  return camera;
+}
+
+} // namespace
+
+int main(int argc, char* argv[])
+{
+  dart::gui::ApplicationOptions options;
+  options.world = createPolyhedronWorld();
+  options.runDefaults = makePolyhedronRunDefaults();
+  options.camera = makePolyhedronCamera();
+  return dart::gui::runApplication(argc, argv, options);
 }

@@ -30,70 +30,153 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/gizmo.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/all.hpp>
+#include <dart/simulation/world.hpp>
 
-using namespace dart::dynamics;
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
-int main()
+#include <Eigen/Geometry>
+
+#include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace {
+
+struct DragAndDropScene
 {
-  dart::simulation::WorldPtr world(new dart::simulation::World);
+  dart::simulation::WorldPtr world;
+  std::vector<dart::gui::Gizmo> gizmos;
+};
 
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+DragAndDropScene createDragAndDropScene()
+{
+  DragAndDropScene scene;
+  scene.world = dart::simulation::World::create("drag_and_drop");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
 
-  tf.translation() = Eigen::Vector3d(4, -4, 0);
-  dart::gui::InteractiveFramePtr frame(new dart::gui::InteractiveFrame(
-      Frame::World(), "interactive frame", tf, 2.0));
-  world->addSimpleFrame(frame);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(4.0, -4.0, 0.0);
+  auto anchor = std::make_shared<dart::dynamics::SimpleFrame>(
+      dart::dynamics::Frame::World(), "interactive frame", transform);
+  scene.world->addSimpleFrame(anchor);
 
-  tf.translation() = Eigen::Vector3d(-4, 4, 0);
-  SimpleFramePtr draggable(new SimpleFrame(frame.get(), "draggable", tf));
-  draggable->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(1, 1, 1)));
+  dart::gui::Gizmo gizmo;
+  gizmo.label = "interactive frame";
+  gizmo.target = anchor;
+  gizmo.size = 2.0;
+  scene.gizmos.push_back(std::move(gizmo));
+
+  transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(-4.0, 4.0, 0.0);
+  auto draggable = anchor->spawnChildSimpleFrame("draggable", transform);
+  draggable->setShape(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(1.0, 1.0, 1.0)));
   draggable->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9, 0.0, 0.0));
-  world->addSimpleFrame(draggable);
+  scene.world->addSimpleFrame(draggable);
 
-  tf.translation() = Eigen::Vector3d(8.0, 0.0, 0.0);
-  SimpleFramePtr x_marker(new SimpleFrame(Frame::World(), "X", tf));
-  std::shared_ptr<BoxShape> x_shape(
-      new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
-  x_marker->setShape(x_shape);
-  x_marker->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9, 0.0, 0.0));
-  world->addSimpleFrame(x_marker);
+  const auto addMarker = [&](const std::string& name,
+                             const Eigen::Vector3d& position,
+                             const Eigen::Vector3d& color) {
+    Eigen::Isometry3d markerTransform = Eigen::Isometry3d::Identity();
+    markerTransform.translation() = position;
+    auto marker = std::make_shared<dart::dynamics::SimpleFrame>(
+        dart::dynamics::Frame::World(), name, markerTransform);
+    marker->setShape(
+        std::make_shared<dart::dynamics::BoxShape>(
+            Eigen::Vector3d(0.2, 0.2, 0.2)));
+    marker->getVisualAspect(true)->setColor(color);
+    scene.world->addSimpleFrame(marker);
+  };
 
-  tf.translation() = Eigen::Vector3d(0.0, 8.0, 0.0);
-  SimpleFramePtr y_marker(new SimpleFrame(Frame::World(), "Y", tf));
-  std::shared_ptr<BoxShape> y_shape(
-      new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
-  y_marker->setShape(y_shape);
-  y_marker->getVisualAspect(true)->setColor(Eigen::Vector3d(0.0, 0.9, 0.0));
-  world->addSimpleFrame(y_marker);
+  addMarker(
+      "X", Eigen::Vector3d(8.0, 0.0, 0.0), Eigen::Vector3d(0.9, 0.0, 0.0));
+  addMarker(
+      "Y", Eigen::Vector3d(0.0, 8.0, 0.0), Eigen::Vector3d(0.0, 0.9, 0.0));
+  addMarker(
+      "Z", Eigen::Vector3d(0.0, 0.0, 8.0), Eigen::Vector3d(0.0, 0.0, 0.9));
 
-  tf.translation() = Eigen::Vector3d(0.0, 0.0, 8.0);
-  SimpleFramePtr z_marker(new SimpleFrame(Frame::World(), "Z", tf));
-  std::shared_ptr<BoxShape> z_shape(
-      new BoxShape(Eigen::Vector3d(0.2, 0.2, 0.2)));
-  z_marker->setShape(z_shape);
-  z_marker->getVisualAspect(true)->setColor(Eigen::Vector3d(0.0, 0.0, 0.9));
-  world->addSimpleFrame(z_marker);
+  return scene;
+}
 
-  ::osg::ref_ptr<dart::gui::WorldNode> node = new dart::gui::WorldNode(world);
+dart::gui::RunOptions makeDragAndDropRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
 
-  dart::gui::Viewer viewer;
-  viewer.addWorldNode(node);
-  viewer.enableDragAndDrop(frame.get());
-  viewer.enableDragAndDrop(draggable.get());
+dart::gui::OrbitCamera makeDragAndDropCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.0);
+  camera.yaw = 0.7044940642422177;
+  camera.pitch = 0.5743269238648862;
+  camera.distance = 31.272991542223778;
+  return camera;
+}
 
-  viewer.addInstructionText("\nCtrl + Left-click: Rotate the box\n");
-  std::cout << viewer.getInstructions() << std::endl;
+void printDragAndDropInstructions()
+{
+  std::cout
+      << "Drag and drop example:\n"
+      << "  - Click a renderable to select it.\n"
+      << "  - Left-drag gizmo arrows, planes, and rings to move or rotate the "
+         "interactive frame.\n"
+      << "  - Arrow keys nudge on the camera plane; PageUp/PageDown nudge "
+         "vertically.\n"
+      << std::endl;
+}
 
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+} // namespace
 
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(20.0, 17.0, 17.0),
-      ::osg::Vec3(0.0, 0.0, 0.0),
-      ::osg::Vec3(0, 0, 1));
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
+int main(int argc, char* argv[])
+{
+  bool showInteractionTips = true;
 
-  viewer.run();
+  dart::gui::Panel controls;
+  controls.title = "Drag Controls";
+  controls.buildWithContext
+      = [&](dart::gui::PanelBuilder& panel, dart::gui::PanelContext& context) {
+          panel.text("Drag targets with selection handles");
+          panel.separator();
+          if (context.lifecycle != nullptr) {
+            if (panel.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+              dart::gui::togglePaused(*context.lifecycle);
+            }
+            panel.sameLine();
+            if (panel.button("Step")) {
+              dart::gui::requestSingleStep(*context.lifecycle);
+            }
+          }
+          panel.checkbox("Show tips", showInteractionTips);
+          if (showInteractionTips) {
+            panel.text("Left-drag gizmo arrows, planes, and rings.");
+            panel.text("Click renderables to inspect selection.");
+            panel.text("Arrow/PageUp/PageDown nudge the selected frame.");
+          }
+          panel.text("selected: " + context.selectedLabel);
+        };
+
+  printDragAndDropInstructions();
+
+  auto scene = createDragAndDropScene();
+  dart::gui::ApplicationOptions options;
+  options.world = scene.world;
+  options.gizmos = scene.gizmos;
+  options.runDefaults = makeDragAndDropRunDefaults();
+  options.camera = makeDragAndDropCamera();
+  options.panels.push_back(std::move(controls));
+
+  return dart::gui::runApplication(argc, argv, options);
 }

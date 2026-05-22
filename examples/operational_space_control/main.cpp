@@ -30,322 +30,312 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/gizmo.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/utils/All.hpp>
-#include <dart/utils/urdf/All.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/all.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/skeleton.hpp>
+
+#include <dart/math/constants.hpp>
+
 #include <dart/io/read.hpp>
 
-#include <ranges>
+#include <Eigen/Geometry>
 
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::math;
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
-class OperationalSpaceControlWorld : public dart::gui::WorldNode
+namespace {
+
+constexpr const char* kRobotUri = "dart://sample/urdf/KR5/KR5 sixx R650.urdf";
+constexpr const char* kGroundUri = "dart://sample/urdf/KR5/ground.urdf";
+constexpr const char* kRobotSkeletonName = "KR5";
+constexpr const char* kTargetFrameName = "operational_space_control_target";
+constexpr const char* kGroundSkeletonName
+    = "visual_operational_space_control_ground";
+
+dart::dynamics::SkeletonPtr loadOperationalSpaceRobot()
+{
+  auto robot = dart::io::readSkeleton(kRobotUri);
+  if (robot == nullptr) {
+    throw std::runtime_error(
+        "Failed to load operational-space robot from "
+        + std::string(kRobotUri));
+  }
+
+  if (robot->getNumJoints() == 0 || robot->getJoint(0) == nullptr) {
+    throw std::runtime_error("Operational-space KR5 is missing its root joint");
+  }
+  robot->getJoint(0)->setTransformFromParentBodyNode(
+      Eigen::Isometry3d::Identity());
+  robot->setName(kRobotSkeletonName);
+
+  robot->eachJoint([](dart::dynamics::Joint* joint) {
+    joint->setLimitEnforcement(false);
+    if (joint->getNumDofs() > 0) {
+      joint->setDampingCoefficient(0, 0.5);
+    }
+  });
+  return robot;
+}
+
+dart::dynamics::SkeletonPtr loadOperationalSpaceGround()
+{
+  auto ground = dart::io::readSkeleton(kGroundUri);
+  if (ground == nullptr || ground->getNumJoints() == 0
+      || ground->getJoint(0) == nullptr) {
+    throw std::runtime_error(
+        "Failed to load operational-space ground from "
+        + std::string(kGroundUri));
+  }
+
+  ground->setName(kGroundSkeletonName);
+  Eigen::Isometry3d transform
+      = ground->getJoint(0)->getTransformFromParentBodyNode();
+  transform.pretranslate(Eigen::Vector3d(0.0, 0.0, 0.5));
+  transform.rotate(
+      Eigen::AngleAxisd(dart::math::pi / 2.0, Eigen::Vector3d::UnitX()));
+  ground->getJoint(0)->setTransformFromParentBodyNode(transform);
+  return ground;
+}
+
+class OperationalSpaceControlState
 {
 public:
-  OperationalSpaceControlWorld(dart::simulation::WorldPtr _world)
-    : dart::gui::WorldNode(_world)
+  OperationalSpaceControlState(
+      dart::dynamics::SkeletonPtr robot, dart::dynamics::SimpleFramePtr target)
+    : mRobot(std::move(robot)),
+      mEndEffector(
+          mRobot && mRobot->getNumBodyNodes() > 0
+              ? mRobot->getBodyNode(mRobot->getNumBodyNodes() - 1)
+              : nullptr),
+      mTarget(std::move(target)),
+      mOffset(0.05, 0.0, 0.0)
   {
-    // Extract the relevant pointers
-    mRobot = mWorld->getSkeleton(0);
-    mEndEffector = mRobot->getBodyNode(mRobot->getNumBodyNodes() - 1);
-
-    // Setup gain matrices
-    std::size_t dofs = mEndEffector->getNumDependentGenCoords();
-    mKp.setZero();
-    for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
-      mKp(i, i) = 50.0;
+    if (mRobot == nullptr || mEndEffector == nullptr || mTarget == nullptr) {
+      throw std::runtime_error(
+          "Operational-space control is missing KR5, end-effector, or target");
     }
 
+    const std::size_t dofs = mEndEffector->getNumDependentGenCoords();
+    mKp.setZero();
+    for (std::size_t i = 0; i < 3; ++i) {
+      mKp(i, i) = 50.0;
+    }
     mKd.setZero(dofs, dofs);
-    for (const auto i : std::views::iota(std::size_t{0}, dofs)) {
+    for (std::size_t i = 0; i < dofs; ++i) {
       mKd(i, i) = 5.0;
     }
 
-    // Set joint properties
-    mRobot->eachJoint([](dart::dynamics::Joint* joint) {
-      joint->setLimitEnforcement(false);
-      joint->setDampingCoefficient(0, 0.5);
-    });
-
-    mOffset = Eigen::Vector3d(0.05, 0, 0);
-
-    // Create target Frame
-    Eigen::Isometry3d tf = mEndEffector->getWorldTransform();
-    tf.pretranslate(mOffset);
-    mTarget = std::make_shared<SimpleFrame>(Frame::World(), "target", tf);
-    ShapePtr ball(new SphereShape(0.025));
-    mTarget->setShape(ball);
-    mTarget->getVisualAspect(true)->setColor(Eigen::Vector3d(0.9, 0, 0));
-    mWorld->addSimpleFrame(mTarget);
-
+    Eigen::Isometry3d targetTransform = mEndEffector->getWorldTransform();
+    targetTransform.pretranslate(mOffset);
+    mTarget->setTransform(targetTransform);
     mOffset
         = mEndEffector->getWorldTransform().rotation().transpose() * mOffset;
   }
 
-  // Triggered at the beginning of each simulation step
-  void customPreStep() override
+  void preStep()
   {
-    Eigen::MatrixXd M = mRobot->getMassMatrix();
-
-    LinearJacobian J = mEndEffector->getLinearJacobian(mOffset);
-    Eigen::MatrixXd pinv_J
-        = J.transpose()
-          * (J * J.transpose() + 0.0025 * Eigen::Matrix3d::Identity())
+    const Eigen::MatrixXd mass = mRobot->getMassMatrix();
+    const dart::math::LinearJacobian jacobian
+        = mEndEffector->getLinearJacobian(mOffset);
+    const Eigen::MatrixXd jacobianInverse
+        = jacobian.transpose()
+          * (jacobian * jacobian.transpose()
+             + 0.0025 * Eigen::Matrix3d::Identity())
                 .inverse();
 
-    LinearJacobian dJ = mEndEffector->getLinearJacobianDeriv(mOffset);
-    Eigen::MatrixXd pinv_dJ
-        = dJ.transpose()
-          * (dJ * dJ.transpose() + 0.0025 * Eigen::Matrix3d::Identity())
+    const dart::math::LinearJacobian jacobianDeriv
+        = mEndEffector->getLinearJacobianDeriv(mOffset);
+    const Eigen::MatrixXd jacobianDerivInverse
+        = jacobianDeriv.transpose()
+          * (jacobianDeriv * jacobianDeriv.transpose()
+             + 0.0025 * Eigen::Matrix3d::Identity())
                 .inverse();
 
-    Eigen::Vector3d e = mTarget->getWorldTransform().translation()
-                        - mEndEffector->getWorldTransform() * mOffset;
+    const Eigen::Vector3d positionError
+        = mTarget->getWorldTransform().translation()
+          - mEndEffector->getWorldTransform() * mOffset;
+    const Eigen::Vector3d velocityError
+        = -mEndEffector->getLinearVelocity(mOffset);
+    const Eigen::VectorXd coriolisAndGravity
+        = mRobot->getCoriolisAndGravityForces();
 
-    Eigen::Vector3d de = -mEndEffector->getLinearVelocity(mOffset);
-
-    Eigen::VectorXd Cg = mRobot->getCoriolisAndGravityForces();
-
-    mForces = M * (pinv_J * mKp * de + pinv_dJ * mKp * e) + Cg
-              + mKd * pinv_J * mKp * e;
-
-    mRobot->setForces(mForces);
+    const Eigen::VectorXd forces
+        = mass
+              * (jacobianInverse * mKp * velocityError
+                 + jacobianDerivInverse * mKp * positionError)
+          + coriolisAndGravity + mKd * jacobianInverse * mKp * positionError;
+    mRobot->setForces(forces);
   }
 
-  dart::gui::DragAndDrop* dnd;
-
-protected:
-  // Triggered when this node gets added to the Viewer
-  void setupViewer() override
-  {
-    if (mViewer) {
-      dnd = mViewer->enableDragAndDrop(mTarget.get());
-      dnd->setObstructable(false);
-      mViewer->addInstructionText(
-          "\nClick and drag the red ball to move the target of the operational "
-          "space controller\n");
-      mViewer->addInstructionText(
-          "Hold key 1 to constrain movements to the x-axis\n");
-      mViewer->addInstructionText(
-          "Hold key 2 to constrain movements to the y-axis\n");
-      mViewer->addInstructionText(
-          "Hold key 3 to constrain movements to the z-axis\n");
-    }
-  }
-
-  SkeletonPtr mRobot;
-  BodyNode* mEndEffector;
-  SimpleFramePtr mTarget;
-
+private:
+  dart::dynamics::SkeletonPtr mRobot;
+  dart::dynamics::BodyNode* mEndEffector = nullptr;
+  dart::dynamics::SimpleFramePtr mTarget;
   Eigen::Vector3d mOffset;
   Eigen::Matrix3d mKp;
   Eigen::MatrixXd mKd;
-  Eigen::VectorXd mForces;
 };
 
-class ConstraintEventHandler : public ::osgGA::GUIEventHandler
+struct OperationalSpaceScene
 {
-public:
-  ConstraintEventHandler(dart::gui::DragAndDrop* dnd = nullptr) : mDnD(dnd)
-  {
-    clearConstraints();
-    if (mDnD) {
-      mDnD->unconstrain();
-    }
-  }
-
-  void clearConstraints()
-  {
-    for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
-      mConstrained[i] = false;
-    }
-  }
-
-  virtual bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
-  {
-    if (nullptr == mDnD) {
-      clearConstraints();
-      return false;
-    }
-
-    bool handled = false;
-    switch (ea.getEventType()) {
-      case ::osgGA::GUIEventAdapter::KEYDOWN: {
-        switch (ea.getKey()) {
-          case '1':
-            mConstrained[0] = true;
-            handled = true;
-            break;
-          case '2':
-            mConstrained[1] = true;
-            handled = true;
-            break;
-          case '3':
-            mConstrained[2] = true;
-            handled = true;
-            break;
-        }
-        break;
-      }
-
-      case ::osgGA::GUIEventAdapter::KEYUP: {
-        switch (ea.getKey()) {
-          case '1':
-            mConstrained[0] = false;
-            handled = true;
-            break;
-          case '2':
-            mConstrained[1] = false;
-            handled = true;
-            break;
-          case '3':
-            mConstrained[2] = false;
-            handled = true;
-            break;
-        }
-        break;
-      }
-
-      default:
-        return false;
-    }
-
-    if (!handled) {
-      return handled;
-    }
-
-    std::size_t constraintDofs = 0;
-    for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
-      if (mConstrained[i]) {
-        ++constraintDofs;
-      }
-    }
-
-    if (constraintDofs == 0 || constraintDofs == 3) {
-      mDnD->unconstrain();
-    } else if (constraintDofs == 1) {
-      Eigen::Vector3d v(Eigen::Vector3d::Zero());
-      for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
-        if (mConstrained[i]) {
-          v[i] = 1.0;
-        }
-      }
-
-      mDnD->constrainToLine(v);
-    } else if (constraintDofs == 2) {
-      Eigen::Vector3d v(Eigen::Vector3d::Zero());
-      for (const auto i : std::views::iota(std::size_t{0}, std::size_t{3})) {
-        if (!mConstrained[i]) {
-          v[i] = 1.0;
-        }
-      }
-
-      mDnD->constrainToPlane(v);
-    }
-
-    return handled;
-  }
-
-  bool mConstrained[3];
-
-  dart::sub_ptr<dart::gui::DragAndDrop> mDnD;
+  dart::simulation::WorldPtr world;
+  std::shared_ptr<OperationalSpaceControlState> controller;
+  std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  std::vector<dart::gui::Gizmo> gizmos;
 };
 
-class ShadowEventHandler : public osgGA::GUIEventHandler
+OperationalSpaceScene createOperationalSpaceScene()
 {
-public:
-  ShadowEventHandler(
-      OperationalSpaceControlWorld* node, dart::gui::Viewer* viewer)
-    : mNode(node), mViewer(viewer)
-  {
-  }
+  OperationalSpaceScene scene;
+  scene.world = dart::simulation::World::create("dartsim_operational_space");
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  scene.world->addSkeleton(loadOperationalSpaceGround());
 
-  bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
-  {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
-      if (ea.getKey() == 's' || ea.getKey() == 'S') {
-        if (mNode->isShadowed()) {
-          mNode->setShadowTechnique(nullptr);
-        } else {
-          mNode->setShadowTechnique(
-              dart::gui::WorldNode::createDefaultShadowTechnique(mViewer));
-        }
-        return true;
+  auto robot = loadOperationalSpaceRobot();
+  if (robot->getNumBodyNodes() == 0) {
+    throw std::runtime_error(
+        "Operational-space KR5 is missing an end-effector body node");
+  }
+  auto* endEffector = robot->getBodyNode(robot->getNumBodyNodes() - 1);
+
+  Eigen::Isometry3d targetTransform = endEffector->getWorldTransform();
+  targetTransform.pretranslate(Eigen::Vector3d(0.05, 0.0, 0.0));
+  auto target = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), kTargetFrameName, targetTransform);
+  scene.world->addSimpleFrame(target);
+
+  scene.controller
+      = std::make_shared<OperationalSpaceControlState>(robot, target);
+  dart::gui::InverseKinematicsHandle handle;
+  handle.label = "1 operational-space target";
+  handle.hotkey = '1';
+  handle.target = target;
+  scene.ikHandles.push_back(std::move(handle));
+
+  dart::gui::Gizmo gizmo;
+  gizmo.label = kTargetFrameName;
+  gizmo.target = target;
+  gizmo.size = 0.16;
+  scene.gizmos.push_back(std::move(gizmo));
+
+  scene.world->addSkeleton(robot);
+  return scene;
+}
+
+dart::gui::RunOptions makeOperationalSpaceRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makeOperationalSpaceCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94);
+  camera.yaw = 0.8848934155088675;
+  camera.pitch = 0.38410042777133657;
+  camera.distance = 4.376539729055364;
+  return camera;
+}
+
+void printOperationalSpaceInstructions()
+{
+  std::cout
+      << "Operational Space Control Example Controls:\n"
+      << "Left-drag the target gizmo arrows/planes/rings to move the "
+         "operational-space target.\n"
+      << "Press 1 to select the target for arrow/PageUp/PageDown nudges.\n"
+      << "s/S: Toggle shadows\n"
+      << "Space: Toggle simulation\n";
+}
+
+std::vector<dart::gui::KeyboardAction> createOperationalSpaceKeyboardActions()
+{
+  const auto makeToggleShadowsAction = [](char shortcut) {
+    dart::gui::KeyboardAction action;
+    action.label = "Toggle shadows";
+    action.shortcut = dart::gui::KeyboardShortcut::characterKey(shortcut);
+    action.callback = [](dart::gui::KeyboardActionContext& context) {
+      if (context.renderSettings != nullptr) {
+        context.renderSettings->shadowsEnabled
+            = !context.renderSettings->shadowsEnabled;
+      }
+    };
+    return action;
+  };
+  return {makeToggleShadowsAction('s'), makeToggleShadowsAction('S')};
+}
+
+dart::gui::Panel createOperationalSpacePanel()
+{
+  dart::gui::Panel panel;
+  panel.title = "Operational Space";
+  panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
+                              dart::gui::PanelContext& context) {
+    builder.text("KR5 operational-space target control");
+    builder.text("Left-drag the target gizmo arrows/planes/rings.");
+    builder.text("Press 1 to select it for keyboard nudges.");
+    builder.text("Arrow keys and PageUp/PageDown nudge selected targets.");
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
       }
     }
+    if (context.rendering.settings != nullptr) {
+      bool shadows = context.rendering.settings->shadowsEnabled;
+      if (builder.checkbox("Shadow On/Off", shadows)) {
+        context.rendering.settings->shadowsEnabled = shadows;
+      }
+    }
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("selected: " + context.selectedLabel);
+  };
+  return panel;
+}
 
-    // The return value should be 'true' if the input has been fully handled
-    // and should not be visible to any remaining event handlers. It should be
-    // false if the input has not been fully handled and should be viewed by
-    // any remaining event handlers.
-    return false;
-  }
+} // namespace
 
-protected:
-  OperationalSpaceControlWorld* mNode;
-  dart::gui::Viewer* mViewer;
-};
-
-int main()
+int main(int argc, char* argv[])
 {
-  dart::simulation::WorldPtr world(new dart::simulation::World);
+  try {
+    OperationalSpaceScene scene = createOperationalSpaceScene();
 
-  // Load the robot
-  dart::dynamics::SkeletonPtr robot
-      = dart::io::readSkeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf");
-  world->addSkeleton(robot);
+    dart::gui::ApplicationOptions options;
+    options.world = scene.world;
+    options.ikHandles = scene.ikHandles;
+    options.gizmos = scene.gizmos;
+    options.runDefaults = makeOperationalSpaceRunDefaults();
+    options.camera = makeOperationalSpaceCamera();
+    options.preStep = [controller = scene.controller]() {
+      controller->preStep();
+    };
+    options.keyboardActions = createOperationalSpaceKeyboardActions();
+    options.panels.push_back(createOperationalSpacePanel());
 
-  // Rotate the robot so that z is upwards (default transform is not Identity)
-  robot->getJoint(0)->setTransformFromParentBodyNode(
-      Eigen::Isometry3d::Identity());
-
-  // Load the ground
-  dart::dynamics::SkeletonPtr ground
-      = dart::io::readSkeleton("dart://sample/urdf/KR5/ground.urdf");
-  world->addSkeleton(ground);
-
-  // Rotate and move the ground so that z is upwards
-  Eigen::Isometry3d ground_tf
-      = ground->getJoint(0)->getTransformFromParentBodyNode();
-  ground_tf.pretranslate(Eigen::Vector3d(0, 0, 0.5));
-  ground_tf.rotate(Eigen::AngleAxisd(pi / 2, Eigen::Vector3d(1, 0, 0)));
-  ground->getJoint(0)->setTransformFromParentBodyNode(ground_tf);
-
-  // Create an instance of our customized WorldNode
-  ::osg::ref_ptr<OperationalSpaceControlWorld> node
-      = new OperationalSpaceControlWorld(world);
-  node->setNumStepsPerCycle(10);
-
-  // Create the Viewer instance
-  dart::gui::Viewer viewer;
-  viewer.addWorldNode(node);
-  viewer.simulate(true);
-
-  // Add our custom event handler to the Viewer
-  viewer.addEventHandler(new ConstraintEventHandler(node->dnd));
-  viewer.addEventHandler(new ShadowEventHandler(node.get(), &viewer));
-
-  // Print out instructions
-  std::cout << viewer.getInstructions() << std::endl;
-
-  // Set up the window to be 640x480 pixels
-  viewer.setUpViewInWindow(0, 0, 640, 480);
-
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.57, 3.14, 1.64),
-      ::osg::Vec3(0.00, 0.00, 0.00),
-      ::osg::Vec3(-0.24, -0.25, 0.94));
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  // Begin the application loop
-  viewer.run();
+    printOperationalSpaceInstructions();
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "operational_space_control: " << e.what() << "\n";
+    return 1;
+  }
 }

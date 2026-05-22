@@ -83,9 +83,9 @@ Using IkFast within DART
 * ``tests/integration/io/test_IkFast.cpp`` shows how DART wires a generated WAM
   arm solver into an end-effector IK node, validates version strings, and
   iterates through the returned solutions.
-* The ``examples/wam_ikfast`` sample demonstrates how to load the generated
-  solver at runtime, feed solutions back into a skeleton, and visualize the
-  result with OSG.
+* The ``wam_ikfast`` GUI example demonstrates how to load the generated solver
+  at runtime, feed solutions back into a skeleton, and visualize the result
+  with the maintained DART GUI renderer.
 
 Support policy
 --------------

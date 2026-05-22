@@ -32,7 +32,7 @@ General
 * Supports lazy evaluation and automatic updates of kinematic and dynamic quantities.
 * Allows for the extension of the API to embed user-provided classes into its data structures.
 * Provides comprehensive event recording in the simulation history.
-* 3D visualization API using OpenGL and OpenSceneGraph with ImGui support.
+* 3D visualization API using Filament with GLFW3 and Dear ImGui support.
 * Extensible API to interface with various optimization problems, such as nonlinear programming and multi-objective optimization.
 
 Collision Detection

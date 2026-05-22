@@ -8,6 +8,9 @@
 #include <assimp/cexport.h>
 #include <assimp/cimport.h>
 #include <assimp/config.h>
+#if __has_include(<assimp/GltfMaterial.h>)
+  #include <assimp/GltfMaterial.h>
+#endif
 #include <assimp/material.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -2436,6 +2439,7 @@ TEST(MeshShapeTest, TriMeshConstructorPreservesTexturePaths)
   const auto* material = shape.getMaterial(0u);
   ASSERT_NE(material, nullptr);
   ASSERT_FALSE(material->textureImagePaths.empty());
+  EXPECT_FLOAT_EQ(material->metallicFactor, 0.0f);
 
   bool foundTexture = false;
   for (const auto& path : material->textureImagePaths) {
@@ -2506,12 +2510,13 @@ TEST(MeshShapeTest, ExtractMaterialsPreservesPbrMetadata)
           &roughnessTexture,
           AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE_ROUGHNESS, 0)),
       AI_SUCCESS);
-#if DART_ASSIMP_VERSION_MAJOR >= 6
+#if defined(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE)
   aiString metallicRoughnessTexture("textures/metallic_roughness.png");
   ASSERT_EQ(
       scene->mMaterials[0]->AddProperty(
           &metallicRoughnessTexture,
-          AI_MATKEY_TEXTURE(aiTextureType_GLTF_METALLIC_ROUGHNESS, 0)),
+          _AI_MATKEY_TEXTURE_BASE,
+          AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE),
       AI_SUCCESS);
 #endif
   aiString normalTexture("textures/normal.png");
@@ -2581,7 +2586,7 @@ TEST(MeshShapeTest, ExtractMaterialsPreservesPbrMetadata)
   EXPECT_NE(
       material->roughnessTexturePath.find("textures/roughness.png"),
       std::string::npos);
-#if DART_ASSIMP_VERSION_MAJOR >= 6
+#if defined(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE)
   EXPECT_NE(
       material->metallicRoughnessTexturePath.find(
           "textures/metallic_roughness.png"),
@@ -2598,7 +2603,7 @@ TEST(MeshShapeTest, ExtractMaterialsPreservesPbrMetadata)
   EXPECT_NE(
       material->emissiveTexturePath.find("textures/emissive.png"),
       std::string::npos);
-#if DART_ASSIMP_VERSION_MAJOR >= 6
+#if defined(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE)
   EXPECT_GE(material->textureImagePaths.size(), 7u);
 #else
   EXPECT_GE(material->textureImagePaths.size(), 6u);

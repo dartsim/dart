@@ -60,6 +60,6 @@ than explicit high-gain feedback.
 See also:
 
 - :doc:`../topics/numerical-methods` (time stepping + constraints overview)
-- :doc:`../tutorials/collisions` (collision/contact setup patterns)
-- :doc:`../tutorials/multi-pendulum` (implicit spring + damping behavior)
+- :doc:`../topics/control-gain-tuning` (discrete-time PD tuning)
+- :doc:`../gallery` (maintained Filament simulation scenes)
 ```

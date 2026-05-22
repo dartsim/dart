@@ -12,14 +12,14 @@
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
+ *     copyright notice, this list of conditions and the disclaimer
+ *     in the documentation and/or other materials provided with the
+ *     distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
  *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
  *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
@@ -30,276 +30,282 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
-#include <dart/gui/im_gui_handler.hpp>
-#include <dart/gui/include_im_gui.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/gizmo.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/all.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <CLI/CLI.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/simple_frame.hpp>
 
-//==============================================================================
-class CustomWorldNode : public dart::gui::WorldNode
+#include <Eigen/Geometry>
+
+#include <iomanip>
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace {
+
+constexpr const char* kPanelTargetName = "panel extension target";
+
+struct PanelExtensionScene
 {
-public:
-  CustomWorldNode(const dart::simulation::WorldPtr& world = nullptr)
-    : dart::gui::WorldNode(world)
-  {
-    // Set up the customized WorldNode
-  }
-
-  void customPreRefresh()
-  {
-    // Use this function to execute custom code before each time that the
-    // window is rendered. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void customPostRefresh()
-  {
-    // Use this function to execute custom code after each time that the
-    // window is rendered. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void customPreStep()
-  {
-    // Use this function to execute custom code before each simulation time
-    // step is performed. This function can be deleted if it does not need
-    // to be used.
-  }
-
-  void customPostStep()
-  {
-    // Use this function to execute custom code after each simulation time
-    // step is performed. This function can be deleted if it does not need
-    // to be used.
-  }
+  dart::simulation::WorldPtr world;
+  std::shared_ptr<dart::dynamics::SimpleFrame> target;
+  std::vector<dart::gui::Gizmo> gizmos;
+  std::shared_ptr<int> preStepCount;
+  std::shared_ptr<int> postStepCount;
+  std::shared_ptr<int> preRenderCount;
+  std::shared_ptr<int> postRenderCount;
+  std::shared_ptr<bool> gravityEnabled;
 };
 
-//==============================================================================
-class CustomEventHandler : public osgGA::GUIEventHandler
+std::shared_ptr<dart::dynamics::SimpleFrame> createPanelTarget()
 {
-public:
-  CustomEventHandler(/*Pass in any necessary arguments*/)
-  {
-    // Set up the customized event handler
-  }
+  return dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), kPanelTargetName);
+}
 
-  virtual bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter&) override
-  {
-    if (ea.getEventType() == osgGA::GUIEventAdapter::KEYDOWN) {
-      if (ea.getKey() == 'q') {
-        std::cout << "Lowercase q pressed" << std::endl;
-        return true;
-      } else if (ea.getKey() == 'Q') {
-        std::cout << "Capital Q pressed" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
-        std::cout << "Left arrow key pressed" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
-        std::cout << "Right arrow key pressed" << std::endl;
-        return true;
-      }
-    } else if (ea.getEventType() == osgGA::GUIEventAdapter::KEYUP) {
-      if (ea.getKey() == 'q') {
-        std::cout << "Lowercase q released" << std::endl;
-        return true;
-      } else if (ea.getKey() == 'Q') {
-        std::cout << "Capital Q released" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Left) {
-        std::cout << "Left arrow key released" << std::endl;
-        return true;
-      } else if (ea.getKey() == osgGA::GUIEventAdapter::KEY_Right) {
-        std::cout << "Right arrow key released" << std::endl;
-        return true;
-      }
-    }
-
-    // The return value should be 'true' if the input has been fully handled
-    // and should not be visible to any remaining event handlers. It should be
-    // false if the input has not been fully handled and should be viewed by
-    // any remaining event handlers.
-    return false;
-  }
-};
-
-//==============================================================================
-class TestWidget : public dart::gui::ImGuiWidget
+PanelExtensionScene createPanelExtensionScene()
 {
-public:
-  /// Constructor
-  TestWidget(dart::gui::ImGuiViewer* viewer, dart::simulation::WorldPtr world)
-    : mViewer(viewer),
-      mWorld(std::move(world)),
-      mGuiGravity(true),
-      mGravity(true),
-      mGuiHeadlights(true)
-  {
-    // Do nothing
+  PanelExtensionScene scene;
+  scene.world = dart::simulation::World::create("panel_extension");
+  scene.world->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
+  scene.target = createPanelTarget();
+  scene.world->addSimpleFrame(scene.target);
+  dart::gui::Gizmo gizmo;
+  gizmo.label = kPanelTargetName;
+  gizmo.target = scene.target;
+  gizmo.size = 0.24;
+  scene.gizmos.push_back(std::move(gizmo));
+  scene.preStepCount = std::make_shared<int>(0);
+  scene.postStepCount = std::make_shared<int>(0);
+  scene.preRenderCount = std::make_shared<int>(0);
+  scene.postRenderCount = std::make_shared<int>(0);
+  scene.gravityEnabled = std::make_shared<bool>(true);
+  return scene;
+}
+
+dart::gui::RunOptions makePanelExtensionRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::OrbitCamera makePanelExtensionCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.up = Eigen::Vector3d(-0.24, -0.25, 0.94);
+  camera.yaw = 0.8848934155088675;
+  camera.pitch = 0.38410042777133657;
+  camera.distance = 4.376539729055364;
+  return camera;
+}
+
+void setPanelWorldGravity(
+    const dart::simulation::WorldPtr& world, bool gravityEnabled)
+{
+  if (world == nullptr) {
+    return;
   }
 
-  // Documentation inherited
-  void render() override
-  {
-    ImGui::SetNextWindowPos(ImVec2(10, 20));
-    ImGui::SetNextWindowSize(ImVec2(240, 320));
-    ImGui::SetNextWindowBgAlpha(0.5f);
-    if (!ImGui::Begin(
-            "Tinkertoy Control",
-            nullptr,
-            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar
-                | ImGuiWindowFlags_HorizontalScrollbar)) {
-      // Early out if the window is collapsed, as an optimization.
-      ImGui::End();
-      return;
-    }
-
-    // Menu
-    if (ImGui::BeginMenuBar()) {
-      if (ImGui::BeginMenu("Menu")) {
-        if (ImGui::MenuItem("Exit")) {
-          mViewer->setDone(true);
-        }
-        ImGui::EndMenu();
-      }
-      if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About DART")) {
-          mViewer->showAbout();
-        }
-        ImGui::EndMenu();
-      }
-      ImGui::EndMenuBar();
-    }
-
-    ImGui::Text("An empty OSG example with ImGui");
-    ImGui::Spacing();
-
-    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
-      int e = mViewer->isSimulating() ? 0 : 1;
-      if (mViewer->isAllowingSimulation()) {
-        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating()) {
-          mViewer->simulate(true);
-        }
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating()) {
-          mViewer->simulate(false);
-        }
-      }
-
-      ImGui::Text("Time: %.3f", mWorld->getTime());
-    }
-
-    if (ImGui::CollapsingHeader(
-            "World Options", ImGuiTreeNodeFlags_DefaultOpen)) {
-      // Gravity
-      ImGui::Checkbox("Gravity On/Off", &mGuiGravity);
-      setGravity(mGuiGravity);
-
-      ImGui::Spacing();
-
-      // Headlights
-      mGuiHeadlights = mViewer->checkHeadlights();
-      ImGui::Checkbox("Headlights On/Off", &mGuiHeadlights);
-      mViewer->switchHeadlights(mGuiHeadlights);
-    }
-
-    if (ImGui::CollapsingHeader("View", ImGuiTreeNodeFlags_DefaultOpen)) {
-      osg::Vec3d eye;
-      osg::Vec3d center;
-      osg::Vec3d up;
-      mViewer->getCamera()->getViewMatrixAsLookAt(eye, center, up);
-
-      ImGui::Text("Eye   : (%.2f, %.2f, %.2f)", eye.x(), eye.y(), eye.z());
-      ImGui::Text(
-          "Center: (%.2f, %.2f, %.2f)", center.x(), center.y(), center.z());
-      ImGui::Text("Up    : (%.2f, %.2f, %.2f)", up.x(), up.y(), up.z());
-    }
-
-    if (ImGui::CollapsingHeader("Help")) {
-      ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
-      ImGui::Text("User Guide:\n");
-      ImGui::Text("%s", mViewer->getInstructions().c_str());
-      ImGui::PopTextWrapPos();
-    }
-
-    ImGui::End();
+  if (gravityEnabled) {
+    world->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
+  } else {
+    world->setGravity(Eigen::Vector3d::Zero());
   }
+}
 
-protected:
-  void setGravity(bool gravity)
-  {
-    if (mGravity == gravity) {
-      return;
+std::string formatCameraVector(const Eigen::Vector3d& value)
+{
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(2) << "(" << value.x() << ", "
+         << value.y() << ", " << value.z() << ")";
+  return stream.str();
+}
+
+dart::gui::KeyboardAction makePrintAction(
+    std::string label,
+    dart::gui::KeyboardShortcut shortcut,
+    std::string message,
+    dart::gui::KeyboardActionTrigger trigger
+    = dart::gui::KeyboardActionTrigger::Press)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = shortcut;
+  action.trigger = trigger;
+  action.callback
+      = [message = std::move(message)](dart::gui::KeyboardActionContext&) {
+          std::cout << message << std::endl;
+        };
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createPanelExtensionKeyboardActions()
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makePrintAction(
+      "Lowercase q pressed",
+      dart::gui::KeyboardShortcut::characterKey('q'),
+      "Lowercase q pressed"));
+  actions.push_back(makePrintAction(
+      "Capital Q pressed",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q pressed"));
+  actions.push_back(makePrintAction(
+      "Left arrow key pressed",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
+      "Left arrow key pressed"));
+  actions.push_back(makePrintAction(
+      "Right arrow key pressed",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
+      "Right arrow key pressed"));
+  actions.push_back(makePrintAction(
+      "Lowercase q released",
+      dart::gui::KeyboardShortcut::characterKey('q'),
+      "Lowercase q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Capital Q released",
+      dart::gui::KeyboardShortcut::characterKey('Q'),
+      "Capital Q released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Left arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Left),
+      "Left arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
+  actions.push_back(makePrintAction(
+      "Right arrow key released",
+      dart::gui::KeyboardShortcut::namedKey(dart::gui::KeyboardKey::Right),
+      "Right arrow key released",
+      dart::gui::KeyboardActionTrigger::Release));
+  return actions;
+}
+
+dart::gui::Panel createPanelExtensionControls(const PanelExtensionScene& scene)
+{
+  dart::gui::Panel controls;
+  controls.title = "Tinkertoy Control";
+  controls.buildWithContext = [scene](
+                                  dart::gui::PanelBuilder& panel,
+                                  dart::gui::PanelContext& context) {
+    panel.text("Promoted panel extension example");
+    panel.separator();
+
+    panel.text("Simulation");
+    if (context.lifecycle != nullptr) {
+      if (panel.button("Play")) {
+        context.lifecycle->paused = false;
+      }
+      panel.sameLine();
+      if (panel.button("Pause")) {
+        context.lifecycle->paused = true;
+      }
+      panel.sameLine();
+      if (panel.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+      panel.sameLine();
+      if (panel.button("Exit")) {
+        dart::gui::requestExit(*context.lifecycle);
+      }
+    }
+    panel.text("Time: " + std::to_string(context.simulationTime));
+    if (scene.preStepCount != nullptr) {
+      panel.text("Pre-step callbacks: " + std::to_string(*scene.preStepCount));
+    }
+    if (scene.postStepCount != nullptr) {
+      panel.text(
+          "Post-step callbacks: " + std::to_string(*scene.postStepCount));
+    }
+    if (scene.preRenderCount != nullptr) {
+      panel.text(
+          "Pre-render callbacks: " + std::to_string(*scene.preRenderCount));
+    }
+    if (scene.postRenderCount != nullptr) {
+      panel.text(
+          "Post-render callbacks: " + std::to_string(*scene.postRenderCount));
     }
 
-    mGravity = gravity;
-
-    if (mGravity) {
-      mWorld->setGravity(-9.81 * Eigen::Vector3d::UnitZ());
-    } else {
-      mWorld->setGravity(Eigen::Vector3d::Zero());
+    panel.separator();
+    panel.text("World Options");
+    if (scene.gravityEnabled != nullptr) {
+      bool gravity = *scene.gravityEnabled;
+      panel.checkbox("Gravity On/Off", gravity);
+      if (gravity != *scene.gravityEnabled) {
+        *scene.gravityEnabled = gravity;
+        setPanelWorldGravity(scene.world, gravity);
+      }
     }
-  }
+    if (context.lighting.headlightsEnabled != nullptr) {
+      bool headlights = *context.lighting.headlightsEnabled;
+      if (panel.checkbox("Headlights On/Off", headlights)) {
+        *context.lighting.headlightsEnabled = headlights;
+      }
+    }
 
-  osg::ref_ptr<dart::gui::ImGuiViewer> mViewer;
-  dart::simulation::WorldPtr mWorld;
-  bool mGuiGravity;
-  bool mGravity;
-  bool mGuiHeadlights;
-};
+    panel.separator();
+    panel.text("View");
+    panel.text("Eye   : " + formatCameraVector(context.camera.eye));
+    panel.text("Center: " + formatCameraVector(context.camera.target));
+    panel.text("Up    : " + formatCameraVector(context.camera.up));
 
-//==============================================================================
+    panel.separator();
+    panel.text("Help");
+    panel.text("User Guide");
+    panel.text("Left drag orbits; right or middle drag pans; wheel zooms.");
+    panel.text("Left-drag target gizmo arrows/planes/rings.");
+    panel.text("q, Q, Left, and Right demonstrate keydown/release callbacks.");
+    panel.text("About DART: project and libdart simulation libraries.");
+    panel.text("selected: " + context.selectedLabel);
+  };
+  return controls;
+}
+
+} // namespace
+
 int main(int argc, char* argv[])
 {
-  CLI::App app("ImGui sample viewer");
-  double guiScale = 1.0;
-  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
-      ->check(CLI::PositiveNumber);
-  CLI11_PARSE(app, argc, argv);
+  PanelExtensionScene scene = createPanelExtensionScene();
 
-  // Create a world
-  dart::simulation::WorldPtr world(new dart::simulation::World);
+  dart::gui::ApplicationOptions options;
+  options.world = scene.world;
+  options.runDefaults = makePanelExtensionRunDefaults();
+  options.camera = makePanelExtensionCamera();
+  options.gizmos = scene.gizmos;
+  options.preStep = [count = scene.preStepCount]() {
+    if (count != nullptr) {
+      ++*count;
+    }
+  };
+  options.postStep = [count = scene.postStepCount]() {
+    if (count != nullptr) {
+      ++*count;
+    }
+  };
+  options.preRender = [count = scene.preRenderCount]() {
+    if (count != nullptr) {
+      ++*count;
+    }
+  };
+  options.postRender = [count = scene.postRenderCount]() {
+    if (count != nullptr) {
+      ++*count;
+    }
+  };
+  options.keyboardActions = createPanelExtensionKeyboardActions();
+  options.panels.push_back(createPanelExtensionControls(scene));
 
-  // Add a target object to the world
-  dart::gui::InteractiveFramePtr target(
-      new dart::gui::InteractiveFrame(dart::dynamics::Frame::World()));
-  world->addSimpleFrame(target);
-
-  // Wrap a WorldNode around it
-  osg::ref_ptr<CustomWorldNode> node = new CustomWorldNode(world);
-
-  // Create a Viewer and set it up with the WorldNode
-  osg::ref_ptr<dart::gui::ImGuiViewer> viewer = new dart::gui::ImGuiViewer();
-  viewer->setImGuiScale(static_cast<float>(guiScale));
-  viewer->getImGuiHandler()->setFontScale(static_cast<float>(guiScale));
-  viewer->addWorldNode(node);
-
-  // Add control widget for atlas
-  viewer->getImGuiHandler()->addWidget(
-      std::make_shared<TestWidget>(viewer, world));
-
-  // Active the drag-and-drop feature for the target
-  viewer->enableDragAndDrop(target.get());
-
-  // Pass in the custom event handler
-  viewer->addEventHandler(new CustomEventHandler);
-
-  // Set up the window to be 640x480
-  viewer->setUpViewInWindow(0, 0, 640, 480);
-
-  // Adjust the viewpoint of the Viewer
-  viewer->getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.57f, 3.14f, 1.64f),
-      ::osg::Vec3(0.00f, 0.00f, 0.00f),
-      ::osg::Vec3(-0.24f, -0.25f, 0.94f));
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer->setCameraManipulator(viewer->getCameraManipulator());
-
-  // Begin running the application loop
-  viewer->run();
+  return dart::gui::runApplication(argc, argv, options);
 }

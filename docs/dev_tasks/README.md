@@ -3,10 +3,7 @@
 Working documentation for multi-phase development tasks in DART.
 
 > **Key Rule**: `docs/dev_tasks/` is for **working documentation** during active development.
-> When a task completes, the folder is **deleted** (not archived). Key insights
-> go to the relevant developer knowledge-base doc under `docs/onboarding/`,
-> while durable dashboards, evidence matrices, API inventories, and migration
-> maps go to `docs/plans/` or `docs/onboarding/` before deletion.
+> When a task completes, the folder is **deleted** (not archived). Key insights go to `docs/onboarding/`.
 
 ## When to Create a dev_tasks Folder
 
@@ -121,9 +118,7 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 ### Examples (Active Tasks)
 
-- `compute_resource_access/` - Follow-up compute graph metadata task for
-  resource read/write declarations, validation, and visualization
-- `filament_gui/` - Filament + GLFW + Dear ImGui GUI replacement plan (MVP, architecture, visual quality, milestones, migration, testing docs)
+- `world_split/` - ECS world separation (design, migration docs)
 
 ## Structure
 
@@ -151,25 +146,17 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 **When task is completed, agents MUST:**
 
-1. [ ] **Promote durable artifacts** → Move dashboards, evidence matrices,
-       API inventories, migration maps, and long-lived decisions to
-       `docs/plans/` or an existing relevant `docs/onboarding/<topic>.md`
-2. [ ] **Remove temporary links** → Durable docs must not point back to the
-       completed task folder
-3. [ ] **Delete the entire folder** → `git rm -r docs/dev_tasks/<task>/`
-       or remove it locally before the completion change is finalized
-4. [ ] **Include in completion PR** → Same PR that finishes the implementation
+1. [ ] **Extract key insights** → Add brief section to existing `docs/onboarding/<relevant>.md`
+2. [ ] **Delete the entire folder** → `git rm -r docs/dev_tasks/<task>/`
+3. [ ] **Include in completion PR** → Same PR that finishes the implementation
 
 ### Why This Matters
 
 - `dev_tasks/` is **working documentation** — it has no value after completion
-- Key decisions belong in `docs/onboarding/` where agents will find durable
-  developer context
-- Durable dashboards and row-level matrices belong in `docs/plans/` when they
-  remain useful after the implementation lands
+- Key decisions belong in `docs/onboarding/` where agents will find them
 - Orphaned folders confuse future agents and waste context window
 
-**Developer docs must stay lean**:
+**Onboarding docs must stay lean**:
 
 - ❌ Don't create new detailed files for every completed task
 - ✅ Add brief sections to existing relevant docs
@@ -177,7 +164,7 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 - ✅ Point to code for implementation details
 - ⚠️ LLMs struggle with bloated documentation - keep it minimal
 
-**What NOT to include in developer docs**:
+**What NOT to include in onboarding docs**:
 
 - ❌ **Hardcoded file lists** - Files change, become outdated
 - ❌ **Code snippets** - Code evolves, docs won't
@@ -192,18 +179,17 @@ Then: <specific instruction, e.g., "Continue implementing X in file Y" or "Run t
 
 **Before submitting PRs:**
 
-1. Run the strongest relevant gate; use `pixi run test-all` when the task
-   affects broad behavior or the risk is unclear.
+1. Suggested (Unverified): Run `pixi run test-all` - comprehensive test suite
 2. Fix any failures before pushing
 3. **Important**: If GitHub CI fails but `test-all` passed locally, update `test-all` to catch that failure
 
 **Before committing:**
 
-- Run `pixi run lint` as required by root `AGENTS.md`
+- Suggested (Unverified): Run `pixi run lint` to catch common issues early
 - Update task status in tracker
 - No author names or ownership attribution
 
 ## Related
 
 - [Main docs](../README.md)
-- [Developer knowledge base](../onboarding/README.md)
+- [Onboarding](../onboarding/README.md)

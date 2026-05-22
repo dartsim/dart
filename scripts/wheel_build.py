@@ -22,7 +22,7 @@ def _is_sccache_launcher(value: str | None) -> bool:
 
 
 def main(argv: list[str]) -> int:
-    use_system_imgui = argv[1].upper() if len(argv) > 1 else "ON"
+    use_system_imgui = argv[1].upper() if len(argv) > 1 else "OFF"
     if use_system_imgui not in {"ON", "OFF"}:
         print(
             f"Invalid use_system_imgui value '{use_system_imgui}'. Expected ON/OFF.",
@@ -67,6 +67,8 @@ def main(argv: list[str]) -> int:
         "-DDART_BUILD_TUTORIALS=OFF",
         "-DBUILD_SHARED_LIBS=OFF",
         f"-DDART_USE_SYSTEM_IMGUI={use_system_imgui}",
+        "-DDART_USE_SYSTEM_FILAMENT=OFF",
+        "-DDART_FETCH_FILAMENT=ON",
         f"-DDART_DISABLE_COMPILER_CACHE={disable_compiler_cache}",
     ]
 

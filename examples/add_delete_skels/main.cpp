@@ -30,134 +30,249 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/macros.hpp"
+#include <dart/config.hpp>
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/utils/All.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/all.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/inertia.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+
 #include <dart/io/read.hpp>
 
+#include <Eigen/Geometry>
+
 #include <iostream>
+#include <memory>
+#include <random>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::gui;
-using namespace dart::gui;
-using namespace dart::utils;
-using namespace dart::math;
+namespace {
 
-class AddDeleteSkelsEventHandler : public ::osgGA::GUIEventHandler
+constexpr const char* kGroundUri = "dart://sample/skel/ground.skel";
+constexpr const char* kGroundName = "add_delete_ground";
+constexpr const char* kCubePrefix = "spawned_cube_";
+
+dart::dynamics::SkeletonPtr createCube(
+    const std::string& name,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& size,
+    const Eigen::Vector3d& color,
+    double mass = 0.1)
 {
-public:
-  AddDeleteSkelsEventHandler(const WorldPtr& world) : mWorld(world) {}
+  auto skeleton = dart::dynamics::Skeleton::create(name);
 
-  bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
+  dart::dynamics::BodyNode::Properties body;
+  body.mName = "cube_link";
+  body.mInertia.setMass(mass);
+  body.mInertia.setMoment(dart::dynamics::BoxShape::computeInertia(size, mass));
+
+  dart::dynamics::FreeJoint::Properties joint;
+  joint.mName = "cube_joint";
+  joint.mT_ParentBodyToJoint = Eigen::Translation3d(position);
+
+  auto pair = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>(
+      nullptr, joint, body);
+  auto shape = std::make_shared<dart::dynamics::BoxShape>(size);
+  auto* shapeNode = pair.second->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
+  shapeNode->getVisualAspect()->setColor(color);
+
+  return skeleton;
+}
+
+struct AddDeleteState
+{
+  explicit AddDeleteState(dart::simulation::WorldPtr inputWorld)
+    : world(std::move(inputWorld)), randomEngine(std::random_device{}())
   {
-    if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
-      switch (ea.getKey()) {
-        case 'q':
-        case 'Q':
-          spawnCube();
-          return true;
-        case 'w':
-        case 'W':
-          if (mWorld->getNumSkeletons() > 1) {
-            mWorld->removeSkeleton(
-                mWorld->getSkeleton(mWorld->getNumSkeletons() - 1));
-          }
-          return true;
-        default:
-          return false;
+  }
+
+  void spawnRandomCube()
+  {
+    if (world == nullptr) {
+      return;
+    }
+
+    std::uniform_real_distribution<double> positionX(-1.0, 1.0);
+    std::uniform_real_distribution<double> positionY(0.5, 1.0);
+    std::uniform_real_distribution<double> positionZ(-1.0, 1.0);
+    std::uniform_real_distribution<double> size(0.1, 0.5);
+    std::uniform_real_distribution<double> color(0.0, 1.0);
+
+    const std::size_t index = nextCubeIndex++;
+    world->addSkeleton(createCube(
+        std::string(kCubePrefix) + std::to_string(index),
+        Eigen::Vector3d(
+            positionX(randomEngine),
+            positionY(randomEngine),
+            positionZ(randomEngine)),
+        Eigen::Vector3d(
+            size(randomEngine), size(randomEngine), size(randomEngine)),
+        Eigen::Vector3d(
+            color(randomEngine), color(randomEngine), color(randomEngine))));
+  }
+
+  void deleteLastCube()
+  {
+    if (world == nullptr || world->getNumSkeletons() <= 1) {
+      return;
+    }
+
+    for (std::size_t i = world->getNumSkeletons(); i > 0; --i) {
+      auto skeleton = world->getSkeleton(i - 1);
+      if (skeleton != nullptr
+          && skeleton->getName().rfind(kCubePrefix, 0) == 0) {
+        world->removeSkeleton(skeleton);
+        return;
       }
     }
-    return false;
   }
 
-  void spawnCube(
-      const Eigen::Vector3d& position = Eigen::Vector3d(
-          Random::uniform(-1.0, 1.0),
-          Random::uniform(0.5, 1.0),
-          Random::uniform(-1.0, 1.0)),
-      const Eigen::Vector3d& size = Eigen::Vector3d(
-          Random::uniform(0.1, 0.5),
-          Random::uniform(0.1, 0.5),
-          Random::uniform(0.1, 0.5)),
-      double mass = 0.1)
-  {
-    SkeletonPtr newCubeSkeleton = Skeleton::create();
-
-    BodyNode::Properties body;
-    body.mName = "cube_link";
-    body.mInertia.setMass(mass);
-    body.mInertia.setMoment(BoxShape::computeInertia(size, mass));
-    ShapePtr newBoxShape(new BoxShape(size));
-
-    FreeJoint::Properties joint;
-    joint.mName = "cube_joint";
-    joint.mT_ParentBodyToJoint = Eigen::Translation3d(position);
-
-    auto pair = newCubeSkeleton->createJointAndBodyNodePair<FreeJoint>(
-        nullptr, joint, body);
-    auto shapeNode = pair.second->createShapeNodeWith<
-        VisualAspect,
-        CollisionAspect,
-        DynamicsAspect>(newBoxShape);
-    shapeNode->getVisualAspect()->setColor(
-        Random::uniform<Eigen::Vector3d>(0.0, 1.0));
-
-    mWorld->addSkeleton(newCubeSkeleton);
-  }
-
-protected:
-  WorldPtr mWorld;
+  dart::simulation::WorldPtr world;
+  std::size_t nextCubeIndex = 0;
+  std::mt19937 randomEngine;
 };
 
-int main()
+std::shared_ptr<AddDeleteState> createAddDeleteState(
+    const dart::simulation::WorldPtr& world)
 {
-  // Create and initialize the world
-  WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/ground.skel");
-  DART_ASSERT(myWorld != nullptr);
-  Eigen::Vector3d gravity(0.0, -9.81, 0.0);
-  myWorld->setGravity(gravity);
+  return std::make_shared<AddDeleteState>(world);
+}
 
-  myWorld->setCollisionDetector(CollisionDetectorType::Dart);
+void preferBulletCollisionDetector(dart::simulation::World& world)
+{
+#if DART_HAVE_BULLET
+  world.setCollisionDetector(dart::simulation::CollisionDetectorType::Bullet);
+#else
+  (void)world;
+#endif
+}
 
-  // Create event handler
-  auto handler = new AddDeleteSkelsEventHandler(myWorld);
+dart::gui::OrbitCamera makeAddDeleteCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.yaw = 0.5404195002705842;
+  camera.pitch = 0.4758822496604165;
+  camera.distance = 6.557438524302;
+  return camera;
+}
 
-  // Create a WorldNode and wrap it around the world
-  ::osg::ref_ptr<RealTimeWorldNode> node = new RealTimeWorldNode(myWorld);
+dart::gui::RunOptions makeAddDeleteRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
 
-  // Create a Viewer and set it up with the WorldNode
-  auto viewer = Viewer();
-  viewer.addWorldNode(node);
-  viewer.addEventHandler(handler);
+dart::simulation::WorldPtr createAddDeleteWorld()
+{
+  auto world = dart::io::readWorld(kGroundUri);
+  if (world == nullptr) {
+    throw std::runtime_error("Failed to load dart://sample/skel/ground.skel");
+  }
 
-  // Print instructions
-  viewer.addInstructionText("'q': spawn a random cube\n");
-  viewer.addInstructionText("'w': delete a spawned cube\n");
-  viewer.addInstructionText("space bar: simulation on/off\n");
-  std::cout << viewer.getInstructions() << std::endl;
+  world->setGravity(Eigen::Vector3d(0.0, -9.81, 0.0));
+  preferBulletCollisionDetector(*world);
+  if (auto ground = world->getSkeleton(0)) {
+    ground->setName(kGroundName);
+  }
+  return world;
+}
 
-  // Set up the window to be 640x480
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+std::vector<dart::gui::KeyboardAction> createAddDeleteKeyboardActions(
+    const std::shared_ptr<AddDeleteState>& state)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
 
-  // Adjust the viewpoint of the Viewer
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(5.0f, 3.0f, 3.0f),
-      ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f));
+  dart::gui::KeyboardAction spawn;
+  spawn.label = "Spawn random cube";
+  spawn.shortcut = dart::gui::KeyboardShortcut::characterKey('q');
+  spawn.callback = [state](dart::gui::KeyboardActionContext&) {
+    state->spawnRandomCube();
+  };
+  actions.push_back(std::move(spawn));
 
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
+  dart::gui::KeyboardAction remove;
+  remove.label = "Delete last spawned cube";
+  remove.shortcut = dart::gui::KeyboardShortcut::characterKey('w');
+  remove.callback = [state](dart::gui::KeyboardActionContext&) {
+    state->deleteLastCube();
+  };
+  actions.push_back(std::move(remove));
 
-  // Begin running the application loop
-  viewer.run();
+  return actions;
+}
 
-  return 0;
+dart::gui::Panel createControlsPanel(
+    const std::shared_ptr<AddDeleteState>& state)
+{
+  dart::gui::Panel panel;
+  panel.title = "Add/Delete Skeletons";
+  panel.buildWithContext = [state](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    builder.text("Spawn or delete dynamic cube skeletons.");
+    builder.text("'q': spawn a random cube");
+    builder.text("'w': delete a spawned cube");
+    builder.text("space bar: simulation on/off");
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    if (builder.button("Spawn Cube")) {
+      state->spawnRandomCube();
+    }
+    builder.sameLine();
+    if (builder.button("Delete Cube")) {
+      state->deleteLastCube();
+    }
+    if (context.world != nullptr) {
+      builder.text(
+          "skeletons: " + std::to_string(context.world->getNumSkeletons()));
+    }
+    builder.text("time: " + std::to_string(context.simulationTime));
+  };
+  return panel;
+}
+
+} // namespace
+
+int main(int argc, char* argv[])
+{
+  try {
+    auto world = createAddDeleteWorld();
+    auto state = createAddDeleteState(world);
+
+    dart::gui::ApplicationOptions options;
+    options.world = world;
+    options.camera = makeAddDeleteCamera();
+    options.runDefaults = makeAddDeleteRunDefaults();
+    options.keyboardActions = createAddDeleteKeyboardActions(state);
+    options.panels.push_back(createControlsPanel(state));
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "add_delete_skels: " << e.what() << "\n";
+    return 1;
+  }
 }

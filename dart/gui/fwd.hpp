@@ -36,33 +36,36 @@
 namespace dart {
 namespace gui {
 
-class BodyNodeDnD;
-class DefaultEventHandler;
-class DragAndDrop;
-class EntityNode;
-class FrameNode;
-class GridVisual;
-class ImGuiHandler;
-class ImGuiViewer;
-class ImGuiWidget;
-class InteractiveFrame;
-class InteractiveFrameDnD;
-class MouseEventHandler;
-class RealTimeWorldNode;
-class SaveScreen;
-class ShapeFrameNode;
-class SimpleFrameDnD;
-class SimpleFrameShapeDnD;
-class SupportPolygonVisual;
-class Viewer;
-class ViewerAttachment;
-class WorldNode;
-
-namespace render {
-
-class ShapeNode;
-
-} // namespace render
+struct ActiveRenderableState;
+struct ApplicationOptions;
+struct DebugLineDescriptor;
+struct DebugTriangleDescriptor;
+struct Gizmo;
+struct GizmoAxisColors;
+struct GizmoHandleHit;
+struct GeometryDescriptor;
+struct BodyNodeDragHandle;
+struct MaterialDescriptor;
+struct MeshGeometry;
+struct MeshIndexRange;
+struct MeshTriangle;
+struct MeshVertex;
+struct OrbitCamera;
+struct OrbitCameraBasis;
+struct OrbitCameraController;
+struct Panel;
+class PanelBuilder;
+struct PanelContext;
+struct PerspectiveProjection;
+struct PickHit;
+struct PickRay;
+struct ProfileAccumulator;
+struct RenderableDescriptor;
+struct RenderableSetUpdatePlan;
+enum class RenderOutputMode;
+struct RenderSettings;
+struct RunOptions;
+struct ViewerLifecycleState;
 
 } // namespace gui
 } // namespace dart

@@ -1,34 +1,27 @@
 # Rigid Loop Example
 
-## Summary
+This example loads `dart://sample/skel/chain.skel`, bends the chain into a
+closed-loop pose, connects `link 6` and `link 10` with a ball-joint constraint,
+and visualizes the constrained dynamics through the promoted `dart::gui`
+runner.
 
-- Goal: form a closed-loop chain using a ball joint constraint.
-- Concepts/APIs: `constraint::BallJointConstraint`, `dart::io::readWorld`.
-- Expected output: an OSG viewer with a chain where two red links close the loop.
-- Controls: space toggles simulation; ESC exits.
+Run it with:
 
-## Details
+```bash
+pixi run ex rigid_loop
+```
 
-The red body nodes are connected by a ball joint constraint to close the
-kinematic loop while the chain moves under gravity and damping.
+Headless capture:
 
-## Build Instructions
+```bash
+pixi run ex rigid_loop --headless --frames 2 --screenshot /tmp/rigid_loop.ppm
+```
 
-From this directory:
+Controls:
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+- Space: play/pause
+- `n`: step one frame while paused
+- Escape: exit
 
-## Execute Instructions
-
-Launch the executable from the build directory above:
-
-    $ ./rigid_loop
-
-## Controls
-
-- Space: play/pause simulation.
-- ESC: exit application.
-- Mouse: rotate, zoom, and pan the camera view.
+The red links are connected by a ball-joint constraint to form the loop. The
+default launch size is 640x480, matching the historical viewer example.

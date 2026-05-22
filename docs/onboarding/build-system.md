@@ -49,14 +49,14 @@
 ### Key Build Options
 
 ```cmake
-DART_BUILD_GUI          = ON   # Build OpenSceneGraph GUI
-DART_BUILD_GUI_RAYLIB       = OFF  # Build experimental Raylib integration
+DART_BUILD_GUI          = ON   # Filament-backed GUI; Linux x86_64 default
+DART_USE_SYSTEM_FILAMENT = ON  # Use installed Filament or Filament_ROOT
+DART_FETCH_FILAMENT     = ON   # Fetch pinned Filament archive fallback
 DART_BUILD_DARTPY           = OFF  # Build Python bindings
 DART_BUILD_PROFILE          = OFF  # Enable profiling support
 DART_PROFILE_TRACY          = OFF  # Enable Tracy profiler backend (developer-only)
 DART_ENABLE_SIMD            = OFF  # Enable SIMD instructions
 DART_USE_SYSTEM_IMGUI       = OFF  # Use system ImGui vs fetch from GitHub
-DART_USE_SYSTEM_RAYLIB      = OFF  # Use system Raylib vs fetch from GitHub
 DART_USE_SYSTEM_GOOGLEBENCHMARK = OFF
 DART_USE_SYSTEM_GOOGLETEST  = OFF
 DART_USE_SYSTEM_TRACY       = OFF
@@ -99,7 +99,7 @@ BUILD_SHARED_LIBS           = ON   # Build shared libraries (Linux/macOS)
 
 - Defines core DART library
 - Manages subdirectory structure
-- Links core dependencies (Eigen3, assimp, fmt, spdlog)
+- Links core dependencies (Eigen3, FCL, assimp, fmt, spdlog)
 - Configures SIMD instructions
 - Sets active log levels
 - Generates `dart/config.hpp`
@@ -113,13 +113,12 @@ dart/
 ├── lcpsolver/      # LCP solver
 ├── optimizer/      # Deprecated alias headers that forward to math/optimization
 ├── dynamics/       # Dynamics engine
-├── collision/      # Built-in collision + compatibility/reference harnesses
+├── collision/      # Collision detection (FCL + optional Bullet/ODE)
 ├── constraint/     # Constraint handling
 ├── simulation/     # Simulation framework + time stepping
 ├── utils/          # Parsers and helpers (URDF/SDF)
-└── gui/            # GUI components (OpenSceneGraph backend)
-    ├── render/     # Shape renderers
-    └── detail/     # Implementation details
+└── gui/            # Filament-backed GUI components
+    └── detail/
 ```
 
 #### 3. dart/gui/CMakeLists.txt
@@ -129,17 +128,15 @@ dart/
 **Responsibilities:**
 
 - Builds `dart-gui` library
-- Integrates OpenSceneGraph
-- Integrates ImGui (system or fetched)
-- Manages render subdirectory
-- Generates component headers (`All.hpp`, `gui.hpp`)
+- Integrates the Filament-backed GUI implementation
+- Integrates GLFW3 and ImGui
+- Generates component headers (`all.hpp`, `gui.hpp`) and installs promoted
+  `dart/gui/*.hpp` scene/viewer descriptor headers
 
 **Dependencies:**
 
-- `dart-utils` (dependent target)
-- OpenSceneGraph 3.0.0+ (external)
-- ImGui 1.80+ (external or fetched)
-- OpenGL (for ImGui backend)
+- private GUI implementation sources
+- Filament 1.71.3, GLFW3, ImGui, PNG, and JPEG for the private backend
 
 ---
 
@@ -154,14 +151,21 @@ dart/
 - **CMake Module:** `cmake/DARTFindEigen3.cmake`
 - **Find Package:** `Eigen3` (CONFIG mode)
 
-#### 2. assimp (Asset Importer)
+#### 2. FCL (Flexible Collision Library)
+
+- **Version:** ≥ 0.7.0, < 0.8
+- **Purpose:** Collision detection
+- **CMake Module:** `cmake/DARTFindfcl.cmake`
+- **ROS Dependency:** `libfcl-dev`
+
+#### 3. assimp (Asset Importer)
 
 - **Version:** ≥ 5.4.3, < 6
 - **Purpose:** 3D model loading (meshes, skeletons)
 - **CMake Module:** `cmake/DARTFindassimp.cmake`
 - **Special Checks:** Constructor/destructor availability for `aiScene` and `aiMaterial`
 
-#### 3. fmt (Formatting Library)
+#### 4. fmt (Formatting Library)
 
 - **Version:** ≥ 11.1.4, < 12
 - **Purpose:** String formatting
@@ -187,33 +191,29 @@ dart/
 
 ### GUI-Specific Dependencies
 
-#### 7. OpenSceneGraph (OSG)
+#### DART GUI Stack
 
-- **Version:** ≥ 3.0.0, < 4
-- **Recommended:** ≥ 3.7.0 (for macOS 10.15+ compatibility)
-- **Purpose:** 3D visualization and rendering
-- **CMake Module:** `cmake/DARTFindOpenSceneGraph.cmake`
-- **Components Required:**
-  - `osg`
-  - `osgViewer`
-  - `osgManipulator`
-  - `osgGA`
-  - `osgDB`
-  - `osgShadow`
-  - `osgUtil`
-- **Target:** `osg::osg` (INTERFACE IMPORTED)
-- **Platform Notes:**
-  - macOS: Manual build required on osx-64 and osx-arm64 (git SHA: `2e4ae2ea94595995c1fc56860051410b0c0be605`)
-  - Linux: Available via conda-forge
-  - Windows: Available via conda-forge
+- **Version:** Filament 1.71.3 for the pinned Linux x86_64 fetch.
+- **Purpose:** Maintained built-in 3D visualization and interaction renderer.
+- **Windowing/UI:** GLFW3 and Dear ImGui are private backend dependencies.
+- **Options:**
+  - `DART_BUILD_GUI=ON` builds `dart-gui`, the `dartsim` executable, and the
+    Filament smoke-test target. It defaults to `ON` only on Linux x86_64, where
+    the pinned Filament archive is supported.
+  - `DART_FETCH_FILAMENT=ON` fetches the pinned Filament archive for supported
+    platforms.
+  - `DART_USE_SYSTEM_FILAMENT=ON` discovers an installed package or `Filament_ROOT`.
 
-#### 8. ImGui (Immediate Mode GUI)
+OpenSceneGraph and Raylib are no longer maintained renderer options in the
+active build.
+
+#### ImGui (Immediate Mode GUI)
 
 - **Version:** ≥ 1.91.9, < 2 (system), v1.84.2 (fetched)
 - **Purpose:** In-scene GUI widgets and overlays
 - **CMake Module:** `cmake/DARTFindimgui.cmake`
 - **Fetch Module:** `dart/external/imgui/CMakeLists.txt`
-- **Backend:** OpenGL2 (for OSG compatibility)
+- **Backend:** Private DART GUI overlay integration
 - **Target:** `imgui::imgui`
 - **Modes:**
   - **System Mode** (`DART_USE_SYSTEM_IMGUI=ON`): Links against system package
@@ -222,79 +222,48 @@ dart/
     - Tag: `v1.84.2`
     - Not installed with DART (local build only)
 
-#### Raylib (Experimental)
+#### Filament
 
-- **Purpose:** Optional/experimental backend for windowing + rendering (in progress)
+- **Purpose:** DART's maintained built-in GUI renderer.
 - **Options:**
-  - **Enable**: `DART_BUILD_GUI_RAYLIB=ON`
-  - **System Mode** (`DART_USE_SYSTEM_RAYLIB=ON`): Links against a system-installed `raylib`
-  - **Fetch Mode** (`DART_USE_SYSTEM_RAYLIB=OFF`): Fetches Raylib from `https://github.com/raysan5/raylib.git` (defaults to the latest git tag)
-  - **Fetch Tag Override**: `DART_RAYLIB_GIT_TAG=<tag>` (only used when fetching)
-- **Note:** In out-of-source example builds, `DART_BUILD_GUI_RAYLIB` may be unset; avoid using it to gate standalone example builds. Prefer guarding only in in-source builds or checking for the `raylib` target.
+  - **Enable**: `DART_BUILD_GUI=ON`
+  - **System Mode** (`DART_USE_SYSTEM_FILAMENT=ON`): Finds an installed
+    Filament tree, typically through `Filament_ROOT`
+  - **Fetch Mode** (`DART_FETCH_FILAMENT=ON`): Explicitly fetches the pinned
+    Filament archive for supported platforms, including official dartpy wheels
+- **Migration:** The full replacement plan lives in
+  [gui-rendering.md](gui-rendering.md). New public GUI APIs should describe
+  DART concepts and keep Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal,
+  OSG, and Raylib types private.
 
-#### 9. OpenGL
+#### OpenGL
 
-- **Purpose:** Graphics rendering (required by ImGui backend)
+- **Purpose:** Platform graphics support used by Filament on OpenGL-capable
+  systems.
 - **Target:** `OpenGL::GL`
 - **Platform:** All (system-provided)
 
-### Collision Reference Dependencies (Optional Inputs)
+### Collision Engine Dependencies (Optional Components)
 
-These dependencies are reference-comparison inputs only. Core DART libraries,
-dartpy, gz-physics runtime integration, and the native-backed
-`collision-fcl`/`collision-bullet`/`collision-ode` compatibility facades do not
-need per-engine collision build switches. The optional FCL, Bullet, and ODE
-reference targets are built only when `DART_BUILD_COLLISION_REFERENCE_TESTS` or
-`DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` is enabled, normally through the
-`collision-reference` Pixi environment. Do not use reference gates as
-compatibility gates for normal core, package, dartpy, or downstream runtime
-builds.
-
-#### 10. FCL (Flexible Collision Library)
-
-- **Version:** ≥ 0.7.0, < 0.8
-- **Purpose:** Optional reference collision implementation for tests and
-  benchmarks
-- **Build gate:** `DART_BUILD_COLLISION_REFERENCE_TESTS` or
-  `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`
-- **Integration:** Builds optional `dart-test-reference-fcl` target.
-  The core DART libraries, dartpy, native-backed compatibility facades, and
-  normal runtime collision stack do not depend on FCL.
-- **CMake Module:** `cmake/DARTFindfcl.cmake`
-- **ROS Dependency:** `libfcl-dev`
-- **Failure mode:** Configuration aborts with `FATAL_ERROR` if reference tests
-  or benchmarks are enabled and FCL is missing.
-- **Disable:** Leave both reference gates `OFF` to omit the target entirely.
-
-#### 11. Bullet Physics
+#### 10. Bullet Physics
 
 - **Version:** ≥ 3.25, < 4
-- **Purpose:** Optional reference collision implementation for tests and
-  benchmarks
-- **Build gate:** `DART_BUILD_COLLISION_REFERENCE_TESTS` or
-  `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`
-- **Integration:** Builds optional `dart-test-reference-bullet` target. The core
-  DART libraries, dartpy, native-backed compatibility
-  facades, and normal runtime collision stack do not depend on Bullet.
+- **Purpose:** Alternative collision detection
+- **Option:** `DART_BUILD_COLLISION_BULLET`
+- **Integration:** Compiled directly into the core `dart` target (no separate component)
 - **CMake Module:** `cmake/DARTFindBullet.cmake`
-- **Failure mode:** Configuration aborts with `FATAL_ERROR` if reference tests
-  or benchmarks are enabled and Bullet is missing.
-- **Disable:** Leave both reference gates `OFF` to omit the target entirely.
+- **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and Bullet is missing.
+- **Disable:** There is no `DART_SKIP_Bullet`; set `DART_BUILD_COLLISION_BULLET=OFF` to omit the backend entirely.
 
-#### 12. Open Dynamics Engine (ODE)
+#### 11. Open Dynamics Engine (ODE)
 
 - **Version:** ≥ 0.13, < 1
-- **Purpose:** Optional reference collision implementation for tests and
-  benchmarks
-- **Build gate:** `DART_BUILD_COLLISION_REFERENCE_TESTS` or
-  `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS`
-- **Integration:** Builds optional `dart-test-reference-ode` target.
-  The core DART libraries, dartpy, native-backed compatibility facades, and
-  normal runtime collision stack do not depend on ODE collision.
+- **Purpose:** Alternative collision detection
+- **Option:** `DART_BUILD_COLLISION_ODE`
+- **Integration:** Compiled directly into the core `dart` target (no separate component)
 - **CMake Module:** `cmake/DARTFindODE.cmake`
-- **Failure mode:** Configuration aborts with `FATAL_ERROR` if reference tests
-  or benchmarks are enabled and ODE is missing.
-- **Disable:** Leave both reference gates `OFF` to omit the target entirely.
+- **Failure mode:** Configuration aborts with `FATAL_ERROR` if the option is `ON` and ODE is missing.
+- **Disable:** There is no `DART_SKIP_ODE`; set `DART_BUILD_COLLISION_ODE=OFF` to omit the backend entirely.
 
 ### Utility Dependencies
 
@@ -356,8 +325,7 @@ builds.
 
 #### macOS
 
-- **Cocoa Framework** (linked with ImGui)
-- **Git:** ≥ 2.40.0 (for OSG build)
+- **Cocoa Framework** (transitively required by windowing/rendering packages)
 
 ---
 
@@ -409,7 +377,7 @@ DART includes several dependencies as part of the source tree under `dart/extern
 
 - Core: `imgui.cpp`, `imgui_draw.cpp`, `imgui_tables.cpp`, `imgui_widgets.cpp`
 - Headers: `imgui.h`, `imgui_internal.h`, `imconfig.h`, `imstb_*.h`
-- Backend: `imgui_impl_opengl2.cpp/h` (OpenGL2 backend for OSG)
+- Backend integration: private DART GUI overlay code
 
 **Dependencies:**
 
@@ -459,18 +427,13 @@ Component Dependency Tree:
 └── dart (core)
     ├── external-odelcpsolver
     ├── Eigen3
+    ├── fcl
     ├── assimp
     ├── fmt
     ├── spdlog (optional)
     ├── octomap (optional)
-    ├── collision-fcl (native-backed compatibility facade; no FCL dependency)
-    ├── collision-bullet (native-backed compatibility facade; no Bullet dependency)
-    └── collision-ode (native-backed compatibility facade; no ODE collision dependency)
-
-Reference test/benchmark targets, when enabled:
-    ├── dart-test-reference-fcl (optional; reference tests/benchmarks only)
-    ├── dart-test-reference-bullet (optional; reference tests/benchmarks only)
-    └── dart-test-reference-ode (optional; reference tests/benchmarks only)
+    ├── Bullet (optional; via `DART_BUILD_COLLISION_BULLET`)
+    └── ODE (optional; via `DART_BUILD_COLLISION_ODE`)
 
     ├── utils
     │   └── depends: dart, tinyxml2, libsdformat
@@ -482,34 +445,21 @@ Reference test/benchmark targets, when enabled:
     │   └── depends: utils (+ utils-urdf when available)
     │
     └── gui
-        └── depends: utils, OpenSceneGraph, ImGui, OpenGL
+        └── depends: private Filament, GLFW3, ImGui implementation
 ```
 
 ### Component Targets
 
-| Component               | Library Target               | Dependencies                                                        |
-| ----------------------- | ---------------------------- | ------------------------------------------------------------------- |
-| `dart`                  | `dart`                       | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `assimp`, `fmt::fmt` |
-| `collision-fcl`         | `dart-collision-fcl`         | `dart`                                                              |
-| `collision-bullet`      | `dart-collision-bullet`      | `dart`                                                              |
-| `collision-ode`         | `dart-collision-ode`         | `dart`                                                              |
-| `test-reference-fcl`    | `dart-test-reference-fcl`    | `dart`, `fcl`                                                       |
-| `test-reference-bullet` | `dart-test-reference-bullet` | `dart`, `Bullet`                                                    |
-| `test-reference-ode`    | `dart-test-reference-ode`    | `dart`, `ODE`                                                       |
-| `utils`                 | `dart-utils`                 | `dart`, `tinyxml2`, `libsdformat`                                   |
-| `utils-urdf`            | `dart-utils-urdf`            | `dart-utils`, `urdfdom`                                             |
-| `io`                    | `dart-io`                    | `dart-utils` (plus `dart-utils-urdf` when available)                |
-| `gui`                   | `dart-gui`                   | `dart-utils`, `osg::osg`, `imgui::imgui`                            |
-| `external-imgui`        | `dart-external-imgui`        | `OpenGL::GL`                                                        |
+| Component        | Library Target        | Dependencies                                                                                                                        |
+| ---------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `dart`           | `dart`                | `dart-external-odelcpsolver`, `Eigen3::Eigen`, `fcl`, `assimp`, `fmt::fmt` (plus Bullet/ODE when the collision options are enabled) |
+| `utils`          | `dart-utils`          | `dart`, `tinyxml2`, `libsdformat`                                                                                                   |
+| `utils-urdf`     | `dart-utils-urdf`     | `dart-utils`, `urdfdom`                                                                                                             |
+| `io`             | `dart-io`             | `dart-utils` (plus `dart-utils-urdf` when available)                                                                                |
+| `gui`            | `dart-gui`            | private GUI implementation, Filament, GLFW3, ImGui, PNG, JPEG                                                                       |
+| `external-imgui` | `dart-external-imgui` | `OpenGL::GL`                                                                                                                        |
 
-> FCL, Bullet, and ODE collision dependencies are optional
-> `dart-test-reference-*` targets. `collision-fcl`,
-> `collision-bullet`, and `collision-ode` remain native-backed compatibility
-> facades that do not add external collision runtime dependencies. Enable
-> `DART_BUILD_COLLISION_REFERENCE_TESTS` or
-> `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` only for explicit reference
-> comparison tests or benchmarks. Core libraries, dartpy, and the
-> native-backed compatibility facades do not need reference gates.
+> Bullet and ODE no longer create standalone `dart-collision-*` components. When `DART_BUILD_COLLISION_BULLET` or `DART_BUILD_COLLISION_ODE` is `ON`, their sources and link dependencies are baked directly into the `dart` target.
 
 > Advanced optimizer targets (IPOPT, NLopt, pagmo, SNOPT) were moved to [dart-optimization](https://github.com/dartsim/dart-optimization). The `dart/optimizer` directory that remains in this repo only ships deprecated headers that forward to `dart/math/optimization`.
 
@@ -525,18 +475,17 @@ dart/
 ├── dynamics/        # Dynamics engine (bodies, joints, skeletons)
 ├── collision/       # Collision detection framework
 │   ├── dart/       # Native collision engine
-│   ├── fcl/        # Native-backed facade + optional FCL reference code
-│   ├── bullet/     # Native-backed facade + optional Bullet reference code
-│   └── ode/        # Native-backed facade + optional ODE collision reference code
+│   ├── fcl/        # FCL collision engine
+│   ├── bullet/     # Bullet collision engine (optional)
+│   └── ode/        # ODE collision engine (optional)
 ├── constraint/      # Constraint solver
 ├── simulation/      # Simulation world, integration, and time stepping
 ├── io/              # Unified model loading (readWorld/readSkeleton)
 ├── utils/           # Utility functions
 │   ├── sdf/        # SDF file parser
 │   └── urdf/       # URDF file parser
-└── gui/             # GUI components (OpenSceneGraph backend)
-    ├── render/      # Rendering utilities
-    └── detail/      # Implementation details
+└── gui/             # Filament-backed GUI components
+    └── detail/
 ```
 
 ---
@@ -565,7 +514,7 @@ dart/
 - **`dart-utils`** - Utility functions
 - **`dart-utils-urdf`** - URDF parser
 - **`dart-io`** - Unified model loading (`dart::io`)
-- **`dart-gui`** - OpenSceneGraph GUI
+- **`dart-gui`** - Filament-backed GUI
 
 ### Python Bindings Target
 
@@ -606,19 +555,18 @@ dart/
 
 Examples are built in `build/.../bin/`:
 
-- `hello_world` - Basic DART usage
-- `atlas_puppet` - Atlas robot control
-- `atlas_simbicon` - Atlas robot with Simbicon controller
-- Various other examples...
+- `dartsim` - Application-level simulator/viewer and migrated visual scenes
+- Historical GUI names such as `hello_world`, `rigid_cubes`, and
+  `drag_and_drop` - thin `dart::gui` launchers for migrated scenes
+- `gui_scene_diagnostics` - Backend-hidden GUI descriptor diagnostics
+- `unified_loading`, `headless_simulation`, `speed_test`, and `csv_logger` -
+  Maintained non-legacy examples
 
 ### Tutorial Executables
 
-Tutorials are built in `build/.../bin/`:
-
-- `tutorial_biped` / `tutorial_biped_finished`
-- `tutorial_collisions` / `tutorial_collisions_finished`
-- `tutorial_dominoes` / `tutorial_dominoes_finished`
-- `tutorial_multi_pendulum` / `tutorial_multi_pendulum_finished`
+The legacy OpenSceneGraph tutorial executables were removed. The
+`DART_BUILD_TUTORIALS` option remains accepted for compatibility but no longer
+adds those targets.
 
 ### Benchmark Executables (Performance Testing)
 
@@ -800,15 +748,11 @@ build/
 - `patch-gz` - Patch DART version requirement
 - `config-gz` - Configure gz-physics build
 - `build-gz` - Build gz-physics with dartsim plugin
-- `test-gz` - Run the full gz-physics test suite and verify DART integration;
-  gz-physics `PERFORMANCE_*` tests run serially after the parallel
-  compatibility pass to avoid timing-threshold noise from CTest parallelism
+- `test-gz` - Verify DART integration
 
 **Start here next time:**
 
-- [`pixi.toml`](../../pixi.toml) (`[feature.gazebo]`) - task chain and
-  dependencies; this environment intentionally does not enable optional
-  FCL/Bullet/ODE reference collision components
+- [`pixi.toml`](../../pixi.toml) (`[feature.gazebo]`) - task chain + env overrides
 - [`scripts/patch_gz_physics.py`](../../scripts/patch_gz_physics.py) - intentionally limited patch scope (DART version only)
 - [`cmake/gz_physics_force_vendor_gtest.cmake`](../../cmake/gz_physics_force_vendor_gtest.cmake) - ensures gz-physics uses its vendored GoogleTest headers
 - [`.github/workflows/ci_gz_physics.yml`](../../.github/workflows/ci_gz_physics.yml) - CI entry point for this workflow
@@ -822,12 +766,9 @@ DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 
 This command downloads the pinned `gz-physics9_9.0.0` branch, applies only the
 DART version-requirement patch from `scripts/patch_gz_physics.py`, configures
-with tests enabled, builds gz-physics and the DART plugin, runs the full
-gz-physics CTest inventory, and checks that the generated
-`libgz-physics-dartsim-plugin` links to DART libraries. The CTest inventory is
-split into parallel non-performance tests plus serial `PERFORMANCE_*` tests so
-upstream timing-threshold tests are not measured while other gz-physics tests
-are competing for the same runner.
+with tests enabled, builds the DART plugin and selected gz-physics tests, runs
+`ctest --tests-regex "^(UNIT_|check_UNIT_|COMMON_TEST_.*dartsim)"`, and checks
+that the generated `libgz-physics-dartsim-plugin` links to DART libraries.
 
 **Fast iteration loop (Suggested (Unverified)):**
 
@@ -838,14 +779,13 @@ are competing for the same runner.
 
 **What to look for (success signal):**
 
-- The full gz-physics CTest inventory passes with `CTEST_OUTPUT_ON_FAILURE=1`
-  (`PERFORMANCE_*` tests are still run, but serially).
+- The selected `UNIT_`, `check_UNIT_`, and `COMMON_TEST_.*dartsim` ctest targets
+  pass with `CTEST_OUTPUT_ON_FAILURE=1`.
 - The plugin linkage check prints a DART library from `ldd` or `otool -L`.
-- `test-gz` prints:
-  `✓ Full gz-physics suite passed and DART plugin links successfully!`
+- `test-gz` prints: `✓ DART plugin built successfully with DART integration!`
 
 For PR or release evidence, paste either the `CI gz-physics` run URL or a short
-local transcript summary with the pinned branch, command, full CTest result,
+local transcript summary with the pinned branch, command, selected ctest regex,
 plugin link-check result, and final success line. If a gz-physics-sensitive
 change skips this gate, state the deferral reason in the PR description.
 
@@ -854,17 +794,10 @@ change skips this gate, state the deferral reason in the PR description.
 - **Missing DART components at configure time.** Example errors:
   - `Could NOT find DART (missing: collision-bullet collision-ode) (Required is at least version "7.0")`
   - `... but it set DART_FOUND to FALSE ...`
-  - **Resolution:** The downstream should be updated to depend only on `dart`
-    for normal runtime collision. The `collision-bullet` and `collision-ode`
-    package components are native-backed compatibility facades; the reference
-    `DART_BUILD_COLLISION_REFERENCE_TESTS` and
-    `DART_BUILD_COLLISION_REFERENCE_BENCHMARKS` gates are for explicit
-    `dart-test-reference-*` comparison builds, not required by core DART,
-    dartpy, gz-physics runtime integration, or native-backed compatibility
-    facades.
+  - **Resolution:** The downstream is requesting legacy components. In DART 7, Bullet/ODE backends are part of the core `dart` component; `collision-bullet` / `collision-ode` exist only as deprecated compatibility components and are planned for removal in DART 8. Prefer to update downstream to depend on `dart`, but keep this workflow passing for existing consumers.
 - **No local gz-physics source patches.** Keep `scripts/patch_gz_physics.py` limited to the DART version requirement bump; otherwise this workflow stops catching real compatibility breaks.
 - **gtest header mismatches.** Symptom: link errors like `undefined reference to testing::internal::MakeAndRegisterTestInfo(std::string, ...)` when building gz-physics tests. The `config-gz` task passes `-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:FILEPATH=$PWD/cmake/gz_physics_force_vendor_gtest.cmake` to ensure gz-physics compiles against the vendored headers that match its vendored gtest library; keep that behavior.
-- **Deprecation noise is expected.** When gz-physics exercises deprecated compatibility APIs, CMake or compiler warnings may appear; these are intentional and should be treated as migration pressure for downstreams.
+- **Deprecation noise is expected.** When gz-physics links the deprecated compatibility targets, CMake may emit deprecation warnings; these are intentional and should be treated as migration pressure for downstreams.
 - **Type-name API compatibility.** `CollisionDetector::getType()` and `BoxedLcpSolver::getType()` return `const std::string&` for gz-physics compatibility; prefer `getTypeView()` in DART code, and keep `test-gz` green before changing signatures.
 - **Constraint solver type compatibility.** gz-physics does `dynamic_cast<BoxedLcpConstraintSolver*>` on the solver returned by `World::getConstraintSolver()`. If `World` creates a base `ConstraintSolver` instead of `BoxedLcpConstraintSolver`, the cast fails and gz-physics tests break (`COMMON_TEST_world_features_dartsim`, `UNIT_WorldFeatures_TEST`). Always use `BoxedLcpConstraintSolver` (deprecated but required) when constructing the solver in `createConstraintSolver()` in `world.cpp`.
 - **The gz-physics checkout is ephemeral.** `download-gz` clones into `.deps/gz-physics`, and `patch-gz` writes a `.bak` backup in that directory; both are expected and should remain untracked.
@@ -903,7 +836,9 @@ change skips this gate, state the deferral reason in the PR description.
 
 ```xml
 <depend>assimp</depend>
+<depend>bullet</depend>
 <depend>eigen</depend>
+<depend>libfcl-dev</depend>
 <depend>liburdfdom-dev</depend>
 <depend>tinyxml2</depend>
 <depend>sdformat</depend>

@@ -3,12 +3,13 @@
 ## Summary
 
 - Goal: keep a biped standing with SPD control while applying perturbations.
-- Concepts/APIs: SPD tracking, custom `RealTimeWorldNode`, external forces.
-- Expected output: a biped that tries to balance under scripted pushes.
-- Controls: space starts simulation; 1-4 apply directional pushes.
-
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+- Concepts/APIs: `dart::io::readWorld`, SPD tracking, external forces,
+  `dart::gui::ApplicationOptions`, custom panels, per-step callbacks, and
+  keyboard actions.
+- Expected output: a posed fullbody biped balancing on the ground.
+- Controls: Space starts or pauses simulation. Keys `1` and `2` push the biped
+  along `+X` and `-X`; keys `3` and `4` push along `+Z` and `-Z`. The panel
+  exposes the same perturbations.
 
 ## Build Instructions
 
@@ -21,8 +22,20 @@ From this directory:
 
 ## Execute Instructions
 
-Launch the executable from the build directory above:
+From the source tree:
 
-    $ ./{generated_executable}
+```bash
+pixi run ex biped_stand
+```
 
-Follow the instructions detailed in the console.
+From a standalone build directory:
+
+```bash
+./biped_stand
+```
+
+Headless capture is also supported through the promoted `dart::gui` runner:
+
+```bash
+pixi run ex biped_stand --headless --frames 2 --screenshot /tmp/biped_stand.ppm
+```

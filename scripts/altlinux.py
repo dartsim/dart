@@ -28,7 +28,6 @@ DEFAULT_PACKAGES = [
     "libfmt-devel",
     "libgtest-devel",
     "libnlopt-devel",
-    "libOpenSceneGraph-devel",
     "libode-devel",
     "libtinyxml2-devel",
     "libfreeglut-devel",
@@ -225,7 +224,7 @@ def test_container(args):
     cmake_args = [
         f"-DCMAKE_BUILD_TYPE={build_type}",
         "-DDART_BUILD_DARTPY=OFF",
-        "-DDART_BUILD_GUI_OSG=ON",
+        "-DDART_BUILD_GUI=OFF",
         "-DDART_ENABLE_SDFORMAT=OFF",
         "-DDART_ENABLE_SIMD=OFF",
         "-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
