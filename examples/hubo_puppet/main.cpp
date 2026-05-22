@@ -1415,6 +1415,7 @@ void addHuboPuppetIkTargets(
     handle.hotkey = config.hotkey;
     handle.target = target;
     handle.ik = ik;
+    handle.solveMode = dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy;
     scene.ikHandles.push_back(std::move(handle));
 
     dart::gui::Gizmo gizmo;

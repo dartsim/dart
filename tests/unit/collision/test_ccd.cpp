@@ -67,6 +67,51 @@ TEST(SphereCastSphere, Miss)
   EXPECT_FALSE(result.isHit());
 }
 
+TEST(SphereCastSphere, DegenerateQuadraticBranches)
+{
+  SphereShape target(1.0);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  constexpr double radius = 0.5;
+
+  CcdOption option;
+
+  {
+    CcdResult result;
+    EXPECT_FALSE(sphereCastSphere(
+        Eigen::Vector3d(5.0, 0.0, 0.0),
+        Eigen::Vector3d(5.0, 0.0, 0.0),
+        radius,
+        target,
+        transform,
+        option,
+        result));
+  }
+
+  {
+    CcdResult result;
+    EXPECT_FALSE(sphereCastSphere(
+        Eigen::Vector3d(5.0, 0.0, 0.0),
+        Eigen::Vector3d(5.0 - 1e-6, 0.0, 0.0),
+        radius,
+        target,
+        transform,
+        option,
+        result));
+  }
+
+  {
+    CcdResult result;
+    EXPECT_FALSE(sphereCastSphere(
+        Eigen::Vector3d(5.0, 0.0, 0.0),
+        Eigen::Vector3d(6.0, 0.0, 0.0),
+        radius,
+        target,
+        transform,
+        option,
+        result));
+  }
+}
+
 TEST(SphereCastSphere, DirectHit)
 {
   SphereShape target(1.0);
@@ -188,6 +233,39 @@ TEST(SphereCastBox, Miss)
       = sphereCastBox(start, end, radius, target, transform, option, result);
 
   EXPECT_FALSE(hit);
+}
+
+TEST(SphereCastBox, SlabMissAndInitialOverlapNormal)
+{
+  BoxShape target(Eigen::Vector3d(1, 1, 1));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  CcdOption option;
+
+  {
+    CcdResult result;
+    EXPECT_FALSE(sphereCastBox(
+        Eigen::Vector3d(-5.0, 2.0, 0.0),
+        Eigen::Vector3d(5.0, 1.5, 0.0),
+        0.1,
+        target,
+        transform,
+        option,
+        result));
+  }
+
+  {
+    CcdResult result;
+    ASSERT_TRUE(sphereCastBox(
+        Eigen::Vector3d(1.2, 0.0, 0.0),
+        Eigen::Vector3d(1.2, 0.0, 0.0),
+        0.5,
+        target,
+        transform,
+        option,
+        result));
+    EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-12);
+    EXPECT_NEAR(result.normal.x(), 1.0, 1e-12);
+  }
 }
 
 TEST(SphereCastBox, HitFrontFace)
@@ -698,6 +776,34 @@ TEST(SphereCastConvex, TranslatedTarget)
   EXPECT_LT(result.timeOfImpact, 0.5);
 }
 
+TEST(SphereCastConvex, StationaryOverlapUsesFallbackDirections)
+{
+  ConvexShape target(
+      {{-1, -1, -1},
+       {1, -1, -1},
+       {1, 1, -1},
+       {-1, 1, -1},
+       {-1, -1, 1},
+       {1, -1, 1},
+       {1, 1, 1},
+       {-1, 1, 1}});
+  const Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  CcdOption option;
+  CcdResult result;
+  ASSERT_TRUE(sphereCastConvex(
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::Zero(),
+      0.25,
+      target,
+      transform,
+      option,
+      result));
+  EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-12);
+  EXPECT_TRUE(result.point.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
+}
+
 //==============================================================================
 // Sphere-cast Mesh tests
 //==============================================================================
@@ -1205,6 +1311,29 @@ TEST(CapsuleCastConvex, DirectHit)
   EXPECT_LT(result.timeOfImpact, 0.5);
 }
 
+TEST(CapsuleCastConvex, StationaryOverlapUsesFallbackDirections)
+{
+  CapsuleShape capsule(0.25, 0.5);
+  ConvexShape target(
+      {{-1, -1, -1},
+       {1, -1, -1},
+       {1, 1, -1},
+       {-1, 1, -1},
+       {-1, -1, 1},
+       {1, -1, 1},
+       {1, 1, 1},
+       {-1, 1, 1}});
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+
+  CcdOption option;
+  CcdResult result;
+  ASSERT_TRUE(capsuleCastConvex(
+      identity, identity, capsule, target, identity, option, result));
+  EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-12);
+  EXPECT_TRUE(result.point.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
+}
+
 //==============================================================================
 // Capsule-cast Mesh tests
 //==============================================================================
@@ -1372,6 +1501,23 @@ TEST(ConservativeAdvancement, StartingInContact)
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.timeOfImpact, 0.0, 0.1);
+}
+
+TEST(ConservativeAdvancement, StationaryOverlapUsesFallbackDirections)
+{
+  ConvexShape shapeA(makeCubeVertices(0.5));
+  ConvexShape shapeB(makeCubeVertices(0.5));
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+
+  CcdOption option;
+  CcdResult result;
+  const bool hit = conservativeAdvancement(
+      shapeA, identity, identity, shapeB, identity, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-12);
+  EXPECT_TRUE(result.point.allFinite());
+  EXPECT_TRUE(result.normal.allFinite());
 }
 
 TEST(ConservativeAdvancement, RotatingShape)

@@ -724,6 +724,7 @@ DartScene createDartScene(const AppOptions& options)
       runtimeHandle.hotkey = handle.hotkey;
       runtimeHandle.target = handle.target;
       runtimeHandle.ik = handle.ik;
+      runtimeHandle.solveMode = handle.solveMode;
       scene.ikHandles.push_back(std::move(runtimeHandle));
     }
     return scene;

@@ -291,19 +291,17 @@ def test_run_args_with_defaults_preserves_explicit_scene(run_cpp_example):
 
 def test_cmake_cache_bool(run_cpp_example, tmp_path):
     cache_path = tmp_path / "CMakeCache.txt"
-    cache_path.write_text("DART_BUILD_GUI_FILAMENT:BOOL=ON\n", encoding="utf-8")
-    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_FILAMENT") is True
+    cache_path.write_text("DART_BUILD_GUI:BOOL=ON\n", encoding="utf-8")
+    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI") is True
 
-    cache_path.write_text("DART_BUILD_GUI_FILAMENT:BOOL=OFF\n", encoding="utf-8")
-    assert (
-        run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_FILAMENT") is False
-    )
+    cache_path.write_text("DART_BUILD_GUI:BOOL=OFF\n", encoding="utf-8")
+    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI") is False
 
-    cache_path.write_text("DART_BUILD_GUI_FILAMENT:BOOL=maybe\n", encoding="utf-8")
-    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_FILAMENT") is None
+    cache_path.write_text("DART_BUILD_GUI:BOOL=maybe\n", encoding="utf-8")
+    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI") is None
 
     cache_path.write_text("UNRELATED:BOOL=ON\n", encoding="utf-8")
-    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI_FILAMENT") is None
+    assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI") is None
 
 
 def test_run_filament_smoke_uses_no_tests_error_when_supported(

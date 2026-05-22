@@ -378,6 +378,23 @@ bool collideShapes(
         });
   }
 
+  if (type1 == ShapeType::Plane && type2 == ShapeType::Convex) {
+    const auto* p = static_cast<const PlaneShape*>(shape1);
+    const auto* c = static_cast<const ConvexShape*>(shape2);
+    return collideWithFlippedNormals(
+        result,
+        option,
+        [&](CollisionResult& local, const CollisionOption& opt) {
+          return collidePlaneConvex(*p, tf1, *c, tf2, local, opt);
+        });
+  }
+
+  if (type1 == ShapeType::Convex && type2 == ShapeType::Plane) {
+    const auto* c = static_cast<const ConvexShape*>(shape1);
+    const auto* p = static_cast<const PlaneShape*>(shape2);
+    return collidePlaneConvex(*p, tf2, *c, tf1, result, option);
+  }
+
   if (type1 == ShapeType::Mesh && type2 == ShapeType::Mesh) {
     const auto* m1 = static_cast<const MeshShape*>(shape1);
     const auto* m2 = static_cast<const MeshShape*>(shape2);

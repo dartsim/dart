@@ -53,6 +53,8 @@ foreach(_dart_filament_cache_var IN ITEMS
     Filament_smol_v_LIBRARY
     Filament_shaders_LIBRARY
     Filament_zstd_LIBRARY
+    Filament_Foundation_LIBRARY
+    Filament_objc_LIBRARY
     Filament_cxx_LIBRARY
     Filament_cxxabi_LIBRARY)
   _dart_filament_unset_missing_cache_path(${_dart_filament_cache_var})
@@ -89,6 +91,16 @@ set(_dart_filament_library_suffixes
   lib/aarch64
   lib/${CMAKE_SYSTEM_PROCESSOR}
 )
+if(MSVC)
+  list(
+    PREPEND
+    _dart_filament_library_suffixes
+    lib/x86_64/md
+    lib/${CMAKE_SYSTEM_PROCESSOR}/md
+    lib/x86_64/mt
+    lib/${CMAKE_SYSTEM_PROCESSOR}/mt
+  )
+endif()
 
 foreach(_lib IN ITEMS filament backend filabridge filaflat utils geometry bluegl bluevk smol-v shaders)
   string(REPLACE "-" "_" _lib_var "${_lib}")
@@ -109,6 +121,20 @@ find_library(Filament_zstd_LIBRARY
 )
 if(Filament_zstd_LIBRARY)
   list(APPEND Filament_LIBRARIES "${Filament_zstd_LIBRARY}")
+endif()
+
+if(APPLE)
+  find_library(Filament_Foundation_LIBRARY NAMES Foundation)
+  if(Filament_Foundation_LIBRARY)
+    list(APPEND Filament_LIBRARIES "${Filament_Foundation_LIBRARY}")
+  endif()
+
+  find_library(Filament_objc_LIBRARY NAMES objc)
+  if(Filament_objc_LIBRARY)
+    list(APPEND Filament_LIBRARIES "${Filament_objc_LIBRARY}")
+  endif()
+elseif(WIN32)
+  list(APPEND Filament_LIBRARIES opengl32)
 endif()
 
 set(_dart_filament_requires_libcxx FALSE)
@@ -212,6 +238,8 @@ mark_as_advanced(
   Filament_smol_v_LIBRARY
   Filament_shaders_LIBRARY
   Filament_zstd_LIBRARY
+  Filament_Foundation_LIBRARY
+  Filament_objc_LIBRARY
   Filament_cxx_LIBRARY
   Filament_cxxabi_LIBRARY
 )

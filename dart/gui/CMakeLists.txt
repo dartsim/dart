@@ -1,4 +1,4 @@
-if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
+if(DART_BUILD_GUI)
   set(core_target_name ${PROJECT_NAME}-gui-core)
   set(core_component_name gui-core)
 
@@ -48,13 +48,11 @@ if(DART_BUILD_GUI OR DART_BUILD_GUI_FILAMENT)
   )
   target_link_libraries(${core_target_name} PUBLIC dart)
 
-  if(DART_BUILD_GUI_FILAMENT)
-    include("${CMAKE_CURRENT_LIST_DIR}/detail/backend_sources.cmake")
-    dart_gui_filament_configure_backend_target(
-      ${core_target_name}
-      GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/filament_generated"
-    )
-  endif()
+  include("${CMAKE_CURRENT_LIST_DIR}/detail/backend_sources.cmake")
+  dart_gui_filament_configure_backend_target(
+    ${core_target_name}
+    GENERATED_DIR "${CMAKE_CURRENT_BINARY_DIR}/filament_generated"
+  )
 
   add_component(${PROJECT_NAME} ${core_component_name})
   add_component_targets(

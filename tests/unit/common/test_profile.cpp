@@ -46,6 +46,25 @@
 using dart::common::profile::Profiler;
 using dart::common::profile::ProfileScope;
 
+  #define DART_TEST_PROFILE_IF_ELSE(profile_statement, marker_value)           \
+    if (true)                                                                  \
+      profile_statement;                                                       \
+    else                                                                       \
+      marker = marker_value
+
+TEST(ProfileMacro, ScopedMacrosAreSingleStatements)
+{
+  int marker = 0;
+
+  DART_TEST_PROFILE_IF_ELSE(DART_PROFILE_SCOPED, 1);
+  DART_TEST_PROFILE_IF_ELSE(
+      DART_PROFILE_SCOPED_N("single-statement named scope"), 2);
+
+  EXPECT_EQ(marker, 0);
+}
+
+  #undef DART_TEST_PROFILE_IF_ELSE
+
 class ProfileTest : public ::testing::Test
 {
 protected:

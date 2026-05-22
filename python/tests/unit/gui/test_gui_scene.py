@@ -5,6 +5,12 @@ from pathlib import Path
 import dartpy as dart
 
 
+requires_gui_bindings = pytest.mark.skipif(
+    not hasattr(dart.gui, "extract_renderables"),
+    reason="dartpy GUI bindings are not built in this configuration",
+)
+
+
 def test_gui_stub_surface_is_backend_hidden():
     repo_root = Path(__file__).resolve().parents[4]
     gui_stub = repo_root / "python" / "stubs" / "dartpy" / "gui" / "__init__.pyi"
@@ -32,6 +38,7 @@ def test_gui_stub_surface_is_backend_hidden():
         assert token not in gui_stub_text
 
 
+@requires_gui_bindings
 def test_gui_extract_renderables_from_world():
     world = dart.World.create("world")
     skeleton = dart.Skeleton("robot")
@@ -96,6 +103,7 @@ def test_gui_extract_renderables_from_world():
     assert np.allclose(hit.normal, [-1.0, 0.0, 0.0])
 
 
+@requires_gui_bindings
 def test_gui_plan_renderable_set_update():
     visible_a = dart.gui.RenderableDescriptor()
     visible_a.id = 1
@@ -147,6 +155,7 @@ def test_gui_plan_renderable_set_update():
     assert versioned_plan.active_renderable_indices_to_remove == [0]
 
 
+@requires_gui_bindings
 def test_gui_pick_sphere_uses_surface_normal():
     world = dart.World.create("world")
     skeleton = dart.Skeleton("sphere_robot")
@@ -168,6 +177,7 @@ def test_gui_pick_sphere_uses_surface_normal():
     assert np.allclose(hit.normal, [expected_x, 0.5, 0.0])
 
 
+@requires_gui_bindings
 def test_gui_pick_multi_sphere_uses_surface_normal():
     renderable = dart.gui.RenderableDescriptor()
     renderable.id = 1
@@ -195,6 +205,7 @@ def test_gui_pick_multi_sphere_uses_surface_normal():
     assert np.allclose(hit.normal, expected_normal)
 
 
+@requires_gui_bindings
 def test_gui_pick_cylinder_uses_surface_normal():
     renderable = dart.gui.RenderableDescriptor()
     renderable.id = 1
@@ -217,6 +228,7 @@ def test_gui_pick_cylinder_uses_surface_normal():
     assert np.allclose(hit.normal, [expected_x, 0.5, 0.0])
 
 
+@requires_gui_bindings
 def test_gui_pick_capsule_uses_surface_normal():
     renderable = dart.gui.RenderableDescriptor()
     renderable.id = 1
@@ -250,6 +262,7 @@ def test_gui_pick_capsule_uses_surface_normal():
     assert np.allclose(cap_hit.normal, [0.5, 0.0, np.sqrt(0.75)])
 
 
+@requires_gui_bindings
 def test_gui_pick_cone_uses_surface_normal():
     renderable = dart.gui.RenderableDescriptor()
     renderable.id = 1
@@ -284,6 +297,7 @@ def test_gui_pick_cone_uses_surface_normal():
     assert np.allclose(base_hit.normal, [0.0, 0.0, -1.0])
 
 
+@requires_gui_bindings
 def test_gui_pick_pyramid_uses_surface_normal():
     renderable = dart.gui.RenderableDescriptor()
     renderable.id = 1
@@ -316,6 +330,7 @@ def test_gui_pick_pyramid_uses_surface_normal():
     assert np.allclose(base_hit.normal, [0.0, 0.0, -1.0])
 
 
+@requires_gui_bindings
 def test_gui_pick_plane_uses_finite_proxy_surface():
     renderable = dart.gui.RenderableDescriptor()
     renderable.id = 1
@@ -342,6 +357,7 @@ def test_gui_pick_plane_uses_finite_proxy_surface():
     assert dart.gui.pick_nearest_renderable([renderable], miss_ray) is None
 
 
+@requires_gui_bindings
 def test_gui_pick_triangle_mesh_uses_surface_triangles():
     renderable = dart.gui.RenderableDescriptor()
     renderable.id = 1
@@ -382,6 +398,7 @@ def test_gui_pick_triangle_mesh_uses_surface_triangles():
     assert dart.gui.pick_nearest_renderable([renderable], miss_ray) is None
 
 
+@requires_gui_bindings
 def test_gui_pick_point_cloud_uses_per_point_box_surface():
     renderable = dart.gui.RenderableDescriptor()
     renderable.id = 1
@@ -411,6 +428,7 @@ def test_gui_pick_point_cloud_uses_per_point_box_surface():
     assert dart.gui.pick_nearest_renderable([renderable], gap_ray) is None
 
 
+@requires_gui_bindings
 def test_gui_pick_voxel_grid_uses_per_voxel_box_surface():
     renderable = dart.gui.RenderableDescriptor()
     renderable.id = 1
@@ -440,6 +458,7 @@ def test_gui_pick_voxel_grid_uses_per_voxel_box_surface():
     assert dart.gui.pick_nearest_renderable([renderable], gap_ray) is None
 
 
+@requires_gui_bindings
 def test_gui_extract_renderables_from_simple_frame():
     world = dart.World.create("world")
     transform = dart.Isometry3()
@@ -479,6 +498,7 @@ def test_gui_extract_renderables_from_simple_frame():
     )
 
 
+@requires_gui_bindings
 def test_gui_debug_grid_lines():
     options = dart.gui.DebugDrawOptions()
     options.grid_half_extent = 1.0
@@ -492,6 +512,7 @@ def test_gui_debug_grid_lines():
     assert np.allclose(lines[0].to_point, [1.0, -1.0, 0.08])
 
 
+@requires_gui_bindings
 def test_gui_translate_free_joint_renderable():
     world = dart.World.create("world")
     skeleton = dart.Skeleton("robot")
@@ -517,6 +538,7 @@ def test_gui_translate_free_joint_renderable():
     )
 
 
+@requires_gui_bindings
 def test_gui_plane_drag_helpers():
     previous_ray = dart.gui.PickRay()
     previous_ray.origin = np.array([0.0, 0.0, 1.0])
@@ -546,6 +568,7 @@ def test_gui_plane_drag_helpers():
     )
 
 
+@requires_gui_bindings
 def test_gui_axis_drag_helpers():
     previous_ray = dart.gui.PickRay()
     previous_ray.origin = np.array([0.0, 0.0, 1.0])
@@ -570,6 +593,7 @@ def test_gui_axis_drag_helpers():
     )
 
 
+@requires_gui_bindings
 def test_gui_center_of_mass_debug_lines():
     world = dart.World.create("world")
     skeleton = dart.Skeleton("robot")
@@ -592,6 +616,7 @@ def test_gui_center_of_mass_debug_lines():
     assert np.allclose(lines[0].to_point, [0.2, 0.0, 0.0])
 
 
+@requires_gui_bindings
 def test_gui_inertia_debug_options():
     world = dart.World.create("world")
     skeleton = dart.Skeleton("robot")
@@ -620,6 +645,7 @@ def test_gui_inertia_debug_options():
     assert extracted_lines[0].label.endswith(".inertia")
 
 
+@requires_gui_bindings
 def test_gui_collision_shape_debug_lines():
     world = dart.World.create("world")
     skeleton = dart.Skeleton("robot")
@@ -650,6 +676,7 @@ def test_gui_collision_shape_debug_lines():
     assert extracted_lines[0].label.endswith(".collision_bounds")
 
 
+@requires_gui_bindings
 def test_gui_support_polygon_debug_options():
     skeleton = dart.Skeleton("supportless")
     options = dart.gui.DebugDrawOptions()
@@ -665,6 +692,7 @@ def test_gui_support_polygon_debug_options():
     assert len(lines) == 0
 
 
+@requires_gui_bindings
 def test_gui_camera_and_run_helpers():
     options = dart.gui.RunOptions()
     options.width = 0
@@ -809,6 +837,7 @@ def test_gui_camera_and_run_helpers():
     assert np.isclose(override_projection.far_plane, 10.0)
 
 
+@requires_gui_bindings
 def test_gui_write_rgba_ppm(tmp_path):
     path = tmp_path / "capture.ppm"
     rgba_pixels = [

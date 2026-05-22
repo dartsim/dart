@@ -44,6 +44,7 @@ class PlaneShape;
 class SphereShape;
 class BoxShape;
 class CapsuleShape;
+class ConvexShape;
 
 [[nodiscard]] DART_COLLISION_NATIVE_API bool collidePlaneSphere(
     const PlaneShape& plane,
@@ -66,6 +67,14 @@ class CapsuleShape;
     const Eigen::Isometry3d& planeTransform,
     const CapsuleShape& capsule,
     const Eigen::Isometry3d& capsuleTransform,
+    CollisionResult& result,
+    const CollisionOption& option = CollisionOption());
+
+[[nodiscard]] DART_COLLISION_NATIVE_API bool collidePlaneConvex(
+    const PlaneShape& plane,
+    const Eigen::Isometry3d& planeTransform,
+    const ConvexShape& convex,
+    const Eigen::Isometry3d& convexTransform,
     CollisionResult& result,
     const CollisionOption& option = CollisionOption());
 

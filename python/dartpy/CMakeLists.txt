@@ -362,6 +362,10 @@ target_compile_definitions(dartpy
     DARTPY_VERSION_INFO="${DART_VERSION}"
 )
 target_compile_options(dartpy PRIVATE "-UNB_COMPACT_ASSERTIONS")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
+   AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_link_options(dartpy PRIVATE "-Wl,-z,noexecstack")
+endif()
 
 if(_dartpy_has_gui)
   target_compile_definitions(dartpy PRIVATE DARTPY_HAS_GUI=1)

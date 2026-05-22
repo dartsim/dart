@@ -12,7 +12,7 @@ add_subdirectory(headless_simulation)
 add_subdirectory(speed_test)
 add_subdirectory(csv_logger)
 
-if(DART_BUILD_GUI_FILAMENT OR NOT DART_IN_SOURCE_BUILD)
+if(DART_BUILD_GUI OR NOT DART_IN_SOURCE_BUILD)
   add_subdirectory(add_delete_skels)
   add_subdirectory(atlas_puppet)
   add_subdirectory(atlas_simbicon)

@@ -89,9 +89,14 @@ void updateFrameUi(
   uiState.fontSize = ImGui::GetFontSize();
   uiState.fontGlobalScale = imguiIo.FontGlobalScale;
   uiState.uiScale = guiScale;
-  if (imguiIo.Fonts != nullptr && imguiIo.Fonts->TexData != nullptr) {
-    uiState.fontTextureSize = std::array<int, 2>{
-        imguiIo.Fonts->TexData->Width, imguiIo.Fonts->TexData->Height};
+  if (imguiIo.Fonts != nullptr) {
+    unsigned char* pixels = nullptr;
+    int width = 0;
+    int height = 0;
+    imguiIo.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+    if (pixels != nullptr && width > 0 && height > 0) {
+      uiState.fontTextureSize = std::array<int, 2>{width, height};
+    }
   }
   dart::gui::PanelContext panelContext{
       dartScene.world.get(),

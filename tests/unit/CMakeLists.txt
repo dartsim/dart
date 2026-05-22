@@ -352,13 +352,13 @@ if(TARGET dart-gui-core)
   target_link_libraries(UNIT_gui_FilamentSceneExtraction dart-gui-core)
 endif()
 
-if(TARGET dart-gui AND NOT DART_USE_SYSTEM_IMGUI)
-  # DART-patched ImGui guard tests only work with fetched ImGui, not system ImGui.
+if(TARGET dart-gui AND TARGET dart-imgui-lib)
+  # DART-patched ImGui guard tests only work with the fetched ImGui target.
   dart_add_test(
     "unit"
     UNIT_gui_ImGuiColorPickerGuard
     gui/test_imgui_color_picker_guard.cpp)
-  target_link_libraries(UNIT_gui_ImGuiColorPickerGuard dart-gui)
+  target_link_libraries(UNIT_gui_ImGuiColorPickerGuard dart-gui dart-imgui-lib)
   dart_add_test(
     "unit" UNIT_gui_ImGuiInternalFormatSymbols
     gui/test_imgui_internal_format_symbols.cpp)

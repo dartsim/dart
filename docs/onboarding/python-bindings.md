@@ -162,7 +162,7 @@ Signals to look for:
 ### For End Users
 
 ```bash
-# PyPI wheels (pre-built, includes the current legacy GUI)
+# PyPI wheels (pre-built, includes the Filament-backed GUI)
 pip install dartpy
 
 # conda-forge
@@ -187,8 +187,8 @@ Wheels are built using **pixi** environments defined in `pixi.toml`:
 
 - Features: `py312-wheel`, `py313-wheel`
 - Platform-specific build tasks
-- Current legacy GUI enabled on all platforms; Filament GUI wheel promotion is
-  still gated by the north-star migration plan
+- Filament-backed GUI enabled on all official wheel platforms through
+  `DART_BUILD_GUI=ON`
 
 ### Publishing Workflow
 

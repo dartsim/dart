@@ -45,6 +45,7 @@
 #include "dart/config.hpp"
 #include "dart/dynamics/box_shape.hpp"
 #include "dart/dynamics/cone_shape.hpp"
+#include "dart/dynamics/cylinder_shape.hpp"
 #include "dart/dynamics/ellipsoid_shape.hpp"
 #include "dart/dynamics/heightmap_shape.hpp"
 #include "dart/dynamics/multi_sphere_convex_hull_shape.hpp"
@@ -83,6 +84,17 @@ std::shared_ptr<SimpleFrame> createBoxFrame(
 {
   auto frame = std::make_shared<SimpleFrame>(Frame::World(), name);
   frame->setShape(std::make_shared<BoxShape>(size));
+  frame->setTranslation(translation);
+  return frame;
+}
+
+std::shared_ptr<SimpleFrame> createShapeFrame(
+    const std::string& name,
+    const ShapePtr& shape,
+    const Eigen::Vector3d& translation)
+{
+  auto frame = std::make_shared<SimpleFrame>(Frame::World(), name);
+  frame->setShape(shape);
   frame->setTranslation(translation);
   return frame;
 }
@@ -232,6 +244,58 @@ TEST(CollisionBackend, PersistentManifoldCacheRefreshRemovesDrifted)
 }
 
 //==============================================================================
+TEST(CollisionBackend, PersistentManifoldCacheRefreshAllKeepsAndDropsPairs)
+{
+  native::PersistentManifoldCache cache;
+
+  native::CachedContact stable;
+  stable.localPointA = Eigen::Vector3d::Zero();
+  stable.localPointB = Eigen::Vector3d::Zero();
+  stable.normal = Eigen::Vector3d::Zero();
+  cache.getOrCreate(1u, 2u).addOrReplace(stable);
+
+  native::CachedContact missing;
+  missing.localPointA = Eigen::Vector3d::Zero();
+  missing.localPointB = Eigen::Vector3d::Zero();
+  cache.getOrCreate(3u, 4u).addOrReplace(missing);
+
+  native::CachedContact drifting;
+  drifting.localPointA = Eigen::Vector3d::Zero();
+  drifting.localPointB = Eigen::Vector3d::Zero();
+  drifting.normal = Eigen::Vector3d::UnitX();
+  cache.getOrCreate(5u, 6u).addOrReplace(drifting);
+
+  cache.refreshAll(
+      [](std::size_t idA, std::size_t idB) {
+        if (idA == 3u || idB == 3u) {
+          return std::optional<
+              std::pair<Eigen::Isometry3d, Eigen::Isometry3d>>();
+        }
+
+        Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+        Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+        if (idA == 5u || idB == 5u) {
+          tfB.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+        }
+        return std::optional<std::pair<Eigen::Isometry3d, Eigen::Isometry3d>>(
+            std::make_pair(tfA, tfB));
+      },
+      0.04);
+
+  EXPECT_EQ(1u, cache.size());
+  auto& kept = cache.getOrCreate(2u, 1u);
+  ASSERT_EQ(1, kept.numContacts);
+  EXPECT_EQ(1, kept.contacts[0].lifetime);
+
+  cache.remove(1u, 2u);
+  EXPECT_EQ(0u, cache.size());
+  cache.getOrCreate(7u, 8u);
+  EXPECT_EQ(1u, cache.size());
+  cache.clear();
+  EXPECT_EQ(0u, cache.size());
+}
+
+//==============================================================================
 TEST(CollisionBackend, PersistentManifoldCacheWarmStartInCollide)
 {
   auto detector = DartCollisionDetector::create();
@@ -298,6 +362,52 @@ TEST(CollisionBackend, PersistentManifoldCacheWarmStartAcrossGroupOrder)
   EXPECT_NEAR(2.5, warm.cachedNormalImpulse, 1e-12);
   EXPECT_NEAR(-0.6, warm.cachedFrictionImpulse1, 1e-12);
   EXPECT_NEAR(0.3, warm.cachedFrictionImpulse2, 1e-12);
+}
+
+//==============================================================================
+TEST(CollisionBackend, PersistentManifoldCacheWarmStartMultipleContacts)
+{
+  auto detector = DartCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  auto boxA = createBoxFrame(
+      "boxA", Eigen::Vector3d::Ones(), Eigen::Vector3d::Zero());
+  auto boxB = createBoxFrame(
+      "boxB", Eigen::Vector3d::Ones(), Eigen::Vector3d(0.8, 0.0, 0.0));
+  group->addShapeFrame(boxA.get());
+  group->addShapeFrame(boxB.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  CollisionResult first;
+  ASSERT_TRUE(group->collide(option, &first));
+  ASSERT_GT(first.getNumContacts(), 1u);
+
+  std::vector<double> expectedImpulses;
+  expectedImpulses.reserve(first.getNumContacts());
+  for (auto i = 0u; i < first.getNumContacts(); ++i) {
+    auto& contact = first.getContact(i);
+    ASSERT_NE(nullptr, contact.userData);
+    auto* cached = static_cast<native::CachedContact*>(contact.userData);
+    cached->cachedNormalImpulse = static_cast<double>(i + 1u);
+    expectedImpulses.push_back(cached->cachedNormalImpulse);
+  }
+  std::sort(expectedImpulses.begin(), expectedImpulses.end());
+
+  CollisionResult second;
+  ASSERT_TRUE(group->collide(option, &second));
+  ASSERT_EQ(first.getNumContacts(), second.getNumContacts());
+
+  std::vector<double> actualImpulses;
+  actualImpulses.reserve(second.getNumContacts());
+  for (auto i = 0u; i < second.getNumContacts(); ++i) {
+    actualImpulses.push_back(second.getContact(i).cachedNormalImpulse);
+  }
+  std::sort(actualImpulses.begin(), actualImpulses.end());
+
+  EXPECT_EQ(expectedImpulses, actualImpulses);
 }
 
 //==============================================================================
@@ -405,6 +515,133 @@ TEST(CollisionBackend, DistanceCrossGroup)
   ASSERT_TRUE(result.found());
   EXPECT_EQ(sphereA.get(), result.shapeFrame1);
   EXPECT_EQ(sphereB.get(), result.shapeFrame2);
+}
+
+//==============================================================================
+TEST(CollisionBackend, PrimitiveAndAdaptedConvexPairsCollideAcrossPairOrder)
+{
+  struct PairCase
+  {
+    const char* name;
+    ShapePtr shapeA;
+    ShapePtr shapeB;
+    Eigen::Vector3d offsetB;
+  };
+
+  const std::vector<PairCase> cases{
+      {"cylinder-cylinder",
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       Eigen::Vector3d(0.4, 0.0, 0.0)},
+      {"cone-cone",
+       std::make_shared<ConeShape>(0.5, 1.0),
+       std::make_shared<ConeShape>(0.5, 1.0),
+       Eigen::Vector3d(0.4, 0.0, 0.0)},
+      {"cylinder-cone",
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       std::make_shared<ConeShape>(0.5, 1.0),
+       Eigen::Vector3d(0.4, 0.0, 0.0)},
+      {"ellipsoid-ellipsoid",
+       std::make_shared<EllipsoidShape>(Eigen::Vector3d(1.0, 0.8, 0.6)),
+       std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.5, 0.4)),
+       Eigen::Vector3d(0.4, 0.0, 0.0)},
+  };
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 4u;
+
+  for (const auto& testCase : cases) {
+    SCOPED_TRACE(testCase.name);
+
+    auto detector = DartCollisionDetector::create();
+    auto frameA
+        = createShapeFrame("shape_a", testCase.shapeA, Eigen::Vector3d::Zero());
+    auto frameB
+        = createShapeFrame("shape_b", testCase.shapeB, testCase.offsetB);
+    auto groupA = detector->createCollisionGroup(frameA.get());
+    auto groupB = detector->createCollisionGroup(frameB.get());
+
+    CollisionResult resultAB;
+    ASSERT_TRUE(
+        detector->collide(groupA.get(), groupB.get(), option, &resultAB));
+    ASSERT_GT(resultAB.getNumContacts(), 0u);
+    EXPECT_TRUE(resultAB.getContact(0).point.allFinite());
+    EXPECT_TRUE(resultAB.getContact(0).normal.allFinite());
+    EXPECT_GE(resultAB.getContact(0).penetrationDepth, 0.0);
+
+    CollisionResult resultBA;
+    ASSERT_TRUE(
+        detector->collide(groupB.get(), groupA.get(), option, &resultBA));
+    ASSERT_GT(resultBA.getNumContacts(), 0u);
+    EXPECT_TRUE(resultBA.getContact(0).point.allFinite());
+    EXPECT_TRUE(resultBA.getContact(0).normal.allFinite());
+    EXPECT_GE(resultBA.getContact(0).penetrationDepth, 0.0);
+  }
+}
+
+//==============================================================================
+TEST(CollisionBackend, PrimitiveAndAdaptedConvexDistancesAcrossPairOrder)
+{
+  struct PairCase
+  {
+    const char* name;
+    ShapePtr shapeA;
+    ShapePtr shapeB;
+    Eigen::Vector3d offsetB;
+  };
+
+  const std::vector<PairCase> cases{
+      {"cylinder-cylinder",
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       Eigen::Vector3d(1.25, 0.0, 0.0)},
+      {"cone-cone",
+       std::make_shared<ConeShape>(0.5, 1.0),
+       std::make_shared<ConeShape>(0.5, 1.0),
+       Eigen::Vector3d(1.25, 0.0, 0.0)},
+      {"cylinder-cone",
+       std::make_shared<CylinderShape>(0.5, 1.0),
+       std::make_shared<ConeShape>(0.5, 1.0),
+       Eigen::Vector3d(1.25, 0.0, 0.0)},
+      {"ellipsoid-ellipsoid",
+       std::make_shared<EllipsoidShape>(Eigen::Vector3d(1.0, 0.8, 0.6)),
+       std::make_shared<EllipsoidShape>(Eigen::Vector3d(0.6, 0.5, 0.4)),
+       Eigen::Vector3d(1.1, 0.0, 0.0)},
+  };
+
+  const DistanceOption option(true, -10.0, nullptr);
+
+  for (const auto& testCase : cases) {
+    SCOPED_TRACE(testCase.name);
+
+    auto detector = DartCollisionDetector::create();
+    auto frameA
+        = createShapeFrame("shape_a", testCase.shapeA, Eigen::Vector3d::Zero());
+    auto frameB
+        = createShapeFrame("shape_b", testCase.shapeB, testCase.offsetB);
+    auto groupA = detector->createCollisionGroup(frameA.get());
+    auto groupB = detector->createCollisionGroup(frameB.get());
+
+    DistanceResult resultAB;
+    const double distanceAB
+        = detector->distance(groupA.get(), groupB.get(), option, &resultAB);
+    ASSERT_TRUE(resultAB.found());
+    EXPECT_GT(distanceAB, 0.0);
+    EXPECT_NEAR(resultAB.unclampedMinDistance, distanceAB, 1e-9);
+    EXPECT_TRUE(resultAB.nearestPoint1.allFinite());
+    EXPECT_TRUE(resultAB.nearestPoint2.allFinite());
+
+    DistanceResult resultBA;
+    const double distanceBA
+        = detector->distance(groupB.get(), groupA.get(), option, &resultBA);
+    ASSERT_TRUE(resultBA.found());
+    EXPECT_NEAR(distanceAB, distanceBA, 1e-9);
+    EXPECT_TRUE(resultBA.nearestPoint1.allFinite());
+    EXPECT_TRUE(resultBA.nearestPoint2.allFinite());
+    EXPECT_TRUE(resultAB.nearestPoint1.isApprox(resultBA.nearestPoint2, 1e-6));
+    EXPECT_TRUE(resultAB.nearestPoint2.isApprox(resultBA.nearestPoint1, 1e-6));
+  }
 }
 
 //==============================================================================
@@ -570,6 +807,9 @@ TEST(CollisionBackend, ConeShapeAdapter)
 
   const auto* convex = static_cast<const native::ConvexShape*>(adapted.get());
   EXPECT_EQ(33u, convex->getVertices().size());
+  const auto localAabb = convex->computeLocalAabb();
+  EXPECT_TRUE(localAabb.min.isApprox(Eigen::Vector3d(-0.5, -0.5, -0.6)));
+  EXPECT_TRUE(localAabb.max.isApprox(Eigen::Vector3d(0.5, 0.5, 0.6)));
 }
 
 //==============================================================================
@@ -586,6 +826,27 @@ TEST(CollisionBackend, EllipsoidShapeAdapter)
 
   const auto* convex = static_cast<const native::ConvexShape*>(adapted.get());
   EXPECT_LT(0u, convex->getVertices().size());
+  const auto localAabb = convex->computeLocalAabb();
+  EXPECT_TRUE(localAabb.min.isApprox(Eigen::Vector3d(-1.0, -1.5, -2.0)));
+  EXPECT_TRUE(localAabb.max.isApprox(Eigen::Vector3d(1.0, 1.5, 2.0)));
+}
+
+//==============================================================================
+TEST(CollisionBackend, SphericalEllipsoidShapeAdapter)
+{
+  auto ellipsoid
+      = std::make_shared<EllipsoidShape>(Eigen::Vector3d(2.0, 2.0, 2.0));
+  ASSERT_TRUE(ellipsoid->isSphere());
+
+  dynamics::ShapePtr ellipsoidShape = ellipsoid;
+  auto adapted = adaptShape(ellipsoidShape);
+  ASSERT_NE(nullptr, adapted);
+  EXPECT_EQ(native::ShapeType::Sphere, adapted->getType());
+
+  const auto* sphere = static_cast<const native::SphereShape*>(adapted.get());
+  EXPECT_DOUBLE_EQ(sphere->getRadius(), 1.0);
+  EXPECT_EQ(sphere->computeLocalAabb().min, Eigen::Vector3d(-1.0, -1.0, -1.0));
+  EXPECT_EQ(sphere->computeLocalAabb().max, Eigen::Vector3d(1.0, 1.0, 1.0));
 }
 
 //==============================================================================
@@ -669,3 +930,31 @@ TEST(CollisionBackend, VoxelGridCollidesAfterOccupancyUpdate)
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_GT(result.getNumContacts(), 0u);
 }
+//==============================================================================
+TEST(CollisionBackend, VoxelGridDistanceAfterOccupancyUpdate)
+{
+  auto detector = DartCollisionDetector::create();
+
+  auto voxelGrid = std::make_shared<VoxelGridShape>(0.1);
+  voxelGrid->updateOccupancy(Eigen::Vector3d::Zero(), true);
+
+  auto voxelFrame
+      = createShapeFrame("voxel_grid", voxelGrid, Eigen::Vector3d::Zero());
+  auto sphereFrame
+      = createSphereFrame("sphere", 0.02, Eigen::Vector3d(0.3, 0.0, 0.0));
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(voxelFrame.get());
+  group->addShapeFrame(sphereFrame.get());
+
+  DistanceResult result;
+  const double distance
+      = group->distance(DistanceOption(true, 0.0, nullptr), &result);
+
+  ASSERT_TRUE(result.found());
+  EXPECT_GT(distance, 0.0);
+  EXPECT_NEAR(result.unclampedMinDistance, distance, 1e-9);
+  EXPECT_TRUE(result.nearestPoint1.allFinite());
+  EXPECT_TRUE(result.nearestPoint2.allFinite());
+}
+#endif

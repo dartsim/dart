@@ -6,11 +6,11 @@ project(${application_name})
 
 set(application_target dartsim)
 
-if(DART_IN_SOURCE_BUILD AND NOT DART_BUILD_GUI_FILAMENT)
+if(DART_IN_SOURCE_BUILD AND NOT DART_BUILD_GUI)
   if(DART_VERBOSE OR NOT DART_IN_SOURCE_BUILD)
     message(
       STATUS
-      "Skipping ${application_name} application (requires DART_BUILD_GUI_FILAMENT=ON)"
+      "Skipping ${application_name} application (requires DART_BUILD_GUI=ON)"
     )
   endif()
   return()

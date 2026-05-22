@@ -115,15 +115,22 @@ jobs:
           for sarif in "${sarif_files[@]}"; do
             tmp="${sarif}.tmp"
             jq '
-              (.runs[]?.results) |= map(
+              def primary_uri:
+                .locations[0].physicalLocation.artifactLocation.uri // "";
+
+              def generated_or_dependency_path:
+                gsub("\\\\"; "/")
+                | (
+                  test("(^|/)(\\.pixi|build|dist|\\.cache)(/|$)")
+                  or test("(^|/)(third-party|external)(/|$)")
+                );
+
+              (.runs[]?.results) |= ((. // []) | map(
                 select(
-                  (
-                    .locations[0].physicalLocation.artifactLocation.uri // ""
-                    | startswith(".pixi/")
-                  )
+                  (primary_uri | generated_or_dependency_path)
                   | not
                 )
-              )
+              ))
             ' "$sarif" > "$tmp"
             mv "$tmp" "$sarif"
           done
@@ -132,3 +139,4 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: sarif-results
+          wait-for-processing: "true"

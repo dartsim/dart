@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/include_im_gui.hpp>
+#include <imgui.h>
 
 #include <gtest/gtest.h>
 

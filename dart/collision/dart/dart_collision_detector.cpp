@@ -39,8 +39,10 @@
 #include "dart/collision/detail/legacy_deprecation.hpp"
 #include "dart/collision/native/persistent_manifold_cache.hpp"
 #include "dart/common/logging.hpp"
+#include "dart/common/profile.hpp"
 #include "dart/dynamics/shape_frame.hpp"
 
+#include <array>
 #include <optional>
 #include <ranges>
 #include <string_view>
@@ -96,29 +98,30 @@ void warmStartContacts(
     native::PersistentManifoldCache* manifoldCache,
     IdResolver&& resolveId)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionDetector::warmStartContacts");
+
   if (!result || !manifoldCache) {
     return;
   }
 
-  for (auto i = 0u; i < result->getNumContacts(); ++i) {
-    auto& contact = result->getContact(i);
+  if (result->getNumContacts() == 1u) {
+    auto& contact = result->getContact(0);
     auto* object1 = contact.collisionObject1;
     auto* object2 = contact.collisionObject2;
     if (!object1 || !object2) {
-      continue;
+      return;
+    }
+
+    const auto id1 = resolveId(object1);
+    const auto id2 = resolveId(object2);
+    if (id1 == 0u || id2 == 0u) {
+      return;
     }
 
     const auto tf1 = object1->getTransform();
     const auto tf2 = object2->getTransform();
     const auto tf1Inv = tf1.inverse();
     const auto tf2Inv = tf2.inverse();
-
-    const auto id1 = resolveId(object1);
-    const auto id2 = resolveId(object2);
-    if (id1 == 0u || id2 == 0u) {
-      continue;
-    }
-
     const bool swapped = id2 < id1;
 
     native::CachedContact cached;
@@ -131,11 +134,19 @@ void warmStartContacts(
 
     auto& manifold = manifoldCache->getOrCreate(id1, id2);
     manifold.addOrReplace(cached);
-    manifold.refresh(swapped ? tf2 : tf1, swapped ? tf1 : tf2);
+    if (manifold.numContacts == 1) {
+      auto& manifoldContact = manifold.contacts[0];
+      contact.cachedNormalImpulse = manifoldContact.cachedNormalImpulse;
+      contact.cachedFrictionImpulse1 = manifoldContact.cachedFrictionImpulse1;
+      contact.cachedFrictionImpulse2 = manifoldContact.cachedFrictionImpulse2;
+      contact.userData = &manifoldContact;
+      return;
+    }
 
+    manifold.refresh(swapped ? tf2 : tf1, swapped ? tf1 : tf2);
     if (manifold.numContacts == 0) {
       manifoldCache->remove(id1, id2);
-      continue;
+      return;
     }
 
     const auto match = manifold.findMatch(cached.localPointA);
@@ -146,7 +157,111 @@ void warmStartContacts(
     contact.cachedFrictionImpulse1 = manifoldContact.cachedFrictionImpulse1;
     contact.cachedFrictionImpulse2 = manifoldContact.cachedFrictionImpulse2;
     contact.userData = &manifoldContact;
+    return;
   }
+
+  CollisionObject* cachedObject1 = nullptr;
+  CollisionObject* cachedObject2 = nullptr;
+  Eigen::Isometry3d tf1;
+  Eigen::Isometry3d tf2;
+  Eigen::Isometry3d tf1Inv;
+  Eigen::Isometry3d tf2Inv;
+  std::size_t id1 = 0u;
+  std::size_t id2 = 0u;
+  bool swapped = false;
+  native::PersistentManifold* manifold = nullptr;
+  std::vector<std::size_t> pendingContactIndices;
+  std::vector<Eigen::Vector3d> pendingLocalPoints;
+  pendingContactIndices.reserve(result->getNumContacts());
+  pendingLocalPoints.reserve(result->getNumContacts());
+
+  auto flushPair = [&]() {
+    if (!manifold || pendingContactIndices.empty()) {
+      return;
+    }
+
+    manifold->refresh(swapped ? tf2 : tf1, swapped ? tf1 : tf2);
+    if (manifold->numContacts == 0) {
+      manifoldCache->remove(id1, id2);
+      manifold = nullptr;
+      pendingContactIndices.clear();
+      pendingLocalPoints.clear();
+      return;
+    }
+
+    std::array<bool, native::PersistentManifold::kMaxContacts> assignedSlots{};
+    for (auto pendingIndex = 0u; pendingIndex < pendingContactIndices.size();
+         ++pendingIndex) {
+      const auto match = manifold->findMatch(pendingLocalPoints[pendingIndex]);
+      if (match < 0) {
+        continue;
+      }
+
+      const auto matchIndex = static_cast<std::size_t>(match);
+      if (assignedSlots[matchIndex]) {
+        continue;
+      }
+      assignedSlots[matchIndex] = true;
+
+      auto& contact = result->getContact(pendingContactIndices[pendingIndex]);
+      auto& manifoldContact = manifold->contacts[matchIndex];
+      contact.cachedNormalImpulse = manifoldContact.cachedNormalImpulse;
+      contact.cachedFrictionImpulse1 = manifoldContact.cachedFrictionImpulse1;
+      contact.cachedFrictionImpulse2 = manifoldContact.cachedFrictionImpulse2;
+      contact.userData = &manifoldContact;
+    }
+
+    manifold = nullptr;
+    pendingContactIndices.clear();
+    pendingLocalPoints.clear();
+  };
+
+  for (auto i = 0u; i < result->getNumContacts(); ++i) {
+    auto& contact = result->getContact(i);
+    auto* object1 = contact.collisionObject1;
+    auto* object2 = contact.collisionObject2;
+    if (!object1 || !object2) {
+      continue;
+    }
+
+    if (object1 != cachedObject1 || object2 != cachedObject2) {
+      flushPair();
+      cachedObject1 = object1;
+      cachedObject2 = object2;
+      tf1 = object1->getTransform();
+      tf2 = object2->getTransform();
+      tf1Inv = tf1.inverse();
+      tf2Inv = tf2.inverse();
+      id1 = resolveId(object1);
+      id2 = resolveId(object2);
+      swapped = id2 < id1;
+    }
+
+    if (id1 == 0u || id2 == 0u) {
+      flushPair();
+      cachedObject1 = nullptr;
+      cachedObject2 = nullptr;
+      continue;
+    }
+
+    if (!manifold) {
+      manifold = &manifoldCache->getOrCreate(id1, id2);
+    }
+
+    native::CachedContact cached;
+    cached.localPointA
+        = swapped ? tf2Inv * contact.point : tf1Inv * contact.point;
+    cached.localPointB
+        = swapped ? tf1Inv * contact.point : tf2Inv * contact.point;
+    cached.normal = contact.normal;
+    cached.penetrationDepth = contact.penetrationDepth;
+
+    manifold->addOrReplace(cached);
+    pendingContactIndices.push_back(i);
+    pendingLocalPoints.push_back(cached.localPointA);
+  }
+
+  flushPair();
 }
 
 template <typename IdResolver>
@@ -155,6 +270,8 @@ void refreshManifoldCache(
     native::PersistentManifoldCache* manifoldCache,
     IdResolver&& resolveId)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionDetector::refreshManifoldCache");
+
   if (!manifoldCache) {
     return;
   }
@@ -188,6 +305,8 @@ void refreshManifoldCache(
     native::PersistentManifoldCache* manifoldCache,
     IdResolver&& resolveId)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionDetector::refreshManifoldCache");
+
   if (!manifoldCache) {
     return;
   }
@@ -306,6 +425,8 @@ bool DartCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionDetector::collideSelf");
+
   clearResult(result);
 
   if (!checkGroupValidity(this, group)) {
@@ -324,8 +445,15 @@ bool DartCollisionDetector::collide(
     warmStartContacts(result, mManifoldCache.get(), resolveId);
   }
 
-  refreshManifoldCache(
-      castedGroup->mCollisionObjects, mManifoldCache.get(), resolveId);
+  const bool currentPairWarmStarted
+      = collision && option.enableContact && result
+        && result->getNumContacts() > 0u
+        && castedGroup->mCollisionObjects.size() == 2u
+        && (!mManifoldCache || mManifoldCache->size() <= 1u);
+  if (!currentPairWarmStarted) {
+    refreshManifoldCache(
+        castedGroup->mCollisionObjects, mManifoldCache.get(), resolveId);
+  }
   return collision;
 }
 
@@ -336,6 +464,8 @@ bool DartCollisionDetector::collide(
     const CollisionOption& option,
     CollisionResult* result)
 {
+  DART_PROFILE_SCOPED_N("DartCollisionDetector::collideGroups");
+
   clearResult(result);
 
   if (!checkGroupValidity(this, group1)) {
@@ -361,11 +491,19 @@ bool DartCollisionDetector::collide(
     warmStartContacts(result, mManifoldCache.get(), resolveId);
   }
 
-  refreshManifoldCache(
-      castedGroup1->mCollisionObjects,
-      castedGroup2->mCollisionObjects,
-      mManifoldCache.get(),
-      resolveId);
+  const bool currentPairWarmStarted
+      = collision && option.enableContact && result
+        && result->getNumContacts() > 0u
+        && castedGroup1->mCollisionObjects.size() == 1u
+        && castedGroup2->mCollisionObjects.size() == 1u
+        && (!mManifoldCache || mManifoldCache->size() <= 1u);
+  if (!currentPairWarmStarted) {
+    refreshManifoldCache(
+        castedGroup1->mCollisionObjects,
+        castedGroup2->mCollisionObjects,
+        mManifoldCache.get(),
+        resolveId);
+  }
   return collision;
 }
 

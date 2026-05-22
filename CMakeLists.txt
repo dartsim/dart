@@ -205,22 +205,11 @@ else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON CATEGORY build)
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF CATEGORY build)
-set(_dart_default_gui_filament OFF)
+set(_dart_default_gui OFF)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
-  set(_dart_default_gui_filament ON)
+  set(_dart_default_gui ON)
 endif()
-dart_option(DART_BUILD_GUI "Build the Filament-backed GUI library" ${_dart_default_gui_filament} CATEGORY build)
-dart_option(DART_BUILD_GUI_FILAMENT "Build the DART GUI application and smoke-test target" OFF CATEGORY build)
-if(DART_BUILD_GUI AND NOT DART_BUILD_GUI_FILAMENT)
-  set(DART_BUILD_GUI_FILAMENT ON)
-  set(
-    DART_BUILD_GUI_FILAMENT
-    ON
-    CACHE BOOL
-    "Build the DART GUI application and smoke-test target"
-    FORCE
-  )
-endif()
+dart_option(DART_BUILD_GUI "Build the Filament-backed GUI library" ${_dart_default_gui} CATEGORY build)
 if(DEFINED DART_BUILD_GUI_RAYLIB AND DART_BUILD_GUI_RAYLIB)
   message(FATAL_ERROR "DART_BUILD_GUI_RAYLIB has been removed. Use the Filament-backed DART GUI instead.")
 endif()
@@ -314,7 +303,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_
 endif()
 dart_option(DART_FETCH_FILAMENT
   "Fetch the pinned Filament archive when a packaged Filament install is unavailable" ${_dart_fetch_filament_default} CATEGORY system)
-unset(_dart_default_gui_filament)
+unset(_dart_default_gui)
 unset(_dart_fetch_filament_default)
 set(DART_FILAMENT_VERSION "1.71.3" CACHE STRING "Filament version for future explicit fetch support")
 mark_as_advanced(DART_FILAMENT_VERSION)
@@ -375,6 +364,12 @@ if(DART_CODECOV)
 
   # Code Coverage Configuration
   add_library(coverage_config INTERFACE)
+  set(DART_COVERAGE_COMPILE_OPTIONS
+    -O0        # no optimization
+    -g         # generate debug info
+    --coverage # sets all required flags
+  )
+  set(DART_COVERAGE_LINK_OPTIONS --coverage)
 
   # CodeCov can only be enabled in Debug mode
   if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -388,13 +383,13 @@ if(DART_CODECOV)
 
   # Add required flags (GCC & LLVM/Clang)
   target_compile_options(coverage_config INTERFACE
-    -O0        # no optimization
-    -g         # generate debug info
-    --coverage # sets all required flags
+    ${DART_COVERAGE_COMPILE_OPTIONS}
   )
 
   # Add required flags (GCC & LLVM/Clang)
-  target_link_options(coverage_config INTERFACE --coverage)
+  target_link_options(coverage_config INTERFACE
+    ${DART_COVERAGE_LINK_OPTIONS}
+  )
 
   # Export CodeCov configuration
   install(TARGETS coverage_config DESTINATION lib EXPORT coverage_config)
@@ -726,28 +721,26 @@ if(TARGET dart)
   endif()
 
   if(DART_BUILD_EXAMPLES)
-    if(TARGET dart-gui)
-      # Add example subdirectories and an "examples" target.
-      if(MSVC)
-        add_subdirectory(examples)
-      else()
-        add_subdirectory(examples EXCLUDE_FROM_ALL)
-        get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
-        add_custom_target(examples DEPENDS ${examples})
-      endif()
-
-      if(DART_VERBOSE)
-        message(STATUS "")
-        message(STATUS "[ Examples ]")
-        foreach(example IN LISTS examples)
-          message(STATUS "Adding example: ${example}")
-        endforeach()
-      else()
-        list(LENGTH examples examples_length)
-        message(STATUS "Adding ${examples_length} examples")
-      endif()
+    # Add example subdirectories and an "examples" target. Individual example
+    # CMake files skip themselves when their optional component targets are
+    # unavailable, so non-GUI examples still build when dart-gui is disabled.
+    if(MSVC)
+      add_subdirectory(examples)
     else()
-      message(STATUS "Skipping examples (requires dart-gui target; enable DART_BUILD_GUI)")
+      add_subdirectory(examples EXCLUDE_FROM_ALL)
+      get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
+      add_custom_target(examples DEPENDS ${examples})
+    endif()
+
+    if(DART_VERBOSE)
+      message(STATUS "")
+      message(STATUS "[ Examples ]")
+      foreach(example IN LISTS examples)
+        message(STATUS "Adding example: ${example}")
+      endforeach()
+    else()
+      list(LENGTH examples examples_length)
+      message(STATUS "Adding ${examples_length} examples")
     endif()
   else()
     message(STATUS "Skipping examples (DART_BUILD_EXAMPLES == OFF)")
@@ -759,7 +752,7 @@ if(TARGET dart)
     message(STATUS "Skipping tutorials (DART_BUILD_TUTORIALS == OFF)")
   endif()
 
-  if(DART_BUILD_GUI_FILAMENT)
+  if(DART_BUILD_GUI)
     if(MSVC)
       add_subdirectory(apps/dartsim)
     else()
@@ -769,7 +762,7 @@ if(TARGET dart)
       add_dependencies(examples dartsim)
     endif()
   else()
-    message(STATUS "Skipping dartsim application (DART_BUILD_GUI_FILAMENT == OFF)")
+    message(STATUS "Skipping dartsim application (DART_BUILD_GUI == OFF)")
   endif()
 
 endif()

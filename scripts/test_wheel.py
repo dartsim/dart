@@ -107,14 +107,11 @@ core_modules = [
     'common',
     'constraint',
     'dynamics',
+    'gui',
     'math',
+    'optimizer',
     'simulation',
     'utils',
-]
-
-# Optional submodules (may not be available on all platforms)
-optional_modules = [
-    'gui',  # Requires the Filament-backed GUI build
 ]
 
 print('Testing core submodules:')
@@ -123,25 +120,14 @@ for module_name in core_modules:
     try:
         module = getattr(dartpy, module_name)
         print(f'  ✓ dartpy.{module_name}')
-    except AttributeError as e:
-        print(f'  ✗ dartpy.{module_name} - MISSING!')
-        failed.append(module_name)
-
-print('\\nTesting optional submodules:')
-for module_name in optional_modules:
-    try:
-        module = getattr(dartpy, module_name)
-        print(f'  ✓ dartpy.{module_name}')
         if module_name == 'gui':
-            has_viewer = hasattr(module, 'Viewer')
             has_scene_api = hasattr(module, 'extract_renderables')
-            viewer_marker = '✓' if has_viewer else '⚠'
-            viewer_detail = 'Viewer available' if has_viewer else 'Viewer missing'
-            scene_marker = '✓' if has_scene_api else '⚠'
+            scene_marker = '✓' if has_scene_api else '✗'
             scene_detail = 'scene API available' if has_scene_api else 'scene API missing'
-            print(f'    {viewer_marker} dartpy.gui ({viewer_detail})')
             print(f'    {scene_marker} dartpy.gui scene API ({scene_detail})')
-            if has_scene_api:
+            if not has_scene_api:
+                failed.append('gui.extract_renderables')
+            else:
                 import numpy as np
 
                 world = dartpy.World.create('wheel_gui')
@@ -165,7 +151,8 @@ for module_name in optional_modules:
                     )
                 print('    ✓ dartpy.gui scene smoke')
     except AttributeError as e:
-        print(f'  ⚠ dartpy.{module_name} not available (optional)')
+        print(f'  ✗ dartpy.{module_name} - MISSING!')
+        failed.append(module_name)
 
 if failed:
     print(f'\\n✗ ERROR: Missing required modules: {failed}')

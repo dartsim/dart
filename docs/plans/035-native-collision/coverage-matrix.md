@@ -26,6 +26,11 @@ Current branch bar:
   covered by tests.
 - Comparable performance surfaces have benchmark rows, even if later
   optimization remains open.
+- Generated upstream inventory and row-level mapping live in
+  [`upstream-inventory.md`](upstream-inventory.md) and
+  [`upstream-case-map.md`](upstream-case-map.md). Those files account for FCL,
+  Bullet, and ODE source tests, demos, kernels, and benchmark scenarios before
+  this DART-owned taxonomy summarizes the durable feature bar.
 - Rows outside the current feature-complete pass are marked `DEFERRED` with a
   feature/performance rationale instead of remaining hidden in a temporary
   dev-task folder.

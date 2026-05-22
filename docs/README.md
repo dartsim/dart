@@ -4,57 +4,40 @@ This directory contains documentation for DART users, developers, and contributo
 
 ## For New Contributors
 
-**Start here:** [onboarding/README.md](onboarding/README.md) - Complete developer onboarding guide with architecture, components, and workflows.
+**Start here:** [onboarding/README.md](onboarding/README.md) - Developer
+knowledge base and onboarding guide for architecture, components, and
+workflows.
 
 ## Documentation Structure
 
-### Developer And Agent Docs (Markdown)
+| Directory                               | Owns                                                                |
+| --------------------------------------- | ------------------------------------------------------------------- |
+| [`ai/`](ai/README.md)                   | AI-native principles, north star, workflow map, sessions, and gates |
+| [`assets/`](assets/)                    | Source-controlled assets used by repository docs outside RTD static |
+| [`background/`](background/README.md)   | Theory and research foundations derived from preserved source PDFs  |
+| [`design/`](design/README.md)           | Durable technical design proposals and decision rationale           |
+| [`dev_tasks/`](dev_tasks/README.md)     | Active multi-session implementation task tracking                   |
+| [`doxygen/`](doxygen/)                  | Doxygen inputs consumed by the published C++ API build              |
+| [`onboarding/`](onboarding/README.md)   | Developer knowledge base, onboarding, architecture, and workflows   |
+| [`plans/`](plans/README.md)             | Living roadmap, priority, open gaps, gates, and plan lifecycle      |
+| [`python_api/`](python_api/index.rst)   | Reusable dartpy API module pages for Sphinx autodoc                 |
+| [`readthedocs/`](readthedocs/README.md) | Published user documentation site source                            |
 
-Located in `onboarding/`, `ai/`, and `plans/` - **architecture, workflow, and
-planning guides for developers and agents:**
-
-- **[Onboarding Guide](onboarding/README.md)** - Complete internal architecture overview with diagrams
-- [AI Agent Entrypoint](ai/README.md) - AI-native principles, north star, workflow map, verification gates, sessions, and component ownership
-- [Living Plans](plans/README.md) - Planning rules, operating dashboard, and strategic roadmap
-- [Core Architecture](onboarding/architecture.md) - Deep dive into simulation engine internals
-- [Aspect System](onboarding/aspect-system.md) - Aspect/State/Properties design and implementation
-- [Dynamics System](onboarding/dynamics.md) - Articulated body system and kinematics
-- [Constraint Solver](onboarding/constraints.md) - Constraint resolution and collision response
-- [GUI & Rendering](onboarding/gui-rendering.md) - Filament renderer
-  architecture, workflow, and verification
-- [Python Bindings](onboarding/python-bindings.md) - nanobind bindings architecture
-- [Build System](onboarding/build-system.md) - CMake internals and dependency analysis
-- [Building from Source](onboarding/building.md) - Step-by-step build instructions
-- [Code Style Guide](onboarding/code-style.md) - Code conventions for C++, Python, and CMake
-- [Model Loading (IO)](onboarding/io-parsing.md) - Unified model loading API (`dart::io`)
-
-_Format: Markdown (GitHub/LLM-friendly) for internal codebase understanding_
-
-### Supporting Documentation Buckets
-
-- `assets/` - Shared documentation images and generated visual assets
-- `background/` - Theory and research foundations
-- `design/` - Durable architecture and design decision records
-- `dev_tasks/` - Active multi-session implementation task state
-- `doxygen/` - API documentation generation inputs
-- `python_api/` - Generated or staged Python API documentation
-
-### User Documentation (ReadTheDocs)
-
-Located in `readthedocs/` - **Published documentation for end users:**
-
-- **[User Guides](readthedocs/dart/user_guide/)** - Installation, tutorials, migration guides
-- **[API Reference](https://dart.readthedocs.io/)** - Published API documentation
-
-_Format: ReStructuredText (RST) for Sphinx/ReadTheDocs publishing_
+The Markdown developer and agent docs are optimized for GitHub and LLM-friendly
+inspection. The published site under `readthedocs/` is Sphinx/RST plus MyST
+Markdown and owns end-user navigation.
 
 ## Quick Links by Task
 
-- **New to DART?** → [onboarding/README.md](onboarding/README.md)
+- **New to DART development?** → [onboarding/README.md](onboarding/README.md)
 - **Building from source?** → [onboarding/building.md](onboarding/building.md)
 - **Contributing code?** → [onboarding/contributing.md](onboarding/contributing.md) + [onboarding/code-style.md](onboarding/code-style.md)
 - **Understanding architecture?** → [onboarding/architecture.md](onboarding/architecture.md)
+- **Writing durable design rationale?** → [design/README.md](design/README.md) + [onboarding/api-boundaries.md](onboarding/api-boundaries.md)
+- **Understanding theory?** → [background/README.md](background/README.md)
+- **Published docs/API site?** → [readthedocs/README.md](readthedocs/README.md) + [onboarding/api-documentation.md](onboarding/api-documentation.md)
 - **Revising project plans?** → [plans/README.md](plans/README.md) + [plans/dashboard.md](plans/dashboard.md) + [plans/north-star-roadmap.md](plans/north-star-roadmap.md)
 - **Using AI agent workflows?** → [ai/README.md](ai/README.md) + [ai/principles.md](ai/principles.md) + [ai/north-star.md](ai/north-star.md) + [onboarding/ai-tools.md](onboarding/ai-tools.md)
+- **Letting AI pick next work?** → [ai/README.md#choosing-the-next-task](ai/README.md#choosing-the-next-task) + [ai/workflows.md](ai/workflows.md)
 - **Using DART API?** → [dart.readthedocs.io](https://dart.readthedocs.io/)
-- **Looking for examples?** → [examples/](../examples/)
+- **Looking for examples?** → [examples/](../examples/) and [tutorials/](../tutorials/)

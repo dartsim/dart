@@ -42,6 +42,15 @@ namespace dart::collision::native {
 
 namespace {
 
+[[nodiscard]] bool hasIdentityRotation(const Eigen::Isometry3d& transform)
+{
+  const auto& rotation = transform.linear();
+  return rotation(0, 0) == 1.0 && rotation(0, 1) == 0.0 && rotation(0, 2) == 0.0
+         && rotation(1, 0) == 0.0 && rotation(1, 1) == 1.0
+         && rotation(1, 2) == 0.0 && rotation(2, 0) == 0.0
+         && rotation(2, 1) == 0.0 && rotation(2, 2) == 1.0;
+}
+
 struct SegmentClosestPointResult
 {
   Eigen::Vector3d point1;
@@ -107,6 +116,109 @@ SegmentClosestPointResult closestPointsBetweenSegments(
   return result;
 }
 
+bool collideVerticalCapsules(
+    double radius1,
+    double radius2,
+    double halfHeight1,
+    double halfHeight2,
+    const Eigen::Vector3d& translation1,
+    const Eigen::Vector3d& translation2,
+    CollisionResult& result)
+{
+  const double minZ1 = translation1.z() - halfHeight1;
+  const double maxZ1 = translation1.z() + halfHeight1;
+  const double minZ2 = translation2.z() - halfHeight2;
+  const double maxZ2 = translation2.z() + halfHeight2;
+
+  double z1 = minZ1;
+  double z2 = minZ2;
+  if (maxZ1 < minZ2) {
+    z1 = maxZ1;
+    z2 = minZ2;
+  } else if (maxZ2 < minZ1) {
+    z1 = minZ1;
+    z2 = maxZ2;
+  } else {
+    z1 = z2 = std::max(minZ1, minZ2);
+  }
+
+  const double dx = translation1.x() - translation2.x();
+  const double dy = translation1.y() - translation2.y();
+  const double dz = z1 - z2;
+  const double sumRadii = radius1 + radius2;
+
+  if (dy == 0.0 && dz == 0.0) {
+    const double dist = std::abs(dx);
+    if (dist > sumRadii) {
+      return false;
+    }
+
+    const double penetration = sumRadii - dist;
+    if (dist < 1e-10) {
+      result.addContact(
+          translation2.x(),
+          translation2.y(),
+          z2 + radius2 - penetration * 0.5,
+          0.0,
+          0.0,
+          1.0,
+          penetration);
+    } else {
+      const double normalX = dx / dist;
+      result.addContact(
+          translation2.x() + normalX * (radius2 - penetration * 0.5),
+          translation2.y(),
+          z2,
+          normalX,
+          0.0,
+          0.0,
+          penetration);
+    }
+    return true;
+  }
+
+  if (dx == 0.0 && dz == 0.0) {
+    const double dist = std::abs(dy);
+    if (dist > sumRadii) {
+      return false;
+    }
+
+    const double penetration = sumRadii - dist;
+    const double normalY = dy / dist;
+    result.addContact(
+        translation2.x(),
+        translation2.y() + normalY * (radius2 - penetration * 0.5),
+        z2,
+        0.0,
+        normalY,
+        0.0,
+        penetration);
+    return true;
+  }
+
+  const double distSquared = dx * dx + dy * dy + dz * dz;
+  if (distSquared > sumRadii * sumRadii) {
+    return false;
+  }
+
+  const double dist = std::sqrt(distSquared);
+  const double penetration = sumRadii - dist;
+
+  Eigen::Vector3d normal;
+  if (dist < 1e-10) {
+    normal = Eigen::Vector3d::UnitZ();
+  } else {
+    normal = Eigen::Vector3d(dx, dy, dz) / dist;
+  }
+
+  const Eigen::Vector3d contactPoint
+      = Eigen::Vector3d(translation2.x(), translation2.y(), z2)
+        + normal * (radius2 - penetration * 0.5);
+
+  result.addContact(contactPoint, normal, penetration);
+  return true;
+}
+
 } // namespace
 
 bool collideCapsules(
@@ -125,6 +237,17 @@ bool collideCapsules(
   const double radius2 = capsule2.getRadius();
   const double halfHeight1 = capsule1.getHeight() * 0.5;
   const double halfHeight2 = capsule2.getHeight() * 0.5;
+
+  if (hasIdentityRotation(transform1) && hasIdentityRotation(transform2)) {
+    return collideVerticalCapsules(
+        radius1,
+        radius2,
+        halfHeight1,
+        halfHeight2,
+        transform1.translation(),
+        transform2.translation(),
+        result);
+  }
 
   const Eigen::Vector3d localTop1(0, 0, halfHeight1);
   const Eigen::Vector3d localBottom1(0, 0, -halfHeight1);

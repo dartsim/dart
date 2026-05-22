@@ -51,12 +51,23 @@
 
 namespace dart::gui {
 
+enum class InverseKinematicsSolveMode
+{
+  /// Solve the IK module attached to the target handle directly.
+  Target,
+
+  /// Solve the owning Skeleton's HierarchicalIK module.
+  SkeletonHierarchy,
+};
+
 struct InverseKinematicsHandle
 {
   std::string label;
   int hotkey = 0;
   dart::dynamics::SimpleFramePtr target;
   dart::dynamics::InverseKinematicsPtr ik;
+  /// Selects local target IK or the owning skeleton hierarchy for GUI nudges.
+  InverseKinematicsSolveMode solveMode = InverseKinematicsSolveMode::Target;
 };
 
 struct BodyNodeDragHandle

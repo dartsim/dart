@@ -290,7 +290,6 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
 
     desired = {
         "DART_BUILD_GUI": "ON",
-        "DART_BUILD_GUI_FILAMENT": "ON",
         "DART_BUILD_EXAMPLES": "ON",
         "DART_BUILD_TUTORIALS": "OFF",
         "DART_USE_SYSTEM_FILAMENT": use_system_filament,

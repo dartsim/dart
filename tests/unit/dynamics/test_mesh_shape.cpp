@@ -2515,7 +2515,8 @@ TEST(MeshShapeTest, ExtractMaterialsPreservesPbrMetadata)
   ASSERT_EQ(
       scene->mMaterials[0]->AddProperty(
           &metallicRoughnessTexture,
-          AI_MATKEY_TEXTURE(aiTextureType_GLTF_METALLIC_ROUGHNESS, 0)),
+          _AI_MATKEY_TEXTURE_BASE,
+          AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE),
       AI_SUCCESS);
 #endif
   aiString normalTexture("textures/normal.png");
