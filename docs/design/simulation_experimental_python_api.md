@@ -137,6 +137,12 @@ and frame-to-frame closure constraints. The closure API should separate the
 topology definition from runtime choices such as enabled state, residual-only
 diagnostics, kinematic projection, and dynamic constraint solving.
 
+Closure arguments should use symmetric names such as `frame_a`/`frame_b` or
+`endpoint_a`/`endpoint_b`, never `parent`/`child`. A Python user should be able
+to define a closed-chain topology once, then choose whether a pipeline reports
+residuals, projects kinematic state, or participates in dynamic constraint
+solving without rebuilding the topology.
+
 ### Fresh Results Without Dirty-Flag API
 
 The long-term API should not make users manually reason about dirty flags.
@@ -348,6 +354,12 @@ operate in simulation mode. Positive-count stepping may enter simulation mode
 after validation; zero-count stepping is a no-op. Python and C++ should share
 the same DART 8 lifecycle semantics so users do not learn different rules by
 language.
+
+The current DART 7 binding already auto-enters simulation mode for
+`world.step(n=...)`, while the C++ experimental surface still requires
+explicit simulation-mode entry. That language difference should not survive
+DART 8 promotion. The official API should define the same validation,
+auto-finalization, zero-count, and topology-mutation rules in both languages.
 
 ### Lifecycle And Finalization
 
@@ -622,9 +634,19 @@ closure = world.add_loop_closure(
     "four_bar_closure",
     frame_a=ground_frame,
     frame_b=coupler,
-    transform=sx.Transform.identity(),
+    relative_transform=(
+        (1.0, 0.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0, 0.0),
+        (0.0, 0.0, 0.0, 1.0),
+    ),
+    family=sx.LoopClosureFamily.RIGID,
+)
+
+closure.runtime_policy = sx.LoopClosureRuntimePolicy(
     enabled=True,
-    projection=sx.LoopProjectionPolicy.KINEMATIC,
+    kinematics=sx.ClosureKinematicsPolicy.PROJECT,
+    dynamics=sx.ClosureDynamicsPolicy.SOLVE,
 )
 ```
 
@@ -634,28 +656,40 @@ The exact names can change before promotion, but the API should distinguish:
 - closure topology from runtime participation policy;
 - kinematic projection, residual-only diagnostics, and full dynamic constraint
   solving as selectable runtime behavior;
+- topology validation and finalization from per-step runtime activation;
 - spatial closure families such as rigid, point, distance, and axis closures;
+- scalar couplers and gear constraints from spatial loop closures;
 - public tolerance, stabilization, enable/disable, and diagnostic fields
   without exposing backend solver rows.
+
+Closed-chain APIs must define ownership and lifetime. World-owned closures are
+the conservative default because endpoints may span multibodies, rigid bodies,
+and the world frame. A `MultiBody.add_loop_closure(...)` convenience can
+forward to the world only when both endpoints are in the same owner. Cross-world
+endpoints must be rejected, and removal, serialization, topology rebuilds, and
+`world.clear()` must document handle invalidation.
 
 Closed-chain APIs must define how closures affect DOF counts, state-space
 metadata, serialization, collision filtering, handle validity, and residual
 reporting. `MultiBody.num_dofs` should continue to mean the underlying tree
 coordinate dimension; closures add residual rows, active flags, tolerances,
-convergence status, and force/impulse diagnostics. A kinematics-only pipeline
-should state whether it projects closure errors, reports residuals only, or
-requires an explicit projection stage. Dynamic closure behavior belongs to a
-named constraint or implicit-dynamics stage, not to ordinary frame-cache
-refresh.
+convergence status, and force/impulse diagnostics. A future diagnostics value
+should include residual vectors and norms, units and frame conventions,
+active/enabled state, projection or solve convergence, tolerance used, and
+force/impulse availability. A kinematics-only pipeline should state whether it
+projects closure errors, reports residuals only, or requires an explicit
+projection stage. Dynamic closure behavior belongs to a named constraint or
+implicit-dynamics stage, not to ordinary frame-cache refresh.
 
 Existing engine APIs point to the same broad shape. MuJoCo models loop joints
 as equality constraints such as connect and weld constraints outside the
-kinematic tree; Drake exposes named multibody constraints and locks topology at
-finalization; Project Chrono exposes link handles with relative-motion and
-diagnostic concepts; Bullet exposes generic typed constraints between rigid
-bodies. DART should keep the pattern of explicit closure handles and
-diagnostics, but use DART-owned names and value objects for the public Python
-API. See the companion C++ design for source links and lower-level constraints.
+kinematic tree; Drake exposes named spatial constraints and separate coupler
+constraints with topology locked at finalization; Project Chrono exposes link
+handles with relative-motion, enable/disable, and diagnostic concepts; Bullet
+exposes generic typed constraints between rigid bodies. DART should keep the
+pattern of explicit closure handles, runtime activation, and diagnostics, but
+use DART-owned names and value objects for the public Python API. See the
+companion C++ design for source links and lower-level constraints.
 
 For Python, the user-facing lesson is that `add_loop_closure(...)` should look
 like normal object construction, while lower-level residual rows, solver

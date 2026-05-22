@@ -121,6 +121,12 @@ a fake child joint, or an exposed solver row. It is public topology plus
 runtime policy, with the implementation free to choose the constraint
 formulation behind that facade.
 
+Closure endpoints should use symmetric names such as `frameA`/`frameB` or
+`endpointA`/`endpointB`, never `parent`/`child`. Runtime policy such as enabled
+state, residual-only reporting, kinematic projection, and dynamic solving
+should be separate from topology so a closed-chain definition can stay stable
+while solver participation changes by pipeline stage.
+
 ### Fresh Results Without Dirty-Flag API
 
 The long-term API should preserve the safety of DART 6 lazy evaluation without
@@ -341,9 +347,14 @@ auto closure = world.addLoopClosure(
         .frameA = groundFrame,
         .frameB = couplerLink,
         .relativeTransform = Eigen::Isometry3d::Identity(),
-        .enabled = true,
-        .projection = sx::LoopProjectionPolicy::Kinematic,
+        .family = sx::LoopClosureFamily::Rigid,
     });
+
+closure.setRuntimePolicy(sx::LoopClosureRuntimePolicy{
+    .enabled = true,
+    .kinematics = sx::ClosureKinematicsPolicy::Project,
+    .dynamics = sx::ClosureDynamicsPolicy::Solve,
+});
 ```
 
 The exact type names can change before promotion, but the public contract
@@ -353,6 +364,7 @@ should distinguish:
 - closure topology, which names the endpoint frames and residual family;
 - runtime participation, such as enabled/disabled state, kinematic projection,
   residual-only reporting, and full dynamic constraint solving;
+- topology validation and finalization from per-step runtime activation;
 - spatial closure families such as rigid, distance, point, and axis closures
   without naming them after an implementation engine;
 - scalar multibody coupling families, such as joint couplers and gear
@@ -368,6 +380,14 @@ only when both endpoints are in the same owner. Cross-world endpoints must be
 rejected, and removal, serialization, topology rebuilds, and `World::clear()`
 must document handle invalidation.
 
+Topology validation must reject degenerate endpoint pairs, cross-world
+endpoints, unsupported closure families for the selected pipeline, and
+inconsistent initial guesses when the policy requires an initially satisfied
+closure. After validation or simulation-mode finalization, adding or removing
+closures should require an explicit reset, rebuild, or clear operation. First
+`World::step()` may perform this freeze in the common path only if the timing
+and failure modes are documented.
+
 Closed-chain APIs must define how closures affect DOF counting, state-space
 metadata, loop validation, serialization, collision filtering, and diagnostics.
 The expected baseline is that `MultiBody::getDOFCount()` reports the
@@ -382,15 +402,22 @@ reports residuals only, or requires the caller to select an explicit projection
 stage. Dynamic closure behavior belongs to a named constraint or
 implicit-dynamics stage, not to ordinary frame-cache refresh.
 
+Diagnostics should be queryable without exposing solver rows directly. A future
+diagnostic value can include the residual vector and norm, residual units and
+frame convention, active/enabled state, projection or solve convergence status,
+iteration count, tolerance used, and force or impulse estimates expressed in a
+documented endpoint frame. If the active pipeline only reports residuals, force
+and impulse fields should be absent or explicitly marked unavailable.
+
 The API should keep the useful lessons from existing engines without inheriting
 their public vocabulary:
 
-| Engine/API pattern      | Lesson for DART's public API                                                                                   |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
-| MuJoCo equality models  | Keep loop closures outside the kinematic tree as named residuals that can feed dynamics.                       |
-| Drake multibody plant   | Separate topology construction from finalization so closed-chain dimensions, constraints, and ports are known. |
-| Project Chrono links    | Return public constraint/link handles with relative-motion and reaction diagnostics.                           |
-| Bullet typed constraint | Support enable/disable, feedback, and solver policy without making a generic backend constraint the API.       |
+| Engine/API pattern      | Lesson for DART's public API                                                                                     |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| MuJoCo equality models  | Keep loop closures outside the kinematic tree as named residuals that can feed dynamics.                         |
+| Drake multibody plant   | Separate topology construction from finalization, and keep scalar couplers distinct from spatial closures.       |
+| Project Chrono links    | Return public constraint/link handles with relative-motion, enable/disable, and reaction diagnostics.            |
+| Bullet typed constraint | Support enable/disable, feedback, and solver policy without making a generic backend constraint the primary API. |
 
 - MuJoCo models loop joints through equality constraints with residuals
   `r(q) = 0`, including connect and weld constraints outside the kinematic
@@ -434,7 +461,10 @@ world.step(100);
 
 For DART 7, `World::step()` and `World::step(count)` may enter simulation mode
 as a common-path convenience, while `World::updateKinematics()` remains an
-explicit simulation-mode synchronization hook. DART 8 promotion must make the
+explicit simulation-mode synchronization hook. The current DART 7 C++ surface
+still requires explicit simulation-mode entry for stepping and kinematics
+updates, while dartpy currently auto-enters for `step(n)`. That mismatch is
+acceptable only during the experimental stage. DART 8 promotion must make the
 C++ and Python lifecycle rules identical: zero-count repeated stepping is a
 no-op, positive-count stepping validates/finalizes once before the first step,
 and topology mutation after finalization requires documented reset, rebuild, or
