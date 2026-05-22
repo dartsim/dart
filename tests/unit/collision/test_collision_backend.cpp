@@ -957,4 +957,3 @@ TEST(CollisionBackend, VoxelGridDistanceAfterOccupancyUpdate)
   EXPECT_TRUE(result.nearestPoint1.allFinite());
   EXPECT_TRUE(result.nearestPoint2.allFinite());
 }
-#endif
