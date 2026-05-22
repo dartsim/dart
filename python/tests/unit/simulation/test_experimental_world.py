@@ -167,6 +167,35 @@ def test_experimental_api_exposes_python_names_only():
             assert not hasattr(target, name), f"{target.__name__}.{name}"
 
 
+def test_experimental_stub_tracks_public_runtime_symbols():
+    sx = _simulation_experimental()
+    repo_root = Path(__file__).resolve().parents[4]
+    stub = (
+        repo_root / "python" / "stubs" / "dartpy" / "simulation_experimental.pyi"
+    ).read_text(encoding="utf-8")
+
+    public_symbols = (
+        "WorldSyncStage",
+        "ClosureKinematicsPolicy",
+        "ClosureDynamicsPolicy",
+        "LoopClosureRuntimePolicy",
+        "LoopClosureResidual",
+        "LoopClosureResidualCoordinates",
+    )
+    for symbol in public_symbols:
+        assert hasattr(sx, symbol), symbol
+        assert f'"{symbol}"' in stub
+        assert f"class {symbol}" in stub
+
+    for member in (
+        "runtime_policy",
+        "compute_residual",
+        "def sync(",
+        "force_available",
+    ):
+        assert member in stub
+
+
 def test_experimental_world_smoke():
     sx = _simulation_experimental()
 
@@ -228,12 +257,26 @@ def test_experimental_multibody_link_joint_common_path():
         axis=(0.0, 0.0, 2.0),
     )
     forearm = arm.add_link("forearm", parent=base, joint=spec)
+    tool = world.add_fixed_frame(
+        "tool",
+        forearm,
+        offset=_translation_transform(1.0, 0.0, 0.0),
+    )
+    slider = arm.add_link(
+        "slider",
+        parent=base,
+        joint=sx.JointSpec(
+            name="rail",
+            type=sx.JointType.PRISMATIC,
+            axis=(1.0, 0.0, 0.0),
+        ),
+    )
 
     assert forearm.name == "forearm"
     assert forearm.get_name() == "forearm"
-    assert arm.num_links == 2
-    assert arm.num_joints == 1
-    assert arm.num_dofs == 1
+    assert arm.num_links == 3
+    assert arm.num_joints == 2
+    assert arm.num_dofs == 2
     assert arm.get_link("base").name == "base"
     assert arm.get_link("missing") is None
 
@@ -262,18 +305,29 @@ def test_experimental_multibody_link_joint_common_path():
     assert joint.position.tolist() == pytest.approx([0.25])
     joint.position = np.asarray([0.5], dtype=float)
     assert joint.get_position().tolist() == pytest.approx([0.5])
+    joint.position = [math.pi / 2.0]
 
     joint.set_velocity((-0.75,))
     assert joint.velocity.tolist() == pytest.approx([-0.75])
     joint.velocity = [1.25]
     assert joint.get_velocity().tolist() == pytest.approx([1.25])
 
+    slider_joint = slider.parent_joint
+    slider_joint.position = [2.0]
+
+    world.enter_simulation_mode()
+    world.sync(sx.WorldSyncStage.KINEMATICS)
+    assert tool.translation.tolist() == pytest.approx([0.0, 1.0, 0.0])
+    assert slider.translation.tolist() == pytest.approx([2.0, 0.0, 0.0])
+    assert world.time == pytest.approx(0.0)
+    assert world.frame == 0
+
     world.step()
 
     assert world.is_simulation_mode
-    assert joint.position.tolist() == pytest.approx([0.5])
+    assert joint.position.tolist() == pytest.approx([math.pi / 2.0])
     assert joint.velocity.tolist() == pytest.approx([1.25])
-    assert forearm.translation.tolist() == pytest.approx([0.0, 0.0, 0.0])
+    assert tool.translation.tolist() == pytest.approx([0.0, 1.0, 0.0])
 
 
 def test_experimental_loop_closure_topology_api():
@@ -373,6 +427,13 @@ def test_experimental_loop_closure_topology_api():
     assert residual.value.tolist() == pytest.approx([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
     assert residual.norm == pytest.approx(1.0)
 
+    coupler.parent_joint.position = [math.pi / 2.0]
+    world.sync(sx.WorldSyncStage.KINEMATICS)
+    residual = closure.compute_residual()
+    assert residual.value.tolist() == pytest.approx(
+        [0.5, 0.5, 0.0, 0.0, 0.0, math.pi / 2.0]
+    )
+
 
 def test_experimental_frame_handles_support_kinematics_only_updates():
     sx = _simulation_experimental()
@@ -400,7 +461,10 @@ def test_experimental_frame_handles_support_kinematics_only_updates():
     parent.local_transform = _translation_transform(3.0, 0.0, 0.0)
 
     assert child.translation.tolist() == pytest.approx([3.0, 2.0, 0.0])
-    world.update_kinematics()
+    world.sync()
+    assert world.time == pytest.approx(0.0)
+    assert world.frame == 0
+    world.sync(sx.WorldSyncStage.KINEMATICS)
     assert child.transform[:3, 3].tolist() == pytest.approx([3.0, 2.0, 0.0])
 
 

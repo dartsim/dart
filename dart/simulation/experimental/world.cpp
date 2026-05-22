@@ -104,6 +104,17 @@ void executeKinematicsGraph(World& world, compute::ComputeExecutor& executor)
 }
 
 //==============================================================================
+bool isValidWorldSyncStage(WorldSyncStage stage)
+{
+  switch (stage) {
+    case WorldSyncStage::Kinematics:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
 bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
 {
   if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
@@ -667,21 +678,42 @@ std::size_t World::getFrame() const noexcept
 }
 
 //==============================================================================
-void World::updateKinematics()
+void World::sync(WorldSyncStage stage)
 {
   compute::SequentialExecutor executor;
-  updateKinematics(executor);
+  sync(stage, executor);
+}
+
+//==============================================================================
+void World::sync(WorldSyncStage stage, compute::ComputeExecutor& executor)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !m_simulationMode,
+      InvalidArgumentException,
+      "World::sync() requires simulation mode");
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValidWorldSyncStage(stage),
+      InvalidArgumentException,
+      "World::sync() stage is invalid");
+
+  switch (stage) {
+    case WorldSyncStage::Kinematics:
+      executeKinematicsGraph(*this, executor);
+      return;
+  }
+}
+
+//==============================================================================
+void World::updateKinematics()
+{
+  sync(WorldSyncStage::Kinematics);
 }
 
 //==============================================================================
 void World::updateKinematics(compute::ComputeExecutor& executor)
 {
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !m_simulationMode,
-      InvalidArgumentException,
-      "updateKinematics() requires simulation mode");
-
-  executeKinematicsGraph(*this, executor);
+  sync(WorldSyncStage::Kinematics, executor);
 }
 
 //==============================================================================

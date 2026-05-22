@@ -36,6 +36,7 @@
 
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
+#include <dart/simulation/experimental/world_sync_stage.hpp>
 
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
@@ -113,6 +114,8 @@ public:
   void setTime(double time);
   [[nodiscard]] double getTime() const noexcept;
   [[nodiscard]] std::size_t getFrame() const noexcept;
+  void sync(WorldSyncStage stage = WorldSyncStage::Kinematics);
+  void sync(WorldSyncStage stage, compute::ComputeExecutor& executor);
   void updateKinematics();
   void updateKinematics(compute::ComputeExecutor& executor);
   void step();

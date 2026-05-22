@@ -238,12 +238,12 @@ the release roadmap.
 - `dart::simulation::experimental::World` owns the new world lifecycle,
   topology construction, stepping, compute-executor overloads, serialization,
   and registry-backed storage.
-- `World::updateKinematics()` executes the kinematics graph without the default
-  rigid-body integration stage, and its executor overload lets the same
-  kinematics-only path use backend-neutral compute execution. In DART 7 this
-  remains an explicit simulation-mode synchronization hook; the DART 8 target
-  is fresh-by-default ordinary queries plus named synchronization hooks for
-  predictable batching.
+- `World::sync(WorldSyncStage::Kinematics)` executes the kinematics graph
+  without the default rigid-body integration stage, and its executor overload
+  lets the same kinematics-only path use backend-neutral compute execution.
+  `World::updateKinematics()` remains available in DART 7 as the existing
+  synchronization spelling. The DART 8 target is fresh-by-default ordinary
+  queries plus named synchronization hooks for predictable batching.
 - Default `World::step()` composes rigid-body integration followed by
   kinematics through `WorldStepPipeline`, and executor/pipeline overloads
   already allow selected stage execution and repeated stepping with
@@ -371,7 +371,7 @@ auto body = world.addRigidBody("box", sx::RigidBodyOptions{});
 auto robot = world.addMultiBody("arm");
 
 world.enterSimulationMode();
-world.updateKinematics();
+world.sync(sx::WorldSyncStage::Kinematics);
 world.step();
 ```
 
@@ -577,9 +577,11 @@ world.step(100);
 ```
 
 For DART 7, `World::step()` and `World::step(count)` enter simulation mode as a
-common-path convenience, while `World::updateKinematics()` remains an explicit
-simulation-mode synchronization hook. DART 8 promotion must keep the C++ and
-Python lifecycle rules identical: zero-count repeated stepping is a no-op,
+common-path convenience, while `World::sync(WorldSyncStage::Kinematics)` is the
+preferred explicit simulation-mode synchronization hook for predictable
+kinematics-only work placement. `World::updateKinematics()` remains a DART 7
+spelling over the same stage. DART 8 promotion must keep the C++ and Python
+lifecycle rules identical: zero-count repeated stepping is a no-op,
 positive-count stepping validates/finalizes once before the first step, and
 topology mutation after finalization requires documented reset, rebuild, or
 clear behavior. Repeated stepping should reuse the same executor and pipeline
@@ -615,7 +617,7 @@ The public distinction should be pipeline intent, not a separate world type:
 ```cpp
 world.enterSimulationMode();
 joint.setPosition(q);
-world.updateKinematics();
+world.sync(sx::WorldSyncStage::Kinematics);
 ```
 
 When callers need predictable work placement or alternate execution policy,
@@ -623,11 +625,12 @@ the same kinematics-only path accepts the backend-neutral executor facade:
 
 ```cpp
 compute::TaskflowExecutor executor;
-world.updateKinematics(executor);
+world.sync(sx::WorldSyncStage::Kinematics, executor);
 ```
 
-A future convenience wrapper may name a kinematics-only tick or pipeline, but
-the durable C++ contract is:
+`World::updateKinematics()` delegates to this sync stage in DART 7. A future
+convenience wrapper may name a kinematics-only tick or pipeline, but the durable
+C++ contract is:
 
 - kinematics-only execution updates frames and caches without integrating
   forces, velocities, or rigid-body state;
@@ -654,9 +657,9 @@ The C++ public contract should be:
 - ordinary object queries return fresh values by default;
 - joint position writes invalidate affected kinematic outputs internally; users
   do not observe dirty flags, cache bits, or registry versions;
-- the current DART 7 joint position/velocity wrappers expose state storage, but
-  they do not yet promise closed-chain projection or full joint-state-driven
-  forward kinematics until those solver stages are implemented;
+- the current DART 7 joint position/velocity wrappers drive open-chain
+  forward-kinematics refreshes for standard tree joints, but closed-chain
+  projection remains a staged solver capability;
 - `World::step()` and kinematics-only tick/sync methods guarantee freshness for
   the stage bundle they execute;
 - explicit synchronization methods remain available for controllers,
@@ -688,8 +691,9 @@ fields:
   those concepts; transform, velocity, mass, inertia, force, and torque now
   have public wrappers.
 - Joint state, limits, effort/control commands, and transforms should be added
-  through public methods before examples use those concepts; joint DOF count
-  and generalized position/velocity now have public wrappers.
+  through public methods before examples use those concepts; joint DOF count,
+  generalized position/velocity, and open-chain FK refreshes now have public
+  wrappers.
 - World state access should use public state views or explicit copy/write-back
   APIs, not direct registry mappers.
 - Public handles must document validity after `World::clear()`, entity removal,
@@ -877,7 +881,7 @@ the DART 8 contract:
 
 - direct loading from existing model formats into the new world;
 - collision geometry, shape materials, contacts, constraints, and actuators;
-- loop-closure residual diagnostics, kinematic projection, and dynamic solving;
+- loop-closure kinematic projection and dynamic solving;
 - complete rigid-body and multibody dynamics state access;
 - sensors and rendering integration;
 - batched worlds and accelerator-specific execution;

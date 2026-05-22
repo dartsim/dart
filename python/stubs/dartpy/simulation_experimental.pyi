@@ -14,13 +14,19 @@ __all__: list[str] = [
     "JointSpec",
     "JointType",
     "Link",
+    "ClosureDynamicsPolicy",
+    "ClosureKinematicsPolicy",
     "LoopClosure",
     "LoopClosureFamily",
+    "LoopClosureResidual",
+    "LoopClosureResidualCoordinates",
+    "LoopClosureRuntimePolicy",
     "LoopClosureSpec",
     "MultiBody",
     "RigidBody",
     "RigidBodyOptions",
     "World",
+    "WorldSyncStage",
 ]
 
 
@@ -40,6 +46,24 @@ class LoopClosureFamily(Enum):
     RIGID = 0
     POINT = 1
     DISTANCE = 2
+
+
+class LoopClosureResidualCoordinates(Enum):
+    WORLD = 0
+
+
+class WorldSyncStage(Enum):
+    KINEMATICS = 0
+
+
+class ClosureKinematicsPolicy(Enum):
+    RESIDUAL_ONLY = 0
+    PROJECT = 1
+
+
+class ClosureDynamicsPolicy(Enum):
+    RESIDUAL_ONLY = 0
+    SOLVE = 1
 
 
 class JointSpec:
@@ -73,6 +97,29 @@ class LoopClosureSpec:
     family: LoopClosureFamily
     offset_a: NDArray[np.float64]
     offset_b: NDArray[np.float64]
+
+
+class LoopClosureRuntimePolicy:
+    def __init__(
+        self,
+        enabled: bool = True,
+        kinematics: ClosureKinematicsPolicy = ...,
+        dynamics: ClosureDynamicsPolicy = ...,
+    ) -> None:
+        ...
+
+    enabled: bool
+    kinematics: ClosureKinematicsPolicy
+    dynamics: ClosureDynamicsPolicy
+
+
+class LoopClosureResidual:
+    value: NDArray[np.float64]
+    norm: float
+    enabled: bool
+    active: bool
+    coordinates: LoopClosureResidualCoordinates
+    force_available: bool
 
 
 class RigidBodyOptions:
@@ -251,6 +298,7 @@ class LoopClosure:
     frame_b: Frame
     offset_a: NDArray[np.float64]
     offset_b: NDArray[np.float64]
+    runtime_policy: LoopClosureRuntimePolicy
     is_valid: bool
 
     def get_name(self) -> str:
@@ -269,6 +317,15 @@ class LoopClosure:
         ...
 
     def get_offset_b(self) -> NDArray[np.float64]:
+        ...
+
+    def get_runtime_policy(self) -> LoopClosureRuntimePolicy:
+        ...
+
+    def set_runtime_policy(self, policy: LoopClosureRuntimePolicy) -> None:
+        ...
+
+    def compute_residual(self) -> LoopClosureResidual:
         ...
 
 
@@ -429,6 +486,9 @@ class World:
         ...
 
     def update_kinematics(self) -> None:
+        ...
+
+    def sync(self, stage: WorldSyncStage = ...) -> None:
         ...
 
     def step(self, n: int = 1) -> None:

@@ -282,12 +282,12 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
   `examples/rigid_loop`, `examples/coupler_constraint`, and
   `examples/mimic_pendulums` are reference material for import compatibility
   and semantics, not the DART 7/8 Python API shape.
-- `World::updateKinematics()` already executes a kinematics graph without the
-  default rigid-body integration stage, and the current dartpy module exposes
-  that operation through the experimental binding. C++ also has an executor
-  overload for backend-neutral kinematics-only execution; dartpy should expose
-  executor customization only after Python compute wrappers are deliberately
-  promoted.
+- `world.sync(sx.WorldSyncStage.KINEMATICS)` already executes a kinematics
+  graph without the default rigid-body integration stage, and
+  `world.update_kinematics()` remains available in DART 7 as the existing
+  synchronization spelling. C++ also has an executor overload for
+  backend-neutral kinematics-only execution; dartpy should expose executor
+  customization only after Python compute wrappers are deliberately promoted.
 - The C++ `WorldStepPipeline` can execute selected stages, while default
   `World::step()` composes rigid-body integration followed by kinematics.
   C++ repeated-step overloads can reuse caller-owned executor and pipeline
@@ -351,6 +351,7 @@ dartpy.simulation_experimental
   Joint
   JointType
   JointSpec
+  WorldSyncStage
   LoopClosure
   LoopClosureFamily
   LoopClosureRuntimePolicy
@@ -414,7 +415,7 @@ Operations stay method-shaped:
 world.add_rigid_body("box", mass=1.0)
 world.add_multi_body("arm")
 world.enter_simulation_mode()
-world.update_kinematics()
+world.sync(sx.WorldSyncStage.KINEMATICS)
 world.step()
 world.step(n=100)
 world.clear()
@@ -504,11 +505,12 @@ stage composition:
 ```python
 world.enter_simulation_mode()
 joint.position = q
-world.update_kinematics()
+world.sync(sx.WorldSyncStage.KINEMATICS)
 ```
 
-`update_kinematics()` is a synchronization hook, not a burden every user must
-remember before reading a transform. Property reads and query APIs should either
+`sync(...)` is a synchronization hook, not a burden every user must remember
+before reading a transform. `update_kinematics()` remains a DART 7 spelling
+over the same kinematics stage. Property reads and query APIs should either
 ensure the needed kinematic freshness or make any advanced unchecked mode
 explicit.
 
@@ -546,12 +548,14 @@ The API should define these rules:
 - state writes invalidate derived kinematics, collision, rendering, and sensor
   data as needed;
 - `joint.position` and `joint.velocity` are vector properties with length
-  `joint.num_dofs`; they expose state storage today, while closed-chain
-  projection and full joint-state-driven forward kinematics remain staged work;
+  `joint.num_dofs`; position writes drive open-chain forward-kinematics
+  refreshes for standard tree joints, while closed-chain projection remains a
+  staged solver capability;
 - ordinary object properties and query methods produce fresh results by
   default, even if that triggers internal synchronization;
-- bulk workloads can call `world.update_kinematics()` or a future
-  `world.sync(...)` once, then read many values without repeated hidden work;
+- bulk workloads can call `world.sync(sx.WorldSyncStage.KINEMATICS)` or the
+  DART 7 `world.update_kinematics()` spelling once, then read many values
+  without repeated hidden work;
 - advanced unchecked reads, if added, must be visibly named and documented as
   possibly stale;
 - query APIs that can be expensive should support an explicit update policy
@@ -561,7 +565,7 @@ One possible future query shape is:
 
 ```python
 # Future shape, not a DART 7 API promise.
-world.sync(sx.Stage.KINEMATICS)
+world.sync(sx.WorldSyncStage.KINEMATICS)
 poses = robot.links.transforms
 contacts = world.collision.query(update=sx.UpdatePolicy.IF_STALE)
 ```
@@ -658,7 +662,7 @@ Use methods for operations:
 ```python
 world.step()
 world.clear()
-world.update_kinematics()
+world.sync(sx.WorldSyncStage.KINEMATICS)
 robot.add_link("base")
 body.apply_force((1.0, 0.0, 0.0))
 ```
@@ -847,7 +851,7 @@ forearm = arm.add_link(
     ),
 )
 
-world.update_kinematics()
+world.sync(sx.WorldSyncStage.KINEMATICS)
 ```
 
 `RigidBodyOptions` is a good initial value object because its public fields
@@ -1054,7 +1058,7 @@ updates and before optional visualization or sensor updates:
 ```python
 # Future shape, not a DART 7 API promise.
 robot.joints.position = q
-world.update_kinematics()
+world.sync(sx.WorldSyncStage.KINEMATICS)
 contacts = world.collision.query()
 visible = world.visibility.query(camera)
 ```
@@ -1146,7 +1150,7 @@ they have public C++ owner APIs and objective-specific verification:
 
 - file loading directly into the experimental world;
 - collision geometry, shape materials, contacts, constraints, and actuators;
-- loop-closure residual diagnostics, kinematic projection, and dynamic solving;
+- loop-closure kinematic projection and dynamic solving;
 - rigid-body collision coupling and broader pose/state accessors beyond the
   currently public transform, velocity, mass, inertia, force, and torque
   wrapper set;
@@ -1268,7 +1272,7 @@ forearm = arm.add_link(
         axis=(0.0, 0.0, 1.0),
     ),
 )
-world.update_kinematics()
+world.sync(sx.WorldSyncStage.KINEMATICS)
 ```
 
 DART 8 target after owner APIs exist:

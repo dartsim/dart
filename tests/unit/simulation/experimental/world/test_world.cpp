@@ -51,6 +51,7 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <numbers>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -567,20 +568,25 @@ TEST(World, RigidBodyVelocityAccessorsDriveStep)
 // Test that simulation operations require simulation mode
 TEST(World, UpdateKinematicsRequiresSimulationMode)
 {
-  dart::simulation::experimental::World world;
+  namespace sx = dart::simulation::experimental;
 
-  // updateKinematics should throw in design mode
+  sx::World world;
+
+  EXPECT_THROW(world.updateKinematics(), sx::InvalidArgumentException);
   EXPECT_THROW(
-      world.updateKinematics(),
-      dart::simulation::experimental::InvalidArgumentException);
+      world.sync(sx::WorldSyncStage::Kinematics), sx::InvalidArgumentException);
 
-  // After entering simulation mode, should work
   world.enterSimulationMode();
   EXPECT_NO_THROW(world.updateKinematics());
+  EXPECT_NO_THROW(world.sync(sx::WorldSyncStage::Kinematics));
+  EXPECT_THROW(
+      world.sync(static_cast<sx::WorldSyncStage>(999)),
+      sx::InvalidArgumentException);
 }
 
-// Test that updateKinematics refreshes a hierarchy through the compute graph
-TEST(World, UpdateKinematicsRefreshesFrameHierarchy)
+// Test that explicit sync refreshes a hierarchy through the compute graph
+// without advancing simulation time.
+TEST(World, SyncKinematicsRefreshesFrameHierarchy)
 {
   namespace sx = dart::simulation::experimental;
 
@@ -608,7 +614,7 @@ TEST(World, UpdateKinematicsRefreshesFrameHierarchy)
   updatedParentTransform.translate(Eigen::Vector3d(5.0, 6.0, 7.0));
   parent.setLocalTransform(updatedParentTransform);
 
-  world.updateKinematics();
+  world.sync(sx::WorldSyncStage::Kinematics);
 
   EXPECT_FALSE(registry.get<sx::comps::FrameCache>(parent.getEntity())
                    .needTransformUpdate);
@@ -618,9 +624,9 @@ TEST(World, UpdateKinematicsRefreshesFrameHierarchy)
       child.getTransform().isApprox(updatedParentTransform * childOffset));
 }
 
-// Test that kinematics-only synchronization can use an injected executor
+// Test that kinematics-only sync can use an injected executor
 // without advancing the simulation clock.
-TEST(World, UpdateKinematicsAcceptsExecutorWithoutAdvancingClock)
+TEST(World, SyncKinematicsAcceptsExecutorWithoutAdvancingClock)
 {
   namespace sx = dart::simulation::experimental;
 
@@ -638,7 +644,7 @@ TEST(World, UpdateKinematicsAcceptsExecutorWithoutAdvancingClock)
   parent.setLocalTransform(updatedParentTransform);
 
   RecordingExecutor executor;
-  world.updateKinematics(executor);
+  world.sync(sx::WorldSyncStage::Kinematics, executor);
 
   EXPECT_EQ(executor.executeCount, 1u);
   EXPECT_EQ(executor.nodeCount, 2u);
@@ -647,6 +653,87 @@ TEST(World, UpdateKinematicsAcceptsExecutorWithoutAdvancingClock)
   EXPECT_EQ(world.getFrame(), 0u);
   EXPECT_TRUE(
       child.getTransform().isApprox(updatedParentTransform * childOffset));
+}
+
+TEST(World, SyncKinematicsRefreshesJointDrivenLinkTransforms)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultiBody("arm");
+  auto base = robot.addLink("base");
+  auto forearm = robot.addLink(
+      "forearm",
+      base,
+      sx::JointSpec{
+          .name = "elbow",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitZ(),
+      });
+  auto slider = robot.addLink(
+      "slider",
+      base,
+      sx::JointSpec{
+          .name = "rail",
+          .type = sx::JointType::Prismatic,
+          .axis = Eigen::Vector3d::UnitX(),
+      });
+
+  Eigen::Isometry3d toolOffset = Eigen::Isometry3d::Identity();
+  toolOffset.translate(Eigen::Vector3d(1.0, 0.0, 0.0));
+  auto tool = world.addFixedFrame("tool", forearm, toolOffset);
+
+  world.enterSimulationMode();
+
+  auto elbow = forearm.getParentJoint();
+  elbow.setPosition(Eigen::VectorXd::Constant(1, std::numbers::pi / 2.0));
+  auto rail = slider.getParentJoint();
+  rail.setPosition(Eigen::VectorXd::Constant(1, 2.0));
+
+  world.sync(sx::WorldSyncStage::Kinematics);
+
+  EXPECT_TRUE(
+      tool.getTranslation().isApprox(Eigen::Vector3d(0.0, 1.0, 0.0), 1e-12));
+  EXPECT_TRUE(slider.getTranslation().isApprox(Eigen::Vector3d(2.0, 0.0, 0.0)));
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+}
+
+TEST(World, LoopClosureResidualUsesSyncedJointTransforms)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultiBody("arm");
+  auto base = robot.addLink("base");
+  auto forearm = robot.addLink(
+      "forearm",
+      base,
+      sx::JointSpec{
+          .name = "elbow",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitZ(),
+      });
+
+  Eigen::Isometry3d toolOffset = Eigen::Isometry3d::Identity();
+  toolOffset.translate(Eigen::Vector3d(1.0, 0.0, 0.0));
+  auto tool = world.addFixedFrame("tool", forearm, toolOffset);
+  auto ground = world.addRigidBody("ground");
+  auto closure = world.addLoopClosure(
+      "tool_to_ground",
+      {.frameA = tool,
+       .frameB = ground,
+       .family = sx::LoopClosureFamily::Point});
+
+  world.enterSimulationMode();
+  forearm.getParentJoint().setPosition(
+      Eigen::VectorXd::Constant(1, std::numbers::pi / 2.0));
+
+  world.sync(sx::WorldSyncStage::Kinematics);
+
+  const auto residual = closure.computeResidual();
+  ASSERT_EQ(residual.value.size(), 3);
+  EXPECT_TRUE(residual.value.isApprox(Eigen::Vector3d(0.0, 1.0, 0.0), 1e-12));
 }
 
 // Test that ordinary frame reads stay fresh after mutating an ancestor frame,

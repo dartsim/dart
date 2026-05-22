@@ -400,6 +400,9 @@ void defSimulationExperimentalModule(nb::module_& m)
       m, "LoopClosureResidualCoordinates")
       .value("WORLD", sim::LoopClosureResidualCoordinates::World);
 
+  nb::enum_<sim::WorldSyncStage>(m, "WorldSyncStage")
+      .value("KINEMATICS", sim::WorldSyncStage::Kinematics);
+
   nb::enum_<sim::ClosureKinematicsPolicy>(m, "ClosureKinematicsPolicy")
       .value("RESIDUAL_ONLY", sim::ClosureKinematicsPolicy::ResidualOnly)
       .value("PROJECT", sim::ClosureKinematicsPolicy::Project);
@@ -1278,6 +1281,11 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def(
           "update_kinematics",
           [](sim::World& self) { self.updateKinematics(); },
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "sync",
+          [](sim::World& self, sim::WorldSyncStage stage) { self.sync(stage); },
+          nb::arg("stage") = sim::WorldSyncStage::Kinematics,
           nb::call_guard<nb::gil_scoped_release>())
       .def(
           "step",

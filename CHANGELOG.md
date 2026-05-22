@@ -458,6 +458,12 @@
     `LoopClosure.compute_residual()` diagnostics for closed-chain residual
     vectors, norms, activation state, coordinate convention, and force
     availability metadata without exposing backend solver rows.
+  - Added experimental C++ `World::sync(WorldSyncStage::Kinematics)` and
+    dartpy `world.sync(sx.WorldSyncStage.KINEMATICS)` for explicit
+    kinematics-only work placement without advancing simulation time.
+  - Updated experimental kinematics refresh so generalized joint-position
+    writes drive open-chain link transforms and loop-closure residuals for
+    standard tree joints.
   - Added experimental joint DOF count, generalized position, and generalized
     velocity accessors in C++ and snake_case dartpy bindings.
   - Rejected invalid experimental `RigidBodyOptions` at the C++ and dartpy API

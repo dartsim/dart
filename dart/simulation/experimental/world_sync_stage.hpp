@@ -32,38 +32,19 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/export.hpp>
-
 namespace dart::simulation::experimental {
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class LoopClosure;
-class MultiBody;
-class RigidBody;
-class World;
-enum class WorldSyncStage;
-
-namespace compute {
-class ComputeExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
-
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct JointSpec;
-struct LinkOptions;
-struct LoopClosureRuntimePolicy;
-struct LoopClosureResidual;
-struct LoopClosureSpec;
-struct MultiBodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
+/// Stage bundle for explicit world synchronization.
+///
+/// Synchronization stages refresh derived world outputs without implying a full
+/// physics step. They provide predictable work placement for batching,
+/// planning, visualization, and sensor workflows while ordinary object queries
+/// can remain fresh-by-default.
+enum class WorldSyncStage
+{
+  /// Refresh frame and kinematic caches without advancing time or integrating
+  /// dynamics.
+  Kinematics,
+};
 
 } // namespace dart::simulation::experimental
