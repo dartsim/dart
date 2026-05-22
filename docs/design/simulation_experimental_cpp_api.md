@@ -258,7 +258,9 @@ the release roadmap.
   now owns `LoopClosure` handles with symmetric frame endpoints, semantic
   closure families, offsets, runtime participation policy, residual
   diagnostics, lookup, validation, and serialization. Closure kinematic
-  projection and dynamic closure solving remain staged design targets.
+  projection and dynamic closure solving remain staged design targets. Active
+  projection or solve policies are rejected at runtime until a compatible stage
+  exists, so policy metadata cannot silently overpromise solver participation.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and

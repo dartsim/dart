@@ -115,6 +115,48 @@ bool isValidWorldSyncStage(WorldSyncStage stage)
 }
 
 //==============================================================================
+void validateLoopClosureKinematicsPolicySupport(const World& world)
+{
+  auto view = world.getRegistry().view<comps::LoopClosure, comps::Name>();
+  for (auto entity : view) {
+    const auto& closure = view.get<comps::LoopClosure>(entity);
+    if (!closure.runtimePolicy.enabled
+        || closure.runtimePolicy.kinematics
+               == ClosureKinematicsPolicy::ResidualOnly) {
+      continue;
+    }
+
+    const auto& name = view.get<comps::Name>(entity);
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidOperationException,
+        "LoopClosure '{}' requests kinematic projection, but the active "
+        "pipeline does not include a loop-closure projection stage",
+        name.name);
+  }
+}
+
+//==============================================================================
+void validateLoopClosureDynamicsPolicySupport(const World& world)
+{
+  auto view = world.getRegistry().view<comps::LoopClosure, comps::Name>();
+  for (auto entity : view) {
+    const auto& closure = view.get<comps::LoopClosure>(entity);
+    if (!closure.runtimePolicy.enabled
+        || closure.runtimePolicy.dynamics
+               == ClosureDynamicsPolicy::ResidualOnly) {
+      continue;
+    }
+
+    const auto& name = view.get<comps::Name>(entity);
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidOperationException,
+        "LoopClosure '{}' requests dynamic solving, but the active pipeline "
+        "does not include a loop-closure solving stage",
+        name.name);
+  }
+}
+
+//==============================================================================
 bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
 {
   if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
@@ -631,6 +673,7 @@ void World::enterSimulationMode()
       InvalidArgumentException,
       "World is already in simulation mode");
 
+  validateLoopClosureKinematicsPolicySupport(*this);
   m_simulationMode = true;
 
   // Initial bake so that cached transforms are up-to-date.
@@ -699,6 +742,7 @@ void World::sync(WorldSyncStage stage, compute::ComputeExecutor& executor)
 
   switch (stage) {
     case WorldSyncStage::Kinematics:
+      validateLoopClosureKinematicsPolicySupport(*this);
       executeKinematicsGraph(*this, executor);
       return;
   }
@@ -776,6 +820,9 @@ void World::step(
 void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
+  validateLoopClosureKinematicsPolicySupport(*this);
+  validateLoopClosureDynamicsPolicySupport(*this);
+
   if (!m_simulationMode) {
     enterSimulationMode();
   }

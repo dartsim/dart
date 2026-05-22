@@ -12,6 +12,9 @@ data-style getter/setter aliases from `dartpy.simulation_experimental`, added
 The latest completed slices bound `StateSpace` into
 `dartpy.simulation_experimental` and improved loop-closure ergonomics with
 optional auto-named construction plus direct runtime participation properties.
+The runtime also rejects active loop-closure projection/solve policies until
+compatible stages exist, while disabled closures may retain future policy
+metadata.
 
 ## Current Branch
 

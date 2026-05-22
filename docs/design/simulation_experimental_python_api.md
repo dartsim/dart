@@ -746,7 +746,9 @@ participation properties, and a Pythonic `LoopClosureRuntimePolicy` value
 object for batch assignment. `closure.compute_residual()` returns explicit
 closed-chain residual diagnostics without exposing solver rows. Constrained
 kinematic projection and dynamic solving remain DART 8 target concepts to stage
-behind the experimental module before promotion.
+behind the experimental module before promotion. Active projection or solve
+policies are rejected at runtime until compatible stages exist, while disabled
+closures may retain future-intent policy metadata.
 
 The staged Python shape uses compact value objects or keyword construction and
 returned public handles:

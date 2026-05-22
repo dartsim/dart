@@ -813,3 +813,32 @@ def test_experimental_loop_closure_rejects_invalid_topology():
     world.enter_simulation_mode()
     with pytest.raises(Exception, match="simulation mode"):
         world.add_loop_closure("after_bake", frame_a=base, frame_b=link)
+
+
+def test_experimental_loop_closure_rejects_unsupported_active_policy():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    arm = world.add_multi_body("arm")
+    base = arm.add_link("base")
+    link = arm.add_link("link", parent=base, joint=sx.JointSpec(name="joint"))
+    closure = world.add_loop_closure("closure", frame_a=base, frame_b=link)
+
+    closure.kinematics = sx.ClosureKinematicsPolicy.PROJECT
+    with pytest.raises(Exception, match="projection stage"):
+        world.enter_simulation_mode()
+    assert not world.is_simulation_mode
+
+    closure.enabled = False
+    closure.dynamics = sx.ClosureDynamicsPolicy.SOLVE
+    world.enter_simulation_mode()
+    world.sync()
+    world.step()
+
+    closure.enabled = True
+    with pytest.raises(Exception, match="projection stage"):
+        world.sync(sx.WorldSyncStage.KINEMATICS)
+
+    closure.kinematics = sx.ClosureKinematicsPolicy.RESIDUAL_ONLY
+    with pytest.raises(Exception, match="solving stage"):
+        world.step()

@@ -342,6 +342,10 @@ TEST(World, LoopClosureTopology)
   EXPECT_TRUE(runtimePolicy.enabled);
   EXPECT_EQ(runtimePolicy.kinematics, sx::ClosureKinematicsPolicy::Project);
   EXPECT_EQ(runtimePolicy.dynamics, sx::ClosureDynamicsPolicy::Solve);
+  closure.setRuntimePolicy(
+      {.enabled = true,
+       .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
+       .dynamics = sx::ClosureDynamicsPolicy::ResidualOnly});
 
   EXPECT_EQ(world.getLoopClosureCount(), 1u);
   EXPECT_TRUE(world.hasLoopClosure("closing_bar"));
@@ -488,6 +492,46 @@ TEST(World, LoopClosureRejectsInvalidRuntimePolicy)
            .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
            .dynamics = static_cast<sx::ClosureDynamicsPolicy>(999)}),
       sx::InvalidArgumentException);
+}
+
+TEST(World, LoopClosureRejectsUnsupportedActiveRuntimePolicy)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto link = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
+  auto closure
+      = world.addLoopClosure("closure", {.frameA = base, .frameB = link});
+
+  closure.setRuntimePolicy(
+      {.enabled = true,
+       .kinematics = sx::ClosureKinematicsPolicy::Project,
+       .dynamics = sx::ClosureDynamicsPolicy::ResidualOnly});
+  EXPECT_THROW(world.enterSimulationMode(), sx::InvalidOperationException);
+
+  closure.setRuntimePolicy(
+      {.enabled = false,
+       .kinematics = sx::ClosureKinematicsPolicy::Project,
+       .dynamics = sx::ClosureDynamicsPolicy::Solve});
+  EXPECT_NO_THROW(world.enterSimulationMode());
+  EXPECT_NO_THROW(world.sync(sx::WorldSyncStage::Kinematics));
+  EXPECT_NO_THROW(world.step());
+
+  closure.setRuntimePolicy(
+      {.enabled = true,
+       .kinematics = sx::ClosureKinematicsPolicy::Project,
+       .dynamics = sx::ClosureDynamicsPolicy::ResidualOnly});
+  EXPECT_THROW(
+      world.sync(sx::WorldSyncStage::Kinematics),
+      sx::InvalidOperationException);
+
+  closure.setRuntimePolicy(
+      {.enabled = true,
+       .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
+       .dynamics = sx::ClosureDynamicsPolicy::Solve});
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
 }
 
 // Test that rigid bodies can be driven kinematically through the public

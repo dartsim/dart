@@ -474,6 +474,8 @@
     ECS storage or component mappers.
   - Added Pythonic loop-closure conveniences for auto-named construction and
     direct runtime participation properties.
+  - Made experimental loop closures reject active projection or solve policies
+    at runtime until compatible stages are present.
   - Rejected invalid experimental `RigidBodyOptions` at the C++ and dartpy API
     boundaries, including non-positive mass, non-finite pose or velocity data,
     zero orientation quaternions, and non-symmetric-positive-definite inertia.
