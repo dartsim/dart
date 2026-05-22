@@ -85,6 +85,16 @@ Inspect screenshots or captured frame sequences when judging visual quality.
 Command success alone is not enough for material, lighting, transparency,
 camera, or UI regressions.
 
+## Native Collision Visual Checks
+
+`examples/collision_sandbox` is the maintained native collision visual
+verifier. Keep its pair registry data-driven so the selector, unsupported
+placeholders, focused registry tests, and headless smoke captures stay aligned
+with the native narrow-phase support table. Broad-phase debug rendering should
+consume copied native debug snapshots, not mutable tree internals, and the GUI
+path should use public `dart::gui` APIs without adding FCL, Bullet, or ODE as
+runtime example dependencies.
+
 ## Migration Notes
 
 The removed OSG and Raylib paths are not compatibility targets for new work.

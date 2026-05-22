@@ -100,15 +100,16 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`037-native-collision-visual-verification.md`](037-native-collision-visual-verification.md)
-- Status: Active
-- Horizon: Now
+- Status: Complete
+- Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Decide when to remove the dev-task folder in the completion PR,
-  then run the final PR-ready verification sweep.
-- Gate: The completed example must build with Filament-backed `dart-gui`, pass
-  `EXAMPLE_collision_sandbox_headless_sweep`, cover every supported native pair
-  with explicit unsupported placeholders, and have focused native-collision
-  tests for any new broad-phase debug snapshot API.
+- Next step: Use `examples/collision_sandbox` and
+  `EXAMPLE_collision_sandbox_headless_sweep` whenever native collision pair
+  support, broad-phase diagnostics, or Filament GUI rendering changes.
+- Gate: The Filament-backed sandbox covers every supported native pair or
+  explicit unsupported placeholder, contact/manifold overlays, native
+  group/mask filtering, broad-phase overlays, focused registry/debug-snapshot
+  tests, and CTest-gated headless screenshot smoke coverage.
 
 ### PLAN-040: DART 7 Release Hardening
 

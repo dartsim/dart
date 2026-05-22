@@ -1,6 +1,6 @@
 # Native Collision Visual Verification
 
-- Operating state:
+- Operating state: Complete in
   [`PLAN-037` in `dashboard.md`](dashboard.md#plan-037-native-collision-visual-verification)
 - Outcome: a dedicated native-collision GUI example lets maintainers inspect
   every supported collision pair and every explicit unsupported placeholder with
@@ -30,10 +30,8 @@ end-to-end physics simulations. It should make incorrect contact geometry,
 manifold grouping, pair dispatch, or broad-phase candidate generation visible
 from a single debug example.
 
-The active implementation tracker is
-[`docs/dev_tasks/native_collision_visual_verification/`](../dev_tasks/native_collision_visual_verification/).
-Delete that task folder in the completion PR after durable results move to
-code, examples, tests, this plan, and any needed onboarding notes.
+Durable GUI rendering notes live in
+[`docs/onboarding/gui-rendering.md`](../onboarding/gui-rendering.md#native-collision-visual-checks).
 
 ## Requirements
 
