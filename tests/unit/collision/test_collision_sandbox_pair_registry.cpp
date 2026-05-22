@@ -121,6 +121,33 @@ TEST(CollisionSandboxPairRegistry, ShapeFactoryCreatesEveryFixture)
   }
 }
 
+TEST(CollisionSandboxPairRegistry, ShapeFactoryAppliesTypeAwareParameters)
+{
+  sandbox::ShapeParameters sphereParams
+      = sandbox::defaultShapeParameters(collision::ShapeType::Sphere);
+  sphereParams.radius = 0.7;
+  auto sphere = sandbox::makeShape(collision::ShapeType::Sphere, sphereParams);
+  ASSERT_NE(sphere, nullptr);
+  EXPECT_NEAR(sphere->computeLocalAabb().max.x(), 0.7, 1e-12);
+
+  sandbox::ShapeParameters boxParams
+      = sandbox::defaultShapeParameters(collision::ShapeType::Box);
+  boxParams.halfExtents = Eigen::Vector3d(0.25, 0.5, 0.75);
+  auto box = sandbox::makeShape(collision::ShapeType::Box, boxParams);
+  ASSERT_NE(box, nullptr);
+  EXPECT_TRUE(box->computeLocalAabb().max.isApprox(boxParams.halfExtents));
+
+  sandbox::ShapeParameters capsuleParams
+      = sandbox::defaultShapeParameters(collision::ShapeType::Capsule);
+  capsuleParams.radius = 0.2;
+  capsuleParams.height = 1.4;
+  auto capsule
+      = sandbox::makeShape(collision::ShapeType::Capsule, capsuleParams);
+  ASSERT_NE(capsule, nullptr);
+  EXPECT_NEAR(capsule->computeLocalAabb().max.x(), 0.2, 1e-12);
+  EXPECT_GT(capsule->computeLocalAabb().max.z(), 0.6);
+}
+
 TEST(CollisionSandboxPairRegistry, LiveCasesCanRunNativeQueries)
 {
   for (const sandbox::PairCase& pair : sandbox::pairCases()) {

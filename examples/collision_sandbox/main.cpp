@@ -76,6 +76,7 @@ namespace simulation = dart::simulation;
 
 namespace {
 
+using ShapeParameters = sandbox::ShapeParameters;
 using ShapeType = collision::ShapeType;
 
 Eigen::Vector4d rgba(double r, double g, double b, double a = 1.0)
@@ -117,8 +118,10 @@ struct SandboxState
   std::array<double, 3> objectBTranslation = {0.55, 0.0, 0.0};
   std::array<double, 3> objectARotation = {0.0, 0.0, 0.0};
   std::array<double, 3> objectBRotation = {0.0, 0.0, 0.0};
-  double objectAScale = 1.0;
-  double objectBScale = 1.0;
+  ShapeParameters objectAParams
+      = sandbox::defaultShapeParameters(ShapeType::Sphere);
+  ShapeParameters objectBParams
+      = sandbox::defaultShapeParameters(ShapeType::Sphere);
   double maxContacts = 16.0;
   bool showAabbs = true;
   bool showBroadPhase = true;
@@ -165,8 +168,10 @@ void resetPairControls(SandboxState& state)
   copyTranslation(state.objectBTranslation, pose.transformB.translation());
   state.objectARotation = {0.0, 0.0, 0.0};
   state.objectBRotation = {0.0, 0.0, 0.0};
-  state.objectAScale = 1.0;
-  state.objectBScale = 1.0;
+  state.objectAParams
+      = sandbox::defaultShapeParameters(selectedPair(state).shapeA);
+  state.objectBParams
+      = sandbox::defaultShapeParameters(selectedPair(state).shapeB);
   state.maxContacts = 16.0;
   state.dirty = true;
 }
@@ -197,36 +202,36 @@ Eigen::Vector4d objectColor(
   return objectA ? rgba(0.18, 0.38, 0.95) : rgba(0.18, 0.75, 0.34);
 }
 
-std::shared_ptr<dynamics::Shape> makeVisualShape(ShapeType type, double scale)
+std::shared_ptr<dynamics::Shape> makeVisualShape(
+    ShapeType type, const ShapeParameters& params)
 {
-  scale = std::clamp(scale, 0.05, 5.0);
   switch (type) {
     case ShapeType::Sphere:
-      return std::make_shared<dynamics::SphereShape>(0.45 * scale);
+      return std::make_shared<dynamics::SphereShape>(params.radius);
     case ShapeType::Box:
-      return std::make_shared<dynamics::BoxShape>(
-          Eigen::Vector3d(0.9, 0.7, 0.6) * scale);
+      return std::make_shared<dynamics::BoxShape>(params.halfExtents * 2.0);
     case ShapeType::Capsule:
       return std::make_shared<dynamics::CapsuleShape>(
-          0.25 * scale, 0.9 * scale);
+          params.radius, params.height);
     case ShapeType::Cylinder:
       return std::make_shared<dynamics::CylinderShape>(
-          0.35 * scale, 0.8 * scale);
+          params.radius, params.height);
     case ShapeType::Plane:
-      return std::make_shared<dynamics::BoxShape>(
-          Eigen::Vector3d(3.0, 3.0, 0.025) * scale);
+      return std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(
+          params.halfExtents.x() * 2.0,
+          params.halfExtents.y() * 2.0,
+          params.halfExtents.z() * 2.0));
     case ShapeType::Convex:
-      return std::make_shared<dynamics::SphereShape>(0.48 * scale);
+      return std::make_shared<dynamics::SphereShape>(params.radius * 0.87);
     case ShapeType::Mesh:
-      return std::make_shared<dynamics::BoxShape>(
-          Eigen::Vector3d(0.9, 0.9, 0.9) * scale);
+      return std::make_shared<dynamics::BoxShape>(params.halfExtents * 2.0);
     case ShapeType::Sdf:
-      return std::make_shared<dynamics::SphereShape>(0.45 * scale);
+      return std::make_shared<dynamics::SphereShape>(params.radius);
     case ShapeType::Compound:
       return std::make_shared<dynamics::BoxShape>(
-          Eigen::Vector3d(0.7, 0.38, 0.28) * scale);
+          Eigen::Vector3d(0.7, 0.38, 0.28) * (params.radius / 0.45));
   }
-  return std::make_shared<dynamics::SphereShape>(0.45 * scale);
+  return std::make_shared<dynamics::SphereShape>(params.radius);
 }
 
 void addFrame(
@@ -448,9 +453,9 @@ void rebuildScene(SandboxState& state)
 
   collision::CollisionWorld nativeWorld;
   auto objA = nativeWorld.createObject(
-      sandbox::makeShape(pair.shapeA, state.objectAScale), tfA);
+      sandbox::makeShape(pair.shapeA, state.objectAParams), tfA);
   auto objB = nativeWorld.createObject(
-      sandbox::makeShape(pair.shapeB, state.objectBScale), tfB);
+      sandbox::makeShape(pair.shapeB, state.objectBParams), tfB);
 
   collision::CollisionResult collisionResult;
   collision::DistanceResult distanceResult;
@@ -471,13 +476,13 @@ void rebuildScene(SandboxState& state)
   addFrame(
       state.world,
       "object_a",
-      makeVisualShape(pair.shapeA, state.objectAScale),
+      makeVisualShape(pair.shapeA, state.objectAParams),
       tfA,
       objectColor(pair, true, state.summary.hit));
   addFrame(
       state.world,
       "object_b",
-      makeVisualShape(pair.shapeB, state.objectBScale),
+      makeVisualShape(pair.shapeB, state.objectBParams),
       tfB,
       objectColor(pair, false, state.summary.hit));
 
@@ -574,6 +579,57 @@ bool slider3(
   return changed;
 }
 
+bool slider3(
+    gui::PanelBuilder& panel,
+    const char* prefix,
+    Eigen::Vector3d& values,
+    double min,
+    double max)
+{
+  bool changed = false;
+  changed |= panel.slider(std::string(prefix) + " X", values.x(), min, max);
+  changed |= panel.slider(std::string(prefix) + " Y", values.y(), min, max);
+  changed |= panel.slider(std::string(prefix) + " Z", values.z(), min, max);
+  return changed;
+}
+
+bool shapeParameterControls(
+    gui::PanelBuilder& panel,
+    const char* prefix,
+    ShapeType type,
+    ShapeParameters& params)
+{
+  bool changed = false;
+  switch (type) {
+    case ShapeType::Sphere:
+    case ShapeType::Convex:
+    case ShapeType::Sdf:
+    case ShapeType::Compound:
+      changed |= panel.slider(
+          std::string(prefix) + " Radius", params.radius, 0.05, 2.0);
+      break;
+    case ShapeType::Capsule:
+    case ShapeType::Cylinder:
+      changed |= panel.slider(
+          std::string(prefix) + " Radius", params.radius, 0.05, 2.0);
+      changed |= panel.slider(
+          std::string(prefix) + " Height", params.height, 0.05, 4.0);
+      break;
+    case ShapeType::Box:
+    case ShapeType::Mesh: {
+      const std::string label = std::string(prefix) + " Half Extent";
+      changed |= slider3(panel, label.c_str(), params.halfExtents, 0.025, 2.0);
+      break;
+    }
+    case ShapeType::Plane: {
+      const std::string label = std::string(prefix) + " Visual Half Extent";
+      changed |= slider3(panel, label.c_str(), params.halfExtents, 0.01, 5.0);
+      break;
+    }
+  }
+  return changed;
+}
+
 gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
 {
   gui::Panel panel;
@@ -617,8 +673,8 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
         panelBuilder, "A Position", state->objectATranslation, -2.0, 2.0);
     state->dirty |= slider3(
         panelBuilder, "A Rotation", state->objectARotation, -180.0, 180.0);
-    state->dirty
-        |= panelBuilder.slider("A Scale", state->objectAScale, 0.1, 3.0);
+    state->dirty |= shapeParameterControls(
+        panelBuilder, "A", pair.shapeA, state->objectAParams);
 
     panelBuilder.separator();
     panelBuilder.text("Object B");
@@ -626,8 +682,8 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
         panelBuilder, "B Position", state->objectBTranslation, -2.0, 2.0);
     state->dirty |= slider3(
         panelBuilder, "B Rotation", state->objectBRotation, -180.0, 180.0);
-    state->dirty
-        |= panelBuilder.slider("B Scale", state->objectBScale, 0.1, 3.0);
+    state->dirty |= shapeParameterControls(
+        panelBuilder, "B", pair.shapeB, state->objectBParams);
     state->dirty
         |= panelBuilder.slider("Max Contacts", state->maxContacts, 1.0, 64.0);
     if (panelBuilder.button("Reset Pair")) {

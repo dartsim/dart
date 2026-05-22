@@ -12,8 +12,9 @@
   `examples/collision_sandbox` is now being rebuilt on the Filament-backed
   `dart::gui` path from `feature/filament-gui-full-execution`;
   `examples/collision_sandbox/pair_registry.*` drives a pair selector for every
-  unordered native shape pair; `test_collision_sandbox_pair_registry` verifies
-  registry coverage against the native narrow-phase support table; and
+  unordered native shape pair and type-aware shape parameters;
+  `test_collision_sandbox_pair_registry` verifies registry coverage against the
+  native narrow-phase support table and shape parameter factory behavior; and
   `BroadPhaseDebugSnapshot` exposes copied AABB-tree topology for GUI overlays.
 
 ## Scope

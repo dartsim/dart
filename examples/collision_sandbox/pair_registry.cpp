@@ -165,18 +165,18 @@ constexpr std::array<ShapeFixture, 9> kShapeFixtures{{
       {0.0, 0.0, -scale}};
 }
 
-[[nodiscard]] std::vector<Eigen::Vector3d> makeCubeVertices(double scale)
+[[nodiscard]] std::vector<Eigen::Vector3d> makeCubeVertices(
+    const Eigen::Vector3d& halfExtents)
 {
-  const double h = 0.45 * scale;
   return {
-      {-h, -h, -h},
-      {h, -h, -h},
-      {h, h, -h},
-      {-h, h, -h},
-      {-h, -h, h},
-      {h, -h, h},
-      {h, h, h},
-      {-h, h, h}};
+      {-halfExtents.x(), -halfExtents.y(), -halfExtents.z()},
+      {halfExtents.x(), -halfExtents.y(), -halfExtents.z()},
+      {halfExtents.x(), halfExtents.y(), -halfExtents.z()},
+      {-halfExtents.x(), halfExtents.y(), -halfExtents.z()},
+      {-halfExtents.x(), -halfExtents.y(), halfExtents.z()},
+      {halfExtents.x(), -halfExtents.y(), halfExtents.z()},
+      {halfExtents.x(), halfExtents.y(), halfExtents.z()},
+      {-halfExtents.x(), halfExtents.y(), halfExtents.z()}};
 }
 
 [[nodiscard]] std::vector<collision::MeshShape::Triangle> makeCubeTriangles()
@@ -227,6 +227,16 @@ constexpr std::array<ShapeFixture, 9> kShapeFixtures{{
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
   tf.translation() = Eigen::Vector3d(x, y, z);
   return tf;
+}
+
+[[nodiscard]] ShapeParameters sanitizedParameters(ShapeParameters params)
+{
+  params.radius = std::clamp(params.radius, 0.05, 5.0);
+  params.height = std::clamp(params.height, 0.05, 10.0);
+  params.halfExtents
+      = params.halfExtents.cwiseMax(Eigen::Vector3d::Constant(0.025))
+            .cwiseMin(Eigen::Vector3d::Constant(5.0));
+  return params;
 }
 
 } // namespace
@@ -319,34 +329,84 @@ bool isAdaptedFallbackPair(ShapeType shapeA, ShapeType shapeB)
   return false;
 }
 
+ShapeParameters defaultShapeParameters(ShapeType type)
+{
+  ShapeParameters params;
+  switch (type) {
+    case ShapeType::Sphere:
+      params.radius = 0.45;
+      break;
+    case ShapeType::Box:
+      params.halfExtents = Eigen::Vector3d(0.45, 0.35, 0.3);
+      break;
+    case ShapeType::Capsule:
+      params.radius = 0.25;
+      params.height = 0.9;
+      break;
+    case ShapeType::Cylinder:
+      params.radius = 0.35;
+      params.height = 0.8;
+      break;
+    case ShapeType::Plane:
+      params.halfExtents = Eigen::Vector3d(1.5, 1.5, 0.0125);
+      break;
+    case ShapeType::Convex:
+      params.radius = 0.55;
+      break;
+    case ShapeType::Mesh:
+      params.halfExtents = Eigen::Vector3d(0.45, 0.45, 0.45);
+      break;
+    case ShapeType::Sdf:
+      params.radius = 0.45;
+      break;
+    case ShapeType::Compound:
+      params.radius = 0.45;
+      break;
+  }
+
+  return params;
+}
+
 std::unique_ptr<collision::Shape> makeShape(ShapeType type, double scale)
 {
+  ShapeParameters params = defaultShapeParameters(type);
   scale = std::clamp(scale, 0.05, 5.0);
+  params.radius *= scale;
+  params.height *= scale;
+  params.halfExtents *= scale;
+  return makeShape(type, params);
+}
+
+std::unique_ptr<collision::Shape> makeShape(
+    ShapeType type, const ShapeParameters& inputParams)
+{
+  const ShapeParameters params = sanitizedParameters(inputParams);
 
   switch (type) {
     case ShapeType::Sphere:
-      return std::make_unique<collision::SphereShape>(0.45 * scale);
+      return std::make_unique<collision::SphereShape>(params.radius);
     case ShapeType::Box:
-      return std::make_unique<collision::BoxShape>(
-          Eigen::Vector3d(0.45, 0.35, 0.3) * scale);
+      return std::make_unique<collision::BoxShape>(params.halfExtents);
     case ShapeType::Capsule:
       return std::make_unique<collision::CapsuleShape>(
-          0.25 * scale, 0.9 * scale);
+          params.radius, params.height);
     case ShapeType::Cylinder:
       return std::make_unique<collision::CylinderShape>(
-          0.35 * scale, 0.8 * scale);
+          params.radius, params.height);
     case ShapeType::Plane:
       return std::make_unique<collision::PlaneShape>(
           Eigen::Vector3d::UnitZ(), 0.0);
     case ShapeType::Convex:
       return std::make_unique<collision::ConvexShape>(
-          makeOctahedronVertices(0.55 * scale));
+          makeOctahedronVertices(params.radius));
     case ShapeType::Mesh:
       return std::make_unique<collision::MeshShape>(
-          makeCubeVertices(scale), makeCubeTriangles());
+          makeCubeVertices(params.halfExtents), makeCubeTriangles());
     case ShapeType::Sdf:
-      return std::make_unique<collision::SdfShape>(makeSphereSdf(scale));
+      return std::make_unique<collision::SdfShape>(
+          makeSphereSdf(params.radius / 0.45));
     case ShapeType::Compound: {
+      const double scale = params.radius / 0.45;
       auto compound = std::make_unique<collision::CompoundShape>();
       compound->addChild(
           std::make_unique<collision::SphereShape>(0.28 * scale),

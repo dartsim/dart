@@ -8,7 +8,7 @@
       pair-by-pair debugger.
 - [x] Phase 3: Add contact/manifold/depth visualization and raw-value panels.
 - [x] Phase 4: Add broad-phase debug snapshots and overlays.
-- [ ] Phase 5: Add deterministic headless visual smoke and focused tests.
+- [ ] Phase 5: Add deterministic headless visual smoke sweeps.
 
 ## Goal
 
@@ -57,21 +57,19 @@ parameters, object posing, contact/manifold data, and broad-phase diagnostics.
 
 ## Immediate Next Steps
 
-1. Replace the current uniform scale controls with richer object A/object B
-   shape-parameter inspectors.
-2. Expand the headless smoke into a deterministic sweep over representative
+1. Expand the headless smoke into a deterministic sweep over representative
    pair and broad-phase overlay presets.
-3. Add spatial-order overlays for broad-phase implementations that expose
+2. Add spatial-order overlays for broad-phase implementations that expose
    ordering data; AABB-tree boxes, tree edges, and candidate pairs are already
    covered.
-4. Consider whether collision filtering controls belong in the first completion
+3. Consider whether collision filtering controls belong in the first completion
    pass or should remain a follow-up.
 
 ## Completion Checklist
 
 - [ ] The example covers every supported native pair or shows an explicit
       placeholder for unsupported/not-yet-visualized rows.
-- [ ] Users can move and pose both objects and adjust shape parameters at
+- [x] Users can move and pose both objects and adjust shape parameters at
       runtime.
 - [x] Contact overlays and panels show raw point, normal, depth, and manifold
       membership.

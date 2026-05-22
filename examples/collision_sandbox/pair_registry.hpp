@@ -90,6 +90,13 @@ struct PairPose
   Eigen::Isometry3d transformB = Eigen::Isometry3d::Identity();
 };
 
+struct ShapeParameters
+{
+  double radius = 0.45;
+  double height = 0.9;
+  Eigen::Vector3d halfExtents = Eigen::Vector3d(0.45, 0.35, 0.3);
+};
+
 [[nodiscard]] std::span<const ShapeFixture> shapeFixtures();
 [[nodiscard]] std::span<const PairCase> pairCases();
 [[nodiscard]] const PairCase& pairCaseAt(std::size_t index);
@@ -102,8 +109,11 @@ struct PairPose
 [[nodiscard]] bool isAdaptedFallbackPair(
     collision::ShapeType shapeA, collision::ShapeType shapeB);
 
+[[nodiscard]] ShapeParameters defaultShapeParameters(collision::ShapeType type);
 [[nodiscard]] std::unique_ptr<collision::Shape> makeShape(
     collision::ShapeType type, double scale = 1.0);
+[[nodiscard]] std::unique_ptr<collision::Shape> makeShape(
+    collision::ShapeType type, const ShapeParameters& params);
 [[nodiscard]] PairPose defaultPairPose(const PairCase& pair);
 
 } // namespace dart::examples::collision_sandbox
