@@ -230,6 +230,11 @@ active build.
     Filament tree, typically through `Filament_ROOT`
   - **Fetch Mode** (`DART_FETCH_FILAMENT=ON`): Explicitly fetches the pinned
     Filament archive for supported platforms, including official dartpy wheels
+- **Public build flag:** Keep `DART_BUILD_GUI` as the single public option for
+  the GUI surface. Filament is the maintained backend, so do not add
+  backend-specific public toggles such as `DART_BUILD_GUI_FILAMENT`; use
+  dependency-selection options such as `DART_USE_SYSTEM_FILAMENT` and
+  `DART_FETCH_FILAMENT` for packaged versus fetched Filament.
 - **Migration:** The full replacement plan lives in
   [gui-rendering.md](gui-rendering.md). New public GUI APIs should describe
   DART concepts and keep Filament, GLFW, Dear ImGui, OpenGL, Vulkan, Metal,
