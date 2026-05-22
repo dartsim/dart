@@ -99,6 +99,15 @@ void validateLoopClosureRuntimePolicy(const LoopClosureRuntimePolicy& policy)
       "LoopClosureRuntimePolicy.dynamics is invalid");
 }
 
+Eigen::Vector3d computeWorldRotationResidual(
+    const Eigen::Isometry3d& endpointA, const Eigen::Isometry3d& endpointB)
+{
+  const Eigen::Matrix3d relativeRotation
+      = endpointB.linear().transpose() * endpointA.linear();
+  const Eigen::AngleAxisd angleAxis(relativeRotation);
+  return endpointB.linear() * (angleAxis.axis() * angleAxis.angle());
+}
+
 } // namespace
 
 //==============================================================================
@@ -158,6 +167,39 @@ void LoopClosure::setRuntimePolicy(const LoopClosureRuntimePolicy& policy)
 {
   validateLoopClosureRuntimePolicy(policy);
   getMutableLoopClosureComponent(*this).runtimePolicy = policy;
+}
+
+//==============================================================================
+LoopClosureResidual LoopClosure::computeResidual() const
+{
+  const auto& closure = getLoopClosureComponent(*this);
+  const auto endpointA = getFrameA().getTransform() * closure.offsetA;
+  const auto endpointB = getFrameB().getTransform() * closure.offsetB;
+  const Eigen::Vector3d linearResidual
+      = endpointA.translation() - endpointB.translation();
+
+  LoopClosureResidual residual;
+  residual.enabled = closure.runtimePolicy.enabled;
+  residual.active = closure.runtimePolicy.enabled;
+
+  switch (closure.family) {
+    case LoopClosureFamily::Rigid:
+      residual.value.resize(6);
+      residual.value.head<3>() = linearResidual;
+      residual.value.tail<3>()
+          = computeWorldRotationResidual(endpointA, endpointB);
+      break;
+    case LoopClosureFamily::Point:
+      residual.value = linearResidual;
+      break;
+    case LoopClosureFamily::Distance:
+      residual.value.resize(1);
+      residual.value[0] = linearResidual.norm();
+      break;
+  }
+
+  residual.norm = residual.value.norm();
+  return residual;
 }
 
 //==============================================================================

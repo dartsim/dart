@@ -32,47 +32,49 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/fwd.hpp>
+#include <dart/simulation/experimental/export.hpp>
 
-#include <dart/simulation/experimental/constraint/loop_closure_family.hpp>
-#include <dart/simulation/experimental/constraint/loop_closure_residual.hpp>
-#include <dart/simulation/experimental/constraint/loop_closure_runtime_policy.hpp>
-
-#include <Eigen/Geometry>
-#include <entt/entt.hpp>
-
-#include <string_view>
+#include <Eigen/Core>
 
 namespace dart::simulation::experimental {
 
-/// World-owned handle for a closed-chain topology relation.
-///
-/// The DART 7 experimental API stores loop closures as named topology objects
-/// that can later participate in kinematic projection, residual diagnostics, or
-/// dynamic solving. This handle exposes the stable semantic relation without
-/// exposing solver rows or ECS storage.
-class DART_EXPERIMENTAL_API LoopClosure
+/// Coordinate convention for loop-closure residual values.
+enum class LoopClosureResidualCoordinates
 {
-public:
-  LoopClosure(entt::entity entity, World* world);
+  /// Linear residuals and rotation vectors are expressed in world coordinates.
+  World,
+};
 
-  [[nodiscard]] std::string_view getName() const;
-  [[nodiscard]] LoopClosureFamily getFamily() const;
-  [[nodiscard]] Frame getFrameA() const;
-  [[nodiscard]] Frame getFrameB() const;
-  [[nodiscard]] const Eigen::Isometry3d& getOffsetA() const;
-  [[nodiscard]] const Eigen::Isometry3d& getOffsetB() const;
-  [[nodiscard]] LoopClosureRuntimePolicy getRuntimePolicy() const;
-  void setRuntimePolicy(const LoopClosureRuntimePolicy& policy);
-  [[nodiscard]] LoopClosureResidual computeResidual() const;
+/// Residual diagnostic for a loop closure at the current world state.
+///
+/// This value reports public residual diagnostics only. It does not expose
+/// constraint rows, solver identifiers, backend storage, or force/impulse
+/// estimates from a particular implementation.
+struct DART_EXPERIMENTAL_API LoopClosureResidual
+{
+  /// Residual value for the closure family.
+  ///
+  /// Rigid closures use [linear_x, linear_y, linear_z, angular_x, angular_y,
+  /// angular_z]. Point closures use the three linear coordinates. Distance
+  /// closures use a single non-negative scalar distance.
+  Eigen::VectorXd value;
 
-  [[nodiscard]] entt::entity getEntity() const;
-  [[nodiscard]] World* getWorld() const;
-  [[nodiscard]] bool isValid() const;
+  /// Euclidean norm of value.
+  double norm = 0.0;
 
-private:
-  entt::entity m_entity;
-  World* m_world;
+  /// Whether the closure is enabled for runtime participation.
+  bool enabled = true;
+
+  /// True when this closure is enabled and can participate in the active
+  /// residual/projection/solve pipeline.
+  bool active = true;
+
+  /// Coordinate convention used by value.
+  LoopClosureResidualCoordinates coordinates
+      = LoopClosureResidualCoordinates::World;
+
+  /// Current DART 7 diagnostics do not expose solved force or impulse data.
+  bool forceAvailable = false;
 };
 
 } // namespace dart::simulation::experimental

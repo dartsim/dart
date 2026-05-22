@@ -157,6 +157,7 @@ def test_experimental_api_exposes_python_names_only():
             "getOffsetB",
             "getRuntimePolicy",
             "setRuntimePolicy",
+            "computeResidual",
             "isValid",
         ),
     }
@@ -361,6 +362,16 @@ def test_experimental_loop_closure_topology_api():
     assert auto_closure.name == "loop_closure_001"
     assert auto_closure.family == sx.LoopClosureFamily.POINT
     assert world.num_loop_closures == 2
+
+    world.enter_simulation_mode()
+    residual = closure.compute_residual()
+    assert isinstance(residual, sx.LoopClosureResidual)
+    assert residual.enabled is True
+    assert residual.active is True
+    assert residual.coordinates == sx.LoopClosureResidualCoordinates.WORLD
+    assert residual.force_available is False
+    assert residual.value.tolist() == pytest.approx([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    assert residual.norm == pytest.approx(1.0)
 
 
 def test_experimental_frame_handles_support_kinematics_only_updates():

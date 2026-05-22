@@ -358,6 +358,61 @@ TEST(World, LoopClosureTopology)
        .family = sx::LoopClosureFamily::Point});
   EXPECT_EQ(autoClosure.getName(), "loop_closure_001");
   EXPECT_EQ(world.getLoopClosureCount(), 2u);
+
+  world.enterSimulationMode();
+  const auto residual = closure.computeResidual();
+  EXPECT_TRUE(residual.enabled);
+  EXPECT_TRUE(residual.active);
+  EXPECT_EQ(residual.coordinates, sx::LoopClosureResidualCoordinates::World);
+  EXPECT_FALSE(residual.forceAvailable);
+  ASSERT_EQ(residual.value.size(), 6);
+  EXPECT_TRUE(
+      residual.value.head<3>().isApprox(Eigen::Vector3d(1.0, 0.0, 0.0)));
+  EXPECT_TRUE(residual.value.tail<3>().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_DOUBLE_EQ(residual.norm, 1.0);
+}
+
+TEST(World, LoopClosureResidualDiagnostics)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  sx::RigidBodyOptions bodyOptions;
+  auto a = world.addRigidBody("a", bodyOptions);
+  bodyOptions.position = Eigen::Vector3d(0.0, 3.0, 4.0);
+  auto b = world.addRigidBody("b", bodyOptions);
+
+  auto point = world.addLoopClosure(
+      "point",
+      {.frameA = a, .frameB = b, .family = sx::LoopClosureFamily::Point});
+  auto distance = world.addLoopClosure(
+      "distance",
+      {.frameA = a, .frameB = b, .family = sx::LoopClosureFamily::Distance});
+
+  world.enterSimulationMode();
+
+  const auto pointResidual = point.computeResidual();
+  ASSERT_EQ(pointResidual.value.size(), 3);
+  EXPECT_TRUE(pointResidual.value.isApprox(Eigen::Vector3d(0.0, -3.0, -4.0)));
+  EXPECT_DOUBLE_EQ(pointResidual.norm, 5.0);
+  EXPECT_TRUE(pointResidual.enabled);
+  EXPECT_TRUE(pointResidual.active);
+  EXPECT_FALSE(pointResidual.forceAvailable);
+
+  const auto distanceResidual = distance.computeResidual();
+  ASSERT_EQ(distanceResidual.value.size(), 1);
+  EXPECT_DOUBLE_EQ(distanceResidual.value[0], 5.0);
+  EXPECT_DOUBLE_EQ(distanceResidual.norm, 5.0);
+
+  point.setRuntimePolicy({
+      .enabled = false,
+      .kinematics = sx::ClosureKinematicsPolicy::ResidualOnly,
+      .dynamics = sx::ClosureDynamicsPolicy::ResidualOnly,
+  });
+  const auto disabledResidual = point.computeResidual();
+  EXPECT_FALSE(disabledResidual.enabled);
+  EXPECT_FALSE(disabledResidual.active);
+  EXPECT_TRUE(disabledResidual.value.isApprox(pointResidual.value));
 }
 
 TEST(World, LoopClosureRejectsInvalidTopology)

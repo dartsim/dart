@@ -59,6 +59,7 @@ struct JointOptions;
 struct JointSpec;
 struct LinkOptions;
 struct LoopClosureRuntimePolicy;
+struct LoopClosureResidual;
 struct LoopClosureSpec;
 struct MultiBodyOptions;
 struct RigidBodyOptions;

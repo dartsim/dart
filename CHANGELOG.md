@@ -454,6 +454,10 @@
   - Added experimental C++ and dartpy `LoopClosureRuntimePolicy` metadata for
     closed-chain runtime intent, including residual-only, kinematic projection,
     and dynamic solving policy selections without exposing solver internals.
+  - Added experimental C++ `LoopClosure::computeResidual()` and dartpy
+    `LoopClosure.compute_residual()` diagnostics for closed-chain residual
+    vectors, norms, activation state, coordinate convention, and force
+    availability metadata without exposing backend solver rows.
   - Added experimental joint DOF count, generalized position, and generalized
     velocity accessors in C++ and snake_case dartpy bindings.
   - Rejected invalid experimental `RigidBodyOptions` at the C++ and dartpy API

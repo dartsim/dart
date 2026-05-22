@@ -274,9 +274,9 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
   C++ value object, joint type, axis, parent/child, DOF count, and generalized
   position/velocity access. `World` now exposes `LoopClosure` handles with
   symmetric frame endpoints, semantic closure families, offsets, runtime
-  participation policy, lookup, validation, and serialization. Closure residual
-  diagnostics, kinematic projection, and dynamic closure solving remain staged
-  design targets.
+  participation policy, explicit residual diagnostics, lookup, validation, and
+  serialization. Closure kinematic projection and dynamic closure solving
+  remain staged design targets.
 - DART 6-style downstream closed-chain examples use a tree skeleton plus
   solver constraints or mimic/coupler metadata. Examples such as
   `examples/rigid_loop`, `examples/coupler_constraint`, and
@@ -572,16 +572,16 @@ public API exposes dirty flags.
 
 ## Public Object Model
 
-| Object        | Role                                                                  | Initial Python shape                                                                                                              |
-| ------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.                                                 |
-| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform, velocity, mass, inertia, force, and torque reads/writes, and broader dynamics properties as accessors mature.    |
-| `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                                                            |
-| `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                                                      |
-| `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links, DOF count, generalized position and velocity; broader state/control APIs remain staged. |
-| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint topology handle with runtime-intent policy now; diagnostics, projection, and dynamic solving remain staged.    |
-| `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                                                               |
-| `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                                                               |
+| Object        | Role                                                                  | Initial Python shape                                                                                                                      |
+| ------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.                                                         |
+| `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform, velocity, mass, inertia, force, and torque reads/writes, and broader dynamics properties as accessors mature.            |
+| `MultiBody`   | Articulated rigid-body system.                                        | Name, counts, link and joint construction, link and joint collections.                                                                    |
+| `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                                                              |
+| `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links, DOF count, generalized position and velocity; broader state/control APIs remain staged.         |
+| `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint topology handle with runtime-intent policy and residual diagnostics now; projection and dynamic solving remain staged. |
+| `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                                                                       |
+| `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                                                                       |
 
 `MultiBody` is the DART 7 experimental name because it matches the C++ concept.
 An `Articulation` alias can be considered during later promotion if the stable
@@ -722,13 +722,15 @@ components. The tree structure of a `MultiBody` remains the owner for names,
 links, joints, state indexing, and articulated-body algorithms. Loop closures
 add graph edges on top of that tree.
 
-DART 7 now stages the topology and runtime-intent part of this model:
+DART 7 now stages the topology, runtime-intent, and residual-diagnostic part
+of this model:
 `world.add_loop_closure(...)` returns a first-class `LoopClosure` handle with
 symmetric endpoint frames, semantic family, endpoint offsets, name lookup,
 count queries, validation, serialization, and a Pythonic
-`LoopClosureRuntimePolicy`. Constrained kinematic projection, residual
-diagnostics, and dynamic solving remain DART 8 target concepts to stage behind
-the experimental module before promotion.
+`LoopClosureRuntimePolicy`. `closure.compute_residual()` returns explicit
+closed-chain residual diagnostics without exposing solver rows. Constrained
+kinematic projection and dynamic solving remain DART 8 target concepts to
+stage behind the experimental module before promotion.
 
 The staged Python shape uses compact value objects or keyword construction and
 returned public handles:
@@ -756,6 +758,12 @@ closure.runtime_policy = sx.LoopClosureRuntimePolicy(
     kinematics=sx.ClosureKinematicsPolicy.PROJECT,
     dynamics=sx.ClosureDynamicsPolicy.SOLVE,
 )
+```
+
+Residual diagnostics are explicit queries rather than implicit properties:
+
+```python
+residual = closure.compute_residual()
 ```
 
 The minimal world-owned construction surface should be:
@@ -791,10 +799,11 @@ Closed-chain APIs must define how closures affect DOF counts, state-space
 metadata, serialization, collision filtering, handle validity, and residual
 reporting. `MultiBody.num_dofs` should continue to mean the underlying tree
 coordinate dimension; closures add residual rows, active flags, tolerances,
-convergence status, and force/impulse diagnostics. A future diagnostics value
-should include residual vectors and norms, units and frame conventions,
-active/enabled state, projection or solve convergence, tolerance used, and
-force/impulse availability. A kinematics-only pipeline should state whether it
+convergence status, and force/impulse diagnostics. The current
+`LoopClosureResidual` value reports residual vectors and norms, world-frame
+coordinate convention, active/enabled state, and force availability. Future
+diagnostics can add projection or solve convergence, tolerance used, and solved
+force/impulse estimates. A kinematics-only pipeline should state whether it
 projects closure errors, reports residuals only, or requires an explicit
 projection stage. Dynamic closure behavior belongs to a named constraint or
 implicit-dynamics stage, not to ordinary frame-cache refresh.

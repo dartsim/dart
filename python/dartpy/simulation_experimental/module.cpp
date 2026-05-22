@@ -396,6 +396,10 @@ void defSimulationExperimentalModule(nb::module_& m)
       .value("POINT", sim::LoopClosureFamily::Point)
       .value("DISTANCE", sim::LoopClosureFamily::Distance);
 
+  nb::enum_<sim::LoopClosureResidualCoordinates>(
+      m, "LoopClosureResidualCoordinates")
+      .value("WORLD", sim::LoopClosureResidualCoordinates::World);
+
   nb::enum_<sim::ClosureKinematicsPolicy>(m, "ClosureKinematicsPolicy")
       .value("RESIDUAL_ONLY", sim::ClosureKinematicsPolicy::ResidualOnly)
       .value("PROJECT", sim::ClosureKinematicsPolicy::Project);
@@ -766,6 +770,30 @@ void defSimulationExperimentalModule(nb::module_& m)
         return format_repr("LoopClosureRuntimePolicy", fields);
       });
 
+  nb::class_<sim::LoopClosureResidual>(m, "LoopClosureResidual")
+      .def_prop_ro(
+          "value",
+          [](const sim::LoopClosureResidual& self) { return self.value; })
+      .def_ro("norm", &sim::LoopClosureResidual::norm)
+      .def_ro("enabled", &sim::LoopClosureResidual::enabled)
+      .def_ro("active", &sim::LoopClosureResidual::active)
+      .def_ro("coordinates", &sim::LoopClosureResidual::coordinates)
+      .def_ro("force_available", &sim::LoopClosureResidual::forceAvailable)
+      .def("__repr__", [](const sim::LoopClosureResidual& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back(
+            "value", nb::cast<std::string>(nb::repr(nb::cast(self.value))));
+        fields.emplace_back("norm", std::to_string(self.norm));
+        fields.emplace_back("enabled", self.enabled ? "True" : "False");
+        fields.emplace_back("active", self.active ? "True" : "False");
+        fields.emplace_back(
+            "coordinates",
+            nb::cast<std::string>(nb::repr(nb::cast(self.coordinates))));
+        fields.emplace_back(
+            "force_available", self.forceAvailable ? "True" : "False");
+        return format_repr("LoopClosureResidual", fields);
+      });
+
   loopClosureClass
       .def(
           "get_name",
@@ -790,6 +818,7 @@ void defSimulationExperimentalModule(nb::module_& m)
           "set_runtime_policy",
           &sim::LoopClosure::setRuntimePolicy,
           nb::arg("policy"))
+      .def("compute_residual", &sim::LoopClosure::computeResidual)
       .def_prop_ro(
           "name",
           [](const sim::LoopClosure& self) {
