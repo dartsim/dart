@@ -326,6 +326,35 @@ TEST(World, UpdateKinematicsRefreshesFrameHierarchy)
       child.getTransform().isApprox(updatedParentTransform * childOffset));
 }
 
+// Test that ordinary frame reads stay fresh after mutating an ancestor frame,
+// without requiring users to know cache invalidation details.
+TEST(World, FrameReadsRefreshDescendantsAfterParentLocalTransformChange)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto parent = world.addFreeFrame("parent");
+
+  Eigen::Isometry3d childOffset = Eigen::Isometry3d::Identity();
+  childOffset.translate(Eigen::Vector3d(0.0, 2.0, 0.0));
+  auto child = world.addFixedFrame("child", parent, childOffset);
+
+  world.enterSimulationMode();
+  EXPECT_TRUE(child.getTransform().isApprox(childOffset));
+
+  Eigen::Isometry3d updatedParentTransform = Eigen::Isometry3d::Identity();
+  updatedParentTransform.translate(Eigen::Vector3d(3.0, 0.0, 0.0));
+  parent.setLocalTransform(updatedParentTransform);
+
+  auto& registry = world.getRegistry();
+  EXPECT_TRUE(registry.get<sx::comps::FrameCache>(parent.getEntity())
+                  .needTransformUpdate);
+  EXPECT_TRUE(registry.get<sx::comps::FrameCache>(child.getEntity())
+                  .needTransformUpdate);
+  EXPECT_TRUE(
+      child.getTransform().isApprox(updatedParentTransform * childOffset));
+}
+
 // Test that the experimental step path enters simulation mode and refreshes
 // kinematics using the default sequential graph executor.
 TEST(World, StepRefreshesFrameHierarchy)

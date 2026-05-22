@@ -67,6 +67,15 @@ def _simulation_experimental():
     return module
 
 
+def _translation_transform(x: float, y: float, z: float):
+    return (
+        (1.0, 0.0, 0.0, x),
+        (0.0, 1.0, 0.0, y),
+        (0.0, 0.0, 1.0, z),
+        (0.0, 0.0, 0.0, 1.0),
+    )
+
+
 def test_experimental_world_module_is_separate_from_legacy_simulation():
     sx = _simulation_experimental()
 
@@ -161,6 +170,36 @@ def test_experimental_multibody_link_joint_common_path():
 
     assert world.is_simulation_mode
     assert forearm.translation.tolist() == pytest.approx([0.0, 0.0, 0.0])
+
+
+def test_experimental_frame_handles_support_kinematics_only_updates():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    parent = world.add_free_frame("parent")
+    child = world.add_fixed_frame(
+        "sensor",
+        parent,
+        offset=_translation_transform(0.0, 2.0, 0.0),
+    )
+
+    assert isinstance(parent, sx.Frame)
+    assert isinstance(parent, sx.FreeFrame)
+    assert isinstance(child, sx.Frame)
+    assert isinstance(child, sx.FixedFrame)
+    assert sx.Frame.world().is_world
+    assert parent.name == "parent"
+    assert child.name == "sensor"
+    assert child.parent_frame == parent
+
+    world.enter_simulation_mode()
+    assert child.translation.tolist() == pytest.approx([0.0, 2.0, 0.0])
+
+    parent.local_transform = _translation_transform(3.0, 0.0, 0.0)
+
+    assert child.translation.tolist() == pytest.approx([3.0, 2.0, 0.0])
+    world.update_kinematics()
+    assert child.transform[:3, 3].tolist() == pytest.approx([3.0, 2.0, 0.0])
 
 
 def test_experimental_world_common_path_properties_and_step_count():

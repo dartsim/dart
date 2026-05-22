@@ -64,9 +64,7 @@ void FreeFrame::setLocalTransform(const Eigen::Isometry3d& transform)
   auto& props = registry.get<comps::FreeFrameProperties>(m_entity);
   props.localTransform = transform;
 
-  // Invalidate cache
-  auto& cache = registry.get<comps::FrameCache>(m_entity);
-  cache.needTransformUpdate = true;
+  markSubtreeTransformCacheDirty();
 }
 
 //==============================================================================

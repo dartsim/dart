@@ -40,6 +40,8 @@
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
+#include <string_view>
+
 namespace dart::simulation::experimental {
 
 /// Frame represents a spatial reference frame in the kinematic tree.
@@ -129,8 +131,9 @@ public:
   /// Get the local transform of this Frame with respect to its parent Frame
   ///
   /// Returns the transform of this frame relative to its parent frame (local).
-  /// Default implementation returns Identity (for world frame).
-  /// Derived classes override this to provide frame-type-specific behavior.
+  /// Base Frame handles dispatch through public frame components so handles
+  /// returned from getParentFrame() behave the same as FreeFrame, FixedFrame,
+  /// RigidBody, or Link handles.
   ///
   /// @return Local transform relative to parent frame
   [[nodiscard]] virtual const Eigen::Isometry3d& getLocalTransform() const;
@@ -149,6 +152,12 @@ public:
   /// @note This is NOT virtual - it dispatches based on ECS components.
   ///       This is more scalable than OOP inheritance for the ECS pattern.
   [[nodiscard]] Frame getParentFrame() const;
+
+  /// Get the user-visible name for this frame.
+  ///
+  /// World frames return "world". Unnamed non-world frames return an empty
+  /// string.
+  [[nodiscard]] std::string_view getName() const;
 
   /// Set the parent frame (for FreeFrame and FixedFrame)
   ///
@@ -340,6 +349,10 @@ public:
   }
 
   // Note: m_entity and m_world are inherited from EntityObject<Frame>
+
+protected:
+  /// Mark this frame and all descendant frame transform caches dirty.
+  void markSubtreeTransformCacheDirty();
 };
 
 } // namespace dart::simulation::experimental

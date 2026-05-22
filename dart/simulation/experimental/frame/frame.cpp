@@ -37,6 +37,7 @@
 #include "dart/simulation/experimental/world.hpp"
 
 #include <dart/simulation/experimental/comps/link.hpp>
+#include <dart/simulation/experimental/comps/name.hpp>
 
 #include <vector>
 
@@ -104,9 +105,27 @@ Frame::Frame(entt::entity entity, World* world)
 //==============================================================================
 const Eigen::Isometry3d& Frame::getLocalTransform() const
 {
-  // Default implementation: returns identity (for world frame)
-  // Derived classes override this to provide frame-type-specific behavior
   static const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  if (isWorld()) {
+    return identity;
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid frame handle");
+
+  const auto& registry = m_world->getRegistry();
+  if (const auto* props
+      = registry.try_get<comps::FreeFrameProperties>(m_entity)) {
+    return props->localTransform;
+  }
+  if (const auto* props
+      = registry.try_get<comps::FixedFrameProperties>(m_entity)) {
+    return props->localTransform;
+  }
+  if (const auto* link = registry.try_get<comps::Link>(m_entity)) {
+    return link->transformFromParentJoint;
+  }
+
   return identity;
 }
 
@@ -129,6 +148,24 @@ Frame Frame::getParentFrame() const
       "Entity does not have FrameState component");
 
   return Frame(frameState->parentFrame, m_world);
+}
+
+//==============================================================================
+std::string_view Frame::getName() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid frame handle");
+
+  if (isWorld()) {
+    return "world";
+  }
+
+  if (const auto* name
+      = m_world->getRegistry().try_get<comps::Name>(m_entity)) {
+    return name->name;
+  }
+
+  return "";
 }
 
 //==============================================================================
@@ -206,9 +243,7 @@ void Frame::setParentFrame(const Frame& parent)
   // Update parent in FrameState component
   frameState->parentFrame = parentEntity;
 
-  if (m_world) {
-    markSubtreeCacheDirty(m_world->getRegistry(), m_entity);
-  }
+  markSubtreeTransformCacheDirty();
 }
 
 //==============================================================================
@@ -383,6 +418,16 @@ bool Frame::isValid() const
   }
 
   return true;
+}
+
+//==============================================================================
+void Frame::markSubtreeTransformCacheDirty()
+{
+  if (!m_world) {
+    return;
+  }
+
+  markSubtreeCacheDirty(m_world->getRegistry(), m_entity);
 }
 
 } // namespace dart::simulation::experimental

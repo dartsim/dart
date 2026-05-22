@@ -38,6 +38,9 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
+#include <dart/simulation/experimental/frame/fixed_frame.hpp>
+#include <dart/simulation/experimental/frame/frame.hpp>
+#include <dart/simulation/experimental/frame/free_frame.hpp>
 #include <dart/simulation/experimental/multi_body/joint.hpp>
 #include <dart/simulation/experimental/multi_body/link.hpp>
 #include <dart/simulation/experimental/multi_body/multi_body.hpp>
@@ -46,6 +49,7 @@
 #include <Eigen/Cholesky>
 #include <nanobind/eigen/dense.h>
 #include <nanobind/nanobind.h>
+#include <nanobind/ndarray.h>
 #include <nanobind/stl/array.h>
 #include <nanobind/stl/string.h>
 
@@ -82,6 +86,115 @@ Eigen::Vector4d toWxyz(const Eigen::Quaterniond& quaternion)
   Eigen::Vector4d out;
   out << quaternion.w(), quaternion.x(), quaternion.y(), quaternion.z();
   return out;
+}
+
+void validateIsometryMatrix(const Eigen::Matrix4d& matrix)
+{
+  constexpr double tolerance = 1e-9;
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !matrix.allFinite(),
+      sim::InvalidArgumentException,
+      "Transform matrix must contain only finite values");
+
+  Eigen::RowVector4d expectedBottom;
+  expectedBottom << 0.0, 0.0, 0.0, 1.0;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (matrix.bottomRows<1>() - expectedBottom).cwiseAbs().maxCoeff()
+          > tolerance,
+      sim::InvalidArgumentException,
+      "Transform matrix bottom row must be [0, 0, 0, 1]");
+
+  const Eigen::Matrix3d rotation = matrix.topLeftCorner<3, 3>();
+  const double orthonormalError
+      = (rotation * rotation.transpose() - Eigen::Matrix3d::Identity())
+            .cwiseAbs()
+            .maxCoeff();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      orthonormalError > tolerance
+          || std::abs(rotation.determinant() - 1.0) > tolerance,
+      sim::InvalidArgumentException,
+      "Transform matrix rotation must be orthonormal");
+}
+
+Eigen::Matrix4d toMatrix4(const nb::handle& value)
+{
+  if (nb::isinstance<nb::ndarray<double>>(value)) {
+    const auto array = nb::cast<nb::ndarray<double>>(value);
+    if (array.ndim() != 2 || array.shape(0) != 4 || array.shape(1) != 4) {
+      throw nb::type_error("Expected a 4x4 matrix");
+    }
+
+    auto stride = [&](size_t axis) -> int64_t {
+      if (array.stride_ptr()) {
+        return array.stride(axis);
+      }
+      int64_t strideValue = 1;
+      for (size_t i = array.ndim(); i-- > axis + 1;) {
+        strideValue *= array.shape(i);
+      }
+      return strideValue;
+    };
+
+    Eigen::Matrix4d matrix;
+    const double* base = array.data();
+    const int64_t s0 = stride(0);
+    const int64_t s1 = stride(1);
+    for (Eigen::Index r = 0; r < 4; ++r) {
+      for (Eigen::Index c = 0; c < 4; ++c) {
+        matrix(r, c) = base[r * s0 + c * s1];
+      }
+    }
+    return matrix;
+  }
+
+  const auto nested = nb::cast<std::array<std::array<double, 4>, 4>>(value);
+  Eigen::Matrix4d matrix;
+  for (std::size_t r = 0; r < nested.size(); ++r) {
+    for (std::size_t c = 0; c < nested[r].size(); ++c) {
+      matrix(static_cast<Eigen::Index>(r), static_cast<Eigen::Index>(c))
+          = nested[r][c];
+    }
+  }
+  return matrix;
+}
+
+Eigen::Isometry3d toIsometry(const nb::handle& value)
+{
+  Eigen::Matrix4d matrix;
+  if (nb::hasattr(value, "matrix")) {
+    matrix = toMatrix4(value.attr("matrix")());
+  } else {
+    matrix = toMatrix4(value);
+  }
+
+  validateIsometryMatrix(matrix);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.matrix() = matrix;
+  return transform;
+}
+
+sim::Frame toFrameHandle(const nb::handle& value)
+{
+  if (nb::isinstance<sim::FreeFrame>(value)) {
+    auto frame = nb::cast<sim::FreeFrame>(value);
+    return sim::Frame(frame.getEntity(), frame.getWorld());
+  }
+  if (nb::isinstance<sim::FixedFrame>(value)) {
+    auto frame = nb::cast<sim::FixedFrame>(value);
+    return sim::Frame(frame.getEntity(), frame.getWorld());
+  }
+  if (nb::isinstance<sim::Link>(value)) {
+    auto frame = nb::cast<sim::Link>(value);
+    return sim::Frame(frame.getEntity(), frame.getWorld());
+  }
+  if (nb::isinstance<sim::RigidBody>(value)) {
+    auto frame = nb::cast<sim::RigidBody>(value);
+    return sim::Frame(frame.getEntity(), frame.getWorld());
+  }
+
+  return nb::cast<sim::Frame>(value);
 }
 
 bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
@@ -262,8 +375,212 @@ void defSimulationExperimentalModule(nb::module_& m)
         return format_repr("JointSpec", fields);
       });
 
+  auto frameClass = nb::class_<sim::Frame>(m, "Frame");
+  auto freeFrameClass = nb::class_<sim::FreeFrame, sim::Frame>(m, "FreeFrame");
+  auto fixedFrameClass
+      = nb::class_<sim::FixedFrame, sim::Frame>(m, "FixedFrame");
   auto jointClass = nb::class_<sim::Joint>(m, "Joint");
-  auto linkClass = nb::class_<sim::Link>(m, "Link");
+  auto linkClass = nb::class_<sim::Link, sim::Frame>(m, "Link");
+
+  frameClass.def_static("world", &sim::Frame::world)
+      .def(
+          "getName",
+          [](const sim::Frame& self) { return std::string(self.getName()); })
+      .def(
+          "get_name",
+          [](const sim::Frame& self) { return std::string(self.getName()); })
+      .def("getParentFrame", &sim::Frame::getParentFrame)
+      .def("get_parent_frame", &sim::Frame::getParentFrame)
+      .def(
+          "setParentFrame",
+          [](sim::Frame& self, const nb::handle& parent) {
+            self.setParentFrame(toFrameHandle(parent));
+          },
+          nb::arg("parent"))
+      .def(
+          "set_parent_frame",
+          [](sim::Frame& self, const nb::handle& parent) {
+            self.setParentFrame(toFrameHandle(parent));
+          },
+          nb::arg("parent"))
+      .def(
+          "getLocalTransform",
+          [](const sim::Frame& self) {
+            return self.getLocalTransform().matrix();
+          })
+      .def(
+          "get_local_transform",
+          [](const sim::Frame& self) {
+            return self.getLocalTransform().matrix();
+          })
+      .def(
+          "getTransform",
+          [](const sim::Frame& self) { return self.getTransformMatrix(); })
+      .def(
+          "get_transform",
+          [](const sim::Frame& self) { return self.getTransformMatrix(); })
+      .def(
+          "get_transform",
+          [](const sim::Frame& self, const nb::handle& relativeTo) {
+            return self.getTransform(toFrameHandle(relativeTo)).matrix();
+          },
+          nb::arg("relative_to"))
+      .def(
+          "get_transform",
+          [](const sim::Frame& self,
+             const nb::handle& to,
+             const nb::handle& expressedIn) {
+            return self
+                .getTransform(toFrameHandle(to), toFrameHandle(expressedIn))
+                .matrix();
+          },
+          nb::arg("to"),
+          nb::arg("expressed_in"))
+      .def("isValid", &sim::Frame::isValid)
+      .def("is_valid_handle", &sim::Frame::isValid)
+      .def("isWorld", &sim::Frame::isWorld)
+      .def(
+          "isSameInstanceAs",
+          [](const sim::Frame& self, const nb::handle& other) {
+            return self.isSameInstanceAs(toFrameHandle(other));
+          },
+          nb::arg("other"))
+      .def(
+          "is_same_instance_as",
+          [](const sim::Frame& self, const nb::handle& other) {
+            return self.isSameInstanceAs(toFrameHandle(other));
+          },
+          nb::arg("other"))
+      .def_prop_ro(
+          "name",
+          [](const sim::Frame& self) { return std::string(self.getName()); })
+      .def_prop_rw(
+          "parent_frame",
+          &sim::Frame::getParentFrame,
+          [](sim::Frame& self, const nb::handle& parent) {
+            self.setParentFrame(toFrameHandle(parent));
+          })
+      .def_prop_ro(
+          "local_transform",
+          [](const sim::Frame& self) {
+            return self.getLocalTransform().matrix();
+          })
+      .def_prop_ro("translation", &sim::Frame::getTranslation)
+      .def_prop_ro("rotation", &sim::Frame::getRotation)
+      .def_prop_ro(
+          "quaternion",
+          [](const sim::Frame& self) { return toWxyz(self.getQuaternion()); })
+      .def_prop_ro("transform", &sim::Frame::getTransformMatrix)
+      .def_prop_ro("is_valid", &sim::Frame::isValid)
+      .def_prop_ro("is_world", &sim::Frame::isWorld)
+      .def(
+          "__eq__",
+          [](const sim::Frame& self, const nb::handle& other) {
+            try {
+              return self == toFrameHandle(other);
+            } catch (const nb::cast_error&) {
+              return false;
+            }
+          },
+          nb::is_operator())
+      .def(
+          "__ne__",
+          [](const sim::Frame& self, const nb::handle& other) {
+            try {
+              return self != toFrameHandle(other);
+            } catch (const nb::cast_error&) {
+              return true;
+            }
+          },
+          nb::is_operator())
+      .def("__repr__", [](const sim::Frame& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("valid", self.isValid() ? "True" : "False");
+        if (self.isValid()) {
+          fields.emplace_back("name", repr_string(std::string(self.getName())));
+        }
+        return format_repr("Frame", fields);
+      });
+
+  freeFrameClass
+      .def(
+          "setLocalTransform",
+          [](sim::FreeFrame& self, const nb::handle& transform) {
+            self.setLocalTransform(toIsometry(transform));
+          },
+          nb::arg("transform"))
+      .def(
+          "set_local_transform",
+          [](sim::FreeFrame& self, const nb::handle& transform) {
+            self.setLocalTransform(toIsometry(transform));
+          },
+          nb::arg("transform"))
+      .def(
+          "getLocalTransform",
+          [](const sim::FreeFrame& self) {
+            return self.getLocalTransform().matrix();
+          })
+      .def(
+          "get_local_transform",
+          [](const sim::FreeFrame& self) {
+            return self.getLocalTransform().matrix();
+          })
+      .def_prop_rw(
+          "local_transform",
+          [](const sim::FreeFrame& self) {
+            return self.getLocalTransform().matrix();
+          },
+          [](sim::FreeFrame& self, const nb::handle& transform) {
+            self.setLocalTransform(toIsometry(transform));
+          })
+      .def("__repr__", [](const sim::FreeFrame& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("valid", self.isValid() ? "True" : "False");
+        if (self.isValid()) {
+          fields.emplace_back("name", repr_string(std::string(self.getName())));
+        }
+        return format_repr("FreeFrame", fields);
+      });
+
+  fixedFrameClass
+      .def(
+          "setLocalTransform",
+          [](sim::FixedFrame& self, const nb::handle& transform) {
+            self.setLocalTransform(toIsometry(transform));
+          },
+          nb::arg("transform"))
+      .def(
+          "set_local_transform",
+          [](sim::FixedFrame& self, const nb::handle& transform) {
+            self.setLocalTransform(toIsometry(transform));
+          },
+          nb::arg("transform"))
+      .def(
+          "getLocalTransform",
+          [](const sim::FixedFrame& self) {
+            return self.getLocalTransform().matrix();
+          })
+      .def(
+          "get_local_transform",
+          [](const sim::FixedFrame& self) {
+            return self.getLocalTransform().matrix();
+          })
+      .def_prop_rw(
+          "local_transform",
+          [](const sim::FixedFrame& self) {
+            return self.getLocalTransform().matrix();
+          },
+          [](sim::FixedFrame& self, const nb::handle& transform) {
+            self.setLocalTransform(toIsometry(transform));
+          })
+      .def("__repr__", [](const sim::FixedFrame& self) {
+        std::vector<std::pair<std::string, std::string>> fields;
+        fields.emplace_back("valid", self.isValid() ? "True" : "False");
+        if (self.isValid()) {
+          fields.emplace_back("name", repr_string(std::string(self.getName())));
+        }
+        return format_repr("FixedFrame", fields);
+      });
 
   jointClass
       .def(
@@ -437,7 +754,7 @@ void defSimulationExperimentalModule(nb::module_& m)
         return format_repr("MultiBody", fields);
       });
 
-  nb::class_<sim::RigidBody>(m, "RigidBody")
+  nb::class_<sim::RigidBody, sim::Frame>(m, "RigidBody")
       .def("getName", [](const sim::RigidBody& self) { return self.getName(); })
       .def_prop_ro(
           "name", [](const sim::RigidBody& self) { return self.getName(); })
@@ -551,6 +868,69 @@ void defSimulationExperimentalModule(nb::module_& m)
             self->setTimeStep(timeStep);
           },
           nb::arg("time_step") = 0.001)
+      .def(
+          "addFreeFrame",
+          [](sim::World& self, const std::string& name) {
+            return self.addFreeFrame(name);
+          },
+          nb::arg("name") = "",
+          nb::keep_alive<0, 1>())
+      .def(
+          "addFreeFrame",
+          [](sim::World& self,
+             const std::string& name,
+             const nb::handle& parent) {
+            return self.addFreeFrame(name, toFrameHandle(parent));
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_free_frame",
+          [](sim::World& self,
+             const std::string& name,
+             const nb::handle& parent) {
+            if (parent.is_none()) {
+              return self.addFreeFrame(name);
+            }
+            return self.addFreeFrame(name, toFrameHandle(parent));
+          },
+          nb::arg("name") = "",
+          nb::kw_only(),
+          nb::arg("parent") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "addFixedFrame",
+          [](sim::World& self,
+             const std::string& name,
+             const nb::handle& parent,
+             const nb::handle& offset) {
+            if (offset.is_none()) {
+              return self.addFixedFrame(name, toFrameHandle(parent));
+            }
+            return self.addFixedFrame(
+                name, toFrameHandle(parent), toIsometry(offset));
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("offset") = nb::none(),
+          nb::keep_alive<0, 1>())
+      .def(
+          "add_fixed_frame",
+          [](sim::World& self,
+             const std::string& name,
+             const nb::handle& parent,
+             const nb::handle& offset) {
+            if (offset.is_none()) {
+              return self.addFixedFrame(name, toFrameHandle(parent));
+            }
+            return self.addFixedFrame(
+                name, toFrameHandle(parent), toIsometry(offset));
+          },
+          nb::arg("name"),
+          nb::arg("parent"),
+          nb::arg("offset") = nb::none(),
+          nb::keep_alive<0, 1>())
       .def(
           "addMultiBody",
           [](sim::World& self, const std::string& name) {

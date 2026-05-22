@@ -443,6 +443,9 @@
   - Rejected invalid experimental `RigidBodyOptions` at the C++ and dartpy API
     boundaries, including non-positive mass, non-finite pose or velocity data,
     zero orientation quaternions, and non-symmetric-positive-definite inertia.
+  - Added first-class dartpy bindings for experimental `Frame`, `FreeFrame`,
+    and `FixedFrame`, and kept descendant frame reads fresh after parent-frame
+    local transform changes.
   - Fixed experimental Taskflow executor paths to propagate compute-node
     exceptions instead of reporting graph execution success after failed tasks.
   - Fixed experimental compute profiling and rigid-body stepping edge cases for

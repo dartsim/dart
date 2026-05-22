@@ -7,6 +7,9 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 __all__: list[str] = [
+    "FixedFrame",
+    "Frame",
+    "FreeFrame",
     "Joint",
     "JointSpec",
     "JointType",
@@ -62,6 +65,110 @@ class RigidBodyOptions:
     linear_velocity: NDArray[np.float64]
     angular_velocity: NDArray[np.float64]
     inertia: NDArray[np.float64]
+
+
+class Frame:
+    name: str
+    parent_frame: Frame
+    local_transform: NDArray[np.float64]
+    translation: NDArray[np.float64]
+    rotation: NDArray[np.float64]
+    quaternion: NDArray[np.float64]
+    transform: NDArray[np.float64]
+    is_valid: bool
+    is_world: bool
+
+    @staticmethod
+    def world() -> Frame:
+        ...
+
+    def getName(self) -> str:
+        ...
+
+    def get_name(self) -> str:
+        ...
+
+    def getParentFrame(self) -> Frame:
+        ...
+
+    def get_parent_frame(self) -> Frame:
+        ...
+
+    def setParentFrame(self, parent: Frame) -> None:
+        ...
+
+    def set_parent_frame(self, parent: Frame) -> None:
+        ...
+
+    def getLocalTransform(self) -> NDArray[np.float64]:
+        ...
+
+    def get_local_transform(self) -> NDArray[np.float64]:
+        ...
+
+    def getTransform(self) -> NDArray[np.float64]:
+        ...
+
+    @overload
+    def get_transform(self) -> NDArray[np.float64]:
+        ...
+
+    @overload
+    def get_transform(self, relative_to: Frame) -> NDArray[np.float64]:
+        ...
+
+    @overload
+    def get_transform(
+        self, to: Frame, expressed_in: Frame
+    ) -> NDArray[np.float64]:
+        ...
+
+    def isValid(self) -> bool:
+        ...
+
+    def is_valid_handle(self) -> bool:
+        ...
+
+    def isWorld(self) -> bool:
+        ...
+
+    def is_same_instance_as(self, other: Frame) -> bool:
+        ...
+
+    def isSameInstanceAs(self, other: Frame) -> bool:
+        ...
+
+
+class FreeFrame(Frame):
+    local_transform: NDArray[np.float64]
+
+    def setLocalTransform(self, transform: ArrayLike) -> None:
+        ...
+
+    def set_local_transform(self, transform: ArrayLike) -> None:
+        ...
+
+    def getLocalTransform(self) -> NDArray[np.float64]:
+        ...
+
+    def get_local_transform(self) -> NDArray[np.float64]:
+        ...
+
+
+class FixedFrame(Frame):
+    local_transform: NDArray[np.float64]
+
+    def setLocalTransform(self, transform: ArrayLike) -> None:
+        ...
+
+    def set_local_transform(self, transform: ArrayLike) -> None:
+        ...
+
+    def getLocalTransform(self) -> NDArray[np.float64]:
+        ...
+
+    def get_local_transform(self) -> NDArray[np.float64]:
+        ...
 
 
 class MultiBody:
@@ -126,7 +233,7 @@ class MultiBody:
         ...
 
 
-class Link:
+class Link(Frame):
     name: str
     parent_joint: Joint
     translation: NDArray[np.float64]
@@ -193,7 +300,7 @@ class Joint:
         ...
 
 
-class RigidBody:
+class RigidBody(Frame):
     name: str
     translation: NDArray[np.float64]
     rotation: NDArray[np.float64]
@@ -219,6 +326,40 @@ class World:
     num_rigid_bodies: int
 
     def addMultiBody(self, name: str) -> MultiBody:
+        ...
+
+    @overload
+    def addFreeFrame(self, name: str = "") -> FreeFrame:
+        ...
+
+    @overload
+    def addFreeFrame(self, name: str, parent: Frame) -> FreeFrame:
+        ...
+
+    @overload
+    def add_free_frame(self, name: str = "") -> FreeFrame:
+        ...
+
+    @overload
+    def add_free_frame(
+        self, name: str = "", *, parent: Frame | None = None
+    ) -> FreeFrame:
+        ...
+
+    def addFixedFrame(
+        self,
+        name: str,
+        parent: Frame,
+        offset: ArrayLike | None = None,
+    ) -> FixedFrame:
+        ...
+
+    def add_fixed_frame(
+        self,
+        name: str,
+        parent: Frame,
+        offset: ArrayLike | None = None,
+    ) -> FixedFrame:
         ...
 
     def getMultiBody(self, name: str) -> MultiBody | None:
