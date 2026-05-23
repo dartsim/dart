@@ -75,6 +75,12 @@ void integratePositionsSemiImplicit(
 /// inverse mass (model) as separate inputs mirrors the intended Model/Control
 /// vs State separation. Like the position kernel, it is templated on @c Scalar
 /// and uses plain scalar pointers with no Eigen expression templates.
+///
+/// Note: using `force * inverseMass` reassociates the per-entity integrator's
+/// `force / mass`, so results match it within a tolerance, not bit-for-bit
+/// (IEEE-754 `a * (1/b)` differs from `a / b`). The bitwise-determinism
+/// guarantee is scoped to a single integrator across worker counts, not to
+/// batched-versus-per-entity.
 template <typename Scalar>
 void integrateVelocitiesSemiImplicit(
     Scalar* velocities,

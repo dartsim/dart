@@ -79,6 +79,10 @@ ParallelExecutor& ParallelExecutor::operator=(ParallelExecutor&&) noexcept
 //==============================================================================
 void ParallelExecutor::execute(const ComputeGraph& graph)
 {
+  // Debug-only diagnostic aid: explicit graph edges remain the correctness
+  // source of truth, so stage authors must encode every cross-node data
+  // dependency as an edge rather than relying on this check (it is compiled out
+  // under NDEBUG).
   DART_EXPERIMENTAL_ASSERT_MSG(
       graph.findResourceHazards().empty(),
       "Parallel execution found unordered resource-access hazards; add an "
