@@ -321,6 +321,7 @@ class Joint:
     rest_position: NDArray[np.float64]
     damping_coefficient: NDArray[np.float64]
     armature: NDArray[np.float64]
+    coulomb_friction: NDArray[np.float64]
     position_lower_limits: NDArray[np.float64]
     position_upper_limits: NDArray[np.float64]
     velocity_lower_limits: NDArray[np.float64]

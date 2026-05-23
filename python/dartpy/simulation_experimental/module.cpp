@@ -782,6 +782,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::Joint& self, const nb::handle& value) {
             self.setArmature(toVectorX(value));
           })
+      .def_prop_rw(
+          "coulomb_friction",
+          &sim::Joint::getCoulombFriction,
+          [](sim::Joint& self, const nb::handle& value) {
+            self.setCoulombFriction(toVectorX(value));
+          })
       .def(
           "set_position_limits",
           [](sim::Joint& self,

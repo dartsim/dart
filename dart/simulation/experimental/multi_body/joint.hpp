@@ -208,6 +208,18 @@ public:
   /// equal to getDOFCount().
   void setArmature(const Eigen::VectorXd& armature);
 
+  /// Get the per-coordinate Coulomb (dry) friction magnitudes.
+  [[nodiscard]] Eigen::VectorXd getCoulombFriction() const;
+
+  /// Set the per-coordinate Coulomb (dry) friction magnitudes.
+  ///
+  /// A nonzero value applies a bounded dry-friction force/torque that opposes
+  /// joint motion: it holds the coordinate at rest while the required holding
+  /// effort stays within the friction bound (stiction) and otherwise resists
+  /// motion at the friction magnitude (kinetic). Values must be non-negative
+  /// and finite, with size equal to getDOFCount().
+  void setCoulombFriction(const Eigen::VectorXd& friction);
+
   /// Set the per-coordinate position limits.
   ///
   /// Each lower bound must be less than or equal to the matching upper bound.

@@ -1104,6 +1104,60 @@ def test_experimental_joint_armature():
     )
 
 
+def test_experimental_joint_coulomb_friction():
+    sx = _simulation_experimental()
+
+    # Stiction: a driving force within the bound does not move the joint.
+    world = sx.World()
+    world.gravity = (0.0, 0.0, 0.0)
+    robot = world.add_multi_body("slider")
+    base = robot.add_link("base")
+    carriage = robot.add_link(
+        "carriage",
+        parent=base,
+        joint=sx.JointSpec(
+            name="rail", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    carriage.mass = 2.0
+
+    joint = carriage.parent_joint
+    assert joint.coulomb_friction.tolist() == pytest.approx([0.0])
+    joint.coulomb_friction = [10.0]
+    joint.force = [5.0]
+
+    with pytest.raises(Exception, match="non-negative"):
+        joint.coulomb_friction = [-1.0]
+
+    world.time_step = 0.01
+    world.step(n=100)
+    assert joint.velocity.tolist()[0] == pytest.approx(0.0, abs=1e-12)
+    assert joint.position.tolist()[0] == pytest.approx(0.0, abs=1e-12)
+
+    # Kinetic: exceeding the bound yields net velocity step (F - mu) / m * dt.
+    world2 = sx.World()
+    world2.gravity = (0.0, 0.0, 0.0)
+    robot2 = world2.add_multi_body("slider")
+    base2 = robot2.add_link("base")
+    carriage2 = robot2.add_link(
+        "carriage",
+        parent=base2,
+        joint=sx.JointSpec(
+            name="rail", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    mass = 2.0
+    carriage2.mass = mass
+    joint2 = carriage2.parent_joint
+    joint2.coulomb_friction = [10.0]
+    joint2.force = [20.0]
+    dt = 0.01
+    world2.time_step = dt
+    world2.step()
+    expected_velocity = (20.0 - 10.0) / mass * dt
+    assert joint2.velocity.tolist()[0] == pytest.approx(expected_velocity)
+
+
 def test_experimental_joint_spring_and_damping():
     sx = _simulation_experimental()
 

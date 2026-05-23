@@ -366,6 +366,26 @@ void Joint::setArmature(const Eigen::VectorXd& armature)
 }
 
 //==============================================================================
+Eigen::VectorXd Joint::getCoulombFriction() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.coulombFriction;
+}
+
+//==============================================================================
+void Joint::setCoulombFriction(const Eigen::VectorXd& friction)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(friction, jointComp.getDOF(), "Coulomb friction");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (friction.array() < 0.0).any(),
+      InvalidArgumentException,
+      "Joint Coulomb friction must be non-negative");
+
+  jointComp.coulombFriction = friction;
+}
+
+//==============================================================================
 void Joint::setPositionLimits(
     const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
 {

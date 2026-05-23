@@ -521,6 +521,12 @@
     the public mass-matrix accessor, improving integration stability for stiff
     geared actuators (an improvement over the legacy DART rigid-body API, which
     lacks armature).
+  - Added experimental Coulomb (dry) joint friction:
+    `Joint::setCoulombFriction`/`getCoulombFriction` (dartpy
+    `joint.coulomb_friction`). The forward dynamics applies a bounded
+    velocity-level friction impulse per coordinate that holds the joint at rest
+    while the driving effort stays within the bound (stiction) and otherwise
+    opposes motion at the friction magnitude (kinetic).
   - Added experimental joint passive dynamics: per-coordinate spring stiffness
     with rest position and damping coefficient contribute restoring/dissipative
     generalized forces in the articulated-body forward dynamics

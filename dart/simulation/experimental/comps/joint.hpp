@@ -196,6 +196,10 @@ struct Joint
   /// (per generalized coordinate).
   Eigen::VectorXd armature;
 
+  /// Coulomb (dry) friction force/torque magnitude that opposes joint motion
+  /// (per generalized coordinate).
+  Eigen::VectorXd coulombFriction;
+
   JointLimits limits;
 
   Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();

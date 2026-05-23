@@ -47,6 +47,14 @@ the experimental `World`:
   mass-matrix accessor. An improvement over legacy DART, which lacks armature.
   Verified analytically (M = I + m L^2 + armature and the reduced gravity
   acceleration). C++ + dartpy tests.
+- Phase 4 (partial) — Coulomb (dry) joint friction:
+  `Joint::setCoulombFriction`/`getCoulombFriction` (dartpy
+  `joint.coulomb_friction`). The integrator applies a bounded velocity-level
+  friction impulse per coordinate, using the mass-matrix diagonal as the
+  effective inertia: stiction (holds at rest) when the required holding impulse
+  is within the bound, kinetic friction otherwise. Verified analytically
+  (stiction below the bound; net step `(F - mu)/m * dt` above it). C++ + dartpy
+  tests.
 - Phase 2 (partial) — collision query bridge: public `CollisionShape`
   (sphere/box) attachable to rigid bodies, public `Contact`, and
   `World::collide()` bridging to `dart/collision/native` via pairwise
@@ -99,8 +107,8 @@ Phases 2–5. Suggested next slices, in rough dependency order:
   multibody links, self-collision/filtering, broad-phase pruning, and a
   persistent collision world instead of rebuilding per `collide()`.
 - **Phase 4 next:** actuator types (FORCE/PASSIVE/SERVO/VELOCITY/ACCELERATION/
-  LOCKED), Coulomb joint friction, and mimic/coupler. (Position, velocity, and
-  effort limits, armature, and the public generalized mass-matrix / Coriolis /
+  LOCKED) and mimic/coupler. (Position, velocity, and effort limits, armature,
+  Coulomb joint friction, and the public generalized mass-matrix / Coriolis /
   gravity accessors are done — `MultiBody::getMassMatrix`/`getInverseMassMatrix`/
   `getCoriolisForces`/`getGravityForces`/`getCoriolisAndGravityForces`.)
 - **Phase 5:** loop-closure kinematic projection + dynamic solving, pluggable

@@ -431,6 +431,24 @@ void simulateMultiBody(
     joint.acceleration = block;
     joint.velocity += block * timeStep;
 
+    // Apply Coulomb (dry) joint friction as a bounded velocity-level impulse:
+    // it stops the coordinate when the holding impulse is within the friction
+    // bound (stiction) and otherwise opposes motion at the friction magnitude.
+    if (joint.coulombFriction.size() == joint.velocity.size()) {
+      for (Eigen::Index d = 0; d < joint.velocity.size(); ++d) {
+        const double bound = joint.coulombFriction[d] * timeStep;
+        if (bound <= 0.0) {
+          continue;
+        }
+        const auto globalDof
+            = static_cast<Eigen::Index>(tree.links[i].dofOffset) + d;
+        const double effInertia = mb.massMatrix(globalDof, globalDof);
+        const double stopImpulse = effInertia * joint.velocity[d];
+        const double frictionImpulse = std::clamp(stopImpulse, -bound, bound);
+        joint.velocity[d] -= frictionImpulse / effInertia;
+      }
+    }
+
     // Enforce velocity limits by clamping the generalized velocity.
     if (joint.limits.velocityLower.size() == joint.velocity.size()
         && joint.limits.velocityUpper.size() == joint.velocity.size()) {

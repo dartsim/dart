@@ -1460,6 +1460,77 @@ TEST(World, MultiBodyJointArmature)
   EXPECT_NEAR(joint.getAcceleration()[0], expectedAccel, 1e-9);
 }
 
+// Test that Coulomb joint friction holds a joint at rest when the driving
+// effort is within the friction bound (stiction).
+TEST(World, MultiBodyJointCoulombFrictionStiction)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(2.0);
+
+  auto joint = carriage.getParentJoint();
+  EXPECT_DOUBLE_EQ(joint.getCoulombFriction()[0], 0.0);
+  joint.setCoulombFriction(Eigen::VectorXd::Constant(1, 10.0));
+  joint.setForce(Eigen::VectorXd::Constant(1, 5.0)); // below the friction bound
+
+  EXPECT_THROW(
+      joint.setCoulombFriction(Eigen::VectorXd::Constant(1, -1.0)),
+      sx::InvalidArgumentException);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+  world.step(100);
+
+  // Static friction holds the joint: it should not move.
+  EXPECT_NEAR(joint.getVelocity()[0], 0.0, 1e-12);
+  EXPECT_NEAR(joint.getPosition()[0], 0.0, 1e-12);
+}
+
+// Test that Coulomb joint friction reduces the net velocity step once the
+// driving effort exceeds the friction bound (kinetic friction).
+TEST(World, MultiBodyJointCoulombFrictionKinetic)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  const double mass = 2.0;
+  carriage.setMass(mass);
+
+  auto joint = carriage.getParentJoint();
+  const double force = 20.0;
+  const double friction = 10.0;
+  joint.setCoulombFriction(Eigen::VectorXd::Constant(1, friction));
+  joint.setForce(Eigen::VectorXd::Constant(1, force));
+
+  const double dt = 0.01;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  world.step();
+
+  // From rest, the net velocity step is (force - friction) / mass * dt.
+  const double expectedVelocity = (force - friction) / mass * dt;
+  EXPECT_NEAR(joint.getVelocity()[0], expectedVelocity, 1e-12);
+}
+
 // Test that the public mass matrix and bias forces satisfy the joint-space
 // equation of motion M qddot + C + g = tau for a 2-DOF chain. This validates
 // the decomposition for a multi-DOF system without hand-computing M.
