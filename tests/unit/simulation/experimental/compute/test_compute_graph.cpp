@@ -36,6 +36,8 @@
 #include <dart/simulation/experimental/compute/compute_node.hpp>
 #include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
+#include <dart/simulation/experimental/compute/rigid_body_integration_kernel.hpp>
+#include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 
 #include <gtest/gtest.h>
@@ -640,4 +642,56 @@ TEST(ExperimentalComputeGraphDot, IncludesResourceAccess)
 
   const auto dot = compute::toDot(graph);
   EXPECT_NE(dot.find("read_write comps::Transform"), std::string::npos);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, SemiImplicitPositionUpdate)
+{
+  std::vector<double> positions{1.0, 2.0, 3.0, 4.0};
+  const std::vector<double> velocities{0.5, -1.0, 2.0, 0.0};
+
+  compute::integratePositionsSemiImplicit(
+      positions.data(), velocities.data(), 0.1, positions.size());
+
+  EXPECT_DOUBLE_EQ(positions[0], 1.05);
+  EXPECT_DOUBLE_EQ(positions[1], 1.9);
+  EXPECT_DOUBLE_EQ(positions[2], 3.2);
+  EXPECT_DOUBLE_EQ(positions[3], 4.0);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, IsScalarGeneric)
+{
+  // Instantiating the same kernel for float proves it is not bound to double,
+  // keeping the autodiff/SIMD scalar door open.
+  std::vector<float> positions{1.0F, 2.0F};
+  const std::vector<float> velocities{2.0F, 4.0F};
+
+  compute::integratePositionsSemiImplicit(
+      positions.data(), velocities.data(), 0.5F, positions.size());
+
+  EXPECT_FLOAT_EQ(positions[0], 2.0F);
+  EXPECT_FLOAT_EQ(positions[1], 4.0F);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, IntegratesStateBatchPositions)
+{
+  compute::RigidBodyStateBatch batch;
+  batch.worldCount = 1;
+  batch.bodyCount = 1;
+  batch.position = {0.0, 0.0, 0.0};
+  batch.orientation = {1.0, 0.0, 0.0, 0.0};
+  batch.linearVelocity = {1.0, 2.0, 3.0};
+  batch.angularVelocity = {0.0, 0.0, 0.0};
+
+  compute::integratePositionsSemiImplicit(
+      batch.position.data(),
+      batch.linearVelocity.data(),
+      0.5,
+      batch.position.size());
+
+  EXPECT_DOUBLE_EQ(batch.position[0], 0.5);
+  EXPECT_DOUBLE_EQ(batch.position[1], 1.0);
+  EXPECT_DOUBLE_EQ(batch.position[2], 1.5);
 }
