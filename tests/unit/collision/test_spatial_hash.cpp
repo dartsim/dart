@@ -85,7 +85,7 @@ TEST(SpatialHashBroadPhase, DebugSnapshotExposesHashCells)
   EXPECT_DOUBLE_EQ(snapshot.spatialHashCellSize, 1.0);
   EXPECT_EQ(snapshot.numObjects, 2u);
   ASSERT_EQ(snapshot.candidatePairs.size(), 1u);
-  EXPECT_EQ(snapshot.candidatePairs[0], std::make_pair(5u, 7u));
+  EXPECT_EQ(snapshot.candidatePairs[0], BroadPhasePair(5u, 7u));
 
   ASSERT_EQ(snapshot.cells.size(), 1u);
   const BroadPhaseDebugCell& cell = snapshot.cells[0];
