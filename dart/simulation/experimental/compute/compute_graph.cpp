@@ -224,6 +224,71 @@ bool ComputeGraph::validate() const
 }
 
 //==============================================================================
+std::vector<ComputeResourceHazard> ComputeGraph::findResourceHazards() const
+{
+  std::vector<ComputeResourceHazard> hazards;
+  std::vector<ComputeNode*> nodes = getNodes();
+  const auto count = nodes.size();
+  if (count < 2) {
+    return hazards;
+  }
+
+  auto indexOf = [&](const ComputeNode* node) -> std::size_t {
+    const auto it = std::ranges::find(nodes, node);
+    return static_cast<std::size_t>(std::distance(nodes.begin(), it));
+  };
+
+  // reachable[i][j] is true when node j runs strictly after node i, i.e. an
+  // explicit dependency path orders them. Unordered pairs may run concurrently.
+  std::vector<std::vector<bool>> reachable(
+      count, std::vector<bool>(count, false));
+  for (std::size_t i = 0; i < count; ++i) {
+    std::vector<ComputeNode*> stack;
+    for (const auto& edge : m_edges) {
+      if (edge.from == nodes[i]) {
+        stack.push_back(edge.to);
+      }
+    }
+    while (!stack.empty()) {
+      auto* current = stack.back();
+      stack.pop_back();
+      const auto j = indexOf(current);
+      if (j >= count || reachable[i][j]) {
+        continue;
+      }
+      reachable[i][j] = true;
+      for (const auto& edge : m_edges) {
+        if (edge.from == current) {
+          stack.push_back(edge.to);
+        }
+      }
+    }
+  }
+
+  for (std::size_t i = 0; i < count; ++i) {
+    for (std::size_t j = i + 1; j < count; ++j) {
+      if (reachable[i][j] || reachable[j][i]) {
+        continue;
+      }
+
+      for (const auto& first : nodes[i]->getMetadata().resources) {
+        for (const auto& second : nodes[j]->getMetadata().resources) {
+          if (first.resource != second.resource
+              || !accessesConflict(first.mode, second.mode)) {
+            continue;
+          }
+          hazards.push_back(
+              ComputeResourceHazard{
+                  nodes[i], nodes[j], first.resource, first.mode, second.mode});
+        }
+      }
+    }
+  }
+
+  return hazards;
+}
+
+//==============================================================================
 void ComputeGraph::clear()
 {
   m_edges.clear();

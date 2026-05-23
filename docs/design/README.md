@@ -13,6 +13,7 @@ fields in `docs/plans/dashboard.md` or `docs/dev_tasks/<task>/`.
 | File                                                                             | Purpose                                                                                      |
 | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | [`algorithm_extension_contracts.md`](algorithm_extension_contracts.md)           | Durable rules for research-facing algorithm extension and baseline contracts                 |
+| [`compute_backend_research.md`](compute_backend_research.md)                     | Evidence survey and DART workload-candidate ranking behind the scalable-compute roadmap      |
 | [`hierarchical_allocator.md`](hierarchical_allocator.md)                         | World-level memory management proposal and allocator ownership rationale                     |
 | [`scalable_compute_decisions.md`](scalable_compute_decisions.md)                 | Workload-first CPU, SIMD, and GPU decision framework for scalable computation                |
 | [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)       | C++ API shape for promoting `dart::simulation::experimental` to the DART 8 simulation API    |

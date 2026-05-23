@@ -32,6 +32,7 @@
 
 #include "dart/simulation/experimental/compute/parallel_executor.hpp"
 
+#include "dart/simulation/experimental/common/assert.hpp"
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
 #include "dart/simulation/experimental/compute/execution_profile.hpp"
 
@@ -77,6 +78,11 @@ ParallelExecutor& ParallelExecutor::operator=(ParallelExecutor&&) noexcept
 //==============================================================================
 void ParallelExecutor::execute(const ComputeGraph& graph)
 {
+  DART_EXPERIMENTAL_ASSERT_MSG(
+      graph.findResourceHazards().empty(),
+      "Parallel execution found unordered resource-access hazards; add an "
+      "explicit dependency or declare a reduction");
+
   tf::Taskflow taskflow;
   std::unordered_map<ComputeNode*, tf::Task> tasks;
 
@@ -97,6 +103,11 @@ void ParallelExecutor::execute(const ComputeGraph& graph)
 ComputeExecutionProfile ParallelExecutor::executeProfiled(
     const ComputeGraph& graph)
 {
+  DART_EXPERIMENTAL_ASSERT_MSG(
+      graph.findResourceHazards().empty(),
+      "Parallel execution found unordered resource-access hazards; add an "
+      "explicit dependency or declare a reduction");
+
   tf::Taskflow taskflow;
   std::unordered_map<ComputeNode*, tf::Task> tasks;
   ComputeExecutionProfiler profiler(graph, getWorkerCount());

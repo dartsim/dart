@@ -469,3 +469,175 @@ TEST(ExperimentalParallelExecutor, ProfileReportsObservedParallelism)
   EXPECT_LT(leftProfile->workerIndex, profile.workerCount);
   EXPECT_LT(rightProfile->workerIndex, profile.workerCount);
 }
+
+namespace {
+
+//==============================================================================
+compute::ComputeStageMetadata accessMeta(
+    std::string resource, compute::ComputeAccessMode mode)
+{
+  compute::ComputeStageMetadata metadata;
+  metadata.resources.push_back({std::move(resource), mode});
+  return metadata;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(ExperimentalComputeAccess, ToStringCoversModes)
+{
+  EXPECT_EQ(compute::toString(compute::ComputeAccessMode::Read), "read");
+  EXPECT_EQ(compute::toString(compute::ComputeAccessMode::Write), "write");
+  EXPECT_EQ(
+      compute::toString(compute::ComputeAccessMode::ReadWrite), "read_write");
+  EXPECT_EQ(compute::toString(compute::ComputeAccessMode::Reduce), "reduce");
+  EXPECT_EQ(compute::toString(compute::ComputeAccessMode::Scratch), "scratch");
+}
+
+//==============================================================================
+TEST(ExperimentalComputeAccess, ConflictRules)
+{
+  using compute::accessesConflict;
+  using Mode = compute::ComputeAccessMode;
+
+  EXPECT_FALSE(accessesConflict(Mode::Read, Mode::Read));
+  EXPECT_TRUE(accessesConflict(Mode::Read, Mode::Write));
+  EXPECT_TRUE(accessesConflict(Mode::Write, Mode::Write));
+  EXPECT_TRUE(accessesConflict(Mode::ReadWrite, Mode::Read));
+  EXPECT_FALSE(accessesConflict(Mode::Reduce, Mode::Reduce));
+  EXPECT_TRUE(accessesConflict(Mode::Reduce, Mode::Write));
+  EXPECT_FALSE(accessesConflict(Mode::Scratch, Mode::Write));
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, ReadReadIsSafe)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Read));
+  graph.addNode(
+      "b", []() {}, accessMeta("x", compute::ComputeAccessMode::Read));
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, DisjointWritesAreSafe)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+  graph.addNode(
+      "b", []() {}, accessMeta("y", compute::ComputeAccessMode::Write));
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, UnorderedWriteWriteIsHazard)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+  graph.addNode(
+      "b", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+
+  const auto hazards = graph.findResourceHazards();
+  ASSERT_EQ(hazards.size(), 1u);
+  EXPECT_EQ(hazards.front().resource, "x");
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, OrderedWriteWriteIsSafe)
+{
+  compute::ComputeGraph graph;
+  auto& a = graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+  auto& b = graph.addNode(
+      "b", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+  graph.addDependency(a, b);
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, DeclaredReductionIsSafe)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Reduce));
+  graph.addNode(
+      "b", []() {}, accessMeta("x", compute::ComputeAccessMode::Reduce));
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, ScratchIsSafe)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Scratch));
+  graph.addNode(
+      "b", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, PerEntityTreeHasNoFalsePositives)
+{
+  // Mirrors the kinematics graph: a parent writes its own cache; two children
+  // read the parent cache and write their own. Per-entity resource ids keep
+  // independent siblings hazard-free.
+  compute::ComputeGraph graph;
+
+  compute::ComputeStageMetadata parentMeta;
+  parentMeta.resources.push_back(
+      {"cache#0", compute::ComputeAccessMode::Write});
+  compute::ComputeStageMetadata child1Meta;
+  child1Meta.resources.push_back({"cache#0", compute::ComputeAccessMode::Read});
+  child1Meta.resources.push_back(
+      {"cache#1", compute::ComputeAccessMode::Write});
+  compute::ComputeStageMetadata child2Meta;
+  child2Meta.resources.push_back({"cache#0", compute::ComputeAccessMode::Read});
+  child2Meta.resources.push_back(
+      {"cache#2", compute::ComputeAccessMode::Write});
+
+  auto& parent = graph.addNode("parent", []() {}, parentMeta);
+  auto& child1 = graph.addNode("child1", []() {}, child1Meta);
+  auto& child2 = graph.addNode("child2", []() {}, child2Meta);
+  graph.addDependency(parent, child1);
+  graph.addDependency(parent, child2);
+
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, CoarseSharedWriteIsFlagged)
+{
+  // Negative control: collapsing per-entity ids to one coarse id surfaces the
+  // sibling write/write conflict that per-entity ids avoid.
+  compute::ComputeGraph graph;
+
+  compute::ComputeStageMetadata writeCache;
+  writeCache.resources.push_back({"cache", compute::ComputeAccessMode::Write});
+
+  auto& parent = graph.addNode("parent", []() {}, writeCache);
+  auto& child1 = graph.addNode("child1", []() {}, writeCache);
+  auto& child2 = graph.addNode("child2", []() {}, writeCache);
+  graph.addDependency(parent, child1);
+  graph.addDependency(parent, child2);
+
+  const auto hazards = graph.findResourceHazards();
+  ASSERT_EQ(hazards.size(), 1u);
+  EXPECT_EQ(hazards.front().resource, "cache");
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraphDot, IncludesResourceAccess)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a",
+      []() {},
+      accessMeta("comps::Transform", compute::ComputeAccessMode::ReadWrite));
+
+  const auto dot = compute::toDot(graph);
+  EXPECT_NE(dot.find("read_write comps::Transform"), std::string::npos);
+}

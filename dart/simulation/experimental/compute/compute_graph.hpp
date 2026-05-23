@@ -55,6 +55,20 @@ struct DART_EXPERIMENTAL_API ComputeEdge
   ComputeNode* to;
 };
 
+/// A descriptive resource-access hazard between two unordered nodes.
+///
+/// Reported when two nodes that are not ordered by an explicit dependency
+/// declare conflicting accesses to the same resource. This does not mutate the
+/// graph; explicit dependencies remain the correctness source of truth.
+struct DART_EXPERIMENTAL_API ComputeResourceHazard
+{
+  const ComputeNode* first;
+  const ComputeNode* second;
+  std::string resource;
+  ComputeAccessMode firstMode;
+  ComputeAccessMode secondMode;
+};
+
 /// Directed acyclic graph for experimental compute pipeline work.
 class DART_EXPERIMENTAL_API ComputeGraph
 {
@@ -105,6 +119,13 @@ public:
   }
 
   [[nodiscard]] bool validate() const;
+
+  /// Reports conservative resource-access hazards between unordered nodes.
+  ///
+  /// Two nodes conflict when they are not connected by any dependency path and
+  /// declare conflicting accesses to the same resource (see @c
+  /// accessesConflict). This is diagnostic only and never mutates the graph.
+  [[nodiscard]] std::vector<ComputeResourceHazard> findResourceHazards() const;
 
   void clear();
 

@@ -74,9 +74,12 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Land resource-access metadata for compute nodes before dependency
-  inference, contact scheduling, or GPU/rendering backend work; use the
-  resource-access evaluator mission to keep objective-specific proof explicit.
+- Next step: Follow the multiphase plan in
+  `docs/dev_tasks/experimental_world_scalable_compute/`; land the Phase 0
+  foundations (executor-parity test, EnTT concurrency contract, benchmark corpus
+  with a contact-shaped proxy) before the resource-access metadata milestone,
+  and keep both ahead of dependency inference, contact scheduling, or
+  GPU/rendering backend work.
 - Gate:
   [`030-compute-resource-access/evaluator.md`](030-compute-resource-access/evaluator.md)
   records the focused proof: graph/world tests and the compute-graph benchmark

@@ -140,6 +140,13 @@ Eigen::Isometry3d getLocalTransform(
   return Eigen::Isometry3d::Identity();
 }
 
+//==============================================================================
+std::string frameCacheResource(entt::entity entity)
+{
+  return "comps::FrameCache#"
+         + std::to_string(static_cast<std::uint32_t>(entity));
+}
+
 } // namespace
 
 //==============================================================================
@@ -161,6 +168,20 @@ void WorldKinematicsGraph::rebuild()
   for (auto entity : frameView) {
     const auto name = std::string("frame_")
                       + std::to_string(static_cast<std::uint32_t>(entity));
+
+    ComputeStageMetadata metadata{
+        ComputeStageDomain::Kinematics,
+        ComputeStageAcceleration::TaskParallel
+            | ComputeStageAcceleration::DataLocality};
+    metadata.resources.push_back(
+        {frameCacheResource(entity), ComputeAccessMode::Write});
+    const auto buildParentFrame
+        = registry.get<comps::FrameState>(entity).parentFrame;
+    if (buildParentFrame != entt::null) {
+      metadata.resources.push_back(
+          {frameCacheResource(buildParentFrame), ComputeAccessMode::Read});
+    }
+
     auto& node = m_graph.addNode(
         name,
         [&registry, entity]() {
@@ -183,9 +204,7 @@ void WorldKinematicsGraph::rebuild()
 
           cache.needTransformUpdate = false;
         },
-        {ComputeStageDomain::Kinematics,
-         ComputeStageAcceleration::TaskParallel
-             | ComputeStageAcceleration::DataLocality});
+        metadata);
 
     m_entityNodes.push_back({entity, &node});
   }
