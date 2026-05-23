@@ -1169,6 +1169,14 @@ public:
     return rotates_;
   }
 
+  // Translation alone at parameter t (skips the orientation work in at()).
+  [[nodiscard]] Eigen::Vector3d translationAt(double t) const
+  {
+    const double u = 1.0 - t;
+    return u * u * u * translation_[0] + 3.0 * t * u * u * translation_[1]
+           + 3.0 * t * t * u * translation_[2] + t * t * t * translation_[3];
+  }
+
   // Instantaneous translational speed |T'(t)| (hodograph evaluated at t).
   [[nodiscard]] double linearSpeedAt(double t) const
   {
@@ -1467,19 +1475,41 @@ bool splineCast(
     initialDir = Eigen::Vector3d::UnitX();
   }
 
-  auto supportB = [&](const Eigen::Vector3d& dir) {
-    return transformB * shapeB.support(transformB.rotation().transpose() * dir);
+  // Shape A spins only when its rotation control points are non-trivial; shape
+  // B is static. When a body has no rotation, its support reduces to a vertex
+  // scan plus a translation, skipping two matrix-vector products per support
+  // call -- a large saving since the conservative-advancement loop evaluates
+  // supports many times.
+  const bool aRotates = motionA.rotates();
+  const Eigen::Vector3d bTranslation = transformB.translation();
+  const Eigen::Matrix3d bRotation = transformB.rotation();
+  const bool bRotates = !bRotation.isIdentity(kEpsilon);
+  const Eigen::Matrix3d bRotationT = bRotation.transpose();
+
+  auto supportB = [&](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
+    if (bRotates) {
+      return bTranslation + bRotation * shapeB.support(bRotationT * dir);
+    }
+    return bTranslation + shapeB.support(dir);
   };
 
   GjkSimplex warmSimplex;
   bool haveWarm = false;
 
   for (int iter = 0; iter < option.maxIterations; ++iter) {
-    const Eigen::Isometry3d currentTransformA = motionA.at(t);
+    const Eigen::Vector3d currentTranslationA = motionA.translationAt(t);
+    Eigen::Matrix3d currentRotationA = Eigen::Matrix3d::Identity();
+    if (aRotates) {
+      currentRotationA = motionA.at(t).rotation();
+    }
 
-    auto supportA = [&](const Eigen::Vector3d& dir) {
-      return currentTransformA
-             * shapeA.support(currentTransformA.rotation().transpose() * dir);
+    auto supportA = [&](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
+      if (aRotates) {
+        return currentTranslationA
+               + currentRotationA
+                     * shapeA.support(currentRotationA.transpose() * dir);
+      }
+      return currentTranslationA + shapeA.support(dir);
     };
 
     GjkResult gjkResult
