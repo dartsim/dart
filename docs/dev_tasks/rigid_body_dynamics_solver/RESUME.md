@@ -60,6 +60,14 @@ the experimental `World`:
   is within the bound, kinetic friction otherwise. Verified analytically
   (stiction below the bound; net step `(F - mu)/m * dt` above it). C++ + dartpy
   tests.
+- Phase 4 (partial) — joint actuator types: `Joint::setActuatorType`/
+  `getActuatorType` with public `ActuatorType` (dartpy `joint.actuator_type`,
+  `ActuatorType`). `Force` (default) applies the clamped commanded effort;
+  `Passive` ignores it (passive spring/damping/friction still apply). The
+  remaining modes (`Servo`/`Velocity`/`Acceleration`/`Locked`/`Mimic`) are
+  defined but rejected by the forward dynamics — they need the constraint solver
+  (Locked changes the effective DOF count; servo/mimic are constraints). C++ +
+  dartpy tests.
 - Phase 2 (partial) — collision query bridge: public `CollisionShape`
   (sphere/box) attachable to rigid bodies, public `Contact`, and
   `World::collide()` bridging to `dart/collision/native` via pairwise
@@ -111,11 +119,19 @@ Phases 2–5. Suggested next slices, in rough dependency order:
 - **Phase 2 next:** capsule/cylinder/plane/mesh shapes, collision shapes on
   multibody links, self-collision/filtering, broad-phase pruning, and a
   persistent collision world instead of rebuilding per `collide()`.
-- **Phase 4 next:** actuator types (FORCE/PASSIVE/SERVO/VELOCITY/ACCELERATION/
-  LOCKED) and mimic/coupler. (Position, velocity, and effort limits, armature,
-  Coulomb joint friction, and the public generalized mass-matrix / Coriolis /
-  gravity accessors are done — `MultiBody::getMassMatrix`/`getInverseMassMatrix`/
-  `getCoriolisForces`/`getGravityForces`/`getCoriolisAndGravityForces`.)
+- **Phase 4 next:** the constraint-coupled actuator modes (SERVO/VELOCITY/
+  ACCELERATION/LOCKED) and mimic/coupler, which all need the constraint solver
+  (see below). (Done in Phase 4: position/velocity/effort limits, armature,
+  Coulomb joint friction, Force/Passive actuator types, inverse dynamics, and
+  the public generalized mass-matrix / Coriolis / gravity accessors —
+  `MultiBody::getMassMatrix`/`getInverseMassMatrix`/`getCoriolisForces`/
+  `getGravityForces`/`getCoriolisAndGravityForces`/`computeInverseDynamics`.)
+- **Shared foundation needed next:** a constraint solver coupling the
+  articulated system (impulse-based articulated dynamics). It unblocks the
+  remaining Phase 3 (contacts on multibody links, joint motor/limit
+  constraints, boxed-LCP, islands), the constraint-coupled Phase 4 actuator
+  modes and mimic/coupler, and Phase 5 loop-closure dynamics. Budget it as a
+  dedicated multi-session subsystem.
 - **Phase 5:** loop-closure kinematic projection + dynamic solving, pluggable
   integrator/substepping, body/COM Jacobians, and a model-format loading bridge.
 

@@ -1196,6 +1196,47 @@ def test_experimental_joint_coulomb_friction():
     assert joint2.velocity.tolist()[0] == pytest.approx(expected_velocity)
 
 
+def test_experimental_joint_actuator_types():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.gravity = (0.0, 0.0, 0.0)
+    robot = world.add_multi_body("slider")
+    base = robot.add_link("base")
+    carriage = robot.add_link(
+        "carriage",
+        parent=base,
+        joint=sx.JointSpec(
+            name="rail", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    mass = 2.0
+    carriage.mass = mass
+
+    joint = carriage.parent_joint
+    assert joint.actuator_type == sx.ActuatorType.FORCE
+    joint.actuator_type = sx.ActuatorType.PASSIVE
+    assert joint.actuator_type == sx.ActuatorType.PASSIVE
+
+    # Passive ignores the commanded effort but still applies the spring.
+    joint.force = [100.0]
+    stiffness = 10.0
+    joint.spring_stiffness = [stiffness]
+    joint.rest_position = [0.0]
+    joint.position = [1.0]
+
+    world.time_step = 0.001
+    world.step()
+    assert joint.acceleration.tolist()[0] == pytest.approx(
+        -stiffness * 1.0 / mass, abs=1e-9
+    )
+
+    # Unimplemented actuator types are rejected by the dynamics.
+    joint.actuator_type = sx.ActuatorType.SERVO
+    with pytest.raises(Exception, match="not yet implemented"):
+        world.step()
+
+
 def test_experimental_joint_spring_and_damping():
     sx = _simulation_experimental()
 

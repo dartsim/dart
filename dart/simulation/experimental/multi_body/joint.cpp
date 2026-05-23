@@ -69,6 +69,50 @@ JointType toPublicJointType(comps::JointType type)
   return JointType::Custom;
 }
 
+comps::ActuatorType toComponentActuatorType(ActuatorType type)
+{
+  switch (type) {
+    case ActuatorType::Force:
+      return comps::ActuatorType::Force;
+    case ActuatorType::Passive:
+      return comps::ActuatorType::Passive;
+    case ActuatorType::Servo:
+      return comps::ActuatorType::Servo;
+    case ActuatorType::Velocity:
+      return comps::ActuatorType::Velocity;
+    case ActuatorType::Acceleration:
+      return comps::ActuatorType::Acceleration;
+    case ActuatorType::Locked:
+      return comps::ActuatorType::Locked;
+    case ActuatorType::Mimic:
+      return comps::ActuatorType::Mimic;
+  }
+
+  return comps::ActuatorType::Force;
+}
+
+ActuatorType toPublicActuatorType(comps::ActuatorType type)
+{
+  switch (type) {
+    case comps::ActuatorType::Force:
+      return ActuatorType::Force;
+    case comps::ActuatorType::Passive:
+      return ActuatorType::Passive;
+    case comps::ActuatorType::Servo:
+      return ActuatorType::Servo;
+    case comps::ActuatorType::Velocity:
+      return ActuatorType::Velocity;
+    case comps::ActuatorType::Acceleration:
+      return ActuatorType::Acceleration;
+    case comps::ActuatorType::Locked:
+      return ActuatorType::Locked;
+    case comps::ActuatorType::Mimic:
+      return ActuatorType::Mimic;
+  }
+
+  return ActuatorType::Force;
+}
+
 comps::Joint& getJointComponent(World* world, entt::entity entity)
 {
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -180,6 +224,20 @@ JointType Joint::getType() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);
   return toPublicJointType(jointComp.type);
+}
+
+//==============================================================================
+ActuatorType Joint::getActuatorType() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return toPublicActuatorType(jointComp.actuatorType);
+}
+
+//==============================================================================
+void Joint::setActuatorType(ActuatorType actuatorType)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  jointComp.actuatorType = toComponentActuatorType(actuatorType);
 }
 
 //==============================================================================

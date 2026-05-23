@@ -531,6 +531,13 @@
     velocity-level friction impulse per coordinate that holds the joint at rest
     while the driving effort stays within the bound (stiction) and otherwise
     opposes motion at the friction magnitude (kinetic).
+  - Added experimental joint actuator types: `Joint::setActuatorType`/
+    `getActuatorType` with `ActuatorType` (dartpy `joint.actuator_type`,
+    `ActuatorType`). `Force` (default) applies the commanded joint effort and
+    `Passive` ignores it (passive spring/damping/friction still apply); the
+    remaining modes (`Servo`/`Velocity`/`Acceleration`/`Locked`/`Mimic`) are
+    reserved and rejected by the forward dynamics until the constraint solver
+    lands.
   - Added experimental joint passive dynamics: per-coordinate spring stiffness
     with rest position and damping coefficient contribute restoring/dissipative
     generalized forces in the articulated-body forward dynamics

@@ -402,11 +402,26 @@ void simulateMultiBody(
     const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
     qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
 
-    // Clamp the commanded actuation effort to its limits; passive spring and
-    // damping forces are not subject to the effort limits.
-    const Eigen::VectorXd effort
-        = joint.torque.cwiseMax(joint.limits.effortLower)
-              .cwiseMin(joint.limits.effortUpper);
+    // Determine the commanded actuation effort by actuator type. Force applies
+    // the clamped joint effort; Passive applies none. Passive spring and
+    // damping forces are not subject to the effort limits and always apply.
+    Eigen::VectorXd effort;
+    switch (joint.actuatorType) {
+      case comps::ActuatorType::Force:
+        effort = joint.torque.cwiseMax(joint.limits.effortLower)
+                     .cwiseMin(joint.limits.effortUpper);
+        break;
+      case comps::ActuatorType::Passive:
+        effort = Eigen::VectorXd::Zero(
+            static_cast<Eigen::Index>(tree.links[i].dof));
+        break;
+      default:
+        DART_EXPERIMENTAL_THROW_T(
+            InvalidOperationException,
+            "Joint actuator type is not yet implemented in the "
+            "articulated-body forward dynamics; supported types are Force and "
+            "Passive");
+    }
     appliedForce.segment(tree.links[i].dofOffset, tree.links[i].dof)
         = effort
           - joint.springStiffness.cwiseProduct(

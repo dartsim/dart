@@ -143,6 +143,20 @@ enum class JointType
   Custom
 };
 
+/// Joint actuator type (how the joint is driven during forward dynamics)
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+enum class ActuatorType
+{
+  Force,        ///< Commanded joint effort drives the dynamics (default)
+  Passive,      ///< No commanded effort; only passive forces act
+  Servo,        ///< Velocity servo to a target (not yet implemented)
+  Velocity,     ///< Prescribed velocity (not yet implemented)
+  Acceleration, ///< Prescribed acceleration (not yet implemented)
+  Locked,       ///< Frozen at the current position (not yet implemented)
+  Mimic         ///< Follows another joint (not yet implemented)
+};
+
 /// Joint limits
 ///
 /// Per-coordinate lower/upper bounds for position, velocity, and actuation
@@ -180,6 +194,7 @@ struct Joint
   DART_EXPERIMENTAL_STATE_COMPONENT(Joint);
 
   JointType type = JointType::Revolute;
+  ActuatorType actuatorType = ActuatorType::Force;
   std::string name;
 
   Eigen::VectorXd position;

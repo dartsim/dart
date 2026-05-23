@@ -46,6 +46,23 @@
 
 namespace dart::simulation::experimental {
 
+/// Public joint actuator type used by the experimental multibody facade.
+///
+/// Describes how a joint is driven during forward dynamics. `Force` (the
+/// default) applies the commanded joint effort; `Passive` applies no commanded
+/// effort (only passive spring/damping/friction forces act). The remaining
+/// modes are reserved and not yet implemented in the forward dynamics.
+enum class ActuatorType
+{
+  Force,
+  Passive,
+  Servo,
+  Velocity,
+  Acceleration,
+  Locked,
+  Mimic
+};
+
 /// Generic Joint handle class
 ///
 /// Represents a joint connecting two links in a MultiBody. This is a
@@ -97,6 +114,16 @@ public:
   ///
   /// @return JointType enum (Revolute, Prismatic, etc.)
   [[nodiscard]] JointType getType() const;
+
+  /// Get the joint actuator type (default ActuatorType::Force).
+  [[nodiscard]] ActuatorType getActuatorType() const;
+
+  /// Set the joint actuator type.
+  ///
+  /// `Force` applies the commanded joint effort; `Passive` ignores it (only
+  /// passive spring/damping/friction forces act). The remaining modes are not
+  /// yet implemented and are rejected by the forward dynamics at step time.
+  void setActuatorType(ActuatorType actuatorType);
 
   /// Get the primary joint axis
   ///

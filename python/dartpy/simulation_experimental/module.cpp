@@ -416,6 +416,15 @@ void defSimulationExperimentalModule(nb::module_& m)
       .value("FREE", sim::JointType::Free)
       .value("CUSTOM", sim::JointType::Custom);
 
+  nb::enum_<sim::ActuatorType>(m, "ActuatorType")
+      .value("FORCE", sim::ActuatorType::Force)
+      .value("PASSIVE", sim::ActuatorType::Passive)
+      .value("SERVO", sim::ActuatorType::Servo)
+      .value("VELOCITY", sim::ActuatorType::Velocity)
+      .value("ACCELERATION", sim::ActuatorType::Acceleration)
+      .value("LOCKED", sim::ActuatorType::Locked)
+      .value("MIMIC", sim::ActuatorType::Mimic);
+
   nb::enum_<sim::LoopClosureFamily>(m, "LoopClosureFamily")
       .value("RIGID", sim::LoopClosureFamily::Rigid)
       .value("POINT", sim::LoopClosureFamily::Point)
@@ -737,6 +746,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           "name",
           [](const sim::Joint& self) { return std::string(self.getName()); })
       .def_prop_ro("type", &sim::Joint::getType)
+      .def_prop_rw(
+          "actuator_type",
+          &sim::Joint::getActuatorType,
+          &sim::Joint::setActuatorType)
       .def_prop_ro("axis", &sim::Joint::getAxis)
       .def_prop_ro("num_dofs", &sim::Joint::getDOFCount)
       .def_prop_rw(

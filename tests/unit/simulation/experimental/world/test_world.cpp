@@ -1531,6 +1531,52 @@ TEST(World, MultiBodyJointCoulombFrictionKinetic)
   EXPECT_NEAR(joint.getVelocity()[0], expectedVelocity, 1e-12);
 }
 
+// Test that the PASSIVE actuator type ignores the commanded joint effort while
+// still applying passive spring forces, and that unimplemented actuator types
+// are rejected by the forward dynamics.
+TEST(World, MultiBodyJointActuatorTypes)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  const double mass = 2.0;
+  carriage.setMass(mass);
+
+  auto joint = carriage.getParentJoint();
+  EXPECT_EQ(joint.getActuatorType(), sx::ActuatorType::Force);
+
+  joint.setActuatorType(sx::ActuatorType::Passive);
+  EXPECT_EQ(joint.getActuatorType(), sx::ActuatorType::Passive);
+
+  // A passive joint ignores the commanded effort but still responds to passive
+  // spring forces.
+  joint.setForce(Eigen::VectorXd::Constant(1, 100.0));
+  const double stiffness = 10.0;
+  joint.setSpringStiffness(Eigen::VectorXd::Constant(1, stiffness));
+  joint.setRestPosition(Eigen::VectorXd::Zero(1));
+  joint.setPosition(Eigen::VectorXd::Constant(1, 1.0));
+
+  world.setTimeStep(0.001);
+  world.enterSimulationMode();
+  world.step();
+
+  // The commanded effort is ignored; only the spring acts: qddot = -k x / m.
+  EXPECT_NEAR(joint.getAcceleration()[0], -stiffness * 1.0 / mass, 1e-9);
+
+  // An actuator type that is not yet implemented is rejected by the dynamics.
+  joint.setActuatorType(sx::ActuatorType::Servo);
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+}
+
 // Test that the public mass matrix and bias forces satisfy the joint-space
 // equation of motion M qddot + C + g = tau for a 2-DOF chain. This validates
 // the decomposition for a multi-DOF system without hand-computing M.

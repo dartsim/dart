@@ -44,6 +44,16 @@ class JointType(Enum):
     CUSTOM = 8
 
 
+class ActuatorType(Enum):
+    FORCE = 0
+    PASSIVE = 1
+    SERVO = 2
+    VELOCITY = 3
+    ACCELERATION = 4
+    LOCKED = 5
+    MIMIC = 6
+
+
 class LoopClosureFamily(Enum):
     RIGID = 0
     POINT = 1
@@ -316,6 +326,7 @@ class Link(Frame):
 class Joint:
     name: str
     type: JointType
+    actuator_type: ActuatorType
     axis: NDArray[np.float64]
     num_dofs: int
     position: NDArray[np.float64]
