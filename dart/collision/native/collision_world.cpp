@@ -528,6 +528,19 @@ void CollisionWorld::buildBroadPhaseSnapshot(
   m_cachedDeterministic = settings.deterministic;
 }
 
+BroadPhaseDebugSnapshot CollisionWorld::buildBroadPhaseDebugSnapshot() const
+{
+  BroadPhaseDebugSnapshot snapshot;
+  buildBroadPhaseDebugSnapshot(snapshot);
+  return snapshot;
+}
+
+void CollisionWorld::buildBroadPhaseDebugSnapshot(
+    BroadPhaseDebugSnapshot& out) const
+{
+  m_broadPhase->buildDebugSnapshot(out);
+}
+
 bool CollisionWorld::collideAll(
     const BroadPhaseSnapshot& snapshot,
     const CollisionOption& option,

@@ -48,6 +48,8 @@
 
 #include <dart/collision/collision_result.hpp>
 
+#include <dart/common/profile.hpp>
+
 #include <chrono>
 
 namespace dart::gui::detail {
@@ -95,6 +97,7 @@ void SceneFrameUpdater::update(
     bool orbitLight,
     double orbitLightPeriodSeconds)
 {
+  DART_PROFILE_SCOPED_N("SceneFrameUpdater::update");
   const std::size_t simulationStepsToRun = mSimulationStepper.stepsToRun(
       mOptions, mLifecycle, mDartScene.world->getTimeStep());
 

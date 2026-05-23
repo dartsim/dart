@@ -228,6 +228,42 @@ double SpatialHashBroadPhase::averageObjectsPerCell() const
   return static_cast<double>(totalObjects) / static_cast<double>(grid_.size());
 }
 
+void SpatialHashBroadPhase::buildDebugSnapshot(
+    BroadPhaseDebugSnapshot& out) const
+{
+  out.clear();
+  out.candidatePairs = queryPairs();
+  out.numObjects = size();
+  out.spatialHashCellSize = cellSize_;
+  out.hasSpatialHashCells = true;
+  out.cells.reserve(grid_.size());
+
+  for (const auto& [coord, objectIds] : grid_) {
+    BroadPhaseDebugCell cell;
+    cell.coordinates = coord;
+    cell.hash = CellHash{}(coord);
+    cell.aabb = Aabb(
+        Eigen::Vector3d(
+            static_cast<double>(coord[0]) * cellSize_,
+            static_cast<double>(coord[1]) * cellSize_,
+            static_cast<double>(coord[2]) * cellSize_),
+        Eigen::Vector3d(
+            static_cast<double>(coord[0] + 1) * cellSize_,
+            static_cast<double>(coord[1] + 1) * cellSize_,
+            static_cast<double>(coord[2] + 1) * cellSize_));
+    cell.objectIds.assign(objectIds.begin(), objectIds.end());
+    std::sort(cell.objectIds.begin(), cell.objectIds.end());
+    out.cells.push_back(std::move(cell));
+  }
+
+  std::sort(
+      out.cells.begin(),
+      out.cells.end(),
+      [](const BroadPhaseDebugCell& lhs, const BroadPhaseDebugCell& rhs) {
+        return lhs.coordinates < rhs.coordinates;
+      });
+}
+
 bool SpatialHashBroadPhase::isFinite(const Aabb& aabb)
 {
   return aabb.min.allFinite() && aabb.max.allFinite();

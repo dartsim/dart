@@ -65,6 +65,7 @@ public:
 
   void queryPairs(std::vector<BroadPhasePair>& out) const override;
   bool visitPairs(const BroadPhasePairVisitor& visitor) const override;
+  void buildDebugSnapshot(BroadPhaseDebugSnapshot& out) const override;
 
   template <typename Visitor>
   bool visitPairsFast(Visitor&& visitor) const;

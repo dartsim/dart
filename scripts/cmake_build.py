@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -78,6 +79,72 @@ def resolve_build_dir(value: str | None) -> Path:
     )
 
 
+def refresh_stale_nanobind_static_archive(build_dir: Path) -> None:
+    """Force stale nanobind static archives to rebuild after package updates.
+
+    Some package installs preserve nanobind source mtimes from the wheel. If the
+    pixi environment updates nanobind in place, Ninja can keep a newer static
+    archive that was compiled from older sources while the updated headers now
+    reference newer module lifecycle hooks.
+    """
+
+    nm = shutil.which("nm")
+    if not nm:
+        return
+
+    try:
+        import nanobind  # type: ignore
+    except Exception:
+        return
+
+    nb_root = Path(nanobind.__file__).resolve().parent
+    nb_internals_cpp = nb_root / "src" / "nb_internals.cpp"
+    nb_internals_h = nb_root / "src" / "nb_internals.h"
+    if not nb_internals_cpp.is_file():
+        return
+
+    try:
+        internals_text = nb_internals_cpp.read_text(encoding="utf-8")
+    except OSError:
+        return
+
+    required_symbols = ("nb_module_traverse", "nb_module_clear")
+    if not all(symbol in internals_text for symbol in required_symbols):
+        return
+
+    archives = sorted(build_dir.rglob("libnanobind-static*.a"))
+    for archive in archives:
+        result = subprocess.run(
+            [nm, "-C", str(archive)],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        if result.returncode != 0:
+            continue
+
+        defined_symbols = {
+            symbol
+            for line in result.stdout.splitlines()
+            if " T " in line or " t " in line
+            for symbol in required_symbols
+            if symbol in line
+        }
+        if all(symbol in defined_symbols for symbol in required_symbols):
+            continue
+
+        nb_internals_cpp.touch()
+        if nb_internals_h.is_file():
+            nb_internals_h.touch()
+        print(
+            "Detected stale nanobind static archive; touched "
+            f"{nb_internals_cpp} so CMake rebuilds {archive}.",
+            file=sys.stderr,
+        )
+        return
+
+
 def run_build(
     build_dir: Path, config: str | None, parallel: int, target: str | None
 ) -> None:
@@ -116,6 +183,7 @@ def run_build(
 def main() -> int:
     args = parse_args()
     build_dir = resolve_build_dir(args.build_dir)
+    refresh_stale_nanobind_static_archive(build_dir)
     parallel = resolve_parallel(args.parallel)
     targets = args.target or [None]
     for target in targets:

@@ -85,6 +85,24 @@ Inspect screenshots or captured frame sequences when judging visual quality.
 Command success alone is not enough for material, lighting, transparency,
 camera, or UI regressions.
 
+## Native Collision Visual Checks
+
+`examples/collision_sandbox` is the maintained native collision visual
+verifier. Keep its pair registry data-driven so the selector, unsupported
+placeholders, focused registry tests, and headless smoke captures stay aligned
+with the native narrow-phase support table. Broad-phase debug rendering should
+consume copied native debug snapshots, not mutable tree internals, and the GUI
+path should use public `dart::gui` APIs without adding FCL, Bullet, or ODE as
+runtime example dependencies.
+
+Persistent debug geometry attached to a `World` should call
+`dart::gui::applyDebugVisualStyle` rather than setting visual aspect color and
+shadow state ad hoc. Built-in `DebugLineDescriptor` renderables and
+world-backed debug `ShapeFrame`s should share the same no-shadow policy.
+Collision object posing should use public `dart::gui::Gizmo` handles so visual
+pair checks stay mouse-driven; keep ImGui panels for mode and parameter
+controls rather than as the primary transform editor.
+
 ## Migration Notes
 
 The removed OSG and Raylib paths are not compatibility targets for new work.

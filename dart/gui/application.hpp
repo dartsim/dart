@@ -33,6 +33,7 @@
 #ifndef DART_GUI_APPLICATION_HPP_
 #define DART_GUI_APPLICATION_HPP_
 
+#include <dart/gui/debug.hpp>
 #include <dart/gui/export.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
@@ -149,6 +150,7 @@ struct ApplicationOptions
   std::string defaultScene;
   std::vector<Panel> panels;
   std::vector<Gizmo> gizmos;
+  std::function<std::vector<DebugLabelDescriptor>()> debugLabels;
   std::vector<InverseKinematicsHandle> ikHandles;
   std::vector<BodyNodeDragHandle> bodyNodeDragHandles;
   std::vector<KeyboardAction> keyboardActions;
