@@ -10,14 +10,15 @@ fields in `docs/plans/dashboard.md` or `docs/dev_tasks/<task>/`.
 
 ## Files
 
-| File                                                                             | Purpose                                                                                      |
-| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| [`algorithm_extension_contracts.md`](algorithm_extension_contracts.md)           | Durable rules for research-facing algorithm extension and baseline contracts                 |
-| [`hierarchical_allocator.md`](hierarchical_allocator.md)                         | World-level memory management proposal and allocator ownership rationale                     |
-| [`lie_group_batch.md`](lie_group_batch.md)                                       | Consolidated batch (data-parallel) strategy for the typed Lie group API (SO3/SE3)            |
-| [`scalable_compute_decisions.md`](scalable_compute_decisions.md)                 | Workload-first CPU, SIMD, and GPU decision framework for scalable computation                |
-| [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)       | C++ API shape for promoting `dart::simulation::experimental` to the DART 8 simulation API    |
-| [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md) | Python API shape for `dartpy.simulation_experimental` over the experimental simulation stack |
+| File                                                                             | Purpose                                                                                                                                  |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| [`algorithm_extension_contracts.md`](algorithm_extension_contracts.md)           | Durable rules for research-facing algorithm extension and baseline contracts                                                             |
+| [`hierarchical_allocator.md`](hierarchical_allocator.md)                         | World-level memory management proposal and allocator ownership rationale                                                                 |
+| [`lie_group_batch.md`](lie_group_batch.md)                                       | Consolidated batch (data-parallel) strategy for the typed Lie group API (SO3/SE3)                                                        |
+| [`scalable_compute_decisions.md`](scalable_compute_decisions.md)                 | Workload-first CPU, SIMD, and GPU decision framework for scalable computation                                                            |
+| [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)       | C++ API shape for promoting `dart::simulation::experimental` to the DART 8 simulation API                                                |
+| [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md) | Python API shape for `dartpy.simulation_experimental` over the experimental simulation stack                                             |
+| [`simulation_experimental_references.md`](simulation_experimental_references.md) | Managed catalog of research papers, textbooks, standards, and comparative engines for the experimental world (status, priority, verdict) |
 
 ## Placement Rules
 
