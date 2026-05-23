@@ -33,6 +33,14 @@ the experimental `World`:
   pendulum `M = I + m L^2`, gravity force `-m g L`) and via the
   `M qddot + C + g = tau` equation-of-motion identity on a 2-DOF chain. C++ +
   dartpy tests.
+- Phase 4 (partial) — joint velocity and effort limits: per-coordinate
+  velocity and effort (force/torque) lower/upper bounds
+  (`Joint::setVelocityLimits`/`getVelocityLowerLimits`/`getVelocityUpperLimits`,
+  `setEffortLimits`/`getEffortLowerLimits`/`getEffortUpperLimits`; dartpy
+  `set_velocity_limits`/`set_effort_limits` + `*_lower_limits`/`*_upper_limits`).
+  Effort is clamped before the solve; velocity is clamped each step. The
+  `comps::JointLimits` struct now carries position/velocity/effort lower/upper
+  pairs (serialized round-trip tested). C++ + dartpy tests.
 - Phase 2 (partial) — collision query bridge: public `CollisionShape`
   (sphere/box) attachable to rigid bodies, public `Contact`, and
   `World::collide()` bridging to `dart/collision/native` via pairwise
@@ -85,8 +93,8 @@ Phases 2–5. Suggested next slices, in rough dependency order:
   multibody links, self-collision/filtering, broad-phase pruning, and a
   persistent collision world instead of rebuilding per `collide()`.
 - **Phase 4 next:** actuator types (FORCE/PASSIVE/SERVO/VELOCITY/ACCELERATION/
-  LOCKED), velocity/effort limits, Coulomb joint friction, mimic/coupler, and
-  armature. (Position limits and the public generalized mass-matrix / Coriolis /
+  LOCKED), Coulomb joint friction, mimic/coupler, and armature. (Position,
+  velocity, and effort limits and the public generalized mass-matrix / Coriolis /
   gravity accessors are done — `MultiBody::getMassMatrix`/`getInverseMassMatrix`/
   `getCoriolisForces`/`getGravityForces`/`getCoriolisAndGravityForces`.)
 - **Phase 5:** loop-closure kinematic projection + dynamic solving, pluggable

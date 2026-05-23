@@ -215,6 +215,43 @@ public:
   /// Get the per-coordinate upper position limits (default +infinity).
   [[nodiscard]] Eigen::VectorXd getPositionUpperLimits() const;
 
+  /// Set the per-coordinate velocity limits.
+  ///
+  /// Each lower bound must be less than or equal to the matching upper bound.
+  /// Use +/- infinity for an unbounded coordinate (the default). The
+  /// articulated-body integration clamps generalized velocities to these limits
+  /// each step.
+  ///
+  /// @param lower Lower bounds, size getDOFCount().
+  /// @param upper Upper bounds, size getDOFCount().
+  void setVelocityLimits(
+      const Eigen::VectorXd& lower, const Eigen::VectorXd& upper);
+
+  /// Get the per-coordinate lower velocity limits (default -infinity).
+  [[nodiscard]] Eigen::VectorXd getVelocityLowerLimits() const;
+
+  /// Get the per-coordinate upper velocity limits (default +infinity).
+  [[nodiscard]] Eigen::VectorXd getVelocityUpperLimits() const;
+
+  /// Set the per-coordinate actuation effort (force/torque) limits.
+  ///
+  /// Each lower bound must be less than or equal to the matching upper bound.
+  /// Use +/- infinity for an unbounded coordinate (the default). The
+  /// articulated-body forward dynamics clamps the commanded joint effort (set
+  /// via setForce) to these limits before solving; passive spring and damping
+  /// forces are not subject to the effort limits.
+  ///
+  /// @param lower Lower bounds, size getDOFCount().
+  /// @param upper Upper bounds, size getDOFCount().
+  void setEffortLimits(
+      const Eigen::VectorXd& lower, const Eigen::VectorXd& upper);
+
+  /// Get the per-coordinate lower effort limits (default -infinity).
+  [[nodiscard]] Eigen::VectorXd getEffortLowerLimits() const;
+
+  /// Get the per-coordinate upper effort limits (default +infinity).
+  [[nodiscard]] Eigen::VectorXd getEffortUpperLimits() const;
+
   /// Get the parent link
   ///
   /// @return Parent Link handle

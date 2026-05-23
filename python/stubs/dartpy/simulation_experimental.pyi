@@ -322,11 +322,21 @@ class Joint:
     damping_coefficient: NDArray[np.float64]
     position_lower_limits: NDArray[np.float64]
     position_upper_limits: NDArray[np.float64]
+    velocity_lower_limits: NDArray[np.float64]
+    velocity_upper_limits: NDArray[np.float64]
+    effort_lower_limits: NDArray[np.float64]
+    effort_upper_limits: NDArray[np.float64]
     parent_link: Link
     child_link: Link
     is_valid: bool
 
     def set_position_limits(self, lower: ArrayLike, upper: ArrayLike) -> None:
+        ...
+
+    def set_velocity_limits(self, lower: ArrayLike, upper: ArrayLike) -> None:
+        ...
+
+    def set_effort_limits(self, lower: ArrayLike, upper: ArrayLike) -> None:
         ...
 
 

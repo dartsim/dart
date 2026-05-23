@@ -1692,6 +1692,96 @@ TEST(World, MultiBodyJointPositionLimit)
   EXPECT_NEAR(joint.getVelocity()[0], 0.0, 1e-9);
 }
 
+// Test that joint effort limits clamp the commanded actuation force used by the
+// articulated-body forward dynamics.
+TEST(World, MultiBodyJointEffortLimit)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  const double mass = 2.0;
+  carriage.setMass(mass);
+
+  auto joint = carriage.getParentJoint();
+  EXPECT_TRUE(std::isinf(joint.getEffortUpperLimits()[0]));
+  EXPECT_TRUE(std::isinf(joint.getEffortLowerLimits()[0]));
+
+  const double effortLimit = 10.0;
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -effortLimit),
+      Eigen::VectorXd::Constant(1, effortLimit));
+  joint.setForce(Eigen::VectorXd::Constant(1, 100.0)); // far above the limit
+
+  EXPECT_THROW(
+      joint.setEffortLimits(
+          Eigen::VectorXd::Constant(1, 1.0), Eigen::VectorXd::Constant(1, 0.0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      joint.setEffortLimits(
+          Eigen::VectorXd::Constant(2, 0.0), Eigen::VectorXd::Constant(2, 1.0)),
+      sx::InvalidArgumentException);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+  world.step();
+
+  // The applied effort is clamped to the limit, so qddot = effortLimit / mass.
+  EXPECT_NEAR(joint.getAcceleration()[0], effortLimit / mass, 1e-12);
+}
+
+// Test that joint velocity limits clamp the generalized velocity each step.
+TEST(World, MultiBodyJointVelocityLimit)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(2.0);
+
+  auto joint = carriage.getParentJoint();
+  EXPECT_TRUE(std::isinf(joint.getVelocityUpperLimits()[0]));
+  EXPECT_TRUE(std::isinf(joint.getVelocityLowerLimits()[0]));
+
+  const double velocityLimit = 0.1;
+  joint.setVelocityLimits(
+      Eigen::VectorXd::Constant(1, -velocityLimit),
+      Eigen::VectorXd::Constant(1, velocityLimit));
+  joint.setForce(Eigen::VectorXd::Constant(1, 10.0)); // accelerates the slider
+
+  EXPECT_THROW(
+      joint.setVelocityLimits(
+          Eigen::VectorXd::Constant(1, 1.0), Eigen::VectorXd::Constant(1, 0.0)),
+      sx::InvalidArgumentException);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+
+  for (int i = 0; i < 200; ++i) {
+    world.step();
+    EXPECT_LE(joint.getVelocity()[0], velocityLimit + 1e-12);
+  }
+
+  // Under continued forcing the velocity saturates exactly at the limit.
+  EXPECT_NEAR(joint.getVelocity()[0], velocityLimit, 1e-12);
+}
+
 // Test that World::collide() reports contacts between overlapping collision
 // shapes and reports none once the shapes are separated.
 TEST(World, CollisionQueryReportsContacts)

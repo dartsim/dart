@@ -59,17 +59,17 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 
 ### Joints
 
-| Capability                                                  | DART 6                                                                                                 | Experimental                           | Status                       |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------- | ---------------------------- |
-| Joint types                                                 | Weld, Revolute, Prismatic, Screw, Universal, Translational2D, Euler, Planar, Translational, Ball, Free | type tag + axis (FK only)              | PARTIAL                      |
-| Joint forward dynamics                                      | per-joint accel via ABA                                                                                | revolute/prismatic (Phase 1)           | PARTIAL                      |
-| Position/velocity/accel/force limits                        | `GenericJoint` setters + `JointConstraint`                                                             | position limits (hard stops) (Phase 3) | PARTIAL                      |
-| Spring stiffness + rest position                            | `setSpringStiffness`/`setRestPosition`                                                                 | revolute/prismatic (Phase 4)           | PRESENT (1-DOF)              |
-| Damping                                                     | `setDampingCoefficient`                                                                                | revolute/prismatic (Phase 4)           | PRESENT (1-DOF)              |
-| Coulomb joint friction                                      | `JointCoulombFrictionConstraint`                                                                       | none                                   | MISSING                      |
-| Actuator types (FORCE/PASSIVE/SERVO/MIMIC/ACCEL/VEL/LOCKED) | per-DOF actuator type                                                                                  | none                                   | MISSING                      |
-| Mimic / coupler                                             | `MimicMotorConstraint`, `CouplerConstraint`                                                            | LoopClosure metadata only              | MISSING                      |
-| Armature / rotor inertia                                    | not in DART 6 (gap to _improve_ on)                                                                    | none                                   | MISSING (improvement target) |
+| Capability                                                  | DART 6                                                                                                 | Experimental                                | Status                       |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------- | ---------------------------- |
+| Joint types                                                 | Weld, Revolute, Prismatic, Screw, Universal, Translational2D, Euler, Planar, Translational, Ball, Free | type tag + axis (FK only)                   | PARTIAL                      |
+| Joint forward dynamics                                      | per-joint accel via ABA                                                                                | revolute/prismatic (Phase 1)                | PARTIAL                      |
+| Position/velocity/accel/force limits                        | `GenericJoint` setters + `JointConstraint`                                                             | position/velocity/effort limits (Phase 3-4) | PARTIAL                      |
+| Spring stiffness + rest position                            | `setSpringStiffness`/`setRestPosition`                                                                 | revolute/prismatic (Phase 4)                | PRESENT (1-DOF)              |
+| Damping                                                     | `setDampingCoefficient`                                                                                | revolute/prismatic (Phase 4)                | PRESENT (1-DOF)              |
+| Coulomb joint friction                                      | `JointCoulombFrictionConstraint`                                                                       | none                                        | MISSING                      |
+| Actuator types (FORCE/PASSIVE/SERVO/MIMIC/ACCEL/VEL/LOCKED) | per-DOF actuator type                                                                                  | none                                        | MISSING                      |
+| Mimic / coupler                                             | `MimicMotorConstraint`, `CouplerConstraint`                                                            | LoopClosure metadata only                   | MISSING                      |
+| Armature / rotor inertia                                    | not in DART 6 (gap to _improve_ on)                                                                    | none                                        | MISSING (improvement target) |
 
 ### Constraints & contacts
 

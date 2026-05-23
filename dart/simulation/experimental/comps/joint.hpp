@@ -145,13 +145,18 @@ enum class JointType
 
 /// Joint limits
 ///
+/// Per-coordinate lower/upper bounds for position, velocity, and actuation
+/// effort. Unbounded coordinates use +/- infinity.
+///
 /// **Internal Implementation Detail** - Not exposed in public API
 struct JointLimits
 {
-  Eigen::VectorXd lower;
-  Eigen::VectorXd upper;
-  Eigen::VectorXd velocity;
-  Eigen::VectorXd effort;
+  Eigen::VectorXd lower;         ///< Position lower bounds
+  Eigen::VectorXd upper;         ///< Position upper bounds
+  Eigen::VectorXd velocityLower; ///< Velocity lower bounds
+  Eigen::VectorXd velocityUpper; ///< Velocity upper bounds
+  Eigen::VectorXd effortLower;   ///< Actuation effort lower bounds
+  Eigen::VectorXd effortUpper;   ///< Actuation effort upper bounds
 };
 
 /// Joint component (single joint in articulated body)

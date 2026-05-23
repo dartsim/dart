@@ -1124,6 +1124,69 @@ def test_experimental_joint_position_limit():
     assert joint.velocity.tolist()[0] == pytest.approx(0.0, abs=1e-9)
 
 
+def test_experimental_joint_effort_limit():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.gravity = (0.0, 0.0, 0.0)
+    robot = world.add_multi_body("slider")
+    base = robot.add_link("base")
+    carriage = robot.add_link(
+        "carriage",
+        parent=base,
+        joint=sx.JointSpec(
+            name="rail", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    mass = 2.0
+    carriage.mass = mass
+
+    joint = carriage.parent_joint
+    assert math.isinf(joint.effort_upper_limits.tolist()[0])
+    joint.set_effort_limits([-10.0], [10.0])
+    joint.force = [100.0]  # far above the limit
+
+    with pytest.raises(Exception, match="must not exceed upper limits"):
+        joint.set_effort_limits([1.0], [0.0])
+
+    world.time_step = 0.01
+    world.step()
+
+    # The applied effort is clamped to the limit, so qddot = 10 / mass.
+    assert joint.acceleration.tolist()[0] == pytest.approx(10.0 / mass)
+
+
+def test_experimental_joint_velocity_limit():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.gravity = (0.0, 0.0, 0.0)
+    robot = world.add_multi_body("slider")
+    base = robot.add_link("base")
+    carriage = robot.add_link(
+        "carriage",
+        parent=base,
+        joint=sx.JointSpec(
+            name="rail", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    carriage.mass = 2.0
+
+    joint = carriage.parent_joint
+    assert math.isinf(joint.velocity_upper_limits.tolist()[0])
+    velocity_limit = 0.1
+    joint.set_velocity_limits([-velocity_limit], [velocity_limit])
+    joint.force = [10.0]  # accelerates the slider
+
+    world.time_step = 0.01
+    for _ in range(200):
+        world.step()
+        assert joint.velocity.tolist()[0] <= velocity_limit + 1e-12
+
+    # Under continued forcing the velocity saturates exactly at the limit.
+    assert joint.velocity.tolist()[0] == pytest.approx(velocity_limit)
+
+
 def test_experimental_collision_query():
     sx = _simulation_experimental()
 

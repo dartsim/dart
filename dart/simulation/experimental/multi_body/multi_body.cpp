@@ -487,10 +487,14 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   jointComp.dampingCoefficient = Eigen::VectorXd::Zero(dof);
   jointComp.restPosition = Eigen::VectorXd::Zero(dof);
 
-  // Position limits default to unbounded.
+  // Position, velocity, and effort limits default to unbounded.
   const double infinity = std::numeric_limits<double>::infinity();
   jointComp.limits.lower = Eigen::VectorXd::Constant(dof, -infinity);
   jointComp.limits.upper = Eigen::VectorXd::Constant(dof, infinity);
+  jointComp.limits.velocityLower = Eigen::VectorXd::Constant(dof, -infinity);
+  jointComp.limits.velocityUpper = Eigen::VectorXd::Constant(dof, infinity);
+  jointComp.limits.effortLower = Eigen::VectorXd::Constant(dof, -infinity);
+  jointComp.limits.effortUpper = Eigen::VectorXd::Constant(dof, infinity);
 
   // Link the parent link to this joint
   auto& parentLinkComp = safeGet<comps::Link>(registry, parentEntity);

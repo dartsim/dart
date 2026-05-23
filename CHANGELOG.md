@@ -508,6 +508,13 @@
     `set_position_limits`, `position_lower_limits`, `position_upper_limits`).
     The articulated-body integration enforces them as hard stops, clamping the
     coordinate and arresting the velocity driving it past a limit.
+  - Added experimental joint velocity and effort (force/torque) limits:
+    `Joint::setVelocityLimits`/`getVelocityLowerLimits`/`getVelocityUpperLimits`
+    and `Joint::setEffortLimits`/`getEffortLowerLimits`/`getEffortUpperLimits`
+    (dartpy `set_velocity_limits`/`velocity_lower_limits`/`velocity_upper_limits`
+    and `set_effort_limits`/`effort_lower_limits`/`effort_upper_limits`). The
+    forward dynamics clamps the commanded joint effort before solving and clamps
+    the generalized velocity each step.
   - Added experimental joint passive dynamics: per-coordinate spring stiffness
     with rest position and damping coefficient contribute restoring/dissipative
     generalized forces in the articulated-body forward dynamics

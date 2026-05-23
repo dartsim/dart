@@ -101,6 +101,33 @@ void validateJointStateVector(
       fieldName);
 }
 
+// Validate a lower/upper limit pair. Infinite bounds are allowed (they mark an
+// unbounded coordinate); only NaN and lower > upper are rejected.
+void validateJointLimitPair(
+    const Eigen::VectorXd& lower,
+    const Eigen::VectorXd& upper,
+    std::size_t dof,
+    const char* fieldName)
+{
+  const auto dofIndex = static_cast<Eigen::Index>(dof);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      lower.size() != dofIndex || upper.size() != dofIndex,
+      InvalidArgumentException,
+      "Joint {} limit dimensions must match DOF count ({})",
+      fieldName,
+      dof);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      lower.array().isNaN().any() || upper.array().isNaN().any(),
+      InvalidArgumentException,
+      "Joint {} limits must not be NaN",
+      fieldName);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (lower.array() > upper.array()).any(),
+      InvalidArgumentException,
+      "Joint lower {} limits must not exceed upper limits",
+      fieldName);
+}
+
 void markSubtreeTransformCacheDirty(entt::registry& registry, entt::entity root)
 {
   if (root == entt::null || !registry.valid(root)) {
@@ -323,22 +350,7 @@ void Joint::setPositionLimits(
     const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
 {
   auto& jointComp = getJointComponent(m_world, m_entity);
-  const auto dof = static_cast<Eigen::Index>(jointComp.getDOF());
-
-  DART_EXPERIMENTAL_THROW_T_IF(
-      lower.size() != dof || upper.size() != dof,
-      InvalidArgumentException,
-      "Joint position limit dimensions must match DOF count ({})",
-      dof);
-  DART_EXPERIMENTAL_THROW_T_IF(
-      lower.array().isNaN().any() || upper.array().isNaN().any(),
-      InvalidArgumentException,
-      "Joint position limits must not be NaN");
-  DART_EXPERIMENTAL_THROW_T_IF(
-      (lower.array() > upper.array()).any(),
-      InvalidArgumentException,
-      "Joint lower position limits must not exceed upper limits");
-
+  validateJointLimitPair(lower, upper, jointComp.getDOF(), "position");
   jointComp.limits.lower = lower;
   jointComp.limits.upper = upper;
 }
@@ -353,6 +365,50 @@ Eigen::VectorXd Joint::getPositionLowerLimits() const
 Eigen::VectorXd Joint::getPositionUpperLimits() const
 {
   return getJointComponent(m_world, m_entity).limits.upper;
+}
+
+//==============================================================================
+void Joint::setVelocityLimits(
+    const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointLimitPair(lower, upper, jointComp.getDOF(), "velocity");
+  jointComp.limits.velocityLower = lower;
+  jointComp.limits.velocityUpper = upper;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getVelocityLowerLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.velocityLower;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getVelocityUpperLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.velocityUpper;
+}
+
+//==============================================================================
+void Joint::setEffortLimits(
+    const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointLimitPair(lower, upper, jointComp.getDOF(), "effort");
+  jointComp.limits.effortLower = lower;
+  jointComp.limits.effortUpper = upper;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getEffortLowerLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.effortLower;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getEffortUpperLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.effortUpper;
 }
 
 //==============================================================================

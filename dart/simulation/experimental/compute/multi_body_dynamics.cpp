@@ -379,8 +379,14 @@ void simulateMultiBody(
     }
     const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
     qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
+
+    // Clamp the commanded actuation effort to its limits; passive spring and
+    // damping forces are not subject to the effort limits.
+    const Eigen::VectorXd effort
+        = joint.torque.cwiseMax(joint.limits.effortLower)
+              .cwiseMin(joint.limits.effortUpper);
     appliedForce.segment(tree.links[i].dofOffset, tree.links[i].dof)
-        = joint.torque
+        = effort
           - joint.springStiffness.cwiseProduct(
               joint.position - joint.restPosition)
           - joint.dampingCoefficient.cwiseProduct(joint.velocity);
@@ -402,6 +408,14 @@ void simulateMultiBody(
         = qddot.segment(tree.links[i].dofOffset, tree.links[i].dof);
     joint.acceleration = block;
     joint.velocity += block * timeStep;
+
+    // Enforce velocity limits by clamping the generalized velocity.
+    if (joint.limits.velocityLower.size() == joint.velocity.size()
+        && joint.limits.velocityUpper.size() == joint.velocity.size()) {
+      joint.velocity = joint.velocity.cwiseMax(joint.limits.velocityLower)
+                           .cwiseMin(joint.limits.velocityUpper);
+    }
+
     joint.position += joint.velocity * timeStep;
 
     // Enforce position limits as hard stops: clamp the coordinate and arrest

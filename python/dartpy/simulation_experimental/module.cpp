@@ -787,6 +787,28 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("upper"))
       .def_prop_ro("position_lower_limits", &sim::Joint::getPositionLowerLimits)
       .def_prop_ro("position_upper_limits", &sim::Joint::getPositionUpperLimits)
+      .def(
+          "set_velocity_limits",
+          [](sim::Joint& self,
+             const nb::handle& lower,
+             const nb::handle& upper) {
+            self.setVelocityLimits(toVectorX(lower), toVectorX(upper));
+          },
+          nb::arg("lower"),
+          nb::arg("upper"))
+      .def_prop_ro("velocity_lower_limits", &sim::Joint::getVelocityLowerLimits)
+      .def_prop_ro("velocity_upper_limits", &sim::Joint::getVelocityUpperLimits)
+      .def(
+          "set_effort_limits",
+          [](sim::Joint& self,
+             const nb::handle& lower,
+             const nb::handle& upper) {
+            self.setEffortLimits(toVectorX(lower), toVectorX(upper));
+          },
+          nb::arg("lower"),
+          nb::arg("upper"))
+      .def_prop_ro("effort_lower_limits", &sim::Joint::getEffortLowerLimits)
+      .def_prop_ro("effort_upper_limits", &sim::Joint::getEffortUpperLimits)
       .def_prop_ro("parent_link", &sim::Joint::getParentLink)
       .def_prop_ro("child_link", &sim::Joint::getChildLink)
       .def_prop_ro("is_valid", &sim::Joint::isValid)

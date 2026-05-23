@@ -162,6 +162,47 @@ TEST(Serialization, TwoLinkChain)
   EXPECT_DOUBLE_EQ(axis[2], 1.0);
 }
 
+// Test save/load preserves per-coordinate joint position, velocity, and effort
+// limits.
+TEST(Serialization, PreservesJointLimits)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world1;
+  auto mb = world1.addMultiBody("robot");
+  auto base = mb.addLink("base");
+  auto link = mb.addLink(
+      "link",
+      base,
+      sx::JointSpec{.name = "joint", .type = sx::JointType::Revolute});
+
+  auto joint = link.getParentJoint();
+  joint.setPositionLimits(
+      Eigen::VectorXd::Constant(1, -0.5), Eigen::VectorXd::Constant(1, 0.5));
+  joint.setVelocityLimits(
+      Eigen::VectorXd::Constant(1, -1.5), Eigen::VectorXd::Constant(1, 2.5));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -3.0), Eigen::VectorXd::Constant(1, 4.0));
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  auto mb_restored = world2.getMultiBody("robot");
+  ASSERT_TRUE(mb_restored.has_value());
+  auto joint_restored = mb_restored->getJoint("joint");
+  ASSERT_TRUE(joint_restored.has_value());
+
+  EXPECT_DOUBLE_EQ(joint_restored->getPositionLowerLimits()[0], -0.5);
+  EXPECT_DOUBLE_EQ(joint_restored->getPositionUpperLimits()[0], 0.5);
+  EXPECT_DOUBLE_EQ(joint_restored->getVelocityLowerLimits()[0], -1.5);
+  EXPECT_DOUBLE_EQ(joint_restored->getVelocityUpperLimits()[0], 2.5);
+  EXPECT_DOUBLE_EQ(joint_restored->getEffortLowerLimits()[0], -3.0);
+  EXPECT_DOUBLE_EQ(joint_restored->getEffortUpperLimits()[0], 4.0);
+}
+
 // Test save/load preserves names
 TEST(Serialization, PreservesNames)
 {
