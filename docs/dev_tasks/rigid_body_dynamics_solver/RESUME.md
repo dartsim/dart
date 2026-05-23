@@ -38,6 +38,12 @@ the experimental `World`:
   returning `tau = M qddot + C qdot + g` (with armature) via RNEA
   (`compute::computeMultiBodyInverseDynamics`). Verified analytically and by a
   forward/inverse round-trip. C++ + dartpy tests.
+- Phase 4 (partial) — generalized impulse response: public
+  `MultiBody::computeImpulseResponse(f)` (dartpy `compute_impulse_response`)
+  returning `dqdot = M^-1 f` (M includes armature) — the joint-space primitive
+  for impulse-based constraint dynamics. Verified analytically and by the
+  `M dqdot = f` identity. C++ + dartpy tests. (The full constrained impulse
+  dynamics still needs body Jacobians + the constraint solve.)
 - Phase 4 (partial) — joint velocity and effort limits: per-coordinate
   velocity and effort (force/torque) lower/upper bounds
   (`Joint::setVelocityLimits`/`getVelocityLowerLimits`/`getVelocityUpperLimits`,

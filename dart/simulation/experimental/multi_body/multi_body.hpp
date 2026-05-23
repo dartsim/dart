@@ -323,6 +323,23 @@ public:
   [[nodiscard]] Eigen::VectorXd computeInverseDynamics(
       const Eigen::VectorXd& desiredAcceleration) const;
 
+  /// Compute the generalized velocity change produced by a generalized
+  /// joint-space impulse at the current configuration: `dqdot = M(q)^-1 f`,
+  /// where `M` includes joint armature.
+  ///
+  /// This is the joint-space primitive used by impulse-based constraint
+  /// solving; full constrained impulse dynamics (mapping Cartesian constraint
+  /// impulses through body Jacobians) additionally requires those Jacobians.
+  ///
+  /// @param jointImpulse Generalized impulse, size getDOFCount(), ordered by
+  ///        joint construction order.
+  /// @return The generalized velocity change in the same ordering. Empty when
+  ///         there are no movable DOFs.
+  /// @throws InvalidArgumentException if the impulse size does not match the
+  ///         movable DOF count.
+  [[nodiscard]] Eigen::VectorXd computeImpulseResponse(
+      const Eigen::VectorXd& jointImpulse) const;
+
 private:
   entt::entity m_entity; ///< Entity ID in the registry
   World* m_world;        ///< Non-owning pointer to World

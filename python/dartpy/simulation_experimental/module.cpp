@@ -1122,6 +1122,12 @@ void defSimulationExperimentalModule(nb::module_& m)
             return self.computeInverseDynamics(toVectorX(acceleration));
           },
           nb::arg("desired_acceleration"))
+      .def(
+          "compute_impulse_response",
+          [](const sim::MultiBody& self, const nb::handle& impulse) {
+            return self.computeImpulseResponse(toVectorX(impulse));
+          },
+          nb::arg("joint_impulse"))
       .def_prop_ro("is_valid", &sim::MultiBody::isValid)
       .def("__repr__", [](const sim::MultiBody& self) {
         std::vector<std::pair<std::string, std::string>> fields;

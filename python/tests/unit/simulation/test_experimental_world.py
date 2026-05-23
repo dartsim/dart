@@ -1073,6 +1073,46 @@ def test_experimental_multibody_inverse_dynamics():
         robot.compute_inverse_dynamics([0.0, 0.0])
 
 
+def test_experimental_multibody_impulse_response():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+    robot = world.add_multi_body("pendulum")
+    base = robot.add_link("base")
+    length = 1.5
+    offset = np.eye(4)
+    offset[0, 3] = length
+    bob = robot.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset,
+        ),
+    )
+    mass = 2.0
+    inertia_yy = 0.2
+    bob.mass = mass
+    bob.inertia = ((0.1, 0.0, 0.0), (0.0, inertia_yy, 0.0), (0.0, 0.0, 0.3))
+
+    world.enter_simulation_mode()
+
+    impulse = 5.0
+    delta_velocity = robot.compute_impulse_response([impulse])
+    inertia_pivot = inertia_yy + mass * length * length
+    assert delta_velocity.tolist() == pytest.approx([impulse / inertia_pivot])
+
+    # Consistency: M dqdot = f.
+    assert (robot.mass_matrix @ delta_velocity).tolist() == pytest.approx(
+        [impulse]
+    )
+
+    with pytest.raises(Exception, match="must match"):
+        robot.compute_impulse_response([0.0, 0.0])
+
+
 def test_experimental_multibody_dynamics_terms_no_dof():
     sx = _simulation_experimental()
 

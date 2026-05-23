@@ -593,4 +593,23 @@ Eigen::VectorXd MultiBody::computeInverseDynamics(
       registry, structure, m_world->getGravity(), desiredAcceleration);
 }
 
+//==============================================================================
+Eigen::VectorXd MultiBody::computeImpulseResponse(
+    const Eigen::VectorXd& jointImpulse) const
+{
+  const Eigen::MatrixXd massMatrix = getMassMatrix();
+  if (massMatrix.size() == 0) {
+    return {};
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      jointImpulse.size() != massMatrix.rows(),
+      InvalidArgumentException,
+      "Joint impulse dimension ({}) must match the multibody DOF count ({})",
+      jointImpulse.size(),
+      massMatrix.rows());
+
+  return massMatrix.ldlt().solve(jointImpulse);
+}
+
 } // namespace dart::simulation::experimental

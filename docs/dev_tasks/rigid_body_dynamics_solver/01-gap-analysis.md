@@ -39,15 +39,15 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 
 ### Forward / inverse dynamics
 
-| Capability                               | DART 6 (legacy)                                         | Experimental                                                       | Status  |
-| ---------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------ | ------- |
-| Articulated-body forward dynamics        | `Skeleton::computeForwardDynamics` (Featherstone ABA)   | RNEA-based, fixed base, revolute/prismatic (Phase 1)               | PARTIAL |
-| Inverse dynamics (RNEA)                  | `Skeleton::computeInverseDynamics`                      | `MultiBody::computeInverseDynamics` (Phase 4)                      | PRESENT |
-| Mass matrix / inverse mass matrix        | `getMassMatrix`, `getInvMassMatrix`, augmented variants | `MultiBody::getMassMatrix`/`getInverseMassMatrix` (Phase 4)        | PRESENT |
-| Coriolis / gravity generalized forces    | `getCoriolisForces`, `getGravityForces`                 | `MultiBody::getCoriolisForces`/`getGravityForces` (Phase 4)        | PRESENT |
-| Impulse-based dynamics (for constraints) | `computeImpulseForwardDynamics`                         | none                                                               | MISSING |
-| Free single-body integration             | per-body explicit integration                           | semi-implicit Euler (Phase 0.1)                                    | PARTIAL |
-| Floating base / other joint dynamics     | all joint types, free base                              | fixed base only; ball/free/universal/planar/screw dynamics not yet | MISSING |
+| Capability                               | DART 6 (legacy)                                         | Experimental                                                                             | Status  |
+| ---------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------- |
+| Articulated-body forward dynamics        | `Skeleton::computeForwardDynamics` (Featherstone ABA)   | RNEA-based, fixed base, revolute/prismatic (Phase 1)                                     | PARTIAL |
+| Inverse dynamics (RNEA)                  | `Skeleton::computeInverseDynamics`                      | `MultiBody::computeInverseDynamics` (Phase 4)                                            | PRESENT |
+| Mass matrix / inverse mass matrix        | `getMassMatrix`, `getInvMassMatrix`, augmented variants | `MultiBody::getMassMatrix`/`getInverseMassMatrix` (Phase 4)                              | PRESENT |
+| Coriolis / gravity generalized forces    | `getCoriolisForces`, `getGravityForces`                 | `MultiBody::getCoriolisForces`/`getGravityForces` (Phase 4)                              | PRESENT |
+| Impulse-based dynamics (for constraints) | `computeImpulseForwardDynamics`                         | joint-space impulse response `M^-1 f` (Phase 4); full constrained version pending solver | PARTIAL |
+| Free single-body integration             | per-body explicit integration                           | semi-implicit Euler (Phase 0.1)                                                          | PARTIAL |
+| Floating base / other joint dynamics     | all joint types, free base                              | fixed base only; ball/free/universal/planar/screw dynamics not yet                       | MISSING |
 
 ### Gravity & global forces
 

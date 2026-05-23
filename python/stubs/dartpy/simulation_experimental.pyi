@@ -294,6 +294,11 @@ class MultiBody:
     ) -> NDArray[np.float64]:
         ...
 
+    def compute_impulse_response(
+        self, joint_impulse: ArrayLike
+    ) -> NDArray[np.float64]:
+        ...
+
     @overload
     def add_link(self, name: str = "") -> Link:
         ...

@@ -507,6 +507,10 @@
     `computeInverseDynamics(qddot)` (dartpy `compute_inverse_dynamics`) returns
     the generalized joint forces `tau = M qddot + C qdot + g` (including joint
     armature) via the recursive Newton-Euler algorithm.
+  - Added an experimental generalized impulse-response primitive on `MultiBody`:
+    `computeImpulseResponse(f)` (dartpy `compute_impulse_response`) returns the
+    generalized velocity change `dqdot = M^-1 f` — the joint-space building
+    block for impulse-based constraint dynamics.
   - Added experimental joint position limits: `Joint::setPositionLimits` with
     `getPositionLowerLimits`/`getPositionUpperLimits` (dartpy
     `set_position_limits`, `position_lower_limits`, `position_upper_limits`).

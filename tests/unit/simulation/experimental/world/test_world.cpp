@@ -1750,6 +1750,50 @@ TEST(World, MultiBodyInverseDynamicsRoundTrip)
   EXPECT_NEAR(joint2.getAcceleration()[0], qddotDesired[1], 1e-9);
 }
 
+// Test the generalized impulse response dqdot = M^-1 f against the analytical
+// single-pendulum value and the M dqdot = f consistency identity.
+TEST(World, MultiBodyImpulseResponse)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("pendulum");
+  auto base = robot.addLink("base");
+  const double length = 1.5;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(length, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+
+  const double mass = 2.0;
+  const double inertiaYy = 0.2;
+  bob.setMass(mass);
+  bob.setInertia(Eigen::Vector3d(0.1, inertiaYy, 0.3).asDiagonal());
+
+  world.enterSimulationMode();
+
+  const double impulse = 5.0;
+  const Eigen::VectorXd deltaVelocity
+      = robot.computeImpulseResponse(Eigen::VectorXd::Constant(1, impulse));
+  ASSERT_EQ(deltaVelocity.size(), 1);
+
+  // dqdot = f / (I + m L^2) about the pivot.
+  const double inertiaPivot = inertiaYy + mass * length * length;
+  EXPECT_NEAR(deltaVelocity[0], impulse / inertiaPivot, 1e-12);
+
+  // Consistency: M dqdot = f.
+  EXPECT_NEAR((robot.getMassMatrix() * deltaVelocity)[0], impulse, 1e-12);
+
+  EXPECT_THROW(
+      (void)robot.computeImpulseResponse(Eigen::VectorXd::Zero(2)),
+      sx::InvalidArgumentException);
+}
+
 // Test that the dynamics accessors return empty results for a multibody with no
 // movable degrees of freedom.
 TEST(World, MultiBodyDynamicsAccessorsNoDOF)
@@ -1774,6 +1818,7 @@ TEST(World, MultiBodyDynamicsAccessorsNoDOF)
   EXPECT_EQ(robot.getGravityForces().size(), 0);
   EXPECT_EQ(robot.getCoriolisAndGravityForces().size(), 0);
   EXPECT_EQ(robot.computeInverseDynamics(Eigen::VectorXd()).size(), 0);
+  EXPECT_EQ(robot.computeImpulseResponse(Eigen::VectorXd()).size(), 0);
 }
 
 // Test that a prismatic joint aligned with gravity free-falls at g.
