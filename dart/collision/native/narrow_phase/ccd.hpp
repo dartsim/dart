@@ -209,10 +209,16 @@ namespace dart::collision::native {
 /// vectors for `rotationControlPoints` to sweep a curved translational path
 /// with no spin.
 ///
-/// The per-step motion bound is `max|T'| + max|W'|*r` over the remaining
-/// interval (de Casteljau subdivision of the derivative curve); this is
-/// conservative because the SO(3) exponential's right Jacobian is a contraction
-/// (`|omega| <= |W'|`), so the time of impact never overshoots a true contact.
+/// With `CcdAdvancement::Conservative` (the default) the step is
+/// acceleration-bounded -- the gap closes by at most `(v0 + angular)*dt +
+/// accel*dt^2/2`, whose root gives the largest provably safe step. It never
+/// overshoots a true contact (the SO(3) exponential's right Jacobian is a
+/// contraction, so `|omega| <= |W'|`), which is the no-tunnelling guarantee
+/// barrier/IPC solvers need. With `CcdAdvancement::Fast` the step instead
+/// divides the gap by the maximum forward displacement over the rest of the
+/// motion: far fewer iterations, but it may stride past a sharply curved first
+/// contact and report a later one -- for rigid-body use where speed matters
+/// more than first-contact precision.
 [[nodiscard]] DART_COLLISION_NATIVE_API bool splineCast(
     const ConvexShape& shapeA,
     const std::array<Eigen::Vector3d, 4>& translationControlPoints,

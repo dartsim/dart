@@ -1369,6 +1369,50 @@ static void BM_CCD_SplineCast_BoxBox_Native(benchmark::State& state)
 }
 BENCHMARK(BM_CCD_SplineCast_BoxBox_Native);
 
+// Native fast (non-conservative) advancement: the speed-matched counterpart to
+// the reference engine's spline cast, which is also non-conservative. The
+// conservative row above finds the true first contact; this row matches the
+// reference engine's larger steps (and its first-contact overshoot).
+static void BM_CCD_SplineCast_BoxBox_NativeFast(benchmark::State& state)
+{
+  ConvexShape shapeA(BoxVertices(kBoxHalf));
+  ConvexShape shapeB(BoxVertices(kBoxHalf));
+  const Eigen::Isometry3d targetTf = MakeTranslation(kSplineTargetTranslation);
+
+  CcdOption option = CcdOption::standard();
+  option.advancement = CcdAdvancement::Fast;
+  CcdResult result;
+
+  if (!splineCast(
+          shapeA,
+          kSplineTranslation,
+          kSplineRotation,
+          shapeB,
+          targetTf,
+          option,
+          result)) {
+    state.SkipWithError("Native fast spline cast setup did not hit.");
+    return;
+  }
+
+  for (auto _ : state) {
+    result.clear();
+    bool hit = splineCast(
+        shapeA,
+        kSplineTranslation,
+        kSplineRotation,
+        shapeB,
+        targetTf,
+        option,
+        result);
+    double toi = result.timeOfImpact;
+    benchmark::DoNotOptimize(hit);
+    benchmark::DoNotOptimize(toi);
+    benchmark::ClobberMemory();
+  }
+}
+BENCHMARK(BM_CCD_SplineCast_BoxBox_NativeFast);
+
 #if DART_HAVE_FCL
 namespace {
 

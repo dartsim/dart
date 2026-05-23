@@ -1206,6 +1206,48 @@ public:
     return rotates_ ? maxQuadraticBezierNorm(rotationVel_, t) : 0.0;
   }
 
+  // Maximum forward translational displacement along direction n over [t, 1],
+  // i.e. max_{s in [t,1]} (T(s) - T(t)) . n, evaluated in closed form at the
+  // interval ends and the interior extrema of the projected curve. This is the
+  // largest distance the body can travel toward the obstacle over the rest of
+  // the motion. Stepping distance/displacement is the (non-conservative) fast
+  // advancement: it can stride past a curved first contact and converge on a
+  // later one, so it is only used when CcdAdvancement::Fast is requested.
+  [[nodiscard]] double maxForwardDisplacement(
+      double t, const Eigen::Vector3d& n) const
+  {
+    const double v0 = translationVel_[0].dot(n);
+    const double v1 = translationVel_[1].dot(n);
+    const double v2 = translationVel_[2].dot(n);
+
+    const Eigen::Vector3d base = translationAt(t);
+    double best = 0.0;
+    const auto consider = [&](double s) {
+      if (s > t && s < 1.0) {
+        best = std::max(best, (translationAt(s) - base).dot(n));
+      }
+    };
+    best = std::max(best, (translationAt(1.0) - base).dot(n));
+
+    // Interior extrema solve T'(s).n = 0, a quadratic in monomial form.
+    const double a = v0 - 2.0 * v1 + v2;
+    const double b = 2.0 * (v1 - v0);
+    const double c = v0;
+    if (std::abs(a) < kEpsilon) {
+      if (std::abs(b) > kEpsilon) {
+        consider(-c / b);
+      }
+    } else {
+      const double disc = b * b - 4.0 * a * c;
+      if (disc >= 0.0) {
+        const double sd = std::sqrt(disc);
+        consider((-b + sd) / (2.0 * a));
+        consider((-b - sd) / (2.0 * a));
+      }
+    }
+    return best;
+  }
+
 private:
   // Upper bound on the Euclidean norm of a quadratic Bezier (control points v)
   // over [t, 1]. de Casteljau subdivision at t yields the right sub-curve's
@@ -1550,30 +1592,46 @@ bool splineCast(
       return true;
     }
 
-    // Acceleration-bounded conservative step. Over [t, t+dt] the point speed is
-    // at most v0 + s*accel (translation, linearized by its second-derivative
-    // bound) plus a constant angular contribution, so the closing of the gap is
-    // at most (v0 + angular)*dt + accel*dt^2/2. Solving that quadratic for the
-    // dt that closes exactly `distance` gives the largest provably safe step --
-    // tighter than distance/max_speed because it does not assume the curve is
-    // already moving at its peak speed.
-    const double v0 = motionA.linearSpeedAt(t);
-    const double angular = motionA.maxAngularSpeed(t) * maxRadius;
-    const double accel = motionA.maxLinearAccel(t);
-    const double linearTerm = v0 + angular;
-
     double dt;
-    if (accel < option.tolerance) {
-      const double bound = std::max(linearTerm, option.tolerance);
-      dt = distance / bound;
+    if (option.advancement == CcdAdvancement::Fast) {
+      // Fast (non-conservative) step: divide the gap by the maximum forward
+      // displacement over the rest of the motion. This strides much closer to
+      // the obstacle per iteration but can overshoot a curved first contact and
+      // converge on a later one -- the speed-for-tunnelling trade the caller
+      // opts into.
+      Eigen::Vector3d toward
+          = gjkResult.closestPointB - gjkResult.closestPointA;
+      if (toward.squaredNorm() < kEpsilon) {
+        toward = sepAxis;
+      }
+      toward.normalize();
+      const double disp = motionA.maxForwardDisplacement(t, toward)
+                          + motionA.maxAngularSpeed(t) * (1.0 - t) * maxRadius;
+      dt = distance / std::max(disp, option.tolerance);
     } else {
-      // Larger root of (accel/2) dt^2 + linearTerm dt - distance = 0.
-      dt = (-linearTerm
-            + std::sqrt(linearTerm * linearTerm + 2.0 * accel * distance))
-           / accel;
+      // Acceleration-bounded conservative step. Over [t, t+dt] the point speed
+      // is at most v0 + s*accel (translation, linearized by its
+      // second-derivative bound) plus a constant angular contribution, so the
+      // closing of the gap is at most (v0 + angular)*dt + accel*dt^2/2. Solving
+      // that quadratic for the dt that closes exactly `distance` gives the
+      // largest provably safe step -- tighter than distance/max_speed because
+      // it does not assume the curve is already moving at its peak speed.
+      const double v0 = motionA.linearSpeedAt(t);
+      const double angular = motionA.maxAngularSpeed(t) * maxRadius;
+      const double accel = motionA.maxLinearAccel(t);
+      const double linearTerm = v0 + angular;
+
+      if (accel < option.tolerance) {
+        dt = distance / std::max(linearTerm, option.tolerance);
+      } else {
+        // Larger root of (accel/2) dt^2 + linearTerm dt - distance = 0.
+        dt = (-linearTerm
+              + std::sqrt(linearTerm * linearTerm + 2.0 * accel * distance))
+             / accel;
+      }
     }
     if (dt < kEpsilon) {
-      dt = distance / std::max(linearTerm, option.tolerance);
+      dt = kEpsilon;
     }
     t += dt;
     if (t > 1.0) {

@@ -1855,6 +1855,52 @@ TEST(SplineCast, RotatingSplineHitsConservatively)
   EXPECT_LE(result.timeOfImpact, substepHit + 1e-3);
 }
 
+// The fast advancement mode takes larger displacement-based steps, trading the
+// no-tunnelling guarantee for speed. On a sharply curved sweep it strides past
+// the true first contact and reports a later one, whereas the conservative mode
+// (default) reports the first contact. Both still detect the collision.
+TEST(SplineCast, FastModeOvershootsConservativeFirstContact)
+{
+  ConvexShape shapeA(makeCubeVertices(0.5));
+  ConvexShape shapeB(makeCubeVertices(0.5));
+
+  Eigen::Isometry3d transformB = Eigen::Isometry3d::Identity();
+  transformB.translation() = Eigen::Vector3d(0, -1, 0);
+
+  const std::array<Eigen::Vector3d, 4> translation
+      = {Eigen::Vector3d(-2, 2, 0),
+         Eigen::Vector3d(-2, -2, 0),
+         Eigen::Vector3d(2, -2, 0),
+         Eigen::Vector3d(2, 2, 0)};
+  const std::array<Eigen::Vector3d, 4> rotation
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero()};
+
+  CcdOption conservative;
+  CcdResult conservativeResult;
+  ASSERT_TRUE(splineCast(
+      shapeA,
+      translation,
+      rotation,
+      shapeB,
+      transformB,
+      conservative,
+      conservativeResult));
+
+  CcdOption fast;
+  fast.advancement = CcdAdvancement::Fast;
+  CcdResult fastResult;
+  ASSERT_TRUE(splineCast(
+      shapeA, translation, rotation, shapeB, transformB, fast, fastResult));
+
+  // The conservative mode finds the genuine first contact; the fast mode
+  // strides past it to a later overlap.
+  EXPECT_LT(conservativeResult.timeOfImpact, 0.5);
+  EXPECT_GT(fastResult.timeOfImpact, conservativeResult.timeOfImpact);
+}
+
 //==============================================================================
 // Determinism tests
 //==============================================================================
