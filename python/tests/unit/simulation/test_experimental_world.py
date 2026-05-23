@@ -1347,6 +1347,80 @@ def test_experimental_joint_actuator_types():
         world.step()
 
 
+def test_experimental_joint_velocity_actuator():
+    sx = _simulation_experimental()
+
+    # Single slider reaches its commanded velocity regardless of applied force.
+    world = sx.World()
+    world.gravity = (0.0, 0.0, 0.0)
+    robot = world.add_multi_body("slider")
+    base = robot.add_link("base")
+    carriage = robot.add_link(
+        "carriage",
+        parent=base,
+        joint=sx.JointSpec(
+            name="rail", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    carriage.mass = 2.0
+
+    joint = carriage.parent_joint
+    assert joint.command_velocity.tolist() == pytest.approx([0.0])
+    joint.actuator_type = sx.ActuatorType.VELOCITY
+    joint.command_velocity = [0.5]
+    joint.force = [100.0]  # ignored by the Velocity actuator
+
+    world.time_step = 0.01
+    world.step()
+    assert joint.velocity.tolist()[0] == pytest.approx(0.5)
+
+    # Coupled 2-link chain: both joints reach their (different) targets exactly.
+    world2 = sx.World()
+    world2.gravity = (0.0, 0.0, 0.0)
+    robot2 = world2.add_multi_body("double_pendulum")
+    base2 = robot2.add_link("base")
+    offset1 = np.eye(4)
+    offset1[0, 3] = 0.7
+    offset2 = np.eye(4)
+    offset2[0, 3] = 0.6
+    link1 = robot2.add_link(
+        "link1",
+        parent=base2,
+        joint=sx.JointSpec(
+            name="j1",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset1,
+        ),
+    )
+    link1.mass = 1.5
+    link1.inertia = ((0.05, 0.0, 0.0), (0.0, 0.08, 0.0), (0.0, 0.0, 0.05))
+    link2 = robot2.add_link(
+        "link2",
+        parent=link1,
+        joint=sx.JointSpec(
+            name="j2",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset2,
+        ),
+    )
+    link2.mass = 1.0
+    link2.inertia = ((0.04, 0.0, 0.0), (0.0, 0.06, 0.0), (0.0, 0.0, 0.04))
+
+    j1 = link1.parent_joint
+    j2 = link2.parent_joint
+    j1.actuator_type = sx.ActuatorType.VELOCITY
+    j2.actuator_type = sx.ActuatorType.VELOCITY
+    j1.command_velocity = [0.3]
+    j2.command_velocity = [-0.4]
+
+    world2.time_step = 0.005
+    world2.step()
+    assert j1.velocity.tolist()[0] == pytest.approx(0.3, abs=1e-9)
+    assert j2.velocity.tolist()[0] == pytest.approx(-0.4, abs=1e-9)
+
+
 def test_experimental_joint_spring_and_damping():
     sx = _simulation_experimental()
 

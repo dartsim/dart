@@ -1577,6 +1577,92 @@ TEST(World, MultiBodyJointActuatorTypes)
   EXPECT_THROW(world.step(), sx::InvalidOperationException);
 }
 
+// Test the Velocity actuator type: a velocity-level constraint drives joints to
+// their commanded velocities exactly in one step, including under inertial
+// coupling between joints.
+TEST(World, MultiBodyJointVelocityActuatorSingle)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(2.0);
+
+  auto joint = carriage.getParentJoint();
+  EXPECT_DOUBLE_EQ(joint.getCommandVelocity()[0], 0.0);
+  joint.setActuatorType(sx::ActuatorType::Velocity);
+  joint.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.5));
+  joint.setForce(Eigen::VectorXd::Constant(1, 100.0)); // ignored by Velocity
+
+  EXPECT_THROW(
+      joint.setCommandVelocity(Eigen::VectorXd::Zero(2)),
+      sx::InvalidArgumentException);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+  world.step();
+
+  // The joint reaches its commanded velocity exactly, regardless of the effort.
+  EXPECT_NEAR(joint.getVelocity()[0], 0.5, 1e-12);
+}
+
+// Test the Velocity actuator under inertial coupling: both joints of a 2-link
+// chain reach their (different) commanded velocities exactly in one step.
+TEST(World, MultiBodyJointVelocityActuatorCoupled)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("double_pendulum");
+  auto base = robot.addLink("base");
+  Eigen::Isometry3d offset1 = Eigen::Isometry3d::Identity();
+  offset1.translation() = Eigen::Vector3d(0.7, 0.0, 0.0);
+  Eigen::Isometry3d offset2 = Eigen::Isometry3d::Identity();
+  offset2.translation() = Eigen::Vector3d(0.6, 0.0, 0.0);
+
+  sx::JointSpec spec1;
+  spec1.name = "j1";
+  spec1.type = sx::JointType::Revolute;
+  spec1.axis = Eigen::Vector3d::UnitY();
+  spec1.transformFromParent = offset1;
+  auto link1 = robot.addLink("link1", base, spec1);
+  link1.setMass(1.5);
+  link1.setInertia(Eigen::Vector3d(0.05, 0.08, 0.05).asDiagonal());
+
+  sx::JointSpec spec2;
+  spec2.name = "j2";
+  spec2.type = sx::JointType::Revolute;
+  spec2.axis = Eigen::Vector3d::UnitY();
+  spec2.transformFromParent = offset2;
+  auto link2 = robot.addLink("link2", link1, spec2);
+  link2.setMass(1.0);
+  link2.setInertia(Eigen::Vector3d(0.04, 0.06, 0.04).asDiagonal());
+
+  auto joint1 = link1.getParentJoint();
+  auto joint2 = link2.getParentJoint();
+  joint1.setActuatorType(sx::ActuatorType::Velocity);
+  joint2.setActuatorType(sx::ActuatorType::Velocity);
+  joint1.setCommandVelocity(Eigen::VectorXd::Constant(1, 0.3));
+  joint2.setCommandVelocity(Eigen::VectorXd::Constant(1, -0.4));
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step();
+
+  EXPECT_NEAR(joint1.getVelocity()[0], 0.3, 1e-9);
+  EXPECT_NEAR(joint2.getVelocity()[0], -0.4, 1e-9);
+}
+
 // Test that the public mass matrix and bias forces satisfy the joint-space
 // equation of motion M qddot + C + g = tau for a 2-DOF chain. This validates
 // the decomposition for a multi-DOF system without hand-computing M.

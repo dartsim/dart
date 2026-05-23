@@ -544,11 +544,14 @@
     opposes motion at the friction magnitude (kinetic).
   - Added experimental joint actuator types: `Joint::setActuatorType`/
     `getActuatorType` with `ActuatorType` (dartpy `joint.actuator_type`,
-    `ActuatorType`). `Force` (default) applies the commanded joint effort and
-    `Passive` ignores it (passive spring/damping/friction still apply); the
-    remaining modes (`Servo`/`Velocity`/`Acceleration`/`Locked`/`Mimic`) are
-    reserved and rejected by the forward dynamics until the constraint solver
-    lands.
+    `ActuatorType`). `Force` (default) applies the commanded joint effort,
+    `Passive` ignores it (passive spring/damping/friction still apply), and
+    `Velocity` drives the joint to its commanded velocity
+    (`Joint::setCommandVelocity`, dartpy `joint.command_velocity`) via a coupled
+    velocity-level equality constraint `lambda = (J M^-1 J^T)^-1 (target - J
+qdot)` that reaches the target exactly even under inertial coupling. The
+    remaining modes (`Servo`/`Acceleration`/`Locked`/`Mimic`) are reserved and
+    rejected by the forward dynamics until the full constraint solver lands.
   - Added experimental joint passive dynamics: per-coordinate spring stiffness
     with rest position and damping coefficient contribute restoring/dissipative
     generalized forces in the articulated-body forward dynamics

@@ -457,6 +457,9 @@ void simulateMultiBody(
                      .cwiseMin(joint.limits.effortUpper);
         break;
       case comps::ActuatorType::Passive:
+      case comps::ActuatorType::Velocity:
+        // Passive applies no commanded effort; Velocity is driven by a
+        // velocity-level constraint solved after the unconstrained step.
         effort = Eigen::VectorXd::Zero(
             static_cast<Eigen::Index>(tree.links[i].dof));
         break;
@@ -464,8 +467,8 @@ void simulateMultiBody(
         DART_EXPERIMENTAL_THROW_T(
             InvalidOperationException,
             "Joint actuator type is not yet implemented in the "
-            "articulated-body forward dynamics; supported types are Force and "
-            "Passive");
+            "articulated-body forward dynamics; supported types are Force, "
+            "Passive, and Velocity");
     }
     appliedForce.segment(tree.links[i].dofOffset, tree.links[i].dof)
         = effort
@@ -480,46 +483,120 @@ void simulateMultiBody(
   const Eigen::VectorXd qddot
       = mb.massMatrix.ldlt().solve(appliedForce - mb.bias);
 
-  // Semi-implicit Euler integration of the generalized coordinates.
+  // Unconstrained next generalized velocity (semi-implicit Euler), then apply
+  // velocity-level effects on the global vector before integrating positions.
+  Eigen::VectorXd nextVelocity = qdot + qddot * timeStep;
+
+  // Coulomb (dry) joint friction as a bounded velocity-level impulse: it stops
+  // a coordinate when the holding impulse is within the friction bound
+  // (stiction) and otherwise opposes motion at the friction magnitude.
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const auto dof = tree.links[i].dof;
+    if (dof == 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
+    if (joint.coulombFriction.size() != static_cast<Eigen::Index>(dof)) {
+      continue;
+    }
+    for (std::size_t d = 0; d < dof; ++d) {
+      const double bound
+          = joint.coulombFriction[static_cast<Eigen::Index>(d)] * timeStep;
+      if (bound <= 0.0) {
+        continue;
+      }
+      const auto globalDof
+          = static_cast<Eigen::Index>(tree.links[i].dofOffset + d);
+      const double effInertia = mb.massMatrix(globalDof, globalDof);
+      const double stopImpulse = effInertia * nextVelocity[globalDof];
+      const double frictionImpulse = std::clamp(stopImpulse, -bound, bound);
+      nextVelocity[globalDof] -= frictionImpulse / effInertia;
+    }
+  }
+
+  // Velocity-actuated joints: solve a coupled velocity-level equality
+  // constraint that drives the selected coordinates to their commanded
+  // velocities, lambda = (J M^-1 J^T)^-1 (target - J nextVelocity),
+  // nextVelocity += M^-1 J^T lambda, where J selects the constrained
+  // coordinates.
+  std::vector<Eigen::Index> constrainedDof;
+  std::vector<double> constrainedTarget;
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const auto dof = tree.links[i].dof;
+    if (dof == 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
+    if (joint.actuatorType != comps::ActuatorType::Velocity) {
+      continue;
+    }
+    for (std::size_t d = 0; d < dof; ++d) {
+      constrainedDof.push_back(
+          static_cast<Eigen::Index>(tree.links[i].dofOffset + d));
+      constrainedTarget.push_back(
+          joint.commandVelocity.size() == static_cast<Eigen::Index>(dof)
+              ? joint.commandVelocity[static_cast<Eigen::Index>(d)]
+              : 0.0);
+    }
+  }
+  if (!constrainedDof.empty()) {
+    const Eigen::MatrixXd inverseMass = mb.massMatrix.inverse();
+    const auto k = static_cast<Eigen::Index>(constrainedDof.size());
+    Eigen::MatrixXd constraintMatrix(k, k);
+    Eigen::VectorXd residual(k);
+    for (Eigen::Index a = 0; a < k; ++a) {
+      residual[a] = constrainedTarget[static_cast<std::size_t>(a)]
+                    - nextVelocity[constrainedDof[static_cast<std::size_t>(a)]];
+      for (Eigen::Index b = 0; b < k; ++b) {
+        constraintMatrix(a, b) = inverseMass(
+            constrainedDof[static_cast<std::size_t>(a)],
+            constrainedDof[static_cast<std::size_t>(b)]);
+      }
+    }
+    const Eigen::VectorXd lambda = constraintMatrix.ldlt().solve(residual);
+    for (Eigen::Index a = 0; a < k; ++a) {
+      nextVelocity
+          += inverseMass.col(constrainedDof[static_cast<std::size_t>(a)])
+             * lambda[a];
+    }
+  }
+
+  // Enforce velocity limits by clamping the generalized velocity.
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const auto dof = tree.links[i].dof;
+    if (dof == 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
+    if (joint.limits.velocityLower.size() != static_cast<Eigen::Index>(dof)
+        || joint.limits.velocityUpper.size()
+               != static_cast<Eigen::Index>(dof)) {
+      continue;
+    }
+    for (std::size_t d = 0; d < dof; ++d) {
+      const auto globalDof
+          = static_cast<Eigen::Index>(tree.links[i].dofOffset + d);
+      nextVelocity[globalDof] = std::clamp(
+          nextVelocity[globalDof],
+          joint.limits.velocityLower[static_cast<Eigen::Index>(d)],
+          joint.limits.velocityUpper[static_cast<Eigen::Index>(d)]);
+    }
+  }
+
+  // Write back the new velocity/acceleration and integrate positions, applying
+  // position limits as hard stops (clamp the coordinate and arrest the velocity
+  // component driving it past the limit).
   for (std::size_t i = 0; i < tree.links.size(); ++i) {
     if (tree.links[i].dof == 0) {
       continue;
     }
     auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    const auto block
+    joint.acceleration
         = qddot.segment(tree.links[i].dofOffset, tree.links[i].dof);
-    joint.acceleration = block;
-    joint.velocity += block * timeStep;
-
-    // Apply Coulomb (dry) joint friction as a bounded velocity-level impulse:
-    // it stops the coordinate when the holding impulse is within the friction
-    // bound (stiction) and otherwise opposes motion at the friction magnitude.
-    if (joint.coulombFriction.size() == joint.velocity.size()) {
-      for (Eigen::Index d = 0; d < joint.velocity.size(); ++d) {
-        const double bound = joint.coulombFriction[d] * timeStep;
-        if (bound <= 0.0) {
-          continue;
-        }
-        const auto globalDof
-            = static_cast<Eigen::Index>(tree.links[i].dofOffset) + d;
-        const double effInertia = mb.massMatrix(globalDof, globalDof);
-        const double stopImpulse = effInertia * joint.velocity[d];
-        const double frictionImpulse = std::clamp(stopImpulse, -bound, bound);
-        joint.velocity[d] -= frictionImpulse / effInertia;
-      }
-    }
-
-    // Enforce velocity limits by clamping the generalized velocity.
-    if (joint.limits.velocityLower.size() == joint.velocity.size()
-        && joint.limits.velocityUpper.size() == joint.velocity.size()) {
-      joint.velocity = joint.velocity.cwiseMax(joint.limits.velocityLower)
-                           .cwiseMin(joint.limits.velocityUpper);
-    }
-
+    joint.velocity
+        = nextVelocity.segment(tree.links[i].dofOffset, tree.links[i].dof);
     joint.position += joint.velocity * timeStep;
 
-    // Enforce position limits as hard stops: clamp the coordinate and arrest
-    // the velocity component driving it past the limit.
     if (joint.limits.lower.size() == joint.position.size()
         && joint.limits.upper.size() == joint.position.size()) {
       for (Eigen::Index d = 0; d < joint.position.size(); ++d) {

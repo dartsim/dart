@@ -338,6 +338,7 @@ class Joint:
     name: str
     type: JointType
     actuator_type: ActuatorType
+    command_velocity: NDArray[np.float64]
     axis: NDArray[np.float64]
     num_dofs: int
     position: NDArray[np.float64]

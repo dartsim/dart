@@ -75,14 +75,20 @@ the experimental `World`:
   is within the bound, kinetic friction otherwise. Verified analytically
   (stiction below the bound; net step `(F - mu)/m * dt` above it). C++ + dartpy
   tests.
-- Phase 4 (partial) — joint actuator types: `Joint::setActuatorType`/
-  `getActuatorType` with public `ActuatorType` (dartpy `joint.actuator_type`,
-  `ActuatorType`). `Force` (default) applies the clamped commanded effort;
-  `Passive` ignores it (passive spring/damping/friction still apply). The
-  remaining modes (`Servo`/`Velocity`/`Acceleration`/`Locked`/`Mimic`) are
-  defined but rejected by the forward dynamics — they need the constraint solver
-  (Locked changes the effective DOF count; servo/mimic are constraints). C++ +
-  dartpy tests.
+- Phase 4 (partial) — joint actuator types + first constraint solve:
+  `Joint::setActuatorType`/`getActuatorType` with public `ActuatorType` (dartpy
+  `joint.actuator_type`, `ActuatorType`). `Force` (default) applies the clamped
+  commanded effort; `Passive` ignores it (passive spring/damping/friction still
+  apply); `Velocity` drives the joint to `Joint::setCommandVelocity` (dartpy
+  `joint.command_velocity`) via a **coupled velocity-level equality constraint**
+  `lambda = (J M^-1 J^T)^-1 (target - J qdot)`, `qdot += M^-1 J^T lambda`,
+  reaching the target exactly even under inertial coupling (verified on a 2-link
+  chain). This is the first real constraint solve and establishes the
+  `J M^-1 J^T` machinery the contact LCP will reuse; the integration step was
+  restructured into a global velocity phase (friction → velocity constraint →
+  velocity limits) plus a per-joint position write-back. The remaining modes
+  (`Servo`/`Acceleration`/`Locked`/`Mimic`) are defined but rejected by the
+  forward dynamics. C++ + dartpy tests.
 - Phase 2 (partial) — collision query bridge: public `CollisionShape`
   (sphere/box) attachable to rigid bodies, public `Contact`, and
   `World::collide()` bridging to `dart/collision/native` via pairwise
@@ -134,24 +140,27 @@ Phases 2–5. Suggested next slices, in rough dependency order:
 - **Phase 2 next:** capsule/cylinder/plane/mesh shapes, collision shapes on
   multibody links, self-collision/filtering, broad-phase pruning, and a
   persistent collision world instead of rebuilding per `collide()`.
-- **Phase 4 next:** the constraint-coupled actuator modes (SERVO/VELOCITY/
-  ACCELERATION/LOCKED) and mimic/coupler, which all need the constraint solver
-  (see below). (Done in Phase 4: position/velocity/effort limits, armature,
-  Coulomb joint friction, Force/Passive actuator types, inverse dynamics, and
-  the public generalized mass-matrix / Coriolis / gravity accessors —
-  `MultiBody::getMassMatrix`/`getInverseMassMatrix`/`getCoriolisForces`/
-  `getGravityForces`/`getCoriolisAndGravityForces`/`computeInverseDynamics`.)
-- **Shared foundation needed next:** a constraint solver coupling the
-  articulated system (impulse-based articulated dynamics). The joint-space
-  primitives it builds on are now in place — mass matrix, `M^-1`, the impulse
-  response `M^-1 f`, inverse dynamics, and the body- and world-frame link
-  Jacobians. What remains for the solver: the constraint formulation and the
-  boxed-LCP/PGS solve wired into `World::step` (an optional COM Jacobian aside,
-  the kinematic/dynamic primitives are ready). It unblocks
-  the remaining Phase 3 (contacts on multibody links, joint motor/limit
-  constraints, boxed-LCP, islands), the constraint-coupled Phase 4 actuator
-  modes and mimic/coupler, and Phase 5 loop-closure dynamics. Budget it as a
-  dedicated multi-session subsystem.
+- **Phase 4 next:** the remaining constraint-coupled actuator modes
+  (SERVO/ACCELERATION/LOCKED) and mimic/coupler. `Velocity` is done (an equality
+  constraint, see above); SERVO/ACCELERATION reuse the same `J M^-1 J^T`
+  machinery with different targets/gains, LOCKED is a zero-velocity+frozen-
+  position constraint, and mimic/coupler couple two joints' coordinates.
+  (Done in Phase 4: position/velocity/effort limits, armature, Coulomb joint
+  friction, Force/Passive/Velocity actuator types, inverse dynamics, the
+  generalized mass-matrix / Coriolis / gravity accessors, and the impulse
+  response.)
+- **Shared foundation needed next:** the full (inequality) constraint solver
+  wired into `World::step`. The joint-space primitives are now all in place —
+  mass matrix, `M^-1`, the impulse response `M^-1 f`, inverse dynamics, the body-
+  and world-frame link Jacobians — and the **equality-constraint solve**
+  (`J M^-1 J^T lambda = c`) already exists and is exercised by the Velocity
+  actuator. What remains: assembling contact/joint-limit constraints (contact
+  Jacobians from the body/world Jacobians + collision normals) and the
+  **boxed-LCP/PGS solve** (inequalities + friction cone) on top of the existing
+  equality machinery, plus islands. It unblocks the remaining Phase 3 (contacts
+  on multibody links, joint limit/servo-force constraints, boxed-LCP, islands),
+  the remaining Phase 4 actuator modes and mimic/coupler, and Phase 5 loop-
+  closure dynamics. Budget it as a dedicated multi-session subsystem.
 - **Phase 5:** loop-closure kinematic projection + dynamic solving, pluggable
   integrator/substepping, body/COM Jacobians, and a model-format loading bridge.
 

@@ -215,6 +215,10 @@ struct Joint
   /// (per generalized coordinate).
   Eigen::VectorXd coulombFriction;
 
+  /// Commanded target velocity used by the Velocity actuator type (per
+  /// generalized coordinate).
+  Eigen::VectorXd commandVelocity;
+
   JointLimits limits;
 
   Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();

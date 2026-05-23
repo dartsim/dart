@@ -121,9 +121,21 @@ public:
   /// Set the joint actuator type.
   ///
   /// `Force` applies the commanded joint effort; `Passive` ignores it (only
-  /// passive spring/damping/friction forces act). The remaining modes are not
-  /// yet implemented and are rejected by the forward dynamics at step time.
+  /// passive spring/damping/friction forces act); `Velocity` drives the joint
+  /// to its commanded velocity (see setCommandVelocity) via a velocity-level
+  /// constraint. The remaining modes are not yet implemented and are rejected
+  /// by the forward dynamics at step time.
   void setActuatorType(ActuatorType actuatorType);
+
+  /// Get the commanded target velocity used by the `Velocity` actuator type.
+  [[nodiscard]] Eigen::VectorXd getCommandVelocity() const;
+
+  /// Set the commanded target velocity used by the `Velocity` actuator type.
+  ///
+  /// When the actuator type is `Velocity`, the forward dynamics drives the
+  /// joint's generalized velocity to this value each step. Values must be
+  /// finite, with size equal to getDOFCount().
+  void setCommandVelocity(const Eigen::VectorXd& velocity);
 
   /// Get the primary joint axis
   ///

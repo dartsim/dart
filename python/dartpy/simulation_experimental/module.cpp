@@ -750,6 +750,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           "actuator_type",
           &sim::Joint::getActuatorType,
           &sim::Joint::setActuatorType)
+      .def_prop_rw(
+          "command_velocity",
+          &sim::Joint::getCommandVelocity,
+          [](sim::Joint& self, const nb::handle& value) {
+            self.setCommandVelocity(toVectorX(value));
+          })
       .def_prop_ro("axis", &sim::Joint::getAxis)
       .def_prop_ro("num_dofs", &sim::Joint::getDOFCount)
       .def_prop_rw(

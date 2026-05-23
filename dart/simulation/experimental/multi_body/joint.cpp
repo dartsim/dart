@@ -241,6 +241,21 @@ void Joint::setActuatorType(ActuatorType actuatorType)
 }
 
 //==============================================================================
+Eigen::VectorXd Joint::getCommandVelocity() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.commandVelocity;
+}
+
+//==============================================================================
+void Joint::setCommandVelocity(const Eigen::VectorXd& velocity)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(velocity, jointComp.getDOF(), "command velocity");
+  jointComp.commandVelocity = velocity;
+}
+
+//==============================================================================
 Eigen::Vector3d Joint::getAxis() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);

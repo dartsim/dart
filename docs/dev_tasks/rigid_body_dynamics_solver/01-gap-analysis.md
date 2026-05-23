@@ -67,26 +67,26 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 | Spring stiffness + rest position                            | `setSpringStiffness`/`setRestPosition`                                                                 | revolute/prismatic (Phase 4)                                  | PRESENT (1-DOF)              |
 | Damping                                                     | `setDampingCoefficient`                                                                                | revolute/prismatic (Phase 4)                                  | PRESENT (1-DOF)              |
 | Coulomb joint friction                                      | `JointCoulombFrictionConstraint`                                                                       | per-coordinate velocity-level Coulomb friction (Phase 4)      | PARTIAL                      |
-| Actuator types (FORCE/PASSIVE/SERVO/MIMIC/ACCEL/VEL/LOCKED) | per-DOF actuator type                                                                                  | Force + Passive (Phase 4); other modes reserved               | PARTIAL                      |
+| Actuator types (FORCE/PASSIVE/SERVO/MIMIC/ACCEL/VEL/LOCKED) | per-DOF actuator type                                                                                  | Force + Passive + Velocity (Phase 4); other modes reserved    | PARTIAL                      |
 | Mimic / coupler                                             | `MimicMotorConstraint`, `CouplerConstraint`                                                            | LoopClosure metadata only                                     | MISSING                      |
 | Armature / rotor inertia                                    | not in DART 6 (gap to _improve_ on)                                                                    | per-coordinate armature on the mass-matrix diagonal (Phase 4) | PRESENT (improves on DART 6) |
 
 ### Constraints & contacts
 
-| Capability                      | DART 6                                             | Experimental                                                | Status                 |
-| ------------------------------- | -------------------------------------------------- | ----------------------------------------------------------- | ---------------------- |
-| Contact response solver         | `BoxedLcpConstraintSolver` (island grouping)       | sequential normal impulses, free rigid bodies (Phase 3)     | PARTIAL                |
-| Boxed-LCP solver                | Dantzig primary, PGS fallback (`dart/math/lcp/`)   | not wired; current solver is sequential-impulse             | MISSING                |
-| Rigid contact constraints       | `ContactConstraint` (friction pyramid)             | normal + friction-pyramid impulses, free bodies (Phase 3)   | PARTIAL                |
-| Friction                        | friction pyramid + slip/dir params                 | two-tangent friction-pyramid Coulomb, free bodies (Phase 3) | PARTIAL                |
-| Restitution                     | restitution coeff + `ContactSurfaceParams`         | per-body coeff, combined max, applied in solver (Phase 3)   | PARTIAL                |
-| ERP / CFM tuning                | static members + `ContactSurfaceParams`            | fixed projection factor; no per-contact ERP/CFM yet         | MISSING                |
-| Joint limit / motor constraints | `JointLimitConstraint`, `ServoMotorConstraint`     | none                                                        | MISSING                |
-| Closed-loop joint constraints   | `BallJointConstraint`, `WeldJointConstraint`, etc. | residual only                                               | MISSING                |
-| Contacts on multibody links     | links participate in the constraint solve          | rigid bodies only; links not yet                            | MISSING                |
-| Static-body convention          | static skeletons / fixed base                      | public `isStatic` flag; immovable, no gravity (Phase 3)     | PRESENT                |
-| Penetration correction          | ERP / split impulse                                | projection-based positional correction (Phase 3)            | PARTIAL                |
-| Soft contacts                   | `SoftContactConstraint`                            | none                                                        | MISSING (later domain) |
+| Capability                      | DART 6                                             | Experimental                                                            | Status                 |
+| ------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------- |
+| Contact response solver         | `BoxedLcpConstraintSolver` (island grouping)       | sequential normal impulses, free rigid bodies (Phase 3)                 | PARTIAL                |
+| Boxed-LCP solver                | Dantzig primary, PGS fallback (`dart/math/lcp/`)   | not wired; current solver is sequential-impulse                         | MISSING                |
+| Rigid contact constraints       | `ContactConstraint` (friction pyramid)             | normal + friction-pyramid impulses, free bodies (Phase 3)               | PARTIAL                |
+| Friction                        | friction pyramid + slip/dir params                 | two-tangent friction-pyramid Coulomb, free bodies (Phase 3)             | PARTIAL                |
+| Restitution                     | restitution coeff + `ContactSurfaceParams`         | per-body coeff, combined max, applied in solver (Phase 3)               | PARTIAL                |
+| ERP / CFM tuning                | static members + `ContactSurfaceParams`            | fixed projection factor; no per-contact ERP/CFM yet                     | MISSING                |
+| Joint limit / motor constraints | `JointLimitConstraint`, `ServoMotorConstraint`     | velocity-motor equality constraint (Phase 4); limit/servo-force pending | PARTIAL                |
+| Closed-loop joint constraints   | `BallJointConstraint`, `WeldJointConstraint`, etc. | residual only                                                           | MISSING                |
+| Contacts on multibody links     | links participate in the constraint solve          | rigid bodies only; links not yet                                        | MISSING                |
+| Static-body convention          | static skeletons / fixed base                      | public `isStatic` flag; immovable, no gravity (Phase 3)                 | PRESENT                |
+| Penetration correction          | ERP / split impulse                                | projection-based positional correction (Phase 3)                        | PARTIAL                |
+| Soft contacts                   | `SoftContactConstraint`                            | none                                                                    | MISSING (later domain) |
 
 ### Integration
 
