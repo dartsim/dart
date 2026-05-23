@@ -42,6 +42,9 @@
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
+#include <algorithm>
+#include <vector>
+
 #include <cmath>
 
 namespace dart::simulation::experimental::compute {
@@ -560,6 +563,56 @@ RigidBodyStateBatch rolloutRigidBodyStateBatch(
     integrateRigidBodyStateBatch(state, model, force, timeStep);
   }
   return state;
+}
+
+//==============================================================================
+double totalKineticEnergy(
+    const RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    std::size_t chunkSize)
+{
+  const auto bodies = state.worldCount * state.bodyCount;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      state.linearVelocity.size() != 3 * bodies
+          || model.inverseMass.size() != bodies,
+      InvalidArgumentException,
+      "totalKineticEnergy arrays are inconsistent with worldCount {} and "
+      "bodyCount {}",
+      state.worldCount,
+      state.bodyCount);
+
+  if (bodies == 0) {
+    return 0.0;
+  }
+
+  const std::size_t chunk = std::max<std::size_t>(1, chunkSize);
+
+  // Sum each fixed-size chunk independently (a chunk is the unit a worker would
+  // own), then merge the partials in chunk order. The fixed merge order makes
+  // the result independent of how chunks are scheduled.
+  std::vector<double> partials;
+  partials.reserve((bodies + chunk - 1) / chunk);
+  for (std::size_t begin = 0; begin < bodies; begin += chunk) {
+    const auto end = std::min(begin + chunk, bodies);
+    double partial = 0.0;
+    for (std::size_t b = begin; b < end; ++b) {
+      const double inverseMass = model.inverseMass[b];
+      if (inverseMass <= 0.0) {
+        continue;
+      }
+      const double vx = state.linearVelocity[3 * b + 0];
+      const double vy = state.linearVelocity[3 * b + 1];
+      const double vz = state.linearVelocity[3 * b + 2];
+      partial += 0.5 * (vx * vx + vy * vy + vz * vz) / inverseMass;
+    }
+    partials.push_back(partial);
+  }
+
+  double total = 0.0;
+  for (const double partial : partials) {
+    total += partial;
+  }
+  return total;
 }
 
 } // namespace dart::simulation::experimental::compute

@@ -189,4 +189,21 @@ rolloutRigidBodyStateBatch(
     const std::vector<std::vector<double>>& controlSequence,
     double timeStep);
 
+/// Total translational kinetic energy of a state batch: the sum over all bodies
+/// of `0.5 * mass * |linearVelocity|^2`, with `mass = 1 / inverseMass` (bodies
+/// with non-positive inverse mass are static and contribute nothing).
+///
+/// The sum is a floating-point reduction, which is non-associative, so it is
+/// computed deterministically as fixed-size chunk partials merged in chunk
+/// order. This is the reduction shape later parallel stages reuse: each chunk
+/// can run on a separate thread, and the fixed merge order makes the result
+/// independent of how chunks are scheduled, so it is identical across worker
+/// counts. It differs from a naive left-to-right sum only by reduction order,
+/// within a small relative tolerance (the Phase 3 reduction-determinism gate).
+/// Throws on size mismatch.
+[[nodiscard]] DART_EXPERIMENTAL_API double totalKineticEnergy(
+    const RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    std::size_t chunkSize = 256);
+
 } // namespace dart::simulation::experimental::compute

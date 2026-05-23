@@ -949,6 +949,57 @@ TEST(ExperimentalIntegrationKernel, SimdOrientationMatchesScalarForLargeBatch)
 }
 
 //==============================================================================
+TEST(ExperimentalIntegrationKernel, TotalKineticEnergyReductionWithinTolerance)
+{
+  const std::size_t bodies = 500;
+
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = bodies;
+  state.linearVelocity.resize(3 * bodies);
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = bodies;
+  model.inverseMass.resize(bodies);
+
+  for (std::size_t b = 0; b < bodies; ++b) {
+    state.linearVelocity[3 * b + 0] = 0.01 * static_cast<double>(b);
+    state.linearVelocity[3 * b + 1] = -0.02 * static_cast<double>(b);
+    state.linearVelocity[3 * b + 2] = 0.005 * static_cast<double>(b) + 1.0;
+    // Every 50th body is static (zero inverse mass) and contributes nothing.
+    model.inverseMass[b]
+        = (b % 50 == 0) ? 0.0 : 1.0 / (1.0 + 0.1 * static_cast<double>(b));
+  }
+
+  // A single chunk reduces left-to-right (the naive reference order).
+  const double naive = compute::totalKineticEnergy(state, model, bodies + 1);
+
+  // The reduction is deterministic for a given chunking.
+  EXPECT_EQ(
+      compute::totalKineticEnergy(state, model, 64),
+      compute::totalKineticEnergy(state, model, 64));
+
+  // Different chunkings (different reduction orders, as different worker counts
+  // would produce) agree within a small relative tolerance -- the Phase 3
+  // fixed-ULP reduction-determinism gate.
+  const double tolerance = 1e-12 * std::abs(naive);
+  EXPECT_NEAR(compute::totalKineticEnergy(state, model, 1), naive, tolerance);
+  EXPECT_NEAR(compute::totalKineticEnergy(state, model, 64), naive, tolerance);
+  EXPECT_NEAR(compute::totalKineticEnergy(state, model, 256), naive, tolerance);
+
+  EXPECT_GT(naive, 0.0);
+  EXPECT_TRUE(std::isfinite(naive));
+
+  // Inconsistent model size is rejected.
+  auto bad = model;
+  bad.inverseMass.pop_back();
+  EXPECT_THROW(
+      (void)compute::totalKineticEnergy(state, bad),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
 TEST(ExperimentalIntegrationKernel, RollsOutStateBatchOverControlSequence)
 {
   compute::RigidBodyStateBatch initial;
