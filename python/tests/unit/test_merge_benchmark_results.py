@@ -49,10 +49,26 @@ def test_merge_concatenates_benchmarks_and_keeps_first_context(tmp_path):
     assert [b["name"] for b in merged["benchmarks"]] == ["BM_A", "BM_B", "BM_C"]
 
 
-def test_merge_directory_and_writes_output(tmp_path):
+def test_merge_directory_defaults_to_median(tmp_path):
     module = _load_module()
     out = tmp_path / "out" / "combined.json"
     rc = module.main([str(FIXTURE), "--output", str(out)])
+
+    assert rc == 0
+    data = json.loads(out.read_text(encoding="utf-8"))
+    names = [b["name"] for b in data["benchmarks"]]
+    # One median series per benchmark, with the _median suffix stripped.
+    assert names == [
+        "BM_Distance_BoxBox_Native",
+        "BM_Distance_BoxBox_Bullet",
+        "BM_DartAdapter_CollidePersistentScene/64",
+    ]
+
+
+def test_merge_all_keeps_every_row(tmp_path):
+    module = _load_module()
+    out = tmp_path / "out" / "combined.json"
+    rc = module.main([str(FIXTURE), "--output", str(out), "--aggregate", "all"])
 
     assert rc == 0
     data = json.loads(out.read_text(encoding="utf-8"))

@@ -113,10 +113,13 @@ INDEX_HTML = """<!DOCTYPE html>
   header { padding: 24px 32px; border-bottom: 1px solid #30363d; }
   header h1 { margin: 0 0 4px; font-size: 22px; }
   header p { margin: 0; color: #8b949e; font-size: 14px; }
-  main { padding: 24px 32px; display: grid; gap: 28px; }
-  .suite { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; }
-  .suite h2 { margin: 0 0 14px; font-size: 16px; }
-  canvas { max-height: 360px; }
+  main { padding: 20px 32px; }
+  section > h2 { font-size: 16px; margin: 18px 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px; }
+  .card h3 { margin: 0 0 2px; font-size: 12px; font-weight: 600; word-break: break-all; }
+  .card .val { color: #8b949e; font-size: 12px; margin-bottom: 6px; }
+  canvas { max-height: 200px; }
   footer { padding: 16px 32px; color: #8b949e; font-size: 13px; border-top: 1px solid #30363d; }
   a { color: #58a6ff; }
 </style>
@@ -141,39 +144,54 @@ if (data.lastUpdate) {
   meta.textContent = "Last updated " + new Date(data.lastUpdate).toUTCString()
     + " - " + (data.repoUrl || "");
 }
+// One chart per benchmark (x-axis = commits), matching github-action-benchmark.
 for (const [suite, runs] of Object.entries(data.entries)) {
   const section = document.createElement("section");
-  section.className = "suite";
   const title = document.createElement("h2");
-  title.textContent = suite;
+  title.textContent = suite + " — " + runs.length + " run(s), "
+    + new Set(runs.flatMap(r => r.benches.map(b => b.name))).size + " benchmarks";
   section.appendChild(title);
-  const canvas = document.createElement("canvas");
-  section.appendChild(canvas);
+  const grid = document.createElement("div");
+  grid.className = "grid";
+  section.appendChild(grid);
   root.appendChild(section);
 
   const labels = runs.map(r => (r.commit.id || "").slice(0, 7) || new Date(r.date).toLocaleDateString());
   const names = [...new Set(runs.flatMap(r => r.benches.map(b => b.name)))];
-  const datasets = names.map((name, i) => ({
-    label: name,
-    data: runs.map(r => {
+  names.forEach((name, i) => {
+    const series = runs.map(r => {
       const b = r.benches.find(x => x.name === name);
       return b ? b.value : null;
-    }),
-    borderColor: COLORS[i % COLORS.length],
-    backgroundColor: COLORS[i % COLORS.length],
-    spanGaps: true,
-    tension: 0.2,
-  }));
-  const unit = (runs.at(-1).benches[0] || {}).unit || "";
-  new Chart(canvas, {
-    type: "line",
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      interaction: { mode: "index", intersect: false },
-      scales: { y: { title: { display: true, text: "time (" + unit + ")" }, beginAtZero: true } },
-      plugins: { legend: { position: "bottom" } },
-    },
+    });
+    const unit = (runs.map(r => r.benches.find(x => x.name === name)).find(Boolean) || {}).unit || "";
+    const latest = [...series].reverse().find(v => v != null);
+    const card = document.createElement("div");
+    card.className = "card";
+    const h3 = document.createElement("h3");
+    h3.textContent = name;
+    const val = document.createElement("div");
+    val.className = "val";
+    val.textContent = "latest: " + latest + " " + unit;
+    const canvas = document.createElement("canvas");
+    card.append(h3, val, canvas);
+    grid.appendChild(card);
+    new Chart(canvas, {
+      type: "line",
+      data: { labels, datasets: [{
+        label: name,
+        data: series,
+        borderColor: COLORS[i % COLORS.length],
+        backgroundColor: COLORS[i % COLORS.length],
+        tension: 0.2,
+        spanGaps: true,
+        pointRadius: 3,
+      }] },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { title: { display: true, text: unit } } },
+      },
+    });
   });
 }
 const dl = document.getElementById("download");
