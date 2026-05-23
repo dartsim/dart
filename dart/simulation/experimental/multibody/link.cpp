@@ -30,10 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/multi_body/link.hpp"
+#include "dart/simulation/experimental/multibody/link.hpp"
 
 #include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/multi_body/joint.hpp"
+#include "dart/simulation/experimental/multibody/joint.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 namespace dart::simulation::experimental {

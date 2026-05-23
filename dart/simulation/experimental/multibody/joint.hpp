@@ -34,7 +34,7 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
-#include <dart/simulation/experimental/multi_body/joint_type.hpp>
+#include <dart/simulation/experimental/multibody/joint_type.hpp>
 
 #include <Eigen/Core>
 #include <entt/entt.hpp>
@@ -48,7 +48,7 @@ namespace dart::simulation::experimental {
 
 /// Generic Joint handle class
 ///
-/// Represents a joint connecting two links in a MultiBody. This is a
+/// Represents a joint connecting two links in a Multibody. This is a
 /// lightweight handle to the underlying entity in the ECS registry.
 ///
 /// Unlike traditional OOP physics engines, the experimental stack uses a single
@@ -102,8 +102,8 @@ public:
   ///
   /// Valid for: Revolute, Prismatic, Screw, Universal, Planar
   /// @return 3D unit vector representing the primary axis
-  /// @throws InvalidArgumentException if joint type doesn't use axis (Ball,
-  /// Free)
+  /// @throws InvalidArgumentException if joint type doesn't use axis
+  /// (Spherical, Free)
   [[nodiscard]] Eigen::Vector3d getAxis() const;
 
   /// Get the secondary joint axis

@@ -22,7 +22,7 @@ Completed slices on this branch include:
 - `compute::ParallelExecutor` added as the preferred backend-neutral public C++
   executor name, with `TaskflowExecutor` kept as a DART 7 source-compatibility
   alias.
-- `MultiBody` link/joint enumeration added in C++ and dartpy as
+- `Multibody` link/joint enumeration added in C++ and dartpy as
   construction-ordered snapshots with Pythonic list/name properties.
 
 ## Current Branch
@@ -83,7 +83,7 @@ Python lifecycle semantics.
     stored `LoopClosureRuntimePolicy` one field at a time.
   - `closure.runtime_policy` remains available for batch assignment.
 - Existing lookup-style `get_*` methods such as `get_link`, `get_joint`,
-  `get_multi_body`, `get_loop_closure`, and `get_rigid_body` remain allowed
+  `get_multibody`, `get_loop_closure`, and `get_rigid_body` remain allowed
   until collection views and uniqueness policy are designed.
 - Completed compute-executor slice:
   - Added `dart/simulation/experimental/compute/parallel_executor.hpp` and
@@ -101,31 +101,31 @@ Python lifecycle semantics.
   - `pixi run build`
   - `pixi run test-unit`
   - `git diff --check`
-- Current MultiBody enumeration slice:
-  - Adds C++ `MultiBody::getLinks()`, `getJoints()`, `getLinkNames()`, and
+- Current Multibody enumeration slice:
+  - Adds C++ `Multibody::getLinks()`, `getJoints()`, `getLinkNames()`, and
     `getJointNames()` as construction-ordered snapshots of public handles and
     names.
   - Adds dartpy properties `links`, `joints`, `link_names`, and `joint_names`
-    on `sx.MultiBody`.
+    on `sx.Multibody`.
   - Keeps Python lookup methods as `get_link()` / `get_joint()` for the
     current experimental staging surface, and does not add dict-style collection
     indexing before uniqueness/invalidation policy is documented.
 - Current owner-local name uniqueness slice:
-  - Changes `World::addMultiBody()` to reject duplicate explicit names and skip
+  - Changes `World::addMultibody()` to reject duplicate explicit names and skip
     generated names that would collide with explicit names.
   - Changes `World::addRigidBody()` to reject duplicate explicit names and skip
     generated names that would collide with explicit names.
-  - Changes `MultiBody::setName()` to reject empty names and duplicate names
+  - Changes `Multibody::setName()` to reject empty names and duplicate names
     owned by the same `World`.
-  - Changes `MultiBody::addLink()` to reject duplicate link and joint names
-    within the owning `MultiBody`, skip generated link/joint names that would
-    collide, and reject a parent link from a different `MultiBody`.
+  - Changes `Multibody::addLink()` to reject duplicate link and joint names
+    within the owning `Multibody`, skip generated link/joint names that would
+    collide, and reject a parent link from a different `Multibody`.
   - Updates C++ and dartpy tests to exercise duplicate rejection, generated-name
     collision skipping, and cross-multibody parent rejection.
 - Current multibody presence-query slice:
-  - Adds C++ `World::hasMultiBody(std::string_view) const`.
-  - Adds dartpy `world.has_multi_body(name)` and the matching committed stub.
-  - Adds C++ `MultiBody::isValid()` and dartpy `MultiBody.is_valid`, and
+  - Adds C++ `World::hasMultibody(std::string_view) const`.
+  - Adds dartpy `world.has_multibody(name)` and the matching committed stub.
+  - Adds C++ `Multibody::isValid()` and dartpy `Multibody.is_valid`, and
     documents `World::getRegistry()` as a DART 7 test/internal escape hatch.
   - Makes dartpy `world.step(n=...)` reject negative step counts explicitly
     while keeping zero-count stepping as a no-op.

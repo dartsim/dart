@@ -32,40 +32,24 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/comps/component_category.hpp>
+namespace dart::simulation::experimental {
 
-#include <entt/entt.hpp>
-
-#include <vector>
-
-namespace dart::simulation::experimental::comps {
-
-/// Tag marking entity as a MultiBody
+/// Public joint type used by the experimental multibody facade.
 ///
-/// Automatically serialized via DART_EXPERIMENTAL_TAG_COMPONENT macro.
-/// **Internal Implementation Detail** - Not exposed in public API
-struct MultiBodyTag
+/// This enum intentionally lives outside component storage so C++ and dartpy
+/// users can construct multibody joints without including implementation
+/// headers.
+enum class JointType
 {
-  DART_EXPERIMENTAL_TAG_COMPONENT(MultiBodyTag);
+  Fixed,
+  Revolute,
+  Prismatic,
+  Screw,
+  Universal,
+  Spherical,
+  Planar,
+  Free,
+  Custom
 };
 
-/// Component storing MultiBody structure (links, joints)
-///
-/// Automatically serialized with entity remapping via
-/// DART_EXPERIMENTAL_STATE_COMPONENT macro.
-/// **Internal Implementation Detail** - Not exposed in public API
-struct MultiBodyStructure
-{
-  DART_EXPERIMENTAL_STATE_COMPONENT(MultiBodyStructure);
-
-  std::vector<entt::entity> links;
-  std::vector<entt::entity> joints;
-
-  /// Declare which fields need entity remapping during serialization
-  static constexpr auto entityFields()
-  {
-    return std::tuple{&MultiBodyStructure::links, &MultiBodyStructure::joints};
-  }
-};
-
-} // namespace dart::simulation::experimental::comps
+} // namespace dart::simulation::experimental

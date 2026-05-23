@@ -130,7 +130,7 @@ Eigen::Isometry3d getJointTransform(const comps::Joint& joint)
                             * Eigen::AngleAxisd(joint.position[1], joint.axis2))
                                .toRotationMatrix();
       return transform;
-    case comps::JointType::Ball:
+    case comps::JointType::Spherical:
       return rotationVectorTransform(joint.position.head<3>());
     case comps::JointType::Planar: {
       const Eigen::Vector3d normal = joint.axis.normalized();

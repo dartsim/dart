@@ -22,7 +22,7 @@
 - [x] Added `compute::ParallelExecutor` as the preferred backend-neutral C++
       name for the parallel compute-graph executor while keeping a DART 7
       compatibility alias for the previous Taskflow-branded include.
-- [x] Added construction-ordered `MultiBody` link/joint enumeration in C++ and
+- [x] Added construction-ordered `Multibody` link/joint enumeration in C++ and
       Pythonic dartpy list/name properties without committing world-level
       dict-style collection semantics.
 - [x] Enforced owner-local name uniqueness for experimental world multibodies,
@@ -32,7 +32,7 @@
 - [x] Added symmetric world-owned multibody presence queries in C++ and dartpy,
       keeping lookup optional and deferring collection views until explicit
       ordering/invalidation contracts exist.
-- [x] Added `MultiBody` validity queries in C++ and dartpy so
+- [x] Added `Multibody` validity queries in C++ and dartpy so
       `World::clear()` lifecycle effects are visible through public handles.
 - [x] Tightened dartpy `World.step(n=...)` validation and aligned the Python
       design doc with the implemented enum/member surface.

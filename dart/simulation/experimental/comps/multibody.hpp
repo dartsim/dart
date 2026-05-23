@@ -30,16 +30,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "multi_body.hpp"
+#pragma once
 
-#include "dart/simulation/experimental/io/category_serializer.hpp"
+#include <dart/simulation/experimental/comps/component_category.hpp>
+
+#include <entt/entt.hpp>
+
+#include <vector>
 
 namespace dart::simulation::experimental::comps {
 
-// Register multibody components
-DART_EXPERIMENTAL_REGISTER_COMPONENTS_BEGIN()
-DART_EXPERIMENTAL_REGISTER_COMPONENTS_ADD(MultiBodyTag)
-DART_EXPERIMENTAL_REGISTER_COMPONENTS_ADD(MultiBodyStructure)
-DART_EXPERIMENTAL_REGISTER_COMPONENTS_END()
+/// Tag marking entity as a Multibody
+///
+/// Automatically serialized via DART_EXPERIMENTAL_TAG_COMPONENT macro.
+/// **Internal Implementation Detail** - Not exposed in public API
+struct MultibodyTag
+{
+  DART_EXPERIMENTAL_TAG_COMPONENT(MultibodyTag);
+};
+
+/// Component storing Multibody structure (links, joints)
+///
+/// Automatically serialized with entity remapping via
+/// DART_EXPERIMENTAL_STATE_COMPONENT macro.
+/// **Internal Implementation Detail** - Not exposed in public API
+struct MultibodyStructure
+{
+  DART_EXPERIMENTAL_STATE_COMPONENT(MultibodyStructure);
+
+  std::vector<entt::entity> links;
+  std::vector<entt::entity> joints;
+
+  /// Declare which fields need entity remapping during serialization
+  static constexpr auto entityFields()
+  {
+    return std::tuple{&MultibodyStructure::links, &MultibodyStructure::joints};
+  }
+};
 
 } // namespace dart::simulation::experimental::comps

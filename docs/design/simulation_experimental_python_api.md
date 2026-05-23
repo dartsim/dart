@@ -75,7 +75,7 @@ originating engine.
 Creation methods return Python objects:
 
 ```python
-arm = world.add_multi_body("arm")
+arm = world.add_multibody("arm")
 base = arm.add_link("base")
 elbow = arm.joints["elbow"]
 ```
@@ -164,7 +164,7 @@ behavior, not for a synchronous wrapper.
 ### Tree Topology Plus First-Class Closures
 
 Python users should build ordinary serial chains and branched robots through
-`MultiBody`, `Link`, `Joint`, and `JointSpec`. Closed-chain mechanisms should
+`Multibody`, `Link`, `Joint`, and `JointSpec`. Closed-chain mechanisms should
 then be added as explicit first-class closure constraints between symmetric
 endpoints, not by assigning a second parent link or exposing internal solver
 rows.
@@ -261,7 +261,7 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
 ## Current Evidence
 
 - `dartpy.simulation_experimental` already exists as an opt-in module with
-  `World`, `MultiBody`, and `RigidBody` smoke coverage.
+  `World`, `Multibody`, and `RigidBody` smoke coverage.
 - `docs/onboarding/python-bindings.md` requires this module to remain separate
   from legacy `dartpy.simulation` during DART 7.
 - `docs/onboarding/api-boundaries.md` classifies experimental APIs as public
@@ -269,7 +269,7 @@ or active task handoff. Those belong in `docs/plans/` or `docs/dev_tasks/`.
   storage, scheduler, backend, or component internals.
 - `dart/simulation/experimental/world.hpp` already has world lifecycle,
   stepping, frame, multibody, rigid-body, and compute-executor hooks.
-- The implemented DART 7 `MultiBody`, `Link`, and `Joint` binding is currently
+- The implemented DART 7 `Multibody`, `Link`, and `Joint` binding is currently
   tree-shaped, with Python-style `JointSpec` construction backed by the public
   C++ value object, joint type, axis, parent/child, DOF count, and generalized
   position/velocity access. `World` now exposes `LoopClosure` handles with
@@ -355,7 +355,7 @@ dartpy.simulation_experimental
   World
   RigidBody
   RigidBodyOptions
-  MultiBody
+  Multibody
   Link
   Joint
   JointType
@@ -426,7 +426,7 @@ Operations stay method-shaped:
 
 ```python
 world.add_rigid_body("box", mass=1.0)
-world.add_multi_body("arm")
+world.add_multibody("arm")
 world.enter_simulation_mode()
 world.sync(sx.WorldSyncStage.KINEMATICS)
 world.step()
@@ -463,7 +463,7 @@ allocation, validation, or failure timing:
 ```python
 # Future shape, not a DART 7 API promise.
 world = sx.World(time_step=0.001)
-robot = world.add_multi_body("arm")
+robot = world.add_multibody("arm")
 
 world.validate_topology()
 world.enter_simulation_mode()
@@ -594,18 +594,21 @@ public API exposes dirty flags.
 | ------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `World`       | Owns simulation objects, time, frame count, and stepping.             | Constructor, lifecycle methods, time properties, add methods, object collections.                                                         |
 | `RigidBody`   | Single rigid object and frame handle.                                 | Name, transform, velocity, mass, inertia, force, and torque reads/writes, and broader dynamics properties as accessors mature.            |
-| `MultiBody`   | Articulated rigid-body system.                                        | Name, validity, counts, link and joint construction, link and joint collections.                                                          |
+| `Multibody`   | Articulated rigid-body system.                                        | Name, validity, counts, link and joint construction, link and joint collections.                                                          |
 | `Link`        | Body in a multibody kinematic tree.                                   | Name, parent joint, frame transform queries.                                                                                              |
 | `Joint`       | Connection between links.                                             | Name, type, axes, parent and child links, DOF count, generalized position and velocity; broader state/control APIs remain staged.         |
 | `LoopClosure` | Explicit spatial closure between two public frames, links, or bodies. | Symmetric-endpoint topology handle with runtime-intent policy and residual diagnostics now; projection and dynamic solving remain staged. |
 | `Frame`       | Spatial reference frame.                                              | Transform, translation, rotation, quaternion, parent-frame queries.                                                                       |
 | `StateSpace`  | Named flat-vector metadata.                                           | Variables, dimensions, bounds, finalization, names.                                                                                       |
 
-`MultiBody` is the DART 7 experimental name because it matches the C++ concept.
-An `Articulation` alias can be considered during later promotion if the stable
-Python API needs a more robotics-oriented name. Until that decision is made,
-examples should teach `MultiBody` and make the relationship to links and joints
-obvious.
+`Multibody` is the experimental name because "multibody system" is the standard
+term in the multibody-dynamics literature (Featherstone, _Rigid Body Dynamics
+Algorithms_; Shabana) and matches peer robotics-dynamics libraries (Drake's
+`MultibodyPlant`). It is spelled as one word to follow that literature. The
+engine-specific term "Articulation" (PhysX/Isaac/Newton) was considered and
+rejected because it does not appear in the robotics/dynamics literature as the
+name of the object. Examples should teach `Multibody` and make the relationship
+to links and joints obvious.
 
 Creation methods return objects owned by a world or by another public object.
 This is a future target shape once fixed rigid bodies, link construction
@@ -614,7 +617,7 @@ options, and collection owners are fully bound:
 ```python
 world = sx.World()
 ground = world.add_rigid_body("ground", fixed=True)
-arm = world.add_multi_body("arm")
+arm = world.add_multibody("arm")
 base = arm.add_link("base")
 tool = arm.add_link("tool", parent=base)
 ```
@@ -628,7 +631,7 @@ but they should not become the common way to command physics objects.
 The public model should expose physics concepts, not storage entities:
 
 - a `World` owns time, topology, state, and collections;
-- a `MultiBody` owns links, joints, actuators, and state dimensions;
+- a `Multibody` owns links, joints, actuators, and state dimensions;
 - a `RigidBody` owns a body frame and rigid-body properties;
 - a `Link` participates in a kinematic tree and owns or references a frame;
 - a `Joint` connects parent and child links and owns state/control dimensions;
@@ -694,10 +697,10 @@ Collections should become the normal access path once public C++ enumeration
 wrappers and name-uniqueness policy exist:
 
 ```python
-len(world.multi_bodies)
-world.multi_bodies.names
-world.multi_bodies.get("arm")      # Optional lookup, returns None if missing.
-world.multi_bodies["arm"]          # Required lookup, raises KeyError if missing.
+len(world.multibodies)
+world.multibodies.names
+world.multibodies.get("arm")      # Optional lookup, returns None if missing.
+world.multibodies["arm"]          # Required lookup, raises KeyError if missing.
 
 len(robot.links)
 robot.links.names
@@ -710,11 +713,11 @@ robot.joints["elbow"]
 
 Named objects should be unique within their public owner before dict-style
 collection access is promoted. `World` owns unique multibody, rigid-body, and
-loop-closure names; `MultiBody` owns unique link and joint names. Autogenerated
+loop-closure names; `Multibody` owns unique link and joint names. Autogenerated
 names should skip existing names so explicit names and generated names cannot
-silently collide. Optional lookup methods such as `get_multi_body()` and
+silently collide. Optional lookup methods such as `get_multibody()` and
 `get_link()` may continue to return `None` for missing names during DART 7
-staging. Presence methods such as `has_multi_body()`, `has_rigid_body()`, and
+staging. Presence methods such as `has_multibody()`, `has_rigid_body()`, and
 `has_loop_closure()` are Pythonic operations for checking world-owned names
 without promoting a full dict-style collection object yet.
 
@@ -750,7 +753,7 @@ internal component fields.
 
 Closed-chain mechanisms should be first-class API concepts, not workarounds
 that duplicate links, add fake tree edges, or expose internal constraint
-components. The tree structure of a `MultiBody` remains the owner for names,
+components. The tree structure of a `Multibody` remains the owner for names,
 links, joints, state indexing, and articulated-body algorithms. Loop closures
 add graph edges on top of that tree.
 
@@ -823,14 +826,14 @@ The exact names can change before promotion, but the API should distinguish:
 
 Closed-chain APIs must define ownership and lifetime. World-owned closures are
 the conservative default because endpoints may span multibodies, rigid bodies,
-and the world frame. A `MultiBody.add_loop_closure(...)` convenience can
+and the world frame. A `Multibody.add_loop_closure(...)` convenience can
 forward to the world only when both endpoints are in the same owner. Cross-world
 endpoints must be rejected, and removal, serialization, topology rebuilds, and
 `world.clear()` must document handle invalidation.
 
 Closed-chain APIs must define how closures affect DOF counts, state-space
 metadata, serialization, collision filtering, handle validity, and residual
-reporting. `MultiBody.num_dofs` should continue to mean the underlying tree
+reporting. `Multibody.num_dofs` should continue to mean the underlying tree
 coordinate dimension; closures add residual rows, active flags, tolerances,
 convergence status, and force/impulse diagnostics. The current
 `LoopClosureResidual` value reports residual vectors and norms, world-frame
@@ -867,7 +870,7 @@ component vocabulary.
 
 ```python
 world = sx.World()
-arm = world.add_multi_body("arm")
+arm = world.add_multibody("arm")
 
 base = arm.add_link("base")
 forearm = arm.add_link(
@@ -961,7 +964,7 @@ Advanced APIs should distinguish at least four concepts:
 
 | Concept      | Meaning                                            | Common-path visibility                                        |
 | ------------ | -------------------------------------------------- | ------------------------------------------------------------- |
-| Topology     | Bodies, links, joints, geometry, dimensions.       | Hidden behind `World`, `RigidBody`, and `MultiBody` objects.  |
+| Topology     | Bodies, links, joints, geometry, dimensions.       | Hidden behind `World`, `RigidBody`, and `Multibody` objects.  |
 | State        | Time-varying positions, velocities, and caches.    | Owned by `World.step()` until explicit state APIs are used.   |
 | Control      | Commands, targets, efforts, and inputs.            | Object or collection properties first, explicit values later. |
 | Contact data | Collision results and constraint data for solvers. | Deferred until public contact buffers/views exist.            |
@@ -1205,7 +1208,7 @@ as DART policy.
 | Functional model/state stepping      | Makes data ownership explicit and supports advanced rollout control.                              | Hide model/state separation in the common `World.step()` path, then expose explicit state spaces and state views for advanced workflows.       |
 | Compiled topology plus runtime state | Allows multiple states, reset points, and advanced sampling.                                      | Keep topology and simulation state separate internally; expose lifecycle and state views only through public DART handles.                     |
 | Procedural model editing             | Gives programmatic construction a clear validation point.                                         | Treat topology mutation as design-mode work and require explicit reset/rebuild semantics after simulation starts.                              |
-| Object-returning construction        | Lets users keep direct references to the objects they create.                                     | Return `World`, `RigidBody`, `MultiBody`, `Link`, and `Joint` objects rather than integer handles or component identifiers.                    |
+| Object-returning construction        | Lets users keep direct references to the objects they create.                                     | Return `World`, `RigidBody`, `Multibody`, `Link`, and `Joint` objects rather than integer handles or component identifiers.                    |
 | Typed named collections              | Gives convenient lookup while preserving grouped metadata.                                        | Add `.names`, `.get()`, and `[]` only after uniqueness, ordering, missing-name, and invalidation behavior are documented.                      |
 | Path-based scene addressing          | Works well for serialization and rendering hierarchies.                                           | Keep paths and serialized names out of the runtime control API; use Python objects and named collections.                                      |
 | Grouped option objects               | Keeps configuration structured and validates fields early.                                        | Use DART value objects for stable configuration, with keyword shortcuts for common construction paths.                                         |
@@ -1290,7 +1293,7 @@ print(world.time, box.translation)
 DART 7 experimental design target for construction:
 
 ```python
-arm = world.add_multi_body("arm")
+arm = world.add_multibody("arm")
 base = arm.add_link("base")
 forearm = arm.add_link(
     "forearm",

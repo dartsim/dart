@@ -135,7 +135,7 @@ and
 
 ### Tree Topology Plus First-Class Closures
 
-Articulated systems should keep a tree-shaped `MultiBody` as the owner for
+Articulated systems should keep a tree-shaped `Multibody` as the owner for
 links, joints, names, and state indexing, then represent closed chains as
 explicit first-class closure constraints between symmetric public endpoints.
 
@@ -250,9 +250,9 @@ the release roadmap.
   caller-owned execution policy.
 - `RigidBodyOptions` already represents user-facing rigid-body initialization
   data: mass, inertia, pose, and velocity.
-- `Frame`, `FreeFrame`, `FixedFrame`, `MultiBody`, `Link`, and `Joint` provide
+- `Frame`, `FreeFrame`, `FixedFrame`, `Multibody`, `Link`, and `Joint` provide
   first-class handle concepts over the experimental storage.
-- The implemented DART 7 `MultiBody`, `Link`, and `Joint` API is currently
+- The implemented DART 7 `Multibody`, `Link`, and `Joint` API is currently
   tree-shaped, with public `JointSpec` construction, joint type, axis,
   parent/child, DOF count, and generalized position/velocity access. `World`
   now owns `LoopClosure` handles with symmetric frame endpoints, semantic
@@ -340,7 +340,7 @@ promotion, but public examples should never require implementation folders.
 | `World`                | Owns topology, time, frame count, stepping, serialization, and compute entry points.                                 | Official simulation world.                                                                                                            |
 | `RigidBody`            | World-owned handle for a single rigid object and frame.                                                              | Public rigid body handle with transform, velocity, inertial, force, and torque APIs, plus geometry/material APIs once wrappers exist. |
 | `RigidBodyOptions`     | Public value object for mass, inertia, pose, and velocity initialization.                                            | Stable construction/configuration value object.                                                                                       |
-| `MultiBody`            | World-owned handle for articulated rigid-body topology.                                                              | Official articulated-body concept, with final naming chosen during promotion.                                                         |
+| `Multibody`            | World-owned handle for articulated rigid-body topology.                                                              | Official articulated-body concept, with final naming chosen during promotion.                                                         |
 | `Link`                 | Body in a multibody kinematic tree and frame participant.                                                            | Public link handle.                                                                                                                   |
 | `Joint`                | Connection between links with type, axes, parent/child access, DOF count, and generalized position/velocity vectors. | Public joint handle with complete state/control, limits, transforms, and diagnostics once wrappers exist.                             |
 | `LoopClosure`          | Explicit spatial closure between two public frames, links, or bodies.                                                | Public closed-chain handle with symmetric endpoints, diagnostics, and runtime solve policy separated.                                 |
@@ -373,7 +373,7 @@ namespace sx = dart::simulation::experimental;
 
 sx::World world;
 auto body = world.addRigidBody("box", sx::RigidBodyOptions{});
-auto robot = world.addMultiBody("arm");
+auto robot = world.addMultibody("arm");
 
 world.enterSimulationMode();
 world.sync(sx::WorldSyncStage::Kinematics);
@@ -393,7 +393,7 @@ functions rather than assertions in user paths.
 
 Closed-chain mechanisms should be modeled as explicit loop-closure structure,
 not as duplicated bodies, fake tree edges, or exposed internal constraint
-components. The initial tree of `MultiBody`, `Link`, and `Joint` remains useful
+components. The initial tree of `Multibody`, `Link`, and `Joint` remains useful
 for ownership, naming, state indexing, and articulated-body algorithms; closure
 edges add graph structure on top of that tree.
 
@@ -466,7 +466,7 @@ should distinguish:
 
 Closed-chain APIs must define ownership and lifetime. World-owned closures are
 the conservative default because endpoints may span multibodies, rigid bodies,
-and the world frame. A `MultiBody` convenience method may forward to the world
+and the world frame. A `Multibody` convenience method may forward to the world
 only when both endpoints are in the same owner. Cross-world endpoints must be
 rejected, and removal, serialization, topology rebuilds, and `World::clear()`
 must document handle invalidation.
@@ -481,7 +481,7 @@ and failure modes are documented.
 
 Closed-chain APIs must define how closures affect DOF counting, state-space
 metadata, loop validation, serialization, collision filtering, and diagnostics.
-The expected baseline is that `MultiBody::getDOFCount()` reports the
+The expected baseline is that `Multibody::getDOFCount()` reports the
 underlying tree generalized-coordinate dimension; closures add residual rows,
 constraint metadata, active flags, tolerances, convergence status, and
 force/impulse diagnostics. If a future API exposes independent constrained
@@ -680,8 +680,8 @@ avoid recursive per-object dirty propagation in scalable workloads. Internally,
 epoch or generation counters can make no-op freshness checks cheap, and compute
 pipelines can refresh only the stage outputs requested by the workload.
 
-MultiBody-local link and joint enumeration is part of the public facade because
-the `MultiBody` owner already stores these handles in construction order. C++
+Multibody-local link and joint enumeration is part of the public facade because
+the `Multibody` owner already stores these handles in construction order. C++
 snapshot APIs such as `getLinks()`, `getJoints()`, `getLinkNames()`, and
 `getJointNames()` should return lightweight public handles or value data, not
 raw entity IDs, component references, or backend storage views. Rich named
@@ -689,11 +689,11 @@ collection objects and bulk DOF views should wait until uniqueness, invalidation
 and state-owner contracts are documented.
 
 Names used for owner-local lookup should be unique within their public owner:
-`World` owns multibody, rigid-body, and loop-closure names, while `MultiBody`
+`World` owns multibody, rigid-body, and loop-closure names, while `Multibody`
 owns link and joint names. Autogenerated names should skip existing names so
 explicit names cannot collide with later generated names. Cross-owner topology
-mutation, such as adding a child link to one `MultiBody` using a parent link
-from another `MultiBody`, should be rejected at the API boundary; closed-chain
+mutation, such as adding a child link to one `Multibody` using a parent link
+from another `Multibody`, should be rejected at the API boundary; closed-chain
 relationships belong in explicit loop-closure objects instead.
 
 World-owned named objects should expose a consistent lookup shape while richer
