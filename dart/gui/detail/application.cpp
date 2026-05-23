@@ -258,6 +258,9 @@ int runGuiBackendApplicationImpl(
 
   bool orbitLight = appOptions.orbitLight;
   bool headlightsEnabled = true;
+  // Mutable so the F2 key can toggle the perf HUD at runtime (initialized from
+  // the --perf-hud option).
+  bool showPerfHud = appOptions.showPerfHud;
   SceneLights lights = createSceneLights(
       *engine,
       runOptions.headless,
@@ -313,7 +316,8 @@ int runGuiBackendApplicationImpl(
           lifecycle,
           cameraController,
           homeCamera,
-          inputState);
+          inputState,
+          showPerfHud);
     }
     profile.inputMs += elapsedMs(phaseStart);
 
@@ -369,7 +373,7 @@ int runGuiBackendApplicationImpl(
           lifecycle,
           guiScale,
           profile,
-          appOptions.showPerfHud,
+          showPerfHud,
           perfHud,
           renderContext.backendName);
     }

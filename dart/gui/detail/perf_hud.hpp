@@ -63,6 +63,17 @@ struct PerfHudState
   double prevUiMs = 0.0;
   double prevBeginFrameMs = 0.0;
   double prevRenderMs = 0.0;
+  double prevSimulatedMs = 0.0;
+
+  // Smoothed (exponential moving average) display values. Raw per-frame numbers
+  // change too fast to read, so the headline figures use these while the graphs
+  // show the raw history.
+  static constexpr int kPhaseCount = 8;
+  double emaCpuMs = 0.0;
+  double emaGpuMs = 0.0;
+  double emaRealTimeFactor = 0.0;
+  bool hasRealTimeFactor = false;
+  std::array<double, kPhaseCount> emaPhaseMs{};
 
   std::array<float, kHistory> cpuHistory{};
   std::array<float, kHistory> gpuHistory{};

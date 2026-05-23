@@ -206,13 +206,16 @@ DART_GUI_API std::vector<RenderableDescriptor> extractRenderables(
 ///
 /// Geometry (the GeometryDescriptor built by describeShape) only changes when a
 /// shape's version changes, but transforms change every frame. This extractor
-/// caches each shape's GeometryDescriptor keyed by the shape pointer and its
-/// version, so describeShape — which rebuilds full vertex/index arrays for
-/// meshes, heightmaps, soft meshes, and voxel grids — is not re-run every frame
-/// for unchanged geometry. Transforms, materials, and versions are always
-/// refreshed, so output is equivalent to extractRenderables(). Reuses the same
-/// version-based caching assumption the Filament resource sync already relies
-/// on.
+/// caches each shape's GeometryDescriptor keyed by the shape's stable id
+/// (`Shape::getID()`) and its version, so describeShape — which rebuilds full
+/// vertex/index arrays for meshes, heightmaps, soft meshes, and voxel grids —
+/// is not re-run every frame for unchanged geometry. Transforms, materials, and
+/// versions are always refreshed, so output is equivalent to
+/// extractRenderables(). Reuses the same version-based caching assumption the
+/// Filament resource sync already relies on. The key is the shape id rather
+/// than the shape pointer so a deleted shape whose heap address is later reused
+/// by a new shape cannot alias a stale cache entry (shape ids are never
+/// reused).
 class DART_GUI_API RenderableExtractor
 {
 public:
@@ -225,7 +228,7 @@ private:
     GeometryDescriptor geometry;
   };
 
-  std::unordered_map<const dynamics::Shape*, CachedGeometry> mGeometryCache;
+  std::unordered_map<std::size_t, CachedGeometry> mGeometryCache;
 };
 
 DART_GUI_API RenderableSetUpdatePlan planRenderableSetUpdate(

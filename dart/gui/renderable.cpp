@@ -261,7 +261,7 @@ std::vector<RenderableDescriptor> RenderableExtractor::extract(
     const simulation::World& world)
 {
   std::vector<RenderableDescriptor> renderables;
-  std::unordered_set<const dynamics::Shape*> seenShapes;
+  std::unordered_set<std::size_t> seenShapeIds;
 
   const auto processShapeFrame
       = [&](const dynamics::ShapeFrame& shapeFrame,
@@ -274,11 +274,14 @@ std::vector<RenderableDescriptor> RenderableExtractor::extract(
           if (!shape) {
             return;
           }
-          const dynamics::Shape* const shapePtr = shape.get();
+          // Key on the stable shape id, never the pointer: a deleted shape's
+          // heap address can be reused by a new shape, but ids are never
+          // reused, so a reused address cannot alias a stale cache entry.
+          const std::size_t shapeId = shape->getID();
           const std::size_t version = shape->getVersion();
-          seenShapes.insert(shapePtr);
+          seenShapeIds.insert(shapeId);
 
-          auto it = mGeometryCache.find(shapePtr);
+          auto it = mGeometryCache.find(shapeId);
           if (it != mGeometryCache.end() && it->second.version == version) {
             // Cache hit (only cacheable, static-geometry kinds are ever
             // stored). The per-shape cost is a geometry copy rather than
@@ -306,7 +309,7 @@ std::vector<RenderableDescriptor> RenderableExtractor::extract(
           GeometryDescriptor builtGeometry = std::move(*geometry);
           if (isCacheableGeometryKind(builtGeometry.kind)) {
             mGeometryCache.insert_or_assign(
-                shapePtr, CachedGeometry{version, builtGeometry});
+                shapeId, CachedGeometry{version, builtGeometry});
           } else if (it != mGeometryCache.end()) {
             // Dynamic geometry must be rebuilt every frame; never keep an
             // entry.
@@ -355,9 +358,9 @@ std::vector<RenderableDescriptor> RenderableExtractor::extract(
   }
 
   // Drop cache entries for shapes that are no longer present so the cache does
-  // not grow unbounded and so a reused shape address cannot alias stale data.
+  // not grow unbounded.
   for (auto it = mGeometryCache.begin(); it != mGeometryCache.end();) {
-    if (seenShapes.find(it->first) == seenShapes.end()) {
+    if (seenShapeIds.find(it->first) == seenShapeIds.end()) {
       it = mGeometryCache.erase(it);
     } else {
       ++it;

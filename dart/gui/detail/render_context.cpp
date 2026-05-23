@@ -116,8 +116,8 @@ Backend resolveRequestedBackend(const dart::gui::RunOptions& options)
   if (const char* env = std::getenv("DART_FILAMENT_BACKEND");
       env != nullptr && env[0] != '\0') {
     source = env;
-  } else if (!options.backend.empty()) {
-    source = options.backend;
+  } else if (!options.renderBackend.empty()) {
+    source = options.renderBackend;
   } else {
     // Historical default: OpenGL, the only backend DART previously created.
     return Backend::OPENGL;
@@ -126,8 +126,9 @@ Backend resolveRequestedBackend(const dart::gui::RunOptions& options)
   if (const std::optional<Backend> parsed = parseBackend(source); parsed) {
     return *parsed;
   }
-  std::cerr << "[dart::gui] Unknown DART_FILAMENT_BACKEND/backend value '"
-            << source << "'; falling back to OpenGL.\n";
+  std::cerr << "[dart::gui] Unknown render backend '" << source
+            << "' (DART_FILAMENT_BACKEND / --render-backend); falling back to "
+               "OpenGL.\n";
   return Backend::OPENGL;
 }
 
@@ -153,8 +154,8 @@ Backend resolveRequestedBackend(const dart::gui::RunOptions& options)
         std::cerr << "[dart::gui] Filament backend '" << backendName(requested)
                   << "' unavailable; using '" << backendName(backend) << "'.\n";
       } else {
-        std::cout << "[dart::gui] Filament backend: " << backendName(backend)
-                  << "\n";
+        std::cout << "[dart::gui] Filament render backend: "
+                  << backendName(backend) << "\n";
       }
       if (chosenName != nullptr) {
         *chosenName = backendName(backend);

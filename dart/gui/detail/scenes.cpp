@@ -607,8 +607,9 @@ AppOptions parseOptions(
       }
       options.run.guiScale
           = std::clamp(static_cast<double>(guiScale), 0.5, 4.0);
-    } else if (arg == "--backend" && i + 1 < argc) {
-      options.run.backend = argv[++i];
+    } else if (
+        (arg == "--render-backend" || arg == "--backend") && i + 1 < argc) {
+      options.run.renderBackend = argv[++i];
     } else if (arg == "--perf-hud") {
       options.showPerfHud = true;
       // The HUD draws inside the ImGui overlay, so keep the overlay on even in
