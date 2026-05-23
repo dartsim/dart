@@ -31,7 +31,7 @@
  */
 
 #include <dart/simulation/experimental/common/exceptions.hpp>
-#include <dart/simulation/experimental/multi_body/multi_body.hpp>
+#include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <Eigen/Core>
@@ -47,7 +47,7 @@ namespace sim = dart::simulation::experimental;
 TEST(Joint, GeneralizedPositionAndVelocity)
 {
   sim::World world;
-  auto arm = world.addMultiBody("arm");
+  auto arm = world.addMultibody("arm");
   auto base = arm.addLink("base");
   arm.addLink(
       "forearm",
@@ -80,7 +80,7 @@ TEST(Joint, GeneralizedPositionAndVelocity)
 TEST(Joint, ReportsExpectedDOFCounts)
 {
   sim::World world;
-  auto mechanism = world.addMultiBody("mechanism");
+  auto mechanism = world.addMultibody("mechanism");
   auto base = mechanism.addLink("base");
 
   const std::vector<std::pair<sim::JointType, std::size_t>> cases = {
@@ -89,9 +89,9 @@ TEST(Joint, ReportsExpectedDOFCounts)
       {sim::JointType::Prismatic, 1},
       {sim::JointType::Screw, 1},
       {sim::JointType::Universal, 2},
-      {sim::JointType::Ball, 3},
+      {sim::JointType::Spherical, 3},
       {sim::JointType::Planar, 3},
-      {sim::JointType::Free, 6},
+      {sim::JointType::Floating, 6},
       {sim::JointType::Custom, 0},
   };
 
@@ -116,7 +116,7 @@ TEST(Joint, ReportsExpectedDOFCounts)
 TEST(Joint, FixedJointAcceptsZeroLengthState)
 {
   sim::World world;
-  auto mechanism = world.addMultiBody("mechanism");
+  auto mechanism = world.addMultibody("mechanism");
   auto base = mechanism.addLink("base");
   mechanism.addLink(
       "fixture",
@@ -138,7 +138,7 @@ TEST(Joint, FixedJointAcceptsZeroLengthState)
 TEST(Joint, InvalidHandleThrows)
 {
   sim::World world;
-  auto arm = world.addMultiBody("arm");
+  auto arm = world.addMultibody("arm");
   auto base = arm.addLink("base");
 
   auto invalidJoint = base.getParentJoint();
@@ -155,7 +155,7 @@ TEST(Joint, InvalidHandleThrows)
 TEST(Joint, RejectsInvalidStateVectors)
 {
   sim::World world;
-  auto arm = world.addMultiBody("arm");
+  auto arm = world.addMultibody("arm");
   auto base = arm.addLink("base");
   arm.addLink(
       "forearm",

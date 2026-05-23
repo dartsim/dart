@@ -80,8 +80,8 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
 
   registerComponentIfNeeded<comps::RigidBodyTag>(registry);
 
-  registerComponentIfNeeded<comps::MultiBodyTag>(registry);
-  registerComponentIfNeeded<comps::MultiBodyStructure>(registry);
+  registerComponentIfNeeded<comps::MultibodyTag>(registry);
+  registerComponentIfNeeded<comps::MultibodyStructure>(registry);
 
   registerComponentIfNeeded<comps::LoopClosure>(registry);
 
@@ -244,9 +244,9 @@ void SerializerRegistry::loadAllEntities(
 
   // Second pass: Fix entity references using entityMap
   // For components that contain entity IDs, we need to remap them
-  auto mbView = registry.view<comps::MultiBodyStructure>();
+  auto mbView = registry.view<comps::MultibodyStructure>();
   for (auto entity : mbView) {
-    auto& comp = mbView.get<comps::MultiBodyStructure>(entity);
+    auto& comp = mbView.get<comps::MultibodyStructure>(entity);
     for (auto& e : comp.links) {
       if (e != entt::null) {
         e = entityMap.at(e);

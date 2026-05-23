@@ -30,26 +30,37 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/simulation/experimental/multibody/link.hpp"
+
+#include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/multibody/joint.hpp"
+#include "dart/simulation/experimental/world.hpp"
 
 namespace dart::simulation::experimental {
 
-/// Public joint type used by the experimental multibody facade.
-///
-/// This enum intentionally lives outside component storage so C++ and dartpy
-/// users can construct multibody joints without including implementation
-/// headers.
-enum class JointType
+//==============================================================================
+Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
+
+//==============================================================================
+std::string_view Link::getName() const
 {
-  Fixed,
-  Revolute,
-  Prismatic,
-  Screw,
-  Universal,
-  Ball,
-  Planar,
-  Free,
-  Custom
-};
+  const auto& linkComp
+      = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  return linkComp.name;
+}
+
+//==============================================================================
+Joint Link::getParentJoint() const
+{
+  const auto& linkComp
+      = getWorld()->getRegistry().get<comps::Link>(getEntity());
+  return Joint(linkComp.parentJoint, getWorld());
+}
+
+//==============================================================================
+const Eigen::Isometry3d& Link::getWorldTransform() const
+{
+  return Frame::getTransform();
+}
 
 } // namespace dart::simulation::experimental

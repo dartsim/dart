@@ -56,7 +56,7 @@ add_library(${target_name}
   comps/joint.cpp
   comps/link.cpp
   comps/loop_closure.cpp
-  comps/multi_body.cpp
+  comps/multibody.cpp
   comps/name.cpp
   comps/rigid_body.cpp
   frame/fixed_frame.cpp
@@ -64,9 +64,9 @@ add_library(${target_name}
   frame/free_frame.cpp
   io/binary_io.cpp
   io/serializer.cpp
-  multi_body/joint.cpp
-  multi_body/link.cpp
-  multi_body/multi_body.cpp
+  multibody/joint.cpp
+  multibody/link.cpp
+  multibody/multibody.cpp
   space/state_space.cpp
   space/vector_mapper.cpp
   world.cpp

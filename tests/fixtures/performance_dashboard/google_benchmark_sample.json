@@ -1,0 +1,76 @@
+{
+  "context": {
+    "date": "2026-05-20T08:00:00+00:00",
+    "host_name": "sample-runner",
+    "executable": "build/sample/cpp/Release/bin/bm_comparative_distance",
+    "num_cpus": 4,
+    "mhz_per_cpu": 3200,
+    "cpu_scaling_enabled": false,
+    "library_version": "v1.9.5",
+    "library_build_type": "release",
+    "json_schema_version": 1
+  },
+  "benchmarks": [
+    {
+      "name": "BM_Distance_BoxBox_Native",
+      "run_name": "BM_Distance_BoxBox_Native",
+      "run_type": "iteration",
+      "repetitions": 3,
+      "threads": 1,
+      "iterations": 100,
+      "real_time": 10.0,
+      "cpu_time": 10.0,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_Distance_BoxBox_Native_median",
+      "run_name": "BM_Distance_BoxBox_Native",
+      "run_type": "aggregate",
+      "aggregate_name": "median",
+      "aggregate_unit": "time",
+      "repetitions": 3,
+      "threads": 1,
+      "iterations": 3,
+      "real_time": 10.0,
+      "cpu_time": 10.0,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_Distance_BoxBox_Bullet",
+      "run_name": "BM_Distance_BoxBox_Bullet",
+      "run_type": "iteration",
+      "repetitions": 3,
+      "threads": 1,
+      "iterations": 100,
+      "real_time": 20.0,
+      "cpu_time": 20.0,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_Distance_BoxBox_Bullet_median",
+      "run_name": "BM_Distance_BoxBox_Bullet",
+      "run_type": "aggregate",
+      "aggregate_name": "median",
+      "aggregate_unit": "time",
+      "repetitions": 3,
+      "threads": 1,
+      "iterations": 3,
+      "real_time": 20.0,
+      "cpu_time": 20.0,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_DartAdapter_CollidePersistentScene/64",
+      "run_name": "BM_DartAdapter_CollidePersistentScene/64",
+      "run_type": "aggregate",
+      "aggregate_name": "median",
+      "aggregate_unit": "time",
+      "repetitions": 3,
+      "threads": 1,
+      "iterations": 3,
+      "real_time": 42.0,
+      "cpu_time": 42.0,
+      "time_unit": "us"
+    }
+  ]
+}
