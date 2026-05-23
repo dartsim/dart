@@ -20,22 +20,30 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
       DOT surfacing + per-entity wiring on the kinematics stage; 30/30
       `test_compute_graph` cases pass. Contract in
       [`../../plans/030-compute-resource-access/`](../../plans/030-compute-resource-access/).
-- [~] Phase 2: Immutable Model + batched SoA State. Seed landed:
-  `RigidBodyStateBatch` flat-scalar SoA value type with
-  `extractRigidBodyState`/`applyRigidBodyState` (single world) and a
-  round-trip test. Remaining: a leading world dimension > 1, an immutable
-  Model split, and scalar-generic (`template <typename Scalar>`, `double`-only)
-  kernels.
-- [~] Phase 3: Multi-core hardening, SIMD, data locality. Landed early:
-  O((N+E) log N) topological sort and a multi-worker (1/2/4/8) determinism
-  parity test. Remaining: tolerance-based determinism gate, SIMD on SoA
-  kernels, cost gate, and a Bevy-style ambiguity detector once a second
-  write-conflicting stage exists.
-- [ ] Phase 4: Homogeneous batch (CPU) + rollout API
+- [~] Phase 2: Immutable Model + batched SoA State. Landed: `RigidBodyStateBatch`
+  flat-scalar SoA with single- and multi-world (leading dimension) extract/apply;
+  scalar-generic SoA kernels (`integratePositionsSemiImplicit`,
+  `integrateVelocitiesSemiImplicit`) and a batched linear integrator
+  (`integrateRigidBodyStateBatchLinear`) that keeps force/inverse-mass as
+  Control/Model inputs separate from State. Remaining: an immutable Model value
+  type, an angular (orientation) integration kernel, and wiring the batched SoA
+  integrator into the live `WorldStepStage` pipeline.
+- [~] Phase 3: Multi-core hardening, SIMD, data locality. Landed: O((N+E) log N)
+  topological sort; multi-worker (1/2/4/8) determinism parity (bitwise for the
+  current map-only stages); `findResourceHazards()` serves as the unordered-write
+  ambiguity detector. Remaining: explicit SIMD on the hot SoA kernels, a cost
+  gate, fixed-ULP reduction tolerance once a reduction stage exists, and the
+  ambiguity detector's broader surface once a second write-conflicting stage
+  lands.
+- [~] Phase 4: Homogeneous batch (CPU) + rollout. Landed: `stepWorldsBatched`
+  (parallel batch executor, bit-identical to sequential) and
+  `rolloutWorldsBatched` (initial state → step → final state batch). Remaining:
+  control-sequence inputs (needs a control owner type) and heterogeneous batches.
 - [ ] Phase 5: GPU prototype behind a gate with a kill criterion (internal, no
-      public API); CUDA-versus-SYCL decided from the benchmark
+      public API); CUDA-versus-SYCL decided from the benchmark. Blocked on GPU
+      hardware/CI.
 - [ ] Phase 6: Reassess — broaden GPU, auto-scheduling, Pattern B, differentiable
-      state (each gated)
+      state (each gated; gated on Phase 5 evidence).
 
 ## Goal
 
