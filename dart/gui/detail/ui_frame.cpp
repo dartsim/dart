@@ -205,6 +205,12 @@ void updateFrameUi(
   auto phaseStart = dart::gui::ProfileAccumulator::Clock::now();
   updateImGuiMouseInput(window, imguiIo, viewport.width, viewport.height);
   ImGui::NewFrame();
+#ifdef IMGUI_HAS_DOCK
+  if (dartScene.dockingEnabled) {
+    ImGui::DockSpaceOverViewport(
+        0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+  }
+#endif
   const std::string selectedLabel = selectionController.selectedLabel();
   const auto cameraBasis
       = dart::gui::makeOrbitCameraBasis(cameraController.camera);

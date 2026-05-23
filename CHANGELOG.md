@@ -39,8 +39,11 @@
     `dart-gui` editor (menu bar, Scene Tree, Inspector, Console, simulation
     controls, replay timeline), and a public additive
     `dart::gui::ApplicationOptions::renderableProvider` hook renders the
-    experimental scene in the viewport without exposing renderer types. See
-    `docs/design/dartsim_gui_simulator.md` and
+    experimental scene in the viewport without exposing renderer types. The
+    editor runs as an ImGui docking workspace via `pixi run dartsim`, which
+    builds against the ImGui docking branch (`DART_USE_SYSTEM_IMGUI=OFF`);
+    docking is guarded by `IMGUI_HAS_DOCK`, so non-docking ImGui builds are
+    unaffected. See `docs/design/dartsim_gui_simulator.md` and
     `docs/onboarding/gui-rendering.md`.
   - Moved the `dartsim` viewer source to the application-level `apps/dartsim`
     tree, added a public `dart::gui::ApplicationOptions::world` handoff for

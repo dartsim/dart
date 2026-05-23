@@ -300,10 +300,13 @@ if(DART_BUILD_GUI)
     include(FetchContent)
 
     # ImGui version constraint
-    # Current: v1.84.2 (released 2021-08-23)
+    # Current: v1.92.8-docking (docking branch release)
+    # The docking variant provides the multi-viewport dockspace API
+    # (IMGUI_HAS_DOCK) required by the standalone dartsim editor. The version
+    # matches the system ImGui that DART already builds against.
     # Minimum required: v1.80 for stable table API
     set(IMGUI_MIN_VERSION "1.80")
-    set(IMGUI_TARGET_VERSION "v1.84.2")
+    set(IMGUI_TARGET_VERSION "v1.92.8-docking")
 
     message(STATUS "Fetching ImGui ${IMGUI_TARGET_VERSION} from GitHub...")
 
@@ -387,8 +390,12 @@ if(DART_BUILD_GUI)
       set_target_properties(${imgui_library_name} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     endif()
 
-    # Define IMGUI_DISABLE_OBSOLETE_FUNCTIONS to avoid using deprecated APIs
-    target_compile_definitions(${imgui_library_name} PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+    # Note: IMGUI_DISABLE_OBSOLETE_FUNCTIONS is intentionally NOT defined here.
+    # The docking branch tracks ImGui 1.92.x, whose font rework marks
+    # io.FontGlobalScale and ImFontAtlas::GetTexDataAsRGBA32() obsolete. DART's
+    # font handling (dart/gui/detail) still uses them, matching the system-ImGui
+    # path (which keeps obsolete functions available). Defining the macro would
+    # remove those symbols and break the GUI build.
 
     # Component registration
     # Note: We use dart-imgui-lib as the real target name (not imgui::imgui with ALIAS)

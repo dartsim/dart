@@ -80,6 +80,7 @@ struct DartScene
   dart::gui::RenderSettings renderSettings;
   std::function<std::vector<dart::gui::RenderableDescriptor>()>
       renderableProvider;
+  bool dockingEnabled = false;
 };
 
 enum class ExampleScene
@@ -138,6 +139,7 @@ struct AppOptions
   std::vector<dart::gui::KeyboardAction> keyboardActions;
   std::function<std::vector<dart::gui::RenderableDescriptor>()>
       renderableProvider;
+  bool dockingEnabled = false;
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;
   bool showUiExplicit = false;

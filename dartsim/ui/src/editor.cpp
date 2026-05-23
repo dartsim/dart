@@ -403,6 +403,7 @@ int runEditor(int argc, char* argv[])
   // world is never stepped (simulateWorld = false).
   options.world = dart::simulation::World::create("dartsim_editor");
   options.simulateWorld = false;
+  options.dockingEnabled = true;
   options.renderableProvider = [app]() {
     return toDescriptors(app->engine.renderItems());
   };

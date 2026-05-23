@@ -160,9 +160,14 @@ struct ApplicationOptions
   ///
   /// Lets an application render geometry that is not backed by the legacy
   /// `dart::simulation::World` (e.g. the experimental-World editor in
-  /// `apps/dartsim_ui`). The returned descriptors only need `id`, `geometry`,
+  /// `dartsim/ui`). The returned descriptors only need `id`, `geometry`,
   /// `material`, and `worldTransform`; dynamics pointers may stay null.
   std::function<std::vector<RenderableDescriptor>()> renderableProvider;
+
+  /// Enables an ImGui dockspace over the main viewport so panels can be
+  /// docked/rearranged. Only takes effect when the linked ImGui build provides
+  /// the docking API (`IMGUI_HAS_DOCK`); otherwise it is silently ignored.
+  bool dockingEnabled = false;
 };
 
 DART_GUI_API int runApplication(int argc, char* argv[]);

@@ -28,15 +28,25 @@ sketch below in two ways worth recording:
   editor append `RenderableDescriptor`s (from `ObjectManager::computeRenderItems`)
   to the scene each frame. The editor hosts an empty legacy world purely as a
   render canvas (never stepped); the experimental World drives the actual scene.
+- **Docking workspace**: the editor enables an ImGui dockspace over the main
+  viewport (`ApplicationOptions::dockingEnabled`, plumbed into `dart::gui` and
+  submitted as `DockSpaceOverViewport` with a pass-through central node so the
+  3D scene shows through). All docking code is guarded by `IMGUI_HAS_DOCK`, so
+  it is a no-op with non-docking ImGui builds. Because the docking API ships
+  only on ImGui's docking branch, `pixi run dartsim` builds with
+  `DART_USE_SYSTEM_IMGUI=OFF` to fetch `v1.92.8-docking`; the library build and
+  GUI smoke tests keep using system ImGui. Panel arrangement persists via
+  `imgui.ini`.
 
 What is built and verified: the headless engine (object/selection/command/name
 managers, undo/redo, Edit/Run controller, record/replay, project I/O) with unit
 tests; the editor UI (menu bar, Scene Tree, Inspector, Console, simulation
 controls, replay timeline); and viewport rendering of the experimental scene
 (verified headless — non-blank smoke plus a foreground-geometry pixel check).
-Remaining follow-ups: viewport pick-to-tree selection sync, and co-evolution to
-adopt experimental shape/loader APIs (replacing editor-side shape descriptors)
-as they land (see PLAN-050). The `## Architecture Overview` and later sections
+Remaining follow-ups: a programmatic default dock layout (panels are dockable
+and persist via `imgui.ini`, but the first run is not pre-arranged); viewport
+pick-to-tree selection sync; and co-evolution to adopt experimental shape/loader
+APIs (replacing editor-side shape descriptors) as they land (see PLAN-050). The `## Architecture Overview` and later sections
 record the original rationale; treat this section as the authoritative as-built
 note where they differ.
 

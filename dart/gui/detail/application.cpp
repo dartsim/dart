@@ -169,6 +169,7 @@ int runGuiBackendApplicationImpl(
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;
     appOptions.renderableProvider = applicationOptions.renderableProvider;
+    appOptions.dockingEnabled = applicationOptions.dockingEnabled;
     appOptions.preStep = applicationOptions.preStep;
     appOptions.postStep = applicationOptions.postStep;
     appOptions.renderSettings = applicationOptions.renderSettings;

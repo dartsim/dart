@@ -23,15 +23,25 @@ overview: `docs/onboarding/gui-rendering.md`.
 
 ## Usage
 
+Launch the editor as a dockable ImGui workspace:
+
 ```bash
-pixi run ex dartsim
-pixi run ex dartsim --headless --frames 10 --screenshot /tmp/dartsim.ppm
+pixi run dartsim
+pixi run dartsim -- --width 1600 --height 900
 ```
 
-Passing `--scene <name>` renders a built-in `dart::gui` example fixture instead
-of the editor (used by the headless GUI smoke tests):
+`pixi run dartsim` builds against the ImGui docking branch
+(`DART_USE_SYSTEM_IMGUI=OFF`) so the menu bar, Scene Tree, Inspector, Console,
+and Simulation panels can be docked, split, and rearranged, with the layout
+persisted in `imgui.ini`. Extra CLI flags pass through after `--`.
+
+The `pixi run ex dartsim` command builds against system ImGui (no docking) and
+is used for headless rendering and the built-in `dart::gui` scene fixtures.
+Passing `--scene <name>` renders a fixture instead of the editor (used by the
+headless GUI smoke tests):
 
 ```bash
+pixi run ex dartsim --headless --frames 10 --screenshot /tmp/dartsim.ppm
 pixi run ex dartsim --scene boxes
 ```
 
