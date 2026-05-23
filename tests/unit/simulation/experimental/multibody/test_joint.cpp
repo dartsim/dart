@@ -91,7 +91,7 @@ TEST(Joint, ReportsExpectedDOFCounts)
       {sim::JointType::Universal, 2},
       {sim::JointType::Spherical, 3},
       {sim::JointType::Planar, 3},
-      {sim::JointType::Free, 6},
+      {sim::JointType::Floating, 6},
       {sim::JointType::Custom, 0},
   };
 

@@ -107,12 +107,12 @@ enum class JointType
 
   // ========== 6-DOF Joints ==========
 
-  /// Free joint (6-DOF) - Unconstrained motion
+  /// Floating joint (6-DOF) - Unconstrained motion
   /// DOF: 3 translations + 3 rotations
   /// Use: Floating base (humanoids, flying robots, space robots)
   /// Representation: Position (3D) + Orientation (quaternion)
   /// Status: TODO
-  Free,
+  Floating,
 
   // ========== Extensibility ==========
 
@@ -167,7 +167,7 @@ struct JointLimits
 /// - Universal:  axis, axis2 (must be perpendicular)
 /// - Spherical:       (no geometric parameters - uses quaternion position)
 /// - Planar:     axis (normal to plane), axis2 (in-plane direction)
-/// - Free:       (no geometric parameters - 6-DOF position)
+/// - Floating:       (no geometric parameters - 6-DOF position)
 ///
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Joint
@@ -217,7 +217,7 @@ struct Joint
         return 3;
       case Planar:
         return 3;
-      case Free:
+      case Floating:
         return 6;
       default:
         return 0;

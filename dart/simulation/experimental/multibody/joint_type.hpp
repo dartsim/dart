@@ -48,7 +48,7 @@ enum class JointType
   Universal,
   Spherical,
   Planar,
-  Free,
+  Floating,
   Custom
 };
 

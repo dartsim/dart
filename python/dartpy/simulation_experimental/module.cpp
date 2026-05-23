@@ -410,7 +410,7 @@ void defSimulationExperimentalModule(nb::module_& m)
       .value("UNIVERSAL", sim::JointType::Universal)
       .value("SPHERICAL", sim::JointType::Spherical)
       .value("PLANAR", sim::JointType::Planar)
-      .value("FREE", sim::JointType::Free)
+      .value("FLOATING", sim::JointType::Floating)
       .value("CUSTOM", sim::JointType::Custom);
 
   nb::enum_<sim::LoopClosureFamily>(m, "LoopClosureFamily")

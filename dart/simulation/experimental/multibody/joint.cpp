@@ -60,8 +60,8 @@ JointType toPublicJointType(comps::JointType type)
       return JointType::Spherical;
     case comps::JointType::Planar:
       return JointType::Planar;
-    case comps::JointType::Free:
-      return JointType::Free;
+    case comps::JointType::Floating:
+      return JointType::Floating;
     case comps::JointType::Custom:
       return JointType::Custom;
   }
@@ -160,12 +160,13 @@ Eigen::Vector3d Joint::getAxis() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);
 
-  // Validate joint type - Spherical and Free joints don't have axes
+  // Validate joint type - Spherical and Floating joints don't have axes
   DART_EXPERIMENTAL_THROW_T_IF(
       jointComp.type == comps::JointType::Spherical
-          || jointComp.type == comps::JointType::Free,
+          || jointComp.type == comps::JointType::Floating,
       InvalidArgumentException,
-      "getAxis() is not valid for Spherical and Free joints (no axis concept)");
+      "getAxis() is not valid for Spherical and Floating joints (no axis "
+      "concept)");
 
   return jointComp.axis;
 }

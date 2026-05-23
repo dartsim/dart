@@ -40,7 +40,7 @@ class JointType(Enum):
     UNIVERSAL = 4
     SPHERICAL = 5
     PLANAR = 6
-    FREE = 7
+    FLOATING = 7
     CUSTOM = 8
 
 

@@ -103,7 +103,7 @@ public:
   /// Valid for: Revolute, Prismatic, Screw, Universal, Planar
   /// @return 3D unit vector representing the primary axis
   /// @throws InvalidArgumentException if joint type doesn't use axis
-  /// (Spherical, Free)
+  /// (Spherical, Floating)
   [[nodiscard]] Eigen::Vector3d getAxis() const;
 
   /// Get the secondary joint axis

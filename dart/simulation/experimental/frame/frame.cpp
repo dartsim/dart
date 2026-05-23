@@ -142,7 +142,7 @@ Eigen::Isometry3d getJointTransform(const comps::Joint& joint)
           = Eigen::AngleAxisd(joint.position[2], normal).toRotationMatrix();
       return transform;
     }
-    case comps::JointType::Free:
+    case comps::JointType::Floating:
       transform.translation() = joint.position.head<3>();
       transform.linear()
           = rotationVectorTransform(joint.position.tail<3>()).linear();

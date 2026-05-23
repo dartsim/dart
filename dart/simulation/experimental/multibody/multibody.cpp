@@ -107,8 +107,8 @@ comps::JointType toComponentJointType(JointType type)
       return comps::JointType::Spherical;
     case JointType::Planar:
       return comps::JointType::Planar;
-    case JointType::Free:
-      return comps::JointType::Free;
+    case JointType::Floating:
+      return comps::JointType::Floating;
     case JointType::Custom:
       return comps::JointType::Custom;
   }
