@@ -76,13 +76,17 @@ framework or touching the classic World.
 
 ## Immediate Next Steps
 
-1. Add the `ParallelExecutor`-versus-`SequentialExecutor` parity test and the
-   per-entity-versus-batched integration-topology agreement test.
-2. Document and debug-assert the EnTT concurrency contract.
-3. Stand up the benchmark corpus and `bm-check` baselines, including one
-   contact-shaped synthetic workload proxy.
-4. Record the resource identity model and the thin Model/State interface shape in
-   this folder before starting Phase 1.
+(Phase 0/1 and the early Phase 3 items above are done; see `RESUME.md`.)
+
+1. Extend `RigidBodyStateBatch` to a leading world dimension > 1 (homogeneous
+   replication) and add the immutable Model split.
+2. Make the integration and kinematics kernels scalar-generic
+   (`template <typename Scalar>`, instantiate `double` only) and have them read
+   and write the SoA batch instead of per-entity `registry.get`.
+3. Add the tolerance-based determinism gate (bitwise for map-only stages,
+   fixed-ULP for reductions) and a SIMD pass on the SoA kernels.
+4. Wire `bm-check` baselines for the experimental benchmarks so phase gates cite
+   committed numbers.
 
 ## Relationship To Other Surfaces
 
