@@ -87,9 +87,22 @@ class CollisionShape:
     half_extents: NDArray[np.float64]
 
 
+class CollisionBody:
+    name: str
+    is_rigid_body: bool
+    is_link: bool
+    is_valid: bool
+
+    def as_rigid_body(self) -> RigidBody | None:
+        ...
+
+    def as_link(self) -> Link | None:
+        ...
+
+
 class Contact:
-    body_a: RigidBody
-    body_b: RigidBody
+    body_a: CollisionBody
+    body_b: CollisionBody
     point: NDArray[np.float64]
     normal: NDArray[np.float64]
     depth: float
@@ -331,7 +344,12 @@ class Link(Frame):
     rotation: NDArray[np.float64]
     quaternion: NDArray[np.float64]
     transform: NDArray[np.float64]
+    collision_shape: CollisionShape | None
+    has_collision_shape: bool
     is_valid: bool
+
+    def set_collision_shape(self, shape: CollisionShape) -> None:
+        ...
 
 
 class Joint:

@@ -73,20 +73,20 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 
 ### Constraints & contacts
 
-| Capability                      | DART 6                                             | Experimental                                                            | Status                 |
-| ------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------- |
-| Contact response solver         | `BoxedLcpConstraintSolver` (island grouping)       | sequential normal impulses, free rigid bodies (Phase 3)                 | PARTIAL                |
-| Boxed-LCP solver                | Dantzig primary, PGS fallback (`dart/math/lcp/`)   | not wired; current solver is sequential-impulse                         | MISSING                |
-| Rigid contact constraints       | `ContactConstraint` (friction pyramid)             | normal + friction-pyramid impulses, free bodies (Phase 3)               | PARTIAL                |
-| Friction                        | friction pyramid + slip/dir params                 | two-tangent friction-pyramid Coulomb, free bodies (Phase 3)             | PARTIAL                |
-| Restitution                     | restitution coeff + `ContactSurfaceParams`         | per-body coeff, combined max, applied in solver (Phase 3)               | PARTIAL                |
-| ERP / CFM tuning                | static members + `ContactSurfaceParams`            | fixed projection factor; no per-contact ERP/CFM yet                     | MISSING                |
-| Joint limit / motor constraints | `JointLimitConstraint`, `ServoMotorConstraint`     | velocity-motor equality constraint (Phase 4); limit/servo-force pending | PARTIAL                |
-| Closed-loop joint constraints   | `BallJointConstraint`, `WeldJointConstraint`, etc. | residual only                                                           | MISSING                |
-| Contacts on multibody links     | links participate in the constraint solve          | rigid bodies only; links not yet                                        | MISSING                |
-| Static-body convention          | static skeletons / fixed base                      | public `isStatic` flag; immovable, no gravity (Phase 3)                 | PRESENT                |
-| Penetration correction          | ERP / split impulse                                | projection-based positional correction (Phase 3)                        | PARTIAL                |
-| Soft contacts                   | `SoftContactConstraint`                            | none                                                                    | MISSING (later domain) |
+| Capability                      | DART 6                                             | Experimental                                                                                           | Status                 |
+| ------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------- |
+| Contact response solver         | `BoxedLcpConstraintSolver` (island grouping)       | sequential normal impulses, free rigid bodies (Phase 3)                                                | PARTIAL                |
+| Boxed-LCP solver                | Dantzig primary, PGS fallback (`dart/math/lcp/`)   | not wired; current solver is sequential-impulse                                                        | MISSING                |
+| Rigid contact constraints       | `ContactConstraint` (friction pyramid)             | normal + friction-pyramid impulses, free bodies (Phase 3)                                              | PARTIAL                |
+| Friction                        | friction pyramid + slip/dir params                 | two-tangent friction-pyramid Coulomb, free bodies (Phase 3)                                            | PARTIAL                |
+| Restitution                     | restitution coeff + `ContactSurfaceParams`         | per-body coeff, combined max, applied in solver (Phase 3)                                              | PARTIAL                |
+| ERP / CFM tuning                | static members + `ContactSurfaceParams`            | fixed projection factor; no per-contact ERP/CFM yet                                                    | MISSING                |
+| Joint limit / motor constraints | `JointLimitConstraint`, `ServoMotorConstraint`     | velocity-motor equality constraint (Phase 4); limit/servo-force pending                                | PARTIAL                |
+| Closed-loop joint constraints   | `BallJointConstraint`, `WeldJointConstraint`, etc. | residual only                                                                                          | MISSING                |
+| Contacts on multibody links     | links participate in the constraint solve          | links carry shapes + appear in `World::collide()` as `CollisionBody` (Phase 2); response solve pending | PARTIAL                |
+| Static-body convention          | static skeletons / fixed base                      | public `isStatic` flag; immovable, no gravity (Phase 3)                                                | PRESENT                |
+| Penetration correction          | ERP / split impulse                                | projection-based positional correction (Phase 3)                                                       | PARTIAL                |
+| Soft contacts                   | `SoftContactConstraint`                            | none                                                                                                   | MISSING (later domain) |
 
 ### Integration
 
@@ -99,13 +99,13 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 
 ### Collision
 
-| Capability                 | DART 6                                                      | Experimental                                  | Status  |
-| -------------------------- | ----------------------------------------------------------- | --------------------------------------------- | ------- |
-| Collision query owner      | `ConstraintSolver` owns detector                            | `World::collide()` query bridge (Phase 2)     | PARTIAL |
-| Backends                   | FCL, Bullet, ODE, DART native, `collision/native`           | native engine bridged via `World::collide()`  | PARTIAL |
-| Shape types                | box, sphere, capsule, cylinder, mesh, plane, heightmap, ... | sphere + box on rigid bodies (Phase 2)        | PARTIAL |
-| Self-collision / filtering | `setSelfCollisionCheck`, `CollisionFilter`                  | none                                          | MISSING |
-| Contacts in step (solved)  | contacts feed the constraint solver                         | query only; not fed to a solver yet (Phase 3) | MISSING |
+| Capability                 | DART 6                                                      | Experimental                                     | Status  |
+| -------------------------- | ----------------------------------------------------------- | ------------------------------------------------ | ------- |
+| Collision query owner      | `ConstraintSolver` owns detector                            | `World::collide()` query bridge (Phase 2)        | PARTIAL |
+| Backends                   | FCL, Bullet, ODE, DART native, `collision/native`           | native engine bridged via `World::collide()`     | PARTIAL |
+| Shape types                | box, sphere, capsule, cylinder, mesh, plane, heightmap, ... | sphere + box on rigid bodies and links (Phase 2) | PARTIAL |
+| Self-collision / filtering | `setSelfCollisionCheck`, `CollisionFilter`                  | none                                             | MISSING |
+| Contacts in step (solved)  | contacts feed the constraint solver                         | query only; not fed to a solver yet (Phase 3)    | MISSING |
 
 > Note: `dart/collision/native/` is a maintained native collision engine with
 > standalone world/query concepts (PLAN-035/036/037). The experimental World

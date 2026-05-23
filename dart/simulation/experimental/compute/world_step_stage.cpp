@@ -668,6 +668,14 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
   for (const auto& contact : contacts) {
     const auto entityA = contact.bodyA.getEntity();
     const auto entityB = contact.bodyB.getEntity();
+
+    // This sequential-impulse solver handles rigid-body pairs only; contacts
+    // involving multibody links are resolved by the articulated contact solve.
+    if (!registry.all_of<comps::RigidBodyTag>(entityA)
+        || !registry.all_of<comps::RigidBodyTag>(entityB)) {
+      continue;
+    }
+
     const auto& transformA = registry.get<comps::Transform>(entityA);
     const auto& transformB = registry.get<comps::Transform>(entityB);
     const auto& massA = registry.get<comps::MassProperties>(entityA);

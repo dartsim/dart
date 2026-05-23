@@ -1577,6 +1577,43 @@ def test_experimental_collision_query():
     assert len(world.collide()) == 0
 
 
+def test_experimental_collision_query_includes_links():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    robot = world.add_multi_body("robot")
+    base = robot.add_link("base")
+    base.set_collision_shape(sx.CollisionShape.sphere(1.0))
+    assert base.has_collision_shape
+    assert base.collision_shape.type == sx.CollisionShapeType.SPHERE
+
+    ball = world.add_rigid_body("ball", position=(1.2, 0.0, 0.0))
+    ball.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    world.enter_simulation_mode()
+    contacts = world.collide()
+    assert len(contacts) >= 1
+
+    saw_link = False
+    saw_rigid_body = False
+    for contact in contacts:
+        assert contact.depth > 0.0
+        saw_link = saw_link or contact.body_a.is_link or contact.body_b.is_link
+        saw_rigid_body = (
+            saw_rigid_body
+            or contact.body_a.is_rigid_body
+            or contact.body_b.is_rigid_body
+        )
+        for body in (contact.body_a, contact.body_b):
+            if body.is_link:
+                assert body.name == "base"
+                assert body.as_link() is not None
+                assert body.as_rigid_body() is None
+    assert saw_link
+    assert saw_rigid_body
+
+
 def test_experimental_contact_stops_approaching_bodies():
     sx = _simulation_experimental()
 

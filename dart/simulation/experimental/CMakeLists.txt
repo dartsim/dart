@@ -35,6 +35,7 @@ include(dart_defs)
 include(dart_experimental_dependencies)
 
 add_library(${target_name}
+  body/collision_body.cpp
   body/rigid_body.cpp
   common/diagnostics.cpp
   common/exceptions.cpp

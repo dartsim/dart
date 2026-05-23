@@ -2380,6 +2380,55 @@ TEST(World, CollisionQueryReportsContacts)
   EXPECT_TRUE(world.collide().empty());
 }
 
+// Test that multibody links with collision shapes participate in collision
+// queries and are reported as CollisionBody links (not rigid bodies).
+TEST(World, CollisionQueryIncludesMultibodyLinks)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  // A multibody base link (at the world origin) carrying a sphere shape.
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  base.setCollisionShape(sx::CollisionShape::makeSphere(1.0));
+  EXPECT_TRUE(base.hasCollisionShape());
+  ASSERT_TRUE(base.getCollisionShape().has_value());
+  EXPECT_EQ(base.getCollisionShape()->type, sx::CollisionShapeType::Sphere);
+
+  // A rigid body overlapping the base (radius 1 + radius 0.5, centers 1.2
+  // apart, overlap 0.3).
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(1.2, 0.0, 0.0);
+  auto ball = world.addRigidBody("ball", options);
+  ball.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.enterSimulationMode();
+  const auto contacts = world.collide();
+  ASSERT_GE(contacts.size(), 1u);
+
+  bool sawLink = false;
+  bool sawRigidBody = false;
+  for (const auto& contact : contacts) {
+    EXPECT_GT(contact.depth, 0.0);
+    sawLink = sawLink || contact.bodyA.isLink() || contact.bodyB.isLink();
+    sawRigidBody = sawRigidBody || contact.bodyA.isRigidBody()
+                   || contact.bodyB.isRigidBody();
+
+    // The link CollisionBody resolves back to the named base link.
+    if (contact.bodyA.isLink()) {
+      EXPECT_EQ(contact.bodyA.getName(), "base");
+      EXPECT_TRUE(contact.bodyA.asLink().has_value());
+      EXPECT_FALSE(contact.bodyA.asRigidBody().has_value());
+    }
+    if (contact.bodyB.isLink()) {
+      EXPECT_EQ(contact.bodyB.getName(), "base");
+    }
+  }
+  EXPECT_TRUE(sawLink);
+  EXPECT_TRUE(sawRigidBody);
+}
+
 // Test that the contact stage resolves approaching velocities (fully inelastic)
 // between overlapping rigid bodies and leaves separating bodies untouched.
 TEST(World, RigidBodyContactResolvesApproachingVelocity)

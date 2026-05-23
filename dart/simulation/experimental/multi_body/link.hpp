@@ -32,12 +32,14 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/multi_body/joint.hpp>
 
 #include <Eigen/Core>
 #include <entt/entt.hpp>
 
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -121,6 +123,22 @@ public:
   ///
   /// Must be finite, symmetric, and positive definite.
   void setInertia(const Eigen::Matrix3d& inertia);
+
+  //--------------------------------------------------------------------------
+  // Collision geometry
+  //--------------------------------------------------------------------------
+
+  /// Get the collision shape attached to this link, if any.
+  [[nodiscard]] std::optional<CollisionShape> getCollisionShape() const;
+
+  /// Set (or replace) the collision shape attached to this link.
+  ///
+  /// Once a link has a collision shape it participates in `World::collide()`,
+  /// posed by the link's forward-kinematics world transform.
+  void setCollisionShape(const CollisionShape& shape);
+
+  /// Return whether this link has a collision shape.
+  [[nodiscard]] bool hasCollisionShape() const;
 
   //--------------------------------------------------------------------------
   // Frame interface overrides

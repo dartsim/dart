@@ -873,6 +873,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           "quaternion",
           [](const sim::Link& self) { return toWxyz(self.getQuaternion()); })
       .def_prop_ro("transform", &sim::Link::getTransformMatrix)
+      .def(
+          "set_collision_shape",
+          &sim::Link::setCollisionShape,
+          nb::arg("shape"))
+      .def_prop_ro("collision_shape", &sim::Link::getCollisionShape)
+      .def_prop_ro("has_collision_shape", &sim::Link::hasCollisionShape)
       .def_prop_ro("is_valid", &sim::Link::isValid)
       .def("__repr__", [](const sim::Link& self) {
         std::vector<std::pair<std::string, std::string>> fields;
@@ -1338,6 +1344,29 @@ void defSimulationExperimentalModule(nb::module_& m)
             "angular_velocity",
             nb::cast<std::string>(nb::repr(nb::cast(self.angularVelocity))));
         return format_repr("RigidBodyOptions", fields);
+      });
+
+  nb::class_<sim::CollisionBody>(m, "CollisionBody")
+      .def_prop_ro(
+          "name", [](const sim::CollisionBody& self) { return self.getName(); })
+      .def_prop_ro("is_rigid_body", &sim::CollisionBody::isRigidBody)
+      .def_prop_ro("is_link", &sim::CollisionBody::isLink)
+      .def_prop_ro("is_valid", &sim::CollisionBody::isValid)
+      .def(
+          "as_rigid_body",
+          [](const sim::CollisionBody& self) -> nb::object {
+            auto body = self.asRigidBody();
+            if (!body.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*body, nb::rv_policy::move);
+          })
+      .def("as_link", [](const sim::CollisionBody& self) -> nb::object {
+        auto link = self.asLink();
+        if (!link.has_value()) {
+          return nb::none();
+        }
+        return nb::cast(*link, nb::rv_policy::move);
       });
 
   nb::class_<sim::Contact>(m, "Contact")

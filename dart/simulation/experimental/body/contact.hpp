@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/body/rigid_body.hpp>
+#include <dart/simulation/experimental/body/collision_body.hpp>
 
 #include <Eigen/Core>
 
@@ -41,13 +41,14 @@ namespace dart::simulation::experimental {
 /// A single contact point produced by a collision query.
 ///
 /// This is query output (no constraint solving): it reports where two bodies'
-/// collision shapes overlap. The contact normal points from `bodyA` toward
-/// `bodyB` and `depth` is the penetration depth (positive when overlapping),
-/// both in world coordinates.
+/// collision shapes overlap. Each body is a `CollisionBody` (a rigid body or a
+/// multibody link). The contact normal points from `bodyA` toward `bodyB` and
+/// `depth` is the penetration depth (positive when overlapping), both in world
+/// coordinates.
 struct Contact
 {
-  RigidBody bodyA;
-  RigidBody bodyB;
+  CollisionBody bodyA;
+  CollisionBody bodyB;
   Eigen::Vector3d point = Eigen::Vector3d::Zero();
   Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
   double depth = 0.0;

@@ -39,6 +39,8 @@
 
 #include <Eigen/Cholesky>
 
+#include <optional>
+
 #include <cmath>
 
 namespace dart::simulation::experimental {
@@ -110,6 +112,48 @@ void Link::setInertia(const Eigen::Matrix3d& inertia)
 
   getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.inertia
       = inertia;
+}
+
+//==============================================================================
+std::optional<CollisionShape> Link::getCollisionShape() const
+{
+  const auto& registry = getWorld()->getRegistry();
+  if (const auto* geometry
+      = registry.try_get<comps::CollisionGeometry>(getEntity())) {
+    return geometry->shape;
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+void Link::setCollisionShape(const CollisionShape& shape)
+{
+  switch (shape.type) {
+    case CollisionShapeType::Sphere:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0,
+          InvalidArgumentException,
+          "Sphere collision shape radius must be positive and finite");
+      break;
+    case CollisionShapeType::Box:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !shape.halfExtents.allFinite()
+              || (shape.halfExtents.array() <= 0.0).any(),
+          InvalidArgumentException,
+          "Box collision shape half extents must be positive and finite");
+      break;
+  }
+
+  auto& registry = getWorld()->getRegistry();
+  registry.emplace_or_replace<comps::CollisionGeometry>(
+      getEntity(), comps::CollisionGeometry{shape});
+}
+
+//==============================================================================
+bool Link::hasCollisionShape() const
+{
+  return getWorld()->getRegistry().all_of<comps::CollisionGeometry>(
+      getEntity());
 }
 
 //==============================================================================

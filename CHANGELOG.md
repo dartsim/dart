@@ -565,6 +565,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     native collision engine. dartpy adds `CollisionShape`, `CollisionShapeType`,
     `Contact`, `body.set_collision_shape`/`collision_shape`/`has_collision_shape`,
     and `world.collide()`.
+  - Generalized experimental collision queries to multibody links: links can now
+    carry collision shapes (`Link::setCollisionShape`/`getCollisionShape`/
+    `hasCollisionShape`, dartpy `link.set_collision_shape`/`collision_shape`/
+    `has_collision_shape`) and participate in `World::collide()`, posed by their
+    forward-kinematics world transform. `Contact` now references a `CollisionBody`
+    handle (a rigid body or a link) via `body_a`/`body_b`, with
+    `name`/`is_rigid_body`/`is_link`/`as_rigid_body`/`as_link`. The rigid-body
+    contact response stage skips link pairs (their response is a later slice).
   - Added an experimental rigid-body contact response: `World::step()` now
     resolves contacts between free rigid bodies with sequential normal impulses
     (frictionless, fully inelastic) plus a positional correction that prevents

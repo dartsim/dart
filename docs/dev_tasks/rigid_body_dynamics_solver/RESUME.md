@@ -172,29 +172,29 @@ subsystem; budget them as multiple verified slices.
 
 ## Contact solver — concrete implementation plan (derived from the code)
 
-The architecture has been mapped; the next session can implement directly:
+The architecture has been mapped; the next session can implement directly.
 
-1. **Generalize the contact body reference.** Today `Contact`
-   (`body/contact.hpp`) holds `RigidBody bodyA/bodyB`. Introduce a lightweight
-   `CollisionBody` handle (entity + `World*`) with
-   `getEntity`/`getWorld`/`getName`/`isRigidBody`/`isLink` (+ `asRigidBody`/
-   `asLink`), and change `Contact` to hold `CollisionBody`. The existing contact
-   stage already extracts `contact.bodyA.getEntity()`
-   (`compute/world_step_stage.cpp`), so it keeps compiling; dartpy
-   `Contact.body_a` returns `CollisionBody` — keep a `name` property so the
-   existing python test `{contact.body_a.name, contact.body_b.name}` passes.
-2. **Link collision shapes.** Add `Link::setCollisionShape`/`getCollisionShape`
-   storing `comps::CollisionGeometry` on the link entity (mirror `RigidBody`;
-   the component doc already says "a body or link").
-3. **`collide()` includes links.** `World::collide()` (`world.cpp`) iterates
-   `CollisionGeometry + Transform + RigidBodyTag` and uses `comps::Transform`
-   for the pose. Add a second pass over `CollisionGeometry + comps::Link` using
-   `FrameCache.worldTransform` for the pose, pushing `ObjectEntry`s; build
-   `CollisionBody` contacts.
-4. **Rigid-body contact stage skips link pairs.** In `RigidBodyContactStage`
-   guard each contact with `registry.all_of<comps::RigidBodyTag>(entity)` for
-   both bodies; link contacts are handled by the new articulated contact solve.
-5. **Articulated contact response.** For a contact on link `i` with world normal
+**Status: steps 1-4 below are DONE** (committed on the branch) — `CollisionBody`
+handle, link collision shapes, links in `World::collide()`, and the rigid-body
+stage skipping link pairs. The remaining work is **step 5 (articulated contact
+response)** and beyond.
+
+1. **(DONE) Generalize the contact body reference.** `Contact`
+   (`body/contact.hpp`) now holds a `CollisionBody` handle
+   (`body/collision_body.{hpp,cpp}`) with
+   `getEntity`/`getWorld`/`getName`/`isRigidBody`/`isLink`/`asRigidBody`/
+   `asLink`. dartpy `Contact.body_a`/`body_b` return `CollisionBody`.
+2. **(DONE) Link collision shapes.** `Link::setCollisionShape`/
+   `getCollisionShape`/`hasCollisionShape` store `comps::CollisionGeometry` on
+   the link entity (dartpy `link.set_collision_shape`/`collision_shape`/
+   `has_collision_shape`).
+3. **(DONE) `collide()` includes links.** `World::collide()` now has a second
+   pass over `CollisionGeometry + comps::Link + comps::FrameCache`, posing each
+   link by `FrameCache.worldTransform`.
+4. **(DONE) Rigid-body contact stage skips link pairs.** `RigidBodyContactStage`
+   guards each contact with `registry.all_of<comps::RigidBodyTag>` for both
+   bodies; link contacts are left for the articulated contact solve.
+5. **(NEXT) Articulated contact response.** For a contact on link `i` with world normal
    `n` at point `p`: the contact-point world Jacobian is the link world Jacobian
    with the linear block shifted to `p` (linear rows += `skew(o - p)` _ angular
    rows, where `o` is the link origin). The normal row is

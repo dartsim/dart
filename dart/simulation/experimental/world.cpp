@@ -923,30 +923,46 @@ std::vector<Contact> World::collide()
   };
   std::vector<ObjectEntry> entries;
 
-  auto view = m_registry.view<
+  const auto addEntry = [&](entt::entity entity,
+                            const CollisionShape& collisionShape,
+                            const Eigen::Isometry3d& pose) {
+    std::unique_ptr<ncol::Shape> shape;
+    switch (collisionShape.type) {
+      case CollisionShapeType::Sphere:
+        shape = std::make_unique<ncol::SphereShape>(collisionShape.radius);
+        break;
+      case CollisionShapeType::Box:
+        shape = std::make_unique<ncol::BoxShape>(collisionShape.halfExtents);
+        break;
+    }
+    entries.push_back(
+        {entity, collisionWorld.createObject(std::move(shape), pose)});
+  };
+
+  // Rigid bodies pose their collision shape from the rigid-body transform.
+  auto rigidBodyView = m_registry.view<
       comps::CollisionGeometry,
       comps::Transform,
       comps::RigidBodyTag>();
-  for (auto entity : view) {
-    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
-    const auto& transform = view.get<comps::Transform>(entity);
+  for (auto entity : rigidBodyView) {
+    const auto& geometry = rigidBodyView.get<comps::CollisionGeometry>(entity);
+    const auto& transform = rigidBodyView.get<comps::Transform>(entity);
 
     Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
     pose.linear() = transform.orientation.normalized().toRotationMatrix();
     pose.translation() = transform.position;
+    addEntry(entity, geometry.shape, pose);
+  }
 
-    std::unique_ptr<ncol::Shape> shape;
-    switch (geometry.shape.type) {
-      case CollisionShapeType::Sphere:
-        shape = std::make_unique<ncol::SphereShape>(geometry.shape.radius);
-        break;
-      case CollisionShapeType::Box:
-        shape = std::make_unique<ncol::BoxShape>(geometry.shape.halfExtents);
-        break;
-    }
-
-    entries.push_back(
-        {entity, collisionWorld.createObject(std::move(shape), pose)});
+  // Multibody links pose their collision shape from the cached frame transform
+  // maintained by forward kinematics.
+  auto linkView
+      = m_registry
+            .view<comps::CollisionGeometry, comps::Link, comps::FrameCache>();
+  for (auto entity : linkView) {
+    const auto& geometry = linkView.get<comps::CollisionGeometry>(entity);
+    const auto& cache = linkView.get<comps::FrameCache>(entity);
+    addEntry(entity, geometry.shape, cache.worldTransform);
   }
 
   // Pairwise narrow-phase queries. Each pair's bodies are known here, so the
@@ -970,8 +986,8 @@ std::vector<Contact> World::collide()
         // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
         contacts.push_back(
             Contact{
-                RigidBody(entries[i].entity, this),
-                RigidBody(entries[j].entity, this),
+                CollisionBody(entries[i].entity, this),
+                CollisionBody(entries[j].entity, this),
                 point.position,
                 -point.normal,
                 point.depth});
