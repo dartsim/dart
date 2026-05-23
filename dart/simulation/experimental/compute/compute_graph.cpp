@@ -236,34 +236,35 @@ std::vector<ComputeResourceHazard> ComputeGraph::findResourceHazards() const
     return hazards;
   }
 
-  auto indexOf = [&](const ComputeNode* node) -> std::size_t {
-    const auto it = std::ranges::find(nodes, node);
-    return static_cast<std::size_t>(std::distance(nodes.begin(), it));
-  };
+  std::unordered_map<const ComputeNode*, std::size_t> indexByNode;
+  indexByNode.reserve(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    indexByNode.emplace(nodes[i], i);
+  }
+
+  std::vector<std::vector<std::size_t>> dependents(count);
+  for (const auto& edge : m_edges) {
+    dependents[indexByNode.at(edge.from)].push_back(indexByNode.at(edge.to));
+  }
 
   // reachable[i][j] is true when node j runs strictly after node i, i.e. an
   // explicit dependency path orders them. Unordered pairs may run concurrently.
+  // The precomputed index map and adjacency keep this O(N * (N + E)) instead of
+  // rescanning all edges and linear-searching for each visited node.
   std::vector<std::vector<bool>> reachable(
       count, std::vector<bool>(count, false));
+  std::vector<std::size_t> stack;
   for (std::size_t i = 0; i < count; ++i) {
-    std::vector<ComputeNode*> stack;
-    for (const auto& edge : m_edges) {
-      if (edge.from == nodes[i]) {
-        stack.push_back(edge.to);
-      }
-    }
+    stack.assign(dependents[i].begin(), dependents[i].end());
     while (!stack.empty()) {
-      auto* current = stack.back();
+      const auto j = stack.back();
       stack.pop_back();
-      const auto j = indexOf(current);
-      if (j >= count || reachable[i][j]) {
+      if (reachable[i][j]) {
         continue;
       }
       reachable[i][j] = true;
-      for (const auto& edge : m_edges) {
-        if (edge.from == current) {
-          stack.push_back(edge.to);
-        }
+      for (const auto to : dependents[j]) {
+        stack.push_back(to);
       }
     }
   }

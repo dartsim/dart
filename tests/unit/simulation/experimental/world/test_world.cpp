@@ -1619,4 +1619,13 @@ TEST(World, RigidBodyStateBatchRoundTrip)
   EXPECT_THROW(
       compute::applyRigidBodyState(smaller, batch),
       sx::InvalidArgumentException);
+
+  // A batch whose array sizes are inconsistent with bodyCount is rejected
+  // before any out-of-bounds access.
+  compute::RigidBodyStateBatch malformed;
+  malformed.worldCount = 1;
+  malformed.bodyCount = batch.bodyCount; // arrays intentionally left empty
+  EXPECT_THROW(
+      compute::applyRigidBodyState(target, malformed),
+      sx::InvalidArgumentException);
 }

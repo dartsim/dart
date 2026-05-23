@@ -88,6 +88,18 @@ void applyRigidBodyState(World& world, const RigidBodyStateBatch& state)
       "{}",
       state.worldCount);
 
+  // The fields are independently public, so validate their sizes against
+  // bodyCount before indexing to avoid out-of-bounds reads on a malformed
+  // batch.
+  DART_EXPERIMENTAL_THROW_T_IF(
+      state.position.size() != 3 * state.bodyCount
+          || state.linearVelocity.size() != 3 * state.bodyCount
+          || state.angularVelocity.size() != 3 * state.bodyCount
+          || state.orientation.size() != 4 * state.bodyCount,
+      InvalidArgumentException,
+      "RigidBodyStateBatch arrays are inconsistent with bodyCount {}",
+      state.bodyCount);
+
   auto& registry = world.getRegistry();
   auto view
       = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
