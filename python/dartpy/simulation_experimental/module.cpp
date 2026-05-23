@@ -1128,6 +1128,12 @@ void defSimulationExperimentalModule(nb::module_& m)
             return self.computeImpulseResponse(toVectorX(impulse));
           },
           nb::arg("joint_impulse"))
+      .def(
+          "get_jacobian",
+          [](const sim::MultiBody& self, const sim::Link& link) {
+            return self.getJacobian(link);
+          },
+          nb::arg("link"))
       .def_prop_ro("is_valid", &sim::MultiBody::isValid)
       .def("__repr__", [](const sim::MultiBody& self) {
         std::vector<std::pair<std::string, std::string>> fields;

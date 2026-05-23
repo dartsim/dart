@@ -511,6 +511,11 @@
     `computeImpulseResponse(f)` (dartpy `compute_impulse_response`) returns the
     generalized velocity change `dqdot = M^-1 f` — the joint-space building
     block for impulse-based constraint dynamics.
+  - Added experimental body-frame link Jacobians: `MultiBody::getJacobian(link)`
+    (dartpy `get_jacobian`) returns the 6 x DOF spatial Jacobian mapping the
+    generalized velocity to the link's spatial velocity `[angular; linear]` in
+    the link frame. It depends only on the joint configuration; world-frame and
+    center-of-mass Jacobians are not yet provided.
   - Added experimental joint position limits: `Joint::setPositionLimits` with
     `getPositionLowerLimits`/`getPositionUpperLimits` (dartpy
     `set_position_limits`, `position_lower_limits`, `position_upper_limits`).

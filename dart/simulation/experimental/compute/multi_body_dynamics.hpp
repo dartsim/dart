@@ -94,6 +94,21 @@ computeMultiBodyInverseDynamics(
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration);
 
+/// Compute the body-frame spatial Jacobian of one link of a multibody.
+///
+/// The returned 6 x DOF matrix maps the multibody's generalized velocity to the
+/// link's spatial velocity `[angular; linear]` expressed in the link's own
+/// frame, with columns ordered by joint construction order. It depends only on
+/// the current joint configuration (not on world transforms), so it is robust
+/// to stale frame caches. Columns of joints that do not move the link are zero.
+///
+/// @throws InvalidArgumentException if `linkEntity` is not part of `structure`.
+[[nodiscard]] DART_EXPERIMENTAL_API Eigen::MatrixXd
+computeMultiBodyLinkJacobian(
+    entt::registry& registry,
+    const comps::MultiBodyStructure& structure,
+    entt::entity linkEntity);
+
 /// Fixed-base articulated-body forward-dynamics stage.
 ///
 /// For each multibody, this stage computes generalized joint accelerations from

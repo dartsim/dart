@@ -299,6 +299,9 @@ class MultiBody:
     ) -> NDArray[np.float64]:
         ...
 
+    def get_jacobian(self, link: Link) -> NDArray[np.float64]:
+        ...
+
     @overload
     def add_link(self, name: str = "") -> Link:
         ...

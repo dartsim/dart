@@ -1794,6 +1794,112 @@ TEST(World, MultiBodyImpulseResponse)
       sx::InvalidArgumentException);
 }
 
+// Test the body-frame link Jacobian against independent screw-theory twist
+// values: a revolute joint's body twist is [axis; axis x p].
+TEST(World, MultiBodyLinkJacobian)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("pendulum");
+  auto base = robot.addLink("base");
+  const double length = 1.5;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(length, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+  bob.setMass(1.0);
+
+  world.enterSimulationMode();
+
+  // Revolute about Y with link offset (L,0,0): body twist [axis; axis x p]
+  // = [0,1,0, 0,0,-L].
+  const Eigen::MatrixXd jacobianBob = robot.getJacobian(bob);
+  ASSERT_EQ(jacobianBob.rows(), 6);
+  ASSERT_EQ(jacobianBob.cols(), 1);
+  Eigen::Matrix<double, 6, 1> expected;
+  expected << 0.0, 1.0, 0.0, 0.0, 0.0, -length;
+  EXPECT_TRUE(jacobianBob.col(0).isApprox(expected, 1e-12));
+
+  // The fixed base cannot move: its Jacobian is zero.
+  const Eigen::MatrixXd jacobianBase = robot.getJacobian(base);
+  ASSERT_EQ(jacobianBase.rows(), 6);
+  ASSERT_EQ(jacobianBase.cols(), 1);
+  EXPECT_TRUE(jacobianBase.isZero(1e-12));
+
+  // A link from a different world is rejected.
+  sx::World other;
+  auto otherRobot = other.addMultiBody("other");
+  auto otherBase = otherRobot.addLink("other_base");
+  EXPECT_THROW(
+      (void)robot.getJacobian(otherBase), sx::InvalidArgumentException);
+}
+
+// Test the body-frame Jacobian column structure of a 2-DOF chain: a joint below
+// a link does not contribute to that link's Jacobian.
+TEST(World, MultiBodyLinkJacobianChain)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("double_pendulum");
+  auto base = robot.addLink("base");
+
+  const double l1 = 0.7;
+  const double l2 = 0.6;
+  Eigen::Isometry3d offset1 = Eigen::Isometry3d::Identity();
+  offset1.translation() = Eigen::Vector3d(l1, 0.0, 0.0);
+  Eigen::Isometry3d offset2 = Eigen::Isometry3d::Identity();
+  offset2.translation() = Eigen::Vector3d(l2, 0.0, 0.0);
+
+  sx::JointSpec spec1;
+  spec1.name = "j1";
+  spec1.type = sx::JointType::Revolute;
+  spec1.axis = Eigen::Vector3d::UnitY();
+  spec1.transformFromParent = offset1;
+  auto link1 = robot.addLink("link1", base, spec1);
+  link1.setMass(1.0);
+
+  sx::JointSpec spec2;
+  spec2.name = "j2";
+  spec2.type = sx::JointType::Revolute;
+  spec2.axis = Eigen::Vector3d::UnitY();
+  spec2.transformFromParent = offset2;
+  auto link2 = robot.addLink("link2", link1, spec2);
+  link2.setMass(1.0);
+
+  world.enterSimulationMode();
+
+  const Eigen::MatrixXd jacobian1 = robot.getJacobian(link1);
+  ASSERT_EQ(jacobian1.rows(), 6);
+  ASSERT_EQ(jacobian1.cols(), 2);
+  // joint1 moves link1 with twist [0,1,0,0,0,-l1]; joint2 (below) does not.
+  Eigen::Matrix<double, 6, 1> twist1;
+  twist1 << 0.0, 1.0, 0.0, 0.0, 0.0, -l1;
+  EXPECT_TRUE(jacobian1.col(0).isApprox(twist1, 1e-12));
+  EXPECT_TRUE(jacobian1.col(1).isZero(1e-12));
+
+  const Eigen::MatrixXd jacobian2 = robot.getJacobian(link2);
+  ASSERT_EQ(jacobian2.cols(), 2);
+  // joint2 moves link2 with its own twist [0,1,0,0,0,-l2].
+  Eigen::Matrix<double, 6, 1> twist2;
+  twist2 << 0.0, 1.0, 0.0, 0.0, 0.0, -l2;
+  EXPECT_TRUE(jacobian2.col(1).isApprox(twist2, 1e-12));
+  // joint1 also moves link2; the angular part is preserved under the pure
+  // translation between the link frames.
+  EXPECT_TRUE(jacobian2.col(0).head<3>().isApprox(
+      Eigen::Vector3d(0.0, 1.0, 0.0), 1e-12));
+  EXPECT_FALSE(jacobian2.col(0).isZero(1e-12));
+}
+
 // Test that the dynamics accessors return empty results for a multibody with no
 // movable degrees of freedom.
 TEST(World, MultiBodyDynamicsAccessorsNoDOF)

@@ -1113,6 +1113,43 @@ def test_experimental_multibody_impulse_response():
         robot.compute_impulse_response([0.0, 0.0])
 
 
+def test_experimental_multibody_link_jacobian():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.gravity = (0.0, 0.0, 0.0)
+    robot = world.add_multi_body("pendulum")
+    base = robot.add_link("base")
+    length = 1.5
+    offset = np.eye(4)
+    offset[0, 3] = length
+    bob = robot.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset,
+        ),
+    )
+    bob.mass = 1.0
+
+    world.enter_simulation_mode()
+
+    jacobian = robot.get_jacobian(bob)
+    assert jacobian.shape == (6, 1)
+    # Body twist [axis; axis x p] = [0, 1, 0, 0, 0, -L].
+    assert jacobian[:, 0].tolist() == pytest.approx(
+        [0.0, 1.0, 0.0, 0.0, 0.0, -length]
+    )
+
+    # The fixed base cannot move: its Jacobian is zero.
+    base_jacobian = robot.get_jacobian(base)
+    assert base_jacobian.shape == (6, 1)
+    assert np.allclose(base_jacobian, 0.0)
+
+
 def test_experimental_multibody_dynamics_terms_no_dof():
     sx = _simulation_experimental()
 

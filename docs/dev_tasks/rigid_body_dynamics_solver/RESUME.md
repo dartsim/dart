@@ -43,7 +43,16 @@ the experimental `World`:
   returning `dqdot = M^-1 f` (M includes armature) — the joint-space primitive
   for impulse-based constraint dynamics. Verified analytically and by the
   `M dqdot = f` identity. C++ + dartpy tests. (The full constrained impulse
-  dynamics still needs body Jacobians + the constraint solve.)
+  dynamics still needs the constraint solve.)
+- Phase 5 (partial) — body-frame link Jacobians: public
+  `MultiBody::getJacobian(link)` (dartpy `get_jacobian`) returns the 6 x DOF
+  body-frame spatial Jacobian (`[angular; linear]` in the link frame), via the
+  recursion `J_i = X_i J_parent` with own columns = the joint subspace
+  (`compute::computeMultiBodyLinkJacobian`). Config-only (no world transform, so
+  robust to stale frame caches). Verified by screw-theory twist values
+  (`[axis; axis x p]`) and the 2-DOF column structure. World-frame and COM
+  Jacobians are deferred (they need the link world transform / FK). C++ + dartpy
+  tests.
 - Phase 4 (partial) — joint velocity and effort limits: per-coordinate
   velocity and effort (force/torque) lower/upper bounds
   (`Joint::setVelocityLimits`/`getVelocityLowerLimits`/`getVelocityUpperLimits`,
@@ -133,8 +142,12 @@ Phases 2–5. Suggested next slices, in rough dependency order:
   `MultiBody::getMassMatrix`/`getInverseMassMatrix`/`getCoriolisForces`/
   `getGravityForces`/`getCoriolisAndGravityForces`/`computeInverseDynamics`.)
 - **Shared foundation needed next:** a constraint solver coupling the
-  articulated system (impulse-based articulated dynamics). It unblocks the
-  remaining Phase 3 (contacts on multibody links, joint motor/limit
+  articulated system (impulse-based articulated dynamics). The joint-space
+  primitives it builds on are now in place — mass matrix, `M^-1`, the impulse
+  response `M^-1 f`, inverse dynamics, and the body-frame link Jacobian. What
+  remains for the solver: the world-frame (and COM) Jacobian, the constraint
+  formulation, and the boxed-LCP/PGS solve wired into `World::step`. It unblocks
+  the remaining Phase 3 (contacts on multibody links, joint motor/limit
   constraints, boxed-LCP, islands), the constraint-coupled Phase 4 actuator
   modes and mimic/coupler, and Phase 5 loop-closure dynamics. Budget it as a
   dedicated multi-session subsystem.

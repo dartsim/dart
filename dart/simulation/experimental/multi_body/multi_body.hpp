@@ -340,6 +340,20 @@ public:
   [[nodiscard]] Eigen::VectorXd computeImpulseResponse(
       const Eigen::VectorXd& jointImpulse) const;
 
+  /// Get the body-frame spatial Jacobian of a link in this multibody.
+  ///
+  /// The returned 6 x getDOFCount() matrix maps the generalized velocity to the
+  /// link's spatial velocity `[angular; linear]` expressed in the link's own
+  /// frame, with columns ordered by joint construction order. It depends only
+  /// on the current joint configuration (not on world transforms). Columns of
+  /// joints that do not move the link are zero.
+  ///
+  /// @param link A link belonging to this multibody.
+  /// @return The 6 x getDOFCount() body Jacobian.
+  /// @throws InvalidArgumentException if the link belongs to a different world
+  ///         or is not part of this multibody.
+  [[nodiscard]] Eigen::MatrixXd getJacobian(const Link& link) const;
+
 private:
   entt::entity m_entity; ///< Entity ID in the registry
   World* m_world;        ///< Non-owning pointer to World

@@ -576,6 +576,46 @@ Eigen::VectorXd computeMultiBodyInverseDynamics(
 }
 
 //==============================================================================
+Eigen::MatrixXd computeMultiBodyLinkJacobian(
+    entt::registry& registry,
+    const comps::MultiBodyStructure& structure,
+    entt::entity linkEntity)
+{
+  const auto& linkEntities = structure.links;
+  const auto it
+      = std::find(linkEntities.begin(), linkEntities.end(), linkEntity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      it == linkEntities.end(),
+      InvalidArgumentException,
+      "Link does not belong to this multibody");
+  const auto targetIndex = static_cast<std::size_t>(it - linkEntities.begin());
+
+  const DynamicsTree tree = buildDynamicsTree(registry, structure);
+  const auto dofCount = static_cast<Eigen::Index>(tree.dofCount);
+
+  // Body-frame Jacobian per link via the recursion J_i = X_i J_parent, with the
+  // link's own joint columns set to its motion subspace S_i (already expressed
+  // in the link frame). Links are in parent-before-child order.
+  std::vector<Eigen::MatrixXd> jacobian(
+      tree.links.size(), Eigen::MatrixXd::Zero(6, dofCount));
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const auto& link = tree.links[i];
+    if (link.parentIndex >= 0) {
+      jacobian[i] = link.parentToChild
+                    * jacobian[static_cast<std::size_t>(link.parentIndex)];
+    }
+    if (link.dof > 0) {
+      jacobian[i].middleCols(
+          static_cast<Eigen::Index>(link.dofOffset),
+          static_cast<Eigen::Index>(link.dof))
+          = link.subspace;
+    }
+  }
+
+  return jacobian[targetIndex];
+}
+
+//==============================================================================
 std::string_view MultiBodyForwardDynamicsStage::getName() const noexcept
 {
   return "multi_body_forward_dynamics";

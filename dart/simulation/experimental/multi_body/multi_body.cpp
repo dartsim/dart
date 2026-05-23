@@ -612,4 +612,19 @@ Eigen::VectorXd MultiBody::computeImpulseResponse(
   return massMatrix.ldlt().solve(jointImpulse);
 }
 
+//==============================================================================
+Eigen::MatrixXd MultiBody::getJacobian(const Link& link) const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      link.getWorld() != m_world,
+      InvalidArgumentException,
+      "Link belongs to a different world");
+
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
+  return compute::computeMultiBodyLinkJacobian(
+      registry, structure, link.getEntity());
+}
+
 } // namespace dart::simulation::experimental
