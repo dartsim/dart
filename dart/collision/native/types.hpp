@@ -39,6 +39,7 @@
 
 #include <Eigen/Core>
 
+#include <memory>
 #include <span>
 #include <vector>
 
@@ -51,15 +52,114 @@ class DART_COLLISION_NATIVE_API CollisionResult
 public:
   CollisionResult() = default;
 
-  void addContact(const ContactPoint& contact);
+  void addContact(const ContactPoint& contact)
+  {
+    if (manifoldCount_ == 0u) {
+      firstContact_ = contact;
+      firstEntryIsContact_ = true;
+      manifoldCount_ = 1u;
+      contactCount_ = 1u;
+      invalidateCache();
+      return;
+    }
+
+    auto& manifold = nextExtraManifold();
+    manifold.setSingleContact(contact, ContactType::Point);
+    ++contactCount_;
+    invalidateCache();
+  }
+
+  void addContact(
+      const Eigen::Vector3d& position,
+      const Eigen::Vector3d& normal,
+      double depth)
+  {
+    if (manifoldCount_ == 0u) {
+      firstContact_.position = position;
+      firstContact_.normal = normal;
+      firstContact_.depth = depth;
+      firstContact_.object1 = nullptr;
+      firstContact_.object2 = nullptr;
+      firstContact_.featureIndex1 = -1;
+      firstContact_.featureIndex2 = -1;
+      firstEntryIsContact_ = true;
+      manifoldCount_ = 1u;
+      contactCount_ = 1u;
+      invalidateCache();
+      return;
+    }
+
+    auto& manifold = nextExtraManifold();
+    manifold.setSingleContact(position, normal, depth, ContactType::Point);
+    ++contactCount_;
+    invalidateCache();
+  }
+
+  void addContact(
+      double positionX,
+      double positionY,
+      double positionZ,
+      double normalX,
+      double normalY,
+      double normalZ,
+      double depth)
+  {
+    if (manifoldCount_ == 0u) {
+      firstContact_.position.x() = positionX;
+      firstContact_.position.y() = positionY;
+      firstContact_.position.z() = positionZ;
+      firstContact_.normal.x() = normalX;
+      firstContact_.normal.y() = normalY;
+      firstContact_.normal.z() = normalZ;
+      firstContact_.depth = depth;
+      firstContact_.object1 = nullptr;
+      firstContact_.object2 = nullptr;
+      firstContact_.featureIndex1 = -1;
+      firstContact_.featureIndex2 = -1;
+      firstEntryIsContact_ = true;
+      manifoldCount_ = 1u;
+      contactCount_ = 1u;
+      invalidateCache();
+      return;
+    }
+
+    auto& manifold = nextExtraManifold();
+    manifold.setSingleContact(
+        Eigen::Vector3d(positionX, positionY, positionZ),
+        Eigen::Vector3d(normalX, normalY, normalZ),
+        depth,
+        ContactType::Point);
+    ++contactCount_;
+    invalidateCache();
+  }
+
   void addManifold(ContactManifold manifold);
-  void clear();
+  void clear()
+  {
+    manifoldCount_ = 0;
+    contactCount_ = 0;
+    invalidateCache();
+  }
 
-  [[nodiscard]] bool isCollision() const;
-  [[nodiscard]] explicit operator bool() const;
+  [[nodiscard]] bool isCollision() const
+  {
+    return manifoldCount_ > 0;
+  }
 
-  [[nodiscard]] std::size_t numContacts() const;
-  [[nodiscard]] std::size_t numManifolds() const;
+  [[nodiscard]] explicit operator bool() const
+  {
+    return isCollision();
+  }
+
+  [[nodiscard]] std::size_t numContacts() const
+  {
+    return contactCount_;
+  }
+
+  [[nodiscard]] std::size_t numManifolds() const
+  {
+    return manifoldCount_;
+  }
 
   [[nodiscard]] const ContactManifold& getManifold(std::size_t i) const;
   [[nodiscard]] std::span<const ContactManifold> getManifolds() const;
@@ -67,15 +167,36 @@ public:
   [[nodiscard]] const ContactPoint& getContact(std::size_t i) const;
 
 private:
-  std::vector<ContactManifold> manifolds_;
+  ContactPoint firstContact_;
+  std::unique_ptr<ContactManifold> firstManifold_;
+  std::vector<ContactManifold> extraManifolds_;
   std::size_t manifoldCount_ = 0;
   std::size_t contactCount_ = 0;
+  bool firstEntryIsContact_ = false;
 
+  mutable std::vector<ContactManifold> manifoldsCache_;
   mutable std::vector<const ContactPoint*> flatContactsCache_;
+  mutable bool manifoldsCacheValid_ = false;
   mutable bool flatCacheValid_ = false;
 
-  ContactManifold& nextManifold();
-  void invalidateCache();
+  ContactManifold& nextExtraManifold()
+  {
+    const std::size_t extraIndex = manifoldCount_ - 1u;
+    if (extraIndex == extraManifolds_.size()) {
+      extraManifolds_.emplace_back();
+    }
+    ++manifoldCount_;
+    return extraManifolds_[extraIndex];
+  }
+
+  [[nodiscard]] const ContactManifold& manifoldAt(std::size_t i) const;
+  void updateManifoldsCache() const;
+  void invalidateCache()
+  {
+    manifoldsCacheValid_ = false;
+    flatCacheValid_ = false;
+  }
+
   void updateFlatCache() const;
 };
 

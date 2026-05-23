@@ -53,12 +53,9 @@ namespace dart::simulation::experimental {
 /// frame-related operations such as transform queries, velocity/acceleration
 /// computations (future), and can be used as a reference frame.
 ///
-/// PLACEHOLDER: This is a minimal implementation to demonstrate World's
-/// ability to manage multiple object types (Multibody and RigidBody).
-/// Future enhancements will add:
-/// - Physics properties (mass, inertia, collision shapes)
-/// - State access (pose, velocity)
-/// - Force application
+/// The initial public surface exposes name, transform, world-frame velocity,
+/// inertial state, and force/torque accumulators. Future enhancements will add:
+/// - Collision shapes
 /// - Collision detection integration
 ///
 /// @note RigidBody objects are owned by World and accessed via handles.
@@ -72,15 +69,86 @@ public:
   /// Get the name of the rigid body
   [[nodiscard]] std::string getName() const;
 
-  /// Get the rigid body's local transform relative to the world frame.
-  [[nodiscard]] const Eigen::Isometry3d& getLocalTransform() const override;
+  /// Set the rigid body's world transform.
+  ///
+  /// This updates the public frame transform and the internal rigid-body
+  /// dynamics pose so kinematics-only reads and subsequent physics steps start
+  /// from the same pose.
+  void setTransform(const Eigen::Isometry3d& transform);
+
+  /// Get the body's world-frame linear velocity.
+  [[nodiscard]] Eigen::Vector3d getLinearVelocity() const;
+
+  /// Set the body's world-frame linear velocity.
+  ///
+  /// The value must contain only finite coordinates. Subsequent physics steps
+  /// use this velocity directly.
+  void setLinearVelocity(const Eigen::Vector3d& velocity);
+
+  /// Get the body's world-frame angular velocity.
+  [[nodiscard]] Eigen::Vector3d getAngularVelocity() const;
+
+  /// Set the body's world-frame angular velocity.
+  ///
+  /// The value must contain only finite coordinates. Subsequent physics steps
+  /// use this velocity directly.
+  void setAngularVelocity(const Eigen::Vector3d& velocity);
+
+  /// Get the body's mass.
+  [[nodiscard]] double getMass() const;
+
+  /// Set the body's mass.
+  ///
+  /// The value must be positive and finite. Subsequent physics steps use this
+  /// mass directly.
+  void setMass(double mass);
+
+  /// Get the body's body-frame inertia tensor.
+  [[nodiscard]] Eigen::Matrix3d getInertia() const;
+
+  /// Set the body's body-frame inertia tensor.
+  ///
+  /// The value must be finite, symmetric, and positive definite. Subsequent
+  /// physics steps use this inertia directly.
+  void setInertia(const Eigen::Matrix3d& inertia);
+
+  /// Get the body's accumulated world-frame force.
+  [[nodiscard]] Eigen::Vector3d getForce() const;
+
+  /// Set the body's accumulated world-frame force.
+  ///
+  /// The value must contain only finite coordinates. Subsequent physics steps
+  /// use this force directly until it is changed.
+  void setForce(const Eigen::Vector3d& force);
+
+  /// Add to the body's accumulated world-frame force.
+  ///
+  /// The value must contain only finite coordinates.
+  void applyForce(const Eigen::Vector3d& force);
+
+  /// Clear the body's accumulated force.
+  void clearForce();
+
+  /// Get the body's accumulated world-frame torque.
+  [[nodiscard]] Eigen::Vector3d getTorque() const;
+
+  /// Set the body's accumulated world-frame torque.
+  ///
+  /// The value must contain only finite coordinates. Subsequent physics steps
+  /// use this torque directly until it is changed.
+  void setTorque(const Eigen::Vector3d& torque);
+
+  /// Add to the body's accumulated world-frame torque.
+  ///
+  /// The value must contain only finite coordinates.
+  void applyTorque(const Eigen::Vector3d& torque);
+
+  /// Clear the body's accumulated torque.
+  void clearTorque();
 
   // Note: getEntity(), getWorld(), isValid() inherited from Frame
 
   // TODO: Add methods for:
-  // - Getting/setting pose
-  // - Getting/setting velocity
-  // - Applying forces/torques
   // - Accessing collision shapes
   // - Enabling/disabling physics
 };

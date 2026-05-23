@@ -20,6 +20,7 @@ COMPONENT_PREFIXES = {
     "io": "UNIT_io",
     "gui": "UNIT_gui",
 }
+ALL_UNIT_TESTS_REGEX = "^UNIT_"
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -50,6 +51,7 @@ def _print_components() -> None:
     print("Available test components:")
     for name, prefix in sorted(COMPONENT_PREFIXES.items()):
         print(f"  {name} -> ctest -R {prefix}")
+    print(f"\nNo component -> ctest -R {ALL_UNIT_TESTS_REGEX}")
     print("\nUsage: pixi run test-unit <component>")
     print("       pixi run test-unit simd")
     print("       pixi run test-unit math --verbose")
@@ -95,9 +97,10 @@ def run(component: str | None, build_type: str, verbose: bool) -> int:
     if verbose:
         ctest_cmd.append("-V")
 
+    test_regex = ALL_UNIT_TESTS_REGEX
     if component:
-        prefix = COMPONENT_PREFIXES.get(component.lower(), f"UNIT_{component}")
-        ctest_cmd.extend(["-R", prefix])
+        test_regex = COMPONENT_PREFIXES.get(component.lower(), f"UNIT_{component}")
+    ctest_cmd.extend(["-R", test_regex])
 
     result = subprocess.run(ctest_cmd, env=env)
     return result.returncode

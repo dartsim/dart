@@ -6,7 +6,16 @@ full evidence log:
 
 - [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)
   owns row-level test and benchmark coverage.
-- `dashboard.md` owns this plan's operating state.
+- [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)
+  owns the generated local benchmark manifest for the completed performance
+  wave.
+- [`035-native-collision/upstream-inventory.md`](035-native-collision/upstream-inventory.md)
+  owns the generated inventory of collected FCL, Bullet, and ODE source tests,
+  demos, kernels, and benchmark scenarios.
+- [`035-native-collision/upstream-case-map.md`](035-native-collision/upstream-case-map.md)
+  owns the row-level mapping from those collected upstream cases to DART tests,
+  benchmarks, fixtures, or explicit non-applicability decisions.
+- `dashboard.md` owns this plan's operating state and final validation evidence.
 - Local command output, CI artifacts, and the final PR description own
   per-run evidence after the dev-task folders are removed.
 
@@ -30,6 +39,11 @@ true:
   `docs/dev_tasks/experimental_collision/` must be absent before the PR is
   ready. This dashboard and the coverage matrix are the durable source of truth
   after those temporary task folders are removed.
+- Completed performance-wave task folders must be removed once their durable
+  evidence is promoted here and under
+  [`035-native-collision/`](035-native-collision/).
+- Completed upstream-superset task state must be removed once final validation
+  proves the durable upstream inventory and case map are current.
 
 ## Reading Rules
 
@@ -52,6 +66,14 @@ true:
   records 202 DONE, 0 PARTIAL, 0 GAP, and 24 DEFERRED rows.
   Gap signal: no active feature-level GAP/PARTIAL rows for this pass; deferred
   rows belong to later waves.
+- **Upstream superset map**
+  Current status:
+  [`035-native-collision/upstream-case-map.md`](035-native-collision/upstream-case-map.md)
+  records 207 covered rows and 382 not-applicable rows from the generated FCL,
+  Bullet, and ODE inventory, with no mapping-needed, fixture-needed, or
+  new-benchmark-needed rows.
+  Gap signal: regenerate the map after any upstream clone refresh before
+  accepting a refreshed superset claim.
 - **Runtime selection**
   Current status: `dart` is the normal detector; retained old names are
   native-backed compatibility facades.
@@ -62,20 +84,73 @@ true:
   Gap signal: final reference-enabled CI/package evidence still open on the
   completing review surface.
 - **Performance guardrails**
-  Current status: native/reference benchmark guardrails cover core and public
-  adapter paths.
-  Gap signal: final PR-state benchmark artifact open; deeper single-CPU,
-  multi-core, and GPU work is later.
+  Current status:
+  [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)
+  records 45 comparable native leads, 0 behind rows, 24 native-only rows, and
+  0 rerun-needed rows from the local single-worker benchmark packet.
+  Gap signal: host CPU scaling remained enabled for the local packet; deeper
+  single-CPU, data-layout, multi-core, and GPU work is later.
 - **CI follow-up**
   Current status: pushed Windows reference run passed; pushed Linux reference
   run found one Release ASan leak now locally repaired.
   Gap signal: review-head CI must prove the Atlas Simbicon ownership repair
   after push.
 - **Completion packaging**
-  Current status: persistent dashboard/matrix are promoted and the
-  native/experimental dev-task folders are removed locally.
-  Gap signal: maintainer-selected PR/CI surface and evidence transfer are still
-  approval-gated.
+  Current status: persistent dashboard/matrix and generated upstream inventory
+  artifacts are promoted. The upstream-superset working docs have been removed
+  after final local validation.
+  Gap signal: final PR-state CI evidence remains open until the branch is
+  published for review.
+
+## Upstream Superset Completion Evidence
+
+| Requirement                         | Durable evidence                                                                                                                                               | Current result                                                                                                                                    |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Upstream collection                 | Generated [`upstream-inventory.md`](035-native-collision/upstream-inventory.md) records FCL, Bullet, and ODE origins, revisions, scoped files, and row counts. | FCL test tree, Bullet collision/tests/examples/benchmarks/kernels, and ODE tests/demos/libccd benchmarks are catalogued.                          |
+| Row categorization                  | Generated [`upstream-case-map.md`](035-native-collision/upstream-case-map.md) maps every extracted row to DART coverage or explicit non-applicability.         | 207 rows are covered, 382 rows are not applicable to the current CPU native detector or native public API, and 0 rows remain unresolved.          |
+| Correctness expansion               | Coverage anchors live in `tests/unit/collision/`, `tests/integration/collision/`, and the DART/reference compatibility tests named in the generated map.       | `pixi run test-all` passed locally after the durable artifacts and status checker were added.                                                     |
+| Benchmark expansion and performance | Generated [`benchmark-manifest.md`](035-native-collision/benchmark-manifest.md) owns the latest local native-vs-reference packet summary.                      | 45 comparable rows are strict native leads, 0 rows are behind, 24 rows are native-only profiling coverage, and 0 rows need rerun.                 |
+| Native detector coverage            | Native-only `coverage_native.info` extraction is summarized in the coverage matrix and status snapshot.                                                        | Full `dart/collision/native` line coverage is 95.1% and function coverage is 98.0%.                                                               |
+| Repeatable status gate              | `pixi run check-native-collision-superset` runs `scripts/check_native_collision_superset_status.py` and is part of `pixi run lint`.                            | The gate validates source revisions, required upstream scopes, row-map counts, unresolved statuses, and zero benchmark rows behind the reference. |
+
+## Later GUI Debugger Scope
+
+A native collision-pair debugger example is now tracked as
+[`PLAN-037`](dashboard.md#plan-037-native-collision-visual-verification), with
+durable rendering guidance in
+[`gui-rendering.md`](../onboarding/gui-rendering.md#native-collision-visual-checks).
+That follow-up keeps this completed feature/performance dashboard focused on
+durable coverage and benchmark evidence while the visual verification work owns
+pair-by-pair runtime controls, contact/manifold rendering, and broad-phase
+overlays.
+
+## Feature Summary
+
+| Feature content                               | Native runtime status                                                                                                                | Comparison/reference scope                                                                                   | Remaining gate                                                                           |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Detector factory and public runtime selection | `dart` is the canonical runtime detector; legacy names route to native-backed facades.                                               | Reference detectors are opt-in test/benchmark fixtures only.                                                 | Final review-head factory/runtime validation.                                            |
+| Primitive contacts and signed distance        | Sphere, box, capsule, cylinder, plane, convex, compound, SDF, contact symmetry, and pair-order behavior are covered by native tests. | Reference rows validate parity where the query is comparable.                                                | Keep the generated upstream map and benchmark manifest synchronized before final claims. |
+| Broadphase and collision groups               | Native world/group updates, deterministic pair ordering, empty scenes, self-collision, filters, and persistent scenes are covered.   | Reference group behavior remains a comparison surface.                                                       | No active upstream broadphase mapping gap; final validation remains.                     |
+| Ray and cast queries                          | Native closest/all/filter raycast behavior is covered and benchmarked.                                                               | Comparable raycast references are benchmark-only.                                                            | Deeper closest-hit traversal tuning is deferred.                                         |
+| Mesh, convex, and field-heavy scenes          | Mesh, convex, plane/mesh, heightmap/field adaptation, and mesh-heavy scenes are covered by tests and benchmark guards.               | Mesh-heavy references remain comparison-only.                                                                | Larger dynamic mesh and BVH scale sweeps are deferred.                                   |
+| Adapter-only DART shapes                      | Cone, pyramid, ellipsoid, heightmap, multi-sphere, and voxel-grid shapes adapt into explicit native geometry.                        | Comparison engines do not define the runtime contract.                                                       | Direct heightfield/sparse voxel acceleration remains deferred.                           |
+| Upstream FCL/Bullet/ODE case map              | Every generated upstream row maps to covered DART behavior or a concrete non-applicability decision.                                 | GPU/prototype kernels and non-collision tests are catalogued but outside current CPU native collision scope. | Regenerate the inventory before final task cleanup.                                      |
+
+## Performance Summary
+
+Ratio is native median divided by the strongest comparable median; values below
+`1.0` mean native is faster in the local single-worker benchmark packet.
+
+| Benchmark content                                                             | Comparable rows | Native result                           |     Ratio range | Current caveat                                                       |
+| ----------------------------------------------------------------------------- | --------------: | --------------------------------------- | --------------: | -------------------------------------------------------------------- |
+| Primitive pair narrowphase, including touching/grazing/deep-penetration cases |              27 | Leads every comparable row              | `0.015`-`0.976` | Keep recurring JSON regression checks on the final CI surface.       |
+| Public adapter and package collision paths                                    |               3 | Leads every comparable row              | `0.619`-`0.894` | Keep recurring JSON regression checks on the final CI surface.       |
+| Signed distance queries                                                       |               3 | Leads every comparable row              | `0.077`-`0.410` | Ordered broadphase distance traversal remains a later optimization.  |
+| Ray and ray-batch queries                                                     |               7 | Leads every comparable row              | `0.104`-`0.606` | Batch/SIMD throughput is deferred.                                   |
+| Mixed broadphase and pair-generation scenarios                                |               4 | Leads every comparable row              | `0.041`-`0.957` | Larger stacked/ragdoll/landscape sweeps are deferred.                |
+| Mesh, convex, and field-heavy scenarios                                       |               1 | Leads the comparable row                |         `0.144` | Dynamic mesh update and BVH profiling remain later work.             |
+| Native-only persistent scene and dirty-subset paths                           |               8 | Non-comparable native guardrails        |             n/a | Retain as native regression guards, not comparison claims.           |
+| Native-only stacked and terrain profiling scenes                              |              16 | Non-comparable native workload coverage |             n/a | Add reference variants only if that scope becomes part of the claim. |
 
 ## Runtime Dependency Contract
 
@@ -100,8 +175,9 @@ by naming the repo surfaces that were inventoried.
 
 - **Native collision unit tests**
   Inventory evidence: `tests/unit/collision/CMakeLists.txt` plus the
-  `collision-native` CTest label; full `pixi run test-all` reported 266/266
-  C++ tests passing.
+  `collision-native` CTest label; recent local validation includes a passing
+  `pixi run test-all` after artifact promotion and `pixi run test-unit`
+  reporting 281/281 unit tests passing.
   Coverage status: covered by native pair, algorithm, broadphase, filter,
   distance, raycast, CCD, and adapter rows.
   Remaining pre-PR gate: re-run final validation on the completing review head.
@@ -315,11 +391,13 @@ into DART-owned feature/performance rows.
 
 - **Broad collision benchmark guard**
   DART native evidence: `bm-collision-check` aggregates core and public adapter
-  JSON guards.
+  JSON guards, promoted through
+  [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md).
   Reference comparison: FCL/Bullet/ODE where the query is comparable.
-  Current bar: local guard evidence exists; scheduled/manual CI artifact
-  evidence exists on a repaired head.
-  Open performance gap: final PR-state benchmark artifact still required.
+  Current bar: the local single-worker packet has 45 comparable native leads,
+  0 behind rows, 24 native-only rows, and 0 rerun-needed rows.
+  Open performance gap: rerun the guard before accepting future performance
+  claims, ideally with CPU scaling controlled.
 - **Raw narrowphase**
   DART native evidence: timed rows consume outputs/contact counts and reject
   trivial no-op wins.
@@ -389,12 +467,13 @@ into DART-owned feature/performance rows.
   deferred.
 - **Pipeline breakdown**
   DART native evidence: `bm_pipeline_breakdown.cpp` reports per-stage native
-  pipeline timing.
+  pipeline timing; profile builds may also use `dart/common/profile.hpp`
+  scopes on the public collision adapter path.
   Reference comparison: native instrumentation, not old-engine comparison.
   Current bar: provides visibility into sync, broadphase, narrowphase, and
   merge costs.
-  Open performance gap: use this to pick later single-CPU and multi-core
-  optimization work.
+  Open performance gap: use the benchmark breakdown and profile scopes to pick
+  later single-CPU and multi-core optimization work.
 - **CCD / sweep benchmarks**
   DART native evidence: `bm_ccd.cpp` covers sphere casts, capsule casts, and
   conservative advancement.
@@ -420,7 +499,8 @@ reference-engine names, when setting goals.
 1. Single-core CPU: reduce broadphase sync cost, ordered traversal overhead,
    narrowphase pair cost, contact manifold reduction cost, and public-adapter
    overhead across primitive, convex, mesh, distance, raycast, batch, and
-   scenario rows.
+   scenario rows. Prefer `dart/common/profile.hpp` scopes and benchmark JSON to
+   identify the next slice before changing data structures.
 2. Scenario scale: extend box-stack, mixed primitive, ragdoll/capsule,
    mesh-heavy, heightmap, and raycast-batch sweeps from smoke sizes to sustained
    large-scene sizes, with JSON guardrails for regression detection.
@@ -429,6 +509,12 @@ reference-engine names, when setting goals.
 4. GPU: treat acceleration as an optional backend for native data structures
    only, with identical CPU fallback semantics, deterministic result ordering,
    and no runtime dependency on comparison engines.
+5. Cache locality and allocation: consider pooled or slab-backed storage for
+   frequently recreated contact/manifold data only after profiling shows
+   allocation churn dominates. A measured inline first-manifold storage
+   experiment regressed one-contact raw paths, so future pool work should
+   preserve small `CollisionResult` objects and gz-physics-compatible public
+   behavior.
 
 ## API And Abstraction Cleanup Roadmap
 

@@ -2,13 +2,8 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(dart-tutorials)
 
-add_subdirectory(tutorial_biped)
-add_subdirectory(tutorial_biped_finished)
-add_subdirectory(tutorial_collisions)
-add_subdirectory(tutorial_collisions_finished)
-add_subdirectory(tutorial_dominoes)
-add_subdirectory(tutorial_dominoes_finished)
-add_subdirectory(tutorial_multi_pendulum)
-add_subdirectory(tutorial_multi_pendulum_finished)
-add_subdirectory(tutorial_wholebody_ik)
-add_subdirectory(tutorial_wholebody_ik_finished)
+message(
+  STATUS
+  "The legacy OpenSceneGraph C++ tutorials were removed; use Filament GUI "
+  "examples and docs for maintained visualization coverage."
+)

@@ -37,6 +37,11 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <limits>
+#include <numbers>
+#include <span>
+#include <utility>
+#include <vector>
 
 #include <cmath>
 
@@ -65,6 +70,96 @@ SupportFunction makeBoxSupport(
   };
 }
 
+SupportFunction makeOrientedBoxSupport(
+    const Eigen::Isometry3d& transform, const Eigen::Vector3d& halfExtents)
+{
+  return [transform, halfExtents](const Eigen::Vector3d& dir) {
+    const Eigen::Vector3d localDir = transform.linear().transpose() * dir;
+    Eigen::Vector3d localSupport;
+    localSupport.x()
+        = (localDir.x() >= 0.0) ? halfExtents.x() : -halfExtents.x();
+    localSupport.y()
+        = (localDir.y() >= 0.0) ? halfExtents.y() : -halfExtents.y();
+    localSupport.z()
+        = (localDir.z() >= 0.0) ? halfExtents.z() : -halfExtents.z();
+    return transform * localSupport;
+  };
+}
+
+Eigen::Isometry3d makeBoxSignedDistanceFrame(
+    const Eigen::Vector3d& translation = Eigen::Vector3d::Zero(),
+    double angle = 0.0,
+    const Eigen::Vector3d& axis = Eigen::Vector3d::UnitZ())
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = translation;
+  if (angle != 0.0) {
+    tf.linear()
+        = Eigen::AngleAxisd(angle, axis.normalized()).toRotationMatrix();
+  }
+  return tf;
+}
+
+void expectRotatedBoxEdgeFaceSignedDistance(
+    const char* name,
+    const Eigen::Isometry3d& worldFromFrame,
+    const Eigen::Vector3d& secondBoxTranslation,
+    double expectedSignedDistance)
+{
+  SCOPED_TRACE(name);
+  const Eigen::Vector3d halfExtents1(0.5, 0.5, 0.5);
+  const Eigen::Vector3d halfExtents2(0.3, 0.4, 0.5);
+
+  Eigen::Isometry3d frameFromBox1 = Eigen::Isometry3d::Identity();
+  frameFromBox1.translation() = Eigen::Vector3d(0.0, 0.0, 0.5);
+
+  Eigen::Isometry3d frameFromBox2 = Eigen::Isometry3d::Identity();
+  frameFromBox2.linear() << 0.6, -0.8, 0.0, 0.8, 0.6, 0.0, 0.0, 0.0, 1.0;
+  frameFromBox2.translation() = secondBoxTranslation;
+
+  const Eigen::Isometry3d worldFromBox1 = worldFromFrame * frameFromBox1;
+  const Eigen::Isometry3d worldFromBox2 = worldFromFrame * frameFromBox2;
+
+  auto supportA = makeOrientedBoxSupport(worldFromBox1, halfExtents1);
+  auto supportB = makeOrientedBoxSupport(worldFromBox2, halfExtents2);
+  const Eigen::Vector3d initialDirection
+      = worldFromBox2.translation() - worldFromBox1.translation();
+
+  const GjkResult gjk = Gjk::query(supportA, supportB, initialDirection);
+  if (expectedSignedDistance > 0.0) {
+    ASSERT_FALSE(gjk.intersecting);
+    EXPECT_NEAR(gjk.distance, expectedSignedDistance, 1e-6);
+    EXPECT_TRUE(gjk.closestPointA.allFinite());
+    EXPECT_TRUE(gjk.closestPointB.allFinite());
+    return;
+  }
+
+  if (expectedSignedDistance == 0.0) {
+    if (!gjk.intersecting) {
+      EXPECT_NEAR(gjk.distance, 0.0, 1e-6);
+      EXPECT_TRUE(gjk.closestPointA.allFinite());
+      EXPECT_TRUE(gjk.closestPointB.allFinite());
+    }
+    return;
+  }
+
+  ASSERT_TRUE(gjk.intersecting);
+  const MprResult mpr = Mpr::penetration(
+      supportA,
+      supportB,
+      worldFromBox1.translation(),
+      worldFromBox2.translation());
+  ASSERT_TRUE(mpr.success);
+  EXPECT_NEAR(mpr.depth, -expectedSignedDistance, 1e-5);
+  EXPECT_TRUE(mpr.pointOnA.allFinite());
+  EXPECT_TRUE(mpr.pointOnB.allFinite());
+  EXPECT_TRUE(mpr.position.allFinite());
+  EXPECT_GT(
+      std::abs(mpr.normal.normalized().dot(
+          worldFromFrame.linear() * Eigen::Vector3d::UnitX())),
+      0.99);
+}
+
 SupportPoint makeSupportPoint(
     const SupportFunction& supportA,
     const SupportFunction& supportB,
@@ -83,6 +178,68 @@ SupportFunction makeConvexSupport(const ConvexShape& convex)
   return [&convex](const Eigen::Vector3d& dir) {
     return convex.support(dir);
   };
+}
+
+SupportFunction makeTransformedConvexSupport(
+    const ConvexShape& convex, const Eigen::Isometry3d& transform)
+{
+  return [&convex, transform](const Eigen::Vector3d& dir) {
+    const Eigen::Vector3d localDir = transform.linear().transpose() * dir;
+    return transform * convex.support(localDir);
+  };
+}
+
+struct ScriptedSupportEntry
+{
+  Eigen::Vector3d direction;
+  Eigen::Vector3d point;
+};
+
+SupportFunction makeScriptedSupport(
+    std::vector<ScriptedSupportEntry> entries, double fallbackScale = 1000.0)
+{
+  return [entries = std::move(entries),
+          fallbackScale](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
+    Eigen::Vector3d direction = dir;
+    if (direction.squaredNorm() < 1e-20) {
+      direction = Eigen::Vector3d::UnitX();
+    } else {
+      direction.normalize();
+    }
+
+    for (const auto& entry : entries) {
+      Eigen::Vector3d key = entry.direction;
+      if (key.squaredNorm() < 1e-20) {
+        key = Eigen::Vector3d::UnitX();
+      } else {
+        key.normalize();
+      }
+      if (direction.isApprox(key, 1e-9)) {
+        return entry.point;
+      }
+    }
+
+    return -fallbackScale * direction;
+  };
+}
+
+SupportFunction makeZeroSupport()
+{
+  return [](const Eigen::Vector3d&) {
+    return Eigen::Vector3d::Zero();
+  };
+}
+
+GjkSimplex makeWarmStartDirections(std::span<const Eigen::Vector3d> directions)
+{
+  GjkSimplex simplex;
+  for (const auto& direction : directions) {
+    SupportPoint point;
+    point.direction = direction;
+    point.v = direction;
+    simplex.push(point);
+  }
+  return simplex;
 }
 
 TEST(Gjk, SpheresIntersecting)
@@ -201,6 +358,53 @@ TEST(Gjk, ConvexConvexSeparated)
   EXPECT_FALSE(Gjk::intersect(supportA, supportB));
 }
 
+TEST(Gjk, TransformedConvexSupportMatchesVertexSearch)
+{
+  const std::vector<Eigen::Vector3d> vertices{
+      {-1, -1, -1},
+      {1, -1, -1},
+      {1, 1, -1},
+      {-1, 1, -1},
+      {-1, -1, 1},
+      {1, -1, 1},
+      {1, 1, 1},
+      {-1, 1, 1}};
+  const ConvexShape convex(vertices);
+
+  std::array<Eigen::Isometry3d, 3> transforms;
+  transforms[0] = Eigen::Isometry3d::Identity();
+  transforms[1] = Eigen::Isometry3d::Identity();
+  transforms[1].translation() = Eigen::Vector3d(-1.0, 2.0, -3.0);
+  transforms[2] = Eigen::Isometry3d::Identity();
+  transforms[2].linear()
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d(1.0, -2.0, 3.0).normalized())
+            .toRotationMatrix();
+
+  const std::array<Eigen::Vector3d, 3> directions{{
+      {-2.0, -2.0, -2.0},
+      {-2.0, 3.0, -2.0},
+      {7.0, 1.0, -1.0},
+  }};
+
+  for (const auto& transform : transforms) {
+    const auto support = makeTransformedConvexSupport(convex, transform);
+    for (const auto& direction : directions) {
+      Eigen::Vector3d expected = Eigen::Vector3d::Zero();
+      double expectedDot = -std::numeric_limits<double>::infinity();
+      for (const auto& vertex : vertices) {
+        const Eigen::Vector3d transformedVertex = transform * vertex;
+        const double dot = transformedVertex.dot(direction);
+        if (dot > expectedDot) {
+          expectedDot = dot;
+          expected = transformedVertex;
+        }
+      }
+
+      EXPECT_TRUE(support(direction).isApprox(expected, 1e-12));
+    }
+  }
+}
+
 TEST(Gjk, IdenticalShapes)
 {
   auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
@@ -298,6 +502,167 @@ TEST(Gjk, WarmStartEmptySimplexFallsBack)
   EXPECT_NEAR(result.distance, 1.0, 1e-6);
 }
 
+TEST(Gjk, WarmStartSimplexReductionCasesRemainFinite)
+{
+  auto supportA
+      = makeBoxSupport(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones());
+  auto supportB = makeBoxSupport(
+      Eigen::Vector3d(3.0, 2.0, 1.0), Eigen::Vector3d(0.5, 0.4, 0.3));
+
+  const std::array<Eigen::Vector3d, 4> directions{{
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d(-1.0, -1.0, -1.0),
+  }};
+
+  for (int simplexSize = 1; simplexSize <= 4; ++simplexSize) {
+    GjkSimplex simplex;
+    for (int i = 0; i < simplexSize; ++i) {
+      simplex.push(makeSupportPoint(supportA, supportB, directions[i]));
+    }
+    simplex.points[0].direction = Eigen::Vector3d::Zero();
+
+    const GjkResult result
+        = Gjk::query(supportA, supportB, simplex, Eigen::Vector3d::Zero());
+    EXPECT_FALSE(result.intersecting);
+    EXPECT_TRUE(std::isfinite(result.distance));
+    EXPECT_TRUE(result.closestPointA.allFinite());
+    EXPECT_TRUE(result.closestPointB.allFinite());
+    EXPECT_TRUE(result.separationAxis.allFinite());
+  }
+}
+
+TEST(Gjk, ScriptedLineSimplexReductionsRemainFinite)
+{
+  const auto supportB = makeZeroSupport();
+  const std::array<Eigen::Vector3d, 2> directions{
+      Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY()};
+
+  const std::array<std::array<Eigen::Vector3d, 2>, 3> lineCases{{
+      {Eigen::Vector3d(2.0, 0.0, 0.0), Eigen::Vector3d(2.0, 0.0, 0.0)},
+      {Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d(2.0, 0.0, 0.0)},
+      {Eigen::Vector3d(1.0, -1.0, 0.0), Eigen::Vector3d(1.0, 1.0, 0.0)},
+  }};
+
+  for (const auto& lineCase : lineCases) {
+    auto supportA = makeScriptedSupport({
+        {directions[0], lineCase[0]},
+        {directions[1], lineCase[1]},
+    });
+    const GjkResult result = Gjk::query(
+        supportA,
+        supportB,
+        makeWarmStartDirections(directions),
+        Eigen::Vector3d::Zero());
+
+    EXPECT_FALSE(result.intersecting);
+    EXPECT_TRUE(std::isfinite(result.distance));
+    EXPECT_TRUE(result.closestPointA.allFinite());
+    EXPECT_TRUE(result.closestPointB.allFinite());
+    EXPECT_TRUE(result.separationAxis.allFinite());
+  }
+}
+
+TEST(Gjk, ScriptedTriangleSimplexReductionsRemainFinite)
+{
+  const auto supportB = makeZeroSupport();
+  const std::array<Eigen::Vector3d, 3> directions{
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ()};
+
+  const std::array<std::array<Eigen::Vector3d, 3>, 3> triangleCases{{
+      {Eigen::Vector3d(1.0, 0.0, 0.0),
+       Eigen::Vector3d(2.0, -1.0, 0.0),
+       Eigen::Vector3d(2.0, 1.0, 0.0)},
+      {Eigen::Vector3d(1.0, -1.0, 0.0),
+       Eigen::Vector3d(1.0, 1.0, 0.0),
+       Eigen::Vector3d(3.0, 0.0, 0.0)},
+      {Eigen::Vector3d(
+           1.339155159085458, -1.8612700724644577, 3.0873592851850828),
+       Eigen::Vector3d(
+           0.96698692094859917, -0.24585782282486157, 2.7090516856147455),
+       Eigen::Vector3d(
+           -0.15173670634136016, 4.6100102129124449, 1.5718733703952394)},
+  }};
+
+  for (const auto& triangleCase : triangleCases) {
+    auto supportA = makeScriptedSupport({
+        {directions[0], triangleCase[0]},
+        {directions[1], triangleCase[1]},
+        {directions[2], triangleCase[2]},
+    });
+    const GjkResult result = Gjk::query(
+        supportA,
+        supportB,
+        makeWarmStartDirections(directions),
+        Eigen::Vector3d::Zero());
+
+    EXPECT_FALSE(result.intersecting);
+    EXPECT_TRUE(std::isfinite(result.distance));
+    EXPECT_TRUE(result.closestPointA.allFinite());
+    EXPECT_TRUE(result.closestPointB.allFinite());
+    EXPECT_TRUE(result.separationAxis.allFinite());
+  }
+}
+
+TEST(Gjk, ScriptedTetrahedronContainingOriginReportsIntersection)
+{
+  const auto supportA = makeScriptedSupport({
+      {Eigen::Vector3d::UnitX(), Eigen::Vector3d(1.0, 0.0, 0.0)},
+      {Eigen::Vector3d::UnitY(), Eigen::Vector3d(0.0, 1.0, 0.0)},
+      {Eigen::Vector3d::UnitZ(), Eigen::Vector3d(0.0, 0.0, 1.0)},
+      {Eigen::Vector3d(-1.0, -1.0, -1.0), Eigen::Vector3d(-1.0, -1.0, -1.0)},
+  });
+  const auto supportB = makeZeroSupport();
+  const std::array<Eigen::Vector3d, 4> directions{
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d(-1.0, -1.0, -1.0)};
+
+  const GjkResult result = Gjk::query(
+      supportA,
+      supportB,
+      makeWarmStartDirections(directions),
+      Eigen::Vector3d::Zero());
+
+  EXPECT_TRUE(result.intersecting);
+  EXPECT_EQ(result.simplex.size, 4);
+}
+
+TEST(GjkSignedDistance, RotatedBoxEdgeFaceCases)
+{
+  const std::array<Eigen::Isometry3d, 4> frames{{
+      Eigen::Isometry3d::Identity(),
+      makeBoxSignedDistanceFrame(Eigen::Vector3d(0.0, 0.0, 1.0)),
+      makeBoxSignedDistanceFrame(Eigen::Vector3d(0.0, 1.0, 0.0)),
+      makeBoxSignedDistanceFrame(
+          Eigen::Vector3d(0.1, 0.2, 0.3),
+          std::numbers::pi_v<double> * 0.1,
+          Eigen::Vector3d::UnitZ()),
+  }};
+
+  for (const auto& frame : frames) {
+    expectRotatedBoxEdgeFaceSignedDistance(
+        "rotated edge separated from face",
+        frame,
+        Eigen::Vector3d(-1.1, 0.0, 0.5),
+        0.1);
+    expectRotatedBoxEdgeFaceSignedDistance(
+        "rotated edge touching face",
+        frame,
+        Eigen::Vector3d(-1.0, 0.1, 0.5),
+        0.0);
+    expectRotatedBoxEdgeFaceSignedDistance(
+        "rotated edge penetrating face",
+        frame,
+        Eigen::Vector3d(-0.9, -0.05, 0.5),
+        -0.1);
+  }
+}
+
 TEST(Epa, SphereSphereIntersecting)
 {
   auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
@@ -312,6 +677,42 @@ TEST(Epa, SphereSphereIntersecting)
   } else {
     EXPECT_LT(gjk.simplex.size, 4);
   }
+}
+
+TEST(Epa, RejectsIncompleteSimplex)
+{
+  auto supportA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
+  auto supportB = makeSphereSupport(Eigen::Vector3d(0.5, 0.0, 0.0), 1.0);
+
+  GjkSimplex simplex;
+  simplex.push(makeSupportPoint(supportA, supportB, Eigen::Vector3d::UnitX()));
+  simplex.push(makeSupportPoint(supportA, supportB, Eigen::Vector3d::UnitY()));
+
+  const EpaResult epa = Epa::penetration(supportA, supportB, simplex);
+  EXPECT_FALSE(epa.success);
+  EXPECT_EQ(epa.depth, 0.0);
+}
+
+TEST(Epa, DegenerateInitialTetrahedronReturnsNoPenetration)
+{
+  const auto supportA = makeZeroSupport();
+  const auto supportB = makeZeroSupport();
+
+  GjkSimplex simplex;
+  for (const Eigen::Vector3d& point :
+       {Eigen::Vector3d(1.0, 0.0, 0.0),
+        Eigen::Vector3d(2.0, 0.0, 0.0),
+        Eigen::Vector3d(3.0, 0.0, 0.0),
+        Eigen::Vector3d(4.0, 0.0, 0.0)}) {
+    SupportPoint supportPoint;
+    supportPoint.v = point;
+    supportPoint.v1 = point;
+    simplex.push(supportPoint);
+  }
+
+  const EpaResult epa = Epa::penetration(supportA, supportB, simplex);
+  EXPECT_FALSE(epa.success);
+  EXPECT_EQ(epa.depth, 0.0);
 }
 
 TEST(Epa, BoxBoxPenetrationDepthAnalytic)
@@ -385,4 +786,69 @@ TEST(Mpr, SphereSpherePenetrationDepthAnalytic)
   EXPECT_TRUE(mpr.pointOnA.allFinite());
   EXPECT_TRUE(mpr.pointOnB.allFinite());
   EXPECT_TRUE(mpr.position.allFinite());
+}
+
+TEST(Mpr, ScriptedTouchAndSegmentPortalCases)
+{
+  const SupportFunction zero = makeZeroSupport();
+
+  {
+    const auto supportA = makeScriptedSupport(
+        {{-Eigen::Vector3d::UnitX(), -1e-7 * Eigen::Vector3d::UnitX()}});
+
+    const MprResult mpr = Mpr::penetration(
+        supportA, zero, Eigen::Vector3d::UnitX(), Eigen::Vector3d::Zero());
+
+    ASSERT_TRUE(mpr.success);
+    EXPECT_NEAR(mpr.depth, 0.0, 1e-12);
+    EXPECT_TRUE(mpr.pointOnA.allFinite());
+    EXPECT_TRUE(mpr.pointOnB.allFinite());
+    EXPECT_TRUE(mpr.position.allFinite());
+  }
+
+  {
+    const auto supportA = makeScriptedSupport(
+        {{-Eigen::Vector3d::UnitX(), -Eigen::Vector3d::UnitX()}});
+
+    const MprResult mpr = Mpr::penetration(
+        supportA, zero, Eigen::Vector3d::UnitX(), Eigen::Vector3d::Zero());
+
+    ASSERT_TRUE(mpr.success);
+    EXPECT_NEAR(mpr.depth, 1.0, 1e-12);
+    EXPECT_GT(mpr.normal.dot(-Eigen::Vector3d::UnitX()), 0.99);
+    EXPECT_TRUE(mpr.pointOnA.allFinite());
+    EXPECT_TRUE(mpr.pointOnB.allFinite());
+    EXPECT_TRUE(mpr.position.allFinite());
+  }
+}
+
+TEST(Mpr, ReportsSeparatedAndConcentricCases)
+{
+  auto separatedA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
+  auto separatedB = makeSphereSupport(Eigen::Vector3d(3.0, 0.0, 0.0), 1.0);
+  EXPECT_FALSE(
+      Mpr::intersect(
+          separatedA,
+          separatedB,
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d(3.0, 0.0, 0.0)));
+  EXPECT_FALSE(
+      Mpr::penetration(
+          separatedA,
+          separatedB,
+          Eigen::Vector3d::Zero(),
+          Eigen::Vector3d(3.0, 0.0, 0.0))
+          .success);
+
+  auto concentricA = makeSphereSupport(Eigen::Vector3d::Zero(), 1.0);
+  auto concentricB = makeSphereSupport(Eigen::Vector3d::Zero(), 0.25);
+  const MprResult contained = Mpr::penetration(
+      concentricA,
+      concentricB,
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::Zero());
+  EXPECT_TRUE(contained.success);
+  EXPECT_TRUE(contained.pointOnA.allFinite());
+  EXPECT_TRUE(contained.pointOnB.allFinite());
+  EXPECT_TRUE(contained.position.allFinite());
 }

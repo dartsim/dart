@@ -1,0 +1,148 @@
+material {
+    name : dartTexturedLit,
+    shadingModel : lit,
+    doubleSided : true,
+    requires : [
+        uv0
+    ],
+    parameters : [
+        {
+            type : float4,
+            name : baseColor
+        },
+        {
+            type : float,
+            name : metallic
+        },
+        {
+            type : float,
+            name : roughness
+        },
+        {
+            type : float,
+            name : reflectance
+        },
+        {
+            type : float3,
+            name : emissiveColor
+        },
+        {
+            type : float,
+            name : useBaseColorTexture
+        },
+        {
+            type : float,
+            name : useMetallicTexture
+        },
+        {
+            type : float,
+            name : useRoughnessTexture
+        },
+        {
+            type : float,
+            name : useMetallicRoughnessTexture
+        },
+        {
+            type : float,
+            name : useNormalTexture
+        },
+        {
+            type : float,
+            name : useOcclusionTexture
+        },
+        {
+            type : float,
+            name : useEmissiveTexture
+        },
+        {
+            type : sampler2d,
+            name : baseColorTexture
+        },
+        {
+            type : sampler2d,
+            name : metallicTexture
+        },
+        {
+            type : sampler2d,
+            name : roughnessTexture
+        },
+        {
+            type : sampler2d,
+            name : metallicRoughnessTexture
+        },
+        {
+            type : sampler2d,
+            name : normalTexture
+        },
+        {
+            type : sampler2d,
+            name : occlusionTexture
+        },
+        {
+            type : sampler2d,
+            name : emissiveTexture
+        }
+    ]
+}
+
+fragment {
+    float displayLuminance(vec3 color) {
+        return dot(color, vec3(0.2126, 0.7152, 0.0722));
+    }
+
+    vec3 readableDisplayColor(vec3 color) {
+        float baseLuminance = displayLuminance(color);
+        if (baseLuminance >= 0.16) {
+            return color;
+        }
+
+        float lift = clamp((0.16 - baseLuminance) / 0.16, 0.0, 1.0);
+        return mix(color, vec3(0.28, 0.30, 0.34), lift);
+    }
+
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        vec2 uv = getUV0();
+
+        vec4 baseColor = materialParams.baseColor;
+        if (materialParams.useBaseColorTexture > 0.5) {
+            baseColor *= texture(materialParams_baseColorTexture, uv);
+        }
+        baseColor.rgb = readableDisplayColor(baseColor.rgb);
+
+        float metallic = materialParams.metallic;
+        float roughness = materialParams.roughness;
+        if (materialParams.useMetallicRoughnessTexture > 0.5) {
+            vec4 metallicRoughness = texture(
+                    materialParams_metallicRoughnessTexture, uv);
+            roughness *= metallicRoughness.g;
+            metallic *= metallicRoughness.b;
+        }
+        if (materialParams.useMetallicTexture > 0.5) {
+            metallic *= texture(materialParams_metallicTexture, uv).r;
+        }
+        if (materialParams.useRoughnessTexture > 0.5) {
+            roughness *= texture(materialParams_roughnessTexture, uv).r;
+        }
+
+        vec3 emissive = materialParams.emissiveColor;
+        if (materialParams.useEmissiveTexture > 0.5) {
+            emissive *= texture(materialParams_emissiveTexture, uv).rgb;
+        }
+
+        material.baseColor = baseColor;
+        material.metallic = clamp(metallic, 0.0, 1.0);
+        material.roughness = clamp(roughness, 0.04, 1.0);
+        material.reflectance = materialParams.reflectance;
+        material.emissive.rgb = emissive;
+
+        if (materialParams.useOcclusionTexture > 0.5) {
+            material.ambientOcclusion = texture(
+                    materialParams_occlusionTexture, uv).r;
+        }
+        if (materialParams.useNormalTexture > 0.5) {
+            material.normal = normalize(
+                    texture(materialParams_normalTexture, uv).xyz * 2.0 - 1.0);
+        }
+    }
+}

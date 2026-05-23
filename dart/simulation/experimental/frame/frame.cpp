@@ -36,7 +36,11 @@
 #include "dart/simulation/experimental/frame/free_frame.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
+#include <dart/simulation/experimental/comps/joint.hpp>
 #include <dart/simulation/experimental/comps/link.hpp>
+#include <dart/simulation/experimental/comps/name.hpp>
+
+#include <Eigen/Geometry>
 
 #include <vector>
 
@@ -87,6 +91,106 @@ void markSubtreeCacheDirty(entt::registry& registry, entt::entity root)
 
 namespace dart::simulation::experimental {
 
+namespace {
+
+//==============================================================================
+Eigen::Isometry3d rotationVectorTransform(const Eigen::Vector3d& rotation)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  const double angle = rotation.norm();
+  if (angle > 1e-12) {
+    transform.linear()
+        = Eigen::AngleAxisd(angle, rotation / angle).toRotationMatrix();
+  }
+  return transform;
+}
+
+//==============================================================================
+Eigen::Isometry3d getJointTransform(const comps::Joint& joint)
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+
+  switch (joint.type) {
+    case comps::JointType::Fixed:
+      return transform;
+    case comps::JointType::Revolute:
+      transform.linear()
+          = Eigen::AngleAxisd(joint.position[0], joint.axis).toRotationMatrix();
+      return transform;
+    case comps::JointType::Prismatic:
+      transform.translation() = joint.axis * joint.position[0];
+      return transform;
+    case comps::JointType::Screw:
+      transform.linear()
+          = Eigen::AngleAxisd(joint.position[0], joint.axis).toRotationMatrix();
+      transform.translation() = joint.axis * joint.pitch * joint.position[0];
+      return transform;
+    case comps::JointType::Universal:
+      transform.linear() = (Eigen::AngleAxisd(joint.position[0], joint.axis)
+                            * Eigen::AngleAxisd(joint.position[1], joint.axis2))
+                               .toRotationMatrix();
+      return transform;
+    case comps::JointType::Ball:
+      return rotationVectorTransform(joint.position.head<3>());
+    case comps::JointType::Planar: {
+      const Eigen::Vector3d normal = joint.axis.normalized();
+      const Eigen::Vector3d axis1 = joint.axis2.normalized();
+      const Eigen::Vector3d axis2 = normal.cross(axis1).normalized();
+      transform.translation()
+          = axis1 * joint.position[0] + axis2 * joint.position[1];
+      transform.linear()
+          = Eigen::AngleAxisd(joint.position[2], normal).toRotationMatrix();
+      return transform;
+    }
+    case comps::JointType::Free:
+      transform.translation() = joint.position.head<3>();
+      transform.linear()
+          = rotationVectorTransform(joint.position.tail<3>()).linear();
+      return transform;
+    case comps::JointType::Custom:
+      DART_EXPERIMENTAL_THROW_T(
+          InvalidOperationException,
+          "Custom joints require a custom kinematics stage");
+  }
+
+  return transform;
+}
+
+//==============================================================================
+Eigen::Isometry3d getFrameLocalTransform(
+    const entt::registry& registry, entt::entity entity)
+{
+  if (const auto* link = registry.try_get<comps::Link>(entity)) {
+    if (link->parentJoint != entt::null) {
+      const auto* joint = registry.try_get<comps::Joint>(link->parentJoint);
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !joint,
+          InvalidOperationException,
+          "Link parent joint is missing a Joint component");
+
+      return getJointTransform(*joint) * link->transformFromParentJoint;
+    }
+  }
+
+  if (const auto* props
+      = registry.try_get<comps::FreeFrameProperties>(entity)) {
+    return props->localTransform;
+  }
+
+  if (const auto* props
+      = registry.try_get<comps::FixedFrameProperties>(entity)) {
+    return props->localTransform;
+  }
+
+  if (const auto* link = registry.try_get<comps::Link>(entity)) {
+    return link->transformFromParentJoint;
+  }
+
+  return Eigen::Isometry3d::Identity();
+}
+
+} // namespace
+
 //==============================================================================
 Frame::Frame(entt::entity entity, World* world)
   : EntityObjectWith<
@@ -102,12 +206,16 @@ Frame::Frame(entt::entity entity, World* world)
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Frame::getLocalTransform() const
+Eigen::Isometry3d Frame::getLocalTransform() const
 {
-  // Default implementation: returns identity (for world frame)
-  // Derived classes override this to provide frame-type-specific behavior
-  static const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
-  return identity;
+  if (isWorld()) {
+    return Eigen::Isometry3d::Identity();
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid frame handle");
+
+  return getFrameLocalTransform(m_world->getRegistry(), m_entity);
 }
 
 //==============================================================================
@@ -129,6 +237,24 @@ Frame Frame::getParentFrame() const
       "Entity does not have FrameState component");
 
   return Frame(frameState->parentFrame, m_world);
+}
+
+//==============================================================================
+std::string_view Frame::getName() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid frame handle");
+
+  if (isWorld()) {
+    return "world";
+  }
+
+  if (const auto* name
+      = m_world->getRegistry().try_get<comps::Name>(m_entity)) {
+    return name->name;
+  }
+
+  return "";
 }
 
 //==============================================================================
@@ -206,9 +332,7 @@ void Frame::setParentFrame(const Frame& parent)
   // Update parent in FrameState component
   frameState->parentFrame = parentEntity;
 
-  if (m_world) {
-    markSubtreeCacheDirty(m_world->getRegistry(), m_entity);
-  }
+  markSubtreeTransformCacheDirty();
 }
 
 //==============================================================================
@@ -234,7 +358,9 @@ const Eigen::Isometry3d& Frame::getTransform() const
 
   if (cache->needTransformUpdate) {
     auto parent = getParentFrame();
-    cache->worldTransform = parent.getTransform() * getLocalTransform();
+    cache->worldTransform
+        = parent.getTransform()
+          * getFrameLocalTransform(m_world->getRegistry(), m_entity);
     cache->needTransformUpdate = false;
   }
 
@@ -296,7 +422,7 @@ Eigen::Isometry3d Frame::getTransform(const Frame& relativeTo) const
   // Optimization: transform to parent is just the local transform
   auto parent = getParentFrame();
   if (!parent.isWorld() && relativeTo.m_entity == parent.m_entity) {
-    return getLocalTransform();
+    return getFrameLocalTransform(m_world->getRegistry(), m_entity);
   }
 
   // General case: compute via world transforms
@@ -383,6 +509,16 @@ bool Frame::isValid() const
   }
 
   return true;
+}
+
+//==============================================================================
+void Frame::markSubtreeTransformCacheDirty()
+{
+  if (!m_world) {
+    return;
+  }
+
+  markSubtreeCacheDirty(m_world->getRegistry(), m_entity);
 }
 
 } // namespace dart::simulation::experimental

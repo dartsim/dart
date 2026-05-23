@@ -69,7 +69,9 @@ jobs:
             -DDART_BUILD_EXAMPLES=OFF \
             -DDART_BUILD_TUTORIALS=OFF \
             -DDART_BUILD_SIMULATION_EXPERIMENTAL=OFF \
-            -DDART_BUILD_GUI_OSG=OFF \
+            -DDART_BUILD_GUI=OFF \
+            -DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF \
+            -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF \
             ${{ matrix.simd_level.cmake_flags }}
 
       - name: Build SIMD tests
@@ -119,7 +121,9 @@ jobs:
             -DDART_BUILD_EXAMPLES=OFF \
             -DDART_BUILD_TUTORIALS=OFF \
             -DDART_BUILD_SIMULATION_EXPERIMENTAL=OFF \
-            -DDART_BUILD_GUI_OSG=OFF
+            -DDART_BUILD_GUI=OFF \
+            -DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF \
+            -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF
 
       - name: Build SIMD tests
         run: |

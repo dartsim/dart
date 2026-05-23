@@ -35,6 +35,7 @@
 #include "dart/common/macros.hpp"
 #include "terminal_condition.hpp"
 
+#include <algorithm>
 #include <utility>
 
 // Macro for functions not implemented yet
@@ -47,6 +48,22 @@ using namespace Eigen;
 
 using namespace dart::dynamics;
 using namespace dart::constraint;
+
+namespace {
+
+constexpr double kAxisEpsilon = 1e-10;
+
+Eigen::Vector3d normalizedOr(
+    const Eigen::Vector3d& vector, const Eigen::Vector3d& fallback)
+{
+  const double norm = vector.norm();
+  if (norm <= kAxisEpsilon) {
+    return fallback;
+  }
+  return vector / norm;
+}
+
+} // namespace
 
 //==============================================================================
 State::State(SkeletonPtr _skeleton, const std::string& _name)
@@ -240,17 +257,19 @@ Eigen::Isometry3d State::getCOMFrame() const
 {
   Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
 
-  // Y-axis
-  const Eigen::Vector3d yAxis = Eigen::Vector3d::UnitY();
+  // Z-axis
+  const Eigen::Vector3d zAxis = Eigen::Vector3d::UnitZ();
 
   // X-axis
   Eigen::Vector3d pelvisXAxis = mPelvis->getTransform().linear().col(0);
-  const double mag = yAxis.dot(pelvisXAxis);
-  pelvisXAxis -= mag * yAxis;
-  const Eigen::Vector3d xAxis = pelvisXAxis.normalized();
+  const double mag = zAxis.dot(pelvisXAxis);
+  pelvisXAxis -= mag * zAxis;
+  const Eigen::Vector3d xAxis
+      = normalizedOr(pelvisXAxis, Eigen::Vector3d::UnitX());
 
-  // Z-axis
-  const Eigen::Vector3d zAxis = xAxis.cross(yAxis);
+  // Y-axis
+  const Eigen::Vector3d yAxis
+      = normalizedOr(zAxis.cross(xAxis), Eigen::Vector3d::UnitY());
 
   T.translation() = getCOM();
 
@@ -282,7 +301,7 @@ double State::getSagittalCOMVelocity()
 //==============================================================================
 double State::getCoronalCOMDistance()
 {
-  Eigen::Vector3d yAxis = getCOMFrame().linear().col(2); // z-axis
+  Eigen::Vector3d yAxis = getCOMFrame().linear().col(1); // y-axis
   Eigen::Vector3d d = getCOM() - getStanceAnklePosition();
 
   return d.dot(yAxis);
@@ -291,7 +310,7 @@ double State::getCoronalCOMDistance()
 //==============================================================================
 double State::getCoronalCOMVelocity()
 {
-  Eigen::Vector3d yAxis = getCOMFrame().linear().col(2); // z-axis
+  Eigen::Vector3d yAxis = getCOMFrame().linear().col(1); // y-axis
   Eigen::Vector3d v = getCOMVelocity();
 
   return v.dot(yAxis);
@@ -323,17 +342,17 @@ Eigen::Vector3d State::getRightAnklePosition() const
 double State::getSagittalPelvisAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
-  Vector3d comY = comR.col(1);
+  Vector3d comZ = comR.col(2);
 
   Vector3d pelvisZ = mPelvis->getTransform().linear().col(2);
   Vector3d projPelvisZ = (comR.transpose() * pelvisZ);
-  projPelvisZ[2] = 0.0;
-  projPelvisZ.normalize();
-  double angle = _getAngleBetweenTwoVectors(projPelvisZ, comY);
+  projPelvisZ[1] = 0.0;
+  projPelvisZ = normalizedOr(projPelvisZ, Eigen::Vector3d::UnitZ());
+  double angle = _getAngleBetweenTwoVectors(projPelvisZ, comZ);
 
-  Vector3d cross = comY.cross(projPelvisZ);
+  Vector3d cross = comZ.cross(projPelvisZ);
 
-  if (cross[2] > 0.0) {
+  if (cross[1] > 0.0) {
     return angle;
   } else {
     return -angle;
@@ -344,14 +363,14 @@ double State::getSagittalPelvisAngle() const
 double State::getCoronalPelvisAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
-  Vector3d comY = comR.col(1);
+  Vector3d comZ = comR.col(2);
   Vector3d pelvisZ = mPelvis->getTransform().linear().col(2);
   Vector3d projPelvisZ = (comR.transpose() * pelvisZ);
   projPelvisZ[0] = 0.0;
-  projPelvisZ.normalize();
-  double angle = _getAngleBetweenTwoVectors(projPelvisZ, comY);
+  projPelvisZ = normalizedOr(projPelvisZ, Eigen::Vector3d::UnitZ());
+  double angle = _getAngleBetweenTwoVectors(projPelvisZ, comZ);
 
-  Vector3d cross = comY.cross(projPelvisZ);
+  Vector3d cross = comZ.cross(projPelvisZ);
 
   if (cross[0] > 0.0) {
     return angle;
@@ -364,16 +383,16 @@ double State::getCoronalPelvisAngle() const
 double State::getSagittalLeftLegAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
-  Vector3d comY = comR.col(1);
+  Vector3d comZ = comR.col(2);
   Vector3d thighAxisZ = mLeftThigh->getTransform().linear().col(2);
   Vector3d projThighAZ = (comR.transpose() * thighAxisZ);
-  projThighAZ[2] = 0.0;
-  projThighAZ.normalize();
-  double angle = _getAngleBetweenTwoVectors(projThighAZ, comY);
+  projThighAZ[1] = 0.0;
+  projThighAZ = normalizedOr(projThighAZ, Eigen::Vector3d::UnitZ());
+  double angle = _getAngleBetweenTwoVectors(projThighAZ, comZ);
 
-  Vector3d cross = comY.cross(projThighAZ);
+  Vector3d cross = comZ.cross(projThighAZ);
 
-  if (cross[2] > 0.0) {
+  if (cross[1] > 0.0) {
     return angle;
   } else {
     return -angle;
@@ -384,16 +403,16 @@ double State::getSagittalLeftLegAngle() const
 double State::getSagittalRightLegAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
-  Vector3d comY = comR.col(1);
+  Vector3d comZ = comR.col(2);
   Vector3d thighAxisZ = mRightThigh->getTransform().linear().col(2);
   Vector3d projThighAZ = (comR.transpose() * thighAxisZ);
-  projThighAZ[2] = 0.0;
-  projThighAZ.normalize();
-  double angle = _getAngleBetweenTwoVectors(projThighAZ, comY);
+  projThighAZ[1] = 0.0;
+  projThighAZ = normalizedOr(projThighAZ, Eigen::Vector3d::UnitZ());
+  double angle = _getAngleBetweenTwoVectors(projThighAZ, comZ);
 
-  Vector3d cross = comY.cross(projThighAZ);
+  Vector3d cross = comZ.cross(projThighAZ);
 
-  if (cross[2] > 0.0) {
+  if (cross[1] > 0.0) {
     return angle;
   } else {
     return -angle;
@@ -404,14 +423,14 @@ double State::getSagittalRightLegAngle() const
 double State::getCoronalLeftLegAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
-  Vector3d comY = comR.col(1);
+  Vector3d comZ = comR.col(2);
   Vector3d thighAxisZ = mLeftThigh->getTransform().linear().col(2);
   Vector3d projThighAZ = (comR.transpose() * thighAxisZ);
   projThighAZ[0] = 0.0;
-  projThighAZ.normalize();
-  double angle = _getAngleBetweenTwoVectors(projThighAZ, comY);
+  projThighAZ = normalizedOr(projThighAZ, Eigen::Vector3d::UnitZ());
+  double angle = _getAngleBetweenTwoVectors(projThighAZ, comZ);
 
-  Vector3d cross = comY.cross(projThighAZ);
+  Vector3d cross = comZ.cross(projThighAZ);
 
   if (cross[0] > 0.0) {
     return angle;
@@ -424,14 +443,14 @@ double State::getCoronalLeftLegAngle() const
 double State::getCoronalRightLegAngle() const
 {
   Matrix3d comR = getCOMFrame().linear();
-  Vector3d comY = comR.col(1);
+  Vector3d comZ = comR.col(2);
   Vector3d thighAxisZ = mRightThigh->getTransform().linear().col(2);
   Vector3d projThighAZ = (comR.transpose() * thighAxisZ);
   projThighAZ[0] = 0.0;
-  projThighAZ.normalize();
-  double angle = _getAngleBetweenTwoVectors(projThighAZ, comY);
+  projThighAZ = normalizedOr(projThighAZ, Eigen::Vector3d::UnitZ());
+  double angle = _getAngleBetweenTwoVectors(projThighAZ, comZ);
 
-  Vector3d cross = comY.cross(projThighAZ);
+  Vector3d cross = comZ.cross(projThighAZ);
 
   if (cross[0] > 0.0) {
     return angle;
@@ -453,7 +472,12 @@ Eigen::Vector3d State::_getJointPosition(BodyNode* _bodyNode) const
 double State::_getAngleBetweenTwoVectors(
     const Eigen::Vector3d& _v1, const Eigen::Vector3d& _v2) const
 {
-  return std::acos(_v1.dot(_v2) / (_v1.norm() * _v2.norm()));
+  const double denominator = _v1.norm() * _v2.norm();
+  if (denominator <= kAxisEpsilon) {
+    return 0.0;
+  }
+
+  return std::acos(std::clamp(_v1.dot(_v2) / denominator, -1.0, 1.0));
 }
 
 //==============================================================================

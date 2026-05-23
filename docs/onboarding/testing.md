@@ -131,7 +131,7 @@ tests/
 │   ├── common/              # Allocators, factory, logging, memory, strings
 │   ├── constraint/          # Constraint solver API
 │   ├── dynamics/            # Joint tests, inertia calculations, shape node API
-│   ├── gui/                 # Tests for OSG nodes and ImGui integration
+│   ├── gui/                 # DART GUI descriptor and public-boundary tests
 │   ├── io/                  # Tests for parsers (URDF, SDF error paths)
 │   ├── math/                # Geometry, math operations, random, meshes, LCP solvers
 │   ├── sensor/              # Tests for the sensor API
@@ -192,7 +192,10 @@ Unit tests focus on testing **individual classes or functions in isolation**. Th
 - **common/**: Allocators, factory patterns, logging, memory management, strings, URIs
 - **constraint/**: Constraint solver API tests (without full physics)
 - **dynamics/**: Individual joint tests, inertia calculations, single component tests
-- **gui/**: OSG nodes and ImGui integration tests
+- **gui/**: Filament descriptor, scene extraction, and public-boundary guards.
+  GUI tests should keep renderer implementation types out of public headers and
+  prefer DART-owned concepts such as renderables, cameras, picking, debug draw,
+  screenshots, and viewer lifecycle state.
 - **io/**: Parser tests (URDF, SDF error paths)
 - **math/**: Geometry primitives, icosphere generation, mathematical operations, random number generation, triangle meshes, LCP solvers (in `lcp/` subdirectory)
 - **sensor/**: Sensor API tests
@@ -217,28 +220,14 @@ Unit tests focus on testing **individual classes or functions in isolation**. Th
 - ✅ Tests API correctness, edge cases, or algorithms
 - ✅ Can run in milliseconds
 
-### Regression Tests (Migrated)
+### Regression Test Naming
 
-> **Note:** The `tests/regression/` directory has been **completely removed**. All issue-based regression tests have been renamed with descriptive names and placed in appropriate unit/ or integration/ directories.
+All regression tests use descriptive names organized by module, with GitHub issue references in comments:
 
-Previously, all issue-based regression tests lived in a separate `tests/regression/` directory with names like `test_Issue1234.cpp`. They have now been:
-
-1. **Renamed** with descriptive names that indicate what they test (e.g., `test_CollisionAccuracy.cpp`, `test_SkeletonState.cpp`)
-2. **Distributed** to appropriate module directories based on their test type
-
-**Migration examples:**
-
-- `test_Issue1184.cpp` → `integration/collision/test_CollisionAccuracy.cpp`
-- `test_Issue1243.cpp` → `integration/dynamics/test_SkeletonState.cpp`
-- `test_Issue986.cpp` → `unit/dynamics/test_CreateShapeNodeApi.cpp`
-
-**Rationale for migration:**
-
-- Descriptive test names improve code readability and maintainability
-- Organizing by module makes related tests easier to find
-- Eliminates redundant categorization (regression vs unit/integration)
-- Issue references are preserved in comments within each test file
-- Follows the principle: organize by WHAT you test, not WHY it was written
+```cpp
+// Regression test for Issue #1184 (collision accuracy)
+TEST_F(CollisionTest, test_CollisionAccuracy) { ... }
+```
 
 ### Benchmarks (`benchmark/`)
 
@@ -395,11 +384,16 @@ ctest
 
 ### Run tests by category:
 
+````bash
+ctest -L integration
+ctest -L unit
+
+### Run tests by category:
+
 ```bash
 ctest -L integration
 ctest -L unit
-ctest -L regression
-```
+````
 
 ### Run a specific test:
 

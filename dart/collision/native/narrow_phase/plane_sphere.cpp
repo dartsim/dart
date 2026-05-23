@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/collision/native/narrow_phase/distance.hpp>
 #include <dart/collision/native/narrow_phase/plane_sphere.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
@@ -187,6 +188,46 @@ bool collidePlaneCapsule(
 
   result.addContact(contact);
 
+  return true;
+}
+
+bool collidePlaneConvex(
+    const PlaneShape& plane,
+    const Eigen::Isometry3d& planeTransform,
+    const ConvexShape& convex,
+    const Eigen::Isometry3d& convexTransform,
+    CollisionResult& result,
+    const CollisionOption& option)
+{
+  if (result.numContacts() >= option.maxNumContacts) {
+    return false;
+  }
+
+  DistanceResult distanceResult;
+  const double signedDist = distancePlaneShape(
+      plane,
+      planeTransform,
+      convex,
+      convexTransform,
+      distanceResult,
+      DistanceOption::unlimited());
+
+  if (!std::isfinite(signedDist) || signedDist > 0.0) {
+    return false;
+  }
+
+  const Eigen::Vector3d worldNormal
+      = planeTransform.rotation() * plane.getNormal();
+  const double penetration = -signedDist;
+  const Eigen::Vector3d contactPoint
+      = distanceResult.pointOnObject2 + worldNormal * (penetration * 0.5);
+
+  ContactPoint contact;
+  contact.position = contactPoint;
+  contact.normal = worldNormal;
+  contact.depth = penetration;
+
+  result.addContact(contact);
   return true;
 }
 

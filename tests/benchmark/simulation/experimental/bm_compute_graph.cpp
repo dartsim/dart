@@ -32,8 +32,8 @@
 
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
+#include <dart/simulation/experimental/compute/parallel_executor.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
-#include <dart/simulation/experimental/compute/taskflow_executor.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
 #include <dart/simulation/experimental/world.hpp>
@@ -125,12 +125,12 @@ void BM_ComputeGraphSequential(benchmark::State& state)
 }
 
 //==============================================================================
-void BM_ComputeGraphTaskflow(benchmark::State& state)
+void BM_ComputeGraphParallel(benchmark::State& state)
 {
   const auto itemCount = static_cast<int>(state.range(0));
   const auto batchSize = static_cast<int>(state.range(1));
   BatchedGraph graph(itemCount, batchSize);
-  compute::TaskflowExecutor executor;
+  compute::ParallelExecutor executor;
 
   for (auto _ : state) {
     executor.execute(graph.graph);
@@ -252,12 +252,12 @@ void BM_WorldStepSequential(benchmark::State& state)
 }
 
 //==============================================================================
-void BM_WorldStepTaskflow(benchmark::State& state)
+void BM_WorldStepParallel(benchmark::State& state)
 {
   const auto parentCount = static_cast<int>(state.range(0));
   const auto childCount = static_cast<int>(state.range(1));
   KinematicsWorld fixture(parentCount, childCount);
-  compute::TaskflowExecutor executor;
+  compute::ParallelExecutor executor;
   int iteration = 0;
 
   for (auto _ : state) {
@@ -287,11 +287,11 @@ void BM_RigidBodyStepSequential(benchmark::State& state)
 }
 
 //==============================================================================
-void BM_RigidBodyStepTaskflow(benchmark::State& state)
+void BM_RigidBodyStepParallel(benchmark::State& state)
 {
   const auto bodyCount = static_cast<int>(state.range(0));
   RigidBodyWorld fixture(bodyCount);
-  compute::TaskflowExecutor executor;
+  compute::ParallelExecutor executor;
 
   for (auto _ : state) {
     fixture.world.step(executor);
@@ -312,7 +312,7 @@ BENCHMARK(BM_ComputeGraphSequential)
     ->Args({1024, 1})
     ->Args({1024, 32})
     ->Args({4096, 64});
-BENCHMARK(BM_ComputeGraphTaskflow)
+BENCHMARK(BM_ComputeGraphParallel)
     ->Args({1024, 1})
     ->Args({1024, 32})
     ->Args({4096, 64});
@@ -324,8 +324,8 @@ BENCHMARK(BM_WorldStepSequential)
     ->Args({32, 8})
     ->Args({128, 8})
     ->Args({128, 32});
-BENCHMARK(BM_WorldStepTaskflow)->Args({32, 8})->Args({128, 8})->Args({128, 32});
+BENCHMARK(BM_WorldStepParallel)->Args({32, 8})->Args({128, 8})->Args({128, 32});
 BENCHMARK(BM_RigidBodyStepSequential)->Arg(128)->Arg(1024)->Arg(4096);
-BENCHMARK(BM_RigidBodyStepTaskflow)->Arg(128)->Arg(1024)->Arg(4096);
+BENCHMARK(BM_RigidBodyStepParallel)->Arg(128)->Arg(1024)->Arg(4096);
 
 BENCHMARK_MAIN();

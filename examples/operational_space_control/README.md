@@ -2,27 +2,40 @@
 
 ## Summary
 
-- Goal: drive an end effector toward a draggable target in task space.
-- Concepts/APIs: operational-space control, Jacobians, drag-and-drop targets.
-- Expected output: a robot arm tracking a red target sphere.
-- Controls: drag the red ball; hold 1/2/3 to constrain motion axes.
+- Goal: control the KR5 end effector by moving an operational-space target
+  gizmo.
+- Concepts/APIs: URDF loading, Jacobian-based operational-space control,
+  per-step callbacks, `SimpleFrame` targets, public `dart::gui::Gizmo`
+  affordances, renderer-neutral drag and nudge controls, and public
+  `dart::gui` panels.
+- Expected output: the KR5 robot over the KR5 ground with a public transform
+  gizmo near the end effector.
+- Controls: left-drag the target gizmo arrows/planes/rings to move the
+  operational-space target. Press `1` to select the target for
+  arrow/PageUp/PageDown nudges. Press `s` or `S` to toggle shadows. Space
+  toggles simulation.
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+## Run
 
-## Build Instructions
+From the source tree:
 
-From this directory:
+```bash
+pixi run ex operational_space_control
+```
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+Headless capture is provided by the promoted `dart::gui` runner:
 
-## Execute Instructions
+```bash
+pixi run ex operational_space_control --headless --frames 2 --screenshot /tmp/operational_space_control.ppm
+```
 
-Launch the executable from the build directory above:
+Image-sequence capture uses `--out`:
 
-    $ ./{generated_executable}
+```bash
+pixi run ex operational_space_control --headless --frames 3 --out /tmp/operational_space_control_frames
+```
 
-Follow the instructions detailed in the console.
+## Notes
+
+- The historical camera home, custom up vector, and shadow toggle are restored
+  through public `dart::gui` APIs.

@@ -17,144 +17,191 @@
  *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *   POSSIBILITY OF SUCH DAMAGE.
+ *   INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ *   SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ *   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ *   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *   EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "human_arm_joint_limit_constraint.hpp"
-#include "dart/common/macros.hpp"
-#include "human_leg_joint_limit_constraint.hpp"
+#include "human_joint_limit_constraints.hpp"
 
 #include <dart/config.hpp>
-#include <dart/gui/all.hpp>
-#include <dart/utils/All.hpp>
-#include <dart/all.hpp>
+
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
+
+#include <dart/simulation/world.hpp>
+
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/shape_frame.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
+
+#include <dart/common/uri.hpp>
+
 #include <dart/io/read.hpp>
 
-#include <cmath>
+#include <Eigen/Core>
 
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart;
-using namespace utils;
+#include <iostream>
+#include <stdexcept>
+#include <string>
 
-class HumanJointLimitsWorldNode : public dart::gui::WorldNode
+#include <cstddef>
+
+namespace {
+
+constexpr const char* kGroundSkeletonName = "human_joint_limits_ground";
+constexpr const char* kHumanSkeletonName = "human_joint_limits_human";
+
+struct HumanJointLimitsScene
 {
-public:
-  explicit HumanJointLimitsWorldNode(const WorldPtr& world)
-    : dart::gui::WorldNode(world), ts(0)
-  {
-  }
-
-  void customPreRefresh() override
-  {
-    if (ts == 0) {
-      auto skel = mWorld->getSkeleton("human");
-
-      auto shldJointl = skel->getJoint("j_bicep_left");
-      auto elbowJointl = skel->getJoint("j_forearm_left");
-      constraint_larm = std::make_shared<HumanArmJointLimitConstraint>(
-          shldJointl, elbowJointl, false);
-      mWorld->getConstraintSolver()->addConstraint(constraint_larm);
-
-      auto shldJointr = skel->getJoint("j_bicep_right");
-      auto elbowJointr = skel->getJoint("j_forearm_right");
-      constraint_rarm = std::make_shared<HumanArmJointLimitConstraint>(
-          shldJointr, elbowJointr, true);
-      mWorld->getConstraintSolver()->addConstraint(constraint_rarm);
-
-      auto thighJointl = skel->getJoint("j_thigh_left");
-      auto shinJointl = skel->getJoint("j_shin_left");
-      auto ankleJointl = skel->getJoint("j_heel_left");
-      constraint_lleg = std::make_shared<HumanLegJointLimitConstraint>(
-          thighJointl, shinJointl, ankleJointl, false);
-      mWorld->getConstraintSolver()->addConstraint(constraint_lleg);
-
-      auto thighJointr = skel->getJoint("j_thigh_right");
-      auto shinJointr = skel->getJoint("j_shin_right");
-      auto ankleJointr = skel->getJoint("j_heel_right");
-      constraint_rleg = std::make_shared<HumanLegJointLimitConstraint>(
-          thighJointr, shinJointr, ankleJointr, true);
-      mWorld->getConstraintSolver()->addConstraint(constraint_rleg);
-    }
-
-    // Uncomment to apply external force
-    // Eigen::Vector3d force = Eigen::Vector3d(0,0,-4);
-    // Eigen::Vector3d location(0.0, -0.2, 0.0);
-    // mWorld->getSkeleton("human")->getBodyNode("l-lowerarm")->addExtForce(force, location, true, true);
-
-    mWorld->step();
-    ts++;
-  }
-
-private:
-  int ts;
-  HumanArmJointLimitConstraintPtr constraint_larm;
-  HumanArmJointLimitConstraintPtr constraint_rarm;
-  HumanLegJointLimitConstraintPtr constraint_lleg;
-  HumanLegJointLimitConstraintPtr constraint_rleg;
+  dart::simulation::WorldPtr world;
+  std::size_t customConstraintCount = 0;
 };
 
-class HumanJointLimitsEventHandler : public ::osgGA::GUIEventHandler
+void makeStaticGround(const dart::dynamics::SkeletonPtr& skeleton)
 {
-public:
-  HumanJointLimitsEventHandler()
-  {
+  if (skeleton == nullptr) {
+    return;
   }
 
-  virtual bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
-  {
-    if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
-      // Add any specific key handling here if needed
-      // For now, we'll let the default behavior handle space bar for simulation toggle
+  skeleton->setMobile(false);
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* body = skeleton->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
     }
-    return false;
+    body->setGravityMode(false);
   }
-};
+}
 
-int main()
+void colorHuman(const dart::dynamics::SkeletonPtr& human)
+{
+  const std::size_t numBodies = human->getNumBodyNodes();
+  for (std::size_t i = 0; i < numBodies; ++i) {
+    auto* body = human->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
+    }
+    const double t = numBodies <= 1 ? 0.0
+                                    : static_cast<double>(i)
+                                          / static_cast<double>(numBodies - 1);
+    body->setColor(
+        Eigen::Vector3d(0.68 + 0.10 * t, 0.52 + 0.10 * t, 0.38 + 0.08 * t));
+  }
+
+  if (auto* pelvis = human->getBodyNode("pelvis")) {
+    pelvis->setColor(Eigen::Vector3d(0.42, 0.50, 0.66));
+  }
+  if (auto* thorax = human->getBodyNode("thorax")) {
+    thorax->setColor(Eigen::Vector3d(0.36, 0.54, 0.70));
+  }
+  if (auto* head = human->getBodyNode("head")) {
+    head->setColor(Eigen::Vector3d(0.84, 0.68, 0.52));
+  }
+}
+
+HumanJointLimitsScene createHumanJointLimitsScene()
 {
   const dart::common::Uri worldUri = dart::common::Uri::createFromPath(
       dart::config::dataPath("skel/kima/kima_human_edited.skel"));
-  WorldPtr world = dart::io::readWorld(worldUri);
-  DART_ASSERT(world != nullptr);
-  world->setCollisionDetector(CollisionDetectorType::Dart);
+  auto world = dart::io::readWorld(worldUri);
+  if (world == nullptr) {
+    throw std::runtime_error(
+        "Failed to load human_joint_limits world from " + worldUri.toString());
+  }
 
-  auto skel = world->getSkeleton("human");
-  skel->eachJoint([](dart::dynamics::Joint* joint) {
-    joint->setLimitEnforcement(true);
-  });
+  auto ground = world->getSkeleton("ground skeleton");
+  if (ground == nullptr) {
+    throw std::runtime_error("human_joint_limits world is missing ground");
+  }
+  ground->setName(kGroundSkeletonName);
+  makeStaticGround(ground);
+  if (auto* body = ground->getBodyNode("ground")) {
+    body->setColor(Eigen::Vector3d(0.58, 0.62, 0.60));
+  }
 
-  // Create the world node
-  ::osg::ref_ptr<HumanJointLimitsWorldNode> node
-      = new HumanJointLimitsWorldNode(world);
+  auto human = world->getSkeleton("human");
+  if (human == nullptr) {
+    throw std::runtime_error("human_joint_limits world is missing human");
+  }
+  human->setName(kHumanSkeletonName);
+  human->setMobile(true);
+  human->eachJoint(
+      [](dart::dynamics::Joint* joint) { joint->setLimitEnforcement(true); });
+  const std::size_t customConstraintCount
+      = installHumanJointLimitConstraints(*world, human);
 
-  // Create the viewer
-  dart::gui::Viewer viewer;
-  viewer.addWorldNode(node);
+  colorHuman(human);
+  return {world, customConstraintCount};
+}
 
-  // Add event handler
-  viewer.addEventHandler(new HumanJointLimitsEventHandler());
+dart::gui::RunOptions makeHumanJointLimitsRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
 
-  // Print instructions
-  std::cout << viewer.getInstructions() << std::endl;
-  std::cout << "space bar: simulation on/off" << std::endl;
+dart::gui::Panel createHumanJointLimitsPanel(std::size_t customConstraintCount)
+{
+  dart::gui::Panel panel;
+  panel.title = "Human Joint Limits";
+  panel.buildWithContext = [customConstraintCount](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    builder.text("Kima human skeleton with DART joint-limit enforcement");
+    builder.text(
+        "Neural arm/leg custom constraints: "
+        + std::to_string(customConstraintCount));
+    builder.text("space bar: simulation on/off");
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("contacts: " + std::to_string(context.contactCount));
+    builder.text("selected: " + context.selectedLabel);
+  };
+  return panel;
+}
 
-  // Set up window
-  viewer.setUpViewInWindow(0, 0, 640, 480);
+void printHumanJointLimitsInstructions()
+{
+  std::cout << "Human joint limits example\n";
+  std::cout << "Neural arm/leg custom constraints are installed\n";
+  std::cout << "space bar: simulation on/off\n";
+}
 
-  // Run the viewer
-  viewer.run();
+} // namespace
 
-  return 0;
+int main(int argc, char* argv[])
+{
+  try {
+    auto scene = createHumanJointLimitsScene();
+    printHumanJointLimitsInstructions();
+
+    dart::gui::ApplicationOptions options;
+    options.world = scene.world;
+    options.runDefaults = makeHumanJointLimitsRunDefaults();
+    options.panels.push_back(
+        createHumanJointLimitsPanel(scene.customConstraintCount));
+
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "human_joint_limits: " << e.what() << "\n";
+    return 1;
+  }
 }

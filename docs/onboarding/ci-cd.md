@@ -12,7 +12,9 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - PR template checklist: [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md)
   - Asserts-enabled CI build (no `-DNDEBUG`): see [Asserts-Enabled CI Build](#asserts-enabled-ci-build-no--dndebug)
   - Eigen over-alignment CI build: see [Eigen Over-Alignment CI Build](#eigen-over-alignment-ci-build)
-  - ASAN testing (memory errors): `pixi run test-asan` (runs in CI for `release-6.16`)
+  - ASAN testing (memory errors): `pixi run test-asan`; the Linux
+    `Release Tests` CI job runs it after the Release C++ tests, Python tests,
+    and examples.
   - CI monitoring commands: see [CI Monitoring (CLI)](#ci-monitoring-cli) and [CI Monitoring (API)](#ci-monitoring-api)
   - Common CI failure fixes: see [Common CI Failure Modes](#common-ci-failure-modes)
 - Fast CI fail-fast loop:
@@ -26,6 +28,9 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - `gh run view --job <JOB_ID> --log-failed` only works after the job completes; use the REST logs endpoint (or wait) when a run is still in progress.
   - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early (including AppVeyor); resolve conflicts locally and push before re-running CI.
   - FreeBSD VM tests can take over 1 hour to complete; this is expected, not a sign of failure.
+  - Linux `Release Tests` can be the last PR blocker because its
+    AddressSanitizer phase is long-running. Check the job step state and recent
+    successful `main` run durations before treating it as stuck.
   - FreeBSD VM startup can timeout (~5 min); this is transient—re-run the job.
   - `dynamic_cast` can fail silently on FreeBSD across shared library boundaries; use type enums + `static_cast`.
   - macOS ARM64 sporadic SEGFAULT from `alloca`/VLA alignment; use `std::vector<T>` instead.
@@ -54,6 +59,10 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Local lint may fail if clang-format is missing or a stale CMake cache references an old version; clean the build directory (`rm -rf build/`) and reconfigure to pick up the pixi-provided clang-format.
   - Codecov patch failures usually mean new lines or branches are uncovered; add targeted tests and re-run coverage.
   - Codecov patch status can lag until coverage jobs complete; confirm Coverage (Debug) finished before acting.
+  - CodeQL alerts under generated dependency paths like `build/**/_deps` need
+    SARIF filtering before upload; CodeQL config `paths-ignore` is not enough.
+    Confirm Code Scanning has processed the relevant C++ analysis for the target
+    commit before treating the open-alert count as final.
 
 ## Common CI Failure Modes
 
@@ -68,6 +77,12 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - RTD build failures: Sphinx extension compatibility issues; use defensive `.get(key, default)` patterns.
 - Case-colliding files after branch merge: When merging `release-*` into `main`, PascalCase files from the release branch can collide with snake_case files in main on case-insensitive filesystems (macOS, Windows). Check for duplicates with `find tests -name "*.cpp" | sort -f | uniq -di` and remove the PascalCase version. Also verify new tests are registered in the appropriate `CMakeLists.txt`.
 - Eigen over-alignment failures: reproduce with `pixi run test-eigen-overalignment`. These failures do not require AVX-512 hardware; the job forces Eigen's 64-byte static alignment contract at compile time.
+- CodeQL generated dependency alerts: `paths-ignore` can miss findings emitted
+  from C++ manual-build SARIF, especially under generated dependency build
+  trees like `build/**/_deps`. Keep CodeQL analysis limited to first-party
+  sources, drop SARIF results whose primary location is under generated or
+  vendored paths before upload, confirm the Code Scanning analyses include the
+  target commit and language, then require the open-alert count to reach zero.
 
 ## Task Recap (General)
 

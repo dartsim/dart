@@ -30,107 +30,84 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/debug.hpp>
+#include <dart/gui/gizmo.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/utils/All.hpp>
-#include <dart/utils/urdf/All.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/all.hpp>
+#include <dart/constraint/balance_constraint.hpp>
+
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/degree_of_freedom.hpp>
+#include <dart/dynamics/end_effector.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/inverse_kinematics.hpp>
+#include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/mesh_shape.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
+
+#include <dart/math/geometry.hpp>
+#include <dart/math/optimization/function.hpp>
+#include <dart/math/optimization/gradient_descent_solver.hpp>
+#include <dart/math/optimization/problem.hpp>
+
+#include <dart/common/uri.hpp>
+
 #include <dart/io/read.hpp>
 
+#include <Eigen/Geometry>
+
 #include <algorithm>
-#include <filesystem>
-#include <iterator>
+#include <array>
+#include <iostream>
+#include <limits>
 #include <memory>
-#include <string_view>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include <cstdlib>
+#include <cmath>
 
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::utils;
-using namespace dart::math;
+namespace {
 
-const double display_elevation = 0.05;
+constexpr const char* kAtlasUri
+    = "dart://sample/sdf/atlas/atlas_v5_no_head.urdf";
+constexpr const char* kAtlasSkeletonName = "visual_atlas_robot";
+constexpr const char* kGroundSkeletonName = "visual_atlas_puppet_ground";
+constexpr const char* kAtlasSupportOverlayName
+    = "atlas_puppet_support_polygon_overlay";
+constexpr const char* kAtlasSupportComOverlayName
+    = "atlas_puppet_support_com_overlay";
+constexpr double kTeleopLinearStep = 0.01;
+constexpr double kTeleopElevationStep = 0.2 * kTeleopLinearStep;
+constexpr double kTeleopYawStep = 2.0 * 3.14159265358979323846 / 180.0;
+constexpr double kSupportVisualElevation = 0.05;
+constexpr double kSupportComMarkerRadius = 0.06;
+constexpr double kAtlasHandRootGradientWeight = 1e-3;
 
-struct RunOptions
+enum class PuppetMotion
 {
-  bool headless = false;
-  int frames = 10;
-  int width = 1280;
-  int height = 960;
-  std::string screenshotPath;
+  Forward,
+  Backward,
+  Left,
+  Right,
+  Up,
+  Down,
+  YawLeft,
+  YawRight,
 };
 
-void printUsage(const char* executable)
-{
-  std::cout << "Usage: " << executable
-            << " [--headless] [--frames N] [--width N] [--height N]"
-               " [--screenshot PATH]\n";
-}
-
-RunOptions parseOptions(int argc, char* argv[])
-{
-  RunOptions options;
-  for (int i = 1; i < argc; ++i) {
-    const std::string_view arg(argv[i]);
-    if (arg == "--headless") {
-      options.headless = true;
-    } else if (arg == "--frames" && i + 1 < argc) {
-      options.frames = std::max(1, std::atoi(argv[++i]));
-    } else if (arg == "--width" && i + 1 < argc) {
-      options.width = std::max(1, std::atoi(argv[++i]));
-    } else if (arg == "--height" && i + 1 < argc) {
-      options.height = std::max(1, std::atoi(argv[++i]));
-    } else if (arg == "--screenshot" && i + 1 < argc) {
-      options.screenshotPath = argv[++i];
-      options.headless = true;
-    } else if (arg == "--help" || arg == "-h") {
-      printUsage(argv[0]);
-      std::exit(EXIT_SUCCESS);
-    } else {
-      std::cerr << "Unknown argument: " << arg << "\n";
-      printUsage(argv[0]);
-      std::exit(EXIT_FAILURE);
-    }
-  }
-  return options;
-}
-
-bool prepareScreenshotPath(const std::filesystem::path& path)
-{
-  std::error_code ec;
-
-  if (path.has_parent_path()) {
-    std::filesystem::create_directories(path.parent_path(), ec);
-    if (ec) {
-      std::cerr << "Failed to create screenshot directory '"
-                << path.parent_path() << "': " << ec.message() << "\n";
-      return false;
-    }
-  }
-
-  const bool screenshotExists = std::filesystem::exists(path, ec);
-  if (ec) {
-    std::cerr << "Failed to inspect screenshot path '" << path
-              << "': " << ec.message() << "\n";
-    return false;
-  }
-
-  if (screenshotExists) {
-    std::filesystem::remove(path, ec);
-    if (ec) {
-      std::cerr << "Failed to remove existing screenshot '" << path
-                << "': " << ec.message() << "\n";
-      return false;
-    }
-  }
-
-  return true;
-}
-
-class RelaxedPosture : public dart::math::Function
+class RelaxedPosture final : public dart::math::Function
 {
 public:
   RelaxedPosture(
@@ -145,939 +122,1131 @@ public:
       mUpper(upper),
       mWeights(weights)
   {
-    int dofs = mIdeal.size();
-    DART_ERROR_IF(
-        mLower.size() != dofs || mWeights.size() != dofs
-            || mUpper.size() != dofs,
-        "Dimension mismatch:\\n  ideal:   {}\\n  lower:   {}\\n  upper:   "
-        "{}\\n  weights: {}",
-        mIdeal.size(),
-        mLower.size(),
-        mUpper.size(),
-        mWeights.size());
-    mResultVector.setZero(dofs);
+    const Eigen::Index dofCount = mIdeal.size();
+    if (mLower.size() != dofCount || mUpper.size() != dofCount
+        || mWeights.size() != dofCount) {
+      throw std::runtime_error(
+          "Atlas relaxed-posture objective has mismatched vector sizes");
+    }
+    mResultVector.setZero(dofCount);
   }
 
-  double eval(const Eigen::VectorXd& _x) override
+  double eval(const Eigen::VectorXd& x) override
   {
-    computeResultVector(_x);
+    computeResultVector(x);
     return 0.5 * mResultVector.dot(mResultVector);
   }
 
   void evalGradient(
-      const Eigen::VectorXd& _x, Eigen::Map<Eigen::VectorXd> _grad) override
+      const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
   {
-    computeResultVector(_x);
+    computeResultVector(x);
 
-    _grad.setZero();
-    int smaller = std::min(mResultVector.size(), _grad.size());
-    for (int i = 0; i < smaller; ++i) {
-      _grad[i] = mResultVector[i];
+    grad.setZero();
+    const Eigen::Index count = std::min(mResultVector.size(), grad.size());
+    for (Eigen::Index i = 0; i < count; ++i) {
+      grad[i] = mResultVector[i];
     }
   }
 
-  void computeResultVector(const Eigen::VectorXd& _x)
+  void computeResultVector(const Eigen::VectorXd& x)
   {
     mResultVector.setZero();
-
-    if (enforceIdealPosture) {
-      // Try to get the robot into the best possible posture
-      for (auto i = 0; i < std::ssize(_x); ++i) {
-        if (mIdeal.size() <= i) {
-          break;
-        }
-
-        mResultVector[i] = mWeights[i] * (_x[i] - mIdeal[i]);
-      }
-    } else {
-      // Only adjust the posture if it is really bad
-      for (auto i = 0; i < std::ssize(_x); ++i) {
-        if (mIdeal.size() <= i) {
-          break;
-        }
-
-        if (_x[i] < mLower[i]) {
-          mResultVector[i] = mWeights[i] * (_x[i] - mLower[i]);
-        } else if (mUpper[i] < _x[i]) {
-          mResultVector[i] = mWeights[i] * (_x[i] - mUpper[i]);
-        }
+    const Eigen::Index count = std::min(mIdeal.size(), x.size());
+    for (Eigen::Index i = 0; i < count; ++i) {
+      if (enforceIdealPosture) {
+        mResultVector[i] = mWeights[i] * (x[i] - mIdeal[i]);
+      } else if (x[i] < mLower[i]) {
+        mResultVector[i] = mWeights[i] * (x[i] - mLower[i]);
+      } else if (mUpper[i] < x[i]) {
+        mResultVector[i] = mWeights[i] * (x[i] - mUpper[i]);
       }
     }
   }
 
   bool enforceIdealPosture;
 
-protected:
+private:
   Eigen::VectorXd mResultVector;
-
   Eigen::VectorXd mIdeal;
-
   Eigen::VectorXd mLower;
-
   Eigen::VectorXd mUpper;
-
   Eigen::VectorXd mWeights;
 };
 
-class TeleoperationWorld : public dart::gui::WorldNode
+void makeAtlasMeshVisualsReadable(const dart::dynamics::SkeletonPtr& atlas)
 {
-public:
-  enum MoveEnum_t
-  {
-    MOVE_Q = 0,
-    MOVE_W,
-    MOVE_E,
-    MOVE_A,
-    MOVE_S,
-    MOVE_D,
-    MOVE_F,
-    MOVE_Z,
+  const Eigen::Vector4d readableAtlasColor(0.15, 0.16, 0.18, 1.0);
 
-    NUM_MOVE
-  };
-
-  TeleoperationWorld(WorldPtr _world, SkeletonPtr _robot)
-    : dart::gui::WorldNode(_world),
-      mAtlas(_robot),
-      iter(0),
-      l_foot(_robot->getEndEffector("l_foot")),
-      r_foot(_robot->getEndEffector("r_foot"))
-  {
-    mMoveComponents.resize(NUM_MOVE, false);
-    mAnyMovement = false;
-  }
-
-  void setMovement(const std::vector<bool>& moveComponents)
-  {
-    mMoveComponents = moveComponents;
-
-    mAnyMovement = false;
-
-    for (bool move : mMoveComponents) {
-      if (move) {
-        mAnyMovement = true;
-        break;
+  for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i) {
+    auto* body = atlas->getBodyNode(i);
+    for (std::size_t j = 0; j < body->getNumShapeNodes(); ++j) {
+      auto* shapeNode = body->getShapeNode(j);
+      auto* visual = shapeNode->getVisualAspect();
+      if (visual == nullptr) {
+        continue;
       }
+
+      const auto mesh = std::dynamic_pointer_cast<dart::dynamics::MeshShape>(
+          shapeNode->getShape());
+      if (mesh == nullptr) {
+        continue;
+      }
+
+      mesh->setColorMode(dart::dynamics::MeshShape::MATERIAL_COLOR);
+      const Eigen::Vector4d rgba = visual->getRGBA();
+      Eigen::Vector4d readable = readableAtlasColor;
+      readable.w() = rgba.w();
+      visual->setRGBA(readable);
     }
   }
-
-  void customPreRefresh() override
-  {
-    if (mAnyMovement) {
-      Eigen::Isometry3d old_tf = mAtlas->getBodyNode(0)->getWorldTransform();
-      Eigen::Isometry3d new_tf = Eigen::Isometry3d::Identity();
-      Eigen::Vector3d forward = old_tf.linear().col(0);
-      forward[2] = 0.0;
-      if (forward.norm() > 1e-10) {
-        forward.normalize();
-      } else {
-        forward.setZero();
-      }
-
-      Eigen::Vector3d left = old_tf.linear().col(1);
-      left[2] = 0.0;
-      if (left.norm() > 1e-10) {
-        left.normalize();
-      } else {
-        left.setZero();
-      }
-
-      const Eigen::Vector3d& up = Eigen::Vector3d::UnitZ();
-
-      const double linearStep = 0.01;
-      const double elevationStep = 0.2 * linearStep;
-      const double rotationalStep = 2.0 * pi / 180.0;
-
-      if (mMoveComponents[MOVE_W]) {
-        new_tf.translate(linearStep * forward);
-      }
-
-      if (mMoveComponents[MOVE_S]) {
-        new_tf.translate(-linearStep * forward);
-      }
-
-      if (mMoveComponents[MOVE_A]) {
-        new_tf.translate(linearStep * left);
-      }
-
-      if (mMoveComponents[MOVE_D]) {
-        new_tf.translate(-linearStep * left);
-      }
-
-      if (mMoveComponents[MOVE_F]) {
-        new_tf.translate(elevationStep * up);
-      }
-
-      if (mMoveComponents[MOVE_Z]) {
-        new_tf.translate(-elevationStep * up);
-      }
-
-      if (mMoveComponents[MOVE_Q]) {
-        new_tf.rotate(Eigen::AngleAxisd(rotationalStep, up));
-      }
-
-      if (mMoveComponents[MOVE_E]) {
-        new_tf.rotate(Eigen::AngleAxisd(-rotationalStep, up));
-      }
-
-      new_tf.pretranslate(old_tf.translation());
-      new_tf.rotate(old_tf.rotation());
-
-      mAtlas->getJoint(0)->setPositions(FreeJoint::convertToPositions(new_tf));
-    }
-
-    bool solved = mAtlas->getIK(true)->solveAndApply(true);
-
-    if (!solved) {
-      ++iter;
-    } else {
-      iter = 0;
-    }
-
-    if (iter == 1000) {
-      std::cout << "Failing!" << std::endl;
-    }
-  }
-
-protected:
-  SkeletonPtr mAtlas;
-  std::size_t iter;
-
-  EndEffectorPtr l_foot;
-  EndEffectorPtr r_foot;
-
-  Eigen::VectorXd grad;
-
-  std::vector<bool> mMoveComponents;
-
-  bool mAnyMovement;
-};
-
-class InputHandler : public ::osgGA::GUIEventHandler
-{
-public:
-  InputHandler(
-      dart::gui::Viewer* viewer,
-      TeleoperationWorld* teleop,
-      const SkeletonPtr& atlas,
-      const WorldPtr& world)
-    : mViewer(viewer), mTeleop(teleop), mAtlas(atlas), mWorld(world)
-  {
-    initialize();
-  }
-
-  void initialize()
-  {
-    mRestConfig = mAtlas->getPositions();
-
-    mLegs.reserve(12);
-    for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
-      const auto* dof = mAtlas->getDof(i);
-      const std::string_view name = dof->getName();
-      if (name.size() > 1 && name.substr(1).starts_with("_leg_")) {
-        mLegs.push_back(dof->getIndexInSkeleton());
-      }
-    }
-    // We should also adjust the pelvis when detangling the legs
-    mLegs.push_back(mAtlas->getDof("rootJoint_rot_x")->getIndexInSkeleton());
-    mLegs.push_back(mAtlas->getDof("rootJoint_rot_y")->getIndexInSkeleton());
-    mLegs.push_back(mAtlas->getDof("rootJoint_pos_z")->getIndexInSkeleton());
-
-    mAtlas->eachEndEffector([&](EndEffector* ee) {
-      if (const InverseKinematicsPtr ik = ee->getIK()) {
-        mDefaultBounds.push_back(ik->getErrorMethod().getBounds());
-        mDefaultTargetTf.push_back(ik->getTarget()->getRelativeTransform());
-        mConstraintActive.push_back(false);
-        mEndEffectorIndex.push_back(ee->getIndexInSkeleton());
-      }
-    });
-
-    mPosture = std::dynamic_pointer_cast<RelaxedPosture>(
-        mAtlas->getIK(true)->getObjective());
-
-    mBalance = std::dynamic_pointer_cast<dart::constraint::BalanceConstraint>(
-        mAtlas->getIK(true)->getProblem()->getEqConstraint(1));
-
-    mOptimizationKey = 'r';
-
-    mMoveComponents.resize(TeleoperationWorld::NUM_MOVE, false);
-  }
-
-  virtual bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
-  {
-    if (nullptr == mAtlas) {
-      return false;
-    }
-
-    if (::osgGA::GUIEventAdapter::KEYDOWN == ea.getEventType()) {
-      if (ea.getKey() == 'p') {
-        for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
-          std::cout << mAtlas->getDof(i)->getName() << ": "
-                    << mAtlas->getDof(i)->getPosition() << std::endl;
-        }
-        std::cout << "  -- -- -- -- -- " << std::endl;
-        return true;
-      }
-
-      if (ea.getKey() == 't') {
-        // Reset all the positions except for x, y, and yaw
-        for (std::size_t i = 0; i < mAtlas->getNumDofs(); ++i) {
-          if (i < 2 || 4 < i) {
-            mAtlas->getDof(i)->setPosition(mRestConfig[i]);
-          }
-        }
-        return true;
-      }
-
-      if ('1' <= ea.getKey() && ea.getKey() <= '9') {
-        std::size_t index = ea.getKey() - '1';
-        if (index < mConstraintActive.size()) {
-          EndEffector* ee = mAtlas->getEndEffector(mEndEffectorIndex[index]);
-          const InverseKinematicsPtr& ik = ee->getIK();
-          if (ik && mConstraintActive[index]) {
-            mConstraintActive[index] = false;
-
-            ik->getErrorMethod().setBounds(mDefaultBounds[index]);
-            ik->getTarget()->setRelativeTransform(mDefaultTargetTf[index]);
-            mWorld->removeSimpleFrame(ik->getTarget());
-          } else if (ik) {
-            mConstraintActive[index] = true;
-
-            // Use the standard default bounds instead of our custom default
-            // bounds
-            ik->getErrorMethod().setBounds();
-            ik->getTarget()->setTransform(ee->getTransform());
-            mWorld->addSimpleFrame(ik->getTarget());
-          }
-        }
-        return true;
-      }
-
-      if ('x' == ea.getKey()) {
-        EndEffector* ee = mAtlas->getEndEffector("l_foot");
-        ee->getSupport()->setActive(!ee->getSupport()->isActive());
-        return true;
-      }
-
-      if ('c' == ea.getKey()) {
-        EndEffector* ee = mAtlas->getEndEffector("r_foot");
-        ee->getSupport()->setActive(!ee->getSupport()->isActive());
-        return true;
-      }
-
-      switch (ea.getKey()) {
-        case 'w':
-          mMoveComponents[TeleoperationWorld::MOVE_W] = true;
-          break;
-        case 'a':
-          mMoveComponents[TeleoperationWorld::MOVE_A] = true;
-          break;
-        case 's':
-          mMoveComponents[TeleoperationWorld::MOVE_S] = true;
-          break;
-        case 'd':
-          mMoveComponents[TeleoperationWorld::MOVE_D] = true;
-          break;
-        case 'q':
-          mMoveComponents[TeleoperationWorld::MOVE_Q] = true;
-          break;
-        case 'e':
-          mMoveComponents[TeleoperationWorld::MOVE_E] = true;
-          break;
-        case 'f':
-          mMoveComponents[TeleoperationWorld::MOVE_F] = true;
-          break;
-        case 'z':
-          mMoveComponents[TeleoperationWorld::MOVE_Z] = true;
-          break;
-      }
-
-      switch (ea.getKey()) {
-        case 'w':
-        case 'a':
-        case 's':
-        case 'd':
-        case 'q':
-        case 'e':
-        case 'f':
-        case 'z': {
-          mTeleop->setMovement(mMoveComponents);
-          return true;
-        }
-      }
-
-      if (mOptimizationKey == ea.getKey()) {
-        if (mPosture) {
-          mPosture->enforceIdealPosture = true;
-        }
-
-        if (mBalance) {
-          mBalance->setErrorMethod(
-              dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
-        }
-
-        return true;
-      }
-    }
-
-    if (::osgGA::GUIEventAdapter::KEYUP == ea.getEventType()) {
-      if (ea.getKey() == mOptimizationKey) {
-        if (mPosture) {
-          mPosture->enforceIdealPosture = false;
-        }
-
-        if (mBalance) {
-          mBalance->setErrorMethod(
-              dart::constraint::BalanceConstraint::FROM_CENTROID);
-        }
-
-        return true;
-      }
-
-      switch (ea.getKey()) {
-        case 'w':
-          mMoveComponents[TeleoperationWorld::MOVE_W] = false;
-          break;
-        case 'a':
-          mMoveComponents[TeleoperationWorld::MOVE_A] = false;
-          break;
-        case 's':
-          mMoveComponents[TeleoperationWorld::MOVE_S] = false;
-          break;
-        case 'd':
-          mMoveComponents[TeleoperationWorld::MOVE_D] = false;
-          break;
-        case 'q':
-          mMoveComponents[TeleoperationWorld::MOVE_Q] = false;
-          break;
-        case 'e':
-          mMoveComponents[TeleoperationWorld::MOVE_E] = false;
-          break;
-        case 'f':
-          mMoveComponents[TeleoperationWorld::MOVE_F] = false;
-          break;
-        case 'z':
-          mMoveComponents[TeleoperationWorld::MOVE_Z] = false;
-          break;
-      }
-
-      switch (ea.getKey()) {
-        case 'w':
-        case 'a':
-        case 's':
-        case 'd':
-        case 'q':
-        case 'e':
-        case 'f':
-        case 'z': {
-          mTeleop->setMovement(mMoveComponents);
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-protected:
-  dart::gui::Viewer* mViewer;
-
-  TeleoperationWorld* mTeleop;
-
-  SkeletonPtr mAtlas;
-
-  WorldPtr mWorld;
-
-  Eigen::VectorXd mRestConfig;
-
-  std::vector<std::size_t> mLegs;
-
-  std::vector<bool> mConstraintActive;
-
-  std::vector<std::size_t> mEndEffectorIndex;
-
-  std::vector<std::pair<Eigen::Vector6d, Eigen::Vector6d>> mDefaultBounds;
-
-  dart::common::aligned_vector<Eigen::Isometry3d> mDefaultTargetTf;
-
-  std::shared_ptr<RelaxedPosture> mPosture;
-
-  std::shared_ptr<dart::constraint::BalanceConstraint> mBalance;
-
-  char mOptimizationKey;
-
-  std::vector<bool> mMoveComponents;
-};
-
-SkeletonPtr createGround()
-{
-  // Create a Skeleton to represent the ground
-  SkeletonPtr ground = Skeleton::create("ground");
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  double thickness = 0.01;
-  tf.translation() = Eigen::Vector3d(0, 0, -thickness / 2.0);
-  WeldJoint::Properties joint;
-  joint.mT_ParentBodyToJoint = tf;
-  ground->createJointAndBodyNodePair<WeldJoint>(nullptr, joint);
-  ShapePtr groundShape
-      = std::make_shared<BoxShape>(Eigen::Vector3d(10, 10, thickness));
-
-  auto shapeNode = ground->getBodyNode(0)
-                       ->createShapeNodeWith<
-                           VisualAspect,
-                           CollisionAspect,
-                           DynamicsAspect>(groundShape);
-  shapeNode->getVisualAspect()->setColor(dart::Color::Blue(0.2));
-
-  return ground;
 }
 
-SkeletonPtr createAtlas()
+struct AtlasWholeBodySolverState
 {
-  // Parse in the atlas model
-  SkeletonPtr atlas
-      = dart::io::readSkeleton("dart://sample/sdf/atlas/atlas_v5_no_head.urdf");
+  std::shared_ptr<RelaxedPosture> posture;
+  std::shared_ptr<dart::constraint::BalanceConstraint> balance;
+};
 
-  // Add a box to the root node to make it easier to click and drag
-  double scale = 0.25;
-  ShapePtr boxShape
-      = std::make_shared<BoxShape>(scale * Eigen::Vector3d(1.0, 1.0, 0.5));
+bool solveOwningSkeletonIk(const dart::dynamics::InverseKinematicsPtr& ik);
 
-  Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
-  tf.translation() = Eigen::Vector3d(0.1 * Eigen::Vector3d(0.0, 0.0, 1.0));
+void disableSkeletonCollisionAndGravity(
+    const dart::dynamics::SkeletonPtr& skeleton)
+{
+  if (skeleton == nullptr) {
+    return;
+  }
 
-  auto shapeNode
-      = atlas->getBodyNode(0)->createShapeNodeWith<VisualAspect>(boxShape);
-  shapeNode->getVisualAspect()->setColor(dart::Color::Black());
-  shapeNode->setRelativeTransform(tf);
+  skeleton->disableSelfCollisionCheck();
+  skeleton->setAdjacentBodyCheck(false);
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* body = skeleton->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
+    }
+    body->setCollidable(false);
+    body->setGravityMode(false);
+    body->eachShapeNodeWith<dart::dynamics::CollisionAspect>(
+        [](dart::dynamics::ShapeNode* shapeNode) {
+          shapeNode->getCollisionAspect()->setCollidable(false);
+        });
+  }
+}
 
+std::optional<std::pair<Eigen::Vector3d, Eigen::Vector3d>>
+computeVisualWorldBounds(const dart::dynamics::SkeletonPtr& skeleton)
+{
+  if (skeleton == nullptr) {
+    return std::nullopt;
+  }
+
+  bool hasBounds = false;
+  Eigen::Vector3d min = Eigen::Vector3d::Zero();
+  Eigen::Vector3d max = Eigen::Vector3d::Zero();
+
+  const auto includePoint = [&](const Eigen::Vector3d& point) {
+    if (!hasBounds) {
+      min = point;
+      max = point;
+      hasBounds = true;
+      return;
+    }
+    min = min.cwiseMin(point);
+    max = max.cwiseMax(point);
+  };
+
+  for (std::size_t i = 0; i < skeleton->getNumBodyNodes(); ++i) {
+    auto* body = skeleton->getBodyNode(i);
+    if (body == nullptr) {
+      continue;
+    }
+
+    body->eachShapeNodeWith<dart::dynamics::VisualAspect>(
+        [&](const dart::dynamics::ShapeNode* shapeNode) {
+          if (shapeNode == nullptr || shapeNode->getShape() == nullptr
+              || shapeNode->getVisualAspect()->isHidden()) {
+            return;
+          }
+
+          const auto& bounds = shapeNode->getShape()->getBoundingBox();
+          const Eigen::Vector3d localMin = bounds.getMin();
+          const Eigen::Vector3d localMax = bounds.getMax();
+          if (!localMin.allFinite() || !localMax.allFinite()) {
+            return;
+          }
+
+          const Eigen::Isometry3d transform = shapeNode->getWorldTransform();
+          for (int x = 0; x < 2; ++x) {
+            for (int y = 0; y < 2; ++y) {
+              for (int z = 0; z < 2; ++z) {
+                includePoint(
+                    transform
+                    * Eigen::Vector3d(
+                        x == 0 ? localMin.x() : localMax.x(),
+                        y == 0 ? localMin.y() : localMax.y(),
+                        z == 0 ? localMin.z() : localMax.z()));
+              }
+            }
+          }
+        });
+  }
+
+  if (!hasBounds) {
+    return std::nullopt;
+  }
+
+  return std::make_pair(min, max);
+}
+
+void setRequiredDofPosition(
+    const dart::dynamics::SkeletonPtr& skeleton,
+    const char* name,
+    double position)
+{
+  auto* dof = skeleton ? skeleton->getDof(name) : nullptr;
+  if (dof == nullptr) {
+    throw std::runtime_error(
+        "Atlas puppet model is missing expected DOF " + std::string(name));
+  }
+  dof->setPosition(position);
+}
+
+void setupAtlasPuppetStartConfiguration(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  constexpr double degrees = 3.14159265358979323846 / 180.0;
+
+  setRequiredDofPosition(atlas, "r_leg_hpy", -45.0 * degrees);
+  setRequiredDofPosition(atlas, "r_leg_kny", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "r_leg_aky", -45.0 * degrees);
+  setRequiredDofPosition(atlas, "l_leg_hpy", -45.0 * degrees);
+  setRequiredDofPosition(atlas, "l_leg_kny", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "l_leg_aky", -45.0 * degrees);
+
+  setRequiredDofPosition(atlas, "r_arm_shx", 65.0 * degrees);
+  setRequiredDofPosition(atlas, "r_arm_ely", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "r_arm_elx", -90.0 * degrees);
+  setRequiredDofPosition(atlas, "r_arm_wry", 65.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_shx", -65.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_ely", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_elx", 90.0 * degrees);
+  setRequiredDofPosition(atlas, "l_arm_wry", 65.0 * degrees);
+
+  atlas->getDof("r_leg_kny")->setPositionLowerLimit(10.0 * degrees);
+  atlas->getDof("l_leg_kny")->setPositionLowerLimit(10.0 * degrees);
+}
+
+dart::dynamics::SkeletonPtr loadAtlasPuppetSkeleton()
+{
+  const auto atlasUri = dart::common::Uri::createFromString(kAtlasUri);
+  auto atlas = dart::io::readSkeleton(atlasUri);
+  if (atlas == nullptr) {
+    throw std::runtime_error(
+        "Failed to load Atlas puppet model from " + atlasUri.toString());
+  }
+
+  atlas->setName(kAtlasSkeletonName);
+  setupAtlasPuppetStartConfiguration(atlas);
+  makeAtlasMeshVisualsReadable(atlas);
+
+  auto* rootBody = atlas->getRootBodyNode();
+  if (rootBody != nullptr
+      && dynamic_cast<dart::dynamics::FreeJoint*>(rootBody->getParentJoint())
+             != nullptr) {
+    Eigen::Isometry3d transform = rootBody->getWorldTransform();
+    transform.translation().x() = 0.0;
+    transform.translation().y() = 0.0;
+    dart::dynamics::FreeJoint::setTransformOf(rootBody, transform);
+    if (const auto bounds = computeVisualWorldBounds(atlas)) {
+      constexpr double groundClearance = 0.015;
+      transform = rootBody->getWorldTransform();
+      transform.translation().z() += groundClearance - bounds->first.z();
+      dart::dynamics::FreeJoint::setTransformOf(rootBody, transform);
+    }
+  }
+
+  auto* torso = atlas->getRootBodyNode();
+  if (torso != nullptr) {
+    auto rootShape = std::make_shared<dart::dynamics::BoxShape>(
+        Eigen::Vector3d(0.25, 0.25, 0.125));
+    auto* shapeNode
+        = torso->createShapeNodeWith<dart::dynamics::VisualAspect>(rootShape);
+    shapeNode->setName("atlas_puppet_root_handle");
+    shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.1));
+    shapeNode->getVisualAspect()->setRGBA(
+        Eigen::Vector4d(0.08, 0.09, 0.10, 1.0));
+  }
+
+  disableSkeletonCollisionAndGravity(atlas);
   return atlas;
 }
 
-void setupStartConfiguration(const SkeletonPtr& atlas)
+dart::math::SupportGeometry makeAtlasPuppetFootSupportGeometry()
 {
-  // Squat with the right leg
-  atlas->getDof("r_leg_hpy")->setPosition(-45.0 * pi / 180.0);
-  atlas->getDof("r_leg_kny")->setPosition(90.0 * pi / 180.0);
-  atlas->getDof("r_leg_aky")->setPosition(-45.0 * pi / 180.0);
-
-  // Squat with the left left
-  atlas->getDof("l_leg_hpy")->setPosition(-45.0 * pi / 180.0);
-  atlas->getDof("l_leg_kny")->setPosition(90.0 * pi / 180.0);
-  atlas->getDof("l_leg_aky")->setPosition(-45.0 * pi / 180.0);
-
-  // Get the right arm into a comfortable position
-  atlas->getDof("r_arm_shx")->setPosition(65.0 * pi / 180.0);
-  atlas->getDof("r_arm_ely")->setPosition(90.0 * pi / 180.0);
-  atlas->getDof("r_arm_elx")->setPosition(-90.0 * pi / 180.0);
-  atlas->getDof("r_arm_wry")->setPosition(65.0 * pi / 180.0);
-
-  // Get the left arm into a comfortable position
-  atlas->getDof("l_arm_shx")->setPosition(-65.0 * pi / 180.0);
-  atlas->getDof("l_arm_ely")->setPosition(90.0 * pi / 180.0);
-  atlas->getDof("l_arm_elx")->setPosition(90.0 * pi / 180.0);
-  atlas->getDof("l_arm_wry")->setPosition(65.0 * pi / 180.0);
-
-  // Prevent the knees from bending backwards
-  atlas->getDof("r_leg_kny")->setPositionLowerLimit(10 * pi / 180.0);
-  atlas->getDof("l_leg_kny")->setPositionLowerLimit(10 * pi / 180.0);
-}
-
-void setupEndEffectors(const SkeletonPtr& atlas)
-{
-  // Apply very small weights to the gradient of the root joint in order to
-  // encourage the arms to use arm joints instead of only moving around the root
-  // joint
-  Eigen::VectorXd rootjoint_weights = Eigen::VectorXd::Ones(6);
-  rootjoint_weights = 0.01 * rootjoint_weights;
-
-  // Setting the bounds to be infinite allows the end effector to be implicitly
-  // unconstrained
-  Eigen::Vector3d linearBounds
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
-
-  Eigen::Vector3d angularBounds
-      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
-
-  // -- Set up the left hand --
-
-  // Create a relative transform for the EndEffector frame. This is the
-  // transform that the left hand will have relative to the BodyNode that it is
-  // attached to
-  Eigen::Isometry3d tf_hand(Eigen::Isometry3d::Identity());
-  tf_hand.translation() = Eigen::Vector3d(0.0009, 0.1254, 0.012);
-  tf_hand.rotate(
-      Eigen::AngleAxisd(90.0 * pi / 180.0, Eigen::Vector3d::UnitZ()));
-
-  // Create the left hand's end effector and set its relative transform
-  EndEffector* l_hand
-      = atlas->getBodyNode("l_hand")->createEndEffector("l_hand");
-  l_hand->setDefaultRelativeTransform(tf_hand, true);
-
-  // Create an interactive frame to use as the target for the left hand
-  dart::gui::InteractiveFramePtr lh_target(
-      new dart::gui::InteractiveFrame(Frame::World(), "lh_target"));
-
-  // Set the target of the left hand to the interactive frame. We pass true into
-  // the function to tell it that it should create the IK module if it does not
-  // already exist. If we don't do that, then calling getIK() could return a
-  // nullptr if the IK module was never created.
-  l_hand->getIK(true)->setTarget(lh_target);
-
-  // Tell the left hand to use the whole body for its IK
-  l_hand->getIK()->useWholeBody();
-
-  // Set the weights for the gradient
-  l_hand->getIK()->getGradientMethod().setComponentWeights(rootjoint_weights);
-
-  // Set the bounds for the IK to be infinite so that the hands start out
-  // unconstrained
-  l_hand->getIK()->getErrorMethod().setLinearBounds(
-      -linearBounds, linearBounds);
-
-  l_hand->getIK()->getErrorMethod().setAngularBounds(
-      -angularBounds, angularBounds);
-
-  // -- Set up the right hand --
-
-  // The orientation of the right hand frame is different than the left, so we
-  // need to adjust the signs of the relative transform
-  tf_hand.translation()[0] = -tf_hand.translation()[0];
-  tf_hand.translation()[1] = -tf_hand.translation()[1];
-  tf_hand.linear() = tf_hand.linear().inverse().eval();
-
-  // Create the right hand's end effector and set its relative transform
-  EndEffector* r_hand
-      = atlas->getBodyNode("r_hand")->createEndEffector("r_hand");
-  r_hand->setDefaultRelativeTransform(tf_hand, true);
-
-  // Create an interactive frame to use as the target for the right hand
-  dart::gui::InteractiveFramePtr rh_target(
-      new dart::gui::InteractiveFrame(Frame::World(), "rh_target"));
-
-  // Create the right hand's IK and set its target
-  r_hand->getIK(true)->setTarget(rh_target);
-
-  // Tell the right hand to use the whole body for its IK
-  r_hand->getIK()->useWholeBody();
-
-  // Set the weights for the gradient
-  r_hand->getIK()->getGradientMethod().setComponentWeights(rootjoint_weights);
-
-  // Set the bounds for the IK to be infinite so that the hands start out
-  // unconstrained
-  r_hand->getIK()->getErrorMethod().setLinearBounds(
-      -linearBounds, linearBounds);
-
-  r_hand->getIK()->getErrorMethod().setAngularBounds(
-      -angularBounds, angularBounds);
-
-  // Define the support geometry for the feet. These points will be used to
-  // compute the convex hull of the robot's support polygon
   dart::math::SupportGeometry support;
-  const double sup_pos_x = 0.10 - 0.186;
-  const double sup_neg_x = -0.03 - 0.186;
-  const double sup_pos_y = 0.03;
-  const double sup_neg_y = -0.03;
-  support.push_back(Eigen::Vector3d(sup_neg_x, sup_neg_y, 0.0));
-  support.push_back(Eigen::Vector3d(sup_pos_x, sup_neg_y, 0.0));
-  support.push_back(Eigen::Vector3d(sup_pos_x, sup_pos_y, 0.0));
-  support.push_back(Eigen::Vector3d(sup_neg_x, sup_pos_y, 0.0));
-
-  // Create a relative transform that goes from the center of the feet to the
-  // bottom of the feet
-  Eigen::Isometry3d tf_foot(Eigen::Isometry3d::Identity());
-  tf_foot.translation() = Eigen::Vector3d(0.186, 0.0, -0.08);
-
-  // Constrain the feet to snap to the ground
-  linearBounds[2] = 1e-8;
-
-  // Constrain the feet to lie flat on the ground
-  angularBounds[0] = 1e-8;
-  angularBounds[1] = 1e-8;
-
-  // Create an end effector for the left foot and set its relative transform
-  EndEffector* l_foot
-      = atlas->getBodyNode("l_foot")->createEndEffector("l_foot");
-  l_foot->setRelativeTransform(tf_foot);
-
-  // Create an interactive frame to use as the target for the left foot
-  dart::gui::InteractiveFramePtr lf_target(
-      new dart::gui::InteractiveFrame(Frame::World(), "lf_target"));
-
-  // Create the left foot's IK and set its target
-  l_foot->getIK(true)->setTarget(lf_target);
-
-  // Set the left foot's IK hierarchy level to 1. This will project its IK goals
-  // through the null space of any IK modules that are on level 0. This means
-  // that it will try to accomplish its goals while also accommodating the goals
-  // of other modules.
-  l_foot->getIK()->setHierarchyLevel(1);
-
-  // Use the bounds defined above
-  l_foot->getIK()->getErrorMethod().setLinearBounds(
-      -linearBounds, linearBounds);
-  l_foot->getIK()->getErrorMethod().setAngularBounds(
-      -angularBounds, angularBounds);
-
-  // Create Support for the foot and give it geometry
-  l_foot->getSupport(true)->setGeometry(support);
-
-  // Turn on support mode so that it can be used as a foot
-  l_foot->getSupport()->setActive();
-
-  // Create an end effector for the right foot and set its relative transform
-  EndEffector* r_foot
-      = atlas->getBodyNode("r_foot")->createEndEffector("r_foot");
-  r_foot->setRelativeTransform(tf_foot);
-
-  // Create an interactive frame to use as the target for the right foot
-  dart::gui::InteractiveFramePtr rf_target(
-      new dart::gui::InteractiveFrame(Frame::World(), "rf_target"));
-
-  // Create the right foot's IK module and set its target
-  r_foot->getIK(true)->setTarget(rf_target);
-
-  // Set the right foot's IK hierarchy level to 1
-  r_foot->getIK()->setHierarchyLevel(1);
-
-  // Use the bounds defined above
-  r_foot->getIK()->getErrorMethod().setLinearBounds(
-      -linearBounds, linearBounds);
-  r_foot->getIK()->getErrorMethod().setAngularBounds(
-      -angularBounds, angularBounds);
-
-  // Create Support for the foot and give it geometry
-  r_foot->getSupport(true)->setGeometry(support);
-
-  // Turn on support mode so that it can be used as a foot
-  r_foot->getSupport()->setActive();
-
-  // Move atlas to the ground so that it starts out squatting with its feet on
-  // the ground
-  double heightChange = -r_foot->getWorldTransform().translation()[2];
-  atlas->getDof(5)->setPosition(heightChange);
-
-  // Now that the feet are on the ground, we should set their target transforms
-  l_foot->getIK()->getTarget()->setTransform(l_foot->getTransform());
-  r_foot->getIK()->getTarget()->setTransform(r_foot->getTransform());
+  constexpr double supportPositiveX = 0.10 - 0.186;
+  constexpr double supportNegativeX = -0.03 - 0.186;
+  constexpr double supportPositiveY = 0.03;
+  constexpr double supportNegativeY = -0.03;
+  support.emplace_back(supportNegativeX, supportNegativeY, 0.0);
+  support.emplace_back(supportPositiveX, supportNegativeY, 0.0);
+  support.emplace_back(supportPositiveX, supportPositiveY, 0.0);
+  support.emplace_back(supportNegativeX, supportPositiveY, 0.0);
+  return support;
 }
 
-void setupWholeBodySolver(const SkeletonPtr& atlas)
+void addDisconnectedLine(
+    dart::dynamics::LineSegmentShape& shape,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to)
 {
-  // The default
-  std::shared_ptr<dart::math::GradientDescentSolver> solver
-      = std::dynamic_pointer_cast<dart::math::GradientDescentSolver>(
-          atlas->getIK(true)->getSolver());
-  solver->setNumMaxIterations(10);
-
-  std::size_t nDofs = atlas->getNumDofs();
-
-  double default_weight = 0.01;
-  Eigen::VectorXd weights = default_weight * Eigen::VectorXd::Ones(nDofs);
-  weights[2] = 0.0;
-  weights[3] = 0.0;
-  weights[4] = 0.0;
-
-  weights[6] *= 0.2;
-  weights[7] *= 0.2;
-  weights[8] *= 0.2;
-
-  Eigen::VectorXd lower_posture = Eigen::VectorXd::Constant(
-      nDofs, -std::numeric_limits<double>::infinity());
-  lower_posture[0] = -0.35;
-  lower_posture[1] = -0.35;
-  lower_posture[5] = 0.600;
-
-  lower_posture[6] = -0.1;
-  lower_posture[7] = -0.1;
-  lower_posture[8] = -0.1;
-
-  Eigen::VectorXd upper_posture = Eigen::VectorXd::Constant(
-      nDofs, std::numeric_limits<double>::infinity());
-  upper_posture[0] = 0.35;
-  upper_posture[1] = 0.35;
-  upper_posture[5] = 0.885;
-
-  upper_posture[6] = 0.1;
-  upper_posture[7] = 0.1;
-  upper_posture[8] = 0.1;
-
-  std::shared_ptr<RelaxedPosture> objective = std::make_shared<RelaxedPosture>(
-      atlas->getPositions(), lower_posture, upper_posture, weights);
-  atlas->getIK()->setObjective(objective);
-
-  std::shared_ptr<dart::constraint::BalanceConstraint> balance
-      = std::make_shared<dart::constraint::BalanceConstraint>(atlas->getIK());
-  atlas->getIK()->getProblem()->addEqConstraint(balance);
-
-  //  // Shift the center of mass towards the support polygon center while
-  //  trying
-  //  // to keep the support polygon where it is
-  //  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
-  //  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_COM);
-
-  //  // Keep shifting the center of mass towards the center of the support
-  //  // polygon, even if it is already inside. This is useful for trying to
-  //  // optimize a stance
-  //  balance->setErrorMethod(dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
-  //  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_COM);
-
-  //  // Try to leave the center of mass where it is while moving the support
-  //  // polygon to be under the current center of mass location
-  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_CENTROID);
-  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
-
-  //  // Try to leave the center of mass where it is while moving the support
-  //  // point that is closest to the center of mass
-  //  balance->setErrorMethod(dart::constraint::BalanceConstraint::FROM_EDGE);
-  //  balance->setBalanceMethod(dart::constraint::BalanceConstraint::SHIFT_SUPPORT);
-
-  // Note that using the FROM_EDGE error method is liable to leave the center of
-  // mass visualization red even when the constraint was successfully solved.
-  // This is because the constraint solver has a tiny bit of tolerance that
-  // allows the Problem to be considered solved when the center of mass is
-  // microscopically outside of the support polygon. This is an inherent risk of
-  // using FROM_EDGE instead of FROM_CENTROID.
-
-  // Feel free to experiment with the different balancing methods. You will find
-  // that some work much better for user interaction than others.
+  const auto start = shape.addVertex(from);
+  if (start > 0u) {
+    shape.removeConnection(start - 1u, start);
+  }
+  shape.addVertex(to, start);
 }
 
-void enableDragAndDrops(dart::gui::Viewer& viewer, const SkeletonPtr& atlas)
+std::shared_ptr<dart::dynamics::LineSegmentShape> createLineShape(
+    const std::vector<dart::gui::DebugLineDescriptor>& lines)
 {
-  // Turn on drag-and-drop for the whole Skeleton
-  for (std::size_t i = 0; i < atlas->getNumBodyNodes(); ++i) {
-    viewer.enableDragAndDrop(atlas->getBodyNode(i), false, false);
+  auto shape = std::make_shared<dart::dynamics::LineSegmentShape>(2.0f);
+  for (const auto& line : lines) {
+    addDisconnectedLine(*shape, line.from, line.to);
+  }
+  return shape;
+}
+
+void appendMarkerAxisLines(
+    std::vector<dart::gui::DebugLineDescriptor>& lines,
+    const Eigen::Vector3d& center,
+    double radius,
+    const std::string& label)
+{
+  dart::gui::DebugLineDescriptor x;
+  x.from = center - Eigen::Vector3d::UnitX() * radius;
+  x.to = center + Eigen::Vector3d::UnitX() * radius;
+  x.label = label + ".x";
+  lines.push_back(x);
+
+  dart::gui::DebugLineDescriptor y;
+  y.from = center - Eigen::Vector3d::UnitY() * radius;
+  y.to = center + Eigen::Vector3d::UnitY() * radius;
+  y.label = label + ".y";
+  lines.push_back(y);
+
+  dart::gui::DebugLineDescriptor z;
+  z.from = center - Eigen::Vector3d::UnitZ() * radius;
+  z.to = center + Eigen::Vector3d::UnitZ() * radius;
+  z.label = label + ".z";
+  lines.push_back(z);
+}
+
+std::vector<dart::gui::DebugLineDescriptor> makeAtlasSupportPolygonLines(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  if (atlas == nullptr) {
+    return {};
   }
 
-  atlas->eachEndEffector([&](EndEffector* ee) {
-    if (!ee->getIK()) {
+  dart::gui::DebugDrawOptions options;
+  options.drawGrid = false;
+  options.drawWorldFrame = false;
+  options.drawSupportPolygons = true;
+  options.supportPolygonElevation = kSupportVisualElevation;
+  return dart::gui::makeSupportPolygonDebugLines(*atlas, options, "atlas");
+}
+
+std::optional<Eigen::Vector2d> computeAtlasComSupportProjection(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  if (atlas == nullptr || atlas->getMass() <= 0.0
+      || !std::isfinite(atlas->getMass())) {
+    return std::nullopt;
+  }
+
+  const auto& axes = atlas->getSupportAxes();
+  if (!axes.first.allFinite() || !axes.second.allFinite()) {
+    return std::nullopt;
+  }
+
+  const Eigen::Vector3d com = atlas->getCOM();
+  if (!com.allFinite()) {
+    return std::nullopt;
+  }
+
+  return Eigen::Vector2d(com.dot(axes.first), com.dot(axes.second));
+}
+
+std::vector<dart::gui::DebugLineDescriptor> makeAtlasSupportComLines(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  if (atlas == nullptr) {
+    return {};
+  }
+
+  const auto projectedCom = computeAtlasComSupportProjection(atlas);
+  if (!projectedCom) {
+    return {};
+  }
+
+  const auto& axes = atlas->getSupportAxes();
+  const Eigen::Vector3d up = axes.first.cross(axes.second);
+  if (!up.allFinite() || up.squaredNorm() <= 1e-18) {
+    return {};
+  }
+
+  const Eigen::Vector3d center = axes.first * projectedCom->x()
+                                 + axes.second * projectedCom->y()
+                                 + up.normalized() * kSupportVisualElevation;
+  std::vector<dart::gui::DebugLineDescriptor> lines;
+  lines.reserve(3);
+  appendMarkerAxisLines(
+      lines, center, kSupportComMarkerRadius, "atlas.support_com");
+  return lines;
+}
+
+Eigen::Vector4d atlasSupportComColor(const dart::dynamics::SkeletonPtr& atlas)
+{
+  const auto projectedCom = computeAtlasComSupportProjection(atlas);
+  if (atlas == nullptr || !projectedCom) {
+    return Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
+  }
+
+  return dart::math::isInsideSupportPolygon(
+             *projectedCom, atlas->getSupportPolygon())
+             ? Eigen::Vector4d(0.0, 0.0, 1.0, 1.0)
+             : Eigen::Vector4d(1.0, 0.0, 0.0, 1.0);
+}
+
+dart::dynamics::SimpleFramePtr createAtlasSupportPolygonOverlay(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  auto overlay = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), kAtlasSupportOverlayName);
+  overlay->setShape(createLineShape(makeAtlasSupportPolygonLines(atlas)));
+  overlay->getVisualAspect(true)->setRGBA(
+      Eigen::Vector4d(0.22, 0.86, 0.38, 0.86));
+  return overlay;
+}
+
+dart::dynamics::SimpleFramePtr createAtlasSupportComOverlay(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  auto overlay = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), kAtlasSupportComOverlayName);
+  overlay->setShape(createLineShape(makeAtlasSupportComLines(atlas)));
+  overlay->getVisualAspect(true)->setRGBA(atlasSupportComColor(atlas));
+  return overlay;
+}
+
+void updateAtlasSupportPolygonOverlay(
+    const dart::dynamics::SkeletonPtr& atlas,
+    const dart::dynamics::SimpleFramePtr& overlay)
+{
+  if (overlay == nullptr) {
+    return;
+  }
+
+  overlay->setShape(createLineShape(makeAtlasSupportPolygonLines(atlas)));
+}
+
+void updateAtlasSupportComOverlay(
+    const dart::dynamics::SkeletonPtr& atlas,
+    const dart::dynamics::SimpleFramePtr& overlay)
+{
+  if (overlay == nullptr) {
+    return;
+  }
+
+  overlay->setShape(createLineShape(makeAtlasSupportComLines(atlas)));
+  overlay->getVisualAspect(true)->setRGBA(atlasSupportComColor(atlas));
+}
+
+void setUnconstrainedIkBounds(const dart::dynamics::InverseKinematicsPtr& ik)
+{
+  Eigen::Vector3d linearBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d angularBounds
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
+  ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
+}
+
+void setVectorEntry(Eigen::VectorXd& values, Eigen::Index index, double value)
+{
+  if (0 <= index && index < values.size()) {
+    values[index] = value;
+  }
+}
+
+void scaleVectorEntry(Eigen::VectorXd& values, Eigen::Index index, double scale)
+{
+  if (0 <= index && index < values.size()) {
+    values[index] *= scale;
+  }
+}
+
+AtlasWholeBodySolverState setupAtlasWholeBodySolver(
+    const dart::dynamics::SkeletonPtr& atlas)
+{
+  AtlasWholeBodySolverState state;
+  if (atlas == nullptr) {
+    return state;
+  }
+
+  auto wholeBodyIk = atlas->getIK(true);
+  auto solver = std::dynamic_pointer_cast<dart::math::GradientDescentSolver>(
+      wholeBodyIk->getSolver());
+  if (solver != nullptr) {
+    solver->setNumMaxIterations(10);
+  }
+
+  const Eigen::Index dofCount = static_cast<Eigen::Index>(atlas->getNumDofs());
+  constexpr double defaultWeight = 0.01;
+  Eigen::VectorXd weights = defaultWeight * Eigen::VectorXd::Ones(dofCount);
+  setVectorEntry(weights, 2, 0.0);
+  setVectorEntry(weights, 3, 0.0);
+  setVectorEntry(weights, 4, 0.0);
+  scaleVectorEntry(weights, 6, 0.2);
+  scaleVectorEntry(weights, 7, 0.2);
+  scaleVectorEntry(weights, 8, 0.2);
+
+  Eigen::VectorXd lowerPosture = Eigen::VectorXd::Constant(
+      dofCount, -std::numeric_limits<double>::infinity());
+  setVectorEntry(lowerPosture, 0, -0.35);
+  setVectorEntry(lowerPosture, 1, -0.35);
+  setVectorEntry(lowerPosture, 5, 0.600);
+  setVectorEntry(lowerPosture, 6, -0.1);
+  setVectorEntry(lowerPosture, 7, -0.1);
+  setVectorEntry(lowerPosture, 8, -0.1);
+
+  Eigen::VectorXd upperPosture = Eigen::VectorXd::Constant(
+      dofCount, std::numeric_limits<double>::infinity());
+  setVectorEntry(upperPosture, 0, 0.35);
+  setVectorEntry(upperPosture, 1, 0.35);
+  setVectorEntry(upperPosture, 5, 0.885);
+  setVectorEntry(upperPosture, 6, 0.1);
+  setVectorEntry(upperPosture, 7, 0.1);
+  setVectorEntry(upperPosture, 8, 0.1);
+
+  state.posture = std::make_shared<RelaxedPosture>(
+      atlas->getPositions(), lowerPosture, upperPosture, weights);
+  wholeBodyIk->setObjective(state.posture);
+
+  state.balance = std::make_shared<dart::constraint::BalanceConstraint>(
+      wholeBodyIk,
+      dart::constraint::BalanceConstraint::SHIFT_SUPPORT,
+      dart::constraint::BalanceConstraint::FROM_CENTROID);
+  wholeBodyIk->getProblem()->addEqConstraint(state.balance);
+  return state;
+}
+
+dart::dynamics::SkeletonPtr createGround()
+{
+  auto ground = dart::dynamics::Skeleton::create(kGroundSkeletonName);
+  auto* body
+      = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
+  auto* shapeNode = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(4.0, 4.0, 0.04)));
+  shapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, -0.02));
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.66, 0.68, 0.70, 1.0));
+  return ground;
+}
+
+struct AtlasPuppetScene
+{
+  dart::simulation::WorldPtr world;
+  dart::dynamics::SkeletonPtr atlas;
+  dart::dynamics::SimpleFramePtr supportOverlay;
+  dart::dynamics::SimpleFramePtr supportComOverlay;
+  std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
+  std::vector<dart::gui::Gizmo> gizmos;
+  AtlasWholeBodySolverState wholeBodySolver;
+  struct TargetState
+  {
+    dart::simulation::WorldPtr world;
+    dart::dynamics::EndEffector* effector = nullptr;
+    dart::dynamics::InverseKinematicsPtr ik;
+    dart::dynamics::SimpleFramePtr target;
+    std::pair<Eigen::Vector6d, Eigen::Vector6d> defaultBounds;
+    Eigen::Isometry3d defaultTargetTransform = Eigen::Isometry3d::Identity();
+    std::string label;
+    char hotkey = '\0';
+    bool active = false;
+
+    void activate(bool resetTargetTransform = true)
+    {
+      if (active || world == nullptr || effector == nullptr || target == nullptr
+          || ik == nullptr) {
+        return;
+      }
+
+      ik->getErrorMethod().setBounds();
+      if (resetTargetTransform) {
+        target->setTransform(effector->getWorldTransform());
+      }
+      world->addSimpleFrame(target);
+      active = true;
+      std::cout << "Activated IK target '" << effector->getName() << "'.\n";
+    }
+
+    void deactivate()
+    {
+      if (!active || world == nullptr || target == nullptr || ik == nullptr) {
+        return;
+      }
+
+      ik->getErrorMethod().setBounds(defaultBounds);
+      target->setTransform(defaultTargetTransform);
+      world->removeSimpleFrame(target);
+      active = false;
+      std::cout << "Deactivated IK target '" << effector->getName() << "'.\n";
+    }
+
+    void solve()
+    {
+      if (active && ik != nullptr) {
+        solveOwningSkeletonIk(ik);
+      }
+    }
+
+    void toggle()
+    {
+      if (active) {
+        deactivate();
+      } else {
+        activate();
+      }
+    }
+  };
+
+  std::vector<std::shared_ptr<TargetState>> targetStates;
+  Eigen::VectorXd restConfiguration;
+};
+
+bool solveOwningSkeletonIk(const dart::dynamics::InverseKinematicsPtr& ik)
+{
+  if (ik == nullptr) {
+    return true;
+  }
+
+  auto* node = ik->getNode();
+  const auto bodyNode = node ? node->getBodyNodePtr() : nullptr;
+  const auto skeleton = bodyNode ? bodyNode->getSkeleton() : nullptr;
+  if (skeleton != nullptr) {
+    const auto wholeBodyIk = skeleton->getIK(true);
+    if (wholeBodyIk != nullptr) {
+      return wholeBodyIk->solveAndApply(true);
+    }
+  }
+
+  return ik->solveAndApply(true);
+}
+
+void applyAtlasRootGradientWeights(
+    const dart::dynamics::SkeletonPtr& atlas,
+    const dart::dynamics::InverseKinematicsPtr& ik)
+{
+  if (atlas == nullptr || ik == nullptr) {
+    return;
+  }
+
+  const auto* rootBody = atlas->getRootBodyNode();
+  const auto* rootJoint = rootBody ? rootBody->getParentJoint() : nullptr;
+  if (rootJoint == nullptr) {
+    return;
+  }
+
+  const auto dofs = ik->getDofs();
+  Eigen::VectorXd weights
+      = Eigen::VectorXd::Ones(static_cast<Eigen::Index>(dofs.size()));
+  for (std::size_t i = 0; i < dofs.size(); ++i) {
+    const auto* dof = atlas->getDof(dofs[i]);
+    if (dof != nullptr && dof->getJoint() == rootJoint) {
+      weights[static_cast<Eigen::Index>(i)] = kAtlasHandRootGradientWeight;
+    }
+  }
+
+  ik->getGradientMethod().setComponentWeights(weights);
+}
+
+void addAtlasPuppetIkTargets(
+    AtlasPuppetScene& scene, const dart::dynamics::SkeletonPtr& atlas)
+{
+  struct Config
+  {
+    const char* bodyNode;
+    const char* effectorName;
+    const char* targetName;
+    const char* label;
+    int hotkey;
+    Eigen::Isometry3d relativeTransform;
+    bool supportContact;
+  };
+
+  constexpr double halfPi = 1.5707963267948966;
+  Eigen::Isometry3d leftHand = Eigen::Isometry3d::Identity();
+  leftHand.translation() = Eigen::Vector3d(0.0009, 0.1254, 0.012);
+  leftHand.rotate(Eigen::AngleAxisd(halfPi, Eigen::Vector3d::UnitZ()));
+
+  Eigen::Isometry3d rightHand = leftHand;
+  rightHand.translation().x() = -rightHand.translation().x();
+  rightHand.translation().y() = -rightHand.translation().y();
+  rightHand.linear() = rightHand.linear().inverse().eval();
+
+  Eigen::Isometry3d foot = Eigen::Isometry3d::Identity();
+  foot.translation() = Eigen::Vector3d(0.186, 0.0, -0.08);
+
+  const std::array<Config, 4> configs{{
+      {"l_hand",
+       "atlas_puppet_left_hand",
+       "atlas_puppet_ik_target_left_hand",
+       "1 left hand",
+       '1',
+       leftHand,
+       false},
+      {"r_hand",
+       "atlas_puppet_right_hand",
+       "atlas_puppet_ik_target_right_hand",
+       "2 right hand",
+       '2',
+       rightHand,
+       false},
+      {"l_foot",
+       "atlas_puppet_left_foot",
+       "atlas_puppet_ik_target_left_foot",
+       "3 left foot",
+       '3',
+       foot,
+       true},
+      {"r_foot",
+       "atlas_puppet_right_foot",
+       "atlas_puppet_ik_target_right_foot",
+       "4 right foot",
+       '4',
+       foot,
+       true},
+  }};
+
+  const auto footSupportGeometry = makeAtlasPuppetFootSupportGeometry();
+  for (const Config& config : configs) {
+    auto* bodyNode = atlas->getBodyNode(config.bodyNode);
+    if (bodyNode == nullptr) {
+      throw std::runtime_error(
+          "Atlas puppet model is missing body node "
+          + std::string(config.bodyNode));
+    }
+
+    auto* endEffector = bodyNode->createEndEffector(config.effectorName);
+    if (config.supportContact) {
+      endEffector->setRelativeTransform(config.relativeTransform);
+      auto* support = endEffector->getSupport(true);
+      support->setGeometry(footSupportGeometry);
+      support->setActive(true);
+    } else {
+      endEffector->setDefaultRelativeTransform(config.relativeTransform, true);
+    }
+
+    auto ik = endEffector->getIK(true);
+    ik->useWholeBody();
+    ik->setGradientMethod<dart::dynamics::InverseKinematics::JacobianDLS>();
+    ik->getSolver()->setNumMaxIterations(30);
+    if (config.supportContact) {
+      ik->setHierarchyLevel(1);
+      Eigen::Vector3d linearBounds
+          = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+      Eigen::Vector3d angularBounds
+          = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+      linearBounds.z() = 1e-8;
+      angularBounds.x() = 1e-8;
+      angularBounds.y() = 1e-8;
+      ik->getErrorMethod().setLinearBounds(-linearBounds, linearBounds);
+      ik->getErrorMethod().setAngularBounds(-angularBounds, angularBounds);
+    } else {
+      applyAtlasRootGradientWeights(atlas, ik);
+      setUnconstrainedIkBounds(ik);
+    }
+
+    auto target = dart::dynamics::SimpleFrame::createShared(
+        dart::dynamics::Frame::World(),
+        config.targetName,
+        endEffector->getWorldTransform());
+    ik->setTarget(target);
+
+    auto state = std::make_shared<AtlasPuppetScene::TargetState>();
+    state->world = scene.world;
+    state->effector = endEffector;
+    state->ik = ik;
+    state->target = target;
+    state->defaultBounds = ik->getErrorMethod().getBounds();
+    state->defaultTargetTransform = target->getRelativeTransform();
+    state->label = config.label;
+    state->hotkey = config.hotkey;
+
+    dart::gui::InverseKinematicsHandle handle;
+    handle.label = config.label;
+    handle.hotkey = config.hotkey;
+    handle.target = target;
+    handle.ik = std::move(ik);
+    handle.solveMode = dart::gui::InverseKinematicsSolveMode::SkeletonHierarchy;
+
+    dart::gui::Gizmo gizmo;
+    gizmo.label = config.targetName;
+    gizmo.target = target;
+    gizmo.size = 0.20;
+    gizmo.isVisible = [state]() {
+      return state->active;
+    };
+    gizmo.onChanged = [state](const Eigen::Isometry3d&) {
+      state->solve();
+    };
+
+    scene.gizmos.push_back(std::move(gizmo));
+    scene.ikHandles.push_back(std::move(handle));
+    scene.targetStates.push_back(std::move(state));
+  }
+}
+
+AtlasPuppetScene createAtlasPuppetScene()
+{
+  AtlasPuppetScene scene;
+  scene.world = dart::simulation::World::create("dartsim_atlas_puppet");
+  scene.world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  scene.world->addSkeleton(createGround());
+
+  auto atlas = loadAtlasPuppetSkeleton();
+  scene.atlas = atlas;
+  scene.world->addSkeleton(atlas);
+  addAtlasPuppetIkTargets(scene, atlas);
+  scene.wholeBodySolver = setupAtlasWholeBodySolver(scene.atlas);
+  scene.restConfiguration = atlas->getPositions();
+  scene.supportOverlay = createAtlasSupportPolygonOverlay(scene.atlas);
+  scene.world->addSimpleFrame(scene.supportOverlay);
+  scene.supportComOverlay = createAtlasSupportComOverlay(scene.atlas);
+  scene.world->addSimpleFrame(scene.supportComOverlay);
+  return scene;
+}
+
+void solveAtlasWholeBody(const dart::dynamics::SkeletonPtr& atlas)
+{
+  const auto wholeBodyIk = atlas ? atlas->getIK() : nullptr;
+  if (wholeBodyIk != nullptr) {
+    wholeBodyIk->solveAndApply(true);
+  }
+}
+
+bool applyRootTeleoperationStep(
+    const dart::dynamics::SkeletonPtr& atlas, PuppetMotion motion)
+{
+  auto* rootBody = atlas ? atlas->getRootBodyNode() : nullptr;
+  if (rootBody == nullptr
+      || dynamic_cast<dart::dynamics::FreeJoint*>(rootBody->getParentJoint())
+             == nullptr) {
+    return false;
+  }
+
+  const Eigen::Isometry3d current = rootBody->getWorldTransform();
+  Eigen::Isometry3d next = current;
+
+  Eigen::Vector3d forward = current.linear().col(0);
+  forward.z() = 0.0;
+  if (forward.norm() > 1e-10) {
+    forward.normalize();
+  } else {
+    forward.setZero();
+  }
+
+  Eigen::Vector3d left = current.linear().col(1);
+  left.z() = 0.0;
+  if (left.norm() > 1e-10) {
+    left.normalize();
+  } else {
+    left.setZero();
+  }
+
+  switch (motion) {
+    case PuppetMotion::Forward:
+      next.translation() += kTeleopLinearStep * forward;
+      break;
+    case PuppetMotion::Backward:
+      next.translation() -= kTeleopLinearStep * forward;
+      break;
+    case PuppetMotion::Left:
+      next.translation() += kTeleopLinearStep * left;
+      break;
+    case PuppetMotion::Right:
+      next.translation() -= kTeleopLinearStep * left;
+      break;
+    case PuppetMotion::Up:
+      next.translation() += kTeleopElevationStep * Eigen::Vector3d::UnitZ();
+      break;
+    case PuppetMotion::Down:
+      next.translation() -= kTeleopElevationStep * Eigen::Vector3d::UnitZ();
+      break;
+    case PuppetMotion::YawLeft:
+      next.linear()
+          = Eigen::AngleAxisd(kTeleopYawStep, Eigen::Vector3d::UnitZ())
+                .toRotationMatrix()
+            * current.linear();
+      break;
+    case PuppetMotion::YawRight:
+      next.linear()
+          = Eigen::AngleAxisd(-kTeleopYawStep, Eigen::Vector3d::UnitZ())
+                .toRotationMatrix()
+            * current.linear();
+      break;
+  }
+
+  dart::dynamics::FreeJoint::setTransformOf(rootBody, next);
+  return true;
+}
+
+std::vector<dart::gui::KeyboardAction> createAtlasPuppetKeyboardActions(
+    const dart::dynamics::SkeletonPtr& atlas,
+    const std::vector<std::shared_ptr<AtlasPuppetScene::TargetState>>&
+        targetStates,
+    const Eigen::VectorXd& restConfiguration,
+    const AtlasWholeBodySolverState& wholeBodySolver)
+{
+  struct Config
+  {
+    char key;
+    const char* label;
+    PuppetMotion motion;
+  };
+
+  const std::array<Config, 8> configs{{
+      {'w', "Move Atlas forward", PuppetMotion::Forward},
+      {'s', "Move Atlas backward", PuppetMotion::Backward},
+      {'a', "Move Atlas left", PuppetMotion::Left},
+      {'d', "Move Atlas right", PuppetMotion::Right},
+      {'f', "Raise Atlas root", PuppetMotion::Up},
+      {'z', "Lower Atlas root", PuppetMotion::Down},
+      {'q', "Yaw Atlas left", PuppetMotion::YawLeft},
+      {'e', "Yaw Atlas right", PuppetMotion::YawRight},
+  }};
+
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.reserve(configs.size() + targetStates.size() + 6);
+  for (const Config& config : configs) {
+    dart::gui::KeyboardAction action;
+    action.label = config.label;
+    action.shortcut = dart::gui::KeyboardShortcut::characterKey(config.key);
+    action.repeat = true;
+    action.callback = [atlas, motion = config.motion](
+                          dart::gui::KeyboardActionContext& context) {
+      if (applyRootTeleoperationStep(atlas, motion)) {
+        solveAtlasWholeBody(atlas);
+        if (context.lifecycle != nullptr) {
+          context.lifecycle->paused = true;
+        }
+      }
+    };
+    actions.push_back(std::move(action));
+  }
+
+  for (const auto& state : targetStates) {
+    if (state == nullptr || state->hotkey == '\0') {
+      continue;
+    }
+
+    dart::gui::KeyboardAction action;
+    action.label = "Toggle Atlas target " + state->label;
+    action.shortcut = dart::gui::KeyboardShortcut::characterKey(state->hotkey);
+    action.callback
+        = [atlas, state](dart::gui::KeyboardActionContext& context) {
+            state->toggle();
+            solveAtlasWholeBody(atlas);
+            if (context.lifecycle != nullptr) {
+              context.lifecycle->paused = true;
+            }
+          };
+    actions.push_back(std::move(action));
+  }
+
+  const auto addSupportToggle
+      = [&](char key, const char* effectorName, const char* label) {
+          dart::gui::KeyboardAction action;
+          action.label = label;
+          action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+          action.callback =
+              [atlas, effectorName](dart::gui::KeyboardActionContext& context) {
+                auto* effector
+                    = atlas ? atlas->getEndEffector(effectorName) : nullptr;
+                auto* support = effector ? effector->getSupport() : nullptr;
+                if (support != nullptr) {
+                  support->setActive(!support->isActive());
+                  if (context.lifecycle != nullptr) {
+                    context.lifecycle->paused = true;
+                  }
+                }
+              };
+          actions.push_back(std::move(action));
+        };
+  addSupportToggle(
+      'x', "atlas_puppet_left_foot", "Toggle left Atlas foot support");
+  addSupportToggle(
+      'c', "atlas_puppet_right_foot", "Toggle right Atlas foot support");
+
+  dart::gui::KeyboardAction printDofs;
+  printDofs.label = "Print Atlas DOFs";
+  printDofs.shortcut = dart::gui::KeyboardShortcut::characterKey('p');
+  printDofs.callback = [atlas](dart::gui::KeyboardActionContext&) {
+    if (atlas == nullptr) {
+      return;
+    }
+    for (std::size_t i = 0; i < atlas->getNumDofs(); ++i) {
+      auto* dof = atlas->getDof(i);
+      std::cout << dof->getName() << ": " << dof->getPosition() << "\n";
+    }
+  };
+  actions.push_back(std::move(printDofs));
+
+  dart::gui::KeyboardAction resetPosture;
+  resetPosture.label = "Reset Atlas relaxed posture";
+  resetPosture.shortcut = dart::gui::KeyboardShortcut::characterKey('t');
+  resetPosture.callback = [atlas, restConfiguration](
+                              dart::gui::KeyboardActionContext& context) {
+    if (atlas == nullptr
+        || static_cast<std::size_t>(restConfiguration.size())
+               != atlas->getNumDofs()) {
       return;
     }
 
-    // Check whether the target is an interactive frame, and add it if it is
-    if (const auto& frame
-        = std::dynamic_pointer_cast<dart::gui::InteractiveFrame>(
-            ee->getIK()->getTarget())) {
-      viewer.enableDragAndDrop(frame.get());
+    for (std::size_t i = 0; i < atlas->getNumDofs(); ++i) {
+      if (i < 2 || 4 < i) {
+        atlas->getDof(i)->setPosition(restConfiguration[static_cast<int>(i)]);
+      }
     }
-  });
+    solveAtlasWholeBody(atlas);
+    if (context.lifecycle != nullptr) {
+      context.lifecycle->paused = true;
+    }
+  };
+  actions.push_back(std::move(resetPosture));
+
+  dart::gui::KeyboardAction optimizePosture;
+  optimizePosture.label = "Optimize Atlas posture and balance";
+  optimizePosture.shortcut = dart::gui::KeyboardShortcut::characterKey('r');
+  optimizePosture.callback
+      = [wholeBodySolver, atlas](dart::gui::KeyboardActionContext& context) {
+          if (wholeBodySolver.posture != nullptr) {
+            wholeBodySolver.posture->enforceIdealPosture = true;
+          }
+          if (wholeBodySolver.balance != nullptr) {
+            wholeBodySolver.balance->setErrorMethod(
+                dart::constraint::BalanceConstraint::OPTIMIZE_BALANCE);
+          }
+          solveAtlasWholeBody(atlas);
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  actions.push_back(std::move(optimizePosture));
+
+  dart::gui::KeyboardAction restoreBalanceMode;
+  restoreBalanceMode.label = "Restore Atlas centroid balance mode";
+  restoreBalanceMode.shortcut = dart::gui::KeyboardShortcut::characterKey('r');
+  restoreBalanceMode.trigger = dart::gui::KeyboardActionTrigger::Release;
+  restoreBalanceMode.callback
+      = [wholeBodySolver, atlas](dart::gui::KeyboardActionContext& context) {
+          if (wholeBodySolver.posture != nullptr) {
+            wholeBodySolver.posture->enforceIdealPosture = false;
+          }
+          if (wholeBodySolver.balance != nullptr) {
+            wholeBodySolver.balance->setErrorMethod(
+                dart::constraint::BalanceConstraint::FROM_CENTROID);
+          }
+          solveAtlasWholeBody(atlas);
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  actions.push_back(std::move(restoreBalanceMode));
+  return actions;
 }
+
+dart::gui::Panel createAtlasPuppetPanel()
+{
+  dart::gui::Panel panel;
+  panel.title = "Atlas Puppet";
+  panel.buildWithContext = [](dart::gui::PanelBuilder& builder,
+                              dart::gui::PanelContext& context) {
+    builder.text("Atlas whole-body IK puppet");
+    builder.text("Press 1-4 to toggle/select active targets.");
+    builder.text("Left-drag active target gizmo handles.");
+    builder.text("Arrow keys and PageUp/PageDown nudge it.");
+    builder.text("Hold X/Y/Z with Ctrl-drag to constrain an axis.");
+    builder.text("WASD moves the root; Q/E yaw; F/Z height.");
+    builder.text("X/C toggles foot support; P prints DOFs; T resets posture.");
+    builder.text("Hold R to optimize whole-body posture and balance.");
+    builder.text("Blue/red COM marker shows support-polygon validity.");
+    builder.text("Whole-body IK solves active targets and balance each step.");
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("selected: " + context.selectedLabel);
+  };
+  return panel;
+}
+
+dart::gui::RunOptions makeAtlasPuppetRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 1280;
+  options.height = 960;
+  return options;
+}
+
+dart::gui::OrbitCamera makeAtlasPuppetCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 1.0);
+  camera.yaw = 0.5118558424318241;
+  camera.pitch = 0.22626228031830084;
+  camera.distance = 6.285196894290584;
+  return camera;
+}
+
+} // namespace
 
 int main(int argc, char* argv[])
 {
-  const auto options = parseOptions(argc, argv);
+  try {
+    AtlasPuppetScene scene = createAtlasPuppetScene();
 
-  // Create and configure the physics world
-  WorldPtr world = World::create();
-  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
-
-  // Create and add skeletons to the world
-  SkeletonPtr atlas = createAtlas();
-  SkeletonPtr ground = createGround();
-  world->addSkeleton(atlas);
-  world->addSkeleton(ground);
-
-  // Setup robot configuration and control
-  setupStartConfiguration(atlas);
-  setupEndEffectors(atlas);
-  setupWholeBodySolver(atlas);
-
-  // Create the OSG world node
-  ::osg::ref_ptr<TeleoperationWorld> worldNode
-      = new TeleoperationWorld(world, atlas);
-
-  // Create the OSG viewer
-  std::unique_ptr<dart::gui::Viewer> viewerPtr;
-  if (options.headless) {
-    viewerPtr = std::make_unique<dart::gui::Viewer>(
-        dart::gui::ViewerConfig::headless(options.width, options.height));
-  } else {
-    viewerPtr = std::make_unique<dart::gui::Viewer>();
+    dart::gui::ApplicationOptions options;
+    options.world = scene.world;
+    options.ikHandles = scene.ikHandles;
+    options.gizmos = scene.gizmos;
+    options.runDefaults = makeAtlasPuppetRunDefaults();
+    options.camera = makeAtlasPuppetCamera();
+    options.preStep = [atlas = scene.atlas,
+                       supportOverlay = scene.supportOverlay,
+                       supportComOverlay = scene.supportComOverlay]() {
+      solveAtlasWholeBody(atlas);
+      updateAtlasSupportPolygonOverlay(atlas, supportOverlay);
+      updateAtlasSupportComOverlay(atlas, supportComOverlay);
+    };
+    options.keyboardActions = createAtlasPuppetKeyboardActions(
+        scene.atlas,
+        scene.targetStates,
+        scene.restConfiguration,
+        scene.wholeBodySolver);
+    options.panels.push_back(createAtlasPuppetPanel());
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "atlas_puppet: " << e.what() << "\n";
+    return 1;
   }
-  dart::gui::Viewer& viewer = *viewerPtr;
-  if (options.headless) {
-    viewer.setThreadingModel(::osgViewer::Viewer::SingleThreaded);
-  }
-  viewer.allowSimulation(false); // Kinematic control only
-  viewer.addWorldNode(worldNode);
-
-  // Setup input handling
-  ::osg::ref_ptr<InputHandler> inputHandler
-      = new InputHandler(&viewer, worldNode, atlas, world);
-  viewer.addEventHandler(inputHandler);
-
-  // Enable interactive manipulation
-  enableDragAndDrops(viewer, atlas);
-
-  // Add visualizations
-  viewer.addAttachment(
-      new dart::gui::SupportPolygonVisual(atlas, display_elevation));
-
-  // Configure viewer window
-  if (!options.headless) {
-    viewer.setUpViewInWindow(0, 0, options.width, options.height);
-  }
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(5.34, 3.00, 2.41),
-      ::osg::Vec3(0.00, 0.00, 1.00),
-      ::osg::Vec3(-0.20, -0.08, 0.98));
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  if (options.headless) {
-    const int warmupFrames
-        = options.screenshotPath.empty() ? options.frames : options.frames - 1;
-    for (int i = 0; i < warmupFrames; ++i) {
-      viewer.frame();
-    }
-
-    if (!options.screenshotPath.empty()) {
-      const std::filesystem::path screenshotPath(options.screenshotPath);
-      if (!prepareScreenshotPath(screenshotPath)) {
-        return EXIT_FAILURE;
-      }
-
-      viewer.captureScreen(options.screenshotPath);
-      viewer.frame();
-
-      std::error_code ec;
-      const bool screenshotExists = std::filesystem::exists(screenshotPath, ec);
-      const auto screenshotSize
-          = screenshotExists ? std::filesystem::file_size(screenshotPath, ec)
-                             : 0u;
-      if (ec || !screenshotExists || screenshotSize == 0) {
-        std::cerr << "Failed to write screenshot: " << screenshotPath << "\n";
-        return EXIT_FAILURE;
-      }
-    }
-
-    return EXIT_SUCCESS;
-  }
-
-  // Display usage instructions
-  std::cout << viewer.getInstructions() << std::endl;
-  std::cout << "\n=== Atlas Puppet Control Instructions ===\n"
-            << "Mouse Controls:\n"
-            << "  Alt + Click:   Translate body (preserve orientation)\n"
-            << "  Ctrl + Click:  Rotate body (preserve position)\n"
-            << "  Shift + Click: Move using parent joint only\n\n"
-            << "Keyboard Controls:\n"
-            << "  1-4: Toggle EndEffector interactive targets\n"
-            << "  WASD: Move robot (forward/left/back/right)\n"
-            << "  Q/E:  Rotate robot (counter-clockwise/clockwise)\n"
-            << "  F/Z:  Adjust elevation (up/down)\n"
-            << "  X/C:  Toggle left/right foot support\n"
-            << "  R:    Optimize robot posture\n"
-            << "  T:    Reset to relaxed posture\n\n"
-            << "Notes:\n"
-            << "- Uses iterative Jacobian methods (can be sensitive)\n"
-            << "- Use R/T keys for recovery from tangled configurations\n"
-            << "- Green polygon: support area, Blue/red ball: center of mass\n"
-            << "- Kinematic control only (no physics simulation)\n"
-            << std::endl;
-
-  // Start the OSG viewer main loop
-  return viewer.run();
 }

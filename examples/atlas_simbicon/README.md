@@ -3,26 +3,29 @@
 ## Summary
 
 - Goal: run a Simbicon-style controller on the Atlas model.
-- Concepts/APIs: gait controller, ImGui viewer controls.
-- Expected output: an Atlas model walking in an ImGui-driven OSG viewer.
-- Controls: use the ImGui panel; `--gui-scale` adjusts widget scaling.
+- Concepts/APIs: `dart::io::readSkeleton`, example-owned gait controller
+  state machines, `dart::gui::ApplicationOptions::preStep`, keyboard actions,
+  `dart::gui::RunOptions`, and panel controls.
+- Expected output: an `Atlas Simbicon` window with Atlas walking on the atlas
+  ground with Simbicon control, perturbation keys, and an `Atlas Control`
+  panel.
+- Controls: use r to reset, a/s/d/f to push the torso, 1/2/3/4 to switch
+  state machines, and the panel for gravity, harness toggles, reset, stride
+  mode, headlights, shadows, depth output, pause, step, and exit.
+  `--gui-scale` adjusts the GUI scale, and `--width`/`--height` override the
+  default 1280x960 window size.
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+## Run
 
-## Build Instructions
+From the source tree:
 
-From this directory:
+```bash
+pixi run ex atlas_simbicon
+```
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+Headless capture is also supported through the promoted `dart::gui` runner:
 
-## Execute Instructions
-
-Launch the executable from the build directory above:
-
-    $ ./{generated_executable}
-
-Follow the instructions detailed in the console.
+```bash
+pixi run ex atlas_simbicon --headless --frames 2 --screenshot /tmp/atlas_simbicon.ppm
+pixi run ex atlas_simbicon --headless --frames 2 --render-output depth --screenshot /tmp/atlas_simbicon_depth.ppm
+```

@@ -9,8 +9,9 @@ plan operating state.
 
 ## North-Star Dimensions
 
-- **Easy start**: self-explanatory public APIs, package availability, and Pixi
-  source workflows.
+- **Easy start**: self-explanatory public APIs, package availability, Pixi
+  source workflows, and cloud-runnable tutorials for users who need to try DART
+  before local installation.
 - **Algorithm extensibility**: stable research-facing extension points,
   baseline comparisons, benchmarks, and tests.
 - **Scalable compute**: multi-core CPU, SIMD, and evidence-backed GPU planning.

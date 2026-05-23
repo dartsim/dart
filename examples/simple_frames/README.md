@@ -3,35 +3,53 @@
 ## Summary
 
 - Goal: show how to build and render a hierarchy of `SimpleFrame` objects.
-- Concepts/APIs: `SimpleFrame`, shape attachments, frame transforms.
-- Expected output: an OSG viewer with boxes, ellipsoids, and an arrow shape.
-- Controls: none.
+- Concepts/APIs: `dart::gui` application setup, `SimpleFrame`, shape
+  attachments, frame transforms, marker ellipsoids, and `ArrowShape` markers.
+- Expected output: three colored box frames, three marker ellipsoids, and a
+  pink arrow marker.
+- Controls: Space starts or pauses simulation. Click selection and keyboard
+  nudging are provided by the promoted `dart::gui` viewer.
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+## Run
+
+From the source tree:
+
+```bash
+pixi run ex simple_frames
+```
+
+Headless capture is provided by the promoted `dart::gui` runner:
+
+```bash
+pixi run ex simple_frames --headless --frames 2 --screenshot /tmp/simple_frames.ppm
+```
 
 ## Build Instructions
 
 From this directory:
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
 
 ## Execute Instructions
 
-Launch the executable from the build directory above:
+Launch the standalone executable from the build directory above:
 
-    $ ./{generated_executable}
+```bash
+./simple_frames
+```
 
-This example demonstrates how to create and visualize simple frames using the OSG
-renderer in DART. It shows various geometric shapes (boxes, ellipsoids, arrows)
-attached to different coordinate frames with different transformations applied.
+This example demonstrates how to create and visualize simple frames. It shows
+boxes, ellipsoids, and arrows attached to different coordinate frames with
+different transformations applied.
 
 Key features demonstrated:
 
-- Creating SimpleFrame objects with different transformations
-- Attaching shapes to frames
-- Frame hierarchy and relative transformations
-- OSG-based visualization
+- Creating `SimpleFrame` objects with different transformations.
+- Attaching shapes to frames.
+- Frame hierarchy and relative transformations.
+- Visualization through the promoted `dart::gui` renderer.

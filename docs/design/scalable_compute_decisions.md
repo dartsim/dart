@@ -64,6 +64,26 @@ Keep the first resource-access PR conservative:
 - no GPU residency, stream, memory-transfer, solver registry, or rendering API
   should be introduced as part of resource access metadata.
 
+## Freshness And Cache Strategy
+
+Scalable compute needs a freshness model that keeps public APIs simple while
+avoiding recursive per-object cache bookkeeping in hot paths. The simulation
+API should guarantee fresh common reads and explicit stage synchronization, but
+the implementation can choose the cheapest internal strategy for each workload:
+
+- generation or epoch counters for cheap "already fresh" checks;
+- stage-local dirty sets when only a subset of frames, shapes, or sensors need
+  refresh;
+- dependency graphs for ordered kinematics, collision, sensor, and rendering
+  prep updates;
+- batched cache refresh for SIMD, multi-core CPU, or future accelerator paths;
+- diagnostic freshness metadata for profiling, not public dirty flags.
+
+Performance comparisons should measure the full workload: state mutation,
+freshness bookkeeping, kinematics refresh, query update, solver work, and
+readout. A kinematics-only pipeline should be compared against the full physics
+pipeline for the same scene before claiming a user-visible performance gain.
+
 ## Multi-Core CPU Constraints
 
 Multi-core CPU work should:
@@ -94,6 +114,21 @@ Before public GPU support:
 - document package paths that can and cannot ship GPU support;
 - add CI coverage for build/import and at least one smoke benchmark;
 - review API boundaries for backend leakage.
+
+## Backend Candidate Scope
+
+Backend technology is an implementation decision until a separate public
+backend API is intentionally designed. Candidate implementation paths include
+multi-core CPU schedulers, SIMD dispatch, CUDA, Metal, Vulkan compute,
+ROCm/HIP, LLVM/JIT code generation, and future runtimes, but user APIs should
+name DART concepts, algorithms, solver policies, and workload capabilities.
+
+Adding or replacing a backend should preserve the public simulation API unless
+the active major-release compatibility policy explicitly allows a breaking
+change. Backend names may appear in build flags, diagnostics, profiling output,
+benchmark reports, and developer docs; they should not become required public
+type names, solver names, or namespace names without a promotion design and
+migration plan.
 
 ## CUDA Versus SYCL Criteria
 

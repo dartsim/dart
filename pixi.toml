@@ -25,13 +25,15 @@ imgui = ">=1.92.3,<2"
 isort = ">=7.0.0,<8"
 jinja2 = ">=3.1.6,<4"
 libboost-devel = ">=1.88.0,<2"
+libjpeg-turbo = ">=3.1.2,<4"
+libode = ">=0.16.6,<0.17"
+libpng = ">=1.6.54,<2"
 libsdformat = ">=16.0.0,<17"
 myst-parser = ">=4.0.1,<5"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 ninja = ">=1.13.2,<2"
 numpy = ">=2.4.0,<3"
 octomap = ">=1.10.0,<2"
-openscenegraph = ">=3.6.5,<4"
 pip = ">=25.3,<26"
 pipx = ">=1.8.0,<2"
 pkg-config = ">=0.29.2,<0.30"
@@ -51,7 +53,6 @@ taplo = ">=0.10.0,<0.11"
 taskflow = ">=4.0.0,<5"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
-vulkanscenegraph = ">=1.1.0,<2"
 
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
@@ -74,23 +75,23 @@ fi
 DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
-DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-ON}
+DART_FILAMENT_PLATFORM_DEFAULT=OFF
+case "$(uname -s)-$(uname -m)" in
+  Linux-x86_64|Linux-amd64)
+    DART_FILAMENT_PLATFORM_DEFAULT=ON
+    ;;
+esac
+DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
-DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-OFF}
-DART_BUILD_GUI_RAYLIB_VALUE=${DART_BUILD_GUI_RAYLIB_OVERRIDE:-${DART_BUILD_RAYLIB_OVERRIDE:-OFF}}
-DART_BUILD_GUI_VSG_VALUE=${DART_BUILD_GUI_VSG_OVERRIDE:-ON}
 DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
-DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-OFF}
-DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_OVERRIDE:-OFF}
-DART_USE_SYSTEM_RAYLIB_VALUE=${DART_USE_SYSTEM_RAYLIB_OVERRIDE:-OFF}
-DART_RAYLIB_GIT_TAG_VALUE=${DART_RAYLIB_GIT_TAG_OVERRIDE:-}
-DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
-RAYLIB_GIT_TAG_DEF=""
-if [ -n "${DART_RAYLIB_GIT_TAG_VALUE}" ]; then
-  RAYLIB_GIT_TAG_DEF="-DDART_RAYLIB_GIT_TAG=${DART_RAYLIB_GIT_TAG_VALUE}"
+DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
+if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
+  DART_FETCH_FILAMENT_VALUE=${DART_FILAMENT_PLATFORM_DEFAULT}
 fi
+DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_OVERRIDE:-OFF}
+DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -127,9 +128,6 @@ cmake \
   -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
   -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
-  -DDART_BUILD_GUI_FILAMENT=${DART_BUILD_GUI_FILAMENT_VALUE} \
-  -DDART_BUILD_GUI_RAYLIB=${DART_BUILD_GUI_RAYLIB_VALUE} \
-  -DDART_BUILD_GUI_VSG=${DART_BUILD_GUI_VSG_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -144,13 +142,11 @@ cmake \
   -DDART_USE_SYSTEM_IMGUI=ON \
   -DDART_USE_SYSTEM_FILAMENT=${DART_USE_SYSTEM_FILAMENT_VALUE} \
   -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
-  -DDART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE} \
-  -DDART_USE_SYSTEM_RAYLIB=${DART_USE_SYSTEM_RAYLIB_VALUE} \
+  -DDART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE} \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
-  -DDART_USE_SYSTEM_TRACY=ON \
+  -DDART_USE_SYSTEM_TRACY=OFF \
   -DDART_VERBOSE=${DART_VERBOSE} \
   -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} \
-  $RAYLIB_GIT_TAG_DEF \
   $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
@@ -158,7 +154,7 @@ cmake \
   { arg = "build_type", default = "Release" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 # Auto-fix formatting issues (runs black and isort to format code)
@@ -196,6 +192,7 @@ lint-spell = { cmd = "codespell --write-changes --config .codespellrc" }
 
 check-collision-runtime-isolation = { cmd = "python scripts/check_collision_runtime_isolation.py" }
 audit-collision-compat-facades = { cmd = "python scripts/audit_collision_compat_facades.py" }
+check-native-collision-superset = { cmd = "python scripts/check_native_collision_superset_status.py" }
 
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
 
@@ -217,6 +214,7 @@ lint = { depends-on = [
   "lint-rst",
   "check-collision-runtime-isolation",
   "audit-collision-compat-facades",
+  "check-native-collision-superset",
   "lint-api-boundaries",
   "sync-ai-commands",
 ] }
@@ -319,7 +317,7 @@ set -euo pipefail
 BUILD_TYPE=${BUILD_TYPE:-Debug}
 DART_BUILD_PROFILE={{ build_profile }}
 DART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN:-ON}
-DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-ON}
+DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-OFF}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
@@ -329,22 +327,23 @@ fi
 DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
+DART_FILAMENT_PLATFORM_DEFAULT=OFF
+case "$(uname -s)-$(uname -m)" in
+  Linux-x86_64|Linux-amd64)
+    DART_FILAMENT_PLATFORM_DEFAULT=ON
+    ;;
+esac
+DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
 DART_BUILD_EXAMPLES_VALUE=${DART_BUILD_EXAMPLES_OVERRIDE:-ON}
 DART_BUILD_TUTORIALS_VALUE=${DART_BUILD_TUTORIALS_OVERRIDE:-ON}
 DART_BUILD_TESTS_VALUE=${DART_BUILD_TESTS_OVERRIDE:-ON}
-DART_BUILD_GUI_FILAMENT_VALUE=${DART_BUILD_GUI_FILAMENT_OVERRIDE:-OFF}
-DART_BUILD_GUI_RAYLIB_VALUE=${DART_BUILD_GUI_RAYLIB_OVERRIDE:-${DART_BUILD_RAYLIB_OVERRIDE:-OFF}}
-DART_BUILD_GUI_VSG_VALUE=${DART_BUILD_GUI_VSG_OVERRIDE:-ON}
 DART_USE_SYSTEM_FILAMENT_VALUE=${DART_USE_SYSTEM_FILAMENT_OVERRIDE:-ON}
-DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-OFF}
-DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_OVERRIDE:-OFF}
-DART_USE_SYSTEM_RAYLIB_VALUE=${DART_USE_SYSTEM_RAYLIB_OVERRIDE:-OFF}
-DART_RAYLIB_GIT_TAG_VALUE=${DART_RAYLIB_GIT_TAG_OVERRIDE:-}
-DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
-RAYLIB_GIT_TAG_DEF=""
-if [ -n "${DART_RAYLIB_GIT_TAG_VALUE}" ]; then
-  RAYLIB_GIT_TAG_DEF="-DDART_RAYLIB_GIT_TAG=${DART_RAYLIB_GIT_TAG_VALUE}"
+DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
+if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
+  DART_FETCH_FILAMENT_VALUE=${DART_FILAMENT_PLATFORM_DEFAULT}
 fi
+DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_OVERRIDE:-OFF}
+DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -379,9 +378,7 @@ cmake \
   -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
-  -DDART_BUILD_GUI_FILAMENT=${DART_BUILD_GUI_FILAMENT_VALUE} \
-  -DDART_BUILD_GUI_RAYLIB=${DART_BUILD_GUI_RAYLIB_VALUE} \
-  -DDART_BUILD_GUI_VSG=${DART_BUILD_GUI_VSG_VALUE} \
+  -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
   -DDART_BUILD_EXAMPLES=${DART_BUILD_EXAMPLES_VALUE} \
   -DDART_BUILD_TUTORIALS=${DART_BUILD_TUTORIALS_VALUE} \
   -DDART_BUILD_TESTS=${DART_BUILD_TESTS_VALUE} \
@@ -396,19 +393,17 @@ cmake \
   -DDART_USE_SYSTEM_IMGUI=ON \
   -DDART_USE_SYSTEM_FILAMENT=${DART_USE_SYSTEM_FILAMENT_VALUE} \
   -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
-  -DDART_ENABLE_FILAMENT_GUI_SMOKE_TESTS=${DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS_VALUE} \
-  -DDART_USE_SYSTEM_RAYLIB=${DART_USE_SYSTEM_RAYLIB_VALUE} \
+  -DDART_ENABLE_GUI_FILAMENT_SMOKE_TESTS=${DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS_VALUE} \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
-  -DDART_USE_SYSTEM_TRACY=ON \
+  -DDART_USE_SYSTEM_TRACY=OFF \
   -DDART_VERBOSE=${DART_VERBOSE} \
-  $RAYLIB_GIT_TAG_DEF \
   $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 build-tests = { cmd = [
@@ -530,7 +525,7 @@ set -euo pipefail
 BUILD_TYPE={{ build_type }}
 DART_BUILD_PROFILE=${DART_BUILD_PROFILE:-ON}
 DART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN:-ON}
-DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-ON}
+DART_PROFILE_TRACY=${DART_PROFILE_TRACY:-OFF}
 DART_ENABLE_ASAN=${DART_ENABLE_ASAN:-OFF}
 DART_VERBOSE=${DART_VERBOSE:-OFF}
 DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-{{ dartpy }}}
@@ -563,7 +558,7 @@ if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
 NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
-cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=ON -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
+cmake -G Ninja -S . -B build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} -DDART_BUILD_SIMULATION_EXPERIMENTAL=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} -DDART_BUILD_PROFILE=${DART_BUILD_PROFILE} -DDART_PROFILE_BUILTIN=${DART_PROFILE_BUILTIN} -DDART_PROFILE_TRACY=${DART_PROFILE_TRACY} -DDART_ENABLE_ASAN=${DART_ENABLE_ASAN} -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_NANOBIND=OFF -DDART_USE_SYSTEM_TRACY=OFF -DDART_VERBOSE=${DART_VERBOSE} -Dnanobind_DIR=${NANOBIND_CMAKE_DIR} $LAUNCHER_DEFS
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
@@ -773,14 +768,16 @@ python scripts/pixi_test_py.py
   { arg = "build_type", default = "Release" },
 ] }
 
-test-filament-gui-smoke = { cmd = [
+test-dart-gui-smoke = { cmd = [
   "python",
   "scripts/run_cpp_example.py",
-  "filament_gui",
+  "dartsim",
   "--pixi-smoke",
 ], depends-on = [
   "config",
-], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "OFF", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF" } }
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF" } }
+
+test-filament-gui-smoke = { depends-on = ["test-dart-gui-smoke"] }
 
 test-capsule-ground-contact = { cmd = """
     ctest \
@@ -815,6 +812,14 @@ DART_CODECOV_TEMP_DIR=${DART_CODECOV_TEMP_DIR:-build/$PIXI_ENVIRONMENT_NAME/cpp/
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
+DART_FILAMENT_PLATFORM_DEFAULT=OFF
+case "$(uname -s)-$(uname -m)" in
+  Linux-x86_64|Linux-amd64)
+    DART_FILAMENT_PLATFORM_DEFAULT=ON
+    ;;
+esac
+DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
+DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
   unset DART_COMPILER_CACHE
@@ -853,7 +858,7 @@ cmake \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
-    -DDART_USE_SYSTEM_TRACY=ON \
+    -DDART_USE_SYSTEM_TRACY=OFF \
     -DDART_VERBOSE=$DART_VERBOSE \
     $LAUNCHER_DEFS
 """,
@@ -952,89 +957,12 @@ bm-collision-check = { depends-on = [
   "bm-collision-check-raycast-batch",
   "bm-collision-check-adapter",
 ] }
-bm-dashboard = { cmd = """
-    python scripts/generate_performance_dashboard.py \
-      --input .benchmark_results \
-      --output-dir build/performance-dashboard
-""" }
-check-bm-dashboard = { cmd = "python scripts/verify_performance_dashboard.py build/performance-dashboard" }
-check-bm-dashboard-public = { cmd = """
-    python scripts/check_performance_dashboard_endpoint.py \
-      https://dartsim.github.io/dart/performance/status.json \
-      --require-data \
-      --require-dashboard-page \
-      --require-summary \
-      --require-fresh
-""" }
-check-bm-dashboard-pages = { cmd = """
-    python scripts/check_performance_dashboard_pages_config.py
-""" }
-check-bm-dashboard-pages-branch = { cmd = """
-    python scripts/check_performance_dashboard_pages_branch.py
-""" }
-check-bm-dashboard-pages-build = { cmd = """
-    python scripts/check_performance_dashboard_pages_build.py
-""" }
-check-bm-dashboard-publication = { cmd = """
-    python scripts/check_performance_dashboard_publication.py \
-      --allow-unpublished
-""" }
-check-bm-dashboard-publication-live = { cmd = """
-    python scripts/check_performance_dashboard_publication.py
-""" }
-check-bm-dashboard-website-sources = { cmd = """
-    python scripts/check_performance_dashboard_website_sources.py
-""" }
-check-bm-dashboard-pr-body = { cmd = """
-    python scripts/check_performance_dashboard_pr_body.py
-""" }
-check-bm-dashboard-service-sources = { cmd = """
-    python scripts/check_performance_dashboard_service_sources.py
-""" }
-check-bm-dashboard-empty = { cmd = """
-    repo="$(pwd)" \
-      && tmpdir="$(mktemp -d)" \
-      && cd "$tmpdir" \
-      && python "$repo/scripts/generate_performance_dashboard.py" \
-        --input .benchmark_results \
-        --output-dir "$tmpdir/dashboard" \
-        --run-id empty-publication-smoke \
-        --run-at 2026-05-21T00:00:00+00:00 \
-        --branch main \
-        --sha smoke \
-        --allow-empty \
-      && python "$repo/scripts/verify_performance_dashboard.py" "$tmpdir/dashboard" \
-      && python "$repo/scripts/check_performance_dashboard_endpoint.py" \
-        "$tmpdir/dashboard/status.json" \
-        --expect-status-file "$tmpdir/dashboard/status.json"
-""" }
-check-bm-dashboard-workflow-dry-run = { cmd = """
-    python scripts/check_performance_dashboard_workflow_dry_run.py \
-      --work-dir build/performance-dashboard-workflow-dry-run
-""" }
-check-bm-dashboard-workflow-registration = { cmd = """
-    python scripts/check_performance_dashboard_workflow_registration.py
-""" }
-check-bm-dashboard-workflow-run = { cmd = """
-    python scripts/check_performance_dashboard_workflow_run.py
-""" }
-check-bm-dashboard-launch-preflight = { cmd = """
-    python scripts/check_performance_dashboard_launch_preflight.py
-""" }
-check-bm-dashboard-launch-live = { cmd = """
-    python scripts/check_performance_dashboard_launch_preflight.py \
-      --require-registered \
-      --require-published
-""" }
-bm-dashboard-artifacts = { cmd = """
-    python scripts/download_performance_dashboard_artifacts.py \
-      --repo dartsim/dart \
-      --output-dir .benchmark_seed \
-      --branch main \
-      --skip-if-unavailable
-""" }
-bm-dashboard-surfaces = { cmd = "python scripts/run_performance_dashboard_benchmarks.py", depends-on = [
-  "config",
+config-bm-collision = { depends-on = [
+  { task = "config", args = [
+    "ON",
+    "Release",
+    "OFF",
+  ] },
 ] }
 bm-collision-check-narrow = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1046,7 +974,7 @@ bm-collision-check-narrow = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-narrow-adapter = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1054,12 +982,11 @@ bm-collision-check-narrow-adapter = { cmd = """
       --output .benchmark_results/collision_check_narrow_adapter.json \
       --benchmark-filter 'BM_NarrowPhaseAdapter_EdgeCases_(Native|FCL|Bullet|ODE)/(SphereSphere|BoxBox|SphereBox)_Touching/1$' \
       --max-native-ratio 1.10 \
-      --report-only \
       -- \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-narrow-raw-reference = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1067,12 +994,11 @@ bm-collision-check-narrow-raw-reference = { cmd = """
       --output .benchmark_results/collision_check_narrow_raw_reference.json \
       --benchmark-filter 'BM_NarrowPhaseRawReference_(SphereSphere|BoxBox|SphereBox)_(Native|FCL|Bullet|ODE)$|BM_NarrowPhaseRawReference_EdgeCases_(Native|FCL|Bullet|ODE)/(SphereSphere|BoxBox|CapsuleCapsule|SphereBox|CapsuleSphere|CapsuleBox)_(Touching|DeepPenetration|Grazing|ThinFeature)/1$' \
       --max-native-ratio 1.10 \
-      --report-only \
       -- \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-distance = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1084,7 +1010,7 @@ bm-collision-check-distance = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-raycast = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1096,7 +1022,7 @@ bm-collision-check-raycast = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-mixed = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1108,7 +1034,7 @@ bm-collision-check-mixed = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=5
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-mesh = { cmd = """
     python scripts/check_collision_benchmarks.py \
@@ -1119,7 +1045,7 @@ bm-collision-check-mesh = { cmd = """
       -- \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
-""", depends-on = ["config"] }
+""", depends-on = ["config-bm-collision"] }
 bm-collision-check-raycast-batch = { cmd = """
     python scripts/check_collision_benchmarks.py \
       --target bm_scenarios_raycast_batch \
@@ -1130,7 +1056,7 @@ bm-collision-check-raycast-batch = { cmd = """
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
 """, depends-on = [
-  "config",
+  "config-bm-collision",
 ] }
 bm-collision-check-adapter = { cmd = """
     python scripts/cmake_build.py \
@@ -1142,7 +1068,7 @@ bm-collision-check-adapter = { cmd = """
       --benchmark_out_format=json \
       --benchmark_min_time=1ms \
       --benchmark_repetitions=3
-""", depends-on = ["config"] }
+""", depends-on = ["config-bm-collision"] }
 
 test-joints = { cmd = [
   "bash",
@@ -1285,6 +1211,17 @@ config-install = { cmd = [
   "-lc",
   """
 set -euo pipefail
+DART_FILAMENT_PLATFORM_DEFAULT=OFF
+case "$(uname -s)-$(uname -m)" in
+  Linux-x86_64|Linux-amd64)
+    DART_FILAMENT_PLATFORM_DEFAULT=ON
+    ;;
+esac
+DART_BUILD_GUI_VALUE=${DART_BUILD_GUI_OVERRIDE:-${DART_FILAMENT_PLATFORM_DEFAULT}}
+DART_FETCH_FILAMENT_VALUE=${DART_FETCH_FILAMENT_OVERRIDE:-}
+if [ -z "$DART_FETCH_FILAMENT_VALUE" ]; then
+  DART_FETCH_FILAMENT_VALUE=${DART_FILAMENT_PLATFORM_DEFAULT}
+fi
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
 if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   DART_DISABLE_COMPILER_CACHE_VALUE=ON
@@ -1318,7 +1255,7 @@ cmake \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
     -DDART_BUILD_DARTPY={{ dartpy }} \
     -DDART_BUILD_SIMULATION_EXPERIMENTAL={{ dartpy }} \
-    -DDART_BUILD_GUI=${DART_BUILD_GUI_OVERRIDE:-ON} \
+    -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
     -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF} \
     -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF} \
     -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
@@ -1326,8 +1263,9 @@ cmake \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
+    -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
     -DDART_USE_SYSTEM_NANOBIND=OFF \
-    -DDART_USE_SYSTEM_TRACY=ON \
+    -DDART_USE_SYSTEM_TRACY=OFF \
     -DDART_VERBOSE=$DART_VERBOSE \
     $LAUNCHER_DEFS
 """,
@@ -1335,7 +1273,75 @@ cmake \
   { arg = "dartpy", default = "ON" },
 ] }
 
-tracy = { cmd = "tracy-profiler" }
+tracy-build = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE=Release
+DART_TRACY_CMAKE_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
+DART_TRACY_SRC_DIR=${DART_TRACY_CMAKE_DIR}/_deps/tracy-src/profiler
+DART_TRACY_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/${BUILD_TYPE}
+DART_TRACY_BIN=${DART_TRACY_BUILD_DIR}/tracy-profiler
+DART_TRACY_VERSION=0.13.1
+if [ ! -d "${DART_TRACY_SRC_DIR}" ]; then
+  echo "Tracy source was not fetched. Run DART_PROFILE_TRACY=ON pixi run config ON ${BUILD_TYPE}." >&2
+  exit 1
+fi
+DART_TRACY_STAMP=${DART_TRACY_BUILD_DIR}/.dart-tracy-version
+DART_TRACY_BUILT_VERSION=""
+if [ -f "${DART_TRACY_STAMP}" ]; then
+  IFS= read -r DART_TRACY_BUILT_VERSION < "${DART_TRACY_STAMP}"
+fi
+if [ -x "${DART_TRACY_BIN}" ] \
+  && [ "${DART_TRACY_BUILT_VERSION}" = "${DART_TRACY_VERSION}" ] \
+  && [ "${DART_TRACY_REBUILD:-OFF}" != "ON" ]; then
+  echo "Tracy GUI client ${DART_TRACY_VERSION} is already built at ${DART_TRACY_BIN}."
+  exit 0
+fi
+rm -rf "${DART_TRACY_BUILD_DIR}"
+cmake \
+  -G Ninja \
+  -S "${DART_TRACY_SRC_DIR}" \
+  -B "${DART_TRACY_BUILD_DIR}" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+  -DLEGACY=ON \
+  -DNO_PARALLEL_STL=ON \
+  -DNO_ISA_EXTENSIONS=ON
+cmake --build "${DART_TRACY_BUILD_DIR}" --target tracy-profiler --parallel "${DART_PARALLEL_JOBS:-$(python scripts/parallel_jobs.py)}"
+printf "%s\n" "${DART_TRACY_VERSION}" > "${DART_TRACY_STAMP}"
+""",
+], depends-on = [
+  { task = "config", args = [
+    "ON",
+    "Release",
+    "ON",
+    "ON",
+    "ON",
+  ] },
+] }
+
+tracy = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE=Release
+DART_TRACY_BIN=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/${BUILD_TYPE}/tracy-profiler
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built; building it now." >&2
+  pixi run tracy-build
+fi
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built at ${DART_TRACY_BIN}." >&2
+  exit 1
+fi
+export TRACY_DPI_SCALE=${TRACY_DPI_SCALE:-1}
+exec "${DART_TRACY_BIN}" "$@"
+""",
+  "tracy",
+] }
 
 # Python package build
 build-py = { cmd = "pip install . -v", env = { CMAKE_ARGS = "-DDART_BUILD_DARTPY=ON -DDART_BUILD_COLLISION_REFERENCE_TESTS=OFF -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=OFF -DDART_ENABLE_SIMD=OFF -DDART_BUILD_WHEELS=ON -DDART_TREAT_WARNINGS_AS_ERRORS=OFF -DBUILD_SHARED_LIBS=OFF -DDART_USE_SYSTEM_IMGUI=ON" } }
@@ -1399,7 +1405,7 @@ test-published-package-quickstarts = { cmd = "python scripts/test_published_pack
 
 # Shared wheel helper tasks (reused by version-specific wheel features)
 wheel-build-core = { cmd = "python scripts/wheel_build.py {{ use_system_imgui }}", args = [
-  { arg = "use_system_imgui", default = "ON" },
+  { arg = "use_system_imgui", default = "OFF" },
 ] }
 
 wheel-repair-linux-core = { cmd = "auditwheel repair dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl -w dist/ && rm dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl", args = [
@@ -1565,7 +1571,7 @@ cmake \
   -DDART_USE_SYSTEM_GOOGLETEST=ON \
   -DDART_USE_SYSTEM_IMGUI=ON \
   -DDART_USE_SYSTEM_NANOBIND=OFF \
-  -DDART_USE_SYSTEM_TRACY=ON \
+  -DDART_USE_SYSTEM_TRACY=OFF \
   -DDART_VERBOSE=${DART_VERBOSE} \
   $LAUNCHER_DEFS
 """,
@@ -1609,8 +1615,6 @@ mesalib = ">=25.0.5,<26"
 libglvnd = ">=1.7.0,<2"
 libgl-devel = ">=1.7.0,<2"
 libglu = ">=9.0.3,<10"
-tracy-profiler-client = ">=0.12.2,<0.13"
-tracy-profiler-gui = ">=0.11.1,<0.12"
 vulkan-headers = ">=1.3.231.1,<2"
 libcxx = ">=22.1.5,<23"
 libcxxabi = ">=22.1.5,<23"
@@ -1622,40 +1626,6 @@ libcxx-devel = ">=22.1.5,<23"
 
 [target.osx-64.dependencies]
 git = ">=2.52.0,<3"
-tracy-profiler-client = ">=0.12.2,<0.13"
-tracy-profiler-gui = ">=0.11.1,<0.12"
-
-[target.osx-64.tasks]
-download-osg = { cmd = """
-    rm -rf .deps/OpenSceneGraph/ && \
-    git clone https://github.com/openscenegraph/OpenSceneGraph.git .deps/OpenSceneGraph && \
-    cd .deps/OpenSceneGraph && \
-    git checkout 2e4ae2ea94595995c1fc56860051410b0c0be605
-""", outputs = [
-  ".deps/OpenSceneGraph/README.md",
-] }
-
-config-osg = { cmd = """
-    cmake \
-        -G Ninja \
-        -S .deps/OpenSceneGraph \
-        -B .deps/OpenSceneGraph/build \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-        -DBUILD_OSG_APPLICATIONS=OFF \
-        -DBUILD_OSG_EXAMPLES=OFF
-""", depends-on = ["download-osg"] }
-
-build-osg = { cmd = ["bash", "-lc", """
-set -euo pipefail
-CMAKE_BUILD_DIR=.deps/OpenSceneGraph/build python scripts/cmake_build.py
-"""], depends-on = ["config-osg"] }
-
-install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
-  "build-osg",
-] }
 
 ################################################################################
 # osx-arm64
@@ -1663,40 +1633,6 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 
 [target.osx-arm64.dependencies]
 git = ">=2.52.0,<3"
-tracy-profiler-client = ">=0.12.2,<0.13"
-tracy-profiler-gui = ">=0.11.1,<0.12"
-
-[target.osx-arm64.tasks]
-download-osg = { cmd = """
-    rm -rf .deps/OpenSceneGraph/ && \
-    git clone https://github.com/openscenegraph/OpenSceneGraph.git .deps/OpenSceneGraph && \
-    cd .deps/OpenSceneGraph && \
-    git checkout 2e4ae2ea94595995c1fc56860051410b0c0be605
-""", outputs = [
-  ".deps/OpenSceneGraph/README.md",
-] }
-
-config-osg = { cmd = """
-    cmake \
-        -G Ninja \
-        -S .deps/OpenSceneGraph \
-        -B .deps/OpenSceneGraph/build \
-        -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-        -DBUILD_OSG_APPLICATIONS=OFF \
-        -DBUILD_OSG_EXAMPLES=OFF
-""", depends-on = ["download-osg"] }
-
-build-osg = { cmd = ["bash", "-lc", """
-set -euo pipefail
-CMAKE_BUILD_DIR=.deps/OpenSceneGraph/build python scripts/cmake_build.py
-"""], depends-on = ["config-osg"] }
-
-install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on = [
-  "build-osg",
-] }
 
 ################################################################################
 # win-64
@@ -1705,8 +1641,6 @@ install-osg = { cmd = "cmake --install .deps/OpenSceneGraph/build", depends-on =
 [target.win-64.dependencies]
 # Note: Vulkan packages are not available in conda-forge for Windows
 # System imgui that requires Vulkan will automatically fallback to fetching imgui from GitHub
-tracy-profiler-client = ">=0.12.2,<0.13"
-tracy-profiler-gui = ">=0.12.2,<0.13"
 
 [target.win-64.tasks]
 # Note: DART_MSVC_FORCE_RELEASE_RUNTIME defaults to ON, which forces /MD for all
@@ -1737,14 +1671,14 @@ set -euo pipefail
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
         -DDART_USE_SYSTEM_NANOBIND=OFF \
-        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_USE_SYSTEM_TRACY=OFF \
         -DDART_VERBOSE=$DART_VERBOSE
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "dartpy", default = "ON" },
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 # Multi-config generator uses same build directory for all configurations
@@ -1878,13 +1812,13 @@ set -euo pipefail
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_USE_SYSTEM_TRACY=OFF \
         -DDART_VERBOSE=$DART_VERBOSE
 """,
 ], env = { DART_VERBOSE = "OFF" }, args = [
   { arg = "build_profile", default = "ON" },
   { arg = "profile_builtin", default = "ON" },
-  { arg = "profile_tracy", default = "ON" },
+  { arg = "profile_tracy", default = "OFF" },
 ] }
 
 test = { cmd = [
@@ -2050,14 +1984,77 @@ set -euo pipefail
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_TRACY=ON \
+        -DDART_USE_SYSTEM_TRACY=OFF \
         -DDART_VERBOSE=$DART_VERBOSE
 """,
 ], env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" }, args = [
   { arg = "dartpy", default = "ON" },
 ] }
 
-tracy = { cmd = "tracy-profiler.exe" }
+tracy-build = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+DART_TRACY_CMAKE_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp
+DART_TRACY_SRC_DIR=${DART_TRACY_CMAKE_DIR}/_deps/tracy-src/profiler
+DART_TRACY_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler
+DART_TRACY_BIN=${DART_TRACY_BUILD_DIR}/Release/tracy-profiler.exe
+DART_TRACY_VERSION=0.13.1
+if [ ! -d "${DART_TRACY_SRC_DIR}" ]; then
+  echo "Tracy source was not fetched. Run DART_PROFILE_TRACY=ON pixi run config." >&2
+  exit 1
+fi
+DART_TRACY_STAMP=${DART_TRACY_BUILD_DIR}/.dart-tracy-version
+DART_TRACY_BUILT_VERSION=""
+if [ -f "${DART_TRACY_STAMP}" ]; then
+  IFS= read -r DART_TRACY_BUILT_VERSION < "${DART_TRACY_STAMP}"
+fi
+if [ -x "${DART_TRACY_BIN}" ] \
+  && [ "${DART_TRACY_BUILT_VERSION}" = "${DART_TRACY_VERSION}" ] \
+  && [ "${DART_TRACY_REBUILD:-OFF}" != "ON" ]; then
+  echo "Tracy GUI client ${DART_TRACY_VERSION} is already built at ${DART_TRACY_BIN}."
+  exit 0
+fi
+rm -rf "${DART_TRACY_BUILD_DIR}"
+cmake \
+  -S "${DART_TRACY_SRC_DIR}" \
+  -B "${DART_TRACY_BUILD_DIR}" \
+  -G 'Visual Studio 17 2022' \
+  -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+  -DNO_PARALLEL_STL=ON \
+  -DNO_ISA_EXTENSIONS=ON
+cmake --build "${DART_TRACY_BUILD_DIR}" --config Release --target tracy-profiler
+printf "%s\n" "${DART_TRACY_VERSION}" > "${DART_TRACY_STAMP}"
+""",
+], depends-on = [
+  { task = "config", args = [
+    "ON",
+    "ON",
+    "ON",
+    "ON",
+  ] },
+] }
+
+tracy = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+DART_TRACY_BIN=build/$PIXI_ENVIRONMENT_NAME/tracy-profiler/Release/tracy-profiler.exe
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built; building it now." >&2
+  pixi run tracy-build
+fi
+if [ ! -x "${DART_TRACY_BIN}" ]; then
+  echo "Tracy GUI client was not built at ${DART_TRACY_BIN}." >&2
+  exit 1
+fi
+export TRACY_DPI_SCALE=${TRACY_DPI_SCALE:-1}
+exec "${DART_TRACY_BIN}" "$@"
+""",
+  "tracy",
+] }
 
 #============================
 # Feature: Collision Reference
@@ -2106,7 +2103,7 @@ libode = ">=0.16.6,<0.17"
 #
 # Individual tasks can also be run separately if needed:
 #   pixi run -e gazebo download-gz  # Download gz-physics source
-#   pixi run -e gazebo patch-gz     # Patch DART version requirement
+#   pixi run -e gazebo patch-gz     # Validate DART version requirement
 #   pixi run -e gazebo config-gz    # Configure CMake build
 #   pixi run -e gazebo build-gz     # Build gz-physics + dartsim plugin
 #   pixi run -e gazebo test-gz      # Run full gz-physics suite + verify DART integration
@@ -2232,8 +2229,8 @@ test-gz = { cmd = """
 # - All CMake configuration MUST be done via CMAKE_ARGS environment variable
 # - DO NOT use --config-settings=cmake.define.XXX (it doesn't work reliably with scikit-build-core)
 # - DART_BUILD_GUI controls whether dartpy.gui submodule is included (see python/dartpy/CMakeLists.txt)
-# - OpenSceneGraph is available on conda-forge for ALL platforms (Linux, macOS, Windows)
-# - DART_BUILD_GUI=ON enables dartpy.gui Python bindings on all platforms
+# - Wheel builds enable the Filament-backed dartpy.gui surface and fetch the
+#   pinned upstream Filament SDK when a packaged Filament provider is not used.
 
 [feature.py312-wheel]
 channels = ["conda-forge"]
@@ -2243,16 +2240,19 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.12.*"
 pip = ">=25.3,<26"
 scikit-build-core = ">=0.11.6,<0.12"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fmt = ">=12.0.0,<13"
+glfw = ">=3.4,<4"
 imgui = ">=1.92.3,<2"
 libboost-devel = ">=1.88.0,<2"
+libjpeg-turbo = ">=3.1.2,<4"
 octomap = ">=1.10.0,<2"
+libpng = ">=1.6.54,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
 numpy = ">=2.4.0,<3"
@@ -2261,26 +2261,22 @@ uv = ">=0.9.21,<0.10"
 twine = ">=6.2.0,<7"
 
 [feature.py312-wheel.target.linux-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 auditwheel = ">=6.5.1,<7"
 patchelf = ">=0.17.2,<0.18"
 mesalib = ">=25.0.5,<26"
 libglvnd = ">=1.7.0,<2"
 
 [feature.py312-wheel.target.osx-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py312-wheel.target.osx-arm64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py312-wheel.target.win-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delvewheel = ">=1.11.2,<2"
 
 [feature.py312-wheel.target.linux-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
 
 # auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
 wheel-repair = { depends-on = [
@@ -2290,7 +2286,7 @@ wheel-repair = { depends-on = [
 ] }
 
 [feature.py312-wheel.target.win-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
 
 wheel-repair = { depends-on = [
   { task = "wheel-repair-windows-core", args = [
@@ -2335,7 +2331,7 @@ wheel-publish = { depends-on = [
   "wheel-upload",
 ] }
 
-# macOS-specific: OSG is available but imgui needs to be built from source (not available on conda-forge for macOS)
+# macOS-specific: imgui needs to be built from source (not available on conda-forge for macOS)
 [feature.py312-wheel.target.osx-64.tasks]
 wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
 
@@ -2369,16 +2365,19 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.13.*"
 pip = ">=25.3,<26"
 scikit-build-core = ">=0.11.6,<0.12"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fmt = ">=12.0.0,<13"
+glfw = ">=3.4,<4"
 imgui = ">=1.92.3,<2"
 libboost-devel = ">=1.88.0,<2"
+libjpeg-turbo = ">=3.1.2,<4"
 octomap = ">=1.10.0,<2"
+libpng = ">=1.6.54,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
 numpy = ">=2.4.0,<3"
@@ -2387,14 +2386,13 @@ uv = ">=0.9.21,<0.10"
 twine = ">=6.2.0,<7"
 
 [feature.py313-wheel.target.linux-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 auditwheel = ">=6.5.1,<7"
 patchelf = ">=0.17.2,<0.18"
 mesalib = ">=25.0.5,<26"
 libglvnd = ">=1.7.0,<2"
 
 [feature.py313-wheel.target.linux-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
 
 # auditwheel auto-detects the glibc compatibility tag from the bundled libraries.
 wheel-repair = { depends-on = [
@@ -2404,7 +2402,6 @@ wheel-repair = { depends-on = [
 ] }
 
 [feature.py313-wheel.target.osx-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py313-wheel.target.osx-64.tasks]
@@ -2419,11 +2416,10 @@ wheel-repair = { depends-on = [
 ] }
 
 [feature.py313-wheel.target.win-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delvewheel = ">=1.11.2,<2"
 
 [feature.py313-wheel.target.win-64.tasks]
-wheel-build = { depends-on = ["wheel-build-core"] }
+wheel-build = { depends-on = [{ task = "wheel-build-core", args = ["OFF"] }] }
 
 wheel-repair = { depends-on = [
   { task = "wheel-repair-windows-core", args = [
@@ -2469,7 +2465,6 @@ wheel-publish = { depends-on = [
 ] }
 
 [feature.py313-wheel.target.osx-arm64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py313-wheel.target.osx-arm64.tasks]
@@ -2495,16 +2490,19 @@ platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 python = "3.14.*"
 pip = ">=25.3,<26"
 scikit-build-core = ">=0.11.6,<0.12"
-nanobind = ">=2.10.2,<3"
+nanobind = ">=2.10.2,<2.12"
 cmake = ">=4.2.1,<5"
 ninja = ">=1.13.2,<2"
 assimp = ">=6.0.4,<7"
 console_bridge = ">=1.0.2,<2"
 eigen = ">=3.4.0,<4"
 fmt = ">=12.0.0,<13"
+glfw = ">=3.4,<4"
 imgui = ">=1.92.3,<2"
 libboost-devel = ">=1.88.0,<2"
+libjpeg-turbo = ">=3.1.2,<4"
 octomap = ">=1.10.0,<2"
+libpng = ">=1.6.54,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
 numpy = ">=2.4.0,<3"
@@ -2513,7 +2511,6 @@ uv = ">=0.9.21,<0.10"
 twine = ">=6.2.0,<7"
 
 [feature.py314-wheel.target.linux-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 auditwheel = ">=6.5.1,<7"
 patchelf = ">=0.17.2,<0.18"
 mesalib = ">=25.0.5,<26"
@@ -2530,15 +2527,12 @@ wheel-repair = { depends-on = [
 ] }
 
 [feature.py314-wheel.target.osx-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py314-wheel.target.osx-arm64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delocate = ">=0.13.0,<0.14"
 
 [feature.py314-wheel.target.win-64.dependencies]
-openscenegraph = ">=3.6.5,<4"
 delvewheel = ">=1.11.2,<2"
 
 [feature.py314-wheel.target.win-64.tasks]

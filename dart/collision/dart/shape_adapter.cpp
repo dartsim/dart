@@ -47,11 +47,8 @@
 #include "dart/dynamics/pyramid_shape.hpp"
 #include "dart/dynamics/soft_mesh_shape.hpp"
 #include "dart/dynamics/sphere_shape.hpp"
+#include "dart/dynamics/voxel_grid_shape.hpp"
 #include "dart/math/tri_mesh.hpp"
-
-#if DART_HAVE_OCTOMAP
-  #include "dart/dynamics/voxel_grid_shape.hpp"
-#endif
 
 #include <numbers>
 #include <vector>
@@ -278,35 +275,28 @@ std::unique_ptr<native::Shape> adaptShape(const dynamics::ConstShapePtr& shape)
     return std::make_unique<native::ConvexShape>(std::move(vertices));
   }
 
-#if DART_HAVE_OCTOMAP
   if (shapeType == dynamics::VoxelGridShape::getStaticType()) {
     const auto& voxelGrid
         = std::static_pointer_cast<const dynamics::VoxelGridShape>(shape);
-    const auto octree = voxelGrid->getOctree();
-    if (!octree) {
-      DART_WARN("[DartCollisionDetector] VoxelGridShape has no octree data.");
+    const auto grid = voxelGrid->getOccupancyGrid();
+    if (!grid) {
+      DART_WARN(
+          "[DartCollisionDetector] VoxelGridShape has no occupancy grid.");
       return nullptr;
     }
 
     auto compound = std::make_unique<native::CompoundShape>();
-    for (auto it = octree->begin_leafs(), end = octree->end_leafs(); it != end;
-         ++it) {
-      if (!octree->isNodeOccupied(*it)) {
-        continue;
-      }
-
+    for (const auto& cell : grid->getOccupiedCells()) {
       Eigen::Isometry3d voxelTransform = Eigen::Isometry3d::Identity();
-      voxelTransform.translation()
-          = Eigen::Vector3d(it.getX(), it.getY(), it.getZ());
+      voxelTransform.translation() = cell.center;
       compound->addChild(
-          std::make_unique<native::BoxShape>(Eigen::Vector3d::Constant(
-              0.5 * static_cast<double>(it.getSize()))),
+          std::make_unique<native::BoxShape>(
+              Eigen::Vector3d::Constant(0.5 * cell.size)),
           voxelTransform);
     }
 
     return compound;
   }
-#endif
 
   if (shapeType == dynamics::MeshShape::getStaticType()) {
     const auto& mesh

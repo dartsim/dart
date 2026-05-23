@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <stack>
+#include <unordered_set>
 
 #include <cassert>
 #include <cmath>
@@ -141,6 +142,59 @@ bool AabbTreeBroadPhase::visitPairs(const BroadPhasePairVisitor& visitor) const
   }
 
   return visitPairsRecursive(root_, root_, visitor);
+}
+
+void AabbTreeBroadPhase::buildDebugSnapshot(BroadPhaseDebugSnapshot& out) const
+{
+  out.clear();
+  out.candidatePairs = queryPairs();
+  out.numObjects = size();
+  out.hasTreeTopology = true;
+  out.rootNode = root_;
+
+  if (root_ == kNullNode) {
+    return;
+  }
+
+  std::vector<std::size_t> stack{root_};
+  std::unordered_set<std::size_t> visited;
+  visited.reserve(nodeCount_);
+
+  while (!stack.empty()) {
+    const std::size_t nodeIndex = stack.back();
+    stack.pop_back();
+
+    if (nodeIndex == kNullNode || nodeIndex >= nodes_.size()) {
+      continue;
+    }
+    if (!visited.insert(nodeIndex).second) {
+      continue;
+    }
+
+    const Node& node = nodes_[nodeIndex];
+    BroadPhaseDebugNode debugNode;
+    debugNode.nodeId = nodeIndex;
+    debugNode.parent = node.parent;
+    debugNode.left = node.left;
+    debugNode.right = node.right;
+    debugNode.objectId = node.objectId;
+    debugNode.aabb = node.fatAabb;
+    debugNode.tightAabb = node.isLeaf() ? node.tightAabb : node.fatAabb;
+    debugNode.height = node.height;
+    out.nodes.push_back(debugNode);
+
+    if (!node.isLeaf()) {
+      stack.push_back(node.left);
+      stack.push_back(node.right);
+    }
+  }
+
+  std::sort(
+      out.nodes.begin(),
+      out.nodes.end(),
+      [](const BroadPhaseDebugNode& lhs, const BroadPhaseDebugNode& rhs) {
+        return lhs.nodeId < rhs.nodeId;
+      });
 }
 
 void AabbTreeBroadPhase::build(

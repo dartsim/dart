@@ -4,8 +4,7 @@
 
 - Local build/test workflow: [building.md](building.md) and [testing.md](testing.md)
 - CI monitoring and expectations: [ci-cd.md](ci-cd.md)
-- Dartpy developer build workflow: [building.md](building.md) and
-  [api-documentation.md](api-documentation.md)
+- Dartpy developer build guide: [docs/readthedocs/dartpy/developer_guide/build.rst](../readthedocs/dartpy/developer_guide/build.rst)
 
 ## Design Decisions
 
@@ -57,9 +56,7 @@ namespaces:
 ```
 dartpy/
 ├── io            # File parsers (URDF, SDF, SKEL, MJCF)
-├── simulation_experimental
-│                 # Opt-in ECS-backed experimental world
-└── gui           # 3D visualization (OpenSceneGraph + ImGui)
+└── gui           # Filament-backed 3D visualization descriptors and helpers
 ```
 
 - Core classes/functions (dynamics, collision, math, simulation, constraint,
@@ -67,17 +64,6 @@ dartpy/
 - Legacy submodules remain importable in DART 7.x but will be removed in DART
   8.0. Toggle deprecation handling with `DARTPY_WARN_ON_LEGACY_MODULES` or
   `DARTPY_ENABLE_LEGACY_MODULES`.
-- `dartpy.simulation_experimental` is not promoted onto the top-level package
-  and is not part of the legacy submodule compatibility layer.
-- Collision detector backend aliases are different: for the DART 7 native
-  collision transition, dartpy does not need to keep backward compatibility for
-  legacy `DARTCollisionDetector`, `FCLCollisionDetector`,
-  `BulletCollisionDetector`, or `OdeCollisionDetector` names. Prefer the clean
-  Python API: use `DartCollisionDetector` or the default detector, and do not
-  add compatibility shims for the old backend-specific spellings unless a
-  maintainer explicitly changes that policy. C++ keeps deprecated
-  native-backed facades for downstream source compatibility, but those names
-  should not be mirrored back into the Python API.
 
 **Source**: See `python/dartpy/` directory for module implementations
 
@@ -92,7 +78,12 @@ experimental namespaces. C++ users opt in through
 only public experimental wrapper types and must not expose EnTT, `comps`, or
 other ECS internals until the C++ API provides public wrappers. The DART 8 path
 is to remove the classic world after the experimental world reaches parity and
-promote the experimental shape into the stable simulation namespace.
+promote the experimental shape into the official stable simulation namespace.
+dartpy 8 removes the legacy dartpy 6 API surface instead of carrying it beside
+the promoted API.
+
+Durable API-shape rationale for this surface lives in
+[simulation_experimental_python_api.md](../design/simulation_experimental_python_api.md).
 
 ### Eigen ↔ NumPy Integration
 
@@ -141,7 +132,7 @@ positions = skel.get_positions()  # Returns ndarray
   entry needs a replacement, `remove_by` condition, tracking phase or issue, and
   reason. See [api-boundaries.md](api-boundaries.md).
 
-### OSG Bindings Design
+### GUI Bindings Design
 
 GUI bindings are built only when `DART_BUILD_GUI=ON`. The build wires this up by
 conditionally appending the GUI sources in `python/dartpy/CMakeLists.txt`.
@@ -149,6 +140,13 @@ conditionally appending the GUI sources in `python/dartpy/CMakeLists.txt`.
 Project policy: official dartpy wheels build with GUI enabled, so `dartpy.gui`
 is expected to be available in release artifacts and CI. For local headless-only
 builds you can disable GUI, but some examples/tutorials will not run.
+
+The maintained `dartpy.gui` surface is built around DART-owned concepts such as
+scene descriptors, renderable descriptors, picking, camera helpers, debug
+draws, screenshot options, and viewer lifecycle state. Filament, GLFW, Dear
+ImGui, OpenGL, Vulkan, Metal, OSG, and Raylib implementation types stay out of
+public Python-facing contracts. See [gui-rendering.md](gui-rendering.md) for
+the promoted GUI boundary.
 
 ## Fast Iteration Loop
 
@@ -182,7 +180,7 @@ Signals to look for:
 ### For End Users
 
 ```bash
-# PyPI wheels (pre-built, includes OSG)
+# PyPI wheels (pre-built, includes the Filament-backed GUI)
 pip install dartpy
 
 # conda-forge
@@ -191,8 +189,7 @@ conda install dartpy -c conda-forge
 
 ### For Developers
 
-**See**: [building.md](building.md) for build commands and
-[api-documentation.md](api-documentation.md) for API documentation behavior.
+**See**: `docs/readthedocs/dartpy/developer_guide/build.rst` for detailed instructions
 
 **Quick options**:
 
@@ -208,7 +205,8 @@ Wheels are built using **pixi** environments defined in `pixi.toml`:
 
 - Features: `py312-wheel`, `py313-wheel`
 - Platform-specific build tasks
-- OSG enabled on all platforms
+- Filament-backed GUI enabled on all official wheel platforms through
+  `DART_BUILD_GUI=ON`
 
 ### Publishing Workflow
 
@@ -229,6 +227,12 @@ pixi run -e py313-wheel wheel-verify wheel-test
 pixi run -e py312-wheel wheel-upload
 pixi run -e py313-wheel wheel-upload
 ```
+
+Run Linux wheel import tests after `wheel-repair`, not against the raw
+`linux_x86_64` wheel produced by `wheel-build`. The raw wheel can still depend
+on shared libraries from the build environment, while the repaired
+`manylinux_*` wheel is the artifact that should import in a fresh virtual
+environment and prove `dartpy.gui` is present.
 
 ### Version Management
 
@@ -329,5 +333,4 @@ robot.setForces(forces)
 - **Build system**: `python/dartpy/CMakeLists.txt`
 - **pixi configuration**: `pixi.toml` (features: `py312-wheel`, `py313-wheel`)
 - **Examples**: `python/examples/README.md` (index) and `python/examples/`
-- **Developer docs**: [building.md](building.md) and
-  [api-documentation.md](api-documentation.md)
+- **Developer guide**: `docs/readthedocs/dartpy/developer_guide/build.rst`

@@ -1,34 +1,28 @@
 # Capsule Ground Contact Example
 
-## Summary
+This example exercises capsule-plane contact with an ODE collision detector
+when ODE is available, and visualizes the scene through the promoted
+`dart::gui` runner.
 
-- Goal: observe capsule-plane contact behavior with the built-in detector.
-- Concepts/APIs: `simulation::CollisionDetectorType::Dart`,
-  `dynamics::CapsuleShape`.
-- Expected output: a capsule resting on an infinite plane with a visible ground.
-- Controls: h/v reset pose; space clears velocities.
+Run it with:
 
-## Notes
+```bash
+pixi run ex capsule_ground_contact
+```
 
-- Uses DART's built-in collision detector; no reference collision backend is
-  required.
+Headless capture:
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+```bash
+pixi run ex capsule_ground_contact --headless --frames 2 --screenshot /tmp/capsule_ground_contact.ppm
+```
 
-## Build Instructions
+Controls:
 
-From this directory:
+- Space: play/pause through the shared viewer control and clear capsule
+  velocities
+- `h`: reset the capsule to the horizontal pose
+- `v`: reset the capsule to the vertical pose
+- `n`: step one frame while paused
+- Escape: exit
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
-
-## Execute Instructions
-
-Launch the executable from the build directory above:
-
-    $ ./{generated_executable}
-
-Follow the instructions detailed in the console.
+The default launch size is 1024x768, matching the historical viewer example.

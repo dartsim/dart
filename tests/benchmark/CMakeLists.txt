@@ -228,6 +228,16 @@ target_link_libraries(bm_scenarios_pipeline_breakdown
 )
 dart_format_add(collision/scenarios/bm_pipeline_breakdown.cpp)
 add_executable(
+  bm_scenarios_stacked_scenes
+  collision/scenarios/bm_stacked_scenes.cpp
+)
+target_link_libraries(bm_scenarios_stacked_scenes
+  dart
+  dart-collision-native
+  benchmark::benchmark
+)
+dart_format_add(collision/scenarios/bm_stacked_scenes.cpp)
+add_executable(
   bm_scenarios_dart_adapter
   collision/scenarios/bm_dart_adapter.cpp
 )
@@ -268,6 +278,21 @@ target_link_libraries(bm_dynamics_cache
   benchmark::benchmark_main
 )
 dart_format_add(dynamics/bm_dynamics_cache.cpp)
+
+add_executable(bm_sparse_occupancy_grid dynamics/bm_sparse_occupancy_grid.cpp)
+target_link_libraries(bm_sparse_occupancy_grid
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+if(TARGET octomap)
+  target_link_libraries(bm_sparse_occupancy_grid octomap)
+  target_compile_definitions(
+    bm_sparse_occupancy_grid
+    PRIVATE DART_TESTS_HAVE_OCTOMAP=1
+  )
+endif()
+dart_format_add(dynamics/bm_sparse_occupancy_grid.cpp)
 
 if(TARGET dart-io)
   add_executable(bm_dynamics_cache_io dynamics/bm_dynamics_cache_io.cpp)

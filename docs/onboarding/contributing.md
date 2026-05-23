@@ -185,6 +185,9 @@ Reviewers will check:
 
 - Be responsive to reviewer comments
 - Make requested changes in new commits (don't force-push)
+- If the PR needs the latest target branch, use explicit maintainer/user
+  approval to merge that branch into the PR branch instead of rebasing the
+  published PR history
 - Mark conversations as resolved when addressed
 - Ask questions if feedback is unclear
 

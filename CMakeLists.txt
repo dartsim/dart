@@ -113,7 +113,7 @@ set(DART_VERSION "${DART_MAJOR_VERSION}.${DART_MINOR_VERSION}.${DART_PATCH_VERSI
 # Already set above
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
-set(DART_PKG_EXTERNAL_DEPS "assimp, eigen3, entt, octomap")
+set(DART_PKG_EXTERNAL_DEPS "assimp, eigen3, entt")
 set_property(GLOBAL PROPERTY DART_PKG_LINK_LIBS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_INCLUDE_DIRS "")
 set_property(GLOBAL PROPERTY DART_PUBLIC_SYSTEM_INCLUDE_DIRS "")
@@ -205,26 +205,29 @@ else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON CATEGORY build)
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF CATEGORY build)
-dart_option(DART_BUILD_GUI "Build GUI library" ON CATEGORY build)
-dart_option(DART_BUILD_GUI_FILAMENT "Build experimental Filament GUI example" OFF CATEGORY build)
-set(_dart_user_set_build_gui_raylib FALSE)
-if(DEFINED DART_BUILD_GUI_RAYLIB)
-  set(_dart_user_set_build_gui_raylib TRUE)
+set(_dart_default_gui OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
+  set(_dart_default_gui ON)
 endif()
-dart_option(DART_BUILD_GUI_RAYLIB "Build experimental Raylib GUI backend" OFF CATEGORY build)
-if(NOT _dart_user_set_build_gui_raylib AND DEFINED DART_BUILD_RAYLIB)
-  message(WARNING "DART_BUILD_RAYLIB is deprecated; use DART_BUILD_GUI_RAYLIB instead.")
-  if(DART_BUILD_RAYLIB)
-    set(_dart_build_gui_raylib_value ON)
-  else()
-    set(_dart_build_gui_raylib_value OFF)
-  endif()
-  set(DART_BUILD_GUI_RAYLIB "${_dart_build_gui_raylib_value}" CACHE BOOL "Build experimental Raylib GUI backend" FORCE)
-  unset(DART_BUILD_RAYLIB CACHE)
-  unset(_dart_build_gui_raylib_value)
+dart_option(DART_BUILD_GUI "Build the Filament-backed GUI library" ${_dart_default_gui} CATEGORY build)
+if(DEFINED DART_BUILD_GUI_RAYLIB AND DART_BUILD_GUI_RAYLIB)
+  message(FATAL_ERROR "DART_BUILD_GUI_RAYLIB has been removed. Use the Filament-backed DART GUI instead.")
 endif()
+if(DEFINED DART_BUILD_RAYLIB AND DART_BUILD_RAYLIB)
+  message(FATAL_ERROR "DART_BUILD_RAYLIB has been removed. Use the Filament-backed DART GUI instead.")
+endif()
+if(DEFINED DART_USE_SYSTEM_RAYLIB AND DART_USE_SYSTEM_RAYLIB)
+  message(FATAL_ERROR "DART_USE_SYSTEM_RAYLIB has been removed with the Raylib GUI experiment.")
+endif()
+if(DEFINED DART_RAYLIB_GIT_TAG AND NOT DART_RAYLIB_GIT_TAG STREQUAL "")
+  message(FATAL_ERROR "DART_RAYLIB_GIT_TAG has been removed with the Raylib GUI experiment.")
+endif()
+unset(DART_BUILD_GUI_RAYLIB CACHE)
+unset(DART_BUILD_RAYLIB CACHE)
+unset(DART_USE_SYSTEM_RAYLIB CACHE)
+unset(DART_RAYLIB_GIT_TAG CACHE)
+set(DART_BUILD_GUI_RAYLIB OFF)
 unset(_dart_user_set_build_gui_raylib)
-dart_option(DART_BUILD_GUI_VSG "Build experimental VSG (VulkanSceneGraph) GUI backend" OFF CATEGORY build)
 dart_option(DART_STRICT_SYMBOL_VISIBILITY
   "Build shared libraries with hidden default symbol visibility so exported public ABI must use component *_API macros" OFF
   CATEGORY build)
@@ -253,12 +256,12 @@ endif()
 dart_option(DART_BUILD_EXAMPLES "Build example targets" ON CATEGORY build)
 dart_option(DART_BUILD_TUTORIALS "Build tutorial targets" ON CATEGORY build)
 dart_option(DART_BUILD_TESTS "Build C++ tests" ON CATEGORY build)
-dart_option(DART_ENABLE_FILAMENT_GUI_SMOKE_TESTS
-  "Register opt-in headless smoke tests for the experimental Filament GUI example" OFF
+dart_option(DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS
+  "Register opt-in headless smoke tests for the DART GUI executable" OFF
   CATEGORY diagnostics)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF CATEGORY performance)
 dart_option(DART_PROFILE_BUILTIN "Enable built-in text profiling backend" ON CATEGORY performance)
-dart_option(DART_PROFILE_TRACY "Enable Tracy profiling backend" ON CATEGORY performance)
+dart_option(DART_PROFILE_TRACY "Enable Tracy profiling backend for local developer profiling" OFF CATEGORY performance)
 dart_option(DART_CODECOV "Turn on codecov support" OFF CATEGORY performance)
 
 # Backward compatibility: accept legacy DART_PROFILE_TEXT if provided.
@@ -294,12 +297,16 @@ dart_option(DART_USE_SYSTEM_IMGUI
   "Use system-installed ImGui instead of fetching from GitHub (recommended for package distributions)" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_FILAMENT
   "Use system-installed Filament instead of an explicit fetched copy (recommended for package distributions)" ON CATEGORY system)
+set(_dart_fetch_filament_default OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
+  set(_dart_fetch_filament_default ON)
+endif()
 dart_option(DART_FETCH_FILAMENT
-  "Allow explicit Filament fetching for experimental local builds" OFF CATEGORY system)
+  "Fetch the pinned Filament archive when a packaged Filament install is unavailable" ${_dart_fetch_filament_default} CATEGORY system)
+unset(_dart_default_gui)
+unset(_dart_fetch_filament_default)
 set(DART_FILAMENT_VERSION "1.71.3" CACHE STRING "Filament version for future explicit fetch support")
 mark_as_advanced(DART_FILAMENT_VERSION)
-dart_option(DART_USE_SYSTEM_RAYLIB
-  "Use system-installed Raylib instead of fetching from GitHub (recommended for package distributions)" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF CATEGORY system)
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind" OFF CATEGORY system)
@@ -357,6 +364,12 @@ if(DART_CODECOV)
 
   # Code Coverage Configuration
   add_library(coverage_config INTERFACE)
+  set(DART_COVERAGE_COMPILE_OPTIONS
+    -O0        # no optimization
+    -g         # generate debug info
+    --coverage # sets all required flags
+  )
+  set(DART_COVERAGE_LINK_OPTIONS --coverage)
 
   # CodeCov can only be enabled in Debug mode
   if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -370,13 +383,13 @@ if(DART_CODECOV)
 
   # Add required flags (GCC & LLVM/Clang)
   target_compile_options(coverage_config INTERFACE
-    -O0        # no optimization
-    -g         # generate debug info
-    --coverage # sets all required flags
+    ${DART_COVERAGE_COMPILE_OPTIONS}
   )
 
   # Add required flags (GCC & LLVM/Clang)
-  target_link_options(coverage_config INTERFACE --coverage)
+  target_link_options(coverage_config INTERFACE
+    ${DART_COVERAGE_LINK_OPTIONS}
+  )
 
   # Export CodeCov configuration
   install(TARGETS coverage_config DESTINATION lib EXPORT coverage_config)
@@ -451,7 +464,7 @@ option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
 # Uninstall
 #===============================================================================
 
-# Add an "uninstall" target early so that fetched dependencies (e.g., raylib)
+# Add an "uninstall" target early so that fetched dependencies
 # don't create their own conflicting target.
 # https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/recipe/AddUninstallTarget
 if(NOT TARGET uninstall)
@@ -558,10 +571,10 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
     add_compile_options(-Wno-overloaded-virtual -Wno-alloc-size-larger-than -Wno-dangling-pointer)
   endif()
   if(GCC_VERSION VERSION_GREATER_EQUAL 15.0)
-    # TODO(GCC15): Remove once upstream dependencies (octomap, fcl) stop using
+    # TODO(GCC15): Remove once upstream reference dependencies stop using
     # <ciso646>, which is deprecated in C++20. GCC 15 emits a #warning that our
     # -Werror=cpp flag treats as an error.
-    # Tracking: octomap uses <ciso646> in OcTreeKey.h; fcl pulls it in transitively.
+    # Tracking: FCL and OctoMap reference targets can pull it transitively.
     add_compile_options(-Wno-error=cpp)
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
@@ -708,85 +721,48 @@ if(TARGET dart)
   endif()
 
   if(DART_BUILD_EXAMPLES)
-    if(TARGET dart-gui)
-      # Add example subdirectories and an "examples" target.
-      if(MSVC)
-        add_subdirectory(examples)
-      else()
-        add_subdirectory(examples EXCLUDE_FROM_ALL)
-        get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
-        add_custom_target(examples DEPENDS ${examples})
-      endif()
-
-      if(DART_VERBOSE)
-        message(STATUS "")
-        message(STATUS "[ Examples ]")
-        foreach(example IN LISTS examples)
-          message(STATUS "Adding example: ${example}")
-        endforeach()
-      else()
-        list(LENGTH examples examples_length)
-        message(STATUS "Adding ${examples_length} examples")
-      endif()
+    # Add example subdirectories and an "examples" target. Individual example
+    # CMake files skip themselves when their optional component targets are
+    # unavailable, so non-GUI examples still build when dart-gui is disabled.
+    if(MSVC)
+      add_subdirectory(examples)
     else()
-      message(STATUS "Skipping examples (requires dart-gui target; enable DART_BUILD_GUI)")
+      add_subdirectory(examples EXCLUDE_FROM_ALL)
+      get_property(examples GLOBAL PROPERTY DART_EXAMPLES)
+      add_custom_target(examples DEPENDS ${examples})
+    endif()
+
+    if(DART_VERBOSE)
+      message(STATUS "")
+      message(STATUS "[ Examples ]")
+      foreach(example IN LISTS examples)
+        message(STATUS "Adding example: ${example}")
+      endforeach()
+    else()
+      list(LENGTH examples examples_length)
+      message(STATUS "Adding ${examples_length} examples")
     endif()
   else()
     message(STATUS "Skipping examples (DART_BUILD_EXAMPLES == OFF)")
   endif()
 
   if(DART_BUILD_TUTORIALS)
-    if(TARGET dart-gui)
-      # Add a "tutorials" target to build tutorials.
-      if(MSVC)
-        add_subdirectory(tutorials)
-      else()
-        add_subdirectory(tutorials EXCLUDE_FROM_ALL)
-        get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
-        add_custom_target(tutorials DEPENDS ${tutorials})
-      endif()
-
-      if(DART_VERBOSE)
-        message(STATUS "")
-        message(STATUS "[ Tutorials ]")
-        foreach(tutorial IN LISTS tutorials)
-          message(STATUS "Adding tutorial: ${tutorial}")
-        endforeach()
-      else()
-        list(LENGTH tutorials tutorials_length)
-        message(STATUS "Adding ${tutorials_length} tutorials")
-      endif()
-    else()
-      message(STATUS "Skipping tutorials (requires dart-gui target; enable DART_BUILD_GUI)")
-    endif()
+    message(STATUS "Skipping removed legacy GUI tutorials")
   else()
     message(STATUS "Skipping tutorials (DART_BUILD_TUTORIALS == OFF)")
   endif()
 
-  if(DART_BUILD_GUI_RAYLIB)
+  if(DART_BUILD_GUI)
     if(MSVC)
-      add_subdirectory(examples/raylib)
+      add_subdirectory(apps/dartsim)
     else()
-      add_subdirectory(examples/raylib EXCLUDE_FROM_ALL)
+      add_subdirectory(apps/dartsim EXCLUDE_FROM_ALL)
     endif()
-    if(TARGET examples AND TARGET dart_raylib)
-      add_dependencies(examples dart_raylib)
+    if(TARGET examples AND TARGET dartsim)
+      add_dependencies(examples dartsim)
     endif()
   else()
-    message(STATUS "Skipping Raylib example (DART_BUILD_GUI_RAYLIB == OFF)")
-  endif()
-
-  if(DART_BUILD_GUI_FILAMENT)
-    if(MSVC)
-      add_subdirectory(examples/filament_gui)
-    else()
-      add_subdirectory(examples/filament_gui EXCLUDE_FROM_ALL)
-    endif()
-    if(TARGET examples AND TARGET dart_filament_gui)
-      add_dependencies(examples dart_filament_gui)
-    endif()
-  else()
-    message(STATUS "Skipping Filament GUI example (DART_BUILD_GUI_FILAMENT == OFF)")
+    message(STATUS "Skipping dartsim application (DART_BUILD_GUI == OFF)")
   endif()
 
 endif()
@@ -816,11 +792,8 @@ foreach(target_candidate IN LISTS tutorials)
     list(APPEND all_targets ${target_candidate})
   endif()
 endforeach()
-if(TARGET dart_raylib)
-  list(APPEND all_targets dart_raylib)
-endif()
-if(TARGET dart_filament_gui)
-  list(APPEND all_targets dart_filament_gui)
+if(TARGET dartsim)
+  list(APPEND all_targets dartsim)
 endif()
 add_custom_target(ALL DEPENDS ${all_targets})
 
@@ -855,6 +828,7 @@ get_property(PACKAGE_INCLUDE_DIRS GLOBAL
 include(CMakePackageConfigHelpers)
 set(DART_CONFIG_IN ${DART_SOURCE_DIR}/cmake/${PROJECT_NAME_UPPERCASE}Config.cmake.in)
 set(DART_CONFIG_OUT ${DART_BINARY_DIR}/${PROJECT_NAME_UPPERCASE}Config.cmake)
+set(DART_VERSION_IN ${DART_SOURCE_DIR}/cmake/${PROJECT_NAME_UPPERCASE}ConfigVersion.cmake.in)
 set(DART_VERSION_OUT ${DART_BINARY_DIR}/cmake/${PROJECT_NAME_UPPERCASE}ConfigVersion.cmake)
 if(DART_VERBOSE)
   message(STATUS ${DART_CONFIG_OUT})
@@ -866,10 +840,11 @@ configure_package_config_file(
   INSTALL_DESTINATION "${CONFIG_INSTALL_DIR}"
   PATH_VARS INCLUDE_INSTALL_DIR
 )
-write_basic_config_version_file(
+set(DART_CMAKE_MIN_COMPATIBLE_VERSION "6.10.0")
+configure_file(
+  ${DART_VERSION_IN}
   ${DART_VERSION_OUT}
-  VERSION ${${PROJECT_NAME_UPPERCASE}_VERSION}
-  COMPATIBILITY SameMajorVersion
+  @ONLY
 )
 install(
   FILES ${DART_CONFIG_OUT} ${DART_VERSION_OUT}
@@ -1066,8 +1041,8 @@ if(DOXYGEN_FOUND)
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/docs/doxygen
     DEPENDS ${DOXYGEN_DOXYFILE}
   )
-  # Use dart-docs to avoid conflicts with vsgImGui's docs target from VSG macros
-  # The vsg_add_target_docs macro creates a 'docs' target that conflicts
+  # Use dart-docs as the internal target name so an existing docs target can
+  # depend on it without target-name conflicts.
   add_custom_target(dart-docs DEPENDS ${DOXYGEN_HTML_INDEX})
   if(NOT TARGET docs)
     add_custom_target(docs DEPENDS dart-docs)

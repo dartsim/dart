@@ -2,27 +2,42 @@
 
 ## Summary
 
-- Goal: sample points from a robot mesh and visualize a voxel grid.
-- Concepts/APIs: `PointCloudShape`, `VoxelGridShape`, ImGui controls.
-- Expected output: an ImGui viewer with a point cloud and voxel occupancy.
-- Controls: use the ImGui panel; `--gui-scale` adjusts widget sizing.
+- Goal: sample points from the KR5 robot mesh or a box volume and visualize
+  the resulting point cloud, sensor origin, and voxel occupancy.
+- Concepts/APIs: `dart::gui::ApplicationOptions`, `PointCloudShape`,
+  `VoxelGridShape`, source-owned DART worlds, and renderer-neutral panels.
+- Expected output: the KR5 robot and ground with blue point samples, an orange
+  native voxel grid, a red moving sensor sphere, and a small scene grid.
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+## Run In Tree
 
-## Build Instructions
+From the repository root:
 
-From this directory:
+```bash
+pixi run ex point_cloud
+```
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+Useful promoted runner options:
 
-## Execute Instructions
+```bash
+pixi run ex point_cloud --headless --frames 2 --screenshot /tmp/point_cloud.ppm
+pixi run ex point_cloud --width 960 --height 540 --gui-scale 1.25
+```
 
-Launch the executable from the build directory above:
+The example defaults to a 1280x720 viewer and preserves command-line overrides
+handled by the shared `dart::gui` runner.
 
-    $ ./{generated_executable}
+## Controls
 
-Follow the instructions detailed in the console.
+- `Play`, `Pause`, `Step`, and `Exit` control simulation from the panel.
+- `Run Robot Updating` toggles the live point-cloud update loop.
+- `Sample on robot` and `Sample in box` switch the sample source.
+- The panel can show or hide the point cloud, sensor origin, scene grid, and
+  native voxel grid.
+- Scene-grid controls expose plane, offset, line count, step size,
+  major/minor/axis widths, and line colors through source-owned DART line
+  geometry.
+- `Cycle Color Mode`, `Cycle Point Shape Type`, and `Visual Size` adjust the
+  point-cloud rendering through public DART shape APIs.
+- `Point Cloud Color` and `Voxel Grid Color` edit the renderer-neutral visual
+  colors used by the point-cloud and voxel-grid fixtures.

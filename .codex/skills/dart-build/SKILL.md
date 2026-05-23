@@ -48,13 +48,13 @@ For build system internals (CMake, dependencies): `docs/onboarding/build-system.
 ## Filament GUI Visual Checks
 
 - For Filament GUI rendering changes, run a bounded headless capture through
-  `pixi run ex filament_gui --headless --frames ... --width ... --height ... --screenshot ...`.
+  `pixi run ex dartsim --headless --frames ... --width ... --height ... --screenshot ...`.
   Prefer at least 1280px width when judging visual quality.
 - Inspect the rendered image yourself; do not rely only on command success.
-  `examples/filament_gui/analyze_headless_smoke.py` is useful for a smoke
-  signal, but it is not a substitute for visual inspection.
-- If the user explicitly asks for `pixi run ex filament_gui`, also run that
-  exact entry point and terminate it after confirming the GUI binary launches.
+  The headless smoke analyzer under the private Filament test helpers is useful
+  for a smoke signal, but it is not a substitute for visual inspection.
+- If the user explicitly asks for `pixi run ex dartsim`, also run that exact
+  entry point and terminate it after confirming the GUI binary launches.
 
 ## Key Files
 

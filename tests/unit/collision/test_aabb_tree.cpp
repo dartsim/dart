@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <random>
+#include <unordered_map>
 
 using namespace dart::collision::native;
 
@@ -58,6 +59,35 @@ TEST(AabbTreeBroadPhase, AddSingle)
   EXPECT_EQ(bp.size(), 1);
   EXPECT_TRUE(bp.queryPairs().empty());
   EXPECT_TRUE(bp.validate());
+}
+
+TEST(AabbTreeBroadPhase, EmptyAndMissingOperationsAreNoOps)
+{
+  AabbTreeBroadPhase bp;
+
+  bp.remove(123);
+  bp.update(7, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 1, 1)));
+  EXPECT_EQ(bp.size(), 1u);
+  EXPECT_TRUE(bp.validate());
+
+  bp.add(7, Aabb(Eigen::Vector3d(2, 2, 2), Eigen::Vector3d(3, 3, 3)));
+  EXPECT_EQ(bp.size(), 1u);
+  EXPECT_TRUE(bp.queryPairs().empty());
+
+  std::vector<std::size_t> ids;
+  std::vector<Aabb> aabbs;
+  bp.build(ids, aabbs);
+  EXPECT_EQ(bp.size(), 0u);
+  EXPECT_TRUE(bp.queryOverlapping(
+                    Aabb(Eigen::Vector3d::Zero(), Eigen::Vector3d::Ones()))
+                  .empty());
+
+  bool visited = false;
+  EXPECT_TRUE(bp.visitPairs([&](std::size_t, std::size_t) {
+    visited = true;
+    return true;
+  }));
+  EXPECT_FALSE(visited);
 }
 
 TEST(AabbTreeBroadPhase, AddTwo_NoOverlap)
@@ -264,6 +294,86 @@ TEST(AabbTreeBroadPhase, Polymorphism)
   EXPECT_EQ(bp->queryPairs().size(), 1);
 }
 
+TEST(AabbTreeBroadPhase, DebugSnapshotExposesTreeTopology)
+{
+  AabbTreeBroadPhase bp;
+
+  const std::unordered_map<std::size_t, Aabb> tightAabbs{
+      {10u, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, 2, 2))},
+      {20u, Aabb(Eigen::Vector3d(1, 1, 1), Eigen::Vector3d(3, 3, 3))},
+      {30u, Aabb(Eigen::Vector3d(8, 8, 8), Eigen::Vector3d(9, 9, 9))},
+  };
+
+  for (const auto& [id, aabb] : tightAabbs) {
+    bp.add(id, aabb);
+  }
+
+  BroadPhaseDebugSnapshot snapshot;
+  bp.buildDebugSnapshot(snapshot);
+
+  EXPECT_TRUE(snapshot.hasTreeTopology);
+  EXPECT_EQ(snapshot.numObjects, tightAabbs.size());
+  EXPECT_NE(snapshot.rootNode, BroadPhaseDebugNode::kInvalidIndex);
+  EXPECT_EQ(snapshot.nodes.size(), 2u * tightAabbs.size() - 1u);
+  ASSERT_EQ(snapshot.candidatePairs.size(), 1u);
+  EXPECT_EQ(snapshot.candidatePairs[0], BroadPhasePair(10u, 20u));
+
+  std::unordered_map<std::size_t, const BroadPhaseDebugNode*> nodesById;
+  std::unordered_map<std::size_t, const BroadPhaseDebugNode*> leavesByObject;
+  for (const auto& node : snapshot.nodes) {
+    nodesById.emplace(node.nodeId, &node);
+    if (node.isLeaf()) {
+      leavesByObject.emplace(node.objectId, &node);
+      EXPECT_TRUE(node.aabb.contains(node.tightAabb));
+    } else {
+      EXPECT_NE(node.left, BroadPhaseDebugNode::kInvalidIndex);
+      EXPECT_NE(node.right, BroadPhaseDebugNode::kInvalidIndex);
+    }
+  }
+
+  ASSERT_TRUE(nodesById.contains(snapshot.rootNode));
+  EXPECT_EQ(
+      nodesById.at(snapshot.rootNode)->parent,
+      BroadPhaseDebugNode::kInvalidIndex);
+
+  ASSERT_EQ(leavesByObject.size(), tightAabbs.size());
+  for (const auto& [id, expectedAabb] : tightAabbs) {
+    ASSERT_TRUE(leavesByObject.contains(id));
+    const BroadPhaseDebugNode& leaf = *leavesByObject.at(id);
+    EXPECT_TRUE(leaf.tightAabb.min.isApprox(expectedAabb.min));
+    EXPECT_TRUE(leaf.tightAabb.max.isApprox(expectedAabb.max));
+  }
+
+  for (const auto& node : snapshot.nodes) {
+    if (node.isLeaf()) {
+      continue;
+    }
+
+    ASSERT_TRUE(nodesById.contains(node.left));
+    ASSERT_TRUE(nodesById.contains(node.right));
+    EXPECT_EQ(nodesById.at(node.left)->parent, node.nodeId);
+    EXPECT_EQ(nodesById.at(node.right)->parent, node.nodeId);
+  }
+}
+
+TEST(AabbTreeBroadPhase, GenericDebugSnapshotHasPairsWithoutTopology)
+{
+  std::unique_ptr<BroadPhase> bp = std::make_unique<BruteForceBroadPhase>();
+
+  bp->add(0, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, 2, 2)));
+  bp->add(1, Aabb(Eigen::Vector3d(1, 1, 1), Eigen::Vector3d(3, 3, 3)));
+
+  BroadPhaseDebugSnapshot snapshot;
+  bp->buildDebugSnapshot(snapshot);
+
+  EXPECT_FALSE(snapshot.hasTreeTopology);
+  EXPECT_EQ(snapshot.rootNode, BroadPhaseDebugNode::kInvalidIndex);
+  EXPECT_TRUE(snapshot.nodes.empty());
+  EXPECT_EQ(snapshot.numObjects, 2u);
+  ASSERT_EQ(snapshot.candidatePairs.size(), 1u);
+  EXPECT_EQ(snapshot.candidatePairs[0], BroadPhasePair(0u, 1u));
+}
+
 TEST(AabbTreeBroadPhase, FatAabbOptimization)
 {
   AabbTreeBroadPhase bp(0.5);
@@ -460,6 +570,33 @@ TEST(AabbTreeBroadPhase, QueryPairsWithOutput)
   ASSERT_EQ(out.size(), 1);
   EXPECT_EQ(out[0].first, 0);
   EXPECT_EQ(out[0].second, 1);
+}
+
+TEST(AabbTreeBroadPhase, VisitPairsCanStopEarly)
+{
+  AabbTreeBroadPhase bp;
+
+  bp.add(0, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(4, 4, 4)));
+  bp.add(1, Aabb(Eigen::Vector3d(1, 1, 1), Eigen::Vector3d(5, 5, 5)));
+  bp.add(2, Aabb(Eigen::Vector3d(2, 2, 2), Eigen::Vector3d(6, 6, 6)));
+  bp.add(3, Aabb(Eigen::Vector3d(20, 20, 20), Eigen::Vector3d(21, 21, 21)));
+
+  std::vector<BroadPhasePair> visited;
+  const bool completed = bp.visitPairs([&](std::size_t id1, std::size_t id2) {
+    visited.emplace_back(id1, id2);
+    return false;
+  });
+
+  EXPECT_FALSE(completed);
+  ASSERT_EQ(visited.size(), 1u);
+  EXPECT_LT(visited[0].first, visited[0].second);
+
+  visited.clear();
+  EXPECT_TRUE(bp.visitPairs([&](std::size_t id1, std::size_t id2) {
+    visited.emplace_back(id1, id2);
+    return true;
+  }));
+  EXPECT_EQ(visited.size(), 3u);
 }
 
 TEST(AabbTreeBroadPhase, QueryPairsFiltered)

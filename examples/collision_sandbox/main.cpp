@@ -30,592 +30,1109 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/vsg/collision_scene_builder.hpp>
-#include <dart/gui/vsg/im_gui_viewer.hpp>
-#include <dart/gui/vsg/simple_viewer.hpp>
+#include "pair_registry.hpp"
 
-#include <dart/collision/native/aabb.hpp>
-#include <dart/collision/native/collision_object.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/debug.hpp>
+#include <dart/gui/gizmo.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
+
+#include <dart/simulation/world.hpp>
+
+#include <dart/collision/native/broad_phase/broad_phase.hpp>
 #include <dart/collision/native/collision_world.hpp>
-#include <dart/collision/native/shapes/shape.hpp>
-#include <dart/collision/native/types.hpp>
+#include <dart/collision/native/narrow_phase/narrow_phase.hpp>
 
-#include <CLI/CLI.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/capsule_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
 
+#include <Eigen/Geometry>
+
+#include <algorithm>
+#include <array>
+#include <iomanip>
 #include <iostream>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
-#include <cstdio>
+#include <cmath>
 
 namespace collision = dart::collision::native;
-namespace guivsg = dart::gui::vsg;
+namespace dynamics = dart::dynamics;
+namespace gui = dart::gui;
+namespace sandbox = dart::examples::collision_sandbox;
+namespace simulation = dart::simulation;
 
-enum class DemoMode
+namespace {
+
+using ShapeParameters = sandbox::ShapeParameters;
+using ShapeType = collision::ShapeType;
+using BroadPhaseObjectCenters
+    = std::unordered_map<std::size_t, Eigen::Vector3d>;
+
+struct BroadPhaseOption
 {
-  Shapes,
-  Contacts,
-  Filtering,
-  Distance,
-  Raycast,
-  CCD,
-  Picking
+  collision::BroadPhaseType type;
+  std::string_view id;
+  std::string_view label;
 };
 
-collision::Aabb computeWorldAabb(const collision::CollisionObject& obj)
-{
-  const auto* shape = obj.getShape();
-  const auto& transform = obj.getTransform();
+constexpr std::array<BroadPhaseOption, 4> kBroadPhaseOptions{{
+    {collision::BroadPhaseType::AabbTree, "aabb_tree", "AABB Tree"},
+    {collision::BroadPhaseType::SpatialHash, "spatial_hash", "Spatial Hash"},
+    {collision::BroadPhaseType::SweepAndPrune, "sweep_and_prune", "Sweep"},
+    {collision::BroadPhaseType::BruteForce, "brute_force", "Brute Force"},
+}};
 
-  collision::Aabb localAabb;
-  switch (shape->getType()) {
-    case collision::ShapeType::Sphere: {
-      const auto* s = static_cast<const collision::SphereShape*>(shape);
-      localAabb = collision::Aabb::forSphere(s->getRadius());
-      break;
-    }
-    case collision::ShapeType::Box: {
-      const auto* b = static_cast<const collision::BoxShape*>(shape);
-      localAabb = collision::Aabb::forBox(b->getHalfExtents());
-      break;
-    }
-    case collision::ShapeType::Capsule: {
-      const auto* c = static_cast<const collision::CapsuleShape*>(shape);
-      localAabb = collision::Aabb::forCapsule(c->getRadius(), c->getHeight());
-      break;
-    }
-    case collision::ShapeType::Cylinder: {
-      const auto* c = static_cast<const collision::CylinderShape*>(shape);
-      localAabb = collision::Aabb::forCylinder(c->getRadius(), c->getHeight());
-      break;
-    }
-    default:
-      localAabb = collision::Aabb(
-          Eigen::Vector3d(-0.5, -0.5, -0.5), Eigen::Vector3d(0.5, 0.5, 0.5));
-  }
-  return collision::Aabb::transformed(localAabb, transform);
+constexpr std::array<std::string_view, 3> kPairCoverageColumns{{
+    "Pair",
+    "Support",
+    "Mode",
+}};
+
+constexpr double kObjectGizmoSize = 0.65;
+constexpr double kContactObjectAlpha = 0.45;
+constexpr double kContactMarkerRadius = 0.018;
+constexpr double kDistanceMarkerRadius = 0.04;
+
+Eigen::Vector4d rgba(double r, double g, double b, double a = 1.0)
+{
+  return {r, g, b, a};
 }
 
-struct DemoState
+struct ContactRow
 {
-  DemoMode mode = DemoMode::Contacts;
-  bool showAABBs = true;
-  bool showGrid = true;
-  bool showAxes = true;
-  float sphereOffset = 0.6f;
-  float rayAngle = 0.0f;
-  bool needsRebuild = true;
-
-  bool hasPickRay = false;
-  Eigen::Vector3d pickRayOrigin = Eigen::Vector3d::Zero();
-  Eigen::Vector3d pickRayDirection = Eigen::Vector3d::UnitZ();
-  bool pickHit = false;
-  Eigen::Vector3d pickHitPoint = Eigen::Vector3d::Zero();
-  Eigen::Vector3d pickHitNormal = Eigen::Vector3d::UnitZ();
-
-  double hoverX = 0.0;
-  double hoverY = 0.0;
-  bool hoverHit = false;
-  Eigen::Vector3d hoverHitPoint = Eigen::Vector3d::Zero();
-  std::string hoverInfo;
-
-  const collision::CollisionObject* selectedObject = nullptr;
-  collision::Aabb selectedAabb;
+  std::size_t manifoldIndex = 0;
+  std::size_t contactIndex = 0;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+  double depth = 0.0;
 };
 
-void addPrimitiveTargets(
-    guivsg::CollisionSceneBuilder& builder,
-    collision::CollisionWorld& world,
-    bool showAABBs)
+struct QuerySummary
 {
-  auto box = world.createObject(
-      std::make_unique<collision::BoxShape>(Eigen::Vector3d(0.5, 0.5, 0.5)));
-  box.setTransform(
-      Eigen::Translation3d(-1.5, 0.0, 0.0) * Eigen::Isometry3d::Identity());
+  const sandbox::PairCase* pair = nullptr;
+  bool hit = false;
+  bool distanceValid = false;
+  double distance = 0.0;
+  std::size_t numManifolds = 0;
+  std::size_t numContacts = 0;
+  std::size_t broadPhaseObjects = 0;
+  std::size_t broadPhaseNodes = 0;
+  std::size_t broadPhaseLeaves = 0;
+  std::size_t broadPhaseInternals = 0;
+  std::size_t broadPhaseCandidatePairs = 0;
+  std::size_t broadPhaseCells = 0;
+  std::size_t broadPhaseEndpoints = 0;
+  bool broadPhaseHasTreeTopology = false;
+  bool broadPhaseHasSpatialHashCells = false;
+  bool broadPhaseHasSweepEndpoints = false;
+  bool pairFiltered = false;
+  std::vector<ContactRow> contacts;
+};
 
-  auto sphere
-      = world.createObject(std::make_unique<collision::SphereShape>(0.4));
-  sphere.setTransform(
-      Eigen::Translation3d(0.0, 0.0, 0.0) * Eigen::Isometry3d::Identity());
+struct SandboxState
+{
+  simulation::WorldPtr world = simulation::World::create("collision_sandbox");
+  dynamics::SimpleFramePtr objectAFrame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), "object_a");
+  dynamics::SimpleFramePtr objectBFrame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), "object_b");
+  std::vector<dynamics::SimpleFramePtr> debugFrames;
+  std::size_t pairCaseIndex = 0;
+  std::size_t broadPhaseIndex = 0;
+  ShapeParameters objectAParams
+      = sandbox::defaultShapeParameters(ShapeType::Sphere);
+  ShapeParameters objectBParams
+      = sandbox::defaultShapeParameters(ShapeType::Sphere);
+  double maxContacts = 16.0;
+  bool showAabbs = true;
+  bool showBroadPhase = true;
+  bool showBvhNodes = true;
+  bool showBvhEdges = true;
+  bool showCandidatePairs = true;
+  bool showSpatialHashCells = true;
+  bool showSweepEndpoints = true;
+  bool showDebugLabels = true;
+  bool filterPair = false;
+  bool dirty = true;
+  QuerySummary summary;
+  std::vector<gui::DebugLabelDescriptor> debugLabels;
+};
 
-  auto capsule
-      = world.createObject(std::make_unique<collision::CapsuleShape>(0.3, 0.8));
-  capsule.setTransform(
-      Eigen::Translation3d(1.5, 0.0, 0.0) * Eigen::Isometry3d::Identity());
+void addDebugLabel(
+    SandboxState& state,
+    std::string text,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector4d& color)
+{
+  if (!position.allFinite() || text.empty()) {
+    return;
+  }
 
-  auto cylinder = world.createObject(
-      std::make_unique<collision::CylinderShape>(0.35, 0.7));
-  cylinder.setTransform(
-      Eigen::Translation3d(3.0, 0.0, 0.0) * Eigen::Isometry3d::Identity());
+  gui::DebugLabelDescriptor label;
+  label.text = std::move(text);
+  label.position = position;
+  label.rgba = color;
+  state.debugLabels.push_back(std::move(label));
+}
 
-  builder.addObject(box, guivsg::colors::Blue);
-  builder.addObject(sphere, guivsg::colors::Green);
-  builder.addObject(capsule, guivsg::colors::Yellow);
-  builder.addObject(cylinder, guivsg::colors::Cyan);
+const sandbox::PairCase& selectedPair(const SandboxState& state)
+{
+  const auto pairs = sandbox::pairCases();
+  return pairs[std::min(state.pairCaseIndex, pairs.size() - 1)];
+}
 
-  if (showAABBs) {
-    collision::Aabb boxAabb
-        = collision::Aabb::forBox(Eigen::Vector3d(0.5, 0.5, 0.5));
-    collision::Aabb worldBoxAabb = collision::Aabb::transformed(
-        boxAabb,
-        Eigen::Translation3d(-1.5, 0.0, 0.0) * Eigen::Isometry3d::Identity());
-    builder.addAabb(worldBoxAabb, guivsg::colors::Orange);
+const BroadPhaseOption& selectedBroadPhase(const SandboxState& state)
+{
+  return kBroadPhaseOptions[std::min(
+      state.broadPhaseIndex, kBroadPhaseOptions.size() - 1)];
+}
 
-    collision::Aabb sphereAabb = collision::Aabb::forSphere(0.4);
-    collision::Aabb worldSphereAabb = collision::Aabb::transformed(
-        sphereAabb,
-        Eigen::Translation3d(0.0, 0.0, 0.0) * Eigen::Isometry3d::Identity());
-    builder.addAabb(worldSphereAabb, guivsg::colors::Orange);
+std::string_view pairCoverageMode(const sandbox::PairCase& pair)
+{
+  switch (pair.status) {
+    case sandbox::PairStatus::Contact:
+      return "dedicated native contact path";
+    case sandbox::PairStatus::AdaptedFallback:
+      return "native adapter contact path";
+    case sandbox::PairStatus::DistanceOnly:
+      return "native distance query only";
+    case sandbox::PairStatus::Unsupported:
+      return "unsupported placeholder";
+  }
+  return "unknown";
+}
 
-    collision::Aabb capsuleAabb = collision::Aabb::forCapsule(0.3, 0.8);
-    collision::Aabb worldCapsuleAabb = collision::Aabb::transformed(
-        capsuleAabb,
-        Eigen::Translation3d(1.5, 0.0, 0.0) * Eigen::Isometry3d::Identity());
-    builder.addAabb(worldCapsuleAabb, guivsg::colors::Orange);
+const BroadPhaseOption* findBroadPhaseOption(std::string_view id)
+{
+  const auto it = std::find_if(
+      kBroadPhaseOptions.begin(),
+      kBroadPhaseOptions.end(),
+      [id](const BroadPhaseOption& option) { return option.id == id; });
+  if (it == kBroadPhaseOptions.end()) {
+    return nullptr;
+  }
+  return &*it;
+}
 
-    collision::Aabb cylinderAabb = collision::Aabb::forCylinder(0.35, 0.7);
-    collision::Aabb worldCylinderAabb = collision::Aabb::transformed(
-        cylinderAabb,
-        Eigen::Translation3d(3.0, 0.0, 0.0) * Eigen::Isometry3d::Identity());
-    builder.addAabb(worldCylinderAabb, guivsg::colors::Orange);
+void attachObjectFrames(SandboxState& state)
+{
+  if (state.world->getSimpleFrame(state.objectAFrame->getName()) == nullptr) {
+    state.world->addSimpleFrame(state.objectAFrame);
+  }
+  if (state.world->getSimpleFrame(state.objectBFrame->getName()) == nullptr) {
+    state.world->addSimpleFrame(state.objectBFrame);
   }
 }
 
-void buildScene(
-    guivsg::CollisionSceneBuilder& builder,
-    collision::CollisionWorld& world,
-    DemoState& state)
+void resetPairControls(SandboxState& state)
 {
-  builder.clear();
+  const sandbox::PairPose pose = sandbox::defaultPairPose(selectedPair(state));
+  state.objectAFrame->setTransform(pose.transformA);
+  state.objectBFrame->setTransform(pose.transformB);
+  state.objectAParams
+      = sandbox::defaultShapeParameters(selectedPair(state).shapeA);
+  state.objectBParams
+      = sandbox::defaultShapeParameters(selectedPair(state).shapeB);
+  state.maxContacts = 16.0;
+  state.dirty = true;
+}
 
-  switch (state.mode) {
-    case DemoMode::Shapes: {
-      addPrimitiveTargets(builder, world, state.showAABBs);
-      break;
-    }
+std::string formatVec3(const Eigen::Vector3d& value)
+{
+  std::ostringstream out;
+  out << std::fixed << std::setprecision(3) << value.x() << " " << value.y()
+      << " " << value.z();
+  return out.str();
+}
 
-    case DemoMode::Contacts: {
-      auto staticSphere
-          = world.createObject(std::make_unique<collision::SphereShape>(0.4));
-      staticSphere.setTransform(
-          Eigen::Translation3d(0.0, 0.0, 0.0) * Eigen::Isometry3d::Identity());
-      builder.addObject(staticSphere, guivsg::colors::Green);
+std::string formatFramePosition(const dynamics::SimpleFramePtr& frame)
+{
+  if (frame == nullptr) {
+    return "unavailable";
+  }
+  return formatVec3(frame->getWorldTransform().translation());
+}
 
-      auto movingSphere
-          = world.createObject(std::make_unique<collision::SphereShape>(0.35));
-      movingSphere.setTransform(
-          Eigen::Translation3d(0.0, state.sphereOffset, 0.0)
-          * Eigen::Isometry3d::Identity());
-      builder.addObject(movingSphere, guivsg::colors::Magenta);
+Eigen::Vector4d objectColor(
+    const sandbox::PairCase& pair,
+    bool objectA,
+    bool hit,
+    bool filtered,
+    bool showContactOverlay)
+{
+  const double alpha = showContactOverlay ? kContactObjectAlpha : 1.0;
+  if (filtered) {
+    return objectA ? rgba(0.62, 0.62, 0.68) : rgba(0.48, 0.5, 0.56);
+  }
+  if (pair.status == sandbox::PairStatus::Unsupported) {
+    return rgba(0.42, 0.44, 0.46);
+  }
+  if (pair.status == sandbox::PairStatus::DistanceOnly) {
+    return objectA ? rgba(0.1, 0.75, 0.9) : rgba(0.95, 0.85, 0.25);
+  }
+  if (hit) {
+    return objectA ? rgba(0.95, 0.18, 0.18, alpha)
+                   : rgba(0.95, 0.18, 0.78, alpha);
+  }
+  if (pair.status == sandbox::PairStatus::AdaptedFallback) {
+    return objectA ? rgba(0.95, 0.52, 0.16) : rgba(0.18, 0.75, 0.9);
+  }
+  return objectA ? rgba(0.18, 0.38, 0.95) : rgba(0.18, 0.75, 0.34);
+}
 
-      if (state.showAABBs) {
-        collision::Aabb staticAabb = collision::Aabb::forSphere(0.4);
-        collision::Aabb worldStaticAabb = collision::Aabb::transformed(
-            staticAabb,
-            Eigen::Translation3d(0.0, 0.0, 0.0)
-                * Eigen::Isometry3d::Identity());
-        builder.addAabb(worldStaticAabb, guivsg::colors::Orange);
+std::shared_ptr<dynamics::Shape> makeVisualShape(
+    ShapeType type, const ShapeParameters& params)
+{
+  switch (type) {
+    case ShapeType::Sphere:
+      return std::make_shared<dynamics::SphereShape>(params.radius);
+    case ShapeType::Box:
+      return std::make_shared<dynamics::BoxShape>(params.halfExtents * 2.0);
+    case ShapeType::Capsule:
+      return std::make_shared<dynamics::CapsuleShape>(
+          params.radius, params.height);
+    case ShapeType::Cylinder:
+      return std::make_shared<dynamics::CylinderShape>(
+          params.radius, params.height);
+    case ShapeType::Plane:
+      return std::make_shared<dynamics::BoxShape>(Eigen::Vector3d(
+          params.halfExtents.x() * 2.0,
+          params.halfExtents.y() * 2.0,
+          params.halfExtents.z() * 2.0));
+    case ShapeType::Convex:
+      return std::make_shared<dynamics::SphereShape>(params.radius * 0.87);
+    case ShapeType::Mesh:
+      return std::make_shared<dynamics::BoxShape>(params.halfExtents * 2.0);
+    case ShapeType::Sdf:
+      return std::make_shared<dynamics::SphereShape>(params.radius);
+    case ShapeType::Compound:
+      return std::make_shared<dynamics::BoxShape>(
+          Eigen::Vector3d(0.7, 0.38, 0.28) * (params.radius / 0.45));
+  }
+  return std::make_shared<dynamics::SphereShape>(params.radius);
+}
 
-        collision::Aabb movingAabb = collision::Aabb::forSphere(0.35);
-        collision::Aabb worldMovingAabb = collision::Aabb::transformed(
-            movingAabb,
-            Eigen::Translation3d(0.0, state.sphereOffset, 0.0)
-                * Eigen::Isometry3d::Identity());
-        builder.addAabb(worldMovingAabb, guivsg::colors::Orange);
+void addLine(
+    SandboxState& state,
+    std::string name,
+    const Eigen::Vector3d& from,
+    const Eigen::Vector3d& to,
+    const Eigen::Vector4d& color,
+    float thickness = 2.0f)
+{
+  if (!from.allFinite() || !to.allFinite()) {
+    return;
+  }
+  if ((to - from).squaredNorm() < 1e-12) {
+    return;
+  }
+
+  const Eigen::Vector3d segment = to - from;
+  const double length = segment.norm();
+  if (!std::isfinite(length) || length < 1e-9) {
+    return;
+  }
+
+  const Eigen::Vector3d direction = segment / length;
+  const Eigen::Quaterniond rotation
+      = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(), direction);
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = rotation.toRotationMatrix();
+  tf.translation() = (from + to) * 0.5;
+
+  const double radius = std::clamp<double>(thickness * 0.003, 0.003, 0.02);
+  auto frame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), std::move(name), tf);
+  frame->setShape(std::make_shared<dynamics::CylinderShape>(radius, length));
+  gui::applyDebugVisualStyle(*frame, color);
+  state.world->addSimpleFrame(frame);
+  state.debugFrames.push_back(std::move(frame));
+}
+
+void addPointMarker(
+    SandboxState& state,
+    std::string name,
+    const Eigen::Vector3d& point,
+    const Eigen::Vector4d& color,
+    double radius)
+{
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = point;
+  auto frame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), std::move(name), tf);
+  frame->setShape(std::make_shared<dynamics::SphereShape>(radius));
+  gui::applyDebugVisualStyle(*frame, color);
+  state.world->addSimpleFrame(frame);
+  state.debugFrames.push_back(std::move(frame));
+}
+
+void addAabbLines(
+    SandboxState& state,
+    const std::string& prefix,
+    const collision::Aabb& aabb,
+    const Eigen::Vector4d& color)
+{
+  if (!aabb.min.allFinite() || !aabb.max.allFinite()) {
+    return;
+  }
+
+  const Eigen::Vector3d min = aabb.min.cwiseMin(aabb.max);
+  const Eigen::Vector3d max = aabb.min.cwiseMax(aabb.max);
+  const std::array<Eigen::Vector3d, 8> corners{
+      Eigen::Vector3d(min.x(), min.y(), min.z()),
+      Eigen::Vector3d(max.x(), min.y(), min.z()),
+      Eigen::Vector3d(max.x(), max.y(), min.z()),
+      Eigen::Vector3d(min.x(), max.y(), min.z()),
+      Eigen::Vector3d(min.x(), min.y(), max.z()),
+      Eigen::Vector3d(max.x(), min.y(), max.z()),
+      Eigen::Vector3d(max.x(), max.y(), max.z()),
+      Eigen::Vector3d(min.x(), max.y(), max.z())};
+  const std::array<std::pair<std::size_t, std::size_t>, 12> edges{
+      std::pair<std::size_t, std::size_t>{0, 1},
+      {1, 2},
+      {2, 3},
+      {3, 0},
+      {4, 5},
+      {5, 6},
+      {6, 7},
+      {7, 4},
+      {0, 4},
+      {1, 5},
+      {2, 6},
+      {3, 7}};
+
+  for (std::size_t i = 0; i < edges.size(); ++i) {
+    addLine(
+        state,
+        prefix + ".edge." + std::to_string(i),
+        corners[edges[i].first],
+        corners[edges[i].second],
+        color,
+        1.0f);
+  }
+}
+
+Eigen::Vector4d sweepAxisColor(int axis, bool isMin)
+{
+  const double intensity = isMin ? 0.95 : 0.55;
+  switch (axis) {
+    case 0:
+      return rgba(intensity, 0.16, 0.16);
+    case 1:
+      return rgba(0.16, intensity, 0.16);
+    case 2:
+      return rgba(0.16, 0.35, intensity);
+  }
+  return rgba(0.85, 0.85, 0.85);
+}
+
+void addSweepEndpointOverlay(
+    SandboxState& state, const collision::BroadPhaseDebugSnapshot& snapshot)
+{
+  if (!snapshot.hasSweepEndpoints || snapshot.endpoints.empty()) {
+    return;
+  }
+
+  for (int axis = 0; axis < 3; ++axis) {
+    std::vector<const collision::BroadPhaseDebugEndpoint*> endpoints;
+    for (const auto& endpoint : snapshot.endpoints) {
+      if (endpoint.axis == axis && std::isfinite(endpoint.value)) {
+        endpoints.push_back(&endpoint);
       }
-
-      collision::CollisionResult result;
-      collision::CollisionOption option;
-      option.enableContact = true;
-      world.collide(option, result);
-      builder.addContacts(result, 0.3, 0.05);
-      break;
     }
 
-    case DemoMode::Filtering: {
-      constexpr std::uint32_t Group1 = 0x01;
-      constexpr std::uint32_t Group2 = 0x02;
-
-      auto obj1
-          = world.createObject(std::make_unique<collision::SphereShape>(0.3));
-      obj1.setTransform(
-          Eigen::Translation3d(-0.5, 1.5, 0.0) * Eigen::Isometry3d::Identity());
-      obj1.setCollisionGroup(Group1);
-      obj1.setCollisionMask(Group2);
-      builder.addObject(obj1, guivsg::colors::Red);
-
-      auto obj2
-          = world.createObject(std::make_unique<collision::SphereShape>(0.3));
-      obj2.setTransform(
-          Eigen::Translation3d(0.5, 1.5, 0.0) * Eigen::Isometry3d::Identity());
-      obj2.setCollisionGroup(Group2);
-      obj2.setCollisionMask(Group1);
-      builder.addObject(obj2, guivsg::colors::Blue);
-
-      collision::CollisionResult result;
-      collision::CollisionOption option;
-      option.enableContact = true;
-      world.collide(option, result);
-      builder.addContacts(result, 0.2, 0.03);
-      break;
+    if (endpoints.empty()) {
+      continue;
     }
 
-    case DemoMode::Distance: {
-      auto distSphere1
-          = world.createObject(std::make_unique<collision::SphereShape>(0.3));
-      distSphere1.setTransform(
-          Eigen::Translation3d(-0.8, 1.5, 0.5) * Eigen::Isometry3d::Identity());
-      builder.addObject(distSphere1, guivsg::colors::Red);
+    double minValue = endpoints.front()->value;
+    double maxValue = endpoints.front()->value;
+    for (const auto* endpoint : endpoints) {
+      minValue = std::min(minValue, endpoint->value);
+      maxValue = std::max(maxValue, endpoint->value);
+    }
 
-      auto distSphere2
-          = world.createObject(std::make_unique<collision::SphereShape>(0.25));
-      distSphere2.setTransform(
-          Eigen::Translation3d(0.6, 1.5, 0.3) * Eigen::Isometry3d::Identity());
-      builder.addObject(distSphere2, guivsg::colors::Blue);
+    const double span = std::max(maxValue - minValue, 1.0);
+    const double railY = -1.15 - static_cast<double>(axis) * 0.16;
+    constexpr double railZ = -0.55;
+    constexpr double railMinX = -1.25;
+    constexpr double railMaxX = 1.25;
+    const Eigen::Vector4d railColor = sweepAxisColor(axis, true);
+    addLine(
+        state,
+        "sweep.axis." + std::to_string(axis),
+        Eigen::Vector3d(railMinX, railY, railZ),
+        Eigen::Vector3d(railMaxX, railY, railZ),
+        railColor,
+        1.0f);
+    addDebugLabel(
+        state,
+        std::string("Sweep ") + static_cast<char>('X' + axis),
+        Eigen::Vector3d(railMinX, railY, railZ),
+        railColor);
 
-      if (state.showAABBs) {
-        collision::Aabb ds1Aabb = collision::Aabb::forSphere(0.3);
-        collision::Aabb worldDs1Aabb = collision::Aabb::transformed(
-            ds1Aabb,
-            Eigen::Translation3d(-0.8, 1.5, 0.5)
-                * Eigen::Isometry3d::Identity());
-        builder.addAabb(worldDs1Aabb, guivsg::colors::Orange);
+    for (const auto* endpoint : endpoints) {
+      const double t = (endpoint->value - minValue) / span;
+      const double x = railMinX + t * (railMaxX - railMinX);
+      addLine(
+          state,
+          "sweep.endpoint." + std::to_string(axis) + "."
+              + std::to_string(endpoint->order),
+          Eigen::Vector3d(x, railY, railZ - 0.065),
+          Eigen::Vector3d(x, railY, railZ + 0.065),
+          sweepAxisColor(axis, endpoint->isMin),
+          endpoint->isMin ? 2.5f : 1.5f);
+    }
+  }
+}
 
-        collision::Aabb ds2Aabb = collision::Aabb::forSphere(0.25);
-        collision::Aabb worldDs2Aabb = collision::Aabb::transformed(
-            ds2Aabb,
-            Eigen::Translation3d(0.6, 1.5, 0.3)
-                * Eigen::Isometry3d::Identity());
-        builder.addAabb(worldDs2Aabb, guivsg::colors::Orange);
+void addBroadPhaseOverlay(
+    SandboxState& state,
+    const collision::BroadPhaseDebugSnapshot& snapshot,
+    const BroadPhaseObjectCenters& fallbackObjectCenters)
+{
+  std::unordered_map<std::size_t, Eigen::Vector3d> nodeCenters;
+  BroadPhaseObjectCenters objectCentersById = fallbackObjectCenters;
+  nodeCenters.reserve(snapshot.nodes.size());
+  objectCentersById.reserve(
+      fallbackObjectCenters.size() + snapshot.nodes.size());
+
+  for (const auto& node : snapshot.nodes) {
+    nodeCenters.emplace(node.nodeId, node.aabb.center());
+    if (node.isLeaf()) {
+      objectCentersById[node.objectId] = node.tightAabb.center();
+      if (state.showAabbs) {
+        const Eigen::Vector4d aabbColor = rgba(0.95, 0.62, 0.18);
+        addAabbLines(
+            state,
+            "broadphase.leaf." + std::to_string(node.objectId),
+            node.tightAabb,
+            aabbColor);
+        addDebugLabel(
+            state,
+            "AABB " + std::to_string(node.objectId),
+            node.tightAabb.center(),
+            aabbColor);
       }
-
-      Eigen::Vector3d center1(-0.8, 1.5, 0.5);
-      Eigen::Vector3d center2(0.6, 1.5, 0.3);
-      double r1 = 0.3;
-      double r2 = 0.25;
-      Eigen::Vector3d diff = center2 - center1;
-      double centerDist = diff.norm();
-      double surfaceDist = centerDist - r1 - r2;
-
-      collision::DistanceResult distResult;
-      distResult.distance = surfaceDist;
-      distResult.normal = diff.normalized();
-      distResult.pointOnObject1 = center1 + distResult.normal * r1;
-      distResult.pointOnObject2 = center2 - distResult.normal * r2;
-      builder.addDistanceResult(distResult);
-      break;
+    } else if (state.showBvhNodes) {
+      const Eigen::Vector4d nodeColor = rgba(0.16, 0.36, 0.95);
+      addAabbLines(
+          state,
+          "broadphase.internal." + std::to_string(node.nodeId),
+          node.aabb,
+          nodeColor);
+      addDebugLabel(
+          state,
+          "BVH " + std::to_string(node.nodeId),
+          node.aabb.center(),
+          nodeColor);
     }
+  }
 
-    case DemoMode::Raycast: {
-      addPrimitiveTargets(builder, world, state.showAABBs);
-
-      double angle = state.rayAngle * M_PI / 180.0;
-      Eigen::Vector3d dir(std::cos(angle), std::sin(angle), -0.1);
-      collision::Ray ray(
-          Eigen::Vector3d(-3.0, -1.5, 1.0), dir.normalized(), 8.0);
-
-      collision::RaycastOption rayOpt;
-      rayOpt.maxDistance = ray.maxDistance;
-      collision::RaycastResult rayHit;
-      bool hit = world.raycast(ray, rayOpt, rayHit);
-      builder.addRaycast(ray, hit ? &rayHit : nullptr);
-      break;
-    }
-
-    case DemoMode::CCD: {
-      addPrimitiveTargets(builder, world, state.showAABBs);
-
-      Eigen::Vector3d ccdStart(-3.0, 0.0, 0.0);
-      Eigen::Vector3d ccdEnd(3.0, 0.0, 0.0);
-      double ccdRadius = 0.15;
-
-      collision::CcdOption ccdOpt = collision::CcdOption::standard();
-      collision::CcdResult ccdHit;
-      bool hit = world.sphereCast(ccdStart, ccdEnd, ccdRadius, ccdOpt, ccdHit);
-      builder.addSphereCast(
-          ccdStart, ccdEnd, ccdRadius, hit ? &ccdHit : nullptr);
-      break;
-    }
-
-    case DemoMode::Picking: {
-      addPrimitiveTargets(builder, world, state.showAABBs);
-
-      if (state.hasPickRay) {
-        collision::Ray pickRay(
-            state.pickRayOrigin, state.pickRayDirection, 100.0);
-
-        collision::RaycastOption rayOpt;
-        rayOpt.maxDistance = pickRay.maxDistance;
-        collision::RaycastResult rayHit;
-        bool hit = world.raycast(pickRay, rayOpt, rayHit);
-
-        state.pickHit = hit;
-        if (hit) {
-          state.pickHitPoint = rayHit.point;
-          state.pickHitNormal = rayHit.normal;
+  if (state.showBvhEdges && snapshot.hasTreeTopology) {
+    for (const auto& node : snapshot.nodes) {
+      if (node.isLeaf()) {
+        continue;
+      }
+      const auto parentCenter = nodeCenters.find(node.nodeId);
+      if (parentCenter == nodeCenters.end()) {
+        continue;
+      }
+      for (const std::size_t child : {node.left, node.right}) {
+        const auto childCenter = nodeCenters.find(child);
+        if (childCenter != nodeCenters.end()) {
+          addLine(
+              state,
+              "broadphase.edge." + std::to_string(node.nodeId) + "."
+                  + std::to_string(child),
+              parentCenter->second,
+              childCenter->second,
+              rgba(0.95, 0.95, 0.95),
+              1.0f);
         }
-
-        builder.addRaycast(pickRay, hit ? &rayHit : nullptr);
       }
-      break;
     }
   }
 
-  state.needsRebuild = false;
+  if (state.showCandidatePairs) {
+    for (std::size_t i = 0; i < snapshot.candidatePairs.size(); ++i) {
+      const auto& pair = snapshot.candidatePairs[i];
+      const auto first = objectCentersById.find(pair.first);
+      const auto second = objectCentersById.find(pair.second);
+      if (first != objectCentersById.end()
+          && second != objectCentersById.end()) {
+        const Eigen::Vector4d pairColor = rgba(0.95, 0.1, 0.85);
+        addLine(
+            state,
+            "broadphase.candidate." + std::to_string(i),
+            first->second,
+            second->second,
+            pairColor,
+            2.5f);
+        addDebugLabel(
+            state,
+            "Pair " + std::to_string(i),
+            (first->second + second->second) * 0.5,
+            pairColor);
+      }
+    }
+  }
+
+  if (state.showSpatialHashCells && snapshot.hasSpatialHashCells) {
+    for (std::size_t i = 0; i < snapshot.cells.size(); ++i) {
+      const Eigen::Vector4d cellColor = rgba(0.1, 0.85, 0.95);
+      addAabbLines(
+          state,
+          "spatial_hash.cell." + std::to_string(i),
+          snapshot.cells[i].aabb,
+          cellColor);
+      addDebugLabel(
+          state,
+          "Cell " + std::to_string(i),
+          snapshot.cells[i].aabb.center(),
+          cellColor);
+    }
+  }
+
+  if (state.showSweepEndpoints) {
+    addSweepEndpointOverlay(state, snapshot);
+  }
 }
+
+void clearDebugFrames(SandboxState& state)
+{
+  for (const auto& frame : state.debugFrames) {
+    if (frame != nullptr) {
+      state.world->removeSimpleFrame(frame);
+    }
+  }
+  state.debugFrames.clear();
+}
+
+void updateObjectVisuals(SandboxState& state)
+{
+  const sandbox::PairCase& pair = selectedPair(state);
+  const bool showContactOverlay = state.summary.numContacts > 0;
+  state.objectAFrame->setShape(
+      makeVisualShape(pair.shapeA, state.objectAParams));
+  state.objectBFrame->setShape(
+      makeVisualShape(pair.shapeB, state.objectBParams));
+  state.objectAFrame->getVisualAspect(true)->setRGBA(objectColor(
+      pair,
+      true,
+      state.summary.hit,
+      state.summary.pairFiltered,
+      showContactOverlay));
+  state.objectBFrame->getVisualAspect(true)->setRGBA(objectColor(
+      pair,
+      false,
+      state.summary.hit,
+      state.summary.pairFiltered,
+      showContactOverlay));
+}
+
+void summarizeContacts(
+    QuerySummary& summary, const collision::CollisionResult& result)
+{
+  summary.numManifolds = result.numManifolds();
+  summary.numContacts = result.numContacts();
+  summary.contacts.clear();
+  for (std::size_t m = 0; m < result.numManifolds(); ++m) {
+    const auto& manifold = result.getManifold(m);
+    for (std::size_t c = 0; c < manifold.numContacts(); ++c) {
+      const auto& contact = manifold.getContact(c);
+      summary.contacts.push_back(
+          ContactRow{m, c, contact.position, contact.normal, contact.depth});
+    }
+  }
+}
+
+void summarizeBroadPhase(
+    QuerySummary& summary, const collision::BroadPhaseDebugSnapshot& snapshot)
+{
+  summary.broadPhaseObjects = snapshot.numObjects;
+  summary.broadPhaseNodes = snapshot.nodes.size();
+  summary.broadPhaseCells = snapshot.cells.size();
+  summary.broadPhaseEndpoints = snapshot.endpoints.size();
+  summary.broadPhaseCandidatePairs = snapshot.candidatePairs.size();
+  summary.broadPhaseHasTreeTopology = snapshot.hasTreeTopology;
+  summary.broadPhaseHasSpatialHashCells = snapshot.hasSpatialHashCells;
+  summary.broadPhaseHasSweepEndpoints = snapshot.hasSweepEndpoints;
+  summary.broadPhaseLeaves = 0;
+  summary.broadPhaseInternals = 0;
+  for (const auto& node : snapshot.nodes) {
+    if (node.isLeaf()) {
+      ++summary.broadPhaseLeaves;
+    } else {
+      ++summary.broadPhaseInternals;
+    }
+  }
+}
+
+void rebuildScene(SandboxState& state)
+{
+  attachObjectFrames(state);
+  clearDebugFrames(state);
+  state.debugLabels.clear();
+
+  const sandbox::PairCase& pair = selectedPair(state);
+  state.summary = QuerySummary{};
+  state.summary.pair = &pair;
+
+  const Eigen::Isometry3d tfA = state.objectAFrame->getWorldTransform();
+  const Eigen::Isometry3d tfB = state.objectBFrame->getWorldTransform();
+
+  collision::CollisionWorld nativeWorld(selectedBroadPhase(state).type);
+  auto objA = nativeWorld.createObject(
+      sandbox::makeShape(pair.shapeA, state.objectAParams), tfA);
+  auto objB = nativeWorld.createObject(
+      sandbox::makeShape(pair.shapeB, state.objectBParams), tfB);
+  BroadPhaseObjectCenters broadPhaseObjectCenters;
+  broadPhaseObjectCenters.reserve(2u);
+  broadPhaseObjectCenters.emplace(objA.getId(), objA.computeAabb().center());
+  broadPhaseObjectCenters.emplace(objB.getId(), objB.computeAabb().center());
+  if (state.filterPair) {
+    objA.setCollisionFilter(
+        collision::FilterGroup::Static, collision::FilterGroup::Static);
+    objB.setCollisionFilter(
+        collision::FilterGroup::Dynamic, collision::FilterGroup::Dynamic);
+  } else {
+    objA.setCollisionFilterData(collision::CollisionFilterData::all());
+    objB.setCollisionFilterData(collision::CollisionFilterData::all());
+  }
+  state.summary.pairFiltered = !collision::shouldCollide(
+      objA.getCollisionFilterData(), objB.getCollisionFilterData());
+
+  collision::CollisionResult collisionResult;
+  collision::DistanceResult distanceResult;
+  if (pair.supportsContact()) {
+    collision::CollisionOption option;
+    option.maxNumContacts
+        = static_cast<std::size_t>(std::clamp(state.maxContacts, 1.0, 128.0));
+    state.summary.hit
+        = nativeWorld.collide(objA, objB, option, collisionResult);
+    summarizeContacts(state.summary, collisionResult);
+  } else if (pair.supportsDistance()) {
+    collision::DistanceOption option;
+    collision::NarrowPhase::distance(objA, objB, option, distanceResult);
+    state.summary.distanceValid = distanceResult.isValid();
+    state.summary.distance = distanceResult.distance;
+  }
+
+  updateObjectVisuals(state);
+
+  if (pair.supportsContact()) {
+    for (const ContactRow& contact : state.summary.contacts) {
+      const std::string prefix = "contact.m"
+                                 + std::to_string(contact.manifoldIndex) + ".c"
+                                 + std::to_string(contact.contactIndex);
+      addPointMarker(
+          state,
+          prefix + ".point",
+          contact.point,
+          rgba(0.95, 0.12, 0.12),
+          kContactMarkerRadius);
+      addDebugLabel(
+          state,
+          "Contact " + std::to_string(contact.manifoldIndex) + ":"
+              + std::to_string(contact.contactIndex),
+          contact.point,
+          rgba(0.95, 0.12, 0.12));
+      if (contact.normal.squaredNorm() > 1e-12) {
+        addLine(
+            state,
+            prefix + ".normal",
+            contact.point,
+            contact.point + contact.normal.normalized() * 0.32,
+            rgba(0.95, 0.9, 0.12),
+            2.5f);
+        addLine(
+            state,
+            prefix + ".depth",
+            contact.point,
+            contact.point
+                - contact.normal.normalized() * std::max(contact.depth, 0.035),
+            rgba(0.95, 0.12, 0.85),
+            2.0f);
+      }
+    }
+  } else if (distanceResult.isValid()) {
+    addLine(
+        state,
+        "distance.segment",
+        distanceResult.pointOnObject1,
+        distanceResult.pointOnObject2,
+        rgba(0.1, 0.82, 0.92),
+        2.5f);
+    addDebugLabel(
+        state,
+        "Distance",
+        (distanceResult.pointOnObject1 + distanceResult.pointOnObject2) * 0.5,
+        rgba(0.1, 0.82, 0.92));
+    addPointMarker(
+        state,
+        "distance.point_a",
+        distanceResult.pointOnObject1,
+        rgba(0.95, 0.82, 0.12),
+        kDistanceMarkerRadius);
+    addPointMarker(
+        state,
+        "distance.point_b",
+        distanceResult.pointOnObject2,
+        rgba(0.95, 0.82, 0.12),
+        kDistanceMarkerRadius);
+  }
+
+  const collision::BroadPhaseDebugSnapshot broadPhase
+      = nativeWorld.buildBroadPhaseDebugSnapshot();
+  summarizeBroadPhase(state.summary, broadPhase);
+  if (state.showBroadPhase) {
+    addBroadPhaseOverlay(state, broadPhase, broadPhaseObjectCenters);
+  }
+
+  state.dirty = false;
+}
+
+bool parseExampleArgs(int argc, char* argv[], SandboxState& state)
+{
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view arg(argv[i]);
+    if (arg == "--pair" && i + 1 < argc) {
+      const std::string_view id(argv[++i]);
+      const sandbox::PairCase* pair = sandbox::findPairCase(id);
+      if (!pair) {
+        std::cerr << "Unknown pair id: " << id << "\n";
+        return false;
+      }
+      state.pairCaseIndex = pair->index;
+      resetPairControls(state);
+    } else if (arg == "--broad-phase" && i + 1 < argc) {
+      const std::string_view id(argv[++i]);
+      const BroadPhaseOption* option = findBroadPhaseOption(id);
+      if (!option) {
+        std::cerr << "Unknown broad-phase id: " << id << "\n";
+        return false;
+      }
+      state.broadPhaseIndex
+          = static_cast<std::size_t>(option - kBroadPhaseOptions.data());
+      state.dirty = true;
+    } else if (arg == "--filter-pair") {
+      state.filterPair = true;
+      state.dirty = true;
+    }
+  }
+  return true;
+}
+
+bool slider3(
+    gui::PanelBuilder& panel,
+    const char* prefix,
+    Eigen::Vector3d& values,
+    double min,
+    double max)
+{
+  bool changed = false;
+  changed |= panel.slider(std::string(prefix) + " X", values.x(), min, max);
+  changed |= panel.slider(std::string(prefix) + " Y", values.y(), min, max);
+  changed |= panel.slider(std::string(prefix) + " Z", values.z(), min, max);
+  return changed;
+}
+
+bool shapeParameterControls(
+    gui::PanelBuilder& panel,
+    const char* prefix,
+    ShapeType type,
+    ShapeParameters& params)
+{
+  bool changed = false;
+  switch (type) {
+    case ShapeType::Sphere:
+    case ShapeType::Convex:
+    case ShapeType::Sdf:
+    case ShapeType::Compound:
+      changed |= panel.slider(
+          std::string(prefix) + " Radius", params.radius, 0.05, 2.0);
+      break;
+    case ShapeType::Capsule:
+    case ShapeType::Cylinder:
+      changed |= panel.slider(
+          std::string(prefix) + " Radius", params.radius, 0.05, 2.0);
+      changed |= panel.slider(
+          std::string(prefix) + " Height", params.height, 0.05, 4.0);
+      break;
+    case ShapeType::Box:
+    case ShapeType::Mesh: {
+      const std::string label = std::string(prefix) + " Half Extent";
+      changed |= slider3(panel, label.c_str(), params.halfExtents, 0.025, 2.0);
+      break;
+    }
+    case ShapeType::Plane: {
+      const std::string label = std::string(prefix) + " Visual Half Extent";
+      changed |= slider3(panel, label.c_str(), params.halfExtents, 0.01, 5.0);
+      break;
+    }
+  }
+  return changed;
+}
+
+std::vector<gui::Gizmo> createObjectGizmos(
+    const std::shared_ptr<SandboxState>& state)
+{
+  const auto makeGizmo = [state](
+                             std::string label,
+                             const dynamics::SimpleFramePtr& target,
+                             const gui::GizmoAxisColors& colors) {
+    gui::Gizmo gizmo;
+    gizmo.label = std::move(label);
+    gizmo.target = target;
+    gizmo.flags = gui::GizmoFlags::All;
+    gizmo.size = kObjectGizmoSize;
+    gizmo.colors = colors;
+    gizmo.onChanged = [state](const Eigen::Isometry3d&) {
+      state->dirty = true;
+    };
+    return gizmo;
+  };
+
+  gui::GizmoAxisColors colorsA;
+  colorsA.highlight = rgba(1.0, 0.82, 0.18);
+  gui::GizmoAxisColors colorsB;
+  colorsB.x = rgba(0.95, 0.22, 0.55);
+  colorsB.y = rgba(0.18, 0.75, 0.45);
+  colorsB.z = rgba(0.35, 0.55, 0.98);
+  colorsB.highlight = rgba(1.0, 0.82, 0.18);
+
+  return {
+      makeGizmo("Object A", state->objectAFrame, colorsA),
+      makeGizmo("Object B", state->objectBFrame, colorsB)};
+}
+
+gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
+{
+  gui::Panel panel;
+  panel.title = "Native Collision";
+  panel.initialPosition = std::array<double, 2>{820.0, 16.0};
+  panel.initialSize = std::array<double, 2>{420.0, 620.0};
+  panel.build = [state](gui::PanelBuilder& panelBuilder) {
+    const auto pairs = sandbox::pairCases();
+    const sandbox::PairCase& pair = selectedPair(*state);
+
+    panelBuilder.text(
+        pair.label + " [" + std::string(sandbox::pairStatusLabel(pair.status))
+        + "]");
+    panelBuilder.text(pair.note);
+    panelBuilder.text(
+        "Support: " + std::string(sandbox::pairStatusDescription(pair.status)));
+    panelBuilder.text("Path: " + std::string(pairCoverageMode(pair)));
+    panelBuilder.text("Left-drag object gizmo arrows, planes, and rings.");
+    if (panelBuilder.button("Previous")) {
+      state->pairCaseIndex
+          = (state->pairCaseIndex + pairs.size() - 1) % pairs.size();
+      resetPairControls(*state);
+    }
+    panelBuilder.sameLine();
+    if (panelBuilder.button("Next")) {
+      state->pairCaseIndex = (state->pairCaseIndex + 1) % pairs.size();
+      resetPairControls(*state);
+    }
+    if (panelBuilder.beginMenu("Pair Selector")) {
+      for (const sandbox::PairCase& candidate : pairs) {
+        if (panelBuilder.menuItem(
+                candidate.label + " ["
+                + std::string(sandbox::pairStatusLabel(candidate.status))
+                + "]")) {
+          state->pairCaseIndex = candidate.index;
+          resetPairControls(*state);
+        }
+      }
+      panelBuilder.endMenu();
+    }
+    if (panelBuilder.collapsingHeader("Pair Coverage", false)) {
+      const bool useTable
+          = panelBuilder.beginTable("pair_coverage", kPairCoverageColumns);
+      if (!useTable) {
+        panelBuilder.text("Pair | Support | Mode");
+      }
+      for (const sandbox::PairCase& candidate : pairs) {
+        std::string pairLabel = candidate.label;
+        if (candidate.index == state->pairCaseIndex) {
+          pairLabel += " (current)";
+        }
+        const std::string statusLabel
+            = std::string(sandbox::pairStatusLabel(candidate.status));
+        const std::string modeLabel = std::string(pairCoverageMode(candidate));
+        if (useTable) {
+          panelBuilder.tableNextRow();
+          panelBuilder.tableNextColumn();
+          panelBuilder.text(pairLabel);
+          panelBuilder.tableNextColumn();
+          panelBuilder.text(statusLabel);
+          panelBuilder.tableNextColumn();
+          panelBuilder.text(modeLabel);
+        } else {
+          panelBuilder.text(
+              pairLabel + " | " + statusLabel + " | " + modeLabel);
+        }
+      }
+      if (useTable) {
+        panelBuilder.endTable();
+      }
+    }
+
+    panelBuilder.separator();
+    panelBuilder.text(
+        "Broad-phase: " + std::string(selectedBroadPhase(*state).label));
+    if (panelBuilder.beginMenu("Broad-phase Selector")) {
+      for (std::size_t i = 0; i < kBroadPhaseOptions.size(); ++i) {
+        const BroadPhaseOption& option = kBroadPhaseOptions[i];
+        if (panelBuilder.menuItem(std::string(option.label))) {
+          state->broadPhaseIndex = i;
+          state->dirty = true;
+        }
+      }
+      panelBuilder.endMenu();
+    }
+
+    panelBuilder.separator();
+    panelBuilder.text("Object A");
+    panelBuilder.text("Position: " + formatFramePosition(state->objectAFrame));
+    state->dirty |= shapeParameterControls(
+        panelBuilder, "A", pair.shapeA, state->objectAParams);
+
+    panelBuilder.separator();
+    panelBuilder.text("Object B");
+    panelBuilder.text("Position: " + formatFramePosition(state->objectBFrame));
+    state->dirty |= shapeParameterControls(
+        panelBuilder, "B", pair.shapeB, state->objectBParams);
+    state->dirty
+        |= panelBuilder.slider("Max Contacts", state->maxContacts, 1.0, 64.0);
+    state->dirty |= panelBuilder.checkbox("Filter Pair", state->filterPair);
+    if (panelBuilder.button("Reset Pair")) {
+      resetPairControls(*state);
+    }
+
+    panelBuilder.separator();
+    state->dirty |= panelBuilder.checkbox("AABBs", state->showAabbs);
+    state->dirty
+        |= panelBuilder.checkbox("Broad-phase Overlay", state->showBroadPhase);
+    state->dirty |= panelBuilder.checkbox("BVH Nodes", state->showBvhNodes);
+    state->dirty |= panelBuilder.checkbox("BVH Edges", state->showBvhEdges);
+    state->dirty
+        |= panelBuilder.checkbox("Candidate Pairs", state->showCandidatePairs);
+    state->dirty |= panelBuilder.checkbox(
+        "Spatial Hash Cells", state->showSpatialHashCells);
+    state->dirty
+        |= panelBuilder.checkbox("Sweep Endpoints", state->showSweepEndpoints);
+    panelBuilder.checkbox("Name Tags", state->showDebugLabels);
+
+    panelBuilder.separator();
+    const QuerySummary& summary = state->summary;
+    panelBuilder.text(
+        std::string("Collision: ") + (summary.hit ? "yes" : "no"));
+    panelBuilder.text(
+        std::string("Filtered: ") + (summary.pairFiltered ? "yes" : "no"));
+    panelBuilder.text(
+        "Manifolds: " + std::to_string(summary.numManifolds)
+        + " Contacts: " + std::to_string(summary.numContacts));
+    if (summary.distanceValid) {
+      panelBuilder.text("Distance: " + std::to_string(summary.distance));
+    }
+    if (panelBuilder.collapsingHeader("Contacts", true)) {
+      for (const ContactRow& contact : summary.contacts) {
+        panelBuilder.text(
+            "M" + std::to_string(contact.manifoldIndex) + " C"
+            + std::to_string(contact.contactIndex) + " p "
+            + formatVec3(contact.point));
+        panelBuilder.text(
+            "    n " + formatVec3(contact.normal) + " d "
+            + std::to_string(contact.depth));
+      }
+    }
+    if (panelBuilder.collapsingHeader("Broad-phase", true)) {
+      panelBuilder.text(
+          "Objects: " + std::to_string(summary.broadPhaseObjects));
+      panelBuilder.text(
+          "Candidates: " + std::to_string(summary.broadPhaseCandidatePairs));
+      panelBuilder.text(
+          "Nodes: " + std::to_string(summary.broadPhaseNodes) + " ("
+          + std::to_string(summary.broadPhaseLeaves) + " leaf, "
+          + std::to_string(summary.broadPhaseInternals) + " internal)");
+      panelBuilder.text("Cells: " + std::to_string(summary.broadPhaseCells));
+      panelBuilder.text(
+          "Endpoints: " + std::to_string(summary.broadPhaseEndpoints));
+      panelBuilder.text(
+          std::string("Tree topology: ")
+          + (summary.broadPhaseHasTreeTopology ? "yes" : "no"));
+      panelBuilder.text(
+          std::string("Spatial cells: ")
+          + (summary.broadPhaseHasSpatialHashCells ? "yes" : "no"));
+      panelBuilder.text(
+          std::string("Sweep order: ")
+          + (summary.broadPhaseHasSweepEndpoints ? "yes" : "no"));
+    }
+  };
+  return panel;
+}
+
+gui::RunOptions makeRunDefaults()
+{
+  gui::RunOptions options;
+  options.windowTitle = "DART Native Collision Sandbox";
+  options.width = 1280;
+  options.height = 720;
+  return options;
+}
+
+gui::OrbitCamera makeCamera()
+{
+  gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.4, 0.0, 0.25);
+  camera.yaw = -0.72;
+  camera.pitch = 0.38;
+  camera.distance = 5.3;
+  return camera;
+}
+
+} // namespace
 
 int main(int argc, char* argv[])
 {
-  CLI::App app("DART Collision Sandbox - Interactive Demo");
-
-  bool headless = false;
-  app.add_flag(
-      "--headless", headless, "Run in headless mode (render and exit)");
-
-  double guiScale = 1.0;
-  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
-      ->check(CLI::PositiveNumber);
-
-  int width = 1280;
-  app.add_option("-W,--width", width, "Window width")
-      ->check(CLI::PositiveNumber);
-
-  int height = 720;
-  app.add_option("-H,--height", height, "Window height")
-      ->check(CLI::PositiveNumber);
-
-  std::string outputFile = "collision_sandbox.ppm";
-  app.add_option("-o,--output", outputFile, "Output file for headless mode");
-
-  CLI11_PARSE(app, argc, argv);
-
-  int scaledWidth = static_cast<int>(width * guiScale);
-  int scaledHeight = static_cast<int>(height * guiScale);
-
-  std::cout << "DART Collision Sandbox - Interactive Demo\n";
-  std::cout << "=========================================\n\n";
-
-  collision::CollisionWorld world;
-  guivsg::CollisionSceneBuilder builder;
-  DemoState state;
-
-  if (headless) {
-    auto viewer = guivsg::SimpleViewer::headless(scaledWidth, scaledHeight);
-    viewer.addGrid(6.0, 1.0);
-    viewer.addAxes(1.0);
-    viewer.lookAt(
-        Eigen::Vector3d(6.0, -4.0, 3.0),
-        Eigen::Vector3d(0.5, 0.0, 0.0),
-        Eigen::Vector3d::UnitZ());
-
-    buildScene(builder, world, state);
-    viewer.setScene(builder.build());
-    viewer.frame();
-
-    if (viewer.saveScreenshot(outputFile)) {
-      std::cout << "Saved screenshot to: " << outputFile << "\n";
-    } else {
-      std::cerr << "Failed to save screenshot\n";
-      return 1;
-    }
-    std::cout << "Done.\n";
-    return 0;
+  auto state = std::make_shared<SandboxState>();
+  resetPairControls(*state);
+  if (!parseExampleArgs(argc, argv, *state)) {
+    return 2;
   }
+  attachObjectFrames(*state);
+  rebuildScene(*state);
 
-  guivsg::ImGuiViewer viewer(
-      scaledWidth, scaledHeight, "DART Collision Sandbox");
-  viewer.addGrid(6.0, 1.0);
-  viewer.addAxes(1.0);
-  viewer.lookAt(
-      Eigen::Vector3d(6.0, -4.0, 3.0),
-      Eigen::Vector3d(0.5, 0.0, 0.0),
-      Eigen::Vector3d::UnitZ());
-
-  float guiScaleF = static_cast<float>(guiScale);
-  bool firstFrame = true;
-  viewer.setImGuiCallback([&state, guiScaleF, &firstFrame, &viewer, &world]() {
-    ImGui::GetIO().FontGlobalScale = guiScaleF;
-
-    if (firstFrame) {
-      ImGui::SetNextWindowPos(ImVec2(10 * guiScaleF, 10 * guiScaleF));
-      ImGui::SetNextWindowSize(ImVec2(280 * guiScaleF, 320 * guiScaleF));
-      firstFrame = false;
+  gui::ApplicationOptions options;
+  options.world = state->world;
+  options.runDefaults = makeRunDefaults();
+  options.camera = makeCamera();
+  options.simulateWorld = false;
+  options.gizmos = createObjectGizmos(state);
+  options.debugLabels = [state] {
+    return state->showDebugLabels ? state->debugLabels
+                                  : std::vector<gui::DebugLabelDescriptor>{};
+  };
+  options.panels.push_back(createControlsPanel(state));
+  options.preRender = [state] {
+    if (state->dirty) {
+      rebuildScene(*state);
     }
+  };
 
-    ImGui::Begin("Collision Sandbox Controls");
-
-    ImGui::Text("Demo Mode:");
-    if (ImGui::RadioButton("Shapes", state.mode == DemoMode::Shapes)) {
-      state.mode = DemoMode::Shapes;
-      state.needsRebuild = true;
-    }
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Contacts", state.mode == DemoMode::Contacts)) {
-      state.mode = DemoMode::Contacts;
-      state.needsRebuild = true;
-    }
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Filtering", state.mode == DemoMode::Filtering)) {
-      state.mode = DemoMode::Filtering;
-      state.needsRebuild = true;
-    }
-
-    if (ImGui::RadioButton("Distance", state.mode == DemoMode::Distance)) {
-      state.mode = DemoMode::Distance;
-      state.needsRebuild = true;
-    }
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Raycast", state.mode == DemoMode::Raycast)) {
-      state.mode = DemoMode::Raycast;
-      state.needsRebuild = true;
-    }
-    ImGui::SameLine();
-    if (ImGui::RadioButton("CCD", state.mode == DemoMode::CCD)) {
-      state.mode = DemoMode::CCD;
-      state.needsRebuild = true;
-    }
-
-    if (ImGui::RadioButton("Picking", state.mode == DemoMode::Picking)) {
-      state.mode = DemoMode::Picking;
-      state.hasPickRay = false;
-      state.needsRebuild = true;
-    }
-
-    ImGui::Separator();
-
-    if (ImGui::Checkbox("Show AABBs", &state.showAABBs)) {
-      state.needsRebuild = true;
-    }
-
-    ImGui::Separator();
-
-    if (state.mode == DemoMode::Contacts) {
-      ImGui::Text("Contact Parameters:");
-      if (ImGui::SliderFloat(
-              "Sphere Y Offset", &state.sphereOffset, 0.0f, 2.0f)) {
-        state.needsRebuild = true;
-      }
-    }
-
-    if (state.mode == DemoMode::Raycast) {
-      ImGui::Text("Ray Parameters:");
-      if (ImGui::SliderFloat("Ray Angle", &state.rayAngle, -45.0f, 45.0f)) {
-        state.needsRebuild = true;
-      }
-    }
-
-    if (state.mode == DemoMode::Picking) {
-      ImGui::Text("Left-click in 3D view to cast ray");
-      if (state.hasPickRay) {
-        if (state.pickHit) {
-          ImGui::TextColored(
-              ImVec4(0.0f, 1.0f, 0.0f, 1.0f),
-              "Hit at (%.2f, %.2f, %.2f)",
-              state.pickHitPoint.x(),
-              state.pickHitPoint.y(),
-              state.pickHitPoint.z());
-        } else {
-          ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "No hit");
-        }
-      }
-    }
-
-    ImGui::End();
-
-    ImGuiIO& io = ImGui::GetIO();
-    ImVec2 mousePos = io.MousePos;
-
-    if (!io.WantCaptureMouse) {
-      char hoverBuf[128];
-      Eigen::Vector3d rayOrigin, rayDir;
-      if (viewer.computePickingRay(mousePos.x, mousePos.y, rayOrigin, rayDir)) {
-        collision::Ray ray(rayOrigin, rayDir, 100.0);
-        collision::RaycastOption rayOpt;
-        collision::RaycastResult rayHit;
-        bool hit = world.raycast(ray, rayOpt, rayHit);
-
-        if (hit && rayHit.object) {
-          state.hoverHit = true;
-          state.hoverHitPoint = rayHit.point;
-
-          collision::Aabb aabb = computeWorldAabb(*rayHit.object);
-          viewer.setHoverHighlight(aabb.min, aabb.max);
-
-          std::snprintf(
-              hoverBuf,
-              sizeof(hoverBuf),
-              "(%.2f, %.2f, %.2f)",
-              rayHit.point.x(),
-              rayHit.point.y(),
-              rayHit.point.z());
-          state.hoverInfo = hoverBuf;
-
-          if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            state.selectedObject = rayHit.object;
-            state.selectedAabb = aabb;
-            viewer.setSelectionHighlight(aabb.min, aabb.max);
-
-            if (state.mode == DemoMode::Picking) {
-              state.pickRayOrigin = rayOrigin;
-              state.pickRayDirection = rayDir;
-              state.hasPickRay = true;
-              state.needsRebuild = true;
-            }
-          }
-        } else {
-          state.hoverHit = false;
-          viewer.clearHoverHighlight();
-          state.hoverInfo.clear();
-
-          if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            state.selectedObject = nullptr;
-            viewer.clearSelectionHighlight();
-          }
-        }
-      } else {
-        viewer.clearHoverHighlight();
-        state.hoverInfo.clear();
-      }
-    } else {
-      viewer.clearHoverHighlight();
-      state.hoverInfo.clear();
-    }
-
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    float statusBarHeight = 24 * guiScaleF;
-    ImGui::SetNextWindowPos(ImVec2(
-        viewport->Pos.x, viewport->Pos.y + viewport->Size.y - statusBarHeight));
-    ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, statusBarHeight));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 4));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::Begin(
-        "##StatusBar",
-        nullptr,
-        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize
-            | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar
-            | ImGuiWindowFlags_NoSavedSettings
-            | ImGuiWindowFlags_NoBringToFrontOnFocus);
-
-    ImGui::Text("Right-drag: rotate | Middle-drag: pan | Scroll: zoom");
-    if (!state.hoverInfo.empty()) {
-      ImGui::SameLine(viewport->Size.x - 200 * guiScaleF);
-      ImGui::Text("Pos: %s", state.hoverInfo.c_str());
-    }
-
-    ImGui::End();
-    ImGui::PopStyleVar(2);
-  });
-
-  buildScene(builder, world, state);
-  viewer.setScene(builder.build());
-
-  while (!viewer.shouldClose()) {
-    if (state.needsRebuild) {
-      world = collision::CollisionWorld();
-      buildScene(builder, world, state);
-      viewer.setScene(builder.build());
-    }
-    viewer.frame();
-  }
-
-  std::cout << "Done.\n";
-  return 0;
+  return gui::runApplication(argc, argv, options);
 }

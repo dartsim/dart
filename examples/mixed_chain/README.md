@@ -2,28 +2,31 @@
 
 ## Summary
 
-- Goal: simulate a chain that mixes rigid and soft bodies.
-- Concepts/APIs: soft body nodes, `dart::io::readWorld`, external forces.
-- Expected output: a mixed chain where you can push soft segments.
-- Controls: q/w, e/r, t/y apply forces; space toggles simulation.
+- Goal: visualize a mixed rigid/soft articulated chain and apply short impulses
+  to one soft link.
+- Concepts/APIs: SKEL loading, soft body nodes, external forces, pre-step
+  callbacks, renderer-neutral keyboard actions, and public `dart::gui` panels.
+- Expected output: a mixed rigid/soft chain initialized from
+  `test_articulated_bodies_10bodies.skel`.
+- Controls: `q`/`w`, `e`/`r`, and `t`/`y` apply short impulses in the
+  negative/positive X, Y, and Z directions. Space toggles simulation.
 
-This project is dependent on DART with OSG support. Please make sure a proper
-version of DART is installed with the gui component before building this
-project.
+## Run
 
-## Build Instructions
+From the source tree:
 
-From this directory:
+```bash
+pixi run ex mixed_chain
+```
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+Headless capture is provided by the promoted `dart::gui` runner:
 
-## Execute Instructions
+```bash
+pixi run ex mixed_chain --headless --frames 2 --screenshot /tmp/mixed_chain.ppm
+```
 
-Launch the executable from the build directory above:
+Image-sequence capture uses `--out`:
 
-    $ ./mixed_chain
-
-Follow the instructions detailed in the console.
+```bash
+pixi run ex mixed_chain --headless --frames 3 --out /tmp/mixed_chain_frames
+```

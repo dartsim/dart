@@ -41,12 +41,15 @@ class Frame;
 class FreeFrame;
 class Joint;
 class Link;
+class LoopClosure;
 class MultiBody;
 class RigidBody;
 class World;
+enum class WorldSyncStage;
 
 namespace compute {
 class ComputeExecutor;
+class ParallelExecutor;
 class WorldStepPipeline;
 class WorldStepStage;
 } // namespace compute
@@ -55,7 +58,11 @@ class WorldStepStage;
 struct FixedFrameOptions;
 struct FreeFrameOptions;
 struct JointOptions;
+struct JointSpec;
 struct LinkOptions;
+struct LoopClosureRuntimePolicy;
+struct LoopClosureResidual;
+struct LoopClosureSpec;
 struct MultiBodyOptions;
 struct RigidBodyOptions;
 struct WorldOptions;

@@ -1,0 +1,126 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "dart/simulation/experimental/compute/parallel_executor.hpp"
+
+#include "dart/simulation/experimental/compute/compute_graph.hpp"
+#include "dart/simulation/experimental/compute/execution_profile.hpp"
+
+#include <taskflow/taskflow.hpp>
+
+#include <memory>
+#include <unordered_map>
+
+namespace dart::simulation::experimental::compute {
+
+//==============================================================================
+class ParallelExecutor::Impl
+{
+public:
+  explicit Impl(std::size_t workerCount)
+  {
+    if (workerCount == 0) {
+      executor = std::make_unique<tf::Executor>();
+    } else {
+      executor = std::make_unique<tf::Executor>(workerCount);
+    }
+  }
+
+  std::unique_ptr<tf::Executor> executor;
+};
+
+//==============================================================================
+ParallelExecutor::ParallelExecutor(std::size_t workerCount)
+  : m_impl(std::make_unique<Impl>(workerCount))
+{
+}
+
+//==============================================================================
+ParallelExecutor::~ParallelExecutor() = default;
+
+//==============================================================================
+ParallelExecutor::ParallelExecutor(ParallelExecutor&&) noexcept = default;
+
+//==============================================================================
+ParallelExecutor& ParallelExecutor::operator=(ParallelExecutor&&) noexcept
+    = default;
+
+//==============================================================================
+void ParallelExecutor::execute(const ComputeGraph& graph)
+{
+  tf::Taskflow taskflow;
+  std::unordered_map<ComputeNode*, tf::Task> tasks;
+
+  for (auto* node : graph.getNodes()) {
+    tasks.emplace(
+        node,
+        taskflow.emplace([node]() { node->execute(); }).name(node->getName()));
+  }
+
+  for (const auto& edge : graph.getEdges()) {
+    tasks.at(edge.from).precede(tasks.at(edge.to));
+  }
+
+  m_impl->executor->run(taskflow).get();
+}
+
+//==============================================================================
+ComputeExecutionProfile ParallelExecutor::executeProfiled(
+    const ComputeGraph& graph)
+{
+  tf::Taskflow taskflow;
+  std::unordered_map<ComputeNode*, tf::Task> tasks;
+  ComputeExecutionProfiler profiler(graph, getWorkerCount());
+
+  for (auto* node : graph.getNodes()) {
+    tasks.emplace(
+        node,
+        taskflow.emplace([&profiler, node]() { profiler.executeNode(*node); })
+            .name(node->getName()));
+  }
+
+  for (const auto& edge : graph.getEdges()) {
+    tasks.at(edge.from).precede(tasks.at(edge.to));
+  }
+
+  profiler.start();
+  m_impl->executor->run(taskflow).get();
+  return profiler.finish();
+}
+
+//==============================================================================
+std::size_t ParallelExecutor::getWorkerCount() const
+{
+  return m_impl && m_impl->executor ? m_impl->executor->num_workers() : 0;
+}
+
+} // namespace dart::simulation::experimental::compute

@@ -77,6 +77,7 @@ public:
   [[nodiscard]] std::vector<std::size_t> queryOverlapping(
       const Aabb& aabb) const override;
   [[nodiscard]] std::size_t size() const override;
+  void buildDebugSnapshot(BroadPhaseDebugSnapshot& out) const override;
 
   using BroadPhase::build;
   using BroadPhase::queryPairs;

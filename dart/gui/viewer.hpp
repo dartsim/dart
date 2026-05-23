@@ -33,397 +33,235 @@
 #ifndef DART_GUI_VIEWER_HPP_
 #define DART_GUI_VIEWER_HPP_
 
-#include <dart/gui/camera_mode.hpp>
-#include <dart/gui/default_event_handler.hpp>
-#include <dart/gui/detail/camera_mode_callback.hpp>
 #include <dart/gui/export.hpp>
-#include <dart/gui/fwd.hpp>
-#include <dart/gui/viewer_config.hpp>
-#include <dart/gui/world_node.hpp>
-
-#include <dart/simulation/fwd.hpp>
-
-#include <dart/dynamics/fwd.hpp>
-
-#include <dart/common/class_with_virtual_base.hpp>
-#include <dart/common/subject.hpp>
 
 #include <Eigen/Core>
-#include <osgShadow/ShadowTechnique>
-#include <osgViewer/Viewer>
+#include <Eigen/Geometry>
 
-#include <map>
-#include <memory>
-#include <unordered_set>
+#include <optional>
+#include <string>
 #include <vector>
 
 #include <cstdint>
 
-namespace dart {
-namespace gui {
+namespace dart::gui {
 
-namespace detail {
-class CameraModeCallback;
-} // namespace detail
-
-DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class DART_GUI_API ViewerAttachment : public virtual ::osg::Group
+struct PickRay
 {
-public:
-  friend class Viewer;
-
-  /// Default constructor
-  ViewerAttachment();
-
-  /// Virtual destructor
-  virtual ~ViewerAttachment();
-
-  /// This function will get called each time the Viewer is refreshed. Override
-  /// it to have your attachment update with each refresh cycle.
-  virtual void refresh() = 0;
-
-  Viewer* getViewer();
-
-  const Viewer* getViewer() const;
-
-protected:
-  /// This function will be called by attach(Viewer*) so you can do customized
-  /// setup when the Viewer changes. By default this function does nothing, so
-  /// overriding it is completely safe.
-  virtual void customAttach(Viewer* newViewer);
-
-  /// This function will get called when the visual is attached to a new Viewer.
-  /// It adds this node as a child to the root node of the Viewer so the
-  /// refresh() function will be called at each update cycle. It will also call
-  /// customAttach(Viewer*) so you can do customized setup.
-  virtual void attach(Viewer* newViewer);
-
-private:
-  Viewer* mViewer;
+  Eigen::Vector3d origin = Eigen::Vector3d::Zero();
+  Eigen::Vector3d direction = Eigen::Vector3d::UnitX();
 };
 
-class DART_GUI_API Viewer : public osgViewer::Viewer,
-                            public dart::common::Subject
+struct RunOptions
 {
-public:
-  /// Constructor for dart::gui::Viewer. This will automatically create the
-  /// default event handler.
-  Viewer(const ::osg::Vec4& clearColor = ::osg::Vec4(0.9, 0.9, 0.9, 1.0));
-
-  /// Constructor with configuration bundle. Supports headless mode.
-  explicit Viewer(const ViewerConfig& config);
-
-  /// Destructor
-  virtual ~Viewer();
-
-  /// Returns true if this viewer is in headless (offscreen) mode.
-  [[nodiscard]] bool isHeadless() const;
-
-  /// Factory method to create a Viewer with the given configuration.
-  [[nodiscard]] static std::shared_ptr<Viewer> create(
-      const ViewerConfig& config);
-
-  /// Capture current frame to raw pixel buffer (RGBA, row-major,
-  /// bottom-to-top). Returns empty vector if capture fails.
-  ///
-  /// @note This method is designed for headless mode which uses single
-  /// buffering. For windowed (double-buffered) mode, use captureScreen()
-  /// instead, which captures via a draw callback before the buffer swap.
-  ///
-  /// @param[out] outWidth  Receives image width if non-null
-  /// @param[out] outHeight Receives image height if non-null
-  [[nodiscard]] std::vector<uint8_t> captureBuffer(
-      int* outWidth = nullptr, int* outHeight = nullptr);
-
-  /// Capture the current screen in a png file. The filename argument should
-  /// include the full path for the file.
-  ///
-  /// It is recommended that you end the filename with ".png". That is the type
-  /// of file that will be produced, but the extension will not be added on
-  /// automatically.
-  // TODO(MXG): Add a bool argument that instructs the viewer to append a date
-  // and time to the name of the file.
-  void captureScreen(const std::string& filename);
-
-  /// As the screen refreshes, save screen capture images to the specified
-  /// directory.
-  ///
-  /// The prefix argument will be the first part of the name of each
-  /// image. The second part of the image will contain an integer with "digits"
-  /// number of digits; any unused leading digits will be filled with 0. The
-  /// integer corresponds to its number in the sequence of frames.
-  ///
-  /// Set the restart argument to true if you want the sequence counter to
-  /// restart from 0.
-  void record(
-      const std::string& directory,
-      const std::string& prefix = "image",
-      bool restart = false,
-      std::size_t digits = 6);
-
-  /// If the Viewer is recording, then pause the recording. The next time
-  /// record() is called, the numbering of the images will resume from where it
-  /// left off.
-  void pauseRecording();
-
-  /// Returns true if the Viewer is currently recording.
-  bool isRecording() const;
-
-  /// Creates the default event handler for this dart::gui::Viewer
-  virtual void switchDefaultEventHandler(bool _on);
-
-  /// Return a pointer to the default event handler
-  DefaultEventHandler* getDefaultEventHandler() const;
-
-  /// Pass in true to turn headlights on, false to turn headlights off
-  virtual void switchHeadlights(bool _on);
-
-  /// True iff headlights are currently set to true
-  bool checkHeadlights() const;
-
-  /// Add a WorldNode to this Viewer. If active is true, the WorldNode will
-  /// respond to user input (but it will not begin simulating unless its
-  /// simulation is currently turned on).
-  void addWorldNode(WorldNode* _newWorldNode, bool _active = true);
-
-  /// Remove a WorldNode from this Viewer
-  void removeWorldNode(WorldNode* _oldWorldNode);
-
-  /// Remove the WorldNode associated with _oldWorld from this Viewer
-  void removeWorldNode(std::shared_ptr<dart::simulation::World> _oldWorld);
-
-  /// Get the WorldNode associated with the given _world. Returns nullptr if
-  /// this Viewer does not contain a WorldNode associated with _world.
-  WorldNode* getWorldNode(
-      std::shared_ptr<dart::simulation::World> _world) const;
-
-  /// Add an attachment to this Viewer. Note that an attachment can only be
-  /// attached to one Viewer at a time.
-  void addAttachment(ViewerAttachment* _attachment);
-
-  /// Remove the attachment from this Viewer.
-  void removeAttachment(ViewerAttachment* _attachment);
-
-  /// Get the set of attachments in this Viewer
-  const std::unordered_set<ViewerAttachment*>& getAttachments() const;
-
-  /// Get the Group node that contains the LightSources for this Viewer
-  ::osg::Group* getLightGroup();
-
-  /// Get the Group node that contains the LightSources for this Viewer
-  const ::osg::Group* getLightGroup() const;
-
-  /// Get one of the LightSources of this Viewer
-  /// index either 0 or 1
-  /// Useful for shadowing techniques
-  const ::osg::ref_ptr<::osg::LightSource>& getLightSource(
-      std::size_t index = 0) const;
-
-  /// Set up the default lighting scheme
-  void setupDefaultLights();
-
-  /// Set the direction that this Viewer should consider to be upwards (default
-  /// is <0,0,1>)
-  void setUpwardsDirection(const ::osg::Vec3& _up);
-
-  /// Set the direction that this Viewer should consider to be upwards (default
-  /// is <0,0,1>)
-  void setUpwardsDirection(const Eigen::Vector3d& _up);
-
-  /// Set the given WorldNode to active
-  void setWorldNodeActive(WorldNode* _node, bool _active = true);
-
-  /// Set the given World to active
-  void setWorldNodeActive(
-      std::shared_ptr<dart::simulation::World> _world, bool _active = true);
-
-  /// Set all currently active WorldNodes to simulate _on
-  void simulate(bool _on);
-
-  /// Return true iff this Viewer is currently set to simulate
-  bool isSimulating() const;
-
-  /// Prevent simulation from starting, even if simulate(true) is called
-  void allowSimulation(bool _allow);
-
-  /// Return true iff this Viewer is currently allowing simulation to happen
-  bool isAllowingSimulation() const;
-
-  /// Returns a nullptr if _entity is not a type that can support the built-in
-  /// drag and drop features, otherwise it returns a pointer to the DragAndDrop
-  /// interface object that has been created (allowing you to configure it). If
-  /// a DragAndDrop interface already existed for this object, the existing one
-  /// will be returned.
-  DragAndDrop* enableDragAndDrop(dart::dynamics::Entity* _entity);
-
-  /// A version of enableDragAndDrop specifically for SimpleFrame objects.
-  SimpleFrameDnD* enableDragAndDrop(dart::dynamics::SimpleFrame* _frame);
-
-  /// A version of enableDragAndDrop specifically for a single shape within a
-  /// SimpleFrame object. Dragging and Dropping the shape will also drag and
-  /// drop the entire Frame
-  SimpleFrameShapeDnD* enableDragAndDrop(
-      dart::dynamics::SimpleFrame* _frame, dart::dynamics::Shape* _shape);
-
-  /// A version of enableDragAndDrop specifically for InteractiveFrames
-  InteractiveFrameDnD* enableDragAndDrop(InteractiveFrame* _frame);
-
-  /// A version of enableDragAndDrop specifically for BodyNodes
-  BodyNodeDnD* enableDragAndDrop(
-      dart::dynamics::BodyNode* _bn,
-      bool _useExternalIK = true,
-      bool _useWholeBody = false);
-
-  /// Delete a DragAndDrop object. Returns true if the DnD was active and has
-  /// now been deleted
-  bool disableDragAndDrop(DragAndDrop* _dnd);
-
-  /// Delete a SimpleFrameDnD object. Returns true if the DnD was active and has
-  /// now been deleted
-  bool disableDragAndDrop(SimpleFrameDnD* _dnd);
-
-  /// Delete a SimpleFrameShapeDnD object. Returns true if a DnD existed and
-  /// could be deleted
-  bool disableDragAndDrop(SimpleFrameShapeDnD* _dnd);
-
-  /// Delete an InteractiveFrameDnD object. Returns true if a DnD existed and
-  /// could be deleted
-  bool disableDragAndDrop(InteractiveFrameDnD* _dnd);
-
-  /// Delete a BodyNodeDnD object. Returns true if a DnD existed and could be
-  /// deleted
-  bool disableDragAndDrop(BodyNodeDnD* _dnd);
-
-  /// Get a string containing the user interface constructions for this Viewer
-  const std::string& getInstructions() const;
-
-  /// Add something to the instructions for this Viewer. You are strongly
-  /// recommended to end your string with an end-of-line character. An
-  /// end-of-line character will NOT be added automatically.
-  void addInstructionText(const std::string& _instruction);
-
-  /// Called automatically at the beginning of each render cycle
-  virtual void updateViewer();
-
-  /// Called automatically by updateViewer()
-  void updateDragAndDrops();
-
-  /// Get the root ::osg::Group of this Viewer
-  const ::osg::ref_ptr<::osg::Group>& getRootGroup() const;
-
-  /// Sets the vertical field of view of the master camera of the view.
-  /// @param[in] fov Vertical field of view in degrees.
-  void setVerticalFieldOfView(double fov);
-
-  /// Returns the vertical field of view of the master camera of the view.
-  /// @return Vertical field of view in degrees if the camera is perspective
-  /// view, 0.0 otherwise.
-  double getVerticalFieldOfView() const;
-
-  /// Sets the camera mode of the primary camera.
-  void setCameraMode(CameraMode mode);
-
-  /// Returns the camera mode of the primary camera.
-  CameraMode getCameraMode() const;
-
-protected:
-  friend class SaveScreen;
-
-  /// Current number of the image sequence for screen recording
-  std::size_t mImageSequenceNum;
-
-  /// Number of digits to use when saving an image sequence
-  std::size_t mImageDigits;
-
-  /// Whether or not the Viewer is currently recording
-  bool mRecording;
-
-  /// Whether or not the Viewer is staged for a screen capture
-  bool mScreenCapture;
-
-  /// Directory for saving images
-  std::string mImageDirectory;
-
-  /// Prefix to apply to images
-  std::string mImagePrefix;
-
-  /// Name for the next screen capture
-  std::string mScreenCapName;
-
-  /// Default WorldNodeEventHandler for this dart::gui::Viewer
-  ::osg::ref_ptr<DefaultEventHandler> mDefaultEventHandler;
-
-  /// The root node of this Viewer
-  ::osg::ref_ptr<::osg::Group> mRootGroup;
-
-  /// The Group Node containing light sources
-  ::osg::ref_ptr<::osg::Group> mLightGroup;
-
-  /// Non-headlights Light #1
-  ::osg::ref_ptr<::osg::Light> mLight1;
-
-  /// Non-headlights LightSource #1
-  ::osg::ref_ptr<::osg::LightSource> mLightSource1;
-
-  /// Non-headlights Light #2
-  ::osg::ref_ptr<::osg::Light> mLight2;
-
-  /// Non-headlights LightSource #2
-  ::osg::ref_ptr<::osg::LightSource> mLightSource2;
-
-  /// Vector pointing upwards
-  ::osg::Vec3 mUpwards;
-
-  /// Vector pointing to the side
-  ::osg::Vec3 mOver;
-
-  /// True iff this Viewer is currently simulating
-  bool mSimulating;
-
-  /// True iff this Viewer is allowing simulation
-  bool mAllowSimulation;
-
-  /// True iff headlights were last set to be on
-  bool mHeadlights;
-
-  /// Map of WorldNodes in this dart::gui::Viewer. A WorldNode will map to
-  /// true iff it is currently active
-  std::map<::osg::ref_ptr<WorldNode>, bool> mWorldNodes;
-
-  std::unordered_set<ViewerAttachment*> mAttachments;
-
-  /// string of instructions for this Viewer
-  std::string mInstructions;
-
-  // TODO(MXG): Consolidate all these maps into a single map of maps which uses
-  // typeid as a key
-
-  /// Map from SimpleFrame ptrs to SimpleFrameDnD ptrs
-  std::map<dart::dynamics::SimpleFrame*, SimpleFrameDnD*> mSimpleFrameDnDMap;
-
-  /// Multimap from Shape ptrs to SimpleFrameShapeDnD ptrs. We use a multimap
-  /// in order to support the possibility of a single Shape being used by
-  /// multiple objects
-  std::multimap<dart::dynamics::Shape*, SimpleFrameShapeDnD*>
-      mSimpleFrameShapeDnDMap;
-
-  /// Map from InteractiveFrame ptrs to InteractiveFrameDnD ptrs
-  std::map<InteractiveFrame*, InteractiveFrameDnD*> mInteractiveFrameDnDMap;
-
-  /// Map from BodyNode ptrs to BodyNodeDnD ptrs
-  std::map<dart::dynamics::BodyNode*, BodyNodeDnD*> mBodyNodeDnDMap;
-
-private:
-  /// Callback to control the camera mode
-  ::osg::ref_ptr<detail::CameraModeCallback> mCameraModeCallback;
-
-  /// Whether this viewer is in headless mode
-  bool mHeadless = false;
+  std::string windowTitle = "dartsim";
+  int width = 1280;
+  int height = 720;
+  int maxFrames = -1;
+  double guiScale = 1.0;
+  bool headless = false;
+  std::string screenshotPath;
+  std::string frameOutputDirectory;
 };
 
-DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
+enum class RenderOutputMode
+{
+  Color,
+  Depth,
+};
 
-} // namespace gui
-} // namespace dart
+struct RenderSettings
+{
+  bool shadowsEnabled = true;
+  RenderOutputMode outputMode = RenderOutputMode::Color;
+};
+
+struct ViewerLifecycleState
+{
+  int renderedFrames = 0;
+  int skippedFrames = 0;
+  std::string frameOutputDirectory;
+  bool paused = false;
+  bool stepOnce = false;
+  bool screenshotRequested = false;
+  bool frameOutputEnabled = false;
+  bool exitRequested = false;
+};
+
+struct OrbitCamera
+{
+  Eigen::Vector3d target = Eigen::Vector3d(0.0, 0.0, 0.45);
+  Eigen::Vector3d up = Eigen::Vector3d::UnitZ();
+  double yaw = -1.03;
+  double pitch = 0.29;
+  double distance = 6.1;
+};
+
+struct OrbitCameraBasis
+{
+  Eigen::Vector3d eye = Eigen::Vector3d::Zero();
+  Eigen::Vector3d forward = Eigen::Vector3d::UnitX();
+  Eigen::Vector3d right = Eigen::Vector3d::UnitY();
+  Eigen::Vector3d up = Eigen::Vector3d::UnitZ();
+};
+
+struct OrbitCameraUpdate
+{
+  double deltaX = 0.0;
+  double deltaY = 0.0;
+  double scrollDelta = 0.0;
+  bool orbit = false;
+  bool pan = false;
+  double orbitScale = 0.006;
+  double panScale = 0.0015;
+  double scrollScale = 0.12;
+  double minDistance = 0.35;
+  double maxDistance = 80.0;
+  double minPitch = -1.45;
+  double maxPitch = 1.45;
+};
+
+struct OrbitCameraController
+{
+  OrbitCamera camera;
+  double lastCursorX = 0.0;
+  double lastCursorY = 0.0;
+  double scrollDelta = 0.0;
+  bool hasLastCursor = false;
+};
+
+struct OrbitCameraControllerInput
+{
+  double cursorX = 0.0;
+  double cursorY = 0.0;
+  bool hasCursor = true;
+  bool orbit = false;
+  bool pan = false;
+};
+
+struct DirectionalNudgeInput
+{
+  bool left = false;
+  bool right = false;
+  bool forward = false;
+  bool backward = false;
+  bool up = false;
+  bool down = false;
+  bool fast = false;
+  double stepSize = 0.035;
+  double fastMultiplier = 3.0;
+};
+
+struct ProjectionOptions
+{
+  double verticalFovDegrees = 45.0;
+  std::optional<double> nearPlane;
+  std::optional<double> farPlane;
+  double nearScale = 0.001;
+  double minNearPlane = 0.0005;
+  double maxNearPlane = 0.010;
+  double minFarPlane = 30.0;
+  double farPadding = 35.0;
+};
+
+struct PerspectiveProjection
+{
+  double verticalFovDegrees = 45.0;
+  double aspectRatio = 1.0;
+  double nearPlane = 0.002;
+  double farPlane = 30.0;
+};
+
+DART_GUI_API void normalizeRunOptions(RunOptions& options);
+
+DART_GUI_API bool shouldRequestScreenshot(
+    const RunOptions& options, int renderedFrames, bool screenshotRequested);
+
+DART_GUI_API bool shouldCaptureFrameOutput(const RunOptions& options);
+
+DART_GUI_API std::string makeFrameOutputPath(
+    const RunOptions& options, int frameNumber);
+
+DART_GUI_API void setFrameOutputCapture(
+    ViewerLifecycleState& state, std::string outputDirectory, bool enabled);
+
+DART_GUI_API void toggleFrameOutputCapture(
+    ViewerLifecycleState& state, std::string outputDirectory);
+
+DART_GUI_API bool shouldCaptureFrameOutput(
+    const RunOptions& options, const ViewerLifecycleState& state);
+
+DART_GUI_API std::string makeFrameOutputPath(
+    const RunOptions& options,
+    const ViewerLifecycleState& state,
+    int frameNumber);
+
+DART_GUI_API bool shouldStopAfterFrame(
+    const RunOptions& options, int renderedFrames);
+
+DART_GUI_API void togglePaused(ViewerLifecycleState& state);
+
+DART_GUI_API void requestSingleStep(
+    ViewerLifecycleState& state, bool pause = true);
+
+DART_GUI_API void requestExit(ViewerLifecycleState& state);
+
+DART_GUI_API bool shouldAdvanceSimulation(const ViewerLifecycleState& state);
+
+DART_GUI_API void markSimulationAdvanced(ViewerLifecycleState& state);
+
+DART_GUI_API bool shouldRequestScreenshot(
+    const RunOptions& options, const ViewerLifecycleState& state);
+
+DART_GUI_API void markScreenshotRequested(ViewerLifecycleState& state);
+
+DART_GUI_API void markFrameRendered(ViewerLifecycleState& state);
+
+DART_GUI_API void markFrameSkipped(ViewerLifecycleState& state);
+
+DART_GUI_API bool shouldStopAfterFrame(
+    const RunOptions& options, const ViewerLifecycleState& state);
+
+DART_GUI_API bool writeRgbaPpm(
+    const std::string& path,
+    std::uint32_t width,
+    std::uint32_t height,
+    const std::vector<std::uint8_t>& rgbaPixels,
+    bool originBottomLeft = false,
+    std::string* errorMessage = nullptr);
+
+DART_GUI_API OrbitCameraBasis makeOrbitCameraBasis(const OrbitCamera& camera);
+
+DART_GUI_API Eigen::Vector3d cameraEye(const OrbitCamera& camera);
+
+DART_GUI_API void updateOrbitCamera(
+    OrbitCamera& camera, const OrbitCameraUpdate& update);
+
+DART_GUI_API void addOrbitCameraScroll(
+    OrbitCameraController& controller, double scrollDelta);
+
+DART_GUI_API void resetOrbitCameraTracking(OrbitCameraController& controller);
+
+DART_GUI_API void updateOrbitCameraController(
+    OrbitCameraController& controller, const OrbitCameraControllerInput& input);
+
+DART_GUI_API Eigen::Vector3d computeCameraRelativeNudge(
+    const OrbitCamera& camera, const DirectionalNudgeInput& input);
+
+DART_GUI_API PickRay makePerspectivePickRay(
+    const OrbitCamera& camera,
+    double cursorX,
+    double cursorY,
+    int width,
+    int height,
+    double verticalFovRadians = 0.7853981633974483);
+
+DART_GUI_API PerspectiveProjection makePerspectiveProjection(
+    const OrbitCamera& camera,
+    int width,
+    int height,
+    const ProjectionOptions& options = {});
+
+} // namespace dart::gui
 
 #endif // DART_GUI_VIEWER_HPP_

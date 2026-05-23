@@ -7,8 +7,8 @@ numerical—not a bug in your controller logic. DART exposes enough low-level
 dynamics data to implement sophisticated methods, but it still helps to know
 what the default timestepper and constraint solver are doing.
 
-This page summarizes the numerical methods most users run into first and links
-to the DART tutorials where they show up in practice.
+This page summarizes the numerical methods most users run into first and how
+they show up in DART simulation loops.
 
 ## Time stepping in DART
 
@@ -72,8 +72,8 @@ consider whether joint stiffness/damping is a better fit for what you want.
 ```{eval-rst}
 See also:
 
-- :doc:`../tutorials/multi-pendulum` (implicit joint springs and damping)
-- :doc:`../tutorials/collisions` (contact setup and collision handling)
+- :doc:`../topics/simulation-stability` (contact and timestep checklist)
+- :doc:`../gallery` (maintained Filament simulation scenes)
 ```
 
 ## Implementing custom integrators

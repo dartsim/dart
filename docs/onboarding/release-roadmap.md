@@ -63,6 +63,11 @@ changed scope before opening the PR:
 - DART 8 is the promotion point for the ECS-backed world once it has stable
   public wrappers, migration notes, and parity gates; the classic
   Skeleton-backed `World` is removed rather than mixed with the new world.
+- The C++ experimental simulation surface and the
+  `dartpy.simulation_experimental` API shape are promoted into the official
+  DART 8 and dartpy 8 simulation APIs after those gates pass.
+- dartpy 8 removes the legacy dartpy 6 API surface completely rather than
+  keeping it as a compatibility layer.
 - DART 8 becomes the first stable release of the new API; from here we preserve backward compatibility on a best-effort basis.
 - Users who still need the legacy surface should remain on DART 7 or DART 6, where that code continues in maintenance.
 
@@ -73,8 +78,9 @@ Track these throughout DART 7 so DART 8 removals are deliberate:
 | Debt area                         | DART 7 handling                                                                                            | DART 8 gate                                                                                           |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | Legacy DART 6 API surface         | Keep available and deprecated; avoid expanding it unless needed for migration or gz-physics compatibility. | Removal list has migration notes, changelog entries, and gz-physics status.                           |
+| Legacy dartpy 6 API surface       | Keep available and deprecated only for DART 7 migration.                                                   | dartpy 8 removes the compatibility layer and documents the replacement import/API path.               |
 | Classic Skeleton-backed `World`   | Keep as the stable DART 7 simulation path.                                                                 | ECS-backed world has stable wrappers, migration notes, focused tests, and parity evidence.            |
-| Experimental world bindings       | Keep under `dart::simulation::experimental` and `dartpy.simulation_experimental`.                          | Promotion decision has parity gates and documented import/API migration.                              |
+| Experimental world bindings       | Keep under `dart::simulation::experimental` and `dartpy.simulation_experimental`.                          | Promoted as the official DART 8/dartpy 8 API with documented C++ and Python migration paths.          |
 | Deprecated CMake/package surfaces | Keep release packaging and compatibility shims only where they support DART 7 users.                       | Package exports and examples no longer require deprecated component or header names.                  |
 | Solver implementation details     | Keep Dantzig helper APIs, contact caches, and backend storage out of research-facing contracts.            | Any remaining public-looking internals are classified as supported, compatibility, or removed.        |
 | GUI backend exposure              | Keep Filament and other backend details behind migration gates.                                            | Public GUI API is backend-hidden and old backend-specific entry points have a migration/removal path. |

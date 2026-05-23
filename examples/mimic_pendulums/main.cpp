@@ -17,78 +17,82 @@
  *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *   POSSIBILITY OF SUCH DAMAGE.
+ *   INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ *   SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ *   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ *   OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *   EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <dart/config.hpp>
 
-#include <dart/gui/grid_visual.hpp>
-#include <dart/gui/im_gui_handler.hpp>
-#include <dart/gui/im_gui_viewer.hpp>
-#include <dart/gui/im_gui_widget.hpp>
-#include <dart/gui/include_im_gui.hpp>
-#include <dart/gui/real_time_world_node.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/world.hpp>
 
 #include <dart/constraint/constraint_solver.hpp>
-#include <dart/constraint/mimic_motor_constraint.hpp>
 
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/joint.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/weld_joint.hpp>
 
 #include <dart/math/helpers.hpp>
 #include <dart/math/lcp/pivoting/dantzig_solver.hpp>
 #include <dart/math/lcp/projection/pgs_solver.hpp>
 
-#include <dart/common/uri.hpp>
-
 #include <dart/io/read.hpp>
 
-#include <CLI/CLI.hpp>
-#include <Eigen/Core>
-#include <osg/GraphicsContext>
-#include <osg/Vec3>
+#include <Eigen/Geometry>
 
 #include <algorithm>
+#include <array>
+#include <iomanip>
 #include <iostream>
 #include <memory>
-#include <span>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
 #include <string>
-#include <utility>
+#include <string_view>
 #include <vector>
 
-using dart::common::Uri;
-using dart::dynamics::BodyNode;
-using dart::dynamics::Joint;
-using dart::dynamics::MimicConstraintType;
-using dart::dynamics::SkeletonPtr;
-using dart::gui::ImGuiViewer;
-using dart::gui::RealTimeWorldNode;
-using dart::simulation::WorldPtr;
+#include <cctype>
+
 namespace {
+
+constexpr const char* kWorldUri
+    = "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf";
+constexpr const char* kGridName = "mimic_pendulums_xy_grid";
+constexpr const char* kGridBodyName = "mimic_pendulums_xy_grid_body";
+constexpr const char* kGridShapeName = "mimic_pendulums_xy_grid_lines";
+
+enum class SolverType
+{
+  Dantzig,
+  Pgs,
+};
+
+struct MimicPendulumsConfig
+{
+  SolverType solver = SolverType::Dantzig;
+  std::string collisionDetector = "file";
+};
 
 struct MimicPairView
 {
   std::string label;
-  const Joint* follower{};
-  const Joint* reference{};
+  const dart::dynamics::Joint* follower = nullptr;
+  const dart::dynamics::Joint* reference = nullptr;
   std::size_t followerDof = 0;
   std::size_t referenceDof = 0;
-  const BodyNode* base{};
+  const dart::dynamics::BodyNode* base = nullptr;
   Eigen::Vector3d baseStart = Eigen::Vector3d::Zero();
-  Eigen::Vector3d baseNow = Eigen::Vector3d::Zero();
 };
 
 struct PaletteEntry
@@ -96,6 +100,20 @@ struct PaletteEntry
   std::string model;
   Eigen::Vector3d color;
   std::string label;
+};
+
+struct MimicPendulumsScene
+{
+  dart::simulation::WorldPtr world;
+  std::vector<MimicPairView> pairs;
+  MimicPendulumsConfig config;
+};
+
+struct MimicPendulumsState
+{
+  dart::simulation::WorldPtr world;
+  std::vector<MimicPairView> pairs;
+  MimicPendulumsConfig config;
 };
 
 const std::vector<PaletteEntry>& getPalette()
@@ -112,57 +130,192 @@ const std::vector<PaletteEntry>& getPalette()
   return palette;
 }
 
-Eigen::Vector3d translationOf(const BodyNode* bn)
+std::string formatDouble(double value, int precision = 3)
 {
-  if (bn == nullptr) {
-    return Eigen::Vector3d::Zero();
-  }
-  return bn->getWorldTransform().translation();
+  std::ostringstream stream;
+  stream << std::fixed << std::setprecision(precision) << value;
+  return stream.str();
 }
 
-struct SolverConfig
+std::string formatAngle(double radians)
 {
-  bool usePgsSolver = false;
-};
+  return formatDouble(radians) + " rad ("
+         + formatDouble(dart::math::toDegree(radians), 1) + " deg)";
+}
 
-void applyLcpSolver(
-    const SolverConfig& cfg, const dart::simulation::WorldPtr& world)
+std::string toLowerAscii(std::string_view value)
 {
-  auto* boxedSolver = dynamic_cast<dart::constraint::ConstraintSolver*>(
-      world->getConstraintSolver());
-  if (!boxedSolver) {
-    return;
+  std::string lowered(value);
+  std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](char c) {
+    return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  });
+  return lowered;
+}
+
+std::optional<std::string_view> getOptionValue(
+    std::string_view argument,
+    std::string_view option,
+    int& index,
+    int argc,
+    char* argv[])
+{
+  if (argument == option) {
+    if (index + 1 >= argc) {
+      throw std::runtime_error("Missing value for " + std::string(option));
+    }
+    return std::string_view(argv[++index]);
   }
 
-  if (cfg.usePgsSolver) {
-    boxedSolver->setLcpSolver(std::make_shared<dart::math::PgsSolver>());
-    boxedSolver->setSecondaryLcpSolver(nullptr);
+  const std::string prefix = std::string(option) + "=";
+  if (argument.starts_with(prefix)) {
+    return argument.substr(prefix.size());
+  }
+
+  return std::nullopt;
+}
+
+std::optional<SolverType> parseSolver(std::string_view value)
+{
+  const std::string lowered = toLowerAscii(value);
+  if (lowered == "dantzig") {
+    return SolverType::Dantzig;
+  }
+  if (lowered == "pgs" || lowered == "projected-gauss-seidel") {
+    return SolverType::Pgs;
+  }
+  return std::nullopt;
+}
+
+std::string solverName(SolverType solver)
+{
+  return solver == SolverType::Pgs ? "pgs" : "dantzig";
+}
+
+void printMimicUsage(const char* executable)
+{
+  std::cout
+      << "Usage: " << executable
+      << " [--solver dantzig|pgs] [--collision file|dart|fcl|bullet|ode]\n"
+      << "       [common dart::gui flags such as --headless, --frames,\n"
+      << "        --screenshot, --out, --width, --height, --gui-scale]\n";
+}
+
+enum class ParseResult
+{
+  Ok,
+  Help,
+};
+
+ParseResult parseMimicPendulumsConfig(
+    int argc, char* argv[], MimicPendulumsConfig& config)
+{
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view argument(argv[i] == nullptr ? "" : argv[i]);
+    if (argument == "--help" || argument == "-h") {
+      printMimicUsage(argv[0]);
+      return ParseResult::Help;
+    }
+    if (auto value = getOptionValue(argument, "--solver", i, argc, argv)) {
+      if (auto solver = parseSolver(*value)) {
+        config.solver = *solver;
+      } else {
+        throw std::runtime_error(
+            "Unknown --solver value: " + std::string(*value));
+      }
+      continue;
+    }
+    if (auto value = getOptionValue(argument, "--collision", i, argc, argv)) {
+      const std::string collision = toLowerAscii(*value);
+      if (collision == "file" || collision == "dart" || collision == "fcl"
+          || collision == "bullet" || collision == "ode") {
+        config.collisionDetector = collision;
+      } else {
+        throw std::runtime_error(
+            "Unknown --collision value: " + std::string(*value));
+      }
+      continue;
+    }
+  }
+
+  return ParseResult::Ok;
+}
+
+Eigen::Vector3d translationOf(const dart::dynamics::BodyNode* body)
+{
+  if (body == nullptr) {
+    return Eigen::Vector3d::Zero();
+  }
+  return body->getWorldTransform().translation();
+}
+
+void applyCollisionDetector(
+    const MimicPendulumsConfig& config, const dart::simulation::WorldPtr& world)
+{
+  if (world == nullptr || config.collisionDetector == "file") {
+    return;
+  }
+  if (config.collisionDetector == "dart") {
+    world->setCollisionDetector(dart::simulation::CollisionDetectorType::Dart);
+    return;
+  }
+  if (config.collisionDetector == "fcl") {
+    world->setCollisionDetector(dart::simulation::CollisionDetectorType::Fcl);
+    return;
+  }
+#if DART_HAVE_BULLET
+  if (config.collisionDetector == "bullet") {
+    world->setCollisionDetector(
+        dart::simulation::CollisionDetectorType::Bullet);
+    return;
+  }
+#endif
+#if DART_HAVE_ODE
+  if (config.collisionDetector == "ode") {
+    world->setCollisionDetector(dart::simulation::CollisionDetectorType::Ode);
+    return;
+  }
+#endif
+  throw std::runtime_error(
+      "Requested collision detector is not available: "
+      + config.collisionDetector);
+}
+
+void applyLcpSolver(
+    const MimicPendulumsConfig& config, const dart::simulation::WorldPtr& world)
+{
+  auto* solver = world == nullptr ? nullptr : world->getConstraintSolver();
+  if (solver == nullptr) {
+    return;
+  }
+  if (config.solver == SolverType::Pgs) {
+    solver->setLcpSolver(std::make_shared<dart::math::PgsSolver>());
+    solver->setSecondaryLcpSolver(nullptr);
   } else {
-    boxedSolver->setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
-    boxedSolver->setSecondaryLcpSolver(
-        std::make_shared<dart::math::PgsSolver>());
+    solver->setLcpSolver(std::make_shared<dart::math::DantzigSolver>());
+    solver->setSecondaryLcpSolver(std::make_shared<dart::math::PgsSolver>());
   }
 }
 
 void retargetMimicsToBaseline(
-    const WorldPtr& world, const std::string& baselineName)
+    const dart::simulation::WorldPtr& world, const std::string& baselineName)
 {
-  const auto baseline = world->getSkeleton(baselineName);
-  if (!baseline) {
-    std::cerr << "Baseline skeleton [" << baselineName << "] not found; "
-              << "leaving parsed mimic joints untouched.\n";
-    return;
+  const auto baseline
+      = world == nullptr ? nullptr : world->getSkeleton(baselineName);
+  if (baseline == nullptr) {
+    throw std::runtime_error(
+        "mimic_pendulums world is missing baseline skeleton: " + baselineName);
   }
 
   for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
     const auto skeleton = world->getSkeleton(i);
-    if (!skeleton) {
+    if (skeleton == nullptr) {
       continue;
     }
 
-    for (std::size_t j = 0; j < skeleton->getNumJoints(); ++j) {
-      auto* joint = skeleton->getJoint(j);
-      if (!joint) {
+    for (std::size_t jointIndex = 0; jointIndex < skeleton->getNumJoints();
+         ++jointIndex) {
+      auto* joint = skeleton->getJoint(jointIndex);
+      if (joint == nullptr) {
         continue;
       }
 
@@ -172,7 +325,6 @@ void retargetMimicsToBaseline(
       }
 
       if (skeleton == baseline) {
-        // Leave the baseline uncoupled so it serves as the reference.
         std::vector<dart::dynamics::MimicDofProperties> clearedProps(
             joint->getNumDofs());
         joint->setMimicJointDofs(clearedProps);
@@ -188,12 +340,12 @@ void retargetMimicsToBaseline(
           continue;
         }
 
-        auto* ref = baseline->getJoint(prop.mReferenceJoint->getName());
-        if (!ref) {
+        auto* reference = baseline->getJoint(prop.mReferenceJoint->getName());
+        if (reference == nullptr) {
           continue;
         }
 
-        prop.mReferenceJoint = ref;
+        prop.mReferenceJoint = reference;
         joint->setMimicJointDof(dofIndex, prop);
         updated = true;
       }
@@ -206,45 +358,47 @@ void retargetMimicsToBaseline(
   }
 }
 
-std::vector<MimicPairView> collectMimicPairs(const WorldPtr& world)
+std::vector<MimicPairView> collectMimicPairs(
+    const dart::simulation::WorldPtr& world)
 {
   std::vector<MimicPairView> pairs;
-  if (!world) {
+  if (world == nullptr) {
     return pairs;
   }
 
   for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
     const auto skeleton = world->getSkeleton(i);
-    if (!skeleton) {
+    if (skeleton == nullptr) {
       continue;
     }
 
     const auto* base = skeleton->getBodyNode("base");
-    for (std::size_t j = 0; j < skeleton->getNumJoints(); ++j) {
-      const auto* follower = skeleton->getJoint(j);
-      if (!follower) {
+    for (std::size_t jointIndex = 0; jointIndex < skeleton->getNumJoints();
+         ++jointIndex) {
+      const auto* follower = skeleton->getJoint(jointIndex);
+      if (follower == nullptr) {
         continue;
       }
 
       const auto props = follower->getMimicDofProperties();
-      for (std::size_t k = 0; k < props.size(); ++k) {
-        const auto& prop = props[k];
+      for (std::size_t dofIndex = 0; dofIndex < props.size(); ++dofIndex) {
+        const auto& prop = props[dofIndex];
         if (prop.mReferenceJoint == nullptr) {
           continue;
         }
 
         MimicPairView view;
         view.label = skeleton->getName() + ": " + follower->getName() + "["
-                     + std::to_string(k) + "] -> "
+                     + std::to_string(dofIndex) + "] -> "
                      + prop.mReferenceJoint->getName() + "["
                      + std::to_string(prop.mReferenceDofIndex) + "]";
         view.follower = follower;
         view.reference = prop.mReferenceJoint;
-        view.followerDof = k;
+        view.followerDof = dofIndex;
         view.referenceDof = prop.mReferenceDofIndex;
         view.base = base;
         view.baseStart = translationOf(base);
-        pairs.push_back(view);
+        pairs.push_back(std::move(view));
       }
     }
   }
@@ -252,296 +406,273 @@ std::vector<MimicPairView> collectMimicPairs(const WorldPtr& world)
   return pairs;
 }
 
-void tintBases(const WorldPtr& world)
+void tintBases(const dart::simulation::WorldPtr& world)
 {
   for (const auto& entry : getPalette()) {
     const auto skeleton = world->getSkeleton(entry.model);
-    if (!skeleton) {
+    if (skeleton == nullptr) {
       continue;
     }
 
     auto* base = skeleton->getBodyNode("base");
-    if (!base) {
-      continue;
+    if (base != nullptr) {
+      base->setColor(entry.color);
     }
-
-    base->setColor(entry.color);
   }
 }
 
-class MimicOverlay : public dart::gui::ImGuiWidget
+std::shared_ptr<dart::dynamics::LineSegmentShape> createMimicGridShape()
 {
-public:
-  MimicOverlay(
-      ImGuiViewer* viewer,
-      WorldPtr world,
-      std::vector<MimicPairView> pairs,
-      std::string worldPath,
-      SolverConfig cfg)
-    : mViewer(viewer),
-      mWorld(std::move(world)),
-      mPairs(std::move(pairs)),
-      mWorldPath(std::move(worldPath)),
-      mConfig(std::move(cfg))
-  {
-    applyLcpSolver(mConfig, mWorld);
+  auto grid = std::make_shared<dart::dynamics::LineSegmentShape>(1.0f);
+  constexpr double halfExtent = 5.0;
+  constexpr int cells = 20;
+  constexpr double spacing = (2.0 * halfExtent) / cells;
+  for (int index = 0; index <= cells; ++index) {
+    const double coordinate = -halfExtent + index * spacing;
+    const auto xStart
+        = grid->addVertex(Eigen::Vector3d(-halfExtent, coordinate, 0.0));
+    grid->addVertex(Eigen::Vector3d(halfExtent, coordinate, 0.0), xStart);
+    const auto yStart
+        = grid->addVertex(Eigen::Vector3d(coordinate, -halfExtent, 0.0));
+    grid->addVertex(Eigen::Vector3d(coordinate, halfExtent, 0.0), yStart);
   }
+  return grid;
+}
 
-  void render() override
-  {
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-    const auto windowFlags = ImGuiWindowFlags_NoCollapse;
-    if (!ImGui::Begin("Mimic constraint debugger", nullptr, windowFlags)) {
-      ImGui::End();
-      return;
-    }
+dart::dynamics::SkeletonPtr createMimicGrid()
+{
+  auto ground = dart::dynamics::Skeleton::create(kGridName);
+  auto* body
+      = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
+  body->setName(kGridBodyName);
+  auto* shapeNode = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
+      createMimicGridShape());
+  shapeNode->setName(kGridShapeName);
+  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.45, 0.48, 0.45));
+  return ground;
+}
 
-    renderSimControls();
-    ImGui::Text(
-        "World time %.3f s | dt %.4f",
-        mWorld->getTime(),
-        mWorld->getTimeStep());
-    ImGui::TextWrapped("SDF: %s", mWorldPath.c_str());
-
-    renderSolverControls();
-    renderLegend();
-    ImGui::Separator();
-
-    if (mPairs.empty()) {
-      ImGui::TextWrapped(
-          "No mimic joints were parsed from %s", mWorldPath.c_str());
-    }
-
-    renderMimicTable();
-
-    ImGui::End();
+MimicPendulumsScene createMimicPendulumsScene(
+    const MimicPendulumsConfig& config)
+{
+  MimicPendulumsScene scene;
+  scene.config = config;
+  auto world = dart::io::readWorld(kWorldUri);
+  if (world == nullptr) {
+    throw std::runtime_error(
+        "Failed to load mimic_pendulums world from " + std::string(kWorldUri));
   }
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  retargetMimicsToBaseline(world, "pendulum_with_base");
+  applyCollisionDetector(config, world);
+  applyLcpSolver(config, world);
+  scene.pairs = collectMimicPairs(world);
+  tintBases(world);
 
-private:
-  void resetAnchors()
-  {
-    for (auto& pair : mPairs) {
-      pair.baseStart = translationOf(pair.base);
-    }
+  auto ground = world->getSkeleton("ground_plane");
+  if (ground == nullptr) {
+    throw std::runtime_error("mimic_pendulums world is missing ground_plane");
   }
+  world->addSkeleton(createMimicGrid());
 
-  void renderSimControls()
-  {
-    bool simulating = mViewer->isSimulating();
-    if (ImGui::Checkbox("Run simulation", &simulating)) {
-      mViewer->simulate(simulating);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Step 1")) {
-      mViewer->simulate(false);
-      mWorld->step();
-      updateBasePositions();
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Reset world")) {
-      mWorld->reset();
-      resetAnchors();
+  for (const auto& entry : getPalette()) {
+    if (world->getSkeleton(entry.model) == nullptr) {
+      throw std::runtime_error(
+          "mimic_pendulums world is missing skeleton: " + entry.model);
     }
   }
 
-  void renderSolverControls()
-  {
-    ImGui::Separator();
-    ImGui::Text("Solver");
-    bool pgs = mConfig.usePgsSolver;
-    if (ImGui::Checkbox("Force PGS solver", &pgs)) {
-      mConfig.usePgsSolver = pgs;
-      applyLcpSolver(mConfig, mWorld);
-    }
+  scene.world = std::move(world);
+  return scene;
+}
 
-    const auto contacts = mWorld->getLastCollisionResult().getNumContacts();
-    ImGui::Text("Contacts last step: %zu", contacts);
+dart::gui::RunOptions makeMimicPendulumsRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 1280;
+  options.height = 720;
+  return options;
+}
+
+dart::gui::OrbitCamera makeMimicPendulumsCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.5, 0.0, 1.5);
+  camera.yaw = -0.7509290623979403;
+  camera.pitch = 0.2391161269830301;
+  camera.distance = 10.559356040971437;
+  return camera;
+}
+
+void refreshBaseAnchors(MimicPendulumsState& state)
+{
+  for (auto& pair : state.pairs) {
+    pair.baseStart = translationOf(pair.base);
   }
+}
 
-  void renderMimicTable()
-  {
-    if (mPairs.empty()) {
-      return;
-    }
-
-    ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg
-                            | ImGuiTableFlags_SizingStretchProp
-                            | ImGuiTableFlags_Resizable;
-    if (ImGui::BeginTable("mimic_table", 6, flags)) {
-      ImGui::TableSetupColumn("Pair");
-      ImGui::TableSetupColumn("Reference (rad)");
-      ImGui::TableSetupColumn("Follower (rad)");
-      ImGui::TableSetupColumn("Error (rad)");
-      ImGui::TableSetupColumn("Velocity error (rad/s)");
-      ImGui::TableSetupColumn("Base drift (m)");
-      ImGui::TableHeadersRow();
-
-      for (auto& pair : mPairs) {
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-        ImGui::TextUnformatted(pair.label.c_str());
-
-        const double middleRefPos
-            = pair.reference->getPosition(pair.referenceDof);
-        const double middleRefVel
-            = pair.reference->getVelocity(pair.referenceDof);
-        const double follower = pair.follower->getPosition(pair.followerDof);
-        const double followerVel = pair.follower->getVelocity(pair.followerDof);
-        const double error = follower - middleRefPos;
-        const double velError = followerVel - middleRefVel;
-
-        ImGui::TableSetColumnIndex(1);
-        ImGui::Text(
-            "%.3f (%.1f deg)",
-            middleRefPos,
-            dart::math::toDegree(middleRefPos));
-        ImGui::TableSetColumnIndex(2);
-        ImGui::Text(
-            "%.3f (%.1f deg)", follower, dart::math::toDegree(follower));
-        ImGui::TableSetColumnIndex(3);
-        ImGui::TextColored(
-            std::abs(error) > 0.2 ? ImVec4(1, 0.4f, 0.4f, 1)
-                                  : ImVec4(0.7f, 0.9f, 0.7f, 1),
-            "%.3f",
-            error);
-        ImGui::TableSetColumnIndex(4);
-        ImGui::TextColored(
-            std::abs(velError) > 0.2 ? ImVec4(1, 0.4f, 0.4f, 1)
-                                     : ImVec4(0.7f, 0.9f, 0.7f, 1),
-            "%.3f",
-            velError);
-
-        pair.baseNow = translationOf(pair.base);
-        const double drift = (pair.baseNow - pair.baseStart).norm();
-        ImGui::TableSetColumnIndex(5);
-        ImGui::TextColored(
-            drift > 0.25 ? ImVec4(1, 0.4f, 0.4f, 1)
-                         : ImVec4(0.7f, 0.9f, 0.7f, 1),
-            "%.3f (%.2f, %.2f, %.2f)",
-            drift,
-            pair.baseNow.x(),
-            pair.baseNow.y(),
-            pair.baseNow.z());
+dart::gui::Panel createMimicPendulumsPanel(
+    const std::shared_ptr<MimicPendulumsState>& state)
+{
+  dart::gui::Panel panel;
+  panel.title = "Mimic constraint debugger";
+  panel.initialPosition = std::array<double, 2>{10.0, 10.0};
+  panel.initialSize = std::array<double, 2>{800.0, 600.0};
+  panel.autoResize = false;
+  panel.buildWithContext = [state](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    builder.text("SDF mimic-joint pendulum comparison");
+    builder.text("gray: uncoupled, red/blue: opposite mimic mappings");
+    builder.text("SDF: " + std::string(kWorldUri));
+    builder.text("solver: " + solverName(state->config.solver));
+    builder.text("collision: " + state->config.collisionDetector);
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      bool simulating = !context.lifecycle->paused;
+      if (builder.checkbox("Run simulation", simulating)) {
+        context.lifecycle->paused = !simulating;
       }
-
-      ImGui::EndTable();
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step 1")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Reset world")) {
+        if (context.world != nullptr) {
+          context.world->reset();
+        }
+        refreshBaseAnchors(*state);
+      }
     }
-  }
 
-  void renderLegend()
-  {
-    ImGui::Separator();
-    ImGui::Text("Rigs:");
+    builder.separator();
+    builder.text("Collision / solver");
+#if DART_HAVE_ODE
+    bool useOdeCollision = state->config.collisionDetector == "ode";
+    if (builder.checkbox(
+            "Use ODE collision (closer to Gazebo repro)", useOdeCollision)) {
+      state->config.collisionDetector = useOdeCollision ? "ode" : "file";
+      applyCollisionDetector(state->config, state->world);
+    }
+#else
+    builder.text("ODE collision detector not built");
+#endif
+
+    bool forcePgsSolver = state->config.solver == SolverType::Pgs;
+    if (builder.checkbox("Force PGS solver", forcePgsSolver)) {
+      state->config.solver
+          = forcePgsSolver ? SolverType::Pgs : SolverType::Dantzig;
+      applyLcpSolver(state->config, state->world);
+    }
+
+    builder.text(
+        "World time: " + formatDouble(context.simulationTime) + " s | dt "
+        + formatDouble(state->world->getTimeStep(), 4));
+    builder.text("Contacts last step: " + std::to_string(context.contactCount));
+    builder.text("mimic pairs: " + std::to_string(state->pairs.size()));
+    builder.separator();
+
+    builder.text("Rigs:");
     for (const auto& entry : getPalette()) {
-      ImGui::Bullet();
-      ImGui::SameLine();
-      ImGui::ColorButton(
-          ("##color_" + entry.model).c_str(),
-          ImVec4(entry.color.x(), entry.color.y(), entry.color.z(), 1.0f),
-          ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoInputs,
-          ImVec2(18, 18));
-      ImGui::SameLine();
-      ImGui::Text("%s (%s)", entry.model.c_str(), entry.label.c_str());
+      builder.colorSwatch(
+          entry.model + " (" + entry.label + ")",
+          Eigen::Vector4d(
+              entry.color.x(), entry.color.y(), entry.color.z(), 1.0));
     }
-  }
+    builder.separator();
 
-  void updateBasePositions()
-  {
-    for (auto& pair : mPairs) {
-      pair.baseNow = translationOf(pair.base);
+    if (state->pairs.empty()) {
+      builder.text(
+          "No mimic joints were parsed from " + std::string(kWorldUri));
     }
-  }
 
-  ImGuiViewer* mViewer;
-  WorldPtr mWorld;
-  std::vector<MimicPairView> mPairs;
-  std::string mWorldPath;
-  SolverConfig mConfig;
-};
+    constexpr std::array<std::string_view, 6> kMimicColumns{
+        "Pair",
+        "Reference (rad)",
+        "Follower (rad)",
+        "Error (rad)",
+        "Velocity error (rad/s)",
+        "Base drift (m)"};
+    const bool useTable = builder.beginTable("mimic_table", kMimicColumns);
+    if (!useTable) {
+      builder.text(
+          "Pair | Reference (rad) | Follower (rad) | Error (rad) | Velocity "
+          "error (rad/s) | Base drift (m)");
+    }
+    for (const auto& pair : state->pairs) {
+      if (pair.follower == nullptr || pair.reference == nullptr) {
+        continue;
+      }
+      const double referencePosition
+          = pair.reference->getPosition(pair.referenceDof);
+      const double followerPosition
+          = pair.follower->getPosition(pair.followerDof);
+      const double positionError = followerPosition - referencePosition;
+      const double referenceVelocity
+          = pair.reference->getVelocity(pair.referenceDof);
+      const double followerVelocity
+          = pair.follower->getVelocity(pair.followerDof);
+      const double velocityError = followerVelocity - referenceVelocity;
+      const double baseDrift
+          = (translationOf(pair.base) - pair.baseStart).norm();
+
+      if (useTable) {
+        builder.tableNextRow();
+        builder.tableNextColumn();
+        builder.text(pair.label);
+        builder.tableNextColumn();
+        builder.text(formatAngle(referencePosition));
+        builder.tableNextColumn();
+        builder.text(formatAngle(followerPosition));
+        builder.tableNextColumn();
+        builder.text(formatDouble(positionError));
+        builder.tableNextColumn();
+        builder.text(formatDouble(velocityError));
+        builder.tableNextColumn();
+        builder.text(formatDouble(baseDrift));
+      } else {
+        builder.text(
+            pair.label + ": reference " + formatAngle(referencePosition)
+            + ", follower " + formatAngle(followerPosition)
+            + ", position error " + formatDouble(positionError)
+            + " rad, velocity error " + formatDouble(velocityError)
+            + " rad/s, base drift " + formatDouble(baseDrift) + " m");
+      }
+    }
+    if (useTable) {
+      builder.endTable();
+    }
+  };
+  return panel;
+}
 
 } // namespace
 
-//==============================================================================
 int main(int argc, char* argv[])
 {
-  CLI::App app("Mimic pendulums example");
-  double guiScale = 1.0;
-  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
-      ->check(CLI::PositiveNumber);
-  CLI11_PARSE(app, argc, argv);
+  try {
+    MimicPendulumsConfig config;
+    if (parseMimicPendulumsConfig(argc, argv, config) == ParseResult::Help) {
+      return 0;
+    }
+    auto scene = createMimicPendulumsScene(config);
+    auto state = std::make_shared<MimicPendulumsState>();
+    state->world = scene.world;
+    state->pairs = scene.pairs;
+    state->config = scene.config;
 
-  const std::string worldUri
-      = "dart://sample/sdf/test/mimic_fast_slow_pendulums_world.sdf";
-
-  const auto world = dart::io::readWorld(Uri(worldUri));
-  if (!world) {
-    std::cerr << "Failed to load world from " << worldUri << "\n";
-    return EXIT_FAILURE;
+    dart::gui::ApplicationOptions options;
+    options.world = state->world;
+    options.runDefaults = makeMimicPendulumsRunDefaults();
+    options.camera = makeMimicPendulumsCamera();
+    options.panels.push_back(createMimicPendulumsPanel(state));
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "mimic_pendulums: " << e.what() << "\n";
+    return 1;
   }
-  world->setCollisionDetector(dart::simulation::CollisionDetectorType::Dart);
-
-  retargetMimicsToBaseline(world, "pendulum_with_base");
-  tintBases(world);
-
-  auto mimicPairs = collectMimicPairs(world);
-  if (mimicPairs.empty()) {
-    std::cerr << "No mimic joints found in " << worldUri << "\n";
-  }
-
-  auto* wsi = osg::GraphicsContext::getWindowingSystemInterface();
-  if (wsi == nullptr) {
-    std::cerr << "No OSG windowing system detected. "
-              << "A valid display server is required to run this example.\n";
-    return EXIT_FAILURE;
-  }
-
-  osg::ref_ptr<RealTimeWorldNode> worldNode = new RealTimeWorldNode(world);
-  osg::ref_ptr<ImGuiViewer> viewer = new ImGuiViewer();
-  viewer->setImGuiScale(static_cast<float>(guiScale));
-  viewer->getImGuiHandler()->setFontScale(static_cast<float>(guiScale));
-  viewer->addWorldNode(worldNode);
-  viewer->addInstructionText("space: toggle simulation\n");
-
-  auto grid
-      = ::osg::ref_ptr<dart::gui::GridVisual>(new dart::gui::GridVisual());
-  grid->setPlaneType(dart::gui::GridVisual::PlaneType::XY);
-  grid->setNumCells(20);
-  viewer->addAttachment(grid);
-
-  viewer->setUpViewInWindow(0, 0, 1280, 720);
-  viewer->getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(8.0f, -7.0f, 4.0f),
-      ::osg::Vec3(0.5f, 0.0f, 1.5f),
-      ::osg::Vec3(0.0f, 0.0f, 1.0f));
-  viewer->setCameraManipulator(viewer->getCameraManipulator());
-
-  viewer->simulate(true);
-  viewer->getImGuiHandler()->addWidget(
-      std::make_shared<MimicOverlay>(
-          viewer.get(),
-          world,
-          std::move(mimicPairs),
-          worldUri,
-          SolverConfig{}));
-
-  if (!viewer->isRealized()) {
-    viewer->realize();
-  }
-
-  osg::ref_ptr<osg::GraphicsContext> gc
-      = viewer->getCamera() ? viewer->getCamera()->getGraphicsContext()
-                            : nullptr;
-  if (!viewer->isRealized() || !gc || !gc->valid()) {
-    std::cerr << "Failed to create an OSG window. Ensure DISPLAY is set or "
-              << "use a virtual framebuffer.\n";
-    return EXIT_FAILURE;
-  }
-
-  const int runResult = viewer->run();
-  if (runResult != 0) {
-    std::cerr << "Viewer exited early (status " << runResult << ")\n";
-  }
-
-  return runResult;
 }

@@ -42,14 +42,26 @@ Use these practices:
     branch with the same camera, dimensions, frame count, and renderer.
   - Inspect the images yourself and include the commands plus any environment
     variables such as software rendering flags in the PR body.
-  - Prefer uploading transient comparison images to the GitHub PR description
-    editor and embedding the resulting attachment URLs. Do not commit
-    screenshots/headless-render images solely as PR evidence. Commit images only
-    when they are durable documentation, fixtures, or source assets that should
-    live in the repository.
-  - If the current tool cannot upload PR attachments, leave the local artifact
-    paths and ask a maintainer to upload them, or use another maintainer-approved
-    non-repository hosting path.
+  - Upload transient comparison images, GIFs, and videos through the GitHub
+    PR/issue Markdown attachment flow so the PR body contains GitHub-hosted
+    `https://github.com/user-attachments/assets/...` URLs that render inline.
+    Do not commit screenshots, headless renders, GIFs, or screencast videos
+    solely as PR evidence. Commit visual files only when they are durable
+    documentation, fixtures, or source assets that should live in the
+    repository.
+  - The official GitHub attachment flow is the web PR/issue editor drag/drop or
+    file picker. `gh pr edit`, `gh pr comment`, and the public REST API do not
+    provide a supported generic attachment upload command; any command or action
+    that edits or comments on a PR still requires explicit maintainer/user
+    approval. Use a maintainer-approved upload helper only when it produces
+    GitHub attachment URLs without committing files to the branch; helpers that
+    mimic the web upload may require a browser session cookie and must not be
+    used unless the maintainer has explicitly approved that credential handling.
+  - If the current tool cannot upload PR attachments, keep the local artifact
+    paths in the working note, ask a maintainer to upload them through the PR
+    editor, and then update the PR body with the returned GitHub attachment
+    URL after explicit maintainer/user approval. Do not fall back to committing
+    transient evidence into `docs/assets/`.
   - If no headless path exists, either add a narrowly scoped capture mode when
     it fits the example or document why visual comparison is not practical.
 - Mark non-applicable checklist items as "N/A" with a short reason.
@@ -97,10 +109,22 @@ Use these practices:
    explicit maintainer/user approval and only when the user explicitly requests
    it or when there is a clear reason such as removing sensitive content or
    repairing broken branch history.
-10. If `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
+10. If a published PR branch needs the latest target branch, use explicit
+    maintainer/user approval to update that published branch by merging the
+    target branch and pushing normally:
+    ```bash
+    # After explicit maintainer/user approval:
+    git fetch origin <target-branch>
+    git merge --no-ff origin/<target-branch>
+    git push
+    ```
+    Do not rebase a published PR branch by default because it invalidates
+    existing CI runs and makes PR review/comment history harder to follow.
+    Rebase or force-push only when the maintainer explicitly requests it.
+11. If `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
     local until explicit maintainer/user approval is given for the additional
     push or PR update.
-11. Monitor CI:
+12. Monitor CI:
     ```bash
     gh pr checks <PR_NUMBER>
     ```

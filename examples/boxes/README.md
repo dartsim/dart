@@ -2,33 +2,45 @@
 
 ## Summary
 
-- Goal: spawn a grid of rigid boxes over a ground plane and visualize them.
-- Concepts/APIs: `dynamics::Skeleton`, `simulation::World`,
-  `simulation::CollisionDetectorType::Dart`, `gui::Viewer`.
-- Expected output: an OSG viewer with colored boxes falling onto a gray ground.
-- Controls: press space to toggle simulation.
+- Goal: spawn a grid of rigid boxes over a ground plane and visualize contact
+  dynamics.
+- Concepts/APIs: `dart::gui` application setup, `dynamics::Skeleton`,
+  `simulation::World`, Bullet collision preference, and headless capture.
+- Expected output: a 5x5x5 grid of colored boxes falling onto a gray ground
+  plane.
+- Controls: left drag orbits, right/middle drag pans, wheel zooms, Space
+  starts or pauses simulation, `n` steps once while paused, and Escape exits.
+  The default window size is 1360x768, matching the historical example.
 
-## Notes
+## Run
 
-- Uses DART's built-in collision detector; no reference collision backend is
-  required.
+From the source tree:
 
-This project is dependent on DART. Please make sure a proper version of DART is
-installed before building this project.
+```bash
+pixi run ex boxes
+```
+
+Headless capture is provided by the promoted `dart::gui` runner:
+
+```bash
+pixi run ex boxes --headless --frames 2 --screenshot /tmp/boxes.ppm
+```
 
 ## Build Instructions
 
 From this directory:
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
 
 ## Execute Instructions
 
-Launch the executable from the build directory above:
+Launch the standalone executable from the build directory above:
 
-    $ ./{generated_executable}
-
-Follow the instructions detailed in the console.
+```bash
+./boxes
+```

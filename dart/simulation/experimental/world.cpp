@@ -39,6 +39,8 @@
 #include "dart/simulation/experimental/compute/sequential_executor.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/compute/world_step_stage.hpp"
+#include "dart/simulation/experimental/constraint/loop_closure.hpp"
+#include "dart/simulation/experimental/constraint/loop_closure_spec.hpp"
 #include "dart/simulation/experimental/frame/fixed_frame.hpp"
 #include "dart/simulation/experimental/frame/frame.hpp"
 #include "dart/simulation/experimental/frame/free_frame.hpp"
@@ -46,11 +48,14 @@
 #include "dart/simulation/experimental/io/serializer.hpp"
 #include "dart/simulation/experimental/multi_body/multi_body.hpp"
 
+#include <Eigen/Cholesky>
+
 #include <algorithm>
 #include <format>
 #include <istream>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include <cmath>
@@ -99,6 +104,186 @@ void executeKinematicsGraph(World& world, compute::ComputeExecutor& executor)
 }
 
 //==============================================================================
+bool isValidWorldSyncStage(WorldSyncStage stage)
+{
+  switch (stage) {
+    case WorldSyncStage::Kinematics:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+void validateLoopClosureKinematicsPolicySupport(const World& world)
+{
+  auto view = world.getRegistry().view<comps::LoopClosure, comps::Name>();
+  for (auto entity : view) {
+    const auto& closure = view.get<comps::LoopClosure>(entity);
+    if (!closure.runtimePolicy.enabled
+        || closure.runtimePolicy.kinematics
+               == ClosureKinematicsPolicy::ResidualOnly) {
+      continue;
+    }
+
+    const auto& name = view.get<comps::Name>(entity);
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidOperationException,
+        "LoopClosure '{}' requests kinematic projection, but the active "
+        "pipeline does not include a loop-closure projection stage",
+        name.name);
+  }
+}
+
+//==============================================================================
+void validateLoopClosureDynamicsPolicySupport(const World& world)
+{
+  auto view = world.getRegistry().view<comps::LoopClosure, comps::Name>();
+  for (auto entity : view) {
+    const auto& closure = view.get<comps::LoopClosure>(entity);
+    if (!closure.runtimePolicy.enabled
+        || closure.runtimePolicy.dynamics
+               == ClosureDynamicsPolicy::ResidualOnly) {
+      continue;
+    }
+
+    const auto& name = view.get<comps::Name>(entity);
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidOperationException,
+        "LoopClosure '{}' requests dynamic solving, but the active pipeline "
+        "does not include a loop-closure solving stage",
+        name.name);
+  }
+}
+
+//==============================================================================
+bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
+{
+  if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
+    return false;
+  }
+
+  Eigen::LLT<Eigen::Matrix3d> factorization(matrix);
+  return factorization.info() == Eigen::Success;
+}
+
+//==============================================================================
+void validateFiniteVector(
+    const Eigen::Vector3d& value, std::string_view fieldName)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !value.allFinite(),
+      InvalidArgumentException,
+      "RigidBodyOptions.{} must contain only finite values",
+      fieldName);
+}
+
+//==============================================================================
+bool isValidLoopClosureFamily(LoopClosureFamily family)
+{
+  switch (family) {
+    case LoopClosureFamily::Rigid:
+    case LoopClosureFamily::Point:
+    case LoopClosureFamily::Distance:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+void validateLoopClosureOffset(
+    const Eigen::Isometry3d& offset, std::string_view fieldName)
+{
+  constexpr double tolerance = 1e-9;
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !offset.matrix().allFinite(),
+      InvalidArgumentException,
+      "LoopClosureSpec.{} must contain only finite values",
+      fieldName);
+
+  const auto& rotation = offset.linear();
+  const double orthonormalError
+      = (rotation * rotation.transpose() - Eigen::Matrix3d::Identity())
+            .cwiseAbs()
+            .maxCoeff();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      orthonormalError > tolerance
+          || std::abs(rotation.determinant() - 1.0) > tolerance,
+      InvalidArgumentException,
+      "LoopClosureSpec.{} rotation must be orthonormal",
+      fieldName);
+}
+
+//==============================================================================
+entt::entity resolveLoopClosureFrame(
+    const World& world, const Frame& frame, std::string_view fieldName)
+{
+  if (frame.isWorld()) {
+    return entt::null;
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !frame.isValid(),
+      InvalidArgumentException,
+      "LoopClosureSpec.{} is invalid or has been destroyed",
+      fieldName);
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      frame.getWorld() != &world,
+      InvalidArgumentException,
+      "LoopClosureSpec.{} belongs to a different world",
+      fieldName);
+
+  return frame.getEntity();
+}
+
+//==============================================================================
+void validateLoopClosureSpec(const World& world, const LoopClosureSpec& spec)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValidLoopClosureFamily(spec.family),
+      InvalidArgumentException,
+      "LoopClosureSpec.family is invalid");
+
+  const auto frameA = resolveLoopClosureFrame(world, spec.frameA, "frameA");
+  const auto frameB = resolveLoopClosureFrame(world, spec.frameB, "frameB");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      frameA == frameB,
+      InvalidArgumentException,
+      "LoopClosureSpec endpoints must be distinct frames");
+
+  validateLoopClosureOffset(spec.offsetA, "offsetA");
+  validateLoopClosureOffset(spec.offsetB, "offsetB");
+}
+
+//==============================================================================
+void validateRigidBodyOptions(const RigidBodyOptions& options)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(options.mass) || options.mass <= 0.0,
+      InvalidArgumentException,
+      "RigidBodyOptions.mass must be positive and finite");
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isSymmetricPositiveDefinite(options.inertia),
+      InvalidArgumentException,
+      "RigidBodyOptions.inertia must be symmetric positive definite");
+
+  validateFiniteVector(options.position, "position");
+  validateFiniteVector(options.linearVelocity, "linearVelocity");
+  validateFiniteVector(options.angularVelocity, "angularVelocity");
+
+  const auto orientationNorm = options.orientation.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !options.orientation.coeffs().allFinite()
+          || !std::isfinite(orientationNorm) || orientationNorm <= 0.0,
+      InvalidArgumentException,
+      "RigidBodyOptions.orientation must be finite and non-zero");
+}
+
+//==============================================================================
 Eigen::Quaterniond normalizeOrIdentity(const Eigen::Quaterniond& orientation)
 {
   const auto norm = orientation.norm();
@@ -126,6 +311,9 @@ Eigen::Isometry3d toIsometry(
 World::World() = default;
 
 //==============================================================================
+World::~World() = default;
+
+//==============================================================================
 entt::registry& World::getRegistry()
 {
   return m_registry;
@@ -148,6 +336,7 @@ void World::clear()
   m_freeFrameCounter = 0;
   m_fixedFrameCounter = 0;
   m_multiBodyCounter = 0;
+  m_loopClosureCounter = 0;
   m_rigidBodyCounter = 0;
   m_linkCounter = 0;
   m_jointCounter = 0;
@@ -305,12 +494,18 @@ MultiBody World::addMultiBody(std::string_view name)
 {
   ensureDesignMode();
 
-  std::string candidateName
-      = name.empty() ? std::format("multibody_{:03d}", m_multiBodyCounter + 1)
-                     : std::string(name);
-
+  std::string candidateName;
   if (name.empty()) {
-    ++m_multiBodyCounter;
+    do {
+      candidateName = std::format("multibody_{:03d}", ++m_multiBodyCounter);
+    } while (hasEntityWithName<comps::MultiBodyTag>(m_registry, candidateName));
+  } else {
+    candidateName = std::string(name);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        hasEntityWithName<comps::MultiBodyTag>(m_registry, candidateName),
+        InvalidArgumentException,
+        "MultiBody '{}' already exists",
+        candidateName);
   }
 
   auto entity = m_registry.create();
@@ -335,9 +530,75 @@ std::optional<MultiBody> World::getMultiBody(std::string_view name)
 }
 
 //==============================================================================
+bool World::hasMultiBody(std::string_view name) const
+{
+  return hasEntityWithName<comps::MultiBodyTag>(m_registry, name);
+}
+
+//==============================================================================
 std::size_t World::getMultiBodyCount() const
 {
   return countEntities<comps::MultiBodyTag>(m_registry);
+}
+
+//==============================================================================
+LoopClosure World::addLoopClosure(
+    std::string_view name, const LoopClosureSpec& spec)
+{
+  ensureDesignMode();
+  validateLoopClosureSpec(*this, spec);
+
+  std::string candidateName;
+  if (name.empty()) {
+    do {
+      candidateName
+          = std::format("loop_closure_{:03d}", ++m_loopClosureCounter);
+    } while (hasEntityWithName<comps::LoopClosure>(m_registry, candidateName));
+  } else {
+    candidateName = std::string(name);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        hasEntityWithName<comps::LoopClosure>(m_registry, candidateName),
+        InvalidArgumentException,
+        "LoopClosure '{}' already exists",
+        candidateName);
+  }
+
+  auto entity = m_registry.create();
+  m_registry.emplace<comps::Name>(entity, candidateName);
+
+  auto& closure = m_registry.emplace<comps::LoopClosure>(entity);
+  closure.family = spec.family;
+  closure.frameA = resolveLoopClosureFrame(*this, spec.frameA, "frameA");
+  closure.frameB = resolveLoopClosureFrame(*this, spec.frameB, "frameB");
+  closure.offsetA = spec.offsetA;
+  closure.offsetB = spec.offsetB;
+
+  return LoopClosure(entity, this);
+}
+
+//==============================================================================
+std::optional<LoopClosure> World::getLoopClosure(std::string_view name)
+{
+  auto view = m_registry.view<comps::LoopClosure, comps::Name>();
+  for (auto entity : view) {
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name) {
+      return LoopClosure(entity, this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasLoopClosure(std::string_view name) const
+{
+  return hasEntityWithName<comps::LoopClosure>(m_registry, name);
+}
+
+//==============================================================================
+std::size_t World::getLoopClosureCount() const
+{
+  return countEntities<comps::LoopClosure>(m_registry);
 }
 
 //==============================================================================
@@ -346,15 +607,21 @@ RigidBody World::addRigidBody(
 {
   ensureDesignMode();
 
-  std::string candidateName
-      = name.empty() ? std::format("rigid_body_{:03d}", m_rigidBodyCounter + 1)
-                     : std::string(name);
+  std::string candidateName;
+  if (name.empty()) {
+    do {
+      candidateName = std::format("rigid_body_{:03d}", ++m_rigidBodyCounter);
+    } while (hasEntityWithName<comps::RigidBodyTag>(m_registry, candidateName));
+  } else {
+    candidateName = std::string(name);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        hasEntityWithName<comps::RigidBodyTag>(m_registry, candidateName),
+        InvalidArgumentException,
+        "RigidBody '{}' already exists",
+        candidateName);
+  }
 
-  DART_EXPERIMENTAL_THROW_T_IF(
-      hasEntityWithName<comps::RigidBodyTag>(m_registry, candidateName),
-      InvalidArgumentException,
-      "RigidBody '{}' already exists",
-      candidateName);
+  validateRigidBodyOptions(options);
 
   Frame parent = Frame(entt::null, this);
   const auto orientation = normalizeOrIdentity(options.orientation);
@@ -362,7 +629,7 @@ RigidBody World::addRigidBody(
 
   std::string actualName;
   auto entity = createFrameEntity(
-      name,
+      candidateName,
       parent,
       initialTransform,
       &m_rigidBodyCounter,
@@ -390,6 +657,19 @@ RigidBody World::addRigidBody(
 }
 
 //==============================================================================
+std::optional<RigidBody> World::getRigidBody(std::string_view name)
+{
+  auto view = m_registry.view<comps::RigidBodyTag, comps::Name>();
+  for (auto entity : view) {
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name) {
+      return RigidBody(entity, this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
 bool World::hasRigidBody(std::string_view name) const
 {
   return hasEntityWithName<comps::RigidBodyTag>(m_registry, name);
@@ -409,6 +689,7 @@ void World::enterSimulationMode()
       InvalidArgumentException,
       "World is already in simulation mode");
 
+  validateLoopClosureKinematicsPolicySupport(*this);
   m_simulationMode = true;
 
   // Initial bake so that cached transforms are up-to-date.
@@ -456,15 +737,43 @@ std::size_t World::getFrame() const noexcept
 }
 
 //==============================================================================
-void World::updateKinematics()
+void World::sync(WorldSyncStage stage)
+{
+  compute::SequentialExecutor executor;
+  sync(stage, executor);
+}
+
+//==============================================================================
+void World::sync(WorldSyncStage stage, compute::ComputeExecutor& executor)
 {
   DART_EXPERIMENTAL_THROW_T_IF(
       !m_simulationMode,
       InvalidArgumentException,
-      "updateKinematics() requires simulation mode");
+      "World::sync() requires simulation mode");
 
-  compute::SequentialExecutor executor;
-  executeKinematicsGraph(*this, executor);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValidWorldSyncStage(stage),
+      InvalidArgumentException,
+      "World::sync() stage is invalid");
+
+  switch (stage) {
+    case WorldSyncStage::Kinematics:
+      validateLoopClosureKinematicsPolicySupport(*this);
+      executeKinematicsGraph(*this, executor);
+      return;
+  }
+}
+
+//==============================================================================
+void World::updateKinematics()
+{
+  sync(WorldSyncStage::Kinematics);
+}
+
+//==============================================================================
+void World::updateKinematics(compute::ComputeExecutor& executor)
+{
+  sync(WorldSyncStage::Kinematics, executor);
 }
 
 //==============================================================================
@@ -475,6 +784,13 @@ void World::step()
 }
 
 //==============================================================================
+void World::step(std::size_t count)
+{
+  compute::SequentialExecutor executor;
+  step(count, executor);
+}
+
+//==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
   compute::RigidBodyIntegrationStage rigidBodyIntegration;
@@ -482,6 +798,16 @@ void World::step(compute::ComputeExecutor& executor)
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(rigidBodyIntegration).addStage(kinematics);
   step(executor, pipeline);
+}
+
+//==============================================================================
+void World::step(std::size_t count, compute::ComputeExecutor& executor)
+{
+  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::KinematicsStage kinematics;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(rigidBodyIntegration).addStage(kinematics);
+  step(count, executor, pipeline);
 }
 
 //==============================================================================
@@ -496,17 +822,42 @@ void World::step(
 
 //==============================================================================
 void World::step(
+    std::size_t count,
+    compute::ComputeExecutor& executor,
+    compute::WorldStepStage& stage)
+{
+  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(rigidBodyIntegration).addStage(stage);
+  step(count, executor, pipeline);
+}
+
+//==============================================================================
+void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline)
 {
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !m_simulationMode,
-      InvalidArgumentException,
-      "step() requires simulation mode");
+  validateLoopClosureKinematicsPolicySupport(*this);
+  validateLoopClosureDynamicsPolicySupport(*this);
+
+  if (!m_simulationMode) {
+    enterSimulationMode();
+  }
 
   pipeline.execute(*this, executor);
 
   m_time += m_timeStep;
   ++m_frame;
+}
+
+//==============================================================================
+void World::step(
+    std::size_t count,
+    compute::ComputeExecutor& executor,
+    compute::WorldStepPipeline& pipeline)
+{
+  for (std::size_t i = 0; i < count; ++i) {
+    step(executor, pipeline);
+  }
 }
 
 //==============================================================================
@@ -591,6 +942,8 @@ void World::resetCountersFromRegistry()
       m_fixedFrameCounter, countEntities<comps::FixedFrameTag>(m_registry));
   m_multiBodyCounter = std::max(
       m_multiBodyCounter, countEntities<comps::MultiBodyTag>(m_registry));
+  m_loopClosureCounter = std::max(
+      m_loopClosureCounter, countEntities<comps::LoopClosure>(m_registry));
   m_rigidBodyCounter = std::max(
       m_rigidBodyCounter, countEntities<comps::RigidBodyTag>(m_registry));
   m_linkCounter

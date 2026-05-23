@@ -39,6 +39,22 @@ its own line so status updates remain git-history friendly.
   source checkout, and local DART 7 package installs; DART 7 public package
   publication remains tracked by `check-dart7-artifacts`.
 
+### PLAN-012: Cloud Dartpy Tutorials
+
+- Owner doc:
+  [`012-cloud-dartpy-tutorials.md`](012-cloud-dartpy-tutorials.md)
+- Status: Active
+- Horizon: Next
+- Dimension: Easy start
+- Next step: Run a Colab runtime spike from a DART 7 dartpy wheel artifact and
+  the Filament GUI branch to prove import, headless simulation, and one
+  Filament-backed inline image or video before publishing stable tutorial links.
+- Gate: Cloud tutorial support is not complete until the notebook rejects DART
+  6 artifacts, installs only DART 7 dartpy artifacts in the cloud runtime,
+  runs a headless simulation, renders a nonblank Filament-backed image or
+  video inline, and passes both an automated Jupyter notebook smoke and a
+  documented Colab runtime smoke.
+
 ### PLAN-020: Algorithm Extension Contracts
 
 - Owner doc:
@@ -72,18 +88,44 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)
-- Status: Active
-- Horizon: Now
+- Status: Parked
+- Horizon: Later
 - Dimension: Algorithm extensibility
-- Next step: Keep native collision feature/use-case/benchmark coverage,
-  runtime-isolation proof, and DART 7/DART 8 abstraction cleanup planning
-  current through the completing local packet and final PR evidence transfer.
-- Gate:
-  [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)
-  has no active GAP/PARTIAL rows, runtime reference engines remain
-  test/benchmark-only, final
-  benchmark/CI evidence is attached to the completing review surface, and
-  temporary dev-task folders are removed.
+- Next step: Use the durable feature dashboard and coverage matrix as the
+  feature-complete baseline for the native collision performance wave.
+- Gate: Coverage matrix has no active feature-level GAP/PARTIAL rows, runtime
+  comparison-only implementations remain test/benchmark-only, and
+  compatibility/package isolation audits remain part of `pixi run lint`.
+
+### PLAN-036: Native Collision Performance Wave
+
+- Owner doc:
+  [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md)
+- Status: Complete
+- Horizon: Later
+- Dimension: Scalable compute
+- Next step: Use the durable benchmark manifest and follow-up plan to choose
+  the next profiled hot-path slice without restoring reference-engine runtime
+  dependencies.
+- Gate: The durable manifest records 45 comparable native leads, 0 behind rows,
+  24 native-only rows, and 0 rerun-needed rows from the local single-worker
+  benchmark packet; multi-core CPU and single-GPU work remain behind prototype
+  gates.
+
+### PLAN-037: Native Collision Visual Verification
+
+- Owner doc:
+  [`../onboarding/gui-rendering.md#native-collision-visual-checks`](../onboarding/gui-rendering.md#native-collision-visual-checks)
+- Status: Complete
+- Horizon: Later
+- Dimension: Algorithm extensibility
+- Next step: Use `examples/collision_sandbox` and
+  `EXAMPLE_collision_sandbox_headless_sweep` whenever native collision pair
+  support, broad-phase diagnostics, or Filament GUI rendering changes.
+- Gate: The Filament-backed sandbox covers every supported native pair or
+  explicit unsupported placeholder, contact/manifold overlays, native
+  group/mask filtering, broad-phase overlays, focused registry/debug-snapshot
+  tests, and CTest-gated headless screenshot smoke coverage.
 
 ### PLAN-080: Performance Dashboard
 
@@ -128,14 +170,14 @@ its own line so status updates remain git-history friendly.
 ### PLAN-060: Backend-Hidden GUI Roadmap
 
 - Owner doc:
-  [`../dev_tasks/filament_gui/08-north-star-migration.md`](../dev_tasks/filament_gui/08-north-star-migration.md)
+  [`../onboarding/gui-rendering.md`](../onboarding/gui-rendering.md)
 - Status: Complete
 - Horizon: Later
 - Dimension: Easy start
-- Next step: Use the Filament north-star migration plan as the gate for future
-  public GUI API promotion.
-- Gate: GUI promotion stays backend-hidden and aligned with the Filament
-  dev-task migration plan.
+- Next step: Keep future public GUI API promotion aligned with the durable
+  backend-hidden renderer guidance.
+- Gate: GUI promotion stays backend-hidden and aligned with the maintained
+  Filament renderer onboarding guidance.
 
 ### PLAN-070: DART 8 Compatibility Cleanup
 

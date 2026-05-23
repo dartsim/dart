@@ -30,40 +30,81 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/macros.hpp"
+#include "../gui_source_grid.hpp"
 
 #include <dart/config.hpp>
 
-#include <dart/gui/all.hpp>
-#include <dart/gui/im_gui_handler.hpp>
-#include <dart/gui/include_im_gui.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/utils/All.hpp>
-#include <dart/utils/urdf/All.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/all.hpp>
+#include <dart/constraint/constraint_solver.hpp>
 
-#include <CLI/CLI.hpp>
+#if DART_HAVE_ODE
+  #include <dart/collision/ode/ode_collision_detector.hpp>
+#endif
 
-#include <ranges>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/heightmap_shape.hpp>
+#include <dart/dynamics/inertia.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/shape.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
+#include <dart/dynamics/weld_joint.hpp>
+
+#include <Eigen/Geometry>
+
+#include <algorithm>
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <cmath>
+#include <cstddef>
 
-using namespace dart;
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::math;
+namespace {
+
+constexpr const char* kInteractiveTerrainName = "visual_heightmap";
+constexpr const char* kInteractiveGridName = "visual_heightmap_grid";
+constexpr const char* kReferenceBoxName = "visual_heightmap_reference_box";
+constexpr const char* kSampleBallPrefix = "visual_heightmap_sample_ball_";
+
+enum class HeightmapDemo
+{
+  Interactive,
+  Alignment,
+};
+
+struct HeightmapConfig
+{
+  HeightmapDemo demo = HeightmapDemo::Interactive;
+};
+
+struct ParseResult
+{
+  bool help = false;
+};
 
 struct HeightmapAlignmentDemoConfig
 {
   Eigen::Vector3d heightmapOrigin = Eigen::Vector3d::Zero();
   std::size_t heightmapXResolution = 2u;
   std::size_t heightmapYResolution = 2u;
-  float heightmapScale = 2.0f;
-  float heightmapZMin = 0.0f;
-  float heightmapZMax = 0.0f;
+  double heightmapScale = 2.0;
+  double heightmapZMin = 0.0;
+  double heightmapZMax = 0.0;
   Eigen::Vector3d boxSize = Eigen::Vector3d(2.0, 2.0, 2.0);
   Eigen::Vector3d boxOffset = Eigen::Vector3d(3.0, 0.0, -1.0);
   std::size_t ballGridCount = 5u;
@@ -72,146 +113,338 @@ struct HeightmapAlignmentDemoConfig
   double ballDropHeight = 1.0;
 };
 
-template <typename S>
-typename HeightmapShape<S>::HeightField generateHeightField(
-    std::size_t xResolution, std::size_t yResolution, S zMin, S zMax)
+struct HeightmapPanelState
 {
-  typename HeightmapShape<S>::HeightField data(yResolution, xResolution);
-  for (const auto i : std::views::iota(std::size_t{0}, yResolution)) {
-    for (const auto j : std::views::iota(std::size_t{0}, xResolution)) {
-      data(i, j) = math::Random::uniform(zMin, zMax);
+  std::shared_ptr<dart::dynamics::SimpleFrame> terrain;
+  dart::examples::SourceOwnedGridState grid;
+  double xResolution = 100.0;
+  double yResolution = 100.0;
+  double xSize = 2.0;
+  double ySize = 2.0;
+  double zMin = -0.1;
+  double zMax = 0.4;
+  Eigen::Vector4d terrainColor = Eigen::Vector4d(0.24, 0.58, 0.88, 1.0);
+  bool terrainVisible = true;
+  int generation = 0;
+};
+
+struct HeightmapScene
+{
+  dart::simulation::WorldPtr world;
+  std::shared_ptr<HeightmapPanelState> panelState;
+};
+
+std::optional<std::string_view> getOptionValue(
+    std::string_view argument,
+    std::string_view option,
+    int& index,
+    int argc,
+    char* argv[])
+{
+  if (argument == option) {
+    if (index + 1 >= argc) {
+      throw std::runtime_error("Missing value for " + std::string(option));
+    }
+    return std::string_view(argv[++index]);
+  }
+
+  const std::string prefix = std::string(option) + "=";
+  if (argument.starts_with(prefix)) {
+    return argument.substr(prefix.size());
+  }
+
+  return std::nullopt;
+}
+
+std::optional<HeightmapDemo> parseDemo(std::string_view value)
+{
+  if (value == "interactive") {
+    return HeightmapDemo::Interactive;
+  }
+  if (value == "alignment") {
+    return HeightmapDemo::Alignment;
+  }
+  return std::nullopt;
+}
+
+void printHeightmapUsage(const char* executable)
+{
+  std::cout << "Usage: " << executable << " [--demo interactive|alignment]\n"
+            << "       [common dart::gui flags such as --headless, --frames,\n"
+            << "        --screenshot, --out, --width, --height, --gui-scale]\n";
+}
+
+ParseResult parseHeightmapConfig(
+    int argc, char* argv[], HeightmapConfig& config)
+{
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view argument(argv[i] == nullptr ? "" : argv[i]);
+    if (argument == "--help" || argument == "-h") {
+      printHeightmapUsage(argv[0]);
+      return {.help = true};
+    }
+    if (auto value = getOptionValue(argument, "--demo", i, argc, argv)) {
+      if (auto demo = parseDemo(*value)) {
+        config.demo = *demo;
+      } else {
+        throw std::runtime_error(
+            "Unknown --demo value: " + std::string(*value));
+      }
     }
   }
-  return data;
+
+  return {};
 }
 
-template <typename S>
-dynamics::ShapePtr createHeightmapShape(
-    std::size_t xResolution = 20u,
-    std::size_t yResolution = 20u,
-    S xSize = S(2),
-    S ySize = S(2),
-    S zMin = S(0.0),
-    S zMax = S(0.1))
+std::size_t clampResolution(double value)
 {
-  using Vector3 = Eigen::Matrix<S, 3, 1>;
-
-  auto data = generateHeightField<S>(xResolution, yResolution, zMin, zMax);
-  const auto xStride = xResolution > 1 ? xResolution - 1 : 1u;
-  const auto yStride = yResolution > 1 ? yResolution - 1 : 1u;
-  auto scale = Vector3(
-      xSize / static_cast<S>(xStride), ySize / static_cast<S>(yStride), 1);
-
-  auto terrainShape = std::make_shared<HeightmapShape<S>>();
-  terrainShape->setScale(scale);
-  terrainShape->setHeightField(data);
-  terrainShape->setDataVariance(dynamics::Shape::DYNAMIC);
-
-  return terrainShape;
+  const double rounded = std::round(value);
+  return static_cast<std::size_t>(std::clamp(rounded, 5.0, 100.0));
 }
 
-template <typename S>
-dynamics::SimpleFramePtr createHeightmapFrame(
-    std::size_t xResolution = 20u,
-    std::size_t yResolution = 20u,
-    S xSize = S(2),
-    S ySize = S(2),
-    S zMin = S(0.0),
-    S zMax = S(0.1))
+std::vector<double> generateHeightField(
+    std::size_t xResolution,
+    std::size_t yResolution,
+    double zMin,
+    double zMax,
+    int generation)
 {
-  auto terrainFrame = SimpleFrame::createShared(Frame::World());
-
-  terrainFrame->createVisualAspect();
-
-  auto terrainShape = createHeightmapShape(
-      xResolution, yResolution, xSize, ySize, zMin, zMax);
-  terrainFrame->setShape(terrainShape);
-
-  return terrainFrame;
-}
-
-SkeletonPtr createAlignmentHeightmap(const HeightmapAlignmentDemoConfig& config)
-{
-  auto heightmap = Skeleton::create("heightmap");
-
-  auto [joint, body]
-      = heightmap->createJointAndBodyNodePair<WeldJoint>(nullptr);
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = config.heightmapOrigin;
-  joint->setTransformFromParentBodyNode(tf);
-
-  std::vector<float> heights(
-      config.heightmapXResolution * config.heightmapYResolution, 0.0f);
-  for (auto& height : heights) {
-    height = math::Random::uniform(config.heightmapZMin, config.heightmapZMax);
+  if (zMax < zMin) {
+    std::swap(zMin, zMax);
   }
 
-  auto shape = std::make_shared<HeightmapShape<float>>();
+  std::vector<double> heights;
+  heights.reserve(xResolution * yResolution);
+  const double phase = static_cast<double>(generation) * 0.17;
+  for (std::size_t y = 0; y < yResolution; ++y) {
+    for (std::size_t x = 0; x < xResolution; ++x) {
+      const double xPhase = static_cast<double>(x) * 0.31 + phase;
+      const double yPhase = static_cast<double>(y) * 0.27 - phase * 0.5;
+      const double ridge
+          = (x == xResolution / 2 || y == yResolution / 2) ? 0.18 : 0.0;
+      const double normalized = std::clamp(
+          0.5 + ridge + 0.24 * std::sin(xPhase) * std::cos(yPhase), 0.0, 1.0);
+      heights.push_back(zMin + (zMax - zMin) * normalized);
+    }
+  }
+  return heights;
+}
+
+std::shared_ptr<dart::dynamics::HeightmapShaped> createHeightmapShape(
+    std::size_t xResolution,
+    std::size_t yResolution,
+    double xSize,
+    double ySize,
+    double zMin,
+    double zMax,
+    int generation)
+{
+  auto shape = std::make_shared<dart::dynamics::HeightmapShaped>();
+  shape->setDataVariance(dart::dynamics::Shape::DYNAMIC);
   shape->setHeightField(
-      config.heightmapXResolution, config.heightmapYResolution, heights);
+      xResolution,
+      yResolution,
+      generateHeightField(xResolution, yResolution, zMin, zMax, generation));
+  const auto xStride = xResolution > 1 ? xResolution - 1 : 1u;
+  const auto yStride = yResolution > 1 ? yResolution - 1 : 1u;
   shape->setScale(
-      Eigen::Vector3f(config.heightmapScale, config.heightmapScale, 1.0f));
+      Eigen::Vector3d(
+          xSize / static_cast<double>(xStride),
+          ySize / static_cast<double>(yStride),
+          1.0));
+  return shape;
+}
 
-  auto shapeNode = body->createShapeNodeWith<
-      CollisionAspect,
-      DynamicsAspect,
-      VisualAspect>(shape);
-  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.2, 0.4, 0.9));
+void applyVisibility(
+    const std::shared_ptr<dart::dynamics::SimpleFrame>& frame, bool visible)
+{
+  if (frame == nullptr) {
+    return;
+  }
 
+  auto* visual = frame->getVisualAspect(true);
+  if (visible) {
+    visual->show();
+  } else {
+    visual->hide();
+  }
+}
+
+void applyTerrainColor(const std::shared_ptr<HeightmapPanelState>& state)
+{
+  if (state == nullptr || state->terrain == nullptr) {
+    return;
+  }
+
+  state->terrain->getVisualAspect(true)->setRGBA(state->terrainColor);
+}
+
+void regenerateHeightmap(const std::shared_ptr<HeightmapPanelState>& state)
+{
+  if (state == nullptr || state->terrain == nullptr) {
+    return;
+  }
+
+  const std::size_t xResolution = clampResolution(state->xResolution);
+  const std::size_t yResolution = clampResolution(state->yResolution);
+  state->xResolution = static_cast<double>(xResolution);
+  state->yResolution = static_cast<double>(yResolution);
+  state->xSize = std::max(0.1, state->xSize);
+  state->ySize = std::max(0.1, state->ySize);
+
+  state->terrain->setShape(createHeightmapShape(
+      xResolution,
+      yResolution,
+      state->xSize,
+      state->ySize,
+      state->zMin,
+      state->zMax,
+      state->generation));
+  applyTerrainColor(state);
+  applyVisibility(state->terrain, state->terrainVisible);
+}
+
+std::shared_ptr<dart::dynamics::SimpleFrame> createInteractiveFrame(
+    const std::string& name,
+    const dart::dynamics::ShapePtr& shape,
+    const Eigen::Vector4d& color)
+{
+  auto frame = dart::dynamics::SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), name);
+  frame->setShape(shape);
+  frame->getVisualAspect(true)->setRGBA(color);
+  return frame;
+}
+
+dart::dynamics::SkeletonPtr createStaticVisualSkeleton(
+    const std::string& name,
+    const dart::dynamics::ShapePtr& shape,
+    const Eigen::Vector3d& position,
+    const Eigen::Vector3d& color,
+    double alpha = 1.0)
+{
+  auto skeleton = dart::dynamics::Skeleton::create(name);
+  auto* body = skeleton->createJointAndBodyNodePair<dart::dynamics::WeldJoint>()
+                   .second;
+  auto* shapeNode
+      = body->createShapeNodeWith<dart::dynamics::VisualAspect>(shape);
+  shapeNode->setRelativeTranslation(position);
+  shapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(color.x(), color.y(), color.z(), alpha));
+  return skeleton;
+}
+
+void addReferenceMarkers(const dart::simulation::WorldPtr& world)
+{
+  world->addSkeleton(createStaticVisualSkeleton(
+      kReferenceBoxName,
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(0.48, 0.48, 0.28)),
+      Eigen::Vector3d(0.72, 0.0, 0.20),
+      Eigen::Vector3d(0.20, 0.72, 0.28),
+      0.48));
+
+  int index = 0;
+  for (int y = -1; y <= 1; ++y) {
+    for (int x = -1; x <= 1; ++x) {
+      world->addSkeleton(createStaticVisualSkeleton(
+          kSampleBallPrefix + std::to_string(index++),
+          std::make_shared<dart::dynamics::SphereShape>(0.07),
+          Eigen::Vector3d(
+              -0.25 + static_cast<double>(x) * 0.42,
+              static_cast<double>(y) * 0.32,
+              0.45),
+          Eigen::Vector3d(0.92, 0.48, 0.16)));
+    }
+  }
+}
+
+dart::dynamics::SkeletonPtr createAlignmentHeightmap(
+    const HeightmapAlignmentDemoConfig& config)
+{
+  auto heightmap = dart::dynamics::Skeleton::create("heightmap");
+  auto jointAndBody
+      = heightmap->createJointAndBodyNodePair<dart::dynamics::WeldJoint>();
+  auto* joint = jointAndBody.first;
+  auto* body = jointAndBody.second;
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = config.heightmapOrigin;
+  joint->setTransformFromParentBodyNode(transform);
+
+  auto shape = createHeightmapShape(
+      config.heightmapXResolution,
+      config.heightmapYResolution,
+      config.heightmapScale,
+      config.heightmapScale,
+      config.heightmapZMin,
+      config.heightmapZMax,
+      0);
+
+  auto* shapeNode = body->createShapeNodeWith<
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect,
+      dart::dynamics::VisualAspect>(shape);
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.2, 0.4, 0.9, 1.0));
   return heightmap;
 }
 
-SkeletonPtr createAlignmentReferenceBox(
+dart::dynamics::SkeletonPtr createAlignmentReferenceBox(
     const HeightmapAlignmentDemoConfig& config)
 {
-  auto box = Skeleton::create("reference_box");
+  auto box = dart::dynamics::Skeleton::create("reference_box");
+  auto jointAndBody
+      = box->createJointAndBodyNodePair<dart::dynamics::WeldJoint>();
+  auto* joint = jointAndBody.first;
+  auto* body = jointAndBody.second;
 
-  auto [joint, body] = box->createJointAndBodyNodePair<WeldJoint>(nullptr);
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = config.boxOffset;
-  joint->setTransformFromParentBodyNode(tf);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = config.boxOffset;
+  joint->setTransformFromParentBodyNode(transform);
 
-  auto shape = std::make_shared<BoxShape>(config.boxSize);
-  auto shapeNode = body->createShapeNodeWith<
-      CollisionAspect,
-      DynamicsAspect,
-      VisualAspect>(shape);
-  shapeNode->getVisualAspect()->setColor(Eigen::Vector3d(0.2, 0.7, 0.2));
-
+  auto shape = std::make_shared<dart::dynamics::BoxShape>(config.boxSize);
+  auto* shapeNode = body->createShapeNodeWith<
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect,
+      dart::dynamics::VisualAspect>(shape);
+  shapeNode->getVisualAspect()->setRGBA(Eigen::Vector4d(0.2, 0.7, 0.2, 1.0));
   return box;
 }
 
-SkeletonPtr createAlignmentBall(
+dart::dynamics::SkeletonPtr createAlignmentBall(
     const std::string& name,
     const Eigen::Vector3d& position,
     double radius,
     double mass,
     const Eigen::Vector3d& color)
 {
-  auto ball = Skeleton::create(name);
+  auto ball = dart::dynamics::Skeleton::create(name);
+  auto jointAndBody
+      = ball->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto* joint = jointAndBody.first;
+  auto* body = jointAndBody.second;
 
-  auto [joint, body] = ball->createJointAndBodyNodePair<FreeJoint>(nullptr);
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = position;
-  joint->setTransformFromParentBodyNode(tf);
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = position;
+  joint->setTransformFromParentBodyNode(transform);
 
-  auto shape = std::make_shared<SphereShape>(radius);
-  auto shapeNode = body->createShapeNodeWith<
-      VisualAspect,
-      CollisionAspect,
-      DynamicsAspect>(shape);
-  shapeNode->getVisualAspect()->setColor(color);
+  auto shape = std::make_shared<dart::dynamics::SphereShape>(radius);
+  auto* shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
+  shapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(color.x(), color.y(), color.z(), 1.0));
 
   dart::dynamics::Inertia inertia;
   inertia.setMass(mass);
   inertia.setMoment(shape->computeInertia(mass));
   body->setInertia(inertia);
-
   return ball;
 }
 
 void addAlignmentBallGrid(
-    const simulation::WorldPtr& world,
+    const dart::simulation::WorldPtr& world,
     const std::string& prefix,
     const Eigen::Vector3d& center,
     double halfExtent,
@@ -225,32 +458,65 @@ void addAlignmentBallGrid(
     return;
   }
 
-  const double step = (count == 1u) ? 0.0 : (2.0 * halfExtent) / (count - 1u);
+  const double step = count == 1u ? 0.0 : (2.0 * halfExtent) / (count - 1u);
   std::size_t index = 0u;
-  for (const auto row : std::views::iota(std::size_t{0}, count)) {
-    for (const auto col : std::views::iota(std::size_t{0}, count)) {
-      const double x = center.x() - halfExtent + step * row;
-      const double y = center.y() - halfExtent + step * col;
-      const double z = dropHeight;
-      const Eigen::Vector3d position(x, y, z);
+  for (std::size_t row = 0; row < count; ++row) {
+    for (std::size_t col = 0; col < count; ++col) {
+      const Eigen::Vector3d position(
+          center.x() - halfExtent + step * static_cast<double>(row),
+          center.y() - halfExtent + step * static_cast<double>(col),
+          dropHeight);
       world->addSkeleton(createAlignmentBall(
           prefix + std::to_string(index++), position, radius, mass, color));
     }
   }
 }
 
-void setupAlignmentDemo(const simulation::WorldPtr& world)
+HeightmapScene createInteractiveHeightmapScene()
 {
-  HeightmapAlignmentDemoConfig config;
+  HeightmapScene scene;
+  scene.world = dart::simulation::World::create("dartsim_heightmap");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
 
+  auto terrain = createInteractiveFrame(
+      kInteractiveTerrainName,
+      std::make_shared<dart::dynamics::HeightmapShaped>(),
+      Eigen::Vector4d(0.24, 0.58, 0.88, 1.0));
+  scene.world->addSimpleFrame(terrain);
+  addReferenceMarkers(scene.world);
+
+  scene.panelState = std::make_shared<HeightmapPanelState>();
+  scene.panelState->terrain = terrain;
+  scene.panelState->grid.lineCount = 20.0;
+  scene.panelState->grid.lineStepSize = 0.1;
+  scene.panelState->grid.zOffset = -0.01;
+  scene.panelState->grid.minorLineColor
+      = Eigen::Vector4d(0.42, 0.42, 0.42, 0.42);
+  scene.panelState->grid.majorLineColor
+      = Eigen::Vector4d(0.56, 0.56, 0.56, 0.58);
+  scene.panelState->grid.axisLineColor
+      = Eigen::Vector4d(0.18, 0.24, 0.32, 0.82);
+  dart::examples::attachSourceOwnedGridFrames(
+      scene.world, scene.panelState->grid, kInteractiveGridName);
+  regenerateHeightmap(scene.panelState);
+  return scene;
+}
+
+void setupAlignmentDemo(const dart::simulation::WorldPtr& world)
+{
   world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
   world->setTimeStep(0.001);
-  world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
 
+#if DART_HAVE_ODE
+  world->getConstraintSolver()->setCollisionDetector(
+      dart::collision::OdeCollisionDetector::create());
+#else
+  std::cerr << "heightmap: ODE is not available; using the default collision "
+               "detector for alignment mode.\n";
+#endif
+
+  HeightmapAlignmentDemoConfig config;
   world->addSkeleton(createAlignmentHeightmap(config));
-
-  // Offset the reference box in X to keep collisions from overlapping while
-  // preserving the vertical offset described in the report.
   world->addSkeleton(createAlignmentReferenceBox(config));
 
   const double halfExtent = 1.0 - config.ballRadius * 1.1;
@@ -277,458 +543,148 @@ void setupAlignmentDemo(const simulation::WorldPtr& world)
       ballColor);
 }
 
-class HeightmapWorld : public gui::WorldNode
+HeightmapScene createAlignmentHeightmapScene()
 {
-public:
-  explicit HeightmapWorld(simulation::WorldPtr world)
-    : gui::WorldNode(std::move(world))
-  {
-    // Do nothing
-  }
+  HeightmapScene scene;
+  scene.world = dart::simulation::World::create("dartsim_heightmap_alignment");
+  setupAlignmentDemo(scene.world);
+  return scene;
+}
 
-  // Triggered at the beginning of each simulation step
-  void customPreStep() override
-  {
-    // Do nothing
-  }
-
-protected:
-};
-
-template <typename S>
-class HeightmapWidget : public dart::gui::ImGuiWidget
+dart::gui::RunOptions makeHeightmapRunDefaults()
 {
-public:
-  HeightmapWidget(
-      dart::gui::ImGuiViewer* viewer,
-      HeightmapWorld* node,
-      dynamics::SimpleFramePtr terrain,
-      gui::GridVisual* grid,
-      std::size_t xResolution = 20u,
-      std::size_t yResolution = 20u,
-      S xSize = S(2),
-      S ySize = S(2),
-      S zMin = S(0.0),
-      S zMax = S(0.1))
-    : mViewer(viewer),
-      mNode(node),
-      mTerrain(std::move(terrain)),
-      mGrid(grid),
-      mHeightmapShape(
-          std::dynamic_pointer_cast<HeightmapShape<S>>(mTerrain->getShape()))
-  {
-    mXResolution = xResolution;
-    mYResolution = yResolution;
-    mXSize = xSize;
-    mYSize = ySize;
-    mZMin = zMin;
-    mZMax = zMax;
+  dart::gui::RunOptions options;
+  options.width = 1280;
+  options.height = 720;
+  return options;
+}
 
-    updateHeightmapShape();
+dart::gui::OrbitCamera makeHeightmapCamera(HeightmapDemo demo)
+{
+  dart::gui::OrbitCamera camera;
+  if (demo == HeightmapDemo::Alignment) {
+    camera.target = Eigen::Vector3d(1.5, 0.0, 0.3);
+    camera.yaw = 0.8716037370732271;
+    camera.pitch = 0.33479550808323927;
+    camera.distance = 6.086871117413281;
+  } else {
+    camera.target = Eigen::Vector3d(0.0, 0.0, 0.30);
+    camera.yaw = 0.8848934155088675;
+    camera.pitch = 0.31896455812752583;
+    camera.distance = 4.27318382473771;
+  }
+  return camera;
+}
+
+void addSimulationControls(
+    dart::gui::PanelBuilder& builder, dart::gui::PanelContext& context)
+{
+  if (context.lifecycle == nullptr) {
+    return;
   }
 
-  void updateHeightmapShape()
-  {
-    if (!mHeightmapShape) {
-      mTerrain->setShape(createHeightmapShape(
-          mXResolution, mYResolution, mXSize, mYSize, mZMin, mZMax));
-      mHeightmapShape
-          = std::dynamic_pointer_cast<HeightmapShape<S>>(mTerrain->getShape());
-      if (!mHeightmapShape) {
-        return;
-      }
-    }
-
-    mHeightmapShape->setHeightField(
-        generateHeightField<S>(mXResolution, mYResolution, mZMin, mZMax));
-    const auto xStride = mXResolution > 1 ? mXResolution - 1 : 1u;
-    const auto yStride = mYResolution > 1 ? mYResolution - 1 : 1u;
-    Eigen::Matrix<S, 3, 1> scale(
-        mXSize / static_cast<S>(xStride),
-        mYSize / static_cast<S>(yStride),
-        S(1));
-    mHeightmapShape->setScale(scale);
-    mTerrain->setShape(mHeightmapShape);
+  if (builder.button("Play")) {
+    context.lifecycle->paused = false;
   }
+  builder.sameLine();
+  if (builder.button("Pause")) {
+    context.lifecycle->paused = true;
+  }
+  builder.sameLine();
+  if (builder.button("Step")) {
+    dart::gui::requestSingleStep(*context.lifecycle);
+  }
+  builder.sameLine();
+  if (builder.button("Exit")) {
+    dart::gui::requestExit(*context.lifecycle);
+  }
+}
 
-  void render() override
-  {
-    ImGui::SetNextWindowPos(ImVec2(10, 20));
-    ImGui::SetNextWindowSize(ImVec2(360, 600));
-    ImGui::SetNextWindowBgAlpha(0.5f);
-    if (!ImGui::Begin(
-            "Heightmap Demo",
-            nullptr,
-            ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar)) {
-      // Early out if the window is collapsed, as an optimization.
-      ImGui::End();
+dart::gui::Panel createHeightmapPanel(
+    std::shared_ptr<HeightmapPanelState> state, HeightmapDemo demo)
+{
+  dart::gui::Panel panel;
+  panel.title = "Heightmap Demo";
+  panel.buildWithContext = [state = std::move(state), demo](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) {
+    builder.text("Heightmap rendering example");
+    if (demo == HeightmapDemo::Alignment) {
+      builder.text(
+          "Alignment mode compares a collision heightmap with a "
+          "reference box using falling ball grids.");
+      addSimulationControls(builder, context);
+      builder.separator();
+      builder.text("heightmap_ball_ and box_ball_ show contact drift.");
+      builder.text("time: " + std::to_string(context.simulationTime));
+      builder.text("contacts: " + std::to_string(context.contactCount));
       return;
     }
 
-    // Menu
-    if (ImGui::BeginMenuBar()) {
-      if (ImGui::BeginMenu("Menu")) {
-        if (ImGui::MenuItem("Exit")) {
-          mViewer->setDone(true);
-        }
-        ImGui::EndMenu();
-      }
-      if (ImGui::BeginMenu("Help")) {
-        if (ImGui::MenuItem("About DART")) {
-          mViewer->showAbout();
-        }
-        ImGui::EndMenu();
-      }
-      ImGui::EndMenuBar();
+    builder.text(
+        "Tweak the controls below to regenerate the heightmap. The "
+        "grid stays aligned with the terrain.");
+    addSimulationControls(builder, context);
+    builder.separator();
+
+    if (state == nullptr) {
+      return;
     }
 
-    ImGui::Text("Heightmap rendering example");
-    ImGui::Spacing();
-    ImGui::TextWrapped(
-        "Tweak the controls below to regenerate the heightmap. The grid stays "
-        "aligned with the terrain so you can check updates in real time.");
-
-    if (ImGui::CollapsingHeader("Help")) {
-      ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 320);
-      ImGui::Text("User Guid:\n");
-      ImGui::Text("%s", mViewer->getInstructions().c_str());
-      ImGui::PopTextWrapPos();
+    bool changed = false;
+    if (builder.checkbox("Show Terrain", state->terrainVisible)) {
+      applyVisibility(state->terrain, state->terrainVisible);
     }
-
-    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
-      int e = mViewer->isSimulating() ? 0 : 1;
-      if (mViewer->isAllowingSimulation()) {
-        if (ImGui::RadioButton("Play", &e, 0) && !mViewer->isSimulating()) {
-          mViewer->simulate(true);
-        }
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Pause", &e, 1) && mViewer->isSimulating()) {
-          mViewer->simulate(false);
-        }
-      }
+    if (builder.colorEdit("Terrain Color", state->terrainColor)) {
+      applyTerrainColor(state);
     }
-
-    if (mTerrain) {
-      if (ImGui::CollapsingHeader(
-              "Heightmap", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Text("Terrain");
-
-        auto aspect = mTerrain->getVisualAspect();
-        bool display = !aspect->isHidden();
-        if (ImGui::Checkbox("Show##Terrain", &display)) {
-          if (display) {
-            aspect->show();
-          } else {
-            aspect->hide();
-          }
-        }
-
-        auto shape = std::dynamic_pointer_cast<dynamics::HeightmapShapef>(
-            mTerrain->getShape());
-        DART_ASSERT(shape);
-
-        int xResolution = static_cast<int>(mXResolution);
-        if (ImGui::InputInt("X Resolution", &xResolution, 5, 10)) {
-          if (xResolution < 5) {
-            xResolution = 5;
-          }
-
-          if (static_cast<int>(mXResolution) != xResolution) {
-            mXResolution = xResolution;
-            updateHeightmapShape();
-          }
-        }
-
-        int yResolution = static_cast<int>(mYResolution);
-        if (ImGui::InputInt("Y Resolution", &yResolution, 5, 10)) {
-          if (yResolution < 5) {
-            yResolution = 5;
-          }
-
-          if (static_cast<int>(mYResolution) != yResolution) {
-            mYResolution = yResolution;
-            updateHeightmapShape();
-          }
-        }
-
-        ImGui::Separator();
-
-        if (ImGui::InputFloat("X Size", &mXSize, 0.1, 0.2)) {
-          if (mXSize < 0.1) {
-            mXSize = 0.1;
-          }
-
-          updateHeightmapShape();
-        }
-
-        if (ImGui::InputFloat("Y Size", &mYSize, 0.1, 0.2)) {
-          if (mYSize < 0.1) {
-            mYSize = 0.1;
-          }
-
-          updateHeightmapShape();
-        }
-
-        ImGui::Separator();
-
-        if (ImGui::InputFloat("Z Min", &mZMin, 0.05, 0.1)) {
-          updateHeightmapShape();
-        }
-
-        if (ImGui::InputFloat("Z Max", &mZMax, 0.05, 0.1)) {
-          updateHeightmapShape();
-        }
-
-        ImGui::Separator();
-
-        auto visualAspect = mTerrain->getVisualAspect();
-
-        float color[4];
-        auto visualColor = visualAspect->getRGBA();
-        color[0] = static_cast<float>(visualColor[0]);
-        color[1] = static_cast<float>(visualColor[1]);
-        color[2] = static_cast<float>(visualColor[2]);
-        color[3] = static_cast<float>(visualColor[3]);
-        if (ImGui::ColorEdit4("Color##Heightmap", color)) {
-          visualColor[0] = static_cast<double>(color[0]);
-          visualColor[1] = static_cast<double>(color[1]);
-          visualColor[2] = static_cast<double>(color[2]);
-          visualColor[3] = static_cast<double>(color[3]);
-          visualAspect->setColor(visualColor);
-        }
-      }
+    changed |= builder.slider("X Resolution", state->xResolution, 5.0, 100.0);
+    changed |= builder.slider("Y Resolution", state->yResolution, 5.0, 100.0);
+    changed |= builder.slider("X Size", state->xSize, 0.1, 4.0);
+    changed |= builder.slider("Y Size", state->ySize, 0.1, 4.0);
+    changed |= builder.slider("Z Min", state->zMin, -1.0, 1.0);
+    changed |= builder.slider("Z Max", state->zMax, -1.0, 1.0);
+    if (builder.button("Regenerate")) {
+      ++state->generation;
+      changed = true;
     }
-
-    if (mGrid) {
-      if (ImGui::CollapsingHeader("Grid", ImGuiTreeNodeFlags_None)) {
-        ImGui::Text("Grid");
-
-        bool display = mGrid->isDisplayed();
-        if (ImGui::Checkbox("Show##Grid", &display)) {
-          mGrid->display(display);
-        }
-
-        if (display) {
-          int e = static_cast<int>(mGrid->getPlaneType());
-          if (mViewer->isAllowingSimulation()) {
-            if (ImGui::RadioButton("XY-Plane", &e, 0)) {
-              mGrid->setPlaneType(gui::GridVisual::PlaneType::XY);
-            }
-            ImGui::SameLine();
-            if (ImGui::RadioButton("YZ-Plane", &e, 1)) {
-              mGrid->setPlaneType(gui::GridVisual::PlaneType::YZ);
-            }
-            ImGui::SameLine();
-            if (ImGui::RadioButton("ZX-Plane", &e, 2)) {
-              mGrid->setPlaneType(gui::GridVisual::PlaneType::ZX);
-            }
-          }
-
-          static Eigen::Vector3f offset;
-          ImGui::Columns(3);
-          offset = mGrid->getOffset().cast<float>();
-          if (ImGui::InputFloat("X", &offset[0], 0.1f, 0.5f, "%.1f")) {
-            mGrid->setOffset(offset.cast<double>());
-          }
-          ImGui::NextColumn();
-          if (ImGui::InputFloat("Y", &offset[1], 0.1f, 0.5f, "%.1f")) {
-            mGrid->setOffset(offset.cast<double>());
-          }
-          ImGui::NextColumn();
-          if (ImGui::InputFloat("Z", &offset[2], 0.1f, 0.5f, "%.1f")) {
-            mGrid->setOffset(offset.cast<double>());
-          }
-          ImGui::Columns(1);
-
-          static int cellCount;
-          cellCount = static_cast<int>(mGrid->getNumCells());
-          if (ImGui::InputInt("Line Count", &cellCount, 1, 5)) {
-            if (cellCount < 0) {
-              cellCount = 0;
-            }
-            mGrid->setNumCells(static_cast<std::size_t>(cellCount));
-          }
-
-          static float cellStepSize;
-          cellStepSize = static_cast<float>(mGrid->getMinorLineStepSize());
-          if (ImGui::InputFloat(
-                  "Line Step Size", &cellStepSize, 0.001f, 0.1f)) {
-            mGrid->setMinorLineStepSize(static_cast<double>(cellStepSize));
-          }
-
-          static int minorLinesPerMajorLine;
-          minorLinesPerMajorLine
-              = static_cast<int>(mGrid->getNumMinorLinesPerMajorLine());
-          if (ImGui::InputInt(
-                  "Minor Lines per Major Line",
-                  &minorLinesPerMajorLine,
-                  1,
-                  5)) {
-            if (minorLinesPerMajorLine < 0) {
-              minorLinesPerMajorLine = 0;
-            }
-            mGrid->setNumMinorLinesPerMajorLine(
-                static_cast<std::size_t>(minorLinesPerMajorLine));
-          }
-
-          static float axisLineWidth;
-          axisLineWidth = mGrid->getAxisLineWidth();
-          if (ImGui::InputFloat(
-                  "Axis Line Width", &axisLineWidth, 1.f, 2.f, "%.0f")) {
-            mGrid->setAxisLineWidth(axisLineWidth);
-          }
-
-          static float majorLineWidth;
-          majorLineWidth = mGrid->getMajorLineWidth();
-          if (ImGui::InputFloat(
-                  "Major Line Width", &majorLineWidth, 1.f, 2.f, "%.0f")) {
-            mGrid->setMajorLineWidth(majorLineWidth);
-          }
-
-          static float majorColor[3];
-          auto internalmajorColor = mGrid->getMajorLineColor();
-          majorColor[0] = static_cast<float>(internalmajorColor.x());
-          majorColor[1] = static_cast<float>(internalmajorColor.y());
-          majorColor[2] = static_cast<float>(internalmajorColor.z());
-          if (ImGui::ColorEdit3("Major Line Color", majorColor)) {
-            internalmajorColor[0] = static_cast<double>(majorColor[0]);
-            internalmajorColor[1] = static_cast<double>(majorColor[1]);
-            internalmajorColor[2] = static_cast<double>(majorColor[2]);
-            mGrid->setMajorLineColor(internalmajorColor);
-          }
-
-          static float minorLineWidth;
-          minorLineWidth = mGrid->getMinorLineWidth();
-          if (ImGui::InputFloat(
-                  "Minor Line Width", &minorLineWidth, 1.f, 2.f, "%.0f")) {
-            mGrid->setMinorLineWidth(minorLineWidth);
-          }
-
-          float minorColor[3];
-          auto internalMinorColor = mGrid->getMinorLineColor();
-          minorColor[0] = static_cast<float>(internalMinorColor.x());
-          minorColor[1] = static_cast<float>(internalMinorColor.y());
-          minorColor[2] = static_cast<float>(internalMinorColor.z());
-          if (ImGui::ColorEdit3("Minor Line Color", minorColor)) {
-            internalMinorColor[0] = static_cast<double>(minorColor[0]);
-            internalMinorColor[1] = static_cast<double>(minorColor[1]);
-            internalMinorColor[2] = static_cast<double>(minorColor[2]);
-            mGrid->setMinorLineColor(internalMinorColor);
-          }
-        }
-      }
+    if (changed) {
+      regenerateHeightmap(state);
     }
+    builder.separator();
+    dart::examples::addSourceOwnedGridPanelControls(builder, state->grid);
+    builder.separator();
+    builder.text("Grid controls edit source-owned DART line geometry.");
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("selected: " + context.selectedLabel);
+  };
+  return panel;
+}
 
-    ImGui::End();
-  }
-
-protected:
-  dart::gui::ImGuiViewer* mViewer;
-  HeightmapWorld* mNode;
-  dynamics::SimpleFramePtr mTerrain;
-  ::osg::ref_ptr<gui::GridVisual> mGrid;
-  std::size_t mXResolution;
-  std::size_t mYResolution;
-  float mXSize;
-  float mYSize;
-  float mZMin;
-  float mZMax;
-  std::shared_ptr<HeightmapShape<S>> mHeightmapShape;
-};
+} // namespace
 
 int main(int argc, char* argv[])
 {
-  CLI::App app("Heightmap example");
-  double guiScale = 1.0;
-  std::string demo = "interactive";
-  app.add_option("--gui-scale", guiScale, "Scale factor for ImGui widgets")
-      ->check(CLI::PositiveNumber);
-  app.add_option(
-         "--demo",
-         demo,
-         "Demo mode: interactive or alignment (heightmap + box comparison)")
-      ->check(CLI::IsMember({"interactive", "alignment"}));
-  CLI11_PARSE(app, argc, argv);
+  try {
+    HeightmapConfig config;
+    const auto parseResult = parseHeightmapConfig(argc, argv, config);
+    if (parseResult.help) {
+      return 0;
+    }
 
-  auto world = dart::simulation::World::create();
-  const bool alignmentDemo = demo == "alignment";
-  if (alignmentDemo) {
-    setupAlignmentDemo(world);
-  } else {
-    world->setGravity(Eigen::Vector3d::Zero());
+    HeightmapScene scene = config.demo == HeightmapDemo::Alignment
+                               ? createAlignmentHeightmapScene()
+                               : createInteractiveHeightmapScene();
+
+    dart::gui::ApplicationOptions options;
+    options.world = scene.world;
+    options.runDefaults = makeHeightmapRunDefaults();
+    options.camera = makeHeightmapCamera(config.demo);
+    options.panels.push_back(
+        createHeightmapPanel(scene.panelState, config.demo));
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "heightmap: " << e.what() << "\n";
+    return 1;
   }
-
-  // Use a wider height range out of the box so the surface is visible above
-  // the grid without fiddling with the controls.
-  constexpr auto xResolution = 100u;
-  constexpr auto yResolution = 100u;
-  constexpr auto xSize = 2.f;
-  constexpr auto ySize = 2.f;
-  constexpr auto zMin = -0.1f;
-  constexpr auto zMax = 0.4f;
-  dynamics::SimpleFramePtr terrain;
-  if (!alignmentDemo) {
-    terrain = createHeightmapFrame<float>(
-        xResolution, yResolution, xSize, ySize, zMin, zMax);
-    world->addSimpleFrame(terrain);
-    DART_ASSERT(world->getNumSimpleFrames() == 1u);
-  }
-
-  // Create an instance of our customized WorldNode
-  ::osg::ref_ptr<HeightmapWorld> node = new HeightmapWorld(world);
-  node->setNumStepsPerCycle(16);
-
-  // Create the Viewer instance
-  dart::gui::ImGuiViewer viewer;
-  viewer.setImGuiScale(static_cast<float>(guiScale));
-  viewer.getImGuiHandler()->setFontScale(static_cast<float>(guiScale));
-  viewer.addWorldNode(node);
-  viewer.simulate(true);
-
-  // Create grid
-  ::osg::ref_ptr<gui::GridVisual> grid = new gui::GridVisual();
-  // Sink the grid slightly so the heightmap surface is not z-fighting with it.
-  grid->setOffset(Eigen::Vector3d(0.0, 0.0, -0.01));
-
-  // Add control widget for atlas
-  if (!alignmentDemo) {
-    viewer.getImGuiHandler()->addWidget(
-        std::make_shared<HeightmapWidget<float>>(
-            &viewer,
-            node.get(),
-            terrain,
-            grid.get(),
-            xResolution,
-            yResolution,
-            xSize,
-            ySize,
-            zMin,
-            zMax));
-  }
-
-  viewer.addAttachment(grid);
-
-  // Print out instructions
-  std::cout << viewer.getInstructions() << std::endl;
-
-  // Set up the window to be 1280x720 pixels
-  viewer.setUpViewInWindow(0, 0, 1280, 720);
-
-  if (alignmentDemo) {
-    viewer.getCameraManipulator()->setHomePosition(
-        ::osg::Vec3(5.2f, 4.4f, 2.3f),
-        ::osg::Vec3(1.5f, 0.0f, 0.3f),
-        ::osg::Vec3(-0.2f, -0.2f, 0.95f));
-  } else {
-    viewer.getCameraManipulator()->setHomePosition(
-        ::osg::Vec3(2.57f, 3.14f, 1.64f),
-        ::osg::Vec3(0.00f, 0.00f, 0.30f),
-        ::osg::Vec3(-0.24f, -0.25f, 0.94f));
-  }
-  // We need to re-dirty the CameraManipulator by passing it into the viewer
-  // again, so that the viewer knows to update its HomePosition setting
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  // Begin the application loop
-  viewer.run();
 }

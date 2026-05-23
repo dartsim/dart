@@ -58,6 +58,52 @@ TEST(SweepAndPruneBroadPhase, AddSingle)
   EXPECT_TRUE(bp.queryPairs().empty());
 }
 
+TEST(SweepAndPruneBroadPhase, DebugSnapshotExposesEndpointOrder)
+{
+  SweepAndPruneBroadPhase bp;
+
+  bp.add(10, Aabb(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1, 1, 1)));
+  bp.add(20, Aabb(Eigen::Vector3d(0.5, 2, 2), Eigen::Vector3d(2, 3, 3)));
+
+  BroadPhaseDebugSnapshot snapshot;
+  bp.buildDebugSnapshot(snapshot);
+
+  EXPECT_TRUE(snapshot.hasSweepEndpoints);
+  EXPECT_FALSE(snapshot.hasTreeTopology);
+  EXPECT_FALSE(snapshot.hasSpatialHashCells);
+  EXPECT_EQ(snapshot.numObjects, 2u);
+  EXPECT_TRUE(snapshot.candidatePairs.empty());
+  ASSERT_EQ(snapshot.endpoints.size(), 12u);
+
+  std::vector<BroadPhaseDebugEndpoint> xEndpoints;
+  for (const BroadPhaseDebugEndpoint& endpoint : snapshot.endpoints) {
+    if (endpoint.axis == 0) {
+      xEndpoints.push_back(endpoint);
+    }
+  }
+
+  ASSERT_EQ(xEndpoints.size(), 4u);
+  EXPECT_EQ(xEndpoints[0].objectId, 10u);
+  EXPECT_TRUE(xEndpoints[0].isMin);
+  EXPECT_DOUBLE_EQ(xEndpoints[0].value, 0.0);
+  EXPECT_EQ(xEndpoints[0].order, 0u);
+
+  EXPECT_EQ(xEndpoints[1].objectId, 20u);
+  EXPECT_TRUE(xEndpoints[1].isMin);
+  EXPECT_DOUBLE_EQ(xEndpoints[1].value, 0.5);
+  EXPECT_EQ(xEndpoints[1].order, 1u);
+
+  EXPECT_EQ(xEndpoints[2].objectId, 10u);
+  EXPECT_FALSE(xEndpoints[2].isMin);
+  EXPECT_DOUBLE_EQ(xEndpoints[2].value, 1.0);
+  EXPECT_EQ(xEndpoints[2].order, 2u);
+
+  EXPECT_EQ(xEndpoints[3].objectId, 20u);
+  EXPECT_FALSE(xEndpoints[3].isMin);
+  EXPECT_DOUBLE_EQ(xEndpoints[3].value, 2.0);
+  EXPECT_EQ(xEndpoints[3].order, 3u);
+}
+
 TEST(SweepAndPruneBroadPhase, AddTwo_NoOverlap)
 {
   SweepAndPruneBroadPhase bp;

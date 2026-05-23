@@ -34,7 +34,6 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
-#include <dart/simulation/experimental/comps/joint.hpp> // For JointType
 #include <dart/simulation/experimental/multi_body/link.hpp> // Need complete type for LinkOptions
 
 #include <Eigen/Core>
@@ -43,10 +42,39 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <cstddef>
 
 namespace dart::simulation::experimental {
+
+/// Joint construction value object.
+///
+/// JointSpec describes the public joint configuration used when connecting a
+/// child link to a parent link. It intentionally contains joint concepts only;
+/// the parent link remains part of the link-construction call so the same
+/// joint spec can be reused for multiple construction sites.
+///
+/// Usage:
+/// @code
+///   auto base = robot.addLink("base");
+///   auto forearm = robot.addLink("forearm", base, JointSpec{
+///       .name = "elbow",
+///       .type = JointType::Revolute,
+///       .axis = Eigen::Vector3d::UnitZ(),
+///   });
+/// @endcode
+struct JointSpec
+{
+  std::string name;                     ///< Name of connecting joint
+  JointType type = JointType::Revolute; ///< Type of joint
+  Eigen::Vector3d axis
+      = Eigen::Vector3d::UnitZ(); ///< Joint axis (rotation or translation)
+
+  // Future: Add more joint-specific parameters.
+  // Eigen::Vector3d axis2;  // For Universal, Planar
+  // double pitch;           // For Screw
+};
 
 /// Options for creating a link with parent joint
 ///
@@ -61,7 +89,7 @@ namespace dart::simulation::experimental {
 ///   auto link1 = robot.addLink("link1", {
 ///       .parentLink = root,
 ///       .jointName = "shoulder",
-///       .jointType = comps::JointType::Revolute,
+///       .jointType = JointType::Revolute,
 ///       .axis = {0, 0, 1}
 ///   });
 ///
@@ -69,15 +97,15 @@ namespace dart::simulation::experimental {
 ///   auto link2 = robot.addLink("link2", {
 ///       .parentLink = link1,
 ///       .jointName = "slider",
-///       .jointType = comps::JointType::Prismatic,
+///       .jointType = JointType::Prismatic,
 ///       .axis = {1, 0, 0}
 ///   });
 /// @endcode
 struct LinkOptions
 {
-  Link parentLink;       ///< Parent link handle
-  std::string jointName; ///< Name of connecting joint
-  comps::JointType jointType = comps::JointType::Revolute; ///< Type of joint
+  Link parentLink;                           ///< Parent link handle
+  std::string jointName;                     ///< Name of connecting joint
+  JointType jointType = JointType::Revolute; ///< Type of joint
   Eigen::Vector3d axis
       = Eigen::Vector3d::UnitZ(); ///< Joint axis (rotation or translation)
 
@@ -150,15 +178,45 @@ public:
   /// @return Joint handle if found, std::nullopt otherwise
   std::optional<Joint> getJoint(std::string_view name) const;
 
+  /// Get all link handles in construction order.
+  ///
+  /// The returned vector is a snapshot of lightweight handles. The handles
+  /// remain tied to this MultiBody's World and follow the same validity rules
+  /// as handles returned by addLink() and getLink().
+  [[nodiscard]] std::vector<Link> getLinks() const;
+
+  /// Get all joint handles in construction order.
+  ///
+  /// The returned vector is a snapshot of lightweight handles. The handles
+  /// remain tied to this MultiBody's World and follow the same validity rules
+  /// as handles returned by getJoint().
+  [[nodiscard]] std::vector<Joint> getJoints() const;
+
+  /// Get link names in construction order.
+  ///
+  /// Link names are unique within this MultiBody.
+  [[nodiscard]] std::vector<std::string> getLinkNames() const;
+
+  /// Get joint names in construction order.
+  ///
+  /// Joint names are unique within this MultiBody.
+  [[nodiscard]] std::vector<std::string> getJointNames() const;
+
   /// Get the entity ID (for advanced users)
   ///
   /// @return The entity ID
-  entt::entity getEntity() const;
+  [[nodiscard]] entt::entity getEntity() const;
 
   /// Get the World pointer (for advanced users)
   ///
   /// @return Pointer to the World
-  World* getWorld() const;
+  [[nodiscard]] World* getWorld() const;
+
+  /// Return whether this handle still refers to a live MultiBody.
+  ///
+  /// Handles become invalid after the owning World destroys the underlying
+  /// entity, including through World::clear().
+  [[nodiscard]] bool isValid() const;
 
   //--------------------------------------------------------------------------
   /// @name Kinematic Structure (Design-time only)
@@ -184,6 +242,23 @@ public:
   /// @return Link handle (use getParentJoint() to access the created joint)
   /// @throws InvalidArgumentException if in simulation mode or parent invalid
   Link addLink(std::string_view name, const LinkOptions& options);
+
+  /// Create a link with parent joint
+  ///
+  /// Creates a link and its parent joint atomically using a parent Link and
+  /// JointSpec. This is the preferred DART 7 experimental construction shape
+  /// because JointSpec can be shared by C++ and dartpy.
+  ///
+  /// @param name Link name (empty = auto-generate "link_NNN")
+  /// @param parentLink Parent link handle
+  /// @param joint JointSpec describing the parent joint
+  /// @return Link handle (use getParentJoint() to access the created joint)
+  /// @throws InvalidArgumentException if in simulation mode, parent invalid, or
+  /// joint parameters invalid
+  Link addLink(
+      std::string_view name,
+      const Link& parentLink,
+      const JointSpec& joint = {});
 
 private:
   entt::entity m_entity; ///< Entity ID in the registry

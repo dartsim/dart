@@ -27,8 +27,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #   sdf
 #   urdf
 # gui
-#   osg
-#     render
+#   experimental
+#   filament
 
 #===============================================================================
 # Targets - {dependency targets}, source directories, [external dependency libs]
@@ -38,7 +38,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 #        sensor, utils, gui, [assimp, eigen3, fmt]
 # dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
 # dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
-# dart-gui - {dart-utils}, gui, gui/render, [openscenegraph]
+# dart-gui - {dart-gui-core}, gui, gui/detail,
+#            [filament, glfw3, imgui, png, jpeg]
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
@@ -46,7 +47,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # dart - {dart}
 # utils - (dart), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
-# gui - (utils), {dart-gui}
+# gui - (gui-core), {dart-gui}
+# collision-bullet - (dart), {dart} [compat]
+# collision-ode - (dart), {dart} [compat]
 # collision-fcl - (dart), {dart-collision-fcl}
 # collision-bullet - (dart), {dart-collision-bullet}
 # collision-ode - (dart), {dart-collision-ode}
@@ -90,7 +93,7 @@ add_subdirectory(simulation)
 add_subdirectory(sensor)
 add_subdirectory(utils) # tinyxml2, libsdformat
 add_subdirectory(io)
-add_subdirectory(gui) # osg
+add_subdirectory(gui) # DART GUI
 add_subdirectory(simd)
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
@@ -204,11 +207,6 @@ endif()
 # Boost gdb helper scripts embed inline asm that breaks GCC with our flags.
 target_compile_definitions(dart PUBLIC BOOST_ALL_NO_EMBEDDED_GDB_SCRIPTS)
 
-# octomap settings
-if(TARGET octomap)
-  target_link_libraries(dart PUBLIC octomap)
-endif()
-
 # C++ standard settings
 target_compile_features(dart PUBLIC cxx_std_20)
 
@@ -278,9 +276,6 @@ add_component_targets(${PROJECT_NAME} dart dart)
 add_component_dependency_packages(${PROJECT_NAME} dart
   assimp Eigen3 fmt
 )
-if(TARGET octomap)
-  add_component_dependency_packages(${PROJECT_NAME} dart octomap)
-endif()
 if(spdlog_FOUND)
   add_component_dependency_packages(${PROJECT_NAME} dart spdlog)
 endif()
@@ -317,10 +312,6 @@ if(MSVC)
     dart PROPERTIES
     STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
   )
-endif()
-
-if(DART_CODECOV)
-  target_link_libraries(dart PUBLIC coverage_config)
 endif()
 
 if(DART_BUILD_PROFILE)

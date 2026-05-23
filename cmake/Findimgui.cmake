@@ -29,21 +29,10 @@ find_path(
     "${CMAKE_INSTALL_PREFIX}/include/imgui"
 )
 
-# Find the path containing imgui_impl_opengl2.h
-find_path(
-  imgui_backends_INCLUDE_DIR
-  NAMES imgui_impl_opengl2.h
-  HINTS
-    ${PC_imgui_INCLUDEDIR}
-    ${PC_imgui_INCLUDEDIR}/backends
-  PATHS
-    "${CMAKE_INSTALL_PREFIX}/include"
-    "${CMAKE_INSTALL_PREFIX}/include/imgui/backends"
-)
-
-# Combine both paths into imgui_INCLUDE_DIRS
-if(imgui_INCLUDE_DIR AND imgui_backends_INCLUDE_DIR)
-  set(imgui_INCLUDE_DIRS "${imgui_INCLUDE_DIR}" "${imgui_backends_INCLUDE_DIR}")
+# Public DART GUI code only requires core Dear ImGui headers. Renderer/backend
+# integration lives in the private Filament implementation.
+if(imgui_INCLUDE_DIR)
+  set(imgui_INCLUDE_DIRS "${imgui_INCLUDE_DIR}")
 else()
   message(FATAL_ERROR "Could not find the required imgui headers")
 endif()

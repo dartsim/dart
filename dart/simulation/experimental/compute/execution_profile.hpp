@@ -114,7 +114,7 @@ struct DART_EXPERIMENTAL_API ComputeExecutionProfile
 /// Helper used by executors to collect one profiled graph execution.
 ///
 /// Custom executors can use this helper to report profiles in the same format
-/// as the built-in sequential and Taskflow executors.
+/// as the built-in sequential and parallel executors.
 class DART_EXPERIMENTAL_API ComputeExecutionProfiler
 {
 public:

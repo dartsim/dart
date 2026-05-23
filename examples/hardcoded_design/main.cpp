@@ -30,157 +30,301 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-/**
- * @file main.cpp
- * @author Can Erdogan (rewritten by Michael X. Grey)
- * @date Feb 02, 2013  (rewritten April 09, 2015)
- * @brief This application shows the creation of a kinematic skeleton from
- * scratch without the use of a model file. Run the program without arguments
- * and you can use the buttons {1,2} to move the corresponding joints. The key
- * '-' will make the joints move in the negative direction.
- */
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include "hardcoded_event_handler.hpp"
+#include <dart/simulation/world.hpp>
 
-#include <dart/gui/all.hpp>
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/line_segment_shape.hpp>
+#include <dart/dynamics/revolute_joint.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/skeleton.hpp>
 
-#include <dart/all.hpp>
+#include <Eigen/Geometry>
 
-#include <osg/PolygonMode>
-
+#include <array>
 #include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
-dart::dynamics::SkeletonPtr createSkeleton()
+#include <cstddef>
+
+namespace {
+
+constexpr const char* kSkeletonName = "visual_hardcoded_design";
+constexpr double kPi = 3.14159265358979323846;
+constexpr double kJointStep = 0.1;
+const Eigen::Vector3d kLinkSize(0.3, 0.3, 1.0);
+const Eigen::Vector4d kWireframeColor(0.02, 0.02, 0.02, 1.0);
+
+struct HardcodedDesignScene
 {
-  // Create Left Leg skeleton
-  dart::dynamics::SkeletonPtr LeftLegSkel = dart::dynamics::Skeleton::create();
+  dart::simulation::WorldPtr world;
+  dart::dynamics::SkeletonPtr skeleton;
+};
 
-  double mass = 1.0;
+struct HardcodedDesignControls
+{
+  dart::dynamics::SkeletonPtr skeleton;
+  bool inverse = false;
 
-  // BodyNode 1: Left Hip Yaw (LHY)
+  void toggleDirection()
+  {
+    inverse = !inverse;
+    std::cout << "Direction inverted: " << (inverse ? "negative" : "positive")
+              << "\n";
+  }
+
+  void moveDof(std::size_t dofIndex)
+  {
+    if (skeleton == nullptr || dofIndex >= skeleton->getNumDofs()) {
+      return;
+    }
+
+    Eigen::VectorXd pose = skeleton->getPositions();
+    pose(static_cast<Eigen::Index>(dofIndex))
+        += inverse ? -kJointStep : kJointStep;
+    skeleton->setPositions(pose);
+    std::cout << "Updated pose DOF " << dofIndex << ": " << pose.transpose()
+              << "\n";
+  }
+};
+
+std::shared_ptr<dart::dynamics::LineSegmentShape> createBoxWireframeShape(
+    const Eigen::Vector3d& size)
+{
+  auto wireframe = std::make_shared<dart::dynamics::LineSegmentShape>(2.0f);
+  const Eigen::Vector3d half = 0.5 * size;
+  const std::array<Eigen::Vector3d, 8> vertices{{
+      {-half.x(), -half.y(), -half.z()},
+      {half.x(), -half.y(), -half.z()},
+      {half.x(), half.y(), -half.z()},
+      {-half.x(), half.y(), -half.z()},
+      {-half.x(), -half.y(), half.z()},
+      {half.x(), -half.y(), half.z()},
+      {half.x(), half.y(), half.z()},
+      {-half.x(), half.y(), half.z()},
+  }};
+  for (const auto& vertex : vertices) {
+    wireframe->addVertex(vertex);
+  }
+  while (!wireframe->getConnections().empty()) {
+    wireframe->removeConnection(0);
+  }
+
+  const std::array<std::pair<std::size_t, std::size_t>, 12> edges{{
+      {0, 1},
+      {1, 2},
+      {2, 3},
+      {3, 0},
+      {4, 5},
+      {5, 6},
+      {6, 7},
+      {7, 4},
+      {0, 4},
+      {1, 5},
+      {2, 6},
+      {3, 7},
+  }};
+  for (const auto& edge : edges) {
+    wireframe->addConnection(edge.first, edge.second);
+  }
+  return wireframe;
+}
+
+void addBoxWireframe(
+    dart::dynamics::BodyNode* body,
+    const Eigen::Vector3d& center,
+    const Eigen::Vector3d& size)
+{
+  if (body == nullptr) {
+    return;
+  }
+
+  auto* wireframeNode = body->createShapeNodeWith<dart::dynamics::VisualAspect>(
+      createBoxWireframeShape(size));
+  wireframeNode->setRelativeTranslation(center);
+  wireframeNode->getVisualAspect()->setRGBA(kWireframeColor);
+}
+
+dart::dynamics::SkeletonPtr createHardcodedDesignSkeleton()
+{
+  auto skeleton = dart::dynamics::Skeleton::create(kSkeletonName);
+  constexpr double mass = 1.0;
+
   dart::dynamics::BodyNode::Properties body;
   body.mName = "LHY";
-  dart::dynamics::ShapePtr shape(
-      new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
   body.mInertia.setMass(mass);
+  auto shape = std::make_shared<dart::dynamics::BoxShape>(kLinkSize);
 
   dart::dynamics::RevoluteJoint::Properties joint;
   joint.mName = "LHY";
-  joint.mAxis = Eigen::Vector3d(0.0, 0.0, 1.0);
-  joint.mPositionLowerLimits[0] = -dart::math::pi;
-  joint.mPositionUpperLimits[0] = dart::math::pi;
+  joint.mAxis = Eigen::Vector3d::UnitZ();
+  joint.mPositionLowerLimits[0] = -kPi;
+  joint.mPositionUpperLimits[0] = kPi;
 
-  // You can get the newly created Joint and BodyNode pointers like this
-  std::pair<dart::dynamics::Joint*, dart::dynamics::BodyNode*> pair
-      = LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+  auto [rootJoint, rootBody]
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
           nullptr, joint, body);
-  pair.second->createShapeNodeWith<
+  (void)rootJoint;
+  auto* rootShapeNode = rootBody->createShapeNodeWith<
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(shape);
-  dart::dynamics::BodyNode* parent = pair.second;
+  rootShapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(0.18, 0.38, 0.92, 0.9));
+  addBoxWireframe(rootBody, Eigen::Vector3d::Zero(), kLinkSize);
+  rootBody->setMass(mass);
 
-  // BodyNode 2: Left Hip Roll (LHR) whose parent is: LHY
-  body = dart::dynamics::BodyNode::Properties(); // create a fresh properties
-                                                 // container
+  body = dart::dynamics::BodyNode::Properties();
   body.mName = "LHR";
-  shape = dart::dynamics::ShapePtr(
-      new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
-
+  body.mInertia.setMass(mass);
+  shape = std::make_shared<dart::dynamics::BoxShape>(kLinkSize);
+  joint = dart::dynamics::RevoluteJoint::Properties();
   joint.mName = "LHR";
+  joint.mAxis = Eigen::Vector3d::UnitX();
+  joint.mPositionLowerLimits[0] = -kPi;
+  joint.mPositionUpperLimits[0] = kPi;
   joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 0.5);
 
-  // You can get the specific type of Joint Pointer instead of just a basic
-  // Joint pointer
-  std::pair<dart::dynamics::RevoluteJoint*, dart::dynamics::BodyNode*> pair1
-      = LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
-          parent, joint, body);
-  pair1.first->setAxis(Eigen::Vector3d(1.0, 0.0, 0.0));
-  auto shapeNode1 = pair1.second->createShapeNodeWith<
+  auto [hipRollJoint, hipRollBody]
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+          rootBody, joint, body);
+  (void)hipRollJoint;
+  auto* hipRollShapeNode = hipRollBody->createShapeNodeWith<
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(shape);
-  shapeNode1->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
-  pair1.second->setLocalCOM(shapeNode1->getRelativeTranslation());
-  pair1.second->setMass(mass);
+  hipRollShapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+  hipRollShapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(0.95, 0.65, 0.12, 0.9));
+  addBoxWireframe(
+      hipRollBody, hipRollShapeNode->getRelativeTranslation(), kLinkSize);
+  hipRollBody->setLocalCOM(hipRollShapeNode->getRelativeTranslation());
+  hipRollBody->setMass(mass);
 
-  // BodyNode 3: Left Hip Pitch (LHP) whose parent is: LHR
-  body = dart::dynamics::BodyNode::Properties(); // create a fresh properties
-                                                 // container
+  body = dart::dynamics::BodyNode::Properties();
   body.mName = "LHP";
-  shape = dart::dynamics::ShapePtr(
-      new dart::dynamics::BoxShape(Eigen::Vector3d(0.3, 0.3, 1.0)));
-
+  body.mInertia.setMass(mass);
+  shape = std::make_shared<dart::dynamics::BoxShape>(kLinkSize);
+  joint = dart::dynamics::RevoluteJoint::Properties();
   joint.mName = "LHP";
-  joint.mAxis = Eigen::Vector3d(0.0, 1.0, 0.0);
+  joint.mAxis = Eigen::Vector3d::UnitY();
+  joint.mPositionLowerLimits[0] = -kPi;
+  joint.mPositionUpperLimits[0] = kPi;
   joint.mT_ParentBodyToJoint = Eigen::Translation3d(0.0, 0.0, 1.0);
 
-  // Or you can completely ignore the return value of this function
-  std::pair<dart::dynamics::RevoluteJoint*, dart::dynamics::BodyNode*> pair2
-      = LeftLegSkel->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
-          LeftLegSkel->getBodyNode(1), joint, body);
-  auto shapeNode2 = pair2.second->createShapeNodeWith<
+  auto [hipPitchJoint, hipPitchBody]
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::RevoluteJoint>(
+          hipRollBody, joint, body);
+  (void)hipPitchJoint;
+  auto* hipPitchShapeNode = hipPitchBody->createShapeNodeWith<
       dart::dynamics::VisualAspect,
       dart::dynamics::CollisionAspect,
       dart::dynamics::DynamicsAspect>(shape);
-  shapeNode2->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
-  pair2.second->setLocalCOM(shapeNode2->getRelativeTranslation());
-  pair2.second->setMass(mass);
+  hipPitchShapeNode->setRelativeTranslation(Eigen::Vector3d(0.0, 0.0, 0.5));
+  hipPitchShapeNode->getVisualAspect()->setRGBA(
+      Eigen::Vector4d(0.84, 0.18, 0.18, 0.9));
+  addBoxWireframe(
+      hipPitchBody, hipPitchShapeNode->getRelativeTranslation(), kLinkSize);
+  hipPitchBody->setLocalCOM(hipPitchShapeNode->getRelativeTranslation());
+  hipPitchBody->setMass(mass);
 
-  return LeftLegSkel;
+  return skeleton;
 }
 
-int main(int /*argc*/, char* /*argv*/[])
+HardcodedDesignScene createHardcodedDesignScene()
 {
-  // Create skeleton
-  dart::dynamics::SkeletonPtr skeleton = createSkeleton();
+  HardcodedDesignScene scene;
+  scene.world = dart::simulation::World::create("dartsim_hardcoded_design");
+  scene.world->setGravity(Eigen::Vector3d::Zero());
+  scene.skeleton = createHardcodedDesignSkeleton();
+  scene.world->addSkeleton(scene.skeleton);
+  return scene;
+}
 
-  // Create world and add skeleton
-  dart::simulation::WorldPtr world = dart::simulation::World::create();
-  world->addSkeleton(skeleton);
+dart::gui::OrbitCamera makeHardcodedDesignCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(0.0, 0.0, 0.0);
+  camera.yaw = 0.7853981633974483;
+  camera.pitch = 0.6154797086703874;
+  camera.distance = 3.4641016151377544;
+  return camera;
+}
 
-  // Create OSG viewer
-  dart::gui::Viewer viewer;
-  viewer.setUpwardsDirection(Eigen::Vector3d(0.0, 0.0, 1.0));
+dart::gui::KeyboardAction makeMoveJointAction(
+    char key,
+    std::size_t dofIndex,
+    const std::shared_ptr<HardcodedDesignControls>& controls)
+{
+  dart::gui::KeyboardAction action;
+  action.label = "Move hardcoded-design DOF " + std::to_string(dofIndex);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback
+      = [controls, dofIndex](dart::gui::KeyboardActionContext& context) {
+          controls->moveDof(dofIndex);
+          if (context.lifecycle != nullptr) {
+            context.lifecycle->paused = true;
+          }
+        };
+  return action;
+}
 
-  // Create world node
-  osg::ref_ptr<dart::gui::WorldNode> worldNode
-      = new dart::gui::WorldNode(world);
+std::vector<dart::gui::KeyboardAction> createHardcodedDesignKeyboardActions(
+    const std::shared_ptr<HardcodedDesignControls>& controls)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makeMoveJointAction('1', 0, controls));
+  actions.push_back(makeMoveJointAction('2', 1, controls));
+  actions.push_back(makeMoveJointAction('3', 2, controls));
 
-  // Set wireframe mode to match the legacy example
-  worldNode->getStateSet()->setAttributeAndModes(
-      new ::osg::PolygonMode(
-          ::osg::PolygonMode::FRONT_AND_BACK, ::osg::PolygonMode::LINE),
-      ::osg::StateAttribute::ON | ::osg::StateAttribute::OVERRIDE);
+  dart::gui::KeyboardAction direction;
+  direction.label = "Toggle hardcoded-design joint direction";
+  direction.shortcut = dart::gui::KeyboardShortcut::characterKey('-');
+  direction.callback = [controls](dart::gui::KeyboardActionContext& context) {
+    controls->toggleDirection();
+    if (context.lifecycle != nullptr) {
+      context.lifecycle->paused = true;
+    }
+  };
+  actions.push_back(std::move(direction));
+  return actions;
+}
 
-  // Add world node to viewer
-  viewer.addWorldNode(worldNode);
+dart::gui::Panel createHardcodedDesignPanel(
+    const std::shared_ptr<HardcodedDesignControls>& controls)
+{
+  dart::gui::Panel panel;
+  panel.title = "Hardcoded Design";
+  panel.build = [controls](dart::gui::PanelBuilder& builder) {
+    builder.text("Hand-built three-link revolute skeleton.");
+    builder.text("Keys: 1 LHY, 2 LHR, 3 LHP.");
+    builder.text("Key: - toggles joint increment direction.");
+    builder.text(
+        std::string("direction: ")
+        + (controls->inverse ? "negative" : "positive"));
+  };
+  return panel;
+}
 
-  // Add custom event handler for skeleton control
-  viewer.addEventHandler(new HardcodedEventHandler(skeleton));
+} // namespace
 
-  // Add instructions
-  viewer.addInstructionText("Press {1,2,3} keys to move joints\n");
-  viewer.addInstructionText("Press '-' to change direction\n");
-  viewer.addInstructionText("Use mouse to navigate the view\n");
+int main(int argc, char* argv[])
+{
+  auto scene = createHardcodedDesignScene();
+  auto controls = std::make_shared<HardcodedDesignControls>();
+  controls->skeleton = scene.skeleton;
 
-  // Set up the view
-  viewer.getCameraManipulator()->setHomePosition(
-      osg::Vec3(2.0f, 2.0f, 2.0f),
-      osg::Vec3(0.0f, 0.0f, 0.0f),
-      osg::Vec3(0.0f, 0.0f, 1.0f));
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  std::cout << "=========================================" << std::endl;
-  std::cout << "Hardcoded Design Example" << std::endl;
-  std::cout << "=========================================" << std::endl;
-  std::cout << "Press {1,2,3} keys to move joints" << std::endl;
-  std::cout << "Press '-' to change direction" << std::endl;
-  std::cout << "Use mouse to navigate the view" << std::endl;
-  std::cout << "=========================================" << std::endl;
-
-  // Run the viewer
-  viewer.run();
-
-  return 0;
+  dart::gui::ApplicationOptions options;
+  options.world = scene.world;
+  options.camera = makeHardcodedDesignCamera();
+  options.keyboardActions = createHardcodedDesignKeyboardActions(controls);
+  options.panels.push_back(createHardcodedDesignPanel(controls));
+  return dart::gui::runApplication(argc, argv, options);
 }

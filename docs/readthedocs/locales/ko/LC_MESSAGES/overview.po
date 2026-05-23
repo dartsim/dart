@@ -113,9 +113,9 @@ msgstr "URDF 및 SDF 형식의 모델을 지원합니다."
 
 #: ../../overview.rst:27 859751351c124cf68963768203a3d382
 msgid ""
-"Provides default integration methods (semi-implicit Euler and RK4) and an"
-" extensible API for other numerical integration methods."
-msgstr "기본 적분 방법(세미 암시적 Euler 및 RK4)과 다른 수치 적분 방법에 대한 확장 가능한 API를 제공합니다."
+"Provides a default semi-implicit Euler timestepper and low-level dynamics"
+" access for implementing custom numerical integration methods."
+msgstr "기본 세미 암시적 오일러 시간 스테퍼와 사용자 정의 수치 적분 방법을 구현하기 위한 저수준 동역학 액세스를 제공합니다."
 
 #: ../../overview.rst:28 5b803c7655d54f12805420566e30fa94
 msgid ""
@@ -134,8 +134,8 @@ msgid "Provides comprehensive event recording in the simulation history."
 msgstr "시뮬레이션 기록에서 포괄적인 이벤트 기록을 제공합니다."
 
 #: ../../overview.rst:31 d7f233e77cd84ec0b7df6f96965a2706
-msgid "3D visualization API using OpenGL and OpenSceneGraph with ImGui support."
-msgstr "OpenGL 및 OpenSceneGraph와 ImGui 지원을 사용한 3D 시각화 API."
+msgid "3D visualization API using Filament with GLFW3 and Dear ImGui support."
+msgstr "GLFW3 및 Dear ImGui를 지원하는 Filament 기반 3D 시각화 API."
 
 #: ../../overview.rst:32 819dd3bc098a48afa3b60a3edee3da5c
 msgid ""

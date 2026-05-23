@@ -36,491 +36,650 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/common/macros.hpp"
-#include "dart/common/string.hpp"
+#include <dart/config.hpp>
 
-#include <dart/gui/all.hpp>
+#include <dart/gui/application.hpp>
+#include <dart/gui/panel.hpp>
+#include <dart/gui/viewer.hpp>
 
-#include <dart/utils/All.hpp>
+#include <dart/simulation/world.hpp>
 
-#include <dart/all.hpp>
+#include <dart/constraint/constraint_solver.hpp>
+
+#include <dart/collision/collision_option.hpp>
+#include <dart/collision/collision_result.hpp>
+
+#include <dart/dynamics/body_node.hpp>
+#include <dart/dynamics/box_shape.hpp>
+#include <dart/dynamics/cone_shape.hpp>
+#include <dart/dynamics/convex_mesh_shape.hpp>
+#include <dart/dynamics/cylinder_shape.hpp>
+#include <dart/dynamics/ellipsoid_shape.hpp>
+#include <dart/dynamics/frame.hpp>
+#include <dart/dynamics/free_joint.hpp>
+#include <dart/dynamics/inertia.hpp>
+#include <dart/dynamics/point_cloud_shape.hpp>
+#include <dart/dynamics/shape.hpp>
+#include <dart/dynamics/shape_node.hpp>
+#include <dart/dynamics/simple_frame.hpp>
+#include <dart/dynamics/skeleton.hpp>
+#include <dart/dynamics/sphere_shape.hpp>
+
+#include <dart/math/constants.hpp>
+#include <dart/math/geometry.hpp>
+#include <dart/math/random.hpp>
+
 #include <dart/io/read.hpp>
 
-#include <CLI/CLI.hpp>
+#include <Eigen/Geometry>
 
+#include <algorithm>
+#include <charconv>
+#include <functional>
 #include <iostream>
-#include <ranges>
+#include <memory>
+#include <optional>
 #include <span>
+#include <stdexcept>
 #include <string>
+#include <string_view>
+#include <system_error>
+#include <utility>
 #include <vector>
 
-using namespace dart::common;
-using namespace dart::dynamics;
-using namespace dart::simulation;
-using namespace dart::gui;
-using namespace dart::gui;
-using namespace dart::utils;
-using namespace dart::math;
+#include <cctype>
 
 namespace {
 
-bool tryParseCollisionDetector(
-    const std::string& value, CollisionDetectorType& detector)
+constexpr const char* kShapesUri = "dart://sample/skel/shapes.skel";
+constexpr const char* kShapePrefix = "rigid_shape_";
+constexpr const char* kContactFrameName = "contact_points";
+
+struct RigidShapesConfig
 {
-  if (value == "dart") {
-    detector = CollisionDetectorType::Dart;
+  std::string collisionDetector = "file";
+  std::size_t maxContacts = 1000;
+  double groundThickness = 0.0;
+};
+
+std::string toLowerAscii(std::string_view value)
+{
+  std::string lowered(value);
+  std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](char c) {
+    return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  });
+  return lowered;
+}
+
+bool parseSizeT(std::string_view value, std::size_t& output)
+{
+  const auto* first = value.data();
+  const auto* last = value.data() + value.size();
+  const auto result = std::from_chars(first, last, output);
+  return result.ec == std::errc{} && result.ptr == last;
+}
+
+bool parseDouble(std::string_view value, double& output)
+{
+  const auto* first = value.data();
+  const auto* last = value.data() + value.size();
+  const auto result = std::from_chars(first, last, output);
+  return result.ec == std::errc{} && result.ptr == last;
+}
+
+std::optional<std::string_view> getOptionValue(
+    std::string_view argument,
+    std::string_view option,
+    int& index,
+    int argc,
+    char* argv[])
+{
+  if (argument == option) {
+    if (index + 1 >= argc) {
+      throw std::runtime_error("Missing value for " + std::string(option));
+    }
+    return std::string_view(argv[++index]);
+  }
+
+  const std::string prefix = std::string(option) + "=";
+  if (argument.starts_with(prefix)) {
+    return argument.substr(prefix.size());
+  }
+
+  return std::nullopt;
+}
+
+RigidShapesConfig parseRigidShapesConfig(int argc, char* argv[])
+{
+  RigidShapesConfig config;
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view argument(argv[i] == nullptr ? "" : argv[i]);
+    if (auto value
+        = getOptionValue(argument, "--collision-detector", i, argc, argv)) {
+      config.collisionDetector = toLowerAscii(*value);
+      continue;
+    }
+    if (auto value
+        = getOptionValue(argument, "--max-contacts", i, argc, argv)) {
+      if (!parseSizeT(*value, config.maxContacts)) {
+        throw std::runtime_error(
+            "Invalid --max-contacts value: " + std::string(*value));
+      }
+      continue;
+    }
+    if (auto value
+        = getOptionValue(argument, "--ground-thickness", i, argc, argv)) {
+      if (!parseDouble(*value, config.groundThickness)
+          || config.groundThickness < 0.0) {
+        throw std::runtime_error(
+            "Invalid --ground-thickness value: " + std::string(*value));
+      }
+      continue;
+    }
+  }
+  return config;
+}
+
+bool applyCollisionDetector(
+    const dart::simulation::WorldPtr& world, const std::string& detectorName)
+{
+  if (detectorName == "file") {
     return true;
   }
-  if (value == "fcl") {
-    detector = CollisionDetectorType::Dart;
+  if (detectorName == "dart") {
+    world->setCollisionDetector(dart::simulation::CollisionDetectorType::Dart);
     return true;
   }
-  if (value == "bullet") {
-    detector = CollisionDetectorType::Dart;
+  if (detectorName == "fcl") {
+    world->setCollisionDetector(dart::simulation::CollisionDetectorType::Fcl);
     return true;
   }
-  if (value == "ode") {
-    detector = CollisionDetectorType::Dart;
+#if DART_HAVE_BULLET
+  if (detectorName == "bullet") {
+    world->setCollisionDetector(
+        dart::simulation::CollisionDetectorType::Bullet);
     return true;
   }
+#endif
+#if DART_HAVE_ODE
+  if (detectorName == "ode") {
+    world->setCollisionDetector(dart::simulation::CollisionDetectorType::Ode);
+    return true;
+  }
+#endif
   return false;
 }
 
-bool updateGroundThickness(const WorldPtr& world, double thickness)
+bool updateGroundThickness(
+    const dart::simulation::WorldPtr& world, double thickness)
 {
-  if (!world) {
+  if (world == nullptr) {
     return false;
   }
 
-  SkeletonPtr groundSkeleton = world->getSkeleton("ground skeleton");
-  if (!groundSkeleton) {
-    for (const auto i :
-         std::views::iota(std::size_t{0}, world->getNumSkeletons())) {
+  dart::dynamics::SkeletonPtr groundSkeleton
+      = world->getSkeleton("ground skeleton");
+  if (groundSkeleton == nullptr) {
+    for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
       auto skeleton = world->getSkeleton(i);
-      if (skeleton && skeleton->getBodyNode("ground")) {
+      if (skeleton != nullptr && skeleton->getBodyNode("ground") != nullptr) {
         groundSkeleton = skeleton;
         break;
       }
     }
   }
 
-  if (!groundSkeleton) {
+  if (groundSkeleton == nullptr) {
     return false;
   }
 
   auto* groundBody = groundSkeleton->getBodyNode("ground");
-  if (!groundBody) {
+  if (groundBody == nullptr) {
     return false;
   }
 
-  auto updateShapeNode = [thickness](ShapeNode* shapeNode) {
-    if (!shapeNode) {
-      return;
-    }
+  const auto updateShapeNode
+      = [thickness](dart::dynamics::ShapeNode* shapeNode) {
+          if (shapeNode == nullptr) {
+            return;
+          }
 
-    auto box = std::dynamic_pointer_cast<BoxShape>(shapeNode->getShape());
-    if (!box) {
-      return;
-    }
+          auto box = std::dynamic_pointer_cast<dart::dynamics::BoxShape>(
+              shapeNode->getShape());
+          if (box == nullptr) {
+            return;
+          }
 
-    const Eigen::Vector3d originalSize = box->getSize();
-    const Eigen::Vector3d originalTranslation
-        = shapeNode->getRelativeTranslation();
-    const double originalTop = originalTranslation.y() + 0.5 * originalSize.y();
+          const Eigen::Vector3d originalSize = box->getSize();
+          const Eigen::Vector3d originalTranslation
+              = shapeNode->getRelativeTranslation();
+          const double originalTop
+              = originalTranslation.y() + 0.5 * originalSize.y();
 
-    Eigen::Vector3d size = originalSize;
-    size.y() = thickness;
-    box->setSize(size);
+          Eigen::Vector3d size = originalSize;
+          size.y() = thickness;
+          box->setSize(size);
 
-    Eigen::Vector3d translation = originalTranslation;
-    translation.y() = originalTop - 0.5 * thickness;
-    shapeNode->setRelativeTranslation(translation);
-  };
+          Eigen::Vector3d translation = originalTranslation;
+          translation.y() = originalTop - 0.5 * thickness;
+          shapeNode->setRelativeTranslation(translation);
+        };
 
-  groundBody->eachShapeNodeWith<VisualAspect>(updateShapeNode);
-  groundBody->eachShapeNodeWith<CollisionAspect>(updateShapeNode);
-
+  groundBody->eachShapeNodeWith<dart::dynamics::VisualAspect>(updateShapeNode);
+  groundBody->eachShapeNodeWith<dart::dynamics::CollisionAspect>(
+      updateShapeNode);
   return true;
 }
 
-} // namespace
-
-class CustomWorldNode : public RealTimeWorldNode
+dart::dynamics::SkeletonPtr createDynamicShape(
+    const std::string& name,
+    std::shared_ptr<dart::dynamics::Shape> shape,
+    const Eigen::Isometry3d& transform,
+    const Eigen::Vector3d& color,
+    double mass = 1.0)
 {
-public:
-  CustomWorldNode(
-      const WorldPtr& world,
-      const std::shared_ptr<PointCloudShape>& contactShape,
-      VisualAspect* contactVisual)
-    : RealTimeWorldNode(world),
-      mContactShape(contactShape),
-      mContactVisual(contactVisual),
-      mContactPointsVisible(false)
+  auto skeleton = dart::dynamics::Skeleton::create(name);
+  auto pair = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto* joint = pair.first;
+  auto* body = pair.second;
+  joint->setTransformFromParentBodyNode(transform);
+
+  auto* shapeNode = body->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
+  shapeNode->getVisualAspect()->setColor(color);
+  shapeNode->getDynamicsAspect()->setRestitutionCoeff(0.35);
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.8);
+
+  body->setInertia(
+      dart::dynamics::Inertia(
+          mass, Eigen::Vector3d::Zero(), shape->computeInertia(mass)));
+  return skeleton;
+}
+
+Eigen::Isometry3d makeRandomTransform()
+{
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  const Eigen::Vector3d rotation = dart::math::Random::uniform<Eigen::Vector3d>(
+      -dart::math::pi, dart::math::pi);
+  transform.translation() = Eigen::Vector3d(
+      dart::math::Random::uniform(-1.0, 1.0),
+      dart::math::Random::uniform(0.5, 1.0),
+      dart::math::Random::uniform(-1.0, 1.0));
+  transform.linear() = dart::math::expMapRot(rotation);
+  return transform;
+}
+
+Eigen::Vector3d makeRandomColor()
+{
+  return dart::math::Random::uniform<Eigen::Vector3d>(0.0, 1.0);
+}
+
+struct RigidShapesState
+{
+  explicit RigidShapesState(dart::simulation::WorldPtr inputWorld)
+    : world(std::move(inputWorld)),
+      contactPoints(std::make_shared<dart::dynamics::PointCloudShape>(0.02))
   {
-    if (mContactVisual) {
-      mContactVisual->setHidden(true);
+    contactPoints->setDataVariance(dart::dynamics::Shape::DYNAMIC);
+    contactPoints->setPointShapeType(
+        dart::dynamics::PointCloudShape::BILLBOARD_CIRCLE);
+    contactFrame = dart::dynamics::SimpleFrame::createShared(
+        dart::dynamics::Frame::World(), kContactFrameName);
+    contactFrame->setShape(contactPoints);
+    contactFrame->getVisualAspect(true)->setRGBA(
+        Eigen::Vector4d(0.9, 0.1, 0.1, 1.0));
+    setContactPointsVisible(false);
+    if (world != nullptr) {
+      world->addSimpleFrame(contactFrame);
     }
   }
 
-  void toggleContactPoints()
+  void spawnShape(
+      std::string label,
+      std::shared_ptr<dart::dynamics::Shape> shape,
+      double mass = 10.0)
   {
-    setContactPointsVisible(!mContactPointsVisible);
-  }
-
-  void setContactPointsVisible(bool visible)
-  {
-    mContactPointsVisible = visible;
-    if (mContactVisual) {
-      mContactVisual->setHidden(!visible);
-    }
-    if (!visible && mContactShape) {
-      mContactShape->removeAllPoints();
-    }
-  }
-
-  bool getContactPointsVisible() const
-  {
-    return mContactPointsVisible;
-  }
-
-  void customPreRefresh() override
-  {
-    if (!mContactPointsVisible || !mContactShape) {
+    if (world == nullptr || shape == nullptr) {
       return;
     }
 
-    const auto& contacts = getWorld()->getLastCollisionResult().getContacts();
-    mContactPoints.clear();
-    mContactPoints.reserve(contacts.size());
-    for (const auto& contact : contacts) {
-      mContactPoints.push_back(contact.point);
-    }
-
-    mContactShape->setPoint(
-        std::span<const Eigen::Vector3d>(
-            mContactPoints.data(), mContactPoints.size()));
+    const std::size_t index = nextShapeIndex++;
+    world->addSkeleton(createDynamicShape(
+        std::string(kShapePrefix) + std::move(label) + "_"
+            + std::to_string(index),
+        std::move(shape),
+        makeRandomTransform(),
+        makeRandomColor(),
+        mass));
   }
 
-private:
-  std::shared_ptr<PointCloudShape> mContactShape;
-  VisualAspect* mContactVisual;
-  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
-      mContactPoints;
-  bool mContactPointsVisible;
-};
-
-class RigidShapesEventHandler : public ::osgGA::GUIEventHandler
-{
-public:
-  RigidShapesEventHandler(const WorldPtr& world, CustomWorldNode* worldNode)
-    : mWorld(world), mWorldNode(worldNode)
+  template <class ShapeType, class... Args>
+  void spawn(std::string label, Args&&... args)
   {
+    spawnShape(
+        std::move(label),
+        std::make_shared<ShapeType>(std::forward<Args>(args)...));
   }
 
-  bool handle(
-      const ::osgGA::GUIEventAdapter& ea, ::osgGA::GUIActionAdapter&) override
+  void spawnBox()
   {
-    if (ea.getEventType() == ::osgGA::GUIEventAdapter::KEYDOWN) {
-      switch (ea.getKey()) {
-        case 'q':
-        case 'Q':
-          spawnBox(
-              getRandomTransform(),
-              Random::uniform<Eigen::Vector3d>(0.05, 0.25));
-          return true;
-        case 'w':
-        case 'W':
-          spawnEllipsoid(
-              getRandomTransform(),
-              Random::uniform<Eigen::Vector3d>(0.025, 0.125));
-          return true;
-        case 'e':
-        case 'E': {
-          const double radius = Random::uniform(0.05, 0.25);
-          const double height = Random::uniform(0.1, 0.5);
-          spawnCylinder(getRandomTransform(), radius, height);
-          return true;
-        }
-        case 'r':
-        case 'R': {
-          const int vertexCount = Random::uniform<int>(16, 32);
-          const double bound = Random::uniform(0.1, 0.25);
-          spawnConvexMesh(getRandomTransform(), vertexCount, bound);
-          return true;
-        }
-        case 'a':
-        case 'A':
-          if (mWorld->getNumSkeletons() > 1) {
-            mWorld->removeSkeleton(
-                mWorld->getSkeleton(mWorld->getNumSkeletons() - 1));
-          }
-          return true;
-        case 'c':
-        case 'C':
-          if (mWorldNode) {
-            mWorldNode->toggleContactPoints();
-          }
-          return true;
-        default:
-          return false;
-      }
-    }
-    return false;
+    spawn<dart::dynamics::BoxShape>(
+        "box", dart::math::Random::uniform<Eigen::Vector3d>(0.05, 0.25));
   }
 
-private:
-  std::string nextSkeletonName(const std::string& prefix)
+  void spawnEllipsoid()
   {
-    return prefix + "_" + std::to_string(mSpawnCount++);
+    spawn<dart::dynamics::EllipsoidShape>(
+        "ellipsoid",
+        2.0 * dart::math::Random::uniform<Eigen::Vector3d>(0.025, 0.125));
   }
 
-  Eigen::Isometry3d getRandomTransform()
+  void spawnCylinder()
   {
-    Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-
-    const Eigen::Vector3d rotation = Random::uniform<Eigen::Vector3d>(-pi, pi);
-    const Eigen::Vector3d position = Eigen::Vector3d(
-        Random::uniform(-1.0, 1.0),
-        Random::uniform(0.5, 1.0),
-        Random::uniform(-1.0, 1.0));
-
-    T.translation() = position;
-    T.linear() = expMapRot(rotation);
-
-    return T;
+    spawn<dart::dynamics::CylinderShape>(
+        "cylinder",
+        dart::math::Random::uniform(0.05, 0.25),
+        dart::math::Random::uniform(0.1, 0.5));
   }
 
-  void spawnBox(
-      const Eigen::Isometry3d& _T,
-      const Eigen::Vector3d& _size,
-      double _mass = 10)
+  void spawnSphere()
   {
-    SkeletonPtr newSkeleton = Skeleton::create(nextSkeletonName("box"));
-
-    ShapePtr newShape(new BoxShape(_size));
-
-    BodyNode::Properties bodyProp;
-    bodyProp.mName = "box_link";
-    bodyProp.mInertia.setMass(_mass);
-
-    FreeJoint::Properties jointProp;
-    jointProp.mName = "box_joint";
-    jointProp.mT_ParentBodyToJoint = _T;
-
-    auto pair = newSkeleton->createJointAndBodyNodePair<FreeJoint>(
-        nullptr, jointProp, bodyProp);
-    auto shapeNode = pair.second->createShapeNodeWith<
-        VisualAspect,
-        CollisionAspect,
-        DynamicsAspect>(newShape);
-    shapeNode->getVisualAspect()->setColor(
-        Random::uniform<Eigen::Vector3d>(0.0, 1.0));
-
-    mWorld->addSkeleton(newSkeleton);
+    spawn<dart::dynamics::SphereShape>("sphere", 0.22);
   }
 
-  void spawnEllipsoid(
-      const Eigen::Isometry3d& _T,
-      const Eigen::Vector3d& _radii,
-      double _mass = 10)
+  void spawnCone()
   {
-    SkeletonPtr newSkeleton = Skeleton::create(nextSkeletonName("ellipsoid"));
-
-    ShapePtr newShape(new EllipsoidShape(_radii * 2.0));
-
-    BodyNode::Properties bodyProp;
-    bodyProp.mName = "ellipsoid_link";
-    bodyProp.mInertia.setMass(_mass);
-
-    FreeJoint::Properties jointProp;
-    jointProp.mName = "ellipsoid_joint";
-    jointProp.mT_ParentBodyToJoint = _T;
-
-    auto pair = newSkeleton->createJointAndBodyNodePair<FreeJoint>(
-        nullptr, jointProp, bodyProp);
-    auto shapeNode = pair.second->createShapeNodeWith<
-        VisualAspect,
-        CollisionAspect,
-        DynamicsAspect>(newShape);
-    shapeNode->getVisualAspect()->setColor(
-        Random::uniform<Eigen::Vector3d>(0.0, 1.0));
-
-    mWorld->addSkeleton(newSkeleton);
+    spawn<dart::dynamics::ConeShape>("cone", 0.20, 0.45);
   }
 
-  void spawnCylinder(
-      const Eigen::Isometry3d& _T,
-      double _radius,
-      double _height,
-      double _mass = 10)
+  void spawnConvexMesh()
   {
-    SkeletonPtr newSkeleton = Skeleton::create(nextSkeletonName("cylinder"));
+    auto mesh
+        = std::make_shared<dart::dynamics::ConvexMeshShape::TriMeshType>();
+    const int vertexCount = dart::math::Random::uniform<int>(16, 32);
+    const double bound = dart::math::Random::uniform(0.1, 0.25);
+    mesh->reserveVertices(vertexCount + 4);
 
-    ShapePtr newShape(new CylinderShape(_radius, _height));
-
-    BodyNode::Properties bodyProp;
-    bodyProp.mName = "cylinder_link";
-    bodyProp.mInertia.setMass(_mass);
-
-    FreeJoint::Properties jointProp;
-    jointProp.mName = "cylinder_joint";
-    jointProp.mT_ParentBodyToJoint = _T;
-
-    auto pair = newSkeleton->createJointAndBodyNodePair<FreeJoint>(
-        nullptr, jointProp, bodyProp);
-    auto shapeNode = pair.second->createShapeNodeWith<
-        VisualAspect,
-        CollisionAspect,
-        DynamicsAspect>(newShape);
-    shapeNode->getVisualAspect()->setColor(
-        Random::uniform<Eigen::Vector3d>(0.0, 1.0));
-
-    mWorld->addSkeleton(newSkeleton);
-  }
-
-  void spawnConvexMesh(
-      const Eigen::Isometry3d& _T,
-      int _vertexCount,
-      double _bound,
-      double _mass = 10)
-  {
-    SkeletonPtr newSkeleton = Skeleton::create(nextSkeletonName("convex_mesh"));
-
-    auto mesh = std::make_shared<ConvexMeshShape::TriMeshType>();
-    mesh->reserveVertices(_vertexCount + 4);
-
-    const double seed = _bound * 0.6;
+    const double seed = bound * 0.6;
     mesh->addVertex(Eigen::Vector3d(-seed, -seed, -seed));
     mesh->addVertex(Eigen::Vector3d(seed, -seed, seed));
     mesh->addVertex(Eigen::Vector3d(-seed, seed, seed));
     mesh->addVertex(Eigen::Vector3d(seed, seed, -seed));
 
-    for (int i = 0; i < _vertexCount; ++i) {
-      mesh->addVertex(Random::uniform<Eigen::Vector3d>(-_bound, _bound));
+    for (int i = 0; i < vertexCount; ++i) {
+      mesh->addVertex(
+          dart::math::Random::uniform<Eigen::Vector3d>(-bound, bound));
     }
-
-    ShapePtr newShape = ConvexMeshShape::fromMesh(mesh, true);
-
-    BodyNode::Properties bodyProp;
-    bodyProp.mName = "convex_mesh_link";
-    bodyProp.mInertia.setMass(_mass);
-
-    FreeJoint::Properties jointProp;
-    jointProp.mName = "convex_mesh_joint";
-    jointProp.mT_ParentBodyToJoint = _T;
-
-    auto pair = newSkeleton->createJointAndBodyNodePair<FreeJoint>(
-        nullptr, jointProp, bodyProp);
-    auto shapeNode = pair.second->createShapeNodeWith<
-        VisualAspect,
-        CollisionAspect,
-        DynamicsAspect>(newShape);
-    shapeNode->getVisualAspect()->setColor(
-        Random::uniform<Eigen::Vector3d>(0.0, 1.0));
-
-    mWorld->addSkeleton(newSkeleton);
+    spawnShape(
+        "convex_mesh", dart::dynamics::ConvexMeshShape::fromMesh(mesh, true));
   }
 
-protected:
-  WorldPtr mWorld;
-  CustomWorldNode* mWorldNode;
-  std::size_t mSpawnCount{0};
+  void deleteLast()
+  {
+    if (world == nullptr || world->getNumSkeletons() <= 1) {
+      return;
+    }
+
+    for (std::size_t i = world->getNumSkeletons(); i > 0; --i) {
+      auto skeleton = world->getSkeleton(i - 1);
+      if (skeleton != nullptr
+          && skeleton->getName().rfind(kShapePrefix, 0) == 0) {
+        world->removeSkeleton(skeleton);
+        return;
+      }
+    }
+  }
+
+  void setContactPointsVisible(bool visible)
+  {
+    contactPointsVisible = visible;
+    if (contactFrame != nullptr) {
+      contactFrame->getVisualAspect(true)->setHidden(!visible);
+    }
+    if (!visible && contactPoints != nullptr) {
+      contactPoints->removeAllPoints();
+      contactPositions.clear();
+    }
+  }
+
+  void toggleContactPoints()
+  {
+    setContactPointsVisible(!contactPointsVisible);
+  }
+
+  void updateContactPoints()
+  {
+    if (!contactPointsVisible || world == nullptr || contactPoints == nullptr) {
+      return;
+    }
+
+    const auto contacts = world->getLastCollisionResult().getContacts();
+    contactPositions.clear();
+    contactPositions.reserve(contacts.size());
+    for (const auto& contact : contacts) {
+      contactPositions.push_back(contact.point);
+    }
+
+    contactPoints->setPoint(
+        std::span<const Eigen::Vector3d>(
+            contactPositions.data(), contactPositions.size()));
+  }
+
+  dart::simulation::WorldPtr world;
+  std::shared_ptr<dart::dynamics::PointCloudShape> contactPoints;
+  std::shared_ptr<dart::dynamics::SimpleFrame> contactFrame;
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
+      contactPositions;
+  std::size_t nextShapeIndex = 0;
+  bool contactPointsVisible = false;
 };
+
+std::shared_ptr<RigidShapesState> createRigidShapesState(
+    const dart::simulation::WorldPtr& world)
+{
+  return std::make_shared<RigidShapesState>(world);
+}
+
+dart::simulation::WorldPtr createRigidShapesWorld(
+    const RigidShapesConfig& config)
+{
+  auto world = dart::io::readWorld(kShapesUri);
+  if (world == nullptr) {
+    throw std::runtime_error(
+        "Failed to load rigid-shapes world from " + std::string(kShapesUri));
+  }
+
+  if (!applyCollisionDetector(world, config.collisionDetector)) {
+    throw std::runtime_error(
+        "Unsupported collision detector: " + config.collisionDetector);
+  }
+  if (auto* constraintSolver = world->getConstraintSolver()) {
+    constraintSolver->getCollisionOption().maxNumContacts = config.maxContacts;
+  }
+  if (config.groundThickness > 0.0
+      && !updateGroundThickness(world, config.groundThickness)) {
+    throw std::runtime_error("Failed to update ground thickness");
+  }
+  return world;
+}
+
+void printRigidShapesInstructions(const dart::simulation::WorldPtr& world)
+{
+  if (world != nullptr) {
+    if (const auto detector = world->getCollisionDetector()) {
+      std::cout << "Collision detector: " << detector->getTypeView() << "\n";
+    }
+  }
+
+  std::cout << "Rigid Shapes Example Controls:\n"
+            << "space bar: simulation on/off\n"
+            << "'q': spawn a random cube\n"
+            << "'w': spawn a random ellipsoid\n"
+            << "'e': spawn a random cylinder\n"
+            << "'r': spawn a random convex mesh\n"
+            << "'a': delete a spawned object at last\n"
+            << "'c': toggle contact points\n";
+}
+
+dart::gui::Panel createControlsPanel(
+    const std::shared_ptr<RigidShapesState>& state)
+{
+  bool gravityEnabled = true;
+
+  dart::gui::Panel panel;
+  panel.title = "Rigid Shapes";
+  panel.buildWithContext = [state, gravityEnabled](
+                               dart::gui::PanelBuilder& builder,
+                               dart::gui::PanelContext& context) mutable {
+    builder.text("Spawn rigid bodies with different collision shapes.");
+    builder.text("Keys: q box, w ellipsoid, e cylinder, r convex mesh.");
+    builder.text("Keys: a delete last, c toggle contact points.");
+    builder.separator();
+    if (context.lifecycle != nullptr) {
+      if (builder.button(context.lifecycle->paused ? "Resume" : "Pause")) {
+        dart::gui::togglePaused(*context.lifecycle);
+      }
+      builder.sameLine();
+      if (builder.button("Step")) {
+        dart::gui::requestSingleStep(*context.lifecycle);
+      }
+    }
+
+    if (context.world != nullptr
+        && builder.checkbox("Gravity", gravityEnabled)) {
+      context.world->setGravity(
+          gravityEnabled ? Eigen::Vector3d(0.0, 0.0, -9.81)
+                         : Eigen::Vector3d::Zero());
+    }
+
+    if (builder.button("Box")) {
+      state->spawnBox();
+    }
+    builder.sameLine();
+    if (builder.button("Ellipsoid")) {
+      state->spawnEllipsoid();
+    }
+    if (builder.button("Cylinder")) {
+      state->spawnCylinder();
+    }
+    builder.sameLine();
+    if (builder.button("Sphere")) {
+      state->spawnSphere();
+    }
+    if (builder.button("Cone")) {
+      state->spawnCone();
+    }
+    builder.sameLine();
+    if (builder.button("Convex Mesh")) {
+      state->spawnConvexMesh();
+    }
+    if (builder.button("Delete Last")) {
+      state->deleteLast();
+    }
+    builder.sameLine();
+    if (builder.button("Toggle Contacts")) {
+      state->toggleContactPoints();
+    }
+    if (context.world != nullptr) {
+      builder.text(
+          "skeletons: " + std::to_string(context.world->getNumSkeletons()));
+    }
+    builder.text("time: " + std::to_string(context.simulationTime));
+    builder.text("contacts: " + std::to_string(context.contactCount));
+  };
+  return panel;
+}
+
+dart::gui::OrbitCamera makeRigidShapesCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d::Zero();
+  camera.up = Eigen::Vector3d::UnitY();
+  camera.yaw = 0.7853981633974483;
+  camera.pitch = 0.6154797086703874;
+  camera.distance = 3.4641016151377544;
+  return camera;
+}
+
+dart::gui::RunOptions makeRigidShapesRunDefaults()
+{
+  dart::gui::RunOptions options;
+  options.width = 640;
+  options.height = 480;
+  return options;
+}
+
+dart::gui::KeyboardAction makeRigidShapesAction(
+    std::shared_ptr<RigidShapesState> state,
+    char key,
+    std::string label,
+    std::function<void(RigidShapesState&)> callback)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::characterKey(key);
+  action.callback = [state = std::move(state), callback = std::move(callback)](
+                        dart::gui::KeyboardActionContext&) {
+    if (state != nullptr) {
+      callback(*state);
+    }
+  };
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> createRigidShapesKeyboardActions(
+    const std::shared_ptr<RigidShapesState>& state)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makeRigidShapesAction(
+      state, 'q', "Spawn box", [](RigidShapesState& s) { s.spawnBox(); }));
+  actions.push_back(makeRigidShapesAction(
+      state, 'w', "Spawn ellipsoid", [](RigidShapesState& s) {
+        s.spawnEllipsoid();
+      }));
+  actions.push_back(makeRigidShapesAction(
+      state, 'e', "Spawn cylinder", [](RigidShapesState& s) {
+        s.spawnCylinder();
+      }));
+  actions.push_back(makeRigidShapesAction(
+      state, 'r', "Spawn convex mesh", [](RigidShapesState& s) {
+        s.spawnConvexMesh();
+      }));
+  actions.push_back(makeRigidShapesAction(
+      state, 'a', "Delete last spawned shape", [](RigidShapesState& s) {
+        s.deleteLast();
+      }));
+  actions.push_back(makeRigidShapesAction(
+      state, 'c', "Toggle contact points", [](RigidShapesState& s) {
+        s.toggleContactPoints();
+      }));
+  return actions;
+}
+
+} // namespace
 
 int main(int argc, char* argv[])
 {
-  CLI::App app("Rigid shapes example");
-  std::string collisionDetector = "file";
-  std::size_t maxContacts = 1000;
-  double groundThickness = 0.0;
-  app.add_option(
-      "--collision-detector",
-      collisionDetector,
-      "Collision detector: file or dart; legacy aliases fcl, bullet, and ode "
-      "map to dart");
-  app.add_option(
-      "--max-contacts",
-      maxContacts,
-      "Maximum number of contacts per collision pass (0 disables collision)");
-  app.add_option(
-      "--ground-thickness",
-      groundThickness,
-      "Override ground box thickness in meters (0 keeps the file value)");
-  CLI11_PARSE(app, argc, argv);
+  try {
+    const auto config = parseRigidShapesConfig(argc, argv);
+    auto world = createRigidShapesWorld(config);
+    auto state = createRigidShapesState(world);
 
-  WorldPtr myWorld = dart::io::readWorld("dart://sample/skel/shapes.skel");
-  DART_ASSERT(myWorld != nullptr);
-
-  const std::string detectorLower = toLower(collisionDetector);
-  if (detectorLower != "file") {
-    CollisionDetectorType detectorType;
-    if (!tryParseCollisionDetector(detectorLower, detectorType)) {
-      std::cerr << "Unsupported collision detector: " << collisionDetector
-                << std::endl;
-      return 1;
-    }
-    myWorld->setCollisionDetector(detectorType);
-  }
-
-  if (const auto detector = myWorld->getCollisionDetector()) {
-    std::cout << "Collision detector: " << detector->getTypeView() << std::endl;
-  }
-
-  auto& collisionOption = myWorld->getConstraintSolver()->getCollisionOption();
-  collisionOption.maxNumContacts = maxContacts;
-
-  if (groundThickness < 0.0) {
-    std::cerr << "--ground-thickness must be non-negative." << std::endl;
+    dart::gui::ApplicationOptions options;
+    options.world = world;
+    options.runDefaults = makeRigidShapesRunDefaults();
+    options.camera = makeRigidShapesCamera();
+    options.preStep = [state]() {
+      state->updateContactPoints();
+    };
+    options.keyboardActions = createRigidShapesKeyboardActions(state);
+    options.panels.push_back(createControlsPanel(state));
+    printRigidShapesInstructions(world);
+    return dart::gui::runApplication(argc, argv, options);
+  } catch (const std::exception& e) {
+    std::cerr << "rigid_shapes: " << e.what() << "\n";
     return 1;
   }
-
-  if (groundThickness > 0.0) {
-    if (!updateGroundThickness(myWorld, groundThickness)) {
-      std::cerr << "Failed to update ground thickness." << std::endl;
-      return 1;
-    }
-  }
-
-  auto contactShape = std::make_shared<PointCloudShape>(0.02);
-  contactShape->setDataVariance(Shape::DYNAMIC);
-  contactShape->setPointShapeType(PointCloudShape::BILLBOARD_CIRCLE);
-
-  auto contactFrame
-      = SimpleFrame::createShared(Frame::World(), "contact_points");
-  contactFrame->setShape(contactShape);
-  auto* contactVisual = contactFrame->createVisualAspect();
-  contactVisual->setRGBA(Eigen::Vector4d(0.9, 0.1, 0.1, 1.0));
-  contactVisual->setHidden(true);
-  myWorld->addSimpleFrame(contactFrame);
-
-  ::osg::ref_ptr<CustomWorldNode> node
-      = new CustomWorldNode(myWorld, contactShape, contactVisual);
-
-  auto handler = new RigidShapesEventHandler(myWorld, node.get());
-
-  auto viewer = Viewer();
-  viewer.addWorldNode(node);
-  viewer.addEventHandler(handler);
-
-  viewer.addInstructionText("space bar: simulation on/off\n");
-  viewer.addInstructionText("'q': spawn a random cube\n");
-  viewer.addInstructionText("'w': spawn a random ellipsoid\n");
-  viewer.addInstructionText("'e': spawn a random cylinder\n");
-  viewer.addInstructionText("'r': spawn a random convex mesh\n");
-  viewer.addInstructionText("'a': delete a spawned object at last\n");
-  viewer.addInstructionText("'c': toggle contact points\n");
-  std::cout << viewer.getInstructions() << std::endl;
-
-  viewer.setUpViewInWindow(0, 0, 640, 480);
-
-  viewer.getCameraManipulator()->setHomePosition(
-      ::osg::Vec3(2.0f, 2.0f, 2.0f),
-      ::osg::Vec3(0.0f, 0.0f, 0.0f),
-      ::osg::Vec3(0.0f, 1.0f, 0.0f));
-
-  viewer.setCameraManipulator(viewer.getCameraManipulator());
-
-  viewer.run();
-
-  return 0;
 }
