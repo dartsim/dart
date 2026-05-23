@@ -121,6 +121,29 @@ std::size_t SweepAndPruneBroadPhase::size() const
   return objects_.size();
 }
 
+void SweepAndPruneBroadPhase::buildDebugSnapshot(
+    BroadPhaseDebugSnapshot& out) const
+{
+  out.clear();
+  out.candidatePairs = queryPairs();
+  out.numObjects = size();
+  out.hasSweepEndpoints = true;
+  out.endpoints.reserve(objects_.size() * 2u * 3u);
+
+  if (dirty_) {
+    rebuildEndpoints();
+  }
+
+  for (int axis = 0; axis < 3; ++axis) {
+    for (std::size_t order = 0; order < endpoints_[axis].size(); ++order) {
+      const Endpoint& endpoint = endpoints_[axis][order];
+      out.endpoints.push_back(
+          BroadPhaseDebugEndpoint{
+              axis, endpoint.objectId, endpoint.value, endpoint.isMin, order});
+    }
+  }
+}
+
 void SweepAndPruneBroadPhase::rebuildEndpoints() const
 {
   for (int axis = 0; axis < 3; ++axis) {

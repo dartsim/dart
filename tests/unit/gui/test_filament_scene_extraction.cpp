@@ -33,6 +33,7 @@
 #include <dart/config.hpp>
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/debug.hpp>
 #include <dart/gui/detail/scenes.hpp>
 #include <dart/gui/detail/simulation_stepper.hpp>
 #include <dart/gui/geometry.hpp>
@@ -616,6 +617,12 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       std::filesystem::path("dart") / "gui" / "detail" / "frame_viewport.cpp");
   const auto sceneFrameSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "scene_frame.cpp");
+  const auto uiFrameSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "ui_frame.cpp");
+  const auto frameRendererSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "frame_renderer.cpp");
+  const auto applicationSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "application.cpp");
   const auto sceneFixturesSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "scene_fixtures.cpp");
   const auto selectionSource = readSourceFile(
@@ -635,6 +642,9 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       / "render_environment.cpp");
   const auto viewerHeader
       = readSourceFile(std::filesystem::path("dart") / "gui" / "viewer.hpp");
+  const auto debugColorSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "materials"
+      / "debug_color.mat");
   const auto texturedLitSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "materials"
       / "textured_lit.mat");
@@ -666,8 +676,37 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       sceneFixturesSource.find("atlas->setPosition(0, -halfPi)"),
       std::string::npos);
   EXPECT_NE(selectionSource.find("uiCapturesMouse"), std::string::npos);
+  EXPECT_EQ(inputSource.find("isInsideStatusPanel"), std::string::npos);
+  EXPECT_EQ(frameViewportSource.find("isInsideStatusPanel"), std::string::npos);
   EXPECT_NE(
       sceneFrameSource.find("selectionDebugRenderableId()"), std::string::npos);
+  EXPECT_NE(
+      sceneFrameSource.find(
+          "DART_PROFILE_SCOPED_N(\"SceneFrameUpdater::update\")"),
+      std::string::npos);
+  EXPECT_NE(uiFrameSource.find("projectDebugLabel"), std::string::npos);
+  EXPECT_NE(uiFrameSource.find("renderDebugLabels"), std::string::npos);
+  EXPECT_NE(uiFrameSource.find("dartScene.debugLabels"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("DART_PROFILE_SCOPED_N(\"updateFrameUi\")"),
+      std::string::npos);
+  EXPECT_NE(
+      frameRendererSource.find(
+          "DART_PROFILE_SCOPED_N(\"renderApplicationFrame\")"),
+      std::string::npos);
+  EXPECT_NE(
+      frameRendererSource.find("DART_PROFILE_SCOPED_N(\"beginFilamentFrame\")"),
+      std::string::npos);
+  EXPECT_NE(
+      frameRendererSource.find(
+          "DART_PROFILE_SCOPED_N(\"renderFilamentViews\")"),
+      std::string::npos);
+  EXPECT_NE(applicationSource.find("DART_PROFILE_FRAME"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("DART_PROFILE_SCOPED_N(\"GUI render frame\")"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("appOptions.debugLabels"), std::string::npos);
   EXPECT_NE(
       selectionSource.find("mSelectionBoundsVisible = false"),
       std::string::npos);
@@ -680,6 +719,8 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
   EXPECT_NE(selectionSource.find("skeleton->getIK(true)"), std::string::npos);
   EXPECT_NE(
       debugOverlaySource.find("kGizmoWorldScale = 1.0"), std::string::npos);
+  EXPECT_NE(debugColorSource.find("depthWrite : false"), std::string::npos);
+  EXPECT_NE(debugColorSource.find("depthCulling : false"), std::string::npos);
   EXPECT_NE(renderableFactorySource.find("line.thickness"), std::string::npos);
   EXPECT_NE(
       renderableFactorySource.find("PrimitiveType::TRIANGLES"),
@@ -727,6 +768,8 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
           "mSelectedDragPlanePoint = bodyDrag.targetTransform.translation()"),
       std::string::npos);
   EXPECT_NE(panelSource.find("defaultPositionIndex"), std::string::npos);
+  EXPECT_NE(panelSource.find("ImGuiCond_FirstUseEver"), std::string::npos);
+  EXPECT_EQ(panelSource.find("ImGuiCond_Always"), std::string::npos);
   EXPECT_NE(
       panelSource.find("context.ui.displaySize.x()) - panelWidth"),
       std::string::npos);
@@ -1319,6 +1362,40 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresGizmos)
   EXPECT_EQ(options.gizmos.front().target, target);
   EXPECT_EQ(options.gizmos.front().flags, dart::gui::GizmoFlags::Translate);
   EXPECT_DOUBLE_EQ(options.gizmos.front().size, 0.25);
+}
+
+TEST(FilamentSceneExtraction, ApplicationOptionsStoresDebugLabels)
+{
+  dart::gui::ApplicationOptions options;
+  options.world = World::create("debug_label_scene");
+  options.debugLabels = [] {
+    dart::gui::DebugLabelDescriptor label;
+    label.text = "AABB 0";
+    label.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+    label.rgba = Eigen::Vector4d(0.1, 0.2, 0.3, 0.4);
+    return std::vector<dart::gui::DebugLabelDescriptor>{label};
+  };
+
+  ASSERT_TRUE(options.debugLabels);
+  const auto labels = options.debugLabels();
+  ASSERT_EQ(labels.size(), 1u);
+  EXPECT_EQ(labels.front().text, "AABB 0");
+  EXPECT_TRUE(labels.front().position.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_TRUE(
+      labels.front().rgba.isApprox(Eigen::Vector4d(0.1, 0.2, 0.3, 0.4)));
+
+  dart::gui::detail::AppOptions appOptions;
+  appOptions.world = options.world;
+  appOptions.debugLabels = options.debugLabels;
+  const dart::gui::detail::DartScene scene
+      = dart::gui::detail::createDartScene(appOptions);
+
+  ASSERT_TRUE(scene.debugLabels);
+  const auto sceneLabels = scene.debugLabels();
+  ASSERT_EQ(sceneLabels.size(), 1u);
+  EXPECT_EQ(sceneLabels.front().text, "AABB 0");
+  EXPECT_TRUE(
+      sceneLabels.front().position.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
 }
 
 TEST(FilamentSceneExtraction, ApplicationOptionsStoresBodyNodeDragHandles)
@@ -3503,6 +3580,46 @@ TEST(FilamentSceneExtraction, HuboPuppetExamplePreservesLegacyParityMarkers)
   EXPECT_NE(readmeSource.find("arm and leg IK"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, CollisionSandboxUsesMouseDrivenObjectGizmos)
+{
+  const auto mainSource = readSourceFile(
+      std::filesystem::path("examples") / "collision_sandbox" / "main.cpp");
+  const auto readmeSource = readSourceFile(
+      std::filesystem::path("examples") / "collision_sandbox" / "README.md");
+
+  EXPECT_NE(
+      mainSource.find("#include <dart/gui/gizmo.hpp>"), std::string::npos);
+  EXPECT_NE(mainSource.find("createObjectGizmos"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("options.gizmos = createObjectGizmos(state)"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("gizmo.onChanged"), std::string::npos);
+  EXPECT_NE(mainSource.find("kContactObjectAlpha"), std::string::npos);
+  EXPECT_NE(mainSource.find("showDebugLabels"), std::string::npos);
+  EXPECT_NE(mainSource.find("addDebugLabel"), std::string::npos);
+  EXPECT_NE(mainSource.find("BroadPhaseObjectCenters"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("objectCentersById = fallbackObjectCenters"),
+      std::string::npos);
+  EXPECT_NE(mainSource.find("options.debugLabels"), std::string::npos);
+  EXPECT_NE(mainSource.find("\"Name Tags\""), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("const bool showContactOverlay"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("Left-drag object gizmo arrows, planes, and rings"),
+      std::string::npos);
+  EXPECT_EQ(mainSource.find("\"A Position\""), std::string::npos);
+  EXPECT_EQ(mainSource.find("\"B Position\""), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("Left-drag object gizmo arrows, planes, and rings"),
+      std::string::npos);
+  EXPECT_NE(readmeSource.find("rendered translucent"), std::string::npos);
+  EXPECT_NE(
+      readmeSource.find("point, normal, and depth overlays"),
+      std::string::npos);
+  EXPECT_NE(readmeSource.find("Minimal name tags"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, G1PuppetExamplePreservesLegacyParityMarkers)
 {
   const auto mainSource = readSourceFile(
@@ -4826,6 +4943,27 @@ TEST(
       descriptor.renderResourceVersion,
       secondExtract.front().renderResourceVersion);
   EXPECT_NE(descriptor.renderResourceVersion, 0u);
+}
+
+TEST(FilamentSceneExtraction, ApplyDebugVisualStyle_SimpleFrame_DisablesShadows)
+{
+  auto world = World::create("world");
+  auto frame = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "debug_marker");
+  frame->setShape(std::make_shared<SphereShape>(0.12));
+  const Eigen::Vector4d color(0.95, 0.16, 0.12, 0.75);
+  dart::gui::applyDebugVisualStyle(*frame, color);
+  world->addSimpleFrame(frame);
+
+  ASSERT_NE(frame->getVisualAspect(), nullptr);
+  EXPECT_TRUE(frame->getVisualAspect()->getRGBA().isApprox(color));
+  EXPECT_FALSE(frame->getVisualAspect()->getShadowed());
+
+  const auto descriptors = dart::gui::extractRenderables(*world);
+  ASSERT_EQ(descriptors.size(), 1u);
+  EXPECT_TRUE(descriptors.front().material.rgba.isApprox(color));
+  EXPECT_FALSE(descriptors.front().material.castsShadows);
+  EXPECT_FALSE(descriptors.front().material.receivesShadows);
 }
 
 TEST(

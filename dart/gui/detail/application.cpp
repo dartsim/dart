@@ -175,6 +175,7 @@ int runGuiBackendApplicationImpl(
       appOptions.renderSettings.outputMode = renderOutputMode;
     }
     appOptions.gizmos = applicationOptions.gizmos;
+    appOptions.debugLabels = applicationOptions.debugLabels;
     appOptions.ikHandles = applicationOptions.ikHandles;
     appOptions.bodyNodeDragHandles = applicationOptions.bodyNodeDragHandles;
     appOptions.keyboardActions = applicationOptions.keyboardActions;
@@ -295,43 +296,56 @@ int runGuiBackendApplicationImpl(
 
   while (!lifecycle.exitRequested
          && shouldContinueApplicationLoop(runOptions.headless, window)) {
+    DART_PROFILE_FRAME;
+    DART_PROFILE_SCOPED_N("GUI frame");
     const auto frameStart = ProfileAccumulator::Clock::now();
     auto phaseStart = ProfileAccumulator::Clock::now();
-    pollApplicationInput(
-        window,
-        dartScene,
-        selectionController,
-        lifecycle,
-        cameraController,
-        homeCamera,
-        inputState);
+    {
+      DART_PROFILE_SCOPED_N("GUI input");
+      pollApplicationInput(
+          window,
+          dartScene,
+          selectionController,
+          lifecycle,
+          cameraController,
+          homeCamera,
+          inputState);
+    }
     profile.inputMs += elapsedMs(phaseStart);
 
     phaseStart = ProfileAccumulator::Clock::now();
-    const FrameViewport viewport = updateFrameViewport(
-        window,
-        *view,
-        *camera,
-        cameraController,
-        selectionController,
-        imguiIo,
-        runOptions.width,
-        runOptions.height,
-        dartScene.world->getTimeStep(),
-        appOptions.showUi,
-        runOptions.guiScale);
+    FrameViewport viewport;
+    {
+      DART_PROFILE_SCOPED_N("GUI viewport camera");
+      viewport = updateFrameViewport(
+          window,
+          *view,
+          *camera,
+          cameraController,
+          selectionController,
+          imguiIo,
+          runOptions.width,
+          runOptions.height,
+          dartScene.world->getTimeStep(),
+          appOptions.showUi,
+          runOptions.guiScale);
+    }
     profile.viewportCameraMs += elapsedMs(phaseStart);
 
     const bool uiCapturesMouse
         = isSceneMouseInputCapturedByUi(appOptions.showUi, imguiIo);
-    sceneFrameUpdater.update(
-        viewport,
-        appOptions.showUi,
-        uiCapturesMouse,
-        orbitLight,
-        appOptions.orbitLightPeriodSeconds);
+    {
+      DART_PROFILE_SCOPED_N("GUI scene update");
+      sceneFrameUpdater.update(
+          viewport,
+          appOptions.showUi,
+          uiCapturesMouse,
+          orbitLight,
+          appOptions.orbitLightPeriodSeconds);
+    }
 
     if (appOptions.showUi) {
+      DART_PROFILE_SCOPED_N("GUI ui update");
       updateFrameUi(
           window,
           *engine,
@@ -358,16 +372,20 @@ int runGuiBackendApplicationImpl(
     if (appOptions.preRender) {
       appOptions.preRender();
     }
-    const FrameRenderResult frameRenderResult = renderApplicationFrame(
-        renderContext,
-        appOptions.showUi ? imguiOverlay.view : nullptr,
-        runOptions,
-        viewport.width,
-        viewport.height,
-        frameStart,
-        screenshotCapture,
-        lifecycle,
-        profile);
+    FrameRenderResult frameRenderResult;
+    {
+      DART_PROFILE_SCOPED_N("GUI render frame");
+      frameRenderResult = renderApplicationFrame(
+          renderContext,
+          appOptions.showUi ? imguiOverlay.view : nullptr,
+          runOptions,
+          viewport.width,
+          viewport.height,
+          frameStart,
+          screenshotCapture,
+          lifecycle,
+          profile);
+    }
     if (!frameRenderResult.failed && appOptions.postRender) {
       appOptions.postRender();
     }

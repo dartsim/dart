@@ -305,12 +305,6 @@ void updateImGuiMouseInput(
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
 }
 
-bool isInsideStatusPanel(double cursorX, double cursorY, double guiScale)
-{
-  return cursorX >= 20.0 * guiScale && cursorX <= 360.0 * guiScale
-         && cursorY >= 20.0 * guiScale && cursorY <= 360.0 * guiScale;
-}
-
 bool isSceneMouseInputCapturedByUi(bool showUi, const ImGuiIO& io)
 {
   return showUi && io.WantCaptureMouse;

@@ -112,6 +112,21 @@ its own line so status updates remain git-history friendly.
   benchmark packet; multi-core CPU and single-GPU work remain behind prototype
   gates.
 
+### PLAN-037: Native Collision Visual Verification
+
+- Owner doc:
+  [`../onboarding/gui-rendering.md#native-collision-visual-checks`](../onboarding/gui-rendering.md#native-collision-visual-checks)
+- Status: Complete
+- Horizon: Later
+- Dimension: Algorithm extensibility
+- Next step: Use `examples/collision_sandbox` and
+  `EXAMPLE_collision_sandbox_headless_sweep` whenever native collision pair
+  support, broad-phase diagnostics, or Filament GUI rendering changes.
+- Gate: The Filament-backed sandbox covers every supported native pair or
+  explicit unsupported placeholder, contact/manifold overlays, native
+  group/mask filtering, broad-phase overlays, focused registry/debug-snapshot
+  tests, and CTest-gated headless screenshot smoke coverage.
+
 ### PLAN-040: DART 7 Release Hardening
 
 - Owner doc: [`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)

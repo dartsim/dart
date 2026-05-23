@@ -56,6 +56,7 @@ FrameViewport updateFrameViewport(
     bool showUi,
     double guiScale)
 {
+  (void)guiScale;
   FrameViewport viewport{defaultWidth, defaultHeight};
   if (window != nullptr) {
     glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
@@ -70,13 +71,9 @@ FrameViewport updateFrameViewport(
       view, camera, cameraController.camera, viewport.width, viewport.height);
 
   if (window != nullptr) {
-    double cursorX = 0.0;
-    double cursorY = 0.0;
-    glfwGetCursorPos(window, &cursorX, &cursorY);
     const bool suppressCameraOrbit
         = selectionController.isDraggingSelection()
-          || isSceneMouseInputCapturedByUi(showUi, imguiIo)
-          || (showUi && isInsideStatusPanel(cursorX, cursorY, guiScale));
+          || isSceneMouseInputCapturedByUi(showUi, imguiIo);
     updateCameraController(window, cameraController, suppressCameraOrbit);
   }
 

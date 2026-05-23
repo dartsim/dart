@@ -251,7 +251,7 @@ bool renderBuiltInStatusPanel(
   ImGui::SetNextWindowPos(
       {20.0f * static_cast<float>(guiScale),
        20.0f * static_cast<float>(guiScale)},
-      ImGuiCond_Always);
+      ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowBgAlpha(0.72f);
   ImGui::Begin(
       "DART",
@@ -340,7 +340,7 @@ void renderApplicationPanels(
       ImGui::SetNextWindowPos(
           {static_cast<float>((*panel.initialPosition)[0] * scale),
            static_cast<float>((*panel.initialPosition)[1] * scale)},
-          ImGuiCond_Always);
+          ImGuiCond_FirstUseEver);
     } else {
       const float panelWidth = static_cast<float>(
           panel.initialSize.has_value() ? (*panel.initialSize)[0] * guiScale
@@ -360,7 +360,7 @@ void renderApplicationPanels(
       ImGui::SetNextWindowSize(
           {static_cast<float>((*panel.initialSize)[0] * guiScale),
            static_cast<float>((*panel.initialSize)[1] * guiScale)},
-          ImGuiCond_Always);
+          ImGuiCond_FirstUseEver);
     } else {
       ImGui::SetNextWindowSize({320.0f * scale, 0.0f}, ImGuiCond_FirstUseEver);
     }

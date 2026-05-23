@@ -287,6 +287,37 @@ TEST(CollisionWorld, SnapshotPairLimitsAndCachedCollidePaths)
   EXPECT_GT(cached.numContacts(), 0u);
 }
 
+TEST(CollisionWorld, BroadPhaseDebugSnapshotTracksCandidatePairs)
+{
+  CollisionWorld world(BroadPhaseType::AabbTree);
+
+  auto obj1 = world.createObject(std::make_unique<SphereShape>(1.0));
+  Eigen::Isometry3d tf2 = Eigen::Isometry3d::Identity();
+  tf2.translation() = Eigen::Vector3d(1.5, 0.0, 0.0);
+  auto obj2 = world.createObject(std::make_unique<SphereShape>(1.0), tf2);
+
+  BroadPhaseDebugSnapshot snapshot = world.buildBroadPhaseDebugSnapshot();
+  EXPECT_TRUE(snapshot.hasTreeTopology);
+  EXPECT_EQ(snapshot.numObjects, 2u);
+  EXPECT_EQ(snapshot.nodes.size(), 3u);
+  ASSERT_EQ(snapshot.candidatePairs.size(), 1u);
+  EXPECT_EQ(
+      snapshot.candidatePairs[0],
+      std::make_pair(
+          std::min(obj1.getId(), obj2.getId()),
+          std::max(obj1.getId(), obj2.getId())));
+
+  tf2.translation() = Eigen::Vector3d(4.0, 0.0, 0.0);
+  obj2.setTransform(tf2);
+  world.updateObject(obj2);
+  world.buildBroadPhaseDebugSnapshot(snapshot);
+
+  EXPECT_TRUE(snapshot.hasTreeTopology);
+  EXPECT_EQ(snapshot.numObjects, 2u);
+  EXPECT_TRUE(snapshot.candidatePairs.empty());
+  EXPECT_EQ(snapshot.nodes.size(), 3u);
+}
+
 TEST(CollisionWorld, DirectCollideRejectsInvalidAndCallbackFilteredPairs)
 {
   CollisionWorld world;

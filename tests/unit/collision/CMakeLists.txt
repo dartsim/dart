@@ -44,6 +44,7 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
     test_capsule_capsule.cpp
     test_ccd.cpp
     test_collision_filter_core.cpp
+    test_collision_sandbox_pair_registry.cpp
     test_collision_object.cpp
     test_collision_world.cpp
     test_compound.cpp
@@ -98,6 +99,16 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
     endif()
     if(test_name STREQUAL "test_legacy_compat_facades")
       target_link_libraries(${test_name} PRIVATE dart)
+    endif()
+    if(test_name STREQUAL "test_collision_sandbox_pair_registry")
+      target_sources(${test_name}
+        PRIVATE
+          ${CMAKE_SOURCE_DIR}/examples/collision_sandbox/pair_registry.cpp
+      )
+      target_include_directories(${test_name}
+        PRIVATE
+          ${CMAKE_SOURCE_DIR}/examples/collision_sandbox
+      )
     endif()
     if(test_name STREQUAL "test_reference_backends")
       target_link_libraries(${test_name} PRIVATE dart)

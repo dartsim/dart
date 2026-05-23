@@ -576,6 +576,21 @@
     do not depend on those reference gates.
   - Broke the collision→dynamics source dependency using a bridge pattern: dynamics-dependent implementations moved from `dart/collision/*.cpp` to `dart/dynamics/detail/*_bridge.cpp`. Collision `.cpp` files no longer include any `dart/dynamics/` headers.
   - Added built-in native collision module (`dart/collision/native/`) with 575+ tests covering all primitive shape pairs, GJK/EPA, distance queries, raycast, CCD, four broad-phase algorithms, collision filtering, compound shapes, and parallel narrowphase.
+  - Added a Filament-backed native collision sandbox with pair selection, shape
+    parameter and pose controls, contact/manifold overlays, broad-phase
+    selection, native group/mask filtering, AABB-tree, spatial-hash,
+    sweep-and-prune debug rendering, unsupported-pair placeholders, and
+    headless screenshot smoke coverage.
+  - Added mouse-driven object transform gizmos to the native collision sandbox
+    so pair poses can be translated and rotated directly in the scene.
+  - Added `dart::gui::applyDebugVisualStyle` for persistent debug
+    `ShapeFrame` visuals and updated GUI overlays, including the native
+    collision sandbox, to use consistent no-shadow debug styling.
+  - Updated Filament debug overlays so gizmos, contacts, AABB edges, and
+    selection lines draw through solid scene geometry without writing depth.
+  - Made Filament ImGui panels movable after their initial placement, added
+    opt-out debug name tags for collision sandbox overlays, and annotated the
+    GUI render loop with built-in profiling scopes.
   - Wired the native DART backend as a full `CollisionDetector` implementation with distance queries, raycast, and expanded shape adapters (Cone, Ellipsoid, Heightmap, MultiSphere). The legacy `"experimental"` factory key remains as an alias for compatibility.
   - Added native sparse occupancy-grid storage for `VoxelGridShape`, including native voxel collision support without requiring OctoMap.
   - Optimized native sparse occupancy-grid point-cloud insertion and occupied-cell extraction, added opt-in threaded point-cloud insertion, expanded OctoMap reference-comparison benchmarks, and enabled native `VoxelGridShape` GUI rendering without OctoMap.

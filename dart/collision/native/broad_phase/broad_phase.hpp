@@ -35,7 +35,9 @@
 #include <dart/collision/native/aabb.hpp>
 #include <dart/collision/native/export.hpp>
 
+#include <array>
 #include <functional>
+#include <limits>
 #include <span>
 #include <utility>
 #include <vector>
@@ -47,6 +49,71 @@ namespace dart::collision::native {
 using BroadPhasePair = std::pair<std::size_t, std::size_t>;
 using BroadPhasePairVisitor
     = std::function<bool(std::size_t first, std::size_t second)>;
+
+struct DART_COLLISION_NATIVE_API BroadPhaseDebugNode
+{
+  static constexpr std::size_t kInvalidIndex
+      = std::numeric_limits<std::size_t>::max();
+
+  std::size_t nodeId = kInvalidIndex;
+  std::size_t parent = kInvalidIndex;
+  std::size_t left = kInvalidIndex;
+  std::size_t right = kInvalidIndex;
+  std::size_t objectId = kInvalidIndex;
+  Aabb aabb;
+  Aabb tightAabb;
+  std::size_t height = 0;
+
+  [[nodiscard]] bool isLeaf() const
+  {
+    return objectId != kInvalidIndex;
+  }
+};
+
+struct DART_COLLISION_NATIVE_API BroadPhaseDebugCell
+{
+  std::array<int, 3> coordinates = {0, 0, 0};
+  Aabb aabb;
+  std::vector<std::size_t> objectIds;
+  std::size_t hash = 0;
+};
+
+struct DART_COLLISION_NATIVE_API BroadPhaseDebugEndpoint
+{
+  int axis = 0;
+  std::size_t objectId = BroadPhaseDebugNode::kInvalidIndex;
+  double value = 0.0;
+  bool isMin = true;
+  std::size_t order = 0;
+};
+
+struct DART_COLLISION_NATIVE_API BroadPhaseDebugSnapshot
+{
+  std::vector<BroadPhaseDebugNode> nodes;
+  std::vector<BroadPhaseDebugCell> cells;
+  std::vector<BroadPhaseDebugEndpoint> endpoints;
+  std::vector<BroadPhasePair> candidatePairs;
+  std::size_t rootNode = BroadPhaseDebugNode::kInvalidIndex;
+  std::size_t numObjects = 0;
+  double spatialHashCellSize = 0.0;
+  bool hasTreeTopology = false;
+  bool hasSpatialHashCells = false;
+  bool hasSweepEndpoints = false;
+
+  void clear()
+  {
+    nodes.clear();
+    cells.clear();
+    endpoints.clear();
+    candidatePairs.clear();
+    rootNode = BroadPhaseDebugNode::kInvalidIndex;
+    numObjects = 0;
+    spatialHashCellSize = 0.0;
+    hasTreeTopology = false;
+    hasSpatialHashCells = false;
+    hasSweepEndpoints = false;
+  }
+};
 
 class DART_COLLISION_NATIVE_API BroadPhase
 {
@@ -63,6 +130,13 @@ public:
       const Aabb& aabb) const
       = 0;
   [[nodiscard]] virtual std::size_t size() const = 0;
+
+  virtual void buildDebugSnapshot(BroadPhaseDebugSnapshot& out) const
+  {
+    out.clear();
+    out.candidatePairs = queryPairs();
+    out.numObjects = size();
+  }
 
   virtual void queryPairs(std::vector<BroadPhasePair>& out) const
   {
