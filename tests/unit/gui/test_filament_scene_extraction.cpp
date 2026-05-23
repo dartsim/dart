@@ -3597,6 +3597,10 @@ TEST(FilamentSceneExtraction, CollisionSandboxUsesMouseDrivenObjectGizmos)
   EXPECT_NE(mainSource.find("kContactObjectAlpha"), std::string::npos);
   EXPECT_NE(mainSource.find("showDebugLabels"), std::string::npos);
   EXPECT_NE(mainSource.find("addDebugLabel"), std::string::npos);
+  EXPECT_NE(mainSource.find("BroadPhaseObjectCenters"), std::string::npos);
+  EXPECT_NE(
+      mainSource.find("objectCentersById = fallbackObjectCenters"),
+      std::string::npos);
   EXPECT_NE(mainSource.find("options.debugLabels"), std::string::npos);
   EXPECT_NE(mainSource.find("\"Name Tags\""), std::string::npos);
   EXPECT_NE(

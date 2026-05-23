@@ -77,6 +77,8 @@ namespace {
 
 using ShapeParameters = sandbox::ShapeParameters;
 using ShapeType = collision::ShapeType;
+using BroadPhaseObjectCenters
+    = std::unordered_map<std::size_t, Eigen::Vector3d>;
 
 struct BroadPhaseOption
 {
@@ -497,17 +499,20 @@ void addSweepEndpointOverlay(
 }
 
 void addBroadPhaseOverlay(
-    SandboxState& state, const collision::BroadPhaseDebugSnapshot& snapshot)
+    SandboxState& state,
+    const collision::BroadPhaseDebugSnapshot& snapshot,
+    const BroadPhaseObjectCenters& fallbackObjectCenters)
 {
   std::unordered_map<std::size_t, Eigen::Vector3d> nodeCenters;
-  std::unordered_map<std::size_t, Eigen::Vector3d> leafCentersByObjectId;
+  BroadPhaseObjectCenters objectCentersById = fallbackObjectCenters;
   nodeCenters.reserve(snapshot.nodes.size());
-  leafCentersByObjectId.reserve(snapshot.nodes.size());
+  objectCentersById.reserve(
+      fallbackObjectCenters.size() + snapshot.nodes.size());
 
   for (const auto& node : snapshot.nodes) {
     nodeCenters.emplace(node.nodeId, node.aabb.center());
     if (node.isLeaf()) {
-      leafCentersByObjectId.emplace(node.objectId, node.tightAabb.center());
+      objectCentersById[node.objectId] = node.tightAabb.center();
       if (state.showAabbs) {
         const Eigen::Vector4d aabbColor = rgba(0.95, 0.62, 0.18);
         addAabbLines(
@@ -564,10 +569,10 @@ void addBroadPhaseOverlay(
   if (state.showCandidatePairs) {
     for (std::size_t i = 0; i < snapshot.candidatePairs.size(); ++i) {
       const auto& pair = snapshot.candidatePairs[i];
-      const auto first = leafCentersByObjectId.find(pair.first);
-      const auto second = leafCentersByObjectId.find(pair.second);
-      if (first != leafCentersByObjectId.end()
-          && second != leafCentersByObjectId.end()) {
+      const auto first = objectCentersById.find(pair.first);
+      const auto second = objectCentersById.find(pair.second);
+      if (first != objectCentersById.end()
+          && second != objectCentersById.end()) {
         const Eigen::Vector4d pairColor = rgba(0.95, 0.1, 0.85);
         addLine(
             state,
@@ -694,6 +699,10 @@ void rebuildScene(SandboxState& state)
       sandbox::makeShape(pair.shapeA, state.objectAParams), tfA);
   auto objB = nativeWorld.createObject(
       sandbox::makeShape(pair.shapeB, state.objectBParams), tfB);
+  BroadPhaseObjectCenters broadPhaseObjectCenters;
+  broadPhaseObjectCenters.reserve(2u);
+  broadPhaseObjectCenters.emplace(objA.getId(), objA.computeAabb().center());
+  broadPhaseObjectCenters.emplace(objB.getId(), objB.computeAabb().center());
   if (state.filterPair) {
     objA.setCollisionFilter(
         collision::FilterGroup::Static, collision::FilterGroup::Static);
@@ -790,7 +799,7 @@ void rebuildScene(SandboxState& state)
       = nativeWorld.buildBroadPhaseDebugSnapshot();
   summarizeBroadPhase(state.summary, broadPhase);
   if (state.showBroadPhase) {
-    addBroadPhaseOverlay(state, broadPhase);
+    addBroadPhaseOverlay(state, broadPhase, broadPhaseObjectCenters);
   }
 
   state.dirty = false;
