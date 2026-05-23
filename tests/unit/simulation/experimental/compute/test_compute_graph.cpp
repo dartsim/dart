@@ -884,6 +884,71 @@ TEST(ExperimentalIntegrationKernel, IntegratesAngularVelocityFromTorque)
 }
 
 //==============================================================================
+TEST(ExperimentalIntegrationKernel, SimdOrientationMatchesScalarForLargeBatch)
+{
+  // A batch above the SIMD dispatch threshold exercises the vectorized
+  // orientation path; it must match the scalar-generic kernel within a few ULP.
+  const std::size_t bodies = 96;
+
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = bodies;
+  state.position.assign(3 * bodies, 0.0);
+  state.linearVelocity.assign(3 * bodies, 0.0);
+  state.orientation.resize(4 * bodies);
+  state.angularVelocity.resize(3 * bodies);
+
+  std::vector<double> referenceOrientation(4 * bodies);
+  std::vector<double> angular(3 * bodies);
+  for (std::size_t b = 0; b < bodies; ++b) {
+    const double a = 0.1 + 0.01 * static_cast<double>(b);
+    double qw = std::cos(a);
+    double qx = std::sin(a) * 0.3;
+    double qy = std::sin(a) * 0.5;
+    double qz = std::sin(a) * 0.2;
+    const double norm = std::sqrt(qw * qw + qx * qx + qy * qy + qz * qz);
+    qw /= norm;
+    qx /= norm;
+    qy /= norm;
+    qz /= norm;
+    state.orientation[4 * b + 0] = qw;
+    state.orientation[4 * b + 1] = qx;
+    state.orientation[4 * b + 2] = qy;
+    state.orientation[4 * b + 3] = qz;
+    referenceOrientation[4 * b + 0] = qw;
+    referenceOrientation[4 * b + 1] = qx;
+    referenceOrientation[4 * b + 2] = qy;
+    referenceOrientation[4 * b + 3] = qz;
+
+    // Body 0 has zero angular velocity to exercise the no-spin guard.
+    const double spin = (b == 0) ? 0.0 : 1.0;
+    angular[3 * b + 0] = spin * (0.2 + 0.01 * static_cast<double>(b));
+    angular[3 * b + 1] = spin * (-0.1 + 0.005 * static_cast<double>(b));
+    angular[3 * b + 2] = spin * 0.3;
+  }
+  state.angularVelocity = angular;
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = bodies;
+  model.inverseMass.assign(bodies, 1.0);
+  const std::vector<double> force(3 * bodies, 0.0);
+
+  // Zero force keeps linear state at rest, isolating the orientation update
+  // (which dispatches to the SIMD path because bodies >= the threshold).
+  compute::integrateRigidBodyStateBatch(state, model, force, 0.05);
+
+  // Reference: the scalar-generic kernel on the same orientation/angular input.
+  compute::integrateOrientationsSemiImplicit(
+      referenceOrientation.data(), angular.data(), 0.05, bodies);
+
+  for (std::size_t i = 0; i < 4 * bodies; ++i) {
+    EXPECT_NEAR(state.orientation[i], referenceOrientation[i], 1e-12)
+        << "orientation component " << i;
+  }
+}
+
+//==============================================================================
 TEST(ExperimentalIntegrationKernel, RollsOutStateBatchOverControlSequence)
 {
   compute::RigidBodyStateBatch initial;

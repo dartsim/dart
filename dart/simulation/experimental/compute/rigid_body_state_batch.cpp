@@ -118,6 +118,99 @@ void integrateAngularVelocitiesFromTorque(
   }
 }
 
+//==============================================================================
+// SIMD orientation update: the same angle-axis exponential map as the
+// scalar-generic integrateOrientationsSemiImplicit kernel, expressed as Eigen
+// array operations so the per-body transcendentals (sqrt/sin/cos) vectorize.
+// The array-of-quaternions layout is deinterleaved into per-component arrays so
+// the vectorized math stays contiguous. This is the double-only fast path; the
+// scalar-generic kernel remains the reference and the fallback.
+void integrateOrientationsSimd(
+    double* orientations,
+    const double* angularVelocities,
+    double timeStep,
+    std::size_t bodyCount)
+{
+  if (bodyCount == 0) {
+    return;
+  }
+
+  using Array = Eigen::ArrayXd;
+  const auto n = static_cast<Eigen::Index>(bodyCount);
+
+  Array w(n);
+  Array x(n);
+  Array y(n);
+  Array z(n);
+  Array ox(n);
+  Array oy(n);
+  Array oz(n);
+  for (Eigen::Index b = 0; b < n; ++b) {
+    w[b] = orientations[4 * b + 0];
+    x[b] = orientations[4 * b + 1];
+    y[b] = orientations[4 * b + 2];
+    z[b] = orientations[4 * b + 3];
+    ox[b] = angularVelocities[3 * b + 0];
+    oy[b] = angularVelocities[3 * b + 1];
+    oz[b] = angularVelocities[3 * b + 2];
+  }
+
+  const Array speed = (ox * ox + oy * oy + oz * oz).sqrt();
+  const Array halfAngle = 0.5 * speed * timeStep;
+  const auto spinning = speed > 0.0;
+  // Fold the axis normalization (1/speed) into the sin factor; guard the
+  // zero-spin case so it leaves the quaternion unchanged, matching the scalar
+  // kernel exactly.
+  const Array safeSpeed = spinning.select(speed, 1.0);
+  const Array axisScale = spinning.select(halfAngle.sin() / safeSpeed, 0.0);
+  const Array dw = spinning.select(halfAngle.cos(), 1.0);
+  const Array dx = ox * axisScale;
+  const Array dy = oy * axisScale;
+  const Array dz = oz * axisScale;
+
+  // dq * q (Hamilton product), left-multiplying the world-frame delta.
+  Array nw = dw * w - dx * x - dy * y - dz * z;
+  Array nx = dw * x + dx * w + dy * z - dz * y;
+  Array ny = dw * y - dx * z + dy * w + dz * x;
+  Array nz = dw * z + dx * y - dy * x + dz * w;
+
+  const Array norm = (nw * nw + nx * nx + ny * ny + nz * nz).sqrt();
+  const Array inverse = (norm > 0.0).select(1.0 / norm, 1.0);
+  nw *= inverse;
+  nx *= inverse;
+  ny *= inverse;
+  nz *= inverse;
+
+  for (Eigen::Index b = 0; b < n; ++b) {
+    orientations[4 * b + 0] = nw[b];
+    orientations[4 * b + 1] = nx[b];
+    orientations[4 * b + 2] = ny[b];
+    orientations[4 * b + 3] = nz[b];
+  }
+}
+
+//==============================================================================
+// Dispatch the orientation update: the deinterleave/vectorize/reinterleave SIMD
+// path only pays off once there are enough bodies to amortize its array setup,
+// so small batches use the scalar-generic kernel. The threshold is a
+// conservative default; profiling can refine it.
+constexpr std::size_t kOrientationSimdThreshold = 64;
+
+void integrateOrientationsBatch(
+    double* orientations,
+    const double* angularVelocities,
+    double timeStep,
+    std::size_t bodyCount)
+{
+  if (bodyCount >= kOrientationSimdThreshold) {
+    integrateOrientationsSimd(
+        orientations, angularVelocities, timeStep, bodyCount);
+  } else {
+    integrateOrientationsSemiImplicit(
+        orientations, angularVelocities, timeStep, bodyCount);
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -423,7 +516,7 @@ void integrateRigidBodyStateBatch(
   // Linear step (validates model, force, and the 3-component arrays), then the
   // orientation step from the batch angular velocity.
   integrateRigidBodyStateBatchLinear(state, model, force, timeStep);
-  integrateOrientationsSemiImplicit(
+  integrateOrientationsBatch(
       state.orientation.data(), state.angularVelocity.data(), timeStep, bodies);
 }
 
@@ -451,7 +544,7 @@ void integrateRigidBodyStateBatch(
   // updated angular velocity.
   integrateRigidBodyStateBatchLinear(state, model, force, timeStep);
   integrateAngularVelocitiesFromTorque(state, model, torque, timeStep);
-  integrateOrientationsSemiImplicit(
+  integrateOrientationsBatch(
       state.orientation.data(), state.angularVelocity.data(), timeStep, bodies);
 }
 
