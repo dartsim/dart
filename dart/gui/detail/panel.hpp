@@ -44,6 +44,10 @@
 
 namespace dart::gui::detail {
 
+/// Window title of the built-in scene/debug status panel. Shared so the default
+/// dock layout can place it without duplicating the literal.
+inline constexpr const char* kBuiltInStatusPanelTitle = "DART";
+
 bool renderBuiltInStatusPanel(
     const char* sceneName,
     double simulationTime,
@@ -54,12 +58,14 @@ bool renderBuiltInStatusPanel(
     DebugDrawOptions& staticDebugOptions,
     DebugDrawOptions& contactDebugOptions,
     ViewerLifecycleState& lifecycle,
-    double guiScale);
+    double guiScale,
+    bool dockingEnabled);
 
 void renderApplicationPanels(
     std::vector<dart::gui::Panel>& panels,
     dart::gui::PanelContext& context,
-    double guiScale);
+    double guiScale,
+    bool dockingEnabled);
 
 } // namespace dart::gui::detail
 

@@ -35,7 +35,10 @@ sketch below in two ways worth recording:
   it is a no-op with non-docking ImGui builds. Because the docking API ships
   only on ImGui's docking branch, `pixi run dartsim` builds with
   `DART_USE_SYSTEM_IMGUI=OFF` to fetch `v1.92.8-docking`; the library build and
-  GUI smoke tests keep using system ImGui. Panel arrangement persists via
+  GUI smoke tests keep using system ImGui. On first run an IDE-style default
+  layout is built (menu top, Scene Tree left, Inspector right, Console and
+  Simulation tabbed at the bottom, viewport center) via a per-panel
+  `dart::gui::DockSide` hint; afterwards the user's arrangement persists via
   `imgui.ini`.
 
 What is built and verified: the headless engine (object/selection/command/name

@@ -163,8 +163,6 @@ void buildTreeNode(
 
 void buildSceneTree(dart::gui::PanelBuilder& ui, EditorApp& app)
 {
-  ui.text("Scene Tree");
-  ui.separator();
   const SceneModel& model = app.engine.objects().model();
   if (model.empty()) {
     ui.text("(empty world)");
@@ -177,8 +175,6 @@ void buildSceneTree(dart::gui::PanelBuilder& ui, EditorApp& app)
 
 void buildInspector(dart::gui::PanelBuilder& ui, EditorApp& app)
 {
-  ui.text("Inspector");
-  ui.separator();
   const ObjectId id = app.engine.selection().primary();
   const SceneObject* object = app.engine.objects().model().find(id);
   if (object == nullptr) {
@@ -221,8 +217,6 @@ void buildInspector(dart::gui::PanelBuilder& ui, EditorApp& app)
 
 void buildConsole(dart::gui::PanelBuilder& ui, EditorApp& app)
 {
-  ui.text("Console");
-  ui.separator();
   const auto& entries = app.engine.logger().entries();
   const std::size_t count = entries.size();
   const std::size_t start = count > 14 ? count - 14 : 0;
@@ -378,6 +372,7 @@ dart::gui::Panel makePanel(
     bool menuBar,
     std::array<double, 2> position,
     std::array<double, 2> size,
+    dart::gui::DockSide dockSide,
     std::function<void(dart::gui::PanelBuilder&)> build)
 {
   dart::gui::Panel panel;
@@ -386,6 +381,7 @@ dart::gui::Panel makePanel(
   panel.initialPosition = position;
   panel.initialSize = size;
   panel.autoResize = false;
+  panel.dockSide = dockSide;
   panel.build = std::move(build);
   return panel;
 }
@@ -413,30 +409,35 @@ int runEditor(int argc, char* argv[])
       true,
       {0.0, 0.0},
       {1280.0, 0.0},
+      dart::gui::DockSide::Top,
       [app](dart::gui::PanelBuilder& ui) { buildMenuBar(ui, *app); }));
   options.panels.push_back(makePanel(
       "Scene Tree",
       false,
       {0.0, 30.0},
       {280.0, 360.0},
+      dart::gui::DockSide::Left,
       [app](dart::gui::PanelBuilder& ui) { buildSceneTree(ui, *app); }));
   options.panels.push_back(makePanel(
       "Inspector",
       false,
       {1000.0, 30.0},
       {280.0, 360.0},
+      dart::gui::DockSide::Right,
       [app](dart::gui::PanelBuilder& ui) { buildInspector(ui, *app); }));
   options.panels.push_back(makePanel(
       "Simulation",
       false,
       {0.0, 400.0},
       {280.0, 220.0},
+      dart::gui::DockSide::Bottom,
       [app](dart::gui::PanelBuilder& ui) { buildSimControls(ui, *app); }));
   options.panels.push_back(makePanel(
       "Console",
       false,
       {300.0, 520.0},
       {680.0, 180.0},
+      dart::gui::DockSide::Bottom,
       [app](dart::gui::PanelBuilder& ui) { buildConsole(ui, *app); }));
 
   return dart::gui::runApplication(argc, argv, options);

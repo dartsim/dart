@@ -246,17 +246,23 @@ bool renderBuiltInStatusPanel(
     DebugDrawOptions& staticDebugOptions,
     DebugDrawOptions& contactDebugOptions,
     ViewerLifecycleState& lifecycle,
-    double guiScale)
+    double guiScale,
+    bool dockingEnabled)
 {
   ImGui::SetNextWindowPos(
       {20.0f * static_cast<float>(guiScale),
        20.0f * static_cast<float>(guiScale)},
       ImGuiCond_FirstUseEver);
-  ImGui::SetNextWindowBgAlpha(0.72f);
-  ImGui::Begin(
-      "DART",
-      nullptr,
-      ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+  // When docking, this panel joins the dock layout: keep it opaque and let
+  // ImGui persist/manage its size, rather than a translucent auto-resizing
+  // floating overlay.
+  ImGuiWindowFlags statusFlags
+      = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
+  if (dockingEnabled) {
+    statusFlags = 0;
+  }
+  ImGui::SetNextWindowBgAlpha(dockingEnabled ? 1.0f : 0.72f);
+  ImGui::Begin(kBuiltInStatusPanelTitle, nullptr, statusFlags);
   ImGui::PushTextWrapPos(
       ImGui::GetCursorPosX() + 300.0f * static_cast<float>(guiScale));
   ImGui::TextWrapped(
@@ -324,7 +330,8 @@ bool renderBuiltInStatusPanel(
 void renderApplicationPanels(
     std::vector<dart::gui::Panel>& panels,
     dart::gui::PanelContext& context,
-    double guiScale)
+    double guiScale,
+    bool dockingEnabled)
 {
   ImGuiPanelBuilder builder;
   std::size_t defaultPositionIndex = 0u;
@@ -354,8 +361,12 @@ void renderApplicationPanels(
       ImGui::SetNextWindowPos({x, y}, ImGuiCond_FirstUseEver);
       ++defaultPositionIndex;
     }
+    // Floating overlay panels are translucent so the 3D scene shows through;
+    // docked panels sit in opaque side regions where translucency hurts
+    // legibility, so they default to fully opaque.
+    const double defaultAlpha = dockingEnabled ? 1.0 : 0.72;
     ImGui::SetNextWindowBgAlpha(
-        static_cast<float>(panel.backgroundAlpha.value_or(0.72)));
+        static_cast<float>(panel.backgroundAlpha.value_or(defaultAlpha)));
     if (panel.initialSize.has_value()) {
       ImGui::SetNextWindowSize(
           {static_cast<float>((*panel.initialSize)[0] * guiScale),
@@ -365,7 +376,13 @@ void renderApplicationPanels(
       ImGui::SetNextWindowSize({320.0f * scale, 0.0f}, ImGuiCond_FirstUseEver);
     }
 
-    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoSavedSettings;
+    // When docking is enabled, allow ImGui to persist each panel's dock state
+    // (position/size/dock node) in imgui.ini; otherwise keep floating overlays
+    // deterministic by not saving their settings.
+    ImGuiWindowFlags windowFlags = 0;
+    if (!dockingEnabled) {
+      windowFlags |= ImGuiWindowFlags_NoSavedSettings;
+    }
     if (panel.autoResize) {
       windowFlags |= ImGuiWindowFlags_AlwaysAutoResize;
     }

@@ -48,6 +48,9 @@
 #include <dart/common/profile.hpp>
 
 #include <imgui.h>
+#ifdef IMGUI_HAS_DOCK
+  #include <imgui_internal.h>
+#endif
 
 #include <algorithm>
 #include <array>
@@ -179,6 +182,113 @@ void renderDebugLabels(
   }
 }
 
+#ifdef IMGUI_HAS_DOCK
+// Builds a default IDE-style dock layout: top/bottom bars span full width and
+// left/right columns fill the remaining middle, leaving a transparent central
+// node for the 3D viewport. Each panel docks into the region named by its
+// DockSide; panels sharing a side become tabs. Only sides actually used are
+// split, so unused regions take no space.
+void buildDefaultDockLayout(
+    ImGuiID dockId, const std::vector<dart::gui::Panel>& panels)
+{
+  using dart::gui::DockSide;
+
+  bool useTop = false;
+  bool useBottom = false;
+  bool useLeft = false;
+  bool useRight = false;
+  for (const auto& panel : panels) {
+    switch (panel.dockSide) {
+      case DockSide::Top:
+        useTop = true;
+        break;
+      case DockSide::Bottom:
+        useBottom = true;
+        break;
+      case DockSide::Left:
+        useLeft = true;
+        break;
+      case DockSide::Right:
+        useRight = true;
+        break;
+      case DockSide::Center:
+      case DockSide::None:
+        break;
+    }
+  }
+
+  ImGui::DockBuilderRemoveNode(dockId);
+  // ImGuiDockNodeFlags_DockSpace is a private flag while PassthruCentralNode is
+  // public; OR-ing the two enum types directly trips C++20's
+  // -Wdeprecated-enum-enum-conversion (and DART builds with -Werror), so
+  // combine them as ints.
+  ImGui::DockBuilderAddNode(
+      dockId,
+      static_cast<int>(ImGuiDockNodeFlags_DockSpace)
+          | static_cast<int>(ImGuiDockNodeFlags_PassthruCentralNode));
+  ImGui::DockBuilderSetNodeSize(dockId, ImGui::GetMainViewport()->Size);
+
+  ImGuiID center = dockId;
+  ImGuiID top = 0;
+  ImGuiID bottom = 0;
+  ImGuiID left = 0;
+  ImGuiID right = 0;
+  if (useTop) {
+    top = ImGui::DockBuilderSplitNode(
+        center, ImGuiDir_Up, 0.07f, nullptr, &center);
+  }
+  if (useBottom) {
+    bottom = ImGui::DockBuilderSplitNode(
+        center, ImGuiDir_Down, 0.26f, nullptr, &center);
+  }
+  if (useLeft) {
+    left = ImGui::DockBuilderSplitNode(
+        center, ImGuiDir_Left, 0.20f, nullptr, &center);
+  }
+  if (useRight) {
+    right = ImGui::DockBuilderSplitNode(
+        center, ImGuiDir_Right, 0.25f, nullptr, &center);
+  }
+
+  for (const auto& panel : panels) {
+    if (panel.title.empty()) {
+      continue;
+    }
+    ImGuiID target = 0;
+    switch (panel.dockSide) {
+      case DockSide::Top:
+        target = top;
+        break;
+      case DockSide::Bottom:
+        target = bottom;
+        break;
+      case DockSide::Left:
+        target = left;
+        break;
+      case DockSide::Right:
+        target = right;
+        break;
+      case DockSide::Center:
+        target = center;
+        break;
+      case DockSide::None:
+        continue;
+    }
+    ImGui::DockBuilderDockWindow(panel.title.c_str(), target);
+  }
+
+  // Fold the built-in scene/debug status panel into the bottom region so it
+  // joins the docked layout instead of floating over the viewport.
+  if (bottom != 0) {
+    ImGui::DockBuilderDockWindow(kBuiltInStatusPanelTitle, bottom);
+  } else if (left != 0) {
+    ImGui::DockBuilderDockWindow(kBuiltInStatusPanelTitle, left);
+  }
+
+  ImGui::DockBuilderFinish(dockId);
+}
+#endif // IMGUI_HAS_DOCK
+
 } // namespace
 
 void updateFrameUi(
@@ -207,8 +317,17 @@ void updateFrameUi(
   ImGui::NewFrame();
 #ifdef IMGUI_HAS_DOCK
   if (dartScene.dockingEnabled) {
-    ImGui::DockSpaceOverViewport(
+    const ImGuiID dockId = ImGui::DockSpaceOverViewport(
         0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+    if (!dartScene.dockLayoutInitialized) {
+      dartScene.dockLayoutInitialized = true;
+      // Apply the default layout only when no saved layout exists; a restored
+      // imgui.ini layout leaves the root dock node already split.
+      const ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockId);
+      if (node == nullptr || node->IsLeafNode()) {
+        buildDefaultDockLayout(dockId, panels);
+      }
+    }
   }
 #endif
   const std::string selectedLabel = selectionController.selectedLabel();
@@ -253,7 +372,8 @@ void updateFrameUi(
       debugOverlays.staticOptions,
       debugOverlays.contactOptions,
       lifecycle,
-      guiScale);
+      guiScale,
+      dartScene.dockingEnabled);
   if (debugOptionsChanged) {
     refreshStaticDebugOverlay(
         engine, scene, debugMaterial, *dartScene.world, debugOverlays);
@@ -264,7 +384,8 @@ void updateFrameUi(
         dartScene.world->getLastCollisionResult(),
         debugOverlays);
   }
-  renderApplicationPanels(panels, panelContext, guiScale);
+  renderApplicationPanels(
+      panels, panelContext, guiScale, dartScene.dockingEnabled);
   if (dartScene.debugLabels) {
     renderDebugLabels(
         dartScene.debugLabels(), cameraController.camera, viewport, guiScale);
