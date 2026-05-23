@@ -38,6 +38,7 @@
 #include <dart/simulation/experimental/compute/compute_executor.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
+#include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
@@ -1553,4 +1554,69 @@ TEST(World, StepCountAcceptsMultiDomainSolverPipeline)
   EXPECT_EQ(executor.executeCount, expected.size());
   EXPECT_DOUBLE_EQ(world.getTime(), 0.3);
   EXPECT_EQ(world.getFrame(), 3u);
+}
+
+// Test that rigid-body state can be extracted to a structure-of-arrays batch
+// and applied back, round-tripping exactly and rejecting size mismatches.
+TEST(World, RigidBodyStateBatchRoundTrip)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto build = [](sx::World& world) {
+    std::vector<sx::RigidBody> bodies;
+    for (int i = 0; i < 4; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + i;
+      options.position = Eigen::Vector3d(0.1 * i, 0.2 * i, 0.3 * i);
+      options.linearVelocity = Eigen::Vector3d(0.5 * i, -0.25 * i, 0.1 * i);
+      options.angularVelocity = Eigen::Vector3d(0.01 * i, 0.02 * i, 0.03 * i);
+      bodies.push_back(
+          world.addRigidBody("body_" + std::to_string(i), options));
+    }
+    return bodies;
+  };
+
+  sx::World source;
+  auto sourceBodies = build(source);
+
+  const auto batch = compute::extractRigidBodyState(source);
+  EXPECT_EQ(batch.worldCount, 1u);
+  EXPECT_EQ(batch.bodyCount, 4u);
+  EXPECT_EQ(batch.position.size(), 12u);
+  EXPECT_EQ(batch.orientation.size(), 16u);
+  EXPECT_EQ(batch.linearVelocity.size(), 12u);
+  EXPECT_EQ(batch.angularVelocity.size(), 12u);
+
+  // Apply the source snapshot to an identical world; the re-extracted state
+  // must match field for field.
+  sx::World target;
+  auto targetBodies = build(target);
+  compute::applyRigidBodyState(target, batch);
+
+  const auto roundTrip = compute::extractRigidBodyState(target);
+  ASSERT_EQ(roundTrip.bodyCount, batch.bodyCount);
+  EXPECT_EQ(roundTrip.position, batch.position);
+  EXPECT_EQ(roundTrip.orientation, batch.orientation);
+  EXPECT_EQ(roundTrip.linearVelocity, batch.linearVelocity);
+  EXPECT_EQ(roundTrip.angularVelocity, batch.angularVelocity);
+
+  // Mutating the batch and applying it changes world state deterministically.
+  auto mutated = batch;
+  for (auto& value : mutated.position) {
+    value += 1.0;
+  }
+  compute::applyRigidBodyState(source, mutated);
+  const auto afterMutation = compute::extractRigidBodyState(source);
+  for (std::size_t i = 0; i < afterMutation.position.size(); ++i) {
+    EXPECT_DOUBLE_EQ(afterMutation.position[i], batch.position[i] + 1.0);
+  }
+
+  // A batch whose body count does not match the world is rejected.
+  sx::World smaller;
+  sx::RigidBodyOptions soleOptions;
+  smaller.addRigidBody("only", soleOptions);
+  EXPECT_THROW(
+      compute::applyRigidBodyState(smaller, batch),
+      sx::InvalidArgumentException);
 }
