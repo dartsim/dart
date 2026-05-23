@@ -553,10 +553,7 @@ ConstraintSolver::solve()
 
 ### Integration
 
-1. **Method Selection:**
-   - Semi-implicit Euler: Best balance for real-time
-   - RK4: Better accuracy, 4x cost
-   - Euler: Fastest but least stable
+1. **Method:** Built-in semi-implicit Euler timestepper inside `World::step()`
 2. **Timestep Selection:** Smaller dt = more stable but slower
 3. **Separate Position/Velocity Integration:** Allows partial updates
 

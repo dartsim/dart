@@ -148,8 +148,6 @@ compile_flags.txt
 !.codex/skills/**/SKILL.md
 !.codex/AGENTS.md
 
-.omc/
-
 # Claude Code project files: team-shared commands + skills ARE
 # source-controlled (so every contributor gets the same DART workflows).
 # Per-developer ephemera (session state, scheduled-task locks, local
@@ -173,6 +171,9 @@ compile_flags.txt
 #   .claude/statsig/               (per-developer feature-flag cache)
 #   .claude/todos/                 (per-developer TaskCreate state)
 #   .claude/ide/                   (per-developer IDE integration)
+
+# OpenCode project files.
+.omo/
 
 # Other AI agents — defensive ignores so per-developer caches from these
 # tools don't accidentally land in the repo. If we adopt one and want to

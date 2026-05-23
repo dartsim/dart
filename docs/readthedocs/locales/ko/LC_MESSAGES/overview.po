@@ -113,9 +113,9 @@ msgstr "URDF 및 SDF 형식의 모델을 지원합니다."
 
 #: ../../overview.rst:27 859751351c124cf68963768203a3d382
 msgid ""
-"Provides default integration methods (semi-implicit Euler and RK4) and an"
-" extensible API for other numerical integration methods."
-msgstr "기본 적분 방법(세미 암시적 Euler 및 RK4)과 다른 수치 적분 방법에 대한 확장 가능한 API를 제공합니다."
+"Provides a default semi-implicit Euler timestepper and low-level dynamics"
+" access for implementing custom numerical integration methods."
+msgstr "기본 세미 암시적 오일러 시간 스테퍼와 사용자 정의 수치 적분 방법을 구현하기 위한 저수준 동역학 액세스를 제공합니다."
 
 #: ../../overview.rst:28 5b803c7655d54f12805420566e30fa94
 msgid ""

@@ -263,7 +263,7 @@ graph TB
 - **Skeleton**: Articulated body system (robot/character)
 - **Collision Detection**: Multi-backend support (FCL, Bullet, ODE)
 - **Constraint Solver**: LCP-based constraint resolution
-- **Integration**: Time-stepping schemes (Euler, Semi-Implicit Euler, RK4)
+- **Integration**: Built-in semi-implicit Euler timestepper
 
 **Dynamics Layer:**
 
@@ -591,9 +591,9 @@ sequenceDiagram
 **Key Files**:
 
 - Example: [`examples/atlas_puppet/main.cpp`](../../examples/atlas_puppet/main.cpp)
-- [`BodyNodeDnD`](dart/gui/DragAndDrop.hpp#L266)
+- [`pickNearestRenderable()`](dart/gui/interaction.hpp#L60)
 - [`IK::solve()`](dart/dynamics/IK.cpp#L142)
-- [`Viewer::enableDragAndDrop()`](dart/gui/Viewer.cpp#L189)
+- [`translateFrameRenderable()`](dart/gui/interaction.hpp#L90)
 
 ---
 
@@ -708,8 +708,8 @@ sequenceDiagram
 
 - [`dart::io` unified API](dart/io/Read.hpp)
 - Implementation: [`dart/io/Read.cpp`](dart/io/Read.cpp)
-- Internal parser: [`UrdfParser`](dart/utils/urdf/UrdfParser.hpp)
-- Entry point: [`UrdfParser::parseSkeleton()`](dart/utils/urdf/UrdfParser.cpp)
+- Internal parser: [`UrdfParser`](dart/utils/urdf/urdf_parser.hpp)
+- Entry point: [`UrdfParser::parseSkeleton()`](dart/utils/urdf/urdf_parser.cpp)
 - Example: [`examples/atlas_puppet/main.cpp`](../../examples/atlas_puppet/main.cpp)
 - Notes: URDF `<limit>` on `planar` and `floating` joints is interpreted uniformly across all of their DOFs (with warnings), and planar joints derive their plane from the `<axis>` normal.
 
@@ -752,7 +752,7 @@ sequenceDiagram
 
 - Example: [`python/examples/hello_world/main.py`](../../python/examples/hello_world/main.py)
 - [`python/dartpy/`](python/dartpy/) - Bindings implementation
-- [`setup.py`](setup.py) - Build configuration
+- [`pyproject.toml`](pyproject.toml) - Python package configuration (scikit-build-core)
 
 ---
 
