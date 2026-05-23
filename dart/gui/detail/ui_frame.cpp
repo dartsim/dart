@@ -149,8 +149,11 @@ void renderDebugLabels(
 
   std::size_t rendered = 0u;
   for (const dart::gui::DebugLabelDescriptor& label : labels) {
-    if (rendered >= kMaxDebugLabels || label.text.empty()) {
+    if (rendered >= kMaxDebugLabels) {
       break;
+    }
+    if (label.text.empty()) {
+      continue;
     }
 
     const std::optional<ImVec2> anchor
