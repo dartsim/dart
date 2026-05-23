@@ -69,9 +69,6 @@ public:
   /// Get the name of the rigid body
   [[nodiscard]] std::string getName() const;
 
-  /// Get the rigid body's local transform relative to the world frame.
-  [[nodiscard]] const Eigen::Isometry3d& getLocalTransform() const override;
-
   /// Set the rigid body's world transform.
   ///
   /// This updates the public frame transform and the internal rigid-body

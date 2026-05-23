@@ -58,14 +58,6 @@ Joint Link::getParentJoint() const
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Link::getLocalTransform() const
-{
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return linkComp.transformFromParentJoint;
-}
-
-//==============================================================================
 const Eigen::Isometry3d& Link::getWorldTransform() const
 {
   return Frame::getTransform();

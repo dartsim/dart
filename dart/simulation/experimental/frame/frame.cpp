@@ -206,30 +206,16 @@ Frame::Frame(entt::entity entity, World* world)
 }
 
 //==============================================================================
-const Eigen::Isometry3d& Frame::getLocalTransform() const
+Eigen::Isometry3d Frame::getLocalTransform() const
 {
-  static const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
   if (isWorld()) {
-    return identity;
+    return Eigen::Isometry3d::Identity();
   }
 
   DART_EXPERIMENTAL_THROW_T_IF(
       !isValid(), InvalidArgumentException, "Invalid frame handle");
 
-  const auto& registry = m_world->getRegistry();
-  if (const auto* props
-      = registry.try_get<comps::FreeFrameProperties>(m_entity)) {
-    return props->localTransform;
-  }
-  if (const auto* props
-      = registry.try_get<comps::FixedFrameProperties>(m_entity)) {
-    return props->localTransform;
-  }
-  if (const auto* link = registry.try_get<comps::Link>(m_entity)) {
-    return link->transformFromParentJoint;
-  }
-
-  return identity;
+  return getFrameLocalTransform(m_world->getRegistry(), m_entity);
 }
 
 //==============================================================================

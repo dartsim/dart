@@ -130,13 +130,17 @@ public:
   ///
   /// Get the local transform of this Frame with respect to its parent Frame
   ///
-  /// Returns the transform of this frame relative to its parent frame (local).
-  /// Base Frame handles dispatch through public frame components so handles
-  /// returned from getParentFrame() behave the same as FreeFrame, FixedFrame,
-  /// RigidBody, or Link handles.
+  /// Returns the transform of this frame relative to the frame returned by
+  /// getParentFrame(), so it is equivalent to getTransform(getParentFrame()).
+  /// For an articulated link this includes the parent joint motion, not just
+  /// the fixed mounting offset, which keeps the identity
+  /// worldTransform = getParentFrame().getTransform() * getLocalTransform().
+  ///
+  /// @note This is NOT virtual - it dispatches based on ECS components, the
+  ///       same scalable pattern used by getParentFrame().
   ///
   /// @return Local transform relative to parent frame
-  [[nodiscard]] virtual const Eigen::Isometry3d& getLocalTransform() const;
+  [[nodiscard]] Eigen::Isometry3d getLocalTransform() const;
 
   /// Get the parent frame of this Frame
   ///

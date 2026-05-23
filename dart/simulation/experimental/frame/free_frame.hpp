@@ -71,11 +71,6 @@ public:
   ///
   /// @param transform New fixed transform offset from parent frame
   void setLocalTransform(const Eigen::Isometry3d& transform);
-
-  /// Get the local transform (relative to parent frame)
-  ///
-  /// @return Transform offset from parent frame (local)
-  [[nodiscard]] const Eigen::Isometry3d& getLocalTransform() const;
 };
 
 } // namespace dart::simulation::experimental

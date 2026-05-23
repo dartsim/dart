@@ -452,6 +452,20 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
       InvalidArgumentException,
       "Joint axis must be non-zero");
   jointComp.axis = options.axis / axisNorm;
+
+  // Planar and universal joints build a second in-plane/rotation direction from
+  // axis2. If axis is parallel to axis2 the derived basis collapses (its cross
+  // product is zero), producing degenerate transforms during sync/step, so
+  // reject it at construction time.
+  if (jointComp.type == comps::JointType::Planar
+      || jointComp.type == comps::JointType::Universal) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        jointComp.axis.cross(jointComp.axis2).norm() <= 1e-6,
+        InvalidArgumentException,
+        "Joint axis must not be parallel to axis2 for planar and universal "
+        "joints");
+  }
+
   jointComp.parentLink = parentEntity;
   jointComp.childLink = linkEntity;
 

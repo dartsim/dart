@@ -102,14 +102,6 @@ public:
   // Frame interface overrides
   //--------------------------------------------------------------------------
 
-  /// Get the local transform of this Link with respect to its parent
-  ///
-  /// Returns the transform from the parent joint frame to this link frame.
-  /// This is stored in the Link component as transformFromParentJoint.
-  ///
-  /// @return Local transform relative to parent joint
-  [[nodiscard]] const Eigen::Isometry3d& getLocalTransform() const override;
-
   /// Get the world transform of this Link
   ///
   /// Unlike FreeFrame/FixedFrame which use lazy evaluation, Link's

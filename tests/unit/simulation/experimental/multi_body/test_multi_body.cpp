@@ -407,6 +407,82 @@ TEST(MultiBody, RejectsInvalidJointSpecAxis)
       sim::InvalidArgumentException);
 }
 
+TEST(MultiBody, RejectsDegeneratePlanarOrUniversalJointAxis)
+{
+  namespace sim = dart::simulation::experimental;
+
+  sim::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+
+  // A planar joint whose normal axis is parallel to the default in-plane axis2
+  // (UnitX) collapses the in-plane basis, so it must be rejected.
+  EXPECT_THROW(
+      robot.addLink(
+          "degenerate_planar",
+          base,
+          sim::JointSpec{
+              .name = "degenerate_planar_joint",
+              .type = sim::JointType::Planar,
+              .axis = Eigen::Vector3d::UnitX()}),
+      sim::InvalidArgumentException);
+
+  // A universal joint with both rotation axes parallel is likewise degenerate.
+  EXPECT_THROW(
+      robot.addLink(
+          "degenerate_universal",
+          base,
+          sim::JointSpec{
+              .name = "degenerate_universal_joint",
+              .type = sim::JointType::Universal,
+              .axis = Eigen::Vector3d::UnitX()}),
+      sim::InvalidArgumentException);
+
+  // A planar joint whose normal axis is not parallel to axis2 is valid.
+  EXPECT_NO_THROW(robot.addLink(
+      "valid_planar",
+      base,
+      sim::JointSpec{
+          .name = "valid_planar_joint",
+          .type = sim::JointType::Planar,
+          .axis = Eigen::Vector3d::UnitZ()}));
+}
+
+// A link's local transform must include the parent joint motion so that it
+// matches the parent-relative transform and the world-transform identity holds.
+TEST(MultiBody, LinkLocalTransformIncludesJointMotion)
+{
+  namespace sim = dart::simulation::experimental;
+
+  sim::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto link1 = robot.addLink(
+      "link1",
+      base,
+      sim::JointSpec{
+          .name = "joint1",
+          .type = sim::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitZ()});
+
+  world.enterSimulationMode();
+
+  auto joint = link1.getParentJoint();
+  joint.setPosition(Eigen::VectorXd::Constant(1, 0.5));
+  world.updateKinematics();
+
+  const Eigen::Isometry3d local = link1.getLocalTransform();
+  const Eigen::Isometry3d relativeToParent = link1.getTransform(base);
+
+  // local_transform equals relative_transform(parent) and reflects joint
+  // motion.
+  EXPECT_TRUE(local.isApprox(relativeToParent));
+  EXPECT_FALSE(local.isApprox(Eigen::Isometry3d::Identity()));
+
+  // worldTransform == parent.getTransform() * getLocalTransform().
+  EXPECT_TRUE(link1.getTransform().isApprox(base.getTransform() * local));
+}
+
 // Test creating a serial manipulator (typical robot arm)
 TEST(MultiBody, SerialManipulator)
 {

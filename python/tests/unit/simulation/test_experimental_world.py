@@ -529,6 +529,40 @@ def test_experimental_multibody_link_joint_common_path():
     assert tool.translation.tolist() == pytest.approx([0.0, 1.0, 0.0])
 
 
+def test_link_local_transform_includes_joint_motion():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    arm = world.add_multi_body("arm")
+    base = arm.add_link("base")
+    link = arm.add_link(
+        "link",
+        parent=base,
+        joint=sx.JointSpec(
+            name="joint",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 0.0, 1.0),
+        ),
+    )
+
+    world.enter_simulation_mode()
+    link.parent_joint.position = [math.pi / 2.0]
+    world.sync(sx.WorldSyncStage.KINEMATICS)
+
+    local = link.local_transform
+    relative_to_parent = link.relative_transform(link.parent_frame)
+
+    # local_transform includes the joint motion, so it matches the
+    # parent-relative transform rather than the bare mounting offset.
+    assert local.reshape(16).tolist() == pytest.approx(
+        relative_to_parent.reshape(16).tolist()
+    )
+    assert local[:3, :3].reshape(9).tolist() == pytest.approx(
+        [0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+        abs=1e-12,
+    )
+
+
 def test_experimental_loop_closure_topology_api():
     sx = _simulation_experimental()
 

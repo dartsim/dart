@@ -67,12 +67,4 @@ void FixedFrame::setLocalTransform(const Eigen::Isometry3d& transform)
   markSubtreeTransformCacheDirty();
 }
 
-//==============================================================================
-const Eigen::Isometry3d& FixedFrame::getLocalTransform() const
-{
-  const auto& properties
-      = m_world->getRegistry().get<comps::FixedFrameProperties>(m_entity);
-  return properties.localTransform;
-}
-
 } // namespace dart::simulation::experimental

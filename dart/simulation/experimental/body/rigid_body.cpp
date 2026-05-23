@@ -102,14 +102,6 @@ std::string RigidBody::getName() const
 }
 
 //==============================================================================
-const Eigen::Isometry3d& RigidBody::getLocalTransform() const
-{
-  const auto& props
-      = m_world->getRegistry().get<comps::FreeFrameProperties>(m_entity);
-  return props.localTransform;
-}
-
-//==============================================================================
 void RigidBody::setTransform(const Eigen::Isometry3d& transform)
 {
   DART_EXPERIMENTAL_THROW_T_IF(
