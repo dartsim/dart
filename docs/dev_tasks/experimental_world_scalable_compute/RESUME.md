@@ -13,21 +13,28 @@ Critical (state-batch bounds check) and Major (hazard reachability cost) finding
 were fixed; API-inventory/doc sync; and the leading world dimension
 (`extractRigidBodyStateBatch`/`applyRigidBodyStateBatch`, homogeneous multi-world).
 
+Since then: a scalar-generic SoA position-integration kernel
+(`integratePositionsSemiImplicit`, instantiated `double`, tested for `float`) and
+a CPU batch executor (`stepWorldsBatched`, Phase 4 seed: N independent worlds
+advanced in parallel via the executor seam, bit-identical to sequential).
+
 ## Current Branch
 
-`feature/experimental-world-scalable-compute` — eight commits ahead of `main`,
+`feature/experimental-world-scalable-compute` — eleven commits ahead of `main`,
 working tree clean, all gates green. Not pushed; accumulating toward one larger
 DART 7 PR.
 
 ## Immediate Next Step
 
-Continue Phase 2: the SoA batch and its leading world dimension now exist, so the
-remaining pieces are (a) an immutable Model split (topology/params separate from
-the mutable State batch) and (b) making the integration/kinematics kernels
-scalar-generic (`template <typename Scalar>`, instantiate `double` only) and have
-them read/write the SoA batch instead of per-entity `registry.get`. Keep `entt`
-internal and the public handle API unchanged. This is the data seam that
-transfers to multi-core, SIMD, and GPU; see `01-plan.md` Phase 2.
+The hard remaining work is the larger refactor (best for a fresh session): wire
+the scalar-generic SoA kernel into the actual `WorldStepStage` pipeline so the
+step reads/writes the batch instead of per-entity `registry.get`, and add the
+immutable Model split (topology/params separate from the mutable State batch).
+Then Phase 3 (tolerance determinism gate, SIMD on the SoA kernels, ambiguity
+detector), Phase 4 rollout (control sequence + output buffers on top of
+`stepWorldsBatched`), and Phase 5 GPU (blocked on GPU hardware/CI + the
+CUDA-vs-SYCL benchmark). Keep `entt` internal and the public handle API
+unchanged; see `01-plan.md`.
 
 ## Context That Would Be Lost
 
