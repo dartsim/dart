@@ -194,21 +194,34 @@ response)** and beyond.
 4. **(DONE) Rigid-body contact stage skips link pairs.** `RigidBodyContactStage`
    guards each contact with `registry.all_of<comps::RigidBodyTag>` for both
    bodies; link contacts are left for the articulated contact solve.
-5. **(NEXT) Articulated contact response.** For a contact on link `i` with world normal
-   `n` at point `p`: the contact-point world Jacobian is the link world Jacobian
-   with the linear block shifted to `p` (linear rows += `skew(o - p)` _ angular
-   rows, where `o` is the link origin). The normal row is
-   `Jn = n^T _ J_point_linear`(1 x dof); effective mass`m_eff = 1 / (Jn M^-1 Jn^T)`; normal impulse
-`lambda_n = max(0, -m_eff \* (Jn qdot))`(remove approaching normal velocity,
-clamp >= 0); apply`qdot += M^-1 Jn^T lambda_n`. This reuses the `J M^-1 J^T`
-machinery already built for the Velocity actuator. Then add
-restitution/friction and a positional (Baumgarte/split-impulse) correction,
-then a boxed-LCP for simultaneous contacts (`dart/math/lcp`, PLAN-020) and
-   islands.
+5. **(NEXT) Articulated contact response.** Scope the first version to
+   link-vs-static-rigid-body contacts (one-sided: only the articulated DOFs move;
+   the static ground contributes no compliance). It fits inside the velocity
+   phase already built in `simulateMultiBody` (no new stage needed):
+   - In `MultiBodyForwardDynamicsStage::execute`, call `world.collide()` once and
+     route to each multibody the contacts whose link belongs to it and whose
+     other body `isRigidBody()` and is static (`comps::StaticBodyTag`). Pass them
+     into `simulateMultiBody`.
+   - Map the contact's link entity to its index in the `DynamicsTree`; get the
+     body Jacobian from `linkBodyJacobians(tree)` and the world Jacobian via the
+     link world rotation; shift the linear block to the contact point `p`:
+     `J_point_linear = R*J_body_linear - skew(p - o)*R*J_body_angular`, `o` =
+     link world origin (`tree.links[i].worldTransform.translation()`).
+   - Normal row `Jn = n^T J_point_linear` (1 x dof). **Sign care:** orient `n`
+     to point from the obstacle into the link (the contact normal points
+     bodyA->bodyB; flip if the link is bodyA). Normal velocity `vn = Jn*nextVel`.
+   - If `vn < 0` (approaching) apply `lambda_n = max(0, -m_eff*vn)` with
+     `m_eff = 1/(Jn M^-1 Jn^T)` (reuse `mb.massMatrix.inverse()` /
+     `J M^-1 J^T`); `nextVelocity += M^-1 Jn^T lambda_n`. Add a small Baumgarte
+     bias `+ beta*depth/dt` to stop sinking. Iterate a few times for multiple
+     contacts.
+   - Later: restitution/friction (tangent rows + cone), then the boxed-LCP for
+     simultaneous coupled contacts (`dart/math/lcp`, PLAN-020) and islands, and
+     link-vs-dynamic-body / link-vs-link (two-sided) contacts.
 6. **Verify by emergent behavior** (the only non-closed-form tests in the task,
-   so budget time to tune tolerances): a fixed-base link with a sphere shape
-   drops under gravity and rests on a static rigid ground (penetration stops,
-   normal velocity -> 0); likewise a 1-DOF prismatic "leg".
+   so budget time to tune tolerances): a fixed-base 1-DOF prismatic "leg" with a
+   sphere shape descends under gravity and rests on a static rigid ground
+   (penetration stops, normal velocity -> 0).
 
 When committing this session's work: create a feature branch, run the pre-commit
 checklist (`pixi run lint`, build, tests), and open a PR with milestone
