@@ -1102,11 +1102,19 @@ RotationBoundData makeRotationBoundData(
   return data;
 }
 
-// Samples a cubic-Bezier (spline) motion and supplies a conservative speed
-// bound over a remaining interval [t, 1]. Translation follows the cubic Bezier
-// of the four translation control points; orientation is the exponential of the
-// cubic Bezier of the four rotation-vector control points -- the same
-// parameterization the reference spline-motion model uses.
+// Samples a cubic-Bezier (spline) motion and supplies the ingredients for a
+// closed-form conservative advancement step over a remaining interval [t, 1].
+// Translation follows the cubic Bezier of the four translation control points;
+// orientation is the exponential of the cubic Bezier of the four
+// rotation-vector control points -- the same curve the reference spline-motion
+// model traces.
+//
+// The step uses an acceleration-bounded speed model: |T'(t+s)| <= |T'(t)| +
+// s*A, where A bounds |T''| over the step. This is far tighter than a flat
+// max-speed bound when the curve is slow now but fast later (a curve whose tail
+// accelerates away), turning the conservative-advancement step from
+// distance/max_speed into the larger root of a quadratic -- fewer GJK
+// evaluations to reach the time of impact, with no loss of conservativeness.
 class SplineSample
 {
 public:
@@ -1126,6 +1134,11 @@ public:
       translationVel_[i] = 3.0 * (translation_[i + 1] - translation_[i]);
       rotationVel_[i] = 3.0 * (rotation_[i + 1] - rotation_[i]);
     }
+    // T''(s) is linear in s: T''(s) = accelBase_ + s * accelSlope_.
+    accelBase_ = 2.0 * (translationVel_[1] - translationVel_[0]);
+    accelSlope_ = 2.0
+                  * (translationVel_[0] - 2.0 * translationVel_[1]
+                     + translationVel_[2]);
   }
 
   [[nodiscard]] Eigen::Isometry3d at(double t) const
@@ -1156,10 +1169,24 @@ public:
     return rotates_;
   }
 
-  // Upper bound on translational speed |T'(s)| for s in [t, 1].
-  [[nodiscard]] double maxLinearSpeed(double t) const
+  // Instantaneous translational speed |T'(t)| (hodograph evaluated at t).
+  [[nodiscard]] double linearSpeedAt(double t) const
   {
-    return maxQuadraticBezierNorm(translationVel_, t);
+    const double u = 1.0 - t;
+    const Eigen::Vector3d v = u * u * translationVel_[0]
+                              + 2.0 * u * t * translationVel_[1]
+                              + t * t * translationVel_[2];
+    return v.norm();
+  }
+
+  // Upper bound on |T''(s)| for s in [t, 1]. T'' is linear in s, and a linear
+  // vector function's norm is convex, so its maximum over an interval is at an
+  // endpoint.
+  [[nodiscard]] double maxLinearAccel(double t) const
+  {
+    const double accelAtT = (accelBase_ + t * accelSlope_).norm();
+    const double accelAtEnd = (accelBase_ + accelSlope_).norm();
+    return std::max(accelAtT, accelAtEnd);
   }
 
   // Upper bound on angular speed |omega(s)| for s in [t, 1]. The body-frame
@@ -1189,6 +1216,8 @@ private:
   std::array<Eigen::Vector3d, 4> rotation_;
   std::array<Eigen::Vector3d, 3> translationVel_;
   std::array<Eigen::Vector3d, 3> rotationVel_;
+  Eigen::Vector3d accelBase_ = Eigen::Vector3d::Zero();
+  Eigen::Vector3d accelSlope_ = Eigen::Vector3d::Zero();
   bool rotates_;
 };
 
@@ -1491,17 +1520,32 @@ bool splineCast(
       return true;
     }
 
-    // Conservative spline motion bound over the remaining interval [t, 1]: the
-    // max point speed is bounded by the translational speed plus the angular
-    // speed times the swept radius. Both speed bounds shrink as t advances
-    // (de Casteljau on the remaining sub-curve), so the step grows near the
-    // end.
-    double motionBound
-        = motionA.maxLinearSpeed(t) + motionA.maxAngularSpeed(t) * maxRadius;
-    if (motionBound < option.tolerance) {
-      motionBound = option.tolerance;
+    // Acceleration-bounded conservative step. Over [t, t+dt] the point speed is
+    // at most v0 + s*accel (translation, linearized by its second-derivative
+    // bound) plus a constant angular contribution, so the closing of the gap is
+    // at most (v0 + angular)*dt + accel*dt^2/2. Solving that quadratic for the
+    // dt that closes exactly `distance` gives the largest provably safe step --
+    // tighter than distance/max_speed because it does not assume the curve is
+    // already moving at its peak speed.
+    const double v0 = motionA.linearSpeedAt(t);
+    const double angular = motionA.maxAngularSpeed(t) * maxRadius;
+    const double accel = motionA.maxLinearAccel(t);
+    const double linearTerm = v0 + angular;
+
+    double dt;
+    if (accel < option.tolerance) {
+      const double bound = std::max(linearTerm, option.tolerance);
+      dt = distance / bound;
+    } else {
+      // Larger root of (accel/2) dt^2 + linearTerm dt - distance = 0.
+      dt = (-linearTerm
+            + std::sqrt(linearTerm * linearTerm + 2.0 * accel * distance))
+           / accel;
     }
-    t += distance / motionBound;
+    if (dt < kEpsilon) {
+      dt = distance / std::max(linearTerm, option.tolerance);
+    }
+    t += dt;
     if (t > 1.0) {
       return false;
     }
