@@ -1900,6 +1900,57 @@ TEST(World, MultiBodyLinkJacobianChain)
   EXPECT_FALSE(jacobian2.col(0).isZero(1e-12));
 }
 
+// Test the world-frame link Jacobian: its linear block predicts the link
+// origin's world velocity, cross-checked against a finite difference of FK.
+TEST(World, MultiBodyLinkWorldJacobian)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("pendulum");
+  auto base = robot.addLink("base");
+  const double length = 1.5;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(length, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+  bob.setMass(1.0);
+  bob.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+
+  auto joint = bob.getParentJoint();
+  const double qd = 0.7;
+  joint.setVelocity(Eigen::VectorXd::Constant(1, qd));
+
+  const double dt = 1e-6;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+
+  // At q = 0 the bob frame is axis-aligned with world, so the world Jacobian
+  // equals the body Jacobian: [0,1,0, 0,0,-L].
+  const Eigen::MatrixXd worldJacobian = robot.getWorldJacobian(bob);
+  ASSERT_EQ(worldJacobian.rows(), 6);
+  ASSERT_EQ(worldJacobian.cols(), 1);
+  Eigen::Matrix<double, 6, 1> expected;
+  expected << 0.0, 1.0, 0.0, 0.0, 0.0, -length;
+  EXPECT_TRUE(worldJacobian.col(0).isApprox(expected, 1e-12));
+
+  // Finite-difference cross-check of the linear block against forward
+  // kinematics (zero gravity and no effort keep the joint velocity constant).
+  const Eigen::Vector3d origin0 = bob.getWorldTransform().translation();
+  const Eigen::Vector3d predictedVelocity
+      = worldJacobian.bottomRows<3>() * Eigen::VectorXd::Constant(1, qd);
+  world.step();
+  const Eigen::Vector3d origin1 = bob.getWorldTransform().translation();
+  const Eigen::Vector3d fdVelocity = (origin1 - origin0) / dt;
+  EXPECT_TRUE(predictedVelocity.isApprox(fdVelocity, 1e-4));
+}
+
 // Test that the dynamics accessors return empty results for a multibody with no
 // movable degrees of freedom.
 TEST(World, MultiBodyDynamicsAccessorsNoDOF)

@@ -109,6 +109,21 @@ computeMultiBodyLinkJacobian(
     const comps::MultiBodyStructure& structure,
     entt::entity linkEntity);
 
+/// Compute the world-frame geometric Jacobian of one link of a multibody.
+///
+/// The returned 6 x DOF matrix maps the multibody's generalized velocity to the
+/// link's spatial velocity `[angular; linear]` expressed in world axes, with
+/// the link-frame origin as the linear reference point. It is the body Jacobian
+/// with both blocks rotated into world axes. The link world transform is
+/// derived from the joint configuration and the base world transform.
+///
+/// @throws InvalidArgumentException if `linkEntity` is not part of `structure`.
+[[nodiscard]] DART_EXPERIMENTAL_API Eigen::MatrixXd
+computeMultiBodyLinkWorldJacobian(
+    entt::registry& registry,
+    const comps::MultiBodyStructure& structure,
+    entt::entity linkEntity);
+
 /// Fixed-base articulated-body forward-dynamics stage.
 ///
 /// For each multibody, this stage computes generalized joint accelerations from

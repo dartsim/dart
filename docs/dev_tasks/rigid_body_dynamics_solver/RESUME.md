@@ -44,15 +44,15 @@ the experimental `World`:
   for impulse-based constraint dynamics. Verified analytically and by the
   `M dqdot = f` identity. C++ + dartpy tests. (The full constrained impulse
   dynamics still needs the constraint solve.)
-- Phase 5 (partial) — body-frame link Jacobians: public
-  `MultiBody::getJacobian(link)` (dartpy `get_jacobian`) returns the 6 x DOF
-  body-frame spatial Jacobian (`[angular; linear]` in the link frame), via the
-  recursion `J_i = X_i J_parent` with own columns = the joint subspace
-  (`compute::computeMultiBodyLinkJacobian`). Config-only (no world transform, so
-  robust to stale frame caches). Verified by screw-theory twist values
-  (`[axis; axis x p]`) and the 2-DOF column structure. World-frame and COM
-  Jacobians are deferred (they need the link world transform / FK). C++ + dartpy
-  tests.
+- Phase 5 (partial) — link Jacobians: public `MultiBody::getJacobian(link)`
+  (body frame) and `getWorldJacobian(link)` (world axes, link-origin referenced)
+  (dartpy `get_jacobian`/`get_world_jacobian`) return the 6 x DOF spatial
+  Jacobian. The body Jacobian uses the recursion `J_i = X_i J_parent` with own
+  columns = the joint subspace; the world Jacobian rotates both blocks by the
+  link world rotation, which is accumulated within the dynamics pass (so robust
+  to stale frame caches). Verified by screw-theory twist values, the 2-DOF
+  column structure, and a finite-difference cross-check against FK. COM
+  Jacobians are deferred. C++ + dartpy tests.
 - Phase 4 (partial) — joint velocity and effort limits: per-coordinate
   velocity and effort (force/torque) lower/upper bounds
   (`Joint::setVelocityLimits`/`getVelocityLowerLimits`/`getVelocityUpperLimits`,
@@ -144,9 +144,10 @@ Phases 2–5. Suggested next slices, in rough dependency order:
 - **Shared foundation needed next:** a constraint solver coupling the
   articulated system (impulse-based articulated dynamics). The joint-space
   primitives it builds on are now in place — mass matrix, `M^-1`, the impulse
-  response `M^-1 f`, inverse dynamics, and the body-frame link Jacobian. What
-  remains for the solver: the world-frame (and COM) Jacobian, the constraint
-  formulation, and the boxed-LCP/PGS solve wired into `World::step`. It unblocks
+  response `M^-1 f`, inverse dynamics, and the body- and world-frame link
+  Jacobians. What remains for the solver: the constraint formulation and the
+  boxed-LCP/PGS solve wired into `World::step` (an optional COM Jacobian aside,
+  the kinematic/dynamic primitives are ready). It unblocks
   the remaining Phase 3 (contacts on multibody links, joint motor/limit
   constraints, boxed-LCP, islands), the constraint-coupled Phase 4 actuator
   modes and mimic/coupler, and Phase 5 loop-closure dynamics. Budget it as a

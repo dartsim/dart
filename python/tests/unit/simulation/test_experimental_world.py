@@ -1150,6 +1150,39 @@ def test_experimental_multibody_link_jacobian():
     assert np.allclose(base_jacobian, 0.0)
 
 
+def test_experimental_multibody_link_world_jacobian():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.gravity = (0.0, 0.0, 0.0)
+    robot = world.add_multi_body("pendulum")
+    base = robot.add_link("base")
+    length = 1.5
+    offset = np.eye(4)
+    offset[0, 3] = length
+    bob = robot.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset,
+        ),
+    )
+    bob.mass = 1.0
+
+    world.enter_simulation_mode()
+
+    # At q = 0 the link frame is axis-aligned with world, so the world Jacobian
+    # equals the body Jacobian: [0, 1, 0, 0, 0, -L].
+    world_jacobian = robot.get_world_jacobian(bob)
+    assert world_jacobian.shape == (6, 1)
+    assert world_jacobian[:, 0].tolist() == pytest.approx(
+        [0.0, 1.0, 0.0, 0.0, 0.0, -length]
+    )
+
+
 def test_experimental_multibody_dynamics_terms_no_dof():
     sx = _simulation_experimental()
 

@@ -627,4 +627,19 @@ Eigen::MatrixXd MultiBody::getJacobian(const Link& link) const
       registry, structure, link.getEntity());
 }
 
+//==============================================================================
+Eigen::MatrixXd MultiBody::getWorldJacobian(const Link& link) const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      link.getWorld() != m_world,
+      InvalidArgumentException,
+      "Link belongs to a different world");
+
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
+  return compute::computeMultiBodyLinkWorldJacobian(
+      registry, structure, link.getEntity());
+}
+
 } // namespace dart::simulation::experimental

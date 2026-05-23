@@ -113,14 +113,14 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 
 ### Rigid-body quantities & API
 
-| Capability                     | DART 6                                           | Experimental                                          | Status               |
-| ------------------------------ | ------------------------------------------------ | ----------------------------------------------------- | -------------------- |
-| Center of mass / COM jacobian  | `Skeleton::getCOM*`                              | single-body COM = origin                              | PARTIAL              |
-| Linear/angular momentum        | `BodyNode::getLinearMomentum/getAngularMomentum` | single rigid body (Phase 0.3)                         | PRESENT (rigid body) |
-| Kinetic/potential energy       | `Skeleton::computeKineticEnergy/Potential`       | single rigid body (Phase 0.3)                         | PRESENT (rigid body) |
-| External force application API | `addExtForce` (local/global, offset)             | world-frame force/torque accum                        | PARTIAL              |
-| Jacobians                      | `BodyNode::getJacobian`, COM jacobians           | body-frame link Jacobian (Phase 5); world/COM pending | PARTIAL              |
-| Model loading into world       | `dart::io` URDF/SDF/MJCF/SKEL                    | none on experimental                                  | MISSING (deferred)   |
+| Capability                     | DART 6                                           | Experimental                                                | Status               |
+| ------------------------------ | ------------------------------------------------ | ----------------------------------------------------------- | -------------------- |
+| Center of mass / COM jacobian  | `Skeleton::getCOM*`                              | single-body COM = origin                                    | PARTIAL              |
+| Linear/angular momentum        | `BodyNode::getLinearMomentum/getAngularMomentum` | single rigid body (Phase 0.3)                               | PRESENT (rigid body) |
+| Kinetic/potential energy       | `Skeleton::computeKineticEnergy/Potential`       | single rigid body (Phase 0.3)                               | PRESENT (rigid body) |
+| External force application API | `addExtForce` (local/global, offset)             | world-frame force/torque accum                              | PARTIAL              |
+| Jacobians                      | `BodyNode::getJacobian`, COM jacobians           | body- and world-frame link Jacobians (Phase 5); COM pending | PARTIAL              |
+| Model loading into world       | `dart::io` URDF/SDF/MJCF/SKEL                    | none on experimental                                        | MISSING (deferred)   |
 
 ## Improvement Opportunities Over DART 6
 

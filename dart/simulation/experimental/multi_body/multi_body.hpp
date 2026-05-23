@@ -354,6 +354,20 @@ public:
   ///         or is not part of this multibody.
   [[nodiscard]] Eigen::MatrixXd getJacobian(const Link& link) const;
 
+  /// Get the world-frame geometric Jacobian of a link in this multibody.
+  ///
+  /// The returned 6 x getDOFCount() matrix maps the generalized velocity to the
+  /// link's spatial velocity `[angular; linear]` expressed in world axes, with
+  /// the link-frame origin as the linear reference point. The link world
+  /// transform is derived from the joint configuration and the base world
+  /// transform.
+  ///
+  /// @param link A link belonging to this multibody.
+  /// @return The 6 x getDOFCount() world-frame Jacobian.
+  /// @throws InvalidArgumentException if the link belongs to a different world
+  ///         or is not part of this multibody.
+  [[nodiscard]] Eigen::MatrixXd getWorldJacobian(const Link& link) const;
+
 private:
   entt::entity m_entity; ///< Entity ID in the registry
   World* m_world;        ///< Non-owning pointer to World

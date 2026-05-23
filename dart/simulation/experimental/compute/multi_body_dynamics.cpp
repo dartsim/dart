@@ -175,6 +175,7 @@ struct LinkDynamics
   Matrix6 childToParentForce = Matrix6::Identity(); // X^T
   Subspace subspace{6, 0};                          // S in child frame
   Matrix6 inertia = Matrix6::Zero();
+  Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
 };
 
 //==============================================================================
@@ -218,6 +219,7 @@ DynamicsTree buildDynamicsTree(
       const auto& cache = registry.get<comps::FrameCache>(linkEntity);
       dynamics.parentToChild = adjoint(cache.worldTransform.inverse());
       dynamics.childToParentForce = dynamics.parentToChild.transpose();
+      dynamics.worldTransform = cache.worldTransform;
       dynamics.parentIndex = -1;
       continue;
     }
@@ -236,6 +238,8 @@ DynamicsTree buildDynamicsTree(
         = jointMotionTransform(joint) * linkComp.transformFromParentJoint;
     dynamics.parentToChild = adjoint(childInParent.inverse());
     dynamics.childToParentForce = dynamics.parentToChild.transpose();
+    dynamics.worldTransform
+        = tree.links[parentIt->second].worldTransform * childInParent;
 
     const Subspace jointFrameSubspace = jointSubspaceInJointFrame(joint);
     dynamics.subspace = adjoint(linkComp.transformFromParentJoint.inverse())
@@ -261,6 +265,47 @@ DynamicsTree buildDynamicsTree(
   }
 
   return tree;
+}
+
+//==============================================================================
+// Body-frame spatial Jacobian of every link via the recursion
+// J_i = X_i J_parent, with the link's own joint columns set to its motion
+// subspace S_i (already expressed in the link frame). Each Jacobian is 6 x
+// dofCount, [angular; linear] in the link's own frame.
+std::vector<Eigen::MatrixXd> linkBodyJacobians(const DynamicsTree& tree)
+{
+  const auto dofCount = static_cast<Eigen::Index>(tree.dofCount);
+  std::vector<Eigen::MatrixXd> jacobian(
+      tree.links.size(), Eigen::MatrixXd::Zero(6, dofCount));
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const auto& link = tree.links[i];
+    if (link.parentIndex >= 0) {
+      jacobian[i] = link.parentToChild
+                    * jacobian[static_cast<std::size_t>(link.parentIndex)];
+    }
+    if (link.dof > 0) {
+      jacobian[i].middleCols(
+          static_cast<Eigen::Index>(link.dofOffset),
+          static_cast<Eigen::Index>(link.dof))
+          = link.subspace;
+    }
+  }
+  return jacobian;
+}
+
+//==============================================================================
+// Index of a link entity within a multibody structure.
+std::size_t linkIndexOf(
+    const comps::MultiBodyStructure& structure, entt::entity linkEntity)
+{
+  const auto& linkEntities = structure.links;
+  const auto it
+      = std::find(linkEntities.begin(), linkEntities.end(), linkEntity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      it == linkEntities.end(),
+      InvalidArgumentException,
+      "Link does not belong to this multibody");
+  return static_cast<std::size_t>(it - linkEntities.begin());
 }
 
 //==============================================================================
@@ -581,38 +626,30 @@ Eigen::MatrixXd computeMultiBodyLinkJacobian(
     const comps::MultiBodyStructure& structure,
     entt::entity linkEntity)
 {
-  const auto& linkEntities = structure.links;
-  const auto it
-      = std::find(linkEntities.begin(), linkEntities.end(), linkEntity);
-  DART_EXPERIMENTAL_THROW_T_IF(
-      it == linkEntities.end(),
-      InvalidArgumentException,
-      "Link does not belong to this multibody");
-  const auto targetIndex = static_cast<std::size_t>(it - linkEntities.begin());
-
+  const auto targetIndex = linkIndexOf(structure, linkEntity);
   const DynamicsTree tree = buildDynamicsTree(registry, structure);
-  const auto dofCount = static_cast<Eigen::Index>(tree.dofCount);
+  return linkBodyJacobians(tree)[targetIndex];
+}
 
-  // Body-frame Jacobian per link via the recursion J_i = X_i J_parent, with the
-  // link's own joint columns set to its motion subspace S_i (already expressed
-  // in the link frame). Links are in parent-before-child order.
-  std::vector<Eigen::MatrixXd> jacobian(
-      tree.links.size(), Eigen::MatrixXd::Zero(6, dofCount));
-  for (std::size_t i = 0; i < tree.links.size(); ++i) {
-    const auto& link = tree.links[i];
-    if (link.parentIndex >= 0) {
-      jacobian[i] = link.parentToChild
-                    * jacobian[static_cast<std::size_t>(link.parentIndex)];
-    }
-    if (link.dof > 0) {
-      jacobian[i].middleCols(
-          static_cast<Eigen::Index>(link.dofOffset),
-          static_cast<Eigen::Index>(link.dof))
-          = link.subspace;
-    }
-  }
+//==============================================================================
+Eigen::MatrixXd computeMultiBodyLinkWorldJacobian(
+    entt::registry& registry,
+    const comps::MultiBodyStructure& structure,
+    entt::entity linkEntity)
+{
+  const auto targetIndex = linkIndexOf(structure, linkEntity);
+  const DynamicsTree tree = buildDynamicsTree(registry, structure);
+  const Eigen::MatrixXd bodyJacobian = linkBodyJacobians(tree)[targetIndex];
 
-  return jacobian[targetIndex];
+  // Rotate both the angular and linear blocks into world axes, keeping the link
+  // origin as the reference point: this is the geometric (world-frame) Jacobian
+  // [angular; linear of the link origin].
+  const Eigen::Matrix3d rotation
+      = tree.links[targetIndex].worldTransform.linear();
+  Eigen::MatrixXd worldJacobian(6, bodyJacobian.cols());
+  worldJacobian.topRows<3>() = rotation * bodyJacobian.topRows<3>();
+  worldJacobian.bottomRows<3>() = rotation * bodyJacobian.bottomRows<3>();
+  return worldJacobian;
 }
 
 //==============================================================================
