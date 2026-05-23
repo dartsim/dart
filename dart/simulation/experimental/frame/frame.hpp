@@ -101,7 +101,7 @@ public:
   friend class World;
   friend class FreeFrame;
   friend class FixedFrame;
-  friend class MultiBody;
+  friend class Multibody;
 
   /// Construct a Frame handle from an entity and world
   ///

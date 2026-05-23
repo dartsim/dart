@@ -31,7 +31,7 @@
  */
 
 #include <dart/simulation/experimental/body/rigid_body.hpp>
-#include <dart/simulation/experimental/multi_body/multi_body.hpp>
+#include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <Eigen/Geometry>
@@ -166,8 +166,8 @@ TEST(ObjectManager, MultiBodyWithLinks)
 
   objects.rebuild();
 
-  ASSERT_TRUE(objects.world().hasMultiBody("arm"));
-  auto arm = objects.world().getMultiBody("arm");
+  ASSERT_TRUE(objects.world().hasMultibody("arm"));
+  auto arm = objects.world().getMultibody("arm");
   ASSERT_TRUE(arm.has_value());
   EXPECT_EQ(arm->getLinkCount(), 2u);
   EXPECT_EQ(arm->getJointCount(), 1u);

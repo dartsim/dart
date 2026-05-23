@@ -40,7 +40,7 @@ sketch below in two ways worth recording:
   shared build directory flips between system and docking ImGui as different
   targets are built — the editor launchers reconfigure to docking on demand, and
   `dart::gui::isImGuiDockingAvailable()` lets the editor log `ImGui docking:
-  enabled` (or a rebuild hint) so the active state is visible. On first run an
+enabled` (or a rebuild hint) so the active state is visible. On first run an
   IDE-style default layout is built (menu top, Scene Tree left, Inspector right,
   Console and Simulation tabbed at the bottom, viewport center) via a per-panel
   `dart::gui::DockSide` hint; afterwards the user's arrangement persists via

@@ -127,6 +127,22 @@ its own line so status updates remain git-history friendly.
   group/mask filtering, broad-phase overlays, focused registry/debug-snapshot
   tests, and CTest-gated headless screenshot smoke coverage.
 
+### PLAN-080: Performance Dashboard
+
+- Owner doc:
+  [`../readthedocs/community/performance_dashboard.rst`](../readthedocs/community/performance_dashboard.rst)
+- Status: Active
+- Horizon: Now
+- Dimension: Scalable compute
+- Next step: Merge the `Performance Dashboard` workflow
+  (`benchmark-action/github-action-benchmark`), enable GitHub Pages from the
+  `gh-pages` branch, and let the first `main` run publish to
+  `dartsim.github.io/dart/performance/`.
+- Gate: `pixi run bm-dashboard-preview` renders the dashboard locally from real
+  Google Benchmark JSON; after publication the hosted page shows per-benchmark
+  history. Per-PR regression comments and an optional secondary backend
+  (Bencher/CodSpeed) are deferred future work, not launch blockers.
+
 ### PLAN-040: DART 7 Release Hardening
 
 - Owner doc: [`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)

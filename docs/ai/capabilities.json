@@ -173,6 +173,12 @@
       "gate_profile": "reference"
     },
     {
+      "name": "dart-references",
+      "category": "research",
+      "status": "active",
+      "gate_profile": "reference"
+    },
+    {
       "name": "dart-test",
       "category": "test",
       "status": "active",

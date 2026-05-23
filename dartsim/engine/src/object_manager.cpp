@@ -34,10 +34,10 @@
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
-#include <dart/simulation/experimental/multi_body/joint.hpp>
-#include <dart/simulation/experimental/multi_body/joint_type.hpp>
-#include <dart/simulation/experimental/multi_body/link.hpp>
-#include <dart/simulation/experimental/multi_body/multi_body.hpp>
+#include <dart/simulation/experimental/multibody/joint.hpp>
+#include <dart/simulation/experimental/multibody/joint_type.hpp>
+#include <dart/simulation/experimental/multibody/link.hpp>
+#include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <dartsim_engine/object_manager.hpp>
@@ -66,11 +66,11 @@ sx::JointType toJointType(JointKind kind)
     case JointKind::Universal:
       return sx::JointType::Universal;
     case JointKind::Ball:
-      return sx::JointType::Ball;
+      return sx::JointType::Spherical;
     case JointKind::Planar:
       return sx::JointType::Planar;
     case JointKind::Free:
-      return sx::JointType::Free;
+      return sx::JointType::Floating;
   }
   return sx::JointType::Revolute;
 }
@@ -136,7 +136,7 @@ void ObjectManager::rebuild()
 
 void ObjectManager::buildMultiBody(const SceneObject& multiBodyObject)
 {
-  sx::MultiBody mb = m_world->addMultiBody(multiBodyObject.name);
+  sx::Multibody mb = m_world->addMultibody(multiBodyObject.name);
 
   // Collect link children in model order.
   std::vector<const SceneObject*> links;
@@ -218,7 +218,7 @@ std::optional<Eigen::Isometry3d> ObjectManager::worldTransformOf(
   } else if (object->type == ObjectType::Link) {
     const SceneObject* mbObject = m_model.find(object->multiBody);
     if (mbObject != nullptr) {
-      std::optional<sx::MultiBody> mb = m_world->getMultiBody(mbObject->name);
+      std::optional<sx::Multibody> mb = m_world->getMultibody(mbObject->name);
       if (mb.has_value()) {
         std::optional<sx::Link> link = mb->getLink(object->name);
         if (link.has_value()) {

@@ -30,11 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/multi_body/joint.hpp"
+#include "dart/simulation/experimental/multibody/joint.hpp"
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/multi_body/link.hpp"
+#include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <vector>
@@ -56,12 +56,12 @@ JointType toPublicJointType(comps::JointType type)
       return JointType::Screw;
     case comps::JointType::Universal:
       return JointType::Universal;
-    case comps::JointType::Ball:
-      return JointType::Ball;
+    case comps::JointType::Spherical:
+      return JointType::Spherical;
     case comps::JointType::Planar:
       return JointType::Planar;
-    case comps::JointType::Free:
-      return JointType::Free;
+    case comps::JointType::Floating:
+      return JointType::Floating;
     case comps::JointType::Custom:
       return JointType::Custom;
   }
@@ -160,12 +160,13 @@ Eigen::Vector3d Joint::getAxis() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);
 
-  // Validate joint type - Ball and Free joints don't have axes
+  // Validate joint type - Spherical and Floating joints don't have axes
   DART_EXPERIMENTAL_THROW_T_IF(
-      jointComp.type == comps::JointType::Ball
-          || jointComp.type == comps::JointType::Free,
+      jointComp.type == comps::JointType::Spherical
+          || jointComp.type == comps::JointType::Floating,
       InvalidArgumentException,
-      "getAxis() is not valid for Ball and Free joints (no axis concept)");
+      "getAxis() is not valid for Spherical and Floating joints (no axis "
+      "concept)");
 
   return jointComp.axis;
 }

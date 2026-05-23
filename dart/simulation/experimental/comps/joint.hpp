@@ -93,11 +93,11 @@ enum class JointType
 
   // ========== 3-DOF Joints ==========
 
-  /// Ball/Spherical joint (3-DOF) - Free rotation in all directions
-  /// Use: Human shoulders, camera gimbals, floating objects
+  /// Spherical joint (3-DOF) - free rotation in all directions
+  /// (ball-and-socket) Use: Human shoulders, camera gimbals, floating objects
   /// Representation: Quaternion or Euler angles
   /// Status: TODO
-  Ball,
+  Spherical,
 
   /// Planar joint (3-DOF) - Motion constrained to a plane
   /// DOF: 2 translations + 1 rotation within the plane
@@ -107,12 +107,12 @@ enum class JointType
 
   // ========== 6-DOF Joints ==========
 
-  /// Free joint (6-DOF) - Unconstrained motion
+  /// Floating joint (6-DOF) - Unconstrained motion
   /// DOF: 3 translations + 3 rotations
   /// Use: Floating base (humanoids, flying robots, space robots)
   /// Representation: Position (3D) + Orientation (quaternion)
   /// Status: TODO
-  Free,
+  Floating,
 
   // ========== Extensibility ==========
 
@@ -165,9 +165,9 @@ struct JointLimits
 /// - Prismatic:  axis
 /// - Screw:      axis, pitch
 /// - Universal:  axis, axis2 (must be perpendicular)
-/// - Ball:       (no geometric parameters - uses quaternion position)
+/// - Spherical:       (no geometric parameters - uses quaternion position)
 /// - Planar:     axis (normal to plane), axis2 (in-plane direction)
-/// - Free:       (no geometric parameters - 6-DOF position)
+/// - Floating:       (no geometric parameters - 6-DOF position)
 ///
 /// **Internal Implementation Detail** - Not exposed in public API
 struct Joint
@@ -213,11 +213,11 @@ struct Joint
         return 1;
       case Universal:
         return 2;
-      case Ball:
+      case Spherical:
         return 3;
       case Planar:
         return 3;
-      case Free:
+      case Floating:
         return 6;
       default:
         return 0;
