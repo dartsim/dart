@@ -38,12 +38,87 @@
 #include "dart/simulation/experimental/compute/rigid_body_integration_kernel.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
+#include <Eigen/Cholesky>
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
 #include <cmath>
 
 namespace dart::simulation::experimental::compute {
+
+namespace {
+
+//==============================================================================
+bool allFinite(const Eigen::Vector3d& value)
+{
+  return value.array().isFinite().all();
+}
+
+//==============================================================================
+bool allFinite(const Eigen::Matrix3d& value)
+{
+  return value.array().isFinite().all();
+}
+
+//==============================================================================
+// Add the angular acceleration from torque to each body's angular velocity,
+// mirroring the per-entity integrateAngularVelocity: it forms the world-frame
+// inertia (R I R^T) from the normalized orientation, LDLT-solves the torque,
+// and leaves the angular velocity unchanged on a non-finite or
+// non-positive-definite system. Reads the pre-update orientation, so it must
+// run before the orientation step.
+void integrateAngularVelocitiesFromTorque(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& torque,
+    double timeStep)
+{
+  const auto bodies = state.worldCount * state.bodyCount;
+  for (std::size_t b = 0; b < bodies; ++b) {
+    const Eigen::Vector3d tau(
+        torque[3 * b + 0], torque[3 * b + 1], torque[3 * b + 2]);
+    const Eigen::Matrix3d inertia
+        = Eigen::Map<const Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(
+            model.inertia.data() + 9 * b);
+    if (!allFinite(tau) || !allFinite(inertia)) {
+      continue;
+    }
+
+    // Normalize the orientation exactly as the per-entity path does, falling
+    // back to identity for a degenerate quaternion.
+    Eigen::Quaterniond orientation(
+        state.orientation[4 * b + 0],
+        state.orientation[4 * b + 1],
+        state.orientation[4 * b + 2],
+        state.orientation[4 * b + 3]);
+    const double norm = orientation.norm();
+    Eigen::Matrix3d rotation;
+    if (norm <= 0.0 || !std::isfinite(norm)) {
+      rotation = Eigen::Matrix3d::Identity();
+    } else {
+      orientation.coeffs() /= norm;
+      rotation = orientation.toRotationMatrix();
+    }
+
+    const Eigen::Matrix3d worldInertia
+        = rotation * inertia * rotation.transpose();
+    Eigen::LDLT<Eigen::Matrix3d> solver(worldInertia);
+    if (solver.info() != Eigen::Success || !solver.isPositive()) {
+      continue;
+    }
+
+    const Eigen::Vector3d angularAcceleration = solver.solve(tau);
+    if (solver.info() != Eigen::Success || !allFinite(angularAcceleration)) {
+      continue;
+    }
+
+    state.angularVelocity[3 * b + 0] += angularAcceleration.x() * timeStep;
+    state.angularVelocity[3 * b + 1] += angularAcceleration.y() * timeStep;
+    state.angularVelocity[3 * b + 2] += angularAcceleration.z() * timeStep;
+  }
+}
+
+} // namespace
 
 //==============================================================================
 RigidBodyStateBatch extractRigidBodyState(const World& world)
@@ -297,6 +372,12 @@ RigidBodyModelBatch extractRigidBodyModelBatch(const World& world)
     const double inverse
         = (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
     model.inverseMass.push_back(inverse);
+
+    for (int row = 0; row < 3; ++row) {
+      for (int col = 0; col < 3; ++col) {
+        model.inertia.push_back(mass.inertia(row, col));
+      }
+    }
   }
 
   return model;
@@ -342,6 +423,34 @@ void integrateRigidBodyStateBatch(
   // Linear step (validates model, force, and the 3-component arrays), then the
   // orientation step from the batch angular velocity.
   integrateRigidBodyStateBatchLinear(state, model, force, timeStep);
+  integrateOrientationsSemiImplicit(
+      state.orientation.data(), state.angularVelocity.data(), timeStep, bodies);
+}
+
+//==============================================================================
+void integrateRigidBodyStateBatch(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    const std::vector<double>& torque,
+    double timeStep)
+{
+  const auto bodies = state.worldCount * state.bodyCount;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      state.orientation.size() != 4 * bodies || torque.size() != 3 * bodies
+          || model.inertia.size() != 9 * bodies,
+      InvalidArgumentException,
+      "integrateRigidBodyStateBatch (torque) arrays are inconsistent with "
+      "worldCount {} and bodyCount {}",
+      state.worldCount,
+      state.bodyCount);
+
+  // Match the per-entity order: linear velocity and position (the linear helper
+  // validates model, force, and the 3-component arrays), then angular velocity
+  // from torque using the pre-update orientation, then orientation from the
+  // updated angular velocity.
+  integrateRigidBodyStateBatchLinear(state, model, force, timeStep);
+  integrateAngularVelocitiesFromTorque(state, model, torque, timeStep);
   integrateOrientationsSemiImplicit(
       state.orientation.data(), state.angularVelocity.data(), timeStep, bodies);
 }

@@ -494,12 +494,17 @@ void BatchedRigidBodyIntegrationStage::execute(
   }
 
   std::vector<double> force;
+  std::vector<double> torque;
   force.reserve(3 * entities.size());
+  torque.reserve(3 * entities.size());
   for (const auto entity : entities) {
     const auto& f = registry.get<comps::Force>(entity);
     force.push_back(f.force.x());
     force.push_back(f.force.y());
     force.push_back(f.force.z());
+    torque.push_back(f.torque.x());
+    torque.push_back(f.torque.y());
+    torque.push_back(f.torque.z());
   }
 
   auto state = extractRigidBodyState(world);
@@ -509,8 +514,8 @@ void BatchedRigidBodyIntegrationStage::execute(
   ComputeGraph graph;
   graph.addNode(
       "soa_rigid_body_integration",
-      [&state, &model, &force, timeStep]() {
-        integrateRigidBodyStateBatch(state, model, force, timeStep);
+      [&state, &model, &force, &torque, timeStep]() {
+        integrateRigidBodyStateBatch(state, model, force, torque, timeStep);
       },
       getMetadata());
   executor.execute(graph);

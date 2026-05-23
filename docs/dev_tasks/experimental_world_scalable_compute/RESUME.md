@@ -2,11 +2,11 @@
 
 ## Last Session Summary
 
-Twenty-one verified commits on the feature branch, each green
+Twenty-three verified commits on the feature branch, each green
 (`pixi run build`, `pixi run build-simulation-experimental-tests`,
 `pixi run lint`, the experimental ctest label, and the benchmark). The branch now
-carries the full standalone structure-of-arrays (SoA) toolkit and its first live
-wiring:
+carries the full standalone structure-of-arrays (SoA) toolkit and a live World
+step driven by it at full parity with the per-entity integrator:
 
 - Phase 0/1: EnTT concurrency contract + debug hazard assert, contact-shaped
   benchmark proxy, resource-access metadata (`findResourceHazards`/DOT/per-entity
@@ -18,8 +18,11 @@ wiring:
   with `extract`/`apply` (single- and multi-world) validated by a code-reviewer
   pass (Critical bounds-check + Major hazard-cost findings fixed).
 - Phase 2 kernels/integrators: scalar-generic `integratePositionsSemiImplicit`,
-  `integrateVelocitiesSemiImplicit`, and `integrateOrientationsSemiImplicit`;
-  the linear and full (`integrateRigidBodyStateBatch`) batched integrators.
+  `integrateVelocitiesSemiImplicit`, and `integrateOrientationsSemiImplicit`
+  (angle-axis exponential map, exact for constant angular velocity); the linear
+  and full (`integrateRigidBodyStateBatch`) batched integrators, including a
+  torque overload that adds angular velocity from torque via the world-inertia
+  (`R I R^T`) LDLT solve, mirroring the per-entity `integrateAngularVelocity`.
 - Phase 4 (partial): CPU batch executor (`stepWorldsBatched`), World rollout
   (`rolloutWorldsBatched`), and a pure-SoA control-sequence rollout
   (`rolloutRigidBodyStateBatch`).
@@ -27,34 +30,35 @@ wiring:
   additive `WorldStepStage` that drives a live World step through the SoA path
   (extract -> `integrateRigidBodyStateBatch` via the executor -> apply +
   frame-cache update), deferring frame-coupled bodies to
-  `RigidBodyIntegrationStage`. Two parity tests verify it matches the per-entity
-  stage to 1e-10 for free bodies (no angular velocity / torque) and reproduces
-  the per-entity result for the frame-coupled fallback.
+  `RigidBodyIntegrationStage`. A parity test verifies it matches the per-entity
+  stage to 1e-10 across a full dynamic step (linear force, torque, orientation)
+  for free bodies, plus a frame-coupled fallback test. The orientation scheme is
+  unified on the exponential map and `RigidBodyModelBatch` now carries inertia,
+  so the SoA stage is a full drop-in replacement for free rigid bodies.
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute` — twenty-one commits ahead of
+`feature/experimental-world-scalable-compute` — twenty-three commits ahead of
 `main`, working tree clean, all gates green. Not pushed; accumulating toward one
 larger DART 7 PR.
 
 ## Immediate Next Step
 
-The SoA path now drives a live step, but only at parity with the per-entity
-integrator in the linear regime. To make `BatchedRigidBodyIntegrationStage` a
-full drop-in replacement (and let `World::step` select it), the SoA path must
-reach parity for spinning bodies under torque:
+`BatchedRigidBodyIntegrationStage` now matches the per-entity integrator across a
+full free-body dynamic step, so the SoA path is a verified drop-in. The natural
+next steps, in rough order:
 
-1. Carry inertia in `RigidBodyModelBatch` and add an angular-velocity-from-torque
-   step (the world-inertia LDLT solve that `integrateAngularVelocity` performs).
-2. Reconcile the orientation scheme: the per-entity integrator uses an angle-axis
-   update while `integrateOrientationsSemiImplicit` uses a quaternion product;
-   pick one (or make the kernel match) so a spinning-body parity test passes.
-3. Then optionally let `World::step` choose the batched stage.
+1. Optionally let `World::step` (or the default pipeline) select the batched
+   stage, behind the executor seam, once frame-coupled coverage is broadened
+   beyond the current per-entity fallback (e.g. parent-before-child ordering of
+   the frame-cache loop so the SoA path handles rigid-body parenting directly).
+2. Phase 3 explicit SIMD on the hot kernels (currently auto-vectorized at -O3),
+   with a tolerance-based determinism gate.
+3. Phase 4 heterogeneous batches (deferred-by-design in `01-plan.md`).
+4. Phase 5 GPU prototype (blocked on GPU hardware/CI + the CUDA-vs-SYCL
+   benchmark); Phase 6 reassess.
 
-After that: Phase 3 explicit SIMD on the hot kernels (currently auto-vectorized
-at -O3); Phase 4 heterogeneous batches (deferred-by-design in `01-plan.md`);
-Phase 5 GPU prototype (blocked on GPU hardware/CI + the CUDA-vs-SYCL benchmark);
-Phase 6 reassess. Keep `entt` internal and the public handle API unchanged.
+Keep `entt` internal and the public handle API unchanged.
 
 ## Context That Would Be Lost
 

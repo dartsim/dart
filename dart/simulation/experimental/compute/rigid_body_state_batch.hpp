@@ -75,13 +75,17 @@ struct DART_EXPERIMENTAL_API RigidBodyStateBatch
 /// mutable @c RigidBodyStateBatch.
 ///
 /// This is the Model side of the Model/State split: built once and read during
-/// integration. For now it carries the per-body inverse mass
-/// (length `worldCount * bodyCount`); inertia and other parameters can follow.
+/// integration. It carries the per-body inverse mass
+/// (length `worldCount * bodyCount`) and body-frame inertia tensor (nine
+/// row-major components per body, length `9 * worldCount * bodyCount`). The
+/// inertia is only required by the torque-aware integrator overload; the
+/// linear and torque-free paths ignore it.
 struct DART_EXPERIMENTAL_API RigidBodyModelBatch
 {
   std::size_t worldCount = 1;
   std::size_t bodyCount = 0;
   std::vector<double> inverseMass; ///< worldCount * bodyCount
+  std::vector<double> inertia;     ///< 9 * worldCount * bodyCount (row-major)
 
   [[nodiscard]] bool isEmpty() const noexcept
   {
@@ -151,6 +155,23 @@ DART_EXPERIMENTAL_API void integrateRigidBodyStateBatch(
     RigidBodyStateBatch& state,
     const RigidBodyModelBatch& model,
     const std::vector<double>& force,
+    double timeStep);
+
+/// Integrate a state batch one full semi-implicit Euler dynamic step in place,
+/// including the angular-velocity-from-torque update. The order matches the
+/// per-entity integrator: linear velocity from @p force / @p model, angular
+/// velocity from @p torque via the world-frame inertia (`R I R^T`, solved by
+/// LDLT) using @p model 's inertia and the current orientation, position from
+/// the updated linear velocity, then orientation from the updated angular
+/// velocity. A non-finite torque/inertia or a non-positive-definite world
+/// inertia leaves the angular velocity unchanged, as in the per-entity path.
+/// @p torque has three components per body; @p model.inertia must be populated.
+/// Throws on size mismatch.
+DART_EXPERIMENTAL_API void integrateRigidBodyStateBatch(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    const std::vector<double>& torque,
     double timeStep);
 
 /// Roll out a state batch over a control sequence on the SoA arrays, with no

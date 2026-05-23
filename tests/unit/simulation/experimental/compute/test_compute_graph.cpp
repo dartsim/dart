@@ -811,6 +811,44 @@ TEST(ExperimentalIntegrationKernel, IntegratesFullStateBatch)
 }
 
 //==============================================================================
+TEST(ExperimentalIntegrationKernel, IntegratesAngularVelocityFromTorque)
+{
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = 1;
+  state.position = {0.0, 0.0, 0.0};
+  state.orientation = {1.0, 0.0, 0.0, 0.0}; // identity
+  state.linearVelocity = {0.0, 0.0, 0.0};
+  state.angularVelocity = {0.0, 0.0, 0.0};
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = 1;
+  model.inverseMass = {1.0};
+  // Diagonal body inertia diag(2, 4, 8), row-major.
+  model.inertia = {2.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 8.0};
+
+  const std::vector<double> force = {0.0, 0.0, 0.0};
+  const std::vector<double> torque = {2.0, 4.0, 8.0};
+
+  compute::integrateRigidBodyStateBatch(state, model, force, torque, 0.1);
+
+  // Identity orientation => world inertia == body inertia, so the angular
+  // acceleration is I^-1 * torque = (1, 1, 1) and the velocity gains
+  // accel * dt = (0.1, 0.1, 0.1).
+  EXPECT_NEAR(state.angularVelocity[0], 0.1, 1e-12);
+  EXPECT_NEAR(state.angularVelocity[1], 0.1, 1e-12);
+  EXPECT_NEAR(state.angularVelocity[2], 0.1, 1e-12);
+
+  // A wrong-size inertia is rejected.
+  auto bad = model;
+  bad.inertia = {1.0, 2.0, 3.0};
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatch(state, bad, force, torque, 0.1),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
 TEST(ExperimentalIntegrationKernel, RollsOutStateBatchOverControlSequence)
 {
   compute::RigidBodyStateBatch initial;

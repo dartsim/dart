@@ -1426,9 +1426,9 @@ TEST(World, RigidBodyStepParallelMatchesSequentialAcrossWorkerCounts)
 }
 
 // Test that the batched SoA integration stage matches the per-entity stage for
-// free (non-frame-coupled) rigid bodies under constant angular velocity and no
-// torque -- the regime where the two integrators share semantics, now that both
-// use the same angle-axis exponential map for the orientation update.
+// free (non-frame-coupled) rigid bodies under a full dynamic step: linear
+// force, torque (via the shared world-inertia LDLT solve), and the shared
+// angle-axis exponential-map orientation update.
 TEST(World, BatchedRigidBodyIntegrationStageMatchesPerEntityForFreeBodies)
 {
   namespace sx = dart::simulation::experimental;
@@ -1441,14 +1441,12 @@ TEST(World, BatchedRigidBodyIntegrationStageMatchesPerEntityForFreeBodies)
       options.inertia = Eigen::Vector3d(1.0, 1.5, 2.0).asDiagonal();
       options.position = Eigen::Vector3d(0.2 * i, -0.1 * i, 0.05 * i);
       options.linearVelocity = Eigen::Vector3d(0.5, 0.25 * i, -0.1 * i);
-      // Constant angular velocity exercises orientation parity; with no torque
-      // it stays constant in both stages, so the shared exponential map keeps
-      // them aligned.
       options.angularVelocity = Eigen::Vector3d(0.05 * i, -0.03 * i, 0.2);
       auto body = world.addRigidBody("body_" + std::to_string(i), options);
-      // Linear force only (no torque): a torque would exercise the per-entity
-      // inertia solve that the SoA model does not yet carry.
       body.setForce(Eigen::Vector3d(0.1 * i, 0.2, -0.3));
+      // Non-zero torque exercises the world-inertia (R I R^T) LDLT solve that
+      // both stages now share.
+      body.setTorque(Eigen::Vector3d(0.05, -0.1 * i, 0.2));
       bodies.push_back(body);
     }
     world.setTimeStep(0.01);
@@ -1484,6 +1482,10 @@ TEST(World, BatchedRigidBodyIntegrationStageMatchesPerEntityForFreeBodies)
           perEntityBodies[i].getLinearVelocity().isApprox(
               batchedBodies[i].getLinearVelocity(), tolerance))
           << "step " << step << " body " << i << " linear velocity";
+      EXPECT_TRUE(
+          perEntityBodies[i].getAngularVelocity().isApprox(
+              batchedBodies[i].getAngularVelocity(), tolerance))
+          << "step " << step << " body " << i << " angular velocity";
       EXPECT_TRUE(
           perEntityBodies[i].getLocalTransform().isApprox(
               batchedBodies[i].getLocalTransform(), tolerance))
