@@ -24,6 +24,10 @@ CANONICAL_BENCHMARKS = {
     "allocators": "bm_allocators",
     "allocators_comparative": "bm_allocators_comparative",
     "allocators-comparative": "bm_allocators_comparative",
+    "helpers": "bm_helpers",
+    "math_helpers": "bm_helpers",
+    "spatial_algebra": "bm_spatial_algebra",
+    "jacobian": "bm_jacobian",
 }
 
 ALIASES = {
@@ -43,10 +47,14 @@ ALIASES = {
     "bm_dynamics_cache_io": "bm_dynamics_cache_io",
     "bm_allocators": "bm_allocators",
     "bm_allocators_comparative": "bm_allocators_comparative",
+    "bm_helpers": "bm_helpers",
+    "bm_spatial_algebra": "bm_spatial_algebra",
+    "bm_jacobian": "bm_jacobian",
 }
 
 
 def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
+    parser_argv, passthrough_args = _split_passthrough(argv)
     parser = argparse.ArgumentParser(
         description=__doc__,
         add_help=False,  # Allow --help to pass through to the benchmark.
@@ -59,7 +67,7 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument(
         "--target",
-        dest="benchmark",
+        dest="target",
         help="Alias for benchmark target name (legacy pixi usage).",
     )
     parser.add_argument(
@@ -72,14 +80,24 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         action="store_true",
         help="Show this help for the pixi wrapper.",
     )
-    known, unknown = parser.parse_known_args(argv)
+    known, unknown = parser.parse_known_args(parser_argv)
+    if known.target is not None:
+        known.benchmark = known.target
 
     if known.pixi_help or known.benchmark is None:
         parser.print_help()
         _print_known_benchmarks()
         sys.exit(0)
 
-    return known, unknown
+    return known, [*unknown, *passthrough_args]
+
+
+def _split_passthrough(argv: list[str]) -> tuple[list[str], list[str]]:
+    if "--" not in argv:
+        return argv, []
+
+    index = argv.index("--")
+    return argv[:index], argv[index + 1 :]
 
 
 def _print_known_benchmarks() -> None:
@@ -121,6 +139,8 @@ def _find_binary(build_dir: Path, target: str) -> Path:
         build_dir / "tests" / "benchmark" / "unit" / target,
         build_dir / "tests" / "benchmark" / "simd" / target,
         build_dir / "tests" / "benchmark" / "common" / target,
+        build_dir / "tests" / "benchmark" / "math" / target,
+        build_dir / "tests" / "benchmark" / "simulation" / "experimental" / target,
     ]
 
     for path in candidates:
@@ -171,6 +191,7 @@ def run(benchmark: str, build_type: str, run_args: list[str]) -> int:
 
 def main(argv: list[str]) -> int:
     args, run_args = parse_args(argv)
+    run_args = [arg for arg in run_args if arg != "--"]
     return run(args.benchmark, args.build_type, run_args)
 
 
