@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lie_groups.hpp"
 #include "helpers/gtest_utils.hpp"
+
+#include "dart/math/lie_groups.hpp"
 
 #include <gtest/gtest.h>
 

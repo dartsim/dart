@@ -40,12 +40,10 @@ struct ScalarCast;
 
 //==============================================================================
 template <
-    template <typename, template <typename> class...>
-    class Class,
+    template <typename, template <typename> class...> class Class,
     typename Scalar,
     typename OtherScalar,
-    template <typename>
-    class... Ts>
+    template <typename> class... Ts>
 struct ScalarCast<Class<Scalar, Ts...>, OtherScalar>
 {
   using type = Class<OtherScalar, Ts...>;
@@ -53,8 +51,7 @@ struct ScalarCast<Class<Scalar, Ts...>, OtherScalar>
 
 //==============================================================================
 template <
-    template <typename, int>
-    class Class,
+    template <typename, int> class Class,
     typename Scalar,
     typename OtherScalar,
     int Dim>

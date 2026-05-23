@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lie_groups.hpp"
 #include "helpers/gtest_utils.hpp"
+
+#include "dart/math/lie_groups.hpp"
 
 #include <gtest/gtest.h>
 
@@ -100,8 +101,10 @@ TYPED_TEST(LieBatchTest, ExpLogRoundTrip)
 
   for (std::size_t i = 0; i < n; ++i) {
     const Eigen::Map<const Eigen::Matrix<S, D, 1>> in(tangents.data() + i * D);
-    const Eigen::Map<const Eigen::Matrix<S, D, 1>> out(recovered.data() + i * D);
-    EXPECT_TRUE(test::equals(in, out, test::EpsForDiff<S>())) << "element " << i;
+    const Eigen::Map<const Eigen::Matrix<S, D, 1>> out(
+        recovered.data() + i * D);
+    EXPECT_TRUE(test::equals(in, out, test::EpsForDiff<S>()))
+        << "element " << i;
   }
 }
 

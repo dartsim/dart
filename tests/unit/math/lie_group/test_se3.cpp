@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lie_groups.hpp"
 #include "helpers/gtest_utils.hpp"
+
+#include "dart/math/lie_groups.hpp"
 
 #include <gtest/gtest.h>
 
@@ -298,7 +299,8 @@ TYPED_TEST(SE3Test, Jacobians)
       const Matrix4 dt_dt = Hat(dt) / eps;
       jac_numeric.col(j) = SE3::Vee(dt_dt).params();
     }
-    EXPECT_TRUE(test::equals(jac_numeric, SE3::LeftJacobian(x), test::EpsForDiff<S>()));
+    EXPECT_TRUE(
+        test::equals(jac_numeric, SE3::LeftJacobian(x), test::EpsForDiff<S>()));
   };
 
   auto test_numerical_right_jacobian = [&](const Vector6& x) {
@@ -318,7 +320,9 @@ TYPED_TEST(SE3Test, Jacobians)
       const Matrix4 dt_dt = Hat(dt) / eps;
       jac_numeric.col(j) = SE3::Vee(dt_dt).params();
     }
-    EXPECT_TRUE(test::equals(jac_numeric, SE3::RightJacobian(x), test::EpsForDiff<S>()));
+    EXPECT_TRUE(
+        test::equals(
+            jac_numeric, SE3::RightJacobian(x), test::EpsForDiff<S>()));
   };
 
   for (auto i = 0; i < 1; ++i) {
@@ -381,16 +385,18 @@ TYPED_TEST(SE3Test, Jacobians)
         << SE3Tangent(V + SE3::RightJacobianInverse(V) * dV).exp().toMatrix();
 
     // J_l^{-1} == (J_l)^{-1}
-    EXPECT_TRUE(SE3::LeftJacobianInverse(V).isApprox(
-        SE3::LeftJacobian(V).inverse(), 1e-6))
+    EXPECT_TRUE(
+        SE3::LeftJacobianInverse(V).isApprox(
+            SE3::LeftJacobian(V).inverse(), 1e-6))
         << "J_l^{-1}:\n"
         << SE3::LeftJacobianInverse(V) << "\n"
         << "(J_l(x))^{-1}:\n"
         << SE3::LeftJacobian(V).inverse();
 
     // J_r^{-1} == (J_r)^{-1}
-    EXPECT_TRUE(SE3::RightJacobianInverse(V).isApprox(
-        SE3::RightJacobian(V).inverse(), 1e-6))
+    EXPECT_TRUE(
+        SE3::RightJacobianInverse(V).isApprox(
+            SE3::RightJacobian(V).inverse(), 1e-6))
         << "J_r^{-1}:\n"
         << SE3::RightJacobianInverse(V) << "\n"
         << "(J_r(x))^{-1}:\n"

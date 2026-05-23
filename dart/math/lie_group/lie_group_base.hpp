@@ -33,9 +33,9 @@
 #pragma once
 
 #include <dart/math/fwd.hpp>
+#include <dart/math/lie_group/detail/cast.hpp>
 #include <dart/math/lie_group/helpers.hpp>
 #include <dart/math/lie_group/inverse_base.hpp>
-#include <dart/math/lie_group/detail/cast.hpp>
 
 namespace dart::math {
 

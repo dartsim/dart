@@ -30,8 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/math/lie_groups.hpp"
 #include "helpers/gtest_utils.hpp"
+
+#include "dart/math/lie_groups.hpp"
 
 #include <gtest/gtest.h>
 
@@ -52,11 +53,12 @@ Matrix3<S> expMapRot(const Vector3<S>& _q)
   Matrix3<S> qss = skew(_q);
   Matrix3<S> qss2 = qss * qss;
 
-  if (theta < LieGroupTol<S>())
+  if (theta < LieGroupTol<S>()) {
     R = Matrix3<S>::Identity() + qss + 0.5 * qss2;
-  else
+  } else {
     R = Matrix3<S>::Identity() + (sin(theta) / theta) * qss
         + ((1 - cos(theta)) / (theta * theta)) * qss2;
+  }
 
   return R;
 }
@@ -226,7 +228,8 @@ TYPED_TEST(SO3Test, Jacobians)
       const Matrix3 dt_dt = Hat(dt) / eps;
       jac_numeric.col(j) = SO3::Vee(dt_dt).params();
     }
-    EXPECT_TRUE(test::equals(jac_numeric, SO3::LeftJacobian(x), test::EpsForDiff<S>()))
+    EXPECT_TRUE(
+        test::equals(jac_numeric, SO3::LeftJacobian(x), test::EpsForDiff<S>()))
         << "left_J_numeric:\n"
         << jac_numeric << "\n"
         << "left_J        :\n"
@@ -250,7 +253,8 @@ TYPED_TEST(SO3Test, Jacobians)
       const Matrix3 dt_dt = Hat(dt) / eps;
       jac_numeric.col(j) = SO3::Vee(dt_dt).params();
     }
-    EXPECT_TRUE(test::equals(jac_numeric, SO3::RightJacobian(x), test::EpsForDiff<S>()))
+    EXPECT_TRUE(
+        test::equals(jac_numeric, SO3::RightJacobian(x), test::EpsForDiff<S>()))
         << "right_J_numeric:\n"
         << jac_numeric << "\n"
         << "right_J        :\n"
@@ -337,8 +341,9 @@ TYPED_TEST(SO3Test, Jacobians)
         << SO3::LeftJacobian(xi).inverse();
 
     // J_r^{-1} == (J_r)^{-1}
-    EXPECT_TRUE(SO3::RightJacobianInverse(xi).isApprox(
-        SO3::RightJacobian(xi).inverse()))
+    EXPECT_TRUE(
+        SO3::RightJacobianInverse(xi).isApprox(
+            SO3::RightJacobian(xi).inverse()))
         << "J_r^{-1}:\n"
         << SO3::LeftJacobianInverse(xi) << "\n"
         << "(J_r(x))^{-1}:\n"

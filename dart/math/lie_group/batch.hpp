@@ -34,20 +34,20 @@
 
 // Batch (data-parallel) operations for the typed Lie group API.
 //
-// These are *consolidated* with the single-element Lie group types rather than a
-// parallel SoA class hierarchy: each function views a packed, contiguous buffer
-// element-wise through Eigen::Map<SO3<S>> / Eigen::Map<SE3<S>> and applies the
-// existing scalar operation. Buffers are AoS of `Params` (each element occupies
-// `T::ParamSize` scalars; tangents occupy `T::DoF` scalars), matching the
-// layout the Map specializations expect.
+// These are *consolidated* with the single-element Lie group types rather than
+// a parallel SoA class hierarchy: each function views a packed, contiguous
+// buffer element-wise through Eigen::Map<SO3<S>> / Eigen::Map<SE3<S>> and
+// applies the existing scalar operation. Buffers are AoS of `Params` (each
+// element occupies `T::ParamSize` scalars; tangents occupy `T::DoF` scalars),
+// matching the layout the Map specializations expect.
 //
 // The implementations below are the always-correct scalar reference path. SIMD
 // acceleration (see dart/simd) is expected to be slotted in *behind this same
 // interface* (kept off the public type surface, per
-// docs/design/scalable_compute_decisions.md and docs/onboarding/api-boundaries.md).
-// Escalating to a dedicated SoA storage type should only happen if benchmarks on
-// the experimental engine prove the interleaved Map layout is the bottleneck.
-// See docs/design/lie_group_batch.md.
+// docs/design/scalable_compute_decisions.md and
+// docs/onboarding/api-boundaries.md). Escalating to a dedicated SoA storage
+// type should only happen if benchmarks on the experimental engine prove the
+// interleaved Map layout is the bottleneck. See docs/design/lie_group_batch.md.
 
 #include <dart/math/lie_group/functions.hpp>
 #include <dart/math/lie_group/se3.hpp>
@@ -62,7 +62,8 @@ namespace dart::math {
 /// @tparam T A Lie group type (e.g., SO3<double>, SE3<float>).
 /// @param[in] lhs Packed left operands (count * T::ParamSize scalars).
 /// @param[in] rhs Packed right operands (count * T::ParamSize scalars).
-/// @param[out] out Packed results (count * T::ParamSize scalars). May alias lhs.
+/// @param[out] out Packed results (count * T::ParamSize scalars). May alias
+/// lhs.
 /// @param[in] count Number of elements.
 template <typename T>
 void composeBatch(

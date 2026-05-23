@@ -84,8 +84,7 @@ void defLieGroups(nb::module_& m)
             return self * other;
           })
       .def(
-          "__str__",
-          [](const SO3d& x) { return matrixToString(x.toMatrix()); })
+          "__str__", [](const SO3d& x) { return matrixToString(x.toMatrix()); })
       .def(
           "__repr__",
           [](const SO3d& x) { return matrixToRepr("SO3", x.toMatrix()); })
@@ -104,9 +103,7 @@ void defLieGroups(nb::module_& m)
       .def("inverse", [](const SO3d& self) -> SO3d { return self.inverse(); })
       .def(
           "log",
-          [](const SO3d& self, double t) -> SO3Tangentd {
-            return self.log(t);
-          },
+          [](const SO3d& self, double t) -> SO3Tangentd { return self.log(t); },
           nb::arg("tol") = tol)
       .def(
           "inverse_in_place",
@@ -132,8 +129,7 @@ void defLieGroups(nb::module_& m)
             return self * other;
           })
       .def(
-          "__str__",
-          [](const SE3d& x) { return matrixToString(x.toMatrix()); })
+          "__str__", [](const SE3d& x) { return matrixToString(x.toMatrix()); })
       .def(
           "__repr__",
           [](const SE3d& x) { return matrixToRepr("SE3", x.toMatrix()); })
@@ -151,9 +147,7 @@ void defLieGroups(nb::module_& m)
       .def("inverse", [](const SE3d& self) -> SE3d { return self.inverse(); })
       .def(
           "log",
-          [](const SE3d& self, double t) -> SE3Tangentd {
-            return self.log(t);
-          },
+          [](const SE3d& self, double t) -> SE3Tangentd { return self.log(t); },
           nb::arg("tol") = tol)
       .def(
           "inverse_in_place",

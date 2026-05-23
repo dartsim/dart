@@ -41,17 +41,17 @@
 // classes (e.g., SO3f/SO3d). DART builds all template code inline, so the
 // extern-template/DLL instantiation variants used elsewhere are unnecessary
 // here; the source-side macros intentionally expand to nothing.
-#define DART_TEMPLATE_HEADER(type, module_name, class_name)                     \
-  using class_name##f = class_name<float>;                                      \
+#define DART_TEMPLATE_HEADER(type, module_name, class_name)                    \
+  using class_name##f = class_name<float>;                                     \
   using class_name##d = class_name<double>;
 #define DART_TEMPLATE_SOURCE(type, module_name, class_name)
-#define DART_TEMPLATE_CLASS_HEADER(module_name, class_name)                     \
+#define DART_TEMPLATE_CLASS_HEADER(module_name, class_name)                    \
   DART_TEMPLATE_HEADER(class, module_name, class_name)
-#define DART_TEMPLATE_STRUCT_HEADER(module_name, class_name)                    \
+#define DART_TEMPLATE_STRUCT_HEADER(module_name, class_name)                   \
   DART_TEMPLATE_HEADER(struct, module_name, class_name)
-#define DART_TEMPLATE_CLASS_SOURCE(module_name, class_name)                     \
+#define DART_TEMPLATE_CLASS_SOURCE(module_name, class_name)                    \
   DART_TEMPLATE_SOURCE(class, module_name, class_name)
-#define DART_TEMPLATE_STRUCT_SOURCE(module_name, class_name)                    \
+#define DART_TEMPLATE_STRUCT_SOURCE(module_name, class_name)                   \
   DART_TEMPLATE_SOURCE(struct, module_name, class_name)
 
 // Forward declarations for math classes
@@ -373,7 +373,5 @@ using LinearJacobian = Matrix<double, 3, Dynamic>;
 using AngularJacobian = Matrix<double, 3, Dynamic>;
 using Jacobian
     = Matrix<double, 6, Dynamic>; // TODO(JS): Rename to SpatialJacobian
-
-
 
 } // namespace dart::math

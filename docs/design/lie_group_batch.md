@@ -46,7 +46,7 @@ buffers.
   layer follows the same shape for the typed API.
 - **Matches project guidance.** `docs/design/scalable_compute_decisions.md`
   ("SIMD Constraints") and `docs/onboarding/api-boundaries.md` require SIMD/batch
-  details to stay *behind implementation boundaries*, with scalar fallbacks and
+  details to stay _behind implementation boundaries_, with scalar fallbacks and
   preserved Eigen interop — i.e., not exposed as an architecture-specific public
   type.
 - **Fits the consumer's actual layout.** The experimental world stores transforms
@@ -56,8 +56,8 @@ buffers.
 ## Implementation notes
 
 - The functions in `batch.hpp` are the always-correct **scalar reference path**.
-  SIMD acceleration (via `dart/simd`) is expected to be slotted in *behind the
-  same interface* — callers do not change.
+  SIMD acceleration (via `dart/simd`) is expected to be slotted in _behind the
+  same interface_ — callers do not change.
 - The experimental engine is intentionally **not** rewired in this initial
   layer; that is a follow-up once a kernel is benchmarked against the scalar
   path.
