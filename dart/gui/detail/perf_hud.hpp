@@ -30,54 +30,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_PROFILE_HPP_
-#define DART_GUI_PROFILE_HPP_
+#ifndef DART_GUI_DETAIL_PERF_HUD_HPP_
+#define DART_GUI_DETAIL_PERF_HUD_HPP_
 
-#include <dart/gui/export.hpp>
-
-#include <chrono>
+#include <array>
 
 #include <cstddef>
 
 namespace dart::gui {
 
-struct ProfileAccumulator
-{
-  using Clock = std::chrono::steady_clock;
-
-  std::size_t frames = 0;
-  std::size_t renderedFrames = 0;
-  std::size_t skippedFrames = 0;
-  std::size_t simulationSteps = 0;
-  double frameMs = 0.0;
-  double simulatedMs = 0.0;
-  double inputMs = 0.0;
-  double viewportCameraMs = 0.0;
-  double simulationMs = 0.0;
-  double contactDebugMs = 0.0;
-  double extractionMs = 0.0;
-  double syncMs = 0.0;
-  double interactionMs = 0.0;
-  double selectionDebugMs = 0.0;
-  double uiMs = 0.0;
-  double beginFrameMs = 0.0;
-  double renderMs = 0.0;
-  double screenshotWaitMs = 0.0;
-  double screenshotSaveMs = 0.0;
-  double maxFrameMs = 0.0;
-  double maxRenderMs = 0.0;
-  // GPU frame time sampled from the Filament frame-info history (most recent
-  // valid value, in milliseconds). 0 means unavailable (e.g. the NOOP backend
-  // or before timer-query results arrive). Unlike the phase fields above this
-  // is a last-sample value, not an accumulator.
-  double gpuFrameMs = 0.0;
-  double maxGpuFrameMs = 0.0;
-};
-
-DART_GUI_API double elapsedMs(ProfileAccumulator::Clock::time_point start);
-
-DART_GUI_API void printProfile(const ProfileAccumulator& profile);
+struct ProfileAccumulator;
 
 } // namespace dart::gui
 
-#endif // DART_GUI_PROFILE_HPP_
+namespace dart::gui::detail {
+
+// Rolling state for the live performance overlay. Persists across frames so the
+// HUD can show instantaneous per-frame values (derived as deltas of the
+// run-long ProfileAccumulator) and a short history plot.
+struct PerfHudState
+{
+  static constexpr int kHistory = 120;
+
+  bool hasPrev = false;
+  std::size_t prevFrames = 0;
+  double prevFrameMs = 0.0;
+  double prevInputMs = 0.0;
+  double prevViewportMs = 0.0;
+  double prevSimulationMs = 0.0;
+  double prevExtractionMs = 0.0;
+  double prevSyncMs = 0.0;
+  double prevUiMs = 0.0;
+  double prevBeginFrameMs = 0.0;
+  double prevRenderMs = 0.0;
+
+  std::array<float, kHistory> cpuHistory{};
+  std::array<float, kHistory> gpuHistory{};
+  int historyOffset = 0;
+  int historyCount = 0;
+};
+
+// Draws the performance overlay as an ImGui window. Must be called between
+// ImGui::NewFrame() and ImGui::Render(). Reads per-frame values from `profile`
+// (the single source of truth) and shows the active graphics backend.
+void drawPerfHud(
+    PerfHudState& state,
+    const dart::gui::ProfileAccumulator& profile,
+    const char* backendName);
+
+} // namespace dart::gui::detail
+
+#endif // DART_GUI_DETAIL_PERF_HUD_HPP_

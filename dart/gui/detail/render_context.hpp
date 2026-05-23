@@ -63,10 +63,17 @@ struct FilamentRenderContext
   ::filament::Scene* scene = nullptr;
   ::filament::Camera* camera = nullptr;
   utils::Entity cameraEntity;
+  // Name of the graphics backend actually selected (static string literal).
+  const char* backendName = "opengl";
 };
 
 FilamentRenderContext createFilamentRenderContext(
     const dart::gui::RunOptions& options, void* nativeWindow);
+
+// Most recent valid GPU frame duration in milliseconds from the Filament
+// frame-info history, or 0 if unavailable (e.g. NOOP backend, or results not
+// ready yet).
+double latestGpuFrameMs(const FilamentRenderContext& context);
 
 bool beginFilamentFrame(FilamentRenderContext& context);
 

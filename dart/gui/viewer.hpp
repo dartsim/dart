@@ -62,6 +62,11 @@ struct RunOptions
   bool headless = false;
   std::string screenshotPath;
   std::string frameOutputDirectory;
+  // Graphics backend selection as a renderer-neutral DART concept (no Filament
+  // types leak here). Empty means the default. Accepted values:
+  // "default", "opengl", "vulkan", "noop" (case-insensitive). The
+  // DART_FILAMENT_BACKEND environment variable overrides this field.
+  std::string backend;
 };
 
 enum class RenderOutputMode

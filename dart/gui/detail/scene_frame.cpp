@@ -114,7 +114,7 @@ void SceneFrameUpdater::update(
   }
 
   auto phaseStart = dart::gui::ProfileAccumulator::Clock::now();
-  auto descriptors = dart::gui::extractRenderables(*mDartScene.world);
+  auto descriptors = mExtractor.extract(*mDartScene.world);
   mProfile.extractionMs += dart::gui::elapsedMs(phaseStart);
 
   phaseStart = dart::gui::ProfileAccumulator::Clock::now();

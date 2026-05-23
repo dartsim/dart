@@ -607,6 +607,14 @@ AppOptions parseOptions(
       }
       options.run.guiScale
           = std::clamp(static_cast<double>(guiScale), 0.5, 4.0);
+    } else if (arg == "--backend" && i + 1 < argc) {
+      options.run.backend = argv[++i];
+    } else if (arg == "--perf-hud") {
+      options.showPerfHud = true;
+      // The HUD draws inside the ImGui overlay, so keep the overlay on even in
+      // headless mode (where UI is otherwise auto-disabled).
+      options.showUi = true;
+      options.showUiExplicit = true;
     } else if (arg == "--profile") {
       options.profile = true;
     } else if (arg == "--scene" && i + 1 < argc) {

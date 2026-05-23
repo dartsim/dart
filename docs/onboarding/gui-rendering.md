@@ -64,6 +64,35 @@ implementation.
 
 OpenSceneGraph and Raylib are no longer buildable renderer options.
 
+## Performance, Profiling, and Backend Selection
+
+The renderer aims for real-time interaction by default while leaving room for
+higher-fidelity offline rendering later. Three pieces support that:
+
+- **Backend selection.** The Filament graphics backend is chosen at runtime as a
+  renderer-neutral DART concept — `dart::gui::RunOptions::backend`, the
+  `--backend` flag, or the `DART_FILAMENT_BACKEND` environment variable
+  (`default`/`opengl`/`vulkan`/`noop`, env takes precedence). Selection,
+  fallback, and the startup log live in `dart/gui/detail/render_context.cpp`; no
+  Filament backend types appear in public headers. Embedded materials are
+  compiled for both OpenGL and Vulkan (`matc -a opengl -a vulkan` in
+  `backend_sources.cmake`) so the choice needs no separate build. `noop` renders
+  nothing and is useful for isolating CPU cost.
+- **Profiling.** Use the built-in unified profiler (`dart/common/profile.hpp`,
+  text + optional Tracy backends, enabled via `DART_BUILD_PROFILE` /
+  `DART_PROFILE_TRACY`); the GUI loop already emits frame and per-phase zones,
+  and `--profile` prints a per-phase summary at exit (`dart/gui/profile.hpp`).
+  `--perf-hud` adds a live in-app ImGui overlay (CPU per-phase, GPU frame time
+  from Filament frame-info, FPS, history plots) — see
+  `dart/gui/detail/perf_hud.cpp`.
+- **Scene-sync cost.** Per-frame scene extraction is the dominant CPU cost, not
+  GPU rendering. `dart::gui::RenderableExtractor` caches each shape's geometry by
+  shape version so `describeShape` is not rebuilt every frame for static
+  geometry; kinds whose geometry changes without a version bump (soft mesh, point
+  cloud, voxel grid) are rebuilt every frame. This reuses the same version-based
+  caching assumption the Filament resource sync relies on — see
+  `dart/gui/renderable.cpp`.
+
 ## Validation
 
 For renderer changes, use the focused scene extraction tests plus at least one
