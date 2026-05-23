@@ -198,10 +198,12 @@ response)** and beyond.
    link-vs-static-rigid-body contacts (one-sided) inside `simulateMultiBody`'s
    velocity phase (`LinkContact`, contact-point normal Jacobian, unilateral
    normal impulse + Baumgarte), routed by `MultiBodyForwardDynamicsStage::execute`
-   via `world.collide()`. Verified by a prismatic-leg drop-and-rest (C++ +
-   dartpy). **Still pending:** restitution/friction (tangent rows + cone),
-   link-vs-dynamic-body and link-vs-link (two-sided) contacts, and a boxed-LCP
-   for coupled simultaneous contacts. The original plan, for reference:
+   via `world.collide()`. **Two-tangent Coulomb friction** (accumulated-impulse,
+   friction-cone bounded) is also implemented. Verified by a prismatic-leg
+   drop-and-rest and a sliding-link friction brake (C++ + dartpy). **Still
+   pending:** restitution, link-vs-dynamic-body and link-vs-link (two-sided)
+   contacts, and a boxed-LCP for coupled simultaneous contacts. The original
+   plan, for reference:
    - In `MultiBodyForwardDynamicsStage::execute`, call `world.collide()` once and
      route to each multibody the contacts whose link belongs to it and whose
      other body `isRigidBody()` and is static (`comps::StaticBodyTag`). Pass them

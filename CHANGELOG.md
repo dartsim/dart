@@ -578,9 +578,11 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     resolves each link-vs-static contact with a unilateral normal impulse using
     the contact-point normal Jacobian and `m_eff = 1 / (Jn M^-1 Jn^T)`, plus a
     Baumgarte bias to remove residual penetration (reusing the constraint-solve
-    machinery). A fixed-base prismatic "leg" with a sphere drops under gravity
-    and rests on the ground. Link-vs-dynamic/link-vs-link contacts, friction,
-    and a boxed-LCP for coupled contacts are still pending.
+    machinery), plus accumulated-impulse two-tangent Coulomb friction bounded by
+    the friction cone. A fixed-base prismatic "leg" with a sphere drops under
+    gravity and rests on the ground, and a sliding link is braked to rest by
+    friction. Link-vs-dynamic/link-vs-link contacts and a boxed-LCP for coupled
+    contacts are still pending.
   - Added an experimental rigid-body contact response: `World::step()` now
     resolves contacts between free rigid bodies with sequential normal impulses
     (frictionless, fully inelastic) plus a positional correction that prevents

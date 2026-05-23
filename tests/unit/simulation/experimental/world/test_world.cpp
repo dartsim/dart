@@ -2477,6 +2477,60 @@ TEST(World, MultiBodyLinkRestsOnStaticGround)
   EXPECT_NEAR(joint.getVelocity()[0], 0.0, 5e-2);
 }
 
+// Test that Coulomb friction at a link contact decelerates a sliding link. A
+// vertical prismatic carries a horizontal prismatic link whose sphere rests on
+// the ground; an initial horizontal velocity is braked to rest by friction.
+TEST(World, MultiBodyLinkContactFrictionStopsSlide)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("slider_robot");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec verticalSpec;
+  verticalSpec.name = "vertical";
+  verticalSpec.type = sx::JointType::Prismatic;
+  verticalSpec.axis = Eigen::Vector3d::UnitZ();
+  auto carrier = robot.addLink("carrier", base, verticalSpec);
+  carrier.setMass(0.1);
+
+  sx::JointSpec horizontalSpec;
+  horizontalSpec.name = "horizontal";
+  horizontalSpec.type = sx::JointType::Prismatic;
+  horizontalSpec.axis = Eigen::Vector3d::UnitX();
+  auto slider = robot.addLink("slider", carrier, horizontalSpec);
+  slider.setMass(1.0);
+  slider.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+  groundOptions.isStatic = true;
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(20.0, 20.0, 0.5)));
+
+  auto vertical = carrier.getParentJoint();
+  auto horizontal = slider.getParentJoint();
+  // Rest height so the sphere sits on the ground (top at z = -0.5).
+  vertical.setPosition(Eigen::VectorXd::Constant(1, -0.3));
+  horizontal.setVelocity(Eigen::VectorXd::Constant(1, 1.0));
+
+  world.setTimeStep(0.002);
+  world.enterSimulationMode();
+
+  for (int i = 0; i < 600; ++i) {
+    world.step();
+  }
+
+  // Friction brakes the slide to rest; the slider advanced but did not reverse.
+  EXPECT_NEAR(horizontal.getVelocity()[0], 0.0, 5e-2);
+  EXPECT_GT(slider.getParentJoint().getPosition()[0], 0.01);
+  // The link stays resting on the ground (does not fall through).
+  EXPECT_NEAR(slider.getWorldTransform().translation().z(), -0.3, 1e-2);
+}
+
 // Test that the contact stage resolves approaching velocities (fully inelastic)
 // between overlapping rigid bodies and leaves separating bodies untouched.
 TEST(World, RigidBodyContactResolvesApproachingVelocity)

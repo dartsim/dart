@@ -1695,6 +1695,50 @@ def test_experimental_multibody_link_rests_on_static_ground():
     assert joint.velocity.tolist()[0] == pytest.approx(0.0, abs=5e-2)
 
 
+def test_experimental_multibody_link_contact_friction_stops_slide():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+
+    robot = world.add_multi_body("slider_robot")
+    base = robot.add_link("base")
+    carrier = robot.add_link(
+        "carrier",
+        parent=base,
+        joint=sx.JointSpec(
+            name="vertical", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    carrier.mass = 0.1
+    slider = robot.add_link(
+        "slider",
+        parent=carrier,
+        joint=sx.JointSpec(
+            name="horizontal", type=sx.JointType.PRISMATIC, axis=(1.0, 0.0, 0.0)
+        ),
+    )
+    slider.mass = 1.0
+    slider.set_collision_shape(sx.CollisionShape.sphere(0.2))
+
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -1.0))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box((20.0, 20.0, 0.5)))
+
+    vertical = carrier.parent_joint
+    horizontal = slider.parent_joint
+    vertical.position = [-0.3]  # rest height (sphere on ground top z = -0.5)
+    horizontal.velocity = [1.0]
+
+    world.time_step = 0.002
+    world.step(n=600)
+
+    # Friction brakes the slide to rest; the slider advanced but did not reverse,
+    # and stayed resting on the ground.
+    assert horizontal.velocity.tolist()[0] == pytest.approx(0.0, abs=5e-2)
+    assert horizontal.position.tolist()[0] > 0.01
+    assert slider.transform[2, 3] == pytest.approx(-0.3, abs=1e-2)
+
+
 def test_experimental_contact_restitution():
     sx = _simulation_experimental()
 

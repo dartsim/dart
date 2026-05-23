@@ -34,6 +34,7 @@
 
 #include "dart/simulation/experimental/body/contact.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
+#include "dart/simulation/experimental/comps/contact_material.hpp"
 #include "dart/simulation/experimental/comps/dynamics.hpp"
 #include "dart/simulation/experimental/comps/frame_types.hpp"
 #include "dart/simulation/experimental/comps/joint.hpp"
@@ -49,6 +50,8 @@
 #include <algorithm>
 #include <unordered_map>
 #include <vector>
+
+#include <cmath>
 
 namespace dart::simulation::experimental::compute {
 
@@ -199,6 +202,7 @@ struct LinkContact
   Eigen::Vector3d normal = Eigen::Vector3d::UnitZ(); // world, points into link
   Eigen::Vector3d point = Eigen::Vector3d::Zero();   // world contact point
   double depth = 0.0;
+  double friction = 1.0; // combined Coulomb friction coefficient
 };
 
 //==============================================================================
@@ -586,42 +590,109 @@ void simulateMultiBody(
     constexpr double penetrationSlop = 1e-4;
     constexpr double baumgarteFactor = 0.2;
     constexpr int contactIterations = 8;
+
+    // Precompute the contact-space Jacobians (normal + two tangents) once.
+    struct ContactRow
+    {
+      Eigen::VectorXd normalJacobian;
+      Eigen::VectorXd tangentJacobian1;
+      Eigen::VectorXd tangentJacobian2;
+      double normalDenominator = 0.0;
+      double tangentDenominator1 = 0.0;
+      double tangentDenominator2 = 0.0;
+      double bias = 0.0;
+      double friction = 1.0;
+      double normalImpulse = 0.0;
+      double tangentImpulse1 = 0.0;
+      double tangentImpulse2 = 0.0;
+      bool active = false;
+    };
+    std::vector<ContactRow> rows(linkContacts.size());
+
+    for (std::size_t c = 0; c < linkContacts.size(); ++c) {
+      const auto& contact = linkContacts[c];
+      const auto linkIt = std::find(
+          structure.links.begin(), structure.links.end(), contact.link);
+      if (linkIt == structure.links.end()) {
+        continue;
+      }
+      const auto index
+          = static_cast<std::size_t>(linkIt - structure.links.begin());
+
+      const Eigen::Matrix3d rotation
+          = tree.links[index].worldTransform.linear();
+      const Eigen::Vector3d origin
+          = tree.links[index].worldTransform.translation();
+      const Eigen::MatrixXd angularJacobian
+          = rotation * bodyJacobian[index].topRows(3);
+      const Eigen::MatrixXd pointLinearJacobian
+          = rotation * bodyJacobian[index].bottomRows(3)
+            - skew(contact.point - origin) * angularJacobian;
+
+      auto& row = rows[c];
+      row.normalJacobian = pointLinearJacobian.transpose() * contact.normal;
+      row.normalDenominator
+          = row.normalJacobian.dot(inverseMass * row.normalJacobian);
+      if (row.normalDenominator <= 0.0) {
+        continue; // the contact cannot move this link (e.g. fixed base)
+      }
+
+      // Two tangent directions orthogonal to the contact normal.
+      const Eigen::Vector3d normal = contact.normal.normalized();
+      const Eigen::Vector3d reference = std::abs(normal.x()) < 0.9
+                                            ? Eigen::Vector3d::UnitX()
+                                            : Eigen::Vector3d::UnitY();
+      const Eigen::Vector3d tangent1 = normal.cross(reference).normalized();
+      const Eigen::Vector3d tangent2 = normal.cross(tangent1);
+      row.tangentJacobian1 = pointLinearJacobian.transpose() * tangent1;
+      row.tangentJacobian2 = pointLinearJacobian.transpose() * tangent2;
+      row.tangentDenominator1
+          = row.tangentJacobian1.dot(inverseMass * row.tangentJacobian1);
+      row.tangentDenominator2
+          = row.tangentJacobian2.dot(inverseMass * row.tangentJacobian2);
+      row.bias = baumgarteFactor
+                 * std::max(0.0, contact.depth - penetrationSlop) / timeStep;
+      row.friction = contact.friction;
+      row.active = true;
+    }
+
     for (int iteration = 0; iteration < contactIterations; ++iteration) {
-      for (const auto& contact : linkContacts) {
-        const auto linkIt = std::find(
-            structure.links.begin(), structure.links.end(), contact.link);
-        if (linkIt == structure.links.end()) {
+      for (auto& row : rows) {
+        if (!row.active) {
           continue;
         }
-        const auto index
-            = static_cast<std::size_t>(linkIt - structure.links.begin());
 
-        const Eigen::Matrix3d rotation
-            = tree.links[index].worldTransform.linear();
-        const Eigen::Vector3d origin
-            = tree.links[index].worldTransform.translation();
-        const Eigen::MatrixXd angularJacobian
-            = rotation * bodyJacobian[index].topRows(3);
-        const Eigen::MatrixXd pointLinearJacobian
-            = rotation * bodyJacobian[index].bottomRows(3)
-              - skew(contact.point - origin) * angularJacobian;
-        const Eigen::VectorXd normalJacobian
-            = pointLinearJacobian.transpose() * contact.normal;
+        // Normal impulse with accumulation (unilateral: lambda_n >= 0).
+        const double normalVelocity = row.normalJacobian.dot(nextVelocity);
+        const double deltaNormal
+            = (-normalVelocity + row.bias) / row.normalDenominator;
+        const double newNormal = std::max(0.0, row.normalImpulse + deltaNormal);
+        nextVelocity += inverseMass * row.normalJacobian
+                        * (newNormal - row.normalImpulse);
+        row.normalImpulse = newNormal;
 
-        const double denominator
-            = normalJacobian.dot(inverseMass * normalJacobian);
-        if (denominator <= 0.0) {
-          continue; // the contact cannot move this link (e.g. fixed base)
+        // Two-tangent Coulomb friction, each impulse bounded by mu * lambda_n.
+        const double bound = row.friction * row.normalImpulse;
+        if (row.tangentDenominator1 > 0.0) {
+          const double vt = row.tangentJacobian1.dot(nextVelocity);
+          const double newImpulse = std::clamp(
+              row.tangentImpulse1 - vt / row.tangentDenominator1,
+              -bound,
+              bound);
+          nextVelocity += inverseMass * row.tangentJacobian1
+                          * (newImpulse - row.tangentImpulse1);
+          row.tangentImpulse1 = newImpulse;
         }
-        const double normalVelocity = normalJacobian.dot(nextVelocity);
-        const double bias = baumgarteFactor
-                            * std::max(0.0, contact.depth - penetrationSlop)
-                            / timeStep;
-        const double lambda = (-normalVelocity + bias) / denominator;
-        if (lambda <= 0.0) {
-          continue; // unilateral: contacts only push, never pull
+        if (row.tangentDenominator2 > 0.0) {
+          const double vt = row.tangentJacobian2.dot(nextVelocity);
+          const double newImpulse = std::clamp(
+              row.tangentImpulse2 - vt / row.tangentDenominator2,
+              -bound,
+              bound);
+          nextVelocity += inverseMass * row.tangentJacobian2
+                          * (newImpulse - row.tangentImpulse2);
+          row.tangentImpulse2 = newImpulse;
         }
-        nextVelocity += inverseMass * normalJacobian * lambda;
       }
     }
   }
@@ -825,6 +896,13 @@ void MultiBodyForwardDynamicsStage::execute(
   const auto isStaticRigidBody = [&](entt::entity entity) {
     return registry.all_of<comps::RigidBodyTag, comps::StaticBodyTag>(entity);
   };
+  const auto frictionOf = [&](entt::entity entity) {
+    if (const auto* material
+        = registry.try_get<comps::ContactMaterial>(entity)) {
+      return material->friction;
+    }
+    return 1.0;
+  };
 
   auto view = registry.view<comps::MultiBodyStructure>();
   for (auto entity : view) {
@@ -839,14 +917,16 @@ void MultiBodyForwardDynamicsStage::execute(
           = std::find(links.begin(), links.end(), entityA) != links.end();
       const bool bInBody
           = std::find(links.begin(), links.end(), entityB) != links.end();
+      const double friction
+          = std::sqrt(frictionOf(entityA) * frictionOf(entityB));
 
       // The contact normal points bodyA -> bodyB; orient it into the link.
       if (aInBody && !bInBody && isStaticRigidBody(entityB)) {
         linkContacts.push_back(
-            {entityA, -contact.normal, contact.point, contact.depth});
+            {entityA, -contact.normal, contact.point, contact.depth, friction});
       } else if (bInBody && !aInBody && isStaticRigidBody(entityA)) {
         linkContacts.push_back(
-            {entityB, contact.normal, contact.point, contact.depth});
+            {entityB, contact.normal, contact.point, contact.depth, friction});
       }
     }
 
