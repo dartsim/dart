@@ -623,6 +623,13 @@ def run(
     env["CMAKE_BUILD_DIR"] = str(build_dir)
     _apply_libcxx_prefix(env)
 
+    # The standalone dartsim editor requires the ImGui docking branch, which only
+    # the fetched ImGui provides (DART_USE_SYSTEM_IMGUI=OFF). Force it whenever
+    # the editor is launched (i.e. not a --scene GUI fixture and not a smoke run)
+    # so the binary always supports docking regardless of the shared build cache.
+    if target == "dartsim" and not smoke and not _has_arg(run_args, "--scene"):
+        env.setdefault("DART_USE_SYSTEM_IMGUI_OVERRIDE", "OFF")
+
     _ensure_target_requirements(build_dir, spec, env, smoke)
     _build_example(build_dir, spec.build_target, env)
 

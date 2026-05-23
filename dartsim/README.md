@@ -30,15 +30,22 @@ pixi run dartsim
 pixi run dartsim -- --width 1600 --height 900
 ```
 
-`pixi run dartsim` builds against the ImGui docking branch
+Launching the editor (either `pixi run dartsim` or `pixi run ex dartsim`
+without `--scene`) forces the ImGui docking branch
 (`DART_USE_SYSTEM_IMGUI=OFF`) so the menu bar, Scene Tree, Inspector, Console,
-and Simulation panels can be docked, split, and rearranged, with the layout
-persisted in `imgui.ini`. Extra CLI flags pass through after `--`.
+and Simulation panels open in a default IDE layout and can be docked, split, and
+rearranged, with the arrangement persisted in `imgui.ini`. Extra CLI flags pass
+through after `--`. The Console panel logs `ImGui docking: enabled` on startup;
+if it instead reports `UNAVAILABLE`, the binary was built against non-docking
+ImGui — relaunch with `pixi run dartsim` to rebuild against the docking branch.
 
-The `pixi run ex dartsim` command builds against system ImGui (no docking) and
-is used for headless rendering and the built-in `dart::gui` scene fixtures.
-Passing `--scene <name>` renders a fixture instead of the editor (used by the
-headless GUI smoke tests):
+Because the GUI build links one ImGui, building the library or other GUI
+examples (`pixi run build`, `pixi run config`, `pixi run ex <gui-example>`)
+switches the shared build to system ImGui; the next editor launch transparently
+rebuilds against the docking branch.
+
+Passing `--scene <name>` renders a built-in `dart::gui` scene fixture instead of
+the editor (system ImGui, used by the headless GUI smoke tests):
 
 ```bash
 pixi run ex dartsim --headless --frames 10 --screenshot /tmp/dartsim.ppm

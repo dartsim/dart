@@ -170,6 +170,12 @@ struct ApplicationOptions
   bool dockingEnabled = false;
 };
 
+/// Returns true if the linked ImGui build provides the docking API
+/// (`IMGUI_HAS_DOCK`). When false, `ApplicationOptions::dockingEnabled` has no
+/// effect; rebuild against the fetched ImGui docking branch
+/// (`DART_USE_SYSTEM_IMGUI=OFF`) to enable docking.
+DART_GUI_API bool isImGuiDockingAvailable();
+
 DART_GUI_API int runApplication(int argc, char* argv[]);
 
 DART_GUI_API int runApplication(

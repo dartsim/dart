@@ -34,6 +34,8 @@
 
 #include "imgui_material.hpp"
 
+#include <dart/gui/application.hpp>
+
 #include <backend/BufferDescriptor.h>
 #include <backend/PixelBufferDescriptor.h>
 #include <filament/Camera.h>
@@ -384,3 +386,16 @@ void destroyConfiguredImGuiOverlay(
 }
 
 } // namespace dart::gui::detail
+
+namespace dart::gui {
+
+bool isImGuiDockingAvailable()
+{
+#ifdef IMGUI_HAS_DOCK
+  return true;
+#else
+  return false;
+#endif
+}
+
+} // namespace dart::gui
