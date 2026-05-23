@@ -2,7 +2,7 @@
 
 ## Last Session Summary
 
-Twenty-three verified commits on the feature branch, each green
+Twenty-five verified commits on the feature branch, each green
 (`pixi run build`, `pixi run build-simulation-experimental-tests`,
 `pixi run lint`, the experimental ctest label, and the benchmark). The branch now
 carries the full standalone structure-of-arrays (SoA) toolkit and a live World
@@ -11,8 +11,10 @@ step driven by it at full parity with the per-entity integrator:
 - Phase 0/1: EnTT concurrency contract + debug hazard assert, contact-shaped
   benchmark proxy, resource-access metadata (`findResourceHazards`/DOT/per-entity
   kinematics wiring), and an O((N+E) log N) topological sort.
-- Determinism: multi-worker (1/2/4/8) parity test against the sequential
-  reference.
+- Determinism (Phase 3 gate): multi-worker (1/2/4/8) parity against the
+  sequential reference, with a bitwise gate for the map-only integration stage
+  (per-body nodes run concurrently and must match bit-for-bit, since the stage
+  has no cross-body reduction).
 - Phase 2 state: `RigidBodyStateBatch` (flat-scalar SoA, leading world
   dimension) + the immutable `RigidBodyModelBatch` (Model/State/Control split),
   with `extract`/`apply` (single- and multi-world) validated by a code-reviewer
@@ -38,7 +40,7 @@ step driven by it at full parity with the per-entity integrator:
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute` — twenty-three commits ahead of
+`feature/experimental-world-scalable-compute` — twenty-five commits ahead of
 `main`, working tree clean, all gates green. Not pushed; accumulating toward one
 larger DART 7 PR.
 

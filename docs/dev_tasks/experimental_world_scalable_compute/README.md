@@ -20,25 +20,27 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
       DOT surfacing + per-entity wiring on the kinematics stage; 30/30
       `test_compute_graph` cases pass. Contract in
       [`../../plans/030-compute-resource-access/`](../../plans/030-compute-resource-access/).
-- [~] Phase 2: Immutable Model + batched SoA State. Landed: `RigidBodyStateBatch`
-  flat-scalar SoA with single- and multi-world (leading dimension) extract/apply;
-  scalar-generic SoA kernels (`integratePositionsSemiImplicit`,
-  `integrateVelocitiesSemiImplicit`) and a batched linear integrator
-  (`integrateRigidBodyStateBatchLinear`) that keeps force/inverse-mass as
-  Control/Model inputs separate from State. Remaining: an immutable Model value
-  type, an angular (orientation) integration kernel, and wiring the batched SoA
-  integrator into the live `WorldStepStage` pipeline.
+- [x] Phase 2: Immutable Model + batched SoA State. `RigidBodyStateBatch`
+      flat-scalar SoA with single- and multi-world (leading dimension) extract/apply;
+      immutable `RigidBodyModelBatch` (inverse mass + inertia) realizing the
+      Model/State split; scalar-generic SoA kernels (position, velocity, and the
+      angle-axis exponential-map orientation kernel) and the linear and full
+      (`integrateRigidBodyStateBatch`, plus a torque overload) batched integrators.
+      `BatchedRigidBodyIntegrationStage` wires the SoA path into a live
+      `WorldStepStage` at full parity with the per-entity integrator (force, torque,
+      orientation), with a per-entity fallback for frame-coupled bodies.
 - [~] Phase 3: Multi-core hardening, SIMD, data locality. Landed: O((N+E) log N)
-  topological sort; multi-worker (1/2/4/8) determinism parity (bitwise for the
-  current map-only stages); `findResourceHazards()` serves as the unordered-write
-  ambiguity detector. Remaining: explicit SIMD on the hot SoA kernels, a cost
-  gate, fixed-ULP reduction tolerance once a reduction stage exists, and the
-  ambiguity detector's broader surface once a second write-conflicting stage
-  lands.
-- [~] Phase 4: Homogeneous batch (CPU) + rollout. Landed: `stepWorldsBatched`
-  (parallel batch executor, bit-identical to sequential) and
-  `rolloutWorldsBatched` (initial state → step → final state batch). Remaining:
-  control-sequence inputs (needs a control owner type) and heterogeneous batches.
+  topological sort; multi-worker (1/2/4/8) determinism parity with a bitwise gate
+  for the map-only integration stage (per-body nodes run concurrently);
+  `findResourceHazards()` serves as the unordered-write ambiguity detector.
+  Remaining: explicit SIMD on the hot SoA kernels and a cost gate (both
+  benchmark-gated), plus fixed-ULP reduction tolerance once a reduction stage
+  exists.
+- [x] Phase 4: Homogeneous batch (CPU) + rollout. `stepWorldsBatched` (parallel
+      batch executor via the injected executor, bit-identical to sequential),
+      `rolloutWorldsBatched`, and a pure-SoA control-sequence rollout
+      (`rolloutRigidBodyStateBatch`). Heterogeneous batches are deferred to Phase 6
+      by design.
 - [ ] Phase 5: GPU prototype behind a gate with a kill criterion (internal, no
       public API); CUDA-versus-SYCL decided from the benchmark. Blocked on GPU
       hardware/CI.
@@ -84,17 +86,18 @@ framework or touching the classic World.
 
 ## Immediate Next Steps
 
-(Phase 0/1 and the early Phase 3 items above are done; see `RESUME.md`.)
+(Phases 0-2 and Phase 4 are done, and Phase 3's determinism gate and topological
+sort are in; see `RESUME.md`.)
 
-1. Extend `RigidBodyStateBatch` to a leading world dimension > 1 (homogeneous
-   replication) and add the immutable Model split.
-2. Make the integration and kinematics kernels scalar-generic
-   (`template <typename Scalar>`, instantiate `double` only) and have them read
-   and write the SoA batch instead of per-entity `registry.get`.
-3. Add the tolerance-based determinism gate (bitwise for map-only stages,
-   fixed-ULP for reductions) and a SIMD pass on the SoA kernels.
-4. Wire `bm-check` baselines for the experimental benchmarks so phase gates cite
-   committed numbers.
+1. Optionally let `World::step` / the default pipeline select
+   `BatchedRigidBodyIntegrationStage`, after broadening frame-coupled coverage
+   (parent-before-child ordering of the frame-cache loop) so the SoA path handles
+   rigid-body parenting directly instead of via the per-entity fallback.
+2. Phase 3 remainder: explicit SIMD (`dart/simd`) on the hot SoA kernels and a
+   cost gate for sub-threshold graphs, each cited against committed `bm-check`
+   baselines.
+3. Phase 5 GPU prototype — blocked on a GPU runner the project does not have;
+   treat runner provisioning as a named prerequisite, not a coding task.
 
 ## Relationship To Other Surfaces
 
