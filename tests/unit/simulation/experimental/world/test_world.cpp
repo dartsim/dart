@@ -961,9 +961,9 @@ TEST(World, StepAcceptsParallelExecutor)
       child.getTransform().isApprox(updatedParentTransform * childOffset));
 }
 
-// Test that RigidBodyOptions seed the dynamics components used by the graph
+// Test that RigidBodyOptions seed the public rigid-body state used by the graph
 // backed step path.
-TEST(World, RigidBodyOptionsInitializeDynamicsComponents)
+TEST(World, RigidBodyOptionsInitializePublicState)
 {
   namespace sx = dart::simulation::experimental;
 
@@ -978,18 +978,11 @@ TEST(World, RigidBodyOptionsInitializeDynamicsComponents)
   options.angularVelocity = Eigen::Vector3d(0.1, 0.2, 0.3);
 
   auto body = world.addRigidBody("body", options);
-  const auto& registry = world.getRegistry();
 
-  const auto& transform = registry.get<sx::comps::Transform>(body.getEntity());
-  const auto& velocity = registry.get<sx::comps::Velocity>(body.getEntity());
-  const auto& mass = registry.get<sx::comps::MassProperties>(body.getEntity());
-
-  EXPECT_TRUE(transform.position.isApprox(options.position));
-  EXPECT_TRUE(transform.orientation.isApprox(options.orientation));
-  EXPECT_TRUE(velocity.linear.isApprox(options.linearVelocity));
-  EXPECT_TRUE(velocity.angular.isApprox(options.angularVelocity));
-  EXPECT_DOUBLE_EQ(mass.mass, options.mass);
-  EXPECT_TRUE(mass.inertia.isApprox(options.inertia));
+  EXPECT_TRUE(body.getTranslation().isApprox(options.position));
+  EXPECT_TRUE(body.getQuaternion().isApprox(options.orientation));
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(options.linearVelocity));
+  EXPECT_TRUE(body.getAngularVelocity().isApprox(options.angularVelocity));
   EXPECT_DOUBLE_EQ(body.getMass(), options.mass);
   EXPECT_TRUE(body.getInertia().isApprox(options.inertia));
 
@@ -1001,8 +994,6 @@ TEST(World, RigidBodyOptionsInitializeDynamicsComponents)
 
   EXPECT_DOUBLE_EQ(body.getMass(), updatedMass);
   EXPECT_TRUE(body.getInertia().isApprox(updatedInertia));
-  EXPECT_DOUBLE_EQ(mass.mass, updatedMass);
-  EXPECT_TRUE(mass.inertia.isApprox(updatedInertia));
 
   EXPECT_TRUE(body.getForce().isApprox(Eigen::Vector3d::Zero()));
   body.setForce(Eigen::Vector3d(0.0, 2.0, 0.0));
@@ -1124,14 +1115,8 @@ TEST(World, StepIntegratesRigidBodyStateAndAdvancesClock)
   const auto expectedVelocity = Eigen::Vector3d(2.0, 1.0, 0.0);
   const auto expectedPosition = Eigen::Vector3d(2.0, 2.5, 3.0);
 
-  const auto& transform
-      = world.getRegistry().get<sx::comps::Transform>(body.getEntity());
-  const auto& velocity
-      = world.getRegistry().get<sx::comps::Velocity>(body.getEntity());
-
-  EXPECT_TRUE(velocity.linear.isApprox(expectedVelocity));
-  EXPECT_TRUE(transform.position.isApprox(expectedPosition));
-  EXPECT_TRUE(body.getTransform().translation().isApprox(expectedPosition));
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(expectedVelocity));
+  EXPECT_TRUE(body.getTranslation().isApprox(expectedPosition));
   EXPECT_DOUBLE_EQ(world.getTime(), 0.5);
   EXPECT_EQ(world.getFrame(), 1u);
 }
@@ -1206,13 +1191,8 @@ TEST(World, StepIntegratesRigidBodyTorque)
   const Eigen::Quaterniond expectedOrientation
       = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitX()) * options.orientation;
 
-  const auto& transform
-      = world.getRegistry().get<sx::comps::Transform>(body.getEntity());
-  const auto& velocity
-      = world.getRegistry().get<sx::comps::Velocity>(body.getEntity());
-
-  EXPECT_TRUE(velocity.angular.isApprox(expectedAngularVelocity));
-  EXPECT_TRUE(transform.orientation.isApprox(expectedOrientation));
+  EXPECT_TRUE(body.getAngularVelocity().isApprox(expectedAngularVelocity));
+  EXPECT_TRUE(body.getQuaternion().isApprox(expectedOrientation));
   EXPECT_TRUE(
       body.getRotation().isApprox(expectedOrientation.toRotationMatrix()));
 }
@@ -1249,13 +1229,8 @@ TEST(World, StepStoresReparentedRigidBodyPoseAsParentLocal)
   Eigen::Isometry3d expectedLocalTransform
       = parentTransform.inverse() * expectedWorldTransform;
 
-  const auto& registry = world.getRegistry();
-  const auto& transform = registry.get<sx::comps::Transform>(body.getEntity());
-  const auto& props
-      = registry.get<sx::comps::FreeFrameProperties>(body.getEntity());
-
-  EXPECT_TRUE(transform.position.isApprox(expectedPosition));
-  EXPECT_TRUE(props.localTransform.isApprox(expectedLocalTransform));
+  EXPECT_TRUE(body.getTranslation().isApprox(expectedPosition));
+  EXPECT_TRUE(body.getLocalTransform().isApprox(expectedLocalTransform));
   EXPECT_TRUE(body.getTransform().isApprox(expectedWorldTransform));
 }
 
@@ -1296,15 +1271,9 @@ TEST(World, RigidBodyIntegrationStageOrdersRigidBodyFrameAncestry)
   expectedChildLocalTransform.translation()
       = expectedChildPosition - expectedParentPosition;
 
-  const auto& registry = world.getRegistry();
-  const auto& parentProps
-      = registry.get<sx::comps::FreeFrameProperties>(parent.getEntity());
-  const auto& childProps
-      = registry.get<sx::comps::FreeFrameProperties>(child.getEntity());
-
-  EXPECT_TRUE(parentProps.localTransform.translation().isApprox(
+  EXPECT_TRUE(parent.getLocalTransform().translation().isApprox(
       expectedParentPosition));
-  EXPECT_TRUE(childProps.localTransform.isApprox(expectedChildLocalTransform));
+  EXPECT_TRUE(child.getLocalTransform().isApprox(expectedChildLocalTransform));
 }
 
 // Test that the rigid-body integration stage produces the same state through
@@ -1354,37 +1323,31 @@ TEST(World, RigidBodyStepParallelMatchesSequential)
 
   constexpr double tolerance = 1e-10;
   for (std::size_t i = 0; i < sequentialBodies.size(); ++i) {
-    const auto& sequentialTransform
-        = sequentialWorld.getRegistry().get<sx::comps::Transform>(
-            sequentialBodies[i].getEntity());
-    const auto& parallelTransform
-        = parallelWorld.getRegistry().get<sx::comps::Transform>(
-            parallelBodies[i].getEntity());
-    const auto& sequentialVelocity
-        = sequentialWorld.getRegistry().get<sx::comps::Velocity>(
-            sequentialBodies[i].getEntity());
-    const auto& parallelVelocity
-        = parallelWorld.getRegistry().get<sx::comps::Velocity>(
-            parallelBodies[i].getEntity());
+    const auto sequentialTranslation = sequentialBodies[i].getTranslation();
+    const auto parallelTranslation = parallelBodies[i].getTranslation();
+    const auto sequentialRotation = sequentialBodies[i].getRotation();
+    const auto parallelRotation = parallelBodies[i].getRotation();
+    const auto sequentialLinearVelocity
+        = sequentialBodies[i].getLinearVelocity();
+    const auto parallelLinearVelocity = parallelBodies[i].getLinearVelocity();
+    const auto sequentialAngularVelocity
+        = sequentialBodies[i].getAngularVelocity();
+    const auto parallelAngularVelocity = parallelBodies[i].getAngularVelocity();
 
-    EXPECT_TRUE(sequentialTransform.position.isApprox(
-        parallelTransform.position, tolerance))
+    EXPECT_TRUE(sequentialTranslation.isApprox(parallelTranslation, tolerance))
         << "position diff: "
-        << (sequentialTransform.position - parallelTransform.position).norm();
-    EXPECT_TRUE(sequentialTransform.orientation.isApprox(
-        parallelTransform.orientation, tolerance))
+        << (sequentialTranslation - parallelTranslation).norm();
+    EXPECT_TRUE(sequentialRotation.isApprox(parallelRotation, tolerance))
         << "orientation diff: "
-        << (sequentialTransform.orientation.coeffs()
-            - parallelTransform.orientation.coeffs())
-               .norm();
+        << (sequentialRotation - parallelRotation).norm();
     EXPECT_TRUE(
-        sequentialVelocity.linear.isApprox(parallelVelocity.linear, tolerance))
+        sequentialLinearVelocity.isApprox(parallelLinearVelocity, tolerance))
         << "linear velocity diff: "
-        << (sequentialVelocity.linear - parallelVelocity.linear).norm();
-    EXPECT_TRUE(sequentialVelocity.angular.isApprox(
-        parallelVelocity.angular, tolerance))
+        << (sequentialLinearVelocity - parallelLinearVelocity).norm();
+    EXPECT_TRUE(
+        sequentialAngularVelocity.isApprox(parallelAngularVelocity, tolerance))
         << "angular velocity diff: "
-        << (sequentialVelocity.angular - parallelVelocity.angular).norm();
+        << (sequentialAngularVelocity - parallelAngularVelocity).norm();
     EXPECT_TRUE(
         sequentialBodies[i].getTransform().isApprox(
             parallelBodies[i].getTransform(), tolerance));
