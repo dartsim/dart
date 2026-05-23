@@ -346,4 +346,18 @@ void integrateRigidBodyStateBatch(
       state.orientation.data(), state.angularVelocity.data(), timeStep, bodies);
 }
 
+//==============================================================================
+RigidBodyStateBatch rolloutRigidBodyStateBatch(
+    const RigidBodyStateBatch& initialState,
+    const RigidBodyModelBatch& model,
+    const std::vector<std::vector<double>>& controlSequence,
+    double timeStep)
+{
+  RigidBodyStateBatch state = initialState;
+  for (const auto& force : controlSequence) {
+    integrateRigidBodyStateBatch(state, model, force, timeStep);
+  }
+  return state;
+}
+
 } // namespace dart::simulation::experimental::compute

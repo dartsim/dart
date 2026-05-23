@@ -153,4 +153,19 @@ DART_EXPERIMENTAL_API void integrateRigidBodyStateBatch(
     const std::vector<double>& force,
     double timeStep);
 
+/// Roll out a state batch over a control sequence on the SoA arrays, with no
+/// World or device types involved.
+///
+/// Starting from @p initialState, for each per-step force batch in
+/// @p controlSequence (each of length `3 * worldCount * bodyCount`), applies
+/// one `integrateRigidBodyStateBatch` step and returns the final state. An
+/// empty control sequence returns @p initialState unchanged. Throws on size
+/// mismatch.
+[[nodiscard]] DART_EXPERIMENTAL_API RigidBodyStateBatch
+rolloutRigidBodyStateBatch(
+    const RigidBodyStateBatch& initialState,
+    const RigidBodyModelBatch& model,
+    const std::vector<std::vector<double>>& controlSequence,
+    double timeStep);
+
 } // namespace dart::simulation::experimental::compute

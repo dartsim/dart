@@ -806,3 +806,46 @@ TEST(ExperimentalIntegrationKernel, IntegratesFullStateBatch)
       compute::integrateRigidBodyStateBatch(bad, model, force, 0.1),
       sx::InvalidArgumentException);
 }
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, RollsOutStateBatchOverControlSequence)
+{
+  compute::RigidBodyStateBatch initial;
+  initial.worldCount = 1;
+  initial.bodyCount = 1;
+  initial.position = {0.0, 0.0, 0.0};
+  initial.orientation = {1.0, 0.0, 0.0, 0.0};
+  initial.linearVelocity = {0.0, 0.0, 0.0};
+  initial.angularVelocity = {0.0, 0.0, 0.0};
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = 1;
+  model.inverseMass = {1.0};
+
+  const std::vector<std::vector<double>> controls = {
+      {1.0, 0.0, 0.0}, // step 1: unit force along +x
+      {0.0, 0.0, 0.0}, // step 2: no force
+  };
+
+  const auto result
+      = compute::rolloutRigidBodyStateBatch(initial, model, controls, 1.0);
+
+  // Matches applying the two steps manually.
+  auto reference = initial;
+  compute::integrateRigidBodyStateBatch(reference, model, controls[0], 1.0);
+  compute::integrateRigidBodyStateBatch(reference, model, controls[1], 1.0);
+  EXPECT_EQ(result.position, reference.position);
+  EXPECT_EQ(result.linearVelocity, reference.linearVelocity);
+
+  // Hand computation: step 1 sets vel.x = 1 and pos.x = 1; step 2 keeps vel and
+  // advances pos.x to 2.
+  EXPECT_DOUBLE_EQ(result.linearVelocity[0], 1.0);
+  EXPECT_DOUBLE_EQ(result.position[0], 2.0);
+
+  // An empty control sequence returns the initial state unchanged.
+  const auto unchanged
+      = compute::rolloutRigidBodyStateBatch(initial, model, {}, 1.0);
+  EXPECT_EQ(unchanged.position, initial.position);
+  EXPECT_EQ(unchanged.linearVelocity, initial.linearVelocity);
+}
