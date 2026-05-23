@@ -479,6 +479,65 @@
   - Added experimental C++ `World::sync(WorldSyncStage::Kinematics)` and
     dartpy `world.sync(sx.WorldSyncStage.KINEMATICS)` for explicit
     kinematics-only work placement without advancing simulation time.
+  - Added experimental C++ `World::setGravity()`/`getGravity()` and dartpy
+    `world.gravity`, applying a uniform gravitational acceleration (default
+    `(0, 0, -9.81)`) to dynamic rigid bodies during integration without storing
+    it in any per-body force accumulator.
+  - Made experimental rigid-body external force/torque accumulators per-step
+    applied loads: each step consumes and then clears them, matching the legacy
+    DART 6 convention where external forces are re-applied every step.
+  - Added experimental rigid-body derived dynamic quantities in C++ and dartpy:
+    linear/angular momentum, kinetic energy, and gravitational potential energy.
+  - Added experimental articulated-body forward dynamics for fixed-base
+    multibodies: `World::step()` now integrates revolute and prismatic joint
+    accelerations from joint efforts, gravity, and Coriolis/centrifugal terms
+    using a recursive Newton-Euler formulation. Added joint effort/acceleration
+    accessors (`Joint::getForce`/`setForce`/`getAcceleration`, dartpy
+    `joint.force`/`joint.acceleration`), link inertial accessors
+    (`Link::getMass`/`setMass`/`getInertia`/`setInertia`, dartpy
+    `link.mass`/`link.inertia`), and a `JointSpec`/`LinkOptions`
+    `transformFromParent` link offset (dartpy `transform_from_parent`).
+  - Added experimental generalized-coordinate dynamics accessors on `MultiBody`:
+    `getMassMatrix`/`getInverseMassMatrix`, `getCoriolisForces`,
+    `getGravityForces`, and `getCoriolisAndGravityForces` (dartpy `mass_matrix`,
+    `inverse_mass_matrix`, `coriolis_forces`, `gravity_forces`,
+    `coriolis_and_gravity_forces`). The terms reuse the forward-dynamics
+    recursive Newton-Euler computation and satisfy `M qddot + C + g = tau`.
+  - Added experimental joint position limits: `Joint::setPositionLimits` with
+    `getPositionLowerLimits`/`getPositionUpperLimits` (dartpy
+    `set_position_limits`, `position_lower_limits`, `position_upper_limits`).
+    The articulated-body integration enforces them as hard stops, clamping the
+    coordinate and arresting the velocity driving it past a limit.
+  - Added experimental joint passive dynamics: per-coordinate spring stiffness
+    with rest position and damping coefficient contribute restoring/dissipative
+    generalized forces in the articulated-body forward dynamics
+    (`Joint::getSpringStiffness`/`setSpringStiffness`,
+    `getRestPosition`/`setRestPosition`,
+    `getDampingCoefficient`/`setDampingCoefficient`; dartpy
+    `joint.spring_stiffness`, `joint.rest_position`, `joint.damping_coefficient`).
+  - Added experimental rigid-body collision queries: attach a `CollisionShape`
+    (sphere or box) to a rigid body and call `World::collide()` to get contact
+    points (position, world-frame normal, penetration depth) via the maintained
+    native collision engine. dartpy adds `CollisionShape`, `CollisionShapeType`,
+    `Contact`, `body.set_collision_shape`/`collision_shape`/`has_collision_shape`,
+    and `world.collide()`.
+  - Added an experimental rigid-body contact response: `World::step()` now
+    resolves contacts between free rigid bodies with sequential normal impulses
+    (frictionless, fully inelastic) plus a positional correction that prevents
+    resting bodies from sinking. Rigid-body integration is split into velocity
+    and position stages so the contact solve runs at the velocity level between
+    them.
+  - Added an experimental static rigid-body convention (`RigidBodyOptions::isStatic`,
+    `RigidBody::setStatic`/`isStatic`, dartpy `is_static`): static bodies ignore
+    gravity and forces, are not integrated, and are treated as immovable by the
+    contact solver, so a dynamic body dropped onto a static ground comes to rest.
+  - Added experimental rigid-body contact restitution and Coulomb friction:
+    `RigidBody::setRestitution`/`getRestitution` and `setFriction`/`getFriction`
+    (dartpy `restitution`/`friction`). The contact solver now uses accumulated
+    normal impulses with restitution (a perfectly elastic equal-mass head-on
+    collision swaps velocities) and a two-tangent friction-pyramid Coulomb model
+    bounded by the normal impulse (a body sliding on a static ground decelerates
+    and stops).
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position
