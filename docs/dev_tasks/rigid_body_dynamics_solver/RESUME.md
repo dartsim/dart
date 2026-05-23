@@ -2,8 +2,10 @@
 
 ## Last Session Summary
 
-Implemented and verified Phases 0.1, 0.2, 0.3, and 1 of the rigid-body solver on
-the experimental `World`:
+Implemented and verified, in fully-tested slices, the rigid-body solver's
+joint-space dynamics layer on the experimental `World` (Phases 0-1 complete;
+Phases 2-5 partial — the contact-LCP subsystem is the main remaining work, see
+the implementation plan below):
 
 - Phase 0.1 — World gravity (`setGravity`/`getGravity`, default `(0,0,-9.81)`,
   applied as acceleration; serialization; dartpy `world.gravity`).
@@ -114,7 +116,8 @@ the experimental `World`:
 
 All gates passed at each slice: `pixi run lint`, focused C++ tests
 (`test_world`, `test_serialization`, `test_compute_graph`), and
-`test_experimental_world.py`. Changes are uncommitted on `main`.
+`test_experimental_world.py`. All work is committed on the
+`feature/experimental-rigid-body-dynamics` branch.
 
 Key implementation note: each link's center of mass is assumed at the link frame
 origin; the joint motion subspace is transformed by the post-joint link offset
@@ -166,6 +169,46 @@ Phases 2–5. Suggested next slices, in rough dependency order:
 
 Phase 3 (friction + LCP), the remainder of Phase 4, and Phase 5 are each a major
 subsystem; budget them as multiple verified slices.
+
+## Contact solver — concrete implementation plan (derived from the code)
+
+The architecture has been mapped; the next session can implement directly:
+
+1. **Generalize the contact body reference.** Today `Contact`
+   (`body/contact.hpp`) holds `RigidBody bodyA/bodyB`. Introduce a lightweight
+   `CollisionBody` handle (entity + `World*`) with
+   `getEntity`/`getWorld`/`getName`/`isRigidBody`/`isLink` (+ `asRigidBody`/
+   `asLink`), and change `Contact` to hold `CollisionBody`. The existing contact
+   stage already extracts `contact.bodyA.getEntity()`
+   (`compute/world_step_stage.cpp`), so it keeps compiling; dartpy
+   `Contact.body_a` returns `CollisionBody` — keep a `name` property so the
+   existing python test `{contact.body_a.name, contact.body_b.name}` passes.
+2. **Link collision shapes.** Add `Link::setCollisionShape`/`getCollisionShape`
+   storing `comps::CollisionGeometry` on the link entity (mirror `RigidBody`;
+   the component doc already says "a body or link").
+3. **`collide()` includes links.** `World::collide()` (`world.cpp`) iterates
+   `CollisionGeometry + Transform + RigidBodyTag` and uses `comps::Transform`
+   for the pose. Add a second pass over `CollisionGeometry + comps::Link` using
+   `FrameCache.worldTransform` for the pose, pushing `ObjectEntry`s; build
+   `CollisionBody` contacts.
+4. **Rigid-body contact stage skips link pairs.** In `RigidBodyContactStage`
+   guard each contact with `registry.all_of<comps::RigidBodyTag>(entity)` for
+   both bodies; link contacts are handled by the new articulated contact solve.
+5. **Articulated contact response.** For a contact on link `i` with world normal
+   `n` at point `p`: the contact-point world Jacobian is the link world Jacobian
+   with the linear block shifted to `p` (linear rows += `skew(o - p)` _ angular
+   rows, where `o` is the link origin). The normal row is
+   `Jn = n^T _ J_point_linear`(1 x dof); effective mass`m_eff = 1 / (Jn M^-1 Jn^T)`; normal impulse
+`lambda_n = max(0, -m_eff \* (Jn qdot))`(remove approaching normal velocity,
+clamp >= 0); apply`qdot += M^-1 Jn^T lambda_n`. This reuses the `J M^-1 J^T`
+machinery already built for the Velocity actuator. Then add
+restitution/friction and a positional (Baumgarte/split-impulse) correction,
+then a boxed-LCP for simultaneous contacts (`dart/math/lcp`, PLAN-020) and
+   islands.
+6. **Verify by emergent behavior** (the only non-closed-form tests in the task,
+   so budget time to tune tolerances): a fixed-base link with a sphere shape
+   drops under gravity and rests on a static rigid ground (penetration stops,
+   normal velocity -> 0); likewise a 1-DOF prismatic "leg".
 
 When committing this session's work: create a feature branch, run the pre-commit
 checklist (`pixi run lint`, build, tests), and open a PR with milestone
