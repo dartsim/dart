@@ -228,9 +228,11 @@ TYPED_TEST(SE3Test, HatAndVeeOperators)
 
   // Check if the result is equal to the expected vector
   EXPECT_TRUE(SE3<S>::Vee(mat).isApprox(vec));
+  EXPECT_TRUE(Vee<SE3<S>>(mat).isApprox(vec));
 
   // Check if the result is equal to the original vector
   EXPECT_TRUE(SE3<S>::Vee(Hat(vec)).isApprox(vec));
+  EXPECT_TRUE(Vee<SE3<S>>(Hat(vec)).isApprox(vec));
 
   // Check if the result is equal to the original matrix
   EXPECT_TRUE(Hat(SE3<S>::Vee(mat)).isApprox(mat));
@@ -264,11 +266,20 @@ TYPED_TEST(SE3Test, SmallAdjoint)
 
   SE3Tangent<S> dx1 = SE3Tangent<S>::Random();
   SE3Tangent<S> dx2 = SE3Tangent<S>::Random();
+  const Vector3<S> expectedAngular = dx1.angular().cross(dx2.angular());
+  const Vector3<S> expectedLinear
+      = dx1.angular().cross(dx2.linear()) + dx1.linear().cross(dx2.angular());
 
-  EXPECT_TRUE(
-      ad(dx1, dx2).angular().isApprox(dx1.angular().cross(dx2.angular())));
-  EXPECT_TRUE(ad(dx1, dx2).linear().isApprox(
-      dx1.angular().cross(dx2.linear()) + dx1.linear().cross(dx2.angular())));
+  EXPECT_TRUE(ad(dx1, dx2).angular().isApprox(expectedAngular));
+  EXPECT_TRUE(ad(dx1, dx2).linear().isApprox(expectedLinear));
+
+  const SE3Tangent<S> bracket = SE3<S>::LieBracket(dx1.params(), dx2.params());
+  EXPECT_TRUE(bracket.angular().isApprox(expectedAngular));
+  EXPECT_TRUE(bracket.linear().isApprox(expectedLinear));
+
+  const SE3Tangent<S> cross = SE3<S>::Cross(dx1.params(), dx2.params());
+  EXPECT_TRUE(cross.angular().isApprox(expectedAngular));
+  EXPECT_TRUE(cross.linear().isApprox(expectedLinear));
 }
 
 //==============================================================================

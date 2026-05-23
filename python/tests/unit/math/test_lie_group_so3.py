@@ -11,7 +11,7 @@ def test_identity():
 
 
 def test_random():
-    x = rand_so3()
+    rand_so3()
 
 
 def test_inverse():

@@ -318,7 +318,7 @@ Matrix3<S> SO3<S>::LeftJacobianInverse(
 
   const S theta = dx.norm();
   if (theta < tol) {
-    J.noalias() += skew(0.5 * dx);
+    J.noalias() -= skew(0.5 * dx);
     return J;
   }
 

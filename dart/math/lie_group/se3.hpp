@@ -277,8 +277,11 @@ typename SE3<S>::Tangent SE3<S>::LieBracket(
   //              | [v1]w2 + [w1]v2 |
   //--------------------------------------------------------------------------
   Tangent out;
-  as_angular(out).noalias() = as_angular(dx1).cross(as_angular(dx2));
-  as_linear(out).noalias() = as_angular(dx1).cross(as_linear(dx2));
+  out.angular().noalias()
+      = dx1.template head<3>().cross(dx2.template head<3>());
+  out.linear().noalias()
+      = dx1.template tail<3>().cross(dx2.template head<3>())
+        + dx1.template head<3>().cross(dx2.template tail<3>());
   return out;
 }
 

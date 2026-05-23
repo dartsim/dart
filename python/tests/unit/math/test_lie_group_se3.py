@@ -11,7 +11,7 @@ def test_identity():
 
 
 def test_random():
-    x = rand_se3()
+    rand_se3()
 
 
 def test_inverse():

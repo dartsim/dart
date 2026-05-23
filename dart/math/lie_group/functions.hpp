@@ -41,8 +41,9 @@ template <typename Derived>
 [[nodiscard]] typename Derived::LieAlgebra Hat(
     const TangentBase<Derived>& tangent);
 
-template <typename Derived>
-[[nodiscard]] typename Derived::Tangent Vee(const LieGroupBase<Derived>& x);
+template <typename LieGroupDerived, typename MatrixDerived>
+[[nodiscard]] typename LieGroupDerived::Tangent Vee(
+    const Eigen::MatrixBase<MatrixDerived>& matrix);
 
 /// Exponential map of a Lie group element
 ///
@@ -106,10 +107,11 @@ typename Derived::LieAlgebra Hat(const TangentBase<Derived>& tangent)
 }
 
 //==============================================================================
-template <typename Derived>
-typename Derived::Tangent Vee(const LieGroupBase<Derived>& x)
+template <typename LieGroupDerived, typename MatrixDerived>
+typename LieGroupDerived::Tangent Vee(
+    const Eigen::MatrixBase<MatrixDerived>& matrix)
 {
-  return x.vee();
+  return LieGroupDerived::Vee(matrix);
 }
 
 //==============================================================================

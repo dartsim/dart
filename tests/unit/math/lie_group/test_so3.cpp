@@ -168,9 +168,11 @@ TYPED_TEST(SO3Test, HatAndVeeOperators)
 
   // Check if the result is equal to the expected vector
   EXPECT_TRUE(SO3<S>::Vee(mat).isApprox(vec));
+  EXPECT_TRUE(Vee<SO3<S>>(mat).isApprox(vec));
 
   // Check if the result is equal to the original vector
   EXPECT_TRUE(SO3<S>::Vee(Hat(vec)).isApprox(vec));
+  EXPECT_TRUE(Vee<SO3<S>>(Hat(vec)).isApprox(vec));
 
   // Check if the result is equal to the original matrix
   EXPECT_TRUE(Hat(SO3<S>::Vee(mat)).isApprox(mat));
@@ -200,6 +202,23 @@ TYPED_TEST(SO3Test, SmallAdjoint)
   SO3Tangent<S> dx2 = SO3Tangent<S>::Random();
 
   EXPECT_TRUE(ad(dx1, dx2).params().isApprox(dx1.params().cross(dx2.params())));
+}
+
+//==============================================================================
+TYPED_TEST(SO3Test, LeftJacobianInverseSmallAngle)
+{
+  using S = typename TestFixture::Scalar;
+
+  const Vector3<S> dx
+      = (S(0.5) * LieGroupTol<S>()) * Vector3<S>(S(0.25), S(-0.5), S(0.75));
+  Matrix3<S> expected = Matrix3<S>::Identity();
+  expected.noalias() -= skew(S(0.5) * dx);
+
+  EXPECT_TRUE(SO3<S>::LeftJacobianInverse(dx).isApprox(expected))
+      << "J_l^{-1}(dx):\n"
+      << SO3<S>::LeftJacobianInverse(dx) << "\n"
+      << "expected:\n"
+      << expected;
 }
 
 //==============================================================================
