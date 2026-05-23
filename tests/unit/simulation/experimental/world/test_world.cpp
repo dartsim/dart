@@ -291,6 +291,16 @@ TEST(World, RigidBodyLookupByName)
   EXPECT_EQ(found->getName(), "body");
 
   EXPECT_FALSE(world.getRigidBody("missing").has_value());
+
+  EXPECT_THROW(world.addRigidBody("body"), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getRigidBodyCount(), 1u);
+
+  sx::World worldWithExplicitGeneratedName;
+  [[maybe_unused]] auto explicitName
+      = worldWithExplicitGeneratedName.addRigidBody("rigid_body_001");
+  auto generated = worldWithExplicitGeneratedName.addRigidBody("");
+  EXPECT_EQ(generated.getName(), "rigid_body_002");
+  EXPECT_EQ(worldWithExplicitGeneratedName.getRigidBodyCount(), 2u);
 }
 
 TEST(World, LoopClosureTopology)

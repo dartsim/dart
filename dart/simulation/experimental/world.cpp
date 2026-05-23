@@ -601,15 +601,19 @@ RigidBody World::addRigidBody(
 {
   ensureDesignMode();
 
-  std::string candidateName
-      = name.empty() ? std::format("rigid_body_{:03d}", m_rigidBodyCounter + 1)
-                     : std::string(name);
-
-  DART_EXPERIMENTAL_THROW_T_IF(
-      hasEntityWithName<comps::RigidBodyTag>(m_registry, candidateName),
-      InvalidArgumentException,
-      "RigidBody '{}' already exists",
-      candidateName);
+  std::string candidateName;
+  if (name.empty()) {
+    do {
+      candidateName = std::format("rigid_body_{:03d}", ++m_rigidBodyCounter);
+    } while (hasEntityWithName<comps::RigidBodyTag>(m_registry, candidateName));
+  } else {
+    candidateName = std::string(name);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        hasEntityWithName<comps::RigidBodyTag>(m_registry, candidateName),
+        InvalidArgumentException,
+        "RigidBody '{}' already exists",
+        candidateName);
+  }
 
   validateRigidBodyOptions(options);
 
@@ -619,7 +623,7 @@ RigidBody World::addRigidBody(
 
   std::string actualName;
   auto entity = createFrameEntity(
-      name,
+      candidateName,
       parent,
       initialTransform,
       &m_rigidBodyCounter,

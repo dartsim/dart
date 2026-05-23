@@ -359,6 +359,15 @@ def test_experimental_world_smoke():
     assert world.has_rigid_body("box")
     assert not world.has_rigid_body("missing")
     assert world.num_rigid_bodies == 1
+    with pytest.raises(Exception, match="already exists"):
+        world.add_rigid_body("box")
+    assert world.num_rigid_bodies == 1
+
+    auto_world = sx.World()
+    auto_world.add_rigid_body("rigid_body_001")
+    generated_body = auto_world.add_rigid_body("")
+    assert generated_body.name == "rigid_body_002"
+    assert auto_world.num_rigid_bodies == 2
 
     world.enter_simulation_mode()
     assert world.is_simulation_mode
