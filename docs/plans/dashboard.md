@@ -129,19 +129,19 @@ its own line so status updates remain git-history friendly.
 
 ### PLAN-080: Performance Dashboard
 
-- Owner doc: [`080-performance-dashboard.md`](080-performance-dashboard.md)
+- Owner doc:
+  [`../readthedocs/community/performance_dashboard.rst`](../readthedocs/community/performance_dashboard.rst)
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Review/merge the scheduled/manual CI publisher for
-  `scripts/generate_performance_dashboard.py`, run it once from `main`, then
-  add maintainer-approved Bencher reporting after the DART-owned dashboard path
-  is accepted.
-- Gate:
-  `docs/dev_tasks/performance_dashboard/README.md` tracks implementation;
-  dashboard history must survive GitHub artifact expiration, collision
-  native/reference rows must show time history and strongest-reference ratios,
-  and Bencher reporting requires maintainer-approved project/secrets setup.
+- Next step: Merge the `Performance Dashboard` workflow
+  (`benchmark-action/github-action-benchmark`), enable GitHub Pages from the
+  `gh-pages` branch, and let the first `main` run publish to
+  `dartsim.github.io/dart/performance/`.
+- Gate: `pixi run bm-dashboard-preview` renders the dashboard locally from real
+  Google Benchmark JSON; after publication the hosted page shows per-benchmark
+  history. Per-PR regression comments and an optional secondary backend
+  (Bencher/CodSpeed) are deferred future work, not launch blockers.
 
 ### PLAN-040: DART 7 Release Hardening
 
