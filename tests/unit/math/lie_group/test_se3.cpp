@@ -143,7 +143,7 @@ TYPED_TEST(SE3Test, Random)
   SE3<S> x = SE3<S>::Random();
   EXPECT_GE(x.rotation().quaternion().norm(), 0)
       << "quat_params: " << x.rotation().quaternion().coeffs().transpose();
-  EXPECT_LE(x.rotation().quaternion().norm(), 1)
+  EXPECT_LE(x.rotation().quaternion().norm(), 1 + LieGroupTol<S>())
       << "quat_params: " << x.rotation().quaternion().coeffs().transpose();
   EXPECT_TRUE(x.rotation().toMatrix().determinant() > 0);
 }

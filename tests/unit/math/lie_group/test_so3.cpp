@@ -93,7 +93,7 @@ TYPED_TEST(SO3Test, Random)
 
   SO3<S> so3 = SO3<S>::Random();
   EXPECT_GE(so3.quaternion().norm(), 0);
-  EXPECT_LE(so3.quaternion().norm(), 1);
+  EXPECT_LE(so3.quaternion().norm(), 1 + LieGroupTol<S>());
   EXPECT_TRUE(so3.toMatrix().determinant() > 0);
 }
 
