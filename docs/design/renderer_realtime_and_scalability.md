@@ -86,11 +86,11 @@ case where transforms change every step.
    Isaac Sim "scenegraph instancing":
    https://docs.isaacsim.omniverse.nvidia.com/latest/reference_material/sim_performance_optimization_handbook.html
 2. **Fix the per-frame CPU sync.** `updateSceneRenderablesFromDescriptors`
-   (`dart/gui/detail/renderable_sync.cpp`) matches descriptors to renderables
-   with an O(N^2) `find_if` and unconditionally re-pushes every transform. Use an
-   id-keyed map and skip `setTransform`/material updates when the transform and
-   version are unchanged (extend the version-based skipping the geometry cache
-   already uses). This complements the geometry-extraction cache already landed.
+   (`dart/gui/detail/renderable_sync.cpp`) previously matched descriptors to
+   renderables with an O(N^2) `find_if`; this is now an id-keyed map lookup
+   (O(N), landed). Remaining follow-up: skip `setTransform`/material updates when
+   the transform and version are unchanged (extend the version-based skipping the
+   geometry cache already uses) so static/sleeping bodies cost nothing per frame.
 3. **Defer LOD.** Filament has no built-in LOD; fill-rate is rarely DART's
    bottleneck (draw-call count and CPU sync dominate at scale). Use
    `View::setVisibleLayers` for category toggles (visual/collision/debug), not as
@@ -103,3 +103,5 @@ case where transforms change every step.
 - Live perf HUD with CPU/GPU frame time, FPS, per-phase breakdown, fixed-scale
   history plots, and a real-time-factor readout (`dart/gui/detail/perf_hud.cpp`).
 - Runtime rendering-backend selection (`render_context.cpp`).
+- O(N) id-keyed descriptor-to-renderable sync, replacing the O(N^2) `find_if`
+  (`dart/gui/detail/renderable_sync.cpp`).
