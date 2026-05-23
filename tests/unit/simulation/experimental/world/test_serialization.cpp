@@ -283,6 +283,7 @@ TEST(Serialization, PreservesWorldTimingMetadata)
   dart::simulation::experimental::World world1;
   world1.setTimeStep(0.125);
   world1.setTime(2.0);
+  world1.setGravity(Eigen::Vector3d(0.0, -1.5, -3.0));
   world1.enterSimulationMode();
   world1.step();
 
@@ -296,6 +297,7 @@ TEST(Serialization, PreservesWorldTimingMetadata)
   EXPECT_DOUBLE_EQ(world2.getTimeStep(), 0.125);
   EXPECT_DOUBLE_EQ(world2.getTime(), 2.125);
   EXPECT_EQ(world2.getFrame(), 1u);
+  EXPECT_TRUE(world2.getGravity().isApprox(Eigen::Vector3d(0.0, -1.5, -3.0)));
 }
 
 // Test save/load preserves auto-generation counters

@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/experimental/body/collision_shape.hpp>
+#include <dart/simulation/experimental/body/contact.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
 #include <dart/simulation/experimental/comps/dynamics.hpp>
@@ -639,6 +641,7 @@ TEST(World, RigidBodySetTransformRefreshesAttachedFrames)
   sensorOffset.translate(Eigen::Vector3d(0.0, 1.0, 0.0));
   auto sensor = world.addFixedFrame("sensor", body, sensorOffset);
 
+  world.setGravity(Eigen::Vector3d::Zero());
   world.enterSimulationMode();
 
   Eigen::Isometry3d drivenPose = Eigen::Isometry3d::Identity();
@@ -686,6 +689,7 @@ TEST(World, RigidBodyVelocityAccessorsDriveStep)
           Eigen::Vector3d(0.0, std::numeric_limits<double>::quiet_NaN(), 0.0)),
       sx::InvalidArgumentException);
 
+  world.setGravity(Eigen::Vector3d::Zero());
   world.setTimeStep(0.5);
   world.enterSimulationMode();
   world.step();
@@ -1107,6 +1111,7 @@ TEST(World, StepIntegratesRigidBodyStateAndAdvancesClock)
   auto body = world.addRigidBody("body", options);
   body.setForce(Eigen::Vector3d(0.0, 4.0, 0.0));
 
+  world.setGravity(Eigen::Vector3d::Zero());
   world.setTimeStep(0.5);
   world.enterSimulationMode();
 
@@ -1150,6 +1155,7 @@ TEST(World, StepCountAcceptsExecutor)
   options.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
   auto body = world.addRigidBody("body", options);
 
+  world.setGravity(Eigen::Vector3d::Zero());
   world.setTimeStep(0.25);
 
   RecordingExecutor executor;
@@ -1197,6 +1203,697 @@ TEST(World, StepIntegratesRigidBodyTorque)
       body.getRotation().isApprox(expectedOrientation.toRotationMatrix()));
 }
 
+// Test that World gravity accelerates a free rigid body during stepping and is
+// independent of body mass.
+TEST(World, StepAppliesGravityToFreeBody)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  EXPECT_TRUE(world.getGravity().isApprox(Eigen::Vector3d(0.0, 0.0, -9.81)));
+
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  options.position = Eigen::Vector3d(0.0, 0.0, 10.0);
+  auto body = world.addRigidBody("body", options);
+
+  world.setTimeStep(0.1);
+  world.enterSimulationMode();
+  world.step();
+
+  const Eigen::Vector3d gravity(0.0, 0.0, -9.81);
+  const double dt = 0.1;
+  const Eigen::Vector3d expectedVelocity = gravity * dt;
+  const Eigen::Vector3d expectedPosition
+      = Eigen::Vector3d(0.0, 0.0, 10.0) + expectedVelocity * dt;
+
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(expectedVelocity));
+  EXPECT_TRUE(body.getTranslation().isApprox(expectedPosition));
+}
+
+// Test that World gravity is configurable, validated, and reset by clear().
+TEST(World, GravityIsConfigurableAndValidated)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  const Eigen::Vector3d customGravity(0.0, -3.0, 0.0);
+  world.setGravity(customGravity);
+  EXPECT_TRUE(world.getGravity().isApprox(customGravity));
+
+  EXPECT_THROW(
+      world.setGravity(
+          Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      world.setGravity(
+          Eigen::Vector3d(0.0, std::numeric_limits<double>::infinity(), 0.0)),
+      sx::InvalidArgumentException);
+
+  world.clear();
+  EXPECT_TRUE(world.getGravity().isApprox(Eigen::Vector3d(0.0, 0.0, -9.81)));
+}
+
+// Test that external force/torque accumulators are per-step applied loads that
+// are consumed and then cleared by each step (legacy DART 6 convention).
+TEST(World, StepClearsExternalForceAndTorque)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  auto body = world.addRigidBody("body", options);
+  body.setForce(Eigen::Vector3d(4.0, 0.0, 0.0));
+
+  world.setTimeStep(0.5);
+  world.enterSimulationMode();
+  world.step();
+
+  // Force consumed by the step (v += F/m * dt = 2 * 0.5 = 1) then cleared.
+  const Eigen::Vector3d velocityAfterFirstStep(1.0, 0.0, 0.0);
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(velocityAfterFirstStep));
+  EXPECT_TRUE(body.getForce().isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_TRUE(body.getTorque().isApprox(Eigen::Vector3d::Zero()));
+
+  // A second step without re-applying the force must not accelerate further.
+  world.step();
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(velocityAfterFirstStep));
+}
+
+// Test derived rigid-body dynamic quantities (momentum and energy).
+TEST(World, RigidBodyDynamicQuantities)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  options.inertia = Eigen::Vector3d(2.0, 4.0, 8.0).asDiagonal();
+  options.position = Eigen::Vector3d(0.0, 0.0, 5.0);
+  options.linearVelocity = Eigen::Vector3d(3.0, 0.0, 0.0);
+  options.angularVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto body = world.addRigidBody("body", options);
+
+  EXPECT_TRUE(
+      body.getLinearMomentum().isApprox(Eigen::Vector3d(6.0, 0.0, 0.0)));
+  EXPECT_TRUE(
+      body.getAngularMomentum().isApprox(Eigen::Vector3d(2.0, 0.0, 0.0)));
+  // KE = 0.5 * m * |v|^2 + 0.5 * w . (I w) = 0.5*2*9 + 0.5*1*2 = 10.
+  EXPECT_DOUBLE_EQ(body.getKineticEnergy(), 10.0);
+  // PE = -m * gravity . position = -2 * (-9.81 * 5) = 98.1.
+  EXPECT_NEAR(body.getPotentialEnergy(), 98.1, 1e-9);
+}
+
+// Test that articulated-body forward dynamics produces the analytical gravity
+// acceleration for a horizontal single revolute pendulum.
+TEST(World, MultiBodyRevolutePendulumGravityAcceleration)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("pendulum");
+  auto base = robot.addLink("base");
+
+  // Child link: revolute about Y at the base origin; center of mass offset L
+  // along +X so the link is horizontal at q = 0.
+  const double length = 1.5;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(length, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+
+  const double mass = 2.0;
+  const double inertiaYy = 0.2;
+  bob.setMass(mass);
+  bob.setInertia(Eigen::Vector3d(0.1, inertiaYy, 0.3).asDiagonal());
+
+  world.setTimeStep(0.001);
+  world.enterSimulationMode();
+  world.step();
+
+  // I_pivot = I_com + m L^2 (parallel axis); qddot = m g L / I_pivot.
+  const double expected
+      = 9.81 * mass * length / (inertiaYy + mass * length * length);
+  auto joint = bob.getParentJoint();
+  EXPECT_NEAR(joint.getAcceleration()[0], expected, 1e-9);
+}
+
+// Test that the public generalized mass matrix, gravity forces, and Coriolis
+// forces match analytical values for a single revolute pendulum.
+TEST(World, MultiBodyMassMatrixAndForcesSinglePendulum)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("pendulum");
+  auto base = robot.addLink("base");
+
+  const double length = 1.5;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(length, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+
+  const double mass = 2.0;
+  const double inertiaYy = 0.2;
+  bob.setMass(mass);
+  bob.setInertia(Eigen::Vector3d(0.1, inertiaYy, 0.3).asDiagonal());
+
+  // A single revolute DOF has no Coriolis/centrifugal term (M is constant in
+  // q), so a nonzero velocity must still leave the Coriolis force at zero.
+  auto joint = bob.getParentJoint();
+  joint.setVelocity(Eigen::VectorXd::Constant(1, 2.0));
+
+  world.enterSimulationMode();
+
+  // M = I_axis + m L^2 about the pivot (parallel-axis theorem), 1x1.
+  const Eigen::MatrixXd massMatrix = robot.getMassMatrix();
+  ASSERT_EQ(massMatrix.rows(), 1);
+  ASSERT_EQ(massMatrix.cols(), 1);
+  const double expectedMass = inertiaYy + mass * length * length;
+  EXPECT_NEAR(massMatrix(0, 0), expectedMass, 1e-12);
+
+  const Eigen::MatrixXd inverseMass = robot.getInverseMassMatrix();
+  ASSERT_EQ(inverseMass.rows(), 1);
+  ASSERT_EQ(inverseMass.cols(), 1);
+  EXPECT_NEAR(inverseMass(0, 0), 1.0 / expectedMass, 1e-12);
+
+  // Horizontal pendulum at q = 0: the gravity generalized force is -m g L, so
+  // the unactuated joint accelerates by +m g L / M (the forward-dynamics sign).
+  const Eigen::VectorXd gravityForces = robot.getGravityForces();
+  ASSERT_EQ(gravityForces.size(), 1);
+  EXPECT_NEAR(gravityForces[0], -mass * 9.81 * length, 1e-12);
+
+  const Eigen::VectorXd coriolis = robot.getCoriolisForces();
+  ASSERT_EQ(coriolis.size(), 1);
+  EXPECT_NEAR(coriolis[0], 0.0, 1e-12);
+
+  const Eigen::VectorXd combined = robot.getCoriolisAndGravityForces();
+  ASSERT_EQ(combined.size(), 1);
+  EXPECT_NEAR(combined[0], gravityForces[0], 1e-12);
+}
+
+// Test that the public mass matrix and bias forces satisfy the joint-space
+// equation of motion M qddot + C + g = tau for a 2-DOF chain. This validates
+// the decomposition for a multi-DOF system without hand-computing M.
+TEST(World, MultiBodyEquationOfMotionConsistency)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("double_pendulum");
+  auto base = robot.addLink("base");
+
+  const double l1 = 0.7;
+  const double l2 = 0.6;
+  Eigen::Isometry3d offset1 = Eigen::Isometry3d::Identity();
+  offset1.translation() = Eigen::Vector3d(l1, 0.0, 0.0);
+  Eigen::Isometry3d offset2 = Eigen::Isometry3d::Identity();
+  offset2.translation() = Eigen::Vector3d(l2, 0.0, 0.0);
+
+  sx::JointSpec spec1;
+  spec1.name = "j1";
+  spec1.type = sx::JointType::Revolute;
+  spec1.axis = Eigen::Vector3d::UnitY();
+  spec1.transformFromParent = offset1;
+  auto link1 = robot.addLink("link1", base, spec1);
+  link1.setMass(1.5);
+  link1.setInertia(Eigen::Vector3d(0.05, 0.08, 0.05).asDiagonal());
+
+  sx::JointSpec spec2;
+  spec2.name = "j2";
+  spec2.type = sx::JointType::Revolute;
+  spec2.axis = Eigen::Vector3d::UnitY();
+  spec2.transformFromParent = offset2;
+  auto link2 = robot.addLink("link2", link1, spec2);
+  link2.setMass(1.0);
+  link2.setInertia(Eigen::Vector3d(0.04, 0.06, 0.04).asDiagonal());
+
+  auto joint1 = link1.getParentJoint();
+  auto joint2 = link2.getParentJoint();
+
+  joint1.setPosition(Eigen::VectorXd::Constant(1, 0.3));
+  joint1.setVelocity(Eigen::VectorXd::Constant(1, 1.1));
+  joint1.setForce(Eigen::VectorXd::Constant(1, 2.0));
+  joint2.setPosition(Eigen::VectorXd::Constant(1, -0.5));
+  joint2.setVelocity(Eigen::VectorXd::Constant(1, 0.7));
+  joint2.setForce(Eigen::VectorXd::Constant(1, -1.5));
+
+  Eigen::VectorXd tau(2);
+  tau << 2.0, -1.5;
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+
+  // Read the dynamics terms at the current (pre-step) state.
+  const Eigen::MatrixXd massMatrix = robot.getMassMatrix();
+  const Eigen::VectorXd coriolis = robot.getCoriolisForces();
+  const Eigen::VectorXd gravityForces = robot.getGravityForces();
+
+  ASSERT_EQ(massMatrix.rows(), 2);
+  ASSERT_EQ(massMatrix.cols(), 2);
+  EXPECT_NEAR((massMatrix - massMatrix.transpose()).norm(), 0.0, 1e-12);
+
+  // step() computes qddot from the same pre-step state, so the equation of
+  // motion must hold exactly (up to solver round-off).
+  world.step();
+  Eigen::VectorXd qddot(2);
+  qddot << joint1.getAcceleration()[0], joint2.getAcceleration()[0];
+
+  const Eigen::VectorXd residual
+      = massMatrix * qddot + coriolis + gravityForces - tau;
+  EXPECT_NEAR(residual.norm(), 0.0, 1e-9);
+}
+
+// Test that the dynamics accessors return empty results for a multibody with no
+// movable degrees of freedom.
+TEST(World, MultiBodyDynamicsAccessorsNoDOF)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto robot = world.addMultiBody("static_chain");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "weld";
+  spec.type = sx::JointType::Fixed;
+  (void)robot.addLink("welded", base, spec);
+
+  world.enterSimulationMode();
+
+  EXPECT_EQ(robot.getDOFCount(), 0u);
+  EXPECT_EQ(robot.getMassMatrix().size(), 0);
+  EXPECT_EQ(robot.getInverseMassMatrix().size(), 0);
+  EXPECT_EQ(robot.getCoriolisForces().size(), 0);
+  EXPECT_EQ(robot.getGravityForces().size(), 0);
+  EXPECT_EQ(robot.getCoriolisAndGravityForces().size(), 0);
+}
+
+// Test that a prismatic joint aligned with gravity free-falls at g.
+TEST(World, MultiBodyPrismaticFreeFall)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  carriage.setMass(3.0);
+
+  const double dt = 0.01;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  world.step();
+
+  auto joint = carriage.getParentJoint();
+  EXPECT_NEAR(joint.getAcceleration()[0], -9.81, 1e-9);
+  EXPECT_NEAR(joint.getVelocity()[0], -9.81 * dt, 1e-12);
+  EXPECT_NEAR(joint.getPosition()[0], -9.81 * dt * dt, 1e-12);
+}
+
+// Test that the pendulum integrator conserves mechanical energy over a swing
+// (a sign or scale error in the dynamics would inject energy and diverge).
+TEST(World, MultiBodyPendulumConservesEnergy)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+  const Eigen::Vector3d gravity(0.0, 0.0, -9.81);
+
+  auto robot = world.addMultiBody("pendulum");
+  auto base = robot.addLink("base");
+
+  const double length = 1.0;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(length, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+
+  const double mass = 1.0;
+  const Eigen::Matrix3d inertia
+      = Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal();
+  bob.setMass(mass);
+  bob.setInertia(inertia);
+
+  auto joint = bob.getParentJoint();
+
+  // Released from horizontal at rest; total energy starts at zero.
+  const auto energy = [&]() {
+    const double qd = joint.getVelocity()[0];
+    const Eigen::Isometry3d worldTransform = bob.getTransform();
+    const Eigen::Vector3d com = worldTransform.translation();
+    const Eigen::Vector3d omega = qd * Eigen::Vector3d::UnitY();
+    const Eigen::Vector3d linear = omega.cross(com);
+    const Eigen::Matrix3d rotation = worldTransform.linear();
+    const Eigen::Matrix3d worldInertia
+        = rotation * inertia * rotation.transpose();
+    const double kinetic = 0.5 * mass * linear.squaredNorm()
+                           + 0.5 * omega.dot(worldInertia * omega);
+    const double potential = -mass * gravity.dot(com);
+    return kinetic + potential;
+  };
+
+  world.setTimeStep(1e-4);
+  world.enterSimulationMode();
+
+  const double initialEnergy = energy();
+  EXPECT_NEAR(initialEnergy, 0.0, 1e-12);
+
+  // Roughly a quarter period: enough time to swing from horizontal toward the
+  // bottom (stable equilibrium at q = pi/2).
+  double maxAngle = 0.0;
+  for (int i = 0; i < 8000; ++i) {
+    world.step();
+    EXPECT_NEAR(energy(), initialEnergy, 5e-2);
+    maxAngle = std::max(maxAngle, std::abs(joint.getPosition()[0]));
+  }
+
+  // The pendulum should have swung down close to the bottom (q ~ pi/2).
+  EXPECT_GT(maxAngle, 1.4);
+}
+
+// Test that joint spring stiffness and damping contribute passive generalized
+// forces in the articulated-body dynamics.
+TEST(World, MultiBodyJointSpringAndDamping)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("slider");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto carriage = robot.addLink("carriage", base, spec);
+  const double mass = 2.0;
+  carriage.setMass(mass);
+
+  auto joint = carriage.getParentJoint();
+  const double stiffness = 10.0;
+  const double damping = 3.0;
+  joint.setSpringStiffness(Eigen::VectorXd::Constant(1, stiffness));
+  joint.setDampingCoefficient(Eigen::VectorXd::Constant(1, damping));
+  joint.setRestPosition(Eigen::VectorXd::Zero(1));
+
+  EXPECT_THROW(
+      joint.setSpringStiffness(Eigen::VectorXd::Constant(1, -1.0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      joint.setDampingCoefficient(Eigen::VectorXd::Constant(1, -1.0)),
+      sx::InvalidArgumentException);
+
+  const double position = 0.5;
+  const double velocity = 2.0;
+  joint.setPosition(Eigen::VectorXd::Constant(1, position));
+  joint.setVelocity(Eigen::VectorXd::Constant(1, velocity));
+
+  world.setTimeStep(0.001);
+  world.enterSimulationMode();
+  world.step();
+
+  // qddot = (-stiffness * position - damping * velocity) / mass.
+  const double expected = (-stiffness * position - damping * velocity) / mass;
+  EXPECT_NEAR(joint.getAcceleration()[0], expected, 1e-9);
+}
+
+// Test that a joint position limit acts as a hard stop in the dynamics.
+TEST(World, MultiBodyJointPositionLimit)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("pendulum");
+  auto base = robot.addLink("base");
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+  bob.setMass(1.0);
+  bob.setInertia(Eigen::Vector3d(0.05, 0.05, 0.05).asDiagonal());
+
+  auto joint = bob.getParentJoint();
+  EXPECT_TRUE(std::isinf(joint.getPositionUpperLimits()[0]));
+  EXPECT_TRUE(std::isinf(joint.getPositionLowerLimits()[0]));
+
+  const double upperLimit = 0.5;
+  joint.setPositionLimits(
+      Eigen::VectorXd::Constant(1, -std::numeric_limits<double>::infinity()),
+      Eigen::VectorXd::Constant(1, upperLimit));
+  EXPECT_DOUBLE_EQ(joint.getPositionUpperLimits()[0], upperLimit);
+
+  EXPECT_THROW(
+      joint.setPositionLimits(
+          Eigen::VectorXd::Constant(1, 1.0), Eigen::VectorXd::Constant(1, 0.0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      joint.setPositionLimits(
+          Eigen::VectorXd::Constant(2, 0.0), Eigen::VectorXd::Constant(2, 1.0)),
+      sx::InvalidArgumentException);
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(400);
+
+  // Gravity drives the joint toward +pi/2, but it must stop at the upper limit.
+  EXPECT_NEAR(joint.getPosition()[0], upperLimit, 1e-9);
+  EXPECT_NEAR(joint.getVelocity()[0], 0.0, 1e-9);
+}
+
+// Test that World::collide() reports contacts between overlapping collision
+// shapes and reports none once the shapes are separated.
+TEST(World, CollisionQueryReportsContacts)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  sx::RigidBodyOptions optionsA;
+  optionsA.position = Eigen::Vector3d(0.0, 0.0, 0.0);
+  auto bodyA = world.addRigidBody("a", optionsA);
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(1.0));
+
+  sx::RigidBodyOptions optionsB;
+  optionsB.position = Eigen::Vector3d(1.5, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("b", optionsB);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(1.0));
+
+  EXPECT_TRUE(bodyA.hasCollisionShape());
+  ASSERT_TRUE(bodyA.getCollisionShape().has_value());
+  EXPECT_EQ(bodyA.getCollisionShape()->type, sx::CollisionShapeType::Sphere);
+  EXPECT_FALSE(world.addRigidBody("c").hasCollisionShape());
+
+  // Spheres of radius 1 centered 1.5 apart overlap by 0.5.
+  auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  for (const auto& contact : contacts) {
+    EXPECT_GT(contact.depth, 0.0);
+    EXPECT_NEAR(contact.depth, 0.5, 1e-6);
+    EXPECT_NEAR(std::abs(contact.normal.x()), 1.0, 1e-6);
+  }
+
+  // Separate the bodies; the query should report no contacts.
+  Eigen::Isometry3d farPose = Eigen::Isometry3d::Identity();
+  farPose.translation() = Eigen::Vector3d(10.0, 0.0, 0.0);
+  bodyB.setTransform(farPose);
+  EXPECT_TRUE(world.collide().empty());
+}
+
+// Test that the contact stage resolves approaching velocities (fully inelastic)
+// between overlapping rigid bodies and leaves separating bodies untouched.
+TEST(World, RigidBodyContactResolvesApproachingVelocity)
+{
+  namespace sx = dart::simulation::experimental;
+
+  // Two equal-mass spheres overlapping and approaching head-on along x.
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+
+    sx::RigidBodyOptions optionsA;
+    optionsA.position = Eigen::Vector3d(-0.45, 0.0, 0.0);
+    optionsA.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto bodyA = world.addRigidBody("a", optionsA);
+    bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions optionsB;
+    optionsB.position = Eigen::Vector3d(0.45, 0.0, 0.0);
+    optionsB.linearVelocity = Eigen::Vector3d(-1.0, 0.0, 0.0);
+    auto bodyB = world.addRigidBody("b", optionsB);
+    bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    world.setTimeStep(0.001);
+    world.step();
+
+    // Equal masses, head-on, fully inelastic: both come to rest. Linear
+    // momentum (zero) is conserved.
+    EXPECT_NEAR(bodyA.getLinearVelocity().x(), 0.0, 1e-9);
+    EXPECT_NEAR(bodyB.getLinearVelocity().x(), 0.0, 1e-9);
+  }
+
+  // Overlapping but separating: the contact stage must not change velocities.
+  {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+
+    sx::RigidBodyOptions optionsA;
+    optionsA.position = Eigen::Vector3d(-0.45, 0.0, 0.0);
+    optionsA.linearVelocity = Eigen::Vector3d(-1.0, 0.0, 0.0);
+    auto bodyA = world.addRigidBody("a", optionsA);
+    bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    sx::RigidBodyOptions optionsB;
+    optionsB.position = Eigen::Vector3d(0.45, 0.0, 0.0);
+    optionsB.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto bodyB = world.addRigidBody("b", optionsB);
+    bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    world.setTimeStep(0.001);
+    world.step();
+
+    EXPECT_NEAR(bodyA.getLinearVelocity().x(), -1.0, 1e-9);
+    EXPECT_NEAR(bodyB.getLinearVelocity().x(), 1.0, 1e-9);
+  }
+}
+
+// Test that a dynamic body dropped onto a static ground comes to rest on it
+// (gravity + contact response + positional correction keep it from sinking).
+TEST(World, RigidBodyRestsOnStaticGround)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  // Static ground box with its top face at z = 0.
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+  EXPECT_TRUE(ground.isStatic());
+
+  // Dynamic sphere dropped from above.
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 2.0);
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(1000);
+
+  // The sphere (radius 0.5) should rest with its center near z = 0.5 and have
+  // essentially stopped moving. The ground must not have moved.
+  EXPECT_NEAR(sphere.getTranslation().z(), 0.5, 2e-2);
+  EXPECT_LT(std::abs(sphere.getLinearVelocity().z()), 0.1);
+  EXPECT_TRUE(
+      ground.getTranslation().isApprox(Eigen::Vector3d(0.0, 0.0, -0.5)));
+}
+
+// Test that restitution makes contacts bounce: a perfectly elastic, equal-mass,
+// head-on collision swaps the bodies' velocities.
+TEST(World, RigidBodyContactRestitution)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions optionsA;
+  optionsA.position = Eigen::Vector3d(-0.45, 0.0, 0.0);
+  optionsA.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto bodyA = world.addRigidBody("a", optionsA);
+  bodyA.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  bodyA.setRestitution(1.0);
+
+  sx::RigidBodyOptions optionsB;
+  optionsB.position = Eigen::Vector3d(0.45, 0.0, 0.0);
+  optionsB.linearVelocity = Eigen::Vector3d(-1.0, 0.0, 0.0);
+  auto bodyB = world.addRigidBody("b", optionsB);
+  bodyB.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  bodyB.setRestitution(1.0);
+
+  EXPECT_DOUBLE_EQ(bodyA.getRestitution(), 1.0);
+  EXPECT_DOUBLE_EQ(world.addRigidBody("default").getRestitution(), 0.0);
+  EXPECT_DOUBLE_EQ(world.addRigidBody("default_friction").getFriction(), 1.0);
+
+  world.setTimeStep(0.001);
+  world.step();
+
+  // Perfectly elastic, equal masses, head-on: the velocities swap.
+  EXPECT_NEAR(bodyA.getLinearVelocity().x(), -1.0, 1e-9);
+  EXPECT_NEAR(bodyB.getLinearVelocity().x(), 1.0, 1e-9);
+}
+
+// Test that Coulomb friction decelerates a body sliding on a static ground.
+TEST(World, RigidBodyContactFrictionDeceleratesSlidingBody)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+  // A flat, low box (so friction torque does not tip it) sliding in +x.
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.1);
+  boxOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto slider = world.addRigidBody("slider", boxOptions);
+  slider.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.1)));
+  slider.setFriction(0.5);
+  EXPECT_DOUBLE_EQ(slider.getFriction(), 0.5);
+
+  world.setTimeStep(0.005);
+  world.enterSimulationMode();
+  world.step(400);
+
+  // Friction should have braked the slide (started at 2 m/s) without reversing
+  // it, and the body should have moved forward before stopping.
+  const double velocityX = slider.getLinearVelocity().x();
+  EXPECT_LT(velocityX, 0.5);
+  EXPECT_GT(velocityX, -0.2);
+  EXPECT_GT(slider.getTranslation().x(), 0.0);
+}
+
 // Test that rigid-body integration keeps the integrated world pose
 // authoritative when a body has been reparented through the inherited frame
 // API.
@@ -1218,6 +1915,7 @@ TEST(World, StepStoresReparentedRigidBodyPoseAsParentLocal)
   auto body = world.addRigidBody("body", options);
   body.setParentFrame(parent);
 
+  world.setGravity(Eigen::Vector3d::Zero());
   world.setTimeStep(0.5);
   world.enterSimulationMode();
 
@@ -1255,6 +1953,7 @@ TEST(World, RigidBodyIntegrationStageOrdersRigidBodyFrameAncestry)
   auto child = world.addRigidBody("child", childOptions);
   child.setParentFrame(parent);
 
+  world.setGravity(Eigen::Vector3d::Zero());
   world.setTimeStep(0.5);
   world.enterSimulationMode();
 

@@ -508,6 +508,12 @@ def test_experimental_multibody_link_joint_common_path():
     slider_joint = slider.parent_joint
     slider_joint.position = [2.0]
 
+    # This test exercises construction and forward kinematics, so disable
+    # gravity and joint velocities to keep the step from changing the pose.
+    world.gravity = (0.0, 0.0, 0.0)
+    joint.velocity = [0.0]
+    slider_joint.velocity = [0.0]
+
     world.enter_simulation_mode()
     world.sync(sx.WorldSyncStage.KINEMATICS)
     assert tool.translation.tolist() == pytest.approx([0.0, 1.0, 0.0])
@@ -525,7 +531,7 @@ def test_experimental_multibody_link_joint_common_path():
 
     assert world.is_simulation_mode
     assert joint.position.tolist() == pytest.approx([math.pi / 2.0])
-    assert joint.velocity.tolist() == pytest.approx([1.25])
+    assert joint.velocity.tolist() == pytest.approx([0.0])
     assert tool.translation.tolist() == pytest.approx([0.0, 1.0, 0.0])
 
 
@@ -779,6 +785,7 @@ def test_experimental_world_common_path_properties_and_step_count():
     box.clear_torque()
     assert box.torque.tolist() == pytest.approx([0.0, 0.0, 0.0])
 
+    world.gravity = (0.0, 0.0, 0.0)
     world.step(n=0)
     assert not world.is_simulation_mode
     assert world.time == pytest.approx(0.0)
@@ -817,9 +824,431 @@ def test_experimental_rigid_body_options_value_object():
 
     world = sx.World(time_step=0.1)
     box = world.add_rigid_body("box", options)
+    world.gravity = (0.0, 0.0, 0.0)
     world.step()
 
     assert box.translation.tolist() == pytest.approx([2.1, 3.0, 4.0])
+
+
+def test_experimental_world_gravity():
+    sx = _simulation_experimental()
+
+    world = sx.World(time_step=0.1)
+    assert world.gravity.tolist() == pytest.approx([0.0, 0.0, -9.81])
+
+    world.gravity = (0.0, -2.0, 0.0)
+    assert world.gravity.tolist() == pytest.approx([0.0, -2.0, 0.0])
+
+    # Gravity accelerates a free body during stepping, independent of mass.
+    world.gravity = (0.0, 0.0, -10.0)
+    box = world.add_rigid_body("box", mass=3.0, position=(0.0, 0.0, 5.0))
+    world.step()
+
+    dt = 0.1
+    assert box.linear_velocity.tolist() == pytest.approx([0.0, 0.0, -1.0])
+    assert box.translation.tolist() == pytest.approx([0.0, 0.0, 5.0 - 0.1])
+
+    with pytest.raises(Exception, match="finite"):
+        world.gravity = (float("nan"), 0.0, 0.0)
+
+
+def test_experimental_rigid_body_dynamic_quantities():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+    box = world.add_rigid_body(
+        "box",
+        mass=2.0,
+        position=(0.0, 0.0, 5.0),
+        linear_velocity=(3.0, 0.0, 0.0),
+        angular_velocity=(1.0, 0.0, 0.0),
+    )
+    box.inertia = ((2.0, 0.0, 0.0), (0.0, 4.0, 0.0), (0.0, 0.0, 8.0))
+
+    assert box.linear_momentum.tolist() == pytest.approx([6.0, 0.0, 0.0])
+    assert box.angular_momentum.tolist() == pytest.approx([2.0, 0.0, 0.0])
+    assert box.kinetic_energy == pytest.approx(10.0)
+    assert box.potential_energy == pytest.approx(98.1)
+
+
+def test_experimental_multibody_forward_dynamics():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+
+    # Single revolute pendulum, horizontal at q = 0 (center of mass offset L).
+    robot = world.add_multi_body("pendulum")
+    base = robot.add_link("base")
+    length = 1.5
+    offset = np.eye(4)
+    offset[0, 3] = length
+    spec = sx.JointSpec(
+        name="hinge",
+        type=sx.JointType.REVOLUTE,
+        axis=(0.0, 1.0, 0.0),
+        transform_from_parent=offset,
+    )
+    assert spec.transform_from_parent[0, 3] == pytest.approx(length)
+    bob = robot.add_link("bob", parent=base, joint=spec)
+
+    mass = 2.0
+    inertia_yy = 0.2
+    bob.mass = mass
+    bob.inertia = ((0.1, 0.0, 0.0), (0.0, inertia_yy, 0.0), (0.0, 0.0, 0.3))
+    assert bob.mass == pytest.approx(2.0)
+
+    # Prismatic joint aligned with gravity (built in design mode before stepping).
+    slider = world.add_multi_body("slider")
+    rail_base = slider.add_link("base")
+    carriage = slider.add_link(
+        "carriage",
+        parent=rail_base,
+        joint=sx.JointSpec(
+            name="rail", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    carriage.mass = 3.0
+
+    hinge = bob.parent_joint
+    hinge.force = [0.0]
+    assert hinge.force.tolist() == pytest.approx([0.0])
+
+    world.time_step = 0.001
+    world.step()
+
+    expected = 9.81 * mass * length / (inertia_yy + mass * length * length)
+    assert hinge.acceleration.tolist()[0] == pytest.approx(expected)
+    assert carriage.parent_joint.acceleration.tolist()[0] == pytest.approx(-9.81)
+
+
+def test_experimental_multibody_dynamics_terms():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+
+    # Single revolute pendulum, horizontal at q = 0 (center of mass offset L).
+    robot = world.add_multi_body("pendulum")
+    base = robot.add_link("base")
+    length = 1.5
+    offset = np.eye(4)
+    offset[0, 3] = length
+    spec = sx.JointSpec(
+        name="hinge",
+        type=sx.JointType.REVOLUTE,
+        axis=(0.0, 1.0, 0.0),
+        transform_from_parent=offset,
+    )
+    bob = robot.add_link("bob", parent=base, joint=spec)
+    mass = 2.0
+    inertia_yy = 0.2
+    bob.mass = mass
+    bob.inertia = ((0.1, 0.0, 0.0), (0.0, inertia_yy, 0.0), (0.0, 0.0, 0.3))
+
+    # A single revolute DOF has no Coriolis term even at nonzero velocity.
+    hinge = bob.parent_joint
+    hinge.velocity = [2.0]
+
+    world.enter_simulation_mode()
+
+    expected_mass = inertia_yy + mass * length * length
+    mass_matrix = robot.mass_matrix
+    assert mass_matrix.shape == (1, 1)
+    assert mass_matrix[0, 0] == pytest.approx(expected_mass)
+
+    inverse_mass = robot.inverse_mass_matrix
+    assert inverse_mass.shape == (1, 1)
+    assert inverse_mass[0, 0] == pytest.approx(1.0 / expected_mass)
+
+    # Horizontal pendulum: gravity generalized force is -m g L.
+    gravity_forces = robot.gravity_forces
+    assert gravity_forces.tolist() == pytest.approx([-mass * 9.81 * length])
+
+    assert robot.coriolis_forces.tolist() == pytest.approx([0.0])
+    assert robot.coriolis_and_gravity_forces.tolist() == pytest.approx(
+        gravity_forces.tolist()
+    )
+
+
+def test_experimental_multibody_equation_of_motion_consistency():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+
+    robot = world.add_multi_body("double_pendulum")
+    base = robot.add_link("base")
+
+    offset1 = np.eye(4)
+    offset1[0, 3] = 0.7
+    offset2 = np.eye(4)
+    offset2[0, 3] = 0.6
+
+    link1 = robot.add_link(
+        "link1",
+        parent=base,
+        joint=sx.JointSpec(
+            name="j1",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset1,
+        ),
+    )
+    link1.mass = 1.5
+    link1.inertia = ((0.05, 0.0, 0.0), (0.0, 0.08, 0.0), (0.0, 0.0, 0.05))
+
+    link2 = robot.add_link(
+        "link2",
+        parent=link1,
+        joint=sx.JointSpec(
+            name="j2",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset2,
+        ),
+    )
+    link2.mass = 1.0
+    link2.inertia = ((0.04, 0.0, 0.0), (0.0, 0.06, 0.0), (0.0, 0.0, 0.04))
+
+    joint1 = link1.parent_joint
+    joint2 = link2.parent_joint
+    joint1.position = [0.3]
+    joint1.velocity = [1.1]
+    joint1.force = [2.0]
+    joint2.position = [-0.5]
+    joint2.velocity = [0.7]
+    joint2.force = [-1.5]
+
+    world.time_step = 1e-3
+    world.enter_simulation_mode()
+
+    # Read the dynamics terms at the current (pre-step) state.
+    mass_matrix = robot.mass_matrix
+    coriolis = robot.coriolis_forces
+    gravity_forces = robot.gravity_forces
+    assert mass_matrix.shape == (2, 2)
+    assert np.allclose(mass_matrix, mass_matrix.T)
+
+    # step() solves the same state, so the equation of motion must hold.
+    world.step()
+    qddot = np.array([joint1.acceleration[0], joint2.acceleration[0]])
+    tau = np.array([2.0, -1.5])
+    residual = mass_matrix @ qddot + coriolis + gravity_forces - tau
+    assert np.allclose(residual, np.zeros(2), atol=1e-9)
+
+
+def test_experimental_multibody_dynamics_terms_no_dof():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    robot = world.add_multi_body("static_chain")
+    base = robot.add_link("base")
+    robot.add_link(
+        "welded",
+        parent=base,
+        joint=sx.JointSpec(name="weld", type=sx.JointType.FIXED),
+    )
+
+    world.enter_simulation_mode()
+
+    assert robot.num_dofs == 0
+    assert robot.mass_matrix.size == 0
+    assert robot.inverse_mass_matrix.size == 0
+    assert robot.coriolis_forces.size == 0
+    assert robot.gravity_forces.size == 0
+    assert robot.coriolis_and_gravity_forces.size == 0
+
+
+def test_experimental_joint_spring_and_damping():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.gravity = (0.0, 0.0, 0.0)
+    robot = world.add_multi_body("slider")
+    base = robot.add_link("base")
+    carriage = robot.add_link(
+        "carriage",
+        parent=base,
+        joint=sx.JointSpec(
+            name="rail", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    carriage.mass = 2.0
+
+    joint = carriage.parent_joint
+    joint.spring_stiffness = [10.0]
+    joint.damping_coefficient = [3.0]
+    joint.rest_position = [0.0]
+    assert joint.spring_stiffness.tolist() == pytest.approx([10.0])
+    assert joint.damping_coefficient.tolist() == pytest.approx([3.0])
+
+    joint.position = [0.5]
+    joint.velocity = [2.0]
+
+    world.time_step = 0.001
+    world.step()
+
+    expected = (-10.0 * 0.5 - 3.0 * 2.0) / 2.0
+    assert joint.acceleration.tolist()[0] == pytest.approx(expected)
+
+
+def test_experimental_joint_position_limit():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+    robot = world.add_multi_body("pendulum")
+    base = robot.add_link("base")
+    offset = np.eye(4)
+    offset[0, 3] = 1.0
+    bob = robot.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset,
+        ),
+    )
+    bob.mass = 1.0
+    bob.inertia = ((0.05, 0.0, 0.0), (0.0, 0.05, 0.0), (0.0, 0.0, 0.05))
+
+    joint = bob.parent_joint
+    assert math.isinf(joint.position_upper_limits.tolist()[0])
+    joint.set_position_limits([-math.inf], [0.5])
+    assert joint.position_upper_limits.tolist()[0] == pytest.approx(0.5)
+
+    world.time_step = 0.005
+    world.step(n=400)
+
+    # Gravity drives the joint toward +pi/2 but it stops at the upper limit.
+    assert joint.position.tolist()[0] == pytest.approx(0.5, abs=1e-9)
+    assert joint.velocity.tolist()[0] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_experimental_collision_query():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+
+    body_a = world.add_rigid_body("a", position=(0.0, 0.0, 0.0))
+    body_a.set_collision_shape(sx.CollisionShape.sphere(1.0))
+    body_b = world.add_rigid_body("b", position=(1.2, 0.0, 0.0))
+    body_b.set_collision_shape(sx.CollisionShape.box((0.5, 0.5, 0.5)))
+
+    assert body_a.has_collision_shape
+    assert body_a.collision_shape.type == sx.CollisionShapeType.SPHERE
+    assert body_b.collision_shape.type == sx.CollisionShapeType.BOX
+    assert world.add_rigid_body("c").collision_shape is None
+
+    contacts = world.collide()
+    assert len(contacts) >= 1
+    for contact in contacts:
+        assert contact.depth > 0.0
+        names = {contact.body_a.name, contact.body_b.name}
+        assert names == {"a", "b"}
+
+    body_b.transform = _translation_transform(10.0, 0.0, 0.0)
+    assert len(world.collide()) == 0
+
+
+def test_experimental_contact_stops_approaching_bodies():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.gravity = (0.0, 0.0, 0.0)
+
+    body_a = world.add_rigid_body(
+        "a", position=(-0.45, 0.0, 0.0), linear_velocity=(1.0, 0.0, 0.0)
+    )
+    body_a.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    body_b = world.add_rigid_body(
+        "b", position=(0.45, 0.0, 0.0), linear_velocity=(-1.0, 0.0, 0.0)
+    )
+    body_b.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    world.time_step = 0.001
+    world.step()
+
+    # Equal-mass head-on fully inelastic contact: both come to rest.
+    assert body_a.linear_velocity.tolist()[0] == pytest.approx(0.0, abs=1e-9)
+    assert body_b.linear_velocity.tolist()[0] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_experimental_body_rests_on_static_ground():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.5))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box((5.0, 5.0, 0.5)))
+    assert ground.is_static
+
+    sphere = world.add_rigid_body("sphere", position=(0.0, 0.0, 2.0))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    assert not sphere.is_static
+
+    world.time_step = 0.005
+    world.step(n=1000)
+
+    # Sphere (radius 0.5) rests on the ground (top at z = 0) and stops.
+    assert sphere.translation.tolist()[2] == pytest.approx(0.5, abs=2e-2)
+    assert abs(sphere.linear_velocity.tolist()[2]) < 0.1
+    assert ground.translation.tolist() == pytest.approx([0.0, 0.0, -0.5])
+
+
+def test_experimental_contact_restitution():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.gravity = (0.0, 0.0, 0.0)
+
+    body_a = world.add_rigid_body(
+        "a", position=(-0.45, 0.0, 0.0), linear_velocity=(1.0, 0.0, 0.0)
+    )
+    body_a.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    body_a.restitution = 1.0
+    body_b = world.add_rigid_body(
+        "b", position=(0.45, 0.0, 0.0), linear_velocity=(-1.0, 0.0, 0.0)
+    )
+    body_b.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    body_b.restitution = 1.0
+
+    assert body_a.restitution == pytest.approx(1.0)
+    assert world.add_rigid_body("c").restitution == pytest.approx(0.0)
+    assert world.add_rigid_body("d").friction == pytest.approx(1.0)
+
+    world.time_step = 0.001
+    world.step()
+
+    # Perfectly elastic equal-mass head-on collision swaps velocities.
+    assert body_a.linear_velocity.tolist()[0] == pytest.approx(-1.0, abs=1e-9)
+    assert body_b.linear_velocity.tolist()[0] == pytest.approx(1.0, abs=1e-9)
+
+
+def test_experimental_contact_friction():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.5))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box((5.0, 5.0, 0.5)))
+
+    slider = world.add_rigid_body(
+        "slider", position=(0.0, 0.0, 0.1), linear_velocity=(2.0, 0.0, 0.0)
+    )
+    slider.set_collision_shape(sx.CollisionShape.box((0.5, 0.5, 0.1)))
+    slider.friction = 0.5
+    assert slider.friction == pytest.approx(0.5)
+
+    world.time_step = 0.005
+    world.step(n=400)
+
+    # Friction brakes the slide without reversing it.
+    velocity_x = slider.linear_velocity.tolist()[0]
+    assert velocity_x < 0.5
+    assert velocity_x > -0.2
+    assert slider.translation.tolist()[0] > 0.0
 
 
 def test_experimental_rigid_body_options_reject_invalid_values():
