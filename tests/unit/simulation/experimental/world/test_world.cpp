@@ -1425,6 +1425,117 @@ TEST(World, RigidBodyStepParallelMatchesSequentialAcrossWorkerCounts)
   }
 }
 
+// Test that the batched SoA integration stage matches the per-entity stage for
+// free (non-frame-coupled) rigid bodies with no angular motion or torque, which
+// is the regime where the two integrators share semantics.
+TEST(World, BatchedRigidBodyIntegrationStageMatchesPerEntityForFreeBodies)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto buildWorld = [](sx::World& world, std::vector<sx::RigidBody>& bodies) {
+    for (int i = 0; i < 8; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + 0.3 * i;
+      options.inertia = Eigen::Vector3d(1.0, 1.5, 2.0).asDiagonal();
+      options.position = Eigen::Vector3d(0.2 * i, -0.1 * i, 0.05 * i);
+      options.linearVelocity = Eigen::Vector3d(0.5, 0.25 * i, -0.1 * i);
+      // Zero angular velocity: once a body spins, the per-entity (angle-axis)
+      // and SoA (quaternion-product) orientation schemes diverge by design.
+      options.angularVelocity = Eigen::Vector3d::Zero();
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      // Linear force only: a torque would exercise the per-entity inertia solve
+      // that the SoA model does not yet carry.
+      body.setForce(Eigen::Vector3d(0.1 * i, 0.2, -0.3));
+      bodies.push_back(body);
+    }
+    world.setTimeStep(0.01);
+    world.enterSimulationMode();
+  };
+
+  sx::World perEntityWorld;
+  sx::World batchedWorld;
+  std::vector<sx::RigidBody> perEntityBodies;
+  std::vector<sx::RigidBody> batchedBodies;
+  buildWorld(perEntityWorld, perEntityBodies);
+  buildWorld(batchedWorld, batchedBodies);
+
+  compute::SequentialExecutor executor;
+  compute::RigidBodyIntegrationStage perEntityStage;
+  compute::BatchedRigidBodyIntegrationStage batchedStage;
+
+  constexpr double tolerance = 1e-10;
+  for (int step = 0; step < 5; ++step) {
+    perEntityStage.execute(perEntityWorld, executor);
+    batchedStage.execute(batchedWorld, executor);
+
+    for (std::size_t i = 0; i < perEntityBodies.size(); ++i) {
+      EXPECT_TRUE(
+          perEntityBodies[i].getTranslation().isApprox(
+              batchedBodies[i].getTranslation(), tolerance))
+          << "step " << step << " body " << i << " position";
+      EXPECT_TRUE(
+          perEntityBodies[i].getRotation().isApprox(
+              batchedBodies[i].getRotation(), tolerance))
+          << "step " << step << " body " << i << " orientation";
+      EXPECT_TRUE(
+          perEntityBodies[i].getLinearVelocity().isApprox(
+              batchedBodies[i].getLinearVelocity(), tolerance))
+          << "step " << step << " body " << i << " linear velocity";
+      EXPECT_TRUE(
+          perEntityBodies[i].getLocalTransform().isApprox(
+              batchedBodies[i].getLocalTransform(), tolerance))
+          << "step " << step << " body " << i << " local transform";
+    }
+  }
+}
+
+// Test that the batched stage defers to the per-entity stage (producing
+// identical results) when a rigid body is parented to another rigid body, where
+// local-transform bookkeeping needs parent-before-child ordering.
+TEST(World, BatchedRigidBodyIntegrationStageDefersForFrameCoupledBodies)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto buildWorld = [](sx::World& world) {
+    sx::RigidBodyOptions parentOptions;
+    parentOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+    parentOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+    auto parent = world.addRigidBody("parent", parentOptions);
+
+    sx::RigidBodyOptions childOptions;
+    childOptions.position = Eigen::Vector3d(20.0, 0.0, 0.0);
+    childOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto child = world.addRigidBody("child", childOptions);
+    child.setParentFrame(parent);
+
+    world.setTimeStep(0.5);
+    world.enterSimulationMode();
+    return std::pair<sx::RigidBody, sx::RigidBody>(parent, child);
+  };
+
+  sx::World perEntityWorld;
+  sx::World batchedWorld;
+  auto [perEntityParent, perEntityChild] = buildWorld(perEntityWorld);
+  auto [batchedParent, batchedChild] = buildWorld(batchedWorld);
+
+  compute::SequentialExecutor executor;
+  compute::RigidBodyIntegrationStage perEntityStage;
+  compute::BatchedRigidBodyIntegrationStage batchedStage;
+  perEntityStage.execute(perEntityWorld, executor);
+  batchedStage.execute(batchedWorld, executor);
+
+  EXPECT_TRUE(perEntityParent.getLocalTransform().isApprox(
+      batchedParent.getLocalTransform()));
+  EXPECT_TRUE(perEntityChild.getLocalTransform().isApprox(
+      batchedChild.getLocalTransform()));
+  EXPECT_TRUE(
+      perEntityParent.getTransform().isApprox(batchedParent.getTransform()));
+  EXPECT_TRUE(
+      perEntityChild.getTransform().isApprox(batchedChild.getTransform()));
+}
+
 // Test that the experimental step path can swap the kinematics stage contract.
 TEST(World, StepAcceptsCustomStage)
 {

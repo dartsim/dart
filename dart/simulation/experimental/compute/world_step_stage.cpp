@@ -38,6 +38,7 @@
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
 #include "dart/simulation/experimental/compute/compute_executor.hpp"
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
+#include "dart/simulation/experimental/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -443,6 +444,94 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
 std::size_t RigidBodyIntegrationStage::getBatchSize() const noexcept
 {
   return m_batchSize;
+}
+
+//==============================================================================
+std::string_view BatchedRigidBodyIntegrationStage::getName() const noexcept
+{
+  return "batched_rigid_body_integration";
+}
+
+//==============================================================================
+ComputeStageMetadata BatchedRigidBodyIntegrationStage::getMetadata()
+    const noexcept
+{
+  return {
+      ComputeStageDomain::RigidBody,
+      ComputeStageAcceleration::TaskParallel
+          | ComputeStageAcceleration::DataParallel
+          | ComputeStageAcceleration::Simd
+          | ComputeStageAcceleration::DataLocality};
+}
+
+//==============================================================================
+void BatchedRigidBodyIntegrationStage::execute(
+    World& world, ComputeExecutor& executor)
+{
+  auto& registry = world.getRegistry();
+
+  // Gather entities in the same view order used by the state/model extractors
+  // so the force array and the frame-update loop stay aligned body-for-body.
+  auto view
+      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+  std::vector<entt::entity> entities;
+  entities.reserve(view.size_hint());
+  for (const auto entity : view) {
+    entities.push_back(entity);
+  }
+
+  if (entities.empty()) {
+    return;
+  }
+
+  // Frame-coupled rigid bodies require parent-before-child ordering for the
+  // local-transform bookkeeping; the SoA path integrates in flat order, so
+  // defer those cases to the per-entity stage.
+  if (hasRigidBodyFrameDependency(registry, entities)) {
+    RigidBodyIntegrationStage fallback;
+    fallback.execute(world, executor);
+    return;
+  }
+
+  std::vector<double> force;
+  force.reserve(3 * entities.size());
+  for (const auto entity : entities) {
+    const auto& f = registry.get<comps::Force>(entity);
+    force.push_back(f.force.x());
+    force.push_back(f.force.y());
+    force.push_back(f.force.z());
+  }
+
+  auto state = extractRigidBodyState(world);
+  const auto model = extractRigidBodyModelBatch(world);
+  const auto timeStep = world.getTimeStep();
+
+  ComputeGraph graph;
+  graph.addNode(
+      "soa_rigid_body_integration",
+      [&state, &model, &force, timeStep]() {
+        integrateRigidBodyStateBatch(state, model, force, timeStep);
+      },
+      getMetadata());
+  executor.execute(graph);
+
+  applyRigidBodyState(world, state);
+
+  // Restore frame-cache consistency the same way the per-entity integrator
+  // does, now that the world-space Transform has been written back. With no
+  // rigid-body-to-rigid-body parenting, view order is a valid update order.
+  for (const auto entity : entities) {
+    const auto& transform = registry.get<comps::Transform>(entity);
+    auto& props = registry.get<comps::FreeFrameProperties>(entity);
+    const auto worldTransform = toIsometry(transform, transform.orientation);
+    const auto& frameState = registry.get<comps::FrameState>(entity);
+    props.localTransform
+        = computeFrameWorldTransform(registry, frameState.parentFrame).inverse()
+          * worldTransform;
+
+    auto& cache = registry.get<comps::FrameCache>(entity);
+    cache.needTransformUpdate = true;
+  }
 }
 
 } // namespace dart::simulation::experimental::compute

@@ -2,52 +2,76 @@
 
 ## Last Session Summary
 
-Eight verified commits on the feature branch (each green: `pixi run build`,
-`pixi run lint`, experimental ctest targets, benchmark): Phase 0/1 + plan (EnTT
-concurrency contract + debug assert, contact-shaped benchmark proxy,
-resource-access metadata with `findResourceHazards`/DOT/per-entity kinematics
-wiring); O((N+E) log N) topological sort; multi-worker (1/2/4/8) determinism
-parity test; Phase 2 seed (`RigidBodyStateBatch` flat-scalar SoA +
-`extractRigidBodyState`/`applyRigidBodyState`); a code-reviewer pass whose
-Critical (state-batch bounds check) and Major (hazard reachability cost) findings
-were fixed; API-inventory/doc sync; and the leading world dimension
-(`extractRigidBodyStateBatch`/`applyRigidBodyStateBatch`, homogeneous multi-world).
+Twenty-one verified commits on the feature branch, each green
+(`pixi run build`, `pixi run build-simulation-experimental-tests`,
+`pixi run lint`, the experimental ctest label, and the benchmark). The branch now
+carries the full standalone structure-of-arrays (SoA) toolkit and its first live
+wiring:
 
-Since then: scalar-generic SoA kernels (`integratePositionsSemiImplicit`,
-`integrateVelocitiesSemiImplicit`) and a batched linear integrator
-(`integrateRigidBodyStateBatchLinear`); a CPU batch executor (`stepWorldsBatched`)
-and rollout (`rolloutWorldsBatched`); and the immutable Model batch
-(`RigidBodyModelBatch` + `extractRigidBodyModelBatch` + a model-based integrator
-overload) realizing the Model/State/Control split.
+- Phase 0/1: EnTT concurrency contract + debug hazard assert, contact-shaped
+  benchmark proxy, resource-access metadata (`findResourceHazards`/DOT/per-entity
+  kinematics wiring), and an O((N+E) log N) topological sort.
+- Determinism: multi-worker (1/2/4/8) parity test against the sequential
+  reference.
+- Phase 2 state: `RigidBodyStateBatch` (flat-scalar SoA, leading world
+  dimension) + the immutable `RigidBodyModelBatch` (Model/State/Control split),
+  with `extract`/`apply` (single- and multi-world) validated by a code-reviewer
+  pass (Critical bounds-check + Major hazard-cost findings fixed).
+- Phase 2 kernels/integrators: scalar-generic `integratePositionsSemiImplicit`,
+  `integrateVelocitiesSemiImplicit`, and `integrateOrientationsSemiImplicit`;
+  the linear and full (`integrateRigidBodyStateBatch`) batched integrators.
+- Phase 4 (partial): CPU batch executor (`stepWorldsBatched`), World rollout
+  (`rolloutWorldsBatched`), and a pure-SoA control-sequence rollout
+  (`rolloutRigidBodyStateBatch`).
+- Phase 2 live wiring (this session): `BatchedRigidBodyIntegrationStage` — an
+  additive `WorldStepStage` that drives a live World step through the SoA path
+  (extract -> `integrateRigidBodyStateBatch` via the executor -> apply +
+  frame-cache update), deferring frame-coupled bodies to
+  `RigidBodyIntegrationStage`. Two parity tests verify it matches the per-entity
+  stage to 1e-10 for free bodies (no angular velocity / torque) and reproduces
+  the per-entity result for the frame-coupled fallback.
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute` — sixteen commits ahead of `main`,
-working tree clean, all gates green. Not pushed; accumulating toward one larger
-DART 7 PR.
+`feature/experimental-world-scalable-compute` — twenty-one commits ahead of
+`main`, working tree clean, all gates green. Not pushed; accumulating toward one
+larger DART 7 PR.
 
 ## Immediate Next Step
 
-The remaining Phase 2 work is the larger integration (best for a fresh session):
-add an angular (orientation-from-angular-velocity) scalar-generic kernel, then
-wire the batched SoA integrator into the live `WorldStepStage` pipeline so
-`World::step` drives the SoA path instead of per-entity `registry.get` (the
-current `integrateRigidBody` does the full force->velocity->position->orientation
-update with inertia, so the SoA path must reach parity before it can replace it).
-After that: Phase 3 explicit SIMD on the hot kernels; Phase 4 control sequences +
-heterogeneous batches; Phase 5 GPU (blocked on GPU hardware/CI + the CUDA-vs-SYCL
-benchmark); Phase 6 reassess. Keep `entt` internal and the public handle API
-unchanged; see `01-plan.md`.
+The SoA path now drives a live step, but only at parity with the per-entity
+integrator in the linear regime. To make `BatchedRigidBodyIntegrationStage` a
+full drop-in replacement (and let `World::step` select it), the SoA path must
+reach parity for spinning bodies under torque:
+
+1. Carry inertia in `RigidBodyModelBatch` and add an angular-velocity-from-torque
+   step (the world-inertia LDLT solve that `integrateAngularVelocity` performs).
+2. Reconcile the orientation scheme: the per-entity integrator uses an angle-axis
+   update while `integrateOrientationsSemiImplicit` uses a quaternion product;
+   pick one (or make the kernel match) so a spinning-body parity test passes.
+3. Then optionally let `World::step` choose the batched stage.
+
+After that: Phase 3 explicit SIMD on the hot kernels (currently auto-vectorized
+at -O3); Phase 4 heterogeneous batches (deferred-by-design in `01-plan.md`);
+Phase 5 GPU prototype (blocked on GPU hardware/CI + the CUDA-vs-SYCL benchmark);
+Phase 6 reassess. Keep `entt` internal and the public handle API unchanged.
 
 ## Context That Would Be Lost
 
+- Build/test gotcha: `pixi run build` builds libraries only, NOT the unit-test
+  binaries. Use `pixi run build-simulation-experimental-tests` (target
+  `dart_experimental_tests`) before `ctest -L simulation-experimental`, or you
+  will run stale test binaries that silently pass.
+- The world-space dynamics are frame-independent: only the `localTransform`
+  bookkeeping depends on parent frames, which is why the batched stage can
+  integrate in flat SoA order and only the frame-cache loop (or the per-entity
+  fallback) needs parent-before-child ordering.
 - The state-representation refactor (immutable Model + batched SoA State) is the
-  true foundation and is intentionally pulled forward to Phase 2, before SIMD,
-  batch, or GPU work. Today's array-of-structs access over `entt::registry`
-  (`world_step_stage.cpp` `integrateRigidBody`) exercises the scheduling seam but
-  not the data seam that transfers to the GPU.
+  true foundation, intentionally pulled forward to Phase 2 before SIMD, batch, or
+  GPU work, because today's array-of-structs `entt::registry` access exercises
+  the scheduling seam but not the data seam that transfers to the GPU.
 - Determinism: a parity test (`RigidBodyStepParallelMatchesSequential`) and a
-  debug-only hazard assertion in `ParallelExecutor` now guard it. The Phase 3
+  debug-only hazard assertion in `ParallelExecutor` guard it. The Phase 3
   determinism gate must stay tolerance-based, not bitwise, because float
   reductions are non-associative.
 - `ComputeNode::ExecuteFn` is a host `std::function`; it cannot cross to a device.
@@ -59,19 +83,16 @@ unchanged; see `01-plan.md`.
   is the hard-case baseline; it shows no parallel speedup, as expected.
 - Resource-access metadata (Phase 1) is implemented at per-entity stable-string
   granularity and stays diagnostic. The milestone contract is in
-  `docs/plans/030-compute-resource-access/` (mission + evaluator); the former
-  narrow dev task is consolidated into `01-plan.md` Phase 1.
-- Known follow-up surfaced by Phase 0: `ComputeGraph::buildTopologicalOrder` is
-  O(N^2) and dominates `SequentialExecutor` on large graphs; replace with an
-  O(N+E) Kahn's queue in Phase 3.
+  `docs/plans/030-compute-resource-access/`; the former narrow dev task is
+  consolidated into `01-plan.md` Phase 1.
 - Keep Taskflow behind the executor seam; keep all backend names out of the
   public API; do not touch the classic `dart::simulation::World`.
 
 ## How to Resume
 
 ```bash
-git status && git log -3 --oneline
+git status && git log -5 --oneline
 ```
 
-Then read `01-plan.md`, confirm Phase 0 is still the next step, and begin with the
-executor-parity test described under "Immediate Next Step."
+Then read `01-plan.md` and continue with the angular-from-torque parity work
+described under "Immediate Next Step."
