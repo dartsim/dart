@@ -13,7 +13,7 @@
     structures and algorithms for kinematic and dynamic applications in robotics
     and computer animation.
   </description>
-  <url type="website">http://dartsim.github.io/</url>
+  <url type="website">https://dart.readthedocs.io/</url>
   <url type="repository">https://github.com/dartsim/dart</url>
   <url type="bugtracker">https://github.com/dartsim/dart/issues</url>
   <maintainer email="grey@openrobotics.org">Michael X. Grey</maintainer>
