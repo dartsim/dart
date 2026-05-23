@@ -30,9 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/application.hpp>
+#include <dartsim_ui/editor.hpp>
 
 int main(int argc, char* argv[])
 {
-  return dart::gui::runApplication(argc, argv);
+  return dartsim::ui::runEditor(argc, argv);
 }

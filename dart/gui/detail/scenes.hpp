@@ -78,6 +78,8 @@ struct DartScene
   std::function<void()> postStep;
   bool simulateWorld = true;
   dart::gui::RenderSettings renderSettings;
+  std::function<std::vector<dart::gui::RenderableDescriptor>()>
+      renderableProvider;
 };
 
 enum class ExampleScene
@@ -134,6 +136,8 @@ struct AppOptions
   std::vector<dart::gui::InverseKinematicsHandle> ikHandles;
   std::vector<dart::gui::BodyNodeDragHandle> bodyNodeDragHandles;
   std::vector<dart::gui::KeyboardAction> keyboardActions;
+  std::function<std::vector<dart::gui::RenderableDescriptor>()>
+      renderableProvider;
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;
   bool showUiExplicit = false;

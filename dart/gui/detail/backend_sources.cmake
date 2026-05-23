@@ -451,13 +451,16 @@ function(dart_gui_filament_add_smoke_tests example_target)
   endif()
 
   find_package(Python3 COMPONENTS Interpreter REQUIRED)
+  # The no-scene dartsim launch is the experimental-World editor, whose default
+  # scene is intentionally minimal, so it uses the non-blank (basic) check. The
+  # legacy example scenes below keep the stricter contrast analysis.
   _dart_gui_filament_add_headless_smoke_test(
     EXAMPLE_dartsim_headless_smoke
     ${example_target}
     BINARY_DIR "${DART_GUI_FILAMENT_BINARY_DIR}"
     FRAMES 10
     ANALYZE
-    ANALYSIS_MODE contrast
+    ANALYSIS_MODE basic
   )
 
   list(LENGTH DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS _smoke_pair_count)

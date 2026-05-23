@@ -168,6 +168,7 @@ int runGuiBackendApplicationImpl(
   appOptions.camera = applicationOptions.camera;
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;
+    appOptions.renderableProvider = applicationOptions.renderableProvider;
     appOptions.preStep = applicationOptions.preStep;
     appOptions.postStep = applicationOptions.postStep;
     appOptions.renderSettings = applicationOptions.renderSettings;

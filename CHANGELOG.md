@@ -29,6 +29,19 @@
     alongside the existing `--screenshot <path>` final-frame capture.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
+  - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
+    library) built only on the experimental World API. Its headless editor
+    engine (`dartsim/engine`) provides scene/object, selection, command
+    (undo/redo, grouped macros), and name managers, a typed event bus, an
+    in-engine logger, an Edit/Run simulation controller, binary record/replay,
+    and a human-readable project format, covered by `UNIT_dartsim_engine` unit
+    tests. The `dartsim/ui` panel layer wires the engine to the backend-hidden
+    `dart-gui` editor (menu bar, Scene Tree, Inspector, Console, simulation
+    controls, replay timeline), and a public additive
+    `dart::gui::ApplicationOptions::renderableProvider` hook renders the
+    experimental scene in the viewport without exposing renderer types. See
+    `docs/design/dartsim_gui_simulator.md` and
+    `docs/onboarding/gui-rendering.md`.
   - Moved the `dartsim` viewer source to the application-level `apps/dartsim`
     tree, added a public `dart::gui::ApplicationOptions::world` handoff for
     example-owned worlds, and restored `hello_world` as a real public-API

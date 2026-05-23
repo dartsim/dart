@@ -103,6 +103,29 @@ Collision object posing should use public `dart::gui::Gizmo` handles so visual
 pair checks stay mouse-driven; keep ImGui panels for mode and parameter
 controls rather than as the primary transform editor.
 
+## dartsim Editor (Experimental World)
+
+The standalone GUI simulator lives in the top-level `dartsim/` folder (a runtime
+executable distribution, not a library). It is split into a headless editor
+engine (`dartsim/engine`, no GUI dependency) that owns an experimental
+`dart::simulation::experimental::World` plus object/selection/command
+(undo/redo)/name managers, an Edit/Run controller, record/replay, and a
+human-readable project format; a thin panel layer (`dartsim/ui`) that wires the
+engine to `dart::gui`; and the executable entry point (`dartsim/app`). The
+engine keeps a SceneModel as the source of truth and rebuilds the experimental
+World from it (that World has no per-object removal), which is also how undo/redo
+and Reset work. Design rationale lives in
+`docs/design/dartsim_gui_simulator.md`.
+
+The viewport draws the experimental scene through
+`dart::gui::ApplicationOptions::renderableProvider`, an optional callback that
+returns extra `RenderableDescriptor`s appended to the world-derived renderables
+each frame. Descriptors only need `id`, `geometry`, `material`, and
+`worldTransform`; dynamics pointers stay null. This keeps the renderer
+backend-hidden while letting non-legacy-World sources contribute geometry. The
+editor hosts an empty legacy world purely as a render canvas (never stepped);
+viewport pick-to-tree selection sync is a known follow-up.
+
 ## Migration Notes
 
 The removed OSG and Raylib paths are not compatibility targets for new work.

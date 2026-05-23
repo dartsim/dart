@@ -708,6 +708,7 @@ DartScene createDartScene(const AppOptions& options)
     scene.postStep = options.postStep;
     scene.simulateWorld = options.simulateWorld;
     scene.renderSettings = options.renderSettings;
+    scene.renderableProvider = options.renderableProvider;
     scene.gizmos = options.gizmos;
     scene.debugLabels = options.debugLabels;
     scene.bodyNodeDragHandles = options.bodyNodeDragHandles;

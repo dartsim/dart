@@ -37,6 +37,7 @@
 #include <dart/gui/export.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
+#include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/fwd.hpp>
@@ -154,6 +155,14 @@ struct ApplicationOptions
   std::vector<InverseKinematicsHandle> ikHandles;
   std::vector<BodyNodeDragHandle> bodyNodeDragHandles;
   std::vector<KeyboardAction> keyboardActions;
+
+  /// Optional provider of extra renderables appended to the scene each frame.
+  ///
+  /// Lets an application render geometry that is not backed by the legacy
+  /// `dart::simulation::World` (e.g. the experimental-World editor in
+  /// `apps/dartsim_ui`). The returned descriptors only need `id`, `geometry`,
+  /// `material`, and `worldTransform`; dynamics pointers may stay null.
+  std::function<std::vector<RenderableDescriptor>()> renderableProvider;
 };
 
 DART_GUI_API int runApplication(int argc, char* argv[]);

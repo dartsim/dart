@@ -437,6 +437,11 @@ if(DART_BUILD_SIMULATION_EXPERIMENTAL)
   add_subdirectory(simulation/experimental)
 endif()
 
+# Headless dartsim editor engine tests (links the apps/dartsim_engine library).
+if(TARGET dartsim_engine)
+  add_subdirectory(dartsim_engine)
+endif()
+
 # ==============================================================================
 # Collision-Native Tests
 # ==============================================================================
