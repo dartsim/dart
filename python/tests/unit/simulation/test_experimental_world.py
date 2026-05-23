@@ -1660,6 +1660,41 @@ def test_experimental_body_rests_on_static_ground():
     assert ground.translation.tolist() == pytest.approx([0.0, 0.0, -0.5])
 
 
+def test_experimental_multibody_link_rests_on_static_ground():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+
+    robot = world.add_multi_body("leg_robot")
+    base = robot.add_link("base")
+    leg = robot.add_link(
+        "leg",
+        parent=base,
+        joint=sx.JointSpec(
+            name="slider", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    leg.mass = 1.0
+    leg.set_collision_shape(sx.CollisionShape.sphere(0.2))
+
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -1.0))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box((5.0, 5.0, 0.5)))
+
+    joint = leg.parent_joint
+    joint.position = [-0.25]  # start just above the ground
+
+    world.time_step = 0.002
+    world.step(n=1500)
+
+    # The sphere (radius 0.2) rests on the ground top (z = -0.5): leg origin at
+    # z = -0.3 with near-zero velocity and no deep penetration.
+    rest_z = leg.transform[2, 3]
+    assert rest_z == pytest.approx(-0.3, abs=5e-3)
+    assert rest_z > -0.31
+    assert joint.velocity.tolist()[0] == pytest.approx(0.0, abs=5e-2)
+
+
 def test_experimental_contact_restitution():
     sx = _simulation_experimental()
 

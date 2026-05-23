@@ -194,10 +194,14 @@ response)** and beyond.
 4. **(DONE) Rigid-body contact stage skips link pairs.** `RigidBodyContactStage`
    guards each contact with `registry.all_of<comps::RigidBodyTag>` for both
    bodies; link contacts are left for the articulated contact solve.
-5. **(NEXT) Articulated contact response.** Scope the first version to
-   link-vs-static-rigid-body contacts (one-sided: only the articulated DOFs move;
-   the static ground contributes no compliance). It fits inside the velocity
-   phase already built in `simulateMultiBody` (no new stage needed):
+5. **(DONE for link-vs-static) Articulated contact response.** Implemented for
+   link-vs-static-rigid-body contacts (one-sided) inside `simulateMultiBody`'s
+   velocity phase (`LinkContact`, contact-point normal Jacobian, unilateral
+   normal impulse + Baumgarte), routed by `MultiBodyForwardDynamicsStage::execute`
+   via `world.collide()`. Verified by a prismatic-leg drop-and-rest (C++ +
+   dartpy). **Still pending:** restitution/friction (tangent rows + cone),
+   link-vs-dynamic-body and link-vs-link (two-sided) contacts, and a boxed-LCP
+   for coupled simultaneous contacts. The original plan, for reference:
    - In `MultiBodyForwardDynamicsStage::execute`, call `world.collide()` once and
      route to each multibody the contacts whose link belongs to it and whose
      other body `isRigidBody()` and is static (`comps::StaticBodyTag`). Pass them

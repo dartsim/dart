@@ -2429,6 +2429,54 @@ TEST(World, CollisionQueryIncludesMultibodyLinks)
   EXPECT_TRUE(sawRigidBody);
 }
 
+// Test that a multibody link with a collision shape rests on a static ground
+// via the articulated contact response (a fixed-base prismatic "leg" drops
+// under gravity and stops where its sphere meets the ground).
+TEST(World, MultiBodyLinkRestsOnStaticGround)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("leg_robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "slider";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto leg = robot.addLink("leg", base, spec);
+  leg.setMass(1.0);
+  const double radius = 0.2;
+  leg.setCollisionShape(sx::CollisionShape::makeSphere(radius));
+
+  // Static ground box centered at z = -1 with half-height 0.5 (top at z =
+  // -0.5).
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+  groundOptions.isStatic = true;
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+  auto joint = leg.getParentJoint();
+  // Start just above the ground so the impact is gentle.
+  joint.setPosition(Eigen::VectorXd::Constant(1, -0.25));
+
+  world.setTimeStep(0.002);
+  world.enterSimulationMode();
+
+  for (int i = 0; i < 1500; ++i) {
+    world.step();
+  }
+
+  // The sphere (radius 0.2) rests on the ground top (z = -0.5), so the leg
+  // origin settles at z = -0.3 with near-zero velocity and no deep penetration.
+  const double restZ = leg.getWorldTransform().translation().z();
+  EXPECT_NEAR(restZ, -0.3, 5e-3);
+  EXPECT_GT(restZ, -0.31);
+  EXPECT_NEAR(joint.getVelocity()[0], 0.0, 5e-2);
+}
+
 // Test that the contact stage resolves approaching velocities (fully inelastic)
 // between overlapping rigid bodies and leaves separating bodies untouched.
 TEST(World, RigidBodyContactResolvesApproachingVelocity)

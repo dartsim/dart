@@ -573,6 +573,14 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     handle (a rigid body or a link) via `body_a`/`body_b`, with
     `name`/`is_rigid_body`/`is_link`/`as_rigid_body`/`as_link`. The rigid-body
     contact response stage skips link pairs (their response is a later slice).
+  - Added an experimental articulated contact response: multibody links with
+    collision shapes now rest on static rigid-body obstacles. `World::step()`
+    resolves each link-vs-static contact with a unilateral normal impulse using
+    the contact-point normal Jacobian and `m_eff = 1 / (Jn M^-1 Jn^T)`, plus a
+    Baumgarte bias to remove residual penetration (reusing the constraint-solve
+    machinery). A fixed-base prismatic "leg" with a sphere drops under gravity
+    and rests on the ground. Link-vs-dynamic/link-vs-link contacts, friction,
+    and a boxed-LCP for coupled contacts are still pending.
   - Added an experimental rigid-body contact response: `World::step()` now
     resolves contacts between free rigid bodies with sequential normal impulses
     (frictionless, fully inelastic) plus a positional correction that prevents

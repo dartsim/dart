@@ -32,12 +32,14 @@
 
 #include "dart/simulation/experimental/compute/multi_body_dynamics.hpp"
 
+#include "dart/simulation/experimental/body/contact.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/dynamics.hpp"
 #include "dart/simulation/experimental/comps/frame_types.hpp"
 #include "dart/simulation/experimental/comps/joint.hpp"
 #include "dart/simulation/experimental/comps/link.hpp"
 #include "dart/simulation/experimental/comps/multi_body.hpp"
+#include "dart/simulation/experimental/comps/rigid_body.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Cholesky>
@@ -187,6 +189,16 @@ struct DynamicsTree
   std::vector<entt::entity> jointOf;
   std::size_t dofCount = 0;
   Eigen::VectorXd armature; // Rotor inertia per generalized coordinate.
+};
+
+//==============================================================================
+// A contact acting on one link of a multibody against an immovable obstacle.
+struct LinkContact
+{
+  entt::entity link = entt::null;
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ(); // world, points into link
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();   // world contact point
+  double depth = 0.0;
 };
 
 //==============================================================================
@@ -423,7 +435,8 @@ void simulateMultiBody(
     entt::registry& registry,
     const comps::MultiBodyStructure& structure,
     const Eigen::Vector3d& gravity,
-    double timeStep)
+    double timeStep,
+    const std::vector<LinkContact>& linkContacts)
 {
   if (structure.links.empty()) {
     return;
@@ -558,6 +571,58 @@ void simulateMultiBody(
       nextVelocity
           += inverseMass.col(constrainedDof[static_cast<std::size_t>(a)])
              * lambda[a];
+    }
+  }
+
+  // Resolve contacts on this multibody's links against immovable obstacles with
+  // a sequential, unilateral normal-impulse solve (one-sided: the obstacle does
+  // not move). For a contact on link `i` with world normal `n` (pointing into
+  // the link) at point `p`, the contact-point normal Jacobian is
+  // `jn = (R J_point_linear)^T n`, where `J_point_linear` shifts the link's
+  // body linear Jacobian to `p`. A Baumgarte bias removes residual penetration.
+  if (!linkContacts.empty()) {
+    const Eigen::MatrixXd inverseMass = mb.massMatrix.inverse();
+    const std::vector<Eigen::MatrixXd> bodyJacobian = linkBodyJacobians(tree);
+    constexpr double penetrationSlop = 1e-4;
+    constexpr double baumgarteFactor = 0.2;
+    constexpr int contactIterations = 8;
+    for (int iteration = 0; iteration < contactIterations; ++iteration) {
+      for (const auto& contact : linkContacts) {
+        const auto linkIt = std::find(
+            structure.links.begin(), structure.links.end(), contact.link);
+        if (linkIt == structure.links.end()) {
+          continue;
+        }
+        const auto index
+            = static_cast<std::size_t>(linkIt - structure.links.begin());
+
+        const Eigen::Matrix3d rotation
+            = tree.links[index].worldTransform.linear();
+        const Eigen::Vector3d origin
+            = tree.links[index].worldTransform.translation();
+        const Eigen::MatrixXd angularJacobian
+            = rotation * bodyJacobian[index].topRows(3);
+        const Eigen::MatrixXd pointLinearJacobian
+            = rotation * bodyJacobian[index].bottomRows(3)
+              - skew(contact.point - origin) * angularJacobian;
+        const Eigen::VectorXd normalJacobian
+            = pointLinearJacobian.transpose() * contact.normal;
+
+        const double denominator
+            = normalJacobian.dot(inverseMass * normalJacobian);
+        if (denominator <= 0.0) {
+          continue; // the contact cannot move this link (e.g. fixed base)
+        }
+        const double normalVelocity = normalJacobian.dot(nextVelocity);
+        const double bias = baumgarteFactor
+                            * std::max(0.0, contact.depth - penetrationSlop)
+                            / timeStep;
+        const double lambda = (-normalVelocity + bias) / denominator;
+        if (lambda <= 0.0) {
+          continue; // unilateral: contacts only push, never pull
+        }
+        nextVelocity += inverseMass * normalJacobian * lambda;
+      }
     }
   }
 
@@ -751,10 +816,41 @@ void MultiBodyForwardDynamicsStage::execute(
   const Eigen::Vector3d gravity = world.getGravity();
   const double timeStep = world.getTimeStep();
 
+  // Collision query once per step; route each contact that touches a link to
+  // the multibody that owns it. Only link-vs-static-rigid-body contacts are
+  // resolved here (one-sided); link-vs-dynamic and link-vs-link contacts are a
+  // later, two-sided slice.
+  const std::vector<Contact> contacts = world.collide();
+
+  const auto isStaticRigidBody = [&](entt::entity entity) {
+    return registry.all_of<comps::RigidBodyTag, comps::StaticBodyTag>(entity);
+  };
+
   auto view = registry.view<comps::MultiBodyStructure>();
   for (auto entity : view) {
     const auto& structure = view.get<comps::MultiBodyStructure>(entity);
-    simulateMultiBody(registry, structure, gravity, timeStep);
+
+    std::vector<LinkContact> linkContacts;
+    for (const auto& contact : contacts) {
+      const auto entityA = contact.bodyA.getEntity();
+      const auto entityB = contact.bodyB.getEntity();
+      const auto& links = structure.links;
+      const bool aInBody
+          = std::find(links.begin(), links.end(), entityA) != links.end();
+      const bool bInBody
+          = std::find(links.begin(), links.end(), entityB) != links.end();
+
+      // The contact normal points bodyA -> bodyB; orient it into the link.
+      if (aInBody && !bInBody && isStaticRigidBody(entityB)) {
+        linkContacts.push_back(
+            {entityA, -contact.normal, contact.point, contact.depth});
+      } else if (bInBody && !aInBody && isStaticRigidBody(entityA)) {
+        linkContacts.push_back(
+            {entityB, contact.normal, contact.point, contact.depth});
+      }
+    }
+
+    simulateMultiBody(registry, structure, gravity, timeStep, linkContacts);
   }
 }
 
