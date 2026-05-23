@@ -959,6 +959,86 @@ def test_experimental_screw_joint_dynamics():
     )
 
 
+def test_experimental_universal_joint_dynamics():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+    robot = world.add_multi_body("ujoint")
+    base = robot.add_link("base")
+    length = 0.9
+    offset = np.eye(4)
+    offset[0, 3] = length
+    spec = sx.JointSpec(
+        name="u",
+        type=sx.JointType.UNIVERSAL,
+        axis=(0.0, 0.0, 1.0),
+        axis2=(0.0, 1.0, 0.0),
+        transform_from_parent=offset,
+    )
+    distal = robot.add_link("distal", parent=base, joint=spec)
+    mass = 2.0
+    inertia_yy = 0.12
+    inertia_zz = 0.2
+    distal.mass = mass
+    distal.inertia = (
+        (0.05, 0.0, 0.0),
+        (0.0, inertia_yy, 0.0),
+        (0.0, 0.0, inertia_zz),
+    )
+
+    joint = distal.parent_joint
+    assert joint.type == sx.JointType.UNIVERSAL
+    assert joint.num_dofs == 2
+    assert joint.axis2.tolist() == pytest.approx([0.0, 1.0, 0.0])
+
+    world.enter_simulation_mode()
+
+    # M and gravity at q = 0: axis (Z) and axis2 (Y) intersect at the origin and
+    # the distal center of mass sits at (L, 0, 0).
+    mass_matrix = robot.mass_matrix
+    assert mass_matrix.shape == (2, 2)
+    assert mass_matrix[0, 0] == pytest.approx(inertia_zz + mass * length**2)
+    assert mass_matrix[1, 1] == pytest.approx(inertia_yy + mass * length**2)
+    assert mass_matrix[0, 1] == pytest.approx(0.0, abs=1e-12)
+
+    gravity = robot.gravity_forces
+    assert gravity[0] == pytest.approx(0.0, abs=1e-12)
+    assert gravity[1] == pytest.approx(-mass * 9.81 * length)
+
+    # The Coriolis force must match the Christoffel-symbol expression derived
+    # from the configuration-dependent mass matrix by finite differences. That
+    # reference does not use the velocity-product term cJ, so agreement (at a
+    # configuration where both joint velocities are nonzero) validates cJ.
+    q = np.array([0.3, 0.5])
+    qdot = np.array([0.7, 1.1])
+
+    def mass_at(position):
+        joint.position = position.tolist()
+        return np.array(robot.mass_matrix)
+
+    h = 1e-5
+    dM = []
+    for i in range(2):
+        plus = q.copy()
+        minus = q.copy()
+        plus[i] += h
+        minus[i] -= h
+        dM.append((mass_at(plus) - mass_at(minus)) / (2.0 * h))
+
+    expected = np.zeros(2)
+    for k in range(2):
+        for i in range(2):
+            for j in range(2):
+                christoffel = 0.5 * (dM[i][k, j] + dM[j][k, i] - dM[k][i, j])
+                expected[k] += christoffel * qdot[i] * qdot[j]
+
+    joint.position = q.tolist()
+    joint.velocity = qdot.tolist()
+    coriolis = robot.coriolis_forces
+    assert coriolis.tolist() == pytest.approx(expected.tolist(), abs=1e-6)
+    assert np.linalg.norm(expected) > 1e-3
+
+
 def test_experimental_multibody_dynamics_terms():
     sx = _simulation_experimental()
 

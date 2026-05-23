@@ -176,6 +176,7 @@ class JointSpec:
         name: str = "",
         type: JointType = ...,
         axis: ArrayLike | None = None,
+        axis2: ArrayLike | None = None,
         transform_from_parent: ArrayLike | None = None,
     ) -> None:
         ...
@@ -183,6 +184,7 @@ class JointSpec:
     name: str
     type: JointType
     axis: NDArray[np.float64]
+    axis2: NDArray[np.float64]
     transform_from_parent: NDArray[np.float64]
 
 
@@ -358,6 +360,7 @@ class Joint:
     actuator_type: ActuatorType
     command_velocity: NDArray[np.float64]
     axis: NDArray[np.float64]
+    axis2: NDArray[np.float64]
     pitch: float
     num_dofs: int
     position: NDArray[np.float64]

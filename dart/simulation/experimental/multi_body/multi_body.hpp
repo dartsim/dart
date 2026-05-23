@@ -72,6 +72,10 @@ struct JointSpec
   Eigen::Vector3d axis
       = Eigen::Vector3d::UnitZ(); ///< Joint axis (rotation or translation)
 
+  /// Secondary joint axis (Universal: second rotation axis; Planar: in-plane
+  /// direction). Must not be parallel to `axis` for those joint types.
+  Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
+
   /// Transform from the parent-joint frame (after joint motion) to the child
   /// link frame. This places the child link relative to its joint, giving the
   /// chain spatial extent (for example, the length of a pendulum link). The
@@ -79,7 +83,6 @@ struct JointSpec
   Eigen::Isometry3d transformFromParent = Eigen::Isometry3d::Identity();
 
   // Future: Add more joint-specific parameters.
-  // Eigen::Vector3d axis2;  // For Universal, Planar
   // double pitch;           // For Screw
 };
 
@@ -116,12 +119,15 @@ struct LinkOptions
   Eigen::Vector3d axis
       = Eigen::Vector3d::UnitZ(); ///< Joint axis (rotation or translation)
 
+  /// Secondary joint axis (Universal: second rotation axis; Planar: in-plane
+  /// direction). Must not be parallel to `axis` for those joint types.
+  Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
+
   /// Transform from the parent-joint frame (after joint motion) to the child
   /// link frame. See JointSpec::transformFromParent.
   Eigen::Isometry3d transformFromParent = Eigen::Isometry3d::Identity();
 
   // Future: Add more joint-specific parameters
-  // Eigen::Vector3d axis2;  // For Universal, Planar
   // double pitch;           // For Screw
 };
 

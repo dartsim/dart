@@ -275,17 +275,20 @@ void validateFiniteVector(const Eigen::Vector3d& value, const char* fieldName)
       fieldName);
 }
 
-void validateJointSpecAxis(const Eigen::Vector3d& axis)
+void validateJointSpecAxis(
+    const Eigen::Vector3d& axis, const char* field = "axis")
 {
   DART_EXPERIMENTAL_THROW_T_IF(
       !axis.allFinite(),
       sim::InvalidArgumentException,
-      "JointSpec.axis must contain only finite values");
+      "JointSpec.{} must contain only finite values",
+      field);
 
   DART_EXPERIMENTAL_THROW_T_IF(
       axis.norm() <= 1e-9,
       sim::InvalidArgumentException,
-      "JointSpec.axis must be non-zero");
+      "JointSpec.{} must be non-zero",
+      field);
 }
 
 void validateOrientation(const Eigen::Quaterniond& orientation)
@@ -577,6 +580,7 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::new_([](std::string name,
                       sim::JointType type,
                       const nb::handle& axis,
+                      const nb::handle& axis2,
                       const nb::handle& transform_from_parent) {
             sim::JointSpec spec;
             spec.name = std::move(name);
@@ -584,6 +588,10 @@ void defSimulationExperimentalModule(nb::module_& m)
             if (!axis.is_none()) {
               spec.axis = toVector3(axis);
               validateJointSpecAxis(spec.axis);
+            }
+            if (!axis2.is_none()) {
+              spec.axis2 = toVector3(axis2);
+              validateJointSpecAxis(spec.axis2, "axis2");
             }
             if (!transform_from_parent.is_none()) {
               spec.transformFromParent = toIsometry(transform_from_parent);
@@ -593,6 +601,7 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("name") = "",
           nb::arg("type") = sim::JointType::Revolute,
           nb::arg("axis") = nb::none(),
+          nb::arg("axis2") = nb::none(),
           nb::arg("transform_from_parent") = nb::none())
       .def_rw("name", &sim::JointSpec::name)
       .def_rw("type", &sim::JointSpec::type)
@@ -603,6 +612,14 @@ void defSimulationExperimentalModule(nb::module_& m)
             auto value = toVector3(axis);
             validateJointSpecAxis(value);
             self.axis = value;
+          })
+      .def_prop_rw(
+          "axis2",
+          [](const sim::JointSpec& self) { return self.axis2; },
+          [](sim::JointSpec& self, const nb::handle& axis2) {
+            auto value = toVector3(axis2);
+            validateJointSpecAxis(value, "axis2");
+            self.axis2 = value;
           })
       .def_prop_rw(
           "transform_from_parent",
@@ -757,6 +774,7 @@ void defSimulationExperimentalModule(nb::module_& m)
             self.setCommandVelocity(toVectorX(value));
           })
       .def_prop_ro("axis", &sim::Joint::getAxis)
+      .def_prop_ro("axis2", &sim::Joint::getAxis2)
       .def_prop_rw("pitch", &sim::Joint::getPitch, &sim::Joint::setPitch)
       .def_prop_ro("num_dofs", &sim::Joint::getDOFCount)
       .def_prop_rw(

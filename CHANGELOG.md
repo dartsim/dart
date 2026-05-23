@@ -502,6 +502,15 @@
     `getPitch`, dartpy `joint.pitch`), with motion subspace `[axis; pitch*axis]`.
     Verified by the analytic mass matrix `M = I_axis + m pitch^2` and gravity
     acceleration.
+  - Added experimental universal-joint (2-DOF) forward dynamics: a `Universal`
+    joint rotates about `axis` then `axis2` (`JointSpec`/`LinkOptions::axis2`,
+    dartpy `JointSpec.axis2` and read-only `joint.axis2`). Its first motion
+    subspace column is configuration dependent, so the recursive Newton-Euler
+    acceleration recursion now adds the joint velocity-product bias
+    `cJ = Sdot qdot`; constant-subspace joints (revolute/prismatic/screw) are
+    unaffected. Verified by the closed-form mass matrix and gravity at the zero
+    configuration and by matching the Coriolis force to the Christoffel symbols
+    derived from the configuration-dependent mass matrix.
   - Added experimental generalized-coordinate dynamics accessors on `MultiBody`:
     `getMassMatrix`/`getInverseMassMatrix`, `getCoriolisForces`,
     `getGravityForces`, and `getCoriolisAndGravityForces` (dartpy `mass_matrix`,

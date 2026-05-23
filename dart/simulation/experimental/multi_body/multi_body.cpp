@@ -461,6 +461,17 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
       "Joint axis must be non-zero");
   jointComp.axis = options.axis / axisNorm;
 
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !options.axis2.allFinite(),
+      InvalidArgumentException,
+      "Joint axis2 must contain only finite values");
+  const double axis2Norm = options.axis2.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      axis2Norm <= 1e-9,
+      InvalidArgumentException,
+      "Joint axis2 must be non-zero");
+  jointComp.axis2 = options.axis2 / axis2Norm;
+
   // Planar and universal joints build a second in-plane/rotation direction from
   // axis2. If axis is parallel to axis2 the derived basis collapses (its cross
   // product is zero), producing degenerate transforms during sync/step, so
@@ -524,6 +535,7 @@ Link MultiBody::addLink(
           .jointName = joint.name,
           .jointType = joint.type,
           .axis = joint.axis,
+          .axis2 = joint.axis2,
           .transformFromParent = joint.transformFromParent,
       });
 }

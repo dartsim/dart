@@ -2132,6 +2132,145 @@ TEST(World, MultiBodyScrewJointDynamics)
   EXPECT_NEAR(joint.getAcceleration()[0], expectedAccel, 1e-9);
 }
 
+// Test the universal joint's mass matrix and gravity forces against closed-form
+// values at the zero configuration: axis (Z) and axis2 (Y) intersect at the
+// base origin and the distal center of mass sits at (L, 0, 0).
+TEST(World, MultiBodyUniversalMassMatrixAndGravity)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("ujoint");
+  auto base = robot.addLink("base");
+
+  const double length = 0.9;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(length, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "u";
+  spec.type = sx::JointType::Universal;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  spec.axis2 = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto distal = robot.addLink("distal", base, spec);
+
+  const double mass = 2.0;
+  const double inertiaXx = 0.05;
+  const double inertiaYy = 0.12;
+  const double inertiaZz = 0.2;
+  distal.setMass(mass);
+  distal.setInertia(
+      Eigen::Vector3d(inertiaXx, inertiaYy, inertiaZz).asDiagonal());
+
+  auto joint = distal.getParentJoint();
+  ASSERT_EQ(joint.getType(), sx::JointType::Universal);
+  ASSERT_EQ(joint.getDOFCount(), 2u);
+  EXPECT_TRUE(joint.getAxis2().isApprox(Eigen::Vector3d::UnitY()));
+
+  world.enterSimulationMode();
+
+  // M(0,0): rotation about Z through the origin -> Izz + m L^2.
+  // M(1,1): rotation about Y through the origin -> Iyy + m L^2.
+  // The two axes are orthogonal and intersect, so the coupling is zero at q =
+  // 0.
+  const Eigen::MatrixXd massMatrix = robot.getMassMatrix();
+  ASSERT_EQ(massMatrix.rows(), 2);
+  ASSERT_EQ(massMatrix.cols(), 2);
+  EXPECT_NEAR(massMatrix(0, 0), inertiaZz + mass * length * length, 1e-12);
+  EXPECT_NEAR(massMatrix(1, 1), inertiaYy + mass * length * length, 1e-12);
+  EXPECT_NEAR(massMatrix(0, 1), 0.0, 1e-12);
+  EXPECT_NEAR(massMatrix(1, 0), 0.0, 1e-12);
+
+  // Gravity: rotating about the vertical Z axis does no work (g[0] = 0); the
+  // horizontal link about Y matches the single-pendulum value -m g L.
+  const Eigen::VectorXd gravity = robot.getGravityForces();
+  ASSERT_EQ(gravity.size(), 2);
+  EXPECT_NEAR(gravity[0], 0.0, 1e-12);
+  EXPECT_NEAR(gravity[1], -mass * 9.81 * length, 1e-12);
+}
+
+// Test that the universal joint's Coriolis/centrifugal forces match the
+// Christoffel-symbol expression derived from the configuration-dependent mass
+// matrix by finite differences. The reference depends only on M(q) (which does
+// not use the velocity-product term cJ), so agreement validates cJ.
+TEST(World, MultiBodyUniversalCoriolisMatchesChristoffel)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("ujoint");
+  auto base = robot.addLink("base");
+
+  const double length = 0.9;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(length, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "u";
+  spec.type = sx::JointType::Universal;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  spec.axis2 = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto distal = robot.addLink("distal", base, spec);
+
+  const double mass = 2.0;
+  distal.setMass(mass);
+  distal.setInertia(Eigen::Vector3d(0.05, 0.12, 0.2).asDiagonal());
+
+  auto joint = distal.getParentJoint();
+
+  world.enterSimulationMode();
+
+  const Eigen::Vector2d q(0.3, 0.5);
+  const Eigen::Vector2d qdot(0.7, 1.1);
+
+  // M(q) at a perturbed configuration.
+  auto massAt = [&](const Eigen::Vector2d& position) {
+    joint.setPosition(position);
+    return robot.getMassMatrix();
+  };
+
+  // Central-difference dM/dq_i.
+  const double h = 1e-5;
+  std::vector<Eigen::MatrixXd> dM(2);
+  for (int i = 0; i < 2; ++i) {
+    Eigen::Vector2d plus = q;
+    Eigen::Vector2d minus = q;
+    plus[i] += h;
+    minus[i] -= h;
+    dM[static_cast<std::size_t>(i)]
+        = (massAt(plus) - massAt(minus)) / (2.0 * h);
+  }
+
+  // Christoffel symbols of the first kind:
+  // c_k = sum_ij 0.5 (dM_kj/dq_i + dM_ki/dq_j - dM_ij/dq_k) qdot_i qdot_j.
+  Eigen::Vector2d expected = Eigen::Vector2d::Zero();
+  for (int k = 0; k < 2; ++k) {
+    for (int i = 0; i < 2; ++i) {
+      for (int j = 0; j < 2; ++j) {
+        const double christoffel = 0.5
+                                   * (dM[static_cast<std::size_t>(i)](k, j)
+                                      + dM[static_cast<std::size_t>(j)](k, i)
+                                      - dM[static_cast<std::size_t>(k)](i, j));
+        expected[k] += christoffel * qdot[i] * qdot[j];
+      }
+    }
+  }
+
+  joint.setPosition(q);
+  joint.setVelocity(qdot);
+  const Eigen::VectorXd coriolis = robot.getCoriolisForces();
+
+  ASSERT_EQ(coriolis.size(), 2);
+  EXPECT_NEAR(coriolis[0], expected[0], 1e-6);
+  EXPECT_NEAR(coriolis[1], expected[1], 1e-6);
+
+  // The velocity-product coupling must be genuinely exercised (a zero reference
+  // would make the comparison vacuous).
+  EXPECT_GT(expected.norm(), 1e-3);
+}
+
 // Test that the pendulum integrator conserves mechanical energy over a swing
 // (a sign or scale error in the dynamics would inject energy and diverge).
 TEST(World, MultiBodyPendulumConservesEnergy)

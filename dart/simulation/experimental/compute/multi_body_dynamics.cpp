@@ -138,12 +138,19 @@ Eigen::Isometry3d jointMotionTransform(const comps::Joint& joint)
           = Eigen::AngleAxisd(joint.position[0], joint.axis).toRotationMatrix();
       transform.translation() = joint.axis * (joint.pitch * joint.position[0]);
       return transform;
+    case comps::JointType::Universal:
+      // Two sequential rotations: theta1 about axis, then theta2 about axis2
+      // (axis2 expressed in the intermediate frame).
+      transform.linear() = (Eigen::AngleAxisd(joint.position[0], joint.axis)
+                            * Eigen::AngleAxisd(joint.position[1], joint.axis2))
+                               .toRotationMatrix();
+      return transform;
     default:
       DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException,
           "Articulated-body forward dynamics is not yet implemented for this "
-          "joint type; supported types are fixed, revolute, prismatic, and "
-          "screw");
+          "joint type; supported types are fixed, revolute, prismatic, screw, "
+          "and universal");
   }
 }
 
@@ -174,12 +181,66 @@ Subspace jointSubspaceInJointFrame(const comps::Joint& joint)
       subspace.col(0).tail<3>() = joint.axis * joint.pitch;
       return subspace;
     }
+    case comps::JointType::Universal: {
+      // Both columns expressed in the joint output frame (after both
+      // rotations). Column 0 (theta1 about axis) is carried by the second
+      // rotation, so it becomes R(theta2, axis2)^T * axis; column 1 (theta2
+      // about axis2) is axis2 itself. This makes column 0 configuration
+      // dependent, which the velocity-product term cJ accounts for.
+      Subspace subspace(6, 2);
+      const Eigen::Matrix3d secondRotation
+          = Eigen::AngleAxisd(joint.position[1], joint.axis2)
+                .toRotationMatrix();
+      subspace.col(0).head<3>() = secondRotation.transpose() * joint.axis;
+      subspace.col(0).tail<3>().setZero();
+      subspace.col(1).head<3>() = joint.axis2;
+      subspace.col(1).tail<3>().setZero();
+      return subspace;
+    }
     default:
       DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException,
           "Articulated-body forward dynamics is not yet implemented for this "
-          "joint type; supported types are fixed, revolute, prismatic, and "
-          "screw");
+          "joint type; supported types are fixed, revolute, prismatic, screw, "
+          "and universal");
+  }
+}
+
+//==============================================================================
+// A single quadratic term of a joint's velocity-product bias cJ = Sdot qdot,
+// expressed in the child link frame: contributes `coeff * qdot[a] * qdot[b]`,
+// where a and b index the joint's local generalized coordinates. Constant
+// subspaces (revolute, prismatic, screw) have no such terms; configuration-
+// dependent multi-DOF subspaces (universal) do.
+struct JointBiasTerm
+{
+  std::size_t a = 0;
+  std::size_t b = 0;
+  Vector6 coeff = Vector6::Zero();
+};
+
+//==============================================================================
+// Velocity-product bias terms cJ = Sdot qdot for a joint, mapped into the child
+// link frame by the post-joint offset adjoint (the same transform applied to
+// the motion subspace).
+std::vector<JointBiasTerm> jointBiasTerms(
+    const comps::Joint& joint, const Matrix6& offsetAdjoint)
+{
+  switch (joint.type) {
+    case comps::JointType::Universal: {
+      // d/dt(col0) = (s1 x axis2) * theta2dot with s1 = R(theta2, axis2)^T
+      // axis, so cJ = (s1 x axis2) * theta1dot * theta2dot (angular; linear
+      // zero).
+      const Eigen::Matrix3d secondRotation
+          = Eigen::AngleAxisd(joint.position[1], joint.axis2)
+                .toRotationMatrix();
+      const Eigen::Vector3d s1 = secondRotation.transpose() * joint.axis;
+      Vector6 coeff = Vector6::Zero();
+      coeff.head<3>() = s1.cross(joint.axis2);
+      return {JointBiasTerm{0, 1, offsetAdjoint * coeff}};
+    }
+    default:
+      return {};
   }
 }
 
@@ -195,6 +256,7 @@ struct LinkDynamics
   Matrix6 parentToChild = Matrix6::Identity();      // X = Ad(T^{-1})
   Matrix6 childToParentForce = Matrix6::Identity(); // X^T
   Subspace subspace{6, 0};                          // S in child frame
+  std::vector<JointBiasTerm> biasTerms; // cJ = Sdot qdot (child frame)
   Matrix6 inertia = Matrix6::Zero();
   Eigen::Isometry3d worldTransform = Eigen::Isometry3d::Identity();
 };
@@ -275,8 +337,10 @@ DynamicsTree buildDynamicsTree(
         = tree.links[parentIt->second].worldTransform * childInParent;
 
     const Subspace jointFrameSubspace = jointSubspaceInJointFrame(joint);
-    dynamics.subspace = adjoint(linkComp.transformFromParentJoint.inverse())
-                        * jointFrameSubspace;
+    const Matrix6 offsetAdjoint
+        = adjoint(linkComp.transformFromParentJoint.inverse());
+    dynamics.subspace = offsetAdjoint * jointFrameSubspace;
+    dynamics.biasTerms = jointBiasTerms(joint, offsetAdjoint);
     dynamics.dof = static_cast<std::size_t>(jointFrameSubspace.cols());
     dynamics.dofOffset = tree.dofCount;
     tree.dofCount += dynamics.dof;
@@ -370,9 +434,19 @@ Eigen::VectorXd recursiveNewtonEuler(
         jointAcceleration
             = link.subspace * qddot.segment(link.dofOffset, link.dof);
       }
+      // Velocity-product bias of a configuration-dependent joint subspace,
+      // cJ = Sdot qdot (zero for constant-subspace joints).
+      Vector6 jointBias = Vector6::Zero();
+      for (const auto& term : link.biasTerms) {
+        jointBias
+            += term.coeff
+               * (qdot[static_cast<Eigen::Index>(link.dofOffset + term.a)]
+                  * qdot[static_cast<Eigen::Index>(link.dofOffset + term.b)]);
+      }
+
       velocity[i] = link.parentToChild * velocity[parent] + jointVelocity;
       acceleration[i] = link.parentToChild * acceleration[parent]
-                        + jointAcceleration
+                        + jointAcceleration + jointBias
                         + motionCross(velocity[i]) * jointVelocity;
     }
     force[i] = link.inertia * acceleration[i]
