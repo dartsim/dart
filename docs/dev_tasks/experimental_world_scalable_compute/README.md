@@ -32,10 +32,12 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
 - [~] Phase 3: Multi-core hardening, SIMD, data locality. Landed: O((N+E) log N)
   topological sort; multi-worker (1/2/4/8) determinism parity with a bitwise gate
   for the map-only integration stage (per-body nodes run concurrently);
-  `findResourceHazards()` serves as the unordered-write ambiguity detector.
-  Remaining: explicit SIMD on the hot SoA kernels and a cost gate (both
-  benchmark-gated), plus fixed-ULP reduction tolerance once a reduction stage
-  exists.
+  `findResourceHazards()` as the unordered-write ambiguity detector; and a cost
+  gate (`ParallelExecutor::setInlineThreshold`) that runs sub-threshold graphs
+  inline. Remaining: explicit SIMD intrinsics on the hot SoA kernels (the
+  vectorization door is already open via the scalar-generic kernels and -O3
+  auto-vectorization; benchmark-gated), plus fixed-ULP reduction tolerance once a
+  reduction stage exists.
 - [x] Phase 4: Homogeneous batch (CPU) + rollout. `stepWorldsBatched` (parallel
       batch executor via the injected executor, bit-identical to sequential),
       `rolloutWorldsBatched`, and a pure-SoA control-sequence rollout

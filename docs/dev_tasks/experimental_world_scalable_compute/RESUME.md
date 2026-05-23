@@ -2,7 +2,7 @@
 
 ## Last Session Summary
 
-Twenty-five verified commits on the feature branch, each green
+Twenty-seven verified commits on the feature branch, each green
 (`pixi run build`, `pixi run build-simulation-experimental-tests`,
 `pixi run lint`, the experimental ctest label, and the benchmark). The branch now
 carries the full standalone structure-of-arrays (SoA) toolkit and a live World
@@ -40,7 +40,7 @@ step driven by it at full parity with the per-entity integrator:
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute` — twenty-five commits ahead of
+`feature/experimental-world-scalable-compute` — twenty-seven commits ahead of
 `main`, working tree clean, all gates green. Not pushed; accumulating toward one
 larger DART 7 PR.
 
@@ -54,11 +54,16 @@ next steps, in rough order:
    stage, behind the executor seam, once frame-coupled coverage is broadened
    beyond the current per-entity fallback (e.g. parent-before-child ordering of
    the frame-cache loop so the SoA path handles rigid-body parenting directly).
-2. Phase 3 explicit SIMD on the hot kernels (currently auto-vectorized at -O3),
-   with a tolerance-based determinism gate.
-3. Phase 4 heterogeneous batches (deferred-by-design in `01-plan.md`).
-4. Phase 5 GPU prototype (blocked on GPU hardware/CI + the CUDA-vs-SYCL
-   benchmark); Phase 6 reassess.
+2. Phase 3 explicit SIMD intrinsics on the hot kernels. The determinism gate
+   (bitwise for map-only stages) and the cost gate
+   (`ParallelExecutor::setInlineThreshold`) are done; what remains is hand-written
+   SIMD, which is low-ROI because the scalar-generic kernels already
+   auto-vectorize at -O3, and its exit criterion needs committed `bm-check`
+   baselines.
+3. Phase 4 heterogeneous batches (deferred-by-design to Phase 6 in `01-plan.md`).
+4. Phase 5 GPU prototype (blocked on a GPU runner the project does not have;
+   the plan classifies this as a provisioning prerequisite, not a coding task);
+   Phase 6 reassess (gated on Phase 5).
 
 Keep `entt` internal and the public handle API unchanged.
 
