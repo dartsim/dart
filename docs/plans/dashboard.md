@@ -190,7 +190,7 @@ its own line so status updates remain git-history friendly.
 - Gate: DART 8 cleanup decisions cite migration notes, changelog entries,
   package/export status, and gz-physics compatibility where relevant.
 
-### PLAN-080: Filament Renderer Performance
+### PLAN-090: Filament Renderer Performance
 
 - Owner doc:
   [`../onboarding/gui-rendering.md#performance-profiling-and-backend-selection`](../onboarding/gui-rendering.md#performance-profiling-and-backend-selection)
