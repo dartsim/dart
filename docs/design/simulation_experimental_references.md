@@ -40,14 +40,14 @@ stands and where it is wired into the code.
 
 Each entry carries these properties:
 
-| Property       | Values                                                                                                     | Meaning                                                                              |
-| -------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| **Type**       | `textbook`, `paper`, `standard`, `engine`                                                                  | Kind of reference (`engine` = comparative software implementation).                  |
-| **Topic**      | e.g. `dynamics`, `kinematics`, `contact`, `integration`, `collision`, `terminology`, `model-format`, `api` | Primary subject area.                                                                |
-| **Status**     | `referenced`, `planned`, `in-progress`, `implemented`, `deferred`, `rejected`                              | The experimental world's relationship to the reference.                              |
-| **Priority**   | `high`, `medium`, `low`, `—`                                                                               | For `planned`/`in-progress` work; `—` when not applicable.                           |
-| **Verdict**    | `adopt`, `baseline`, `reference`, `evaluate`, `reject`                                                     | The project's decision: build on it, compare against it, cite it, weigh it, or pass. |
-| **Where used** | links / paths                                                                                              | Design doc, code, or test that uses or will use it.                                  |
+| Property       | Values                                                                                                     | Meaning                                                                                       |
+| -------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Type**       | `textbook`, `paper`, `standard`, `engine`                                                                  | Kind of reference (`engine` = comparative software implementation).                           |
+| **Topic**      | e.g. `dynamics`, `kinematics`, `contact`, `integration`, `collision`, `terminology`, `model-format`, `api` | Primary subject area.                                                                         |
+| **Status**     | `referenced`, `planned`, `in-progress`, `implemented`, `deferred`, `rejected`                              | The experimental world's relationship to the reference.                                       |
+| **Priority**   | `high`, `medium`, `low`, `—`                                                                               | Relative importance for acting on or evaluating the reference; `—` when purely informational. |
+| **Verdict**    | `adopt`, `baseline`, `reference`, `evaluate`, `reject`                                                     | The project's decision: build on it, compare against it, cite it, weigh it, or pass.          |
+| **Where used** | links / paths                                                                                              | Design doc, code, or test that uses or will use it.                                           |
 
 Status values are written from the experimental world's perspective. A method
 already shipping in _classic_ DART but not yet in the experimental world is
@@ -121,7 +121,7 @@ Planning and Control._ Springer, 2009.
 | `tan-lcp`              | Tan, Siu & Liu, _Contact Handling for Articulated Rigid Bodies Using LCP_                  | contact     | implemented | —        | adopt     |
 | `stewart-trinkle-1996` | Stewart & Trinkle, "An implicit time-stepping scheme … Coulomb friction" (1996)            | contact     | referenced  | medium   | baseline  |
 | `baraff-1996`          | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                           | dynamics    | referenced  | low      | reference |
-| `macklin-xpbd-2016`    | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016) | integration | evaluate    | medium   | evaluate  |
+| `macklin-xpbd-2016`    | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016) | integration | referenced  | medium   | evaluate  |
 | `gjk-1988`             | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                  | collision   | implemented | —        | adopt     |
 
 ### `featherstone-1983`
@@ -177,7 +177,7 @@ Baraff, D. "Linear-time dynamics using Lagrange multipliers." _SIGGRAPH_, 1996.
 Macklin, M., Müller, M., & Chentanez, N. "XPBD: position-based simulation of
 compliant constrained dynamics." _MIG_, 2016.
 
-- **Type:** paper · **Topic:** integration · **Status:** evaluate · **Priority:** medium · **Verdict:** evaluate
+- **Type:** paper · **Topic:** integration · **Status:** referenced · **Priority:** medium · **Verdict:** evaluate
 - **Where used:** named as a candidate integration family in [cpp design](simulation_experimental_cpp_api.md).
 - **Notes:** Compliant position-based dynamics; under evaluation as an optional
   integration/constraint family behind the DART-owned capability matrix. Not a
