@@ -1407,6 +1407,59 @@ TEST(World, MultiBodyMassMatrixAndForcesSinglePendulum)
   EXPECT_NEAR(combined[0], gravityForces[0], 1e-12);
 }
 
+// Test that joint armature (rotor inertia) adds to the joint-space mass-matrix
+// diagonal and reduces the resulting joint acceleration.
+TEST(World, MultiBodyJointArmature)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("pendulum");
+  auto base = robot.addLink("base");
+  const double length = 1.5;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(length, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+
+  const double mass = 2.0;
+  const double inertiaYy = 0.2;
+  bob.setMass(mass);
+  bob.setInertia(Eigen::Vector3d(0.1, inertiaYy, 0.3).asDiagonal());
+
+  auto joint = bob.getParentJoint();
+  EXPECT_DOUBLE_EQ(joint.getArmature()[0], 0.0);
+
+  const double armature = 1.0;
+  joint.setArmature(Eigen::VectorXd::Constant(1, armature));
+  EXPECT_DOUBLE_EQ(joint.getArmature()[0], armature);
+
+  EXPECT_THROW(
+      joint.setArmature(Eigen::VectorXd::Constant(1, -1.0)),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      joint.setArmature(Eigen::VectorXd::Constant(2, 1.0)),
+      sx::InvalidArgumentException);
+
+  world.setTimeStep(0.001);
+  world.enterSimulationMode();
+
+  // Armature adds to the mass-matrix diagonal.
+  const double expectedMass = inertiaYy + mass * length * length + armature;
+  EXPECT_NEAR(robot.getMassMatrix()(0, 0), expectedMass, 1e-12);
+
+  world.step();
+
+  // The unactuated joint accelerates by m g L / (I + m L^2 + armature).
+  const double expectedAccel = 9.81 * mass * length / expectedMass;
+  EXPECT_NEAR(joint.getAcceleration()[0], expectedAccel, 1e-9);
+}
+
 // Test that the public mass matrix and bias forces satisfy the joint-space
 // equation of motion M qddot + C + g = tau for a 2-DOF chain. This validates
 // the decomposition for a multi-DOF system without hand-computing M.

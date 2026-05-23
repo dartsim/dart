@@ -1057,6 +1057,53 @@ def test_experimental_multibody_dynamics_terms_no_dof():
     assert robot.coriolis_and_gravity_forces.size == 0
 
 
+def test_experimental_joint_armature():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+    robot = world.add_multi_body("pendulum")
+    base = robot.add_link("base")
+    length = 1.5
+    offset = np.eye(4)
+    offset[0, 3] = length
+    bob = robot.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset,
+        ),
+    )
+    mass = 2.0
+    inertia_yy = 0.2
+    bob.mass = mass
+    bob.inertia = ((0.1, 0.0, 0.0), (0.0, inertia_yy, 0.0), (0.0, 0.0, 0.3))
+
+    joint = bob.parent_joint
+    assert joint.armature.tolist() == pytest.approx([0.0])
+    armature = 1.0
+    joint.armature = [armature]
+    assert joint.armature.tolist() == pytest.approx([armature])
+
+    with pytest.raises(Exception, match="non-negative"):
+        joint.armature = [-1.0]
+
+    world.time_step = 0.001
+    world.enter_simulation_mode()
+
+    # Armature adds to the mass-matrix diagonal.
+    expected_mass = inertia_yy + mass * length * length + armature
+    assert robot.mass_matrix[0, 0] == pytest.approx(expected_mass)
+
+    world.step()
+    expected_accel = 9.81 * mass * length / expected_mass
+    assert joint.acceleration.tolist()[0] == pytest.approx(
+        expected_accel, abs=1e-9
+    )
+
+
 def test_experimental_joint_spring_and_damping():
     sx = _simulation_experimental()
 

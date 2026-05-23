@@ -185,6 +185,7 @@ struct DynamicsTree
   std::vector<LinkDynamics> links;
   std::vector<entt::entity> jointOf;
   std::size_t dofCount = 0;
+  Eigen::VectorXd armature; // Rotor inertia per generalized coordinate.
 };
 
 //==============================================================================
@@ -242,6 +243,21 @@ DynamicsTree buildDynamicsTree(
     dynamics.dof = static_cast<std::size_t>(jointFrameSubspace.cols());
     dynamics.dofOffset = tree.dofCount;
     tree.dofCount += dynamics.dof;
+  }
+
+  // Gather per-coordinate rotor inertia (armature) in generalized-coordinate
+  // order; defaults to zero for any joint without an armature set.
+  tree.armature
+      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    const auto dof = tree.links[i].dof;
+    if (dof == 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
+    if (joint.armature.size() == static_cast<Eigen::Index>(dof)) {
+      tree.armature.segment(tree.links[i].dofOffset, dof) = joint.armature;
+    }
   }
 
   return tree;
@@ -317,7 +333,8 @@ MassAndBias computeMassAndBias(
     const std::vector<LinkDynamics>& links,
     std::size_t dofCount,
     const Eigen::Vector3d& gravity,
-    const Eigen::VectorXd& qdot)
+    const Eigen::VectorXd& qdot,
+    const Eigen::VectorXd& armature)
 {
   Vector6 baseAcceleration = Vector6::Zero();
   baseAcceleration.tail<3>() = -gravity;
@@ -346,6 +363,11 @@ MassAndBias computeMassAndBias(
         = recursiveNewtonEuler(links, baseAcceleration, dofCount, unit, zero);
     result.massMatrix.col(static_cast<Eigen::Index>(column))
         = response - result.gravityOnly;
+  }
+
+  // Rotor inertia (armature) adds to the joint-space mass-matrix diagonal.
+  if (armature.size() == static_cast<Eigen::Index>(dofCount)) {
+    result.massMatrix.diagonal() += armature;
   }
 
   return result;
@@ -392,8 +414,8 @@ void simulateMultiBody(
           - joint.dampingCoefficient.cwiseProduct(joint.velocity);
   }
 
-  const MassAndBias mb
-      = computeMassAndBias(tree.links, tree.dofCount, gravity, qdot);
+  const MassAndBias mb = computeMassAndBias(
+      tree.links, tree.dofCount, gravity, qdot, tree.armature);
 
   const Eigen::VectorXd qddot
       = mb.massMatrix.ldlt().solve(appliedForce - mb.bias);
@@ -463,8 +485,8 @@ MultiBodyDynamicsTerms computeMultiBodyDynamicsTerms(
     qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
   }
 
-  const MassAndBias mb
-      = computeMassAndBias(tree.links, tree.dofCount, gravity, qdot);
+  const MassAndBias mb = computeMassAndBias(
+      tree.links, tree.dofCount, gravity, qdot, tree.armature);
 
   terms.massMatrix = mb.massMatrix;
   terms.gravityForces = mb.gravityOnly;

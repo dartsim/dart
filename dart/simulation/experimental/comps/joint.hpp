@@ -192,6 +192,10 @@ struct Joint
   Eigen::VectorXd dampingCoefficient;
   Eigen::VectorXd restPosition;
 
+  /// Rotor/reflected inertia added to the joint-space mass-matrix diagonal
+  /// (per generalized coordinate).
+  Eigen::VectorXd armature;
+
   JointLimits limits;
 
   Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();

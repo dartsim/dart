@@ -776,6 +776,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::Joint& self, const nb::handle& value) {
             self.setDampingCoefficient(toVectorX(value));
           })
+      .def_prop_rw(
+          "armature",
+          &sim::Joint::getArmature,
+          [](sim::Joint& self, const nb::handle& value) {
+            self.setArmature(toVectorX(value));
+          })
       .def(
           "set_position_limits",
           [](sim::Joint& self,

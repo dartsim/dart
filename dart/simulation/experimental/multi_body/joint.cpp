@@ -346,6 +346,26 @@ void Joint::setDampingCoefficient(const Eigen::VectorXd& damping)
 }
 
 //==============================================================================
+Eigen::VectorXd Joint::getArmature() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.armature;
+}
+
+//==============================================================================
+void Joint::setArmature(const Eigen::VectorXd& armature)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(armature, jointComp.getDOF(), "armature");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (armature.array() < 0.0).any(),
+      InvalidArgumentException,
+      "Joint armature must be non-negative");
+
+  jointComp.armature = armature;
+}
+
+//==============================================================================
 void Joint::setPositionLimits(
     const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
 {

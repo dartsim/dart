@@ -515,6 +515,12 @@
     and `set_effort_limits`/`effort_lower_limits`/`effort_upper_limits`). The
     forward dynamics clamps the commanded joint effort before solving and clamps
     the generalized velocity each step.
+  - Added experimental joint armature (rotor/reflected inertia):
+    `Joint::setArmature`/`getArmature` (dartpy `joint.armature`). Armature is
+    added to the joint-space mass-matrix diagonal in the forward dynamics and in
+    the public mass-matrix accessor, improving integration stability for stiff
+    geared actuators (an improvement over the legacy DART rigid-body API, which
+    lacks armature).
   - Added experimental joint passive dynamics: per-coordinate spring stiffness
     with rest position and damping coefficient contribute restoring/dissipative
     generalized forces in the articulated-body forward dynamics

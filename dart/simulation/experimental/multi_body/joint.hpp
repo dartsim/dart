@@ -197,6 +197,17 @@ public:
   /// to getDOFCount().
   void setDampingCoefficient(const Eigen::VectorXd& damping);
 
+  /// Get the per-coordinate rotor/reflected inertia (armature).
+  [[nodiscard]] Eigen::VectorXd getArmature() const;
+
+  /// Set the per-coordinate rotor/reflected inertia (armature).
+  ///
+  /// Armature is added to the joint-space mass-matrix diagonal, modeling the
+  /// reflected inertia of a geared actuator. It improves integration stability
+  /// for stiff actuators. Values must be non-negative and finite, with size
+  /// equal to getDOFCount().
+  void setArmature(const Eigen::VectorXd& armature);
+
   /// Set the per-coordinate position limits.
   ///
   /// Each lower bound must be less than or equal to the matching upper bound.
