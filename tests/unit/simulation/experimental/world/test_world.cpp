@@ -2531,6 +2531,48 @@ TEST(World, MultiBodyLinkContactFrictionStopsSlide)
   EXPECT_NEAR(slider.getWorldTransform().translation().z(), -0.3, 1e-2);
 }
 
+// Test that restitution at a link contact rebounds a dropped link. A prismatic
+// link with a sphere falls onto a near-elastic ground and bounces back up.
+TEST(World, MultiBodyLinkContactRestitutionBounces)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("bouncer");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "slider";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto bob = robot.addLink("bob", base, spec);
+  bob.setMass(1.0);
+  bob.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -1.0);
+  groundOptions.isStatic = true;
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setRestitution(0.9);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+  auto joint = bob.getParentJoint();
+  joint.setPosition(Eigen::VectorXd::Constant(1, 0.0)); // drop 0.3 m to contact
+
+  world.setTimeStep(0.002);
+  world.enterSimulationMode();
+
+  double maxUpwardVelocity = 0.0;
+  for (int i = 0; i < 400; ++i) {
+    world.step();
+    maxUpwardVelocity = std::max(maxUpwardVelocity, joint.getVelocity()[0]);
+  }
+
+  // Impact speed from a 0.3 m drop is ~2.4 m/s; e = 0.9 rebounds at ~2.2 m/s.
+  EXPECT_GT(maxUpwardVelocity, 1.5);
+}
+
 // Test that the contact stage resolves approaching velocities (fully inelastic)
 // between overlapping rigid bodies and leaves separating bodies untouched.
 TEST(World, RigidBodyContactResolvesApproachingVelocity)

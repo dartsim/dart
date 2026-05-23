@@ -202,7 +202,8 @@ struct LinkContact
   Eigen::Vector3d normal = Eigen::Vector3d::UnitZ(); // world, points into link
   Eigen::Vector3d point = Eigen::Vector3d::Zero();   // world contact point
   double depth = 0.0;
-  double friction = 1.0; // combined Coulomb friction coefficient
+  double friction = 1.0;    // combined Coulomb friction coefficient
+  double restitution = 0.0; // combined normal restitution coefficient
 };
 
 //==============================================================================
@@ -601,6 +602,7 @@ void simulateMultiBody(
       double tangentDenominator1 = 0.0;
       double tangentDenominator2 = 0.0;
       double bias = 0.0;
+      double restitutionTarget = 0.0;
       double friction = 1.0;
       double normalImpulse = 0.0;
       double tangentImpulse1 = 0.0;
@@ -653,6 +655,14 @@ void simulateMultiBody(
       row.bias = baumgarteFactor
                  * std::max(0.0, contact.depth - penetrationSlop) / timeStep;
       row.friction = contact.friction;
+
+      // Restitution target: rebound at -e * (approaching normal velocity),
+      // ignoring slow approaches to avoid jitter at rest.
+      constexpr double restitutionThreshold = 1e-2;
+      const double approachingVelocity = row.normalJacobian.dot(nextVelocity);
+      row.restitutionTarget = (approachingVelocity < -restitutionThreshold)
+                                  ? -contact.restitution * approachingVelocity
+                                  : 0.0;
       row.active = true;
     }
 
@@ -665,7 +675,8 @@ void simulateMultiBody(
         // Normal impulse with accumulation (unilateral: lambda_n >= 0).
         const double normalVelocity = row.normalJacobian.dot(nextVelocity);
         const double deltaNormal
-            = (-normalVelocity + row.bias) / row.normalDenominator;
+            = (-normalVelocity + std::max(row.bias, row.restitutionTarget))
+              / row.normalDenominator;
         const double newNormal = std::max(0.0, row.normalImpulse + deltaNormal);
         nextVelocity += inverseMass * row.normalJacobian
                         * (newNormal - row.normalImpulse);
@@ -903,6 +914,13 @@ void MultiBodyForwardDynamicsStage::execute(
     }
     return 1.0;
   };
+  const auto restitutionOf = [&](entt::entity entity) {
+    if (const auto* material
+        = registry.try_get<comps::ContactMaterial>(entity)) {
+      return material->restitution;
+    }
+    return 0.0;
+  };
 
   auto view = registry.view<comps::MultiBodyStructure>();
   for (auto entity : view) {
@@ -919,14 +937,26 @@ void MultiBodyForwardDynamicsStage::execute(
           = std::find(links.begin(), links.end(), entityB) != links.end();
       const double friction
           = std::sqrt(frictionOf(entityA) * frictionOf(entityB));
+      const double restitution
+          = std::max(restitutionOf(entityA), restitutionOf(entityB));
 
       // The contact normal points bodyA -> bodyB; orient it into the link.
       if (aInBody && !bInBody && isStaticRigidBody(entityB)) {
         linkContacts.push_back(
-            {entityA, -contact.normal, contact.point, contact.depth, friction});
+            {entityA,
+             -contact.normal,
+             contact.point,
+             contact.depth,
+             friction,
+             restitution});
       } else if (bInBody && !aInBody && isStaticRigidBody(entityA)) {
         linkContacts.push_back(
-            {entityB, contact.normal, contact.point, contact.depth, friction});
+            {entityB,
+             contact.normal,
+             contact.point,
+             contact.depth,
+             friction,
+             restitution});
       }
     }
 

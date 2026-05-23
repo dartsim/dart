@@ -1739,6 +1739,41 @@ def test_experimental_multibody_link_contact_friction_stops_slide():
     assert slider.transform[2, 3] == pytest.approx(-0.3, abs=1e-2)
 
 
+def test_experimental_multibody_link_contact_restitution_bounces():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+
+    robot = world.add_multi_body("bouncer")
+    base = robot.add_link("base")
+    bob = robot.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="slider", type=sx.JointType.PRISMATIC, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    bob.mass = 1.0
+    bob.set_collision_shape(sx.CollisionShape.sphere(0.2))
+
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -1.0))
+    ground.is_static = True
+    ground.restitution = 0.9
+    ground.set_collision_shape(sx.CollisionShape.box((5.0, 5.0, 0.5)))
+
+    joint = bob.parent_joint
+    joint.position = [0.0]  # drop 0.3 m to contact
+
+    world.time_step = 0.002
+    max_upward_velocity = 0.0
+    for _ in range(400):
+        world.step()
+        max_upward_velocity = max(max_upward_velocity, joint.velocity.tolist()[0])
+
+    # Impact speed ~2.4 m/s; e = 0.9 rebounds at ~2.2 m/s.
+    assert max_upward_velocity > 1.5
+
+
 def test_experimental_contact_restitution():
     sx = _simulation_experimental()
 
