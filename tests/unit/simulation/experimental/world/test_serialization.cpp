@@ -34,15 +34,15 @@
 #include <dart/simulation/experimental/common/constants.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>
-#include <dart/simulation/experimental/comps/multi_body.hpp>
+#include <dart/simulation/experimental/comps/multibody.hpp>
 #include <dart/simulation/experimental/comps/name.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
-#include <dart/simulation/experimental/multi_body/joint.hpp>
-#include <dart/simulation/experimental/multi_body/link.hpp>
-#include <dart/simulation/experimental/multi_body/multi_body.hpp>
+#include <dart/simulation/experimental/multibody/joint.hpp>
+#include <dart/simulation/experimental/multibody/link.hpp>
+#include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <gtest/gtest.h>
@@ -67,16 +67,16 @@ TEST(Serialization, EmptyWorld)
   world2.loadBinary(ss);
 
   // Verify empty
-  EXPECT_EQ(world2.getMultiBodyCount(), 0);
+  EXPECT_EQ(world2.getMultibodyCount(), 0);
   EXPECT_EQ(world2.getRigidBodyCount(), 0);
   EXPECT_FALSE(world2.isSimulationMode());
 }
 
 // Test save/load world with single multibody (no links)
-TEST(Serialization, SingleMultiBodyNoLinks)
+TEST(Serialization, SingleMultibodyNoLinks)
 {
   dart::simulation::experimental::World world1;
-  [[maybe_unused]] auto mb1 = world1.addMultiBody("robot1");
+  [[maybe_unused]] auto mb1 = world1.addMultibody("robot1");
 
   std::stringstream ss;
   world1.saveBinary(ss);
@@ -84,8 +84,8 @@ TEST(Serialization, SingleMultiBodyNoLinks)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  EXPECT_EQ(world2.getMultiBodyCount(), 1);
-  auto mb_restored = world2.getMultiBody("robot1");
+  EXPECT_EQ(world2.getMultibodyCount(), 1);
+  auto mb_restored = world2.getMultibody("robot1");
   ASSERT_TRUE(mb_restored.has_value());
   EXPECT_EQ(mb_restored->getName(), "robot1");
   EXPECT_EQ(mb_restored->getLinkCount(), 0);
@@ -96,7 +96,7 @@ TEST(Serialization, SingleMultiBodyNoLinks)
 TEST(Serialization, SingleRootLink)
 {
   dart::simulation::experimental::World world1;
-  auto mb = world1.addMultiBody("robot");
+  auto mb = world1.addMultibody("robot");
   [[maybe_unused]] auto base = mb.addLink("base");
 
   std::stringstream ss;
@@ -105,7 +105,7 @@ TEST(Serialization, SingleRootLink)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  auto mb_restored = world2.getMultiBody("robot");
+  auto mb_restored = world2.getMultibody("robot");
   ASSERT_TRUE(mb_restored.has_value());
   EXPECT_EQ(mb_restored->getName(), "robot"); // Verify name preserved
   EXPECT_EQ(mb_restored->getLinkCount(), 1);
@@ -116,7 +116,7 @@ TEST(Serialization, SingleRootLink)
 TEST(Serialization, TwoLinkChain)
 {
   dart::simulation::experimental::World world1;
-  auto mb = world1.addMultiBody("robot");
+  auto mb = world1.addMultibody("robot");
   auto base = mb.addLink("base");
   [[maybe_unused]] auto link1 = mb.addLink(
       "link1",
@@ -131,8 +131,8 @@ TEST(Serialization, TwoLinkChain)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  // Verify MultiBody restored
-  auto mb_restored = world2.getMultiBody("robot");
+  // Verify Multibody restored
+  auto mb_restored = world2.getMultibody("robot");
   ASSERT_TRUE(mb_restored.has_value());
   EXPECT_EQ(mb_restored->getName(), "robot");
   EXPECT_EQ(mb_restored->getLinkCount(), 2);
@@ -166,7 +166,7 @@ TEST(Serialization, TwoLinkChain)
 TEST(Serialization, PreservesNames)
 {
   dart::simulation::experimental::World world1;
-  auto mb = world1.addMultiBody("test_robot");
+  auto mb = world1.addMultibody("test_robot");
   [[maybe_unused]] auto base = mb.addLink("base_link");
   [[maybe_unused]] auto link = mb.addLink(
       "arm_link", {.parentLink = base, .jointName = "shoulder_joint"});
@@ -177,7 +177,7 @@ TEST(Serialization, PreservesNames)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  auto mb_restored = world2.getMultiBody("test_robot");
+  auto mb_restored = world2.getMultibody("test_robot");
   ASSERT_TRUE(mb_restored.has_value());
   EXPECT_EQ(mb_restored->getName(), "test_robot");
 }
@@ -205,7 +205,7 @@ TEST(Serialization, WithLoopClosures)
   namespace sx = dart::simulation::experimental;
 
   sx::World world1;
-  auto robot = world1.addMultiBody("robot");
+  auto robot = world1.addMultibody("robot");
   auto base = robot.addLink("base");
   auto link = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
   auto ground = world1.addRigidBody("ground");
@@ -244,7 +244,7 @@ TEST(Serialization, WithLoopClosures)
   EXPECT_EQ(runtimePolicy.kinematics, sx::ClosureKinematicsPolicy::Project);
   EXPECT_EQ(runtimePolicy.dynamics, sx::ClosureDynamicsPolicy::Solve);
 
-  auto restoredRobot = world2.getMultiBody("robot");
+  auto restoredRobot = world2.getMultibody("robot");
   ASSERT_TRUE(restoredRobot.has_value());
   auto restoredLink = restoredRobot->getLink("link");
   ASSERT_TRUE(restoredLink.has_value());
@@ -264,7 +264,7 @@ TEST(Serialization, WithLoopClosures)
 TEST(Serialization, PreservesSimulationMode)
 {
   dart::simulation::experimental::World world1;
-  world1.addMultiBody("robot");
+  world1.addMultibody("robot");
   world1.enterSimulationMode();
   ASSERT_TRUE(world1.isSimulationMode());
 
@@ -302,8 +302,8 @@ TEST(Serialization, PreservesWorldTimingMetadata)
 TEST(Serialization, PreservesCounters)
 {
   dart::simulation::experimental::World world1;
-  [[maybe_unused]] auto mb1 = world1.addMultiBody("");
-  [[maybe_unused]] auto mb2 = world1.addMultiBody("");
+  [[maybe_unused]] auto mb1 = world1.addMultibody("");
+  [[maybe_unused]] auto mb2 = world1.addMultibody("");
 
   std::stringstream ss;
   world1.saveBinary(ss);
@@ -311,7 +311,7 @@ TEST(Serialization, PreservesCounters)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  auto mb3 = world2.addMultiBody("");
+  auto mb3 = world2.addMultibody("");
   EXPECT_EQ(mb3.getName(), "multibody_003");
 }
 
@@ -319,7 +319,7 @@ TEST(Serialization, PreservesCounters)
 TEST(Serialization, MultipleCycles)
 {
   dart::simulation::experimental::World world1;
-  auto mb = world1.addMultiBody("robot");
+  auto mb = world1.addMultibody("robot");
   mb.addLink("base");
 
   for (int i = 0; i < 3; ++i) {
@@ -333,8 +333,8 @@ TEST(Serialization, MultipleCycles)
     world2.saveBinary(ss2);
     world1.loadBinary(ss2);
 
-    EXPECT_EQ(world1.getMultiBodyCount(), 1);
-    auto mb_restored = world1.getMultiBody("robot");
+    EXPECT_EQ(world1.getMultibodyCount(), 1);
+    auto mb_restored = world1.getMultibody("robot");
     ASSERT_TRUE(mb_restored.has_value());
     EXPECT_EQ(mb_restored->getLinkCount(), 1);
   }
@@ -344,28 +344,28 @@ TEST(Serialization, MultipleCycles)
 TEST(Serialization, LoadClearsExisting)
 {
   dart::simulation::experimental::World world1;
-  world1.addMultiBody("robot1");
+  world1.addMultibody("robot1");
 
   std::stringstream ss;
   world1.saveBinary(ss);
 
   dart::simulation::experimental::World world2;
-  world2.addMultiBody("robot2");
-  world2.addMultiBody("robot3");
-  EXPECT_EQ(world2.getMultiBodyCount(), 2);
+  world2.addMultibody("robot2");
+  world2.addMultibody("robot3");
+  EXPECT_EQ(world2.getMultibodyCount(), 2);
 
   world2.loadBinary(ss);
-  EXPECT_EQ(world2.getMultiBodyCount(), 1);
-  EXPECT_TRUE(world2.getMultiBody("robot1").has_value());
-  EXPECT_FALSE(world2.getMultiBody("robot2").has_value());
-  EXPECT_FALSE(world2.getMultiBody("robot3").has_value());
+  EXPECT_EQ(world2.getMultibodyCount(), 1);
+  EXPECT_TRUE(world2.getMultibody("robot1").has_value());
+  EXPECT_FALSE(world2.getMultibody("robot2").has_value());
+  EXPECT_FALSE(world2.getMultibody("robot3").has_value());
 }
 
 // Test saves and restores joint type (REVOLUTE)
 TEST(Serialization, JointTypeRevolute)
 {
   dart::simulation::experimental::World world1;
-  auto mb = world1.addMultiBody("robot");
+  auto mb = world1.addMultibody("robot");
   [[maybe_unused]] auto base = mb.addLink("base");
   [[maybe_unused]] auto link1 = mb.addLink(
       "link1",
@@ -380,7 +380,7 @@ TEST(Serialization, JointTypeRevolute)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  [[maybe_unused]] auto mb2 = world2.getMultiBody("robot");
+  [[maybe_unused]] auto mb2 = world2.getMultibody("robot");
   ASSERT_TRUE(mb2.has_value());
   EXPECT_EQ(mb2->getJointCount(), 1);
 }
@@ -389,7 +389,7 @@ TEST(Serialization, JointTypeRevolute)
 TEST(Serialization, JointTypePrismatic)
 {
   dart::simulation::experimental::World world1;
-  auto mb = world1.addMultiBody("robot");
+  auto mb = world1.addMultibody("robot");
   [[maybe_unused]] auto base = mb.addLink("base");
   [[maybe_unused]] auto link1 = mb.addLink(
       "link1",
@@ -404,7 +404,7 @@ TEST(Serialization, JointTypePrismatic)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  [[maybe_unused]] auto mb2 = world2.getMultiBody("robot");
+  [[maybe_unused]] auto mb2 = world2.getMultibody("robot");
   ASSERT_TRUE(mb2.has_value());
   EXPECT_EQ(mb2->getJointCount(), 1);
 }
@@ -413,7 +413,7 @@ TEST(Serialization, JointTypePrismatic)
 TEST(Serialization, ComplexHierarchy)
 {
   dart::simulation::experimental::World world1;
-  auto robot = world1.addMultiBody("ur5");
+  auto robot = world1.addMultibody("ur5");
   [[maybe_unused]] auto base = robot.addLink("base");
   [[maybe_unused]] auto link1 = robot.addLink(
       "shoulder_link",
@@ -458,7 +458,7 @@ TEST(Serialization, ComplexHierarchy)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  auto robot_restored = world2.getMultiBody("ur5");
+  auto robot_restored = world2.getMultibody("ur5");
   ASSERT_TRUE(robot_restored.has_value());
   EXPECT_EQ(robot_restored->getLinkCount(), 7);
   EXPECT_EQ(robot_restored->getJointCount(), 6);
@@ -527,12 +527,12 @@ TEST(Serialization, ComplexHierarchy)
 }
 
 // Test multiple multibodies
-TEST(Serialization, MultipleMultiBodies)
+TEST(Serialization, MultipleMultibodies)
 {
   dart::simulation::experimental::World world1;
-  [[maybe_unused]] auto mb1 = world1.addMultiBody("robot1");
-  [[maybe_unused]] auto mb2 = world1.addMultiBody("robot2");
-  auto mb3 = world1.addMultiBody("robot3");
+  [[maybe_unused]] auto mb1 = world1.addMultibody("robot1");
+  [[maybe_unused]] auto mb2 = world1.addMultibody("robot2");
+  auto mb3 = world1.addMultibody("robot3");
 
   mb1.addLink("base1");
   mb2.addLink("base2");
@@ -544,10 +544,10 @@ TEST(Serialization, MultipleMultiBodies)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  EXPECT_EQ(world2.getMultiBodyCount(), 3);
-  EXPECT_TRUE(world2.getMultiBody("robot1").has_value());
-  EXPECT_TRUE(world2.getMultiBody("robot2").has_value());
-  EXPECT_TRUE(world2.getMultiBody("robot3").has_value());
+  EXPECT_EQ(world2.getMultibodyCount(), 3);
+  EXPECT_TRUE(world2.getMultibody("robot1").has_value());
+  EXPECT_TRUE(world2.getMultibody("robot2").has_value());
+  EXPECT_TRUE(world2.getMultibody("robot3").has_value());
 }
 
 // Test mixed multibodies and rigid bodies
@@ -555,7 +555,7 @@ TEST(Serialization, MixedContent)
 {
   dart::simulation::experimental::World world1;
 
-  auto mb = world1.addMultiBody("robot");
+  auto mb = world1.addMultibody("robot");
   mb.addLink("base");
 
   [[maybe_unused]] auto rb1 = world1.addRigidBody("box1");
@@ -567,9 +567,9 @@ TEST(Serialization, MixedContent)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  EXPECT_EQ(world2.getMultiBodyCount(), 1);
+  EXPECT_EQ(world2.getMultibodyCount(), 1);
   EXPECT_EQ(world2.getRigidBodyCount(), 2);
-  EXPECT_TRUE(world2.getMultiBody("robot").has_value());
+  EXPECT_TRUE(world2.getMultibody("robot").has_value());
   EXPECT_TRUE(world2.hasRigidBody("box1"));
   EXPECT_TRUE(world2.hasRigidBody("box2"));
 }
@@ -578,7 +578,7 @@ TEST(Serialization, MixedContent)
 TEST(Serialization, EmptyNames)
 {
   dart::simulation::experimental::World world1;
-  auto mb = world1.addMultiBody("");
+  auto mb = world1.addMultibody("");
   auto base = mb.addLink("");
   dart::simulation::experimental::LinkOptions opts{
       .parentLink = base, .jointName = ""};
@@ -590,7 +590,7 @@ TEST(Serialization, EmptyNames)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  auto restoredMb = world2.getMultiBody("multibody_001");
+  auto restoredMb = world2.getMultibody("multibody_001");
   ASSERT_TRUE(restoredMb.has_value());
   EXPECT_EQ(restoredMb->getName(), "multibody_001");
 
@@ -611,7 +611,7 @@ TEST(Serialization, EmptyNames)
 TEST(Serialization, LargeHierarchy)
 {
   dart::simulation::experimental::World world1;
-  auto robot = world1.addMultiBody("large_robot");
+  auto robot = world1.addMultibody("large_robot");
 
   // Create chain of 20 links
   auto prev = robot.addLink("base");
@@ -627,7 +627,7 @@ TEST(Serialization, LargeHierarchy)
   dart::simulation::experimental::World world2;
   world2.loadBinary(ss);
 
-  auto robot2 = world2.getMultiBody("large_robot");
+  auto robot2 = world2.getMultibody("large_robot");
   ASSERT_TRUE(robot2.has_value());
   EXPECT_EQ(robot2->getLinkCount(), 20);
   EXPECT_EQ(robot2->getJointCount(), 19);
@@ -967,7 +967,7 @@ TEST(Serialization, CloneResetCounters)
   auto frame2 = world.addFreeFrame(); // free_frame_002
   (void)frame1;
   (void)frame2;
-  [[maybe_unused]] auto mb1 = world.addMultiBody(""); // multibody_001
+  [[maybe_unused]] auto mb1 = world.addMultibody(""); // multibody_001
 
   std::stringstream ss;
   world.saveBinary(ss);
@@ -984,6 +984,6 @@ TEST(Serialization, CloneResetCounters)
             .name;
   EXPECT_EQ(nextFrameName, "free_frame_003");
 
-  auto nextMb = clone.addMultiBody("");
+  auto nextMb = clone.addMultibody("");
   EXPECT_EQ(nextMb.getName(), "multibody_002");
 }
