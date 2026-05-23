@@ -474,6 +474,41 @@ TEST(ExperimentalParallelExecutor, ProfileReportsObservedParallelism)
   EXPECT_LT(rightProfile->workerIndex, profile.workerCount);
 }
 
+//==============================================================================
+TEST(ExperimentalParallelExecutor, InlineThresholdRunsSubThresholdGraphsInline)
+{
+  // The cost gate runs graphs at or below the inline threshold sequentially,
+  // skipping Taskflow; the result must match the parallel path exactly.
+  auto build = [](compute::ComputeGraph& graph, std::vector<int>& out) {
+    out.assign(5, -1);
+    for (int i = 0; i < 5; ++i) {
+      graph.addNode("n" + std::to_string(i), [&out, i]() { out[i] = i * i; });
+    }
+  };
+
+  compute::ParallelExecutor executor(4);
+  EXPECT_EQ(executor.getInlineThreshold(), std::size_t{1});
+
+  // Inline path: threshold at or above the node count.
+  compute::ComputeGraph inlineGraph;
+  std::vector<int> inlineOut;
+  build(inlineGraph, inlineOut);
+  executor.setInlineThreshold(5);
+  EXPECT_EQ(executor.getInlineThreshold(), std::size_t{5});
+  executor.execute(inlineGraph);
+
+  // Parallel path: threshold below the node count.
+  compute::ComputeGraph parallelGraph;
+  std::vector<int> parallelOut;
+  build(parallelGraph, parallelOut);
+  executor.setInlineThreshold(0);
+  executor.execute(parallelGraph);
+
+  const std::vector<int> expected = {0, 1, 4, 9, 16};
+  EXPECT_EQ(inlineOut, expected);
+  EXPECT_EQ(parallelOut, expected);
+}
+
 namespace {
 
 //==============================================================================
