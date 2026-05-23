@@ -1354,6 +1354,75 @@ TEST(World, RigidBodyStepParallelMatchesSequential)
   }
 }
 
+// Test that parallel execution matches the sequential reference across a range
+// of worker counts, hardening the deterministic-sync guarantee beyond a single
+// worker configuration.
+TEST(World, RigidBodyStepParallelMatchesSequentialAcrossWorkerCounts)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  constexpr int bodyCount = 12;
+  constexpr int stepCount = 5;
+  constexpr double tolerance = 1e-10;
+
+  auto buildWorld = [](sx::World& world, std::vector<sx::RigidBody>& bodies) {
+    for (int i = 0; i < bodyCount; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + 0.1 * i;
+      options.inertia = Eigen::Vector3d(1.0, 1.5, 2.0).asDiagonal();
+      options.position = Eigen::Vector3d(0.1 * i, 0.2 * i, 0.3 * i);
+      options.linearVelocity = Eigen::Vector3d(0.5, 0.25 * i, -0.1 * i);
+      options.angularVelocity = Eigen::Vector3d(0.01 * i, 0.02 * i, 0.03 * i);
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      body.setForce(Eigen::Vector3d(0.1 * i, 0.2, -0.3));
+      bodies.push_back(body);
+    }
+    world.setTimeStep(0.01);
+    world.enterSimulationMode();
+  };
+
+  sx::World reference;
+  std::vector<sx::RigidBody> referenceBodies;
+  buildWorld(reference, referenceBodies);
+  for (int s = 0; s < stepCount; ++s) {
+    reference.step();
+  }
+
+  for (const std::size_t workers :
+       {std::size_t{1}, std::size_t{2}, std::size_t{4}, std::size_t{8}}) {
+    sx::World world;
+    std::vector<sx::RigidBody> bodies;
+    buildWorld(world, bodies);
+
+    compute::ParallelExecutor executor(workers);
+    for (int s = 0; s < stepCount; ++s) {
+      world.step(executor);
+    }
+
+    for (int i = 0; i < bodyCount; ++i) {
+      EXPECT_TRUE(
+          referenceBodies[static_cast<std::size_t>(i)].getTransform().isApprox(
+              bodies[static_cast<std::size_t>(i)].getTransform(), tolerance))
+          << "workers=" << workers << " body=" << i;
+      EXPECT_TRUE(
+          referenceBodies[static_cast<std::size_t>(i)]
+              .getLinearVelocity()
+              .isApprox(
+                  bodies[static_cast<std::size_t>(i)].getLinearVelocity(),
+                  tolerance))
+          << "workers=" << workers << " body=" << i;
+      EXPECT_TRUE(
+          referenceBodies[static_cast<std::size_t>(i)]
+              .getAngularVelocity()
+              .isApprox(
+                  bodies[static_cast<std::size_t>(i)].getAngularVelocity(),
+                  tolerance))
+          << "workers=" << workers << " body=" << i;
+    }
+  }
+}
+
 // Test that the experimental step path can swap the kinematics stage contract.
 TEST(World, StepAcceptsCustomStage)
 {
