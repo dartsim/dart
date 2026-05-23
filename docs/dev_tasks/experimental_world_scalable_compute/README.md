@@ -32,12 +32,16 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
 - [~] Phase 3: Multi-core hardening, SIMD, data locality. Landed: O((N+E) log N)
   topological sort; multi-worker (1/2/4/8) determinism parity with a bitwise gate
   for the map-only integration stage (per-body nodes run concurrently);
-  `findResourceHazards()` as the unordered-write ambiguity detector; and a cost
-  gate (`ParallelExecutor::setInlineThreshold`) that runs sub-threshold graphs
-  inline. Remaining: explicit SIMD intrinsics on the hot SoA kernels (the
-  vectorization door is already open via the scalar-generic kernels and -O3
-  auto-vectorization; benchmark-gated), plus fixed-ULP reduction tolerance once a
-  reduction stage exists.
+  `findResourceHazards()` as the unordered-write ambiguity detector; a cost gate
+  (`ParallelExecutor::setInlineThreshold`) that runs sub-threshold graphs inline;
+  and an explicit-SIMD orientation kernel (`integrateOrientationsSimd`,
+  Eigen-vectorized transcendentals) that the batched integrator dispatches to
+  above a body-count threshold, with the scalar-generic kernel as the fallback.
+  The linear (position/velocity) kernels are memory-bound and already optimally
+  auto-vectorized at -O3, so they keep the scalar-generic path. Remaining:
+  committed `bm-check` throughput baselines to close the SIMD exit criterion
+  (needs stable benchmark CI), and fixed-ULP reduction tolerance once a reduction
+  stage exists.
 - [x] Phase 4: Homogeneous batch (CPU) + rollout. `stepWorldsBatched` (parallel
       batch executor via the injected executor, bit-identical to sequential),
       `rolloutWorldsBatched`, and a pure-SoA control-sequence rollout
