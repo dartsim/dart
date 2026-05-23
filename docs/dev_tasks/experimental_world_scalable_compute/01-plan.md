@@ -189,10 +189,12 @@ Deliverables:
 - A cost gate so sub-threshold nodes run inline; coarsen node granularity and
   avoid per-step Taskflow rebuild where profiling shows scheduling overhead
   dominates.
-- Replace `ComputeGraph::buildTopologicalOrder` (currently O(N^2): it rescans all
-  nodes for each emitted node) with an O(N+E) Kahn's queue. Phase 0 benchmarking
-  found this dominates `SequentialExecutor` time on large graphs (hundreds of ms
-  for ~16k nodes), which would distort any sequential-versus-parallel comparison.
+- Done (early): `ComputeGraph::buildTopologicalOrder` was O(N^2) (it rescanned all
+  nodes for each emitted node, with O(N) index lookups per edge). Phase 0
+  benchmarking found this dominated `SequentialExecutor` on large graphs
+  (hundreds of ms for ~16k nodes), which would distort sequential-versus-parallel
+  comparisons. Replaced with Kahn's algorithm using a min-heap on node index
+  (O((N+E) log N)) that preserves the construction-order tie-break.
 - SIMD (via `dart/simd`) and cache-friendly iteration on the SoA integration and
   kinematics kernels, with scalar fallback preserved.
 - A Bevy-style ambiguity detector for unordered write conflicts, added once a
