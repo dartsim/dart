@@ -2,29 +2,31 @@
 
 ## Last Session Summary
 
-Phases 0 and 1 are implemented and verified green (build, lint, and the
-experimental unit tests all pass). Phase 0: the executor-parity test already
-existed (`RigidBodyStepParallelMatchesSequential`); added the EnTT concurrency
-contract (documented on `ComputeExecutor`, debug-asserted in `ParallelExecutor`)
-and a contact-shaped benchmark proxy. Phase 1: resource-access metadata
-(`ComputeAccessMode`, `ComputeResourceAccess`, `ComputeGraph::findResourceHazards`,
-DOT surfacing, per-entity kinematics wiring) with 30/30 `test_compute_graph`
-cases. Next is Phase 2 (immutable Model + batched SoA State).
+Four verified commits on the feature branch (each green: `pixi run build`,
+`pixi run lint`, experimental ctest targets, benchmark): (1) Phase 0/1 + plan —
+EnTT concurrency contract + debug assert, contact-shaped benchmark proxy, and
+resource-access metadata (`ComputeAccessMode`, `findResourceHazards`, DOT,
+per-entity kinematics wiring); (2) O((N+E) log N) topological sort; (3)
+multi-worker (1/2/4/8) determinism parity test; (4) Phase 2 seed —
+`RigidBodyStateBatch` flat-scalar SoA with `extractRigidBodyState`/
+`applyRigidBodyState` and a round-trip test. A code-reviewer pass on the branch
+was requested; fold its findings in next.
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute` — Phase 0/1 changes staged for
-commit; verified against `pixi run build`, `pixi run lint`, and the experimental
-ctest targets.
+`feature/experimental-world-scalable-compute` — four commits ahead of `main`,
+working tree clean, all gates green. Not pushed; accumulating toward one larger
+DART 7 PR.
 
 ## Immediate Next Step
 
-Begin Phase 2: introduce DART-owned state/control owner value types and an
-SoA/tensor-friendly State buffer (leading world dimension defaulting to one),
-keeping `entt` internal and the public handle API unchanged. Co-locate the
-scalar-generic kernel rewrite (`template <typename Scalar>`, instantiate `double`
-only) with this change. This is the data seam that transfers to multi-core,
-SIMD, and GPU; see `01-plan.md` Phase 2.
+Continue Phase 2: extend `RigidBodyStateBatch` to a leading world dimension > 1
+(homogeneous replication), add the immutable Model split, and make the
+integration/kinematics kernels scalar-generic (`template <typename Scalar>`,
+instantiate `double` only) so they read/write the SoA batch instead of per-entity
+`registry.get`. Keep `entt` internal and the public handle API unchanged. This is
+the data seam that transfers to multi-core, SIMD, and GPU; see `01-plan.md`
+Phase 2.
 
 ## Context That Would Be Lost
 

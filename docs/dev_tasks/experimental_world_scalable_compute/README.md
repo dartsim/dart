@@ -20,10 +20,17 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
       DOT surfacing + per-entity wiring on the kinematics stage; 30/30
       `test_compute_graph` cases pass. Contract in
       [`../../plans/030-compute-resource-access/`](../../plans/030-compute-resource-access/).
-- [ ] Phase 2: Immutable Model + batched SoA State (single world), scalar-generic
-      kernels instantiated for `double` only
-- [ ] Phase 3: Multi-core hardening (tolerance-based determinism), SIMD, data
-      locality, cost gate, ambiguity detector once a second stage exists
+- [~] Phase 2: Immutable Model + batched SoA State. Seed landed:
+  `RigidBodyStateBatch` flat-scalar SoA value type with
+  `extractRigidBodyState`/`applyRigidBodyState` (single world) and a
+  round-trip test. Remaining: a leading world dimension > 1, an immutable
+  Model split, and scalar-generic (`template <typename Scalar>`, `double`-only)
+  kernels.
+- [~] Phase 3: Multi-core hardening, SIMD, data locality. Landed early:
+  O((N+E) log N) topological sort and a multi-worker (1/2/4/8) determinism
+  parity test. Remaining: tolerance-based determinism gate, SIMD on SoA
+  kernels, cost gate, and a Bevy-style ambiguity detector once a second
+  write-conflicting stage exists.
 - [ ] Phase 4: Homogeneous batch (CPU) + rollout API
 - [ ] Phase 5: GPU prototype behind a gate with a kill criterion (internal, no
       public API); CUDA-versus-SYCL decided from the benchmark
