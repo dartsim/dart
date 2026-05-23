@@ -40,6 +40,7 @@
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
 #include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
+#include <dart/simulation/experimental/compute/world_batch.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
@@ -1700,5 +1701,59 @@ TEST(World, RigidBodyStateBatchMultiWorld)
   const std::vector<const sx::World*> heteroWorlds{&w0, &hetero};
   EXPECT_THROW(
       { (void)compute::extractRigidBodyStateBatch(heteroWorlds); },
+      sx::InvalidArgumentException);
+}
+
+// Test the CPU batch executor: N independent homogeneous worlds advanced in
+// parallel match a single sequentially-stepped reference, and null worlds are
+// rejected.
+TEST(World, StepWorldsBatchedMatchesSequential)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto build = [](sx::World& world) {
+    for (int i = 0; i < 3; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + i;
+      options.position = Eigen::Vector3d(1.0 + i, 0.0, 0.0);
+      options.linearVelocity = Eigen::Vector3d(0.1 * (i + 1), 0.0, 0.0);
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      body.setForce(Eigen::Vector3d(0.2, -0.1, 0.05));
+    }
+    world.setTimeStep(0.01);
+    world.enterSimulationMode();
+  };
+
+  sx::World reference;
+  build(reference);
+  reference.step(5);
+  const auto refState = compute::extractRigidBodyState(reference);
+
+  sx::World w0;
+  sx::World w1;
+  sx::World w2;
+  sx::World w3;
+  build(w0);
+  build(w1);
+  build(w2);
+  build(w3);
+  const std::vector<sx::World*> worlds{&w0, &w1, &w2, &w3};
+
+  compute::ParallelExecutor executor(2);
+  compute::stepWorldsBatched(worlds, 5, executor);
+
+  for (auto* world : worlds) {
+    const auto state = compute::extractRigidBodyState(*world);
+    ASSERT_EQ(state.bodyCount, refState.bodyCount);
+    EXPECT_EQ(state.position, refState.position);
+    EXPECT_EQ(state.linearVelocity, refState.linearVelocity);
+    EXPECT_EQ(state.orientation, refState.orientation);
+    EXPECT_DOUBLE_EQ(world->getTime(), reference.getTime());
+  }
+
+  const std::vector<sx::World*> withNull{&w0, nullptr};
+  EXPECT_THROW(
+      compute::stepWorldsBatched(withNull, 1, executor),
       sx::InvalidArgumentException);
 }
