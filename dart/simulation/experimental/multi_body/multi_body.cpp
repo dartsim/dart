@@ -41,11 +41,54 @@
 
 #include <Eigen/Geometry>
 
+#include <algorithm>
 #include <format>
 
 namespace dart::simulation::experimental {
 
 namespace {
+
+template <typename Component>
+bool hasOtherEntityWithName(
+    const entt::registry& registry,
+    entt::entity excludedEntity,
+    std::string_view name)
+{
+  auto view = registry.view<Component, comps::Name>();
+  for (auto entity : view) {
+    if (entity == excludedEntity) {
+      continue;
+    }
+
+    const auto& nameComp = view.template get<comps::Name>(entity);
+    if (nameComp.name == name) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool containsEntity(
+    const std::vector<entt::entity>& entities, entt::entity candidate)
+{
+  return std::find(entities.begin(), entities.end(), candidate)
+         != entities.end();
+}
+
+bool containsName(
+    const entt::registry& registry,
+    const std::vector<entt::entity>& entities,
+    std::string_view name)
+{
+  for (const auto& entity : entities) {
+    if (safeGet<comps::Name>(registry, entity).name == name) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 comps::JointType toComponentJointType(JointType type)
 {
@@ -91,6 +134,16 @@ std::string_view MultiBody::getName() const
 //==============================================================================
 void MultiBody::setName(std::string_view name)
 {
+  DART_EXPERIMENTAL_THROW_T_IF(
+      name.empty(), InvalidArgumentException, "MultiBody name cannot be empty");
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      hasOtherEntityWithName<comps::MultiBodyTag>(
+          m_world->getRegistry(), m_entity, name),
+      InvalidArgumentException,
+      "MultiBody '{}' already exists",
+      name);
+
   auto& nameComp = safeGet<comps::Name>(m_world->getRegistry(), m_entity);
   nameComp.name = name;
 }
@@ -237,22 +290,32 @@ Link MultiBody::addLink(std::string_view name)
       InvalidArgumentException,
       "Cannot create Link in simulation mode");
 
+  auto& registry = m_world->getRegistry();
+  auto& structure = safeGet<comps::MultiBodyStructure>(registry, m_entity);
+
   // Auto-generate name if not provided
   std::string actualName;
   if (name.empty()) {
-    actualName = std::format("link_{:03d}", ++m_world->m_linkCounter);
+    do {
+      actualName = std::format("link_{:03d}", ++m_world->m_linkCounter);
+    } while (containsName(registry, structure.links, actualName));
   } else {
     actualName = std::string(name);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        containsName(registry, structure.links, actualName),
+        InvalidArgumentException,
+        "Link '{}' already exists in MultiBody '{}'",
+        actualName,
+        getName());
   }
 
   // Create link entity
-  auto linkEntity = m_world->getRegistry().create();
+  auto linkEntity = registry.create();
 
   // Add Name for consistency (all named entities should have this)
-  m_world->getRegistry().emplace<comps::Name>(linkEntity, actualName);
+  registry.emplace<comps::Name>(linkEntity, actualName);
 
   // Add frame and link components
-  auto& registry = m_world->getRegistry();
   registry.emplace<comps::FrameTag>(linkEntity);
   auto& frameState = registry.emplace<comps::FrameState>(linkEntity);
   frameState.parentFrame = entt::null;
@@ -262,13 +325,11 @@ Link MultiBody::addLink(std::string_view name)
   registry.emplace<comps::FreeFrameProperties>(linkEntity).localTransform
       = Eigen::Isometry3d::Identity();
 
-  auto& linkComp = m_world->getRegistry().emplace<comps::Link>(linkEntity);
+  auto& linkComp = registry.emplace<comps::Link>(linkEntity);
   linkComp.name = std::move(actualName);
   linkComp.parentJoint = entt::null;
 
   // Add to MultiBody structure
-  auto& structure
-      = m_world->getRegistry().get<comps::MultiBodyStructure>(m_entity);
   structure.links.push_back(linkEntity);
 
   return Link(linkEntity, m_world);
@@ -289,24 +350,52 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   auto parentEntity = options.parentLink.getEntity();
 
   DART_EXPERIMENTAL_THROW_T_IF(
+      options.parentLink.getWorld() != m_world,
+      InvalidArgumentException,
+      "Parent link belongs to a different world");
+
+  DART_EXPERIMENTAL_THROW_T_IF(
       !registry.valid(parentEntity),
       InvalidArgumentException,
       "Parent link is invalid");
 
+  auto& structure = safeGet<comps::MultiBodyStructure>(registry, m_entity);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !containsEntity(structure.links, parentEntity),
+      InvalidArgumentException,
+      "Parent link does not belong to MultiBody '{}'",
+      getName());
+
   // Auto-generate link name if not provided
   std::string actualLinkName;
   if (name.empty()) {
-    actualLinkName = std::format("link_{:03d}", ++m_world->m_linkCounter);
+    do {
+      actualLinkName = std::format("link_{:03d}", ++m_world->m_linkCounter);
+    } while (containsName(registry, structure.links, actualLinkName));
   } else {
     actualLinkName = std::string(name);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        containsName(registry, structure.links, actualLinkName),
+        InvalidArgumentException,
+        "Link '{}' already exists in MultiBody '{}'",
+        actualLinkName,
+        getName());
   }
 
   // Auto-generate joint name if not provided
   std::string actualJointName;
   if (options.jointName.empty()) {
-    actualJointName = std::format("joint_{:03d}", ++m_world->m_jointCounter);
+    do {
+      actualJointName = std::format("joint_{:03d}", ++m_world->m_jointCounter);
+    } while (containsName(registry, structure.joints, actualJointName));
   } else {
     actualJointName = options.jointName;
+    DART_EXPERIMENTAL_THROW_T_IF(
+        containsName(registry, structure.joints, actualJointName),
+        InvalidArgumentException,
+        "Joint '{}' already exists in MultiBody '{}'",
+        actualJointName,
+        getName());
   }
 
   // Create link entity
@@ -368,7 +457,6 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   linkComp.parentJoint = jointEntity;
 
   // Add to MultiBody structure
-  auto& structure = safeGet<comps::MultiBodyStructure>(registry, m_entity);
   structure.links.push_back(linkEntity);
   structure.joints.push_back(jointEntity);
 

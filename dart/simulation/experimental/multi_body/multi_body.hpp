@@ -194,12 +194,12 @@ public:
 
   /// Get link names in construction order.
   ///
-  /// Duplicate names, if present, are preserved in the returned snapshot.
+  /// Link names are unique within this MultiBody.
   [[nodiscard]] std::vector<std::string> getLinkNames() const;
 
   /// Get joint names in construction order.
   ///
-  /// Duplicate names, if present, are preserved in the returned snapshot.
+  /// Joint names are unique within this MultiBody.
   [[nodiscard]] std::vector<std::string> getJointNames() const;
 
   /// Get the entity ID (for advanced users)

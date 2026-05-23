@@ -494,12 +494,18 @@ MultiBody World::addMultiBody(std::string_view name)
 {
   ensureDesignMode();
 
-  std::string candidateName
-      = name.empty() ? std::format("multibody_{:03d}", m_multiBodyCounter + 1)
-                     : std::string(name);
-
+  std::string candidateName;
   if (name.empty()) {
-    ++m_multiBodyCounter;
+    do {
+      candidateName = std::format("multibody_{:03d}", ++m_multiBodyCounter);
+    } while (hasEntityWithName<comps::MultiBodyTag>(m_registry, candidateName));
+  } else {
+    candidateName = std::string(name);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        hasEntityWithName<comps::MultiBodyTag>(m_registry, candidateName),
+        InvalidArgumentException,
+        "MultiBody '{}' already exists",
+        candidateName);
   }
 
   auto entity = m_registry.create();

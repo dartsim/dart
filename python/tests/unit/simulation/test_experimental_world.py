@@ -346,6 +346,11 @@ def test_experimental_world_smoke():
     assert multi_body.name == "renamed_robot"
     assert world.get_multi_body("renamed_robot").name == "renamed_robot"
     assert world.get_multi_body("missing") is None
+    with pytest.raises(Exception, match="already exists"):
+        world.add_multi_body("renamed_robot")
+    with pytest.raises(Exception, match="cannot be empty"):
+        multi_body.name = ""
+    assert multi_body.name == "renamed_robot"
     assert world.num_multi_bodies == 1
     assert world.num_loop_closures == 0
 
@@ -411,6 +416,34 @@ def test_experimental_multibody_link_joint_common_path():
     assert [joint.name for joint in arm.joints] == ["elbow", "rail"]
     assert arm.link_names == ["base", "forearm", "slider"]
     assert arm.joint_names == ["elbow", "rail"]
+    with pytest.raises(Exception, match="already exists"):
+        arm.add_link("base")
+    assert arm.num_links == 3
+    assert arm.num_joints == 2
+    with pytest.raises(Exception, match="already exists"):
+        arm.add_link(
+            "forearm",
+            parent=base,
+            joint=sx.JointSpec(name="wrist", type=sx.JointType.REVOLUTE),
+        )
+    assert arm.num_links == 3
+    assert arm.num_joints == 2
+    with pytest.raises(Exception, match="already exists"):
+        arm.add_link(
+            "tool_link",
+            parent=base,
+            joint=sx.JointSpec(name="elbow", type=sx.JointType.REVOLUTE),
+        )
+    assert arm.num_links == 3
+    assert arm.num_joints == 2
+    other = world.add_multi_body("other")
+    other_base = other.add_link("other_base")
+    with pytest.raises(Exception, match="does not belong"):
+        arm.add_link(
+            "foreign_child",
+            parent=other_base,
+            joint=sx.JointSpec(name="foreign_joint", type=sx.JointType.REVOLUTE),
+        )
     assert arm.get_link("base").name == "base"
     assert arm.get_link("missing") is None
 
