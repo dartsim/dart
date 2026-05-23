@@ -30,16 +30,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "multi_body.hpp"
+#pragma once
 
-#include "dart/simulation/experimental/io/category_serializer.hpp"
+namespace dart::simulation::experimental {
 
-namespace dart::simulation::experimental::comps {
+/// Public joint type used by the experimental multibody facade.
+///
+/// This enum intentionally lives outside component storage so C++ and dartpy
+/// users can construct multibody joints without including implementation
+/// headers.
+enum class JointType
+{
+  Fixed,
+  Revolute,
+  Prismatic,
+  Screw,
+  Universal,
+  Spherical,
+  Planar,
+  Floating,
+  Custom
+};
 
-// Register multibody components
-DART_EXPERIMENTAL_REGISTER_COMPONENTS_BEGIN()
-DART_EXPERIMENTAL_REGISTER_COMPONENTS_ADD(MultiBodyTag)
-DART_EXPERIMENTAL_REGISTER_COMPONENTS_ADD(MultiBodyStructure)
-DART_EXPERIMENTAL_REGISTER_COMPONENTS_END()
-
-} // namespace dart::simulation::experimental::comps
+} // namespace dart::simulation::experimental
