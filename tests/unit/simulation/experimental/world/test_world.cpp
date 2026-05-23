@@ -1425,6 +1425,72 @@ TEST(World, RigidBodyStepParallelMatchesSequentialAcrossWorkerCounts)
   }
 }
 
+// Test the Phase 3 determinism gate's strong half: rigid-body integration is a
+// map-only stage (each body reads and writes only its own components, with no
+// cross-body reduction), so parallel execution must equal the sequential
+// reference bit-for-bit, not merely within a tolerance.
+TEST(World, RigidBodyIntegrationStageIsBitwiseDeterministicAcrossWorkers)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto buildWorld = [](sx::World& world, std::vector<sx::RigidBody>& bodies) {
+    for (int i = 0; i < 12; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + 0.1 * i;
+      options.inertia = Eigen::Vector3d(1.0, 1.5, 2.0).asDiagonal();
+      options.position = Eigen::Vector3d(0.1 * i, 0.2 * i, 0.3 * i);
+      options.linearVelocity = Eigen::Vector3d(0.5, 0.25 * i, -0.1 * i);
+      options.angularVelocity = Eigen::Vector3d(0.01 * i, 0.02 * i, 0.03 * i);
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      body.setForce(Eigen::Vector3d(0.1 * i, 0.2, -0.3));
+      body.setTorque(Eigen::Vector3d(0.05, -0.1 * i, 0.2));
+      bodies.push_back(body);
+    }
+    world.setTimeStep(0.01);
+    world.enterSimulationMode();
+  };
+
+  sx::World reference;
+  std::vector<sx::RigidBody> referenceBodies;
+  buildWorld(reference, referenceBodies);
+  compute::SequentialExecutor sequential;
+  compute::RigidBodyIntegrationStage referenceStage;
+  for (int s = 0; s < 5; ++s) {
+    referenceStage.execute(reference, sequential);
+  }
+
+  for (const std::size_t workers :
+       {std::size_t{1}, std::size_t{2}, std::size_t{4}, std::size_t{8}}) {
+    sx::World world;
+    std::vector<sx::RigidBody> bodies;
+    buildWorld(world, bodies);
+
+    compute::ParallelExecutor executor(workers);
+    compute::RigidBodyIntegrationStage stage;
+    for (int s = 0; s < 5; ++s) {
+      stage.execute(world, executor);
+    }
+
+    for (std::size_t i = 0; i < referenceBodies.size(); ++i) {
+      EXPECT_TRUE((referenceBodies[i].getTransform().matrix().array()
+                   == bodies[i].getTransform().matrix().array())
+                      .all())
+          << "workers=" << workers << " body=" << i << " transform not bitwise";
+      EXPECT_TRUE((referenceBodies[i].getLinearVelocity().array()
+                   == bodies[i].getLinearVelocity().array())
+                      .all())
+          << "workers=" << workers << " body=" << i
+          << " linear velocity not bitwise";
+      EXPECT_TRUE((referenceBodies[i].getAngularVelocity().array()
+                   == bodies[i].getAngularVelocity().array())
+                      .all())
+          << "workers=" << workers << " body=" << i
+          << " angular velocity not bitwise";
+    }
+  }
+}
+
 // Test that the batched SoA integration stage matches the per-entity stage for
 // free (non-frame-coupled) rigid bodies under a full dynamic step: linear
 // force, torque (via the shared world-inertia LDLT solve), and the shared
