@@ -39,6 +39,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <numbers>
 
 using namespace dart::collision::native;
@@ -1419,6 +1420,19 @@ std::vector<Eigen::Vector3d> makeCubeVertices(double halfExtent)
       {-h, h, h}};
 }
 
+std::vector<Eigen::Vector3d> makeBoxVertices(const Eigen::Vector3d& half)
+{
+  return {
+      {-half.x(), -half.y(), -half.z()},
+      {half.x(), -half.y(), -half.z()},
+      {half.x(), half.y(), -half.z()},
+      {-half.x(), half.y(), -half.z()},
+      {-half.x(), -half.y(), half.z()},
+      {half.x(), -half.y(), half.z()},
+      {half.x(), half.y(), half.z()},
+      {-half.x(), half.y(), half.z()}};
+}
+
 TEST(ConservativeAdvancement, Miss)
 {
   ConvexShape shapeA(makeCubeVertices(0.5));
@@ -1551,6 +1565,294 @@ TEST(ConservativeAdvancement, RotatingShape)
   EXPECT_TRUE(hit);
   EXPECT_GT(result.timeOfImpact, 0.5);
   EXPECT_LT(result.timeOfImpact, 1.0);
+}
+
+//==============================================================================
+// Convex cast (both shapes moving)
+//==============================================================================
+
+TEST(ConvexCast, BothMovingTowardEachOther)
+{
+  ConvexShape shapeA(makeCubeVertices(0.5));
+  ConvexShape shapeB(makeCubeVertices(0.5));
+
+  Eigen::Isometry3d aStart = Eigen::Isometry3d::Identity();
+  aStart.translation() = Eigen::Vector3d(-5, 0, 0);
+  Eigen::Isometry3d aEnd = Eigen::Isometry3d::Identity();
+  aEnd.translation() = Eigen::Vector3d(0, 0, 0);
+
+  Eigen::Isometry3d bStart = Eigen::Isometry3d::Identity();
+  bStart.translation() = Eigen::Vector3d(5, 0, 0);
+  Eigen::Isometry3d bEnd = Eigen::Isometry3d::Identity();
+  bEnd.translation() = Eigen::Vector3d(0, 0, 0);
+
+  CcdOption option;
+  CcdResult result;
+
+  const bool hit
+      = convexCast(shapeA, aStart, aEnd, shapeB, bStart, bEnd, option, result);
+
+  EXPECT_TRUE(hit);
+  // Centers close from 10 to surface contact at distance 1 -> t = 0.9.
+  EXPECT_NEAR(result.timeOfImpact, 0.9, 5e-2);
+}
+
+TEST(ConvexCast, BothMovingSameDirectionMiss)
+{
+  ConvexShape shapeA(makeCubeVertices(0.5));
+  ConvexShape shapeB(makeCubeVertices(0.5));
+
+  Eigen::Isometry3d aStart = Eigen::Isometry3d::Identity();
+  aStart.translation() = Eigen::Vector3d(-5, 0, 0);
+  Eigen::Isometry3d aEnd = Eigen::Isometry3d::Identity();
+  aEnd.translation() = Eigen::Vector3d(0, 0, 0);
+
+  Eigen::Isometry3d bStart = Eigen::Isometry3d::Identity();
+  bStart.translation() = Eigen::Vector3d(-3, 0, 0);
+  Eigen::Isometry3d bEnd = Eigen::Isometry3d::Identity();
+  bEnd.translation() = Eigen::Vector3d(2, 0, 0);
+
+  CcdOption option;
+  CcdResult result;
+
+  const bool hit
+      = convexCast(shapeA, aStart, aEnd, shapeB, bStart, bEnd, option, result);
+
+  EXPECT_FALSE(hit);
+}
+
+TEST(ConvexCast, MatchesConservativeAdvancementWhenBStatic)
+{
+  ConvexShape shapeA(makeCubeVertices(0.5));
+  ConvexShape shapeB(makeCubeVertices(0.5));
+
+  Eigen::Isometry3d aStart = Eigen::Isometry3d::Identity();
+  aStart.translation() = Eigen::Vector3d(-5, 0, 0);
+  Eigen::Isometry3d aEnd = Eigen::Isometry3d::Identity();
+  aEnd.translation() = Eigen::Vector3d(5, 0, 0);
+
+  const Eigen::Isometry3d bStatic = Eigen::Isometry3d::Identity();
+
+  CcdOption option;
+  CcdResult castResult;
+  CcdResult advResult;
+
+  const bool castHit = convexCast(
+      shapeA, aStart, aEnd, shapeB, bStatic, bStatic, option, castResult);
+  const bool advHit = conservativeAdvancement(
+      shapeA, aStart, aEnd, shapeB, bStatic, option, advResult);
+
+  EXPECT_EQ(castHit, advHit);
+  ASSERT_TRUE(castHit);
+  EXPECT_NEAR(castResult.timeOfImpact, advResult.timeOfImpact, 1e-9);
+}
+
+//==============================================================================
+// Spline (cubic-Bezier) cast tests
+//==============================================================================
+
+namespace {
+
+// First time on a fine grid at which shape A (following the spline) is within
+// contact tolerance of static shape B -- a discrete reference that upper-bounds
+// the true time of impact, so a conservative cast must not exceed it.
+double splineSubstepHitTime(
+    const ConvexShape& shapeA,
+    const std::array<Eigen::Vector3d, 4>& translation,
+    const std::array<Eigen::Vector3d, 4>& rotation,
+    const ConvexShape& shapeB,
+    const Eigen::Isometry3d& transformB,
+    const CcdOption& option)
+{
+  constexpr int kSamples = 4000;
+  const bool rotates = rotation[0].squaredNorm() + rotation[1].squaredNorm()
+                           + rotation[2].squaredNorm()
+                           + rotation[3].squaredNorm()
+                       > 1e-12;
+  for (int i = 0; i <= kSamples; ++i) {
+    const double t = static_cast<double>(i) / static_cast<double>(kSamples);
+    const double u = 1.0 - t;
+    const double b0 = u * u * u;
+    const double b1 = 3.0 * t * u * u;
+    const double b2 = 3.0 * t * t * u;
+    const double b3 = t * t * t;
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.translation() = b0 * translation[0] + b1 * translation[1]
+                         + b2 * translation[2] + b3 * translation[3];
+    if (rotates) {
+      const Eigen::Vector3d w = b0 * rotation[0] + b1 * rotation[1]
+                                + b2 * rotation[2] + b3 * rotation[3];
+      const double angle = w.norm();
+      if (angle > 1e-12) {
+        pose.linear() = Eigen::AngleAxisd(angle, w / angle).toRotationMatrix();
+      }
+    }
+    CcdResult probe;
+    if (conservativeAdvancement(
+            shapeA, pose, pose, shapeB, transformB, option, probe)) {
+      return t;
+    }
+  }
+  return -1.0;
+}
+
+} // namespace
+
+// A spline can curve away from the chord between its endpoints, so it collides
+// where a straight-line cast over the same endpoints misses entirely. This is
+// the capability the linear and screw motion models cannot represent.
+TEST(SplineCast, CurvedPathHitsWhereChordMisses)
+{
+  ConvexShape shapeA(makeCubeVertices(0.5));
+  ConvexShape shapeB(makeCubeVertices(0.5));
+
+  Eigen::Isometry3d transformB = Eigen::Isometry3d::Identity();
+  transformB.translation() = Eigen::Vector3d(0, -1, 0);
+
+  // Downward-bulging cubic Bezier; the chord stays at y = 2 (far from B), but
+  // the curve dips to the obstacle at its midpoint.
+  const std::array<Eigen::Vector3d, 4> translation
+      = {Eigen::Vector3d(-2, 2, 0),
+         Eigen::Vector3d(-2, -2, 0),
+         Eigen::Vector3d(2, -2, 0),
+         Eigen::Vector3d(2, 2, 0)};
+  const std::array<Eigen::Vector3d, 4> rotation
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero()};
+
+  CcdOption option;
+  CcdResult result;
+  const bool hit = splineCast(
+      shapeA, translation, rotation, shapeB, transformB, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 0.5);
+
+  // A straight cast over the same endpoints (the chord) never approaches B.
+  Eigen::Isometry3d chordStart = Eigen::Isometry3d::Identity();
+  chordStart.translation() = translation[0];
+  Eigen::Isometry3d chordEnd = Eigen::Isometry3d::Identity();
+  chordEnd.translation() = translation[3];
+  CcdResult chordResult;
+  const bool chordHit = conservativeAdvancement(
+      shapeA, chordStart, chordEnd, shapeB, transformB, option, chordResult);
+  EXPECT_FALSE(chordHit);
+}
+
+// A conservative cast must never overshoot the true contact, so its time of
+// impact stays at or below the first overlap a fine discrete sampling finds.
+TEST(SplineCast, ConservativeVersusSubstep)
+{
+  ConvexShape shapeA(makeCubeVertices(0.5));
+  ConvexShape shapeB(makeCubeVertices(0.5));
+
+  Eigen::Isometry3d transformB = Eigen::Isometry3d::Identity();
+  transformB.translation() = Eigen::Vector3d(0, -1, 0);
+
+  const std::array<Eigen::Vector3d, 4> translation
+      = {Eigen::Vector3d(-2, 2, 0),
+         Eigen::Vector3d(-2, -2, 0),
+         Eigen::Vector3d(2, -2, 0),
+         Eigen::Vector3d(2, 2, 0)};
+  const std::array<Eigen::Vector3d, 4> rotation
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero()};
+
+  CcdOption option;
+  CcdResult result;
+  ASSERT_TRUE(splineCast(
+      shapeA, translation, rotation, shapeB, transformB, option, result));
+
+  const double substepHit = splineSubstepHitTime(
+      shapeA, translation, rotation, shapeB, transformB, option);
+  ASSERT_GT(substepHit, 0.0);
+  EXPECT_LE(result.timeOfImpact, substepHit + 1e-3);
+}
+
+// Evenly spaced collinear control points make the cubic Bezier a constant-speed
+// straight line, so the spline cast must reproduce the linear cast's TOI.
+TEST(SplineCast, DegeneratesToLinearMotion)
+{
+  ConvexShape shapeA(makeCubeVertices(0.5));
+  ConvexShape shapeB(makeCubeVertices(0.5));
+
+  const Eigen::Isometry3d transformB = Eigen::Isometry3d::Identity();
+
+  const Eigen::Vector3d p0(-5, 0, 0);
+  const Eigen::Vector3d p3(5, 0, 0);
+  const Eigen::Vector3d d = p3 - p0;
+  const std::array<Eigen::Vector3d, 4> translation
+      = {p0, p0 + d / 3.0, p0 + 2.0 * d / 3.0, p3};
+  const std::array<Eigen::Vector3d, 4> rotation
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero()};
+
+  CcdOption option;
+  CcdResult splineResult;
+  ASSERT_TRUE(splineCast(
+      shapeA, translation, rotation, shapeB, transformB, option, splineResult));
+
+  Eigen::Isometry3d linearStart = Eigen::Isometry3d::Identity();
+  linearStart.translation() = p0;
+  Eigen::Isometry3d linearEnd = Eigen::Isometry3d::Identity();
+  linearEnd.translation() = p3;
+  CcdResult linearResult;
+  ASSERT_TRUE(conservativeAdvancement(
+      shapeA,
+      linearStart,
+      linearEnd,
+      shapeB,
+      transformB,
+      option,
+      linearResult));
+
+  EXPECT_NEAR(splineResult.timeOfImpact, linearResult.timeOfImpact, 1e-3);
+}
+
+// A spline carrying rotation exercises the angular term of the motion bound: a
+// rod that is clear of the obstacle while horizontal sweeps into it as it
+// spins.
+TEST(SplineCast, RotatingSplineHitsConservatively)
+{
+  ConvexShape shapeA(makeBoxVertices(Eigen::Vector3d(1.2, 0.1, 0.1)));
+  ConvexShape shapeB(makeCubeVertices(0.5));
+
+  Eigen::Isometry3d transformB = Eigen::Isometry3d::Identity();
+
+  // Stationary center just above B; rotation about Z sweeps the rod down into
+  // B.
+  const std::array<Eigen::Vector3d, 4> translation
+      = {Eigen::Vector3d(0, 1, 0),
+         Eigen::Vector3d(0, 1, 0),
+         Eigen::Vector3d(0, 1, 0),
+         Eigen::Vector3d(0, 1, 0)};
+  const double pi = std::numbers::pi_v<double>;
+  const std::array<Eigen::Vector3d, 4> rotation
+      = {Eigen::Vector3d(0, 0, 0),
+         Eigen::Vector3d(0, 0, pi / 3.0),
+         Eigen::Vector3d(0, 0, 2.0 * pi / 3.0),
+         Eigen::Vector3d(0, 0, pi)};
+
+  CcdOption option;
+  CcdResult result;
+  const bool hit = splineCast(
+      shapeA, translation, rotation, shapeB, transformB, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 1.0);
+
+  const double substepHit = splineSubstepHitTime(
+      shapeA, translation, rotation, shapeB, transformB, option);
+  ASSERT_GT(substepHit, 0.0);
+  EXPECT_LE(result.timeOfImpact, substepHit + 1e-3);
 }
 
 //==============================================================================

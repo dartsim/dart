@@ -371,6 +371,12 @@ struct DART_COLLISION_NATIVE_API CcdOption
 
   int maxIterations = 32;
 
+  /// Minimum separation (gap) the query keeps between primitives. A positive
+  /// value reports the time of impact at which the primitives close to this
+  /// distance rather than to touching, which barrier/IPC-style solvers require.
+  /// Ignored by the rigid shape casts; used by the primitive CCD queries.
+  double minSeparation = 0.0;
+
   [[nodiscard]] static CcdOption standard()
   {
     return {1e-4, 32};
@@ -379,6 +385,30 @@ struct DART_COLLISION_NATIVE_API CcdOption
   [[nodiscard]] static CcdOption precise()
   {
     return {1e-6, 64};
+  }
+};
+
+/// Result of a primitive-level continuous collision query (point-triangle,
+/// edge-edge). Reports only a conservative time of impact in [0, 1]; the
+/// contact configuration can be reconstructed by the caller from the input
+/// trajectories.
+struct DART_COLLISION_NATIVE_API CcdPrimitiveResult
+{
+  bool hit = false;
+
+  /// Conservative time of impact in [0, 1]: a lower bound on the true first
+  /// contact time. Never overshoots a real collision.
+  double timeOfImpact = 1.0;
+
+  [[nodiscard]] bool isHit() const
+  {
+    return hit;
+  }
+
+  void clear()
+  {
+    hit = false;
+    timeOfImpact = 1.0;
   }
 };
 

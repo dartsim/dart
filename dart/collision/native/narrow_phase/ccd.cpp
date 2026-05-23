@@ -32,8 +32,10 @@
 
 #include <dart/collision/native/narrow_phase/ccd.hpp>
 #include <dart/collision/native/narrow_phase/gjk.hpp>
+#include <dart/collision/native/narrow_phase/gjk_inl.hpp>
 
 #include <algorithm>
+#include <array>
 
 #include <cmath>
 
@@ -498,7 +500,7 @@ bool sphereCastConvex(
              * target.support(targetTransform.rotation().transpose() * dir);
     };
 
-    GjkResult gjkResult = Gjk::query(supportA, supportB, initialDir);
+    GjkResult gjkResult = detail::queryT(supportA, supportB, initialDir);
 
     if (gjkResult.intersecting) {
       result.hit = true;
@@ -593,19 +595,42 @@ Eigen::Vector3d getCapsuleEndpoint(
   return transform * localPoint;
 }
 
-Eigen::Isometry3d interpolateTransform(
-    const Eigen::Isometry3d& start, const Eigen::Isometry3d& end, double t)
+// Samples a rigid motion start -> end at parameter t in [0, 1]. Endpoint
+// quaternions are built once at construction so the conservative-advancement
+// loop pays only a slerp (or nothing, for translation) per iteration instead of
+// reconstructing quaternions from rotation matrices every step.
+class MotionSample
 {
-  Eigen::Isometry3d result = Eigen::Isometry3d::Identity();
-  result.translation()
-      = (1.0 - t) * start.translation() + t * end.translation();
+public:
+  MotionSample(const Eigen::Isometry3d& start, const Eigen::Isometry3d& end)
+    : startTranslation_(start.translation()),
+      endTranslation_(end.translation()),
+      startRotation_(start.rotation()),
+      rotates_(!startRotation_.isApprox(end.rotation())),
+      qStart_(startRotation_),
+      qEnd_(end.rotation())
+  {
+  }
 
-  Eigen::Quaterniond qStart(start.rotation());
-  Eigen::Quaterniond qEnd(end.rotation());
-  result.linear() = qStart.slerp(t, qEnd).toRotationMatrix();
+  [[nodiscard]] Eigen::Isometry3d at(double t) const
+  {
+    Eigen::Isometry3d result = Eigen::Isometry3d::Identity();
+    result.translation() = (1.0 - t) * startTranslation_ + t * endTranslation_;
+    // Translation-only motion skips the slerp; rotational motion reuses the
+    // cached endpoint quaternions.
+    result.linear() = rotates_ ? qStart_.slerp(t, qEnd_).toRotationMatrix()
+                               : startRotation_;
+    return result;
+  }
 
-  return result;
-}
+private:
+  Eigen::Vector3d startTranslation_;
+  Eigen::Vector3d endTranslation_;
+  Eigen::Matrix3d startRotation_;
+  bool rotates_;
+  Eigen::Quaterniond qStart_;
+  Eigen::Quaterniond qEnd_;
+};
 
 double computeCapsuleMotionBound(
     const CapsuleShape& capsule,
@@ -899,9 +924,10 @@ bool capsuleCastConvex(
     initialDir = Eigen::Vector3d::UnitX();
   }
 
+  const MotionSample capsuleMotion(capsuleStart, capsuleEnd);
+
   for (int iter = 0; iter < option.maxIterations; ++iter) {
-    const Eigen::Isometry3d currentCapsuleTransform
-        = interpolateTransform(capsuleStart, capsuleEnd, t);
+    const Eigen::Isometry3d currentCapsuleTransform = capsuleMotion.at(t);
 
     auto supportA = [&](const Eigen::Vector3d& dir) {
       return getCapsuleSupport(currentCapsuleTransform, capsule, dir);
@@ -911,7 +937,7 @@ bool capsuleCastConvex(
              * target.support(targetTransform.rotation().transpose() * dir);
     };
 
-    GjkResult gjkResult = Gjk::query(supportA, supportB, initialDir);
+    GjkResult gjkResult = detail::queryT(supportA, supportB, initialDir);
 
     if (gjkResult.intersecting) {
       result.hit = true;
@@ -1024,27 +1050,147 @@ bool capsuleCastMesh(
 
 namespace {
 
-double computeMotionBound(
+// Precomputed rotational data for a shape's motion, used to evaluate a directed
+// (closest-direction-aware) conservative-advancement bound each step. The
+// rotation contributes to the closest-distance rate only through its component
+// perpendicular to the closest direction n: (omega x r).n <= |omega| * r_perp *
+// |n x axis|. So the angular term carries a |n x axis| factor that vanishes
+// when the rotation axis is parallel to n (e.g. a coaxial screw, where the spin
+// does not close the gap) and is maximal when the axis is perpendicular to n
+// (an ordinary rotational sweep). This is a C2A-style directed bound (Tang/Kim/
+// Manocha, ICRA 2009) restricted to the angular term; the linear term stays
+// undirected (|v|) so translation remains strictly conservative.
+struct RotationBoundData
+{
+  Eigen::Vector3d axis = Eigen::Vector3d::UnitX();
+  double angle = 0.0;
+  double maxPerpRadius = 0.0;
+
+  [[nodiscard]] double angularBound(const Eigen::Vector3d& direction) const
+  {
+    if (angle < kEpsilon) {
+      return 0.0;
+    }
+    return angle * maxPerpRadius * direction.cross(axis).norm();
+  }
+};
+
+RotationBoundData makeRotationBoundData(
     const ConvexShape& shape,
     const Eigen::Isometry3d& transformStart,
     const Eigen::Isometry3d& transformEnd)
 {
-  double linearVelocity
-      = (transformEnd.translation() - transformStart.translation()).norm();
+  RotationBoundData data;
 
-  Eigen::Quaterniond qStart(transformStart.rotation());
-  Eigen::Quaterniond qEnd(transformEnd.rotation());
-  double angle = qStart.angularDistance(qEnd);
-
-  double maxRadius = 0.0;
-  for (const auto& vertex : shape.getVertices()) {
-    maxRadius = std::max(maxRadius, vertex.norm());
+  const Eigen::Quaterniond qStart(transformStart.rotation());
+  const Eigen::Quaterniond qEnd(transformEnd.rotation());
+  data.angle = qStart.angularDistance(qEnd);
+  if (data.angle < kEpsilon) {
+    return data;
   }
 
-  double angularContribution = angle * maxRadius;
+  data.axis = Eigen::AngleAxisd(qEnd * qStart.conjugate()).axis();
+  const Eigen::Matrix3d rotStart = transformStart.rotation();
 
-  return linearVelocity + angularContribution;
+  // Perpendicular distance from the (world) rotation axis is invariant along
+  // the sweep, so it is evaluated once at the start configuration.
+  for (const auto& vertex : shape.getVertices()) {
+    const Eigen::Vector3d p = rotStart * vertex;
+    const double perp = (p - p.dot(data.axis) * data.axis).norm();
+    data.maxPerpRadius = std::max(data.maxPerpRadius, perp);
+  }
+  return data;
 }
+
+// Samples a cubic-Bezier (spline) motion and supplies a conservative speed
+// bound over a remaining interval [t, 1]. Translation follows the cubic Bezier
+// of the four translation control points; orientation is the exponential of the
+// cubic Bezier of the four rotation-vector control points -- the same
+// parameterization the reference spline-motion model uses.
+class SplineSample
+{
+public:
+  SplineSample(
+      const std::array<Eigen::Vector3d, 4>& translation,
+      const std::array<Eigen::Vector3d, 4>& rotation)
+    : translation_(translation),
+      rotation_(rotation),
+      rotates_(
+          rotation[0].squaredNorm() + rotation[1].squaredNorm()
+              + rotation[2].squaredNorm() + rotation[3].squaredNorm()
+          > kEpsilon)
+  {
+    // Hodograph (derivative) control points: a cubic Bezier's derivative is a
+    // quadratic Bezier with control points 3*(P_{i+1} - P_i).
+    for (int i = 0; i < 3; ++i) {
+      translationVel_[i] = 3.0 * (translation_[i + 1] - translation_[i]);
+      rotationVel_[i] = 3.0 * (rotation_[i + 1] - rotation_[i]);
+    }
+  }
+
+  [[nodiscard]] Eigen::Isometry3d at(double t) const
+  {
+    const double u = 1.0 - t;
+    const double b0 = u * u * u;
+    const double b1 = 3.0 * t * u * u;
+    const double b2 = 3.0 * t * t * u;
+    const double b3 = t * t * t;
+
+    Eigen::Isometry3d result = Eigen::Isometry3d::Identity();
+    result.translation() = b0 * translation_[0] + b1 * translation_[1]
+                           + b2 * translation_[2] + b3 * translation_[3];
+    if (rotates_) {
+      const Eigen::Vector3d w = b0 * rotation_[0] + b1 * rotation_[1]
+                                + b2 * rotation_[2] + b3 * rotation_[3];
+      const double angle = w.norm();
+      if (angle > kEpsilon) {
+        result.linear()
+            = Eigen::AngleAxisd(angle, w / angle).toRotationMatrix();
+      }
+    }
+    return result;
+  }
+
+  [[nodiscard]] bool rotates() const
+  {
+    return rotates_;
+  }
+
+  // Upper bound on translational speed |T'(s)| for s in [t, 1].
+  [[nodiscard]] double maxLinearSpeed(double t) const
+  {
+    return maxQuadraticBezierNorm(translationVel_, t);
+  }
+
+  // Upper bound on angular speed |omega(s)| for s in [t, 1]. The body-frame
+  // angular velocity is omega = J_r(W) W', and the SO(3) right Jacobian J_r is
+  // a contraction (its singular values are at most 1), so |omega| <= |W'|.
+  // Hence the hodograph bound on |W'| also bounds |omega|.
+  [[nodiscard]] double maxAngularSpeed(double t) const
+  {
+    return rotates_ ? maxQuadraticBezierNorm(rotationVel_, t) : 0.0;
+  }
+
+private:
+  // Upper bound on the Euclidean norm of a quadratic Bezier (control points v)
+  // over [t, 1]. de Casteljau subdivision at t yields the right sub-curve's
+  // control points; the curve lies in their convex hull, so the largest control
+  // point norm bounds the curve norm on the remaining interval.
+  static double maxQuadraticBezierNorm(
+      const std::array<Eigen::Vector3d, 3>& v, double t)
+  {
+    const Eigen::Vector3d a = v[0] + t * (v[1] - v[0]);
+    const Eigen::Vector3d b = v[1] + t * (v[2] - v[1]);
+    const Eigen::Vector3d r0 = a + t * (b - a); // curve value at t
+    return std::max({r0.norm(), b.norm(), v[2].norm()});
+  }
+
+  std::array<Eigen::Vector3d, 4> translation_;
+  std::array<Eigen::Vector3d, 4> rotation_;
+  std::array<Eigen::Vector3d, 3> translationVel_;
+  std::array<Eigen::Vector3d, 3> rotationVel_;
+  bool rotates_;
+};
 
 } // namespace
 
@@ -1059,11 +1205,13 @@ bool conservativeAdvancement(
 {
   result.clear();
 
-  double motionBound
-      = computeMotionBound(shapeA, transformAStart, transformAEnd);
-  if (motionBound < option.tolerance) {
-    motionBound = option.tolerance;
-  }
+  // Directed conservative-advancement bound (recomputed each step from the
+  // closest direction): the linear term stays undirected; only the rotational
+  // term is projected via |n x axis|.
+  const double linearBound
+      = (transformAEnd.translation() - transformAStart.translation()).norm();
+  const RotationBoundData rotationA
+      = makeRotationBoundData(shapeA, transformAStart, transformAEnd);
 
   double t = 0.0;
 
@@ -1073,9 +1221,13 @@ bool conservativeAdvancement(
     initialDir = Eigen::Vector3d::UnitX();
   }
 
+  const MotionSample motionA(transformAStart, transformAEnd);
+
+  GjkSimplex warmSimplex;
+  bool haveWarm = false;
+
   for (int iter = 0; iter < option.maxIterations; ++iter) {
-    Eigen::Isometry3d currentTransformA
-        = interpolateTransform(transformAStart, transformAEnd, t);
+    Eigen::Isometry3d currentTransformA = motionA.at(t);
 
     auto supportA = [&](const Eigen::Vector3d& dir) {
       return currentTransformA
@@ -1086,7 +1238,12 @@ bool conservativeAdvancement(
              * shapeB.support(transformB.rotation().transpose() * dir);
     };
 
-    GjkResult gjkResult = Gjk::query(supportA, supportB, initialDir);
+    // Warm-start GJK from the previous step's simplex (see convexCast).
+    GjkResult gjkResult
+        = haveWarm ? detail::queryT(supportA, supportB, warmSimplex, initialDir)
+                   : detail::queryT(supportA, supportB, initialDir);
+    warmSimplex = gjkResult.simplex;
+    haveWarm = true;
 
     if (gjkResult.intersecting) {
       result.hit = true;
@@ -1122,9 +1279,229 @@ bool conservativeAdvancement(
       return true;
     }
 
+    double motionBound = linearBound + rotationA.angularBound(sepAxis);
+    if (motionBound < option.tolerance) {
+      motionBound = option.tolerance;
+    }
     double dt = distance / motionBound;
     t += dt;
 
+    if (t > 1.0) {
+      return false;
+    }
+
+    initialDir = sepAxis;
+  }
+
+  return false;
+}
+
+bool convexCast(
+    const ConvexShape& shapeA,
+    const Eigen::Isometry3d& transformAStart,
+    const Eigen::Isometry3d& transformAEnd,
+    const ConvexShape& shapeB,
+    const Eigen::Isometry3d& transformBStart,
+    const Eigen::Isometry3d& transformBEnd,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  result.clear();
+
+  // Directed conservative-advancement bound, recomputed each step from the
+  // closest direction. Linear term uses the relative translation (undirected);
+  // each body's rotational term is projected via |n x axis|.
+  const Eigen::Vector3d relativeLinearVel
+      = (transformAEnd.translation() - transformAStart.translation())
+        - (transformBEnd.translation() - transformBStart.translation());
+  const double linearBound = relativeLinearVel.norm();
+  const RotationBoundData rotationA
+      = makeRotationBoundData(shapeA, transformAStart, transformAEnd);
+  const RotationBoundData rotationB
+      = makeRotationBoundData(shapeB, transformBStart, transformBEnd);
+
+  double t = 0.0;
+
+  Eigen::Vector3d initialDir
+      = transformBStart.translation() - transformAStart.translation();
+  if (initialDir.squaredNorm() < kEpsilon) {
+    initialDir = Eigen::Vector3d::UnitX();
+  }
+
+  const MotionSample motionA(transformAStart, transformAEnd);
+  const MotionSample motionB(transformBStart, transformBEnd);
+
+  GjkSimplex warmSimplex;
+  bool haveWarm = false;
+
+  for (int iter = 0; iter < option.maxIterations; ++iter) {
+    const Eigen::Isometry3d currentTransformA = motionA.at(t);
+    const Eigen::Isometry3d currentTransformB = motionB.at(t);
+
+    auto supportA = [&](const Eigen::Vector3d& dir) {
+      return currentTransformA
+             * shapeA.support(currentTransformA.rotation().transpose() * dir);
+    };
+    auto supportB = [&](const Eigen::Vector3d& dir) {
+      return currentTransformB
+             * shapeB.support(currentTransformB.rotation().transpose() * dir);
+    };
+
+    // Warm-start GJK from the previous step's simplex: consecutive
+    // conservative- advancement configurations are nearly identical, so the
+    // prior search directions seed the closest-point query close to its answer.
+    // The warm-start recomputes supports at the current configuration, so the
+    // result is identical -- only the iteration count drops.
+    GjkResult gjkResult
+        = haveWarm ? detail::queryT(supportA, supportB, warmSimplex, initialDir)
+                   : detail::queryT(supportA, supportB, initialDir);
+    warmSimplex = gjkResult.simplex;
+    haveWarm = true;
+
+    if (gjkResult.intersecting) {
+      result.hit = true;
+      result.timeOfImpact = t;
+      Eigen::Vector3d pointA = supportA(Eigen::Vector3d::UnitX());
+      Eigen::Vector3d pointB = supportB(-Eigen::Vector3d::UnitX());
+      result.point = pointB;
+      result.normal = (pointA - pointB).normalized();
+      if (result.normal.squaredNorm() < kEpsilon) {
+        result.normal = Eigen::Vector3d::UnitZ();
+      }
+      return true;
+    }
+
+    Eigen::Vector3d pointA = gjkResult.closestPointA;
+    Eigen::Vector3d pointB = gjkResult.closestPointB;
+    double distance = gjkResult.distance;
+
+    Eigen::Vector3d sepAxis = gjkResult.separationAxis;
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = pointB - pointA;
+    }
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = Eigen::Vector3d::UnitX();
+    }
+    sepAxis.normalize();
+
+    if (distance < option.tolerance) {
+      result.hit = true;
+      result.timeOfImpact = t;
+      result.point = pointB;
+      result.normal = sepAxis;
+      return true;
+    }
+
+    double motionBound = linearBound + rotationA.angularBound(sepAxis)
+                         + rotationB.angularBound(sepAxis);
+    if (motionBound < option.tolerance) {
+      motionBound = option.tolerance;
+    }
+    t += distance / motionBound;
+    if (t > 1.0) {
+      return false;
+    }
+
+    initialDir = sepAxis;
+  }
+
+  return false;
+}
+
+bool splineCast(
+    const ConvexShape& shapeA,
+    const std::array<Eigen::Vector3d, 4>& translationControlPoints,
+    const std::array<Eigen::Vector3d, 4>& rotationControlPoints,
+    const ConvexShape& shapeB,
+    const Eigen::Isometry3d& transformB,
+    const CcdOption& option,
+    CcdResult& result)
+{
+  result.clear();
+
+  const SplineSample motionA(translationControlPoints, rotationControlPoints);
+
+  // Rotation pivots about shape A's local origin, so the swept radius that
+  // converts angular speed to point speed is the farthest vertex from it.
+  double maxRadius = 0.0;
+  if (motionA.rotates()) {
+    for (const auto& vertex : shapeA.getVertices()) {
+      maxRadius = std::max(maxRadius, vertex.norm());
+    }
+  }
+
+  double t = 0.0;
+
+  Eigen::Vector3d initialDir
+      = transformB.translation() - translationControlPoints[0];
+  if (initialDir.squaredNorm() < kEpsilon) {
+    initialDir = Eigen::Vector3d::UnitX();
+  }
+
+  auto supportB = [&](const Eigen::Vector3d& dir) {
+    return transformB * shapeB.support(transformB.rotation().transpose() * dir);
+  };
+
+  GjkSimplex warmSimplex;
+  bool haveWarm = false;
+
+  for (int iter = 0; iter < option.maxIterations; ++iter) {
+    const Eigen::Isometry3d currentTransformA = motionA.at(t);
+
+    auto supportA = [&](const Eigen::Vector3d& dir) {
+      return currentTransformA
+             * shapeA.support(currentTransformA.rotation().transpose() * dir);
+    };
+
+    GjkResult gjkResult
+        = haveWarm ? detail::queryT(supportA, supportB, warmSimplex, initialDir)
+                   : detail::queryT(supportA, supportB, initialDir);
+    warmSimplex = gjkResult.simplex;
+    haveWarm = true;
+
+    if (gjkResult.intersecting) {
+      result.hit = true;
+      result.timeOfImpact = t;
+      Eigen::Vector3d pointA = supportA(Eigen::Vector3d::UnitX());
+      Eigen::Vector3d pointB = supportB(-Eigen::Vector3d::UnitX());
+      result.point = pointB;
+      result.normal = (pointA - pointB).normalized();
+      if (result.normal.squaredNorm() < kEpsilon) {
+        result.normal = Eigen::Vector3d::UnitZ();
+      }
+      return true;
+    }
+
+    const double distance = gjkResult.distance;
+
+    Eigen::Vector3d sepAxis = gjkResult.separationAxis;
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = gjkResult.closestPointB - gjkResult.closestPointA;
+    }
+    if (sepAxis.squaredNorm() < kEpsilon) {
+      sepAxis = Eigen::Vector3d::UnitX();
+    }
+    sepAxis.normalize();
+
+    if (distance < option.tolerance) {
+      result.hit = true;
+      result.timeOfImpact = t;
+      result.point = gjkResult.closestPointB;
+      result.normal = sepAxis;
+      return true;
+    }
+
+    // Conservative spline motion bound over the remaining interval [t, 1]: the
+    // max point speed is bounded by the translational speed plus the angular
+    // speed times the swept radius. Both speed bounds shrink as t advances
+    // (de Casteljau on the remaining sub-curve), so the step grows near the
+    // end.
+    double motionBound
+        = motionA.maxLinearSpeed(t) + motionA.maxAngularSpeed(t) * maxRadius;
+    if (motionBound < option.tolerance) {
+      motionBound = option.tolerance;
+    }
+    t += distance / motionBound;
     if (t > 1.0) {
       return false;
     }
