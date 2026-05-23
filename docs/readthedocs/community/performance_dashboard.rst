@@ -7,6 +7,11 @@ results over time:
 * Dashboard:
   `https://dartsim.github.io/dart/performance/ <https://dartsim.github.io/dart/performance/>`_
 
+It leads with end-to-end world-step cases — stepping the experimental World
+(sequential vs the parallel compute executor) and real robot models such as
+Atlas — alongside focused lower-level kernels, so the headline numbers reflect
+real simulation performance rather than micro-operations.
+
 The dashboard is built entirely on GitHub infrastructure. A GitHub Actions
 workflow runs DART's benchmark suites and hands the Google Benchmark JSON to
 `benchmark-action/github-action-benchmark

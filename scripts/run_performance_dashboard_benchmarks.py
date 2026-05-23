@@ -20,54 +20,46 @@ class BenchmarkSpec:
     output_name: str
 
 
+# The dashboard leads with end-to-end world-step cases — the performance signal
+# that matters for a physics engine — and keeps a couple of focused lower-level
+# kernels. Sequential-vs-parallel pairs surface the experimental World's compute
+# executor scaling over time.
 BENCHMARK_SPECS = [
+    # End-to-end world stepping with the experimental World, sequential vs the
+    # parallel compute executor.
     BenchmarkSpec(
-        surface="common",
-        target="allocators",
-        benchmark_filter="BM_SingleAlloc_(Std|Pool)/(8|128)/(1|64)(/.*)?$",
-        output_name="dashboard_common_allocators.json",
+        surface="world",
+        target="bm_compute_graph",
+        benchmark_filter="BM_WorldStep(Sequential|Parallel)/.*",
+        output_name="dashboard_world_step.json",
     ),
+    # Rigid-body step throughput as the body count scales (128/1024/4096).
     BenchmarkSpec(
-        surface="dynamics",
-        target="kinematics",
-        benchmark_filter="BM_(Kinematics|Dynamics)/(1|10)$",
-        output_name="dashboard_dynamics_kinematics.json",
+        surface="rigidbody",
+        target="bm_compute_graph",
+        benchmark_filter="BM_RigidBodyStep(Sequential|Parallel)/.*",
+        output_name="dashboard_rigidbody_step.json",
     ),
+    # End-to-end stepping of real robot models loaded through dart-io.
     BenchmarkSpec(
-        surface="dynamics",
+        surface="robots",
         target="dynamics_cache_io",
-        benchmark_filter=("BM_Robot_(KR5|Atlas)_Forward(Kinematics|Dynamics)(/.*)?$"),
-        output_name="dashboard_dynamics_robot_models.json",
+        benchmark_filter="BM_Robot_(KR5|Atlas)_WorldStep",
+        output_name="dashboard_robots.json",
     ),
+    # LCP solver comparison (constraint-solve hot path).
     BenchmarkSpec(
         surface="lcp",
         target="lcp_compare",
         benchmark_filter="BM_LCP_COMPARE_SMOKE$",
-        output_name="dashboard_lcp_compare.json",
+        output_name="dashboard_lcp.json",
     ),
-    BenchmarkSpec(
-        surface="math",
-        target="helpers",
-        benchmark_filter="BM_isNan_(Baseline|Optimized)/(3|4)(/.*)?$",
-        output_name="dashboard_math_helpers.json",
-    ),
+    # SIMD vectorization kernel vs scalar baseline.
     BenchmarkSpec(
         surface="simd",
         target="simd",
         benchmark_filter="BM_Add_DART_f32(_Baseline)?/1024(/.*)?$",
-        output_name="dashboard_simd_add.json",
-    ),
-    BenchmarkSpec(
-        surface="simulation",
-        target="bm_compute_graph",
-        benchmark_filter="BM_WorldStep(Sequential|Taskflow)/32/8(/.*)?$",
-        output_name="dashboard_simulation_world_step.json",
-    ),
-    BenchmarkSpec(
-        surface="compute",
-        target="bm_compute_graph",
-        benchmark_filter="BM_ComputeGraph(Sequential|Taskflow)/1024/32(/.*)?$",
-        output_name="dashboard_compute_graph.json",
+        output_name="dashboard_simd.json",
     ),
 ]
 

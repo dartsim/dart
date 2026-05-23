@@ -38,26 +38,21 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     )
 
     lines = result.stdout.strip().splitlines()
-    assert len(lines) == 8
+    assert len(lines) == 5
     assert all("scripts/run_cpp_benchmark.py" in line for line in lines)
     assert all("--benchmark_out_format=json" in line for line in lines)
     assert all("--benchmark_min_time=1ms" in line for line in lines)
     assert all("--benchmark_repetitions=3" in line for line in lines)
-    assert "dashboard_common_allocators.json" in result.stdout
-    assert "dashboard_dynamics_kinematics.json" in result.stdout
-    assert "dashboard_dynamics_robot_models.json" in result.stdout
-    assert "dashboard_lcp_compare.json" in result.stdout
-    assert "dashboard_math_helpers.json" in result.stdout
-    assert "dashboard_simd_add.json" in result.stdout
-    assert "dashboard_simulation_world_step.json" in result.stdout
-    assert "dashboard_compute_graph.json" in result.stdout
-    assert "BM_SingleAlloc_(Std|Pool)/(8|128)/(1|64)(/.*)?$" in result.stdout
-    assert "BM_Robot_(KR5|Atlas)_Forward(Kinematics|Dynamics)(/.*)?$" in result.stdout
+    assert "dashboard_world_step.json" in result.stdout
+    assert "dashboard_rigidbody_step.json" in result.stdout
+    assert "dashboard_robots.json" in result.stdout
+    assert "dashboard_lcp.json" in result.stdout
+    assert "dashboard_simd.json" in result.stdout
+    assert "BM_WorldStep(Sequential|Parallel)/.*" in result.stdout
+    assert "BM_RigidBodyStep(Sequential|Parallel)/.*" in result.stdout
+    assert "BM_Robot_(KR5|Atlas)_WorldStep" in result.stdout
     assert "BM_LCP_COMPARE_SMOKE" in result.stdout
-    assert "BM_isNan_(Baseline|Optimized)/(3|4)(/.*)?$" in result.stdout
     assert "BM_Add_DART_f32(_Baseline)?/1024(/.*)?$" in result.stdout
-    assert "BM_WorldStep(Sequential|Taskflow)/32/8(/.*)?$" in result.stdout
-    assert "BM_ComputeGraph(Sequential|Taskflow)/1024/32(/.*)?$" in result.stdout
 
 
 def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):
@@ -66,9 +61,9 @@ def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):
             sys.executable,
             str(SCRIPT),
             "--surface",
-            "math",
-            "--surface",
             "simd",
+            "--surface",
+            "lcp",
             "--output-dir",
             str(tmp_path),
             "--benchmark-min-time",
@@ -84,9 +79,9 @@ def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):
 
     lines = result.stdout.strip().splitlines()
     assert len(lines) == 2
-    assert "dashboard_math_helpers.json" in result.stdout
-    assert "dashboard_simd_add.json" in result.stdout
-    assert "dashboard_common_allocators.json" not in result.stdout
+    assert "dashboard_simd.json" in result.stdout
+    assert "dashboard_lcp.json" in result.stdout
+    assert "dashboard_world_step.json" not in result.stdout
     assert "--benchmark_min_time=2ms" in result.stdout
     assert "--benchmark_repetitions=2" in result.stdout
 
@@ -107,7 +102,11 @@ def test_dashboard_surface_runner_fails_when_output_has_no_rows(tmp_path, monkey
     )
 
     def fake_run(command, check):
-        output = next(arg.split("=", 1)[1] for arg in command if arg.startswith("--benchmark_out="))
+        output = next(
+            arg.split("=", 1)[1]
+            for arg in command
+            if arg.startswith("--benchmark_out=")
+        )
         Path(output).write_text(json.dumps({"benchmarks": []}), encoding="utf-8")
 
     monkeypatch.setattr(runner.subprocess, "run", fake_run)
@@ -132,7 +131,11 @@ def test_dashboard_surface_runner_accepts_output_with_rows(tmp_path, monkeypatch
     )
 
     def fake_run(command, check):
-        output = next(arg.split("=", 1)[1] for arg in command if arg.startswith("--benchmark_out="))
+        output = next(
+            arg.split("=", 1)[1]
+            for arg in command
+            if arg.startswith("--benchmark_out=")
+        )
         Path(output).write_text(
             json.dumps({"benchmarks": [{"name": "BM_Fake", "real_time": 1.0}]}),
             encoding="utf-8",
