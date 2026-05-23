@@ -2271,6 +2271,130 @@ TEST(World, MultiBodyUniversalCoriolisMatchesChristoffel)
   EXPECT_GT(expected.norm(), 1e-3);
 }
 
+// Test the planar joint's (3-DOF) mass matrix and gravity at the zero
+// configuration. With the plane normal along Y, in-plane axes X and -Z, and the
+// center of mass at the joint origin, the mass matrix is diagonal and only the
+// vertical (-Z) translation feels gravity.
+TEST(World, MultiBodyPlanarMassMatrixAndGravity)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("planar");
+  auto base = robot.addLink("base");
+
+  sx::JointSpec spec;
+  spec.name = "plane";
+  spec.type = sx::JointType::Planar;
+  spec.axis = Eigen::Vector3d::UnitY();  // plane normal
+  spec.axis2 = Eigen::Vector3d::UnitX(); // first in-plane direction
+  auto slider = robot.addLink("slider", base, spec);
+
+  const double mass = 3.0;
+  const double inertiaYy = 0.15;
+  slider.setMass(mass);
+  slider.setInertia(Eigen::Vector3d(0.1, inertiaYy, 0.2).asDiagonal());
+
+  auto joint = slider.getParentJoint();
+  ASSERT_EQ(joint.getType(), sx::JointType::Planar);
+  ASSERT_EQ(joint.getDOFCount(), 3u);
+
+  world.enterSimulationMode();
+
+  // Translations cost the full mass; rotation about the normal costs Iyy. The
+  // axes are orthogonal and the center of mass is at the origin, so there is no
+  // coupling at q = 0.
+  const Eigen::MatrixXd massMatrix = robot.getMassMatrix();
+  ASSERT_EQ(massMatrix.rows(), 3);
+  ASSERT_EQ(massMatrix.cols(), 3);
+  Eigen::Matrix3d expectedMass
+      = Eigen::Vector3d(mass, mass, inertiaYy).asDiagonal();
+  EXPECT_TRUE(massMatrix.isApprox(expectedMass, 1e-12));
+
+  // In-plane axes are X and normal x X = -Z. Only the -Z translation does work
+  // against gravity: g = -m (gravity . axis) = -m (9.81).
+  const Eigen::VectorXd gravity = robot.getGravityForces();
+  ASSERT_EQ(gravity.size(), 3);
+  EXPECT_NEAR(gravity[0], 0.0, 1e-12);
+  EXPECT_NEAR(gravity[1], -mass * 9.81, 1e-12);
+  EXPECT_NEAR(gravity[2], 0.0, 1e-12);
+}
+
+// Test that the planar joint's Coriolis forces match the Christoffel-symbol
+// expression from the configuration-dependent mass matrix (finite differences).
+// A nonzero link offset makes the rotation couple to the translations, so the
+// reference is nonzero and validates the velocity-product term cJ.
+TEST(World, MultiBodyPlanarCoriolisMatchesChristoffel)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("planar");
+  auto base = robot.addLink("base");
+
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(0.6, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "plane";
+  spec.type = sx::JointType::Planar;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.axis2 = Eigen::Vector3d::UnitX();
+  spec.transformFromParent = offset;
+  auto slider = robot.addLink("slider", base, spec);
+
+  const double mass = 3.0;
+  slider.setMass(mass);
+  slider.setInertia(Eigen::Vector3d(0.1, 0.15, 0.2).asDiagonal());
+
+  auto joint = slider.getParentJoint();
+
+  world.enterSimulationMode();
+
+  const Eigen::Vector3d q(0.2, -0.15, 0.5);
+  const Eigen::Vector3d qdot(0.7, -0.4, 1.1);
+
+  auto massAt = [&](const Eigen::Vector3d& position) {
+    joint.setPosition(position);
+    return robot.getMassMatrix();
+  };
+
+  const double h = 1e-5;
+  std::vector<Eigen::MatrixXd> dM(3);
+  for (int i = 0; i < 3; ++i) {
+    Eigen::Vector3d plus = q;
+    Eigen::Vector3d minus = q;
+    plus[i] += h;
+    minus[i] -= h;
+    dM[static_cast<std::size_t>(i)]
+        = (massAt(plus) - massAt(minus)) / (2.0 * h);
+  }
+
+  Eigen::Vector3d expected = Eigen::Vector3d::Zero();
+  for (int k = 0; k < 3; ++k) {
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+        const double christoffel = 0.5
+                                   * (dM[static_cast<std::size_t>(i)](k, j)
+                                      + dM[static_cast<std::size_t>(j)](k, i)
+                                      - dM[static_cast<std::size_t>(k)](i, j));
+        expected[k] += christoffel * qdot[i] * qdot[j];
+      }
+    }
+  }
+
+  joint.setPosition(q);
+  joint.setVelocity(qdot);
+  const Eigen::VectorXd coriolis = robot.getCoriolisForces();
+
+  ASSERT_EQ(coriolis.size(), 3);
+  EXPECT_NEAR(coriolis[0], expected[0], 1e-6);
+  EXPECT_NEAR(coriolis[1], expected[1], 1e-6);
+  EXPECT_NEAR(coriolis[2], expected[2], 1e-6);
+  EXPECT_GT(expected.norm(), 1e-3);
+}
+
 // Test that the pendulum integrator conserves mechanical energy over a swing
 // (a sign or scale error in the dynamics would inject energy and diverge).
 TEST(World, MultiBodyPendulumConservesEnergy)

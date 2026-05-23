@@ -45,9 +45,17 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
     joints contribute none. Verified directly by matching the engine's Coriolis
     force to the Christoffel symbols finite-differenced from the
     (cJ-independent) mass matrix, plus the closed-form M/gravity at q=0. C++ +
-    dartpy tests. **Planar** (next) reuses the same `biasTerms` mechanism: its
-    in-plane translation columns are `R(theta_rot, normal)^T axis_inplane`, also
-    configuration dependent.
+    dartpy tests.
+- Phase 5 (partial) — planar-joint (3-DOF) dynamics: two in-plane translations
+  plus a rotation about the plane normal (`axis` = normal, `axis2` = first
+  in-plane direction), matching the kinematics convention. The translation
+  columns are `R(theta_rot, normal)^T * inplane_axis` (configuration dependent),
+  so they reuse the `biasTerms` `cJ` mechanism (rotation-translation coupling).
+  Verified by the closed-form M/gravity at q=0 and the Christoffel-symbol
+  Coriolis cross-check with a nonzero link offset. C++ + dartpy tests. The
+  remaining unimplemented joints are Ball and Free, which (with body-twist
+  velocity coordinates) have a constant subspace but need manifold-aware
+  SO(3)/SE(3) position integration instead of `q += qdot*dt`.
 - Phase 4 (partial) — joint passive dynamics + limits: per-coordinate spring
   stiffness + rest position and damping coefficient applied as passive
   generalized forces, and per-coordinate position limits enforced as hard stops

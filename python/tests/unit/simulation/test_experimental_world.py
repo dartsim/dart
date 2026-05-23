@@ -1039,6 +1039,102 @@ def test_experimental_universal_joint_dynamics():
     assert np.linalg.norm(expected) > 1e-3
 
 
+def test_experimental_planar_joint_dynamics():
+    sx = _simulation_experimental()
+
+    # Mass matrix and gravity at q = 0 (plane normal Y, in-plane axes X and -Z,
+    # center of mass at the joint origin).
+    world = sx.World()  # default gravity (0, 0, -9.81)
+    robot = world.add_multi_body("planar")
+    base = robot.add_link("base")
+    slider = robot.add_link(
+        "slider",
+        parent=base,
+        joint=sx.JointSpec(
+            name="plane",
+            type=sx.JointType.PLANAR,
+            axis=(0.0, 1.0, 0.0),
+            axis2=(1.0, 0.0, 0.0),
+        ),
+    )
+    mass = 3.0
+    inertia_yy = 0.15
+    slider.mass = mass
+    slider.inertia = ((0.1, 0.0, 0.0), (0.0, inertia_yy, 0.0), (0.0, 0.0, 0.2))
+
+    joint = slider.parent_joint
+    assert joint.type == sx.JointType.PLANAR
+    assert joint.num_dofs == 3
+
+    world.enter_simulation_mode()
+
+    mass_matrix = robot.mass_matrix
+    assert mass_matrix.shape == (3, 3)
+    assert np.allclose(mass_matrix, np.diag([mass, mass, inertia_yy]), atol=1e-12)
+
+    gravity = robot.gravity_forces
+    assert gravity[0] == pytest.approx(0.0, abs=1e-12)
+    assert gravity[1] == pytest.approx(-mass * 9.81)
+    assert gravity[2] == pytest.approx(0.0, abs=1e-12)
+
+    # Coriolis must match the Christoffel symbols of M(q) (finite differences).
+    # A nonzero link offset couples rotation to the translations, so the
+    # reference is nonzero and validates the velocity-product term cJ.
+    offset_world = sx.World()
+    offset_robot = offset_world.add_multi_body("planar")
+    offset_base = offset_robot.add_link("base")
+    offset_mat = np.eye(4)
+    offset_mat[0, 3] = 0.6
+    offset_slider = offset_robot.add_link(
+        "slider",
+        parent=offset_base,
+        joint=sx.JointSpec(
+            name="plane",
+            type=sx.JointType.PLANAR,
+            axis=(0.0, 1.0, 0.0),
+            axis2=(1.0, 0.0, 0.0),
+            transform_from_parent=offset_mat,
+        ),
+    )
+    offset_slider.mass = mass
+    offset_slider.inertia = (
+        (0.1, 0.0, 0.0),
+        (0.0, 0.15, 0.0),
+        (0.0, 0.0, 0.2),
+    )
+    offset_joint = offset_slider.parent_joint
+    offset_world.enter_simulation_mode()
+
+    q = np.array([0.2, -0.15, 0.5])
+    qdot = np.array([0.7, -0.4, 1.1])
+
+    def mass_at(position):
+        offset_joint.position = position.tolist()
+        return np.array(offset_robot.mass_matrix)
+
+    h = 1e-5
+    dM = []
+    for i in range(3):
+        plus = q.copy()
+        minus = q.copy()
+        plus[i] += h
+        minus[i] -= h
+        dM.append((mass_at(plus) - mass_at(minus)) / (2.0 * h))
+
+    expected = np.zeros(3)
+    for k in range(3):
+        for i in range(3):
+            for j in range(3):
+                christoffel = 0.5 * (dM[i][k, j] + dM[j][k, i] - dM[k][i, j])
+                expected[k] += christoffel * qdot[i] * qdot[j]
+
+    offset_joint.position = q.tolist()
+    offset_joint.velocity = qdot.tolist()
+    coriolis = offset_robot.coriolis_forces
+    assert coriolis.tolist() == pytest.approx(expected.tolist(), abs=1e-6)
+    assert np.linalg.norm(expected) > 1e-3
+
+
 def test_experimental_multibody_dynamics_terms():
     sx = _simulation_experimental()
 

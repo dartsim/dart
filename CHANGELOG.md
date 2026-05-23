@@ -511,6 +511,15 @@
     unaffected. Verified by the closed-form mass matrix and gravity at the zero
     configuration and by matching the Coriolis force to the Christoffel symbols
     derived from the configuration-dependent mass matrix.
+  - Added experimental planar-joint (3-DOF) forward dynamics: a `Planar` joint
+    provides two in-plane translations plus a rotation about the plane normal
+    (`axis` is the normal, `axis2` the first in-plane direction), matching the
+    existing kinematics convention. Its in-plane translation subspace columns
+    rotate with the rotation coordinate, so they are configuration dependent and
+    contribute velocity-product bias terms `cJ` (reusing the universal joint's
+    mechanism). Verified by the closed-form mass matrix and gravity at the zero
+    configuration and by the Christoffel-symbol Coriolis cross-check with a
+    nonzero link offset.
   - Added experimental generalized-coordinate dynamics accessors on `MultiBody`:
     `getMassMatrix`/`getInverseMassMatrix`, `getCoriolisForces`,
     `getGravityForces`, and `getCoriolisAndGravityForces` (dartpy `mass_matrix`,

@@ -145,12 +145,25 @@ Eigen::Isometry3d jointMotionTransform(const comps::Joint& joint)
                             * Eigen::AngleAxisd(joint.position[1], joint.axis2))
                                .toRotationMatrix();
       return transform;
+    case comps::JointType::Planar: {
+      // In-plane translation (position[0], position[1]) along two orthogonal
+      // directions plus rotation (position[2]) about the plane normal. This
+      // matches the kinematics convention in world_kinematics_graph/frame.
+      const Eigen::Vector3d normal = joint.axis.normalized();
+      const Eigen::Vector3d inPlane1 = joint.axis2.normalized();
+      const Eigen::Vector3d inPlane2 = normal.cross(inPlane1).normalized();
+      transform.linear()
+          = Eigen::AngleAxisd(joint.position[2], normal).toRotationMatrix();
+      transform.translation()
+          = inPlane1 * joint.position[0] + inPlane2 * joint.position[1];
+      return transform;
+    }
     default:
       DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException,
           "Articulated-body forward dynamics is not yet implemented for this "
           "joint type; supported types are fixed, revolute, prismatic, screw, "
-          "and universal");
+          "universal, and planar");
   }
 }
 
@@ -197,12 +210,31 @@ Subspace jointSubspaceInJointFrame(const comps::Joint& joint)
       subspace.col(1).tail<3>().setZero();
       return subspace;
     }
+    case comps::JointType::Planar: {
+      // Two in-plane translations and a rotation about the normal, in the joint
+      // output frame. The translation directions are carried by the rotation
+      // (R(theta_rot, normal)^T * in-plane axis), making them configuration
+      // dependent; the rotation column is the constant normal.
+      const Eigen::Vector3d normal = joint.axis.normalized();
+      const Eigen::Vector3d inPlane1 = joint.axis2.normalized();
+      const Eigen::Vector3d inPlane2 = normal.cross(inPlane1).normalized();
+      const Eigen::Matrix3d rotation
+          = Eigen::AngleAxisd(joint.position[2], normal).toRotationMatrix();
+      Subspace subspace(6, 3);
+      subspace.col(0).head<3>().setZero();
+      subspace.col(0).tail<3>() = rotation.transpose() * inPlane1;
+      subspace.col(1).head<3>().setZero();
+      subspace.col(1).tail<3>() = rotation.transpose() * inPlane2;
+      subspace.col(2).head<3>() = normal;
+      subspace.col(2).tail<3>().setZero();
+      return subspace;
+    }
     default:
       DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException,
           "Articulated-body forward dynamics is not yet implemented for this "
           "joint type; supported types are fixed, revolute, prismatic, screw, "
-          "and universal");
+          "universal, and planar");
   }
 }
 
@@ -238,6 +270,25 @@ std::vector<JointBiasTerm> jointBiasTerms(
       Vector6 coeff = Vector6::Zero();
       coeff.head<3>() = s1.cross(joint.axis2);
       return {JointBiasTerm{0, 1, offsetAdjoint * coeff}};
+    }
+    case comps::JointType::Planar: {
+      // The two in-plane translation columns rotate with position[2], so
+      // d/dt(col_t) = -theta_rot_dot * R^T (normal x inplane_t). Each couples a
+      // translation rate with the rotation rate (angular part zero).
+      const Eigen::Vector3d normal = joint.axis.normalized();
+      const Eigen::Vector3d inPlane1 = joint.axis2.normalized();
+      const Eigen::Vector3d inPlane2 = normal.cross(inPlane1).normalized();
+      const Eigen::Matrix3d rotationTranspose
+          = Eigen::AngleAxisd(joint.position[2], normal)
+                .toRotationMatrix()
+                .transpose();
+      Vector6 coeff0 = Vector6::Zero();
+      coeff0.tail<3>() = -(rotationTranspose * normal.cross(inPlane1));
+      Vector6 coeff1 = Vector6::Zero();
+      coeff1.tail<3>() = -(rotationTranspose * normal.cross(inPlane2));
+      return {
+          JointBiasTerm{0, 2, offsetAdjoint * coeff0},
+          JointBiasTerm{1, 2, offsetAdjoint * coeff1}};
     }
     default:
       return {};
