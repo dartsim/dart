@@ -104,7 +104,7 @@ def test_experimental_api_exposes_python_names_only():
             "isValid",
             "isWorld",
         ),
-        sx.MultiBody: (
+        sx.Multibody: (
             "addLink",
             "getLink",
             "getJoint",
@@ -176,10 +176,10 @@ def test_experimental_api_exposes_python_names_only():
             "isValid",
         ),
         sx.World: (
-            "addMultiBody",
-            "getMultiBody",
-            "hasMultiBody",
-            "getMultiBodyCount",
+            "addMultibody",
+            "getMultibody",
+            "hasMultibody",
+            "getMultibodyCount",
             "addRigidBody",
             "getRigidBody",
             "hasRigidBody",
@@ -188,7 +188,7 @@ def test_experimental_api_exposes_python_names_only():
             "getLoopClosure",
             "hasLoopClosure",
             "getLoopClosureCount",
-            "get_multi_body_count",
+            "get_multibody_count",
             "get_loop_closure_count",
             "get_rigid_body_count",
             "updateKinematics",
@@ -262,7 +262,7 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "variable_names",
         "link_names",
         "joint_names",
-        "has_multi_body",
+        "has_multibody",
         "is_valid",
     ):
         assert member in stub
@@ -274,9 +274,9 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "def set_position(",
         "def get_runtime_policy(",
         "def set_runtime_policy(",
-        "def getMultiBody(",
-        "def hasMultiBody(",
-        "def has_multi_body_count(",
+        "def getMultibody(",
+        "def hasMultibody(",
+        "def has_multibody_count(",
         "def get_rigid_body_count(",
     )
     for member in forbidden_stub_members:
@@ -344,38 +344,38 @@ def test_experimental_world_smoke():
 
     world = sx.World()
     assert not world.is_simulation_mode
-    assert world.num_multi_bodies == 0
+    assert world.num_multibodies == 0
     assert world.num_loop_closures == 0
     assert world.num_rigid_bodies == 0
 
-    multi_body = world.add_multi_body("robot")
-    assert multi_body.name == "robot"
-    assert multi_body.is_valid
-    assert multi_body.num_links == 0
-    assert multi_body.num_joints == 0
-    assert multi_body.num_dofs == 0
+    multibody = world.add_multibody("robot")
+    assert multibody.name == "robot"
+    assert multibody.is_valid
+    assert multibody.num_links == 0
+    assert multibody.num_joints == 0
+    assert multibody.num_dofs == 0
 
-    multi_body.name = "renamed_robot"
-    assert multi_body.name == "renamed_robot"
-    assert world.has_multi_body("renamed_robot")
-    assert not world.has_multi_body("missing")
-    assert world.get_multi_body("renamed_robot").name == "renamed_robot"
-    assert world.get_multi_body("missing") is None
+    multibody.name = "renamed_robot"
+    assert multibody.name == "renamed_robot"
+    assert world.has_multibody("renamed_robot")
+    assert not world.has_multibody("missing")
+    assert world.get_multibody("renamed_robot").name == "renamed_robot"
+    assert world.get_multibody("missing") is None
     with pytest.raises(Exception, match="already exists"):
-        world.add_multi_body("renamed_robot")
+        world.add_multibody("renamed_robot")
     with pytest.raises(Exception, match="cannot be empty"):
-        multi_body.name = ""
-    assert multi_body.name == "renamed_robot"
-    assert world.num_multi_bodies == 1
+        multibody.name = ""
+    assert multibody.name == "renamed_robot"
+    assert world.num_multibodies == 1
     assert world.num_loop_closures == 0
 
-    auto_multi_body_world = sx.World()
-    auto_multi_body_world.add_multi_body("multibody_001")
-    generated_multi_body = auto_multi_body_world.add_multi_body("")
-    assert generated_multi_body.name == "multibody_002"
-    assert auto_multi_body_world.has_multi_body("multibody_001")
-    assert auto_multi_body_world.has_multi_body("multibody_002")
-    assert auto_multi_body_world.num_multi_bodies == 2
+    auto_multibody_world = sx.World()
+    auto_multibody_world.add_multibody("multibody_001")
+    generated_multibody = auto_multibody_world.add_multibody("")
+    assert generated_multibody.name == "multibody_002"
+    assert auto_multibody_world.has_multibody("multibody_001")
+    assert auto_multibody_world.has_multibody("multibody_002")
+    assert auto_multibody_world.num_multibodies == 2
 
     rigid_body = world.add_rigid_body("box")
     assert rigid_body.name == "box"
@@ -398,9 +398,9 @@ def test_experimental_world_smoke():
 
     world.clear()
     assert not world.is_simulation_mode
-    assert not multi_body.is_valid
+    assert not multibody.is_valid
     assert not rigid_body.is_valid
-    assert world.num_multi_bodies == 0
+    assert world.num_multibodies == 0
     assert world.num_loop_closures == 0
     assert world.num_rigid_bodies == 0
 
@@ -409,7 +409,7 @@ def test_experimental_multibody_link_joint_common_path():
     sx = _simulation_experimental()
 
     world = sx.World()
-    arm = world.add_multi_body("arm")
+    arm = world.add_multibody("arm")
 
     base = arm.add_link("base")
     assert base.name == "base"
@@ -470,7 +470,7 @@ def test_experimental_multibody_link_joint_common_path():
         )
     assert arm.num_links == 3
     assert arm.num_joints == 2
-    other = world.add_multi_body("other")
+    other = world.add_multibody("other")
     other_base = other.add_link("other_base")
     with pytest.raises(Exception, match="does not belong"):
         arm.add_link(
@@ -533,7 +533,7 @@ def test_link_local_transform_includes_joint_motion():
     sx = _simulation_experimental()
 
     world = sx.World()
-    arm = world.add_multi_body("arm")
+    arm = world.add_multibody("arm")
     base = arm.add_link("base")
     link = arm.add_link(
         "link",
@@ -567,7 +567,7 @@ def test_experimental_loop_closure_topology_api():
     sx = _simulation_experimental()
 
     world = sx.World()
-    arm = world.add_multi_body("four_bar")
+    arm = world.add_multibody("four_bar")
     base = arm.add_link("base")
     coupler = arm.add_link(
         "coupler",
@@ -881,7 +881,7 @@ def test_experimental_rigid_body_options_reject_invalid_values():
     with pytest.raises(Exception, match="RigidBody torque"):
         body.apply_torque((0.0, 0.0, math.nan))
 
-    arm = world.add_multi_body("arm")
+    arm = world.add_multibody("arm")
     base = arm.add_link("base")
     link = arm.add_link("link", parent=base, joint=sx.JointSpec(name="joint"))
     joint = link.parent_joint
@@ -903,7 +903,7 @@ def test_experimental_loop_closure_rejects_invalid_topology():
     sx = _simulation_experimental()
 
     world = sx.World()
-    arm = world.add_multi_body("arm")
+    arm = world.add_multibody("arm")
     base = arm.add_link("base")
     link = arm.add_link("link", parent=base, joint=sx.JointSpec(name="joint"))
 
@@ -934,7 +934,7 @@ def test_experimental_loop_closure_rejects_unsupported_active_policy():
     sx = _simulation_experimental()
 
     world = sx.World()
-    arm = world.add_multi_body("arm")
+    arm = world.add_multibody("arm")
     base = arm.add_link("base")
     link = arm.add_link("link", parent=base, joint=sx.JointSpec(name="joint"))
     closure = world.add_loop_closure("closure", frame_a=base, frame_b=link)

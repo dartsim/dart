@@ -43,7 +43,7 @@
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
-#include <dart/simulation/experimental/multi_body/multi_body.hpp>
+#include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/version.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -250,11 +250,11 @@ TEST(World, BakingWithMultibodies)
   dart::simulation::experimental::World world;
 
   // Create several multibodies with joints and links
-  auto robot1 = world.addMultiBody("robot1");
+  auto robot1 = world.addMultibody("robot1");
   auto base1 = robot1.addLink("base");
   (void)robot1.addLink("link1", {.parentLink = base1, .jointName = "joint1"});
 
-  auto robot2 = world.addMultiBody("robot2");
+  auto robot2 = world.addMultibody("robot2");
   auto base2 = robot2.addLink("base");
   auto link2
       = robot2.addLink("link1", {.parentLink = base2, .jointName = "joint1"});
@@ -269,7 +269,7 @@ TEST(World, BakingWithMultibodies)
   EXPECT_TRUE(world.isSimulationMode());
 
   // Counts should remain the same
-  EXPECT_EQ(world.getMultiBodyCount(), 2u);
+  EXPECT_EQ(world.getMultibodyCount(), 2u);
   EXPECT_EQ(robot1.getLinkCount(), 2u);
   EXPECT_EQ(robot1.getJointCount(), 1u);
   EXPECT_EQ(robot2.getLinkCount(), 3u);
@@ -278,34 +278,34 @@ TEST(World, BakingWithMultibodies)
 
 // Test multibody lookup by name returns first-class handles and exposes a
 // symmetric presence query for world-owned names.
-TEST(World, MultiBodyLookupByName)
+TEST(World, MultibodyLookupByName)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("robot");
+  auto robot = world.addMultibody("robot");
 
-  auto found = world.getMultiBody("robot");
+  auto found = world.getMultibody("robot");
   ASSERT_TRUE(found.has_value());
   EXPECT_TRUE(found->isValid());
   EXPECT_EQ(found->getEntity(), robot.getEntity());
   EXPECT_EQ(found->getWorld(), robot.getWorld());
   EXPECT_EQ(found->getName(), "robot");
-  EXPECT_TRUE(world.hasMultiBody("robot"));
-  EXPECT_FALSE(world.hasMultiBody("missing"));
-  EXPECT_FALSE(world.getMultiBody("missing").has_value());
+  EXPECT_TRUE(world.hasMultibody("robot"));
+  EXPECT_FALSE(world.hasMultibody("missing"));
+  EXPECT_FALSE(world.getMultibody("missing").has_value());
 
-  EXPECT_THROW(world.addMultiBody("robot"), sx::InvalidArgumentException);
-  EXPECT_EQ(world.getMultiBodyCount(), 1u);
+  EXPECT_THROW(world.addMultibody("robot"), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 1u);
 
   sx::World worldWithExplicitGeneratedName;
   [[maybe_unused]] auto explicitName
-      = worldWithExplicitGeneratedName.addMultiBody("multibody_001");
-  auto generated = worldWithExplicitGeneratedName.addMultiBody("");
+      = worldWithExplicitGeneratedName.addMultibody("multibody_001");
+  auto generated = worldWithExplicitGeneratedName.addMultibody("");
   EXPECT_EQ(generated.getName(), "multibody_002");
-  EXPECT_TRUE(worldWithExplicitGeneratedName.hasMultiBody("multibody_001"));
-  EXPECT_TRUE(worldWithExplicitGeneratedName.hasMultiBody("multibody_002"));
-  EXPECT_EQ(worldWithExplicitGeneratedName.getMultiBodyCount(), 2u);
+  EXPECT_TRUE(worldWithExplicitGeneratedName.hasMultibody("multibody_001"));
+  EXPECT_TRUE(worldWithExplicitGeneratedName.hasMultibody("multibody_002"));
+  EXPECT_EQ(worldWithExplicitGeneratedName.getMultibodyCount(), 2u);
 }
 
 TEST(World, ClearInvalidatesPublicHandlesAndResetsFacadeState)
@@ -316,7 +316,7 @@ TEST(World, ClearInvalidatesPublicHandlesAndResetsFacadeState)
   world.setTimeStep(0.01);
   world.setTime(0.25);
 
-  auto robot = world.addMultiBody("robot");
+  auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
   auto body = world.addRigidBody("body");
   auto closure = world.addLoopClosure(
@@ -327,7 +327,7 @@ TEST(World, ClearInvalidatesPublicHandlesAndResetsFacadeState)
   EXPECT_TRUE(base.isValid());
   EXPECT_TRUE(body.isValid());
   EXPECT_TRUE(closure.isValid());
-  EXPECT_TRUE(world.hasMultiBody("robot"));
+  EXPECT_TRUE(world.hasMultibody("robot"));
   EXPECT_TRUE(world.hasRigidBody("body"));
   EXPECT_TRUE(world.hasLoopClosure("closure"));
 
@@ -347,13 +347,13 @@ TEST(World, ClearInvalidatesPublicHandlesAndResetsFacadeState)
   EXPECT_DOUBLE_EQ(world.getTimeStep(), 0.001);
   EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
   EXPECT_EQ(world.getFrame(), 0u);
-  EXPECT_EQ(world.getMultiBodyCount(), 0u);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
   EXPECT_EQ(world.getRigidBodyCount(), 0u);
   EXPECT_EQ(world.getLoopClosureCount(), 0u);
-  EXPECT_FALSE(world.hasMultiBody("robot"));
+  EXPECT_FALSE(world.hasMultibody("robot"));
   EXPECT_FALSE(world.hasRigidBody("body"));
   EXPECT_FALSE(world.hasLoopClosure("closure"));
-  EXPECT_FALSE(world.getMultiBody("robot").has_value());
+  EXPECT_FALSE(world.getMultibody("robot").has_value());
   EXPECT_FALSE(world.getRigidBody("body").has_value());
   EXPECT_FALSE(world.getLoopClosure("closure").has_value());
 }
@@ -390,7 +390,7 @@ TEST(World, LoopClosureTopology)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("four_bar");
+  auto robot = world.addMultibody("four_bar");
   auto base = robot.addLink("base");
   auto coupler = robot.addLink(
       "coupler",
@@ -517,7 +517,7 @@ TEST(World, LoopClosureRejectsInvalidTopology)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("robot");
+  auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
   auto link = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
 
@@ -565,7 +565,7 @@ TEST(World, LoopClosureRejectsInvalidRuntimePolicy)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("robot");
+  auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
   auto link = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
   auto closure
@@ -591,7 +591,7 @@ TEST(World, LoopClosureRejectsUnsupportedActiveRuntimePolicy)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("robot");
+  auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
   auto link = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
   auto closure
@@ -796,7 +796,7 @@ TEST(World, SyncKinematicsRefreshesJointDrivenLinkTransforms)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("arm");
+  auto robot = world.addMultibody("arm");
   auto base = robot.addLink("base");
   auto forearm = robot.addLink(
       "forearm",
@@ -840,7 +840,7 @@ TEST(World, LoopClosureResidualUsesSyncedJointTransforms)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("arm");
+  auto robot = world.addMultibody("arm");
   auto base = robot.addLink("base");
   auto forearm = robot.addLink(
       "forearm",
