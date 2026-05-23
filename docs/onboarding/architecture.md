@@ -63,8 +63,6 @@ DART follows a **modular layered architecture** with clear separation of concern
 
 ### 1. **Foundation Layer** (common/, math/, lcpsolver/)
 
-> Legacy `dart/integration` has been removed; time stepping now lives alongside the world/simulator code. Advanced optimizers moved into `dart/math/optimization/` with deprecated shims in `dart/optimizer/`.
-
 #### 1.1 Common Module (`dart/common/`)
 
 **Purpose:** Provides foundational utilities and design patterns used throughout DART.
@@ -197,7 +195,7 @@ selects solvers through the `math::LcpSolver` contract.
 
 ---
 
-#### 1.4 Time Integration (Simulation Internals)
+#### 1.5 Time Integration (Simulation Internals)
 
 **Purpose:** Advance the world state each tick after dynamics and constraints are resolved.
 
@@ -610,7 +608,7 @@ World (simulation environment)
   - Constraint solving
   - Time stepping
 - **Key Properties:**
-  - Gravity (default: -9.81 m/s² in Y)
+  - Gravity (default: [0, 0, -9.81] m/s²)
   - Time step (default: 0.001s = 1ms)
   - Current time and frame number
 - **Key Methods:**
@@ -999,7 +997,7 @@ DART is a well-architected research-focused physics engine with:
 - **Dynamics:** Skeleton, BodyNode, Joint, efficient algorithms
 - **Constraints:** LCP-based contact resolution, joint limits, motors
 - **Simulation:** World container, time stepping, integration
-- **Integration:** Euler, Semi-Implicit Euler, RK4
+- **Integration:** Semi-implicit Euler (built-in)
 
 ### **Key Algorithms:**
 
@@ -1032,7 +1030,7 @@ This architecture makes DART suitable for:
 │   ├── dart.cpp              # Empty implementation file
 │   ├── common/               # Utilities, patterns, memory
 │   ├── math/                 # Mathematical utilities (includes math/optimization/)
-│   ├── lcpsolver/            # LCP solvers
+│   ├── math/lcp/              # LCP solvers
 │   ├── collision/            # Collision detection
 │   │   ├── fcl/             # FCL backend
 │   │   ├── bullet/          # Bullet backend

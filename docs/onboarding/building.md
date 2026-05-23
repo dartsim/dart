@@ -311,8 +311,8 @@ and Raylib smoke path are no longer buildable renderer options.
 # Unix Makefiles
 cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 
-# Visual Studio 2017 (multi-config; pick configuration at build-time)
-cmake .. -G "Visual Studio 15 2017" -A x64
+# Visual Studio 2022 (multi-config; pick configuration at build-time)
+cmake .. -G "Visual Studio 17 2022" -A x64
 
 # Xcode (multi-config; pick configuration at build-time)
 cmake .. -G "Xcode"
