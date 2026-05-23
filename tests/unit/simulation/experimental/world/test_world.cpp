@@ -1428,7 +1428,9 @@ TEST(World, RigidBodyStepParallelMatchesSequentialAcrossWorkerCounts)
 // Test the Phase 3 determinism gate's strong half: rigid-body integration is a
 // map-only stage (each body reads and writes only its own components, with no
 // cross-body reduction), so parallel execution must equal the sequential
-// reference bit-for-bit, not merely within a tolerance.
+// reference bit-for-bit, not merely within a tolerance. A batch size of one
+// puts each body in its own graph node so the bodies actually run concurrently
+// across workers, rather than collapsing into a single batched node.
 TEST(World, RigidBodyIntegrationStageIsBitwiseDeterministicAcrossWorkers)
 {
   namespace sx = dart::simulation::experimental;
@@ -1455,7 +1457,7 @@ TEST(World, RigidBodyIntegrationStageIsBitwiseDeterministicAcrossWorkers)
   std::vector<sx::RigidBody> referenceBodies;
   buildWorld(reference, referenceBodies);
   compute::SequentialExecutor sequential;
-  compute::RigidBodyIntegrationStage referenceStage;
+  compute::RigidBodyIntegrationStage referenceStage(1);
   for (int s = 0; s < 5; ++s) {
     referenceStage.execute(reference, sequential);
   }
@@ -1467,7 +1469,7 @@ TEST(World, RigidBodyIntegrationStageIsBitwiseDeterministicAcrossWorkers)
     buildWorld(world, bodies);
 
     compute::ParallelExecutor executor(workers);
-    compute::RigidBodyIntegrationStage stage;
+    compute::RigidBodyIntegrationStage stage(1);
     for (int s = 0; s < 5; ++s) {
       stage.execute(world, executor);
     }
