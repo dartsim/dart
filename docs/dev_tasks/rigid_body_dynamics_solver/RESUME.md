@@ -26,6 +26,19 @@ the implementation plan below):
   `jointSubspaceInJointFrame`. Verified by `M = I_axis + m pitch^2` and the
   gravity acceleration. (Universal/Planar/Ball/Free still need multi-DOF and, for
   Ball/Free, manifold-aware SO(3)/SE(3) integration.) C++ + dartpy tests.
+  - **Important finding (Universal/Planar):** these multi-DOF joints have a
+    _configuration-dependent_ motion subspace (e.g. a universal joint's first
+    column is `R(theta2, axis2)^T * axis`). The current RNEA in
+    `simulateMultiBody`/`recursiveNewtonEuler` was built for joints with a
+    constant joint-frame subspace (fixed/revolute/prismatic/screw), so it omits
+    the joint velocity-product term `cJ = Sdot * qdot`. A naive universal
+    implementation gets the **mass matrix and gravity right but Coriolis wrong**
+    — verified by an attempted universal-joint test that matched an equivalent
+    two-revolute chain on M and gravity but gave **half** the chain's theta1
+    acceleration under nonzero velocity. So adding Universal/Planar requires
+    extending the RNEA acceleration recursion with the per-joint `Sdot * qdot`
+    term (Featherstone's `cJ`), not just adding subspace cases. This was
+    attempted and reverted to avoid shipping a subtly-wrong joint.
 - Phase 4 (partial) — joint passive dynamics + limits: per-coordinate spring
   stiffness + rest position and damping coefficient applied as passive
   generalized forces, and per-coordinate position limits enforced as hard stops
