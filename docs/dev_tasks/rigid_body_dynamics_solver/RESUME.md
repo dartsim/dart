@@ -180,43 +180,78 @@ Check `git status` / `git log -3 --oneline` for the live state.
 
 ## Immediate Next Step
 
-Working slices of Phases 0.1–4 are landed and verified; remaining work deepens
-Phases 2–5. Suggested next slices, in rough dependency order:
+**All joint types are now implemented and verified** (fixed, revolute,
+prismatic, screw, universal, planar, ball, free) with a floating base via a
+`Free` joint, including the config-dependent-subspace `cJ` term and SO(3)/SE(3)
+manifold integration. The two remaining roadmap subsystems are each a dedicated
+multi-session effort with a specific architectural prerequisite, detailed below.
 
-- **Phase 3 next:** a public static-body convention (so a ground can be created
-  — currently non-positive mass is treated as immovable internally but the
-  public ctor/`setMass` reject it); a Baumgarte/penetration positional
-  correction; restitution and a friction model; joint-limit constraints; then
-  wiring the boxed-LCP library (`dart/math/lcp/`, PLAN-020) and islands.
-- **Phase 2 next:** capsule/cylinder/plane/mesh shapes, collision shapes on
-  multibody links, self-collision/filtering, broad-phase pruning, and a
-  persistent collision world instead of rebuilding per `collide()`.
-- **Phase 4 next:** the remaining constraint-coupled actuator modes
-  (SERVO/ACCELERATION/LOCKED) and mimic/coupler. `Velocity` is done (an equality
-  constraint, see above); SERVO/ACCELERATION reuse the same `J M^-1 J^T`
-  machinery with different targets/gains, LOCKED is a zero-velocity+frozen-
-  position constraint, and mimic/coupler couple two joints' coordinates.
-  (Done in Phase 4: position/velocity/effort limits, armature, Coulomb joint
-  friction, Force/Passive/Velocity actuator types, inverse dynamics, the
-  generalized mass-matrix / Coriolis / gravity accessors, and the impulse
-  response.)
-- **Shared foundation needed next:** the full (inequality) constraint solver
-  wired into `World::step`. The joint-space primitives are now all in place —
-  mass matrix, `M^-1`, the impulse response `M^-1 f`, inverse dynamics, the body-
-  and world-frame link Jacobians — and the **equality-constraint solve**
-  (`J M^-1 J^T lambda = c`) already exists and is exercised by the Velocity
-  actuator. What remains: assembling contact/joint-limit constraints (contact
-  Jacobians from the body/world Jacobians + collision normals) and the
-  **boxed-LCP/PGS solve** (inequalities + friction cone) on top of the existing
-  equality machinery, plus islands. It unblocks the remaining Phase 3 (contacts
-  on multibody links, joint limit/servo-force constraints, boxed-LCP, islands),
-  the remaining Phase 4 actuator modes and mimic/coupler, and Phase 5 loop-
-  closure dynamics. Budget it as a dedicated multi-session subsystem.
-- **Phase 5:** loop-closure kinematic projection + dynamic solving, pluggable
-  integrator/substepping, body/COM Jacobians, and a model-format loading bridge.
+### Subsystem A — full constraint solver / boxed-LCP (two-sided contacts)
 
-Phase 3 (friction + LCP), the remainder of Phase 4, and Phase 5 are each a major
-subsystem; budget them as multiple verified slices.
+What works today: rigid-body-vs-rigid-body and rigid-body-vs-static contacts
+(`RigidBodyContactStage`, sequential impulse + friction + restitution +
+positional correction); link-vs-static-rigid-body one-sided articulated contact
+(inside `simulateMultiBody`). **Missing:** link-vs-dynamic-rigid-body and
+link-vs-link (two-sided) contacts, and a coupled simultaneous boxed-LCP/PGS
+solve over all contacts at once.
+
+- **Architectural prerequisite (the real blocker):** the default `World::step`
+  pipeline (see `world.cpp` ~line 835) runs the rigid-body stages _fully_ before
+  the multibody stage: `RigidBodyVelocityStage` → `RigidBodyContactStage` →
+  `RigidBodyPositionStage` → `MultiBodyForwardDynamicsStage` → `KinematicsStage`.
+  So when the multibody contact solve runs, rigid bodies have already had their
+  velocity _and position_ integrated this step. A correct coupled two-sided solve
+  needs the pipeline reordered into phases: **(1) all velocity integration
+  (rigid + multibody unconstrained `qddot`→`qdot`), (2) one unified contact /
+  constraint solve over all bodies, (3) all position integration**. This touches
+  the core step loop and all 274 passing tests, so do it as its own slice with
+  the suite as the guardrail (revert if it destabilizes, as was done for the
+  first universal-joint attempt).
+- **After reordering:** assemble every contact as a constraint row with a
+  Jacobian that maps the contact impulse to each involved body's velocity —
+  rigid bodies via `invMass`/`invWorldInertia` + arm (already in
+  `RigidBodyContactStage`), links via `J_point` + `M^-1` (already in
+  `simulateMultiBody`). Stack them and run the **boxed-LCP/PGS** in
+  `dart/math/lcp/` (normal `lambda_n >= 0`, friction cone `|lambda_t| <= mu
+lambda_n`) instead of the two separate per-stage Gauss-Seidel loops. Add
+  islands for performance later.
+- **Smaller correct increment if a full rewrite is out of budget:**
+  link-vs-dynamic-rigid-body via equal-and-opposite velocity impulses applied in
+  `MultiBodyForwardDynamicsStage` (momentum-conserving; accept a one-step
+  position lag for the rigid body, corrected by Baumgarte). Verify by total
+  linear/angular momentum conservation when a moving link strikes a free body.
+
+### Subsystem B — model loading (URDF/SDF/MJCF) into the experimental World
+
+`dart::io` (`dart/io/read.hpp`) parses to the **legacy** types only:
+`readSkeleton` → `dynamics::SkeletonPtr`, `readWorld` → `simulation::WorldPtr`.
+There is no experimental-World loader yet, so this needs a translation layer:
+
+- Walk the legacy `Skeleton`'s `BodyNode` tree; for each `BodyNode` create an
+  experimental `Link` (mass, inertia) and for each parent `Joint` map the legacy
+  joint type → experimental `JointType` + axis/axis2/pitch and the
+  parent-joint-to-child-link transform (`transformFromParent`).
+- **Impedance mismatch to resolve:** the experimental dynamics assumes each
+  link's COM is at the link-frame origin (`spatialInertia`), whereas
+  URDF/Skeleton place the COM at an arbitrary offset from the body frame and
+  express child-joint origins relative to the body frame. Either (a) extend the
+  experimental spatial inertia to carry a COM offset
+  (`I = [[I_C - m c× c×, m c×],[-m c×, m 1]]`), or (b) reframe each link so the
+  link frame sits at the COM and shift child-joint `transformFromParent` and the
+  parent joint transform accordingly. Option (a) is the cleaner standalone slice
+  and is independently verifiable (offset-COM pendulum).
+- Verify a known URDF loads with the right DOF count, tree structure, and a sane
+  forward-dynamics step, in C++ and dartpy.
+
+### Smaller deferred items
+
+- **Phase 2:** capsule/cylinder/plane/mesh shapes, self-collision/filtering,
+  broad-phase pruning, a persistent collision world instead of rebuilding per
+  `collide()`.
+- **Phase 4:** remaining actuator modes (SERVO/ACCELERATION/LOCKED) and
+  mimic/coupler — reuse the existing `J M^-1 J^T` equality machinery.
+- **Phase 5:** loop-closure dynamic solving, pluggable integrator/substepping,
+  body/COM Jacobians.
 
 ## Contact solver — concrete implementation plan (derived from the code)
 
