@@ -70,6 +70,25 @@ Eigen::Matrix3d skew(const Eigen::Vector3d& v)
 }
 
 //==============================================================================
+// SO(3) exponential map: a rotation vector (axis * angle) to a rotation matrix.
+Eigen::Matrix3d rotationExp(const Eigen::Vector3d& rotationVector)
+{
+  const double angle = rotationVector.norm();
+  if (angle < 1e-12) {
+    return Eigen::Matrix3d::Identity();
+  }
+  return Eigen::AngleAxisd(angle, rotationVector / angle).toRotationMatrix();
+}
+
+//==============================================================================
+// SO(3) logarithm map: a rotation matrix to a rotation vector (axis * angle).
+Eigen::Vector3d rotationLog(const Eigen::Matrix3d& rotation)
+{
+  const Eigen::AngleAxisd angleAxis(rotation);
+  return angleAxis.angle() * angleAxis.axis();
+}
+
+//==============================================================================
 // Spatial motion adjoint for the [angular; linear] convention. For a transform
 // T = (R, p) that expresses frame B in frame A (x_A = R x_B + p), this maps a
 // spatial motion vector from B to A.
@@ -158,12 +177,22 @@ Eigen::Isometry3d jointMotionTransform(const comps::Joint& joint)
           = inPlane1 * joint.position[0] + inPlane2 * joint.position[1];
       return transform;
     }
+    case comps::JointType::Ball:
+      // Orientation stored as a rotation vector (exponential coordinates).
+      transform.linear() = rotationExp(joint.position.head<3>());
+      return transform;
+    case comps::JointType::Free:
+      // 6-DOF pose: translation (position[0..2]) then orientation as a rotation
+      // vector (position[3..5]), matching the kinematics convention.
+      transform.linear() = rotationExp(joint.position.tail<3>());
+      transform.translation() = joint.position.head<3>();
+      return transform;
     default:
       DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException,
           "Articulated-body forward dynamics is not yet implemented for this "
           "joint type; supported types are fixed, revolute, prismatic, screw, "
-          "universal, and planar");
+          "universal, planar, ball, and free");
   }
 }
 
@@ -229,12 +258,29 @@ Subspace jointSubspaceInJointFrame(const comps::Joint& joint)
       subspace.col(2).tail<3>().setZero();
       return subspace;
     }
+    case comps::JointType::Ball: {
+      // Generalized velocity is the body angular velocity (matching the
+      // rotation-vector position), so the subspace is constant: angular = I,
+      // linear = 0.
+      Subspace subspace = Subspace::Zero(6, 3);
+      subspace.topRows<3>() = Eigen::Matrix3d::Identity();
+      return subspace;
+    }
+    case comps::JointType::Free: {
+      // Generalized velocity is [linear; angular] body twist to match the
+      // position layout [translation; rotation vector]; the subspace permutes
+      // it into the [angular; linear] spatial convention. Constant subspace.
+      Subspace subspace = Subspace::Zero(6, 6);
+      subspace.bottomLeftCorner<3, 3>() = Eigen::Matrix3d::Identity();
+      subspace.topRightCorner<3, 3>() = Eigen::Matrix3d::Identity();
+      return subspace;
+    }
     default:
       DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException,
           "Articulated-body forward dynamics is not yet implemented for this "
           "joint type; supported types are fixed, revolute, prismatic, screw, "
-          "universal, and planar");
+          "universal, planar, ball, and free");
   }
 }
 
@@ -871,9 +917,10 @@ void simulateMultiBody(
     }
   }
 
-  // Write back the new velocity/acceleration and integrate positions, applying
-  // position limits as hard stops (clamp the coordinate and arrest the velocity
-  // component driving it past the limit).
+  // Write back the new velocity/acceleration and integrate positions. Euclidean
+  // joints integrate linearly and apply position limits as hard stops; ball and
+  // free joints integrate their orientation on the SO(3)/SE(3) manifold via the
+  // exponential map (position limits do not apply to a rotation vector).
   for (std::size_t i = 0; i < tree.links.size(); ++i) {
     if (tree.links[i].dof == 0) {
       continue;
@@ -883,6 +930,25 @@ void simulateMultiBody(
         = qddot.segment(tree.links[i].dofOffset, tree.links[i].dof);
     joint.velocity
         = nextVelocity.segment(tree.links[i].dofOffset, tree.links[i].dof);
+
+    if (joint.type == comps::JointType::Ball) {
+      // Body angular velocity integrated by right multiplication on SO(3).
+      const Eigen::Matrix3d rotation = rotationExp(joint.position.head<3>());
+      joint.position.head<3>() = rotationLog(
+          rotation * rotationExp(joint.velocity.head<3>() * timeStep));
+      continue;
+    }
+    if (joint.type == comps::JointType::Free) {
+      // Velocity is [linear; angular] body twist. Translation advances in the
+      // parent frame (R * v) and orientation integrates on SO(3).
+      const Eigen::Matrix3d rotation = rotationExp(joint.position.tail<3>());
+      joint.position.head<3>()
+          += rotation * joint.velocity.head<3>() * timeStep;
+      joint.position.tail<3>() = rotationLog(
+          rotation * rotationExp(joint.velocity.tail<3>() * timeStep));
+      continue;
+    }
+
     joint.position += joint.velocity * timeStep;
 
     if (joint.limits.lower.size() == joint.position.size()

@@ -2395,6 +2395,193 @@ TEST(World, MultiBodyPlanarCoriolisMatchesChristoffel)
   EXPECT_GT(expected.norm(), 1e-3);
 }
 
+// Test the ball joint's (3-DOF) mass matrix and gravity at the identity
+// orientation. The center of mass is offset along X, so the mass matrix is the
+// inertia about the ball center (parallel-axis theorem) and only rotation about
+// Y feels gravity.
+TEST(World, MultiBodyBallMassMatrixAndGravity)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("ball");
+  auto base = robot.addLink("base");
+
+  const double offsetX = 0.7;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(offsetX, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "socket";
+  spec.type = sx::JointType::Ball;
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+
+  const double mass = 2.0;
+  const double inertiaXx = 0.05;
+  const double inertiaYy = 0.12;
+  const double inertiaZz = 0.2;
+  bob.setMass(mass);
+  bob.setInertia(Eigen::Vector3d(inertiaXx, inertiaYy, inertiaZz).asDiagonal());
+
+  auto joint = bob.getParentJoint();
+  ASSERT_EQ(joint.getType(), sx::JointType::Ball);
+  ASSERT_EQ(joint.getDOFCount(), 3u);
+
+  world.enterSimulationMode();
+
+  // Inertia about the ball center: the COM offset is along X, so Ixx is
+  // unchanged and Iyy, Izz gain m * offset^2 (parallel-axis).
+  const Eigen::MatrixXd massMatrix = robot.getMassMatrix();
+  ASSERT_EQ(massMatrix.rows(), 3);
+  ASSERT_EQ(massMatrix.cols(), 3);
+  Eigen::Matrix3d expectedMass = Eigen::Vector3d(
+                                     inertiaXx,
+                                     inertiaYy + mass * offsetX * offsetX,
+                                     inertiaZz + mass * offsetX * offsetX)
+                                     .asDiagonal();
+  EXPECT_TRUE(massMatrix.isApprox(expectedMass, 1e-12));
+
+  // Gravity torque about the ball center is offset x (0,0,-mg) = (0, m g d, 0);
+  // the generalized gravity force is its negative about each body axis.
+  const Eigen::VectorXd gravity = robot.getGravityForces();
+  ASSERT_EQ(gravity.size(), 3);
+  EXPECT_NEAR(gravity[0], 0.0, 1e-12);
+  EXPECT_NEAR(gravity[1], -mass * 9.81 * offsetX, 1e-12);
+  EXPECT_NEAR(gravity[2], 0.0, 1e-12);
+}
+
+// Test the ball joint's SO(3) manifold integration: a torque-free body with
+// isotropic inertia keeps a constant body angular velocity, and the stored
+// rotation vector accumulates linearly (rotations about a fixed axis commute).
+TEST(World, MultiBodyBallIsotropicFreeSpin)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("ball");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "socket";
+  spec.type = sx::JointType::Ball;
+  auto bob = robot.addLink("bob", base, spec);
+
+  // Isotropic inertia: torque-free Euler dynamics keep the angular velocity
+  // constant (the gyroscopic term omega x (I omega) vanishes).
+  bob.setMass(1.5);
+  bob.setInertia(0.1 * Eigen::Matrix3d::Identity());
+
+  auto joint = bob.getParentJoint();
+  const Eigen::Vector3d omega(0.3, -0.5, 0.7);
+  joint.setVelocity(omega);
+
+  const double dt = 0.001;
+  const int steps = 100;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  for (int i = 0; i < steps; ++i) {
+    world.step();
+  }
+
+  // Angular velocity is unchanged; the rotation vector is omega * total time.
+  EXPECT_TRUE(joint.getVelocity().isApprox(omega, 1e-9));
+  EXPECT_TRUE(joint.getPosition().isApprox(omega * (dt * steps), 1e-9));
+}
+
+// Test the free joint (floating base): a free body under gravity free-falls,
+// with the linear acceleration equal to gravity and no angular motion.
+TEST(World, MultiBodyFreeJointFreeFall)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("floating");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "floating";
+  spec.type = sx::JointType::Free;
+  auto body = robot.addLink("body", base, spec);
+
+  const double mass = 2.0;
+  body.setMass(mass);
+  body.setInertia(Eigen::Vector3d(0.05, 0.12, 0.2).asDiagonal());
+
+  auto joint = body.getParentJoint();
+  ASSERT_EQ(joint.getType(), sx::JointType::Free);
+  ASSERT_EQ(joint.getDOFCount(), 6u);
+
+  const double dt = 0.01;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  world.step();
+
+  // Velocity is [linear; angular]. Free fall: linear z accelerates at gravity,
+  // no angular motion.
+  const Eigen::VectorXd acceleration = joint.getAcceleration();
+  ASSERT_EQ(acceleration.size(), 6);
+  EXPECT_TRUE(
+      acceleration.head<3>().isApprox(Eigen::Vector3d(0.0, 0.0, -9.81), 1e-9));
+  EXPECT_TRUE(acceleration.tail<3>().isZero(1e-12));
+
+  const Eigen::VectorXd velocity = joint.getVelocity();
+  EXPECT_TRUE(velocity.head<3>().isApprox(
+      Eigen::Vector3d(0.0, 0.0, -9.81 * dt), 1e-12));
+  EXPECT_TRUE(velocity.tail<3>().isZero(1e-12));
+
+  const Eigen::VectorXd position = joint.getPosition();
+  EXPECT_TRUE(position.head<3>().isApprox(
+      Eigen::Vector3d(0.0, 0.0, -9.81 * dt * dt), 1e-12));
+  EXPECT_TRUE(position.tail<3>().isZero(1e-12));
+}
+
+// Test the free joint's combined SE(3) integration: with translation and spin
+// both along the same principal axis (no gravity), the body twist stays
+// constant and the translation and rotation vector accumulate linearly.
+TEST(World, MultiBodyFreeJointTranslatesAndSpins)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultiBody("floating");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "floating";
+  spec.type = sx::JointType::Free;
+  auto body = robot.addLink("body", base, spec);
+
+  body.setMass(2.0);
+  body.setInertia(Eigen::Vector3d(0.05, 0.12, 0.2).asDiagonal());
+
+  auto joint = body.getParentJoint();
+  // Body twist [linear; angular] with both along Z (a principal axis), so there
+  // is no gyroscopic or Coriolis coupling: both rates stay constant.
+  Eigen::VectorXd twist(6);
+  twist << 0.0, 0.0, 3.0, 0.0, 0.0, 2.0;
+  joint.setVelocity(twist);
+
+  const double dt = 0.001;
+  const int steps = 100;
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+  for (int i = 0; i < steps; ++i) {
+    world.step();
+  }
+
+  const double time = dt * steps;
+  EXPECT_TRUE(joint.getVelocity().isApprox(twist, 1e-9));
+
+  const Eigen::VectorXd position = joint.getPosition();
+  EXPECT_TRUE(
+      position.head<3>().isApprox(Eigen::Vector3d(0.0, 0.0, 3.0 * time), 1e-9));
+  EXPECT_TRUE(
+      position.tail<3>().isApprox(Eigen::Vector3d(0.0, 0.0, 2.0 * time), 1e-9));
+}
+
 // Test that the pendulum integrator conserves mechanical energy over a swing
 // (a sign or scale error in the dynamics would inject energy and diverge).
 TEST(World, MultiBodyPendulumConservesEnergy)

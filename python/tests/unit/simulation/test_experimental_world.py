@@ -1135,6 +1135,140 @@ def test_experimental_planar_joint_dynamics():
     assert np.linalg.norm(expected) > 1e-3
 
 
+def test_experimental_ball_joint_dynamics():
+    sx = _simulation_experimental()
+
+    # Mass matrix and gravity at the identity orientation (center of mass offset
+    # along X): M is the inertia about the ball center, gravity torque about Y.
+    world = sx.World()  # default gravity (0, 0, -9.81)
+    robot = world.add_multi_body("ball")
+    base = robot.add_link("base")
+    offset = np.eye(4)
+    offset[0, 3] = 0.7
+    bob = robot.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="socket", type=sx.JointType.BALL, transform_from_parent=offset
+        ),
+    )
+    mass = 2.0
+    bob.mass = mass
+    bob.inertia = ((0.05, 0.0, 0.0), (0.0, 0.12, 0.0), (0.0, 0.0, 0.2))
+
+    joint = bob.parent_joint
+    assert joint.type == sx.JointType.BALL
+    assert joint.num_dofs == 3
+
+    world.enter_simulation_mode()
+
+    expected_mass = np.diag(
+        [0.05, 0.12 + mass * 0.7**2, 0.2 + mass * 0.7**2]
+    )
+    assert np.allclose(robot.mass_matrix, expected_mass, atol=1e-12)
+    gravity = robot.gravity_forces
+    assert gravity[0] == pytest.approx(0.0, abs=1e-12)
+    assert gravity[1] == pytest.approx(-mass * 9.81 * 0.7)
+    assert gravity[2] == pytest.approx(0.0, abs=1e-12)
+
+    # SO(3) manifold integration: torque-free isotropic spin keeps a constant
+    # angular velocity and accumulates the rotation vector linearly.
+    spin_world = sx.World()
+    spin_world.gravity = (0.0, 0.0, 0.0)
+    spin_robot = spin_world.add_multi_body("ball")
+    spin_base = spin_robot.add_link("base")
+    spin_bob = spin_robot.add_link(
+        "bob",
+        parent=spin_base,
+        joint=sx.JointSpec(name="socket", type=sx.JointType.BALL),
+    )
+    spin_bob.mass = 1.5
+    spin_bob.inertia = ((0.1, 0.0, 0.0), (0.0, 0.1, 0.0), (0.0, 0.0, 0.1))
+    spin_joint = spin_bob.parent_joint
+    omega = np.array([0.3, -0.5, 0.7])
+    spin_joint.velocity = omega.tolist()
+
+    dt = 0.001
+    steps = 100
+    spin_world.time_step = dt
+    spin_world.enter_simulation_mode()
+    for _ in range(steps):
+        spin_world.step()
+
+    assert spin_joint.velocity.tolist() == pytest.approx(omega.tolist(), abs=1e-9)
+    assert spin_joint.position.tolist() == pytest.approx(
+        (omega * dt * steps).tolist(), abs=1e-9
+    )
+
+
+def test_experimental_free_joint_dynamics():
+    sx = _simulation_experimental()
+
+    # Free fall under gravity: linear acceleration equals gravity, no rotation.
+    world = sx.World()  # default gravity (0, 0, -9.81)
+    robot = world.add_multi_body("floating")
+    base = robot.add_link("base")
+    body = robot.add_link(
+        "body",
+        parent=base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FREE),
+    )
+    body.mass = 2.0
+    body.inertia = ((0.05, 0.0, 0.0), (0.0, 0.12, 0.0), (0.0, 0.0, 0.2))
+
+    joint = body.parent_joint
+    assert joint.type == sx.JointType.FREE
+    assert joint.num_dofs == 6
+
+    dt = 0.01
+    world.time_step = dt
+    world.enter_simulation_mode()
+    world.step()
+
+    # Velocity ordering is [linear; angular].
+    acceleration = joint.acceleration
+    assert acceleration[:3].tolist() == pytest.approx([0.0, 0.0, -9.81], abs=1e-9)
+    assert acceleration[3:].tolist() == pytest.approx([0.0, 0.0, 0.0], abs=1e-12)
+    position = joint.position
+    assert position[:3].tolist() == pytest.approx(
+        [0.0, 0.0, -9.81 * dt * dt], abs=1e-12
+    )
+    assert position[3:].tolist() == pytest.approx([0.0, 0.0, 0.0], abs=1e-12)
+
+    # Combined SE(3) integration: translation and spin both along Z stay
+    # constant and accumulate linearly.
+    spin_world = sx.World()
+    spin_world.gravity = (0.0, 0.0, 0.0)
+    spin_robot = spin_world.add_multi_body("floating")
+    spin_base = spin_robot.add_link("base")
+    spin_body = spin_robot.add_link(
+        "body",
+        parent=spin_base,
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FREE),
+    )
+    spin_body.mass = 2.0
+    spin_body.inertia = ((0.05, 0.0, 0.0), (0.0, 0.12, 0.0), (0.0, 0.0, 0.2))
+    spin_joint = spin_body.parent_joint
+    twist = [0.0, 0.0, 3.0, 0.0, 0.0, 2.0]
+    spin_joint.velocity = twist
+
+    steps = 100
+    spin_world.time_step = dt
+    spin_world.enter_simulation_mode()
+    for _ in range(steps):
+        spin_world.step()
+
+    total = dt * steps
+    assert spin_joint.velocity.tolist() == pytest.approx(twist, abs=1e-9)
+    position = spin_joint.position
+    assert position[:3].tolist() == pytest.approx(
+        [0.0, 0.0, 3.0 * total], abs=1e-9
+    )
+    assert position[3:].tolist() == pytest.approx(
+        [0.0, 0.0, 2.0 * total], abs=1e-9
+    )
+
+
 def test_experimental_multibody_dynamics_terms():
     sx = _simulation_experimental()
 

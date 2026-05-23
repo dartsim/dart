@@ -53,9 +53,21 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
   so they reuse the `biasTerms` `cJ` mechanism (rotation-translation coupling).
   Verified by the closed-form M/gravity at q=0 and the Christoffel-symbol
   Coriolis cross-check with a nonzero link offset. C++ + dartpy tests. The
-  remaining unimplemented joints are Ball and Free, which (with body-twist
-  velocity coordinates) have a constant subspace but need manifold-aware
-  SO(3)/SE(3) position integration instead of `q += qdot*dt`.
+  remaining unimplemented joints are Ball and Free (now done, below).
+- Phase 5 (partial) — ball-joint (3-DOF) and free-joint (6-DOF) dynamics with
+  manifold integration, which also enables a **floating base** (model it as a
+  fixed base link + a `Free` joint to the moving link). Both use body-twist
+  generalized velocities so their subspaces are constant (ball: body angular
+  velocity, subspace `[I;0]`; free: `[linear; angular]` to match the
+  `[translation; rotation vector]` position layout, subspace permutes to the
+  `[angular; linear]` twist). The new piece is **manifold position integration**:
+  ball orientation `R_new = R_old Exp(omega dt)`, free pose advances translation
+  in the parent frame (`R*v dt`) and orientation by `Exp(omega dt)`, replacing
+  `q += qdot*dt` for these joint types in `simulateMultiBody` (added `rotationExp`
+  / `rotationLog` helpers). Position limits do not apply to rotation vectors and
+  are skipped for ball/free. Verified by the closed-form M/gravity (ball
+  pendulum), torque-free isotropic spin, free-fall, and combined translate-spin
+  closed-form integration. C++ + dartpy tests.
 - Phase 4 (partial) — joint passive dynamics + limits: per-coordinate spring
   stiffness + rest position and damping coefficient applied as passive
   generalized forces, and per-coordinate position limits enforced as hard stops

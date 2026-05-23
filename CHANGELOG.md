@@ -520,6 +520,16 @@
     mechanism). Verified by the closed-form mass matrix and gravity at the zero
     configuration and by the Christoffel-symbol Coriolis cross-check with a
     nonzero link offset.
+  - Added experimental ball-joint (3-DOF) and free-joint (6-DOF) forward
+    dynamics with manifold integration, which also enables a floating base
+    (model it as a fixed base link connected to the moving link by a `Free`
+    joint). Both use body-twist generalized velocities (the ball uses the body
+    angular velocity; the free joint uses `[linear; angular]` to match its
+    `[translation; rotation vector]` position layout), so their motion subspaces
+    are constant. Orientation is integrated on SO(3)/SE(3) via the exponential
+    map instead of `q += qdot*dt`. Verified by the closed-form mass matrix and
+    gravity (ball spherical pendulum), torque-free isotropic spin, free-fall,
+    and combined translate-and-spin closed-form integration.
   - Added experimental generalized-coordinate dynamics accessors on `MultiBody`:
     `getMassMatrix`/`getInverseMassMatrix`, `getCoriolisForces`,
     `getGravityForces`, and `getCoriolisAndGravityForces` (dartpy `mass_matrix`,
