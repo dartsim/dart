@@ -60,10 +60,24 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
+      # Configure the CMake build (no GUI/examples/tutorials/dartpy) so the
+      # benchmark targets can be built. run_cpp_benchmark.py builds each target
+      # but requires the build directory to already be configured.
+      - name: Configure build
+        env:
+          DART_BUILD_GUI_OVERRIDE: "OFF"
+          DART_BUILD_EXAMPLES_OVERRIDE: "OFF"
+          DART_BUILD_TUTORIALS_OVERRIDE: "OFF"
+          DART_BUILD_DARTPY_OVERRIDE: "OFF"
+        run: |
+          pixi run --locked -e collision-reference config
+
       - name: Run benchmark surfaces
+        # Tolerate a flaky surface: publish whatever produced results. The merge
+        # step below fails only if no benchmark rows were produced at all.
         run: |
           pixi run --locked -e collision-reference \
-            python scripts/run_performance_dashboard_benchmarks.py --continue-on-error
+            python scripts/run_performance_dashboard_benchmarks.py --continue-on-error || true
 
       - name: Merge benchmark results
         run: |
