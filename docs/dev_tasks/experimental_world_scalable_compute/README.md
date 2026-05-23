@@ -38,10 +38,15 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
   Eigen-vectorized transcendentals) that the batched integrator dispatches to
   above a body-count threshold, with the scalar-generic kernel as the fallback.
   The linear (position/velocity) kernels are memory-bound and already optimally
-  auto-vectorized at -O3, so they keep the scalar-generic path. Remaining:
-  committed `bm-check` throughput baselines to close the SIMD exit criterion
-  (needs stable benchmark CI), and fixed-ULP reduction tolerance once a reduction
-  stage exists.
+  auto-vectorized at -O3, so they keep the scalar-generic path. Also landed: a
+  deterministic reduction (`totalKineticEnergy`) with fixed-order chunk partials
+  and a fixed-ULP/relative tolerance gate, the reduction shape later parallel
+  stages reuse. Remaining: the "parallel/SIMD beats the Phase 0 baseline" exit
+  criterion, which is **not achievable on today's physics** -- measured
+  `BM_RigidBodyStepParallel` is slower than sequential because trivial Euler
+  integration is overhead-bound, exactly the plan's thesis; it waits for a
+  compute-bound workload (contact solver) and committed `bm-check` baselines on
+  stable benchmark CI.
 - [x] Phase 4: Homogeneous batch (CPU) + rollout. `stepWorldsBatched` (parallel
       batch executor via the injected executor, bit-identical to sequential),
       `rolloutWorldsBatched`, and a pure-SoA control-sequence rollout

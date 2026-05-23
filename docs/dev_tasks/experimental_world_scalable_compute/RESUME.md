@@ -2,7 +2,7 @@
 
 ## Last Session Summary
 
-Twenty-nine verified commits on the feature branch, each green
+Thirty-one verified commits on the feature branch, each green
 (`pixi run build`, `pixi run build-simulation-experimental-tests`,
 `pixi run lint`, the experimental ctest label, and the benchmark). The branch now
 carries the full standalone structure-of-arrays (SoA) toolkit and a live World
@@ -40,7 +40,7 @@ step driven by it at full parity with the per-entity integrator:
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute` — twenty-nine commits ahead of
+`feature/experimental-world-scalable-compute` — thirty-one commits ahead of
 `main`, working tree clean, all gates green. Not pushed; accumulating toward one
 larger DART 7 PR.
 
@@ -54,13 +54,16 @@ next steps, in rough order:
    stage, behind the executor seam, once frame-coupled coverage is broadened
    beyond the current per-entity fallback (e.g. parent-before-child ordering of
    the frame-cache loop so the SoA path handles rigid-body parenting directly).
-2. Phase 3 is functionally done: determinism gate (bitwise for map-only), cost
-   gate (`ParallelExecutor::setInlineThreshold`), and an explicit-SIMD
-   orientation kernel (`integrateOrientationsSimd`) with scalar fallback. The
-   linear kernels stay scalar-generic because they are memory-bound and already
-   auto-vectorize at -O3. What remains is committed `bm-check` throughput
-   baselines (needs stable benchmark CI) and fixed-ULP reduction tolerance once a
-   reduction stage exists.
+2. Phase 3's deliverables are all implemented: determinism gate (bitwise for
+   map-only), cost gate (`ParallelExecutor::setInlineThreshold`), explicit-SIMD
+   orientation kernel (`integrateOrientationsSimd`) with scalar fallback, and a
+   deterministic reduction (`totalKineticEnergy`) with a fixed-ULP tolerance
+   gate. The one open exit criterion -- "parallel/SIMD beats the Phase 0
+   baseline" -- is not achievable on today's physics: measured
+   `BM_RigidBodyStepParallel` is slower than sequential because trivial Euler
+   integration is overhead-bound (the plan's thesis). It waits for a
+   compute-bound workload (contact solver) plus committed `bm-check` baselines on
+   stable benchmark CI.
 3. Phase 4 heterogeneous batches (deferred-by-design to Phase 6 in `01-plan.md`).
 4. Phase 5 GPU prototype (blocked on a GPU runner the project does not have;
    the plan classifies this as a provisioning prerequisite, not a coding task);
