@@ -1035,6 +1035,44 @@ def test_experimental_multibody_equation_of_motion_consistency():
     assert np.allclose(residual, np.zeros(2), atol=1e-9)
 
 
+def test_experimental_multibody_inverse_dynamics():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+    robot = world.add_multi_body("pendulum")
+    base = robot.add_link("base")
+    length = 1.5
+    offset = np.eye(4)
+    offset[0, 3] = length
+    bob = robot.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="hinge",
+            type=sx.JointType.REVOLUTE,
+            axis=(0.0, 1.0, 0.0),
+            transform_from_parent=offset,
+        ),
+    )
+    mass = 2.0
+    inertia_yy = 0.2
+    bob.mass = mass
+    bob.inertia = ((0.1, 0.0, 0.0), (0.0, inertia_yy, 0.0), (0.0, 0.0, 0.3))
+
+    world.enter_simulation_mode()
+
+    # At q = 0, qdot = 0: tau = (I + m L^2) qddot + g, with g = -m g L.
+    accel = 3.0
+    tau = robot.compute_inverse_dynamics([accel])
+    expected = (
+        inertia_yy + mass * length * length
+    ) * accel - mass * 9.81 * length
+    assert tau.tolist() == pytest.approx([expected])
+
+    with pytest.raises(Exception, match="must match"):
+        robot.compute_inverse_dynamics([0.0, 0.0])
+
+
 def test_experimental_multibody_dynamics_terms_no_dof():
     sx = _simulation_experimental()
 

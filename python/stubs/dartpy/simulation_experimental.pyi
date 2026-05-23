@@ -279,6 +279,11 @@ class MultiBody:
     coriolis_and_gravity_forces: NDArray[np.float64]
     is_valid: bool
 
+    def compute_inverse_dynamics(
+        self, desired_acceleration: ArrayLike
+    ) -> NDArray[np.float64]:
+        ...
+
     @overload
     def add_link(self, name: str = "") -> Link:
         ...

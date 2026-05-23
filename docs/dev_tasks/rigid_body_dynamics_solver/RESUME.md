@@ -33,6 +33,11 @@ the experimental `World`:
   pendulum `M = I + m L^2`, gravity force `-m g L`) and via the
   `M qddot + C + g = tau` equation-of-motion identity on a 2-DOF chain. C++ +
   dartpy tests.
+- Phase 4 (partial) — inverse dynamics: public
+  `MultiBody::computeInverseDynamics(qddot)` (dartpy `compute_inverse_dynamics`)
+  returning `tau = M qddot + C qdot + g` (with armature) via RNEA
+  (`compute::computeMultiBodyInverseDynamics`). Verified analytically and by a
+  forward/inverse round-trip. C++ + dartpy tests.
 - Phase 4 (partial) — joint velocity and effort limits: per-coordinate
   velocity and effort (force/torque) lower/upper bounds
   (`Joint::setVelocityLimits`/`getVelocityLowerLimits`/`getVelocityUpperLimits`,

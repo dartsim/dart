@@ -582,4 +582,15 @@ Eigen::VectorXd MultiBody::getCoriolisAndGravityForces() const
   return terms.coriolisForces + terms.gravityForces;
 }
 
+//==============================================================================
+Eigen::VectorXd MultiBody::computeInverseDynamics(
+    const Eigen::VectorXd& desiredAcceleration) const
+{
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
+  return compute::computeMultiBodyInverseDynamics(
+      registry, structure, m_world->getGravity(), desiredAcceleration);
+}
+
 } // namespace dart::simulation::experimental

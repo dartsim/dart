@@ -1604,6 +1604,106 @@ TEST(World, MultiBodyEquationOfMotionConsistency)
   EXPECT_NEAR(residual.norm(), 0.0, 1e-9);
 }
 
+// Test inverse dynamics against the analytical single-pendulum value
+// tau = (I + m L^2) qddot + g.
+TEST(World, MultiBodyInverseDynamicsSinglePendulum)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("pendulum");
+  auto base = robot.addLink("base");
+  const double length = 1.5;
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(length, 0.0, 0.0);
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  spec.transformFromParent = offset;
+  auto bob = robot.addLink("bob", base, spec);
+
+  const double mass = 2.0;
+  const double inertiaYy = 0.2;
+  bob.setMass(mass);
+  bob.setInertia(Eigen::Vector3d(0.1, inertiaYy, 0.3).asDiagonal());
+
+  world.enterSimulationMode();
+
+  const double accel = 3.0;
+  const Eigen::VectorXd tau
+      = robot.computeInverseDynamics(Eigen::VectorXd::Constant(1, accel));
+  ASSERT_EQ(tau.size(), 1);
+
+  // At q = 0, qdot = 0: tau = (I + m L^2) qddot + g, with g = -m g L.
+  const double expected
+      = (inertiaYy + mass * length * length) * accel - mass * 9.81 * length;
+  EXPECT_NEAR(tau[0], expected, 1e-9);
+
+  EXPECT_THROW(
+      (void)robot.computeInverseDynamics(Eigen::VectorXd::Zero(2)),
+      sx::InvalidArgumentException);
+}
+
+// Test that inverse dynamics inverts forward dynamics: the forces from
+// computeInverseDynamics(qddot) reproduce qddot in the next step.
+TEST(World, MultiBodyInverseDynamicsRoundTrip)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("double_pendulum");
+  auto base = robot.addLink("base");
+
+  Eigen::Isometry3d offset1 = Eigen::Isometry3d::Identity();
+  offset1.translation() = Eigen::Vector3d(0.7, 0.0, 0.0);
+  Eigen::Isometry3d offset2 = Eigen::Isometry3d::Identity();
+  offset2.translation() = Eigen::Vector3d(0.6, 0.0, 0.0);
+
+  sx::JointSpec spec1;
+  spec1.name = "j1";
+  spec1.type = sx::JointType::Revolute;
+  spec1.axis = Eigen::Vector3d::UnitY();
+  spec1.transformFromParent = offset1;
+  auto link1 = robot.addLink("link1", base, spec1);
+  link1.setMass(1.5);
+  link1.setInertia(Eigen::Vector3d(0.05, 0.08, 0.05).asDiagonal());
+
+  sx::JointSpec spec2;
+  spec2.name = "j2";
+  spec2.type = sx::JointType::Revolute;
+  spec2.axis = Eigen::Vector3d::UnitY();
+  spec2.transformFromParent = offset2;
+  auto link2 = robot.addLink("link2", link1, spec2);
+  link2.setMass(1.0);
+  link2.setInertia(Eigen::Vector3d(0.04, 0.06, 0.04).asDiagonal());
+
+  auto joint1 = link1.getParentJoint();
+  auto joint2 = link2.getParentJoint();
+  joint1.setPosition(Eigen::VectorXd::Constant(1, 0.3));
+  joint1.setVelocity(Eigen::VectorXd::Constant(1, 1.1));
+  joint2.setPosition(Eigen::VectorXd::Constant(1, -0.5));
+  joint2.setVelocity(Eigen::VectorXd::Constant(1, 0.7));
+
+  world.setTimeStep(1e-3);
+  world.enterSimulationMode();
+
+  Eigen::VectorXd qddotDesired(2);
+  qddotDesired << 0.4, -0.9;
+  const Eigen::VectorXd tau = robot.computeInverseDynamics(qddotDesired);
+  ASSERT_EQ(tau.size(), 2);
+
+  joint1.setForce(tau.segment(0, 1));
+  joint2.setForce(tau.segment(1, 1));
+  world.step();
+
+  // Forward dynamics of the inverse-dynamics torque reproduces the target.
+  EXPECT_NEAR(joint1.getAcceleration()[0], qddotDesired[0], 1e-9);
+  EXPECT_NEAR(joint2.getAcceleration()[0], qddotDesired[1], 1e-9);
+}
+
 // Test that the dynamics accessors return empty results for a multibody with no
 // movable degrees of freedom.
 TEST(World, MultiBodyDynamicsAccessorsNoDOF)
@@ -1627,6 +1727,7 @@ TEST(World, MultiBodyDynamicsAccessorsNoDOF)
   EXPECT_EQ(robot.getCoriolisForces().size(), 0);
   EXPECT_EQ(robot.getGravityForces().size(), 0);
   EXPECT_EQ(robot.getCoriolisAndGravityForces().size(), 0);
+  EXPECT_EQ(robot.computeInverseDynamics(Eigen::VectorXd()).size(), 0);
 }
 
 // Test that a prismatic joint aligned with gravity free-falls at g.

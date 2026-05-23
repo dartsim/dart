@@ -513,6 +513,54 @@ MultiBodyDynamicsTerms computeMultiBodyDynamicsTerms(
 }
 
 //==============================================================================
+Eigen::VectorXd computeMultiBodyInverseDynamics(
+    entt::registry& registry,
+    const comps::MultiBodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& desiredAcceleration)
+{
+  if (structure.links.empty()) {
+    return {};
+  }
+
+  const DynamicsTree tree = buildDynamicsTree(registry, structure);
+  if (tree.dofCount == 0) {
+    return {};
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      desiredAcceleration.size() != static_cast<Eigen::Index>(tree.dofCount),
+      InvalidArgumentException,
+      "Desired acceleration dimension ({}) must match the multibody DOF count "
+      "({})",
+      desiredAcceleration.size(),
+      tree.dofCount);
+
+  Eigen::VectorXd qdot
+      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(tree.dofCount));
+  for (std::size_t i = 0; i < tree.links.size(); ++i) {
+    if (tree.links[i].dof == 0) {
+      continue;
+    }
+    const auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
+    qdot.segment(tree.links[i].dofOffset, tree.links[i].dof) = joint.velocity;
+  }
+
+  Vector6 baseAcceleration = Vector6::Zero();
+  baseAcceleration.tail<3>() = -gravity;
+
+  Eigen::VectorXd tau = recursiveNewtonEuler(
+      tree.links, baseAcceleration, tree.dofCount, desiredAcceleration, qdot);
+
+  // Armature contributes diag(armature) * qddot to the joint forces.
+  if (tree.armature.size() == desiredAcceleration.size()) {
+    tau += tree.armature.cwiseProduct(desiredAcceleration);
+  }
+
+  return tau;
+}
+
+//==============================================================================
 std::string_view MultiBodyForwardDynamicsStage::getName() const noexcept
 {
   return "multi_body_forward_dynamics";

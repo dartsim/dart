@@ -503,6 +503,10 @@
     `inverse_mass_matrix`, `coriolis_forces`, `gravity_forces`,
     `coriolis_and_gravity_forces`). The terms reuse the forward-dynamics
     recursive Newton-Euler computation and satisfy `M qddot + C + g = tau`.
+  - Added an experimental inverse-dynamics accessor on `MultiBody`:
+    `computeInverseDynamics(qddot)` (dartpy `compute_inverse_dynamics`) returns
+    the generalized joint forces `tau = M qddot + C qdot + g` (including joint
+    armature) via the recursive Newton-Euler algorithm.
   - Added experimental joint position limits: `Joint::setPositionLimits` with
     `getPositionLowerLimits`/`getPositionUpperLimits` (dartpy
     `set_position_limits`, `position_lower_limits`, `position_upper_limits`).

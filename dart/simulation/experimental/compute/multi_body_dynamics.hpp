@@ -78,6 +78,22 @@ computeMultiBodyDynamicsTerms(
     const comps::MultiBodyStructure& structure,
     const Eigen::Vector3d& gravity);
 
+/// Compute the generalized joint forces required to produce a desired
+/// generalized acceleration at the multibody's current configuration and
+/// velocity (inverse dynamics): `tau = M(q) qddot + C(q, qdot) qdot + g(q)`,
+/// including any joint armature on the mass-matrix diagonal.
+///
+/// Uses the recursive Newton-Euler algorithm directly. `desiredAcceleration`
+/// must have size equal to the multibody's movable degree-of-freedom count,
+/// ordered by joint construction order; the result has the same ordering. For a
+/// multibody with no movable degrees of freedom the result is empty.
+[[nodiscard]] DART_EXPERIMENTAL_API Eigen::VectorXd
+computeMultiBodyInverseDynamics(
+    entt::registry& registry,
+    const comps::MultiBodyStructure& structure,
+    const Eigen::Vector3d& gravity,
+    const Eigen::VectorXd& desiredAcceleration);
+
 /// Fixed-base articulated-body forward-dynamics stage.
 ///
 /// For each multibody, this stage computes generalized joint accelerations from

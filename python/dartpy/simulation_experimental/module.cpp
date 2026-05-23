@@ -1103,6 +1103,12 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro(
           "coriolis_and_gravity_forces",
           &sim::MultiBody::getCoriolisAndGravityForces)
+      .def(
+          "compute_inverse_dynamics",
+          [](const sim::MultiBody& self, const nb::handle& acceleration) {
+            return self.computeInverseDynamics(toVectorX(acceleration));
+          },
+          nb::arg("desired_acceleration"))
       .def_prop_ro("is_valid", &sim::MultiBody::isValid)
       .def("__repr__", [](const sim::MultiBody& self) {
         std::vector<std::pair<std::string, std::string>> fields;

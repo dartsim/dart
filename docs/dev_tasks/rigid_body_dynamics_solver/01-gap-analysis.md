@@ -42,7 +42,7 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 | Capability                               | DART 6 (legacy)                                         | Experimental                                                       | Status  |
 | ---------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------ | ------- |
 | Articulated-body forward dynamics        | `Skeleton::computeForwardDynamics` (Featherstone ABA)   | RNEA-based, fixed base, revolute/prismatic (Phase 1)               | PARTIAL |
-| Inverse dynamics (RNEA)                  | `Skeleton::computeInverseDynamics`                      | internal RNEA exists; no public API                                | PARTIAL |
+| Inverse dynamics (RNEA)                  | `Skeleton::computeInverseDynamics`                      | `MultiBody::computeInverseDynamics` (Phase 4)                      | PRESENT |
 | Mass matrix / inverse mass matrix        | `getMassMatrix`, `getInvMassMatrix`, augmented variants | `MultiBody::getMassMatrix`/`getInverseMassMatrix` (Phase 4)        | PRESENT |
 | Coriolis / gravity generalized forces    | `getCoriolisForces`, `getGravityForces`                 | `MultiBody::getCoriolisForces`/`getGravityForces` (Phase 4)        | PRESENT |
 | Impulse-based dynamics (for constraints) | `computeImpulseForwardDynamics`                         | none                                                               | MISSING |

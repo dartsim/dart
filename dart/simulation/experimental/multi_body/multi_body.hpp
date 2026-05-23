@@ -309,6 +309,20 @@ public:
   /// are no movable DOFs.
   [[nodiscard]] Eigen::VectorXd getCoriolisAndGravityForces() const;
 
+  /// Compute the generalized joint forces (inverse dynamics) that produce a
+  /// desired generalized acceleration at the current configuration and
+  /// velocity: `tau = M(q) qddot + C(q, qdot) qdot + g(q)`, including joint
+  /// armature.
+  ///
+  /// @param desiredAcceleration Target generalized acceleration, size
+  ///        getDOFCount(), ordered by joint construction order.
+  /// @return The required generalized forces in the same ordering. Empty when
+  ///         there are no movable DOFs.
+  /// @throws InvalidArgumentException if the acceleration size does not match
+  ///         the movable DOF count.
+  [[nodiscard]] Eigen::VectorXd computeInverseDynamics(
+      const Eigen::VectorXd& desiredAcceleration) const;
+
 private:
   entt::entity m_entity; ///< Entity ID in the registry
   World* m_world;        ///< Non-owning pointer to World
