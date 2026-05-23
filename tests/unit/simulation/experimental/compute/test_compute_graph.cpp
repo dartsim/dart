@@ -726,3 +726,43 @@ TEST(ExperimentalIntegrationKernel, IntegratesStateBatchLinearStep)
           state, badForce, inverseMass, 0.1),
       sx::InvalidArgumentException);
 }
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, IntegratesOrientationAboutZ)
+{
+  std::vector<double> orientation = {1.0, 0.0, 0.0, 0.0}; // identity
+  const std::vector<double> angular = {0.0, 0.0, 2.0};    // omega about +z
+
+  compute::integrateOrientationsSemiImplicit(
+      orientation.data(), angular.data(), 0.1, 1);
+
+  const double w = orientation[0];
+  const double x = orientation[1];
+  const double y = orientation[2];
+  const double z = orientation[3];
+
+  // Remains a unit quaternion.
+  EXPECT_NEAR(w * w + x * x + y * y + z * z, 1.0, 1e-12);
+  // Pure z-rotation keeps the x and y components zero.
+  EXPECT_DOUBLE_EQ(x, 0.0);
+  EXPECT_DOUBLE_EQ(y, 0.0);
+  // tan(theta/2) = z/w = 0.5 * omega_z * dt = 0.1 (ratio preserved by
+  // normalization).
+  EXPECT_NEAR(z / w, 0.1, 1e-12);
+  EXPECT_GT(w, 0.0);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, OrientationKernelIsScalarGeneric)
+{
+  std::vector<float> orientation = {1.0F, 0.0F, 0.0F, 0.0F};
+  const std::vector<float> angular = {0.0F, 0.0F, 2.0F};
+
+  compute::integrateOrientationsSemiImplicit(
+      orientation.data(), angular.data(), 0.1F, 1);
+
+  const float norm
+      = orientation[0] * orientation[0] + orientation[1] * orientation[1]
+        + orientation[2] * orientation[2] + orientation[3] * orientation[3];
+  EXPECT_NEAR(norm, 1.0F, 1e-5F);
+}

@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <cstddef>
 
 namespace dart::simulation::experimental::compute {
@@ -87,6 +88,59 @@ void integrateVelocitiesSemiImplicit(
     velocities[3 * b + 0] += forces[3 * b + 0] * scale;
     velocities[3 * b + 1] += forces[3 * b + 1] * scale;
     velocities[3 * b + 2] += forces[3 * b + 2] * scale;
+  }
+}
+
+/// Scalar-generic semi-implicit Euler orientation update over flat, world-major
+/// structure-of-arrays state.
+///
+/// Integrates each unit quaternion `q` (stored w, x, y, z, length
+/// `4 * bodyCount`) from its body angular velocity (length `3 * bodyCount`):
+/// `q <- normalize(q + 0.5 * (0, omega) * q * timeStep)`. It is templated on
+/// @c Scalar and uses `using std::sqrt` so an autodiff or wide scalar can
+/// supply its own `sqrt` via ADL.
+template <typename Scalar>
+void integrateOrientationsSemiImplicit(
+    Scalar* orientations,
+    const Scalar* angularVelocities,
+    Scalar timeStep,
+    std::size_t bodyCount)
+{
+  using std::sqrt;
+  const Scalar half = static_cast<Scalar>(0.5);
+  for (std::size_t b = 0; b < bodyCount; ++b) {
+    const Scalar w = orientations[4 * b + 0];
+    const Scalar x = orientations[4 * b + 1];
+    const Scalar y = orientations[4 * b + 2];
+    const Scalar z = orientations[4 * b + 3];
+    const Scalar ox = angularVelocities[3 * b + 0];
+    const Scalar oy = angularVelocities[3 * b + 1];
+    const Scalar oz = angularVelocities[3 * b + 2];
+
+    // dq = 0.5 * (0, omega) * q (quaternion product).
+    const Scalar dw = -(ox * x + oy * y + oz * z);
+    const Scalar dx = ox * w + oy * z - oz * y;
+    const Scalar dy = oy * w + oz * x - ox * z;
+    const Scalar dz = oz * w + ox * y - oy * x;
+
+    Scalar nw = w + half * dw * timeStep;
+    Scalar nx = x + half * dx * timeStep;
+    Scalar ny = y + half * dy * timeStep;
+    Scalar nz = z + half * dz * timeStep;
+
+    const Scalar norm = sqrt(nw * nw + nx * nx + ny * ny + nz * nz);
+    if (norm > static_cast<Scalar>(0)) {
+      const Scalar inverse = static_cast<Scalar>(1) / norm;
+      nw *= inverse;
+      nx *= inverse;
+      ny *= inverse;
+      nz *= inverse;
+    }
+
+    orientations[4 * b + 0] = nw;
+    orientations[4 * b + 1] = nx;
+    orientations[4 * b + 2] = ny;
+    orientations[4 * b + 3] = nz;
   }
 }
 
