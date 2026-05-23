@@ -35,6 +35,7 @@
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/dynamics.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
+#include "dart/simulation/experimental/compute/rigid_body_integration_kernel.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Geometry>
@@ -244,6 +245,37 @@ void applyRigidBodyStateBatch(
 
     applyRigidBodyState(*worlds[w], single);
   }
+}
+
+//==============================================================================
+void integrateRigidBodyStateBatchLinear(
+    RigidBodyStateBatch& state,
+    const std::vector<double>& force,
+    const std::vector<double>& inverseMass,
+    double timeStep)
+{
+  const auto bodies = state.worldCount * state.bodyCount;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      state.position.size() != 3 * bodies
+          || state.linearVelocity.size() != 3 * bodies
+          || force.size() != 3 * bodies || inverseMass.size() != bodies,
+      InvalidArgumentException,
+      "integrateRigidBodyStateBatchLinear arrays are inconsistent with "
+      "worldCount {} and bodyCount {}",
+      state.worldCount,
+      state.bodyCount);
+
+  integrateVelocitiesSemiImplicit(
+      state.linearVelocity.data(),
+      force.data(),
+      inverseMass.data(),
+      timeStep,
+      bodies);
+  integratePositionsSemiImplicit(
+      state.position.data(),
+      state.linearVelocity.data(),
+      timeStep,
+      state.position.size());
 }
 
 } // namespace dart::simulation::experimental::compute

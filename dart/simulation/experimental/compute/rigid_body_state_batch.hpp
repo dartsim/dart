@@ -94,4 +94,18 @@ extractRigidBodyStateBatch(const std::vector<const World*>& worlds);
 DART_EXPERIMENTAL_API void applyRigidBodyStateBatch(
     const std::vector<World*>& worlds, const RigidBodyStateBatch& state);
 
+/// Integrate a state batch one semi-implicit Euler step in place: linear
+/// velocities are updated from @p force and @p inverseMass, then positions from
+/// the updated velocities, via the scalar-generic SoA kernels.
+///
+/// @p force has three components per body (length `3 * worldCount * bodyCount`)
+/// and @p inverseMass one per body (length `worldCount * bodyCount`); they are
+/// kept out of the State batch as Control/Model inputs, foreshadowing the
+/// Model/State split. Throws on size mismatch.
+DART_EXPERIMENTAL_API void integrateRigidBodyStateBatchLinear(
+    RigidBodyStateBatch& state,
+    const std::vector<double>& force,
+    const std::vector<double>& inverseMass,
+    double timeStep);
+
 } // namespace dart::simulation::experimental::compute

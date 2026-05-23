@@ -695,3 +695,34 @@ TEST(ExperimentalIntegrationKernel, IntegratesStateBatchPositions)
   EXPECT_DOUBLE_EQ(batch.position[1], 1.0);
   EXPECT_DOUBLE_EQ(batch.position[2], 1.5);
 }
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, IntegratesStateBatchLinearStep)
+{
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = 2;
+  state.position = {0.0, 0.0, 0.0, 1.0, 1.0, 1.0};
+  state.orientation = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0};
+  state.linearVelocity = {1.0, 0.0, 0.0, 0.0, 2.0, 0.0};
+  state.angularVelocity = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+  const std::vector<double> force = {0.0, 0.0, 10.0, 0.0, 0.0, 0.0};
+  const std::vector<double> inverseMass = {0.5, 1.0};
+
+  compute::integrateRigidBodyStateBatchLinear(state, force, inverseMass, 0.1);
+
+  // Velocity updated first: body 0 z += 10 * 0.5 * 0.1 = 0.5; body 1 unchanged.
+  EXPECT_DOUBLE_EQ(state.linearVelocity[2], 0.5);
+  // Position then uses the updated velocity (semi-implicit Euler).
+  EXPECT_DOUBLE_EQ(state.position[0], 0.1);  // body 0 x: 0 + 1.0 * 0.1
+  EXPECT_DOUBLE_EQ(state.position[2], 0.05); // body 0 z: 0 + 0.5 * 0.1
+  EXPECT_DOUBLE_EQ(state.position[4], 1.2);  // body 1 y: 1 + 2.0 * 0.1
+
+  // Size mismatch is rejected.
+  const std::vector<double> badForce = {0.0, 0.0, 0.0};
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatchLinear(
+          state, badForce, inverseMass, 0.1),
+      sx::InvalidArgumentException);
+}

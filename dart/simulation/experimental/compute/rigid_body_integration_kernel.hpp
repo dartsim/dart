@@ -65,4 +65,29 @@ void integratePositionsSemiImplicit(
   }
 }
 
+/// Scalar-generic semi-implicit Euler linear-velocity update over flat,
+/// world-major structure-of-arrays state.
+///
+/// Applies `velocity += force * inverseMass * timeStep` per body. Velocities
+/// and forces are three components per body (length `3 * bodyCount`); inverse
+/// masses are one per body (length `bodyCount`). Keeping force (control) and
+/// inverse mass (model) as separate inputs mirrors the intended Model/Control
+/// vs State separation. Like the position kernel, it is templated on @c Scalar
+/// and uses plain scalar pointers with no Eigen expression templates.
+template <typename Scalar>
+void integrateVelocitiesSemiImplicit(
+    Scalar* velocities,
+    const Scalar* forces,
+    const Scalar* inverseMasses,
+    Scalar timeStep,
+    std::size_t bodyCount)
+{
+  for (std::size_t b = 0; b < bodyCount; ++b) {
+    const Scalar scale = inverseMasses[b] * timeStep;
+    velocities[3 * b + 0] += forces[3 * b + 0] * scale;
+    velocities[3 * b + 1] += forces[3 * b + 1] * scale;
+    velocities[3 * b + 2] += forces[3 * b + 2] * scale;
+  }
+}
+
 } // namespace dart::simulation::experimental::compute
