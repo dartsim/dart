@@ -13,27 +13,30 @@ Critical (state-batch bounds check) and Major (hazard reachability cost) finding
 were fixed; API-inventory/doc sync; and the leading world dimension
 (`extractRigidBodyStateBatch`/`applyRigidBodyStateBatch`, homogeneous multi-world).
 
-Since then: a scalar-generic SoA position-integration kernel
-(`integratePositionsSemiImplicit`, instantiated `double`, tested for `float`) and
-a CPU batch executor (`stepWorldsBatched`, Phase 4 seed: N independent worlds
-advanced in parallel via the executor seam, bit-identical to sequential).
+Since then: scalar-generic SoA kernels (`integratePositionsSemiImplicit`,
+`integrateVelocitiesSemiImplicit`) and a batched linear integrator
+(`integrateRigidBodyStateBatchLinear`); a CPU batch executor (`stepWorldsBatched`)
+and rollout (`rolloutWorldsBatched`); and the immutable Model batch
+(`RigidBodyModelBatch` + `extractRigidBodyModelBatch` + a model-based integrator
+overload) realizing the Model/State/Control split.
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute` — eleven commits ahead of `main`,
+`feature/experimental-world-scalable-compute` — sixteen commits ahead of `main`,
 working tree clean, all gates green. Not pushed; accumulating toward one larger
 DART 7 PR.
 
 ## Immediate Next Step
 
-The hard remaining work is the larger refactor (best for a fresh session): wire
-the scalar-generic SoA kernel into the actual `WorldStepStage` pipeline so the
-step reads/writes the batch instead of per-entity `registry.get`, and add the
-immutable Model split (topology/params separate from the mutable State batch).
-Then Phase 3 (tolerance determinism gate, SIMD on the SoA kernels, ambiguity
-detector), Phase 4 rollout (control sequence + output buffers on top of
-`stepWorldsBatched`), and Phase 5 GPU (blocked on GPU hardware/CI + the
-CUDA-vs-SYCL benchmark). Keep `entt` internal and the public handle API
+The remaining Phase 2 work is the larger integration (best for a fresh session):
+add an angular (orientation-from-angular-velocity) scalar-generic kernel, then
+wire the batched SoA integrator into the live `WorldStepStage` pipeline so
+`World::step` drives the SoA path instead of per-entity `registry.get` (the
+current `integrateRigidBody` does the full force->velocity->position->orientation
+update with inertia, so the SoA path must reach parity before it can replace it).
+After that: Phase 3 explicit SIMD on the hot kernels; Phase 4 control sequences +
+heterogeneous batches; Phase 5 GPU (blocked on GPU hardware/CI + the CUDA-vs-SYCL
+benchmark); Phase 6 reassess. Keep `entt` internal and the public handle API
 unchanged; see `01-plan.md`.
 
 ## Context That Would Be Lost
