@@ -108,9 +108,15 @@ def test_experimental_api_exposes_python_names_only():
             "addLink",
             "getLink",
             "getJoint",
+            "getLinks",
+            "getJoints",
+            "getLinkNames",
+            "getJointNames",
             "getLinkCount",
             "getJointCount",
             "getDOFCount",
+            "get_links",
+            "get_joints",
         ),
         sx.RigidBody: (
             "get_name",
@@ -247,6 +253,8 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "force_available",
         "add_variable",
         "variable_names",
+        "link_names",
+        "joint_names",
     ):
         assert member in stub
 
@@ -399,6 +407,10 @@ def test_experimental_multibody_link_joint_common_path():
     assert arm.num_links == 3
     assert arm.num_joints == 2
     assert arm.num_dofs == 2
+    assert [link.name for link in arm.links] == ["base", "forearm", "slider"]
+    assert [joint.name for joint in arm.joints] == ["elbow", "rail"]
+    assert arm.link_names == ["base", "forearm", "slider"]
+    assert arm.joint_names == ["elbow", "rail"]
     assert arm.get_link("base").name == "base"
     assert arm.get_link("missing") is None
 

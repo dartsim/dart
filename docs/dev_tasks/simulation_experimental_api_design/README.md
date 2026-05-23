@@ -22,6 +22,9 @@
 - [x] Added `compute::ParallelExecutor` as the preferred backend-neutral C++
       name for the parallel compute-graph executor while keeping a DART 7
       compatibility alias for the previous Taskflow-branded include.
+- [x] Added construction-ordered `MultiBody` link/joint enumeration in C++ and
+      Pythonic dartpy list/name properties without committing world-level
+      dict-style collection semantics.
 - [ ] Continue closing API gaps from
       `docs/design/simulation_experimental_cpp_api.md` and
       `docs/design/simulation_experimental_python_api.md`.
@@ -62,7 +65,7 @@ stable public concepts whose internals can change before DART 8 promotion.
 
 ## Immediate Next Steps
 
-1. Validate and push the `compute::ParallelExecutor` slice.
+1. Validate and push the `MultiBody` link/joint enumeration slice.
 2. Audit the remaining gap between the design docs and the public C++/dartpy
    staging surface.
 3. Prefer the next narrow API slice that improves the public facade without

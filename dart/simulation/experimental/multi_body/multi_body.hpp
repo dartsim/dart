@@ -42,6 +42,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <cstddef>
 
@@ -176,6 +177,30 @@ public:
   /// @param name Joint name
   /// @return Joint handle if found, std::nullopt otherwise
   std::optional<Joint> getJoint(std::string_view name) const;
+
+  /// Get all link handles in construction order.
+  ///
+  /// The returned vector is a snapshot of lightweight handles. The handles
+  /// remain tied to this MultiBody's World and follow the same validity rules
+  /// as handles returned by addLink() and getLink().
+  [[nodiscard]] std::vector<Link> getLinks() const;
+
+  /// Get all joint handles in construction order.
+  ///
+  /// The returned vector is a snapshot of lightweight handles. The handles
+  /// remain tied to this MultiBody's World and follow the same validity rules
+  /// as handles returned by getJoint().
+  [[nodiscard]] std::vector<Joint> getJoints() const;
+
+  /// Get link names in construction order.
+  ///
+  /// Duplicate names, if present, are preserved in the returned snapshot.
+  [[nodiscard]] std::vector<std::string> getLinkNames() const;
+
+  /// Get joint names in construction order.
+  ///
+  /// Duplicate names, if present, are preserved in the returned snapshot.
+  [[nodiscard]] std::vector<std::string> getJointNames() const;
 
   /// Get the entity ID (for advanced users)
   ///

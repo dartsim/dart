@@ -707,6 +707,13 @@ The current C++ tests allow duplicate multibody names. Dict-style world lookup
 must wait for a documented uniqueness rule or expose only list-like and
 optional lookup behavior for duplicate-capable collections.
 
+The DART 7 experimental binding may stage construction-ordered snapshot lists
+for owner-local collections whose ordering is already explicit in the public
+C++ owner, such as `robot.links`, `robot.joints`, `robot.link_names`, and
+`robot.joint_names`. These properties should remain list-like and should not
+grow dict-style `[]` lookup or collection-level bulk state until the full
+collection contract below is documented.
+
 The collection contract should define:
 
 - whether names must be unique at construction time;

@@ -3,9 +3,9 @@
 ## Last Session Summary
 
 Work is continuing on `docs/simulation-api-design`, which is a pushed branch
-tracking `origin/docs/simulation-api-design`. The previous pushed base before
-the current executor-naming slice was `6ce3f83eb93` (`Guard unsupported loop
-closure runtime policies`).
+tracking `origin/docs/simulation-api-design`. The last pushed base before the
+current MultiBody enumeration slice was `83628bfb9a7` (`Add backend-neutral
+parallel executor API`).
 
 Completed slices on this branch include:
 
@@ -19,6 +19,9 @@ Completed slices on this branch include:
   compatible runtime stages exist.
 - `World::sync(WorldSyncStage::Kinematics)` / `world.sync(...)` added for
   explicit kinematics-only work placement.
+- `compute::ParallelExecutor` added as the preferred backend-neutral public C++
+  executor name, with `TaskflowExecutor` kept as a DART 7 source-compatibility
+  alias.
 
 ## Current Branch
 
@@ -27,11 +30,10 @@ Completed slices on this branch include:
 
 ## Immediate Next Step
 
-After the current `compute::ParallelExecutor` slice is committed and pushed,
-continue auditing the next narrow public API gap from the design docs. This
-slice replaces preferred Taskflow-branded executor usage with the
-backend-neutral `ParallelExecutor` name while keeping a DART 7 compatibility
-alias for existing `TaskflowExecutor` source users.
+The current slice adds construction-ordered `MultiBody` link/joint enumeration
+in C++ and Pythonic dartpy list/name properties. Validate it, commit it, merge
+the latest `origin/main`, and push the branch. Then continue auditing the next
+narrow public API gap from the design docs.
 
 ## Context That Would Be Lost
 
@@ -81,7 +83,7 @@ alias for existing `TaskflowExecutor` source users.
 - Existing lookup-style `get_*` methods such as `get_link`, `get_joint`,
   `get_multi_body`, `get_loop_closure`, and `get_rigid_body` remain allowed
   until collection views and uniqueness policy are designed.
-- Current compute-executor slice:
+- Completed compute-executor slice:
   - Added `dart/simulation/experimental/compute/parallel_executor.hpp` and
     `.cpp` with `compute::ParallelExecutor`.
   - Converted `taskflow_executor.hpp` to a compatibility include/alias for
@@ -90,13 +92,22 @@ alias for existing `TaskflowExecutor` source users.
     changelog wording to prefer the backend-neutral public name.
   - The Taskflow implementation dependency remains private to
     `parallel_executor.cpp`.
-- Current compute-executor slice validation completed:
+- Completed compute-executor slice validation:
   - `pixi run ninja -C build/default/cpp/Release test_compute_graph test_world`
   - Focused CTest for `test_compute_graph` and `test_world`
   - `pixi run lint`
   - `pixi run build`
   - `pixi run test-unit`
   - `git diff --check`
+- Current MultiBody enumeration slice:
+  - Adds C++ `MultiBody::getLinks()`, `getJoints()`, `getLinkNames()`, and
+    `getJointNames()` as construction-ordered snapshots of public handles and
+    names.
+  - Adds dartpy properties `links`, `joints`, `link_names`, and `joint_names`
+    on `sx.MultiBody`.
+  - Keeps Python lookup methods as `get_link()` / `get_joint()` for the
+    current experimental staging surface, and does not add dict-style collection
+    indexing before uniqueness/invalidation policy is documented.
 
 ## How To Resume
 

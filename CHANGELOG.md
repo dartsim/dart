@@ -447,6 +447,10 @@
   - Added public experimental C++ `JointSpec` construction and reused it in the
     dartpy `JointSpec` binding, including finite, non-zero joint-axis
     validation at the API boundary.
+  - Added construction-ordered experimental link and joint enumeration on
+    `MultiBody` in C++ and dartpy, exposing public handles and name snapshots
+    without introducing dict-style collection lookup before the uniqueness
+    contract is finalized.
   - Added executor overloads for experimental C++ `World::updateKinematics()`
     and repeated `World::step(...)` calls so kinematics-only updates and
     multi-step simulation can reuse caller-owned backend-neutral execution

@@ -38,6 +38,8 @@
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <string>
+#include <vector>
 
 // Test MultiBody creation with explicit name
 TEST(MultiBody, CreationWithName)
@@ -211,6 +213,47 @@ TEST(MultiBody, JointSpecConstruction)
   EXPECT_EQ(robot.getLinkCount(), 2u);
   EXPECT_EQ(robot.getJointCount(), 1u);
   EXPECT_EQ(robot.getDOFCount(), 1u);
+}
+
+TEST(MultiBody, EnumeratesLinksAndJointsInConstructionOrder)
+{
+  namespace sim = dart::simulation::experimental;
+
+  sim::World world;
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto forearm = robot.addLink(
+      "forearm",
+      base,
+      sim::JointSpec{
+          .name = "elbow",
+          .type = sim::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitZ()});
+  robot.addLink(
+      "tool",
+      forearm,
+      sim::JointSpec{
+          .name = "wrist",
+          .type = sim::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitY()});
+
+  const auto links = robot.getLinks();
+  ASSERT_EQ(links.size(), 3u);
+  EXPECT_EQ(links[0].getName(), "base");
+  EXPECT_EQ(links[1].getName(), "forearm");
+  EXPECT_EQ(links[2].getName(), "tool");
+  EXPECT_EQ(
+      robot.getLinkNames(),
+      (std::vector<std::string>{"base", "forearm", "tool"}));
+
+  const auto joints = robot.getJoints();
+  ASSERT_EQ(joints.size(), 2u);
+  EXPECT_EQ(joints[0].getName(), "elbow");
+  EXPECT_EQ(joints[0].getChildLink().getName(), "forearm");
+  EXPECT_EQ(joints[1].getName(), "wrist");
+  EXPECT_EQ(joints[1].getChildLink().getName(), "tool");
+  EXPECT_EQ(
+      robot.getJointNames(), (std::vector<std::string>{"elbow", "wrist"}));
 }
 
 TEST(MultiBody, RejectsInvalidJointSpecAxis)

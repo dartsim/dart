@@ -162,6 +162,68 @@ std::optional<Joint> MultiBody::getJoint(std::string_view name) const
 }
 
 //==============================================================================
+std::vector<Link> MultiBody::getLinks() const
+{
+  const auto& structure
+      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+
+  std::vector<Link> links;
+  links.reserve(structure.links.size());
+  for (const auto& linkEntity : structure.links) {
+    links.emplace_back(linkEntity, m_world);
+  }
+
+  return links;
+}
+
+//==============================================================================
+std::vector<Joint> MultiBody::getJoints() const
+{
+  const auto& structure
+      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+
+  std::vector<Joint> joints;
+  joints.reserve(structure.joints.size());
+  for (const auto& jointEntity : structure.joints) {
+    joints.emplace_back(jointEntity, m_world);
+  }
+
+  return joints;
+}
+
+//==============================================================================
+std::vector<std::string> MultiBody::getLinkNames() const
+{
+  const auto& structure
+      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+  const auto& registry = m_world->getRegistry();
+
+  std::vector<std::string> names;
+  names.reserve(structure.links.size());
+  for (const auto& linkEntity : structure.links) {
+    names.push_back(safeGet<comps::Name>(registry, linkEntity).name);
+  }
+
+  return names;
+}
+
+//==============================================================================
+std::vector<std::string> MultiBody::getJointNames() const
+{
+  const auto& structure
+      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+  const auto& registry = m_world->getRegistry();
+
+  std::vector<std::string> names;
+  names.reserve(structure.joints.size());
+  for (const auto& jointEntity : structure.joints) {
+    names.push_back(safeGet<comps::Name>(registry, jointEntity).name);
+  }
+
+  return names;
+}
+
+//==============================================================================
 World* MultiBody::getWorld() const
 {
   return m_world;

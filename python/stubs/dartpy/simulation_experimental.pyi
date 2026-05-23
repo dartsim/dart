@@ -238,6 +238,10 @@ class MultiBody:
     num_links: int
     num_joints: int
     num_dofs: int
+    links: list[Link]
+    joints: list[Joint]
+    link_names: list[str]
+    joint_names: list[str]
 
     @overload
     def add_link(self, name: str = "") -> Link:

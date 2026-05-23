@@ -677,6 +677,14 @@ avoid recursive per-object dirty propagation in scalable workloads. Internally,
 epoch or generation counters can make no-op freshness checks cheap, and compute
 pipelines can refresh only the stage outputs requested by the workload.
 
+MultiBody-local link and joint enumeration is part of the public facade because
+the `MultiBody` owner already stores these handles in construction order. C++
+snapshot APIs such as `getLinks()`, `getJoints()`, `getLinkNames()`, and
+`getJointNames()` should return lightweight public handles or value data, not
+raw entity IDs, component references, or backend storage views. Rich named
+collection objects and bulk DOF views should wait until uniqueness, invalidation,
+and state-owner contracts are documented.
+
 ## Public Facade Rules
 
 The promoted API should expose public wrappers before exposing implementation

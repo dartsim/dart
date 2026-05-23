@@ -978,6 +978,10 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("num_links", &sim::MultiBody::getLinkCount)
       .def_prop_ro("num_joints", &sim::MultiBody::getJointCount)
       .def_prop_ro("num_dofs", &sim::MultiBody::getDOFCount)
+      .def_prop_ro("links", &sim::MultiBody::getLinks)
+      .def_prop_ro("joints", &sim::MultiBody::getJoints)
+      .def_prop_ro("link_names", &sim::MultiBody::getLinkNames)
+      .def_prop_ro("joint_names", &sim::MultiBody::getJointNames)
       .def("__repr__", [](const sim::MultiBody& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back("name", repr_string(std::string(self.getName())));
