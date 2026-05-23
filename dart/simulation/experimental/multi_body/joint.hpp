@@ -148,6 +148,73 @@ public:
   /// size does not match the joint DOF count, or if any value is non-finite.
   void setVelocity(const Eigen::VectorXd& velocity);
 
+  /// Get a copy of the generalized joint force (effort) vector.
+  [[nodiscard]] Eigen::VectorXd getForce() const;
+
+  /// Set the generalized joint force (effort) vector.
+  ///
+  /// This is the actuation effort applied at the joint (torque for revolute,
+  /// force for prismatic) and is consumed by forward dynamics. Unlike
+  /// rigid-body external forces, the joint effort persists across steps until
+  /// changed, so it models a held actuator command.
+  ///
+  /// @param force Vector with size equal to getDOFCount().
+  /// @throws InvalidArgumentException if this handle is invalid, if the vector
+  /// size does not match the joint DOF count, or if any value is non-finite.
+  void setForce(const Eigen::VectorXd& force);
+
+  /// Get a copy of the generalized joint acceleration vector.
+  ///
+  /// Reflects the most recent acceleration computed by forward dynamics. It is
+  /// zero before the first step.
+  [[nodiscard]] Eigen::VectorXd getAcceleration() const;
+
+  /// Get the per-coordinate spring stiffness vector.
+  [[nodiscard]] Eigen::VectorXd getSpringStiffness() const;
+
+  /// Set the per-coordinate spring stiffness vector.
+  ///
+  /// A nonzero stiffness applies a passive restoring force
+  /// `-stiffness * (position - restPosition)` during forward dynamics. Values
+  /// must be non-negative and finite, with size equal to getDOFCount().
+  void setSpringStiffness(const Eigen::VectorXd& stiffness);
+
+  /// Get the per-coordinate spring rest position vector.
+  [[nodiscard]] Eigen::VectorXd getRestPosition() const;
+
+  /// Set the per-coordinate spring rest position vector.
+  ///
+  /// Values must be finite, with size equal to getDOFCount().
+  void setRestPosition(const Eigen::VectorXd& restPosition);
+
+  /// Get the per-coordinate damping coefficient vector.
+  [[nodiscard]] Eigen::VectorXd getDampingCoefficient() const;
+
+  /// Set the per-coordinate damping coefficient vector.
+  ///
+  /// A nonzero coefficient applies a passive force `-damping * velocity` during
+  /// forward dynamics. Values must be non-negative and finite, with size equal
+  /// to getDOFCount().
+  void setDampingCoefficient(const Eigen::VectorXd& damping);
+
+  /// Set the per-coordinate position limits.
+  ///
+  /// Each lower bound must be less than or equal to the matching upper bound.
+  /// Use +/- infinity for an unbounded coordinate (the default). The
+  /// articulated-body integration clamps positions to these limits and arrests
+  /// the velocity driving a coordinate past a limit.
+  ///
+  /// @param lower Lower bounds, size getDOFCount().
+  /// @param upper Upper bounds, size getDOFCount().
+  void setPositionLimits(
+      const Eigen::VectorXd& lower, const Eigen::VectorXd& upper);
+
+  /// Get the per-coordinate lower position limits (default -infinity).
+  [[nodiscard]] Eigen::VectorXd getPositionLowerLimits() const;
+
+  /// Get the per-coordinate upper position limits (default +infinity).
+  [[nodiscard]] Eigen::VectorXd getPositionUpperLimits() const;
+
   /// Get the parent link
   ///
   /// @return Parent Link handle
@@ -169,7 +236,6 @@ public:
   [[nodiscard]] bool isValid() const;
 
   // TODO: Add methods for:
-  // - Getting/setting acceleration
   // - Getting/setting joint limits
   // - Getting/setting effort limits
   // - Computing joint transforms

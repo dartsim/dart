@@ -32,26 +32,25 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/comps/component_category.hpp>
+#include <dart/simulation/experimental/body/rigid_body.hpp>
 
-namespace dart::simulation::experimental::comps {
+#include <Eigen/Core>
 
-/// Tag marking entity as a RigidBody
+namespace dart::simulation::experimental {
+
+/// A single contact point produced by a collision query.
 ///
-/// Automatically serialized via DART_EXPERIMENTAL_TAG_COMPONENT macro.
-/// **Internal Implementation Detail** - Not exposed in public API
-struct RigidBodyTag
+/// This is query output (no constraint solving): it reports where two bodies'
+/// collision shapes overlap. The contact normal points from `bodyA` toward
+/// `bodyB` and `depth` is the penetration depth (positive when overlapping),
+/// both in world coordinates.
+struct Contact
 {
-  DART_EXPERIMENTAL_TAG_COMPONENT(RigidBodyTag);
+  RigidBody bodyA;
+  RigidBody bodyB;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+  double depth = 0.0;
 };
 
-/// Tag marking a rigid body as static (immovable): no gravity, no integration,
-/// and treated as infinite mass by the contact solver.
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct StaticBodyTag
-{
-  DART_EXPERIMENTAL_TAG_COMPONENT(StaticBodyTag);
-};
-
-} // namespace dart::simulation::experimental::comps
+} // namespace dart::simulation::experimental

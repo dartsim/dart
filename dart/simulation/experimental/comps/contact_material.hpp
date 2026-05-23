@@ -36,22 +36,17 @@
 
 namespace dart::simulation::experimental::comps {
 
-/// Tag marking entity as a RigidBody
+/// Per-body contact material parameters consumed by the contact solver.
 ///
-/// Automatically serialized via DART_EXPERIMENTAL_TAG_COMPONENT macro.
-/// **Internal Implementation Detail** - Not exposed in public API
-struct RigidBodyTag
+/// **Internal Implementation Detail** - Not exposed in public API. The public
+/// surface is the rigid-body restitution/friction accessors. Defaults match the
+/// behavior of a body with no material attached: no bounce, friction one.
+struct ContactMaterial
 {
-  DART_EXPERIMENTAL_TAG_COMPONENT(RigidBodyTag);
-};
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(ContactMaterial);
 
-/// Tag marking a rigid body as static (immovable): no gravity, no integration,
-/// and treated as infinite mass by the contact solver.
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct StaticBodyTag
-{
-  DART_EXPERIMENTAL_TAG_COMPONENT(StaticBodyTag);
+  double restitution = 0.0;
+  double friction = 1.0;
 };
 
 } // namespace dart::simulation::experimental::comps

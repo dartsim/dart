@@ -32,7 +32,10 @@
 
 #include "dart/simulation/experimental/compute/world_step_stage.hpp"
 
+#include "dart/simulation/experimental/body/contact.hpp"
+#include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
+#include "dart/simulation/experimental/comps/contact_material.hpp"
 #include "dart/simulation/experimental/comps/dynamics.hpp"
 #include "dart/simulation/experimental/comps/frame_types.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
@@ -229,21 +232,44 @@ void integrateAngularVelocity(
 }
 
 //==============================================================================
-void integrateRigidBody(
-    entt::registry& registry, entt::entity entity, const double timeStep)
+// Update a body's velocity from gravity and the applied force/torque, then
+// clear the per-step force accumulators. Does not move the body.
+void integrateRigidBodyVelocity(
+    entt::registry& registry,
+    entt::entity entity,
+    const Eigen::Vector3d& gravity,
+    const double timeStep)
 {
-  auto& transform = registry.get<comps::Transform>(entity);
+  const auto& transform = registry.get<comps::Transform>(entity);
   auto& velocity = registry.get<comps::Velocity>(entity);
   const auto& mass = registry.get<comps::MassProperties>(entity);
-  const auto& force = registry.get<comps::Force>(entity);
+  auto& force = registry.get<comps::Force>(entity);
 
-  auto orientation = normalizeOrIdentity(transform.orientation);
+  const auto orientation = normalizeOrIdentity(transform.orientation);
 
   if (mass.mass > 0.0 && std::isfinite(mass.mass)) {
-    velocity.linear += (force.force / mass.mass) * timeStep;
+    velocity.linear += (force.force / mass.mass + gravity) * timeStep;
   }
 
   integrateAngularVelocity(velocity, mass, force, orientation, timeStep);
+
+  // External force/torque accumulators are per-step applied loads: they are
+  // consumed by this integration and then cleared, matching the legacy DART 6
+  // convention where external forces are re-applied each step. Gravity is not
+  // stored here; it is applied as an acceleration above.
+  force.force.setZero();
+  force.torque.setZero();
+}
+
+//==============================================================================
+// Advance a body's pose from its current velocity and refresh its frame cache.
+void integrateRigidBodyPosition(
+    entt::registry& registry, entt::entity entity, const double timeStep)
+{
+  auto& transform = registry.get<comps::Transform>(entity);
+  const auto& velocity = registry.get<comps::Velocity>(entity);
+
+  auto orientation = normalizeOrIdentity(transform.orientation);
 
   transform.position += velocity.linear * timeStep;
 
@@ -266,6 +292,17 @@ void integrateRigidBody(
 
   auto& cache = registry.get<comps::FrameCache>(entity);
   cache.needTransformUpdate = true;
+}
+
+//==============================================================================
+void integrateRigidBody(
+    entt::registry& registry,
+    entt::entity entity,
+    const Eigen::Vector3d& gravity,
+    const double timeStep)
+{
+  integrateRigidBodyVelocity(registry, entity, gravity, timeStep);
+  integrateRigidBodyPosition(registry, entity, timeStep);
 }
 
 } // namespace
@@ -388,6 +425,7 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
 
   ComputeGraph graph;
   const auto timeStep = world.getTimeStep();
+  const Eigen::Vector3d gravity = world.getGravity();
   if (hasRigidBodyFrameDependency(registry, *entities)) {
     std::vector<RigidBodyNode> nodes;
     nodes.reserve(entities->size());
@@ -395,8 +433,8 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
     for (const auto entity : *entities) {
       auto& node = graph.addNode(
           "rigid_body_entity_" + std::to_string(entt::to_integral(entity)),
-          [&registry, entity, timeStep]() {
-            integrateRigidBody(registry, entity, timeStep);
+          [&registry, entity, gravity, timeStep]() {
+            integrateRigidBody(registry, entity, gravity, timeStep);
           },
           getMetadata());
       nodes.push_back({entity, &node});
@@ -427,10 +465,13 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
     const auto end = std::min(begin + m_batchSize, entities->size());
     graph.addNode(
         "rigid_body_batch_" + std::to_string(begin),
-        [&registry, entities, begin, end, timeStep]() {
+        [&registry, entities, begin, end, gravity, timeStep]() {
           for (auto i = begin; i < end; ++i) {
             integrateRigidBody(
-                registry, (*entities)[static_cast<std::size_t>(i)], timeStep);
+                registry,
+                (*entities)[static_cast<std::size_t>(i)],
+                gravity,
+                timeStep);
           }
         },
         getMetadata());
@@ -443,6 +484,361 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
 std::size_t RigidBodyIntegrationStage::getBatchSize() const noexcept
 {
   return m_batchSize;
+}
+
+namespace {
+
+//==============================================================================
+double inverseMass(const comps::MassProperties& mass)
+{
+  return (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
+}
+
+//==============================================================================
+Eigen::Matrix3d inverseWorldInertia(
+    const comps::MassProperties& mass, const comps::Transform& transform)
+{
+  if (!(mass.mass > 0.0) || !std::isfinite(mass.mass)) {
+    return Eigen::Matrix3d::Zero();
+  }
+
+  const Eigen::Matrix3d rotation
+      = normalizeOrIdentity(transform.orientation).toRotationMatrix();
+  const Eigen::Matrix3d worldInertia
+      = rotation * mass.inertia * rotation.transpose();
+  Eigen::LDLT<Eigen::Matrix3d> solver(worldInertia);
+  if (solver.info() != Eigen::Success || !solver.isPositive()) {
+    return Eigen::Matrix3d::Zero();
+  }
+  return solver.solve(Eigen::Matrix3d::Identity());
+}
+
+//==============================================================================
+double restitutionOf(const entt::registry& registry, entt::entity entity)
+{
+  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
+    return material->restitution;
+  }
+  return 0.0;
+}
+
+//==============================================================================
+double frictionOf(const entt::registry& registry, entt::entity entity)
+{
+  if (const auto* material = registry.try_get<comps::ContactMaterial>(entity)) {
+    return material->friction;
+  }
+  return 1.0;
+}
+
+} // namespace
+
+//==============================================================================
+std::string_view RigidBodyVelocityStage::getName() const noexcept
+{
+  return "rigid_body_velocity";
+}
+
+//==============================================================================
+ComputeStageMetadata RigidBodyVelocityStage::getMetadata() const noexcept
+{
+  return {
+      ComputeStageDomain::RigidBody,
+      ComputeStageAcceleration::TaskParallel
+          | ComputeStageAcceleration::DataParallel};
+}
+
+//==============================================================================
+void RigidBodyVelocityStage::execute(
+    World& world, ComputeExecutor& /*executor*/)
+{
+  auto& registry = world.getRegistry();
+  const Eigen::Vector3d gravity = world.getGravity();
+  const auto timeStep = world.getTimeStep();
+
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::Velocity,
+      comps::MassProperties,
+      comps::Force>();
+  for (auto entity : view) {
+    if (registry.all_of<comps::StaticBodyTag>(entity)) {
+      continue; // Static bodies do not accelerate.
+    }
+    integrateRigidBodyVelocity(registry, entity, gravity, timeStep);
+  }
+}
+
+//==============================================================================
+std::string_view RigidBodyPositionStage::getName() const noexcept
+{
+  return "rigid_body_position";
+}
+
+//==============================================================================
+ComputeStageMetadata RigidBodyPositionStage::getMetadata() const noexcept
+{
+  return {
+      ComputeStageDomain::RigidBody,
+      ComputeStageAcceleration::TaskParallel
+          | ComputeStageAcceleration::DataLocality};
+}
+
+//==============================================================================
+void RigidBodyPositionStage::execute(
+    World& world, ComputeExecutor& /*executor*/)
+{
+  auto& registry = world.getRegistry();
+  const auto timeStep = world.getTimeStep();
+
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::Transform,
+      comps::Velocity,
+      comps::FreeFrameProperties,
+      comps::FrameState,
+      comps::FrameCache>();
+  for (auto entity : view) {
+    if (registry.all_of<comps::StaticBodyTag>(entity)) {
+      continue; // Static bodies do not move.
+    }
+    integrateRigidBodyPosition(registry, entity, timeStep);
+  }
+}
+
+//==============================================================================
+RigidBodyContactStage::RigidBodyContactStage(std::size_t iterations)
+  : m_iterations(std::max<std::size_t>(1, iterations))
+{
+}
+
+//==============================================================================
+std::string_view RigidBodyContactStage::getName() const noexcept
+{
+  return "rigid_body_contact";
+}
+
+//==============================================================================
+ComputeStageMetadata RigidBodyContactStage::getMetadata() const noexcept
+{
+  return {
+      ComputeStageDomain::Constraint,
+      ComputeStageAcceleration::TaskParallel
+          | ComputeStageAcceleration::DataLocality};
+}
+
+//==============================================================================
+void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
+{
+  const auto contacts = world.collide();
+  if (contacts.empty()) {
+    return;
+  }
+
+  auto& registry = world.getRegistry();
+
+  // Precompute per-contact constants for a sequential-impulse normal solve.
+  struct NormalConstraint
+  {
+    entt::entity bodyA;
+    entt::entity bodyB;
+    Eigen::Vector3d normal;
+    Eigen::Vector3d armA;
+    Eigen::Vector3d armB;
+    double invMassA;
+    double invMassB;
+    Eigen::Matrix3d invInertiaA;
+    Eigen::Matrix3d invInertiaB;
+    double effectiveMass;
+    double depth;
+    double restitutionVelocity;
+    double normalImpulse;
+    Eigen::Vector3d tangent1;
+    Eigen::Vector3d tangent2;
+    double tangentMass1;
+    double tangentMass2;
+    double tangentImpulse1;
+    double tangentImpulse2;
+    double friction;
+  };
+
+  std::vector<NormalConstraint> constraints;
+  constraints.reserve(contacts.size());
+  for (const auto& contact : contacts) {
+    const auto entityA = contact.bodyA.getEntity();
+    const auto entityB = contact.bodyB.getEntity();
+    const auto& transformA = registry.get<comps::Transform>(entityA);
+    const auto& transformB = registry.get<comps::Transform>(entityB);
+    const auto& massA = registry.get<comps::MassProperties>(entityA);
+    const auto& massB = registry.get<comps::MassProperties>(entityB);
+
+    const bool staticA = registry.all_of<comps::StaticBodyTag>(entityA);
+    const bool staticB = registry.all_of<comps::StaticBodyTag>(entityB);
+
+    NormalConstraint constraint;
+    constraint.bodyA = entityA;
+    constraint.bodyB = entityB;
+    constraint.normal = contact.normal;
+    constraint.depth = contact.depth;
+    constraint.armA = contact.point - transformA.position;
+    constraint.armB = contact.point - transformB.position;
+    constraint.invMassA = staticA ? 0.0 : inverseMass(massA);
+    constraint.invMassB = staticB ? 0.0 : inverseMass(massB);
+    constraint.invInertiaA = staticA ? Eigen::Matrix3d::Zero()
+                                     : inverseWorldInertia(massA, transformA);
+    constraint.invInertiaB = staticB ? Eigen::Matrix3d::Zero()
+                                     : inverseWorldInertia(massB, transformB);
+
+    const Eigen::Vector3d crossA = constraint.armA.cross(constraint.normal);
+    const Eigen::Vector3d crossB = constraint.armB.cross(constraint.normal);
+    const double angular
+        = constraint.normal.dot(
+              (constraint.invInertiaA * crossA).cross(constraint.armA))
+          + constraint.normal.dot(
+              (constraint.invInertiaB * crossB).cross(constraint.armB));
+    constraint.effectiveMass
+        = constraint.invMassA + constraint.invMassB + angular;
+    if (constraint.effectiveMass <= 0.0) {
+      continue; // Both bodies are static.
+    }
+
+    // Restitution target from the pre-solve approach velocity (the impact
+    // speed). Combine the two materials by taking the larger bounce.
+    const double restitution = std::max(
+        restitutionOf(registry, entityA), restitutionOf(registry, entityB));
+    const auto& velocityA = registry.get<comps::Velocity>(entityA);
+    const auto& velocityB = registry.get<comps::Velocity>(entityB);
+    const double initialApproach
+        = (velocityB.linear + velocityB.angular.cross(constraint.armB)
+           - velocityA.linear - velocityA.angular.cross(constraint.armA))
+              .dot(constraint.normal);
+    constexpr double restitutionThreshold = 1e-3;
+    constraint.restitutionVelocity
+        = (restitution > 0.0 && initialApproach < -restitutionThreshold)
+              ? -restitution * initialApproach
+              : 0.0;
+    constraint.normalImpulse = 0.0;
+
+    // Two tangent directions spanning the contact plane, plus their effective
+    // masses, for a friction-pyramid (box) Coulomb model.
+    constraint.tangent1 = constraint.normal.unitOrthogonal();
+    constraint.tangent2 = constraint.normal.cross(constraint.tangent1);
+    const auto tangentMass = [&](const Eigen::Vector3d& tangent) {
+      const Eigen::Vector3d crossTangentA = constraint.armA.cross(tangent);
+      const Eigen::Vector3d crossTangentB = constraint.armB.cross(tangent);
+      return constraint.invMassA + constraint.invMassB
+             + tangent.dot((constraint.invInertiaA * crossTangentA)
+                               .cross(constraint.armA))
+             + tangent.dot((constraint.invInertiaB * crossTangentB)
+                               .cross(constraint.armB));
+    };
+    constraint.tangentMass1 = tangentMass(constraint.tangent1);
+    constraint.tangentMass2 = tangentMass(constraint.tangent2);
+    constraint.tangentImpulse1 = 0.0;
+    constraint.tangentImpulse2 = 0.0;
+    constraint.friction = std::sqrt(
+        frictionOf(registry, entityA) * frictionOf(registry, entityB));
+
+    constraints.push_back(constraint);
+  }
+
+  // Sequential impulses (Gauss-Seidel) drive each contact's normal approach
+  // velocity to its restitution target. The accumulated normal impulse is
+  // clamped non-negative so contacts only push, never pull.
+  for (std::size_t iteration = 0; iteration < m_iterations; ++iteration) {
+    for (auto& constraint : constraints) {
+      auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
+      auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
+
+      const Eigen::Vector3d pointVelocityA
+          = velocityA.linear + velocityA.angular.cross(constraint.armA);
+      const Eigen::Vector3d pointVelocityB
+          = velocityB.linear + velocityB.angular.cross(constraint.armB);
+      const double approach
+          = (pointVelocityB - pointVelocityA).dot(constraint.normal);
+
+      double lambda = -(approach - constraint.restitutionVelocity)
+                      / constraint.effectiveMass;
+      const double clamped = std::max(constraint.normalImpulse + lambda, 0.0);
+      lambda = clamped - constraint.normalImpulse;
+      constraint.normalImpulse = clamped;
+
+      const Eigen::Vector3d impulse = lambda * constraint.normal;
+      velocityB.linear += constraint.invMassB * impulse;
+      velocityB.angular
+          += constraint.invInertiaB * constraint.armB.cross(impulse);
+      velocityA.linear -= constraint.invMassA * impulse;
+      velocityA.angular
+          -= constraint.invInertiaA * constraint.armA.cross(impulse);
+
+      // Coulomb friction along each tangent, clamped to the friction pyramid
+      // bounded by the accumulated normal impulse.
+      const double frictionLimit
+          = constraint.friction * constraint.normalImpulse;
+      const auto solveFriction = [&](const Eigen::Vector3d& tangent,
+                                     double tangentMass,
+                                     double& tangentImpulse) {
+        if (tangentMass <= 0.0 || frictionLimit <= 0.0) {
+          return;
+        }
+        const Eigen::Vector3d tangentVelocity
+            = velocityB.linear + velocityB.angular.cross(constraint.armB)
+              - velocityA.linear - velocityA.angular.cross(constraint.armA);
+        double tangentLambda = -tangentVelocity.dot(tangent) / tangentMass;
+        const double clampedTangent = std::clamp(
+            tangentImpulse + tangentLambda, -frictionLimit, frictionLimit);
+        tangentLambda = clampedTangent - tangentImpulse;
+        tangentImpulse = clampedTangent;
+
+        const Eigen::Vector3d tangentImpulseVector = tangentLambda * tangent;
+        velocityB.linear += constraint.invMassB * tangentImpulseVector;
+        velocityB.angular += constraint.invInertiaB
+                             * constraint.armB.cross(tangentImpulseVector);
+        velocityA.linear -= constraint.invMassA * tangentImpulseVector;
+        velocityA.angular -= constraint.invInertiaA
+                             * constraint.armA.cross(tangentImpulseVector);
+      };
+      solveFriction(
+          constraint.tangent1,
+          constraint.tangentMass1,
+          constraint.tangentImpulse1);
+      solveFriction(
+          constraint.tangent2,
+          constraint.tangentMass2,
+          constraint.tangentImpulse2);
+    }
+  }
+
+  // Positional correction (projection) removes residual penetration beyond a
+  // small allowance without injecting velocity, so resting stacks do not sink.
+  constexpr double allowance = 1e-4;
+  constexpr double correctionFactor = 0.2;
+  for (const auto& constraint : constraints) {
+    const double penetration = constraint.depth - allowance;
+    if (penetration <= 0.0) {
+      continue;
+    }
+
+    const double totalInverseMass = constraint.invMassA + constraint.invMassB;
+    if (totalInverseMass <= 0.0) {
+      continue;
+    }
+
+    const Eigen::Vector3d correction
+        = (correctionFactor * penetration / totalInverseMass)
+          * constraint.normal;
+    registry.get<comps::Transform>(constraint.bodyA).position
+        -= constraint.invMassA * correction;
+    registry.get<comps::Transform>(constraint.bodyB).position
+        += constraint.invMassB * correction;
+  }
+}
+
+//==============================================================================
+std::size_t RigidBodyContactStage::getIterations() const noexcept
+{
+  return m_iterations;
 }
 
 } // namespace dart::simulation::experimental::compute

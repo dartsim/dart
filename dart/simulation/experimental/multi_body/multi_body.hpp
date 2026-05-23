@@ -37,6 +37,7 @@
 #include <dart/simulation/experimental/multi_body/link.hpp> // Need complete type for LinkOptions
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
 #include <optional>
@@ -70,6 +71,12 @@ struct JointSpec
   JointType type = JointType::Revolute; ///< Type of joint
   Eigen::Vector3d axis
       = Eigen::Vector3d::UnitZ(); ///< Joint axis (rotation or translation)
+
+  /// Transform from the parent-joint frame (after joint motion) to the child
+  /// link frame. This places the child link relative to its joint, giving the
+  /// chain spatial extent (for example, the length of a pendulum link). The
+  /// child link's center of mass is at the child link frame origin.
+  Eigen::Isometry3d transformFromParent = Eigen::Isometry3d::Identity();
 
   // Future: Add more joint-specific parameters.
   // Eigen::Vector3d axis2;  // For Universal, Planar
@@ -108,6 +115,10 @@ struct LinkOptions
   JointType jointType = JointType::Revolute; ///< Type of joint
   Eigen::Vector3d axis
       = Eigen::Vector3d::UnitZ(); ///< Joint axis (rotation or translation)
+
+  /// Transform from the parent-joint frame (after joint motion) to the child
+  /// link frame. See JointSpec::transformFromParent.
+  Eigen::Isometry3d transformFromParent = Eigen::Isometry3d::Identity();
 
   // Future: Add more joint-specific parameters
   // Eigen::Vector3d axis2;  // For Universal, Planar
@@ -259,6 +270,44 @@ public:
       std::string_view name,
       const Link& parentLink,
       const JointSpec& joint = {});
+
+  //--------------------------------------------------------------------------
+  /// @name Generalized-Coordinate Dynamics
+  //--------------------------------------------------------------------------
+
+  /// Get the joint-space mass matrix M(q) at the current configuration.
+  ///
+  /// The matrix is symmetric positive-definite and square with size
+  /// getDOFCount(), ordered by joint construction order. Returns an empty
+  /// matrix when the multibody has no movable degrees of freedom.
+  ///
+  /// Supports fixed-base trees with fixed/revolute/prismatic joints; other
+  /// joint types are rejected.
+  [[nodiscard]] Eigen::MatrixXd getMassMatrix() const;
+
+  /// Get the inverse of the joint-space mass matrix at the current
+  /// configuration. Returns an empty matrix when there are no movable DOFs.
+  [[nodiscard]] Eigen::MatrixXd getInverseMassMatrix() const;
+
+  /// Get the Coriolis/centrifugal generalized forces C(q, qdot) qdot at the
+  /// current configuration and velocity.
+  ///
+  /// Size getDOFCount(), ordered by joint construction order. Empty when there
+  /// are no movable DOFs.
+  [[nodiscard]] Eigen::VectorXd getCoriolisForces() const;
+
+  /// Get the gravity generalized forces g(q) at the current configuration.
+  ///
+  /// Size getDOFCount(), ordered by joint construction order. Empty when there
+  /// are no movable DOFs.
+  [[nodiscard]] Eigen::VectorXd getGravityForces() const;
+
+  /// Get the combined Coriolis/centrifugal and gravity generalized forces
+  /// C(q, qdot) qdot + g(q) at the current configuration and velocity.
+  ///
+  /// Size getDOFCount(), ordered by joint construction order. Empty when there
+  /// are no movable DOFs.
+  [[nodiscard]] Eigen::VectorXd getCoriolisAndGravityForces() const;
 
 private:
   entt::entity m_entity; ///< Entity ID in the registry

@@ -240,6 +240,122 @@ void Joint::setVelocity(const Eigen::VectorXd& velocity)
 }
 
 //==============================================================================
+Eigen::VectorXd Joint::getForce() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.torque;
+}
+
+//==============================================================================
+void Joint::setForce(const Eigen::VectorXd& force)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(force, jointComp.getDOF(), "force");
+
+  jointComp.torque = force;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getAcceleration() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.acceleration;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getSpringStiffness() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.springStiffness;
+}
+
+//==============================================================================
+void Joint::setSpringStiffness(const Eigen::VectorXd& stiffness)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(stiffness, jointComp.getDOF(), "spring stiffness");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (stiffness.array() < 0.0).any(),
+      InvalidArgumentException,
+      "Joint spring stiffness must be non-negative");
+
+  jointComp.springStiffness = stiffness;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getRestPosition() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.restPosition;
+}
+
+//==============================================================================
+void Joint::setRestPosition(const Eigen::VectorXd& restPosition)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(restPosition, jointComp.getDOF(), "rest position");
+
+  jointComp.restPosition = restPosition;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getDampingCoefficient() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.dampingCoefficient;
+}
+
+//==============================================================================
+void Joint::setDampingCoefficient(const Eigen::VectorXd& damping)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(damping, jointComp.getDOF(), "damping coefficient");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (damping.array() < 0.0).any(),
+      InvalidArgumentException,
+      "Joint damping coefficient must be non-negative");
+
+  jointComp.dampingCoefficient = damping;
+}
+
+//==============================================================================
+void Joint::setPositionLimits(
+    const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  const auto dof = static_cast<Eigen::Index>(jointComp.getDOF());
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      lower.size() != dof || upper.size() != dof,
+      InvalidArgumentException,
+      "Joint position limit dimensions must match DOF count ({})",
+      dof);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      lower.array().isNaN().any() || upper.array().isNaN().any(),
+      InvalidArgumentException,
+      "Joint position limits must not be NaN");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (lower.array() > upper.array()).any(),
+      InvalidArgumentException,
+      "Joint lower position limits must not exceed upper limits");
+
+  jointComp.limits.lower = lower;
+  jointComp.limits.upper = upper;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getPositionLowerLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.lower;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getPositionUpperLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.upper;
+}
+
+//==============================================================================
 Link Joint::getParentLink() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);

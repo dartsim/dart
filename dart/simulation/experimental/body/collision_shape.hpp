@@ -32,26 +32,57 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/comps/component_category.hpp>
+#include <Eigen/Core>
 
-namespace dart::simulation::experimental::comps {
+namespace dart::simulation::experimental {
 
-/// Tag marking entity as a RigidBody
+/// The geometric family of a collision shape.
 ///
-/// Automatically serialized via DART_EXPERIMENTAL_TAG_COMPONENT macro.
-/// **Internal Implementation Detail** - Not exposed in public API
-struct RigidBodyTag
+/// Names describe geometry only; they do not name a collision backend.
+enum class CollisionShapeType
 {
-  DART_EXPERIMENTAL_TAG_COMPONENT(RigidBodyTag);
+  Sphere,
+  Box,
 };
 
-/// Tag marking a rigid body as static (immovable): no gravity, no integration,
-/// and treated as infinite mass by the contact solver.
+/// Public value object describing a body's collision geometry.
 ///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct StaticBodyTag
+/// This is a backend-neutral facade: the experimental World maps it onto the
+/// maintained native collision engine when running collision queries. The shape
+/// is expressed in the owning body's frame, centered at the body frame origin.
+///
+/// Only the fields relevant to `type` are used. Prefer the named constructors
+/// (`makeSphere`, `makeBox`) for clarity.
+struct CollisionShape
 {
-  DART_EXPERIMENTAL_TAG_COMPONENT(StaticBodyTag);
+  /// Geometric family selecting which fields below are used.
+  CollisionShapeType type = CollisionShapeType::Sphere;
+
+  /// Sphere radius (used when type == Sphere). Must be positive.
+  double radius = 0.5;
+
+  /// Box half extents along the body x/y/z axes (used when type == Box). Each
+  /// component must be positive.
+  Eigen::Vector3d halfExtents = Eigen::Vector3d::Constant(0.5);
+
+  /// Create a sphere collision shape.
+  [[nodiscard]] static CollisionShape makeSphere(double radius)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Sphere;
+    shape.radius = radius;
+    return shape;
+  }
+
+  /// Create a box collision shape from half extents.
+  [[nodiscard]] static CollisionShape makeBox(
+      const Eigen::Vector3d& halfExtents)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Box;
+    shape.halfExtents = halfExtents;
+    return shape;
+  }
 };
 
-} // namespace dart::simulation::experimental::comps
+} // namespace dart::simulation::experimental

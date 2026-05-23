@@ -45,6 +45,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <cstddef>
 
@@ -110,6 +111,19 @@ public:
   }
 
   void enterSimulationMode();
+
+  /// Set the uniform gravitational acceleration applied to dynamic bodies.
+  ///
+  /// Gravity is applied as an acceleration during rigid-body integration
+  /// (`a = force / mass + gravity`); it is not stored in any per-body force
+  /// accumulator. Bodies with non-positive or non-finite mass are unaffected.
+  /// The value must contain only finite coordinates. Defaults to
+  /// `(0, 0, -9.81)`.
+  void setGravity(const Eigen::Vector3d& gravity);
+
+  /// Get the uniform gravitational acceleration applied to dynamic bodies.
+  [[nodiscard]] const Eigen::Vector3d& getGravity() const noexcept;
+
   void setTimeStep(double timeStep);
   [[nodiscard]] double getTimeStep() const noexcept;
   void setTime(double time);
@@ -148,6 +162,18 @@ public:
   const entt::registry& getRegistry() const;
 
   //--------------------------------------------------------------------------
+  // Collision queries
+  //--------------------------------------------------------------------------
+
+  /// Run a collision query over all rigid bodies that have a collision shape.
+  ///
+  /// This is a query, not a solver: it reports contact points (position,
+  /// world-frame normal from bodyA toward bodyB, and penetration depth) using
+  /// the current body world transforms. It does not modify body state. Bodies
+  /// without a collision shape are ignored.
+  [[nodiscard]] std::vector<Contact> collide();
+
+  //--------------------------------------------------------------------------
   // Serialization
   //--------------------------------------------------------------------------
   void saveBinary(std::ostream& output) const;
@@ -183,6 +209,7 @@ private:
 
   entt::registry m_registry;
   bool m_simulationMode{false};
+  Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
   double m_timeStep{0.001};
   double m_time{0.0};
   std::size_t m_frame{0};

@@ -34,11 +34,13 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
+#include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 
 #include <entt/entt.hpp>
 
+#include <optional>
 #include <string>
 
 namespace dart::simulation::experimental {
@@ -117,8 +119,9 @@ public:
 
   /// Set the body's accumulated world-frame force.
   ///
-  /// The value must contain only finite coordinates. Subsequent physics steps
-  /// use this force directly until it is changed.
+  /// The value must contain only finite coordinates. The force is a per-step
+  /// applied load: it is consumed by the next physics step and then cleared, so
+  /// continuous forces must be re-applied each step.
   void setForce(const Eigen::Vector3d& force);
 
   /// Add to the body's accumulated world-frame force.
@@ -134,8 +137,9 @@ public:
 
   /// Set the body's accumulated world-frame torque.
   ///
-  /// The value must contain only finite coordinates. Subsequent physics steps
-  /// use this torque directly until it is changed.
+  /// The value must contain only finite coordinates. The torque is a per-step
+  /// applied load: it is consumed by the next physics step and then cleared, so
+  /// continuous torques must be re-applied each step.
   void setTorque(const Eigen::Vector3d& torque);
 
   /// Add to the body's accumulated world-frame torque.
@@ -145,6 +149,72 @@ public:
 
   /// Clear the body's accumulated torque.
   void clearTorque();
+
+  //--------------------------------------------------------------------------
+  // Derived dynamic quantities
+  //
+  // These assume the body's center of mass is at the body frame origin, which
+  // matches the experimental rigid-body integration model.
+  //--------------------------------------------------------------------------
+
+  /// Get the body's world-frame linear momentum (mass * linear velocity).
+  [[nodiscard]] Eigen::Vector3d getLinearMomentum() const;
+
+  /// Get the body's world-frame angular momentum about its center of mass.
+  [[nodiscard]] Eigen::Vector3d getAngularMomentum() const;
+
+  /// Get the body's kinetic energy (translational + rotational).
+  [[nodiscard]] double getKineticEnergy() const;
+
+  /// Get the body's gravitational potential energy for the world's gravity.
+  ///
+  /// Defined as `-mass * gravity . position`, so the value increases as the
+  /// body moves against gravity. With the default gravity `(0, 0, -9.81)` this
+  /// equals `mass * 9.81 * z`.
+  [[nodiscard]] double getPotentialEnergy() const;
+
+  //--------------------------------------------------------------------------
+  // Collision geometry
+  //--------------------------------------------------------------------------
+
+  /// Set whether the body is static (immovable).
+  ///
+  /// A static body ignores gravity and applied forces, is not integrated, and
+  /// is treated as infinite mass by the contact solver.
+  void setStatic(bool isStatic);
+
+  /// Return whether the body is static.
+  [[nodiscard]] bool isStatic() const;
+
+  /// Set the body's restitution (bounciness) coefficient in [0, 1].
+  ///
+  /// The contact solver combines two bodies' restitution by taking the maximum.
+  /// Zero (the default) is fully inelastic.
+  void setRestitution(double restitution);
+
+  /// Get the body's restitution coefficient (default 0).
+  [[nodiscard]] double getRestitution() const;
+
+  /// Set the body's contact friction coefficient (non-negative).
+  ///
+  /// The contact solver combines two bodies' friction as the geometric mean.
+  /// Defaults to 1.
+  void setFriction(double friction);
+
+  /// Get the body's contact friction coefficient (default 1).
+  [[nodiscard]] double getFriction() const;
+
+  /// Set (or replace) this body's collision shape.
+  ///
+  /// The shape is centered at the body frame origin and is used by
+  /// `World::collide()` collision queries. Dimensions must be positive.
+  void setCollisionShape(const CollisionShape& shape);
+
+  /// Get this body's collision shape, if one is attached.
+  [[nodiscard]] std::optional<CollisionShape> getCollisionShape() const;
+
+  /// Return whether this body has a collision shape attached.
+  [[nodiscard]] bool hasCollisionShape() const;
 
   // Note: getEntity(), getWorld(), isValid() inherited from Frame
 

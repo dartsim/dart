@@ -32,26 +32,20 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/comps/component_category.hpp>
 
 namespace dart::simulation::experimental::comps {
 
-/// Tag marking entity as a RigidBody
+/// Collision geometry attached to a body or link.
 ///
-/// Automatically serialized via DART_EXPERIMENTAL_TAG_COMPONENT macro.
-/// **Internal Implementation Detail** - Not exposed in public API
-struct RigidBodyTag
+/// **Internal Implementation Detail** - Not exposed in public API. The public
+/// surface is the `CollisionShape` value object plus body/link accessors.
+struct CollisionGeometry
 {
-  DART_EXPERIMENTAL_TAG_COMPONENT(RigidBodyTag);
-};
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(CollisionGeometry);
 
-/// Tag marking a rigid body as static (immovable): no gravity, no integration,
-/// and treated as infinite mass by the contact solver.
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct StaticBodyTag
-{
-  DART_EXPERIMENTAL_TAG_COMPONENT(StaticBodyTag);
+  CollisionShape shape;
 };
 
 } // namespace dart::simulation::experimental::comps

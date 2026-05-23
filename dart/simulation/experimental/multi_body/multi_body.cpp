@@ -35,6 +35,7 @@
 #include "dart/simulation/experimental/common/ecs_utils.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/compute/multi_body_dynamics.hpp"
 #include "dart/simulation/experimental/multi_body/joint.hpp"
 #include "dart/simulation/experimental/multi_body/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
@@ -43,6 +44,7 @@
 
 #include <algorithm>
 #include <format>
+#include <limits>
 
 namespace dart::simulation::experimental {
 
@@ -431,6 +433,12 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   auto& linkComp = registry.emplace<comps::Link>(linkEntity);
   linkComp.name = std::move(actualLinkName);
 
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !options.transformFromParent.matrix().allFinite(),
+      InvalidArgumentException,
+      "Link transform from parent must contain only finite values");
+  linkComp.transformFromParentJoint = options.transformFromParent;
+
   // Create joint entity
   auto jointEntity = registry.create();
 
@@ -475,6 +483,14 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   jointComp.velocity = Eigen::VectorXd::Zero(dof);
   jointComp.acceleration = Eigen::VectorXd::Zero(dof);
   jointComp.torque = Eigen::VectorXd::Zero(dof);
+  jointComp.springStiffness = Eigen::VectorXd::Zero(dof);
+  jointComp.dampingCoefficient = Eigen::VectorXd::Zero(dof);
+  jointComp.restPosition = Eigen::VectorXd::Zero(dof);
+
+  // Position limits default to unbounded.
+  const double infinity = std::numeric_limits<double>::infinity();
+  jointComp.limits.lower = Eigen::VectorXd::Constant(dof, -infinity);
+  jointComp.limits.upper = Eigen::VectorXd::Constant(dof, infinity);
 
   // Link the parent link to this joint
   auto& parentLinkComp = safeGet<comps::Link>(registry, parentEntity);
@@ -501,7 +517,63 @@ Link MultiBody::addLink(
           .jointName = joint.name,
           .jointType = joint.type,
           .axis = joint.axis,
+          .transformFromParent = joint.transformFromParent,
       });
+}
+
+//==============================================================================
+Eigen::MatrixXd MultiBody::getMassMatrix() const
+{
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
+  return compute::computeMultiBodyDynamicsTerms(
+             registry, structure, m_world->getGravity())
+      .massMatrix;
+}
+
+//==============================================================================
+Eigen::MatrixXd MultiBody::getInverseMassMatrix() const
+{
+  const Eigen::MatrixXd mass = getMassMatrix();
+  if (mass.size() == 0) {
+    return mass;
+  }
+  return mass.ldlt().solve(Eigen::MatrixXd::Identity(mass.rows(), mass.cols()));
+}
+
+//==============================================================================
+Eigen::VectorXd MultiBody::getCoriolisForces() const
+{
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
+  return compute::computeMultiBodyDynamicsTerms(
+             registry, structure, m_world->getGravity())
+      .coriolisForces;
+}
+
+//==============================================================================
+Eigen::VectorXd MultiBody::getGravityForces() const
+{
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
+  return compute::computeMultiBodyDynamicsTerms(
+             registry, structure, m_world->getGravity())
+      .gravityForces;
+}
+
+//==============================================================================
+Eigen::VectorXd MultiBody::getCoriolisAndGravityForces() const
+{
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
+  const compute::MultiBodyDynamicsTerms terms
+      = compute::computeMultiBodyDynamicsTerms(
+          registry, structure, m_world->getGravity());
+  return terms.coriolisForces + terms.gravityForces;
 }
 
 } // namespace dart::simulation::experimental

@@ -44,11 +44,14 @@ add_library(${target_name}
   compute/compute_node.cpp
   compute/compute_stage_metadata.cpp
   compute/execution_profile.cpp
+  compute/multi_body_dynamics.cpp
   compute/parallel_executor.cpp
   compute/sequential_executor.cpp
   compute/world_kinematics_graph.cpp
   compute/world_step_stage.cpp
   constraint/loop_closure.cpp
+  comps/collision_geometry.cpp
+  comps/contact_material.cpp
   comps/dynamics.cpp
   comps/frame_types.cpp
   comps/joint.cpp
@@ -87,6 +90,8 @@ target_link_libraries(${target_name}
     Eigen3::Eigen
     EnTT::EnTT
     spdlog::spdlog
+  PRIVATE
+    ${PROJECT_NAME}-collision-native
 )
 
 if(TARGET Taskflow::Taskflow)

@@ -35,6 +35,7 @@
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/multi_body/joint.hpp>
 
+#include <Eigen/Core>
 #include <entt/entt.hpp>
 
 #include <string>
@@ -97,6 +98,29 @@ public:
   ///
   /// @return Parent Joint handle (check with isValid() for root links)
   [[nodiscard]] Joint getParentJoint() const;
+
+  //--------------------------------------------------------------------------
+  // Inertial properties
+  //
+  // The link's center of mass is assumed to be at the link frame origin, which
+  // matches the experimental articulated-body forward-dynamics model.
+  //--------------------------------------------------------------------------
+
+  /// Get the link's mass.
+  [[nodiscard]] double getMass() const;
+
+  /// Set the link's mass.
+  ///
+  /// Must be positive and finite. Used by articulated-body forward dynamics.
+  void setMass(double mass);
+
+  /// Get the link's body-frame inertia tensor about its center of mass.
+  [[nodiscard]] Eigen::Matrix3d getInertia() const;
+
+  /// Set the link's body-frame inertia tensor about its center of mass.
+  ///
+  /// Must be finite, symmetric, and positive definite.
+  void setInertia(const Eigen::Matrix3d& inertia);
 
   //--------------------------------------------------------------------------
   // Frame interface overrides

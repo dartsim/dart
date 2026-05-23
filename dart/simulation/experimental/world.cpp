@@ -32,10 +32,18 @@
 
 #include "dart/simulation/experimental/world.hpp"
 
+#include "dart/collision/native/collision_object.hpp"
+#include "dart/collision/native/collision_world.hpp"
+#include "dart/collision/native/contact_manifold.hpp"
+#include "dart/collision/native/contact_point.hpp"
+#include "dart/collision/native/shapes/shape.hpp"
+#include "dart/collision/native/types.hpp"
+#include "dart/simulation/experimental/body/contact.hpp"
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/common/ecs_utils.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/compute/multi_body_dynamics.hpp"
 #include "dart/simulation/experimental/compute/sequential_executor.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/compute/world_step_stage.hpp"
@@ -53,12 +61,15 @@
 #include <algorithm>
 #include <format>
 #include <istream>
+#include <memory>
 #include <ostream>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include <cmath>
+#include <cstdint>
 
 namespace {
 
@@ -330,6 +341,7 @@ void World::clear()
 {
   m_registry.clear();
   m_simulationMode = false;
+  m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   m_timeStep = 0.001;
   m_time = 0.0;
   m_frame = 0;
@@ -653,6 +665,10 @@ RigidBody World::addRigidBody(
 
   m_registry.emplace<comps::Force>(entity);
 
+  if (options.isStatic) {
+    m_registry.emplace<comps::StaticBodyTag>(entity);
+  }
+
   return RigidBody(entity, this);
 }
 
@@ -694,6 +710,23 @@ void World::enterSimulationMode()
 
   // Initial bake so that cached transforms are up-to-date.
   updateKinematics();
+}
+
+//==============================================================================
+void World::setGravity(const Eigen::Vector3d& gravity)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !gravity.array().isFinite().all(),
+      InvalidArgumentException,
+      "Gravity must contain only finite coordinates");
+
+  m_gravity = gravity;
+}
+
+//==============================================================================
+const Eigen::Vector3d& World::getGravity() const noexcept
+{
+  return m_gravity;
 }
 
 //==============================================================================
@@ -793,20 +826,34 @@ void World::step(std::size_t count)
 //==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
-  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::RigidBodyVelocityStage rigidBodyVelocity;
+  compute::RigidBodyContactStage rigidBodyContact;
+  compute::RigidBodyPositionStage rigidBodyPosition;
+  compute::MultiBodyForwardDynamicsStage multiBodyDynamics;
   compute::KinematicsStage kinematics;
   compute::WorldStepPipeline pipeline;
-  pipeline.addStage(rigidBodyIntegration).addStage(kinematics);
+  pipeline.addStage(rigidBodyVelocity)
+      .addStage(rigidBodyContact)
+      .addStage(rigidBodyPosition)
+      .addStage(multiBodyDynamics)
+      .addStage(kinematics);
   step(executor, pipeline);
 }
 
 //==============================================================================
 void World::step(std::size_t count, compute::ComputeExecutor& executor)
 {
-  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::RigidBodyVelocityStage rigidBodyVelocity;
+  compute::RigidBodyContactStage rigidBodyContact;
+  compute::RigidBodyPositionStage rigidBodyPosition;
+  compute::MultiBodyForwardDynamicsStage multiBodyDynamics;
   compute::KinematicsStage kinematics;
   compute::WorldStepPipeline pipeline;
-  pipeline.addStage(rigidBodyIntegration).addStage(kinematics);
+  pipeline.addStage(rigidBodyVelocity)
+      .addStage(rigidBodyContact)
+      .addStage(rigidBodyPosition)
+      .addStage(multiBodyDynamics)
+      .addStage(kinematics);
   step(count, executor, pipeline);
 }
 
@@ -861,6 +908,81 @@ void World::step(
 }
 
 //==============================================================================
+std::vector<Contact> World::collide()
+{
+  namespace ncol = dart::collision::native;
+
+  ncol::CollisionWorld collisionWorld;
+
+  // Build one native collision object per shape-bearing rigid body, remembering
+  // which experimental entity each object came from.
+  struct ObjectEntry
+  {
+    entt::entity entity;
+    ncol::CollisionObject object;
+  };
+  std::vector<ObjectEntry> entries;
+
+  auto view = m_registry.view<
+      comps::CollisionGeometry,
+      comps::Transform,
+      comps::RigidBodyTag>();
+  for (auto entity : view) {
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.linear() = transform.orientation.normalized().toRotationMatrix();
+    pose.translation() = transform.position;
+
+    std::unique_ptr<ncol::Shape> shape;
+    switch (geometry.shape.type) {
+      case CollisionShapeType::Sphere:
+        shape = std::make_unique<ncol::SphereShape>(geometry.shape.radius);
+        break;
+      case CollisionShapeType::Box:
+        shape = std::make_unique<ncol::BoxShape>(geometry.shape.halfExtents);
+        break;
+    }
+
+    entries.push_back(
+        {entity, collisionWorld.createObject(std::move(shape), pose)});
+  }
+
+  // Pairwise narrow-phase queries. Each pair's bodies are known here, so the
+  // contacts map back to the right rigid bodies without relying on the result
+  // carrying object identity. This is O(n^2); a future slice can use the native
+  // broad phase to prune candidate pairs.
+  const auto option = ncol::CollisionOption::fullContacts();
+  std::vector<Contact> contacts;
+  for (std::size_t i = 0; i < entries.size(); ++i) {
+    for (std::size_t j = i + 1; j < entries.size(); ++j) {
+      ncol::CollisionResult result;
+      if (!collisionWorld.collide(
+              entries[i].object, entries[j].object, option, result)) {
+        continue;
+      }
+
+      for (std::size_t k = 0; k < result.numContacts(); ++k) {
+        const auto& point = result.getContact(k);
+        // The native narrow phase reports the normal pointing from the second
+        // object toward the first; the public Contact convention points from
+        // bodyA (entries[i]) toward bodyB (entries[j]), so negate it.
+        contacts.push_back(
+            Contact{
+                RigidBody(entries[i].entity, this),
+                RigidBody(entries[j].entity, this),
+                point.position,
+                -point.normal,
+                point.depth});
+      }
+    }
+  }
+
+  return contacts;
+}
+
+//==============================================================================
 void World::saveBinary(std::ostream& output) const
 {
   io::writeFormatHeader(output);
@@ -880,6 +1002,9 @@ void World::saveBinary(std::ostream& output) const
   io::writePOD(output, m_timeStep);
   io::writePOD(output, m_time);
   io::writePOD(output, m_frame);
+  io::writePOD(output, m_gravity.x());
+  io::writePOD(output, m_gravity.y());
+  io::writePOD(output, m_gravity.z());
 }
 
 //==============================================================================
@@ -910,6 +1035,16 @@ void World::loadBinary(std::istream& input)
       io::readPOD(input, m_timeStep);
       io::readPOD(input, m_time);
       io::readPOD(input, m_frame);
+    }
+
+    if (input.peek() != std::char_traits<char>::eof()) {
+      double gravityX = 0.0;
+      double gravityY = 0.0;
+      double gravityZ = 0.0;
+      io::readPOD(input, gravityX);
+      io::readPOD(input, gravityY);
+      io::readPOD(input, gravityZ);
+      m_gravity = Eigen::Vector3d(gravityX, gravityY, gravityZ);
     }
   }
 

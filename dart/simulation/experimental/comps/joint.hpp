@@ -182,6 +182,11 @@ struct Joint
   Eigen::VectorXd acceleration;
   Eigen::VectorXd torque;
 
+  /// Passive joint dynamics (per generalized coordinate).
+  Eigen::VectorXd springStiffness;
+  Eigen::VectorXd dampingCoefficient;
+  Eigen::VectorXd restPosition;
+
   JointLimits limits;
 
   Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();

@@ -30,28 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "dart/simulation/experimental/comps/contact_material.hpp"
 
-#include <dart/simulation/experimental/comps/component_category.hpp>
+#include "dart/simulation/experimental/io/category_serializer.hpp"
 
 namespace dart::simulation::experimental::comps {
 
-/// Tag marking entity as a RigidBody
-///
-/// Automatically serialized via DART_EXPERIMENTAL_TAG_COMPONENT macro.
-/// **Internal Implementation Detail** - Not exposed in public API
-struct RigidBodyTag
-{
-  DART_EXPERIMENTAL_TAG_COMPONENT(RigidBodyTag);
-};
-
-/// Tag marking a rigid body as static (immovable): no gravity, no integration,
-/// and treated as infinite mass by the contact solver.
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct StaticBodyTag
-{
-  DART_EXPERIMENTAL_TAG_COMPONENT(StaticBodyTag);
-};
+DART_EXPERIMENTAL_REGISTER_COMPONENT(ContactMaterial)
 
 } // namespace dart::simulation::experimental::comps

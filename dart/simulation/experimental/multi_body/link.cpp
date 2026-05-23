@@ -32,11 +32,31 @@
 
 #include "dart/simulation/experimental/multi_body/link.hpp"
 
+#include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/multi_body/joint.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
+#include <Eigen/Cholesky>
+
+#include <cmath>
+
 namespace dart::simulation::experimental {
+
+namespace {
+
+//==============================================================================
+bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
+{
+  if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
+    return false;
+  }
+
+  Eigen::LLT<Eigen::Matrix3d> factorization(matrix);
+  return factorization.info() == Eigen::Success;
+}
+
+} // namespace
 
 //==============================================================================
 Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
@@ -55,6 +75,41 @@ Joint Link::getParentJoint() const
   const auto& linkComp
       = getWorld()->getRegistry().get<comps::Link>(getEntity());
   return Joint(linkComp.parentJoint, getWorld());
+}
+
+//==============================================================================
+double Link::getMass() const
+{
+  return getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.mass;
+}
+
+//==============================================================================
+void Link::setMass(double mass)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(mass) || mass <= 0.0,
+      InvalidArgumentException,
+      "Link mass must be positive and finite");
+
+  getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.mass = mass;
+}
+
+//==============================================================================
+Eigen::Matrix3d Link::getInertia() const
+{
+  return getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.inertia;
+}
+
+//==============================================================================
+void Link::setInertia(const Eigen::Matrix3d& inertia)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isSymmetricPositiveDefinite(inertia),
+      InvalidArgumentException,
+      "Link inertia must be symmetric positive definite");
+
+  getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.inertia
+      = inertia;
 }
 
 //==============================================================================
