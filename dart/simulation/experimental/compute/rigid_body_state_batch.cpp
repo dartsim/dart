@@ -41,6 +41,8 @@
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
+#include <cmath>
+
 namespace dart::simulation::experimental::compute {
 
 //==============================================================================
@@ -276,6 +278,48 @@ void integrateRigidBodyStateBatchLinear(
       state.linearVelocity.data(),
       timeStep,
       state.position.size());
+}
+
+//==============================================================================
+RigidBodyModelBatch extractRigidBodyModelBatch(const World& world)
+{
+  const auto& registry = world.getRegistry();
+  // Use the same view as extractRigidBodyState so the model order matches the
+  // state order body-for-body, then fetch the mass per entity.
+  auto view
+      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+
+  RigidBodyModelBatch model;
+  model.worldCount = 1;
+  for (const auto entity : view) {
+    ++model.bodyCount;
+    const auto& mass = registry.get<comps::MassProperties>(entity);
+    const double inverse
+        = (mass.mass > 0.0 && std::isfinite(mass.mass)) ? 1.0 / mass.mass : 0.0;
+    model.inverseMass.push_back(inverse);
+  }
+
+  return model;
+}
+
+//==============================================================================
+void integrateRigidBodyStateBatchLinear(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    double timeStep)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      model.worldCount != state.worldCount
+          || model.bodyCount != state.bodyCount,
+      InvalidArgumentException,
+      "RigidBodyModelBatch ({}x{}) does not match the state batch ({}x{})",
+      model.worldCount,
+      model.bodyCount,
+      state.worldCount,
+      state.bodyCount);
+
+  integrateRigidBodyStateBatchLinear(state, force, model.inverseMass, timeStep);
 }
 
 } // namespace dart::simulation::experimental::compute

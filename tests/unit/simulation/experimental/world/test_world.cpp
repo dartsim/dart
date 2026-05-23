@@ -1813,3 +1813,58 @@ TEST(World, RolloutWorldsBatchedMatchesReference)
     }
   }
 }
+
+// Test the immutable Model batch: inverse masses are extracted in state order,
+// and the model-based integrator overload matches the explicit-vector overload.
+TEST(World, RigidBodyModelBatchIntegration)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  for (int i = 0; i < 2; ++i) {
+    sx::RigidBodyOptions options;
+    options.mass = 2.0 * (i + 1); // body 0 mass 2, body 1 mass 4
+    options.position = Eigen::Vector3d(i, 0.0, 0.0);
+    world.addRigidBody("b" + std::to_string(i), options);
+  }
+
+  const auto state = compute::extractRigidBodyState(world);
+  const auto model = compute::extractRigidBodyModelBatch(world);
+  EXPECT_EQ(model.worldCount, 1u);
+  EXPECT_EQ(model.bodyCount, 2u);
+  ASSERT_EQ(model.inverseMass.size(), 2u);
+  // EnTT view order is not insertion order, so check the set, not positions.
+  EXPECT_TRUE(
+      (model.inverseMass[0] == 0.5 && model.inverseMass[1] == 0.25)
+      || (model.inverseMass[0] == 0.25 && model.inverseMass[1] == 0.5));
+
+  const std::vector<double> force = {0.0, 0.0, 4.0, 0.0, 0.0, 8.0};
+  const double dt = 0.5;
+
+  auto viaModel = state;
+  compute::integrateRigidBodyStateBatchLinear(viaModel, model, force, dt);
+
+  auto viaVector = state;
+  compute::integrateRigidBodyStateBatchLinear(
+      viaVector, force, model.inverseMass, dt);
+
+  EXPECT_EQ(viaModel.linearVelocity, viaVector.linearVelocity);
+  EXPECT_EQ(viaModel.position, viaVector.position);
+  // Per body, in extraction order: z-velocity == force.z * inverseMass * dt
+  // (initial velocity is zero), independent of the view iteration order.
+  for (std::size_t i = 0; i < model.bodyCount; ++i) {
+    EXPECT_DOUBLE_EQ(
+        viaModel.linearVelocity[3 * i + 2],
+        force[3 * i + 2] * (model.inverseMass[i] * dt));
+  }
+
+  // A model whose body count does not match the state is rejected.
+  compute::RigidBodyModelBatch wrong;
+  wrong.worldCount = 1;
+  wrong.bodyCount = 1;
+  wrong.inverseMass = {1.0};
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatchLinear(viaModel, wrong, force, dt),
+      sx::InvalidArgumentException);
+}

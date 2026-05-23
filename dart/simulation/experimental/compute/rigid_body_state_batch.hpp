@@ -71,6 +71,24 @@ struct DART_EXPERIMENTAL_API RigidBodyStateBatch
   }
 };
 
+/// Immutable per-body model parameters for a batch, kept separate from the
+/// mutable @c RigidBodyStateBatch.
+///
+/// This is the Model side of the Model/State split: built once and read during
+/// integration. For now it carries the per-body inverse mass
+/// (length `worldCount * bodyCount`); inertia and other parameters can follow.
+struct DART_EXPERIMENTAL_API RigidBodyModelBatch
+{
+  std::size_t worldCount = 1;
+  std::size_t bodyCount = 0;
+  std::vector<double> inverseMass; ///< worldCount * bodyCount
+
+  [[nodiscard]] bool isEmpty() const noexcept
+  {
+    return worldCount == 0 || bodyCount == 0;
+  }
+};
+
 /// Extract a single-world (`worldCount == 1`) snapshot of all rigid bodies in
 /// the world's rigid-body iteration order.
 [[nodiscard]] DART_EXPERIMENTAL_API RigidBodyStateBatch
@@ -106,6 +124,22 @@ DART_EXPERIMENTAL_API void integrateRigidBodyStateBatchLinear(
     RigidBodyStateBatch& state,
     const std::vector<double>& force,
     const std::vector<double>& inverseMass,
+    double timeStep);
+
+/// Extract immutable model parameters (per-body inverse mass) from a single
+/// world, in rigid-body iteration order. A non-positive or non-finite mass maps
+/// to zero inverse mass (a static body).
+[[nodiscard]] DART_EXPERIMENTAL_API RigidBodyModelBatch
+extractRigidBodyModelBatch(const World& world);
+
+/// Integrate a state batch one semi-implicit Euler linear step using an
+/// explicit model. @p state and @p model must have matching world and body
+/// counts and
+/// @p force three components per body. Throws on mismatch.
+DART_EXPERIMENTAL_API void integrateRigidBodyStateBatchLinear(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
     double timeStep);
 
 } // namespace dart::simulation::experimental::compute
