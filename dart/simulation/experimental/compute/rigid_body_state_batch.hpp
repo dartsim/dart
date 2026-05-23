@@ -142,4 +142,15 @@ DART_EXPERIMENTAL_API void integrateRigidBodyStateBatchLinear(
     const std::vector<double>& force,
     double timeStep);
 
+/// Integrate a state batch one full semi-implicit Euler kinematic step in
+/// place: the linear step (velocity from @p force / @p model, then position)
+/// followed by the orientation step (quaternion from the batch angular
+/// velocity). Angular velocity is treated as given (no torque/inertia term
+/// yet). Throws on size mismatch.
+DART_EXPERIMENTAL_API void integrateRigidBodyStateBatch(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    double timeStep);
+
 } // namespace dart::simulation::experimental::compute

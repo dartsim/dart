@@ -766,3 +766,43 @@ TEST(ExperimentalIntegrationKernel, OrientationKernelIsScalarGeneric)
         + orientation[2] * orientation[2] + orientation[3] * orientation[3];
   EXPECT_NEAR(norm, 1.0F, 1e-5F);
 }
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, IntegratesFullStateBatch)
+{
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = 1;
+  state.position = {0.0, 0.0, 0.0};
+  state.orientation = {1.0, 0.0, 0.0, 0.0};
+  state.linearVelocity = {1.0, 0.0, 0.0};
+  state.angularVelocity = {0.0, 0.0, 2.0};
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = 1;
+  model.inverseMass = {1.0};
+
+  const std::vector<double> force = {0.0, 0.0, 4.0};
+
+  compute::integrateRigidBodyStateBatch(state, model, force, 0.1);
+
+  // Linear: vel.z += 4 * 1 * 0.1 = 0.4; pos += updated vel * 0.1.
+  EXPECT_DOUBLE_EQ(state.linearVelocity[2], 0.4);
+  EXPECT_DOUBLE_EQ(state.position[0], 0.1);
+  EXPECT_DOUBLE_EQ(state.position[2], 0.04);
+  // Orientation: z-rotation, x and y stay zero, unit norm, tan(theta/2)=0.1.
+  EXPECT_DOUBLE_EQ(state.orientation[1], 0.0);
+  EXPECT_DOUBLE_EQ(state.orientation[2], 0.0);
+  const double w = state.orientation[0];
+  const double z = state.orientation[3];
+  EXPECT_NEAR(w * w + z * z, 1.0, 1e-12);
+  EXPECT_NEAR(z / w, 0.1, 1e-12);
+
+  // Orientation array of the wrong size is rejected.
+  auto bad = state;
+  bad.orientation = {1.0, 0.0, 0.0};
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatch(bad, model, force, 0.1),
+      sx::InvalidArgumentException);
+}

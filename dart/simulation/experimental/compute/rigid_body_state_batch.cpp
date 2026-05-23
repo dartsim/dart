@@ -322,4 +322,28 @@ void integrateRigidBodyStateBatchLinear(
   integrateRigidBodyStateBatchLinear(state, force, model.inverseMass, timeStep);
 }
 
+//==============================================================================
+void integrateRigidBodyStateBatch(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    double timeStep)
+{
+  const auto bodies = state.worldCount * state.bodyCount;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      state.orientation.size() != 4 * bodies,
+      InvalidArgumentException,
+      "RigidBodyStateBatch orientation array is inconsistent with worldCount "
+      "{} "
+      "and bodyCount {}",
+      state.worldCount,
+      state.bodyCount);
+
+  // Linear step (validates model, force, and the 3-component arrays), then the
+  // orientation step from the batch angular velocity.
+  integrateRigidBodyStateBatchLinear(state, model, force, timeStep);
+  integrateOrientationsSemiImplicit(
+      state.orientation.data(), state.angularVelocity.data(), timeStep, bodies);
+}
+
 } // namespace dart::simulation::experimental::compute
