@@ -242,6 +242,7 @@ class MultiBody:
     joints: list[Joint]
     link_names: list[str]
     joint_names: list[str]
+    is_valid: bool
 
     @overload
     def add_link(self, name: str = "") -> Link:
@@ -351,6 +352,9 @@ class World:
         ...
 
     def add_multi_body(self, name: str) -> MultiBody:
+        ...
+
+    def has_multi_body(self, name: str) -> bool:
         ...
 
     def get_multi_body(self, name: str) -> MultiBody | None:

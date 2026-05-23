@@ -361,6 +361,9 @@ Public handles should document:
   invalidation;
 - thread-safety for read-only queries and mutation.
 
+Every first-class handle should expose a public validity query before users
+need to inspect implementation storage to understand lifecycle effects.
+
 ## Lifecycle
 
 The C++ API keeps topology mutation separate from simulation execution:
@@ -692,6 +695,13 @@ explicit names cannot collide with later generated names. Cross-owner topology
 mutation, such as adding a child link to one `MultiBody` using a parent link
 from another `MultiBody`, should be rejected at the API boundary; closed-chain
 relationships belong in explicit loop-closure objects instead.
+
+World-owned named objects should expose a consistent lookup shape while richer
+collection views mature: optional `get*()` lookup for a first-class handle,
+`has*()` presence queries for branch-free validation, and count properties for
+simple inspection. Construction-ordered world-level collection snapshots should
+wait until `World` owns an explicit public ordering contract rather than using
+registry iteration order.
 
 ## Public Facade Rules
 

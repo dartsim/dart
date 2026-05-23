@@ -79,6 +79,7 @@ public:
   //--------------------------------------------------------------------------
   MultiBody addMultiBody(std::string_view name);
   std::optional<MultiBody> getMultiBody(std::string_view name);
+  bool hasMultiBody(std::string_view name) const;
   std::size_t getMultiBodyCount() const;
 
   //--------------------------------------------------------------------------
@@ -137,7 +138,13 @@ public:
   //--------------------------------------------------------------------------
   // Registry access
   //--------------------------------------------------------------------------
+  /// @internal
+  /// DART 7 implementation escape hatch for tests and subsystem bring-up.
+  /// This is not part of the DART 8 promotion target for the public World
+  /// facade; prefer public handles and accessors for user-facing code.
   entt::registry& getRegistry();
+  /// @internal
+  /// See the non-const overload.
   const entt::registry& getRegistry() const;
 
   //--------------------------------------------------------------------------

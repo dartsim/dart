@@ -276,6 +276,88 @@ TEST(World, BakingWithMultibodies)
   EXPECT_EQ(robot2.getJointCount(), 2u);
 }
 
+// Test multibody lookup by name returns first-class handles and exposes a
+// symmetric presence query for world-owned names.
+TEST(World, MultiBodyLookupByName)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  auto robot = world.addMultiBody("robot");
+
+  auto found = world.getMultiBody("robot");
+  ASSERT_TRUE(found.has_value());
+  EXPECT_TRUE(found->isValid());
+  EXPECT_EQ(found->getEntity(), robot.getEntity());
+  EXPECT_EQ(found->getWorld(), robot.getWorld());
+  EXPECT_EQ(found->getName(), "robot");
+  EXPECT_TRUE(world.hasMultiBody("robot"));
+  EXPECT_FALSE(world.hasMultiBody("missing"));
+  EXPECT_FALSE(world.getMultiBody("missing").has_value());
+
+  EXPECT_THROW(world.addMultiBody("robot"), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultiBodyCount(), 1u);
+
+  sx::World worldWithExplicitGeneratedName;
+  [[maybe_unused]] auto explicitName
+      = worldWithExplicitGeneratedName.addMultiBody("multibody_001");
+  auto generated = worldWithExplicitGeneratedName.addMultiBody("");
+  EXPECT_EQ(generated.getName(), "multibody_002");
+  EXPECT_TRUE(worldWithExplicitGeneratedName.hasMultiBody("multibody_001"));
+  EXPECT_TRUE(worldWithExplicitGeneratedName.hasMultiBody("multibody_002"));
+  EXPECT_EQ(worldWithExplicitGeneratedName.getMultiBodyCount(), 2u);
+}
+
+TEST(World, ClearInvalidatesPublicHandlesAndResetsFacadeState)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setTimeStep(0.01);
+  world.setTime(0.25);
+
+  auto robot = world.addMultiBody("robot");
+  auto base = robot.addLink("base");
+  auto body = world.addRigidBody("body");
+  auto closure = world.addLoopClosure(
+      "closure",
+      {.frameA = base, .frameB = body, .family = sx::LoopClosureFamily::Point});
+
+  EXPECT_TRUE(robot.isValid());
+  EXPECT_TRUE(base.isValid());
+  EXPECT_TRUE(body.isValid());
+  EXPECT_TRUE(closure.isValid());
+  EXPECT_TRUE(world.hasMultiBody("robot"));
+  EXPECT_TRUE(world.hasRigidBody("body"));
+  EXPECT_TRUE(world.hasLoopClosure("closure"));
+
+  world.enterSimulationMode();
+  world.step();
+  EXPECT_TRUE(world.isSimulationMode());
+  EXPECT_GT(world.getTime(), 0.0);
+  EXPECT_GT(world.getFrame(), 0u);
+
+  world.clear();
+
+  EXPECT_FALSE(robot.isValid());
+  EXPECT_FALSE(base.isValid());
+  EXPECT_FALSE(body.isValid());
+  EXPECT_FALSE(closure.isValid());
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTimeStep(), 0.001);
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_EQ(world.getMultiBodyCount(), 0u);
+  EXPECT_EQ(world.getRigidBodyCount(), 0u);
+  EXPECT_EQ(world.getLoopClosureCount(), 0u);
+  EXPECT_FALSE(world.hasMultiBody("robot"));
+  EXPECT_FALSE(world.hasRigidBody("body"));
+  EXPECT_FALSE(world.hasLoopClosure("closure"));
+  EXPECT_FALSE(world.getMultiBody("robot").has_value());
+  EXPECT_FALSE(world.getRigidBody("body").has_value());
+  EXPECT_FALSE(world.getLoopClosure("closure").has_value());
+}
+
 // Test rigid body lookup by name returns first-class handles.
 TEST(World, RigidBodyLookupByName)
 {

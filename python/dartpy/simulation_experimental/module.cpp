@@ -65,6 +65,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstddef>
 
 namespace nb = nanobind;
 
@@ -982,12 +983,16 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("joints", &sim::MultiBody::getJoints)
       .def_prop_ro("link_names", &sim::MultiBody::getLinkNames)
       .def_prop_ro("joint_names", &sim::MultiBody::getJointNames)
+      .def_prop_ro("is_valid", &sim::MultiBody::isValid)
       .def("__repr__", [](const sim::MultiBody& self) {
         std::vector<std::pair<std::string, std::string>> fields;
-        fields.emplace_back("name", repr_string(std::string(self.getName())));
-        fields.emplace_back("links", std::to_string(self.getLinkCount()));
-        fields.emplace_back("joints", std::to_string(self.getJointCount()));
-        fields.emplace_back("dofs", std::to_string(self.getDOFCount()));
+        fields.emplace_back("valid", self.isValid() ? "True" : "False");
+        if (self.isValid()) {
+          fields.emplace_back("name", repr_string(std::string(self.getName())));
+          fields.emplace_back("links", std::to_string(self.getLinkCount()));
+          fields.emplace_back("joints", std::to_string(self.getJointCount()));
+          fields.emplace_back("dofs", std::to_string(self.getDOFCount()));
+        }
         return format_repr("MultiBody", fields);
       });
 
@@ -1203,6 +1208,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("name"),
           nb::keep_alive<0, 1>())
       .def(
+          "has_multi_body",
+          [](const sim::World& self, const std::string& name) {
+            return self.hasMultiBody(name);
+          },
+          nb::arg("name"))
+      .def(
           "add_loop_closure",
           [](sim::World& self,
              const sim::LoopClosureSpec& spec,
@@ -1323,14 +1334,18 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::call_guard<nb::gil_scoped_release>())
       .def(
           "step",
-          [](sim::World& self, std::size_t n) {
+          [](sim::World& self, std::ptrdiff_t n) {
+            DART_EXPERIMENTAL_THROW_T_IF(
+                n < 0,
+                sim::InvalidArgumentException,
+                "World.step(n=...) requires a non-negative step count");
             if (n == 0) {
               return;
             }
             if (!self.isSimulationMode()) {
               self.enterSimulationMode();
             }
-            self.step(n);
+            self.step(static_cast<std::size_t>(n));
           },
           nb::arg("n") = 1,
           nb::call_guard<nb::gil_scoped_release>())

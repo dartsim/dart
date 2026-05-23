@@ -530,6 +530,12 @@ std::optional<MultiBody> World::getMultiBody(std::string_view name)
 }
 
 //==============================================================================
+bool World::hasMultiBody(std::string_view name) const
+{
+  return hasEntityWithName<comps::MultiBodyTag>(m_registry, name);
+}
+
+//==============================================================================
 std::size_t World::getMultiBodyCount() const
 {
   return countEntities<comps::MultiBodyTag>(m_registry);

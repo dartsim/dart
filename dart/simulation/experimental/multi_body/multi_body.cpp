@@ -277,9 +277,22 @@ std::vector<std::string> MultiBody::getJointNames() const
 }
 
 //==============================================================================
+entt::entity MultiBody::getEntity() const
+{
+  return m_entity;
+}
+
+//==============================================================================
 World* MultiBody::getWorld() const
 {
   return m_world;
+}
+
+//==============================================================================
+bool MultiBody::isValid() const
+{
+  return m_world != nullptr && m_world->getRegistry().valid(m_entity)
+         && m_world->getRegistry().all_of<comps::MultiBodyTag>(m_entity);
 }
 
 Link MultiBody::addLink(std::string_view name)

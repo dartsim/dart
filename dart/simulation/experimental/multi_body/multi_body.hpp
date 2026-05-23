@@ -205,12 +205,18 @@ public:
   /// Get the entity ID (for advanced users)
   ///
   /// @return The entity ID
-  entt::entity getEntity() const;
+  [[nodiscard]] entt::entity getEntity() const;
 
   /// Get the World pointer (for advanced users)
   ///
   /// @return Pointer to the World
-  World* getWorld() const;
+  [[nodiscard]] World* getWorld() const;
+
+  /// Return whether this handle still refers to a live MultiBody.
+  ///
+  /// Handles become invalid after the owning World destroys the underlying
+  /// entity, including through World::clear().
+  [[nodiscard]] bool isValid() const;
 
   //--------------------------------------------------------------------------
   /// @name Kinematic Structure (Design-time only)

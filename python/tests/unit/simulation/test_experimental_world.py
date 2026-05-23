@@ -115,6 +115,7 @@ def test_experimental_api_exposes_python_names_only():
             "getLinkCount",
             "getJointCount",
             "getDOFCount",
+            "isValid",
             "get_links",
             "get_joints",
         ),
@@ -175,8 +176,14 @@ def test_experimental_api_exposes_python_names_only():
             "isValid",
         ),
         sx.World: (
+            "addMultiBody",
+            "getMultiBody",
+            "hasMultiBody",
+            "getMultiBodyCount",
             "addRigidBody",
             "getRigidBody",
+            "hasRigidBody",
+            "getRigidBodyCount",
             "addLoopClosure",
             "getLoopClosure",
             "hasLoopClosure",
@@ -255,6 +262,8 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "variable_names",
         "link_names",
         "joint_names",
+        "has_multi_body",
+        "is_valid",
     ):
         assert member in stub
 
@@ -265,6 +274,9 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "def set_position(",
         "def get_runtime_policy(",
         "def set_runtime_policy(",
+        "def getMultiBody(",
+        "def hasMultiBody(",
+        "def has_multi_body_count(",
         "def get_rigid_body_count(",
     )
     for member in forbidden_stub_members:
@@ -338,12 +350,15 @@ def test_experimental_world_smoke():
 
     multi_body = world.add_multi_body("robot")
     assert multi_body.name == "robot"
+    assert multi_body.is_valid
     assert multi_body.num_links == 0
     assert multi_body.num_joints == 0
     assert multi_body.num_dofs == 0
 
     multi_body.name = "renamed_robot"
     assert multi_body.name == "renamed_robot"
+    assert world.has_multi_body("renamed_robot")
+    assert not world.has_multi_body("missing")
     assert world.get_multi_body("renamed_robot").name == "renamed_robot"
     assert world.get_multi_body("missing") is None
     with pytest.raises(Exception, match="already exists"):
@@ -353,6 +368,14 @@ def test_experimental_world_smoke():
     assert multi_body.name == "renamed_robot"
     assert world.num_multi_bodies == 1
     assert world.num_loop_closures == 0
+
+    auto_multi_body_world = sx.World()
+    auto_multi_body_world.add_multi_body("multibody_001")
+    generated_multi_body = auto_multi_body_world.add_multi_body("")
+    assert generated_multi_body.name == "multibody_002"
+    assert auto_multi_body_world.has_multi_body("multibody_001")
+    assert auto_multi_body_world.has_multi_body("multibody_002")
+    assert auto_multi_body_world.num_multi_bodies == 2
 
     rigid_body = world.add_rigid_body("box")
     assert rigid_body.name == "box"
@@ -375,6 +398,8 @@ def test_experimental_world_smoke():
 
     world.clear()
     assert not world.is_simulation_mode
+    assert not multi_body.is_valid
+    assert not rigid_body.is_valid
     assert world.num_multi_bodies == 0
     assert world.num_loop_closures == 0
     assert world.num_rigid_bodies == 0
@@ -724,6 +749,8 @@ def test_experimental_world_common_path_properties_and_step_count():
     assert not world.is_simulation_mode
     assert world.time == pytest.approx(0.0)
     assert world.frame == 0
+    with pytest.raises(Exception, match="non-negative step count"):
+        world.step(n=-1)
 
     world.step(n=3)
 
