@@ -30,37 +30,49 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/multi_body/link.hpp"
+#pragma once
 
-#include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/multi_body/joint.hpp"
-#include "dart/simulation/experimental/world.hpp"
+#include <dart/simulation/experimental/fwd.hpp>
+
+#include <dart/simulation/experimental/constraint/loop_closure_family.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure_residual.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure_runtime_policy.hpp>
+
+#include <Eigen/Geometry>
+#include <entt/entt.hpp>
+
+#include <string_view>
 
 namespace dart::simulation::experimental {
 
-//==============================================================================
-Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
-
-//==============================================================================
-std::string_view Link::getName() const
+/// World-owned handle for a closed-chain topology relation.
+///
+/// The DART 7 experimental API stores loop closures as named topology objects
+/// that can later participate in kinematic projection, residual diagnostics, or
+/// dynamic solving. This handle exposes the stable semantic relation without
+/// exposing solver rows or ECS storage.
+class DART_EXPERIMENTAL_API LoopClosure
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return linkComp.name;
-}
+public:
+  LoopClosure(entt::entity entity, World* world);
 
-//==============================================================================
-Joint Link::getParentJoint() const
-{
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return Joint(linkComp.parentJoint, getWorld());
-}
+  [[nodiscard]] std::string_view getName() const;
+  [[nodiscard]] LoopClosureFamily getFamily() const;
+  [[nodiscard]] Frame getFrameA() const;
+  [[nodiscard]] Frame getFrameB() const;
+  [[nodiscard]] const Eigen::Isometry3d& getOffsetA() const;
+  [[nodiscard]] const Eigen::Isometry3d& getOffsetB() const;
+  [[nodiscard]] LoopClosureRuntimePolicy getRuntimePolicy() const;
+  void setRuntimePolicy(const LoopClosureRuntimePolicy& policy);
+  [[nodiscard]] LoopClosureResidual computeResidual() const;
 
-//==============================================================================
-const Eigen::Isometry3d& Link::getWorldTransform() const
-{
-  return Frame::getTransform();
-}
+  [[nodiscard]] entt::entity getEntity() const;
+  [[nodiscard]] World* getWorld() const;
+  [[nodiscard]] bool isValid() const;
+
+private:
+  entt::entity m_entity;
+  World* m_world;
+};
 
 } // namespace dart::simulation::experimental

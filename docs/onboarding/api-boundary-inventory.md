@@ -14,9 +14,9 @@ documented downstream migration or removal condition is satisfied.
 
 ## Summary
 
-- C++ public headers scanned: 410
+- C++ public headers scanned: 418
 - C++ headers with exposed implementation debt: 96
-- C++ headers with compatibility signals: 50
+- C++ headers with compatibility signals: 51
 - dartpy binding sources scanned: 156
 - dartpy binding sources with allowlisted compatibility debt: 8
 
@@ -36,7 +36,7 @@ documented downstream migration or removal condition is satisfied.
 | sensor                  | 3       | 3         | 0             | 0            | 0            |
 | simd                    | 16      | 11        | 0             | 0            | 5            |
 | simulation              | 4       | 2         | 1             | 0            | 1            |
-| simulation/experimental | 42      | 0         | 0             | 36           | 6            |
+| simulation/experimental | 50      | 0         | 1             | 43           | 6            |
 | top-level               | 3       | 2         | 1             | 0            | 0            |
 | utils                   | 19      | 10        | 7             | 0            | 2            |
 
@@ -143,58 +143,59 @@ documented downstream migration or removal condition is satisfied.
 
 ## C++ Compatibility Signals
 
-| Header                                                     | Module     | Signals | Classification              |
-| ---------------------------------------------------------- | ---------- | ------- | --------------------------- |
-| dart/collision/bullet/compat/bullet_collision_detector.hpp | collision  | 1       | exposed-implementation debt |
-| dart/collision/collision_detector.hpp                      | collision  | 3       | exposed-implementation debt |
-| dart/collision/collision_filter.hpp                        | collision  | 1       | exposed-implementation debt |
-| dart/collision/contact.hpp                                 | collision  | 2       | exposed-implementation debt |
-| dart/collision/dart/DARTCollisionDetector.hpp              | collision  | 1       | compatibility               |
-| dart/collision/dart/dart_collision_detector.hpp            | collision  | 1       | compatibility               |
-| dart/collision/fcl/compat/fcl_collision_detector.hpp       | collision  | 3       | exposed-implementation debt |
-| dart/collision/ode/compat/ode_collision_detector.hpp       | collision  | 3       | exposed-implementation debt |
-| dart/collision/smart_pointer.hpp                           | collision  | 1       | compatibility               |
-| dart/common/class_with_virtual_base.hpp                    | common     | 1       | compatibility               |
-| dart/common/deprecated.hpp                                 | common     | 8       | compatibility               |
-| dart/common/local_resource_retriever.hpp                   | common     | 1       | compatibility               |
-| dart/common/resource_retriever.hpp                         | common     | 3       | compatibility               |
-| dart/constraint/boxed_lcp_constraint_solver.hpp            | constraint | 2       | compatibility               |
-| dart/constraint/boxed_lcp_solver.hpp                       | constraint | 6       | compatibility               |
-| dart/constraint/constraint_solver.hpp                      | constraint | 1       | exposed-implementation debt |
-| dart/constraint/contact_surface.hpp                        | constraint | 1       | compatibility               |
-| dart/constraint/dantzig_boxed_lcp_solver.hpp               | constraint | 3       | compatibility               |
-| dart/constraint/pgs_boxed_lcp_solver.hpp                   | constraint | 3       | compatibility               |
-| dart/constraint/smart_pointer.hpp                          | constraint | 1       | compatibility               |
-| dart/dart.hpp                                              | top-level  | 1       | compatibility               |
-| dart/dynamics/assimp_input_resource_adaptor.hpp            | dynamics   | 1       | exposed-implementation debt |
-| dart/dynamics/body_node.hpp                                | dynamics   | 11      | exposed-implementation debt |
-| dart/dynamics/free_joint.hpp                               | dynamics   | 1       | exposed-implementation debt |
-| dart/dynamics/marker.hpp                                   | dynamics   | 1       | exposed-implementation debt |
-| dart/dynamics/mesh_shape.hpp                               | dynamics   | 16      | compatibility               |
-| dart/dynamics/meta_skeleton.hpp                            | dynamics   | 19      | exposed-implementation debt |
-| dart/dynamics/referential_skeleton.hpp                     | dynamics   | 1       | compatibility               |
-| dart/dynamics/skeleton.hpp                                 | dynamics   | 19      | exposed-implementation debt |
-| dart/dynamics/smart_pointer.hpp                            | dynamics   | 1       | compatibility               |
-| dart/dynamics/soft_mesh_shape.hpp                          | dynamics   | 4       | compatibility               |
-| dart/dynamics/voxel_grid_shape.hpp                         | dynamics   | 4       | compatibility               |
-| dart/math/constants.hpp                                    | math       | 3       | exposed-implementation debt |
-| dart/math/geometry.hpp                                     | math       | 1       | exposed-implementation debt |
-| dart/math/lcp/all.hpp                                      | math       | 1       | compatibility               |
-| dart/math/lcp/pivoting/dantzig/matrix.hpp                  | math       | 6       | compatibility               |
-| dart/math/lcp/pivoting/dantzig/pivot_matrix.hpp            | math       | 3       | compatibility               |
-| dart/optimizer/all.hpp                                     | optimizer  | 3       | compatibility               |
-| dart/optimizer/function.hpp                                | optimizer  | 10      | compatibility               |
-| dart/optimizer/gradient_descent_solver.hpp                 | optimizer  | 2       | compatibility               |
-| dart/optimizer/problem.hpp                                 | optimizer  | 2       | compatibility               |
-| dart/optimizer/solver.hpp                                  | optimizer  | 2       | compatibility               |
-| dart/simulation/smart_pointer.hpp                          | simulation | 1       | compatibility               |
-| dart/utils/assimp_mesh_loader.hpp                          | utils      | 1       | compatibility               |
-| dart/utils/composite_resource_retriever.hpp                | utils      | 1       | compatibility               |
-| dart/utils/dart_resource_retriever.hpp                     | utils      | 1       | compatibility               |
-| dart/utils/http_resource_retriever.hpp                     | utils      | 1       | compatibility               |
-| dart/utils/package_resource_retriever.hpp                  | utils      | 1       | compatibility               |
-| dart/utils/sdf/sdf_parser.hpp                              | utils      | 3       | compatibility               |
-| dart/utils/urdf/dart_loader.hpp                            | utils      | 3       | compatibility               |
+| Header                                                     | Module                  | Signals | Classification              |
+| ---------------------------------------------------------- | ----------------------- | ------- | --------------------------- |
+| dart/collision/bullet/compat/bullet_collision_detector.hpp | collision               | 1       | exposed-implementation debt |
+| dart/collision/collision_detector.hpp                      | collision               | 3       | exposed-implementation debt |
+| dart/collision/collision_filter.hpp                        | collision               | 1       | exposed-implementation debt |
+| dart/collision/contact.hpp                                 | collision               | 2       | exposed-implementation debt |
+| dart/collision/dart/DARTCollisionDetector.hpp              | collision               | 1       | compatibility               |
+| dart/collision/dart/dart_collision_detector.hpp            | collision               | 1       | compatibility               |
+| dart/collision/fcl/compat/fcl_collision_detector.hpp       | collision               | 3       | exposed-implementation debt |
+| dart/collision/ode/compat/ode_collision_detector.hpp       | collision               | 3       | exposed-implementation debt |
+| dart/collision/smart_pointer.hpp                           | collision               | 1       | compatibility               |
+| dart/common/class_with_virtual_base.hpp                    | common                  | 1       | compatibility               |
+| dart/common/deprecated.hpp                                 | common                  | 8       | compatibility               |
+| dart/common/local_resource_retriever.hpp                   | common                  | 1       | compatibility               |
+| dart/common/resource_retriever.hpp                         | common                  | 3       | compatibility               |
+| dart/constraint/boxed_lcp_constraint_solver.hpp            | constraint              | 2       | compatibility               |
+| dart/constraint/boxed_lcp_solver.hpp                       | constraint              | 6       | compatibility               |
+| dart/constraint/constraint_solver.hpp                      | constraint              | 1       | exposed-implementation debt |
+| dart/constraint/contact_surface.hpp                        | constraint              | 1       | compatibility               |
+| dart/constraint/dantzig_boxed_lcp_solver.hpp               | constraint              | 3       | compatibility               |
+| dart/constraint/pgs_boxed_lcp_solver.hpp                   | constraint              | 3       | compatibility               |
+| dart/constraint/smart_pointer.hpp                          | constraint              | 1       | compatibility               |
+| dart/dart.hpp                                              | top-level               | 1       | compatibility               |
+| dart/dynamics/assimp_input_resource_adaptor.hpp            | dynamics                | 1       | exposed-implementation debt |
+| dart/dynamics/body_node.hpp                                | dynamics                | 11      | exposed-implementation debt |
+| dart/dynamics/free_joint.hpp                               | dynamics                | 1       | exposed-implementation debt |
+| dart/dynamics/marker.hpp                                   | dynamics                | 1       | exposed-implementation debt |
+| dart/dynamics/mesh_shape.hpp                               | dynamics                | 16      | compatibility               |
+| dart/dynamics/meta_skeleton.hpp                            | dynamics                | 19      | exposed-implementation debt |
+| dart/dynamics/referential_skeleton.hpp                     | dynamics                | 1       | compatibility               |
+| dart/dynamics/skeleton.hpp                                 | dynamics                | 19      | exposed-implementation debt |
+| dart/dynamics/smart_pointer.hpp                            | dynamics                | 1       | compatibility               |
+| dart/dynamics/soft_mesh_shape.hpp                          | dynamics                | 4       | compatibility               |
+| dart/dynamics/voxel_grid_shape.hpp                         | dynamics                | 4       | compatibility               |
+| dart/math/constants.hpp                                    | math                    | 3       | exposed-implementation debt |
+| dart/math/geometry.hpp                                     | math                    | 1       | exposed-implementation debt |
+| dart/math/lcp/all.hpp                                      | math                    | 1       | compatibility               |
+| dart/math/lcp/pivoting/dantzig/matrix.hpp                  | math                    | 6       | compatibility               |
+| dart/math/lcp/pivoting/dantzig/pivot_matrix.hpp            | math                    | 3       | compatibility               |
+| dart/optimizer/all.hpp                                     | optimizer               | 3       | compatibility               |
+| dart/optimizer/function.hpp                                | optimizer               | 10      | compatibility               |
+| dart/optimizer/gradient_descent_solver.hpp                 | optimizer               | 2       | compatibility               |
+| dart/optimizer/problem.hpp                                 | optimizer               | 2       | compatibility               |
+| dart/optimizer/solver.hpp                                  | optimizer               | 2       | compatibility               |
+| dart/simulation/experimental/compute/taskflow_executor.hpp | simulation/experimental | 1       | compatibility               |
+| dart/simulation/smart_pointer.hpp                          | simulation              | 1       | compatibility               |
+| dart/utils/assimp_mesh_loader.hpp                          | utils                   | 1       | compatibility               |
+| dart/utils/composite_resource_retriever.hpp                | utils                   | 1       | compatibility               |
+| dart/utils/dart_resource_retriever.hpp                     | utils                   | 1       | compatibility               |
+| dart/utils/http_resource_retriever.hpp                     | utils                   | 1       | compatibility               |
+| dart/utils/package_resource_retriever.hpp                  | utils                   | 1       | compatibility               |
+| dart/utils/sdf/sdf_parser.hpp                              | utils                   | 3       | compatibility               |
+| dart/utils/urdf/dart_loader.hpp                            | utils                   | 3       | compatibility               |
 
 ## dartpy Binding Surface
 
@@ -342,7 +343,7 @@ documented downstream migration or removal condition is satisfied.
 | python/dartpy/simulation/module.hpp                            | supported public   | n/a                                                                                                                                                                                                                                                                                                                                                                                                                       | 0                | none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | python/dartpy/simulation/world.cpp                             | supported public   | World, WorldConfig                                                                                                                                                                                                                                                                                                                                                                                                        | 0                | none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | python/dartpy/simulation/world.hpp                             | supported public   | n/a                                                                                                                                                                                                                                                                                                                                                                                                                       | 0                | none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| python/dartpy/simulation_experimental/module.cpp               | supported public   | MultiBody, RigidBody, World                                                                                                                                                                                                                                                                                                                                                                                               | 0                | none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| python/dartpy/simulation_experimental/module.cpp               | supported public   | FixedFrame, Frame, FreeFrame, Joint, JointSpec, Link, LoopClosure, LoopClosureResidual, LoopClosureRuntimePolicy, LoopClosureSpec, MultiBody, RigidBody, RigidBodyOptions, StateSpace, StateVariable, World                                                                                                                                                                                                               | 0                | none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | python/dartpy/simulation_experimental/module.hpp               | supported public   | n/a                                                                                                                                                                                                                                                                                                                                                                                                                       | 0                | none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | python/dartpy/utils/mjcf_parser.cpp                            | supported public   | Options                                                                                                                                                                                                                                                                                                                                                                                                                   | 2                | none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | python/dartpy/utils/mjcf_parser.hpp                            | supported public   | n/a                                                                                                                                                                                                                                                                                                                                                                                                                       | 0                | none                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |

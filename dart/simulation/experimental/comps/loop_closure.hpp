@@ -30,37 +30,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/multi_body/link.hpp"
+#pragma once
 
-#include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/multi_body/joint.hpp"
-#include "dart/simulation/experimental/world.hpp"
+#include <dart/simulation/experimental/comps/component_category.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure_family.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure_runtime_policy.hpp>
 
-namespace dart::simulation::experimental {
+#include <Eigen/Geometry>
+#include <entt/entt.hpp>
 
-//==============================================================================
-Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
+namespace dart::simulation::experimental::comps {
 
-//==============================================================================
-std::string_view Link::getName() const
+/// Component storing an explicit loop-closure topology relation.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct LoopClosure
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return linkComp.name;
-}
+  DART_EXPERIMENTAL_STATE_COMPONENT(LoopClosure);
 
-//==============================================================================
-Joint Link::getParentJoint() const
-{
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return Joint(linkComp.parentJoint, getWorld());
-}
+  dart::simulation::experimental::LoopClosureFamily family
+      = dart::simulation::experimental::LoopClosureFamily::Rigid;
+  entt::entity frameA = entt::null;
+  entt::entity frameB = entt::null;
+  Eigen::Isometry3d offsetA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d offsetB = Eigen::Isometry3d::Identity();
+  dart::simulation::experimental::LoopClosureRuntimePolicy runtimePolicy;
 
-//==============================================================================
-const Eigen::Isometry3d& Link::getWorldTransform() const
-{
-  return Frame::getTransform();
-}
+  static constexpr auto entityFields()
+  {
+    return std::tuple{&LoopClosure::frameA, &LoopClosure::frameB};
+  }
+};
 
-} // namespace dart::simulation::experimental
+} // namespace dart::simulation::experimental::comps

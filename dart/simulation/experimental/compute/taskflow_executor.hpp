@@ -32,35 +32,11 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/compute/compute_executor.hpp>
-
-#include <memory>
-
-namespace tf {
-class Executor;
-}
+#include <dart/simulation/experimental/compute/parallel_executor.hpp>
 
 namespace dart::simulation::experimental::compute {
 
-/// Experimental parallel executor backed by Taskflow.
-class DART_EXPERIMENTAL_API TaskflowExecutor final : public ComputeExecutor
-{
-public:
-  explicit TaskflowExecutor(std::size_t workerCount = 0);
-  ~TaskflowExecutor() override;
-
-  TaskflowExecutor(const TaskflowExecutor&) = delete;
-  TaskflowExecutor& operator=(const TaskflowExecutor&) = delete;
-  TaskflowExecutor(TaskflowExecutor&&) noexcept;
-  TaskflowExecutor& operator=(TaskflowExecutor&&) noexcept;
-
-  void execute(const ComputeGraph& graph) override;
-  [[nodiscard]] ComputeExecutionProfile executeProfiled(
-      const ComputeGraph& graph) override;
-  [[nodiscard]] std::size_t getWorkerCount() const override;
-
-private:
-  std::unique_ptr<tf::Executor> m_executor;
-};
+/// DART 7 compatibility alias. Prefer ParallelExecutor in new code.
+using TaskflowExecutor = ParallelExecutor;
 
 } // namespace dart::simulation::experimental::compute

@@ -30,37 +30,28 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/multi_body/link.hpp"
+#pragma once
 
-#include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/multi_body/joint.hpp"
-#include "dart/simulation/experimental/world.hpp"
+#include <dart/simulation/experimental/constraint/loop_closure_family.hpp>
+#include <dart/simulation/experimental/frame/frame.hpp>
+
+#include <Eigen/Geometry>
 
 namespace dart::simulation::experimental {
 
-//==============================================================================
-Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
-
-//==============================================================================
-std::string_view Link::getName() const
+/// Value object describing a closed-chain relation between two public frames.
+///
+/// `frameA` and `frameB` are symmetric endpoints. `offsetA` and `offsetB`
+/// define the closure endpoint frames relative to those endpoint frames.
+/// Kinematic projection, residual reporting, and dynamic solving policies are
+/// intentionally not part of this topology object.
+struct LoopClosureSpec
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return linkComp.name;
-}
-
-//==============================================================================
-Joint Link::getParentJoint() const
-{
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return Joint(linkComp.parentJoint, getWorld());
-}
-
-//==============================================================================
-const Eigen::Isometry3d& Link::getWorldTransform() const
-{
-  return Frame::getTransform();
-}
+  Frame frameA = Frame::world();
+  Frame frameB = Frame::world();
+  LoopClosureFamily family = LoopClosureFamily::Rigid;
+  Eigen::Isometry3d offsetA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d offsetB = Eigen::Isometry3d::Identity();
+};
 
 } // namespace dart::simulation::experimental

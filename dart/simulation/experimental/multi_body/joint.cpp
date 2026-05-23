@@ -37,7 +37,103 @@
 #include "dart/simulation/experimental/multi_body/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
+#include <vector>
+
 namespace dart::simulation::experimental {
+
+namespace {
+
+JointType toPublicJointType(comps::JointType type)
+{
+  switch (type) {
+    case comps::JointType::Fixed:
+      return JointType::Fixed;
+    case comps::JointType::Revolute:
+      return JointType::Revolute;
+    case comps::JointType::Prismatic:
+      return JointType::Prismatic;
+    case comps::JointType::Screw:
+      return JointType::Screw;
+    case comps::JointType::Universal:
+      return JointType::Universal;
+    case comps::JointType::Ball:
+      return JointType::Ball;
+    case comps::JointType::Planar:
+      return JointType::Planar;
+    case comps::JointType::Free:
+      return JointType::Free;
+    case comps::JointType::Custom:
+      return JointType::Custom;
+  }
+
+  return JointType::Custom;
+}
+
+comps::Joint& getJointComponent(World* world, entt::entity entity)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      world == nullptr, InvalidArgumentException, "Invalid joint handle");
+
+  auto& registry = world->getRegistry();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !registry.valid(entity) || !registry.all_of<comps::Joint>(entity),
+      InvalidArgumentException,
+      "Invalid joint handle");
+
+  return registry.get<comps::Joint>(entity);
+}
+
+void validateJointStateVector(
+    const Eigen::VectorXd& value, std::size_t dof, const char* fieldName)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      value.size() != static_cast<Eigen::Index>(dof),
+      InvalidArgumentException,
+      "Joint {} dimension ({}) must match DOF count ({})",
+      fieldName,
+      value.size(),
+      dof);
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !value.allFinite(),
+      InvalidArgumentException,
+      "Joint {} must contain only finite values",
+      fieldName);
+}
+
+void markSubtreeTransformCacheDirty(entt::registry& registry, entt::entity root)
+{
+  if (root == entt::null || !registry.valid(root)) {
+    return;
+  }
+
+  std::vector<entt::entity> stack;
+  stack.push_back(root);
+
+  auto frameStateView = registry.view<comps::FrameState>();
+
+  while (!stack.empty()) {
+    const auto entity = stack.back();
+    stack.pop_back();
+
+    if (!registry.valid(entity)) {
+      continue;
+    }
+
+    if (auto* cache = registry.try_get<comps::FrameCache>(entity)) {
+      cache->needTransformUpdate = true;
+    }
+
+    for (const auto child : frameStateView) {
+      const auto& state = frameStateView.get<comps::FrameState>(child);
+      if (state.parentFrame == entity) {
+        stack.push_back(child);
+      }
+    }
+  }
+}
+
+} // namespace
 
 //==============================================================================
 Joint::Joint(entt::entity entity, World* world)
@@ -48,21 +144,21 @@ Joint::Joint(entt::entity entity, World* world)
 //==============================================================================
 std::string_view Joint::getName() const
 {
-  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  const auto& jointComp = getJointComponent(m_world, m_entity);
   return jointComp.name;
 }
 
 //==============================================================================
-comps::JointType Joint::getType() const
+JointType Joint::getType() const
 {
-  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
-  return jointComp.type;
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return toPublicJointType(jointComp.type);
 }
 
 //==============================================================================
 Eigen::Vector3d Joint::getAxis() const
 {
-  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  const auto& jointComp = getJointComponent(m_world, m_entity);
 
   // Validate joint type - Ball and Free joints don't have axes
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -77,7 +173,7 @@ Eigen::Vector3d Joint::getAxis() const
 //==============================================================================
 Eigen::Vector3d Joint::getAxis2() const
 {
-  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  const auto& jointComp = getJointComponent(m_world, m_entity);
 
   // Validate joint type
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -92,7 +188,7 @@ Eigen::Vector3d Joint::getAxis2() const
 //==============================================================================
 double Joint::getPitch() const
 {
-  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  const auto& jointComp = getJointComponent(m_world, m_entity);
 
   // Validate joint type
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -104,16 +200,56 @@ double Joint::getPitch() const
 }
 
 //==============================================================================
+std::size_t Joint::getDOFCount() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.getDOF();
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getPosition() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.position;
+}
+
+//==============================================================================
+void Joint::setPosition(const Eigen::VectorXd& position)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(position, jointComp.getDOF(), "position");
+
+  jointComp.position = position;
+  markSubtreeTransformCacheDirty(m_world->getRegistry(), jointComp.childLink);
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getVelocity() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.velocity;
+}
+
+//==============================================================================
+void Joint::setVelocity(const Eigen::VectorXd& velocity)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(velocity, jointComp.getDOF(), "velocity");
+
+  jointComp.velocity = velocity;
+}
+
+//==============================================================================
 Link Joint::getParentLink() const
 {
-  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  const auto& jointComp = getJointComponent(m_world, m_entity);
   return Link(jointComp.parentLink, m_world);
 }
 
 //==============================================================================
 Link Joint::getChildLink() const
 {
-  const auto& jointComp = m_world->getRegistry().get<comps::Joint>(m_entity);
+  const auto& jointComp = getJointComponent(m_world, m_entity);
   return Link(jointComp.childLink, m_world);
 }
 
@@ -126,7 +262,8 @@ entt::entity Joint::getEntity() const
 //==============================================================================
 bool Joint::isValid() const
 {
-  return m_world->getRegistry().valid(m_entity);
+  return m_world != nullptr && m_world->getRegistry().valid(m_entity)
+         && m_world->getRegistry().all_of<comps::Joint>(m_entity);
 }
 
 } // namespace dart::simulation::experimental

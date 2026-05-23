@@ -64,17 +64,7 @@ void FreeFrame::setLocalTransform(const Eigen::Isometry3d& transform)
   auto& props = registry.get<comps::FreeFrameProperties>(m_entity);
   props.localTransform = transform;
 
-  // Invalidate cache
-  auto& cache = registry.get<comps::FrameCache>(m_entity);
-  cache.needTransformUpdate = true;
-}
-
-//==============================================================================
-const Eigen::Isometry3d& FreeFrame::getLocalTransform() const
-{
-  const auto& props
-      = m_world->getRegistry().get<comps::FreeFrameProperties>(m_entity);
-  return props.localTransform;
+  markSubtreeTransformCacheDirty();
 }
 
 } // namespace dart::simulation::experimental

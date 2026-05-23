@@ -30,37 +30,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/multi_body/link.hpp"
+#pragma once
 
-#include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/multi_body/joint.hpp"
-#include "dart/simulation/experimental/world.hpp"
+#include <dart/simulation/experimental/export.hpp>
+
+#include <Eigen/Core>
 
 namespace dart::simulation::experimental {
 
-//==============================================================================
-Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
-
-//==============================================================================
-std::string_view Link::getName() const
+/// Coordinate convention for loop-closure residual values.
+enum class LoopClosureResidualCoordinates
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return linkComp.name;
-}
+  /// Linear residuals and rotation vectors are expressed in world coordinates.
+  World,
+};
 
-//==============================================================================
-Joint Link::getParentJoint() const
+/// Residual diagnostic for a loop closure at the current world state.
+///
+/// This value reports public residual diagnostics only. It does not expose
+/// constraint rows, solver identifiers, backend storage, or force/impulse
+/// estimates from a particular implementation.
+struct DART_EXPERIMENTAL_API LoopClosureResidual
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return Joint(linkComp.parentJoint, getWorld());
-}
+  /// Residual value for the closure family.
+  ///
+  /// Rigid closures use [linear_x, linear_y, linear_z, angular_x, angular_y,
+  /// angular_z]. Point closures use the three linear coordinates. Distance
+  /// closures use a single non-negative scalar distance.
+  Eigen::VectorXd value;
 
-//==============================================================================
-const Eigen::Isometry3d& Link::getWorldTransform() const
-{
-  return Frame::getTransform();
-}
+  /// Euclidean norm of value.
+  double norm = 0.0;
+
+  /// Whether the closure is enabled for runtime participation.
+  bool enabled = true;
+
+  /// True when this closure is enabled and can participate in the active
+  /// residual/projection/solve pipeline.
+  bool active = true;
+
+  /// Coordinate convention used by value.
+  LoopClosureResidualCoordinates coordinates
+      = LoopClosureResidualCoordinates::World;
+
+  /// Current DART 7 diagnostics do not expose solved force or impulse data.
+  bool forceAvailable = false;
+};
 
 } // namespace dart::simulation::experimental

@@ -34,13 +34,15 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
-#include <dart/simulation/experimental/comps/joint.hpp> // For JointType
+#include <dart/simulation/experimental/multi_body/joint_type.hpp>
 
 #include <Eigen/Core>
 #include <entt/entt.hpp>
 
 #include <string>
 #include <string_view>
+
+#include <cstddef>
 
 namespace dart::simulation::experimental {
 
@@ -66,7 +68,7 @@ namespace dart::simulation::experimental {
 ///   auto link = robot.addLink("link1", {
 ///       .parentLink = root,
 ///       .jointName = "shoulder",
-///       .jointType = JointType::REVOLUTE
+///       .jointType = JointType::Revolute
 ///   });
 ///
 ///   Joint joint = link.getParentJoint();
@@ -93,8 +95,8 @@ public:
 
   /// Get the joint type
   ///
-  /// @return JointType enum (REVOLUTE, PRISMATIC, etc.)
-  [[nodiscard]] comps::JointType getType() const;
+  /// @return JointType enum (Revolute, Prismatic, etc.)
+  [[nodiscard]] JointType getType() const;
 
   /// Get the primary joint axis
   ///
@@ -119,6 +121,33 @@ public:
   /// @throws InvalidArgumentException if not a Screw joint
   [[nodiscard]] double getPitch() const;
 
+  /// Get the number of generalized coordinates owned by this joint.
+  ///
+  /// Fixed joints return 0. Revolute, prismatic, and screw joints return 1;
+  /// higher-dimensional joints return their public generalized-coordinate
+  /// dimension.
+  [[nodiscard]] std::size_t getDOFCount() const;
+
+  /// Get a copy of the generalized joint position vector.
+  [[nodiscard]] Eigen::VectorXd getPosition() const;
+
+  /// Set the generalized joint position vector.
+  ///
+  /// @param position Vector with size equal to getDOFCount().
+  /// @throws InvalidArgumentException if this handle is invalid, if the vector
+  /// size does not match the joint DOF count, or if any value is non-finite.
+  void setPosition(const Eigen::VectorXd& position);
+
+  /// Get a copy of the generalized joint velocity vector.
+  [[nodiscard]] Eigen::VectorXd getVelocity() const;
+
+  /// Set the generalized joint velocity vector.
+  ///
+  /// @param velocity Vector with size equal to getDOFCount().
+  /// @throws InvalidArgumentException if this handle is invalid, if the vector
+  /// size does not match the joint DOF count, or if any value is non-finite.
+  void setVelocity(const Eigen::VectorXd& velocity);
+
   /// Get the parent link
   ///
   /// @return Parent Link handle
@@ -140,7 +169,7 @@ public:
   [[nodiscard]] bool isValid() const;
 
   // TODO: Add methods for:
-  // - Getting/setting position, velocity, acceleration
+  // - Getting/setting acceleration
   // - Getting/setting joint limits
   // - Getting/setting effort limits
   // - Computing joint transforms

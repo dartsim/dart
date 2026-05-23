@@ -67,6 +67,24 @@ dartpy/
 
 **Source**: See `python/dartpy/` directory for module implementations
 
+### Experimental World Bindings And Transition
+
+DART 7 keeps the classic Skeleton-backed `dart::simulation::World` and
+`dartpy.World` path stable while the ECS-backed world matures behind explicit
+experimental namespaces. C++ users opt in through
+`dart::simulation::experimental`; Python users opt in through
+`dartpy.simulation_experimental`, which is built only when
+`DART_BUILD_SIMULATION_EXPERIMENTAL=ON`. Bindings for this module should expose
+only public experimental wrapper types and must not expose EnTT, `comps`, or
+other ECS internals until the C++ API provides public wrappers. The DART 8 path
+is to remove the classic world after the experimental world reaches parity and
+promote the experimental shape into the official stable simulation namespace.
+dartpy 8 removes the legacy dartpy 6 API surface instead of carrying it beside
+the promoted API.
+
+Durable API-shape rationale for this surface lives in
+[simulation_experimental_python_api.md](../design/simulation_experimental_python_api.md).
+
 ### Eigen ↔ NumPy Integration
 
 **Key Design**: nanobind's Eigen support enables seamless conversion

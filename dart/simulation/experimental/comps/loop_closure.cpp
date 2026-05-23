@@ -30,37 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/multi_body/link.hpp"
+#include "loop_closure.hpp"
 
-#include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/multi_body/joint.hpp"
-#include "dart/simulation/experimental/world.hpp"
+#include "dart/simulation/experimental/io/category_serializer.hpp"
 
-namespace dart::simulation::experimental {
+namespace dart::simulation::experimental::comps {
 
-//==============================================================================
-Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
+DART_EXPERIMENTAL_REGISTER_COMPONENT(LoopClosure)
 
-//==============================================================================
-std::string_view Link::getName() const
-{
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return linkComp.name;
-}
-
-//==============================================================================
-Joint Link::getParentJoint() const
-{
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return Joint(linkComp.parentJoint, getWorld());
-}
-
-//==============================================================================
-const Eigen::Isometry3d& Link::getWorldTransform() const
-{
-  return Frame::getTransform();
-}
-
-} // namespace dart::simulation::experimental
+} // namespace dart::simulation::experimental::comps

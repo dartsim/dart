@@ -30,37 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/multi_body/link.hpp"
-
-#include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/multi_body/joint.hpp"
-#include "dart/simulation/experimental/world.hpp"
+#pragma once
 
 namespace dart::simulation::experimental {
 
-//==============================================================================
-Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
-
-//==============================================================================
-std::string_view Link::getName() const
+/// Semantic family for an explicit loop closure.
+///
+/// The family names describe the physical relation, not a backend, engine, or
+/// solver implementation. Runtime participation in kinematic projection or
+/// dynamic solving is configured separately from this topology description.
+enum class LoopClosureFamily
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return linkComp.name;
-}
+  /// Match both position and orientation between two endpoint frames.
+  Rigid,
 
-//==============================================================================
-Joint Link::getParentJoint() const
-{
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return Joint(linkComp.parentJoint, getWorld());
-}
+  /// Match endpoint positions while allowing relative orientation.
+  Point,
 
-//==============================================================================
-const Eigen::Isometry3d& Link::getWorldTransform() const
-{
-  return Frame::getTransform();
-}
+  /// Maintain a fixed distance between endpoint positions.
+  Distance,
+};
 
 } // namespace dart::simulation::experimental

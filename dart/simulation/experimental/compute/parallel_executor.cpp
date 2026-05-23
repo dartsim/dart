@@ -30,39 +30,52 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/compute/taskflow_executor.hpp"
+#include "dart/simulation/experimental/compute/parallel_executor.hpp"
 
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
 #include "dart/simulation/experimental/compute/execution_profile.hpp"
 
 #include <taskflow/taskflow.hpp>
 
+#include <memory>
 #include <unordered_map>
 
 namespace dart::simulation::experimental::compute {
 
 //==============================================================================
-TaskflowExecutor::TaskflowExecutor(std::size_t workerCount)
+class ParallelExecutor::Impl
 {
-  if (workerCount == 0) {
-    m_executor = std::make_unique<tf::Executor>();
-  } else {
-    m_executor = std::make_unique<tf::Executor>(workerCount);
+public:
+  explicit Impl(std::size_t workerCount)
+  {
+    if (workerCount == 0) {
+      executor = std::make_unique<tf::Executor>();
+    } else {
+      executor = std::make_unique<tf::Executor>(workerCount);
+    }
   }
+
+  std::unique_ptr<tf::Executor> executor;
+};
+
+//==============================================================================
+ParallelExecutor::ParallelExecutor(std::size_t workerCount)
+  : m_impl(std::make_unique<Impl>(workerCount))
+{
 }
 
 //==============================================================================
-TaskflowExecutor::~TaskflowExecutor() = default;
+ParallelExecutor::~ParallelExecutor() = default;
 
 //==============================================================================
-TaskflowExecutor::TaskflowExecutor(TaskflowExecutor&&) noexcept = default;
+ParallelExecutor::ParallelExecutor(ParallelExecutor&&) noexcept = default;
 
 //==============================================================================
-TaskflowExecutor& TaskflowExecutor::operator=(TaskflowExecutor&&) noexcept
+ParallelExecutor& ParallelExecutor::operator=(ParallelExecutor&&) noexcept
     = default;
 
 //==============================================================================
-void TaskflowExecutor::execute(const ComputeGraph& graph)
+void ParallelExecutor::execute(const ComputeGraph& graph)
 {
   tf::Taskflow taskflow;
   std::unordered_map<ComputeNode*, tf::Task> tasks;
@@ -77,11 +90,11 @@ void TaskflowExecutor::execute(const ComputeGraph& graph)
     tasks.at(edge.from).precede(tasks.at(edge.to));
   }
 
-  m_executor->run(taskflow).get();
+  m_impl->executor->run(taskflow).get();
 }
 
 //==============================================================================
-ComputeExecutionProfile TaskflowExecutor::executeProfiled(
+ComputeExecutionProfile ParallelExecutor::executeProfiled(
     const ComputeGraph& graph)
 {
   tf::Taskflow taskflow;
@@ -100,14 +113,14 @@ ComputeExecutionProfile TaskflowExecutor::executeProfiled(
   }
 
   profiler.start();
-  m_executor->run(taskflow).get();
+  m_impl->executor->run(taskflow).get();
   return profiler.finish();
 }
 
 //==============================================================================
-std::size_t TaskflowExecutor::getWorkerCount() const
+std::size_t ParallelExecutor::getWorkerCount() const
 {
-  return m_executor ? m_executor->num_workers() : 0;
+  return m_impl && m_impl->executor ? m_impl->executor->num_workers() : 0;
 }
 
 } // namespace dart::simulation::experimental::compute

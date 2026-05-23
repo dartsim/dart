@@ -35,6 +35,8 @@
 #include <dart/simulation/experimental/fwd.hpp>
 
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/constraint/loop_closure.hpp>
+#include <dart/simulation/experimental/world_sync_stage.hpp>
 
 #include <Eigen/Geometry>
 #include <entt/entt.hpp>
@@ -52,7 +54,7 @@ class DART_EXPERIMENTAL_API World
 {
 public:
   World();
-  ~World() = default;
+  ~World();
 
   World(const World&) = delete;
   World& operator=(const World&) = delete;
@@ -77,7 +79,17 @@ public:
   //--------------------------------------------------------------------------
   MultiBody addMultiBody(std::string_view name);
   std::optional<MultiBody> getMultiBody(std::string_view name);
+  bool hasMultiBody(std::string_view name) const;
   std::size_t getMultiBodyCount() const;
+
+  //--------------------------------------------------------------------------
+  // Loop-closure management
+  //--------------------------------------------------------------------------
+  LoopClosure addLoopClosure(
+      std::string_view name, const LoopClosureSpec& spec);
+  std::optional<LoopClosure> getLoopClosure(std::string_view name);
+  bool hasLoopClosure(std::string_view name) const;
+  std::size_t getLoopClosureCount() const;
 
   //--------------------------------------------------------------------------
   // Rigid body management
@@ -85,6 +97,7 @@ public:
   RigidBody addRigidBody(
       std::string_view name,
       const RigidBodyOptions& options = RigidBodyOptions{});
+  std::optional<RigidBody> getRigidBody(std::string_view name);
   bool hasRigidBody(std::string_view name) const;
   std::size_t getRigidBodyCount() const;
 
@@ -102,17 +115,36 @@ public:
   void setTime(double time);
   [[nodiscard]] double getTime() const noexcept;
   [[nodiscard]] std::size_t getFrame() const noexcept;
+  void sync(WorldSyncStage stage = WorldSyncStage::Kinematics);
+  void sync(WorldSyncStage stage, compute::ComputeExecutor& executor);
   void updateKinematics();
+  void updateKinematics(compute::ComputeExecutor& executor);
   void step();
+  void step(std::size_t count);
   void step(compute::ComputeExecutor& executor);
+  void step(std::size_t count, compute::ComputeExecutor& executor);
   void step(compute::ComputeExecutor& executor, compute::WorldStepStage& stage);
   void step(
+      std::size_t count,
+      compute::ComputeExecutor& executor,
+      compute::WorldStepStage& stage);
+  void step(
       compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
+  void step(
+      std::size_t count,
+      compute::ComputeExecutor& executor,
+      compute::WorldStepPipeline& pipeline);
 
   //--------------------------------------------------------------------------
   // Registry access
   //--------------------------------------------------------------------------
+  /// @internal
+  /// DART 7 implementation escape hatch for tests and subsystem bring-up.
+  /// This is not part of the DART 8 promotion target for the public World
+  /// facade; prefer public handles and accessors for user-facing code.
   entt::registry& getRegistry();
+  /// @internal
+  /// See the non-const overload.
   const entt::registry& getRegistry() const;
 
   //--------------------------------------------------------------------------
@@ -132,6 +164,7 @@ private:
   friend class FixedFrame;
   friend class Link;
   friend class Joint;
+  friend class LoopClosure;
   friend class MultiBody;
   friend class RigidBody;
 
@@ -157,6 +190,7 @@ private:
   std::size_t m_freeFrameCounter{0};
   std::size_t m_fixedFrameCounter{0};
   std::size_t m_multiBodyCounter{0};
+  std::size_t m_loopClosureCounter{0};
   std::size_t m_rigidBodyCounter{0};
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};

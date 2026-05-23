@@ -30,37 +30,36 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/multi_body/link.hpp"
+#pragma once
 
-#include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/multi_body/joint.hpp"
-#include "dart/simulation/experimental/world.hpp"
+#include <dart/simulation/experimental/compute/compute_executor.hpp>
 
-namespace dart::simulation::experimental {
+#include <memory>
 
-//==============================================================================
-Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
+#include <cstddef>
 
-//==============================================================================
-std::string_view Link::getName() const
+namespace dart::simulation::experimental::compute {
+
+/// Experimental executor that runs ready graph nodes in parallel.
+class DART_EXPERIMENTAL_API ParallelExecutor final : public ComputeExecutor
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return linkComp.name;
-}
+public:
+  explicit ParallelExecutor(std::size_t workerCount = 0);
+  ~ParallelExecutor() override;
 
-//==============================================================================
-Joint Link::getParentJoint() const
-{
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return Joint(linkComp.parentJoint, getWorld());
-}
+  ParallelExecutor(const ParallelExecutor&) = delete;
+  ParallelExecutor& operator=(const ParallelExecutor&) = delete;
+  ParallelExecutor(ParallelExecutor&&) noexcept;
+  ParallelExecutor& operator=(ParallelExecutor&&) noexcept;
 
-//==============================================================================
-const Eigen::Isometry3d& Link::getWorldTransform() const
-{
-  return Frame::getTransform();
-}
+  void execute(const ComputeGraph& graph) override;
+  [[nodiscard]] ComputeExecutionProfile executeProfiled(
+      const ComputeGraph& graph) override;
+  [[nodiscard]] std::size_t getWorkerCount() const override;
 
-} // namespace dart::simulation::experimental
+private:
+  class Impl;
+  std::unique_ptr<Impl> m_impl;
+};
+
+} // namespace dart::simulation::experimental::compute

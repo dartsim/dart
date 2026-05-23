@@ -67,9 +67,9 @@ namespace dart::simulation::experimental {
 /// @code
 ///   auto root = robot.addLink("base");
 ///   auto link1 = robot.addLink("link1", {
-///       .parentLink = root.getEntity(),
+///       .parentLink = root,
 ///       .jointName = "shoulder",
-///       .jointType = JointType::REVOLUTE
+///       .jointType = JointType::Revolute
 ///   });
 ///   std::cout << link1.getName() << std::endl;
 /// @endcode
@@ -101,14 +101,6 @@ public:
   //--------------------------------------------------------------------------
   // Frame interface overrides
   //--------------------------------------------------------------------------
-
-  /// Get the local transform of this Link with respect to its parent
-  ///
-  /// Returns the transform from the parent joint frame to this link frame.
-  /// This is stored in the Link component as transformFromParentJoint.
-  ///
-  /// @return Local transform relative to parent joint
-  [[nodiscard]] const Eigen::Isometry3d& getLocalTransform() const override;
 
   /// Get the world transform of this Link
   ///

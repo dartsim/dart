@@ -45,22 +45,30 @@ namespace dart::simulation::experimental {
 struct RigidBodyOptions
 {
   /// Mass used by the experimental unconstrained integration stage.
+  ///
+  /// Must be positive and finite when passed to World::addRigidBody().
   double mass = 1.0;
 
   /// Body-frame inertia used by the experimental unconstrained integration
   /// stage.
+  ///
+  /// Must be finite and symmetric positive definite when passed to
+  /// World::addRigidBody().
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
 
-  /// Initial world position.
+  /// Initial world position. Must contain only finite values.
   Eigen::Vector3d position = Eigen::Vector3d::Zero();
 
   /// Initial world orientation.
+  ///
+  /// Must be finite and non-zero when passed to World::addRigidBody(). The
+  /// stored rigid body transform uses the normalized orientation.
   Eigen::Quaterniond orientation = Eigen::Quaterniond::Identity();
 
-  /// Initial world-frame linear velocity.
+  /// Initial world-frame linear velocity. Must contain only finite values.
   Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
 
-  /// Initial world-frame angular velocity.
+  /// Initial world-frame angular velocity. Must contain only finite values.
   Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
 };
 
