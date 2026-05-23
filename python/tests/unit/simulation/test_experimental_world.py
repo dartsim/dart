@@ -921,6 +921,44 @@ def test_experimental_multibody_forward_dynamics():
     assert carriage.parent_joint.acceleration.tolist()[0] == pytest.approx(-9.81)
 
 
+def test_experimental_screw_joint_dynamics():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+    robot = world.add_multi_body("screw")
+    base = robot.add_link("base")
+    nut = robot.add_link(
+        "nut",
+        parent=base,
+        joint=sx.JointSpec(
+            name="helix", type=sx.JointType.SCREW, axis=(0.0, 0.0, 1.0)
+        ),
+    )
+    mass = 2.0
+    inertia_zz = 0.1
+    nut.mass = mass
+    nut.inertia = ((0.1, 0.0, 0.0), (0.0, 0.1, 0.0), (0.0, 0.0, inertia_zz))
+
+    joint = nut.parent_joint
+    pitch = 0.5
+    joint.pitch = pitch
+    assert joint.pitch == pytest.approx(pitch)
+
+    world.time_step = 0.001
+    world.enter_simulation_mode()
+
+    # M = I_zz + m pitch^2 about the screw axis.
+    expected_mass = inertia_zz + mass * pitch * pitch
+    assert robot.mass_matrix[0, 0] == pytest.approx(expected_mass)
+
+    world.step()
+    # Gravity drives the screw down: qddot = -m g pitch / M.
+    expected_accel = -mass * 9.81 * pitch / expected_mass
+    assert joint.acceleration.tolist()[0] == pytest.approx(
+        expected_accel, abs=1e-9
+    )
+
+
 def test_experimental_multibody_dynamics_terms():
     sx = _simulation_experimental()
 

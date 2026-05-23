@@ -160,6 +160,12 @@ public:
   /// @throws InvalidArgumentException if not a Screw joint
   [[nodiscard]] double getPitch() const;
 
+  /// Set the screw pitch (translation per radian of rotation).
+  ///
+  /// Valid for Screw joints; the value must be finite. The articulated-body
+  /// forward dynamics couples rotation and translation by this pitch.
+  void setPitch(double pitch);
+
   /// Get the number of generalized coordinates owned by this joint.
   ///
   /// Fixed joints return 0. Revolute, prismatic, and screw joints return 1;

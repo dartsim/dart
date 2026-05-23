@@ -39,6 +39,8 @@
 
 #include <vector>
 
+#include <cmath>
+
 namespace dart::simulation::experimental {
 
 namespace {
@@ -297,6 +299,23 @@ double Joint::getPitch() const
       "getPitch() is only valid for Screw joints");
 
   return jointComp.pitch;
+}
+
+//==============================================================================
+void Joint::setPitch(double pitch)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      jointComp.type != comps::JointType::Screw,
+      InvalidArgumentException,
+      "setPitch() is only valid for Screw joints");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(pitch),
+      InvalidArgumentException,
+      "Joint pitch must be finite");
+
+  jointComp.pitch = pitch;
 }
 
 //==============================================================================

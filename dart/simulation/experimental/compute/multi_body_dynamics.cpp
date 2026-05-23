@@ -131,11 +131,19 @@ Eigen::Isometry3d jointMotionTransform(const comps::Joint& joint)
     case comps::JointType::Prismatic:
       transform.translation() = joint.axis * joint.position[0];
       return transform;
+    case comps::JointType::Screw:
+      // Coupled rotation + translation along the axis: theta rotates and
+      // advances by pitch * theta.
+      transform.linear()
+          = Eigen::AngleAxisd(joint.position[0], joint.axis).toRotationMatrix();
+      transform.translation() = joint.axis * (joint.pitch * joint.position[0]);
+      return transform;
     default:
       DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException,
           "Articulated-body forward dynamics is not yet implemented for this "
-          "joint type; supported types are fixed, revolute, and prismatic");
+          "joint type; supported types are fixed, revolute, prismatic, and "
+          "screw");
   }
 }
 
@@ -159,11 +167,19 @@ Subspace jointSubspaceInJointFrame(const comps::Joint& joint)
       subspace.col(0).tail<3>() = joint.axis;
       return subspace;
     }
+    case comps::JointType::Screw: {
+      // Twist of a screw: angular = axis, linear = pitch * axis.
+      Subspace subspace(6, 1);
+      subspace.col(0).head<3>() = joint.axis;
+      subspace.col(0).tail<3>() = joint.axis * joint.pitch;
+      return subspace;
+    }
     default:
       DART_EXPERIMENTAL_THROW_T(
           InvalidOperationException,
           "Articulated-body forward dynamics is not yet implemented for this "
-          "joint type; supported types are fixed, revolute, and prismatic");
+          "joint type; supported types are fixed, revolute, prismatic, and "
+          "screw");
   }
 }
 

@@ -358,6 +358,7 @@ class Joint:
     actuator_type: ActuatorType
     command_velocity: NDArray[np.float64]
     axis: NDArray[np.float64]
+    pitch: float
     num_dofs: int
     position: NDArray[np.float64]
     velocity: NDArray[np.float64]

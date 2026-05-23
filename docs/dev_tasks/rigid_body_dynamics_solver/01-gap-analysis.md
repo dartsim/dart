@@ -47,7 +47,7 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 | Coriolis / gravity generalized forces    | `getCoriolisForces`, `getGravityForces`                 | `MultiBody::getCoriolisForces`/`getGravityForces` (Phase 4)                              | PRESENT |
 | Impulse-based dynamics (for constraints) | `computeImpulseForwardDynamics`                         | joint-space impulse response `M^-1 f` (Phase 4); full constrained version pending solver | PARTIAL |
 | Free single-body integration             | per-body explicit integration                           | semi-implicit Euler (Phase 0.1)                                                          | PARTIAL |
-| Floating base / other joint dynamics     | all joint types, free base                              | fixed base only; ball/free/universal/planar/screw dynamics not yet                       | MISSING |
+| Floating base / other joint dynamics     | all joint types, free base                              | fixed base only; screw added (Phase 5); ball/free/universal/planar dynamics not yet      | MISSING |
 
 ### Gravity & global forces
 
@@ -62,7 +62,7 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 | Capability                                                  | DART 6                                                                                                 | Experimental                                                  | Status                       |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | ---------------------------- |
 | Joint types                                                 | Weld, Revolute, Prismatic, Screw, Universal, Translational2D, Euler, Planar, Translational, Ball, Free | type tag + axis (FK only)                                     | PARTIAL                      |
-| Joint forward dynamics                                      | per-joint accel via ABA                                                                                | revolute/prismatic (Phase 1)                                  | PARTIAL                      |
+| Joint forward dynamics                                      | per-joint accel via ABA                                                                                | revolute/prismatic/screw (Phase 1, 5)                         | PARTIAL                      |
 | Position/velocity/accel/force limits                        | `GenericJoint` setters + `JointConstraint`                                                             | position/velocity/effort limits (Phase 3-4)                   | PARTIAL                      |
 | Spring stiffness + rest position                            | `setSpringStiffness`/`setRestPosition`                                                                 | revolute/prismatic (Phase 4)                                  | PRESENT (1-DOF)              |
 | Damping                                                     | `setDampingCoefficient`                                                                                | revolute/prismatic (Phase 4)                                  | PRESENT (1-DOF)              |

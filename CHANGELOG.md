@@ -497,6 +497,11 @@
     (`Link::getMass`/`setMass`/`getInertia`/`setInertia`, dartpy
     `link.mass`/`link.inertia`), and a `JointSpec`/`LinkOptions`
     `transformFromParent` link offset (dartpy `transform_from_parent`).
+  - Added experimental screw-joint forward dynamics: a `Screw` joint couples
+    rotation and translation along its axis by a pitch (`Joint::setPitch`/
+    `getPitch`, dartpy `joint.pitch`), with motion subspace `[axis; pitch*axis]`.
+    Verified by the analytic mass matrix `M = I_axis + m pitch^2` and gravity
+    acceleration.
   - Added experimental generalized-coordinate dynamics accessors on `MultiBody`:
     `getMassMatrix`/`getInverseMassMatrix`, `getCoriolisForces`,
     `getGravityForces`, and `getCoriolisAndGravityForces` (dartpy `mass_matrix`,

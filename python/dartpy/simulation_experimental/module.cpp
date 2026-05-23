@@ -757,6 +757,7 @@ void defSimulationExperimentalModule(nb::module_& m)
             self.setCommandVelocity(toVectorX(value));
           })
       .def_prop_ro("axis", &sim::Joint::getAxis)
+      .def_prop_rw("pitch", &sim::Joint::getPitch, &sim::Joint::setPitch)
       .def_prop_ro("num_dofs", &sim::Joint::getDOFCount)
       .def_prop_rw(
           "position",

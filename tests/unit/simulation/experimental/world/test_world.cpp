@@ -2091,6 +2091,47 @@ TEST(World, MultiBodyPrismaticFreeFall)
   EXPECT_NEAR(joint.getPosition()[0], -9.81 * dt * dt, 1e-12);
 }
 
+// Test screw-joint forward dynamics: rotation and translation are coupled by
+// the pitch, so a vertical screw under gravity has M = I_axis + m pitch^2 and
+// accelerates by -m g pitch / M.
+TEST(World, MultiBodyScrewJointDynamics)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("screw");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "helix";
+  spec.type = sx::JointType::Screw;
+  spec.axis = Eigen::Vector3d::UnitZ();
+  auto nut = robot.addLink("nut", base, spec);
+
+  const double mass = 2.0;
+  const double inertiaZz = 0.1;
+  nut.setMass(mass);
+  nut.setInertia(Eigen::Vector3d(0.1, 0.1, inertiaZz).asDiagonal());
+
+  auto joint = nut.getParentJoint();
+  const double pitch = 0.5;
+  joint.setPitch(pitch);
+  EXPECT_DOUBLE_EQ(joint.getPitch(), pitch);
+
+  world.setTimeStep(0.001);
+  world.enterSimulationMode();
+
+  // M = I_zz + m pitch^2 about the screw axis.
+  const double expectedMass = inertiaZz + mass * pitch * pitch;
+  EXPECT_NEAR(robot.getMassMatrix()(0, 0), expectedMass, 1e-12);
+
+  world.step();
+
+  // Gravity drives the screw down (z = pitch * theta): qddot = -m g pitch / M.
+  const double expectedAccel = -mass * 9.81 * pitch / expectedMass;
+  EXPECT_NEAR(joint.getAcceleration()[0], expectedAccel, 1e-9);
+}
+
 // Test that the pendulum integrator conserves mechanical energy over a swing
 // (a sign or scale error in the dynamics would inject energy and diverge).
 TEST(World, MultiBodyPendulumConservesEnergy)

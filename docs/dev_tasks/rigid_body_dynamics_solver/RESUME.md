@@ -20,6 +20,12 @@ the implementation plan below):
   `transformFromParent` link offset, with dartpy bindings + stubs. Verified
   against analytical pendulum acceleration, prismatic free-fall, and energy
   conservation over a swing.
+- Phase 5 (partial) — screw-joint dynamics: a `Screw` joint couples rotation and
+  translation by a pitch (`Joint::setPitch`/`getPitch`, dartpy `joint.pitch`),
+  motion subspace `[axis; pitch*axis]`, added to `jointMotionTransform` and
+  `jointSubspaceInJointFrame`. Verified by `M = I_axis + m pitch^2` and the
+  gravity acceleration. (Universal/Planar/Ball/Free still need multi-DOF and, for
+  Ball/Free, manifold-aware SO(3)/SE(3) integration.) C++ + dartpy tests.
 - Phase 4 (partial) — joint passive dynamics + limits: per-coordinate spring
   stiffness + rest position and damping coefficient applied as passive
   generalized forces, and per-coordinate position limits enforced as hard stops
