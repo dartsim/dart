@@ -156,8 +156,40 @@
   do {                                                                         \
   } while (0)
 
+//==============================================================================
+// S should be defined as one of float and double in the enclosing scope
+#define EXPECT_S_EQ(val1, val2)                                                \
+  EXPECT_PRED_FORMAT2(                                                         \
+      ::testing::internal::CmpHelperFloatingPointEQ<S>, val1, val2)
+
 namespace dart {
 namespace test {
+
+//==============================================================================
+template <typename Scalar>
+Scalar EpsForDiff()
+{
+  if constexpr (std::is_same_v<Scalar, float>) {
+    return 1e-2;
+  } else if constexpr (std::is_same_v<Scalar, double>) {
+    return 1e-3;
+  } else {
+    return 1e-4;
+  }
+}
+
+//==============================================================================
+template <typename Scalar>
+Scalar EpsForEquals()
+{
+  if constexpr (std::is_same_v<Scalar, float>) {
+    return 1e-3;
+  } else if constexpr (std::is_same_v<Scalar, double>) {
+    return 1e-6;
+  } else {
+    return 1e-9;
+  }
+}
 
 //==============================================================================
 /// Returns true if the two matrices are equal within the given bound
