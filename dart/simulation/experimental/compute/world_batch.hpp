@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
 #include <vector>
@@ -61,6 +62,19 @@ class ComputeExecutor;
 /// null.
 DART_EXPERIMENTAL_API void stepWorldsBatched(
     const std::vector<World*>& worlds,
+    std::size_t stepCount,
+    ComputeExecutor& executor);
+
+/// Roll out a homogeneous batch of worlds from a shared initial state.
+///
+/// Applies @p initialState to @p worlds, advances them @p stepCount times with
+/// @c stepWorldsBatched, and returns the resulting batched state. This is the
+/// rollout entry point built on the batch executor and the SoA state batch; it
+/// keeps device/stream types out of the API. Control-sequence inputs are a
+/// later addition once a control owner type exists.
+[[nodiscard]] DART_EXPERIMENTAL_API RigidBodyStateBatch rolloutWorldsBatched(
+    const std::vector<World*>& worlds,
+    const RigidBodyStateBatch& initialState,
     std::size_t stepCount,
     ComputeExecutor& executor);
 

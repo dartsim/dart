@@ -1757,3 +1757,59 @@ TEST(World, StepWorldsBatchedMatchesSequential)
       compute::stepWorldsBatched(withNull, 1, executor),
       sx::InvalidArgumentException);
 }
+
+// Test the batched rollout: applying a shared initial state, advancing, and
+// returning the final batched state matches a single-world reference.
+TEST(World, RolloutWorldsBatchedMatchesReference)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto build = [](sx::World& world) {
+    for (int i = 0; i < 2; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + i;
+      options.position = Eigen::Vector3d(0.5 + i, 0.0, 0.0);
+      options.linearVelocity = Eigen::Vector3d(0.2 * (i + 1), 0.1, 0.0);
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      body.setForce(Eigen::Vector3d(0.15, -0.05, 0.1));
+    }
+    world.setTimeStep(0.01);
+    world.enterSimulationMode();
+  };
+
+  sx::World w0;
+  sx::World w1;
+  build(w0);
+  build(w1);
+  const std::vector<sx::World*> worlds{&w0, &w1};
+
+  // Capture the homogeneous initial state, then perturb the worlds so the
+  // rollout's apply step must reset them.
+  const std::vector<const sx::World*> constWorlds{&w0, &w1};
+  const auto initial = compute::extractRigidBodyStateBatch(constWorlds);
+  w0.step(3);
+  w1.step(7);
+
+  compute::ParallelExecutor executor(2);
+  const auto result
+      = compute::rolloutWorldsBatched(worlds, initial, 5, executor);
+
+  // Reference: a single world built identically (so its state equals one slice
+  // of the initial batch) and stepped the same number of times.
+  sx::World reference;
+  build(reference);
+  reference.step(5);
+  const auto refFinal = compute::extractRigidBodyState(reference);
+
+  EXPECT_EQ(result.worldCount, 2u);
+  ASSERT_EQ(result.bodyCount, refFinal.bodyCount);
+  const auto stride = refFinal.position.size();
+  for (std::size_t r = 0; r < 2; ++r) {
+    for (std::size_t k = 0; k < stride; ++k) {
+      EXPECT_DOUBLE_EQ(result.position[r * stride + k], refFinal.position[k]);
+      EXPECT_DOUBLE_EQ(
+          result.linearVelocity[r * stride + k], refFinal.linearVelocity[k]);
+    }
+  }
+}

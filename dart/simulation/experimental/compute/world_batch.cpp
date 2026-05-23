@@ -67,4 +67,18 @@ void stepWorldsBatched(
   executor.execute(graph);
 }
 
+//==============================================================================
+RigidBodyStateBatch rolloutWorldsBatched(
+    const std::vector<World*>& worlds,
+    const RigidBodyStateBatch& initialState,
+    std::size_t stepCount,
+    ComputeExecutor& executor)
+{
+  applyRigidBodyStateBatch(worlds, initialState);
+  stepWorldsBatched(worlds, stepCount, executor);
+
+  const std::vector<const World*> constWorlds(worlds.begin(), worlds.end());
+  return extractRigidBodyStateBatch(constWorlds);
+}
+
 } // namespace dart::simulation::experimental::compute
