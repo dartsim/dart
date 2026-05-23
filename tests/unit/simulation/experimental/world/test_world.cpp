@@ -1426,8 +1426,9 @@ TEST(World, RigidBodyStepParallelMatchesSequentialAcrossWorkerCounts)
 }
 
 // Test that the batched SoA integration stage matches the per-entity stage for
-// free (non-frame-coupled) rigid bodies with no angular motion or torque, which
-// is the regime where the two integrators share semantics.
+// free (non-frame-coupled) rigid bodies under constant angular velocity and no
+// torque -- the regime where the two integrators share semantics, now that both
+// use the same angle-axis exponential map for the orientation update.
 TEST(World, BatchedRigidBodyIntegrationStageMatchesPerEntityForFreeBodies)
 {
   namespace sx = dart::simulation::experimental;
@@ -1440,12 +1441,13 @@ TEST(World, BatchedRigidBodyIntegrationStageMatchesPerEntityForFreeBodies)
       options.inertia = Eigen::Vector3d(1.0, 1.5, 2.0).asDiagonal();
       options.position = Eigen::Vector3d(0.2 * i, -0.1 * i, 0.05 * i);
       options.linearVelocity = Eigen::Vector3d(0.5, 0.25 * i, -0.1 * i);
-      // Zero angular velocity: once a body spins, the per-entity (angle-axis)
-      // and SoA (quaternion-product) orientation schemes diverge by design.
-      options.angularVelocity = Eigen::Vector3d::Zero();
+      // Constant angular velocity exercises orientation parity; with no torque
+      // it stays constant in both stages, so the shared exponential map keeps
+      // them aligned.
+      options.angularVelocity = Eigen::Vector3d(0.05 * i, -0.03 * i, 0.2);
       auto body = world.addRigidBody("body_" + std::to_string(i), options);
-      // Linear force only: a torque would exercise the per-entity inertia solve
-      // that the SoA model does not yet carry.
+      // Linear force only (no torque): a torque would exercise the per-entity
+      // inertia solve that the SoA model does not yet carry.
       body.setForce(Eigen::Vector3d(0.1 * i, 0.2, -0.3));
       bodies.push_back(body);
     }

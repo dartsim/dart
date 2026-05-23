@@ -49,6 +49,8 @@
 #include <thread>
 #include <vector>
 
+#include <cmath>
+
 namespace compute = dart::simulation::experimental::compute;
 namespace sx = dart::simulation::experimental;
 
@@ -746,9 +748,9 @@ TEST(ExperimentalIntegrationKernel, IntegratesOrientationAboutZ)
   // Pure z-rotation keeps the x and y components zero.
   EXPECT_DOUBLE_EQ(x, 0.0);
   EXPECT_DOUBLE_EQ(y, 0.0);
-  // tan(theta/2) = z/w = 0.5 * omega_z * dt = 0.1 (ratio preserved by
-  // normalization).
-  EXPECT_NEAR(z / w, 0.1, 1e-12);
+  // Exponential map: z/w = tan(omega_z * dt / 2) = tan(0.1) (ratio preserved
+  // by normalization).
+  EXPECT_NEAR(z / w, std::tan(0.1), 1e-12);
   EXPECT_GT(w, 0.0);
 }
 
@@ -791,13 +793,14 @@ TEST(ExperimentalIntegrationKernel, IntegratesFullStateBatch)
   EXPECT_DOUBLE_EQ(state.linearVelocity[2], 0.4);
   EXPECT_DOUBLE_EQ(state.position[0], 0.1);
   EXPECT_DOUBLE_EQ(state.position[2], 0.04);
-  // Orientation: z-rotation, x and y stay zero, unit norm, tan(theta/2)=0.1.
+  // Orientation: z-rotation via the exponential map, x and y stay zero, unit
+  // norm, z/w = tan(omega_z * dt / 2) = tan(0.1).
   EXPECT_DOUBLE_EQ(state.orientation[1], 0.0);
   EXPECT_DOUBLE_EQ(state.orientation[2], 0.0);
   const double w = state.orientation[0];
   const double z = state.orientation[3];
   EXPECT_NEAR(w * w + z * z, 1.0, 1e-12);
-  EXPECT_NEAR(z / w, 0.1, 1e-12);
+  EXPECT_NEAR(z / w, std::tan(0.1), 1e-12);
 
   // Orientation array of the wrong size is rejected.
   auto bad = state;

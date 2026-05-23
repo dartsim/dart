@@ -91,14 +91,18 @@ void integrateVelocitiesSemiImplicit(
   }
 }
 
-/// Scalar-generic semi-implicit Euler orientation update over flat, world-major
-/// structure-of-arrays state.
+/// Scalar-generic orientation update over flat, world-major structure-of-arrays
+/// state, using the angle-axis exponential map.
 ///
 /// Integrates each unit quaternion `q` (stored w, x, y, z, length
-/// `4 * bodyCount`) from its body angular velocity (length `3 * bodyCount`):
-/// `q <- normalize(q + 0.5 * (0, omega) * q * timeStep)`. It is templated on
-/// @c Scalar and uses `using std::sqrt` so an autodiff or wide scalar can
-/// supply its own `sqrt` via ADL.
+/// `4 * bodyCount`) from its body angular velocity (length `3 * bodyCount`) by
+/// the exact rotation for a constant angular velocity over @p timeStep:
+/// `q <- normalize(dq * q)` with `dq = (cos(a/2), sin(a/2) * axis)`,
+/// `a = |omega| * timeStep`, `axis = omega / |omega|`. This is the same
+/// exponential-map update the per-entity integrator applies, so the batched and
+/// per-entity paths agree, and it is exact (not first order) for a constant
+/// angular velocity. It is templated on @c Scalar and uses `using std::sqrt`
+/// (and `sin`/`cos`) so an autodiff or wide scalar can supply its own via ADL.
 template <typename Scalar>
 void integrateOrientationsSemiImplicit(
     Scalar* orientations,
@@ -106,6 +110,8 @@ void integrateOrientationsSemiImplicit(
     Scalar timeStep,
     std::size_t bodyCount)
 {
+  using std::cos;
+  using std::sin;
   using std::sqrt;
   const Scalar half = static_cast<Scalar>(0.5);
   for (std::size_t b = 0; b < bodyCount; ++b) {
@@ -117,16 +123,28 @@ void integrateOrientationsSemiImplicit(
     const Scalar oy = angularVelocities[3 * b + 1];
     const Scalar oz = angularVelocities[3 * b + 2];
 
-    // dq = 0.5 * (0, omega) * q (quaternion product).
-    const Scalar dw = -(ox * x + oy * y + oz * z);
-    const Scalar dx = ox * w + oy * z - oz * y;
-    const Scalar dy = oy * w + oz * x - ox * z;
-    const Scalar dz = oz * w + ox * y - oy * x;
+    Scalar nw = w;
+    Scalar nx = x;
+    Scalar ny = y;
+    Scalar nz = z;
 
-    Scalar nw = w + half * dw * timeStep;
-    Scalar nx = x + half * dx * timeStep;
-    Scalar ny = y + half * dy * timeStep;
-    Scalar nz = z + half * dz * timeStep;
+    const Scalar speed = sqrt(ox * ox + oy * oy + oz * oz);
+    if (speed > static_cast<Scalar>(0)) {
+      // Angle-axis delta dq = (cos(a/2), sin(a/2) * axis); the sin(a/2)/|omega|
+      // factor folds the axis normalization in without a separate divide.
+      const Scalar halfAngle = half * speed * timeStep;
+      const Scalar axisScale = sin(halfAngle) / speed;
+      const Scalar dw = cos(halfAngle);
+      const Scalar dx = ox * axisScale;
+      const Scalar dy = oy * axisScale;
+      const Scalar dz = oz * axisScale;
+
+      // dq * q (Hamilton product), left-multiplying the world-frame delta.
+      nw = dw * w - dx * x - dy * y - dz * z;
+      nx = dw * x + dx * w + dy * z - dz * y;
+      ny = dw * y - dx * z + dy * w + dz * x;
+      nz = dw * z + dx * y - dy * x + dz * w;
+    }
 
     const Scalar norm = sqrt(nw * nw + nx * nx + ny * ny + nz * nz);
     if (norm > static_cast<Scalar>(0)) {
