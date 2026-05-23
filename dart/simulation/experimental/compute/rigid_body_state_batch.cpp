@@ -144,4 +144,106 @@ void applyRigidBodyState(World& world, const RigidBodyStateBatch& state)
       index);
 }
 
+//==============================================================================
+RigidBodyStateBatch extractRigidBodyStateBatch(
+    const std::vector<const World*>& worlds)
+{
+  RigidBodyStateBatch batch;
+  batch.worldCount = worlds.size();
+  if (worlds.empty()) {
+    return batch;
+  }
+
+  for (std::size_t w = 0; w < worlds.size(); ++w) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        worlds[w] == nullptr,
+        InvalidArgumentException,
+        "extractRigidBodyStateBatch received a null world at index {}",
+        w);
+
+    const auto single = extractRigidBodyState(*worlds[w]);
+    if (w == 0) {
+      batch.bodyCount = single.bodyCount;
+    } else {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          single.bodyCount != batch.bodyCount,
+          InvalidArgumentException,
+          "Heterogeneous body counts: world 0 has {}, world {} has {}",
+          batch.bodyCount,
+          w,
+          single.bodyCount);
+    }
+
+    batch.position.insert(
+        batch.position.end(), single.position.begin(), single.position.end());
+    batch.orientation.insert(
+        batch.orientation.end(),
+        single.orientation.begin(),
+        single.orientation.end());
+    batch.linearVelocity.insert(
+        batch.linearVelocity.end(),
+        single.linearVelocity.begin(),
+        single.linearVelocity.end());
+    batch.angularVelocity.insert(
+        batch.angularVelocity.end(),
+        single.angularVelocity.begin(),
+        single.angularVelocity.end());
+  }
+
+  return batch;
+}
+
+//==============================================================================
+void applyRigidBodyStateBatch(
+    const std::vector<World*>& worlds, const RigidBodyStateBatch& state)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      state.worldCount != worlds.size(),
+      InvalidArgumentException,
+      "RigidBodyStateBatch worldCount ({}) does not match the number of worlds "
+      "({})",
+      state.worldCount,
+      worlds.size());
+
+  const auto bodies = state.worldCount * state.bodyCount;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      state.position.size() != 3 * bodies
+          || state.linearVelocity.size() != 3 * bodies
+          || state.angularVelocity.size() != 3 * bodies
+          || state.orientation.size() != 4 * bodies,
+      InvalidArgumentException,
+      "RigidBodyStateBatch arrays are inconsistent with worldCount {} and "
+      "bodyCount {}",
+      state.worldCount,
+      state.bodyCount);
+
+  const auto bodyCount = state.bodyCount;
+  for (std::size_t w = 0; w < worlds.size(); ++w) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        worlds[w] == nullptr,
+        InvalidArgumentException,
+        "applyRigidBodyStateBatch received a null world at index {}",
+        w);
+
+    const auto p0 = static_cast<std::ptrdiff_t>(3 * w * bodyCount);
+    const auto p1 = static_cast<std::ptrdiff_t>(3 * (w + 1) * bodyCount);
+    const auto o0 = static_cast<std::ptrdiff_t>(4 * w * bodyCount);
+    const auto o1 = static_cast<std::ptrdiff_t>(4 * (w + 1) * bodyCount);
+
+    RigidBodyStateBatch single;
+    single.worldCount = 1;
+    single.bodyCount = bodyCount;
+    single.position.assign(
+        state.position.begin() + p0, state.position.begin() + p1);
+    single.orientation.assign(
+        state.orientation.begin() + o0, state.orientation.begin() + o1);
+    single.linearVelocity.assign(
+        state.linearVelocity.begin() + p0, state.linearVelocity.begin() + p1);
+    single.angularVelocity.assign(
+        state.angularVelocity.begin() + p0, state.angularVelocity.begin() + p1);
+
+    applyRigidBodyState(*worlds[w], single);
+  }
+}
+
 } // namespace dart::simulation::experimental::compute

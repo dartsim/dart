@@ -1629,3 +1629,76 @@ TEST(World, RigidBodyStateBatchRoundTrip)
       compute::applyRigidBodyState(target, malformed),
       sx::InvalidArgumentException);
 }
+
+// Test the homogeneous multi-world batch path: extract with a leading world
+// dimension, world-major ordering, round-trip apply, and rejection of
+// world-count and body-count mismatches.
+TEST(World, RigidBodyStateBatchMultiWorld)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto buildWorld = [](sx::World& world, double seed) {
+    for (int i = 0; i < 2; ++i) {
+      sx::RigidBodyOptions options;
+      options.position = Eigen::Vector3d(seed + i, seed + 2 * i, seed + 3 * i);
+      options.linearVelocity = Eigen::Vector3d(seed, -seed, 0.5 * seed);
+      world.addRigidBody("body_" + std::to_string(i), options);
+    }
+  };
+
+  sx::World w0;
+  sx::World w1;
+  sx::World w2;
+  buildWorld(w0, 1.0);
+  buildWorld(w1, 2.0);
+  buildWorld(w2, 3.0);
+
+  const std::vector<const sx::World*> worlds{&w0, &w1, &w2};
+  const auto batch = compute::extractRigidBodyStateBatch(worlds);
+  EXPECT_EQ(batch.worldCount, 3u);
+  EXPECT_EQ(batch.bodyCount, 2u);
+  EXPECT_EQ(batch.position.size(), 18u);    // 3 * worldCount * bodyCount
+  EXPECT_EQ(batch.orientation.size(), 24u); // 4 * worldCount * bodyCount
+
+  // World-major ordering: each world's slice equals its single-world extract.
+  const auto single0 = compute::extractRigidBodyState(w0);
+  const auto single2 = compute::extractRigidBodyState(w2);
+  for (std::size_t k = 0; k < 6; ++k) {
+    EXPECT_DOUBLE_EQ(batch.position[k], single0.position[k]);
+    EXPECT_DOUBLE_EQ(batch.position[12 + k], single2.position[k]);
+  }
+
+  // Apply to fresh worlds (different initial state) and round-trip.
+  sx::World t0;
+  sx::World t1;
+  sx::World t2;
+  buildWorld(t0, 9.0);
+  buildWorld(t1, 9.0);
+  buildWorld(t2, 9.0);
+  const std::vector<sx::World*> targets{&t0, &t1, &t2};
+  compute::applyRigidBodyStateBatch(targets, batch);
+
+  const std::vector<const sx::World*> constTargets{&t0, &t1, &t2};
+  const auto roundTrip = compute::extractRigidBodyStateBatch(constTargets);
+  EXPECT_EQ(roundTrip.position, batch.position);
+  EXPECT_EQ(roundTrip.orientation, batch.orientation);
+  EXPECT_EQ(roundTrip.linearVelocity, batch.linearVelocity);
+  EXPECT_EQ(roundTrip.angularVelocity, batch.angularVelocity);
+
+  // A world-count mismatch on apply is rejected.
+  const std::vector<sx::World*> twoTargets{&t0, &t1};
+  EXPECT_THROW(
+      compute::applyRigidBodyStateBatch(twoTargets, batch),
+      sx::InvalidArgumentException);
+
+  // Heterogeneous body counts are rejected on extract.
+  sx::World hetero;
+  buildWorld(hetero, 5.0);
+  sx::RigidBodyOptions extra;
+  hetero.addRigidBody("extra", extra);
+  const std::vector<const sx::World*> heteroWorlds{&w0, &hetero};
+  EXPECT_THROW(
+      { (void)compute::extractRigidBodyStateBatch(heteroWorlds); },
+      sx::InvalidArgumentException);
+}

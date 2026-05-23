@@ -82,4 +82,16 @@ extractRigidBodyState(const World& world);
 DART_EXPERIMENTAL_API void applyRigidBodyState(
     World& world, const RigidBodyStateBatch& state);
 
+/// Extract a homogeneous multi-world snapshot with a leading world dimension
+/// (`worldCount == worlds.size()`), laid out world-major. All worlds must
+/// expose the same rigid-body count; throws otherwise.
+[[nodiscard]] DART_EXPERIMENTAL_API RigidBodyStateBatch
+extractRigidBodyStateBatch(const std::vector<const World*>& worlds);
+
+/// Apply a homogeneous multi-world snapshot back to @p worlds, slice by slice
+/// in world-major order. Throws if `state.worldCount` does not match the number
+/// of worlds or the array sizes are inconsistent with `worldCount * bodyCount`.
+DART_EXPERIMENTAL_API void applyRigidBodyStateBatch(
+    const std::vector<World*>& worlds, const RigidBodyStateBatch& state);
+
 } // namespace dart::simulation::experimental::compute
