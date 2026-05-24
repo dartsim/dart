@@ -7,6 +7,16 @@ results over time:
 * Dashboard:
   `https://dartsim.github.io/dart/performance/ <https://dartsim.github.io/dart/performance/>`_
 
+The live dashboard is embedded below. If it does not load (for example before
+the first publication), open it directly with the link above.
+
+.. raw:: html
+
+   <iframe src="https://dartsim.github.io/dart/performance/"
+           title="DART performance dashboard"
+           width="100%" height="720" loading="lazy"
+           style="border: 1px solid #d0d7de; border-radius: 6px;"></iframe>
+
 It leads with end-to-end world-step cases — stepping the experimental World
 (sequential vs the parallel compute executor) and real robot models such as
 Atlas — alongside focused lower-level kernels, so the headline numbers reflect
@@ -19,9 +29,9 @@ workflow runs DART's benchmark suites and hands the Google Benchmark JSON to
 the history on the ``gh-pages`` branch and renders an interactive Chart.js page.
 There is no external account, API token, or third-party service to maintain.
 
-The dashboard URL returns ``404`` until the first ``main`` push, scheduled, or
-manually dispatched run of the **Performance Dashboard** workflow has published
-to ``gh-pages``.
+The dashboard URL returns ``404`` until a ``main`` push, scheduled, or manually
+dispatched run of the **Performance Dashboard** workflow has published to
+``gh-pages`` and GitHub Pages has finished building the branch.
 
 How it works
 ------------
