@@ -622,6 +622,27 @@ def _imgui_override(target: str, run_args: list[str], smoke: bool) -> str | None
     return "OFF" if launching_docked_editor else "ON"
 
 
+def _apply_imgui_override(
+    env: dict[str, str],
+    target: str,
+    run_args: list[str],
+    smoke: bool,
+    requirements: tuple[str, ...],
+) -> None:
+    """Pin DART_USE_SYSTEM_IMGUI_OVERRIDE for a GUI run.
+
+    Assigns directly rather than via setdefault: the `pixi run dartsim` task
+    pre-sets this variable to OFF, so per-run pinning must overwrite it or a
+    scene-fixture launch (`pixi run dartsim -- --scene ...`) would stay on the
+    editor's docking build instead of system ImGui.
+    """
+    if "filament" not in requirements:
+        return
+    override = _imgui_override(target, run_args, smoke)
+    if override is not None:
+        env["DART_USE_SYSTEM_IMGUI_OVERRIDE"] = override
+
+
 def run(
     target: str,
     build_type: str,
@@ -642,10 +663,7 @@ def run(
     # Pin the ImGui variant for GUI runs so a launch never inherits a stale
     # build-cache state from a previous run: the editor needs the docking branch
     # (OFF), while scene fixtures and other GUI examples need system ImGui (ON).
-    if "filament" in spec.requirements:
-        override = _imgui_override(target, run_args, smoke)
-        if override is not None:
-            env.setdefault("DART_USE_SYSTEM_IMGUI_OVERRIDE", override)
+    _apply_imgui_override(env, target, run_args, smoke, spec.requirements)
 
     _ensure_target_requirements(build_dir, spec, env, smoke)
     _build_example(build_dir, spec.build_target, env)

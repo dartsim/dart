@@ -207,6 +207,31 @@ def test_imgui_override_pins_variant_for_non_smoke_gui_runs(run_cpp_example):
     assert run_cpp_example._imgui_override("dartsim", [], smoke=True) is None
 
 
+def test_apply_imgui_override_overwrites_preset(run_cpp_example):
+    # A scene-fixture launch must use system ImGui even when the editor preset
+    # (DART_USE_SYSTEM_IMGUI_OVERRIDE=OFF, set by the `pixi run dartsim` task) is
+    # already in the environment.
+    env = {"DART_USE_SYSTEM_IMGUI_OVERRIDE": "OFF"}
+    run_cpp_example._apply_imgui_override(
+        env, "dartsim", ["--scene", "boxes"], smoke=False, requirements=("filament",)
+    )
+    assert env["DART_USE_SYSTEM_IMGUI_OVERRIDE"] == "ON"
+
+    # The editor launch pins OFF.
+    env = {}
+    run_cpp_example._apply_imgui_override(
+        env, "dartsim", [], smoke=False, requirements=("filament",)
+    )
+    assert env["DART_USE_SYSTEM_IMGUI_OVERRIDE"] == "OFF"
+
+    # Non-GUI targets leave the variable untouched.
+    env = {}
+    run_cpp_example._apply_imgui_override(
+        env, "some_tool", [], smoke=False, requirements=()
+    )
+    assert "DART_USE_SYSTEM_IMGUI_OVERRIDE" not in env
+
+
 def _cmake_filament_smoke_scene_pairs(cmake_text):
     match = re.search(
         r"set\(DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS\s+(.*?)\n\)",
