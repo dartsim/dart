@@ -193,6 +193,31 @@ TEST(PointTriangleCcd, NoRelativeMotion)
   EXPECT_FALSE(hit);
 }
 
+TEST(PointTriangleCcd, IterationCapDoesNotFalsePositive)
+{
+  // A point gliding at height 0.3 over the triangle in +x never touches z = 0,
+  // but the slow approach can exhaust a small iteration budget before that is
+  // proven. ACCD must report no contact, not a false-positive hit, when the
+  // budget runs out without converging.
+  const Eigen::Vector3d p0(0, 0, 0.3);
+  const Eigen::Vector3d p1(4, 0, 0.3);
+  CcdPrimitiveResult result;
+
+  // Default budget: the no-contact early-out proves no impact occurs in [0, 1].
+  CcdOption option;
+  EXPECT_FALSE(
+      pointTriangleCcd(p0, p1, kA, kA, kB, kB, kC, kC, option, result));
+  EXPECT_FALSE(result.isHit());
+
+  // Tiny budget: the loop caps before proving anything; it must still report no
+  // contact rather than overshoot into a hit.
+  CcdOption capped;
+  capped.maxIterations = 3;
+  EXPECT_FALSE(
+      pointTriangleCcd(p0, p1, kA, kA, kB, kB, kC, kC, capped, result));
+  EXPECT_FALSE(result.isHit());
+}
+
 //==============================================================================
 // Edge-edge ACCD
 //==============================================================================

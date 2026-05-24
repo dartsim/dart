@@ -229,20 +229,27 @@ bool accdAdvance(
       return true;
     }
 
-    t += stepFactor * clearance / lp;
-    if (t >= 1.0) {
+    // The distance shrinks no faster than the additive velocity bound lp, so
+    // the earliest the gap can reach contact is t + clearance / lp. If that is
+    // at or beyond the end of the step, the primitives provably do not reach
+    // contact within [0, 1] -- no hit. (This also bounds the loop: each
+    // iteration adds at least stepFactor * convergeAbs / lp to t, so t reaches
+    // this guard or the convergence threshold in finite steps for any
+    // well-posed input.)
+    if (t + clearance / lp >= 1.0) {
       return false;
     }
 
+    t += stepFactor * clearance / lp;
     d = distAt(t);
   }
 
-  // Iteration cap hit while still strictly approaching contact. The accumulated
-  // time is a conservative lower bound on the true contact time, so report it
-  // as a hit (the barrier-method-safe choice).
-  result.hit = true;
-  result.timeOfImpact = t;
-  return true;
+  // Exhausted the iteration budget without converging to contact or proving
+  // none can occur -- a slow, near-tangential approach that has not been shown
+  // to close to minSeparation in [0, 1]. Reporting a hit here would be a false
+  // positive (the gap may never actually reach contact), so report no contact;
+  // callers needing a sharper answer can raise option.maxIterations.
+  return false;
 }
 
 //==============================================================================
