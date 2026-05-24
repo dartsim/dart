@@ -37,8 +37,8 @@
 namespace Eigen::internal {
 
 /// Specialization of Eigen::internal::traits for const dart::math::SO3
-template <typename S>
-struct traits<::Eigen::Map<const ::dart::math::SO3<S>>>
+template <typename S, int Options, typename StrideType>
+struct traits<::Eigen::Map<const ::dart::math::SO3<S>, Options, StrideType>>
   : traits<const ::dart::math::SO3<S>>
 {
   using Base = traits<const ::dart::math::SO3<S>>;
@@ -46,19 +46,22 @@ struct traits<::Eigen::Map<const ::dart::math::SO3<S>>>
 
   // LieGroup common
   static constexpr int ParamSize = Base::ParamSize;
-  using Params = typename ::Eigen::Map<const ::Eigen::Matrix<S, ParamSize, 1>>;
+  using Params = typename ::Eigen::
+      Map<const ::Eigen::Matrix<S, ParamSize, 1>, Options, StrideType>;
 };
 
 /// Specialization of Eigen::internal::traits for dart::math::SO3
-template <typename S>
-struct traits<::Eigen::Map<::dart::math::SO3<S>>> : traits<::dart::math::SO3<S>>
+template <typename S, int Options, typename StrideType>
+struct traits<::Eigen::Map<::dart::math::SO3<S>, Options, StrideType>>
+  : traits<::dart::math::SO3<S>>
 {
   using Base = traits<::dart::math::SO3<S>>;
   using Scalar = typename Base::Scalar;
 
   // LieGroup common
   static constexpr int ParamSize = Base::ParamSize;
-  using Params = typename ::Eigen::Map<::Eigen::Matrix<S, ParamSize, 1>>;
+  using Params = typename ::Eigen::
+      Map<::Eigen::Matrix<S, ParamSize, 1>, Options, StrideType>;
 };
 
 } // namespace Eigen::internal
@@ -71,13 +74,15 @@ namespace Eigen {
 /// @tparam S The scalar type of the underlying quaternion parameters
 /// Pass Eigen::Aligned if the pointer to the underlying data is aligned. That
 /// way, Eigen can use vectorized instructions.
-template <typename S>
-class Map<const ::dart::math::SO3<S>>
-  : public ::dart::math::SO3Base<Map<const ::dart::math::SO3<S>>>
+template <typename S, int Options, typename StrideType>
+class Map<const ::dart::math::SO3<S>, Options, StrideType>
+  : public ::dart::math::SO3Base<
+        Map<const ::dart::math::SO3<S>, Options, StrideType>>
 {
 public:
-  using Base = ::dart::math::SO3Base<Map<const ::dart::math::SO3<S>>>;
-  using This = Map<const ::dart::math::SO3<S>>;
+  using Base = ::dart::math::SO3Base<
+      Map<const ::dart::math::SO3<S>, Options, StrideType>>;
+  using This = Map<const ::dart::math::SO3<S>, Options, StrideType>;
   using Scalar = typename Base::Scalar;
 
   // SO3e specifics
@@ -94,6 +99,12 @@ public:
   /// which is 4 for SO3.
   explicit Map(const Scalar* data);
 
+  /// Constructs a map with an explicit stride
+  ///
+  /// @param[in] data Pointer to the underlying scalar data.
+  /// @param[in] stride Stride describing the data layout.
+  Map(const Scalar* data, const StrideType& stride);
+
   /// Returns the parameters of the underlying quaternion
   [[nodiscard]] const Params& params() const;
 
@@ -107,13 +118,14 @@ private:
 /// @tparam S The scalar type of the underlying quaternion parameters
 /// Pass Eigen::Aligned if the pointer to the underlying data is aligned. That
 /// way, Eigen can use vectorized instructions.
-template <typename S>
-class Map<::dart::math::SO3<S>>
-  : public ::dart::math::SO3Base<Map<::dart::math::SO3<S>>>
+template <typename S, int Options, typename StrideType>
+class Map<::dart::math::SO3<S>, Options, StrideType>
+  : public ::dart::math::SO3Base<Map<::dart::math::SO3<S>, Options, StrideType>>
 {
 public:
-  using Base = ::dart::math::SO3Base<Map<::dart::math::SO3<S>>>;
-  using This = Map<::dart::math::SO3<S>>;
+  using Base
+      = ::dart::math::SO3Base<Map<::dart::math::SO3<S>, Options, StrideType>>;
+  using This = Map<::dart::math::SO3<S>, Options, StrideType>;
   using Scalar = typename Base::Scalar;
 
   // SO3Base specifics
@@ -131,6 +143,12 @@ public:
   /// its internal data. The array must have a size of at least ParamSize,
   /// which is 4 for SO3.
   explicit Map(Scalar* data);
+
+  /// Constructs a map with an explicit stride
+  ///
+  /// @param[in] data Pointer to the underlying scalar data.
+  /// @param[in] stride Stride describing the data layout.
+  Map(Scalar* data, const StrideType& stride);
 
   /// Returns the parameters of the underlying quaternion
   [[nodiscard]] const Params& params() const;
@@ -151,38 +169,59 @@ private:
 namespace Eigen {
 
 //==============================================================================
-template <typename S>
-Map<const ::dart::math::SO3<S>>::Map(const Scalar* data) : m_params(data)
+template <typename S, int Options, typename StrideType>
+Map<const ::dart::math::SO3<S>, Options, StrideType>::Map(const Scalar* data)
+  : m_params(data)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S>
-const typename Map<const ::dart::math::SO3<S>>::Params&
-Map<const ::dart::math::SO3<S>>::params() const
-{
-  return m_params;
-}
-
-//==============================================================================
-template <typename S>
-Map<::dart::math::SO3<S>>::Map(Scalar* data) : m_params(data)
+template <typename S, int Options, typename StrideType>
+Map<const ::dart::math::SO3<S>, Options, StrideType>::Map(
+    const Scalar* data, const StrideType& stride)
+  : m_params(data, stride)
 {
   // Do nothing
 }
 
 //==============================================================================
-template <typename S>
-const typename Map<::dart::math::SO3<S>>::Params&
-Map<::dart::math::SO3<S>>::params() const
+template <typename S, int Options, typename StrideType>
+const typename Map<const ::dart::math::SO3<S>, Options, StrideType>::Params&
+Map<const ::dart::math::SO3<S>, Options, StrideType>::params() const
 {
   return m_params;
 }
 
 //==============================================================================
-template <typename S>
-typename Map<::dart::math::SO3<S>>::Params& Map<::dart::math::SO3<S>>::params()
+template <typename S, int Options, typename StrideType>
+Map<::dart::math::SO3<S>, Options, StrideType>::Map(Scalar* data)
+  : m_params(data)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S, int Options, typename StrideType>
+Map<::dart::math::SO3<S>, Options, StrideType>::Map(
+    Scalar* data, const StrideType& stride)
+  : m_params(data, stride)
+{
+  // Do nothing
+}
+
+//==============================================================================
+template <typename S, int Options, typename StrideType>
+const typename Map<::dart::math::SO3<S>, Options, StrideType>::Params&
+Map<::dart::math::SO3<S>, Options, StrideType>::params() const
+{
+  return m_params;
+}
+
+//==============================================================================
+template <typename S, int Options, typename StrideType>
+typename Map<::dart::math::SO3<S>, Options, StrideType>::Params&
+Map<::dart::math::SO3<S>, Options, StrideType>::params()
 {
   return m_params;
 }

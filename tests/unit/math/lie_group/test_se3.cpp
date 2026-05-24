@@ -555,6 +555,18 @@ TYPED_TEST(SE3Test, MapConstructor)
   // Test the constructor for the non-const specialization
   Map<SE3<S>, Eigen::Unaligned> nonconst_map(data);
   EXPECT_EQ(nonconst_map.params().data(), data);
+
+  // Non-default map options (e.g. aligned maps) must still resolve to the SE3
+  // Map specialization rather than falling back to the generic Eigen::Map,
+  // which does not support this Lie-group type.
+  static_assert(
+      std::is_base_of_v<
+          SE3Base<::Eigen::Map<const SE3<S>, ::Eigen::Aligned16>>,
+          ::Eigen::Map<const SE3<S>, ::Eigen::Aligned16>>,
+      "Aligned SE3 map must use the SE3 Map specialization");
+  alignas(16) S aligned_data[] = {1, 0, 0, 0, 1, 2, 3};
+  ::Eigen::Map<const SE3<S>, ::Eigen::Aligned16> aligned_map(aligned_data);
+  EXPECT_EQ(aligned_map.params().data(), aligned_data);
 }
 
 //==============================================================================

@@ -598,6 +598,18 @@ TYPED_TEST(SO3Test, MapConstructor)
   // Test the constructor for the non-const specialization
   Map<SO3<S>, Eigen::Unaligned> nonconst_map(data);
   EXPECT_EQ(nonconst_map.params().data(), data);
+
+  // Non-default map options (e.g. aligned maps) must still resolve to the SO3
+  // Map specialization rather than falling back to the generic Eigen::Map,
+  // which does not support this Lie-group type.
+  static_assert(
+      std::is_base_of_v<
+          SO3Base<::Eigen::Map<const SO3<S>, ::Eigen::Aligned16>>,
+          ::Eigen::Map<const SO3<S>, ::Eigen::Aligned16>>,
+      "Aligned SO3 map must use the SO3 Map specialization");
+  alignas(16) S aligned_data[] = {1, 0, 0, 0};
+  ::Eigen::Map<const SO3<S>, ::Eigen::Aligned16> aligned_map(aligned_data);
+  EXPECT_EQ(aligned_map.params().data(), aligned_data);
 }
 
 //==============================================================================
