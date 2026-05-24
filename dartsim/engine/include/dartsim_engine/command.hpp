@@ -130,6 +130,8 @@ private:
   {
     SceneModel model;
     SelectionState selection;
+
+    bool operator==(const EditorState&) const = default;
   };
   struct HistoryEntry
   {

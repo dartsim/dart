@@ -116,6 +116,10 @@ public:
     return m_nextId;
   }
 
+  /// Exact equality of the whole model, used to detect no-op edits when
+  /// snapshotting for undo/redo.
+  bool operator==(const SceneModel&) const = default;
+
 private:
   std::unordered_map<ObjectId, SceneObject> m_objects;
   std::vector<ObjectId> m_rootOrder;

@@ -37,8 +37,26 @@
 #include <dartsim_engine/selection_manager.hpp>
 
 #include <utility>
+#include <vector>
 
 namespace dartsim::commands {
+
+namespace {
+
+/// Collect `id` and all of its descendants in pre-order.
+void collectSubtree(
+    const SceneModel& model, ObjectId id, std::vector<ObjectId>& out)
+{
+  if (!model.contains(id)) {
+    return;
+  }
+  out.push_back(id);
+  for (const ObjectId child : model.childrenOf(id)) {
+    collectSubtree(model, child, out);
+  }
+}
+
+} // namespace
 
 std::unique_ptr<Command> addRigidBody(
     ShapeType shape, const Eigen::Isometry3d& transform, std::string name)
@@ -164,9 +182,17 @@ std::unique_ptr<Command> removeObject(ObjectId id)
 {
   return std::make_unique<Command>(
       "Remove", [id](ObjectManager& objects, SelectionManager& selection) {
-        objects.model().remove(id);
+        SceneModel& model = objects.model();
+        // remove() also deletes descendants, so deselect the whole subtree;
+        // otherwise a selected descendant leaves a dangling id in the
+        // selection.
+        std::vector<ObjectId> removed;
+        collectSubtree(model, id, removed);
+        model.remove(id);
         objects.rebuild();
-        selection.deselect(id);
+        for (const ObjectId removedId : removed) {
+          selection.deselect(removedId);
+        }
       });
 }
 

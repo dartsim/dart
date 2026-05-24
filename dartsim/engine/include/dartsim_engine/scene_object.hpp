@@ -107,6 +107,12 @@ struct ShapeDesc
   ShapeType type = ShapeType::Box;
   Eigen::Vector3d dimensions = Eigen::Vector3d(1.0, 1.0, 1.0);
   Eigen::Vector4d color = Eigen::Vector4d(0.8, 0.8, 0.85, 1.0);
+
+  friend bool operator==(const ShapeDesc& lhs, const ShapeDesc& rhs)
+  {
+    return lhs.type == rhs.type && lhs.dimensions == rhs.dimensions
+           && lhs.color == rhs.color;
+  }
 };
 
 /// A single node in the editable scene tree.
@@ -144,6 +150,22 @@ struct SceneObject
   JointKind jointType = JointKind::Revolute;
   Eigen::Vector3d jointAxis = Eigen::Vector3d::UnitZ();
   double jointPosition = 0.0; ///< single-DOF generalized position
+
+  // Exact equality, used to detect no-op edits when snapshotting for undo/redo.
+  // Eigen::Isometry3d has no operator==, so compare the underlying matrix.
+  friend bool operator==(const SceneObject& lhs, const SceneObject& rhs)
+  {
+    return lhs.id == rhs.id && lhs.type == rhs.type && lhs.name == rhs.name
+           && lhs.parent == rhs.parent && lhs.children == rhs.children
+           && lhs.visible == rhs.visible
+           && lhs.transform.matrix() == rhs.transform.matrix()
+           && lhs.linearVelocity == rhs.linearVelocity
+           && lhs.angularVelocity == rhs.angularVelocity && lhs.mass == rhs.mass
+           && lhs.inertia == rhs.inertia && lhs.shape == rhs.shape
+           && lhs.multiBody == rhs.multiBody && lhs.parentLink == rhs.parentLink
+           && lhs.jointType == rhs.jointType && lhs.jointAxis == rhs.jointAxis
+           && lhs.jointPosition == rhs.jointPosition;
+  }
 };
 
 } // namespace dartsim

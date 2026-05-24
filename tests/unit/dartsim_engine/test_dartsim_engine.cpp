@@ -416,6 +416,54 @@ TEST(CommandManager, DuplicateExplicitNamesAreDeduplicated)
   EXPECT_TRUE(objects.world().hasRigidBody("box 1"));
 }
 
+TEST(CommandManager, NoOpCommandPreservesRedoBranch)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addRigidBody());
+  const ObjectId id = selection.primary();
+  ASSERT_TRUE(commands.undo()); // creates a pending redo branch
+  ASSERT_TRUE(commands.canRedo());
+
+  // A command that changes nothing (here the target id no longer exists) must
+  // not record a history entry or discard the pending redo branch.
+  commands.execute(commands::rename(id, "noop"));
+  EXPECT_FALSE(commands.canUndo());
+  EXPECT_TRUE(commands.canRedo());
+
+  ASSERT_TRUE(commands.redo());
+  EXPECT_EQ(objects.model().size(), 1u);
+}
+
+TEST(CommandManager, RemoveDeselectsEntireSubtree)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = selection.primary();
+  commands.execute(commands::addLink(arm));
+  const ObjectId link = selection.primary();
+  ASSERT_NE(arm, kNoObject);
+  ASSERT_NE(link, arm);
+
+  // Select both the parent and its descendant (additive multi-selection).
+  selection.select(arm);
+  selection.select(link, /*additive=*/true);
+  ASSERT_TRUE(selection.isSelected(arm));
+  ASSERT_TRUE(selection.isSelected(link));
+
+  commands.execute(commands::removeObject(arm));
+  EXPECT_FALSE(objects.model().contains(arm));
+  EXPECT_FALSE(objects.model().contains(link)); // descendant removed too
+  // Neither the root nor the descendant may linger in the selection.
+  EXPECT_FALSE(selection.isSelected(link));
+  EXPECT_TRUE(selection.empty());
+}
+
 //==============================================================================
 // SimEngine: end-to-end design -> run -> record -> replay + project file
 //==============================================================================

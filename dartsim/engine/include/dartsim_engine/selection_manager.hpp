@@ -43,6 +43,8 @@ struct SelectionState
 {
   std::vector<ObjectId> ids;
   ObjectId primary = kNoObject;
+
+  bool operator==(const SelectionState&) const = default;
 };
 
 /// Owns the editor selection, shared by the Scene Tree and the viewport.

@@ -61,6 +61,12 @@ void CommandManager::execute(std::unique_ptr<Command> command)
   EditorState before = capture();
   command->apply(m_objects, m_selection);
   EditorState after = capture();
+  if (after == before) {
+    // The command changed nothing (e.g. an early return on a name collision or
+    // an invalid id). Recording it would add a no-op undo step and discard the
+    // redo branch, which is unexpected data loss in editor workflows.
+    return;
+  }
   m_undo.push_back(
       HistoryEntry{command->label(), std::move(before), std::move(after)});
   m_redo.clear();
@@ -86,10 +92,15 @@ void CommandManager::endMacro()
     return; // close only the outermost macro
   }
   if (m_macroDirty) {
-    m_undo.push_back(
-        HistoryEntry{
-            std::move(m_macroLabel), std::move(m_macroBefore), capture()});
-    m_redo.clear();
+    EditorState after = capture();
+    if (after != m_macroBefore) {
+      m_undo.push_back(
+          HistoryEntry{
+              std::move(m_macroLabel),
+              std::move(m_macroBefore),
+              std::move(after)});
+      m_redo.clear();
+    }
   }
   m_macroDirty = false;
 }
