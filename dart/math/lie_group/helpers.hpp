@@ -251,6 +251,11 @@ constexpr S LieGroupTol()
     return 1e-6;
   } else if constexpr (std::is_same_v<S, long double>) {
     return 1e-9;
+  } else {
+    // Fallback for non-standard scalar types (e.g. autodiff scalars): use
+    // Eigen's default approximate-comparison precision so the generic
+    // template surface stays usable instead of falling off a non-void return.
+    return static_cast<S>(Eigen::NumTraits<S>::dummy_precision());
   }
 }
 
