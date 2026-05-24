@@ -253,14 +253,31 @@ typename SO3<S>::LieGroup SO3<S>::FromEulerAngles(
     EulerConvention convention)
 {
   if (convention == EulerConvention::EXTRINSIC) {
-    return FromEulerAngles(
-        angles.reverse(), 2, 1, 0, EulerConvention::INTRINSIC);
+    // An extrinsic sequence about (axis0, axis1, axis2) is the reversed-order
+    // product of the per-axis rotations. Computed directly rather than by
+    // recursing on angles.reverse(): the runtime branch is still instantiated
+    // for every call, so recursion would instantiate this function on an
+    // ever-deeper Eigen::Reverse<> type and blow the template-instantiation
+    // depth.
+    return SO3<S>(Quaternion<S>(
+        AngleAxis<S>(angles[2], Vector3<S>::Unit(axis2))
+        * AngleAxis<S>(angles[1], Vector3<S>::Unit(axis1))
+        * AngleAxis<S>(angles[0], Vector3<S>::Unit(axis0))));
   }
 
   return SO3<S>(Quaternion<S>(
       AngleAxis<S>(angles[0], Vector3<S>::Unit(axis0))
       * AngleAxis<S>(angles[1], Vector3<S>::Unit(axis1))
       * AngleAxis<S>(angles[2], Vector3<S>::Unit(axis2))));
+}
+
+//==============================================================================
+template <typename S>
+template <typename MatrixDerived>
+typename SO3<S>::LieGroup SO3<S>::FromEulerXYZ(
+    const Eigen::MatrixBase<MatrixDerived>& angles, EulerConvention convention)
+{
+  return FromEulerAngles(angles, 0, 1, 2, convention);
 }
 
 //==============================================================================

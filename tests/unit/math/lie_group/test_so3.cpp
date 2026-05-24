@@ -98,6 +98,33 @@ TYPED_TEST(SO3Test, Random)
 }
 
 //==============================================================================
+TYPED_TEST(SO3Test, FromEulerAngles)
+{
+  using S = typename TestFixture::Scalar;
+  const Vector3<S> a(S(0.3), S(-0.5), S(0.7));
+  const Vector3<S> a_rev(a[2], a[1], a[0]);
+
+  // FromEulerXYZ is defined and matches the explicit-axis intrinsic XYZ path.
+  EXPECT_TRUE(
+      SO3<S>::FromEulerXYZ(a).toMatrix().isApprox(
+          SO3<S>::FromEulerAngles(a, 0, 1, 2).toMatrix()));
+
+  // Intrinsic XYZ equals R_x(a0) * R_y(a1) * R_z(a2).
+  const Matrix3<S> intrinsic_xyz = (AngleAxis<S>(a[0], Vector3<S>::UnitX())
+                                    * AngleAxis<S>(a[1], Vector3<S>::UnitY())
+                                    * AngleAxis<S>(a[2], Vector3<S>::UnitZ()))
+                                       .toRotationMatrix();
+  EXPECT_TRUE(SO3<S>::FromEulerXYZ(a).toMatrix().isApprox(intrinsic_xyz));
+
+  // Extrinsic must honor the caller's axes: extrinsic ZYX equals intrinsic XYZ
+  // of the reversed angles (regression for a hardcoded 2,1,0 sequence).
+  EXPECT_TRUE(
+      SO3<S>::FromEulerAngles(a, 2, 1, 0, SO3<S>::EulerConvention::EXTRINSIC)
+          .toMatrix()
+          .isApprox(SO3<S>::FromEulerAngles(a_rev, 0, 1, 2).toMatrix()));
+}
+
+//==============================================================================
 TYPED_TEST(SO3Test, Inverse)
 {
   using S = typename TestFixture::Scalar;
