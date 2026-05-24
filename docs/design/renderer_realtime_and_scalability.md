@@ -46,9 +46,15 @@ for smoothness; robotics stacks also surface a real-time factor.
 ### Recommendation (follow-up)
 
 1. **State interpolation** — keep previous/current poses and render the blend by
-   `alpha = accumulator/dt`. This is the single biggest fix for perceived
-   lag/stutter at a fixed sim rate. Requires exposing the leftover accumulator
-   and a prev-pose snapshot to the extraction/render path.
+   `alpha = accumulator/dt`. This is the canonical fix for perceived lag/stutter
+   at a fixed sim rate. Caveat for DART: the gain is large only when few sim
+   steps run per rendered frame (large sim `dt` relative to frame time). At
+   DART's typical small timestep (e.g. 1000 Hz → ~16 steps per 60 FPS frame) the
+   leftover-accumulator blend is sub-millisecond, so the visual benefit is
+   minimal; and interpolation does **not** help a GPU-bound viewer (where the
+   limit is render throughput, not sim/render mismatch). Prioritize this only
+   when profiling shows few sim steps per rendered frame. Requires exposing the
+   leftover accumulator and a prev-pose snapshot to the extraction/render path.
 2. **Render/sim decoupling** — optionally move `world->step()` to a background
    thread with a double-buffered state the render thread interpolates, so a slow
    render never blocks physics (MuJoCo/Bullet/Unreal model).
