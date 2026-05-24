@@ -397,7 +397,7 @@ int runGuiBackendApplicationImpl(
           lifecycle,
           profile);
     }
-    if (appOptions.showPerfHud) {
+    if (showPerfHud) {
       const double gpuMs = latestGpuFrameMs(renderContext);
       if (gpuMs > 0.0) {
         profile.gpuFrameMs = gpuMs;
