@@ -661,6 +661,8 @@ AppOptions parseOptions(
              " [--orbit-light-period SECONDS]"
              " [--gui-scale N]"
              " [--profile]"
+             " [--perf-hud]"
+             " [--render-backend default|opengl|vulkan|noop]"
              " [--scene "
              "mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|"
              "mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-"

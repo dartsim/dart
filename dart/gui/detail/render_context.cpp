@@ -95,15 +95,13 @@ std::optional<Backend> parseBackend(const std::string& raw)
   if (value == "vulkan" || value == "vk") {
     return Backend::VULKAN;
   }
-  if (value == "metal") {
-    return Backend::METAL;
-  }
-  if (value == "webgpu") {
-    return Backend::WEBGPU;
-  }
   if (value == "noop" || value == "none") {
     return Backend::NOOP;
   }
+  // metal/webgpu are intentionally not accepted: embedded materials are only
+  // compiled for OpenGL and Vulkan (see backend_sources.cmake), so selecting a
+  // backend without matching material variants would fail at material load
+  // rather than fall back. Unknown tokens fall back to OpenGL in the caller.
   return std::nullopt;
 }
 
