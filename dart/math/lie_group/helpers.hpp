@@ -123,7 +123,7 @@
   CLASS_NAME(const ::Eigen::MatrixBase<MatrixDerived>& params)                 \
     : Base(), m_params(params)                                                 \
   {                                                                            \
-    /* Do nothing */                                                           \
+    this->normalize();                                                         \
   }                                                                            \
                                                                                \
   /**                                                                          \
@@ -135,7 +135,7 @@
   CLASS_NAME(::Eigen::MatrixBase<MatrixDerived>&& params)                      \
     : Base(), m_params(std::move(params))                                      \
   {                                                                            \
-    /* Do nothing */                                                           \
+    this->normalize();                                                         \
   }                                                                            \
   static_assert(true, "")
 

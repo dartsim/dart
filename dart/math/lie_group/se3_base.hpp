@@ -92,6 +92,10 @@ public:
    */
   Derived& inverseInPlace();
 
+  /// Normalizes the orientation to a unit quaternion in place, leaving the
+  /// translation part unchanged.
+  void normalize();
+
   /// Returns the logarithm map of the given SE3
   ///
   /// The logarithm map of an SE3 @f$ x @f$ is a vector @f$ \xi @f$ such
@@ -259,6 +263,13 @@ Derived& SE3Base<Derived>::inverseInPlace()
   rotation() = r_inv;
   translation() = -(r_inv * translation());
   return derived();
+}
+
+//==============================================================================
+template <typename Derived>
+void SE3Base<Derived>::normalize()
+{
+  rotation().normalize();
 }
 
 //==============================================================================

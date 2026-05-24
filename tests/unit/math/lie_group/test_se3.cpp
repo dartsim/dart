@@ -570,6 +570,24 @@ TYPED_TEST(SE3Test, MapConstructor)
 }
 
 //==============================================================================
+TYPED_TEST(SE3Test, RawParamsConstructorNormalizesQuaternion)
+{
+  using S = typename TestFixture::Scalar;
+
+  // Constructing from a raw 7-vector must normalize the quaternion part while
+  // leaving the translation untouched.
+  Vector<S, 7> raw;
+  raw << S(1.8), S(0), S(0), S(2.4), S(5), S(6), S(7); // quat = 3x unit
+  const SE3<S> x(raw);
+  EXPECT_NEAR(x.rotation().params().norm(), S(1), test::EpsForEquals<S>());
+  EXPECT_TRUE(
+      test::equals(
+          Vector3<S>(x.translation()),
+          Vector3<S>(S(5), S(6), S(7)),
+          test::EpsForEquals<S>()));
+}
+
+//==============================================================================
 TYPED_TEST(SE3Test, TestDataAccess)
 {
   using S = typename TestFixture::Scalar;

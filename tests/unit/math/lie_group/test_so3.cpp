@@ -638,6 +638,21 @@ TYPED_TEST(SO3Test, LogHandlesAntipodalQuaternion)
 }
 
 //==============================================================================
+TYPED_TEST(SO3Test, RawParamsConstructorNormalizes)
+{
+  using S = typename TestFixture::Scalar;
+
+  // Constructing from a raw (non-unit) parameter vector must enforce the
+  // unit-quaternion invariant so the result is a valid rotation.
+  const SO3<S> x(
+      Vector4<S>(S(1.8), S(0), S(0), S(2.4))); // 3x a unit quaternion
+  EXPECT_NEAR(x.params().norm(), S(1), test::EpsForEquals<S>());
+  const Vector4<S> expected(S(0.6), S(0), S(0), S(0.8));
+  EXPECT_TRUE(
+      test::equals(Vector4<S>(x.params()), expected, test::EpsForEquals<S>()));
+}
+
+//==============================================================================
 TYPED_TEST(SO3Test, TestDataAccess)
 {
   using S = typename TestFixture::Scalar;
