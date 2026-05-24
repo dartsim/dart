@@ -969,6 +969,39 @@ TEST(CapsuleCastSphere, RotatingCapsule)
   EXPECT_LT(result.timeOfImpact, 1.0);
 }
 
+TEST(CapsuleCastSphere, SideOfCapsuleBodyHit)
+{
+  // A long thin capsule (axis along Z) slides sideways in -X past a sphere
+  // aligned with its mid-height. The sphere strikes the cylindrical body far
+  // from both spherical caps -- a contact a caps-only endpoint sweep misses.
+  CapsuleShape capsule(0.2, 4.0); // radius 0.2, half-height 2.0
+  SphereShape target(0.3);
+  const Eigen::Isometry3d targetTransform
+      = Eigen::Isometry3d::Identity(); // sphere at origin
+
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  capsuleStart.translation() = Eigen::Vector3d(3, 0, 0);
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(-3, 0, 0);
+
+  CcdOption option;
+  CcdResult result;
+
+  const bool hit = capsuleCastSphere(
+      capsuleStart,
+      capsuleEnd,
+      capsule,
+      target,
+      targetTransform,
+      option,
+      result);
+
+  EXPECT_TRUE(hit);
+  // Contact when |x| reaches capsuleRadius + sphereRadius = 0.5; with
+  // x(t) = 3 - 6t that is t ~ 0.417.
+  EXPECT_NEAR(result.timeOfImpact, 0.417, 0.05);
+}
+
 //==============================================================================
 // Capsule-cast Box tests
 //==============================================================================
