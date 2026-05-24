@@ -86,7 +86,11 @@ higher-fidelity offline rendering later. Three pieces support that:
   with smoothed CPU per-phase timings, GPU frame time from Filament frame-info,
   FPS, a real-time-factor (sim-vs-wall) readout that shows whether playback is
   keeping up, and fixed-scale history plots against the 60 FPS budget — see
-  `dart/gui/detail/perf_hud.cpp`.
+  `dart/gui/detail/perf_hud.cpp`. Interpreting the readout: a very high GPU
+  frame time (far over the 60 FPS budget) while CPU time is low usually means
+  the GPU driver is not active and OpenGL/Vulkan fell back to Mesa software
+  rendering (llvmpipe/lavapipe), not that the GPU is slow. Confirm the active
+  device (e.g. `nvidia-smi`, `glxinfo`) before optimizing the renderer.
 - **Scene-sync cost.** Per-frame scene extraction is the dominant CPU cost, not
   GPU rendering. `dart::gui::RenderableExtractor` caches each shape's geometry by
   shape version so `describeShape` is not rebuilt every frame for static
