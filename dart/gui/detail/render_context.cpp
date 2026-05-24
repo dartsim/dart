@@ -87,7 +87,10 @@ std::optional<Backend> parseBackend(const std::string& raw)
 {
   const std::string value = toLowerAscii(raw);
   if (value.empty() || value == "default" || value == "auto") {
-    return Backend::DEFAULT;
+    // "default"/"auto" map to OpenGL (the build's safe default), not Filament's
+    // platform auto-pick, which could choose a backend with no embedded
+    // materials (e.g. Metal on macOS — materials are compiled GL/Vulkan only).
+    return Backend::OPENGL;
   }
   if (value == "opengl" || value == "gl" || value == "opengles") {
     return Backend::OPENGL;
@@ -137,8 +140,10 @@ Backend resolveRequestedBackend(const dart::gui::RunOptions& options)
 ::filament::Engine* createEngineWithFallback(
     Backend requested, const char** chosenName)
 {
+  // Fall back only to backends with embedded materials (OpenGL, Vulkan), never
+  // to Filament's platform default which could select a material-less backend.
   std::array<Backend, 3> candidates{
-      requested, Backend::OPENGL, Backend::DEFAULT};
+      requested, Backend::OPENGL, Backend::VULKAN};
   Backend previous = requested;
   for (std::size_t i = 0; i < candidates.size(); ++i) {
     const Backend backend = candidates[i];
