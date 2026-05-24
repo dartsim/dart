@@ -57,6 +57,15 @@ public:
       const ComputeGraph& graph) override;
   [[nodiscard]] std::size_t getWorkerCount() const override;
 
+  /// Cost gate: graphs with at most this many nodes execute inline
+  /// (sequentially, in topological order) instead of building a Taskflow, since
+  /// scheduling overhead dominates when there is little or no parallelism to
+  /// exploit. The inline path is the sequential reference order, so results are
+  /// unchanged. Defaults to 1 (a single-node graph has no parallelism);
+  /// profiling can raise it to coarsen the inline/parallel boundary.
+  void setInlineThreshold(std::size_t threshold) noexcept;
+  [[nodiscard]] std::size_t getInlineThreshold() const noexcept;
+
 private:
   class Impl;
   std::unique_ptr<Impl> m_impl;

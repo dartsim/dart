@@ -61,6 +61,7 @@ set(collision_native_sources
   narrow_phase/mesh_mesh.cpp
   narrow_phase/narrow_phase.cpp
   narrow_phase/plane_sphere.cpp
+  narrow_phase/primitive_ccd.cpp
   narrow_phase/raycast.cpp
   narrow_phase/sphere_box.cpp
   narrow_phase/sphere_sphere.cpp

@@ -31,6 +31,8 @@
  */
 
 #include <dart/collision/native/narrow_phase/ccd.hpp>
+#include <dart/collision/native/narrow_phase/gjk.hpp>
+#include <dart/collision/native/narrow_phase/primitive_ccd.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 
 #include <benchmark/benchmark.h>
@@ -455,5 +457,155 @@ static void BM_CCD_ConservativeAdvancement_Convex(benchmark::State& state)
   }
 }
 BENCHMARK(BM_CCD_ConservativeAdvancement_Convex);
+
+//==============================================================================
+// Primitive CCD (IPC-class: point-triangle, edge-edge)
+//==============================================================================
+
+namespace {
+
+void consumePrimitiveResult(bool hit, const CcdPrimitiveResult& result)
+{
+  bool resultHit = result.hit;
+  double toi = result.timeOfImpact;
+  benchmark::DoNotOptimize(hit);
+  benchmark::DoNotOptimize(resultHit);
+  benchmark::DoNotOptimize(toi);
+  benchmark::ClobberMemory();
+}
+
+} // namespace
+
+static void BM_CCD_PointTriangle_ACCD(benchmark::State& state)
+{
+  const Eigen::Vector3d a(-1, -1, 0);
+  const Eigen::Vector3d b(1, -1, 0);
+  const Eigen::Vector3d c(0, 1, 0);
+  const Eigen::Vector3d pStart(0, 0, 1);
+  const Eigen::Vector3d pEnd(0, 0, -1);
+
+  CcdOption option = CcdOption::standard();
+  CcdPrimitiveResult result;
+
+  CcdPrimitiveResult sanity;
+  if (!pointTriangleCcd(pStart, pEnd, a, a, b, b, c, c, option, sanity)
+      || !sanity.isHit()) {
+    state.SkipWithError("Point-triangle CCD benchmark setup did not hit.");
+    return;
+  }
+
+  for (auto _ : state) {
+    result.clear();
+    const bool hit
+        = pointTriangleCcd(pStart, pEnd, a, a, b, b, c, c, option, result);
+    consumePrimitiveResult(hit, result);
+  }
+}
+BENCHMARK(BM_CCD_PointTriangle_ACCD);
+
+static void BM_CCD_EdgeEdge_ACCD(benchmark::State& state)
+{
+  const Eigen::Vector3d a0(-1, 0, 0.5);
+  const Eigen::Vector3d a1(-1, 0, -0.5);
+  const Eigen::Vector3d b0(1, 0, 0.5);
+  const Eigen::Vector3d b1(1, 0, -0.5);
+  const Eigen::Vector3d c0(0, -1, 0);
+  const Eigen::Vector3d d0(0, 1, 0);
+
+  CcdOption option = CcdOption::standard();
+  CcdPrimitiveResult result;
+
+  CcdPrimitiveResult sanity;
+  if (!edgeEdgeCcd(a0, a1, b0, b1, c0, c0, d0, d0, option, sanity)
+      || !sanity.isHit()) {
+    state.SkipWithError("Edge-edge CCD benchmark setup did not hit.");
+    return;
+  }
+
+  for (auto _ : state) {
+    result.clear();
+    const bool hit
+        = edgeEdgeCcd(a0, a1, b0, b1, c0, c0, d0, d0, option, result);
+    consumePrimitiveResult(hit, result);
+  }
+}
+BENCHMARK(BM_CCD_EdgeEdge_ACCD);
+
+//==============================================================================
+// Algorithmic comparison: conservative advancement vs. uniform substepping
+//
+// A continuous-collision engine that lacks a dedicated convex cast must sample
+// the trajectory at K substeps and run a discrete intersection test at each
+// (the naive baseline). Both paths below use the SAME GJK kernel, so the
+// comparison isolates the algorithmic win of conservative advancement, which
+// converges in a handful of distance evaluations regardless of trajectory
+// length while remaining more accurate than any fixed substep resolution.
+//==============================================================================
+
+namespace {
+
+Eigen::Isometry3d InterpolateTransform(
+    const Eigen::Isometry3d& start, const Eigen::Isometry3d& end, double t)
+{
+  Eigen::Isometry3d out = Eigen::Isometry3d::Identity();
+  out.translation() = (1.0 - t) * start.translation() + t * end.translation();
+  const Eigen::Quaterniond qStart(start.rotation());
+  const Eigen::Quaterniond qEnd(end.rotation());
+  out.linear() = qStart.slerp(t, qEnd).toRotationMatrix();
+  return out;
+}
+
+double SubsteppingConvexCast(
+    const ConvexShape& shapeA,
+    const Eigen::Isometry3d& tfAStart,
+    const Eigen::Isometry3d& tfAEnd,
+    const ConvexShape& shapeB,
+    const Eigen::Isometry3d& tfB,
+    int substeps)
+{
+  auto supportB = [&](const Eigen::Vector3d& dir) {
+    return tfB * shapeB.support(tfB.rotation().transpose() * dir);
+  };
+  for (int i = 0; i <= substeps; ++i) {
+    const double t = static_cast<double>(i) / static_cast<double>(substeps);
+    const Eigen::Isometry3d tfA = InterpolateTransform(tfAStart, tfAEnd, t);
+    auto supportA = [&](const Eigen::Vector3d& dir) {
+      return tfA * shapeA.support(tfA.rotation().transpose() * dir);
+    };
+    if (Gjk::intersect(supportA, supportB)) {
+      return t;
+    }
+  }
+  return -1.0;
+}
+
+} // namespace
+
+static void BM_CCD_ConvexCast_Substepping(benchmark::State& state)
+{
+  const int substeps = static_cast<int>(state.range(0));
+
+  ConvexShape shapeA(MakeBoxVertices(kHalfExtents));
+  ConvexShape shapeB(MakeBoxVertices(kHalfExtents));
+
+  const Eigen::Isometry3d startTf
+      = MakeTransform(Eigen::Vector3d(-5.0, 0.0, 0.0));
+  const Eigen::Isometry3d endTf = MakeTransform(Eigen::Vector3d(5.0, 0.0, 0.0));
+  const Eigen::Isometry3d targetTf = Eigen::Isometry3d::Identity();
+
+  if (SubsteppingConvexCast(shapeA, startTf, endTf, shapeB, targetTf, substeps)
+      < 0.0) {
+    state.SkipWithError("Substepping CCD baseline did not hit.");
+    return;
+  }
+
+  for (auto _ : state) {
+    double toi = SubsteppingConvexCast(
+        shapeA, startTf, endTf, shapeB, targetTf, substeps);
+    benchmark::DoNotOptimize(toi);
+    benchmark::ClobberMemory();
+  }
+}
+BENCHMARK(BM_CCD_ConvexCast_Substepping)->Arg(256)->Arg(1024);
 
 BENCHMARK_MAIN();

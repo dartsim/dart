@@ -138,6 +138,7 @@ struct AppOptions
   bool showUi = true;
   bool showUiExplicit = false;
   bool profile = false;
+  bool showPerfHud = false;
   bool orbitLight = true;
   double orbitLightPeriodSeconds = 80.0;
   std::string g1PackageName = "g1_description";

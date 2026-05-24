@@ -5,9 +5,13 @@ file(GLOB detail_hdrs "detail/*.hpp")
 file(GLOB detail_srcs "detail/*.cpp")
 file(GLOB opt_hdrs "optimization/*.hpp")
 file(GLOB opt_srcs "optimization/*.cpp")
+file(GLOB lie_group_hdrs "lie_group/*.hpp")
+file(GLOB lie_group_srcs "lie_group/*.cpp")
+file(GLOB lie_group_detail_hdrs "lie_group/detail/*.hpp")
 
-dart_add_core_headers(${hdrs} ${detail_hdrs} ${opt_hdrs})
-dart_add_core_sources(${srcs} ${detail_srcs} ${opt_srcs})
+dart_add_core_headers(${hdrs} ${detail_hdrs} ${opt_hdrs} ${lie_group_hdrs}
+                      ${lie_group_detail_hdrs})
+dart_add_core_sources(${srcs} ${detail_srcs} ${opt_srcs} ${lie_group_srcs})
 
 set(DART_MATH_LCP_PUBLIC_HEADERS "")
 set(DART_MATH_LCP_PUBLIC_HEADER_NAMES "")
@@ -23,7 +27,8 @@ dart_generate_component_headers(
   TARGET_DIR "dart/math/"
   OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}"
   HEADERS ${header_names}
-  SOURCE_HEADERS ${math_component_headers} ${detail_hdrs} ${DART_MATH_LCP_DETAIL_HEADERS}
+  SOURCE_HEADERS ${math_component_headers} ${detail_hdrs} ${lie_group_hdrs}
+                 ${lie_group_detail_hdrs} ${DART_MATH_LCP_DETAIL_HEADERS}
 )
 
 # Generate headers for optimization sub-namespace
@@ -48,6 +53,16 @@ install(
 install(
   FILES ${detail_hdrs}
   DESTINATION include/dart/math/detail
+  COMPONENT headers
+)
+install(
+  FILES ${lie_group_hdrs}
+  DESTINATION include/dart/math/lie_group
+  COMPONENT headers
+)
+install(
+  FILES ${lie_group_detail_hdrs}
+  DESTINATION include/dart/math/lie_group/detail
   COMPONENT headers
 )
 if(opt_hdrs)

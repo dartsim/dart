@@ -35,7 +35,10 @@
 #include "dart/simulation/experimental/common/exceptions.hpp"
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
+#include <queue>
+#include <unordered_map>
 #include <utility>
 
 namespace dart::simulation::experimental::compute {
@@ -224,6 +227,72 @@ bool ComputeGraph::validate() const
 }
 
 //==============================================================================
+std::vector<ComputeResourceHazard> ComputeGraph::findResourceHazards() const
+{
+  std::vector<ComputeResourceHazard> hazards;
+  std::vector<ComputeNode*> nodes = getNodes();
+  const auto count = nodes.size();
+  if (count < 2) {
+    return hazards;
+  }
+
+  std::unordered_map<const ComputeNode*, std::size_t> indexByNode;
+  indexByNode.reserve(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    indexByNode.emplace(nodes[i], i);
+  }
+
+  std::vector<std::vector<std::size_t>> dependents(count);
+  for (const auto& edge : m_edges) {
+    dependents[indexByNode.at(edge.from)].push_back(indexByNode.at(edge.to));
+  }
+
+  // reachable[i][j] is true when node j runs strictly after node i, i.e. an
+  // explicit dependency path orders them. Unordered pairs may run concurrently.
+  // The precomputed index map and adjacency keep this O(N * (N + E)) instead of
+  // rescanning all edges and linear-searching for each visited node.
+  std::vector<std::vector<bool>> reachable(
+      count, std::vector<bool>(count, false));
+  std::vector<std::size_t> stack;
+  for (std::size_t i = 0; i < count; ++i) {
+    stack.assign(dependents[i].begin(), dependents[i].end());
+    while (!stack.empty()) {
+      const auto j = stack.back();
+      stack.pop_back();
+      if (reachable[i][j]) {
+        continue;
+      }
+      reachable[i][j] = true;
+      for (const auto to : dependents[j]) {
+        stack.push_back(to);
+      }
+    }
+  }
+
+  for (std::size_t i = 0; i < count; ++i) {
+    for (std::size_t j = i + 1; j < count; ++j) {
+      if (reachable[i][j] || reachable[j][i]) {
+        continue;
+      }
+
+      for (const auto& first : nodes[i]->getMetadata().resources) {
+        for (const auto& second : nodes[j]->getMetadata().resources) {
+          if (first.resource != second.resource
+              || !accessesConflict(first.mode, second.mode)) {
+            continue;
+          }
+          hazards.push_back(
+              ComputeResourceHazard{
+                  nodes[i], nodes[j], first.resource, first.mode, second.mode});
+        }
+      }
+    }
+  }
+
+  return hazards;
+}
+
+//==============================================================================
 void ComputeGraph::clear()
 {
   m_edges.clear();
@@ -273,14 +342,16 @@ std::vector<ComputeNode*> ComputeGraph::buildTopologicalOrder(
     bool throwOnCycle) const
 {
   std::vector<ComputeNode*> nodes = getNodes();
-  std::vector<std::size_t> indegree(nodes.size(), 0);
-  std::vector<bool> consumed(nodes.size(), false);
+  const auto count = nodes.size();
 
-  auto nodeIndex = [&](const ComputeNode* node) -> std::size_t {
-    const auto it = std::ranges::find(nodes, node);
-    return static_cast<std::size_t>(std::distance(nodes.begin(), it));
-  };
+  std::unordered_map<const ComputeNode*, std::size_t> indexByNode;
+  indexByNode.reserve(count);
+  for (std::size_t i = 0; i < count; ++i) {
+    indexByNode.emplace(nodes[i], i);
+  }
 
+  std::vector<std::vector<std::size_t>> dependents(count);
+  std::vector<std::size_t> indegree(count, 0);
   for (const auto& edge : m_edges) {
     if (!edge.from || !edge.to || !ownsNode(*edge.from)
         || !ownsNode(*edge.to)) {
@@ -291,39 +362,37 @@ std::vector<ComputeNode*> ComputeGraph::buildTopologicalOrder(
       }
       return {};
     }
-    ++indegree[nodeIndex(edge.to)];
+    dependents[indexByNode.at(edge.from)].push_back(indexByNode.at(edge.to));
+    ++indegree[indexByNode.at(edge.to)];
+  }
+
+  // Kahn's algorithm with a min-heap on node index so ties break by node
+  // construction order, matching the previous linear-scan behavior in
+  // O((N + E) log N) instead of O(N^2).
+  std::priority_queue<std::size_t, std::vector<std::size_t>, std::greater<>>
+      ready;
+  for (std::size_t i = 0; i < count; ++i) {
+    if (indegree[i] == 0) {
+      ready.push(i);
+    }
   }
 
   std::vector<ComputeNode*> order;
-  order.reserve(nodes.size());
-
-  while (order.size() < nodes.size()) {
-    bool consumedNode = false;
-    for (std::size_t i = 0; i < nodes.size(); ++i) {
-      if (consumed[i] || indegree[i] != 0) {
-        continue;
+  order.reserve(count);
+  while (!ready.empty()) {
+    const auto i = ready.top();
+    ready.pop();
+    order.push_back(nodes[i]);
+    for (const auto to : dependents[i]) {
+      if (--indegree[to] == 0) {
+        ready.push(to);
       }
-
-      auto* node = nodes[i];
-      consumed[i] = true;
-      order.push_back(node);
-      consumedNode = true;
-
-      for (const auto& edge : m_edges) {
-        if (edge.from == node) {
-          --indegree[nodeIndex(edge.to)];
-        }
-      }
-      break;
     }
+  }
 
-    if (!consumedNode) {
-      if (throwOnCycle) {
-        DART_EXPERIMENTAL_THROW_T(
-            InvalidOperationException, "Compute graph contains a cycle");
-      }
-      return order;
-    }
+  if (order.size() != count && throwOnCycle) {
+    DART_EXPERIMENTAL_THROW_T(
+        InvalidOperationException, "Compute graph contains a cycle");
   }
 
   return order;

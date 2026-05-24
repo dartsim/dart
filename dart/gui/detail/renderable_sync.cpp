@@ -42,6 +42,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <unordered_map>
 
 #include <cmath>
 
@@ -212,25 +213,29 @@ bool updateSceneRenderablesFromDescriptors(
     int viewportHeight)
 {
   bool selectedRenderableStillVisible = selectedRenderableId == 0;
+  // Index descriptors by id once so the per-renderable lookup is O(1); matching
+  // every scene renderable with std::find_if was O(N^2) at large scene scale.
+  std::unordered_map<RenderableId, const RenderableDescriptor*> descriptorById;
+  descriptorById.reserve(descriptors.size());
+  for (const RenderableDescriptor& descriptor : descriptors) {
+    descriptorById.emplace(descriptor.id, &descriptor);
+  }
+
   for (SceneRenderable& sceneRenderable : sceneRenderables) {
-    const auto descriptor = std::find_if(
-        descriptors.begin(),
-        descriptors.end(),
-        [&](const RenderableDescriptor& candidate) {
-          return candidate.id == sceneRenderable.id;
-        });
-    if (descriptor == descriptors.end() || !descriptor->material.visible) {
+    const auto found = descriptorById.find(sceneRenderable.id);
+    if (found == descriptorById.end() || !found->second->material.visible) {
       continue;
     }
+    const RenderableDescriptor& descriptor = *found->second;
 
-    const bool isSelected = descriptor->id == selectedRenderableId;
+    const bool isSelected = descriptor.id == selectedRenderableId;
     if (isSelected) {
       selectedRenderableStillVisible = true;
     }
     updateSceneRenderableFromDescriptor(
         engine,
         sceneRenderable,
-        *descriptor,
+        descriptor,
         renderSettings,
         camera,
         viewportWidth,

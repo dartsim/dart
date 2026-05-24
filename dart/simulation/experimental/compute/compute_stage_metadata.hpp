@@ -36,6 +36,7 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <cstdint>
 
@@ -76,12 +77,57 @@ enum class ComputeStageAcceleration : std::uint32_t
 
 using ComputeStageAccelerationMask = std::uint32_t;
 
+/// How a compute stage accesses a named resource.
+///
+/// This metadata is descriptive. It powers hazard validation, visualization,
+/// and profiling context, but explicit graph dependencies remain the
+/// correctness source of truth.
+enum class ComputeAccessMode : std::uint8_t
+{
+  Read,      ///< Reads a resource without mutating it.
+  Write,     ///< Overwrites a resource; does not depend on the prior value.
+  ReadWrite, ///< Reads and mutates a resource in place.
+  Reduce,    ///< Contributes to a deterministic reduction shared with peers.
+  Scratch, ///< Node-local temporary; carries no inter-node dependency meaning.
+};
+
+/// A declared access to a named resource by a compute stage.
+///
+/// Resource identifiers are stable strings in this first iteration, for example
+/// component or stage names such as "comps::Transform" or "comps::FrameCache".
+struct DART_EXPERIMENTAL_API ComputeResourceAccess
+{
+  std::string resource;
+  ComputeAccessMode mode = ComputeAccessMode::Read;
+};
+
 /// Stage metadata used by debugging, profiling, and graph-shaping heuristics.
 struct DART_EXPERIMENTAL_API ComputeStageMetadata
 {
   ComputeStageDomain domain = ComputeStageDomain::Generic;
   ComputeStageAccelerationMask acceleration = 0u;
+  std::vector<ComputeResourceAccess> resources{};
 };
+
+/// Returns true when two accesses to the same resource form a data hazard if
+/// the accessing nodes are not ordered by an explicit dependency.
+///
+/// Read/read sharing, scratch access, and mutually declared reductions are not
+/// hazards; any other combination involving a write or mutation is.
+[[nodiscard]] constexpr bool accessesConflict(
+    ComputeAccessMode lhs, ComputeAccessMode rhs) noexcept
+{
+  if (lhs == ComputeAccessMode::Scratch || rhs == ComputeAccessMode::Scratch) {
+    return false;
+  }
+  if (lhs == ComputeAccessMode::Read && rhs == ComputeAccessMode::Read) {
+    return false;
+  }
+  if (lhs == ComputeAccessMode::Reduce && rhs == ComputeAccessMode::Reduce) {
+    return false;
+  }
+  return true;
+}
 
 [[nodiscard]] constexpr ComputeStageAccelerationMask toMask(
     ComputeStageAcceleration acceleration) noexcept
@@ -116,5 +162,8 @@ struct DART_EXPERIMENTAL_API ComputeStageMetadata
 
 [[nodiscard]] DART_EXPERIMENTAL_API std::string formatAccelerationMask(
     ComputeStageAccelerationMask mask);
+
+[[nodiscard]] DART_EXPERIMENTAL_API std::string_view toString(
+    ComputeAccessMode mode) noexcept;
 
 } // namespace dart::simulation::experimental::compute

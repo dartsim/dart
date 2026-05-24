@@ -167,6 +167,25 @@ if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS)
 endif()
 if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
   add_executable(
+    bm_comparative_ccd
+    collision/comparative/bm_ccd.cpp
+  )
+  target_link_libraries(bm_comparative_ccd
+    dart
+    dart-collision-native
+    benchmark::benchmark
+  )
+  target_link_libraries(bm_comparative_ccd dart-test-reference-fcl)
+  if(TARGET dart-test-reference-bullet)
+    target_link_libraries(bm_comparative_ccd dart-test-reference-bullet)
+  endif()
+  if(TARGET dart-test-reference-ode)
+    target_link_libraries(bm_comparative_ccd dart-test-reference-ode)
+  endif()
+  dart_format_add(collision/comparative/bm_ccd.cpp)
+endif()
+if(DART_BUILD_COLLISION_REFERENCE_BENCHMARKS AND TARGET dart-test-reference-fcl)
+  add_executable(
     bm_scenarios_mixed_primitives
     collision/scenarios/bm_mixed_primitives.cpp
   )

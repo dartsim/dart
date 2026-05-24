@@ -117,4 +117,24 @@ private:
   std::size_t m_batchSize;
 };
 
+/// Unconstrained rigid-body integration stage driven by the batched
+/// structure-of-arrays path.
+///
+/// Instead of per-entity component access, this stage extracts a
+/// `RigidBodyStateBatch` (plus the immutable `RigidBodyModelBatch`), runs the
+/// scalar-generic SoA integrator, and applies the result back to the World. The
+/// world-space dynamics are frame-independent, so for frame-coupled rigid
+/// bodies (a rigid body parented to another rigid body), where the
+/// local-transform bookkeeping must run parent-before-child, this stage defers
+/// to `RigidBodyIntegrationStage`. It is the experimental seam through which
+/// the later SIMD and device batch paths drive a live World step.
+class DART_EXPERIMENTAL_API BatchedRigidBodyIntegrationStage final
+  : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+};
+
 } // namespace dart::simulation::experimental::compute

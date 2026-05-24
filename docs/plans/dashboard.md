@@ -74,9 +74,12 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Land resource-access metadata for compute nodes before dependency
-  inference, contact scheduling, or GPU/rendering backend work; use the
-  resource-access evaluator mission to keep objective-specific proof explicit.
+- Next step: Follow the multiphase plan in
+  `docs/dev_tasks/experimental_world_scalable_compute/`; land the Phase 0
+  foundations (executor-parity test, EnTT concurrency contract, benchmark corpus
+  with a contact-shaped proxy) before the resource-access metadata milestone,
+  and keep both ahead of dependency inference, contact scheduling, or
+  GPU/rendering backend work.
 - Gate:
   [`030-compute-resource-access/evaluator.md`](030-compute-resource-access/evaluator.md)
   records the focused proof: graph/world tests and the compute-graph benchmark
@@ -188,3 +191,37 @@ its own line so status updates remain git-history friendly.
   during DART 7 packaging passes and DART 8 removal planning.
 - Gate: DART 8 cleanup decisions cite migration notes, changelog entries,
   package/export status, and gz-physics compatibility where relevant.
+
+### PLAN-090: Filament Renderer Performance
+
+- Owner doc:
+  [`../onboarding/gui-rendering.md#performance-profiling-and-backend-selection`](../onboarding/gui-rendering.md#performance-profiling-and-backend-selection)
+- Status: Complete
+- Horizon: Later
+- Dimension: Scalable compute
+- Next step: Use the renderer performance/profiling/backend guidance in
+  `../onboarding/gui-rendering.md` and the fidelity-profile design in
+  [`../design/filament_fidelity_profile.md`](../design/filament_fidelity_profile.md)
+  when extending the renderer; the latter is the seam to implement for
+  offline/high-fidelity sensor rendering (egocentric views, lens distortion,
+  depth/segmentation outputs).
+- Gate: Per-phase profiling plus a toggleable in-app HUD (`--perf-hud`) expose
+  CPU+GPU frame time; the Filament backend is runtime-selectable (`--backend` /
+  `DART_FILAMENT_BACKEND`) with graceful fallback and no public backend-type
+  leak; the per-shape geometry cache reduced scene extraction without changing
+  output (`UNIT_gui_FilamentSceneExtraction`, headless scene smoke, and
+  `pixi run lint` green).
+
+### PLAN-100: DART 7 Lie-Group Consolidation
+
+- Owner doc:
+  [`../dev_tasks/lie_group_consolidation/README.md`](../dev_tasks/lie_group_consolidation/README.md)
+- Status: Parked
+- Horizon: Next
+- Dimension: Release transition
+- Next step: Port the deferred `GroupProduct` (composite Lie group) from
+  `7/nested_group_product` into `main` under main conventions, mirroring the
+  merged `SO3`/`SE3` inverse machinery and resolving the five known WIP gaps.
+- Gate: `GroupProduct` source and tests land in `dart/math/lie_group/` with
+  `pixi run lint`, build, and `ctest -R UNIT_math_lie_group` green; the
+  Lie-group base API increment already merged via PR #2697.
