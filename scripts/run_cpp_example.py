@@ -606,6 +606,22 @@ def _run_example_binary(
         _run_with_optional_xvfb(command, runtime_env, use_xvfb)
 
 
+def _imgui_override(target: str, run_args: list[str], smoke: bool) -> str | None:
+    """ImGui variant to pin for a GUI run, or None to leave the cache as-is.
+
+    The standalone dartsim editor needs the ImGui docking branch that only the
+    fetched ImGui provides (DART_USE_SYSTEM_IMGUI=OFF); every other GUI path
+    (scene fixtures, other GUI examples) must use system ImGui (ON). Pinning the
+    value per run keeps a launch from inheriting a stale cache state left by a
+    previous run (e.g. OFF after an editor launch). Smoke runs keep their
+    externally configured cache.
+    """
+    if smoke:
+        return None
+    launching_docked_editor = target == "dartsim" and not _has_arg(run_args, "--scene")
+    return "OFF" if launching_docked_editor else "ON"
+
+
 def run(
     target: str,
     build_type: str,
@@ -623,12 +639,13 @@ def run(
     env["CMAKE_BUILD_DIR"] = str(build_dir)
     _apply_libcxx_prefix(env)
 
-    # The standalone dartsim editor requires the ImGui docking branch, which only
-    # the fetched ImGui provides (DART_USE_SYSTEM_IMGUI=OFF). Force it whenever
-    # the editor is launched (i.e. not a --scene GUI fixture and not a smoke run)
-    # so the binary always supports docking regardless of the shared build cache.
-    if target == "dartsim" and not smoke and not _has_arg(run_args, "--scene"):
-        env.setdefault("DART_USE_SYSTEM_IMGUI_OVERRIDE", "OFF")
+    # Pin the ImGui variant for GUI runs so a launch never inherits a stale
+    # build-cache state from a previous run: the editor needs the docking branch
+    # (OFF), while scene fixtures and other GUI examples need system ImGui (ON).
+    if "filament" in spec.requirements:
+        override = _imgui_override(target, run_args, smoke)
+        if override is not None:
+            env.setdefault("DART_USE_SYSTEM_IMGUI_OVERRIDE", override)
 
     _ensure_target_requirements(build_dir, spec, env, smoke)
     _build_example(build_dir, spec.build_target, env)

@@ -492,6 +492,32 @@ TEST(CommandManager, AddLinkRejectsInvalidParentLink)
   EXPECT_EQ(objects.model().size(), 4u); // arm, body, rootLink, child link
 }
 
+TEST(CommandManager, ReparentRejectsLinkButAllowsOthers)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = selection.primary();
+  commands.execute(commands::addLink(arm));
+  const ObjectId link = selection.primary();
+  commands.execute(commands::addFreeFrame());
+  const ObjectId frame = selection.primary();
+
+  // A link must stay under its owning multibody; moving it elsewhere would drop
+  // it from the rebuilt world, so the reparent is rejected.
+  commands.execute(commands::reparent(link, frame));
+  ASSERT_NE(objects.model().find(link), nullptr);
+  EXPECT_EQ(objects.model().find(link)->parent, arm);
+
+  // Non-link objects can still be reparented.
+  commands.execute(commands::addRigidBody());
+  const ObjectId body = selection.primary();
+  commands.execute(commands::reparent(body, frame));
+  EXPECT_EQ(objects.model().find(body)->parent, frame);
+}
+
 //==============================================================================
 // SimEngine: end-to-end design -> run -> record -> replay + project file
 //==============================================================================

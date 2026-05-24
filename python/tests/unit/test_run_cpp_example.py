@@ -193,6 +193,20 @@ def test_filament_smoke_pattern_uses_scene_all_list(run_cpp_example):
     )
 
 
+def test_imgui_override_pins_variant_for_non_smoke_gui_runs(run_cpp_example):
+    # The docked editor (dartsim without --scene) needs the fetched docking ImGui.
+    assert run_cpp_example._imgui_override("dartsim", [], smoke=False) == "OFF"
+    # Scene fixtures and other GUI examples must use system ImGui, even right
+    # after an editor launch left the cache at OFF.
+    assert (
+        run_cpp_example._imgui_override("dartsim", ["--scene", "boxes"], smoke=False)
+        == "ON"
+    )
+    assert run_cpp_example._imgui_override("rigid_cubes", [], smoke=False) == "ON"
+    # Smoke runs keep their externally configured cache (no override pinned).
+    assert run_cpp_example._imgui_override("dartsim", [], smoke=True) is None
+
+
 def _cmake_filament_smoke_scene_pairs(cmake_text):
     match = re.search(
         r"set\(DART_GUI_FILAMENT_SMOKE_SCENE_PAIRS\s+(.*?)\n\)",

@@ -263,7 +263,19 @@ std::unique_ptr<Command> reparent(ObjectId id, ObjectId newParent)
 {
   return std::make_unique<Command>(
       "Reparent", [id, newParent](ObjectManager& objects, SelectionManager&) {
-        if (objects.model().reparent(id, newParent)) {
+        SceneModel& model = objects.model();
+        const SceneObject* object = model.find(id);
+        if (object == nullptr) {
+          return;
+        }
+        // Links/joints are materialized only from their owning multibody's
+        // direct child list, so moving one elsewhere in the tree would silently
+        // drop it from the rebuilt world. They cannot be reparented.
+        if (object->type == ObjectType::Link
+            || object->type == ObjectType::Joint) {
+          return;
+        }
+        if (model.reparent(id, newParent)) {
           objects.rebuild();
         }
       });
