@@ -217,7 +217,11 @@ bool accdAdvance(
   }
 
   const double stepFactor = 1.0 - kConservativeScale;
-  const double convergeAbs = std::max(option.tolerance, kEpsilon) * gap0;
+  // Absolute contact band. A hit means the primitives close to within
+  // minSeparation, so the threshold must be an absolute distance -- scaling it
+  // by the initial gap would report a hit for a non-colliding near-miss that
+  // merely ends close relative to a large starting separation.
+  const double convergeAbs = std::max(option.tolerance, kEpsilon);
   const int maxIter = std::max(1, option.maxIterations);
 
   double t = 0.0;

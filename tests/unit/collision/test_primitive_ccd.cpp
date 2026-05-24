@@ -242,6 +242,31 @@ TEST(PointTriangleCcd, ContactExactlyAtEndOfStep)
   EXPECT_NEAR(result.timeOfImpact, 1.0, 1e-6);
 }
 
+TEST(PointTriangleCcd, LargeGapNearMissNotReportedAsHit)
+{
+  // Start far above the triangle (large initial gap) and stop just short of it
+  // with a small positive gap. The contact band is absolute, so this near-miss
+  // must not be reported as a hit -- a gap-relative band would inflate with the
+  // large starting separation and falsely flag the positive final clearance.
+  CcdOption option;
+  CcdPrimitiveResult result;
+
+  const bool hit = pointTriangleCcd(
+      Eigen::Vector3d(0, 0, 10.0),
+      Eigen::Vector3d(0, 0, 5e-4), // ends 5e-4 above the triangle: no contact
+      kA,
+      kA,
+      kB,
+      kB,
+      kC,
+      kC,
+      option,
+      result);
+
+  EXPECT_FALSE(hit);
+  EXPECT_FALSE(result.isHit());
+}
+
 //==============================================================================
 // Edge-edge ACCD
 //==============================================================================
