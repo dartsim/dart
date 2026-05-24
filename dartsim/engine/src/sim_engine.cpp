@@ -142,6 +142,10 @@ bool SimEngine::loadProject(const std::string& path)
   m_commands.clearHistory();
   // Drop any pre-load Run-mode snapshot so Reset targets the loaded scene.
   m_simulation.clearForNewScene();
+  // Drop any prior recording/replay; seeking it would restore old-world
+  // snapshots into the freshly loaded scene and corrupt it.
+  m_recorder.clear();
+  m_player.clear();
   m_logger.info("Loaded project: " + path);
   m_events.emit(EventType::ProjectLoaded);
   notifyChanged();

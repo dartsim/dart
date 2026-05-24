@@ -464,6 +464,34 @@ TEST(CommandManager, RemoveDeselectsEntireSubtree)
   EXPECT_TRUE(selection.empty());
 }
 
+TEST(CommandManager, AddLinkRejectsInvalidParentLink)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = selection.primary();
+  ASSERT_EQ(objects.model().size(), 1u);
+
+  // A parent link referencing a missing id is rejected (nothing added),
+  // otherwise the orphaned link is silently dropped from the rebuilt world.
+  commands.execute(commands::addLink(arm, /*parentLink=*/9999));
+  EXPECT_EQ(objects.model().size(), 1u);
+
+  // A non-Link object is not a valid parent link.
+  commands.execute(commands::addRigidBody());
+  const ObjectId body = selection.primary();
+  commands.execute(commands::addLink(arm, body));
+  EXPECT_EQ(objects.model().size(), 2u); // arm + body, no link
+
+  // A real link in the same multibody is accepted as a parent.
+  commands.execute(commands::addLink(arm));
+  const ObjectId rootLink = selection.primary();
+  commands.execute(commands::addLink(arm, rootLink));
+  EXPECT_EQ(objects.model().size(), 4u); // arm, body, rootLink, child link
+}
+
 //==============================================================================
 // SimEngine: end-to-end design -> run -> record -> replay + project file
 //==============================================================================
@@ -542,6 +570,39 @@ TEST(SimEngine, LoadProjectClearsRunSnapshot)
   // Reset must keep the loaded scene rather than restore the pre-load snapshot.
   engine.simulation().reset();
   EXPECT_EQ(engine.objects().model().size(), savedSize);
+
+  std::filesystem::remove(path);
+}
+
+TEST(SimEngine, LoadProjectClearsRecordingAndPlayer)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_engine_load_clears_replay.dartsim";
+
+  // Record several frames on one scene and load them into the player.
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 5)));
+  engine.objects().model().timeStep = 0.01;
+  engine.objects().rebuild();
+  engine.startRecording();
+  engine.simulation().step(3);
+  engine.stopRecording();
+  engine.loadRecordingIntoPlayer();
+  ASSERT_GT(engine.player().frameCount(), 0u);
+
+  // Load a different project over it.
+  SimEngine other;
+  other.execute(commands::addMultiBody("arm"));
+  ASSERT_TRUE(other.saveProject(path.string()));
+  ASSERT_TRUE(engine.loadProject(path.string()));
+
+  // The stale recording/replay must not survive the load; otherwise seeking it
+  // would restore old-world snapshots into the freshly loaded scene.
+  EXPECT_FALSE(engine.isRecording());
+  EXPECT_EQ(engine.recorder().recording().frameCount(), 0u);
+  EXPECT_EQ(engine.player().frameCount(), 0u);
+  EXPECT_FALSE(engine.replaySeek(0));
 
   std::filesystem::remove(path);
 }

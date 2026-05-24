@@ -115,6 +115,15 @@ std::unique_ptr<Command> addLink(
         if (mb == nullptr || mb->type != ObjectType::MultiBody) {
           return;
         }
+        // A non-root parent link must be an existing Link in this multibody;
+        // otherwise rebuild() cannot attach the child and silently drops it.
+        if (parentLink != kNoObject) {
+          const SceneObject* parent = model.find(parentLink);
+          if (parent == nullptr || parent->type != ObjectType::Link
+              || parent->multiBody != multiBody) {
+            return;
+          }
+        }
         SceneObject object;
         object.type = ObjectType::Link;
         object.parent = multiBody;

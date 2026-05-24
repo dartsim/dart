@@ -139,6 +139,13 @@ public:
   /// Restore frame `index` into `world`. Returns false if out of range.
   bool seek(dart::simulation::experimental::World& world, std::size_t index);
 
+  /// Drop the loaded recording and rewind (e.g. when loading a new project).
+  void clear()
+  {
+    m_data = {};
+    m_index = 0;
+  }
+
 private:
   Recording m_data;
   std::size_t m_index = 0;
