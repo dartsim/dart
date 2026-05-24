@@ -556,6 +556,21 @@ TEST(SimEngine, EndToEndEditorLoop)
   EXPECT_DOUBLE_EQ(engine.objects().world().getTime(), 0.0);
 }
 
+TEST(SimEngine, NoOpCommandDoesNotSignalChange)
+{
+  SimEngine engine;
+  int changes = 0;
+  engine.setOnChanged([&]() { ++changes; });
+
+  engine.execute(commands::addRigidBody());
+  ASSERT_EQ(changes, 1); // a real edit signals exactly once
+
+  // A rejected/no-op command (removing a non-existent id) must not look like a
+  // successful mutation to event-driven consumers.
+  engine.execute(commands::removeObject(99999));
+  EXPECT_EQ(changes, 1);
+}
+
 TEST(SimEngine, ProjectFileRoundTrip)
 {
   const std::filesystem::path path

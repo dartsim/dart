@@ -61,7 +61,11 @@ void SimEngine::notifyChanged()
 void SimEngine::execute(std::unique_ptr<Command> command)
 {
   std::string label = command ? command->label() : std::string();
-  m_commands.execute(std::move(command));
+  if (!m_commands.execute(std::move(command))) {
+    // No-op command (e.g. a rejected edit): do not log it or signal a scene
+    // change, so event-driven consumers don't run spurious refresh/save flows.
+    return;
+  }
   if (!label.empty()) {
     m_logger.info(std::move(label));
   }

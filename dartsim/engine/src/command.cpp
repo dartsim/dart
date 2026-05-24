@@ -47,16 +47,16 @@ void CommandManager::restore(const EditorState& state)
   m_selection.setState(state.selection);
 }
 
-void CommandManager::execute(std::unique_ptr<Command> command)
+bool CommandManager::execute(std::unique_ptr<Command> command)
 {
   if (!command) {
-    return;
+    return false;
   }
   if (m_macroDepth > 0) {
     // Inside a macro: apply now; the macro pushes one combined history entry.
     command->apply(m_objects, m_selection);
     m_macroDirty = true;
-    return;
+    return true;
   }
   EditorState before = capture();
   command->apply(m_objects, m_selection);
@@ -65,11 +65,12 @@ void CommandManager::execute(std::unique_ptr<Command> command)
     // The command changed nothing (e.g. an early return on a name collision or
     // an invalid id). Recording it would add a no-op undo step and discard the
     // redo branch, which is unexpected data loss in editor workflows.
-    return;
+    return false;
   }
   m_undo.push_back(
       HistoryEntry{command->label(), std::move(before), std::move(after)});
   m_redo.clear();
+  return true;
 }
 
 void CommandManager::beginMacro(std::string label)
@@ -105,9 +106,10 @@ void CommandManager::endMacro()
   m_macroDirty = false;
 }
 
-void CommandManager::execute(std::string label, Command::Action action)
+bool CommandManager::execute(std::string label, Command::Action action)
 {
-  execute(std::make_unique<Command>(std::move(label), std::move(action)));
+  return execute(
+      std::make_unique<Command>(std::move(label), std::move(action)));
 }
 
 bool CommandManager::undo()

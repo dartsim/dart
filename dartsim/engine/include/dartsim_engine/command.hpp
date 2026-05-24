@@ -88,13 +88,16 @@ public:
   }
 
   /// Snapshot, run the command, snapshot again, and push to the undo history.
+  /// Returns true if the command changed the editor state (and was recorded);
+  /// false for a no-op so callers can skip change signals. A command applied
+  /// inside an open macro (see beginMacro) always reports true.
   ///
-  /// While a macro is open (see beginMacro) the command is applied but not
-  /// pushed individually; the whole macro becomes one undo entry.
-  void execute(std::unique_ptr<Command> command);
+  /// While a macro is open the command is applied but not pushed individually;
+  /// the whole macro becomes one undo entry.
+  bool execute(std::unique_ptr<Command> command);
 
   /// Convenience overload constructing a Command in place.
-  void execute(std::string label, Command::Action action);
+  bool execute(std::string label, Command::Action action);
 
   /// Begin grouping subsequent commands into a single undoable transaction.
   /// Nested macros are flattened into the outermost one.

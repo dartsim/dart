@@ -63,7 +63,6 @@ struct EditorApp
 {
   SimEngine engine;
   double replayFrame = 0.0;
-  bool recording = false;
 
   void note(const std::string& message)
   {
@@ -262,9 +261,10 @@ void buildSimControls(dart::gui::PanelBuilder& ui, EditorApp& app)
   }
 
   ui.separator();
-  bool record = app.recording;
+  // Drive the checkbox from engine state so it stays correct when the recorder
+  // is reset elsewhere (e.g. loading a project clears any active recording).
+  bool record = app.engine.isRecording();
   if (ui.checkbox("Record", record)) {
-    app.recording = record;
     if (record) {
       app.engine.startRecording();
       app.note("Recording started");
