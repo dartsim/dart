@@ -885,6 +885,38 @@ TEST(ExperimentalIntegrationKernel, IntegratesAngularVelocityFromTorque)
 }
 
 //==============================================================================
+TEST(
+    ExperimentalIntegrationKernel,
+    BatchIntegrationRejectsMismatchedAngularVelocity)
+{
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = 1;
+  state.position = {0.0, 0.0, 0.0};
+  state.orientation = {1.0, 0.0, 0.0, 0.0};
+  state.linearVelocity = {0.0, 0.0, 0.0};
+  state.angularVelocity = {0.0, 0.0}; // too short: must be 3 * bodyCount
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = 1;
+  model.inverseMass = {1.0};
+  model.inertia = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+
+  const std::vector<double> force = {0.0, 0.0, 0.0};
+  const std::vector<double> torque = {0.0, 0.0, 0.0};
+
+  // Both overloads must reject the malformed angular-velocity array up front
+  // rather than read (orientation step) or write (torque step) out of bounds.
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatch(state, model, force, 0.1),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatch(state, model, force, torque, 0.1),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
 TEST(ExperimentalIntegrationKernel, SimdOrientationMatchesScalarForLargeBatch)
 {
   // A batch above the SIMD dispatch threshold exercises the vectorized

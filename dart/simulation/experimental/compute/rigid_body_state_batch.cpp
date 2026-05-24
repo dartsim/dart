@@ -515,11 +515,12 @@ void integrateRigidBodyStateBatch(
 {
   const auto bodies = state.worldCount * state.bodyCount;
   DART_EXPERIMENTAL_THROW_T_IF(
-      state.orientation.size() != 4 * bodies,
+      state.orientation.size() != 4 * bodies
+          || state.angularVelocity.size() != 3 * bodies,
       InvalidArgumentException,
-      "RigidBodyStateBatch orientation array is inconsistent with worldCount "
-      "{} "
-      "and bodyCount {}",
+      "RigidBodyStateBatch orientation/angular-velocity arrays are "
+      "inconsistent "
+      "with worldCount {} and bodyCount {}",
       state.worldCount,
       state.bodyCount);
 
@@ -540,8 +541,9 @@ void integrateRigidBodyStateBatch(
 {
   const auto bodies = state.worldCount * state.bodyCount;
   DART_EXPERIMENTAL_THROW_T_IF(
-      state.orientation.size() != 4 * bodies || torque.size() != 3 * bodies
-          || model.inertia.size() != 9 * bodies,
+      state.orientation.size() != 4 * bodies
+          || state.angularVelocity.size() != 3 * bodies
+          || torque.size() != 3 * bodies || model.inertia.size() != 9 * bodies,
       InvalidArgumentException,
       "integrateRigidBodyStateBatch (torque) arrays are inconsistent with "
       "worldCount {} and bodyCount {}",

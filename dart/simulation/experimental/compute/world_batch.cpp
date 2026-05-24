@@ -39,6 +39,7 @@
 #include "dart/simulation/experimental/world.hpp"
 
 #include <string>
+#include <unordered_set>
 
 namespace dart::simulation::experimental::compute {
 
@@ -49,11 +50,21 @@ void stepWorldsBatched(
     ComputeExecutor& executor)
 {
   ComputeGraph graph;
+  std::unordered_set<const World*> seen;
   for (std::size_t w = 0; w < worlds.size(); ++w) {
     DART_EXPERIMENTAL_THROW_T_IF(
         worlds[w] == nullptr,
         InvalidArgumentException,
         "stepWorldsBatched received a null world at index {}",
+        w);
+    // The nodes have no edges and run concurrently, so the same World must not
+    // appear twice -- that would step one object from multiple threads at once
+    // (a data race) and advance it more than intended.
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !seen.insert(worlds[w]).second,
+        InvalidArgumentException,
+        "stepWorldsBatched received a duplicate world at index {}; each world "
+        "must be unique",
         w);
 
     auto* world = worlds[w];

@@ -1939,6 +1939,13 @@ TEST(World, StepWorldsBatchedMatchesSequential)
   EXPECT_THROW(
       compute::stepWorldsBatched(withNull, 1, executor),
       sx::InvalidArgumentException);
+
+  // The same world twice would be stepped concurrently from two nodes (a data
+  // race); it must be rejected.
+  const std::vector<sx::World*> withDuplicate{&w0, &w0};
+  EXPECT_THROW(
+      compute::stepWorldsBatched(withDuplicate, 1, executor),
+      sx::InvalidArgumentException);
 }
 
 // Test the batched rollout: applying a shared initial state, advancing, and
