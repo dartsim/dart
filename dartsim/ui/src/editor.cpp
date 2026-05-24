@@ -411,6 +411,9 @@ int runEditor(int argc, char* argv[])
         "Panel docking: UNAVAILABLE - this build lacks docking support. "
         "Launch with `pixi run dartsim` to rebuild with docking enabled.");
   }
+  app->note(
+      "Press F2 (or pass --perf-hud) for the live performance HUD "
+      "(per-phase CPU/GPU frame timing).");
 
   options.panels.push_back(makePanel(
       "Menu",

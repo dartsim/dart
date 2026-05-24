@@ -44,6 +44,16 @@ examples (`pixi run build`, `pixi run config`, `pixi run ex <gui-example>`)
 switches the shared build to system ImGui; the next editor launch transparently
 rebuilds against the docking branch.
 
+The editor inherits the shared `dart::gui` live performance HUD: press **F2**
+(or launch with `--perf-hud`) to toggle an overlay with per-phase CPU/GPU frame
+timing and the active renderer backend, which is useful for spotting cost in the
+editor's per-frame scene extraction. Choose the renderer backend with
+`--backend <name>` (or the `DART_FILAMENT_BACKEND` environment variable).
+
+```bash
+pixi run dartsim -- --perf-hud
+```
+
 Passing `--scene <name>` renders a built-in `dart::gui` scene fixture instead of
 the editor (system ImGui, used by the headless GUI smoke tests):
 
