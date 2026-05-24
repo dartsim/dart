@@ -34,7 +34,7 @@
 
 #include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
-#include <dart/simulation/experimental/multi_body/joint.hpp>
+#include <dart/simulation/experimental/multibody/joint.hpp>
 
 #include <Eigen/Core>
 #include <entt/entt.hpp>
@@ -47,7 +47,7 @@ namespace dart::simulation::experimental {
 
 /// Link handle class
 ///
-/// Represents a rigid link in a MultiBody kinematic tree. This is a lightweight
+/// Represents a rigid link in a Multibody kinematic tree. This is a lightweight
 /// handle to the underlying entity in the ECS registry.
 ///
 /// Links are rigid bodies connected by joints in an articulated system.
@@ -85,7 +85,7 @@ namespace dart::simulation::experimental {
 class DART_EXPERIMENTAL_API Link : public Frame
 {
 public:
-  /// Constructor (typically called by MultiBody::addLink)
+  /// Constructor (typically called by Multibody::addLink)
   ///
   /// @param entity The entity ID in the registry
   /// @param world Pointer to the World owning this entity

@@ -45,7 +45,7 @@
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
-#include <dart/simulation/experimental/multi_body/multi_body.hpp>
+#include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/version.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -252,11 +252,11 @@ TEST(World, BakingWithMultibodies)
   dart::simulation::experimental::World world;
 
   // Create several multibodies with joints and links
-  auto robot1 = world.addMultiBody("robot1");
+  auto robot1 = world.addMultibody("robot1");
   auto base1 = robot1.addLink("base");
   (void)robot1.addLink("link1", {.parentLink = base1, .jointName = "joint1"});
 
-  auto robot2 = world.addMultiBody("robot2");
+  auto robot2 = world.addMultibody("robot2");
   auto base2 = robot2.addLink("base");
   auto link2
       = robot2.addLink("link1", {.parentLink = base2, .jointName = "joint1"});
@@ -271,7 +271,7 @@ TEST(World, BakingWithMultibodies)
   EXPECT_TRUE(world.isSimulationMode());
 
   // Counts should remain the same
-  EXPECT_EQ(world.getMultiBodyCount(), 2u);
+  EXPECT_EQ(world.getMultibodyCount(), 2u);
   EXPECT_EQ(robot1.getLinkCount(), 2u);
   EXPECT_EQ(robot1.getJointCount(), 1u);
   EXPECT_EQ(robot2.getLinkCount(), 3u);
@@ -280,34 +280,34 @@ TEST(World, BakingWithMultibodies)
 
 // Test multibody lookup by name returns first-class handles and exposes a
 // symmetric presence query for world-owned names.
-TEST(World, MultiBodyLookupByName)
+TEST(World, MultibodyLookupByName)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("robot");
+  auto robot = world.addMultibody("robot");
 
-  auto found = world.getMultiBody("robot");
+  auto found = world.getMultibody("robot");
   ASSERT_TRUE(found.has_value());
   EXPECT_TRUE(found->isValid());
   EXPECT_EQ(found->getEntity(), robot.getEntity());
   EXPECT_EQ(found->getWorld(), robot.getWorld());
   EXPECT_EQ(found->getName(), "robot");
-  EXPECT_TRUE(world.hasMultiBody("robot"));
-  EXPECT_FALSE(world.hasMultiBody("missing"));
-  EXPECT_FALSE(world.getMultiBody("missing").has_value());
+  EXPECT_TRUE(world.hasMultibody("robot"));
+  EXPECT_FALSE(world.hasMultibody("missing"));
+  EXPECT_FALSE(world.getMultibody("missing").has_value());
 
-  EXPECT_THROW(world.addMultiBody("robot"), sx::InvalidArgumentException);
-  EXPECT_EQ(world.getMultiBodyCount(), 1u);
+  EXPECT_THROW(world.addMultibody("robot"), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getMultibodyCount(), 1u);
 
   sx::World worldWithExplicitGeneratedName;
   [[maybe_unused]] auto explicitName
-      = worldWithExplicitGeneratedName.addMultiBody("multibody_001");
-  auto generated = worldWithExplicitGeneratedName.addMultiBody("");
+      = worldWithExplicitGeneratedName.addMultibody("multibody_001");
+  auto generated = worldWithExplicitGeneratedName.addMultibody("");
   EXPECT_EQ(generated.getName(), "multibody_002");
-  EXPECT_TRUE(worldWithExplicitGeneratedName.hasMultiBody("multibody_001"));
-  EXPECT_TRUE(worldWithExplicitGeneratedName.hasMultiBody("multibody_002"));
-  EXPECT_EQ(worldWithExplicitGeneratedName.getMultiBodyCount(), 2u);
+  EXPECT_TRUE(worldWithExplicitGeneratedName.hasMultibody("multibody_001"));
+  EXPECT_TRUE(worldWithExplicitGeneratedName.hasMultibody("multibody_002"));
+  EXPECT_EQ(worldWithExplicitGeneratedName.getMultibodyCount(), 2u);
 }
 
 TEST(World, ClearInvalidatesPublicHandlesAndResetsFacadeState)
@@ -318,7 +318,7 @@ TEST(World, ClearInvalidatesPublicHandlesAndResetsFacadeState)
   world.setTimeStep(0.01);
   world.setTime(0.25);
 
-  auto robot = world.addMultiBody("robot");
+  auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
   auto body = world.addRigidBody("body");
   auto closure = world.addLoopClosure(
@@ -329,7 +329,7 @@ TEST(World, ClearInvalidatesPublicHandlesAndResetsFacadeState)
   EXPECT_TRUE(base.isValid());
   EXPECT_TRUE(body.isValid());
   EXPECT_TRUE(closure.isValid());
-  EXPECT_TRUE(world.hasMultiBody("robot"));
+  EXPECT_TRUE(world.hasMultibody("robot"));
   EXPECT_TRUE(world.hasRigidBody("body"));
   EXPECT_TRUE(world.hasLoopClosure("closure"));
 
@@ -349,13 +349,13 @@ TEST(World, ClearInvalidatesPublicHandlesAndResetsFacadeState)
   EXPECT_DOUBLE_EQ(world.getTimeStep(), 0.001);
   EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
   EXPECT_EQ(world.getFrame(), 0u);
-  EXPECT_EQ(world.getMultiBodyCount(), 0u);
+  EXPECT_EQ(world.getMultibodyCount(), 0u);
   EXPECT_EQ(world.getRigidBodyCount(), 0u);
   EXPECT_EQ(world.getLoopClosureCount(), 0u);
-  EXPECT_FALSE(world.hasMultiBody("robot"));
+  EXPECT_FALSE(world.hasMultibody("robot"));
   EXPECT_FALSE(world.hasRigidBody("body"));
   EXPECT_FALSE(world.hasLoopClosure("closure"));
-  EXPECT_FALSE(world.getMultiBody("robot").has_value());
+  EXPECT_FALSE(world.getMultibody("robot").has_value());
   EXPECT_FALSE(world.getRigidBody("body").has_value());
   EXPECT_FALSE(world.getLoopClosure("closure").has_value());
 }
@@ -392,7 +392,7 @@ TEST(World, LoopClosureTopology)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("four_bar");
+  auto robot = world.addMultibody("four_bar");
   auto base = robot.addLink("base");
   auto coupler = robot.addLink(
       "coupler",
@@ -519,7 +519,7 @@ TEST(World, LoopClosureRejectsInvalidTopology)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("robot");
+  auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
   auto link = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
 
@@ -567,7 +567,7 @@ TEST(World, LoopClosureRejectsInvalidRuntimePolicy)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("robot");
+  auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
   auto link = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
   auto closure
@@ -593,7 +593,7 @@ TEST(World, LoopClosureRejectsUnsupportedActiveRuntimePolicy)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("robot");
+  auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
   auto link = robot.addLink("link", {.parentLink = base, .jointName = "joint"});
   auto closure
@@ -800,7 +800,7 @@ TEST(World, SyncKinematicsRefreshesJointDrivenLinkTransforms)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("arm");
+  auto robot = world.addMultibody("arm");
   auto base = robot.addLink("base");
   auto forearm = robot.addLink(
       "forearm",
@@ -844,7 +844,7 @@ TEST(World, LoopClosureResidualUsesSyncedJointTransforms)
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
-  auto robot = world.addMultiBody("arm");
+  auto robot = world.addMultibody("arm");
   auto base = robot.addLink("base");
   auto forearm = robot.addLink(
       "forearm",
@@ -1310,13 +1310,13 @@ TEST(World, RigidBodyDynamicQuantities)
 
 // Test that articulated-body forward dynamics produces the analytical gravity
 // acceleration for a horizontal single revolute pendulum.
-TEST(World, MultiBodyRevolutePendulumGravityAcceleration)
+TEST(World, MultibodyRevolutePendulumGravityAcceleration)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("pendulum");
+  auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
 
   // Child link: revolute about Y at the base origin; center of mass offset L
@@ -1349,13 +1349,13 @@ TEST(World, MultiBodyRevolutePendulumGravityAcceleration)
 
 // Test that the public generalized mass matrix, gravity forces, and Coriolis
 // forces match analytical values for a single revolute pendulum.
-TEST(World, MultiBodyMassMatrixAndForcesSinglePendulum)
+TEST(World, MultibodyMassMatrixAndForcesSinglePendulum)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("pendulum");
+  auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
 
   const double length = 1.5;
@@ -1409,13 +1409,13 @@ TEST(World, MultiBodyMassMatrixAndForcesSinglePendulum)
 
 // Test that joint armature (rotor inertia) adds to the joint-space mass-matrix
 // diagonal and reduces the resulting joint acceleration.
-TEST(World, MultiBodyJointArmature)
+TEST(World, MultibodyJointArmature)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("pendulum");
+  auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
   const double length = 1.5;
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
@@ -1462,14 +1462,14 @@ TEST(World, MultiBodyJointArmature)
 
 // Test that Coulomb joint friction holds a joint at rest when the driving
 // effort is within the friction bound (stiction).
-TEST(World, MultiBodyJointCoulombFrictionStiction)
+TEST(World, MultibodyJointCoulombFrictionStiction)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("slider");
+  auto robot = world.addMultibody("slider");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "rail";
@@ -1498,14 +1498,14 @@ TEST(World, MultiBodyJointCoulombFrictionStiction)
 
 // Test that Coulomb joint friction reduces the net velocity step once the
 // driving effort exceeds the friction bound (kinetic friction).
-TEST(World, MultiBodyJointCoulombFrictionKinetic)
+TEST(World, MultibodyJointCoulombFrictionKinetic)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("slider");
+  auto robot = world.addMultibody("slider");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "rail";
@@ -1534,14 +1534,14 @@ TEST(World, MultiBodyJointCoulombFrictionKinetic)
 // Test that the PASSIVE actuator type ignores the commanded joint effort while
 // still applying passive spring forces, and that unimplemented actuator types
 // are rejected by the forward dynamics.
-TEST(World, MultiBodyJointActuatorTypes)
+TEST(World, MultibodyJointActuatorTypes)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("slider");
+  auto robot = world.addMultibody("slider");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "rail";
@@ -1580,14 +1580,14 @@ TEST(World, MultiBodyJointActuatorTypes)
 // Test the Velocity actuator type: a velocity-level constraint drives joints to
 // their commanded velocities exactly in one step, including under inertial
 // coupling between joints.
-TEST(World, MultiBodyJointVelocityActuatorSingle)
+TEST(World, MultibodyJointVelocityActuatorSingle)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("slider");
+  auto robot = world.addMultibody("slider");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "rail";
@@ -1616,14 +1616,14 @@ TEST(World, MultiBodyJointVelocityActuatorSingle)
 
 // Test the Velocity actuator under inertial coupling: both joints of a 2-link
 // chain reach their (different) commanded velocities exactly in one step.
-TEST(World, MultiBodyJointVelocityActuatorCoupled)
+TEST(World, MultibodyJointVelocityActuatorCoupled)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("double_pendulum");
+  auto robot = world.addMultibody("double_pendulum");
   auto base = robot.addLink("base");
   Eigen::Isometry3d offset1 = Eigen::Isometry3d::Identity();
   offset1.translation() = Eigen::Vector3d(0.7, 0.0, 0.0);
@@ -1666,13 +1666,13 @@ TEST(World, MultiBodyJointVelocityActuatorCoupled)
 // Test that the public mass matrix and bias forces satisfy the joint-space
 // equation of motion M qddot + C + g = tau for a 2-DOF chain. This validates
 // the decomposition for a multi-DOF system without hand-computing M.
-TEST(World, MultiBodyEquationOfMotionConsistency)
+TEST(World, MultibodyEquationOfMotionConsistency)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("double_pendulum");
+  auto robot = world.addMultibody("double_pendulum");
   auto base = robot.addLink("base");
 
   const double l1 = 0.7;
@@ -1738,13 +1738,13 @@ TEST(World, MultiBodyEquationOfMotionConsistency)
 
 // Test inverse dynamics against the analytical single-pendulum value
 // tau = (I + m L^2) qddot + g.
-TEST(World, MultiBodyInverseDynamicsSinglePendulum)
+TEST(World, MultibodyInverseDynamicsSinglePendulum)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("pendulum");
+  auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
   const double length = 1.5;
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
@@ -1780,13 +1780,13 @@ TEST(World, MultiBodyInverseDynamicsSinglePendulum)
 
 // Test that inverse dynamics inverts forward dynamics: the forces from
 // computeInverseDynamics(qddot) reproduce qddot in the next step.
-TEST(World, MultiBodyInverseDynamicsRoundTrip)
+TEST(World, MultibodyInverseDynamicsRoundTrip)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("double_pendulum");
+  auto robot = world.addMultibody("double_pendulum");
   auto base = robot.addLink("base");
 
   Eigen::Isometry3d offset1 = Eigen::Isometry3d::Identity();
@@ -1838,13 +1838,13 @@ TEST(World, MultiBodyInverseDynamicsRoundTrip)
 
 // Test the generalized impulse response dqdot = M^-1 f against the analytical
 // single-pendulum value and the M dqdot = f consistency identity.
-TEST(World, MultiBodyImpulseResponse)
+TEST(World, MultibodyImpulseResponse)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("pendulum");
+  auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
   const double length = 1.5;
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
@@ -1882,14 +1882,14 @@ TEST(World, MultiBodyImpulseResponse)
 
 // Test the body-frame link Jacobian against independent screw-theory twist
 // values: a revolute joint's body twist is [axis; axis x p].
-TEST(World, MultiBodyLinkJacobian)
+TEST(World, MultibodyLinkJacobian)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("pendulum");
+  auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
   const double length = 1.5;
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
@@ -1921,7 +1921,7 @@ TEST(World, MultiBodyLinkJacobian)
 
   // A link from a different world is rejected.
   sx::World other;
-  auto otherRobot = other.addMultiBody("other");
+  auto otherRobot = other.addMultibody("other");
   auto otherBase = otherRobot.addLink("other_base");
   EXPECT_THROW(
       (void)robot.getJacobian(otherBase), sx::InvalidArgumentException);
@@ -1929,14 +1929,14 @@ TEST(World, MultiBodyLinkJacobian)
 
 // Test the body-frame Jacobian column structure of a 2-DOF chain: a joint below
 // a link does not contribute to that link's Jacobian.
-TEST(World, MultiBodyLinkJacobianChain)
+TEST(World, MultibodyLinkJacobianChain)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("double_pendulum");
+  auto robot = world.addMultibody("double_pendulum");
   auto base = robot.addLink("base");
 
   const double l1 = 0.7;
@@ -1988,14 +1988,14 @@ TEST(World, MultiBodyLinkJacobianChain)
 
 // Test the world-frame link Jacobian: its linear block predicts the link
 // origin's world velocity, cross-checked against a finite difference of FK.
-TEST(World, MultiBodyLinkWorldJacobian)
+TEST(World, MultibodyLinkWorldJacobian)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("pendulum");
+  auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
   const double length = 1.5;
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
@@ -2039,13 +2039,13 @@ TEST(World, MultiBodyLinkWorldJacobian)
 
 // Test that the dynamics accessors return empty results for a multibody with no
 // movable degrees of freedom.
-TEST(World, MultiBodyDynamicsAccessorsNoDOF)
+TEST(World, MultibodyDynamicsAccessorsNoDOF)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
 
-  auto robot = world.addMultiBody("static_chain");
+  auto robot = world.addMultibody("static_chain");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "weld";
@@ -2065,13 +2065,13 @@ TEST(World, MultiBodyDynamicsAccessorsNoDOF)
 }
 
 // Test that a prismatic joint aligned with gravity free-falls at g.
-TEST(World, MultiBodyPrismaticFreeFall)
+TEST(World, MultibodyPrismaticFreeFall)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("slider");
+  auto robot = world.addMultibody("slider");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "rail";
@@ -2094,13 +2094,13 @@ TEST(World, MultiBodyPrismaticFreeFall)
 // Test screw-joint forward dynamics: rotation and translation are coupled by
 // the pitch, so a vertical screw under gravity has M = I_axis + m pitch^2 and
 // accelerates by -m g pitch / M.
-TEST(World, MultiBodyScrewJointDynamics)
+TEST(World, MultibodyScrewJointDynamics)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("screw");
+  auto robot = world.addMultibody("screw");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "helix";
@@ -2135,13 +2135,13 @@ TEST(World, MultiBodyScrewJointDynamics)
 // Test the universal joint's mass matrix and gravity forces against closed-form
 // values at the zero configuration: axis (Z) and axis2 (Y) intersect at the
 // base origin and the distal center of mass sits at (L, 0, 0).
-TEST(World, MultiBodyUniversalMassMatrixAndGravity)
+TEST(World, MultibodyUniversalMassMatrixAndGravity)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("ujoint");
+  auto robot = world.addMultibody("ujoint");
   auto base = robot.addLink("base");
 
   const double length = 0.9;
@@ -2194,13 +2194,13 @@ TEST(World, MultiBodyUniversalMassMatrixAndGravity)
 // Christoffel-symbol expression derived from the configuration-dependent mass
 // matrix by finite differences. The reference depends only on M(q) (which does
 // not use the velocity-product term cJ), so agreement validates cJ.
-TEST(World, MultiBodyUniversalCoriolisMatchesChristoffel)
+TEST(World, MultibodyUniversalCoriolisMatchesChristoffel)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("ujoint");
+  auto robot = world.addMultibody("ujoint");
   auto base = robot.addLink("base");
 
   const double length = 0.9;
@@ -2275,13 +2275,13 @@ TEST(World, MultiBodyUniversalCoriolisMatchesChristoffel)
 // configuration. With the plane normal along Y, in-plane axes X and -Z, and the
 // center of mass at the joint origin, the mass matrix is diagonal and only the
 // vertical (-Z) translation feels gravity.
-TEST(World, MultiBodyPlanarMassMatrixAndGravity)
+TEST(World, MultibodyPlanarMassMatrixAndGravity)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("planar");
+  auto robot = world.addMultibody("planar");
   auto base = robot.addLink("base");
 
   sx::JointSpec spec;
@@ -2325,13 +2325,13 @@ TEST(World, MultiBodyPlanarMassMatrixAndGravity)
 // expression from the configuration-dependent mass matrix (finite differences).
 // A nonzero link offset makes the rotation couple to the translations, so the
 // reference is nonzero and validates the velocity-product term cJ.
-TEST(World, MultiBodyPlanarCoriolisMatchesChristoffel)
+TEST(World, MultibodyPlanarCoriolisMatchesChristoffel)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("planar");
+  auto robot = world.addMultibody("planar");
   auto base = robot.addLink("base");
 
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
@@ -2399,13 +2399,13 @@ TEST(World, MultiBodyPlanarCoriolisMatchesChristoffel)
 // orientation. The center of mass is offset along X, so the mass matrix is the
 // inertia about the ball center (parallel-axis theorem) and only rotation about
 // Y feels gravity.
-TEST(World, MultiBodyBallMassMatrixAndGravity)
+TEST(World, MultibodyBallMassMatrixAndGravity)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("ball");
+  auto robot = world.addMultibody("ball");
   auto base = robot.addLink("base");
 
   const double offsetX = 0.7;
@@ -2413,7 +2413,7 @@ TEST(World, MultiBodyBallMassMatrixAndGravity)
   offset.translation() = Eigen::Vector3d(offsetX, 0.0, 0.0);
   sx::JointSpec spec;
   spec.name = "socket";
-  spec.type = sx::JointType::Ball;
+  spec.type = sx::JointType::Spherical;
   spec.transformFromParent = offset;
   auto bob = robot.addLink("bob", base, spec);
 
@@ -2425,7 +2425,7 @@ TEST(World, MultiBodyBallMassMatrixAndGravity)
   bob.setInertia(Eigen::Vector3d(inertiaXx, inertiaYy, inertiaZz).asDiagonal());
 
   auto joint = bob.getParentJoint();
-  ASSERT_EQ(joint.getType(), sx::JointType::Ball);
+  ASSERT_EQ(joint.getType(), sx::JointType::Spherical);
   ASSERT_EQ(joint.getDOFCount(), 3u);
 
   world.enterSimulationMode();
@@ -2454,18 +2454,18 @@ TEST(World, MultiBodyBallMassMatrixAndGravity)
 // Test the ball joint's SO(3) manifold integration: a torque-free body with
 // isotropic inertia keeps a constant body angular velocity, and the stored
 // rotation vector accumulates linearly (rotations about a fixed axis commute).
-TEST(World, MultiBodyBallIsotropicFreeSpin)
+TEST(World, MultibodyBallIsotropicFreeSpin)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("ball");
+  auto robot = world.addMultibody("ball");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "socket";
-  spec.type = sx::JointType::Ball;
+  spec.type = sx::JointType::Spherical;
   auto bob = robot.addLink("bob", base, spec);
 
   // Isotropic inertia: torque-free Euler dynamics keep the angular velocity
@@ -2492,17 +2492,17 @@ TEST(World, MultiBodyBallIsotropicFreeSpin)
 
 // Test the free joint (floating base): a free body under gravity free-falls,
 // with the linear acceleration equal to gravity and no angular motion.
-TEST(World, MultiBodyFreeJointFreeFall)
+TEST(World, MultibodyFreeJointFreeFall)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("floating");
+  auto robot = world.addMultibody("floating");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "floating";
-  spec.type = sx::JointType::Free;
+  spec.type = sx::JointType::Floating;
   auto body = robot.addLink("body", base, spec);
 
   const double mass = 2.0;
@@ -2510,7 +2510,7 @@ TEST(World, MultiBodyFreeJointFreeFall)
   body.setInertia(Eigen::Vector3d(0.05, 0.12, 0.2).asDiagonal());
 
   auto joint = body.getParentJoint();
-  ASSERT_EQ(joint.getType(), sx::JointType::Free);
+  ASSERT_EQ(joint.getType(), sx::JointType::Floating);
   ASSERT_EQ(joint.getDOFCount(), 6u);
 
   const double dt = 0.01;
@@ -2540,18 +2540,18 @@ TEST(World, MultiBodyFreeJointFreeFall)
 // Test the free joint's combined SE(3) integration: with translation and spin
 // both along the same principal axis (no gravity), the body twist stays
 // constant and the translation and rotation vector accumulate linearly.
-TEST(World, MultiBodyFreeJointTranslatesAndSpins)
+TEST(World, MultibodyFreeJointTranslatesAndSpins)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("floating");
+  auto robot = world.addMultibody("floating");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "floating";
-  spec.type = sx::JointType::Free;
+  spec.type = sx::JointType::Floating;
   auto body = robot.addLink("body", base, spec);
 
   body.setMass(2.0);
@@ -2586,13 +2586,13 @@ TEST(World, MultiBodyFreeJointTranslatesAndSpins)
 // link frame sits at the hinge but whose center of mass is offset along X
 // behaves like the same pendulum built with a link-frame offset (parallel-axis
 // mass matrix and gravity torque), exercising the COM-coupled spatial inertia.
-TEST(World, MultiBodyLinkCenterOfMassOffset)
+TEST(World, MultibodyLinkCenterOfMassOffset)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("pendulum");
+  auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
 
   // Link frame at the hinge (no transformFromParent offset); the mass is offset
@@ -2634,14 +2634,14 @@ TEST(World, MultiBodyLinkCenterOfMassOffset)
 
 // Test that the pendulum integrator conserves mechanical energy over a swing
 // (a sign or scale error in the dynamics would inject energy and diverge).
-TEST(World, MultiBodyPendulumConservesEnergy)
+TEST(World, MultibodyPendulumConservesEnergy)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
   const Eigen::Vector3d gravity(0.0, 0.0, -9.81);
 
-  auto robot = world.addMultiBody("pendulum");
+  auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
 
   const double length = 1.0;
@@ -2699,14 +2699,14 @@ TEST(World, MultiBodyPendulumConservesEnergy)
 
 // Test that joint spring stiffness and damping contribute passive generalized
 // forces in the articulated-body dynamics.
-TEST(World, MultiBodyJointSpringAndDamping)
+TEST(World, MultibodyJointSpringAndDamping)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("slider");
+  auto robot = world.addMultibody("slider");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "rail";
@@ -2745,13 +2745,13 @@ TEST(World, MultiBodyJointSpringAndDamping)
 }
 
 // Test that a joint position limit acts as a hard stop in the dynamics.
-TEST(World, MultiBodyJointPositionLimit)
+TEST(World, MultibodyJointPositionLimit)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("pendulum");
+  auto robot = world.addMultibody("pendulum");
   auto base = robot.addLink("base");
   Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
   offset.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
@@ -2794,14 +2794,14 @@ TEST(World, MultiBodyJointPositionLimit)
 
 // Test that joint effort limits clamp the commanded actuation force used by the
 // articulated-body forward dynamics.
-TEST(World, MultiBodyJointEffortLimit)
+TEST(World, MultibodyJointEffortLimit)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("slider");
+  auto robot = world.addMultibody("slider");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "rail";
@@ -2839,14 +2839,14 @@ TEST(World, MultiBodyJointEffortLimit)
 }
 
 // Test that joint velocity limits clamp the generalized velocity each step.
-TEST(World, MultiBodyJointVelocityLimit)
+TEST(World, MultibodyJointVelocityLimit)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
 
-  auto robot = world.addMultiBody("slider");
+  auto robot = world.addMultibody("slider");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "rail";
@@ -2930,7 +2930,7 @@ TEST(World, CollisionQueryIncludesMultibodyLinks)
   sx::World world;
 
   // A multibody base link (at the world origin) carrying a sphere shape.
-  auto robot = world.addMultiBody("robot");
+  auto robot = world.addMultibody("robot");
   auto base = robot.addLink("base");
   base.setCollisionShape(sx::CollisionShape::makeSphere(1.0));
   EXPECT_TRUE(base.hasCollisionShape());
@@ -2973,13 +2973,13 @@ TEST(World, CollisionQueryIncludesMultibodyLinks)
 // Test that a multibody link with a collision shape rests on a static ground
 // via the articulated contact response (a fixed-base prismatic "leg" drops
 // under gravity and stops where its sphere meets the ground).
-TEST(World, MultiBodyLinkRestsOnStaticGround)
+TEST(World, MultibodyLinkRestsOnStaticGround)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("leg_robot");
+  auto robot = world.addMultibody("leg_robot");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "slider";
@@ -3022,7 +3022,7 @@ TEST(World, MultiBodyLinkRestsOnStaticGround)
 // moving along +X hits a free rigid body. The contact impulse acts on both
 // bodies, so total X linear momentum is conserved and the box is pushed
 // forward.
-TEST(World, MultiBodyLinkPushesDynamicRigidBody)
+TEST(World, MultibodyLinkPushesDynamicRigidBody)
 {
   namespace sx = dart::simulation::experimental;
 
@@ -3030,7 +3030,7 @@ TEST(World, MultiBodyLinkPushesDynamicRigidBody)
   world.setGravity(Eigen::Vector3d::Zero());
 
   // Striker: a fixed base carrying a sphere on a prismatic X joint, moving +X.
-  auto robot = world.addMultiBody("striker_robot");
+  auto robot = world.addMultibody("striker_robot");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "rail";
@@ -3083,13 +3083,13 @@ TEST(World, MultiBodyLinkPushesDynamicRigidBody)
 // Test that Coulomb friction at a link contact decelerates a sliding link. A
 // vertical prismatic carries a horizontal prismatic link whose sphere rests on
 // the ground; an initial horizontal velocity is braked to rest by friction.
-TEST(World, MultiBodyLinkContactFrictionStopsSlide)
+TEST(World, MultibodyLinkContactFrictionStopsSlide)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("slider_robot");
+  auto robot = world.addMultibody("slider_robot");
   auto base = robot.addLink("base");
 
   sx::JointSpec verticalSpec;
@@ -3136,13 +3136,13 @@ TEST(World, MultiBodyLinkContactFrictionStopsSlide)
 
 // Test that restitution at a link contact rebounds a dropped link. A prismatic
 // link with a sphere falls onto a near-elastic ground and bounces back up.
-TEST(World, MultiBodyLinkContactRestitutionBounces)
+TEST(World, MultibodyLinkContactRestitutionBounces)
 {
   namespace sx = dart::simulation::experimental;
 
   sx::World world; // default gravity (0, 0, -9.81)
 
-  auto robot = world.addMultiBody("bouncer");
+  auto robot = world.addMultibody("bouncer");
   auto base = robot.addLink("base");
   sx::JointSpec spec;
   spec.name = "slider";

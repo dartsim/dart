@@ -34,7 +34,7 @@
 
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/multi_body/link.hpp"
+#include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 namespace dart::simulation::experimental {

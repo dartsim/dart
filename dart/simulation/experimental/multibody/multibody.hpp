@@ -34,7 +34,7 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
-#include <dart/simulation/experimental/multi_body/link.hpp> // Need complete type for LinkOptions
+#include <dart/simulation/experimental/multibody/link.hpp> // Need complete type for LinkOptions
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -131,49 +131,49 @@ struct LinkOptions
   // double pitch;           // For Screw
 };
 
-/// MultiBody represents an articulated rigid body system
+/// Multibody represents an articulated rigid body system
 ///
 /// This is a lightweight handle class that references entity data stored
 /// in the World's entt::registry. It provides convenient API to access
-/// and modify MultiBody properties without owning the data.
+/// and modify Multibody properties without owning the data.
 ///
-/// A MultiBody consists of multiple rigid Links connected by Joints.
+/// A Multibody consists of multiple rigid Links connected by Joints.
 /// This class is suitable for representing:
 /// - Robotic manipulators (e.g., UR5, Franka Emika Panda)
 /// - Humanoid characters (e.g., bipeds, quadrupeds)
 /// - Mechanical systems (e.g., furniture, mechanisms)
 ///
-/// The term "MultiBody" is used for consistency with other classes in
+/// The term "Multibody" is used for consistency with other classes in
 /// this library (e.g., RigidBody, SoftBody, FixedFrame, FreeFrame).
 ///
 /// @note Handles are lightweight (entity ID + pointer) and safe to copy.
 ///       Handles become invalid if the underlying entity is destroyed
 ///       or the World is destroyed.
-class DART_EXPERIMENTAL_API MultiBody
+class DART_EXPERIMENTAL_API Multibody
 {
 public:
-  /// Construct a MultiBody handle
+  /// Construct a Multibody handle
   ///
   /// @param entity The entity ID in the registry
   /// @param world Pointer to the World owning this entity
-  MultiBody(entt::entity entity, World* world);
+  Multibody(entt::entity entity, World* world);
 
-  /// Get the name of this MultiBody
+  /// Get the name of this Multibody
   ///
   /// @return The name
   std::string_view getName() const;
 
-  /// Set the name of this MultiBody
+  /// Set the name of this Multibody
   ///
   /// @param name New name
   void setName(std::string_view name);
 
-  /// Get the number of links in this MultiBody
+  /// Get the number of links in this Multibody
   ///
   /// @return Number of links
   std::size_t getLinkCount() const;
 
-  /// Get the number of joints in this MultiBody
+  /// Get the number of joints in this Multibody
   ///
   /// @return Number of joints
   std::size_t getJointCount() const;
@@ -198,25 +198,25 @@ public:
   /// Get all link handles in construction order.
   ///
   /// The returned vector is a snapshot of lightweight handles. The handles
-  /// remain tied to this MultiBody's World and follow the same validity rules
+  /// remain tied to this Multibody's World and follow the same validity rules
   /// as handles returned by addLink() and getLink().
   [[nodiscard]] std::vector<Link> getLinks() const;
 
   /// Get all joint handles in construction order.
   ///
   /// The returned vector is a snapshot of lightweight handles. The handles
-  /// remain tied to this MultiBody's World and follow the same validity rules
+  /// remain tied to this Multibody's World and follow the same validity rules
   /// as handles returned by getJoint().
   [[nodiscard]] std::vector<Joint> getJoints() const;
 
   /// Get link names in construction order.
   ///
-  /// Link names are unique within this MultiBody.
+  /// Link names are unique within this Multibody.
   [[nodiscard]] std::vector<std::string> getLinkNames() const;
 
   /// Get joint names in construction order.
   ///
-  /// Joint names are unique within this MultiBody.
+  /// Joint names are unique within this Multibody.
   [[nodiscard]] std::vector<std::string> getJointNames() const;
 
   /// Get the entity ID (for advanced users)
@@ -229,7 +229,7 @@ public:
   /// @return Pointer to the World
   [[nodiscard]] World* getWorld() const;
 
-  /// Return whether this handle still refers to a live MultiBody.
+  /// Return whether this handle still refers to a live Multibody.
   ///
   /// Handles become invalid after the owning World destroys the underlying
   /// entity, including through World::clear().

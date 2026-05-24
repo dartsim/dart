@@ -42,7 +42,7 @@ class FreeFrame;
 class Joint;
 class Link;
 class LoopClosure;
-class MultiBody;
+class Multibody;
 class RigidBody;
 class World;
 enum class WorldSyncStage;
@@ -66,7 +66,7 @@ struct LinkOptions;
 struct LoopClosureRuntimePolicy;
 struct LoopClosureResidual;
 struct LoopClosureSpec;
-struct MultiBodyOptions;
+struct MultibodyOptions;
 struct RigidBodyOptions;
 struct WorldOptions;
 

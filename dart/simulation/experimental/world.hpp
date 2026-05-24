@@ -78,10 +78,10 @@ public:
   //--------------------------------------------------------------------------
   // Multibody management
   //--------------------------------------------------------------------------
-  MultiBody addMultiBody(std::string_view name);
-  std::optional<MultiBody> getMultiBody(std::string_view name);
-  bool hasMultiBody(std::string_view name) const;
-  std::size_t getMultiBodyCount() const;
+  Multibody addMultibody(std::string_view name);
+  std::optional<Multibody> getMultibody(std::string_view name);
+  bool hasMultibody(std::string_view name) const;
+  std::size_t getMultibodyCount() const;
 
   //--------------------------------------------------------------------------
   // Loop-closure management
@@ -191,7 +191,7 @@ private:
   friend class Link;
   friend class Joint;
   friend class LoopClosure;
-  friend class MultiBody;
+  friend class Multibody;
   friend class RigidBody;
 
   Frame resolveParentFrame(const Frame& parent) const;
@@ -216,7 +216,7 @@ private:
 
   std::size_t m_freeFrameCounter{0};
   std::size_t m_fixedFrameCounter{0};
-  std::size_t m_multiBodyCounter{0};
+  std::size_t m_multibodyCounter{0};
   std::size_t m_loopClosureCounter{0};
   std::size_t m_rigidBodyCounter{0};
   std::size_t m_linkCounter{0};

@@ -30,7 +30,7 @@ def articulated_dynamics_demo():
     """A 2-DOF arm: report the generalized dynamics terms and inverse dynamics."""
     print("== Articulated dynamics (revolute + universal arm) ==")
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("arm")
+    robot = world.add_multibody("arm")
 
     base = robot.add_link("base")
     upper = robot.add_link(
@@ -83,12 +83,12 @@ def floating_base_demo():
     """A free-floating body free-falls under gravity (SE(3) integration)."""
     print("\n== Floating base (free joint) ==")
     world = sx.World()
-    robot = world.add_multi_body("floating")
+    robot = world.add_multibody("floating")
     base = robot.add_link("base")
     body = robot.add_link(
         "body",
         parent=base,
-        joint=sx.JointSpec(name="floating", type=sx.JointType.FREE),
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
     )
     body.mass = 1.5
     body.inertia = ((0.1, 0.0, 0.0), (0.0, 0.1, 0.0), (0.0, 0.0, 0.1))
@@ -110,7 +110,7 @@ def contact_demo():
     """A prismatic 'leg' with a sphere foot drops and rests on static ground."""
     print("\n== Contact (link resting on static ground) ==")
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("leg_robot")
+    robot = world.add_multibody("leg_robot")
     base = robot.add_link("base")
     leg = robot.add_link(
         "leg",

@@ -24,7 +24,7 @@ constrained rigid-body simulator. This is the gap the first solver must close.
 - `KinematicsStage` refreshes frame transforms (open-chain FK for tree joints).
 - `World::step()` = `RigidBodyIntegrationStage` then `KinematicsStage`, advances
   time/frame once. No substepping. No collision, no constraint solve.
-- `MultiBody`/`Link`/`Joint`: topology, names, DOF count, generalized
+- `Multibody`/`Link`/`Joint`: topology, names, DOF count, generalized
   position/velocity, open-chain FK. **No forward dynamics, no joint forces,
   limits, actuators, damping, or springs in the step.**
 - `LoopClosure`: topology + residual diagnostics only; projection/solve rejected
@@ -42,9 +42,9 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 | Capability                               | DART 6 (legacy)                                         | Experimental                                                                             | Status  |
 | ---------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------- |
 | Articulated-body forward dynamics        | `Skeleton::computeForwardDynamics` (Featherstone ABA)   | RNEA-based, fixed base, revolute/prismatic (Phase 1)                                     | PARTIAL |
-| Inverse dynamics (RNEA)                  | `Skeleton::computeInverseDynamics`                      | `MultiBody::computeInverseDynamics` (Phase 4)                                            | PRESENT |
-| Mass matrix / inverse mass matrix        | `getMassMatrix`, `getInvMassMatrix`, augmented variants | `MultiBody::getMassMatrix`/`getInverseMassMatrix` (Phase 4)                              | PRESENT |
-| Coriolis / gravity generalized forces    | `getCoriolisForces`, `getGravityForces`                 | `MultiBody::getCoriolisForces`/`getGravityForces` (Phase 4)                              | PRESENT |
+| Inverse dynamics (RNEA)                  | `Skeleton::computeInverseDynamics`                      | `Multibody::computeInverseDynamics` (Phase 4)                                            | PRESENT |
+| Mass matrix / inverse mass matrix        | `getMassMatrix`, `getInvMassMatrix`, augmented variants | `Multibody::getMassMatrix`/`getInverseMassMatrix` (Phase 4)                              | PRESENT |
+| Coriolis / gravity generalized forces    | `getCoriolisForces`, `getGravityForces`                 | `Multibody::getCoriolisForces`/`getGravityForces` (Phase 4)                              | PRESENT |
 | Impulse-based dynamics (for constraints) | `computeImpulseForwardDynamics`                         | joint-space impulse response `M^-1 f` (Phase 4); full constrained version pending solver | PARTIAL |
 | Free single-body integration             | per-body explicit integration                           | semi-implicit Euler (Phase 0.1)                                                          | PARTIAL |
 | Floating base / other joint dynamics     | all joint types, free base                              | fixed base only; screw added (Phase 5); ball/free/universal/planar dynamics not yet      | MISSING |

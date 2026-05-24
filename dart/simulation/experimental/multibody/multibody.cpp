@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/multi_body/multi_body.hpp"
+#include "dart/simulation/experimental/multibody/multibody.hpp"
 
 #include "dart/simulation/experimental/common/ecs_utils.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/compute/multi_body_dynamics.hpp"
-#include "dart/simulation/experimental/multi_body/joint.hpp"
-#include "dart/simulation/experimental/multi_body/link.hpp"
+#include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
+#include "dart/simulation/experimental/multibody/joint.hpp"
+#include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
 #include <Eigen/Geometry>
@@ -105,12 +105,12 @@ comps::JointType toComponentJointType(JointType type)
       return comps::JointType::Screw;
     case JointType::Universal:
       return comps::JointType::Universal;
-    case JointType::Ball:
-      return comps::JointType::Ball;
+    case JointType::Spherical:
+      return comps::JointType::Spherical;
     case JointType::Planar:
       return comps::JointType::Planar;
-    case JointType::Free:
-      return comps::JointType::Free;
+    case JointType::Floating:
+      return comps::JointType::Floating;
     case JointType::Custom:
       return comps::JointType::Custom;
   }
@@ -121,29 +121,29 @@ comps::JointType toComponentJointType(JointType type)
 } // namespace
 
 //==============================================================================
-MultiBody::MultiBody(entt::entity entity, World* world)
+Multibody::Multibody(entt::entity entity, World* world)
   : m_entity(entity), m_world(world)
 {
 }
 
 //==============================================================================
-std::string_view MultiBody::getName() const
+std::string_view Multibody::getName() const
 {
   const auto& nameComp = safeGet<comps::Name>(m_world->getRegistry(), m_entity);
   return nameComp.name;
 }
 
 //==============================================================================
-void MultiBody::setName(std::string_view name)
+void Multibody::setName(std::string_view name)
 {
   DART_EXPERIMENTAL_THROW_T_IF(
-      name.empty(), InvalidArgumentException, "MultiBody name cannot be empty");
+      name.empty(), InvalidArgumentException, "Multibody name cannot be empty");
 
   DART_EXPERIMENTAL_THROW_T_IF(
-      hasOtherEntityWithName<comps::MultiBodyTag>(
+      hasOtherEntityWithName<comps::MultibodyTag>(
           m_world->getRegistry(), m_entity, name),
       InvalidArgumentException,
-      "MultiBody '{}' already exists",
+      "Multibody '{}' already exists",
       name);
 
   auto& nameComp = safeGet<comps::Name>(m_world->getRegistry(), m_entity);
@@ -151,27 +151,27 @@ void MultiBody::setName(std::string_view name)
 }
 
 //==============================================================================
-std::size_t MultiBody::getLinkCount() const
+std::size_t Multibody::getLinkCount() const
 {
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+      = safeGet<comps::MultibodyStructure>(m_world->getRegistry(), m_entity);
   return structure.links.size();
 }
 
 //==============================================================================
-std::size_t MultiBody::getJointCount() const
+std::size_t Multibody::getJointCount() const
 {
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+      = safeGet<comps::MultibodyStructure>(m_world->getRegistry(), m_entity);
   return structure.joints.size();
 }
 
 //==============================================================================
-std::size_t MultiBody::getDOFCount() const
+std::size_t Multibody::getDOFCount() const
 {
   std::size_t dof = 0;
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+      = safeGet<comps::MultibodyStructure>(m_world->getRegistry(), m_entity);
   const auto& registry = m_world->getRegistry();
 
   for (const auto& jointEntity : structure.joints) {
@@ -183,10 +183,10 @@ std::size_t MultiBody::getDOFCount() const
 }
 
 //==============================================================================
-std::optional<Link> MultiBody::getLink(std::string_view name) const
+std::optional<Link> Multibody::getLink(std::string_view name) const
 {
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+      = safeGet<comps::MultibodyStructure>(m_world->getRegistry(), m_entity);
   const auto& registry = m_world->getRegistry();
 
   for (const auto& linkEntity : structure.links) {
@@ -200,10 +200,10 @@ std::optional<Link> MultiBody::getLink(std::string_view name) const
 }
 
 //==============================================================================
-std::optional<Joint> MultiBody::getJoint(std::string_view name) const
+std::optional<Joint> Multibody::getJoint(std::string_view name) const
 {
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+      = safeGet<comps::MultibodyStructure>(m_world->getRegistry(), m_entity);
   const auto& registry = m_world->getRegistry();
 
   for (const auto& jointEntity : structure.joints) {
@@ -217,10 +217,10 @@ std::optional<Joint> MultiBody::getJoint(std::string_view name) const
 }
 
 //==============================================================================
-std::vector<Link> MultiBody::getLinks() const
+std::vector<Link> Multibody::getLinks() const
 {
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+      = safeGet<comps::MultibodyStructure>(m_world->getRegistry(), m_entity);
 
   std::vector<Link> links;
   links.reserve(structure.links.size());
@@ -232,10 +232,10 @@ std::vector<Link> MultiBody::getLinks() const
 }
 
 //==============================================================================
-std::vector<Joint> MultiBody::getJoints() const
+std::vector<Joint> Multibody::getJoints() const
 {
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+      = safeGet<comps::MultibodyStructure>(m_world->getRegistry(), m_entity);
 
   std::vector<Joint> joints;
   joints.reserve(structure.joints.size());
@@ -247,10 +247,10 @@ std::vector<Joint> MultiBody::getJoints() const
 }
 
 //==============================================================================
-std::vector<std::string> MultiBody::getLinkNames() const
+std::vector<std::string> Multibody::getLinkNames() const
 {
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+      = safeGet<comps::MultibodyStructure>(m_world->getRegistry(), m_entity);
   const auto& registry = m_world->getRegistry();
 
   std::vector<std::string> names;
@@ -263,10 +263,10 @@ std::vector<std::string> MultiBody::getLinkNames() const
 }
 
 //==============================================================================
-std::vector<std::string> MultiBody::getJointNames() const
+std::vector<std::string> Multibody::getJointNames() const
 {
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(m_world->getRegistry(), m_entity);
+      = safeGet<comps::MultibodyStructure>(m_world->getRegistry(), m_entity);
   const auto& registry = m_world->getRegistry();
 
   std::vector<std::string> names;
@@ -279,25 +279,25 @@ std::vector<std::string> MultiBody::getJointNames() const
 }
 
 //==============================================================================
-entt::entity MultiBody::getEntity() const
+entt::entity Multibody::getEntity() const
 {
   return m_entity;
 }
 
 //==============================================================================
-World* MultiBody::getWorld() const
+World* Multibody::getWorld() const
 {
   return m_world;
 }
 
 //==============================================================================
-bool MultiBody::isValid() const
+bool Multibody::isValid() const
 {
   return m_world != nullptr && m_world->getRegistry().valid(m_entity)
-         && m_world->getRegistry().all_of<comps::MultiBodyTag>(m_entity);
+         && m_world->getRegistry().all_of<comps::MultibodyTag>(m_entity);
 }
 
-Link MultiBody::addLink(std::string_view name)
+Link Multibody::addLink(std::string_view name)
 {
   // Check design mode
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -306,7 +306,7 @@ Link MultiBody::addLink(std::string_view name)
       "Cannot create Link in simulation mode");
 
   auto& registry = m_world->getRegistry();
-  auto& structure = safeGet<comps::MultiBodyStructure>(registry, m_entity);
+  auto& structure = safeGet<comps::MultibodyStructure>(registry, m_entity);
 
   // Auto-generate name if not provided
   std::string actualName;
@@ -319,7 +319,7 @@ Link MultiBody::addLink(std::string_view name)
     DART_EXPERIMENTAL_THROW_T_IF(
         containsName(registry, structure.links, actualName),
         InvalidArgumentException,
-        "Link '{}' already exists in MultiBody '{}'",
+        "Link '{}' already exists in Multibody '{}'",
         actualName,
         getName());
   }
@@ -344,14 +344,14 @@ Link MultiBody::addLink(std::string_view name)
   linkComp.name = std::move(actualName);
   linkComp.parentJoint = entt::null;
 
-  // Add to MultiBody structure
+  // Add to Multibody structure
   structure.links.push_back(linkEntity);
 
   return Link(linkEntity, m_world);
 }
 
 //==============================================================================
-Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
+Link Multibody::addLink(std::string_view name, const LinkOptions& options)
 {
   // Check design mode
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -374,11 +374,11 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
       InvalidArgumentException,
       "Parent link is invalid");
 
-  auto& structure = safeGet<comps::MultiBodyStructure>(registry, m_entity);
+  auto& structure = safeGet<comps::MultibodyStructure>(registry, m_entity);
   DART_EXPERIMENTAL_THROW_T_IF(
       !containsEntity(structure.links, parentEntity),
       InvalidArgumentException,
-      "Parent link does not belong to MultiBody '{}'",
+      "Parent link does not belong to Multibody '{}'",
       getName());
 
   // Auto-generate link name if not provided
@@ -392,7 +392,7 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
     DART_EXPERIMENTAL_THROW_T_IF(
         containsName(registry, structure.links, actualLinkName),
         InvalidArgumentException,
-        "Link '{}' already exists in MultiBody '{}'",
+        "Link '{}' already exists in Multibody '{}'",
         actualLinkName,
         getName());
   }
@@ -408,7 +408,7 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
     DART_EXPERIMENTAL_THROW_T_IF(
         containsName(registry, structure.joints, actualJointName),
         InvalidArgumentException,
-        "Joint '{}' already exists in MultiBody '{}'",
+        "Joint '{}' already exists in Multibody '{}'",
         actualJointName,
         getName());
   }
@@ -517,7 +517,7 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
   // Link this link to the parent joint
   linkComp.parentJoint = jointEntity;
 
-  // Add to MultiBody structure
+  // Add to Multibody structure
   structure.links.push_back(linkEntity);
   structure.joints.push_back(jointEntity);
 
@@ -525,7 +525,7 @@ Link MultiBody::addLink(std::string_view name, const LinkOptions& options)
 }
 
 //==============================================================================
-Link MultiBody::addLink(
+Link Multibody::addLink(
     std::string_view name, const Link& parentLink, const JointSpec& joint)
 {
   return addLink(
@@ -541,18 +541,18 @@ Link MultiBody::addLink(
 }
 
 //==============================================================================
-Eigen::MatrixXd MultiBody::getMassMatrix() const
+Eigen::MatrixXd Multibody::getMassMatrix() const
 {
   auto& registry = m_world->getRegistry();
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
-  return compute::computeMultiBodyDynamicsTerms(
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyDynamicsTerms(
              registry, structure, m_world->getGravity())
       .massMatrix;
 }
 
 //==============================================================================
-Eigen::MatrixXd MultiBody::getInverseMassMatrix() const
+Eigen::MatrixXd Multibody::getInverseMassMatrix() const
 {
   const Eigen::MatrixXd mass = getMassMatrix();
   if (mass.size() == 0) {
@@ -562,52 +562,52 @@ Eigen::MatrixXd MultiBody::getInverseMassMatrix() const
 }
 
 //==============================================================================
-Eigen::VectorXd MultiBody::getCoriolisForces() const
+Eigen::VectorXd Multibody::getCoriolisForces() const
 {
   auto& registry = m_world->getRegistry();
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
-  return compute::computeMultiBodyDynamicsTerms(
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyDynamicsTerms(
              registry, structure, m_world->getGravity())
       .coriolisForces;
 }
 
 //==============================================================================
-Eigen::VectorXd MultiBody::getGravityForces() const
+Eigen::VectorXd Multibody::getGravityForces() const
 {
   auto& registry = m_world->getRegistry();
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
-  return compute::computeMultiBodyDynamicsTerms(
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyDynamicsTerms(
              registry, structure, m_world->getGravity())
       .gravityForces;
 }
 
 //==============================================================================
-Eigen::VectorXd MultiBody::getCoriolisAndGravityForces() const
+Eigen::VectorXd Multibody::getCoriolisAndGravityForces() const
 {
   auto& registry = m_world->getRegistry();
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
-  const compute::MultiBodyDynamicsTerms terms
-      = compute::computeMultiBodyDynamicsTerms(
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  const compute::MultibodyDynamicsTerms terms
+      = compute::computeMultibodyDynamicsTerms(
           registry, structure, m_world->getGravity());
   return terms.coriolisForces + terms.gravityForces;
 }
 
 //==============================================================================
-Eigen::VectorXd MultiBody::computeInverseDynamics(
+Eigen::VectorXd Multibody::computeInverseDynamics(
     const Eigen::VectorXd& desiredAcceleration) const
 {
   auto& registry = m_world->getRegistry();
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
-  return compute::computeMultiBodyInverseDynamics(
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyInverseDynamics(
       registry, structure, m_world->getGravity(), desiredAcceleration);
 }
 
 //==============================================================================
-Eigen::VectorXd MultiBody::computeImpulseResponse(
+Eigen::VectorXd Multibody::computeImpulseResponse(
     const Eigen::VectorXd& jointImpulse) const
 {
   const Eigen::MatrixXd massMatrix = getMassMatrix();
@@ -626,7 +626,7 @@ Eigen::VectorXd MultiBody::computeImpulseResponse(
 }
 
 //==============================================================================
-Eigen::MatrixXd MultiBody::getJacobian(const Link& link) const
+Eigen::MatrixXd Multibody::getJacobian(const Link& link) const
 {
   DART_EXPERIMENTAL_THROW_T_IF(
       link.getWorld() != m_world,
@@ -635,13 +635,13 @@ Eigen::MatrixXd MultiBody::getJacobian(const Link& link) const
 
   auto& registry = m_world->getRegistry();
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
-  return compute::computeMultiBodyLinkJacobian(
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyLinkJacobian(
       registry, structure, link.getEntity());
 }
 
 //==============================================================================
-Eigen::MatrixXd MultiBody::getWorldJacobian(const Link& link) const
+Eigen::MatrixXd Multibody::getWorldJacobian(const Link& link) const
 {
   DART_EXPERIMENTAL_THROW_T_IF(
       link.getWorld() != m_world,
@@ -650,8 +650,8 @@ Eigen::MatrixXd MultiBody::getWorldJacobian(const Link& link) const
 
   auto& registry = m_world->getRegistry();
   const auto& structure
-      = safeGet<comps::MultiBodyStructure>(registry, m_entity);
-  return compute::computeMultiBodyLinkWorldJacobian(
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyLinkWorldJacobian(
       registry, structure, link.getEntity());
 }
 

@@ -104,7 +104,7 @@ def test_experimental_api_exposes_python_names_only():
             "isValid",
             "isWorld",
         ),
-        sx.MultiBody: (
+        sx.Multibody: (
             "addLink",
             "getLink",
             "getJoint",
@@ -176,10 +176,10 @@ def test_experimental_api_exposes_python_names_only():
             "isValid",
         ),
         sx.World: (
-            "addMultiBody",
-            "getMultiBody",
-            "hasMultiBody",
-            "getMultiBodyCount",
+            "addMultibody",
+            "getMultibody",
+            "hasMultibody",
+            "getMultibodyCount",
             "addRigidBody",
             "getRigidBody",
             "hasRigidBody",
@@ -188,7 +188,7 @@ def test_experimental_api_exposes_python_names_only():
             "getLoopClosure",
             "hasLoopClosure",
             "getLoopClosureCount",
-            "get_multi_body_count",
+            "get_multibody_count",
             "get_loop_closure_count",
             "get_rigid_body_count",
             "updateKinematics",
@@ -262,7 +262,7 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "variable_names",
         "link_names",
         "joint_names",
-        "has_multi_body",
+        "has_multibody",
         "is_valid",
     ):
         assert member in stub
@@ -274,9 +274,9 @@ def test_experimental_stub_tracks_public_runtime_symbols():
         "def set_position(",
         "def get_runtime_policy(",
         "def set_runtime_policy(",
-        "def getMultiBody(",
-        "def hasMultiBody(",
-        "def has_multi_body_count(",
+        "def getMultibody(",
+        "def hasMultibody(",
+        "def has_multibody_count(",
         "def get_rigid_body_count(",
     )
     for member in forbidden_stub_members:
@@ -344,38 +344,38 @@ def test_experimental_world_smoke():
 
     world = sx.World()
     assert not world.is_simulation_mode
-    assert world.num_multi_bodies == 0
+    assert world.num_multibodies == 0
     assert world.num_loop_closures == 0
     assert world.num_rigid_bodies == 0
 
-    multi_body = world.add_multi_body("robot")
-    assert multi_body.name == "robot"
-    assert multi_body.is_valid
-    assert multi_body.num_links == 0
-    assert multi_body.num_joints == 0
-    assert multi_body.num_dofs == 0
+    multibody = world.add_multibody("robot")
+    assert multibody.name == "robot"
+    assert multibody.is_valid
+    assert multibody.num_links == 0
+    assert multibody.num_joints == 0
+    assert multibody.num_dofs == 0
 
-    multi_body.name = "renamed_robot"
-    assert multi_body.name == "renamed_robot"
-    assert world.has_multi_body("renamed_robot")
-    assert not world.has_multi_body("missing")
-    assert world.get_multi_body("renamed_robot").name == "renamed_robot"
-    assert world.get_multi_body("missing") is None
+    multibody.name = "renamed_robot"
+    assert multibody.name == "renamed_robot"
+    assert world.has_multibody("renamed_robot")
+    assert not world.has_multibody("missing")
+    assert world.get_multibody("renamed_robot").name == "renamed_robot"
+    assert world.get_multibody("missing") is None
     with pytest.raises(Exception, match="already exists"):
-        world.add_multi_body("renamed_robot")
+        world.add_multibody("renamed_robot")
     with pytest.raises(Exception, match="cannot be empty"):
-        multi_body.name = ""
-    assert multi_body.name == "renamed_robot"
-    assert world.num_multi_bodies == 1
+        multibody.name = ""
+    assert multibody.name == "renamed_robot"
+    assert world.num_multibodies == 1
     assert world.num_loop_closures == 0
 
-    auto_multi_body_world = sx.World()
-    auto_multi_body_world.add_multi_body("multibody_001")
-    generated_multi_body = auto_multi_body_world.add_multi_body("")
-    assert generated_multi_body.name == "multibody_002"
-    assert auto_multi_body_world.has_multi_body("multibody_001")
-    assert auto_multi_body_world.has_multi_body("multibody_002")
-    assert auto_multi_body_world.num_multi_bodies == 2
+    auto_multibody_world = sx.World()
+    auto_multibody_world.add_multibody("multibody_001")
+    generated_multibody = auto_multibody_world.add_multibody("")
+    assert generated_multibody.name == "multibody_002"
+    assert auto_multibody_world.has_multibody("multibody_001")
+    assert auto_multibody_world.has_multibody("multibody_002")
+    assert auto_multibody_world.num_multibodies == 2
 
     rigid_body = world.add_rigid_body("box")
     assert rigid_body.name == "box"
@@ -398,9 +398,9 @@ def test_experimental_world_smoke():
 
     world.clear()
     assert not world.is_simulation_mode
-    assert not multi_body.is_valid
+    assert not multibody.is_valid
     assert not rigid_body.is_valid
-    assert world.num_multi_bodies == 0
+    assert world.num_multibodies == 0
     assert world.num_loop_closures == 0
     assert world.num_rigid_bodies == 0
 
@@ -409,7 +409,7 @@ def test_experimental_multibody_link_joint_common_path():
     sx = _simulation_experimental()
 
     world = sx.World()
-    arm = world.add_multi_body("arm")
+    arm = world.add_multibody("arm")
 
     base = arm.add_link("base")
     assert base.name == "base"
@@ -470,7 +470,7 @@ def test_experimental_multibody_link_joint_common_path():
         )
     assert arm.num_links == 3
     assert arm.num_joints == 2
-    other = world.add_multi_body("other")
+    other = world.add_multibody("other")
     other_base = other.add_link("other_base")
     with pytest.raises(Exception, match="does not belong"):
         arm.add_link(
@@ -539,7 +539,7 @@ def test_link_local_transform_includes_joint_motion():
     sx = _simulation_experimental()
 
     world = sx.World()
-    arm = world.add_multi_body("arm")
+    arm = world.add_multibody("arm")
     base = arm.add_link("base")
     link = arm.add_link(
         "link",
@@ -573,7 +573,7 @@ def test_experimental_loop_closure_topology_api():
     sx = _simulation_experimental()
 
     world = sx.World()
-    arm = world.add_multi_body("four_bar")
+    arm = world.add_multibody("four_bar")
     base = arm.add_link("base")
     coupler = arm.add_link(
         "coupler",
@@ -877,7 +877,7 @@ def test_experimental_multibody_forward_dynamics():
     world = sx.World()  # default gravity (0, 0, -9.81)
 
     # Single revolute pendulum, horizontal at q = 0 (center of mass offset L).
-    robot = world.add_multi_body("pendulum")
+    robot = world.add_multibody("pendulum")
     base = robot.add_link("base")
     length = 1.5
     offset = np.eye(4)
@@ -898,7 +898,7 @@ def test_experimental_multibody_forward_dynamics():
     assert bob.mass == pytest.approx(2.0)
 
     # Prismatic joint aligned with gravity (built in design mode before stepping).
-    slider = world.add_multi_body("slider")
+    slider = world.add_multibody("slider")
     rail_base = slider.add_link("base")
     carriage = slider.add_link(
         "carriage",
@@ -925,7 +925,7 @@ def test_experimental_screw_joint_dynamics():
     sx = _simulation_experimental()
 
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("screw")
+    robot = world.add_multibody("screw")
     base = robot.add_link("base")
     nut = robot.add_link(
         "nut",
@@ -963,7 +963,7 @@ def test_experimental_universal_joint_dynamics():
     sx = _simulation_experimental()
 
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("ujoint")
+    robot = world.add_multibody("ujoint")
     base = robot.add_link("base")
     length = 0.9
     offset = np.eye(4)
@@ -1045,7 +1045,7 @@ def test_experimental_planar_joint_dynamics():
     # Mass matrix and gravity at q = 0 (plane normal Y, in-plane axes X and -Z,
     # center of mass at the joint origin).
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("planar")
+    robot = world.add_multibody("planar")
     base = robot.add_link("base")
     slider = robot.add_link(
         "slider",
@@ -1081,7 +1081,7 @@ def test_experimental_planar_joint_dynamics():
     # A nonzero link offset couples rotation to the translations, so the
     # reference is nonzero and validates the velocity-product term cJ.
     offset_world = sx.World()
-    offset_robot = offset_world.add_multi_body("planar")
+    offset_robot = offset_world.add_multibody("planar")
     offset_base = offset_robot.add_link("base")
     offset_mat = np.eye(4)
     offset_mat[0, 3] = 0.6
@@ -1141,7 +1141,7 @@ def test_experimental_ball_joint_dynamics():
     # Mass matrix and gravity at the identity orientation (center of mass offset
     # along X): M is the inertia about the ball center, gravity torque about Y.
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("ball")
+    robot = world.add_multibody("ball")
     base = robot.add_link("base")
     offset = np.eye(4)
     offset[0, 3] = 0.7
@@ -1149,7 +1149,7 @@ def test_experimental_ball_joint_dynamics():
         "bob",
         parent=base,
         joint=sx.JointSpec(
-            name="socket", type=sx.JointType.BALL, transform_from_parent=offset
+            name="socket", type=sx.JointType.SPHERICAL, transform_from_parent=offset
         ),
     )
     mass = 2.0
@@ -1157,7 +1157,7 @@ def test_experimental_ball_joint_dynamics():
     bob.inertia = ((0.05, 0.0, 0.0), (0.0, 0.12, 0.0), (0.0, 0.0, 0.2))
 
     joint = bob.parent_joint
-    assert joint.type == sx.JointType.BALL
+    assert joint.type == sx.JointType.SPHERICAL
     assert joint.num_dofs == 3
 
     world.enter_simulation_mode()
@@ -1175,12 +1175,12 @@ def test_experimental_ball_joint_dynamics():
     # angular velocity and accumulates the rotation vector linearly.
     spin_world = sx.World()
     spin_world.gravity = (0.0, 0.0, 0.0)
-    spin_robot = spin_world.add_multi_body("ball")
+    spin_robot = spin_world.add_multibody("ball")
     spin_base = spin_robot.add_link("base")
     spin_bob = spin_robot.add_link(
         "bob",
         parent=spin_base,
-        joint=sx.JointSpec(name="socket", type=sx.JointType.BALL),
+        joint=sx.JointSpec(name="socket", type=sx.JointType.SPHERICAL),
     )
     spin_bob.mass = 1.5
     spin_bob.inertia = ((0.1, 0.0, 0.0), (0.0, 0.1, 0.0), (0.0, 0.0, 0.1))
@@ -1206,18 +1206,18 @@ def test_experimental_free_joint_dynamics():
 
     # Free fall under gravity: linear acceleration equals gravity, no rotation.
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("floating")
+    robot = world.add_multibody("floating")
     base = robot.add_link("base")
     body = robot.add_link(
         "body",
         parent=base,
-        joint=sx.JointSpec(name="floating", type=sx.JointType.FREE),
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
     )
     body.mass = 2.0
     body.inertia = ((0.05, 0.0, 0.0), (0.0, 0.12, 0.0), (0.0, 0.0, 0.2))
 
     joint = body.parent_joint
-    assert joint.type == sx.JointType.FREE
+    assert joint.type == sx.JointType.FLOATING
     assert joint.num_dofs == 6
 
     dt = 0.01
@@ -1239,12 +1239,12 @@ def test_experimental_free_joint_dynamics():
     # constant and accumulate linearly.
     spin_world = sx.World()
     spin_world.gravity = (0.0, 0.0, 0.0)
-    spin_robot = spin_world.add_multi_body("floating")
+    spin_robot = spin_world.add_multibody("floating")
     spin_base = spin_robot.add_link("base")
     spin_body = spin_robot.add_link(
         "body",
         parent=spin_base,
-        joint=sx.JointSpec(name="floating", type=sx.JointType.FREE),
+        joint=sx.JointSpec(name="floating", type=sx.JointType.FLOATING),
     )
     spin_body.mass = 2.0
     spin_body.inertia = ((0.05, 0.0, 0.0), (0.0, 0.12, 0.0), (0.0, 0.0, 0.2))
@@ -1273,7 +1273,7 @@ def test_experimental_link_center_of_mass_offset():
     sx = _simulation_experimental()
 
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("pendulum")
+    robot = world.add_multibody("pendulum")
     base = robot.add_link("base")
     # Link frame at the hinge; the mass is offset along X via the center of mass.
     bob = robot.add_link(
@@ -1308,7 +1308,7 @@ def test_experimental_multibody_dynamics_terms():
     world = sx.World()  # default gravity (0, 0, -9.81)
 
     # Single revolute pendulum, horizontal at q = 0 (center of mass offset L).
-    robot = world.add_multi_body("pendulum")
+    robot = world.add_multibody("pendulum")
     base = robot.add_link("base")
     length = 1.5
     offset = np.eye(4)
@@ -1355,7 +1355,7 @@ def test_experimental_multibody_equation_of_motion_consistency():
 
     world = sx.World()  # default gravity (0, 0, -9.81)
 
-    robot = world.add_multi_body("double_pendulum")
+    robot = world.add_multibody("double_pendulum")
     base = robot.add_link("base")
 
     offset1 = np.eye(4)
@@ -1420,7 +1420,7 @@ def test_experimental_multibody_inverse_dynamics():
     sx = _simulation_experimental()
 
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("pendulum")
+    robot = world.add_multibody("pendulum")
     base = robot.add_link("base")
     length = 1.5
     offset = np.eye(4)
@@ -1458,7 +1458,7 @@ def test_experimental_multibody_impulse_response():
     sx = _simulation_experimental()
 
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("pendulum")
+    robot = world.add_multibody("pendulum")
     base = robot.add_link("base")
     length = 1.5
     offset = np.eye(4)
@@ -1499,7 +1499,7 @@ def test_experimental_multibody_link_jacobian():
 
     world = sx.World()
     world.gravity = (0.0, 0.0, 0.0)
-    robot = world.add_multi_body("pendulum")
+    robot = world.add_multibody("pendulum")
     base = robot.add_link("base")
     length = 1.5
     offset = np.eye(4)
@@ -1536,7 +1536,7 @@ def test_experimental_multibody_link_world_jacobian():
 
     world = sx.World()
     world.gravity = (0.0, 0.0, 0.0)
-    robot = world.add_multi_body("pendulum")
+    robot = world.add_multibody("pendulum")
     base = robot.add_link("base")
     length = 1.5
     offset = np.eye(4)
@@ -1568,7 +1568,7 @@ def test_experimental_multibody_dynamics_terms_no_dof():
     sx = _simulation_experimental()
 
     world = sx.World()
-    robot = world.add_multi_body("static_chain")
+    robot = world.add_multibody("static_chain")
     base = robot.add_link("base")
     robot.add_link(
         "welded",
@@ -1590,7 +1590,7 @@ def test_experimental_joint_armature():
     sx = _simulation_experimental()
 
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("pendulum")
+    robot = world.add_multibody("pendulum")
     base = robot.add_link("base")
     length = 1.5
     offset = np.eye(4)
@@ -1639,7 +1639,7 @@ def test_experimental_joint_coulomb_friction():
     # Stiction: a driving force within the bound does not move the joint.
     world = sx.World()
     world.gravity = (0.0, 0.0, 0.0)
-    robot = world.add_multi_body("slider")
+    robot = world.add_multibody("slider")
     base = robot.add_link("base")
     carriage = robot.add_link(
         "carriage",
@@ -1666,7 +1666,7 @@ def test_experimental_joint_coulomb_friction():
     # Kinetic: exceeding the bound yields net velocity step (F - mu) / m * dt.
     world2 = sx.World()
     world2.gravity = (0.0, 0.0, 0.0)
-    robot2 = world2.add_multi_body("slider")
+    robot2 = world2.add_multibody("slider")
     base2 = robot2.add_link("base")
     carriage2 = robot2.add_link(
         "carriage",
@@ -1692,7 +1692,7 @@ def test_experimental_joint_actuator_types():
 
     world = sx.World()
     world.gravity = (0.0, 0.0, 0.0)
-    robot = world.add_multi_body("slider")
+    robot = world.add_multibody("slider")
     base = robot.add_link("base")
     carriage = robot.add_link(
         "carriage",
@@ -1734,7 +1734,7 @@ def test_experimental_joint_velocity_actuator():
     # Single slider reaches its commanded velocity regardless of applied force.
     world = sx.World()
     world.gravity = (0.0, 0.0, 0.0)
-    robot = world.add_multi_body("slider")
+    robot = world.add_multibody("slider")
     base = robot.add_link("base")
     carriage = robot.add_link(
         "carriage",
@@ -1758,7 +1758,7 @@ def test_experimental_joint_velocity_actuator():
     # Coupled 2-link chain: both joints reach their (different) targets exactly.
     world2 = sx.World()
     world2.gravity = (0.0, 0.0, 0.0)
-    robot2 = world2.add_multi_body("double_pendulum")
+    robot2 = world2.add_multibody("double_pendulum")
     base2 = robot2.add_link("base")
     offset1 = np.eye(4)
     offset1[0, 3] = 0.7
@@ -1807,7 +1807,7 @@ def test_experimental_joint_spring_and_damping():
 
     world = sx.World()
     world.gravity = (0.0, 0.0, 0.0)
-    robot = world.add_multi_body("slider")
+    robot = world.add_multibody("slider")
     base = robot.add_link("base")
     carriage = robot.add_link(
         "carriage",
@@ -1839,7 +1839,7 @@ def test_experimental_joint_position_limit():
     sx = _simulation_experimental()
 
     world = sx.World()  # default gravity (0, 0, -9.81)
-    robot = world.add_multi_body("pendulum")
+    robot = world.add_multibody("pendulum")
     base = robot.add_link("base")
     offset = np.eye(4)
     offset[0, 3] = 1.0
@@ -1874,7 +1874,7 @@ def test_experimental_joint_effort_limit():
 
     world = sx.World()
     world.gravity = (0.0, 0.0, 0.0)
-    robot = world.add_multi_body("slider")
+    robot = world.add_multibody("slider")
     base = robot.add_link("base")
     carriage = robot.add_link(
         "carriage",
@@ -1906,7 +1906,7 @@ def test_experimental_joint_velocity_limit():
 
     world = sx.World()
     world.gravity = (0.0, 0.0, 0.0)
-    robot = world.add_multi_body("slider")
+    robot = world.add_multibody("slider")
     base = robot.add_link("base")
     carriage = robot.add_link(
         "carriage",
@@ -1963,7 +1963,7 @@ def test_experimental_collision_query_includes_links():
 
     world = sx.World()
 
-    robot = world.add_multi_body("robot")
+    robot = world.add_multibody("robot")
     base = robot.add_link("base")
     base.set_collision_shape(sx.CollisionShape.sphere(1.0))
     assert base.has_collision_shape
@@ -2046,7 +2046,7 @@ def test_experimental_multibody_link_rests_on_static_ground():
 
     world = sx.World()  # default gravity (0, 0, -9.81)
 
-    robot = world.add_multi_body("leg_robot")
+    robot = world.add_multibody("leg_robot")
     base = robot.add_link("base")
     leg = robot.add_link(
         "leg",
@@ -2083,7 +2083,7 @@ def test_experimental_multibody_link_pushes_dynamic_rigid_body():
     world.gravity = (0.0, 0.0, 0.0)
 
     # Striker: a prismatic-X link moving toward a free rigid body.
-    robot = world.add_multi_body("striker_robot")
+    robot = world.add_multibody("striker_robot")
     base = robot.add_link("base")
     striker = robot.add_link(
         "striker",
@@ -2131,7 +2131,7 @@ def test_experimental_multibody_link_contact_friction_stops_slide():
 
     world = sx.World()  # default gravity (0, 0, -9.81)
 
-    robot = world.add_multi_body("slider_robot")
+    robot = world.add_multibody("slider_robot")
     base = robot.add_link("base")
     carrier = robot.add_link(
         "carrier",
@@ -2175,7 +2175,7 @@ def test_experimental_multibody_link_contact_restitution_bounces():
 
     world = sx.World()  # default gravity (0, 0, -9.81)
 
-    robot = world.add_multi_body("bouncer")
+    robot = world.add_multibody("bouncer")
     base = robot.add_link("base")
     bob = robot.add_link(
         "bob",
@@ -2319,7 +2319,7 @@ def test_experimental_rigid_body_options_reject_invalid_values():
     with pytest.raises(Exception, match="RigidBody torque"):
         body.apply_torque((0.0, 0.0, math.nan))
 
-    arm = world.add_multi_body("arm")
+    arm = world.add_multibody("arm")
     base = arm.add_link("base")
     link = arm.add_link("link", parent=base, joint=sx.JointSpec(name="joint"))
     joint = link.parent_joint
@@ -2341,7 +2341,7 @@ def test_experimental_loop_closure_rejects_invalid_topology():
     sx = _simulation_experimental()
 
     world = sx.World()
-    arm = world.add_multi_body("arm")
+    arm = world.add_multibody("arm")
     base = arm.add_link("base")
     link = arm.add_link("link", parent=base, joint=sx.JointSpec(name="joint"))
 
@@ -2372,7 +2372,7 @@ def test_experimental_loop_closure_rejects_unsupported_active_policy():
     sx = _simulation_experimental()
 
     world = sx.World()
-    arm = world.add_multi_body("arm")
+    arm = world.add_multibody("arm")
     base = arm.add_link("base")
     link = arm.add_link("link", parent=base, joint=sx.JointSpec(name="joint"))
     closure = world.add_loop_closure("closure", frame_a=base, frame_b=link)

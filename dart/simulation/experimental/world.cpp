@@ -43,7 +43,7 @@
 #include "dart/simulation/experimental/common/ecs_utils.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/compute/multi_body_dynamics.hpp"
+#include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
 #include "dart/simulation/experimental/compute/sequential_executor.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/compute/world_step_stage.hpp"
@@ -54,7 +54,7 @@
 #include "dart/simulation/experimental/frame/free_frame.hpp"
 #include "dart/simulation/experimental/io/binary_io.hpp"
 #include "dart/simulation/experimental/io/serializer.hpp"
-#include "dart/simulation/experimental/multi_body/multi_body.hpp"
+#include "dart/simulation/experimental/multibody/multibody.hpp"
 
 #include <Eigen/Cholesky>
 
@@ -347,7 +347,7 @@ void World::clear()
   m_frame = 0;
   m_freeFrameCounter = 0;
   m_fixedFrameCounter = 0;
-  m_multiBodyCounter = 0;
+  m_multibodyCounter = 0;
   m_loopClosureCounter = 0;
   m_rigidBodyCounter = 0;
   m_linkCounter = 0;
@@ -502,55 +502,55 @@ Frame World::resolveParentFrame(const Frame& parent) const
 }
 
 //==============================================================================
-MultiBody World::addMultiBody(std::string_view name)
+Multibody World::addMultibody(std::string_view name)
 {
   ensureDesignMode();
 
   std::string candidateName;
   if (name.empty()) {
     do {
-      candidateName = std::format("multibody_{:03d}", ++m_multiBodyCounter);
-    } while (hasEntityWithName<comps::MultiBodyTag>(m_registry, candidateName));
+      candidateName = std::format("multibody_{:03d}", ++m_multibodyCounter);
+    } while (hasEntityWithName<comps::MultibodyTag>(m_registry, candidateName));
   } else {
     candidateName = std::string(name);
     DART_EXPERIMENTAL_THROW_T_IF(
-        hasEntityWithName<comps::MultiBodyTag>(m_registry, candidateName),
+        hasEntityWithName<comps::MultibodyTag>(m_registry, candidateName),
         InvalidArgumentException,
-        "MultiBody '{}' already exists",
+        "Multibody '{}' already exists",
         candidateName);
   }
 
   auto entity = m_registry.create();
   m_registry.emplace<comps::Name>(entity, candidateName);
-  m_registry.emplace<comps::MultiBodyTag>(entity);
-  m_registry.emplace<comps::MultiBodyStructure>(entity);
+  m_registry.emplace<comps::MultibodyTag>(entity);
+  m_registry.emplace<comps::MultibodyStructure>(entity);
 
-  return MultiBody(entity, this);
+  return Multibody(entity, this);
 }
 
 //==============================================================================
-std::optional<MultiBody> World::getMultiBody(std::string_view name)
+std::optional<Multibody> World::getMultibody(std::string_view name)
 {
-  auto view = m_registry.view<comps::MultiBodyTag, comps::Name>();
+  auto view = m_registry.view<comps::MultibodyTag, comps::Name>();
   for (auto entity : view) {
     const auto& info = view.get<comps::Name>(entity);
     if (info.name == name) {
-      return MultiBody(entity, this);
+      return Multibody(entity, this);
     }
   }
   return std::nullopt;
 }
 
 //==============================================================================
-bool World::hasMultiBody(std::string_view name) const
+bool World::hasMultibody(std::string_view name) const
 {
-  return hasEntityWithName<comps::MultiBodyTag>(m_registry, name);
+  return hasEntityWithName<comps::MultibodyTag>(m_registry, name);
 }
 
 //==============================================================================
-std::size_t World::getMultiBodyCount() const
+std::size_t World::getMultibodyCount() const
 {
-  return countEntities<comps::MultiBodyTag>(m_registry);
+  return countEntities<comps::MultibodyTag>(m_registry);
 }
 
 //==============================================================================
@@ -829,13 +829,13 @@ void World::step(compute::ComputeExecutor& executor)
   compute::RigidBodyVelocityStage rigidBodyVelocity;
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
-  compute::MultiBodyForwardDynamicsStage multiBodyDynamics;
+  compute::MultibodyForwardDynamicsStage multibodyDynamics;
   compute::KinematicsStage kinematics;
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
       .addStage(rigidBodyPosition)
-      .addStage(multiBodyDynamics)
+      .addStage(multibodyDynamics)
       .addStage(kinematics);
   step(executor, pipeline);
 }
@@ -846,13 +846,13 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
   compute::RigidBodyVelocityStage rigidBodyVelocity;
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
-  compute::MultiBodyForwardDynamicsStage multiBodyDynamics;
+  compute::MultibodyForwardDynamicsStage multibodyDynamics;
   compute::KinematicsStage kinematics;
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
       .addStage(rigidBodyPosition)
-      .addStage(multiBodyDynamics)
+      .addStage(multibodyDynamics)
       .addStage(kinematics);
   step(count, executor, pipeline);
 }
@@ -1011,7 +1011,7 @@ void World::saveBinary(std::ostream& output) const
   io::writePOD(output, simulationFlag);
   io::writePOD(output, m_freeFrameCounter);
   io::writePOD(output, m_fixedFrameCounter);
-  io::writePOD(output, m_multiBodyCounter);
+  io::writePOD(output, m_multibodyCounter);
   io::writePOD(output, m_rigidBodyCounter);
   io::writePOD(output, m_linkCounter);
   io::writePOD(output, m_jointCounter);
@@ -1042,7 +1042,7 @@ void World::loadBinary(std::istream& input)
 
     io::readPOD(input, m_freeFrameCounter);
     io::readPOD(input, m_fixedFrameCounter);
-    io::readPOD(input, m_multiBodyCounter);
+    io::readPOD(input, m_multibodyCounter);
     io::readPOD(input, m_rigidBodyCounter);
     io::readPOD(input, m_linkCounter);
     io::readPOD(input, m_jointCounter);
@@ -1091,8 +1091,8 @@ void World::resetCountersFromRegistry()
       m_freeFrameCounter, countEntities<comps::FreeFrameTag>(m_registry));
   m_fixedFrameCounter = std::max(
       m_fixedFrameCounter, countEntities<comps::FixedFrameTag>(m_registry));
-  m_multiBodyCounter = std::max(
-      m_multiBodyCounter, countEntities<comps::MultiBodyTag>(m_registry));
+  m_multibodyCounter = std::max(
+      m_multibodyCounter, countEntities<comps::MultibodyTag>(m_registry));
   m_loopClosureCounter = std::max(
       m_loopClosureCounter, countEntities<comps::LoopClosure>(m_registry));
   m_rigidBodyCounter = std::max(

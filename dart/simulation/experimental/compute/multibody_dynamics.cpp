@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/compute/multi_body_dynamics.hpp"
+#include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
 
 #include "dart/simulation/experimental/body/contact.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
@@ -39,7 +39,7 @@
 #include "dart/simulation/experimental/comps/frame_types.hpp"
 #include "dart/simulation/experimental/comps/joint.hpp"
 #include "dart/simulation/experimental/comps/link.hpp"
-#include "dart/simulation/experimental/comps/multi_body.hpp"
+#include "dart/simulation/experimental/comps/multibody.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -185,11 +185,11 @@ Eigen::Isometry3d jointMotionTransform(const comps::Joint& joint)
           = inPlane1 * joint.position[0] + inPlane2 * joint.position[1];
       return transform;
     }
-    case comps::JointType::Ball:
+    case comps::JointType::Spherical:
       // Orientation stored as a rotation vector (exponential coordinates).
       transform.linear() = rotationExp(joint.position.head<3>());
       return transform;
-    case comps::JointType::Free:
+    case comps::JointType::Floating:
       // 6-DOF pose: translation (position[0..2]) then orientation as a rotation
       // vector (position[3..5]), matching the kinematics convention.
       transform.linear() = rotationExp(joint.position.tail<3>());
@@ -266,7 +266,7 @@ Subspace jointSubspaceInJointFrame(const comps::Joint& joint)
       subspace.col(2).tail<3>().setZero();
       return subspace;
     }
-    case comps::JointType::Ball: {
+    case comps::JointType::Spherical: {
       // Generalized velocity is the body angular velocity (matching the
       // rotation-vector position), so the subspace is constant: angular = I,
       // linear = 0.
@@ -274,7 +274,7 @@ Subspace jointSubspaceInJointFrame(const comps::Joint& joint)
       subspace.topRows<3>() = Eigen::Matrix3d::Identity();
       return subspace;
     }
-    case comps::JointType::Free: {
+    case comps::JointType::Floating: {
       // Generalized velocity is [linear; angular] body twist to match the
       // position layout [translation; rotation vector]; the subspace permutes
       // it into the [angular; linear] spatial convention. Constant subspace.
@@ -396,7 +396,7 @@ struct LinkContact
 // Build the per-link spatial dynamics for a multibody at its current
 // configuration. Links are in construction order (parent-before-child).
 DynamicsTree buildDynamicsTree(
-    const entt::registry& registry, const comps::MultiBodyStructure& structure)
+    const entt::registry& registry, const comps::MultibodyStructure& structure)
 {
   const auto& linkEntities = structure.links;
 
@@ -501,7 +501,7 @@ std::vector<Eigen::MatrixXd> linkBodyJacobians(const DynamicsTree& tree)
 //==============================================================================
 // Index of a link entity within a multibody structure.
 std::size_t linkIndexOf(
-    const comps::MultiBodyStructure& structure, entt::entity linkEntity)
+    const comps::MultibodyStructure& structure, entt::entity linkEntity)
 {
   const auto& linkEntities = structure.links;
   const auto it
@@ -634,9 +634,9 @@ MassAndBias computeMassAndBias(
 }
 
 //==============================================================================
-void simulateMultiBody(
+void simulateMultibody(
     entt::registry& registry,
-    const comps::MultiBodyStructure& structure,
+    const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     double timeStep,
     const std::vector<LinkContact>& linkContacts)
@@ -1031,14 +1031,14 @@ void simulateMultiBody(
     joint.velocity
         = nextVelocity.segment(tree.links[i].dofOffset, tree.links[i].dof);
 
-    if (joint.type == comps::JointType::Ball) {
+    if (joint.type == comps::JointType::Spherical) {
       // Body angular velocity integrated by right multiplication on SO(3).
       const Eigen::Matrix3d rotation = rotationExp(joint.position.head<3>());
       joint.position.head<3>() = rotationLog(
           rotation * rotationExp(joint.velocity.head<3>() * timeStep));
       continue;
     }
-    if (joint.type == comps::JointType::Free) {
+    if (joint.type == comps::JointType::Floating) {
       // Velocity is [linear; angular] body twist. Translation advances in the
       // parent frame (R * v) and orientation integrates on SO(3).
       const Eigen::Matrix3d rotation = rotationExp(joint.position.tail<3>());
@@ -1069,12 +1069,12 @@ void simulateMultiBody(
 } // namespace
 
 //==============================================================================
-MultiBodyDynamicsTerms computeMultiBodyDynamicsTerms(
+MultibodyDynamicsTerms computeMultibodyDynamicsTerms(
     entt::registry& registry,
-    const comps::MultiBodyStructure& structure,
+    const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity)
 {
-  MultiBodyDynamicsTerms terms;
+  MultibodyDynamicsTerms terms;
   if (structure.links.empty()) {
     return terms;
   }
@@ -1104,9 +1104,9 @@ MultiBodyDynamicsTerms computeMultiBodyDynamicsTerms(
 }
 
 //==============================================================================
-Eigen::VectorXd computeMultiBodyInverseDynamics(
+Eigen::VectorXd computeMultibodyInverseDynamics(
     entt::registry& registry,
-    const comps::MultiBodyStructure& structure,
+    const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration)
 {
@@ -1152,9 +1152,9 @@ Eigen::VectorXd computeMultiBodyInverseDynamics(
 }
 
 //==============================================================================
-Eigen::MatrixXd computeMultiBodyLinkJacobian(
+Eigen::MatrixXd computeMultibodyLinkJacobian(
     entt::registry& registry,
-    const comps::MultiBodyStructure& structure,
+    const comps::MultibodyStructure& structure,
     entt::entity linkEntity)
 {
   const auto targetIndex = linkIndexOf(structure, linkEntity);
@@ -1163,9 +1163,9 @@ Eigen::MatrixXd computeMultiBodyLinkJacobian(
 }
 
 //==============================================================================
-Eigen::MatrixXd computeMultiBodyLinkWorldJacobian(
+Eigen::MatrixXd computeMultibodyLinkWorldJacobian(
     entt::registry& registry,
-    const comps::MultiBodyStructure& structure,
+    const comps::MultibodyStructure& structure,
     entt::entity linkEntity)
 {
   const auto targetIndex = linkIndexOf(structure, linkEntity);
@@ -1184,13 +1184,13 @@ Eigen::MatrixXd computeMultiBodyLinkWorldJacobian(
 }
 
 //==============================================================================
-std::string_view MultiBodyForwardDynamicsStage::getName() const noexcept
+std::string_view MultibodyForwardDynamicsStage::getName() const noexcept
 {
-  return "multi_body_forward_dynamics";
+  return "multibody_forward_dynamics";
 }
 
 //==============================================================================
-ComputeStageMetadata MultiBodyForwardDynamicsStage::getMetadata() const noexcept
+ComputeStageMetadata MultibodyForwardDynamicsStage::getMetadata() const noexcept
 {
   return {
       ComputeStageDomain::ArticulatedBody,
@@ -1198,7 +1198,7 @@ ComputeStageMetadata MultiBodyForwardDynamicsStage::getMetadata() const noexcept
 }
 
 //==============================================================================
-void MultiBodyForwardDynamicsStage::execute(
+void MultibodyForwardDynamicsStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
   auto& registry = world.getRegistry();
@@ -1233,9 +1233,9 @@ void MultiBodyForwardDynamicsStage::execute(
     return 0.0;
   };
 
-  auto view = registry.view<comps::MultiBodyStructure>();
+  auto view = registry.view<comps::MultibodyStructure>();
   for (auto entity : view) {
-    const auto& structure = view.get<comps::MultiBodyStructure>(entity);
+    const auto& structure = view.get<comps::MultibodyStructure>(entity);
 
     std::vector<LinkContact> linkContacts;
     for (const auto& contact : contacts) {
@@ -1275,7 +1275,7 @@ void MultiBodyForwardDynamicsStage::execute(
       }
     }
 
-    simulateMultiBody(registry, structure, gravity, timeStep, linkContacts);
+    simulateMultibody(registry, structure, gravity, timeStep, linkContacts);
   }
 }
 

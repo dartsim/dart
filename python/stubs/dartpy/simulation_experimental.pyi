@@ -22,7 +22,7 @@ __all__: list[str] = [
     "LoopClosureResidualCoordinates",
     "LoopClosureRuntimePolicy",
     "LoopClosureSpec",
-    "MultiBody",
+    "Multibody",
     "RigidBody",
     "RigidBodyOptions",
     "StateSpace",
@@ -38,9 +38,9 @@ class JointType(Enum):
     PRISMATIC = 2
     SCREW = 3
     UNIVERSAL = 4
-    BALL = 5
+    SPHERICAL = 5
     PLANAR = 6
-    FREE = 7
+    FLOATING = 7
     CUSTOM = 8
 
 
@@ -288,7 +288,7 @@ class FixedFrame(Frame):
     local_transform: NDArray[np.float64]
 
 
-class MultiBody:
+class Multibody:
     name: str
     num_links: int
     num_joints: int
@@ -457,7 +457,7 @@ class World:
     gravity: NDArray[np.float64]
     frame: int
     is_simulation_mode: bool
-    num_multi_bodies: int
+    num_multibodies: int
     num_loop_closures: int
     num_rigid_bodies: int
 
@@ -474,13 +474,13 @@ class World:
     ) -> FixedFrame:
         ...
 
-    def add_multi_body(self, name: str) -> MultiBody:
+    def add_multibody(self, name: str) -> Multibody:
         ...
 
-    def has_multi_body(self, name: str) -> bool:
+    def has_multibody(self, name: str) -> bool:
         ...
 
-    def get_multi_body(self, name: str) -> MultiBody | None:
+    def get_multibody(self, name: str) -> Multibody | None:
         ...
 
     @overload

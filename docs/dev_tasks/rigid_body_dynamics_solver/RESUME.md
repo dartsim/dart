@@ -14,7 +14,7 @@ the implementation plan below):
   potential energy) in C++ and dartpy.
 - Phase 1 — articulated-body forward dynamics: RNEA-based forward dynamics for
   fixed-base trees with revolute/prismatic joints in
-  `compute/multi_body_dynamics.{hpp,cpp}` (`MultiBodyForwardDynamicsStage`,
+  `compute/multibody_dynamics.{hpp,cpp}` (`MultibodyForwardDynamicsStage`,
   added to the default `World::step` pipeline). Added `Joint` force/acceleration
   accessors, `Link` mass/inertia accessors, and a `JointSpec`/`LinkOptions`
   `transformFromParent` link offset, with dartpy bindings + stubs. Verified
@@ -63,7 +63,7 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
   `[angular; linear]` twist). The new piece is **manifold position integration**:
   ball orientation `R_new = R_old Exp(omega dt)`, free pose advances translation
   in the parent frame (`R*v dt`) and orientation by `Exp(omega dt)`, replacing
-  `q += qdot*dt` for these joint types in `simulateMultiBody` (added `rotationExp`
+  `q += qdot*dt` for these joint types in `simulateMultibody` (added `rotationExp`
   / `rotationLog` helpers). Position limits do not apply to rotation vectors and
   are skipped for ball/free. Verified by the closed-form M/gravity (ball
   pendulum), torque-free isotropic spin, free-fall, and combined translate-spin
@@ -75,26 +75,26 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
   `getPositionUpperLimits`, dartpy `set_position_limits`/`position_lower_limits`/
   `position_upper_limits`). C++ + dartpy + analytical tests.
 - Phase 4 (partial) — generalized-coordinate dynamics accessors: public
-  `MultiBody::getMassMatrix`/`getInverseMassMatrix`/`getCoriolisForces`/
+  `Multibody::getMassMatrix`/`getInverseMassMatrix`/`getCoriolisForces`/
   `getGravityForces`/`getCoriolisAndGravityForces` (dartpy `mass_matrix`,
   `inverse_mass_matrix`, `coriolis_forces`, `gravity_forces`,
   `coriolis_and_gravity_forces`), factored out of the forward-dynamics RNEA into
-  `compute::computeMultiBodyDynamicsTerms`. Verified analytically (single
+  `compute::computeMultibodyDynamicsTerms`. Verified analytically (single
   pendulum `M = I + m L^2`, gravity force `-m g L`) and via the
   `M qddot + C + g = tau` equation-of-motion identity on a 2-DOF chain. C++ +
   dartpy tests.
 - Phase 4 (partial) — inverse dynamics: public
-  `MultiBody::computeInverseDynamics(qddot)` (dartpy `compute_inverse_dynamics`)
+  `Multibody::computeInverseDynamics(qddot)` (dartpy `compute_inverse_dynamics`)
   returning `tau = M qddot + C qdot + g` (with armature) via RNEA
-  (`compute::computeMultiBodyInverseDynamics`). Verified analytically and by a
+  (`compute::computeMultibodyInverseDynamics`). Verified analytically and by a
   forward/inverse round-trip. C++ + dartpy tests.
 - Phase 4 (partial) — generalized impulse response: public
-  `MultiBody::computeImpulseResponse(f)` (dartpy `compute_impulse_response`)
+  `Multibody::computeImpulseResponse(f)` (dartpy `compute_impulse_response`)
   returning `dqdot = M^-1 f` (M includes armature) — the joint-space primitive
   for impulse-based constraint dynamics. Verified analytically and by the
   `M dqdot = f` identity. C++ + dartpy tests. (The full constrained impulse
   dynamics still needs the constraint solve.)
-- Phase 5 (partial) — link Jacobians: public `MultiBody::getJacobian(link)`
+- Phase 5 (partial) — link Jacobians: public `Multibody::getJacobian(link)`
   (body frame) and `getWorldJacobian(link)` (world axes, link-origin referenced)
   (dartpy `get_jacobian`/`get_world_jacobian`) return the 6 x DOF spatial
   Jacobian. The body Jacobian uses the recursion `J_i = X_i J_parent` with own
@@ -170,7 +170,7 @@ All gates passed at each slice: `pixi run lint`, focused C++ tests
 Key implementation note: each link's center of mass is assumed at the link frame
 origin; the joint motion subspace is transformed by the post-joint link offset
 (`Ad(transformFromParent^{-1}) * S_jointframe`) — this was essential to get
-correct gravity torques. See `compute/multi_body_dynamics.cpp`.
+correct gravity torques. See `compute/multibody_dynamics.cpp`.
 
 ## Current Branch
 
@@ -191,14 +191,14 @@ multi-session effort with a specific architectural prerequisite, detailed below.
 What works today: rigid-body-vs-rigid-body and rigid-body-vs-static contacts
 (`RigidBodyContactStage`, sequential impulse + friction + restitution +
 positional correction); link-vs-static-rigid-body one-sided articulated contact
-(inside `simulateMultiBody`). **Missing:** link-vs-dynamic-rigid-body and
+(inside `simulateMultibody`). **Missing:** link-vs-dynamic-rigid-body and
 link-vs-link (two-sided) contacts, and a coupled simultaneous boxed-LCP/PGS
 solve over all contacts at once.
 
 - **Architectural prerequisite (the real blocker):** the default `World::step`
   pipeline (see `world.cpp` ~line 835) runs the rigid-body stages _fully_ before
   the multibody stage: `RigidBodyVelocityStage` → `RigidBodyContactStage` →
-  `RigidBodyPositionStage` → `MultiBodyForwardDynamicsStage` → `KinematicsStage`.
+  `RigidBodyPositionStage` → `MultibodyForwardDynamicsStage` → `KinematicsStage`.
   So when the multibody contact solve runs, rigid bodies have already had their
   velocity _and position_ integrated this step. A correct coupled two-sided solve
   needs the pipeline reordered into phases: **(1) all velocity integration
@@ -211,12 +211,12 @@ solve over all contacts at once.
   Jacobian that maps the contact impulse to each involved body's velocity —
   rigid bodies via `invMass`/`invWorldInertia` + arm (already in
   `RigidBodyContactStage`), links via `J_point` + `M^-1` (already in
-  `simulateMultiBody`). Stack them and run the **boxed-LCP/PGS** in
+  `simulateMultibody`). Stack them and run the **boxed-LCP/PGS** in
   `dart/math/lcp/` (normal `lambda_n >= 0`, friction cone `|lambda_t| <= mu
 lambda_n`) instead of the two separate per-stage Gauss-Seidel loops. Add
   islands for performance later.
 - **(DONE) Smaller correct increment — two-sided link-vs-dynamic-rigid-body.**
-  `simulateMultiBody`'s contact solve now couples a dynamic rigid-body obstacle:
+  `simulateMultibody`'s contact solve now couples a dynamic rigid-body obstacle:
   `LinkContact::otherBody` carries it, and the contact rows include its inverse
   mass/inertia + arm so the normal and friction impulses are applied to both the
   link (`M^-1 J^T`) and the rigid body (equal-and-opposite, via its
@@ -287,19 +287,19 @@ response)** and beyond.
    guards each contact with `registry.all_of<comps::RigidBodyTag>` for both
    bodies; link contacts are left for the articulated contact solve.
 5. **(DONE for link-vs-static) Articulated contact response.** Implemented for
-   link-vs-static-rigid-body contacts (one-sided) inside `simulateMultiBody`'s
+   link-vs-static-rigid-body contacts (one-sided) inside `simulateMultibody`'s
    velocity phase (`LinkContact`, contact-point normal Jacobian, unilateral
-   normal impulse + Baumgarte), routed by `MultiBodyForwardDynamicsStage::execute`
+   normal impulse + Baumgarte), routed by `MultibodyForwardDynamicsStage::execute`
    via `world.collide()`. **Two-tangent Coulomb friction** (accumulated-impulse,
    friction-cone bounded) and **per-contact restitution** are also implemented.
    Verified by a prismatic-leg drop-and-rest, a sliding-link friction brake, and
    a dropped-link bounce (C++ + dartpy). **Still pending:** link-vs-dynamic-body
    and link-vs-link (two-sided) contacts, and a boxed-LCP for coupled
    simultaneous contacts. The original plan, for reference:
-   - In `MultiBodyForwardDynamicsStage::execute`, call `world.collide()` once and
+   - In `MultibodyForwardDynamicsStage::execute`, call `world.collide()` once and
      route to each multibody the contacts whose link belongs to it and whose
      other body `isRigidBody()` and is static (`comps::StaticBodyTag`). Pass them
-     into `simulateMultiBody`.
+     into `simulateMultibody`.
    - Map the contact's link entity to its index in the `DynamicsTree`; get the
      body Jacobian from `linkBodyJacobians(tree)` and the world Jacobian via the
      link world rotation; shift the linear block to the contact point `p`:

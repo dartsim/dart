@@ -45,9 +45,9 @@
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
-#include <dart/simulation/experimental/multi_body/joint.hpp>
-#include <dart/simulation/experimental/multi_body/link.hpp>
-#include <dart/simulation/experimental/multi_body/multi_body.hpp>
+#include <dart/simulation/experimental/multibody/joint.hpp>
+#include <dart/simulation/experimental/multibody/link.hpp>
+#include <dart/simulation/experimental/multibody/multibody.hpp>
 #include <dart/simulation/experimental/space/state_space.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
@@ -414,9 +414,9 @@ void defSimulationExperimentalModule(nb::module_& m)
       .value("PRISMATIC", sim::JointType::Prismatic)
       .value("SCREW", sim::JointType::Screw)
       .value("UNIVERSAL", sim::JointType::Universal)
-      .value("BALL", sim::JointType::Ball)
+      .value("SPHERICAL", sim::JointType::Spherical)
       .value("PLANAR", sim::JointType::Planar)
-      .value("FREE", sim::JointType::Free)
+      .value("FLOATING", sim::JointType::Floating)
       .value("CUSTOM", sim::JointType::Custom);
 
   nb::enum_<sim::ActuatorType>(m, "ActuatorType")
@@ -1088,17 +1088,17 @@ void defSimulationExperimentalModule(nb::module_& m)
         return format_repr("LoopClosure", fields);
       });
 
-  nb::class_<sim::MultiBody>(m, "MultiBody")
+  nb::class_<sim::Multibody>(m, "Multibody")
       .def(
           "add_link",
-          [](sim::MultiBody& self, const std::string& name) {
+          [](sim::Multibody& self, const std::string& name) {
             return self.addLink(name);
           },
           nb::arg("name") = "",
           nb::keep_alive<0, 1>())
       .def(
           "add_link",
-          [](sim::MultiBody& self,
+          [](sim::Multibody& self,
              const std::string& name,
              const sim::Link& parent,
              const sim::JointSpec& joint) {
@@ -1111,7 +1111,7 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::keep_alive<0, 1>())
       .def(
           "get_link",
-          [](sim::MultiBody& self, const std::string& name) -> nb::object {
+          [](sim::Multibody& self, const std::string& name) -> nb::object {
             auto link = self.getLink(name);
             if (!link.has_value()) {
               return nb::none();
@@ -1122,7 +1122,7 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::keep_alive<0, 1>())
       .def(
           "get_joint",
-          [](sim::MultiBody& self, const std::string& name) -> nb::object {
+          [](sim::Multibody& self, const std::string& name) -> nb::object {
             auto joint = self.getJoint(name);
             if (!joint.has_value()) {
               return nb::none();
@@ -1133,52 +1133,52 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::keep_alive<0, 1>())
       .def_prop_rw(
           "name",
-          [](const sim::MultiBody& self) {
+          [](const sim::Multibody& self) {
             return std::string(self.getName());
           },
-          [](sim::MultiBody& self, const std::string& name) {
+          [](sim::Multibody& self, const std::string& name) {
             self.setName(name);
           })
-      .def_prop_ro("num_links", &sim::MultiBody::getLinkCount)
-      .def_prop_ro("num_joints", &sim::MultiBody::getJointCount)
-      .def_prop_ro("num_dofs", &sim::MultiBody::getDOFCount)
-      .def_prop_ro("links", &sim::MultiBody::getLinks)
-      .def_prop_ro("joints", &sim::MultiBody::getJoints)
-      .def_prop_ro("link_names", &sim::MultiBody::getLinkNames)
-      .def_prop_ro("joint_names", &sim::MultiBody::getJointNames)
-      .def_prop_ro("mass_matrix", &sim::MultiBody::getMassMatrix)
-      .def_prop_ro("inverse_mass_matrix", &sim::MultiBody::getInverseMassMatrix)
-      .def_prop_ro("coriolis_forces", &sim::MultiBody::getCoriolisForces)
-      .def_prop_ro("gravity_forces", &sim::MultiBody::getGravityForces)
+      .def_prop_ro("num_links", &sim::Multibody::getLinkCount)
+      .def_prop_ro("num_joints", &sim::Multibody::getJointCount)
+      .def_prop_ro("num_dofs", &sim::Multibody::getDOFCount)
+      .def_prop_ro("links", &sim::Multibody::getLinks)
+      .def_prop_ro("joints", &sim::Multibody::getJoints)
+      .def_prop_ro("link_names", &sim::Multibody::getLinkNames)
+      .def_prop_ro("joint_names", &sim::Multibody::getJointNames)
+      .def_prop_ro("mass_matrix", &sim::Multibody::getMassMatrix)
+      .def_prop_ro("inverse_mass_matrix", &sim::Multibody::getInverseMassMatrix)
+      .def_prop_ro("coriolis_forces", &sim::Multibody::getCoriolisForces)
+      .def_prop_ro("gravity_forces", &sim::Multibody::getGravityForces)
       .def_prop_ro(
           "coriolis_and_gravity_forces",
-          &sim::MultiBody::getCoriolisAndGravityForces)
+          &sim::Multibody::getCoriolisAndGravityForces)
       .def(
           "compute_inverse_dynamics",
-          [](const sim::MultiBody& self, const nb::handle& acceleration) {
+          [](const sim::Multibody& self, const nb::handle& acceleration) {
             return self.computeInverseDynamics(toVectorX(acceleration));
           },
           nb::arg("desired_acceleration"))
       .def(
           "compute_impulse_response",
-          [](const sim::MultiBody& self, const nb::handle& impulse) {
+          [](const sim::Multibody& self, const nb::handle& impulse) {
             return self.computeImpulseResponse(toVectorX(impulse));
           },
           nb::arg("joint_impulse"))
       .def(
           "get_jacobian",
-          [](const sim::MultiBody& self, const sim::Link& link) {
+          [](const sim::Multibody& self, const sim::Link& link) {
             return self.getJacobian(link);
           },
           nb::arg("link"))
       .def(
           "get_world_jacobian",
-          [](const sim::MultiBody& self, const sim::Link& link) {
+          [](const sim::Multibody& self, const sim::Link& link) {
             return self.getWorldJacobian(link);
           },
           nb::arg("link"))
-      .def_prop_ro("is_valid", &sim::MultiBody::isValid)
-      .def("__repr__", [](const sim::MultiBody& self) {
+      .def_prop_ro("is_valid", &sim::Multibody::isValid)
+      .def("__repr__", [](const sim::Multibody& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back("valid", self.isValid() ? "True" : "False");
         if (self.isValid()) {
@@ -1187,7 +1187,7 @@ void defSimulationExperimentalModule(nb::module_& m)
           fields.emplace_back("joints", std::to_string(self.getJointCount()));
           fields.emplace_back("dofs", std::to_string(self.getDOFCount()));
         }
-        return format_repr("MultiBody", fields);
+        return format_repr("Multibody", fields);
       });
 
   nb::class_<sim::RigidBody, sim::Frame>(m, "RigidBody")
@@ -1444,27 +1444,27 @@ void defSimulationExperimentalModule(nb::module_& m)
           nb::arg("offset") = nb::none(),
           nb::keep_alive<0, 1>())
       .def(
-          "add_multi_body",
+          "add_multibody",
           [](sim::World& self, const std::string& name) {
-            return self.addMultiBody(name);
+            return self.addMultibody(name);
           },
           nb::arg("name"),
           nb::keep_alive<0, 1>())
       .def(
-          "get_multi_body",
+          "get_multibody",
           [](sim::World& self, const std::string& name) -> nb::object {
-            auto multiBody = self.getMultiBody(name);
-            if (!multiBody.has_value()) {
+            auto multibody = self.getMultibody(name);
+            if (!multibody.has_value()) {
               return nb::none();
             }
-            return nb::cast(*multiBody, nb::rv_policy::move);
+            return nb::cast(*multibody, nb::rv_policy::move);
           },
           nb::arg("name"),
           nb::keep_alive<0, 1>())
       .def(
-          "has_multi_body",
+          "has_multibody",
           [](const sim::World& self, const std::string& name) {
-            return self.hasMultiBody(name);
+            return self.hasMultibody(name);
           },
           nb::arg("name"))
       .def(
@@ -1613,7 +1613,7 @@ void defSimulationExperimentalModule(nb::module_& m)
             self.setGravity(toVector3(gravity));
           })
       .def_prop_ro("frame", &sim::World::getFrame)
-      .def_prop_ro("num_multi_bodies", &sim::World::getMultiBodyCount)
+      .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)
       .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)
       .def_prop_ro("num_rigid_bodies", &sim::World::getRigidBodyCount)
       .def("collide", &sim::World::collide)
@@ -1621,7 +1621,7 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def("__repr__", [](const sim::World& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back(
-            "multi_bodies", std::to_string(self.getMultiBodyCount()));
+            "multibodies", std::to_string(self.getMultibodyCount()));
         fields.emplace_back(
             "loop_closures", std::to_string(self.getLoopClosureCount()));
         fields.emplace_back(

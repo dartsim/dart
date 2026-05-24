@@ -45,7 +45,7 @@
 #include <string_view>
 
 namespace dart::simulation::experimental::comps {
-struct MultiBodyStructure;
+struct MultibodyStructure;
 } // namespace dart::simulation::experimental::comps
 
 namespace dart::simulation::experimental::compute {
@@ -57,7 +57,7 @@ namespace dart::simulation::experimental::compute {
 /// `massMatrix * qddot + coriolisForces + gravityForces = tau`, where `tau` is
 /// the applied generalized force. This matches the legacy DART decomposition of
 /// `Skeleton::getMassMatrix`, `getCoriolisForces`, and `getGravityForces`.
-struct MultiBodyDynamicsTerms
+struct MultibodyDynamicsTerms
 {
   Eigen::MatrixXd massMatrix;     ///< M(q), size dof x dof
   Eigen::VectorXd coriolisForces; ///< C(q, qdot) qdot, size dof
@@ -72,10 +72,10 @@ struct MultiBodyDynamicsTerms
 /// Fixed-base trees with fixed/revolute/prismatic joints are supported; other
 /// joint types are rejected. For a multibody with no movable degrees of freedom
 /// the returned matrix and vectors are empty.
-[[nodiscard]] DART_EXPERIMENTAL_API MultiBodyDynamicsTerms
-computeMultiBodyDynamicsTerms(
+[[nodiscard]] DART_EXPERIMENTAL_API MultibodyDynamicsTerms
+computeMultibodyDynamicsTerms(
     entt::registry& registry,
-    const comps::MultiBodyStructure& structure,
+    const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity);
 
 /// Compute the generalized joint forces required to produce a desired
@@ -88,9 +88,9 @@ computeMultiBodyDynamicsTerms(
 /// ordered by joint construction order; the result has the same ordering. For a
 /// multibody with no movable degrees of freedom the result is empty.
 [[nodiscard]] DART_EXPERIMENTAL_API Eigen::VectorXd
-computeMultiBodyInverseDynamics(
+computeMultibodyInverseDynamics(
     entt::registry& registry,
-    const comps::MultiBodyStructure& structure,
+    const comps::MultibodyStructure& structure,
     const Eigen::Vector3d& gravity,
     const Eigen::VectorXd& desiredAcceleration);
 
@@ -104,9 +104,9 @@ computeMultiBodyInverseDynamics(
 ///
 /// @throws InvalidArgumentException if `linkEntity` is not part of `structure`.
 [[nodiscard]] DART_EXPERIMENTAL_API Eigen::MatrixXd
-computeMultiBodyLinkJacobian(
+computeMultibodyLinkJacobian(
     entt::registry& registry,
-    const comps::MultiBodyStructure& structure,
+    const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
 
 /// Compute the world-frame geometric Jacobian of one link of a multibody.
@@ -119,9 +119,9 @@ computeMultiBodyLinkJacobian(
 ///
 /// @throws InvalidArgumentException if `linkEntity` is not part of `structure`.
 [[nodiscard]] DART_EXPERIMENTAL_API Eigen::MatrixXd
-computeMultiBodyLinkWorldJacobian(
+computeMultibodyLinkWorldJacobian(
     entt::registry& registry,
-    const comps::MultiBodyStructure& structure,
+    const comps::MultibodyStructure& structure,
     entt::entity linkEntity);
 
 /// Fixed-base articulated-body forward-dynamics stage.
@@ -143,7 +143,7 @@ computeMultiBodyLinkWorldJacobian(
 ///   kinematics but their dynamics are rejected until implemented.
 /// - Each link's center of mass is at the link frame origin, and the link
 ///   inertia tensor is expressed about that origin.
-class DART_EXPERIMENTAL_API MultiBodyForwardDynamicsStage final
+class DART_EXPERIMENTAL_API MultibodyForwardDynamicsStage final
   : public WorldStepStage
 {
 public:
