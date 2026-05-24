@@ -30,25 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "math/module.hpp"
+#pragma once
 
-#include "math/constants.hpp"
-#include "math/eigen_geometry.hpp"
-#include "math/geometry.hpp"
-#include "math/lie_groups.hpp"
-#include "math/random.hpp"
-#include "math/trimesh.hpp"
+#include <nanobind/nanobind.h>
 
 namespace dart::python_nb {
 
-void defMathModule(nanobind::module_& m)
-{
-  defMathConstants(m);
-  defRandom(m);
-  defGeometry(m);
-  defEigenGeometry(m);
-  defLieGroups(m);
-  defTriMesh(m);
-}
+void defLieGroups(nanobind::module_& m);
 
 } // namespace dart::python_nb

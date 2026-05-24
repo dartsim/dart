@@ -341,6 +341,19 @@ dart_build_tests(
     math/lcp/test_lcp_projection_solvers.cpp
 )
 
+# Math Lie group tests
+dart_build_tests(
+  TYPE unit
+  TARGET_PREFIX UNIT_math_lie_group
+  LINK_LIBRARIES dart
+  SOURCES
+    math/lie_group/test_so3.cpp
+    math/lie_group/test_se3.cpp
+    math/lie_group/test_spatial_inertia.cpp
+    math/lie_group/test_forward_kinematics.cpp
+    math/lie_group/test_batch.cpp
+)
+
 # ==============================================================================
 # GUI Tests
 # ==============================================================================
