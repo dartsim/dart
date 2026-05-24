@@ -845,8 +845,12 @@ def test_experimental_world_gravity():
     world.step()
 
     dt = 0.1
-    assert box.linear_velocity.tolist() == pytest.approx([0.0, 0.0, -1.0])
-    assert box.translation.tolist() == pytest.approx([0.0, 0.0, 5.0 - 0.1])
+    gravity_z = -10.0
+    # Semi-implicit Euler: v = g dt, x = x0 + v dt = x0 + g dt^2.
+    assert box.linear_velocity.tolist() == pytest.approx([0.0, 0.0, gravity_z * dt])
+    assert box.translation.tolist() == pytest.approx(
+        [0.0, 0.0, 5.0 + gravity_z * dt * dt]
+    )
 
     with pytest.raises(Exception, match="finite"):
         world.gravity = (float("nan"), 0.0, 0.0)

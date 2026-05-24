@@ -195,18 +195,18 @@ positional correction); link-vs-static-rigid-body one-sided articulated contact
 link-vs-link (two-sided) contacts, and a coupled simultaneous boxed-LCP/PGS
 solve over all contacts at once.
 
-- **Architectural prerequisite (the real blocker):** the default `World::step`
-  pipeline (see `world.cpp` ~line 835) runs the rigid-body stages _fully_ before
-  the multibody stage: `RigidBodyVelocityStage` → `RigidBodyContactStage` →
-  `RigidBodyPositionStage` → `MultibodyForwardDynamicsStage` → `KinematicsStage`.
-  So when the multibody contact solve runs, rigid bodies have already had their
-  velocity _and position_ integrated this step. A correct coupled two-sided solve
-  needs the pipeline reordered into phases: **(1) all velocity integration
-  (rigid + multibody unconstrained `qddot`→`qdot`), (2) one unified contact /
-  constraint solve over all bodies, (3) all position integration**. This touches
-  the core step loop and all 274 passing tests, so do it as its own slice with
-  the suite as the guardrail (revert if it destabilizes, as was done for the
-  first universal-joint attempt).
+- **Pipeline ordering (partly addressed):** the default `World::step` pipeline is
+  now `RigidBodyVelocityStage` → `RigidBodyContactStage` →
+  `MultibodyForwardDynamicsStage` → `RigidBodyPositionStage` → `KinematicsStage`
+  (rigid-body position integration moved after the multibody stage so two-sided
+  link-vs-rigid impulses land the same step). A fully coupled solve still wants
+  the stronger split: **(1) all velocity integration (rigid + multibody
+  unconstrained `qddot`→`qdot`), (2) one unified contact/constraint solve over
+  all bodies, (3) all position integration** — so rigid-rigid and link contacts
+  are resolved jointly rather than in separate Gauss-Seidel passes. This touches
+  the core step loop and all passing tests, so do it as its own slice with the
+  suite as the guardrail (revert if it destabilizes, as was done for the first
+  universal-joint attempt).
 - **After reordering:** assemble every contact as a constraint row with a
   Jacobian that maps the contact impulse to each involved body's velocity —
   rigid bodies via `invMass`/`invWorldInertia` + arm (already in
@@ -221,10 +221,11 @@ lambda_n`) instead of the two separate per-stage Gauss-Seidel loops. Add
   mass/inertia + arm so the normal and friction impulses are applied to both the
   link (`M^-1 J^T`) and the rigid body (equal-and-opposite, via its
   `comps::Velocity`). An immovable obstacle leaves `otherBody` null and reduces
-  to the original one-sided solve. Accepts a one-step position lag for the rigid
-  body (it is position-integrated earlier in the pipeline), corrected by
-  Baumgarte. Verified by total X-momentum conservation when a prismatic striker
-  link hits a free body (C++ + dartpy). **Still remaining:** link-vs-link
+  to the original one-sided solve. `RigidBodyPositionStage` now runs _after_
+  `MultibodyForwardDynamicsStage` in `World::step`, so these impulses reach the
+  rigid body's pose in the same step (no lag; addressed a P1 review note).
+  Verified by total X-momentum conservation when a prismatic striker link hits a
+  free body (C++ + dartpy). **Still remaining:** link-vs-link
   contacts and the coupled simultaneous boxed-LCP (both need the pipeline
   reordering above).
 

@@ -832,10 +832,13 @@ void World::step(compute::ComputeExecutor& executor)
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
   compute::KinematicsStage kinematics;
   compute::WorldStepPipeline pipeline;
+  // Integrate rigid-body positions after the multibody stage so two-sided
+  // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
+  // the multibody solve) take effect in the same step's pose update.
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
-      .addStage(rigidBodyPosition)
       .addStage(multibodyDynamics)
+      .addStage(rigidBodyPosition)
       .addStage(kinematics);
   step(executor, pipeline);
 }
@@ -849,10 +852,13 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
   compute::KinematicsStage kinematics;
   compute::WorldStepPipeline pipeline;
+  // Integrate rigid-body positions after the multibody stage so two-sided
+  // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
+  // the multibody solve) take effect in the same step's pose update.
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
-      .addStage(rigidBodyPosition)
       .addStage(multibodyDynamics)
+      .addStage(rigidBodyPosition)
       .addStage(kinematics);
   step(count, executor, pipeline);
 }
