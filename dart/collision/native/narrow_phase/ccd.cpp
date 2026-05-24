@@ -125,9 +125,11 @@ bool sphereCastSphere(
     result.hit = true;
     result.timeOfImpact = 0.0;
     result.point = sphereStart;
-    result.normal = (sphereStart - targetCenter).normalized();
-    if (result.normal.squaredNorm() < kEpsilon) {
+    const Eigen::Vector3d normal = sphereStart - targetCenter;
+    if (normal.squaredNorm() < kEpsilon) {
       result.normal = Eigen::Vector3d::UnitZ();
+    } else {
+      result.normal = normal.normalized();
     }
     return true;
   }
@@ -508,9 +510,11 @@ bool sphereCastConvex(
       result.timeOfImpact = t;
       Eigen::Vector3d pointB = supportB(Eigen::Vector3d::UnitX());
       result.point = pointB;
-      result.normal = (currentCenter - pointB).normalized();
-      if (result.normal.squaredNorm() < kEpsilon) {
+      const Eigen::Vector3d normal = currentCenter - pointB;
+      if (normal.squaredNorm() < kEpsilon) {
         result.normal = Eigen::Vector3d::UnitZ();
+      } else {
+        result.normal = normal.normalized();
       }
       return true;
     }
@@ -1307,9 +1311,14 @@ bool conservativeAdvancement(
       Eigen::Vector3d pointA = supportA(Eigen::Vector3d::UnitX());
       Eigen::Vector3d pointB = supportB(-Eigen::Vector3d::UnitX());
       result.point = pointB;
-      result.normal = (pointA - pointB).normalized();
-      if (result.normal.squaredNorm() < kEpsilon) {
+      // Check the magnitude before normalizing: coincident support points
+      // (degenerate/overlapping configs) would otherwise yield a NaN normal
+      // that slips past a post-normalization guard (NaN < kEpsilon is false).
+      const Eigen::Vector3d normal = pointA - pointB;
+      if (normal.squaredNorm() < kEpsilon) {
         result.normal = Eigen::Vector3d::UnitZ();
+      } else {
+        result.normal = normal.normalized();
       }
       return true;
     }
@@ -1421,9 +1430,14 @@ bool convexCast(
       Eigen::Vector3d pointA = supportA(Eigen::Vector3d::UnitX());
       Eigen::Vector3d pointB = supportB(-Eigen::Vector3d::UnitX());
       result.point = pointB;
-      result.normal = (pointA - pointB).normalized();
-      if (result.normal.squaredNorm() < kEpsilon) {
+      // Check the magnitude before normalizing: coincident support points
+      // (degenerate/overlapping configs) would otherwise yield a NaN normal
+      // that slips past a post-normalization guard (NaN < kEpsilon is false).
+      const Eigen::Vector3d normal = pointA - pointB;
+      if (normal.squaredNorm() < kEpsilon) {
         result.normal = Eigen::Vector3d::UnitZ();
+      } else {
+        result.normal = normal.normalized();
       }
       return true;
     }
@@ -1545,9 +1559,14 @@ bool splineCast(
       Eigen::Vector3d pointA = supportA(Eigen::Vector3d::UnitX());
       Eigen::Vector3d pointB = supportB(-Eigen::Vector3d::UnitX());
       result.point = pointB;
-      result.normal = (pointA - pointB).normalized();
-      if (result.normal.squaredNorm() < kEpsilon) {
+      // Check the magnitude before normalizing: coincident support points
+      // (degenerate/overlapping configs) would otherwise yield a NaN normal
+      // that slips past a post-normalization guard (NaN < kEpsilon is false).
+      const Eigen::Vector3d normal = pointA - pointB;
+      if (normal.squaredNorm() < kEpsilon) {
         result.normal = Eigen::Vector3d::UnitZ();
+      } else {
+        result.normal = normal.normalized();
       }
       return true;
     }

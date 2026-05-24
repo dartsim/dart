@@ -1699,6 +1699,25 @@ TEST(ConvexCast, ZeroIterationBudgetDetectsInitialOverlap)
   EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-9);
 }
 
+TEST(ConvexCast, CoincidentSupportPointsGiveFiniteNormal)
+{
+  // Degenerate convexes whose support points coincide (overlapping point-like
+  // shapes) must not produce a NaN contact normal: the magnitude is checked
+  // before normalizing, so the fallback normal is used instead.
+  ConvexShape shapeA(std::vector<Eigen::Vector3d>{Eigen::Vector3d::Zero()});
+  ConvexShape shapeB(std::vector<Eigen::Vector3d>{Eigen::Vector3d::Zero()});
+  const Eigen::Isometry3d atOrigin = Eigen::Isometry3d::Identity();
+
+  CcdOption option;
+  CcdResult result;
+  const bool hit = convexCast(
+      shapeA, atOrigin, atOrigin, shapeB, atOrigin, atOrigin, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_TRUE(result.normal.allFinite());
+  EXPECT_NEAR(result.normal.norm(), 1.0, 1e-9);
+}
+
 TEST(SplineCast, ZeroIterationBudgetDetectsInitialOverlap)
 {
   ConvexShape shapeA(makeCubeVertices(0.5));
