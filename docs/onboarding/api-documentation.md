@@ -140,9 +140,13 @@ pixi run api-docs-build    # Convenience task that runs both builders
 
 ### GitHub Pages
 
-The GitHub Pages workflow and the `gh-pages` branch are no longer part of the
-documentation pipeline. Historical builds remain available at their existing
-URLs, but new changes are exclusively published via Read the Docs.
+GitHub Pages is no longer part of the primary documentation pipeline.
+Historical C++ API builds remain available at their existing
+`https://dartsim.github.io/dart/v6.*` URLs, and the performance dashboard is
+published from the `gh-pages` branch at
+`https://dartsim.github.io/dart/performance/`. User-facing documentation
+changes should still go to Read the Docs unless they specifically maintain one
+of those GitHub Pages surfaces.
 
 ## Troubleshooting
 

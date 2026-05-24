@@ -30,37 +30,42 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/experimental/multi_body/link.hpp"
+#pragma once
 
-#include "dart/simulation/experimental/comps/all.hpp"
-#include "dart/simulation/experimental/multi_body/joint.hpp"
-#include "dart/simulation/experimental/world.hpp"
+#include <dart/simulation/experimental/comps/component_category.hpp>
 
-namespace dart::simulation::experimental {
+#include <entt/entt.hpp>
 
-//==============================================================================
-Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
+#include <vector>
 
-//==============================================================================
-std::string_view Link::getName() const
+namespace dart::simulation::experimental::comps {
+
+/// Tag marking entity as a Multibody
+///
+/// Automatically serialized via DART_EXPERIMENTAL_TAG_COMPONENT macro.
+/// **Internal Implementation Detail** - Not exposed in public API
+struct MultibodyTag
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return linkComp.name;
-}
+  DART_EXPERIMENTAL_TAG_COMPONENT(MultibodyTag);
+};
 
-//==============================================================================
-Joint Link::getParentJoint() const
+/// Component storing Multibody structure (links, joints)
+///
+/// Automatically serialized with entity remapping via
+/// DART_EXPERIMENTAL_STATE_COMPONENT macro.
+/// **Internal Implementation Detail** - Not exposed in public API
+struct MultibodyStructure
 {
-  const auto& linkComp
-      = getWorld()->getRegistry().get<comps::Link>(getEntity());
-  return Joint(linkComp.parentJoint, getWorld());
-}
+  DART_EXPERIMENTAL_STATE_COMPONENT(MultibodyStructure);
 
-//==============================================================================
-const Eigen::Isometry3d& Link::getWorldTransform() const
-{
-  return Frame::getTransform();
-}
+  std::vector<entt::entity> links;
+  std::vector<entt::entity> joints;
 
-} // namespace dart::simulation::experimental
+  /// Declare which fields need entity remapping during serialization
+  static constexpr auto entityFields()
+  {
+    return std::tuple{&MultibodyStructure::links, &MultibodyStructure::joints};
+  }
+};
+
+} // namespace dart::simulation::experimental::comps
