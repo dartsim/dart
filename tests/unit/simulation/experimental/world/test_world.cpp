@@ -2582,6 +2582,56 @@ TEST(World, MultiBodyFreeJointTranslatesAndSpins)
       position.tail<3>().isApprox(Eigen::Vector3d(0.0, 0.0, 2.0 * time), 1e-9));
 }
 
+// Test a center-of-mass offset from the link frame: a revolute pendulum whose
+// link frame sits at the hinge but whose center of mass is offset along X
+// behaves like the same pendulum built with a link-frame offset (parallel-axis
+// mass matrix and gravity torque), exercising the COM-coupled spatial inertia.
+TEST(World, MultiBodyLinkCenterOfMassOffset)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultiBody("pendulum");
+  auto base = robot.addLink("base");
+
+  // Link frame at the hinge (no transformFromParent offset); the mass is offset
+  // along X by the center of mass instead.
+  sx::JointSpec spec;
+  spec.name = "hinge";
+  spec.type = sx::JointType::Revolute;
+  spec.axis = Eigen::Vector3d::UnitY();
+  auto bob = robot.addLink("bob", base, spec);
+
+  const double mass = 2.0;
+  const double length = 1.5;
+  const double inertiaYy = 0.2;
+  bob.setMass(mass);
+  bob.setInertia(Eigen::Vector3d(0.1, inertiaYy, 0.3).asDiagonal());
+  bob.setCenterOfMass(Eigen::Vector3d(length, 0.0, 0.0));
+  EXPECT_TRUE(
+      bob.getCenterOfMass().isApprox(Eigen::Vector3d(length, 0.0, 0.0)));
+
+  world.enterSimulationMode();
+
+  // Parallel-axis: rotating about Y through the hinge sees Iyy + m L^2.
+  const Eigen::MatrixXd massMatrix = robot.getMassMatrix();
+  ASSERT_EQ(massMatrix.rows(), 1);
+  EXPECT_NEAR(massMatrix(0, 0), inertiaYy + mass * length * length, 1e-12);
+
+  // Horizontal pendulum: gravity generalized force is -m g L.
+  const Eigen::VectorXd gravity = robot.getGravityForces();
+  ASSERT_EQ(gravity.size(), 1);
+  EXPECT_NEAR(gravity[0], -mass * 9.81 * length, 1e-12);
+
+  // Forward dynamics: qddot = m g L / (Iyy + m L^2).
+  world.setTimeStep(0.001);
+  world.step();
+  const double expected
+      = 9.81 * mass * length / (inertiaYy + mass * length * length);
+  EXPECT_NEAR(bob.getParentJoint().getAcceleration()[0], expected, 1e-9);
+}
+
 // Test that the pendulum integrator conserves mechanical energy over a swing
 // (a sign or scale error in the dynamics would inject energy and diverge).
 TEST(World, MultiBodyPendulumConservesEnergy)

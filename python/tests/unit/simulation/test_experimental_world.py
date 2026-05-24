@@ -1269,6 +1269,39 @@ def test_experimental_free_joint_dynamics():
     )
 
 
+def test_experimental_link_center_of_mass_offset():
+    sx = _simulation_experimental()
+
+    world = sx.World()  # default gravity (0, 0, -9.81)
+    robot = world.add_multi_body("pendulum")
+    base = robot.add_link("base")
+    # Link frame at the hinge; the mass is offset along X via the center of mass.
+    bob = robot.add_link(
+        "bob",
+        parent=base,
+        joint=sx.JointSpec(
+            name="hinge", type=sx.JointType.REVOLUTE, axis=(0.0, 1.0, 0.0)
+        ),
+    )
+    mass = 2.0
+    length = 1.5
+    inertia_yy = 0.2
+    bob.mass = mass
+    bob.inertia = ((0.1, 0.0, 0.0), (0.0, inertia_yy, 0.0), (0.0, 0.0, 0.3))
+    bob.center_of_mass = (length, 0.0, 0.0)
+    assert bob.center_of_mass.tolist() == pytest.approx([length, 0.0, 0.0])
+
+    world.enter_simulation_mode()
+
+    # Parallel-axis mass matrix and horizontal-pendulum gravity torque.
+    assert robot.mass_matrix[0, 0] == pytest.approx(
+        inertia_yy + mass * length**2
+    )
+    assert robot.gravity_forces.tolist() == pytest.approx(
+        [-mass * 9.81 * length]
+    )
+
+
 def test_experimental_multibody_dynamics_terms():
     sx = _simulation_experimental()
 

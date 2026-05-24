@@ -538,6 +538,14 @@
     one-sided case). Verified by total linear-momentum conservation when a
     moving link strikes a free body. Link-vs-link and a coupled simultaneous
     boxed-LCP over all contacts remain future work.
+  - Added experimental link center-of-mass offset: `Link::setCenterOfMass`/
+    `getCenterOfMass` (dartpy `link.center_of_mass`) place a link's center of
+    mass away from its link-frame origin, with the inertia tensor taken about
+    the center of mass. The articulated-body spatial inertia now uses the full
+    COM-coupled form, so a link no longer has to sit at its center of mass
+    (matching legacy DART and easing model loading). Verified by an offset-COM
+    pendulum matching the parallel-axis mass matrix, gravity torque, and
+    acceleration.
   - Added experimental generalized-coordinate dynamics accessors on `MultiBody`:
     `getMassMatrix`/`getInverseMassMatrix`, `getCoriolisForces`,
     `getGravityForces`, and `getCoriolisAndGravityForces` (dartpy `mass_matrix`,

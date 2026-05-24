@@ -115,6 +115,27 @@ void Link::setInertia(const Eigen::Matrix3d& inertia)
 }
 
 //==============================================================================
+Eigen::Vector3d Link::getCenterOfMass() const
+{
+  return getWorld()
+      ->getRegistry()
+      .get<comps::Link>(getEntity())
+      .mass.localCenterOfMass;
+}
+
+//==============================================================================
+void Link::setCenterOfMass(const Eigen::Vector3d& centerOfMass)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !centerOfMass.allFinite(),
+      InvalidArgumentException,
+      "Link center of mass must contain only finite values");
+
+  getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.localCenterOfMass
+      = centerOfMass;
+}
+
+//==============================================================================
 std::optional<CollisionShape> Link::getCollisionShape() const
 {
   const auto& registry = getWorld()->getRegistry();

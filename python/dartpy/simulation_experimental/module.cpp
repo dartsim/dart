@@ -886,6 +886,12 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::Link& self, const nb::handle& inertia) {
             self.setInertia(toMatrix3(inertia));
           })
+      .def_prop_rw(
+          "center_of_mass",
+          &sim::Link::getCenterOfMass,
+          [](sim::Link& self, const nb::handle& centerOfMass) {
+            self.setCenterOfMass(toVector3(centerOfMass));
+          })
       .def_prop_ro("translation", &sim::Link::getTranslation)
       .def_prop_ro("rotation", &sim::Link::getRotation)
       .def_prop_ro(

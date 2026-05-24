@@ -128,10 +128,18 @@ Matrix6 forceCross(const Vector6& value)
 //==============================================================================
 Matrix6 spatialInertia(const comps::MassProperties& mass)
 {
-  // The center of mass is assumed at the link frame origin, so the spatial
-  // inertia is block diagonal in the [angular; linear] convention.
+  // Spatial inertia about the link frame origin in the [angular; linear]
+  // convention, for a body with rotational inertia `inertia` about its center
+  // of mass `c`:
+  //   [[ I_C - m c x c x , m c x ],
+  //    [ -m c x          , m 1   ]].
+  // With the center of mass at the origin (c = 0) this reduces to the
+  // block-diagonal form diag(I_C, m 1).
+  const Eigen::Matrix3d comCross = skew(mass.localCenterOfMass);
   Matrix6 result = Matrix6::Zero();
-  result.topLeftCorner<3, 3>() = mass.inertia;
+  result.topLeftCorner<3, 3>() = mass.inertia - mass.mass * comCross * comCross;
+  result.topRightCorner<3, 3>() = mass.mass * comCross;
+  result.bottomLeftCorner<3, 3>() = -mass.mass * comCross;
   result.bottomRightCorner<3, 3>() = mass.mass * Eigen::Matrix3d::Identity();
   return result;
 }

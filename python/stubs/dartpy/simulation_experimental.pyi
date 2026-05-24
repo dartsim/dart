@@ -342,6 +342,7 @@ class Link(Frame):
     parent_joint: Joint
     mass: float
     inertia: NDArray[np.float64]
+    center_of_mass: NDArray[np.float64]
     translation: NDArray[np.float64]
     rotation: NDArray[np.float64]
     quaternion: NDArray[np.float64]

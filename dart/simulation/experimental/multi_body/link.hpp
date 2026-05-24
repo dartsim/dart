@@ -104,8 +104,9 @@ public:
   //--------------------------------------------------------------------------
   // Inertial properties
   //
-  // The link's center of mass is assumed to be at the link frame origin, which
-  // matches the experimental articulated-body forward-dynamics model.
+  // The inertia tensor is expressed about the center of mass, which may be
+  // offset from the link frame origin (see getCenterOfMass/setCenterOfMass; it
+  // defaults to the origin).
   //--------------------------------------------------------------------------
 
   /// Get the link's mass.
@@ -123,6 +124,17 @@ public:
   ///
   /// Must be finite, symmetric, and positive definite.
   void setInertia(const Eigen::Matrix3d& inertia);
+
+  /// Get the link's center of mass expressed in the link frame (default: the
+  /// origin).
+  [[nodiscard]] Eigen::Vector3d getCenterOfMass() const;
+
+  /// Set the link's center of mass expressed in the link frame.
+  ///
+  /// A nonzero offset places the center of mass away from the link frame
+  /// origin; the inertia tensor (see setInertia) remains about the center of
+  /// mass. Must contain only finite values.
+  void setCenterOfMass(const Eigen::Vector3d& centerOfMass);
 
   //--------------------------------------------------------------------------
   // Collision geometry

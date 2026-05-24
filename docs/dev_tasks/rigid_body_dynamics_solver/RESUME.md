@@ -238,16 +238,18 @@ There is no experimental-World loader yet, so this needs a translation layer:
   experimental `Link` (mass, inertia) and for each parent `Joint` map the legacy
   joint type → experimental `JointType` + axis/axis2/pitch and the
   parent-joint-to-child-link transform (`transformFromParent`).
-- **Impedance mismatch to resolve:** the experimental dynamics assumes each
-  link's COM is at the link-frame origin (`spatialInertia`), whereas
-  URDF/Skeleton place the COM at an arbitrary offset from the body frame and
-  express child-joint origins relative to the body frame. Either (a) extend the
-  experimental spatial inertia to carry a COM offset
-  (`I = [[I_C - m c× c×, m c×],[-m c×, m 1]]`), or (b) reframe each link so the
-  link frame sits at the COM and shift child-joint `transformFromParent` and the
-  parent joint transform accordingly. Option (a) is the cleaner standalone slice
-  and is independently verifiable (offset-COM pendulum).
-- Verify a known URDF loads with the right DOF count, tree structure, and a sane
+- **(DONE) Impedance mismatch — COM offset.** The experimental dynamics no
+  longer requires a link's COM at the link-frame origin: `comps::MassProperties`
+  carries `localCenterOfMass`, `spatialInertia` uses the full COM-coupled form
+  `[[I_C - m c× c×, m c×],[-m c×, m 1]]`, and `Link::setCenterOfMass`/
+  `getCenterOfMass` (dartpy `link.center_of_mass`) expose it. So a loader can map
+  URDF/Skeleton COM offsets directly (no reframing). Verified by an offset-COM
+  pendulum (C++ + dartpy). Child-joint origins relative to the body frame still
+  map onto `transformFromParent` as today.
+- **Remaining:** the actual translation pass — walk the parsed `Skeleton`,
+  create links/joints, map joint types and transforms, and (optionally) collision
+  shapes — likely in a new `dart/simulation/experimental/io` bridge. Verify a
+  known URDF loads with the right DOF count, tree structure, and a sane
   forward-dynamics step, in C++ and dartpy.
 
 ### Smaller deferred items
