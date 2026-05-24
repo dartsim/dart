@@ -531,13 +531,29 @@ and report the throttle rather than re-spamming the PR with more triggers.
 ### Updating Published PRs
 
 Prefer additive follow-up commits for updates to already-published PRs. This
-keeps review history inspectable and makes each review round clear.
+keeps review history inspectable and makes each review round clear. Pushing any
+such update is an external mutation that requires explicit maintainer/user
+approval.
 
-When a published PR branch needs the latest target branch, use explicit
-maintainer/user approval to update that published branch by merging the target
-branch and pushing normally. Do not rebase published PR branches by default:
-rebasing invalidates existing CI runs and makes PR review/comment history harder
-to follow. Rebase or force-push only when the maintainer explicitly requests it.
+#### Merge The Base Branch Before Every Push (MANDATORY)
+
+**Before every push, first merge the latest base branch (usually `main`) into
+the working branch.** Do this on every push, not just the first, so each
+pushed/CI-tested state reflects current `main` and conflicts surface early
+instead of at merge time.
+
+```bash
+git fetch origin <base-branch>
+git merge --no-ff origin/<base-branch>   # never rebase a published PR branch
+# rebuild + retest if the merge touched code, then push (an approved mutation)
+git push
+```
+
+Merging the base in locally is a routine pre-push step. The `git push` itself is
+still an external mutation that requires explicit maintainer/user approval. Do
+not rebase published PR branches by default: rebasing invalidates existing CI
+runs and makes PR review/comment history harder to follow. Rebase or force-push
+only when the maintainer explicitly requests it.
 
 Amend or force-push only when the user explicitly requests it or when there is a
 clear reason, such as removing sensitive content, repairing broken branch
