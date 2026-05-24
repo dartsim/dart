@@ -36,6 +36,8 @@
 
 #include <gtest/gtest.h>
 
+#include <type_traits>
+
 using namespace dart;
 using namespace math;
 
@@ -142,6 +144,23 @@ TYPED_TEST(SO3Test, InverseInPlace)
   const SO3<S> so3_inverse = so3.inverse();
   so3.inverseInPlace();
   EXPECT_TRUE(so3_inverse.isApprox(so3));
+}
+
+//==============================================================================
+TYPED_TEST(SO3Test, InverseRvalueMaterializes)
+{
+  using S = typename TestFixture::Scalar;
+  using LG = SO3<S>;
+
+  // inverse() on a temporary must materialize to a concrete value rather than a
+  // reference-holding expression, so the result cannot dangle.
+  static_assert(
+      std::is_same_v<decltype(LG::Random().inverse()), typename LG::LieGroup>);
+
+  const LG sample = LG::Random();
+  const auto inv = LG(sample).inverse(); // called on a temporary
+  const LG expected = sample.inverse();
+  EXPECT_TRUE(inv.isApprox(expected));
 }
 
 //==============================================================================

@@ -133,8 +133,13 @@ public:
       const LieGroupBase<OtherDerived>& other,
       Scalar tol = LieGroupTol<Scalar>()) const;
 
-  /// Returns the inverse of this Lie group
-  [[nodiscard]] InverseType inverse() const;
+  /// Returns the inverse of this Lie group as a lightweight expression that
+  /// references this object (valid only while this object stays alive).
+  [[nodiscard]] InverseType inverse() const&;
+
+  /// Returns the inverse of this temporary Lie group, materialized to a
+  /// concrete value so the result never references the expired operand.
+  [[nodiscard]] LieGroup inverse() const&&;
 
   /// Performs in-place inverse and returns the reference of the derived
   Derived& inverseInPlace();
@@ -284,9 +289,20 @@ bool LieGroupBase<Derived>::isApprox(
 //==============================================================================
 template <typename Derived>
 typename LieGroupBase<Derived>::InverseType LieGroupBase<Derived>::inverse()
-    const
+    const&
 {
   return InverseType(derived());
+}
+
+//==============================================================================
+template <typename Derived>
+typename LieGroupBase<Derived>::LieGroup LieGroupBase<Derived>::inverse()
+    const&&
+{
+  // *this is a temporary: returning the reference-holding InverseType would
+  // dangle, so evaluate to a concrete LieGroup while the operand is still
+  // alive.
+  return InverseType(derived()).eval();
 }
 
 //==============================================================================
