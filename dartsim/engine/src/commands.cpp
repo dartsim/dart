@@ -275,6 +275,13 @@ std::unique_ptr<Command> reparent(ObjectId id, ObjectId newParent)
             || object->type == ObjectType::Joint) {
           return;
         }
+        // rebuild() instantiates only root children (links come from their
+        // multibody), so nesting a rigid body/frame under another object would
+        // drop it from the rebuilt world. Until hierarchical rebuild exists,
+        // only moves to the world root are representable.
+        if (newParent != kNoObject) {
+          return;
+        }
         if (model.reparent(id, newParent)) {
           objects.rebuild();
         }

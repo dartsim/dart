@@ -492,7 +492,7 @@ TEST(CommandManager, AddLinkRejectsInvalidParentLink)
   EXPECT_EQ(objects.model().size(), 4u); // arm, body, rootLink, child link
 }
 
-TEST(CommandManager, ReparentRejectsLinkButAllowsOthers)
+TEST(CommandManager, ReparentRejectsUnsupportedMoves)
 {
   ObjectManager objects;
   SelectionManager selection;
@@ -504,6 +504,8 @@ TEST(CommandManager, ReparentRejectsLinkButAllowsOthers)
   const ObjectId link = selection.primary();
   commands.execute(commands::addFreeFrame());
   const ObjectId frame = selection.primary();
+  commands.execute(commands::addRigidBody());
+  const ObjectId body = selection.primary();
 
   // A link must stay under its owning multibody; moving it elsewhere would drop
   // it from the rebuilt world, so the reparent is rejected.
@@ -511,11 +513,12 @@ TEST(CommandManager, ReparentRejectsLinkButAllowsOthers)
   ASSERT_NE(objects.model().find(link), nullptr);
   EXPECT_EQ(objects.model().find(link)->parent, arm);
 
-  // Non-link objects can still be reparented.
-  commands.execute(commands::addRigidBody());
-  const ObjectId body = selection.primary();
+  // rebuild() instantiates only root children, so nesting a non-link object
+  // under another object is rejected: the body stays at the root and keeps
+  // rendering instead of silently vanishing from the world.
   commands.execute(commands::reparent(body, frame));
-  EXPECT_EQ(objects.model().find(body)->parent, frame);
+  EXPECT_EQ(objects.model().find(body)->parent, kNoObject);
+  EXPECT_TRUE(objects.world().hasRigidBody(objects.model().find(body)->name));
 }
 
 //==============================================================================
