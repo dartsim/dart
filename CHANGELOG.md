@@ -569,6 +569,34 @@
   - Replace crash-causing `DART_ASSERT` with `DART_WARN` + graceful recovery for non-finite transforms in Joint setters, BodyNode update pipeline, GenericJoint inertia propagation, and MJCF parser validation. ([gz-physics#861](https://github.com/gazebosim/gz-physics/issues/861), [gz-physics#862](https://github.com/gazebosim/gz-physics/issues/862))
 
 - Collision and Geometry
+  - Added IPC-class primitive continuous collision detection to the native
+    collision backend: conservative, minimum-separation-aware point-triangle and
+    edge-edge time-of-impact queries (additive conservative advancement) for
+    independently moving vertices, with an exact coplanarity-cubic validation
+    path. These are the continuous queries deformable / barrier (IPC-style)
+    solvers require and that the rigid-only reference engines do not provide.
+  - Added a both-moving rigid convex cast (`convexCast`) to the native backend,
+    generalizing conservative advancement so each convex body carries its own
+    motion (matching reference-engine continuous collision, which the prior
+    single-body `conservativeAdvancement` did not cover).
+  - Added a cubic-Bezier spline cast (`splineCast`) covering polynomial motion —
+    the one motion model the linear/screw casts cannot represent. The default
+    conservative mode finds the true first contact (the only spline cast that
+    does so; the reference engine's spline returns a wrong, later contact because
+    its bound is non-conservative), and an opt-in `CcdAdvancement::Fast` mode
+    trades that no-tunnelling guarantee for larger steps that run 1.9× faster
+    than the reference engine's spline cast.
+  - Optimized the conservative-advancement loop (an unchanged-orientation fast
+    path that skips the per-iteration quaternion slerp for translational sweeps,
+    a cached motion sampler that builds endpoint quaternions once per cast instead
+    of every iteration, GJK warm-starting that reseeds each closest-point query
+    from the previous step's simplex, a templated/de-virtualized GJK query for the
+    cast hot path, a directed conservative-advancement bound that projects the
+    rotational term onto the closest direction so a coaxial screw's spin no longer
+    inflates the step bound, and an acceleration-bounded spline step), so the
+    native convex cast beats the reference engines' own continuous-collision
+    queries across the swept box, octahedron, sphere, sphere/box, capsule,
+    cylinder, rotational, screw, and spline motion cases.
   - Decoupled FCL, Bullet, and ODE collision backends from `libdart.so` into
     explicit test/benchmark reference targets (`dart-test-reference-fcl`,
     `dart-test-reference-bullet`, `dart-test-reference-ode`) while promoting the
