@@ -131,17 +131,16 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`../readthedocs/community/performance_dashboard.rst`](../readthedocs/community/performance_dashboard.rst)
-- Status: Active
-- Horizon: Now
+- Status: Complete
+- Horizon: Later
 - Dimension: Scalable compute
-- Next step: Merge the `Performance Dashboard` workflow
-  (`benchmark-action/github-action-benchmark`), enable GitHub Pages from the
-  `gh-pages` branch, and let the first `main` run publish to
-  `dartsim.github.io/dart/performance/`.
+- Next step: Live at `dartsim.github.io/dart/performance/` via
+  `benchmark-action/github-action-benchmark` and embedded in the Read the Docs
+  page. Optional future work: per-PR regression comments and a secondary backend
+  (Bencher/CodSpeed).
 - Gate: `pixi run bm-dashboard-preview` renders the dashboard locally from real
-  Google Benchmark JSON; after publication the hosted page shows per-benchmark
-  history. Per-PR regression comments and an optional secondary backend
-  (Bencher/CodSpeed) are deferred future work, not launch blockers.
+  Google Benchmark JSON; each `main` publish updates the hosted per-benchmark
+  history.
 
 ### PLAN-040: DART 7 Release Hardening
 
@@ -189,3 +188,23 @@ its own line so status updates remain git-history friendly.
   during DART 7 packaging passes and DART 8 removal planning.
 - Gate: DART 8 cleanup decisions cite migration notes, changelog entries,
   package/export status, and gz-physics compatibility where relevant.
+
+### PLAN-090: Filament Renderer Performance
+
+- Owner doc:
+  [`../onboarding/gui-rendering.md#performance-profiling-and-backend-selection`](../onboarding/gui-rendering.md#performance-profiling-and-backend-selection)
+- Status: Complete
+- Horizon: Later
+- Dimension: Scalable compute
+- Next step: Use the renderer performance/profiling/backend guidance in
+  `../onboarding/gui-rendering.md` and the fidelity-profile design in
+  [`../design/filament_fidelity_profile.md`](../design/filament_fidelity_profile.md)
+  when extending the renderer; the latter is the seam to implement for
+  offline/high-fidelity sensor rendering (egocentric views, lens distortion,
+  depth/segmentation outputs).
+- Gate: Per-phase profiling plus a toggleable in-app HUD (`--perf-hud`) expose
+  CPU+GPU frame time; the Filament backend is runtime-selectable (`--backend` /
+  `DART_FILAMENT_BACKEND`) with graceful fallback and no public backend-type
+  leak; the per-shape geometry cache reduced scene extraction without changing
+  output (`UNIT_gui_FilamentSceneExtraction`, headless scene smoke, and
+  `pixi run lint` green).
