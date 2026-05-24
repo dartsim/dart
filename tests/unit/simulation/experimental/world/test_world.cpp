@@ -1887,6 +1887,47 @@ TEST(World, RigidBodyStateBatchMultiWorld)
       sx::InvalidArgumentException);
 }
 
+// Test that applyRigidBodyStateBatch validates every world before mutating any,
+// so an invalid later world leaves the earlier worlds unchanged (atomic
+// failure) rather than partially applying the batch.
+TEST(World, ApplyRigidBodyStateBatchValidatesBeforeMutating)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto build2 = [](sx::World& world, double seed) {
+    for (int i = 0; i < 2; ++i) {
+      sx::RigidBodyOptions options;
+      options.position = Eigen::Vector3d(seed + i, 0.0, 0.0);
+      world.addRigidBody("body_" + std::to_string(i), options);
+    }
+  };
+
+  sx::World source0;
+  sx::World source1;
+  build2(source0, 1.0);
+  build2(source1, 2.0);
+  const std::vector<const sx::World*> sources{&source0, &source1};
+  const auto batch = compute::extractRigidBodyStateBatch(sources);
+
+  // t0 matches the batch body count; t1 does not, so apply must throw before
+  // mutating t0.
+  sx::World t0;
+  sx::World t1;
+  build2(t0, 9.0);
+  build2(t1, 9.0);
+  t1.addRigidBody(
+      "extra", sx::RigidBodyOptions{}); // t1 now has 3 bodies, not 2
+
+  const std::vector<sx::World*> targets{&t0, &t1};
+  const auto beforePosition = compute::extractRigidBodyState(t0).position;
+  EXPECT_THROW(
+      compute::applyRigidBodyStateBatch(targets, batch),
+      sx::InvalidArgumentException);
+  const auto afterPosition = compute::extractRigidBodyState(t0).position;
+  EXPECT_EQ(beforePosition, afterPosition);
+}
+
 // Test the CPU batch executor: N independent homogeneous worlds advanced in
 // parallel match a single sequentially-stepped reference, and null worlds are
 // rejected.

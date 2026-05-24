@@ -399,6 +399,11 @@ void applyRigidBodyStateBatch(
       state.bodyCount);
 
   const auto bodyCount = state.bodyCount;
+
+  // Validate every target world (non-null and matching rigid-body count) before
+  // mutating any of them. Because the batch is applied slice by slice, an
+  // invalid later world would otherwise leave earlier worlds already mutated --
+  // a non-atomic failure that silently corrupts a multi-world batch.
   for (std::size_t w = 0; w < worlds.size(); ++w) {
     DART_EXPERIMENTAL_THROW_T_IF(
         worlds[w] == nullptr,
@@ -406,6 +411,24 @@ void applyRigidBodyStateBatch(
         "applyRigidBodyStateBatch received a null world at index {}",
         w);
 
+    const auto& registry = worlds[w]->getRegistry();
+    auto view
+        = registry
+              .view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+    std::size_t count = 0;
+    for ([[maybe_unused]] const auto entity : view) {
+      ++count;
+    }
+    DART_EXPERIMENTAL_THROW_T_IF(
+        count != bodyCount,
+        InvalidArgumentException,
+        "applyRigidBodyStateBatch world {} has {} rigid bodies, expected {}",
+        w,
+        count,
+        bodyCount);
+  }
+
+  for (std::size_t w = 0; w < worlds.size(); ++w) {
     const auto p0 = static_cast<std::ptrdiff_t>(3 * w * bodyCount);
     const auto p1 = static_cast<std::ptrdiff_t>(3 * (w + 1) * bodyCount);
     const auto o0 = static_cast<std::ptrdiff_t>(4 * w * bodyCount);
