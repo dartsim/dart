@@ -30,62 +30,65 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_UI_FRAME_HPP_
-#define DART_GUI_DETAIL_UI_FRAME_HPP_
+#ifndef DART_GUI_DETAIL_PERF_HUD_HPP_
+#define DART_GUI_DETAIL_PERF_HUD_HPP_
 
-#include <vector>
+#include <array>
 
-struct GLFWwindow;
-struct ImGuiIO;
-
-namespace filament {
-class Engine;
-class Material;
-class Scene;
-} // namespace filament
+#include <cstddef>
 
 namespace dart::gui {
 
-struct Panel;
 struct ProfileAccumulator;
-struct OrbitCameraController;
-struct ViewerLifecycleState;
 
 } // namespace dart::gui
 
 namespace dart::gui::detail {
 
-struct DartScene;
-struct DebugOverlayController;
-enum class ExampleScene;
-struct FrameViewport;
-struct ImGuiOverlay;
-struct PerfHudState;
-class SelectionController;
+// Rolling state for the live performance overlay. Persists across frames so the
+// HUD can show instantaneous per-frame values (derived as deltas of the
+// run-long ProfileAccumulator) and a short history plot.
+struct PerfHudState
+{
+  static constexpr int kHistory = 120;
 
-void updateFrameUi(
-    GLFWwindow* window,
-    ::filament::Engine& engine,
-    ::filament::Scene& scene,
-    ::filament::Material& debugMaterial,
-    ImGuiOverlay& imguiOverlay,
-    ImGuiIO& imguiIo,
-    const FrameViewport& viewport,
-    ExampleScene exampleScene,
-    DartScene& dartScene,
-    const dart::gui::OrbitCameraController& cameraController,
-    const SelectionController& selectionController,
-    bool& orbitLight,
-    bool& headlightsEnabled,
-    DebugOverlayController& debugOverlays,
-    std::vector<dart::gui::Panel>& panels,
-    dart::gui::ViewerLifecycleState& lifecycle,
-    double guiScale,
-    dart::gui::ProfileAccumulator& profile,
-    bool showPerfHud,
-    PerfHudState& perfHud,
+  bool hasPrev = false;
+  std::size_t prevFrames = 0;
+  double prevFrameMs = 0.0;
+  double prevInputMs = 0.0;
+  double prevViewportMs = 0.0;
+  double prevSimulationMs = 0.0;
+  double prevExtractionMs = 0.0;
+  double prevSyncMs = 0.0;
+  double prevUiMs = 0.0;
+  double prevBeginFrameMs = 0.0;
+  double prevRenderMs = 0.0;
+  double prevSimulatedMs = 0.0;
+
+  // Smoothed (exponential moving average) display values. Raw per-frame numbers
+  // change too fast to read, so the headline figures use these while the graphs
+  // show the raw history.
+  static constexpr int kPhaseCount = 8;
+  double emaCpuMs = 0.0;
+  double emaGpuMs = 0.0;
+  double emaRealTimeFactor = 0.0;
+  bool hasRealTimeFactor = false;
+  std::array<double, kPhaseCount> emaPhaseMs{};
+
+  std::array<float, kHistory> cpuHistory{};
+  std::array<float, kHistory> gpuHistory{};
+  int historyOffset = 0;
+  int historyCount = 0;
+};
+
+// Draws the performance overlay as an ImGui window. Must be called between
+// ImGui::NewFrame() and ImGui::Render(). Reads per-frame values from `profile`
+// (the single source of truth) and shows the active graphics backend.
+void drawPerfHud(
+    PerfHudState& state,
+    const dart::gui::ProfileAccumulator& profile,
     const char* backendName);
 
 } // namespace dart::gui::detail
 
-#endif // DART_GUI_DETAIL_UI_FRAME_HPP_
+#endif // DART_GUI_DETAIL_PERF_HUD_HPP_
