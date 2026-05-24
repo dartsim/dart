@@ -40,6 +40,7 @@
 #include <dart/gui/detail/imgui_overlay.hpp>
 #include <dart/gui/detail/input.hpp>
 #include <dart/gui/detail/native_window.hpp>
+#include <dart/gui/detail/perf_hud.hpp>
 #include <dart/gui/detail/render_context.hpp>
 #include <dart/gui/detail/render_environment.hpp>
 #include <dart/gui/detail/renderable_resources.hpp>
@@ -113,9 +114,11 @@ using dart::gui::detail::ImGuiOverlay;
 using dart::gui::detail::initialCameraForScene;
 using dart::gui::detail::InitialSceneState;
 using dart::gui::detail::isSceneMouseInputCapturedByUi;
+using dart::gui::detail::latestGpuFrameMs;
 using dart::gui::detail::MaterialResources;
 using dart::gui::detail::MaterialSet;
 using dart::gui::detail::parseOptions;
+using dart::gui::detail::PerfHudState;
 using dart::gui::detail::pollApplicationInput;
 using dart::gui::detail::Renderable;
 using dart::gui::detail::renderApplicationFrame;
@@ -255,6 +258,9 @@ int runGuiBackendApplicationImpl(
 
   bool orbitLight = appOptions.orbitLight;
   bool headlightsEnabled = true;
+  // Mutable so the F2 key can toggle the perf HUD at runtime (initialized from
+  // the --perf-hud option).
+  bool showPerfHud = appOptions.showPerfHud;
   SceneLights lights = createSceneLights(
       *engine,
       runOptions.headless,
@@ -273,6 +279,7 @@ int runGuiBackendApplicationImpl(
   SelectionController selectionController;
   ScreenshotCapture screenshotCapture;
   ProfileAccumulator profile;
+  PerfHudState perfHud;
   bool frameCaptureSucceeded = true;
   SimulationStepper simulationStepper;
   const auto orbitStartClock = ProfileAccumulator::Clock::now();
@@ -309,7 +316,8 @@ int runGuiBackendApplicationImpl(
           lifecycle,
           cameraController,
           homeCamera,
-          inputState);
+          inputState,
+          showPerfHud);
     }
     profile.inputMs += elapsedMs(phaseStart);
 
@@ -364,7 +372,10 @@ int runGuiBackendApplicationImpl(
           appOptions.panels,
           lifecycle,
           guiScale,
-          profile);
+          profile,
+          showPerfHud,
+          perfHud,
+          renderContext.backendName);
     }
     setSceneLightsEnabled(*engine, lights, headlightsEnabled);
     applyRenderSettings(*view, dartScene.renderSettings);
@@ -385,6 +396,15 @@ int runGuiBackendApplicationImpl(
           screenshotCapture,
           lifecycle,
           profile);
+    }
+    if (showPerfHud) {
+      const double gpuMs = latestGpuFrameMs(renderContext);
+      if (gpuMs > 0.0) {
+        profile.gpuFrameMs = gpuMs;
+        if (gpuMs > profile.maxGpuFrameMs) {
+          profile.maxGpuFrameMs = gpuMs;
+        }
+      }
     }
     if (!frameRenderResult.failed && appOptions.postRender) {
       appOptions.postRender();
