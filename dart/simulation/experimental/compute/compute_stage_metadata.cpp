@@ -122,4 +122,23 @@ std::string formatAccelerationMask(ComputeStageAccelerationMask mask)
   return result.empty() ? std::string("unknown") : result;
 }
 
+//==============================================================================
+std::string_view toString(ComputeAccessMode mode) noexcept
+{
+  switch (mode) {
+    case ComputeAccessMode::Read:
+      return "read";
+    case ComputeAccessMode::Write:
+      return "write";
+    case ComputeAccessMode::ReadWrite:
+      return "read_write";
+    case ComputeAccessMode::Reduce:
+      return "reduce";
+    case ComputeAccessMode::Scratch:
+      return "scratch";
+  }
+
+  return "unknown";
+}
+
 } // namespace dart::simulation::experimental::compute

@@ -51,11 +51,11 @@ Status: MISSING (absent), PARTIAL (some support), PRESENT (comparable to DART 6)
 
 ### Gravity & global forces
 
-| Capability              | DART 6                               | Experimental                                                        | Status  |
-| ----------------------- | ------------------------------------ | ------------------------------------------------------------------- | ------- |
-| World gravity           | `World::setGravity` → per-skeleton   | `World::setGravity`/`getGravity` applied in integration (Phase 0.1) | PRESENT |
-| Per-body external force | `BodyNode::addExtForce/addExtTorque` | world-frame force/torque accumulator (Phase 0.1)                    | PARTIAL |
-| Force reset each step   | `clearExternalForces` per step       | force/torque cleared after each step (Phase 0.2)                    | PRESENT |
+| Capability              | DART 6                               | Experimental                                                                                             | Status    |
+| ----------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------- | --------- |
+| World gravity           | `World::setGravity` → per-skeleton   | `World::setGravity`/`getGravity` added to the transient step force buffer (Phase 0.1/#2698 re-alignment) | PRESENT   |
+| Per-body external force | `BodyNode::addExtForce/addExtTorque` | persistent world-frame force/torque inputs (Phase 0.1/#2698 re-alignment)                                | PARTIAL   |
+| Force reset each step   | `clearExternalForces` per step       | callers clear/update persistent force/torque explicitly                                                  | DIFFERENT |
 
 ### Joints
 

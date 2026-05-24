@@ -517,16 +517,43 @@ fresh top-level Codex review with `@codex review`. This is the normal completion
 step for a Codex review-fix round, not an inline reply. A manual trigger is a PR
 comment and still requires explicit maintainer/user approval.
 
+### Codex Re-Trigger Cadence And Throttling
+
+Re-trigger Codex at most once per review-fix round, and only after an approved
+push that addressed its comments. Rapid, repeated `@codex review` requests across
+many quick rounds can slow or suspend Codex: observed review latency grows round
+over round and a later re-trigger can receive no review at all. If Codex stays
+silent well beyond its usual turnaround after a re-trigger, treat it as a
+throttle/timeout blocker, not a reason to re-request. Record the converged state
+as evidence instead — all surfaced findings fixed and their threads resolved —
+and report the throttle rather than re-spamming the PR with more triggers.
+
 ### Updating Published PRs
 
 Prefer additive follow-up commits for updates to already-published PRs. This
-keeps review history inspectable and makes each review round clear.
+keeps review history inspectable and makes each review round clear. Pushing any
+such update is an external mutation that requires explicit maintainer/user
+approval.
 
-When a published PR branch needs the latest target branch, use explicit
-maintainer/user approval to update that published branch by merging the target
-branch and pushing normally. Do not rebase published PR branches by default:
-rebasing invalidates existing CI runs and makes PR review/comment history harder
-to follow. Rebase or force-push only when the maintainer explicitly requests it.
+#### Merge The Base Branch Before Every Push (MANDATORY)
+
+**Before every push, first merge the latest base branch (usually `main`) into
+the working branch.** Do this on every push, not just the first, so each
+pushed/CI-tested state reflects current `main` and conflicts surface early
+instead of at merge time.
+
+```bash
+git fetch origin <base-branch>
+git merge --no-ff origin/<base-branch>   # never rebase a published PR branch
+# rebuild + retest if the merge touched code, then push (an approved mutation)
+git push
+```
+
+Merging the base in locally is a routine pre-push step. The `git push` itself is
+still an external mutation that requires explicit maintainer/user approval. Do
+not rebase published PR branches by default: rebasing invalidates existing CI
+runs and makes PR review/comment history harder to follow. Rebase or force-push
+only when the maintainer explicitly requests it.
 
 Amend or force-push only when the user explicitly requests it or when there is a
 clear reason, such as removing sensitive content, repairing broken branch
@@ -643,6 +670,13 @@ gh pr checks <PR>
 # Watch until all checks complete (useful for waiting)
 gh pr checks <PR> --watch
 ```
+
+During DART's long CI matrix (the full run can take a couple of hours, with
+`Release Tests` as the long pole), `gh pr checks --watch` can exit early on a
+transient network error (for example a dropped `api.github.com` connection) and
+look like completion. For long runs prefer a resilient poll that re-queries
+`gh pr checks <PR>` on an interval, tolerates transient failures, and stops only
+when nothing is pending, any check fails, or the head SHA moves.
 
 **Stop conditions:**
 

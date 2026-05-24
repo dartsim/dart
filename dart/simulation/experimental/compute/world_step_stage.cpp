@@ -41,6 +41,7 @@
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
 #include "dart/simulation/experimental/compute/compute_executor.hpp"
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
+#include "dart/simulation/experimental/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
@@ -232,33 +233,30 @@ void integrateAngularVelocity(
 }
 
 //==============================================================================
-// Update a body's velocity from gravity and the applied force/torque, then
-// clear the per-step force accumulators. Does not move the body.
+// Update a body's velocity from an already-assembled force/torque buffer. Does
+// not move the body or mutate the persistent force component.
 void integrateRigidBodyVelocity(
     entt::registry& registry,
     entt::entity entity,
-    const Eigen::Vector3d& gravity,
+    const Eigen::Vector3d& force,
+    const Eigen::Vector3d& torque,
     const double timeStep)
 {
   const auto& transform = registry.get<comps::Transform>(entity);
   auto& velocity = registry.get<comps::Velocity>(entity);
   const auto& mass = registry.get<comps::MassProperties>(entity);
-  auto& force = registry.get<comps::Force>(entity);
 
   const auto orientation = normalizeOrIdentity(transform.orientation);
 
   if (mass.mass > 0.0 && std::isfinite(mass.mass)) {
-    velocity.linear += (force.force / mass.mass + gravity) * timeStep;
+    velocity.linear += (force / mass.mass) * timeStep;
   }
 
-  integrateAngularVelocity(velocity, mass, force, orientation, timeStep);
-
-  // External force/torque accumulators are per-step applied loads: they are
-  // consumed by this integration and then cleared, matching the legacy DART 6
-  // convention where external forces are re-applied each step. Gravity is not
-  // stored here; it is applied as an acceleration above.
-  force.force.setZero();
-  force.torque.setZero();
+  comps::Force assembledForce;
+  assembledForce.force = force;
+  assembledForce.torque = torque;
+  integrateAngularVelocity(
+      velocity, mass, assembledForce, orientation, timeStep);
 }
 
 //==============================================================================
@@ -296,12 +294,11 @@ void integrateRigidBodyPosition(
 
 //==============================================================================
 void integrateRigidBody(
-    entt::registry& registry,
-    entt::entity entity,
-    const Eigen::Vector3d& gravity,
-    const double timeStep)
+    entt::registry& registry, entt::entity entity, const double timeStep)
 {
-  integrateRigidBodyVelocity(registry, entity, gravity, timeStep);
+  const auto& force = registry.get<comps::Force>(entity);
+  integrateRigidBodyVelocity(
+      registry, entity, force.force, force.torque, timeStep);
   integrateRigidBodyPosition(registry, entity, timeStep);
 }
 
@@ -425,7 +422,6 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
 
   ComputeGraph graph;
   const auto timeStep = world.getTimeStep();
-  const Eigen::Vector3d gravity = world.getGravity();
   if (hasRigidBodyFrameDependency(registry, *entities)) {
     std::vector<RigidBodyNode> nodes;
     nodes.reserve(entities->size());
@@ -433,8 +429,8 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
     for (const auto entity : *entities) {
       auto& node = graph.addNode(
           "rigid_body_entity_" + std::to_string(entt::to_integral(entity)),
-          [&registry, entity, gravity, timeStep]() {
-            integrateRigidBody(registry, entity, gravity, timeStep);
+          [&registry, entity, timeStep]() {
+            integrateRigidBody(registry, entity, timeStep);
           },
           getMetadata());
       nodes.push_back({entity, &node});
@@ -465,13 +461,10 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
     const auto end = std::min(begin + m_batchSize, entities->size());
     graph.addNode(
         "rigid_body_batch_" + std::to_string(begin),
-        [&registry, entities, begin, end, gravity, timeStep]() {
+        [&registry, entities, begin, end, timeStep]() {
           for (auto i = begin; i < end; ++i) {
             integrateRigidBody(
-                registry,
-                (*entities)[static_cast<std::size_t>(i)],
-                gravity,
-                timeStep);
+                registry, (*entities)[static_cast<std::size_t>(i)], timeStep);
           }
         },
         getMetadata());
@@ -487,6 +480,57 @@ std::size_t RigidBodyIntegrationStage::getBatchSize() const noexcept
 }
 
 namespace {
+
+//==============================================================================
+struct RigidBodyForceBatch
+{
+  std::vector<entt::entity> entities;
+  std::vector<double> force;
+  std::vector<double> torque;
+};
+
+//==============================================================================
+RigidBodyForceBatch assembleRigidBodyForces(
+    const World& world, bool includeGravity)
+{
+  const auto& registry = world.getRegistry();
+  auto view
+      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+
+  RigidBodyForceBatch batch;
+  batch.entities.reserve(view.size_hint());
+  batch.force.reserve(3 * view.size_hint());
+  batch.torque.reserve(3 * view.size_hint());
+
+  const Eigen::Vector3d gravity
+      = includeGravity ? world.getGravity() : Eigen::Vector3d::Zero();
+  for (const auto entity : view) {
+    batch.entities.push_back(entity);
+
+    const auto& applied = registry.get<comps::Force>(entity);
+    Eigen::Vector3d assembledForce = applied.force;
+    Eigen::Vector3d assembledTorque = applied.torque;
+
+    if (registry.all_of<comps::StaticBodyTag>(entity)) {
+      assembledForce.setZero();
+      assembledTorque.setZero();
+    } else if (includeGravity) {
+      const auto& mass = registry.get<comps::MassProperties>(entity);
+      if (mass.mass > 0.0 && std::isfinite(mass.mass)) {
+        assembledForce += mass.mass * gravity;
+      }
+    }
+
+    batch.force.push_back(assembledForce.x());
+    batch.force.push_back(assembledForce.y());
+    batch.force.push_back(assembledForce.z());
+    batch.torque.push_back(assembledTorque.x());
+    batch.torque.push_back(assembledTorque.y());
+    batch.torque.push_back(assembledTorque.z());
+  }
+
+  return batch;
+}
 
 //==============================================================================
 double inverseMass(const comps::MassProperties& mass)
@@ -553,20 +597,24 @@ void RigidBodyVelocityStage::execute(
     World& world, ComputeExecutor& /*executor*/)
 {
   auto& registry = world.getRegistry();
-  const Eigen::Vector3d gravity = world.getGravity();
   const auto timeStep = world.getTimeStep();
+  const auto forces = assembleRigidBodyForces(world, true);
 
-  auto view = registry.view<
-      comps::RigidBodyTag,
-      comps::Transform,
-      comps::Velocity,
-      comps::MassProperties,
-      comps::Force>();
-  for (auto entity : view) {
+  for (std::size_t i = 0; i < forces.entities.size(); ++i) {
+    const auto entity = forces.entities[i];
     if (registry.all_of<comps::StaticBodyTag>(entity)) {
       continue; // Static bodies do not accelerate.
     }
-    integrateRigidBodyVelocity(registry, entity, gravity, timeStep);
+
+    const Eigen::Vector3d force(
+        forces.force[3 * i + 0],
+        forces.force[3 * i + 1],
+        forces.force[3 * i + 2]);
+    const Eigen::Vector3d torque(
+        forces.torque[3 * i + 0],
+        forces.torque[3 * i + 1],
+        forces.torque[3 * i + 2]);
+    integrateRigidBodyVelocity(registry, entity, force, torque, timeStep);
   }
 }
 
@@ -847,6 +895,78 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 std::size_t RigidBodyContactStage::getIterations() const noexcept
 {
   return m_iterations;
+}
+
+//==============================================================================
+std::string_view BatchedRigidBodyIntegrationStage::getName() const noexcept
+{
+  return "batched_rigid_body_integration";
+}
+
+//==============================================================================
+ComputeStageMetadata BatchedRigidBodyIntegrationStage::getMetadata()
+    const noexcept
+{
+  return {
+      ComputeStageDomain::RigidBody,
+      ComputeStageAcceleration::TaskParallel
+          | ComputeStageAcceleration::DataParallel
+          | ComputeStageAcceleration::Simd
+          | ComputeStageAcceleration::DataLocality};
+}
+
+//==============================================================================
+void BatchedRigidBodyIntegrationStage::execute(
+    World& world, ComputeExecutor& executor)
+{
+  auto& registry = world.getRegistry();
+  const auto forces = assembleRigidBodyForces(world, false);
+  const auto& entities = forces.entities;
+
+  if (entities.empty()) {
+    return;
+  }
+
+  // Frame-coupled rigid bodies require parent-before-child ordering for the
+  // local-transform bookkeeping; the SoA path integrates in flat order, so
+  // defer those cases to the per-entity stage.
+  if (hasRigidBodyFrameDependency(registry, entities)) {
+    RigidBodyIntegrationStage fallback;
+    fallback.execute(world, executor);
+    return;
+  }
+
+  auto state = extractRigidBodyState(world);
+  const auto model = extractRigidBodyModelBatch(world);
+  const auto timeStep = world.getTimeStep();
+
+  ComputeGraph graph;
+  graph.addNode(
+      "soa_rigid_body_integration",
+      [&state, &model, &forces, timeStep]() {
+        integrateRigidBodyStateBatch(
+            state, model, forces.force, forces.torque, timeStep);
+      },
+      getMetadata());
+  executor.execute(graph);
+
+  applyRigidBodyState(world, state);
+
+  // Restore frame-cache consistency the same way the per-entity integrator
+  // does, now that the world-space Transform has been written back. With no
+  // rigid-body-to-rigid-body parenting, view order is a valid update order.
+  for (const auto entity : entities) {
+    const auto& transform = registry.get<comps::Transform>(entity);
+    auto& props = registry.get<comps::FreeFrameProperties>(entity);
+    const auto worldTransform = toIsometry(transform, transform.orientation);
+    const auto& frameState = registry.get<comps::FrameState>(entity);
+    props.localTransform
+        = computeFrameWorldTransform(registry, frameState.parentFrame).inverse()
+          * worldTransform;
+
+    auto& cache = registry.get<comps::FrameCache>(entity);
+    cache.needTransformUpdate = true;
+  }
 }
 
 } // namespace dart::simulation::experimental::compute

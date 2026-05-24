@@ -47,6 +47,7 @@ struct DART_EXPERIMENTAL_API ComputeGraphDotOptions
   bool includeMetadata = true;
   bool includeProfile = true;
   bool groupParallelLevels = true;
+  bool includeResources = true;
 };
 
 /// Export a compute graph as Graphviz DOT for debugging and visualization.

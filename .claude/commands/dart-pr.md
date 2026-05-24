@@ -109,18 +109,20 @@ Use these practices:
    explicit maintainer/user approval and only when the user explicitly requests
    it or when there is a clear reason such as removing sensitive content or
    repairing broken branch history.
-10. If a published PR branch needs the latest target branch, use explicit
-    maintainer/user approval to update that published branch by merging the
-    target branch and pushing normally:
+10. Before every push to a published PR branch, first merge the latest base
+    branch into it (on every push, not just the first) so each pushed/CI-tested
+    state reflects current `main` and conflicts surface early:
     ```bash
-    # After explicit maintainer/user approval:
     git fetch origin <target-branch>
-    git merge --no-ff origin/<target-branch>
-    git push
+    git merge --no-ff origin/<target-branch>  # never rebase a published PR branch
+    # rebuild + retest if the merge touched code
+    git push                                   # after explicit approval
     ```
-    Do not rebase a published PR branch by default because it invalidates
-    existing CI runs and makes PR review/comment history harder to follow.
-    Rebase or force-push only when the maintainer explicitly requests it.
+    The local base merge is a routine pre-push step; the push itself still
+    requires explicit maintainer/user approval. Do not rebase a published PR
+    branch by default because it invalidates existing CI runs and makes PR
+    review/comment history harder to follow. Rebase or force-push only when the
+    maintainer explicitly requests it.
 11. If `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
     local until explicit maintainer/user approval is given for the additional
     push or PR update.

@@ -35,12 +35,15 @@ after explicit maintainer/user approval and only when the user explicitly
 requests it or when there is a clear reason such as removing sensitive content
 or repairing broken branch history.
 
-If a published PR branch needs the latest target branch while addressing
-feedback, use explicit maintainer/user approval to update that published branch
-by merging the target branch and pushing normally. Do not rebase a published PR
-branch by default because it invalidates existing CI runs and makes PR
-review/comment history harder to follow. Rebase or force-push only when the
-maintainer explicitly requests it.
+Before every push, first merge the latest base branch into the PR branch (on
+every push, not just the first) so each pushed/CI-tested state reflects current
+`main` and conflicts surface early: `git fetch origin <base>` then
+`git merge --no-ff origin/<base>`, rebuild/retest if the merge touched code, then
+push. The local base merge is a routine pre-push step; the push itself still
+requires explicit maintainer/user approval. Do not rebase a published PR branch
+by default because it invalidates existing CI runs and makes PR review/comment
+history harder to follow. Rebase or force-push only when the maintainer
+explicitly requests it.
 
 ## Automated Reviews (Codex, Code Quality, Copilot, etc.)
 

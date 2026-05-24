@@ -60,6 +60,7 @@ if(DART_BUILD_TESTS AND TARGET GTest::gtest)
     test_narrow_phase.cpp
     test_parallel_determinism.cpp
     test_plane.cpp
+    test_primitive_ccd.cpp
     test_raycast_core.cpp
     test_reference_backends.cpp
     test_sdf_compare.cpp

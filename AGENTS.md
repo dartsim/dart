@@ -73,6 +73,7 @@ OpenCode and Codex entrypoints live in `.opencode/command/` and
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
 - **Commit/PR titles**: Do not prefix commit messages or PR titles with agent tags like `[codex]`; use plain descriptive titles.
 - **PRs**: Use `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone (`DART 7.0` for `main`, `DART 6.16.x` for `release-6.16`).
+- **PR pushes**: Before every push to a PR branch, first merge the latest base branch (usually `main`) into it — merge, never rebase a published PR branch. The local merge is routine; the push still needs approval. See `docs/onboarding/ai-tools.md`.
 - **Subdirectories**: May have their own `AGENTS.md` for module-specific rules.
 
 ## Pre-Commit Checklist (MANDATORY)

@@ -9,7 +9,10 @@ the implementation plan below):
 
 - Phase 0.1 — World gravity (`setGravity`/`getGravity`, default `(0,0,-9.81)`,
   applied as acceleration; serialization; dartpy `world.gravity`).
-- Phase 0.2 — per-step force/torque reset (consumed then cleared each step).
+- Phase 0.2 — force/torque components are persistent applied loads after the
+  #2698 convention re-alignment; `World::step()` assembles a transient SoA force
+  buffer with `mass * gravity` and leaves applied force/torque for callers to
+  clear or update explicitly.
 - Phase 0.3 — rigid-body quantities (linear/angular momentum, kinetic and
   potential energy) in C++ and dartpy.
 - Phase 1 — articulated-body forward dynamics: RNEA-based forward dynamics for
@@ -162,10 +165,11 @@ theta2dot` with `s1 = R(theta2,axis2)^T axis` (angular; linear zero), mapped
   spheres stop (e=0) or swap (e=1), a sphere drops onto a static ground and
   rests, and a sliding box brakes via friction.
 
-All gates passed at each slice: `pixi run lint`, focused C++ tests
+Historical gates passed at each slice: `pixi run lint`, focused C++ tests
 (`test_world`, `test_serialization`, `test_compute_graph`), and
-`test_experimental_world.py`. All work is committed on the
-`feature/experimental-rigid-body-dynamics` branch.
+`test_experimental_world.py`. The current re-alignment merge is in progress on
+the `feature/experimental-rigid-body-dynamics` branch and still needs local
+verification before pushing.
 
 Key implementation note: each link's center of mass is assumed at the link frame
 origin; the joint motion subspace is transformed by the post-joint link offset
@@ -174,11 +178,18 @@ correct gravity torques. See `compute/multibody_dynamics.cpp`.
 
 ## Current Branch
 
-Working in `/home/js/dev/dartsim/dart/task_2` on `main` (snapshot). Create a
-feature branch before pushing (e.g. `feature/experimental-rigid-body-gravity`).
-Check `git status` / `git log -3 --oneline` for the live state.
+Working in `/home/js/dev/dartsim/dart/task_2` on
+`feature/experimental-rigid-body-dynamics` (PR #2705). `origin/main`
+`b7f5380679c` has been merged locally; conflict resolution and verification are
+still in progress.
 
 ## Immediate Next Step
+
+**Blocker — land the MVP PR #2705.** Finish the local main merge and verification:
+the integration convention is now #2698-style pure/persistent force inputs plus
+a transient gravity force-assembly buffer for default `World::step()`. Next,
+build and run the focused C++/Python gates, fix fallout, add the required
+dart-gui example (Subsystem C), then push only after maintainer approval.
 
 **All joint types are now implemented and verified** (fixed, revolute,
 prismatic, screw, universal, planar, ball, free) with a floating base via a
@@ -252,6 +263,38 @@ There is no experimental-World loader yet, so this needs a translation layer:
   shapes — likely in a new `dart/simulation/experimental/io` bridge. Verify a
   known URDF loads with the right DOF count, tree structure, and a sane
   forward-dynamics step, in C++ and dartpy.
+
+### Subsystem C — MVP GUI example (required for the MVP)
+
+Today the only experimental example is **headless**
+(`python/examples/experimental_rigid_body/main.py`). The MVP needs at least one
+**GUI** example that steps the experimental rigid-body `World` and renders it
+live.
+
+Grounding (verified in-tree):
+
+- DART's maintained native renderer is **`dart-gui`** (Filament + GLFW3 + Dear
+  ImGui, built with `DART_BUILD_GUI=ON`). Public, renderer-neutral headers:
+  `dart/gui/{scene,viewer,renderable,geometry,panel,gizmo}.hpp`
+  (see `docs/onboarding/gui-rendering.md`). dartpy already exposes gui bindings
+  (`python/dartpy/gui`, tests in `python/tests/unit/gui/`), so the example may be
+  C++ or Python.
+- **Template:** `examples/collision_sandbox/main.cpp` shows the viewer/scene/
+  panel/gizmo wiring and `gui::RunOptions` lifecycle — but it drives the _legacy_
+  `simulation::World`. Follow its GUI wiring, not its physics.
+- **Net-new (small): an experimental→renderable bridge.** There is no
+  experimental-`World`→`gui` adapter yet. Each frame, iterate the rigid bodies
+  (and multibody links), read `comps::Transform` (+ the body's shape) and emit /
+  update `gui::Renderable`s in a `gui::Scene`; advance with `world.step()` in the
+  viewer loop. Keep it a thin read-only extraction (aligns with the SoA / batch
+  intent — a future batched pose→renderable path can replace it).
+- **Scope:** a small, visually obvious scene — e.g. bodies falling under gravity
+  onto a static floor (exercises gravity + the contact stage), and/or a short
+  articulated chain swinging. Gate the build on `DART_BUILD_GUI=ON`. Put a C++
+  example under `examples/experimental_rigid_body_gui/` (mirroring
+  `collision_sandbox`) or a Python one under `python/examples/`.
+- Depends on the gravity decision in `convention_realignment.md` (the falling-
+  body scene should actually fall).
 
 ### Smaller deferred items
 

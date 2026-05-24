@@ -120,18 +120,20 @@ gh pr checks <PR_NUMBER>
      maintainer/user approval and only when the user explicitly requests it or
      when there is a clear reason such as removing sensitive content or
      repairing broken branch history.
-   - If a published PR branch needs the latest target branch, use explicit
-     maintainer/user approval to update that published branch by merging the
-     target branch and pushing normally:
+   - Before every push, first merge the latest base branch into the PR branch
+     (on every push, not just the first) so each pushed/CI-tested state reflects
+     current `main` and conflicts surface early:
      ```bash
-     # After explicit maintainer/user approval:
      git fetch origin <base-branch>
-     git merge --no-ff origin/<base-branch>
-     git push
+     git merge --no-ff origin/<base-branch>  # never rebase a published PR branch
+     # rebuild + retest if the merge touched code
+     git push                                 # after explicit approval
      ```
-     Do not rebase a published PR branch by default because it invalidates
-     existing CI runs and makes PR review/comment history harder to follow.
-     Rebase or force-push only when the maintainer explicitly requests it.
+     The local base merge is a routine pre-push step; the push itself still
+     requires explicit maintainer/user approval. Do not rebase a published PR
+     branch by default because it invalidates existing CI runs and makes PR
+     review/comment history harder to follow. Rebase or force-push only when the
+     maintainer explicitly requests it.
 4. Address reviews:
    - Use the `dart-review-pr` workflow for substantive review feedback.
    - Never reply to AI-generated review comments from bot users such as

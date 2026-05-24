@@ -119,9 +119,9 @@ public:
 
   /// Set the body's accumulated world-frame force.
   ///
-  /// The value must contain only finite coordinates. The force is a per-step
-  /// applied load: it is consumed by the next physics step and then cleared, so
-  /// continuous forces must be re-applied each step.
+  /// The value must contain only finite coordinates. The force is a persistent
+  /// applied load: physics steps read it into a transient force buffer without
+  /// clearing it, so callers clear or update it explicitly.
   void setForce(const Eigen::Vector3d& force);
 
   /// Add to the body's accumulated world-frame force.
@@ -137,9 +137,9 @@ public:
 
   /// Set the body's accumulated world-frame torque.
   ///
-  /// The value must contain only finite coordinates. The torque is a per-step
-  /// applied load: it is consumed by the next physics step and then cleared, so
-  /// continuous torques must be re-applied each step.
+  /// The value must contain only finite coordinates. The torque is a persistent
+  /// applied load: physics steps read it into a transient force buffer without
+  /// clearing it, so callers clear or update it explicitly.
   void setTorque(const Eigen::Vector3d& torque);
 
   /// Add to the body's accumulated world-frame torque.

@@ -117,10 +117,30 @@ private:
   std::size_t m_batchSize;
 };
 
-/// Updates free rigid-body velocities from gravity and applied forces (and
-/// clears the per-step force accumulators) without advancing positions. Pairs
-/// with RigidBodyPositionStage so a contact-resolution stage can run at the
-/// velocity level in between.
+/// Unconstrained rigid-body integration stage driven by the batched
+/// structure-of-arrays path.
+///
+/// Instead of per-entity component access, this stage extracts a
+/// `RigidBodyStateBatch` (plus the immutable `RigidBodyModelBatch`), runs the
+/// scalar-generic SoA integrator, and applies the result back to the World. The
+/// world-space dynamics are frame-independent, so for frame-coupled rigid
+/// bodies (a rigid body parented to another rigid body), where the
+/// local-transform bookkeeping must run parent-before-child, this stage defers
+/// to `RigidBodyIntegrationStage`. It is the experimental seam through which
+/// the later SIMD and device batch paths drive a live World step.
+class DART_EXPERIMENTAL_API BatchedRigidBodyIntegrationStage final
+  : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+};
+
+/// Updates free rigid-body velocities from the assembled transient force buffer
+/// (persistent applied force/torque plus gravity) without advancing positions.
+/// Pairs with RigidBodyPositionStage so a contact-resolution stage can run at
+/// the velocity level in between.
 class DART_EXPERIMENTAL_API RigidBodyVelocityStage final : public WorldStepStage
 {
 public:

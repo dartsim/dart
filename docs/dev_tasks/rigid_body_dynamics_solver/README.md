@@ -14,7 +14,9 @@ solver** under a multi-solver, multi-physics architecture.
 - [x] Phased roadmap ([`02-roadmap.md`](02-roadmap.md)).
 - [x] Phase 0.1: World gravity in rigid-body integration (first implementation
       slice — `World::setGravity`/`getGravity`, dartpy `world.gravity`, tests).
-- [x] Phase 0.2: per-step force/torque reset (consumed then cleared each step).
+- [x] Phase 0.2: persistent applied force/torque inputs; default stepping
+      assembles a transient SoA force buffer and leaves applied loads for
+      callers to clear or update explicitly.
 - [x] Phase 0.3: rigid-body quantities (linear/angular momentum, kinetic and
       potential energy).
 - [x] Phase 1: articulated-body forward dynamics (RNEA-based, fixed-base,
@@ -68,17 +70,20 @@ solvers, couplers, ECS storage, or execution backends.
 - Model/State/Control/Contacts are conceptually separate (precondition for
   batching/differentiability); the easy path hides this.
 - Default gravity is `(0, 0, -9.81)`, matching legacy DART 6 and the user's
-  multiphysics API vision. Gravity is applied as an acceleration, not stored in
-  the per-body force accumulator.
+  multiphysics API vision. Gravity is added to the transient force buffer as
+  `mass * gravity`, not stored in the per-body force accumulator.
+- Applied rigid-body forces and torques are persistent inputs, matching main's
+  #2698 integration convention.
 - Parity with DART 6 on shared scenes is the gate before any DART 8 promotion
   claim.
 
 ## Immediate Next Steps
 
-1. Land Phase 0.1: `World::setGravity`/`getGravity` + gravity in
-   `RigidBodyIntegrationStage`, tests, dartpy binding/stub, changelog.
-2. Decide and document the per-step force-reset policy (Phase 0.2).
-3. Begin Phase 1 articulated-body forward dynamics design slice.
+1. Finish the PR #2705 convention re-alignment and verification against current
+   `origin/main`.
+2. Add the required dart-gui example that steps and renders the experimental
+   `World`.
+3. Continue remaining contact-LCP and model-loading work from `RESUME.md`.
 
 ## Relationship To The API-Design Dev Task
 
