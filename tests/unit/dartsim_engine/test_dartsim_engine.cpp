@@ -250,6 +250,26 @@ TEST(CommandManager, EditCommandsAndAutoNaming)
   EXPECT_EQ(objects.model().size(), 1u);
 }
 
+TEST(CommandManager, SetTimeStepSanitizesInvalidValues)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::setTimeStep(0.02));
+  EXPECT_DOUBLE_EQ(objects.model().timeStep, 0.02);
+  EXPECT_DOUBLE_EQ(objects.world().getTimeStep(), 0.02);
+
+  commands.execute(commands::setTimeStep(-0.1));
+  EXPECT_DOUBLE_EQ(objects.model().timeStep, 1e-9);
+  EXPECT_DOUBLE_EQ(objects.world().getTimeStep(), 1e-9);
+
+  SimulationController controller(objects);
+  controller.play();
+  controller.advance(1e-6);
+  EXPECT_GT(controller.frameCount(), 0u);
+}
+
 //==============================================================================
 // SimulationController: edit/run, step, reset
 //==============================================================================

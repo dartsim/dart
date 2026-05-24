@@ -46,11 +46,15 @@
 #include <string>
 #include <unordered_set>
 
+#include <cmath>
+
 namespace dartsim {
 
 namespace sx = dart::simulation::experimental;
 
 namespace {
+
+constexpr double kMinimumTimeStep = 1e-9;
 
 sx::JointType toJointType(JointKind kind)
 {
@@ -73,6 +77,12 @@ sx::JointType toJointType(JointKind kind)
       return sx::JointType::Floating;
   }
   return sx::JointType::Revolute;
+}
+
+double sanitizeTimeStep(double timeStep)
+{
+  return std::isfinite(timeStep) && timeStep > 0.0 ? timeStep
+                                                   : kMinimumTimeStep;
 }
 
 void collectMultiBodyLinks(
@@ -109,7 +119,8 @@ void ObjectManager::rebuild()
 {
   // A fresh World guarantees design mode regardless of prior simulation state.
   m_world = std::make_unique<sx::World>();
-  m_world->setTimeStep(std::max(m_model.timeStep, 1e-9));
+  m_model.timeStep = sanitizeTimeStep(m_model.timeStep);
+  m_world->setTimeStep(m_model.timeStep);
 
   for (const ObjectId id : m_model.rootChildren()) {
     const SceneObject* object = m_model.find(id);

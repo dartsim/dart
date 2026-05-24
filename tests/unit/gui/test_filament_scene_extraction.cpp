@@ -810,6 +810,27 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, DockingPanelFallbackRequiresDockingSupport)
+{
+  const auto panelSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "panel.cpp");
+
+  EXPECT_NE(
+      panelSource.find(
+          "const bool dockingActive = dockingEnabled && "
+          "dart::gui::isDockingAvailable();"),
+      std::string::npos);
+  EXPECT_NE(
+      panelSource.find(
+          "ImGui::SetNextWindowBgAlpha(dockingActive ? 1.0f : 0.72f)"),
+      std::string::npos);
+  EXPECT_NE(
+      panelSource.find(
+          "const double defaultAlpha = dockingActive ? 1.0 : 0.72"),
+      std::string::npos);
+  EXPECT_NE(panelSource.find("if (!dockingActive)"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, PromotedGuiHeadersAvoidExperimentalSurface)
 {
   const auto headers

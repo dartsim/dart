@@ -41,9 +41,13 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
+
 namespace dartsim::commands {
 
 namespace {
+
+constexpr double kMinimumTimeStep = 1e-9;
 
 /// Collect `id` and all of its descendants in pre-order.
 void collectSubtree(
@@ -92,6 +96,12 @@ std::string makeUniqueLinkName(
       return candidate;
     }
   }
+}
+
+double sanitizeTimeStep(double timeStep)
+{
+  return std::isfinite(timeStep) && timeStep > 0.0 ? timeStep
+                                                   : kMinimumTimeStep;
 }
 
 } // namespace
@@ -338,7 +348,7 @@ std::unique_ptr<Command> setTimeStep(double timeStep)
 {
   return std::make_unique<Command>(
       "Set Time Step", [timeStep](ObjectManager& objects, SelectionManager&) {
-        objects.model().timeStep = timeStep;
+        objects.model().timeStep = sanitizeTimeStep(timeStep);
         objects.rebuild();
       });
 }
