@@ -232,16 +232,31 @@ Derived& SO3Base<Derived>::inverseInPlace()
 template <typename Derived>
 typename SO3Base<Derived>::Tangent SO3Base<Derived>::log(Scalar tol) const
 {
-  const Scalar cos_theta = quaternion().w();
-  const Scalar theta = 2 * std::acos(cos_theta);
+  // Quaternions double-cover SO(3): q and -q represent the same rotation.
+  // Canonicalize to the w >= 0 hemisphere so equivalent rotations map to the
+  // minimal rotation vector and never reach the sin(theta/2) == 0 pole at
+  // theta == 2*pi (e.g. the antipodal identity with w == -1).
+  Scalar w = quaternion().w();
+  Vector3<Scalar> vec = quaternion().vec();
+  if (w < 0) {
+    w = -w;
+    vec = -vec;
+  }
+
+  // Guard std::acos against round-off pushing w slightly outside [-1, 1].
+  if (w > Scalar(1)) {
+    w = Scalar(1);
+  }
+
+  const Scalar theta = 2 * std::acos(w);
   DART_ASSERT(!std::isnan(theta));
 
   if (theta < tol) {
-    return Tangent(2 * quaternion().vec());
+    return Tangent(2 * vec);
   }
 
   const Scalar theta_over_sin_half_theta = theta / std::sin(0.5 * theta);
-  return Tangent(theta_over_sin_half_theta * quaternion().vec());
+  return Tangent(theta_over_sin_half_theta * vec);
 }
 
 //==============================================================================

@@ -613,6 +613,31 @@ TYPED_TEST(SO3Test, MapConstructor)
 }
 
 //==============================================================================
+TYPED_TEST(SO3Test, LogHandlesAntipodalQuaternion)
+{
+  using S = typename TestFixture::Scalar;
+
+  // The antipodal identity (w == -1) is the same rotation as identity, so log()
+  // must return a finite, near-zero tangent rather than hitting the
+  // sin(theta/2) == 0 pole at theta == 2*pi.
+  const SO3<S> antipodal_identity(
+      Quaternion<S>(S(-1), S(0), S(0), S(0)), SO3<S>::NO_NORMALIZE);
+  const Vector3<S> xi_identity = antipodal_identity.log().params();
+  EXPECT_TRUE(xi_identity.allFinite());
+  EXPECT_NEAR(xi_identity.norm(), S(0), test::EpsForDiff<S>());
+
+  // A rotation and its antipodal (negated) quaternion represent the same
+  // element, so their logarithms must agree.
+  const SO3<S> r(Quaternion<S>(S(0.6), S(0), S(0), S(0.8)));
+  const SO3<S> r_antipodal(
+      Quaternion<S>(S(-0.6), S(0), S(0), S(-0.8)), SO3<S>::NO_NORMALIZE);
+  const Vector3<S> xi = r.log().params();
+  const Vector3<S> xi_antipodal = r_antipodal.log().params();
+  EXPECT_TRUE(xi_antipodal.allFinite());
+  EXPECT_TRUE(test::equals(xi, xi_antipodal, test::EpsForDiff<S>()));
+}
+
+//==============================================================================
 TYPED_TEST(SO3Test, TestDataAccess)
 {
   using S = typename TestFixture::Scalar;
