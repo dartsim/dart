@@ -34,6 +34,7 @@
 
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/dynamics.hpp"
+#include "dart/simulation/experimental/comps/name.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_integration_kernel.hpp"
 #include "dart/simulation/experimental/world.hpp"
@@ -43,6 +44,7 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
@@ -62,6 +64,26 @@ bool allFinite(const Eigen::Vector3d& value)
 bool allFinite(const Eigen::Matrix3d& value)
 {
   return value.array().isFinite().all();
+}
+
+//==============================================================================
+// Ordered rigid-body names for a world, in the same view order the batch
+// extract/apply uses. The name is the stable per-body identity key: EnTT view
+// iteration order is storage-dependent, so equal body counts alone do not
+// guarantee that two worlds map the same slice index to the same body. A
+// multi-world batch is only well defined when every world yields this same
+// ordered sequence.
+std::vector<std::string> rigidBodyNames(const World& world)
+{
+  const auto& registry = world.getRegistry();
+  auto view
+      = registry.view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
+  std::vector<std::string> names;
+  for (const auto entity : view) {
+    const auto* name = registry.try_get<comps::Name>(entity);
+    names.push_back(name ? name->name : std::string{});
+  }
+  return names;
 }
 
 //==============================================================================
@@ -336,6 +358,7 @@ RigidBodyStateBatch extractRigidBodyStateBatch(
     return batch;
   }
 
+  std::vector<std::string> referenceNames;
   for (std::size_t w = 0; w < worlds.size(); ++w) {
     DART_EXPERIMENTAL_THROW_T_IF(
         worlds[w] == nullptr,
@@ -344,8 +367,10 @@ RigidBodyStateBatch extractRigidBodyStateBatch(
         w);
 
     const auto single = extractRigidBodyState(*worlds[w]);
+    auto names = rigidBodyNames(*worlds[w]);
     if (w == 0) {
       batch.bodyCount = single.bodyCount;
+      referenceNames = std::move(names);
     } else {
       DART_EXPERIMENTAL_THROW_T_IF(
           single.bodyCount != batch.bodyCount,
@@ -354,6 +379,13 @@ RigidBodyStateBatch extractRigidBodyStateBatch(
           batch.bodyCount,
           w,
           single.bodyCount);
+      DART_EXPERIMENTAL_THROW_T_IF(
+          names != referenceNames,
+          InvalidArgumentException,
+          "extractRigidBodyStateBatch world {} has a different rigid-body "
+          "ordering or identity than world 0; all worlds must expose the same "
+          "ordered bodies",
+          w);
     }
 
     batch.position.insert(
@@ -408,6 +440,7 @@ void applyRigidBodyStateBatch(
   // (this also makes rolloutWorldsBatched, which applies before stepping, fail
   // atomically on a duplicate world).
   std::unordered_set<const World*> seen;
+  std::vector<std::string> referenceNames;
   for (std::size_t w = 0; w < worlds.size(); ++w) {
     DART_EXPERIMENTAL_THROW_T_IF(
         worlds[w] == nullptr,
@@ -421,21 +454,26 @@ void applyRigidBodyStateBatch(
         "world slice must target a distinct world",
         w);
 
-    const auto& registry = worlds[w]->getRegistry();
-    auto view
-        = registry
-              .view<comps::RigidBodyTag, comps::Transform, comps::Velocity>();
-    std::size_t count = 0;
-    for ([[maybe_unused]] const auto entity : view) {
-      ++count;
-    }
+    auto names = rigidBodyNames(*worlds[w]);
     DART_EXPERIMENTAL_THROW_T_IF(
-        count != bodyCount,
+        names.size() != bodyCount,
         InvalidArgumentException,
         "applyRigidBodyStateBatch world {} has {} rigid bodies, expected {}",
         w,
-        count,
+        names.size(),
         bodyCount);
+    if (w == 0) {
+      referenceNames = std::move(names);
+    } else {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          names != referenceNames,
+          InvalidArgumentException,
+          "applyRigidBodyStateBatch world {} has a different rigid-body "
+          "ordering "
+          "or identity than world 0; all worlds must expose the same ordered "
+          "bodies",
+          w);
+    }
   }
 
   for (std::size_t w = 0; w < worlds.size(); ++w) {

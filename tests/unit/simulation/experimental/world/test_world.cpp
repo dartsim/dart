@@ -1928,6 +1928,49 @@ TEST(World, ApplyRigidBodyStateBatchValidatesBeforeMutating)
   EXPECT_EQ(beforePosition, afterPosition);
 }
 
+// Test that the multi-world batch rejects worlds whose rigid bodies do not
+// share the same ordered identity (same count but different bodies/order),
+// which would otherwise silently permute state between bodies.
+TEST(World, MultiWorldBatchRejectsMismatchedBodyIdentity)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto addTwo = [](sx::World& world, const std::string& prefix) {
+    for (int i = 0; i < 2; ++i) {
+      sx::RigidBodyOptions options;
+      options.position = Eigen::Vector3d(i, 0.0, 0.0);
+      world.addRigidBody(prefix + std::to_string(i), options);
+    }
+  };
+
+  // Same body count, different names => different ordered identity.
+  sx::World named0;
+  sx::World named1;
+  addTwo(named0, "a");
+  addTwo(named1, "b");
+  const std::vector<const sx::World*> mixed{&named0, &named1};
+  EXPECT_THROW(
+      { (void)compute::extractRigidBodyStateBatch(mixed); },
+      sx::InvalidArgumentException);
+
+  // A valid batch (consistent identity) applied to targets whose identities
+  // disagree is rejected before any mutation.
+  sx::World src0;
+  sx::World src1;
+  addTwo(src0, "a");
+  addTwo(src1, "a");
+  const std::vector<const sx::World*> sources{&src0, &src1};
+  const auto batch = compute::extractRigidBodyStateBatch(sources);
+
+  sx::World target0;
+  addTwo(target0, "a");
+  const std::vector<sx::World*> targets{&target0, &named1};
+  EXPECT_THROW(
+      compute::applyRigidBodyStateBatch(targets, batch),
+      sx::InvalidArgumentException);
+}
+
 // Test the CPU batch executor: N independent homogeneous worlds advanced in
 // parallel match a single sequentially-stepped reference, and null worlds are
 // rejected.
