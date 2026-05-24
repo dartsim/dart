@@ -75,6 +75,24 @@ sx::JointType toJointType(JointKind kind)
   return sx::JointType::Revolute;
 }
 
+void collectMultiBodyLinks(
+    const SceneModel& model,
+    ObjectId parent,
+    ObjectId multiBody,
+    std::vector<const SceneObject*>& links)
+{
+  for (const ObjectId childId : model.childrenOf(parent)) {
+    const SceneObject* child = model.find(childId);
+    if (child == nullptr) {
+      continue;
+    }
+    if (child->type == ObjectType::Link && child->multiBody == multiBody) {
+      links.push_back(child);
+    }
+    collectMultiBodyLinks(model, childId, multiBody, links);
+  }
+}
+
 } // namespace
 
 ObjectManager::ObjectManager() : m_world(std::make_unique<sx::World>()) {}
@@ -140,12 +158,7 @@ void ObjectManager::buildMultiBody(const SceneObject& multiBodyObject)
 
   // Collect link children in model order.
   std::vector<const SceneObject*> links;
-  for (const ObjectId childId : multiBodyObject.children) {
-    const SceneObject* child = m_model.find(childId);
-    if (child != nullptr && child->type == ObjectType::Link) {
-      links.push_back(child);
-    }
-  }
+  collectMultiBodyLinks(m_model, multiBodyObject.id, multiBodyObject.id, links);
 
   // Add links parent-before-child (kinematic parent given by parentLink).
   std::unordered_set<ObjectId> added;

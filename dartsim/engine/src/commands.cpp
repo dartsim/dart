@@ -36,6 +36,8 @@
 #include <dartsim_engine/scene_model.hpp>
 #include <dartsim_engine/selection_manager.hpp>
 
+#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -53,6 +55,42 @@ void collectSubtree(
   out.push_back(id);
   for (const ObjectId child : model.childrenOf(id)) {
     collectSubtree(model, child, out);
+  }
+}
+
+bool isLinkNameAvailableInMultiBody(
+    const SceneModel& model,
+    ObjectId multiBody,
+    std::string_view name,
+    ObjectId except = kNoObject)
+{
+  for (const ObjectId id : model.allIds()) {
+    if (id == except) {
+      continue;
+    }
+    const SceneObject* object = model.find(id);
+    if (object != nullptr && object->type == ObjectType::Link
+        && object->multiBody == multiBody && object->name == name) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::string makeUniqueLinkName(
+    const SceneModel& model, ObjectId multiBody, std::string_view base)
+{
+  const std::string root = base.empty()
+                               ? NameManager::defaultBaseName(ObjectType::Link)
+                               : std::string(base);
+  if (isLinkNameAvailableInMultiBody(model, multiBody, root)) {
+    return root;
+  }
+  for (int suffix = 1;; ++suffix) {
+    std::string candidate = root + " " + std::to_string(suffix);
+    if (isLinkNameAvailableInMultiBody(model, multiBody, candidate)) {
+      return candidate;
+    }
   }
 }
 
@@ -126,15 +164,11 @@ std::unique_ptr<Command> addLink(
         }
         SceneObject object;
         object.type = ObjectType::Link;
-        object.parent = multiBody;
+        object.parent = parentLink == kNoObject ? multiBody : parentLink;
         object.multiBody = multiBody;
         object.parentLink = parentLink;
         object.jointType = joint;
-        object.name = NameManager::makeUnique(
-            model,
-            multiBody,
-            name.empty() ? NameManager::defaultBaseName(ObjectType::Link)
-                         : name);
+        object.name = makeUniqueLinkName(model, multiBody, name);
         const ObjectId id = model.add(std::move(object));
         objects.rebuild();
         selection.select(id);
@@ -197,6 +231,9 @@ std::unique_ptr<Command> removeObject(ObjectId id)
         // selection.
         std::vector<ObjectId> removed;
         collectSubtree(model, id, removed);
+        if (removed.empty()) {
+          return;
+        }
         model.remove(id);
         objects.rebuild();
         for (const ObjectId removedId : removed) {
@@ -249,6 +286,15 @@ std::unique_ptr<Command> rename(ObjectId id, std::string name)
         SceneModel& model = objects.model();
         SceneObject* object = model.find(id);
         if (object == nullptr || name.empty()) {
+          return;
+        }
+        if (object->type == ObjectType::Link) {
+          if (!isLinkNameAvailableInMultiBody(
+                  model, object->multiBody, name, id)) {
+            return;
+          }
+          object->name = name;
+          objects.rebuild();
           return;
         }
         if (!model.isNameAvailable(object->parent, name, id)) {

@@ -158,7 +158,7 @@ TEST(ObjectManager, MultiBodyWithLinks)
   SceneObject fore;
   fore.type = ObjectType::Link;
   fore.name = "forearm";
-  fore.parent = mbId;
+  fore.parent = baseId;
   fore.multiBody = mbId;
   fore.parentLink = baseId;
   fore.jointType = JointKind::Revolute;
@@ -492,6 +492,48 @@ TEST(CommandManager, AddLinkRejectsInvalidParentLink)
   EXPECT_EQ(objects.model().size(), 4u); // arm, body, rootLink, child link
 }
 
+TEST(CommandManager, AddLinkPreservesParentChain)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = selection.primary();
+  commands.execute(commands::addLink(arm, kNoObject, JointKind::Fixed, "base"));
+  const ObjectId base = selection.primary();
+  commands.execute(
+      commands::addLink(arm, base, JointKind::Revolute, "forearm"));
+  const ObjectId forearm = selection.primary();
+  commands.execute(
+      commands::addLink(arm, forearm, JointKind::Revolute, "tool"));
+  const ObjectId tool = selection.primary();
+
+  ASSERT_NE(objects.model().find(base), nullptr);
+  ASSERT_NE(objects.model().find(forearm), nullptr);
+  ASSERT_NE(objects.model().find(tool), nullptr);
+  EXPECT_EQ(objects.model().find(base)->parent, arm);
+  EXPECT_EQ(objects.model().find(forearm)->parent, base);
+  EXPECT_EQ(objects.model().find(tool)->parent, forearm);
+  ASSERT_EQ(objects.model().childrenOf(base).size(), 1u);
+  EXPECT_EQ(objects.model().childrenOf(base).front(), forearm);
+
+  auto armWorld = objects.world().getMultibody("arm");
+  ASSERT_TRUE(armWorld.has_value());
+  EXPECT_EQ(armWorld->getLinkCount(), 3u);
+
+  commands.execute(commands::removeObject(base));
+  EXPECT_TRUE(objects.model().contains(arm));
+  EXPECT_FALSE(objects.model().contains(base));
+  EXPECT_FALSE(objects.model().contains(forearm));
+  EXPECT_FALSE(objects.model().contains(tool));
+  EXPECT_TRUE(selection.empty());
+
+  armWorld = objects.world().getMultibody("arm");
+  ASSERT_TRUE(armWorld.has_value());
+  EXPECT_EQ(armWorld->getLinkCount(), 0u);
+}
+
 TEST(CommandManager, ReparentRejectsUnsupportedMoves)
 {
   ObjectManager objects;
@@ -572,6 +614,25 @@ TEST(SimEngine, NoOpCommandDoesNotSignalChange)
   // successful mutation to event-driven consumers.
   engine.execute(commands::removeObject(99999));
   EXPECT_EQ(changes, 1);
+}
+
+TEST(SimEngine, NoOpRemoveDoesNotResetRunState)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 5)));
+  engine.objects().model().timeStep = 0.01;
+  engine.objects().rebuild();
+  engine.simulation().step(4);
+
+  const double simTime = engine.simulation().simTime();
+  const std::size_t frameCount = engine.simulation().frameCount();
+  ASSERT_GT(simTime, 0.0);
+  ASSERT_GT(frameCount, 0u);
+
+  engine.execute(commands::removeObject(99999));
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Run);
+  EXPECT_DOUBLE_EQ(engine.simulation().simTime(), simTime);
+  EXPECT_EQ(engine.simulation().frameCount(), frameCount);
 }
 
 TEST(SimEngine, ProjectFileRoundTrip)
