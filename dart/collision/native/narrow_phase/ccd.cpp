@@ -476,7 +476,8 @@ bool sphereCastConvex(
     initialDir = Eigen::Vector3d::UnitX();
   }
 
-  for (int iter = 0; iter < option.maxIterations; ++iter) {
+  // Clamp to >= 1 so a zero/negative budget still tests the t = 0 overlap.
+  for (int iter = 0; iter < std::max(1, option.maxIterations); ++iter) {
     Eigen::Vector3d currentCenter = sphereStart + t * (sphereEnd - sphereStart);
 
     const double centerX = currentCenter.x();
@@ -926,7 +927,8 @@ bool capsuleCastConvex(
 
   const MotionSample capsuleMotion(capsuleStart, capsuleEnd);
 
-  for (int iter = 0; iter < option.maxIterations; ++iter) {
+  // Clamp to >= 1 so a zero/negative budget still tests the t = 0 overlap.
+  for (int iter = 0; iter < std::max(1, option.maxIterations); ++iter) {
     const Eigen::Isometry3d currentCapsuleTransform = capsuleMotion.at(t);
 
     auto supportA = [&](const Eigen::Vector3d& dir) {
@@ -1305,7 +1307,8 @@ bool conservativeAdvancement(
   GjkSimplex warmSimplex;
   bool haveWarm = false;
 
-  for (int iter = 0; iter < option.maxIterations; ++iter) {
+  // Clamp to >= 1 so a zero/negative budget still tests the t = 0 overlap.
+  for (int iter = 0; iter < std::max(1, option.maxIterations); ++iter) {
     Eigen::Isometry3d currentTransformA = motionA.at(t);
 
     auto supportA = [&](const Eigen::Vector3d& dir) {
@@ -1413,7 +1416,8 @@ bool convexCast(
   GjkSimplex warmSimplex;
   bool haveWarm = false;
 
-  for (int iter = 0; iter < option.maxIterations; ++iter) {
+  // Clamp to >= 1 so a zero/negative budget still tests the t = 0 overlap.
+  for (int iter = 0; iter < std::max(1, option.maxIterations); ++iter) {
     const Eigen::Isometry3d currentTransformA = motionA.at(t);
     const Eigen::Isometry3d currentTransformB = motionB.at(t);
 
@@ -1538,7 +1542,8 @@ bool splineCast(
   GjkSimplex warmSimplex;
   bool haveWarm = false;
 
-  for (int iter = 0; iter < option.maxIterations; ++iter) {
+  // Clamp to >= 1 so a zero/negative budget still tests the t = 0 overlap.
+  for (int iter = 0; iter < std::max(1, option.maxIterations); ++iter) {
     const Eigen::Vector3d currentTranslationA = motionA.translationAt(t);
     Eigen::Matrix3d currentRotationA = Eigen::Matrix3d::Identity();
     if (aRotates) {

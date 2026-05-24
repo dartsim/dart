@@ -1647,6 +1647,46 @@ TEST(ConvexCast, MatchesConservativeAdvancementWhenBStatic)
   EXPECT_NEAR(castResult.timeOfImpact, advResult.timeOfImpact, 1e-9);
 }
 
+// A zero (or negative) iteration budget must still detect shapes already
+// overlapping at t = 0; the cast loops clamp to at least one iteration so the
+// initial configuration is always tested.
+TEST(ConvexCast, ZeroIterationBudgetDetectsInitialOverlap)
+{
+  ConvexShape shapeA(makeCubeVertices(0.5));
+  ConvexShape shapeB(makeCubeVertices(0.5));
+  const Eigen::Isometry3d atOrigin = Eigen::Isometry3d::Identity();
+
+  CcdOption option;
+  option.maxIterations = 0;
+  CcdResult result;
+  const bool hit = convexCast(
+      shapeA, atOrigin, atOrigin, shapeB, atOrigin, atOrigin, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-9);
+}
+
+TEST(SplineCast, ZeroIterationBudgetDetectsInitialOverlap)
+{
+  ConvexShape shapeA(makeCubeVertices(0.5));
+  ConvexShape shapeB(makeCubeVertices(0.5));
+  const Eigen::Isometry3d atOrigin = Eigen::Isometry3d::Identity();
+  const std::array<Eigen::Vector3d, 4> origin
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::Zero()};
+
+  CcdOption option;
+  option.maxIterations = 0;
+  CcdResult result;
+  const bool hit
+      = splineCast(shapeA, origin, origin, shapeB, atOrigin, option, result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_NEAR(result.timeOfImpact, 0.0, 1e-9);
+}
+
 //==============================================================================
 // Spline (cubic-Bezier) cast tests
 //==============================================================================
