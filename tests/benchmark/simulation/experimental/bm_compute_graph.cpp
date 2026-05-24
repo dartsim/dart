@@ -302,6 +302,88 @@ void BM_RigidBodyStepParallel(benchmark::State& state)
   state.SetItemsProcessed(state.iterations() * bodyCount);
 }
 
+//==============================================================================
+// Contact/constraint-shaped proxy: an iterative, sequentially-coupled sweep.
+//
+// Unlike the embarrassingly-parallel fixtures above, each constraint node reads
+// and writes shared body state in a fixed order (Gauss-Seidel style), so the
+// graph has a long critical path and little exploitable parallelism, and it
+// touches memory through an irregular index permutation. This is the "hard
+// case" that any multi-core or GPU speedup claim must be measured against, so
+// scaling numbers are not gathered only on easy embarrassingly-parallel work.
+struct ContactShapedGraph
+{
+  ContactShapedGraph(int bodyCount, int iterations)
+    : velocities(static_cast<std::size_t>(std::max(bodyCount, 1)), 1.0),
+      indices(static_cast<std::size_t>(std::max(bodyCount, 1)))
+  {
+    for (std::size_t i = 0; i < indices.size(); ++i) {
+      indices[i] = static_cast<int>((i * 2654435761u) % indices.size());
+    }
+
+    // One node per solver iteration. Each node runs a full Gauss-Seidel sweep
+    // over all bodies (heavy, O(bodies) sequential work), and each iteration
+    // depends on the previous one, so the graph is a serial chain of heavy
+    // nodes. Task-graph parallelism cannot speed it up, unlike the
+    // embarrassingly-parallel fixtures above; sequential and parallel times
+    // should be comparable. This keeps the node count small so graph scheduling
+    // overhead does not dominate the measured solver work.
+    compute::ComputeNode* previous = nullptr;
+    for (int iter = 0; iter < iterations; ++iter) {
+      auto& node = graph.addNode("sweep_" + std::to_string(iter), [this]() {
+        for (std::size_t c = 0; c + 1 < indices.size(); ++c) {
+          const auto a = static_cast<std::size_t>(indices[c]);
+          const auto b = static_cast<std::size_t>(indices[c + 1]);
+          const double delta = 0.01 * (velocities[a] - velocities[b]);
+          velocities[a] -= delta;
+          velocities[b] += delta;
+        }
+        benchmark::DoNotOptimize(velocities[0]);
+      });
+      if (previous != nullptr) {
+        graph.addDependency(*previous, node);
+      }
+      previous = &node;
+    }
+  }
+
+  compute::ComputeGraph graph;
+  std::vector<double> velocities;
+  std::vector<int> indices;
+};
+
+//==============================================================================
+void BM_ContactShapedSequential(benchmark::State& state)
+{
+  const auto bodyCount = static_cast<int>(state.range(0));
+  const auto iterations = static_cast<int>(state.range(1));
+  ContactShapedGraph fixture(bodyCount, iterations);
+  compute::SequentialExecutor executor;
+
+  for (auto _ : state) {
+    executor.execute(fixture.graph);
+  }
+
+  state.counters["bodies"] = bodyCount;
+  state.counters["iterations"] = iterations;
+}
+
+//==============================================================================
+void BM_ContactShapedParallel(benchmark::State& state)
+{
+  const auto bodyCount = static_cast<int>(state.range(0));
+  const auto iterations = static_cast<int>(state.range(1));
+  ContactShapedGraph fixture(bodyCount, iterations);
+  compute::ParallelExecutor executor;
+
+  for (auto _ : state) {
+    executor.execute(fixture.graph);
+  }
+
+  state.counters["bodies"] = bodyCount;
+  state.counters["iterations"] = iterations;
+}
+
 } // namespace
 
 BENCHMARK(BM_ComputeGraphBuild)
@@ -327,5 +409,13 @@ BENCHMARK(BM_WorldStepSequential)
 BENCHMARK(BM_WorldStepParallel)->Args({32, 8})->Args({128, 8})->Args({128, 32});
 BENCHMARK(BM_RigidBodyStepSequential)->Arg(128)->Arg(1024)->Arg(4096);
 BENCHMARK(BM_RigidBodyStepParallel)->Arg(128)->Arg(1024)->Arg(4096);
+BENCHMARK(BM_ContactShapedSequential)
+    ->Args({1024, 16})
+    ->Args({4096, 16})
+    ->Args({1024, 64});
+BENCHMARK(BM_ContactShapedParallel)
+    ->Args({1024, 16})
+    ->Args({4096, 16})
+    ->Args({1024, 64});
 
 BENCHMARK_MAIN();

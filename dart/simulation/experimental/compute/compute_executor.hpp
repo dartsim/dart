@@ -42,6 +42,21 @@ namespace dart::simulation::experimental::compute {
 class ComputeGraph;
 
 /// Backend-neutral interface for executing experimental compute graphs.
+///
+/// Concurrency contract for parallel backends. A node callable may run on any
+/// worker thread, so graphs must satisfy these invariants for parallel
+/// execution to be safe and deterministic:
+///   - no node may create, destroy, add, or remove entities or components while
+///     the graph executes (no structural changes mid-execution);
+///   - two nodes that are not ordered by an explicit dependency must not write
+///     the same component instance; per-entity work should use per-entity
+///     resource identifiers so independent siblings stay conflict-free;
+///   - explicit dependencies remain the correctness source of truth; declared
+///     resource-access metadata is a descriptive check layered on top of them
+///     (see @c ComputeGraph::findResourceHazards).
+/// Sequential execution is the reference path and is always safe; the parallel
+/// backend additionally checks declared accesses for unordered hazards in debug
+/// builds.
 class DART_EXPERIMENTAL_API ComputeExecutor
 {
 public:

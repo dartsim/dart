@@ -32,33 +32,50 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/compute/execution_profile.hpp>
+#include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/export.hpp>
 
-#include <string>
+#include <vector>
+
+#include <cstddef>
+
+namespace dart::simulation::experimental {
+class World;
+} // namespace dart::simulation::experimental
 
 namespace dart::simulation::experimental::compute {
 
-class ComputeGraph;
+class ComputeExecutor;
 
-/// Options for exporting a compute graph to Graphviz DOT.
-struct DART_EXPERIMENTAL_API ComputeGraphDotOptions
-{
-  bool includeMetadata = true;
-  bool includeProfile = true;
-  bool groupParallelLevels = true;
-  bool includeResources = true;
-};
-
-/// Export a compute graph as Graphviz DOT for debugging and visualization.
+/// Advance a homogeneous batch of independent worlds in parallel.
 ///
-/// The DOT output is backend-neutral and can include static metadata plus an
-/// optional execution profile. This is intentionally a text artifact instead of
-/// a renderer dependency, so future GUI/rendering tools can consume the same
-/// data without coupling the compute graph to a specific visualization stack.
-[[nodiscard]] DART_EXPERIMENTAL_API std::string toDot(
-    const ComputeGraph& graph,
-    const ComputeExecutionProfile* profile = nullptr,
-    const ComputeGraphDotOptions& options = {});
+/// Each world becomes an independent node in a single compute graph and is
+/// stepped @p stepCount times through the default (sequential) per-world path;
+/// @p executor then runs the nodes, so a parallel executor advances the whole
+/// batch concurrently. This is the "homogeneous batch" execution shape
+/// (replicated environments, Pattern A) realized on the CPU by reusing the
+/// existing compute-graph executor seam, with no change to per-world step
+/// semantics.
+///
+/// The worlds must be independent (no shared state); their per-world results
+/// are identical to stepping each world on its own. Throws if any pointer is
+/// null.
+DART_EXPERIMENTAL_API void stepWorldsBatched(
+    const std::vector<World*>& worlds,
+    std::size_t stepCount,
+    ComputeExecutor& executor);
+
+/// Roll out a homogeneous batch of worlds from a shared initial state.
+///
+/// Applies @p initialState to @p worlds, advances them @p stepCount times with
+/// @c stepWorldsBatched, and returns the resulting batched state. This is the
+/// rollout entry point built on the batch executor and the SoA state batch; it
+/// keeps device/stream types out of the API. Control-sequence inputs are a
+/// later addition once a control owner type exists.
+[[nodiscard]] DART_EXPERIMENTAL_API RigidBodyStateBatch rolloutWorldsBatched(
+    const std::vector<World*>& worlds,
+    const RigidBodyStateBatch& initialState,
+    std::size_t stepCount,
+    ComputeExecutor& executor);
 
 } // namespace dart::simulation::experimental::compute

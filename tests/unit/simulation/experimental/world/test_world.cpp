@@ -38,7 +38,9 @@
 #include <dart/simulation/experimental/compute/compute_executor.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
+#include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
+#include <dart/simulation/experimental/compute/world_batch.hpp>
 #include <dart/simulation/experimental/compute/world_step_stage.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure_spec.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
@@ -1354,6 +1356,258 @@ TEST(World, RigidBodyStepParallelMatchesSequential)
   }
 }
 
+// Test that parallel execution matches the sequential reference across a range
+// of worker counts, hardening the deterministic-sync guarantee beyond a single
+// worker configuration.
+TEST(World, RigidBodyStepParallelMatchesSequentialAcrossWorkerCounts)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  constexpr int bodyCount = 12;
+  constexpr int stepCount = 5;
+  constexpr double tolerance = 1e-10;
+
+  auto buildWorld = [](sx::World& world, std::vector<sx::RigidBody>& bodies) {
+    for (int i = 0; i < bodyCount; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + 0.1 * i;
+      options.inertia = Eigen::Vector3d(1.0, 1.5, 2.0).asDiagonal();
+      options.position = Eigen::Vector3d(0.1 * i, 0.2 * i, 0.3 * i);
+      options.linearVelocity = Eigen::Vector3d(0.5, 0.25 * i, -0.1 * i);
+      options.angularVelocity = Eigen::Vector3d(0.01 * i, 0.02 * i, 0.03 * i);
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      body.setForce(Eigen::Vector3d(0.1 * i, 0.2, -0.3));
+      bodies.push_back(body);
+    }
+    world.setTimeStep(0.01);
+    world.enterSimulationMode();
+  };
+
+  sx::World reference;
+  std::vector<sx::RigidBody> referenceBodies;
+  buildWorld(reference, referenceBodies);
+  for (int s = 0; s < stepCount; ++s) {
+    reference.step();
+  }
+
+  for (const std::size_t workers :
+       {std::size_t{1}, std::size_t{2}, std::size_t{4}, std::size_t{8}}) {
+    sx::World world;
+    std::vector<sx::RigidBody> bodies;
+    buildWorld(world, bodies);
+
+    compute::ParallelExecutor executor(workers);
+    for (int s = 0; s < stepCount; ++s) {
+      world.step(executor);
+    }
+
+    for (int i = 0; i < bodyCount; ++i) {
+      EXPECT_TRUE(
+          referenceBodies[static_cast<std::size_t>(i)].getTransform().isApprox(
+              bodies[static_cast<std::size_t>(i)].getTransform(), tolerance))
+          << "workers=" << workers << " body=" << i;
+      EXPECT_TRUE(
+          referenceBodies[static_cast<std::size_t>(i)]
+              .getLinearVelocity()
+              .isApprox(
+                  bodies[static_cast<std::size_t>(i)].getLinearVelocity(),
+                  tolerance))
+          << "workers=" << workers << " body=" << i;
+      EXPECT_TRUE(
+          referenceBodies[static_cast<std::size_t>(i)]
+              .getAngularVelocity()
+              .isApprox(
+                  bodies[static_cast<std::size_t>(i)].getAngularVelocity(),
+                  tolerance))
+          << "workers=" << workers << " body=" << i;
+    }
+  }
+}
+
+// Test the Phase 3 determinism gate's strong half: rigid-body integration is a
+// map-only stage (each body reads and writes only its own components, with no
+// cross-body reduction), so parallel execution must equal the sequential
+// reference bit-for-bit, not merely within a tolerance. A batch size of one
+// puts each body in its own graph node so the bodies actually run concurrently
+// across workers, rather than collapsing into a single batched node.
+TEST(World, RigidBodyIntegrationStageIsBitwiseDeterministicAcrossWorkers)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto buildWorld = [](sx::World& world, std::vector<sx::RigidBody>& bodies) {
+    for (int i = 0; i < 12; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + 0.1 * i;
+      options.inertia = Eigen::Vector3d(1.0, 1.5, 2.0).asDiagonal();
+      options.position = Eigen::Vector3d(0.1 * i, 0.2 * i, 0.3 * i);
+      options.linearVelocity = Eigen::Vector3d(0.5, 0.25 * i, -0.1 * i);
+      options.angularVelocity = Eigen::Vector3d(0.01 * i, 0.02 * i, 0.03 * i);
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      body.setForce(Eigen::Vector3d(0.1 * i, 0.2, -0.3));
+      body.setTorque(Eigen::Vector3d(0.05, -0.1 * i, 0.2));
+      bodies.push_back(body);
+    }
+    world.setTimeStep(0.01);
+    world.enterSimulationMode();
+  };
+
+  sx::World reference;
+  std::vector<sx::RigidBody> referenceBodies;
+  buildWorld(reference, referenceBodies);
+  compute::SequentialExecutor sequential;
+  compute::RigidBodyIntegrationStage referenceStage(1);
+  for (int s = 0; s < 5; ++s) {
+    referenceStage.execute(reference, sequential);
+  }
+
+  for (const std::size_t workers :
+       {std::size_t{1}, std::size_t{2}, std::size_t{4}, std::size_t{8}}) {
+    sx::World world;
+    std::vector<sx::RigidBody> bodies;
+    buildWorld(world, bodies);
+
+    compute::ParallelExecutor executor(workers);
+    compute::RigidBodyIntegrationStage stage(1);
+    for (int s = 0; s < 5; ++s) {
+      stage.execute(world, executor);
+    }
+
+    for (std::size_t i = 0; i < referenceBodies.size(); ++i) {
+      EXPECT_TRUE((referenceBodies[i].getTransform().matrix().array()
+                   == bodies[i].getTransform().matrix().array())
+                      .all())
+          << "workers=" << workers << " body=" << i << " transform not bitwise";
+      EXPECT_TRUE((referenceBodies[i].getLinearVelocity().array()
+                   == bodies[i].getLinearVelocity().array())
+                      .all())
+          << "workers=" << workers << " body=" << i
+          << " linear velocity not bitwise";
+      EXPECT_TRUE((referenceBodies[i].getAngularVelocity().array()
+                   == bodies[i].getAngularVelocity().array())
+                      .all())
+          << "workers=" << workers << " body=" << i
+          << " angular velocity not bitwise";
+    }
+  }
+}
+
+// Test that the batched SoA integration stage matches the per-entity stage for
+// free (non-frame-coupled) rigid bodies under a full dynamic step: linear
+// force, torque (via the shared world-inertia LDLT solve), and the shared
+// angle-axis exponential-map orientation update.
+TEST(World, BatchedRigidBodyIntegrationStageMatchesPerEntityForFreeBodies)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto buildWorld = [](sx::World& world, std::vector<sx::RigidBody>& bodies) {
+    for (int i = 0; i < 8; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + 0.3 * i;
+      options.inertia = Eigen::Vector3d(1.0, 1.5, 2.0).asDiagonal();
+      options.position = Eigen::Vector3d(0.2 * i, -0.1 * i, 0.05 * i);
+      options.linearVelocity = Eigen::Vector3d(0.5, 0.25 * i, -0.1 * i);
+      options.angularVelocity = Eigen::Vector3d(0.05 * i, -0.03 * i, 0.2);
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      body.setForce(Eigen::Vector3d(0.1 * i, 0.2, -0.3));
+      // Non-zero torque exercises the world-inertia (R I R^T) LDLT solve that
+      // both stages now share.
+      body.setTorque(Eigen::Vector3d(0.05, -0.1 * i, 0.2));
+      bodies.push_back(body);
+    }
+    world.setTimeStep(0.01);
+    world.enterSimulationMode();
+  };
+
+  sx::World perEntityWorld;
+  sx::World batchedWorld;
+  std::vector<sx::RigidBody> perEntityBodies;
+  std::vector<sx::RigidBody> batchedBodies;
+  buildWorld(perEntityWorld, perEntityBodies);
+  buildWorld(batchedWorld, batchedBodies);
+
+  compute::SequentialExecutor executor;
+  compute::RigidBodyIntegrationStage perEntityStage;
+  compute::BatchedRigidBodyIntegrationStage batchedStage;
+
+  constexpr double tolerance = 1e-10;
+  for (int step = 0; step < 5; ++step) {
+    perEntityStage.execute(perEntityWorld, executor);
+    batchedStage.execute(batchedWorld, executor);
+
+    for (std::size_t i = 0; i < perEntityBodies.size(); ++i) {
+      EXPECT_TRUE(
+          perEntityBodies[i].getTranslation().isApprox(
+              batchedBodies[i].getTranslation(), tolerance))
+          << "step " << step << " body " << i << " position";
+      EXPECT_TRUE(
+          perEntityBodies[i].getRotation().isApprox(
+              batchedBodies[i].getRotation(), tolerance))
+          << "step " << step << " body " << i << " orientation";
+      EXPECT_TRUE(
+          perEntityBodies[i].getLinearVelocity().isApprox(
+              batchedBodies[i].getLinearVelocity(), tolerance))
+          << "step " << step << " body " << i << " linear velocity";
+      EXPECT_TRUE(
+          perEntityBodies[i].getAngularVelocity().isApprox(
+              batchedBodies[i].getAngularVelocity(), tolerance))
+          << "step " << step << " body " << i << " angular velocity";
+      EXPECT_TRUE(
+          perEntityBodies[i].getLocalTransform().isApprox(
+              batchedBodies[i].getLocalTransform(), tolerance))
+          << "step " << step << " body " << i << " local transform";
+    }
+  }
+}
+
+// Test that the batched stage defers to the per-entity stage (producing
+// identical results) when a rigid body is parented to another rigid body, where
+// local-transform bookkeeping needs parent-before-child ordering.
+TEST(World, BatchedRigidBodyIntegrationStageDefersForFrameCoupledBodies)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto buildWorld = [](sx::World& world) {
+    sx::RigidBodyOptions parentOptions;
+    parentOptions.position = Eigen::Vector3d(10.0, 0.0, 0.0);
+    parentOptions.linearVelocity = Eigen::Vector3d(2.0, 0.0, 0.0);
+    auto parent = world.addRigidBody("parent", parentOptions);
+
+    sx::RigidBodyOptions childOptions;
+    childOptions.position = Eigen::Vector3d(20.0, 0.0, 0.0);
+    childOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+    auto child = world.addRigidBody("child", childOptions);
+    child.setParentFrame(parent);
+
+    world.setTimeStep(0.5);
+    world.enterSimulationMode();
+    return std::pair<sx::RigidBody, sx::RigidBody>(parent, child);
+  };
+
+  sx::World perEntityWorld;
+  sx::World batchedWorld;
+  auto [perEntityParent, perEntityChild] = buildWorld(perEntityWorld);
+  auto [batchedParent, batchedChild] = buildWorld(batchedWorld);
+
+  compute::SequentialExecutor executor;
+  compute::RigidBodyIntegrationStage perEntityStage;
+  compute::BatchedRigidBodyIntegrationStage batchedStage;
+  perEntityStage.execute(perEntityWorld, executor);
+  batchedStage.execute(batchedWorld, executor);
+
+  EXPECT_TRUE(perEntityParent.getLocalTransform().isApprox(
+      batchedParent.getLocalTransform()));
+  EXPECT_TRUE(perEntityChild.getLocalTransform().isApprox(
+      batchedChild.getLocalTransform()));
+  EXPECT_TRUE(
+      perEntityParent.getTransform().isApprox(batchedParent.getTransform()));
+  EXPECT_TRUE(
+      perEntityChild.getTransform().isApprox(batchedChild.getTransform()));
+}
+
 // Test that the experimental step path can swap the kinematics stage contract.
 TEST(World, StepAcceptsCustomStage)
 {
@@ -1484,4 +1738,417 @@ TEST(World, StepCountAcceptsMultiDomainSolverPipeline)
   EXPECT_EQ(executor.executeCount, expected.size());
   EXPECT_DOUBLE_EQ(world.getTime(), 0.3);
   EXPECT_EQ(world.getFrame(), 3u);
+}
+
+// Test that rigid-body state can be extracted to a structure-of-arrays batch
+// and applied back, round-tripping exactly and rejecting size mismatches.
+TEST(World, RigidBodyStateBatchRoundTrip)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto build = [](sx::World& world) {
+    std::vector<sx::RigidBody> bodies;
+    for (int i = 0; i < 4; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + i;
+      options.position = Eigen::Vector3d(0.1 * i, 0.2 * i, 0.3 * i);
+      options.linearVelocity = Eigen::Vector3d(0.5 * i, -0.25 * i, 0.1 * i);
+      options.angularVelocity = Eigen::Vector3d(0.01 * i, 0.02 * i, 0.03 * i);
+      bodies.push_back(
+          world.addRigidBody("body_" + std::to_string(i), options));
+    }
+    return bodies;
+  };
+
+  sx::World source;
+  auto sourceBodies = build(source);
+
+  const auto batch = compute::extractRigidBodyState(source);
+  EXPECT_EQ(batch.worldCount, 1u);
+  EXPECT_EQ(batch.bodyCount, 4u);
+  EXPECT_EQ(batch.position.size(), 12u);
+  EXPECT_EQ(batch.orientation.size(), 16u);
+  EXPECT_EQ(batch.linearVelocity.size(), 12u);
+  EXPECT_EQ(batch.angularVelocity.size(), 12u);
+
+  // Apply the source snapshot to an identical world; the re-extracted state
+  // must match field for field.
+  sx::World target;
+  auto targetBodies = build(target);
+  compute::applyRigidBodyState(target, batch);
+
+  const auto roundTrip = compute::extractRigidBodyState(target);
+  ASSERT_EQ(roundTrip.bodyCount, batch.bodyCount);
+  EXPECT_EQ(roundTrip.position, batch.position);
+  EXPECT_EQ(roundTrip.orientation, batch.orientation);
+  EXPECT_EQ(roundTrip.linearVelocity, batch.linearVelocity);
+  EXPECT_EQ(roundTrip.angularVelocity, batch.angularVelocity);
+
+  // Mutating the batch and applying it changes world state deterministically.
+  auto mutated = batch;
+  for (auto& value : mutated.position) {
+    value += 1.0;
+  }
+  compute::applyRigidBodyState(source, mutated);
+  const auto afterMutation = compute::extractRigidBodyState(source);
+  for (std::size_t i = 0; i < afterMutation.position.size(); ++i) {
+    EXPECT_DOUBLE_EQ(afterMutation.position[i], batch.position[i] + 1.0);
+  }
+
+  // A batch whose body count does not match the world is rejected.
+  sx::World smaller;
+  sx::RigidBodyOptions soleOptions;
+  smaller.addRigidBody("only", soleOptions);
+  EXPECT_THROW(
+      compute::applyRigidBodyState(smaller, batch),
+      sx::InvalidArgumentException);
+
+  // A batch whose array sizes are inconsistent with bodyCount is rejected
+  // before any out-of-bounds access.
+  compute::RigidBodyStateBatch malformed;
+  malformed.worldCount = 1;
+  malformed.bodyCount = batch.bodyCount; // arrays intentionally left empty
+  EXPECT_THROW(
+      compute::applyRigidBodyState(target, malformed),
+      sx::InvalidArgumentException);
+}
+
+// Test the homogeneous multi-world batch path: extract with a leading world
+// dimension, world-major ordering, round-trip apply, and rejection of
+// world-count and body-count mismatches.
+TEST(World, RigidBodyStateBatchMultiWorld)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto buildWorld = [](sx::World& world, double seed) {
+    for (int i = 0; i < 2; ++i) {
+      sx::RigidBodyOptions options;
+      options.position = Eigen::Vector3d(seed + i, seed + 2 * i, seed + 3 * i);
+      options.linearVelocity = Eigen::Vector3d(seed, -seed, 0.5 * seed);
+      world.addRigidBody("body_" + std::to_string(i), options);
+    }
+  };
+
+  sx::World w0;
+  sx::World w1;
+  sx::World w2;
+  buildWorld(w0, 1.0);
+  buildWorld(w1, 2.0);
+  buildWorld(w2, 3.0);
+
+  const std::vector<const sx::World*> worlds{&w0, &w1, &w2};
+  const auto batch = compute::extractRigidBodyStateBatch(worlds);
+  EXPECT_EQ(batch.worldCount, 3u);
+  EXPECT_EQ(batch.bodyCount, 2u);
+  EXPECT_EQ(batch.position.size(), 18u);    // 3 * worldCount * bodyCount
+  EXPECT_EQ(batch.orientation.size(), 24u); // 4 * worldCount * bodyCount
+
+  // World-major ordering: each world's slice equals its single-world extract.
+  const auto single0 = compute::extractRigidBodyState(w0);
+  const auto single2 = compute::extractRigidBodyState(w2);
+  for (std::size_t k = 0; k < 6; ++k) {
+    EXPECT_DOUBLE_EQ(batch.position[k], single0.position[k]);
+    EXPECT_DOUBLE_EQ(batch.position[12 + k], single2.position[k]);
+  }
+
+  // Apply to fresh worlds (different initial state) and round-trip.
+  sx::World t0;
+  sx::World t1;
+  sx::World t2;
+  buildWorld(t0, 9.0);
+  buildWorld(t1, 9.0);
+  buildWorld(t2, 9.0);
+  const std::vector<sx::World*> targets{&t0, &t1, &t2};
+  compute::applyRigidBodyStateBatch(targets, batch);
+
+  const std::vector<const sx::World*> constTargets{&t0, &t1, &t2};
+  const auto roundTrip = compute::extractRigidBodyStateBatch(constTargets);
+  EXPECT_EQ(roundTrip.position, batch.position);
+  EXPECT_EQ(roundTrip.orientation, batch.orientation);
+  EXPECT_EQ(roundTrip.linearVelocity, batch.linearVelocity);
+  EXPECT_EQ(roundTrip.angularVelocity, batch.angularVelocity);
+
+  // A world-count mismatch on apply is rejected.
+  const std::vector<sx::World*> twoTargets{&t0, &t1};
+  EXPECT_THROW(
+      compute::applyRigidBodyStateBatch(twoTargets, batch),
+      sx::InvalidArgumentException);
+
+  // Heterogeneous body counts are rejected on extract.
+  sx::World hetero;
+  buildWorld(hetero, 5.0);
+  sx::RigidBodyOptions extra;
+  hetero.addRigidBody("extra", extra);
+  const std::vector<const sx::World*> heteroWorlds{&w0, &hetero};
+  EXPECT_THROW(
+      { (void)compute::extractRigidBodyStateBatch(heteroWorlds); },
+      sx::InvalidArgumentException);
+}
+
+// Test that applyRigidBodyStateBatch validates every world before mutating any,
+// so an invalid later world leaves the earlier worlds unchanged (atomic
+// failure) rather than partially applying the batch.
+TEST(World, ApplyRigidBodyStateBatchValidatesBeforeMutating)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto build2 = [](sx::World& world, double seed) {
+    for (int i = 0; i < 2; ++i) {
+      sx::RigidBodyOptions options;
+      options.position = Eigen::Vector3d(seed + i, 0.0, 0.0);
+      world.addRigidBody("body_" + std::to_string(i), options);
+    }
+  };
+
+  sx::World source0;
+  sx::World source1;
+  build2(source0, 1.0);
+  build2(source1, 2.0);
+  const std::vector<const sx::World*> sources{&source0, &source1};
+  const auto batch = compute::extractRigidBodyStateBatch(sources);
+
+  // t0 matches the batch body count; t1 does not, so apply must throw before
+  // mutating t0.
+  sx::World t0;
+  sx::World t1;
+  build2(t0, 9.0);
+  build2(t1, 9.0);
+  t1.addRigidBody(
+      "extra", sx::RigidBodyOptions{}); // t1 now has 3 bodies, not 2
+
+  const std::vector<sx::World*> targets{&t0, &t1};
+  const auto beforePosition = compute::extractRigidBodyState(t0).position;
+  EXPECT_THROW(
+      compute::applyRigidBodyStateBatch(targets, batch),
+      sx::InvalidArgumentException);
+  const auto afterPosition = compute::extractRigidBodyState(t0).position;
+  EXPECT_EQ(beforePosition, afterPosition);
+}
+
+// Test that the multi-world batch rejects worlds whose rigid bodies do not
+// share the same ordered identity (same count but different bodies/order),
+// which would otherwise silently permute state between bodies.
+TEST(World, MultiWorldBatchRejectsMismatchedBodyIdentity)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto addTwo = [](sx::World& world, const std::string& prefix) {
+    for (int i = 0; i < 2; ++i) {
+      sx::RigidBodyOptions options;
+      options.position = Eigen::Vector3d(i, 0.0, 0.0);
+      world.addRigidBody(prefix + std::to_string(i), options);
+    }
+  };
+
+  // Same body count, different names => different ordered identity.
+  sx::World named0;
+  sx::World named1;
+  addTwo(named0, "a");
+  addTwo(named1, "b");
+  const std::vector<const sx::World*> mixed{&named0, &named1};
+  EXPECT_THROW(
+      { (void)compute::extractRigidBodyStateBatch(mixed); },
+      sx::InvalidArgumentException);
+
+  // A valid batch (consistent identity) applied to targets whose identities
+  // disagree is rejected before any mutation.
+  sx::World src0;
+  sx::World src1;
+  addTwo(src0, "a");
+  addTwo(src1, "a");
+  const std::vector<const sx::World*> sources{&src0, &src1};
+  const auto batch = compute::extractRigidBodyStateBatch(sources);
+
+  sx::World target0;
+  addTwo(target0, "a");
+  const std::vector<sx::World*> targets{&target0, &named1};
+  EXPECT_THROW(
+      compute::applyRigidBodyStateBatch(targets, batch),
+      sx::InvalidArgumentException);
+}
+
+// Test the CPU batch executor: N independent homogeneous worlds advanced in
+// parallel match a single sequentially-stepped reference, and null worlds are
+// rejected.
+TEST(World, StepWorldsBatchedMatchesSequential)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto build = [](sx::World& world) {
+    for (int i = 0; i < 3; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + i;
+      options.position = Eigen::Vector3d(1.0 + i, 0.0, 0.0);
+      options.linearVelocity = Eigen::Vector3d(0.1 * (i + 1), 0.0, 0.0);
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      body.setForce(Eigen::Vector3d(0.2, -0.1, 0.05));
+    }
+    world.setTimeStep(0.01);
+    world.enterSimulationMode();
+  };
+
+  sx::World reference;
+  build(reference);
+  reference.step(5);
+  const auto refState = compute::extractRigidBodyState(reference);
+
+  sx::World w0;
+  sx::World w1;
+  sx::World w2;
+  sx::World w3;
+  build(w0);
+  build(w1);
+  build(w2);
+  build(w3);
+  const std::vector<sx::World*> worlds{&w0, &w1, &w2, &w3};
+
+  compute::ParallelExecutor executor(2);
+  compute::stepWorldsBatched(worlds, 5, executor);
+
+  for (auto* world : worlds) {
+    const auto state = compute::extractRigidBodyState(*world);
+    ASSERT_EQ(state.bodyCount, refState.bodyCount);
+    EXPECT_EQ(state.position, refState.position);
+    EXPECT_EQ(state.linearVelocity, refState.linearVelocity);
+    EXPECT_EQ(state.orientation, refState.orientation);
+    EXPECT_DOUBLE_EQ(world->getTime(), reference.getTime());
+  }
+
+  const std::vector<sx::World*> withNull{&w0, nullptr};
+  EXPECT_THROW(
+      compute::stepWorldsBatched(withNull, 1, executor),
+      sx::InvalidArgumentException);
+
+  // The same world twice would be stepped concurrently from two nodes (a data
+  // race); it must be rejected.
+  const std::vector<sx::World*> withDuplicate{&w0, &w0};
+  EXPECT_THROW(
+      compute::stepWorldsBatched(withDuplicate, 1, executor),
+      sx::InvalidArgumentException);
+}
+
+// Test the batched rollout: applying a shared initial state, advancing, and
+// returning the final batched state matches a single-world reference.
+TEST(World, RolloutWorldsBatchedMatchesReference)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  auto build = [](sx::World& world) {
+    for (int i = 0; i < 2; ++i) {
+      sx::RigidBodyOptions options;
+      options.mass = 1.0 + i;
+      options.position = Eigen::Vector3d(0.5 + i, 0.0, 0.0);
+      options.linearVelocity = Eigen::Vector3d(0.2 * (i + 1), 0.1, 0.0);
+      auto body = world.addRigidBody("body_" + std::to_string(i), options);
+      body.setForce(Eigen::Vector3d(0.15, -0.05, 0.1));
+    }
+    world.setTimeStep(0.01);
+    world.enterSimulationMode();
+  };
+
+  sx::World w0;
+  sx::World w1;
+  build(w0);
+  build(w1);
+  const std::vector<sx::World*> worlds{&w0, &w1};
+
+  // Capture the homogeneous initial state, then perturb the worlds so the
+  // rollout's apply step must reset them.
+  const std::vector<const sx::World*> constWorlds{&w0, &w1};
+  const auto initial = compute::extractRigidBodyStateBatch(constWorlds);
+  w0.step(3);
+  w1.step(7);
+
+  compute::ParallelExecutor executor(2);
+  const auto result
+      = compute::rolloutWorldsBatched(worlds, initial, 5, executor);
+
+  // Reference: a single world built identically (so its state equals one slice
+  // of the initial batch) and stepped the same number of times.
+  sx::World reference;
+  build(reference);
+  reference.step(5);
+  const auto refFinal = compute::extractRigidBodyState(reference);
+
+  EXPECT_EQ(result.worldCount, 2u);
+  ASSERT_EQ(result.bodyCount, refFinal.bodyCount);
+  const auto stride = refFinal.position.size();
+  for (std::size_t r = 0; r < 2; ++r) {
+    for (std::size_t k = 0; k < stride; ++k) {
+      EXPECT_DOUBLE_EQ(result.position[r * stride + k], refFinal.position[k]);
+      EXPECT_DOUBLE_EQ(
+          result.linearVelocity[r * stride + k], refFinal.linearVelocity[k]);
+    }
+  }
+
+  // A duplicate world must be rejected atomically: rollout applies state before
+  // it steps, so the apply step rejects duplicates before any world is mutated.
+  const auto beforePosition = compute::extractRigidBodyState(w0).position;
+  const std::vector<sx::World*> duplicate{&w0, &w0};
+  EXPECT_THROW(
+      { (void)compute::rolloutWorldsBatched(duplicate, initial, 5, executor); },
+      sx::InvalidArgumentException);
+  const auto afterPosition = compute::extractRigidBodyState(w0).position;
+  EXPECT_EQ(beforePosition, afterPosition);
+}
+
+// Test the immutable Model batch: inverse masses are extracted in state order,
+// and the model-based integrator overload matches the explicit-vector overload.
+TEST(World, RigidBodyModelBatchIntegration)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  for (int i = 0; i < 2; ++i) {
+    sx::RigidBodyOptions options;
+    options.mass = 2.0 * (i + 1); // body 0 mass 2, body 1 mass 4
+    options.position = Eigen::Vector3d(i, 0.0, 0.0);
+    world.addRigidBody("b" + std::to_string(i), options);
+  }
+
+  const auto state = compute::extractRigidBodyState(world);
+  const auto model = compute::extractRigidBodyModelBatch(world);
+  EXPECT_EQ(model.worldCount, 1u);
+  EXPECT_EQ(model.bodyCount, 2u);
+  ASSERT_EQ(model.inverseMass.size(), 2u);
+  // EnTT view order is not insertion order, so check the set, not positions.
+  EXPECT_TRUE(
+      (model.inverseMass[0] == 0.5 && model.inverseMass[1] == 0.25)
+      || (model.inverseMass[0] == 0.25 && model.inverseMass[1] == 0.5));
+
+  const std::vector<double> force = {0.0, 0.0, 4.0, 0.0, 0.0, 8.0};
+  const double dt = 0.5;
+
+  auto viaModel = state;
+  compute::integrateRigidBodyStateBatchLinear(viaModel, model, force, dt);
+
+  auto viaVector = state;
+  compute::integrateRigidBodyStateBatchLinear(
+      viaVector, force, model.inverseMass, dt);
+
+  EXPECT_EQ(viaModel.linearVelocity, viaVector.linearVelocity);
+  EXPECT_EQ(viaModel.position, viaVector.position);
+  // Per body, in extraction order: z-velocity == force.z * inverseMass * dt
+  // (initial velocity is zero), independent of the view iteration order.
+  for (std::size_t i = 0; i < model.bodyCount; ++i) {
+    EXPECT_DOUBLE_EQ(
+        viaModel.linearVelocity[3 * i + 2],
+        force[3 * i + 2] * (model.inverseMass[i] * dt));
+  }
+
+  // A model whose body count does not match the state is rejected.
+  compute::RigidBodyModelBatch wrong;
+  wrong.worldCount = 1;
+  wrong.bodyCount = 1;
+  wrong.inverseMass = {1.0};
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatchLinear(viaModel, wrong, force, dt),
+      sx::InvalidArgumentException);
 }
