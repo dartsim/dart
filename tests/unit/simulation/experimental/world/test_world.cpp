@@ -2968,6 +2968,68 @@ TEST(World, MultiBodyLinkRestsOnStaticGround)
   EXPECT_NEAR(joint.getVelocity()[0], 0.0, 5e-2);
 }
 
+// Test two-sided link-vs-dynamic-rigid-body contact: a prismatic "striker" link
+// moving along +X hits a free rigid body. The contact impulse acts on both
+// bodies, so total X linear momentum is conserved and the box is pushed
+// forward.
+TEST(World, MultiBodyLinkPushesDynamicRigidBody)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  // Striker: a fixed base carrying a sphere on a prismatic X joint, moving +X.
+  auto robot = world.addMultiBody("striker_robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "rail";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitX();
+  auto striker = robot.addLink("striker", base, spec);
+  const double strikerMass = 2.0;
+  striker.setMass(strikerMass);
+  striker.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+
+  auto joint = striker.getParentJoint();
+  const double initialSpeed = 1.0;
+  joint.setVelocity(Eigen::VectorXd::Constant(1, initialSpeed));
+
+  // Free rigid body in the striker's path (centers 0.5 apart; radii sum 0.4).
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.position = Eigen::Vector3d(0.5, 0.0, 0.0);
+  auto box = world.addRigidBody("box", boxOptions);
+  const double boxMass = 1.0;
+  box.setMass(boxMass);
+  box.setCollisionShape(sx::CollisionShape::makeSphere(0.2));
+
+  world.setTimeStep(0.002);
+  world.enterSimulationMode();
+
+  const double initialMomentum = strikerMass * initialSpeed;
+  bool boxWasPushed = false;
+  for (int i = 0; i < 600; ++i) {
+    world.step();
+    const double momentum = strikerMass * joint.getVelocity()[0]
+                            + boxMass * box.getLinearVelocity().x();
+    // Equal-and-opposite impulses conserve total X momentum every step (no
+    // external force along the unconstrained X axis).
+    EXPECT_NEAR(momentum, initialMomentum, 1e-6);
+    if (box.getLinearVelocity().x() > 1e-3) {
+      boxWasPushed = true;
+    }
+  }
+
+  // The collision happened and drove the box forward, slowing the striker.
+  EXPECT_TRUE(boxWasPushed);
+  EXPECT_GT(box.getLinearVelocity().x(), 0.1);
+  EXPECT_LT(joint.getVelocity()[0], initialSpeed);
+  // An inelastic (restitution 0) collision drives both toward the common
+  // velocity m1 v0 / (m1 + m2).
+  const double commonVelocity = initialMomentum / (strikerMass + boxMass);
+  EXPECT_NEAR(box.getLinearVelocity().x(), commonVelocity, 0.1);
+}
+
 // Test that Coulomb friction at a link contact decelerates a sliding link. A
 // vertical prismatic carries a horizontal prismatic link whose sphere rests on
 // the ground; an initial horizontal velocity is braked to rest by friction.

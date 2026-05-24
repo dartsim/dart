@@ -2043,6 +2043,56 @@ def test_experimental_multibody_link_rests_on_static_ground():
     assert joint.velocity.tolist()[0] == pytest.approx(0.0, abs=5e-2)
 
 
+def test_experimental_multibody_link_pushes_dynamic_rigid_body():
+    sx = _simulation_experimental()
+
+    world = sx.World()
+    world.gravity = (0.0, 0.0, 0.0)
+
+    # Striker: a prismatic-X link moving toward a free rigid body.
+    robot = world.add_multi_body("striker_robot")
+    base = robot.add_link("base")
+    striker = robot.add_link(
+        "striker",
+        parent=base,
+        joint=sx.JointSpec(
+            name="rail", type=sx.JointType.PRISMATIC, axis=(1.0, 0.0, 0.0)
+        ),
+    )
+    striker_mass = 2.0
+    striker.mass = striker_mass
+    striker.set_collision_shape(sx.CollisionShape.sphere(0.2))
+    joint = striker.parent_joint
+    initial_speed = 1.0
+    joint.velocity = [initial_speed]
+
+    box_mass = 1.0
+    box = world.add_rigid_body("box", mass=box_mass, position=(0.5, 0.0, 0.0))
+    box.set_collision_shape(sx.CollisionShape.sphere(0.2))
+
+    world.time_step = 0.002
+    world.enter_simulation_mode()
+
+    initial_momentum = striker_mass * initial_speed
+    box_pushed = False
+    for _ in range(600):
+        world.step()
+        momentum = (
+            striker_mass * joint.velocity[0]
+            + box_mass * box.linear_velocity[0]
+        )
+        # Equal-and-opposite contact impulses conserve total X momentum.
+        assert momentum == pytest.approx(initial_momentum, abs=1e-6)
+        if box.linear_velocity[0] > 1e-3:
+            box_pushed = True
+
+    assert box_pushed
+    assert box.linear_velocity[0] > 0.1
+    assert joint.velocity[0] < initial_speed
+    common_velocity = initial_momentum / (striker_mass + box_mass)
+    assert box.linear_velocity[0] == pytest.approx(common_velocity, abs=0.1)
+
+
 def test_experimental_multibody_link_contact_friction_stops_slide():
     sx = _simulation_experimental()
 

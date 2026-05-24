@@ -530,6 +530,14 @@
     map instead of `q += qdot*dt`. Verified by the closed-form mass matrix and
     gravity (ball spherical pendulum), torque-free isotropic spin, free-fall,
     and combined translate-and-spin closed-form integration.
+  - Added experimental two-sided link-vs-dynamic-rigid-body contact: a multibody
+    link contacting a dynamic rigid body now applies the equal-and-opposite
+    contact impulse (normal + two-tangent Coulomb friction) to that body's
+    velocity, coupling the rigid body's inverse mass/inertia into the
+    articulated contact solve (an immovable obstacle reduces to the existing
+    one-sided case). Verified by total linear-momentum conservation when a
+    moving link strikes a free body. Link-vs-link and a coupled simultaneous
+    boxed-LCP over all contacts remain future work.
   - Added experimental generalized-coordinate dynamics accessors on `MultiBody`:
     `getMassMatrix`/`getInverseMassMatrix`, `getCoriolisForces`,
     `getGravityForces`, and `getCoriolisAndGravityForces` (dartpy `mass_matrix`,

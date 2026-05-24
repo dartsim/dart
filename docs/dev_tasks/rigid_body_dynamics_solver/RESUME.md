@@ -215,11 +215,18 @@ solve over all contacts at once.
   `dart/math/lcp/` (normal `lambda_n >= 0`, friction cone `|lambda_t| <= mu
 lambda_n`) instead of the two separate per-stage Gauss-Seidel loops. Add
   islands for performance later.
-- **Smaller correct increment if a full rewrite is out of budget:**
-  link-vs-dynamic-rigid-body via equal-and-opposite velocity impulses applied in
-  `MultiBodyForwardDynamicsStage` (momentum-conserving; accept a one-step
-  position lag for the rigid body, corrected by Baumgarte). Verify by total
-  linear/angular momentum conservation when a moving link strikes a free body.
+- **(DONE) Smaller correct increment — two-sided link-vs-dynamic-rigid-body.**
+  `simulateMultiBody`'s contact solve now couples a dynamic rigid-body obstacle:
+  `LinkContact::otherBody` carries it, and the contact rows include its inverse
+  mass/inertia + arm so the normal and friction impulses are applied to both the
+  link (`M^-1 J^T`) and the rigid body (equal-and-opposite, via its
+  `comps::Velocity`). An immovable obstacle leaves `otherBody` null and reduces
+  to the original one-sided solve. Accepts a one-step position lag for the rigid
+  body (it is position-integrated earlier in the pipeline), corrected by
+  Baumgarte. Verified by total X-momentum conservation when a prismatic striker
+  link hits a free body (C++ + dartpy). **Still remaining:** link-vs-link
+  contacts and the coupled simultaneous boxed-LCP (both need the pipeline
+  reordering above).
 
 ### Subsystem B — model loading (URDF/SDF/MJCF) into the experimental World
 
