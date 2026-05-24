@@ -531,7 +531,9 @@ and report the throttle rather than re-spamming the PR with more triggers.
 ### Updating Published PRs
 
 Prefer additive follow-up commits for updates to already-published PRs. This
-keeps review history inspectable and makes each review round clear.
+keeps review history inspectable and makes each review round clear. Pushing any
+such update is an external mutation that requires explicit maintainer/user
+approval.
 
 #### Merge The Base Branch Before Every Push (MANDATORY)
 
