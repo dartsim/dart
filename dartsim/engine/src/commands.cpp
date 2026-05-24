@@ -53,13 +53,11 @@ std::unique_ptr<Command> addRigidBody(
         object.parent = kNoObject;
         object.transform = transform;
         object.shape.type = shape;
-        object.name
-            = name.empty()
-                  ? NameManager::makeUnique(
-                        model,
-                        kNoObject,
-                        NameManager::defaultBaseName(ObjectType::RigidBody))
-                  : name;
+        object.name = NameManager::makeUnique(
+            model,
+            kNoObject,
+            name.empty() ? NameManager::defaultBaseName(ObjectType::RigidBody)
+                         : name);
         const ObjectId id = model.add(std::move(object));
         objects.rebuild();
         selection.select(id);
@@ -76,13 +74,11 @@ std::unique_ptr<Command> addMultiBody(std::string name)
         SceneObject object;
         object.type = ObjectType::MultiBody;
         object.parent = kNoObject;
-        object.name
-            = name.empty()
-                  ? NameManager::makeUnique(
-                        model,
-                        kNoObject,
-                        NameManager::defaultBaseName(ObjectType::MultiBody))
-                  : name;
+        object.name = NameManager::makeUnique(
+            model,
+            kNoObject,
+            name.empty() ? NameManager::defaultBaseName(ObjectType::MultiBody)
+                         : name);
         const ObjectId id = model.add(std::move(object));
         objects.rebuild();
         selection.select(id);
@@ -107,12 +103,11 @@ std::unique_ptr<Command> addLink(
         object.multiBody = multiBody;
         object.parentLink = parentLink;
         object.jointType = joint;
-        object.name = name.empty()
-                          ? NameManager::makeUnique(
-                                model,
-                                multiBody,
-                                NameManager::defaultBaseName(ObjectType::Link))
-                          : name;
+        object.name = NameManager::makeUnique(
+            model,
+            multiBody,
+            name.empty() ? NameManager::defaultBaseName(ObjectType::Link)
+                         : name);
         const ObjectId id = model.add(std::move(object));
         objects.rebuild();
         selection.select(id);
@@ -131,13 +126,11 @@ std::unique_ptr<Command> addFreeFrame(
         object.type = ObjectType::FreeFrame;
         object.parent = kNoObject;
         object.transform = transform;
-        object.name
-            = name.empty()
-                  ? NameManager::makeUnique(
-                        model,
-                        kNoObject,
-                        NameManager::defaultBaseName(ObjectType::FreeFrame))
-                  : name;
+        object.name = NameManager::makeUnique(
+            model,
+            kNoObject,
+            name.empty() ? NameManager::defaultBaseName(ObjectType::FreeFrame)
+                         : name);
         const ObjectId id = model.add(std::move(object));
         objects.rebuild();
         selection.select(id);
@@ -156,13 +149,11 @@ std::unique_ptr<Command> addFixedFrame(
         object.type = ObjectType::FixedFrame;
         object.parent = kNoObject;
         object.transform = transform;
-        object.name
-            = name.empty()
-                  ? NameManager::makeUnique(
-                        model,
-                        kNoObject,
-                        NameManager::defaultBaseName(ObjectType::FixedFrame))
-                  : name;
+        object.name = NameManager::makeUnique(
+            model,
+            kNoObject,
+            name.empty() ? NameManager::defaultBaseName(ObjectType::FixedFrame)
+                         : name);
         const ObjectId id = model.add(std::move(object));
         objects.rebuild();
         selection.select(id);

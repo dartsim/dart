@@ -390,6 +390,32 @@ TEST(SceneIO, RejectsBadHeader)
   EXPECT_FALSE(scene_io::load("not a scene file", out));
 }
 
+TEST(SceneIO, RejectsUnsupportedVersion)
+{
+  SceneModel out;
+  // A v1 reader must reject a newer format version instead of parsing it with
+  // v1 rules (which would silently produce corrupt state).
+  EXPECT_FALSE(scene_io::load("dartsim-scene 2\ntimestep 0.001\n", out));
+}
+
+TEST(CommandManager, DuplicateExplicitNamesAreDeduplicated)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  // Two bodies with the same caller-supplied name must be de-duplicated;
+  // otherwise rebuild() calls World::addRigidBody with a duplicate and throws.
+  commands.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0, 0, 0), "box"));
+  commands.execute(
+      commands::addRigidBody(ShapeType::Box, translation(1, 0, 0), "box"));
+
+  EXPECT_EQ(objects.model().size(), 2u);
+  EXPECT_TRUE(objects.world().hasRigidBody("box"));
+  EXPECT_TRUE(objects.world().hasRigidBody("box 1"));
+}
+
 //==============================================================================
 // SimEngine: end-to-end design -> run -> record -> replay + project file
 //==============================================================================

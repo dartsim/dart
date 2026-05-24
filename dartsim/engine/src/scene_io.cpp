@@ -50,6 +50,9 @@ namespace dartsim::scene_io {
 
 namespace {
 
+/// Highest scene-file format version this build can read and writes on save.
+constexpr int kSceneFormatVersion = 1;
+
 void writeRow(std::ostream& out, const char* key, const double* data, int n)
 {
   out << key;
@@ -115,7 +118,7 @@ std::string save(const SceneModel& model)
 {
   std::ostringstream out;
   out << std::setprecision(17);
-  out << "dartsim-scene 1\n";
+  out << "dartsim-scene " << kSceneFormatVersion << "\n";
   out << "timestep " << model.timeStep << '\n';
 
   for (const ObjectId id : model.allIds()) {
@@ -161,6 +164,10 @@ bool load(std::string_view text, SceneModel& out)
     int version = 0;
     header >> tag >> version;
     if (tag != "dartsim-scene") {
+      return false;
+    }
+    // Reject unsupported versions instead of parsing newer files with v1 rules.
+    if (version < 1 || version > kSceneFormatVersion) {
       return false;
     }
   }
