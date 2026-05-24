@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1779634133047,
+  "lastUpdate": 1779635571164,
   "repoUrl": "https://github.com/dartsim/dart",
   "entries": {
     "DART Performance": [
@@ -502,6 +502,132 @@ window.BENCHMARK_DATA = {
             "value": 51636356.74074174,
             "unit": "ns/iter",
             "extra": "iterations: 3\ncpu: 51320497.18518522 ns\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jslee02@users.noreply.github.com",
+            "name": "Jeongseok (JS) Lee",
+            "username": "jslee02"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3982b72e8fa52c7b4e1791c23765abbc4cf67fae",
+          "message": "Add native continuous collision detection (CCD) (#2700)",
+          "timestamp": "2026-05-24T07:43:04-07:00",
+          "tree_id": "5c568912c47cc77ed55d7d99b3445760739776bd",
+          "url": "https://github.com/dartsim/dart/commit/3982b72e8fa52c7b4e1791c23765abbc4cf67fae"
+        },
+        "date": 1779635462831,
+        "tool": "googlecpp",
+        "benches": [
+          {
+            "name": "BM_LCP_COMPARE_SMOKE",
+            "value": 2358.466328340242,
+            "unit": "ns/iter",
+            "extra": "iterations: 1\ncpu: 2358.286895669927 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepSequential/128",
+            "value": 110433.94874642884,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 110426.89503332275 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepSequential/1024",
+            "value": 1558180.0188678512,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 1557998.9822419528 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepSequential/4096",
+            "value": 15429915.945055706,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 15427630.351648333 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepParallel/128",
+            "value": 211495.71039222638,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 165707.08662163749 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepParallel/1024",
+            "value": 1852768.221831059,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 1635116.8157276988 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepParallel/4096",
+            "value": 15486406.041665882,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 14629517.020833299 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_Robot_KR5_WorldStep/min_time:0.100",
+            "value": 37280.15925396804,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 37270.988809182214 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_Robot_Atlas_WorldStep/min_time:0.100",
+            "value": 138737.37422038362,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 138704.4667359666 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_Add_DART_f32_Baseline/1024/repeats:5",
+            "value": 49.041358120511404,
+            "unit": "ns/iter",
+            "extra": "iterations: 5\ncpu: 49.03822682321411 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_Add_DART_f32/1024/repeats:5",
+            "value": 49.116768854792774,
+            "unit": "ns/iter",
+            "extra": "iterations: 5\ncpu: 49.11330189995562 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepSequential/32/8",
+            "value": 491385.2008441998,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 491284.21948645794 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepSequential/128/8",
+            "value": 4948938.003521184,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 4948649.908450705 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepSequential/128/32",
+            "value": 59628827.26086975,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 59624428.99999996 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepParallel/32/8",
+            "value": 632627.8229166821,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 602202.1367187505 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepParallel/128/8",
+            "value": 4764050.026666761,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 4663258.263333331 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepParallel/128/32",
+            "value": 53487632.34615297,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 53183506.88461547 ns\nthreads: 1"
           }
         ]
       }
