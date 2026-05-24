@@ -7,6 +7,16 @@ results over time:
 * Dashboard:
   `https://dartsim.github.io/dart/performance/ <https://dartsim.github.io/dart/performance/>`_
 
+The live dashboard is embedded below. If it does not load (for example before
+the first publication), open it directly with the link above.
+
+.. raw:: html
+
+   <iframe src="https://dartsim.github.io/dart/performance/"
+           title="DART performance dashboard"
+           width="100%" height="720" loading="lazy"
+           style="border: 1px solid #d0d7de; border-radius: 6px;"></iframe>
+
 It leads with end-to-end world-step cases — stepping the experimental World
 (sequential vs the parallel compute executor) and real robot models such as
 Atlas — alongside focused lower-level kernels, so the headline numbers reflect
