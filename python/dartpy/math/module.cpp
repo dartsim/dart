@@ -35,6 +35,7 @@
 #include "math/constants.hpp"
 #include "math/eigen_geometry.hpp"
 #include "math/geometry.hpp"
+#include "math/lie_groups.hpp"
 #include "math/random.hpp"
 #include "math/trimesh.hpp"
 
@@ -46,6 +47,7 @@ void defMathModule(nanobind::module_& m)
   defRandom(m);
   defGeometry(m);
   defEigenGeometry(m);
+  defLieGroups(m);
   defTriMesh(m);
 }
 

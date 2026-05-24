@@ -60,6 +60,7 @@ struct DebugOverlayController;
 enum class ExampleScene;
 struct FrameViewport;
 struct ImGuiOverlay;
+struct PerfHudState;
 class SelectionController;
 
 void updateFrameUi(
@@ -80,7 +81,10 @@ void updateFrameUi(
     std::vector<dart::gui::Panel>& panels,
     dart::gui::ViewerLifecycleState& lifecycle,
     double guiScale,
-    dart::gui::ProfileAccumulator& profile);
+    dart::gui::ProfileAccumulator& profile,
+    bool showPerfHud,
+    PerfHudState& perfHud,
+    const char* backendName);
 
 } // namespace dart::gui::detail
 
