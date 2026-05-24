@@ -74,9 +74,12 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Land resource-access metadata for compute nodes before dependency
-  inference, contact scheduling, or GPU/rendering backend work; use the
-  resource-access evaluator mission to keep objective-specific proof explicit.
+- Next step: Follow the multiphase plan in
+  `docs/dev_tasks/experimental_world_scalable_compute/`; land the Phase 0
+  foundations (executor-parity test, EnTT concurrency contract, benchmark corpus
+  with a contact-shaped proxy) before the resource-access metadata milestone,
+  and keep both ahead of dependency inference, contact scheduling, or
+  GPU/rendering backend work.
 - Gate:
   [`030-compute-resource-access/evaluator.md`](030-compute-resource-access/evaluator.md)
   records the focused proof: graph/world tests and the compute-graph benchmark
@@ -209,9 +212,23 @@ its own line so status updates remain git-history friendly.
   output (`UNIT_gui_FilamentSceneExtraction`, headless scene smoke, and
   `pixi run lint` green).
 
-### PLAN-100: dartsim GUI Simulator
+### PLAN-100: DART 7 Lie-Group Consolidation
 
-- Owner doc: [`100-dartsim-gui-simulator.md`](100-dartsim-gui-simulator.md);
+- Owner doc:
+  [`../dev_tasks/lie_group_consolidation/README.md`](../dev_tasks/lie_group_consolidation/README.md)
+- Status: Parked
+- Horizon: Next
+- Dimension: Release transition
+- Next step: Port the deferred `GroupProduct` (composite Lie group) from
+  `7/nested_group_product` into `main` under main conventions, mirroring the
+  merged `SO3`/`SE3` inverse machinery and resolving the five known WIP gaps.
+- Gate: `GroupProduct` source and tests land in `dart/math/lie_group/` with
+  `pixi run lint`, build, and `ctest -R UNIT_math_lie_group` green; the
+  Lie-group base API increment already merged via PR #2697.
+
+### PLAN-101: dartsim GUI Simulator
+
+- Owner doc: [`101-dartsim-gui-simulator.md`](101-dartsim-gui-simulator.md);
   durable architecture/as-built in
   [`../design/dartsim_gui_simulator.md`](../design/dartsim_gui_simulator.md),
   developer overview in

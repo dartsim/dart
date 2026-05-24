@@ -31,6 +31,7 @@
  */
 
 #include <dart/collision/native/narrow_phase/gjk.hpp>
+#include <dart/collision/native/narrow_phase/gjk_inl.hpp>
 
 #include <algorithm>
 #include <array>
@@ -63,11 +64,6 @@ SupportPoint computeSupport(
   point.v = point.v1 - point.v2;
   point.direction = dir;
   return point;
-}
-
-bool isUsableDirection(const Eigen::Vector3d& direction)
-{
-  return direction.allFinite() && direction.squaredNorm() > kEpsilon;
 }
 
 enum class TriangleRegion
@@ -473,6 +469,18 @@ bool reduceTetrahedron(
   return false;
 }
 
+} // namespace
+
+// These pure simplex helpers are shared by the std::function query path (below)
+// and the templated query path (gjk_inl.hpp). They live in the detail namespace
+// so the header templates can call them while their definitions stay here once.
+namespace detail {
+
+bool isUsableDirection(const Eigen::Vector3d& direction)
+{
+  return direction.allFinite() && direction.squaredNorm() > kEpsilon;
+}
+
 bool reduceSimplex(
     GjkSimplex& simplex,
     Eigen::Vector3d& closest,
@@ -518,108 +526,14 @@ void fillSeparationResult(
   }
 }
 
-GjkResult queryFromSimplex(
-    const SupportFunction& supportA,
-    const SupportFunction& supportB,
-    GjkSimplex simplex,
-    const Eigen::Vector3d& fallbackInitialDirection)
-{
-  GjkResult result;
-  std::array<double, 4> weights{};
-
-  Eigen::Vector3d direction = fallbackInitialDirection;
-  if (!isUsableDirection(direction)) {
-    direction = Eigen::Vector3d::UnitX();
-  }
-
-  if (simplex.size == 0) {
-    simplex.push(computeSupport(supportA, supportB, direction));
-  }
-
-  Eigen::Vector3d closest = Eigen::Vector3d::Zero();
-  if (reduceSimplex(simplex, closest, weights)) {
-    result.intersecting = true;
-    result.simplex = simplex;
-    return result;
-  }
-
-  double prevDist2 = std::numeric_limits<double>::infinity();
-
-  for (int iter = 0; iter < Gjk::kMaxIterations; ++iter) {
-    const double dist2 = closest.squaredNorm();
-    if (dist2 <= Gjk::kTolerance * Gjk::kTolerance) {
-      result.intersecting = true;
-      result.simplex = simplex;
-      return result;
-    }
-
-    direction = -closest;
-    if (!isUsableDirection(direction)) {
-      direction = Eigen::Vector3d::UnitX();
-    }
-    SupportPoint newPoint = computeSupport(supportA, supportB, direction);
-
-    const double delta = newPoint.v.dot(direction) - closest.dot(direction);
-    if (delta <= Gjk::kTolerance) {
-      fillSeparationResult(simplex, weights, closest, result);
-      result.simplex = simplex;
-      return result;
-    }
-
-    simplex.push(newPoint);
-
-    if (reduceSimplex(simplex, closest, weights)) {
-      result.intersecting = true;
-      result.simplex = simplex;
-      return result;
-    }
-
-    const double newDist2 = closest.squaredNorm();
-    if (std::abs(prevDist2 - newDist2) <= Gjk::kTolerance * Gjk::kTolerance) {
-      fillSeparationResult(simplex, weights, closest, result);
-      result.simplex = simplex;
-      return result;
-    }
-    prevDist2 = newDist2;
-  }
-
-  fillSeparationResult(simplex, weights, closest, result);
-  result.simplex = simplex;
-  return result;
-}
-
-GjkSimplex buildWarmStartSimplex(
-    const SupportFunction& supportA,
-    const SupportFunction& supportB,
-    const GjkSimplex& initialSimplex)
-{
-  GjkSimplex simplex;
-  for (int i = 0; i < initialSimplex.size; ++i) {
-    Eigen::Vector3d direction = initialSimplex.points[i].direction;
-    if (!isUsableDirection(direction)) {
-      direction = initialSimplex.points[i].v;
-    }
-    if (isUsableDirection(direction)) {
-      simplex.push(computeSupport(supportA, supportB, direction));
-    }
-  }
-  return simplex;
-}
-
-} // namespace
+} // namespace detail
 
 GjkResult Gjk::query(
     const SupportFunction& supportA,
     const SupportFunction& supportB,
     const Eigen::Vector3d& initialDirection)
 {
-  GjkSimplex simplex;
-  Eigen::Vector3d direction = initialDirection;
-  if (!isUsableDirection(direction)) {
-    direction = Eigen::Vector3d::UnitX();
-  }
-  simplex.push(computeSupport(supportA, supportB, direction));
-  return queryFromSimplex(supportA, supportB, simplex, direction);
+  return detail::queryT(supportA, supportB, initialDirection);
 }
 
 GjkResult Gjk::query(
@@ -628,10 +542,8 @@ GjkResult Gjk::query(
     const GjkSimplex& initialSimplex,
     const Eigen::Vector3d& fallbackInitialDirection)
 {
-  GjkSimplex simplex
-      = buildWarmStartSimplex(supportA, supportB, initialSimplex);
-  return queryFromSimplex(
-      supportA, supportB, simplex, fallbackInitialDirection);
+  return detail::queryT(
+      supportA, supportB, initialSimplex, fallbackInitialDirection);
 }
 
 bool Gjk::intersect(
@@ -639,7 +551,7 @@ bool Gjk::intersect(
     const SupportFunction& supportB,
     const Eigen::Vector3d& initialDirection)
 {
-  return query(supportA, supportB, initialDirection).intersecting;
+  return detail::queryT(supportA, supportB, initialDirection).intersecting;
 }
 
 namespace {

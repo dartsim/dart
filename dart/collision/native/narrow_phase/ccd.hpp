@@ -39,6 +39,8 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <array>
+
 namespace dart::collision::native {
 
 [[nodiscard]] DART_COLLISION_NATIVE_API bool sphereCastSphere(
@@ -171,6 +173,56 @@ namespace dart::collision::native {
     const ConvexShape& shapeA,
     const Eigen::Isometry3d& transformAStart,
     const Eigen::Isometry3d& transformAEnd,
+    const ConvexShape& shapeB,
+    const Eigen::Isometry3d& transformB,
+    const CcdOption& option,
+    CcdResult& result);
+
+/// Conservative advancement when BOTH convex shapes move over the step.
+///
+/// Generalizes conservativeAdvancement (which holds shape B fixed) to the case
+/// where shape B also translates/rotates, matching reference-engine continuous
+/// collision where each body carries its own motion. The closest distance can
+/// change no faster than the sum of the two per-shape motion bounds, so
+/// advancing by distance / (boundA + boundB) is conservative.
+[[nodiscard]] DART_COLLISION_NATIVE_API bool convexCast(
+    const ConvexShape& shapeA,
+    const Eigen::Isometry3d& transformAStart,
+    const Eigen::Isometry3d& transformAEnd,
+    const ConvexShape& shapeB,
+    const Eigen::Isometry3d& transformBStart,
+    const Eigen::Isometry3d& transformBEnd,
+    const CcdOption& option,
+    CcdResult& result);
+
+/// Conservative advancement for shape A following a cubic polynomial (spline)
+/// trajectory against a static convex shape B.
+///
+/// The trajectory is a cubic Bezier in both translation and rotation vector,
+/// matching the spline-motion parameterization of the reference engine that
+/// supports it: translation `T(t) = sum_i B_i(t) translationControlPoints[i]`
+/// and orientation `R(t) = exp([sum_i B_i(t) rotationControlPoints[i]])` with
+/// `B_i` the cubic Bernstein basis. A spline path is the one motion model the
+/// linear/screw casts cannot represent: it can curve away from the chord
+/// between its endpoints, so a straight-line or screw cast over the same
+/// endpoints can miss a collision the spline actually makes. Pass four zero
+/// vectors for `rotationControlPoints` to sweep a curved translational path
+/// with no spin.
+///
+/// With `CcdAdvancement::Conservative` (the default) the step is
+/// acceleration-bounded -- the gap closes by at most `(v0 + angular)*dt +
+/// accel*dt^2/2`, whose root gives the largest provably safe step. It never
+/// overshoots a true contact (the SO(3) exponential's right Jacobian is a
+/// contraction, so `|omega| <= |W'|`), which is the no-tunnelling guarantee
+/// barrier/IPC solvers need. With `CcdAdvancement::Fast` the step instead
+/// divides the gap by the maximum forward displacement over the rest of the
+/// motion: far fewer iterations, but it may stride past a sharply curved first
+/// contact and report a later one -- for rigid-body use where speed matters
+/// more than first-contact precision.
+[[nodiscard]] DART_COLLISION_NATIVE_API bool splineCast(
+    const ConvexShape& shapeA,
+    const std::array<Eigen::Vector3d, 4>& translationControlPoints,
+    const std::array<Eigen::Vector3d, 4>& rotationControlPoints,
     const ConvexShape& shapeB,
     const Eigen::Isometry3d& transformB,
     const CcdOption& option,

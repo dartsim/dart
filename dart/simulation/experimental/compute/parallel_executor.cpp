@@ -32,6 +32,7 @@
 
 #include "dart/simulation/experimental/compute/parallel_executor.hpp"
 
+#include "dart/simulation/experimental/common/assert.hpp"
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
 #include "dart/simulation/experimental/compute/execution_profile.hpp"
 
@@ -56,6 +57,7 @@ public:
   }
 
   std::unique_ptr<tf::Executor> executor;
+  std::size_t inlineThreshold = 1;
 };
 
 //==============================================================================
@@ -77,6 +79,24 @@ ParallelExecutor& ParallelExecutor::operator=(ParallelExecutor&&) noexcept
 //==============================================================================
 void ParallelExecutor::execute(const ComputeGraph& graph)
 {
+  // Debug-only diagnostic aid: explicit graph edges remain the correctness
+  // source of truth, so stage authors must encode every cross-node data
+  // dependency as an edge rather than relying on this check (it is compiled out
+  // under NDEBUG).
+  DART_EXPERIMENTAL_ASSERT_MSG(
+      graph.findResourceHazards().empty(),
+      "Parallel execution found unordered resource-access hazards; add an "
+      "explicit dependency or declare a reduction");
+
+  // Cost gate: a graph at or below the inline threshold runs in topological
+  // order on the calling thread, skipping Taskflow build/scheduling overhead.
+  if (graph.getNodes().size() <= m_impl->inlineThreshold) {
+    for (auto* node : graph.getTopologicalOrder()) {
+      node->execute();
+    }
+    return;
+  }
+
   tf::Taskflow taskflow;
   std::unordered_map<ComputeNode*, tf::Task> tasks;
 
@@ -97,9 +117,25 @@ void ParallelExecutor::execute(const ComputeGraph& graph)
 ComputeExecutionProfile ParallelExecutor::executeProfiled(
     const ComputeGraph& graph)
 {
+  DART_EXPERIMENTAL_ASSERT_MSG(
+      graph.findResourceHazards().empty(),
+      "Parallel execution found unordered resource-access hazards; add an "
+      "explicit dependency or declare a reduction");
+
+  ComputeExecutionProfiler profiler(graph, getWorkerCount());
+
+  // Cost gate: mirror execute(); a sub-threshold graph profiles its inline
+  // (sequential) run, which is what actually executes.
+  if (graph.getNodes().size() <= m_impl->inlineThreshold) {
+    profiler.start();
+    for (auto* node : graph.getTopologicalOrder()) {
+      profiler.executeNode(*node);
+    }
+    return profiler.finish();
+  }
+
   tf::Taskflow taskflow;
   std::unordered_map<ComputeNode*, tf::Task> tasks;
-  ComputeExecutionProfiler profiler(graph, getWorkerCount());
 
   for (auto* node : graph.getNodes()) {
     tasks.emplace(
@@ -121,6 +157,18 @@ ComputeExecutionProfile ParallelExecutor::executeProfiled(
 std::size_t ParallelExecutor::getWorkerCount() const
 {
   return m_impl && m_impl->executor ? m_impl->executor->num_workers() : 0;
+}
+
+//==============================================================================
+void ParallelExecutor::setInlineThreshold(std::size_t threshold) noexcept
+{
+  m_impl->inlineThreshold = threshold;
+}
+
+//==============================================================================
+std::size_t ParallelExecutor::getInlineThreshold() const noexcept
+{
+  return m_impl->inlineThreshold;
 }
 
 } // namespace dart::simulation::experimental::compute

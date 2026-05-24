@@ -6,7 +6,7 @@ This document is the durable architecture and rationale for the `dartsim/`
 application: a general-purpose, standalone robotics multi-physics GUI simulator
 built on DART's experimental World API (evolved from the earlier thin viewer). It owns the
 design and tradeoffs only. Active priority, horizon, and gate live in
-`docs/plans/dashboard.md` (PLAN-100); the landed developer overview lives in
+`docs/plans/dashboard.md` (PLAN-101); the landed developer overview lives in
 `docs/onboarding/gui-rendering.md`.
 
 ## Implementation Status (As Built)
@@ -471,8 +471,8 @@ localized change (in the scene model / render bridge), not a GUI rewrite.
 
 The v1 phases below are implemented (see
 [Implementation Status](#implementation-status-as-built)). Roadmap state and any
-remaining follow-ups live in `docs/plans/dashboard.md` (PLAN-100) and
-`docs/plans/100-dartsim-gui-simulator.md`. At a high level:
+remaining follow-ups live in `docs/plans/dashboard.md` (PLAN-101) and
+`docs/plans/101-dartsim-gui-simulator.md`. At a high level:
 
 1. **Engine skeleton** — managers, command stack, scene model over `sx::World`,
    events; headless unit tests; no UI changes.

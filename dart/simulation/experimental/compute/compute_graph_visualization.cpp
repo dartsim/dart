@@ -97,6 +97,14 @@ void appendNodeLabel(
         << escapeDot(formatAccelerationMask(metadata.acceleration));
   }
 
+  if (options.includeResources) {
+    for (const auto& access : node.getMetadata().resources) {
+      out << "\\n"
+          << escapeDot(std::string(toString(access.mode))) << " "
+          << escapeDot(access.resource);
+    }
+  }
+
   if (options.includeProfile && profile) {
     if (const auto* nodeProfile = profile->getNode(node.getName())) {
       out << "\\nlevel=" << nodeProfile->level;

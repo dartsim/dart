@@ -147,6 +147,12 @@ until DART has a clear long-term contract for them.
 
 ## Related Designs
 
+`docs/design/compute_backend_research.md` owns the evidence survey behind these
+decisions: how comparable engines scale, a comparison of multi-core and GPU
+backend libraries with packaging realities, and a DART workload-candidate
+ranking. Use it for the workload ranking and backend evidence that this
+framework applies.
+
 `docs/design/hierarchical_allocator.md` covers world-level memory ownership and
 allocator direction. It is a dependency for some scalable-compute work, not a
 replacement for workload ranking or backend decisions.

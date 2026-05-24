@@ -365,11 +365,37 @@ struct DART_COLLISION_NATIVE_API CcdResult
   }
 };
 
+/// Advancement strategy for the continuous queries that iterate (the convex and
+/// spline casts).
+enum class CcdAdvancement
+{
+  /// Never overshoots a true contact: the reported time of impact is a lower
+  /// bound on the first contact, so geometry cannot tunnel. Required by
+  /// barrier/IPC-style solvers. Default.
+  Conservative,
+
+  /// Larger displacement-based steps: fewer iterations, but may step over a
+  /// grazing or sharply curved first contact and report a later one. For
+  /// rigid-body use where first-contact precision is not required and raw speed
+  /// matters more than the no-tunnelling guarantee.
+  Fast
+};
+
 struct DART_COLLISION_NATIVE_API CcdOption
 {
   double tolerance = 1e-4;
 
   int maxIterations = 32;
+
+  /// Minimum separation (gap) the query keeps between primitives. A positive
+  /// value reports the time of impact at which the primitives close to this
+  /// distance rather than to touching, which barrier/IPC-style solvers require.
+  /// Ignored by the rigid shape casts; used by the primitive CCD queries.
+  double minSeparation = 0.0;
+
+  /// Whether iterative casts trade the no-tunnelling guarantee for fewer
+  /// iterations. Defaults to the conservative (safe) strategy.
+  CcdAdvancement advancement = CcdAdvancement::Conservative;
 
   [[nodiscard]] static CcdOption standard()
   {
@@ -379,6 +405,30 @@ struct DART_COLLISION_NATIVE_API CcdOption
   [[nodiscard]] static CcdOption precise()
   {
     return {1e-6, 64};
+  }
+};
+
+/// Result of a primitive-level continuous collision query (point-triangle,
+/// edge-edge). Reports only a conservative time of impact in [0, 1]; the
+/// contact configuration can be reconstructed by the caller from the input
+/// trajectories.
+struct DART_COLLISION_NATIVE_API CcdPrimitiveResult
+{
+  bool hit = false;
+
+  /// Conservative time of impact in [0, 1]: a lower bound on the true first
+  /// contact time. Never overshoots a real collision.
+  double timeOfImpact = 1.0;
+
+  [[nodiscard]] bool isHit() const
+  {
+    return hit;
+  }
+
+  void clear()
+  {
+    hit = false;
+    timeOfImpact = 1.0;
   }
 };
 
