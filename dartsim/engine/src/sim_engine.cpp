@@ -140,6 +140,8 @@ bool SimEngine::loadProject(const std::string& path)
   m_objects.setModel(std::move(model));
   m_selection.clear();
   m_commands.clearHistory();
+  // Drop any pre-load Run-mode snapshot so Reset targets the loaded scene.
+  m_simulation.clearForNewScene();
   m_logger.info("Loaded project: " + path);
   m_events.emit(EventType::ProjectLoaded);
   notifyChanged();

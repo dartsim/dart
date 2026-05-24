@@ -447,6 +447,31 @@ TEST(SimEngine, ProjectFileRoundTrip)
   std::filesystem::remove(path);
 }
 
+TEST(SimEngine, LoadProjectClearsRunSnapshot)
+{
+  const std::filesystem::path path = std::filesystem::temp_directory_path()
+                                     / "dartsim_engine_load_reset_test.dartsim";
+
+  SimEngine saved;
+  saved.execute(commands::addRigidBody(ShapeType::Box, translation(1, 1, 1)));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+  const std::size_t savedSize = saved.objects().model().size();
+
+  // Enter Run mode on a different (empty) scene so a design snapshot is
+  // captured, then load the saved project over it.
+  SimEngine engine;
+  engine.simulation().play();
+  ASSERT_TRUE(engine.loadProject(path.string()));
+  EXPECT_EQ(engine.objects().model().size(), savedSize);
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Edit);
+
+  // Reset must keep the loaded scene rather than restore the pre-load snapshot.
+  engine.simulation().reset();
+  EXPECT_EQ(engine.objects().model().size(), savedSize);
+
+  std::filesystem::remove(path);
+}
+
 //==============================================================================
 // Command macros (grouped, single-undo transactions)
 //==============================================================================
@@ -529,6 +554,30 @@ TEST(EventBus, SubscribeEmitUnsubscribe)
   bus.emit(EventType::SceneChanged);
   EXPECT_EQ(count, 1); // no longer notified
   EXPECT_EQ(bus.listenerCount(), 0u);
+}
+
+TEST(EventBus, UnsubscribeDuringEmitIsSafe)
+{
+  EventBus bus;
+  int selfCount = 0;
+  int otherCount = 0;
+  int selfToken = 0;
+  // A listener that unsubscribes itself mid-dispatch must not invalidate the
+  // iteration or skip the remaining listeners.
+  selfToken = bus.subscribe([&](const Event&) {
+    ++selfCount;
+    bus.unsubscribe(selfToken);
+  });
+  bus.subscribe([&](const Event&) { ++otherCount; });
+
+  bus.emit(EventType::SceneChanged);
+  EXPECT_EQ(selfCount, 1);
+  EXPECT_EQ(otherCount, 1);
+  EXPECT_EQ(bus.listenerCount(), 1u); // self removed during dispatch
+
+  bus.emit(EventType::SceneChanged);
+  EXPECT_EQ(selfCount, 1); // self no longer notified
+  EXPECT_EQ(otherCount, 2);
 }
 
 //==============================================================================

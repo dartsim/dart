@@ -88,7 +88,11 @@ public:
 
   void emit(const Event& event) const
   {
-    for (const auto& [token, listener] : m_listeners) {
+    // Dispatch over a snapshot so a listener that subscribes or unsubscribes
+    // (including unsubscribing itself) during the callback cannot invalidate
+    // the iteration over m_listeners.
+    const auto snapshot = m_listeners;
+    for (const auto& [token, listener] : snapshot) {
       (void)token;
       if (listener) {
         listener(event);

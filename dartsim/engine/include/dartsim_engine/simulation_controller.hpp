@@ -80,6 +80,13 @@ public:
   /// Return to the captured design state and Edit mode.
   void reset();
 
+  /// Discard any captured design state and return to a fresh Edit state.
+  ///
+  /// Use when the underlying scene is replaced wholesale (e.g. loading a
+  /// project) so a later reset() targets the newly loaded scene instead of a
+  /// stale pre-load snapshot.
+  void clearForNewScene();
+
   /// Advance according to the real-time factor for `realSeconds` of wall time.
   /// Only does work while running; intended to be called once per GUI frame.
   void advance(double realSeconds);

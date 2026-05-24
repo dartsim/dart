@@ -99,6 +99,15 @@ void SimulationController::reset()
   m_accumulator = 0.0;
 }
 
+void SimulationController::clearForNewScene()
+{
+  m_mode = Mode::Edit;
+  m_running = false;
+  m_accumulator = 0.0;
+  m_haveSnapshot = false;
+  m_designSnapshot = SceneModel{};
+}
+
 void SimulationController::advance(double realSeconds)
 {
   if (!m_running || realSeconds <= 0.0) {
