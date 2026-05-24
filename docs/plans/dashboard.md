@@ -131,17 +131,16 @@ its own line so status updates remain git-history friendly.
 
 - Owner doc:
   [`../readthedocs/community/performance_dashboard.rst`](../readthedocs/community/performance_dashboard.rst)
-- Status: Active
-- Horizon: Now
+- Status: Complete
+- Horizon: Later
 - Dimension: Scalable compute
-- Next step: Merge the `Performance Dashboard` workflow
-  (`benchmark-action/github-action-benchmark`), enable GitHub Pages from the
-  `gh-pages` branch, and let the first `main` run publish to
-  `dartsim.github.io/dart/performance/`.
+- Next step: Live at `dartsim.github.io/dart/performance/` via
+  `benchmark-action/github-action-benchmark` and embedded in the Read the Docs
+  page. Optional future work: per-PR regression comments and a secondary backend
+  (Bencher/CodSpeed).
 - Gate: `pixi run bm-dashboard-preview` renders the dashboard locally from real
-  Google Benchmark JSON; after publication the hosted page shows per-benchmark
-  history. Per-PR regression comments and an optional secondary backend
-  (Bencher/CodSpeed) are deferred future work, not launch blockers.
+  Google Benchmark JSON; each `main` publish updates the hosted per-benchmark
+  history.
 
 ### PLAN-040: DART 7 Release Hardening
 
