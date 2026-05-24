@@ -232,6 +232,23 @@ TYPED_TEST(SO3Test, SmallAdjoint)
 }
 
 //==============================================================================
+TYPED_TEST(SO3Test, TangentMutableIndexing)
+{
+  using S = typename TestFixture::Scalar;
+
+  // Writing through the non-const operator[] must mutate the tangent, not a
+  // temporary copy.
+  SO3Tangent<S> t = SO3Tangent<S>::Zero();
+  t[0] = S(1);
+  t[1] = S(2);
+  t[2] = S(3);
+  EXPECT_S_EQ(t[0], S(1));
+  EXPECT_S_EQ(t[1], S(2));
+  EXPECT_S_EQ(t[2], S(3));
+  EXPECT_TRUE(t.params().isApprox(Vector3<S>(S(1), S(2), S(3))));
+}
+
+//==============================================================================
 TYPED_TEST(SO3Test, LeftJacobianInverseSmallAngle)
 {
   using S = typename TestFixture::Scalar;

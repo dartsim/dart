@@ -184,10 +184,10 @@ public:
       Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the i-th component of the tangent
-  [[nodiscard]] auto operator[](int i) const;
+  [[nodiscard]] decltype(auto) operator[](int i) const;
 
   /// Returns the i-th component of the tangent
-  [[nodiscard]] auto operator[](int i);
+  [[nodiscard]] decltype(auto) operator[](int i);
 
   /// Returns the underlying data
   [[nodiscard]] const Params& params() const;
@@ -401,14 +401,14 @@ bool TangentBase<Derived>::isApprox(
 
 //==============================================================================
 template <typename Derived>
-auto TangentBase<Derived>::operator[](int i) const
+decltype(auto) TangentBase<Derived>::operator[](int i) const
 {
   return params()[i];
 }
 
 //==============================================================================
 template <typename Derived>
-auto TangentBase<Derived>::operator[](int i)
+decltype(auto) TangentBase<Derived>::operator[](int i)
 {
   return params()[i];
 }
