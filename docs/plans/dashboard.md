@@ -211,3 +211,17 @@ its own line so status updates remain git-history friendly.
   leak; the per-shape geometry cache reduced scene extraction without changing
   output (`UNIT_gui_FilamentSceneExtraction`, headless scene smoke, and
   `pixi run lint` green).
+
+### PLAN-100: DART 7 Lie-Group Consolidation
+
+- Owner doc:
+  [`../dev_tasks/lie_group_consolidation/README.md`](../dev_tasks/lie_group_consolidation/README.md)
+- Status: Parked
+- Horizon: Next
+- Dimension: Release transition
+- Next step: Port the deferred `GroupProduct` (composite Lie group) from
+  `7/nested_group_product` into `main` under main conventions, mirroring the
+  merged `SO3`/`SE3` inverse machinery and resolving the five known WIP gaps.
+- Gate: `GroupProduct` source and tests land in `dart/math/lie_group/` with
+  `pixi run lint`, build, and `ctest -R UNIT_math_lie_group` green; the
+  Lie-group base API increment already merged via PR #2697.
