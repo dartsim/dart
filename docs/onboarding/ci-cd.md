@@ -63,6 +63,16 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
     SARIF filtering before upload; CodeQL config `paths-ignore` is not enough.
     Confirm Code Scanning has processed the relevant C++ analysis for the target
     commit before treating the open-alert count as final.
+  - Benchmark runners (`scripts/run_cpp_benchmark.py`,
+    `scripts/run_performance_dashboard_benchmarks.py`) build a target but do not
+    configure the tree. Run `pixi run config` (or a pixi task with
+    `depends-on = ["config"]`) first; on a fresh checkout or CI runner they
+    otherwise fail with `Build directory build/<env>/cpp/<type> does not exist`.
+  - Publishing to `gh-pages` triggers a full legacy Jekyll rebuild over the
+    versioned Doxygen docs, so newly pushed content (such as the performance
+    dashboard at `/performance/`) can take several minutes to appear and 404s
+    during the build. A root `.nojekyll` file makes Pages serve statically
+    (faster, and avoids Jekyll dropping underscore-prefixed Doxygen files).
 
 ## Common CI Failure Modes
 
