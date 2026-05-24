@@ -2043,6 +2043,16 @@ TEST(World, RolloutWorldsBatchedMatchesReference)
           result.linearVelocity[r * stride + k], refFinal.linearVelocity[k]);
     }
   }
+
+  // A duplicate world must be rejected atomically: rollout applies state before
+  // it steps, so the apply step rejects duplicates before any world is mutated.
+  const auto beforePosition = compute::extractRigidBodyState(w0).position;
+  const std::vector<sx::World*> duplicate{&w0, &w0};
+  EXPECT_THROW(
+      { (void)compute::rolloutWorldsBatched(duplicate, initial, 5, executor); },
+      sx::InvalidArgumentException);
+  const auto afterPosition = compute::extractRigidBodyState(w0).position;
+  EXPECT_EQ(beforePosition, afterPosition);
 }
 
 // Test the immutable Model batch: inverse masses are extracted in state order,

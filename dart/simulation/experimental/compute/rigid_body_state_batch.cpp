@@ -43,6 +43,7 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <unordered_set>
 #include <vector>
 
 #include <cmath>
@@ -400,15 +401,24 @@ void applyRigidBodyStateBatch(
 
   const auto bodyCount = state.bodyCount;
 
-  // Validate every target world (non-null and matching rigid-body count) before
-  // mutating any of them. Because the batch is applied slice by slice, an
-  // invalid later world would otherwise leave earlier worlds already mutated --
-  // a non-atomic failure that silently corrupts a multi-world batch.
+  // Validate every target world (non-null, unique, and matching rigid-body
+  // count) before mutating any of them. Because the batch is applied slice by
+  // slice, an invalid later world would otherwise leave earlier worlds already
+  // mutated -- a non-atomic failure that silently corrupts a multi-world batch
+  // (this also makes rolloutWorldsBatched, which applies before stepping, fail
+  // atomically on a duplicate world).
+  std::unordered_set<const World*> seen;
   for (std::size_t w = 0; w < worlds.size(); ++w) {
     DART_EXPERIMENTAL_THROW_T_IF(
         worlds[w] == nullptr,
         InvalidArgumentException,
         "applyRigidBodyStateBatch received a null world at index {}",
+        w);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !seen.insert(worlds[w]).second,
+        InvalidArgumentException,
+        "applyRigidBodyStateBatch received a duplicate world at index {}; each "
+        "world slice must target a distinct world",
         w);
 
     const auto& registry = worlds[w]->getRegistry();
