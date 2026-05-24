@@ -44,6 +44,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -945,6 +946,82 @@ TEST(ExperimentalIntegrationKernel, SimdOrientationMatchesScalarForLargeBatch)
   for (std::size_t i = 0; i < 4 * bodies; ++i) {
     EXPECT_NEAR(state.orientation[i], referenceOrientation[i], 1e-12)
         << "orientation component " << i;
+  }
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, OrientationHandlesDegenerateInputs)
+{
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+
+  // Scalar kernel: a zero-norm quaternion maps to identity (matching the
+  // per-entity normalizeOrIdentity), and a non-finite angular velocity leaves a
+  // valid quaternion finite and unchanged.
+  {
+    std::vector<double> orientation
+        = {0.0,
+           0.0,
+           0.0,
+           0.0, // body 0: zero-norm quaternion
+           1.0,
+           0.0,
+           0.0,
+           0.0}; // body 1: identity quaternion
+    const std::vector<double> angular
+        = {0.0,
+           0.0,
+           1.0, // body 0: spinning
+           nan,
+           nan,
+           nan}; // body 1: non-finite angular velocity
+    compute::integrateOrientationsSemiImplicit(
+        orientation.data(), angular.data(), 0.1, 2);
+
+    EXPECT_DOUBLE_EQ(orientation[0], 1.0); // zero-norm -> identity
+    EXPECT_DOUBLE_EQ(orientation[1], 0.0);
+    EXPECT_DOUBLE_EQ(orientation[2], 0.0);
+    EXPECT_DOUBLE_EQ(orientation[3], 0.0);
+    for (std::size_t i = 4; i < 8; ++i) {
+      EXPECT_TRUE(std::isfinite(orientation[i])) << "component " << i;
+    }
+    EXPECT_DOUBLE_EQ(orientation[4], 1.0); // NaN spin leaves identity unchanged
+  }
+
+  // SIMD path (batch above the dispatch threshold): the same guarantees, so a
+  // large batch behaves identically to a small/scalar batch on degenerate input
+  // rather than producing batch-size-dependent NaN contamination.
+  {
+    const std::size_t bodies = 96;
+    compute::RigidBodyStateBatch state;
+    state.worldCount = 1;
+    state.bodyCount = bodies;
+    state.position.assign(3 * bodies, 0.0);
+    state.linearVelocity.assign(3 * bodies, 0.0);
+    state.orientation.assign(4 * bodies, 0.0);
+    state.angularVelocity.assign(3 * bodies, 0.0);
+    for (std::size_t b = 0; b < bodies; ++b) {
+      state.orientation[4 * b + 0] = 1.0; // identity for every body
+    }
+    state.orientation[0] = 0.0;             // body 0: zero-norm quaternion
+    state.angularVelocity[3 * 1 + 0] = nan; // body 1: non-finite spin
+    state.angularVelocity[3 * 1 + 1] = nan;
+    state.angularVelocity[3 * 1 + 2] = nan;
+
+    compute::RigidBodyModelBatch model;
+    model.worldCount = 1;
+    model.bodyCount = bodies;
+    model.inverseMass.assign(bodies, 1.0);
+    const std::vector<double> force(3 * bodies, 0.0);
+
+    compute::integrateRigidBodyStateBatch(state, model, force, 0.05);
+
+    EXPECT_DOUBLE_EQ(state.orientation[0], 1.0); // zero-norm -> identity
+    EXPECT_DOUBLE_EQ(state.orientation[1], 0.0);
+    EXPECT_DOUBLE_EQ(state.orientation[2], 0.0);
+    EXPECT_DOUBLE_EQ(state.orientation[3], 0.0);
+    for (std::size_t i = 0; i < 4 * bodies; ++i) {
+      EXPECT_TRUE(std::isfinite(state.orientation[i])) << "component " << i;
+    }
   }
 }
 

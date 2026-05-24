@@ -167,9 +167,12 @@ void integrateOrientationsSimd(
   const Array safeSpeed = spinning.select(speed, 1.0);
   const Array axisScale = spinning.select(halfAngle.sin() / safeSpeed, 0.0);
   const Array dw = spinning.select(halfAngle.cos(), 1.0);
-  const Array dx = ox * axisScale;
-  const Array dy = oy * axisScale;
-  const Array dz = oz * axisScale;
+  // Mask the whole delta vector on non-spinning lanes (not just axisScale): a
+  // non-finite angular velocity would otherwise survive as omega * 0 == NaN,
+  // corrupting the SIMD path while the scalar path leaves it unchanged.
+  const Array dx = spinning.select(ox * axisScale, 0.0);
+  const Array dy = spinning.select(oy * axisScale, 0.0);
+  const Array dz = spinning.select(oz * axisScale, 0.0);
 
   // dq * q (Hamilton product), left-multiplying the world-frame delta.
   Array nw = dw * w - dx * x - dy * y - dz * z;
@@ -177,12 +180,16 @@ void integrateOrientationsSimd(
   Array ny = dw * y - dx * z + dy * w + dz * x;
   Array nz = dw * z + dx * y - dy * x + dz * w;
 
+  // A non-normalizable (zero-norm or non-finite) quaternion maps to identity,
+  // matching the scalar kernel and the per-entity normalizeOrIdentity, so a
+  // degenerate input cannot propagate and the SIMD path stays consistent with
+  // the scalar path.
   const Array norm = (nw * nw + nx * nx + ny * ny + nz * nz).sqrt();
-  const Array inverse = (norm > 0.0).select(1.0 / norm, 1.0);
-  nw *= inverse;
-  nx *= inverse;
-  ny *= inverse;
-  nz *= inverse;
+  const auto normalizable = (norm > 0.0) && norm.isFinite();
+  nw = normalizable.select(nw / norm, 1.0);
+  nx = normalizable.select(nx / norm, 0.0);
+  ny = normalizable.select(ny / norm, 0.0);
+  nz = normalizable.select(nz / norm, 0.0);
 
   for (Eigen::Index b = 0; b < n; ++b) {
     orientations[4 * b + 0] = nw[b];

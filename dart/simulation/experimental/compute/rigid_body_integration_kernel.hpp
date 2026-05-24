@@ -117,6 +117,7 @@ void integrateOrientationsSemiImplicit(
     std::size_t bodyCount)
 {
   using std::cos;
+  using std::isfinite;
   using std::sin;
   using std::sqrt;
   const Scalar half = static_cast<Scalar>(0.5);
@@ -153,12 +154,20 @@ void integrateOrientationsSemiImplicit(
     }
 
     const Scalar norm = sqrt(nw * nw + nx * nx + ny * ny + nz * nz);
-    if (norm > static_cast<Scalar>(0)) {
+    if (norm > static_cast<Scalar>(0) && isfinite(norm)) {
       const Scalar inverse = static_cast<Scalar>(1) / norm;
       nw *= inverse;
       nx *= inverse;
       ny *= inverse;
       nz *= inverse;
+    } else {
+      // A non-normalizable (zero-norm or non-finite) quaternion maps to
+      // identity, matching the per-entity normalizeOrIdentity so a degenerate
+      // input can never propagate an invalid rotation.
+      nw = static_cast<Scalar>(1);
+      nx = static_cast<Scalar>(0);
+      ny = static_cast<Scalar>(0);
+      nz = static_cast<Scalar>(0);
     }
 
     orientations[4 * b + 0] = nw;
