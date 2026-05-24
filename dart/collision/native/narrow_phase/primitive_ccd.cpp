@@ -231,12 +231,18 @@ bool accdAdvance(
 
     // The distance shrinks no faster than the additive velocity bound lp, so
     // the earliest the gap can reach contact is t + clearance / lp. If that is
-    // at or beyond the end of the step, the primitives provably do not reach
-    // contact within [0, 1] -- no hit. (This also bounds the loop: each
-    // iteration adds at least stepFactor * convergeAbs / lp to t, so t reaches
-    // this guard or the convergence threshold in finite steps for any
-    // well-posed input.)
+    // at or beyond the end of the step, the only contact possible in the
+    // inclusive interval [0, 1] is exactly at the final endpoint, so check
+    // t = 1 directly before giving up (an end-of-step contact is still a hit).
+    // (This also bounds the loop: each iteration adds at least
+    // stepFactor * convergeAbs / lp to t, so t reaches this guard or the
+    // convergence threshold in finite steps for any well-posed input.)
     if (t + clearance / lp >= 1.0) {
+      if (distAt(1.0) - minSeparation <= convergeAbs) {
+        result.hit = true;
+        result.timeOfImpact = 1.0;
+        return true;
+      }
       return false;
     }
 
@@ -542,7 +548,7 @@ bool edgeEdgeCcdExact(
   const double edgeScale = std::max({x0.norm(), y0.norm(), 1.0});
   const double distTol = slack * edgeScale + 1e-9;
 
-  for (const double t : cubicRootsInUnit(coef)) {
+  const auto contactAt = [&](double t) {
     const Eigen::Vector3d a = aStart + t * da;
     const Eigen::Vector3d b = bStart + t * db;
     const Eigen::Vector3d c = cStart + t * dc;
@@ -550,8 +556,60 @@ bool edgeEdgeCcdExact(
     double s = 0.0;
     double u = 0.0;
     const double dist = distanceSegmentSegment(a, b, c, d, s, u);
-    if (dist <= distTol && s >= -slack && s <= 1.0 + slack && u >= -slack
-        && u <= 1.0 + slack) {
+    return dist <= distTol && s >= -slack && s <= 1.0 + slack && u >= -slack
+           && u <= 1.0 + slack;
+  };
+
+  std::vector<double> candidates = cubicRootsInUnit(coef);
+
+  // Degenerate case: when the coplanarity cubic is identically zero the four
+  // points stay coplanar for the whole step, so it yields no interior roots
+  // even though the segments can still cross mid-step. Bracket the
+  // segment-segment distance over [0, 1] and add interior crossing times so
+  // they get checked.
+  const double coefMag = std::max(
+      {std::abs(coef[0]),
+       std::abs(coef[1]),
+       std::abs(coef[2]),
+       std::abs(coef[3])});
+  if (coefMag <= 1e-10 * edgeScale * edgeScale * edgeScale) {
+    const auto segGap = [&](double t) {
+      double s = 0.0;
+      double u = 0.0;
+      return distanceSegmentSegment(
+                 aStart + t * da,
+                 bStart + t * db,
+                 cStart + t * dc,
+                 dStart + t * dd,
+                 s,
+                 u)
+             - distTol;
+    };
+    constexpr int kSamples = 256;
+    double prevGap = segGap(0.0);
+    for (int i = 1; i <= kSamples; ++i) {
+      double hi = static_cast<double>(i) / static_cast<double>(kSamples);
+      const double curGap = segGap(hi);
+      if (prevGap > 0.0 && curGap <= 0.0) {
+        // Entering contact between (i-1)/N and i/N; bisect for the entry time.
+        double lo = static_cast<double>(i - 1) / static_cast<double>(kSamples);
+        for (int b = 0; b < 40; ++b) {
+          const double mid = 0.5 * (lo + hi);
+          if (segGap(mid) > 0.0) {
+            lo = mid;
+          } else {
+            hi = mid;
+          }
+        }
+        candidates.push_back(hi);
+      }
+      prevGap = curGap;
+    }
+    std::sort(candidates.begin(), candidates.end());
+  }
+
+  for (const double t : candidates) {
+    if (contactAt(t)) {
       result.hit = true;
       result.timeOfImpact = std::clamp(t, 0.0, 1.0);
       return true;

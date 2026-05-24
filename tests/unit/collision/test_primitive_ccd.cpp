@@ -218,6 +218,30 @@ TEST(PointTriangleCcd, IterationCapDoesNotFalsePositive)
   EXPECT_FALSE(result.isHit());
 }
 
+TEST(PointTriangleCcd, ContactExactlyAtEndOfStep)
+{
+  // The point reaches the triangle plane exactly at t = 1; the inclusive
+  // interval [0, 1] means this is a hit, not a miss.
+  CcdOption option;
+  CcdPrimitiveResult result;
+
+  const bool hit = pointTriangleCcd(
+      Eigen::Vector3d(0, 0, 1),
+      Eigen::Vector3d(0, 0, 0),
+      kA,
+      kA,
+      kB,
+      kB,
+      kC,
+      kC,
+      option,
+      result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_TRUE(result.isHit());
+  EXPECT_NEAR(result.timeOfImpact, 1.0, 1e-6);
+}
+
 //==============================================================================
 // Edge-edge ACCD
 //==============================================================================
@@ -375,6 +399,34 @@ TEST(EdgeEdgeCcdExact, CrossingRootAtHalf)
 
   EXPECT_TRUE(hit);
   EXPECT_NEAR(result.timeOfImpact, 0.5, 1e-6);
+}
+
+TEST(EdgeEdgeCcdExact, CoplanarInteriorCrossing)
+{
+  // Both edges stay in the z = 0 plane, so the coplanarity cubic is identically
+  // zero and yields no interior roots. A static horizontal edge (x in [-1, 1])
+  // is swept across by a vertical edge whose x glides -2 -> 2; the two overlap
+  // once the vertical edge enters the horizontal edge's span at t = 0.25 -- an
+  // interior first contact the exact path must still detect (not just t = 0/1).
+  CcdOption option;
+  CcdPrimitiveResult result;
+
+  const bool hit = edgeEdgeCcdExact(
+      Eigen::Vector3d(-1, 0, 0), // edge 1 (a): static
+      Eigen::Vector3d(-1, 0, 0),
+      Eigen::Vector3d(1, 0, 0), // edge 1 (b): static
+      Eigen::Vector3d(1, 0, 0),
+      Eigen::Vector3d(-2, -1, 0), // edge 2 (c): sweeps -2 -> 2 in x
+      Eigen::Vector3d(2, -1, 0),
+      Eigen::Vector3d(-2, 1, 0), // edge 2 (d): sweeps -2 -> 2 in x
+      Eigen::Vector3d(2, 1, 0),
+      option,
+      result);
+
+  EXPECT_TRUE(hit);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 1.0);
+  EXPECT_NEAR(result.timeOfImpact, 0.25, 0.05);
 }
 
 //==============================================================================
