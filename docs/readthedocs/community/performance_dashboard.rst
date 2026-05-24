@@ -29,9 +29,9 @@ workflow runs DART's benchmark suites and hands the Google Benchmark JSON to
 the history on the ``gh-pages`` branch and renders an interactive Chart.js page.
 There is no external account, API token, or third-party service to maintain.
 
-The dashboard URL returns ``404`` until the first ``main`` push, scheduled, or
-manually dispatched run of the **Performance Dashboard** workflow has published
-to ``gh-pages``.
+The dashboard URL returns ``404`` until a ``main`` push, scheduled, or manually
+dispatched run of the **Performance Dashboard** workflow has published to
+``gh-pages`` and GitHub Pages has finished building the branch.
 
 How it works
 ------------
