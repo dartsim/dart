@@ -35,6 +35,7 @@
 #include <dart/gui/detail/imgui_overlay.hpp>
 #include <dart/gui/detail/input.hpp>
 #include <dart/gui/detail/panel.hpp>
+#include <dart/gui/detail/perf_hud.hpp>
 #include <dart/gui/detail/scenes.hpp>
 #include <dart/gui/detail/selection.hpp>
 #include <dart/gui/detail/ui_frame.hpp>
@@ -309,7 +310,10 @@ void updateFrameUi(
     std::vector<dart::gui::Panel>& panels,
     dart::gui::ViewerLifecycleState& lifecycle,
     double guiScale,
-    dart::gui::ProfileAccumulator& profile)
+    dart::gui::ProfileAccumulator& profile,
+    bool showPerfHud,
+    PerfHudState& perfHud,
+    const char* backendName)
 {
   DART_PROFILE_SCOPED_N("updateFrameUi");
   auto phaseStart = dart::gui::ProfileAccumulator::Clock::now();
@@ -389,6 +393,9 @@ void updateFrameUi(
   if (dartScene.debugLabels) {
     renderDebugLabels(
         dartScene.debugLabels(), cameraController.camera, viewport, guiScale);
+  }
+  if (showPerfHud) {
+    drawPerfHud(perfHud, profile, backendName);
   }
   ImGui::Render();
   updateImGuiOverlay(

@@ -189,9 +189,29 @@ its own line so status updates remain git-history friendly.
 - Gate: DART 8 cleanup decisions cite migration notes, changelog entries,
   package/export status, and gz-physics compatibility where relevant.
 
-### PLAN-090: dartsim GUI Simulator
+### PLAN-090: Filament Renderer Performance
 
-- Owner doc: [`090-dartsim-gui-simulator.md`](090-dartsim-gui-simulator.md);
+- Owner doc:
+  [`../onboarding/gui-rendering.md#performance-profiling-and-backend-selection`](../onboarding/gui-rendering.md#performance-profiling-and-backend-selection)
+- Status: Complete
+- Horizon: Later
+- Dimension: Scalable compute
+- Next step: Use the renderer performance/profiling/backend guidance in
+  `../onboarding/gui-rendering.md` and the fidelity-profile design in
+  [`../design/filament_fidelity_profile.md`](../design/filament_fidelity_profile.md)
+  when extending the renderer; the latter is the seam to implement for
+  offline/high-fidelity sensor rendering (egocentric views, lens distortion,
+  depth/segmentation outputs).
+- Gate: Per-phase profiling plus a toggleable in-app HUD (`--perf-hud`) expose
+  CPU+GPU frame time; the Filament backend is runtime-selectable (`--backend` /
+  `DART_FILAMENT_BACKEND`) with graceful fallback and no public backend-type
+  leak; the per-shape geometry cache reduced scene extraction without changing
+  output (`UNIT_gui_FilamentSceneExtraction`, headless scene smoke, and
+  `pixi run lint` green).
+
+### PLAN-100: dartsim GUI Simulator
+
+- Owner doc: [`100-dartsim-gui-simulator.md`](100-dartsim-gui-simulator.md);
   durable architecture/as-built in
   [`../design/dartsim_gui_simulator.md`](../design/dartsim_gui_simulator.md),
   developer overview in

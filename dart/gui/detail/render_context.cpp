@@ -39,16 +39,144 @@
 #include <filament/View.h>
 #include <utils/EntityManager.h>
 
+#include <algorithm>
+#include <array>
+#include <iostream>
+#include <optional>
+#include <string>
+
+#include <cctype>
 #include <cstdint>
+#include <cstdlib>
 
 namespace dart::gui::detail {
+
+namespace {
+
+using Backend = ::filament::Engine::Backend;
+
+std::string toLowerAscii(std::string value)
+{
+  std::transform(
+      value.begin(), value.end(), value.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+      });
+  return value;
+}
+
+const char* backendName(Backend backend)
+{
+  switch (backend) {
+    case Backend::DEFAULT:
+      return "default";
+    case Backend::OPENGL:
+      return "opengl";
+    case Backend::VULKAN:
+      return "vulkan";
+    case Backend::METAL:
+      return "metal";
+    case Backend::WEBGPU:
+      return "webgpu";
+    case Backend::NOOP:
+      return "noop";
+  }
+  return "unknown";
+}
+
+std::optional<Backend> parseBackend(const std::string& raw)
+{
+  const std::string value = toLowerAscii(raw);
+  if (value.empty() || value == "default" || value == "auto") {
+    // "default"/"auto" map to OpenGL (the build's safe default), not Filament's
+    // platform auto-pick, which could choose a backend with no embedded
+    // materials (e.g. Metal on macOS — materials are compiled GL/Vulkan only).
+    return Backend::OPENGL;
+  }
+  if (value == "opengl" || value == "gl" || value == "opengles") {
+    return Backend::OPENGL;
+  }
+  if (value == "vulkan" || value == "vk") {
+    return Backend::VULKAN;
+  }
+  if (value == "noop" || value == "none") {
+    return Backend::NOOP;
+  }
+  // metal/webgpu are intentionally not accepted: embedded materials are only
+  // compiled for OpenGL and Vulkan (see backend_sources.cmake), so selecting a
+  // backend without matching material variants would fail at material load
+  // rather than fall back. Unknown tokens fall back to OpenGL in the caller.
+  return std::nullopt;
+}
+
+// Resolve the requested backend from (highest precedence first) the
+// DART_FILAMENT_BACKEND environment variable, then RunOptions::backend, then a
+// safe default that preserves DART's historical behavior (OpenGL).
+Backend resolveRequestedBackend(const dart::gui::RunOptions& options)
+{
+  std::string source;
+  if (const char* env = std::getenv("DART_FILAMENT_BACKEND");
+      env != nullptr && env[0] != '\0') {
+    source = env;
+  } else if (!options.renderBackend.empty()) {
+    source = options.renderBackend;
+  } else {
+    // Historical default: OpenGL, the only backend DART previously created.
+    return Backend::OPENGL;
+  }
+
+  if (const std::optional<Backend> parsed = parseBackend(source); parsed) {
+    return *parsed;
+  }
+  std::cerr << "[dart::gui] Unknown render backend '" << source
+            << "' (DART_FILAMENT_BACKEND / --render-backend); falling back to "
+               "OpenGL.\n";
+  return Backend::OPENGL;
+}
+
+// Create the Filament engine, attempting the requested backend and then a small
+// ordered fallback list so a request for an unavailable backend degrades to a
+// working one instead of leaving the engine null. On success, *chosenName is
+// set to the static name of the backend that was actually created.
+::filament::Engine* createEngineWithFallback(
+    Backend requested, const char** chosenName)
+{
+  // Fall back only to backends with embedded materials (OpenGL, Vulkan), never
+  // to Filament's platform default which could select a material-less backend.
+  std::array<Backend, 3> candidates{
+      requested, Backend::OPENGL, Backend::VULKAN};
+  Backend previous = requested;
+  for (std::size_t i = 0; i < candidates.size(); ++i) {
+    const Backend backend = candidates[i];
+    if (i > 0 && backend == previous) {
+      continue;
+    }
+    previous = backend;
+    if (::filament::Engine* engine
+        = ::filament::Engine::Builder().backend(backend).build()) {
+      if (backend != requested) {
+        std::cerr << "[dart::gui] Filament backend '" << backendName(requested)
+                  << "' unavailable; using '" << backendName(backend) << "'.\n";
+      } else {
+        std::cout << "[dart::gui] Filament render backend: "
+                  << backendName(backend) << "\n";
+      }
+      if (chosenName != nullptr) {
+        *chosenName = backendName(backend);
+      }
+      return engine;
+    }
+  }
+  return nullptr;
+}
+
+} // namespace
 
 FilamentRenderContext createFilamentRenderContext(
     const dart::gui::RunOptions& options, void* nativeWindow)
 {
   FilamentRenderContext context;
-  context.engine
-      = ::filament::Engine::create(::filament::Engine::Backend::OPENGL);
+  context.engine = createEngineWithFallback(
+      resolveRequestedBackend(options), &context.backendName);
   context.renderer = context.engine->createRenderer();
   if (options.headless) {
     ::filament::Renderer::DisplayInfo displayInfo;
@@ -92,6 +220,21 @@ void renderFilamentViews(
 void endFilamentFrame(FilamentRenderContext& context)
 {
   context.renderer->endFrame();
+}
+
+double latestGpuFrameMs(const FilamentRenderContext& context)
+{
+  if (context.renderer == nullptr) {
+    return 0.0;
+  }
+  const auto history = context.renderer->getFrameInfoHistory(8);
+  for (std::size_t i = history.size(); i-- > 0;) {
+    const auto duration = history[i].denoisedGpuFrameDuration;
+    if (duration > 0) {
+      return static_cast<double>(duration) / 1.0e6; // ns -> ms
+    }
+  }
+  return 0.0;
 }
 
 void destroyFilamentRenderContext(FilamentRenderContext& context)

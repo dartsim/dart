@@ -69,7 +69,7 @@ they should not own priority, timeline, or active implementation state.
 | [`035-native-collision-dashboard.md`](035-native-collision-dashboard.md)                   | Durable native-collision feature/performance dashboard          |
 | [`035-native-collision/coverage-matrix.md`](035-native-collision/coverage-matrix.md)       | Durable row-level native-collision coverage matrix sidecar      |
 | [`035-native-collision/benchmark-manifest.md`](035-native-collision/benchmark-manifest.md) | Generated native-collision benchmark evidence manifest          |
-| [`090-dartsim-gui-simulator.md`](090-dartsim-gui-simulator.md)                             | PLAN-090 dartsim GUI simulator scope, phases, and acceptance    |
+| [`100-dartsim-gui-simulator.md`](100-dartsim-gui-simulator.md)                             | PLAN-100 dartsim GUI simulator scope, phases, and acceptance    |
 | Numbered initiative files, such as `010-*.md`                                              | Active plan scope, evidence, open gaps, and acceptance criteria |
 | [`AGENTS.md`](AGENTS.md)                                                                   | Local rules for agents editing plan docs                        |
 | [`../ai/north-star.md`](../ai/north-star.md)                                               | Mission, current state, missing capabilities, and readiness bar |

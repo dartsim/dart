@@ -27,6 +27,23 @@
   - Restored historical GUI example executable names as `dart::gui` launchers
     backed by `dartsim`, and added `--out <dir>` PPM image-sequence capture
     alongside the existing `--screenshot <path>` final-frame capture.
+  - Added runtime rendering-backend (graphics API) selection through
+    `dart::gui::RunOptions::renderBackend`, the `--render-backend` flag, and the
+    `DART_FILAMENT_BACKEND` environment variable (`default`/`opengl`/`vulkan`
+    both GPU, `noop` for CPU-only/no-render) with graceful fallback and a startup
+    log line; embedded materials are now compiled for both OpenGL and Vulkan so
+    the backend is selectable without a separate build. No backend types are
+    exposed through public headers.
+  - Added a live in-app performance HUD (`--perf-hud`, also toggleable at runtime
+    with `F2`) that overlays smoothed CPU per-phase timings, GPU frame time (from
+    the Filament frame-info history), FPS, a real-time-factor (sim-vs-wall)
+    readout, fixed-scale CPU/GPU history plots against the 60 FPS budget, the
+    active backend, and frame counters, building on the existing GUI
+    `ProfileAccumulator` without a separate timing system.
+  - Sped up per-frame scene extraction with a `dart::gui::RenderableExtractor`
+    that caches each shape's geometry by shape version, so `describeShape` is not
+    rebuilt every frame for static geometry; soft meshes, point clouds, and voxel
+    grids are still rebuilt every frame so deforming/live geometry stays correct.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a

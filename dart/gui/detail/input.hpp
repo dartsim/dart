@@ -52,6 +52,7 @@ struct ApplicationInputState
 {
   bool wasSpacePressed = false;
   bool wasStepPressed = false;
+  bool wasPerfHudKeyPressed = false;
   std::vector<bool> customActionWasPressed;
 };
 
@@ -67,7 +68,8 @@ void pollApplicationInput(
     dart::gui::ViewerLifecycleState& lifecycle,
     dart::gui::OrbitCameraController& cameraController,
     const dart::gui::OrbitCamera& homeCamera,
-    ApplicationInputState& state);
+    ApplicationInputState& state,
+    bool& showPerfHud);
 
 void updateImGuiMouseInput(
     GLFWwindow* window,

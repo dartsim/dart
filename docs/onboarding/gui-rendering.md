@@ -64,6 +64,41 @@ implementation.
 
 OpenSceneGraph and Raylib are no longer buildable renderer options.
 
+## Performance, Profiling, and Backend Selection
+
+The renderer aims for real-time interaction by default while leaving room for
+higher-fidelity offline rendering later. Three pieces support that:
+
+- **Rendering backend selection.** The Filament graphics API is chosen at
+  runtime as a renderer-neutral DART concept — `dart::gui::RunOptions::renderBackend`,
+  the `--render-backend` flag, or the `DART_FILAMENT_BACKEND` environment
+  variable (`default`/`opengl`/`vulkan` both GPU, `noop` for CPU-only/no-render;
+  env takes precedence). Selection, fallback, and the startup log live in
+  `dart/gui/detail/render_context.cpp`; no Filament backend types appear in
+  public headers. Embedded materials are compiled for both OpenGL and Vulkan
+  (`matc -a opengl -a vulkan` in `backend_sources.cmake`) so the choice needs no
+  separate build. `noop` renders nothing and is useful for isolating CPU cost.
+- **Profiling.** Use the built-in unified profiler (`dart/common/profile.hpp`,
+  text + optional Tracy backends, enabled via `DART_BUILD_PROFILE` /
+  `DART_PROFILE_TRACY`); the GUI loop already emits frame and per-phase zones,
+  and `--profile` prints a per-phase summary at exit (`dart/gui/profile.hpp`).
+  `--perf-hud` (toggleable at runtime with `F2`) adds a live in-app ImGui overlay
+  with smoothed CPU per-phase timings, GPU frame time from Filament frame-info,
+  FPS, a real-time-factor (sim-vs-wall) readout that shows whether playback is
+  keeping up, and fixed-scale history plots against the 60 FPS budget — see
+  `dart/gui/detail/perf_hud.cpp`. Interpreting the readout: a very high GPU
+  frame time (far over the 60 FPS budget) while CPU time is low usually means
+  the GPU driver is not active and OpenGL/Vulkan fell back to Mesa software
+  rendering (llvmpipe/lavapipe), not that the GPU is slow. Confirm the active
+  device (e.g. `nvidia-smi`, `glxinfo`) before optimizing the renderer.
+- **Scene-sync cost.** Per-frame scene extraction is the dominant CPU cost, not
+  GPU rendering. `dart::gui::RenderableExtractor` caches each shape's geometry by
+  shape version so `describeShape` is not rebuilt every frame for static
+  geometry; kinds whose geometry changes without a version bump (soft mesh, point
+  cloud, voxel grid) are rebuilt every frame. This reuses the same version-based
+  caching assumption the Filament resource sync relies on — see
+  `dart/gui/renderable.cpp`.
+
 ## Validation
 
 For renderer changes, use the focused scene extraction tests plus at least one

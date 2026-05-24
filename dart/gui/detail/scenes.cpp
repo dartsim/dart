@@ -607,6 +607,15 @@ AppOptions parseOptions(
       }
       options.run.guiScale
           = std::clamp(static_cast<double>(guiScale), 0.5, 4.0);
+    } else if (
+        (arg == "--render-backend" || arg == "--backend") && i + 1 < argc) {
+      options.run.renderBackend = argv[++i];
+    } else if (arg == "--perf-hud") {
+      options.showPerfHud = true;
+      // The HUD draws inside the ImGui overlay, so keep the overlay on even in
+      // headless mode (where UI is otherwise auto-disabled).
+      options.showUi = true;
+      options.showUiExplicit = true;
     } else if (arg == "--profile") {
       options.profile = true;
     } else if (arg == "--scene" && i + 1 < argc) {
@@ -652,6 +661,8 @@ AppOptions parseOptions(
              " [--orbit-light-period SECONDS]"
              " [--gui-scale N]"
              " [--profile]"
+             " [--perf-hud]"
+             " [--render-backend default|opengl|vulkan|noop]"
              " [--scene "
              "mvp|hello-world|boxes|hardcoded-design|rigid-chain|rigid-loop|"
              "mixed-chain|coupler-constraint|add-delete-skels|vehicle|hybrid-"

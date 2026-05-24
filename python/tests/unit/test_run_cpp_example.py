@@ -266,8 +266,11 @@ def test_filament_smoke_cmake_registers_analysis_modes(run_cpp_example):
     )
     scene_call = _cmake_headless_smoke_test_call(cmake_text, "${_test_name}")
 
+    # The no-scene launch is the experimental-World editor, whose minimal default
+    # scene uses the non-blank (basic) check; the legacy --scene fixtures also
+    # use the basic check.
     assert "ANALYZE" in _cmake_tokens(default_call)
-    assert _cmake_option_value(default_call, "ANALYSIS_MODE") == "contrast"
+    assert _cmake_option_value(default_call, "ANALYSIS_MODE") == "basic"
     assert "ANALYZE" in _cmake_tokens(scene_call)
     assert _cmake_option_value(scene_call, "ANALYSIS_MODE") == "basic"
 
