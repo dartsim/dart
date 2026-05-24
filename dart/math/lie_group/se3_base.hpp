@@ -394,42 +394,42 @@ typename SE3Base<Derived>::Scalar& SE3Base<Derived>::quat_w()
 template <typename Derived>
 typename SE3Base<Derived>::Scalar SE3Base<Derived>::x() const
 {
-  return params().x();
+  return translation().x();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar SE3Base<Derived>::y() const
 {
-  return params().y();
+  return translation().y();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar SE3Base<Derived>::z() const
 {
-  return params().z();
+  return translation().z();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar& SE3Base<Derived>::x()
 {
-  return params().x();
+  return translation().x();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar& SE3Base<Derived>::y()
 {
-  return params().y();
+  return translation().y();
 }
 
 //==============================================================================
 template <typename Derived>
 typename SE3Base<Derived>::Scalar& SE3Base<Derived>::z()
 {
-  return params().z();
+  return translation().z();
 }
 
 } // namespace dart::math

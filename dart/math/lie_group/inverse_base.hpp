@@ -62,12 +62,9 @@ public:
   /// Returns the original Lie group, which is the inverse of the inverse.
   [[nodiscard]] const LieGroup& inverse() const;
 
-  [[nodiscard]] const Params& params() const
-  {
-    return eval().params();
-  }
-
-  [[nodiscard]] Params& params()
+  // Returned by value: an inverse is an unmaterialized expression, so eval()
+  // yields a temporary LieGroup. Handing out a reference into it would dangle.
+  [[nodiscard]] Params params() const
   {
     return eval().params();
   }

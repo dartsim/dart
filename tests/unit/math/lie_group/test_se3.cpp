@@ -136,6 +136,41 @@ TYPED_TEST(SE3Test, Identity)
 }
 
 //==============================================================================
+TYPED_TEST(SE3Test, PositionAccessorsReturnTranslation)
+{
+  using S = typename TestFixture::Scalar;
+
+  SE3<S> x = SE3<S>::Random();
+  const Vector3<S> t = x.translation();
+
+  // x()/y()/z() are position accessors, not quaternion coefficients.
+  EXPECT_S_EQ(x.x(), t.x());
+  EXPECT_S_EQ(x.y(), t.y());
+  EXPECT_S_EQ(x.z(), t.z());
+
+  // Writing through them updates the translation, not the quaternion.
+  const S quat_x = x.quat_x();
+  x.x() = S(7);
+  x.y() = S(8);
+  x.z() = S(9);
+  EXPECT_S_EQ(x.translation().x(), S(7));
+  EXPECT_S_EQ(x.translation().y(), S(8));
+  EXPECT_S_EQ(x.translation().z(), S(9));
+  EXPECT_S_EQ(x.quat_x(), quat_x);
+}
+
+//==============================================================================
+TYPED_TEST(SE3Test, InverseParamsMatchEval)
+{
+  using S = typename TestFixture::Scalar;
+
+  const SE3<S> x = SE3<S>::Random();
+  const SE3<S> inv = x.inverse();
+  const auto params = x.inverse().params();
+  EXPECT_TRUE(params.isApprox(inv.params()));
+}
+
+//==============================================================================
 TYPED_TEST(SE3Test, Random)
 {
   using S = typename TestFixture::Scalar;
