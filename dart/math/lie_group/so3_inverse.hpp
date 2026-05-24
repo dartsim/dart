@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2023, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,25 +30,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "math/module.hpp"
+#pragma once
 
-#include "math/constants.hpp"
-#include "math/eigen_geometry.hpp"
-#include "math/geometry.hpp"
-#include "math/lie_groups.hpp"
-#include "math/random.hpp"
-#include "math/trimesh.hpp"
+#include <dart/math/lie_group/inverse_base.hpp>
 
-namespace dart::python_nb {
+namespace Eigen::internal {
 
-void defMathModule(nanobind::module_& m)
+// TODO(JS): Move to a dedicated header file
+template <typename SO3Derived>
+struct traits<::dart::math::SO3Inverse<SO3Derived>>
+  : traits<::dart::math::SO3<typename SO3Derived::Scalar>>
 {
-  defMathConstants(m);
-  defRandom(m);
-  defGeometry(m);
-  defEigenGeometry(m);
-  defLieGroups(m);
-  defTriMesh(m);
-}
+};
 
-} // namespace dart::python_nb
+} // namespace Eigen::internal
+
+namespace dart::math {
+
+/// @brief SO3Inverse is a specialization of LieGroupBase for SO3Inverse
+/// @tparam SO3Derived The derived type of SO3. It can be either SO3 or Map<SO3>
+template <typename SO3Derived>
+class SO3Inverse : public InverseBase<SO3Inverse<SO3Derived>>
+{
+public:
+  using Base = InverseBase<SO3Inverse<SO3Derived>>;
+  using LieGroup = typename Base::LieGroup;
+
+  using Base::eval;
+
+  explicit SO3Inverse(const SO3Derived& so3) : m_so3(so3)
+  {
+    // Do nothing
+  }
+
+  const SO3Derived& original() const
+  {
+    return m_so3;
+  }
+
+protected:
+  const SO3Derived& m_so3;
+};
+
+} // namespace dart::math
+
+//==============================================================================
+// Implementation
+//==============================================================================
+
+namespace dart::math {
+
+//==============================================================================
+
+} // namespace dart::math
