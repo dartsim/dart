@@ -389,7 +389,7 @@ void destroyConfiguredImGuiOverlay(
 
 namespace dart::gui {
 
-bool isImGuiDockingAvailable()
+bool isDockingAvailable()
 {
 #ifdef IMGUI_HAS_DOCK
   return true;

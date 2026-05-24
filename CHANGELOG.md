@@ -47,10 +47,10 @@
     non-docking ImGui builds are unaffected. See
     `docs/design/dartsim_gui_simulator.md` and
     `docs/onboarding/gui-rendering.md`.
-  - Moved the `dartsim` viewer source to the application-level `apps/dartsim`
-    tree, added a public `dart::gui::ApplicationOptions::world` handoff for
-    example-owned worlds, and restored `hello_world` as a real public-API
-    `dart::gui` example source.
+  - Moved the `dartsim` viewer source to a dedicated application tree, added a
+    public `dart::gui::ApplicationOptions::world` handoff for example-owned
+    worlds, and restored `hello_world` as a real public-API `dart::gui` example
+    source.
   - Restored the `hello_world` example's instruction text, camera/run
     defaults, deterministic non-axis-aligned box orientation, profiling
     markers, and README through public `dart::gui`.

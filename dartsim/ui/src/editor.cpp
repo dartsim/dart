@@ -404,13 +404,12 @@ int runEditor(int argc, char* argv[])
     return toDescriptors(app->engine.renderItems());
   };
 
-  if (dart::gui::isImGuiDockingAvailable()) {
-    app->note("ImGui docking: enabled");
+  if (dart::gui::isDockingAvailable()) {
+    app->note("Panel docking: enabled");
   } else {
     app->note(
-        "ImGui docking: UNAVAILABLE - this build links non-docking ImGui. "
-        "Launch with `pixi run dartsim` to rebuild against the docking "
-        "branch.");
+        "Panel docking: UNAVAILABLE - this build lacks docking support. "
+        "Launch with `pixi run dartsim` to rebuild with docking enabled.");
   }
 
   options.panels.push_back(makePanel(

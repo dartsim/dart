@@ -12,7 +12,7 @@
 - Controls: CLI flags for frame count and diagnostic viewport size.
 
 This example is intended for API diagnostics. The maintained GUI application is
-`apps/dartsim`.
+`dartsim`.
 
 ## Build Instructions
 

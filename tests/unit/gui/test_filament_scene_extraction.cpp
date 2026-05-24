@@ -408,7 +408,7 @@ constexpr std::array<std::string_view, 4> kForbiddenPromotedGuiTokens
        "gui-experimental"};
 
 const std::filesystem::path kDartsimApplicationDirectory
-    = std::filesystem::path("apps") / "dartsim";
+    = std::filesystem::path("dartsim") / "app";
 
 struct BackendTokenViolation
 {
@@ -885,7 +885,7 @@ TEST(FilamentSceneExtraction, DiagnosticsExamplePreservesLegacyContractMarkers)
   EXPECT_NE(
       readmeSource.find("renderer-independent GUI descriptors"),
       std::string::npos);
-  EXPECT_NE(readmeSource.find("apps/dartsim"), std::string::npos);
+  EXPECT_NE(readmeSource.find("`dartsim`"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, RerunPlaceholderIsRemoved)
@@ -4623,12 +4623,11 @@ TEST(FilamentSceneExtraction, DartsimApplicationEntryPointStaysMinimal)
 
   EXPECT_EQ(countOccurrences(mainSource, "#include "), 1u);
   EXPECT_NE(
-      mainSource.find("#include <dart/gui/application.hpp>"),
-      std::string::npos);
+      mainSource.find("#include <dartsim_ui/editor.hpp>"), std::string::npos);
   EXPECT_EQ(countOccurrences(mainSource, "int main("), 1u);
   EXPECT_EQ(
       countOccurrences(
-          mainSource, "return dart::gui::runApplication(argc, argv);"),
+          mainSource, "return dartsim::ui::runEditor(argc, argv);"),
       1u);
 }
 
@@ -4650,7 +4649,6 @@ TEST(
 
   const std::vector<std::filesystem::path> expectedFiles
       = {kDartsimApplicationDirectory / "CMakeLists.txt",
-         kDartsimApplicationDirectory / "README.md",
          kDartsimApplicationDirectory / "main.cpp"};
   EXPECT_EQ(files, expectedFiles);
 }

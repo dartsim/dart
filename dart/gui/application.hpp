@@ -164,17 +164,17 @@ struct ApplicationOptions
   /// `material`, and `worldTransform`; dynamics pointers may stay null.
   std::function<std::vector<RenderableDescriptor>()> renderableProvider;
 
-  /// Enables an ImGui dockspace over the main viewport so panels can be
-  /// docked/rearranged. Only takes effect when the linked ImGui build provides
-  /// the docking API (`IMGUI_HAS_DOCK`); otherwise it is silently ignored.
+  /// Enables a docking workspace over the main viewport so panels can be
+  /// docked and rearranged. Only takes effect when the GUI build was compiled
+  /// with docking support (see `isDockingAvailable()`); otherwise it is
+  /// silently ignored.
   bool dockingEnabled = false;
 };
 
-/// Returns true if the linked ImGui build provides the docking API
-/// (`IMGUI_HAS_DOCK`). When false, `ApplicationOptions::dockingEnabled` has no
-/// effect; rebuild against the fetched ImGui docking branch
-/// (`DART_USE_SYSTEM_IMGUI=OFF`) to enable docking.
-DART_GUI_API bool isImGuiDockingAvailable();
+/// Returns true if this GUI build was compiled with docking support. When
+/// false, `ApplicationOptions::dockingEnabled` has no effect; see the build
+/// documentation for enabling a docking-capable GUI build.
+DART_GUI_API bool isDockingAvailable();
 
 DART_GUI_API int runApplication(int argc, char* argv[]);
 
