@@ -68,11 +68,6 @@ public:
     return m_se3;
   }
 
-  SE3Derived& original()
-  {
-    return m_se3;
-  }
-
 protected:
   const SE3Derived& m_se3;
 };

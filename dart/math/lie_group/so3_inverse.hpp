@@ -68,11 +68,6 @@ public:
     return m_so3;
   }
 
-  SO3Derived& original()
-  {
-    return m_so3;
-  }
-
 protected:
   const SO3Derived& m_so3;
 };
