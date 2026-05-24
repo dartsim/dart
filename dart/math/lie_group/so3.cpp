@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2023, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,25 +30,10 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "math/module.hpp"
+#include <dart/math/lie_group/so3.hpp>
 
-#include "math/constants.hpp"
-#include "math/eigen_geometry.hpp"
-#include "math/geometry.hpp"
-#include "math/lie_groups.hpp"
-#include "math/random.hpp"
-#include "math/trimesh.hpp"
+namespace dart::math {
 
-namespace dart::python_nb {
+DART_TEMPLATE_CLASS_SOURCE(MATH, SO3);
 
-void defMathModule(nanobind::module_& m)
-{
-  defMathConstants(m);
-  defRandom(m);
-  defGeometry(m);
-  defEigenGeometry(m);
-  defLieGroups(m);
-  defTriMesh(m);
-}
-
-} // namespace dart::python_nb
+} // namespace dart::math
