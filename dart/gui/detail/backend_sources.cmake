@@ -33,6 +33,7 @@ set(DART_GUI_FILAMENT_BACKEND_SRCS
   "${DART_GUI_FILAMENT_BACKEND_DIR}/input.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/native_window.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/panel.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/perf_hud.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/render_context.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/render_environment.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/renderable_factory.cpp"
@@ -156,7 +157,11 @@ function(
   add_custom_command(
     OUTPUT "${_material_bin}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${generated_dir}"
-    COMMAND Filament::matc -a opengl -p desktop -o "${_material_bin}"
+    # Compile for both OpenGL (GLSL) and Vulkan (SPIR-V) so the Filament backend
+    # is runtime-selectable (DART_FILAMENT_BACKEND / RunOptions::backend) without
+    # a separate build. Each extra API roughly adds its shader variants to the
+    # embedded .filamat blob.
+    COMMAND Filament::matc -a opengl -a vulkan -p desktop -o "${_material_bin}"
             "${material_source}"
     DEPENDS "${material_source}" Filament::matc
     COMMENT "Compiling ${material_label} Filament material"

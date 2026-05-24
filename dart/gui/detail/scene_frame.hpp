@@ -35,6 +35,7 @@
 
 #include <dart/gui/detail/renderable_resources.hpp>
 #include <dart/gui/profile.hpp>
+#include <dart/gui/renderable.hpp>
 
 #include <optional>
 
@@ -107,6 +108,7 @@ private:
   SceneLights& mLights;
   dart::gui::ProfileAccumulator::Clock::time_point mOrbitStartClock;
   dart::gui::ProfileAccumulator& mProfile;
+  dart::gui::RenderableExtractor mExtractor;
 };
 
 } // namespace dart::gui::detail

@@ -66,6 +66,12 @@ struct ProfileAccumulator
   double screenshotSaveMs = 0.0;
   double maxFrameMs = 0.0;
   double maxRenderMs = 0.0;
+  // GPU frame time sampled from the Filament frame-info history (most recent
+  // valid value, in milliseconds). 0 means unavailable (e.g. the NOOP backend
+  // or before timer-query results arrive). Unlike the phase fields above this
+  // is a last-sample value, not an accumulator.
+  double gpuFrameMs = 0.0;
+  double maxGpuFrameMs = 0.0;
 };
 
 DART_GUI_API double elapsedMs(ProfileAccumulator::Clock::time_point start);

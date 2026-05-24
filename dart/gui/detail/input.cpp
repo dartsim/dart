@@ -228,7 +228,8 @@ void pollApplicationInput(
     dart::gui::ViewerLifecycleState& lifecycle,
     OrbitCameraController& cameraController,
     const OrbitCamera& homeCamera,
-    ApplicationInputState& state)
+    ApplicationInputState& state,
+    bool& showPerfHud)
 {
   if (window == nullptr) {
     return;
@@ -244,6 +245,14 @@ void pollApplicationInput(
     togglePaused(lifecycle);
   }
   state.wasSpacePressed = isSpacePressed;
+
+  // F2 toggles the performance HUD at runtime (no need to pass --perf-hud).
+  const bool isPerfHudKeyPressed
+      = glfwGetKey(window, GLFW_KEY_F2) == GLFW_PRESS;
+  if (isPerfHudKeyPressed && !state.wasPerfHudKeyPressed) {
+    showPerfHud = !showPerfHud;
+  }
+  state.wasPerfHudKeyPressed = isPerfHudKeyPressed;
 
   const bool isStepPressed = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
   if (isStepPressed && !state.wasStepPressed) {

@@ -45,6 +45,8 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -121,6 +123,49 @@ std::size_t computeRenderResourceVersion(
 
 } // namespace
 
+// Assembles a descriptor from an already-built geometry. Splitting this out
+// from describeShape() lets RenderableExtractor inject a cached
+// GeometryDescriptor while keeping the rest of the per-frame fields (transform,
+// material, versions) fresh.
+RenderableDescriptor assembleRenderableDescriptor(
+    const dynamics::ShapeFrame& shapeFrame,
+    const dynamics::VisualAspect& visualAspect,
+    const std::string& skeletonName,
+    const std::string& bodyName,
+    const std::string& shapeNodeName,
+    const dynamics::WeakConstSimpleFramePtr& simpleFrame,
+    const dynamics::Shape& shape,
+    GeometryDescriptor geometry)
+{
+  RenderableDescriptor descriptor;
+  descriptor.id = makeRenderableId(shapeFrame);
+  descriptor.shapeFrame = &shapeFrame;
+  descriptor.shapeNode = shapeFrame.asShapeNode();
+  descriptor.shape = &shape;
+  if (descriptor.shapeNode != nullptr) {
+    descriptor.skeleton = descriptor.shapeNode->getSkeleton();
+  }
+  descriptor.simpleFrame = simpleFrame;
+  descriptor.skeletonName = skeletonName;
+  descriptor.bodyName = bodyName;
+  descriptor.shapeFrameName = shapeFrame.getName();
+  descriptor.shapeNodeName = shapeNodeName;
+  descriptor.geometry = std::move(geometry);
+  descriptor.material.rgba = visualAspect.getRGBA();
+  descriptor.material.visible = !visualAspect.isHidden();
+  descriptor.material.castsShadows = visualAspect.getShadowed();
+  descriptor.material.receivesShadows = visualAspect.getShadowed();
+  descriptor.worldTransform = shapeFrame.getWorldTransform();
+  descriptor.shapeFrameVersion = shapeFrame.getVersion();
+  descriptor.shapeNodeVersion = descriptor.shapeNode != nullptr
+                                    ? descriptor.shapeNode->getVersion()
+                                    : 0;
+  descriptor.shapeVersion = shape.getVersion();
+  descriptor.renderResourceVersion = computeRenderResourceVersion(
+      descriptor.geometry, descriptor.material, descriptor.shapeVersion);
+  return descriptor;
+}
+
 std::optional<RenderableDescriptor> makeRenderableDescriptor(
     const dynamics::ShapeFrame& shapeFrame,
     const dynamics::VisualAspect& visualAspect,
@@ -139,33 +184,15 @@ std::optional<RenderableDescriptor> makeRenderableDescriptor(
     return std::nullopt;
   }
 
-  RenderableDescriptor descriptor;
-  descriptor.id = makeRenderableId(shapeFrame);
-  descriptor.shapeFrame = &shapeFrame;
-  descriptor.shapeNode = shapeFrame.asShapeNode();
-  descriptor.shape = shape.get();
-  if (descriptor.shapeNode != nullptr) {
-    descriptor.skeleton = descriptor.shapeNode->getSkeleton();
-  }
-  descriptor.simpleFrame = simpleFrame;
-  descriptor.skeletonName = skeletonName;
-  descriptor.bodyName = bodyName;
-  descriptor.shapeFrameName = shapeFrame.getName();
-  descriptor.shapeNodeName = shapeNodeName;
-  descriptor.geometry = std::move(*geometry);
-  descriptor.material.rgba = visualAspect.getRGBA();
-  descriptor.material.visible = !visualAspect.isHidden();
-  descriptor.material.castsShadows = visualAspect.getShadowed();
-  descriptor.material.receivesShadows = visualAspect.getShadowed();
-  descriptor.worldTransform = shapeFrame.getWorldTransform();
-  descriptor.shapeFrameVersion = shapeFrame.getVersion();
-  descriptor.shapeNodeVersion = descriptor.shapeNode != nullptr
-                                    ? descriptor.shapeNode->getVersion()
-                                    : 0;
-  descriptor.shapeVersion = shape->getVersion();
-  descriptor.renderResourceVersion = computeRenderResourceVersion(
-      descriptor.geometry, descriptor.material, descriptor.shapeVersion);
-  return descriptor;
+  return assembleRenderableDescriptor(
+      shapeFrame,
+      visualAspect,
+      skeletonName,
+      bodyName,
+      shapeNodeName,
+      simpleFrame,
+      *shape,
+      std::move(*geometry));
 }
 
 std::vector<RenderableDescriptor> extractRenderables(
@@ -207,6 +234,136 @@ std::vector<RenderableDescriptor> extractRenderables(
         *simpleFrame, *simpleFrame->getVisualAspect(), {}, {}, {}, simpleFrame);
     if (descriptor) {
       renderables.push_back(std::move(*descriptor));
+    }
+  }
+
+  return renderables;
+}
+
+// Whether a shape kind's geometry only changes when the shape version changes
+// (so it is safe to cache keyed by version). Kinds whose geometry can change
+// in place without a version bump must be rebuilt every frame; these are
+// exactly the kinds computeRenderResourceVersion() vertex-hashes (soft meshes,
+// point clouds) plus voxel grids, whose describeShape() reads live cell data.
+bool isCacheableGeometryKind(ShapeKind kind)
+{
+  switch (kind) {
+    case ShapeKind::SoftMesh:
+    case ShapeKind::PointCloud:
+    case ShapeKind::VoxelGrid:
+      return false;
+    default:
+      return true;
+  }
+}
+
+std::vector<RenderableDescriptor> RenderableExtractor::extract(
+    const simulation::World& world)
+{
+  std::vector<RenderableDescriptor> renderables;
+  std::unordered_set<std::size_t> seenShapeIds;
+
+  const auto processShapeFrame
+      = [&](const dynamics::ShapeFrame& shapeFrame,
+            const dynamics::VisualAspect& visualAspect,
+            const std::string& skeletonName,
+            const std::string& bodyName,
+            const std::string& shapeNodeName,
+            const dynamics::WeakConstSimpleFramePtr& simpleFrame) {
+          const auto shape = shapeFrame.getShape();
+          if (!shape) {
+            return;
+          }
+          // Key on the stable shape id, never the pointer: a deleted shape's
+          // heap address can be reused by a new shape, but ids are never
+          // reused, so a reused address cannot alias a stale cache entry.
+          const std::size_t shapeId = shape->getID();
+          const std::size_t version = shape->getVersion();
+          seenShapeIds.insert(shapeId);
+
+          auto it = mGeometryCache.find(shapeId);
+          if (it != mGeometryCache.end() && it->second.version == version) {
+            // Cache hit (only cacheable, static-geometry kinds are ever
+            // stored). The per-shape cost is a geometry copy rather than
+            // rebuilding the mesh via describeShape.
+            renderables.push_back(assembleRenderableDescriptor(
+                shapeFrame,
+                visualAspect,
+                skeletonName,
+                bodyName,
+                shapeNodeName,
+                simpleFrame,
+                *shape,
+                it->second.geometry));
+            return;
+          }
+
+          auto geometry = describeShape(*shape);
+          if (!geometry) {
+            // Unsupported shape: drop any stale cache entry and skip.
+            if (it != mGeometryCache.end()) {
+              mGeometryCache.erase(it);
+            }
+            return;
+          }
+          GeometryDescriptor builtGeometry = std::move(*geometry);
+          if (isCacheableGeometryKind(builtGeometry.kind)) {
+            mGeometryCache.insert_or_assign(
+                shapeId, CachedGeometry{version, builtGeometry});
+          } else if (it != mGeometryCache.end()) {
+            // Dynamic geometry must be rebuilt every frame; never keep an
+            // entry.
+            mGeometryCache.erase(it);
+          }
+          renderables.push_back(assembleRenderableDescriptor(
+              shapeFrame,
+              visualAspect,
+              skeletonName,
+              bodyName,
+              shapeNodeName,
+              simpleFrame,
+              *shape,
+              std::move(builtGeometry)));
+        };
+
+  for (std::size_t skeletonIndex = 0; skeletonIndex < world.getNumSkeletons();
+       ++skeletonIndex) {
+    const auto skeleton = world.getSkeleton(skeletonIndex);
+    if (!skeleton) {
+      continue;
+    }
+
+    skeleton->eachBodyNode([&](const dynamics::BodyNode* bodyNode) {
+      bodyNode->eachShapeNodeWith<dynamics::VisualAspect>(
+          [&](const dynamics::ShapeNode* shapeNode) {
+            processShapeFrame(
+                *shapeNode,
+                *shapeNode->getVisualAspect(),
+                skeleton->getName(),
+                bodyNode->getName(),
+                shapeNode->getName(),
+                {});
+          });
+    });
+  }
+
+  for (std::size_t i = 0; i < world.getNumSimpleFrames(); ++i) {
+    const auto simpleFrame = world.getSimpleFrame(i);
+    if (simpleFrame == nullptr || !simpleFrame->hasVisualAspect()) {
+      continue;
+    }
+
+    processShapeFrame(
+        *simpleFrame, *simpleFrame->getVisualAspect(), {}, {}, {}, simpleFrame);
+  }
+
+  // Drop cache entries for shapes that are no longer present so the cache does
+  // not grow unbounded.
+  for (auto it = mGeometryCache.begin(); it != mGeometryCache.end();) {
+    if (seenShapeIds.find(it->first) == seenShapeIds.end()) {
+      it = mGeometryCache.erase(it);
+    } else {
+      ++it;
     }
   }
 
