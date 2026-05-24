@@ -180,6 +180,7 @@ set(dartpy_sources
   math/geometry.cpp
   math/random.cpp
   math/eigen_geometry.cpp
+  math/lie_groups.cpp
   math/tri_mesh.cpp
   dynamics/module.cpp
   dynamics/entity.cpp
