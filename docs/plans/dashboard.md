@@ -189,9 +189,9 @@ its own line so status updates remain git-history friendly.
 - Gate: DART 8 cleanup decisions cite migration notes, changelog entries,
   package/export status, and gz-physics compatibility where relevant.
 
-### PLAN-080: dartsim GUI Simulator
+### PLAN-090: dartsim GUI Simulator
 
-- Owner doc: [`080-dartsim-gui-simulator.md`](080-dartsim-gui-simulator.md);
+- Owner doc: [`090-dartsim-gui-simulator.md`](090-dartsim-gui-simulator.md);
   durable architecture/as-built in
   [`../design/dartsim_gui_simulator.md`](../design/dartsim_gui_simulator.md),
   developer overview in

@@ -1,6 +1,6 @@
-# PLAN-080: dartsim GUI Simulator
+# PLAN-090: dartsim GUI Simulator
 
-- Operating state: `PLAN-080` in [`dashboard.md`](dashboard.md)
+- Operating state: `PLAN-090` in [`dashboard.md`](dashboard.md)
 - Outcome: the `dartsim/` application is a standalone, general-purpose robotics
   multi-physics GUI simulator on the experimental World API, with a headless
   editor engine (object/selection/command/name managers, undo/redo, simulation
@@ -98,7 +98,7 @@ The initiative is complete (and durable output has moved to owner docs) when:
 
 ## Gate
 
-See `dashboard.md` PLAN-080 for the operating gate. Objective-specific proof:
+See `dashboard.md` PLAN-090 for the operating gate. Objective-specific proof:
 headless engine tests cover command/undo, object, selection, name, and
 project-round-trip behavior; the app's editor loop (design → run → record →
 replay) works on the experimental World; the engine has zero GUI/renderer
