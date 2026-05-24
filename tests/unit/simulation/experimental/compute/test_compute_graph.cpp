@@ -36,16 +36,21 @@
 #include <dart/simulation/experimental/compute/compute_node.hpp>
 #include <dart/simulation/experimental/compute/compute_stage_metadata.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
+#include <dart/simulation/experimental/compute/rigid_body_integration_kernel.hpp>
+#include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 
 #include <gtest/gtest.h>
 
 #include <atomic>
 #include <chrono>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
+
+#include <cmath>
 
 namespace compute = dart::simulation::experimental::compute;
 namespace sx = dart::simulation::experimental;
@@ -468,4 +473,680 @@ TEST(ExperimentalParallelExecutor, ProfileReportsObservedParallelism)
   EXPECT_EQ(rightProfile->level, 1u);
   EXPECT_LT(leftProfile->workerIndex, profile.workerCount);
   EXPECT_LT(rightProfile->workerIndex, profile.workerCount);
+}
+
+//==============================================================================
+TEST(ExperimentalParallelExecutor, InlineThresholdRunsSubThresholdGraphsInline)
+{
+  // The cost gate runs graphs at or below the inline threshold sequentially,
+  // skipping Taskflow; the result must match the parallel path exactly.
+  auto build = [](compute::ComputeGraph& graph, std::vector<int>& out) {
+    out.assign(5, -1);
+    for (int i = 0; i < 5; ++i) {
+      graph.addNode("n" + std::to_string(i), [&out, i]() { out[i] = i * i; });
+    }
+  };
+
+  compute::ParallelExecutor executor(4);
+  EXPECT_EQ(executor.getInlineThreshold(), std::size_t{1});
+
+  // Inline path: threshold at or above the node count.
+  compute::ComputeGraph inlineGraph;
+  std::vector<int> inlineOut;
+  build(inlineGraph, inlineOut);
+  executor.setInlineThreshold(5);
+  EXPECT_EQ(executor.getInlineThreshold(), std::size_t{5});
+  executor.execute(inlineGraph);
+
+  // Parallel path: threshold below the node count.
+  compute::ComputeGraph parallelGraph;
+  std::vector<int> parallelOut;
+  build(parallelGraph, parallelOut);
+  executor.setInlineThreshold(0);
+  executor.execute(parallelGraph);
+
+  const std::vector<int> expected = {0, 1, 4, 9, 16};
+  EXPECT_EQ(inlineOut, expected);
+  EXPECT_EQ(parallelOut, expected);
+}
+
+namespace {
+
+//==============================================================================
+compute::ComputeStageMetadata accessMeta(
+    std::string resource, compute::ComputeAccessMode mode)
+{
+  compute::ComputeStageMetadata metadata;
+  metadata.resources.push_back({std::move(resource), mode});
+  return metadata;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(ExperimentalComputeAccess, ToStringCoversModes)
+{
+  EXPECT_EQ(compute::toString(compute::ComputeAccessMode::Read), "read");
+  EXPECT_EQ(compute::toString(compute::ComputeAccessMode::Write), "write");
+  EXPECT_EQ(
+      compute::toString(compute::ComputeAccessMode::ReadWrite), "read_write");
+  EXPECT_EQ(compute::toString(compute::ComputeAccessMode::Reduce), "reduce");
+  EXPECT_EQ(compute::toString(compute::ComputeAccessMode::Scratch), "scratch");
+}
+
+//==============================================================================
+TEST(ExperimentalComputeAccess, ConflictRules)
+{
+  using compute::accessesConflict;
+  using Mode = compute::ComputeAccessMode;
+
+  EXPECT_FALSE(accessesConflict(Mode::Read, Mode::Read));
+  EXPECT_TRUE(accessesConflict(Mode::Read, Mode::Write));
+  EXPECT_TRUE(accessesConflict(Mode::Write, Mode::Write));
+  EXPECT_TRUE(accessesConflict(Mode::ReadWrite, Mode::Read));
+  EXPECT_FALSE(accessesConflict(Mode::Reduce, Mode::Reduce));
+  EXPECT_TRUE(accessesConflict(Mode::Reduce, Mode::Write));
+  EXPECT_FALSE(accessesConflict(Mode::Scratch, Mode::Write));
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, ReadReadIsSafe)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Read));
+  graph.addNode(
+      "b", []() {}, accessMeta("x", compute::ComputeAccessMode::Read));
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, DisjointWritesAreSafe)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+  graph.addNode(
+      "b", []() {}, accessMeta("y", compute::ComputeAccessMode::Write));
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, UnorderedWriteWriteIsHazard)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+  graph.addNode(
+      "b", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+
+  const auto hazards = graph.findResourceHazards();
+  ASSERT_EQ(hazards.size(), 1u);
+  EXPECT_EQ(hazards.front().resource, "x");
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, OrderedWriteWriteIsSafe)
+{
+  compute::ComputeGraph graph;
+  auto& a = graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+  auto& b = graph.addNode(
+      "b", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+  graph.addDependency(a, b);
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, DeclaredReductionIsSafe)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Reduce));
+  graph.addNode(
+      "b", []() {}, accessMeta("x", compute::ComputeAccessMode::Reduce));
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, ScratchIsSafe)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a", []() {}, accessMeta("x", compute::ComputeAccessMode::Scratch));
+  graph.addNode(
+      "b", []() {}, accessMeta("x", compute::ComputeAccessMode::Write));
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, PerEntityTreeHasNoFalsePositives)
+{
+  // Mirrors the kinematics graph: a parent writes its own cache; two children
+  // read the parent cache and write their own. Per-entity resource ids keep
+  // independent siblings hazard-free.
+  compute::ComputeGraph graph;
+
+  compute::ComputeStageMetadata parentMeta;
+  parentMeta.resources.push_back(
+      {"cache#0", compute::ComputeAccessMode::Write});
+  compute::ComputeStageMetadata child1Meta;
+  child1Meta.resources.push_back({"cache#0", compute::ComputeAccessMode::Read});
+  child1Meta.resources.push_back(
+      {"cache#1", compute::ComputeAccessMode::Write});
+  compute::ComputeStageMetadata child2Meta;
+  child2Meta.resources.push_back({"cache#0", compute::ComputeAccessMode::Read});
+  child2Meta.resources.push_back(
+      {"cache#2", compute::ComputeAccessMode::Write});
+
+  auto& parent = graph.addNode("parent", []() {}, parentMeta);
+  auto& child1 = graph.addNode("child1", []() {}, child1Meta);
+  auto& child2 = graph.addNode("child2", []() {}, child2Meta);
+  graph.addDependency(parent, child1);
+  graph.addDependency(parent, child2);
+
+  EXPECT_TRUE(graph.findResourceHazards().empty());
+}
+
+//==============================================================================
+TEST(ExperimentalComputeResourceHazards, CoarseSharedWriteIsFlagged)
+{
+  // Negative control: collapsing per-entity ids to one coarse id surfaces the
+  // sibling write/write conflict that per-entity ids avoid.
+  compute::ComputeGraph graph;
+
+  compute::ComputeStageMetadata writeCache;
+  writeCache.resources.push_back({"cache", compute::ComputeAccessMode::Write});
+
+  auto& parent = graph.addNode("parent", []() {}, writeCache);
+  auto& child1 = graph.addNode("child1", []() {}, writeCache);
+  auto& child2 = graph.addNode("child2", []() {}, writeCache);
+  graph.addDependency(parent, child1);
+  graph.addDependency(parent, child2);
+
+  const auto hazards = graph.findResourceHazards();
+  ASSERT_EQ(hazards.size(), 1u);
+  EXPECT_EQ(hazards.front().resource, "cache");
+}
+
+//==============================================================================
+TEST(ExperimentalComputeGraphDot, IncludesResourceAccess)
+{
+  compute::ComputeGraph graph;
+  graph.addNode(
+      "a",
+      []() {},
+      accessMeta("comps::Transform", compute::ComputeAccessMode::ReadWrite));
+
+  const auto dot = compute::toDot(graph);
+  EXPECT_NE(dot.find("read_write comps::Transform"), std::string::npos);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, SemiImplicitPositionUpdate)
+{
+  std::vector<double> positions{1.0, 2.0, 3.0, 4.0};
+  const std::vector<double> velocities{0.5, -1.0, 2.0, 0.0};
+
+  compute::integratePositionsSemiImplicit(
+      positions.data(), velocities.data(), 0.1, positions.size());
+
+  EXPECT_DOUBLE_EQ(positions[0], 1.05);
+  EXPECT_DOUBLE_EQ(positions[1], 1.9);
+  EXPECT_DOUBLE_EQ(positions[2], 3.2);
+  EXPECT_DOUBLE_EQ(positions[3], 4.0);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, IsScalarGeneric)
+{
+  // Instantiating the same kernel for float proves it is not bound to double,
+  // keeping the autodiff/SIMD scalar door open.
+  std::vector<float> positions{1.0F, 2.0F};
+  const std::vector<float> velocities{2.0F, 4.0F};
+
+  compute::integratePositionsSemiImplicit(
+      positions.data(), velocities.data(), 0.5F, positions.size());
+
+  EXPECT_FLOAT_EQ(positions[0], 2.0F);
+  EXPECT_FLOAT_EQ(positions[1], 4.0F);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, IntegratesStateBatchPositions)
+{
+  compute::RigidBodyStateBatch batch;
+  batch.worldCount = 1;
+  batch.bodyCount = 1;
+  batch.position = {0.0, 0.0, 0.0};
+  batch.orientation = {1.0, 0.0, 0.0, 0.0};
+  batch.linearVelocity = {1.0, 2.0, 3.0};
+  batch.angularVelocity = {0.0, 0.0, 0.0};
+
+  compute::integratePositionsSemiImplicit(
+      batch.position.data(),
+      batch.linearVelocity.data(),
+      0.5,
+      batch.position.size());
+
+  EXPECT_DOUBLE_EQ(batch.position[0], 0.5);
+  EXPECT_DOUBLE_EQ(batch.position[1], 1.0);
+  EXPECT_DOUBLE_EQ(batch.position[2], 1.5);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, IntegratesStateBatchLinearStep)
+{
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = 2;
+  state.position = {0.0, 0.0, 0.0, 1.0, 1.0, 1.0};
+  state.orientation = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0};
+  state.linearVelocity = {1.0, 0.0, 0.0, 0.0, 2.0, 0.0};
+  state.angularVelocity = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+  const std::vector<double> force = {0.0, 0.0, 10.0, 0.0, 0.0, 0.0};
+  const std::vector<double> inverseMass = {0.5, 1.0};
+
+  compute::integrateRigidBodyStateBatchLinear(state, force, inverseMass, 0.1);
+
+  // Velocity updated first: body 0 z += 10 * 0.5 * 0.1 = 0.5; body 1 unchanged.
+  EXPECT_DOUBLE_EQ(state.linearVelocity[2], 0.5);
+  // Position then uses the updated velocity (semi-implicit Euler).
+  EXPECT_DOUBLE_EQ(state.position[0], 0.1);  // body 0 x: 0 + 1.0 * 0.1
+  EXPECT_DOUBLE_EQ(state.position[2], 0.05); // body 0 z: 0 + 0.5 * 0.1
+  EXPECT_DOUBLE_EQ(state.position[4], 1.2);  // body 1 y: 1 + 2.0 * 0.1
+
+  // Size mismatch is rejected.
+  const std::vector<double> badForce = {0.0, 0.0, 0.0};
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatchLinear(
+          state, badForce, inverseMass, 0.1),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, IntegratesOrientationAboutZ)
+{
+  std::vector<double> orientation = {1.0, 0.0, 0.0, 0.0}; // identity
+  const std::vector<double> angular = {0.0, 0.0, 2.0};    // omega about +z
+
+  compute::integrateOrientationsSemiImplicit(
+      orientation.data(), angular.data(), 0.1, 1);
+
+  const double w = orientation[0];
+  const double x = orientation[1];
+  const double y = orientation[2];
+  const double z = orientation[3];
+
+  // Remains a unit quaternion.
+  EXPECT_NEAR(w * w + x * x + y * y + z * z, 1.0, 1e-12);
+  // Pure z-rotation keeps the x and y components zero.
+  EXPECT_DOUBLE_EQ(x, 0.0);
+  EXPECT_DOUBLE_EQ(y, 0.0);
+  // Exponential map: z/w = tan(omega_z * dt / 2) = tan(0.1) (ratio preserved
+  // by normalization).
+  EXPECT_NEAR(z / w, std::tan(0.1), 1e-12);
+  EXPECT_GT(w, 0.0);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, OrientationKernelIsScalarGeneric)
+{
+  std::vector<float> orientation = {1.0F, 0.0F, 0.0F, 0.0F};
+  const std::vector<float> angular = {0.0F, 0.0F, 2.0F};
+
+  compute::integrateOrientationsSemiImplicit(
+      orientation.data(), angular.data(), 0.1F, 1);
+
+  const float norm
+      = orientation[0] * orientation[0] + orientation[1] * orientation[1]
+        + orientation[2] * orientation[2] + orientation[3] * orientation[3];
+  EXPECT_NEAR(norm, 1.0F, 1e-5F);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, IntegratesFullStateBatch)
+{
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = 1;
+  state.position = {0.0, 0.0, 0.0};
+  state.orientation = {1.0, 0.0, 0.0, 0.0};
+  state.linearVelocity = {1.0, 0.0, 0.0};
+  state.angularVelocity = {0.0, 0.0, 2.0};
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = 1;
+  model.inverseMass = {1.0};
+
+  const std::vector<double> force = {0.0, 0.0, 4.0};
+
+  compute::integrateRigidBodyStateBatch(state, model, force, 0.1);
+
+  // Linear: vel.z += 4 * 1 * 0.1 = 0.4; pos += updated vel * 0.1.
+  EXPECT_DOUBLE_EQ(state.linearVelocity[2], 0.4);
+  EXPECT_DOUBLE_EQ(state.position[0], 0.1);
+  EXPECT_DOUBLE_EQ(state.position[2], 0.04);
+  // Orientation: z-rotation via the exponential map, x and y stay zero, unit
+  // norm, z/w = tan(omega_z * dt / 2) = tan(0.1).
+  EXPECT_DOUBLE_EQ(state.orientation[1], 0.0);
+  EXPECT_DOUBLE_EQ(state.orientation[2], 0.0);
+  const double w = state.orientation[0];
+  const double z = state.orientation[3];
+  EXPECT_NEAR(w * w + z * z, 1.0, 1e-12);
+  EXPECT_NEAR(z / w, std::tan(0.1), 1e-12);
+
+  // Orientation array of the wrong size is rejected.
+  auto bad = state;
+  bad.orientation = {1.0, 0.0, 0.0};
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatch(bad, model, force, 0.1),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, IntegratesAngularVelocityFromTorque)
+{
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = 1;
+  state.position = {0.0, 0.0, 0.0};
+  state.orientation = {1.0, 0.0, 0.0, 0.0}; // identity
+  state.linearVelocity = {0.0, 0.0, 0.0};
+  state.angularVelocity = {0.0, 0.0, 0.0};
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = 1;
+  model.inverseMass = {1.0};
+  // Diagonal body inertia diag(2, 4, 8), row-major.
+  model.inertia = {2.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 8.0};
+
+  const std::vector<double> force = {0.0, 0.0, 0.0};
+  const std::vector<double> torque = {2.0, 4.0, 8.0};
+
+  compute::integrateRigidBodyStateBatch(state, model, force, torque, 0.1);
+
+  // Identity orientation => world inertia == body inertia, so the angular
+  // acceleration is I^-1 * torque = (1, 1, 1) and the velocity gains
+  // accel * dt = (0.1, 0.1, 0.1).
+  EXPECT_NEAR(state.angularVelocity[0], 0.1, 1e-12);
+  EXPECT_NEAR(state.angularVelocity[1], 0.1, 1e-12);
+  EXPECT_NEAR(state.angularVelocity[2], 0.1, 1e-12);
+
+  // A wrong-size inertia is rejected.
+  auto bad = model;
+  bad.inertia = {1.0, 2.0, 3.0};
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatch(state, bad, force, torque, 0.1),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(
+    ExperimentalIntegrationKernel,
+    BatchIntegrationRejectsMismatchedAngularVelocity)
+{
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = 1;
+  state.position = {0.0, 0.0, 0.0};
+  state.orientation = {1.0, 0.0, 0.0, 0.0};
+  state.linearVelocity = {0.0, 0.0, 0.0};
+  state.angularVelocity = {0.0, 0.0}; // too short: must be 3 * bodyCount
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = 1;
+  model.inverseMass = {1.0};
+  model.inertia = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+
+  const std::vector<double> force = {0.0, 0.0, 0.0};
+  const std::vector<double> torque = {0.0, 0.0, 0.0};
+
+  // Both overloads must reject the malformed angular-velocity array up front
+  // rather than read (orientation step) or write (torque step) out of bounds.
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatch(state, model, force, 0.1),
+      sx::InvalidArgumentException);
+  EXPECT_THROW(
+      compute::integrateRigidBodyStateBatch(state, model, force, torque, 0.1),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, SimdOrientationMatchesScalarForLargeBatch)
+{
+  // A batch above the SIMD dispatch threshold exercises the vectorized
+  // orientation path; it must match the scalar-generic kernel within a few ULP.
+  const std::size_t bodies = 96;
+
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = bodies;
+  state.position.assign(3 * bodies, 0.0);
+  state.linearVelocity.assign(3 * bodies, 0.0);
+  state.orientation.resize(4 * bodies);
+  state.angularVelocity.resize(3 * bodies);
+
+  std::vector<double> referenceOrientation(4 * bodies);
+  std::vector<double> angular(3 * bodies);
+  for (std::size_t b = 0; b < bodies; ++b) {
+    const double a = 0.1 + 0.01 * static_cast<double>(b);
+    double qw = std::cos(a);
+    double qx = std::sin(a) * 0.3;
+    double qy = std::sin(a) * 0.5;
+    double qz = std::sin(a) * 0.2;
+    const double norm = std::sqrt(qw * qw + qx * qx + qy * qy + qz * qz);
+    qw /= norm;
+    qx /= norm;
+    qy /= norm;
+    qz /= norm;
+    state.orientation[4 * b + 0] = qw;
+    state.orientation[4 * b + 1] = qx;
+    state.orientation[4 * b + 2] = qy;
+    state.orientation[4 * b + 3] = qz;
+    referenceOrientation[4 * b + 0] = qw;
+    referenceOrientation[4 * b + 1] = qx;
+    referenceOrientation[4 * b + 2] = qy;
+    referenceOrientation[4 * b + 3] = qz;
+
+    // Body 0 has zero angular velocity to exercise the no-spin guard.
+    const double spin = (b == 0) ? 0.0 : 1.0;
+    angular[3 * b + 0] = spin * (0.2 + 0.01 * static_cast<double>(b));
+    angular[3 * b + 1] = spin * (-0.1 + 0.005 * static_cast<double>(b));
+    angular[3 * b + 2] = spin * 0.3;
+  }
+  state.angularVelocity = angular;
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = bodies;
+  model.inverseMass.assign(bodies, 1.0);
+  const std::vector<double> force(3 * bodies, 0.0);
+
+  // Zero force keeps linear state at rest, isolating the orientation update
+  // (which dispatches to the SIMD path because bodies >= the threshold).
+  compute::integrateRigidBodyStateBatch(state, model, force, 0.05);
+
+  // Reference: the scalar-generic kernel on the same orientation/angular input.
+  compute::integrateOrientationsSemiImplicit(
+      referenceOrientation.data(), angular.data(), 0.05, bodies);
+
+  for (std::size_t i = 0; i < 4 * bodies; ++i) {
+    EXPECT_NEAR(state.orientation[i], referenceOrientation[i], 1e-12)
+        << "orientation component " << i;
+  }
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, OrientationHandlesDegenerateInputs)
+{
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+
+  // Scalar kernel: a zero-norm quaternion maps to identity (matching the
+  // per-entity normalizeOrIdentity), and a non-finite angular velocity leaves a
+  // valid quaternion finite and unchanged.
+  {
+    std::vector<double> orientation
+        = {0.0,
+           0.0,
+           0.0,
+           0.0, // body 0: zero-norm quaternion
+           1.0,
+           0.0,
+           0.0,
+           0.0}; // body 1: identity quaternion
+    const std::vector<double> angular
+        = {0.0,
+           0.0,
+           1.0, // body 0: spinning
+           nan,
+           nan,
+           nan}; // body 1: non-finite angular velocity
+    compute::integrateOrientationsSemiImplicit(
+        orientation.data(), angular.data(), 0.1, 2);
+
+    EXPECT_DOUBLE_EQ(orientation[0], 1.0); // zero-norm -> identity
+    EXPECT_DOUBLE_EQ(orientation[1], 0.0);
+    EXPECT_DOUBLE_EQ(orientation[2], 0.0);
+    EXPECT_DOUBLE_EQ(orientation[3], 0.0);
+    for (std::size_t i = 4; i < 8; ++i) {
+      EXPECT_TRUE(std::isfinite(orientation[i])) << "component " << i;
+    }
+    EXPECT_DOUBLE_EQ(orientation[4], 1.0); // NaN spin leaves identity unchanged
+  }
+
+  // SIMD path (batch above the dispatch threshold): the same guarantees, so a
+  // large batch behaves identically to a small/scalar batch on degenerate input
+  // rather than producing batch-size-dependent NaN contamination.
+  {
+    const std::size_t bodies = 96;
+    compute::RigidBodyStateBatch state;
+    state.worldCount = 1;
+    state.bodyCount = bodies;
+    state.position.assign(3 * bodies, 0.0);
+    state.linearVelocity.assign(3 * bodies, 0.0);
+    state.orientation.assign(4 * bodies, 0.0);
+    state.angularVelocity.assign(3 * bodies, 0.0);
+    for (std::size_t b = 0; b < bodies; ++b) {
+      state.orientation[4 * b + 0] = 1.0; // identity for every body
+    }
+    state.orientation[0] = 0.0;             // body 0: zero-norm quaternion
+    state.angularVelocity[3 * 1 + 0] = nan; // body 1: non-finite spin
+    state.angularVelocity[3 * 1 + 1] = nan;
+    state.angularVelocity[3 * 1 + 2] = nan;
+
+    compute::RigidBodyModelBatch model;
+    model.worldCount = 1;
+    model.bodyCount = bodies;
+    model.inverseMass.assign(bodies, 1.0);
+    const std::vector<double> force(3 * bodies, 0.0);
+
+    compute::integrateRigidBodyStateBatch(state, model, force, 0.05);
+
+    EXPECT_DOUBLE_EQ(state.orientation[0], 1.0); // zero-norm -> identity
+    EXPECT_DOUBLE_EQ(state.orientation[1], 0.0);
+    EXPECT_DOUBLE_EQ(state.orientation[2], 0.0);
+    EXPECT_DOUBLE_EQ(state.orientation[3], 0.0);
+    for (std::size_t i = 0; i < 4 * bodies; ++i) {
+      EXPECT_TRUE(std::isfinite(state.orientation[i])) << "component " << i;
+    }
+  }
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, TotalKineticEnergyReductionWithinTolerance)
+{
+  const std::size_t bodies = 500;
+
+  compute::RigidBodyStateBatch state;
+  state.worldCount = 1;
+  state.bodyCount = bodies;
+  state.linearVelocity.resize(3 * bodies);
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = bodies;
+  model.inverseMass.resize(bodies);
+
+  for (std::size_t b = 0; b < bodies; ++b) {
+    state.linearVelocity[3 * b + 0] = 0.01 * static_cast<double>(b);
+    state.linearVelocity[3 * b + 1] = -0.02 * static_cast<double>(b);
+    state.linearVelocity[3 * b + 2] = 0.005 * static_cast<double>(b) + 1.0;
+    // Every 50th body is static (zero inverse mass) and contributes nothing.
+    model.inverseMass[b]
+        = (b % 50 == 0) ? 0.0 : 1.0 / (1.0 + 0.1 * static_cast<double>(b));
+  }
+
+  // A single chunk reduces left-to-right (the naive reference order).
+  const double naive = compute::totalKineticEnergy(state, model, bodies + 1);
+
+  // The reduction is deterministic for a given chunking.
+  EXPECT_EQ(
+      compute::totalKineticEnergy(state, model, 64),
+      compute::totalKineticEnergy(state, model, 64));
+
+  // Different chunkings (different reduction orders, as different worker counts
+  // would produce) agree within a small relative tolerance -- the Phase 3
+  // fixed-ULP reduction-determinism gate.
+  const double tolerance = 1e-12 * std::abs(naive);
+  EXPECT_NEAR(compute::totalKineticEnergy(state, model, 1), naive, tolerance);
+  EXPECT_NEAR(compute::totalKineticEnergy(state, model, 64), naive, tolerance);
+  EXPECT_NEAR(compute::totalKineticEnergy(state, model, 256), naive, tolerance);
+
+  EXPECT_GT(naive, 0.0);
+  EXPECT_TRUE(std::isfinite(naive));
+
+  // Inconsistent model size is rejected.
+  auto bad = model;
+  bad.inverseMass.pop_back();
+  EXPECT_THROW(
+      (void)compute::totalKineticEnergy(state, bad),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(ExperimentalIntegrationKernel, RollsOutStateBatchOverControlSequence)
+{
+  compute::RigidBodyStateBatch initial;
+  initial.worldCount = 1;
+  initial.bodyCount = 1;
+  initial.position = {0.0, 0.0, 0.0};
+  initial.orientation = {1.0, 0.0, 0.0, 0.0};
+  initial.linearVelocity = {0.0, 0.0, 0.0};
+  initial.angularVelocity = {0.0, 0.0, 0.0};
+
+  compute::RigidBodyModelBatch model;
+  model.worldCount = 1;
+  model.bodyCount = 1;
+  model.inverseMass = {1.0};
+
+  const std::vector<std::vector<double>> controls = {
+      {1.0, 0.0, 0.0}, // step 1: unit force along +x
+      {0.0, 0.0, 0.0}, // step 2: no force
+  };
+
+  const auto result
+      = compute::rolloutRigidBodyStateBatch(initial, model, controls, 1.0);
+
+  // Matches applying the two steps manually.
+  auto reference = initial;
+  compute::integrateRigidBodyStateBatch(reference, model, controls[0], 1.0);
+  compute::integrateRigidBodyStateBatch(reference, model, controls[1], 1.0);
+  EXPECT_EQ(result.position, reference.position);
+  EXPECT_EQ(result.linearVelocity, reference.linearVelocity);
+
+  // Hand computation: step 1 sets vel.x = 1 and pos.x = 1; step 2 keeps vel and
+  // advances pos.x to 2.
+  EXPECT_DOUBLE_EQ(result.linearVelocity[0], 1.0);
+  EXPECT_DOUBLE_EQ(result.position[0], 2.0);
+
+  // An empty control sequence returns the initial state unchanged.
+  const auto unchanged
+      = compute::rolloutRigidBodyStateBatch(initial, model, {}, 1.0);
+  EXPECT_EQ(unchanged.position, initial.position);
+  EXPECT_EQ(unchanged.linearVelocity, initial.linearVelocity);
 }

@@ -491,6 +491,12 @@
   - Added `compute::ParallelExecutor` as the preferred experimental C++
     parallel compute-graph executor name, keeping the implementation backend
     behind the public executor facade.
+  - Added experimental C++ resource-access metadata for compute nodes
+    (`compute::ComputeAccessMode`, `compute::ComputeResourceAccess`, and
+    `ComputeGraph::findResourceHazards()`) with DOT visualization of declared
+    accesses; it reports read/write/reduce/scratch hazards between unordered
+    nodes as diagnostics while explicit dependencies stay authoritative, and the
+    parallel executor debug-asserts the absence of such hazards.
   - Added experimental C++ and dartpy `LoopClosureRuntimePolicy` metadata for
     closed-chain runtime intent, including residual-only, kinematic projection,
     and dynamic solving policy selections without exposing solver internals.
