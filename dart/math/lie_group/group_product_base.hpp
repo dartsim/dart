@@ -288,6 +288,7 @@ typename GroupProductBase<Derived>::Tangent GroupProductBase<Derived>::log(
 template <typename Derived>
 Matrix<
     typename GroupProductBase<Derived>::Scalar,
+    GroupProductBase<Derived>::DoF,
     GroupProductBase<Derived>::DoF>
 GroupProductBase<Derived>::toAdjointMatrix() const
 {
@@ -300,6 +301,7 @@ template <typename Derived>
 template <std::size_t... Indices>
 Matrix<
     typename GroupProductBase<Derived>::Scalar,
+    GroupProductBase<Derived>::DoF,
     GroupProductBase<Derived>::DoF>
 GroupProductBase<Derived>::toAdjointMatrix(
     std::integer_sequence<std::size_t, Indices...>) const

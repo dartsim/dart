@@ -168,7 +168,10 @@ typename RnBase<Derived>::Tangent RnBase<Derived>::ad(
 
 //==============================================================================
 template <typename Derived>
-Matrix<typename RnBase<Derived>::Scalar, RnBase<Derived>::DoF>
+Matrix<
+    typename RnBase<Derived>::Scalar,
+    RnBase<Derived>::DoF,
+    RnBase<Derived>::DoF>
 RnBase<Derived>::toAdjointMatrix() const
 {
   return Matrix<Scalar, DoF, DoF>::Identity();
