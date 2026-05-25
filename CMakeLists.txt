@@ -698,6 +698,14 @@ set(DART_IN_SOURCE_BUILD TRUE)
 if(TARGET dart)
 
   include(CTest)
+
+  # dartsim application (headless editor engine + GUI). Added before tests so
+  # tests/unit/dartsim_engine can link the dartsim_engine target. The engine is
+  # headless; the GUI library and executable build only when dart-gui exists.
+  if(TARGET dart-simulation-experimental)
+    add_subdirectory(dartsim)
+  endif()
+
   if(DART_BUILD_TESTS AND BUILD_TESTING)
     # Add a "tests" target to build unit tests.
     if(MSVC)
@@ -752,18 +760,9 @@ if(TARGET dart)
     message(STATUS "Skipping tutorials (DART_BUILD_TUTORIALS == OFF)")
   endif()
 
-  if(DART_BUILD_GUI)
-    if(MSVC)
-      add_subdirectory(apps/dartsim)
-    else()
-      add_subdirectory(apps/dartsim EXCLUDE_FROM_ALL)
-    endif()
-    if(TARGET examples AND TARGET dartsim)
-      add_dependencies(examples dartsim)
-    endif()
-  else()
-    message(STATUS "Skipping dartsim application (DART_BUILD_GUI == OFF)")
-  endif()
+  # The dartsim application is added above (before tests) via
+  # add_subdirectory(dartsim); its GUI library and executable are gated on
+  # dart-gui inside dartsim/CMakeLists.txt.
 
 endif()
 

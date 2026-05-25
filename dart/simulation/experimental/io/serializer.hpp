@@ -81,6 +81,18 @@ public:
       std::istream& in, entt::entity entity, entt::registry& registry) const
       = 0;
 
+  // Version-aware extension used by built-in serializers. Custom serializers
+  // that only implement the original load() API remain source-compatible.
+  virtual void load(
+      std::istream& in,
+      entt::entity entity,
+      entt::registry& registry,
+      std::uint32_t formatVersion) const
+  {
+    (void)formatVersion;
+    load(in, entity, registry);
+  }
+
   // Check if an entity has this component type
   virtual bool hasComponent(
       entt::entity entity, const entt::registry& registry) const
@@ -130,7 +142,8 @@ public:
   void loadAllEntities(
       std::istream& input,
       entt::registry& registry,
-      EntityMap& entityMap) const;
+      EntityMap& entityMap,
+      std::uint32_t formatVersion) const;
 
   // Clear all registered serializers (primarily for testing)
   void clear();
@@ -246,6 +259,22 @@ public:
     }
   }
 
+  void load(
+      std::istream& in,
+      entt::entity entity,
+      entt::registry& registry,
+      std::uint32_t formatVersion) const final
+  {
+    ComponentT component;
+    loadComponent(in, component, formatVersion);
+
+    if constexpr (std::is_empty_v<ComponentT>) {
+      registry.emplace<ComponentT>(entity);
+    } else {
+      registry.emplace<ComponentT>(entity, std::move(component));
+    }
+  }
+
   bool hasComponent(
       entt::entity entity, const entt::registry& registry) const final
   {
@@ -260,6 +289,14 @@ protected:
       const EntityMap& entityMap) const
       = 0;
   virtual void loadComponent(std::istream& in, ComponentT& component) const = 0;
+  virtual void loadComponent(
+      std::istream& in,
+      ComponentT& component,
+      std::uint32_t formatVersion) const
+  {
+    (void)formatVersion;
+    loadComponent(in, component);
+  }
 };
 
 //==============================================================================

@@ -120,7 +120,8 @@ gh pr checks <PR_NUMBER>
 4. Address reviews:
    - Use the `dart-review-pr` workflow for substantive review feedback.
    - Never reply to AI-generated review comments from bot users such as
-     `chatgpt-codex-connector[bot]`, `github-actions[bot]`, or `copilot[bot]`.
+     `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`,
+     `github-actions[bot]`, or `copilot[bot]`.
    - When a draft PR is first marked ready for review, Codex review is expected
      to start automatically. Before posting `@codex review`, wait a reasonable
      time for the PR-body Codex activity indicator or a submitted Codex review.

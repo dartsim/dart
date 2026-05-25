@@ -30,9 +30,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/application.hpp>
+#pragma once
 
-int main(int argc, char* argv[])
+#include <dart/simulation/experimental/comps/component_category.hpp>
+
+namespace dart::simulation::experimental::comps {
+
+/// Per-body contact material parameters consumed by the contact solver.
+///
+/// **Internal Implementation Detail** - Not exposed in public API. The public
+/// surface is the rigid-body restitution/friction accessors. Defaults match the
+/// behavior of a body with no material attached: no bounce, friction one.
+struct ContactMaterial
 {
-  return dart::gui::runApplication(argc, argv);
-}
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(ContactMaterial);
+
+  double restitution = 0.0;
+  double friction = 1.0;
+};
+
+} // namespace dart::simulation::experimental::comps

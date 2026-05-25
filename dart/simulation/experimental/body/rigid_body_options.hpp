@@ -70,6 +70,11 @@ struct RigidBodyOptions
 
   /// Initial world-frame angular velocity. Must contain only finite values.
   Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+
+  /// Whether the body is static (immovable): it ignores gravity and applied
+  /// forces, is not integrated, and is treated as infinite mass by the contact
+  /// solver. Useful for ground planes and fixtures.
+  bool isStatic = false;
 };
 
 } // namespace dart::simulation::experimental

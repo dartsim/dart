@@ -79,6 +79,11 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
 - Formatting checks fail: run the C++ formatting task and re-run CI. Suggested (Unverified): `pixi run lint-cpp`.
 - Codecov patch failures: add targeted coverage for new lines or branches.
 - Example builds fail because sample code references removed formats or enums; update the example to match the current API (e.g., `dart::io::ModelFormat`).
+- Example or test links fail with `cannot find -ldart-<component>`: inspect the
+  component target output directories, especially for optional components
+  declared outside the core `dart/` subtree. In-tree consumers expect linked
+  DART libraries under `${DART_BINARY_DIR}/lib`; see
+  [build-system.md](build-system.md#optional-component-output-directories).
 - Unit test crashes or segfaults: isolate the failing test from job logs, reproduce locally, and add a regression for the edge case.
 - Job logs are missing or return 404: re-run the single job and/or download the run-level logs archive to inspect failures.
 - Infrastructure failures (runner connectivity lost, self-hosted runner issues): re-run only the failed jobs with `gh run rerun <RUN_ID> --failed`.

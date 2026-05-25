@@ -14,6 +14,7 @@ fields in `docs/plans/dashboard.md` or `docs/dev_tasks/<task>/`.
 | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | [`algorithm_extension_contracts.md`](algorithm_extension_contracts.md)           | Durable rules for research-facing algorithm extension and baseline contracts                                                             |
 | [`compute_backend_research.md`](compute_backend_research.md)                     | Evidence survey and DART workload-candidate ranking behind the scalable-compute roadmap                                                  |
+| [`dartsim_gui_simulator.md`](dartsim_gui_simulator.md)                           | Headless editor engine + thin ImGui/Filament GUI architecture for the dartsim simulator                                                  |
 | [`filament_fidelity_profile.md`](filament_fidelity_profile.md)                   | Renderer-neutral fidelity-profile and camera-sensor seam for real-time vs offline rendering                                              |
 | [`hierarchical_allocator.md`](hierarchical_allocator.md)                         | World-level memory management proposal and allocator ownership rationale                                                                 |
 | [`lie_group_batch.md`](lie_group_batch.md)                                       | Consolidated batch (data-parallel) strategy for the typed Lie group API (SO3/SE3)                                                        |
@@ -22,6 +23,7 @@ fields in `docs/plans/dashboard.md` or `docs/dev_tasks/<task>/`.
 | [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)       | C++ API shape for promoting `dart::simulation::experimental` to the DART 8 simulation API                                                |
 | [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md) | Python API shape for `dartpy.simulation_experimental` over the experimental simulation stack                                             |
 | [`simulation_experimental_references.md`](simulation_experimental_references.md) | Managed catalog of research papers, textbooks, standards, and comparative engines for the experimental world (status, priority, verdict) |
+| [`simulation_solver_architecture.md`](simulation_solver_architecture.md)         | Internal architecture for solvers, domain assignment, multi-physics coupling, and the step schedule behind the experimental `World`      |
 
 ## Placement Rules
 

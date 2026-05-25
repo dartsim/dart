@@ -87,6 +87,20 @@ its own line so status updates remain git-history friendly.
   metadata/profiling/DOT output remain backend-neutral; classic World behavior
   stays untouched.
 
+### PLAN-080: Rigid-Body Dynamics Solver
+
+- Owner doc:
+  [`080-rigid-body-dynamics-solver.md`](080-rigid-body-dynamics-solver.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Land Phase 0.1 (World gravity in the rigid-body integration stage)
+  on the experimental World, then articulated-body forward dynamics; track
+  slice-level work in `docs/dev_tasks/rigid_body_dynamics_solver/`.
+- Gate: Each slice keeps focused experimental tests and `check-api-boundaries`
+  green, holds DART 6 parity on shared scenes before any promotion claim, and
+  never exposes solver/coupler/domain/backend types or ECS storage publicly.
+
 ### PLAN-035: Native Collision Feature Dashboard
 
 - Owner doc:
@@ -225,3 +239,25 @@ its own line so status updates remain git-history friendly.
 - Gate: `GroupProduct` source and tests are in `dart/math/lie_group/` under
   snake_case headers, with inverse/map machinery matching the `SO3`/`SE3`
   expression-template pattern and `ctest -R UNIT_math_lie_group` green.
+
+### PLAN-101: dartsim GUI Simulator
+
+- Owner doc: [`101-dartsim-gui-simulator.md`](101-dartsim-gui-simulator.md);
+  durable architecture/as-built in
+  [`../design/dartsim_gui_simulator.md`](../design/dartsim_gui_simulator.md),
+  developer overview in
+  [`../onboarding/gui-rendering.md`](../onboarding/gui-rendering.md).
+- Status: Active
+- Horizon: Next
+- Dimension: Easy start
+- Next step: v1 is implemented (engine `dartsim/engine` unit-tested by
+  `UNIT_dartsim_engine`; `dartsim/ui` editor builds and renders the
+  experimental scene headless). Pursue the remaining follow-ups: viewport
+  pick-to-tree selection sync, and co-evolution to adopt experimental
+  shape/loader APIs (replace editor-side shape descriptors) per PLAN-050.
+- Gate: The headless engine is covered by command/undo, object, selection,
+  name-uniqueness, and project-round-trip tests with zero GUI/renderer includes;
+  the editor loop (design → run → record → replay) works on the experimental
+  World only; the renderer stays backend-hidden (PLAN-060); and the default
+  `dartsim` headless smoke (`DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS`) renders a
+  non-blank editor frame while legacy `--scene` smokes keep contrast.
