@@ -3011,6 +3011,44 @@ TEST(World, CollisionQueryIncludesMultibodyLinks)
   EXPECT_TRUE(sawRigidBody);
 }
 
+// Test that collision queries refresh dirty link transform caches before
+// building link collision poses.
+TEST(World, CollisionQueryRefreshesDirtyLinkTransforms)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "slider";
+  spec.type = sx::JointType::Prismatic;
+  spec.axis = Eigen::Vector3d::UnitX();
+  auto link = robot.addLink("link", base, spec);
+  link.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.position = Eigen::Vector3d(1.2, 0.0, 0.0);
+  auto obstacle = world.addRigidBody("obstacle", obstacleOptions);
+  obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.enterSimulationMode();
+  ASSERT_TRUE(world.collide().empty());
+
+  link.getParentJoint().setPosition(Eigen::VectorXd::Constant(1, 0.7));
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+
+  bool sawMovedLink = false;
+  for (const auto& contact : contacts) {
+    sawMovedLink
+        = sawMovedLink || contact.bodyA.isLink() || contact.bodyB.isLink();
+  }
+  EXPECT_TRUE(sawMovedLink);
+}
+
 // Test that a multibody link with a collision shape rests on a static ground
 // via the articulated contact response (a fixed-base prismatic "leg" drops
 // under gravity and stops where its sphere meets the ground).

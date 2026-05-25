@@ -47,8 +47,14 @@
 
 #include <gtest/gtest.h>
 
+#include <iterator>
 #include <ranges>
 #include <sstream>
+#include <string>
+#include <string_view>
+
+#include <cstdint>
+#include <cstring>
 
 //==============================================================================
 // Serialization Tests - Comprehensive Coverage
@@ -339,6 +345,47 @@ TEST(Serialization, PreservesWorldTimingMetadata)
   EXPECT_DOUBLE_EQ(world2.getTime(), 2.125);
   EXPECT_EQ(world2.getFrame(), 1u);
   EXPECT_TRUE(world2.getGravity().isApprox(Eigen::Vector3d(0.0, -1.5, -3.0)));
+}
+
+// Test that legacy world records without versioned gravity metadata leave
+// trailing stream bytes untouched instead of consuming them as gravity.
+TEST(Serialization, LegacyWorldMetadataDoesNotConsumeTrailingBytesAsGravity)
+{
+  dart::simulation::experimental::World world1;
+  world1.setTimeStep(0.125);
+  world1.setTime(2.0);
+  world1.setGravity(Eigen::Vector3d(0.0, -1.5, -3.0));
+
+  std::stringstream saved;
+  world1.saveBinary(saved);
+
+  std::string legacyRecord = saved.str();
+  ASSERT_GE(
+      legacyRecord.size(), 2 * sizeof(std::uint32_t) + 3 * sizeof(double));
+
+  const std::uint32_t legacyVersion = 1;
+  std::memcpy(
+      legacyRecord.data() + sizeof(std::uint32_t),
+      &legacyVersion,
+      sizeof(legacyVersion));
+  legacyRecord.resize(legacyRecord.size() - 3 * sizeof(double));
+
+  constexpr std::string_view trailerBytes = "0123456789abcdefghijklmn";
+  static_assert(trailerBytes.size() == 3 * sizeof(double));
+  const std::string trailer(trailerBytes);
+  legacyRecord += trailer;
+
+  std::stringstream input(legacyRecord);
+  dart::simulation::experimental::World world2;
+  world2.loadBinary(input);
+
+  EXPECT_DOUBLE_EQ(world2.getTimeStep(), 0.125);
+  EXPECT_DOUBLE_EQ(world2.getTime(), 2.0);
+  EXPECT_TRUE(world2.getGravity().isApprox(Eigen::Vector3d(0.0, 0.0, -9.81)));
+
+  const std::string remaining{
+      std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+  EXPECT_EQ(remaining, trailer);
 }
 
 // Test save/load preserves auto-generation counters

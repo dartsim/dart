@@ -960,15 +960,15 @@ std::vector<Contact> World::collide()
     addEntry(entity, geometry.shape, pose);
   }
 
-  // Multibody links pose their collision shape from the cached frame transform
-  // maintained by forward kinematics.
+  // Multibody links pose their collision shape through the frame accessor so
+  // dirty joint-driven caches are refreshed before the query.
   auto linkView
       = m_registry
             .view<comps::CollisionGeometry, comps::Link, comps::FrameCache>();
   for (auto entity : linkView) {
     const auto& geometry = linkView.get<comps::CollisionGeometry>(entity);
-    const auto& cache = linkView.get<comps::FrameCache>(entity);
-    addEntry(entity, geometry.shape, cache.worldTransform);
+    const Link link(entity, this);
+    addEntry(entity, geometry.shape, link.getWorldTransform());
   }
 
   // Pairwise narrow-phase queries. Each pair's bodies are known here, so the
@@ -1034,7 +1034,7 @@ void World::loadBinary(std::istream& input)
 {
   clear();
 
-  io::readFormatHeader(input);
+  const auto formatVersion = io::readFormatHeader(input);
 
   io::EntityMap entityMap;
   io::SerializerRegistry::instance().loadAllEntities(
@@ -1059,7 +1059,7 @@ void World::loadBinary(std::istream& input)
       io::readPOD(input, m_frame);
     }
 
-    if (input.peek() != std::char_traits<char>::eof()) {
+    if (formatVersion >= 2) {
       double gravityX = 0.0;
       double gravityY = 0.0;
       double gravityZ = 0.0;

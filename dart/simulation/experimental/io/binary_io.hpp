@@ -63,7 +63,8 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 // Increment this when making breaking changes to the binary format
 // Version history:
 //   1: Initial implementation
-constexpr std::uint32_t kBinaryFormatVersion = 1;
+//   2: World gravity serialized after timing metadata
+constexpr std::uint32_t kBinaryFormatVersion = 2;
 
 //==============================================================================
 // Low-level Binary I/O for POD types
