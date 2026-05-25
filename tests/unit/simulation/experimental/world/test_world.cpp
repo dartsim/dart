@@ -3625,6 +3625,36 @@ TEST(World, BatchedRigidBodyIntegrationStageSkipsStaticBodies)
   EXPECT_TRUE(dynamicBody.getLinearVelocity().isApprox(dynamicLinearVelocity));
 }
 
+// Test that the direct batched SoA integration stage uses the World's gravity
+// when assembling its force buffer, matching the default step path's first
+// velocity stage.
+TEST(World, BatchedRigidBodyIntegrationStageIncludesWorldGravity)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.mass = 2.0;
+  options.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+  options.linearVelocity = Eigen::Vector3d::Zero();
+  auto body = world.addRigidBody("falling_body", options);
+
+  const Eigen::Vector3d gravity(0.0, 0.0, -4.0);
+  constexpr double dt = 0.25;
+  world.setGravity(gravity);
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+
+  compute::SequentialExecutor executor;
+  compute::BatchedRigidBodyIntegrationStage stage;
+  stage.execute(world, executor);
+
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(gravity * dt));
+  EXPECT_TRUE(
+      body.getTranslation().isApprox(options.position + gravity * dt * dt));
+}
+
 // Test that the rigid-body integration stage produces the same state through
 // sequential and parallel graph executors.
 TEST(World, RigidBodyStepParallelMatchesSequential)
@@ -3864,6 +3894,7 @@ TEST(World, BatchedRigidBodyIntegrationStageMatchesPerEntityForFreeBodies)
       body.setTorque(Eigen::Vector3d(0.05, -0.1 * i, 0.2));
       bodies.push_back(body);
     }
+    world.setGravity(Eigen::Vector3d::Zero());
     world.setTimeStep(0.01);
     world.enterSimulationMode();
   };

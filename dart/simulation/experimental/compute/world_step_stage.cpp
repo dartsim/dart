@@ -967,7 +967,7 @@ void BatchedRigidBodyIntegrationStage::execute(
     World& world, ComputeExecutor& executor)
 {
   auto& registry = world.getRegistry();
-  const auto forces = assembleRigidBodyForces(world, false);
+  const auto forces = assembleRigidBodyForces(world, true);
   const auto& entities = forces.entities;
 
   if (entities.empty()) {
