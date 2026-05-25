@@ -75,6 +75,12 @@ add_library(${target_name}
   space/vector_mapper.cpp
   world.cpp
 )
+set_target_properties(${target_name}
+  PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
+    LIBRARY_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
+    RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+)
 dart_apply_strict_symbol_visibility(${target_name})
 dart_maybe_apply_coverage_config(${target_name})
 
