@@ -407,6 +407,49 @@ TEST(Serialization, WithRigidBodies)
   EXPECT_TRUE(world2.hasRigidBody("box2"));
 }
 
+TEST(Serialization, PreservesRigidBodyCollisionComponents)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world1;
+  auto ground = world1.addRigidBody("ground");
+  ground.setStatic(true);
+  ground.setRestitution(0.75);
+  ground.setFriction(0.25);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(1.0, 2.0, 0.5)));
+
+  auto ball = world1.addRigidBody("ball");
+  ball.setCollisionShape(sx::CollisionShape::makeSphere(0.3));
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  auto groundRestored = world2.getRigidBody("ground");
+  ASSERT_TRUE(groundRestored.has_value());
+  EXPECT_TRUE(groundRestored->isStatic());
+  EXPECT_DOUBLE_EQ(groundRestored->getRestitution(), 0.75);
+  EXPECT_DOUBLE_EQ(groundRestored->getFriction(), 0.25);
+
+  auto groundShape = groundRestored->getCollisionShape();
+  ASSERT_TRUE(groundShape.has_value());
+  EXPECT_EQ(groundShape->type, sx::CollisionShapeType::Box);
+  EXPECT_TRUE(
+      groundShape->halfExtents.isApprox(Eigen::Vector3d(1.0, 2.0, 0.5)));
+
+  auto ballRestored = world2.getRigidBody("ball");
+  ASSERT_TRUE(ballRestored.has_value());
+  EXPECT_FALSE(ballRestored->isStatic());
+
+  auto ballShape = ballRestored->getCollisionShape();
+  ASSERT_TRUE(ballShape.has_value());
+  EXPECT_EQ(ballShape->type, sx::CollisionShapeType::Sphere);
+  EXPECT_DOUBLE_EQ(ballShape->radius, 0.3);
+}
+
 TEST(Serialization, WithLoopClosures)
 {
   namespace sx = dart::simulation::experimental;

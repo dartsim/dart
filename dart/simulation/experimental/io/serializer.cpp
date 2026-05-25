@@ -201,6 +201,9 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
   registerComponentIfNeeded<comps::FreeFrameProperties>(registry);
 
   registerComponentIfNeeded<comps::RigidBodyTag>(registry);
+  registerComponentIfNeeded<comps::StaticBodyTag>(registry);
+  registerComponentIfNeeded<comps::CollisionGeometry>(registry);
+  registerComponentIfNeeded<comps::ContactMaterial>(registry);
 
   registerComponentIfNeeded<comps::MultibodyTag>(registry);
   registerComponentIfNeeded<comps::MultibodyStructure>(registry);
