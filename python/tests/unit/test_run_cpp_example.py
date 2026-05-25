@@ -189,13 +189,66 @@ def test_filament_routed_examples_do_not_inject_scene_defaults():
 
 
 def test_split_filament_scene_all_uses_smoke_scene_list(run_cpp_example):
-    scenes, args = run_cpp_example._split_filament_scenes(
+    scenes, args, scene_option_explicit = run_cpp_example._split_filament_scenes(
         ["--frames", "1", "--scene", "all", "--width", "320"]
     )
 
     assert tuple(scenes) == run_cpp_example.FILAMENT_ALL_SCENES
     assert args == ["--frames", "1", "--width", "320"]
+    assert scene_option_explicit is True
     assert "g1" not in scenes
+
+
+def test_split_filament_scenes_marks_implicit_editor_default(run_cpp_example):
+    scenes, args, scene_option_explicit = run_cpp_example._split_filament_scenes([])
+
+    assert scenes == ["mvp"]
+    assert args == []
+    assert scene_option_explicit is False
+
+
+def test_prepare_filament_run_args_keeps_no_scene_launch_for_editor(
+    run_cpp_example, monkeypatch
+):
+    monkeypatch.setenv("DISPLAY", ":99")
+
+    args = run_cpp_example._prepare_filament_run_args(
+        [], "mvp", scene_option_explicit=False, multiple_scenes=False
+    )
+
+    assert "--scene" not in args
+
+
+def test_prepare_filament_run_args_preserves_explicit_mvp_scene(
+    run_cpp_example, monkeypatch
+):
+    monkeypatch.setenv("DISPLAY", ":99")
+
+    args = run_cpp_example._prepare_filament_run_args(
+        [], "mvp", scene_option_explicit=True, multiple_scenes=False
+    )
+
+    assert args[:2] == ["--scene", "mvp"]
+
+
+def test_prepare_filament_run_args_preserves_mvp_scene_all(
+    run_cpp_example, monkeypatch
+):
+    monkeypatch.setenv("DISPLAY", ":99")
+    scenes, base_args, scene_option_explicit = (
+        run_cpp_example._split_filament_scenes(
+            ["--scene", "all", "--frames", "1"]
+        )
+    )
+
+    args = run_cpp_example._prepare_filament_run_args(
+        base_args,
+        scenes[0],
+        scene_option_explicit=scene_option_explicit,
+        multiple_scenes=len(scenes) > 1,
+    )
+
+    assert args[:4] == ["--frames", "1", "--scene", "mvp"]
 
 
 def test_filament_smoke_pattern_uses_scene_all_list(run_cpp_example):

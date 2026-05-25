@@ -407,7 +407,8 @@ def _filament_screenshot_path(scene: str) -> Path:
     return Path("build") / env_name / f"dartsim_{scene_suffix}.ppm"
 
 
-def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
+def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str], bool]:
+    """Return scenes, remaining args, and whether --scene was user-supplied."""
     args = list(run_args)
     for index, arg in enumerate(args):
         if arg != "--scene" or index + 1 >= len(args):
@@ -415,9 +416,9 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
         scene = args[index + 1]
         del args[index : index + 2]
         if scene == "all":
-            return list(FILAMENT_ALL_SCENES), args
-        return [scene], args
-    return ["mvp"], args
+            return list(FILAMENT_ALL_SCENES), args, True
+        return [scene], args, True
+    return ["mvp"], args, False
 
 
 def _path_with_scene(path: Path, scene: str) -> Path:
@@ -430,7 +431,10 @@ def _has_linux_display(env: Mapping[str, str]) -> bool:
 
 
 def _prepare_filament_run_args(
-    run_args: list[str], scene: str, multiple_scenes: bool
+    run_args: list[str],
+    scene: str,
+    scene_option_explicit: bool,
+    multiple_scenes: bool,
 ) -> list[str]:
     args = list(run_args)
     if _has_arg(args, "--help", "-h"):
@@ -439,7 +443,9 @@ def _prepare_filament_run_args(
     headless = _has_arg(args, "--headless") or (
         sys.platform.startswith("linux") and not _has_linux_display(os.environ)
     )
-    if scene != "mvp" and not _has_arg(args, "--scene"):
+    # No --scene means the standalone dartsim editor; explicit --scene mvp means
+    # the legacy MVP fixture and must stay explicit after scene expansion.
+    if (scene != "mvp" or scene_option_explicit) and not _has_arg(args, "--scene"):
         args.extend(["--scene", scene])
     if headless and not _has_arg(args, "--headless"):
         args.append("--headless")
@@ -612,10 +618,12 @@ def _run_example_binary(
         subprocess.run([str(binary), *run_args], check=True, env=runtime_env)
         return
 
-    scenes, base_args = _split_filament_scenes(run_args)
+    scenes, base_args, scene_option_explicit = _split_filament_scenes(run_args)
     multiple_scenes = len(scenes) > 1
     for scene in scenes:
-        prepared_args = _prepare_filament_run_args(base_args, scene, multiple_scenes)
+        prepared_args = _prepare_filament_run_args(
+            base_args, scene, scene_option_explicit, multiple_scenes
+        )
         headless = _uses_headless_filament(prepared_args)
         runtime_env = _runtime_env(env, build_dir, software_gl=headless)
         command = [str(binary), *prepared_args]
