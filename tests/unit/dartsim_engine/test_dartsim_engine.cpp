@@ -470,6 +470,29 @@ TEST(SceneIO, RejectsUnsupportedVersion)
   EXPECT_FALSE(scene_io::load("dartsim-scene 2\ntimestep 0.001\n", out));
 }
 
+TEST(SceneIO, RejectsDuplicateObjectIds)
+{
+  const std::string text
+      = "dartsim-scene 1\n"
+        "timestep 0.001\n"
+        "object\n"
+        "id 7\n"
+        "type 0\n"
+        "parent 0\n"
+        "name first\n"
+        "end\n"
+        "object\n"
+        "id 7\n"
+        "type 0\n"
+        "parent 0\n"
+        "name second\n"
+        "end\n";
+
+  SceneModel out;
+  EXPECT_FALSE(scene_io::load(text, out));
+  EXPECT_TRUE(out.empty());
+}
+
 TEST(CommandManager, DuplicateExplicitNamesAreDeduplicated)
 {
   ObjectManager objects;

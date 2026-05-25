@@ -249,6 +249,13 @@ bool load(std::string_view text, SceneModel& out)
     }
   }
 
+  std::unordered_set<ObjectId> objectIds;
+  for (const SceneObject& object : objects) {
+    if (!objectIds.insert(object.id).second) {
+      return false;
+    }
+  }
+
   // Insert parent-before-child so tree links resolve, preserving ids.
   std::unordered_set<ObjectId> inserted;
   bool progressed = true;
