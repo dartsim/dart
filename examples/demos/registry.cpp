@@ -61,6 +61,18 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Visualization",
        "Custom ImGui panels and a gizmo-draggable target frame.",
        &makeImguiScene});
+  scenes.push_back(
+      {"heightmap",
+       "Heightmap",
+       "Visualization",
+       "An interactive procedural heightmap with a configurable grid.",
+       &makeHeightmapScene});
+  scenes.push_back(
+      {"point_cloud",
+       "Point Cloud",
+       "Visualization",
+       "Animated point-cloud and voxel-grid sensor rendering on a robot.",
+       &makePointCloudScene});
 
   // Rigid Body
   scenes.push_back(
@@ -93,6 +105,12 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Rigid Body",
        "Sensor markers, force/torque arrows, and body selection.",
        &makeSimulationEventHandlerScene});
+  scenes.push_back(
+      {"rigid_shapes",
+       "Rigid Shapes",
+       "Rigid Body",
+       "Spawn assorted rigid shapes with a contact-point cloud.",
+       &makeRigidShapesScene});
 
   // Collision
   scenes.push_back(
@@ -139,6 +157,18 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Constraints & Joints",
        "FreeJoint integration cases compared against reference bodies.",
        &makeFreeJointCasesScene});
+  scenes.push_back(
+      {"lcp_physics",
+       "LCP Physics",
+       "Constraints & Joints",
+       "LCP solver benchmark scenarios comparing Dantzig and PGS.",
+       &makeLcpPhysicsScene});
+  scenes.push_back(
+      {"tinkertoy",
+       "Tinkertoy",
+       "Constraints & Joints",
+       "Interactively assemble jointed structures from blocks.",
+       &makeTinkertoyScene});
 
   // Control & IK
   scenes.push_back(
@@ -153,6 +183,30 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Control & IK",
        "Balanced full-body PD control with a harness constraint.",
        &makeJointConstraintsScene});
+  scenes.push_back(
+      {"biped_stand",
+       "Biped Stand",
+       "Control & IK",
+       "A biped balancing with SPD control under push perturbations.",
+       &makeBipedStandScene});
+  scenes.push_back(
+      {"operational_space_control",
+       "Operational Space Control",
+       "Control & IK",
+       "A KR5 arm tracks a draggable target via operational-space control.",
+       &makeOperationalSpaceControlScene});
+  scenes.push_back(
+      {"atlas_puppet",
+       "Atlas Puppet",
+       "Control & IK",
+       "Atlas whole-body IK puppet with balance and support overlays.",
+       &makeAtlasPuppetScene});
+  scenes.push_back(
+      {"hubo_puppet",
+       "Hubo Puppet",
+       "Control & IK",
+       "Hubo puppet driven by analytical arm and leg IK.",
+       &makeHuboPuppetScene});
 
   // Soft Bodies
   scenes.push_back(
@@ -169,6 +223,12 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        &makeSoftBodiesScene});
 
   // Robots
+  scenes.push_back(
+      {"fetch",
+       "Fetch",
+       "Robots",
+       "A Fetch robot's end effector follows an interactive target.",
+       &makeFetchScene});
   scenes.push_back(
       {"vehicle",
        "Vehicle",

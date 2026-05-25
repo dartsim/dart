@@ -33,6 +33,16 @@ set(dart_demos_sources
   "${CMAKE_CURRENT_LIST_DIR}/scenes/free_joint_cases.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/joint_constraints.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/soft_bodies.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/rigid_shapes.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/heightmap.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/lcp_physics.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/biped_stand.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/tinkertoy.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/operational_space_control.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/point_cloud.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/fetch.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/atlas_puppet.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/hubo_puppet.cpp"
 )
 
 dart_build_gui_example(dart-demos ${dart_demos_sources})

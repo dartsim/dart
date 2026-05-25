@@ -46,6 +46,16 @@ dart::gui::ApplicationOptions makeRigidLoopScene();
 dart::gui::ApplicationOptions makeFreeJointCasesScene();
 dart::gui::ApplicationOptions makeJointConstraintsScene();
 dart::gui::ApplicationOptions makeSoftBodiesScene();
+dart::gui::ApplicationOptions makeRigidShapesScene();
+dart::gui::ApplicationOptions makeHeightmapScene();
+dart::gui::ApplicationOptions makeLcpPhysicsScene();
+dart::gui::ApplicationOptions makeBipedStandScene();
+dart::gui::ApplicationOptions makeTinkertoyScene();
+dart::gui::ApplicationOptions makeOperationalSpaceControlScene();
+dart::gui::ApplicationOptions makePointCloudScene();
+dart::gui::ApplicationOptions makeFetchScene();
+dart::gui::ApplicationOptions makeAtlasPuppetScene();
+dart::gui::ApplicationOptions makeHuboPuppetScene();
 
 /// Ordered demo catalog. Categories are shown in first-appearance order; scenes
 /// appear in this vector's order within each category.

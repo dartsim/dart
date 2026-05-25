@@ -8,9 +8,8 @@
  * This file is provided under the "BSD-style" License.
  */
 
-#include "scenes.hpp"
-
 #include "../../gui_source_grid.hpp"
+#include "scenes.hpp"
 
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
@@ -295,7 +294,8 @@ void addSimulationControls(
   }
 }
 
-dart::gui::Panel createHeightmapPanel(std::shared_ptr<HeightmapPanelState> state)
+dart::gui::Panel createHeightmapPanel(
+    std::shared_ptr<HeightmapPanelState> state)
 {
   dart::gui::Panel panel;
   panel.title = "Heightmap Demo";

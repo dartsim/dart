@@ -8,9 +8,8 @@
  * This file is provided under the "BSD-style" License.
  */
 
-#include "scenes.hpp"
-
 #include "../../gui_source_grid.hpp"
+#include "scenes.hpp"
 
 #include <dart/gui/panel.hpp>
 

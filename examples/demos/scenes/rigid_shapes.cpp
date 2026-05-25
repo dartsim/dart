@@ -10,6 +10,8 @@
 
 #include "scenes.hpp"
 
+#include <dart/config.hpp>
+
 #include <dart/gui/panel.hpp>
 #include <dart/gui/viewer.hpp>
 
