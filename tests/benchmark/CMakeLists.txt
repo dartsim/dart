@@ -364,6 +364,14 @@ target_link_libraries(bm_helpers
 )
 dart_format_add(math/bm_helpers.cpp)
 
+add_executable(bm_group_product math/bm_group_product.cpp)
+target_link_libraries(bm_group_product
+  dart
+  benchmark::benchmark
+  benchmark::benchmark_main
+)
+dart_format_add(math/bm_group_product.cpp)
+
 add_executable(bm_spatial_algebra math/bm_spatial_algebra.cpp)
 target_link_libraries(bm_spatial_algebra
   dart

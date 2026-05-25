@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2023, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -19,7 +19,7 @@
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
  *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
  *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
@@ -30,44 +30,44 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FWD_HPP_
-#define DART_COLLISION_FWD_HPP_
+#pragma once
 
-#include <dart/common/smart_pointer.hpp>
+#include <dart/math/lie_group/inverse_base.hpp>
 
-namespace dart {
-namespace collision {
+namespace Eigen::internal {
 
-class CollisionDetector;
-class CollisionFilter;
-class CollisionGroup;
-class CollisionObject;
+template <typename RnDerived>
+struct traits<::dart::math::RnInverse<RnDerived>>
+  : traits<::dart::math::Rn<typename RnDerived::Scalar, RnDerived::DoF>>
+{
+};
 
-struct CollisionOption;
-class CollisionResult;
-struct Contact;
+} // namespace Eigen::internal
 
-struct DistanceFilter;
-struct DistanceOption;
-struct DistanceResult;
+namespace dart::math {
 
-enum class ContinuousCollisionAdvancement;
-struct ContinuousCollisionHit;
-struct ContinuousCollisionOption;
-struct ContinuousCollisionResult;
+/// Lightweight inverse expression for additive R^n groups.
+template <typename RnDerived>
+class RnInverse : public InverseBase<RnInverse<RnDerived>>
+{
+public:
+  using Base = InverseBase<RnInverse<RnDerived>>;
+  using LieGroup = typename Base::LieGroup;
 
-struct RaycastOption;
-struct RaycastResult;
+  using Base::eval;
 
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DartCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
+  explicit RnInverse(const RnDerived& rn) : m_rn(rn)
+  {
+    // Do nothing
+  }
 
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
+  [[nodiscard]] const RnDerived& original() const
+  {
+    return m_rn;
+  }
 
-} // namespace collision
-} // namespace dart
+protected:
+  const RnDerived& m_rn;
+};
 
-#endif // DART_COLLISION_FWD_HPP_
+} // namespace dart::math

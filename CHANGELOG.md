@@ -127,6 +127,10 @@
     `SparseOccupancyGrid` storage. OctoMap is no longer discovered or linked by
     core DART libraries and remains available only to tests and benchmarks for
     reference comparisons.
+  - Added `dart::math::GroupProduct` for typed direct products of Lie groups
+    and additive `dart::math::Rn` factors for Euclidean joint coordinates,
+    including componentwise composition, inverse expressions, Eigen map support,
+    block-diagonal matrix views, and focused lie-group unit coverage.
   - Fixed Filament mesh material extraction so legacy textured meshes without
     PBR metalness import as dielectric surfaces, restoring visible Atlas
     texture detail in `dartsim`, `atlas_puppet`, and `atlas_simbicon`.
@@ -768,6 +772,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Replace crash-causing `DART_ASSERT` with `DART_WARN` + graceful recovery for non-finite transforms in Joint setters, BodyNode update pipeline, GenericJoint inertia propagation, and MJCF parser validation. ([gz-physics#861](https://github.com/gazebosim/gz-physics/issues/861), [gz-physics#862](https://github.com/gazebosim/gz-physics/issues/862))
 
 - Collision and Geometry
+  - Added public DART and dartpy continuous collision queries for swept sphere
+    and capsule casts, including detector/group options and results plus native
+    swept-AABB broad-phase pruning for world-level cast candidates.
   - Added IPC-class primitive continuous collision detection to the native
     collision backend: conservative, minimum-separation-aware point-triangle and
     edge-edge time-of-impact queries (additive conservative advancement) for

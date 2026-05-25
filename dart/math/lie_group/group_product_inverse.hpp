@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2011, The DART development contributors
+ * Copyright (c) 2011-2023, The DART development contributors
  * All rights reserved.
  *
  * The list of contributors can be found at:
- *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *   https://github.com/dartsim/dart/blob/master/LICENSE
  *
  * This file is provided under the following "BSD-style" License:
  *   Redistribution and use in source and binary forms, with or
@@ -30,44 +30,49 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FWD_HPP_
-#define DART_COLLISION_FWD_HPP_
+#pragma once
 
-#include <dart/common/smart_pointer.hpp>
+#include <dart/math/lie_group/inverse_base.hpp>
 
-namespace dart {
-namespace collision {
+namespace Eigen::internal {
 
-class CollisionDetector;
-class CollisionFilter;
-class CollisionGroup;
-class CollisionObject;
+template <typename GroupProductDerived>
+struct traits<::dart::math::GroupProductInverse<GroupProductDerived>>
+  : traits<typename GroupProductDerived::LieGroup>
+{
+};
 
-struct CollisionOption;
-class CollisionResult;
-struct Contact;
+} // namespace Eigen::internal
 
-struct DistanceFilter;
-struct DistanceOption;
-struct DistanceResult;
+namespace dart::math {
 
-enum class ContinuousCollisionAdvancement;
-struct ContinuousCollisionHit;
-struct ContinuousCollisionOption;
-struct ContinuousCollisionResult;
+/// Lightweight inverse expression for GroupProduct.
+///
+/// The expression references the original product and materializes only when
+/// evaluated, matching SO3Inverse and SE3Inverse.
+template <typename GroupProductDerived>
+class GroupProductInverse
+  : public InverseBase<GroupProductInverse<GroupProductDerived>>
+{
+public:
+  using Base = InverseBase<GroupProductInverse<GroupProductDerived>>;
+  using LieGroup = typename Base::LieGroup;
 
-struct RaycastOption;
-struct RaycastResult;
+  using Base::eval;
 
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DartCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
+  explicit GroupProductInverse(const GroupProductDerived& groupProduct)
+    : m_groupProduct(groupProduct)
+  {
+    // Do nothing
+  }
 
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
+  const GroupProductDerived& original() const
+  {
+    return m_groupProduct;
+  }
 
-} // namespace collision
-} // namespace dart
+protected:
+  const GroupProductDerived& m_groupProduct;
+};
 
-#endif // DART_COLLISION_FWD_HPP_
+} // namespace dart::math

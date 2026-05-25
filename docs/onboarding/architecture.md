@@ -138,6 +138,15 @@ DART follows a **modular layered architecture** with clear separation of concern
 
 - **Icosphere.hpp** - Icosphere generation for spherical structures
 
+- **lie_group/** - Typed Lie-group values for SO(3), SE(3), additive R^n
+  factors, tangents, spatial inertia, batch operations, and direct products.
+  `GroupProduct` represents a direct product of component Lie groups: storage
+  is contiguous, while composition, inverse, normalization, logarithm, and map
+  access are componentwise. Humanoid-like configuration products can combine a
+  floating `SE3`, spherical `SO3` joints, and scalar `R1` joints. Keep new
+  composite Lie-group work in the typed C++ surface first; dartpy should expose
+  only Python workflows that are useful without templated C++ machinery.
+
 **Dependencies:**
 
 - Heavy use of **Eigen** library for linear algebra
@@ -233,6 +242,7 @@ CollisionDetector (Factory)
   - `collide(group1, group2, option, result)` - Collision detection
   - `distance(group1, group2, option, result)` - Distance queries
   - `raycast(group, from, to, option, result)` - Ray casting
+  - `sphereCast(...)` / `capsuleCast(...)` - Continuous swept queries
 
 **2. CollisionGroup** (`dart/collision/CollisionGroup.hpp`)
 
@@ -257,7 +267,20 @@ CollisionDetector (Factory)
 - `CollisionResult` - Stores all contacts from query
 - `DistanceOption/Result` - For distance queries
 - `RaycastOption/Result` - For ray casting
+- `ContinuousCollisionOption/Result` - For swept sphere/capsule casts
 - `CollisionFilter` - Filters collision pairs
+
+---
+
+#### Continuous Collision Queries
+
+DART's native collision backend owns public sphere and capsule cast support.
+The public detector/group API maps those casts through `DartCollisionGroup` into
+the native world, where swept AABBs prune broad-phase candidates before CCD
+narrow-phase work. The public result stores the hit `CollisionObject`, time of
+impact, witness point, and normal; dartpy exposes the same result shape and must
+use the shared polymorphic type-caster helpers when returning DART frame objects
+from collision bindings.
 
 ---
 
