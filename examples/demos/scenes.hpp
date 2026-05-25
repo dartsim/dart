@@ -23,8 +23,29 @@ namespace dart::examples::demos {
 // scene at runtime.
 
 dart::gui::ApplicationOptions makeHelloWorldScene();
+dart::gui::ApplicationOptions makeEmptyScene();
 dart::gui::ApplicationOptions makeShapesScene();
+dart::gui::ApplicationOptions makeSimpleFramesScene();
+dart::gui::ApplicationOptions makeDragAndDropScene();
+dart::gui::ApplicationOptions makePolyhedronVisualScene();
 dart::gui::ApplicationOptions makeBoxesScene();
+dart::gui::ApplicationOptions makeRigidCubesScene();
+dart::gui::ApplicationOptions makeAddDeleteSkelsScene();
+dart::gui::ApplicationOptions makeCapsuleGroundContactScene();
+dart::gui::ApplicationOptions makeHardcodedDesignScene();
+dart::gui::ApplicationOptions makeBoxStackingScene();
+dart::gui::ApplicationOptions makeHybridDynamicsScene();
+dart::gui::ApplicationOptions makeVehicleScene();
+dart::gui::ApplicationOptions makeImguiScene();
+dart::gui::ApplicationOptions makeSimulationEventHandlerScene();
+dart::gui::ApplicationOptions makeMixedChainScene();
+dart::gui::ApplicationOptions makeCouplerConstraintScene();
+dart::gui::ApplicationOptions makeMimicPendulumsScene();
+dart::gui::ApplicationOptions makeRigidChainScene();
+dart::gui::ApplicationOptions makeRigidLoopScene();
+dart::gui::ApplicationOptions makeFreeJointCasesScene();
+dart::gui::ApplicationOptions makeJointConstraintsScene();
+dart::gui::ApplicationOptions makeSoftBodiesScene();
 
 /// Ordered demo catalog. Categories are shown in first-appearance order; scenes
 /// appear in this vector's order within each category.

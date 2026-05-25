@@ -65,6 +65,7 @@
 #include <utils/Log.h>
 
 #include <array>
+#include <exception>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -373,8 +374,21 @@ int runGuiBackendApplicationImpl(
   // while the window, engine, materials, lights, and ImGui overlay persist.
   while (keepRunning) {
     if (demoCatalog != nullptr) {
-      const dart::gui::ApplicationOptions sceneOptions
-          = (*demoCatalog)[static_cast<std::size_t>(activeIndex)].factory();
+      const auto& demoEntry
+          = (*demoCatalog)[static_cast<std::size_t>(activeIndex)];
+      dart::gui::ApplicationOptions sceneOptions;
+      try {
+        sceneOptions = demoEntry.factory();
+      } catch (const std::exception& error) {
+        // Soft-fail: a scene that cannot build (e.g. a missing asset) must not
+        // crash the host. Show an empty world so the sidebar stays usable.
+        std::cerr << "demo scene '" << demoEntry.id
+                  << "' failed to load: " << error.what() << "\n";
+        sceneOptions = dart::gui::ApplicationOptions{};
+      }
+      if (sceneOptions.world == nullptr) {
+        sceneOptions.world = dart::simulation::World::create("(empty)");
+      }
       applySceneOptions(
           appOptions, sceneOptions, renderOutputModeExplicit, renderOutputMode);
       std::vector<dart::gui::Panel> panels;

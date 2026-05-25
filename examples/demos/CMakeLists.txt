@@ -10,12 +10,37 @@ set(dart_demos_sources
   "${CMAKE_CURRENT_LIST_DIR}/app/main.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/registry.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/hello_world.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/empty.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/shapes.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/simple_frames.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/drag_and_drop.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/polyhedron_visual.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/boxes.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/rigid_cubes.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/add_delete_skels.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/capsule_ground_contact.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/hardcoded_design.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/box_stacking.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/hybrid_dynamics.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/vehicle.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/imgui.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/simulation_event_handler.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/mixed_chain.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/coupler_constraint.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/mimic_pendulums.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/rigid_chain.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/rigid_loop.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/free_joint_cases.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/joint_constraints.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/scenes/soft_bodies.cpp"
 )
 
 dart_build_gui_example(dart-demos ${dart_demos_sources})
 
 if(TARGET dart-demos)
   target_include_directories(dart-demos PRIVATE "${CMAKE_CURRENT_LIST_DIR}")
+  # Scenes load worlds/skeletons via dart::io (URDF/SDF/SKEL). Collision
+  # backends (ODE/Bullet) are selected through runtime factories, so they need
+  # no extra link here.
+  target_link_libraries(dart-demos PRIVATE dart-io)
 endif()
