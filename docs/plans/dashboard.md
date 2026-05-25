@@ -261,3 +261,26 @@ its own line so status updates remain git-history friendly.
   World only; the renderer stays backend-hidden (PLAN-060); and the default
   `dartsim` headless smoke (`DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS`) renders a
   non-blank editor frame while legacy `--scene` smokes keep contrast.
+
+### PLAN-102: Demos App
+
+- Owner doc: [`102-demos-app.md`](102-demos-app.md); active architecture in
+  [`../dev_tasks/demos_app/01-design.md`](../dev_tasks/demos_app/01-design.md),
+  execution tracking in
+  [`../dev_tasks/demos_app/README.md`](../dev_tasks/demos_app/README.md).
+- Status: Active
+- Horizon: Now
+- Dimension: Easy start
+- Next step: Phase 1 — add a `dart::gui` runtime scene-swap host (`runDemos`)
+  plus a Demos sidebar, scaffold `examples/demos/` (`demos_scenes` lib +
+  `dart-demos` app), and port 3 seed scenes with a scene-switching headless smoke.
+- Gate: `dart-demos` launches and switches across several scenes (including an
+  asset-backed robot) in one window without leaks or window recreation; the
+  example renderable-count and per-scene headless smokes run against the Demos
+  registry; no standalone GUI example binary or `--scene` example path remains
+  (only `hello_world` stays standalone); `pixi run lint`, `build`, `test-all`,
+  and `check-docs-policy` green.
+
+> Cross-plan note: removing the `--scene` example catalog supersedes PLAN-101's
+> "legacy `--scene` smokes keep contrast" gate clause; update that clause when
+> PLAN-102 Phase 3 lands.
