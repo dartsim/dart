@@ -792,6 +792,38 @@ TEST(SimEngine, EditCommandsAreIgnoredInRunMode)
   EXPECT_FALSE(engine.objects().model().contains(id));
 }
 
+TEST(SimEngine, SimulationModeChangesEmitModeChanged)
+{
+  SimEngine engine;
+  int modeChanges = 0;
+  engine.events().subscribe([&](const Event& event) {
+    if (event.type == EventType::ModeChanged) {
+      ++modeChanges;
+    }
+  });
+
+  engine.simulation().pause();
+  EXPECT_EQ(modeChanges, 0);
+
+  engine.simulation().play();
+  EXPECT_EQ(modeChanges, 1);
+
+  engine.simulation().play();
+  EXPECT_EQ(modeChanges, 1);
+
+  engine.simulation().pause();
+  EXPECT_EQ(modeChanges, 2);
+
+  engine.simulation().reset();
+  EXPECT_EQ(modeChanges, 3);
+
+  engine.simulation().step(1);
+  EXPECT_EQ(modeChanges, 4);
+
+  engine.simulation().clearForNewScene();
+  EXPECT_EQ(modeChanges, 5);
+}
+
 TEST(SimEngine, ProjectFileRoundTrip)
 {
   const std::filesystem::path path

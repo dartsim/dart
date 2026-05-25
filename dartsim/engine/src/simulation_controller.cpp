@@ -53,15 +53,32 @@ void SimulationController::enterRunMode()
   }
 }
 
+void SimulationController::notifyModeChangedIfNeeded(
+    Mode beforeMode, bool beforeRunning)
+{
+  if (m_mode == beforeMode && m_running == beforeRunning) {
+    return;
+  }
+  if (onModeChanged) {
+    onModeChanged();
+  }
+}
+
 void SimulationController::play()
 {
+  const Mode beforeMode = m_mode;
+  const bool beforeRunning = m_running;
   enterRunMode();
   m_running = true;
+  notifyModeChangedIfNeeded(beforeMode, beforeRunning);
 }
 
 void SimulationController::pause()
 {
+  const Mode beforeMode = m_mode;
+  const bool beforeRunning = m_running;
   m_running = false;
+  notifyModeChangedIfNeeded(beforeMode, beforeRunning);
 }
 
 void SimulationController::togglePause()
@@ -83,7 +100,10 @@ void SimulationController::stepOnce()
 
 void SimulationController::step(std::size_t count)
 {
+  const Mode beforeMode = m_mode;
+  const bool beforeRunning = m_running;
   enterRunMode();
+  notifyModeChangedIfNeeded(beforeMode, beforeRunning);
   for (std::size_t i = 0; i < count; ++i) {
     stepOnce();
   }
@@ -91,21 +111,27 @@ void SimulationController::step(std::size_t count)
 
 void SimulationController::reset()
 {
+  const Mode beforeMode = m_mode;
+  const bool beforeRunning = m_running;
   if (m_haveSnapshot) {
     m_objects.setModel(m_designSnapshot);
   }
   m_mode = Mode::Edit;
   m_running = false;
   m_accumulator = 0.0;
+  notifyModeChangedIfNeeded(beforeMode, beforeRunning);
 }
 
 void SimulationController::clearForNewScene()
 {
+  const Mode beforeMode = m_mode;
+  const bool beforeRunning = m_running;
   m_mode = Mode::Edit;
   m_running = false;
   m_accumulator = 0.0;
   m_haveSnapshot = false;
   m_designSnapshot = SceneModel{};
+  notifyModeChangedIfNeeded(beforeMode, beforeRunning);
 }
 
 void SimulationController::advance(double realSeconds)

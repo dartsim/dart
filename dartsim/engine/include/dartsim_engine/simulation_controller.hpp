@@ -100,11 +100,15 @@ public:
   [[nodiscard]] double simTime() const;
   [[nodiscard]] std::size_t frameCount() const;
 
+  /// Invoked when Edit/Run mode or running state changes.
+  std::function<void()> onModeChanged;
+
   /// Invoked after each individual step (used to record replay frames).
   std::function<void()> onAfterStep;
 
 private:
   void enterRunMode();
+  void notifyModeChangedIfNeeded(Mode beforeMode, bool beforeRunning);
   void stepOnce();
 
   ObjectManager& m_objects;

@@ -47,6 +47,9 @@ SimEngine::SimEngine()
   m_simulation.onAfterStep = [this]() {
     m_recorder.capture(m_objects.world());
   };
+  m_simulation.onModeChanged = [this]() {
+    m_events.emit(EventType::ModeChanged);
+  };
 }
 
 SimEngine::~SimEngine() = default;
