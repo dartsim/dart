@@ -2,10 +2,11 @@
 """Check that core package manifests do not depend on GPU runtimes.
 
 Phase 5 GPU support must ship as an optional sidecar. The default DART Pixi
-dependencies and official dartpy wheel metadata must not acquire CUDA, SYCL,
-ROCm/HIP, or other compute-runtime dependencies. Explicit opt-in Pixi features
-or environments may carry those dependencies because they are not part of the
-default install surface.
+dependencies, features included by the default Pixi environment, and official
+dartpy wheel metadata must not acquire CUDA, SYCL, ROCm/HIP, or other
+compute-runtime dependencies. Explicit opt-in Pixi features or environments may
+carry those dependencies because they are not part of the default install
+surface.
 """
 
 from __future__ import annotations
@@ -89,9 +90,35 @@ def _iter_values(value: Any, path: tuple[str, ...]):
         yield path, value
 
 
-def _is_pixi_dependency_path(path: tuple[str, ...]) -> bool:
+def _environment_features(environment: Any) -> set[str]:
+    if isinstance(environment, list):
+        return {str(feature) for feature in environment}
+    if isinstance(environment, dict):
+        features = environment.get("features", [])
+        if isinstance(features, str):
+            return {features}
+        if isinstance(features, list):
+            return {str(feature) for feature in features}
+    return set()
+
+
+def _default_pixi_features(data: dict[str, Any]) -> set[str]:
+    environments = data.get("environments", {})
+    if not isinstance(environments, dict):
+        return set()
+    return _environment_features(environments.get("default"))
+
+
+def _is_pixi_dependency_path(
+    path: tuple[str, ...],
+    data: dict[str, Any],
+) -> bool:
     if path[:1] == ("feature",):
-        return False
+        return (
+            len(path) > 2
+            and path[1] in _default_pixi_features(data)
+            and ("dependencies" in path[2:] or "pypi-dependencies" in path[2:])
+        )
     return "dependencies" in path or "pypi-dependencies" in path
 
 
@@ -99,9 +126,13 @@ def _is_pyproject_scanned_path(path: tuple[str, ...]) -> bool:
     return any(path[: len(prefix)] == prefix for prefix in PYPROJECT_SCANNED_PATHS)
 
 
-def _is_scanned_path(path: Path, key_path: tuple[str, ...]) -> bool:
+def _is_scanned_path(
+    path: Path,
+    data: dict[str, Any],
+    key_path: tuple[str, ...],
+) -> bool:
     if path.name == "pixi.toml":
-        return _is_pixi_dependency_path(key_path)
+        return _is_pixi_dependency_path(key_path, data)
     if path.name == "pyproject.toml":
         return _is_pyproject_scanned_path(key_path)
     return False
@@ -114,7 +145,7 @@ def find_manifest_violations(path: Path, data: dict[str, Any]) -> list[Violation
     )
 
     for key_path, value in _iter_values(data, ()):
-        if not _is_scanned_path(path, key_path):
+        if not _is_scanned_path(path, data, key_path):
             continue
 
         key_term = _matching_term(_join_path(key_path))
@@ -156,6 +187,13 @@ def run_self_tests() -> None:
     }
     if find_manifest_violations(REPO_ROOT / "pixi.toml", cuda_feature_pixi):
         raise AssertionError("optional pixi CUDA feature self-test failed")
+
+    default_feature_pixi = {
+        "feature": {"py-default": {"dependencies": {"cuda-version": "12.*"}}},
+        "environments": {"default": ["py-default"]},
+    }
+    if not find_manifest_violations(REPO_ROOT / "pixi.toml", default_feature_pixi):
+        raise AssertionError("default pixi feature GPU dependency self-test failed")
 
     bad_pyproject = {"build-system": {"requires": ["cupy>=13"]}}
     if not find_manifest_violations(REPO_ROOT / "pyproject.toml", bad_pyproject):

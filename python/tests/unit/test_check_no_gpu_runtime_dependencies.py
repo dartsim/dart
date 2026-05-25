@@ -73,6 +73,30 @@ def test_no_gpu_runtime_dependency_check_allows_opt_in_pixi_cuda_feature():
     assert violations == []
 
 
+def test_no_gpu_runtime_dependency_check_rejects_default_feature_cuda_dependency():
+    module = _load_module()
+
+    violations = module.find_manifest_violations(
+        ROOT / "pixi.toml",
+        {
+            "feature": {
+                "py-default": {
+                    "dependencies": {
+                        "cuda-version": "12.*",
+                    },
+                },
+            },
+            "environments": {
+                "default": ["py-default"],
+            },
+        },
+    )
+
+    assert [(violation.key_path, violation.term) for violation in violations] == [
+        ("feature.py-default.dependencies.cuda-version", "cuda"),
+    ]
+
+
 def test_no_gpu_runtime_dependency_check_rejects_default_target_cuda_dependency():
     module = _load_module()
 
