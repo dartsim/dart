@@ -49,6 +49,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -386,10 +387,25 @@ dart::gui::Panel makePanel(
   return panel;
 }
 
+bool hasSceneOption(int argc, char* argv[])
+{
+  for (int i = 1; i < argc; ++i) {
+    if (argv[i] != nullptr && std::string_view(argv[i]) == "--scene") {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 } // namespace
 
 int runEditor(int argc, char* argv[])
 {
+  if (hasSceneOption(argc, argv)) {
+    return dart::gui::runApplication(argc, argv);
+  }
+
   auto app = std::make_shared<EditorApp>();
   seedDemoScene(*app);
 

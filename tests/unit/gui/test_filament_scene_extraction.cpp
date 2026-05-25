@@ -410,6 +410,9 @@ constexpr std::array<std::string_view, 4> kForbiddenPromotedGuiTokens
 const std::filesystem::path kDartsimApplicationDirectory
     = std::filesystem::path("dartsim") / "app";
 
+const std::filesystem::path kDartsimUiDirectory
+    = std::filesystem::path("dartsim") / "ui";
+
 struct BackendTokenViolation
 {
   std::filesystem::path source;
@@ -4650,6 +4653,35 @@ TEST(FilamentSceneExtraction, DartsimApplicationEntryPointStaysMinimal)
       countOccurrences(
           mainSource, "return dartsim::ui::runEditor(argc, argv);"),
       1u);
+}
+
+TEST(FilamentSceneExtraction, DartsimSceneFixtureModeSkipsEditorPanels)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_NE(
+      editorSource.find("std::string_view(argv[i]) == \"--scene\""),
+      std::string::npos);
+
+  const auto fixtureModeGuard
+      = editorSource.find("if (hasSceneOption(argc, argv))");
+  ASSERT_NE(fixtureModeGuard, std::string::npos);
+  const auto fixtureModeReturn = editorSource.find(
+      "return dart::gui::runApplication(argc, argv);", fixtureModeGuard);
+  ASSERT_NE(fixtureModeReturn, std::string::npos);
+
+  const auto appConstruction
+      = editorSource.find("auto app = std::make_shared<EditorApp>();");
+  const auto demoSeeding = editorSource.find("seedDemoScene(*app);");
+  const auto panelRegistration = editorSource.find("options.panels.push_back");
+  ASSERT_NE(appConstruction, std::string::npos);
+  ASSERT_NE(demoSeeding, std::string::npos);
+  ASSERT_NE(panelRegistration, std::string::npos);
+
+  EXPECT_LT(fixtureModeReturn, appConstruction);
+  EXPECT_LT(fixtureModeReturn, demoSeeding);
+  EXPECT_LT(fixtureModeReturn, panelRegistration);
 }
 
 TEST(FilamentSceneExtraction, DartsimApplicationKeepsOnlyMinimalCppEntryPoint)
