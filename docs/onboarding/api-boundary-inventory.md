@@ -14,8 +14,8 @@ documented downstream migration or removal condition is satisfied.
 
 ## Summary
 
-- C++ public headers scanned: 444
-- C++ headers with exposed implementation debt: 105
+- C++ public headers scanned: 448
+- C++ headers with exposed implementation debt: 107
 - C++ headers with compatibility signals: 51
 - dartpy binding sources scanned: 158
 - dartpy binding sources with allowlisted compatibility debt: 8
@@ -31,7 +31,7 @@ documented downstream migration or removal condition is satisfied.
 | gui                     | 13      | 13        | 0             | 0            | 0            |
 | io                      | 2       | 2         | 0             | 0            | 0            |
 | lcpsolver               | 7       | 1         | 0             | 0            | 6            |
-| math                    | 69      | 48        | 3             | 0            | 18           |
+| math                    | 73      | 50        | 3             | 0            | 20           |
 | optimizer               | 8       | 3         | 5             | 0            | 0            |
 | sensor                  | 3       | 3         | 0             | 0            | 0            |
 | simd                    | 16      | 11        | 0             | 0            | 5            |
@@ -122,6 +122,8 @@ documented downstream migration or removal condition is satisfied.
 | dart/math/geometry.hpp                                     | math                    | 1                | 0                  | `#include <dart/math/detail/geometry-impl.hpp>`                                                                                                    |
 | dart/math/helpers.hpp                                      | math                    | 0                | 3                  | `return detail::valueEqualFloating(lhs, rhs);`<br>`detail::ArithmeticScalar<typename DerivedA::Scalar>`                                            |
 | dart/math/icosphere.hpp                                    | math                    | 1                | 0                  | `#include <dart/math/detail/icosphere-impl.hpp>`                                                                                                   |
+| dart/math/lie_group/group_product.hpp                      | math                    | 0                | 2                  | `/// Specialization of Eigen::internal::traits for GroupProduct.`<br>`= ::dart::math::detail::getGroupProductParamIndices<`                        |
+| dart/math/lie_group/group_product_base.hpp                 | math                    | 0                | 8                  | `= ::Eigen::internal::traits<Derived>::ProductSize;`<br>`= ::Eigen::internal::traits<Derived>::ParamSizes;`                                        |
 | dart/math/lie_group/inverse_base.hpp                       | math                    | 0                | 4                  | `// typename ::Eigen::internal::traits<InverseDerived>::LieGroup>`<br>`using Scalar = typename ::Eigen::internal::traits<InverseDerived>::Scalar;` |
 | dart/math/lie_group/lie_group_base.hpp                     | math                    | 1                | 11                 | `#include <dart/math/lie_group/detail/cast.hpp>`<br>`using Scalar = typename ::Eigen::internal::traits<Derived>::Scalar;`                          |
 | dart/math/lie_group/se3.hpp                                | math                    | 0                | 3                  | `/// @brief Specialization of Eigen::internal::traits for SE3`<br>`J.template bottomLeftCorner<3, 3>() = detail::computeQ(theta, phiX, rhoX);`     |

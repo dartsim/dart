@@ -349,6 +349,7 @@ dart_build_tests(
   SOURCES
     math/lie_group/test_so3.cpp
     math/lie_group/test_se3.cpp
+    math/lie_group/test_group_product.cpp
     math/lie_group/test_spatial_inertia.cpp
     math/lie_group/test_forward_kinematics.cpp
     math/lie_group/test_batch.cpp

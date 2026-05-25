@@ -32,19 +32,47 @@
 
 #pragma once
 
-// This file is a convenience header that includes all of the Lie groups in
-// DART. It is intended to be used by users who want to use all of the Lie
-// groups in DART.
-
-#include <dart/math/lie_group/batch.hpp>
-#include <dart/math/lie_group/functions.hpp>
-#include <dart/math/lie_group/group_product.hpp>
-#include <dart/math/lie_group/group_product_map.hpp>
 #include <dart/math/lie_group/inverse_base.hpp>
-#include <dart/math/lie_group/se3.hpp>
-#include <dart/math/lie_group/se3_map.hpp>
-#include <dart/math/lie_group/se3_tangent.hpp>
-#include <dart/math/lie_group/so3.hpp>
-#include <dart/math/lie_group/so3_map.hpp>
-#include <dart/math/lie_group/so3_tangent.hpp>
-#include <dart/math/lie_group/spatial_inertia.hpp>
+
+namespace Eigen::internal {
+
+template <typename GroupProductDerived>
+struct traits<::dart::math::GroupProductInverse<GroupProductDerived>>
+  : traits<typename GroupProductDerived::LieGroup>
+{
+};
+
+} // namespace Eigen::internal
+
+namespace dart::math {
+
+/// Lightweight inverse expression for GroupProduct.
+///
+/// The expression references the original product and materializes only when
+/// evaluated, matching SO3Inverse and SE3Inverse.
+template <typename GroupProductDerived>
+class GroupProductInverse
+  : public InverseBase<GroupProductInverse<GroupProductDerived>>
+{
+public:
+  using Base = InverseBase<GroupProductInverse<GroupProductDerived>>;
+  using LieGroup = typename Base::LieGroup;
+
+  using Base::eval;
+
+  explicit GroupProductInverse(const GroupProductDerived& groupProduct)
+    : m_groupProduct(groupProduct)
+  {
+    // Do nothing
+  }
+
+  const GroupProductDerived& original() const
+  {
+    return m_groupProduct;
+  }
+
+protected:
+  const GroupProductDerived& m_groupProduct;
+};
+
+} // namespace dart::math

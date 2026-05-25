@@ -102,6 +102,9 @@
     `SparseOccupancyGrid` storage. OctoMap is no longer discovered or linked by
     core DART libraries and remains available only to tests and benchmarks for
     reference comparisons.
+  - Added `dart::math::GroupProduct` for typed direct products of Lie groups,
+    including componentwise composition, inverse expressions, Eigen map support,
+    block-diagonal matrix views, and focused lie-group unit coverage.
   - Fixed Filament mesh material extraction so legacy textured meshes without
     PBR metalness import as dielectric surfaces, restoring visible Atlas
     texture detail in `dartsim`, `atlas_puppet`, and `atlas_simbicon`.
