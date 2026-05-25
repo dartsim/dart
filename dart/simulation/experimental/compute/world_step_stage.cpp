@@ -294,15 +294,23 @@ void integrateRigidBodyPosition(
 
 //==============================================================================
 void integrateRigidBody(
-    entt::registry& registry, entt::entity entity, const double timeStep)
+    entt::registry& registry,
+    entt::entity entity,
+    const Eigen::Vector3d& gravity,
+    const double timeStep)
 {
   if (registry.all_of<comps::StaticBodyTag>(entity)) {
     return;
   }
 
   const auto& force = registry.get<comps::Force>(entity);
+  Eigen::Vector3d assembledForce = force.force;
+  const auto& mass = registry.get<comps::MassProperties>(entity);
+  if (mass.mass > 0.0 && std::isfinite(mass.mass)) {
+    assembledForce += mass.mass * gravity;
+  }
   integrateRigidBodyVelocity(
-      registry, entity, force.force, force.torque, timeStep);
+      registry, entity, assembledForce, force.torque, timeStep);
   integrateRigidBodyPosition(registry, entity, timeStep);
 }
 
@@ -425,6 +433,7 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
   }
 
   ComputeGraph graph;
+  const auto gravity = world.getGravity();
   const auto timeStep = world.getTimeStep();
   if (hasRigidBodyFrameDependency(registry, *entities)) {
     std::vector<RigidBodyNode> nodes;
@@ -433,8 +442,8 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
     for (const auto entity : *entities) {
       auto& node = graph.addNode(
           "rigid_body_entity_" + std::to_string(entt::to_integral(entity)),
-          [&registry, entity, timeStep]() {
-            integrateRigidBody(registry, entity, timeStep);
+          [&registry, entity, gravity, timeStep]() {
+            integrateRigidBody(registry, entity, gravity, timeStep);
           },
           getMetadata());
       nodes.push_back({entity, &node});
@@ -465,10 +474,13 @@ void RigidBodyIntegrationStage::execute(World& world, ComputeExecutor& executor)
     const auto end = std::min(begin + m_batchSize, entities->size());
     graph.addNode(
         "rigid_body_batch_" + std::to_string(begin),
-        [&registry, entities, begin, end, timeStep]() {
+        [&registry, entities, begin, end, gravity, timeStep]() {
           for (auto i = begin; i < end; ++i) {
             integrateRigidBody(
-                registry, (*entities)[static_cast<std::size_t>(i)], timeStep);
+                registry,
+                (*entities)[static_cast<std::size_t>(i)],
+                gravity,
+                timeStep);
           }
         },
         getMetadata());

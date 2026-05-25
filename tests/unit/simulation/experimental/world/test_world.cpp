@@ -3655,6 +3655,42 @@ TEST(World, BatchedRigidBodyIntegrationStageIncludesWorldGravity)
       body.getTranslation().isApprox(options.position + gravity * dt * dt));
 }
 
+// Test that the batched stage keeps world gravity when it falls back to the
+// per-entity integrator for rigid-body frame dependencies.
+TEST(World, BatchedRigidBodyIntegrationStageFallbackIncludesWorldGravity)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  sx::World world;
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.mass = 2.0;
+  parentOptions.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+  parentOptions.linearVelocity = Eigen::Vector3d::Zero();
+  auto parent = world.addRigidBody("parent", parentOptions);
+
+  sx::RigidBodyOptions childOptions;
+  childOptions.mass = 1.5;
+  childOptions.position = Eigen::Vector3d(2.0, 2.0, 3.0);
+  childOptions.linearVelocity = Eigen::Vector3d::Zero();
+  auto child = world.addRigidBody("child", childOptions);
+  child.setParentFrame(parent);
+
+  const Eigen::Vector3d gravity(0.0, 0.0, -4.0);
+  constexpr double dt = 0.25;
+  world.setGravity(gravity);
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+
+  compute::SequentialExecutor executor;
+  compute::BatchedRigidBodyIntegrationStage stage;
+  stage.execute(world, executor);
+
+  EXPECT_TRUE(parent.getLinearVelocity().isApprox(gravity * dt));
+  EXPECT_TRUE(parent.getTranslation().isApprox(
+      parentOptions.position + gravity * dt * dt));
+}
+
 // Test that the rigid-body integration stage produces the same state through
 // sequential and parallel graph executors.
 TEST(World, RigidBodyStepParallelMatchesSequential)
