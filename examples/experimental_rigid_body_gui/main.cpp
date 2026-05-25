@@ -49,6 +49,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace dynamics = dart::dynamics;
@@ -79,6 +80,9 @@ struct RenderBody
 {
   sx::RigidBody body;
   dynamics::SimpleFramePtr frame;
+  Eigen::Isometry3d initialTransform = Eigen::Isometry3d::Identity();
+  Eigen::Vector3d initialLinearVelocity = Eigen::Vector3d::Zero();
+  Eigen::Vector3d initialAngularVelocity = Eigen::Vector3d::Zero();
 };
 
 struct ExampleState
@@ -99,12 +103,18 @@ struct ExampleState
     body.setRestitution(options.isStatic ? 0.0 : 0.15);
     body.setFriction(0.85);
 
+    const auto initialTransform = body.getTransform();
     auto frame = dynamics::SimpleFrame::createShared(
-        dynamics::Frame::World(), name + "_visual", body.getTransform());
+        dynamics::Frame::World(), name + "_visual", initialTransform);
     frame->setShape(makeVisualShape(shape));
     frame->getVisualAspect(true)->setRGBA(color);
     renderWorld->addSimpleFrame(frame);
-    bodies.push_back({body, std::move(frame)});
+    bodies.push_back(
+        {body,
+         std::move(frame),
+         initialTransform,
+         options.linearVelocity,
+         options.angularVelocity});
   }
 
   void syncRenderFrames()
@@ -117,6 +127,22 @@ struct ExampleState
   void step()
   {
     physicsWorld.step();
+    syncRenderFrames();
+  }
+
+  void reset()
+  {
+    physicsWorld.setTime(0.0);
+    renderWorld->reset();
+
+    for (auto& renderBody : bodies) {
+      renderBody.body.setTransform(renderBody.initialTransform);
+      renderBody.body.setLinearVelocity(renderBody.initialLinearVelocity);
+      renderBody.body.setAngularVelocity(renderBody.initialAngularVelocity);
+      renderBody.body.clearForce();
+      renderBody.body.clearTorque();
+    }
+
     syncRenderFrames();
   }
 };
@@ -190,6 +216,18 @@ gui::OrbitCamera makeCamera()
   return camera;
 }
 
+std::vector<gui::KeyboardAction> createKeyboardActions(
+    const std::shared_ptr<ExampleState>& state)
+{
+  gui::KeyboardAction reset;
+  reset.label = "reset scene";
+  reset.shortcut = gui::KeyboardShortcut::characterKey('r');
+  reset.callback = [state](gui::KeyboardActionContext&) {
+    state->reset();
+  };
+  return {std::move(reset)};
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -204,6 +242,7 @@ int main(int argc, char* argv[])
   options.preStep = [state]() {
     state->step();
   };
+  options.keyboardActions = createKeyboardActions(state);
 
   return gui::runApplication(argc, argv, options);
 }
