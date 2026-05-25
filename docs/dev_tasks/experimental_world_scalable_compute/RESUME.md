@@ -147,7 +147,7 @@ Keep `entt` internal and the public handle API unchanged.
     `origin/main` merge with
     `BM_Phase5RigidBodyBatch(CpuBaseline|Gpu)/4096/128/100`, writing
     `.benchmark_results/phase5_cuda_ci_full.json`; the generated packet passed
-    with `worldCount=4096`, `bodyCount=128`, `stepCount=100`, `speedup=240.091`,
+    with `worldCount=4096`, `bodyCount=128`, `stepCount=100`, `speedup=114.463`,
     and `maxFinalStateAbsError=1.78e-15`. This is useful local evidence only
     and does not close Phase 5 without project-owned GPU build/import CI and a
     passing go/no-go packet for the same change.
