@@ -37,6 +37,8 @@
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
 #include <dart/collision/contact.hpp>
+#include <dart/collision/continuous_collision_option.hpp>
+#include <dart/collision/continuous_collision_result.hpp>
 #include <dart/collision/distance_option.hpp>
 #include <dart/collision/distance_result.hpp>
 #include <dart/collision/fwd.hpp>
@@ -49,6 +51,7 @@
 #include <dart/export.hpp>
 
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 #include <map>
 #include <string>
@@ -203,6 +206,43 @@ public:
       const Eigen::Vector3d& to,
       const RaycastOption& option = RaycastOption(),
       RaycastResult* result = nullptr);
+
+  /// Performs a continuous sphere cast against a collision group.
+  ///
+  /// @param[in] group The collision group the sphere will be cast onto.
+  /// @param[in] start The sphere center at the beginning of the step.
+  /// @param[in] end The sphere center at the end of the step.
+  /// @param[in] radius The sphere radius.
+  /// @param[in] option The continuous collision option.
+  /// @param[in] result The continuous collision result.
+  /// @return True if the moving sphere hit a collision object.
+  virtual bool sphereCast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& start,
+      const Eigen::Vector3d& end,
+      double radius,
+      const ContinuousCollisionOption& option = ContinuousCollisionOption(),
+      ContinuousCollisionResult* result = nullptr);
+
+  /// Performs a continuous capsule cast against a collision group.
+  ///
+  /// @param[in] group The collision group the capsule will be cast onto.
+  /// @param[in] capsuleStart The capsule transform at the beginning of the
+  /// step.
+  /// @param[in] capsuleEnd The capsule transform at the end of the step.
+  /// @param[in] radius The capsule radius.
+  /// @param[in] height The cylindrical-part height.
+  /// @param[in] option The continuous collision option.
+  /// @param[in] result The continuous collision result.
+  /// @return True if the moving capsule hit a collision object.
+  virtual bool capsuleCast(
+      CollisionGroup* group,
+      const Eigen::Isometry3d& capsuleStart,
+      const Eigen::Isometry3d& capsuleEnd,
+      double radius,
+      double height,
+      const ContinuousCollisionOption& option = ContinuousCollisionOption(),
+      ContinuousCollisionResult* result = nullptr);
 
 protected:
   class CollisionObjectManager;

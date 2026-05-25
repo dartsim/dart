@@ -1,349 +1,427 @@
 from __future__ import annotations
-import dartpy.dynamics
-import dartpy.math
+
+__all__: list[str] = [
+    "BodyNodeCollisionFilter",
+    "CollisionDetector",
+    "CollisionFilter",
+    "CollisionGroup",
+    "CollisionObject",
+    "CollisionOption",
+    "CollisionResult",
+    "ContinuousCollisionAdvancement",
+    "ContinuousCollisionHit",
+    "ContinuousCollisionOption",
+    "ContinuousCollisionResult",
+    "DartCollisionDetector",
+    "RayHit",
+    "RaycastOption",
+    "RaycastResult",
+]
+
+
+from collections.abc import Sequence
+import enum
+from typing import Annotated, Any, overload
+
 import numpy
-import typing
-__all__: list[str] = ['BodyNodeCollisionFilter', 'CollisionDetector', 'CollisionFilter', 'CollisionGroup', 'CollisionObject', 'CollisionOption', 'CollisionResult', 'CompositeCollisionFilter', 'Contact', 'DartCollisionDetector', 'DistanceOption', 'DistanceResult', 'RayHit', 'RaycastOption', 'RaycastResult']
-class BodyNodeCollisionFilter(CollisionFilter):
-    def __init__(self) -> None:
-        ...
-    def addBodyNodePairToBlackList(self, bodyNode1: dartpy.dynamics.BodyNode, bodyNode2: dartpy.dynamics.BodyNode) -> None:
-        """
-        Add a BodyNode pair to the blacklist.
-        """
-    def ignoresCollision(self, object1: ..., object2: ...) -> bool:
-        """
-        Returns true if the given two CollisionObjects should be checked by the collision detector, false otherwise.
-        """
-    def removeAllBodyNodePairsFromBlackList(self) -> None:
-        """
-        Remove all the BodyNode pairs from the blacklist.
-        """
-    def removeBodyNodePairFromBlackList(self, bodyNode1: dartpy.dynamics.BodyNode, bodyNode2: dartpy.dynamics.BodyNode) -> None:
-        """
-        Remove a BodyNode pair from the blacklist.
-        """
-class CollisionDetector:
-    def cloneWithoutCollisionObjects(self) -> CollisionDetector:
-        ...
-    def createCollisionGroup(self) -> ...:
-        ...
-    def getType(self) -> str:
-        ...
+from numpy.typing import NDArray
+
+
 class CollisionFilter:
     pass
-class CollisionGroup:
-    def addShapeFrame(self, shapeFrame: dartpy.dynamics.ShapeFrame) -> None:
-        ...
-    def addShapeFrames(self, shapeFrames: ..., std: ...) -> None:
-        ...
-    @typing.overload
-    def addShapeFramesOf(self, shapeFrame: dartpy.dynamics.ShapeFrame) -> None:
-        """
-        Adds a ShapeFrame
-        """
-    @typing.overload
-    def addShapeFramesOf(self, shapeFrames: ..., std: ...) -> None:
-        """
-        Adds ShapeFrames
-        """
-    @typing.overload
-    def addShapeFramesOf(self, otherGroup: CollisionGroup) -> None:
-        """
-        Adds ShapeFrames of other CollisionGroup
-        """
-    @typing.overload
-    def addShapeFramesOf(self, body: dartpy.dynamics.BodyNode) -> None:
-        """
-        Adds ShapeFrames of BodyNode
-        """
-    @typing.overload
-    def addShapeFramesOf(self, skeleton: dartpy.dynamics.MetaSkeleton) -> None:
-        """
-        Adds ShapeFrames of MetaSkeleton
-        """
-    @typing.overload
-    def collide(self, option: CollisionOption = ..., result: CollisionResult = None) -> bool:
-        """
-        Performs collision check within this CollisionGroup
-        """
-    @typing.overload
-    def collide(self, otherGroup: CollisionGroup, option: CollisionOption = ..., result: CollisionResult = None) -> bool:
-        """
-        Perform collision check against other CollisionGroup
-        """
-    def distance(self, option: DistanceOption = ..., result: DistanceResult = None) -> float:
-        ...
-    def getAutomaticUpdate(self) -> bool:
-        ...
-    @typing.overload
-    def getCollisionDetector(self) -> CollisionDetector:
-        ...
-    @typing.overload
-    def getCollisionDetector(self) -> CollisionDetector:
-        ...
-    def getNumShapeFrames(self) -> int:
-        ...
-    def hasShapeFrame(self, shapeFrame: dartpy.dynamics.ShapeFrame) -> bool:
-        ...
-    @typing.overload
-    def raycast(self, from: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], to: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> bool:
-        ...
-    @typing.overload
-    def raycast(self, from: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], to: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], option: RaycastOption) -> bool:
-        ...
-    @typing.overload
-    def raycast(self, from: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], to: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], option: RaycastOption, result: RaycastResult) -> bool:
-        ...
-    def removeAllShapeFrames(self) -> None:
-        ...
-    def removeDeletedShapeFrames(self) -> None:
-        ...
-    def removeShapeFrame(self, shapeFrame: dartpy.dynamics.ShapeFrame) -> None:
-        ...
-    def removeShapeFrames(self, shapeFrames: ..., std: ...) -> None:
-        ...
-    @typing.overload
-    def removeShapeFramesOf(self, shapeFrame: dartpy.dynamics.ShapeFrame) -> None:
-        """
-        Removes a ShapeFrame
-        """
-    @typing.overload
-    def removeShapeFramesOf(self, shapeFrames: ..., std: ...) -> None:
-        """
-        Removes ShapeFrames
-        """
-    @typing.overload
-    def removeShapeFramesOf(self, otherGroup: CollisionGroup) -> None:
-        """
-        Removes ShapeFrames of other CollisionGroup
-        """
-    @typing.overload
-    def removeShapeFramesOf(self, body: dartpy.dynamics.BodyNode) -> None:
-        """
-        Removes ShapeFrames of BodyNode
-        """
-    @typing.overload
-    def removeShapeFramesOf(self, skeleton: dartpy.dynamics.MetaSkeleton) -> None:
-        """
-        Removes ShapeFrames of MetaSkeleton
-        """
-    @typing.overload
-    def setAutomaticUpdate(self) -> None:
-        ...
-    @typing.overload
-    def setAutomaticUpdate(self, automatic: bool) -> None:
-        ...
-    def subscribeTo(self) -> None:
-        ...
-    def update(self) -> None:
-        ...
-class CollisionObject:
-    @typing.overload
-    def getCollisionDetector(self) -> ...:
-        """
-        Return collision detection engine associated with this CollisionObject.
-        """
-    @typing.overload
-    def getCollisionDetector(self) -> ...:
-        """
-        Return collision detection engine associated with this CollisionObject.
-        """
-    def getShape(self) -> dartpy.dynamics.Shape:
-        """
-        Return the associated Shape.
-        """
-    def getShapeFrame(self) -> dartpy.dynamics.ShapeFrame:
-        """
-        Return the associated ShapeFrame.
-        """
-    def getTransform(self) -> dartpy.math.Isometry3:
-        """
-        Return the transformation of this CollisionObject in world coordinates.
-        """
+
+class BodyNodeCollisionFilter(CollisionFilter):
+    def __init__(self) -> None: ...
+
+    def addBodyNodePairToBlackList(*args, **kwargs) -> Any: ...
+
+    def removeBodyNodePairFromBlackList(*args, **kwargs) -> Any: ...
+
+    def removeAllBodyNodePairsFromBlackList(*args, **kwargs) -> Any: ...
+
+    add_body_node_pair_to_black_list = addBodyNodePairToBlackList
+
+    remove_all_body_node_pairs_from_black_list = removeAllBodyNodePairsFromBlackList
+
+    remove_body_node_pair_from_black_list = removeBodyNodePairFromBlackList
+
 class CollisionOption:
-    allowNegativePenetrationDepthContacts: bool
-    collisionFilter: CollisionFilter
-    enableContact: bool
-    maxNumContacts: int
-    @typing.overload
-    def __init__(self) -> None:
-        ...
-    @typing.overload
-    def __init__(self, enableContact: bool) -> None:
-        ...
-    @typing.overload
-    def __init__(self, enableContact: bool, maxNumContacts: int) -> None:
-        ...
-    @typing.overload
-    def __init__(self, enableContact: bool, maxNumContacts: int, collisionFilter: CollisionFilter) -> None:
-        ...
-    @typing.overload
-    def __init__(self, enableContact: bool, maxNumContacts: int, collisionFilter: CollisionFilter, allowNegativePenetrationDepthContacts: bool) -> None:
-        ...
+    def __init__(self, enable_contact: bool = ..., max_num_contacts: int = ..., collision_filter: CollisionFilter | None = ..., allow_negative_penetration_depth_contacts: bool = ...) -> None: ...
+
+    @property
+    def enableContact(self) -> bool: ...
+
+    @enableContact.setter
+    def enableContact(self, arg: bool, /) -> None: ...
+
+    @property
+    def maxNumContacts(self) -> int: ...
+
+    @maxNumContacts.setter
+    def maxNumContacts(self, arg: int, /) -> None: ...
+
+    @property
+    def allowNegativePenetrationDepthContacts(self) -> bool: ...
+
+    @allowNegativePenetrationDepthContacts.setter
+    def allowNegativePenetrationDepthContacts(self, arg: bool, /) -> None: ...
+
+    @property
+    def collisionFilter(self) -> CollisionFilter: ...
+
+    @collisionFilter.setter
+    def collisionFilter(self, arg: CollisionFilter, /) -> None: ...
+
+    def __repr__(self) -> str: ...
+
+    @property
+    def allow_negative_penetration_depth_contacts(self) -> bool: ...
+
+    @allow_negative_penetration_depth_contacts.setter
+    def allow_negative_penetration_depth_contacts(self, arg: bool, /) -> None: ...
+
+    @property
+    def collision_filter(self) -> CollisionFilter: ...
+
+    @collision_filter.setter
+    def collision_filter(self, arg: CollisionFilter, /) -> None: ...
+
+    @property
+    def enable_contact(self) -> bool: ...
+
+    @enable_contact.setter
+    def enable_contact(self, arg: bool, /) -> None: ...
+
+    @property
+    def max_num_contacts(self) -> int: ...
+
+    @max_num_contacts.setter
+    def max_num_contacts(self, arg: int, /) -> None: ...
+
 class CollisionResult:
-    def __init__(self) -> None:
-        ...
-    def addContact(self, contact: Contact) -> None:
-        """
-        Add one contact.
-        """
-    def clear(self) -> None:
-        """
-        Clear all the contacts.
-        """
-    def getCollidingBodyNodes(self) -> set[dartpy.dynamics.BodyNode]:
-        """
-        Return the set of BodyNodes that are in collision.
-        """
-    def getCollidingShapeFrames(self) -> set[dartpy.dynamics.ShapeFrame]:
-        """
-        Return the set of ShapeFrames that are in collision.
-        """
-    @typing.overload
-    def getContact(self, index: int) -> Contact:
-        """
-        Return the index-th contact.
-        """
-    @typing.overload
-    def getContact(self, index: int) -> Contact:
-        """
-        Return (const) the index-th contact.
-        """
-    def getContacts(self) -> list[Contact]:
-        """
-        Return contacts.
-        """
-    def getNumContacts(self) -> int:
-        """
-        Return number of contacts.
-        """
-    @typing.overload
-    def inCollision(self, bn: dartpy.dynamics.BodyNode) -> bool:
-        """
-        Returns true if the given BodyNode is in collision.
-        """
-    @typing.overload
-    def inCollision(self, frame: dartpy.dynamics.ShapeFrame) -> bool:
-        """
-        Returns true if the given ShapeFrame is in collision.
-        """
-    def isCollision(self) -> bool:
-        """
-        Return binary collision result.
-        """
-class CompositeCollisionFilter(CollisionFilter):
-    def __init__(self) -> None:
-        ...
-    def addCollisionFilter(self, filter: CollisionFilter) -> None:
-        """
-        Adds a collision filter to this CompositeCollisionFilter.
-        """
-    def removeAllCollisionFilters(self) -> None:
-        """
-        Removes all the collision filters from this CompositeCollisionFilter.
-        """
-    def removeCollisionFilter(self, filter: CollisionFilter) -> None:
-        """
-        Removes a collision filter from this CompositeCollisionFilter.
-        """
-class Contact:
-    collisionObject1: ...
-    collisionObject2: ...
-    force: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]
-    normal: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]
-    penetrationDepth: float
-    point: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]
-    triID1: int
-    triID2: int
-    userData: capsule
-    @staticmethod
-    def getNormalEpsilon() -> float:
-        ...
-    @staticmethod
-    def getNormalEpsilonSquared() -> float:
-        ...
-    @staticmethod
-    def isNonZeroNormal(normal: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> bool:
-        ...
-    @staticmethod
-    def isZeroNormal(normal: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> bool:
-        ...
-    def __init__(self) -> None:
-        ...
+    def __init__(self) -> None: ...
+
+    def clear(self) -> None: ...
+
+    def isCollision(*args, **kwargs) -> Any: ...
+
+    def getNumContacts(*args, **kwargs) -> Any: ...
+
+    def __repr__(self) -> str: ...
+
+    get_num_contacts = getNumContacts
+
+    is_collision = isCollision
+
+class CollisionObject:
+    def getCollisionDetector(*args, **kwargs) -> Any: ...
+
+    def getShapeFrame(*args, **kwargs) -> Any: ...
+
+    def getShape(*args, **kwargs) -> Any: ...
+
+    def getTransform(*args, **kwargs) -> Any: ...
+
+    get_collision_detector = getCollisionDetector
+
+    get_shape = getShape
+
+    get_shape_frame = getShapeFrame
+
+    get_transform = getTransform
+
+class CollisionDetector:
+    def getType(*args, **kwargs) -> Any: ...
+
+    def createCollisionGroup(*args, **kwargs) -> Any: ...
+
+    create_collision_group = createCollisionGroup
+
+    get_type = getType
+
 class DartCollisionDetector(CollisionDetector):
-    @staticmethod
-    def getStaticType() -> str:
-        ...
-    def __init__(self) -> None:
-        ...
-    def cloneWithoutCollisionObjects(self) -> CollisionDetector:
-        ...
-    def createCollisionGroup(self) -> ...:
-        ...
-    def getType(self) -> str:
-        ...
-class DistanceOption:
-    distanceFilter: ...
-    distanceLowerBound: float
-    enableNearestPoints: bool
-    @typing.overload
-    def __init__(self) -> None:
-        ...
-    @typing.overload
-    def __init__(self, enableNearestPoints: bool) -> None:
-        ...
-    @typing.overload
-    def __init__(self, enableNearestPoints: bool, distanceLowerBound: float) -> None:
-        ...
-    @typing.overload
-    def __init__(self, enableNearestPoints: bool, distanceLowerBound: float, distanceFilter: ...) -> None:
-        ...
-class DistanceResult:
-    minDistance: float
-    nearestPoint1: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]
-    nearestPoint2: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]
-    shapeFrame1: dartpy.dynamics.ShapeFrame
-    shapeFrame2: dartpy.dynamics.ShapeFrame
-    unclampedMinDistance: float
-    def __init__(self) -> None:
-        ...
-    def clear(self) -> None:
-        ...
-    def found(self) -> bool:
-        ...
-    def isMinDistanceClamped(self) -> bool:
-        ...
-class RayHit:
-    mCollisionObject: CollisionObject
-    mFraction: float
-    mNormal: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]
-    mPoint: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]
-    def __init__(self) -> None:
-        ...
+    def __init__(self) -> None: ...
+
+    def getStaticType(*args, **kwargs): ...
+
+    get_static_type = getStaticType
+
 class RaycastOption:
-    mEnableAllHits: bool
-    mSortByClosest: bool
-    mFilter: typing.Optional[typing.Callable[[CollisionObject], bool]]
-    @typing.overload
-    def __init__(self) -> None:
-        ...
-    @typing.overload
-    def __init__(self, enableAllHits: bool) -> None:
-        ...
-    @typing.overload
-    def __init__(
-        self,
-        enableAllHits: bool,
-        sortByClosest: bool,
-        filter: typing.Optional[typing.Callable[[CollisionObject], bool]] = None,
-    ) -> None:
-        ...
+    def __init__(self) -> None: ...
+
+    @property
+    def mEnableAllHits(self) -> bool: ...
+
+    @mEnableAllHits.setter
+    def mEnableAllHits(self, arg: bool, /) -> None: ...
+
+    @property
+    def m_enable_all_hits(self) -> bool: ...
+
+    @m_enable_all_hits.setter
+    def m_enable_all_hits(self, arg: bool, /) -> None: ...
+
+class RayHit:
+    def __init__(self) -> None: ...
+
+    @property
+    def mCollisionObject(self) -> CollisionObject: ...
+
+    @mCollisionObject.setter
+    def mCollisionObject(self, arg: CollisionObject, /) -> None: ...
+
+    @property
+    def mPoint(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @mPoint.setter
+    def mPoint(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def mFraction(self) -> float: ...
+
+    @mFraction.setter
+    def mFraction(self, arg: float, /) -> None: ...
+
+    @property
+    def mNormal(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @mNormal.setter
+    def mNormal(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def m_collision_object(self) -> CollisionObject: ...
+
+    @m_collision_object.setter
+    def m_collision_object(self, arg: CollisionObject, /) -> None: ...
+
+    @property
+    def m_fraction(self) -> float: ...
+
+    @m_fraction.setter
+    def m_fraction(self, arg: float, /) -> None: ...
+
+    @property
+    def m_normal(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @m_normal.setter
+    def m_normal(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def m_point(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @m_point.setter
+    def m_point(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
 class RaycastResult:
-    mRayHits: list[RayHit]
-    def __init__(self) -> None:
-        ...
-    def clear(self) -> None:
-        ...
-    def hasHit(self) -> bool:
-        ...
+    def __init__(self) -> None: ...
+
+    def clear(self) -> None: ...
+
+    def hasHit(*args, **kwargs) -> Any: ...
+
+    @property
+    def mRayHits(self) -> list[RayHit]: ...
+
+    @mRayHits.setter
+    def mRayHits(self, arg: Sequence[RayHit], /) -> None: ...
+
+    has_hit = hasHit
+
+    @property
+    def m_ray_hits(self) -> list[RayHit]: ...
+
+    @m_ray_hits.setter
+    def m_ray_hits(self, arg: Sequence[RayHit], /) -> None: ...
+
+class ContinuousCollisionAdvancement(enum.Enum):
+    Conservative = 0
+
+    Fast = 1
+
+class ContinuousCollisionOption:
+    def __init__(self, enable_all_hits: bool = ..., sort_by_time_of_impact: bool = ..., tolerance: float = ..., max_iterations: int = ..., advancement: ContinuousCollisionAdvancement = ContinuousCollisionAdvancement.Conservative) -> None: ...
+
+    @property
+    def mEnableAllHits(self) -> bool: ...
+
+    @mEnableAllHits.setter
+    def mEnableAllHits(self, arg: bool, /) -> None: ...
+
+    @property
+    def mSortByTimeOfImpact(self) -> bool: ...
+
+    @mSortByTimeOfImpact.setter
+    def mSortByTimeOfImpact(self, arg: bool, /) -> None: ...
+
+    @property
+    def mTolerance(self) -> float: ...
+
+    @mTolerance.setter
+    def mTolerance(self, arg: float, /) -> None: ...
+
+    @property
+    def mMaxIterations(self) -> int: ...
+
+    @mMaxIterations.setter
+    def mMaxIterations(self, arg: int, /) -> None: ...
+
+    @property
+    def mAdvancement(self) -> ContinuousCollisionAdvancement: ...
+
+    @mAdvancement.setter
+    def mAdvancement(self, arg: ContinuousCollisionAdvancement, /) -> None: ...
+
+    def __repr__(self) -> str: ...
+
+    @property
+    def m_advancement(self) -> ContinuousCollisionAdvancement: ...
+
+    @m_advancement.setter
+    def m_advancement(self, arg: ContinuousCollisionAdvancement, /) -> None: ...
+
+    @property
+    def m_enable_all_hits(self) -> bool: ...
+
+    @m_enable_all_hits.setter
+    def m_enable_all_hits(self, arg: bool, /) -> None: ...
+
+    @property
+    def m_max_iterations(self) -> int: ...
+
+    @m_max_iterations.setter
+    def m_max_iterations(self, arg: int, /) -> None: ...
+
+    @property
+    def m_sort_by_time_of_impact(self) -> bool: ...
+
+    @m_sort_by_time_of_impact.setter
+    def m_sort_by_time_of_impact(self, arg: bool, /) -> None: ...
+
+    @property
+    def m_tolerance(self) -> float: ...
+
+    @m_tolerance.setter
+    def m_tolerance(self, arg: float, /) -> None: ...
+
+class ContinuousCollisionHit:
+    def __init__(self) -> None: ...
+
+    @property
+    def mCollisionObject(self) -> CollisionObject: ...
+
+    @mCollisionObject.setter
+    def mCollisionObject(self, arg: CollisionObject, /) -> None: ...
+
+    @property
+    def mTimeOfImpact(self) -> float: ...
+
+    @mTimeOfImpact.setter
+    def mTimeOfImpact(self, arg: float, /) -> None: ...
+
+    @property
+    def mPoint(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @mPoint.setter
+    def mPoint(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def mNormal(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @mNormal.setter
+    def mNormal(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def m_collision_object(self) -> CollisionObject: ...
+
+    @m_collision_object.setter
+    def m_collision_object(self, arg: CollisionObject, /) -> None: ...
+
+    @property
+    def m_normal(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @m_normal.setter
+    def m_normal(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def m_point(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @m_point.setter
+    def m_point(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def m_time_of_impact(self) -> float: ...
+
+    @m_time_of_impact.setter
+    def m_time_of_impact(self, arg: float, /) -> None: ...
+
+class ContinuousCollisionResult:
+    def __init__(self) -> None: ...
+
+    def clear(self) -> None: ...
+
+    def hasHit(*args, **kwargs) -> Any: ...
+
+    @property
+    def mHits(self) -> list[ContinuousCollisionHit]: ...
+
+    @mHits.setter
+    def mHits(self, arg: Sequence[ContinuousCollisionHit], /) -> None: ...
+
+    def __repr__(self) -> str: ...
+
+    has_hit = hasHit
+
+    @property
+    def m_hits(self) -> list[ContinuousCollisionHit]: ...
+
+    @m_hits.setter
+    def m_hits(self, arg: Sequence[ContinuousCollisionHit], /) -> None: ...
+
+class CollisionGroup:
+    def addShapeFrame(*args, **kwargs) -> Any: ...
+
+    def addShapeFramesOf(*args, **kwargs) -> Any: ...
+
+    def removeAllShapeFrames(*args, **kwargs) -> Any: ...
+
+    def getNumShapeFrames(*args, **kwargs) -> Any: ...
+
+    @overload
+    def collide(self, option: CollisionOption = ..., result: CollisionResult | None = ...) -> bool: ...
+
+    @overload
+    def collide(self, other: CollisionGroup, option: CollisionOption = ..., result: CollisionResult | None = ...) -> bool: ...
+
+    def collideResult(*args, **kwargs) -> Any: ...
+
+    def raycast(self, from_: object, to: object, option: RaycastOption = ..., result: RaycastResult | None = ...) -> bool: ...
+
+    def raycastResult(*args, **kwargs) -> Any: ...
+
+    def sphereCast(*args, **kwargs) -> Any: ...
+
+    def sphereCastResult(*args, **kwargs) -> Any: ...
+
+    def capsuleCast(*args, **kwargs) -> Any: ...
+
+    def capsuleCastResult(*args, **kwargs) -> Any: ...
+
+    add_shape_frame = addShapeFrame
+
+    add_shape_frames_of = addShapeFramesOf
+
+    capsule_cast = capsuleCast
+
+    capsule_cast_result = capsuleCastResult
+
+    collide_result = collideResult
+
+    get_num_shape_frames = getNumShapeFrames
+
+    raycast_result = raycastResult
+
+    remove_all_shape_frames = removeAllShapeFrames
+
+    sphere_cast = sphereCast
+
+    sphere_cast_result = sphereCastResult

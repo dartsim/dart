@@ -59,6 +59,25 @@ constexpr int pairKey(ShapeType type1, ShapeType type2)
   return (static_cast<int>(type1) << 8) | static_cast<int>(type2);
 }
 
+Aabb sweptSphereAabb(
+    const Eigen::Vector3d& start, const Eigen::Vector3d& end, double radius)
+{
+  Aabb aabb(start.cwiseMin(end), start.cwiseMax(end));
+  aabb.expand(std::max(0.0, radius));
+  return aabb;
+}
+
+Aabb sweptCapsuleAabb(
+    const Eigen::Isometry3d& start,
+    const Eigen::Isometry3d& end,
+    const CapsuleShape& capsule)
+{
+  const double boundingRadius
+      = std::max(0.0, capsule.getRadius() + 0.5 * capsule.getHeight());
+  return sweptSphereAabb(
+      start.translation(), end.translation(), boundingRadius);
+}
+
 template <typename CollideFn>
 bool collideWithFlippedNormals(
     CollisionResult& result,
@@ -988,9 +1007,15 @@ bool CollisionWorld::sphereCast(
   CcdResult closestResult;
   double closestToi = std::numeric_limits<double>::max();
 
-  auto view = m_registry.view<comps::CollisionObjectTag>();
-  for (auto entity : view) {
-    CollisionObject obj(entity, this);
+  auto candidateIds
+      = m_broadPhase->queryOverlapping(sweptSphereAabb(start, end, radius));
+  std::sort(candidateIds.begin(), candidateIds.end());
+  for (const auto id : candidateIds) {
+    CollisionObject obj = getObjectById(id);
+    if (!obj.isValid()) {
+      continue;
+    }
+
     CcdResult tempResult;
     if (NarrowPhase::sphereCast(start, end, radius, obj, option, tempResult)) {
       tempResult.object = cacheQueryObject(obj);
@@ -1019,9 +1044,15 @@ bool CollisionWorld::sphereCastAll(
   results.clear();
   prepareQueryObjectCache();
 
-  auto view = m_registry.view<comps::CollisionObjectTag>();
-  for (auto entity : view) {
-    CollisionObject obj(entity, this);
+  auto candidateIds
+      = m_broadPhase->queryOverlapping(sweptSphereAabb(start, end, radius));
+  std::sort(candidateIds.begin(), candidateIds.end());
+  for (const auto id : candidateIds) {
+    CollisionObject obj = getObjectById(id);
+    if (!obj.isValid()) {
+      continue;
+    }
+
     CcdResult tempResult;
     if (NarrowPhase::sphereCast(start, end, radius, obj, option, tempResult)) {
       tempResult.object = cacheQueryObject(obj);
@@ -1052,9 +1083,15 @@ bool CollisionWorld::capsuleCast(
   CcdResult closestResult;
   double closestToi = std::numeric_limits<double>::max();
 
-  auto view = m_registry.view<comps::CollisionObjectTag>();
-  for (auto entity : view) {
-    CollisionObject obj(entity, this);
+  auto candidateIds = m_broadPhase->queryOverlapping(
+      sweptCapsuleAabb(capsuleStart, capsuleEnd, capsule));
+  std::sort(candidateIds.begin(), candidateIds.end());
+  for (const auto id : candidateIds) {
+    CollisionObject obj = getObjectById(id);
+    if (!obj.isValid()) {
+      continue;
+    }
+
     CcdResult tempResult;
     if (NarrowPhase::capsuleCast(
             capsuleStart, capsuleEnd, capsule, obj, option, tempResult)) {
@@ -1084,9 +1121,15 @@ bool CollisionWorld::capsuleCastAll(
   results.clear();
   prepareQueryObjectCache();
 
-  auto view = m_registry.view<comps::CollisionObjectTag>();
-  for (auto entity : view) {
-    CollisionObject obj(entity, this);
+  auto candidateIds = m_broadPhase->queryOverlapping(
+      sweptCapsuleAabb(capsuleStart, capsuleEnd, capsule));
+  std::sort(candidateIds.begin(), candidateIds.end());
+  for (const auto id : candidateIds) {
+    CollisionObject obj = getObjectById(id);
+    if (!obj.isValid()) {
+      continue;
+    }
+
     CcdResult tempResult;
     if (NarrowPhase::capsuleCast(
             capsuleStart, capsuleEnd, capsule, obj, option, tempResult)) {

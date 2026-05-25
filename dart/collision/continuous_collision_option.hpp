@@ -30,44 +30,65 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FWD_HPP_
-#define DART_COLLISION_FWD_HPP_
+#ifndef DART_COLLISION_CONTINUOUSCOLLISIONOPTION_HPP_
+#define DART_COLLISION_CONTINUOUSCOLLISIONOPTION_HPP_
 
-#include <dart/common/smart_pointer.hpp>
+#include <dart/export.hpp>
+
+#include <functional>
 
 namespace dart {
 namespace collision {
 
-class CollisionDetector;
-class CollisionFilter;
-class CollisionGroup;
 class CollisionObject;
 
-struct CollisionOption;
-class CollisionResult;
-struct Contact;
+/// Advancement strategy for iterative continuous collision queries.
+enum class ContinuousCollisionAdvancement
+{
+  /// Conservative steps never overshoot the first contact.
+  Conservative,
 
-struct DistanceFilter;
-struct DistanceOption;
-struct DistanceResult;
+  /// Larger steps may report a later contact in exchange for speed.
+  Fast
+};
 
-enum class ContinuousCollisionAdvancement;
-struct ContinuousCollisionHit;
-struct ContinuousCollisionOption;
-struct ContinuousCollisionResult;
+struct DART_API ContinuousCollisionOption
+{
+  using Filter = std::function<bool(const CollisionObject*)>;
 
-struct RaycastOption;
-struct RaycastResult;
+  /// Constructor.
+  ContinuousCollisionOption(
+      bool enableAllHits = false,
+      bool sortByTimeOfImpact = false,
+      double tolerance = 1e-4,
+      int maxIterations = 32,
+      ContinuousCollisionAdvancement advancement
+      = ContinuousCollisionAdvancement::Conservative,
+      Filter filter = nullptr);
 
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DartCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
+  /// Returns true when the filter is not set or allows the object.
+  bool passesFilter(const CollisionObject* object) const;
 
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
+  /// Report every hit instead of only the earliest hit.
+  bool mEnableAllHits;
+
+  /// Sort all-hit results by increasing time of impact.
+  bool mSortByTimeOfImpact;
+
+  /// Iterative solver convergence tolerance.
+  double mTolerance;
+
+  /// Maximum number of iterative solver steps.
+  int mMaxIterations;
+
+  /// Advancement strategy for iterative casts.
+  ContinuousCollisionAdvancement mAdvancement;
+
+  /// Optional filter to reject hits from specific collision objects.
+  Filter mFilter;
+};
 
 } // namespace collision
 } // namespace dart
 
-#endif // DART_COLLISION_FWD_HPP_
+#endif // DART_COLLISION_CONTINUOUSCOLLISIONOPTION_HPP_

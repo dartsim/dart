@@ -35,6 +35,8 @@
 #include "dart/collision/collision_filter.hpp"
 #include "dart/collision/collision_object.hpp"
 #include "dart/collision/contact.hpp"
+#include "dart/collision/continuous_collision_option.hpp"
+#include "dart/collision/continuous_collision_result.hpp"
 #include "dart/collision/dart/dart_collision_object.hpp"
 #include "dart/collision/dart/shape_adapter.hpp"
 #include "dart/collision/distance_filter.hpp"
@@ -174,6 +176,39 @@ native::DistanceOption makeNativeDistanceOption(
   nativeOption.upperBound = upperBound;
   nativeOption.enableNearestPoints = option.enableNearestPoints;
   return nativeOption;
+}
+
+native::CcdAdvancement makeNativeCcdAdvancement(
+    ContinuousCollisionAdvancement advancement)
+{
+  switch (advancement) {
+    case ContinuousCollisionAdvancement::Conservative:
+      return native::CcdAdvancement::Conservative;
+    case ContinuousCollisionAdvancement::Fast:
+      return native::CcdAdvancement::Fast;
+  }
+
+  return native::CcdAdvancement::Conservative;
+}
+
+native::CcdOption makeNativeCcdOption(const ContinuousCollisionOption& option)
+{
+  native::CcdOption nativeOption;
+  nativeOption.tolerance = option.mTolerance;
+  nativeOption.maxIterations = option.mMaxIterations;
+  nativeOption.advancement = makeNativeCcdAdvancement(option.mAdvancement);
+  return nativeOption;
+}
+
+ContinuousCollisionHit makeContinuousCollisionHit(
+    const native::CcdResult& nativeResult, CollisionObject* object)
+{
+  ContinuousCollisionHit hit;
+  hit.mCollisionObject = object;
+  hit.mTimeOfImpact = nativeResult.timeOfImpact;
+  hit.mPoint = nativeResult.point;
+  hit.mNormal = nativeResult.normal;
+  return hit;
 }
 
 double aabbDistance(const native::Aabb& a, const native::Aabb& b)
@@ -498,6 +533,114 @@ public:
       result->mRayHits.push_back(closestHit);
     }
 
+    return result->hasHit();
+  }
+
+  bool sphereCast(
+      const Eigen::Vector3d& start,
+      const Eigen::Vector3d& end,
+      double radius,
+      const ContinuousCollisionOption& option,
+      ContinuousCollisionResult* result)
+  {
+    std::vector<native::CcdResult> nativeResults;
+    if (!mWorld.sphereCastAll(
+            start, end, radius, makeNativeCcdOption(option), nativeResults)) {
+      return false;
+    }
+
+    bool hitFound = false;
+    std::vector<ContinuousCollisionHit> hits;
+    hits.reserve(nativeResults.size());
+
+    for (const auto& nativeResult : nativeResults) {
+      if (!nativeResult.object) {
+        continue;
+      }
+
+      const auto* entry = findEntry(nativeResult.object->getId());
+      if (!entry || !option.passesFilter(entry->object)) {
+        continue;
+      }
+
+      hitFound = true;
+      if (!result) {
+        return true;
+      }
+
+      hits.push_back(makeContinuousCollisionHit(nativeResult, entry->object));
+      if (!option.mEnableAllHits) {
+        break;
+      }
+    }
+
+    if (!hitFound || !result) {
+      return hitFound;
+    }
+
+    if (option.mEnableAllHits && option.mSortByTimeOfImpact) {
+      std::sort(hits.begin(), hits.end(), [](const auto& lhs, const auto& rhs) {
+        return lhs.mTimeOfImpact < rhs.mTimeOfImpact;
+      });
+    }
+    result->mHits = std::move(hits);
+    return result->hasHit();
+  }
+
+  bool capsuleCast(
+      const Eigen::Isometry3d& capsuleStart,
+      const Eigen::Isometry3d& capsuleEnd,
+      double radius,
+      double height,
+      const ContinuousCollisionOption& option,
+      ContinuousCollisionResult* result)
+  {
+    native::CapsuleShape capsule(radius, height);
+    std::vector<native::CcdResult> nativeResults;
+    if (!mWorld.capsuleCastAll(
+            capsuleStart,
+            capsuleEnd,
+            capsule,
+            makeNativeCcdOption(option),
+            nativeResults)) {
+      return false;
+    }
+
+    bool hitFound = false;
+    std::vector<ContinuousCollisionHit> hits;
+    hits.reserve(nativeResults.size());
+
+    for (const auto& nativeResult : nativeResults) {
+      if (!nativeResult.object) {
+        continue;
+      }
+
+      const auto* entry = findEntry(nativeResult.object->getId());
+      if (!entry || !option.passesFilter(entry->object)) {
+        continue;
+      }
+
+      hitFound = true;
+      if (!result) {
+        return true;
+      }
+
+      hits.push_back(makeContinuousCollisionHit(nativeResult, entry->object));
+      if (!option.mEnableAllHits) {
+        break;
+      }
+    }
+
+    if (!hitFound || !result) {
+      return hitFound;
+    }
+
+    if (option.mEnableAllHits && option.mSortByTimeOfImpact) {
+      std::sort(hits.begin(), hits.end(), [](const auto& lhs, const auto& rhs) {
+        return lhs.mTimeOfImpact < rhs.mTimeOfImpact;
+      });
+    }
+    result->mHits = std::move(hits);
     return result->hasHit();
   }
 
@@ -927,6 +1070,32 @@ bool DartCollisionGroup::raycast(
 {
   mScene->sync(mCollisionObjects);
   return mScene->raycast(from, to, option, result);
+}
+
+//==============================================================================
+bool DartCollisionGroup::sphereCast(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    double radius,
+    const ContinuousCollisionOption& option,
+    ContinuousCollisionResult* result)
+{
+  mScene->sync(mCollisionObjects);
+  return mScene->sphereCast(start, end, radius, option, result);
+}
+
+//==============================================================================
+bool DartCollisionGroup::capsuleCast(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    double radius,
+    double height,
+    const ContinuousCollisionOption& option,
+    ContinuousCollisionResult* result)
+{
+  mScene->sync(mCollisionObjects);
+  return mScene->capsuleCast(
+      capsuleStart, capsuleEnd, radius, height, option, result);
 }
 
 //==============================================================================

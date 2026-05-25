@@ -139,6 +139,7 @@ set(dartpy_headers
   collision/module.hpp
   collision/collision_option.hpp
   collision/collision_result.hpp
+  collision/continuous_collision.hpp
   collision/raycast.hpp
   collision/collision_detector.hpp
   collision/collision_group.hpp
@@ -216,6 +217,7 @@ set(dartpy_sources
   collision/module.cpp
   collision/collision_option.cpp
   collision/collision_result.cpp
+  collision/continuous_collision.cpp
   collision/raycast.cpp
   collision/collision_detector.cpp
   collision/collision_group.cpp
