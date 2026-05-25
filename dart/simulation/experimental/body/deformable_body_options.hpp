@@ -19,7 +19,7 @@
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
  *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
  *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
@@ -32,45 +32,55 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/export.hpp>
+#include <Eigen/Core>
+
+#include <vector>
+
+#include <cstddef>
 
 namespace dart::simulation::experimental {
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class DeformableBody;
-class Joint;
-class Link;
-class LoopClosure;
-class Multibody;
-class RigidBody;
-class World;
-enum class WorldSyncStage;
+/// Edge connecting two deformable point-mass nodes.
+struct DeformableEdge
+{
+  std::size_t nodeA = 0;
+  std::size_t nodeB = 0;
 
-namespace compute {
-class ComputeExecutor;
-class ParallelExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
+  /// Rest length for the edge spring. Values <= 0 ask World::addDeformableBody
+  /// to compute the rest length from the initial node positions.
+  double restLength = -1.0;
+};
 
-// Value objects
-struct Contact;
+/// Options for creating a DeformableBody.
+///
+/// This first experimental model is intentionally narrow: it represents a set
+/// of point-mass nodes joined by distance springs. Contact and barrier tuning
+/// are solver internals owned by the World step pipeline, not public body
+/// options.
+struct DeformableBodyOptions
+{
+  /// Initial world-space node positions. Must be non-empty and finite.
+  std::vector<Eigen::Vector3d> positions;
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct DeformableBodyOptions;
-struct DeformableEdge;
-struct JointOptions;
-struct JointSpec;
-struct LinkOptions;
-struct LoopClosureRuntimePolicy;
-struct LoopClosureResidual;
-struct LoopClosureSpec;
-struct MultibodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
+  /// Initial world-space node velocities. If empty, all velocities are zero.
+  /// Otherwise the size must match positions and all values must be finite.
+  std::vector<Eigen::Vector3d> velocities;
+
+  /// Per-node masses. If empty, all masses are one. Otherwise the size must
+  /// match positions and all masses must be positive and finite.
+  std::vector<double> masses;
+
+  /// Distance-spring edges between nodes.
+  std::vector<DeformableEdge> edges;
+
+  /// Node indices eliminated from the solve and held fixed in world space.
+  std::vector<std::size_t> fixedNodes;
+
+  /// Distance-spring stiffness. Must be finite and non-negative.
+  double edgeStiffness = 100.0;
+
+  /// Simple velocity damping coefficient. Must be finite and non-negative.
+  double damping = 0.0;
+};
 
 } // namespace dart::simulation::experimental

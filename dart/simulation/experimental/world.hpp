@@ -34,6 +34,7 @@
 
 #include <dart/simulation/experimental/fwd.hpp>
 
+#include <dart/simulation/experimental/body/deformable_body_options.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/constraint/loop_closure.hpp>
 #include <dart/simulation/experimental/world_sync_stage.hpp>
@@ -101,6 +102,15 @@ public:
   std::optional<RigidBody> getRigidBody(std::string_view name);
   bool hasRigidBody(std::string_view name) const;
   std::size_t getRigidBodyCount() const;
+
+  //--------------------------------------------------------------------------
+  // Deformable body management
+  //--------------------------------------------------------------------------
+  DeformableBody addDeformableBody(
+      std::string_view name, const DeformableBodyOptions& options);
+  std::optional<DeformableBody> getDeformableBody(std::string_view name);
+  bool hasDeformableBody(std::string_view name) const;
+  std::size_t getDeformableBodyCount() const;
 
   //--------------------------------------------------------------------------
   // Simulation control
@@ -193,6 +203,7 @@ private:
   friend class LoopClosure;
   friend class Multibody;
   friend class RigidBody;
+  friend class DeformableBody;
 
   Frame resolveParentFrame(const Frame& parent) const;
   entt::entity createFrameEntity(
@@ -219,6 +230,7 @@ private:
   std::size_t m_multibodyCounter{0};
   std::size_t m_loopClosureCounter{0};
   std::size_t m_rigidBodyCounter{0};
+  std::size_t m_deformableBodyCounter{0};
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
 };

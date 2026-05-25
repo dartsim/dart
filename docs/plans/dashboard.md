@@ -101,6 +101,25 @@ its own line so status updates remain git-history friendly.
   green, holds DART 6 parity on shared scenes before any promotion claim, and
   never exposes solver/coupler/domain/backend types or ECS storage publicly.
 
+### PLAN-081: Deformable Implicit-Barrier Solver
+
+- Owner doc:
+  [`081-deformable-implicit-barrier-solver.md`](081-deformable-implicit-barrier-solver.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Review and land the first C++ deformable model/state plus default
+  deformable dynamics stage, GUI smoke example, and benchmark slice on top of
+  PR #2705, then start the Python facade or conservative CCD contact-expansion
+  follow-up from PLAN-081.
+- Gate: The first slice keeps IPC-class naming backend-neutral, leaves upstream
+  IPC as a reference rather than a runtime dependency, proves fixed-node,
+  spring, validation, determinism, explicit opt-in static-ground barrier
+  behavior, and ordinary static collision opt-out behavior with focused C++
+  tests, verifies a long-horizon headless Filament GUI frame sequence, records
+  `bm_deformable_body` baseline/stage-counter benchmark data, and keeps
+  `pixi run build` plus `check-api-boundaries` green.
+
 ### PLAN-035: Native Collision Feature Dashboard
 
 - Owner doc:

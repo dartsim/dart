@@ -39,6 +39,7 @@
 #include "dart/collision/native/shapes/shape.hpp"
 #include "dart/collision/native/types.hpp"
 #include "dart/simulation/experimental/body/contact.hpp"
+#include "dart/simulation/experimental/body/deformable_body.hpp"
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/common/ecs_utils.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
@@ -295,6 +296,132 @@ void validateRigidBodyOptions(const RigidBodyOptions& options)
 }
 
 //==============================================================================
+void validateDeformableFiniteVector(
+    const Eigen::Vector3d& value, std::string_view fieldName, std::size_t index)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !value.allFinite(),
+      InvalidArgumentException,
+      "DeformableBodyOptions.{}[{}] must contain only finite values",
+      fieldName,
+      index);
+}
+
+//==============================================================================
+struct PreparedDeformableBodyData
+{
+  std::vector<Eigen::Vector3d> positions;
+  std::vector<Eigen::Vector3d> velocities;
+  std::vector<double> masses;
+  std::vector<std::uint8_t> fixed;
+  std::vector<comps::DeformableSpringEdge> edges;
+  double stiffness = 0.0;
+  double damping = 0.0;
+};
+
+//==============================================================================
+PreparedDeformableBodyData prepareDeformableBodyOptions(
+    const DeformableBodyOptions& options)
+{
+  const auto nodeCount = options.positions.size();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      nodeCount == 0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.positions must not be empty");
+
+  PreparedDeformableBodyData data;
+  data.positions = options.positions;
+  data.velocities.assign(nodeCount, Eigen::Vector3d::Zero());
+  data.masses.assign(nodeCount, 1.0);
+  data.fixed.assign(nodeCount, 0u);
+  data.stiffness = options.edgeStiffness;
+  data.damping = options.damping;
+
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    validateDeformableFiniteVector(options.positions[i], "positions", i);
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !options.velocities.empty() && options.velocities.size() != nodeCount,
+      InvalidArgumentException,
+      "DeformableBodyOptions.velocities must be empty or match positions");
+  for (std::size_t i = 0; i < options.velocities.size(); ++i) {
+    validateDeformableFiniteVector(options.velocities[i], "velocities", i);
+    data.velocities[i] = options.velocities[i];
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !options.masses.empty() && options.masses.size() != nodeCount,
+      InvalidArgumentException,
+      "DeformableBodyOptions.masses must be empty or match positions");
+  for (std::size_t i = 0; i < options.masses.size(); ++i) {
+    const double mass = options.masses[i];
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !std::isfinite(mass) || mass <= 0.0,
+        InvalidArgumentException,
+        "DeformableBodyOptions.masses[{}] must be positive and finite",
+        i);
+    data.masses[i] = mass;
+  }
+
+  for (const auto fixedNode : options.fixedNodes) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        fixedNode >= nodeCount,
+        InvalidArgumentException,
+        "DeformableBodyOptions.fixedNodes contains out-of-range node {}",
+        fixedNode);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        data.fixed[fixedNode] != 0u,
+        InvalidArgumentException,
+        "DeformableBodyOptions.fixedNodes contains duplicate node {}",
+        fixedNode);
+    data.fixed[fixedNode] = 1u;
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(options.edgeStiffness) || options.edgeStiffness < 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.edgeStiffness must be finite and non-negative");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(options.damping) || options.damping < 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.damping must be finite and non-negative");
+
+  data.edges.reserve(options.edges.size());
+  for (std::size_t i = 0; i < options.edges.size(); ++i) {
+    const auto& edge = options.edges[i];
+    DART_EXPERIMENTAL_THROW_T_IF(
+        edge.nodeA >= nodeCount || edge.nodeB >= nodeCount,
+        InvalidArgumentException,
+        "DeformableBodyOptions.edges[{}] references an out-of-range node",
+        i);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        edge.nodeA == edge.nodeB,
+        InvalidArgumentException,
+        "DeformableBodyOptions.edges[{}] endpoints must be distinct",
+        i);
+
+    double restLength = edge.restLength;
+    if (restLength <= 0.0) {
+      restLength
+          = (options.positions[edge.nodeB] - options.positions[edge.nodeA])
+                .norm();
+    }
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !std::isfinite(restLength) || restLength <= 0.0,
+        InvalidArgumentException,
+        "DeformableBodyOptions.edges[{}].restLength must be positive and "
+        "finite",
+        i);
+
+    data.edges.push_back(
+        comps::DeformableSpringEdge{edge.nodeA, edge.nodeB, restLength});
+  }
+
+  return data;
+}
+
+//==============================================================================
 Eigen::Quaterniond normalizeOrIdentity(const Eigen::Quaterniond& orientation)
 {
   const auto norm = orientation.norm();
@@ -350,6 +477,7 @@ void World::clear()
   m_multibodyCounter = 0;
   m_loopClosureCounter = 0;
   m_rigidBodyCounter = 0;
+  m_deformableBodyCounter = 0;
   m_linkCounter = 0;
   m_jointCounter = 0;
 }
@@ -698,6 +826,73 @@ std::size_t World::getRigidBodyCount() const
 }
 
 //==============================================================================
+DeformableBody World::addDeformableBody(
+    std::string_view name, const DeformableBodyOptions& options)
+{
+  ensureDesignMode();
+  auto data = prepareDeformableBodyOptions(options);
+
+  std::string candidateName;
+  if (name.empty()) {
+    do {
+      candidateName
+          = std::format("deformable_body_{:03d}", ++m_deformableBodyCounter);
+    } while (
+        hasEntityWithName<comps::DeformableBodyTag>(m_registry, candidateName));
+  } else {
+    candidateName = std::string(name);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        hasEntityWithName<comps::DeformableBodyTag>(m_registry, candidateName),
+        InvalidArgumentException,
+        "DeformableBody '{}' already exists",
+        candidateName);
+  }
+
+  auto entity = m_registry.create();
+  m_registry.emplace<comps::Name>(entity, candidateName);
+  m_registry.emplace<comps::DeformableBodyTag>(entity);
+
+  auto& state = m_registry.emplace<comps::DeformableNodeState>(entity);
+  state.positions = std::move(data.positions);
+  state.previousPositions = state.positions;
+  state.velocities = std::move(data.velocities);
+  state.masses = std::move(data.masses);
+  state.fixed = std::move(data.fixed);
+
+  auto& model = m_registry.emplace<comps::DeformableSpringModel>(entity);
+  model.edges = std::move(data.edges);
+  model.stiffness = data.stiffness;
+  model.damping = data.damping;
+
+  return DeformableBody(entt::to_integral(entity), this);
+}
+
+//==============================================================================
+std::optional<DeformableBody> World::getDeformableBody(std::string_view name)
+{
+  auto view = m_registry.view<comps::DeformableBodyTag, comps::Name>();
+  for (auto entity : view) {
+    const auto& info = view.get<comps::Name>(entity);
+    if (info.name == name) {
+      return DeformableBody(entt::to_integral(entity), this);
+    }
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+bool World::hasDeformableBody(std::string_view name) const
+{
+  return hasEntityWithName<comps::DeformableBodyTag>(m_registry, name);
+}
+
+//==============================================================================
+std::size_t World::getDeformableBodyCount() const
+{
+  return countEntities<comps::DeformableBodyTag>(m_registry);
+}
+
+//==============================================================================
 void World::enterSimulationMode()
 {
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -830,6 +1025,7 @@ void World::step(compute::ComputeExecutor& executor)
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::DeformableDynamicsStage deformableDynamics;
   compute::KinematicsStage kinematics;
   compute::WorldStepPipeline pipeline;
   // Integrate rigid-body positions after the multibody stage so two-sided
@@ -838,6 +1034,7 @@ void World::step(compute::ComputeExecutor& executor)
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
       .addStage(multibodyDynamics)
+      .addStage(deformableDynamics)
       .addStage(rigidBodyPosition)
       .addStage(kinematics);
   step(executor, pipeline);
@@ -850,6 +1047,7 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::DeformableDynamicsStage deformableDynamics;
   compute::KinematicsStage kinematics;
   compute::WorldStepPipeline pipeline;
   // Integrate rigid-body positions after the multibody stage so two-sided
@@ -858,6 +1056,7 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
       .addStage(multibodyDynamics)
+      .addStage(deformableDynamics)
       .addStage(rigidBodyPosition)
       .addStage(kinematics);
   step(count, executor, pipeline);
@@ -1041,6 +1240,7 @@ void World::saveBinary(std::ostream& output) const
   io::writePOD(output, m_gravity.x());
   io::writePOD(output, m_gravity.y());
   io::writePOD(output, m_gravity.z());
+  io::writePOD(output, m_deformableBodyCounter);
 }
 
 //==============================================================================
@@ -1082,6 +1282,10 @@ void World::loadBinary(std::istream& input)
       io::readPOD(input, gravityZ);
       m_gravity = Eigen::Vector3d(gravityX, gravityY, gravityZ);
     }
+
+    if (input.peek() != std::char_traits<char>::eof()) {
+      io::readPOD(input, m_deformableBodyCounter);
+    }
   }
 
   // Ensure all frame entities have cache components (not serialized)
@@ -1117,6 +1321,9 @@ void World::resetCountersFromRegistry()
       m_loopClosureCounter, countEntities<comps::LoopClosure>(m_registry));
   m_rigidBodyCounter = std::max(
       m_rigidBodyCounter, countEntities<comps::RigidBodyTag>(m_registry));
+  m_deformableBodyCounter = std::max(
+      m_deformableBodyCounter,
+      countEntities<comps::DeformableBodyTag>(m_registry));
   m_linkCounter
       = std::max(m_linkCounter, countEntities<comps::Link>(m_registry));
   m_jointCounter

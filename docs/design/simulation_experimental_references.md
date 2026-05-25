@@ -123,6 +123,7 @@ Planning and Control._ Springer, 2009.
 | `baraff-1996`          | Baraff, "Linear-time dynamics using Lagrange multipliers" (1996)                           | dynamics    | referenced  | low      | reference |
 | `macklin-xpbd-2016`    | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016) | integration | referenced  | medium   | evaluate  |
 | `gjk-1988`             | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                  | collision   | implemented | —        | adopt     |
+| `ipc-2020`             | Li et al., "Incremental Potential Contact" (2020)                                          | contact     | in-progress | high     | adopt     |
 
 ### `featherstone-1983`
 
@@ -193,6 +194,21 @@ of Robotics and Automation_, 1988.
 - **Where used:** native collision (`dart/collision/`, libccd-derived GJK/EPA).
 - **Notes:** GJK distance/intersection underpins DART's native narrowphase; the
   experimental world consumes collision through the shared collision foundation.
+
+### `ipc-2020`
+
+Li, M., Ferguson, Z., Schneider, T., Langlois, T., Zorin, D., Panozzo, D.,
+Jiang, C., & Kaufman, D. M. "Incremental Potential Contact:
+Intersection- and Inversion-free Large Deformation Dynamics." _ACM Transactions
+on Graphics_ (SIGGRAPH), 2020.
+
+- **Type:** paper · **Topic:** contact/integration · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-081`](../plans/081-deformable-implicit-barrier-solver.md)
+  and the active deformable implicit-barrier dev task.
+- **Notes:** Provides the target method family for robust deformable contact:
+  implicit time stepping with barrier contact and conservative CCD. Public DART
+  APIs should use DART-owned method/capability names rather than exposing the
+  upstream project name as a solver identity.
 
 ## Model Formats & Standards
 

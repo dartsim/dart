@@ -36,6 +36,7 @@ include(dart_experimental_dependencies)
 
 add_library(${target_name}
   body/collision_body.cpp
+  body/deformable_body.cpp
   body/rigid_body.cpp
   common/diagnostics.cpp
   common/exceptions.cpp
@@ -55,6 +56,7 @@ add_library(${target_name}
   constraint/loop_closure.cpp
   comps/collision_geometry.cpp
   comps/contact_material.cpp
+  comps/deformable_body.cpp
   comps/dynamics.cpp
   comps/frame_types.cpp
   comps/joint.cpp

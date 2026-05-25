@@ -699,6 +699,11 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     collision swaps velocities) and a two-tangent friction-pyramid Coulomb model
     bounded by the normal impulse (a body sliding on a static ground decelerates
     and stops).
+  - Added an experimental deformable-body world stage with grid-mesh body
+    construction, explicit mass-spring elastic integration, IPC-style
+    ground-barrier contact with feasibility line search, rigid-body barrier
+    opt-in controls, a Filament GUI example for long-horizon visual inspection,
+    and focused unit/benchmark coverage.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

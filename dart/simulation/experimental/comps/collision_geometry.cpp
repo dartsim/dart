@@ -37,5 +37,6 @@
 namespace dart::simulation::experimental::comps {
 
 DART_EXPERIMENTAL_REGISTER_COMPONENT(CollisionGeometry)
+DART_EXPERIMENTAL_REGISTER_COMPONENT(DeformableGroundBarrierTag)
 
 } // namespace dart::simulation::experimental::comps
