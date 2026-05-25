@@ -35,8 +35,11 @@
 #include <benchmark/benchmark.h>
 #include <dart/simulation/experimental/compute/cuda/rigid_body_state_batch_cuda.cuh>
 
+#include <algorithm>
+#include <limits>
 #include <vector>
 
+#include <cmath>
 #include <cstddef>
 
 namespace compute = dart::simulation::experimental::compute;
@@ -103,6 +106,42 @@ Phase5RigidBodyBatchFixture makeFixture(
   return fixture;
 }
 
+void integrateCpuSteps(
+    compute::RigidBodyStateBatch& state,
+    const compute::RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    std::size_t stepCount)
+{
+  for (std::size_t step = 0; step < stepCount; ++step) {
+    compute::integrateRigidBodyStateBatch(state, model, force, 0.001);
+  }
+}
+
+double maxAbsDifference(
+    const std::vector<double>& actual, const std::vector<double>& expected)
+{
+  if (actual.size() != expected.size()) {
+    return std::numeric_limits<double>::infinity();
+  }
+
+  double maxError = 0.0;
+  for (std::size_t i = 0; i < actual.size(); ++i) {
+    maxError = std::max(maxError, std::abs(actual[i] - expected[i]));
+  }
+  return maxError;
+}
+
+double maxFinalStateAbsError(
+    const compute::RigidBodyStateBatch& actual,
+    const compute::RigidBodyStateBatch& expected)
+{
+  return std::max(
+      {maxAbsDifference(actual.position, expected.position),
+       maxAbsDifference(actual.linearVelocity, expected.linearVelocity),
+       maxAbsDifference(actual.orientation, expected.orientation),
+       maxAbsDifference(actual.angularVelocity, expected.angularVelocity)});
+}
+
 void BM_Phase5RigidBodyBatchCpuBaseline(benchmark::State& state)
 {
   const auto worldCount = static_cast<std::size_t>(state.range(0));
@@ -112,10 +151,7 @@ void BM_Phase5RigidBodyBatchCpuBaseline(benchmark::State& state)
 
   for (auto _ : state) {
     auto working = fixture.state;
-    for (std::size_t step = 0; step < stepCount; ++step) {
-      compute::integrateRigidBodyStateBatch(
-          working, fixture.model, fixture.force, 0.001);
-    }
+    integrateCpuSteps(working, fixture.model, fixture.force, stepCount);
     benchmark::DoNotOptimize(working.position.data());
     benchmark::DoNotOptimize(working.linearVelocity.data());
     benchmark::DoNotOptimize(working.orientation.data());
@@ -140,9 +176,12 @@ void BM_Phase5RigidBodyBatchGpu(benchmark::State& state)
   const auto bodyCount = static_cast<std::size_t>(state.range(1));
   const auto stepCount = static_cast<std::size_t>(state.range(2));
   const auto fixture = makeFixture(worldCount, bodyCount);
+  auto expected = fixture.state;
+  integrateCpuSteps(expected, fixture.model, fixture.force, stepCount);
 
+  auto working = fixture.state;
   for (auto _ : state) {
-    auto working = fixture.state;
+    working = fixture.state;
     cuda::rolloutRigidBodyStateBatchCuda(
         working, fixture.model, fixture.force, 0.001, stepCount);
     benchmark::DoNotOptimize(working.position.data());
@@ -154,6 +193,8 @@ void BM_Phase5RigidBodyBatchGpu(benchmark::State& state)
   state.counters["worlds"] = static_cast<double>(worldCount);
   state.counters["bodies_per_world"] = static_cast<double>(bodyCount);
   state.counters["steps"] = static_cast<double>(stepCount);
+  state.counters["max_final_state_abs_error"]
+      = maxFinalStateAbsError(working, expected);
   state.SetItemsProcessed(
       state.iterations() * worldCount * bodyCount * stepCount);
 }

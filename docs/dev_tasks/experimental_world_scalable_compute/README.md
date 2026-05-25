@@ -60,9 +60,9 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
   `DART_ENABLE_EXPERIMENTAL_CUDA`, a Linux-only Pixi `cuda` environment, a
   private build-tree CUDA wrapper over the force-driven `RigidBodyStateBatch`
   SoA path, a parity unit test, a packet-compatible end-to-end smoke benchmark,
-  and a manual/non-required GitHub workflow. Remaining: run that workflow on a
-  project-owned GPU runner, produce a passing Phase 5 go/no-go packet, and use
-  representative workload results for the CUDA-versus-SYCL decision.
+  and a manual/non-required GitHub workflow that writes and validates the Phase 5
+  packet artifact. Remaining: run that workflow on a project-owned GPU runner
+  and use representative workload results for the CUDA-versus-SYCL decision.
 - [ ] Phase 6: Reassess — broaden GPU, auto-scheduling, Pattern B, differentiable
       state (each gated; gated on Phase 5 evidence).
 
@@ -121,7 +121,8 @@ sort are in; see `RESUME.md`.)
    maintainer/infrastructure-owned prerequisites. The optional/separate package
    shape, pre-registered go/no-go threshold, and
    `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /
-   `--input <packet.json>` plus `pixi run check-compute-backend-boundaries` and
+   `--input <packet.json>`, the `bm-phase5-cuda-packet` packet writer, plus
+   `pixi run check-compute-backend-boundaries` and
    `pixi run check-no-gpu-runtime-dependencies` evidence gates live in
    `docs/design/scalable_compute_decisions.md`. The packet validator requires
    the build/import and policy-gate evidence booleans to be true for the same
@@ -131,10 +132,11 @@ sort are in; see `RESUME.md`.)
    may carry GPU runtime packages.
 4. Phase 5 CUDA evidence: run `pixi run -e cuda test-cuda` on a CUDA host, then
    dispatch `.github/workflows/ci_cuda.yml` on a self-hosted runner labeled
-   `cuda` once the project has one. Keep the workflow non-required until runner
-   stability and benchmark signal are proven, and do not claim the Phase 5 exit
-   until `pixi run bm-phase5-gpu-packet-check --input <packet.json>` passes with
-   the build/import and policy evidence booleans true for the same change.
+   `cuda` once the project has one. The workflow runs the policy gates, the full
+   CPU/GPU benchmark row, `bm-phase5-cuda-packet`, and
+   `bm-phase5-gpu-packet-check`, then uploads both JSON files.
+   Keep the workflow non-required until runner stability and benchmark signal
+   are proven.
 
 ## Relationship To Other Surfaces
 

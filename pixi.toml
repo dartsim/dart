@@ -1043,6 +1043,7 @@ bm-check = { cmd = "python scripts/check_allocator_benchmarks.py", depends-on = 
 bm-compute-check = { cmd = "python scripts/check_compute_graph_benchmarks.py", depends-on = [
   "config",
 ] }
+bm-phase5-cuda-packet = { cmd = "python scripts/write_phase5_cuda_packet.py" }
 bm-phase5-gpu-packet-check = { cmd = "python scripts/check_phase5_gpu_packet.py" }
 bm-dashboard-surfaces = { cmd = "python scripts/run_performance_dashboard_benchmarks.py", depends-on = [
   "config",

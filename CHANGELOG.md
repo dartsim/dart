@@ -453,6 +453,9 @@
     `--input <packet.json>` to create and validate the manual Phase 5 GPU
     go/no-go benchmark packet once a project GPU runner exists, including
     build/import and policy-gate evidence booleans.
+  - Added `pixi run bm-phase5-cuda-packet` and a manual CUDA workflow artifact
+    path that converts Phase 5 CUDA benchmark JSON into a validated GPU go/no-go
+    packet after the CUDA build/import and policy gates pass.
   - Added `pixi run check-compute-backend-boundaries` to keep CUDA/SYCL/device
     backend concepts out of public experimental C++ headers and the default
     dartpy experimental bindings.

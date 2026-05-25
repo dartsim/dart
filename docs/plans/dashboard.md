@@ -83,8 +83,10 @@ its own line so status updates remain git-history friendly.
   `bm-phase5-gpu-packet-check` / `check-compute-backend-boundaries` /
   `check-no-gpu-runtime-dependencies` evidence gates, and the
   `check-phase5-cuda-benchmark-contract` row contract are recorded in the owner
-  doc. Phase 3's speedup surface is the checked contact-island benchmark, not
-  the trivial Euler rigid-body rows.
+  doc. The manual CUDA workflow now writes and validates the Phase 5 packet
+  artifact through `bm-phase5-cuda-packet` when a self-hosted CUDA runner is
+  available. Phase 3's speedup surface is the checked contact-island benchmark,
+  not the trivial Euler rigid-body rows.
 - Gate: `pixi run test-simulation-experimental` covers graph/world parity for
   the current CPU foundation; `pixi run bm-compute-check` keeps the full
   expected `bm_compute_graph` corpus reproducible for the current Euler and

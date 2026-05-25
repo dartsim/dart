@@ -168,6 +168,22 @@ dependency check, and Phase 5 benchmark-contract check all passed for the same
 change. The checker enforces the `worldCount >= 1024`, `bodyCount = 128`,
 `stepCount = 100`, 1.25x median speedup, final-state tolerance, and evidence
 rules above.
+When a CUDA benchmark JSON file is available, the packet can be generated and
+validated without hand-copying rows:
+
+```bash
+pixi run bm-phase5-cuda-packet \
+  --benchmark-json .benchmark_results/phase5_cuda_ci_full.json \
+  --output .benchmark_results/phase5_cuda_packet.json \
+  --includes-transfer-setup-compute-readback \
+  --gpu-build-import-gate-passed \
+  --compute-backend-boundaries-passed \
+  --no-gpu-runtime-dependencies-passed \
+  --phase5-benchmark-contract-passed
+pixi run bm-phase5-gpu-packet-check \
+  --input .benchmark_results/phase5_cuda_packet.json
+```
+
 The same go/no-go packet must include `pixi run check-compute-backend-boundaries`
 evidence so backend-specific concepts stay out of public C++ headers and the
 default dartpy experimental bindings.

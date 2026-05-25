@@ -46,6 +46,11 @@ row.
   torque, orientation) for free and frame-coupled bodies. The orientation scheme
   is unified on the exponential map and `RigidBodyModelBatch` carries inertia, so
   the SoA stage is the default drop-in path for unconstrained rigid bodies.
+- Phase 5 CUDA evidence is now packet-oriented: the CUDA benchmark emits the
+  full-workload CPU/GPU final-state error counter, `bm-phase5-cuda-packet`
+  converts the benchmark JSON plus explicit evidence flags into the validator's
+  packet shape, and the manual CUDA workflow validates/uploads the benchmark JSON
+  and packet artifact.
 
 ## Current Branch
 
@@ -210,13 +215,16 @@ green; provision a project GPU runner plus build/import CI before closing Phase 
 The GPU runner/CI prerequisites are owned by project maintainers/infrastructure;
 the package shape, pre-registered go/no-go threshold, and
 `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /
-`--input <packet.json>` plus `pixi run check-compute-backend-boundaries` and
+`--input <packet.json>`, `bm-phase5-cuda-packet`, plus
+`pixi run check-compute-backend-boundaries` and
 `pixi run check-no-gpu-runtime-dependencies` evidence gates are now durable in
-`docs/design/scalable_compute_decisions.md`. If continuing through draft PR
+`docs/design/scalable_compute_decisions.md`. The manual CUDA workflow runs the
+policy gates, full CPU/GPU row, packet writer, and packet checker, then uploads
+`.benchmark_results/phase5_cuda_ci_full.json` and
+`.benchmark_results/phase5_cuda_packet.json`. If continuing through draft PR
 #2710, first reconcile its opt-in CUDA benchmark/test names and Pixi feature
-shape with these gates, especially
-`pixi run check-phase5-cuda-benchmark-contract`, rather than loosening the Phase
-5 exit criteria.
+shape with these gates, especially the `check-phase5-cuda-benchmark-contract`
+task, rather than loosening the Phase 5 exit criteria.
 For the local CUDA reconciliation path, use `pixi run -e cuda test-cuda` on a
 CUDA host after the default checks pass. The runner/CI prerequisite remains
 maintainer/infrastructure-owned; local CUDA evidence is useful but does not close
