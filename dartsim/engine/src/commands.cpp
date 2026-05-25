@@ -47,6 +47,7 @@ namespace dartsim::commands {
 
 namespace {
 
+constexpr double kMinimumMass = 1e-9;
 constexpr double kMinimumTimeStep = 1e-9;
 
 /// Collect `id` and all of its descendants in pre-order.
@@ -102,6 +103,11 @@ double sanitizeTimeStep(double timeStep)
 {
   return std::isfinite(timeStep) && timeStep > 0.0 ? timeStep
                                                    : kMinimumTimeStep;
+}
+
+double sanitizeMass(double mass)
+{
+  return std::isfinite(mass) && mass > 0.0 ? mass : kMinimumMass;
 }
 
 } // namespace
@@ -270,7 +276,7 @@ std::unique_ptr<Command> setMass(ObjectId id, double mass)
   return std::make_unique<Command>(
       "Set Mass", [id, mass](ObjectManager& objects, SelectionManager&) {
         if (SceneObject* object = objects.model().find(id)) {
-          object->mass = mass;
+          object->mass = sanitizeMass(mass);
           objects.rebuild();
         }
       });

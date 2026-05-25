@@ -95,6 +95,18 @@ bool SimEngine::redo()
   return changed;
 }
 
+bool SimEngine::select(ObjectId id, bool additive)
+{
+  const SelectionState before = m_selection.state();
+  m_selection.select(id, additive);
+  if (m_selection.state() == before) {
+    return false;
+  }
+  m_events.emit(EventType::SelectionChanged, id);
+  notifyChanged();
+  return true;
+}
+
 void SimEngine::startRecording()
 {
   m_recorder.start(m_objects.model().timeStep);

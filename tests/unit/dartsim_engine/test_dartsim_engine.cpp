@@ -43,7 +43,11 @@
 #include <gtest/gtest.h>
 
 #include <filesystem>
+#include <limits>
 #include <sstream>
+#include <string>
+
+#include <cmath>
 
 using namespace dartsim;
 
@@ -138,6 +142,26 @@ TEST(ObjectManager, RebuildCreatesBodiesAndResolvesTransforms)
   const auto items = objects.computeRenderItems();
   EXPECT_EQ(items.size(), 1u);
   EXPECT_EQ(items.front().id, id);
+}
+
+TEST(ObjectManager, RebuildSanitizesNonFiniteRigidBodyMass)
+{
+  ObjectManager objects;
+  SceneObject body;
+  body.type = ObjectType::RigidBody;
+  body.name = "box";
+  body.mass = std::numeric_limits<double>::quiet_NaN();
+  const ObjectId id = objects.model().add(body);
+
+  EXPECT_NO_THROW(objects.rebuild());
+  const SceneObject* sanitized = objects.model().find(id);
+  ASSERT_NE(sanitized, nullptr);
+  EXPECT_TRUE(std::isfinite(sanitized->mass));
+  EXPECT_DOUBLE_EQ(sanitized->mass, 1e-9);
+
+  auto rigidBody = objects.world().getRigidBody("box");
+  ASSERT_TRUE(rigidBody.has_value());
+  EXPECT_DOUBLE_EQ(rigidBody->getMass(), 1e-9);
 }
 
 TEST(ObjectManager, MultiBodyWithLinks)
@@ -268,6 +292,34 @@ TEST(CommandManager, SetTimeStepSanitizesInvalidValues)
   controller.play();
   controller.advance(1e-6);
   EXPECT_GT(controller.frameCount(), 0u);
+}
+
+TEST(CommandManager, SetMassSanitizesInvalidValues)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addRigidBody(ShapeType::Box));
+  const ObjectId id = selection.primary();
+  ASSERT_NE(id, kNoObject);
+
+  commands.execute(
+      commands::setMass(id, std::numeric_limits<double>::quiet_NaN()));
+  const SceneObject* object = objects.model().find(id);
+  ASSERT_NE(object, nullptr);
+  EXPECT_DOUBLE_EQ(object->mass, 1e-9);
+  const std::string name = object->name;
+
+  auto rigidBody = objects.world().getRigidBody(name);
+  ASSERT_TRUE(rigidBody.has_value());
+  EXPECT_DOUBLE_EQ(rigidBody->getMass(), 1e-9);
+
+  commands.execute(commands::setMass(id, -5.0));
+  EXPECT_DOUBLE_EQ(objects.model().find(id)->mass, 1e-9);
+  rigidBody = objects.world().getRigidBody(name);
+  ASSERT_TRUE(rigidBody.has_value());
+  EXPECT_DOUBLE_EQ(rigidBody->getMass(), 1e-9);
 }
 
 //==============================================================================
@@ -634,6 +686,39 @@ TEST(SimEngine, NoOpCommandDoesNotSignalChange)
   // successful mutation to event-driven consumers.
   engine.execute(commands::removeObject(99999));
   EXPECT_EQ(changes, 1);
+}
+
+TEST(SimEngine, SelectSignalsSelectionChange)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box));
+  const ObjectId first = engine.selection().primary();
+  engine.execute(commands::addRigidBody(ShapeType::Sphere));
+  const ObjectId second = engine.selection().primary();
+  ASSERT_NE(first, kNoObject);
+  ASSERT_NE(second, kNoObject);
+  ASSERT_NE(first, second);
+
+  int changes = 0;
+  Event lastEvent;
+  engine.setOnChanged([&]() { ++changes; });
+  engine.events().subscribe([&](const Event& event) { lastEvent = event; });
+
+  EXPECT_TRUE(engine.select(first));
+  EXPECT_EQ(changes, 1);
+  EXPECT_EQ(lastEvent.type, EventType::SelectionChanged);
+  EXPECT_EQ(lastEvent.object, first);
+  EXPECT_EQ(engine.selection().primary(), first);
+
+  EXPECT_FALSE(engine.select(first));
+  EXPECT_EQ(changes, 1);
+
+  EXPECT_TRUE(engine.select(second, /*additive=*/true));
+  EXPECT_EQ(changes, 2);
+  EXPECT_EQ(lastEvent.type, EventType::SelectionChanged);
+  EXPECT_EQ(lastEvent.object, second);
+  EXPECT_EQ(engine.selection().selected().size(), 2u);
+  EXPECT_EQ(engine.selection().primary(), second);
 }
 
 TEST(SimEngine, NoOpRemoveDoesNotResetRunState)

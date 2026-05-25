@@ -154,7 +154,7 @@ void buildTreeNode(
   std::string label = indent + (selected ? "* " : "  ") + object->name + " ["
                       + typeLabel(object->type) + "]##" + std::to_string(id);
   if (ui.button(label)) {
-    app.engine.selection().select(id);
+    app.engine.select(id);
   }
   for (const ObjectId child : app.engine.objects().model().childrenOf(id)) {
     buildTreeNode(ui, app, child, depth + 1);

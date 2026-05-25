@@ -54,6 +54,7 @@ namespace sx = dart::simulation::experimental;
 
 namespace {
 
+constexpr double kMinimumMass = 1e-9;
 constexpr double kMinimumTimeStep = 1e-9;
 
 sx::JointType toJointType(JointKind kind)
@@ -83,6 +84,11 @@ double sanitizeTimeStep(double timeStep)
 {
   return std::isfinite(timeStep) && timeStep > 0.0 ? timeStep
                                                    : kMinimumTimeStep;
+}
+
+double sanitizeMass(double mass)
+{
+  return std::isfinite(mass) && mass > 0.0 ? mass : kMinimumMass;
 }
 
 void collectMultiBodyLinks(
@@ -123,14 +129,15 @@ void ObjectManager::rebuild()
   m_world->setTimeStep(m_model.timeStep);
 
   for (const ObjectId id : m_model.rootChildren()) {
-    const SceneObject* object = m_model.find(id);
+    SceneObject* object = m_model.find(id);
     if (object == nullptr) {
       continue;
     }
     switch (object->type) {
       case ObjectType::RigidBody: {
         sx::RigidBodyOptions opts;
-        opts.mass = std::max(object->mass, 1e-9);
+        object->mass = sanitizeMass(object->mass);
+        opts.mass = object->mass;
         opts.inertia = object->inertia;
         opts.position = object->transform.translation();
         opts.orientation = Eigen::Quaterniond(object->transform.rotation());

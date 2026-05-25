@@ -110,6 +110,10 @@ public:
   bool undo();
   bool redo();
 
+  /// Select an object through the engine facade and notify observers when the
+  /// selection actually changes.
+  bool select(ObjectId id, bool additive = false);
+
   // Record & replay -----------------------------------------------------------
 
   /// Begin recording, capturing the current world as the first frame.

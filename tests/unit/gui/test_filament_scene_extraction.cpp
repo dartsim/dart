@@ -4684,6 +4684,17 @@ TEST(FilamentSceneExtraction, DartsimSceneFixtureModeSkipsEditorPanels)
   EXPECT_LT(fixtureModeReturn, panelRegistration);
 }
 
+TEST(FilamentSceneExtraction, DartsimSceneTreeSelectionUsesEngineFacade)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_EQ(
+      editorSource.find("app.engine.selection().select(id)"),
+      std::string::npos);
+  EXPECT_NE(editorSource.find("app.engine.select(id);"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, DartsimApplicationKeepsOnlyMinimalCppEntryPoint)
 {
   const auto sources
