@@ -74,12 +74,11 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Follow the multiphase plan in
-  `docs/dev_tasks/experimental_world_scalable_compute/`; land the Phase 0
-  foundations (executor-parity test, EnTT concurrency contract, benchmark corpus
-  with a contact-shaped proxy) before the resource-access metadata milestone,
-  and keep both ahead of dependency inference, contact scheduling, or
-  GPU/rendering backend work.
+- Next step: Gather Phase 5 CUDA evidence through the opt-in path:
+  `pixi run -e cuda test-cuda` locally on a CUDA host and the manual
+  `ci_cuda.yml` workflow on a self-hosted runner labeled `cuda`. Keep CUDA
+  private and non-required until runner stability and representative workload
+  benchmarks justify the Phase 6 GPU track.
 - Gate:
   [`030-compute-resource-access/evaluator.md`](030-compute-resource-access/evaluator.md)
   records the focused proof: graph/world tests and the compute-graph benchmark
