@@ -932,6 +932,17 @@ dartsim = { cmd = [
   "dartsim",
 ], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
 
+# Launch the consolidated dart-demos GUI app (all GUI examples as runtime-
+# switchable scenes). Uses system ImGui like other GUI examples; pick a scene
+# with `pixi run demos -- --scene <id>`.
+demos = { cmd = [
+  "python",
+  "scripts/run_cpp_example.py",
+  "demos",
+], depends-on = [
+  "config",
+] }
+
 ex-atlas-puppet = { depends-on = [
   { task = "run-cpp-target", args = [
     "atlas_puppet",

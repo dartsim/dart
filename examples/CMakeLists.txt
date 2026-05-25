@@ -13,44 +13,19 @@ add_subdirectory(speed_test)
 add_subdirectory(csv_logger)
 
 if(DART_BUILD_GUI OR NOT DART_IN_SOURCE_BUILD)
-  add_subdirectory(add_delete_skels)
-  add_subdirectory(atlas_puppet)
-  add_subdirectory(atlas_simbicon)
-  add_subdirectory(biped_stand)
-  add_subdirectory(box_stacking)
-  add_subdirectory(boxes)
-  add_subdirectory(capsule_ground_contact)
-  add_subdirectory(coupler_constraint)
-  add_subdirectory(collision_sandbox)
-  add_subdirectory(demos)
-  add_subdirectory(drag_and_drop)
-  add_subdirectory(empty)
-  add_subdirectory(experimental_rigid_body_gui)
-  add_subdirectory(fetch)
-  add_subdirectory(free_joint_cases)
-  add_subdirectory(g1_puppet)
-  add_subdirectory(hardcoded_design)
-  add_subdirectory(heightmap)
+  # hello_world stays standalone as the minimal "link DART in a CMake project"
+  # template. Other GUI examples are consolidated into the dart-demos app
+  # (examples/demos); each is a registered scene switchable at runtime.
   add_subdirectory(hello_world)
-  add_subdirectory(hubo_puppet)
-  add_subdirectory(human_joint_limits)
-  add_subdirectory(hybrid_dynamics)
-  add_subdirectory(imgui)
-  add_subdirectory(joint_constraints)
-  add_subdirectory(lcp_physics)
-  add_subdirectory(mimic_pendulums)
-  add_subdirectory(mixed_chain)
-  add_subdirectory(operational_space_control)
-  add_subdirectory(point_cloud)
-  add_subdirectory(polyhedron_visual)
-  add_subdirectory(rigid_chain)
-  add_subdirectory(rigid_cubes)
-  add_subdirectory(rigid_loop)
-  add_subdirectory(rigid_shapes)
-  add_subdirectory(simple_frames)
-  add_subdirectory(simulation_event_handler)
-  add_subdirectory(soft_bodies)
-  add_subdirectory(tinkertoy)
-  add_subdirectory(vehicle)
+  add_subdirectory(demos)
+
+  # Kept standalone (not in dart-demos). Tracked in docs/dev_tasks/demos_app/:
+  #   - atlas_simbicon / collision_sandbox: their controller and pair-registry
+  #     sources are reused by tests (tests/integration, tests/unit/collision),
+  #     so they stay multi-file standalone examples.
+  #   - wam_ikfast: depends on a generated IKFast library selected via
+  #     DART_WAM_IKFAST_LIB_PATH at configure time.
+  add_subdirectory(atlas_simbicon)
+  add_subdirectory(collision_sandbox)
   add_subdirectory(wam_ikfast)
 endif()

@@ -44,9 +44,7 @@ set(dart_demos_sources
   "${CMAKE_CURRENT_LIST_DIR}/scenes/atlas_puppet.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/hubo_puppet.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/g1_puppet.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/scenes/atlas_simbicon.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/human_joint_limits.cpp"
-  "${CMAKE_CURRENT_LIST_DIR}/scenes/collision_sandbox.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/experimental_rigid_body_gui.cpp"
 )
 
@@ -58,11 +56,7 @@ if(TARGET dart-demos)
   # backends (ODE/Bullet) are selected through runtime factories, so they need
   # no extra link here.
   target_link_libraries(dart-demos PRIVATE dart-io)
-  # The collision sandbox scene uses the native collision types directly, and
-  # the experimental rigid-body scene drives the experimental World.
-  if(TARGET dart-collision-native)
-    target_link_libraries(dart-demos PRIVATE dart-collision-native)
-  endif()
+  # The experimental rigid-body scene drives the experimental World.
   if(TARGET dart-simulation-experimental)
     target_link_libraries(dart-demos PRIVATE dart-simulation-experimental)
   endif()

@@ -5,11 +5,34 @@
  * The list of contributors can be found at:
  *   https://github.com/dartsim/dart/blob/main/LICENSE
  *
- * This file is provided under the "BSD-style" License.
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "scenes.hpp"
+#include "pair_registry.hpp"
 
+#include <dart/gui/application.hpp>
 #include <dart/gui/debug.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
@@ -20,8 +43,6 @@
 #include <dart/collision/native/broad_phase/broad_phase.hpp>
 #include <dart/collision/native/collision_world.hpp>
 #include <dart/collision/native/narrow_phase/narrow_phase.hpp>
-#include <dart/collision/native/sdf/dense_sdf_field.hpp>
-#include <dart/collision/native/shapes/shape.hpp>
 
 #include <dart/dynamics/box_shape.hpp>
 #include <dart/dynamics/capsule_shape.hpp>
@@ -35,10 +56,9 @@
 #include <algorithm>
 #include <array>
 #include <iomanip>
+#include <iostream>
 #include <memory>
-#include <span>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -46,441 +66,17 @@
 #include <vector>
 
 #include <cmath>
-#include <cstddef>
 
+namespace collision = dart::collision::native;
 namespace dynamics = dart::dynamics;
 namespace gui = dart::gui;
+namespace sandbox = dart::examples::collision_sandbox;
 namespace simulation = dart::simulation;
-
-namespace dart::examples::demos {
 
 namespace {
 
-// Aliased inside the demos namespace so `collision` shadows dart::collision
-// (otherwise found first via the enclosing dart namespace) and resolves to the
-// native collision API the sandbox uses.
-namespace collision = dart::collision::native;
-using collision::ShapeType;
-
-enum class PairStatus
-{
-  Contact,
-  AdaptedFallback,
-  DistanceOnly,
-  Unsupported
-};
-
-struct ShapeFixture
-{
-  collision::ShapeType type;
-  std::string_view id;
-  std::string_view label;
-};
-
-struct PairCase
-{
-  std::size_t index = 0;
-  collision::ShapeType shapeA = collision::ShapeType::Sphere;
-  collision::ShapeType shapeB = collision::ShapeType::Sphere;
-  PairStatus status = PairStatus::Unsupported;
-  std::string id;
-  std::string label;
-  std::string note;
-
-  [[nodiscard]] bool supportsContact() const
-  {
-    return status == PairStatus::Contact
-           || status == PairStatus::AdaptedFallback;
-  }
-
-  [[nodiscard]] bool supportsDistance() const
-  {
-    return supportsContact() || status == PairStatus::DistanceOnly;
-  }
-};
-
-struct PairPose
-{
-  Eigen::Isometry3d transformA = Eigen::Isometry3d::Identity();
-  Eigen::Isometry3d transformB = Eigen::Isometry3d::Identity();
-};
-
-struct ShapeParameters
-{
-  double radius = 0.45;
-  double height = 0.9;
-  Eigen::Vector3d halfExtents = Eigen::Vector3d(0.45, 0.35, 0.3);
-};
-
-constexpr std::array<ShapeFixture, 9> kShapeFixtures{{
-    {ShapeType::Sphere, "sphere", "Sphere"},
-    {ShapeType::Box, "box", "Box"},
-    {ShapeType::Capsule, "capsule", "Capsule"},
-    {ShapeType::Cylinder, "cylinder", "Cylinder"},
-    {ShapeType::Plane, "plane", "Plane"},
-    {ShapeType::Convex, "convex", "Convex"},
-    {ShapeType::Mesh, "mesh", "Mesh"},
-    {ShapeType::Sdf, "sdf", "SDF"},
-    {ShapeType::Compound, "compound", "Compound"},
-}};
-
-[[nodiscard]] std::string_view shapeTypeId(ShapeType type);
-[[nodiscard]] std::string_view shapeTypeLabel(ShapeType type);
-[[nodiscard]] std::string_view pairStatusLabel(PairStatus status);
-[[nodiscard]] std::string_view pairStatusDescription(PairStatus status);
-[[nodiscard]] bool isAdaptedFallbackPair(ShapeType shapeA, ShapeType shapeB);
-
-[[nodiscard]] const ShapeFixture& fixtureFor(ShapeType type)
-{
-  const auto it = std::ranges::find_if(
-      kShapeFixtures,
-      [type](const ShapeFixture& fixture) { return fixture.type == type; });
-  if (it == kShapeFixtures.end()) {
-    throw std::invalid_argument("Unknown collision shape type");
-  }
-  return *it;
-}
-
-[[nodiscard]] std::string makePairId(ShapeType shapeA, ShapeType shapeB)
-{
-  std::ostringstream stream;
-  stream << shapeTypeId(shapeA) << "_" << shapeTypeId(shapeB);
-  return stream.str();
-}
-
-[[nodiscard]] std::string makePairLabel(ShapeType shapeA, ShapeType shapeB)
-{
-  std::ostringstream stream;
-  stream << shapeTypeLabel(shapeA) << " / " << shapeTypeLabel(shapeB);
-  return stream.str();
-}
-
-[[nodiscard]] std::string makePairNote(
-    ShapeType shapeA, ShapeType shapeB, PairStatus status)
-{
-  if (status == PairStatus::AdaptedFallback) {
-    if (shapeA == ShapeType::Compound || shapeB == ShapeType::Compound) {
-      return "Contact generation runs by decomposing the compound into its "
-             "children.";
-    }
-    return "Contact generation runs by adapting this shape to a supported "
-           "native primitive or mesh path.";
-  }
-
-  if (status == PairStatus::DistanceOnly) {
-    return "Only signed distance is available for this pair; contact "
-           "generation is not implemented.";
-  }
-
-  if (status == PairStatus::Unsupported) {
-    return "This pair is listed for coverage inspection, but native contact "
-           "and distance queries are not implemented.";
-  }
-
-  return "Contact generation runs through a dedicated native narrow-phase "
-         "algorithm for this exact shape pair.";
-}
-
-[[nodiscard]] PairStatus classifyPair(ShapeType shapeA, ShapeType shapeB)
-{
-  if (collision::NarrowPhase::isSupported(shapeA, shapeB)) {
-    if (isAdaptedFallbackPair(shapeA, shapeB)) {
-      return PairStatus::AdaptedFallback;
-    }
-    return PairStatus::Contact;
-  }
-
-  if (collision::NarrowPhase::isDistanceSupported(shapeA, shapeB)) {
-    return PairStatus::DistanceOnly;
-  }
-
-  return PairStatus::Unsupported;
-}
-
-[[nodiscard]] const std::vector<PairCase>& pairCaseStorage()
-{
-  static const std::vector<PairCase> cases = [] {
-    std::vector<PairCase> out;
-    out.reserve(kShapeFixtures.size() * (kShapeFixtures.size() + 1) / 2);
-
-    for (std::size_t i = 0; i < kShapeFixtures.size(); ++i) {
-      for (std::size_t j = i; j < kShapeFixtures.size(); ++j) {
-        const ShapeType shapeA = kShapeFixtures[i].type;
-        const ShapeType shapeB = kShapeFixtures[j].type;
-        const PairStatus status = classifyPair(shapeA, shapeB);
-        out.push_back(
-            PairCase{
-                out.size(),
-                shapeA,
-                shapeB,
-                status,
-                makePairId(shapeA, shapeB),
-                makePairLabel(shapeA, shapeB),
-                makePairNote(shapeA, shapeB, status)});
-      }
-    }
-
-    return out;
-  }();
-
-  return cases;
-}
-
-[[nodiscard]] std::vector<Eigen::Vector3d> makeOctahedronVertices(double scale)
-{
-  return {
-      {scale, 0.0, 0.0},
-      {-scale, 0.0, 0.0},
-      {0.0, scale, 0.0},
-      {0.0, -scale, 0.0},
-      {0.0, 0.0, scale},
-      {0.0, 0.0, -scale}};
-}
-
-[[nodiscard]] std::vector<Eigen::Vector3d> makeCubeVertices(
-    const Eigen::Vector3d& halfExtents)
-{
-  return {
-      {-halfExtents.x(), -halfExtents.y(), -halfExtents.z()},
-      {halfExtents.x(), -halfExtents.y(), -halfExtents.z()},
-      {halfExtents.x(), halfExtents.y(), -halfExtents.z()},
-      {-halfExtents.x(), halfExtents.y(), -halfExtents.z()},
-      {-halfExtents.x(), -halfExtents.y(), halfExtents.z()},
-      {halfExtents.x(), -halfExtents.y(), halfExtents.z()},
-      {halfExtents.x(), halfExtents.y(), halfExtents.z()},
-      {-halfExtents.x(), halfExtents.y(), halfExtents.z()}};
-}
-
-[[nodiscard]] std::vector<collision::MeshShape::Triangle> makeCubeTriangles()
-{
-  return {
-      {0, 2, 1},
-      {0, 3, 2},
-      {4, 5, 6},
-      {4, 6, 7},
-      {0, 1, 5},
-      {0, 5, 4},
-      {2, 3, 7},
-      {2, 7, 6},
-      {0, 4, 7},
-      {0, 7, 3},
-      {1, 2, 6},
-      {1, 6, 5}};
-}
-
-[[nodiscard]] std::shared_ptr<collision::DenseSdfField> makeSphereSdf(
-    double scale)
-{
-  constexpr double voxelSize = 0.25;
-  const Eigen::Vector3i dims(9, 9, 9);
-  const Eigen::Vector3d origin(-1.0, -1.0, -1.0);
-  auto field = std::make_shared<collision::DenseSdfField>(
-      origin * scale, dims, voxelSize * scale, 10.0 * scale);
-
-  const double radius = 0.45 * scale;
-  for (int z = 0; z < dims.z(); ++z) {
-    for (int y = 0; y < dims.y(); ++y) {
-      for (int x = 0; x < dims.x(); ++x) {
-        const Eigen::Vector3i index(x, y, z);
-        const Eigen::Vector3d point
-            = field->origin() + Eigen::Vector3d(x, y, z) * field->voxelSize();
-        field->setDistance(index, point.norm() - radius);
-        field->setObserved(index, true);
-      }
-    }
-  }
-
-  return field;
-}
-
-[[nodiscard]] Eigen::Isometry3d translated(
-    double x, double y = 0.0, double z = 0.0)
-{
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
-  tf.translation() = Eigen::Vector3d(x, y, z);
-  return tf;
-}
-
-[[nodiscard]] ShapeParameters sanitizedParameters(ShapeParameters params)
-{
-  params.radius = std::clamp(params.radius, 0.05, 5.0);
-  params.height = std::clamp(params.height, 0.05, 10.0);
-  params.halfExtents
-      = params.halfExtents.cwiseMax(Eigen::Vector3d::Constant(0.025))
-            .cwiseMin(Eigen::Vector3d::Constant(5.0));
-  return params;
-}
-
-std::span<const PairCase> pairCases()
-{
-  return pairCaseStorage();
-}
-
-std::string_view shapeTypeId(ShapeType type)
-{
-  return fixtureFor(type).id;
-}
-
-std::string_view shapeTypeLabel(ShapeType type)
-{
-  return fixtureFor(type).label;
-}
-
-std::string_view pairStatusLabel(PairStatus status)
-{
-  switch (status) {
-    case PairStatus::Contact:
-      return "Native contact";
-    case PairStatus::AdaptedFallback:
-      return "Adapter contact";
-    case PairStatus::DistanceOnly:
-      return "Distance-only";
-    case PairStatus::Unsupported:
-      return "Unsupported";
-  }
-  return "Unknown";
-}
-
-std::string_view pairStatusDescription(PairStatus status)
-{
-  switch (status) {
-    case PairStatus::Contact:
-      return "Dedicated contact generation is implemented for this exact "
-             "native shape pair.";
-    case PairStatus::AdaptedFallback:
-      return "Contact generation is implemented through compound "
-             "decomposition or a native adapter path.";
-    case PairStatus::DistanceOnly:
-      return "Signed distance is implemented, but contact generation is not.";
-    case PairStatus::Unsupported:
-      return "Native contact generation and signed distance are not "
-             "implemented for this pair.";
-  }
-  return "Unknown pair status.";
-}
-
-bool isAdaptedFallbackPair(ShapeType shapeA, ShapeType shapeB)
-{
-  if (shapeA == ShapeType::Compound || shapeB == ShapeType::Compound) {
-    return true;
-  }
-
-  if (shapeA == ShapeType::Convex || shapeB == ShapeType::Convex) {
-    return true;
-  }
-
-  if (shapeA == ShapeType::Mesh || shapeB == ShapeType::Mesh) {
-    return true;
-  }
-
-  return false;
-}
-
-ShapeParameters defaultShapeParameters(ShapeType type)
-{
-  ShapeParameters params;
-  switch (type) {
-    case ShapeType::Sphere:
-      params.radius = 0.45;
-      break;
-    case ShapeType::Box:
-      params.halfExtents = Eigen::Vector3d(0.45, 0.35, 0.3);
-      break;
-    case ShapeType::Capsule:
-      params.radius = 0.25;
-      params.height = 0.9;
-      break;
-    case ShapeType::Cylinder:
-      params.radius = 0.35;
-      params.height = 0.8;
-      break;
-    case ShapeType::Plane:
-      params.halfExtents = Eigen::Vector3d(1.5, 1.5, 0.0125);
-      break;
-    case ShapeType::Convex:
-      params.radius = 0.55;
-      break;
-    case ShapeType::Mesh:
-      params.halfExtents = Eigen::Vector3d(0.45, 0.45, 0.45);
-      break;
-    case ShapeType::Sdf:
-      params.radius = 0.45;
-      break;
-    case ShapeType::Compound:
-      params.radius = 0.45;
-      break;
-  }
-
-  return params;
-}
-
-std::unique_ptr<collision::Shape> makeShape(
-    ShapeType type, const ShapeParameters& inputParams)
-{
-  const ShapeParameters params = sanitizedParameters(inputParams);
-
-  switch (type) {
-    case ShapeType::Sphere:
-      return std::make_unique<collision::SphereShape>(params.radius);
-    case ShapeType::Box:
-      return std::make_unique<collision::BoxShape>(params.halfExtents);
-    case ShapeType::Capsule:
-      return std::make_unique<collision::CapsuleShape>(
-          params.radius, params.height);
-    case ShapeType::Cylinder:
-      return std::make_unique<collision::CylinderShape>(
-          params.radius, params.height);
-    case ShapeType::Plane:
-      return std::make_unique<collision::PlaneShape>(
-          Eigen::Vector3d::UnitZ(), 0.0);
-    case ShapeType::Convex:
-      return std::make_unique<collision::ConvexShape>(
-          makeOctahedronVertices(params.radius));
-    case ShapeType::Mesh:
-      return std::make_unique<collision::MeshShape>(
-          makeCubeVertices(params.halfExtents), makeCubeTriangles());
-    case ShapeType::Sdf:
-      return std::make_unique<collision::SdfShape>(
-          makeSphereSdf(params.radius / 0.45));
-    case ShapeType::Compound: {
-      const double scale = params.radius / 0.45;
-      auto compound = std::make_unique<collision::CompoundShape>();
-      compound->addChild(
-          std::make_unique<collision::SphereShape>(0.28 * scale),
-          translated(-0.18 * scale));
-      compound->addChild(
-          std::make_unique<collision::BoxShape>(
-              Eigen::Vector3d(0.25, 0.2, 0.2) * scale),
-          translated(0.25 * scale));
-      return compound;
-    }
-  }
-
-  throw std::invalid_argument("Unsupported collision shape type");
-}
-
-PairPose defaultPairPose(const PairCase& pair)
-{
-  PairPose pose;
-
-  if (pair.shapeA == ShapeType::Plane && pair.shapeB == ShapeType::Plane) {
-    return pose;
-  }
-
-  if (pair.shapeA == ShapeType::Plane) {
-    pose.transformB.translation() = Eigen::Vector3d(0.0, 0.0, 0.25);
-    return pose;
-  }
-
-  if (pair.shapeB == ShapeType::Plane) {
-    pose.transformA.translation() = Eigen::Vector3d(0.0, 0.0, 0.25);
-    return pose;
-  }
-
-  pose.transformB.translation() = Eigen::Vector3d(0.55, 0.0, 0.0);
-  return pose;
-}
-
+using ShapeParameters = sandbox::ShapeParameters;
+using ShapeType = collision::ShapeType;
 using BroadPhaseObjectCenters
     = std::unordered_map<std::size_t, Eigen::Vector3d>;
 
@@ -525,7 +121,7 @@ struct ContactRow
 
 struct QuerySummary
 {
-  const PairCase* pair = nullptr;
+  const sandbox::PairCase* pair = nullptr;
   bool hit = false;
   bool distanceValid = false;
   double distance = 0.0;
@@ -555,8 +151,10 @@ struct SandboxState
   std::vector<dynamics::SimpleFramePtr> debugFrames;
   std::size_t pairCaseIndex = 0;
   std::size_t broadPhaseIndex = 0;
-  ShapeParameters objectAParams = defaultShapeParameters(ShapeType::Sphere);
-  ShapeParameters objectBParams = defaultShapeParameters(ShapeType::Sphere);
+  ShapeParameters objectAParams
+      = sandbox::defaultShapeParameters(ShapeType::Sphere);
+  ShapeParameters objectBParams
+      = sandbox::defaultShapeParameters(ShapeType::Sphere);
   double maxContacts = 16.0;
   bool showAabbs = true;
   bool showBroadPhase = true;
@@ -589,9 +187,9 @@ void addDebugLabel(
   state.debugLabels.push_back(std::move(label));
 }
 
-const PairCase& selectedPair(const SandboxState& state)
+const sandbox::PairCase& selectedPair(const SandboxState& state)
 {
-  const auto pairs = pairCases();
+  const auto pairs = sandbox::pairCases();
   return pairs[std::min(state.pairCaseIndex, pairs.size() - 1)];
 }
 
@@ -601,19 +199,31 @@ const BroadPhaseOption& selectedBroadPhase(const SandboxState& state)
       state.broadPhaseIndex, kBroadPhaseOptions.size() - 1)];
 }
 
-std::string_view pairCoverageMode(const PairCase& pair)
+std::string_view pairCoverageMode(const sandbox::PairCase& pair)
 {
   switch (pair.status) {
-    case PairStatus::Contact:
+    case sandbox::PairStatus::Contact:
       return "dedicated native contact path";
-    case PairStatus::AdaptedFallback:
+    case sandbox::PairStatus::AdaptedFallback:
       return "native adapter contact path";
-    case PairStatus::DistanceOnly:
+    case sandbox::PairStatus::DistanceOnly:
       return "native distance query only";
-    case PairStatus::Unsupported:
+    case sandbox::PairStatus::Unsupported:
       return "unsupported placeholder";
   }
   return "unknown";
+}
+
+const BroadPhaseOption* findBroadPhaseOption(std::string_view id)
+{
+  const auto it = std::find_if(
+      kBroadPhaseOptions.begin(),
+      kBroadPhaseOptions.end(),
+      [id](const BroadPhaseOption& option) { return option.id == id; });
+  if (it == kBroadPhaseOptions.end()) {
+    return nullptr;
+  }
+  return &*it;
 }
 
 void attachObjectFrames(SandboxState& state)
@@ -628,11 +238,13 @@ void attachObjectFrames(SandboxState& state)
 
 void resetPairControls(SandboxState& state)
 {
-  const PairPose pose = defaultPairPose(selectedPair(state));
+  const sandbox::PairPose pose = sandbox::defaultPairPose(selectedPair(state));
   state.objectAFrame->setTransform(pose.transformA);
   state.objectBFrame->setTransform(pose.transformB);
-  state.objectAParams = defaultShapeParameters(selectedPair(state).shapeA);
-  state.objectBParams = defaultShapeParameters(selectedPair(state).shapeB);
+  state.objectAParams
+      = sandbox::defaultShapeParameters(selectedPair(state).shapeA);
+  state.objectBParams
+      = sandbox::defaultShapeParameters(selectedPair(state).shapeB);
   state.maxContacts = 16.0;
   state.dirty = true;
 }
@@ -654,7 +266,7 @@ std::string formatFramePosition(const dynamics::SimpleFramePtr& frame)
 }
 
 Eigen::Vector4d objectColor(
-    const PairCase& pair,
+    const sandbox::PairCase& pair,
     bool objectA,
     bool hit,
     bool filtered,
@@ -664,17 +276,17 @@ Eigen::Vector4d objectColor(
   if (filtered) {
     return objectA ? rgba(0.62, 0.62, 0.68) : rgba(0.48, 0.5, 0.56);
   }
-  if (pair.status == PairStatus::Unsupported) {
+  if (pair.status == sandbox::PairStatus::Unsupported) {
     return rgba(0.42, 0.44, 0.46);
   }
-  if (pair.status == PairStatus::DistanceOnly) {
+  if (pair.status == sandbox::PairStatus::DistanceOnly) {
     return objectA ? rgba(0.1, 0.75, 0.9) : rgba(0.95, 0.85, 0.25);
   }
   if (hit) {
     return objectA ? rgba(0.95, 0.18, 0.18, alpha)
                    : rgba(0.95, 0.18, 0.78, alpha);
   }
-  if (pair.status == PairStatus::AdaptedFallback) {
+  if (pair.status == sandbox::PairStatus::AdaptedFallback) {
     return objectA ? rgba(0.95, 0.52, 0.16) : rgba(0.18, 0.75, 0.9);
   }
   return objectA ? rgba(0.18, 0.38, 0.95) : rgba(0.18, 0.75, 0.34);
@@ -1011,7 +623,7 @@ void clearDebugFrames(SandboxState& state)
 
 void updateObjectVisuals(SandboxState& state)
 {
-  const PairCase& pair = selectedPair(state);
+  const sandbox::PairCase& pair = selectedPair(state);
   const bool showContactOverlay = state.summary.numContacts > 0;
   state.objectAFrame->setShape(
       makeVisualShape(pair.shapeA, state.objectAParams));
@@ -1075,7 +687,7 @@ void rebuildScene(SandboxState& state)
   clearDebugFrames(state);
   state.debugLabels.clear();
 
-  const PairCase& pair = selectedPair(state);
+  const sandbox::PairCase& pair = selectedPair(state);
   state.summary = QuerySummary{};
   state.summary.pair = &pair;
 
@@ -1084,9 +696,9 @@ void rebuildScene(SandboxState& state)
 
   collision::CollisionWorld nativeWorld(selectedBroadPhase(state).type);
   auto objA = nativeWorld.createObject(
-      makeShape(pair.shapeA, state.objectAParams), tfA);
+      sandbox::makeShape(pair.shapeA, state.objectAParams), tfA);
   auto objB = nativeWorld.createObject(
-      makeShape(pair.shapeB, state.objectBParams), tfB);
+      sandbox::makeShape(pair.shapeB, state.objectBParams), tfB);
   BroadPhaseObjectCenters broadPhaseObjectCenters;
   broadPhaseObjectCenters.reserve(2u);
   broadPhaseObjectCenters.emplace(objA.getId(), objA.computeAabb().center());
@@ -1193,6 +805,37 @@ void rebuildScene(SandboxState& state)
   state.dirty = false;
 }
 
+bool parseExampleArgs(int argc, char* argv[], SandboxState& state)
+{
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view arg(argv[i]);
+    if (arg == "--pair" && i + 1 < argc) {
+      const std::string_view id(argv[++i]);
+      const sandbox::PairCase* pair = sandbox::findPairCase(id);
+      if (!pair) {
+        std::cerr << "Unknown pair id: " << id << "\n";
+        return false;
+      }
+      state.pairCaseIndex = pair->index;
+      resetPairControls(state);
+    } else if (arg == "--broad-phase" && i + 1 < argc) {
+      const std::string_view id(argv[++i]);
+      const BroadPhaseOption* option = findBroadPhaseOption(id);
+      if (!option) {
+        std::cerr << "Unknown broad-phase id: " << id << "\n";
+        return false;
+      }
+      state.broadPhaseIndex
+          = static_cast<std::size_t>(option - kBroadPhaseOptions.data());
+      state.dirty = true;
+    } else if (arg == "--filter-pair") {
+      state.filterPair = true;
+      state.dirty = true;
+    }
+  }
+  return true;
+}
+
 bool slider3(
     gui::PanelBuilder& panel,
     const char* prefix,
@@ -1283,14 +926,15 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
   panel.initialPosition = std::array<double, 2>{820.0, 16.0};
   panel.initialSize = std::array<double, 2>{420.0, 620.0};
   panel.build = [state](gui::PanelBuilder& panelBuilder) {
-    const auto pairs = pairCases();
-    const PairCase& pair = selectedPair(*state);
+    const auto pairs = sandbox::pairCases();
+    const sandbox::PairCase& pair = selectedPair(*state);
 
     panelBuilder.text(
-        pair.label + " [" + std::string(pairStatusLabel(pair.status)) + "]");
+        pair.label + " [" + std::string(sandbox::pairStatusLabel(pair.status))
+        + "]");
     panelBuilder.text(pair.note);
     panelBuilder.text(
-        "Support: " + std::string(pairStatusDescription(pair.status)));
+        "Support: " + std::string(sandbox::pairStatusDescription(pair.status)));
     panelBuilder.text("Path: " + std::string(pairCoverageMode(pair)));
     panelBuilder.text("Left-drag object gizmo arrows, planes, and rings.");
     if (panelBuilder.button("Previous")) {
@@ -1304,10 +948,11 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
       resetPairControls(*state);
     }
     if (panelBuilder.beginMenu("Pair Selector")) {
-      for (const PairCase& candidate : pairs) {
+      for (const sandbox::PairCase& candidate : pairs) {
         if (panelBuilder.menuItem(
                 candidate.label + " ["
-                + std::string(pairStatusLabel(candidate.status)) + "]")) {
+                + std::string(sandbox::pairStatusLabel(candidate.status))
+                + "]")) {
           state->pairCaseIndex = candidate.index;
           resetPairControls(*state);
         }
@@ -1320,13 +965,13 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
       if (!useTable) {
         panelBuilder.text("Pair | Support | Mode");
       }
-      for (const PairCase& candidate : pairs) {
+      for (const sandbox::PairCase& candidate : pairs) {
         std::string pairLabel = candidate.label;
         if (candidate.index == state->pairCaseIndex) {
           pairLabel += " (current)";
         }
         const std::string statusLabel
-            = std::string(pairStatusLabel(candidate.status));
+            = std::string(sandbox::pairStatusLabel(candidate.status));
         const std::string modeLabel = std::string(pairCoverageMode(candidate));
         if (useTable) {
           panelBuilder.tableNextRow();
@@ -1441,6 +1086,15 @@ gui::Panel createControlsPanel(const std::shared_ptr<SandboxState>& state)
   return panel;
 }
 
+gui::RunOptions makeRunDefaults()
+{
+  gui::RunOptions options;
+  options.windowTitle = "DART Native Collision Sandbox";
+  options.width = 1280;
+  options.height = 720;
+  return options;
+}
+
 gui::OrbitCamera makeCamera()
 {
   gui::OrbitCamera camera;
@@ -1453,15 +1107,19 @@ gui::OrbitCamera makeCamera()
 
 } // namespace
 
-dart::gui::ApplicationOptions makeCollisionSandboxScene()
+int main(int argc, char* argv[])
 {
   auto state = std::make_shared<SandboxState>();
   resetPairControls(*state);
+  if (!parseExampleArgs(argc, argv, *state)) {
+    return 2;
+  }
   attachObjectFrames(*state);
   rebuildScene(*state);
 
   gui::ApplicationOptions options;
   options.world = state->world;
+  options.runDefaults = makeRunDefaults();
   options.camera = makeCamera();
   options.simulateWorld = false;
   options.gizmos = createObjectGizmos(state);
@@ -1475,7 +1133,6 @@ dart::gui::ApplicationOptions makeCollisionSandboxScene()
       rebuildScene(*state);
     }
   };
-  return options;
-}
 
-} // namespace dart::examples::demos
+  return gui::runApplication(argc, argv, options);
+}

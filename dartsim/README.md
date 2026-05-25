@@ -62,12 +62,14 @@ pixi run ex dartsim --headless --frames 10 --screenshot /tmp/dartsim.ppm
 pixi run ex dartsim --scene boxes
 ```
 
-Historical GUI examples such as `hello_world`, `rigid_cubes`, `drag_and_drop`,
-and `imgui` have their own executable names:
+The GUI examples are consolidated into the `dart-demos` app, where each is a
+runtime-switchable scene; `hello_world` stays standalone as the minimal
+template:
 
 ```bash
-pixi run ex hello_world
-pixi run ex rigid_cubes --headless --frames 10 --screenshot /tmp/rigid_cubes.ppm
+pixi run demos                  # browse all example scenes in one window
+pixi run demos -- --scene boxes # select a scene by id
+pixi run ex hello_world         # the standalone minimal template
 ```
 
 The renderer implementation is private to `dart::gui`; code should include

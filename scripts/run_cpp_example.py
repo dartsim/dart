@@ -70,55 +70,72 @@ class ExampleSpec:
     default_args: tuple[str, ...] = ()
 
 
+# Standalone GUI example binaries that still build as their own executables.
+# Most former GUI examples are now scenes in the `dart-demos` app (run via the
+# `demos` target); only these remain standalone (special build needs or sources
+# reused by tests), plus `hello_world` as the minimal template.
 GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
-    "imgui": (),
-    "rigid_shapes": (),
     "hello_world": (),
-    "boxes": (),
-    "box_stacking": (),
-    "rigid_cubes": (),
-    "hardcoded_design": (),
-    "rigid_chain": (),
-    "rigid_loop": (),
-    "mixed_chain": (),
-    "coupler_constraint": (),
-    "add_delete_skels": (),
-    "vehicle": (),
-    "hybrid_dynamics": (),
-    "biped_stand": (),
-    "joint_constraints": (),
-    "free_joint_cases": (),
-    "human_joint_limits": (),
-    "lcp_physics": (),
-    "mimic_pendulums": (),
-    "atlas_puppet": (),
-    "hubo_puppet": (),
     "atlas_simbicon": (),
-    "operational_space_control": (),
+    "collision_sandbox": (),
     "wam_ikfast": (),
-    "fetch": (),
-    "tinkertoy": (),
-    "drag_and_drop": (),
-    "empty": (),
-    "simple_frames": (),
-    "soft_bodies": (),
-    "point_cloud": (),
-    "capsule_ground_contact": (),
-    "simulation_event_handler": (),
-    "polyhedron_visual": (),
-    "heightmap": (),
-    "g1_puppet": (),
+    "gui_scene_diagnostics": (),
 }
 
 EXAMPLE_SPECS = {
     "dartsim": ExampleSpec(
         "dartsim", "dartsim", ("filament", "simulation-experimental")
     ),
+    # The consolidated demos app. Its scenes that drive the experimental World
+    # need that component built as well.
+    "demos": ExampleSpec(
+        "dart-demos", "dart-demos", ("filament", "simulation-experimental")
+    ),
     **{
         name: ExampleSpec(name, name, ("filament",), default_args)
         for name, default_args in GUI_SCENE_EXAMPLE_DEFAULT_ARGS.items()
     },
 }
+
+# Former standalone GUI examples that are now scenes in `dart-demos`.
+_DEMOS_SCENE_IDS = (
+    "empty",
+    "shapes",
+    "simple_frames",
+    "drag_and_drop",
+    "polyhedron_visual",
+    "imgui",
+    "heightmap",
+    "point_cloud",
+    "boxes",
+    "rigid_cubes",
+    "add_delete_skels",
+    "rigid_chain",
+    "simulation_event_handler",
+    "rigid_shapes",
+    "experimental_rigid_body",
+    "capsule_ground_contact",
+    "hardcoded_design",
+    "box_stacking",
+    "coupler_constraint",
+    "mimic_pendulums",
+    "rigid_loop",
+    "free_joint_cases",
+    "lcp_physics",
+    "tinkertoy",
+    "hybrid_dynamics",
+    "joint_constraints",
+    "biped_stand",
+    "operational_space_control",
+    "atlas_puppet",
+    "hubo_puppet",
+    "mixed_chain",
+    "soft_bodies",
+    "fetch",
+    "vehicle",
+    "g1_puppet",
+    "human_joint_limits",
+)
 
 REMOVED_EXAMPLES = {
     "raylib": "The Raylib GUI example has been removed. Use `pixi run ex dartsim` "
@@ -178,6 +195,11 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
 def _normalize_target(target: str) -> str:
     if target in REMOVED_EXAMPLES:
         raise SystemExit(REMOVED_EXAMPLES[target])
+    if target in _DEMOS_SCENE_IDS:
+        raise SystemExit(
+            f"The '{target}' GUI example is now a scene in the dart-demos app. "
+            f"Run it with: pixi run demos -- --scene {target}"
+        )
     return target
 
 

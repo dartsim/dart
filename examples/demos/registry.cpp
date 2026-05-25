@@ -125,12 +125,6 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Collision",
        "A capsule settling on a plane; reset its orientation.",
        &makeCapsuleGroundContactScene});
-  scenes.push_back(
-      {"collision_sandbox",
-       "Collision Sandbox",
-       "Collision",
-       "Interactive narrow- and broad-phase collision inspector.",
-       &makeCollisionSandboxScene});
 
   // Constraints & Joints
   scenes.push_back(
@@ -225,12 +219,6 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Control & IK",
        "Hubo puppet driven by analytical arm and leg IK.",
        &makeHuboPuppetScene});
-  scenes.push_back(
-      {"atlas_simbicon",
-       "Atlas Simbicon",
-       "Control & IK",
-       "A Simbicon-controlled Atlas biped walking and balancing.",
-       &makeAtlasSimbiconScene});
 
   // Soft Bodies
   scenes.push_back(
