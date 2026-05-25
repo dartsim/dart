@@ -1052,7 +1052,7 @@ void World::loadBinary(std::istream& input)
 
   io::EntityMap entityMap;
   io::SerializerRegistry::instance().loadAllEntities(
-      input, m_registry, entityMap);
+      input, m_registry, entityMap, formatVersion);
 
   // World metadata (optional for forward-compatibility)
   if (input.peek() != std::char_traits<char>::eof()) {

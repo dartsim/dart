@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <format>
+#include <limits>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
@@ -66,6 +67,127 @@ void registerComponentIfNeeded(SerializerRegistry& registry)
   }
 }
 
+Eigen::VectorXd symmetricLowerBound(const Eigen::VectorXd& upperBound)
+{
+  if (upperBound.size() == 0) {
+    return Eigen::VectorXd{};
+  }
+  return -upperBound.cwiseAbs();
+}
+
+Eigen::VectorXd symmetricUpperBound(const Eigen::VectorXd& upperBound)
+{
+  if (upperBound.size() == 0) {
+    return Eigen::VectorXd{};
+  }
+  return upperBound.cwiseAbs();
+}
+
+void deserializeJointV1(std::istream& input, comps::Joint& joint)
+{
+  readPOD(input, joint.type);
+  readString(input, joint.name);
+  readVectorXd(input, joint.position);
+  readVectorXd(input, joint.velocity);
+  readVectorXd(input, joint.acceleration);
+  readVectorXd(input, joint.torque);
+
+  readVectorXd(input, joint.limits.lower);
+  readVectorXd(input, joint.limits.upper);
+
+  Eigen::VectorXd legacyVelocityLimit;
+  Eigen::VectorXd legacyEffortLimit;
+  readVectorXd(input, legacyVelocityLimit);
+  readVectorXd(input, legacyEffortLimit);
+
+  readVector3d(input, joint.axis);
+  readVector3d(input, joint.axis2);
+  readPOD(input, joint.pitch);
+
+  std::uint32_t parentLink = static_cast<std::uint32_t>(entt::null);
+  std::uint32_t childLink = static_cast<std::uint32_t>(entt::null);
+  readPOD(input, parentLink);
+  readPOD(input, childLink);
+  joint.parentLink = static_cast<entt::entity>(parentLink);
+  joint.childLink = static_cast<entt::entity>(childLink);
+
+  const auto dof = static_cast<Eigen::Index>(joint.getDOF());
+  joint.actuatorType = comps::ActuatorType::Force;
+  joint.springStiffness = Eigen::VectorXd::Zero(dof);
+  joint.dampingCoefficient = Eigen::VectorXd::Zero(dof);
+  joint.restPosition = Eigen::VectorXd::Zero(dof);
+  joint.armature = Eigen::VectorXd::Zero(dof);
+  joint.coulombFriction = Eigen::VectorXd::Zero(dof);
+  joint.commandVelocity = Eigen::VectorXd::Zero(dof);
+
+  const double infinity = std::numeric_limits<double>::infinity();
+  if (joint.limits.lower.size() != dof) {
+    joint.limits.lower = Eigen::VectorXd::Constant(dof, -infinity);
+  }
+  if (joint.limits.upper.size() != dof) {
+    joint.limits.upper = Eigen::VectorXd::Constant(dof, infinity);
+  }
+  joint.limits.velocityLower = legacyVelocityLimit.size() == dof
+                                   ? symmetricLowerBound(legacyVelocityLimit)
+                                   : Eigen::VectorXd::Constant(dof, -infinity);
+  joint.limits.velocityUpper = legacyVelocityLimit.size() == dof
+                                   ? symmetricUpperBound(legacyVelocityLimit)
+                                   : Eigen::VectorXd::Constant(dof, infinity);
+  joint.limits.effortLower = legacyEffortLimit.size() == dof
+                                 ? symmetricLowerBound(legacyEffortLimit)
+                                 : Eigen::VectorXd::Constant(dof, -infinity);
+  joint.limits.effortUpper = legacyEffortLimit.size() == dof
+                                 ? symmetricUpperBound(legacyEffortLimit)
+                                 : Eigen::VectorXd::Constant(dof, infinity);
+}
+
+class JointComponentSerializer final
+  : public TypedComponentSerializer<comps::Joint>
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return comps::Joint::getTypeName();
+  }
+
+private:
+  void saveComponent(
+      std::ostream& output,
+      const comps::Joint& component,
+      const EntityMap& entityMap) const override
+  {
+    autoSerialize(output, component, entityMap);
+  }
+
+  void loadComponent(
+      std::istream& input, comps::Joint& component) const override
+  {
+    autoDeserialize(input, component);
+  }
+
+  void loadComponent(
+      std::istream& input,
+      comps::Joint& component,
+      std::uint32_t formatVersion) const override
+  {
+    if (formatVersion == 1u) {
+      deserializeJointV1(input, component);
+      return;
+    }
+
+    loadComponent(input, component);
+  }
+};
+
+void registerJointSerializer(SerializerRegistry& registry)
+{
+  if (registry.getSerializer(comps::Joint::getTypeName()) != nullptr) {
+    return;
+  }
+
+  registry.registerSerializer(std::make_unique<JointComponentSerializer>());
+}
+
 void registerBuiltInSerializers(SerializerRegistry& registry)
 {
   registerComponentIfNeeded<comps::Name>(registry);
@@ -86,7 +208,7 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
   registerComponentIfNeeded<comps::LoopClosure>(registry);
 
   registerComponentIfNeeded<comps::Link>(registry);
-  registerComponentIfNeeded<comps::Joint>(registry);
+  registerJointSerializer(registry);
 
   registerComponentIfNeeded<comps::Transform>(registry);
   registerComponentIfNeeded<comps::Velocity>(registry);
@@ -200,7 +322,10 @@ void SerializerRegistry::saveAllEntities(
 
 //==============================================================================
 void SerializerRegistry::loadAllEntities(
-    std::istream& input, entt::registry& registry, EntityMap& entityMap) const
+    std::istream& input,
+    entt::registry& registry,
+    EntityMap& entityMap,
+    std::uint32_t formatVersion) const
 {
   // Read entity count
   std::size_t entityCount;
@@ -233,7 +358,7 @@ void SerializerRegistry::loadAllEntities(
       auto* serializer = getSerializer(typeName);
       if (serializer) {
         // Use serializer to load component data
-        serializer->load(input, entity, registry);
+        serializer->load(input, entity, registry, formatVersion);
       } else {
         // Unknown component type - cannot skip (no size info)
         throw std::runtime_error(
