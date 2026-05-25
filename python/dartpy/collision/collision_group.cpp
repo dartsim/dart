@@ -2,11 +2,14 @@
 
 #include "collision/collision_option.hpp"
 #include "collision/collision_result.hpp"
+#include "collision/continuous_collision.hpp"
 #include "collision/raycast.hpp"
 #include "common/eigen_utils.hpp"
 #include "common/type_casters.hpp"
 #include "dart/collision/collision_detector.hpp"
 #include "dart/collision/collision_group.hpp"
+#include "dart/collision/continuous_collision_option.hpp"
+#include "dart/collision/continuous_collision_result.hpp"
 #include "dart/dynamics/body_node.hpp"
 #include "dart/dynamics/shape_frame.hpp"
 
@@ -121,7 +124,83 @@ void defCollisionGroup(nb::module_& m)
           },
           nb::arg("from_"),
           nb::arg("to"),
-          nb::arg("option") = dart::collision::RaycastOption());
+          nb::arg("option") = dart::collision::RaycastOption())
+      .def(
+          "sphereCast",
+          [](CollisionGroup& self,
+             const nb::handle& start,
+             const nb::handle& end,
+             double radius,
+             const dart::collision::ContinuousCollisionOption& option,
+             dart::collision::ContinuousCollisionResult* result) {
+            const Eigen::Vector3d startVec = toVector3(start);
+            const Eigen::Vector3d endVec = toVector3(end);
+            nb::gil_scoped_release release;
+            return self.sphereCast(startVec, endVec, radius, option, result);
+          },
+          nb::arg("start"),
+          nb::arg("end"),
+          nb::arg("radius"),
+          nb::arg("option") = dart::collision::ContinuousCollisionOption(),
+          nb::arg("result") = nullptr)
+      .def(
+          "sphereCastResult",
+          [](CollisionGroup& self,
+             const nb::handle& start,
+             const nb::handle& end,
+             double radius,
+             const dart::collision::ContinuousCollisionOption& option)
+              -> dart::collision::ContinuousCollisionResult {
+            const Eigen::Vector3d startVec = toVector3(start);
+            const Eigen::Vector3d endVec = toVector3(end);
+            dart::collision::ContinuousCollisionResult result;
+            nb::gil_scoped_release release;
+            self.sphereCast(startVec, endVec, radius, option, &result);
+            return result;
+          },
+          nb::arg("start"),
+          nb::arg("end"),
+          nb::arg("radius"),
+          nb::arg("option") = dart::collision::ContinuousCollisionOption())
+      .def(
+          "capsuleCast",
+          [](CollisionGroup& self,
+             const Eigen::Isometry3d& capsuleStart,
+             const Eigen::Isometry3d& capsuleEnd,
+             double radius,
+             double height,
+             const dart::collision::ContinuousCollisionOption& option,
+             dart::collision::ContinuousCollisionResult* result) {
+            nb::gil_scoped_release release;
+            return self.capsuleCast(
+                capsuleStart, capsuleEnd, radius, height, option, result);
+          },
+          nb::arg("capsule_start"),
+          nb::arg("capsule_end"),
+          nb::arg("radius"),
+          nb::arg("height"),
+          nb::arg("option") = dart::collision::ContinuousCollisionOption(),
+          nb::arg("result") = nullptr)
+      .def(
+          "capsuleCastResult",
+          [](CollisionGroup& self,
+             const Eigen::Isometry3d& capsuleStart,
+             const Eigen::Isometry3d& capsuleEnd,
+             double radius,
+             double height,
+             const dart::collision::ContinuousCollisionOption& option)
+              -> dart::collision::ContinuousCollisionResult {
+            dart::collision::ContinuousCollisionResult result;
+            nb::gil_scoped_release release;
+            self.capsuleCast(
+                capsuleStart, capsuleEnd, radius, height, option, &result);
+            return result;
+          },
+          nb::arg("capsule_start"),
+          nb::arg("capsule_end"),
+          nb::arg("radius"),
+          nb::arg("height"),
+          nb::arg("option") = dart::collision::ContinuousCollisionOption());
 }
 
 } // namespace dart::python_nb

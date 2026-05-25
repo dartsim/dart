@@ -30,44 +30,38 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FWD_HPP_
-#define DART_COLLISION_FWD_HPP_
-
-#include <dart/common/smart_pointer.hpp>
+#include "dart/collision/continuous_collision_result.hpp"
 
 namespace dart {
 namespace collision {
 
-class CollisionDetector;
-class CollisionFilter;
-class CollisionGroup;
-class CollisionObject;
+//==============================================================================
+ContinuousCollisionHit::ContinuousCollisionHit()
+  : mCollisionObject(nullptr),
+    mTimeOfImpact(1.0),
+    mPoint(Eigen::Vector3d::Zero()),
+    mNormal(Eigen::Vector3d::UnitZ())
+{
+  // Do nothing
+}
 
-struct CollisionOption;
-class CollisionResult;
-struct Contact;
+//==============================================================================
+ContinuousCollisionResult::ContinuousCollisionResult() : mHits()
+{
+  // Do nothing
+}
 
-struct DistanceFilter;
-struct DistanceOption;
-struct DistanceResult;
+//==============================================================================
+void ContinuousCollisionResult::clear()
+{
+  mHits.clear();
+}
 
-enum class ContinuousCollisionAdvancement;
-struct ContinuousCollisionHit;
-struct ContinuousCollisionOption;
-struct ContinuousCollisionResult;
-
-struct RaycastOption;
-struct RaycastResult;
-
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DartCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
-
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
+//==============================================================================
+bool ContinuousCollisionResult::hasHit() const
+{
+  return !mHits.empty();
+}
 
 } // namespace collision
 } // namespace dart
-
-#endif // DART_COLLISION_FWD_HPP_

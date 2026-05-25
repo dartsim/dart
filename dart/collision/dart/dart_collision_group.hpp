@@ -103,6 +103,21 @@ protected:
       const RaycastOption& option,
       RaycastResult* result);
 
+  bool sphereCast(
+      const Eigen::Vector3d& start,
+      const Eigen::Vector3d& end,
+      double radius,
+      const ContinuousCollisionOption& option,
+      ContinuousCollisionResult* result);
+
+  bool capsuleCast(
+      const Eigen::Isometry3d& capsuleStart,
+      const Eigen::Isometry3d& capsuleEnd,
+      double radius,
+      double height,
+      const ContinuousCollisionOption& option,
+      ContinuousCollisionResult* result);
+
   std::size_t getManifoldCacheId(CollisionObject* object) const;
 
 protected:

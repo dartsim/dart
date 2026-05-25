@@ -1,4 +1,13 @@
-"""Simulation utilities backed by nanobind"""
+from __future__ import annotations
+
+__all__: list[str] = [
+    "CollisionDetectorType",
+    "ConstraintSolver",
+    "LcpSolverType",
+    "World",
+    "WorldConfig",
+]
+
 
 import enum
 from typing import Any, overload
@@ -82,7 +91,7 @@ class World:
 
     @overload
     @staticmethod
-    def create(name: str = 'world') -> World: ...
+    def create(name: str = ...) -> World: ...
 
     @overload
     @staticmethod
@@ -90,97 +99,47 @@ class World:
 
     def clone(self) -> World: ...
 
-    def setName(*args, **kwargs) -> Any:
-        """setName(self, new_name: str) -> str"""
+    def setName(*args, **kwargs) -> Any: ...
 
-    def getName(*args, **kwargs) -> Any:
-        """getName(self) -> str"""
+    def getName(*args, **kwargs) -> Any: ...
 
-    def setGravity(*args, **kwargs) -> Any:
-        """
-        setGravity(self, gravity: numpy.ndarray[dtype=float64, shape=(3), order='C']) -> None
-        setGravity(self, gravity: object) -> None
-        setGravity(self, x: float, y: float, z: float) -> None
-        """
+    def setGravity(*args, **kwargs) -> Any: ...
 
-    def getGravity(*args, **kwargs) -> Any:
-        """getGravity(self) -> numpy.ndarray[dtype=float64, shape=(3), order='C']"""
+    def getGravity(*args, **kwargs) -> Any: ...
 
-    def setTimeStep(*args, **kwargs) -> Any:
-        """setTimeStep(self, time_step: float) -> None"""
+    def setTimeStep(*args, **kwargs) -> Any: ...
 
-    def getTimeStep(*args, **kwargs) -> Any:
-        """getTimeStep(self) -> float"""
+    def getTimeStep(*args, **kwargs) -> Any: ...
 
-    def getSkeleton(*args, **kwargs) -> Any:
-        """
-        getSkeleton(self, index: int) -> dartpy._dartpy.dynamics.Skeleton
-        getSkeleton(self, name: str) -> dartpy._dartpy.dynamics.Skeleton
-        """
+    def getSkeleton(*args, **kwargs) -> Any: ...
 
-    def getNumSkeletons(*args, **kwargs) -> Any:
-        """getNumSkeletons(self) -> int"""
+    def getNumSkeletons(*args, **kwargs) -> Any: ...
 
-    def addSkeleton(*args, **kwargs) -> Any:
-        """addSkeleton(self, skeleton: dartpy._dartpy.dynamics.Skeleton) -> str"""
+    def addSkeleton(*args, **kwargs) -> Any: ...
 
-    def removeSkeleton(*args, **kwargs) -> Any:
-        """
-        removeSkeleton(self, skeleton: dartpy._dartpy.dynamics.Skeleton) -> None
-        """
+    def removeSkeleton(*args, **kwargs) -> Any: ...
 
-    def removeAllSkeletons(*args, **kwargs) -> Any:
-        """removeAllSkeletons(self) -> set[dartpy._dartpy.dynamics.Skeleton]"""
+    def removeAllSkeletons(*args, **kwargs) -> Any: ...
 
-    def hasSkeleton(*args, **kwargs) -> Any:
-        """
-        hasSkeleton(self, skeleton: dartpy._dartpy.dynamics.Skeleton) -> bool
-        hasSkeleton(self, skeleton_name: str) -> bool
-        """
+    def hasSkeleton(*args, **kwargs) -> Any: ...
 
-    def getIndex(*args, **kwargs) -> Any:
-        """getIndex(self, index: int) -> int"""
+    def getIndex(*args, **kwargs) -> Any: ...
 
-    def getNumSimpleFrames(*args, **kwargs) -> Any:
-        """getNumSimpleFrames(self) -> int"""
+    def getNumSimpleFrames(*args, **kwargs) -> Any: ...
 
-    def getSimpleFrame(*args, **kwargs) -> Any:
-        """
-        getSimpleFrame(self, index: int) -> dartpy._dartpy.dynamics.SimpleFrame
-        getSimpleFrame(self, name: str) -> dartpy._dartpy.dynamics.SimpleFrame
-        """
+    def getSimpleFrame(*args, **kwargs) -> Any: ...
 
-    def addSimpleFrame(*args, **kwargs) -> Any:
-        """
-        addSimpleFrame(self, frame: dartpy._dartpy.dynamics.SimpleFrame) -> str
-        """
+    def addSimpleFrame(*args, **kwargs) -> Any: ...
 
-    def removeSimpleFrame(*args, **kwargs) -> Any:
-        """
-        removeSimpleFrame(self, frame: dartpy._dartpy.dynamics.SimpleFrame) -> None
-        """
+    def removeSimpleFrame(*args, **kwargs) -> Any: ...
 
-    def removeAllSimpleFrames(*args, **kwargs) -> Any:
-        """
-        removeAllSimpleFrames(self) -> set[dartpy._dartpy.dynamics.SimpleFrame]
-        """
+    def removeAllSimpleFrames(*args, **kwargs) -> Any: ...
 
-    def checkCollision(*args, **kwargs) -> Any:
-        """
-        checkCollision(self) -> bool
-        checkCollision(self, option: dartpy._dartpy.collision.CollisionOption) -> bool
-        checkCollision(self, option: dartpy._dartpy.collision.CollisionOption, result: dartpy._dartpy.collision.CollisionResult) -> bool
-        """
+    def checkCollision(*args, **kwargs) -> Any: ...
 
-    def checkCollisionResult(*args, **kwargs) -> Any:
-        """
-        checkCollisionResult(self, option: dartpy._dartpy.collision.CollisionOption = CollisionOption(enable_contact=True, max_contacts=1000, allow_negative_penetration_depth_contacts=False, has_filter=False)) -> dartpy._dartpy.collision.CollisionResult
-        """
+    def checkCollisionResult(*args, **kwargs) -> Any: ...
 
-    def getLastCollisionResult(*args, **kwargs) -> Any:
-        """
-        getLastCollisionResult(self) -> dartpy._dartpy.collision.CollisionResult
-        """
+    def getLastCollisionResult(*args, **kwargs) -> Any: ...
 
     def reset(self) -> None: ...
 
@@ -190,19 +149,13 @@ class World:
     @overload
     def step(self, reset_command: bool) -> None: ...
 
-    def setTime(*args, **kwargs) -> Any:
-        """setTime(self, time: float) -> None"""
+    def setTime(*args, **kwargs) -> Any: ...
 
-    def getTime(*args, **kwargs) -> Any:
-        """getTime(self) -> float"""
+    def getTime(*args, **kwargs) -> Any: ...
 
-    def getSimFrames(*args, **kwargs) -> Any:
-        """getSimFrames(self) -> int"""
+    def getSimFrames(*args, **kwargs) -> Any: ...
 
-    def getConstraintSolver(*args, **kwargs) -> Any:
-        """
-        getConstraintSolver(self) -> dartpy._dartpy.simulation.ConstraintSolver
-        """
+    def getConstraintSolver(*args, **kwargs) -> Any: ...
 
     def bake(self) -> None: ...
 
@@ -259,31 +212,17 @@ class World:
     set_time_step = setTimeStep
 
 class ConstraintSolver:
-    def getCollisionDetector(*args, **kwargs) -> Any:
-        """
-        getCollisionDetector(self) -> dartpy._dartpy.collision.CollisionDetector
-        """
+    def getCollisionDetector(*args, **kwargs) -> Any: ...
 
-    def setCollisionDetector(*args, **kwargs) -> Any:
-        """
-        setCollisionDetector(self, detector: dartpy._dartpy.collision.CollisionDetector) -> None
-        """
+    def setCollisionDetector(*args, **kwargs) -> Any: ...
 
-    def getCollisionGroup(*args, **kwargs) -> Any:
-        """getCollisionGroup(self) -> dartpy._dartpy.collision.CollisionGroup"""
+    def getCollisionGroup(*args, **kwargs) -> Any: ...
 
-    def getCollisionOption(*args, **kwargs) -> Any:
-        """getCollisionOption(self) -> dartpy._dartpy.collision.CollisionOption"""
+    def getCollisionOption(*args, **kwargs) -> Any: ...
 
-    def addConstraint(*args, **kwargs) -> Any:
-        """
-        addConstraint(self, constraint: dartpy._dartpy.constraint.ConstraintBase) -> None
-        """
+    def addConstraint(*args, **kwargs) -> Any: ...
 
-    def removeConstraint(*args, **kwargs) -> Any:
-        """
-        removeConstraint(self, constraint: dartpy._dartpy.constraint.ConstraintBase) -> None
-        """
+    def removeConstraint(*args, **kwargs) -> Any: ...
 
     add_constraint = addConstraint
 

@@ -73,6 +73,45 @@ bool CollisionDetector::raycast(
 }
 
 //==============================================================================
+bool CollisionDetector::sphereCast(
+    CollisionGroup* /*group*/,
+    const Eigen::Vector3d& /*start*/,
+    const Eigen::Vector3d& /*end*/,
+    double /*radius*/,
+    const ContinuousCollisionOption& /*option*/,
+    ContinuousCollisionResult* result)
+{
+  if (result) {
+    result->clear();
+  }
+
+  DART_WARN(
+      "[CollisionDetector] Continuous sphere cast is not supported by '{}'",
+      getTypeView());
+  return false;
+}
+
+//==============================================================================
+bool CollisionDetector::capsuleCast(
+    CollisionGroup* /*group*/,
+    const Eigen::Isometry3d& /*capsuleStart*/,
+    const Eigen::Isometry3d& /*capsuleEnd*/,
+    double /*radius*/,
+    double /*height*/,
+    const ContinuousCollisionOption& /*option*/,
+    ContinuousCollisionResult* result)
+{
+  if (result) {
+    result->clear();
+  }
+
+  DART_WARN(
+      "[CollisionDetector] Continuous capsule cast is not supported by '{}'",
+      getTypeView());
+  return false;
+}
+
+//==============================================================================
 std::shared_ptr<CollisionObject> CollisionDetector::claimCollisionObject(
     const dynamics::ShapeFrame* shapeFrame)
 {

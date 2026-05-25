@@ -233,6 +233,7 @@ CollisionDetector (Factory)
   - `collide(group1, group2, option, result)` - Collision detection
   - `distance(group1, group2, option, result)` - Distance queries
   - `raycast(group, from, to, option, result)` - Ray casting
+  - `sphereCast(...)` / `capsuleCast(...)` - Continuous swept queries
 
 **2. CollisionGroup** (`dart/collision/CollisionGroup.hpp`)
 
@@ -257,7 +258,20 @@ CollisionDetector (Factory)
 - `CollisionResult` - Stores all contacts from query
 - `DistanceOption/Result` - For distance queries
 - `RaycastOption/Result` - For ray casting
+- `ContinuousCollisionOption/Result` - For swept sphere/capsule casts
 - `CollisionFilter` - Filters collision pairs
+
+---
+
+#### Continuous Collision Queries
+
+DART's native collision backend owns public sphere and capsule cast support.
+The public detector/group API maps those casts through `DartCollisionGroup` into
+the native world, where swept AABBs prune broad-phase candidates before CCD
+narrow-phase work. The public result stores the hit `CollisionObject`, time of
+impact, witness point, and normal; dartpy exposes the same result shape and must
+use the shared polymorphic type-caster helpers when returning DART frame objects
+from collision bindings.
 
 ---
 

@@ -30,44 +30,54 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_COLLISION_FWD_HPP_
-#define DART_COLLISION_FWD_HPP_
+#ifndef DART_COLLISION_CONTINUOUSCOLLISIONRESULT_HPP_
+#define DART_COLLISION_CONTINUOUSCOLLISIONRESULT_HPP_
 
-#include <dart/common/smart_pointer.hpp>
+#include <dart/export.hpp>
+
+#include <Eigen/Dense>
+
+#include <vector>
 
 namespace dart {
 namespace collision {
 
-class CollisionDetector;
-class CollisionFilter;
-class CollisionGroup;
 class CollisionObject;
 
-struct CollisionOption;
-class CollisionResult;
-struct Contact;
+struct DART_API ContinuousCollisionHit
+{
+  /// The collision object hit by the moving query shape.
+  const CollisionObject* mCollisionObject;
 
-struct DistanceFilter;
-struct DistanceOption;
-struct DistanceResult;
+  /// Conservative time of impact in [0, 1].
+  double mTimeOfImpact;
 
-enum class ContinuousCollisionAdvancement;
-struct ContinuousCollisionHit;
-struct ContinuousCollisionOption;
-struct ContinuousCollisionResult;
+  /// Hit point in world coordinates.
+  Eigen::Vector3d mPoint;
 
-struct RaycastOption;
-struct RaycastResult;
+  /// Hit normal in world coordinates.
+  Eigen::Vector3d mNormal;
 
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DartCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(FCLCollisionDetector)
-DART_COMMON_DECLARE_SHARED_WEAK(DARTCollisionDetector)
+  /// Constructor.
+  ContinuousCollisionHit();
+};
 
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionObject)
-DART_COMMON_DECLARE_SHARED_WEAK(CollisionGroup)
+struct DART_API ContinuousCollisionResult
+{
+  /// Clear the result.
+  void clear();
+
+  /// Returns true if there is a hit.
+  bool hasHit() const;
+
+  /// Continuous collision hits.
+  std::vector<ContinuousCollisionHit> mHits;
+
+  /// Constructor.
+  ContinuousCollisionResult();
+};
 
 } // namespace collision
 } // namespace dart
 
-#endif // DART_COLLISION_FWD_HPP_
+#endif // DART_COLLISION_CONTINUOUSCOLLISIONRESULT_HPP_
