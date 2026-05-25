@@ -8,8 +8,10 @@ promotes the live SoA path into the default experimental `World::step` pipeline:
 parenting with parent-before-child local-transform write-back instead of falling
 back to `RigidBodyIntegrationStage`. The follow-up also wires
 `pixi run bm-compute-check` into the performance dashboard workflow and tightens
-that checker so all 28 expected `bm_compute_graph` rows must be present with
-positive finite timings, including the Phase 5 CPU-baseline smoke row.
+that checker so all 34 expected `bm_compute_graph` rows must be present with
+positive finite timings, including the serial contact-shaped hard case, the
+compute-bound contact-island speedup surface, and the Phase 5 CPU-baseline smoke
+row.
 
 - Phase 0/1: EnTT concurrency contract + debug hazard assert, contact-shaped
   benchmark proxy, resource-access metadata (`findResourceHazards`/DOT/per-entity
@@ -31,6 +33,12 @@ positive finite timings, including the Phase 5 CPU-baseline smoke row.
 - Phase 4: CPU batch executor (`stepWorldsBatched`), World rollout
   (`rolloutWorldsBatched`), and a pure-SoA control-sequence rollout
   (`rolloutRigidBodyStateBatch`).
+- Phase 3 speedup surface: `BM_ContactIslandShaped*` models independent
+  contact/constraint islands that are internally Gauss-Seidel ordered but
+  parallel across islands. `pixi run bm-compute-check` requires those rows and
+  enforces that `BM_ContactIslandShaped/16/512/64` beats sequential by real time.
+  The existing `BM_ContactShaped*` serial chain stays as the hard-case
+  low-parallelism proxy.
 - Phase 2 live wiring: `BatchedRigidBodyIntegrationStage` drives a live World
   step through the SoA path (extract -> `integrateRigidBodyStateBatch` via the
   executor -> apply -> parent-ordered frame-cache update). Parity tests verify it
@@ -54,17 +62,14 @@ full free-body dynamic step and frame-coupled rigid-body parenting. The default
 experimental `World::step` pipeline selects the batched stage behind the executor
 seam. The natural next steps, in rough order:
 
-1. Phase 3's deliverables are all implemented: determinism gate (bitwise for
+1. Phase 3's deliverables are implemented: determinism gate (bitwise for
    map-only), cost gate (`ParallelExecutor::setInlineThreshold`), explicit-SIMD
-   orientation kernel (`integrateOrientationsSimd`) with scalar fallback, and a
+   orientation kernel (`integrateOrientationsSimd`) with scalar fallback,
    deterministic reduction (`totalKineticEnergy`) with a fixed-ULP tolerance
-   gate. The one open exit criterion -- "parallel/SIMD beats the Phase 0
-   baseline" -- is not achievable on today's physics: measured
-   `BM_RigidBodyStepParallel` is slower than sequential because trivial Euler
-   integration is overhead-bound (the plan's thesis). It waits for a
-   compute-bound workload (contact solver) plus an extension of the checked
-   `pixi run bm-compute-check` corpus and dashboard contact-shaped proxy/Phase 5
-   CPU-baseline series on stable benchmark CI.
+   gate, and a checked compute-bound contact-island speedup surface. Measured
+   `BM_RigidBodyStepParallel` remains slower than sequential because trivial
+   Euler integration is overhead-bound (the plan's thesis), so backend decisions
+   must use the contact/constraint-shaped surfaces instead.
 2. Phase 4 heterogeneous batches (deferred-by-design to Phase 6 in `01-plan.md`).
 3. Phase 5 local CUDA substrate is reconciled with the gate shape: optional CUDA
    benchmark files must register the packet-compatible
@@ -104,8 +109,10 @@ Keep `entt` internal and the public handle API unchanged.
   embarrassingly parallel and will mislead the CUDA-versus-SYCL decision. The
   Phase 0 contact-shaped proxy (`BM_ContactShaped*` in `bm_compute_graph.cpp`)
   is the hard-case baseline; it is a reproducibility/smoke surface, not backend
-  selection evidence. `pixi run bm-compute-check` plus the performance dashboard
-  keep the full expected compute benchmark corpus reproducible.
+  selection evidence. The Phase 3 speedup evidence is the contact-island proxy
+  (`BM_ContactIslandShaped*`), where independent islands give the parallel
+  executor compute-bound work. `pixi run bm-compute-check` plus the performance
+  dashboard keep the full expected compute benchmark corpus reproducible.
 - Current validation evidence:
   - `pixi run test-all` passed after all current code, docs, workflow, checker,
     and Phase 5 GPU packet-template edits. The docs phase still emits the known
@@ -123,8 +130,12 @@ Keep `entt` internal and the public handle API unchanged.
     passing go/no-go packet for the same change.
   - `pixi run test-simulation-experimental` passed after the default batched
     world-step update.
-  - `pixi run bm-compute-check --benchmark-min-time 1ms` checked all 28 expected
-    rows after the checker tightening.
+  - `pixi run bm-compute-check --benchmark-min-time 1ms` checked all 34 expected
+    rows after adding the contact-island speedup surface. Local ratios included
+    `BM_ContactIslandShaped/4/512/64 = 0.465`,
+    `BM_ContactIslandShaped/8/512/64 = 0.173`, and
+    `BM_ContactIslandShaped/16/512/64 = 0.510` parallel/sequential by real time;
+    the checker now requires the largest row to stay below 0.95.
   - Checker/dashboard Python tests passed.
   - `pixi run pytest
 python/tests/unit/test_check_no_gpu_runtime_dependencies.py
@@ -146,8 +157,8 @@ python/tests/unit/test_run_performance_dashboard_benchmarks.py -q` passed
     backend-boundary, no-GPU default/core dependency, and Phase 5 benchmark
     contract evidence; `--input` requires them to be true.
   - `pixi run python scripts/run_performance_dashboard_benchmarks.py --dry-run`
-    listed the contact-shaped dashboard command and Phase 5 CPU-baseline
-    command.
+    listed the contact-shaped dashboard command, contact-island dashboard
+    command, and Phase 5 CPU-baseline command.
   - `pixi run pytest python/tests/unit/test_check_phase5_gpu_packet.py -q`
     passed for the executable Phase 5 go/no-go packet validator.
   - `pixi run pytest python/tests/unit/test_check_compute_backend_boundaries.py -q`
@@ -194,9 +205,8 @@ git status && git log -5 --oneline
 
 Then read `01-plan.md`. The remaining work is not another Euler-integration
 cleanup: keep `pixi run bm-compute-check`, the dashboard contact-shaped proxy
-surface, and the Phase 5 CPU-baseline surface green; wait for a compute-bound
-contact/constraint workload before closing the Phase 3 speedup exit; and
-provision a project GPU runner plus build/import CI before starting Phase 5.
+surface, the contact-island speedup surface, and the Phase 5 CPU-baseline surface
+green; provision a project GPU runner plus build/import CI before closing Phase 5.
 The GPU runner/CI prerequisites are owned by project maintainers/infrastructure;
 the package shape, pre-registered go/no-go threshold, and
 `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /

@@ -36,6 +36,12 @@ REQUIRED_NAMES = (
     "BM_ContactShapedParallel/1024/16",
     "BM_ContactShapedParallel/4096/16",
     "BM_ContactShapedParallel/1024/64",
+    "BM_ContactIslandShapedSequential/4/512/64",
+    "BM_ContactIslandShapedSequential/8/512/64",
+    "BM_ContactIslandShapedSequential/16/512/64",
+    "BM_ContactIslandShapedParallel/4/512/64",
+    "BM_ContactIslandShapedParallel/8/512/64",
+    "BM_ContactIslandShapedParallel/16/512/64",
     "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10",
 )
 
@@ -54,10 +60,14 @@ def _load_module():
 
 
 def _complete_rows():
-    return [
+    rows = [
         {"name": name, "real_time": index + 1.0}
         for index, name in enumerate(REQUIRED_NAMES)
     ]
+    for row in rows:
+        if row["name"].startswith("BM_ContactIslandShapedParallel/"):
+            row["real_time"] = 1.0
+    return rows
 
 
 def test_validate_benchmark_rows_accepts_required_compute_surfaces():
@@ -66,7 +76,7 @@ def test_validate_benchmark_rows_accepts_required_compute_surfaces():
     summary = module.validate_benchmark_rows(_complete_rows())
 
     assert summary["row_count"] == len(REQUIRED_NAMES)
-    assert summary["ratio_count"] == 12
+    assert summary["ratio_count"] == 15
     ratios = {
         row["benchmark"]: row["parallel_over_sequential"]
         for row in summary["parallel_ratios"]
@@ -75,6 +85,7 @@ def test_validate_benchmark_rows_accepts_required_compute_surfaces():
     assert ratios["BM_WorldStep/32/8"] == 13.0 / 10.0
     assert ratios["BM_RigidBodyStep/128"] == 19.0 / 16.0
     assert ratios["BM_ContactShaped/1024/16"] == 25.0 / 22.0
+    assert ratios["BM_ContactIslandShaped/4/512/64"] == 1.0 / 28.0
     assert "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10" not in ratios
 
 
@@ -82,19 +93,19 @@ def test_validate_benchmark_rows_accepts_aggregate_row_names():
     module = _load_module()
     rows = [
         {
-            "name": f"{name}_median",
-            "run_name": f"{name}_median",
-            "real_time": index + 1.0,
+            "name": f"{row['name']}_median",
+            "run_name": f"{row['name']}_median",
+            "real_time": row["real_time"],
             "run_type": "aggregate",
             "aggregate_name": "median",
         }
-        for index, name in enumerate(REQUIRED_NAMES)
+        for row in _complete_rows()
     ]
 
     summary = module.validate_benchmark_rows(rows)
 
     assert summary["row_count"] == len(REQUIRED_NAMES)
-    assert summary["ratio_count"] == 12
+    assert summary["ratio_count"] == 15
 
 
 def test_validate_benchmark_rows_ignores_non_timing_aggregate_rows():
@@ -151,6 +162,20 @@ def test_validate_benchmark_rows_rejects_nonfinite_timing():
     with pytest.raises(
         module.BenchmarkCheckError,
         match="invalid timings: BM_ComputeGraphSequential/1024/1",
+    ):
+        module.validate_benchmark_rows(rows)
+
+
+def test_validate_benchmark_rows_rejects_missing_contact_island_speedup():
+    module = _load_module()
+    rows = _complete_rows()
+    for row in rows:
+        if row["name"] == "BM_ContactIslandShapedParallel/16/512/64":
+            row["real_time"] = 100.0
+
+    with pytest.raises(
+        module.BenchmarkCheckError,
+        match="BM_ContactIslandShaped/16/512/64 parallel/sequential",
     ):
         module.validate_benchmark_rows(rows)
 

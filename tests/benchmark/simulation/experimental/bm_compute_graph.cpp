@@ -354,6 +354,78 @@ struct ContactShapedGraph
 };
 
 //==============================================================================
+// Contact/constraint-shaped proxy with independent solver islands.
+//
+// Each island is internally Gauss-Seidel ordered, but islands write disjoint
+// body-state ranges and can run concurrently. This is the first checked
+// compute-bound surface where the Taskflow executor is expected to have real
+// work to amortize scheduling overhead, unlike the Euler-only rigid-body step
+// or the serial contact-shaped chain above.
+struct ContactIslandShapedGraph
+{
+  ContactIslandShapedGraph(int islandCount, int bodiesPerIsland, int iterations)
+    : islandCount(std::max(islandCount, 1)),
+      bodiesPerIsland(std::max(bodiesPerIsland, 2)),
+      iterations(std::max(iterations, 1)),
+      velocities(
+          static_cast<std::size_t>(this->islandCount * this->bodiesPerIsland),
+          1.0),
+      indices(static_cast<std::size_t>(this->bodiesPerIsland))
+  {
+    for (std::size_t i = 0; i < indices.size(); ++i) {
+      indices[i] = static_cast<int>((i * 2654435761u) % indices.size());
+    }
+
+    auto& start = graph.addNode("start", []() {});
+    std::vector<compute::ComputeNode*> islandNodes;
+    islandNodes.reserve(static_cast<std::size_t>(this->islandCount));
+
+    for (int island = 0; island < this->islandCount; ++island) {
+      const auto offset
+          = static_cast<std::size_t>(island * this->bodiesPerIsland);
+      auto& node
+          = graph.addNode("island_" + std::to_string(island), [this, offset]() {
+              for (int iter = 0; iter < this->iterations; ++iter) {
+                for (std::size_t c = 0; c + 1 < indices.size(); ++c) {
+                  const auto a = offset + static_cast<std::size_t>(indices[c]);
+                  const auto b
+                      = offset + static_cast<std::size_t>(indices[c + 1]);
+                  const double delta = 0.01 * (velocities[a] - velocities[b]);
+                  velocities[a] -= delta;
+                  velocities[b] += delta;
+                }
+              }
+              benchmark::DoNotOptimize(velocities[offset]);
+            });
+
+      graph.addDependency(start, node);
+      islandNodes.push_back(&node);
+    }
+
+    auto& reduce = graph.addNode("reduce", [this]() {
+      double sum = 0.0;
+      for (const auto velocity : velocities) {
+        sum += velocity;
+      }
+      total = sum;
+      benchmark::DoNotOptimize(total);
+    });
+
+    for (auto* node : islandNodes) {
+      graph.addDependency(*node, reduce);
+    }
+  }
+
+  compute::ComputeGraph graph;
+  int islandCount;
+  int bodiesPerIsland;
+  int iterations;
+  std::vector<double> velocities;
+  std::vector<int> indices;
+  double total = 0.0;
+};
+
+//==============================================================================
 struct Phase5RigidBodyBatchFixture
 {
   Phase5RigidBodyBatchFixture(int worldCount, int bodyCount)
@@ -445,6 +517,46 @@ void BM_ContactShapedParallel(benchmark::State& state)
 }
 
 //==============================================================================
+void BM_ContactIslandShapedSequential(benchmark::State& state)
+{
+  const auto islandCount = static_cast<int>(state.range(0));
+  const auto bodiesPerIsland = static_cast<int>(state.range(1));
+  const auto iterations = static_cast<int>(state.range(2));
+  ContactIslandShapedGraph fixture(islandCount, bodiesPerIsland, iterations);
+  compute::SequentialExecutor executor;
+
+  for (auto _ : state) {
+    executor.execute(fixture.graph);
+  }
+
+  state.counters["islands"] = islandCount;
+  state.counters["bodies_per_island"] = bodiesPerIsland;
+  state.counters["iterations"] = iterations;
+  state.SetItemsProcessed(
+      state.iterations() * islandCount * bodiesPerIsland * iterations);
+}
+
+//==============================================================================
+void BM_ContactIslandShapedParallel(benchmark::State& state)
+{
+  const auto islandCount = static_cast<int>(state.range(0));
+  const auto bodiesPerIsland = static_cast<int>(state.range(1));
+  const auto iterations = static_cast<int>(state.range(2));
+  ContactIslandShapedGraph fixture(islandCount, bodiesPerIsland, iterations);
+  compute::ParallelExecutor executor;
+
+  for (auto _ : state) {
+    executor.execute(fixture.graph);
+  }
+
+  state.counters["islands"] = islandCount;
+  state.counters["bodies_per_island"] = bodiesPerIsland;
+  state.counters["iterations"] = iterations;
+  state.SetItemsProcessed(
+      state.iterations() * islandCount * bodiesPerIsland * iterations);
+}
+
+//==============================================================================
 void BM_Phase5RigidBodyBatchCpuBaseline(benchmark::State& state)
 {
   const auto worldCount = static_cast<int>(state.range(0));
@@ -504,6 +616,14 @@ BENCHMARK(BM_ContactShapedParallel)
     ->Args({1024, 16})
     ->Args({4096, 16})
     ->Args({1024, 64});
+BENCHMARK(BM_ContactIslandShapedSequential)
+    ->Args({4, 512, 64})
+    ->Args({8, 512, 64})
+    ->Args({16, 512, 64});
+BENCHMARK(BM_ContactIslandShapedParallel)
+    ->Args({4, 512, 64})
+    ->Args({8, 512, 64})
+    ->Args({16, 512, 64});
 BENCHMARK(BM_Phase5RigidBodyBatchCpuBaseline)
     ->Args({1024, 128, 10})
     ->Args({4096, 128, 100});

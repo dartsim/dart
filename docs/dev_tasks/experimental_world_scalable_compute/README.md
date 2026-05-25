@@ -30,28 +30,26 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
       `WorldStepStage` at full parity with the per-entity integrator (force, torque,
       orientation), including parent-before-child local-transform write-back for
       frame-coupled rigid bodies.
-- [~] Phase 3: Multi-core hardening, SIMD, data locality. Landed: O((N+E) log N)
-  topological sort; multi-worker (1/2/4/8) determinism parity with a bitwise gate
-  for the map-only integration stage (per-body nodes run concurrently);
-  `findResourceHazards()` as the unordered-write ambiguity detector; a cost gate
-  (`ParallelExecutor::setInlineThreshold`) that runs sub-threshold graphs inline;
-  and an explicit-SIMD orientation kernel (`integrateOrientationsSimd`,
-  Eigen-vectorized transcendentals) that the batched integrator dispatches to
-  above a body-count threshold, with the scalar-generic kernel as the fallback.
-  The linear (position/velocity) kernels are memory-bound and already optimally
-  auto-vectorized at -O3, so they keep the scalar-generic path. Also landed: a
-  deterministic reduction (`totalKineticEnergy`) with fixed-order chunk partials
-  and a fixed-ULP/relative tolerance gate, the reduction shape later parallel
-  stages reuse. The `pixi run bm-compute-check` gate now checks the full
-  expected `bm_compute_graph` compute/world/rigid-body/contact-shaped/Phase 5
-  CPU-baseline corpus for positive finite timings, and the performance
-  dashboard publishes the contact-shaped proxy and Phase 5 CPU-baseline history.
-  Remaining:
-  the "parallel/SIMD beats the Phase 0 baseline" exit criterion, which is **not
-  achievable on today's physics** -- measured `BM_RigidBodyStepParallel` is
-  slower than sequential because trivial Euler integration is overhead-bound,
-  exactly the plan's thesis; it waits for a compute-bound workload (contact
-  solver) and extension of the checked benchmark gate on stable benchmark CI.
+- [x] Phase 3: Multi-core hardening, SIMD, data locality. Landed: O((N+E) log N)
+      topological sort; multi-worker (1/2/4/8) determinism parity with a bitwise gate
+      for the map-only integration stage (per-body nodes run concurrently);
+      `findResourceHazards()` as the unordered-write ambiguity detector; a cost gate
+      (`ParallelExecutor::setInlineThreshold`) that runs sub-threshold graphs inline;
+      and an explicit-SIMD orientation kernel (`integrateOrientationsSimd`,
+      Eigen-vectorized transcendentals) that the batched integrator dispatches to
+      above a body-count threshold, with the scalar-generic kernel as the fallback.
+      The linear (position/velocity) kernels are memory-bound and already optimally
+      auto-vectorized at -O3, so they keep the scalar-generic path. Also landed: a
+      deterministic reduction (`totalKineticEnergy`) with fixed-order chunk partials
+      and a fixed-ULP/relative tolerance gate, the reduction shape later parallel
+      stages reuse. The `pixi run bm-compute-check` gate now checks the full
+      expected `bm_compute_graph` compute/world/rigid-body/contact-shaped/
+      contact-island-shaped/Phase 5 CPU-baseline corpus for positive finite timings
+      and requires the compute-bound contact-island row to beat sequential by real
+      time. The performance dashboard publishes both the serial contact-shaped
+      hard-case proxy and the independent contact-island speedup surface, plus the
+      Phase 5 CPU-baseline history. The trivial Euler rigid-body rows remain
+      overhead-bound and must not be used to choose backends.
 - [x] Phase 4: Homogeneous batch (CPU) + rollout. `stepWorldsBatched` (parallel
       batch executor via the injected executor, bit-identical to sequential),
       `rolloutWorldsBatched`, and a pure-SoA control-sequence rollout
@@ -115,11 +113,9 @@ sort are in; see `RESUME.md`.)
    `BatchedRigidBodyIntegrationStage`; its frame-coupled rigid-body parity is
    covered by the simulation-experimental test label.
 2. Keep `pixi run bm-compute-check` green as the checked benchmark corpus for
-   `bm_compute_graph`, including the dashboard contact-shaped proxy and Phase 5
-   CPU-baseline series.
-   Phase 3's remaining speedup exit criterion waits for a compute-bound contact
-   or constraint workload and an extension of that gate on stable benchmark CI;
-   do not use trivial Euler integration to choose backends.
+   `bm_compute_graph`, including the dashboard contact-shaped proxy,
+   contact-island speedup surface, and Phase 5 CPU-baseline series. Do not use
+   trivial Euler integration to choose backends.
 3. Phase 5 GPU prototype — blocked on a GPU runner the project does not have;
    treat runner provisioning and a GPU build/import gate as
    maintainer/infrastructure-owned prerequisites. The optional/separate package

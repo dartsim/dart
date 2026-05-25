@@ -49,6 +49,15 @@ BENCHMARK_SPECS = [
         benchmark_filter="BM_ContactShaped(Sequential|Parallel)/.*",
         output_name="dashboard_contact_shaped.json",
     ),
+    # Independent contact/constraint islands: each island is sequentially
+    # coupled internally but disjoint from the others, so the parallel executor
+    # has compute-bound work that can amortize scheduling overhead.
+    BenchmarkSpec(
+        surface="contact_islands",
+        target="bm_compute_graph",
+        benchmark_filter="BM_ContactIslandShaped(Sequential|Parallel)/.*",
+        output_name="dashboard_contact_islands.json",
+    ),
     # CPU side of the Phase 5 homogeneous-batch GPU comparison. The dashboard
     # keeps the bounded smoke row; manual Phase 5 evidence uses the larger
     # pre-registered row in bm_compute_graph.

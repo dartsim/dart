@@ -95,6 +95,14 @@ Multi-core CPU work should:
 - avoid exposing thread pools, task graphs, or worker ownership as public API
   unless they become an intentional long-term contract.
 
+The checked CPU scalability surface lives in `pixi run bm-compute-check`.
+`BM_ContactShaped*` is the serial, low-parallelism contact/constraint-shaped
+hard case. `BM_ContactIslandShaped*` is the compute-bound speedup surface: each
+island is internally sequentially coupled, but independent islands write
+disjoint state and can run concurrently. The checker requires the largest
+contact-island row to beat sequential by real time so Phase 3 evidence does not
+come from trivial Euler-only rigid-body rows.
+
 ## SIMD Constraints
 
 SIMD work should:

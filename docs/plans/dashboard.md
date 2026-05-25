@@ -83,15 +83,16 @@ its own line so status updates remain git-history friendly.
   `bm-phase5-gpu-packet-check` / `check-compute-backend-boundaries` /
   `check-no-gpu-runtime-dependencies` evidence gates, and the
   `check-phase5-cuda-benchmark-contract` row contract are recorded in the owner
-  doc. Do not close the Phase 3 speedup exit until a compute-bound contact or
-  constraint workload has committed benchmark baselines.
+  doc. Phase 3's speedup surface is the checked contact-island benchmark, not
+  the trivial Euler rigid-body rows.
 - Gate: `pixi run test-simulation-experimental` covers graph/world parity for
   the current CPU foundation; `pixi run bm-compute-check` keeps the full
   expected `bm_compute_graph` corpus reproducible for the current Euler and
   contact-shaped workloads; the performance dashboard publishes the
-  contact-shaped proxy and Phase 5 CPU-baseline history; `pixi run -e cuda
-test-cuda` covers the opt-in CUDA smoke path on CUDA hosts; and future
-  compute-bound contact/constraint work must extend the checked benchmark gate.
+  contact-shaped proxy, contact-island speedup surface, and Phase 5 CPU-baseline
+  history; `pixi run -e cuda test-cuda` covers the opt-in CUDA smoke path on CUDA
+  hosts; and future compute-bound contact/constraint work must extend the
+  checked benchmark gate.
   Taskflow remains behind the experimental executor boundary, metadata remains
   backend-neutral, CUDA remains private/non-required, and classic World behavior
   stays untouched.

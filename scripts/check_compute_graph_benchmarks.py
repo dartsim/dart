@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Smoke-check the experimental compute-graph benchmark surface.
 
-This checker is intentionally a correctness/coverage gate, not a speedup claim.
-It verifies that the compute-graph, world-step, rigid-body-step, contact-shaped,
-and Phase 5 CPU-baseline smoke benchmark rows run and report finite positive
-timings. Ratio summaries are printed for review, but the current Euler-only
-rigid-body workload is known to be overhead-bound and must not be used to choose
-CPU/GPU backends.
+This checker is primarily a correctness/coverage gate. It verifies that the
+compute-graph, world-step, rigid-body-step, contact-shaped,
+contact-island-shaped, and Phase 5 CPU-baseline smoke benchmark rows run and
+report finite positive timings. Ratio summaries are printed for review. The
+current Euler-only rigid-body workload is known to be overhead-bound and must
+not be used to choose CPU/GPU backends, but the contact-island surface is
+compute-bound enough to require a bounded parallel speedup sanity check.
 
 Usage:
     python scripts/check_compute_graph_benchmarks.py
@@ -30,7 +31,8 @@ DEFAULT_FILTER = (
     "BM_(ComputeGraph(Build|Sequential|Parallel)"
     "|WorldStep(Sequential|Parallel)"
     "|RigidBodyStep(Sequential|Parallel)"
-    "|ContactShaped(Sequential|Parallel))/.*"
+    "|ContactShaped(Sequential|Parallel)"
+    "|ContactIslandShaped(Sequential|Parallel))/.*"
     "|BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10"
 )
 
@@ -63,15 +65,24 @@ REQUIRED_BENCHMARKS = (
     "BM_ContactShapedParallel/1024/16",
     "BM_ContactShapedParallel/4096/16",
     "BM_ContactShapedParallel/1024/64",
+    "BM_ContactIslandShapedSequential/4/512/64",
+    "BM_ContactIslandShapedSequential/8/512/64",
+    "BM_ContactIslandShapedSequential/16/512/64",
+    "BM_ContactIslandShapedParallel/4/512/64",
+    "BM_ContactIslandShapedParallel/8/512/64",
+    "BM_ContactIslandShapedParallel/16/512/64",
     "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10",
 )
 
 _PAIR_RE = re.compile(
-    r"^(BM_(?:ComputeGraph|WorldStep|RigidBodyStep|ContactShaped))"
+    r"^(BM_(?:ComputeGraph|WorldStep|RigidBodyStep|ContactShaped|"
+    r"ContactIslandShaped))"
     r"(Sequential|Parallel)(/.*)$"
 )
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
+_CONTACT_ISLAND_SPEEDUP_BENCHMARK = "BM_ContactIslandShaped/16/512/64"
+_CONTACT_ISLAND_MAX_PARALLEL_OVER_SEQUENTIAL = 0.95
 
 
 class BenchmarkCheckError(RuntimeError):
@@ -177,6 +188,7 @@ def validate_benchmark_rows(rows: list[dict]) -> dict:
         raise BenchmarkCheckError("; ".join(details))
 
     ratios = compute_parallel_ratios(matched_rows)
+    validate_contact_island_speedup(ratios)
     return {
         "row_count": len(matched_rows),
         "ratio_count": len(ratios),
@@ -213,6 +225,25 @@ def compute_parallel_ratios(rows: list[dict]) -> list[dict]:
             }
         )
     return ratios
+
+
+def validate_contact_island_speedup(ratios: list[dict]) -> None:
+    for row in ratios:
+        if row["benchmark"] != _CONTACT_ISLAND_SPEEDUP_BENCHMARK:
+            continue
+        ratio = row["parallel_over_sequential"]
+        if ratio >= _CONTACT_ISLAND_MAX_PARALLEL_OVER_SEQUENTIAL:
+            raise BenchmarkCheckError(
+                "{} parallel/sequential {:.3f} does not beat the "
+                "required threshold {:.3f}".format(
+                    _CONTACT_ISLAND_SPEEDUP_BENCHMARK,
+                    ratio,
+                    _CONTACT_ISLAND_MAX_PARALLEL_OVER_SEQUENTIAL,
+                )
+            )
+        return
+
+    raise BenchmarkCheckError(f"missing ratio for {_CONTACT_ISLAND_SPEEDUP_BENCHMARK}")
 
 
 def _find_binary(build_dir: Path, target: str) -> Path:

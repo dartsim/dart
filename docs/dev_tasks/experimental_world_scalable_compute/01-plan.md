@@ -208,6 +208,13 @@ Deliverables:
   (O((N+E) log N)) that preserves the construction-order tie-break.
 - SIMD (via `dart/simd`) and cache-friendly iteration on the SoA integration and
   kinematics kernels, with scalar fallback preserved.
+- Done: the benchmark corpus now includes `BM_ContactIslandShaped*`, an
+  independent contact/constraint-island proxy where each island is internally
+  Gauss-Seidel ordered but disjoint islands can run concurrently. `pixi run
+bm-compute-check` requires the full contact-island row set and enforces a
+  bounded real-time speedup for `BM_ContactIslandShaped/16/512/64`, while the
+  original `BM_ContactShaped*` serial-chain proxy remains the hard-case
+  low-parallelism surface.
 - A Bevy-style ambiguity detector for unordered write conflicts, added once a
   second write-conflicting stage exists (defer until there is real surface).
 
