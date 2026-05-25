@@ -477,6 +477,20 @@ Reference test/benchmark targets, when enabled:
 
 > Advanced optimizer targets (IPOPT, NLopt, pagmo, SNOPT) were moved to [dart-optimization](https://github.com/dartsim/dart-optimization). The `dart/optimizer` directory that remains in this repo only ships deprecated headers that forward to `dart/math/optimization`.
 
+### Optional Component Output Directories
+
+Optional component libraries declared outside the core `dart/` subtree may not
+inherit the output-directory properties used by the primary DART libraries. If
+an in-tree example, test, or exported component links a target as
+`-ldart-<component>`, set `ARCHIVE_OUTPUT_DIRECTORY` and
+`LIBRARY_OUTPUT_DIRECTORY` to `${DART_BINARY_DIR}/lib`, and set
+`RUNTIME_OUTPUT_DIRECTORY` to `${DART_BINARY_DIR}/bin` when the target can
+produce runtime artifacts.
+
+Validate new optional components from a clean build by building the executable
+or example that links them. Incremental local builds can hide this class of
+failure when a stale library already exists in the shared output directory.
+
 ### Source Directory Structure
 
 ```
