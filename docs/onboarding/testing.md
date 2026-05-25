@@ -229,6 +229,14 @@ All regression tests use descriptive names organized by module, with GitHub issu
 TEST_F(CollisionTest, test_CollisionAccuracy) { ... }
 ```
 
+### Fallback Path Regressions
+
+When optimized, batched, or parallel code can fall back to a simpler
+implementation, add regression coverage that forces the fallback trigger and
+asserts externally visible behavior. Do not rely only on equivalence checks
+against the delegated implementation; a fallback can drop world options, cached
+state, or execution context while still matching a shallow delegate comparison.
+
 ### Benchmarks (`benchmark/`)
 
 Performance benchmarks measure execution time and resource usage:
