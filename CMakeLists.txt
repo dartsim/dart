@@ -328,6 +328,27 @@ dart_option(
   OFF
   CATEGORY build
 )
+dart_option(
+  DART_ENABLE_EXPERIMENTAL_CUDA
+  "Build opt-in CUDA support for dart::simulation::experimental"
+  OFF
+  CATEGORY build
+)
+set(
+  DART_CUDA_ARCHITECTURES
+  ""
+  CACHE STRING
+  "CUDA architectures for experimental CUDA targets; leave empty for CMake/nvcc default"
+)
+
+if(DART_ENABLE_EXPERIMENTAL_CUDA)
+  if(NOT DART_BUILD_SIMULATION_EXPERIMENTAL)
+    message(FATAL_ERROR
+      "DART_ENABLE_EXPERIMENTAL_CUDA requires DART_BUILD_SIMULATION_EXPERIMENTAL=ON")
+  endif()
+
+  enable_language(CUDA)
+endif()
 
 
 dart_configure_compiler_cache()
@@ -541,19 +562,21 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   # The bug is tracked here: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105593
   # The following workaround can be removed once the bug is fixed.
   if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.1)
-    add_compile_options(-Wno-array-bounds)
-    add_compile_options(-Wno-dangling-pointer)
-    add_compile_options(-Wno-maybe-uninitialized)
-    add_compile_options(-Wno-stringop-overflow)
-    add_compile_options(-Wno-uninitialized)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-array-bounds>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-dangling-pointer>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-maybe-uninitialized>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-overflow>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-uninitialized>)
   endif()
 
-  add_compile_options(-Wall -Wextra -fPIC)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wall>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wextra>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fPIC>)
   if(DART_TREAT_WARNINGS_AS_ERRORS)
-    add_compile_options(-Werror)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror>)
     # Also treat preprocessor warnings (like #warning directives in deprecated
     # headers) as errors
-    add_compile_options(-Werror=cpp)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror=cpp>)
   endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion OUTPUT_VARIABLE GCC_VERSION)
@@ -568,14 +591,17 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
     # GCC 13 currently reports noisy diagnostics in upstream dependencies; silence
     # them until Eigen/FCL updates remove the false positives.
-    add_compile_options(-Wno-overloaded-virtual -Wno-alloc-size-larger-than -Wno-dangling-pointer)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-alloc-size-larger-than>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-dangling-pointer>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-restrict>)
   endif()
   if(GCC_VERSION VERSION_GREATER_EQUAL 15.0)
     # TODO(GCC15): Remove once upstream reference dependencies stop using
     # <ciso646>, which is deprecated in C++20. GCC 15 emits a #warning that our
     # -Werror=cpp flag treats as an error.
     # Tracking: FCL and OctoMap reference targets can pull it transitively.
-    add_compile_options(-Wno-error=cpp)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-error=cpp>)
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -fno-omit-frame-pointer -fno-inline-functions -fno-inline-functions-called-once -fno-optimize-sibling-calls")
@@ -588,17 +614,19 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
 
   # Enforce to colorize compilation output
   if(DART_FORCE_COLORED_OUTPUT)
-    add_compile_options(-fdiagnostics-color=always)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fdiagnostics-color=always>)
   endif()
 
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 
-  add_compile_options(-Wall -Wextra -fPIC)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wall>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wextra>)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fPIC>)
   if(DART_TREAT_WARNINGS_AS_ERRORS)
-    add_compile_options(-Werror)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror>)
     # Also treat preprocessor warnings (like #warning directives in deprecated
     # headers) as errors
-    add_compile_options(-Werror=cpp)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Werror=cpp>)
   endif()
   execute_process(
     COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CLANG_VERSION)
@@ -618,7 +646,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 
   # Enforce to colorize compilation output
   if(DART_FORCE_COLORED_OUTPUT)
-    add_compile_options(-fcolor-diagnostics)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fcolor-diagnostics>)
   endif()
 
 else()

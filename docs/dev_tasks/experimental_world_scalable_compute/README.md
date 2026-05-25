@@ -57,12 +57,14 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
       `rolloutWorldsBatched`, and a pure-SoA control-sequence rollout
       (`rolloutRigidBodyStateBatch`). Heterogeneous batches are deferred to Phase 6
       by design.
-- [ ] Phase 5: GPU prototype behind a gate with a kill criterion (internal, no
-      public API); CUDA-versus-SYCL decided from the benchmark. The optional
-      sidecar package shape is documented, but execution is still blocked on a
-      project-level GPU runner plus build/import CI; local CUDA hardware alone
-      is not enough to satisfy the gate. Owner for these prerequisites: project
-      maintainers/infrastructure.
+- [~] Phase 5: GPU prototype behind a gate with a kill criterion (internal, no
+  public API). The MVP CUDA path is now opt-in behind
+  `DART_ENABLE_EXPERIMENTAL_CUDA`, a Linux-only Pixi `cuda` environment, a
+  private build-tree CUDA wrapper over the force-driven `RigidBodyStateBatch`
+  SoA path, a parity unit test, a packet-compatible end-to-end smoke benchmark,
+  and a manual/non-required GitHub workflow. Remaining: run that workflow on a
+  project-owned GPU runner, produce a passing Phase 5 go/no-go packet, and use
+  representative workload results for the CUDA-versus-SYCL decision.
 - [ ] Phase 6: Reassess — broaden GPU, auto-scheduling, Pattern B, differentiable
       state (each gated; gated on Phase 5 evidence).
 
@@ -131,6 +133,12 @@ sort are in; see `RESUME.md`.)
    benchmark files packet-compatible. The no-GPU dependency gate applies to
    default/core manifests; explicitly opt-in sidecar Pixi features/environments
    may carry GPU runtime packages.
+4. Phase 5 CUDA evidence: run `pixi run -e cuda test-cuda` on a CUDA host, then
+   dispatch `.github/workflows/ci_cuda.yml` on a self-hosted runner labeled
+   `cuda` once the project has one. Keep the workflow non-required until runner
+   stability and benchmark signal are proven, and do not claim the Phase 5 exit
+   until `pixi run bm-phase5-gpu-packet-check --input <packet.json>` passes with
+   the build/import and policy evidence booleans true for the same change.
 
 ## Relationship To Other Surfaces
 

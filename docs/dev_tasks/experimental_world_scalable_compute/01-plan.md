@@ -253,6 +253,12 @@ Deliverables:
   corpus; provide an identical-semantics CPU fallback; extend the checked
   `BM_Phase5RigidBodyBatchCpuBaseline` benchmark row with the matching GPU row;
   add build/import CI and one smoke benchmark.
+- The local MVP implementation is intentionally narrower than the final Phase 5
+  backend: it adds a private build-tree CUDA wrapper for the force-driven
+  `RigidBodyStateBatch` SoA integration path, a parity test, a packet-compatible
+  smoke benchmark, the `pixi run -e cuda test-cuda` command, and a manual
+  `ci_cuda.yml` workflow. It does not expose a public `CudaExecutor`, CUDA
+  stream/device types, or any CUDA names in installed headers.
 - Decide CUDA versus SYCL/AdaptiveCpp from the measured results, applying the
   criteria in `scalable_compute_decisions.md`. Because Taskflow's GPU tasking is
   CUDA-only, the backend stays behind an internal interface so the choice is

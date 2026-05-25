@@ -41,9 +41,11 @@ positive finite timings, including the Phase 5 CPU-baseline smoke row.
 
 ## Current Branch
 
-`main` — local follow-up changes are in progress on top of `origin/main`. The
-worktree is intentionally dirty with uncommitted code, docs, workflow, and test
-changes for this task; no PR is associated with the branch.
+`feature/experimental-world-scalable-compute-cuda-reconcile` — local branch
+reconciling the scalable-compute gates with the opt-in CUDA MVP from draft PR
+#2710. CUDA remains off by default and is enabled through the `cuda` Pixi
+environment or `DART_ENABLE_EXPERIMENTAL_CUDA=ON`; no GitHub mutation has been
+made from this branch.
 
 ## Immediate Next Step
 
@@ -64,25 +66,13 @@ seam. The natural next steps, in rough order:
    `pixi run bm-compute-check` corpus and dashboard contact-shaped proxy/Phase 5
    CPU-baseline series on stable benchmark CI.
 2. Phase 4 heterogeneous batches (deferred-by-design to Phase 6 in `01-plan.md`).
-3. Phase 5 GPU prototype (blocked on project-level GPU runner plus build/import
-   CI; local CUDA hardware alone is not enough to satisfy the gate; owner:
-   project maintainers/infrastructure; durable sidecar package shape and
-   go/no-go threshold are in
-   `docs/design/scalable_compute_decisions.md`); Phase 6 reassess (gated on Phase
-   5).
-
-External state note: draft PR #2710 (`feature/experimental-cuda-mvp`) now exists
-with an opt-in CUDA smoke path. It is useful Phase 5 substrate, but it is not a
-Phase 5 exit by itself: it still needs reconciliation with this worktree's
-default `World::step` batched path, `bm-compute-check` corpus/dashboard gate,
-`BM_Phase5RigidBodyBatchGpu/<world>/128/100` go/no-go row naming, packet
-validator, backend-boundary checker, and default/core no-GPU dependency gate.
-`pixi run check-phase5-cuda-benchmark-contract` now makes that benchmark naming
-contract executable: optional CUDA benchmark files must register the full
-`BM_Phase5RigidBodyBatchGpu/4096/128/100` manual go/no-go row.
-The Phase 5 packet checker now also requires evidence booleans proving the GPU
-build/import gate and policy gates passed for the same change, so a timing-only
-packet cannot accidentally close Phase 5.
+3. Phase 5 local CUDA substrate is reconciled with the gate shape: optional CUDA
+   benchmark files must register the packet-compatible
+   `BM_Phase5RigidBodyBatchGpu/4096/128/100` row, the packet checker requires
+   build/import and policy evidence booleans, and the CUDA MVP remains private
+   and opt-in. The Phase 5 exit is still not complete until a project-owned GPU
+   runner runs the CUDA build/import path and a measured go/no-go packet passes.
+4. Phase 6 reassess remains gated on Phase 5 evidence.
 
 Keep `entt` internal and the public handle API unchanged.
 
@@ -107,6 +97,9 @@ Keep `entt` internal and the public handle API unchanged.
 - `ComputeNode::ExecuteFn` is a host `std::function`; it cannot cross to a device.
   The GPU prototype (Phase 5) needs a separate data-describable execution path;
   only the graph and metadata are shared.
+- The current CUDA MVP is deliberately private: the build-tree-only `.cuh`
+  avoids installed header leakage, and `DART_ENABLE_EXPERIMENTAL_CUDA` only
+  builds a private CUDA target plus smoke tests/benchmarks.
 - Do not benchmark or pick a GPU backend on the current Euler-only physics; it is
   embarrassingly parallel and will mislead the CUDA-versus-SYCL decision. The
   Phase 0 contact-shaped proxy (`BM_ContactShaped*` in `bm_compute_graph.cpp`)
@@ -117,6 +110,17 @@ Keep `entt` internal and the public handle API unchanged.
   - `pixi run test-all` passed after all current code, docs, workflow, checker,
     and Phase 5 GPU packet-template edits. The docs phase still emits the known
     generated-stub `None_` autodoc warnings, but the documentation build passes.
+  - `pixi run -e cuda test-cuda` passed on a local CUDA host after reconciling
+    draft PR #2710 with this task's gates. It built the opt-in CUDA target, ran
+    `test_rigid_body_state_batch_cuda`, and ran the smoke benchmark rows
+    `BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10` and
+    `BM_Phase5RigidBodyBatchGpu/1024/128/10`.
+  - The local manual full Phase 5 row also ran successfully with
+    `BM_Phase5RigidBodyBatch(CpuBaseline|Gpu)/4096/128/100`, writing
+    `.benchmark_results/phase5_cuda_local_full.json`; median local timings were
+    about 3.49 s CPU versus 38.3 ms GPU. This is useful local evidence only and
+    does not close Phase 5 without project-owned GPU build/import CI and a
+    passing go/no-go packet for the same change.
   - `pixi run test-simulation-experimental` passed after the default batched
     world-step update.
   - `pixi run bm-compute-check --benchmark-min-time 1ms` checked all 28 expected
@@ -203,3 +207,7 @@ the package shape, pre-registered go/no-go threshold, and
 shape with these gates, especially
 `pixi run check-phase5-cuda-benchmark-contract`, rather than loosening the Phase
 5 exit criteria.
+For the local CUDA reconciliation path, use `pixi run -e cuda test-cuda` on a
+CUDA host after the default checks pass. The runner/CI prerequisite remains
+maintainer/infrastructure-owned; local CUDA evidence is useful but does not close
+Phase 5 without the build/import gate and packet evidence.

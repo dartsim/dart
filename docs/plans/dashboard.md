@@ -77,21 +77,24 @@ its own line so status updates remain git-history friendly.
 - Next step: Keep the merged Phase 0-4 foundation in
   `docs/dev_tasks/experimental_world_scalable_compute/` as the active tracker;
   the default experimental `World::step` path now uses the batched SoA rigid-body
-  stage. Do not start the Phase 5 GPU prototype until a project GPU runner and
-  GPU build/import CI exist; those prerequisites are owned by project
-  maintainers/infrastructure. The sidecar package shape, go/no-go threshold, and
+  stage. The opt-in CUDA MVP is local substrate only until a project GPU runner
+  and GPU build/import CI exist; those prerequisites are owned by project
+  maintainers/infrastructure. The sidecar package shape, go/no-go threshold,
   `bm-phase5-gpu-packet-check` / `check-compute-backend-boundaries` /
-  `check-no-gpu-runtime-dependencies` evidence gates are recorded in the owner
+  `check-no-gpu-runtime-dependencies` evidence gates, and the
+  `check-phase5-cuda-benchmark-contract` row contract are recorded in the owner
   doc. Do not close the Phase 3 speedup exit until a compute-bound contact or
   constraint workload has committed benchmark baselines.
 - Gate: `pixi run test-simulation-experimental` covers graph/world parity for
   the current CPU foundation; `pixi run bm-compute-check` keeps the full
   expected `bm_compute_graph` corpus reproducible for the current Euler and
   contact-shaped workloads; the performance dashboard publishes the
-  contact-shaped proxy and Phase 5 CPU-baseline history; and future
-  compute-bound contact/constraint work must extend that checked benchmark gate.
+  contact-shaped proxy and Phase 5 CPU-baseline history; `pixi run -e cuda
+test-cuda` covers the opt-in CUDA smoke path on CUDA hosts; and future
+  compute-bound contact/constraint work must extend the checked benchmark gate.
   Taskflow remains behind the experimental executor boundary, metadata remains
-  backend-neutral, and classic World behavior stays untouched.
+  backend-neutral, CUDA remains private/non-required, and classic World behavior
+  stays untouched.
 
 ### PLAN-035: Native Collision Feature Dashboard
 
