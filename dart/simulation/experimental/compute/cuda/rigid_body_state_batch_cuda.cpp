@@ -151,6 +151,46 @@ void copyFromDevice(
       operation);
 }
 
+std::size_t validateLinearInputs(
+    const RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    std::string_view operation)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      model.worldCount != state.worldCount
+          || model.bodyCount != state.bodyCount,
+      sx::InvalidArgumentException,
+      "{} model batch ({}x{}) does not match the state batch ({}x{})",
+      operation,
+      model.worldCount,
+      model.bodyCount,
+      state.worldCount,
+      state.bodyCount);
+
+  const auto bodies = state.worldCount * state.bodyCount;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      state.position.size() != kLinearComponents * bodies
+          || state.linearVelocity.size() != kLinearComponents * bodies
+          || force.size() != kLinearComponents * bodies
+          || model.inverseMass.size() != bodies,
+      sx::InvalidArgumentException,
+      "{} arrays are inconsistent with worldCount {} and bodyCount {}",
+      operation,
+      state.worldCount,
+      state.bodyCount);
+
+  return bodies;
+}
+
+void throwIfCudaRuntimeUnavailable()
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isCudaRuntimeAvailable(),
+      sx::InvalidOperationException,
+      "CUDA runtime has no available device");
+}
+
 } // namespace
 
 //==============================================================================
@@ -168,36 +208,14 @@ void integrateRigidBodyStateBatchLinearCuda(
     const std::vector<double>& force,
     double timeStep)
 {
-  DART_EXPERIMENTAL_THROW_T_IF(
-      model.worldCount != state.worldCount
-          || model.bodyCount != state.bodyCount,
-      sx::InvalidArgumentException,
-      "RigidBodyModelBatch ({}x{}) does not match the state batch ({}x{})",
-      model.worldCount,
-      model.bodyCount,
-      state.worldCount,
-      state.bodyCount);
-
-  const auto bodies = state.worldCount * state.bodyCount;
-  DART_EXPERIMENTAL_THROW_T_IF(
-      state.position.size() != kLinearComponents * bodies
-          || state.linearVelocity.size() != kLinearComponents * bodies
-          || force.size() != kLinearComponents * bodies
-          || model.inverseMass.size() != bodies,
-      sx::InvalidArgumentException,
-      "integrateRigidBodyStateBatchLinearCuda arrays are inconsistent with "
-      "worldCount {} and bodyCount {}",
-      state.worldCount,
-      state.bodyCount);
+  const auto bodies = validateLinearInputs(
+      state, model, force, "integrateRigidBodyStateBatchLinearCuda");
 
   if (bodies == 0) {
     return;
   }
 
-  DART_EXPERIMENTAL_THROW_T_IF(
-      !isCudaRuntimeAvailable(),
-      sx::InvalidOperationException,
-      "CUDA runtime has no available device");
+  throwIfCudaRuntimeUnavailable();
 
   DeviceDoubleBuffer devicePosition(state.position.size());
   DeviceDoubleBuffer deviceLinearVelocity(state.linearVelocity.size());
@@ -222,6 +240,58 @@ void integrateRigidBodyStateBatchLinearCuda(
           timeStep,
           bodies),
       "rigid-body linear kernel");
+  throwIfCudaError(cudaDeviceSynchronize(), "rigid-body linear synchronize");
+
+  copyFromDevice(state.position, devicePosition, "position copy from device");
+  copyFromDevice(
+      state.linearVelocity,
+      deviceLinearVelocity,
+      "linear velocity copy from device");
+}
+
+//==============================================================================
+void rolloutRigidBodyStateBatchLinearCuda(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    double timeStep,
+    std::size_t stepCount)
+{
+  const auto bodies = validateLinearInputs(
+      state, model, force, "rolloutRigidBodyStateBatchLinearCuda");
+
+  if (bodies == 0 || stepCount == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceDoubleBuffer devicePosition(state.position.size());
+  DeviceDoubleBuffer deviceLinearVelocity(state.linearVelocity.size());
+  DeviceDoubleBuffer deviceForce(force.size());
+  DeviceDoubleBuffer deviceInverseMass(model.inverseMass.size());
+
+  copyToDevice(devicePosition, state.position, "position copy to device");
+  copyToDevice(
+      deviceLinearVelocity,
+      state.linearVelocity,
+      "linear velocity copy to device");
+  copyToDevice(deviceForce, force, "force copy to device");
+  copyToDevice(
+      deviceInverseMass, model.inverseMass, "inverse mass copy to device");
+
+  for (std::size_t step = 0; step < stepCount; ++step) {
+    throwIfCudaError(
+        detail::launchRigidBodyStateBatchLinearKernel(
+            devicePosition.data(),
+            deviceLinearVelocity.data(),
+            deviceForce.data(),
+            deviceInverseMass.data(),
+            timeStep,
+            bodies),
+        "rigid-body linear kernel");
+  }
+  throwIfCudaError(cudaDeviceSynchronize(), "rigid-body rollout synchronize");
 
   copyFromDevice(state.position, devicePosition, "position copy from device");
   copyFromDevice(

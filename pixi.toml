@@ -785,8 +785,8 @@ BUILD_TYPE={{ build_type }}
 BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
 ctest --test-dir "${BUILD_DIR}" --output-on-failure -L simulation-experimental-cuda
 "${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
-  --benchmark_filter='BM_(Cpu|Cuda)RigidBodyStateBatchLinear/256$' \
-  --benchmark_min_time=1ms
+  --benchmark_filter='BM_(CpuSingleThread|CpuMulticore|CudaResident)RigidBodyStateBatchLinearRollout/4/256/1$' \
+  --benchmark_min_time=0.001s
 """,
 ], depends-on = [
   { task = "build-cuda", args = [

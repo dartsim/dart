@@ -55,4 +55,18 @@ void integrateRigidBodyStateBatchLinearCuda(
     const std::vector<double>& force,
     double timeStep);
 
+/// Roll out the linear rigid-body batch path on CUDA while keeping the working
+/// state, model, and force buffers resident on the device for all steps.
+///
+/// This is intentionally private to the experimental CUDA target. It provides
+/// the performance shape that a future device-resident backend should expose:
+/// one host-to-device upload, many ordered kernel launches, and one
+/// device-to-host download at the end.
+void rolloutRigidBodyStateBatchLinearCuda(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    double timeStep,
+    std::size_t stepCount);
+
 } // namespace dart::simulation::experimental::compute::cuda

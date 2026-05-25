@@ -187,3 +187,47 @@ TEST(CudaRigidBodyStateBatch, MatchesCpuLinearIntegration)
         << i;
   }
 }
+
+//==============================================================================
+TEST(CudaRigidBodyStateBatch, RolloutMatchesCpuLinearIntegration)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "CUDA runtime has no available device";
+  }
+
+  auto cudaState = makeStateBatch();
+  auto cpuState = cudaState;
+  const auto model = makeModelBatch();
+  const auto force = makeForceBatch();
+  constexpr double dt = 0.01;
+  constexpr std::size_t steps = 32;
+
+  for (std::size_t step = 0; step < steps; ++step) {
+    compute::integrateRigidBodyStateBatchLinear(cpuState, model, force, dt);
+  }
+  cuda::rolloutRigidBodyStateBatchLinearCuda(
+      cudaState, model, force, dt, steps);
+
+  ASSERT_EQ(cudaState.position.size(), cpuState.position.size());
+  ASSERT_EQ(cudaState.linearVelocity.size(), cpuState.linearVelocity.size());
+
+  for (std::size_t i = 0; i < cpuState.position.size(); ++i) {
+    EXPECT_NEAR(cudaState.position[i], cpuState.position[i], 1e-12) << i;
+    EXPECT_NEAR(cudaState.linearVelocity[i], cpuState.linearVelocity[i], 1e-12)
+        << i;
+  }
+}
+
+//==============================================================================
+TEST(CudaRigidBodyStateBatch, RolloutRejectsInvalidSizesBeforeCudaRuntime)
+{
+  auto state = makeStateBatch();
+  const auto model = makeModelBatch();
+  auto force = makeForceBatch();
+
+  force.pop_back();
+
+  EXPECT_THROW(
+      cuda::rolloutRigidBodyStateBatchLinearCuda(state, model, force, 0.01, 4),
+      sx::InvalidArgumentException);
+}
