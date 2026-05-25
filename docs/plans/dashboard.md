@@ -108,17 +108,20 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Review and land the first C++ deformable model/state plus default
-  deformable dynamics stage, GUI smoke example, and benchmark slice on top of
-  PR #2705, then start the Python facade or conservative CCD contact-expansion
-  follow-up from PLAN-081.
-- Gate: The first slice keeps IPC-class naming backend-neutral, leaves upstream
-  IPC as a reference rather than a runtime dependency, proves fixed-node,
-  spring, validation, determinism, explicit opt-in static-ground barrier
-  behavior, and ordinary static collision opt-out behavior with focused C++
-  tests, verifies a long-horizon headless Filament GUI frame sequence, records
-  `bm_deformable_body` baseline/stage-counter benchmark data, and keeps
-  `pixi run build` plus `check-api-boundaries` green.
+- Next step: Use the PLAN-081 IPC paper/repository gap audit to implement the
+  full mesh-backed IPC-class follow-up: mesh/material state, BE/Newmark
+  integration, PT/EE distance derivatives, conservative CCD line search,
+  projected Newton, friction, diagnostics, and the upstream example/test/
+  benchmark corpus.
+- Gate: Full IPC-parity progress is not complete until the implementation
+  distinguishes the first point-mass/static-ground slice from full IPC, keeps
+  IPC naming backend-neutral, proves mesh contact, barrier, distance, CCD,
+  friction, material, boundary-condition, serialization, and diagnostics
+  behavior with focused tests, ports upstream paper/tutorial/stress examples,
+  records benchmark/profiling JSON for kernels/solver/scenes/scaling, verifies
+  long-horizon headless Filament captures for GUI examples, and keeps
+  `pixi run lint`, `pixi run build`, focused C++ tests, and
+  `check-api-boundaries` green.
 
 ### PLAN-035: Native Collision Feature Dashboard
 

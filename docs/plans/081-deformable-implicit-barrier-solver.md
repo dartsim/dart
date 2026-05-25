@@ -26,6 +26,8 @@
   [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
 - Research references:
   [`../design/simulation_experimental_references.md`](../design/simulation_experimental_references.md)
+- IPC paper/repository gap audit:
+  [`081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md`](081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md)
 - Implementation tracking: the first C++ slice is complete in this plan; future
   slices continue from the workstreams below without keeping a completed
   `docs/dev_tasks/` folder alive.
@@ -56,14 +58,24 @@
    (`distance <= xi`) are rejected by line search. Accepted candidates must be
    feasible and satisfy a deterministic descent/residual stopping rule.
    Velocities are updated from `(x_next - x_prev) / dt`.
-4. **IPC-class collision expansion** — Use PR #2700 primitive CCD to assemble
+4. **IPC paper parity expansion** — Follow the audited paper/repository gap
+   matrix in
+   [`ipc-paper-gap-audit.md`](081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md).
+   The next implementation session should first add mesh-backed deformables,
+   material parameters, BE/Newmark integration options, DBC/NBC, and output
+   diagnostics, then wire point-triangle/edge-edge distance derivatives,
+   conservative CCD line search, projected Newton, barrier stiffness adaptation,
+   friction, and the upstream example/test/benchmark corpus.
+5. **IPC-class collision expansion** — Use PR #2700 primitive CCD to assemble
    point-triangle and edge-edge candidate constraints for deformable
    self-contact and deformable-rigid contact. The default runtime path must use
-   conservative queries; exact roots remain validation-only.
-5. **Coupling expansion** — Introduce pairwise rigid/deformable couplers behind
+   conservative queries; exact roots remain validation-only. PR #2709's public
+   continuous-cast API is useful for reusable user-facing CCD exposure but is
+   not a blocker for internal PLAN-081 solver work.
+6. **Coupling expansion** — Introduce pairwise rigid/deformable couplers behind
    the solver architecture once contact buffers expose the needed state views.
    Keep common `World::step()` free of coupler or solver vocabulary.
-6. **Examples and Python facade** — Add a C++ GUI visual smoke scene once the
+7. **Examples and Python facade** — Add a C++ GUI visual smoke scene once the
    focused C++ behavior tests exist. Bind only the user-facing deformable body
    handle/options and basic state accessors after the C++ slice is stable. Add a
    small dartpy example in a later Python facade slice.
@@ -125,6 +137,31 @@
   `pixi run bm bm_deformable_body -- --benchmark_filter='BM_(WorldStepWithoutDeformables|DeformableGridStep|DeformableGridStage)' --benchmark_min_time=0.1s`.
 - Local gates run for the slice: `pixi run lint`, `pixi run build`, focused
   `test_deformable_body`, and `pixi run check-api-boundaries`.
+
+## IPC Paper Parity Gap
+
+The first C++ slice is intentionally not full IPC. The line-by-line paper audit
+and upstream repository/example inventory lives in
+[`081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md`](081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md).
+Treat that file as the next-session checklist for completing the rest of the
+method family. In short, the remaining gap is:
+
+- volumetric and surface mesh-backed deformable state, not only point masses;
+- density, Young's modulus, Poisson ratio, neo-Hookean and fixed-corotational
+  material models;
+- implicit Newmark plus the complete backward-Euler incremental potential;
+- Dirichlet/Neumann boundary conditions, time ranges, moving collision objects,
+  restart/output diagnostics, and material/property scene loading;
+- point-triangle and edge-edge distance values, derivatives, tangent bases,
+  edge-edge mollifier, and conservative CCD line search;
+- sparse projected-Newton solve, local Hessian PSD projection, barrier stiffness
+  adaptation, and IPC accuracy diagnostics;
+- deformable self-contact, deformable-rigid/codimensional contact, and
+  pair-culling broad phase;
+- smoothed lagged friction with `epsilon_v`, tangent bases, contact-force
+  lagging, and friction convergence diagnostics;
+- upstream tutorial, paper, stress, friction, scaling, SQP-comparison, and
+  visual examples ported to DART-native tests/benchmarks/examples.
 
 ## Non-Goals For The First PR
 

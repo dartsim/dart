@@ -204,11 +204,19 @@ on Graphics_ (SIGGRAPH), 2020.
 
 - **Type:** paper · **Topic:** contact/integration · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
 - **Where used:** [`PLAN-081`](../plans/081-deformable-implicit-barrier-solver.md)
-  and the active deformable implicit-barrier dev task.
+  and its [IPC paper gap audit](../plans/081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md).
 - **Notes:** Provides the target method family for robust deformable contact:
-  implicit time stepping with barrier contact and conservative CCD. Public DART
-  APIs should use DART-owned method/capability names rather than exposing the
-  upstream project name as a solver identity.
+  implicit time stepping with barrier contact, conservative CCD, volumetric
+  hyperelasticity, codimensional contact, and lagged variational friction. The
+  current DART slice is only a point-mass/spring body with an analytic
+  static-ground barrier and reusable GUI surface rendering. Full paper parity
+  still requires mesh-backed FE state, point-triangle/edge-edge distance
+  derivatives and mollifiers, projected Newton, adaptive barrier stiffness,
+  friction, material/property coverage, and the upstream example/test/benchmark
+  corpus. Public DART APIs should use DART-owned method/capability names rather
+  than exposing the upstream project name as a solver identity, and the upstream
+  repository should remain a reference/baseline rather than a runtime
+  dependency.
 
 ## Model Formats & Standards
 
