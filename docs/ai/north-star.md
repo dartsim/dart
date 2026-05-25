@@ -49,6 +49,31 @@ agent should be able to inspect the repository, understand the mission and
 current status, choose the next valuable task, implement it locally, and verify
 the result with documented gates without needing hidden maintainer context.
 
+## Consumption Modes
+
+DART is used in three ways, which together shape its priorities:
+
+1. **Embedded physics backend (C++ library).** DART supplies articulated-body
+   dynamics, contact, and constraint solving as a C++ library inside larger
+   simulation frameworks — for example Gazebo through `gz-physics`/`gz-sim`.
+   This path is headless and API-only.
+2. **Python research toolkit (`dartpy`).** Researchers drive DART from Python
+   for robotics, machine learning, and reinforcement learning, headless or with
+   lightweight visualization — the role also filled by tools such as MuJoCo,
+   Isaac Gym/Sim, Newton, and Genesis.
+3. **Standalone GUI simulator (`dartsim`).** The `dartsim` application is a
+   full-featured, interactive desktop simulator and scene editor in the spirit
+   of game engines and DCC tools (Unity, Unreal Engine, Blender): design, run,
+   record, and replay simulations.
+
+These map onto two distribution surfaces:
+
+- `dart/` is the **library** distribution (C++ and Python) serving modes 1 and 2. Its public API and `dartpy` bindings are the compatibility surface for
+  downstream consumers.
+- `dartsim/` is the **standalone application** distribution serving mode 3. It
+  ships as a runtime executable (via package managers), not as a library, so it
+  is not consumed by downstream code and keeps minimal runtime dependencies.
+
 ## Current State
 
 | Area                     | Status                                                                                                                                                                                                                                                                                      | Evidence                                                                                                                                                                                       |

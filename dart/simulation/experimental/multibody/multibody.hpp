@@ -37,6 +37,7 @@
 #include <dart/simulation/experimental/multibody/link.hpp> // Need complete type for LinkOptions
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <entt/entt.hpp>
 
 #include <optional>
@@ -71,8 +72,17 @@ struct JointSpec
   Eigen::Vector3d axis
       = Eigen::Vector3d::UnitZ(); ///< Joint axis (rotation or translation)
 
+  /// Secondary joint axis (Universal: second rotation axis; Planar: in-plane
+  /// direction). Must not be parallel to `axis` for those joint types.
+  Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
+
+  /// Transform from the parent-joint frame (after joint motion) to the child
+  /// link frame. This places the child link relative to its joint, giving the
+  /// chain spatial extent (for example, the length of a pendulum link). The
+  /// child link's center of mass is at the child link frame origin.
+  Eigen::Isometry3d transformFromParent = Eigen::Isometry3d::Identity();
+
   // Future: Add more joint-specific parameters.
-  // Eigen::Vector3d axis2;  // For Universal, Planar
   // double pitch;           // For Screw
 };
 
@@ -109,8 +119,15 @@ struct LinkOptions
   Eigen::Vector3d axis
       = Eigen::Vector3d::UnitZ(); ///< Joint axis (rotation or translation)
 
+  /// Secondary joint axis (Universal: second rotation axis; Planar: in-plane
+  /// direction). Must not be parallel to `axis` for those joint types.
+  Eigen::Vector3d axis2 = Eigen::Vector3d::UnitX();
+
+  /// Transform from the parent-joint frame (after joint motion) to the child
+  /// link frame. See JointSpec::transformFromParent.
+  Eigen::Isometry3d transformFromParent = Eigen::Isometry3d::Identity();
+
   // Future: Add more joint-specific parameters
-  // Eigen::Vector3d axis2;  // For Universal, Planar
   // double pitch;           // For Screw
 };
 
@@ -259,6 +276,103 @@ public:
       std::string_view name,
       const Link& parentLink,
       const JointSpec& joint = {});
+
+  //--------------------------------------------------------------------------
+  /// @name Generalized-Coordinate Dynamics
+  //--------------------------------------------------------------------------
+
+  /// Get the joint-space mass matrix M(q) at the current configuration.
+  ///
+  /// The matrix is symmetric positive-definite and square with size
+  /// getDOFCount(), ordered by joint construction order. Returns an empty
+  /// matrix when the multibody has no movable degrees of freedom.
+  ///
+  /// Supports fixed-base trees with fixed/revolute/prismatic joints; other
+  /// joint types are rejected.
+  [[nodiscard]] Eigen::MatrixXd getMassMatrix() const;
+
+  /// Get the inverse of the joint-space mass matrix at the current
+  /// configuration. Returns an empty matrix when there are no movable DOFs.
+  [[nodiscard]] Eigen::MatrixXd getInverseMassMatrix() const;
+
+  /// Get the Coriolis/centrifugal generalized forces C(q, qdot) qdot at the
+  /// current configuration and velocity.
+  ///
+  /// Size getDOFCount(), ordered by joint construction order. Empty when there
+  /// are no movable DOFs.
+  [[nodiscard]] Eigen::VectorXd getCoriolisForces() const;
+
+  /// Get the gravity generalized forces g(q) at the current configuration.
+  ///
+  /// Size getDOFCount(), ordered by joint construction order. Empty when there
+  /// are no movable DOFs.
+  [[nodiscard]] Eigen::VectorXd getGravityForces() const;
+
+  /// Get the combined Coriolis/centrifugal and gravity generalized forces
+  /// C(q, qdot) qdot + g(q) at the current configuration and velocity.
+  ///
+  /// Size getDOFCount(), ordered by joint construction order. Empty when there
+  /// are no movable DOFs.
+  [[nodiscard]] Eigen::VectorXd getCoriolisAndGravityForces() const;
+
+  /// Compute the generalized joint forces (inverse dynamics) that produce a
+  /// desired generalized acceleration at the current configuration and
+  /// velocity: `tau = M(q) qddot + C(q, qdot) qdot + g(q)`, including joint
+  /// armature.
+  ///
+  /// @param desiredAcceleration Target generalized acceleration, size
+  ///        getDOFCount(), ordered by joint construction order.
+  /// @return The required generalized forces in the same ordering. Empty when
+  ///         there are no movable DOFs.
+  /// @throws InvalidArgumentException if the acceleration size does not match
+  ///         the movable DOF count.
+  [[nodiscard]] Eigen::VectorXd computeInverseDynamics(
+      const Eigen::VectorXd& desiredAcceleration) const;
+
+  /// Compute the generalized velocity change produced by a generalized
+  /// joint-space impulse at the current configuration: `dqdot = M(q)^-1 f`,
+  /// where `M` includes joint armature.
+  ///
+  /// This is the joint-space primitive used by impulse-based constraint
+  /// solving; full constrained impulse dynamics (mapping Cartesian constraint
+  /// impulses through body Jacobians) additionally requires those Jacobians.
+  ///
+  /// @param jointImpulse Generalized impulse, size getDOFCount(), ordered by
+  ///        joint construction order.
+  /// @return The generalized velocity change in the same ordering. Empty when
+  ///         there are no movable DOFs.
+  /// @throws InvalidArgumentException if the impulse size does not match the
+  ///         movable DOF count.
+  [[nodiscard]] Eigen::VectorXd computeImpulseResponse(
+      const Eigen::VectorXd& jointImpulse) const;
+
+  /// Get the body-frame spatial Jacobian of a link in this multibody.
+  ///
+  /// The returned 6 x getDOFCount() matrix maps the generalized velocity to the
+  /// link's spatial velocity `[angular; linear]` expressed in the link's own
+  /// frame, with columns ordered by joint construction order. It depends only
+  /// on the current joint configuration (not on world transforms). Columns of
+  /// joints that do not move the link are zero.
+  ///
+  /// @param link A link belonging to this multibody.
+  /// @return The 6 x getDOFCount() body Jacobian.
+  /// @throws InvalidArgumentException if the link belongs to a different world
+  ///         or is not part of this multibody.
+  [[nodiscard]] Eigen::MatrixXd getJacobian(const Link& link) const;
+
+  /// Get the world-frame geometric Jacobian of a link in this multibody.
+  ///
+  /// The returned 6 x getDOFCount() matrix maps the generalized velocity to the
+  /// link's spatial velocity `[angular; linear]` expressed in world axes, with
+  /// the link-frame origin as the linear reference point. The link world
+  /// transform is derived from the joint configuration and the base world
+  /// transform.
+  ///
+  /// @param link A link belonging to this multibody.
+  /// @return The 6 x getDOFCount() world-frame Jacobian.
+  /// @throws InvalidArgumentException if the link belongs to a different world
+  ///         or is not part of this multibody.
+  [[nodiscard]] Eigen::MatrixXd getWorldJacobian(const Link& link) const;
 
 private:
   entt::entity m_entity; ///< Entity ID in the registry

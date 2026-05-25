@@ -239,6 +239,14 @@ pixi run ex dartsim
 requirements so restored GUI examples and `dartsim` can use the same command
 shape.
 
+To launch the standalone `dartsim` editor as a dockable workspace, use the
+dedicated task, which builds against the ImGui docking branch
+(`DART_USE_SYSTEM_IMGUI=OFF`):
+
+```bash
+pixi run dartsim
+```
+
 5. (Optional) Gazebo / gz-physics integration test:
 
    Suggested (Unverified):

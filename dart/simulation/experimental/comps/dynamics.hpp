@@ -69,7 +69,10 @@ struct MassProperties
   DART_EXPERIMENTAL_PROPERTY_COMPONENT(MassProperties);
 
   double mass = 1.0;
+  /// Rotational inertia about the center of mass.
   Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
+  /// Center of mass expressed in the body/link frame (default: at the origin).
+  Eigen::Vector3d localCenterOfMass = Eigen::Vector3d::Zero();
 };
 
 /// Force and torque accumulators

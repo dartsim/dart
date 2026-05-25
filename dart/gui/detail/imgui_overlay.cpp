@@ -34,6 +34,8 @@
 
 #include "imgui_material.hpp"
 
+#include <dart/gui/application.hpp>
+
 #include <backend/BufferDescriptor.h>
 #include <backend/PixelBufferDescriptor.h>
 #include <filament/Camera.h>
@@ -217,6 +219,9 @@ ImGuiOverlay createConfiguredImGuiOverlay(
   style.Colors[ImGuiCol_WindowBg].w = 0.72f;
 
   auto& io = ImGui::GetIO();
+#ifdef IMGUI_HAS_DOCK
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+#endif
   loadImGuiFont(io, guiScale);
   io.Fonts->Build();
   return createImGuiOverlay(engine);
@@ -381,3 +386,16 @@ void destroyConfiguredImGuiOverlay(
 }
 
 } // namespace dart::gui::detail
+
+namespace dart::gui {
+
+bool isDockingAvailable()
+{
+#ifdef IMGUI_HAS_DOCK
+  return true;
+#else
+  return false;
+#endif
+}
+
+} // namespace dart::gui

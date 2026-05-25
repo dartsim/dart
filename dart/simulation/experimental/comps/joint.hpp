@@ -143,15 +143,34 @@ enum class JointType
   Custom
 };
 
+/// Joint actuator type (how the joint is driven during forward dynamics)
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+enum class ActuatorType
+{
+  Force,        ///< Commanded joint effort drives the dynamics (default)
+  Passive,      ///< No commanded effort; only passive forces act
+  Servo,        ///< Velocity servo to a target (not yet implemented)
+  Velocity,     ///< Prescribed velocity (not yet implemented)
+  Acceleration, ///< Prescribed acceleration (not yet implemented)
+  Locked,       ///< Frozen at the current position (not yet implemented)
+  Mimic         ///< Follows another joint (not yet implemented)
+};
+
 /// Joint limits
+///
+/// Per-coordinate lower/upper bounds for position, velocity, and actuation
+/// effort. Unbounded coordinates use +/- infinity.
 ///
 /// **Internal Implementation Detail** - Not exposed in public API
 struct JointLimits
 {
-  Eigen::VectorXd lower;
-  Eigen::VectorXd upper;
-  Eigen::VectorXd velocity;
-  Eigen::VectorXd effort;
+  Eigen::VectorXd lower;         ///< Position lower bounds
+  Eigen::VectorXd upper;         ///< Position upper bounds
+  Eigen::VectorXd velocityLower; ///< Velocity lower bounds
+  Eigen::VectorXd velocityUpper; ///< Velocity upper bounds
+  Eigen::VectorXd effortLower;   ///< Actuation effort lower bounds
+  Eigen::VectorXd effortUpper;   ///< Actuation effort upper bounds
 };
 
 /// Joint component (single joint in articulated body)
@@ -175,12 +194,30 @@ struct Joint
   DART_EXPERIMENTAL_STATE_COMPONENT(Joint);
 
   JointType type = JointType::Revolute;
+  ActuatorType actuatorType = ActuatorType::Force;
   std::string name;
 
   Eigen::VectorXd position;
   Eigen::VectorXd velocity;
   Eigen::VectorXd acceleration;
   Eigen::VectorXd torque;
+
+  /// Passive joint dynamics (per generalized coordinate).
+  Eigen::VectorXd springStiffness;
+  Eigen::VectorXd dampingCoefficient;
+  Eigen::VectorXd restPosition;
+
+  /// Rotor/reflected inertia added to the joint-space mass-matrix diagonal
+  /// (per generalized coordinate).
+  Eigen::VectorXd armature;
+
+  /// Coulomb (dry) friction force/torque magnitude that opposes joint motion
+  /// (per generalized coordinate).
+  Eigen::VectorXd coulombFriction;
+
+  /// Commanded target velocity used by the Velocity actuator type (per
+  /// generalized coordinate).
+  Eigen::VectorXd commandVelocity;
 
   JointLimits limits;
 

@@ -54,6 +54,9 @@ class WorldStepPipeline;
 class WorldStepStage;
 } // namespace compute
 
+// Value objects
+struct Contact;
+
 // Options structs
 struct FixedFrameOptions;
 struct FreeFrameOptions;

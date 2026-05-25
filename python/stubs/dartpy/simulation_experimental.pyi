@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 __all__: list[str] = [
+    "ActuatorType",
     "ClosureDynamicsPolicy",
     "ClosureKinematicsPolicy",
+    "CollisionBody",
+    "CollisionShape",
+    "CollisionShapeType",
+    "Contact",
     "FixedFrame",
     "Frame",
     "FreeFrame",
@@ -53,6 +58,21 @@ class JointType(enum.Enum):
 
     CUSTOM = 8
 
+class ActuatorType(enum.Enum):
+    FORCE = 0
+
+    PASSIVE = 1
+
+    SERVO = 2
+
+    VELOCITY = 3
+
+    ACCELERATION = 4
+
+    LOCKED = 5
+
+    MIMIC = 6
+
 class LoopClosureFamily(enum.Enum):
     RIGID = 0
 
@@ -65,6 +85,27 @@ class LoopClosureResidualCoordinates(enum.Enum):
 
 class WorldSyncStage(enum.Enum):
     KINEMATICS = 0
+
+class CollisionShapeType(enum.Enum):
+    SPHERE = 0
+
+    BOX = 1
+
+class CollisionShape:
+    @staticmethod
+    def sphere(radius: float) -> CollisionShape: ...
+
+    @staticmethod
+    def box(half_extents: object) -> CollisionShape: ...
+
+    @property
+    def type(self) -> CollisionShapeType: ...
+
+    @property
+    def radius(self) -> float: ...
+
+    @property
+    def half_extents(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
 
 class ClosureKinematicsPolicy(enum.Enum):
     RESIDUAL_ONLY = 0
@@ -133,7 +174,7 @@ class StateSpace:
     def __repr__(self) -> str: ...
 
 class JointSpec:
-    def __init__(self, name: str = ..., type: JointType = JointType.REVOLUTE, axis: object | None = ...) -> None: ...
+    def __init__(self, name: str = ..., type: JointType = JointType.REVOLUTE, axis: object | None = ..., axis2: object | None = ..., transform_from_parent: object | None = ...) -> None: ...
 
     @property
     def name(self) -> str: ...
@@ -152,6 +193,18 @@ class JointSpec:
 
     @axis.setter
     def axis(self, arg: object, /) -> None: ...
+
+    @property
+    def axis2(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @axis2.setter
+    def axis2(self, arg: object, /) -> None: ...
+
+    @property
+    def transform_from_parent(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4, 4), order='F')]: ...
+
+    @transform_from_parent.setter
+    def transform_from_parent(self, arg: object, /) -> None: ...
 
     def __repr__(self) -> str: ...
 
@@ -229,7 +282,28 @@ class Joint:
     def type(self) -> JointType: ...
 
     @property
+    def actuator_type(self) -> ActuatorType: ...
+
+    @actuator_type.setter
+    def actuator_type(self, arg: ActuatorType, /) -> None: ...
+
+    @property
+    def command_velocity(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @command_velocity.setter
+    def command_velocity(self, arg: object, /) -> None: ...
+
+    @property
     def axis(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def axis2(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def pitch(self) -> float: ...
+
+    @pitch.setter
+    def pitch(self, arg: float, /) -> None: ...
 
     @property
     def num_dofs(self) -> int: ...
@@ -245,6 +319,69 @@ class Joint:
 
     @velocity.setter
     def velocity(self, arg: object, /) -> None: ...
+
+    @property
+    def force(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @force.setter
+    def force(self, arg: object, /) -> None: ...
+
+    @property
+    def acceleration(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @property
+    def spring_stiffness(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @spring_stiffness.setter
+    def spring_stiffness(self, arg: object, /) -> None: ...
+
+    @property
+    def rest_position(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @rest_position.setter
+    def rest_position(self, arg: object, /) -> None: ...
+
+    @property
+    def damping_coefficient(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @damping_coefficient.setter
+    def damping_coefficient(self, arg: object, /) -> None: ...
+
+    @property
+    def armature(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @armature.setter
+    def armature(self, arg: object, /) -> None: ...
+
+    @property
+    def coulomb_friction(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @coulomb_friction.setter
+    def coulomb_friction(self, arg: object, /) -> None: ...
+
+    def set_position_limits(self, lower: object, upper: object) -> None: ...
+
+    @property
+    def position_lower_limits(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @property
+    def position_upper_limits(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    def set_velocity_limits(self, lower: object, upper: object) -> None: ...
+
+    @property
+    def velocity_lower_limits(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @property
+    def velocity_upper_limits(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    def set_effort_limits(self, lower: object, upper: object) -> None: ...
+
+    @property
+    def effort_lower_limits(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @property
+    def effort_upper_limits(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
 
     @property
     def parent_link(self) -> Link: ...
@@ -265,6 +402,24 @@ class Link(Frame):
     def parent_joint(self) -> Joint: ...
 
     @property
+    def mass(self) -> float: ...
+
+    @mass.setter
+    def mass(self, arg: float, /) -> None: ...
+
+    @property
+    def inertia(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3, 3), order='F')]: ...
+
+    @inertia.setter
+    def inertia(self, arg: object, /) -> None: ...
+
+    @property
+    def center_of_mass(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @center_of_mass.setter
+    def center_of_mass(self, arg: object, /) -> None: ...
+
+    @property
     def translation(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
 
     @property
@@ -275,6 +430,14 @@ class Link(Frame):
 
     @property
     def transform(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4, 4), order='F')]: ...
+
+    def set_collision_shape(self, shape: CollisionShape) -> None: ...
+
+    @property
+    def collision_shape(self) -> CollisionShape | None: ...
+
+    @property
+    def has_collision_shape(self) -> bool: ...
 
     @property
     def is_valid(self) -> bool: ...
@@ -449,6 +612,29 @@ class Multibody:
     def joint_names(self) -> list[str]: ...
 
     @property
+    def mass_matrix(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None, None), order='F')]: ...
+
+    @property
+    def inverse_mass_matrix(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None, None), order='F')]: ...
+
+    @property
+    def coriolis_forces(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @property
+    def gravity_forces(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    @property
+    def coriolis_and_gravity_forces(self) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    def compute_inverse_dynamics(self, desired_acceleration: object) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    def compute_impulse_response(self, joint_impulse: object) -> Annotated[NDArray[numpy.float64], dict(shape=(None,), order='C')]: ...
+
+    def get_jacobian(self, link: Link) -> Annotated[NDArray[numpy.float64], dict(shape=(None, None), order='F')]: ...
+
+    def get_world_jacobian(self, link: Link) -> Annotated[NDArray[numpy.float64], dict(shape=(None, None), order='F')]: ...
+
+    @property
     def is_valid(self) -> bool: ...
 
     def __repr__(self) -> str: ...
@@ -516,6 +702,44 @@ class RigidBody(Frame):
     @torque.setter
     def torque(self, arg: object, /) -> None: ...
 
+    @property
+    def is_static(self) -> bool: ...
+
+    @is_static.setter
+    def is_static(self, arg: bool, /) -> None: ...
+
+    @property
+    def restitution(self) -> float: ...
+
+    @restitution.setter
+    def restitution(self, arg: float, /) -> None: ...
+
+    @property
+    def friction(self) -> float: ...
+
+    @friction.setter
+    def friction(self, arg: float, /) -> None: ...
+
+    def set_collision_shape(self, shape: CollisionShape) -> None: ...
+
+    @property
+    def collision_shape(self) -> CollisionShape | None: ...
+
+    @property
+    def has_collision_shape(self) -> bool: ...
+
+    @property
+    def linear_momentum(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def angular_momentum(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def kinetic_energy(self) -> float: ...
+
+    @property
+    def potential_energy(self) -> float: ...
+
     def __repr__(self) -> str: ...
 
 class RigidBodyOptions:
@@ -557,7 +781,46 @@ class RigidBodyOptions:
     @inertia.setter
     def inertia(self, arg: object, /) -> None: ...
 
+    @property
+    def is_static(self) -> bool: ...
+
+    @is_static.setter
+    def is_static(self, arg: bool, /) -> None: ...
+
     def __repr__(self) -> str: ...
+
+class CollisionBody:
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def is_rigid_body(self) -> bool: ...
+
+    @property
+    def is_link(self) -> bool: ...
+
+    @property
+    def is_valid(self) -> bool: ...
+
+    def as_rigid_body(self) -> object: ...
+
+    def as_link(self) -> object: ...
+
+class Contact:
+    @property
+    def body_a(self) -> CollisionBody: ...
+
+    @property
+    def body_b(self) -> CollisionBody: ...
+
+    @property
+    def point(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def normal(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @property
+    def depth(self) -> float: ...
 
 class World:
     def __init__(self, time_step: float = ...) -> None: ...
@@ -615,6 +878,12 @@ class World:
     def time(self, arg: float, /) -> None: ...
 
     @property
+    def gravity(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @gravity.setter
+    def gravity(self, arg: object, /) -> None: ...
+
+    @property
     def frame(self) -> int: ...
 
     @property
@@ -625,6 +894,8 @@ class World:
 
     @property
     def num_rigid_bodies(self) -> int: ...
+
+    def collide(self) -> list[Contact]: ...
 
     def clear(self) -> None: ...
 

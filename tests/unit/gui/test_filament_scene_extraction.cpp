@@ -408,7 +408,10 @@ constexpr std::array<std::string_view, 4> kForbiddenPromotedGuiTokens
        "gui-experimental"};
 
 const std::filesystem::path kDartsimApplicationDirectory
-    = std::filesystem::path("apps") / "dartsim";
+    = std::filesystem::path("dartsim") / "app";
+
+const std::filesystem::path kDartsimUiDirectory
+    = std::filesystem::path("dartsim") / "ui";
 
 struct BackendTokenViolation
 {
@@ -810,6 +813,27 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, DockingPanelFallbackRequiresDockingSupport)
+{
+  const auto panelSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "panel.cpp");
+
+  EXPECT_NE(
+      panelSource.find(
+          "const bool dockingActive = dockingEnabled && "
+          "dart::gui::isDockingAvailable();"),
+      std::string::npos);
+  EXPECT_NE(
+      panelSource.find(
+          "ImGui::SetNextWindowBgAlpha(dockingActive ? 1.0f : 0.72f)"),
+      std::string::npos);
+  EXPECT_NE(
+      panelSource.find(
+          "const double defaultAlpha = dockingActive ? 1.0 : 0.72"),
+      std::string::npos);
+  EXPECT_NE(panelSource.find("if (!dockingActive)"), std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, PromotedGuiHeadersAvoidExperimentalSurface)
 {
   const auto headers
@@ -885,7 +909,7 @@ TEST(FilamentSceneExtraction, DiagnosticsExamplePreservesLegacyContractMarkers)
   EXPECT_NE(
       readmeSource.find("renderer-independent GUI descriptors"),
       std::string::npos);
-  EXPECT_NE(readmeSource.find("apps/dartsim"), std::string::npos);
+  EXPECT_NE(readmeSource.find("`dartsim`"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, RerunPlaceholderIsRemoved)
@@ -4623,13 +4647,97 @@ TEST(FilamentSceneExtraction, DartsimApplicationEntryPointStaysMinimal)
 
   EXPECT_EQ(countOccurrences(mainSource, "#include "), 1u);
   EXPECT_NE(
-      mainSource.find("#include <dart/gui/application.hpp>"),
-      std::string::npos);
+      mainSource.find("#include <dartsim_ui/editor.hpp>"), std::string::npos);
   EXPECT_EQ(countOccurrences(mainSource, "int main("), 1u);
   EXPECT_EQ(
       countOccurrences(
-          mainSource, "return dart::gui::runApplication(argc, argv);"),
+          mainSource, "return dartsim::ui::runEditor(argc, argv);"),
       1u);
+}
+
+TEST(FilamentSceneExtraction, DartsimSceneFixtureModeSkipsEditorPanels)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_NE(
+      editorSource.find("std::string_view(argv[i]) == \"--scene\""),
+      std::string::npos);
+
+  const auto fixtureModeGuard
+      = editorSource.find("if (hasSceneOption(argc, argv))");
+  ASSERT_NE(fixtureModeGuard, std::string::npos);
+  const auto fixtureModeReturn = editorSource.find(
+      "return dart::gui::runApplication(argc, argv);", fixtureModeGuard);
+  ASSERT_NE(fixtureModeReturn, std::string::npos);
+
+  const auto appConstruction
+      = editorSource.find("auto app = std::make_shared<EditorApp>();");
+  const auto demoSeeding = editorSource.find("seedDemoScene(*app);");
+  const auto panelRegistration = editorSource.find("options.panels.push_back");
+  ASSERT_NE(appConstruction, std::string::npos);
+  ASSERT_NE(demoSeeding, std::string::npos);
+  ASSERT_NE(panelRegistration, std::string::npos);
+
+  EXPECT_LT(fixtureModeReturn, appConstruction);
+  EXPECT_LT(fixtureModeReturn, demoSeeding);
+  EXPECT_LT(fixtureModeReturn, panelRegistration);
+}
+
+TEST(FilamentSceneExtraction, DartsimSceneTreeSelectionUsesEngineFacade)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_EQ(
+      editorSource.find("app.engine.selection().select(id)"),
+      std::string::npos);
+  EXPECT_NE(editorSource.find("app.engine.select(id);"), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DartsimRunModeUsesElapsedFrameSeconds)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_EQ(editorSource.find("sim.advance(1.0 / 60.0)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("std::chrono::steady_clock::now()"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("std::chrono::duration<double>"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("sim.advance(app.consumeRunFrameSeconds());"),
+      std::string::npos);
+  const auto preRender = editorSource.find("options.preRender = [app]()");
+  ASSERT_NE(preRender, std::string::npos);
+  EXPECT_NE(
+      editorSource.find("advanceRunningSimulation(*app);", preRender),
+      std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DartsimInspectorLocksEditsDuringRunMode)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  const auto inspectorStart = editorSource.find("void buildInspector");
+  ASSERT_NE(inspectorStart, std::string::npos);
+  const auto canEditCheck
+      = editorSource.find("const bool canEdit = app.engine.canEditScene();");
+  ASSERT_NE(canEditCheck, std::string::npos);
+  const auto lockGuard = editorSource.find("if (!canEdit)", canEditCheck);
+  ASSERT_NE(lockGuard, std::string::npos);
+  const auto lockMessage
+      = editorSource.find("Inspector locked during Run mode", lockGuard);
+  ASSERT_NE(lockMessage, std::string::npos);
+  const auto firstSlider = editorSource.find("ui.slider(\"x\"", inspectorStart);
+  const auto deleteButton
+      = editorSource.find("ui.button(\"Delete##inspector\")", inspectorStart);
+  ASSERT_NE(firstSlider, std::string::npos);
+  ASSERT_NE(deleteButton, std::string::npos);
+
+  EXPECT_LT(lockGuard, firstSlider);
+  EXPECT_LT(lockGuard, deleteButton);
 }
 
 TEST(FilamentSceneExtraction, DartsimApplicationKeepsOnlyMinimalCppEntryPoint)
@@ -4650,7 +4758,6 @@ TEST(
 
   const std::vector<std::filesystem::path> expectedFiles
       = {kDartsimApplicationDirectory / "CMakeLists.txt",
-         kDartsimApplicationDirectory / "README.md",
          kDartsimApplicationDirectory / "main.cpp"};
   EXPECT_EQ(files, expectedFiles);
 }

@@ -20,46 +20,19 @@ class BenchmarkSpec:
     output_name: str
 
 
-# The dashboard leads with end-to-end world-step cases — the performance signal
-# that matters for a physics engine — and keeps a couple of focused lower-level
-# kernels. Sequential-vs-parallel pairs surface the experimental World's compute
-# executor scaling over time.
+# The dashboard is intentionally scoped to experimental World performance. Keep
+# the published history focused on end-to-end experimental World update/step
+# cases instead of mixing in unrelated solver, SIMD, or robot-loader surfaces.
 BENCHMARK_SPECS = [
-    # End-to-end world stepping with the experimental World, sequential vs the
-    # parallel compute executor.
     BenchmarkSpec(
-        surface="world",
+        surface="experimental-world",
         target="bm_compute_graph",
-        benchmark_filter="BM_WorldStep(Sequential|Parallel)/.*",
-        output_name="dashboard_world_step.json",
-    ),
-    # Rigid-body step throughput as the body count scales (128/1024/4096).
-    BenchmarkSpec(
-        surface="rigidbody",
-        target="bm_compute_graph",
-        benchmark_filter="BM_RigidBodyStep(Sequential|Parallel)/.*",
-        output_name="dashboard_rigidbody_step.json",
-    ),
-    # End-to-end stepping of real robot models loaded through dart-io.
-    BenchmarkSpec(
-        surface="robots",
-        target="dynamics_cache_io",
-        benchmark_filter="BM_Robot_(KR5|Atlas)_WorldStep",
-        output_name="dashboard_robots.json",
-    ),
-    # LCP solver comparison (constraint-solve hot path).
-    BenchmarkSpec(
-        surface="lcp",
-        target="lcp_compare",
-        benchmark_filter="BM_LCP_COMPARE_SMOKE$",
-        output_name="dashboard_lcp.json",
-    ),
-    # SIMD vectorization kernel vs scalar baseline.
-    BenchmarkSpec(
-        surface="simd",
-        target="simd",
-        benchmark_filter="BM_Add_DART_f32(_Baseline)?/1024(/.*)?$",
-        output_name="dashboard_simd.json",
+        benchmark_filter=(
+            "BM_WorldUpdateKinematics/.*|"
+            "BM_WorldStep(Sequential|Parallel)/.*|"
+            "BM_RigidBodyStep(Sequential|Parallel)/.*"
+        ),
+        output_name="dashboard_experimental_world.json",
     ),
 ]
 
