@@ -570,6 +570,57 @@ TYPED_TEST(SE3Test, MapConstructor)
 }
 
 //==============================================================================
+TYPED_TEST(SE3Test, DynamicStrideMapReferencesRotationAndTranslation)
+{
+  using S = typename TestFixture::Scalar;
+  using Stride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
+
+  constexpr int kStride = 2;
+  constexpr S kSentinel = S(-123);
+
+  const SE3<S> source = SE3<S>::Random();
+  Eigen::Matrix<S, SE3<S>::ParamSize * kStride, 1> storage;
+  storage.setConstant(kSentinel);
+  for (int i = 0; i < SE3<S>::ParamSize; ++i) {
+    storage[i * kStride] = source.params()[i];
+  }
+
+  const Stride stride(SE3<S>::ParamSize * kStride, kStride);
+  const Eigen::Map<const SE3<S>, Eigen::Unaligned, Stride> constMap(
+      storage.data(), stride);
+  EXPECT_TRUE(constMap.rotation().params().isApprox(
+      source.rotation().params(), LieGroupTol<S>()));
+  EXPECT_TRUE(
+      constMap.translation().isApprox(source.translation(), LieGroupTol<S>()));
+  EXPECT_TRUE(constMap.log().isApprox(source.log(), LieGroupTol<S>()));
+
+  Eigen::Map<SE3<S>, Eigen::Unaligned, Stride> map(storage.data(), stride);
+  const SO3<S> replacementRotation = SO3<S>::Random();
+  const Vector3<S> replacementTranslation = Vector3<S>::Random();
+  map.rotation() = replacementRotation;
+  map.translation() = replacementTranslation;
+
+  EXPECT_TRUE(map.rotation().isApprox(replacementRotation));
+  EXPECT_TRUE(
+      map.translation().isApprox(replacementTranslation, LieGroupTol<S>()));
+  for (int i = 0; i < SO3<S>::ParamSize; ++i) {
+    EXPECT_NEAR(
+        storage[i * kStride],
+        replacementRotation.params()[i],
+        LieGroupTol<S>());
+  }
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_NEAR(
+        storage[(SO3<S>::ParamSize + i) * kStride],
+        replacementTranslation[i],
+        LieGroupTol<S>());
+  }
+  for (int i = 0; i < SE3<S>::ParamSize; ++i) {
+    EXPECT_EQ(storage[i * kStride + 1], kSentinel);
+  }
+}
+
+//==============================================================================
 TYPED_TEST(SE3Test, RawParamsConstructorNormalizesQuaternion)
 {
   using S = typename TestFixture::Scalar;

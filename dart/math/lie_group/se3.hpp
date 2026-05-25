@@ -56,6 +56,10 @@ struct traits<::dart::math::SE3<S>>
   using InverseType = ::dart::math::SE3Inverse<LieGroup>;
   using MatrixType = ::Eigen::Matrix<S, MatrixRepDim, MatrixRepDim>;
   using Params = ::Eigen::Matrix<S, ParamSize, 1>;
+  using RotationMap = ::Eigen::Map<::dart::math::SO3<S>>;
+  using ConstRotationMap = ::Eigen::Map<const ::dart::math::SO3<S>>;
+  using TranslationMap = ::Eigen::Map<::Eigen::Matrix<S, 3, 1>>;
+  using ConstTranslationMap = ::Eigen::Map<const ::Eigen::Matrix<S, 3, 1>>;
   using Tangent = ::dart::math::SE3Tangent<S>;
 };
 
