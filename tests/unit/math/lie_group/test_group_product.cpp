@@ -317,55 +317,66 @@ TYPED_TEST(GroupProductTest, StridedHumanoidMapReferencesComponents)
 {
   using S = typename TestFixture::Scalar;
   using Humanoid = HumanoidConfiguration<S>;
-  using Stride = Eigen::InnerStride<>;
 
   constexpr int kStride = 2;
   constexpr S kSentinel = S(-123);
 
   const Humanoid source = Humanoid::Random();
-  Eigen::Matrix<S, Humanoid::ParamSize * kStride, 1> storage;
-  storage.setConstant(kSentinel);
-  for (int i = 0; i < Humanoid::ParamSize; ++i) {
-    storage[i * kStride] = source.params()[i];
-  }
+  const auto makeStorage = [&] {
+    Eigen::Matrix<S, Humanoid::ParamSize * kStride, 1> storage;
+    storage.setConstant(kSentinel);
+    for (int i = 0; i < Humanoid::ParamSize; ++i) {
+      storage[i * kStride] = source.params()[i];
+    }
+    return storage;
+  };
 
-  const Eigen::Map<const Humanoid, Eigen::Unaligned, Stride> constMap(
-      storage.data(), Stride(kStride));
-  EXPECT_TRUE(constMap.template get<0>().params().isApprox(
-      source.template get<0>().params(), LieGroupTol<S>()));
-  EXPECT_TRUE(constMap.template get<1>().params().isApprox(
-      source.template get<1>().params(), LieGroupTol<S>()));
-  EXPECT_TRUE(constMap.template get<2>().params().isApprox(
-      source.template get<2>().params(), LieGroupTol<S>()));
-  EXPECT_NEAR(
-      constMap.template get<kHumanoidScalarStart>().params()[0],
-      source.template get<kHumanoidScalarStart>().params()[0],
-      LieGroupTol<S>());
-  EXPECT_TRUE(constMap.log().isApprox(source.log(), LieGroupTol<S>()));
+  const auto verifyStridedMap = [&](const auto& stride) {
+    using Stride = std::decay_t<decltype(stride)>;
+    auto storage = makeStorage();
 
-  Eigen::Map<Humanoid, Eigen::Unaligned, Stride> map(
-      storage.data(), Stride(kStride));
-  map.inverseInPlace();
-  const Humanoid expectedInverse = source.inverse();
-  EXPECT_TRUE(map.isApprox(expectedInverse));
-  for (int i = 0; i < Humanoid::ParamSize; ++i) {
+    const Eigen::Map<const Humanoid, Eigen::Unaligned, Stride> constMap(
+        storage.data(), stride);
+    EXPECT_TRUE(constMap.template get<0>().params().isApprox(
+        source.template get<0>().params(), LieGroupTol<S>()));
+    EXPECT_TRUE(constMap.template get<1>().params().isApprox(
+        source.template get<1>().params(), LieGroupTol<S>()));
+    EXPECT_TRUE(constMap.template get<2>().params().isApprox(
+        source.template get<2>().params(), LieGroupTol<S>()));
     EXPECT_NEAR(
-        storage[i * kStride], expectedInverse.params()[i], LieGroupTol<S>());
-    EXPECT_EQ(storage[i * kStride + 1], kSentinel);
-  }
-
-  const SO3<S> replacement = SO3<S>::Random();
-  map.template get<1>() = replacement;
-  EXPECT_TRUE(map.template get<1>().isApprox(replacement));
-  for (int i = 0; i < SO3<S>::ParamSize; ++i) {
-    EXPECT_NEAR(
-        storage[(SE3<S>::ParamSize + i) * kStride],
-        replacement.params()[i],
+        constMap.template get<kHumanoidScalarStart>().params()[0],
+        source.template get<kHumanoidScalarStart>().params()[0],
         LieGroupTol<S>());
-  }
-  for (int i = 0; i < Humanoid::ParamSize; ++i) {
-    EXPECT_EQ(storage[i * kStride + 1], kSentinel);
-  }
+    EXPECT_TRUE(constMap.log().isApprox(source.log(), LieGroupTol<S>()));
+
+    Eigen::Map<Humanoid, Eigen::Unaligned, Stride> map(storage.data(), stride);
+    map.inverseInPlace();
+    const Humanoid expectedInverse = source.inverse();
+    EXPECT_TRUE(map.isApprox(expectedInverse));
+    for (int i = 0; i < Humanoid::ParamSize; ++i) {
+      EXPECT_NEAR(
+          storage[i * kStride], expectedInverse.params()[i], LieGroupTol<S>());
+      EXPECT_EQ(storage[i * kStride + 1], kSentinel);
+    }
+
+    const SO3<S> replacement = SO3<S>::Random();
+    map.template get<1>() = replacement;
+    EXPECT_TRUE(map.template get<1>().isApprox(replacement));
+    for (int i = 0; i < SO3<S>::ParamSize; ++i) {
+      EXPECT_NEAR(
+          storage[(SE3<S>::ParamSize + i) * kStride],
+          replacement.params()[i],
+          LieGroupTol<S>());
+    }
+    for (int i = 0; i < Humanoid::ParamSize; ++i) {
+      EXPECT_EQ(storage[i * kStride + 1], kSentinel);
+    }
+  };
+
+  verifyStridedMap(Eigen::InnerStride<>(kStride));
+  verifyStridedMap(
+      Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>(
+          Humanoid::ParamSize * kStride, kStride));
 }
 
 //==============================================================================
