@@ -32,42 +32,64 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/fwd.hpp>
+
 #include <dart/simulation/experimental/export.hpp>
+
+#include <entt/entt.hpp>
+
+#include <optional>
+#include <string>
 
 namespace dart::simulation::experimental {
 
-class FixedFrame;
-class Frame;
-class FreeFrame;
-class Joint;
-class Link;
-class LoopClosure;
-class Multibody;
 class RigidBody;
-class World;
-enum class WorldSyncStage;
+class Link;
 
-namespace compute {
-class ComputeExecutor;
-class ParallelExecutor;
-class WorldStepPipeline;
-class WorldStepStage;
-} // namespace compute
+/// Lightweight handle to a body that can carry collision geometry.
+///
+/// A collision body is either a `RigidBody` or a multibody `Link`. This handle
+/// is the body reference reported by `World::collide()` through `Contact`,
+/// letting contacts refer uniformly to rigid bodies and articulated links.
+///
+/// @note Handles are lightweight (entity ID + pointer) and safe to copy. They
+///       become invalid if the underlying entity or World is destroyed.
+class DART_EXPERIMENTAL_API CollisionBody
+{
+public:
+  /// Construct an invalid handle.
+  CollisionBody() = default;
 
-// Value objects
-struct Contact;
+  /// Construct a handle to the given entity in the given World.
+  CollisionBody(entt::entity entity, World* world);
 
-// Options structs
-struct FixedFrameOptions;
-struct FreeFrameOptions;
-struct JointOptions;
-struct JointSpec;
-struct LinkOptions;
-struct LoopClosureRuntimePolicy;
-struct LoopClosureResidual;
-struct LoopClosureSpec;
-struct MultibodyOptions;
-struct RigidBodyOptions;
-struct WorldOptions;
+  /// Get the underlying entity ID.
+  [[nodiscard]] entt::entity getEntity() const;
+
+  /// Get the owning World pointer.
+  [[nodiscard]] World* getWorld() const;
+
+  /// Return whether this handle refers to a live entity.
+  [[nodiscard]] bool isValid() const;
+
+  /// Get the body's name.
+  [[nodiscard]] std::string getName() const;
+
+  /// Return whether this body is a rigid body.
+  [[nodiscard]] bool isRigidBody() const;
+
+  /// Return whether this body is a multibody link.
+  [[nodiscard]] bool isLink() const;
+
+  /// Get a RigidBody handle if this body is a rigid body, else std::nullopt.
+  [[nodiscard]] std::optional<RigidBody> asRigidBody() const;
+
+  /// Get a Link handle if this body is a multibody link, else std::nullopt.
+  [[nodiscard]] std::optional<Link> asLink() const;
+
+private:
+  entt::entity m_entity{entt::null};
+  World* m_world{nullptr};
+};
 
 } // namespace dart::simulation::experimental

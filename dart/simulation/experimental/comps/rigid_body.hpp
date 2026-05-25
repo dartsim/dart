@@ -45,4 +45,13 @@ struct RigidBodyTag
   DART_EXPERIMENTAL_TAG_COMPONENT(RigidBodyTag);
 };
 
+/// Tag marking a rigid body as static (immovable): no gravity, no integration,
+/// and treated as infinite mass by the contact solver.
+///
+/// **Internal Implementation Detail** - Not exposed in public API
+struct StaticBodyTag
+{
+  DART_EXPERIMENTAL_TAG_COMPONENT(StaticBodyTag);
+};
+
 } // namespace dart::simulation::experimental::comps

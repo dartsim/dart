@@ -67,9 +67,9 @@ Project Stats
 
 Track GitHub interest over time with
 `Star History <https://star-history.com/#dartsim/dart&type=date&legend=top-left>`_.
-Benchmark history over commits is covered by the
-:doc:`DART Performance Dashboard <community/performance_dashboard>`. After the
-first dashboard publication, the hosted benchmark dashboard is available at
+Experimental World benchmark history over commits is covered by the
+:doc:`performance dashboard <community/performance_dashboard>`. After the first
+dashboard publication, the hosted benchmark dashboard is available at
 `dartsim.github.io/dart/performance/
 <https://dartsim.github.io/dart/performance/>`_.
 

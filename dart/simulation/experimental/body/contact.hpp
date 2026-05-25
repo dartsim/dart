@@ -32,58 +32,26 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/comps/component_category.hpp>
+#include <dart/simulation/experimental/body/collision_body.hpp>
 
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
+#include <Eigen/Core>
 
-namespace dart::simulation::experimental::comps {
+namespace dart::simulation::experimental {
 
-/// Spatial transform (position + orientation)
+/// A single contact point produced by a collision query.
 ///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct Transform
+/// This is query output (no constraint solving): it reports where two bodies'
+/// collision shapes overlap. Each body is a `CollisionBody` (a rigid body or a
+/// multibody link). The contact normal points from `bodyA` toward `bodyB` and
+/// `depth` is the penetration depth (positive when overlapping), both in world
+/// coordinates.
+struct Contact
 {
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Transform);
-
-  Eigen::Vector3d position = Eigen::Vector3d::Zero();
-  Eigen::Quaterniond orientation = Eigen::Quaterniond::Identity();
+  CollisionBody bodyA;
+  CollisionBody bodyB;
+  Eigen::Vector3d point = Eigen::Vector3d::Zero();
+  Eigen::Vector3d normal = Eigen::Vector3d::UnitZ();
+  double depth = 0.0;
 };
 
-/// Spatial velocity (linear + angular)
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct Velocity
-{
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Velocity);
-
-  Eigen::Vector3d linear = Eigen::Vector3d::Zero();
-  Eigen::Vector3d angular = Eigen::Vector3d::Zero();
-};
-
-/// Mass properties
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct MassProperties
-{
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(MassProperties);
-
-  double mass = 1.0;
-  /// Rotational inertia about the center of mass.
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-  /// Center of mass expressed in the body/link frame (default: at the origin).
-  Eigen::Vector3d localCenterOfMass = Eigen::Vector3d::Zero();
-};
-
-/// Force and torque accumulators
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct Force
-{
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Force);
-
-  Eigen::Vector3d force = Eigen::Vector3d::Zero();
-  Eigen::Vector3d torque = Eigen::Vector3d::Zero();
-};
-
-} // namespace dart::simulation::experimental::comps
+} // namespace dart::simulation::experimental

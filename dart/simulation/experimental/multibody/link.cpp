@@ -32,11 +32,33 @@
 
 #include "dart/simulation/experimental/multibody/link.hpp"
 
+#include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
 #include "dart/simulation/experimental/multibody/joint.hpp"
 #include "dart/simulation/experimental/world.hpp"
 
+#include <Eigen/Cholesky>
+
+#include <optional>
+
+#include <cmath>
+
 namespace dart::simulation::experimental {
+
+namespace {
+
+//==============================================================================
+bool isSymmetricPositiveDefinite(const Eigen::Matrix3d& matrix)
+{
+  if (!matrix.allFinite() || !matrix.isApprox(matrix.transpose(), 1e-12)) {
+    return false;
+  }
+
+  Eigen::LLT<Eigen::Matrix3d> factorization(matrix);
+  return factorization.info() == Eigen::Success;
+}
+
+} // namespace
 
 //==============================================================================
 Link::Link(entt::entity entity, World* world) : Frame(entity, world) {}
@@ -55,6 +77,104 @@ Joint Link::getParentJoint() const
   const auto& linkComp
       = getWorld()->getRegistry().get<comps::Link>(getEntity());
   return Joint(linkComp.parentJoint, getWorld());
+}
+
+//==============================================================================
+double Link::getMass() const
+{
+  return getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.mass;
+}
+
+//==============================================================================
+void Link::setMass(double mass)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(mass) || mass <= 0.0,
+      InvalidArgumentException,
+      "Link mass must be positive and finite");
+
+  getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.mass = mass;
+}
+
+//==============================================================================
+Eigen::Matrix3d Link::getInertia() const
+{
+  return getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.inertia;
+}
+
+//==============================================================================
+void Link::setInertia(const Eigen::Matrix3d& inertia)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isSymmetricPositiveDefinite(inertia),
+      InvalidArgumentException,
+      "Link inertia must be symmetric positive definite");
+
+  getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.inertia
+      = inertia;
+}
+
+//==============================================================================
+Eigen::Vector3d Link::getCenterOfMass() const
+{
+  return getWorld()
+      ->getRegistry()
+      .get<comps::Link>(getEntity())
+      .mass.localCenterOfMass;
+}
+
+//==============================================================================
+void Link::setCenterOfMass(const Eigen::Vector3d& centerOfMass)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !centerOfMass.allFinite(),
+      InvalidArgumentException,
+      "Link center of mass must contain only finite values");
+
+  getWorld()->getRegistry().get<comps::Link>(getEntity()).mass.localCenterOfMass
+      = centerOfMass;
+}
+
+//==============================================================================
+std::optional<CollisionShape> Link::getCollisionShape() const
+{
+  const auto& registry = getWorld()->getRegistry();
+  if (const auto* geometry
+      = registry.try_get<comps::CollisionGeometry>(getEntity())) {
+    return geometry->shape;
+  }
+  return std::nullopt;
+}
+
+//==============================================================================
+void Link::setCollisionShape(const CollisionShape& shape)
+{
+  switch (shape.type) {
+    case CollisionShapeType::Sphere:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(shape.radius) || shape.radius <= 0.0,
+          InvalidArgumentException,
+          "Sphere collision shape radius must be positive and finite");
+      break;
+    case CollisionShapeType::Box:
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !shape.halfExtents.allFinite()
+              || (shape.halfExtents.array() <= 0.0).any(),
+          InvalidArgumentException,
+          "Box collision shape half extents must be positive and finite");
+      break;
+  }
+
+  auto& registry = getWorld()->getRegistry();
+  registry.emplace_or_replace<comps::CollisionGeometry>(
+      getEntity(), comps::CollisionGeometry{shape});
+}
+
+//==============================================================================
+bool Link::hasCollisionShape() const
+{
+  return getWorld()->getRegistry().all_of<comps::CollisionGeometry>(
+      getEntity());
 }
 
 //==============================================================================

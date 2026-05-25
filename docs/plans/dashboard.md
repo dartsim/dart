@@ -87,6 +87,20 @@ its own line so status updates remain git-history friendly.
   metadata/profiling/DOT output remain backend-neutral; classic World behavior
   stays untouched.
 
+### PLAN-080: Rigid-Body Dynamics Solver
+
+- Owner doc:
+  [`080-rigid-body-dynamics-solver.md`](080-rigid-body-dynamics-solver.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Land Phase 0.1 (World gravity in the rigid-body integration stage)
+  on the experimental World, then articulated-body forward dynamics; track
+  slice-level work in `docs/dev_tasks/rigid_body_dynamics_solver/`.
+- Gate: Each slice keeps focused experimental tests and `check-api-boundaries`
+  green, holds DART 6 parity on shared scenes before any promotion claim, and
+  never exposes solver/coupler/domain/backend types or ECS storage publicly.
+
 ### PLAN-035: Native Collision Feature Dashboard
 
 - Owner doc:

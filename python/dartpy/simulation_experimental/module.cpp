@@ -35,6 +35,8 @@
 #include "common/eigen_utils.hpp"
 #include "common/repr.hpp"
 
+#include <dart/simulation/experimental/body/collision_shape.hpp>
+#include <dart/simulation/experimental/body/contact.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/common/exceptions.hpp>
@@ -54,6 +56,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/array.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
@@ -272,17 +275,20 @@ void validateFiniteVector(const Eigen::Vector3d& value, const char* fieldName)
       fieldName);
 }
 
-void validateJointSpecAxis(const Eigen::Vector3d& axis)
+void validateJointSpecAxis(
+    const Eigen::Vector3d& axis, const char* field = "axis")
 {
   DART_EXPERIMENTAL_THROW_T_IF(
       !axis.allFinite(),
       sim::InvalidArgumentException,
-      "JointSpec.axis must contain only finite values");
+      "JointSpec.{} must contain only finite values",
+      field);
 
   DART_EXPERIMENTAL_THROW_T_IF(
       axis.norm() <= 1e-9,
       sim::InvalidArgumentException,
-      "JointSpec.axis must be non-zero");
+      "JointSpec.{} must be non-zero",
+      field);
 }
 
 void validateOrientation(const Eigen::Quaterniond& orientation)
@@ -413,6 +419,15 @@ void defSimulationExperimentalModule(nb::module_& m)
       .value("FLOATING", sim::JointType::Floating)
       .value("CUSTOM", sim::JointType::Custom);
 
+  nb::enum_<sim::ActuatorType>(m, "ActuatorType")
+      .value("FORCE", sim::ActuatorType::Force)
+      .value("PASSIVE", sim::ActuatorType::Passive)
+      .value("SERVO", sim::ActuatorType::Servo)
+      .value("VELOCITY", sim::ActuatorType::Velocity)
+      .value("ACCELERATION", sim::ActuatorType::Acceleration)
+      .value("LOCKED", sim::ActuatorType::Locked)
+      .value("MIMIC", sim::ActuatorType::Mimic);
+
   nb::enum_<sim::LoopClosureFamily>(m, "LoopClosureFamily")
       .value("RIGID", sim::LoopClosureFamily::Rigid)
       .value("POINT", sim::LoopClosureFamily::Point)
@@ -424,6 +439,26 @@ void defSimulationExperimentalModule(nb::module_& m)
 
   nb::enum_<sim::WorldSyncStage>(m, "WorldSyncStage")
       .value("KINEMATICS", sim::WorldSyncStage::Kinematics);
+
+  nb::enum_<sim::CollisionShapeType>(m, "CollisionShapeType")
+      .value("SPHERE", sim::CollisionShapeType::Sphere)
+      .value("BOX", sim::CollisionShapeType::Box);
+
+  nb::class_<sim::CollisionShape>(m, "CollisionShape")
+      .def_static("sphere", &sim::CollisionShape::makeSphere, nb::arg("radius"))
+      .def_static(
+          "box",
+          [](const nb::handle& halfExtents) {
+            return sim::CollisionShape::makeBox(toVector3(halfExtents));
+          },
+          nb::arg("half_extents"))
+      .def_prop_ro(
+          "type", [](const sim::CollisionShape& self) { return self.type; })
+      .def_prop_ro(
+          "radius", [](const sim::CollisionShape& self) { return self.radius; })
+      .def_prop_ro("half_extents", [](const sim::CollisionShape& self) {
+        return self.halfExtents;
+      });
 
   nb::enum_<sim::ClosureKinematicsPolicy>(m, "ClosureKinematicsPolicy")
       .value("RESIDUAL_ONLY", sim::ClosureKinematicsPolicy::ResidualOnly)
@@ -544,7 +579,9 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def(
           nb::new_([](std::string name,
                       sim::JointType type,
-                      const nb::handle& axis) {
+                      const nb::handle& axis,
+                      const nb::handle& axis2,
+                      const nb::handle& transform_from_parent) {
             sim::JointSpec spec;
             spec.name = std::move(name);
             spec.type = type;
@@ -552,11 +589,20 @@ void defSimulationExperimentalModule(nb::module_& m)
               spec.axis = toVector3(axis);
               validateJointSpecAxis(spec.axis);
             }
+            if (!axis2.is_none()) {
+              spec.axis2 = toVector3(axis2);
+              validateJointSpecAxis(spec.axis2, "axis2");
+            }
+            if (!transform_from_parent.is_none()) {
+              spec.transformFromParent = toIsometry(transform_from_parent);
+            }
             return spec;
           }),
           nb::arg("name") = "",
           nb::arg("type") = sim::JointType::Revolute,
-          nb::arg("axis") = nb::none())
+          nb::arg("axis") = nb::none(),
+          nb::arg("axis2") = nb::none(),
+          nb::arg("transform_from_parent") = nb::none())
       .def_rw("name", &sim::JointSpec::name)
       .def_rw("type", &sim::JointSpec::type)
       .def_prop_rw(
@@ -566,6 +612,22 @@ void defSimulationExperimentalModule(nb::module_& m)
             auto value = toVector3(axis);
             validateJointSpecAxis(value);
             self.axis = value;
+          })
+      .def_prop_rw(
+          "axis2",
+          [](const sim::JointSpec& self) { return self.axis2; },
+          [](sim::JointSpec& self, const nb::handle& axis2) {
+            auto value = toVector3(axis2);
+            validateJointSpecAxis(value, "axis2");
+            self.axis2 = value;
+          })
+      .def_prop_rw(
+          "transform_from_parent",
+          [](const sim::JointSpec& self) {
+            return self.transformFromParent.matrix();
+          },
+          [](sim::JointSpec& self, const nb::handle& transform) {
+            self.transformFromParent = toIsometry(transform);
           })
       .def("__repr__", [](const sim::JointSpec& self) {
         std::vector<std::pair<std::string, std::string>> fields;
@@ -701,7 +763,19 @@ void defSimulationExperimentalModule(nb::module_& m)
           "name",
           [](const sim::Joint& self) { return std::string(self.getName()); })
       .def_prop_ro("type", &sim::Joint::getType)
+      .def_prop_rw(
+          "actuator_type",
+          &sim::Joint::getActuatorType,
+          &sim::Joint::setActuatorType)
+      .def_prop_rw(
+          "command_velocity",
+          &sim::Joint::getCommandVelocity,
+          [](sim::Joint& self, const nb::handle& value) {
+            self.setCommandVelocity(toVectorX(value));
+          })
       .def_prop_ro("axis", &sim::Joint::getAxis)
+      .def_prop_ro("axis2", &sim::Joint::getAxis2)
+      .def_prop_rw("pitch", &sim::Joint::getPitch, &sim::Joint::setPitch)
       .def_prop_ro("num_dofs", &sim::Joint::getDOFCount)
       .def_prop_rw(
           "position",
@@ -715,6 +789,76 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::Joint& self, const nb::handle& velocity) {
             self.setVelocity(toVectorX(velocity));
           })
+      .def_prop_rw(
+          "force",
+          &sim::Joint::getForce,
+          [](sim::Joint& self, const nb::handle& force) {
+            self.setForce(toVectorX(force));
+          })
+      .def_prop_ro("acceleration", &sim::Joint::getAcceleration)
+      .def_prop_rw(
+          "spring_stiffness",
+          &sim::Joint::getSpringStiffness,
+          [](sim::Joint& self, const nb::handle& value) {
+            self.setSpringStiffness(toVectorX(value));
+          })
+      .def_prop_rw(
+          "rest_position",
+          &sim::Joint::getRestPosition,
+          [](sim::Joint& self, const nb::handle& value) {
+            self.setRestPosition(toVectorX(value));
+          })
+      .def_prop_rw(
+          "damping_coefficient",
+          &sim::Joint::getDampingCoefficient,
+          [](sim::Joint& self, const nb::handle& value) {
+            self.setDampingCoefficient(toVectorX(value));
+          })
+      .def_prop_rw(
+          "armature",
+          &sim::Joint::getArmature,
+          [](sim::Joint& self, const nb::handle& value) {
+            self.setArmature(toVectorX(value));
+          })
+      .def_prop_rw(
+          "coulomb_friction",
+          &sim::Joint::getCoulombFriction,
+          [](sim::Joint& self, const nb::handle& value) {
+            self.setCoulombFriction(toVectorX(value));
+          })
+      .def(
+          "set_position_limits",
+          [](sim::Joint& self,
+             const nb::handle& lower,
+             const nb::handle& upper) {
+            self.setPositionLimits(toVectorX(lower), toVectorX(upper));
+          },
+          nb::arg("lower"),
+          nb::arg("upper"))
+      .def_prop_ro("position_lower_limits", &sim::Joint::getPositionLowerLimits)
+      .def_prop_ro("position_upper_limits", &sim::Joint::getPositionUpperLimits)
+      .def(
+          "set_velocity_limits",
+          [](sim::Joint& self,
+             const nb::handle& lower,
+             const nb::handle& upper) {
+            self.setVelocityLimits(toVectorX(lower), toVectorX(upper));
+          },
+          nb::arg("lower"),
+          nb::arg("upper"))
+      .def_prop_ro("velocity_lower_limits", &sim::Joint::getVelocityLowerLimits)
+      .def_prop_ro("velocity_upper_limits", &sim::Joint::getVelocityUpperLimits)
+      .def(
+          "set_effort_limits",
+          [](sim::Joint& self,
+             const nb::handle& lower,
+             const nb::handle& upper) {
+            self.setEffortLimits(toVectorX(lower), toVectorX(upper));
+          },
+          nb::arg("lower"),
+          nb::arg("upper"))
+      .def_prop_ro("effort_lower_limits", &sim::Joint::getEffortLowerLimits)
+      .def_prop_ro("effort_upper_limits", &sim::Joint::getEffortUpperLimits)
       .def_prop_ro("parent_link", &sim::Joint::getParentLink)
       .def_prop_ro("child_link", &sim::Joint::getChildLink)
       .def_prop_ro("is_valid", &sim::Joint::isValid)
@@ -735,12 +879,31 @@ void defSimulationExperimentalModule(nb::module_& m)
           "name",
           [](const sim::Link& self) { return std::string(self.getName()); })
       .def_prop_ro("parent_joint", &sim::Link::getParentJoint)
+      .def_prop_rw("mass", &sim::Link::getMass, &sim::Link::setMass)
+      .def_prop_rw(
+          "inertia",
+          &sim::Link::getInertia,
+          [](sim::Link& self, const nb::handle& inertia) {
+            self.setInertia(toMatrix3(inertia));
+          })
+      .def_prop_rw(
+          "center_of_mass",
+          &sim::Link::getCenterOfMass,
+          [](sim::Link& self, const nb::handle& centerOfMass) {
+            self.setCenterOfMass(toVector3(centerOfMass));
+          })
       .def_prop_ro("translation", &sim::Link::getTranslation)
       .def_prop_ro("rotation", &sim::Link::getRotation)
       .def_prop_ro(
           "quaternion",
           [](const sim::Link& self) { return toWxyz(self.getQuaternion()); })
       .def_prop_ro("transform", &sim::Link::getTransformMatrix)
+      .def(
+          "set_collision_shape",
+          &sim::Link::setCollisionShape,
+          nb::arg("shape"))
+      .def_prop_ro("collision_shape", &sim::Link::getCollisionShape)
+      .def_prop_ro("has_collision_shape", &sim::Link::hasCollisionShape)
       .def_prop_ro("is_valid", &sim::Link::isValid)
       .def("__repr__", [](const sim::Link& self) {
         std::vector<std::pair<std::string, std::string>> fields;
@@ -983,6 +1146,37 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_ro("joints", &sim::Multibody::getJoints)
       .def_prop_ro("link_names", &sim::Multibody::getLinkNames)
       .def_prop_ro("joint_names", &sim::Multibody::getJointNames)
+      .def_prop_ro("mass_matrix", &sim::Multibody::getMassMatrix)
+      .def_prop_ro("inverse_mass_matrix", &sim::Multibody::getInverseMassMatrix)
+      .def_prop_ro("coriolis_forces", &sim::Multibody::getCoriolisForces)
+      .def_prop_ro("gravity_forces", &sim::Multibody::getGravityForces)
+      .def_prop_ro(
+          "coriolis_and_gravity_forces",
+          &sim::Multibody::getCoriolisAndGravityForces)
+      .def(
+          "compute_inverse_dynamics",
+          [](const sim::Multibody& self, const nb::handle& acceleration) {
+            return self.computeInverseDynamics(toVectorX(acceleration));
+          },
+          nb::arg("desired_acceleration"))
+      .def(
+          "compute_impulse_response",
+          [](const sim::Multibody& self, const nb::handle& impulse) {
+            return self.computeImpulseResponse(toVectorX(impulse));
+          },
+          nb::arg("joint_impulse"))
+      .def(
+          "get_jacobian",
+          [](const sim::Multibody& self, const sim::Link& link) {
+            return self.getJacobian(link);
+          },
+          nb::arg("link"))
+      .def(
+          "get_world_jacobian",
+          [](const sim::Multibody& self, const sim::Link& link) {
+            return self.getWorldJacobian(link);
+          },
+          nb::arg("link"))
       .def_prop_ro("is_valid", &sim::Multibody::isValid)
       .def("__repr__", [](const sim::Multibody& self) {
         std::vector<std::pair<std::string, std::string>> fields;
@@ -1057,6 +1251,26 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::RigidBody& self, const nb::handle& torque) {
             self.setTorque(toVector3(torque));
           })
+      .def_prop_rw(
+          "is_static", &sim::RigidBody::isStatic, &sim::RigidBody::setStatic)
+      .def_prop_rw(
+          "restitution",
+          &sim::RigidBody::getRestitution,
+          &sim::RigidBody::setRestitution)
+      .def_prop_rw(
+          "friction",
+          &sim::RigidBody::getFriction,
+          &sim::RigidBody::setFriction)
+      .def(
+          "set_collision_shape",
+          &sim::RigidBody::setCollisionShape,
+          nb::arg("shape"))
+      .def_prop_ro("collision_shape", &sim::RigidBody::getCollisionShape)
+      .def_prop_ro("has_collision_shape", &sim::RigidBody::hasCollisionShape)
+      .def_prop_ro("linear_momentum", &sim::RigidBody::getLinearMomentum)
+      .def_prop_ro("angular_momentum", &sim::RigidBody::getAngularMomentum)
+      .def_prop_ro("kinetic_energy", &sim::RigidBody::getKineticEnergy)
+      .def_prop_ro("potential_energy", &sim::RigidBody::getPotentialEnergy)
       .def("__repr__", [](const sim::RigidBody& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back("name", repr_string(self.getName()));
@@ -1136,6 +1350,12 @@ void defSimulationExperimentalModule(nb::module_& m)
             validateInertia(value);
             self.inertia = value;
           })
+      .def_prop_rw(
+          "is_static",
+          [](const sim::RigidBodyOptions& self) { return self.isStatic; },
+          [](sim::RigidBodyOptions& self, bool isStatic) {
+            self.isStatic = isStatic;
+          })
       .def("__repr__", [](const sim::RigidBodyOptions& self) {
         std::vector<std::pair<std::string, std::string>> fields;
         fields.emplace_back("mass", repr_double(self.mass));
@@ -1150,6 +1370,40 @@ void defSimulationExperimentalModule(nb::module_& m)
             nb::cast<std::string>(nb::repr(nb::cast(self.angularVelocity))));
         return format_repr("RigidBodyOptions", fields);
       });
+
+  nb::class_<sim::CollisionBody>(m, "CollisionBody")
+      .def_prop_ro(
+          "name", [](const sim::CollisionBody& self) { return self.getName(); })
+      .def_prop_ro("is_rigid_body", &sim::CollisionBody::isRigidBody)
+      .def_prop_ro("is_link", &sim::CollisionBody::isLink)
+      .def_prop_ro("is_valid", &sim::CollisionBody::isValid)
+      .def(
+          "as_rigid_body",
+          [](const sim::CollisionBody& self) -> nb::object {
+            auto body = self.asRigidBody();
+            if (!body.has_value()) {
+              return nb::none();
+            }
+            return nb::cast(*body, nb::rv_policy::move);
+          })
+      .def("as_link", [](const sim::CollisionBody& self) -> nb::object {
+        auto link = self.asLink();
+        if (!link.has_value()) {
+          return nb::none();
+        }
+        return nb::cast(*link, nb::rv_policy::move);
+      });
+
+  nb::class_<sim::Contact>(m, "Contact")
+      .def_prop_ro(
+          "body_a", [](const sim::Contact& self) { return self.bodyA; })
+      .def_prop_ro(
+          "body_b", [](const sim::Contact& self) { return self.bodyB; })
+      .def_prop_ro("point", [](const sim::Contact& self) { return self.point; })
+      .def_prop_ro(
+          "normal", [](const sim::Contact& self) { return self.normal; })
+      .def_prop_ro(
+          "depth", [](const sim::Contact& self) { return self.depth; });
 
   nb::class_<sim::World>(m, "World")
       .def(
@@ -1352,10 +1606,17 @@ void defSimulationExperimentalModule(nb::module_& m)
       .def_prop_rw(
           "time_step", &sim::World::getTimeStep, &sim::World::setTimeStep)
       .def_prop_rw("time", &sim::World::getTime, &sim::World::setTime)
+      .def_prop_rw(
+          "gravity",
+          &sim::World::getGravity,
+          [](sim::World& self, const nb::handle& gravity) {
+            self.setGravity(toVector3(gravity));
+          })
       .def_prop_ro("frame", &sim::World::getFrame)
       .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)
       .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)
       .def_prop_ro("num_rigid_bodies", &sim::World::getRigidBodyCount)
+      .def("collide", &sim::World::collide)
       .def("clear", &sim::World::clear)
       .def("__repr__", [](const sim::World& self) {
         std::vector<std::pair<std::string, std::string>> fields;
@@ -1367,6 +1628,11 @@ void defSimulationExperimentalModule(nb::module_& m)
             "rigid_bodies", std::to_string(self.getRigidBodyCount()));
         fields.emplace_back("time", repr_double(self.getTime()));
         fields.emplace_back("time_step", repr_double(self.getTimeStep()));
+        fields.emplace_back(
+            "gravity",
+            "(" + repr_double(self.getGravity().x()) + ", "
+                + repr_double(self.getGravity().y()) + ", "
+                + repr_double(self.getGravity().z()) + ")");
         fields.emplace_back("frame", std::to_string(self.getFrame()));
         fields.emplace_back(
             "simulation_mode",

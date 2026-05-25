@@ -34,56 +34,19 @@
 
 #include <dart/simulation/experimental/comps/component_category.hpp>
 
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
-
 namespace dart::simulation::experimental::comps {
 
-/// Spatial transform (position + orientation)
+/// Per-body contact material parameters consumed by the contact solver.
 ///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct Transform
+/// **Internal Implementation Detail** - Not exposed in public API. The public
+/// surface is the rigid-body restitution/friction accessors. Defaults match the
+/// behavior of a body with no material attached: no bounce, friction one.
+struct ContactMaterial
 {
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Transform);
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(ContactMaterial);
 
-  Eigen::Vector3d position = Eigen::Vector3d::Zero();
-  Eigen::Quaterniond orientation = Eigen::Quaterniond::Identity();
-};
-
-/// Spatial velocity (linear + angular)
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct Velocity
-{
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Velocity);
-
-  Eigen::Vector3d linear = Eigen::Vector3d::Zero();
-  Eigen::Vector3d angular = Eigen::Vector3d::Zero();
-};
-
-/// Mass properties
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct MassProperties
-{
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(MassProperties);
-
-  double mass = 1.0;
-  /// Rotational inertia about the center of mass.
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-  /// Center of mass expressed in the body/link frame (default: at the origin).
-  Eigen::Vector3d localCenterOfMass = Eigen::Vector3d::Zero();
-};
-
-/// Force and torque accumulators
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct Force
-{
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Force);
-
-  Eigen::Vector3d force = Eigen::Vector3d::Zero();
-  Eigen::Vector3d torque = Eigen::Vector3d::Zero();
+  double restitution = 0.0;
+  double friction = 1.0;
 };
 
 } // namespace dart::simulation::experimental::comps

@@ -32,58 +32,57 @@
 
 #pragma once
 
-#include <dart/simulation/experimental/comps/component_category.hpp>
+#include <Eigen/Core>
 
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
+namespace dart::simulation::experimental {
 
-namespace dart::simulation::experimental::comps {
-
-/// Spatial transform (position + orientation)
+/// The geometric family of a collision shape.
 ///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct Transform
+/// Names describe geometry only; they do not name a collision backend.
+enum class CollisionShapeType
 {
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Transform);
-
-  Eigen::Vector3d position = Eigen::Vector3d::Zero();
-  Eigen::Quaterniond orientation = Eigen::Quaterniond::Identity();
+  Sphere,
+  Box,
 };
 
-/// Spatial velocity (linear + angular)
+/// Public value object describing a body's collision geometry.
 ///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct Velocity
+/// This is a backend-neutral facade: the experimental World maps it onto the
+/// maintained native collision engine when running collision queries. The shape
+/// is expressed in the owning body's frame, centered at the body frame origin.
+///
+/// Only the fields relevant to `type` are used. Prefer the named constructors
+/// (`makeSphere`, `makeBox`) for clarity.
+struct CollisionShape
 {
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Velocity);
+  /// Geometric family selecting which fields below are used.
+  CollisionShapeType type = CollisionShapeType::Sphere;
 
-  Eigen::Vector3d linear = Eigen::Vector3d::Zero();
-  Eigen::Vector3d angular = Eigen::Vector3d::Zero();
+  /// Sphere radius (used when type == Sphere). Must be positive.
+  double radius = 0.5;
+
+  /// Box half extents along the body x/y/z axes (used when type == Box). Each
+  /// component must be positive.
+  Eigen::Vector3d halfExtents = Eigen::Vector3d::Constant(0.5);
+
+  /// Create a sphere collision shape.
+  [[nodiscard]] static CollisionShape makeSphere(double radius)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Sphere;
+    shape.radius = radius;
+    return shape;
+  }
+
+  /// Create a box collision shape from half extents.
+  [[nodiscard]] static CollisionShape makeBox(
+      const Eigen::Vector3d& halfExtents)
+  {
+    CollisionShape shape;
+    shape.type = CollisionShapeType::Box;
+    shape.halfExtents = halfExtents;
+    return shape;
+  }
 };
 
-/// Mass properties
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct MassProperties
-{
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(MassProperties);
-
-  double mass = 1.0;
-  /// Rotational inertia about the center of mass.
-  Eigen::Matrix3d inertia = Eigen::Matrix3d::Identity();
-  /// Center of mass expressed in the body/link frame (default: at the origin).
-  Eigen::Vector3d localCenterOfMass = Eigen::Vector3d::Zero();
-};
-
-/// Force and torque accumulators
-///
-/// **Internal Implementation Detail** - Not exposed in public API
-struct Force
-{
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(Force);
-
-  Eigen::Vector3d force = Eigen::Vector3d::Zero();
-  Eigen::Vector3d torque = Eigen::Vector3d::Zero();
-};
-
-} // namespace dart::simulation::experimental::comps
+} // namespace dart::simulation::experimental

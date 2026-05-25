@@ -35,6 +35,7 @@
 #include "dart/simulation/experimental/common/ecs_utils.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
 #include "dart/simulation/experimental/comps/all.hpp"
+#include "dart/simulation/experimental/compute/multibody_dynamics.hpp"
 #include "dart/simulation/experimental/multibody/joint.hpp"
 #include "dart/simulation/experimental/multibody/link.hpp"
 #include "dart/simulation/experimental/world.hpp"
@@ -43,6 +44,7 @@
 
 #include <algorithm>
 #include <format>
+#include <limits>
 
 namespace dart::simulation::experimental {
 
@@ -431,6 +433,12 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
   auto& linkComp = registry.emplace<comps::Link>(linkEntity);
   linkComp.name = std::move(actualLinkName);
 
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !options.transformFromParent.matrix().allFinite(),
+      InvalidArgumentException,
+      "Link transform from parent must contain only finite values");
+  linkComp.transformFromParentJoint = options.transformFromParent;
+
   // Create joint entity
   auto jointEntity = registry.create();
 
@@ -452,6 +460,17 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
       InvalidArgumentException,
       "Joint axis must be non-zero");
   jointComp.axis = options.axis / axisNorm;
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !options.axis2.allFinite(),
+      InvalidArgumentException,
+      "Joint axis2 must contain only finite values");
+  const double axis2Norm = options.axis2.norm();
+  DART_EXPERIMENTAL_THROW_T_IF(
+      axis2Norm <= 1e-9,
+      InvalidArgumentException,
+      "Joint axis2 must be non-zero");
+  jointComp.axis2 = options.axis2 / axis2Norm;
 
   // Planar and universal joints build a second in-plane/rotation direction from
   // axis2. If axis is parallel to axis2 the derived basis collapses (its cross
@@ -475,6 +494,21 @@ Link Multibody::addLink(std::string_view name, const LinkOptions& options)
   jointComp.velocity = Eigen::VectorXd::Zero(dof);
   jointComp.acceleration = Eigen::VectorXd::Zero(dof);
   jointComp.torque = Eigen::VectorXd::Zero(dof);
+  jointComp.springStiffness = Eigen::VectorXd::Zero(dof);
+  jointComp.dampingCoefficient = Eigen::VectorXd::Zero(dof);
+  jointComp.restPosition = Eigen::VectorXd::Zero(dof);
+  jointComp.armature = Eigen::VectorXd::Zero(dof);
+  jointComp.coulombFriction = Eigen::VectorXd::Zero(dof);
+  jointComp.commandVelocity = Eigen::VectorXd::Zero(dof);
+
+  // Position, velocity, and effort limits default to unbounded.
+  const double infinity = std::numeric_limits<double>::infinity();
+  jointComp.limits.lower = Eigen::VectorXd::Constant(dof, -infinity);
+  jointComp.limits.upper = Eigen::VectorXd::Constant(dof, infinity);
+  jointComp.limits.velocityLower = Eigen::VectorXd::Constant(dof, -infinity);
+  jointComp.limits.velocityUpper = Eigen::VectorXd::Constant(dof, infinity);
+  jointComp.limits.effortLower = Eigen::VectorXd::Constant(dof, -infinity);
+  jointComp.limits.effortUpper = Eigen::VectorXd::Constant(dof, infinity);
 
   // Link the parent link to this joint
   auto& parentLinkComp = safeGet<comps::Link>(registry, parentEntity);
@@ -501,7 +535,124 @@ Link Multibody::addLink(
           .jointName = joint.name,
           .jointType = joint.type,
           .axis = joint.axis,
+          .axis2 = joint.axis2,
+          .transformFromParent = joint.transformFromParent,
       });
+}
+
+//==============================================================================
+Eigen::MatrixXd Multibody::getMassMatrix() const
+{
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyDynamicsTerms(
+             registry, structure, m_world->getGravity())
+      .massMatrix;
+}
+
+//==============================================================================
+Eigen::MatrixXd Multibody::getInverseMassMatrix() const
+{
+  const Eigen::MatrixXd mass = getMassMatrix();
+  if (mass.size() == 0) {
+    return mass;
+  }
+  return mass.ldlt().solve(Eigen::MatrixXd::Identity(mass.rows(), mass.cols()));
+}
+
+//==============================================================================
+Eigen::VectorXd Multibody::getCoriolisForces() const
+{
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyDynamicsTerms(
+             registry, structure, m_world->getGravity())
+      .coriolisForces;
+}
+
+//==============================================================================
+Eigen::VectorXd Multibody::getGravityForces() const
+{
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyDynamicsTerms(
+             registry, structure, m_world->getGravity())
+      .gravityForces;
+}
+
+//==============================================================================
+Eigen::VectorXd Multibody::getCoriolisAndGravityForces() const
+{
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  const compute::MultibodyDynamicsTerms terms
+      = compute::computeMultibodyDynamicsTerms(
+          registry, structure, m_world->getGravity());
+  return terms.coriolisForces + terms.gravityForces;
+}
+
+//==============================================================================
+Eigen::VectorXd Multibody::computeInverseDynamics(
+    const Eigen::VectorXd& desiredAcceleration) const
+{
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyInverseDynamics(
+      registry, structure, m_world->getGravity(), desiredAcceleration);
+}
+
+//==============================================================================
+Eigen::VectorXd Multibody::computeImpulseResponse(
+    const Eigen::VectorXd& jointImpulse) const
+{
+  const Eigen::MatrixXd massMatrix = getMassMatrix();
+  if (massMatrix.size() == 0) {
+    return {};
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      jointImpulse.size() != massMatrix.rows(),
+      InvalidArgumentException,
+      "Joint impulse dimension ({}) must match the multibody DOF count ({})",
+      jointImpulse.size(),
+      massMatrix.rows());
+
+  return massMatrix.ldlt().solve(jointImpulse);
+}
+
+//==============================================================================
+Eigen::MatrixXd Multibody::getJacobian(const Link& link) const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      link.getWorld() != m_world,
+      InvalidArgumentException,
+      "Link belongs to a different world");
+
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyLinkJacobian(
+      registry, structure, link.getEntity());
+}
+
+//==============================================================================
+Eigen::MatrixXd Multibody::getWorldJacobian(const Link& link) const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      link.getWorld() != m_world,
+      InvalidArgumentException,
+      "Link belongs to a different world");
+
+  auto& registry = m_world->getRegistry();
+  const auto& structure
+      = safeGet<comps::MultibodyStructure>(registry, m_entity);
+  return compute::computeMultibodyLinkWorldJacobian(
+      registry, structure, link.getEntity());
 }
 
 } // namespace dart::simulation::experimental
