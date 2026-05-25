@@ -4,11 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-
-import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci_cuda.yml"
@@ -48,74 +47,26 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _load_workflow(path: Path) -> dict:
-    with path.open(encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-    if not isinstance(data, dict):
-        raise ValueError(f"{path} must be a YAML mapping")
-    return data
-
-
-def _trigger_mapping(workflow: dict) -> dict:
-    # PyYAML follows YAML 1.1 and may parse the key `on` as boolean True.
-    triggers = workflow.get("on", workflow.get(True, {}))
-    return triggers if isinstance(triggers, dict) else {}
-
-
-def _job(workflow: dict) -> dict:
-    jobs = workflow.get("jobs", {})
-    if not isinstance(jobs, dict):
-        return {}
-    cuda = jobs.get("cuda", {})
-    return cuda if isinstance(cuda, dict) else {}
-
-
-def _steps(job: dict) -> list[dict]:
-    steps = job.get("steps", [])
-    return (
-        [step for step in steps if isinstance(step, dict)]
-        if isinstance(steps, list)
-        else []
-    )
-
-
-def _step_named(steps: list[dict], name: str) -> dict | None:
-    for step in steps:
-        if step.get("name") == name:
-            return step
-    return None
-
-
-def _run_text(step: dict | None) -> str:
-    if step is None:
-        return ""
-    run = step.get("run", "")
-    return run if isinstance(run, str) else ""
-
-
-def _path_text(step: dict | None) -> str:
-    if step is None:
-        return ""
-    with_block = step.get("with", {})
-    if not isinstance(with_block, dict):
-        return ""
-    path = with_block.get("path", "")
-    return path if isinstance(path, str) else ""
-
-
 def _contains_all(text: str, needles: tuple[str, ...]) -> list[str]:
     return [needle for needle in needles if needle not in text]
 
 
+def _find_step_block(text: str, name: str) -> str:
+    pattern = re.compile(
+        rf"(?ms)^ {{6}}- name: {re.escape(name)}\n" r".*?(?=^ {6}- name: |\Z)"
+    )
+    match = pattern.search(text)
+    return match.group(0) if match else ""
+
+
 def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
     try:
-        workflow = _load_workflow(workflow_path)
-    except (OSError, ValueError, yaml.YAMLError) as exc:
+        workflow_text = workflow_path.read_text(encoding="utf-8")
+    except OSError as exc:
         return [Violation(str(exc))]
 
     violations: list[Violation] = []
 
-    workflow_text = workflow_path.read_text(encoding="utf-8")
     if "workflow_dispatch:" not in workflow_text:
         violations.append(Violation("CUDA workflow must be manually dispatched"))
     for forbidden in ("pull_request:", "push:"):
@@ -124,37 +75,35 @@ def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
                 Violation(f"CUDA workflow must not trigger on {forbidden}")
             )
 
-    triggers = _trigger_mapping(workflow)
-    if "workflow_dispatch" not in triggers:
-        violations.append(
-            Violation("CUDA workflow trigger must include workflow_dispatch")
-        )
-
-    cuda_job = _job(workflow)
-    runner_labels = cuda_job.get("runs-on", [])
-    if not isinstance(runner_labels, list) or any(
+    runner_match = re.search(
+        r"(?m)^ {4}runs-on:\s*\[(?P<labels>[^\]]+)\]", workflow_text
+    )
+    runner_labels = set()
+    if runner_match:
+        runner_labels = {
+            label.strip() for label in runner_match.group("labels").split(",")
+        }
+    if not runner_match or any(
         label not in runner_labels for label in REQUIRED_RUNNER_LABELS
     ):
         labels = ", ".join(REQUIRED_RUNNER_LABELS)
         violations.append(Violation(f"CUDA job must run on [{labels}]"))
 
-    steps = _steps(cuda_job)
-
-    smoke_run = _run_text(_step_named(steps, "Run CUDA smoke tests"))
+    smoke_run = _find_step_block(workflow_text, "Run CUDA smoke tests")
     if "pixi run --locked -e cuda test-cuda" not in smoke_run:
         violations.append(Violation("CUDA workflow must run the test-cuda gate"))
 
-    policy_run = _run_text(_step_named(steps, "Run Phase 5 policy gates"))
+    policy_run = _find_step_block(workflow_text, "Run Phase 5 policy gates")
     for gate in _contains_all(policy_run, REQUIRED_POLICY_GATES):
         violations.append(Violation(f"CUDA workflow is missing policy gate: {gate}"))
 
-    full_run = _run_text(_step_named(steps, "Run Phase 5 CUDA go/no-go benchmark"))
+    full_run = _find_step_block(workflow_text, "Run Phase 5 CUDA go/no-go benchmark")
     if "pixi run --locked -e cuda bm-phase5-cuda-full" not in full_run:
         violations.append(
             Violation("CUDA workflow must run bm-phase5-cuda-full for the full row")
         )
 
-    packet_run = _run_text(_step_named(steps, "Write Phase 5 CUDA packet"))
+    packet_run = _find_step_block(workflow_text, "Write Phase 5 CUDA packet")
     packet_requirements = (
         "pixi run --locked -e cuda bm-phase5-cuda-packet",
         "--benchmark-json .benchmark_results/phase5_cuda_ci_full.json",
@@ -168,17 +117,18 @@ def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
             Violation(f"CUDA workflow packet step is missing: {requirement}")
         )
 
-    upload_step = _step_named(steps, "Upload Phase 5 CUDA packet")
-    if upload_step is None:
+    upload_step = _find_step_block(workflow_text, "Upload Phase 5 CUDA packet")
+    if not upload_step:
         violations.append(
             Violation("CUDA workflow must upload Phase 5 packet artifacts")
         )
-    elif not str(upload_step.get("uses", "")).startswith("actions/upload-artifact@"):
+    elif "uses: actions/upload-artifact@" not in upload_step:
         violations.append(
             Violation("CUDA workflow packet upload must use upload-artifact")
         )
-    artifact_paths = _path_text(upload_step)
-    for path in _contains_all(artifact_paths, REQUIRED_ARTIFACT_PATHS):
+    if upload_step and "if: always()" not in upload_step:
+        violations.append(Violation("CUDA workflow packet upload must run always"))
+    for path in _contains_all(upload_step, REQUIRED_ARTIFACT_PATHS):
         violations.append(
             Violation(f"CUDA workflow artifact upload is missing: {path}")
         )

@@ -95,3 +95,18 @@ def test_phase5_cuda_workflow_rejects_missing_artifact_path(tmp_path):
         "CUDA workflow artifact upload is missing: "
         ".benchmark_results/phase5_cuda_packet.json"
     ) in messages
+
+
+def test_phase5_cuda_workflow_rejects_non_always_artifact_upload(tmp_path):
+    module = _load_module()
+    path = _write_workflow(
+        tmp_path,
+        WORKFLOW.read_text(encoding="utf-8").replace(
+            "        if: always()\n",
+            "",
+        ),
+    )
+
+    messages = [violation.message for violation in module.find_violations(path)]
+
+    assert "CUDA workflow packet upload must run always" in messages
