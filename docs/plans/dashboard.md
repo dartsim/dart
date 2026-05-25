@@ -225,3 +225,25 @@ its own line so status updates remain git-history friendly.
 - Gate: `GroupProduct` source and tests land in `dart/math/lie_group/` with
   `pixi run lint`, build, and `ctest -R UNIT_math_lie_group` green; the
   Lie-group base API increment already merged via PR #2697.
+
+### PLAN-101: dartsim GUI Simulator
+
+- Owner doc: [`101-dartsim-gui-simulator.md`](101-dartsim-gui-simulator.md);
+  durable architecture/as-built in
+  [`../design/dartsim_gui_simulator.md`](../design/dartsim_gui_simulator.md),
+  developer overview in
+  [`../onboarding/gui-rendering.md`](../onboarding/gui-rendering.md).
+- Status: Active
+- Horizon: Next
+- Dimension: Easy start
+- Next step: v1 is implemented (engine `dartsim/engine` unit-tested by
+  `UNIT_dartsim_engine`; `dartsim/ui` editor builds and renders the
+  experimental scene headless). Pursue the remaining follow-ups: viewport
+  pick-to-tree selection sync, and co-evolution to adopt experimental
+  shape/loader APIs (replace editor-side shape descriptors) per PLAN-050.
+- Gate: The headless engine is covered by command/undo, object, selection,
+  name-uniqueness, and project-round-trip tests with zero GUI/renderer includes;
+  the editor loop (design → run → record → replay) works on the experimental
+  World only; the renderer stays backend-hidden (PLAN-060); and the default
+  `dartsim` headless smoke (`DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS`) renders a
+  non-blank editor frame while legacy `--scene` smokes keep contrast.

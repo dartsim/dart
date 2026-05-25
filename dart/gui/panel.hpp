@@ -204,6 +204,20 @@ struct PanelContext
   UiState ui;
 };
 
+/// Where a panel docks in the default dock layout when docking is enabled.
+///
+/// Panels sharing a side become tabs in that region. `None` leaves the panel
+/// floating. Ignored when the GUI build has no docking support.
+enum class DockSide
+{
+  None,
+  Left,
+  Right,
+  Top,
+  Bottom,
+  Center,
+};
+
 struct Panel
 {
   std::string title;
@@ -213,6 +227,7 @@ struct Panel
   bool autoResize = true;
   bool horizontalScrollbar = false;
   bool menuBar = false;
+  DockSide dockSide = DockSide::None;
   std::function<void(PanelBuilder&)> build;
   std::function<void(PanelBuilder&, PanelContext&)> buildWithContext;
 };

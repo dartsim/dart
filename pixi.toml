@@ -919,6 +919,19 @@ run-cpp-target = { cmd = """
 
 ex = { cmd = "python scripts/run_cpp_example.py", depends-on = ["config"] }
 
+# Launch the standalone dartsim GUI editor. Builds against the fetched ImGui
+# docking branch (DART_USE_SYSTEM_IMGUI_OVERRIDE=OFF) so the editor's dockable
+# panels are available; run_cpp_example.py ensures the GUI/filament/docking-imgui
+# build requirements (and reports if `pixi run config` has not been run yet).
+# Deliberately does not depend on `config`, which forces system ImGui ON and
+# would thrash the ImGui cache on every launch. Extra CLI args pass through, e.g.
+# `pixi run dartsim -- --width 1600 --height 900`.
+dartsim = { cmd = [
+  "python",
+  "scripts/run_cpp_example.py",
+  "dartsim",
+], env = { BUILD_TYPE = "Release", DART_VERBOSE = "OFF", DART_BUILD_DARTPY_OVERRIDE = "OFF", DART_BUILD_GUI_OVERRIDE = "ON", DART_FETCH_FILAMENT_OVERRIDE = "ON", DART_USE_SYSTEM_FILAMENT_OVERRIDE = "OFF", DART_USE_SYSTEM_IMGUI_OVERRIDE = "OFF" } }
+
 ex-atlas-puppet = { depends-on = [
   { task = "run-cpp-target", args = [
     "atlas_puppet",
