@@ -138,7 +138,8 @@ Use these practices:
 ## AI Review Comments
 
 Never reply to AI-generated review comments from bot users such as
-`chatgpt-codex-connector[bot]`, `github-actions[bot]`, or `copilot[bot]`.
+`chatgpt-codex-connector[bot]`, `github-code-quality[bot]`,
+`github-actions[bot]`, or `copilot[bot]`.
 When a draft PR is first published, wait a reasonable time for the automatic
 Codex review to start; the PR body may show a small Codex activity indicator
 before the submitted review appears. Make fixes silently. Push and ask for a new

@@ -68,7 +68,7 @@ OpenCode and Codex entrypoints live in `.opencode/command/` and
 
 - **Bug fixes**: Require PRs to BOTH `release-6.16` AND `main` branches. See `docs/onboarding/contributing.md`.
 - **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. Promote durable artifacts before completion and delete the task folder in the completing PR. See `docs/dev_tasks/README.md` for criteria and cleanup rules.
-- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-actions[bot]`, `copilot[bot]`). No inline replies and no acknowledgment comments. Make local fixes silently. Pushes, PR comments, thread resolution, review re-triggers, and other GitHub mutations require explicit maintainer/user approval. See `docs/onboarding/ai-tools.md`.
+- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`, `github-actions[bot]`, `copilot[bot]`). No inline replies and no acknowledgment comments. Make local fixes silently. Pushes, PR comments, thread resolution, review re-triggers, and other GitHub mutations require explicit maintainer/user approval. See `docs/onboarding/ai-tools.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
 - **Commit/PR titles**: Do not prefix commit messages or PR titles with agent tags like `[codex]`; use plain descriptive titles.
