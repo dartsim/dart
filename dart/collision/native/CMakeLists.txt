@@ -91,6 +91,8 @@ if(NOT TARGET benchmark::benchmark)
   find_package(benchmark QUIET CONFIG)
 endif()
 
+find_package(Threads REQUIRED)
+
 target_include_directories(${target_name}
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
@@ -104,6 +106,8 @@ target_link_libraries(${target_name}
   PUBLIC
     Eigen3::Eigen
     EnTT::EnTT
+  PRIVATE
+    Threads::Threads
 )
 
 target_compile_definitions(${target_name}

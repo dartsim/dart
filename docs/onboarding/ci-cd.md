@@ -229,6 +229,7 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 | `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule     | Yes           |
 | `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                    | N/A           |
 | `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                | N/A           |
+| `ci_cuda.yml`        | CUDA smoke            | Linux GPU      | Manual                              | N/A           |
 | `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | Branch push core; PR/main full      | Yes           |
 | `ci_simd.yml`        | SIMD multi-arch       | Ubuntu         | Branch/PR path-scoped, manual       | N/A           |
 | `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule | Yes           |
@@ -244,7 +245,7 @@ project's continuous validation surface.
 | Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, gz-physics compatibility, baseline dartpy wheels |
 | Conditional PR            | When affected         | SIMD-only CI, path-filtered platform jobs for code changes                              |
 | Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags    |
-| Scheduled/manual coverage | No                    | FreeBSD VM, repeated full matrix, maintenance lockfile updates                          |
+| Scheduled/manual coverage | No                    | FreeBSD VM, CUDA smoke, repeated full matrix, maintenance lockfile updates              |
 
 Guardrails:
 

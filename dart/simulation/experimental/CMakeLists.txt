@@ -114,6 +114,49 @@ target_compile_definitions(${target_name}
     DART_BUILDING_DART_EXPERIMENTAL
 )
 
+if(DART_ENABLE_EXPERIMENTAL_CUDA)
+  find_package(CUDAToolkit REQUIRED)
+
+  set(cuda_target_name ${target_name}-cuda)
+  add_library(${cuda_target_name} STATIC
+    compute/cuda/rigid_body_state_batch_cuda.cpp
+    compute/cuda/rigid_body_state_batch_cuda.cu
+  )
+  dart_maybe_apply_coverage_config(${cuda_target_name})
+
+  target_include_directories(${cuda_target_name}
+    PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  )
+
+  target_compile_features(${cuda_target_name} PUBLIC cxx_std_20)
+
+  target_link_libraries(${cuda_target_name}
+    PUBLIC
+      ${target_name}
+    PRIVATE
+      CUDA::cudart
+  )
+
+  target_compile_options(${cuda_target_name}
+    PRIVATE
+      $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
+  )
+
+  set_target_properties(${cuda_target_name} PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+    CUDA_STANDARD 17
+    CUDA_STANDARD_REQUIRED ON
+    FOLDER "${component_name}/cuda"
+  )
+
+  if(DART_CUDA_ARCHITECTURES)
+    set_target_properties(${cuda_target_name} PROPERTIES
+      CUDA_ARCHITECTURES "${DART_CUDA_ARCHITECTURES}"
+    )
+  endif()
+endif()
+
 # Component
 add_component(${PROJECT_NAME} ${component_name})
 add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
