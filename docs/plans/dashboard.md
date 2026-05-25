@@ -264,27 +264,19 @@ its own line so status updates remain git-history friendly.
 
 ### PLAN-102: Demos App
 
-- Owner doc: [`102-demos-app.md`](102-demos-app.md); active architecture in
-  [`../dev_tasks/demos_app/01-design.md`](../dev_tasks/demos_app/01-design.md),
-  execution tracking in
-  [`../dev_tasks/demos_app/README.md`](../dev_tasks/demos_app/README.md).
-- Status: Active
+- Owner doc: [`../design/demos_app.md`](../design/demos_app.md); user
+  instructions in [`../../examples/README.md`](../../examples/README.md).
+- Status: Complete
 - Horizon: Now
 - Dimension: Easy start
-- Next step: Runtime scene-swap host, `dart-demos` app, and migration of 37 GUI
-  examples into categorized scenes are landed and headless-verified (cycle smoke
-  `EXAMPLE_dart_demos_cycle_headless_smoke`); tooling/docs/CHANGELOG updated.
-  Remaining (deferred, see `../dev_tasks/demos_app/RESUME.md`): collapse the
-  `dart/gui/detail` `ExampleScene` fixture catalog into the registry (retarget
-  `test_filament_scene_extraction` + per-scene smokes + `dartsim --scene`) and
-  promote the design doc — both touch shared GUI test infra (PLAN-101).
-- Gate: `dart-demos` launches and switches across several scenes (including an
-  asset-backed robot) in one window without leaks or window recreation; the
-  example renderable-count and per-scene headless smokes run against the Demos
-  registry; no standalone GUI example binary or `--scene` example path remains
-  (only `hello_world` stays standalone); `pixi run lint`, `build`, `test-all`,
-  and `check-docs-policy` green.
-
-> Cross-plan note: removing the `--scene` example catalog supersedes PLAN-101's
-> "legacy `--scene` smokes keep contrast" gate clause; update that clause when
-> PLAN-102 Phase 3 lands.
+- Next step: Implemented — `dart-demos` hosts 37 GUI examples as categorized,
+  runtime-switchable scenes (cycle smoke `EXAMPLE_dart_demos_cycle_headless_smoke`);
+  `hello_world` stays the standalone template; tooling/docs/CHANGELOG updated.
+  The `dart/gui/detail` `ExampleScene` set is intentionally kept as the renderer's
+  internal test fixtures (see the plan's "examples vs renderer fixtures"
+  decision), so PLAN-101's `--scene` smoke gate is unaffected. Residual options
+  (split demos into a scenes lib; dockable workspace) are in the plan's Open Gaps.
+- Gate: `dart-demos` launches and switches across scenes (including asset-backed
+  robots) in one window without window recreation; the headless cycle smoke
+  renders every scene; only `hello_world` plus a few special-build/test-coupled
+  programs stay standalone; `pixi run lint` and `check-docs-policy` green.
