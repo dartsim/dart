@@ -107,7 +107,13 @@ def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
 @pytest.mark.parametrize(
     ("target", "build_target", "binary_name", "requirements", "default_args"),
     [
-        ("dartsim", "dartsim", "dartsim", ("filament",), ()),
+        (
+            "dartsim",
+            "dartsim",
+            "dartsim",
+            ("filament", "simulation-experimental"),
+            (),
+        ),
         (
             "g1_puppet",
             "g1_puppet",
@@ -148,8 +154,14 @@ def test_filament_routed_examples_resolve_to_filament(
     spec = run_cpp_example._resolve_example(target)
     assert spec.build_target == target
     assert spec.binary_name == target
-    assert spec.requirements == ("filament",)
+    assert "filament" in spec.requirements
     assert spec.default_args == default_args
+
+
+def test_dartsim_requires_experimental_world(run_cpp_example):
+    spec = run_cpp_example._resolve_example("dartsim")
+
+    assert "simulation-experimental" in spec.requirements
 
 
 def _scene_from_default_args(default_args):
@@ -344,6 +356,50 @@ def test_cmake_cache_bool(run_cpp_example, tmp_path):
 
     cache_path.write_text("UNRELATED:BOOL=ON\n", encoding="utf-8")
     assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI") is None
+
+
+def test_ensure_simulation_experimental_reconfigures_off_cache(
+    run_cpp_example, tmp_path, monkeypatch
+):
+    cache_path = tmp_path / "CMakeCache.txt"
+    cache_path.write_text(
+        "DART_BUILD_SIMULATION_EXPERIMENTAL:BOOL=OFF\n", encoding="utf-8"
+    )
+    calls = []
+
+    def fake_configure(build_dir, definitions, env):
+        calls.append((build_dir, definitions, env))
+
+    monkeypatch.setattr(run_cpp_example, "_configure", fake_configure)
+    env = {"EXAMPLE": "1"}
+
+    run_cpp_example._ensure_simulation_experimental(tmp_path, env)
+
+    assert calls == [
+        (tmp_path, {"DART_BUILD_SIMULATION_EXPERIMENTAL": "ON"}, env)
+    ]
+
+
+def test_ensure_simulation_experimental_keeps_on_cache(
+    run_cpp_example, tmp_path, monkeypatch
+):
+    cache_path = tmp_path / "CMakeCache.txt"
+    cache_path.write_text(
+        "DART_BUILD_SIMULATION_EXPERIMENTAL:BOOL=ON\n", encoding="utf-8"
+    )
+    calls = []
+
+    monkeypatch.setattr(
+        run_cpp_example,
+        "_configure",
+        lambda build_dir, definitions, env: calls.append(
+            (build_dir, definitions, env)
+        ),
+    )
+
+    run_cpp_example._ensure_simulation_experimental(tmp_path, {})
+
+    assert calls == []
 
 
 def test_run_filament_smoke_uses_no_tests_error_when_supported(

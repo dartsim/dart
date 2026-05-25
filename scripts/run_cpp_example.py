@@ -111,7 +111,9 @@ GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
 }
 
 EXAMPLE_SPECS = {
-    "dartsim": ExampleSpec("dartsim", "dartsim", ("filament",)),
+    "dartsim": ExampleSpec(
+        "dartsim", "dartsim", ("filament", "simulation-experimental")
+    ),
     **{
         name: ExampleSpec(name, name, ("filament",), default_args)
         for name, default_args in GUI_SCENE_EXAMPLE_DEFAULT_ARGS.items()
@@ -323,11 +325,31 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
     _configure(build_dir, definitions, env)
 
 
+def _ensure_simulation_experimental(build_dir: Path, env: dict[str, str]) -> None:
+    desired = {"DART_BUILD_SIMULATION_EXPERIMENTAL": "ON"}
+    definitions = {
+        option: value
+        for option, value in desired.items()
+        if not _cache_bool_matches(build_dir, option, value)
+    }
+    if not definitions:
+        return
+
+    print(
+        "Configuring DART simulation experimental requirements "
+        f"({', '.join(f'{k}={v}' for k, v in definitions.items())})...",
+        file=sys.stderr,
+    )
+    _configure(build_dir, definitions, env)
+
+
 def _ensure_target_requirements(
     build_dir: Path, spec: ExampleSpec, env: dict[str, str], smoke: bool
 ) -> None:
     if "filament" in spec.requirements:
         _ensure_filament(build_dir, env, smoke)
+    if "simulation-experimental" in spec.requirements:
+        _ensure_simulation_experimental(build_dir, env)
 
 
 def ensure_build_exists(build_dir: Path, build_type: str) -> None:
