@@ -62,15 +62,13 @@ std::string NameManager::makeUnique(
     std::string_view base,
     ObjectId except)
 {
-  std::string candidate(base);
-  if (candidate.empty()) {
-    candidate = "Object";
-  }
+  const std::string baseName = base.empty() ? "Object" : std::string(base);
+  std::string candidate = baseName;
   if (model.isNameAvailable(parent, candidate, except)) {
     return candidate;
   }
   for (int suffix = 1;; ++suffix) {
-    std::string next = std::string(base) + " " + std::to_string(suffix);
+    std::string next = baseName + " " + std::to_string(suffix);
     if (model.isNameAvailable(parent, next, except)) {
       return next;
     }

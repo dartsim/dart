@@ -84,32 +84,41 @@ void writeMatrix3(std::ostream& out, const Eigen::Matrix3d& m)
   out << '\n';
 }
 
-void readMatrix4(std::istream& in, Eigen::Isometry3d& transform)
+bool readMatrix4(std::istream& in, Eigen::Isometry3d& transform)
 {
   Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
   for (int r = 0; r < 4; ++r) {
     for (int c = 0; c < 4; ++c) {
-      in >> m(r, c);
+      if (!(in >> m(r, c))) {
+        return false;
+      }
     }
   }
   transform.matrix() = m;
+  return true;
 }
 
-void readMatrix3(std::istream& in, Eigen::Matrix3d& m)
+bool readMatrix3(std::istream& in, Eigen::Matrix3d& m)
 {
   for (int r = 0; r < 3; ++r) {
     for (int c = 0; c < 3; ++c) {
-      in >> m(r, c);
+      if (!(in >> m(r, c))) {
+        return false;
+      }
     }
   }
+  return true;
 }
 
 template <int N>
-void readVector(std::istream& in, Eigen::Matrix<double, N, 1>& v)
+bool readVector(std::istream& in, Eigen::Matrix<double, N, 1>& v)
 {
   for (int i = 0; i < N; ++i) {
-    in >> v[i];
+    if (!(in >> v[i])) {
+      return false;
+    }
   }
+  return true;
 }
 
 } // namespace
@@ -162,8 +171,7 @@ bool load(std::string_view text, SceneModel& out)
     std::istringstream header(line);
     std::string tag;
     int version = 0;
-    header >> tag >> version;
-    if (tag != "dartsim-scene") {
+    if (!(header >> tag >> version) || tag != "dartsim-scene") {
       return false;
     }
     // Reject unsupported versions instead of parsing newer files with v1 rules.
@@ -186,7 +194,9 @@ bool load(std::string_view text, SceneModel& out)
     }
 
     if (key == "timestep") {
-      ls >> result.timeStep;
+      if (!(ls >> result.timeStep)) {
+        return false;
+      }
     } else if (key == "object") {
       current = SceneObject{};
       inObject = true;
@@ -197,47 +207,81 @@ bool load(std::string_view text, SceneModel& out)
       }
     } else if (inObject) {
       if (key == "id") {
-        ls >> current.id;
+        if (!(ls >> current.id)) {
+          return false;
+        }
       } else if (key == "type") {
         int value = 0;
-        ls >> value;
+        if (!(ls >> value)) {
+          return false;
+        }
         current.type = static_cast<ObjectType>(value);
       } else if (key == "parent") {
-        ls >> current.parent;
+        if (!(ls >> current.parent)) {
+          return false;
+        }
       } else if (key == "visible") {
         int value = 1;
-        ls >> value;
+        if (!(ls >> value)) {
+          return false;
+        }
         current.visible = value != 0;
       } else if (key == "multibody") {
-        ls >> current.multiBody;
+        if (!(ls >> current.multiBody)) {
+          return false;
+        }
       } else if (key == "parentlink") {
-        ls >> current.parentLink;
+        if (!(ls >> current.parentLink)) {
+          return false;
+        }
       } else if (key == "jointkind") {
         int value = 0;
-        ls >> value;
+        if (!(ls >> value)) {
+          return false;
+        }
         current.jointType = static_cast<JointKind>(value);
       } else if (key == "shapetype") {
         int value = 0;
-        ls >> value;
+        if (!(ls >> value)) {
+          return false;
+        }
         current.shape.type = static_cast<ShapeType>(value);
       } else if (key == "transform") {
-        readMatrix4(ls, current.transform);
+        if (!readMatrix4(ls, current.transform)) {
+          return false;
+        }
       } else if (key == "linvel") {
-        readVector<3>(ls, current.linearVelocity);
+        if (!readVector<3>(ls, current.linearVelocity)) {
+          return false;
+        }
       } else if (key == "angvel") {
-        readVector<3>(ls, current.angularVelocity);
+        if (!readVector<3>(ls, current.angularVelocity)) {
+          return false;
+        }
       } else if (key == "mass") {
-        ls >> current.mass;
+        if (!(ls >> current.mass)) {
+          return false;
+        }
       } else if (key == "inertia") {
-        readMatrix3(ls, current.inertia);
+        if (!readMatrix3(ls, current.inertia)) {
+          return false;
+        }
       } else if (key == "dim") {
-        readVector<3>(ls, current.shape.dimensions);
+        if (!readVector<3>(ls, current.shape.dimensions)) {
+          return false;
+        }
       } else if (key == "color") {
-        readVector<4>(ls, current.shape.color);
+        if (!readVector<4>(ls, current.shape.color)) {
+          return false;
+        }
       } else if (key == "jointaxis") {
-        readVector<3>(ls, current.jointAxis);
+        if (!readVector<3>(ls, current.jointAxis)) {
+          return false;
+        }
       } else if (key == "jointpos") {
-        ls >> current.jointPosition;
+        if (!(ls >> current.jointPosition)) {
+          return false;
+        }
       } else if (key == "name") {
         std::string rest;
         std::getline(ls, rest);

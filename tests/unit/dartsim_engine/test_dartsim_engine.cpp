@@ -118,6 +118,12 @@ TEST(SceneModel, NameUniquenessHelper)
   EXPECT_FALSE(model.isNameAvailable(kNoObject, "Body"));
   EXPECT_TRUE(model.isNameAvailable(kNoObject, "Other"));
   EXPECT_EQ(NameManager::makeUnique(model, kNoObject, "Body"), "Body 1");
+  EXPECT_EQ(NameManager::makeUnique(model, kNoObject, ""), "Object");
+
+  SceneObject fallback;
+  fallback.name = "Object";
+  model.add(fallback);
+  EXPECT_EQ(NameManager::makeUnique(model, kNoObject, ""), "Object 1");
 }
 
 //==============================================================================
@@ -491,6 +497,30 @@ TEST(SceneIO, RejectsDuplicateObjectIds)
   SceneModel out;
   EXPECT_FALSE(scene_io::load(text, out));
   EXPECT_TRUE(out.empty());
+}
+
+TEST(SceneIO, RejectsMalformedNumericFields)
+{
+  auto expectRejects = [](const char* text) {
+    SceneModel out;
+    EXPECT_FALSE(scene_io::load(text, out)) << text;
+    EXPECT_TRUE(out.empty());
+  };
+
+  expectRejects("dartsim-scene 1\ntimestep nope\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id abc\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "transform 1 0 0 0 0 1 0 0 0 0 not-a-number 0 0 0 0 1\n"
+      "end\n");
 }
 
 TEST(CommandManager, DuplicateExplicitNamesAreDeduplicated)
