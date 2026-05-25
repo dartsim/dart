@@ -107,7 +107,13 @@ def test_parse_args_allows_pixi_help_without_target(run_cpp_example, capsys):
 @pytest.mark.parametrize(
     ("target", "build_target", "binary_name", "requirements", "default_args"),
     [
-        ("dartsim", "dartsim", "dartsim", ("filament",), ()),
+        (
+            "dartsim",
+            "dartsim",
+            "dartsim",
+            ("filament", "simulation-experimental"),
+            (),
+        ),
         (
             "g1_puppet",
             "g1_puppet",
@@ -148,8 +154,14 @@ def test_filament_routed_examples_resolve_to_filament(
     spec = run_cpp_example._resolve_example(target)
     assert spec.build_target == target
     assert spec.binary_name == target
-    assert spec.requirements == ("filament",)
+    assert "filament" in spec.requirements
     assert spec.default_args == default_args
+
+
+def test_dartsim_requires_experimental_world(run_cpp_example):
+    spec = run_cpp_example._resolve_example("dartsim")
+
+    assert "simulation-experimental" in spec.requirements
 
 
 def _scene_from_default_args(default_args):
@@ -177,13 +189,66 @@ def test_filament_routed_examples_do_not_inject_scene_defaults():
 
 
 def test_split_filament_scene_all_uses_smoke_scene_list(run_cpp_example):
-    scenes, args = run_cpp_example._split_filament_scenes(
+    scenes, args, scene_option_explicit = run_cpp_example._split_filament_scenes(
         ["--frames", "1", "--scene", "all", "--width", "320"]
     )
 
     assert tuple(scenes) == run_cpp_example.FILAMENT_ALL_SCENES
     assert args == ["--frames", "1", "--width", "320"]
+    assert scene_option_explicit is True
     assert "g1" not in scenes
+
+
+def test_split_filament_scenes_marks_implicit_editor_default(run_cpp_example):
+    scenes, args, scene_option_explicit = run_cpp_example._split_filament_scenes([])
+
+    assert scenes == ["mvp"]
+    assert args == []
+    assert scene_option_explicit is False
+
+
+def test_prepare_filament_run_args_keeps_no_scene_launch_for_editor(
+    run_cpp_example, monkeypatch
+):
+    monkeypatch.setenv("DISPLAY", ":99")
+
+    args = run_cpp_example._prepare_filament_run_args(
+        [], "mvp", scene_option_explicit=False, multiple_scenes=False
+    )
+
+    assert "--scene" not in args
+
+
+def test_prepare_filament_run_args_preserves_explicit_mvp_scene(
+    run_cpp_example, monkeypatch
+):
+    monkeypatch.setenv("DISPLAY", ":99")
+
+    args = run_cpp_example._prepare_filament_run_args(
+        [], "mvp", scene_option_explicit=True, multiple_scenes=False
+    )
+
+    assert args[:2] == ["--scene", "mvp"]
+
+
+def test_prepare_filament_run_args_preserves_mvp_scene_all(
+    run_cpp_example, monkeypatch
+):
+    monkeypatch.setenv("DISPLAY", ":99")
+    scenes, base_args, scene_option_explicit = (
+        run_cpp_example._split_filament_scenes(
+            ["--scene", "all", "--frames", "1"]
+        )
+    )
+
+    args = run_cpp_example._prepare_filament_run_args(
+        base_args,
+        scenes[0],
+        scene_option_explicit=scene_option_explicit,
+        multiple_scenes=len(scenes) > 1,
+    )
+
+    assert args[:4] == ["--frames", "1", "--scene", "mvp"]
 
 
 def test_filament_smoke_pattern_uses_scene_all_list(run_cpp_example):
@@ -191,6 +256,45 @@ def test_filament_smoke_pattern_uses_scene_all_list(run_cpp_example):
         run_cpp_example._filament_smoke_test_name(scene)
         for scene in run_cpp_example.FILAMENT_ALL_SCENES
     )
+
+
+def test_imgui_override_pins_variant_for_non_smoke_gui_runs(run_cpp_example):
+    # The docked editor (dartsim without --scene) needs the fetched docking ImGui.
+    assert run_cpp_example._imgui_override("dartsim", [], smoke=False) == "OFF"
+    # Scene fixtures and other GUI examples must use system ImGui, even right
+    # after an editor launch left the cache at OFF.
+    assert (
+        run_cpp_example._imgui_override("dartsim", ["--scene", "boxes"], smoke=False)
+        == "ON"
+    )
+    assert run_cpp_example._imgui_override("rigid_cubes", [], smoke=False) == "ON"
+    # Smoke runs keep their externally configured cache (no override pinned).
+    assert run_cpp_example._imgui_override("dartsim", [], smoke=True) is None
+
+
+def test_apply_imgui_override_overwrites_preset(run_cpp_example):
+    # A scene-fixture launch must use system ImGui even when the editor preset
+    # (DART_USE_SYSTEM_IMGUI_OVERRIDE=OFF, set by the `pixi run dartsim` task) is
+    # already in the environment.
+    env = {"DART_USE_SYSTEM_IMGUI_OVERRIDE": "OFF"}
+    run_cpp_example._apply_imgui_override(
+        env, "dartsim", ["--scene", "boxes"], smoke=False, requirements=("filament",)
+    )
+    assert env["DART_USE_SYSTEM_IMGUI_OVERRIDE"] == "ON"
+
+    # The editor launch pins OFF.
+    env = {}
+    run_cpp_example._apply_imgui_override(
+        env, "dartsim", [], smoke=False, requirements=("filament",)
+    )
+    assert env["DART_USE_SYSTEM_IMGUI_OVERRIDE"] == "OFF"
+
+    # Non-GUI targets leave the variable untouched.
+    env = {}
+    run_cpp_example._apply_imgui_override(
+        env, "some_tool", [], smoke=False, requirements=()
+    )
+    assert "DART_USE_SYSTEM_IMGUI_OVERRIDE" not in env
 
 
 def _cmake_filament_smoke_scene_pairs(cmake_text):
@@ -266,8 +370,11 @@ def test_filament_smoke_cmake_registers_analysis_modes(run_cpp_example):
     )
     scene_call = _cmake_headless_smoke_test_call(cmake_text, "${_test_name}")
 
+    # The no-scene launch is the experimental-World editor, whose minimal default
+    # scene uses the non-blank (basic) check; the legacy --scene fixtures also
+    # use the basic check.
     assert "ANALYZE" in _cmake_tokens(default_call)
-    assert _cmake_option_value(default_call, "ANALYSIS_MODE") == "contrast"
+    assert _cmake_option_value(default_call, "ANALYSIS_MODE") == "basic"
     assert "ANALYZE" in _cmake_tokens(scene_call)
     assert _cmake_option_value(scene_call, "ANALYSIS_MODE") == "basic"
 
@@ -302,6 +409,50 @@ def test_cmake_cache_bool(run_cpp_example, tmp_path):
 
     cache_path.write_text("UNRELATED:BOOL=ON\n", encoding="utf-8")
     assert run_cpp_example._cmake_cache_bool(tmp_path, "DART_BUILD_GUI") is None
+
+
+def test_ensure_simulation_experimental_reconfigures_off_cache(
+    run_cpp_example, tmp_path, monkeypatch
+):
+    cache_path = tmp_path / "CMakeCache.txt"
+    cache_path.write_text(
+        "DART_BUILD_SIMULATION_EXPERIMENTAL:BOOL=OFF\n", encoding="utf-8"
+    )
+    calls = []
+
+    def fake_configure(build_dir, definitions, env):
+        calls.append((build_dir, definitions, env))
+
+    monkeypatch.setattr(run_cpp_example, "_configure", fake_configure)
+    env = {"EXAMPLE": "1"}
+
+    run_cpp_example._ensure_simulation_experimental(tmp_path, env)
+
+    assert calls == [
+        (tmp_path, {"DART_BUILD_SIMULATION_EXPERIMENTAL": "ON"}, env)
+    ]
+
+
+def test_ensure_simulation_experimental_keeps_on_cache(
+    run_cpp_example, tmp_path, monkeypatch
+):
+    cache_path = tmp_path / "CMakeCache.txt"
+    cache_path.write_text(
+        "DART_BUILD_SIMULATION_EXPERIMENTAL:BOOL=ON\n", encoding="utf-8"
+    )
+    calls = []
+
+    monkeypatch.setattr(
+        run_cpp_example,
+        "_configure",
+        lambda build_dir, definitions, env: calls.append(
+            (build_dir, definitions, env)
+        ),
+    )
+
+    run_cpp_example._ensure_simulation_experimental(tmp_path, {})
+
+    assert calls == []
 
 
 def test_run_filament_smoke_uses_no_tests_error_when_supported(

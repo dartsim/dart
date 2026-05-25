@@ -137,4 +137,45 @@ public:
   void execute(World& world, ComputeExecutor& executor) override;
 };
 
+/// Updates free rigid-body velocities from the assembled transient force buffer
+/// (persistent applied force/torque plus gravity) without advancing positions.
+/// Pairs with RigidBodyPositionStage so a contact-resolution stage can run at
+/// the velocity level in between.
+class DART_EXPERIMENTAL_API RigidBodyVelocityStage final : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+};
+
+/// Advances free rigid-body poses from their current velocities and refreshes
+/// frame caches. Run after velocity and contact resolution.
+class DART_EXPERIMENTAL_API RigidBodyPositionStage final : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+};
+
+/// Resolves contacts between free rigid bodies with sequential normal impulses
+/// (frictionless, fully inelastic). Static bodies (non-positive mass) act as
+/// immovable. This is the first contact-solver slice; friction, restitution
+/// tuning, joints/links, and an LCP formulation are future work.
+class DART_EXPERIMENTAL_API RigidBodyContactStage final : public WorldStepStage
+{
+public:
+  explicit RigidBodyContactStage(std::size_t iterations = 8);
+
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+
+  [[nodiscard]] std::size_t getIterations() const noexcept;
+
+private:
+  std::size_t m_iterations;
+};
+
 } // namespace dart::simulation::experimental::compute

@@ -38,27 +38,21 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     )
 
     lines = result.stdout.strip().splitlines()
-    assert len(lines) == 8
+    assert len(lines) == 1
     assert all("scripts/run_cpp_benchmark.py" in line for line in lines)
     assert all("--benchmark_out_format=json" in line for line in lines)
     assert all("--benchmark_min_time=1ms" in line for line in lines)
     assert all("--benchmark_repetitions=3" in line for line in lines)
-    assert "dashboard_world_step.json" in result.stdout
-    assert "dashboard_rigidbody_step.json" in result.stdout
-    assert "dashboard_contact_shaped.json" in result.stdout
-    assert "dashboard_contact_islands.json" in result.stdout
-    assert "dashboard_phase5_cpu_baseline.json" in result.stdout
-    assert "dashboard_robots.json" in result.stdout
-    assert "dashboard_lcp.json" in result.stdout
-    assert "dashboard_simd.json" in result.stdout
+    assert "dashboard_experimental_world.json" in result.stdout
+    assert "BM_WorldUpdateKinematics" in result.stdout
     assert "BM_WorldStep(Sequential|Parallel)/.*" in result.stdout
     assert "BM_RigidBodyStep(Sequential|Parallel)/.*" in result.stdout
     assert "BM_ContactShaped(Sequential|Parallel)/.*" in result.stdout
     assert "BM_ContactIslandShaped(Sequential|Parallel)/.*" in result.stdout
     assert "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10" in result.stdout
-    assert "BM_Robot_(KR5|Atlas)_WorldStep" in result.stdout
-    assert "BM_LCP_COMPARE_SMOKE" in result.stdout
-    assert "BM_Add_DART_f32(_Baseline)?/1024(/.*)?$" in result.stdout
+    assert "BM_Robot_(KR5|Atlas)_WorldStep" not in result.stdout
+    assert "BM_LCP_COMPARE_SMOKE" not in result.stdout
+    assert "BM_Add_DART_f32(_Baseline)?/1024(/.*)?$" not in result.stdout
 
 
 def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):
@@ -67,9 +61,7 @@ def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):
             sys.executable,
             str(SCRIPT),
             "--surface",
-            "simd",
-            "--surface",
-            "lcp",
+            "experimental-world",
             "--output-dir",
             str(tmp_path),
             "--benchmark-min-time",
@@ -84,10 +76,8 @@ def test_dashboard_surface_runner_can_select_specific_surfaces(tmp_path):
     )
 
     lines = result.stdout.strip().splitlines()
-    assert len(lines) == 2
-    assert "dashboard_simd.json" in result.stdout
-    assert "dashboard_lcp.json" in result.stdout
-    assert "dashboard_world_step.json" not in result.stdout
+    assert len(lines) == 1
+    assert "dashboard_experimental_world.json" in result.stdout
     assert "--benchmark_min_time=2ms" in result.stdout
     assert "--benchmark_repetitions=2" in result.stdout
 

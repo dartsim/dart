@@ -44,6 +44,16 @@ class JointType(Enum):
     CUSTOM = 8
 
 
+class ActuatorType(Enum):
+    FORCE = 0
+    PASSIVE = 1
+    SERVO = 2
+    VELOCITY = 3
+    ACCELERATION = 4
+    LOCKED = 5
+    MIMIC = 6
+
+
 class LoopClosureFamily(Enum):
     RIGID = 0
     POINT = 1
@@ -56,6 +66,46 @@ class LoopClosureResidualCoordinates(Enum):
 
 class WorldSyncStage(Enum):
     KINEMATICS = 0
+
+
+class CollisionShapeType(Enum):
+    SPHERE = 0
+    BOX = 1
+
+
+class CollisionShape:
+    @staticmethod
+    def sphere(radius: float) -> CollisionShape:
+        ...
+
+    @staticmethod
+    def box(half_extents: ArrayLike) -> CollisionShape:
+        ...
+
+    type: CollisionShapeType
+    radius: float
+    half_extents: NDArray[np.float64]
+
+
+class CollisionBody:
+    name: str
+    is_rigid_body: bool
+    is_link: bool
+    is_valid: bool
+
+    def as_rigid_body(self) -> RigidBody | None:
+        ...
+
+    def as_link(self) -> Link | None:
+        ...
+
+
+class Contact:
+    body_a: CollisionBody
+    body_b: CollisionBody
+    point: NDArray[np.float64]
+    normal: NDArray[np.float64]
+    depth: float
 
 
 class ClosureKinematicsPolicy(Enum):
@@ -126,12 +176,16 @@ class JointSpec:
         name: str = "",
         type: JointType = ...,
         axis: ArrayLike | None = None,
+        axis2: ArrayLike | None = None,
+        transform_from_parent: ArrayLike | None = None,
     ) -> None:
         ...
 
     name: str
     type: JointType
     axis: NDArray[np.float64]
+    axis2: NDArray[np.float64]
+    transform_from_parent: NDArray[np.float64]
 
 
 class LoopClosureSpec:
@@ -194,6 +248,7 @@ class RigidBodyOptions:
     linear_velocity: NDArray[np.float64]
     angular_velocity: NDArray[np.float64]
     inertia: NDArray[np.float64]
+    is_static: bool
 
 
 class Frame:
@@ -242,7 +297,28 @@ class Multibody:
     joints: list[Joint]
     link_names: list[str]
     joint_names: list[str]
+    mass_matrix: NDArray[np.float64]
+    inverse_mass_matrix: NDArray[np.float64]
+    coriolis_forces: NDArray[np.float64]
+    gravity_forces: NDArray[np.float64]
+    coriolis_and_gravity_forces: NDArray[np.float64]
     is_valid: bool
+
+    def compute_inverse_dynamics(
+        self, desired_acceleration: ArrayLike
+    ) -> NDArray[np.float64]:
+        ...
+
+    def compute_impulse_response(
+        self, joint_impulse: ArrayLike
+    ) -> NDArray[np.float64]:
+        ...
+
+    def get_jacobian(self, link: Link) -> NDArray[np.float64]:
+        ...
+
+    def get_world_jacobian(self, link: Link) -> NDArray[np.float64]:
+        ...
 
     @overload
     def add_link(self, name: str = "") -> Link:
@@ -264,23 +340,57 @@ class Multibody:
 class Link(Frame):
     name: str
     parent_joint: Joint
+    mass: float
+    inertia: NDArray[np.float64]
+    center_of_mass: NDArray[np.float64]
     translation: NDArray[np.float64]
     rotation: NDArray[np.float64]
     quaternion: NDArray[np.float64]
     transform: NDArray[np.float64]
+    collision_shape: CollisionShape | None
+    has_collision_shape: bool
     is_valid: bool
+
+    def set_collision_shape(self, shape: CollisionShape) -> None:
+        ...
 
 
 class Joint:
     name: str
     type: JointType
+    actuator_type: ActuatorType
+    command_velocity: NDArray[np.float64]
     axis: NDArray[np.float64]
+    axis2: NDArray[np.float64]
+    pitch: float
     num_dofs: int
     position: NDArray[np.float64]
     velocity: NDArray[np.float64]
+    force: NDArray[np.float64]
+    acceleration: NDArray[np.float64]
+    spring_stiffness: NDArray[np.float64]
+    rest_position: NDArray[np.float64]
+    damping_coefficient: NDArray[np.float64]
+    armature: NDArray[np.float64]
+    coulomb_friction: NDArray[np.float64]
+    position_lower_limits: NDArray[np.float64]
+    position_upper_limits: NDArray[np.float64]
+    velocity_lower_limits: NDArray[np.float64]
+    velocity_upper_limits: NDArray[np.float64]
+    effort_lower_limits: NDArray[np.float64]
+    effort_upper_limits: NDArray[np.float64]
     parent_link: Link
     child_link: Link
     is_valid: bool
+
+    def set_position_limits(self, lower: ArrayLike, upper: ArrayLike) -> None:
+        ...
+
+    def set_velocity_limits(self, lower: ArrayLike, upper: ArrayLike) -> None:
+        ...
+
+    def set_effort_limits(self, lower: ArrayLike, upper: ArrayLike) -> None:
+        ...
 
 
 class LoopClosure:
@@ -312,6 +422,18 @@ class RigidBody(Frame):
     inertia: NDArray[np.float64]
     force: NDArray[np.float64]
     torque: NDArray[np.float64]
+    linear_momentum: NDArray[np.float64]
+    angular_momentum: NDArray[np.float64]
+    kinetic_energy: float
+    potential_energy: float
+    is_static: bool
+    restitution: float
+    friction: float
+    collision_shape: CollisionShape | None
+    has_collision_shape: bool
+
+    def set_collision_shape(self, shape: CollisionShape) -> None:
+        ...
 
     def apply_force(self, force: ArrayLike) -> None:
         ...
@@ -332,6 +454,7 @@ class World:
 
     time_step: float
     time: float
+    gravity: NDArray[np.float64]
     frame: int
     is_simulation_mode: bool
     num_multibodies: int
@@ -421,6 +544,9 @@ class World:
         ...
 
     def step(self, n: int = 1) -> None:
+        ...
+
+    def collide(self) -> list[Contact]:
         ...
 
     def clear(self) -> None:

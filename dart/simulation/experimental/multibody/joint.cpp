@@ -39,6 +39,8 @@
 
 #include <vector>
 
+#include <cmath>
+
 namespace dart::simulation::experimental {
 
 namespace {
@@ -67,6 +69,50 @@ JointType toPublicJointType(comps::JointType type)
   }
 
   return JointType::Custom;
+}
+
+comps::ActuatorType toComponentActuatorType(ActuatorType type)
+{
+  switch (type) {
+    case ActuatorType::Force:
+      return comps::ActuatorType::Force;
+    case ActuatorType::Passive:
+      return comps::ActuatorType::Passive;
+    case ActuatorType::Servo:
+      return comps::ActuatorType::Servo;
+    case ActuatorType::Velocity:
+      return comps::ActuatorType::Velocity;
+    case ActuatorType::Acceleration:
+      return comps::ActuatorType::Acceleration;
+    case ActuatorType::Locked:
+      return comps::ActuatorType::Locked;
+    case ActuatorType::Mimic:
+      return comps::ActuatorType::Mimic;
+  }
+
+  return comps::ActuatorType::Force;
+}
+
+ActuatorType toPublicActuatorType(comps::ActuatorType type)
+{
+  switch (type) {
+    case comps::ActuatorType::Force:
+      return ActuatorType::Force;
+    case comps::ActuatorType::Passive:
+      return ActuatorType::Passive;
+    case comps::ActuatorType::Servo:
+      return ActuatorType::Servo;
+    case comps::ActuatorType::Velocity:
+      return ActuatorType::Velocity;
+    case comps::ActuatorType::Acceleration:
+      return ActuatorType::Acceleration;
+    case comps::ActuatorType::Locked:
+      return ActuatorType::Locked;
+    case comps::ActuatorType::Mimic:
+      return ActuatorType::Mimic;
+  }
+
+  return ActuatorType::Force;
 }
 
 comps::Joint& getJointComponent(World* world, entt::entity entity)
@@ -98,6 +144,33 @@ void validateJointStateVector(
       !value.allFinite(),
       InvalidArgumentException,
       "Joint {} must contain only finite values",
+      fieldName);
+}
+
+// Validate a lower/upper limit pair. Infinite bounds are allowed (they mark an
+// unbounded coordinate); only NaN and lower > upper are rejected.
+void validateJointLimitPair(
+    const Eigen::VectorXd& lower,
+    const Eigen::VectorXd& upper,
+    std::size_t dof,
+    const char* fieldName)
+{
+  const auto dofIndex = static_cast<Eigen::Index>(dof);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      lower.size() != dofIndex || upper.size() != dofIndex,
+      InvalidArgumentException,
+      "Joint {} limit dimensions must match DOF count ({})",
+      fieldName,
+      dof);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      lower.array().isNaN().any() || upper.array().isNaN().any(),
+      InvalidArgumentException,
+      "Joint {} limits must not be NaN",
+      fieldName);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (lower.array() > upper.array()).any(),
+      InvalidArgumentException,
+      "Joint lower {} limits must not exceed upper limits",
       fieldName);
 }
 
@@ -156,6 +229,35 @@ JointType Joint::getType() const
 }
 
 //==============================================================================
+ActuatorType Joint::getActuatorType() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return toPublicActuatorType(jointComp.actuatorType);
+}
+
+//==============================================================================
+void Joint::setActuatorType(ActuatorType actuatorType)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  jointComp.actuatorType = toComponentActuatorType(actuatorType);
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getCommandVelocity() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.commandVelocity;
+}
+
+//==============================================================================
+void Joint::setCommandVelocity(const Eigen::VectorXd& velocity)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(velocity, jointComp.getDOF(), "command velocity");
+  jointComp.commandVelocity = velocity;
+}
+
+//==============================================================================
 Eigen::Vector3d Joint::getAxis() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);
@@ -201,6 +303,23 @@ double Joint::getPitch() const
 }
 
 //==============================================================================
+void Joint::setPitch(double pitch)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      jointComp.type != comps::JointType::Screw,
+      InvalidArgumentException,
+      "setPitch() is only valid for Screw joints");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(pitch),
+      InvalidArgumentException,
+      "Joint pitch must be finite");
+
+  jointComp.pitch = pitch;
+}
+
+//==============================================================================
 std::size_t Joint::getDOFCount() const
 {
   const auto& jointComp = getJointComponent(m_world, m_entity);
@@ -238,6 +357,191 @@ void Joint::setVelocity(const Eigen::VectorXd& velocity)
   validateJointStateVector(velocity, jointComp.getDOF(), "velocity");
 
   jointComp.velocity = velocity;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getForce() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.torque;
+}
+
+//==============================================================================
+void Joint::setForce(const Eigen::VectorXd& force)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(force, jointComp.getDOF(), "force");
+
+  jointComp.torque = force;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getAcceleration() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.acceleration;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getSpringStiffness() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.springStiffness;
+}
+
+//==============================================================================
+void Joint::setSpringStiffness(const Eigen::VectorXd& stiffness)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(stiffness, jointComp.getDOF(), "spring stiffness");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (stiffness.array() < 0.0).any(),
+      InvalidArgumentException,
+      "Joint spring stiffness must be non-negative");
+
+  jointComp.springStiffness = stiffness;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getRestPosition() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.restPosition;
+}
+
+//==============================================================================
+void Joint::setRestPosition(const Eigen::VectorXd& restPosition)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(restPosition, jointComp.getDOF(), "rest position");
+
+  jointComp.restPosition = restPosition;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getDampingCoefficient() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.dampingCoefficient;
+}
+
+//==============================================================================
+void Joint::setDampingCoefficient(const Eigen::VectorXd& damping)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(damping, jointComp.getDOF(), "damping coefficient");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (damping.array() < 0.0).any(),
+      InvalidArgumentException,
+      "Joint damping coefficient must be non-negative");
+
+  jointComp.dampingCoefficient = damping;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getArmature() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.armature;
+}
+
+//==============================================================================
+void Joint::setArmature(const Eigen::VectorXd& armature)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(armature, jointComp.getDOF(), "armature");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (armature.array() < 0.0).any(),
+      InvalidArgumentException,
+      "Joint armature must be non-negative");
+
+  jointComp.armature = armature;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getCoulombFriction() const
+{
+  const auto& jointComp = getJointComponent(m_world, m_entity);
+  return jointComp.coulombFriction;
+}
+
+//==============================================================================
+void Joint::setCoulombFriction(const Eigen::VectorXd& friction)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointStateVector(friction, jointComp.getDOF(), "Coulomb friction");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      (friction.array() < 0.0).any(),
+      InvalidArgumentException,
+      "Joint Coulomb friction must be non-negative");
+
+  jointComp.coulombFriction = friction;
+}
+
+//==============================================================================
+void Joint::setPositionLimits(
+    const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointLimitPair(lower, upper, jointComp.getDOF(), "position");
+  jointComp.limits.lower = lower;
+  jointComp.limits.upper = upper;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getPositionLowerLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.lower;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getPositionUpperLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.upper;
+}
+
+//==============================================================================
+void Joint::setVelocityLimits(
+    const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointLimitPair(lower, upper, jointComp.getDOF(), "velocity");
+  jointComp.limits.velocityLower = lower;
+  jointComp.limits.velocityUpper = upper;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getVelocityLowerLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.velocityLower;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getVelocityUpperLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.velocityUpper;
+}
+
+//==============================================================================
+void Joint::setEffortLimits(
+    const Eigen::VectorXd& lower, const Eigen::VectorXd& upper)
+{
+  auto& jointComp = getJointComponent(m_world, m_entity);
+  validateJointLimitPair(lower, upper, jointComp.getDOF(), "effort");
+  jointComp.limits.effortLower = lower;
+  jointComp.limits.effortUpper = upper;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getEffortLowerLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.effortLower;
+}
+
+//==============================================================================
+Eigen::VectorXd Joint::getEffortUpperLimits() const
+{
+  return getJointComponent(m_world, m_entity).limits.effortUpper;
 }
 
 //==============================================================================

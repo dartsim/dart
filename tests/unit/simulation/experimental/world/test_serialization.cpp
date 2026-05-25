@@ -40,6 +40,8 @@
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
+#include <dart/simulation/experimental/io/binary_io.hpp>
+#include <dart/simulation/experimental/io/serializer.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/link.hpp>
 #include <dart/simulation/experimental/multibody/multibody.hpp>
@@ -47,12 +49,111 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <iterator>
 #include <ranges>
 #include <sstream>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include <cstdint>
+#include <cstring>
 
 //==============================================================================
 // Serialization Tests - Comprehensive Coverage
 //==============================================================================
+
+namespace {
+
+void writeLegacyJointV1(
+    std::ostream& output,
+    const dart::simulation::experimental::comps::Joint& joint,
+    const dart::simulation::experimental::io::EntityMap& entityMap)
+{
+  namespace io = dart::simulation::experimental::io;
+
+  io::writePOD(output, joint.type);
+  io::writeString(output, joint.name);
+  io::writeVectorXd(output, joint.position);
+  io::writeVectorXd(output, joint.velocity);
+  io::writeVectorXd(output, joint.acceleration);
+  io::writeVectorXd(output, joint.torque);
+  io::writeVectorXd(output, joint.limits.lower);
+  io::writeVectorXd(output, joint.limits.upper);
+  io::writeVectorXd(output, joint.limits.velocityUpper);
+  io::writeVectorXd(output, joint.limits.effortUpper);
+  io::writeVector3d(output, joint.axis);
+  io::writeVector3d(output, joint.axis2);
+  io::writePOD(output, joint.pitch);
+
+  const auto mappedParent
+      = joint.parentLink != entt::null
+            ? static_cast<std::uint32_t>(entityMap.at(joint.parentLink))
+            : static_cast<std::uint32_t>(entt::null);
+  const auto mappedChild
+      = joint.childLink != entt::null
+            ? static_cast<std::uint32_t>(entityMap.at(joint.childLink))
+            : static_cast<std::uint32_t>(entt::null);
+  io::writePOD(output, mappedParent);
+  io::writePOD(output, mappedChild);
+}
+
+void saveLegacyV1WorldWithCurrentEntities(
+    std::ostream& output, const dart::simulation::experimental::World& world)
+{
+  namespace comps = dart::simulation::experimental::comps;
+  namespace io = dart::simulation::experimental::io;
+
+  constexpr std::uint32_t magicNumber = 0x44525437;
+  constexpr std::uint32_t legacyVersion = 1;
+  io::writePOD(output, magicNumber);
+  io::writePOD(output, legacyVersion);
+
+  const auto& registry = world.getRegistry();
+  std::vector<entt::entity> entities;
+  auto nameView = registry.view<comps::Name>();
+  for (auto entity : nameView) {
+    entities.push_back(entity);
+  }
+  std::ranges::sort(entities, [](entt::entity lhs, entt::entity rhs) {
+    return static_cast<std::uint32_t>(lhs) < static_cast<std::uint32_t>(rhs);
+  });
+
+  io::writePOD(output, entities.size());
+
+  io::EntityMap entityMap;
+  std::uint32_t sequential = 0;
+  for (auto entity : entities) {
+    entityMap[entity] = static_cast<entt::entity>(sequential++);
+  }
+
+  const auto& serializers = io::SerializerRegistry::instance().getSerializers();
+  for (auto entity : entities) {
+    io::writePOD(output, static_cast<std::uint32_t>(entityMap.at(entity)));
+
+    std::vector<std::string> componentTypes;
+    for (const auto& [typeName, serializer] : serializers) {
+      if (serializer->hasComponent(entity, registry)) {
+        componentTypes.push_back(typeName);
+      }
+    }
+    std::ranges::sort(componentTypes);
+
+    io::writePOD(output, componentTypes.size());
+    for (const auto& typeName : componentTypes) {
+      io::writeString(output, typeName);
+      if (typeName == comps::Joint::getTypeName()) {
+        writeLegacyJointV1(
+            output, registry.get<comps::Joint>(entity), entityMap);
+      } else {
+        serializers.at(typeName)->save(output, entity, registry, entityMap);
+      }
+    }
+  }
+}
+
+} // namespace
 
 // Test save/load empty world
 TEST(Serialization, EmptyWorld)
@@ -162,6 +263,112 @@ TEST(Serialization, TwoLinkChain)
   EXPECT_DOUBLE_EQ(axis[2], 1.0);
 }
 
+// Test save/load preserves per-coordinate joint position, velocity, and effort
+// limits.
+TEST(Serialization, PreservesJointLimits)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world1;
+  auto mb = world1.addMultibody("robot");
+  auto base = mb.addLink("base");
+  auto link = mb.addLink(
+      "link",
+      base,
+      sx::JointSpec{.name = "joint", .type = sx::JointType::Revolute});
+
+  auto joint = link.getParentJoint();
+  joint.setPositionLimits(
+      Eigen::VectorXd::Constant(1, -0.5), Eigen::VectorXd::Constant(1, 0.5));
+  joint.setVelocityLimits(
+      Eigen::VectorXd::Constant(1, -1.5), Eigen::VectorXd::Constant(1, 2.5));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -3.0), Eigen::VectorXd::Constant(1, 4.0));
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  auto mb_restored = world2.getMultibody("robot");
+  ASSERT_TRUE(mb_restored.has_value());
+  auto joint_restored = mb_restored->getJoint("joint");
+  ASSERT_TRUE(joint_restored.has_value());
+
+  EXPECT_DOUBLE_EQ(joint_restored->getPositionLowerLimits()[0], -0.5);
+  EXPECT_DOUBLE_EQ(joint_restored->getPositionUpperLimits()[0], 0.5);
+  EXPECT_DOUBLE_EQ(joint_restored->getVelocityLowerLimits()[0], -1.5);
+  EXPECT_DOUBLE_EQ(joint_restored->getVelocityUpperLimits()[0], 2.5);
+  EXPECT_DOUBLE_EQ(joint_restored->getEffortLowerLimits()[0], -3.0);
+  EXPECT_DOUBLE_EQ(joint_restored->getEffortUpperLimits()[0], 4.0);
+}
+
+// Test that v1 joint records migrate the legacy single-sided velocity/effort
+// limit vectors and default fields added in later binary formats.
+TEST(Serialization, LoadsLegacyV1JointRecord)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace comps = dart::simulation::experimental::comps;
+
+  sx::World world1;
+  auto mb = world1.addMultibody("robot");
+  auto base = mb.addLink("base");
+  auto link = mb.addLink(
+      "link",
+      base,
+      sx::JointSpec{
+          .name = "joint",
+          .type = sx::JointType::Revolute,
+          .axis = Eigen::Vector3d::UnitX()});
+
+  auto joint = link.getParentJoint();
+  joint.setPosition(Eigen::VectorXd::Constant(1, 0.25));
+  joint.setVelocity(Eigen::VectorXd::Constant(1, -0.75));
+  world1.getRegistry().get<comps::Joint>(joint.getEntity()).acceleration
+      = Eigen::VectorXd::Constant(1, 1.25);
+  joint.setForce(Eigen::VectorXd::Constant(1, 2.25));
+  joint.setPositionLimits(
+      Eigen::VectorXd::Constant(1, -0.5), Eigen::VectorXd::Constant(1, 0.5));
+  joint.setVelocityLimits(
+      Eigen::VectorXd::Constant(1, -1.5), Eigen::VectorXd::Constant(1, 1.5));
+  joint.setEffortLimits(
+      Eigen::VectorXd::Constant(1, -3.0), Eigen::VectorXd::Constant(1, 3.0));
+
+  std::stringstream legacy;
+  saveLegacyV1WorldWithCurrentEntities(legacy, world1);
+
+  sx::World world2;
+  world2.loadBinary(legacy);
+
+  auto mbRestored = world2.getMultibody("robot");
+  ASSERT_TRUE(mbRestored.has_value());
+  auto jointRestored = mbRestored->getJoint("joint");
+  ASSERT_TRUE(jointRestored.has_value());
+  EXPECT_EQ(jointRestored->getType(), sx::JointType::Revolute);
+  EXPECT_TRUE(jointRestored->getAxis().isApprox(Eigen::Vector3d::UnitX()));
+  EXPECT_DOUBLE_EQ(jointRestored->getPosition()[0], 0.25);
+  EXPECT_DOUBLE_EQ(jointRestored->getVelocity()[0], -0.75);
+  EXPECT_DOUBLE_EQ(jointRestored->getAcceleration()[0], 1.25);
+  EXPECT_DOUBLE_EQ(jointRestored->getForce()[0], 2.25);
+  EXPECT_DOUBLE_EQ(jointRestored->getPositionLowerLimits()[0], -0.5);
+  EXPECT_DOUBLE_EQ(jointRestored->getPositionUpperLimits()[0], 0.5);
+  EXPECT_DOUBLE_EQ(jointRestored->getVelocityLowerLimits()[0], -1.5);
+  EXPECT_DOUBLE_EQ(jointRestored->getVelocityUpperLimits()[0], 1.5);
+  EXPECT_DOUBLE_EQ(jointRestored->getEffortLowerLimits()[0], -3.0);
+  EXPECT_DOUBLE_EQ(jointRestored->getEffortUpperLimits()[0], 3.0);
+
+  const auto& jointComp
+      = world2.getRegistry().get<comps::Joint>(jointRestored->getEntity());
+  EXPECT_EQ(jointComp.actuatorType, comps::ActuatorType::Force);
+  EXPECT_TRUE(jointComp.springStiffness.isZero());
+  EXPECT_TRUE(jointComp.dampingCoefficient.isZero());
+  EXPECT_TRUE(jointComp.restPosition.isZero());
+  EXPECT_TRUE(jointComp.armature.isZero());
+  EXPECT_TRUE(jointComp.coulombFriction.isZero());
+  EXPECT_TRUE(jointComp.commandVelocity.isZero());
+}
+
 // Test save/load preserves names
 TEST(Serialization, PreservesNames)
 {
@@ -198,6 +405,49 @@ TEST(Serialization, WithRigidBodies)
   EXPECT_EQ(world2.getRigidBodyCount(), 2);
   EXPECT_TRUE(world2.hasRigidBody("box1"));
   EXPECT_TRUE(world2.hasRigidBody("box2"));
+}
+
+TEST(Serialization, PreservesRigidBodyCollisionComponents)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world1;
+  auto ground = world1.addRigidBody("ground");
+  ground.setStatic(true);
+  ground.setRestitution(0.75);
+  ground.setFriction(0.25);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(1.0, 2.0, 0.5)));
+
+  auto ball = world1.addRigidBody("ball");
+  ball.setCollisionShape(sx::CollisionShape::makeSphere(0.3));
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  auto groundRestored = world2.getRigidBody("ground");
+  ASSERT_TRUE(groundRestored.has_value());
+  EXPECT_TRUE(groundRestored->isStatic());
+  EXPECT_DOUBLE_EQ(groundRestored->getRestitution(), 0.75);
+  EXPECT_DOUBLE_EQ(groundRestored->getFriction(), 0.25);
+
+  auto groundShape = groundRestored->getCollisionShape();
+  ASSERT_TRUE(groundShape.has_value());
+  EXPECT_EQ(groundShape->type, sx::CollisionShapeType::Box);
+  EXPECT_TRUE(
+      groundShape->halfExtents.isApprox(Eigen::Vector3d(1.0, 2.0, 0.5)));
+
+  auto ballRestored = world2.getRigidBody("ball");
+  ASSERT_TRUE(ballRestored.has_value());
+  EXPECT_FALSE(ballRestored->isStatic());
+
+  auto ballShape = ballRestored->getCollisionShape();
+  ASSERT_TRUE(ballShape.has_value());
+  EXPECT_EQ(ballShape->type, sx::CollisionShapeType::Sphere);
+  EXPECT_DOUBLE_EQ(ballShape->radius, 0.3);
 }
 
 TEST(Serialization, WithLoopClosures)
@@ -283,6 +533,7 @@ TEST(Serialization, PreservesWorldTimingMetadata)
   dart::simulation::experimental::World world1;
   world1.setTimeStep(0.125);
   world1.setTime(2.0);
+  world1.setGravity(Eigen::Vector3d(0.0, -1.5, -3.0));
   world1.enterSimulationMode();
   world1.step();
 
@@ -296,6 +547,48 @@ TEST(Serialization, PreservesWorldTimingMetadata)
   EXPECT_DOUBLE_EQ(world2.getTimeStep(), 0.125);
   EXPECT_DOUBLE_EQ(world2.getTime(), 2.125);
   EXPECT_EQ(world2.getFrame(), 1u);
+  EXPECT_TRUE(world2.getGravity().isApprox(Eigen::Vector3d(0.0, -1.5, -3.0)));
+}
+
+// Test that legacy world records without versioned gravity metadata leave
+// trailing stream bytes untouched instead of consuming them as gravity.
+TEST(Serialization, LegacyWorldMetadataDoesNotConsumeTrailingBytesAsGravity)
+{
+  dart::simulation::experimental::World world1;
+  world1.setTimeStep(0.125);
+  world1.setTime(2.0);
+  world1.setGravity(Eigen::Vector3d(0.0, -1.5, -3.0));
+
+  std::stringstream saved;
+  world1.saveBinary(saved);
+
+  std::string legacyRecord = saved.str();
+  ASSERT_GE(
+      legacyRecord.size(), 2 * sizeof(std::uint32_t) + 3 * sizeof(double));
+
+  const std::uint32_t legacyVersion = 1;
+  std::memcpy(
+      legacyRecord.data() + sizeof(std::uint32_t),
+      &legacyVersion,
+      sizeof(legacyVersion));
+  legacyRecord.resize(legacyRecord.size() - 3 * sizeof(double));
+
+  constexpr std::string_view trailerBytes = "0123456789abcdefghijklmn";
+  static_assert(trailerBytes.size() == 3 * sizeof(double));
+  const std::string trailer(trailerBytes);
+  legacyRecord += trailer;
+
+  std::stringstream input(legacyRecord);
+  dart::simulation::experimental::World world2;
+  world2.loadBinary(input);
+
+  EXPECT_DOUBLE_EQ(world2.getTimeStep(), 0.125);
+  EXPECT_DOUBLE_EQ(world2.getTime(), 2.0);
+  EXPECT_TRUE(world2.getGravity().isApprox(Eigen::Vector3d(0.0, 0.0, -9.81)));
+
+  const std::string remaining{
+      std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+  EXPECT_EQ(remaining, trailer);
 }
 
 // Test save/load preserves auto-generation counters
