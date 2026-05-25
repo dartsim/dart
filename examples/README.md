@@ -8,7 +8,7 @@
   Legacy OpenSceneGraph example sources were removed; common historical GUI
   example names are restored as thin `dart::gui` launchers where a replacement
   scene exists.
-- The application-level viewer is `apps/dartsim/`, built as the `dartsim`
+- The standalone GUI simulator lives in `dartsim/`, built as the `dartsim`
   executable. It is intentionally not listed as an educational example.
 - Legacy OpenSceneGraph C++ tutorials were removed from `tutorials/`.
 

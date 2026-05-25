@@ -37,6 +37,7 @@
 #include <dart/gui/export.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
+#include <dart/gui/renderable.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <dart/simulation/fwd.hpp>
@@ -154,7 +155,26 @@ struct ApplicationOptions
   std::vector<InverseKinematicsHandle> ikHandles;
   std::vector<BodyNodeDragHandle> bodyNodeDragHandles;
   std::vector<KeyboardAction> keyboardActions;
+
+  /// Optional provider of extra renderables appended to the scene each frame.
+  ///
+  /// Lets an application render geometry that is not backed by the legacy
+  /// `dart::simulation::World` (e.g. the experimental-World editor in
+  /// `dartsim/ui`). The returned descriptors only need `id`, `geometry`,
+  /// `material`, and `worldTransform`; dynamics pointers may stay null.
+  std::function<std::vector<RenderableDescriptor>()> renderableProvider;
+
+  /// Enables a docking workspace over the main viewport so panels can be
+  /// docked and rearranged. Only takes effect when the GUI build was compiled
+  /// with docking support (see `isDockingAvailable()`); otherwise it is
+  /// silently ignored.
+  bool dockingEnabled = false;
 };
+
+/// Returns true if this GUI build was compiled with docking support. When
+/// false, `ApplicationOptions::dockingEnabled` has no effect; see the build
+/// documentation for enabling a docking-capable GUI build.
+DART_GUI_API bool isDockingAvailable();
 
 DART_GUI_API int runApplication(int argc, char* argv[]);
 
