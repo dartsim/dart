@@ -1027,16 +1027,19 @@ void simulateMultibody(
       continue;
     }
     auto& joint = registry.get<comps::Joint>(tree.jointOf[i]);
-    joint.acceleration
-        = qddot.segment(tree.links[i].dofOffset, tree.links[i].dof);
+    const Eigen::VectorXd previousVelocity = joint.velocity;
     joint.velocity
         = nextVelocity.segment(tree.links[i].dofOffset, tree.links[i].dof);
+    const auto updateAccelerationFromVelocityDelta = [&]() {
+      joint.acceleration = (joint.velocity - previousVelocity) / timeStep;
+    };
 
     if (joint.type == comps::JointType::Spherical) {
       // Body angular velocity integrated by right multiplication on SO(3).
       const Eigen::Matrix3d rotation = rotationExp(joint.position.head<3>());
       joint.position.head<3>() = rotationLog(
           rotation * rotationExp(joint.velocity.head<3>() * timeStep));
+      updateAccelerationFromVelocityDelta();
       continue;
     }
     if (joint.type == comps::JointType::Floating) {
@@ -1059,6 +1062,7 @@ void simulateMultibody(
           }
         }
       }
+      updateAccelerationFromVelocityDelta();
       continue;
     }
 
@@ -1076,6 +1080,7 @@ void simulateMultibody(
         }
       }
     }
+    updateAccelerationFromVelocityDelta();
   }
 }
 

@@ -1617,6 +1617,7 @@ TEST(World, MultibodyJointVelocityActuatorSingle)
 
   // The joint reaches its commanded velocity exactly, regardless of the effort.
   EXPECT_NEAR(joint.getVelocity()[0], 0.5, 1e-12);
+  EXPECT_NEAR(joint.getAcceleration()[0], 0.5 / world.getTimeStep(), 1e-12);
 }
 
 // Test the Velocity actuator under inertial coupling: both joints of a 2-link
@@ -3980,6 +3981,52 @@ TEST(World, StepAcceptsCustomStage)
   EXPECT_EQ(stage.executionCount, 1);
   EXPECT_TRUE(
       child.getTransform().isApprox(updatedParentTransform * childOffset));
+}
+
+// Test that custom-stage step overloads keep the same default dynamics baseline
+// as World::step(), with the caller-provided stage replacing the final stage.
+TEST(World, StepWithCustomStageUsesDefaultDynamicsBaseline)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  const auto addBody = [](sx::World& world) {
+    sx::RigidBodyOptions options;
+    options.position = Eigen::Vector3d(0.0, 0.0, 5.0);
+    world.setTimeStep(0.01);
+    return world.addRigidBody("body", options);
+  };
+
+  sx::World defaultWorld;
+  sx::World customWorld;
+  auto defaultBody = addBody(defaultWorld);
+  auto customBody = addBody(customWorld);
+
+  compute::SequentialExecutor executor;
+  compute::KinematicsStage replacementKinematics;
+  defaultWorld.step(executor);
+  customWorld.step(executor, replacementKinematics);
+
+  EXPECT_TRUE(
+      customBody.getLinearVelocity().isApprox(defaultBody.getLinearVelocity()));
+  EXPECT_TRUE(
+      customBody.getTranslation().isApprox(defaultBody.getTranslation()));
+  EXPECT_DOUBLE_EQ(customWorld.getTime(), defaultWorld.getTime());
+  EXPECT_EQ(customWorld.getFrame(), defaultWorld.getFrame());
+
+  sx::World countedDefaultWorld;
+  sx::World countedCustomWorld;
+  auto countedDefaultBody = addBody(countedDefaultWorld);
+  auto countedCustomBody = addBody(countedCustomWorld);
+  countedDefaultWorld.step(3, executor);
+  countedCustomWorld.step(3, executor, replacementKinematics);
+
+  EXPECT_TRUE(countedCustomBody.getLinearVelocity().isApprox(
+      countedDefaultBody.getLinearVelocity()));
+  EXPECT_TRUE(countedCustomBody.getTranslation().isApprox(
+      countedDefaultBody.getTranslation()));
+  EXPECT_DOUBLE_EQ(countedCustomWorld.getTime(), countedDefaultWorld.getTime());
+  EXPECT_EQ(countedCustomWorld.getFrame(), countedDefaultWorld.getFrame());
 }
 
 // Test that the experimental world step path can compose multiple solver

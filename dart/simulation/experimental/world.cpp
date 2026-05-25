@@ -867,9 +867,16 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
 void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepStage& stage)
 {
-  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::RigidBodyVelocityStage rigidBodyVelocity;
+  compute::RigidBodyContactStage rigidBodyContact;
+  compute::RigidBodyPositionStage rigidBodyPosition;
+  compute::MultibodyForwardDynamicsStage multibodyDynamics;
   compute::WorldStepPipeline pipeline;
-  pipeline.addStage(rigidBodyIntegration).addStage(stage);
+  pipeline.addStage(rigidBodyVelocity)
+      .addStage(rigidBodyContact)
+      .addStage(multibodyDynamics)
+      .addStage(rigidBodyPosition)
+      .addStage(stage);
   step(executor, pipeline);
 }
 
@@ -879,9 +886,16 @@ void World::step(
     compute::ComputeExecutor& executor,
     compute::WorldStepStage& stage)
 {
-  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::RigidBodyVelocityStage rigidBodyVelocity;
+  compute::RigidBodyContactStage rigidBodyContact;
+  compute::RigidBodyPositionStage rigidBodyPosition;
+  compute::MultibodyForwardDynamicsStage multibodyDynamics;
   compute::WorldStepPipeline pipeline;
-  pipeline.addStage(rigidBodyIntegration).addStage(stage);
+  pipeline.addStage(rigidBodyVelocity)
+      .addStage(rigidBodyContact)
+      .addStage(multibodyDynamics)
+      .addStage(rigidBodyPosition)
+      .addStage(stage);
   step(count, executor, pipeline);
 }
 
