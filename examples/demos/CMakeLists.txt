@@ -60,4 +60,27 @@ if(TARGET dart-demos)
   if(TARGET dart-simulation-experimental)
     target_link_libraries(dart-demos PRIVATE dart-simulation-experimental)
   endif()
+
+  # Headless smoke: cycle through every registered scene a few frames each,
+  # exercising scene build, render, and the runtime scene switch/teardown. Uses
+  # the same software-GL environment as the other GUI Filament smoke tests.
+  if(BUILD_TESTING
+     AND DART_BUILD_TESTS
+     AND DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS)
+    add_test(
+      NAME EXAMPLE_dart_demos_cycle_headless_smoke
+      COMMAND dart-demos --cycle-scenes --headless --width 320 --height 240
+    )
+    set_tests_properties(
+      EXAMPLE_dart_demos_cycle_headless_smoke
+      PROPERTIES LABELS "filament;gui;smoke;graphics"
+    )
+    if(UNIX AND NOT APPLE)
+      set_tests_properties(
+        EXAMPLE_dart_demos_cycle_headless_smoke
+        PROPERTIES ENVIRONMENT
+                   "LIBGL_ALWAYS_SOFTWARE=1;MESA_LOADER_DRIVER_OVERRIDE=llvmpipe"
+      )
+    endif()
+  endif()
 endif()
