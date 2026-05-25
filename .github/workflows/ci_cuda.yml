@@ -1,6 +1,35 @@
 name: CI CUDA
 
 on:
+  push:
+    branches:
+      - main
+      - "release-*"
+    paths:
+      - ".github/actions/configure-compiler-cache/**"
+      - ".github/actions/setup-pixi-ci/**"
+      - ".github/workflows/ci_cuda.yml"
+      - "CMakeLists.txt"
+      - "dart/simulation/experimental/**"
+      - "pixi.lock"
+      - "pixi.toml"
+      - "scripts/cmake_build.py"
+      - "tests/benchmark/simulation/experimental/**"
+      - "tests/unit/simulation/experimental/**"
+  pull_request:
+    branches:
+      - "**"
+    paths:
+      - ".github/actions/configure-compiler-cache/**"
+      - ".github/actions/setup-pixi-ci/**"
+      - ".github/workflows/ci_cuda.yml"
+      - "CMakeLists.txt"
+      - "dart/simulation/experimental/**"
+      - "pixi.lock"
+      - "pixi.toml"
+      - "scripts/cmake_build.py"
+      - "tests/benchmark/simulation/experimental/**"
+      - "tests/unit/simulation/experimental/**"
   workflow_dispatch:
 
 concurrency:
