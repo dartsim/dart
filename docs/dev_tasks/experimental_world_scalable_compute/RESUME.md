@@ -40,9 +40,9 @@ step driven by it at full parity with the per-entity integrator:
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute` — thirty-one commits ahead of
-`main`, working tree clean, all gates green. Not pushed; accumulating toward one
-larger DART 7 PR.
+`feature/experimental-cuda-mvp` — adds the first opt-in CUDA MVP for Phase 5.
+CUDA remains off by default and is enabled through the `cuda` Pixi environment
+or `DART_ENABLE_EXPERIMENTAL_CUDA=ON`.
 
 ## Immediate Next Step
 
@@ -65,9 +65,10 @@ next steps, in rough order:
    compute-bound workload (contact solver) plus committed `bm-check` baselines on
    stable benchmark CI.
 3. Phase 4 heterogeneous batches (deferred-by-design to Phase 6 in `01-plan.md`).
-4. Phase 5 GPU prototype (blocked on a GPU runner the project does not have;
-   the plan classifies this as a provisioning prerequisite, not a coding task);
-   Phase 6 reassess (gated on Phase 5).
+4. Phase 5 GPU evidence: on a CUDA host run `pixi run -e cuda test-cuda`, then
+   dispatch the manual `CI CUDA` workflow once a self-hosted runner carries the
+   `cuda` label. Keep this non-required until runner stability and benchmark
+   signal are established; Phase 6 remains gated on those results.
 
 Keep `entt` internal and the public handle API unchanged.
 
@@ -92,6 +93,9 @@ Keep `entt` internal and the public handle API unchanged.
 - `ComputeNode::ExecuteFn` is a host `std::function`; it cannot cross to a device.
   The GPU prototype (Phase 5) needs a separate data-describable execution path;
   only the graph and metadata are shared.
+- The current CUDA MVP is deliberately private: the build-tree-only `.cuh`
+  avoids installed header leakage, and `DART_ENABLE_EXPERIMENTAL_CUDA` only
+  builds a private CUDA target plus smoke tests/benchmarks.
 - Do not benchmark or pick a GPU backend on the current Euler-only physics; it is
   embarrassingly parallel and will mislead the CUDA-versus-SYCL decision. The
   Phase 0 contact-shaped proxy (`BM_ContactShaped*` in `bm_compute_graph.cpp`)
@@ -109,5 +113,5 @@ Keep `entt` internal and the public handle API unchanged.
 git status && git log -5 --oneline
 ```
 
-Then read `01-plan.md` and continue with the angular-from-torque parity work
-described under "Immediate Next Step."
+Then read `01-plan.md` and use `pixi run -e cuda test-cuda` for the focused CUDA
+validation path.

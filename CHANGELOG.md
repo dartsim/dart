@@ -445,6 +445,9 @@
   - Removed the Filament GUI smoke CI job's distro libc++ package dependency and made its example runner use Pixi-provided libc++/libc++abi libraries when available.
   - Limited Codecov CI uploads to the generated `coverage.info` report so the uploader does not rescan gcov files after the coverage task has already produced lcov output.
   - Added support for assimp 6.x while maintaining backward compatibility with assimp 5.x
+  - Added opt-in CUDA smoke support for experimental simulation builds, including
+    a gated CMake option, Pixi CUDA environment, private SoA integration test and
+    benchmark coverage, and manual CUDA CI workflow.
 
 - Tooling and Docs
   - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))

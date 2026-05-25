@@ -49,6 +49,15 @@ if(DART_EXPERIMENTAL_BUILD_TESTS)
   dart_experimental_add_unit_test_dir(multibody ${CMAKE_CURRENT_SOURCE_DIR}/multibody)
   dart_experimental_add_unit_test_dir(space ${CMAKE_CURRENT_SOURCE_DIR}/space)
 
+  if(TARGET ${PROJECT_NAME}-simulation-experimental-cuda)
+    dart_experimental_add_test(
+      test_rigid_body_state_batch_cuda
+      ${CMAKE_CURRENT_SOURCE_DIR}/cuda/test_rigid_body_state_batch_cuda.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
+      LABEL simulation-experimental-cuda
+    )
+  endif()
+
   # Create meta target for all unit tests
   # DART_ALL_TESTS now contains only the tests added by this module
   add_custom_target(dart_experimental_tests
