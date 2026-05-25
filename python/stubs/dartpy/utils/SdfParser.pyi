@@ -1,54 +1,60 @@
 from __future__ import annotations
+
+__all__: list[str] = [
+    "Options",
+    "RootJointType",
+    "readSkeleton",
+    "readWorld",
+    "read_skeleton",
+    "read_world",
+]
+
+
+import enum
+
 import dartpy.common
-import dartpy.dynamics
-import dartpy.simulation
-import typing
-__all__: list[str] = ['Options', 'RootJointType', 'readSkeleton', 'readWorld']
+
+
+class RootJointType(enum.Enum):
+    Floating = 0
+
+    Fixed = 1
+
+    FLOATING = 0
+
+    FIXED = 1
+
 class Options:
-    mDefaultRootJointType: RootJointType
-    mResourceRetriever: dartpy.common.ResourceRetriever
-    def __init__(self, resourceRetriever: dartpy.common.ResourceRetriever = None, defaultRootJointType: RootJointType = ...) -> None:
-        ...
-class RootJointType:
-    """
-    Members:
-    
-      Floating
-    
-      Fixed
-    """
-    Fixed: typing.ClassVar[RootJointType]  # value = <RootJointType.Fixed: 1>
-    Floating: typing.ClassVar[RootJointType]  # value = <RootJointType.Floating: 0>
-    __members__: typing.ClassVar[dict[str, RootJointType]]  # value = {'Floating': <RootJointType.Floating: 0>, 'Fixed': <RootJointType.Fixed: 1>}
-    def __eq__(self, other: typing.Any) -> bool:
-        ...
-    def __getstate__(self) -> int:
-        ...
-    def __hash__(self) -> int:
-        ...
-    def __index__(self) -> int:
-        ...
-    def __init__(self, value: int) -> None:
-        ...
-    def __int__(self) -> int:
-        ...
-    def __ne__(self, other: typing.Any) -> bool:
-        ...
-    def __repr__(self) -> str:
-        ...
-    def __setstate__(self, state: int) -> None:
-        ...
-    def __str__(self) -> str:
-        ...
+    def __init__(self, resource_retriever: dartpy.common.ResourceRetriever | None = ..., default_root_joint_type: RootJointType = RootJointType.Floating) -> None: ...
+
     @property
-    def name(self) -> str:
-        ...
+    def mResourceRetriever(self) -> dartpy.common.ResourceRetriever: ...
+
+    @mResourceRetriever.setter
+    def mResourceRetriever(self, arg: dartpy.common.ResourceRetriever, /) -> None: ...
+
     @property
-    def value(self) -> int:
-        ...
-@typing.overload
-def readSkeleton(uri: dartpy.common.Uri, options: Options = ...) -> dartpy.dynamics.Skeleton:
-    ...
-@typing.overload
-def readWorld(uri: dartpy.common.Uri, options: Options = ...) -> dartpy.simulation.World:
-    ...
+    def mDefaultRootJointType(self) -> RootJointType: ...
+
+    @mDefaultRootJointType.setter
+    def mDefaultRootJointType(self, arg: RootJointType, /) -> None: ...
+
+    @property
+    def m_default_root_joint_type(self) -> RootJointType: ...
+
+    @m_default_root_joint_type.setter
+    def m_default_root_joint_type(self, arg: RootJointType, /) -> None: ...
+
+    @property
+    def m_resource_retriever(self) -> dartpy.common.ResourceRetriever: ...
+
+    @m_resource_retriever.setter
+    def m_resource_retriever(self, arg: dartpy.common.ResourceRetriever, /) -> None: ...
+
+def readWorld(*args, **kwargs): ...
+
+def readSkeleton(*args, **kwargs): ...
+
+read_skeleton = readSkeleton
+
+read_world = readWorld

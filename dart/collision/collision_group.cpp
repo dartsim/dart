@@ -269,6 +269,39 @@ bool CollisionGroup::raycast(
 }
 
 //==============================================================================
+bool CollisionGroup::sphereCast(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    double radius,
+    const ContinuousCollisionOption& option,
+    ContinuousCollisionResult* result)
+{
+  if (mUpdateAutomatically) {
+    update();
+  }
+
+  return mCollisionDetector->sphereCast(
+      this, start, end, radius, option, result);
+}
+
+//==============================================================================
+bool CollisionGroup::capsuleCast(
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    double radius,
+    double height,
+    const ContinuousCollisionOption& option,
+    ContinuousCollisionResult* result)
+{
+  if (mUpdateAutomatically) {
+    update();
+  }
+
+  return mCollisionDetector->capsuleCast(
+      this, capsuleStart, capsuleEnd, radius, height, option, result);
+}
+
+//==============================================================================
 void CollisionGroup::setAutomaticUpdate(const bool automatic)
 {
   mUpdateAutomatically = automatic;

@@ -241,5 +241,32 @@ def test_raycast():
     assert ray_hit.m_fraction == pytest.approx(0.5)
 
 
+def test_continuous_sphere_cast():
+    cd = dart.DartCollisionDetector()
+
+    simple_frame = dart.SimpleFrame()
+    simple_frame.set_name("continuous_sphere_cast_target")
+    sphere = dart.SphereShape(0.5)
+    simple_frame.set_shape(sphere)
+    simple_frame.set_translation([0, 0, 3])
+
+    group = cd.create_collision_group()
+    group.add_shape_frame(simple_frame)
+
+    option = dart.ContinuousCollisionOption()
+    result = group.sphere_cast_result([0, 0, 0], [0, 0, 6], 0.25, option)
+
+    assert result.has_hit()
+    assert len(result.m_hits) == 1
+    hit = result.m_hits[0]
+    assert (
+        hit.m_collision_object.get_shape_frame().get_name()
+        == "continuous_sphere_cast_target"
+    )
+    assert 0.0 < hit.m_time_of_impact < 1.0
+    assert np.isfinite(hit.m_point).all()
+    assert np.isfinite(hit.m_normal).all()
+
+
 if __name__ == "__main__":
     pytest.main()
