@@ -138,13 +138,14 @@ DART follows a **modular layered architecture** with clear separation of concern
 
 - **Icosphere.hpp** - Icosphere generation for spherical structures
 
-- **lie_group/** - Typed Lie-group values for SO(3), SE(3), tangents,
-  spatial inertia, batch operations, and direct products. `GroupProduct`
-  represents a direct product of component Lie groups: storage is contiguous,
-  while composition, inverse, normalization, logarithm, and map access are
-  componentwise. Keep new composite Lie-group work in the typed C++ surface
-  first; dartpy should expose only Python workflows that are useful without
-  templated C++ machinery.
+- **lie_group/** - Typed Lie-group values for SO(3), SE(3), additive R^n
+  factors, tangents, spatial inertia, batch operations, and direct products.
+  `GroupProduct` represents a direct product of component Lie groups: storage
+  is contiguous, while composition, inverse, normalization, logarithm, and map
+  access are componentwise. Humanoid-like configuration products can combine a
+  floating `SE3`, spherical `SO3` joints, and scalar `R1` joints. Keep new
+  composite Lie-group work in the typed C++ surface first; dartpy should expose
+  only Python workflows that are useful without templated C++ machinery.
 
 **Dependencies:**
 

@@ -19,7 +19,7 @@
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
  *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
  *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
  *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
@@ -32,21 +32,42 @@
 
 #pragma once
 
-// This file is a convenience header that includes all of the Lie groups in
-// DART. It is intended to be used by users who want to use all of the Lie
-// groups in DART.
-
-#include <dart/math/lie_group/batch.hpp>
-#include <dart/math/lie_group/functions.hpp>
-#include <dart/math/lie_group/group_product.hpp>
-#include <dart/math/lie_group/group_product_map.hpp>
 #include <dart/math/lie_group/inverse_base.hpp>
-#include <dart/math/lie_group/rn.hpp>
-#include <dart/math/lie_group/rn_map.hpp>
-#include <dart/math/lie_group/se3.hpp>
-#include <dart/math/lie_group/se3_map.hpp>
-#include <dart/math/lie_group/se3_tangent.hpp>
-#include <dart/math/lie_group/so3.hpp>
-#include <dart/math/lie_group/so3_map.hpp>
-#include <dart/math/lie_group/so3_tangent.hpp>
-#include <dart/math/lie_group/spatial_inertia.hpp>
+
+namespace Eigen::internal {
+
+template <typename RnDerived>
+struct traits<::dart::math::RnInverse<RnDerived>>
+  : traits<::dart::math::Rn<typename RnDerived::Scalar, RnDerived::DoF>>
+{
+};
+
+} // namespace Eigen::internal
+
+namespace dart::math {
+
+/// Lightweight inverse expression for additive R^n groups.
+template <typename RnDerived>
+class RnInverse : public InverseBase<RnInverse<RnDerived>>
+{
+public:
+  using Base = InverseBase<RnInverse<RnDerived>>;
+  using LieGroup = typename Base::LieGroup;
+
+  using Base::eval;
+
+  explicit RnInverse(const RnDerived& rn) : m_rn(rn)
+  {
+    // Do nothing
+  }
+
+  [[nodiscard]] const RnDerived& original() const
+  {
+    return m_rn;
+  }
+
+protected:
+  const RnDerived& m_rn;
+};
+
+} // namespace dart::math

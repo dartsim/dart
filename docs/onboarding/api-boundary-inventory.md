@@ -14,8 +14,8 @@ documented downstream migration or removal condition is satisfied.
 
 ## Summary
 
-- C++ public headers scanned: 448
-- C++ headers with exposed implementation debt: 107
+- C++ public headers scanned: 452
+- C++ headers with exposed implementation debt: 109
 - C++ headers with compatibility signals: 51
 - dartpy binding sources scanned: 158
 - dartpy binding sources with allowlisted compatibility debt: 8
@@ -31,7 +31,7 @@ documented downstream migration or removal condition is satisfied.
 | gui                     | 13      | 13        | 0             | 0            | 0            |
 | io                      | 2       | 2         | 0             | 0            | 0            |
 | lcpsolver               | 7       | 1         | 0             | 0            | 6            |
-| math                    | 73      | 50        | 3             | 0            | 20           |
+| math                    | 77      | 52        | 3             | 0            | 22           |
 | optimizer               | 8       | 3         | 5             | 0            | 0            |
 | sensor                  | 3       | 3         | 0             | 0            | 0            |
 | simd                    | 16      | 11        | 0             | 0            | 5            |
@@ -126,6 +126,8 @@ documented downstream migration or removal condition is satisfied.
 | dart/math/lie_group/group_product_base.hpp                 | math                    | 0                | 8                  | `= ::Eigen::internal::traits<Derived>::ProductSize;`<br>`= ::Eigen::internal::traits<Derived>::ParamSizes;`                                        |
 | dart/math/lie_group/inverse_base.hpp                       | math                    | 0                | 4                  | `// typename ::Eigen::internal::traits<InverseDerived>::LieGroup>`<br>`using Scalar = typename ::Eigen::internal::traits<InverseDerived>::Scalar;` |
 | dart/math/lie_group/lie_group_base.hpp                     | math                    | 1                | 11                 | `#include <dart/math/lie_group/detail/cast.hpp>`<br>`using Scalar = typename ::Eigen::internal::traits<Derived>::Scalar;`                          |
+| dart/math/lie_group/rn.hpp                                 | math                    | 0                | 1                  | `/// Specialization of Eigen::internal::traits for Rn.`                                                                                            |
+| dart/math/lie_group/rn_map.hpp                             | math                    | 0                | 2                  | `/// Specialization of Eigen::internal::traits for const dart::math::Rn.`<br>`/// Specialization of Eigen::internal::traits for dart::math::Rn.`   |
 | dart/math/lie_group/se3.hpp                                | math                    | 0                | 3                  | `/// @brief Specialization of Eigen::internal::traits for SE3`<br>`J.template bottomLeftCorner<3, 3>() = detail::computeQ(theta, phiX, rhoX);`     |
 | dart/math/lie_group/se3_map.hpp                            | math                    | 0                | 2                  | `/// Specialization of Eigen::internal::traits for const dart::math::SE3`<br>`/// Specialization of Eigen::internal::traits for dart::math::SE3`   |
 | dart/math/lie_group/se3_tangent.hpp                        | math                    | 0                | 1                  | `/// @brief Specialization of Eigen::internal::traits for SE3Tangent`                                                                              |

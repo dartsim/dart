@@ -53,6 +53,40 @@ TYPED_TEST_SUITE(GroupProductTest, Types);
 template <typename S>
 using SE3xSO3 = GroupProduct<S, SE3, SO3>;
 
+template <typename S>
+using SevenDofFloatingArm = GroupProduct<S, SE3, R1, R1, R1, R1, R1, R1, R1>;
+
+template <typename S>
+using HumanoidConfiguration = GroupProduct<
+    S,
+    SE3,
+    SO3,
+    SO3,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1,
+    R1>;
+
+constexpr std::size_t kHumanoidScalarStart = 3;
+constexpr std::size_t kHumanoidScalarJointCount = 21;
+
 //==============================================================================
 TYPED_TEST(GroupProductTest, StaticProperties)
 {
@@ -74,6 +108,39 @@ TYPED_TEST(GroupProductTest, StaticProperties)
   EXPECT_EQ(Product::ParamSizeIndices[0], 0);
   EXPECT_EQ(Product::ParamSizeIndices[1], SE3<S>::ParamSize);
   EXPECT_EQ(Product::Tangent::RowsAtCompileTime, Product::DoF);
+}
+
+//==============================================================================
+TYPED_TEST(GroupProductTest, RnModelsScalarAndVectorJointFactors)
+{
+  using S = typename TestFixture::Scalar;
+  using Joint = R1<S>;
+  using JointVector = R6<S>;
+
+  const Joint a(S(0.25));
+  const Joint b(S(-0.5));
+  const Joint composed = a * b;
+
+  EXPECT_EQ(Joint::Dim, 1);
+  EXPECT_EQ(Joint::DoF, 1);
+  EXPECT_EQ(Joint::ParamSize, 1);
+  EXPECT_NEAR(composed.params()[0], S(-0.25), LieGroupTol<S>());
+  EXPECT_TRUE((a * a.inverse()).isIdentity());
+  EXPECT_TRUE(a.inverse().inverse().isApprox(a));
+  EXPECT_NEAR(a.log()[0], S(0.25), LieGroupTol<S>());
+  EXPECT_TRUE(a.ad(a.log()).isApprox(a.log()));
+
+  const auto matrix = a.toMatrix();
+  EXPECT_TRUE((matrix.template topLeftCorner<1, 1>().isIdentity()));
+  EXPECT_NEAR(matrix(0, 1), S(0.25), LieGroupTol<S>());
+  EXPECT_NEAR(matrix(1, 1), S(1), LieGroupTol<S>());
+  EXPECT_TRUE(a.toAdjointMatrix().isIdentity());
+
+  typename JointVector::Params jointParams;
+  jointParams << S(0.1), S(0.2), S(0.3), S(0.4), S(0.5), S(0.6);
+  const JointVector joints(jointParams);
+  EXPECT_TRUE(joints.log().isApprox(joints.params()));
+  EXPECT_TRUE((joints * joints.inverse()).isIdentity());
 }
 
 //==============================================================================
@@ -243,4 +310,109 @@ TYPED_TEST(GroupProductTest, MapReferencesUnderlyingParameters)
   EXPECT_TRUE(map.template get<1>().isApprox(replacement));
   EXPECT_TRUE(params.template segment<SO3<S>::ParamSize>(SE3<S>::ParamSize)
                   .isApprox(replacement.params()));
+}
+
+//==============================================================================
+TYPED_TEST(GroupProductTest, RealWorldFloatingArmUsesScalarJointProduct)
+{
+  using S = typename TestFixture::Scalar;
+  using Arm = SevenDofFloatingArm<S>;
+
+  static_assert(std::is_same_v<typename Arm::template Component<0>, SE3<S>>);
+  static_assert(std::is_same_v<typename Arm::template Component<1>, R1<S>>);
+
+  EXPECT_EQ(Arm::ProductSize, 8u);
+  EXPECT_EQ(Arm::DoF, SE3<S>::DoF + 7);
+  EXPECT_EQ(Arm::ParamSize, SE3<S>::ParamSize + 7);
+
+  Arm q = Arm::Identity();
+  q.template get<0>() = SE3<S>::Random();
+  for (std::size_t i = 1; i < Arm::ProductSize; ++i) {
+    q.params(i)[0] = S(0.1) * static_cast<S>(i);
+  }
+
+  Arm dq = Arm::Identity();
+  dq.template get<0>() = SE3<S>::Random();
+  for (std::size_t i = 1; i < Arm::ProductSize; ++i) {
+    dq.params(i)[0] = S(-0.01) * static_cast<S>(i);
+  }
+
+  const Arm next = q * dq;
+  EXPECT_TRUE(next.template get<0>().isApprox(
+      q.template get<0>() * dq.template get<0>()));
+  for (std::size_t i = 1; i < Arm::ProductSize; ++i) {
+    EXPECT_NEAR(
+        next.params(i)[0], q.params(i)[0] + dq.params(i)[0], LieGroupTol<S>());
+  }
+  EXPECT_TRUE((next * next.inverse()).isIdentity());
+}
+
+//==============================================================================
+TYPED_TEST(GroupProductTest, RealWorldHumanoidConfigurationIsComponentwise)
+{
+  using S = typename TestFixture::Scalar;
+  using Humanoid = HumanoidConfiguration<S>;
+
+  static_assert(
+      std::is_same_v<typename Humanoid::template Component<0>, SE3<S>>);
+  static_assert(
+      std::is_same_v<typename Humanoid::template Component<1>, SO3<S>>);
+  static_assert(
+      std::is_same_v<typename Humanoid::template Component<2>, SO3<S>>);
+  static_assert(std::is_same_v<
+                typename Humanoid::template Component<kHumanoidScalarStart>,
+                R1<S>>);
+
+  EXPECT_EQ(
+      Humanoid::ProductSize, kHumanoidScalarStart + kHumanoidScalarJointCount);
+  EXPECT_EQ(
+      Humanoid::DoF,
+      SE3<S>::DoF + 2 * SO3<S>::DoF
+          + static_cast<int>(kHumanoidScalarJointCount));
+  EXPECT_EQ(
+      Humanoid::ParamSize,
+      SE3<S>::ParamSize + 2 * SO3<S>::ParamSize
+          + static_cast<int>(kHumanoidScalarJointCount));
+
+  Humanoid q = Humanoid::Identity();
+  q.template get<0>() = SE3<S>::Random();
+  q.template get<1>() = SO3<S>::Random();
+  q.template get<2>() = SO3<S>::Random();
+  for (std::size_t i = kHumanoidScalarStart; i < Humanoid::ProductSize; ++i) {
+    q.params(i)[0] = S(0.02) * static_cast<S>(i - kHumanoidScalarStart + 1);
+  }
+
+  Humanoid dq = Humanoid::Identity();
+  dq.template get<0>() = SE3<S>::Random();
+  dq.template get<1>() = SO3<S>::Random();
+  dq.template get<2>() = SO3<S>::Random();
+  for (std::size_t i = kHumanoidScalarStart; i < Humanoid::ProductSize; ++i) {
+    dq.params(i)[0] = S(-0.005) * static_cast<S>(i - kHumanoidScalarStart + 1);
+  }
+
+  const Humanoid next = q * dq;
+  EXPECT_TRUE(next.template get<0>().isApprox(
+      q.template get<0>() * dq.template get<0>()));
+  EXPECT_TRUE(next.template get<1>().isApprox(
+      q.template get<1>() * dq.template get<1>()));
+  EXPECT_TRUE(next.template get<2>().isApprox(
+      q.template get<2>() * dq.template get<2>()));
+
+  const auto tangent = next.log();
+  constexpr int scalarOffset = SE3<S>::DoF + 2 * SO3<S>::DoF;
+  for (std::size_t i = kHumanoidScalarStart; i < Humanoid::ProductSize; ++i) {
+    const auto scalarIndex = static_cast<int>(i - kHumanoidScalarStart);
+    EXPECT_NEAR(
+        next.params(i)[0], q.params(i)[0] + dq.params(i)[0], LieGroupTol<S>());
+    EXPECT_NEAR(
+        tangent[scalarOffset + scalarIndex],
+        next.params(i)[0],
+        LieGroupTol<S>());
+  }
+
+  typename Humanoid::Params params = next.params();
+  Map<Humanoid> map(params.data());
+  map.template get<kHumanoidScalarStart>() = R1<S>(S(1.25));
+  EXPECT_NEAR(params[SE3<S>::ParamSize + 2 * SO3<S>::ParamSize], S(1.25), 0);
+  EXPECT_TRUE((next * next.inverse()).isIdentity());
 }
