@@ -4695,6 +4695,51 @@ TEST(FilamentSceneExtraction, DartsimSceneTreeSelectionUsesEngineFacade)
   EXPECT_NE(editorSource.find("app.engine.select(id);"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, DartsimRunModeUsesElapsedFrameSeconds)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_EQ(editorSource.find("sim.advance(1.0 / 60.0)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("std::chrono::steady_clock::now()"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("std::chrono::duration<double>"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("sim.advance(app.consumeRunFrameSeconds());"),
+      std::string::npos);
+  const auto preRender = editorSource.find("options.preRender = [app]()");
+  ASSERT_NE(preRender, std::string::npos);
+  EXPECT_NE(
+      editorSource.find("advanceRunningSimulation(*app);", preRender),
+      std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DartsimInspectorLocksEditsDuringRunMode)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  const auto inspectorStart = editorSource.find("void buildInspector");
+  ASSERT_NE(inspectorStart, std::string::npos);
+  const auto canEditCheck
+      = editorSource.find("const bool canEdit = app.engine.canEditScene();");
+  ASSERT_NE(canEditCheck, std::string::npos);
+  const auto lockGuard = editorSource.find("if (!canEdit)", canEditCheck);
+  ASSERT_NE(lockGuard, std::string::npos);
+  const auto lockMessage
+      = editorSource.find("Inspector locked during Run mode", lockGuard);
+  ASSERT_NE(lockMessage, std::string::npos);
+  const auto firstSlider = editorSource.find("ui.slider(\"x\"", inspectorStart);
+  const auto deleteButton
+      = editorSource.find("ui.button(\"Delete##inspector\")", inspectorStart);
+  ASSERT_NE(firstSlider, std::string::npos);
+  ASSERT_NE(deleteButton, std::string::npos);
+
+  EXPECT_LT(lockGuard, firstSlider);
+  EXPECT_LT(lockGuard, deleteButton);
+}
+
 TEST(FilamentSceneExtraction, DartsimApplicationKeepsOnlyMinimalCppEntryPoint)
 {
   const auto sources

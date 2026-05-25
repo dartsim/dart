@@ -46,6 +46,7 @@
 #include <dartsim_ui/editor.hpp>
 
 #include <array>
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <string>
@@ -64,10 +65,32 @@ struct EditorApp
 {
   SimEngine engine;
   double replayFrame = 0.0;
+  std::chrono::steady_clock::time_point lastRunFrameTime;
+  bool haveRunFrameTime = false;
 
   void note(const std::string& message)
   {
     engine.logger().info(message);
+  }
+
+  double consumeRunFrameSeconds()
+  {
+    const auto now = std::chrono::steady_clock::now();
+    if (!haveRunFrameTime) {
+      lastRunFrameTime = now;
+      haveRunFrameTime = true;
+      return 0.0;
+    }
+
+    const double elapsed
+        = std::chrono::duration<double>(now - lastRunFrameTime).count();
+    lastRunFrameTime = now;
+    return elapsed;
+  }
+
+  void resetRunFrameClock()
+  {
+    haveRunFrameTime = false;
   }
 };
 
@@ -184,6 +207,12 @@ void buildInspector(dart::gui::PanelBuilder& ui, EditorApp& app)
   ui.text(std::string("Name: ") + object->name);
   ui.text(std::string("Type: ") + typeLabel(object->type));
 
+  const bool canEdit = app.engine.canEditScene();
+  if (!canEdit) {
+    ui.text("Inspector locked during Run mode");
+    return;
+  }
+
   if (object->type == ObjectType::RigidBody) {
     Eigen::Vector3d position = object->transform.translation();
     double x = position.x();
@@ -228,11 +257,6 @@ void buildConsole(dart::gui::PanelBuilder& ui, EditorApp& app)
 void buildSimControls(dart::gui::PanelBuilder& ui, EditorApp& app)
 {
   SimulationController& sim = app.engine.simulation();
-
-  // Advance the running simulation once per UI frame (~60 Hz wall clock).
-  if (sim.isRunning()) {
-    sim.advance(1.0 / 60.0);
-  }
 
   ui.text(
       sim.mode() == SimulationController::Mode::Run ? "Mode: Run"
@@ -287,6 +311,17 @@ void buildSimControls(dart::gui::PanelBuilder& ui, EditorApp& app)
       app.engine.replaySeek(static_cast<std::size_t>(app.replayFrame + 0.5));
     }
   }
+}
+
+void advanceRunningSimulation(EditorApp& app)
+{
+  SimulationController& sim = app.engine.simulation();
+  if (!sim.isRunning()) {
+    app.resetRunFrameClock();
+    return;
+  }
+
+  sim.advance(app.consumeRunFrameSeconds());
 }
 
 void buildMenuBar(dart::gui::PanelBuilder& ui, EditorApp& app)
@@ -418,6 +453,9 @@ int runEditor(int argc, char* argv[])
   options.dockingEnabled = true;
   options.renderableProvider = [app]() {
     return toDescriptors(app->engine.renderItems());
+  };
+  options.preRender = [app]() {
+    advanceRunningSimulation(*app);
   };
 
   if (dart::gui::isDockingAvailable()) {

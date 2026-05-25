@@ -109,6 +109,7 @@ public:
   void execute(std::unique_ptr<Command> command);
   bool undo();
   bool redo();
+  [[nodiscard]] bool canEditScene() const;
 
   /// Select an object through the engine facade and notify observers when the
   /// selection actually changes.

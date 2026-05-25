@@ -763,6 +763,35 @@ TEST(SimEngine, NoOpRemoveDoesNotResetRunState)
   EXPECT_EQ(engine.simulation().frameCount(), frameCount);
 }
 
+TEST(SimEngine, EditCommandsAreIgnoredInRunMode)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 5)));
+  const ObjectId id = engine.selection().primary();
+  ASSERT_NE(id, kNoObject);
+  ASSERT_TRUE(engine.canEditScene());
+
+  engine.simulation().play();
+  ASSERT_EQ(engine.simulation().mode(), SimulationController::Mode::Run);
+  EXPECT_FALSE(engine.canEditScene());
+
+  int changes = 0;
+  engine.setOnChanged([&]() { ++changes; });
+
+  engine.execute(commands::setMass(id, 5.0));
+  EXPECT_DOUBLE_EQ(engine.objects().model().find(id)->mass, 1.0);
+  EXPECT_EQ(changes, 0);
+
+  EXPECT_FALSE(engine.undo());
+  EXPECT_TRUE(engine.objects().model().contains(id));
+  EXPECT_EQ(changes, 0);
+
+  engine.simulation().reset();
+  EXPECT_TRUE(engine.canEditScene());
+  EXPECT_TRUE(engine.undo());
+  EXPECT_FALSE(engine.objects().model().contains(id));
+}
+
 TEST(SimEngine, ProjectFileRoundTrip)
 {
   const std::filesystem::path path

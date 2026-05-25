@@ -60,6 +60,9 @@ void SimEngine::notifyChanged()
 
 void SimEngine::execute(std::unique_ptr<Command> command)
 {
+  if (!canEditScene()) {
+    return;
+  }
   std::string label = command ? command->label() : std::string();
   if (!m_commands.execute(std::move(command))) {
     // No-op command (e.g. a rejected edit): do not log it or signal a scene
@@ -75,6 +78,9 @@ void SimEngine::execute(std::unique_ptr<Command> command)
 
 bool SimEngine::undo()
 {
+  if (!canEditScene()) {
+    return false;
+  }
   const bool changed = m_commands.undo();
   if (changed) {
     m_logger.info("Undo");
@@ -86,6 +92,9 @@ bool SimEngine::undo()
 
 bool SimEngine::redo()
 {
+  if (!canEditScene()) {
+    return false;
+  }
   const bool changed = m_commands.redo();
   if (changed) {
     m_logger.info("Redo");
@@ -93,6 +102,11 @@ bool SimEngine::redo()
     notifyChanged();
   }
   return changed;
+}
+
+bool SimEngine::canEditScene() const
+{
+  return m_simulation.mode() == SimulationController::Mode::Edit;
 }
 
 bool SimEngine::select(ObjectId id, bool additive)
