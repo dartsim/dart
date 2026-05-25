@@ -229,16 +229,16 @@ its own line so status updates remain git-history friendly.
 ### PLAN-100: DART 7 Lie-Group Consolidation
 
 - Owner doc:
-  [`../dev_tasks/lie_group_consolidation/README.md`](../dev_tasks/lie_group_consolidation/README.md)
-- Status: Parked
-- Horizon: Next
+  [`../onboarding/architecture.md#12-math-module-dartmath`](../onboarding/architecture.md#12-math-module-dartmath)
+- Status: Complete
+- Horizon: Later
 - Dimension: Release transition
-- Next step: Port the deferred `GroupProduct` (composite Lie group) from
-  `7/nested_group_product` into `main` under main conventions, mirroring the
-  merged `SO3`/`SE3` inverse machinery and resolving the five known WIP gaps.
-- Gate: `GroupProduct` source and tests land in `dart/math/lie_group/` with
-  `pixi run lint`, build, and `ctest -R UNIT_math_lie_group` green; the
-  Lie-group base API increment already merged via PR #2697.
+- Next step: Use `SO3`, `SE3`, tangents, `SpatialInertia`, batch operations,
+  and `GroupProduct` as the DART 7 typed Lie-group surface; keep future
+  composite work aligned with the componentwise direct-product pattern.
+- Gate: `GroupProduct` source and tests are in `dart/math/lie_group/` under
+  snake_case headers, with inverse/map machinery matching the `SO3`/`SE3`
+  expression-template pattern and `ctest -R UNIT_math_lie_group` green.
 
 ### PLAN-101: dartsim GUI Simulator
 
