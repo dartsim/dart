@@ -111,6 +111,12 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Rigid Body",
        "Spawn assorted rigid shapes with a contact-point cloud.",
        &makeRigidShapesScene});
+  scenes.push_back(
+      {"experimental_rigid_body",
+       "Experimental Rigid Body",
+       "Rigid Body",
+       "Falling rigid bodies on the experimental physics solver.",
+       &makeExperimentalRigidBodyScene});
 
   // Collision
   scenes.push_back(
@@ -119,6 +125,12 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Collision",
        "A capsule settling on a plane; reset its orientation.",
        &makeCapsuleGroundContactScene});
+  scenes.push_back(
+      {"collision_sandbox",
+       "Collision Sandbox",
+       "Collision",
+       "Interactive narrow- and broad-phase collision inspector.",
+       &makeCollisionSandboxScene});
 
   // Constraints & Joints
   scenes.push_back(
@@ -169,6 +181,12 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Constraints & Joints",
        "Interactively assemble jointed structures from blocks.",
        &makeTinkertoyScene});
+  scenes.push_back(
+      {"human_joint_limits",
+       "Human Joint Limits",
+       "Constraints & Joints",
+       "A human skeleton with neural-network joint-limit constraints.",
+       &makeHumanJointLimitsScene});
 
   // Control & IK
   scenes.push_back(
@@ -207,6 +225,12 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        "Control & IK",
        "Hubo puppet driven by analytical arm and leg IK.",
        &makeHuboPuppetScene});
+  scenes.push_back(
+      {"atlas_simbicon",
+       "Atlas Simbicon",
+       "Control & IK",
+       "A Simbicon-controlled Atlas biped walking and balancing.",
+       &makeAtlasSimbiconScene});
 
   // Soft Bodies
   scenes.push_back(
@@ -223,6 +247,12 @@ std::vector<dart::gui::DemoSceneEntry> makeDemoScenes()
        &makeSoftBodiesScene});
 
   // Robots
+  scenes.push_back(
+      {"g1_puppet",
+       "G1 Puppet",
+       "Robots",
+       "A Unitree G1 whole-body IK puppet (loads a remote model).",
+       &makeG1PuppetScene});
   scenes.push_back(
       {"fetch",
        "Fetch",

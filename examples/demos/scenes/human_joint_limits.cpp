@@ -26,9 +26,9 @@
 #include <dart/dynamics/shape_node.hpp>
 #include <dart/dynamics/skeleton.hpp>
 
-#include <dart/common/uri.hpp>
-
 #include <dart/math/constants.hpp>
+
+#include <dart/common/uri.hpp>
 
 #include <dart/io/read.hpp>
 

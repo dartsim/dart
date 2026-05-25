@@ -56,6 +56,11 @@ dart::gui::ApplicationOptions makePointCloudScene();
 dart::gui::ApplicationOptions makeFetchScene();
 dart::gui::ApplicationOptions makeAtlasPuppetScene();
 dart::gui::ApplicationOptions makeHuboPuppetScene();
+dart::gui::ApplicationOptions makeExperimentalRigidBodyScene();
+dart::gui::ApplicationOptions makeG1PuppetScene();
+dart::gui::ApplicationOptions makeCollisionSandboxScene();
+dart::gui::ApplicationOptions makeHumanJointLimitsScene();
+dart::gui::ApplicationOptions makeAtlasSimbiconScene();
 
 /// Ordered demo catalog. Categories are shown in first-appearance order; scenes
 /// appear in this vector's order within each category.
