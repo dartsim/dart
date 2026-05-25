@@ -66,7 +66,9 @@ branch, merged through current `origin/main` (`4b6d07a162a`), with no associated
 PR yet. The branch reconciles the scalable-compute gates with the opt-in CUDA MVP
 from draft PR #2710. CUDA remains off by default and is enabled through the
 `cuda` Pixi environment or `DART_ENABLE_EXPERIMENTAL_CUDA=ON`; no GitHub
-mutation has been made from this branch.
+mutation has been made from this branch. Because `.github/workflows/ci_cuda.yml`
+is new on this branch, GitHub cannot dispatch it until the workflow file exists
+on the default branch (or an equivalent default-branch workflow is installed).
 
 ## Immediate Next Step
 
@@ -93,6 +95,10 @@ next steps, in rough order:
    build/import and policy evidence booleans, and the CUDA MVP remains private
    and opt-in. The Phase 5 exit is still not complete until a project-owned GPU
    runner runs the CUDA build/import path and a measured go/no-go packet passes.
+   The external sequence is: approve/push/open the PR, land or otherwise install
+   the manual CUDA workflow on the default branch, provision a self-hosted
+   runner with the `cuda` label, then dispatch the workflow against the candidate
+   ref and archive its packet artifact.
 4. Phase 6 reassess remains gated on Phase 5 evidence.
 
 Keep `entt` internal and the public handle API unchanged.
@@ -205,6 +211,10 @@ python/tests/unit/test_run_performance_dashboard_benchmarks.py -q` passed
     runners labeled `self-hosted`, `Linux`, `X64`, `dartsim`, and `docker`, but
     no runner labeled `cuda`; the project-owned GPU runner prerequisite remains
     open.
+  - A read-only GitHub workflow check on 2026-05-25 reported
+    `workflow ci_cuda.yml not found on the default branch`; this is expected
+    until the new manual CUDA workflow lands on `origin/main` or an equivalent
+    default-branch workflow is installed.
   - A direct parse of PR #2710's
     `tests/benchmark/simulation/experimental/bm_cuda_rigid_body_state_batch.cpp`
     with `check_phase5_cuda_benchmark_contract.py` reported the expected two

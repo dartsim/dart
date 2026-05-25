@@ -191,6 +191,9 @@ default dartpy experimental bindings. `pixi run check-phase5-cuda-workflow`
 keeps the manual CUDA workflow wired to the policy gates, full benchmark row,
 packet validation, and packet artifact upload before a project GPU runner is
 made required.
+GitHub exposes manual `workflow_dispatch` runs only for workflows present on the
+default branch, so the CUDA workflow must be merged or otherwise installed on
+the default branch before maintainers can dispatch it against a candidate ref.
 
 ## GPU Packaging Shape
 

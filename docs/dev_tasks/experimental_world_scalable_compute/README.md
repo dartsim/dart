@@ -141,6 +141,10 @@ sort are in; see `RESUME.md`.)
    CPU/GPU benchmark row through `bm-phase5-cuda-full`,
    `bm-phase5-cuda-packet`, and
    `bm-phase5-gpu-packet-check`, then uploads both JSON files.
+   `workflow_dispatch` workflows must exist on the default branch before
+   maintainers can dispatch them against a candidate ref, so this workflow has
+   to land (or an equivalent default-branch workflow must exist) before the
+   project-owned CUDA artifact can be produced.
    Keep the workflow non-required until runner stability and benchmark signal
    are proven.
 
