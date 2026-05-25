@@ -219,6 +219,10 @@ lint-phase5-cuda-benchmark-contract = { cmd = [
   "python",
   "scripts/check_phase5_cuda_benchmark_contract.py",
 ] }
+lint-phase5-cuda-workflow = { cmd = [
+  "python",
+  "scripts/check_phase5_cuda_workflow.py",
+] }
 
 update-api-boundary-inventory = { cmd = [
   "python",
@@ -243,6 +247,7 @@ lint = { depends-on = [
   "lint-compute-backend-boundaries",
   "lint-no-gpu-runtime-dependencies",
   "lint-phase5-cuda-benchmark-contract",
+  "lint-phase5-cuda-workflow",
   "sync-ai-commands",
 ] }
 
@@ -288,6 +293,10 @@ check-phase5-cuda-benchmark-contract = { cmd = [
   "python",
   "scripts/check_phase5_cuda_benchmark_contract.py",
 ] }
+check-phase5-cuda-workflow = { cmd = [
+  "python",
+  "scripts/check_phase5_cuda_workflow.py",
+] }
 
 check-api-boundary-inventory = { cmd = [
   "python",
@@ -317,6 +326,7 @@ check-lint = { depends-on = [
   "check-compute-backend-boundaries",
   "check-no-gpu-runtime-dependencies",
   "check-phase5-cuda-benchmark-contract",
+  "check-phase5-cuda-workflow",
   "check-api-boundary-inventory",
   "check-ai-commands",
 ] }

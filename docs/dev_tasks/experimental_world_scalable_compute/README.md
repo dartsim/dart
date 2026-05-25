@@ -127,9 +127,10 @@ sort are in; see `RESUME.md`.)
    `docs/design/scalable_compute_decisions.md`. The packet validator requires
    the build/import and policy-gate evidence booleans to be true for the same
    change. `pixi run check-phase5-cuda-benchmark-contract` keeps optional CUDA
-   benchmark files packet-compatible. The no-GPU dependency gate applies to
-   default/core manifests; explicitly opt-in sidecar Pixi features/environments
-   may carry GPU runtime packages.
+   benchmark files packet-compatible, and the `check-phase5-cuda-workflow` task
+   keeps the manual workflow wired to the required gates and artifacts. The
+   no-GPU dependency gate applies to default/core manifests; explicitly opt-in
+   sidecar Pixi features/environments may carry GPU runtime packages.
 4. Phase 5 CUDA evidence: run `pixi run -e cuda test-cuda` on a CUDA host, then
    dispatch `.github/workflows/ci_cuda.yml` on a self-hosted runner labeled
    `cuda` once the project has one. The workflow runs the policy gates, the full

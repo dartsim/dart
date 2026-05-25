@@ -292,7 +292,9 @@ Exit criteria:
   dependency check proves default/core manifests still avoid GPU runtime
   dependencies while explicitly opt-in sidecar Pixi features remain allowed; the
   benchmark-contract check proves any optional CUDA benchmark uses the
-  packet-compatible `BM_Phase5RigidBodyBatchGpu/4096/128/100` go/no-go row.
+  packet-compatible `BM_Phase5RigidBodyBatchGpu/4096/128/100` go/no-go row; and
+  `pixi run check-phase5-cuda-workflow` proves the manual CUDA workflow still
+  runs the same gates, full-row task, packet checker, and artifact upload path.
 
 External dependency: GPU CI requires a GPU runner that the project does not have
 today. Local CUDA hardware is useful for spikes but is not enough to satisfy the

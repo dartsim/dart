@@ -466,6 +466,9 @@
   - Added `pixi run check-phase5-cuda-benchmark-contract` to ensure optional
     CUDA benchmark files register the Phase 5 GPU go/no-go row consumed by the
     packet validator.
+  - Added `pixi run check-phase5-cuda-workflow` to keep the manual CUDA workflow
+    wired to the Phase 5 policy gates, full benchmark row, packet validator, and
+    artifact upload paths.
   - Tightened generated Doxygen API documentation exclusions so internal symbols
     remain filtered after local documentation builds.
   - CodeQL scope updates and coverage workflow fixes. ([#2121](https://github.com/dartsim/dart/pull/2121), [#2128](https://github.com/dartsim/dart/pull/2128), [#2144](https://github.com/dartsim/dart/pull/2144), [#2147](https://github.com/dartsim/dart/pull/2147), [#2197](https://github.com/dartsim/dart/pull/2197), [#2198](https://github.com/dartsim/dart/pull/2198))

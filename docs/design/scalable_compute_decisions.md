@@ -187,7 +187,10 @@ pixi run bm-phase5-gpu-packet-check \
 
 The same go/no-go packet must include `pixi run check-compute-backend-boundaries`
 evidence so backend-specific concepts stay out of public C++ headers and the
-default dartpy experimental bindings.
+default dartpy experimental bindings. `pixi run check-phase5-cuda-workflow`
+keeps the manual CUDA workflow wired to the policy gates, full benchmark row,
+packet validation, and packet artifact upload before a project GPU runner is
+made required.
 
 ## GPU Packaging Shape
 
