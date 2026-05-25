@@ -198,6 +198,9 @@ bool load(std::string_view text, SceneModel& out)
         return false;
       }
     } else if (key == "object") {
+      if (inObject) {
+        return false;
+      }
       current = SceneObject{};
       inObject = true;
     } else if (key == "end") {
@@ -291,6 +294,9 @@ bool load(std::string_view text, SceneModel& out)
         current.name = rest;
       }
     }
+  }
+  if (inObject) {
+    return false;
   }
 
   std::unordered_set<ObjectId> objectIds;

@@ -523,6 +523,29 @@ TEST(SceneIO, RejectsMalformedNumericFields)
       "end\n");
 }
 
+TEST(SceneIO, RejectsUnterminatedObjectBlocks)
+{
+  auto expectRejects = [](const char* text) {
+    SceneModel out;
+    EXPECT_FALSE(scene_io::load(text, out)) << text;
+    EXPECT_TRUE(out.empty());
+  };
+
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "object\n"
+      "id 8\n"
+      "end\n");
+}
+
 TEST(CommandManager, DuplicateExplicitNamesAreDeduplicated)
 {
   ObjectManager objects;
