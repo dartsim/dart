@@ -11,6 +11,7 @@ Usage:
 """
 
 import ast
+import importlib
 import os
 import subprocess
 import sys
@@ -34,6 +35,13 @@ STUB_MODULES = (
     ("dartpy._dartpy.utils.MjcfParser", Path("dartpy/utils/MjcfParser.pyi")),
     ("dartpy._dartpy.utils.SdfParser", Path("dartpy/utils/SdfParser.pyi")),
     ("dartpy._dartpy.utils.SkelParser", Path("dartpy/utils/SkelParser.pyi")),
+)
+
+OPTIONAL_STUB_MODULES = frozenset(
+    (
+        "dartpy._dartpy.simulation_experimental",
+        "dartpy._dartpy.gui",
+    )
 )
 
 SUBMODULES = (
@@ -114,10 +122,42 @@ def _postprocess_stub(source: str) -> str:
     return _insert_all(source, _public_names(source))
 
 
-def _write_top_level_stub(stubs_dir: Path, names_by_module: dict[str, list[str]]):
+def _requested_module_is_missing(error: ModuleNotFoundError, module_name: str) -> bool:
+    missing_name = error.name
+    return missing_name == module_name or (
+        missing_name is not None and module_name.startswith(f"{missing_name}.")
+    )
+
+
+def _stub_module_available(module_name: str) -> bool:
+    if module_name not in OPTIONAL_STUB_MODULES:
+        return True
+
+    try:
+        importlib.import_module(module_name)
+    except ModuleNotFoundError as e:
+        if _requested_module_is_missing(e, module_name):
+            return False
+        raise
+
+    return True
+
+
+def _remove_stub_output(stubs_dir: Path, relative_output: Path):
+    output = stubs_dir / relative_output
+    if output.exists():
+        output.unlink()
+
+
+def _write_top_level_stub(
+    stubs_dir: Path,
+    names_by_module: dict[str, list[str]],
+    available_submodules: set[str],
+):
     dartpy_dir = stubs_dir / "dartpy"
     dartpy_dir.mkdir(parents=True, exist_ok=True)
 
+    submodules = [module for module in SUBMODULES if module in available_submodules]
     lines = [
         '"""',
         "dartpy: Python API of Dynamic Animation and Robotics Toolkit",
@@ -125,7 +165,7 @@ def _write_top_level_stub(stubs_dir: Path, names_by_module: dict[str, list[str]]
         "from __future__ import annotations",
         "",
     ]
-    for module in SUBMODULES:
+    for module in submodules:
         lines.append(f"from . import {module}")
 
     promoted_names: list[str] = []
@@ -138,7 +178,7 @@ def _write_top_level_stub(stubs_dir: Path, names_by_module: dict[str, list[str]]
         lines.append(")")
         promoted_names.extend(names)
 
-    all_names = [*SUBMODULES, *promoted_names]
+    all_names = [*submodules, *promoted_names]
     lines.extend(
         ["", _all_block(sorted(dict.fromkeys(all_names))), "__version__: str = ''"]
     )
@@ -199,7 +239,13 @@ def main():
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_root = Path(temp_dir)
 
+        available_submodules: set[str] = set()
         for module_name, relative_output in STUB_MODULES:
+            if not _stub_module_available(module_name):
+                print(f"Skipping optional stub module not available: {module_name}")
+                _remove_stub_output(stubs_dir, relative_output)
+                continue
+
             temp_output = temp_root / relative_output.name
             cmd = [
                 sys.executable,
@@ -228,10 +274,12 @@ def main():
             output.write_text(source)
 
             public_module = _public_module_name(relative_output)
+            available_submodules.add(public_module)
             if public_module != "utils":
                 names_by_module[public_module] = _public_names(source)
 
-    _write_top_level_stub(stubs_dir, names_by_module)
+    available_submodules.add("io")
+    _write_top_level_stub(stubs_dir, names_by_module, available_submodules)
     _write_io_stub(stubs_dir)
 
     # Check that stubs were created

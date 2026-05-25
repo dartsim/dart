@@ -2,15 +2,26 @@
 
 from __future__ import annotations
 
+import ast
+import importlib.util
 import sys
 import types
-import importlib.util
-import ast
 from pathlib import Path
+
+import pytest
 
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[4]
+
+
+def _load_generate_stubs_module():
+    script_path = _repo_root() / "scripts" / "generate_stubs.py"
+    spec = importlib.util.spec_from_file_location("generate_stubs", script_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _stub_all(relative_path: str) -> set[str]:
@@ -109,3 +120,54 @@ def test_top_level_stub_promotes_runtime_symbols():
         "World",
     ):
         assert name in public_names
+
+
+def test_optional_stub_modules_can_be_absent(monkeypatch, tmp_path):
+    generate_stubs = _load_generate_stubs_module()
+    optional_module = "dartpy._dartpy.gui"
+
+    def fake_import_module(module_name):
+        if module_name == optional_module:
+            raise ModuleNotFoundError(
+                f"No module named {module_name!r}", name=module_name
+            )
+        return object()
+
+    monkeypatch.setattr(generate_stubs.importlib, "import_module", fake_import_module)
+
+    assert not generate_stubs._stub_module_available(optional_module)
+    assert generate_stubs._stub_module_available("dartpy._dartpy.common")
+
+    stale_output = tmp_path / "dartpy" / "gui" / "__init__.pyi"
+    stale_output.parent.mkdir(parents=True)
+    stale_output.write_text("stale\n", encoding="utf-8")
+
+    generate_stubs._remove_stub_output(tmp_path, Path("dartpy/gui/__init__.pyi"))
+    generate_stubs._write_top_level_stub(
+        tmp_path,
+        {"collision": ["CollisionDetector"]},
+        {"collision", "io", "utils"},
+    )
+
+    top_level_stub = (tmp_path / "dartpy" / "__init__.pyi").read_text(
+        encoding="utf-8"
+    )
+
+    assert not stale_output.exists()
+    assert "from . import collision" in top_level_stub
+    assert "from . import gui" not in top_level_stub
+    assert "from . import simulation_experimental" not in top_level_stub
+
+
+def test_optional_stub_module_dependency_failures_are_not_suppressed(monkeypatch):
+    generate_stubs = _load_generate_stubs_module()
+
+    def fake_import_module(module_name):
+        raise ModuleNotFoundError(
+            "No module named 'missing_dependency'", name="missing_dependency"
+        )
+
+    monkeypatch.setattr(generate_stubs.importlib, "import_module", fake_import_module)
+
+    with pytest.raises(ModuleNotFoundError, match="missing_dependency"):
+        generate_stubs._stub_module_available("dartpy._dartpy.gui")
