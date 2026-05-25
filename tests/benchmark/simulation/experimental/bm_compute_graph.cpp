@@ -33,6 +33,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/compute/compute_graph.hpp>
 #include <dart/simulation/experimental/compute/parallel_executor.hpp>
+#include <dart/simulation/experimental/compute/rigid_body_state_batch.hpp>
 #include <dart/simulation/experimental/compute/sequential_executor.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
@@ -353,6 +354,65 @@ struct ContactShapedGraph
 };
 
 //==============================================================================
+struct Phase5RigidBodyBatchFixture
+{
+  Phase5RigidBodyBatchFixture(int worldCount, int bodyCount)
+  {
+    const auto worlds = static_cast<std::size_t>(worldCount);
+    const auto bodies = static_cast<std::size_t>(bodyCount);
+    const auto totalBodies = worlds * bodies;
+
+    initial.worldCount = worlds;
+    initial.bodyCount = bodies;
+    initial.position.resize(3 * totalBodies);
+    initial.orientation.resize(4 * totalBodies);
+    initial.linearVelocity.resize(3 * totalBodies);
+    initial.angularVelocity.resize(3 * totalBodies);
+
+    model.worldCount = worlds;
+    model.bodyCount = bodies;
+    model.inverseMass.resize(totalBodies);
+
+    force.resize(3 * totalBodies);
+
+    for (std::size_t world = 0; world < worlds; ++world) {
+      for (std::size_t body = 0; body < bodies; ++body) {
+        const auto index = world * bodies + body;
+        const auto component = 3 * index;
+        const auto quaternion = 4 * index;
+
+        initial.position[component + 0] = 0.001 * static_cast<double>(body);
+        initial.position[component + 1] = 0.002 * static_cast<double>(world);
+        initial.position[component + 2] = 0.0;
+
+        initial.orientation[quaternion + 0] = 1.0;
+        initial.orientation[quaternion + 1] = 0.0;
+        initial.orientation[quaternion + 2] = 0.0;
+        initial.orientation[quaternion + 3] = 0.0;
+
+        initial.linearVelocity[component + 0] = 0.5;
+        initial.linearVelocity[component + 1] = 0.25;
+        initial.linearVelocity[component + 2] = 0.125;
+
+        initial.angularVelocity[component + 0] = 0.01;
+        initial.angularVelocity[component + 1] = 0.02;
+        initial.angularVelocity[component + 2] = 0.03;
+
+        model.inverseMass[index] = 1.0 / (1.0 + 0.001 * body);
+
+        force[component + 0] = 0.05;
+        force[component + 1] = 0.025;
+        force[component + 2] = 0.0125;
+      }
+    }
+  }
+
+  compute::RigidBodyStateBatch initial;
+  compute::RigidBodyModelBatch model;
+  std::vector<double> force;
+};
+
+//==============================================================================
 void BM_ContactShapedSequential(benchmark::State& state)
 {
   const auto bodyCount = static_cast<int>(state.range(0));
@@ -382,6 +442,33 @@ void BM_ContactShapedParallel(benchmark::State& state)
 
   state.counters["bodies"] = bodyCount;
   state.counters["iterations"] = iterations;
+}
+
+//==============================================================================
+void BM_Phase5RigidBodyBatchCpuBaseline(benchmark::State& state)
+{
+  const auto worldCount = static_cast<int>(state.range(0));
+  const auto bodyCount = static_cast<int>(state.range(1));
+  const auto stepCount = static_cast<int>(state.range(2));
+  Phase5RigidBodyBatchFixture fixture(worldCount, bodyCount);
+
+  for (auto _ : state) {
+    auto current = fixture.initial;
+    for (int step = 0; step < stepCount; ++step) {
+      compute::integrateRigidBodyStateBatch(
+          current, fixture.model, fixture.force, 0.001);
+    }
+
+    benchmark::DoNotOptimize(current.position.data());
+    benchmark::DoNotOptimize(current.linearVelocity.data());
+    benchmark::ClobberMemory();
+  }
+
+  state.counters["worlds"] = worldCount;
+  state.counters["bodies_per_world"] = bodyCount;
+  state.counters["steps"] = stepCount;
+  state.SetItemsProcessed(
+      state.iterations() * worldCount * bodyCount * stepCount);
 }
 
 } // namespace
@@ -417,5 +504,8 @@ BENCHMARK(BM_ContactShapedParallel)
     ->Args({1024, 16})
     ->Args({4096, 16})
     ->Args({1024, 64});
+BENCHMARK(BM_Phase5RigidBodyBatchCpuBaseline)
+    ->Args({1024, 128, 10})
+    ->Args({4096, 128, 100});
 
 BENCHMARK_MAIN();

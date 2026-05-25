@@ -165,7 +165,7 @@ lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 lint-simulation-experimental = { cmd = """
-    find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
+    find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' -o -name '*.cuh' -o -name '*.cu' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
 
 lint-collision-native = { cmd = """
@@ -195,6 +195,18 @@ audit-collision-compat-facades = { cmd = "python scripts/audit_collision_compat_
 check-native-collision-superset = { cmd = "python scripts/check_native_collision_superset_status.py" }
 
 lint-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
+lint-compute-backend-boundaries = { cmd = [
+  "python",
+  "scripts/check_compute_backend_boundaries.py",
+] }
+lint-no-gpu-runtime-dependencies = { cmd = [
+  "python",
+  "scripts/check_no_gpu_runtime_dependencies.py",
+] }
+lint-phase5-cuda-benchmark-contract = { cmd = [
+  "python",
+  "scripts/check_phase5_cuda_benchmark_contract.py",
+] }
 
 update-api-boundary-inventory = { cmd = [
   "python",
@@ -216,6 +228,9 @@ lint = { depends-on = [
   "audit-collision-compat-facades",
   "check-native-collision-superset",
   "lint-api-boundaries",
+  "lint-compute-backend-boundaries",
+  "lint-no-gpu-runtime-dependencies",
+  "lint-phase5-cuda-benchmark-contract",
   "sync-ai-commands",
 ] }
 
@@ -227,7 +242,7 @@ check-lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 check-lint-simulation-experimental = { cmd = """
-    find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
+    find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' -o -name '*.cuh' -o -name '*.cu' \\) | xargs clang-format --dry-run --Werror --style=file
 """ }
 
 check-lint-py = { cmd = """
@@ -249,6 +264,18 @@ check-lint-spell = { cmd = "codespell --config .codespellrc" }
 check-docs-policy = { cmd = ["python", "scripts/check_docs_policy.py"] }
 
 check-api-boundaries = { cmd = ["python", "scripts/check_api_boundaries.py"] }
+check-compute-backend-boundaries = { cmd = [
+  "python",
+  "scripts/check_compute_backend_boundaries.py",
+] }
+check-no-gpu-runtime-dependencies = { cmd = [
+  "python",
+  "scripts/check_no_gpu_runtime_dependencies.py",
+] }
+check-phase5-cuda-benchmark-contract = { cmd = [
+  "python",
+  "scripts/check_phase5_cuda_benchmark_contract.py",
+] }
 
 check-api-boundary-inventory = { cmd = [
   "python",
@@ -275,6 +302,9 @@ check-lint = { depends-on = [
   "audit-collision-compat-facades",
   "check-docs-policy",
   "check-api-boundaries",
+  "check-compute-backend-boundaries",
+  "check-no-gpu-runtime-dependencies",
+  "check-phase5-cuda-benchmark-contract",
   "check-api-boundary-inventory",
   "check-ai-commands",
 ] }
@@ -946,6 +976,10 @@ bm = { cmd = "python scripts/run_cpp_benchmark.py", depends-on = ["config"] }
 bm-check = { cmd = "python scripts/check_allocator_benchmarks.py", depends-on = [
   "config",
 ] }
+bm-compute-check = { cmd = "python scripts/check_compute_graph_benchmarks.py", depends-on = [
+  "config",
+] }
+bm-phase5-gpu-packet-check = { cmd = "python scripts/check_phase5_gpu_packet.py" }
 bm-dashboard-surfaces = { cmd = "python scripts/run_performance_dashboard_benchmarks.py", depends-on = [
   "config",
 ] }

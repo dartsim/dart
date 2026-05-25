@@ -38,18 +38,22 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     )
 
     lines = result.stdout.strip().splitlines()
-    assert len(lines) == 5
+    assert len(lines) == 7
     assert all("scripts/run_cpp_benchmark.py" in line for line in lines)
     assert all("--benchmark_out_format=json" in line for line in lines)
     assert all("--benchmark_min_time=1ms" in line for line in lines)
     assert all("--benchmark_repetitions=3" in line for line in lines)
     assert "dashboard_world_step.json" in result.stdout
     assert "dashboard_rigidbody_step.json" in result.stdout
+    assert "dashboard_contact_shaped.json" in result.stdout
+    assert "dashboard_phase5_cpu_baseline.json" in result.stdout
     assert "dashboard_robots.json" in result.stdout
     assert "dashboard_lcp.json" in result.stdout
     assert "dashboard_simd.json" in result.stdout
     assert "BM_WorldStep(Sequential|Parallel)/.*" in result.stdout
     assert "BM_RigidBodyStep(Sequential|Parallel)/.*" in result.stdout
+    assert "BM_ContactShaped(Sequential|Parallel)/.*" in result.stdout
+    assert "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10" in result.stdout
     assert "BM_Robot_(KR5|Atlas)_WorldStep" in result.stdout
     assert "BM_LCP_COMPARE_SMOKE" in result.stdout
     assert "BM_Add_DART_f32(_Baseline)?/1024(/.*)?$" in result.stdout

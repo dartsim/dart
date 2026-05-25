@@ -43,10 +43,11 @@ order below:
    solver land. A contact/constraint-shaped benchmark proxy is a Phase 0
    prerequisite, not a Phase 5 deliverable.
 
-## Current Baseline
+## Current Baseline After Phase 0-4
 
 - `World` owns one `entt::registry`; public handles are thin views; `step()`
-  takes an injectable `compute::ComputeExecutor`.
+  takes an injectable `compute::ComputeExecutor` and uses the batched SoA
+  rigid-body integration stage by default.
 - `compute` has `ComputeGraph` (DAG + explicit edges), `SequentialExecutor`
   (reference) and `ParallelExecutor` (Taskflow), execution profiling, DOT, and
   stage metadata with domain + acceleration flags (a `Gpu` flag is reserved).
@@ -55,9 +56,12 @@ order below:
   the experimental World yet.
 - `ComputeNode::ExecuteFn` is a host `std::function<void()>`; it cannot cross to
   a device. The shared substrate is the graph and metadata, not the closures.
-- No determinism parity test and no experimental benchmark corpus exist yet;
-  resource-access metadata is not implemented (`ComputeStageMetadata` has only
-  domain + acceleration; `ComputeGraph::validate()` checks cycles/ownership).
+- Determinism parity tests, resource-access metadata, the batched Model/State
+  split, scalar-generic SoA integrators, explicit-SIMD orientation dispatch,
+  deterministic reductions, CPU homogeneous batch stepping, and rollout support
+  are implemented. The remaining speedup exit waits for a compute-bound contact
+  or constraint workload plus committed benchmark baselines, and the GPU
+  prototype waits for GPU runner/build-import CI prerequisites.
 
 ## Cross-Cutting Invariants
 
@@ -69,8 +73,9 @@ These hold for every phase:
   concurrency seam. No `entt`, `comps`, thread-pool, GPU device, stream, kernel,
   memory-pool, or solver-registry type enters the public API.
 - The classic `dart::simulation::World` is not modified.
-- Every phase exit cites a checked-in benchmark baseline through the `bm` /
-  `bm-check` tasks, not a vague "benchmark green."
+- Every phase exit cites a checked-in benchmark baseline through `bm`,
+  `bm-check`, or the compute-specific `bm-compute-check` task, not a vague
+  "benchmark green."
 - When dartpy gains a parallel or batched step, it releases the GIL around the
   step and forbids Python callbacks inside compute nodes.
 
@@ -91,7 +96,7 @@ Deliverables:
   encode every cross-node data dependency) plus debug assertions that enforce it.
 - A benchmark corpus and harness for the experimental World, including at least
   one contact/constraint-shaped synthetic workload proxy (sequential coupling,
-  irregular memory access), wired to committed `bm-check` baselines.
+  irregular memory access), wired to the committed `bm-compute-check` gate.
 - A recorded decision on the resource identity model for access metadata
   (component-type versus per-entity versus per-archetype) and a thin
   Model/State interface shape, even though the implementation lands in Phase 2.
@@ -101,6 +106,12 @@ Exit criteria:
 - Parity test green; the two integration topologies are proven to agree.
 - Concurrency contract documented and debug-asserted.
 - Benchmark corpus and baselines committed; the contact-shaped proxy runs.
+- `pixi run bm-compute-check` validates the full expected compute/world/
+  rigid-body/contact-shaped/Phase 5 CPU-baseline benchmark corpus with positive
+  finite timings.
+- The performance dashboard publishes the contact-shaped proxy and Phase 5
+  CPU-baseline history so the hard-case scalable-compute and future GPU
+  comparison baselines survive dev-task cleanup.
 - Resource-model and Model/State interface decisions recorded in this folder.
 
 ### Phase 1 — Resource-access metadata (diagnostic)
@@ -239,8 +250,9 @@ Deliverables:
 - Mirror batched-State SoA buffers to device; implement one stage (rigid-body
   integration over a homogeneous batch) as a kernel; measure the full workload
   (transfer + setup + compute) against the CPU batch on the representative
-  corpus; provide an identical-semantics CPU fallback; add build/import CI and
-  one smoke benchmark.
+  corpus; provide an identical-semantics CPU fallback; extend the checked
+  `BM_Phase5RigidBodyBatchCpuBaseline` benchmark row with the matching GPU row;
+  add build/import CI and one smoke benchmark.
 - Decide CUDA versus SYCL/AdaptiveCpp from the measured results, applying the
   criteria in `scalable_compute_decisions.md`. Because Taskflow's GPU tasking is
   CUDA-only, the backend stays behind an internal interface so the choice is
@@ -249,18 +261,30 @@ Deliverables:
 Kill criterion:
 
 - If the GPU full-workload time including transfer does not beat the CPU batch by
-  a pre-registered threshold at batch size B on the representative workload, the
-  Phase 6 GPU track is cut or parked. A gate without a failing branch is a
-  rabbit hole.
+  the pre-registered threshold in `docs/design/scalable_compute_decisions.md`
+  on the representative homogeneous-batch workload, the Phase 6 GPU track is cut
+  or parked. A gate without a failing branch is a rabbit hole.
 
 Exit criteria:
 
-- Benchmark report with an explicit go/no-go; build/import gate green; API-
-  boundary review shows no backend leakage.
+- Benchmark report with an explicit go/no-go and
+  `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /
+  `--input <packet.json>` evidence; the packet must mark the GPU build/import
+  gate, `pixi run check-compute-backend-boundaries`, `pixi run
+check-no-gpu-runtime-dependencies`, and `pixi run
+check-phase5-cuda-benchmark-contract` evidence booleans true for the same
+  change. The backend-boundary check shows no backend leakage; the no-GPU
+  dependency check proves default/core manifests still avoid GPU runtime
+  dependencies while explicitly opt-in sidecar Pixi features remain allowed; the
+  benchmark-contract check proves any optional CUDA benchmark uses the
+  packet-compatible `BM_Phase5RigidBodyBatchGpu/4096/128/100` go/no-go row.
 
 External dependency: GPU CI requires a GPU runner that the project does not have
-today. Treat runner provisioning and the optional/separate GPU package as named
-prerequisites with an owner, not as coding tasks.
+today. Local CUDA hardware is useful for spikes but is not enough to satisfy the
+Phase 5 build/import gate. Treat runner provisioning and the GPU build/import CI
+path as maintainer/infrastructure-owned prerequisites; the durable sidecar
+package shape and go/no-go threshold live in
+`docs/design/scalable_compute_decisions.md`.
 
 ### Phase 6 — Reassess (gated by Phase 5 evidence)
 

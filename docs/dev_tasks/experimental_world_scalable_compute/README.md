@@ -28,7 +28,8 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
       (`integrateRigidBodyStateBatch`, plus a torque overload) batched integrators.
       `BatchedRigidBodyIntegrationStage` wires the SoA path into a live
       `WorldStepStage` at full parity with the per-entity integrator (force, torque,
-      orientation), with a per-entity fallback for frame-coupled bodies.
+      orientation), including parent-before-child local-transform write-back for
+      frame-coupled rigid bodies.
 - [~] Phase 3: Multi-core hardening, SIMD, data locality. Landed: O((N+E) log N)
   topological sort; multi-worker (1/2/4/8) determinism parity with a bitwise gate
   for the map-only integration stage (per-body nodes run concurrently);
@@ -41,20 +42,27 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
   auto-vectorized at -O3, so they keep the scalar-generic path. Also landed: a
   deterministic reduction (`totalKineticEnergy`) with fixed-order chunk partials
   and a fixed-ULP/relative tolerance gate, the reduction shape later parallel
-  stages reuse. Remaining: the "parallel/SIMD beats the Phase 0 baseline" exit
-  criterion, which is **not achievable on today's physics** -- measured
-  `BM_RigidBodyStepParallel` is slower than sequential because trivial Euler
-  integration is overhead-bound, exactly the plan's thesis; it waits for a
-  compute-bound workload (contact solver) and committed `bm-check` baselines on
-  stable benchmark CI.
+  stages reuse. The `pixi run bm-compute-check` gate now checks the full
+  expected `bm_compute_graph` compute/world/rigid-body/contact-shaped/Phase 5
+  CPU-baseline corpus for positive finite timings, and the performance
+  dashboard publishes the contact-shaped proxy and Phase 5 CPU-baseline history.
+  Remaining:
+  the "parallel/SIMD beats the Phase 0 baseline" exit criterion, which is **not
+  achievable on today's physics** -- measured `BM_RigidBodyStepParallel` is
+  slower than sequential because trivial Euler integration is overhead-bound,
+  exactly the plan's thesis; it waits for a compute-bound workload (contact
+  solver) and extension of the checked benchmark gate on stable benchmark CI.
 - [x] Phase 4: Homogeneous batch (CPU) + rollout. `stepWorldsBatched` (parallel
       batch executor via the injected executor, bit-identical to sequential),
       `rolloutWorldsBatched`, and a pure-SoA control-sequence rollout
       (`rolloutRigidBodyStateBatch`). Heterogeneous batches are deferred to Phase 6
       by design.
 - [ ] Phase 5: GPU prototype behind a gate with a kill criterion (internal, no
-      public API); CUDA-versus-SYCL decided from the benchmark. Blocked on GPU
-      hardware/CI.
+      public API); CUDA-versus-SYCL decided from the benchmark. The optional
+      sidecar package shape is documented, but execution is still blocked on a
+      project-level GPU runner plus build/import CI; local CUDA hardware alone
+      is not enough to satisfy the gate. Owner for these prerequisites: project
+      maintainers/infrastructure.
 - [ ] Phase 6: Reassess — broaden GPU, auto-scheduling, Pattern B, differentiable
       state (each gated; gated on Phase 5 evidence).
 
@@ -93,22 +101,36 @@ framework or touching the classic World.
 - Benchmark a contact/constraint-shaped workload proxy before any backend
   decision; trivial Euler physics would mislead the CUDA-versus-SYCL choice.
 - Keep Taskflow as the CPU backend; defer CUDA-versus-SYCL to the Phase 5
-  benchmark; ship any GPU support as an optional/separate package.
+  benchmark; ship any GPU support as an optional/separate package following the
+  sidecar shape in `docs/design/scalable_compute_decisions.md`.
 
 ## Immediate Next Steps
 
 (Phases 0-2 and Phase 4 are done, and Phase 3's determinism gate and topological
 sort are in; see `RESUME.md`.)
 
-1. Optionally let `World::step` / the default pipeline select
-   `BatchedRigidBodyIntegrationStage`, after broadening frame-coupled coverage
-   (parent-before-child ordering of the frame-cache loop) so the SoA path handles
-   rigid-body parenting directly instead of via the per-entity fallback.
-2. Phase 3 remainder: explicit SIMD (`dart/simd`) on the hot SoA kernels and a
-   cost gate for sub-threshold graphs, each cited against committed `bm-check`
-   baselines.
+1. Preserve the default `World::step` selection of
+   `BatchedRigidBodyIntegrationStage`; its frame-coupled rigid-body parity is
+   covered by the simulation-experimental test label.
+2. Keep `pixi run bm-compute-check` green as the checked benchmark corpus for
+   `bm_compute_graph`, including the dashboard contact-shaped proxy and Phase 5
+   CPU-baseline series.
+   Phase 3's remaining speedup exit criterion waits for a compute-bound contact
+   or constraint workload and an extension of that gate on stable benchmark CI;
+   do not use trivial Euler integration to choose backends.
 3. Phase 5 GPU prototype — blocked on a GPU runner the project does not have;
-   treat runner provisioning as a named prerequisite, not a coding task.
+   treat runner provisioning and a GPU build/import gate as
+   maintainer/infrastructure-owned prerequisites. The optional/separate package
+   shape, pre-registered go/no-go threshold, and
+   `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /
+   `--input <packet.json>` plus `pixi run check-compute-backend-boundaries` and
+   `pixi run check-no-gpu-runtime-dependencies` evidence gates live in
+   `docs/design/scalable_compute_decisions.md`. The packet validator requires
+   the build/import and policy-gate evidence booleans to be true for the same
+   change. `pixi run check-phase5-cuda-benchmark-contract` keeps optional CUDA
+   benchmark files packet-compatible. The no-GPU dependency gate applies to
+   default/core manifests; explicitly opt-in sidecar Pixi features/environments
+   may carry GPU runtime packages.
 
 ## Relationship To Other Surfaces
 

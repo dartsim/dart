@@ -74,18 +74,24 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Follow the multiphase plan in
-  `docs/dev_tasks/experimental_world_scalable_compute/`; land the Phase 0
-  foundations (executor-parity test, EnTT concurrency contract, benchmark corpus
-  with a contact-shaped proxy) before the resource-access metadata milestone,
-  and keep both ahead of dependency inference, contact scheduling, or
-  GPU/rendering backend work.
-- Gate:
-  [`030-compute-resource-access/evaluator.md`](030-compute-resource-access/evaluator.md)
-  records the focused proof: graph/world tests and the compute-graph benchmark
-  stay green; Taskflow remains behind the experimental executor boundary; graph
-  metadata/profiling/DOT output remain backend-neutral; classic World behavior
-  stays untouched.
+- Next step: Keep the merged Phase 0-4 foundation in
+  `docs/dev_tasks/experimental_world_scalable_compute/` as the active tracker;
+  the default experimental `World::step` path now uses the batched SoA rigid-body
+  stage. Do not start the Phase 5 GPU prototype until a project GPU runner and
+  GPU build/import CI exist; those prerequisites are owned by project
+  maintainers/infrastructure. The sidecar package shape, go/no-go threshold, and
+  `bm-phase5-gpu-packet-check` / `check-compute-backend-boundaries` /
+  `check-no-gpu-runtime-dependencies` evidence gates are recorded in the owner
+  doc. Do not close the Phase 3 speedup exit until a compute-bound contact or
+  constraint workload has committed benchmark baselines.
+- Gate: `pixi run test-simulation-experimental` covers graph/world parity for
+  the current CPU foundation; `pixi run bm-compute-check` keeps the full
+  expected `bm_compute_graph` corpus reproducible for the current Euler and
+  contact-shaped workloads; the performance dashboard publishes the
+  contact-shaped proxy and Phase 5 CPU-baseline history; and future
+  compute-bound contact/constraint work must extend that checked benchmark gate.
+  Taskflow remains behind the experimental executor boundary, metadata remains
+  backend-neutral, and classic World behavior stays untouched.
 
 ### PLAN-035: Native Collision Feature Dashboard
 

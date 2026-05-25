@@ -127,6 +127,19 @@ bool containsEntity(
 }
 
 //==============================================================================
+std::size_t findEntityIndex(
+    const std::vector<entt::entity>& entities, entt::entity entity)
+{
+  for (std::size_t i = 0; i < entities.size(); ++i) {
+    if (entities[i] == entity) {
+      return i;
+    }
+  }
+
+  return entities.size();
+}
+
+//==============================================================================
 entt::entity findNearestRigidBodyAncestor(
     const entt::registry& registry,
     entt::entity entity,
@@ -164,6 +177,62 @@ bool hasRigidBodyFrameDependency(
   }
 
   return false;
+}
+
+//==============================================================================
+void appendRigidBodyParentBeforeChild(
+    const entt::registry& registry,
+    const std::vector<entt::entity>& rigidBodyEntities,
+    std::vector<int>& visitState,
+    std::vector<entt::entity>& ordered,
+    std::size_t index)
+{
+  if (visitState[index] == 2) {
+    return;
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      visitState[index] == 1,
+      InvalidOperationException,
+      "Rigid-body frame dependency graph contains a cycle");
+
+  visitState[index] = 1;
+
+  const auto entity = rigidBodyEntities[index];
+  const auto& frameState = registry.get<comps::FrameState>(entity);
+  const auto parentRigidBody = findNearestRigidBodyAncestor(
+      registry, frameState.parentFrame, rigidBodyEntities);
+  if (parentRigidBody != entt::null) {
+    const auto parentIndex
+        = findEntityIndex(rigidBodyEntities, parentRigidBody);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        parentIndex == rigidBodyEntities.size(),
+        InvalidOperationException,
+        "Rigid-body ancestor is missing from the integration batch");
+
+    appendRigidBodyParentBeforeChild(
+        registry, rigidBodyEntities, visitState, ordered, parentIndex);
+  }
+
+  visitState[index] = 2;
+  ordered.push_back(entity);
+}
+
+//==============================================================================
+std::vector<entt::entity> orderRigidBodiesParentBeforeChild(
+    const entt::registry& registry,
+    const std::vector<entt::entity>& rigidBodyEntities)
+{
+  std::vector<entt::entity> ordered;
+  ordered.reserve(rigidBodyEntities.size());
+
+  std::vector<int> visitState(rigidBodyEntities.size(), 0);
+  for (std::size_t i = 0; i < rigidBodyEntities.size(); ++i) {
+    appendRigidBodyParentBeforeChild(
+        registry, rigidBodyEntities, visitState, ordered, i);
+  }
+
+  return ordered;
 }
 
 //==============================================================================
@@ -484,15 +553,6 @@ void BatchedRigidBodyIntegrationStage::execute(
     return;
   }
 
-  // Frame-coupled rigid bodies require parent-before-child ordering for the
-  // local-transform bookkeeping; the SoA path integrates in flat order, so
-  // defer those cases to the per-entity stage.
-  if (hasRigidBodyFrameDependency(registry, entities)) {
-    RigidBodyIntegrationStage fallback;
-    fallback.execute(world, executor);
-    return;
-  }
-
   std::vector<double> force;
   std::vector<double> torque;
   force.reserve(3 * entities.size());
@@ -523,9 +583,12 @@ void BatchedRigidBodyIntegrationStage::execute(
   applyRigidBodyState(world, state);
 
   // Restore frame-cache consistency the same way the per-entity integrator
-  // does, now that the world-space Transform has been written back. With no
-  // rigid-body-to-rigid-body parenting, view order is a valid update order.
-  for (const auto entity : entities) {
+  // does, now that the world-space Transform has been written back. The SoA
+  // integration itself is world-space and flat, but local transforms for
+  // frame-coupled bodies must be written parent-before-child.
+  const auto frameUpdateOrder
+      = orderRigidBodiesParentBeforeChild(registry, entities);
+  for (const auto entity : frameUpdateOrder) {
     const auto& transform = registry.get<comps::Transform>(entity);
     auto& props = registry.get<comps::FreeFrameProperties>(entity);
     const auto worldTransform = toIsometry(transform, transform.orientation);

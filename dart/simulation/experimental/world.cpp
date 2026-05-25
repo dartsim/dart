@@ -793,7 +793,7 @@ void World::step(std::size_t count)
 //==============================================================================
 void World::step(compute::ComputeExecutor& executor)
 {
-  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::BatchedRigidBodyIntegrationStage rigidBodyIntegration;
   compute::KinematicsStage kinematics;
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(rigidBodyIntegration).addStage(kinematics);
@@ -803,7 +803,7 @@ void World::step(compute::ComputeExecutor& executor)
 //==============================================================================
 void World::step(std::size_t count, compute::ComputeExecutor& executor)
 {
-  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::BatchedRigidBodyIntegrationStage rigidBodyIntegration;
   compute::KinematicsStage kinematics;
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(rigidBodyIntegration).addStage(kinematics);
@@ -814,7 +814,7 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
 void World::step(
     compute::ComputeExecutor& executor, compute::WorldStepStage& stage)
 {
-  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::BatchedRigidBodyIntegrationStage rigidBodyIntegration;
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(rigidBodyIntegration).addStage(stage);
   step(executor, pipeline);
@@ -826,7 +826,7 @@ void World::step(
     compute::ComputeExecutor& executor,
     compute::WorldStepStage& stage)
 {
-  compute::RigidBodyIntegrationStage rigidBodyIntegration;
+  compute::BatchedRigidBodyIntegrationStage rigidBodyIntegration;
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(rigidBodyIntegration).addStage(stage);
   step(count, executor, pipeline);

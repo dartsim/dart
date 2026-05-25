@@ -18,6 +18,7 @@ on:
       - "dart/**"
       - "pixi.lock"
       - "pixi.toml"
+      - "scripts/check_compute_graph_benchmarks.py"
       - "scripts/merge_benchmark_results.py"
       - "scripts/run_cpp_benchmark.py"
       - "scripts/run_performance_dashboard_benchmarks.py"
@@ -78,6 +79,15 @@ jobs:
         run: |
           pixi run --locked -e collision-reference \
             python scripts/run_performance_dashboard_benchmarks.py --continue-on-error || true
+
+      - name: Check compute benchmark gate
+        # This is a coverage/correctness gate for the scalable-compute benchmark
+        # surface, not a speedup threshold. Keep its JSON outside
+        # .benchmark_results so the merge step does not publish duplicate rows.
+        run: |
+          pixi run --locked -e collision-reference \
+            python scripts/check_compute_graph_benchmarks.py \
+              --output build/compute_graph_check.json
 
       - name: Merge benchmark results
         run: |

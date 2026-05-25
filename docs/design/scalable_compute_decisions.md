@@ -113,7 +113,81 @@ Before public GPU support:
 - define fallback behavior when GPU support is unavailable;
 - document package paths that can and cannot ship GPU support;
 - add CI coverage for build/import and at least one smoke benchmark;
-- review API boundaries for backend leakage.
+- review API boundaries for backend leakage with
+  `pixi run check-compute-backend-boundaries`.
+
+The Phase 5 prototype is allowed to start only after these prerequisites are
+true:
+
+- a project-owned GPU runner is available for build/import CI;
+- a sidecar package/component plan exists that does not add GPU runtime
+  dependencies to the default C++ package, default Pixi environment, or official
+  `dartpy` wheel;
+- the prototype can run an identical-semantics CPU fallback in the same test and
+  benchmark packet;
+- the benchmark packet measures full workload time, including host/device
+  transfer, setup, kernel execution, and readback needed to compare final state.
+
+The first go/no-go benchmark is pre-registered as homogeneous-batch rigid-body
+integration with `worldCount = 4096`, `bodyCount = 128`, and `stepCount = 100`
+over the same `RigidBodyStateBatch` and controls on CPU and GPU. If runner memory
+cannot hold that case, use the largest power-of-two `worldCount` that fits, but
+do not claim a go decision below `worldCount = 1024`. The GPU path passes only if
+its median full-workload time is at least 1.25x faster than the CPU batch median
+and the CPU/GPU final states match the Phase 2 tolerance contract. Otherwise the
+GPU track is parked or cut until a more representative compute-bound workload
+exists.
+
+The checked CPU smoke row is
+`BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10`; the full
+`BM_Phase5RigidBodyBatchCpuBaseline/4096/128/100` row is reserved for manual
+Phase 5 go/no-go packets so routine CI does not spend every run on the full GPU
+comparison workload before a GPU runner exists.
+If an optional CUDA benchmark file is present, `pixi run
+check-phase5-cuda-benchmark-contract` requires it to register the matching
+`BM_Phase5RigidBodyBatchGpu/4096/128/100` row so measured GPU benchmark JSON can
+feed the packet checker without ad hoc renaming.
+
+Manual Phase 5 go/no-go reports should start from
+`pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` and must
+pass `pixi run bm-phase5-gpu-packet-check --input <packet.json>` after measured
+values are filled in. The packet combines Google Benchmark median rows for the
+full CPU fallback and matching GPU prototype workload with metadata proving the
+packet includes transfer, setup, kernel/compute, and readback time, plus the
+final-state CPU/GPU absolute error. The packet also carries boolean evidence
+that the GPU build/import gate, backend-boundary check, no-GPU default/core
+dependency check, and Phase 5 benchmark-contract check all passed for the same
+change. The checker enforces the `worldCount >= 1024`, `bodyCount = 128`,
+`stepCount = 100`, 1.25x median speedup, final-state tolerance, and evidence
+rules above.
+The same go/no-go packet must include `pixi run check-compute-backend-boundaries`
+evidence so backend-specific concepts stay out of public C++ headers and the
+default dartpy experimental bindings.
+
+## GPU Packaging Shape
+
+GPU support must be an optional sidecar, not a dependency of the core install:
+
+- Core C++ packages and official `dartpy` wheels keep CPU-only experimental
+  simulation support and must import/run without a GPU runtime present.
+  `pixi run check-no-gpu-runtime-dependencies` guards the default Pixi and
+  dartpy wheel manifests against accidental CUDA/SYCL/ROCm/HIP runtime
+  dependencies.
+- Default Pixi dependencies must stay GPU-runtime-free; explicitly opt-in Pixi
+  features/environments may carry CUDA/SYCL/etc. packages when they are not part
+  of the default install surface.
+- GPU code may ship as a separate conda component, a separate PyPI package or
+  CUDA-index wheel, or a source-only developer option while the packaging story
+  is immature.
+- Backend-specific libraries, compiler toolchains, and device runtimes must not
+  be linked into the default `dart` target or default `dartpy` wheel.
+- A CPU fallback with identical semantics is required in the core package before
+  any GPU sidecar is useful.
+- Build flags, package names, CI labels, diagnostics, and benchmark reports may
+  name CUDA, SYCL, or another backend. Public C++/Python API types, namespaces,
+  solver names, and required user configuration must not.
+- Any sidecar package must have its own build/import smoke CI on a GPU runner and
+  a no-GPU import test proving the core package remains usable without it.
 
 ## Backend Candidate Scope
 

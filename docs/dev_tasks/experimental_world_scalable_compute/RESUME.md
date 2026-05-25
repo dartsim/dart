@@ -2,11 +2,14 @@
 
 ## Last Session Summary
 
-Thirty-one verified commits on the feature branch, each green
-(`pixi run build`, `pixi run build-simulation-experimental-tests`,
-`pixi run lint`, the experimental ctest label, and the benchmark). The branch now
-carries the full standalone structure-of-arrays (SoA) toolkit and a live World
-step driven by it at full parity with the per-entity integrator:
+PR #2698 merged the Phase 0-4 scalable-compute foundation. The current follow-up
+promotes the live SoA path into the default experimental `World::step` pipeline:
+`BatchedRigidBodyIntegrationStage` now handles frame-coupled rigid-body
+parenting with parent-before-child local-transform write-back instead of falling
+back to `RigidBodyIntegrationStage`. The follow-up also wires
+`pixi run bm-compute-check` into the performance dashboard workflow and tightens
+that checker so all 28 expected `bm_compute_graph` rows must be present with
+positive finite timings, including the Phase 5 CPU-baseline smoke row.
 
 - Phase 0/1: EnTT concurrency contract + debug hazard assert, contact-shaped
   benchmark proxy, resource-access metadata (`findResourceHazards`/DOT/per-entity
@@ -25,36 +28,31 @@ step driven by it at full parity with the per-entity integrator:
   and full (`integrateRigidBodyStateBatch`) batched integrators, including a
   torque overload that adds angular velocity from torque via the world-inertia
   (`R I R^T`) LDLT solve, mirroring the per-entity `integrateAngularVelocity`.
-- Phase 4 (partial): CPU batch executor (`stepWorldsBatched`), World rollout
+- Phase 4: CPU batch executor (`stepWorldsBatched`), World rollout
   (`rolloutWorldsBatched`), and a pure-SoA control-sequence rollout
   (`rolloutRigidBodyStateBatch`).
-- Phase 2 live wiring (this session): `BatchedRigidBodyIntegrationStage` — an
-  additive `WorldStepStage` that drives a live World step through the SoA path
-  (extract -> `integrateRigidBodyStateBatch` via the executor -> apply +
-  frame-cache update), deferring frame-coupled bodies to
-  `RigidBodyIntegrationStage`. A parity test verifies it matches the per-entity
-  stage to 1e-10 across a full dynamic step (linear force, torque, orientation)
-  for free bodies, plus a frame-coupled fallback test. The orientation scheme is
-  unified on the exponential map and `RigidBodyModelBatch` now carries inertia,
-  so the SoA stage is a full drop-in replacement for free rigid bodies.
+- Phase 2 live wiring: `BatchedRigidBodyIntegrationStage` drives a live World
+  step through the SoA path (extract -> `integrateRigidBodyStateBatch` via the
+  executor -> apply -> parent-ordered frame-cache update). Parity tests verify it
+  matches the per-entity stage to 1e-10 across a full dynamic step (linear force,
+  torque, orientation) for free and frame-coupled bodies. The orientation scheme
+  is unified on the exponential map and `RigidBodyModelBatch` carries inertia, so
+  the SoA stage is the default drop-in path for unconstrained rigid bodies.
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute` — thirty-one commits ahead of
-`main`, working tree clean, all gates green. Not pushed; accumulating toward one
-larger DART 7 PR.
+`main` — local follow-up changes are in progress on top of `origin/main`. The
+worktree is intentionally dirty with uncommitted code, docs, workflow, and test
+changes for this task; no PR is associated with the branch.
 
 ## Immediate Next Step
 
 `BatchedRigidBodyIntegrationStage` now matches the per-entity integrator across a
-full free-body dynamic step, so the SoA path is a verified drop-in. The natural
-next steps, in rough order:
+full free-body dynamic step and frame-coupled rigid-body parenting. The default
+experimental `World::step` pipeline selects the batched stage behind the executor
+seam. The natural next steps, in rough order:
 
-1. Optionally let `World::step` (or the default pipeline) select the batched
-   stage, behind the executor seam, once frame-coupled coverage is broadened
-   beyond the current per-entity fallback (e.g. parent-before-child ordering of
-   the frame-cache loop so the SoA path handles rigid-body parenting directly).
-2. Phase 3's deliverables are all implemented: determinism gate (bitwise for
+1. Phase 3's deliverables are all implemented: determinism gate (bitwise for
    map-only), cost gate (`ParallelExecutor::setInlineThreshold`), explicit-SIMD
    orientation kernel (`integrateOrientationsSimd`) with scalar fallback, and a
    deterministic reduction (`totalKineticEnergy`) with a fixed-ULP tolerance
@@ -62,12 +60,29 @@ next steps, in rough order:
    baseline" -- is not achievable on today's physics: measured
    `BM_RigidBodyStepParallel` is slower than sequential because trivial Euler
    integration is overhead-bound (the plan's thesis). It waits for a
-   compute-bound workload (contact solver) plus committed `bm-check` baselines on
-   stable benchmark CI.
-3. Phase 4 heterogeneous batches (deferred-by-design to Phase 6 in `01-plan.md`).
-4. Phase 5 GPU prototype (blocked on a GPU runner the project does not have;
-   the plan classifies this as a provisioning prerequisite, not a coding task);
-   Phase 6 reassess (gated on Phase 5).
+   compute-bound workload (contact solver) plus an extension of the checked
+   `pixi run bm-compute-check` corpus and dashboard contact-shaped proxy/Phase 5
+   CPU-baseline series on stable benchmark CI.
+2. Phase 4 heterogeneous batches (deferred-by-design to Phase 6 in `01-plan.md`).
+3. Phase 5 GPU prototype (blocked on project-level GPU runner plus build/import
+   CI; local CUDA hardware alone is not enough to satisfy the gate; owner:
+   project maintainers/infrastructure; durable sidecar package shape and
+   go/no-go threshold are in
+   `docs/design/scalable_compute_decisions.md`); Phase 6 reassess (gated on Phase
+   5).
+
+External state note: draft PR #2710 (`feature/experimental-cuda-mvp`) now exists
+with an opt-in CUDA smoke path. It is useful Phase 5 substrate, but it is not a
+Phase 5 exit by itself: it still needs reconciliation with this worktree's
+default `World::step` batched path, `bm-compute-check` corpus/dashboard gate,
+`BM_Phase5RigidBodyBatchGpu/<world>/128/100` go/no-go row naming, packet
+validator, backend-boundary checker, and default/core no-GPU dependency gate.
+`pixi run check-phase5-cuda-benchmark-contract` now makes that benchmark naming
+contract executable: optional CUDA benchmark files must register the full
+`BM_Phase5RigidBodyBatchGpu/4096/128/100` manual go/no-go row.
+The Phase 5 packet checker now also requires evidence booleans proving the GPU
+build/import gate and policy gates passed for the same change, so a timing-only
+packet cannot accidentally close Phase 5.
 
 Keep `entt` internal and the public handle API unchanged.
 
@@ -78,9 +93,9 @@ Keep `entt` internal and the public handle API unchanged.
   `dart_experimental_tests`) before `ctest -L simulation-experimental`, or you
   will run stale test binaries that silently pass.
 - The world-space dynamics are frame-independent: only the `localTransform`
-  bookkeeping depends on parent frames, which is why the batched stage can
-  integrate in flat SoA order and only the frame-cache loop (or the per-entity
-  fallback) needs parent-before-child ordering.
+  bookkeeping depends on parent frames, which is why the batched stage integrates
+  in flat SoA order and then writes rigid-body frame properties
+  parent-before-child.
 - The state-representation refactor (immutable Model + batched SoA State) is the
   true foundation, intentionally pulled forward to Phase 2 before SIMD, batch, or
   GPU work, because today's array-of-structs `entt::registry` access exercises
@@ -95,7 +110,71 @@ Keep `entt` internal and the public handle API unchanged.
 - Do not benchmark or pick a GPU backend on the current Euler-only physics; it is
   embarrassingly parallel and will mislead the CUDA-versus-SYCL decision. The
   Phase 0 contact-shaped proxy (`BM_ContactShaped*` in `bm_compute_graph.cpp`)
-  is the hard-case baseline; it shows no parallel speedup, as expected.
+  is the hard-case baseline; it is a reproducibility/smoke surface, not backend
+  selection evidence. `pixi run bm-compute-check` plus the performance dashboard
+  keep the full expected compute benchmark corpus reproducible.
+- Current validation evidence:
+  - `pixi run test-all` passed after all current code, docs, workflow, checker,
+    and Phase 5 GPU packet-template edits. The docs phase still emits the known
+    generated-stub `None_` autodoc warnings, but the documentation build passes.
+  - `pixi run test-simulation-experimental` passed after the default batched
+    world-step update.
+  - `pixi run bm-compute-check --benchmark-min-time 1ms` checked all 28 expected
+    rows after the checker tightening.
+  - Checker/dashboard Python tests passed.
+  - `pixi run pytest
+python/tests/unit/test_check_no_gpu_runtime_dependencies.py
+python/tests/unit/test_check_compute_backend_boundaries.py
+python/tests/unit/test_check_phase5_gpu_packet.py
+python/tests/unit/test_check_phase5_cuda_benchmark_contract.py
+python/tests/unit/test_check_compute_graph_benchmarks.py
+python/tests/unit/test_performance_dashboard_workflow.py
+python/tests/unit/test_run_performance_dashboard_benchmarks.py -q` passed
+    with 54 tests after narrowing the no-GPU dependency checker to default/core
+    manifests while allowing explicitly opt-in sidecar Pixi features, and after
+    adding the Phase 5 CUDA benchmark-contract checker and packet evidence
+    booleans.
+  - Checker input mode passed against
+    `.benchmark_results/compute_graph_check.json`.
+  - `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` is the
+    checked template path for future manual Phase 5 GPU evidence packets. The
+    template now includes false-by-default booleans for GPU build/import,
+    backend-boundary, no-GPU default/core dependency, and Phase 5 benchmark
+    contract evidence; `--input` requires them to be true.
+  - `pixi run python scripts/run_performance_dashboard_benchmarks.py --dry-run`
+    listed the contact-shaped dashboard command and Phase 5 CPU-baseline
+    command.
+  - `pixi run pytest python/tests/unit/test_check_phase5_gpu_packet.py -q`
+    passed for the executable Phase 5 go/no-go packet validator.
+  - `pixi run pytest python/tests/unit/test_check_compute_backend_boundaries.py -q`
+    passed for the executable Phase 5 backend-boundary checker.
+  - `pixi run check-compute-backend-boundaries` passed for the executable
+    Phase 5 backend-leakage API-boundary review.
+  - `pixi run check-no-gpu-runtime-dependencies` passed for the executable
+    no-GPU default/core package manifest gate; opt-in Pixi GPU sidecar features
+    are intentionally allowed.
+  - A direct parse of PR #2710's `pixi.toml` with the updated
+    `check_no_gpu_runtime_dependencies.py` passed, proving its opt-in CUDA
+    feature shape is compatible with the default/core no-GPU dependency gate.
+  - `pixi run check-phase5-cuda-benchmark-contract` passed for the optional CUDA
+    benchmark contract. Its regression tests intentionally reject PR #2710's
+    current `BM_CudaRigidBodyStateBatchLinear/<bodies>` smoke-row shape as
+    insufficient for the Phase 5 go/no-go packet.
+  - A direct parse of PR #2710's
+    `tests/benchmark/simulation/experimental/bm_cuda_rigid_body_state_batch.cpp`
+    with `check_phase5_cuda_benchmark_contract.py` reported the expected two
+    violations: missing `BM_Phase5RigidBodyBatchGpu` and missing the
+    `4096/128/100` manual go/no-go workload.
+  - `pixi run docs-build` passed after tightening Doxygen `internal` symbol
+    exclusions, and `pixi run lint` then stayed green against the generated docs
+    tree.
+  - `pixi run lint` passed.
+  - `pixi run check-lint` passed after adding the Phase 5 CUDA benchmark
+    contract task, packet evidence booleans, and extending
+    simulation-experimental formatting checks to `.cu`/`.cuh` files.
+  - `pixi run check-api-boundaries` passed after the checker was tightened to
+    require Doxygen `internal` symbol exclusions.
+  - `git diff --check` passed.
 - Resource-access metadata (Phase 1) is implemented at per-entity stable-string
   granularity and stays diagnostic. The milestone contract is in
   `docs/plans/030-compute-resource-access/`; the former narrow dev task is
@@ -109,5 +188,18 @@ Keep `entt` internal and the public handle API unchanged.
 git status && git log -5 --oneline
 ```
 
-Then read `01-plan.md` and continue with the angular-from-torque parity work
-described under "Immediate Next Step."
+Then read `01-plan.md`. The remaining work is not another Euler-integration
+cleanup: keep `pixi run bm-compute-check`, the dashboard contact-shaped proxy
+surface, and the Phase 5 CPU-baseline surface green; wait for a compute-bound
+contact/constraint workload before closing the Phase 3 speedup exit; and
+provision a project GPU runner plus build/import CI before starting Phase 5.
+The GPU runner/CI prerequisites are owned by project maintainers/infrastructure;
+the package shape, pre-registered go/no-go threshold, and
+`pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /
+`--input <packet.json>` plus `pixi run check-compute-backend-boundaries` and
+`pixi run check-no-gpu-runtime-dependencies` evidence gates are now durable in
+`docs/design/scalable_compute_decisions.md`. If continuing through draft PR
+#2710, first reconcile its opt-in CUDA benchmark/test names and Pixi feature
+shape with these gates, especially
+`pixi run check-phase5-cuda-benchmark-contract`, rather than loosening the Phase
+5 exit criteria.

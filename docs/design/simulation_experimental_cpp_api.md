@@ -244,10 +244,10 @@ the release roadmap.
   `World::updateKinematics()` remains available in DART 7 as the existing
   synchronization spelling. The DART 8 target is fresh-by-default ordinary
   queries plus named synchronization hooks for predictable batching.
-- Default `World::step()` composes rigid-body integration followed by
-  kinematics through `WorldStepPipeline`, and executor/pipeline overloads
-  already allow selected stage execution and repeated stepping with
-  caller-owned execution policy.
+- Default `World::step()` composes batched SoA rigid-body integration followed
+  by kinematics through `WorldStepPipeline`, and executor/pipeline overloads
+  already allow selected stage execution and repeated stepping with caller-owned
+  execution policy.
 - `RigidBodyOptions` already represents user-facing rigid-body initialization
   data: mass, inertia, pose, and velocity.
 - `Frame`, `FreeFrame`, `FixedFrame`, `Multibody`, `Link`, and `Joint` provide

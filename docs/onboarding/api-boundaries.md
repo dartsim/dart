@@ -169,6 +169,12 @@ they exist locally, and reports any legacy exceptions from
 `replacement`, `remove_by`, `tracking`, and `reason` fields, and stale entries
 fail the checker.
 
+For experimental scalable-compute work, `pixi run check-compute-backend-boundaries`
+also checks public experimental headers and the default dartpy experimental
+bindings for CUDA/SYCL/device/stream/kernel/memory-pool API leakage. The existing
+`ComputeStageAcceleration::Gpu` metadata flag is allowed because it describes
+backend-neutral acceleration intent, not a concrete backend API.
+
 ## Documentation Rules
 
 The public C++ API reference should describe public and compatibility APIs, not

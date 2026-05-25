@@ -40,6 +40,24 @@ BENCHMARK_SPECS = [
         benchmark_filter="BM_RigidBodyStep(Sequential|Parallel)/.*",
         output_name="dashboard_rigidbody_step.json",
     ),
+    # Contact-shaped synthetic workload with sequential coupling and irregular
+    # memory access. This is the hard-case proxy for scalable-compute decisions
+    # until the experimental World has a real contact/constraint solver.
+    BenchmarkSpec(
+        surface="contact",
+        target="bm_compute_graph",
+        benchmark_filter="BM_ContactShaped(Sequential|Parallel)/.*",
+        output_name="dashboard_contact_shaped.json",
+    ),
+    # CPU side of the Phase 5 homogeneous-batch GPU comparison. The dashboard
+    # keeps the bounded smoke row; manual Phase 5 evidence uses the larger
+    # pre-registered row in bm_compute_graph.
+    BenchmarkSpec(
+        surface="phase5cpu",
+        target="bm_compute_graph",
+        benchmark_filter="BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10",
+        output_name="dashboard_phase5_cpu_baseline.json",
+    ),
     # End-to-end stepping of real robot models loaded through dart-io.
     BenchmarkSpec(
         surface="robots",
