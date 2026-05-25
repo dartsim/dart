@@ -61,11 +61,12 @@ the Phase 5 CPU-baseline smoke row.
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute-cuda-reconcile` — local branch
-reconciling the scalable-compute gates with the opt-in CUDA MVP from draft PR
-#2710. CUDA remains off by default and is enabled through the `cuda` Pixi
-environment or `DART_ENABLE_EXPERIMENTAL_CUDA=ON`; no GitHub mutation has been
-made from this branch.
+`feature/experimental-world-scalable-compute-cuda-reconcile` — clean local
+branch, merged through current `origin/main` (`4b6d07a162a`), with no associated
+PR yet. The branch reconciles the scalable-compute gates with the opt-in CUDA MVP
+from draft PR #2710. CUDA remains off by default and is enabled through the
+`cuda` Pixi environment or `DART_ENABLE_EXPERIMENTAL_CUDA=ON`; no GitHub
+mutation has been made from this branch.
 
 ## Immediate Next Step
 
@@ -73,7 +74,9 @@ made from this branch.
 full free-body dynamic step and frame-coupled rigid-body parenting. The default
 experimental `World::step` pipeline selects the merged contact/multibody solver
 pipeline; keep the batched stage as the explicit unconstrained SoA path behind
-the executor seam. The natural next steps, in rough order:
+the executor seam. The branch is locally PR-ready; the next external step is
+explicit maintainer approval to push this branch and open the PR. The natural
+next steps, in rough order:
 
 1. Phase 3's deliverables are implemented: determinism gate (bitwise for
    map-only), cost gate (`ParallelExecutor::setInlineThreshold`), explicit-SIMD
@@ -128,6 +131,9 @@ Keep `entt` internal and the public handle API unchanged.
   `pixi run bm-compute-check` plus the performance dashboard keep the full
   expected compute benchmark corpus reproducible.
 - Current validation evidence:
+  - After the latest `origin/main` merge, `pixi run lint` passed and
+    `pixi run docs-build` passed with the known generated-stub `None_` autodoc
+    warnings.
   - `pixi run test-all` passed after merging current `origin/main` and
     reconciling the rigid-body dynamics default pipeline with the scalable-
     compute branch. The docs phase still emits the known generated-stub `None_`
@@ -195,6 +201,10 @@ python/tests/unit/test_run_performance_dashboard_benchmarks.py -q` passed
   - `pixi run check-phase5-cuda-workflow` passed for the manual CUDA workflow
     wiring that will produce the Phase 5 packet artifact once a project-owned
     GPU runner exists.
+  - A read-only GitHub runner check on 2026-05-25 saw online self-hosted Linux
+    runners labeled `self-hosted`, `Linux`, `X64`, `dartsim`, and `docker`, but
+    no runner labeled `cuda`; the project-owned GPU runner prerequisite remains
+    open.
   - A direct parse of PR #2710's
     `tests/benchmark/simulation/experimental/bm_cuda_rigid_body_state_batch.cpp`
     with `check_phase5_cuda_benchmark_contract.py` reported the expected two
