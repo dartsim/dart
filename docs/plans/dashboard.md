@@ -271,9 +271,13 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Easy start
-- Next step: Phase 1 — add a `dart::gui` runtime scene-swap host (`runDemos`)
-  plus a Demos sidebar, scaffold `examples/demos/` (`demos_scenes` lib +
-  `dart-demos` app), and port 3 seed scenes with a scene-switching headless smoke.
+- Next step: Runtime scene-swap host, `dart-demos` app, and migration of 37 GUI
+  examples into categorized scenes are landed and headless-verified (cycle smoke
+  `EXAMPLE_dart_demos_cycle_headless_smoke`); tooling/docs/CHANGELOG updated.
+  Remaining (deferred, see `../dev_tasks/demos_app/RESUME.md`): collapse the
+  `dart/gui/detail` `ExampleScene` fixture catalog into the registry (retarget
+  `test_filament_scene_extraction` + per-scene smokes + `dartsim --scene`) and
+  promote the design doc — both touch shared GUI test infra (PLAN-101).
 - Gate: `dart-demos` launches and switches across several scenes (including an
   asset-backed robot) in one window without leaks or window recreation; the
   example renderable-count and per-scene headless smokes run against the Demos
