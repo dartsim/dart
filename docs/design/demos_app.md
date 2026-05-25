@@ -27,6 +27,18 @@ touched several places. The proliferation did not scale.
   inspector); and `atlas_simbicon`, `collision_sandbox`, `wam_ikfast` (see
   Standalone exceptions).
 
+## Strategy: Python-first, C++ frozen
+
+Per PLAN-103, Python is DART's primary, growing example surface; this C++
+`dart-demos` app is **frozen** (maintained, not grown). New example content is
+authored Python-first (a headless `dartpy` scene-registry runner plus a Colab
+notebook gallery), and only a small golden subset is mirrored in C++ and kept
+honest by a thin parity smoke. `dart-demos` is retired only later, when the
+Python surface covers the breadth and the `dartsim` editor (PLAN-101) can open
+curated example scenes interactively; the retire-later checklist lives in
+PLAN-103. Renderer regression coverage is independent (see below), so a future
+retirement loses no renderer coverage.
+
 ## Architecture
 
 ### Scene as data, not an entry point

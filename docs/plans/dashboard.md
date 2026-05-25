@@ -49,6 +49,8 @@ its own line so status updates remain git-history friendly.
 - Next step: Run a Colab runtime spike from a DART 7 dartpy wheel artifact and
   the Filament GUI branch to prove import, headless simulation, and one
   Filament-backed inline image or video before publishing stable tutorial links.
+  The notebook gallery imports the headless scene modules from PLAN-103
+  (`python/examples/demos`) rather than duplicating scene code.
 - Gate: Cloud tutorial support is not complete until the notebook rejects DART
   6 artifacts, installs only DART 7 dartpy artifacts in the cloud runtime,
   runs a headless simulation, renders a nonblank Filament-backed image or
@@ -273,10 +275,30 @@ its own line so status updates remain git-history friendly.
   runtime-switchable scenes (cycle smoke `EXAMPLE_dart_demos_cycle_headless_smoke`);
   `hello_world` stays the standalone template; tooling/docs/CHANGELOG updated.
   The `dart/gui/detail` `ExampleScene` set is intentionally kept as the renderer's
-  internal test fixtures (see the plan's "examples vs renderer fixtures"
-  decision), so PLAN-101's `--scene` smoke gate is unaffected. Residual options
-  (split demos into a scenes lib; dockable workspace) are in the plan's Open Gaps.
+  internal test fixtures (see the design doc's "examples vs renderer fixtures"
+  decision), so PLAN-101's `--scene` smoke gate is unaffected. C++ `dart-demos`
+  is now **frozen**: future example growth is Python-first under PLAN-103, which
+  also owns the retire-later checklist for this C++ app.
 - Gate: `dart-demos` launches and switches across scenes (including asset-backed
   robots) in one window without window recreation; the headless cycle smoke
   renders every scene; only `hello_world` plus a few special-build/test-coupled
   programs stay standalone; `pixi run lint` and `check-docs-policy` green.
+
+### PLAN-103: Examples Strategy (Python-First)
+
+- Owner doc: [`103-examples-strategy.md`](103-examples-strategy.md); C++ app
+  architecture in [`../design/demos_app.md`](../design/demos_app.md).
+- Status: Active
+- Horizon: Now
+- Dimension: Easy start
+- Next step: Phase 1 — add the headless Python scene-registry runner in
+  `python/examples/demos/` (CLI mirrors `dart-demos`: `--scene`,
+  `--cycle-scenes`, `--frames`, `--screenshot`), migrate the two existing Python
+  examples into it, add `pixi run py-demos` and a Python cycle smoke. Then the
+  golden-set parity harness, then Python-first modern content, then the Colab
+  notebook gallery (PLAN-012). C++ `dart-demos` (PLAN-102) stays frozen.
+- Gate: `python -m examples.demos` runs headless with the mirrored CLI and a
+  green cycle smoke; the ~3-5 golden scenes assert against shared expected-state
+  fixtures from both C++ and Python; the notebook gallery imports (not copies)
+  the scene modules; C++ demos unchanged; `pixi run lint`, `check-docs-policy`,
+  and `test-py` green for touched surfaces.
