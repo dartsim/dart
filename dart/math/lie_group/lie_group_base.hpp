@@ -37,6 +37,22 @@
 #include <dart/math/lie_group/helpers.hpp>
 #include <dart/math/lie_group/inverse_base.hpp>
 
+namespace dart::math::detail {
+
+template <typename MapType, typename Params>
+MapType makeLieGroupMap(Params&& params, int offset = 0)
+{
+  const auto stride = params.innerStride();
+  auto* data = params.data() + static_cast<::Eigen::Index>(offset) * stride;
+  if constexpr (requires { MapType(data, ::Eigen::InnerStride<>(stride)); }) {
+    return MapType(data, ::Eigen::InnerStride<>(stride));
+  } else {
+    return MapType(data);
+  }
+}
+
+} // namespace dart::math::detail
+
 namespace dart::math {
 
 enum NoInitializeTag

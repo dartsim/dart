@@ -109,6 +109,7 @@ public:
   using Params = typename Base::Params;
   using PlainObject = LieGroup;
   using Tangent = typename Base::Tangent;
+  using AdjointMatrix = Matrix<Scalar, DoF, DoF>;
 
   using Base::derived;
   using Base::operator=;
@@ -132,7 +133,7 @@ public:
   [[nodiscard]] Tangent log(Scalar tol = LieGroupTol<Scalar>()) const;
 
   /// Returns the block-diagonal adjoint matrix of all components.
-  [[nodiscard]] Matrix<Scalar, DoF, DoF> toAdjointMatrix() const;
+  [[nodiscard]] AdjointMatrix toAdjointMatrix() const;
 
   /// Returns the block-diagonal matrix representation of all components.
   [[nodiscard]] MatrixType toMatrix() const;
@@ -165,7 +166,7 @@ private:
       std::integer_sequence<std::size_t, Indices...>, Scalar tol) const;
 
   template <std::size_t... Indices>
-  [[nodiscard]] Matrix<Scalar, DoF, DoF> toAdjointMatrix(
+  [[nodiscard]] AdjointMatrix toAdjointMatrix(
       std::integer_sequence<std::size_t, Indices...>) const;
 
   template <std::size_t... Indices>
@@ -286,10 +287,7 @@ typename GroupProductBase<Derived>::Tangent GroupProductBase<Derived>::log(
 
 //==============================================================================
 template <typename Derived>
-Matrix<
-    typename GroupProductBase<Derived>::Scalar,
-    GroupProductBase<Derived>::DoF,
-    GroupProductBase<Derived>::DoF>
+typename GroupProductBase<Derived>::AdjointMatrix
 GroupProductBase<Derived>::toAdjointMatrix() const
 {
   return toAdjointMatrix(
@@ -299,14 +297,11 @@ GroupProductBase<Derived>::toAdjointMatrix() const
 //==============================================================================
 template <typename Derived>
 template <std::size_t... Indices>
-Matrix<
-    typename GroupProductBase<Derived>::Scalar,
-    GroupProductBase<Derived>::DoF,
-    GroupProductBase<Derived>::DoF>
+typename GroupProductBase<Derived>::AdjointMatrix
 GroupProductBase<Derived>::toAdjointMatrix(
     std::integer_sequence<std::size_t, Indices...>) const
 {
-  Matrix<Scalar, DoF, DoF> out = Matrix<Scalar, DoF, DoF>::Zero();
+  AdjointMatrix out = AdjointMatrix::Zero();
   int offset = 0;
   ((out.template block<Component<Indices>::DoF, Component<Indices>::DoF>(
         offset, offset)
@@ -348,8 +343,8 @@ template <std::size_t Index>
 const typename GroupProductBase<Derived>::template ConstComponentMap<Index>
 GroupProductBase<Derived>::get() const
 {
-  return ConstComponentMap<Index>(
-      params().data() + std::get<Index>(ParamSizeIndices));
+  return detail::makeLieGroupMap<ConstComponentMap<Index>>(
+      params(), std::get<Index>(ParamSizeIndices));
 }
 
 //==============================================================================
@@ -358,8 +353,8 @@ template <std::size_t Index>
 typename GroupProductBase<Derived>::template ComponentMap<Index>
 GroupProductBase<Derived>::get()
 {
-  return ComponentMap<Index>(
-      params().data() + std::get<Index>(ParamSizeIndices));
+  return detail::makeLieGroupMap<ComponentMap<Index>>(
+      params(), std::get<Index>(ParamSizeIndices));
 }
 
 } // namespace dart::math

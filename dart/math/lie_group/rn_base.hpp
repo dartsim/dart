@@ -56,6 +56,7 @@ public:
   using MatrixType = typename Base::MatrixType;
   using Params = typename Base::Params;
   using Tangent = typename Base::Tangent;
+  using AdjointMatrix = Matrix<Scalar, DoF, DoF>;
 
   using Base::derived;
   using Base::operator=;
@@ -89,7 +90,7 @@ public:
   [[nodiscard]] Tangent ad(const Eigen::MatrixBase<MatrixDerived>& dx) const;
 
   /// Returns the identity adjoint matrix for the abelian R^n group.
-  [[nodiscard]] Matrix<Scalar, DoF, DoF> toAdjointMatrix() const;
+  [[nodiscard]] AdjointMatrix toAdjointMatrix() const;
 
   /// Returns a homogeneous translation matrix representation of R^n.
   [[nodiscard]] MatrixType toMatrix() const;
@@ -168,13 +169,9 @@ typename RnBase<Derived>::Tangent RnBase<Derived>::ad(
 
 //==============================================================================
 template <typename Derived>
-Matrix<
-    typename RnBase<Derived>::Scalar,
-    RnBase<Derived>::DoF,
-    RnBase<Derived>::DoF>
-RnBase<Derived>::toAdjointMatrix() const
+typename RnBase<Derived>::AdjointMatrix RnBase<Derived>::toAdjointMatrix() const
 {
-  return Matrix<Scalar, DoF, DoF>::Identity();
+  return AdjointMatrix::Identity();
 }
 
 //==============================================================================

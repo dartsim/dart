@@ -49,6 +49,15 @@ struct traits<::Eigen::Map<
   using Base = traits<::dart::math::GroupProduct<S, ComponentsT...>>;
   using Scalar = typename Base::Scalar;
 
+  template <std::size_t Index>
+  using Component = typename Base::template Component<Index>;
+  template <std::size_t Index>
+  using ComponentMap = ::Eigen::
+      Map<const Component<Index>, ::Eigen::Unaligned, ::Eigen::InnerStride<>>;
+  template <std::size_t Index>
+  using ConstComponentMap = ::Eigen::
+      Map<const Component<Index>, ::Eigen::Unaligned, ::Eigen::InnerStride<>>;
+
   static constexpr int ParamSize = Base::ParamSize;
   using Params = ::Eigen::
       Map<const ::Eigen::Matrix<S, ParamSize, 1>, Options, StrideType>;
@@ -66,6 +75,15 @@ struct traits<
 {
   using Base = traits<::dart::math::GroupProduct<S, ComponentsT...>>;
   using Scalar = typename Base::Scalar;
+
+  template <std::size_t Index>
+  using Component = typename Base::template Component<Index>;
+  template <std::size_t Index>
+  using ComponentMap = ::Eigen::
+      Map<Component<Index>, ::Eigen::Unaligned, ::Eigen::InnerStride<>>;
+  template <std::size_t Index>
+  using ConstComponentMap = ::Eigen::
+      Map<const Component<Index>, ::Eigen::Unaligned, ::Eigen::InnerStride<>>;
 
   static constexpr int ParamSize = Base::ParamSize;
   using Params

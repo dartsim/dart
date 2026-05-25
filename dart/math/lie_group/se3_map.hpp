@@ -48,6 +48,12 @@ struct traits<::Eigen::Map<const ::dart::math::SE3<S>, Options, StrideType>>
   static constexpr int ParamSize = Base::ParamSize;
   using Params = ::Eigen::
       Map<const ::Eigen::Matrix<S, ParamSize, 1>, Options, StrideType>;
+  using RotationMap = typename Base::ConstRotationMap;
+  using ConstRotationMap = ::Eigen::
+      Map<const ::dart::math::SO3<S>, ::Eigen::Unaligned, StrideType>;
+  using TranslationMap = typename Base::ConstTranslationMap;
+  using ConstTranslationMap = ::Eigen::
+      Map<const ::Eigen::Matrix<S, 3, 1>, ::Eigen::Unaligned, StrideType>;
 };
 
 /// Specialization of Eigen::internal::traits for dart::math::SE3
@@ -62,6 +68,14 @@ struct traits<::Eigen::Map<::dart::math::SE3<S>, Options, StrideType>>
   static constexpr int ParamSize = Base::ParamSize;
   using Params
       = ::Eigen::Map<::Eigen::Matrix<S, ParamSize, 1>, Options, StrideType>;
+  using RotationMap
+      = ::Eigen::Map<::dart::math::SO3<S>, ::Eigen::Unaligned, StrideType>;
+  using ConstRotationMap = ::Eigen::
+      Map<const ::dart::math::SO3<S>, ::Eigen::Unaligned, StrideType>;
+  using TranslationMap
+      = ::Eigen::Map<::Eigen::Matrix<S, 3, 1>, ::Eigen::Unaligned, StrideType>;
+  using ConstTranslationMap = ::Eigen::
+      Map<const ::Eigen::Matrix<S, 3, 1>, ::Eigen::Unaligned, StrideType>;
 };
 
 } // namespace Eigen::internal
