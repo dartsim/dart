@@ -327,10 +327,13 @@ project file.
 ### SceneIO (project format + replay format)
 
 - **Project file** (human-readable): the canonical saved scene. A diffable,
-  versionable document (JSON or XML; see [File Formats](#file-formats)) that
-  describes the authored objects, their parameters, hierarchy, editor metadata,
-  and a format version. Chosen over the binary format for design files because it
-  is reviewable and hand-editable (Webots `.wbt` precedent).
+  versioned, line-oriented text document that describes the authored objects,
+  their parameters, hierarchy, editor metadata, and a format version. Chosen over
+  the binary format for design files because it is reviewable and hand-editable
+  (Webots `.wbt` precedent). The loader is fail-closed: it rejects bad or newer
+  headers, malformed numeric fields, duplicate object IDs, and nested or
+  unterminated object blocks without partially mutating the output model. Saving
+  a loaded scene should produce stable text so review diffs stay meaningful.
 - **Replay file** (binary): a sequence of experimental-World binary snapshots
   plus per-frame timing, optimized for fast capture and restore.
 - **UI layout/config**: saved separately from scene data (RViz `.rviz`
