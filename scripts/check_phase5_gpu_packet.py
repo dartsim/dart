@@ -199,16 +199,23 @@ def make_packet_template(
             "phase5_benchmark_contract_passed": False,
             "notes": [
                 "Run on a project-owned GPU runner.",
-                "Set the evidence booleans to true only after the GPU "
-                "build/import gate, backend-boundary check, no-GPU default/core "
-                "dependency check, and Phase 5 benchmark-contract check have "
-                "passed for the same change.",
-                "Set includes_transfer_setup_compute_readback to true only when "
-                "the GPU row includes host/device transfer, setup, kernel/compute, "
-                "and readback needed for final-state comparison.",
-                "Replace the placeholder median rows with Google Benchmark "
-                "aggregate median rows from the CPU fallback and matching GPU "
-                "prototype workload.",
+                (
+                    "Set the evidence booleans to true only after the GPU "
+                    + "build/import gate, backend-boundary check, "
+                    + "no-GPU default/core dependency check, and Phase 5 "
+                    + "benchmark-contract check have passed for the same change."
+                ),
+                (
+                    "Set includes_transfer_setup_compute_readback to true only "
+                    + "when the GPU row includes host/device transfer, setup, "
+                    + "kernel/compute, and readback needed for final-state "
+                    + "comparison."
+                ),
+                (
+                    "Replace the placeholder median rows with Google Benchmark "
+                    + "aggregate median rows from the CPU fallback and matching "
+                    + "GPU prototype workload."
+                ),
             ],
         },
         "benchmarks": [

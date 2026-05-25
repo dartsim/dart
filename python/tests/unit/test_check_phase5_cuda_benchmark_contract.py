@@ -49,8 +49,7 @@ def test_phase5_cuda_benchmark_contract_rejects_legacy_smoke_row_shape():
 
     assert [violation.message for violation in violations] == [
         "CUDA benchmark files must register BM_Phase5RigidBodyBatchGpu",
-        "BM_Phase5RigidBodyBatchGpu must include the 4096/128/100 manual "
-        "go/no-go workload",
+        "BM_Phase5RigidBodyBatchGpu must include the 4096/128/100 manual go/no-go workload",
     ]
 
 
