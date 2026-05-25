@@ -1,5 +1,5 @@
-Performance Dashboard
-=====================
+Experimental World Performance Dashboard
+========================================
 
 DART publishes a public performance dashboard that tracks experimental World
 Google Benchmark results over time:
