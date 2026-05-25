@@ -35,6 +35,7 @@ include(dart_defs)
 include(dart_experimental_dependencies)
 
 add_library(${target_name}
+  body/collision_body.cpp
   body/rigid_body.cpp
   common/diagnostics.cpp
   common/exceptions.cpp
@@ -44,6 +45,7 @@ add_library(${target_name}
   compute/compute_node.cpp
   compute/compute_stage_metadata.cpp
   compute/execution_profile.cpp
+  compute/multibody_dynamics.cpp
   compute/parallel_executor.cpp
   compute/rigid_body_state_batch.cpp
   compute/sequential_executor.cpp
@@ -51,6 +53,8 @@ add_library(${target_name}
   compute/world_kinematics_graph.cpp
   compute/world_step_stage.cpp
   constraint/loop_closure.cpp
+  comps/collision_geometry.cpp
+  comps/contact_material.cpp
   comps/dynamics.cpp
   comps/frame_types.cpp
   comps/joint.cpp
@@ -71,6 +75,12 @@ add_library(${target_name}
   space/vector_mapper.cpp
   world.cpp
 )
+set_target_properties(${target_name}
+  PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
+    LIBRARY_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib"
+    RUNTIME_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/bin"
+)
 dart_apply_strict_symbol_visibility(${target_name})
 dart_maybe_apply_coverage_config(${target_name})
 
@@ -89,6 +99,8 @@ target_link_libraries(${target_name}
     Eigen3::Eigen
     EnTT::EnTT
     spdlog::spdlog
+  PRIVATE
+    ${PROJECT_NAME}-collision-native
 )
 
 if(TARGET Taskflow::Taskflow)

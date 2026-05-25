@@ -32,11 +32,14 @@
 
 #pragma once
 
+#include <dart/simulation/experimental/body/collision_shape.hpp>
 #include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 
+#include <Eigen/Core>
 #include <entt/entt.hpp>
 
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -97,6 +100,57 @@ public:
   ///
   /// @return Parent Joint handle (check with isValid() for root links)
   [[nodiscard]] Joint getParentJoint() const;
+
+  //--------------------------------------------------------------------------
+  // Inertial properties
+  //
+  // The inertia tensor is expressed about the center of mass, which may be
+  // offset from the link frame origin (see getCenterOfMass/setCenterOfMass; it
+  // defaults to the origin).
+  //--------------------------------------------------------------------------
+
+  /// Get the link's mass.
+  [[nodiscard]] double getMass() const;
+
+  /// Set the link's mass.
+  ///
+  /// Must be positive and finite. Used by articulated-body forward dynamics.
+  void setMass(double mass);
+
+  /// Get the link's body-frame inertia tensor about its center of mass.
+  [[nodiscard]] Eigen::Matrix3d getInertia() const;
+
+  /// Set the link's body-frame inertia tensor about its center of mass.
+  ///
+  /// Must be finite, symmetric, and positive definite.
+  void setInertia(const Eigen::Matrix3d& inertia);
+
+  /// Get the link's center of mass expressed in the link frame (default: the
+  /// origin).
+  [[nodiscard]] Eigen::Vector3d getCenterOfMass() const;
+
+  /// Set the link's center of mass expressed in the link frame.
+  ///
+  /// A nonzero offset places the center of mass away from the link frame
+  /// origin; the inertia tensor (see setInertia) remains about the center of
+  /// mass. Must contain only finite values.
+  void setCenterOfMass(const Eigen::Vector3d& centerOfMass);
+
+  //--------------------------------------------------------------------------
+  // Collision geometry
+  //--------------------------------------------------------------------------
+
+  /// Get the collision shape attached to this link, if any.
+  [[nodiscard]] std::optional<CollisionShape> getCollisionShape() const;
+
+  /// Set (or replace) the collision shape attached to this link.
+  ///
+  /// Once a link has a collision shape it participates in `World::collide()`,
+  /// posed by the link's forward-kinematics world transform.
+  void setCollisionShape(const CollisionShape& shape);
+
+  /// Return whether this link has a collision shape.
+  [[nodiscard]] bool hasCollisionShape() const;
 
   //--------------------------------------------------------------------------
   // Frame interface overrides

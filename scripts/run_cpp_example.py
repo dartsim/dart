@@ -111,7 +111,9 @@ GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
 }
 
 EXAMPLE_SPECS = {
-    "dartsim": ExampleSpec("dartsim", "dartsim", ("filament",)),
+    "dartsim": ExampleSpec(
+        "dartsim", "dartsim", ("filament", "simulation-experimental")
+    ),
     **{
         name: ExampleSpec(name, name, ("filament",), default_args)
         for name, default_args in GUI_SCENE_EXAMPLE_DEFAULT_ARGS.items()
@@ -301,6 +303,11 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
 
     _option_override(desired, env, "DART_BUILD_DARTPY", "DART_BUILD_DARTPY_OVERRIDE")
     _option_override(desired, env, "DART_BUILD_TESTS", "DART_BUILD_TESTS_OVERRIDE")
+    # The standalone dartsim editor needs the ImGui docking API, which only the
+    # fetched docking branch provides (DART_USE_SYSTEM_IMGUI=OFF).
+    _option_override(
+        desired, env, "DART_USE_SYSTEM_IMGUI", "DART_USE_SYSTEM_IMGUI_OVERRIDE"
+    )
 
     definitions = {
         option: value
@@ -318,11 +325,31 @@ def _ensure_filament(build_dir: Path, env: dict[str, str], smoke: bool) -> None:
     _configure(build_dir, definitions, env)
 
 
+def _ensure_simulation_experimental(build_dir: Path, env: dict[str, str]) -> None:
+    desired = {"DART_BUILD_SIMULATION_EXPERIMENTAL": "ON"}
+    definitions = {
+        option: value
+        for option, value in desired.items()
+        if not _cache_bool_matches(build_dir, option, value)
+    }
+    if not definitions:
+        return
+
+    print(
+        "Configuring DART simulation experimental requirements "
+        f"({', '.join(f'{k}={v}' for k, v in definitions.items())})...",
+        file=sys.stderr,
+    )
+    _configure(build_dir, definitions, env)
+
+
 def _ensure_target_requirements(
     build_dir: Path, spec: ExampleSpec, env: dict[str, str], smoke: bool
 ) -> None:
     if "filament" in spec.requirements:
         _ensure_filament(build_dir, env, smoke)
+    if "simulation-experimental" in spec.requirements:
+        _ensure_simulation_experimental(build_dir, env)
 
 
 def ensure_build_exists(build_dir: Path, build_type: str) -> None:
@@ -380,7 +407,8 @@ def _filament_screenshot_path(scene: str) -> Path:
     return Path("build") / env_name / f"dartsim_{scene_suffix}.ppm"
 
 
-def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
+def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str], bool]:
+    """Return scenes, remaining args, and whether --scene was user-supplied."""
     args = list(run_args)
     for index, arg in enumerate(args):
         if arg != "--scene" or index + 1 >= len(args):
@@ -388,9 +416,9 @@ def _split_filament_scenes(run_args: list[str]) -> tuple[list[str], list[str]]:
         scene = args[index + 1]
         del args[index : index + 2]
         if scene == "all":
-            return list(FILAMENT_ALL_SCENES), args
-        return [scene], args
-    return ["mvp"], args
+            return list(FILAMENT_ALL_SCENES), args, True
+        return [scene], args, True
+    return ["mvp"], args, False
 
 
 def _path_with_scene(path: Path, scene: str) -> Path:
@@ -403,7 +431,10 @@ def _has_linux_display(env: Mapping[str, str]) -> bool:
 
 
 def _prepare_filament_run_args(
-    run_args: list[str], scene: str, multiple_scenes: bool
+    run_args: list[str],
+    scene: str,
+    scene_option_explicit: bool,
+    multiple_scenes: bool,
 ) -> list[str]:
     args = list(run_args)
     if _has_arg(args, "--help", "-h"):
@@ -412,7 +443,9 @@ def _prepare_filament_run_args(
     headless = _has_arg(args, "--headless") or (
         sys.platform.startswith("linux") and not _has_linux_display(os.environ)
     )
-    if scene != "mvp" and not _has_arg(args, "--scene"):
+    # No --scene means the standalone dartsim editor; explicit --scene mvp means
+    # the legacy MVP fixture and must stay explicit after scene expansion.
+    if (scene != "mvp" or scene_option_explicit) and not _has_arg(args, "--scene"):
         args.extend(["--scene", scene])
     if headless and not _has_arg(args, "--headless"):
         args.append("--headless")
@@ -585,10 +618,12 @@ def _run_example_binary(
         subprocess.run([str(binary), *run_args], check=True, env=runtime_env)
         return
 
-    scenes, base_args = _split_filament_scenes(run_args)
+    scenes, base_args, scene_option_explicit = _split_filament_scenes(run_args)
     multiple_scenes = len(scenes) > 1
     for scene in scenes:
-        prepared_args = _prepare_filament_run_args(base_args, scene, multiple_scenes)
+        prepared_args = _prepare_filament_run_args(
+            base_args, scene, scene_option_explicit, multiple_scenes
+        )
         headless = _uses_headless_filament(prepared_args)
         runtime_env = _runtime_env(env, build_dir, software_gl=headless)
         command = [str(binary), *prepared_args]
@@ -599,6 +634,43 @@ def _run_example_binary(
             and not _has_linux_display(os.environ)
         )
         _run_with_optional_xvfb(command, runtime_env, use_xvfb)
+
+
+def _imgui_override(target: str, run_args: list[str], smoke: bool) -> str | None:
+    """ImGui variant to pin for a GUI run, or None to leave the cache as-is.
+
+    The standalone dartsim editor needs the ImGui docking branch that only the
+    fetched ImGui provides (DART_USE_SYSTEM_IMGUI=OFF); every other GUI path
+    (scene fixtures, other GUI examples) must use system ImGui (ON). Pinning the
+    value per run keeps a launch from inheriting a stale cache state left by a
+    previous run (e.g. OFF after an editor launch). Smoke runs keep their
+    externally configured cache.
+    """
+    if smoke:
+        return None
+    launching_docked_editor = target == "dartsim" and not _has_arg(run_args, "--scene")
+    return "OFF" if launching_docked_editor else "ON"
+
+
+def _apply_imgui_override(
+    env: dict[str, str],
+    target: str,
+    run_args: list[str],
+    smoke: bool,
+    requirements: tuple[str, ...],
+) -> None:
+    """Pin DART_USE_SYSTEM_IMGUI_OVERRIDE for a GUI run.
+
+    Assigns directly rather than via setdefault: the `pixi run dartsim` task
+    pre-sets this variable to OFF, so per-run pinning must overwrite it or a
+    scene-fixture launch (`pixi run dartsim -- --scene ...`) would stay on the
+    editor's docking build instead of system ImGui.
+    """
+    if "filament" not in requirements:
+        return
+    override = _imgui_override(target, run_args, smoke)
+    if override is not None:
+        env["DART_USE_SYSTEM_IMGUI_OVERRIDE"] = override
 
 
 def run(
@@ -617,6 +689,11 @@ def run(
     env["BUILD_TYPE"] = build_type
     env["CMAKE_BUILD_DIR"] = str(build_dir)
     _apply_libcxx_prefix(env)
+
+    # Pin the ImGui variant for GUI runs so a launch never inherits a stale
+    # build-cache state from a previous run: the editor needs the docking branch
+    # (OFF), while scene fixtures and other GUI examples need system ImGui (ON).
+    _apply_imgui_override(env, target, run_args, smoke, spec.requirements)
 
     _ensure_target_requirements(build_dir, spec, env, smoke)
     _build_example(build_dir, spec.build_target, env)

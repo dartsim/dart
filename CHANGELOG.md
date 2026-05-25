@@ -46,10 +46,28 @@
     grids are still rebuilt every frame so deforming/live geometry stays correct.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
-  - Moved the `dartsim` viewer source to the application-level `apps/dartsim`
-    tree, added a public `dart::gui::ApplicationOptions::world` handoff for
-    example-owned worlds, and restored `hello_world` as a real public-API
-    `dart::gui` example source.
+  - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
+    library) built only on the experimental World API. Its headless editor
+    engine (`dartsim/engine`) provides scene/object, selection, command
+    (undo/redo, grouped macros), and name managers, a typed event bus, an
+    in-engine logger, an Edit/Run simulation controller, binary record/replay,
+    and a human-readable project format, covered by `UNIT_dartsim_engine` unit
+    tests. The `dartsim/ui` panel layer wires the engine to the backend-hidden
+    `dart-gui` editor (menu bar, Scene Tree, Inspector, Console, simulation
+    controls, replay timeline), and a public additive
+    `dart::gui::ApplicationOptions::renderableProvider` hook renders the
+    experimental scene in the viewport without exposing renderer types. The
+    editor runs as an ImGui docking workspace via `pixi run dartsim`, which
+    builds against the ImGui docking branch (`DART_USE_SYSTEM_IMGUI=OFF`) and
+    opens with an IDE-style default layout (driven by a per-panel
+    `dart::gui::DockSide` hint); docking is guarded by `IMGUI_HAS_DOCK`, so
+    non-docking ImGui builds are unaffected. See
+    `docs/design/dartsim_gui_simulator.md` and
+    `docs/onboarding/gui-rendering.md`.
+  - Moved the `dartsim` viewer source to a dedicated application tree, added a
+    public `dart::gui::ApplicationOptions::world` handoff for example-owned
+    worlds, and restored `hello_world` as a real public-API `dart::gui` example
+    source.
   - Restored the `hello_world` example's instruction text, camera/run
     defaults, deterministic non-axis-aligned box orientation, profiling
     markers, and README through public `dart::gui`.
@@ -510,6 +528,180 @@
   - Added experimental C++ `World::sync(WorldSyncStage::Kinematics)` and
     dartpy `world.sync(sx.WorldSyncStage.KINEMATICS)` for explicit
     kinematics-only work placement without advancing simulation time.
+  - Added experimental C++ `World::setGravity()`/`getGravity()` and dartpy
+    `world.gravity`, applying a uniform gravitational acceleration (default
+    `(0, 0, -9.81)`) to dynamic rigid bodies through a transient step force
+    buffer without storing it in any per-body force accumulator.
+  - Made experimental rigid-body external force/torque components persistent
+    applied loads: each step reads them into the transient force buffer and
+    leaves the components intact for callers to clear or update explicitly.
+  - Added an experimental rigid-body `dart-gui` example that steps an
+    experimental `World` and mirrors its rigid-body poses into live rendered
+    DART frame geometry.
+  - Added experimental rigid-body derived dynamic quantities in C++ and dartpy:
+    linear/angular momentum, kinetic energy, and gravitational potential energy.
+  - Added experimental articulated-body forward dynamics for fixed-base
+    multibodies: `World::step()` now integrates revolute and prismatic joint
+    accelerations from joint efforts, gravity, and Coriolis/centrifugal terms
+    using a recursive Newton-Euler formulation. Added joint effort/acceleration
+    accessors (`Joint::getForce`/`setForce`/`getAcceleration`, dartpy
+    `joint.force`/`joint.acceleration`), link inertial accessors
+    (`Link::getMass`/`setMass`/`getInertia`/`setInertia`, dartpy
+    `link.mass`/`link.inertia`), and a `JointSpec`/`LinkOptions`
+    `transformFromParent` link offset (dartpy `transform_from_parent`).
+  - Added experimental screw-joint forward dynamics: a `Screw` joint couples
+    rotation and translation along its axis by a pitch (`Joint::setPitch`/
+    `getPitch`, dartpy `joint.pitch`), with motion subspace `[axis; pitch*axis]`.
+    Verified by the analytic mass matrix `M = I_axis + m pitch^2` and gravity
+    acceleration.
+  - Added experimental universal-joint (2-DOF) forward dynamics: a `Universal`
+    joint rotates about `axis` then `axis2` (`JointSpec`/`LinkOptions::axis2`,
+    dartpy `JointSpec.axis2` and read-only `joint.axis2`). Its first motion
+    subspace column is configuration dependent, so the recursive Newton-Euler
+    acceleration recursion now adds the joint velocity-product bias
+    `cJ = Sdot qdot`; constant-subspace joints (revolute/prismatic/screw) are
+    unaffected. Verified by the closed-form mass matrix and gravity at the zero
+    configuration and by matching the Coriolis force to the Christoffel symbols
+    derived from the configuration-dependent mass matrix.
+  - Added experimental planar-joint (3-DOF) forward dynamics: a `Planar` joint
+    provides two in-plane translations plus a rotation about the plane normal
+    (`axis` is the normal, `axis2` the first in-plane direction), matching the
+    existing kinematics convention. Its in-plane translation subspace columns
+    rotate with the rotation coordinate, so they are configuration dependent and
+    contribute velocity-product bias terms `cJ` (reusing the universal joint's
+    mechanism). Verified by the closed-form mass matrix and gravity at the zero
+    configuration and by the Christoffel-symbol Coriolis cross-check with a
+    nonzero link offset.
+  - Added experimental ball-joint (3-DOF) and free-joint (6-DOF) forward
+    dynamics with manifold integration, which also enables a floating base
+    (model it as a fixed base link connected to the moving link by a `Free`
+    joint). Both use body-twist generalized velocities (the ball uses the body
+    angular velocity; the free joint uses `[linear; angular]` to match its
+    `[translation; rotation vector]` position layout), so their motion subspaces
+    are constant. Orientation is integrated on SO(3)/SE(3) via the exponential
+    map instead of `q += qdot*dt`. Verified by the closed-form mass matrix and
+    gravity (ball spherical pendulum), torque-free isotropic spin, free-fall,
+    and combined translate-and-spin closed-form integration.
+  - Added experimental two-sided link-vs-dynamic-rigid-body contact: a multibody
+    link contacting a dynamic rigid body now applies the equal-and-opposite
+    contact impulse (normal + two-tangent Coulomb friction) to that body's
+    velocity, coupling the rigid body's inverse mass/inertia into the
+    articulated contact solve (an immovable obstacle reduces to the existing
+    one-sided case). Verified by total linear-momentum conservation when a
+    moving link strikes a free body. Link-vs-link and a coupled simultaneous
+    boxed-LCP over all contacts remain future work.
+  - Added experimental link center-of-mass offset: `Link::setCenterOfMass`/
+    `getCenterOfMass` (dartpy `link.center_of_mass`) place a link's center of
+    mass away from its link-frame origin, with the inertia tensor taken about
+    the center of mass. The articulated-body spatial inertia now uses the full
+    COM-coupled form, so a link no longer has to sit at its center of mass
+    (matching legacy DART and easing model loading). Verified by an offset-COM
+    pendulum matching the parallel-axis mass matrix, gravity torque, and
+    acceleration.
+  - Added experimental generalized-coordinate dynamics accessors on `Multibody`:
+    `getMassMatrix`/`getInverseMassMatrix`, `getCoriolisForces`,
+    `getGravityForces`, and `getCoriolisAndGravityForces` (dartpy `mass_matrix`,
+    `inverse_mass_matrix`, `coriolis_forces`, `gravity_forces`,
+    `coriolis_and_gravity_forces`). The terms reuse the forward-dynamics
+    recursive Newton-Euler computation and satisfy `M qddot + C + g = tau`.
+  - Added an experimental inverse-dynamics accessor on `Multibody`:
+    `computeInverseDynamics(qddot)` (dartpy `compute_inverse_dynamics`) returns
+    the generalized joint forces `tau = M qddot + C qdot + g` (including joint
+    armature) via the recursive Newton-Euler algorithm.
+  - Added an experimental generalized impulse-response primitive on `Multibody`:
+    `computeImpulseResponse(f)` (dartpy `compute_impulse_response`) returns the
+    generalized velocity change `dqdot = M^-1 f` — the joint-space building
+    block for impulse-based constraint dynamics.
+  - Added experimental link Jacobians: `Multibody::getJacobian(link)`
+    (body-frame) and `getWorldJacobian(link)` (world axes, link-origin
+    referenced) (dartpy `get_jacobian`/`get_world_jacobian`) return the 6 x DOF
+    spatial Jacobian mapping the generalized velocity to the link's spatial
+    velocity `[angular; linear]`. Both are derived from the joint configuration
+    (and the base world transform for the world frame); center-of-mass
+    Jacobians are not yet provided.
+  - Added experimental joint position limits: `Joint::setPositionLimits` with
+    `getPositionLowerLimits`/`getPositionUpperLimits` (dartpy
+    `set_position_limits`, `position_lower_limits`, `position_upper_limits`).
+    The articulated-body integration enforces them as hard stops, clamping the
+    coordinate and arresting the velocity driving it past a limit.
+  - Added experimental joint velocity and effort (force/torque) limits:
+    `Joint::setVelocityLimits`/`getVelocityLowerLimits`/`getVelocityUpperLimits`
+    and `Joint::setEffortLimits`/`getEffortLowerLimits`/`getEffortUpperLimits`
+    (dartpy `set_velocity_limits`/`velocity_lower_limits`/`velocity_upper_limits`
+    and `set_effort_limits`/`effort_lower_limits`/`effort_upper_limits`). The
+    forward dynamics clamps the commanded joint effort before solving and clamps
+    the generalized velocity each step.
+  - Added experimental joint armature (rotor/reflected inertia):
+    `Joint::setArmature`/`getArmature` (dartpy `joint.armature`). Armature is
+    added to the joint-space mass-matrix diagonal in the forward dynamics and in
+    the public mass-matrix accessor, improving integration stability for stiff
+    geared actuators (an improvement over the legacy DART rigid-body API, which
+    lacks armature).
+  - Added experimental Coulomb (dry) joint friction:
+    `Joint::setCoulombFriction`/`getCoulombFriction` (dartpy
+    `joint.coulomb_friction`). The forward dynamics applies a bounded
+    velocity-level friction impulse per coordinate that holds the joint at rest
+    while the driving effort stays within the bound (stiction) and otherwise
+    opposes motion at the friction magnitude (kinetic).
+  - Added experimental joint actuator types: `Joint::setActuatorType`/
+    `getActuatorType` with `ActuatorType` (dartpy `joint.actuator_type`,
+    `ActuatorType`). `Force` (default) applies the commanded joint effort,
+    `Passive` ignores it (passive spring/damping/friction still apply), and
+    `Velocity` drives the joint to its commanded velocity
+    (`Joint::setCommandVelocity`, dartpy `joint.command_velocity`) via a coupled
+    velocity-level equality constraint `lambda = (J M^-1 J^T)^-1 (target - J
+qdot)` that reaches the target exactly even under inertial coupling. The
+    remaining modes (`Servo`/`Acceleration`/`Locked`/`Mimic`) are reserved and
+    rejected by the forward dynamics until the full constraint solver lands.
+  - Added experimental joint passive dynamics: per-coordinate spring stiffness
+    with rest position and damping coefficient contribute restoring/dissipative
+    generalized forces in the articulated-body forward dynamics
+    (`Joint::getSpringStiffness`/`setSpringStiffness`,
+    `getRestPosition`/`setRestPosition`,
+    `getDampingCoefficient`/`setDampingCoefficient`; dartpy
+    `joint.spring_stiffness`, `joint.rest_position`, `joint.damping_coefficient`).
+  - Added experimental rigid-body collision queries: attach a `CollisionShape`
+    (sphere or box) to a rigid body and call `World::collide()` to get contact
+    points (position, world-frame normal, penetration depth) via the maintained
+    native collision engine. dartpy adds `CollisionShape`, `CollisionShapeType`,
+    `Contact`, `body.set_collision_shape`/`collision_shape`/`has_collision_shape`,
+    and `world.collide()`.
+  - Generalized experimental collision queries to multibody links: links can now
+    carry collision shapes (`Link::setCollisionShape`/`getCollisionShape`/
+    `hasCollisionShape`, dartpy `link.set_collision_shape`/`collision_shape`/
+    `has_collision_shape`) and participate in `World::collide()`, posed by their
+    forward-kinematics world transform. `Contact` now references a `CollisionBody`
+    handle (a rigid body or a link) via `body_a`/`body_b`, with
+    `name`/`is_rigid_body`/`is_link`/`as_rigid_body`/`as_link`. The rigid-body
+    contact response stage skips link pairs (their response is a later slice).
+  - Added an experimental articulated contact response: multibody links with
+    collision shapes now rest on static rigid-body obstacles. `World::step()`
+    resolves each link-vs-static contact with a unilateral normal impulse using
+    the contact-point normal Jacobian and `m_eff = 1 / (Jn M^-1 Jn^T)`, plus a
+    Baumgarte bias to remove residual penetration (reusing the constraint-solve
+    machinery), plus accumulated-impulse two-tangent Coulomb friction bounded by
+    the friction cone and per-contact restitution. A fixed-base prismatic "leg"
+    with a sphere drops under gravity and rests on the ground, a sliding link is
+    braked to rest by friction, and a dropped link bounces off a near-elastic
+    ground. Link-vs-dynamic/link-vs-link contacts and a boxed-LCP for coupled
+    contacts are still pending.
+  - Added an experimental rigid-body contact response: `World::step()` now
+    resolves contacts between free rigid bodies with sequential normal impulses
+    (frictionless, fully inelastic) plus a positional correction that prevents
+    resting bodies from sinking. Rigid-body integration is split into velocity
+    and position stages so the contact solve runs at the velocity level between
+    them.
+  - Added an experimental static rigid-body convention (`RigidBodyOptions::isStatic`,
+    `RigidBody::setStatic`/`isStatic`, dartpy `is_static`): static bodies ignore
+    gravity and forces, are not integrated, and are treated as immovable by the
+    contact solver, so a dynamic body dropped onto a static ground comes to rest.
+  - Added experimental rigid-body contact restitution and Coulomb friction:
+    `RigidBody::setRestitution`/`getRestitution` and `setFriction`/`getFriction`
+    (dartpy `restitution`/`friction`). The contact solver now uses accumulated
+    normal impulses with restitution (a perfectly elastic equal-mass head-on
+    collision swaps velocities) and a two-tangent friction-pyramid Coulomb model
+    bounded by the normal impulse (a body sliding on a static ground decelerates
+    and stops).
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position
