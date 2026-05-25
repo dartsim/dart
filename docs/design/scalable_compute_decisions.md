@@ -172,6 +172,7 @@ When a CUDA benchmark JSON file is available, the packet can be generated and
 validated without hand-copying rows:
 
 ```bash
+pixi run -e cuda bm-phase5-cuda-full
 pixi run bm-phase5-cuda-packet \
   --benchmark-json .benchmark_results/phase5_cuda_ci_full.json \
   --output .benchmark_results/phase5_cuda_packet.json \

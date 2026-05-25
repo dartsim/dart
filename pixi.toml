@@ -826,6 +826,21 @@ ctest --test-dir "${BUILD_DIR}" --output-on-failure -L simulation-experimental-c
   { arg = "build_type", default = "Release" },
 ] }
 
+bm-phase5-cuda-full = { cmd = ["bash", "-lc", """
+set -euo pipefail
+mkdir -p .benchmark_results
+python scripts/run_cpp_benchmark.py \
+  --target bm_cuda_rigid_body_state_batch \
+  --build-type Release \
+  -- \
+  --benchmark_filter='BM_Phase5RigidBodyBatch(CpuBaseline|Gpu)/4096/128/100$' \
+  --benchmark_min_time=1ms \
+  --benchmark_repetitions=3 \
+  --benchmark_report_aggregates_only=true \
+  --benchmark_out=.benchmark_results/phase5_cuda_ci_full.json \
+  --benchmark_out_format=json
+"""], depends-on = [{ task = "build-cuda", args = ["Release"] }] }
+
 test-math = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -2201,6 +2216,7 @@ libode = ">=0.16.6,<0.17"
 #
 # Usage:
 #   pixi run -e cuda test-cuda
+#   pixi run -e cuda bm-phase5-cuda-full
 #
 
 [feature.cuda]

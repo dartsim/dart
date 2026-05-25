@@ -133,7 +133,8 @@ sort are in; see `RESUME.md`.)
 4. Phase 5 CUDA evidence: run `pixi run -e cuda test-cuda` on a CUDA host, then
    dispatch `.github/workflows/ci_cuda.yml` on a self-hosted runner labeled
    `cuda` once the project has one. The workflow runs the policy gates, the full
-   CPU/GPU benchmark row, `bm-phase5-cuda-packet`, and
+   CPU/GPU benchmark row through `bm-phase5-cuda-full`,
+   `bm-phase5-cuda-packet`, and
    `bm-phase5-gpu-packet-check`, then uploads both JSON files.
    Keep the workflow non-required until runner stability and benchmark signal
    are proven.

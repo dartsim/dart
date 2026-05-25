@@ -283,11 +283,12 @@ Exit criteria:
 - Benchmark report with an explicit go/no-go and
   `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /
   `--input <packet.json>` evidence. When consuming CUDA benchmark JSON, generate
-  that packet with the `bm-phase5-cuda-packet` task; the packet must mark the
-  GPU build/import gate, `pixi run check-compute-backend-boundaries`,
+  the full row with `pixi run -e cuda bm-phase5-cuda-full`, then generate that
+  packet with the `bm-phase5-cuda-packet` task; the packet must mark the GPU
+  build/import gate, `pixi run check-compute-backend-boundaries`,
   `pixi run check-no-gpu-runtime-dependencies`, and
-  `pixi run check-phase5-cuda-benchmark-contract` evidence booleans true for the same
-  change. The backend-boundary check shows no backend leakage; the no-GPU
+  `pixi run check-phase5-cuda-benchmark-contract` evidence booleans true for
+  the same change. The backend-boundary check shows no backend leakage; the no-GPU
   dependency check proves default/core manifests still avoid GPU runtime
   dependencies while explicitly opt-in sidecar Pixi features remain allowed; the
   benchmark-contract check proves any optional CUDA benchmark uses the

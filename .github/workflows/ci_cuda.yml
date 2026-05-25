@@ -48,16 +48,7 @@ jobs:
           pixi run --locked -e cuda check-phase5-cuda-benchmark-contract
 
       - name: Run Phase 5 CUDA go/no-go benchmark
-        run: |
-          mkdir -p .benchmark_results
-          BUILD_DIR=build/cuda/cpp/Release
-          "${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
-            --benchmark_filter='BM_Phase5RigidBodyBatch(CpuBaseline|Gpu)/4096/128/100$' \
-            --benchmark_min_time=1ms \
-            --benchmark_repetitions=3 \
-            --benchmark_report_aggregates_only=true \
-            --benchmark_out=.benchmark_results/phase5_cuda_ci_full.json \
-            --benchmark_out_format=json
+        run: pixi run --locked -e cuda bm-phase5-cuda-full
 
       - name: Write Phase 5 CUDA packet
         run: |

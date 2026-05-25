@@ -47,10 +47,10 @@ row.
   is unified on the exponential map and `RigidBodyModelBatch` carries inertia, so
   the SoA stage is the default drop-in path for unconstrained rigid bodies.
 - Phase 5 CUDA evidence is now packet-oriented: the CUDA benchmark emits the
-  full-workload CPU/GPU final-state error counter, `bm-phase5-cuda-packet`
-  converts the benchmark JSON plus explicit evidence flags into the validator's
-  packet shape, and the manual CUDA workflow validates/uploads the benchmark JSON
-  and packet artifact.
+  full-workload CPU/GPU final-state error counter, `bm-phase5-cuda-full` writes
+  the full-row benchmark JSON, `bm-phase5-cuda-packet` converts the benchmark
+  JSON plus explicit evidence flags into the validator's packet shape, and the
+  manual CUDA workflow validates/uploads the benchmark JSON and packet artifact.
 
 ## Current Branch
 
@@ -219,8 +219,8 @@ the package shape, pre-registered go/no-go threshold, and
 `pixi run check-compute-backend-boundaries` and
 `pixi run check-no-gpu-runtime-dependencies` evidence gates are now durable in
 `docs/design/scalable_compute_decisions.md`. The manual CUDA workflow runs the
-policy gates, full CPU/GPU row, packet writer, and packet checker, then uploads
-`.benchmark_results/phase5_cuda_ci_full.json` and
+policy gates, `bm-phase5-cuda-full`, packet writer, and packet checker, then
+uploads `.benchmark_results/phase5_cuda_ci_full.json` and
 `.benchmark_results/phase5_cuda_packet.json`. If continuing through draft PR
 #2710, first reconcile its opt-in CUDA benchmark/test names and Pixi feature
 shape with these gates, especially the `check-phase5-cuda-benchmark-contract`
