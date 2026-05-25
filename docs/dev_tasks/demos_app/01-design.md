@@ -16,7 +16,7 @@ same scene exists in up to **three** independent representations:
    executable per example (~39 GUI executables).
 2. A private `createXxxScene()` in `dart/gui/detail/scenes.cpp` (816 lines,
    `enum class ExampleScene`), reached via `runApplication(argc, argv,
-   "<scene>")` / `--scene <name>`, that rebuilds an equivalent `visual_*`
+"<scene>")` / `--scene <name>`, that rebuilds an equivalent `visual_*`
    fixture world.
 3. A registered headless smoke + renderable-count test per scene
    (`EXAMPLE_dartsim_<scene>_headless_smoke`,
@@ -198,7 +198,7 @@ instead of the deleted `dart/gui/detail` catalog:
   renderer self-smoke that must not depend on `examples/`. Everything else in
   `dart/gui/detail/scenes.{hpp,cpp}` — the `ExampleScene` enum, `createDartScene`
   example branches, `parseSceneName`, and the `runApplication(argc, argv,
-  const char*)` / `--scene` example overloads — is removed.
+const char*)` / `--scene` example overloads — is removed.
 - Layering note: GUI tests linking `examples/demos` is acceptable because they
   are example-rendering tests; the library's own smoke stays independent of
   `examples/`.
@@ -209,7 +209,7 @@ Clean consolidation over compatibility (per task decision):
 
 - Per-example executables are removed; `pixi run ex <gui-name>` is replaced by
   `pixi run demos` (and `pixi run demos --scene <id>` headless). `pixi run ex
-  hello_world` stays.
+hello_world` stays.
 - `--scene` on the old viewer path and the `ExampleScene` catalog are removed
   (replaced by the Demos `--scene <id>` selection over the registry).
 - `scripts/run_cpp_example.py` (`GUI_SCENE_EXAMPLE_DEFAULT_ARGS`,

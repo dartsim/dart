@@ -92,6 +92,10 @@ struct ViewerLifecycleState
   bool screenshotRequested = false;
   bool frameOutputEnabled = false;
   bool exitRequested = false;
+  /// Set by the demos sidebar to ask the application loop to swap the active
+  /// scene to `requestedScene` without recreating the window.
+  bool sceneSwitchRequested = false;
+  std::string requestedScene;
 };
 
 struct OrbitCamera
@@ -211,6 +215,9 @@ DART_GUI_API void requestSingleStep(
     ViewerLifecycleState& state, bool pause = true);
 
 DART_GUI_API void requestExit(ViewerLifecycleState& state);
+
+DART_GUI_API void requestSceneSwitch(
+    ViewerLifecycleState& state, std::string sceneId);
 
 DART_GUI_API bool shouldAdvanceSimulation(const ViewerLifecycleState& state);
 

@@ -15,17 +15,17 @@ standalone as the minimal "link DART in a CMake project" template.
 ## Current Status
 
 - [ ] Phase 1: add `dart::gui` runtime scene-swap host (`runDemos`) + Demos
-  sidebar; scaffold `examples/demos/` (`demo_scene.hpp`, `registry.cpp`,
-  `app/main.cpp`); seed 3 scenes; scene-switching headless smoke.
+      sidebar; scaffold `examples/demos/` (`demo_scene.hpp`, `registry.cpp`,
+      `app/main.cpp`); seed 3 scenes; scene-switching headless smoke.
 - [ ] Phase 2: migrate all GUI examples into scene modules, deleting each
-  standalone dir as it lands.
+      standalone dir as it lands.
 - [ ] Phase 3: retarget GUI tests to the registry; delete the
-  `dart/gui/detail/scenes.*` `ExampleScene` catalog and `--scene` overloads;
-  keep the `dart-gui` MVP self-smoke.
+      `dart/gui/detail/scenes.*` `ExampleScene` catalog and `--scene` overloads;
+      keep the `dart-gui` MVP self-smoke.
 - [ ] Phase 4: update tooling/docs (`run_cpp_example.py`, pixi tasks,
-  `examples/README.md`, `dartsim/README.md`, dartpy docs, `CHANGELOG.md`).
+      `examples/README.md`, `dartsim/README.md`, dartpy docs, `CHANGELOG.md`).
 - [ ] Phase 5: promote design to `docs/design/`, add onboarding note, delete this
-  folder in the completing PR.
+      folder in the completing PR.
 
 ## Goal
 
