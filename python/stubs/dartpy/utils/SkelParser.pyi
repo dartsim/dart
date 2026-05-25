@@ -4,6 +4,9 @@ __all__: list[str] = [
     "readSkeleton",
     "readWorld",
     "readWorldXML",
+    "read_skeleton",
+    "read_world",
+    "read_world_xml",
 ]
 
 

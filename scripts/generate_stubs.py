@@ -63,12 +63,20 @@ PROMOTED_MODULES = (
 
 def _public_names(source: str) -> list[str]:
     tree = ast.parse(source)
-    names = [
-        node.name
-        for node in tree.body
-        if isinstance(node, (ast.ClassDef, ast.FunctionDef))
-        and not node.name.startswith("_")
-    ]
+    names = []
+    for node in tree.body:
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef)):
+            names.append(node.name)
+        elif isinstance(node, ast.Assign):
+            names.extend(
+                target.id for target in node.targets if isinstance(target, ast.Name)
+            )
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            names.append(node.target.id)
+        elif isinstance(node, ast.ImportFrom) and node.level > 0:
+            names.extend(alias.asname or alias.name for alias in node.names)
+
+    names = [name for name in names if not name.startswith("_") and name != "*"]
     return sorted(dict.fromkeys(names))
 
 
@@ -151,6 +159,12 @@ def _write_io_stub(stubs_dir: Path):
     )
 
 
+def _public_module_name(relative_output: Path) -> str:
+    if relative_output.parent == Path("dartpy"):
+        return relative_output.stem
+    return relative_output.parts[1]
+
+
 def main():
     # Get the repository root directory
     repo_root = Path(__file__).parent.parent
@@ -213,7 +227,7 @@ def main():
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(source)
 
-            public_module = relative_output.parts[1]
+            public_module = _public_module_name(relative_output)
             if public_module != "utils":
                 names_by_module[public_module] = _public_names(source)
 

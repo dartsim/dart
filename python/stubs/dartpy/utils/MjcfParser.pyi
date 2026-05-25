@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__: list[str] = [
     "Options",
     "readWorld",
+    "read_world",
 ]
 
 

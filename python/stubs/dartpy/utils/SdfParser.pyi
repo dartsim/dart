@@ -5,6 +5,8 @@ __all__: list[str] = [
     "RootJointType",
     "readSkeleton",
     "readWorld",
+    "read_skeleton",
+    "read_world",
 ]
 
 

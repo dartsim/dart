@@ -5,14 +5,43 @@ from __future__ import annotations
 import sys
 import types
 import importlib.util
+import ast
 from pathlib import Path
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[4]
+
+
+def _stub_all(relative_path: str) -> set[str]:
+    stub_path = _repo_root() / "python" / "stubs" / relative_path
+    tree = ast.parse(stub_path.read_text(encoding="utf-8"))
+
+    for node in tree.body:
+        value = None
+        if (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "__all__"
+        ):
+            value = node.value
+        elif isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "__all__"
+            for target in node.targets
+        ):
+            value = node.value
+
+        if value is not None:
+            return set(ast.literal_eval(value))
+
+    raise AssertionError(f"{stub_path} does not define literal __all__")
 
 
 def test_utils_stub_sanitized_executes(monkeypatch):
     """Exec the sanitized stub to catch missing symbols such as Options aliases."""
 
     monkeypatch.setenv("DART_DOCS_SKIP_DARTPY_AUTODOC", "1")
-    repo_root = Path(__file__).resolve().parents[4]
+    repo_root = _repo_root()
     stub_path = repo_root / "python" / "stubs" / "dartpy" / "utils" / "__init__.pyi"
     conf_path = repo_root / "docs" / "readthedocs" / "conf.py"
     spec = importlib.util.spec_from_file_location(
@@ -53,3 +82,30 @@ def test_utils_stub_sanitized_executes(monkeypatch):
     assert parser_cls.Options is modules["dartpy.utils"].UrdfParserOptions
     assert parser_cls.RootJointType is modules["dartpy.utils"].UrdfParserRootJointType
     assert modules["dartpy.utils"].DartLoader is parser_cls
+
+
+def test_utils_stub_all_preserves_parser_exports():
+    public_names = _stub_all("dartpy/utils/__init__.pyi")
+
+    for name in (
+        "DartLoader",
+        "DartLoaderOptions",
+        "DartLoaderRootJointType",
+        "MjcfParser",
+        "SdfParser",
+        "SkelParser",
+    ):
+        assert name in public_names
+
+
+def test_top_level_stub_promotes_runtime_symbols():
+    public_names = _stub_all("dartpy/__init__.pyi")
+
+    for name in (
+        "CollisionDetector",
+        "CollisionGroup",
+        "ContinuousCollisionResult",
+        "Skeleton",
+        "World",
+    ):
+        assert name in public_names

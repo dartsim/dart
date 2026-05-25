@@ -1,9 +1,17 @@
 from __future__ import annotations
 
 __all__: list[str] = [
+    "Bullet",
     "CollisionDetectorType",
     "ConstraintSolver",
+    "Dantzig",
+    "Dart",
+    "Experimental",
+    "Fcl",
     "LcpSolverType",
+    "Lemke",
+    "Ode",
+    "Pgs",
     "World",
     "WorldConfig",
 ]
