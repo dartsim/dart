@@ -95,10 +95,12 @@ void LineSegmentShape::setThickness(float _thickness)
         "Attempting to set non-positive thickness. We set the thickness to "
         "1.0f instead.");
     mThickness = 1.0f;
+    incrementVersion();
     return;
   }
 
   mThickness = _thickness;
+  incrementVersion();
 }
 
 //==============================================================================
@@ -116,6 +118,7 @@ std::size_t LineSegmentShape::addVertex(const Eigen::Vector3d& _v)
   }
 
   mVertices.push_back(_v);
+  incrementVersion();
   return 0;
 }
 
@@ -145,6 +148,7 @@ std::size_t LineSegmentShape::addVertex(
     mConnections.push_back(Eigen::Vector2i(_parent, index));
   }
 
+  incrementVersion();
   return index;
 }
 
@@ -169,6 +173,7 @@ void LineSegmentShape::removeVertex(std::size_t _idx)
   }
 
   mVertices.erase(mVertices.begin() + _idx);
+  incrementVersion();
 }
 
 //==============================================================================
@@ -191,6 +196,7 @@ void LineSegmentShape::setVertex(std::size_t _idx, const Eigen::Vector3d& _v)
     return;
   }
   mVertices[_idx] = _v;
+  incrementVersion();
 }
 
 //==============================================================================
@@ -246,6 +252,7 @@ void LineSegmentShape::addConnection(std::size_t _idx1, std::size_t _idx2)
   }
 
   mConnections.push_back(Eigen::Vector2i(_idx1, _idx2));
+  incrementVersion();
 }
 
 //==============================================================================
@@ -253,12 +260,16 @@ void LineSegmentShape::removeConnection(
     std::size_t _vertexIdx1, std::size_t _vertexIdx2)
 {
   // Search through all connections to remove any that match the request
-  std::erase_if(mConnections, [&](const Eigen::Vector2i& connection) {
-    return (connection[0] == static_cast<int>(_vertexIdx1)
-            && connection[1] == static_cast<int>(_vertexIdx2))
-           || (connection[0] == static_cast<int>(_vertexIdx2)
-               && connection[1] == static_cast<int>(_vertexIdx1));
-  });
+  const auto removed
+      = std::erase_if(mConnections, [&](const Eigen::Vector2i& connection) {
+          return (connection[0] == static_cast<int>(_vertexIdx1)
+                  && connection[1] == static_cast<int>(_vertexIdx2))
+                 || (connection[0] == static_cast<int>(_vertexIdx2)
+                     && connection[1] == static_cast<int>(_vertexIdx1));
+        });
+  if (removed > 0u) {
+    incrementVersion();
+  }
 }
 
 //==============================================================================
@@ -282,6 +293,7 @@ void LineSegmentShape::removeConnection(std::size_t _connectionIdx)
   }
 
   mConnections.erase(mConnections.begin() + _connectionIdx);
+  incrementVersion();
 }
 
 //==============================================================================

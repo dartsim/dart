@@ -44,6 +44,12 @@
     that caches each shape's geometry by shape version, so `describeShape` is not
     rebuilt every frame for static geometry; soft meshes, point clouds, and voxel
     grids are still rebuilt every frame so deforming/live geometry stays correct.
+  - Added a renderer-neutral `dart::gui::makeDeformableSurfaceRenderable()`
+    helper for dynamic deformable surface meshes, including per-frame normals,
+    bounds, material options, and stable resource versioning for Filament-backed
+    captures.
+  - Fixed `LineSegmentShape` mutation versioning so animated line geometry is
+    rebuilt correctly by cached GUI renderable extraction.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a

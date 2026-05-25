@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -118,6 +119,32 @@ std::size_t computeRenderResourceVersion(
       }
     }
   }
+  return seed;
+}
+
+std::size_t computeDeformableSurfaceRenderResourceVersion(
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const Eigen::Vector3i> triangles,
+    const DeformableSurfaceRenderOptions& options)
+{
+  std::size_t seed = options.version;
+  hashCombine(seed, positions.size());
+  for (const Eigen::Vector3d& position : positions) {
+    hashVector3d(seed, position);
+  }
+
+  hashCombine(seed, triangles.size());
+  for (const Eigen::Vector3i& triangle : triangles) {
+    for (int axis = 0; axis < 3; ++axis) {
+      hashCombine(seed, std::hash<int>{}(triangle[axis]));
+    }
+  }
+
+  hashVector4d(seed, options.surfaceColor);
+  hashCombine(seed, std::hash<double>{}(options.roughnessFactor));
+  hashCombine(seed, std::hash<double>{}(options.metallicFactor));
+  hashCombine(seed, std::hash<double>{}(options.boundsPadding));
+  hashCombine(seed, static_cast<std::size_t>(MeshAlphaMode::ShapeAlpha));
   return seed;
 }
 
@@ -238,6 +265,140 @@ std::vector<RenderableDescriptor> extractRenderables(
   }
 
   return renderables;
+}
+
+std::optional<RenderableDescriptor> makeDeformableSurfaceRenderable(
+    RenderableId id,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const Eigen::Vector3i> triangles,
+    const DeformableSurfaceRenderOptions& options)
+{
+  if (id == 0u || positions.empty() || triangles.empty()) {
+    return std::nullopt;
+  }
+
+  Eigen::Vector3d boundsMin
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Eigen::Vector3d boundsMax
+      = Eigen::Vector3d::Constant(-std::numeric_limits<double>::infinity());
+  std::vector<Eigen::Vector3d> vertices;
+  vertices.reserve(positions.size());
+  for (const Eigen::Vector3d& position : positions) {
+    if (!position.allFinite()) {
+      return std::nullopt;
+    }
+    vertices.push_back(position);
+    boundsMin = boundsMin.cwiseMin(position);
+    boundsMax = boundsMax.cwiseMax(position);
+  }
+
+  std::vector<Eigen::Vector3d> normals(
+      positions.size(), Eigen::Vector3d::Zero());
+  for (const Eigen::Vector3i& triangle : triangles) {
+    if (triangle.x() < 0 || triangle.y() < 0 || triangle.z() < 0) {
+      return std::nullopt;
+    }
+
+    const auto a = static_cast<std::size_t>(triangle.x());
+    const auto b = static_cast<std::size_t>(triangle.y());
+    const auto c = static_cast<std::size_t>(triangle.z());
+    if (a >= positions.size() || b >= positions.size()
+        || c >= positions.size()) {
+      return std::nullopt;
+    }
+
+    const Eigen::Vector3d normal
+        = (positions[b] - positions[a]).cross(positions[c] - positions[a]);
+    if (normal.squaredNorm() <= 1e-16) {
+      continue;
+    }
+
+    const Eigen::Vector3d unitNormal = normal.normalized();
+    normals[a] += unitNormal;
+    normals[b] += unitNormal;
+    normals[c] += unitNormal;
+  }
+
+  for (auto& normal : normals) {
+    if (normal.squaredNorm() <= 1e-16) {
+      normal = Eigen::Vector3d::UnitZ();
+    } else {
+      normal.normalize();
+    }
+  }
+
+  GeometryDescriptor geometry;
+  geometry.kind = ShapeKind::Mesh;
+  geometry.triangleVertices = std::move(vertices);
+  geometry.triangleIndices.assign(triangles.begin(), triangles.end());
+  geometry.triangleNormals = std::move(normals);
+  geometry.hasLocalBounds = true;
+  const double padding = std::max(0.0, options.boundsPadding);
+  geometry.localBoundsMin = boundsMin - Eigen::Vector3d::Constant(padding);
+  geometry.localBoundsMax = boundsMax + Eigen::Vector3d::Constant(padding);
+  geometry.meshUsesMaterialColors = true;
+  geometry.meshAlphaMode = MeshAlphaMode::ShapeAlpha;
+
+  MeshMaterialDescriptor surfaceMaterial;
+  surfaceMaterial.diffuse = options.surfaceColor;
+  surfaceMaterial.metallicFactor = options.metallicFactor;
+  surfaceMaterial.roughnessFactor = options.roughnessFactor;
+  geometry.meshMaterials.push_back(std::move(surfaceMaterial));
+  geometry.meshParts.push_back(
+      MeshPartDescriptor{
+          .vertexOffset = 0u,
+          .vertexCount = geometry.triangleVertices.size(),
+          .triangleOffset = 0u,
+          .triangleCount = geometry.triangleIndices.size(),
+          .materialIndex = 0u,
+      });
+
+  RenderableDescriptor descriptor;
+  descriptor.id = id;
+  descriptor.geometry = std::move(geometry);
+  descriptor.material.rgba = options.surfaceColor;
+  descriptor.material.visible = options.visible;
+  descriptor.material.castsShadows = options.castsShadows;
+  descriptor.material.receivesShadows = options.receivesShadows;
+  descriptor.worldTransform = Eigen::Isometry3d::Identity();
+  descriptor.shapeVersion = options.version;
+  descriptor.renderResourceVersion
+      = computeDeformableSurfaceRenderResourceVersion(
+          positions, triangles, options);
+  return descriptor;
+}
+
+std::vector<Eigen::Vector3i> makeGridSurfaceTriangles(
+    std::size_t columns, std::size_t rows)
+{
+  if (columns < 2u || rows < 2u) {
+    return {};
+  }
+
+  constexpr std::size_t maxIndex
+      = static_cast<std::size_t>(std::numeric_limits<int>::max());
+  if (columns > maxIndex / rows) {
+    return {};
+  }
+
+  std::vector<Eigen::Vector3i> triangles;
+  triangles.reserve((columns - 1u) * (rows - 1u) * 2u);
+  const auto index = [columns](std::size_t column, std::size_t row) {
+    return static_cast<int>(row * columns + column);
+  };
+
+  for (std::size_t row = 0u; row + 1u < rows; ++row) {
+    for (std::size_t column = 0u; column + 1u < columns; ++column) {
+      const int a = index(column, row);
+      const int b = index(column + 1u, row);
+      const int c = index(column, row + 1u);
+      const int d = index(column + 1u, row + 1u);
+      triangles.emplace_back(a, b, c);
+      triangles.emplace_back(b, d, c);
+    }
+  }
+
+  return triangles;
 }
 
 // Whether a shape kind's geometry only changes when the shape version changes

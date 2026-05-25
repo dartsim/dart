@@ -36,6 +36,7 @@
 #include <dart/simulation/experimental/world.hpp>
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/renderable.hpp>
 
 #include <dart/simulation/world.hpp>
 
@@ -48,8 +49,11 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <algorithm>
+#include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -85,6 +89,8 @@ struct DeformableVisual
   std::vector<Eigen::Vector3d> initialPositions;
   std::vector<Eigen::Vector3d> initialVelocities;
   std::vector<std::uint8_t> fixed;
+  std::vector<Eigen::Vector3i> surfaceTriangles;
+  int surfaceRenderableKey = 0;
   std::shared_ptr<dynamics::LineSegmentShape> edgeShape;
   dynamics::SimpleFramePtr edgeFrame;
   std::vector<dynamics::SimpleFramePtr> nodeFrames;
@@ -98,6 +104,31 @@ struct ExampleState
       = legacy_sim::World::create("experimental_deformable_gui");
   DeformableVisual deformable;
   int stepsPerFrame = 2;
+  bool showSurfaceMesh = true;
+  bool showPointMasses = true;
+  bool showSpringEdges = true;
+  std::size_t surfaceVersion = 1;
+
+  void applyVisualOptions()
+  {
+    if (deformable.edgeFrame) {
+      auto* visual = deformable.edgeFrame->getVisualAspect();
+      if (showSpringEdges) {
+        visual->show();
+      } else {
+        visual->hide();
+      }
+    }
+
+    for (const auto& frame : deformable.nodeFrames) {
+      auto* visual = frame->getVisualAspect();
+      if (showPointMasses) {
+        visual->show();
+      } else {
+        visual->hide();
+      }
+    }
+  }
 
   void syncRenderFrames()
   {
@@ -107,6 +138,8 @@ struct ExampleState
       deformable.edgeShape->setVertex(i, position);
       deformable.nodeFrames[i]->setTransform(makeTransform(position));
     }
+    ++surfaceVersion;
+    applyVisualOptions();
   }
 
   void step()
@@ -130,6 +163,36 @@ struct ExampleState
     }
 
     syncRenderFrames();
+  }
+
+  std::vector<gui::RenderableDescriptor> makeSurfaceRenderables() const
+  {
+    if (!showSurfaceMesh || deformable.surfaceTriangles.empty()) {
+      return {};
+    }
+
+    const auto nodeCount = deformable.body.getNodeCount();
+    if (nodeCount == 0) {
+      return {};
+    }
+
+    std::vector<Eigen::Vector3d> positions;
+    positions.reserve(nodeCount);
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      positions.push_back(deformable.body.getPosition(i));
+    }
+
+    gui::DeformableSurfaceRenderOptions surfaceOptions;
+    surfaceOptions.version = surfaceVersion;
+    const auto descriptor = gui::makeDeformableSurfaceRenderable(
+        reinterpret_cast<gui::RenderableId>(&deformable.surfaceRenderableKey),
+        positions,
+        deformable.surfaceTriangles,
+        surfaceOptions);
+    if (!descriptor) {
+      return {};
+    }
+    return {*descriptor};
   }
 };
 
@@ -217,6 +280,8 @@ void addDeformableNet(ExampleState& state)
   auto options = makeNetOptions(columns, rows, edges, fixed);
   auto body = state.physicsWorld.addDeformableBody("deformable_net", options);
 
+  auto surfaceTriangles = gui::makeGridSurfaceTriangles(columns, rows);
+
   auto edgeShape = std::make_shared<dynamics::LineSegmentShape>(2.8f);
   for (const auto& position : options.positions) {
     edgeShape->addVertex(position);
@@ -251,6 +316,7 @@ void addDeformableNet(ExampleState& state)
   state.deformable.initialPositions = std::move(options.positions);
   state.deformable.initialVelocities = std::move(options.velocities);
   state.deformable.fixed = std::move(fixed);
+  state.deformable.surfaceTriangles = std::move(surfaceTriangles);
   state.deformable.edgeShape = std::move(edgeShape);
   state.deformable.edgeFrame = std::move(edgeFrame);
   state.deformable.nodeFrames = std::move(nodeFrames);
@@ -271,6 +337,53 @@ std::shared_ptr<ExampleState> makeExampleState()
   state->physicsWorld.enterSimulationMode();
   state->syncRenderFrames();
   return state;
+}
+
+//==============================================================================
+bool applyDeformableViewMode(
+    const std::shared_ptr<ExampleState>& state, std::string_view value)
+{
+  if (value == "combined") {
+    state->showSurfaceMesh = true;
+    state->showPointMasses = true;
+    state->showSpringEdges = true;
+  } else if (value == "surface") {
+    state->showSurfaceMesh = true;
+    state->showPointMasses = false;
+    state->showSpringEdges = false;
+  } else if (value == "points") {
+    state->showSurfaceMesh = false;
+    state->showPointMasses = true;
+    state->showSpringEdges = true;
+  } else {
+    return false;
+  }
+
+  state->applyVisualOptions();
+  return true;
+}
+
+//==============================================================================
+bool parseExampleOptions(
+    int argc, char* argv[], const std::shared_ptr<ExampleState>& state)
+{
+  for (int i = 1; i < argc; ++i) {
+    const std::string_view arg(argv[i]);
+    if (arg == "--deformable-view") {
+      if (i + 1 >= argc) {
+        std::cerr
+            << "--deformable-view requires combined, surface, or points\n";
+        return false;
+      }
+      const std::string_view value(argv[++i]);
+      if (!applyDeformableViewMode(state, value)) {
+        std::cerr << "Invalid --deformable-view value '" << value
+                  << "'. Expected combined, surface, or points.\n";
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 //==============================================================================
@@ -316,6 +429,16 @@ gui::Panel createControlsPanel(const std::shared_ptr<ExampleState>& state)
     if (builder.button("Reset Scene")) {
       state->reset();
     }
+    builder.separator();
+    if (builder.checkbox("Surface Mesh", state->showSurfaceMesh)) {
+      state->applyVisualOptions();
+    }
+    if (builder.checkbox("Point Masses", state->showPointMasses)) {
+      state->applyVisualOptions();
+    }
+    if (builder.checkbox("Spring Edges", state->showSpringEdges)) {
+      state->applyVisualOptions();
+    }
   };
   return panel;
 }
@@ -325,6 +448,9 @@ gui::Panel createControlsPanel(const std::shared_ptr<ExampleState>& state)
 int main(int argc, char* argv[])
 {
   const auto state = makeExampleState();
+  if (!parseExampleOptions(argc, argv, state)) {
+    return 2;
+  }
 
   gui::ApplicationOptions options;
   options.world = state->renderWorld;
@@ -336,6 +462,9 @@ int main(int argc, char* argv[])
   };
   options.panels.push_back(createControlsPanel(state));
   options.keyboardActions = createKeyboardActions(state);
+  options.renderableProvider = [state]() {
+    return state->makeSurfaceRenderables();
+  };
 
   return gui::runApplication(argc, argv, options);
 }

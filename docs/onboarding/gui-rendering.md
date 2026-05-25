@@ -25,6 +25,9 @@ descriptor APIs:
 - renderer-neutral transform gizmo descriptors
 - screenshot and frame-output helpers
 - profile/debug helpers
+- dynamic deformable surface helpers that convert node positions and triangle
+  topology into shaded `RenderableDescriptor` meshes without exposing Filament
+  resources or depending on a specific solver type
 
 These types are stable DART concepts. They are suitable for C++ and Python
 bindings because they do not require applications to include renderer,
