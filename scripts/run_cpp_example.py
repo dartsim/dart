@@ -430,6 +430,23 @@ def _has_linux_display(env: Mapping[str, str]) -> bool:
     return bool(env.get("DISPLAY") or env.get("WAYLAND_DISPLAY"))
 
 
+def _append_filament_dimension_arg(
+    args: list[str],
+    flag: str,
+    env_name: str,
+    headless_default: str,
+    headless: bool,
+) -> None:
+    if _has_arg(args, flag):
+        return
+
+    value = os.environ.get(env_name)
+    if not value and headless:
+        value = headless_default
+    if value:
+        args.extend([flag, value])
+
+
 def _prepare_filament_run_args(
     run_args: list[str],
     scene: str,
@@ -451,24 +468,12 @@ def _prepare_filament_run_args(
         args.append("--headless")
     if headless and not _has_arg(args, "--frames"):
         args.extend(["--frames", os.environ.get("DART_GUI_FILAMENT_FRAMES", "10")])
-    if not _has_arg(args, "--width"):
-        args.extend(
-            [
-                "--width",
-                os.environ.get(
-                    "DART_GUI_FILAMENT_WIDTH", "640" if headless else "1280"
-                ),
-            ]
-        )
-    if not _has_arg(args, "--height"):
-        args.extend(
-            [
-                "--height",
-                os.environ.get(
-                    "DART_GUI_FILAMENT_HEIGHT", "480" if headless else "720"
-                ),
-            ]
-        )
+    _append_filament_dimension_arg(
+        args, "--width", "DART_GUI_FILAMENT_WIDTH", "640", headless
+    )
+    _append_filament_dimension_arg(
+        args, "--height", "DART_GUI_FILAMENT_HEIGHT", "480", headless
+    )
     if headless:
         screenshot = os.environ.get("DART_GUI_FILAMENT_SCREENSHOT")
         if _has_arg(args, "--screenshot"):

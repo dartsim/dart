@@ -30,63 +30,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DART_GUI_DETAIL_UI_FRAME_HPP_
-#define DART_GUI_DETAIL_UI_FRAME_HPP_
+#ifndef DART_GUI_DETAIL_GUI_SCALE_HPP_
+#define DART_GUI_DETAIL_GUI_SCALE_HPP_
 
-#include <vector>
-
-struct GLFWwindow;
-struct ImGuiIO;
-
-namespace filament {
-class Engine;
-class Material;
-class Scene;
-} // namespace filament
-
-namespace dart::gui {
-
-struct Panel;
-struct ProfileAccumulator;
-struct OrbitCameraController;
-struct ViewerLifecycleState;
-
-} // namespace dart::gui
+#include <optional>
+#include <string_view>
 
 namespace dart::gui::detail {
 
-struct DartScene;
-struct DebugOverlayController;
-enum class ExampleScene;
-struct FrameViewport;
-struct GuiScaleState;
-struct ImGuiOverlay;
-struct PerfHudState;
-class SelectionController;
+struct GuiScaleState
+{
+  double userScale = 1.0;
+  double dpiScale = 1.0;
+  double effectiveScale = 1.0;
+};
 
-void updateFrameUi(
-    GLFWwindow* window,
-    ::filament::Engine& engine,
-    ::filament::Scene& scene,
-    ::filament::Material& debugMaterial,
-    ImGuiOverlay& imguiOverlay,
-    ImGuiIO& imguiIo,
-    const FrameViewport& viewport,
-    ExampleScene exampleScene,
-    DartScene& dartScene,
-    const dart::gui::OrbitCameraController& cameraController,
-    const SelectionController& selectionController,
-    bool& orbitLight,
-    bool& headlightsEnabled,
-    DebugOverlayController& debugOverlays,
-    std::vector<dart::gui::Panel>& panels,
-    dart::gui::ViewerLifecycleState& lifecycle,
-    const GuiScaleState& guiScale,
-    dart::gui::ProfileAccumulator& profile,
-    bool showPerfHud,
-    PerfHudState& perfHud,
-    const char* backendName);
+struct GuiWindowSize
+{
+  int width = 1;
+  int height = 1;
+};
+
+double normalizeGuiUserScale(double scale);
+
+double normalizeGuiDpiScale(double scale);
+
+std::optional<double> parseGuiDpiScaleOverride(std::string_view text);
+
+std::optional<double> guiDpiScaleOverrideFromEnvironment();
+
+GuiScaleState makeGuiScaleState(double userScale, double dpiScale);
+
+GuiWindowSize resolveAutomaticGuiWindowSize(
+    int baseWidth,
+    int baseHeight,
+    double effectiveScale,
+    int maxWidth,
+    int maxHeight,
+    bool automaticWidth,
+    bool automaticHeight);
 
 } // namespace dart::gui::detail
 
-#endif // DART_GUI_DETAIL_UI_FRAME_HPP_
+#endif // DART_GUI_DETAIL_GUI_SCALE_HPP_

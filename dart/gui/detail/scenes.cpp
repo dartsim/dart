@@ -32,6 +32,7 @@
 
 #include "scenes.hpp"
 
+#include "gui_scale.hpp"
 #include "scene_fixtures.hpp"
 
 #include <dart/gui/renderable.hpp>
@@ -553,8 +554,10 @@ AppOptions parseOptions(
       options.run.maxFrames = std::atoi(argv[++i]);
     } else if (arg == "--width" && i + 1 < argc) {
       options.run.width = std::max(1, std::atoi(argv[++i]));
+      options.windowWidthExplicit = true;
     } else if (arg == "--height" && i + 1 < argc) {
       options.run.height = std::max(1, std::atoi(argv[++i]));
+      options.windowHeightExplicit = true;
     } else if (arg == "--screenshot" && i + 1 < argc) {
       options.run.screenshotPath = argv[++i];
     } else if (arg == "--out" && i + 1 < argc) {
@@ -606,7 +609,7 @@ AppOptions parseOptions(
         std::exit(2);
       }
       options.run.guiScale
-          = std::clamp(static_cast<double>(guiScale), 0.5, 4.0);
+          = normalizeGuiUserScale(static_cast<double>(guiScale));
     } else if (
         (arg == "--render-backend" || arg == "--backend") && i + 1 < argc) {
       options.run.renderBackend = argv[++i];
@@ -694,16 +697,6 @@ AppOptions parseOptions(
   }
 
   dart::gui::normalizeRunOptions(options.run);
-  if (options.run.guiScale != 1.0) {
-    options.run.width = std::max(
-        1,
-        static_cast<int>(std::lround(
-            static_cast<double>(options.run.width) * options.run.guiScale)));
-    options.run.height = std::max(
-        1,
-        static_cast<int>(std::lround(
-            static_cast<double>(options.run.height) * options.run.guiScale)));
-  }
   if (options.run.headless && !options.showUiExplicit) {
     options.showUi = false;
   }

@@ -53,10 +53,8 @@ FrameViewport updateFrameViewport(
     int defaultWidth,
     int defaultHeight,
     double worldTimeStep,
-    bool showUi,
-    double guiScale)
+    bool showUi)
 {
-  (void)guiScale;
   FrameViewport viewport{defaultWidth, defaultHeight};
   if (window != nullptr) {
     glfwGetFramebufferSize(window, &viewport.width, &viewport.height);

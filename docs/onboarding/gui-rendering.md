@@ -91,6 +91,17 @@ higher-fidelity offline rendering later. Three pieces support that:
   the GPU driver is not active and OpenGL/Vulkan fell back to Mesa software
   rendering (llvmpipe/lavapipe), not that the GPU is slow. Confirm the active
   device (e.g. `nvidia-smi`, `glxinfo`) before optimizing the renderer.
+- **GUI scaling.** Built-in ImGui overlays automatically multiply the manual
+  `RunOptions::guiScale` / `--gui-scale` user multiplier by GLFW's window
+  content scale. `DART_GUI_DPI_SCALE` can override the detected DPI scale for
+  remote desktops or window managers that report the wrong value. Interactive
+  windows without explicit dimensions use at least a `1600x900` logical window,
+  expand toward the primary monitor work area on high-resolution displays, grow
+  with the combined user and DPI scale, and cap below the full work area.
+  Automatic windows are resized again if GLFW reports a DPI/content-scale change
+  while the app is running.
+  Explicit `--width` / `--height` values and headless render, screenshot, or
+  frame-output dimensions remain authoritative when capture dimensions matter.
 - **Scene-sync cost.** Per-frame scene extraction is the dominant CPU cost, not
   GPU rendering. `dart::gui::RenderableExtractor` caches each shape's geometry by
   shape version so `describeShape` is not rebuilt every frame for static

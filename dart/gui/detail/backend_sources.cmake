@@ -29,6 +29,7 @@ set(DART_GUI_FILAMENT_BACKEND_SRCS
   "${DART_GUI_FILAMENT_BACKEND_DIR}/debug_overlay.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/frame_renderer.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/frame_viewport.cpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/gui_scale.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/imgui_overlay.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/input.cpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/native_window.cpp"
@@ -57,6 +58,7 @@ set(DART_GUI_FILAMENT_BACKEND_HDRS
   "${DART_GUI_FILAMENT_BACKEND_DIR}/debug_overlay.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/frame_renderer.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/frame_viewport.hpp"
+  "${DART_GUI_FILAMENT_BACKEND_DIR}/gui_scale.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/imgui_overlay.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/input.hpp"
   "${DART_GUI_FILAMENT_BACKEND_DIR}/native_window.hpp"
@@ -111,11 +113,27 @@ function(_dart_gui_filament_find_dependencies out_imgui_target)
 endfunction()
 
 function(_dart_gui_filament_read_jpeg_version out_version)
+  if(DEFINED JPEG_VERSION AND JPEG_VERSION MATCHES "^[0-9]+$")
+    set(${out_version} "${JPEG_VERSION}" PARENT_SCOPE)
+    return()
+  endif()
+
   foreach(_jpeg_include_dir IN LISTS ARGN)
-    if(EXISTS "${_jpeg_include_dir}/jconfig.h")
+    set(_jpeg_version_header_candidates
+      "${_jpeg_include_dir}/jconfig.h"
+      "${_jpeg_include_dir}/jpeglib.h"
+    )
+    file(GLOB _jpeg_multiarch_config_headers "${_jpeg_include_dir}/*/jconfig.h")
+    list(APPEND _jpeg_version_header_candidates ${_jpeg_multiarch_config_headers})
+
+    foreach(_jpeg_version_header IN LISTS _jpeg_version_header_candidates)
+      if(NOT EXISTS "${_jpeg_version_header}")
+        continue()
+      endif()
+
       file(
         STRINGS
-        "${_jpeg_include_dir}/jconfig.h"
+        "${_jpeg_version_header}"
         _jpeg_version_lines
         REGEX "^#define[ \t]+JPEG_LIB_VERSION[ \t]+[0-9]+"
       )
@@ -131,7 +149,7 @@ function(_dart_gui_filament_read_jpeg_version out_version)
         set(${out_version} "${_jpeg_version}" PARENT_SCOPE)
         return()
       endif()
-    endif()
+    endforeach()
   endforeach()
 
   list(JOIN ARGN ", " _jpeg_include_dirs_message)
