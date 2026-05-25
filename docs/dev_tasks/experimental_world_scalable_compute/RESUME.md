@@ -2,16 +2,19 @@
 
 ## Last Session Summary
 
-PR #2698 merged the Phase 0-4 scalable-compute foundation. The current follow-up
-promotes the live SoA path into the default experimental `World::step` pipeline:
-`BatchedRigidBodyIntegrationStage` now handles frame-coupled rigid-body
-parenting with parent-before-child local-transform write-back instead of falling
-back to `RigidBodyIntegrationStage`. The follow-up also wires
-`pixi run bm-compute-check` into the performance dashboard workflow and tightens
-that checker so all 34 expected `bm_compute_graph` rows must be present with
-positive finite timings, including the serial contact-shaped hard case, the
-compute-bound contact-island speedup surface, and the Phase 5 CPU-baseline smoke
-row.
+PR #2698 merged the Phase 0-4 scalable-compute foundation, and the current
+branch has merged the latest `origin/main` rigid-body dynamics work. The default
+experimental `World::step` pipeline now preserves the contact/multibody solver
+ordering (`RigidBodyVelocityStage`, `RigidBodyContactStage`,
+`MultibodyForwardDynamicsStage`, `RigidBodyPositionStage`, `KinematicsStage`).
+`BatchedRigidBodyIntegrationStage` remains the explicit unconstrained SoA path:
+it handles frame-coupled rigid-body parenting with parent-before-child
+local-transform write-back instead of falling back to `RigidBodyIntegrationStage`.
+The follow-up also wires `pixi run bm-compute-check` into the performance
+dashboard workflow and tightens that checker so all expected `bm_compute_graph`
+rows must be present with positive finite timings, including the serial
+contact-shaped hard case, the compute-bound contact-island speedup surface, and
+the Phase 5 CPU-baseline smoke row.
 
 - Phase 0/1: EnTT concurrency contract + debug hazard assert, contact-shaped
   benchmark proxy, resource-access metadata (`findResourceHazards`/DOT/per-entity
@@ -39,13 +42,15 @@ row.
   enforces that `BM_ContactIslandShaped/16/512/64` beats sequential by real time.
   The existing `BM_ContactShaped*` serial chain stays as the hard-case
   low-parallelism proxy.
-- Phase 2 live wiring: `BatchedRigidBodyIntegrationStage` drives a live World
-  step through the SoA path (extract -> `integrateRigidBodyStateBatch` via the
-  executor -> apply -> parent-ordered frame-cache update). Parity tests verify it
-  matches the per-entity stage to 1e-10 across a full dynamic step (linear force,
-  torque, orientation) for free and frame-coupled bodies. The orientation scheme
-  is unified on the exponential map and `RigidBodyModelBatch` carries inertia, so
-  the SoA stage is the default drop-in path for unconstrained rigid bodies.
+- Phase 2 live wiring: `BatchedRigidBodyIntegrationStage` drives an explicit
+  unconstrained World step through the SoA path (extract ->
+  `integrateRigidBodyStateBatch` via the executor -> apply -> parent-ordered
+  frame-cache update). Parity tests verify it matches the per-entity stage to
+  1e-10 across a full dynamic step (linear force, torque, orientation) for free
+  and frame-coupled bodies. The orientation scheme is unified on the exponential
+  map and `RigidBodyModelBatch` carries inertia, so this stage remains the
+  benchmark/prototype seam for SoA/SIMD/device work even though default
+  `World::step` now uses the contact-aware split solver pipeline.
 - Phase 5 CUDA evidence is now packet-oriented: the CUDA benchmark emits the
   full-workload CPU/GPU final-state error counter, `bm-phase5-cuda-full` writes
   the full-row benchmark JSON, `bm-phase5-cuda-packet` converts the benchmark
@@ -66,8 +71,9 @@ made from this branch.
 
 `BatchedRigidBodyIntegrationStage` now matches the per-entity integrator across a
 full free-body dynamic step and frame-coupled rigid-body parenting. The default
-experimental `World::step` pipeline selects the batched stage behind the executor
-seam. The natural next steps, in rough order:
+experimental `World::step` pipeline selects the merged contact/multibody solver
+pipeline; keep the batched stage as the explicit unconstrained SoA path behind
+the executor seam. The natural next steps, in rough order:
 
 1. Phase 3's deliverables are implemented: determinism gate (bitwise for
    map-only), cost gate (`ParallelExecutor::setInlineThreshold`), explicit-SIMD
@@ -112,31 +118,35 @@ Keep `entt` internal and the public handle API unchanged.
 - The current CUDA MVP is deliberately private: the build-tree-only `.cuh`
   avoids installed header leakage, and `DART_ENABLE_EXPERIMENTAL_CUDA` only
   builds a private CUDA target plus smoke tests/benchmarks.
-- Do not benchmark or pick a GPU backend on the current Euler-only physics; it is
-  embarrassingly parallel and will mislead the CUDA-versus-SYCL decision. The
-  Phase 0 contact-shaped proxy (`BM_ContactShaped*` in `bm_compute_graph.cpp`)
-  is the hard-case baseline; it is a reproducibility/smoke surface, not backend
-  selection evidence. The Phase 3 speedup evidence is the contact-island proxy
-  (`BM_ContactIslandShaped*`), where independent islands give the parallel
-  executor compute-bound work. `pixi run bm-compute-check` plus the performance
-  dashboard keep the full expected compute benchmark corpus reproducible.
+- Do not benchmark or pick a GPU backend on the unconstrained Euler rigid-body
+  rows alone; they are embarrassingly parallel and will mislead the
+  CUDA-versus-SYCL decision. The Phase 0 contact-shaped proxy
+  (`BM_ContactShaped*` in `bm_compute_graph.cpp`) is the hard-case baseline; it
+  is a reproducibility/smoke surface, not backend selection evidence. The Phase
+  3 speedup evidence is the contact-island proxy (`BM_ContactIslandShaped*`),
+  where independent islands give the parallel executor compute-bound work.
+  `pixi run bm-compute-check` plus the performance dashboard keep the full
+  expected compute benchmark corpus reproducible.
 - Current validation evidence:
-  - `pixi run test-all` passed after all current code, docs, workflow, checker,
-    and Phase 5 GPU packet-template edits. The docs phase still emits the known
-    generated-stub `None_` autodoc warnings, but the documentation build passes.
+  - `pixi run test-all` passed after merging current `origin/main` and
+    reconciling the rigid-body dynamics default pipeline with the scalable-
+    compute branch. The docs phase still emits the known generated-stub `None_`
+    autodoc warnings, but the documentation build passes.
   - `pixi run -e cuda test-cuda` passed on a local CUDA host after reconciling
     draft PR #2710 with this task's gates. It built the opt-in CUDA target, ran
     `test_rigid_body_state_batch_cuda`, and ran the smoke benchmark rows
     `BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10` and
     `BM_Phase5RigidBodyBatchGpu/1024/128/10`.
-  - The local manual full Phase 5 row also ran successfully with
+  - The local manual full Phase 5 row also ran successfully after the
+    `origin/main` merge with
     `BM_Phase5RigidBodyBatch(CpuBaseline|Gpu)/4096/128/100`, writing
-    `.benchmark_results/phase5_cuda_local_full.json`; median local timings were
-    about 3.49 s CPU versus 38.3 ms GPU. This is useful local evidence only and
-    does not close Phase 5 without project-owned GPU build/import CI and a
+    `.benchmark_results/phase5_cuda_ci_full.json`; the generated packet passed
+    with `worldCount=4096`, `bodyCount=128`, `stepCount=100`, `speedup=240.091`,
+    and `maxFinalStateAbsError=1.78e-15`. This is useful local evidence only
+    and does not close Phase 5 without project-owned GPU build/import CI and a
     passing go/no-go packet for the same change.
-  - `pixi run test-simulation-experimental` passed after the default batched
-    world-step update.
+  - `pixi run test-simulation-experimental` passed after reconciling the
+    scalable-compute branch with the merged contact/multibody default pipeline.
   - `pixi run bm-compute-check --benchmark-min-time 1ms` checked all 34 expected
     rows after adding the contact-island speedup surface. Local ratios included
     `BM_ContactIslandShaped/4/512/64 = 0.465`,

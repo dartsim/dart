@@ -109,9 +109,13 @@ framework or touching the classic World.
 (Phases 0-2 and Phase 4 are done, and Phase 3's determinism gate and topological
 sort are in; see `RESUME.md`.)
 
-1. Preserve the default `World::step` selection of
-   `BatchedRigidBodyIntegrationStage`; its frame-coupled rigid-body parity is
-   covered by the simulation-experimental test label.
+1. Preserve the current default `World::step` solver pipeline
+   (`RigidBodyVelocityStage` -> `RigidBodyContactStage` ->
+   `MultibodyForwardDynamicsStage` -> `RigidBodyPositionStage` ->
+   `KinematicsStage`) from the rigid-body dynamics work. Keep
+   `BatchedRigidBodyIntegrationStage` as the explicit unconstrained SoA path;
+   its frame-coupled rigid-body parity remains covered by the
+   simulation-experimental test label.
 2. Keep `pixi run bm-compute-check` green as the checked benchmark corpus for
    `bm_compute_graph`, including the dashboard contact-shaped proxy,
    contact-island speedup surface, and Phase 5 CPU-baseline series. Do not use

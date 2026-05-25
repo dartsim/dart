@@ -99,7 +99,7 @@ public:
   void execute(World& world, ComputeExecutor& executor) override;
 };
 
-/// Default unconstrained rigid-body integration stage for the experimental
+/// Per-entity unconstrained rigid-body integration stage for the experimental
 /// World.
 class DART_EXPERIMENTAL_API RigidBodyIntegrationStage final
   : public WorldStepStage

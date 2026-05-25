@@ -76,9 +76,11 @@ its own line so status updates remain git-history friendly.
 - Dimension: Scalable compute
 - Next step: Keep the merged Phase 0-4 foundation in
   `docs/dev_tasks/experimental_world_scalable_compute/` as the active tracker;
-  the default experimental `World::step` path now uses the batched SoA rigid-body
-  stage. The opt-in CUDA MVP is local substrate only until a project GPU runner
-  and GPU build/import CI exist; those prerequisites are owned by project
+  the default experimental `World::step` path now preserves the rigid-body
+  contact/multibody solver pipeline, while the batched SoA rigid-body stage
+  remains an explicit unconstrained path and benchmark/prototype seam. The
+  opt-in CUDA MVP is local substrate only until a project GPU runner and GPU
+  build/import CI exist; those prerequisites are owned by project
   maintainers/infrastructure. The sidecar package shape, go/no-go threshold,
   `bm-phase5-gpu-packet-check` / `check-compute-backend-boundaries` /
   `check-no-gpu-runtime-dependencies` evidence gates, and the

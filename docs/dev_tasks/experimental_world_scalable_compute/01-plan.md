@@ -46,21 +46,27 @@ order below:
 ## Current Baseline After Phase 0-4
 
 - `World` owns one `entt::registry`; public handles are thin views; `step()`
-  takes an injectable `compute::ComputeExecutor` and uses the batched SoA
-  rigid-body integration stage by default.
+  takes an injectable `compute::ComputeExecutor`. After the rigid-body dynamics
+  merge, the default pipeline is velocity integration, free-body contact,
+  multibody forward dynamics, position integration, and kinematics. The batched
+  SoA rigid-body integration stage remains an explicit unconstrained-stage path
+  and benchmark/prototype seam rather than the default contact-aware step.
 - `compute` has `ComputeGraph` (DAG + explicit edges), `SequentialExecutor`
   (reference) and `ParallelExecutor` (Taskflow), execution profiling, DOT, and
   stage metadata with domain + acceleration flags (a `Gpu` flag is reserved).
-- Physics is early: kinematics (frame-tree world transforms) and semi-implicit
-  Euler rigid-body integration only. No ABA, collision, or constraint solver in
-  the experimental World yet.
+- Physics is early but no longer Euler-only: kinematics (frame-tree world
+  transforms), split rigid-body velocity/position integration, free-body
+  contact impulses, and multibody forward dynamics are present. Broader
+  articulated-body/contact solver coverage and scalable contact kernels remain
+  follow-up work.
 - `ComputeNode::ExecuteFn` is a host `std::function<void()>`; it cannot cross to
   a device. The shared substrate is the graph and metadata, not the closures.
 - Determinism parity tests, resource-access metadata, the batched Model/State
   split, scalar-generic SoA integrators, explicit-SIMD orientation dispatch,
   deterministic reductions, CPU homogeneous batch stepping, and rollout support
-  are implemented. The remaining speedup exit waits for a compute-bound contact
-  or constraint workload plus committed benchmark baselines, and the GPU
+  are implemented. The checked contact-island benchmark now supplies the
+  compute-bound speedup proxy, and future solver/contact work must extend that
+  benchmark surface rather than rely on trivial rigid-body rows. The GPU
   prototype waits for GPU runner/build-import CI prerequisites.
 
 ## Cross-Cutting Invariants
