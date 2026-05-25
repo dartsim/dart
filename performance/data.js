@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1779727173934,
+  "lastUpdate": 1779743601926,
   "repoUrl": "https://github.com/dartsim/dart",
   "entries": {
     "DART Performance": [
@@ -870,6 +870,120 @@ window.BENCHMARK_DATA = {
             "value": 15857951.177779088,
             "unit": "ns/iter",
             "extra": "iterations: 3\ncpu: 15531830.422222173 ns\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jslee02@users.noreply.github.com",
+            "name": "Jeongseok (JS) Lee",
+            "username": "jslee02"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a4845e034ee331f5f8008bfe258b01ed7ea8bed0",
+          "message": "Add Lie group product API and robot coverage (#2708)",
+          "timestamp": "2026-05-25T11:54:34-07:00",
+          "tree_id": "6212da6bcd3725f06944e2ea0e06c173f20fe4ca",
+          "url": "https://github.com/dartsim/dart/commit/a4845e034ee331f5f8008bfe258b01ed7ea8bed0"
+        },
+        "date": 1779743496130,
+        "tool": "googlecpp",
+        "benches": [
+          {
+            "name": "BM_WorldUpdateKinematics/32/8",
+            "value": 478150.6136986511,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 478057.1910958905 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldUpdateKinematics/128/8",
+            "value": 4946467.9542248165,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 4945773.76408451 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldUpdateKinematics/128/32",
+            "value": 60305343.043479376,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 60297330.47826082 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepSequential/32/8",
+            "value": 481290.1507692658,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 481222.3370940173 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepSequential/128/8",
+            "value": 4940633.690140863,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 4940123.130281684 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepSequential/128/32",
+            "value": 60365230.739129715,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 60354605.82608697 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepParallel/32/8",
+            "value": 635732.9047013725,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 605669.5069885628 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepParallel/128/8",
+            "value": 4743127.534883331,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 4644480.986710969 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_WorldStepParallel/128/32",
+            "value": 54380571.076929025,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 54079243.49999997 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepSequential/128",
+            "value": 115072.81659280515,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 115066.89422287862 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepSequential/1024",
+            "value": 1571331.0269358575,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 1571095.5297418663 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepSequential/4096",
+            "value": 15584163.711110301,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 15582853.977777787 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepParallel/128",
+            "value": 215906.83530753807,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 202471.8681318676 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepParallel/1024",
+            "value": 1873475.909207018,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 1785518.7020460283 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_RigidBodyStepParallel/4096",
+            "value": 15962623.528088279,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 15604589.640449451 ns\nthreads: 1"
           }
         ]
       }
