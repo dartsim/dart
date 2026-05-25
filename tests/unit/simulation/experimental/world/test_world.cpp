@@ -3500,6 +3500,92 @@ TEST(World, RigidBodyIntegrationStageOrdersRigidBodyFrameAncestry)
   EXPECT_TRUE(child.getLocalTransform().isApprox(expectedChildLocalTransform));
 }
 
+// Test that the direct rigid-body integration stage preserves static-body state
+// even when stored velocity and force components are non-zero.
+TEST(World, RigidBodyIntegrationStageSkipsStaticBodies)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  const Eigen::Vector3d initialPosition(1.0, 2.0, 3.0);
+  const Eigen::Quaterniond initialOrientation(
+      Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()));
+  const Eigen::Vector3d initialLinearVelocity(2.0, -1.0, 0.5);
+  const Eigen::Vector3d initialAngularVelocity(0.4, 0.1, -0.2);
+
+  sx::World world;
+  sx::RigidBodyOptions options;
+  options.isStatic = true;
+  options.position = initialPosition;
+  options.orientation = initialOrientation;
+  options.linearVelocity = initialLinearVelocity;
+  options.angularVelocity = initialAngularVelocity;
+  auto body = world.addRigidBody("static_body", options);
+  body.setForce(Eigen::Vector3d(10.0, 20.0, -30.0));
+  body.setTorque(Eigen::Vector3d(1.0, -2.0, 3.0));
+
+  world.setTimeStep(0.5);
+  world.enterSimulationMode();
+
+  compute::SequentialExecutor executor;
+  compute::RigidBodyIntegrationStage stage(1);
+  stage.execute(world, executor);
+
+  EXPECT_TRUE(body.getTranslation().isApprox(initialPosition));
+  EXPECT_TRUE(body.getQuaternion().isApprox(initialOrientation));
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(initialLinearVelocity));
+  EXPECT_TRUE(body.getAngularVelocity().isApprox(initialAngularVelocity));
+}
+
+// Test that the batched SoA integration stage also preserves static-body state
+// while continuing to integrate dynamic rigid bodies in the same batch.
+TEST(World, BatchedRigidBodyIntegrationStageSkipsStaticBodies)
+{
+  namespace sx = dart::simulation::experimental;
+  namespace compute = dart::simulation::experimental::compute;
+
+  const Eigen::Vector3d staticPosition(1.0, 2.0, 3.0);
+  const Eigen::Quaterniond staticOrientation(
+      Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()));
+  const Eigen::Vector3d staticLinearVelocity(2.0, -1.0, 0.5);
+  const Eigen::Vector3d staticAngularVelocity(0.4, 0.1, -0.2);
+
+  sx::World world;
+  sx::RigidBodyOptions staticOptions;
+  staticOptions.isStatic = true;
+  staticOptions.position = staticPosition;
+  staticOptions.orientation = staticOrientation;
+  staticOptions.linearVelocity = staticLinearVelocity;
+  staticOptions.angularVelocity = staticAngularVelocity;
+  auto staticBody = world.addRigidBody("static_body", staticOptions);
+  staticBody.setForce(Eigen::Vector3d(10.0, 20.0, -30.0));
+  staticBody.setTorque(Eigen::Vector3d(1.0, -2.0, 3.0));
+
+  const Eigen::Vector3d dynamicPosition(-1.0, -2.0, 4.0);
+  const Eigen::Vector3d dynamicLinearVelocity(0.5, 1.0, -2.0);
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.position = dynamicPosition;
+  dynamicOptions.linearVelocity = dynamicLinearVelocity;
+  auto dynamicBody = world.addRigidBody("dynamic_body", dynamicOptions);
+
+  constexpr double dt = 0.5;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(dt);
+  world.enterSimulationMode();
+
+  compute::SequentialExecutor executor;
+  compute::BatchedRigidBodyIntegrationStage stage;
+  stage.execute(world, executor);
+
+  EXPECT_TRUE(staticBody.getTranslation().isApprox(staticPosition));
+  EXPECT_TRUE(staticBody.getQuaternion().isApprox(staticOrientation));
+  EXPECT_TRUE(staticBody.getLinearVelocity().isApprox(staticLinearVelocity));
+  EXPECT_TRUE(staticBody.getAngularVelocity().isApprox(staticAngularVelocity));
+  EXPECT_TRUE(dynamicBody.getTranslation().isApprox(
+      dynamicPosition + dynamicLinearVelocity * dt));
+  EXPECT_TRUE(dynamicBody.getLinearVelocity().isApprox(dynamicLinearVelocity));
+}
+
 // Test that the rigid-body integration stage produces the same state through
 // sequential and parallel graph executors.
 TEST(World, RigidBodyStepParallelMatchesSequential)

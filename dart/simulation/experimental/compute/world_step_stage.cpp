@@ -296,6 +296,10 @@ void integrateRigidBodyPosition(
 void integrateRigidBody(
     entt::registry& registry, entt::entity entity, const double timeStep)
 {
+  if (registry.all_of<comps::StaticBodyTag>(entity)) {
+    return;
+  }
+
   const auto& force = registry.get<comps::Force>(entity);
   integrateRigidBodyVelocity(
       registry, entity, force.force, force.torque, timeStep);
@@ -530,6 +534,33 @@ RigidBodyForceBatch assembleRigidBodyForces(
   }
 
   return batch;
+}
+
+//==============================================================================
+void restoreStaticRigidBodyState(
+    const entt::registry& registry,
+    const std::vector<entt::entity>& entities,
+    const RigidBodyStateBatch& source,
+    RigidBodyStateBatch& target)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      source.bodyCount != entities.size()
+          || target.bodyCount != entities.size(),
+      InvalidOperationException,
+      "Rigid-body batch state does not match the rigid-body entity count");
+
+  for (std::size_t i = 0; i < entities.size(); ++i) {
+    if (!registry.all_of<comps::StaticBodyTag>(entities[i])) {
+      continue;
+    }
+
+    std::copy_n(&source.position[3 * i], 3, &target.position[3 * i]);
+    std::copy_n(
+        &source.linearVelocity[3 * i], 3, &target.linearVelocity[3 * i]);
+    std::copy_n(
+        &source.angularVelocity[3 * i], 3, &target.angularVelocity[3 * i]);
+    std::copy_n(&source.orientation[4 * i], 4, &target.orientation[4 * i]);
+  }
 }
 
 //==============================================================================
@@ -953,6 +984,7 @@ void BatchedRigidBodyIntegrationStage::execute(
   }
 
   auto state = extractRigidBodyState(world);
+  const auto initialState = state;
   const auto model = extractRigidBodyModelBatch(world);
   const auto timeStep = world.getTimeStep();
 
@@ -966,6 +998,7 @@ void BatchedRigidBodyIntegrationStage::execute(
       getMetadata());
   executor.execute(graph);
 
+  restoreStaticRigidBodyState(registry, entities, initialState, state);
   applyRigidBodyState(world, state);
 
   // Restore frame-cache consistency the same way the per-entity integrator
