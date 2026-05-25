@@ -694,6 +694,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     Eigen::Vector3d normal;
     Eigen::Vector3d armA;
     Eigen::Vector3d armB;
+    bool staticA;
+    bool staticB;
     double invMassA;
     double invMassB;
     Eigen::Matrix3d invInertiaA;
@@ -709,6 +711,15 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     double tangentImpulse1;
     double tangentImpulse2;
     double friction;
+  };
+
+  const auto contactPointVelocity = [](const comps::Velocity& velocity,
+                                       const Eigen::Vector3d& arm,
+                                       bool isStatic) -> Eigen::Vector3d {
+    if (isStatic) {
+      return Eigen::Vector3d::Zero();
+    }
+    return velocity.linear + velocity.angular.cross(arm);
   };
 
   std::vector<NormalConstraint> constraints;
@@ -739,6 +750,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     constraint.depth = contact.depth;
     constraint.armA = contact.point - transformA.position;
     constraint.armB = contact.point - transformB.position;
+    constraint.staticA = staticA;
+    constraint.staticB = staticB;
     constraint.invMassA = staticA ? 0.0 : inverseMass(massA);
     constraint.invMassB = staticB ? 0.0 : inverseMass(massB);
     constraint.invInertiaA = staticA ? Eigen::Matrix3d::Zero()
@@ -766,8 +779,9 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
     const auto& velocityA = registry.get<comps::Velocity>(entityA);
     const auto& velocityB = registry.get<comps::Velocity>(entityB);
     const double initialApproach
-        = (velocityB.linear + velocityB.angular.cross(constraint.armB)
-           - velocityA.linear - velocityA.angular.cross(constraint.armA))
+        = (contactPointVelocity(velocityB, constraint.armB, constraint.staticB)
+           - contactPointVelocity(
+               velocityA, constraint.armA, constraint.staticA))
               .dot(constraint.normal);
     constexpr double restitutionThreshold = 1e-3;
     constraint.restitutionVelocity
@@ -807,10 +821,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
       auto& velocityA = registry.get<comps::Velocity>(constraint.bodyA);
       auto& velocityB = registry.get<comps::Velocity>(constraint.bodyB);
 
-      const Eigen::Vector3d pointVelocityA
-          = velocityA.linear + velocityA.angular.cross(constraint.armA);
-      const Eigen::Vector3d pointVelocityB
-          = velocityB.linear + velocityB.angular.cross(constraint.armB);
+      const Eigen::Vector3d pointVelocityA = contactPointVelocity(
+          velocityA, constraint.armA, constraint.staticA);
+      const Eigen::Vector3d pointVelocityB = contactPointVelocity(
+          velocityB, constraint.armB, constraint.staticB);
       const double approach
           = (pointVelocityB - pointVelocityA).dot(constraint.normal);
 
@@ -839,8 +853,10 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
           return;
         }
         const Eigen::Vector3d tangentVelocity
-            = velocityB.linear + velocityB.angular.cross(constraint.armB)
-              - velocityA.linear - velocityA.angular.cross(constraint.armA);
+            = contactPointVelocity(
+                  velocityB, constraint.armB, constraint.staticB)
+              - contactPointVelocity(
+                  velocityA, constraint.armA, constraint.staticA);
         double tangentLambda = -tangentVelocity.dot(tangent) / tangentMass;
         const double clampedTangent = std::clamp(
             tangentImpulse + tangentLambda, -frictionLimit, frictionLimit);

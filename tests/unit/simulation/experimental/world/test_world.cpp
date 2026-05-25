@@ -2587,6 +2587,42 @@ TEST(World, MultibodyFreeJointTranslatesAndSpins)
       position.tail<3>().isApprox(Eigen::Vector3d(0.0, 0.0, 2.0 * time), 1e-9));
 }
 
+// Test that floating-joint translation limits act as hard stops while the
+// orientation continues to use the rotation-vector representation.
+TEST(World, MultibodyFreeJointTranslationPositionLimit)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world; // default gravity (0, 0, -9.81)
+
+  auto robot = world.addMultibody("floating");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "floating";
+  spec.type = sx::JointType::Floating;
+  auto body = robot.addLink("body", base, spec);
+
+  body.setMass(2.0);
+  body.setInertia(Eigen::Vector3d(0.05, 0.12, 0.2).asDiagonal());
+
+  auto joint = body.getParentJoint();
+  Eigen::VectorXd lower
+      = Eigen::VectorXd::Constant(6, -std::numeric_limits<double>::infinity());
+  Eigen::VectorXd upper
+      = Eigen::VectorXd::Constant(6, std::numeric_limits<double>::infinity());
+  const double lowerZ = -0.05;
+  lower[2] = lowerZ;
+  joint.setPositionLimits(lower, upper);
+
+  world.setTimeStep(0.01);
+  world.enterSimulationMode();
+  world.step(100);
+
+  EXPECT_NEAR(joint.getPosition()[2], lowerZ, 1e-12);
+  EXPECT_NEAR(joint.getVelocity()[2], 0.0, 1e-12);
+  EXPECT_TRUE(joint.getPosition().tail<3>().isZero(1e-12));
+}
+
 // Test a center-of-mass offset from the link frame: a revolute pendulum whose
 // link frame sits at the hinge but whose center of mass is offset along X
 // behaves like the same pendulum built with a link-frame offset (parallel-axis
@@ -3236,6 +3272,45 @@ TEST(World, RigidBodyContactResolvesApproachingVelocity)
     EXPECT_NEAR(bodyA.getLinearVelocity().x(), -1.0, 1e-9);
     EXPECT_NEAR(bodyB.getLinearVelocity().x(), 1.0, 1e-9);
   }
+}
+
+// Test that static rigid bodies can retain stored velocities without behaving
+// like moving obstacles in rigid-body contact response.
+TEST(World, RigidBodyContactIgnoresStoredStaticVelocity)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.position = Eigen::Vector3d(0.0, 0.0, 0.0);
+  auto obstacle = world.addRigidBody("obstacle", obstacleOptions);
+  obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions dynamicOptions;
+  dynamicOptions.position = Eigen::Vector3d(0.9, 0.0, 0.0);
+  auto dynamic = world.addRigidBody("dynamic", dynamicOptions);
+  dynamic.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
+  const auto& contact = contacts.front();
+  constexpr double staticSpeed = 5.0;
+  if (contact.bodyA.getEntity() == obstacle.getEntity()) {
+    obstacle.setLinearVelocity(staticSpeed * contact.normal);
+  } else {
+    ASSERT_EQ(contact.bodyB.getEntity(), obstacle.getEntity());
+    obstacle.setLinearVelocity(-staticSpeed * contact.normal);
+  }
+
+  world.setTimeStep(0.001);
+  world.step();
+
+  EXPECT_NEAR(obstacle.getLinearVelocity().norm(), staticSpeed, 1e-12);
+  EXPECT_TRUE(dynamic.getLinearVelocity().isZero(1e-12));
+  EXPECT_TRUE(dynamic.getAngularVelocity().isZero(1e-12));
 }
 
 // Test that a dynamic body dropped onto a static ground comes to rest on it

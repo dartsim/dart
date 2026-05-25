@@ -1020,7 +1020,8 @@ void simulateMultibody(
   // Write back the new velocity/acceleration and integrate positions. Euclidean
   // joints integrate linearly and apply position limits as hard stops; ball and
   // free joints integrate their orientation on the SO(3)/SE(3) manifold via the
-  // exponential map (position limits do not apply to a rotation vector).
+  // exponential map. Floating joints apply limits to translation coordinates
+  // only because angular coordinates are stored as a rotation vector.
   for (std::size_t i = 0; i < tree.links.size(); ++i) {
     if (tree.links[i].dof == 0) {
       continue;
@@ -1046,6 +1047,18 @@ void simulateMultibody(
           += rotation * joint.velocity.head<3>() * timeStep;
       joint.position.tail<3>() = rotationLog(
           rotation * rotationExp(joint.velocity.tail<3>() * timeStep));
+      if (joint.limits.lower.size() == joint.position.size()
+          && joint.limits.upper.size() == joint.position.size()) {
+        for (Eigen::Index d = 0; d < 3; ++d) {
+          if (joint.position[d] < joint.limits.lower[d]) {
+            joint.position[d] = joint.limits.lower[d];
+            joint.velocity[d] = std::max(joint.velocity[d], 0.0);
+          } else if (joint.position[d] > joint.limits.upper[d]) {
+            joint.position[d] = joint.limits.upper[d];
+            joint.velocity[d] = std::min(joint.velocity[d], 0.0);
+          }
+        }
+      }
       continue;
     }
 
