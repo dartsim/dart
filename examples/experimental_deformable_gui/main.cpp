@@ -122,6 +122,7 @@ struct ExampleState
   {
     physicsWorld.setTime(0.0);
     renderWorld->reset();
+    renderWorld->setTime(0.0);
 
     for (std::size_t i = 0; i < deformable.initialPositions.size(); ++i) {
       deformable.body.setPosition(i, deformable.initialPositions[i]);
@@ -306,6 +307,19 @@ std::vector<gui::KeyboardAction> createKeyboardActions(
   return {std::move(reset)};
 }
 
+//==============================================================================
+gui::Panel createControlsPanel(const std::shared_ptr<ExampleState>& state)
+{
+  gui::Panel panel;
+  panel.title = "Deformable Body";
+  panel.build = [state](gui::PanelBuilder& builder) {
+    if (builder.button("Reset Scene")) {
+      state->reset();
+    }
+  };
+  return panel;
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -320,6 +334,7 @@ int main(int argc, char* argv[])
   options.preStep = [state]() {
     state->step();
   };
+  options.panels.push_back(createControlsPanel(state));
   options.keyboardActions = createKeyboardActions(state);
 
   return gui::runApplication(argc, argv, options);

@@ -13,4 +13,5 @@ pixi run ex experimental_deformable_gui --headless --frames 180 \
   --screenshot /tmp/experimental_deformable_gui.ppm
 ```
 
-Press `r` in the interactive window to reset the scene.
+Use the `Reset Scene` panel button or press `r` in the interactive window to
+reset the scene.
