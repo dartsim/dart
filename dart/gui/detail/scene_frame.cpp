@@ -50,9 +50,67 @@
 
 #include <dart/common/profile.hpp>
 
+#include <algorithm>
 #include <chrono>
 
 namespace dart::gui::detail {
+namespace {
+
+const dart::gui::RenderableDescriptor* findRenderableDescriptorById(
+    const std::vector<dart::gui::RenderableDescriptor>& descriptors,
+    dart::gui::RenderableId id)
+{
+  const auto found = std::find_if(
+      descriptors.begin(),
+      descriptors.end(),
+      [id](const dart::gui::RenderableDescriptor& candidate) {
+        return candidate.id == id;
+      });
+  return found == descriptors.end() ? nullptr : &*found;
+}
+
+void syncExternalRenderableSelection(
+    SelectionController& selectionController,
+    const DartScene& scene,
+    const std::vector<dart::gui::RenderableDescriptor>& descriptors)
+{
+  if (!scene.selectedRenderableProvider) {
+    return;
+  }
+
+  const dart::gui::RenderableSelection selection
+      = scene.selectedRenderableProvider();
+  if (selection.id == 0) {
+    if (selectionController.selectedRenderableId() != 0) {
+      selectionController.clear();
+    }
+    return;
+  }
+
+  if (findRenderableDescriptorById(descriptors, selection.id) == nullptr) {
+    if (selectionController.selectedRenderableId() != 0) {
+      selectionController.clear();
+    }
+    return;
+  }
+
+  if (selectionController.selectedRenderableId() != selection.id
+      || selectionController.selectedLabel() != selection.label) {
+    selectionController.select(selection.id, selection.label);
+  }
+}
+
+void notifyRenderableSelectionChanged(
+    const DartScene& scene,
+    dart::gui::RenderableId before,
+    dart::gui::RenderableId after)
+{
+  if (before != after && scene.onRenderableSelected) {
+    scene.onRenderableSelected(after);
+  }
+}
+
+} // namespace
 
 SceneFrameUpdater::SceneFrameUpdater(
     GLFWwindow* window,
@@ -119,6 +177,8 @@ void SceneFrameUpdater::update(
     auto extra = mDartScene.renderableProvider();
     descriptors.insert(descriptors.end(), extra.begin(), extra.end());
   }
+  syncExternalRenderableSelection(
+      mSelectionController, mDartScene, descriptors);
   mProfile.extractionMs += dart::gui::elapsedMs(phaseStart);
 
   phaseStart = dart::gui::ProfileAccumulator::Clock::now();
@@ -165,6 +225,8 @@ void SceneFrameUpdater::update(
   }
 
   phaseStart = dart::gui::ProfileAccumulator::Clock::now();
+  const dart::gui::RenderableId selectionBeforeMouse
+      = mSelectionController.selectedRenderableId();
   mSelectionController.updateMouseSelection(
       mWindow,
       mCameraController.camera,
@@ -176,6 +238,10 @@ void SceneFrameUpdater::update(
       mDartScene,
       descriptors,
       mLifecycle);
+  notifyRenderableSelectionChanged(
+      mDartScene,
+      selectionBeforeMouse,
+      mSelectionController.selectedRenderableId());
   mProfile.interactionMs += dart::gui::elapsedMs(phaseStart);
 
   phaseStart = dart::gui::ProfileAccumulator::Clock::now();

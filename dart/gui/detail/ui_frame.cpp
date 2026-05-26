@@ -34,6 +34,7 @@
 #include <dart/gui/detail/frame_viewport.hpp>
 #include <dart/gui/detail/imgui_overlay.hpp>
 #include <dart/gui/detail/input.hpp>
+#include <dart/gui/detail/native_window.hpp>
 #include <dart/gui/detail/panel.hpp>
 #include <dart/gui/detail/perf_hud.hpp>
 #include <dart/gui/detail/scenes.hpp>
@@ -366,6 +367,8 @@ void updateFrameUi(
       {&headlightsEnabled},
       {&dartScene.renderSettings},
       uiState};
+  panelContext.nativeWindow
+      = window == nullptr ? nullptr : getNativeWindow(window);
   const bool debugOptionsChanged = renderBuiltInStatusPanel(
       sceneName(exampleScene),
       panelContext.simulationTime,

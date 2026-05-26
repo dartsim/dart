@@ -42,18 +42,18 @@ namespace dartsim {
 
 class ObjectManager;
 
-/// Owns the Edit/Run mode and the stepping loop over the experimental World.
+/// Owns the Edit/Simulation mode and stepping loop over the experimental World.
 ///
-/// Entering Run captures the authored design state so Reset can restore it
-/// (the experimental World's default synchronous stepping is the reference
-/// behavior; async stepping is intentionally not used).
+/// Entering Simulation Mode captures the authored edit state so Reset can
+/// restore it (the experimental World's default synchronous stepping is the
+/// reference behavior; async stepping is intentionally not used).
 class SimulationController
 {
 public:
   enum class Mode
   {
     Edit,
-    Run
+    Simulation
   };
 
   explicit SimulationController(ObjectManager& objects);
@@ -66,21 +66,25 @@ public:
   {
     return m_running;
   }
+  [[nodiscard]] bool hasCapturedEditState() const
+  {
+    return m_haveSnapshot;
+  }
 
-  /// Enter Run mode (capturing the design state) and start advancing.
+  /// Enter Simulation Mode (capturing the edit state) and start advancing.
   void play();
 
-  /// Stop advancing but stay in Run mode.
+  /// Stop advancing but stay in Simulation Mode.
   void pause();
   void togglePause();
 
-  /// Advance exactly `count` steps (entering Run mode if needed).
+  /// Advance exactly `count` steps (entering Simulation Mode if needed).
   void step(std::size_t count = 1);
 
-  /// Return to the captured design state and Edit mode.
+  /// Return to the captured edit state and Edit mode.
   void reset();
 
-  /// Discard any captured design state and return to a fresh Edit state.
+  /// Discard any captured edit state and return to a fresh Edit state.
   ///
   /// Use when the underlying scene is replaced wholesale (e.g. loading a
   /// project) so a later reset() targets the newly loaded scene instead of a
@@ -100,14 +104,14 @@ public:
   [[nodiscard]] double simTime() const;
   [[nodiscard]] std::size_t frameCount() const;
 
-  /// Invoked when Edit/Run mode or running state changes.
+  /// Invoked when Edit/Simulation mode or running state changes.
   std::function<void()> onModeChanged;
 
   /// Invoked after each individual step (used to record replay frames).
   std::function<void()> onAfterStep;
 
 private:
-  void enterRunMode();
+  void enterSimulationMode();
   void notifyModeChangedIfNeeded(Mode beforeMode, bool beforeRunning);
   void stepOnce();
 
@@ -116,7 +120,7 @@ private:
   bool m_running = false;
   double m_realTimeFactor = 1.0;
   double m_accumulator = 0.0;
-  SceneModel m_designSnapshot;
+  SceneModel m_editSnapshot;
   bool m_haveSnapshot = false;
 };
 

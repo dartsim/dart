@@ -44,12 +44,12 @@ SimulationController::SimulationController(ObjectManager& objects)
 {
 }
 
-void SimulationController::enterRunMode()
+void SimulationController::enterSimulationMode()
 {
   if (m_mode == Mode::Edit) {
-    m_designSnapshot = m_objects.model();
+    m_editSnapshot = m_objects.model();
     m_haveSnapshot = true;
-    m_mode = Mode::Run;
+    m_mode = Mode::Simulation;
   }
 }
 
@@ -68,7 +68,7 @@ void SimulationController::play()
 {
   const Mode beforeMode = m_mode;
   const bool beforeRunning = m_running;
-  enterRunMode();
+  enterSimulationMode();
   m_running = true;
   notifyModeChangedIfNeeded(beforeMode, beforeRunning);
 }
@@ -102,7 +102,7 @@ void SimulationController::step(std::size_t count)
 {
   const Mode beforeMode = m_mode;
   const bool beforeRunning = m_running;
-  enterRunMode();
+  enterSimulationMode();
   notifyModeChangedIfNeeded(beforeMode, beforeRunning);
   for (std::size_t i = 0; i < count; ++i) {
     stepOnce();
@@ -114,11 +114,13 @@ void SimulationController::reset()
   const Mode beforeMode = m_mode;
   const bool beforeRunning = m_running;
   if (m_haveSnapshot) {
-    m_objects.setModel(m_designSnapshot);
+    m_objects.setModel(m_editSnapshot);
   }
   m_mode = Mode::Edit;
   m_running = false;
   m_accumulator = 0.0;
+  m_haveSnapshot = false;
+  m_editSnapshot = SceneModel{};
   notifyModeChangedIfNeeded(beforeMode, beforeRunning);
 }
 
@@ -130,7 +132,7 @@ void SimulationController::clearForNewScene()
   m_running = false;
   m_accumulator = 0.0;
   m_haveSnapshot = false;
-  m_designSnapshot = SceneModel{};
+  m_editSnapshot = SceneModel{};
   notifyModeChangedIfNeeded(beforeMode, beforeRunning);
 }
 

@@ -36,6 +36,8 @@
 #include <dartsim_engine/scene_model.hpp>
 #include <dartsim_engine/selection_manager.hpp>
 
+#include <algorithm>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -110,10 +112,129 @@ double sanitizeMass(double mass)
   return std::isfinite(mass) && mass > 0.0 ? mass : kMinimumMass;
 }
 
+double sanitizePositive(double value)
+{
+  return std::isfinite(value) && value > 0.0 ? value : kMinimumMass;
+}
+
+double sanitizeUnit(double value)
+{
+  if (!std::isfinite(value)) {
+    return 1.0;
+  }
+  return std::clamp(value, 0.0, 1.0);
+}
+
+ShapeDesc sanitizeShape(ShapeDesc shape)
+{
+  switch (shape.type) {
+    case ShapeType::Box:
+      shape.dimensions.x() = sanitizePositive(shape.dimensions.x());
+      shape.dimensions.y() = sanitizePositive(shape.dimensions.y());
+      shape.dimensions.z() = sanitizePositive(shape.dimensions.z());
+      break;
+    case ShapeType::Sphere:
+      shape.dimensions.x() = sanitizePositive(shape.dimensions.x());
+      break;
+    case ShapeType::Cylinder:
+    case ShapeType::Capsule:
+      shape.dimensions.x() = sanitizePositive(shape.dimensions.x());
+      shape.dimensions.y() = sanitizePositive(shape.dimensions.y());
+      break;
+    case ShapeType::Plane:
+      if (!shape.dimensions.allFinite() || shape.dimensions.isZero()) {
+        shape.dimensions = Eigen::Vector3d::UnitZ();
+      } else {
+        shape.dimensions.normalize();
+      }
+      break;
+  }
+  for (int i = 0; i < 4; ++i) {
+    shape.color[i] = sanitizeUnit(shape.color[i]);
+  }
+  return shape;
+}
+
+bool isFrameLike(ObjectType type)
+{
+  return type == ObjectType::RigidBody || type == ObjectType::Link
+         || type == ObjectType::FreeFrame || type == ObjectType::FixedFrame;
+}
+
+bool isAttachableFrame(ObjectType type)
+{
+  return type == ObjectType::FreeFrame || type == ObjectType::FixedFrame;
+}
+
+bool isSingleAxisJoint(JointKind kind)
+{
+  return kind == JointKind::Revolute || kind == JointKind::Prismatic
+         || kind == JointKind::Screw;
+}
+
+Eigen::Vector3d sanitizeJointAxis(Eigen::Vector3d axis)
+{
+  if (!axis.allFinite() || axis.isZero()) {
+    return Eigen::Vector3d::UnitZ();
+  }
+  return axis.normalized();
+}
+
+bool isAncestorOf(const SceneModel& model, ObjectId ancestor, ObjectId node)
+{
+  ObjectId cursor = node;
+  while (cursor != kNoObject) {
+    const SceneObject* object = model.find(cursor);
+    if (object == nullptr) {
+      return false;
+    }
+    if (object->parent == ancestor) {
+      return true;
+    }
+    cursor = object->parent;
+  }
+  return false;
+}
+
+bool linkParentWouldCycle(
+    const SceneModel& model, ObjectId link, ObjectId parentLink)
+{
+  ObjectId cursor = parentLink;
+  while (cursor != kNoObject) {
+    if (cursor == link) {
+      return true;
+    }
+    const SceneObject* parent = model.find(cursor);
+    if (parent == nullptr || parent->type != ObjectType::Link) {
+      return false;
+    }
+    cursor = parent->parentLink;
+  }
+  return false;
+}
+
+ShapeDesc defaultShape(ShapeType type)
+{
+  ShapeDesc shape;
+  shape.type = type;
+  if (type == ShapeType::Plane) {
+    shape.dimensions = Eigen::Vector3d::UnitZ();
+  }
+  return shape;
+}
+
 } // namespace
 
 std::unique_ptr<Command> addRigidBody(
     ShapeType shape, const Eigen::Isometry3d& transform, std::string name)
+{
+  return addRigidBody(defaultShape(shape), transform, std::move(name));
+}
+
+std::unique_ptr<Command> addRigidBody(
+    const ShapeDesc& shape,
+    const Eigen::Isometry3d& transform,
+    std::string name)
 {
   return std::make_unique<Command>(
       "Add Rigid Body",
@@ -124,7 +245,7 @@ std::unique_ptr<Command> addRigidBody(
         object.type = ObjectType::RigidBody;
         object.parent = kNoObject;
         object.transform = transform;
-        object.shape.type = shape;
+        object.shape = sanitizeShape(shape);
         object.name = NameManager::makeUnique(
             model,
             kNoObject,
@@ -217,18 +338,28 @@ std::unique_ptr<Command> addFreeFrame(
 std::unique_ptr<Command> addFixedFrame(
     const Eigen::Isometry3d& transform, std::string name)
 {
+  return addFixedFrame(kNoObject, transform, std::move(name));
+}
+
+std::unique_ptr<Command> addFixedFrame(
+    ObjectId parentFrame, const Eigen::Isometry3d& transform, std::string name)
+{
   return std::make_unique<Command>(
       "Add Fixed Frame",
-      [transform, name = std::move(name)](
+      [parentFrame, transform, name = std::move(name)](
           ObjectManager& objects, SelectionManager& selection) {
         SceneModel& model = objects.model();
+        const SceneObject* parent = model.find(parentFrame);
+        if (parent == nullptr || !isFrameLike(parent->type)) {
+          return;
+        }
         SceneObject object;
         object.type = ObjectType::FixedFrame;
-        object.parent = kNoObject;
+        object.parent = parentFrame;
         object.transform = transform;
         object.name = NameManager::makeUnique(
             model,
-            kNoObject,
+            parentFrame,
             name.empty() ? NameManager::defaultBaseName(ObjectType::FixedFrame)
                          : name);
         const ObjectId id = model.add(std::move(object));
@@ -282,15 +413,118 @@ std::unique_ptr<Command> setMass(ObjectId id, double mass)
       });
 }
 
+std::unique_ptr<Command> setShape(ObjectId id, ShapeDesc shape)
+{
+  return std::make_unique<Command>(
+      "Set Shape",
+      [id, shape = sanitizeShape(std::move(shape))](
+          ObjectManager& objects, SelectionManager&) {
+        SceneObject* object = objects.model().find(id);
+        if (object == nullptr
+            || (object->type != ObjectType::RigidBody
+                && object->type != ObjectType::Link)
+            || object->shape == shape) {
+          return;
+        }
+        object->shape = shape;
+        objects.rebuild();
+      });
+}
+
 std::unique_ptr<Command> setJointPosition(ObjectId link, double position)
 {
   return std::make_unique<Command>(
       "Set Joint Position",
       [link, position](ObjectManager& objects, SelectionManager&) {
-        if (SceneObject* object = objects.model().find(link)) {
-          object->jointPosition = position;
-          objects.rebuild();
+        SceneObject* object = objects.model().find(link);
+        if (object == nullptr || object->type != ObjectType::Link
+            || object->parentLink == kNoObject
+            || !isSingleAxisJoint(object->jointType)
+            || object->jointPosition == position) {
+          return;
         }
+        object->jointPosition = position;
+        objects.rebuild();
+      });
+}
+
+std::unique_ptr<Command> setLinkParent(ObjectId link, ObjectId parentLink)
+{
+  return std::make_unique<Command>(
+      "Set Link Parent",
+      [link, parentLink](ObjectManager& objects, SelectionManager& selection) {
+        SceneModel& model = objects.model();
+        const SceneObject* object = model.find(link);
+        if (object == nullptr || object->type != ObjectType::Link
+            || object->parentLink == parentLink) {
+          return;
+        }
+
+        const ObjectId multiBody = object->multiBody;
+        if (multiBody == kNoObject || model.find(multiBody) == nullptr
+            || model.find(multiBody)->type != ObjectType::MultiBody) {
+          return;
+        }
+
+        ObjectId newTreeParent = multiBody;
+        if (parentLink != kNoObject) {
+          const SceneObject* parent = model.find(parentLink);
+          if (parent == nullptr || parent->type != ObjectType::Link
+              || parent->multiBody != multiBody
+              || linkParentWouldCycle(model, link, parentLink)
+              || !model.isNameAvailable(parentLink, object->name, link)) {
+            return;
+          }
+          newTreeParent = parentLink;
+        } else if (!model.isNameAvailable(multiBody, object->name, link)) {
+          return;
+        }
+
+        if (!model.reparent(link, newTreeParent)) {
+          return;
+        }
+        SceneObject* updated = model.find(link);
+        if (updated == nullptr) {
+          return;
+        }
+        updated->parentLink = parentLink;
+        objects.rebuild();
+        selection.select(link);
+      });
+}
+
+std::unique_ptr<Command> setJointKind(ObjectId link, JointKind kind)
+{
+  return std::make_unique<Command>(
+      "Set Joint Kind",
+      [link, kind](ObjectManager& objects, SelectionManager& selection) {
+        SceneObject* object = objects.model().find(link);
+        if (object == nullptr || object->type != ObjectType::Link
+            || object->parentLink == kNoObject || object->jointType == kind) {
+          return;
+        }
+        object->jointType = kind;
+        objects.rebuild();
+        selection.select(link);
+      });
+}
+
+std::unique_ptr<Command> setJointAxis(ObjectId link, Eigen::Vector3d axis)
+{
+  return std::make_unique<Command>(
+      "Set Joint Axis",
+      [link, axis = sanitizeJointAxis(std::move(axis))](
+          ObjectManager& objects, SelectionManager& selection) {
+        SceneObject* object = objects.model().find(link);
+        if (object == nullptr || object->type != ObjectType::Link
+            || object->parentLink == kNoObject
+            || !isSingleAxisJoint(object->jointType)
+            || object->jointAxis.isApprox(axis)) {
+          return;
+        }
+        object->jointAxis = axis;
+        objects.rebuild();
+        selection.select(link);
       });
 }
 
@@ -321,6 +555,19 @@ std::unique_ptr<Command> rename(ObjectId id, std::string name)
       });
 }
 
+std::unique_ptr<Command> setVisible(ObjectId id, bool visible)
+{
+  return std::make_unique<Command>(
+      visible ? "Show Object" : "Hide Object",
+      [id, visible](ObjectManager& objects, SelectionManager&) {
+        SceneObject* object = objects.model().find(id);
+        if (object == nullptr || object->visible == visible) {
+          return;
+        }
+        object->visible = visible;
+      });
+}
+
 std::unique_ptr<Command> reparent(ObjectId id, ObjectId newParent)
 {
   return std::make_unique<Command>(
@@ -347,6 +594,73 @@ std::unique_ptr<Command> reparent(ObjectId id, ObjectId newParent)
         if (model.reparent(id, newParent)) {
           objects.rebuild();
         }
+      });
+}
+
+std::unique_ptr<Command> attachFrame(ObjectId frame, ObjectId parentFrame)
+{
+  return std::make_unique<Command>(
+      "Attach Frame",
+      [frame, parentFrame](
+          ObjectManager& objects, SelectionManager& selection) {
+        SceneModel& model = objects.model();
+        SceneObject* child = model.find(frame);
+        const SceneObject* parent = model.find(parentFrame);
+        if (child == nullptr || parent == nullptr
+            || !isAttachableFrame(child->type) || !isFrameLike(parent->type)
+            || frame == parentFrame || child->parent == parentFrame
+            || isAncestorOf(model, frame, parentFrame)
+            || !model.isNameAvailable(parentFrame, child->name, frame)) {
+          return;
+        }
+
+        const std::optional<Eigen::Isometry3d> childWorld
+            = objects.worldTransformOf(frame);
+        const std::optional<Eigen::Isometry3d> parentWorld
+            = objects.worldTransformOf(parentFrame);
+        if (!childWorld.has_value() || !parentWorld.has_value()
+            || !model.reparent(frame, parentFrame)) {
+          return;
+        }
+
+        child = model.find(frame);
+        if (child == nullptr) {
+          return;
+        }
+        child->transform = parentWorld->inverse() * *childWorld;
+        objects.rebuild();
+        selection.select(frame);
+      });
+}
+
+std::unique_ptr<Command> detachFrame(ObjectId frame)
+{
+  return std::make_unique<Command>(
+      "Detach Frame",
+      [frame](ObjectManager& objects, SelectionManager& selection) {
+        SceneModel& model = objects.model();
+        SceneObject* object = model.find(frame);
+        if (object == nullptr || !isAttachableFrame(object->type)
+            || (object->type == ObjectType::FreeFrame
+                && object->parent == kNoObject)
+            || !model.isNameAvailable(kNoObject, object->name, frame)) {
+          return;
+        }
+
+        const std::optional<Eigen::Isometry3d> worldTransform
+            = objects.worldTransformOf(frame);
+        if (!worldTransform.has_value() || !model.reparent(frame, kNoObject)) {
+          return;
+        }
+
+        object = model.find(frame);
+        if (object == nullptr) {
+          return;
+        }
+        object->type = ObjectType::FreeFrame;
+        object->transform = *worldTransform;
+        objects.rebuild();
+        selection.select(frame);
       });
 }
 
