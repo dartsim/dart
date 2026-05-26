@@ -40,7 +40,10 @@
 #include <dartsim_ui/viewport_actions.hpp>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <limits>
+#include <utility>
+#include <vector>
 
 using namespace dartsim;
 
@@ -61,6 +64,18 @@ dart::gui::OrbitCamera testCamera()
   camera.pitch = 0.25;
   camera.distance = 12.0;
   return camera;
+}
+
+std::size_t countRenderItemsOfType(
+    const SimEngine& engine,
+    const std::vector<RenderItem>& items,
+    ObjectType type)
+{
+  return static_cast<std::size_t>(std::count_if(
+      items.begin(), items.end(), [&engine, type](const RenderItem& item) {
+        const SceneObject* object = engine.objects().model().find(item.id);
+        return object != nullptr && object->type == type;
+      }));
 }
 
 } // namespace
@@ -195,6 +210,265 @@ TEST(DartsimViewportActions, TransformGizmoRejectsUnsupportedHiddenAndRunMode)
           Eigen::Vector3d(0.0, 0.0, 1.0)));
 }
 
+TEST(DartsimViewportActions, LayerFiltersSeparateRigidBodiesAndLinks)
+{
+  SimEngine engine;
+  ASSERT_TRUE(
+      ui::applyPaletteAction(engine, ui::PaletteActionKind::AddBoxRigidBody)
+          .ok);
+  const ObjectId box = engine.selection().primary();
+  ASSERT_TRUE(
+      ui::applyPaletteAction(
+          engine, ui::PaletteActionKind::AddTwoLinkArmExample)
+          .ok);
+
+  ui::ViewportLayerFilterState filters;
+  std::vector<RenderItem> items
+      = ui::filteredViewportRenderItems(engine, filters);
+  EXPECT_EQ(countRenderItemsOfType(engine, items, ObjectType::RigidBody), 1u);
+  EXPECT_EQ(countRenderItemsOfType(engine, items, ObjectType::Link), 3u);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  items = ui::filteredViewportRenderItems(engine, filters);
+  EXPECT_EQ(countRenderItemsOfType(engine, items, ObjectType::RigidBody), 0u);
+  EXPECT_EQ(countRenderItemsOfType(engine, items, ObjectType::Link), 3u);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, box, filters));
+  EXPECT_TRUE(engine.objects().model().find(box)->visible);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Links, false)
+          .ok);
+  EXPECT_TRUE(ui::filteredViewportRenderItems(engine, filters).empty());
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, true)
+          .ok);
+  items = ui::filteredViewportRenderItems(engine, filters);
+  EXPECT_EQ(items.size(), 1u);
+  EXPECT_EQ(items.front().id, box);
+}
+
+TEST(DartsimViewportActions, LayerFiltersClassifyAllViewportObjectTypes)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  const ObjectId body = engine.selection().primary();
+  ASSERT_NE(body, kNoObject);
+
+  engine.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = engine.selection().primary();
+  ASSERT_NE(arm, kNoObject);
+  engine.execute(commands::addLink(arm, kNoObject, JointKind::Fixed, "base"));
+  const ObjectId link = engine.selection().primary();
+  ASSERT_NE(link, kNoObject);
+
+  engine.execute(
+      commands::addFreeFrame(translation(1.0, 0.0, 0.0), "free_frame"));
+  const ObjectId freeFrame = engine.selection().primary();
+  ASSERT_NE(freeFrame, kNoObject);
+  engine.execute(
+      commands::addFixedFrame(
+          freeFrame, translation(0.0, 1.0, 0.0), "fixed_frame"));
+  const ObjectId fixedFrame = engine.selection().primary();
+  ASSERT_NE(fixedFrame, kNoObject);
+
+  SceneObject joint;
+  joint.type = ObjectType::Joint;
+  joint.parent = arm;
+  joint.name = "raw_joint";
+  const ObjectId jointId = engine.objects().model().add(std::move(joint));
+  engine.objects().rebuild();
+
+  ui::ViewportLayerFilterState filters;
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, body, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, link, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, freeFrame, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, fixedFrame, filters));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, arm, filters));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, jointId, filters));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, 999999, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, body, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, link, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Links, false)
+          .ok);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, link, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Frames, false)
+          .ok);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, freeFrame, filters));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, fixedFrame, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Frames, true)
+          .ok);
+  ASSERT_TRUE(ui::setOutlinerVisibility(engine, freeFrame, false));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, freeFrame, filters));
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, fixedFrame, filters));
+}
+
+TEST(DartsimViewportActions, LayerFilterTogglesAreViewOnly)
+{
+  SimEngine engine;
+  ASSERT_TRUE(
+      ui::applyPaletteAction(engine, ui::PaletteActionKind::AddBoxRigidBody)
+          .ok);
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  const auto hidden = ui::setViewportLayerVisible(
+      filters, ui::ViewportLayerKind::RigidBodies, false);
+  EXPECT_TRUE(hidden.ok);
+  EXPECT_EQ(hidden.message, "Rigid Bodies hidden");
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_TRUE(engine.objects().model().find(box)->visible);
+
+  const auto actions = ui::buildViewportLayerFilterActions(filters);
+  ASSERT_EQ(actions.size(), 3u);
+  EXPECT_FALSE(actions[0].checked);
+  EXPECT_TRUE(actions[1].checked);
+  EXPECT_TRUE(actions[2].checked);
+}
+
+TEST(DartsimViewportActions, LayerFiltersAffectViewportSelectionAndMovement)
+{
+  SimEngine engine;
+  ASSERT_TRUE(
+      ui::applyPaletteAction(engine, ui::PaletteActionKind::AddBoxRigidBody)
+          .ok);
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  const Eigen::Vector3d original
+      = engine.objects().model().find(box)->transform.translation();
+
+  ui::ViewportLayerFilterState filters;
+  EXPECT_NE(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_NE(ui::selectedViewportLabel(engine, filters), "none");
+
+  engine.execute(commands::addFreeFrame(translation(3.0, 0.0, 0.0), "marker"));
+  const ObjectId marker = engine.selection().primary();
+  ASSERT_NE(marker, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+  engine.select(box);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  EXPECT_EQ(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_EQ(ui::selectedViewportLabel(engine, filters), "none");
+
+  ASSERT_TRUE(engine.select(marker));
+  EXPECT_FALSE(
+      ui::selectViewportRenderable(
+          engine, filters, ui::renderableIdForObject(box)));
+  EXPECT_EQ(engine.selection().primary(), marker);
+  EXPECT_TRUE(ui::selectViewportRenderable(engine, filters, 0));
+  EXPECT_EQ(engine.selection().primary(), kNoObject);
+  ASSERT_TRUE(engine.select(box));
+
+  ui::ViewportMoveInput input;
+  input.right = true;
+  EXPECT_FALSE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(
+      engine.objects().model().find(box)->transform.translation().isApprox(
+          original));
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ui::ViewportTransformGizmo gizmo = ui::makeViewportTransformGizmo();
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, true)
+          .ok);
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  EXPECT_FALSE(
+      ui::applyViewportTransformGizmo(
+          engine, gizmo, filters, translation(8.0, 0.0, 0.0)));
+  EXPECT_FALSE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  EXPECT_EQ(gizmo.object, kNoObject);
+  EXPECT_TRUE(
+      engine.objects().model().find(box)->transform.translation().isApprox(
+          original));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, true)
+          .ok);
+  EXPECT_TRUE(ui::moveSelectedFromViewport(engine, filters, input));
+}
+
+TEST(DartsimViewportActions, LayerFiltersAffectFrameFocusAndGizmos)
+{
+  SimEngine engine;
+  engine.execute(commands::addFreeFrame(translation(1.0, 2.0, 3.0), "frame"));
+  const ObjectId frame = engine.selection().primary();
+  ASSERT_NE(frame, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  EXPECT_EQ(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_NE(ui::selectedViewportLabel(engine, filters), "none");
+  const auto focused = ui::applyViewportCameraAction(
+      engine,
+      testCamera(),
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters);
+  ASSERT_TRUE(focused.ok);
+  ASSERT_TRUE(focused.camera.has_value());
+  EXPECT_TRUE(focused.camera->target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+
+  ui::ViewportTransformGizmo gizmo = ui::makeViewportTransformGizmo();
+  EXPECT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  EXPECT_EQ(gizmo.object, frame);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Frames, false)
+          .ok);
+  EXPECT_EQ(ui::selectedViewportLabel(engine, filters), "none");
+  const auto hiddenFocus = ui::applyViewportCameraAction(
+      engine,
+      testCamera(),
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters);
+  EXPECT_FALSE(hiddenFocus.ok);
+  EXPECT_FALSE(
+      ui::applyViewportTransformGizmo(
+          engine, gizmo, filters, translation(4.0, 5.0, 6.0)));
+  ui::ViewportMoveInput input;
+  input.up = true;
+  EXPECT_FALSE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(
+      engine.objects().model().find(frame)->transform.translation().isApprox(
+          Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_FALSE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  EXPECT_EQ(gizmo.object, kNoObject);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
 TEST(DartsimViewportActions, BuildsCameraActionsFromVisibleSceneState)
 {
   SimEngine engine;
@@ -221,6 +495,57 @@ TEST(DartsimViewportActions, BuildsCameraActionsFromVisibleSceneState)
   const auto hiddenActions = ui::buildViewportCameraActions(engine);
   EXPECT_FALSE(hiddenActions[0].enabled);
   EXPECT_FALSE(hiddenActions[1].enabled);
+}
+
+TEST(DartsimViewportActions, LayerFiltersAffectCameraActionsWithoutEditingScene)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(-10.0, 0.0, 0.5), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = engine.selection().primary();
+  ASSERT_NE(arm, kNoObject);
+  engine.execute(commands::addLink(arm, kNoObject, JointKind::Fixed, "base"));
+  const ObjectId link = engine.selection().primary();
+  ASSERT_NE(link, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  const auto fitWithoutRigidBodies = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FitScene, filters);
+  ASSERT_TRUE(fitWithoutRigidBodies.ok);
+  ASSERT_TRUE(fitWithoutRigidBodies.camera.has_value());
+  EXPECT_NEAR(fitWithoutRigidBodies.camera->target.x(), 0.0, 2.0);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Links, false)
+          .ok);
+  const auto hiddenScene = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FitScene, filters);
+  EXPECT_FALSE(hiddenScene.ok);
+  EXPECT_FALSE(hiddenScene.camera.has_value());
+
+  ASSERT_TRUE(engine.select(box));
+  const auto hiddenSelection = ui::applyViewportCameraAction(
+      engine,
+      testCamera(),
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters);
+  EXPECT_FALSE(hiddenSelection.ok);
+
+  const auto preset = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::Perspective, filters);
+  EXPECT_TRUE(preset.ok);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
 }
 
 TEST(DartsimViewportActions, FitSceneFramesAllVisibleRenderables)

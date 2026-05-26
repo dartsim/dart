@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <utility>
 
 #include <cmath>
 
@@ -58,12 +59,83 @@ bool isTransformable(ObjectType type)
          || type == ObjectType::FixedFrame;
 }
 
-const SceneObject* selectedTransformableObject(const SimEngine& engine)
+bool layerEnabled(
+    const ViewportLayerFilterState& filters, ViewportLayerKind kind)
+{
+  switch (kind) {
+    case ViewportLayerKind::RigidBodies:
+      return filters.rigidBodies;
+    case ViewportLayerKind::Links:
+      return filters.links;
+    case ViewportLayerKind::Frames:
+      return filters.frames;
+  }
+  return true;
+}
+
+void setLayerEnabled(
+    ViewportLayerFilterState& filters, ViewportLayerKind kind, bool visible)
+{
+  switch (kind) {
+    case ViewportLayerKind::RigidBodies:
+      filters.rigidBodies = visible;
+      break;
+    case ViewportLayerKind::Links:
+      filters.links = visible;
+      break;
+    case ViewportLayerKind::Frames:
+      filters.frames = visible;
+      break;
+  }
+}
+
+std::string layerLabel(ViewportLayerKind kind)
+{
+  switch (kind) {
+    case ViewportLayerKind::RigidBodies:
+      return "Rigid Bodies";
+    case ViewportLayerKind::Links:
+      return "Links";
+    case ViewportLayerKind::Frames:
+      return "Frames";
+  }
+  return "Unknown";
+}
+
+bool objectLayerEnabled(
+    ObjectType type, const ViewportLayerFilterState& filters)
+{
+  switch (type) {
+    case ObjectType::RigidBody:
+      return filters.rigidBodies;
+    case ObjectType::Link:
+      return filters.links;
+    case ObjectType::FreeFrame:
+    case ObjectType::FixedFrame:
+      return filters.frames;
+    case ObjectType::MultiBody:
+    case ObjectType::Joint:
+      return false;
+  }
+  return false;
+}
+
+bool renderItemPassesLayer(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const RenderItem& item)
+{
+  const SceneObject* object = engine.objects().model().find(item.id);
+  return object != nullptr && objectLayerEnabled(object->type, filters);
+}
+
+const SceneObject* selectedTransformableObject(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
 {
   const ObjectId selected = engine.selection().primary();
   const SceneObject* object = engine.objects().model().find(selected);
   if (object == nullptr || !isTransformable(object->type)
-      || selectedViewportRenderable(engine) == 0) {
+      || !isViewportObjectVisible(engine, selected, filters)) {
     return nullptr;
   }
   return object;
@@ -148,16 +220,18 @@ void includeRenderItemBounds(ViewportBounds& bounds, const RenderItem& item)
   }
 }
 
-ViewportBounds visibleSceneBounds(const SimEngine& engine)
+ViewportBounds visibleSceneBounds(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
 {
   ViewportBounds bounds;
-  for (const RenderItem& item : engine.renderItems()) {
+  for (const RenderItem& item : filteredViewportRenderItems(engine, filters)) {
     includeRenderItemBounds(bounds, item);
   }
   return bounds;
 }
 
-ViewportBounds selectedRenderableBounds(const SimEngine& engine)
+ViewportBounds selectedRenderableBounds(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
 {
   ViewportBounds bounds;
   const SelectionState selection = engine.selection().state();
@@ -166,7 +240,8 @@ ViewportBounds selectedRenderableBounds(const SimEngine& engine)
   }
 
   for (const ObjectId selected : selection.ids) {
-    for (const RenderItem& item : engine.renderItems()) {
+    for (const RenderItem& item :
+         filteredViewportRenderItems(engine, filters)) {
       if (item.id == selected) {
         includeRenderItemBounds(bounds, item);
         break;
@@ -191,15 +266,16 @@ bool isEffectivelyVisible(const SimEngine& engine, ObjectId id)
   return true;
 }
 
-ViewportBounds selectedFocusBounds(const SimEngine& engine)
+ViewportBounds selectedFocusBounds(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
 {
-  ViewportBounds bounds = selectedRenderableBounds(engine);
+  ViewportBounds bounds = selectedRenderableBounds(engine, filters);
   for (const ObjectId selected : engine.selection().state().ids) {
     const SceneObject* object = engine.objects().model().find(selected);
     if (object == nullptr
         || (object->type != ObjectType::FreeFrame
             && object->type != ObjectType::FixedFrame)
-        || !isEffectivelyVisible(engine, selected)) {
+        || !isViewportObjectVisible(engine, selected, filters)) {
       continue;
     }
 
@@ -347,6 +423,17 @@ Eigen::Vector3d viewportMoveDelta(const ViewportMoveInput& input)
 
 bool moveSelectedFromViewport(SimEngine& engine, const ViewportMoveInput& input)
 {
+  return moveSelectedFromViewport(engine, ViewportLayerFilterState{}, input);
+}
+
+bool moveSelectedFromViewport(
+    SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportMoveInput& input)
+{
+  if (selectedTransformableObject(engine, filters) == nullptr) {
+    return false;
+  }
   return moveSelectedBy(engine, viewportMoveDelta(input));
 }
 
@@ -365,11 +452,19 @@ ViewportTransformGizmo makeViewportTransformGizmo()
 bool syncViewportTransformGizmo(
     ViewportTransformGizmo& state, const SimEngine& engine)
 {
+  return syncViewportTransformGizmo(state, engine, ViewportLayerFilterState{});
+}
+
+bool syncViewportTransformGizmo(
+    ViewportTransformGizmo& state,
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters)
+{
   if (state.target == nullptr) {
     state = makeViewportTransformGizmo();
   }
 
-  const SceneObject* object = selectedTransformableObject(engine);
+  const SceneObject* object = selectedTransformableObject(engine, filters);
   if (object == nullptr) {
     state.object = kNoObject;
     return false;
@@ -386,13 +481,23 @@ bool applyViewportTransformGizmo(
     ViewportTransformGizmo& state,
     const Eigen::Isometry3d& transform)
 {
+  return applyViewportTransformGizmo(
+      engine, state, ViewportLayerFilterState{}, transform);
+}
+
+bool applyViewportTransformGizmo(
+    SimEngine& engine,
+    ViewportTransformGizmo& state,
+    const ViewportLayerFilterState& filters,
+    const Eigen::Isometry3d& transform)
+{
   if (!engine.canEditScene() || !transform.matrix().allFinite()
       || state.object == kNoObject
       || engine.selection().primary() != state.object) {
     return false;
   }
 
-  const SceneObject* object = selectedTransformableObject(engine);
+  const SceneObject* object = selectedTransformableObject(engine, filters);
   if (object == nullptr || object->id != state.object) {
     return false;
   }
@@ -402,14 +507,131 @@ bool applyViewportTransformGizmo(
   }
 
   engine.execute(commands::setTransform(state.object, transform));
-  return syncViewportTransformGizmo(state, engine);
+  return syncViewportTransformGizmo(state, engine, filters);
+}
+
+std::vector<RenderItem> filteredViewportRenderItems(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
+{
+  std::vector<RenderItem> items;
+  for (const RenderItem& item : engine.renderItems()) {
+    if (renderItemPassesLayer(engine, filters, item)) {
+      items.push_back(item);
+    }
+  }
+  return items;
+}
+
+bool isViewportObjectVisible(
+    const SimEngine& engine,
+    ObjectId id,
+    const ViewportLayerFilterState& filters)
+{
+  const SceneObject* object = engine.objects().model().find(id);
+  if (object == nullptr || !objectLayerEnabled(object->type, filters)
+      || !isEffectivelyVisible(engine, id)) {
+    return false;
+  }
+
+  if (object->type == ObjectType::RigidBody
+      || object->type == ObjectType::Link) {
+    const std::vector<RenderItem> items
+        = filteredViewportRenderItems(engine, filters);
+    return std::find_if(
+               items.begin(),
+               items.end(),
+               [id](const RenderItem& item) { return item.id == id; })
+           != items.end();
+  }
+
+  return object->type == ObjectType::FreeFrame
+         || object->type == ObjectType::FixedFrame;
+}
+
+bool selectViewportRenderable(
+    SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    dart::gui::RenderableId renderableId)
+{
+  if (renderableId == 0) {
+    return engine.select(kNoObject);
+  }
+
+  const ObjectId id = objectIdForRenderable(renderableId);
+  return isViewportObjectVisible(engine, id, filters)
+         && selectViewportRenderable(engine, renderableId);
+}
+
+dart::gui::RenderableId selectedViewportRenderable(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
+{
+  const ObjectId selected = engine.selection().primary();
+  if (!isViewportObjectVisible(engine, selected, filters)) {
+    return 0;
+  }
+
+  const SceneObject* object = engine.objects().model().find(selected);
+  if (object == nullptr
+      || (object->type != ObjectType::RigidBody
+          && object->type != ObjectType::Link)) {
+    return 0;
+  }
+  return renderableIdForObject(selected);
+}
+
+std::string selectedViewportLabel(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
+{
+  const ObjectId selected = engine.selection().primary();
+  if (!isViewportObjectVisible(engine, selected, filters)) {
+    return "none";
+  }
+
+  const SceneObject* object = engine.objects().model().find(selected);
+  if (object == nullptr) {
+    return "none";
+  }
+
+  return object->name + " [" + objectTypeLabel(object->type) + "]";
+}
+
+std::vector<ViewportLayerFilterAction> buildViewportLayerFilterActions(
+    const ViewportLayerFilterState& filters)
+{
+  return {
+      {ViewportLayerKind::RigidBodies,
+       "Show Rigid Bodies",
+       layerEnabled(filters, ViewportLayerKind::RigidBodies)},
+      {ViewportLayerKind::Links,
+       "Show Links",
+       layerEnabled(filters, ViewportLayerKind::Links)},
+      {ViewportLayerKind::Frames,
+       "Show Frames",
+       layerEnabled(filters, ViewportLayerKind::Frames)},
+  };
+}
+
+ViewportLayerFilterActionResult setViewportLayerVisible(
+    ViewportLayerFilterState& filters, ViewportLayerKind kind, bool visible)
+{
+  setLayerEnabled(filters, kind, visible);
+  std::string message = layerLabel(kind);
+  message += visible ? " shown" : " hidden";
+  return {true, std::move(message)};
 }
 
 std::vector<ViewportCameraAction> buildViewportCameraActions(
     const SimEngine& engine)
 {
-  const bool hasVisibleScene = !engine.renderItems().empty();
-  const bool hasVisibleSelection = !selectedFocusBounds(engine).empty;
+  return buildViewportCameraActions(engine, ViewportLayerFilterState{});
+}
+
+std::vector<ViewportCameraAction> buildViewportCameraActions(
+    const SimEngine& engine, const ViewportLayerFilterState& filters)
+{
+  const bool hasVisibleScene
+      = !filteredViewportRenderItems(engine, filters).empty();
+  const bool hasVisibleSelection = !selectedFocusBounds(engine, filters).empty;
 
   return {
       makeCameraAction(
@@ -438,10 +660,20 @@ ViewportCameraActionResult applyViewportCameraAction(
     const dart::gui::OrbitCamera& currentCamera,
     ViewportCameraActionKind kind)
 {
+  return applyViewportCameraAction(
+      engine, currentCamera, kind, ViewportLayerFilterState{});
+}
+
+ViewportCameraActionResult applyViewportCameraAction(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    ViewportCameraActionKind kind,
+    const ViewportLayerFilterState& filters)
+{
   dart::gui::OrbitCamera camera = sanitizedCurrentCamera(currentCamera);
   switch (kind) {
     case ViewportCameraActionKind::FitScene: {
-      const ViewportBounds bounds = visibleSceneBounds(engine);
+      const ViewportBounds bounds = visibleSceneBounds(engine, filters);
       if (bounds.empty) {
         return {false, "No visible objects", std::nullopt};
       }
@@ -450,7 +682,7 @@ ViewportCameraActionResult applyViewportCameraAction(
       return {true, "Fit scene", camera};
     }
     case ViewportCameraActionKind::FocusSelection: {
-      const ViewportBounds bounds = selectedFocusBounds(engine);
+      const ViewportBounds bounds = selectedFocusBounds(engine, filters);
       if (bounds.empty) {
         return {false, "No visible selected object", std::nullopt};
       }

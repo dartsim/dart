@@ -2,8 +2,9 @@
 
 ## Last Session Summary
 
-The post-MVP `dartsim` GUI work is continuing on `main` with the tracked dev
-task owning the feature map, coverage target, and review gates. Phase 1 project
+The post-MVP `dartsim` GUI work is continuing on a topic branch with the
+tracked dev task owning the feature map, coverage target, and review gates.
+Phase 1 project
 lifecycle, Phase 2 outliner/viewport selection, and the first Phase 3
 palette/inspector/relationship seams are implemented through tested headless UI
 action/view-model helpers. The project-open path now has a native picker plus
@@ -12,11 +13,11 @@ Edit Mode vs Simulation Mode workflow actions.
 
 ## Current Branch
 
-`main` - current work is being advanced in small direct-main slices when the
-maintainer explicitly requests that workflow. Open Project and Save Project As
-invoke the nativefiledialog-extended picker as a child of the GUI window and
-fall back to an in-app project path modal/browser when the platform dialog is
-unavailable or a selected path fails; tests inject fake dialog responses through
+`feature/dartsim-editor-project-browser-layers` targets a PR into `main`. Open
+Project now opens the in-app project path modal/browser first so it remains
+usable even when the platform native picker backend is unavailable. Browse still
+invokes nativefiledialog-extended as a child of the GUI window and reports
+picker failures in-place; tests inject fake dialog responses through
 `ProjectFileDialog` so selected, canceled, failed, dirty guard, missing-file,
 invalid-file, and directory paths are covered without launching desktop UI.
 The Create menu is now routed through `dartsim_ui/palette_actions`: the tested
@@ -54,14 +55,17 @@ Viewport camera workflow controls are now routed through
 Focus Selection, and perspective/front/back/left/right/top/bottom presets, and
 applies the resulting public `dart::gui::OrbitCamera` through
 `PanelContext::CameraViewState` without exposing renderer backend state.
+Viewport layer filters now live in `ViewportLayerFilterState` and are view-only:
+the render provider, selected-renderable bridge, picking, selected label, camera
+fit/focus, transform gizmo, and keyboard movement all reject layer-hidden rigid
+bodies, links, and frames without dirtying the project or adding undo history.
 
 ## Immediate Next Step
 
-Continue Phase 5 with visibility layer filters, camera lock/modes, or multi-view
-layout state, or continue Phase 3 with richer relationship inspectors and object
-grouping. Keep behavior in testable engine or UI action/view-model helpers
-before wiring it into `editor.cpp`, and keep the filtered coverage line total
-above 95%.
+Continue Phase 5 with camera lock/modes or multi-view layout state, or continue
+Phase 3 with richer relationship inspectors and object grouping. Keep behavior
+in testable engine or UI action/view-model helpers before wiring it into
+`editor.cpp`, and keep the filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -100,9 +104,8 @@ above 95%.
   inspector, and simulation action seams, so command automation stays
   backend-hidden and testable.
 - Project open remains usable without a working native picker: the File menu
-  tries the native picker first, then opens the in-app browser/manual path
-  modal on picker or load failure. Browse reports native picker failures
-  in-place, and `openProject()` accepts extensionless paths when the
+  opens the in-app browser/manual path modal first. Browse reports native picker
+  failures in-place, and `openProject()` accepts extensionless paths when the
   corresponding `.dartsim` file exists.
 - Viewport camera workflow behavior is covered through
   `dartsim_ui/viewport_actions` and `UNIT_dartsim_ui_ViewportActions`; fit uses
@@ -110,6 +113,11 @@ above 95%.
   selected frames, presets keep target/distance while setting canonical
   orientations, and the actions do not mutate project dirty state or undo
   history.
+- Viewport layer filter behavior is covered through
+  `UNIT_dartsim_ui_ViewportActions`; rigid bodies, links, frames, scene-hidden
+  objects, hidden ancestors, unsupported object types, selection clearing,
+  filtered viewport picks, camera fit/focus, gizmo sync/apply, and keyboard
+  movement are all tested through the filtered action overloads.
 - `pixi run coverage-report-dartsim` now extracts the filtered
   `dartsim/engine` plus testable `dartsim/ui` action/view-model coverage
   surface from the broader lcov report. A 2026-05-25 attempt ran 265/265 Debug
@@ -134,8 +142,9 @@ above 95%.
 ## How To Resume
 
 ```bash
-git checkout main
-git pull --ff-only origin main
+git checkout feature/dartsim-editor-project-browser-layers
+git fetch origin main
+git merge --no-ff origin/main
 git status --short --branch
 git log -3 --oneline
 ```

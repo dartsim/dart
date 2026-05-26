@@ -70,6 +70,37 @@ struct ViewportTransformGizmo
   ObjectId object = kNoObject;
 };
 
+/// Viewport-only object layers. These filters do not change scene visibility.
+enum class ViewportLayerKind
+{
+  RigidBodies,
+  Links,
+  Frames,
+};
+
+/// Editor view state for viewport layer filters.
+struct ViewportLayerFilterState
+{
+  bool rigidBodies = true;
+  bool links = true;
+  bool frames = true;
+};
+
+/// View-menu action state for viewport layer filters.
+struct ViewportLayerFilterAction
+{
+  ViewportLayerKind kind = ViewportLayerKind::RigidBodies;
+  std::string label;
+  bool checked = true;
+};
+
+/// Result of applying a viewport layer-filter action.
+struct ViewportLayerFilterActionResult
+{
+  bool ok = false;
+  std::string message;
+};
+
 /// Camera workflow command exposed by the View menu.
 enum class ViewportCameraActionKind
 {
@@ -107,6 +138,10 @@ struct ViewportCameraActionResult
 /// Move the primary selected object through an undoable engine command.
 bool moveSelectedFromViewport(
     SimEngine& engine, const ViewportMoveInput& input);
+bool moveSelectedFromViewport(
+    SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportMoveInput& input);
 
 /// Create a transform gizmo proxy. The caller owns visibility and callbacks.
 [[nodiscard]] ViewportTransformGizmo makeViewportTransformGizmo();
@@ -115,21 +150,65 @@ bool moveSelectedFromViewport(
 /// object.
 bool syncViewportTransformGizmo(
     ViewportTransformGizmo& state, const SimEngine& engine);
+bool syncViewportTransformGizmo(
+    ViewportTransformGizmo& state,
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters);
 
 /// Commit a gizmo-authored transform back through the undoable command stack.
 bool applyViewportTransformGizmo(
     SimEngine& engine,
     ViewportTransformGizmo& state,
     const Eigen::Isometry3d& transform);
+bool applyViewportTransformGizmo(
+    SimEngine& engine,
+    ViewportTransformGizmo& state,
+    const ViewportLayerFilterState& filters,
+    const Eigen::Isometry3d& transform);
+
+/// Return render items that pass the current viewport layer filters.
+[[nodiscard]] std::vector<RenderItem> filteredViewportRenderItems(
+    const SimEngine& engine, const ViewportLayerFilterState& filters);
+
+/// Viewport object visibility after scene visibility and layer filters.
+[[nodiscard]] bool isViewportObjectVisible(
+    const SimEngine& engine,
+    ObjectId id,
+    const ViewportLayerFilterState& filters);
+
+/// Select a visible, layer-enabled viewport renderable.
+bool selectViewportRenderable(
+    SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    dart::gui::RenderableId renderableId);
+
+/// Current selected viewport renderable and label after layer filtering.
+[[nodiscard]] dart::gui::RenderableId selectedViewportRenderable(
+    const SimEngine& engine, const ViewportLayerFilterState& filters);
+[[nodiscard]] std::string selectedViewportLabel(
+    const SimEngine& engine, const ViewportLayerFilterState& filters);
+
+/// Build and apply viewport layer-filter toggles.
+[[nodiscard]] std::vector<ViewportLayerFilterAction>
+buildViewportLayerFilterActions(const ViewportLayerFilterState& filters);
+[[nodiscard]] ViewportLayerFilterActionResult setViewportLayerVisible(
+    ViewportLayerFilterState& filters, ViewportLayerKind kind, bool visible);
 
 /// Build renderer-neutral camera workflow commands for the current scene.
 [[nodiscard]] std::vector<ViewportCameraAction> buildViewportCameraActions(
     const SimEngine& engine);
+[[nodiscard]] std::vector<ViewportCameraAction> buildViewportCameraActions(
+    const SimEngine& engine, const ViewportLayerFilterState& filters);
 
 /// Compute the camera requested by a workflow command.
 [[nodiscard]] ViewportCameraActionResult applyViewportCameraAction(
     const SimEngine& engine,
     const dart::gui::OrbitCamera& currentCamera,
     ViewportCameraActionKind kind);
+[[nodiscard]] ViewportCameraActionResult applyViewportCameraAction(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    ViewportCameraActionKind kind,
+    const ViewportLayerFilterState& filters);
 
 } // namespace dartsim::ui

@@ -80,6 +80,7 @@ struct EditorApp
   std::chrono::steady_clock::time_point lastRunFrameTime;
   bool haveRunFrameTime = false;
   OutlinerState outliner;
+  ViewportLayerFilterState viewportLayers;
   ViewportTransformGizmo transformGizmo = makeViewportTransformGizmo();
   ProjectFileDialogKind projectPathKind = ProjectFileDialogKind::Open;
   bool projectPathModalOpen = false;
@@ -357,78 +358,6 @@ void applyProjectPathModal(EditorApp& app)
   }
 }
 
-void openProjectFromNativeDialog(EditorApp& app)
-{
-  if (app.engine.isProjectDirty()) {
-    app.note("Unsaved changes");
-    return;
-  }
-
-  const ProjectFileDialogResult selection = nativeProjectFileDialog(
-      makeProjectFileDialogRequest(app, ProjectFileDialogKind::Open));
-  switch (selection.status) {
-    case ProjectFileDialogStatus::Selected:
-      if (selection.path.empty()) {
-        app.note("Open canceled");
-        return;
-      }
-      {
-        const ProjectActionResult result = openProject(
-            app.engine, selection.path, DirtyProjectPolicy::Discard);
-        app.note(result.message);
-        if (!result.ok) {
-          requestProjectPathModal(
-              app, ProjectFileDialogKind::Open, result.message, selection.path);
-        }
-      }
-      return;
-    case ProjectFileDialogStatus::Canceled:
-      app.note("Open canceled");
-      return;
-    case ProjectFileDialogStatus::Failed: {
-      std::string message
-          = projectDialogFailureMessage(ProjectFileDialogKind::Open, selection);
-      message += ". Choose a .dartsim file below or enter a path.";
-      app.note(message);
-      requestProjectPathModal(app, ProjectFileDialogKind::Open, message);
-      return;
-    }
-  }
-}
-
-void saveProjectFromNativeDialog(EditorApp& app)
-{
-  const ProjectFileDialogResult selection = nativeProjectFileDialog(
-      makeProjectFileDialogRequest(app, ProjectFileDialogKind::Save));
-  switch (selection.status) {
-    case ProjectFileDialogStatus::Selected:
-      if (selection.path.empty()) {
-        app.note("Save canceled");
-        return;
-      }
-      {
-        const std::string path = ensureProjectExtension(selection.path);
-        const ProjectActionResult result = saveProjectAs(app.engine, path);
-        app.note(result.message);
-        if (!result.ok) {
-          requestProjectPathModal(
-              app, ProjectFileDialogKind::Save, result.message, selection.path);
-        }
-      }
-      return;
-    case ProjectFileDialogStatus::Canceled:
-      app.note("Save canceled");
-      return;
-    case ProjectFileDialogStatus::Failed: {
-      const std::string message
-          = projectDialogFailureMessage(ProjectFileDialogKind::Save, selection);
-      app.note(message);
-      requestProjectPathModal(app, ProjectFileDialogKind::Save, message);
-      return;
-    }
-  }
-}
-
 std::string primarySelectionName(const SimEngine& engine)
 {
   const SceneObject* object
@@ -495,7 +424,8 @@ void buildSceneTree(dart::gui::PanelBuilder& ui, EditorApp& app)
   if (!app.engine.selection().empty()
       && ui.button("Clear Selection##outliner-clear")) {
     clearOutlinerSelection(app.engine);
-    syncViewportTransformGizmo(app.transformGizmo, app.engine);
+    syncViewportTransformGizmo(
+        app.transformGizmo, app.engine, app.viewportLayers);
   }
   if (rows.empty()) {
     ui.text("(empty world)");
@@ -514,6 +444,8 @@ void buildSceneTree(dart::gui::PanelBuilder& ui, EditorApp& app)
     if (ui.checkbox("##visible-" + std::to_string(row.id), visible)) {
       if (setOutlinerVisibility(app.engine, row.id, visible)) {
         app.note((visible ? "Shown " : "Hidden ") + row.name);
+        syncViewportTransformGizmo(
+            app.transformGizmo, app.engine, app.viewportLayers);
       }
     }
     ui.sameLine();
@@ -537,12 +469,14 @@ void buildSceneTree(dart::gui::PanelBuilder& ui, EditorApp& app)
             + std::to_string(row.id);
       if (ui.button(toggleLabel)) {
         toggleOutlinerObjectSelection(app.engine, row.id);
-        syncViewportTransformGizmo(app.transformGizmo, app.engine);
+        syncViewportTransformGizmo(
+            app.transformGizmo, app.engine, app.viewportLayers);
       }
       ui.sameLine();
       if (ui.button(outlinerButtonLabel(row))) {
         selectOutlinerObject(app.engine, row.id);
-        syncViewportTransformGizmo(app.transformGizmo, app.engine);
+        syncViewportTransformGizmo(
+            app.transformGizmo, app.engine, app.viewportLayers);
       }
       if (row.selected) {
         for (const OutlinerContextAction& action :
@@ -559,7 +493,8 @@ void buildSceneTree(dart::gui::PanelBuilder& ui, EditorApp& app)
             app.note(applyOutlinerContextAction(
                          app.engine, app.outliner, row.id, action.kind)
                          .message);
-            syncViewportTransformGizmo(app.transformGizmo, app.engine);
+            syncViewportTransformGizmo(
+                app.transformGizmo, app.engine, app.viewportLayers);
           }
         }
       }
@@ -727,10 +662,11 @@ dart::gui::KeyboardAction makeViewportMoveAction(
   action.shortcut = dart::gui::KeyboardShortcut::namedKey(key);
   action.repeat = true;
   action.callback = [app, input](dart::gui::KeyboardActionContext& context) {
-    if (!moveSelectedFromViewport(app->engine, input)) {
+    if (!moveSelectedFromViewport(app->engine, app->viewportLayers, input)) {
       return;
     }
-    syncViewportTransformGizmo(app->transformGizmo, app->engine);
+    syncViewportTransformGizmo(
+        app->transformGizmo, app->engine, app->viewportLayers);
     if (context.lifecycle != nullptr) {
       context.lifecycle->paused = true;
     }
@@ -782,11 +718,25 @@ void applyViewportCameraMenuAction(
     dart::gui::PanelContext& context,
     ViewportCameraActionKind kind)
 {
-  const ViewportCameraActionResult result
-      = applyViewportCameraAction(app.engine, context.camera.orbit, kind);
+  const ViewportCameraActionResult result = applyViewportCameraAction(
+      app.engine, context.camera.orbit, kind, app.viewportLayers);
   app.note(result.message);
   if (result.ok && result.camera.has_value() && context.camera.setOrbitCamera) {
     context.camera.setOrbitCamera(*result.camera);
+  }
+}
+
+void buildViewportLayerFilterMenu(dart::gui::PanelBuilder& ui, EditorApp& app)
+{
+  for (const ViewportLayerFilterAction& action :
+       buildViewportLayerFilterActions(app.viewportLayers)) {
+    bool checked = action.checked;
+    if (ui.checkbox(action.label, checked)) {
+      app.note(setViewportLayerVisible(app.viewportLayers, action.kind, checked)
+                   .message);
+      syncViewportTransformGizmo(
+          app.transformGizmo, app.engine, app.viewportLayers);
+    }
   }
 }
 
@@ -804,17 +754,17 @@ void buildMenuBar(
       app.note(newProject(app.engine).message);
     }
     if (ui.menuItem("Open Project...")) {
-      openProjectFromNativeDialog(app);
+      requestProjectPathModal(app, ProjectFileDialogKind::Open);
     }
     if (ui.menuItem("Save Project")) {
       if (app.engine.hasProjectPath()) {
         app.note(saveProject(app.engine).message);
       } else {
-        saveProjectFromNativeDialog(app);
+        requestProjectPathModal(app, ProjectFileDialogKind::Save);
       }
     }
     if (ui.menuItem("Save Project As...")) {
-      saveProjectFromNativeDialog(app);
+      requestProjectPathModal(app, ProjectFileDialogKind::Save);
     }
     ui.endMenu();
   }
@@ -833,7 +783,8 @@ void buildMenuBar(
       }
       if (ui.menuItem(label)) {
         app.note(applyRelationshipAction(app.engine, action.kind).message);
-        syncViewportTransformGizmo(app.transformGizmo, app.engine);
+        syncViewportTransformGizmo(
+            app.transformGizmo, app.engine, app.viewportLayers);
       }
     }
     ui.endMenu();
@@ -846,7 +797,8 @@ void buildMenuBar(
       }
       if (ui.menuItem(label)) {
         app.note(applyPaletteAction(app.engine, action.kind).message);
-        syncViewportTransformGizmo(app.transformGizmo, app.engine);
+        syncViewportTransformGizmo(
+            app.transformGizmo, app.engine, app.viewportLayers);
       }
     }
     ui.endMenu();
@@ -866,7 +818,7 @@ void buildMenuBar(
   }
   if (ui.beginMenu("View")) {
     for (const ViewportCameraAction& action :
-         buildViewportCameraActions(app.engine)) {
+         buildViewportCameraActions(app.engine, app.viewportLayers)) {
       std::string label = action.label;
       if (!action.enabled && !action.disabledReason.empty()) {
         label += " (" + action.disabledReason + ")";
@@ -875,6 +827,8 @@ void buildMenuBar(
         applyViewportCameraMenuAction(app, context, action.kind);
       }
     }
+    ui.separator();
+    buildViewportLayerFilterMenu(ui, app);
     ui.endMenu();
   }
   ui.endMenuBar();
@@ -1051,23 +1005,24 @@ int runEditor(int argc, char* argv[])
   options.simulateWorld = false;
   options.dockingEnabled = true;
   options.renderableProvider = [app]() {
-    return toDescriptors(app->engine.renderItems());
+    return toDescriptors(
+        filteredViewportRenderItems(app->engine, app->viewportLayers));
   };
   options.selectedRenderableProvider = [app]() {
     return dart::gui::RenderableSelection{
-        selectedViewportRenderable(app->engine),
-        selectedViewportLabel(app->engine)};
+        selectedViewportRenderable(app->engine, app->viewportLayers),
+        selectedViewportLabel(app->engine, app->viewportLayers)};
   };
   options.onRenderableSelected = [app](dart::gui::RenderableId renderableId) {
+    if (!selectViewportRenderable(
+            app->engine, app->viewportLayers, renderableId)) {
+      return;
+    }
+    syncViewportTransformGizmo(
+        app->transformGizmo, app->engine, app->viewportLayers);
     if (renderableId == 0) {
-      app->engine.select(kNoObject);
-      syncViewportTransformGizmo(app->transformGizmo, app->engine);
       return;
     }
-    if (!selectViewportRenderable(app->engine, renderableId)) {
-      return;
-    }
-    syncViewportTransformGizmo(app->transformGizmo, app->engine);
     const ObjectId id = objectIdForRenderable(renderableId);
     if (const SceneObject* object = app->engine.objects().model().find(id)) {
       app->note("Selected " + object->name);
@@ -1079,7 +1034,10 @@ int runEditor(int argc, char* argv[])
   app->transformGizmo.gizmo.onChanged
       = [app](const Eigen::Isometry3d& transform) {
           if (!applyViewportTransformGizmo(
-                  app->engine, app->transformGizmo, transform)) {
+                  app->engine,
+                  app->transformGizmo,
+                  app->viewportLayers,
+                  transform)) {
             return;
           }
           const std::string name = primarySelectionName(app->engine);
@@ -1089,7 +1047,8 @@ int runEditor(int argc, char* argv[])
   options.gizmos.push_back(app->transformGizmo.gizmo);
   options.keyboardActions = makeViewportMoveActions(app);
   options.preRender = [app]() {
-    syncViewportTransformGizmo(app->transformGizmo, app->engine);
+    syncViewportTransformGizmo(
+        app->transformGizmo, app->engine, app->viewportLayers);
     advanceRunningSimulation(*app);
   };
 

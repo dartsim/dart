@@ -4746,9 +4746,12 @@ TEST(FilamentSceneExtraction, DartsimSceneTreeSelectionUsesEngineFacade)
   EXPECT_NE(
       editorSource.find("clearOutlinerSelection(app.engine)"),
       std::string::npos);
+  EXPECT_NE(editorSource.find("selectViewportRenderable("), std::string::npos);
   EXPECT_NE(
-      editorSource.find("selectViewportRenderable(app->engine, renderableId)"),
+      editorSource.find("app->engine, app->viewportLayers, renderableId"),
       std::string::npos);
+  EXPECT_EQ(
+      editorSource.find("app->engine.select(kNoObject)"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, DartsimSceneTreeUsesOutlinerStateAndActions)
@@ -4794,6 +4797,10 @@ TEST(FilamentSceneExtraction, DartsimViewportTransformUsesActionSeam)
       editorSource.find("applyViewportTransformGizmo("), std::string::npos);
   EXPECT_NE(
       editorSource.find(
+          "app->transformGizmo, app->engine, app->viewportLayers"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
           "options.keyboardActions = makeViewportMoveActions(app)"),
       std::string::npos);
 }
@@ -4808,9 +4815,31 @@ TEST(FilamentSceneExtraction, DartsimViewportCameraUsesActionSeam)
 
   EXPECT_NE(editorSource.find("ui.beginMenu(\"View\")"), std::string::npos);
   EXPECT_NE(
-      editorSource.find("buildViewportCameraActions(app.engine)"),
+      editorSource.find("ViewportLayerFilterState viewportLayers"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("filteredViewportRenderItems("), std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "selectedViewportRenderable(app->engine, app->viewportLayers)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "selectedViewportLabel(app->engine, app->viewportLayers)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("buildViewportLayerFilterActions(app.viewportLayers)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "setViewportLayerVisible(app.viewportLayers, action.kind, checked)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "buildViewportCameraActions(app.engine, app.viewportLayers)"),
       std::string::npos);
   EXPECT_NE(editorSource.find("applyViewportCameraAction("), std::string::npos);
+  EXPECT_NE(editorSource.find("app.viewportLayers"), std::string::npos);
   EXPECT_NE(
       editorSource.find("context.camera.setOrbitCamera"), std::string::npos);
   EXPECT_NE(
@@ -4900,15 +4929,14 @@ TEST(FilamentSceneExtraction, DartsimProjectMenuUsesBrowserAndNativeDialogSeam)
   EXPECT_NE(
       editorSource.find("ui.menuItem(\"Open Project...\")"), std::string::npos);
   EXPECT_NE(
-      editorSource.find("openProjectFromNativeDialog(app)"), std::string::npos);
-  EXPECT_NE(
-      editorSource.find("saveProjectFromNativeDialog(app)"), std::string::npos);
-  EXPECT_NE(
-      editorSource.find("openProjectFromNativeDialog(EditorApp& app)"),
+      editorSource.find(
+          "requestProjectPathModal(app, ProjectFileDialogKind::Open)"),
       std::string::npos);
+  EXPECT_EQ(
+      editorSource.find("openProjectFromNativeDialog("), std::string::npos);
   EXPECT_NE(
       editorSource.find(
-          "makeProjectFileDialogRequest(app, ProjectFileDialogKind::Open)"),
+          "makeProjectFileDialogRequest(app, app.projectPathKind)"),
       std::string::npos);
   EXPECT_NE(editorSource.find("requestProjectPathModal("), std::string::npos);
   EXPECT_NE(editorSource.find("ui.button(\"Browse...\")"), std::string::npos);
@@ -4928,6 +4956,10 @@ TEST(FilamentSceneExtraction, DartsimProjectMenuUsesBrowserAndNativeDialogSeam)
       std::string::npos);
   EXPECT_NE(
       editorSource.find("ui.menuItem(\"Save Project As...\")"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "requestProjectPathModal(app, ProjectFileDialogKind::Save)"),
       std::string::npos);
   EXPECT_EQ(
       editorSource.find("app.engine.loadProject(\"scene.dartsim\")"),

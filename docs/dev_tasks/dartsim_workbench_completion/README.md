@@ -21,7 +21,8 @@
       existing action layers.
 - [ ] Phase 5: Add viewport controls, visibility filters, camera presets,
       workflows, and multi-view layouts. A first tested View menu camera seam
-      now covers fit scene, focus selection, and canonical camera presets.
+      now covers fit scene, focus selection, canonical camera presets, and
+      view-only layer filters for rigid bodies, links, and frames.
 - [ ] Phase 6: Raise focused `dartsim` engine/UI coverage toward 95%+ and run
       specialized review passes before the completion PR.
 
@@ -57,7 +58,7 @@ persist their workspace through a tested, backend-hidden GUI.
 | Watch/chart panels       | Watch list values and plotted simulation signals                                                                                                     | Console log panel only                                                                                                                                                                                                                                                          | Add headless signal registry, watch list, and chart data buffer before rendering widgets                         |
 | Sensor views             | Camera/range/contact-like sensor panes                                                                                                               | No sensor model in `dartsim` scene data                                                                                                                                                                                                                                         | Add sensor descriptors and simulated outputs only after scene model supports sensors                             |
 | Viewport controls        | rotate/pan/zoom modes, camera lock, front/side/top/perspective, fit view, four-view layout                                                           | View menu camera actions now compute fit scene, focus selection, perspective/front/back/left/right/top/bottom presets from `dartsim_ui/viewport_actions` and apply them through a renderer-neutral `PanelContext` camera setter                                                 | Add viewport mode toggles, camera lock, and multi-view layout state once the single-view camera workflow settles |
-| Visibility filters       | Show/hide links, joints, collisions, sensors, and frames                                                                                             | Per-object `visible` is undoable, wired into the outliner, and honored through hidden ancestors; no typed layer filters yet                                                                                                                                                     | Add layer visibility state and filter render items before broader UI wiring                                      |
+| Visibility filters       | Show/hide links, joints, collisions, sensors, and frames                                                                                             | Per-object `visible` is undoable, wired into the outliner, and honored through hidden ancestors; view-only layer filters now hide/show rigid bodies, links, and frames without mutating scene visibility, dirty state, or undo history                                          | Add collision/sensor/joint filters after those object/render layers exist                                        |
 | Console automation       | Text commands for create/delete/select/save/load/simulation controls and debug messages                                                              | `dartsim_ui/console_actions` now tokenizes quoted commands and dispatches project lifecycle, Create menu, selection, visibility, rename/delete, Edit/Simulation mode, record, and replay commands through the same tested action seams used by the panels                       | Add relationship-specific commands and richer watch/chart registration after the command vocabulary stabilizes   |
 
 ## Specialized Review Findings
@@ -139,17 +140,23 @@ persist their workspace through a tested, backend-hidden GUI.
   project, create, select, visibility, rename/delete, simulation mode,
   recording, and replay commands through the same headless action helpers as
   the menu and panel UI.
-- Project open now starts from the backend-hidden native picker and falls back
-  to the in-app project browser/manual path modal when the native picker backend
-  fails or a selected path cannot be loaded. The native picker retries without a
-  parent window when that handle is rejected; extensionless explicit paths
-  resolve to `.dartsim` files when present.
+- Project open now starts from the in-app project browser/manual path modal so
+  the workflow remains usable even when the platform native picker backend is
+  unavailable. Browse still invokes nativefiledialog-extended as a child of the
+  GUI window, retries without the parent when that handle is rejected, and
+  reports failures in-place; extensionless explicit paths resolve to `.dartsim`
+  files when present.
 - Viewport camera workflow controls now use the same action-seam pattern:
   `dartsim_ui/viewport_actions` computes fit scene, focus selection, and
   canonical camera preset requests from visible render items and selected
   frames, while `dart::gui::PanelContext` exposes only a public
   renderer-neutral `OrbitCamera` setter. These actions are view-only and do not
   dirty the project or add undo history.
+- Viewport layer filters live in `ViewportLayerFilterState` on the editor, not
+  in the scene model. The render provider, viewport picking, selected-label
+  bridge, camera fit/focus, transform gizmo, and keyboard movement all query
+  filtered viewport visibility through `dartsim_ui/viewport_actions`; outliner
+  visibility remains the undoable scene-authored visibility source of truth.
 - The first review pass found and fixed root issues before this slice moved on:
   dirty project replacement is blocked by default, parent visibility hides
   descendant render items, project/selection state events are explicit, and
@@ -220,8 +227,7 @@ persist their workspace through a tested, backend-hidden GUI.
 
 1. Keep the filtered `dartsim/engine` + testable `dartsim/ui` line coverage
    above 95% while adding the next feature slices.
-2. Continue viewport workflow controls with visibility layer filters, camera
-   lock/modes, and multi-view layout after the single-view camera workflow
-   settles.
+2. Continue viewport workflow controls with camera lock/modes and multi-view
+   layout after the single-view camera and layer-filter workflow settles.
 3. Continue Phase 3 with richer relationship inspectors and grouping once more
    authored object metadata lands.
