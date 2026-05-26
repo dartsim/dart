@@ -36,7 +36,9 @@
 #include <dartsim_ui/outliner_actions.hpp>
 
 #include <optional>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace dartsim::ui {
 
@@ -46,6 +48,35 @@ InspectorActionResult result(bool ok, std::string message)
 {
   return {ok, std::move(message)};
 }
+
+class MacroScope
+{
+public:
+  MacroScope(CommandManager& commands, std::string label) : m_commands(commands)
+  {
+    m_commands.beginMacro(std::move(label));
+  }
+
+  MacroScope(const MacroScope&) = delete;
+  MacroScope& operator=(const MacroScope&) = delete;
+
+  ~MacroScope()
+  {
+    close();
+  }
+
+  void close()
+  {
+    if (m_open) {
+      m_commands.endMacro();
+      m_open = false;
+    }
+  }
+
+private:
+  CommandManager& m_commands;
+  bool m_open = true;
+};
 
 bool isTransformEditable(ObjectType type)
 {
@@ -305,6 +336,42 @@ const SceneObject* selectedObject(const SimEngine& engine)
   return engine.objects().model().find(engine.selection().primary());
 }
 
+bool hasSelectedAncestor(
+    const SceneModel& model,
+    const std::unordered_set<ObjectId>& selected,
+    ObjectId id)
+{
+  const SceneObject* object = model.find(id);
+  ObjectId parent = object != nullptr ? object->parent : kNoObject;
+  while (parent != kNoObject) {
+    if (selected.find(parent) != selected.end()) {
+      return true;
+    }
+    const SceneObject* parentObject = model.find(parent);
+    if (parentObject == nullptr) {
+      return false;
+    }
+    parent = parentObject->parent;
+  }
+  return false;
+}
+
+std::vector<ObjectId> selectedRootObjects(const SimEngine& engine)
+{
+  const SceneModel& model = engine.objects().model();
+  const std::vector<ObjectId>& selected = engine.selection().selected();
+  std::unordered_set<ObjectId> selectedIds(selected.begin(), selected.end());
+  std::vector<ObjectId> roots;
+  roots.reserve(selected.size());
+  for (const ObjectId id : selected) {
+    if (!model.contains(id) || hasSelectedAncestor(model, selectedIds, id)) {
+      continue;
+    }
+    roots.push_back(id);
+  }
+  return roots;
+}
+
 void setTranslationComponent(
     Eigen::Isometry3d& transform,
     InspectorNumericPropertyKind kind,
@@ -373,10 +440,15 @@ InspectorStatus buildInspectorStatus(const SimEngine& engine)
 
   const bool editable = engine.canEditScene();
   status.hasSelection = true;
+  status.selectionCount = engine.selection().selected().size();
   status.locked = !editable;
   status.object = object->id;
   status.name = object->name;
   status.type = objectTypeLabel(object->type);
+  status.selectionSummary = status.selectionCount == 1
+                                ? "1 selected"
+                                : std::to_string(status.selectionCount)
+                                      + " selected; primary: " + status.name;
   status.canDelete = editable;
 
   if (isTransformEditable(object->type)) {
@@ -558,17 +630,41 @@ InspectorActionResult deleteInspectorSelection(SimEngine& engine)
     return result(false, "Scene locked");
   }
 
-  const SceneObject* object = selectedObject(engine);
-  if (object == nullptr) {
+  const std::vector<ObjectId> roots = selectedRootObjects(engine);
+  if (roots.empty()) {
     return result(false, "Missing object");
   }
 
-  const ObjectId id = object->id;
-  const std::string name = object->name;
-  engine.execute(commands::removeObject(id));
-  return engine.objects().model().contains(id)
-             ? result(false, "Delete rejected")
-             : result(true, "Deleted " + name);
+  std::vector<std::string> names;
+  names.reserve(roots.size());
+  for (const ObjectId id : roots) {
+    const SceneObject* object = engine.objects().model().find(id);
+    if (object == nullptr) {
+      return result(false, "Missing object");
+    }
+    names.push_back(object->name);
+  }
+
+  if (roots.size() == 1u) {
+    engine.execute(commands::removeObject(roots.front()));
+    return engine.objects().model().contains(roots.front())
+               ? result(false, "Delete rejected")
+               : result(true, "Deleted " + names.front());
+  }
+
+  {
+    MacroScope macro(engine.commands(), "Delete Selection");
+    for (const ObjectId id : roots) {
+      engine.execute(commands::removeObject(id));
+    }
+  }
+
+  for (const ObjectId id : roots) {
+    if (engine.objects().model().contains(id)) {
+      return result(false, "Delete rejected");
+    }
+  }
+  return result(true, "Deleted " + std::to_string(roots.size()) + " objects");
 }
 
 } // namespace dartsim::ui

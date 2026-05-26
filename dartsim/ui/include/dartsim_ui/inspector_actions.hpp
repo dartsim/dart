@@ -40,6 +40,8 @@
 #include <string>
 #include <vector>
 
+#include <cstddef>
+
 namespace dartsim::ui {
 
 enum class InspectorNumericPropertyKind
@@ -99,6 +101,8 @@ struct InspectorEnumProperty
 struct InspectorStatus
 {
   bool hasSelection = false;
+  std::size_t selectionCount = 0;
+  std::string selectionSummary;
   bool locked = false;
   ObjectId object = kNoObject;
   std::string name;
@@ -130,7 +134,7 @@ InspectorActionResult setInspectorEnumProperty(
 InspectorActionResult setInspectorShapeColor(
     SimEngine& engine, const Eigen::Vector4d& rgba);
 
-/// Delete the current primary selection through the undoable command stack.
+/// Delete the current selection through the undoable command stack.
 InspectorActionResult deleteInspectorSelection(SimEngine& engine);
 
 } // namespace dartsim::ui

@@ -130,6 +130,13 @@ public:
   /// Select an object through the engine facade and notify observers when the
   /// selection actually changes.
   bool select(ObjectId id, bool additive = false);
+  /// Deselect one object through the engine facade.
+  bool deselect(ObjectId id);
+  /// Toggle one object through the engine facade. Additive true preserves the
+  /// existing selection when selecting an unselected object.
+  bool toggleSelection(ObjectId id, bool additive = true);
+  /// Clear the current selection through the engine facade.
+  bool clearSelection();
 
   // Record & replay -----------------------------------------------------------
 

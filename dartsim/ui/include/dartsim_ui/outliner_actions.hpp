@@ -106,6 +106,10 @@ struct OutlinerActionResult
 /// Select a row target when it still exists in the scene.
 bool selectOutlinerObject(
     SimEngine& engine, ObjectId id, bool additive = false);
+/// Toggle a row target in the current multi-selection.
+bool toggleOutlinerObjectSelection(SimEngine& engine, ObjectId id);
+/// Clear selection from the outliner action seam.
+bool clearOutlinerSelection(SimEngine& engine);
 
 bool setOutlinerExpanded(
     OutlinerState& state, const SimEngine& engine, ObjectId id, bool expanded);

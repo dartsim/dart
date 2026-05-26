@@ -472,6 +472,11 @@ void buildSceneTree(dart::gui::PanelBuilder& ui, EditorApp& app)
 {
   const std::vector<OutlinerRow> rows
       = buildOutlinerRows(app.engine, app.outliner);
+  if (!app.engine.selection().empty()
+      && ui.button("Clear Selection##outliner-clear")) {
+    clearOutlinerSelection(app.engine);
+    syncViewportTransformGizmo(app.transformGizmo, app.engine);
+  }
   if (rows.empty()) {
     ui.text("(empty world)");
     return;
@@ -507,6 +512,14 @@ void buildSceneTree(dart::gui::PanelBuilder& ui, EditorApp& app)
         app.note(cancelOutlinerRename(app.outliner).message);
       }
     } else {
+      const std::string toggleLabel
+          = (row.selected ? "-##outliner-selection-" : "+##outliner-selection-")
+            + std::to_string(row.id);
+      if (ui.button(toggleLabel)) {
+        toggleOutlinerObjectSelection(app.engine, row.id);
+        syncViewportTransformGizmo(app.transformGizmo, app.engine);
+      }
+      ui.sameLine();
       if (ui.button(outlinerButtonLabel(row))) {
         selectOutlinerObject(app.engine, row.id);
         syncViewportTransformGizmo(app.transformGizmo, app.engine);
@@ -541,7 +554,8 @@ void buildInspector(dart::gui::PanelBuilder& ui, EditorApp& app)
     ui.text("(no selection)");
     return;
   }
-  ui.text("Name: " + status.name);
+  ui.text(status.selectionSummary);
+  ui.text((status.selectionCount > 1u ? "Primary: " : "Name: ") + status.name);
   ui.text("Type: " + status.type);
 
   if (status.locked) {

@@ -82,6 +82,8 @@ TEST(DartsimInspectorActions, EmptySelectionBuildsEmptyStatus)
   SimEngine engine;
   const ui::InspectorStatus status = ui::buildInspectorStatus(engine);
   EXPECT_FALSE(status.hasSelection);
+  EXPECT_EQ(status.selectionCount, 0u);
+  EXPECT_TRUE(status.selectionSummary.empty());
   EXPECT_FALSE(status.locked);
   EXPECT_EQ(status.object, kNoObject);
   EXPECT_TRUE(status.enumProperties.empty());
@@ -107,6 +109,8 @@ TEST(DartsimInspectorActions, RigidBodyPropertiesEditThroughUndoableCommands)
 
   ui::InspectorStatus status = ui::buildInspectorStatus(engine);
   EXPECT_TRUE(status.hasSelection);
+  EXPECT_EQ(status.selectionCount, 1u);
+  EXPECT_EQ(status.selectionSummary, "1 selected");
   EXPECT_FALSE(status.locked);
   EXPECT_EQ(status.object, box);
   EXPECT_EQ(status.name, "box");
@@ -441,6 +445,51 @@ TEST(DartsimInspectorActions, FrameInspectorEditsLocalTransformAndDeletes)
 
   ASSERT_TRUE(engine.undo());
   EXPECT_TRUE(engine.objects().model().contains(tip));
+}
+
+TEST(DartsimInspectorActions, MultiSelectionStatusAndDeleteUseRootSet)
+{
+  SimEngine engine;
+  engine.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = engine.selection().primary();
+  engine.execute(commands::addLink(arm, kNoObject, JointKind::Fixed, "base"));
+  const ObjectId base = engine.selection().primary();
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(0.0, 0.0, 1.0), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(arm, kNoObject);
+  ASSERT_NE(base, kNoObject);
+  ASSERT_NE(box, kNoObject);
+
+  ASSERT_TRUE(engine.select(arm));
+  ASSERT_TRUE(engine.select(base, /*additive=*/true));
+  ASSERT_TRUE(engine.select(box, /*additive=*/true));
+
+  const ui::InspectorStatus status = ui::buildInspectorStatus(engine);
+  EXPECT_TRUE(status.hasSelection);
+  EXPECT_EQ(status.selectionCount, 3u);
+  EXPECT_EQ(status.selectionSummary, "3 selected; primary: box");
+  EXPECT_EQ(status.object, box);
+  EXPECT_EQ(status.name, "box");
+  EXPECT_TRUE(status.canDelete);
+
+  const auto deleted = ui::deleteInspectorSelection(engine);
+  EXPECT_TRUE(deleted.ok);
+  EXPECT_EQ(deleted.message, "Deleted 2 objects");
+  EXPECT_FALSE(engine.objects().model().contains(arm));
+  EXPECT_FALSE(engine.objects().model().contains(base));
+  EXPECT_FALSE(engine.objects().model().contains(box));
+  EXPECT_TRUE(engine.selection().empty());
+
+  ASSERT_TRUE(engine.undo());
+  EXPECT_TRUE(engine.objects().model().contains(arm));
+  EXPECT_TRUE(engine.objects().model().contains(base));
+  EXPECT_TRUE(engine.objects().model().contains(box));
+  EXPECT_TRUE(engine.selection().isSelected(arm));
+  EXPECT_TRUE(engine.selection().isSelected(base));
+  EXPECT_TRUE(engine.selection().isSelected(box));
+  EXPECT_EQ(engine.selection().primary(), box);
 }
 
 TEST(DartsimInspectorActions, InspectorLocksEditsDuringSimulationMode)

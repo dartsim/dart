@@ -133,6 +133,42 @@ bool SimEngine::select(ObjectId id, bool additive)
   return true;
 }
 
+bool SimEngine::deselect(ObjectId id)
+{
+  const SelectionState before = m_selection.state();
+  m_selection.deselect(id);
+  if (m_selection.state() == before) {
+    return false;
+  }
+  m_events.emit(EventType::SelectionChanged, id);
+  notifyChanged();
+  return true;
+}
+
+bool SimEngine::toggleSelection(ObjectId id, bool additive)
+{
+  const SelectionState before = m_selection.state();
+  m_selection.toggle(id, additive);
+  if (m_selection.state() == before) {
+    return false;
+  }
+  m_events.emit(EventType::SelectionChanged, id);
+  notifyChanged();
+  return true;
+}
+
+bool SimEngine::clearSelection()
+{
+  const SelectionState before = m_selection.state();
+  m_selection.clear();
+  if (m_selection.state() == before) {
+    return false;
+  }
+  m_events.emit(EventType::SelectionChanged);
+  notifyChanged();
+  return true;
+}
+
 void SimEngine::startRecording()
 {
   m_recorder.start(m_objects.model().timeStep);
