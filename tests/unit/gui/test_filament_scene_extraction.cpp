@@ -4896,7 +4896,7 @@ TEST(FilamentSceneExtraction, DartsimRelationshipMenuUsesActionSeam)
       cmakeSource.find("src/relationship_actions.cpp"), std::string::npos);
 }
 
-TEST(FilamentSceneExtraction, DartsimProjectMenuUsesNativeFileDialogSeam)
+TEST(FilamentSceneExtraction, DartsimProjectMenuUsesBrowserAndNativeDialogSeam)
 {
   const auto editorSource
       = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
@@ -4916,12 +4916,16 @@ TEST(FilamentSceneExtraction, DartsimProjectMenuUsesNativeFileDialogSeam)
   EXPECT_NE(
       editorSource.find("ui.menuItem(\"Open Project...\")"), std::string::npos);
   EXPECT_NE(
-      editorSource.find("openProjectFromNativeDialog(app)"), std::string::npos);
+      editorSource.find("openProjectFromProjectBrowser(app)"),
+      std::string::npos);
   EXPECT_NE(
       editorSource.find("saveProjectFromNativeDialog(app)"), std::string::npos);
   EXPECT_NE(
+      editorSource.find("openProjectFromProjectBrowser(EditorApp& app)"),
+      std::string::npos);
+  EXPECT_NE(
       editorSource.find(
-          "requestProjectPathModal(app, ProjectFileDialogKind::Open"),
+          "ProjectFileDialogKind::Open, \"Choose a .dartsim file to open\""),
       std::string::npos);
   EXPECT_NE(editorSource.find("ui.button(\"Browse...\")"), std::string::npos);
   EXPECT_NE(editorSource.find("projectBrowserEntries"), std::string::npos);
@@ -4956,7 +4960,12 @@ TEST(FilamentSceneExtraction, DartsimProjectMenuUsesNativeFileDialogSeam)
       std::string::npos);
   EXPECT_NE(
       projectDialogSource.find(
-          "args.parentWindow = nativeParentWindow(request.parentNativeWindow)"),
+          "showNativeProjectFileDialog(request, filters, parent, &rawPath)"),
+      std::string::npos);
+  EXPECT_NE(projectDialogSource.find("NFD_ClearError()"), std::string::npos);
+  EXPECT_NE(
+      projectDialogSource.find(
+          "showNativeProjectFileDialog(request, filters, {}, &rawPath)"),
       std::string::npos);
   EXPECT_NE(
       panelHeader.find("void* nativeWindow = nullptr"), std::string::npos);

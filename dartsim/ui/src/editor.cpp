@@ -43,6 +43,7 @@
 #include <dartsim_engine/selection_manager.hpp>
 #include <dartsim_engine/sim_engine.hpp>
 #include <dartsim_engine/simulation_controller.hpp>
+#include <dartsim_ui/console_actions.hpp>
 #include <dartsim_ui/editor.hpp>
 #include <dartsim_ui/inspector_actions.hpp>
 #include <dartsim_ui/outliner_actions.hpp>
@@ -87,6 +88,7 @@ struct EditorApp
   std::string projectPathStatus;
   std::filesystem::path projectBrowserDirectory;
   std::string projectBrowserStatus;
+  std::string consoleInput;
   void* projectDialogParentWindow = nullptr;
 
   void note(const std::string& message)
@@ -246,6 +248,15 @@ std::string projectPathOrDefault(const SimEngine& engine)
   return engine.hasProjectPath() ? engine.projectPath() : kDefaultProjectPath;
 }
 
+std::string initialProjectModalPath(
+    const SimEngine& engine, ProjectFileDialogKind kind)
+{
+  if (kind == ProjectFileDialogKind::Open && !engine.hasProjectPath()) {
+    return {};
+  }
+  return projectPathOrDefault(engine);
+}
+
 std::string projectPathModalTitle(ProjectFileDialogKind kind)
 {
   return kind == ProjectFileDialogKind::Open ? "Open Project"
@@ -282,8 +293,8 @@ void requestProjectPathModal(
     std::string path = {})
 {
   app.projectPathKind = kind;
-  app.projectPath
-      = path.empty() ? projectPathOrDefault(app.engine) : std::move(path);
+  app.projectPath = path.empty() ? initialProjectModalPath(app.engine, kind)
+                                 : std::move(path);
   app.projectPathStatus = std::move(status);
   app.projectBrowserDirectory = projectBrowserDirectoryFor(app.projectPath);
   app.projectBrowserStatus.clear();
@@ -319,6 +330,10 @@ void browseProjectPath(EditorApp& app)
     case ProjectFileDialogStatus::Failed:
       app.projectPathStatus
           = projectDialogFailureMessage(app.projectPathKind, selection);
+      if (app.projectPathKind == ProjectFileDialogKind::Open) {
+        app.projectPathStatus
+            += ". Choose a .dartsim file below or enter a path.";
+      }
       break;
   }
 }
@@ -327,6 +342,10 @@ void applyProjectPathModal(EditorApp& app)
 {
   ProjectActionResult result;
   if (app.projectPathKind == ProjectFileDialogKind::Open) {
+    if (app.projectPath.empty()) {
+      app.projectPathStatus = "Choose a .dartsim file to open";
+      return;
+    }
     result = openProject(app.engine, app.projectPath);
   } else {
     result = saveProjectAs(app.engine, ensureProjectExtension(app.projectPath));
@@ -338,42 +357,15 @@ void applyProjectPathModal(EditorApp& app)
   }
 }
 
-void openProjectFromNativeDialog(EditorApp& app)
+void openProjectFromProjectBrowser(EditorApp& app)
 {
   if (app.engine.isProjectDirty()) {
     app.note("Unsaved changes");
     return;
   }
 
-  const ProjectFileDialogResult selection = nativeProjectFileDialog(
-      makeProjectFileDialogRequest(app, ProjectFileDialogKind::Open));
-  switch (selection.status) {
-    case ProjectFileDialogStatus::Selected:
-      if (selection.path.empty()) {
-        app.note("Open canceled");
-        return;
-      }
-      {
-        const ProjectActionResult result
-            = openProject(app.engine, selection.path);
-        app.note(result.message);
-        if (!result.ok) {
-          requestProjectPathModal(
-              app, ProjectFileDialogKind::Open, result.message, selection.path);
-        }
-      }
-      return;
-    case ProjectFileDialogStatus::Canceled:
-      app.note("Open canceled");
-      return;
-    case ProjectFileDialogStatus::Failed: {
-      const std::string message
-          = projectDialogFailureMessage(ProjectFileDialogKind::Open, selection);
-      app.note(message);
-      requestProjectPathModal(app, ProjectFileDialogKind::Open, message);
-      return;
-    }
-  }
+  requestProjectPathModal(
+      app, ProjectFileDialogKind::Open, "Choose a .dartsim file to open");
 }
 
 void saveProjectFromNativeDialog(EditorApp& app)
@@ -606,6 +598,20 @@ void buildInspector(dart::gui::PanelBuilder& ui, EditorApp& app)
 
 void buildConsole(dart::gui::PanelBuilder& ui, EditorApp& app)
 {
+  ui.textInput("Command", app.consoleInput);
+  ui.sameLine();
+  if (ui.button("Run##console")) {
+    if (!app.consoleInput.empty()) {
+      app.note("> " + app.consoleInput);
+      app.note(applyConsoleCommand(app.engine, app.consoleInput).message);
+      app.consoleInput.clear();
+    }
+  }
+  if (ui.button("Help##console")) {
+    app.note(consoleCommandHelpText());
+  }
+  ui.separator();
+
   const auto& entries = app.engine.logger().entries();
   const std::size_t count = entries.size();
   const std::size_t start = count > 14 ? count - 14 : 0;
@@ -754,7 +760,7 @@ void buildMenuBar(dart::gui::PanelBuilder& ui, EditorApp& app)
       app.note(newProject(app.engine).message);
     }
     if (ui.menuItem("Open Project...")) {
-      openProjectFromNativeDialog(app);
+      openProjectFromProjectBrowser(app);
     }
     if (ui.menuItem("Save Project")) {
       if (app.engine.hasProjectPath()) {
