@@ -210,6 +210,19 @@ bool selectOutlinerObject(SimEngine& engine, ObjectId id, bool additive)
   return engine.select(id, additive);
 }
 
+bool toggleOutlinerObjectSelection(SimEngine& engine, ObjectId id)
+{
+  if (!engine.objects().model().contains(id)) {
+    return false;
+  }
+  return engine.toggleSelection(id);
+}
+
+bool clearOutlinerSelection(SimEngine& engine)
+{
+  return engine.clearSelection();
+}
+
 bool setOutlinerExpanded(
     OutlinerState& state, const SimEngine& engine, ObjectId id, bool expanded)
 {

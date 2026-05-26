@@ -4741,6 +4741,12 @@ TEST(FilamentSceneExtraction, DartsimSceneTreeSelectionUsesEngineFacade)
       editorSource.find("selectOutlinerObject(app.engine, row.id);"),
       std::string::npos);
   EXPECT_NE(
+      editorSource.find("toggleOutlinerObjectSelection(app.engine, row.id)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("clearOutlinerSelection(app.engine)"),
+      std::string::npos);
+  EXPECT_NE(
       editorSource.find("selectViewportRenderable(app->engine, renderableId)"),
       std::string::npos);
 }

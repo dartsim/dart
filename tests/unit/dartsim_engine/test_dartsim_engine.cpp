@@ -1432,6 +1432,33 @@ TEST(SimEngine, SelectSignalsSelectionChange)
   EXPECT_EQ(lastEvent.object, second);
   EXPECT_EQ(engine.selection().selected().size(), 2u);
   EXPECT_EQ(engine.selection().primary(), second);
+
+  EXPECT_TRUE(engine.toggleSelection(first));
+  EXPECT_EQ(changes, 3);
+  EXPECT_EQ(lastEvent.type, EventType::SelectionChanged);
+  EXPECT_EQ(lastEvent.object, first);
+  EXPECT_FALSE(engine.selection().isSelected(first));
+  EXPECT_EQ(engine.selection().primary(), second);
+
+  EXPECT_TRUE(engine.toggleSelection(first));
+  EXPECT_EQ(changes, 4);
+  EXPECT_TRUE(engine.selection().isSelected(first));
+  EXPECT_EQ(engine.selection().primary(), first);
+
+  EXPECT_TRUE(engine.deselect(first));
+  EXPECT_EQ(changes, 5);
+  EXPECT_FALSE(engine.selection().isSelected(first));
+  EXPECT_EQ(engine.selection().primary(), second);
+  EXPECT_FALSE(engine.deselect(first));
+  EXPECT_EQ(changes, 5);
+
+  EXPECT_TRUE(engine.clearSelection());
+  EXPECT_EQ(changes, 6);
+  EXPECT_EQ(lastEvent.type, EventType::SelectionChanged);
+  EXPECT_EQ(lastEvent.object, kNoObject);
+  EXPECT_TRUE(engine.selection().empty());
+  EXPECT_FALSE(engine.clearSelection());
+  EXPECT_EQ(changes, 6);
 }
 
 TEST(SimEngine, NoOpRemoveDoesNotResetRunState)

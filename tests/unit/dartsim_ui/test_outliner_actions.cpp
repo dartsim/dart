@@ -166,8 +166,23 @@ TEST(DartsimOutlinerActions, SelectsExistingRowsAndRejectsMissingIds)
   EXPECT_TRUE(engine.selection().isSelected(second));
   EXPECT_EQ(engine.selection().primary(), second);
 
-  EXPECT_FALSE(ui::selectOutlinerObject(engine, 99999));
+  EXPECT_TRUE(ui::toggleOutlinerObjectSelection(engine, first));
+  EXPECT_FALSE(engine.selection().isSelected(first));
+  EXPECT_TRUE(engine.selection().isSelected(second));
   EXPECT_EQ(engine.selection().primary(), second);
+
+  EXPECT_TRUE(ui::toggleOutlinerObjectSelection(engine, first));
+  EXPECT_TRUE(engine.selection().isSelected(first));
+  EXPECT_TRUE(engine.selection().isSelected(second));
+  EXPECT_EQ(engine.selection().primary(), first);
+
+  EXPECT_FALSE(ui::toggleOutlinerObjectSelection(engine, 99999));
+  EXPECT_TRUE(ui::clearOutlinerSelection(engine));
+  EXPECT_TRUE(engine.selection().empty());
+  EXPECT_FALSE(ui::clearOutlinerSelection(engine));
+
+  EXPECT_FALSE(ui::selectOutlinerObject(engine, 99999));
+  EXPECT_TRUE(engine.selection().empty());
 }
 
 TEST(DartsimOutlinerActions, RenameStateCommitsThroughUndoableCommand)

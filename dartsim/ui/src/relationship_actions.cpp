@@ -158,6 +158,15 @@ bool canMakePrimaryLinkRoot(const SimEngine& engine)
   return isLink(object) && object->parentLink != kNoObject;
 }
 
+std::string namedAction(
+    std::string verb, const SceneObject* child, const SceneObject* parent)
+{
+  if (child == nullptr || parent == nullptr) {
+    return {};
+  }
+  return std::move(verb) + " " + child->name + " to " + parent->name;
+}
+
 } // namespace
 
 std::vector<RelationshipAction> buildRelationshipActions(
@@ -165,26 +174,43 @@ std::vector<RelationshipAction> buildRelationshipActions(
 {
   const bool canEdit = engine.canEditScene();
   const std::string locked = canEdit ? std::string() : "Simulation Mode";
+  const SceneModel& model = engine.objects().model();
+  const SceneObject* primary = findPrimary(engine);
+  const SceneObject* attachChild = model.find(selectedAttachChild(engine));
+  const SceneObject* relationshipChild
+      = model.find(selectedRelationshipChild(engine));
+  const bool attachEnabled = canEdit && canAttachSelectedToPrimary(engine);
+  const bool detachEnabled = canEdit && canDetachPrimary(engine);
+  const bool reparentEnabled
+      = canEdit && canReparentSelectedLinkToPrimary(engine);
+  const bool makeRootEnabled = canEdit && canMakePrimaryLinkRoot(engine);
+
   std::vector<RelationshipAction> actions;
   actions.push_back(action(
       RelationshipActionKind::AttachSelectedToPrimary,
-      "Attach Selected to Primary",
-      canEdit && canAttachSelectedToPrimary(engine),
+      attachEnabled ? namedAction("Attach", attachChild, primary)
+                    : "Attach Selected to Primary",
+      attachEnabled,
       canEdit ? "Select one frame and one parent" : locked));
   actions.push_back(action(
       RelationshipActionKind::DetachPrimaryToWorld,
-      "Detach Primary to World",
-      canEdit && canDetachPrimary(engine),
+      detachEnabled && primary != nullptr
+          ? "Detach " + primary->name + " to World"
+          : "Detach Primary to World",
+      detachEnabled,
       canEdit ? "Select an attached frame" : locked));
   actions.push_back(action(
       RelationshipActionKind::ReparentSelectedLinkToPrimary,
-      "Reparent Selected Link to Primary",
-      canEdit && canReparentSelectedLinkToPrimary(engine),
+      reparentEnabled ? namedAction("Reparent", relationshipChild, primary)
+                      : "Reparent Selected Link to Primary",
+      reparentEnabled,
       canEdit ? "Select one child link and one parent link" : locked));
   actions.push_back(action(
       RelationshipActionKind::MakePrimaryLinkRoot,
-      "Make Primary Link Root",
-      canEdit && canMakePrimaryLinkRoot(engine),
+      makeRootEnabled && primary != nullptr
+          ? "Make " + primary->name + " Root Link"
+          : "Make Primary Link Root",
+      makeRootEnabled,
       canEdit ? "Select a child link" : locked));
   return actions;
 }

@@ -27,14 +27,16 @@ scene and a two-link arm, each created as a single undoable macro transaction. A
 fixed-frame regression prevents root fixed-frame creation from throwing inside
 the experimental World rebuild path.
 The Inspector is now routed through `dartsim_ui/inspector_actions`: the tested
-property model covers primary-selection metadata, Simulation Mode read-only
-state, undoable transform/mass/joint/shape/color edits, shape-type and
-joint-kind enum choices, joint-axis edits, and subtree-safe delete.
+property model covers primary-selection metadata, multi-selection summaries,
+Simulation Mode read-only state, undoable transform/mass/joint/shape/color
+edits, shape-type and joint-kind enum choices, joint-axis edits, single-object
+subtree-safe delete, and multi-selection delete as one undoable root-set macro.
 Relationship editing is now routed through `dartsim_ui/relationship_actions`:
 frame attach/detach commands preserve world transforms, reject invalid pairs,
 convert detached fixed frames to root free frames, reparent child links within
 their owning multibody, reject link-parent cycles, and make child links into
-root links.
+root links. Valid relationship menu items name the selected child and primary
+parent/root target before applying the edit.
 Simulation workflow controls are now routed through a
 `buildSimulationModeActions` view-model: the editor presents "Enter Simulation
 Mode", "Resume Simulation", "Step Simulation", and "Return to Edit Mode" labels
@@ -42,11 +44,10 @@ with disabled reasons instead of ambiguous transport-only buttons.
 
 ## Immediate Next Step
 
-Continue Phase 3 with multi-selection behavior for authored objects and richer
-joint relationship affordances, or continue Phase 5 with viewport fit/focus and
-camera presets. Keep behavior in testable engine or UI action/view-model helpers
-before wiring it into `editor.cpp`, and keep the filtered coverage line total
-above 95%.
+Continue Phase 3 with richer relationship inspectors and object grouping, or
+continue Phase 5 with viewport fit/focus and camera presets. Keep behavior in
+testable engine or UI action/view-model helpers before wiring it into
+`editor.cpp`, and keep the filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -58,7 +59,8 @@ above 95%.
   and `UNIT_dartsim_ui_ProjectActions`.
 - Scene Tree behavior is now covered through `dartsim_ui/outliner_actions` and
   `UNIT_dartsim_ui_OutlinerActions`, including expansion state, inline rename,
-  context actions, visibility, selection, and viewport id mapping.
+  context actions, visibility, replace-selection, multi-selection toggle, clear
+  selection, and viewport id mapping.
 - Simulation panel behavior is now covered through
   `dartsim_ui/simulation_actions` and `UNIT_dartsim_ui_SimulationActions`;
   Reset consumes the captured Edit Mode snapshot so stale runtime snapshots do
@@ -77,7 +79,8 @@ above 95%.
   `dartsim_ui/relationship_actions` and
   `UNIT_dartsim_ui_RelationshipActions`; frame attach/detach and link
   reparent/root actions go through undoable engine commands instead of direct
-  `editor.cpp` mutation.
+  `editor.cpp` mutation, and valid two-object actions preview the affected
+  object names in their labels.
 - `pixi run coverage-report-dartsim` now extracts the filtered
   `dartsim/engine` plus testable `dartsim/ui` action/view-model coverage
   surface from the broader lcov report. A 2026-05-25 attempt ran 265/265 Debug
@@ -87,6 +90,9 @@ above 95%.
 - A focused Debug lcov capture after the relationship and coverage-hardening
   slices reported 95.3% line and 98.0% function coverage over the filtered
   `dartsim/engine` plus testable `dartsim/ui` action/view-model surface.
+- A Debug lcov capture after the multi-selection and relationship-label slice
+  reported 95.7% line and 100.0% function coverage over the same filtered
+  surface.
 - The source-feature review prioritized viewport picking/selection/gizmo work
   and a real outliner before deeper inspector/palette work.
 - Specialized review agents should be run before completion and can be run

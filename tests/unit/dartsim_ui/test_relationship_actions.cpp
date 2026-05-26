@@ -97,6 +97,10 @@ TEST(DartsimRelationshipActions, DescribesAttachAndDetachAvailability)
   EXPECT_TRUE(
       findAction(actions, ui::RelationshipActionKind::AttachSelectedToPrimary)
           ->enabled);
+  EXPECT_EQ(
+      findAction(actions, ui::RelationshipActionKind::AttachSelectedToPrimary)
+          ->label,
+      "Attach child to parent");
   EXPECT_FALSE(
       findAction(actions, ui::RelationshipActionKind::DetachPrimaryToWorld)
           ->enabled);
@@ -142,6 +146,10 @@ TEST(DartsimRelationshipActions, AttachSelectedFrameToPrimaryParent)
   EXPECT_TRUE(
       findAction(actions, ui::RelationshipActionKind::DetachPrimaryToWorld)
           ->enabled);
+  EXPECT_EQ(
+      findAction(actions, ui::RelationshipActionKind::DetachPrimaryToWorld)
+          ->label,
+      "Detach child to World");
 
   ASSERT_TRUE(engine.undo());
   ASSERT_NE(engine.objects().model().find(child), nullptr);
@@ -236,6 +244,11 @@ TEST(DartsimRelationshipActions, ReparentsSelectedLinkToPrimaryParent)
       findAction(
           actions, ui::RelationshipActionKind::ReparentSelectedLinkToPrimary)
           ->enabled);
+  EXPECT_EQ(
+      findAction(
+          actions, ui::RelationshipActionKind::ReparentSelectedLinkToPrimary)
+          ->label,
+      "Reparent tool to base");
 
   const auto reparented = ui::applyRelationshipAction(
       engine, ui::RelationshipActionKind::ReparentSelectedLinkToPrimary);
@@ -272,6 +285,10 @@ TEST(DartsimRelationshipActions, MakesPrimaryLinkRoot)
   EXPECT_TRUE(
       findAction(actions, ui::RelationshipActionKind::MakePrimaryLinkRoot)
           ->enabled);
+  EXPECT_EQ(
+      findAction(actions, ui::RelationshipActionKind::MakePrimaryLinkRoot)
+          ->label,
+      "Make forearm Root Link");
 
   const auto rooted = ui::applyRelationshipAction(
       engine, ui::RelationshipActionKind::MakePrimaryLinkRoot);
