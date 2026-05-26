@@ -4858,6 +4858,33 @@ TEST(FilamentSceneExtraction, DartsimViewportTransformUsesActionSeam)
       std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, DartsimViewportCameraUsesActionSeam)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+  const auto panelHeader = readSourceFile(kDartGuiDirectory / "panel.hpp");
+  const auto uiFrameSource
+      = readSourceFile(kDartGuiDirectory / "detail" / "ui_frame.cpp");
+
+  EXPECT_NE(editorSource.find("ui.beginMenu(\"View\")"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("buildViewportCameraActions(app.engine)"),
+      std::string::npos);
+  EXPECT_NE(editorSource.find("applyViewportCameraAction("), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("context.camera.setOrbitCamera"), std::string::npos);
+  EXPECT_NE(
+      panelHeader.find(
+          "std::function<void(const OrbitCamera&)> setOrbitCamera"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("cameraController.camera = camera"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("resetOrbitCameraTracking(cameraController)"),
+      std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, DartsimSimulationPanelUsesActionSeam)
 {
   const auto editorSource
@@ -4933,17 +4960,17 @@ TEST(FilamentSceneExtraction, DartsimProjectMenuUsesBrowserAndNativeDialogSeam)
   EXPECT_NE(
       editorSource.find("ui.menuItem(\"Open Project...\")"), std::string::npos);
   EXPECT_NE(
-      editorSource.find("openProjectFromProjectBrowser(app)"),
-      std::string::npos);
+      editorSource.find("openProjectFromNativeDialog(app)"), std::string::npos);
   EXPECT_NE(
       editorSource.find("saveProjectFromNativeDialog(app)"), std::string::npos);
   EXPECT_NE(
-      editorSource.find("openProjectFromProjectBrowser(EditorApp& app)"),
+      editorSource.find("openProjectFromNativeDialog(EditorApp& app)"),
       std::string::npos);
   EXPECT_NE(
       editorSource.find(
-          "ProjectFileDialogKind::Open, \"Choose a .dartsim file to open\""),
+          "makeProjectFileDialogRequest(app, ProjectFileDialogKind::Open)"),
       std::string::npos);
+  EXPECT_NE(editorSource.find("requestProjectPathModal("), std::string::npos);
   EXPECT_NE(editorSource.find("ui.button(\"Browse...\")"), std::string::npos);
   EXPECT_NE(editorSource.find("projectBrowserEntries"), std::string::npos);
   EXPECT_NE(

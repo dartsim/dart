@@ -187,6 +187,8 @@ struct PanelContext
     Eigen::Vector3d eye = Eigen::Vector3d::Zero();
     Eigen::Vector3d target = Eigen::Vector3d::Zero();
     Eigen::Vector3d up = Eigen::Vector3d::UnitZ();
+    OrbitCamera orbit;
+    std::function<void(const OrbitCamera&)> setOrbitCamera;
   };
 
   struct LightingState

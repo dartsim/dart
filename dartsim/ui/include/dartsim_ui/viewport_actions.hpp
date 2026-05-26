@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/gui/gizmo.hpp>
+#include <dart/gui/viewer.hpp>
 
 #include <dart/dynamics/fwd.hpp>
 
@@ -40,6 +41,10 @@
 #include <Eigen/Geometry>
 #include <dartsim_engine/scene_object.hpp>
 #include <dartsim_engine/sim_engine.hpp>
+
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace dartsim::ui {
 
@@ -65,6 +70,37 @@ struct ViewportTransformGizmo
   ObjectId object = kNoObject;
 };
 
+/// Camera workflow command exposed by the View menu.
+enum class ViewportCameraActionKind
+{
+  FitScene,
+  FocusSelection,
+  Perspective,
+  Front,
+  Back,
+  Left,
+  Right,
+  Top,
+  Bottom,
+};
+
+/// View-menu action state for camera workflow controls.
+struct ViewportCameraAction
+{
+  ViewportCameraActionKind kind = ViewportCameraActionKind::FitScene;
+  std::string label;
+  bool enabled = true;
+  std::string disabledReason;
+};
+
+/// Result of applying a camera workflow command.
+struct ViewportCameraActionResult
+{
+  bool ok = false;
+  std::string message;
+  std::optional<dart::gui::OrbitCamera> camera;
+};
+
 /// Resolve a movement request into a world-space delta.
 [[nodiscard]] Eigen::Vector3d viewportMoveDelta(const ViewportMoveInput& input);
 
@@ -85,5 +121,15 @@ bool applyViewportTransformGizmo(
     SimEngine& engine,
     ViewportTransformGizmo& state,
     const Eigen::Isometry3d& transform);
+
+/// Build renderer-neutral camera workflow commands for the current scene.
+[[nodiscard]] std::vector<ViewportCameraAction> buildViewportCameraActions(
+    const SimEngine& engine);
+
+/// Compute the camera requested by a workflow command.
+[[nodiscard]] ViewportCameraActionResult applyViewportCameraAction(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    ViewportCameraActionKind kind);
 
 } // namespace dartsim::ui

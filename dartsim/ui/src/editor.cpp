@@ -357,15 +357,43 @@ void applyProjectPathModal(EditorApp& app)
   }
 }
 
-void openProjectFromProjectBrowser(EditorApp& app)
+void openProjectFromNativeDialog(EditorApp& app)
 {
   if (app.engine.isProjectDirty()) {
     app.note("Unsaved changes");
     return;
   }
 
-  requestProjectPathModal(
-      app, ProjectFileDialogKind::Open, "Choose a .dartsim file to open");
+  const ProjectFileDialogResult selection = nativeProjectFileDialog(
+      makeProjectFileDialogRequest(app, ProjectFileDialogKind::Open));
+  switch (selection.status) {
+    case ProjectFileDialogStatus::Selected:
+      if (selection.path.empty()) {
+        app.note("Open canceled");
+        return;
+      }
+      {
+        const ProjectActionResult result = openProject(
+            app.engine, selection.path, DirtyProjectPolicy::Discard);
+        app.note(result.message);
+        if (!result.ok) {
+          requestProjectPathModal(
+              app, ProjectFileDialogKind::Open, result.message, selection.path);
+        }
+      }
+      return;
+    case ProjectFileDialogStatus::Canceled:
+      app.note("Open canceled");
+      return;
+    case ProjectFileDialogStatus::Failed: {
+      std::string message
+          = projectDialogFailureMessage(ProjectFileDialogKind::Open, selection);
+      message += ". Choose a .dartsim file below or enter a path.";
+      app.note(message);
+      requestProjectPathModal(app, ProjectFileDialogKind::Open, message);
+      return;
+    }
+  }
 }
 
 void saveProjectFromNativeDialog(EditorApp& app)
@@ -749,7 +777,23 @@ std::vector<dart::gui::KeyboardAction> makeViewportMoveActions(
   return actions;
 }
 
-void buildMenuBar(dart::gui::PanelBuilder& ui, EditorApp& app)
+void applyViewportCameraMenuAction(
+    EditorApp& app,
+    dart::gui::PanelContext& context,
+    ViewportCameraActionKind kind)
+{
+  const ViewportCameraActionResult result
+      = applyViewportCameraAction(app.engine, context.camera.orbit, kind);
+  app.note(result.message);
+  if (result.ok && result.camera.has_value() && context.camera.setOrbitCamera) {
+    context.camera.setOrbitCamera(*result.camera);
+  }
+}
+
+void buildMenuBar(
+    dart::gui::PanelBuilder& ui,
+    EditorApp& app,
+    dart::gui::PanelContext& context)
 {
   if (!ui.beginMenuBar()) {
     ui.text("dartsim editor");
@@ -760,7 +804,7 @@ void buildMenuBar(dart::gui::PanelBuilder& ui, EditorApp& app)
       app.note(newProject(app.engine).message);
     }
     if (ui.menuItem("Open Project...")) {
-      openProjectFromProjectBrowser(app);
+      openProjectFromNativeDialog(app);
     }
     if (ui.menuItem("Save Project")) {
       if (app.engine.hasProjectPath()) {
@@ -816,6 +860,19 @@ void buildMenuBar(dart::gui::PanelBuilder& ui, EditorApp& app)
       }
       if (ui.menuItem(label)) {
         app.note(applySimulationModeAction(app.engine, action.kind).message);
+      }
+    }
+    ui.endMenu();
+  }
+  if (ui.beginMenu("View")) {
+    for (const ViewportCameraAction& action :
+         buildViewportCameraActions(app.engine)) {
+      std::string label = action.label;
+      if (!action.enabled && !action.disabledReason.empty()) {
+        label += " (" + action.disabledReason + ")";
+      }
+      if (ui.menuItem(label) && action.enabled) {
+        applyViewportCameraMenuAction(app, context, action.kind);
       }
     }
     ui.endMenu();
@@ -1055,7 +1112,7 @@ int runEditor(int argc, char* argv[])
       dart::gui::DockSide::Top,
       [app](dart::gui::PanelBuilder& ui, dart::gui::PanelContext& context) {
         app->projectDialogParentWindow = context.nativeWindow;
-        buildMenuBar(ui, *app);
+        buildMenuBar(ui, *app, context);
         buildProjectPathModal(ui, *app);
       }));
   options.panels.push_back(makePanel(
