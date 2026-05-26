@@ -168,6 +168,7 @@ We ship a [pixi](https://pixi.sh) environment for contributors. Pixi installs ev
    pixi run build                 # cmake --build … --target all
    pixi run build-tests           # builds the C++ test targets
    pixi run test                  # ctest -LE simulation-experimental
+   pixi run -e cuda test-cuda     # optional CUDA smoke path; Linux CUDA host
    pixi run test-all              # helper script that runs lint + build + tests
    ```
 

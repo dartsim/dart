@@ -84,6 +84,12 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   declared outside the core `dart/` subtree. In-tree consumers expect linked
   DART libraries under `${DART_BINARY_DIR}/lib`; see
   [build-system.md](build-system.md#optional-component-output-directories).
+- Example links fail with a missing optional DART library after the component is
+  intentionally disabled: confirm the example only registers itself when every
+  required CMake target exists. CI can build examples with optional components
+  such as `DART_BUILD_SIMULATION_EXPERIMENTAL` turned `OFF`, so target guards
+  belong before `dart_add_example()` or `dart_build_gui_example()` registers the
+  executable.
 - Unit test crashes or segfaults: isolate the failing test from job logs, reproduce locally, and add a regression for the edge case.
 - Job logs are missing or return 404: re-run the single job and/or download the run-level logs archive to inspect failures.
 - Infrastructure failures (runner connectivity lost, self-hosted runner issues): re-run only the failed jobs with `gh run rerun <RUN_ID> --failed`.
@@ -229,6 +235,7 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 | `ci_windows.yml`     | Build, test           | Windows        | PR, main/release push, schedule     | Yes           |
 | `ci_freebsd.yml`     | Build, test (VM)      | FreeBSD        | Schedule, manual                    | N/A           |
 | `ci_altlinux.yml`    | Build, test (Docker)  | Alt Linux      | PR, schedule, manual                | N/A           |
+| `ci_cuda.yml`        | CUDA compile + smoke  | Ubuntu/GPU     | PR path-scoped compile; manual GPU  | N/A           |
 | `ci_gz_physics.yml`  | Gazebo integration    | Ubuntu         | Branch push core; PR/main full      | Yes           |
 | `ci_simd.yml`        | SIMD multi-arch       | Ubuntu         | Branch/PR path-scoped, manual       | N/A           |
 | `publish_dartpy.yml` | Python wheels         | Multi-platform | PR, main/release/tag push, schedule | Yes           |
@@ -242,9 +249,9 @@ project's continuous validation surface.
 | ------------------------- | --------------------- | --------------------------------------------------------------------------------------- |
 | Core branch push          | No                    | Lint, Ubuntu core release tests, gz-physics compatibility, path-scoped SIMD             |
 | Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, gz-physics compatibility, baseline dartpy wheels |
-| Conditional PR            | When affected         | SIMD-only CI, path-filtered platform jobs for code changes                              |
+| Conditional PR            | When affected         | SIMD-only CI, CUDA compile CI, path-filtered platform jobs for code changes             |
 | Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags    |
-| Scheduled/manual coverage | No                    | FreeBSD VM, repeated full matrix, maintenance lockfile updates                          |
+| Scheduled/manual coverage | No                    | FreeBSD VM, CUDA runtime smoke, repeated full matrix, maintenance lockfile updates      |
 
 Guardrails:
 
@@ -258,6 +265,13 @@ Guardrails:
 - Keep at least one dartpy wheel per supported OS in PR CI. Expanded Python
   version coverage can run on `main`, release tags, schedules, and manual
   dispatch.
+- For hardware-gated accelerator paths, split hosted compile coverage from
+  runtime smoke coverage. PR CI should validate toolkit resolution and CUDA
+  targets on a runner that exists in the normal matrix when possible; runtime
+  jobs that require a special self-hosted label should stay manual and
+  non-required until an online runner with that label is consistently
+  available. If a hardware job remains queued, check runner labels before
+  treating the queue as a code failure.
 - Run the full dartpy wheel matrix when `publish_dartpy.yml` itself changes so
   workflow edits validate both PR and continuous wheel tiers before merge.
 - Require stable aggregate check names for variable CI matrices. For dartpy

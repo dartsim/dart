@@ -413,6 +413,9 @@ const std::filesystem::path kDartsimApplicationDirectory
 const std::filesystem::path kDartsimUiDirectory
     = std::filesystem::path("dartsim") / "ui";
 
+const std::filesystem::path kDartGuiDirectory
+    = std::filesystem::path("dart") / "gui";
+
 struct BackendTokenViolation
 {
   std::filesystem::path source;
@@ -1009,6 +1012,9 @@ TEST(FilamentSceneExtraction, PanelBuilderSupportsRendererNeutralControls)
     builder.slider("Gain", gain, 0.0, 2.0);
     builder.colorEdit("Tint", tint);
     builder.colorSwatch("Tint swatch", tint);
+    int selectedMode = 0;
+    constexpr std::array<std::string_view, 2> modes{"Edit", "Simulation"};
+    builder.select("Mode", selectedMode, modes);
     constexpr std::array<double, 3> trend{0.0, 1.0, 0.5};
     builder.plotLines("Trend", trend);
     constexpr std::array<std::string_view, 2> columns{"Name", "Value"};
@@ -1420,6 +1426,45 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresDebugLabels)
   EXPECT_EQ(sceneLabels.front().text, "AABB 0");
   EXPECT_TRUE(
       sceneLabels.front().position.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+}
+
+TEST(FilamentSceneExtraction, ApplicationOptionsStoresRenderableSelectionBridge)
+{
+  dart::gui::ApplicationOptions options;
+  options.world = World::create("renderable_selection_bridge_scene");
+  options.selectedRenderableProvider = [] {
+    return dart::gui::RenderableSelection{42u, "selected object"};
+  };
+
+  dart::gui::RenderableId callbackId = 0;
+  options.onRenderableSelected = [&callbackId](dart::gui::RenderableId id) {
+    callbackId = id;
+  };
+
+  ASSERT_TRUE(options.selectedRenderableProvider);
+  const dart::gui::RenderableSelection selection
+      = options.selectedRenderableProvider();
+  EXPECT_EQ(selection.id, 42u);
+  EXPECT_EQ(selection.label, "selected object");
+  ASSERT_TRUE(options.onRenderableSelected);
+  options.onRenderableSelected(24u);
+  EXPECT_EQ(callbackId, 24u);
+
+  dart::gui::detail::AppOptions appOptions;
+  appOptions.world = options.world;
+  appOptions.selectedRenderableProvider = options.selectedRenderableProvider;
+  appOptions.onRenderableSelected = options.onRenderableSelected;
+  const dart::gui::detail::DartScene scene
+      = dart::gui::detail::createDartScene(appOptions);
+
+  ASSERT_TRUE(scene.selectedRenderableProvider);
+  const dart::gui::RenderableSelection sceneSelection
+      = scene.selectedRenderableProvider();
+  EXPECT_EQ(sceneSelection.id, 42u);
+  EXPECT_EQ(sceneSelection.label, "selected object");
+  ASSERT_TRUE(scene.onRenderableSelected);
+  scene.onRenderableSelected(7u);
+  EXPECT_EQ(callbackId, 7u);
 }
 
 TEST(FilamentSceneExtraction, ApplicationOptionsStoresBodyNodeDragHandles)
@@ -4692,10 +4737,229 @@ TEST(FilamentSceneExtraction, DartsimSceneTreeSelectionUsesEngineFacade)
   EXPECT_EQ(
       editorSource.find("app.engine.selection().select(id)"),
       std::string::npos);
-  EXPECT_NE(editorSource.find("app.engine.select(id);"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("selectOutlinerObject(app.engine, row.id);"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("toggleOutlinerObjectSelection(app.engine, row.id)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("clearOutlinerSelection(app.engine)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("selectViewportRenderable(app->engine, renderableId)"),
+      std::string::npos);
 }
 
-TEST(FilamentSceneExtraction, DartsimRunModeUsesElapsedFrameSeconds)
+TEST(FilamentSceneExtraction, DartsimSceneTreeUsesOutlinerStateAndActions)
+{
+  const auto panelHeader = readSourceFile(kDartGuiDirectory / "panel.hpp");
+  const auto panelSource
+      = readSourceFile(kDartGuiDirectory / "detail/panel.cpp");
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_NE(
+      panelHeader.find("textInput(std::string_view label"), std::string::npos);
+  EXPECT_NE(panelSource.find("ImGui::InputText("), std::string::npos);
+  EXPECT_NE(editorSource.find("OutlinerState outliner"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("buildOutlinerRows(app.engine, app.outliner)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("toggleOutlinerExpanded(app.outliner"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("commitOutlinerRename(app.engine, app.outliner)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("buildOutlinerContextActions(app.engine, row.id)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("applyOutlinerContextAction("), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DartsimViewportTransformUsesActionSeam)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_NE(
+      editorSource.find("#include <dartsim_ui/viewport_actions.hpp>"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("options.gizmos.push_back(app->transformGizmo.gizmo)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("applyViewportTransformGizmo("), std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "options.keyboardActions = makeViewportMoveActions(app)"),
+      std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DartsimViewportCameraUsesActionSeam)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+  const auto panelHeader = readSourceFile(kDartGuiDirectory / "panel.hpp");
+  const auto uiFrameSource
+      = readSourceFile(kDartGuiDirectory / "detail" / "ui_frame.cpp");
+
+  EXPECT_NE(editorSource.find("ui.beginMenu(\"View\")"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("buildViewportCameraActions(app.engine)"),
+      std::string::npos);
+  EXPECT_NE(editorSource.find("applyViewportCameraAction("), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("context.camera.setOrbitCamera"), std::string::npos);
+  EXPECT_NE(
+      panelHeader.find(
+          "std::function<void(const OrbitCamera&)> setOrbitCamera"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("cameraController.camera = camera"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("resetOrbitCameraTracking(cameraController)"),
+      std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DartsimSimulationPanelUsesActionSeam)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_NE(
+      editorSource.find("#include <dartsim_ui/simulation_actions.hpp>"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "const SimulationStatus status = buildSimulationStatus"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("buildSimulationModeActions(app.engine)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("applySimulationModeAction(app.engine, action.kind)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.modeDescription)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.editStateLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("setSimulationRecording(app.engine, record)"),
+      std::string::npos);
+  EXPECT_EQ(
+      editorSource.find("app.engine.simulation().play()"), std::string::npos);
+  EXPECT_EQ(
+      editorSource.find("app.engine.simulation().pause()"), std::string::npos);
+  EXPECT_EQ(
+      editorSource.find("app.engine.simulation().step(1)"), std::string::npos);
+  EXPECT_EQ(
+      editorSource.find("app.engine.simulation().reset()"), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DartsimRelationshipMenuUsesActionSeam)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+  const auto cmakeSource
+      = readSourceFile(kDartsimUiDirectory / "CMakeLists.txt");
+
+  EXPECT_NE(
+      editorSource.find("#include <dartsim_ui/relationship_actions.hpp>"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("buildRelationshipActions(app.engine)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("applyRelationshipAction(app.engine, action.kind)"),
+      std::string::npos);
+  EXPECT_NE(
+      cmakeSource.find("src/relationship_actions.cpp"), std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DartsimProjectMenuUsesBrowserAndNativeDialogSeam)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+  const auto cmakeSource
+      = readSourceFile(kDartsimUiDirectory / "CMakeLists.txt");
+  const auto projectActionsHeader = readSourceFile(
+      kDartsimUiDirectory / "include" / "dartsim_ui" / "project_actions.hpp");
+  const auto projectDialogSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "project_file_dialog.cpp");
+  const auto panelHeader = readSourceFile(kDartGuiDirectory / "panel.hpp");
+  const auto uiFrameSource
+      = readSourceFile(kDartGuiDirectory / "detail" / "ui_frame.cpp");
+
+  EXPECT_NE(
+      editorSource.find("#include <dartsim_ui/project_file_dialog.hpp>"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.menuItem(\"Open Project...\")"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("openProjectFromNativeDialog(app)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("saveProjectFromNativeDialog(app)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("openProjectFromNativeDialog(EditorApp& app)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "makeProjectFileDialogRequest(app, ProjectFileDialogKind::Open)"),
+      std::string::npos);
+  EXPECT_NE(editorSource.find("requestProjectPathModal("), std::string::npos);
+  EXPECT_NE(editorSource.find("ui.button(\"Browse...\")"), std::string::npos);
+  EXPECT_NE(editorSource.find("projectBrowserEntries"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.button(\"Up##project-browser\")"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("nativeProjectFileDialog(request)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "request.parentNativeWindow = app.projectDialogParentWindow"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "app->projectDialogParentWindow = context.nativeWindow"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.menuItem(\"Save Project As...\")"),
+      std::string::npos);
+  EXPECT_EQ(
+      editorSource.find("app.engine.loadProject(\"scene.dartsim\")"),
+      std::string::npos);
+  EXPECT_EQ(
+      editorSource.find("app.engine.saveProject(\"scene.dartsim\")"),
+      std::string::npos);
+  EXPECT_NE(
+      cmakeSource.find("find_package(nfd CONFIG REQUIRED)"), std::string::npos);
+  EXPECT_NE(cmakeSource.find("src/project_file_dialog.cpp"), std::string::npos);
+  EXPECT_NE(cmakeSource.find("nfd::nfd"), std::string::npos);
+  EXPECT_NE(
+      projectActionsHeader.find("void* parentNativeWindow = nullptr"),
+      std::string::npos);
+  EXPECT_NE(
+      projectDialogSource.find(
+          "showNativeProjectFileDialog(request, filters, parent, &rawPath)"),
+      std::string::npos);
+  EXPECT_NE(projectDialogSource.find("NFD_ClearError()"), std::string::npos);
+  EXPECT_NE(
+      projectDialogSource.find(
+          "showNativeProjectFileDialog(request, filters, {}, &rawPath)"),
+      std::string::npos);
+  EXPECT_NE(
+      panelHeader.find("void* nativeWindow = nullptr"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find(
+          "window == nullptr ? nullptr : getNativeWindow(window)"),
+      std::string::npos);
+}
+
+TEST(FilamentSceneExtraction, DartsimSimulationModeUsesElapsedFrameSeconds)
 {
   const auto editorSource
       = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
@@ -4715,22 +4979,23 @@ TEST(FilamentSceneExtraction, DartsimRunModeUsesElapsedFrameSeconds)
       std::string::npos);
 }
 
-TEST(FilamentSceneExtraction, DartsimInspectorLocksEditsDuringRunMode)
+TEST(FilamentSceneExtraction, DartsimInspectorLocksEditsDuringSimulationMode)
 {
   const auto editorSource
       = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
 
   const auto inspectorStart = editorSource.find("void buildInspector");
   ASSERT_NE(inspectorStart, std::string::npos);
-  const auto canEditCheck
-      = editorSource.find("const bool canEdit = app.engine.canEditScene();");
+  const auto canEditCheck = editorSource.find(
+      "const InspectorStatus status = buildInspectorStatus(app.engine);");
   ASSERT_NE(canEditCheck, std::string::npos);
-  const auto lockGuard = editorSource.find("if (!canEdit)", canEditCheck);
+  const auto lockGuard = editorSource.find("if (status.locked)", canEditCheck);
   ASSERT_NE(lockGuard, std::string::npos);
   const auto lockMessage
-      = editorSource.find("Inspector locked during Run mode", lockGuard);
+      = editorSource.find("Inspector locked during Simulation Mode", lockGuard);
   ASSERT_NE(lockMessage, std::string::npos);
-  const auto firstSlider = editorSource.find("ui.slider(\"x\"", inspectorStart);
+  const auto firstSlider
+      = editorSource.find("ui.slider(property.label", inspectorStart);
   const auto deleteButton
       = editorSource.find("ui.button(\"Delete##inspector\")", inspectorStart);
   ASSERT_NE(firstSlider, std::string::npos);
@@ -4738,6 +5003,21 @@ TEST(FilamentSceneExtraction, DartsimInspectorLocksEditsDuringRunMode)
 
   EXPECT_LT(lockGuard, firstSlider);
   EXPECT_LT(lockGuard, deleteButton);
+}
+
+TEST(FilamentSceneExtraction, DartsimInspectorUsesEnumChoiceControls)
+{
+  const auto panelHeader = readSourceFile(kDartGuiDirectory / "panel.hpp");
+  const auto panelSource
+      = readSourceFile(kDartGuiDirectory / "detail" / "panel.cpp");
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_NE(panelHeader.find("select("), std::string::npos);
+  EXPECT_NE(panelSource.find("ImGui::BeginCombo("), std::string::npos);
+  EXPECT_NE(editorSource.find("status.enumProperties"), std::string::npos);
+  EXPECT_NE(editorSource.find("ui.select(property.label"), std::string::npos);
+  EXPECT_NE(editorSource.find("setInspectorEnumProperty("), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, DartsimApplicationKeepsOnlyMinimalCppEntryPoint)

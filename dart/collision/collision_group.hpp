@@ -36,6 +36,8 @@
 #include <dart/collision/collision_fwd.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
+#include <dart/collision/continuous_collision_option.hpp>
+#include <dart/collision/continuous_collision_result.hpp>
 #include <dart/collision/distance_option.hpp>
 #include <dart/collision/distance_result.hpp>
 #include <dart/collision/fwd.hpp>
@@ -45,6 +47,9 @@
 #include <dart/common/observer.hpp>
 
 #include <dart/export.hpp>
+
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 #include <span>
 #include <unordered_map>
@@ -302,6 +307,39 @@ public:
       const Eigen::Vector3d& to,
       const RaycastOption& option = RaycastOption(),
       RaycastResult* result = nullptr);
+
+  /// Performs a continuous sphere cast to this collision group.
+  ///
+  /// @param[in] start The sphere center at the beginning of the step.
+  /// @param[in] end The sphere center at the end of the step.
+  /// @param[in] radius The sphere radius.
+  /// @param[in] option The continuous collision option.
+  /// @param[in] result The continuous collision result.
+  /// @return True if the moving sphere hit a collision object.
+  bool sphereCast(
+      const Eigen::Vector3d& start,
+      const Eigen::Vector3d& end,
+      double radius,
+      const ContinuousCollisionOption& option = ContinuousCollisionOption(),
+      ContinuousCollisionResult* result = nullptr);
+
+  /// Performs a continuous capsule cast to this collision group.
+  ///
+  /// @param[in] capsuleStart The capsule transform at the beginning of the
+  /// step.
+  /// @param[in] capsuleEnd The capsule transform at the end of the step.
+  /// @param[in] radius The capsule radius.
+  /// @param[in] height The cylindrical-part height.
+  /// @param[in] option The continuous collision option.
+  /// @param[in] result The continuous collision result.
+  /// @return True if the moving capsule hit a collision object.
+  bool capsuleCast(
+      const Eigen::Isometry3d& capsuleStart,
+      const Eigen::Isometry3d& capsuleEnd,
+      double radius,
+      double height,
+      const ContinuousCollisionOption& option = ContinuousCollisionOption(),
+      ContinuousCollisionResult* result = nullptr);
 
   /// Set whether this CollisionGroup will automatically check for updates.
   void setAutomaticUpdate(bool automatic = true);

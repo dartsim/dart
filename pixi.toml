@@ -53,6 +53,7 @@ taplo = ">=0.10.0,<0.11"
 taskflow = ">=4.0.0,<5"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
+nativefiledialog-extended = ">=1.3.0,<2"
 
 [tasks]
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
@@ -73,6 +74,8 @@ if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
 DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
+DART_ENABLE_EXPERIMENTAL_CUDA_VALUE=${DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE:-OFF}
+DART_CUDA_ARCHITECTURES_VALUE=${DART_CUDA_ARCHITECTURES:-}
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_FILAMENT_PLATFORM_DEFAULT=OFF
@@ -97,6 +100,7 @@ if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   unset DART_COMPILER_CACHE
   unset CMAKE_C_COMPILER_LAUNCHER
   unset CMAKE_CXX_COMPILER_LAUNCHER
+  unset CMAKE_CUDA_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -115,6 +119,13 @@ fi
 if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
+  if [ -n "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ]; then
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CUDA_COMPILER_LAUNCHER}"
+  elif [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+  fi
+fi
 NANOBIND_CMAKE_DIR=$(python -m nanobind --cmake_dir)
 cmake \
   -G Ninja \
@@ -125,6 +136,8 @@ cmake \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
+  -DDART_ENABLE_EXPERIMENTAL_CUDA=${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE} \
+  -DDART_CUDA_ARCHITECTURES=${DART_CUDA_ARCHITECTURES_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
   -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
@@ -165,7 +178,7 @@ lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 lint-simulation-experimental = { cmd = """
-    find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' \\) -print0 | xargs -0 clang-format -i --style=file
+    find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' -o -name '*.cuh' -o -name '*.cu' \\) -print0 | xargs -0 clang-format -i --style=file
 """ }
 
 lint-collision-native = { cmd = """
@@ -227,7 +240,7 @@ check-lint-cpp = { cmd = """
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
 check-lint-simulation-experimental = { cmd = """
-    find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' \\) | xargs clang-format --dry-run --Werror --style=file
+    find dart/simulation/experimental tests/unit/simulation/experimental tests/benchmark/simulation/experimental -type f \\( -name '*.hpp' -o -name '*.cpp' -o -name '*.cuh' -o -name '*.cu' \\) | xargs clang-format --dry-run --Werror --style=file
 """ }
 
 check-lint-py = { cmd = """
@@ -325,6 +338,8 @@ if [ -z "$DART_BUILD_DARTPY_VALUE" ]; then
   DART_BUILD_DARTPY_VALUE="{{ dartpy }}"
 fi
 DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
+DART_ENABLE_EXPERIMENTAL_CUDA_VALUE=${DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE:-OFF}
+DART_CUDA_ARCHITECTURES_VALUE=${DART_CUDA_ARCHITECTURES:-}
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_FILAMENT_PLATFORM_DEFAULT=OFF
@@ -349,6 +364,7 @@ if [ "${SCCACHE_GHA_ENABLED:-}" = "false" ]; then
   unset DART_COMPILER_CACHE
   unset CMAKE_C_COMPILER_LAUNCHER
   unset CMAKE_CXX_COMPILER_LAUNCHER
+  unset CMAKE_CUDA_COMPILER_LAUNCHER
 fi
 if [ -z "${CMAKE_C_COMPILER_LAUNCHER:-}" ]; then
   if [ "${SCCACHE_GHA_ENABLED:-}" != "false" ] \
@@ -367,6 +383,13 @@ fi
 if [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
   LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CXX_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
 fi
+if [ "${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE}" = "ON" ]; then
+  if [ -n "${CMAKE_CUDA_COMPILER_LAUNCHER:-}" ]; then
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CUDA_COMPILER_LAUNCHER}"
+  elif [ -n "${CMAKE_CXX_COMPILER_LAUNCHER:-}" ]; then
+    LAUNCHER_DEFS="$LAUNCHER_DEFS -DCMAKE_CUDA_COMPILER_LAUNCHER=${CMAKE_CXX_COMPILER_LAUNCHER}"
+  fi
+fi
 cmake \
   -G Ninja \
   -S . \
@@ -376,6 +399,8 @@ cmake \
   -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
   -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
   -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
+  -DDART_ENABLE_EXPERIMENTAL_CUDA=${DART_ENABLE_EXPERIMENTAL_CUDA_VALUE} \
+  -DDART_CUDA_ARCHITECTURES=${DART_CUDA_ARCHITECTURES_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
   -DDART_BUILD_COLLISION_REFERENCE_BENCHMARKS=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE} \
   -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
@@ -481,6 +506,26 @@ CMAKE_BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE} python scripts/cm
   ] },
 ], args = [
   { arg = "dartpy", default = "ON" },
+  { arg = "build_type", default = "Release" },
+] }
+
+build-cuda = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE={{ build_type }}
+BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
+CMAKE_BUILD_DIR=${BUILD_DIR} python scripts/cmake_build.py \
+  --target test_rigid_body_state_batch_cuda \
+  --target bm_cuda_rigid_body_state_batch
+""",
+], depends-on = [
+  { task = "config", args = [
+    "OFF",
+    "{{ build_type }}",
+  ] },
+], args = [
   { arg = "build_type", default = "Release" },
 ] }
 
@@ -738,6 +783,26 @@ test-simulation-experimental = { cmd = [
   { arg = "build_type", default = "Release" },
 ] }
 
+test-cuda = { cmd = [
+  "bash",
+  "-lc",
+  """
+set -euo pipefail
+BUILD_TYPE={{ build_type }}
+BUILD_DIR=build/$PIXI_ENVIRONMENT_NAME/cpp/${BUILD_TYPE}
+ctest --test-dir "${BUILD_DIR}" --output-on-failure -L simulation-experimental-cuda
+"${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
+  --benchmark_filter='BM_(CpuSingleThread|CpuMulticore|CudaResident)RigidBodyStateBatchLinearRollout/4/256/1$' \
+  --benchmark_min_time=0.001s
+""",
+], depends-on = [
+  { task = "build-cuda", args = [
+    "{{ build_type }}",
+  ] },
+], args = [
+  { arg = "build_type", default = "Release" },
+] }
+
 test-math = { cmd = """
     ctest \
         --test-dir build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
@@ -815,6 +880,8 @@ PIXI_ENVIRONMENT_NAME=${PIXI_ENVIRONMENT_NAME:-default}
 rm -rf "build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
 echo "Configuring coverage build directory: build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE"
 DART_CODECOV_TEMP_DIR=${DART_CODECOV_TEMP_DIR:-build/$PIXI_ENVIRONMENT_NAME/cpp/coverage_temp}
+DART_BUILD_DARTPY_VALUE=${DART_BUILD_DARTPY_OVERRIDE:-OFF}
+DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE=${DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE:-ON}
 DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE=${DART_BUILD_COLLISION_REFERENCE_TESTS_OVERRIDE:-OFF}
 DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_VALUE=${DART_BUILD_COLLISION_REFERENCE_BENCHMARKS_OVERRIDE:-OFF}
 DART_DISABLE_COMPILER_CACHE_VALUE=${DART_DISABLE_COMPILER_CACHE:-OFF}
@@ -857,6 +924,9 @@ cmake \
     -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
     -DDART_BUILD_PROFILE=OFF \
+    -DDART_BUILD_DARTPY=${DART_BUILD_DARTPY_VALUE} \
+    -DDART_BUILD_SIMULATION_EXPERIMENTAL=${DART_BUILD_SIMULATION_EXPERIMENTAL_VALUE} \
+    -DDART_BUILD_GUI=${DART_BUILD_GUI_VALUE} \
     -DDART_DISABLE_COMPILER_CACHE=${DART_DISABLE_COMPILER_CACHE_VALUE} \
     -DDART_CODECOV=ON \
     -DDART_BUILD_COLLISION_REFERENCE_TESTS=${DART_BUILD_COLLISION_REFERENCE_TESTS_VALUE} \
@@ -864,6 +934,7 @@ cmake \
     -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
     -DDART_USE_SYSTEM_GOOGLETEST=ON \
     -DDART_USE_SYSTEM_IMGUI=ON \
+    -DDART_FETCH_FILAMENT=${DART_FETCH_FILAMENT_VALUE} \
     -DDART_USE_SYSTEM_TRACY=OFF \
     -DDART_VERBOSE=$DART_VERBOSE \
     $LAUNCHER_DEFS
@@ -910,6 +981,17 @@ lcov \
     --output-file coverage.info \
 && lcov --list coverage.info
 """], depends-on = ["build-coverage"], env = { BUILD_TYPE = "Debug" } }
+
+coverage-report-dartsim = { cmd = ["bash", "-lc", """
+set -euo pipefail
+lcov \
+    --extract coverage.info \
+    '*/dartsim/engine/*' \
+    '*/dartsim/ui/include/dartsim_ui/*_actions.hpp' \
+    '*/dartsim/ui/src/*_actions.cpp' \
+    --output-file coverage-dartsim.info \
+&& lcov --list coverage-dartsim.info
+"""], depends-on = ["coverage-report"], env = { BUILD_TYPE = "Debug" } }
 
 # Shared helper to build a target and run the produced binary. Defaults to a Release build;
 # run the matching config task manually before using other build types.
@@ -2123,6 +2205,35 @@ bullet-cpp = ">=3.25,<4"
 fcl = ">=0.7.0,<0.8"
 libode = ">=0.16.6,<0.17"
 
+#=============
+# Feature: CUDA
+#=============
+#
+# Opt-in experimental CUDA support for internal simulation-experimental smoke
+# tests and benchmarks. CUDA stays out of the default environment and public API.
+#
+# Usage:
+#   pixi run -e cuda test-cuda
+#
+
+[feature.cuda]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[feature.cuda.activation.env]
+DART_ENABLE_EXPERIMENTAL_CUDA_OVERRIDE = "ON"
+DART_BUILD_DARTPY_OVERRIDE = "OFF"
+DART_BUILD_GUI_OVERRIDE = "OFF"
+DART_BUILD_EXAMPLES_OVERRIDE = "OFF"
+DART_BUILD_TUTORIALS_OVERRIDE = "OFF"
+DART_FETCH_FILAMENT_OVERRIDE = "OFF"
+
+[feature.cuda.dependencies]
+cuda-version = "12.9.*"
+cuda-nvcc = "12.9.*"
+cuda-cudart-dev = "12.9.*"
+cuda-driver-dev = "12.9.*"
+
 #=================
 # Feature: Gazebo
 #=================
@@ -2651,6 +2762,7 @@ wheel-repair = { depends-on = [
 [environments]
 default = ["py-default"]
 collision-reference = ["py-default", "collision-reference"]
+cuda = ["py-default", "cuda"]
 gazebo = ["gazebo"]
 py312-wheel = ["py312-wheel"]
 py313-wheel = ["py313-wheel"]

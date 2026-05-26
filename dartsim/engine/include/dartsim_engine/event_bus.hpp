@@ -50,9 +50,12 @@ enum class EventType
 {
   SceneChanged,     ///< Objects added/removed/edited (topology or properties).
   SelectionChanged, ///< The selection set or primary selection changed.
-  ModeChanged,      ///< Edit/Run mode or running state changed.
+  ModeChanged,      ///< Edit/Simulation mode or running state changed.
   RecordingChanged, ///< Recording started/stopped or a frame was captured.
+  ProjectCreated,   ///< A new project replaced the current scene.
+  ProjectSaved,     ///< The current project was saved.
   ProjectLoaded,    ///< A project was loaded, replacing the scene.
+  ProjectStateChanged, ///< Project path or dirty/clean state changed.
 };
 
 /// A single broadcast event. `object` is set when the event concerns one node.

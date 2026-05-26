@@ -349,6 +349,7 @@ dart_build_tests(
   SOURCES
     math/lie_group/test_so3.cpp
     math/lie_group/test_se3.cpp
+    math/lie_group/test_group_product.cpp
     math/lie_group/test_spatial_inertia.cpp
     math/lie_group/test_forward_kinematics.cpp
     math/lie_group/test_batch.cpp
@@ -457,6 +458,11 @@ endif()
 # Headless dartsim editor engine tests (links the dartsim_engine library).
 if(TARGET dartsim_engine)
   add_subdirectory(dartsim_engine)
+endif()
+
+# Testable dartsim UI action/view-model helpers.
+if(TARGET dartsim_ui)
+  add_subdirectory(dartsim_ui)
 endif()
 
 # ==============================================================================

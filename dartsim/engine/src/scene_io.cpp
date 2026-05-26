@@ -36,12 +36,14 @@
 #include <dartsim_engine/scene_model.hpp>
 #include <dartsim_engine/scene_object.hpp>
 
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <ios>
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <system_error>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -347,6 +349,11 @@ bool saveToFile(const std::string& path, const SceneModel& model)
 
 bool loadFromFile(const std::string& path, SceneModel& out)
 {
+  std::error_code error;
+  if (!std::filesystem::is_regular_file(std::filesystem::path(path), error)) {
+    return false;
+  }
+
   std::ifstream file(path, std::ios::binary);
   if (!file) {
     return false;

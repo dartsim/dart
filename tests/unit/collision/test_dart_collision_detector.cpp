@@ -7,6 +7,8 @@
 #include <dart/collision/collision_object.hpp>
 #include <dart/collision/collision_option.hpp>
 #include <dart/collision/collision_result.hpp>
+#include <dart/collision/continuous_collision_option.hpp>
+#include <dart/collision/continuous_collision_result.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/dart/dart_collision_detector.hpp>
 #include <dart/collision/dart/dart_collision_group.hpp>
@@ -621,6 +623,108 @@ TEST(DartCollisionDetector, RaycastWorksForSphere)
   const bool hit = group->raycast(from, to, option, &result);
   EXPECT_TRUE(hit);
   EXPECT_TRUE(result.hasHit());
+}
+
+TEST(DartCollisionDetector, SphereCastReportsPublicContinuousHit)
+{
+  auto detector = DartCollisionDetector::create();
+  auto sphere = std::make_shared<SphereShape>(0.5);
+  auto setup = makeShapeSetup("sphere", sphere);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 3.0);
+  FreeJoint::setTransformOf(setup.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setup.shapeNode);
+
+  ContinuousCollisionOption option;
+  ContinuousCollisionResult result;
+
+  const Eigen::Vector3d start(0.0, 0.0, 0.0);
+  const Eigen::Vector3d end(0.0, 0.0, 6.0);
+  const bool hit = group->sphereCast(start, end, 0.25, option, &result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mHits.size(), 1u);
+  const auto& ccdHit = result.mHits[0];
+  ASSERT_NE(ccdHit.mCollisionObject, nullptr);
+  EXPECT_EQ(setup.shapeNode, ccdHit.mCollisionObject->getShapeFrame());
+  EXPECT_GT(ccdHit.mTimeOfImpact, 0.0);
+  EXPECT_LT(ccdHit.mTimeOfImpact, 1.0);
+}
+
+TEST(DartCollisionDetector, SphereCastHonorsPublicFilter)
+{
+  auto detector = DartCollisionDetector::create();
+  auto nearSetup = makeShapeSetup("near", std::make_shared<SphereShape>(0.5));
+  auto farSetup = makeShapeSetup("far", std::make_shared<SphereShape>(0.5));
+
+  Eigen::Isometry3d nearTf = Eigen::Isometry3d::Identity();
+  nearTf.translation() = Eigen::Vector3d(0.0, 0.0, 3.0);
+  FreeJoint::setTransformOf(nearSetup.body, nearTf);
+
+  Eigen::Isometry3d farTf = Eigen::Isometry3d::Identity();
+  farTf.translation() = Eigen::Vector3d(0.0, 0.0, 5.0);
+  FreeJoint::setTransformOf(farSetup.body, farTf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(nearSetup.shapeNode);
+  group->addShapeFrame(farSetup.shapeNode);
+
+  ContinuousCollisionOption option;
+  option.mFilter = [&](const CollisionObject* object) {
+    return object && object->getShapeFrame() != nearSetup.shapeNode;
+  };
+
+  ContinuousCollisionResult result;
+  const bool hit = group->sphereCast(
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 0.0, 6.0),
+      0.25,
+      option,
+      &result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mHits.size(), 1u);
+  ASSERT_NE(result.mHits[0].mCollisionObject, nullptr);
+  EXPECT_EQ(
+      farSetup.shapeNode, result.mHits[0].mCollisionObject->getShapeFrame());
+}
+
+TEST(DartCollisionDetector, CapsuleCastReportsPublicContinuousHit)
+{
+  auto detector = DartCollisionDetector::create();
+  auto sphere = std::make_shared<SphereShape>(0.5);
+  auto setup = makeShapeSetup("sphere", sphere);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 4.0);
+  FreeJoint::setTransformOf(setup.body, tf);
+
+  auto group = detector->createCollisionGroup();
+  group->addShapeFrame(setup.shapeNode);
+
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.translation() = Eigen::Vector3d(0.0, 0.0, 8.0);
+
+  ContinuousCollisionResult result;
+  const bool hit = group->capsuleCast(
+      capsuleStart,
+      capsuleEnd,
+      0.25,
+      1.0,
+      ContinuousCollisionOption(),
+      &result);
+
+  ASSERT_TRUE(hit);
+  ASSERT_TRUE(result.hasHit());
+  ASSERT_EQ(result.mHits.size(), 1u);
+  ASSERT_NE(result.mHits[0].mCollisionObject, nullptr);
+  EXPECT_EQ(setup.shapeNode, result.mHits[0].mCollisionObject->getShapeFrame());
 }
 
 TEST(DartCollisionDetector, RaycastWorksForHeightmap)

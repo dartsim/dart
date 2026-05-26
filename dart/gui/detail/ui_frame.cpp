@@ -34,6 +34,7 @@
 #include <dart/gui/detail/frame_viewport.hpp>
 #include <dart/gui/detail/imgui_overlay.hpp>
 #include <dart/gui/detail/input.hpp>
+#include <dart/gui/detail/native_window.hpp>
 #include <dart/gui/detail/panel.hpp>
 #include <dart/gui/detail/perf_hud.hpp>
 #include <dart/gui/detail/scenes.hpp>
@@ -302,7 +303,7 @@ void updateFrameUi(
     const FrameViewport& viewport,
     ExampleScene exampleScene,
     DartScene& dartScene,
-    const dart::gui::OrbitCameraController& cameraController,
+    dart::gui::OrbitCameraController& cameraController,
     const SelectionController& selectionController,
     bool& orbitLight,
     bool& headlightsEnabled,
@@ -362,10 +363,19 @@ void updateFrameUi(
       selectionController.selectedNormal(),
       dartScene.world->getTime(),
       dartScene.world->getLastCollisionResult().getNumContacts(),
-      {cameraBasis.eye, cameraController.camera.target, cameraBasis.up},
+      {cameraBasis.eye,
+       cameraController.camera.target,
+       cameraBasis.up,
+       cameraController.camera,
+       [&cameraController](const dart::gui::OrbitCamera& camera) {
+         cameraController.camera = camera;
+         dart::gui::resetOrbitCameraTracking(cameraController);
+       }},
       {&headlightsEnabled},
       {&dartScene.renderSettings},
       uiState};
+  panelContext.nativeWindow
+      = window == nullptr ? nullptr : getNativeWindow(window);
   const bool debugOptionsChanged = renderBuiltInStatusPanel(
       sceneName(exampleScene),
       panelContext.simulationTime,

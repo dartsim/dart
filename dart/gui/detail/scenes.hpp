@@ -80,6 +80,8 @@ struct DartScene
   dart::gui::RenderSettings renderSettings;
   std::function<std::vector<dart::gui::RenderableDescriptor>()>
       renderableProvider;
+  std::function<dart::gui::RenderableSelection()> selectedRenderableProvider;
+  std::function<void(dart::gui::RenderableId)> onRenderableSelected;
   bool dockingEnabled = false;
   /// Set once after the default dock layout has been applied (or skipped
   /// because a saved layout exists). Runtime-only; not copied from AppOptions.
@@ -142,6 +144,8 @@ struct AppOptions
   std::vector<dart::gui::KeyboardAction> keyboardActions;
   std::function<std::vector<dart::gui::RenderableDescriptor>()>
       renderableProvider;
+  std::function<dart::gui::RenderableSelection()> selectedRenderableProvider;
+  std::function<void(dart::gui::RenderableId)> onRenderableSelected;
   bool dockingEnabled = false;
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;

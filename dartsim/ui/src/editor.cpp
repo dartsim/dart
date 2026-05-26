@@ -43,14 +43,26 @@
 #include <dartsim_engine/selection_manager.hpp>
 #include <dartsim_engine/sim_engine.hpp>
 #include <dartsim_engine/simulation_controller.hpp>
+#include <dartsim_ui/console_actions.hpp>
 #include <dartsim_ui/editor.hpp>
+#include <dartsim_ui/inspector_actions.hpp>
+#include <dartsim_ui/outliner_actions.hpp>
+#include <dartsim_ui/palette_actions.hpp>
+#include <dartsim_ui/project_actions.hpp>
+#include <dartsim_ui/project_file_dialog.hpp>
+#include <dartsim_ui/relationship_actions.hpp>
+#include <dartsim_ui/simulation_actions.hpp>
+#include <dartsim_ui/viewport_actions.hpp>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -67,6 +79,17 @@ struct EditorApp
   double replayFrame = 0.0;
   std::chrono::steady_clock::time_point lastRunFrameTime;
   bool haveRunFrameTime = false;
+  OutlinerState outliner;
+  ViewportTransformGizmo transformGizmo = makeViewportTransformGizmo();
+  ProjectFileDialogKind projectPathKind = ProjectFileDialogKind::Open;
+  bool projectPathModalOpen = false;
+  bool projectPathModalRequested = false;
+  std::string projectPath = kDefaultProjectPath;
+  std::string projectPathStatus;
+  std::filesystem::path projectBrowserDirectory;
+  std::string projectBrowserStatus;
+  std::string consoleInput;
+  void* projectDialogParentWindow = nullptr;
 
   void note(const std::string& message)
   {
@@ -94,23 +117,323 @@ struct EditorApp
   }
 };
 
-const char* typeLabel(ObjectType type)
+std::string ensureProjectExtension(std::string path)
 {
-  switch (type) {
-    case ObjectType::RigidBody:
-      return "RigidBody";
-    case ObjectType::MultiBody:
-      return "MultiBody";
-    case ObjectType::Link:
-      return "Link";
-    case ObjectType::Joint:
-      return "Joint";
-    case ObjectType::FreeFrame:
-      return "FreeFrame";
-    case ObjectType::FixedFrame:
-      return "FixedFrame";
+  if (std::filesystem::path(path).extension().empty()) {
+    path += ".dartsim";
   }
-  return "Object";
+  return path;
+}
+
+std::string parentPathOrEmpty(const std::string& path)
+{
+  if (path.empty()) {
+    return {};
+  }
+  return std::filesystem::path(path).parent_path().string();
+}
+
+std::string filenameOrDefault(const std::string& path)
+{
+  if (path.empty()) {
+    return kDefaultProjectPath;
+  }
+  const std::string filename = std::filesystem::path(path).filename().string();
+  return filename.empty() ? kDefaultProjectPath : filename;
+}
+
+std::filesystem::path currentDirectory()
+{
+  std::error_code error;
+  std::filesystem::path path = std::filesystem::current_path(error);
+  return error ? std::filesystem::path(".") : path;
+}
+
+std::filesystem::path absolutePath(std::filesystem::path path)
+{
+  std::error_code error;
+  std::filesystem::path absolute = std::filesystem::absolute(path, error);
+  return error ? std::move(path) : absolute.lexically_normal();
+}
+
+std::filesystem::path projectBrowserDirectoryFor(const std::string& path)
+{
+  std::filesystem::path candidate(path);
+  if (candidate.empty()) {
+    candidate = currentDirectory();
+  }
+
+  std::error_code error;
+  if (!std::filesystem::is_directory(candidate, error)) {
+    candidate = candidate.parent_path();
+  }
+  if (candidate.empty()) {
+    candidate = currentDirectory();
+  }
+
+  candidate = absolutePath(candidate);
+  if (!std::filesystem::is_directory(candidate, error)) {
+    return absolutePath(currentDirectory());
+  }
+  return candidate;
+}
+
+struct ProjectBrowserEntry
+{
+  std::filesystem::path path;
+  std::string label;
+  bool directory = false;
+};
+
+std::vector<ProjectBrowserEntry> projectBrowserEntries(
+    const std::filesystem::path& directory, std::string& status)
+{
+  status.clear();
+  std::vector<ProjectBrowserEntry> entries;
+
+  std::error_code error;
+  std::filesystem::directory_iterator it(directory, error);
+  if (error) {
+    status = "Cannot read folder: " + error.message();
+    return entries;
+  }
+
+  const std::filesystem::directory_iterator end;
+  for (; it != end; it.increment(error)) {
+    if (error) {
+      status = "Cannot read folder: " + error.message();
+      break;
+    }
+    const std::filesystem::directory_entry& entry = *it;
+    std::error_code entryError;
+    const bool directoryEntry = entry.is_directory(entryError);
+    if (entryError) {
+      continue;
+    }
+
+    const std::filesystem::path path = entry.path();
+    if (!directoryEntry && path.extension() != ".dartsim") {
+      continue;
+    }
+
+    ProjectBrowserEntry browserEntry;
+    browserEntry.path = path;
+    browserEntry.directory = directoryEntry;
+    browserEntry.label = directoryEntry ? "[dir] " : "";
+    browserEntry.label += path.filename().string();
+    entries.push_back(std::move(browserEntry));
+  }
+
+  std::sort(
+      entries.begin(),
+      entries.end(),
+      [](const ProjectBrowserEntry& lhs, const ProjectBrowserEntry& rhs) {
+        if (lhs.directory != rhs.directory) {
+          return lhs.directory;
+        }
+        return lhs.label < rhs.label;
+      });
+
+  constexpr std::size_t kMaxProjectBrowserEntries = 48;
+  if (entries.size() > kMaxProjectBrowserEntries) {
+    entries.resize(kMaxProjectBrowserEntries);
+    status = "Showing first 48 project entries";
+  }
+
+  return entries;
+}
+
+std::string projectPathOrDefault(const SimEngine& engine)
+{
+  return engine.hasProjectPath() ? engine.projectPath() : kDefaultProjectPath;
+}
+
+std::string initialProjectModalPath(
+    const SimEngine& engine, ProjectFileDialogKind kind)
+{
+  if (kind == ProjectFileDialogKind::Open && !engine.hasProjectPath()) {
+    return {};
+  }
+  return projectPathOrDefault(engine);
+}
+
+std::string projectPathModalTitle(ProjectFileDialogKind kind)
+{
+  return kind == ProjectFileDialogKind::Open ? "Open Project"
+                                             : "Save Project As";
+}
+
+std::string projectDialogFailureMessage(
+    ProjectFileDialogKind kind, const ProjectFileDialogResult& result)
+{
+  std::string message = projectPathModalTitle(kind) + " dialog failed";
+  if (!result.error.empty()) {
+    message += ": ";
+    message += result.error;
+  }
+  return message;
+}
+
+ProjectFileDialogRequest makeProjectFileDialogRequest(
+    const EditorApp& app, ProjectFileDialogKind kind)
+{
+  const std::string path = projectPathOrDefault(app.engine);
+  ProjectFileDialogRequest request;
+  request.kind = kind;
+  request.defaultPath = parentPathOrEmpty(path);
+  request.defaultName = filenameOrDefault(path);
+  request.parentNativeWindow = app.projectDialogParentWindow;
+  return request;
+}
+
+void requestProjectPathModal(
+    EditorApp& app,
+    ProjectFileDialogKind kind,
+    std::string status = {},
+    std::string path = {})
+{
+  app.projectPathKind = kind;
+  app.projectPath = path.empty() ? initialProjectModalPath(app.engine, kind)
+                                 : std::move(path);
+  app.projectPathStatus = std::move(status);
+  app.projectBrowserDirectory = projectBrowserDirectoryFor(app.projectPath);
+  app.projectBrowserStatus.clear();
+  app.projectPathModalOpen = true;
+  app.projectPathModalRequested = true;
+}
+
+void browseProjectPath(EditorApp& app)
+{
+  ProjectFileDialogRequest request
+      = makeProjectFileDialogRequest(app, app.projectPathKind);
+  request.defaultPath = parentPathOrEmpty(app.projectPath);
+  request.defaultName = filenameOrDefault(app.projectPath);
+
+  const ProjectFileDialogResult selection = nativeProjectFileDialog(request);
+  switch (selection.status) {
+    case ProjectFileDialogStatus::Selected:
+      if (selection.path.empty()) {
+        app.projectPathStatus
+            = projectPathModalTitle(app.projectPathKind) + " canceled";
+      } else {
+        app.projectPath = selection.path;
+        app.projectBrowserDirectory
+            = projectBrowserDirectoryFor(app.projectPath);
+        app.projectBrowserStatus.clear();
+        app.projectPathStatus.clear();
+      }
+      break;
+    case ProjectFileDialogStatus::Canceled:
+      app.projectPathStatus
+          = projectPathModalTitle(app.projectPathKind) + " canceled";
+      break;
+    case ProjectFileDialogStatus::Failed:
+      app.projectPathStatus
+          = projectDialogFailureMessage(app.projectPathKind, selection);
+      if (app.projectPathKind == ProjectFileDialogKind::Open) {
+        app.projectPathStatus
+            += ". Choose a .dartsim file below or enter a path.";
+      }
+      break;
+  }
+}
+
+void applyProjectPathModal(EditorApp& app)
+{
+  ProjectActionResult result;
+  if (app.projectPathKind == ProjectFileDialogKind::Open) {
+    if (app.projectPath.empty()) {
+      app.projectPathStatus = "Choose a .dartsim file to open";
+      return;
+    }
+    result = openProject(app.engine, app.projectPath);
+  } else {
+    result = saveProjectAs(app.engine, ensureProjectExtension(app.projectPath));
+  }
+  app.note(result.message);
+  app.projectPathStatus = result.message;
+  if (result.ok) {
+    app.projectPathModalOpen = false;
+  }
+}
+
+void openProjectFromNativeDialog(EditorApp& app)
+{
+  if (app.engine.isProjectDirty()) {
+    app.note("Unsaved changes");
+    return;
+  }
+
+  const ProjectFileDialogResult selection = nativeProjectFileDialog(
+      makeProjectFileDialogRequest(app, ProjectFileDialogKind::Open));
+  switch (selection.status) {
+    case ProjectFileDialogStatus::Selected:
+      if (selection.path.empty()) {
+        app.note("Open canceled");
+        return;
+      }
+      {
+        const ProjectActionResult result = openProject(
+            app.engine, selection.path, DirtyProjectPolicy::Discard);
+        app.note(result.message);
+        if (!result.ok) {
+          requestProjectPathModal(
+              app, ProjectFileDialogKind::Open, result.message, selection.path);
+        }
+      }
+      return;
+    case ProjectFileDialogStatus::Canceled:
+      app.note("Open canceled");
+      return;
+    case ProjectFileDialogStatus::Failed: {
+      std::string message
+          = projectDialogFailureMessage(ProjectFileDialogKind::Open, selection);
+      message += ". Choose a .dartsim file below or enter a path.";
+      app.note(message);
+      requestProjectPathModal(app, ProjectFileDialogKind::Open, message);
+      return;
+    }
+  }
+}
+
+void saveProjectFromNativeDialog(EditorApp& app)
+{
+  const ProjectFileDialogResult selection = nativeProjectFileDialog(
+      makeProjectFileDialogRequest(app, ProjectFileDialogKind::Save));
+  switch (selection.status) {
+    case ProjectFileDialogStatus::Selected:
+      if (selection.path.empty()) {
+        app.note("Save canceled");
+        return;
+      }
+      {
+        const std::string path = ensureProjectExtension(selection.path);
+        const ProjectActionResult result = saveProjectAs(app.engine, path);
+        app.note(result.message);
+        if (!result.ok) {
+          requestProjectPathModal(
+              app, ProjectFileDialogKind::Save, result.message, selection.path);
+        }
+      }
+      return;
+    case ProjectFileDialogStatus::Canceled:
+      app.note("Save canceled");
+      return;
+    case ProjectFileDialogStatus::Failed: {
+      const std::string message
+          = projectDialogFailureMessage(ProjectFileDialogKind::Save, selection);
+      app.note(message);
+      requestProjectPathModal(app, ProjectFileDialogKind::Save, message);
+      return;
+    }
+  }
+}
+
+std::string primarySelectionName(const SimEngine& engine)
+{
+  const SceneObject* object
+      = engine.objects().model().find(engine.selection().primary());
+  return object == nullptr ? std::string() : object->name;
 }
 
 Eigen::Isometry3d makeTranslation(double x, double y, double z)
@@ -165,87 +488,158 @@ std::vector<dart::gui::RenderableDescriptor> toDescriptors(
   return descriptors;
 }
 
-void buildTreeNode(
-    dart::gui::PanelBuilder& ui, EditorApp& app, ObjectId id, int depth)
-{
-  const SceneObject* object = app.engine.objects().model().find(id);
-  if (object == nullptr) {
-    return;
-  }
-  std::string indent(static_cast<std::size_t>(depth) * 2u, ' ');
-  const bool selected = app.engine.selection().isSelected(id);
-  std::string label = indent + (selected ? "* " : "  ") + object->name + " ["
-                      + typeLabel(object->type) + "]##" + std::to_string(id);
-  if (ui.button(label)) {
-    app.engine.select(id);
-  }
-  for (const ObjectId child : app.engine.objects().model().childrenOf(id)) {
-    buildTreeNode(ui, app, child, depth + 1);
-  }
-}
-
 void buildSceneTree(dart::gui::PanelBuilder& ui, EditorApp& app)
 {
-  const SceneModel& model = app.engine.objects().model();
-  if (model.empty()) {
+  const std::vector<OutlinerRow> rows
+      = buildOutlinerRows(app.engine, app.outliner);
+  if (!app.engine.selection().empty()
+      && ui.button("Clear Selection##outliner-clear")) {
+    clearOutlinerSelection(app.engine);
+    syncViewportTransformGizmo(app.transformGizmo, app.engine);
+  }
+  if (rows.empty()) {
     ui.text("(empty world)");
     return;
   }
-  for (const ObjectId id : model.rootChildren()) {
-    buildTreeNode(ui, app, id, 0);
+  for (const OutlinerRow& row : rows) {
+    const std::string expansionLabel = outlinerExpansionButtonLabel(row);
+    if (!expansionLabel.empty()) {
+      if (ui.button(expansionLabel)) {
+        toggleOutlinerExpanded(app.outliner, app.engine, row.id);
+      }
+      ui.sameLine();
+    }
+
+    bool visible = row.visible;
+    if (ui.checkbox("##visible-" + std::to_string(row.id), visible)) {
+      if (setOutlinerVisibility(app.engine, row.id, visible)) {
+        app.note((visible ? "Shown " : "Hidden ") + row.name);
+      }
+    }
+    ui.sameLine();
+
+    if (row.renaming) {
+      std::string draft = app.outliner.renameDraft;
+      if (ui.textInput("##rename-" + std::to_string(row.id), draft)) {
+        updateOutlinerRenameDraft(app.outliner, draft);
+      }
+      ui.sameLine();
+      if (ui.button("OK##rename-" + std::to_string(row.id))) {
+        app.note(commitOutlinerRename(app.engine, app.outliner).message);
+      }
+      ui.sameLine();
+      if (ui.button("Cancel##rename-" + std::to_string(row.id))) {
+        app.note(cancelOutlinerRename(app.outliner).message);
+      }
+    } else {
+      const std::string toggleLabel
+          = (row.selected ? "-##outliner-selection-" : "+##outliner-selection-")
+            + std::to_string(row.id);
+      if (ui.button(toggleLabel)) {
+        toggleOutlinerObjectSelection(app.engine, row.id);
+        syncViewportTransformGizmo(app.transformGizmo, app.engine);
+      }
+      ui.sameLine();
+      if (ui.button(outlinerButtonLabel(row))) {
+        selectOutlinerObject(app.engine, row.id);
+        syncViewportTransformGizmo(app.transformGizmo, app.engine);
+      }
+      if (row.selected) {
+        for (const OutlinerContextAction& action :
+             buildOutlinerContextActions(app.engine, row.id)) {
+          if (action.kind == OutlinerContextActionKind::Show
+              || action.kind == OutlinerContextActionKind::Hide) {
+            continue;
+          }
+          ui.sameLine();
+          const std::string label
+              = action.label + "##outliner-context-" + std::to_string(row.id)
+                + "-" + std::to_string(static_cast<int>(action.kind));
+          if (ui.button(label)) {
+            app.note(applyOutlinerContextAction(
+                         app.engine, app.outliner, row.id, action.kind)
+                         .message);
+            syncViewportTransformGizmo(app.transformGizmo, app.engine);
+          }
+        }
+      }
+    }
   }
 }
 
 void buildInspector(dart::gui::PanelBuilder& ui, EditorApp& app)
 {
-  const ObjectId id = app.engine.selection().primary();
-  const SceneObject* object = app.engine.objects().model().find(id);
-  if (object == nullptr) {
+  const InspectorStatus status = buildInspectorStatus(app.engine);
+  if (!status.hasSelection) {
     ui.text("(no selection)");
     return;
   }
-  ui.text(std::string("Name: ") + object->name);
-  ui.text(std::string("Type: ") + typeLabel(object->type));
+  ui.text(status.selectionSummary);
+  ui.text((status.selectionCount > 1u ? "Primary: " : "Name: ") + status.name);
+  ui.text("Type: " + status.type);
 
-  const bool canEdit = app.engine.canEditScene();
-  if (!canEdit) {
-    ui.text("Inspector locked during Run mode");
+  if (status.locked) {
+    ui.text("Inspector locked during Simulation Mode");
     return;
   }
 
-  if (object->type == ObjectType::RigidBody) {
-    Eigen::Vector3d position = object->transform.translation();
-    double x = position.x();
-    double y = position.y();
-    double z = position.z();
-    bool moved = false;
-    moved |= ui.slider("x", x, -10.0, 10.0);
-    moved |= ui.slider("y", y, -10.0, 10.0);
-    moved |= ui.slider("z", z, -10.0, 10.0);
-    if (moved) {
-      app.engine.execute(commands::setTransform(id, makeTranslation(x, y, z)));
+  for (const InspectorEnumProperty& property : status.enumProperties) {
+    std::vector<std::string_view> choices;
+    choices.reserve(property.choices.size());
+    int selectedIndex = 0;
+    for (std::size_t i = 0; i < property.choices.size(); ++i) {
+      choices.push_back(property.choices[i].label);
+      if (property.choices[i].value == property.value) {
+        selectedIndex = static_cast<int>(i);
+      }
     }
-    double mass = object->mass;
-    if (ui.slider("mass", mass, 0.01, 100.0)) {
-      app.engine.execute(commands::setMass(id, mass));
+    if (ui.select(property.label, selectedIndex, choices)) {
+      const std::size_t choiceIndex = static_cast<std::size_t>(selectedIndex);
+      if (choiceIndex < property.choices.size()) {
+        app.note(
+            setInspectorEnumProperty(
+                app.engine, property.kind, property.choices[choiceIndex].value)
+                .message);
+      }
     }
-  } else if (
-      object->type == ObjectType::Link && object->parentLink != kNoObject) {
-    double q = object->jointPosition;
-    if (ui.slider("joint", q, -3.14159, 3.14159)) {
-      app.engine.execute(commands::setJointPosition(id, q));
+  }
+
+  for (const InspectorNumericProperty& property : status.numericProperties) {
+    double value = property.value;
+    if (ui.slider(property.label, value, property.minimum, property.maximum)) {
+      app.note(setInspectorNumericProperty(app.engine, property.kind, value)
+                   .message);
+    }
+  }
+  if (status.colorProperty.has_value()) {
+    Eigen::Vector4d color = status.colorProperty->rgba;
+    if (ui.colorEdit(status.colorProperty->label, color)) {
+      app.note(setInspectorShapeColor(app.engine, color).message);
     }
   }
 
   ui.separator();
-  if (ui.button("Delete##inspector")) {
-    app.engine.execute(commands::removeObject(id));
-    app.note("Deleted object");
+  if (status.canDelete && ui.button("Delete##inspector")) {
+    app.note(deleteInspectorSelection(app.engine).message);
   }
 }
 
 void buildConsole(dart::gui::PanelBuilder& ui, EditorApp& app)
 {
+  ui.textInput("Command", app.consoleInput);
+  ui.sameLine();
+  if (ui.button("Run##console")) {
+    if (!app.consoleInput.empty()) {
+      app.note("> " + app.consoleInput);
+      app.note(applyConsoleCommand(app.engine, app.consoleInput).message);
+      app.consoleInput.clear();
+    }
+  }
+  if (ui.button("Help##console")) {
+    app.note(consoleCommandHelpText());
+  }
+  ui.separator();
+
   const auto& entries = app.engine.logger().entries();
   const std::size_t count = entries.size();
   const std::size_t start = count > 14 ? count - 14 : 0;
@@ -256,51 +650,48 @@ void buildConsole(dart::gui::PanelBuilder& ui, EditorApp& app)
 
 void buildSimControls(dart::gui::PanelBuilder& ui, EditorApp& app)
 {
-  SimulationController& sim = app.engine.simulation();
+  const SimulationStatus status = buildSimulationStatus(app.engine);
 
-  ui.text(
-      sim.mode() == SimulationController::Mode::Run ? "Mode: Run"
-                                                    : "Mode: Edit");
-  ui.text("Sim time: " + std::to_string(sim.simTime()));
-  ui.text("Frame: " + std::to_string(sim.frameCount()));
+  ui.text("Mode: " + status.modeLabel);
+  ui.text(status.modeDescription);
+  ui.text(status.editStateLabel);
+  ui.text("Playback: " + status.playbackLabel);
+  ui.text("Reset target: " + status.resetTargetLabel);
+  ui.text("Sim time: " + std::to_string(status.simTime));
+  ui.text("Frame: " + std::to_string(status.frameCount));
   ui.separator();
 
-  if (ui.button("Play")) {
-    sim.play();
-    app.note("Play");
+  const std::vector<SimulationModeAction> modeActions
+      = buildSimulationModeActions(app.engine);
+  for (std::size_t i = 0; i < modeActions.size(); ++i) {
+    const SimulationModeAction& action = modeActions[i];
+    if (i > 0) {
+      ui.sameLine();
+    }
+    std::string label = action.label;
+    if (!action.enabled && !action.disabledReason.empty()) {
+      label += " (" + action.disabledReason + ")";
+    }
+    label += "##simulation-mode-" + std::to_string(i);
+    if (ui.button(label)) {
+      app.note(applySimulationModeAction(app.engine, action.kind).message);
+    }
   }
-  ui.sameLine();
-  if (ui.button("Pause")) {
-    sim.pause();
-    app.note("Pause");
-  }
-  ui.sameLine();
-  if (ui.button("Step")) {
-    sim.step(1);
-    app.note("Step");
-  }
-  ui.sameLine();
-  if (ui.button("Reset")) {
-    sim.reset();
-    app.note("Reset");
+
+  double realTimeFactor = status.realTimeFactor;
+  if (ui.slider("real-time factor", realTimeFactor, 0.0, 5.0)) {
+    app.note(setSimulationRealTimeFactor(app.engine, realTimeFactor).message);
   }
 
   ui.separator();
   // Drive the checkbox from engine state so it stays correct when the recorder
   // is reset elsewhere (e.g. loading a project clears any active recording).
-  bool record = app.engine.isRecording();
+  bool record = status.recording;
   if (ui.checkbox("Record", record)) {
-    if (record) {
-      app.engine.startRecording();
-      app.note("Recording started");
-    } else {
-      app.engine.stopRecording();
-      app.engine.loadRecordingIntoPlayer();
-      app.note("Recording stopped");
-    }
+    app.note(setSimulationRecording(app.engine, record).message);
   }
 
-  const std::size_t frames = app.engine.player().frameCount();
+  const std::size_t frames = status.replayFrameCount;
   if (frames > 0) {
     ui.text("Replay frames: " + std::to_string(frames));
     double maxIndex = static_cast<double>(frames - 1);
@@ -308,7 +699,8 @@ void buildSimControls(dart::gui::PanelBuilder& ui, EditorApp& app)
       app.replayFrame = maxIndex;
     }
     if (ui.slider("timeline", app.replayFrame, 0.0, maxIndex)) {
-      app.engine.replaySeek(static_cast<std::size_t>(app.replayFrame + 0.5));
+      const std::size_t frame = static_cast<std::size_t>(app.replayFrame + 0.5);
+      app.note(seekSimulationReplay(app.engine, frame).message);
     }
   }
 }
@@ -324,22 +716,105 @@ void advanceRunningSimulation(EditorApp& app)
   sim.advance(app.consumeRunFrameSeconds());
 }
 
-void buildMenuBar(dart::gui::PanelBuilder& ui, EditorApp& app)
+dart::gui::KeyboardAction makeViewportMoveAction(
+    std::string label,
+    dart::gui::KeyboardKey key,
+    ViewportMoveInput input,
+    const std::shared_ptr<EditorApp>& app)
+{
+  dart::gui::KeyboardAction action;
+  action.label = std::move(label);
+  action.shortcut = dart::gui::KeyboardShortcut::namedKey(key);
+  action.repeat = true;
+  action.callback = [app, input](dart::gui::KeyboardActionContext& context) {
+    if (!moveSelectedFromViewport(app->engine, input)) {
+      return;
+    }
+    syncViewportTransformGizmo(app->transformGizmo, app->engine);
+    if (context.lifecycle != nullptr) {
+      context.lifecycle->paused = true;
+    }
+    const std::string name = primarySelectionName(app->engine);
+    app->note(name.empty() ? "Moved selection" : "Moved " + name);
+  };
+  return action;
+}
+
+std::vector<dart::gui::KeyboardAction> makeViewportMoveActions(
+    const std::shared_ptr<EditorApp>& app)
+{
+  std::vector<dart::gui::KeyboardAction> actions;
+  actions.push_back(makeViewportMoveAction(
+      "Move selection left",
+      dart::gui::KeyboardKey::Left,
+      ViewportMoveInput{.left = true},
+      app));
+  actions.push_back(makeViewportMoveAction(
+      "Move selection right",
+      dart::gui::KeyboardKey::Right,
+      ViewportMoveInput{.right = true},
+      app));
+  actions.push_back(makeViewportMoveAction(
+      "Move selection forward",
+      dart::gui::KeyboardKey::Up,
+      ViewportMoveInput{.forward = true},
+      app));
+  actions.push_back(makeViewportMoveAction(
+      "Move selection backward",
+      dart::gui::KeyboardKey::Down,
+      ViewportMoveInput{.backward = true},
+      app));
+  actions.push_back(makeViewportMoveAction(
+      "Move selection up",
+      dart::gui::KeyboardKey::PageUp,
+      ViewportMoveInput{.up = true},
+      app));
+  actions.push_back(makeViewportMoveAction(
+      "Move selection down",
+      dart::gui::KeyboardKey::PageDown,
+      ViewportMoveInput{.down = true},
+      app));
+  return actions;
+}
+
+void applyViewportCameraMenuAction(
+    EditorApp& app,
+    dart::gui::PanelContext& context,
+    ViewportCameraActionKind kind)
+{
+  const ViewportCameraActionResult result
+      = applyViewportCameraAction(app.engine, context.camera.orbit, kind);
+  app.note(result.message);
+  if (result.ok && result.camera.has_value() && context.camera.setOrbitCamera) {
+    context.camera.setOrbitCamera(*result.camera);
+  }
+}
+
+void buildMenuBar(
+    dart::gui::PanelBuilder& ui,
+    EditorApp& app,
+    dart::gui::PanelContext& context)
 {
   if (!ui.beginMenuBar()) {
     ui.text("dartsim editor");
     return;
   }
   if (ui.beginMenu("File")) {
-    if (ui.menuItem("Save Project")) {
-      app.note(
-          app.engine.saveProject("scene.dartsim") ? "Saved scene.dartsim"
-                                                  : "Save failed");
+    if (ui.menuItem("New Project")) {
+      app.note(newProject(app.engine).message);
     }
-    if (ui.menuItem("Open Project")) {
-      app.note(
-          app.engine.loadProject("scene.dartsim") ? "Loaded scene.dartsim"
-                                                  : "Open failed");
+    if (ui.menuItem("Open Project...")) {
+      openProjectFromNativeDialog(app);
+    }
+    if (ui.menuItem("Save Project")) {
+      if (app.engine.hasProjectPath()) {
+        app.note(saveProject(app.engine).message);
+      } else {
+        saveProjectFromNativeDialog(app);
+      }
+    }
+    if (ui.menuItem("Save Project As...")) {
+      saveProjectFromNativeDialog(app);
     }
     ui.endMenu();
   }
@@ -350,41 +825,144 @@ void buildMenuBar(dart::gui::PanelBuilder& ui, EditorApp& app)
     if (ui.menuItem("Redo")) {
       app.note(app.engine.redo() ? "Redo" : "Nothing to redo");
     }
+    for (const RelationshipAction& action :
+         buildRelationshipActions(app.engine)) {
+      std::string label = action.label;
+      if (!action.enabled && !action.disabledReason.empty()) {
+        label += " (" + action.disabledReason + ")";
+      }
+      if (ui.menuItem(label)) {
+        app.note(applyRelationshipAction(app.engine, action.kind).message);
+        syncViewportTransformGizmo(app.transformGizmo, app.engine);
+      }
+    }
     ui.endMenu();
   }
   if (ui.beginMenu("Create")) {
-    if (ui.menuItem("Rigid Body (Box)")) {
-      app.engine.execute(
-          commands::addRigidBody(ShapeType::Box, makeTranslation(0, 0, 1)));
-      app.note("Added box");
-    }
-    if (ui.menuItem("Rigid Body (Sphere)")) {
-      app.engine.execute(
-          commands::addRigidBody(ShapeType::Sphere, makeTranslation(0, 0, 1)));
-      app.note("Added sphere");
-    }
-    if (ui.menuItem("MultiBody")) {
-      app.engine.execute(commands::addMultiBody());
-      app.note("Added multibody");
+    for (const PaletteAction& action : buildPaletteActions(app.engine)) {
+      std::string label = action.label;
+      if (!action.enabled && !action.disabledReason.empty()) {
+        label += " (" + action.disabledReason + ")";
+      }
+      if (ui.menuItem(label)) {
+        app.note(applyPaletteAction(app.engine, action.kind).message);
+        syncViewportTransformGizmo(app.transformGizmo, app.engine);
+      }
     }
     ui.endMenu();
   }
   if (ui.beginMenu("Simulate")) {
-    if (ui.menuItem("Play")) {
-      app.engine.simulation().play();
+    for (const SimulationModeAction& action :
+         buildSimulationModeActions(app.engine)) {
+      std::string label = action.label;
+      if (!action.enabled && !action.disabledReason.empty()) {
+        label += " (" + action.disabledReason + ")";
+      }
+      if (ui.menuItem(label)) {
+        app.note(applySimulationModeAction(app.engine, action.kind).message);
+      }
     }
-    if (ui.menuItem("Pause")) {
-      app.engine.simulation().pause();
-    }
-    if (ui.menuItem("Step")) {
-      app.engine.simulation().step(1);
-    }
-    if (ui.menuItem("Reset")) {
-      app.engine.simulation().reset();
+    ui.endMenu();
+  }
+  if (ui.beginMenu("View")) {
+    for (const ViewportCameraAction& action :
+         buildViewportCameraActions(app.engine)) {
+      std::string label = action.label;
+      if (!action.enabled && !action.disabledReason.empty()) {
+        label += " (" + action.disabledReason + ")";
+      }
+      if (ui.menuItem(label) && action.enabled) {
+        applyViewportCameraMenuAction(app, context, action.kind);
+      }
     }
     ui.endMenu();
   }
   ui.endMenuBar();
+}
+
+void buildProjectPathModal(dart::gui::PanelBuilder& ui, EditorApp& app)
+{
+  const std::string title = projectPathModalTitle(app.projectPathKind);
+  if (app.projectPathModalRequested) {
+    ui.openModal(title, app.projectPathModalOpen);
+    app.projectPathModalRequested = false;
+  }
+  if (!app.projectPathModalOpen) {
+    return;
+  }
+
+  if (!ui.beginModal(title, app.projectPathModalOpen)) {
+    return;
+  }
+
+  std::string path = app.projectPath;
+  if (ui.textInput("Project path", path)) {
+    app.projectPath = path;
+    app.projectBrowserDirectory = projectBrowserDirectoryFor(app.projectPath);
+  }
+  if (ui.button("Browse...")) {
+    browseProjectPath(app);
+  }
+  ui.sameLine();
+  const std::string primary
+      = app.projectPathKind == ProjectFileDialogKind::Open ? "Open" : "Save";
+  if (ui.button(primary)) {
+    applyProjectPathModal(app);
+  }
+  ui.sameLine();
+  if (ui.button("Cancel")) {
+    app.projectPathModalOpen = false;
+  }
+  if (!app.projectPathStatus.empty()) {
+    ui.separator();
+    ui.text(app.projectPathStatus);
+  }
+
+  ui.separator();
+  if (app.projectBrowserDirectory.empty()) {
+    app.projectBrowserDirectory = projectBrowserDirectoryFor(app.projectPath);
+  }
+  ui.text("Folder: " + app.projectBrowserDirectory.string());
+  if (ui.button("Up##project-browser")) {
+    const std::filesystem::path parent
+        = app.projectBrowserDirectory.parent_path();
+    if (!parent.empty()) {
+      app.projectBrowserDirectory = parent;
+      app.projectBrowserStatus.clear();
+    }
+  }
+  ui.sameLine();
+  if (ui.button("Refresh##project-browser")) {
+    app.projectBrowserStatus.clear();
+  }
+
+  std::string browserStatus;
+  const std::vector<ProjectBrowserEntry> entries
+      = projectBrowserEntries(app.projectBrowserDirectory, browserStatus);
+  app.projectBrowserStatus = std::move(browserStatus);
+  if (!app.projectBrowserStatus.empty()) {
+    ui.text(app.projectBrowserStatus);
+  }
+  if (entries.empty() && app.projectBrowserStatus.empty()) {
+    ui.text("(no project files)");
+  }
+  for (std::size_t i = 0; i < entries.size(); ++i) {
+    const ProjectBrowserEntry& entry = entries[i];
+    const std::string label
+        = entry.label + "##project-browser-entry-" + std::to_string(i);
+    if (!ui.button(label)) {
+      continue;
+    }
+    if (entry.directory) {
+      app.projectBrowserDirectory = entry.path;
+      app.projectBrowserStatus.clear();
+    } else {
+      app.projectPath = entry.path.string();
+      app.projectPathStatus.clear();
+    }
+  }
+
+  ui.endModal();
 }
 
 void seedDemoScene(EditorApp& app)
@@ -400,6 +978,7 @@ void seedDemoScene(EditorApp& app)
   const ObjectId base = app.engine.selection().primary();
   app.engine.execute(commands::addLink(arm, base, JointKind::Revolute));
   app.engine.commands().clearHistory();
+  app.engine.markProjectClean();
   app.note("dartsim editor ready");
 }
 
@@ -419,6 +998,26 @@ dart::gui::Panel makePanel(
   panel.autoResize = false;
   panel.dockSide = dockSide;
   panel.build = std::move(build);
+  return panel;
+}
+
+dart::gui::Panel makePanel(
+    std::string title,
+    bool menuBar,
+    std::array<double, 2> position,
+    std::array<double, 2> size,
+    dart::gui::DockSide dockSide,
+    std::function<void(dart::gui::PanelBuilder&, dart::gui::PanelContext&)>
+        build)
+{
+  dart::gui::Panel panel;
+  panel.title = std::move(title);
+  panel.menuBar = menuBar;
+  panel.initialPosition = position;
+  panel.initialSize = size;
+  panel.autoResize = false;
+  panel.dockSide = dockSide;
+  panel.buildWithContext = std::move(build);
   return panel;
 }
 
@@ -454,7 +1053,43 @@ int runEditor(int argc, char* argv[])
   options.renderableProvider = [app]() {
     return toDescriptors(app->engine.renderItems());
   };
+  options.selectedRenderableProvider = [app]() {
+    return dart::gui::RenderableSelection{
+        selectedViewportRenderable(app->engine),
+        selectedViewportLabel(app->engine)};
+  };
+  options.onRenderableSelected = [app](dart::gui::RenderableId renderableId) {
+    if (renderableId == 0) {
+      app->engine.select(kNoObject);
+      syncViewportTransformGizmo(app->transformGizmo, app->engine);
+      return;
+    }
+    if (!selectViewportRenderable(app->engine, renderableId)) {
+      return;
+    }
+    syncViewportTransformGizmo(app->transformGizmo, app->engine);
+    const ObjectId id = objectIdForRenderable(renderableId);
+    if (const SceneObject* object = app->engine.objects().model().find(id)) {
+      app->note("Selected " + object->name);
+    }
+  };
+  app->transformGizmo.gizmo.isVisible = [app]() {
+    return app->transformGizmo.object != kNoObject;
+  };
+  app->transformGizmo.gizmo.onChanged
+      = [app](const Eigen::Isometry3d& transform) {
+          if (!applyViewportTransformGizmo(
+                  app->engine, app->transformGizmo, transform)) {
+            return;
+          }
+          const std::string name = primarySelectionName(app->engine);
+          app->note(
+              name.empty() ? "Transformed selection" : "Transformed " + name);
+        };
+  options.gizmos.push_back(app->transformGizmo.gizmo);
+  options.keyboardActions = makeViewportMoveActions(app);
   options.preRender = [app]() {
+    syncViewportTransformGizmo(app->transformGizmo, app->engine);
     advanceRunningSimulation(*app);
   };
 
@@ -475,7 +1110,11 @@ int runEditor(int argc, char* argv[])
       {0.0, 0.0},
       {1280.0, 0.0},
       dart::gui::DockSide::Top,
-      [app](dart::gui::PanelBuilder& ui) { buildMenuBar(ui, *app); }));
+      [app](dart::gui::PanelBuilder& ui, dart::gui::PanelContext& context) {
+        app->projectDialogParentWindow = context.nativeWindow;
+        buildMenuBar(ui, *app, context);
+        buildProjectPathModal(ui, *app);
+      }));
   options.panels.push_back(makePanel(
       "Scene Tree",
       false,

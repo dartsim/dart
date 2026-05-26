@@ -338,6 +338,21 @@ class LieGroupBase;
 template <typename Derived>
 class TangentBase;
 
+template <typename Derived>
+class RnBase;
+template <typename Scalar, int N>
+class Rn;
+template <typename Derived>
+class RnInverse;
+template <typename Scalar>
+using R1 = Rn<Scalar, 1>;
+template <typename Scalar>
+using R2 = Rn<Scalar, 2>;
+template <typename Scalar>
+using R3 = Rn<Scalar, 3>;
+template <typename Scalar>
+using R6 = Rn<Scalar, 6>;
+
 template <typename Scalar>
 class SO3Base;
 template <typename Scalar>

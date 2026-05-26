@@ -720,6 +720,8 @@ DartScene createDartScene(const AppOptions& options)
     scene.simulateWorld = options.simulateWorld;
     scene.renderSettings = options.renderSettings;
     scene.renderableProvider = options.renderableProvider;
+    scene.selectedRenderableProvider = options.selectedRenderableProvider;
+    scene.onRenderableSelected = options.onRenderableSelected;
     scene.dockingEnabled = options.dockingEnabled;
     scene.gizmos = options.gizmos;
     scene.debugLabels = options.debugLabels;

@@ -128,6 +128,10 @@
     `SparseOccupancyGrid` storage. OctoMap is no longer discovered or linked by
     core DART libraries and remains available only to tests and benchmarks for
     reference comparisons.
+  - Added `dart::math::GroupProduct` for typed direct products of Lie groups
+    and additive `dart::math::Rn` factors for Euclidean joint coordinates,
+    including componentwise composition, inverse expressions, Eigen map support,
+    block-diagonal matrix views, and focused lie-group unit coverage.
   - Fixed Filament mesh material extraction so legacy textured meshes without
     PBR metalness import as dielectric surfaces, restoring visible Atlas
     texture detail in `dartsim`, `atlas_puppet`, and `atlas_simbicon`.
@@ -449,6 +453,9 @@
   - Removed the Filament GUI smoke CI job's distro libc++ package dependency and made its example runner use Pixi-provided libc++/libc++abi libraries when available.
   - Limited Codecov CI uploads to the generated `coverage.info` report so the uploader does not rescan gcov files after the coverage task has already produced lcov output.
   - Added support for assimp 6.x while maintaining backward compatibility with assimp 5.x
+  - Added opt-in CUDA smoke support for experimental simulation builds, including
+    a gated CMake option, Pixi CUDA environment, private SoA integration test and
+    benchmark coverage, and manual CUDA CI workflow.
 
 - Tooling and Docs
   - Added AI-native documentation architecture with AGENTS.md, module-specific guides, slash commands, and command sync automation. ([#2446](https://github.com/dartsim/dart/pull/2446), [#2447](https://github.com/dartsim/dart/pull/2447), [#2448](https://github.com/dartsim/dart/pull/2448), [#2449](https://github.com/dartsim/dart/pull/2449))
@@ -769,6 +776,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Replace crash-causing `DART_ASSERT` with `DART_WARN` + graceful recovery for non-finite transforms in Joint setters, BodyNode update pipeline, GenericJoint inertia propagation, and MJCF parser validation. ([gz-physics#861](https://github.com/gazebosim/gz-physics/issues/861), [gz-physics#862](https://github.com/gazebosim/gz-physics/issues/862))
 
 - Collision and Geometry
+  - Added public DART and dartpy continuous collision queries for swept sphere
+    and capsule casts, including detector/group options and results plus native
+    swept-AABB broad-phase pruning for world-level cast candidates.
   - Added IPC-class primitive continuous collision detection to the native
     collision backend: conservative, minimum-separation-aware point-triangle and
     edge-edge time-of-impact queries (additive conservative advancement) for

@@ -590,6 +590,18 @@ Examples are built in `build/.../bin/`:
 - `unified_loading`, `headless_simulation`, `speed_test`, and `csv_logger` -
   Maintained non-legacy examples
 
+Examples that depend on optional component libraries must guard on the required
+CMake targets before registering the executable. For example, a GUI example
+that also links `dart-simulation-experimental` should return early unless both
+`dart-gui` and `dart-simulation-experimental` exist; otherwise CI
+configurations that build examples while disabling that optional component can
+register an executable that later fails to link. Validate this class of change
+with the relevant disabled-component build, for example:
+
+```bash
+DART_BUILD_SIMULATION_EXPERIMENTAL_OVERRIDE=OFF pixi run build-examples ON Release
+```
+
 ### Tutorial Executables
 
 The legacy OpenSceneGraph tutorial executables were removed. The

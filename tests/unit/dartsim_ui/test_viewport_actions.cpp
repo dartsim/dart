@@ -1,0 +1,450 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <dart/dynamics/simple_frame.hpp>
+
+#include <Eigen/Geometry>
+#include <dartsim_engine/commands.hpp>
+#include <dartsim_engine/sim_engine.hpp>
+#include <dartsim_ui/outliner_actions.hpp>
+#include <dartsim_ui/palette_actions.hpp>
+#include <dartsim_ui/viewport_actions.hpp>
+#include <gtest/gtest.h>
+
+#include <limits>
+
+using namespace dartsim;
+
+namespace {
+
+Eigen::Isometry3d translation(double x, double y, double z)
+{
+  Eigen::Isometry3d t = Eigen::Isometry3d::Identity();
+  t.translation() = Eigen::Vector3d(x, y, z);
+  return t;
+}
+
+dart::gui::OrbitCamera testCamera()
+{
+  dart::gui::OrbitCamera camera;
+  camera.target = Eigen::Vector3d(10.0, 20.0, 30.0);
+  camera.yaw = -0.5;
+  camera.pitch = 0.25;
+  camera.distance = 12.0;
+  return camera;
+}
+
+} // namespace
+
+TEST(DartsimViewportActions, ViewportMoveDeltaUsesWorldAxesAndFastScale)
+{
+  ui::ViewportMoveInput input;
+  input.right = true;
+  input.forward = true;
+  input.down = true;
+  input.step = 0.25;
+  EXPECT_TRUE(
+      ui::viewportMoveDelta(input).isApprox(
+          Eigen::Vector3d(0.25, 0.25, -0.25)));
+
+  input.fast = true;
+  input.fastMultiplier = 3.0;
+  EXPECT_TRUE(
+      ui::viewportMoveDelta(input).isApprox(
+          Eigen::Vector3d(0.75, 0.75, -0.75)));
+
+  input.left = true;
+  input.backward = true;
+  input.up = true;
+  EXPECT_TRUE(ui::viewportMoveDelta(input).isApprox(Eigen::Vector3d::Zero()));
+
+  input.step = -1.0;
+  EXPECT_TRUE(ui::viewportMoveDelta(input).isApprox(Eigen::Vector3d::Zero()));
+
+  input.step = 0.25;
+  input.fastMultiplier = 0.0;
+  EXPECT_TRUE(ui::viewportMoveDelta(input).isApprox(Eigen::Vector3d::Zero()));
+}
+
+TEST(DartsimViewportActions, MoveSelectedFromViewportIsUndoable)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 3.0), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+
+  ui::ViewportMoveInput input;
+  input.left = true;
+  input.up = true;
+  input.step = 0.5;
+  EXPECT_TRUE(ui::moveSelectedFromViewport(engine, input));
+  ASSERT_NE(engine.objects().model().find(box), nullptr);
+  EXPECT_TRUE(
+      engine.objects().model().find(box)->transform.translation().isApprox(
+          Eigen::Vector3d(0.5, 2.0, 3.5)));
+
+  ASSERT_TRUE(engine.undo());
+  EXPECT_TRUE(
+      engine.objects().model().find(box)->transform.translation().isApprox(
+          Eigen::Vector3d(1.0, 2.0, 3.0)));
+
+  ASSERT_TRUE(engine.redo());
+  EXPECT_TRUE(
+      engine.objects().model().find(box)->transform.translation().isApprox(
+          Eigen::Vector3d(0.5, 2.0, 3.5)));
+}
+
+TEST(DartsimViewportActions, TransformGizmoTracksAndCommitsSelection)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Sphere, translation(0.0, 0.0, 1.0), "sphere"));
+  const ObjectId sphere = engine.selection().primary();
+  ASSERT_NE(sphere, kNoObject);
+
+  ui::ViewportTransformGizmo gizmo = ui::makeViewportTransformGizmo();
+  ASSERT_NE(gizmo.target, nullptr);
+  gizmo.target.reset();
+  EXPECT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine));
+  ASSERT_NE(gizmo.target, nullptr);
+  EXPECT_EQ(gizmo.object, sphere);
+  EXPECT_EQ(gizmo.gizmo.label, "sphere Transform");
+  EXPECT_TRUE(gizmo.target->getWorldTransform().translation().isApprox(
+      Eigen::Vector3d(0.0, 0.0, 1.0)));
+
+  Eigen::Isometry3d moved = translation(2.0, 0.5, 1.5);
+  moved.linear()
+      = Eigen::AngleAxisd(0.25, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  EXPECT_TRUE(ui::applyViewportTransformGizmo(engine, gizmo, moved));
+  ASSERT_NE(engine.objects().model().find(sphere), nullptr);
+  EXPECT_TRUE(
+      engine.objects().model().find(sphere)->transform.matrix().isApprox(
+          moved.matrix()));
+  EXPECT_TRUE(
+      gizmo.target->getWorldTransform().matrix().isApprox(moved.matrix()));
+
+  EXPECT_FALSE(ui::applyViewportTransformGizmo(engine, gizmo, moved));
+
+  ASSERT_TRUE(engine.undo());
+  EXPECT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine));
+  EXPECT_TRUE(
+      engine.objects().model().find(sphere)->transform.translation().isApprox(
+          Eigen::Vector3d(0.0, 0.0, 1.0)));
+}
+
+TEST(DartsimViewportActions, TransformGizmoRejectsUnsupportedHiddenAndRunMode)
+{
+  SimEngine engine;
+  ui::ViewportTransformGizmo gizmo = ui::makeViewportTransformGizmo();
+
+  engine.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = engine.selection().primary();
+  ASSERT_NE(arm, kNoObject);
+  EXPECT_FALSE(ui::syncViewportTransformGizmo(gizmo, engine));
+  EXPECT_EQ(gizmo.object, kNoObject);
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(0.0, 0.0, 1.0), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine));
+  ASSERT_TRUE(ui::setOutlinerVisibility(engine, box, false));
+  EXPECT_FALSE(ui::syncViewportTransformGizmo(gizmo, engine));
+  EXPECT_EQ(gizmo.object, kNoObject);
+
+  ASSERT_TRUE(ui::setOutlinerVisibility(engine, box, true));
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine));
+  engine.simulation().play();
+  EXPECT_FALSE(
+      ui::applyViewportTransformGizmo(
+          engine, gizmo, translation(1.0, 0.0, 1.0)));
+  EXPECT_TRUE(
+      engine.objects().model().find(box)->transform.translation().isApprox(
+          Eigen::Vector3d(0.0, 0.0, 1.0)));
+}
+
+TEST(DartsimViewportActions, BuildsCameraActionsFromVisibleSceneState)
+{
+  SimEngine engine;
+  const auto emptyActions = ui::buildViewportCameraActions(engine);
+  ASSERT_GE(emptyActions.size(), 2u);
+  EXPECT_EQ(emptyActions[0].kind, ui::ViewportCameraActionKind::FitScene);
+  EXPECT_FALSE(emptyActions[0].enabled);
+  EXPECT_EQ(emptyActions[0].disabledReason, "No visible objects");
+  EXPECT_EQ(emptyActions[1].kind, ui::ViewportCameraActionKind::FocusSelection);
+  EXPECT_FALSE(emptyActions[1].enabled);
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 3.0), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+
+  const auto visibleActions = ui::buildViewportCameraActions(engine);
+  ASSERT_GE(visibleActions.size(), 9u);
+  EXPECT_TRUE(visibleActions[0].enabled);
+  EXPECT_TRUE(visibleActions[1].enabled);
+
+  ASSERT_TRUE(ui::setOutlinerVisibility(engine, box, false));
+  const auto hiddenActions = ui::buildViewportCameraActions(engine);
+  EXPECT_FALSE(hiddenActions[0].enabled);
+  EXPECT_FALSE(hiddenActions[1].enabled);
+}
+
+TEST(DartsimViewportActions, FitSceneFramesAllVisibleRenderables)
+{
+  SimEngine engine;
+  const auto empty = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FitScene);
+  EXPECT_FALSE(empty.ok);
+  EXPECT_FALSE(empty.camera.has_value());
+  EXPECT_EQ(empty.message, "No visible objects");
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(-2.0, 0.0, 0.5), "left_box"));
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Sphere, translation(4.0, 2.0, 1.0), "right_sphere"));
+
+  const dart::gui::OrbitCamera current = testCamera();
+  const auto result = ui::applyViewportCameraAction(
+      engine, current, ui::ViewportCameraActionKind::FitScene);
+
+  ASSERT_TRUE(result.ok);
+  ASSERT_TRUE(result.camera.has_value());
+  EXPECT_EQ(result.message, "Fit scene");
+  EXPECT_NEAR(result.camera->target.x(), 1.0, 0.75);
+  EXPECT_NEAR(result.camera->target.y(), 1.0, 0.75);
+  EXPECT_NEAR(result.camera->target.z(), 0.75, 0.75);
+  EXPECT_EQ(result.camera->yaw, current.yaw);
+  EXPECT_EQ(result.camera->pitch, current.pitch);
+  EXPECT_GT(result.camera->distance, current.distance * 0.5);
+}
+
+TEST(DartsimViewportActions, FitSceneUsesFiniteBoundsForAllPrimitiveShapes)
+{
+  SimEngine engine;
+  ASSERT_TRUE(
+      ui::applyPaletteAction(
+          engine, ui::PaletteActionKind::AddGroundAndBoxExample)
+          .ok);
+  ASSERT_TRUE(
+      ui::applyPaletteAction(
+          engine, ui::PaletteActionKind::AddCylinderRigidBody)
+          .ok);
+  ASSERT_TRUE(
+      ui::applyPaletteAction(engine, ui::PaletteActionKind::AddCapsuleRigidBody)
+          .ok);
+
+  const auto result = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FitScene);
+
+  ASSERT_TRUE(result.ok);
+  ASSERT_TRUE(result.camera.has_value());
+  EXPECT_TRUE(result.camera->target.allFinite());
+  EXPECT_TRUE(std::isfinite(result.camera->distance));
+  EXPECT_GE(result.camera->distance, 0.8);
+  EXPECT_LE(result.camera->distance, 80.0);
+}
+
+TEST(DartsimViewportActions, FocusSelectionFramesOnlyVisibleSelectedObject)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(-8.0, 0.0, 0.5), "left_box"));
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Sphere, translation(3.0, 4.0, 2.0), "sphere"));
+  const ObjectId sphere = engine.selection().primary();
+  ASSERT_NE(sphere, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  const auto focused = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FocusSelection);
+  ASSERT_TRUE(focused.ok);
+  ASSERT_TRUE(focused.camera.has_value());
+  EXPECT_TRUE(
+      focused.camera->target.isApprox(Eigen::Vector3d(3.0, 4.0, 2.0), 1e-9));
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(ui::setOutlinerVisibility(engine, sphere, false));
+  const auto hidden = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FocusSelection);
+  EXPECT_FALSE(hidden.ok);
+  EXPECT_FALSE(hidden.camera.has_value());
+  EXPECT_EQ(hidden.message, "No visible selected object");
+}
+
+TEST(DartsimViewportActions, FocusSelectionFramesAllVisibleSelectedObjects)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(-5.0, 0.0, 0.5), "left_box"));
+  const ObjectId left = engine.selection().primary();
+  ASSERT_NE(left, kNoObject);
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Sphere, translation(5.0, 0.0, 0.5), "right_sphere"));
+  const ObjectId right = engine.selection().primary();
+  ASSERT_NE(right, kNoObject);
+
+  ASSERT_TRUE(engine.select(left, false));
+  ASSERT_TRUE(engine.select(right, true));
+  const auto focused = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FocusSelection);
+
+  ASSERT_TRUE(focused.ok);
+  ASSERT_TRUE(focused.camera.has_value());
+  EXPECT_NEAR(focused.camera->target.x(), 0.0, 0.75);
+  EXPECT_GT(focused.camera->distance, 10.0);
+}
+
+TEST(DartsimViewportActions, FocusSelectionCanFrameSelectedFrames)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addFreeFrame(translation(2.0, -3.0, 4.0), "target_frame"));
+  const ObjectId frame = engine.selection().primary();
+  ASSERT_NE(frame, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  const auto focused = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FocusSelection);
+  ASSERT_TRUE(focused.ok);
+  ASSERT_TRUE(focused.camera.has_value());
+  EXPECT_TRUE(focused.camera->target.isApprox(Eigen::Vector3d(2.0, -3.0, 4.0)));
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(ui::setOutlinerVisibility(engine, frame, false));
+  const auto hidden = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FocusSelection);
+  EXPECT_FALSE(hidden.ok);
+}
+
+TEST(DartsimViewportActions, FocusSelectionRejectsNonRenderableSelection)
+{
+  SimEngine engine;
+  const auto empty = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FocusSelection);
+  EXPECT_FALSE(empty.ok);
+  EXPECT_EQ(empty.message, "No visible selected object");
+
+  engine.execute(commands::addMultiBody("arm"));
+  const auto multibody = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FocusSelection);
+  EXPECT_FALSE(multibody.ok);
+  EXPECT_FALSE(multibody.camera.has_value());
+}
+
+TEST(DartsimViewportActions, CameraPresetsPreserveTargetAndDistance)
+{
+  const dart::gui::OrbitCamera current = testCamera();
+  SimEngine engine;
+
+  const auto front = ui::applyViewportCameraAction(
+      engine, current, ui::ViewportCameraActionKind::Front);
+  ASSERT_TRUE(front.ok);
+  ASSERT_TRUE(front.camera.has_value());
+  EXPECT_TRUE(front.camera->target.isApprox(current.target));
+  EXPECT_EQ(front.camera->distance, current.distance);
+  EXPECT_NEAR(front.camera->yaw, -3.14159265358979323846 * 0.5, 1e-12);
+  EXPECT_NEAR(front.camera->pitch, 0.0, 1e-12);
+  const dart::gui::OrbitCameraBasis frontBasis
+      = dart::gui::makeOrbitCameraBasis(*front.camera);
+  EXPECT_TRUE(frontBasis.forward.allFinite());
+  EXPECT_TRUE(frontBasis.right.allFinite());
+
+  const auto back = ui::applyViewportCameraAction(
+      engine, current, ui::ViewportCameraActionKind::Back);
+  ASSERT_TRUE(back.ok);
+  ASSERT_TRUE(back.camera.has_value());
+  EXPECT_NEAR(back.camera->yaw, 3.14159265358979323846 * 0.5, 1e-12);
+  EXPECT_NEAR(back.camera->pitch, 0.0, 1e-12);
+
+  const auto left = ui::applyViewportCameraAction(
+      engine, current, ui::ViewportCameraActionKind::Left);
+  ASSERT_TRUE(left.ok);
+  ASSERT_TRUE(left.camera.has_value());
+  EXPECT_NEAR(left.camera->yaw, 3.14159265358979323846, 1e-12);
+  EXPECT_NEAR(left.camera->pitch, 0.0, 1e-12);
+
+  const auto right = ui::applyViewportCameraAction(
+      engine, current, ui::ViewportCameraActionKind::Right);
+  ASSERT_TRUE(right.ok);
+  ASSERT_TRUE(right.camera.has_value());
+  EXPECT_NEAR(right.camera->yaw, 0.0, 1e-12);
+  EXPECT_NEAR(right.camera->pitch, 0.0, 1e-12);
+
+  const auto top = ui::applyViewportCameraAction(
+      engine, current, ui::ViewportCameraActionKind::Top);
+  ASSERT_TRUE(top.ok);
+  ASSERT_TRUE(top.camera.has_value());
+  EXPECT_TRUE(top.camera->target.isApprox(current.target));
+  EXPECT_EQ(top.camera->distance, current.distance);
+  EXPECT_NEAR(top.camera->pitch, 1.45, 1e-12);
+  const dart::gui::OrbitCameraBasis topBasis
+      = dart::gui::makeOrbitCameraBasis(*top.camera);
+  EXPECT_TRUE(topBasis.forward.allFinite());
+  EXPECT_TRUE(topBasis.right.allFinite());
+  EXPECT_GT(topBasis.right.norm(), 0.0);
+
+  const auto bottom = ui::applyViewportCameraAction(
+      engine, current, ui::ViewportCameraActionKind::Bottom);
+  ASSERT_TRUE(bottom.ok);
+  ASSERT_TRUE(bottom.camera.has_value());
+  EXPECT_NEAR(bottom.camera->pitch, -1.45, 1e-12);
+  const dart::gui::OrbitCameraBasis bottomBasis
+      = dart::gui::makeOrbitCameraBasis(*bottom.camera);
+  EXPECT_TRUE(bottomBasis.forward.allFinite());
+  EXPECT_TRUE(bottomBasis.right.allFinite());
+
+  dart::gui::OrbitCamera invalid = current;
+  invalid.target
+      = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
+  invalid.distance = -1.0;
+  const auto perspective = ui::applyViewportCameraAction(
+      engine, invalid, ui::ViewportCameraActionKind::Perspective);
+  ASSERT_TRUE(perspective.ok);
+  ASSERT_TRUE(perspective.camera.has_value());
+  EXPECT_TRUE(perspective.camera->target.isApprox(Eigen::Vector3d::Zero()));
+  EXPECT_GE(perspective.camera->distance, 0.8);
+}

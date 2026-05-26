@@ -55,6 +55,13 @@ public:
   using MatrixType = typename Base::MatrixType;
   using Params = typename Base::Params;
   using Tangent = typename Base::Tangent;
+  using RotationMap = typename ::Eigen::internal::traits<Derived>::RotationMap;
+  using ConstRotationMap =
+      typename ::Eigen::internal::traits<Derived>::ConstRotationMap;
+  using TranslationMap =
+      typename ::Eigen::internal::traits<Derived>::TranslationMap;
+  using ConstTranslationMap =
+      typename ::Eigen::internal::traits<Derived>::ConstTranslationMap;
 
   using Base::operator=;
   using Base::derived;
@@ -162,17 +169,16 @@ public:
   [[nodiscard]] MatrixType toMatrix() const;
 
   /// Returns the rotation
-  [[nodiscard]] const Eigen::Map<const SO3<Scalar>> rotation() const;
+  [[nodiscard]] const ConstRotationMap rotation() const;
 
   /// Returns the rotation
-  [[nodiscard]] Eigen::Map<SO3<Scalar>> rotation();
+  [[nodiscard]] RotationMap rotation();
 
   /// Returns the translation
-  [[nodiscard]] const Eigen::Map<const Eigen::Vector3<Scalar>> translation()
-      const;
+  [[nodiscard]] const ConstTranslationMap translation() const;
 
   /// Returns the translation
-  [[nodiscard]] Eigen::Map<Eigen::Vector3<Scalar>> translation();
+  [[nodiscard]] TranslationMap translation();
 
   /// Returns the x component of the orientation part in quaternion.
   [[nodiscard]] Scalar quat_x() const;
@@ -231,7 +237,7 @@ template <typename OtherDerived>
 typename SE3Base<Derived>::LieGroup SE3Base<Derived>::operator*(
     const LieGroupBase<OtherDerived>& other) const
 {
-  const Eigen::Map<const SO3<Scalar>>& o = rotation();
+  const auto o = rotation();
   return LieGroup(
       o * other.derived().rotation(),
       o * other.derived().translation() + translation());
@@ -316,33 +322,32 @@ typename SE3Base<Derived>::MatrixType SE3Base<Derived>::toMatrix() const
 
 //==============================================================================
 template <typename Derived>
-const Eigen::Map<const SO3<typename SE3Base<Derived>::Scalar>>
-SE3Base<Derived>::rotation() const
+const typename SE3Base<Derived>::ConstRotationMap SE3Base<Derived>::rotation()
+    const
 {
-  return Eigen::Map<const SO3<Scalar>>(params().data());
+  return detail::makeLieGroupMap<ConstRotationMap>(params());
 }
 
 //==============================================================================
 template <typename Derived>
-Eigen::Map<SO3<typename SE3Base<Derived>::Scalar>> SE3Base<Derived>::rotation()
+typename SE3Base<Derived>::RotationMap SE3Base<Derived>::rotation()
 {
-  return Eigen::Map<SO3<Scalar>>(params().data());
+  return detail::makeLieGroupMap<RotationMap>(params());
 }
 
 //==============================================================================
 template <typename Derived>
-const Eigen::Map<const Vector3<typename SE3Base<Derived>::Scalar>>
+const typename SE3Base<Derived>::ConstTranslationMap
 SE3Base<Derived>::translation() const
 {
-  return Eigen::Map<const Vector3<Scalar>>(params().data() + 4);
+  return detail::makeLieGroupMap<ConstTranslationMap>(params(), 4);
 }
 
 //==============================================================================
 template <typename Derived>
-Eigen::Map<Vector3<typename SE3Base<Derived>::Scalar>>
-SE3Base<Derived>::translation()
+typename SE3Base<Derived>::TranslationMap SE3Base<Derived>::translation()
 {
-  return Eigen::Map<Vector3<Scalar>>(params().data() + 4);
+  return detail::makeLieGroupMap<TranslationMap>(params(), 4);
 }
 
 //==============================================================================
