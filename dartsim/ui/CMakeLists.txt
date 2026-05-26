@@ -19,6 +19,7 @@ set(target_name dartsim_ui)
 find_package(nfd CONFIG REQUIRED)
 
 add_library(${target_name} STATIC
+  src/console_actions.cpp
   src/editor.cpp
   src/inspector_actions.cpp
   src/outliner_actions.cpp

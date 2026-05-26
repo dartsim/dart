@@ -98,6 +98,32 @@ std::string ensureProjectExtension(std::string path)
   return path;
 }
 
+std::string resolveOpenProjectPath(std::string path)
+{
+  if (path.empty()) {
+    return path;
+  }
+
+  const std::filesystem::path projectPath(path);
+  if (!projectPath.extension().empty()) {
+    return path;
+  }
+
+  std::error_code error;
+  if (std::filesystem::exists(projectPath, error) || error) {
+    return path;
+  }
+
+  std::string extended = path;
+  extended += ".dartsim";
+  if (std::filesystem::is_regular_file(std::filesystem::path(extended), error)
+      && !error) {
+    return extended;
+  }
+
+  return path;
+}
+
 std::string parentPathOrEmpty(const std::string& path)
 {
   if (path.empty()) {
@@ -182,6 +208,7 @@ ProjectActionResult openProject(
   if (shouldBlockDirtyProject(engine, dirtyPolicy)) {
     return {false, "Unsaved changes"};
   }
+  path = resolveOpenProjectPath(std::move(path));
   if (!engine.loadProject(path)) {
     return {false, makeOpenFailureMessage(path)};
   }

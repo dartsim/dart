@@ -146,6 +146,30 @@ TEST(DartsimProjectActions, OpenWithDialogUsesSelectedProjectPath)
   std::filesystem::remove(path);
 }
 
+TEST(DartsimProjectActions, OpenAcceptsExtensionlessProjectPath)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_project_actions_extensionless_open.dartsim";
+  const std::filesystem::path extensionless = path.parent_path() / path.stem();
+
+  SimEngine saved;
+  saved.execute(
+      commands::addRigidBody(ShapeType::Sphere, translation(1.0, 0.0, 1.0)));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  SimEngine engine;
+  const auto result = ui::openProject(engine, extensionless.string());
+
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Loaded " + path.string());
+  EXPECT_TRUE(engine.hasProjectPath());
+  EXPECT_EQ(engine.projectPath(), path.string());
+  EXPECT_EQ(engine.objects().model().size(), 1u);
+
+  std::filesystem::remove(path);
+}
+
 TEST(DartsimProjectActions, OpenWithDialogHandlesCancelFailureAndDirtyGuard)
 {
   SimEngine engine;

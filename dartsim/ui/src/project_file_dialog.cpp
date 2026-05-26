@@ -85,6 +85,33 @@ nfdwindowhandle_t nativeParentWindow(void* window)
   return parent;
 }
 
+nfdresult_t showNativeProjectFileDialog(
+    const ProjectFileDialogRequest& request,
+    const nfdu8filteritem_t* filters,
+    const nfdwindowhandle_t& parent,
+    nfdu8char_t** rawPath)
+{
+  if (request.kind == ProjectFileDialogKind::Open) {
+    nfdopendialogu8args_t args{};
+    args.filterList = filters;
+    args.filterCount = 2;
+    args.defaultPath
+        = request.defaultPath.empty() ? nullptr : request.defaultPath.c_str();
+    args.parentWindow = parent;
+    return NFD_OpenDialogU8_With(rawPath, &args);
+  }
+
+  nfdsavedialogu8args_t args{};
+  args.filterList = filters;
+  args.filterCount = 2;
+  args.defaultPath
+      = request.defaultPath.empty() ? nullptr : request.defaultPath.c_str();
+  args.defaultName = request.defaultName.empty() ? kDefaultProjectPath
+                                                 : request.defaultName.c_str();
+  args.parentWindow = parent;
+  return NFD_SaveDialogU8_With(rawPath, &args);
+}
+
 } // namespace
 
 ProjectFileDialogResult nativeProjectFileDialog(
@@ -109,32 +136,25 @@ ProjectFileDialogResult nativeProjectFileDialog(
   };
 
   nfdu8char_t* rawPath = nullptr;
+  const nfdwindowhandle_t parent
+      = nativeParentWindow(request.parentNativeWindow);
+  nfdresult_t result
+      = showNativeProjectFileDialog(request, filters, parent, &rawPath);
+  if (result == NFD_ERROR && parent.type != NFD_WINDOW_HANDLE_TYPE_UNSET) {
+    const std::string parentError = nativeDialogError("native dialog failed");
+    NFD_ClearError();
+    result = showNativeProjectFileDialog(request, filters, {}, &rawPath);
+    if (result == NFD_ERROR) {
+      return failedDialog(
+          parentError + "; retry without parent failed: "
+          + nativeDialogError("native dialog failed"));
+    }
+  }
+
   const auto freePath = [](nfdu8char_t* path) {
     NFD_FreePathU8(path);
   };
   std::unique_ptr<nfdu8char_t, decltype(freePath)> pathGuard(nullptr, freePath);
-
-  nfdresult_t result = NFD_ERROR;
-  if (request.kind == ProjectFileDialogKind::Open) {
-    nfdopendialogu8args_t args{};
-    args.filterList = filters;
-    args.filterCount = 2;
-    args.defaultPath
-        = request.defaultPath.empty() ? nullptr : request.defaultPath.c_str();
-    args.parentWindow = nativeParentWindow(request.parentNativeWindow);
-    result = NFD_OpenDialogU8_With(&rawPath, &args);
-  } else {
-    nfdsavedialogu8args_t args{};
-    args.filterList = filters;
-    args.filterCount = 2;
-    args.defaultPath
-        = request.defaultPath.empty() ? nullptr : request.defaultPath.c_str();
-    args.defaultName = request.defaultName.empty()
-                           ? kDefaultProjectPath
-                           : request.defaultName.c_str();
-    args.parentWindow = nativeParentWindow(request.parentNativeWindow);
-    result = NFD_SaveDialogU8_With(&rawPath, &args);
-  }
   pathGuard.reset(rawPath);
 
   if (result == NFD_OKAY) {
