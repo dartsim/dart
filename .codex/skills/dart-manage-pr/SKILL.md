@@ -81,6 +81,11 @@ gh pr checks <PR_NUMBER>
    - For bug fixes, verify the required `release-6.16` and `main` dual-PR flow.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
+   - When the PR has meaningful user-facing API, workflow, behavior, or
+     performance impact, confirm the body has a concise Before / After section
+     that compares the relevant old and new surfaces. For performance claims,
+     ensure the baseline is explicit: CPU path, parent commit, `main`, or prior
+     implementation, plus workload, metric, and important limitations.
    - For visual PR evidence, ensure transient screenshots, headless renders,
      GIFs, and videos are hosted as GitHub PR/issue Markdown attachments
      (`https://github.com/user-attachments/assets/...`) rather than committed to
