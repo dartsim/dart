@@ -827,6 +827,9 @@ ctest --test-dir "${BUILD_DIR}" --output-on-failure -L simulation-experimental-c
 "${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
   --benchmark_filter='BM_Phase5RigidBodyBatch(CpuBaseline|Gpu)/1024/128/10$' \
   --benchmark_min_time=1ms
+"${BUILD_DIR}/bin/bm_cuda_rigid_body_state_batch" \
+  --benchmark_filter='BM_(CpuSingleThread|CpuMulticore|CudaResident)RigidBodyStateBatchLinearRollout/4/256/1$' \
+  --benchmark_min_time=0.001s
 """,
 ], depends-on = [
   { task = "build-cuda", args = [

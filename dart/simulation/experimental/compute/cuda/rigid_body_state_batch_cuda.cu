@@ -179,7 +179,7 @@ cudaError_t launchRigidBodyStateBatchLinearKernel(
     return launchStatus;
   }
 
-  return cudaDeviceSynchronize();
+  return cudaSuccess;
 }
 
 //==============================================================================
@@ -217,7 +217,7 @@ cudaError_t launchRigidBodyStateBatchKernel(
     return launchStatus;
   }
 
-  return cudaDeviceSynchronize();
+  return cudaSuccess;
 }
 
 } // namespace dart::simulation::experimental::compute::cuda::detail

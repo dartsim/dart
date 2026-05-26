@@ -61,14 +61,15 @@ the Phase 5 CPU-baseline smoke row.
 
 ## Current Branch
 
-`feature/experimental-world-scalable-compute-cuda-reconcile` — clean local
-branch, merged through current `origin/main` (`4b6d07a162a`), with no associated
-PR yet. The branch reconciles the scalable-compute gates with the opt-in CUDA MVP
-from draft PR #2710. CUDA remains off by default and is enabled through the
-`cuda` Pixi environment or `DART_ENABLE_EXPERIMENTAL_CUDA=ON`; no GitHub
-mutation has been made from this branch. Because `.github/workflows/ci_cuda.yml`
-is new on this branch, GitHub cannot dispatch it until the workflow file exists
-on the default branch (or an equivalent default-branch workflow is installed).
+`feature/experimental-world-scalable-compute-cuda-reconcile` — PR #2712 branch,
+merged through current `origin/main` (`23372bf1942`). The branch layers the
+Phase 5 packet gates and full-batch benchmark contract on top of the merged
+opt-in CUDA smoke path from PR #2710. CUDA remains off by default and is enabled
+through the `cuda` Pixi environment or `DART_ENABLE_EXPERIMENTAL_CUDA=ON`.
+Because `.github/workflows/ci_cuda.yml` now exists on the default branch via
+PR #2710, maintainers can dispatch the workflow; this branch extends that
+workflow to run the Phase 5 packet gates and upload packet artifacts once a
+project-owned CUDA runner is available.
 
 ## Immediate Next Step
 
@@ -145,8 +146,9 @@ Keep `entt` internal and the public handle API unchanged.
     compute branch. The docs phase still emits the known generated-stub `None_`
     autodoc warnings, but the documentation build passes.
   - `pixi run -e cuda test-cuda` passed on a local CUDA host after reconciling
-    draft PR #2710 with this task's gates. It built the opt-in CUDA target, ran
-    `test_rigid_body_state_batch_cuda`, and ran the smoke benchmark rows
+    the merged PR #2710 CUDA path with this task's gates. It built the opt-in
+    CUDA target, ran `test_rigid_body_state_batch_cuda`, and ran the smoke
+    benchmark rows
     `BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10` and
     `BM_Phase5RigidBodyBatchGpu/1024/128/10`.
   - The local manual full Phase 5 row also ran successfully after the
@@ -211,11 +213,10 @@ python/tests/unit/test_run_performance_dashboard_benchmarks.py -q` passed
     runners labeled `self-hosted`, `Linux`, `X64`, `dartsim`, and `docker`, but
     no runner labeled `cuda`; the project-owned GPU runner prerequisite remains
     open.
-  - A read-only GitHub workflow check on 2026-05-25 reported
-    `workflow ci_cuda.yml not found on the default branch`; this is expected
-    until the new manual CUDA workflow lands on `origin/main` or an equivalent
-    default-branch workflow is installed.
-  - A direct parse of PR #2710's
+  - PR #2710 installed `.github/workflows/ci_cuda.yml` on the default branch;
+    PR #2712 extends it with the Phase 5 packet gates, full-row task, packet
+    checker, and artifact upload path.
+  - A direct parse of PR #2710's original
     `tests/benchmark/simulation/experimental/bm_cuda_rigid_body_state_batch.cpp`
     with `check_phase5_cuda_benchmark_contract.py` reported the expected two
     violations: missing `BM_Phase5RigidBodyBatchGpu` and missing the
@@ -257,9 +258,9 @@ the package shape, pre-registered go/no-go threshold, and
 policy gates, `bm-phase5-cuda-full`, packet writer, and packet checker, then
 uploads `.benchmark_results/phase5_cuda_ci_full.json` and
 `.benchmark_results/phase5_cuda_packet.json`; `check-phase5-cuda-workflow`
-guards that wiring locally. If continuing through draft PR #2710, first
-reconcile its opt-in CUDA benchmark/test names and Pixi feature shape with these
-gates, especially the `check-phase5-cuda-benchmark-contract` task, rather than
+guards that wiring locally. If changing the merged PR #2710 CUDA path, keep its
+opt-in benchmark/test names and Pixi feature shape reconciled with these gates,
+especially the `check-phase5-cuda-benchmark-contract` task, rather than
 loosening the Phase 5 exit criteria.
 For the local CUDA reconciliation path, use `pixi run -e cuda test-cuda` on a
 CUDA host after the default checks pass. The runner/CI prerequisite remains

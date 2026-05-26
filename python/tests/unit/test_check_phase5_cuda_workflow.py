@@ -33,7 +33,7 @@ def test_current_repo_phase5_cuda_workflow_passes():
     assert module.find_violations(WORKFLOW) == []
 
 
-def test_phase5_cuda_workflow_rejects_non_manual_trigger(tmp_path):
+def test_phase5_cuda_workflow_rejects_missing_manual_trigger(tmp_path):
     module = _load_module()
     path = _write_workflow(
         tmp_path,
@@ -43,7 +43,21 @@ def test_phase5_cuda_workflow_rejects_non_manual_trigger(tmp_path):
     messages = [violation.message for violation in module.find_violations(path)]
 
     assert "CUDA workflow must be manually dispatched" in messages
-    assert "CUDA workflow must not trigger on push:" in messages
+
+
+def test_phase5_cuda_workflow_rejects_unconditional_runtime_job(tmp_path):
+    module = _load_module()
+    path = _write_workflow(
+        tmp_path,
+        WORKFLOW.read_text(encoding="utf-8").replace(
+            "    if: github.event_name == 'workflow_dispatch'\n",
+            "",
+        ),
+    )
+
+    messages = [violation.message for violation in module.find_violations(path)]
+
+    assert "CUDA runtime job must only run on workflow_dispatch" in messages
 
 
 def test_phase5_cuda_workflow_rejects_missing_full_benchmark_task(tmp_path):

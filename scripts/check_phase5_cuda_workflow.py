@@ -59,6 +59,14 @@ def _find_step_block(text: str, name: str) -> str:
     return match.group(0) if match else ""
 
 
+def _find_job_block(text: str, job_id: str) -> str:
+    pattern = re.compile(
+        rf"(?ms)^  {re.escape(job_id)}:\n" r".*?(?=^  [A-Za-z0-9_-]+:\n|\Z)"
+    )
+    match = pattern.search(text)
+    return match.group(0) if match else ""
+
+
 def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
     try:
         workflow_text = workflow_path.read_text(encoding="utf-8")
@@ -69,14 +77,19 @@ def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
 
     if "workflow_dispatch:" not in workflow_text:
         violations.append(Violation("CUDA workflow must be manually dispatched"))
-    for forbidden in ("pull_request:", "push:"):
-        if forbidden in workflow_text:
-            violations.append(
-                Violation(f"CUDA workflow must not trigger on {forbidden}")
-            )
+
+    runtime_job = _find_job_block(workflow_text, "cuda-runtime")
+    runtime_text = runtime_job or workflow_text
+    if (
+        runtime_job
+        and "if: github.event_name == 'workflow_dispatch'" not in runtime_job
+    ):
+        violations.append(
+            Violation("CUDA runtime job must only run on workflow_dispatch")
+        )
 
     runner_match = re.search(
-        r"(?m)^ {4}runs-on:\s*\[(?P<labels>[^\]]+)\]", workflow_text
+        r"(?m)^ {4}runs-on:\s*\[(?P<labels>[^\]]+)\]", runtime_text
     )
     runner_labels = set()
     if runner_match:
@@ -89,21 +102,21 @@ def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
         labels = ", ".join(REQUIRED_RUNNER_LABELS)
         violations.append(Violation(f"CUDA job must run on [{labels}]"))
 
-    smoke_run = _find_step_block(workflow_text, "Run CUDA smoke tests")
+    smoke_run = _find_step_block(runtime_text, "Run CUDA smoke tests")
     if "pixi run --locked -e cuda test-cuda" not in smoke_run:
         violations.append(Violation("CUDA workflow must run the test-cuda gate"))
 
-    policy_run = _find_step_block(workflow_text, "Run Phase 5 policy gates")
+    policy_run = _find_step_block(runtime_text, "Run Phase 5 policy gates")
     for gate in _contains_all(policy_run, REQUIRED_POLICY_GATES):
         violations.append(Violation(f"CUDA workflow is missing policy gate: {gate}"))
 
-    full_run = _find_step_block(workflow_text, "Run Phase 5 CUDA go/no-go benchmark")
+    full_run = _find_step_block(runtime_text, "Run Phase 5 CUDA go/no-go benchmark")
     if "pixi run --locked -e cuda bm-phase5-cuda-full" not in full_run:
         violations.append(
             Violation("CUDA workflow must run bm-phase5-cuda-full for the full row")
         )
 
-    packet_run = _find_step_block(workflow_text, "Write Phase 5 CUDA packet")
+    packet_run = _find_step_block(runtime_text, "Write Phase 5 CUDA packet")
     packet_requirements = (
         "pixi run --locked -e cuda bm-phase5-cuda-packet",
         "--benchmark-json .benchmark_results/phase5_cuda_ci_full.json",
@@ -117,7 +130,7 @@ def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
             Violation(f"CUDA workflow packet step is missing: {requirement}")
         )
 
-    upload_step = _find_step_block(workflow_text, "Upload Phase 5 CUDA packet")
+    upload_step = _find_step_block(runtime_text, "Upload Phase 5 CUDA packet")
     if not upload_step:
         violations.append(
             Violation("CUDA workflow must upload Phase 5 packet artifacts")
