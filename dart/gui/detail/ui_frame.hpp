@@ -73,7 +73,7 @@ void updateFrameUi(
     const FrameViewport& viewport,
     ExampleScene exampleScene,
     DartScene& dartScene,
-    const dart::gui::OrbitCameraController& cameraController,
+    dart::gui::OrbitCameraController& cameraController,
     const SelectionController& selectionController,
     bool& orbitLight,
     bool& headlightsEnabled,
