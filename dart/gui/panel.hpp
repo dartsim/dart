@@ -70,6 +70,13 @@ public:
 
   virtual bool checkbox(std::string_view label, bool& value) = 0;
 
+  virtual bool textInput(std::string_view label, std::string& value)
+  {
+    (void)label;
+    (void)value;
+    return false;
+  }
+
   virtual bool slider(
       std::string_view label, double& value, double minimum, double maximum)
       = 0;
@@ -78,6 +85,17 @@ public:
   {
     (void)label;
     (void)rgba;
+    return false;
+  }
+
+  virtual bool select(
+      std::string_view label,
+      int& selectedIndex,
+      std::span<const std::string_view> choices)
+  {
+    (void)label;
+    (void)selectedIndex;
+    (void)choices;
     return false;
   }
 
@@ -204,6 +222,7 @@ struct PanelContext
   LightingState lighting;
   RenderingState rendering;
   UiState ui;
+  void* nativeWindow = nullptr;
 };
 
 /// Where a panel docks in the default dock layout when docking is enabled.

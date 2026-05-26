@@ -33,6 +33,7 @@
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
 #include <dart/simulation/experimental/frame/fixed_frame.hpp>
+#include <dart/simulation/experimental/frame/frame.hpp>
 #include <dart/simulation/experimental/frame/free_frame.hpp>
 #include <dart/simulation/experimental/multibody/joint.hpp>
 #include <dart/simulation/experimental/multibody/joint_type.hpp>
@@ -44,6 +45,7 @@
 
 #include <algorithm>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 
 #include <cmath>
@@ -51,6 +53,18 @@
 namespace dartsim {
 
 namespace sx = dart::simulation::experimental;
+
+struct ObjectManager::RebuildFrameIndex
+{
+  std::unordered_map<ObjectId, sx::Frame> frames;
+  std::vector<ObjectId> buildQueue;
+
+  void add(ObjectId id, const sx::Frame& frame)
+  {
+    frames.emplace(id, frame);
+    buildQueue.push_back(id);
+  }
+};
 
 namespace {
 
@@ -91,6 +105,14 @@ double sanitizeMass(double mass)
   return std::isfinite(mass) && mass > 0.0 ? mass : kMinimumMass;
 }
 
+Eigen::Vector3d sanitizeJointAxis(Eigen::Vector3d axis)
+{
+  if (!axis.allFinite() || axis.isZero()) {
+    return Eigen::Vector3d::UnitZ();
+  }
+  return axis.normalized();
+}
+
 void collectMultiBodyLinks(
     const SceneModel& model,
     ObjectId parent,
@@ -128,6 +150,7 @@ void ObjectManager::rebuild()
   m_model.timeStep = sanitizeTimeStep(m_model.timeStep);
   m_world->setTimeStep(m_model.timeStep);
 
+  RebuildFrameIndex frames;
   for (const ObjectId id : m_model.rootChildren()) {
     SceneObject* object = m_model.find(id);
     if (object == nullptr) {
@@ -143,20 +166,23 @@ void ObjectManager::rebuild()
         opts.orientation = Eigen::Quaterniond(object->transform.rotation());
         opts.linearVelocity = object->linearVelocity;
         opts.angularVelocity = object->angularVelocity;
-        m_world->addRigidBody(object->name, opts);
+        sx::RigidBody body = m_world->addRigidBody(object->name, opts);
+        frames.add(object->id, body);
         break;
       }
       case ObjectType::MultiBody:
-        buildMultiBody(*object);
+        buildMultiBody(*object, frames);
         break;
       case ObjectType::FreeFrame: {
         sx::FreeFrame frame = m_world->addFreeFrame(object->name);
         frame.setLocalTransform(object->transform);
+        frames.add(object->id, frame);
         break;
       }
       case ObjectType::FixedFrame:
-        m_world->addFixedFrame(
-            object->name, sx::Frame::world(), object->transform);
+        // Fixed frames need a non-world parent frame in the experimental API.
+        // Root-level fixed-frame records are ignored instead of crashing on
+        // malformed or older project files.
         break;
       case ObjectType::Link:
       case ObjectType::Joint:
@@ -165,12 +191,17 @@ void ObjectManager::rebuild()
     }
   }
 
+  for (std::size_t index = 0; index < frames.buildQueue.size(); ++index) {
+    buildAttachedFrames(frames.buildQueue[index], frames);
+  }
+
   // Note: World::sync()/updateKinematics() require simulation mode, so design
   // (edit) mode relies on direct rigid-body poses and lazy frame evaluation.
   // Articulated link world transforms refresh once stepping begins.
 }
 
-void ObjectManager::buildMultiBody(const SceneObject& multiBodyObject)
+void ObjectManager::buildMultiBody(
+    const SceneObject& multiBodyObject, RebuildFrameIndex& frames)
 {
   sx::Multibody mb = m_world->addMultibody(multiBodyObject.name);
 
@@ -188,7 +219,8 @@ void ObjectManager::buildMultiBody(const SceneObject& multiBodyObject)
         continue;
       }
       if (link->parentLink == kNoObject) {
-        mb.addLink(link->name);
+        sx::Link root = mb.addLink(link->name);
+        frames.add(link->id, root);
         added.insert(link->id);
         progressed = true;
       } else if (added.count(link->parentLink) != 0) {
@@ -207,8 +239,9 @@ void ObjectManager::buildMultiBody(const SceneObject& multiBodyObject)
         sx::JointSpec spec;
         spec.name = link->name + "_joint";
         spec.type = toJointType(link->jointType);
-        spec.axis = link->jointAxis;
-        mb.addLink(link->name, *parentHandle, spec);
+        spec.axis = sanitizeJointAxis(link->jointAxis);
+        sx::Link child = mb.addLink(link->name, *parentHandle, spec);
+        frames.add(link->id, child);
         added.insert(link->id);
         progressed = true;
       }
@@ -229,6 +262,43 @@ void ObjectManager::buildMultiBody(const SceneObject& multiBodyObject)
       Eigen::VectorXd q(1);
       q[0] = link->jointPosition;
       joint.setPosition(q);
+    }
+  }
+}
+
+void ObjectManager::buildAttachedFrames(
+    ObjectId parent, RebuildFrameIndex& frames)
+{
+  const auto parentIt = frames.frames.find(parent);
+  if (parentIt == frames.frames.end()) {
+    return;
+  }
+
+  for (const ObjectId childId : m_model.childrenOf(parent)) {
+    SceneObject* child = m_model.find(childId);
+    if (child == nullptr) {
+      continue;
+    }
+
+    switch (child->type) {
+      case ObjectType::FreeFrame: {
+        sx::FreeFrame frame
+            = m_world->addFreeFrame(child->name, parentIt->second);
+        frame.setLocalTransform(child->transform);
+        frames.add(child->id, frame);
+        break;
+      }
+      case ObjectType::FixedFrame: {
+        if (child->name.empty()) {
+          break;
+        }
+        sx::FixedFrame frame = m_world->addFixedFrame(
+            child->name, parentIt->second, child->transform);
+        frames.add(child->id, frame);
+        break;
+      }
+      default:
+        break;
     }
   }
 }
@@ -257,6 +327,17 @@ std::optional<Eigen::Isometry3d> ObjectManager::worldTransformOf(
         }
       }
     }
+  } else if (
+      object->type == ObjectType::FreeFrame
+      || object->type == ObjectType::FixedFrame) {
+    if (object->parent == kNoObject) {
+      return object->transform;
+    }
+    const std::optional<Eigen::Isometry3d> parentTransform
+        = worldTransformOf(object->parent);
+    if (parentTransform.has_value()) {
+      return *parentTransform * object->transform;
+    }
   }
   return std::nullopt;
 }
@@ -265,32 +346,44 @@ std::vector<RenderItem> ObjectManager::computeRenderItems() const
 {
   std::vector<RenderItem> items;
 
+  struct StackEntry
+  {
+    ObjectId id = kNoObject;
+    bool ancestorsVisible = true;
+  };
+
   // Depth-first over the whole tree so links nested under a multibody render.
-  std::vector<ObjectId> stack(
-      m_model.rootChildren().rbegin(), m_model.rootChildren().rend());
+  std::vector<StackEntry> stack;
+  stack.reserve(m_model.size());
+  for (auto it = m_model.rootChildren().rbegin();
+       it != m_model.rootChildren().rend();
+       ++it) {
+    stack.push_back(StackEntry{*it, true});
+  }
   while (!stack.empty()) {
-    const ObjectId id = stack.back();
+    const StackEntry entry = stack.back();
     stack.pop_back();
-    const SceneObject* object = m_model.find(id);
+    const SceneObject* object = m_model.find(entry.id);
     if (object == nullptr) {
       continue;
     }
-    const auto& children = m_model.childrenOf(id);
+    const bool effectivelyVisible = entry.ancestorsVisible && object->visible;
+    const auto& children = m_model.childrenOf(entry.id);
     for (auto it = children.rbegin(); it != children.rend(); ++it) {
-      stack.push_back(*it);
+      stack.push_back(StackEntry{*it, effectivelyVisible});
     }
 
     const bool hasShape = object->type == ObjectType::RigidBody
                           || object->type == ObjectType::Link;
-    if (!hasShape || !object->visible) {
+    if (!hasShape || !effectivelyVisible) {
       continue;
     }
-    std::optional<Eigen::Isometry3d> transform = worldTransformOf(id);
+    std::optional<Eigen::Isometry3d> transform = worldTransformOf(entry.id);
     if (!transform.has_value()) {
       continue;
     }
     RenderItem item;
-    item.id = id;
+    item.id = entry.id;
     item.shape = object->shape.type;
     item.dimensions = object->shape.dimensions;
     item.color = object->shape.color;

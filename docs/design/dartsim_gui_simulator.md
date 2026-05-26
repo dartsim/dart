@@ -48,16 +48,22 @@ sketch below in two ways worth recording:
   `imgui.ini`.
 
 What is built and verified: the headless engine (object/selection/command/name
-managers, undo/redo, Edit/Run controller, record/replay, project I/O) with unit
-tests; the editor UI (menu bar, Scene Tree, Inspector, Console, simulation
-controls, replay timeline); and viewport rendering of the experimental scene
-(verified headless — non-blank smoke plus a foreground-geometry pixel check).
-Remaining follow-ups: a programmatic default dock layout (panels are dockable
-and persist via `imgui.ini`, but the first run is not pre-arranged); viewport
-pick-to-tree selection sync; and co-evolution to adopt experimental shape/loader
-APIs (replacing editor-side shape descriptors) as they land (see PLAN-050). The `## Architecture Overview` and later sections
-record the original rationale; treat this section as the authoritative as-built
-note where they differ.
+managers, undo/redo, Edit/Simulation mode controller, record/replay, project
+I/O) with unit tests; the editor UI (menu bar, Scene Tree, Inspector, Console,
+simulation controls, replay timeline, a project path modal with native Browse
+fallback, context-sensitive Create menu with starter examples, and frame
+attach/detach relationship actions plus link hierarchy relationship actions);
+direct native project file pickers for Open and Save As; inspector enum
+choices for shape type and child link joint kind; viewport selection sync;
+transform-gizmo action seams; and viewport rendering of the experimental scene
+(verified headless with a non-blank smoke check plus a foreground-geometry
+pixel check). Remaining follow-ups: richer first-run dock layout, viewport
+fit/focus and camera presets, multi-selection inspector behavior, richer joint
+relationship affordances, and co-evolution to adopt experimental shape/loader
+APIs (replacing editor-side shape descriptors) as they land (see PLAN-050). The
+`## Architecture Overview`
+and later sections record the original rationale; treat this section as the
+authoritative as-built note where they differ.
 
 ## Summary
 
@@ -103,8 +109,11 @@ official simulation surface (see
 These are out of scope for the architecture's first implementation waves and are
 revisited only with new evidence. They are not permanent exclusions.
 
-- No retained-mode toolkit (e.g. Qt). The GUI extends the existing ImGui +
-  Filament renderer.
+- No retained-mode toolkit (e.g. Qt) in v1. The GUI extends the existing ImGui +
+  Filament renderer. This is a deferred, evidence-gated decision, not a permanent
+  exclusion; the full toolkit/language/deploy rationale and the observable
+  triggers that would reopen it live in
+  [`dartsim_gui_toolkit_decisions.md`](dartsim_gui_toolkit_decisions.md).
 - No multi-process client/server transport in v1. The engine and GUI live in one
   process behind an in-process interface; the boundary is kept clean enough that
   a transport could be added later.
@@ -283,9 +292,9 @@ command labels for the Edit menu. Initial command catalog:
 
 Commands operate through the ObjectManager so the scene model, World, and name
 table are mutated consistently and reversibly. Commands captured during **Edit
-mode** are undoable; live changes during **Run mode** (e.g. dragging a slider
-while stepping) are handled separately (see SimulationController) and are not
-pushed as authoring history.
+Mode** are undoable; live changes during **Simulation Mode** (e.g. dragging a
+slider while stepping) are handled separately (see SimulationController) and are
+not pushed as authoring history.
 
 ### NameManager
 
@@ -294,17 +303,19 @@ Guarantees unique, stable names within their scope, generates default names
 (which itself enforces owner-local uniqueness in the experimental API). Keeps
 editor display names decoupled from World identifiers where the two must differ.
 
-### SimulationController (Edit vs Run)
+### SimulationController (Edit Mode vs Simulation Mode)
 
 Owns the **mode** and the stepping loop:
 
-- **Edit mode**: World is in design state; topology edits are allowed; commands
+- **Edit Mode**: World is in authored design state; topology edits are allowed; commands
   are undoable; the World is not advancing.
-- **Run mode**: the World has entered simulation mode; the controller advances it
-  with `world.step()` on a fixed cadence with a real-time-factor target and
-  reports sim time, wall time, and step count. Play/Pause/Step(one or N)/Reset.
-  **Reset** restores the authored design-mode state captured when Run began
-  (using a binary state snapshot), so running never destroys the design.
+- **Simulation Mode**: the World has entered runtime simulation state; the
+  controller advances it with `world.step()` on a fixed cadence with a
+  real-time-factor target and reports sim time, wall time, and step count.
+  Play/Pause are playback states within Simulation Mode; Step enters Simulation
+  Mode for one or N ticks. **Reset** restores the authored Edit Mode state
+  captured when Simulation Mode began (using a binary state snapshot), so running
+  never destroys the design.
 
 Stepping runs on the engine; whether it runs on the GUI thread or a worker thread
 is an implementation detail behind the controller. The experimental World's
@@ -313,8 +324,8 @@ used (it is deferred in the experimental API).
 
 ### Recorder / Player (record and replay)
 
-- **Recorder**: while in Run mode, captures a per-step **frame snapshot** of the
-  world state into a recording buffer. Snapshots use the experimental World's
+- **Recorder**: while in Simulation Mode, captures a per-step **frame snapshot**
+  of the world state into a recording buffer. Snapshots use the experimental World's
   binary serialization for fidelity and speed; the recording also stores time
   and step index per frame.
 - **Player**: replays a recording by restoring frame snapshots in order, driven
@@ -397,10 +408,26 @@ Layout is user-rearrangeable and persisted via the UI config file.
 ### Menu bar
 
 - **File**: New, Open Project, Save / Save As, Import (disabled until loaders
-  exist), Open Recording, Save Recording, Exit.
-- **Edit**: Undo, Redo, Delete, Rename, (later) Duplicate, Cut/Copy/Paste.
-- **Create**: Rigid Body (Box/Sphere/Cylinder/Capsule/Plane), MultiBody, Link,
-  Joint (Revolute/Prismatic/…), Frame (Free/Fixed), Loop Closure.
+  exist), Open Recording, Save Recording, Exit. Open Project and Save As invoke
+  the native desktop file picker directly, parented to the GUI window. If the
+  platform dialog backend is unavailable, or a selected path fails to load/save,
+  the editor opens an in-app path modal with a Browse button. The file-dialog
+  boundary remains injectable so path selection is testable without launching
+  the renderer.
+- **Edit**: Undo, Redo, frame attach/detach and link parent/root relationship
+  actions, Delete, Rename, (later) Duplicate, Cut/Copy/Paste. Frame
+  attach/detach goes through undoable commands that preserve world transforms
+  and convert detached fixed frames to root free frames. Link relationship
+  actions keep link hierarchy changes inside the owning multibody and reject
+  cycles or cross-multibody parents.
+- **Create**: a tested, context-sensitive action model for primitive rigid bodies
+  (Box/Sphere/Cylinder/Capsule/Plane), MultiBody, root links, fixed/revolute/
+  prismatic child links, frames, and starter example scenes. Example creation is
+  grouped as single undoable transactions so users can explore and discard a
+  preset without walking back each object. Fixed frames require an existing
+  frame-like parent because the experimental World does not allow direct world
+  attachment. Loop Closure and sensors remain deferred until the public API
+  exposes the necessary concepts.
 - **Simulate**: Play, Pause, Step, Reset, Set Time Step, (record) Start/Stop
   Recording.
 - **View**: toggle panels, camera presets (Orbit/Top/Front/Side), show grid,
@@ -415,9 +442,13 @@ directly.
 - **Scene Tree**: hierarchical view from the ObjectManager; Add (+) typed-create
   dialog; inline rename; drag re-parent; per-row visibility toggle; multi-select;
   selection synced to SelectionManager; delete via command.
-- **Inspector**: context-sensitive properties for the primary selection, grouped
-  into collapsing sections (Transform, Dynamics, Joint, Loop Closure). Edits emit
-  `Set*Command`s with live apply. Numeric fields and sliders use `PanelBuilder`.
+- **Inspector**: context-sensitive properties for the primary selection are
+  generated from a typed action/view-model seam. Current fields cover transform
+  translation, rigid-body mass, child-link joint position, editor-side shape
+  dimensions, shape color, shape-type and joint-kind enum choices, child-link
+  joint axes, Simulation Mode read-only state, and delete. Edits emit undoable
+  commands with live apply; future fields should extend the metadata seam rather
+  than adding direct `editor.cpp` branches.
 - **Console/Logger**: severity-filtered log stream from the engine Logger. A
   future Python REPL slot is reserved (CoppeliaSim/Isaac precedent) but not in
   v1.
@@ -483,7 +514,8 @@ remaining follow-ups live in `docs/plans/dashboard.md` (PLAN-101) and
    primitives; selection/picking.
 3. **Editor UI** — Scene Tree, Inspector, menu bar, Create/Edit via commands,
    undo/redo.
-4. **Simulation control** — Edit/Run mode, Play/Pause/Step/Reset, RTF readouts.
+4. **Simulation control** — Edit/Simulation mode, Play/Pause/Step/Reset, RTF
+   readouts.
 5. **Project save/load** — human-readable project format round-trip.
 6. **Record & replay** — recorder, player, timeline scrubber.
 7. **Hardening + co-evolution** — adopt experimental shape/loader APIs as they

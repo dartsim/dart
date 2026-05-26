@@ -34,8 +34,8 @@ In scope (architecture in [`../design/dartsim_gui_simulator.md`](../design/darts
 
 - Headless editor engine (`dartsim/engine`): `SimEngine` facade,
   `ObjectManager`, `SelectionManager`, `CommandManager` + `CommandStack`
-  (undo/redo), `NameManager`, `SimulationController` (Edit/Run), `Recorder`/
-  `Player`, `SceneIO`, `Logger`/`EventBus`.
+  (undo/redo), `NameManager`, `SimulationController` (Edit/Simulation mode),
+  `Recorder`/`Player`, `SceneIO`, `Logger`/`EventBus`.
 - Thin GUI on the existing ImGui + Filament renderer: menu bar, Scene Tree,
   Inspector, Console/Logger, simulation controls + replay timeline, Viewport with
   selection and gizmos, plus a render bridge from the experimental World.
@@ -61,8 +61,8 @@ ordering:
    picking and selection highlight.
 3. **Editor UI**: Scene Tree, Inspector, menu bar; Create/Edit through commands;
    undo/redo wired to the Edit menu.
-4. **Simulation control**: Edit/Run mode, Play/Pause/Step/Reset, time-step,
-   real-time-factor and sim/wall/step readouts.
+4. **Simulation control**: Edit/Simulation mode, Play/Pause/Step/Reset,
+   time-step, real-time-factor and sim/wall/step readouts.
 5. **Project save/load**: human-readable project format round-trip.
 6. **Record & replay**: recorder, player, timeline scrubber.
 7. **Hardening + co-evolution**: adopt experimental shape/loader APIs as they
