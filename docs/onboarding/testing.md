@@ -237,6 +237,23 @@ asserts externally visible behavior. Do not rely only on equivalence checks
 against the delegated implementation; a fallback can drop world options, cached
 state, or execution context while still matching a shallow delegate comparison.
 
+### Strided Map Regressions
+
+When an API exposes Eigen-backed views into caller-owned storage, add regression
+coverage for the view shape that downstream users are likely to hold, not only
+for contiguous storage. This matters most for nested typed views, such as
+Lie-group maps whose component accessors return submaps.
+
+For these APIs, prefer tests that:
+
+- instantiate both `Eigen::InnerStride<>` and
+  `Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>` when nested maps are
+  supported;
+- call the nested accessor directly, then read and write through the returned
+  view;
+- verify that writes touch only the intended strided slots in the backing
+  buffer.
+
 ### Benchmarks (`benchmark/`)
 
 Performance benchmarks measure execution time and resource usage:
