@@ -172,6 +172,7 @@ int runGuiBackendApplicationImpl(
   appOptions.camera = applicationOptions.camera;
   appOptions.cameraControlsProvider = applicationOptions.cameraControlsProvider;
   appOptions.cameraUpdater = applicationOptions.cameraUpdater;
+  appOptions.viewportLayoutProvider = applicationOptions.viewportLayoutProvider;
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;
     appOptions.renderableProvider = applicationOptions.renderableProvider;
@@ -232,11 +233,13 @@ int runGuiBackendApplicationImpl(
   FilamentRenderContext renderContext = createFilamentRenderContext(
       runOptions, runOptions.headless ? nullptr : getNativeWindow(window));
   auto* engine = renderContext.engine;
-  auto* view = renderContext.view;
   auto* scene = renderContext.scene;
-  auto* camera = renderContext.camera;
   auto* colorGrading = createDebugColorGrading(*engine);
-  configureMainView(*view, colorGrading, runOptions.headless);
+  for (auto* view : renderContext.views) {
+    if (view != nullptr) {
+      configureMainView(*view, colorGrading, runOptions.headless);
+    }
+  }
   auto* indirectLight = createNeutralIndirectLight(*engine);
   auto* skybox = createNeutralSkybox(*engine);
 
@@ -341,10 +344,18 @@ int runGuiBackendApplicationImpl(
           = appOptions.cameraControlsProvider
                 ? appOptions.cameraControlsProvider()
                 : OrbitCameraControlOptions{};
+      dart::gui::ViewportLayoutOptions viewportLayout
+          = appOptions.viewportLayoutProvider
+                ? appOptions.viewportLayoutProvider(cameraController.camera)
+                : dart::gui::ViewportLayoutOptions{};
+      if (!appOptions.viewportLayoutProvider) {
+        viewportLayout.panes[0].camera = cameraController.camera;
+        viewportLayout.panes[0].active = true;
+      }
       viewport = updateFrameViewport(
           window,
-          *view,
-          *camera,
+          renderContext.views,
+          renderContext.cameras,
           cameraController,
           selectionController,
           imguiIo,
@@ -353,7 +364,9 @@ int runGuiBackendApplicationImpl(
           dartScene.world->getTimeStep(),
           appOptions.showUi,
           runOptions.guiScale,
-          cameraControls);
+          cameraControls,
+          viewportLayout);
+      renderContext.activeViewCount = viewport.paneCount;
     }
     profile.viewportCameraMs += elapsedMs(phaseStart);
 
@@ -395,7 +408,11 @@ int runGuiBackendApplicationImpl(
           renderContext.backendName);
     }
     setSceneLightsEnabled(*engine, lights, headlightsEnabled);
-    applyRenderSettings(*view, dartScene.renderSettings);
+    for (std::size_t i = 0; i < renderContext.views.size(); ++i) {
+      if (renderContext.views[i] != nullptr) {
+        applyRenderSettings(*renderContext.views[i], dartScene.renderSettings);
+      }
+    }
 
     if (appOptions.preRender) {
       appOptions.preRender();

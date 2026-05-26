@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <dart/gui/application.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/viewer.hpp>
 
@@ -331,5 +332,12 @@ applyViewportCameraControlAction(
 /// Map a logical viewport pane to its canonical camera preset.
 [[nodiscard]] ViewportCameraActionKind viewportPaneCameraAction(
     ViewportPaneKind pane);
+
+/// Convert editor viewport layout state to the generic GUI render layout seam.
+[[nodiscard]] dart::gui::ViewportLayoutOptions viewportLayoutOptions(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    const ViewportLayoutState& state);
 
 } // namespace dartsim::ui

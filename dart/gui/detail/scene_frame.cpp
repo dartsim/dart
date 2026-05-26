@@ -183,14 +183,11 @@ void SceneFrameUpdater::update(
       mSelectionController, mDartScene, descriptors);
   mProfile.extractionMs += dart::gui::elapsedMs(phaseStart);
 
+  const ViewportPaneFrame& activePane = activeViewportPane(viewport);
+
   phaseStart = dart::gui::ProfileAccumulator::Clock::now();
   mSelectionController.applyKeyboardNudge(
-      mWindow,
-      mCameraController.camera,
-      mDartScene,
-      descriptors,
-      mLifecycle,
-      0.035);
+      mWindow, activePane.camera, mDartScene, descriptors, mLifecycle, 0.035);
   mProfile.interactionMs += dart::gui::elapsedMs(phaseStart);
 
   phaseStart = dart::gui::ProfileAccumulator::Clock::now();
@@ -210,9 +207,9 @@ void SceneFrameUpdater::update(
           mSceneState.sceneRenderables,
           mSelectionController.selectedRenderableId(),
           mDartScene.renderSettings,
-          mCameraController.camera,
-          viewport.width,
-          viewport.height)) {
+          activePane.camera,
+          activePane.width,
+          activePane.height)) {
     mSelectionController.clear();
   }
   mProfile.syncMs += dart::gui::elapsedMs(phaseStart);
@@ -232,9 +229,7 @@ void SceneFrameUpdater::update(
   const bool mouseSelectionCommitted
       = mSelectionController.updateMouseSelection(
           mWindow,
-          mCameraController.camera,
-          viewport.width,
-          viewport.height,
+          viewport,
           showUi,
           uiCapturesMouse,
           mOptions.guiScale,

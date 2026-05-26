@@ -70,21 +70,24 @@ constexpr std::size_t kMaxDebugLabels = 96u;
 constexpr double kPi = 3.14159265358979323846;
 
 std::optional<ImVec2> projectDebugLabel(
-    const dart::gui::OrbitCamera& camera,
-    const FrameViewport& viewport,
-    const Eigen::Vector3d& position)
+    const FrameViewport& viewport, const Eigen::Vector3d& position)
 {
   if (!position.allFinite() || viewport.width <= 0 || viewport.height <= 0) {
     return std::nullopt;
   }
 
+  const ViewportPaneFrame& pane = activeViewportPane(viewport);
+  if (pane.width <= 0 || pane.height <= 0) {
+    return std::nullopt;
+  }
+
   const dart::gui::OrbitCameraBasis basis
-      = dart::gui::makeOrbitCameraBasis(camera);
+      = dart::gui::makeOrbitCameraBasis(pane.camera);
   const Eigen::Vector3d cameraSpace = position - basis.eye;
   const double depth = cameraSpace.dot(basis.forward);
   const dart::gui::PerspectiveProjection projection
       = dart::gui::makePerspectiveProjection(
-          camera, viewport.width, viewport.height);
+          pane.camera, pane.width, pane.height);
   if (!std::isfinite(depth) || depth <= projection.nearPlane
       || depth >= projection.farPlane) {
     return std::nullopt;
@@ -106,8 +109,8 @@ std::optional<ImVec2> projectDebugLabel(
   }
 
   return ImVec2(
-      static_cast<float>((ndcX + 1.0) * 0.5 * viewport.width),
-      static_cast<float>((1.0 - ndcY) * 0.5 * viewport.height));
+      static_cast<float>(pane.x + (ndcX + 1.0) * 0.5 * pane.width),
+      static_cast<float>(pane.y + (1.0 - ndcY) * 0.5 * pane.height));
 }
 
 ImU32 toImGuiColor(const Eigen::Vector4d& rgba, double alphaScale = 1.0)
@@ -132,7 +135,6 @@ std::string compactDebugLabel(std::string text)
 
 void renderDebugLabels(
     const std::vector<dart::gui::DebugLabelDescriptor>& labels,
-    const dart::gui::OrbitCamera& camera,
     const FrameViewport& viewport,
     double guiScale)
 {
@@ -162,7 +164,7 @@ void renderDebugLabels(
     }
 
     const std::optional<ImVec2> anchor
-        = projectDebugLabel(camera, viewport, label.position);
+        = projectDebugLabel(viewport, label.position);
     if (!anchor.has_value()) {
       continue;
     }
@@ -401,8 +403,7 @@ void updateFrameUi(
   renderApplicationPanels(
       panels, panelContext, guiScale, dartScene.dockingEnabled);
   if (dartScene.debugLabels) {
-    renderDebugLabels(
-        dartScene.debugLabels(), cameraController.camera, viewport, guiScale);
+    renderDebugLabels(dartScene.debugLabels(), viewport, guiScale);
   }
   if (showPerfHud) {
     drawPerfHud(perfHud, profile, backendName);

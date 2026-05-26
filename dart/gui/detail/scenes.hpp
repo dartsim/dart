@@ -136,6 +136,8 @@ struct AppOptions
   std::optional<dart::gui::OrbitCamera> camera;
   std::function<dart::gui::OrbitCameraControlOptions()> cameraControlsProvider;
   std::function<bool(dart::gui::OrbitCamera&)> cameraUpdater;
+  std::function<dart::gui::ViewportLayoutOptions(const dart::gui::OrbitCamera&)>
+      viewportLayoutProvider;
   dart::gui::RenderSettings renderSettings;
   bool renderOutputModeExplicit = false;
   std::vector<dart::gui::Panel> panels;

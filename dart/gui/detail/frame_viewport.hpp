@@ -33,6 +33,13 @@
 #ifndef DART_GUI_DETAIL_FRAME_VIEWPORT_HPP_
 #define DART_GUI_DETAIL_FRAME_VIEWPORT_HPP_
 
+#include <dart/gui/application.hpp>
+
+#include <array>
+#include <optional>
+
+#include <cstddef>
+
 struct GLFWwindow;
 struct ImGuiIO;
 
@@ -52,16 +59,45 @@ namespace dart::gui::detail {
 
 class SelectionController;
 
+struct ViewportPaneFrame
+{
+  dart::gui::ViewportPaneKind kind = dart::gui::ViewportPaneKind::Perspective;
+  dart::gui::OrbitCamera camera;
+  int x = 0;
+  int y = 0;
+  int width = 1;
+  int height = 1;
+  bool active = false;
+};
+
 struct FrameViewport
 {
   int width = 1;
   int height = 1;
+  std::size_t paneCount = 1u;
+  std::array<ViewportPaneFrame, dart::gui::kMaxViewportPanes> panes;
 };
+
+FrameViewport makeFrameViewport(
+    const dart::gui::ViewportLayoutOptions& layoutOptions,
+    int width,
+    int height);
+
+std::size_t activeViewportPaneIndex(const FrameViewport& viewport);
+
+const ViewportPaneFrame& activeViewportPane(const FrameViewport& viewport);
+
+std::optional<std::size_t> viewportPaneIndexAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY);
+
+const ViewportPaneFrame* viewportPaneAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY);
 
 FrameViewport updateFrameViewport(
     GLFWwindow* window,
-    ::filament::View& view,
-    ::filament::Camera& camera,
+    const std::array<::filament::View*, dart::gui::kMaxViewportPanes>& views,
+    const std::array<::filament::Camera*, dart::gui::kMaxViewportPanes>&
+        cameras,
     dart::gui::OrbitCameraController& cameraController,
     const SelectionController& selectionController,
     ImGuiIO& imguiIo,
@@ -70,7 +106,8 @@ FrameViewport updateFrameViewport(
     double worldTimeStep,
     bool showUi,
     double guiScale,
-    const dart::gui::OrbitCameraControlOptions& cameraControls);
+    const dart::gui::OrbitCameraControlOptions& cameraControls,
+    const dart::gui::ViewportLayoutOptions& layoutOptions);
 
 } // namespace dart::gui::detail
 

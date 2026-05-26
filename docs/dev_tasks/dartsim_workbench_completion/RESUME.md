@@ -65,17 +65,20 @@ selected-object tracking. The generic `dart::gui::ApplicationOptions` camera
 seams remain renderer-neutral, while `dartsim_ui/viewport_actions` owns the
 editor-specific action labels, disabled reasons, and selection-tracking target.
 Viewport layout actions now have tested single-view/four-view state and active
-pane selection, but they are not exposed in the View menu until renderer-side
-multi-viewport drawing consumes the state. Future renderer work should consume
-`ViewportLayoutState` instead of adding backend-specific editor state.
+pane selection. The View menu exposes the four-view layout, the editor converts
+`ViewportLayoutState` into public `dart::gui::ViewportLayoutOptions`, and
+`dart::gui` renders one or four Filament views from that backend-hidden layout
+provider. The renderer keeps one shared pane geometry model for Filament
+viewports, active-pane camera controls, cursor-pane picking/dragging,
+active-pane debug labels, and tiny-framebuffer fallback to single pane.
 
 ## Immediate Next Step
 
-Continue Phase 5 by making the renderer consume `ViewportLayoutState` for
-multi-viewport drawing, or continue Phase 3 with richer relationship inspectors
-and object grouping. Keep behavior in testable engine or UI action/view-model
-helpers before wiring it into `editor.cpp`, and keep the filtered coverage line
-total above 95%.
+Continue Phase 5 by adding visible pane labels/status affordances and richer
+per-pane interaction polish for the four-view layout, or continue Phase 3 with
+richer relationship inspectors and object grouping. Keep behavior in testable
+engine or UI action/view-model helpers before wiring it into `editor.cpp`, and
+keep the filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -138,8 +141,9 @@ total above 95%.
   `UNIT_dartsim_ui_ViewportActions` and `UNIT_gui_FilamentSceneExtraction`;
   single/four-view mode state, active perspective/front/right/top panes, pane
   camera mapping, public action rejection for pane activation while single-view
-  is active, and view-only dirty/undo invariants are tested before renderer-side
-  split drawing exists.
+  is active, renderer layout payload conversion, split-pane geometry,
+  tiny-framebuffer fallback, GUI provider plumbing, and view-only dirty/undo
+  invariants are tested.
 - `pixi run coverage-report-dartsim` now extracts the filtered
   `dartsim/engine` plus testable `dartsim/ui` action/view-model coverage
   surface from the broader lcov report. A 2026-05-25 attempt ran 265/265 Debug

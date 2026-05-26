@@ -41,6 +41,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <utility>
 #include <vector>
@@ -860,6 +861,71 @@ TEST(DartsimViewportActions, ViewportPaneCameraMappingsAreCanonical)
   EXPECT_EQ(
       ui::viewportPaneCameraAction(ui::ViewportPaneKind::Top),
       ui::ViewportCameraActionKind::Top);
+}
+
+TEST(DartsimViewportActions, ViewportLayoutOptionsExposeRendererPaneViews)
+{
+  SimEngine engine;
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  const dart::gui::OrbitCamera current = testCamera();
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+
+  const auto single
+      = ui::viewportLayoutOptions(engine, current, filters, layout);
+  EXPECT_EQ(single.mode, dart::gui::ViewportLayoutMode::Single);
+  ASSERT_EQ(single.paneCount, 1u);
+  EXPECT_EQ(single.panes[0].kind, dart::gui::ViewportPaneKind::Perspective);
+  EXPECT_TRUE(single.panes[0].active);
+  EXPECT_TRUE(single.panes[0].camera.target.isApprox(current.target));
+  EXPECT_EQ(single.panes[0].camera.distance, current.distance);
+  EXPECT_EQ(single.panes[0].camera.yaw, current.yaw);
+  EXPECT_EQ(single.panes[0].camera.pitch, current.pitch);
+
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  const auto quad = ui::viewportLayoutOptions(engine, current, filters, layout);
+  EXPECT_EQ(quad.mode, dart::gui::ViewportLayoutMode::Quad);
+  ASSERT_EQ(quad.paneCount, dart::gui::kMaxViewportPanes);
+
+  const std::array<dart::gui::ViewportPaneKind, dart::gui::kMaxViewportPanes>
+      expectedKinds{
+          dart::gui::ViewportPaneKind::Perspective,
+          dart::gui::ViewportPaneKind::Top,
+          dart::gui::ViewportPaneKind::Front,
+          dart::gui::ViewportPaneKind::Right};
+  for (std::size_t i = 0; i < expectedKinds.size(); ++i) {
+    EXPECT_EQ(quad.panes[i].kind, expectedKinds[i]);
+  }
+  EXPECT_TRUE(quad.panes[0].active);
+  EXPECT_FALSE(quad.panes[1].active);
+  EXPECT_FALSE(quad.panes[2].active);
+  EXPECT_FALSE(quad.panes[3].active);
+  EXPECT_EQ(quad.panes[0].camera.yaw, current.yaw);
+  EXPECT_EQ(quad.panes[0].camera.pitch, current.pitch);
+  EXPECT_NEAR(quad.panes[1].camera.pitch, 1.45, 1e-12);
+  EXPECT_NEAR(quad.panes[2].camera.yaw, -3.14159265358979323846 * 0.5, 1e-12);
+  EXPECT_NEAR(quad.panes[2].camera.pitch, 0.0, 1e-12);
+  EXPECT_NEAR(quad.panes[3].camera.yaw, 0.0, 1e-12);
+
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::ActivateFrontPane)
+          .ok);
+  const auto activeFront
+      = ui::viewportLayoutOptions(engine, current, filters, layout);
+  ASSERT_EQ(activeFront.paneCount, dart::gui::kMaxViewportPanes);
+  EXPECT_FALSE(activeFront.panes[0].active);
+  EXPECT_TRUE(activeFront.panes[2].active);
+  EXPECT_EQ(activeFront.panes[2].camera.yaw, current.yaw);
+  EXPECT_EQ(activeFront.panes[2].camera.pitch, current.pitch);
+
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
 }
 
 TEST(DartsimViewportActions, CameraControlActionsSetMouseModeWithoutEditing)

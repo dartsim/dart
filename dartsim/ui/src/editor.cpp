@@ -82,6 +82,7 @@ struct EditorApp
   OutlinerState outliner;
   ViewportLayerFilterState viewportLayers;
   ViewportCameraControlState viewportCamera;
+  ViewportLayoutState viewportLayout;
   ViewportTransformGizmo transformGizmo = makeViewportTransformGizmo();
   ProjectFileDialogKind projectPathKind = ProjectFileDialogKind::Open;
   bool projectPathModalOpen = false;
@@ -767,6 +768,54 @@ void buildViewportCameraControlMenu(dart::gui::PanelBuilder& ui, EditorApp& app)
   }
 }
 
+std::string viewportLayoutMenuLabel(const ViewportLayoutAction& action)
+{
+  std::string label = action.label;
+  if (action.checked) {
+    label += " (active)";
+  }
+  if (!action.enabled && !action.disabledReason.empty()) {
+    label += " (" + action.disabledReason + ")";
+  }
+  return label;
+}
+
+void applyViewportLayoutMenuAction(
+    EditorApp& app,
+    dart::gui::PanelContext& context,
+    ViewportLayoutActionKind kind)
+{
+  const ViewportLayoutActionResult layoutResult
+      = applyViewportLayoutAction(app.viewportLayout, kind);
+  app.note(layoutResult.message);
+  if (!layoutResult.ok || !layoutResult.cameraAction.has_value()
+      || !context.camera.setOrbitCamera) {
+    return;
+  }
+
+  const ViewportCameraActionResult cameraResult = applyViewportCameraAction(
+      app.engine,
+      context.camera.orbit,
+      *layoutResult.cameraAction,
+      app.viewportLayers);
+  if (cameraResult.ok && cameraResult.camera.has_value()) {
+    context.camera.setOrbitCamera(*cameraResult.camera);
+  }
+}
+
+void buildViewportLayoutMenu(
+    dart::gui::PanelBuilder& ui,
+    EditorApp& app,
+    dart::gui::PanelContext& context)
+{
+  for (const ViewportLayoutAction& action :
+       buildViewportLayoutActions(app.viewportLayout)) {
+    if (ui.menuItem(viewportLayoutMenuLabel(action)) && action.enabled) {
+      applyViewportLayoutMenuAction(app, context, action.kind);
+    }
+  }
+}
+
 void buildMenuBar(
     dart::gui::PanelBuilder& ui,
     EditorApp& app,
@@ -856,6 +905,8 @@ void buildMenuBar(
     }
     ui.separator();
     buildViewportCameraControlMenu(ui, app);
+    ui.separator();
+    buildViewportLayoutMenu(ui, app, context);
     ui.separator();
     buildViewportLayerFilterMenu(ui, app);
     ui.endMenu();
@@ -1078,6 +1129,14 @@ int runEditor(int argc, char* argv[])
   options.cameraControlsProvider = [app]() {
     return viewportCameraControlOptions(app->viewportCamera);
   };
+  options.viewportLayoutProvider
+      = [app](const dart::gui::OrbitCamera& currentCamera) {
+          return viewportLayoutOptions(
+              app->engine,
+              currentCamera,
+              app->viewportLayers,
+              app->viewportLayout);
+        };
   options.cameraUpdater = [app](dart::gui::OrbitCamera& camera) {
     const ViewportCameraActionResult result = trackedSelectionCamera(
         app->engine, camera, app->viewportLayers, app->viewportCamera);

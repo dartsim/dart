@@ -46,10 +46,13 @@
 #include <dart/dynamics/inverse_kinematics.hpp>
 #include <dart/dynamics/simple_frame.hpp>
 
+#include <array>
 #include <functional>
 #include <optional>
 #include <string>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart::gui {
 
@@ -83,6 +86,36 @@ struct RenderableSelection
 {
   RenderableId id = 0;
   std::string label;
+};
+
+inline constexpr std::size_t kMaxViewportPanes = 4u;
+
+enum class ViewportLayoutMode
+{
+  Single,
+  Quad,
+};
+
+enum class ViewportPaneKind
+{
+  Perspective,
+  Front,
+  Right,
+  Top,
+};
+
+struct ViewportPaneView
+{
+  ViewportPaneKind kind = ViewportPaneKind::Perspective;
+  OrbitCamera camera;
+  bool active = false;
+};
+
+struct ViewportLayoutOptions
+{
+  ViewportLayoutMode mode = ViewportLayoutMode::Single;
+  std::array<ViewportPaneView, kMaxViewportPanes> panes;
+  std::size_t paneCount = 1u;
 };
 
 enum class KeyboardKey
@@ -155,6 +188,8 @@ struct ApplicationOptions
   std::optional<OrbitCamera> camera;
   std::function<OrbitCameraControlOptions()> cameraControlsProvider;
   std::function<bool(OrbitCamera&)> cameraUpdater;
+  std::function<ViewportLayoutOptions(const OrbitCamera&)>
+      viewportLayoutProvider;
   RenderSettings renderSettings;
   std::string defaultScene;
   std::vector<Panel> panels;

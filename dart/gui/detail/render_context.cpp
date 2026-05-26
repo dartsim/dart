@@ -46,6 +46,7 @@
 #include <string>
 
 #include <cctype>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 
@@ -188,12 +189,18 @@ FilamentRenderContext createFilamentRenderContext(
                                 static_cast<std::uint32_t>(options.width),
                                 static_cast<std::uint32_t>(options.height))
                           : context.engine->createSwapChain(nativeWindow);
-  context.view = context.engine->createView();
   context.scene = context.engine->createScene();
-  context.cameraEntity = utils::EntityManager::get().create();
-  context.camera = context.engine->createCamera(context.cameraEntity);
-  context.view->setScene(context.scene);
-  context.view->setCamera(context.camera);
+  for (std::size_t i = 0; i < context.views.size(); ++i) {
+    context.views[i] = context.engine->createView();
+    context.cameraEntities[i] = utils::EntityManager::get().create();
+    context.cameras[i]
+        = context.engine->createCamera(context.cameraEntities[i]);
+    context.views[i]->setScene(context.scene);
+    context.views[i]->setCamera(context.cameras[i]);
+  }
+  context.view = context.views[0];
+  context.cameraEntity = context.cameraEntities[0];
+  context.camera = context.cameras[0];
   return context;
 }
 
@@ -211,7 +218,13 @@ bool shouldSkipRenderedWorkAfterFrameSkip(
 void renderFilamentViews(
     FilamentRenderContext& context, ::filament::View* overlayView)
 {
-  context.renderer->render(context.view);
+  const std::size_t activeViewCount = std::clamp<std::size_t>(
+      context.activeViewCount, 1u, context.views.size());
+  for (std::size_t i = 0; i < activeViewCount; ++i) {
+    if (context.views[i] != nullptr) {
+      context.renderer->render(context.views[i]);
+    }
+  }
   if (overlayView != nullptr) {
     context.renderer->render(overlayView);
   }
@@ -239,9 +252,13 @@ double latestGpuFrameMs(const FilamentRenderContext& context)
 
 void destroyFilamentRenderContext(FilamentRenderContext& context)
 {
-  context.engine->destroyCameraComponent(context.cameraEntity);
-  utils::EntityManager::get().destroy(context.cameraEntity);
-  context.engine->destroy(context.view);
+  for (std::size_t i = 0; i < context.views.size(); ++i) {
+    context.engine->destroyCameraComponent(context.cameraEntities[i]);
+    utils::EntityManager::get().destroy(context.cameraEntities[i]);
+    if (context.views[i] != nullptr) {
+      context.engine->destroy(context.views[i]);
+    }
+  }
   context.engine->destroy(context.scene);
   context.engine->destroy(context.renderer);
   context.engine->destroy(context.swapChain);

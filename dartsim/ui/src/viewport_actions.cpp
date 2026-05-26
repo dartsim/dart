@@ -39,10 +39,12 @@
 #include <dartsim_ui/viewport_actions.hpp>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <utility>
 
 #include <cmath>
+#include <cstddef>
 
 namespace dartsim::ui {
 
@@ -963,6 +965,61 @@ ViewportCameraActionKind viewportPaneCameraAction(ViewportPaneKind pane)
       return ViewportCameraActionKind::Top;
   }
   return ViewportCameraActionKind::Perspective;
+}
+
+dart::gui::ViewportLayoutOptions viewportLayoutOptions(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    const ViewportLayoutState& state)
+{
+  const std::array<ViewportPaneKind, dart::gui::kMaxViewportPanes> panes{
+      ViewportPaneKind::Perspective,
+      ViewportPaneKind::Top,
+      ViewportPaneKind::Front,
+      ViewportPaneKind::Right};
+  dart::gui::ViewportLayoutOptions options;
+  options.mode = state.layout == ViewportLayoutKind::Quad
+                     ? dart::gui::ViewportLayoutMode::Quad
+                     : dart::gui::ViewportLayoutMode::Single;
+  options.paneCount
+      = options.mode == dart::gui::ViewportLayoutMode::Quad ? panes.size() : 1u;
+
+  for (std::size_t i = 0; i < options.paneCount; ++i) {
+    const ViewportPaneKind pane
+        = options.mode == dart::gui::ViewportLayoutMode::Quad
+              ? panes[i]
+              : state.activePane;
+    options.panes[i].active = pane == state.activePane;
+    switch (pane) {
+      case ViewportPaneKind::Perspective:
+        options.panes[i].kind = dart::gui::ViewportPaneKind::Perspective;
+        break;
+      case ViewportPaneKind::Front:
+        options.panes[i].kind = dart::gui::ViewportPaneKind::Front;
+        break;
+      case ViewportPaneKind::Right:
+        options.panes[i].kind = dart::gui::ViewportPaneKind::Right;
+        break;
+      case ViewportPaneKind::Top:
+        options.panes[i].kind = dart::gui::ViewportPaneKind::Top;
+        break;
+    }
+
+    if (options.mode == dart::gui::ViewportLayoutMode::Single
+        || pane == state.activePane) {
+      options.panes[i].camera = currentCamera;
+      continue;
+    }
+
+    const ViewportCameraActionResult camera = applyViewportCameraAction(
+        engine, currentCamera, viewportPaneCameraAction(pane), filters);
+    options.panes[i].camera = camera.ok && camera.camera.has_value()
+                                  ? *camera.camera
+                                  : currentCamera;
+  }
+
+  return options;
 }
 
 } // namespace dartsim::ui
