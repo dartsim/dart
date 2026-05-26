@@ -37,6 +37,7 @@
 
 #include <array>
 #include <optional>
+#include <string_view>
 
 #include <cstddef>
 
@@ -70,6 +71,12 @@ struct ViewportPaneFrame
   bool active = false;
 };
 
+struct ViewportPaneLabelState
+{
+  std::string_view text;
+  bool active = false;
+};
+
 struct FrameViewport
 {
   int width = 1;
@@ -92,6 +99,11 @@ std::optional<std::size_t> viewportPaneIndexAtCursor(
 
 const ViewportPaneFrame* viewportPaneAtCursor(
     const FrameViewport& viewport, double cursorX, double cursorY);
+
+std::string_view viewportPaneDisplayName(dart::gui::ViewportPaneKind kind);
+
+ViewportPaneLabelState viewportPaneLabelState(
+    const FrameViewport& viewport, std::size_t paneIndex);
 
 FrameViewport updateFrameViewport(
     GLFWwindow* window,

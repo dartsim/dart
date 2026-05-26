@@ -70,15 +70,16 @@ pane selection. The View menu exposes the four-view layout, the editor converts
 `dart::gui` renders one or four Filament views from that backend-hidden layout
 provider. The renderer keeps one shared pane geometry model for Filament
 viewports, active-pane camera controls, cursor-pane picking/dragging,
-active-pane debug labels, and tiny-framebuffer fallback to single pane.
+active-pane debug labels, visible pane labels with active-pane status, and
+tiny-framebuffer fallback to single pane.
 
 ## Immediate Next Step
 
-Continue Phase 5 by adding visible pane labels/status affordances and richer
-per-pane interaction polish for the four-view layout, or continue Phase 3 with
-richer relationship inspectors and object grouping. Keep behavior in testable
-engine or UI action/view-model helpers before wiring it into `editor.cpp`, and
-keep the filtered coverage line total above 95%.
+Continue Phase 5 by adding richer per-pane interaction polish for the four-view
+layout, or continue Phase 3 with richer relationship inspectors and object
+grouping. Keep behavior in testable engine or UI action/view-model helpers
+before wiring it into `editor.cpp`, and keep the filtered coverage line total
+above 95%.
 
 ## Context That Would Be Lost
 
@@ -142,6 +143,7 @@ keep the filtered coverage line total above 95%.
   single/four-view mode state, active perspective/front/right/top panes, pane
   camera mapping, public action rejection for pane activation while single-view
   is active, renderer layout payload conversion, split-pane geometry,
+  stable pane display names, active-pane label/status overlay plumbing,
   tiny-framebuffer fallback, GUI provider plumbing, and view-only dirty/undo
   invariants are tested.
 - `pixi run coverage-report-dartsim` now extracts the filtered

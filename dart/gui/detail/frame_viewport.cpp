@@ -40,6 +40,7 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <string_view>
 
 #include <cmath>
 #include <cstddef>
@@ -200,6 +201,36 @@ const ViewportPaneFrame* viewportPaneAtCursor(
   const std::optional<std::size_t> index
       = viewportPaneIndexAtCursor(viewport, cursorX, cursorY);
   return index.has_value() ? &viewport.panes[*index] : nullptr;
+}
+
+std::string_view viewportPaneDisplayName(dart::gui::ViewportPaneKind kind)
+{
+  switch (kind) {
+    case dart::gui::ViewportPaneKind::Perspective:
+      return "Perspective";
+    case dart::gui::ViewportPaneKind::Top:
+      return "Top";
+    case dart::gui::ViewportPaneKind::Front:
+      return "Front";
+    case dart::gui::ViewportPaneKind::Right:
+      return "Right";
+  }
+  return "Viewport";
+}
+
+ViewportPaneLabelState viewportPaneLabelState(
+    const FrameViewport& viewport, std::size_t paneIndex)
+{
+  ViewportPaneLabelState label;
+  if (paneIndex >= viewport.paneCount
+      || paneIndex >= dart::gui::kMaxViewportPanes) {
+    label.text = "Viewport";
+    return label;
+  }
+
+  label.text = viewportPaneDisplayName(viewport.panes[paneIndex].kind);
+  label.active = paneIndex == activeViewportPaneIndex(viewport);
+  return label;
 }
 
 FrameViewport updateFrameViewport(

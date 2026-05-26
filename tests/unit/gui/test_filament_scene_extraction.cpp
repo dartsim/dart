@@ -2064,6 +2064,58 @@ TEST(FilamentSceneExtraction, FrameViewportLayoutFallsBackWhenTooSmall)
   EXPECT_EQ(shortViewport.panes[0].kind, dart::gui::ViewportPaneKind::Front);
 }
 
+TEST(FilamentSceneExtraction, ViewportPaneDisplayNamesAreStable)
+{
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneDisplayName(
+          dart::gui::ViewportPaneKind::Perspective),
+      "Perspective");
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneDisplayName(
+          dart::gui::ViewportPaneKind::Top),
+      "Top");
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneDisplayName(
+          dart::gui::ViewportPaneKind::Front),
+      "Front");
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneDisplayName(
+          dart::gui::ViewportPaneKind::Right),
+      "Right");
+}
+
+TEST(FilamentSceneExtraction, ViewportPaneLabelStateUsesActivePaneFallback)
+{
+  dart::gui::ViewportLayoutOptions layout;
+  layout.mode = dart::gui::ViewportLayoutMode::Quad;
+  layout.paneCount = dart::gui::kMaxViewportPanes;
+  layout.panes[0].kind = dart::gui::ViewportPaneKind::Perspective;
+  layout.panes[1].kind = dart::gui::ViewportPaneKind::Top;
+  layout.panes[2].kind = dart::gui::ViewportPaneKind::Front;
+  layout.panes[3].kind = dart::gui::ViewportPaneKind::Right;
+
+  const auto noExplicitActive
+      = dart::gui::detail::makeFrameViewport(layout, 640, 480);
+  EXPECT_EQ(dart::gui::detail::activeViewportPaneIndex(noExplicitActive), 0u);
+  EXPECT_TRUE(
+      dart::gui::detail::viewportPaneLabelState(noExplicitActive, 0u).active);
+  EXPECT_FALSE(
+      dart::gui::detail::viewportPaneLabelState(noExplicitActive, 1u).active);
+
+  layout.panes[1].active = true;
+  layout.panes[2].active = true;
+  const auto multipleActive
+      = dart::gui::detail::makeFrameViewport(layout, 640, 480);
+  EXPECT_EQ(dart::gui::detail::activeViewportPaneIndex(multipleActive), 1u);
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneLabelState(multipleActive, 1u).text,
+      "Top");
+  EXPECT_TRUE(
+      dart::gui::detail::viewportPaneLabelState(multipleActive, 1u).active);
+  EXPECT_FALSE(
+      dart::gui::detail::viewportPaneLabelState(multipleActive, 2u).active);
+}
+
 TEST(FilamentSceneExtraction, DartsimEditorViewportLayoutUsesRendererSeam)
 {
   const auto applicationHeader
@@ -2104,6 +2156,18 @@ TEST(FilamentSceneExtraction, DartsimEditorViewportLayoutUsesRendererSeam)
       frameViewportSource.find("activeViewportPaneIndex"), std::string::npos);
   EXPECT_NE(
       frameViewportSource.find("viewport.height - pane.y - pane.height"),
+      std::string::npos);
+  EXPECT_NE(
+      frameViewportSource.find("viewportPaneDisplayName"), std::string::npos);
+
+  const auto uiFrameSource
+      = readSourceFile(kDartGuiDirectory / "detail" / "ui_frame.cpp");
+  EXPECT_NE(uiFrameSource.find("renderViewportPaneLabels"), std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("renderViewportPaneLabels(viewport, guiScale)"),
+      std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("viewportPaneLabelState(viewport, i)"),
       std::string::npos);
 
   const auto editorSource
