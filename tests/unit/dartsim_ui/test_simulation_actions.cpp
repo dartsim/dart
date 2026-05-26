@@ -58,6 +58,8 @@ TEST(DartsimSimulationActions, StatusTracksModePlaybackAndResetTarget)
   EXPECT_TRUE(status.canEditScene);
   EXPECT_FALSE(status.hasCapturedEditState);
   EXPECT_EQ(status.modeLabel, "Edit Mode");
+  EXPECT_EQ(status.modeDescription, "Author the scene before simulation");
+  EXPECT_EQ(status.editStateLabel, "Scene edits enabled");
   EXPECT_EQ(status.playbackLabel, "Stopped");
   EXPECT_EQ(status.resetTargetLabel, "Current Edit Mode state");
 
@@ -69,6 +71,9 @@ TEST(DartsimSimulationActions, StatusTracksModePlaybackAndResetTarget)
   EXPECT_FALSE(play.status.canEditScene);
   EXPECT_TRUE(play.status.hasCapturedEditState);
   EXPECT_EQ(play.status.modeLabel, "Simulation Mode");
+  EXPECT_EQ(
+      play.status.modeDescription, "Running from the captured Edit Mode scene");
+  EXPECT_EQ(play.status.editStateLabel, "Scene edits locked");
   EXPECT_EQ(play.status.playbackLabel, "Playing");
   EXPECT_EQ(play.status.resetTargetLabel, "Captured Edit Mode state");
 
@@ -84,6 +89,68 @@ TEST(DartsimSimulationActions, StatusTracksModePlaybackAndResetTarget)
   EXPECT_TRUE(reset.status.editMode);
   EXPECT_FALSE(reset.status.hasCapturedEditState);
   EXPECT_EQ(reset.status.resetTargetLabel, "Current Edit Mode state");
+}
+
+TEST(DartsimSimulationActions, ModeActionsExposeEditAndSimulationWorkflow)
+{
+  SimEngine engine;
+  std::vector<ui::SimulationModeAction> actions
+      = ui::buildSimulationModeActions(engine);
+  ASSERT_EQ(actions.size(), 4u);
+  EXPECT_EQ(actions[0].kind, ui::SimulationModeActionKind::PlayOrResume);
+  EXPECT_EQ(actions[0].label, "Enter Simulation Mode");
+  EXPECT_TRUE(actions[0].enabled);
+  EXPECT_EQ(actions[1].label, "Pause Simulation");
+  EXPECT_FALSE(actions[1].enabled);
+  EXPECT_EQ(actions[1].disabledReason, "Not in Simulation Mode");
+  EXPECT_EQ(actions[2].label, "Step Simulation");
+  EXPECT_TRUE(actions[2].enabled);
+  EXPECT_EQ(actions[3].label, "Return to Edit Mode");
+  EXPECT_FALSE(actions[3].enabled);
+  EXPECT_EQ(actions[3].disabledReason, "Already in Edit Mode");
+
+  const auto noReturn = ui::applySimulationModeAction(
+      engine, ui::SimulationModeActionKind::ReturnToEdit);
+  EXPECT_FALSE(noReturn.ok);
+  EXPECT_EQ(noReturn.message, "Already in Edit Mode");
+
+  const auto enter = ui::applySimulationModeAction(
+      engine, ui::SimulationModeActionKind::PlayOrResume);
+  EXPECT_TRUE(enter.ok);
+  EXPECT_EQ(enter.message, "Simulation playing");
+
+  actions = ui::buildSimulationModeActions(engine);
+  EXPECT_EQ(actions[0].label, "Resume Simulation");
+  EXPECT_FALSE(actions[0].enabled);
+  EXPECT_EQ(actions[0].disabledReason, "Simulation already playing");
+  EXPECT_TRUE(actions[1].enabled);
+  EXPECT_FALSE(actions[2].enabled);
+  EXPECT_EQ(actions[2].disabledReason, "Pause before stepping");
+  EXPECT_TRUE(actions[3].enabled);
+
+  const auto pause = ui::applySimulationModeAction(
+      engine, ui::SimulationModeActionKind::Pause);
+  EXPECT_TRUE(pause.ok);
+  EXPECT_EQ(pause.message, "Simulation paused");
+
+  actions = ui::buildSimulationModeActions(engine);
+  EXPECT_EQ(actions[0].label, "Resume Simulation");
+  EXPECT_TRUE(actions[0].enabled);
+  EXPECT_FALSE(actions[1].enabled);
+  EXPECT_EQ(actions[1].disabledReason, "Simulation already paused");
+  EXPECT_TRUE(actions[2].enabled);
+  EXPECT_TRUE(actions[3].enabled);
+
+  const auto step = ui::applySimulationModeAction(
+      engine, ui::SimulationModeActionKind::Step);
+  EXPECT_TRUE(step.ok);
+  EXPECT_EQ(step.message, "Simulation stepped");
+
+  const auto edit = ui::applySimulationModeAction(
+      engine, ui::SimulationModeActionKind::ReturnToEdit);
+  EXPECT_TRUE(edit.ok);
+  EXPECT_EQ(edit.message, "Returned to Edit Mode");
+  EXPECT_TRUE(edit.status.editMode);
 }
 
 TEST(DartsimSimulationActions, StepAndRealTimeFactorActionsValidateInput)

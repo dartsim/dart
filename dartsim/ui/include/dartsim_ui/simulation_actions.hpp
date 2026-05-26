@@ -35,6 +35,7 @@
 #include <dartsim_engine/sim_engine.hpp>
 
 #include <string>
+#include <vector>
 
 #include <cstddef>
 
@@ -58,6 +59,8 @@ struct SimulationStatus
   std::size_t replayFrameCount = 0;
   std::size_t replayFrame = 0;
   std::string modeLabel;
+  std::string modeDescription;
+  std::string editStateLabel;
   std::string playbackLabel;
   std::string resetTargetLabel;
 };
@@ -70,8 +73,29 @@ struct SimulationActionResult
   SimulationStatus status;
 };
 
+enum class SimulationModeActionKind
+{
+  PlayOrResume,
+  Pause,
+  Step,
+  ReturnToEdit,
+};
+
+struct SimulationModeAction
+{
+  SimulationModeActionKind kind = SimulationModeActionKind::PlayOrResume;
+  std::string label;
+  bool enabled = true;
+  std::string disabledReason;
+};
+
 /// Build panel-facing status from the engine's authoritative state.
 [[nodiscard]] SimulationStatus buildSimulationStatus(const SimEngine& engine);
+
+[[nodiscard]] std::vector<SimulationModeAction> buildSimulationModeActions(
+    const SimEngine& engine);
+SimulationActionResult applySimulationModeAction(
+    SimEngine& engine, SimulationModeActionKind kind);
 
 SimulationActionResult playSimulation(SimEngine& engine);
 SimulationActionResult pauseSimulation(SimEngine& engine);

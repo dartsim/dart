@@ -4804,12 +4804,16 @@ TEST(FilamentSceneExtraction, DartsimSimulationPanelUsesActionSeam)
       editorSource.find(
           "const SimulationStatus status = buildSimulationStatus"),
       std::string::npos);
-  EXPECT_NE(editorSource.find("playSimulation(app.engine)"), std::string::npos);
   EXPECT_NE(
-      editorSource.find("pauseSimulation(app.engine)"), std::string::npos);
-  EXPECT_NE(editorSource.find("stepSimulation(app.engine)"), std::string::npos);
+      editorSource.find("buildSimulationModeActions(app.engine)"),
+      std::string::npos);
   EXPECT_NE(
-      editorSource.find("resetSimulation(app.engine)"), std::string::npos);
+      editorSource.find("applySimulationModeAction(app.engine, action.kind)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.modeDescription)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.editStateLabel)"), std::string::npos);
   EXPECT_NE(
       editorSource.find("setSimulationRecording(app.engine, record)"),
       std::string::npos);
