@@ -41,6 +41,14 @@ Simulation workflow controls are now routed through a
 `buildSimulationModeActions` view-model: the editor presents "Enter Simulation
 Mode", "Resume Simulation", "Step Simulation", and "Return to Edit Mode" labels
 with disabled reasons instead of ambiguous transport-only buttons.
+Console automation is now routed through `dartsim_ui/console_actions`: the
+Console panel has a command input, quoted-argument parser, help/status text,
+and tested project, create, selection, visibility, rename/delete, simulation
+mode, recording, and replay command dispatch over the existing action seams.
+File > Open Project now opens the in-app project browser first. The native file
+dialog is still available from Browse, but failures leave the user in the
+browser instead of making Open unusable; extensionless paths such as `scene`
+resolve to `scene.dartsim` when that file exists.
 
 ## Immediate Next Step
 
@@ -81,6 +89,14 @@ testable engine or UI action/view-model helpers before wiring it into
   reparent/root actions go through undoable engine commands instead of direct
   `editor.cpp` mutation, and valid two-object actions preview the affected
   object names in their labels.
+- Console behavior is now covered through `dartsim_ui/console_actions` and
+  `UNIT_dartsim_ui_ConsoleActions`; commands reuse project, palette, outliner,
+  inspector, and simulation action seams, so command automation stays
+  backend-hidden and testable.
+- Project open remains usable without a working native picker: the File menu
+  opens the in-app browser, Browse reports native picker failures in-place, and
+  `openProject()` accepts extensionless paths when the corresponding `.dartsim`
+  file exists.
 - `pixi run coverage-report-dartsim` now extracts the filtered
   `dartsim/engine` plus testable `dartsim/ui` action/view-model coverage
   surface from the broader lcov report. A 2026-05-25 attempt ran 265/265 Debug
@@ -116,6 +132,6 @@ pattern:
 
 ```bash
 pixi run lint
-cmake --build build/default/cpp/Release --target UNIT_dartsim_engine UNIT_dartsim_ui_ProjectActions UNIT_dartsim_ui_InspectorActions UNIT_dartsim_ui_OutlinerActions UNIT_dartsim_ui_PaletteActions UNIT_dartsim_ui_RelationshipActions UNIT_dartsim_ui_ViewportActions UNIT_dartsim_ui_SimulationActions UNIT_gui_FilamentSceneExtraction
-ctest --test-dir build/default/cpp/Release -R '^(UNIT_gui_FilamentSceneExtraction|UNIT_dartsim_(engine|ui_(ProjectActions|InspectorActions|OutlinerActions|PaletteActions|RelationshipActions|ViewportActions|SimulationActions)))$' --output-on-failure -j 1
+cmake --build build/default/cpp/Release --target UNIT_dartsim_engine UNIT_dartsim_ui_ProjectActions UNIT_dartsim_ui_ConsoleActions UNIT_dartsim_ui_InspectorActions UNIT_dartsim_ui_OutlinerActions UNIT_dartsim_ui_PaletteActions UNIT_dartsim_ui_RelationshipActions UNIT_dartsim_ui_ViewportActions UNIT_dartsim_ui_SimulationActions UNIT_gui_FilamentSceneExtraction
+ctest --test-dir build/default/cpp/Release -R '^(UNIT_gui_FilamentSceneExtraction|UNIT_dartsim_(engine|ui_(ProjectActions|ConsoleActions|InspectorActions|OutlinerActions|PaletteActions|RelationshipActions|ViewportActions|SimulationActions)))$' --output-on-failure -j 1
 ```
