@@ -774,6 +774,94 @@ TEST(DartsimViewportActions, CameraPresetsPreserveTargetAndDistance)
   EXPECT_GE(perspective.camera->distance, 0.8);
 }
 
+TEST(DartsimViewportActions, ViewportLayoutActionsAreViewOnly)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(0.0, 0.0, 0.5), "box"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayoutState layout;
+  auto actions = ui::buildViewportLayoutActions(layout);
+  ASSERT_EQ(actions.size(), 6u);
+  EXPECT_EQ(actions[0].kind, ui::ViewportLayoutActionKind::SingleView);
+  EXPECT_TRUE(actions[0].checked);
+  EXPECT_EQ(actions[1].kind, ui::ViewportLayoutActionKind::QuadView);
+  EXPECT_FALSE(actions[1].checked);
+  EXPECT_EQ(
+      actions[2].kind, ui::ViewportLayoutActionKind::ActivatePerspectivePane);
+  EXPECT_TRUE(actions[2].checked);
+  EXPECT_FALSE(actions[2].enabled);
+  EXPECT_EQ(actions[2].disabledReason, "Enable Four View Layout");
+
+  auto disabledPane = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::ActivateFrontPane);
+  EXPECT_FALSE(disabledPane.ok);
+  EXPECT_EQ(disabledPane.message, "Enable Four View Layout");
+  EXPECT_FALSE(disabledPane.cameraAction.has_value());
+  EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Single);
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Perspective);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  auto result = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::QuadView);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Quad);
+  ASSERT_TRUE(result.cameraAction.has_value());
+  EXPECT_EQ(*result.cameraAction, ui::ViewportCameraActionKind::Perspective);
+
+  actions = ui::buildViewportLayoutActions(layout);
+  ASSERT_EQ(actions.size(), 6u);
+  EXPECT_FALSE(actions[0].checked);
+  EXPECT_TRUE(actions[1].checked);
+  EXPECT_TRUE(actions[2].enabled);
+  EXPECT_TRUE(actions[2].checked);
+
+  result = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::ActivateFrontPane);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Front Pane active");
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Front);
+  ASSERT_TRUE(result.cameraAction.has_value());
+  EXPECT_EQ(*result.cameraAction, ui::ViewportCameraActionKind::Front);
+
+  const auto frontCamera = ui::applyViewportCameraAction(
+      engine, testCamera(), *result.cameraAction);
+  ASSERT_TRUE(frontCamera.ok);
+  ASSERT_TRUE(frontCamera.camera.has_value());
+  EXPECT_NEAR(frontCamera.camera->yaw, -3.14159265358979323846 * 0.5, 1e-12);
+  EXPECT_NEAR(frontCamera.camera->pitch, 0.0, 1e-12);
+
+  result = ui::applyViewportLayoutAction(
+      layout, ui::ViewportLayoutActionKind::SingleView);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Single);
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Front);
+  ASSERT_TRUE(result.cameraAction.has_value());
+  EXPECT_EQ(*result.cameraAction, ui::ViewportCameraActionKind::Front);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, ViewportPaneCameraMappingsAreCanonical)
+{
+  EXPECT_EQ(
+      ui::viewportPaneCameraAction(ui::ViewportPaneKind::Perspective),
+      ui::ViewportCameraActionKind::Perspective);
+  EXPECT_EQ(
+      ui::viewportPaneCameraAction(ui::ViewportPaneKind::Front),
+      ui::ViewportCameraActionKind::Front);
+  EXPECT_EQ(
+      ui::viewportPaneCameraAction(ui::ViewportPaneKind::Right),
+      ui::ViewportCameraActionKind::Right);
+  EXPECT_EQ(
+      ui::viewportPaneCameraAction(ui::ViewportPaneKind::Top),
+      ui::ViewportCameraActionKind::Top);
+}
+
 TEST(DartsimViewportActions, CameraControlActionsSetMouseModeWithoutEditing)
 {
   SimEngine engine;

@@ -430,6 +430,56 @@ std::string cameraMouseModeLabel(dart::gui::OrbitCameraMouseMode mode)
   return "Camera Mode";
 }
 
+ViewportLayoutAction makeViewportLayoutAction(
+    ViewportLayoutActionKind kind,
+    std::string label,
+    bool checked,
+    bool enabled = true,
+    std::string disabledReason = {})
+{
+  ViewportLayoutAction action;
+  action.kind = kind;
+  action.label = std::move(label);
+  action.checked = checked;
+  action.enabled = enabled;
+  action.disabledReason = std::move(disabledReason);
+  return action;
+}
+
+std::string viewportPaneLabel(ViewportPaneKind pane)
+{
+  switch (pane) {
+    case ViewportPaneKind::Perspective:
+      return "Perspective Pane";
+    case ViewportPaneKind::Front:
+      return "Front Pane";
+    case ViewportPaneKind::Right:
+      return "Right Pane";
+    case ViewportPaneKind::Top:
+      return "Top Pane";
+  }
+  return "Viewport Pane";
+}
+
+std::optional<ViewportPaneKind> viewportPaneForLayoutAction(
+    ViewportLayoutActionKind kind)
+{
+  switch (kind) {
+    case ViewportLayoutActionKind::ActivatePerspectivePane:
+      return ViewportPaneKind::Perspective;
+    case ViewportLayoutActionKind::ActivateFrontPane:
+      return ViewportPaneKind::Front;
+    case ViewportLayoutActionKind::ActivateRightPane:
+      return ViewportPaneKind::Right;
+    case ViewportLayoutActionKind::ActivateTopPane:
+      return ViewportPaneKind::Top;
+    case ViewportLayoutActionKind::SingleView:
+    case ViewportLayoutActionKind::QuadView:
+      return std::nullopt;
+  }
+  return std::nullopt;
+}
+
 } // namespace
 
 Eigen::Vector3d viewportMoveDelta(const ViewportMoveInput& input)
@@ -823,6 +873,96 @@ ViewportCameraActionResult trackedSelectionCamera(
   dart::gui::OrbitCamera camera = sanitizedCurrentCamera(currentCamera);
   camera.target = boundsCenter(bounds);
   return {true, "Tracking selection", camera};
+}
+
+std::vector<ViewportLayoutAction> buildViewportLayoutActions(
+    const ViewportLayoutState& state)
+{
+  const bool quad = state.layout == ViewportLayoutKind::Quad;
+  return {
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::SingleView,
+          "Single View",
+          state.layout == ViewportLayoutKind::Single),
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::QuadView, "Four View Layout", quad),
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::ActivatePerspectivePane,
+          "Perspective Pane",
+          state.activePane == ViewportPaneKind::Perspective,
+          quad,
+          "Enable Four View Layout"),
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::ActivateFrontPane,
+          "Front Pane",
+          state.activePane == ViewportPaneKind::Front,
+          quad,
+          "Enable Four View Layout"),
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::ActivateRightPane,
+          "Right Pane",
+          state.activePane == ViewportPaneKind::Right,
+          quad,
+          "Enable Four View Layout"),
+      makeViewportLayoutAction(
+          ViewportLayoutActionKind::ActivateTopPane,
+          "Top Pane",
+          state.activePane == ViewportPaneKind::Top,
+          quad,
+          "Enable Four View Layout"),
+  };
+}
+
+ViewportLayoutActionResult applyViewportLayoutAction(
+    ViewportLayoutState& state, ViewportLayoutActionKind kind)
+{
+  switch (kind) {
+    case ViewportLayoutActionKind::SingleView:
+      state.layout = ViewportLayoutKind::Single;
+      return {
+          true,
+          "Single view layout",
+          viewportPaneCameraAction(state.activePane)};
+    case ViewportLayoutActionKind::QuadView:
+      state.layout = ViewportLayoutKind::Quad;
+      return {
+          true, "Four view layout", viewportPaneCameraAction(state.activePane)};
+    case ViewportLayoutActionKind::ActivatePerspectivePane:
+    case ViewportLayoutActionKind::ActivateFrontPane:
+    case ViewportLayoutActionKind::ActivateRightPane:
+    case ViewportLayoutActionKind::ActivateTopPane: {
+      const std::optional<ViewportPaneKind> pane
+          = viewportPaneForLayoutAction(kind);
+      if (!pane.has_value()) {
+        break;
+      }
+      if (state.layout != ViewportLayoutKind::Quad) {
+        return {false, "Enable Four View Layout", std::nullopt};
+      }
+      state.activePane = *pane;
+      return {
+          true,
+          viewportPaneLabel(*pane) + " active",
+          viewportPaneCameraAction(*pane)};
+    }
+  }
+
+  return {false, "Unknown viewport layout", std::nullopt};
+}
+
+ViewportCameraActionKind viewportPaneCameraAction(ViewportPaneKind pane)
+{
+  switch (pane) {
+    case ViewportPaneKind::Perspective:
+      return ViewportCameraActionKind::Perspective;
+    case ViewportPaneKind::Front:
+      return ViewportCameraActionKind::Front;
+    case ViewportPaneKind::Right:
+      return ViewportCameraActionKind::Right;
+    case ViewportPaneKind::Top:
+      return ViewportCameraActionKind::Top;
+  }
+  return ViewportCameraActionKind::Perspective;
 }
 
 } // namespace dartsim::ui

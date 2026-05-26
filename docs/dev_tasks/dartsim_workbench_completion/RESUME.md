@@ -64,13 +64,18 @@ Viewport camera controls now have tested Orbit/Pan/Zoom mouse mode state and
 selected-object tracking. The generic `dart::gui::ApplicationOptions` camera
 seams remain renderer-neutral, while `dartsim_ui/viewport_actions` owns the
 editor-specific action labels, disabled reasons, and selection-tracking target.
+Viewport layout actions now have tested single-view/four-view state and active
+pane selection, but they are not exposed in the View menu until renderer-side
+multi-viewport drawing consumes the state. Future renderer work should consume
+`ViewportLayoutState` instead of adding backend-specific editor state.
 
 ## Immediate Next Step
 
-Continue Phase 5 with multi-view layout state, or continue Phase 3 with richer
-relationship inspectors and object grouping. Keep behavior in testable engine
-or UI action/view-model helpers before wiring it into `editor.cpp`, and keep the
-filtered coverage line total above 95%.
+Continue Phase 5 by making the renderer consume `ViewportLayoutState` for
+multi-viewport drawing, or continue Phase 3 with richer relationship inspectors
+and object grouping. Keep behavior in testable engine or UI action/view-model
+helpers before wiring it into `editor.cpp`, and keep the filtered coverage line
+total above 95%.
 
 ## Context That Would Be Lost
 
@@ -129,6 +134,12 @@ filtered coverage line total above 95%.
   hidden-selection rejection, generic camera input zoom dragging, and
   `ApplicationOptions` camera callbacks are tested without renderer backend
   leakage into `dartsim/ui`.
+- Viewport layout behavior is covered through
+  `UNIT_dartsim_ui_ViewportActions` and `UNIT_gui_FilamentSceneExtraction`;
+  single/four-view mode state, active perspective/front/right/top panes, pane
+  camera mapping, public action rejection for pane activation while single-view
+  is active, and view-only dirty/undo invariants are tested before renderer-side
+  split drawing exists.
 - `pixi run coverage-report-dartsim` now extracts the filtered
   `dartsim/engine` plus testable `dartsim/ui` action/view-model coverage
   surface from the broader lcov report. A 2026-05-25 attempt ran 265/265 Debug

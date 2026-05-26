@@ -167,6 +167,58 @@ struct ViewportCameraControlActionResult
   std::string message;
 };
 
+/// Viewport layout mode. Quad layout is editor state, not scene data.
+enum class ViewportLayoutKind
+{
+  Single,
+  Quad,
+};
+
+/// Logical pane selected inside the viewport layout.
+enum class ViewportPaneKind
+{
+  Perspective,
+  Front,
+  Right,
+  Top,
+};
+
+/// Editor-owned layout state for the rendered viewport area.
+struct ViewportLayoutState
+{
+  ViewportLayoutKind layout = ViewportLayoutKind::Single;
+  ViewportPaneKind activePane = ViewportPaneKind::Perspective;
+};
+
+/// View-menu layout command.
+enum class ViewportLayoutActionKind
+{
+  SingleView,
+  QuadView,
+  ActivatePerspectivePane,
+  ActivateFrontPane,
+  ActivateRightPane,
+  ActivateTopPane,
+};
+
+/// View-menu action state for viewport layout and active pane selection.
+struct ViewportLayoutAction
+{
+  ViewportLayoutActionKind kind = ViewportLayoutActionKind::SingleView;
+  std::string label;
+  bool checked = false;
+  bool enabled = true;
+  std::string disabledReason;
+};
+
+/// Result of applying a viewport layout action.
+struct ViewportLayoutActionResult
+{
+  bool ok = false;
+  std::string message;
+  std::optional<ViewportCameraActionKind> cameraAction;
+};
+
 /// Resolve a movement request into a world-space delta.
 [[nodiscard]] Eigen::Vector3d viewportMoveDelta(const ViewportMoveInput& input);
 
@@ -269,5 +321,15 @@ applyViewportCameraControlAction(
     const dart::gui::OrbitCamera& currentCamera,
     const ViewportLayerFilterState& filters,
     const ViewportCameraControlState& controls);
+
+/// Build and apply single/quad viewport layout commands.
+[[nodiscard]] std::vector<ViewportLayoutAction> buildViewportLayoutActions(
+    const ViewportLayoutState& state);
+[[nodiscard]] ViewportLayoutActionResult applyViewportLayoutAction(
+    ViewportLayoutState& state, ViewportLayoutActionKind kind);
+
+/// Map a logical viewport pane to its canonical camera preset.
+[[nodiscard]] ViewportCameraActionKind viewportPaneCameraAction(
+    ViewportPaneKind pane);
 
 } // namespace dartsim::ui
