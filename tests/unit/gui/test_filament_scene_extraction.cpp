@@ -1841,6 +1841,23 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
   EXPECT_FALSE(headlessOptions.windowWidthExplicit);
   EXPECT_FALSE(headlessOptions.windowHeightExplicit);
 
+  dart::gui::RunOptions unrelatedDefaults;
+  unrelatedDefaults.maxFrames = 4;
+  unrelatedDefaults.renderBackend = "noop";
+  char unrelatedExecutable[] = "dartsim";
+  char* unrelatedArgv[] = {unrelatedExecutable};
+  const auto unrelatedOptions = dart::gui::detail::parseOptions(
+      1,
+      unrelatedArgv,
+      std::optional<dart::gui::RunOptions>{unrelatedDefaults});
+
+  EXPECT_EQ(unrelatedOptions.run.width, 1280);
+  EXPECT_EQ(unrelatedOptions.run.height, 720);
+  EXPECT_EQ(unrelatedOptions.run.maxFrames, 4);
+  EXPECT_EQ(unrelatedOptions.run.renderBackend, "noop");
+  EXPECT_FALSE(unrelatedOptions.windowWidthExplicit);
+  EXPECT_FALSE(unrelatedOptions.windowHeightExplicit);
+
   dart::gui::RunOptions defaults;
   defaults.width = 1280;
   defaults.height = 960;
@@ -1852,8 +1869,8 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
 
   EXPECT_EQ(defaultOptions.run.width, 1280);
   EXPECT_EQ(defaultOptions.run.height, 960);
-  EXPECT_FALSE(defaultOptions.windowWidthExplicit);
-  EXPECT_FALSE(defaultOptions.windowHeightExplicit);
+  EXPECT_TRUE(defaultOptions.windowWidthExplicit);
+  EXPECT_TRUE(defaultOptions.windowHeightExplicit);
 
   char overrideExecutable[] = "fetch";
   char widthOption[] = "--width";
@@ -1881,7 +1898,7 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
   EXPECT_EQ(widthOnlyOptions.run.width, 1000);
   EXPECT_EQ(widthOnlyOptions.run.height, 960);
   EXPECT_TRUE(widthOnlyOptions.windowWidthExplicit);
-  EXPECT_FALSE(widthOnlyOptions.windowHeightExplicit);
+  EXPECT_TRUE(widthOnlyOptions.windowHeightExplicit);
 
   char depthExecutable[] = "fetch";
   char renderOutputOption[] = "--render-output";

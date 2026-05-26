@@ -542,6 +542,12 @@ AppOptions parseOptions(
   AppOptions options;
   if (runDefaults.has_value()) {
     options.run = *runDefaults;
+    const dart::gui::RunOptions defaultRunOptions;
+    const bool customWindowSize
+        = runDefaults->width != defaultRunOptions.width
+          || runDefaults->height != defaultRunOptions.height;
+    options.windowWidthExplicit = customWindowSize;
+    options.windowHeightExplicit = customWindowSize;
   }
 
   bool g1PackageNameExplicit = false;
