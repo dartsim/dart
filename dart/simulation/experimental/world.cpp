@@ -1070,10 +1070,12 @@ void World::step(
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::DeformableDynamicsStage deformableDynamics;
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
       .addStage(multibodyDynamics)
+      .addStage(deformableDynamics)
       .addStage(rigidBodyPosition)
       .addStage(stage);
   step(executor, pipeline);
@@ -1089,10 +1091,12 @@ void World::step(
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
+  compute::DeformableDynamicsStage deformableDynamics;
   compute::WorldStepPipeline pipeline;
   pipeline.addStage(rigidBodyVelocity)
       .addStage(rigidBodyContact)
       .addStage(multibodyDynamics)
+      .addStage(deformableDynamics)
       .addStage(rigidBodyPosition)
       .addStage(stage);
   step(count, executor, pipeline);

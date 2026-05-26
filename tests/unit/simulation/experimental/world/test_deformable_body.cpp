@@ -325,6 +325,54 @@ TEST(DeformableBody, StepCountWithExecutorRunsDefaultDeformableStage)
 }
 
 //==============================================================================
+TEST(DeformableBody, CustomStageStepOverloadsRunDefaultDeformableStage)
+{
+  auto addStretchedBody = [](sx::World& world) {
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+
+    auto options = makeTwoNodeBody();
+    options.positions[1] = Eigen::Vector3d(2.0, 0.0, 0.0);
+    options.edges = {sx::DeformableEdge{0, 1, 1.0}};
+    options.edgeStiffness = 100.0;
+    return world.addDeformableBody("custom_stage", options);
+  };
+
+  compute::SequentialExecutor executor;
+  compute::KinematicsStage replacementKinematics;
+
+  sx::World defaultWorld;
+  sx::World customWorld;
+  auto defaultBody = addStretchedBody(defaultWorld);
+  auto customBody = addStretchedBody(customWorld);
+
+  defaultWorld.step(executor);
+  customWorld.step(executor, replacementKinematics);
+
+  expectVectorNear(customBody.getPosition(1), defaultBody.getPosition(1));
+  expectVectorNear(customBody.getVelocity(1), defaultBody.getVelocity(1));
+  EXPECT_LT(customBody.getPosition(1).x(), 2.0);
+  EXPECT_DOUBLE_EQ(customWorld.getTime(), defaultWorld.getTime());
+  EXPECT_EQ(customWorld.getFrame(), defaultWorld.getFrame());
+
+  sx::World countedDefaultWorld;
+  sx::World countedCustomWorld;
+  auto countedDefaultBody = addStretchedBody(countedDefaultWorld);
+  auto countedCustomBody = addStretchedBody(countedCustomWorld);
+
+  countedDefaultWorld.step(2, executor);
+  countedCustomWorld.step(2, executor, replacementKinematics);
+
+  expectVectorNear(
+      countedCustomBody.getPosition(1), countedDefaultBody.getPosition(1));
+  expectVectorNear(
+      countedCustomBody.getVelocity(1), countedDefaultBody.getVelocity(1));
+  EXPECT_LT(countedCustomBody.getPosition(1).x(), 2.0);
+  EXPECT_DOUBLE_EQ(countedCustomWorld.getTime(), countedDefaultWorld.getTime());
+  EXPECT_EQ(countedCustomWorld.getFrame(), countedDefaultWorld.getFrame());
+}
+
+//==============================================================================
 TEST(DeformableBody, StaticGroundBarrierPreventsCrossing)
 {
   sx::World world;
