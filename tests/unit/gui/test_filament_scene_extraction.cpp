@@ -1807,8 +1807,8 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
 
   EXPECT_EQ(defaultOptions.run.width, 1280);
   EXPECT_EQ(defaultOptions.run.height, 960);
-  EXPECT_FALSE(defaultOptions.windowWidthExplicit);
-  EXPECT_FALSE(defaultOptions.windowHeightExplicit);
+  EXPECT_TRUE(defaultOptions.windowWidthExplicit);
+  EXPECT_TRUE(defaultOptions.windowHeightExplicit);
 
   char overrideExecutable[] = "fetch";
   char widthOption[] = "--width";
@@ -1836,7 +1836,7 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
   EXPECT_EQ(widthOnlyOptions.run.width, 1000);
   EXPECT_EQ(widthOnlyOptions.run.height, 960);
   EXPECT_TRUE(widthOnlyOptions.windowWidthExplicit);
-  EXPECT_FALSE(widthOnlyOptions.windowHeightExplicit);
+  EXPECT_TRUE(widthOnlyOptions.windowHeightExplicit);
 
   char depthExecutable[] = "fetch";
   char renderOutputOption[] = "--render-output";
@@ -6473,6 +6473,8 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
 {
   const auto nativeWindowSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "native_window.cpp");
+  const auto applicationSource = readSourceFile(
+      std::filesystem::path("dart") / "gui" / "detail" / "application.cpp");
   const auto scenesSource = readSourceFile(
       std::filesystem::path("dart") / "gui" / "detail" / "scenes.cpp");
 
@@ -6559,6 +6561,11 @@ TEST(FilamentSceneExtraction, RunOptions_NormalizeAndGateBoundedCapture)
   EXPECT_NE(nativeWindowSource.find("glfwSetWindowSize"), std::string::npos);
   EXPECT_NE(
       nativeWindowSource.find("guiScale.effectiveScale"), std::string::npos);
+  EXPECT_NE(
+      nativeWindowSource.find("(std::max)(xScale, yScale)"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("!automaticWindowSizeResolved"),
+      std::string::npos);
   EXPECT_EQ(
       scenesSource.find("options.run.width) * options.run.guiScale"),
       std::string::npos);

@@ -77,7 +77,7 @@ double resolveMonitorDpiScale(GLFWmonitor* monitor)
   float xScale = 1.0f;
   float yScale = 1.0f;
   glfwGetMonitorContentScale(monitor, &xScale, &yScale);
-  return normalizeGuiDpiScale(std::max(xScale, yScale));
+  return normalizeGuiDpiScale((std::max)(xScale, yScale));
 #else
   return 1.0;
 #endif
@@ -137,14 +137,15 @@ GLFWmonitor* resolveWindowMonitor(GLFWwindow* window)
       continue;
     }
 
-    const int overlapWidth = std::max(
-        0,
-        std::min(windowX + windowWidth, workArea.x + workArea.width)
-            - std::max(windowX, workArea.x));
-    const int overlapHeight = std::max(
-        0,
-        std::min(windowY + windowHeight, workArea.y + workArea.height)
-            - std::max(windowY, workArea.y));
+    const int overlapWidth = (std::max)(0,
+                                        (std::min)(windowX + windowWidth,
+                                                   workArea.x + workArea.width)
+                                            - (std::max)(windowX, workArea.x));
+    const int overlapHeight
+        = (std::max)(0,
+                     (std::min)(windowY + windowHeight,
+                                workArea.y + workArea.height)
+                         - (std::max)(windowY, workArea.y));
     const int overlapArea = overlapWidth * overlapHeight;
     if (overlapArea > bestOverlapArea) {
       bestOverlapArea = overlapArea;
@@ -269,7 +270,7 @@ double resolveWindowDpiScale(GLFWwindow* window)
   float xScale = 1.0f;
   float yScale = 1.0f;
   glfwGetWindowContentScale(window, &xScale, &yScale);
-  return normalizeGuiDpiScale(std::max(xScale, yScale));
+  return normalizeGuiDpiScale((std::max)(xScale, yScale));
 #else
   return 1.0;
 #endif

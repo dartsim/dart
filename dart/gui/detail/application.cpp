@@ -283,6 +283,9 @@ int runGuiBackendApplicationImpl(
   GuiScaleState guiScale = dart::gui::detail::makeGuiScaleState(
       runOptions.guiScale, resolveWindowDpiScale(window));
   double automaticWindowEffectiveScale = guiScale.effectiveScale;
+  bool automaticWindowSizeResolved
+      = runOptions.headless
+        || (appOptions.windowWidthExplicit && appOptions.windowHeightExplicit);
   ImGuiOverlay imguiOverlay = createConfiguredImGuiOverlay(
       *engine, static_cast<float>(guiScale.effectiveScale));
   auto& imguiIo = getCurrentImGuiIo();
@@ -338,8 +341,9 @@ int runGuiBackendApplicationImpl(
 
     guiScale = dart::gui::detail::makeGuiScaleState(
         runOptions.guiScale, resolveWindowDpiScale(window));
-    if (std::abs(guiScale.effectiveScale - automaticWindowEffectiveScale)
-        > 1e-4) {
+    if (!automaticWindowSizeResolved
+        || std::abs(guiScale.effectiveScale - automaticWindowEffectiveScale)
+               > 1e-4) {
       resizeAutomaticApplicationWindow(
           window,
           runOptions,
@@ -347,6 +351,7 @@ int runGuiBackendApplicationImpl(
           !appOptions.windowWidthExplicit,
           !appOptions.windowHeightExplicit);
       automaticWindowEffectiveScale = guiScale.effectiveScale;
+      automaticWindowSizeResolved = true;
     }
     updateConfiguredImGuiOverlayScale(
         *engine, imguiOverlay, static_cast<float>(guiScale.effectiveScale));
