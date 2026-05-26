@@ -302,7 +302,7 @@ jobs:
 
       - name: Upload collision benchmark artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: collision-benchmark-guard-${{ github.run_id }}-${{ github.run_attempt }}
           path: .benchmark_results/collision_check_*.json
