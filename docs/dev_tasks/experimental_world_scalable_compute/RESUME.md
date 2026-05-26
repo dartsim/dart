@@ -62,14 +62,14 @@ the Phase 5 CPU-baseline smoke row.
 ## Current Branch
 
 `feature/experimental-world-scalable-compute-cuda-reconcile` — PR #2712 branch,
-merged through current `origin/main` (`23372bf1942`). The branch layers the
-Phase 5 packet gates and full-batch benchmark contract on top of the merged
-opt-in CUDA smoke path from PR #2710. CUDA remains off by default and is enabled
-through the `cuda` Pixi environment or `DART_ENABLE_EXPERIMENTAL_CUDA=ON`.
-Because `.github/workflows/ci_cuda.yml` now exists on the default branch via
-PR #2710, maintainers can dispatch the workflow; this branch extends that
-workflow to run the Phase 5 packet gates and upload packet artifacts once a
-project-owned CUDA runner is available.
+merged through current `origin/main` (`ac0bf480361`) as of 2026-05-26. PR #2712
+is open, non-draft, and carries the Phase 5 packet gates and full-batch
+benchmark contract on top of the merged opt-in CUDA smoke path from PR #2710.
+CUDA remains off by default and is enabled through the `cuda` Pixi environment
+or `DART_ENABLE_EXPERIMENTAL_CUDA=ON`. Because `.github/workflows/ci_cuda.yml`
+now exists on the default branch via PR #2710, maintainers can dispatch the
+workflow; PR #2712 extends that workflow to run the Phase 5 packet gates and
+upload packet artifacts once a project-owned CUDA runner is available.
 
 ## Immediate Next Step
 
@@ -77,9 +77,11 @@ project-owned CUDA runner is available.
 full free-body dynamic step and frame-coupled rigid-body parenting. The default
 experimental `World::step` pipeline selects the merged contact/multibody solver
 pipeline; keep the batched stage as the explicit unconstrained SoA path behind
-the executor seam. The branch is locally PR-ready; the next external step is
-explicit maintainer approval to push this branch and open the PR. The natural
-next steps, in rough order:
+the executor seam. The immediate external step is to finish managing PR #2712:
+wait for current CI to leave the GitHub queue, fix any failures, and keep review
+threads resolved. After PR #2712 is mergeable, a maintainer still needs to merge
+it before the extended manual CUDA workflow exists on the default branch. The
+natural next steps, in rough order:
 
 1. Phase 3's deliverables are implemented: determinism gate (bitwise for
    map-only), cost gate (`ParallelExecutor::setInlineThreshold`), explicit-SIMD
@@ -151,11 +153,11 @@ Keep `entt` internal and the public handle API unchanged.
     benchmark rows
     `BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10` and
     `BM_Phase5RigidBodyBatchGpu/1024/128/10`.
-  - The local manual full Phase 5 row also ran successfully after the
-    `origin/main` merge with
+  - The local manual full Phase 5 row also ran successfully on 2026-05-26 after
+    the latest `origin/main` merge with
     `BM_Phase5RigidBodyBatch(CpuBaseline|Gpu)/4096/128/100`, writing
     `.benchmark_results/phase5_cuda_ci_full.json`; the generated packet passed
-    with `worldCount=4096`, `bodyCount=128`, `stepCount=100`, `speedup=114.463`,
+    with `worldCount=4096`, `bodyCount=128`, `stepCount=100`, `speedup=94.871`,
     and `maxFinalStateAbsError=1.78e-15`. This is useful local evidence only
     and does not close Phase 5 without project-owned GPU build/import CI and a
     passing go/no-go packet for the same change.
@@ -209,7 +211,7 @@ python/tests/unit/test_run_performance_dashboard_benchmarks.py -q` passed
   - `pixi run check-phase5-cuda-workflow` passed for the manual CUDA workflow
     wiring that will produce the Phase 5 packet artifact once a project-owned
     GPU runner exists.
-  - A read-only GitHub runner check on 2026-05-25 saw online self-hosted Linux
+  - A read-only GitHub runner check on 2026-05-26 saw online self-hosted Linux
     runners labeled `self-hosted`, `Linux`, `X64`, `dartsim`, and `docker`, but
     no runner labeled `cuda`; the project-owned GPU runner prerequisite remains
     open.
