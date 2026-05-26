@@ -33,6 +33,7 @@
 #include <dartsim_ui/project_actions.hpp>
 
 #include <filesystem>
+#include <fstream>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -66,11 +67,27 @@ std::string makeOpenFailureMessage(const std::string& path)
   }
 
   std::error_code error;
-  if (!std::filesystem::exists(path, error)) {
+  const std::filesystem::path projectPath(path);
+  if (!std::filesystem::exists(projectPath, error)) {
+    if (error) {
+      return "Open failed: " + path + ": " + error.message();
+    }
     return "Open failed: " + path + " does not exist";
   }
 
-  return "Open failed: " + path;
+  if (std::filesystem::is_directory(projectPath, error)) {
+    if (error) {
+      return "Open failed: " + path + ": " + error.message();
+    }
+    return "Open failed: " + path + " is a directory";
+  }
+
+  std::ifstream file(projectPath, std::ios::binary);
+  if (!file) {
+    return "Open failed: " + path + " is not readable";
+  }
+
+  return "Open failed: " + path + " is not a dartsim project";
 }
 
 std::string ensureProjectExtension(std::string path)

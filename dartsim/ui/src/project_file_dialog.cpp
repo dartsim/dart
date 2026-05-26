@@ -59,7 +59,8 @@ ProjectFileDialogResult failedDialog(std::string error)
 std::string nativeDialogError(std::string fallback)
 {
   const char* error = NFD_GetError();
-  return error == nullptr ? std::move(fallback) : std::string(error);
+  return error == nullptr || *error == '\0' ? std::move(fallback)
+                                            : std::string(error);
 }
 
 nfdwindowhandle_t nativeParentWindow(void* window)
