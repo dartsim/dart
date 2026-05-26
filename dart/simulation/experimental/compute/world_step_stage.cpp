@@ -627,17 +627,60 @@ struct StaticGroundBarrier
 {
   enum class Shape
   {
-    BoxAabb,
+    Box,
     Sphere,
   };
 
-  Shape shape = Shape::BoxAabb;
-  Eigen::Vector2d minXY = Eigen::Vector2d::Zero();
-  Eigen::Vector2d maxXY = Eigen::Vector2d::Zero();
+  Shape shape = Shape::Box;
   Eigen::Vector3d center = Eigen::Vector3d::Zero();
+  Eigen::Matrix3d rotation = Eigen::Matrix3d::Identity();
+  Eigen::Vector3d halfExtents = Eigen::Vector3d::Zero();
   double radius = 0.0;
   double top = 0.0;
 };
+
+//==============================================================================
+std::optional<double> boxTopAt(
+    const StaticGroundBarrier& barrier, const Eigen::Vector3d& position)
+{
+  constexpr double tolerance = 1e-12;
+  const Eigen::Vector3d worldAtZero(position.x(), position.y(), 0.0);
+  const Eigen::Vector3d localAtZero
+      = barrier.rotation.transpose() * (worldAtZero - barrier.center);
+  const Eigen::Vector3d localVertical
+      = barrier.rotation.transpose() * Eigen::Vector3d::UnitZ();
+
+  double minZ = -std::numeric_limits<double>::infinity();
+  double maxZ = std::numeric_limits<double>::infinity();
+  for (int axis = 0; axis < 3; ++axis) {
+    const double extent = barrier.halfExtents[axis];
+    const double origin = localAtZero[axis];
+    const double direction = localVertical[axis];
+    if (std::abs(direction) <= tolerance) {
+      if (origin < -extent - tolerance || origin > extent + tolerance) {
+        return std::nullopt;
+      }
+      continue;
+    }
+
+    double intervalMin = (-extent - origin) / direction;
+    double intervalMax = (extent - origin) / direction;
+    if (intervalMin > intervalMax) {
+      std::swap(intervalMin, intervalMax);
+    }
+
+    minZ = std::max(minZ, intervalMin);
+    maxZ = std::min(maxZ, intervalMax);
+    if (minZ > maxZ + tolerance) {
+      return std::nullopt;
+    }
+  }
+
+  if (!std::isfinite(maxZ)) {
+    return std::nullopt;
+  }
+  return maxZ;
+}
 
 //==============================================================================
 std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
@@ -672,39 +715,19 @@ std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
         break;
       }
       case CollisionShapeType::Box: {
-        StaticGroundBarrier barrier;
-        barrier.shape = StaticGroundBarrier::Shape::BoxAabb;
-        barrier.minXY = Eigen::Vector2d(
-            std::numeric_limits<double>::infinity(),
-            std::numeric_limits<double>::infinity());
-        barrier.maxXY = Eigen::Vector2d(
-            -std::numeric_limits<double>::infinity(),
-            -std::numeric_limits<double>::infinity());
-        barrier.top = -std::numeric_limits<double>::infinity();
+        if (!geometry.shape.halfExtents.allFinite()
+            || (geometry.shape.halfExtents.array() <= 0.0).any()
+            || !transform.position.allFinite()) {
+          break;
+        }
 
-        const Eigen::Matrix3d rotation
+        StaticGroundBarrier barrier;
+        barrier.shape = StaticGroundBarrier::Shape::Box;
+        barrier.center = transform.position;
+        barrier.rotation
             = normalizeOrIdentity(transform.orientation).toRotationMatrix();
-        for (const double sx : {-1.0, 1.0}) {
-          for (const double sy : {-1.0, 1.0}) {
-            for (const double sz : {-1.0, 1.0}) {
-              const Eigen::Vector3d local(
-                  sx * geometry.shape.halfExtents.x(),
-                  sy * geometry.shape.halfExtents.y(),
-                  sz * geometry.shape.halfExtents.z());
-              const Eigen::Vector3d worldCorner
-                  = transform.position + rotation * local;
-              barrier.minXY.x() = std::min(barrier.minXY.x(), worldCorner.x());
-              barrier.minXY.y() = std::min(barrier.minXY.y(), worldCorner.y());
-              barrier.maxXY.x() = std::max(barrier.maxXY.x(), worldCorner.x());
-              barrier.maxXY.y() = std::max(barrier.maxXY.y(), worldCorner.y());
-              barrier.top = std::max(barrier.top, worldCorner.z());
-            }
-          }
-        }
-        if (barrier.minXY.allFinite() && barrier.maxXY.allFinite()
-            && std::isfinite(barrier.top)) {
-          barriers.push_back(barrier);
-        }
+        barrier.halfExtents = geometry.shape.halfExtents;
+        barriers.push_back(barrier);
         break;
       }
     }
@@ -722,13 +745,8 @@ std::optional<double> staticGroundTopAt(
   for (const auto& barrier : barriers) {
     std::optional<double> candidate;
     switch (barrier.shape) {
-      case StaticGroundBarrier::Shape::BoxAabb:
-        if (position.x() >= barrier.minXY.x()
-            && position.x() <= barrier.maxXY.x()
-            && position.y() >= barrier.minXY.y()
-            && position.y() <= barrier.maxXY.y()) {
-          candidate = barrier.top;
-        }
+      case StaticGroundBarrier::Shape::Box:
+        candidate = boxTopAt(barrier, position);
         break;
       case StaticGroundBarrier::Shape::Sphere: {
         const Eigen::Vector2d offset

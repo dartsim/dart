@@ -449,6 +449,55 @@ TEST(DeformableBody, StaticGroundBarrierUsesFiniteStaticFootprint)
 }
 
 //==============================================================================
+TEST(DeformableBody, StaticGroundBarrierUsesOrientedBoxFootprint)
+{
+  sx::World world;
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.orientation = Eigen::AngleAxisd(
+      0.25 * 3.14159265358979323846, Eigen::Vector3d::UnitZ());
+  auto obstacle = world.addRigidBody("rotated_obstacle", obstacleOptions);
+  obstacle.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 1.0)));
+  obstacle.setDeformableGroundBarrier(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(2.5, 1.0, 0.25)};
+  auto body = world.addDeformableBody("outside_rotated_footprint", options);
+
+  world.step();
+
+  EXPECT_LT(body.getPosition(0).z(), 0.25);
+}
+
+//==============================================================================
+TEST(DeformableBody, StaticGroundBarrierUsesTiltedBoxSurfaceHeight)
+{
+  sx::World world;
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.orientation = Eigen::AngleAxisd(
+      0.25 * 3.14159265358979323846, Eigen::Vector3d::UnitY());
+  auto obstacle = world.addRigidBody("tilted_obstacle", obstacleOptions);
+  obstacle.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.2)));
+  obstacle.setDeformableGroundBarrier(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d(0.0, 0.0, 0.35)};
+  auto body = world.addDeformableBody("above_tilted_surface", options);
+
+  world.step();
+
+  EXPECT_LT(body.getPosition(0).z(), 0.35);
+  EXPECT_LT(body.getPosition(0).z(), 0.5);
+}
+
+//==============================================================================
 TEST(DeformableBody, StaticCollisionRequiresGroundBarrierOptIn)
 {
   sx::World world;
