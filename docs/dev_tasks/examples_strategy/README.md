@@ -11,20 +11,24 @@ while C++ `dart-demos` (PLAN-102) stays frozen.
 
 ## Current Status
 
-- [x] **Phase 1** — `python/examples/demos/` headless runner + registry; 4 seed
-      scenes (hello_world, sx_articulated, sx_floating_base, sx_contact); `pixi run
-py-demos`; pytest cycle smoke.
-- [ ] **Phase 2** — golden parity harness: 4 golden scenes
-      (`hello_world`, `rigid_chain`, `boxes`, `operational_space_control`), shared
-      `python/examples/demos/golden/<scene>.json` expected-state fixtures, C++ +
-      Python golden smokes; extend `dartpy.gui` headless (camera/screenshot) as far
-      as the screenshot floor needs.
-- [ ] **Phase 3** — modernize content Python-first: `legged_whole_body_control`,
-      `contact_rich_manipulation`, `rl_gym_env`, `mpc_cartpole`,
-      `sensor_depth_segmentation`.
-- [ ] **Phase 4** — notebook gallery in `python/tutorials/` importing the demos
-      scene modules; Colab smoke (PLAN-012).
-- [ ] **Phase 5** — retire C++ `dart-demos` per the checklist in PLAN-103.
+- [x] **Phase 1** — `python/examples/demos/` headless runner + registry; seed
+      scenes (`hello_world`, `kr5_arm`, sx demos); `pixi run py-demos`; pytest
+      cycle smoke.
+- [x] **Phase 2** — golden parity harness landed. Shared
+      `python/examples/demos/golden/hello_world.json` fixture; Python
+      `test_golden_parity` and C++ `UNIT_gui_DemosGoldenParity` both assert
+      against it within 1e-9. `examples/demos` split into a `demos_scenes`
+      static library + thin `dart-demos` app so tests can link the registry.
+- [x] **Phase 3** — 5 modern Python-first scenes (minimal viable, not
+      research-grade): `legged_balance`, `arm_push_box`, `cartpole_gym_env`,
+      `cartpole_mpc`, `sensor_descriptors`. 11 scenes total.
+- [x] **Phase 4** — notebook gallery seeded: `python/tutorials/01_browse_demos.ipynb`
+      imports the demo scene modules (single source). Colab publication +
+      smoke owned by PLAN-012.
+- [ ] **Phase 5** — retire C++ `dart-demos`: **explicit "not now"**. Conditions
+      1–3 of the retire-later checklist are not met (Python breadth gap, no
+      Colab smoke, no editor scene loading). Conditions 4–5 are met. See
+      `docs/plans/103-examples-strategy.md`.
 
 ## Goal
 
@@ -45,8 +49,15 @@ golden-set parity smoke.
 
 ## Immediate Next Steps
 
-1. Phase 2: define the golden set, write fixture-generation tools (run once,
-   commit), add the Python golden smoke and a C++ golden smoke that asserts
-   against the same fixtures.
-2. Phase 3: implement the legged whole-body control scene first (highest
-   research-value modern scenario); then RL gym env wrapper.
+Phases 1–4 are landed; Phase 5 is explicit "not now". Follow-ups to close the
+remaining retire-later gates:
+
+1. Grow the Python scene set toward C++ pedagogical coverage (mirror the
+   categories the Python runner currently lacks).
+2. Extend the golden set beyond `hello_world` (add `rigid_chain`, `boxes`,
+   `operational_space_control` Python scenes mirroring their C++ counterparts +
+   regenerate fixtures via `python -m examples.demos.golden._generate`).
+3. PLAN-012 (Cloud Dartpy Tutorials): publish the notebook gallery with a
+   green Colab smoke.
+4. PLAN-101 (`dartsim` editor): wire it to open curated example scenes
+   interactively. When all three follow-ups land, Phase 5 retire is unblocked.

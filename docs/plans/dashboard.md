@@ -291,14 +291,16 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Easy start
-- Next step: Phase 1 — add the headless Python scene-registry runner in
-  `python/examples/demos/` (CLI mirrors `dart-demos`: `--scene`,
-  `--cycle-scenes`, `--frames`, `--screenshot`), migrate the two existing Python
-  examples into it, add `pixi run py-demos` and a Python cycle smoke. Then the
-  golden-set parity harness, then Python-first modern content, then the Colab
-  notebook gallery (PLAN-012). C++ `dart-demos` (PLAN-102) stays frozen.
-- Gate: `python -m examples.demos` runs headless with the mirrored CLI and a
-  green cycle smoke; the ~3-5 golden scenes assert against shared expected-state
-  fixtures from both C++ and Python; the notebook gallery imports (not copies)
-  the scene modules; C++ demos unchanged; `pixi run lint`, `check-docs-policy`,
-  and `test-py` green for touched surfaces.
+- Next step: Phases 1–4 landed — `dart-demos` Python (11 scenes incl. 5
+  minimal-viable modern scenarios), cross-language golden parity (Python +
+  C++ both assert against the shared fixture within 1e-9),
+  `python/tutorials/01_browse_demos.ipynb`. Phase 5 (retire C++ `dart-demos`)
+  is explicit "not now": conditions 4–5 of the retire-later checklist are met,
+  conditions 1–3 wait on Python-breadth growth + PLAN-012 (Colab smoke) +
+  PLAN-101 (editor loading example scenes). Track residual follow-ups in
+  `docs/dev_tasks/examples_strategy/`.
+- Gate: `pixi run py-demos -- --cycle-scenes` cycles all scenes (exit 0);
+  Python `test_golden_parity` + C++ `UNIT_gui_DemosGoldenParity` both pass
+  against the shared fixture; the notebook imports (not copies) the scene
+  modules; C++ `dart-demos` unchanged; `pixi run lint` and `check-docs-policy`
+  green.

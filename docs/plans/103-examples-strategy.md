@@ -164,18 +164,30 @@ See `dashboard.md` PLAN-103. Objective-specific proof: the Python headless runne
 ## Retire-Later Checklist (C++ `dart-demos`)
 
 Retire `examples/demos` (the C++ app), `pixi run demos`, and the
-`run_cpp_example.py` `demos` spec only when ALL hold:
+`run_cpp_example.py` `demos` spec only when ALL hold. Current status (Phase 5
+explicit "not now"):
 
-1. The Python headless runner covers the example breadth (≥ the pedagogical
-   coverage of the C++ scene set) with a green cycle smoke.
-2. The notebook gallery is published with a green Colab smoke (PLAN-012).
-3. The `dartsim` editor (PLAN-101) can open curated example scenes interactively.
-4. Renderer regression coverage is confirmed independent of `dart-demos`
-   (`dart/gui/detail/scenes` + `test_filament_scene_extraction` +
-   `EXAMPLE_dartsim_<scene>` smokes) — already true today.
-5. The golden-set parity smokes remain green from the Python side.
+1. **NOT MET.** Python headless runner covers the breadth (≥ C++ pedagogical
+   coverage). Today: 11 Python scenes vs 37 C++ scenes. Closing this gap is the
+   Phase 3 follow-up — port the remaining C++-only categories that have no
+   Python counterpart.
+2. **NOT MET.** Notebook gallery published with a green Colab smoke. Today:
+   `python/tutorials/01_browse_demos.ipynb` is the seed; Colab publication +
+   smoke is PLAN-012's responsibility.
+3. **NOT MET.** `dartsim` editor (PLAN-101) can open curated example scenes
+   interactively. Today the editor authors its own scenes; loading
+   `examples/demos` content interactively is a PLAN-101 follow-up.
+4. **MET.** Renderer regression coverage is independent of `dart-demos`:
+   `dart/gui/detail/scenes` + `test_filament_scene_extraction` +
+   `EXAMPLE_dartsim_<scene>` are owned by `dart::gui` and exercise renderer
+   fixtures, not the examples (see `docs/design/demos_app.md`).
+5. **MET (mechanism); EXPANDING.** Cross-language golden parity is
+   implemented end-to-end for `hello_world` (Python `test_golden_parity` + C++
+   `UNIT_gui_DemosGoldenParity` both pass against the shared fixture). The
+   other planned golden scenes iterate on the same mechanism without
+   architectural change.
 
-Until all hold, C++ `dart-demos` stays frozen-but-present.
+Until conditions 1–3 are met, C++ `dart-demos` stays frozen-but-present.
 
 ## Open Gaps
 
