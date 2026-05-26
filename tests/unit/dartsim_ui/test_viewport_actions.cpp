@@ -773,3 +773,113 @@ TEST(DartsimViewportActions, CameraPresetsPreserveTargetAndDistance)
   EXPECT_TRUE(perspective.camera->target.isApprox(Eigen::Vector3d::Zero()));
   EXPECT_GE(perspective.camera->distance, 0.8);
 }
+
+TEST(DartsimViewportActions, CameraControlActionsSetMouseModeWithoutEditing)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportCameraControlState controls;
+  auto actions
+      = ui::buildViewportCameraControlActions(engine, filters, controls);
+  ASSERT_EQ(actions.size(), 4u);
+  EXPECT_EQ(actions[0].kind, ui::ViewportCameraControlActionKind::OrbitMode);
+  EXPECT_TRUE(actions[0].checked);
+  EXPECT_FALSE(actions[1].checked);
+  EXPECT_FALSE(actions[2].checked);
+  EXPECT_FALSE(actions[3].checked);
+  EXPECT_TRUE(actions[3].enabled);
+
+  auto result = ui::applyViewportCameraControlAction(
+      engine, filters, controls, ui::ViewportCameraControlActionKind::PanMode);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Pan Camera Mode");
+  EXPECT_EQ(controls.mouseMode, dart::gui::OrbitCameraMouseMode::Pan);
+  EXPECT_EQ(
+      ui::viewportCameraControlOptions(controls).mouseMode,
+      dart::gui::OrbitCameraMouseMode::Pan);
+
+  result = ui::applyViewportCameraControlAction(
+      engine, filters, controls, ui::ViewportCameraControlActionKind::ZoomMode);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(controls.mouseMode, dart::gui::OrbitCameraMouseMode::Zoom);
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::OrbitMode);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(controls.mouseMode, dart::gui::OrbitCameraMouseMode::Orbit);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, SelectionTrackingFollowsVisibleSelection)
+{
+  SimEngine engine;
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportCameraControlState controls;
+
+  auto result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleTrackSelection);
+  EXPECT_FALSE(result.ok);
+  EXPECT_EQ(result.message, "No visible selected object");
+  EXPECT_FALSE(controls.trackSelection);
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(4.0, -2.0, 0.5), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleTrackSelection);
+  EXPECT_TRUE(result.ok);
+  EXPECT_TRUE(controls.trackSelection);
+
+  const dart::gui::OrbitCamera current = testCamera();
+  auto tracked = ui::trackedSelectionCamera(engine, current, filters, controls);
+  ASSERT_TRUE(tracked.ok);
+  ASSERT_TRUE(tracked.camera.has_value());
+  EXPECT_TRUE(tracked.camera->target.isApprox(Eigen::Vector3d(4.0, -2.0, 0.5)));
+  EXPECT_EQ(tracked.camera->distance, current.distance);
+  EXPECT_EQ(tracked.camera->yaw, current.yaw);
+  EXPECT_EQ(tracked.camera->pitch, current.pitch);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  tracked = ui::trackedSelectionCamera(engine, current, filters, controls);
+  EXPECT_FALSE(tracked.ok);
+  EXPECT_FALSE(tracked.camera.has_value());
+  auto actions
+      = ui::buildViewportCameraControlActions(engine, filters, controls);
+  ASSERT_EQ(actions.size(), 4u);
+  EXPECT_TRUE(actions[3].checked);
+  EXPECT_TRUE(actions[3].enabled);
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleTrackSelection);
+  EXPECT_TRUE(result.ok);
+  EXPECT_FALSE(controls.trackSelection);
+}

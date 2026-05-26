@@ -91,7 +91,9 @@ Eigen::Vector3d selectedNudgeFromKeyboard(
 void updateCameraController(
     GLFWwindow* window,
     dart::gui::OrbitCameraController& controller,
-    bool suppressLeftMouseOrbit = false);
+    bool suppressLeftMouseOrbit = false,
+    const dart::gui::OrbitCameraControlOptions& controls
+    = dart::gui::OrbitCameraControlOptions{});
 
 } // namespace dart::gui::detail
 

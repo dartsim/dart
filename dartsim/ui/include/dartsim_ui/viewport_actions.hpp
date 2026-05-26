@@ -132,6 +132,41 @@ struct ViewportCameraActionResult
   std::optional<dart::gui::OrbitCamera> camera;
 };
 
+/// Editor-owned camera control state. These settings are view-only.
+struct ViewportCameraControlState
+{
+  dart::gui::OrbitCameraMouseMode mouseMode
+      = dart::gui::OrbitCameraMouseMode::Orbit;
+  bool trackSelection = false;
+};
+
+/// View-menu camera-control command.
+enum class ViewportCameraControlActionKind
+{
+  OrbitMode,
+  PanMode,
+  ZoomMode,
+  ToggleTrackSelection,
+};
+
+/// View-menu action state for camera mouse modes and selection tracking.
+struct ViewportCameraControlAction
+{
+  ViewportCameraControlActionKind kind
+      = ViewportCameraControlActionKind::OrbitMode;
+  std::string label;
+  bool checked = false;
+  bool enabled = true;
+  std::string disabledReason;
+};
+
+/// Result of applying a viewport camera-control command.
+struct ViewportCameraControlActionResult
+{
+  bool ok = false;
+  std::string message;
+};
+
 /// Resolve a movement request into a world-space delta.
 [[nodiscard]] Eigen::Vector3d viewportMoveDelta(const ViewportMoveInput& input);
 
@@ -210,5 +245,29 @@ buildViewportLayerFilterActions(const ViewportLayerFilterState& filters);
     const dart::gui::OrbitCamera& currentCamera,
     ViewportCameraActionKind kind,
     const ViewportLayerFilterState& filters);
+
+/// Build and apply camera mouse-mode and selection-tracking actions.
+[[nodiscard]] std::vector<ViewportCameraControlAction>
+buildViewportCameraControlActions(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportCameraControlState& controls);
+[[nodiscard]] ViewportCameraControlActionResult
+applyViewportCameraControlAction(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    ViewportCameraControlState& controls,
+    ViewportCameraControlActionKind kind);
+
+/// Convert editor viewport camera controls to the generic GUI input seam.
+[[nodiscard]] dart::gui::OrbitCameraControlOptions viewportCameraControlOptions(
+    const ViewportCameraControlState& controls);
+
+/// Compute a tracked camera target for the current selected, visible object.
+[[nodiscard]] ViewportCameraActionResult trackedSelectionCamera(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    const ViewportCameraControlState& controls);
 
 } // namespace dartsim::ui

@@ -665,7 +665,25 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       frameViewportSource.find(
           "isSceneMouseInputCapturedByUi(showUi, imguiIo)"),
       std::string::npos);
+  EXPECT_NE(
+      inputSource.find("controls.mouseMode == OrbitCameraMouseMode::Orbit"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("controls.mouseMode == OrbitCameraMouseMode::Pan"),
+      std::string::npos);
+  EXPECT_NE(
+      inputSource.find("controls.mouseMode == OrbitCameraMouseMode::Zoom"),
+      std::string::npos);
   EXPECT_NE(sceneFrameSource.find("uiCapturesMouse"), std::string::npos);
+  EXPECT_NE(
+      sceneFrameSource.find("const bool mouseSelectionCommitted"),
+      std::string::npos);
+  EXPECT_NE(
+      sceneFrameSource.find("= mSelectionController.updateMouseSelection"),
+      std::string::npos);
+  EXPECT_NE(
+      sceneFrameSource.find("mouseSelectionCommitted && after == 0"),
+      std::string::npos);
   EXPECT_NE(
       sceneFixturesSource.find("makeAtlasMeshVisualsReadable(atlas)"),
       std::string::npos);
@@ -713,6 +731,13 @@ TEST(FilamentSceneExtraction, ViewerInputAndLightingDefaultsStayUsable)
       std::string::npos);
   EXPECT_NE(
       applicationSource.find("appOptions.debugLabels"), std::string::npos);
+  EXPECT_NE(
+      applicationSource.find(
+          "appOptions.cameraUpdater(cameraController.camera)"),
+      std::string::npos);
+  EXPECT_EQ(
+      applicationSource.find("resetOrbitCameraTracking(cameraController)"),
+      std::string::npos);
   EXPECT_NE(
       selectionSource.find("mSelectionBoundsVisible = false"),
       std::string::npos);
@@ -1894,6 +1919,29 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresKeyboardActions)
   EXPECT_FALSE(renderSettings.shadowsEnabled);
   context.resetCamera();
   EXPECT_TRUE(cameraReset);
+}
+
+TEST(FilamentSceneExtraction, ApplicationOptionsStoresCameraControls)
+{
+  dart::gui::ApplicationOptions options;
+  options.cameraControlsProvider = [] {
+    dart::gui::OrbitCameraControlOptions controls;
+    controls.mouseMode = dart::gui::OrbitCameraMouseMode::Pan;
+    return controls;
+  };
+  options.cameraUpdater = [](dart::gui::OrbitCamera& camera) {
+    camera.target = Eigen::Vector3d(1.0, 2.0, 3.0);
+    return true;
+  };
+
+  ASSERT_TRUE(static_cast<bool>(options.cameraControlsProvider));
+  EXPECT_EQ(
+      options.cameraControlsProvider().mouseMode,
+      dart::gui::OrbitCameraMouseMode::Pan);
+
+  dart::gui::OrbitCamera camera;
+  ASSERT_TRUE(options.cameraUpdater(camera));
+  EXPECT_TRUE(camera.target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
 }
 
 TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)
@@ -6951,6 +6999,23 @@ TEST(FilamentSceneExtraction, OrbitCamera_UpdateBasisAndPickingAreStable)
   EXPECT_TRUE(
       controller.camera.target.isApprox(Eigen::Vector3d(0.0, -0.03, 0.06)));
   EXPECT_LT(controller.camera.distance, 2.0);
+
+  const double distanceAfterScroll = controller.camera.distance;
+  controllerInput.pan = false;
+  controllerInput.zoom = true;
+  controllerInput.cursorY = 60.0;
+  dart::gui::updateOrbitCameraController(controller, controllerInput);
+  EXPECT_LT(controller.camera.distance, distanceAfterScroll);
+
+  const double yawBeforeExternalTargetUpdate = controller.camera.yaw;
+  controller.camera.target = Eigen::Vector3d(5.0, 0.0, 0.0);
+  controllerInput.orbit = true;
+  controllerInput.zoom = false;
+  controllerInput.cursorX = 120.0;
+  dart::gui::updateOrbitCameraController(controller, controllerInput);
+  EXPECT_NE(controller.camera.yaw, yawBeforeExternalTargetUpdate);
+  EXPECT_TRUE(
+      controller.camera.target.isApprox(Eigen::Vector3d(5.0, 0.0, 0.0)));
 
   controllerInput.hasCursor = false;
   dart::gui::updateOrbitCameraController(controller, controllerInput);

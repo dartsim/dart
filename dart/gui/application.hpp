@@ -153,6 +153,8 @@ struct ApplicationOptions
   std::function<void()> postRender;
   bool simulateWorld = true;
   std::optional<OrbitCamera> camera;
+  std::function<OrbitCameraControlOptions()> cameraControlsProvider;
+  std::function<bool(OrbitCamera&)> cameraUpdater;
   RenderSettings renderSettings;
   std::string defaultScene;
   std::vector<Panel> panels;

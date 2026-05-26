@@ -54,7 +54,8 @@ FrameViewport updateFrameViewport(
     int defaultHeight,
     double worldTimeStep,
     bool showUi,
-    double guiScale)
+    double guiScale,
+    const dart::gui::OrbitCameraControlOptions& cameraControls)
 {
   (void)guiScale;
   FrameViewport viewport{defaultWidth, defaultHeight};
@@ -74,7 +75,8 @@ FrameViewport updateFrameViewport(
     const bool suppressCameraOrbit
         = selectionController.isDraggingSelection()
           || isSceneMouseInputCapturedByUi(showUi, imguiIo);
-    updateCameraController(window, cameraController, suppressCameraOrbit);
+    updateCameraController(
+        window, cameraController, suppressCameraOrbit, cameraControls);
   }
 
   return viewport;

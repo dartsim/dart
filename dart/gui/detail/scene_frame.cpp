@@ -103,9 +103,11 @@ void syncExternalRenderableSelection(
 void notifyRenderableSelectionChanged(
     const DartScene& scene,
     dart::gui::RenderableId before,
-    dart::gui::RenderableId after)
+    dart::gui::RenderableId after,
+    bool mouseSelectionCommitted)
 {
-  if (before != after && scene.onRenderableSelected) {
+  if (scene.onRenderableSelected
+      && (before != after || (mouseSelectionCommitted && after == 0))) {
     scene.onRenderableSelected(after);
   }
 }
@@ -227,21 +229,23 @@ void SceneFrameUpdater::update(
   phaseStart = dart::gui::ProfileAccumulator::Clock::now();
   const dart::gui::RenderableId selectionBeforeMouse
       = mSelectionController.selectedRenderableId();
-  mSelectionController.updateMouseSelection(
-      mWindow,
-      mCameraController.camera,
-      viewport.width,
-      viewport.height,
-      showUi,
-      uiCapturesMouse,
-      mOptions.guiScale,
-      mDartScene,
-      descriptors,
-      mLifecycle);
+  const bool mouseSelectionCommitted
+      = mSelectionController.updateMouseSelection(
+          mWindow,
+          mCameraController.camera,
+          viewport.width,
+          viewport.height,
+          showUi,
+          uiCapturesMouse,
+          mOptions.guiScale,
+          mDartScene,
+          descriptors,
+          mLifecycle);
   notifyRenderableSelectionChanged(
       mDartScene,
       selectionBeforeMouse,
-      mSelectionController.selectedRenderableId());
+      mSelectionController.selectedRenderableId(),
+      mouseSelectionCommitted);
   mProfile.interactionMs += dart::gui::elapsedMs(phaseStart);
 
   phaseStart = dart::gui::ProfileAccumulator::Clock::now();

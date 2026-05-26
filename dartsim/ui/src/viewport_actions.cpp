@@ -401,6 +401,35 @@ ViewportCameraAction makeCameraAction(
   return action;
 }
 
+ViewportCameraControlAction makeCameraControlAction(
+    ViewportCameraControlActionKind kind,
+    std::string label,
+    bool checked,
+    bool enabled = true,
+    std::string disabledReason = {})
+{
+  ViewportCameraControlAction action;
+  action.kind = kind;
+  action.label = std::move(label);
+  action.checked = checked;
+  action.enabled = enabled;
+  action.disabledReason = std::move(disabledReason);
+  return action;
+}
+
+std::string cameraMouseModeLabel(dart::gui::OrbitCameraMouseMode mode)
+{
+  switch (mode) {
+    case dart::gui::OrbitCameraMouseMode::Orbit:
+      return "Orbit Camera Mode";
+    case dart::gui::OrbitCameraMouseMode::Pan:
+      return "Pan Camera Mode";
+    case dart::gui::OrbitCameraMouseMode::Zoom:
+      return "Zoom Camera Mode";
+  }
+  return "Camera Mode";
+}
+
 } // namespace
 
 Eigen::Vector3d viewportMoveDelta(const ViewportMoveInput& input)
@@ -707,6 +736,93 @@ ViewportCameraActionResult applyViewportCameraAction(
   }
 
   return {false, "Unknown camera action", std::nullopt};
+}
+
+std::vector<ViewportCameraControlAction> buildViewportCameraControlActions(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportCameraControlState& controls)
+{
+  const bool hasVisibleSelection = !selectedFocusBounds(engine, filters).empty;
+  return {
+      makeCameraControlAction(
+          ViewportCameraControlActionKind::OrbitMode,
+          "Orbit Camera Mode",
+          controls.mouseMode == dart::gui::OrbitCameraMouseMode::Orbit),
+      makeCameraControlAction(
+          ViewportCameraControlActionKind::PanMode,
+          "Pan Camera Mode",
+          controls.mouseMode == dart::gui::OrbitCameraMouseMode::Pan),
+      makeCameraControlAction(
+          ViewportCameraControlActionKind::ZoomMode,
+          "Zoom Camera Mode",
+          controls.mouseMode == dart::gui::OrbitCameraMouseMode::Zoom),
+      makeCameraControlAction(
+          ViewportCameraControlActionKind::ToggleTrackSelection,
+          "Track Selection",
+          controls.trackSelection,
+          controls.trackSelection || hasVisibleSelection,
+          "No visible selected object"),
+  };
+}
+
+ViewportCameraControlActionResult applyViewportCameraControlAction(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    ViewportCameraControlState& controls,
+    ViewportCameraControlActionKind kind)
+{
+  switch (kind) {
+    case ViewportCameraControlActionKind::OrbitMode:
+      controls.mouseMode = dart::gui::OrbitCameraMouseMode::Orbit;
+      return {true, cameraMouseModeLabel(controls.mouseMode)};
+    case ViewportCameraControlActionKind::PanMode:
+      controls.mouseMode = dart::gui::OrbitCameraMouseMode::Pan;
+      return {true, cameraMouseModeLabel(controls.mouseMode)};
+    case ViewportCameraControlActionKind::ZoomMode:
+      controls.mouseMode = dart::gui::OrbitCameraMouseMode::Zoom;
+      return {true, cameraMouseModeLabel(controls.mouseMode)};
+    case ViewportCameraControlActionKind::ToggleTrackSelection:
+      if (controls.trackSelection) {
+        controls.trackSelection = false;
+        return {true, "Selection tracking off"};
+      }
+      if (selectedFocusBounds(engine, filters).empty) {
+        return {false, "No visible selected object"};
+      }
+      controls.trackSelection = true;
+      return {true, "Selection tracking on"};
+  }
+
+  return {false, "Unknown camera control"};
+}
+
+dart::gui::OrbitCameraControlOptions viewportCameraControlOptions(
+    const ViewportCameraControlState& controls)
+{
+  dart::gui::OrbitCameraControlOptions options;
+  options.mouseMode = controls.mouseMode;
+  return options;
+}
+
+ViewportCameraActionResult trackedSelectionCamera(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    const ViewportCameraControlState& controls)
+{
+  if (!controls.trackSelection) {
+    return {false, "Selection tracking off", std::nullopt};
+  }
+
+  const ViewportBounds bounds = selectedFocusBounds(engine, filters);
+  if (bounds.empty) {
+    return {false, "No visible selected object", std::nullopt};
+  }
+
+  dart::gui::OrbitCamera camera = sanitizedCurrentCamera(currentCamera);
+  camera.target = boundsCenter(bounds);
+  return {true, "Tracking selection", camera};
 }
 
 } // namespace dartsim::ui

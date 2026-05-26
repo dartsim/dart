@@ -81,6 +81,7 @@ struct EditorApp
   bool haveRunFrameTime = false;
   OutlinerState outliner;
   ViewportLayerFilterState viewportLayers;
+  ViewportCameraControlState viewportCamera;
   ViewportTransformGizmo transformGizmo = makeViewportTransformGizmo();
   ProjectFileDialogKind projectPathKind = ProjectFileDialogKind::Open;
   bool projectPathModalOpen = false;
@@ -740,6 +741,32 @@ void buildViewportLayerFilterMenu(dart::gui::PanelBuilder& ui, EditorApp& app)
   }
 }
 
+std::string cameraControlMenuLabel(const ViewportCameraControlAction& action)
+{
+  std::string label = action.label;
+  if (action.checked) {
+    label += " (active)";
+  }
+  if (!action.enabled && !action.disabledReason.empty()) {
+    label += " (" + action.disabledReason + ")";
+  }
+  return label;
+}
+
+void buildViewportCameraControlMenu(dart::gui::PanelBuilder& ui, EditorApp& app)
+{
+  for (const ViewportCameraControlAction& action :
+       buildViewportCameraControlActions(
+           app.engine, app.viewportLayers, app.viewportCamera)) {
+    if (ui.menuItem(cameraControlMenuLabel(action)) && action.enabled) {
+      app.note(
+          applyViewportCameraControlAction(
+              app.engine, app.viewportLayers, app.viewportCamera, action.kind)
+              .message);
+    }
+  }
+}
+
 void buildMenuBar(
     dart::gui::PanelBuilder& ui,
     EditorApp& app,
@@ -827,6 +854,8 @@ void buildMenuBar(
         applyViewportCameraMenuAction(app, context, action.kind);
       }
     }
+    ui.separator();
+    buildViewportCameraControlMenu(ui, app);
     ui.separator();
     buildViewportLayerFilterMenu(ui, app);
     ui.endMenu();
@@ -1046,6 +1075,25 @@ int runEditor(int argc, char* argv[])
         };
   options.gizmos.push_back(app->transformGizmo.gizmo);
   options.keyboardActions = makeViewportMoveActions(app);
+  options.cameraControlsProvider = [app]() {
+    return viewportCameraControlOptions(app->viewportCamera);
+  };
+  options.cameraUpdater = [app](dart::gui::OrbitCamera& camera) {
+    const ViewportCameraActionResult result = trackedSelectionCamera(
+        app->engine, camera, app->viewportLayers, app->viewportCamera);
+    if (!result.ok || !result.camera.has_value()) {
+      return false;
+    }
+    if (camera.target.isApprox(result.camera->target)
+        && camera.up.isApprox(result.camera->up)
+        && camera.yaw == result.camera->yaw
+        && camera.pitch == result.camera->pitch
+        && camera.distance == result.camera->distance) {
+      return false;
+    }
+    camera = *result.camera;
+    return true;
+  };
   options.preRender = [app]() {
     syncViewportTransformGizmo(
         app->transformGizmo, app->engine, app->viewportLayers);

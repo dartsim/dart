@@ -92,7 +92,7 @@ public:
       dart::gui::ViewerLifecycleState& lifecycle,
       double stepSize);
 
-  void updateMouseSelection(
+  bool updateMouseSelection(
       GLFWwindow* window,
       const dart::gui::OrbitCamera& camera,
       int framebufferWidth,

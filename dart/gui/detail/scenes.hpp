@@ -134,6 +134,8 @@ struct AppOptions
   std::function<void()> postRender;
   bool simulateWorld = true;
   std::optional<dart::gui::OrbitCamera> camera;
+  std::function<dart::gui::OrbitCameraControlOptions()> cameraControlsProvider;
+  std::function<bool(dart::gui::OrbitCamera&)> cameraUpdater;
   dart::gui::RenderSettings renderSettings;
   bool renderOutputModeExplicit = false;
   std::vector<dart::gui::Panel> panels;

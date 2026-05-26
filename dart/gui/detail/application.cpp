@@ -80,6 +80,7 @@ namespace {
 
 using dart::gui::elapsedMs;
 using dart::gui::OrbitCameraController;
+using dart::gui::OrbitCameraControlOptions;
 using dart::gui::printProfile;
 using dart::gui::ProfileAccumulator;
 using dart::gui::RunOptions;
@@ -169,6 +170,8 @@ int runGuiBackendApplicationImpl(
   const bool renderOutputModeExplicit = appOptions.renderOutputModeExplicit;
   const auto renderOutputMode = appOptions.renderSettings.outputMode;
   appOptions.camera = applicationOptions.camera;
+  appOptions.cameraControlsProvider = applicationOptions.cameraControlsProvider;
+  appOptions.cameraUpdater = applicationOptions.cameraUpdater;
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;
     appOptions.renderableProvider = applicationOptions.renderableProvider;
@@ -326,10 +329,18 @@ int runGuiBackendApplicationImpl(
     }
     profile.inputMs += elapsedMs(phaseStart);
 
+    if (appOptions.cameraUpdater) {
+      appOptions.cameraUpdater(cameraController.camera);
+    }
+
     phaseStart = ProfileAccumulator::Clock::now();
     FrameViewport viewport;
     {
       DART_PROFILE_SCOPED_N("GUI viewport camera");
+      const OrbitCameraControlOptions cameraControls
+          = appOptions.cameraControlsProvider
+                ? appOptions.cameraControlsProvider()
+                : OrbitCameraControlOptions{};
       viewport = updateFrameViewport(
           window,
           *view,
@@ -341,7 +352,8 @@ int runGuiBackendApplicationImpl(
           runOptions.height,
           dartScene.world->getTimeStep(),
           appOptions.showUi,
-          runOptions.guiScale);
+          runOptions.guiScale,
+          cameraControls);
     }
     profile.viewportCameraMs += elapsedMs(phaseStart);
 

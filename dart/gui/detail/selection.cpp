@@ -573,7 +573,7 @@ void SelectionController::applyKeyboardNudge(
   descriptors = extractRenderables(*scene.world);
 }
 
-void SelectionController::updateMouseSelection(
+bool SelectionController::updateMouseSelection(
     GLFWwindow* window,
     const OrbitCamera& camera,
     int framebufferWidth,
@@ -586,7 +586,7 @@ void SelectionController::updateMouseSelection(
     ViewerLifecycleState& lifecycle)
 {
   if (window == nullptr) {
-    return;
+    return false;
   }
   (void)showUi;
   (void)guiScale;
@@ -854,11 +854,13 @@ void SelectionController::updateMouseSelection(
     }
   }
 
+  bool selectionCommitted = false;
   if (!isLeftMousePressed && mWasLeftMousePressed) {
     const double dragDistance
         = std::hypot(cursorX - mLeftMousePressX, cursorY - mLeftMousePressY);
     if (!mLeftMouseStartedOnPanel && !mLeftMouseStartedDrag
         && dragDistance < 4.0) {
+      selectionCommitted = true;
       const auto hit = pickNearestRenderable(descriptors, cursorRay);
       if (hit) {
         mSelectedRenderableId = hit->id;
@@ -880,6 +882,7 @@ void SelectionController::updateMouseSelection(
   }
 
   mWasLeftMousePressed = isLeftMousePressed;
+  return selectionCommitted;
 }
 
 } // namespace dart::gui::detail

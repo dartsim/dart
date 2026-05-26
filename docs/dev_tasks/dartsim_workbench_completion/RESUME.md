@@ -46,10 +46,11 @@ Console automation is now routed through `dartsim_ui/console_actions`: the
 Console panel has a command input, quoted-argument parser, help/status text,
 and tested project, create, selection, visibility, rename/delete, simulation
 mode, recording, and replay command dispatch over the existing action seams.
-File > Open Project now opens the native file dialog first. Native dialog
-failures and invalid selected paths leave the user in the in-app browser/manual
-path modal instead of making Open unusable; extensionless paths such as `scene`
-resolve to `scene.dartsim` when that file exists.
+File > Open Project now opens the in-app browser/manual path modal first.
+Browse still invokes the native file dialog from inside the modal, and native
+dialog failures or invalid selected paths leave the user in the modal instead
+of making Open unusable; extensionless paths such as `scene` resolve to
+`scene.dartsim` when that file exists.
 Viewport camera workflow controls are now routed through
 `dartsim_ui/viewport_actions`: the View menu exposes Fit Scene,
 Focus Selection, and perspective/front/back/left/right/top/bottom presets, and
@@ -59,13 +60,17 @@ Viewport layer filters now live in `ViewportLayerFilterState` and are view-only:
 the render provider, selected-renderable bridge, picking, selected label, camera
 fit/focus, transform gizmo, and keyboard movement all reject layer-hidden rigid
 bodies, links, and frames without dirtying the project or adding undo history.
+Viewport camera controls now have tested Orbit/Pan/Zoom mouse mode state and
+selected-object tracking. The generic `dart::gui::ApplicationOptions` camera
+seams remain renderer-neutral, while `dartsim_ui/viewport_actions` owns the
+editor-specific action labels, disabled reasons, and selection-tracking target.
 
 ## Immediate Next Step
 
-Continue Phase 5 with camera lock/modes or multi-view layout state, or continue
-Phase 3 with richer relationship inspectors and object grouping. Keep behavior
-in testable engine or UI action/view-model helpers before wiring it into
-`editor.cpp`, and keep the filtered coverage line total above 95%.
+Continue Phase 5 with multi-view layout state, or continue Phase 3 with richer
+relationship inspectors and object grouping. Keep behavior in testable engine
+or UI action/view-model helpers before wiring it into `editor.cpp`, and keep the
+filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -118,6 +123,12 @@ in testable engine or UI action/view-model helpers before wiring it into
   objects, hidden ancestors, unsupported object types, selection clearing,
   filtered viewport picks, camera fit/focus, gizmo sync/apply, and keyboard
   movement are all tested through the filtered action overloads.
+- Viewport camera-control behavior is covered through
+  `UNIT_dartsim_ui_ViewportActions` and `UNIT_gui_FilamentSceneExtraction`;
+  Orbit/Pan/Zoom mouse mode state, selection-tracking enable/disable paths,
+  hidden-selection rejection, generic camera input zoom dragging, and
+  `ApplicationOptions` camera callbacks are tested without renderer backend
+  leakage into `dartsim/ui`.
 - `pixi run coverage-report-dartsim` now extracts the filtered
   `dartsim/engine` plus testable `dartsim/ui` action/view-model coverage
   surface from the broader lcov report. A 2026-05-25 attempt ran 265/265 Debug

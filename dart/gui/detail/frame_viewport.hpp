@@ -44,6 +44,7 @@ class View;
 namespace dart::gui {
 
 struct OrbitCameraController;
+struct OrbitCameraControlOptions;
 
 } // namespace dart::gui
 
@@ -68,7 +69,8 @@ FrameViewport updateFrameViewport(
     int defaultHeight,
     double worldTimeStep,
     bool showUi,
-    double guiScale);
+    double guiScale,
+    const dart::gui::OrbitCameraControlOptions& cameraControls);
 
 } // namespace dart::gui::detail
 
