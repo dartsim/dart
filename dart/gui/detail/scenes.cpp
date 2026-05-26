@@ -542,8 +542,6 @@ AppOptions parseOptions(
   AppOptions options;
   if (runDefaults.has_value()) {
     options.run = *runDefaults;
-    options.windowWidthExplicit = true;
-    options.windowHeightExplicit = true;
   }
 
   bool g1PackageNameExplicit = false;

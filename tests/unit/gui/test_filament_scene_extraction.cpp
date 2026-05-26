@@ -1852,8 +1852,8 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
 
   EXPECT_EQ(defaultOptions.run.width, 1280);
   EXPECT_EQ(defaultOptions.run.height, 960);
-  EXPECT_TRUE(defaultOptions.windowWidthExplicit);
-  EXPECT_TRUE(defaultOptions.windowHeightExplicit);
+  EXPECT_FALSE(defaultOptions.windowWidthExplicit);
+  EXPECT_FALSE(defaultOptions.windowHeightExplicit);
 
   char overrideExecutable[] = "fetch";
   char widthOption[] = "--width";
@@ -1881,7 +1881,7 @@ TEST(FilamentSceneExtraction, ApplicationRunDefaultsSeedParsedOptions)
   EXPECT_EQ(widthOnlyOptions.run.width, 1000);
   EXPECT_EQ(widthOnlyOptions.run.height, 960);
   EXPECT_TRUE(widthOnlyOptions.windowWidthExplicit);
-  EXPECT_TRUE(widthOnlyOptions.windowHeightExplicit);
+  EXPECT_FALSE(widthOnlyOptions.windowHeightExplicit);
 
   char depthExecutable[] = "fetch";
   char renderOutputOption[] = "--render-output";
