@@ -34,6 +34,10 @@ CUDA_BENCHMARK_MARKERS = (
 )
 
 SOURCE_SUFFIXES = {".cpp", ".cu", ".cuh"}
+_BENCHMARK_REGISTRATION_RE = re.compile(
+    r"\bBENCHMARK\s*\(\s*(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*\)(?P<chain>[^;]*);",
+    re.DOTALL,
+)
 
 
 @dataclass(frozen=True)
@@ -114,21 +118,26 @@ def _is_cuda_benchmark_source(path: Path, text: str) -> bool:
 
 
 def _has_required_benchmark_name(masked: str) -> bool:
-    return re.search(rf"\b{re.escape(REQUIRED_GPU_BENCHMARK)}\b", masked) is not None
+    return any(
+        match.group("name") == REQUIRED_GPU_BENCHMARK
+        for match in _BENCHMARK_REGISTRATION_RE.finditer(masked)
+    )
 
 
 def _has_required_workload(masked: str) -> bool:
     world_count, body_count, step_count = REQUIRED_WORKLOAD
-    return (
-        re.search(
+    for match in _BENCHMARK_REGISTRATION_RE.finditer(masked):
+        if match.group("name") != REQUIRED_GPU_BENCHMARK:
+            continue
+        if re.search(
             r"->\s*Args\s*\(\s*\{\s*"
             rf"{world_count}\s*,\s*{body_count}\s*,\s*{step_count}"
             r"\s*\}\s*\)",
-            masked,
+            match.group("chain"),
             re.DOTALL,
-        )
-        is not None
-    )
+        ):
+            return True
+    return False
 
 
 def find_violations_in_text(rel_path: str, text: str) -> list[Violation]:
@@ -211,6 +220,18 @@ def run_self_tests() -> None:
     """
     if find_violations_in_text("bm_cuda_rigid_body_state_batch.cpp", good_source):
         raise AssertionError("valid CUDA benchmark self-test failed")
+
+    mismatched_source = """
+    void BM_Phase5RigidBodyBatchGpu(benchmark::State& state) {}
+    void BM_CudaOther(benchmark::State& state) {}
+    BENCHMARK(BM_Phase5RigidBodyBatchGpu)->Args({1024, 128, 10});
+    BENCHMARK(BM_CudaOther)->Args({4096, 128, 100});
+    """
+    violations = find_violations_in_text(
+        "bm_cuda_rigid_body_state_batch.cpp", mismatched_source
+    )
+    if len(violations) != 1 or "4096/128/100" not in violations[0].message:
+        raise AssertionError("mismatched CUDA workload self-test failed")
 
 
 def main() -> int:

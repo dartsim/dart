@@ -81,3 +81,21 @@ def test_phase5_cuda_benchmark_contract_accepts_packet_compatible_row():
     )
 
     assert violations == []
+
+
+def test_phase5_cuda_benchmark_contract_binds_workload_to_phase5_row():
+    module = _load_module()
+
+    violations = module.find_violations_in_text(
+        "tests/benchmark/simulation/experimental/bm_cuda_rigid_body_state_batch.cpp",
+        """
+        void BM_Phase5RigidBodyBatchGpu(benchmark::State& state) {}
+        void BM_CudaOther(benchmark::State& state) {}
+        BENCHMARK(BM_Phase5RigidBodyBatchGpu)->Args({1024, 128, 10});
+        BENCHMARK(BM_CudaOther)->Args({4096, 128, 100});
+        """,
+    )
+
+    assert [violation.message for violation in violations] == [
+        "BM_Phase5RigidBodyBatchGpu must include the 4096/128/100 manual go/no-go workload",
+    ]
