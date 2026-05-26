@@ -563,6 +563,46 @@ bool DartCollisionDetector::raycast(
 }
 
 //==============================================================================
+bool DartCollisionDetector::sphereCast(
+    CollisionGroup* group,
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    double radius,
+    const ContinuousCollisionOption& option,
+    ContinuousCollisionResult* result)
+{
+  clearResult(result);
+
+  if (!checkGroupValidity(this, group)) {
+    return false;
+  }
+
+  auto* castedGroup = static_cast<DartCollisionGroup*>(group);
+  return castedGroup->sphereCast(start, end, radius, option, result);
+}
+
+//==============================================================================
+bool DartCollisionDetector::capsuleCast(
+    CollisionGroup* group,
+    const Eigen::Isometry3d& capsuleStart,
+    const Eigen::Isometry3d& capsuleEnd,
+    double radius,
+    double height,
+    const ContinuousCollisionOption& option,
+    ContinuousCollisionResult* result)
+{
+  clearResult(result);
+
+  if (!checkGroupValidity(this, group)) {
+    return false;
+  }
+
+  auto* castedGroup = static_cast<DartCollisionGroup*>(group);
+  return castedGroup->capsuleCast(
+      capsuleStart, capsuleEnd, radius, height, option, result);
+}
+
+//==============================================================================
 DartCollisionDetector::DartCollisionDetector() : CollisionDetector()
 {
   mCollisionObjectManager.reset(new ManagerForSharableCollisionObjects(this));

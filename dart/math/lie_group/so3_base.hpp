@@ -189,7 +189,11 @@ template <typename OtherDerived>
 typename SO3Base<Derived>::LieGroup SO3Base<Derived>::operator*(
     const LieGroupBase<OtherDerived>& other) const
 {
-  return LieGroup(quaternion() * other.derived().quaternion());
+  const auto& lhs = params();
+  const auto& rhs = other.derived().params();
+  return LieGroup(
+      Quaternion<Scalar>(lhs[3], lhs[0], lhs[1], lhs[2])
+      * Quaternion<Scalar>(rhs[3], rhs[0], rhs[1], rhs[2]));
 }
 
 //==============================================================================
@@ -198,7 +202,8 @@ template <typename MatrixDerived>
 Vector3<typename SO3Base<Derived>::Scalar> SO3Base<Derived>::operator*(
     const Eigen::MatrixBase<MatrixDerived>& vec) const
 {
-  return quaternion() * vec;
+  const auto& p = params();
+  return Quaternion<Scalar>(p[3], p[0], p[1], p[2]) * vec;
 }
 
 //==============================================================================
@@ -215,7 +220,7 @@ void SO3Base<Derived>::normalize()
 template <typename Derived>
 Derived& SO3Base<Derived>::setRandom()
 {
-  quaternion() = Quaternion<Scalar>::UnitRandom();
+  params() = Quaternion<Scalar>::UnitRandom().coeffs();
   normalize();
   return derived();
 }
@@ -224,7 +229,7 @@ Derived& SO3Base<Derived>::setRandom()
 template <typename Derived>
 Derived& SO3Base<Derived>::inverseInPlace()
 {
-  quaternion() = quaternion().conjugate();
+  params().template head<3>() *= -1;
   return derived();
 }
 
@@ -236,8 +241,9 @@ typename SO3Base<Derived>::Tangent SO3Base<Derived>::log(Scalar tol) const
   // Canonicalize to the w >= 0 hemisphere so equivalent rotations map to the
   // minimal rotation vector and never reach the sin(theta/2) == 0 pole at
   // theta == 2*pi (e.g. the antipodal identity with w == -1).
-  Scalar w = quaternion().w();
-  Vector3<Scalar> vec = quaternion().vec();
+  const auto& p = params();
+  Scalar w = p[3];
+  Vector3<Scalar> vec(p[0], p[1], p[2]);
   if (w < 0) {
     w = -w;
     vec = -vec;
@@ -278,7 +284,8 @@ template <typename TangentDerived>
 typename SO3Base<Derived>::Tangent SO3Base<Derived>::ad(
     const TangentBase<TangentDerived>& dx) const
 {
-  return Tangent(quaternion() * dx.params());
+  const auto& p = params();
+  return Tangent(Quaternion<Scalar>(p[3], p[0], p[1], p[2]) * dx.params());
 }
 
 //==============================================================================
@@ -293,7 +300,8 @@ Matrix3<typename SO3Base<Derived>::Scalar> SO3Base<Derived>::toAdjointMatrix()
 template <typename Derived>
 typename SO3Base<Derived>::MatrixType SO3Base<Derived>::toMatrix() const
 {
-  return quaternion().toRotationMatrix();
+  const auto& p = params();
+  return Quaternion<Scalar>(p[3], p[0], p[1], p[2]).toRotationMatrix();
 }
 
 //==============================================================================

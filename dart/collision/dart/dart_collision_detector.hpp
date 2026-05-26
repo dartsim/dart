@@ -101,6 +101,25 @@ public:
       const RaycastOption& option = RaycastOption(),
       RaycastResult* result = nullptr) override;
 
+  // Documentation inherited
+  bool sphereCast(
+      CollisionGroup* group,
+      const Eigen::Vector3d& start,
+      const Eigen::Vector3d& end,
+      double radius,
+      const ContinuousCollisionOption& option = ContinuousCollisionOption(),
+      ContinuousCollisionResult* result = nullptr) override;
+
+  // Documentation inherited
+  bool capsuleCast(
+      CollisionGroup* group,
+      const Eigen::Isometry3d& capsuleStart,
+      const Eigen::Isometry3d& capsuleEnd,
+      double radius,
+      double height,
+      const ContinuousCollisionOption& option = ContinuousCollisionOption(),
+      ContinuousCollisionResult* result = nullptr) override;
+
 protected:
   /// Constructor
   DartCollisionDetector();

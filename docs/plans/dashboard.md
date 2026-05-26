@@ -74,12 +74,11 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Follow the multiphase plan in
-  `docs/dev_tasks/experimental_world_scalable_compute/`; land the Phase 0
-  foundations (executor-parity test, EnTT concurrency contract, benchmark corpus
-  with a contact-shaped proxy) before the resource-access metadata milestone,
-  and keep both ahead of dependency inference, contact scheduling, or
-  GPU/rendering backend work.
+- Next step: Gather Phase 5 CUDA evidence through the opt-in path:
+  `pixi run -e cuda test-cuda` locally on a CUDA host and the manual
+  `ci_cuda.yml` workflow on a self-hosted runner labeled `cuda`. Keep CUDA
+  private and non-required until runner stability and representative workload
+  benchmarks justify the Phase 6 GPU track.
 - Gate:
   [`030-compute-resource-access/evaluator.md`](030-compute-resource-access/evaluator.md)
   records the focused proof: graph/world tests and the compute-graph benchmark
@@ -251,16 +250,16 @@ its own line so status updates remain git-history friendly.
 ### PLAN-100: DART 7 Lie-Group Consolidation
 
 - Owner doc:
-  [`../dev_tasks/lie_group_consolidation/README.md`](../dev_tasks/lie_group_consolidation/README.md)
-- Status: Parked
-- Horizon: Next
+  [`../onboarding/architecture.md#12-math-module-dartmath`](../onboarding/architecture.md#12-math-module-dartmath)
+- Status: Complete
+- Horizon: Later
 - Dimension: Release transition
-- Next step: Port the deferred `GroupProduct` (composite Lie group) from
-  `7/nested_group_product` into `main` under main conventions, mirroring the
-  merged `SO3`/`SE3` inverse machinery and resolving the five known WIP gaps.
-- Gate: `GroupProduct` source and tests land in `dart/math/lie_group/` with
-  `pixi run lint`, build, and `ctest -R UNIT_math_lie_group` green; the
-  Lie-group base API increment already merged via PR #2697.
+- Next step: Use `SO3`, `SE3`, tangents, `SpatialInertia`, batch operations,
+  and `GroupProduct` as the DART 7 typed Lie-group surface; keep future
+  composite work aligned with the componentwise direct-product pattern.
+- Gate: `GroupProduct` source and tests are in `dart/math/lie_group/` under
+  snake_case headers, with inverse/map machinery matching the `SO3`/`SE3`
+  expression-template pattern and `ctest -R UNIT_math_lie_group` green.
 
 ### PLAN-101: dartsim GUI Simulator
 

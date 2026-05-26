@@ -52,9 +52,13 @@ Operating priority is owned by `docs/plans/dashboard.md` (PLAN-030).
       `rolloutWorldsBatched`, and a pure-SoA control-sequence rollout
       (`rolloutRigidBodyStateBatch`). Heterogeneous batches are deferred to Phase 6
       by design.
-- [ ] Phase 5: GPU prototype behind a gate with a kill criterion (internal, no
-      public API); CUDA-versus-SYCL decided from the benchmark. Blocked on GPU
-      hardware/CI.
+- [~] Phase 5: GPU prototype behind a gate with a kill criterion (internal, no
+  public API). The MVP CUDA path is now opt-in behind
+  `DART_ENABLE_EXPERIMENTAL_CUDA`, a Linux-only Pixi `cuda` environment, a
+  private build-tree CUDA wrapper over `RigidBodyStateBatch`, a parity unit
+  test, an end-to-end smoke benchmark, and a manual/non-required GitHub
+  workflow. Remaining: run that workflow on a provisioned GPU runner and use
+  representative workload results for the CUDA-versus-SYCL decision.
 - [ ] Phase 6: Reassess — broaden GPU, auto-scheduling, Pattern B, differentiable
       state (each gated; gated on Phase 5 evidence).
 
@@ -107,8 +111,10 @@ sort are in; see `RESUME.md`.)
 2. Phase 3 remainder: explicit SIMD (`dart/simd`) on the hot SoA kernels and a
    cost gate for sub-threshold graphs, each cited against committed `bm-check`
    baselines.
-3. Phase 5 GPU prototype — blocked on a GPU runner the project does not have;
-   treat runner provisioning as a named prerequisite, not a coding task.
+3. Phase 5 GPU evidence: run `pixi run -e cuda test-cuda` on a CUDA host, then
+   dispatch `.github/workflows/ci_cuda.yml` on a self-hosted runner labeled
+   `cuda`. Keep the workflow non-required until runner availability and
+   benchmark stability are proven.
 
 ## Relationship To Other Surfaces
 

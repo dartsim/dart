@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <numbers>
 #include <random>
 
 using namespace dart::collision::native;
@@ -1141,6 +1142,49 @@ TEST(CollisionWorldSphereCast, MixedShapes)
   }
 }
 
+TEST(CollisionWorldSphereCast, SweptBroadPhaseMatchesBruteForce)
+{
+  auto populate = [](CollisionWorld& world) {
+    for (int i = 0; i < 32; ++i) {
+      Eigen::Isometry3d farTf = Eigen::Isometry3d::Identity();
+      farTf.translation()
+          = Eigen::Vector3d(50.0 + static_cast<double>(i), 7.0, -3.0);
+      world.createObject(std::make_unique<SphereShape>(0.5), farTf);
+    }
+
+    Eigen::Isometry3d nearTf = Eigen::Isometry3d::Identity();
+    nearTf.translation() = Eigen::Vector3d(0, 0, 5);
+    world.createObject(std::make_unique<SphereShape>(1.0), nearTf);
+
+    Eigen::Isometry3d laterTf = Eigen::Isometry3d::Identity();
+    laterTf.translation() = Eigen::Vector3d(0, 0, 8);
+    world.createObject(
+        std::make_unique<BoxShape>(Eigen::Vector3d(1, 1, 1)), laterTf);
+  };
+
+  CollisionWorld treeWorld(BroadPhaseType::AabbTree);
+  CollisionWorld bruteWorld(BroadPhaseType::BruteForce);
+  populate(treeWorld);
+  populate(bruteWorld);
+
+  const Eigen::Vector3d start(0, 0, 0);
+  const Eigen::Vector3d end(0, 0, 10);
+  constexpr double radius = 0.25;
+
+  CcdOption option;
+  std::vector<CcdResult> treeResults;
+  std::vector<CcdResult> bruteResults;
+
+  ASSERT_TRUE(treeWorld.sphereCastAll(start, end, radius, option, treeResults));
+  ASSERT_TRUE(
+      bruteWorld.sphereCastAll(start, end, radius, option, bruteResults));
+  ASSERT_EQ(treeResults.size(), bruteResults.size());
+  for (std::size_t i = 0; i < treeResults.size(); ++i) {
+    EXPECT_NEAR(
+        treeResults[i].timeOfImpact, bruteResults[i].timeOfImpact, 1e-12);
+  }
+}
+
 //==============================================================================
 // CollisionWorld CapsuleCast tests
 //==============================================================================
@@ -1246,6 +1290,32 @@ TEST(CollisionWorldCapsuleCast, CapsuleCastAll)
   EXPECT_EQ(results.size(), 2u);
 
   EXPECT_LT(results[0].timeOfImpact, results[1].timeOfImpact);
+}
+
+TEST(CollisionWorldCapsuleCast, RotationalSweepUsesConservativeBroadPhaseAabb)
+{
+  CollisionWorld world(BroadPhaseType::AabbTree);
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(2.2, 0.0, 0.0);
+  auto target = world.createObject(std::make_unique<SphereShape>(0.25), tf);
+
+  CapsuleShape capsule(0.1, 4.0);
+  Eigen::Isometry3d capsuleStart = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d capsuleEnd = Eigen::Isometry3d::Identity();
+  capsuleEnd.linear()
+      = Eigen::AngleAxisd(std::numbers::pi, Eigen::Vector3d::UnitY())
+            .toRotationMatrix();
+
+  CcdOption option = CcdOption::precise();
+  CcdResult result;
+
+  ASSERT_TRUE(
+      world.capsuleCast(capsuleStart, capsuleEnd, capsule, option, result));
+  ASSERT_NE(result.object, nullptr);
+  EXPECT_EQ(*result.object, target);
+  EXPECT_GT(result.timeOfImpact, 0.0);
+  EXPECT_LT(result.timeOfImpact, 1.0);
 }
 
 //==============================================================================

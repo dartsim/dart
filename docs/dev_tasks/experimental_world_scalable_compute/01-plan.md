@@ -241,6 +241,12 @@ Deliverables:
   (transfer + setup + compute) against the CPU batch on the representative
   corpus; provide an identical-semantics CPU fallback; add build/import CI and
   one smoke benchmark.
+- The MVP implementation is intentionally narrower than the final Phase 5
+  backend: it adds a private build-tree CUDA wrapper for the linear
+  `RigidBodyStateBatch` SoA integration path, a parity test, a smoke benchmark,
+  the `pixi run -e cuda test-cuda` command, and a manual `ci_cuda.yml` workflow.
+  It does not expose a public `CudaExecutor`, CUDA stream/device types, or any
+  CUDA names in installed headers.
 - Decide CUDA versus SYCL/AdaptiveCpp from the measured results, applying the
   criteria in `scalable_compute_decisions.md`. Because Taskflow's GPU tasking is
   CUDA-only, the backend stays behind an internal interface so the choice is
@@ -258,9 +264,9 @@ Exit criteria:
 - Benchmark report with an explicit go/no-go; build/import gate green; API-
   boundary review shows no backend leakage.
 
-External dependency: GPU CI requires a GPU runner that the project does not have
-today. Treat runner provisioning and the optional/separate GPU package as named
-prerequisites with an owner, not as coding tasks.
+External dependency: GPU CI requires a GPU runner labeled for CUDA. Treat runner
+provisioning and the optional/separate GPU package as named prerequisites with
+an owner, not as hidden requirements of ordinary PR CI.
 
 ### Phase 6 — Reassess (gated by Phase 5 evidence)
 

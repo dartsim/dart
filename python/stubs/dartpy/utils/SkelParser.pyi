@@ -1,11 +1,25 @@
 from __future__ import annotations
-import dartpy.common
-import dartpy.dynamics
-import dartpy.simulation
-__all__: list[str] = ['readSkeleton', 'readWorld', 'readWorldXML']
-def readSkeleton(uri: dartpy.common.Uri, retriever: dartpy.common.ResourceRetriever = None) -> dartpy.dynamics.Skeleton:
-    ...
-def readWorld(uri: dartpy.common.Uri, retriever: dartpy.common.ResourceRetriever = None) -> dartpy.simulation.World:
-    ...
-def readWorldXML(xmlString: str, baseUri: dartpy.common.Uri = '', retriever: dartpy.common.ResourceRetriever = None) -> dartpy.simulation.World:
-    ...
+
+__all__: list[str] = [
+    "readSkeleton",
+    "readWorld",
+    "readWorldXML",
+    "read_skeleton",
+    "read_world",
+    "read_world_xml",
+]
+
+
+
+
+def readWorld(*args, **kwargs): ...
+
+def readWorldXML(*args, **kwargs): ...
+
+def readSkeleton(*args, **kwargs): ...
+
+read_skeleton = readSkeleton
+
+read_world = readWorld
+
+read_world_xml = readWorldXML

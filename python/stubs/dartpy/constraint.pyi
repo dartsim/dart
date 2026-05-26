@@ -1,192 +1,192 @@
 from __future__ import annotations
-import dartpy.collision
+
+__all__: list[str] = [
+    "BallJointConstraint",
+    "ConstraintBase",
+    "DynamicJointConstraint",
+    "JointConstraint",
+    "JointCoulombFrictionConstraint",
+    "RevoluteJointConstraint",
+    "WeldJointConstraint",
+]
+
+
+from typing import Any, overload
+
 import dartpy.dynamics
-import dartpy.math
-import numpy
-import typing
-__all__: list[str] = ['BallJointConstraint', 'ConstraintBase', 'ConstraintSolver', 'DynamicJointConstraint', 'JointConstraint', 'JointCoulombFrictionConstraint', 'RevoluteJointConstraint', 'WeldJointConstraint']
-class BallJointConstraint(DynamicJointConstraint):
-    @staticmethod
-    def getStaticType() -> str:
-        ...
-    @typing.overload
-    def __init__(self, body: dartpy.dynamics.BodyNode, jointPos: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> None:
-        ...
-    @typing.overload
-    def __init__(self, body1: dartpy.dynamics.BodyNode, body2: dartpy.dynamics.BodyNode, jointPos: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> None:
-        ...
-class RevoluteJointConstraint(DynamicJointConstraint):
-    @staticmethod
-    def getStaticType() -> str:
-        ...
-    @typing.overload
-    def __init__(self, body: dartpy.dynamics.BodyNode, jointPos: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], axis: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> None:
-        ...
-    @typing.overload
-    def __init__(self, body1: dartpy.dynamics.BodyNode, body2: dartpy.dynamics.BodyNode, jointPos: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], axis1: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]], axis2: numpy.ndarray[tuple[typing.Literal[3], typing.Literal[1]], numpy.dtype[numpy.float64]]) -> None:
-        ...
+
+
 class ConstraintBase:
-    @staticmethod
-    def compressPath(skeleton: dartpy.dynamics.Skeleton) -> dartpy.dynamics.Skeleton:
-        ...
-    @staticmethod
-    def getRootSkeletonOf(skeleton: dartpy.dynamics.Skeleton) -> dartpy.dynamics.Skeleton:
-        ...
-    def applyImpulse(self, lambda: float) -> None:
-        ...
-    def applyUnitImpulse(self, index: int) -> None:
-        ...
-    def excite(self) -> None:
-        ...
-    def getDimension(self) -> int:
-        ...
-    def getInformation(self, info: ...) -> None:
-        ...
-    def getRootSkeleton(self) -> dartpy.dynamics.Skeleton:
-        ...
-    def getType(self) -> str:
-        ...
-    def getVelocityChange(self, vel: float, withCfm: bool) -> None:
-        ...
-    def isActive(self) -> bool:
-        ...
-    def unexcite(self) -> None:
-        ...
-    def uniteSkeletons(self) -> None:
-        ...
-    def update(self) -> None:
-        ...
-class ConstraintSolver:
-    def addConstraint(self, constraint: ConstraintBase) -> None:
-        ...
-    def addSkeleton(self, skeleton: dartpy.dynamics.Skeleton) -> None:
-        ...
-    def addSkeletons(self, skeletons: ..., std: ...) -> None:
-        ...
-    def clearLastCollisionResult(self) -> None:
-        ...
-    @typing.overload
-    def getCollisionDetector(self) -> dartpy.collision.CollisionDetector:
-        ...
-    @typing.overload
-    def getCollisionDetector(self) -> dartpy.collision.CollisionDetector:
-        ...
-    @typing.overload
-    def getCollisionGroup(self) -> dartpy.collision.CollisionGroup:
-        ...
-    @typing.overload
-    def getCollisionGroup(self) -> dartpy.collision.CollisionGroup:
-        ...
-    @typing.overload
-    def getCollisionOption(self) -> dartpy.collision.CollisionOption:
-        """
-        Returns collision option that is used for collision checkings in this ConstraintSolver to generate contact constraints.
-        """
-    @typing.overload
-    def getCollisionOption(self) -> dartpy.collision.CollisionOption:
-        """
-        Returns collision option that is used for collision checkings in this ConstraintSolver to generate contact constraints.
-        """
-    @typing.overload
-    def getConstraint(self, index: int) -> ConstraintBase:
-        ...
-    @typing.overload
-    def getConstraint(self, index: int) -> ConstraintBase:
-        ...
-    @typing.overload
-    def getNumConstraints(self) -> bool:
-        ...
-    @typing.overload
-    def getNumConstraints(self) -> bool:
-        ...
-    def getTimeStep(self) -> float:
-        ...
-    def removeAllConstraints(self) -> None:
-        ...
-    def removeAllSkeletons(self) -> None:
-        ...
-    def removeConstraint(self, constraint: ConstraintBase) -> None:
-        ...
-    def removeSkeleton(self, skeleton: dartpy.dynamics.Skeleton) -> None:
-        ...
-    def removeSkeletons(self, skeletons: ..., std: ...) -> None:
-        ...
-    def setCollisionDetector(self, collisionDetector: dartpy.collision.CollisionDetector) -> None:
-        ...
-    def setTimeStep(self, timeStep: float) -> None:
-        ...
-    def solve(self) -> None:
-        ...
+    def getType(*args, **kwargs) -> Any: ...
+
+    def getDimension(*args, **kwargs) -> Any: ...
+
+    def update(self) -> None: ...
+
+    get_dimension = getDimension
+
+    get_type = getType
+
 class DynamicJointConstraint(ConstraintBase):
-    @staticmethod
-    def getConstraintForceMixing() -> float:
-        ...
-    @staticmethod
-    def getErrorAllowance() -> float:
-        ...
-    @staticmethod
-    def getErrorReductionParameter() -> float:
-        ...
-    @staticmethod
-    def getMaxErrorReductionVelocity() -> float:
-        ...
-    @staticmethod
-    def setConstraintForceMixing(cfm: float) -> None:
-        ...
-    @staticmethod
-    def setErrorAllowance(allowance: float) -> None:
-        ...
-    @staticmethod
-    def setErrorReductionParameter(erp: float) -> None:
-        ...
-    @staticmethod
-    def setMaxErrorReductionVelocity(erv: float) -> None:
-        ...
-class JointConstraint(ConstraintBase):
-    @staticmethod
-    def getConstraintForceMixing() -> float:
-        ...
-    @staticmethod
-    def getErrorAllowance() -> float:
-        ...
-    @staticmethod
-    def getErrorReductionParameter() -> float:
-        ...
-    @staticmethod
-    def getMaxErrorReductionVelocity() -> float:
-        ...
-    @staticmethod
-    def setConstraintForceMixing(cfm: float) -> None:
-        ...
-    @staticmethod
-    def setErrorAllowance(allowance: float) -> None:
-        ...
-    @staticmethod
-    def setErrorReductionParameter(erp: float) -> None:
-        ...
-    @staticmethod
-    def setMaxErrorReductionVelocity(erv: float) -> None:
-        ...
-    def __init__(self, joint: dartpy.dynamics.Joint) -> None:
-        ...
-class JointCoulombFrictionConstraint(ConstraintBase):
-    @staticmethod
-    def getConstraintForceMixing() -> float:
-        ...
-    @staticmethod
-    def setConstraintForceMixing(cfm: float) -> None:
-        ...
-    def __init__(self, joint: dartpy.dynamics.Joint) -> None:
-        ...
+    def setErrorAllowance(*args, **kwargs): ...
+
+    def getErrorAllowance(*args, **kwargs): ...
+
+    def setErrorReductionParameter(*args, **kwargs): ...
+
+    def getErrorReductionParameter(*args, **kwargs): ...
+
+    def setMaxErrorReductionVelocity(*args, **kwargs): ...
+
+    def getMaxErrorReductionVelocity(*args, **kwargs): ...
+
+    def setConstraintForceMixing(*args, **kwargs): ...
+
+    def getConstraintForceMixing(*args, **kwargs): ...
+
+    get_constraint_force_mixing = getConstraintForceMixing
+
+    get_error_allowance = getErrorAllowance
+
+    get_error_reduction_parameter = getErrorReductionParameter
+
+    get_max_error_reduction_velocity = getMaxErrorReductionVelocity
+
+    set_constraint_force_mixing = setConstraintForceMixing
+
+    set_error_allowance = setErrorAllowance
+
+    set_error_reduction_parameter = setErrorReductionParameter
+
+    set_max_error_reduction_velocity = setMaxErrorReductionVelocity
+
+class BallJointConstraint(DynamicJointConstraint):
+    @overload
+    def __init__(self, body_node: dartpy.dynamics.BodyNode, joint_position: object) -> None: ...
+
+    @overload
+    def __init__(self, body_node1: object, body_node2: object, joint_position: object) -> None: ...
+
+    def getType(*args, **kwargs) -> Any: ...
+
+    def getStaticType(*args, **kwargs): ...
+
+    get_constraint_force_mixing = getConstraintForceMixing
+
+    def getConstraintForceMixing(*args, **kwargs): ...
+
+    get_dimension = getDimension
+
+    def getDimension(*args, **kwargs) -> Any: ...
+
+    get_error_allowance = getErrorAllowance
+
+    def getErrorAllowance(*args, **kwargs): ...
+
+    get_error_reduction_parameter = getErrorReductionParameter
+
+    def getErrorReductionParameter(*args, **kwargs): ...
+
+    get_max_error_reduction_velocity = getMaxErrorReductionVelocity
+
+    def getMaxErrorReductionVelocity(*args, **kwargs): ...
+
+    get_static_type = getStaticType
+
+    get_type = getType
+
+    set_constraint_force_mixing = setConstraintForceMixing
+
+    def setConstraintForceMixing(*args, **kwargs): ...
+
+    set_error_allowance = setErrorAllowance
+
+    def setErrorAllowance(*args, **kwargs): ...
+
+    set_error_reduction_parameter = setErrorReductionParameter
+
+    def setErrorReductionParameter(*args, **kwargs): ...
+
+    set_max_error_reduction_velocity = setMaxErrorReductionVelocity
+
+    def setMaxErrorReductionVelocity(*args, **kwargs): ...
+
+class RevoluteJointConstraint(DynamicJointConstraint):
+    @overload
+    def __init__(self, body_node: dartpy.dynamics.BodyNode, joint_position: object, axis: object) -> None: ...
+
+    @overload
+    def __init__(self, body_node1: object, body_node2: object, joint_position: object, axis1: object, axis2: object) -> None: ...
+
+    def getType(self) -> str: ...
+
+    def getStaticType(*args, **kwargs): ...
+
+    get_static_type = getStaticType
+
 class WeldJointConstraint(DynamicJointConstraint):
-    @staticmethod
-    def getStaticType() -> str:
-        ...
-    @typing.overload
-    def __init__(self, body: dartpy.dynamics.BodyNode) -> None:
-        ...
-    @typing.overload
-    def __init__(self, body1: dartpy.dynamics.BodyNode, body2: dartpy.dynamics.BodyNode) -> None:
-        ...
-    def setRelativeTransform(self, tf: dartpy.math.Isometry3) -> None:
-        ...
+    @overload
+    def __init__(self, body_node: dartpy.dynamics.BodyNode) -> None: ...
+
+    @overload
+    def __init__(self, body_node1: dartpy.dynamics.BodyNode, body_node2: dartpy.dynamics.BodyNode) -> None: ...
+
+    def setRelativeTransform(*args, **kwargs) -> Any: ...
+
+    def getRelativeTransform(*args, **kwargs) -> Any: ...
+
+    def getType(self) -> str: ...
+
+    def getStaticType(*args, **kwargs): ...
+
+    get_relative_transform = getRelativeTransform
+
+    get_static_type = getStaticType
+
+    set_relative_transform = setRelativeTransform
+
+class JointConstraint(ConstraintBase):
+    def __init__(self, joint: dartpy.dynamics.Joint) -> None: ...
+
+    def setErrorAllowance(*args, **kwargs): ...
+
+    def getErrorAllowance(*args, **kwargs): ...
+
+    def setErrorReductionParameter(*args, **kwargs): ...
+
+    def getErrorReductionParameter(*args, **kwargs): ...
+
+    def setMaxErrorReductionVelocity(*args, **kwargs): ...
+
+    def getMaxErrorReductionVelocity(*args, **kwargs): ...
+
+    def setConstraintForceMixing(*args, **kwargs): ...
+
+    def getConstraintForceMixing(*args, **kwargs): ...
+
+    get_constraint_force_mixing = getConstraintForceMixing
+
+    get_error_allowance = getErrorAllowance
+
+    get_error_reduction_parameter = getErrorReductionParameter
+
+    get_max_error_reduction_velocity = getMaxErrorReductionVelocity
+
+    set_constraint_force_mixing = setConstraintForceMixing
+
+    set_error_allowance = setErrorAllowance
+
+    set_error_reduction_parameter = setErrorReductionParameter
+
+    set_max_error_reduction_velocity = setMaxErrorReductionVelocity
+
+class JointCoulombFrictionConstraint(ConstraintBase):
+    def __init__(self, joint: dartpy.dynamics.Joint) -> None: ...
+
+    def setConstraintForceMixing(*args, **kwargs): ...
+
+    def getConstraintForceMixing(*args, **kwargs): ...
+
+    get_constraint_force_mixing = getConstraintForceMixing
+
+    set_constraint_force_mixing = setConstraintForceMixing

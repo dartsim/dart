@@ -23,4 +23,13 @@ if(DART_EXPERIMENTAL_BUILD_BENCHMARKS)
     bm_ecs_safety
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_ecs_safety.cpp
   )
+
+  if(TARGET ${PROJECT_NAME}-simulation-experimental-cuda)
+    dart_experimental_add_benchmark(
+      bm_cuda_rigid_body_state_batch
+      ${CMAKE_CURRENT_SOURCE_DIR}/bm_cuda_rigid_body_state_batch.cpp
+      LIBRARY ${PROJECT_NAME}-simulation-experimental-cuda
+      LABEL "simulation-experimental-cuda"
+    )
+  endif()
 endif()

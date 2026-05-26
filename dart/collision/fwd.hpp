@@ -51,6 +51,11 @@ struct DistanceFilter;
 struct DistanceOption;
 struct DistanceResult;
 
+enum class ContinuousCollisionAdvancement;
+struct ContinuousCollisionHit;
+struct ContinuousCollisionOption;
+struct ContinuousCollisionResult;
+
 struct RaycastOption;
 struct RaycastResult;
 

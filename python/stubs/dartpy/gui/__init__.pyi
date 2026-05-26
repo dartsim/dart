@@ -1,531 +1,1319 @@
 from __future__ import annotations
 
-import typing
-
-import dartpy.collision
-import dartpy.dynamics
-import dartpy.simulation
-import numpy
-
 __all__: list[str] = [
-    'ActiveRenderableState',
-    'DebugDrawOptions',
-    'DebugLineDescriptor',
-    'DirectionalNudgeInput',
-    'GeometryDescriptor',
-    'MaterialDescriptor',
-    'MeshAlphaMode',
-    'MeshMaterialDescriptor',
-    'MeshPartDescriptor',
-    'OrbitCamera',
-    'OrbitCameraBasis',
-    'OrbitCameraController',
-    'OrbitCameraControllerInput',
-    'OrbitCameraUpdate',
-    'PerspectiveProjection',
-    'PickHit',
-    'PickRay',
-    'ProjectionOptions',
-    'RenderableDescriptor',
-    'RenderableSetUpdatePlan',
-    'RunOptions',
-    'ShapeKind',
-    'ViewerLifecycleState',
-    'add_orbit_camera_scroll',
-    'camera_eye',
-    'compute_axis_drag_translation',
-    'compute_camera_relative_nudge',
-    'compute_plane_drag_translation',
-    'describe_shape',
-    'extract_contact_debug_lines',
-    'extract_debug_lines',
-    'extract_renderables',
-    'intersect_plane',
-    'intersect_renderable',
-    'make_collision_shape_debug_lines',
-    'make_frame_output_path',
-    'make_frame_debug_lines',
-    'make_grid_debug_lines',
-    'make_inertia_debug_lines',
-    'make_orbit_camera_basis',
-    'make_perspective_pick_ray',
-    'make_perspective_projection',
-    'make_selection_debug_lines',
-    'make_support_polygon_debug_lines',
-    'mark_frame_rendered',
-    'mark_frame_skipped',
-    'mark_screenshot_requested',
-    'mark_simulation_advanced',
-    'normalize_run_options',
-    'pick_nearest_renderable',
-    'plan_renderable_set_update',
-    'request_single_step',
-    'reset_orbit_camera_tracking',
-    'should_advance_simulation',
-    'should_capture_frame_output',
-    'should_request_screenshot',
-    'should_stop_after_frame',
-    'toggle_paused',
-    'translate_frame_renderable',
-    'translate_free_joint_renderable',
-    'translate_simple_frame_renderable',
-    'update_orbit_camera',
-    'update_orbit_camera_controller',
-    'write_rgba_ppm',
+    "ActiveRenderableState",
+    "DebugDrawOptions",
+    "DebugLineDescriptor",
+    "DirectionalNudgeInput",
+    "GeometryDescriptor",
+    "MaterialDescriptor",
+    "MeshAlphaMode",
+    "MeshMaterialDescriptor",
+    "MeshPartDescriptor",
+    "OrbitCamera",
+    "OrbitCameraBasis",
+    "OrbitCameraController",
+    "OrbitCameraControllerInput",
+    "OrbitCameraUpdate",
+    "PerspectiveProjection",
+    "PickHit",
+    "PickRay",
+    "ProjectionOptions",
+    "RenderableDescriptor",
+    "RenderableSetUpdatePlan",
+    "RunOptions",
+    "ShapeKind",
+    "ViewerLifecycleState",
+    "add_orbit_camera_scroll",
+    "camera_eye",
+    "compute_axis_drag_translation",
+    "compute_camera_relative_nudge",
+    "compute_plane_drag_translation",
+    "describe_shape",
+    "extract_contact_debug_lines",
+    "extract_debug_lines",
+    "extract_renderables",
+    "intersect_plane",
+    "intersect_renderable",
+    "make_collision_shape_debug_lines",
+    "make_frame_debug_lines",
+    "make_frame_output_path",
+    "make_grid_debug_lines",
+    "make_inertia_debug_lines",
+    "make_orbit_camera_basis",
+    "make_perspective_pick_ray",
+    "make_perspective_projection",
+    "make_selection_debug_lines",
+    "make_support_polygon_debug_lines",
+    "mark_frame_rendered",
+    "mark_frame_skipped",
+    "mark_screenshot_requested",
+    "mark_simulation_advanced",
+    "normalize_run_options",
+    "pick_nearest_renderable",
+    "plan_renderable_set_update",
+    "request_single_step",
+    "reset_orbit_camera_tracking",
+    "should_advance_simulation",
+    "should_capture_frame_output",
+    "should_request_screenshot",
+    "should_stop_after_frame",
+    "toggle_paused",
+    "translate_frame_renderable",
+    "translate_free_joint_renderable",
+    "translate_simple_frame_renderable",
+    "update_orbit_camera",
+    "update_orbit_camera_controller",
+    "write_rgba_ppm",
 ]
 
 
-Array = numpy.ndarray
+from collections.abc import Sequence
+import enum
+from typing import Annotated, overload
+
+import numpy
+from numpy.typing import NDArray
+
+import dartpy.collision
+import dartpy.dynamics
+import dartpy.math
+import dartpy.simulation
 
 
-class ShapeKind:
-    Box: typing.ClassVar[ShapeKind]
-    Sphere: typing.ClassVar[ShapeKind]
-    Ellipsoid: typing.ClassVar[ShapeKind]
-    Cylinder: typing.ClassVar[ShapeKind]
-    Capsule: typing.ClassVar[ShapeKind]
-    Cone: typing.ClassVar[ShapeKind]
-    Pyramid: typing.ClassVar[ShapeKind]
-    MultiSphere: typing.ClassVar[ShapeKind]
-    LineSegments: typing.ClassVar[ShapeKind]
-    ConvexMesh: typing.ClassVar[ShapeKind]
-    PointCloud: typing.ClassVar[ShapeKind]
-    Heightmap: typing.ClassVar[ShapeKind]
-    SoftMesh: typing.ClassVar[ShapeKind]
-    VoxelGrid: typing.ClassVar[ShapeKind]
-    Mesh: typing.ClassVar[ShapeKind]
-    Plane: typing.ClassVar[ShapeKind]
-    Unsupported: typing.ClassVar[ShapeKind]
-    __members__: typing.ClassVar[dict[str, ShapeKind]]
+class ShapeKind(enum.Enum):
+    Box = 0
 
-    @property
-    def name(self) -> str: ...
-    @property
-    def value(self) -> int: ...
+    Sphere = 1
 
+    Ellipsoid = 2
 
-class MeshAlphaMode:
-    Blend: typing.ClassVar[MeshAlphaMode]
-    Auto: typing.ClassVar[MeshAlphaMode]
-    ShapeAlpha: typing.ClassVar[MeshAlphaMode]
-    __members__: typing.ClassVar[dict[str, MeshAlphaMode]]
+    Cylinder = 3
 
-    @property
-    def name(self) -> str: ...
-    @property
-    def value(self) -> int: ...
+    Capsule = 4
 
+    Cone = 5
+
+    Pyramid = 6
+
+    MultiSphere = 7
+
+    LineSegments = 8
+
+    ConvexMesh = 9
+
+    PointCloud = 10
+
+    Heightmap = 11
+
+    SoftMesh = 12
+
+    VoxelGrid = 13
+
+    Mesh = 14
+
+    Plane = 15
+
+    Unsupported = 16
+
+class MeshAlphaMode(enum.Enum):
+    Blend = 0
+
+    Auto = 1
+
+    ShapeAlpha = 2
 
 class MeshMaterialDescriptor:
-    ambient: Array
-    diffuse: Array
-    specular: Array
-    emissive: Array
-    shininess: float
-    metallic_factor: float
-    roughness_factor: float
-    base_color_texture_path: str
-    metallic_texture_path: str
-    roughness_texture_path: str
-    metallic_roughness_texture_path: str
-    normal_texture_path: str
-    occlusion_texture_path: str
-    emissive_texture_path: str
-    texture_image_paths: list[str]
-
     def __init__(self) -> None: ...
 
+    @property
+    def ambient(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')]: ...
+
+    @ambient.setter
+    def ambient(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')], /) -> None: ...
+
+    @property
+    def diffuse(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')]: ...
+
+    @diffuse.setter
+    def diffuse(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')], /) -> None: ...
+
+    @property
+    def specular(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')]: ...
+
+    @specular.setter
+    def specular(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')], /) -> None: ...
+
+    @property
+    def emissive(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')]: ...
+
+    @emissive.setter
+    def emissive(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')], /) -> None: ...
+
+    @property
+    def shininess(self) -> float: ...
+
+    @shininess.setter
+    def shininess(self, arg: float, /) -> None: ...
+
+    @property
+    def metallic_factor(self) -> float: ...
+
+    @metallic_factor.setter
+    def metallic_factor(self, arg: float, /) -> None: ...
+
+    @property
+    def roughness_factor(self) -> float: ...
+
+    @roughness_factor.setter
+    def roughness_factor(self, arg: float, /) -> None: ...
+
+    @property
+    def base_color_texture_path(self) -> str: ...
+
+    @base_color_texture_path.setter
+    def base_color_texture_path(self, arg: str, /) -> None: ...
+
+    @property
+    def metallic_texture_path(self) -> str: ...
+
+    @metallic_texture_path.setter
+    def metallic_texture_path(self, arg: str, /) -> None: ...
+
+    @property
+    def roughness_texture_path(self) -> str: ...
+
+    @roughness_texture_path.setter
+    def roughness_texture_path(self, arg: str, /) -> None: ...
+
+    @property
+    def metallic_roughness_texture_path(self) -> str: ...
+
+    @metallic_roughness_texture_path.setter
+    def metallic_roughness_texture_path(self, arg: str, /) -> None: ...
+
+    @property
+    def normal_texture_path(self) -> str: ...
+
+    @normal_texture_path.setter
+    def normal_texture_path(self, arg: str, /) -> None: ...
+
+    @property
+    def occlusion_texture_path(self) -> str: ...
+
+    @occlusion_texture_path.setter
+    def occlusion_texture_path(self, arg: str, /) -> None: ...
+
+    @property
+    def emissive_texture_path(self) -> str: ...
+
+    @emissive_texture_path.setter
+    def emissive_texture_path(self, arg: str, /) -> None: ...
+
+    @property
+    def texture_image_paths(self) -> list[str]: ...
+
+    @texture_image_paths.setter
+    def texture_image_paths(self, arg: Sequence[str], /) -> None: ...
 
 class MeshPartDescriptor:
-    vertex_offset: int
-    vertex_count: int
-    triangle_offset: int
-    triangle_count: int
-    material_index: int
-
     def __init__(self) -> None: ...
 
+    @property
+    def vertex_offset(self) -> int: ...
+
+    @vertex_offset.setter
+    def vertex_offset(self, arg: int, /) -> None: ...
+
+    @property
+    def vertex_count(self) -> int: ...
+
+    @vertex_count.setter
+    def vertex_count(self, arg: int, /) -> None: ...
+
+    @property
+    def triangle_offset(self) -> int: ...
+
+    @triangle_offset.setter
+    def triangle_offset(self, arg: int, /) -> None: ...
+
+    @property
+    def triangle_count(self) -> int: ...
+
+    @triangle_count.setter
+    def triangle_count(self, arg: int, /) -> None: ...
+
+    @property
+    def material_index(self) -> int: ...
+
+    @material_index.setter
+    def material_index(self, arg: int, /) -> None: ...
 
 class GeometryDescriptor:
-    kind: ShapeKind
-    size: Array
-    scale: Array
-    normal: Array
-    local_bounds_min: Array
-    local_bounds_max: Array
-    sphere_centers: list[Array]
-    sphere_radii: list[float]
-    line_vertices: list[Array]
-    line_connections: list[Array]
-    triangle_vertices: list[Array]
-    triangle_indices: list[Array]
-    triangle_normals: list[Array]
-    point_cloud_points: list[Array]
-    point_cloud_colors: list[Array]
-    voxel_centers: list[Array]
-    radius: float
-    height: float
-    offset: float
-    line_thickness: float
-    point_size: float
-    voxel_size: float
-    has_local_bounds: bool
-    mesh_uses_material_colors: bool
-    mesh_alpha_mode: MeshAlphaMode
-    mesh_texture_coord_components: int
-    mesh_texture_coordinates: list[Array]
-    mesh_uri: str
-    shape_type: str
-    unsupported_reason: str
-    mesh_materials: list[MeshMaterialDescriptor]
-    mesh_parts: list[MeshPartDescriptor]
-
     def __init__(self) -> None: ...
 
+    @property
+    def kind(self) -> ShapeKind: ...
+
+    @kind.setter
+    def kind(self, arg: ShapeKind, /) -> None: ...
+
+    @property
+    def size(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @size.setter
+    def size(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def scale(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @scale.setter
+    def scale(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def normal(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @normal.setter
+    def normal(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def local_bounds_min(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @local_bounds_min.setter
+    def local_bounds_min(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def local_bounds_max(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @local_bounds_max.setter
+    def local_bounds_max(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def sphere_centers(self) -> list[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]]: ...
+
+    @sphere_centers.setter
+    def sphere_centers(self, arg: Sequence[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]], /) -> None: ...
+
+    @property
+    def sphere_radii(self) -> list[float]: ...
+
+    @sphere_radii.setter
+    def sphere_radii(self, arg: Sequence[float], /) -> None: ...
+
+    @property
+    def line_vertices(self) -> list[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]]: ...
+
+    @line_vertices.setter
+    def line_vertices(self, arg: Sequence[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]], /) -> None: ...
+
+    @property
+    def line_connections(self) -> list[Annotated[NDArray[numpy.int32], dict(shape=(2), order='C')]]: ...
+
+    @line_connections.setter
+    def line_connections(self, arg: Sequence[Annotated[NDArray[numpy.int32], dict(shape=(2), order='C')]], /) -> None: ...
+
+    @property
+    def triangle_vertices(self) -> list[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]]: ...
+
+    @triangle_vertices.setter
+    def triangle_vertices(self, arg: Sequence[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]], /) -> None: ...
+
+    @property
+    def triangle_indices(self) -> list[Annotated[NDArray[numpy.int32], dict(shape=(3), order='C')]]: ...
+
+    @triangle_indices.setter
+    def triangle_indices(self, arg: Sequence[Annotated[NDArray[numpy.int32], dict(shape=(3), order='C')]], /) -> None: ...
+
+    @property
+    def triangle_normals(self) -> list[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]]: ...
+
+    @triangle_normals.setter
+    def triangle_normals(self, arg: Sequence[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]], /) -> None: ...
+
+    @property
+    def point_cloud_points(self) -> list[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]]: ...
+
+    @point_cloud_points.setter
+    def point_cloud_points(self, arg: Sequence[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]], /) -> None: ...
+
+    @property
+    def point_cloud_colors(self) -> list[Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')]]: ...
+
+    @point_cloud_colors.setter
+    def point_cloud_colors(self, arg: Sequence[Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')]], /) -> None: ...
+
+    @property
+    def voxel_centers(self) -> list[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]]: ...
+
+    @voxel_centers.setter
+    def voxel_centers(self, arg: Sequence[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]], /) -> None: ...
+
+    @property
+    def radius(self) -> float: ...
+
+    @radius.setter
+    def radius(self, arg: float, /) -> None: ...
+
+    @property
+    def height(self) -> float: ...
+
+    @height.setter
+    def height(self, arg: float, /) -> None: ...
+
+    @property
+    def offset(self) -> float: ...
+
+    @offset.setter
+    def offset(self, arg: float, /) -> None: ...
+
+    @property
+    def line_thickness(self) -> float: ...
+
+    @line_thickness.setter
+    def line_thickness(self, arg: float, /) -> None: ...
+
+    @property
+    def point_size(self) -> float: ...
+
+    @point_size.setter
+    def point_size(self, arg: float, /) -> None: ...
+
+    @property
+    def voxel_size(self) -> float: ...
+
+    @voxel_size.setter
+    def voxel_size(self, arg: float, /) -> None: ...
+
+    @property
+    def has_local_bounds(self) -> bool: ...
+
+    @has_local_bounds.setter
+    def has_local_bounds(self, arg: bool, /) -> None: ...
+
+    @property
+    def mesh_uses_material_colors(self) -> bool: ...
+
+    @mesh_uses_material_colors.setter
+    def mesh_uses_material_colors(self, arg: bool, /) -> None: ...
+
+    @property
+    def mesh_alpha_mode(self) -> MeshAlphaMode: ...
+
+    @mesh_alpha_mode.setter
+    def mesh_alpha_mode(self, arg: MeshAlphaMode, /) -> None: ...
+
+    @property
+    def mesh_texture_coord_components(self) -> int: ...
+
+    @mesh_texture_coord_components.setter
+    def mesh_texture_coord_components(self, arg: int, /) -> None: ...
+
+    @property
+    def mesh_texture_coordinates(self) -> list[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]]: ...
+
+    @mesh_texture_coordinates.setter
+    def mesh_texture_coordinates(self, arg: Sequence[Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]], /) -> None: ...
+
+    @property
+    def mesh_uri(self) -> str: ...
+
+    @mesh_uri.setter
+    def mesh_uri(self, arg: str, /) -> None: ...
+
+    @property
+    def shape_type(self) -> str: ...
+
+    @shape_type.setter
+    def shape_type(self, arg: str, /) -> None: ...
+
+    @property
+    def unsupported_reason(self) -> str: ...
+
+    @unsupported_reason.setter
+    def unsupported_reason(self, arg: str, /) -> None: ...
+
+    @property
+    def mesh_materials(self) -> list[MeshMaterialDescriptor]: ...
+
+    @mesh_materials.setter
+    def mesh_materials(self, arg: Sequence[MeshMaterialDescriptor], /) -> None: ...
+
+    @property
+    def mesh_parts(self) -> list[MeshPartDescriptor]: ...
+
+    @mesh_parts.setter
+    def mesh_parts(self, arg: Sequence[MeshPartDescriptor], /) -> None: ...
 
 class MaterialDescriptor:
-    rgba: Array
-    visible: bool
-    casts_shadows: bool
-    receives_shadows: bool
-
     def __init__(self) -> None: ...
 
+    @property
+    def rgba(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')]: ...
+
+    @rgba.setter
+    def rgba(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')], /) -> None: ...
+
+    @property
+    def visible(self) -> bool: ...
+
+    @visible.setter
+    def visible(self, arg: bool, /) -> None: ...
+
+    @property
+    def casts_shadows(self) -> bool: ...
+
+    @casts_shadows.setter
+    def casts_shadows(self, arg: bool, /) -> None: ...
+
+    @property
+    def receives_shadows(self) -> bool: ...
+
+    @receives_shadows.setter
+    def receives_shadows(self, arg: bool, /) -> None: ...
 
 class RenderableDescriptor:
-    id: int
-    skeleton_name: str
-    body_name: str
-    shape_frame_name: str
-    shape_node_name: str
-    geometry: GeometryDescriptor
-    material: MaterialDescriptor
-    world_transform: Array
-    shape_frame_version: int
-    shape_node_version: int
-    shape_version: int
-    render_resource_version: int
-
     def __init__(self) -> None: ...
 
+    @property
+    def id(self) -> int: ...
+
+    @id.setter
+    def id(self, arg: int, /) -> None: ...
+
+    @property
+    def skeleton_name(self) -> str: ...
+
+    @skeleton_name.setter
+    def skeleton_name(self, arg: str, /) -> None: ...
+
+    @property
+    def body_name(self) -> str: ...
+
+    @body_name.setter
+    def body_name(self, arg: str, /) -> None: ...
+
+    @property
+    def shape_frame_name(self) -> str: ...
+
+    @shape_frame_name.setter
+    def shape_frame_name(self, arg: str, /) -> None: ...
+
+    @property
+    def shape_node_name(self) -> str: ...
+
+    @shape_node_name.setter
+    def shape_node_name(self, arg: str, /) -> None: ...
+
+    @property
+    def geometry(self) -> GeometryDescriptor: ...
+
+    @geometry.setter
+    def geometry(self, arg: GeometryDescriptor, /) -> None: ...
+
+    @property
+    def material(self) -> MaterialDescriptor: ...
+
+    @material.setter
+    def material(self, arg: MaterialDescriptor, /) -> None: ...
+
+    @property
+    def world_transform(self) -> dartpy.math.Isometry3: ...
+
+    @world_transform.setter
+    def world_transform(self, arg: dartpy.math.Isometry3, /) -> None: ...
+
+    @property
+    def shape_frame_version(self) -> int: ...
+
+    @shape_frame_version.setter
+    def shape_frame_version(self, arg: int, /) -> None: ...
+
+    @property
+    def shape_node_version(self) -> int: ...
+
+    @shape_node_version.setter
+    def shape_node_version(self, arg: int, /) -> None: ...
+
+    @property
+    def shape_version(self) -> int: ...
+
+    @shape_version.setter
+    def shape_version(self, arg: int, /) -> None: ...
+
+    @property
+    def render_resource_version(self) -> int: ...
+
+    @render_resource_version.setter
+    def render_resource_version(self, arg: int, /) -> None: ...
 
 class RenderableSetUpdatePlan:
-    descriptor_indices_to_add: list[int]
-    active_renderable_indices_to_remove: list[int]
-
     def __init__(self) -> None: ...
 
+    @property
+    def descriptor_indices_to_add(self) -> list[int]: ...
+
+    @descriptor_indices_to_add.setter
+    def descriptor_indices_to_add(self, arg: Sequence[int], /) -> None: ...
+
+    @property
+    def active_renderable_indices_to_remove(self) -> list[int]: ...
+
+    @active_renderable_indices_to_remove.setter
+    def active_renderable_indices_to_remove(self, arg: Sequence[int], /) -> None: ...
 
 class ActiveRenderableState:
-    id: int
-    shape_version: int
-    render_resource_version: int
-
     def __init__(self) -> None: ...
 
+    @property
+    def id(self) -> int: ...
+
+    @id.setter
+    def id(self, arg: int, /) -> None: ...
+
+    @property
+    def shape_version(self) -> int: ...
+
+    @shape_version.setter
+    def shape_version(self, arg: int, /) -> None: ...
+
+    @property
+    def render_resource_version(self) -> int: ...
+
+    @render_resource_version.setter
+    def render_resource_version(self, arg: int, /) -> None: ...
 
 class PickRay:
-    origin: Array
-    direction: Array
-
     def __init__(self) -> None: ...
 
+    @property
+    def origin(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @origin.setter
+    def origin(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def direction(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @direction.setter
+    def direction(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
 
 class RunOptions:
-    width: int
-    height: int
-    max_frames: int
-    gui_scale: float
-    headless: bool
-    screenshot_path: str
-    frame_output_directory: str
-
     def __init__(self) -> None: ...
 
+    @property
+    def width(self) -> int: ...
+
+    @width.setter
+    def width(self, arg: int, /) -> None: ...
+
+    @property
+    def height(self) -> int: ...
+
+    @height.setter
+    def height(self, arg: int, /) -> None: ...
+
+    @property
+    def max_frames(self) -> int: ...
+
+    @max_frames.setter
+    def max_frames(self, arg: int, /) -> None: ...
+
+    @property
+    def gui_scale(self) -> float: ...
+
+    @gui_scale.setter
+    def gui_scale(self, arg: float, /) -> None: ...
+
+    @property
+    def headless(self) -> bool: ...
+
+    @headless.setter
+    def headless(self, arg: bool, /) -> None: ...
+
+    @property
+    def screenshot_path(self) -> str: ...
+
+    @screenshot_path.setter
+    def screenshot_path(self, arg: str, /) -> None: ...
+
+    @property
+    def frame_output_directory(self) -> str: ...
+
+    @frame_output_directory.setter
+    def frame_output_directory(self, arg: str, /) -> None: ...
 
 class ViewerLifecycleState:
-    rendered_frames: int
-    skipped_frames: int
-    paused: bool
-    step_once: bool
-    screenshot_requested: bool
-
     def __init__(self) -> None: ...
 
+    @property
+    def rendered_frames(self) -> int: ...
+
+    @rendered_frames.setter
+    def rendered_frames(self, arg: int, /) -> None: ...
+
+    @property
+    def skipped_frames(self) -> int: ...
+
+    @skipped_frames.setter
+    def skipped_frames(self, arg: int, /) -> None: ...
+
+    @property
+    def paused(self) -> bool: ...
+
+    @paused.setter
+    def paused(self, arg: bool, /) -> None: ...
+
+    @property
+    def step_once(self) -> bool: ...
+
+    @step_once.setter
+    def step_once(self, arg: bool, /) -> None: ...
+
+    @property
+    def screenshot_requested(self) -> bool: ...
+
+    @screenshot_requested.setter
+    def screenshot_requested(self, arg: bool, /) -> None: ...
 
 class OrbitCamera:
-    target: Array
-    yaw: float
-    pitch: float
-    distance: float
-
     def __init__(self) -> None: ...
 
+    @property
+    def target(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @target.setter
+    def target(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def yaw(self) -> float: ...
+
+    @yaw.setter
+    def yaw(self, arg: float, /) -> None: ...
+
+    @property
+    def pitch(self) -> float: ...
+
+    @pitch.setter
+    def pitch(self, arg: float, /) -> None: ...
+
+    @property
+    def distance(self) -> float: ...
+
+    @distance.setter
+    def distance(self, arg: float, /) -> None: ...
 
 class OrbitCameraBasis:
-    eye: Array
-    forward: Array
-    right: Array
-    up: Array
-
     def __init__(self) -> None: ...
 
+    @property
+    def eye(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @eye.setter
+    def eye(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def forward(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @forward.setter
+    def forward(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def right(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @right.setter
+    def right(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def up(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @up.setter
+    def up(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
 
 class OrbitCameraUpdate:
-    delta_x: float
-    delta_y: float
-    scroll_delta: float
-    orbit: bool
-    pan: bool
-    orbit_scale: float
-    pan_scale: float
-    scroll_scale: float
-    min_distance: float
-    max_distance: float
-    min_pitch: float
-    max_pitch: float
-
     def __init__(self) -> None: ...
 
+    @property
+    def delta_x(self) -> float: ...
+
+    @delta_x.setter
+    def delta_x(self, arg: float, /) -> None: ...
+
+    @property
+    def delta_y(self) -> float: ...
+
+    @delta_y.setter
+    def delta_y(self, arg: float, /) -> None: ...
+
+    @property
+    def scroll_delta(self) -> float: ...
+
+    @scroll_delta.setter
+    def scroll_delta(self, arg: float, /) -> None: ...
+
+    @property
+    def orbit(self) -> bool: ...
+
+    @orbit.setter
+    def orbit(self, arg: bool, /) -> None: ...
+
+    @property
+    def pan(self) -> bool: ...
+
+    @pan.setter
+    def pan(self, arg: bool, /) -> None: ...
+
+    @property
+    def orbit_scale(self) -> float: ...
+
+    @orbit_scale.setter
+    def orbit_scale(self, arg: float, /) -> None: ...
+
+    @property
+    def pan_scale(self) -> float: ...
+
+    @pan_scale.setter
+    def pan_scale(self, arg: float, /) -> None: ...
+
+    @property
+    def scroll_scale(self) -> float: ...
+
+    @scroll_scale.setter
+    def scroll_scale(self, arg: float, /) -> None: ...
+
+    @property
+    def min_distance(self) -> float: ...
+
+    @min_distance.setter
+    def min_distance(self, arg: float, /) -> None: ...
+
+    @property
+    def max_distance(self) -> float: ...
+
+    @max_distance.setter
+    def max_distance(self, arg: float, /) -> None: ...
+
+    @property
+    def min_pitch(self) -> float: ...
+
+    @min_pitch.setter
+    def min_pitch(self, arg: float, /) -> None: ...
+
+    @property
+    def max_pitch(self) -> float: ...
+
+    @max_pitch.setter
+    def max_pitch(self, arg: float, /) -> None: ...
 
 class OrbitCameraController:
-    camera: OrbitCamera
-    last_cursor_x: float
-    last_cursor_y: float
-    scroll_delta: float
-    has_last_cursor: bool
-
     def __init__(self) -> None: ...
 
+    @property
+    def camera(self) -> OrbitCamera: ...
+
+    @camera.setter
+    def camera(self, arg: OrbitCamera, /) -> None: ...
+
+    @property
+    def last_cursor_x(self) -> float: ...
+
+    @last_cursor_x.setter
+    def last_cursor_x(self, arg: float, /) -> None: ...
+
+    @property
+    def last_cursor_y(self) -> float: ...
+
+    @last_cursor_y.setter
+    def last_cursor_y(self, arg: float, /) -> None: ...
+
+    @property
+    def scroll_delta(self) -> float: ...
+
+    @scroll_delta.setter
+    def scroll_delta(self, arg: float, /) -> None: ...
+
+    @property
+    def has_last_cursor(self) -> bool: ...
+
+    @has_last_cursor.setter
+    def has_last_cursor(self, arg: bool, /) -> None: ...
 
 class OrbitCameraControllerInput:
-    cursor_x: float
-    cursor_y: float
-    has_cursor: bool
-    orbit: bool
-    pan: bool
-
     def __init__(self) -> None: ...
 
+    @property
+    def cursor_x(self) -> float: ...
+
+    @cursor_x.setter
+    def cursor_x(self, arg: float, /) -> None: ...
+
+    @property
+    def cursor_y(self) -> float: ...
+
+    @cursor_y.setter
+    def cursor_y(self, arg: float, /) -> None: ...
+
+    @property
+    def has_cursor(self) -> bool: ...
+
+    @has_cursor.setter
+    def has_cursor(self, arg: bool, /) -> None: ...
+
+    @property
+    def orbit(self) -> bool: ...
+
+    @orbit.setter
+    def orbit(self, arg: bool, /) -> None: ...
+
+    @property
+    def pan(self) -> bool: ...
+
+    @pan.setter
+    def pan(self, arg: bool, /) -> None: ...
 
 class DirectionalNudgeInput:
-    left: bool
-    right: bool
-    forward: bool
-    backward: bool
-    up: bool
-    down: bool
-    fast: bool
-    step_size: float
-    fast_multiplier: float
-
     def __init__(self) -> None: ...
 
+    @property
+    def left(self) -> bool: ...
+
+    @left.setter
+    def left(self, arg: bool, /) -> None: ...
+
+    @property
+    def right(self) -> bool: ...
+
+    @right.setter
+    def right(self, arg: bool, /) -> None: ...
+
+    @property
+    def forward(self) -> bool: ...
+
+    @forward.setter
+    def forward(self, arg: bool, /) -> None: ...
+
+    @property
+    def backward(self) -> bool: ...
+
+    @backward.setter
+    def backward(self, arg: bool, /) -> None: ...
+
+    @property
+    def up(self) -> bool: ...
+
+    @up.setter
+    def up(self, arg: bool, /) -> None: ...
+
+    @property
+    def down(self) -> bool: ...
+
+    @down.setter
+    def down(self, arg: bool, /) -> None: ...
+
+    @property
+    def fast(self) -> bool: ...
+
+    @fast.setter
+    def fast(self, arg: bool, /) -> None: ...
+
+    @property
+    def step_size(self) -> float: ...
+
+    @step_size.setter
+    def step_size(self, arg: float, /) -> None: ...
+
+    @property
+    def fast_multiplier(self) -> float: ...
+
+    @fast_multiplier.setter
+    def fast_multiplier(self, arg: float, /) -> None: ...
 
 class ProjectionOptions:
-    vertical_fov_degrees: float
-    near_plane: float | None
-    far_plane: float | None
-    near_scale: float
-    min_near_plane: float
-    max_near_plane: float
-    min_far_plane: float
-    far_padding: float
-
     def __init__(self) -> None: ...
 
+    @property
+    def vertical_fov_degrees(self) -> float: ...
+
+    @vertical_fov_degrees.setter
+    def vertical_fov_degrees(self, arg: float, /) -> None: ...
+
+    @property
+    def near_plane(self) -> float | None: ...
+
+    @near_plane.setter
+    def near_plane(self, arg: float, /) -> None: ...
+
+    @property
+    def far_plane(self) -> float | None: ...
+
+    @far_plane.setter
+    def far_plane(self, arg: float, /) -> None: ...
+
+    @property
+    def near_scale(self) -> float: ...
+
+    @near_scale.setter
+    def near_scale(self, arg: float, /) -> None: ...
+
+    @property
+    def min_near_plane(self) -> float: ...
+
+    @min_near_plane.setter
+    def min_near_plane(self, arg: float, /) -> None: ...
+
+    @property
+    def max_near_plane(self) -> float: ...
+
+    @max_near_plane.setter
+    def max_near_plane(self, arg: float, /) -> None: ...
+
+    @property
+    def min_far_plane(self) -> float: ...
+
+    @min_far_plane.setter
+    def min_far_plane(self, arg: float, /) -> None: ...
+
+    @property
+    def far_padding(self) -> float: ...
+
+    @far_padding.setter
+    def far_padding(self, arg: float, /) -> None: ...
 
 class PerspectiveProjection:
-    vertical_fov_degrees: float
-    aspect_ratio: float
-    near_plane: float
-    far_plane: float
-
     def __init__(self) -> None: ...
 
+    @property
+    def vertical_fov_degrees(self) -> float: ...
+
+    @vertical_fov_degrees.setter
+    def vertical_fov_degrees(self, arg: float, /) -> None: ...
+
+    @property
+    def aspect_ratio(self) -> float: ...
+
+    @aspect_ratio.setter
+    def aspect_ratio(self, arg: float, /) -> None: ...
+
+    @property
+    def near_plane(self) -> float: ...
+
+    @near_plane.setter
+    def near_plane(self, arg: float, /) -> None: ...
+
+    @property
+    def far_plane(self) -> float: ...
+
+    @far_plane.setter
+    def far_plane(self, arg: float, /) -> None: ...
 
 class PickHit:
-    id: int
-    renderable_index: int
-    distance: float
-    point: Array
-    normal: Array
-
     def __init__(self) -> None: ...
 
+    @property
+    def id(self) -> int: ...
+
+    @id.setter
+    def id(self, arg: int, /) -> None: ...
+
+    @property
+    def renderable_index(self) -> int: ...
+
+    @renderable_index.setter
+    def renderable_index(self, arg: int, /) -> None: ...
+
+    @property
+    def distance(self) -> float: ...
+
+    @distance.setter
+    def distance(self, arg: float, /) -> None: ...
+
+    @property
+    def point(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @point.setter
+    def point(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def normal(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @normal.setter
+    def normal(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
 
 class DebugLineDescriptor:
-    from_point: Array
-    to_point: Array
-    rgba: Array
-    label: str
-
     def __init__(self) -> None: ...
 
+    @property
+    def from_point(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @from_point.setter
+    def from_point(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def to_point(self) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+    @to_point.setter
+    def to_point(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], /) -> None: ...
+
+    @property
+    def rgba(self) -> Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')]: ...
+
+    @rgba.setter
+    def rgba(self, arg: Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')], /) -> None: ...
+
+    @property
+    def label(self) -> str: ...
+
+    @label.setter
+    def label(self, arg: str, /) -> None: ...
 
 class DebugDrawOptions:
-    draw_grid: bool
-    draw_world_frame: bool
-    draw_body_frames: bool
-    draw_centers_of_mass: bool
-    draw_inertia_boxes: bool
-    draw_collision_shape_bounds: bool
-    draw_support_polygons: bool
-    draw_support_centroids: bool
-    draw_contacts: bool
-    draw_contact_normals: bool
-    draw_contact_forces: bool
-    grid_half_extent: float
-    grid_spacing: float
-    grid_z: float
-    world_frame_axis_length: float
-    body_frame_axis_length: float
-    center_of_mass_marker_radius: float
-    inertia_box_scale: float
-    collision_bounds_padding: float
-    support_polygon_elevation: float
-    support_centroid_marker_radius: float
-    contact_marker_half_extent: float
-    contact_normal_length: float
-    contact_force_scale: float
-    contact_force_min_length: float
-    contact_force_max_length: float
-
     def __init__(self) -> None: ...
 
+    @property
+    def draw_grid(self) -> bool: ...
+
+    @draw_grid.setter
+    def draw_grid(self, arg: bool, /) -> None: ...
+
+    @property
+    def draw_world_frame(self) -> bool: ...
+
+    @draw_world_frame.setter
+    def draw_world_frame(self, arg: bool, /) -> None: ...
+
+    @property
+    def draw_body_frames(self) -> bool: ...
+
+    @draw_body_frames.setter
+    def draw_body_frames(self, arg: bool, /) -> None: ...
+
+    @property
+    def draw_centers_of_mass(self) -> bool: ...
+
+    @draw_centers_of_mass.setter
+    def draw_centers_of_mass(self, arg: bool, /) -> None: ...
+
+    @property
+    def draw_inertia_boxes(self) -> bool: ...
+
+    @draw_inertia_boxes.setter
+    def draw_inertia_boxes(self, arg: bool, /) -> None: ...
+
+    @property
+    def draw_collision_shape_bounds(self) -> bool: ...
+
+    @draw_collision_shape_bounds.setter
+    def draw_collision_shape_bounds(self, arg: bool, /) -> None: ...
+
+    @property
+    def draw_support_polygons(self) -> bool: ...
+
+    @draw_support_polygons.setter
+    def draw_support_polygons(self, arg: bool, /) -> None: ...
+
+    @property
+    def draw_support_centroids(self) -> bool: ...
+
+    @draw_support_centroids.setter
+    def draw_support_centroids(self, arg: bool, /) -> None: ...
+
+    @property
+    def draw_contacts(self) -> bool: ...
+
+    @draw_contacts.setter
+    def draw_contacts(self, arg: bool, /) -> None: ...
+
+    @property
+    def draw_contact_normals(self) -> bool: ...
+
+    @draw_contact_normals.setter
+    def draw_contact_normals(self, arg: bool, /) -> None: ...
+
+    @property
+    def draw_contact_forces(self) -> bool: ...
+
+    @draw_contact_forces.setter
+    def draw_contact_forces(self, arg: bool, /) -> None: ...
+
+    @property
+    def grid_half_extent(self) -> float: ...
+
+    @grid_half_extent.setter
+    def grid_half_extent(self, arg: float, /) -> None: ...
+
+    @property
+    def grid_spacing(self) -> float: ...
+
+    @grid_spacing.setter
+    def grid_spacing(self, arg: float, /) -> None: ...
+
+    @property
+    def grid_z(self) -> float: ...
+
+    @grid_z.setter
+    def grid_z(self, arg: float, /) -> None: ...
+
+    @property
+    def world_frame_axis_length(self) -> float: ...
+
+    @world_frame_axis_length.setter
+    def world_frame_axis_length(self, arg: float, /) -> None: ...
+
+    @property
+    def body_frame_axis_length(self) -> float: ...
+
+    @body_frame_axis_length.setter
+    def body_frame_axis_length(self, arg: float, /) -> None: ...
+
+    @property
+    def center_of_mass_marker_radius(self) -> float: ...
+
+    @center_of_mass_marker_radius.setter
+    def center_of_mass_marker_radius(self, arg: float, /) -> None: ...
+
+    @property
+    def inertia_box_scale(self) -> float: ...
+
+    @inertia_box_scale.setter
+    def inertia_box_scale(self, arg: float, /) -> None: ...
+
+    @property
+    def collision_bounds_padding(self) -> float: ...
+
+    @collision_bounds_padding.setter
+    def collision_bounds_padding(self, arg: float, /) -> None: ...
+
+    @property
+    def support_polygon_elevation(self) -> float: ...
+
+    @support_polygon_elevation.setter
+    def support_polygon_elevation(self, arg: float, /) -> None: ...
+
+    @property
+    def support_centroid_marker_radius(self) -> float: ...
+
+    @support_centroid_marker_radius.setter
+    def support_centroid_marker_radius(self, arg: float, /) -> None: ...
+
+    @property
+    def contact_marker_half_extent(self) -> float: ...
+
+    @contact_marker_half_extent.setter
+    def contact_marker_half_extent(self, arg: float, /) -> None: ...
+
+    @property
+    def contact_normal_length(self) -> float: ...
+
+    @contact_normal_length.setter
+    def contact_normal_length(self, arg: float, /) -> None: ...
+
+    @property
+    def contact_force_scale(self) -> float: ...
+
+    @contact_force_scale.setter
+    def contact_force_scale(self, arg: float, /) -> None: ...
+
+    @property
+    def contact_force_min_length(self) -> float: ...
+
+    @contact_force_min_length.setter
+    def contact_force_min_length(self, arg: float, /) -> None: ...
+
+    @property
+    def contact_force_max_length(self) -> float: ...
+
+    @contact_force_max_length.setter
+    def contact_force_max_length(self, arg: float, /) -> None: ...
 
 def describe_shape(shape: dartpy.dynamics.Shape) -> GeometryDescriptor | None: ...
+
 def extract_renderables(world: dartpy.simulation.World) -> list[RenderableDescriptor]: ...
-@typing.overload
-def plan_renderable_set_update(
-    descriptors: list[RenderableDescriptor], active_renderable_ids: list[int]
-) -> RenderableSetUpdatePlan: ...
-@typing.overload
-def plan_renderable_set_update(
-    descriptors: list[RenderableDescriptor],
-    active_renderable_states: list[ActiveRenderableState],
-) -> RenderableSetUpdatePlan: ...
-def intersect_renderable(
-    renderable: RenderableDescriptor, ray: PickRay
-) -> float | None: ...
-def pick_nearest_renderable(
-    renderables: list[RenderableDescriptor],
-    ray: PickRay,
-    max_distance: float = ...,
-) -> PickHit | None: ...
-def intersect_plane(
-    ray: PickRay, plane_point: Array, plane_normal: Array
-) -> Array | None: ...
-def compute_plane_drag_translation(
-    previous_ray: PickRay,
-    current_ray: PickRay,
-    plane_point: Array,
-    plane_normal: Array,
-) -> Array | None: ...
-def compute_axis_drag_translation(
-    previous_ray: PickRay,
-    current_ray: PickRay,
-    axis_point: Array,
-    axis_direction: Array,
-) -> Array | None: ...
-def translate_free_joint_renderable(
-    renderable: RenderableDescriptor, world_translation: Array
-) -> bool: ...
-def translate_simple_frame_renderable(
-    renderable: RenderableDescriptor, world_translation: Array
-) -> bool: ...
-def translate_frame_renderable(
-    renderable: RenderableDescriptor, world_translation: Array
-) -> bool: ...
+
+@overload
+def plan_renderable_set_update(descriptors: Sequence[RenderableDescriptor], active_renderable_ids: Sequence[int]) -> RenderableSetUpdatePlan: ...
+
+@overload
+def plan_renderable_set_update(descriptors: Sequence[RenderableDescriptor], active_renderable_states: Sequence[ActiveRenderableState]) -> RenderableSetUpdatePlan: ...
+
+def intersect_renderable(renderable: RenderableDescriptor, ray: PickRay) -> float | None: ...
+
+def pick_nearest_renderable(renderables: Sequence[RenderableDescriptor], ray: PickRay, max_distance: float = ...) -> PickHit | None: ...
+
+def intersect_plane(ray: PickRay, plane_point: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], plane_normal: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')] | None: ...
+
+def compute_plane_drag_translation(previous_ray: PickRay, current_ray: PickRay, plane_point: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], plane_normal: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')] | None: ...
+
+def compute_axis_drag_translation(previous_ray: PickRay, current_ray: PickRay, axis_point: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')], axis_direction: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')] | None: ...
+
+def translate_free_joint_renderable(renderable: RenderableDescriptor, world_translation: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]) -> bool: ...
+
+def translate_simple_frame_renderable(renderable: RenderableDescriptor, world_translation: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]) -> bool: ...
+
+def translate_frame_renderable(renderable: RenderableDescriptor, world_translation: Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]) -> bool: ...
+
 def normalize_run_options(options: RunOptions) -> None: ...
+
 def should_capture_frame_output(options: RunOptions) -> bool: ...
+
 def make_frame_output_path(options: RunOptions, frame_number: int) -> str: ...
-@typing.overload
-def should_request_screenshot(
-    options: RunOptions, rendered_frames: int, screenshot_requested: bool
-) -> bool: ...
-@typing.overload
-def should_request_screenshot(
-    options: RunOptions, state: ViewerLifecycleState
-) -> bool: ...
-@typing.overload
+
+@overload
+def should_request_screenshot(options: RunOptions, rendered_frames: int, screenshot_requested: bool) -> bool: ...
+
+@overload
+def should_request_screenshot(options: RunOptions, state: ViewerLifecycleState) -> bool: ...
+
+@overload
 def should_stop_after_frame(options: RunOptions, rendered_frames: int) -> bool: ...
-@typing.overload
-def should_stop_after_frame(
-    options: RunOptions, state: ViewerLifecycleState
-) -> bool: ...
+
+@overload
+def should_stop_after_frame(options: RunOptions, state: ViewerLifecycleState) -> bool: ...
+
 def toggle_paused(state: ViewerLifecycleState) -> None: ...
+
 def request_single_step(state: ViewerLifecycleState, pause: bool = ...) -> None: ...
+
 def should_advance_simulation(state: ViewerLifecycleState) -> bool: ...
+
 def mark_simulation_advanced(state: ViewerLifecycleState) -> None: ...
+
 def mark_screenshot_requested(state: ViewerLifecycleState) -> None: ...
+
 def mark_frame_rendered(state: ViewerLifecycleState) -> None: ...
+
 def mark_frame_skipped(state: ViewerLifecycleState) -> None: ...
-def write_rgba_ppm(
-    path: str,
-    width: int,
-    height: int,
-    rgba_pixels: list[int],
-    origin_bottom_left: bool = ...,
-) -> None: ...
+
+def write_rgba_ppm(path: str, width: int, height: int, rgba_pixels: Sequence[int], origin_bottom_left: bool = ...) -> None: ...
+
 def make_orbit_camera_basis(camera: OrbitCamera) -> OrbitCameraBasis: ...
-def camera_eye(camera: OrbitCamera) -> Array: ...
+
+def camera_eye(camera: OrbitCamera) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
 def update_orbit_camera(camera: OrbitCamera, update: OrbitCameraUpdate) -> None: ...
-def add_orbit_camera_scroll(
-    controller: OrbitCameraController, scroll_delta: float
-) -> None: ...
+
+def add_orbit_camera_scroll(controller: OrbitCameraController, scroll_delta: float) -> None: ...
+
 def reset_orbit_camera_tracking(controller: OrbitCameraController) -> None: ...
-def update_orbit_camera_controller(
-    controller: OrbitCameraController, input: OrbitCameraControllerInput
-) -> None: ...
-def compute_camera_relative_nudge(
-    camera: OrbitCamera, input: DirectionalNudgeInput
-) -> Array: ...
-def make_perspective_pick_ray(
-    camera: OrbitCamera,
-    cursor_x: float,
-    cursor_y: float,
-    width: int,
-    height: int,
-    vertical_fov_radians: float = ...,
-) -> PickRay: ...
-def make_perspective_projection(
-    camera: OrbitCamera,
-    width: int,
-    height: int,
-    options: ProjectionOptions = ...,
-) -> PerspectiveProjection: ...
-def make_grid_debug_lines(
-    options: DebugDrawOptions = ...,
-) -> list[DebugLineDescriptor]: ...
-def make_frame_debug_lines(
-    transform: Array, axis_length: float, label_prefix: str = ...
-) -> list[DebugLineDescriptor]: ...
-def make_selection_debug_lines(
-    renderable: RenderableDescriptor,
-    rgba: Array = ...,
-    label_prefix: str = ...,
-) -> list[DebugLineDescriptor]: ...
-def make_inertia_debug_lines(
-    body_node: dartpy.dynamics.BodyNode,
-    options: DebugDrawOptions = ...,
-    label_prefix: str = ...,
-) -> list[DebugLineDescriptor]: ...
-def make_collision_shape_debug_lines(
-    shape_node: dartpy.dynamics.ShapeNode,
-    options: DebugDrawOptions = ...,
-    label_prefix: str = ...,
-) -> list[DebugLineDescriptor]: ...
-def make_support_polygon_debug_lines(
-    skeleton: dartpy.dynamics.Skeleton,
-    options: DebugDrawOptions = ...,
-    label_prefix: str = ...,
-) -> list[DebugLineDescriptor]: ...
-def extract_contact_debug_lines(
-    result: dartpy.collision.CollisionResult,
-    options: DebugDrawOptions = ...,
-) -> list[DebugLineDescriptor]: ...
-def extract_debug_lines(
-    world: dartpy.simulation.World,
-    options: DebugDrawOptions = ...,
-) -> list[DebugLineDescriptor]: ...
+
+def update_orbit_camera_controller(controller: OrbitCameraController, input: OrbitCameraControllerInput) -> None: ...
+
+def compute_camera_relative_nudge(camera: OrbitCamera, input: DirectionalNudgeInput) -> Annotated[NDArray[numpy.float64], dict(shape=(3), order='C')]: ...
+
+def make_perspective_pick_ray(camera: OrbitCamera, cursor_x: float, cursor_y: float, width: int, height: int, vertical_fov_radians: float = ...) -> PickRay: ...
+
+def make_perspective_projection(camera: OrbitCamera, width: int, height: int, options: ProjectionOptions = ...) -> PerspectiveProjection: ...
+
+def make_grid_debug_lines(options: DebugDrawOptions = ...) -> list[DebugLineDescriptor]: ...
+
+def make_frame_debug_lines(transform: dartpy.math.Isometry3, axis_length: float, label_prefix: str = ...) -> list[DebugLineDescriptor]: ...
+
+def make_selection_debug_lines(renderable: RenderableDescriptor, rgba: Annotated[NDArray[numpy.float64], dict(shape=(4), order='C')] = ..., label_prefix: str = ...) -> list[DebugLineDescriptor]: ...
+
+def make_inertia_debug_lines(body_node: dartpy.dynamics.BodyNode, options: DebugDrawOptions = ..., label_prefix: str = ...) -> list[DebugLineDescriptor]: ...
+
+def make_collision_shape_debug_lines(shape_node: dartpy.dynamics.ShapeNode, options: DebugDrawOptions = ..., label_prefix: str = ...) -> list[DebugLineDescriptor]: ...
+
+def make_support_polygon_debug_lines(skeleton: dartpy.dynamics.Skeleton, options: DebugDrawOptions = ..., label_prefix: str = ...) -> list[DebugLineDescriptor]: ...
+
+def extract_contact_debug_lines(result: dartpy.collision.CollisionResult, options: DebugDrawOptions = ...) -> list[DebugLineDescriptor]: ...
+
+def extract_debug_lines(world: dartpy.simulation.World, options: DebugDrawOptions = ...) -> list[DebugLineDescriptor]: ...
