@@ -402,7 +402,9 @@ TEST(DartsimProjectActions, DialogHelpersRejectUnavailableAndEmptySelections)
   const auto invalidOpen = ui::openProject(
       engine, invalid.string(), ui::DirtyProjectPolicy::Discard);
   EXPECT_FALSE(invalidOpen.ok);
-  EXPECT_EQ(invalidOpen.message, "Open failed: " + invalid.string());
+  EXPECT_EQ(
+      invalidOpen.message,
+      "Open failed: " + invalid.string() + " is not a dartsim project");
 
   std::filesystem::remove(invalid);
 }
@@ -425,6 +427,23 @@ TEST(DartsimProjectActions, OpenReportsFailureWithoutReplacingScene)
   EXPECT_EQ(
       result.message, "Open failed: " + missing.string() + " does not exist");
   EXPECT_EQ(engine.objects().model(), before);
+}
+
+TEST(DartsimProjectActions, OpenReportsDirectoryAsInvalidProjectPath)
+{
+  const std::filesystem::path directory
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_project_actions_open_directory";
+  std::filesystem::remove_all(directory);
+  ASSERT_TRUE(std::filesystem::create_directories(directory));
+
+  SimEngine engine;
+  const auto result = ui::openProject(engine, directory.string());
+  EXPECT_FALSE(result.ok);
+  EXPECT_EQ(
+      result.message, "Open failed: " + directory.string() + " is a directory");
+
+  std::filesystem::remove_all(directory);
 }
 
 TEST(DartsimProjectActions, SaveReportsFailureWithoutChangingProjectState)

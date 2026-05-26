@@ -1738,8 +1738,13 @@ TEST(SimEngine, FailedProjectSaveAndLoadPreserveCurrentState)
         / "dartsim_engine_missing_project_state_test.dartsim";
   const std::filesystem::path invalidSaveDir
       = std::filesystem::temp_directory_path() / "missing-dartsim-dir";
+  const std::filesystem::path loadDirectory
+      = std::filesystem::temp_directory_path()
+        / "dartsim_engine_load_project_directory";
   std::filesystem::remove(missing);
   std::filesystem::remove_all(invalidSaveDir);
+  std::filesystem::remove_all(loadDirectory);
+  ASSERT_TRUE(std::filesystem::create_directories(loadDirectory));
 
   SimEngine engine;
   engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 1)));
@@ -1751,6 +1756,11 @@ TEST(SimEngine, FailedProjectSaveAndLoadPreserveCurrentState)
   const SceneModel dirtyModel = engine.objects().model();
 
   EXPECT_FALSE(engine.loadProject(missing.string()));
+  EXPECT_EQ(engine.projectPath(), path.string());
+  EXPECT_TRUE(engine.isProjectDirty());
+  EXPECT_EQ(engine.objects().model(), dirtyModel);
+
+  EXPECT_FALSE(engine.loadProject(loadDirectory.string()));
   EXPECT_EQ(engine.projectPath(), path.string());
   EXPECT_TRUE(engine.isProjectDirty());
   EXPECT_EQ(engine.objects().model(), dirtyModel);
@@ -1767,6 +1777,7 @@ TEST(SimEngine, FailedProjectSaveAndLoadPreserveCurrentState)
   EXPECT_NE(engine.objects().model(), savedModel);
 
   std::filesystem::remove(path);
+  std::filesystem::remove_all(loadDirectory);
 }
 
 TEST(SimEngine, LoadProjectClearsRunSnapshot)

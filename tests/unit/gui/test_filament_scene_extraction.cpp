@@ -4871,6 +4871,10 @@ TEST(FilamentSceneExtraction, DartsimProjectMenuUsesNativeFileDialogSeam)
           "requestProjectPathModal(app, ProjectFileDialogKind::Open"),
       std::string::npos);
   EXPECT_NE(editorSource.find("ui.button(\"Browse...\")"), std::string::npos);
+  EXPECT_NE(editorSource.find("projectBrowserEntries"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.button(\"Up##project-browser\")"),
+      std::string::npos);
   EXPECT_NE(
       editorSource.find("nativeProjectFileDialog(request)"), std::string::npos);
   EXPECT_NE(

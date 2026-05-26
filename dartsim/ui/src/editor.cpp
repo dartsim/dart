@@ -53,6 +53,7 @@
 #include <dartsim_ui/simulation_actions.hpp>
 #include <dartsim_ui/viewport_actions.hpp>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <filesystem>
@@ -60,6 +61,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -83,6 +85,8 @@ struct EditorApp
   bool projectPathModalRequested = false;
   std::string projectPath = kDefaultProjectPath;
   std::string projectPathStatus;
+  std::filesystem::path projectBrowserDirectory;
+  std::string projectBrowserStatus;
   void* projectDialogParentWindow = nullptr;
 
   void note(const std::string& message)
@@ -136,6 +140,107 @@ std::string filenameOrDefault(const std::string& path)
   return filename.empty() ? kDefaultProjectPath : filename;
 }
 
+std::filesystem::path currentDirectory()
+{
+  std::error_code error;
+  std::filesystem::path path = std::filesystem::current_path(error);
+  return error ? std::filesystem::path(".") : path;
+}
+
+std::filesystem::path absolutePath(std::filesystem::path path)
+{
+  std::error_code error;
+  std::filesystem::path absolute = std::filesystem::absolute(path, error);
+  return error ? std::move(path) : absolute.lexically_normal();
+}
+
+std::filesystem::path projectBrowserDirectoryFor(const std::string& path)
+{
+  std::filesystem::path candidate(path);
+  if (candidate.empty()) {
+    candidate = currentDirectory();
+  }
+
+  std::error_code error;
+  if (!std::filesystem::is_directory(candidate, error)) {
+    candidate = candidate.parent_path();
+  }
+  if (candidate.empty()) {
+    candidate = currentDirectory();
+  }
+
+  candidate = absolutePath(candidate);
+  if (!std::filesystem::is_directory(candidate, error)) {
+    return absolutePath(currentDirectory());
+  }
+  return candidate;
+}
+
+struct ProjectBrowserEntry
+{
+  std::filesystem::path path;
+  std::string label;
+  bool directory = false;
+};
+
+std::vector<ProjectBrowserEntry> projectBrowserEntries(
+    const std::filesystem::path& directory, std::string& status)
+{
+  status.clear();
+  std::vector<ProjectBrowserEntry> entries;
+
+  std::error_code error;
+  std::filesystem::directory_iterator it(directory, error);
+  if (error) {
+    status = "Cannot read folder: " + error.message();
+    return entries;
+  }
+
+  const std::filesystem::directory_iterator end;
+  for (; it != end; it.increment(error)) {
+    if (error) {
+      status = "Cannot read folder: " + error.message();
+      break;
+    }
+    const std::filesystem::directory_entry& entry = *it;
+    std::error_code entryError;
+    const bool directoryEntry = entry.is_directory(entryError);
+    if (entryError) {
+      continue;
+    }
+
+    const std::filesystem::path path = entry.path();
+    if (!directoryEntry && path.extension() != ".dartsim") {
+      continue;
+    }
+
+    ProjectBrowserEntry browserEntry;
+    browserEntry.path = path;
+    browserEntry.directory = directoryEntry;
+    browserEntry.label = directoryEntry ? "[dir] " : "";
+    browserEntry.label += path.filename().string();
+    entries.push_back(std::move(browserEntry));
+  }
+
+  std::sort(
+      entries.begin(),
+      entries.end(),
+      [](const ProjectBrowserEntry& lhs, const ProjectBrowserEntry& rhs) {
+        if (lhs.directory != rhs.directory) {
+          return lhs.directory;
+        }
+        return lhs.label < rhs.label;
+      });
+
+  constexpr std::size_t kMaxProjectBrowserEntries = 48;
+  if (entries.size() > kMaxProjectBrowserEntries) {
+    entries.resize(kMaxProjectBrowserEntries);
+    status = "Showing first 48 project entries";
+  }
+
+  return entries;
+}
+
 std::string projectPathOrDefault(const SimEngine& engine)
 {
   return engine.hasProjectPath() ? engine.projectPath() : kDefaultProjectPath;
@@ -180,6 +285,8 @@ void requestProjectPathModal(
   app.projectPath
       = path.empty() ? projectPathOrDefault(app.engine) : std::move(path);
   app.projectPathStatus = std::move(status);
+  app.projectBrowserDirectory = projectBrowserDirectoryFor(app.projectPath);
+  app.projectBrowserStatus.clear();
   app.projectPathModalOpen = true;
   app.projectPathModalRequested = true;
 }
@@ -199,6 +306,9 @@ void browseProjectPath(EditorApp& app)
             = projectPathModalTitle(app.projectPathKind) + " canceled";
       } else {
         app.projectPath = selection.path;
+        app.projectBrowserDirectory
+            = projectBrowserDirectoryFor(app.projectPath);
+        app.projectBrowserStatus.clear();
         app.projectPathStatus.clear();
       }
       break;
@@ -710,6 +820,7 @@ void buildProjectPathModal(dart::gui::PanelBuilder& ui, EditorApp& app)
   std::string path = app.projectPath;
   if (ui.textInput("Project path", path)) {
     app.projectPath = path;
+    app.projectBrowserDirectory = projectBrowserDirectoryFor(app.projectPath);
   }
   if (ui.button("Browse...")) {
     browseProjectPath(app);
@@ -727,6 +838,50 @@ void buildProjectPathModal(dart::gui::PanelBuilder& ui, EditorApp& app)
   if (!app.projectPathStatus.empty()) {
     ui.separator();
     ui.text(app.projectPathStatus);
+  }
+
+  ui.separator();
+  if (app.projectBrowserDirectory.empty()) {
+    app.projectBrowserDirectory = projectBrowserDirectoryFor(app.projectPath);
+  }
+  ui.text("Folder: " + app.projectBrowserDirectory.string());
+  if (ui.button("Up##project-browser")) {
+    const std::filesystem::path parent
+        = app.projectBrowserDirectory.parent_path();
+    if (!parent.empty()) {
+      app.projectBrowserDirectory = parent;
+      app.projectBrowserStatus.clear();
+    }
+  }
+  ui.sameLine();
+  if (ui.button("Refresh##project-browser")) {
+    app.projectBrowserStatus.clear();
+  }
+
+  std::string browserStatus;
+  const std::vector<ProjectBrowserEntry> entries
+      = projectBrowserEntries(app.projectBrowserDirectory, browserStatus);
+  app.projectBrowserStatus = std::move(browserStatus);
+  if (!app.projectBrowserStatus.empty()) {
+    ui.text(app.projectBrowserStatus);
+  }
+  if (entries.empty() && app.projectBrowserStatus.empty()) {
+    ui.text("(no project files)");
+  }
+  for (std::size_t i = 0; i < entries.size(); ++i) {
+    const ProjectBrowserEntry& entry = entries[i];
+    const std::string label
+        = entry.label + "##project-browser-entry-" + std::to_string(i);
+    if (!ui.button(label)) {
+      continue;
+    }
+    if (entry.directory) {
+      app.projectBrowserDirectory = entry.path;
+      app.projectBrowserStatus.clear();
+    } else {
+      app.projectPath = entry.path.string();
+      app.projectPathStatus.clear();
+    }
   }
 
   ui.endModal();
