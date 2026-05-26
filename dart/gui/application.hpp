@@ -79,6 +79,12 @@ struct BodyNodeDragHandle
   bool useWholeBody = false;
 };
 
+struct RenderableSelection
+{
+  RenderableId id = 0;
+  std::string label;
+};
+
 enum class KeyboardKey
 {
   Unknown,
@@ -163,6 +169,19 @@ struct ApplicationOptions
   /// `dartsim/ui`). The returned descriptors only need `id`, `geometry`,
   /// `material`, and `worldTransform`; dynamics pointers may stay null.
   std::function<std::vector<RenderableDescriptor>()> renderableProvider;
+
+  /// Optional provider for the app-owned selected renderable.
+  ///
+  /// This keeps renderer selection synchronized with application state for
+  /// renderables supplied through `renderableProvider`, without exposing
+  /// renderer backend types to the application. Return id 0 for no selection.
+  std::function<RenderableSelection()> selectedRenderableProvider;
+
+  /// Optional callback fired after viewport picking changes selection.
+  ///
+  /// The callback receives id 0 when a click clears selection. Applications can
+  /// ignore ids they do not own.
+  std::function<void(RenderableId)> onRenderableSelected;
 
   /// Enables a docking workspace over the main viewport so panels can be
   /// docked and rearranged. Only takes effect when the GUI build was compiled

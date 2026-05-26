@@ -456,6 +456,11 @@ if(TARGET dartsim_engine)
   add_subdirectory(dartsim_engine)
 endif()
 
+# Testable dartsim UI action/view-model helpers.
+if(TARGET dartsim_ui)
+  add_subdirectory(dartsim_ui)
+endif()
+
 # ==============================================================================
 # Collision-Native Tests
 # ==============================================================================
