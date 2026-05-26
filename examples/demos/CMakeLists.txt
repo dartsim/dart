@@ -4,10 +4,14 @@ project(dart-demos)
 
 include("${CMAKE_CURRENT_LIST_DIR}/../gui_scene_example.cmake")
 
-# Absolute source paths so the formatter and add_executable resolve regardless
-# of how dart_build_gui_example resolves relative paths.
-set(dart_demos_sources
-  "${CMAKE_CURRENT_LIST_DIR}/app/main.cpp"
+if(NOT TARGET dart-gui)
+  return()
+endif()
+
+# Scene modules + the ordered registry, compiled into a static library so the
+# dart-demos executable and tests/unit/gui/UNIT_demos_golden_parity can both
+# consume the same scene set without rebuilding it.
+set(demos_scene_sources
   "${CMAKE_CURRENT_LIST_DIR}/registry.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/hello_world.cpp"
   "${CMAKE_CURRENT_LIST_DIR}/scenes/empty.cpp"
@@ -48,17 +52,37 @@ set(dart_demos_sources
   "${CMAKE_CURRENT_LIST_DIR}/scenes/experimental_rigid_body_gui.cpp"
 )
 
-dart_build_gui_example(dart-demos ${dart_demos_sources})
+add_library(demos_scenes STATIC ${demos_scene_sources})
+target_include_directories(demos_scenes PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
+target_link_libraries(demos_scenes PUBLIC dart-gui dart-io)
+if(TARGET dart-simulation-experimental)
+  target_link_libraries(demos_scenes PUBLIC dart-simulation-experimental)
+endif()
+target_compile_features(demos_scenes PUBLIC cxx_std_20)
+set_target_properties(demos_scenes PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
+  dart_format_add(${demos_scene_sources})
+endif()
+
+# Thin app: only the entry point, linked against the scene library.
+dart_build_gui_example(dart-demos "${CMAKE_CURRENT_LIST_DIR}/app/main.cpp")
 
 if(TARGET dart-demos)
-  target_include_directories(dart-demos PRIVATE "${CMAKE_CURRENT_LIST_DIR}")
-  # Scenes load worlds/skeletons via dart::io (URDF/SDF/SKEL). Collision
-  # backends (ODE/Bullet) are selected through runtime factories, so they need
-  # no extra link here.
-  target_link_libraries(dart-demos PRIVATE dart-io)
-  # The experimental rigid-body scene drives the experimental World.
-  if(TARGET dart-simulation-experimental)
-    target_link_libraries(dart-demos PRIVATE dart-simulation-experimental)
+  target_link_libraries(dart-demos PRIVATE demos_scenes)
+
+  # Cross-language golden-set parity smoke (PLAN-103 Phase 2): asserts the
+  # C++ hello_world demo scene matches the shared fixture also asserted by
+  # python/tests/unit/test_golden_parity.py. Plain main() so no GTest scope
+  # dependency from examples/.
+  if(BUILD_TESTING AND DART_BUILD_TESTS)
+    add_executable(UNIT_gui_DemosGoldenParity
+      "${CMAKE_SOURCE_DIR}/tests/unit/gui/test_demos_golden_parity.cpp")
+    target_link_libraries(UNIT_gui_DemosGoldenParity PRIVATE demos_scenes)
+    target_compile_features(UNIT_gui_DemosGoldenParity PRIVATE cxx_std_20)
+    add_test(NAME UNIT_gui_DemosGoldenParity
+      COMMAND UNIT_gui_DemosGoldenParity)
+    set_tests_properties(UNIT_gui_DemosGoldenParity
+      PROPERTIES LABELS "unit;gui;demos")
   endif()
 
   # Headless smoke: cycle through every registered scene a few frames each,

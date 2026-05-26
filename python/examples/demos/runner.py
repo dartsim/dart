@@ -67,10 +67,10 @@ def _world_state_snapshot(world: Any) -> dict[str, Any]:
     dartpy.gui headless screenshot path is wired)."""
 
     snapshot: dict[str, Any] = {}
-    for attr, key in (("getNumSkeletons", "num_skeletons"),
+    for attr, key in (("get_num_skeletons", "num_skeletons"),
                       ("num_rigid_bodies", "num_rigid_bodies"),
                       ("num_multibodies", "num_multibodies"),
-                      ("getTime", "sim_time"),
+                      ("get_time", "sim_time"),
                       ("time", "time")):
         getter = getattr(world, attr, None)
         if callable(getter):
