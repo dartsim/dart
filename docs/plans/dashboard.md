@@ -109,10 +109,11 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Algorithm extensibility
 - Next step: Use the PLAN-081 IPC paper/repository gap audit to implement the
-  full mesh-backed IPC-class follow-up: mesh/material state, BE/Newmark
-  integration, PT/EE distance derivatives, conservative CCD line search,
-  projected Newton, friction, diagnostics, and the upstream example/test/
-  benchmark corpus.
+  full mesh-backed IPC-class follow-up. Start a dedicated `docs/dev_tasks/`
+  folder for that multi-session implementation, then work through
+  mesh/material state, scene loading, BE/Newmark integration, PT/EE distance
+  derivatives, conservative CCD line search, projected Newton, friction,
+  diagnostics, and the complete upstream example/test/benchmark/visual corpus.
 - Gate: Full IPC-parity progress is not complete until the implementation
   distinguishes the first point-mass/static-ground slice from full IPC, keeps
   IPC naming backend-neutral, proves mesh contact, barrier, distance, CCD,

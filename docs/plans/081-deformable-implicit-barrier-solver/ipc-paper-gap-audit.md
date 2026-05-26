@@ -16,12 +16,34 @@ examples, tests, benchmarks, and material/property coverage.
   `573d2c7e04104d3f9baf526bdaee7745891a571a`.
 - Modern IPC toolkit reference:
   <https://github.com/ipc-sim/ipc-toolkit>, audited at commit
-  `bca884663a85fbbceaef36826f164edd48cca9c6`.
+  `a510337396c83ddcc22d0f98220bedb9bb967eb3`.
 - DART branch state audited: PR #2711 at
-  `9cac3e50135eabc7497ccd767f47dbd705be9503`.
+  `73341328b7c7b4b0e71a7a31d9f36fd29f8f9729`, before this
+  documentation-only update.
 - Dependency note: upstream IPC and `ipc-toolkit` remain references and test
   baselines. PLAN-081 continues to require DART-owned implementation, DART API
   names, and no upstream runtime dependency.
+
+## Audit Method And Scope
+
+This audit is intentionally stricter than the first-slice acceptance criteria.
+It treats every paper section, Algorithm 1 phase, upstream input scene, toolkit
+test family, benchmark statistic, material option, and visualization path as a
+future DART obligation unless the row explicitly says it is out of scope for a
+DART-owned solver.
+
+"Line-by-line" here means coverage by paper obligation, not copying paper text.
+Agents implementing the next session should keep the paper PDF and upstream
+`IPC` checkout open beside this file and retire rows only after DART has
+matching code, tests, examples, benchmark/profiling output, and visual evidence.
+The first PR's point-mass spring net is useful scaffolding, but it must not be
+described as full IPC, mesh IPC, IPC contact, or IPC friction.
+
+The complete upstream `IPC/input` corpus currently contains 480 files. The
+runnable scene inventory is the `.txt` subset: paper examples, time-step/video
+variants, tutorial examples, other validation/stress scenes, comparison
+benchmarks, and failure cases. Meshes, segment sequences, and supplemental
+application files are required assets for those scenes, not optional coverage.
 
 ## Current DART Slice
 
@@ -31,13 +53,15 @@ solver:
 - `DeformableBody` stores world-space nodes, velocities, masses, fixed nodes,
   and distance-spring edges.
 - `DeformableDynamicsStage` is in the default `World::step()` pipeline.
-- The step objective is implicit-Euler inertia plus edge-spring energy, gravity,
-  damping, and a C2-style analytic vertical ground barrier for explicitly
-  opted-in static boxes/spheres.
+- The step objective is implicit-Euler inertia plus edge-spring energy and a
+  C2-style analytic vertical ground barrier for explicitly opted-in static
+  boxes/spheres. Gravity and damping are folded into the inertial target.
 - The internal solve is deterministic steepest-descent with Armijo-style
   backtracking and feasibility rejection against the analytic ground barrier.
 - Public GUI rendering now has reusable deformable surface descriptors through
-  `dart::gui::makeDeformableSurfaceRenderable()`.
+  `dart::gui::makeDeformableSurfaceRenderable()`. This is render-only support;
+  it does not imply mesh-backed simulation state, triangle contact, or FEM
+  material support.
 - Tests cover public facade validation, fixed nodes, analytic one-spring and
   free-particle ground truth, static-ground opt-in/opt-out, determinism,
   serialization, and GUI extraction.
@@ -67,6 +91,32 @@ Everything below remains either partially implemented or missing.
 | Section 8 comparisons                       | Compare against graphics, engineering, and SQP-type methods.                                                                                                          | DART has native CCD comparison infrastructure, but no IPC solver comparison corpus.                                  | Add DART-native comparison harnesses; external commercial-code comparisons should be documented as manual/non-CI baselines.                |
 | Section 9 conclusion/future                 | Further Newton methods, faster exact CCD, higher-order elements, and better friction convergence.                                                                     | All are future work.                                                                                                 | Keep these out of public API promises until backed by tests and benchmarks.                                                                |
 
+## Detailed Paper Obligation Checklist
+
+Use this as the next-session paper walk. A row is complete only when the DART
+implementation has a focused test, a representative example or benchmark when
+the paper uses one, and diagnostics sufficient to debug regressions.
+
+| Paper obligation          | Required DART artifact                                                                                                                                      | Current DART state                                                                                  | Completion evidence required before closing the gap                                                                                                |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FE state variables        | Mesh-backed deformable body with nodal positions, velocities, accelerations, mass matrix, rest configuration, surface extraction, and element connectivity. | Point-mass nodes, velocities, masses, and spring edges only.                                        | Tetrahedral and surface-mesh construction tests; serialization; invalid mesh/material rejection; surface extraction adjacency tests.               |
+| Incremental potential     | Backward Euler incremental potential over mass, inertia, elastic energy, contact barriers, friction potential, BC work, and optional Newmark terms.         | Point-mass implicit-Euler-like inertia target, edge springs, and analytic ground barrier.           | Manufactured single-DOF and mesh FE energy/gradient/Hessian tests; BE/NM comparison tests; energy decomposition diagnostics.                       |
+| Admissible trajectory set | Signed-free admissibility over primitive-pair unsigned distances, plus element inversion filters for invertible elasticity.                                 | Analytic z-up clearance against opted-in box/sphere top surfaces.                                   | Post-step no-intersection checks, exact/conservative CCD validation, inversion-filter tests, and failure-case fixtures.                            |
+| Accuracy knobs            | DART-owned equivalents for dynamics accuracy, geometric activation distance, stiction velocity threshold, CCD tolerance, and convergence mode.              | Internal fixed tolerances only.                                                                     | Public or semi-public options where appropriate; per-step stats for residuals, clearances, active contacts, friction iterations, and tolerances.   |
+| Smooth barrier            | C2 clamped log barrier with zero support beyond the activation distance, including value, gradient, Hessian, and PSD projection behavior.                   | Analytic ground C2-style energy/gradient only, fixed scale and activation distance.                 | Finite-difference derivative tests, Hessian PSD-projection tests, support cutoff tests, and barrier force magnitude tests.                         |
+| Barrier stiffness policy  | Adaptive barrier stiffness/homotopy policy with minimum stiffness scale and force-balance diagnostics.                                                      | Fixed internal scale.                                                                               | Unit tests for stiffness increase/decrease, complementarity/positivity metrics, and reproducible stats under large stiffness/mass ratios.          |
+| Projected Newton solve    | Sparse assembled Hessian, local PSD projection, direct/iterative linear solver abstraction, residual stopping, and robust fallback.                         | Diagonal scaled steepest descent.                                                                   | Solver microbenchmarks, residual tests, fallback tests, matrix pattern/cache tests, and deterministic solve tests.                                 |
+| Constraint set build      | Primitive-pair candidate set for point-triangle, edge-edge, point-edge/point-point codimensional cases, adjacency exclusions, and broad-phase culling.      | No deformable primitive-pair candidate set.                                                         | Brute-force vs broad-phase tests, candidate normal tests, adjacency filter tests, safe-distance tests, and active-set rebuild counters.            |
+| CCD line search           | Conservative feasible step upper bound for every Newton direction, then backtracking for energy decrease with recomputed constraints.                       | Feasibility rejection only for static ground height.                                                | PT/EE CCD line-search tests, exact CCD post-step audits, line-search rejection counters, and high-speed impact examples.                           |
+| Inversion-aware filtering | Energy-model filters that prevent element inversion during line search for invertible elasticity.                                                           | No volumetric elements.                                                                             | Neo-Hookean/fixed-corotational inversion tests and stress examples with failed candidates counted.                                                 |
+| Distance computation      | Point-triangle and edge-edge closest-feature classification, values, gradients, Hessians, tangent bases, and edge-edge mollifier.                           | Native primitive CCD exists elsewhere; PLAN-081 does not use distance derivatives or tangent bases. | Distance derivative finite-difference tests; edge-edge mollifier tests; tangent-basis orthonormality/continuity tests.                             |
+| Friction potential        | Lagged smoothed Coulomb friction with tangent bases, lagged normal forces, configurable iterations, anisotropic option if adopted, and convergence checks.  | No deformable friction.                                                                             | Slope threshold tests, stick-slip oscillation test, friction potential/Jacobian derivative tests, lagged-iteration convergence diagnostics.        |
+| Codimensional contact     | Points, segments, triangle soups, half-spaces, mesh collision objects, moving mesh sequences, and self-contact/self-friction policy.                        | Static box/sphere ground top surfaces only.                                                         | Codimensional unit tests, moving obstacle examples, self-contact examples, mesh-sequence examples, and collision-object serialization.             |
+| Boundary conditions       | Dirichlet and Neumann boxes, time ranges, scripted linear/angular motion, initial linear/angular velocity, and restartable state.                           | Fixed nodes and node velocities only.                                                               | DBC/NBC time-range tests, scripted motion tests, restart round-trip tests, and tutorial examples.                                                  |
+| Output and diagnostics    | Per-step output/restart, mesh/state dumps, contact counts, timing, memory, Newton/friction iterations, accuracy metrics, and visual replay data.            | Binary world serialization plus spring-grid benchmark counters.                                     | JSON/CSV stats schema, benchmark JSON, `/usr/bin/time -v` or equivalent profiling, replay/visual capture scripts, and docs for interpreting stats. |
+| Comparison baselines      | Paper comparison corpus against SQP/QP/gap methods and external packages where dependencies are acceptable.                                                 | No comparison harness for deformables.                                                              | DART-native comparison fixtures; optional/manual external baselines documented separately from required CI gates.                                  |
+| Visual evidence           | Long-horizon images/video for every promoted example family, including nonblank/motion-difference checks and human-inspected contact sheets.                | One spring-net GUI example with surface/points/combined modes.                                      | Headless Filament captures for tutorial, unit, stress, friction, scaling, and comparison example families; PR-linked screenshots/videos.           |
+
 ## Algorithm 1 Coverage
 
 | Algorithm 1 step                         | IPC behavior                                                 | DART status                                                            | Required work                                                                               |
@@ -81,6 +131,25 @@ Everything below remains either partially implemented or missing.
 | Backtracking                             | Require energy decrease while recomputing constraints.       | Present only for simple objective.                                     | Recompute/cull contact constraints during line search and record rejected candidates.       |
 | Update stiffness/BC/equality constraints | Adapt barrier stiffness and moving boundary/equality data.   | Static ground only; fixed nodes only.                                  | Add adaptive barrier stiffness, DBC/NBC time ranges, moving obstacles, and scripted motion. |
 | Termination                              | Stop on scaled Newton direction vs `epsilon_d`.              | Stops on gradient norm or iteration limits.                            | Match IPC-style convergence metrics and expose stats.                                       |
+
+## Upstream Optimizer Phase Coverage
+
+The reference implementation decomposes more than Algorithm 1's top-level
+loop. DART should not copy the upstream API, but it must cover the same solver
+responsibilities with DART-owned names:
+
+| Upstream responsibility         | Required DART equivalent                                                                                  | Current status                                     |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Warm start policy               | Configurable or internally documented warm-start choices for current state, velocity prediction, and BCs. | Current point-mass step starts from current state. |
+| Mesh/material initialization    | Per-shape mesh loading, scaling, rotation, translation, density, stiffness, and damping validation.       | Missing except hand-authored point-mass options.   |
+| Collision-object initialization | Half-space, mesh collision object, point/segment/triangle codimensional object, and mesh sequence paths.  | Static box/sphere top barrier only.                |
+| Boundary-condition scripting    | DBC/NBC selection by spatial box, time ranges, linear/angular scripted motion, and force work.            | Fixed nodes only.                                  |
+| Elastic solve setup             | Sparse matrix pattern, local-to-global DOF layout, DBC projection, and matrix-cache invalidation.         | Missing.                                           |
+| Energy assembly                 | Separate inertia, elastic, barrier, friction, damping, BC, and comparison-mode terms for diagnostics.     | One combined point-mass objective.                 |
+| Line-search filtering           | Elastic inversion filter, CCD upper bound, active set rebuild, and energy decrease check.                 | Analytic ground feasibility and backtracking.      |
+| Homotopy/adaptation             | Barrier/stiction distance schedule, minimum barrier stiffness scale, active-set convergence policy.       | Missing.                                           |
+| Friction outer loop             | Lagged friction-force updates until tolerance or iteration cap.                                           | Missing.                                           |
+| Output/restart                  | Position, velocity, acceleration, search direction, contact/friction data, and restart metadata.          | Binary world serialization only.                   |
 
 ## Implementation Backlog
 
@@ -120,36 +189,105 @@ Everything below remains either partially implemented or missing.
    - Bind the stable user-facing deformable body/options only after the C++
      mesh/contact options settle.
 
-## Material And Property Coverage
+## Bounded Implementation Slices
 
-| Upstream setting/property                           | Required DART support                              | Current status                                    |
-| --------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------- |
-| `energy NH`                                         | Non-inverting neo-Hookean volumetric energy        | Missing                                           |
-| `energy FCR`                                        | Fixed-corotational energy                          | Missing                                           |
-| `timeIntegration BE`                                | Backward Euler incremental potential               | Partial point-mass only                           |
-| `timeIntegration NM beta gamma`                     | Implicit Newmark                                   | Missing                                           |
-| `density`                                           | Density-based mass from mesh volume/area           | Missing                                           |
-| `stiffness E nu`                                    | Young's modulus and Poisson ratio                  | Missing                                           |
-| `dampingStiff`, `dampingRatio`                      | Rayleigh/lagged damping options                    | Missing                                           |
-| `dHat`                                              | Geometric accuracy/contact activation distance     | Internal fixed value only                         |
-| `tol`                                               | Dynamics accuracy schedule                         | Internal fixed tolerance only                     |
-| `epsv`                                              | Stiction accuracy                                  | Missing                                           |
-| `fricIterAmt`                                       | Lagged friction iteration control                  | Missing                                           |
-| `ground`, `halfSpace`                               | Analytical static/moving collision objects         | Partial static box/sphere ground only             |
-| `selfCollisionOff`, `selfFric`                      | Self-contact and self-friction policy              | Missing                                           |
-| `DBC`, `DBCTimeRange`                               | Dirichlet boundary conditions and time ranges      | Fixed nodes only                                  |
-| `NBC`, `NBCTimeRange`                               | Neumann boundary conditions and time ranges        | Missing                                           |
-| `initVel`, `linearVelocity`, `angularVelocity`      | Initial and scripted rigid/collision-object motion | Node velocities only                              |
-| `restart`                                           | Restart from saved simulation state                | Binary world serialization only                   |
-| `CCDMethod`                                         | Runtime CCD policy, exact validation path          | DART primitive CCD exists, not wired here         |
-| `constraintSolver`                                  | IPC/SQP/QP comparison modes                        | Missing; DART should keep this internal/test-only |
-| `view`, `zoom`, `cameraTracking`, playback settings | Example/visualization controls                     | Partial GUI run options only                      |
+Full IPC parity is too broad for one coding pass. Use these stop points when
+creating the next `docs/dev_tasks/` folder and PR sequence.
+
+| Slice                                      | Dependencies                   | Stop point                                                                                       | Minimum gate                                                                                                                              |
+| ------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Mesh/material state and scene loading   | Current point-mass slice       | Mesh-backed deformable bodies load, validate, serialize, render, and step with no contact.       | Mesh/material unit tests, BE point-mass parity, surface extraction tests, `pixi run lint`, `pixi run build`, `check-api-boundaries`.      |
+| 2. Boundary conditions and diagnostics     | Slice 1                        | DBC/NBC/time ranges, scripted motion, restart, and stats schema work on contact-free meshes.     | DBC/NBC/restart tests, diagnostics JSON schema test, one tutorial scene replay, benchmark JSON for no-contact mesh stepping.              |
+| 3. Distance and candidate kernels          | Slice 1 surface adjacency      | PT/EE distances, derivatives, tangent bases, mollifier, broad phase, and adjacency filters land. | Distance finite-difference tests, candidate brute-force comparisons, `bm_ipc_distance_kernels`, `bm_ipc_constraint_set`.                  |
+| 4. CCD line search and barrier constraints | Slices 2-3                     | Conservative CCD upper bounds and clamped barriers prevent mesh contact intersections.           | CCD line-search tests, exact post-step audits, barrier derivative/PSD tests, `bm_ipc_barrier_kernels`, `bm_ipc_ccd_line_search`.          |
+| 5. Projected Newton solver                 | Slice 4                        | Sparse projected Newton replaces gradient descent for mesh IPC constraints.                      | Solver residual tests, sparse assembly/fallback tests, matrix-cache tests, `bm_ipc_projected_newton`, profiling hot-path summary.         |
+| 6. Friction                                | Slice 5                        | Lagged smoothed friction supports self/external contact with convergence diagnostics.            | Friction potential/Jacobian tests, slope/stick-slip scenes, `bm_ipc_friction`, friction iteration stats.                                  |
+| 7. Corpus port                             | Slices 1-6 as needed per scene | The upstream scene manifest has zero unclassified rows and all required DART artifacts exist.    | Tutorial/paper/stress/comparison CTest groups, `bm_ipc_scene_corpus`, `bm_ipc_scaling`, headless Filament evidence for promoted examples. |
+| 8. Python facade                           | Stable C++ options/diagnostics | Python exposes only stable user-facing deformable options/state and no solver internals.         | `pixi run test-py`, Python example smoke, API-boundary review.                                                                            |
+
+For every slice, define DART-owned option names, units, defaults, validation,
+serialization behavior, and public/internal boundary before exposing the
+option. Upstream setting names are inputs to the audit, not public DART API
+names.
+
+## Material, Property, And Scene-Option Coverage
+
+This table is intentionally broader than public API requirements. Some rows
+should remain internal, test-only, or example-only in DART, but every upstream
+property family needs an explicit DART decision before full IPC parity is
+claimed.
+
+| Upstream setting/property family                                      | Required DART support or decision                                                                  | Current status                                               |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `shape`, `shapes`, transform/scale                                    | Mesh-backed body loading with per-shape transform, scale, material overrides, and validation.      | Missing; point-mass options are hand-authored.               |
+| `shapeMatrix`, legacy replicated shapes                               | Either port as examples through a DART scene generator or document as legacy-only input shorthand. | Missing.                                                     |
+| `meshSeq`                                                             | Moving mesh sequence collision objects for scripted obstacles.                                     | Missing.                                                     |
+| `energy NH`                                                           | Non-inverting neo-Hookean volumetric energy.                                                       | Missing.                                                     |
+| `energy FCR`                                                          | Fixed-corotational energy with inversion-aware filter.                                             | Missing.                                                     |
+| `timeIntegration BE`                                                  | Backward Euler incremental potential.                                                              | Partial point-mass-only surrogate.                           |
+| `timeIntegration NM beta gamma`                                       | Implicit Newmark with acceleration state and high-speed validation.                                | Missing.                                                     |
+| `density`, per-shape `material density`                               | Density-based mass from volume/area with per-shape overrides.                                      | Missing.                                                     |
+| `stiffness E nu`, per-shape material overrides                        | Young's modulus and Poisson ratio with validity ranges and Lamé conversion tests.                  | Missing.                                                     |
+| `dampingStiff`, `dampingRatio`                                        | Rayleigh/lagged damping options and energy diagnostics.                                            | One scalar velocity damping on spring model only.            |
+| `turnOffGravity`                                                      | Explicit gravity control per scene or world.                                                       | World gravity exists; no deformable scene-loader parity.     |
+| `time duration dt`                                                    | Scene duration/time-step controls, including large `dt` and sub-frame/high-speed examples.         | World timestep and frame count exist; no IPC scene loader.   |
+| `tol`, `useActiveSetConvergence`, `noActiveSetConvergence`            | Dynamics residual/convergence policy and diagnostics.                                              | Internal fixed gradient/iteration limits only.               |
+| `dHat`, `tuning`, `useAbsParameters`                                  | Geometric accuracy/contact activation distance schedule.                                           | Internal fixed activation distance only.                     |
+| `kappaMinMultiplier`, `minBarrierStiffnessScale`                      | Minimum barrier stiffness scale and adaptation diagnostics.                                        | Missing.                                                     |
+| `epsv`                                                                | Stiction velocity accuracy for smoothed friction.                                                  | Missing.                                                     |
+| `fricIterAmt`                                                         | Lagged friction iteration cap or convergence-until-satisfied mode.                                 | Missing.                                                     |
+| `ground`, `halfSpace`                                                 | Analytic half-space collision objects with friction and moving variants where applicable.          | Partial static box/sphere top-surface barrier only.          |
+| `meshCO`, `shapes ... linearVelocity/angularVelocity` collision paths | Static/moving mesh collision objects, triangle/edge/point object modes, and friction.              | Missing.                                                     |
+| `selfCollisionOn`, `selfCollisionOff`, `selfFric`                     | Self-contact and self-friction policy per body/scene.                                              | Missing.                                                     |
+| `DBC`, `DBCTimeRange`, `handleRatio`                                  | Dirichlet boundary regions, scripted linear/angular motion, and time ranges.                       | Fixed nodes only; no time range or scripted BC motion.       |
+| `NBC`, `NBCTimeRange`                                                 | Neumann force regions and time ranges.                                                             | Missing.                                                     |
+| `initVel`, `linearVelocity`, `angularVelocity`, `script`              | Initial velocity, scripted object/BC motion, and scene-control scripts.                            | Node initial velocities only.                                |
+| `warmStart`                                                           | Warm-start strategy decision and restart interaction.                                              | Starts from current point-mass state only.                   |
+| `restart`, `statusPath`, output paths                                 | Restartable position/velocity/acceleration state plus replay outputs.                              | Binary world serialization only.                             |
+| `linearSolver`, `linSysSolver`                                        | Sparse linear solver abstraction and fallback policy.                                              | Missing for deformables.                                     |
+| `constraintSolver`, `constraintType`, `constraintOffset`, `QPSolver`  | IPC/SQP/QP/gap comparison harnesses; likely internal/test-only in DART.                            | Missing.                                                     |
+| `CCDMethod`, `CCDTolerance`                                           | Runtime CCD policy for tests/validation and conservative default path.                             | Native primitive CCD exists, not wired into deformables.     |
+| `view`, `zoom`, `cameraTracking`, `playBackSpeed`                     | Example/visualization controls for reproduced upstream scenes.                                     | Current example supports camera/render options only broadly. |
+| `appendStr`, `disableCout`, output naming                             | DART-owned output/diagnostic naming and quiet-mode policy for benchmarks.                          | Missing.                                                     |
 
 ## Upstream Example Matrix
 
 Every row below needs either a runnable DART example, a focused test, a
 benchmark, or a documented non-CI/manual baseline before PLAN-081 can claim
 paper-level coverage.
+
+Coverage policy:
+
+- every upstream `.txt` scene must map to one DART artifact row;
+- every mesh/segment/sequence asset referenced by a scene must load through
+  DART-owned IO or a documented importer shim;
+- paper/tutorial scenes should become maintained examples when they are useful
+  for users, and otherwise focused tests/benchmarks when they are primarily
+  regression fixtures;
+- external application files under `supplementB` are manual comparison assets
+  unless their dependencies become CI-safe.
+
+Before claiming parity, create a machine-readable or Markdown manifest for the
+scene corpus with one row per upstream `.txt` scene and these fields:
+
+- upstream path;
+- DART target type: `test`, `benchmark`, `example`, `manual`, or
+  `not-applicable`;
+- required assets/importer path;
+- implemented DART command, CTest label, or benchmark binary;
+- expected invariant, such as no intersections, min distance, friction
+  threshold, momentum/energy tolerance, or visual deformation;
+- benchmark/profiling artifact path when the scene is performance-relevant;
+- visual evidence requirement when the scene is user-facing or paper-facing.
+
+The manifest must have zero `unclassified` rows before a full-parity claim.
+
+Audited `.txt` scene counts by family: 29 top-level paper examples, 10
+time-step variants, 10 Erleben cases, 9 scaling scenes, 8 video examples, 22
+tutorial scenes, 6 CCD scenes, 9 codimensional unit scenes, 7 friction scenes,
+5 typical scenes, 5 material/resolution sweep scenes, 20 SQP benchmark scenes,
+1 Utopia comparison scene, 1 tunnel scene, 1 bar-twist scene, and 6 failure
+case scenes.
 
 ### Paper Figures And Benchmark Scenes
 
@@ -213,11 +351,11 @@ paper-level coverage.
   `2cubesFall_rotateCO_edges.txt`,
   `2cubesFall_rotateCO_points.txt`,
   `2cubesFall_rotateCO_triangle.txt`,
-  `2cubesFall_translateCO.txt`,
-  `2cubesFall_rotateCO_meshSeq.txt`.
+  `2cubesFall_translateCO.txt`.
 - Integration/advanced settings:
   `input/tutorialExamples/advanced/2cubesFall_BE.txt`,
-  `2cubesFall_NM.txt`, `2cubesFall_attach.txt`.
+  `2cubesFall_NM.txt`, `2cubesFall_attach.txt`,
+  `2cubesFall_rotateCO_meshSeq.txt`.
 - Initial velocity:
   `input/tutorialExamples/initVel/2cubesFall_initVel.txt`,
   `2cubesFall_initRot.txt`.
@@ -280,6 +418,20 @@ dependency policy is approved.
 - `input/paperExamples/supplementB/SQPBenchmark/30_matTwist.txt`
 - `input/paperExamples/supplementB/Utopia/utopiaComparison.txt`
 
+### Failure-Mode Corpus
+
+These upstream scenes encode solver/dependency failure cases. DART should port
+the physical scene when useful, but the commercial-solver failure itself should
+remain a documented optional/manual baseline unless a CI-safe dependency policy
+is approved.
+
+- `input/failures/GurobiException.txt`
+- `input/failures/GurobiIncomplete.txt`
+- `input/failures/SQPMemoryIssue1.txt`
+- `input/failures/SQPMemoryIssue2.txt`
+- `input/failures/SQPMemoryIssue3.txt`
+- `input/failures/SQPMemoryIssue4.txt`
+
 ## Upstream Test Coverage To Mirror
 
 DART already has native primitive CCD tests from the continuous-collision work,
@@ -303,6 +455,24 @@ but full IPC parity should mirror the modern toolkit's focused test families:
 - Utilities: matrix cache, local/global DOF layout, profiler hooks, and interval
   arithmetic.
 
+The DART test suite should split these into small, debuggable targets instead
+of a single monolithic IPC test. Suggested owners:
+
+- `tests/unit/simulation/experimental/ipc_distance/` for distance, tangent,
+  mollifier, and finite-difference derivative checks;
+- `tests/unit/simulation/experimental/ipc_barrier/` for barrier value,
+  gradient, Hessian, PSD projection, stiffness adaptation, and force magnitude;
+- `tests/unit/simulation/experimental/ipc_collision/` for collision mesh,
+  broad phase, candidate filtering, CCD line search, and exact-CCD audits;
+- `tests/unit/simulation/experimental/ipc_friction/` for friction potential,
+  tangent basis, force Jacobian, smooth friction coefficient, and lagged
+  convergence;
+- `tests/unit/simulation/experimental/ipc_solver/` for sparse assembly,
+  projected Newton, linear-solver fallback, DBC/NBC projection, restart, and
+  diagnostics;
+- `tests/unit/simulation/experimental/world/` for public `World` facade
+  integration, serialization, and API-boundary behavior.
+
 ## Benchmark And Profiling Targets
 
 Add these benchmark families before promoting the solver beyond experimental
@@ -325,32 +495,82 @@ status:
    inspected contact sheet or video artifact attached to the PR rather than
    committed.
 
+At minimum, promoted GUI coverage should include long-horizon Filament runs for
+squeeze-out, rods twist, stiff card house, masonry arch, roller ball, pin
+cushion or another codimensional-obstacle scene, high-speed golf ball,
+stick-slip pencil, scaling scenes, and tutorial variants. Each run should fix
+camera pose, resolution, frame count, profile output, screenshot/contact-sheet
+path, and expected motion/contact invariant.
+
+Minimum benchmark/profiling output for each full-parity PR:
+
+- Google Benchmark JSON with repetitions and aggregate rows for each touched
+  kernel, solver, and scene group.
+- Dedicated benchmark families named by responsibility:
+  `bm_ipc_distance_kernels`, `bm_ipc_barrier_kernels`,
+  `bm_ipc_ccd_line_search`, `bm_ipc_friction`,
+  `bm_ipc_projected_newton`, `bm_ipc_constraint_set`,
+  `bm_ipc_scene_corpus`, and `bm_ipc_scaling`.
+- Per-scene stats including nodes/elements/faces, active contacts average/max,
+  Newton iterations average/max, friction iterations average/max, line-search
+  trials/rejections, CCD calls, constraint rebuilds, sparse assembly time,
+  linear solve time, total step time, and memory/RSS.
+- Scaling sweeps over resolution, timestep, stiffness, mass ratio, friction
+  coefficient, and contact density.
+- A rigid-only/no-contact baseline and a no-friction/no-self-contact baseline
+  so regressions can be attributed.
+- Profiling notes that identify the current top three hot paths before and
+  after optimization.
+
 ## Next-Session Execution Order
 
-1. Land mesh-backed deformable model/state, mesh loading for examples, material
-   parameters, BE/NM integration options, DBC/NBC, and output diagnostics.
-2. Land PT/EE distance derivatives, edge-edge mollifier, tangent bases, and
+1. **Mesh/state foundation**: land mesh-backed deformable model/state,
+   density/mass assembly, surface extraction, adjacency metadata, scene asset
+   loading, material parameters, BE/NM state, DBC/NBC, scripted motion, restart,
+   and output diagnostics.
+2. **Distance kernels**: land PT/EE distance values, feature classification,
+   gradients, Hessians, tangent bases, edge-edge mollifier, and
    finite-difference tests.
-3. Wire constraint-set generation, spatial filtering, and conservative CCD line
-   search for self-contact and deformable-collision-object contact.
-4. Replace the gradient-descent solve with projected Newton plus sparse linear
-   solve and barrier stiffness adaptation.
-5. Add friction potential and lagged friction iterations.
-6. Port tutorial examples first, then paper unit tests, then stress examples,
-   then comparison/benchmark corpora.
-7. Add dartpy bindings only after C++ solver options and diagnostics stop
-   moving.
+3. **Constraint and CCD pipeline**: wire candidate generation, spatial
+   filtering, adjacency exclusions, conservative CCD upper bounds, exact-CCD
+   post-step validation, and line-search diagnostics.
+4. **Barrier/Newton solver**: replace gradient descent with projected Newton,
+   sparse assembly, local PSD projection, linear-solver abstraction, barrier
+   stiffness adaptation, and IPC-style convergence metrics.
+5. **Friction**: add smoothed lagged friction, tangent-basis lagging, normal
+   force lagging, friction iteration policy, and convergence diagnostics.
+6. **Example/test corpus**: port tutorial examples first, then unit/failure
+   cases, then paper stress/friction/scaling scenes, then SQP/comparison
+   benchmarks.
+7. **GUI evidence**: promote every user-facing scene with long-horizon
+   headless Filament captures in surface, points/debug, and combined modes when
+   those modes are meaningful.
+8. **Python facade**: add dartpy bindings only after C++ solver options,
+   diagnostics, and scene-loading choices stop moving.
 
 ## Required Gate For A Full IPC-Parity PR
 
 - `pixi run lint`
 - `pixi run build`
-- Focused C++ unit tests for model, distance, barrier, CCD, friction, solver,
-  serialization, and examples.
+- `pixi run test-all` before final promotion, unless a maintainer explicitly
+  scopes a smaller experimental-only PR.
+- `pixi run test-eigen-overalignment` for Eigen-heavy storage/solver changes.
+- `pixi run test-dart-gui-smoke` when promoted GUI examples or Filament
+  extraction/rendering behavior changes.
+- `pixi run check-api-boundaries`
+- Focused C++ unit/CTest groups for mesh/material state, BE/Newmark,
+  DBC/NBC/restart, PT/EE distance derivatives, CCD line search, barrier
+  stiffness/admissibility, projected Newton, friction, serialization,
+  diagnostics, and upstream scene end-to-end runs.
 - `pixi run test-py` after dartpy bindings land.
 - Google Benchmark JSON for kernel, solver, scene, scaling, and comparison
-  groups.
-- Headless Filament long-horizon captures for every GUI example family.
+  groups, including the named benchmark families above.
+- Headless Filament long-horizon captures for every GUI example family, with
+  nonblank image checks, motion-difference checks, and human-inspected contact
+  sheets or videos.
 - PR body with external screenshots/videos and benchmark summaries.
 - Paper/documentation updates that clearly distinguish implemented behavior
   from planned IPC parity.
+- A final grep/audit pass that removes inaccurate "IPC parity" wording from
+  examples, docs, and public API comments unless all rows above are backed by
+  evidence.

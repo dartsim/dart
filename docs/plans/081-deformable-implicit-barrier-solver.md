@@ -28,9 +28,13 @@
   [`../design/simulation_experimental_references.md`](../design/simulation_experimental_references.md)
 - IPC paper/repository gap audit:
   [`081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md`](081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md)
+  owns the next-session checklist for paper sections, Algorithm 1 phases,
+  upstream scene corpus, material/property options, tests, benchmarks,
+  profiling, and visual evidence.
 - Implementation tracking: the first C++ slice is complete in this plan; future
-  slices continue from the workstreams below without keeping a completed
-  `docs/dev_tasks/` folder alive.
+  slices continue from the workstreams below. Because full IPC parity is now a
+  multi-session implementation, start a new `docs/dev_tasks/` folder when that
+  work begins, then promote durable output and delete it in the completing PR.
 
 ## Workstreams
 
@@ -53,8 +57,9 @@
 3. **Optimization contract** — For each deformable body, dynamic variables are
    the non-fixed node positions; fixed nodes are eliminated Dirichlet DOFs. The
    first stage minimizes the mass-weighted implicit-Euler inertia term plus
-   edge-spring elastic energy and gravity load, with an internal positive
-   clearance `xi` for the analytic ground barrier. Infeasible candidates
+   edge-spring elastic energy and analytic ground barrier energy. Gravity and
+   damping are folded into the inertial target for this first point-mass slice,
+   not represented as a separate public force model. Infeasible candidates
    (`distance <= xi`) are rejected by line search. Accepted candidates must be
    feasible and satisfy a deterministic descent/residual stopping rule.
    Velocities are updated from `(x_next - x_prev) / dt`.
@@ -62,10 +67,11 @@
    matrix in
    [`ipc-paper-gap-audit.md`](081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md).
    The next implementation session should first add mesh-backed deformables,
-   material parameters, BE/Newmark integration options, DBC/NBC, and output
-   diagnostics, then wire point-triangle/edge-edge distance derivatives,
-   conservative CCD line search, projected Newton, barrier stiffness adaptation,
-   friction, and the upstream example/test/benchmark corpus.
+   material parameters, scene loading, BE/Newmark integration options,
+   DBC/NBC, restart/output diagnostics, and per-step stats, then wire
+   point-triangle/edge-edge distance derivatives, conservative CCD line search,
+   projected Newton, barrier stiffness adaptation, friction, and the complete
+   upstream example/test/benchmark corpus.
 5. **IPC-class collision expansion** — Use PR #2700 primitive CCD to assemble
    point-triangle and edge-edge candidate constraints for deformable
    self-contact and deformable-rigid contact. The default runtime path must use
@@ -126,17 +132,26 @@
   for explicitly opted-in static-ground barriers while keeping barrier names out
   of the public stage surface.
 - `test_deformable_body` covers public stepping, `step(count, executor)`,
-  invalid model rejection, fixed-node invariants, spring contraction,
-  mass-scaled free-particle dynamics, finite static-ground footprint,
-  active-contact sliding, static-ground barrier feasibility, ordinary static
-  collision opt-out behavior, determinism, stage metadata, and binary
-  serialization.
+  custom step overloads, invalid model rejection, fixed-node invariants, spring
+  contraction, mass-scaled free-particle dynamics, finite static-ground
+  footprint, active-contact sliding, static-ground barrier feasibility,
+  ordinary static collision opt-out behavior, determinism, stage metadata, and
+  binary serialization.
 - `experimental_deformable_gui` can be run with:
   `pixi run ex experimental_deformable_gui --headless --frames 180 --width 960 --height 540 --out /tmp/experimental_deformable_gui_frames --screenshot /tmp/experimental_deformable_gui.ppm`.
+  Use `--deformable-view combined`, `--deformable-view surface`, and
+  `--deformable-view points` when recording final visual evidence for renderer
+  or example changes.
+- Reusable deformable rendering is covered by `UNIT_gui_FilamentSceneExtraction`
+  for the `dart::gui` descriptor path.
 - `bm_deformable_body` can be run with:
   `pixi run bm bm_deformable_body -- --benchmark_filter='BM_(WorldStepWithoutDeformables|DeformableGridStep|DeformableGridStage)' --benchmark_min_time=0.1s`.
 - Local gates run for the slice: `pixi run lint`, `pixi run build`, focused
   `test_deformable_body`, and `pixi run check-api-boundaries`.
+- This evidence is limited to point masses, springs, an analytic static-ground
+  barrier, and render-only deformable surface descriptors. It is not evidence
+  for mesh IPC contact, FEM elasticity, projected Newton, CCD line search,
+  friction, upstream scene parity, or IPC paper parity.
 
 ## IPC Paper Parity Gap
 
@@ -161,7 +176,8 @@ method family. In short, the remaining gap is:
 - smoothed lagged friction with `epsilon_v`, tangent bases, contact-force
   lagging, and friction convergence diagnostics;
 - upstream tutorial, paper, stress, friction, scaling, SQP-comparison, and
-  visual examples ported to DART-native tests/benchmarks/examples.
+  failure-mode visual examples ported to DART-native tests, benchmarks,
+  examples, profiling, and long-horizon headless Filament evidence.
 
 ## Non-Goals For The First PR
 
@@ -177,10 +193,16 @@ method family. In short, the remaining gap is:
 
 ## Revision Triggers
 
-- PR #2705 changes the `WorldStepPipeline`, collision bridge, or deformable
-  extension seam before merge.
-- Primitive CCD APIs from PR #2700 change shape.
-- First-slice tests show the barrier step cannot maintain feasibility with the
-  current model/state split.
+- Mesh/material public API shape would expose solver/backend/project names,
+  upstream IPC-specific vocabulary, or ECS storage.
+- PT/EE distance, conservative CCD, or candidate-filtering APIs cannot be kept
+  internal while preserving testability.
+- Projected-Newton diagnostics, sparse solver outputs, or barrier/friction
+  metrics cannot be serialized or benchmarked without leaking internal solver
+  types.
+- Long-horizon headless Filament captures reveal that surface, point, or debug
+  rendering no longer matches simulated deformation.
+- Benchmark/profiling evidence shows the next slice regresses rigid-only worlds
+  or the first-slice spring-grid baseline without an accepted tradeoff.
 - Maintainers decide to import an external library instead of implementing the
   method in DART-owned code.
