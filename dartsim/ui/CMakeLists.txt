@@ -16,8 +16,18 @@ cmake_minimum_required(VERSION 3.22.1)
 
 set(target_name dartsim_ui)
 
+find_package(nfd CONFIG REQUIRED)
+
 add_library(${target_name} STATIC
   src/editor.cpp
+  src/inspector_actions.cpp
+  src/outliner_actions.cpp
+  src/palette_actions.cpp
+  src/project_actions.cpp
+  src/project_file_dialog.cpp
+  src/relationship_actions.cpp
+  src/simulation_actions.cpp
+  src/viewport_actions.cpp
 )
 
 target_include_directories(${target_name}
@@ -31,6 +41,8 @@ target_link_libraries(${target_name}
   PUBLIC
     dartsim_engine
     dart-gui
+  PRIVATE
+    nfd::nfd
 )
 
 set_target_properties(${target_name} PROPERTIES POSITION_INDEPENDENT_CODE ON)

@@ -66,6 +66,8 @@ void SimEngine::execute(std::unique_ptr<Command> command)
   if (!canEditScene()) {
     return;
   }
+  const bool wasDirty = isProjectDirty();
+  const std::string oldPath = m_projectPath;
   std::string label = command ? command->label() : std::string();
   if (!m_commands.execute(std::move(command))) {
     // No-op command (e.g. a rejected edit): do not log it or signal a scene
@@ -76,6 +78,7 @@ void SimEngine::execute(std::unique_ptr<Command> command)
     m_logger.info(std::move(label));
   }
   m_events.emit(EventType::SceneChanged);
+  emitProjectStateChangedIfNeeded(wasDirty, oldPath);
   notifyChanged();
 }
 
@@ -84,10 +87,13 @@ bool SimEngine::undo()
   if (!canEditScene()) {
     return false;
   }
+  const bool wasDirty = isProjectDirty();
+  const std::string oldPath = m_projectPath;
   const bool changed = m_commands.undo();
   if (changed) {
     m_logger.info("Undo");
     m_events.emit(EventType::SceneChanged);
+    emitProjectStateChangedIfNeeded(wasDirty, oldPath);
     notifyChanged();
   }
   return changed;
@@ -98,10 +104,13 @@ bool SimEngine::redo()
   if (!canEditScene()) {
     return false;
   }
+  const bool wasDirty = isProjectDirty();
+  const std::string oldPath = m_projectPath;
   const bool changed = m_commands.redo();
   if (changed) {
     m_logger.info("Redo");
     m_events.emit(EventType::SceneChanged);
+    emitProjectStateChangedIfNeeded(wasDirty, oldPath);
     notifyChanged();
   }
   return changed;
@@ -159,9 +168,85 @@ bool SimEngine::replaySeek(std::size_t index)
   return ok;
 }
 
-bool SimEngine::saveProject(const std::string& path) const
+bool SimEngine::isProjectDirty() const
 {
-  return scene_io::saveToFile(path, m_objects.model());
+  return !(m_objects.model() == m_cleanProjectModel);
+}
+
+void SimEngine::resetRuntimeStateForProjectReplacement()
+{
+  const bool hadRecordingState = m_recorder.isRecording()
+                                 || !m_recorder.recording().empty()
+                                 || !m_player.empty();
+  const bool hadSelection = !m_selection.empty();
+  m_selection.clear();
+  m_commands.clearHistory();
+  if (hadSelection) {
+    m_events.emit(EventType::SelectionChanged);
+  }
+  // Drop any pre-load Run-mode snapshot so Reset targets the replacement scene.
+  m_simulation.clearForNewScene();
+  // Drop any prior recording/replay; seeking it would restore old-world
+  // snapshots into the freshly loaded scene and corrupt it.
+  m_recorder.clear();
+  m_player.clear();
+  if (hadRecordingState) {
+    m_events.emit(EventType::RecordingChanged);
+  }
+}
+
+void SimEngine::newProject()
+{
+  const bool wasDirty = isProjectDirty();
+  const std::string oldPath = m_projectPath;
+  m_objects.setModel(SceneModel{});
+  m_projectPath.clear();
+  captureCleanProjectModel();
+  resetRuntimeStateForProjectReplacement();
+  m_logger.info("New project");
+  emitProjectStateChangedIfNeeded(wasDirty, oldPath);
+  m_events.emit(EventType::ProjectCreated);
+  notifyChanged();
+}
+
+void SimEngine::captureCleanProjectModel()
+{
+  m_cleanProjectModel = m_objects.model();
+}
+
+void SimEngine::markProjectClean()
+{
+  const bool wasDirty = isProjectDirty();
+  const std::string oldPath = m_projectPath;
+  captureCleanProjectModel();
+  if (wasDirty || oldPath != m_projectPath) {
+    m_events.emit(EventType::ProjectStateChanged);
+    notifyChanged();
+  }
+}
+
+bool SimEngine::saveProject()
+{
+  if (m_projectPath.empty()) {
+    return false;
+  }
+  return saveProject(m_projectPath);
+}
+
+bool SimEngine::saveProject(const std::string& path)
+{
+  const bool wasDirty = isProjectDirty();
+  const std::string oldPath = m_projectPath;
+  if (!scene_io::saveToFile(path, m_objects.model())) {
+    return false;
+  }
+  m_projectPath = path;
+  captureCleanProjectModel();
+  m_logger.info("Saved project: " + path);
+  emitProjectStateChangedIfNeeded(wasDirty, oldPath);
+  m_events.emit(EventType::ProjectSaved);
+  notifyChanged();
+  return true;
 }
 
 bool SimEngine::loadProject(const std::string& path)
@@ -170,19 +255,25 @@ bool SimEngine::loadProject(const std::string& path)
   if (!scene_io::loadFromFile(path, model)) {
     return false;
   }
+  const bool wasDirty = isProjectDirty();
+  const std::string oldPath = m_projectPath;
   m_objects.setModel(std::move(model));
-  m_selection.clear();
-  m_commands.clearHistory();
-  // Drop any pre-load Run-mode snapshot so Reset targets the loaded scene.
-  m_simulation.clearForNewScene();
-  // Drop any prior recording/replay; seeking it would restore old-world
-  // snapshots into the freshly loaded scene and corrupt it.
-  m_recorder.clear();
-  m_player.clear();
+  m_projectPath = path;
+  captureCleanProjectModel();
+  resetRuntimeStateForProjectReplacement();
   m_logger.info("Loaded project: " + path);
+  emitProjectStateChangedIfNeeded(wasDirty, oldPath);
   m_events.emit(EventType::ProjectLoaded);
   notifyChanged();
   return true;
+}
+
+void SimEngine::emitProjectStateChangedIfNeeded(
+    bool wasDirty, const std::string& oldPath)
+{
+  if (wasDirty != isProjectDirty() || oldPath != m_projectPath) {
+    m_events.emit(EventType::ProjectStateChanged);
+  }
 }
 
 std::vector<RenderItem> SimEngine::renderItems() const

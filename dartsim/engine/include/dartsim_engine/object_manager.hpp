@@ -107,10 +107,14 @@ public:
       ObjectId id) const;
 
 private:
+  struct RebuildFrameIndex;
+
   SceneModel m_model;
   std::unique_ptr<dart::simulation::experimental::World> m_world;
 
-  void buildMultiBody(const SceneObject& multiBodyObject);
+  void buildMultiBody(
+      const SceneObject& multiBodyObject, RebuildFrameIndex& frames);
+  void buildAttachedFrames(ObjectId parent, RebuildFrameIndex& frames);
 };
 
 } // namespace dartsim

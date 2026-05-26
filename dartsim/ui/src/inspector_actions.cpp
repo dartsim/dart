@@ -1,0 +1,574 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <Eigen/Geometry>
+#include <dartsim_engine/commands.hpp>
+#include <dartsim_ui/inspector_actions.hpp>
+#include <dartsim_ui/outliner_actions.hpp>
+
+#include <optional>
+#include <utility>
+
+namespace dartsim::ui {
+
+namespace {
+
+InspectorActionResult result(bool ok, std::string message)
+{
+  return {ok, std::move(message)};
+}
+
+bool isTransformEditable(ObjectType type)
+{
+  return type == ObjectType::RigidBody || type == ObjectType::FreeFrame
+         || type == ObjectType::FixedFrame;
+}
+
+bool isShapeEditable(ObjectType type)
+{
+  return type == ObjectType::RigidBody || type == ObjectType::Link;
+}
+
+bool hasSingleDofJoint(const SceneObject& object)
+{
+  if (object.type != ObjectType::Link || object.parentLink == kNoObject) {
+    return false;
+  }
+
+  return object.jointType == JointKind::Revolute
+         || object.jointType == JointKind::Prismatic
+         || object.jointType == JointKind::Screw;
+}
+
+bool hasSingleAxisJoint(const SceneObject& object)
+{
+  return hasSingleDofJoint(object);
+}
+
+InspectorNumericProperty numeric(
+    InspectorNumericPropertyKind kind,
+    std::string label,
+    double value,
+    double minimum,
+    double maximum,
+    bool editable)
+{
+  return {kind, std::move(label), value, minimum, maximum, editable};
+}
+
+InspectorEnumProperty enumProperty(
+    InspectorEnumPropertyKind kind,
+    std::string label,
+    int value,
+    std::vector<InspectorEnumChoice> choices,
+    bool editable)
+{
+  return {kind, std::move(label), value, std::move(choices), editable};
+}
+
+std::vector<InspectorEnumChoice> shapeTypeChoices()
+{
+  return {
+      {"Box", static_cast<int>(ShapeType::Box)},
+      {"Sphere", static_cast<int>(ShapeType::Sphere)},
+      {"Cylinder", static_cast<int>(ShapeType::Cylinder)},
+      {"Capsule", static_cast<int>(ShapeType::Capsule)},
+      {"Plane", static_cast<int>(ShapeType::Plane)},
+  };
+}
+
+std::vector<InspectorEnumChoice> jointKindChoices()
+{
+  return {
+      {"Fixed", static_cast<int>(JointKind::Fixed)},
+      {"Revolute", static_cast<int>(JointKind::Revolute)},
+      {"Prismatic", static_cast<int>(JointKind::Prismatic)},
+      {"Screw", static_cast<int>(JointKind::Screw)},
+      {"Universal", static_cast<int>(JointKind::Universal)},
+      {"Ball", static_cast<int>(JointKind::Ball)},
+      {"Planar", static_cast<int>(JointKind::Planar)},
+      {"Free", static_cast<int>(JointKind::Free)},
+  };
+}
+
+std::optional<ShapeType> shapeTypeFromValue(int value)
+{
+  switch (static_cast<ShapeType>(value)) {
+    case ShapeType::Box:
+    case ShapeType::Sphere:
+    case ShapeType::Cylinder:
+    case ShapeType::Capsule:
+    case ShapeType::Plane:
+      return static_cast<ShapeType>(value);
+  }
+  return std::nullopt;
+}
+
+std::optional<JointKind> jointKindFromValue(int value)
+{
+  switch (static_cast<JointKind>(value)) {
+    case JointKind::Fixed:
+    case JointKind::Revolute:
+    case JointKind::Prismatic:
+    case JointKind::Screw:
+    case JointKind::Universal:
+    case JointKind::Ball:
+    case JointKind::Planar:
+    case JointKind::Free:
+      return static_cast<JointKind>(value);
+  }
+  return std::nullopt;
+}
+
+ShapeDesc defaultShapeFor(ShapeType type, const Eigen::Vector4d& color)
+{
+  ShapeDesc shape;
+  shape.type = type;
+  shape.color = color;
+  if (type == ShapeType::Plane) {
+    shape.dimensions = Eigen::Vector3d::UnitZ();
+  }
+  return shape;
+}
+
+void appendTransformProperties(
+    std::vector<InspectorNumericProperty>& properties,
+    const SceneObject& object,
+    bool editable)
+{
+  const Eigen::Vector3d position = object.transform.translation();
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::TranslationX,
+      "x",
+      position.x(),
+      -10.0,
+      10.0,
+      editable));
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::TranslationY,
+      "y",
+      position.y(),
+      -10.0,
+      10.0,
+      editable));
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::TranslationZ,
+      "z",
+      position.z(),
+      -10.0,
+      10.0,
+      editable));
+}
+
+void appendShapeProperties(
+    std::vector<InspectorNumericProperty>& properties,
+    const SceneObject& object,
+    bool editable)
+{
+  const ShapeDesc& shape = object.shape;
+  const double minPositive = 0.001;
+  switch (shape.type) {
+    case ShapeType::Box:
+      properties.push_back(numeric(
+          InspectorNumericPropertyKind::ShapeDimensionX,
+          "shape x",
+          shape.dimensions.x(),
+          minPositive,
+          10.0,
+          editable));
+      properties.push_back(numeric(
+          InspectorNumericPropertyKind::ShapeDimensionY,
+          "shape y",
+          shape.dimensions.y(),
+          minPositive,
+          10.0,
+          editable));
+      properties.push_back(numeric(
+          InspectorNumericPropertyKind::ShapeDimensionZ,
+          "shape z",
+          shape.dimensions.z(),
+          minPositive,
+          10.0,
+          editable));
+      break;
+    case ShapeType::Sphere:
+      properties.push_back(numeric(
+          InspectorNumericPropertyKind::ShapeDimensionX,
+          "radius",
+          shape.dimensions.x(),
+          minPositive,
+          10.0,
+          editable));
+      break;
+    case ShapeType::Cylinder:
+    case ShapeType::Capsule:
+      properties.push_back(numeric(
+          InspectorNumericPropertyKind::ShapeDimensionX,
+          "radius",
+          shape.dimensions.x(),
+          minPositive,
+          10.0,
+          editable));
+      properties.push_back(numeric(
+          InspectorNumericPropertyKind::ShapeDimensionY,
+          "height",
+          shape.dimensions.y(),
+          minPositive,
+          10.0,
+          editable));
+      break;
+    case ShapeType::Plane:
+      properties.push_back(numeric(
+          InspectorNumericPropertyKind::ShapeDimensionX,
+          "normal x",
+          shape.dimensions.x(),
+          -1.0,
+          1.0,
+          editable));
+      properties.push_back(numeric(
+          InspectorNumericPropertyKind::ShapeDimensionY,
+          "normal y",
+          shape.dimensions.y(),
+          -1.0,
+          1.0,
+          editable));
+      properties.push_back(numeric(
+          InspectorNumericPropertyKind::ShapeDimensionZ,
+          "normal z",
+          shape.dimensions.z(),
+          -1.0,
+          1.0,
+          editable));
+      break;
+  }
+}
+
+void appendJointAxisProperties(
+    std::vector<InspectorNumericProperty>& properties,
+    const SceneObject& object,
+    bool editable)
+{
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::JointAxisX,
+      "axis x",
+      object.jointAxis.x(),
+      -1.0,
+      1.0,
+      editable));
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::JointAxisY,
+      "axis y",
+      object.jointAxis.y(),
+      -1.0,
+      1.0,
+      editable));
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::JointAxisZ,
+      "axis z",
+      object.jointAxis.z(),
+      -1.0,
+      1.0,
+      editable));
+}
+
+const SceneObject* selectedObject(const SimEngine& engine)
+{
+  return engine.objects().model().find(engine.selection().primary());
+}
+
+void setTranslationComponent(
+    Eigen::Isometry3d& transform,
+    InspectorNumericPropertyKind kind,
+    double value)
+{
+  switch (kind) {
+    case InspectorNumericPropertyKind::TranslationX:
+      transform.translation().x() = value;
+      break;
+    case InspectorNumericPropertyKind::TranslationY:
+      transform.translation().y() = value;
+      break;
+    case InspectorNumericPropertyKind::TranslationZ:
+      transform.translation().z() = value;
+      break;
+    default:
+      break;
+  }
+}
+
+void setShapeDimension(
+    ShapeDesc& shape, InspectorNumericPropertyKind kind, double value)
+{
+  switch (kind) {
+    case InspectorNumericPropertyKind::ShapeDimensionX:
+      shape.dimensions.x() = value;
+      break;
+    case InspectorNumericPropertyKind::ShapeDimensionY:
+      shape.dimensions.y() = value;
+      break;
+    case InspectorNumericPropertyKind::ShapeDimensionZ:
+      shape.dimensions.z() = value;
+      break;
+    default:
+      break;
+  }
+}
+
+void setAxisComponent(
+    Eigen::Vector3d& axis, InspectorNumericPropertyKind kind, double value)
+{
+  switch (kind) {
+    case InspectorNumericPropertyKind::JointAxisX:
+      axis.x() = value;
+      break;
+    case InspectorNumericPropertyKind::JointAxisY:
+      axis.y() = value;
+      break;
+    case InspectorNumericPropertyKind::JointAxisZ:
+      axis.z() = value;
+      break;
+    default:
+      break;
+  }
+}
+
+} // namespace
+
+InspectorStatus buildInspectorStatus(const SimEngine& engine)
+{
+  InspectorStatus status;
+  const SceneObject* object = selectedObject(engine);
+  if (object == nullptr) {
+    return status;
+  }
+
+  const bool editable = engine.canEditScene();
+  status.hasSelection = true;
+  status.locked = !editable;
+  status.object = object->id;
+  status.name = object->name;
+  status.type = objectTypeLabel(object->type);
+  status.canDelete = editable;
+
+  if (isTransformEditable(object->type)) {
+    appendTransformProperties(status.numericProperties, *object, editable);
+  }
+  if (object->type == ObjectType::RigidBody) {
+    status.numericProperties.push_back(numeric(
+        InspectorNumericPropertyKind::Mass,
+        "mass",
+        object->mass,
+        0.01,
+        100.0,
+        editable));
+  }
+  if (hasSingleDofJoint(*object)) {
+    status.numericProperties.push_back(numeric(
+        InspectorNumericPropertyKind::JointPosition,
+        "joint",
+        object->jointPosition,
+        -3.14159,
+        3.14159,
+        editable));
+  }
+  if (object->type == ObjectType::Link && object->parentLink != kNoObject) {
+    status.enumProperties.push_back(enumProperty(
+        InspectorEnumPropertyKind::JointKind,
+        "joint kind",
+        static_cast<int>(object->jointType),
+        jointKindChoices(),
+        editable));
+  }
+  if (hasSingleAxisJoint(*object)) {
+    appendJointAxisProperties(status.numericProperties, *object, editable);
+  }
+  if (isShapeEditable(object->type)) {
+    status.enumProperties.push_back(enumProperty(
+        InspectorEnumPropertyKind::ShapeType,
+        "shape",
+        static_cast<int>(object->shape.type),
+        shapeTypeChoices(),
+        editable));
+    appendShapeProperties(status.numericProperties, *object, editable);
+    status.colorProperty
+        = InspectorColorProperty{"color", object->shape.color, editable};
+  }
+
+  return status;
+}
+
+InspectorActionResult setInspectorNumericProperty(
+    SimEngine& engine, InspectorNumericPropertyKind kind, double value)
+{
+  if (!engine.canEditScene()) {
+    return result(false, "Scene locked");
+  }
+
+  const SceneObject* object = selectedObject(engine);
+  if (object == nullptr) {
+    return result(false, "Missing object");
+  }
+
+  switch (kind) {
+    case InspectorNumericPropertyKind::TranslationX:
+    case InspectorNumericPropertyKind::TranslationY:
+    case InspectorNumericPropertyKind::TranslationZ: {
+      if (!isTransformEditable(object->type)) {
+        return result(false, "Unsupported property");
+      }
+      Eigen::Isometry3d transform = object->transform;
+      setTranslationComponent(transform, kind, value);
+      engine.execute(commands::setTransform(object->id, transform));
+      return result(true, "Updated transform");
+    }
+    case InspectorNumericPropertyKind::Mass:
+      if (object->type != ObjectType::RigidBody) {
+        return result(false, "Unsupported property");
+      }
+      engine.execute(commands::setMass(object->id, value));
+      return result(true, "Updated mass");
+    case InspectorNumericPropertyKind::ShapeDimensionX:
+    case InspectorNumericPropertyKind::ShapeDimensionY:
+    case InspectorNumericPropertyKind::ShapeDimensionZ: {
+      if (!isShapeEditable(object->type)) {
+        return result(false, "Unsupported property");
+      }
+      ShapeDesc shape = object->shape;
+      setShapeDimension(shape, kind, value);
+      engine.execute(commands::setShape(object->id, shape));
+      return result(true, "Updated shape");
+    }
+    case InspectorNumericPropertyKind::JointPosition:
+      if (!hasSingleDofJoint(*object)) {
+        return result(false, "Unsupported property");
+      }
+      engine.execute(commands::setJointPosition(object->id, value));
+      return result(true, "Updated joint");
+    case InspectorNumericPropertyKind::JointAxisX:
+    case InspectorNumericPropertyKind::JointAxisY:
+    case InspectorNumericPropertyKind::JointAxisZ: {
+      if (!hasSingleAxisJoint(*object)) {
+        return result(false, "Unsupported property");
+      }
+      Eigen::Vector3d axis = object->jointAxis;
+      setAxisComponent(axis, kind, value);
+      engine.execute(commands::setJointAxis(object->id, axis));
+      return result(true, "Updated joint axis");
+    }
+  }
+
+  return result(false, "Unsupported property");
+}
+
+InspectorActionResult setInspectorEnumProperty(
+    SimEngine& engine, InspectorEnumPropertyKind kind, int value)
+{
+  if (!engine.canEditScene()) {
+    return result(false, "Scene locked");
+  }
+
+  const SceneObject* object = selectedObject(engine);
+  if (object == nullptr) {
+    return result(false, "Missing object");
+  }
+
+  switch (kind) {
+    case InspectorEnumPropertyKind::ShapeType: {
+      if (!isShapeEditable(object->type)) {
+        return result(false, "Unsupported property");
+      }
+      const std::optional<ShapeType> shapeType = shapeTypeFromValue(value);
+      if (!shapeType.has_value()) {
+        return result(false, "Unsupported choice");
+      }
+      engine.execute(
+          commands::setShape(
+              object->id, defaultShapeFor(*shapeType, object->shape.color)));
+      return result(true, "Updated shape type");
+    }
+    case InspectorEnumPropertyKind::JointKind: {
+      if (object->type != ObjectType::Link || object->parentLink == kNoObject) {
+        return result(false, "Unsupported property");
+      }
+      const std::optional<JointKind> jointKind = jointKindFromValue(value);
+      if (!jointKind.has_value()) {
+        return result(false, "Unsupported choice");
+      }
+      engine.execute(commands::setJointKind(object->id, *jointKind));
+      return result(true, "Updated joint kind");
+    }
+  }
+
+  return result(false, "Unsupported property");
+}
+
+InspectorActionResult setInspectorShapeColor(
+    SimEngine& engine, const Eigen::Vector4d& rgba)
+{
+  if (!engine.canEditScene()) {
+    return result(false, "Scene locked");
+  }
+
+  const SceneObject* object = selectedObject(engine);
+  if (object == nullptr) {
+    return result(false, "Missing object");
+  }
+  if (!isShapeEditable(object->type)) {
+    return result(false, "Unsupported property");
+  }
+
+  ShapeDesc shape = object->shape;
+  shape.color = rgba;
+  engine.execute(commands::setShape(object->id, shape));
+  return result(true, "Updated color");
+}
+
+InspectorActionResult deleteInspectorSelection(SimEngine& engine)
+{
+  if (!engine.canEditScene()) {
+    return result(false, "Scene locked");
+  }
+
+  const SceneObject* object = selectedObject(engine);
+  if (object == nullptr) {
+    return result(false, "Missing object");
+  }
+
+  const ObjectId id = object->id;
+  const std::string name = object->name;
+  engine.execute(commands::removeObject(id));
+  return engine.objects().model().contains(id)
+             ? result(false, "Delete rejected")
+             : result(true, "Deleted " + name);
+}
+
+} // namespace dartsim::ui

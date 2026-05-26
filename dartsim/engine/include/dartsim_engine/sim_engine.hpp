@@ -76,6 +76,10 @@ public:
   {
     return m_selection;
   }
+  [[nodiscard]] const SelectionManager& selection() const
+  {
+    return m_selection;
+  }
   [[nodiscard]] CommandManager& commands()
   {
     return m_commands;
@@ -84,11 +88,23 @@ public:
   {
     return m_simulation;
   }
+  [[nodiscard]] const SimulationController& simulation() const
+  {
+    return m_simulation;
+  }
   [[nodiscard]] Recorder& recorder()
   {
     return m_recorder;
   }
+  [[nodiscard]] const Recorder& recorder() const
+  {
+    return m_recorder;
+  }
   [[nodiscard]] Player& player()
+  {
+    return m_player;
+  }
+  [[nodiscard]] const Player& player() const
   {
     return m_player;
   }
@@ -129,7 +145,28 @@ public:
 
   // Project I/O ---------------------------------------------------------------
 
-  [[nodiscard]] bool saveProject(const std::string& path) const;
+  /// True when the current scene differs from the last clean project snapshot.
+  [[nodiscard]] bool isProjectDirty() const;
+  [[nodiscard]] const std::string& projectPath() const
+  {
+    return m_projectPath;
+  }
+  [[nodiscard]] bool hasProjectPath() const
+  {
+    return !m_projectPath.empty();
+  }
+
+  /// Replace the current project with a fresh empty scene.
+  void newProject();
+  /// Mark the current scene as clean without saving (used for generated
+  /// startup/demo scenes).
+  void markProjectClean();
+
+  /// Save to the current project path. Returns false when no path is set.
+  [[nodiscard]] bool saveProject();
+  /// Save to `path`, make it the current project path, and mark the scene
+  /// clean.
+  [[nodiscard]] bool saveProject(const std::string& path);
   bool loadProject(const std::string& path);
 
   /// Resolve current world transforms to renderable primitives.
@@ -143,6 +180,10 @@ public:
 
 private:
   void notifyChanged();
+  void resetRuntimeStateForProjectReplacement();
+  void captureCleanProjectModel();
+  void emitProjectStateChangedIfNeeded(
+      bool wasDirty, const std::string& oldPath);
 
   ObjectManager m_objects;
   SelectionManager m_selection;
@@ -153,6 +194,8 @@ private:
   EventBus m_events;
   Logger m_logger;
   std::function<void()> m_onChanged;
+  std::string m_projectPath;
+  SceneModel m_cleanProjectModel;
 };
 
 } // namespace dartsim

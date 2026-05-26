@@ -11,8 +11,8 @@ are kept minimal.
 
 - `engine/` — headless editor engine (no GUI dependency): scene/object,
   selection, command (undo/redo, grouped macros), and name managers, a typed
-  event bus, a logger, an Edit/Run simulation controller, record/replay, and a
-  human-readable project format. Unit-tested by `UNIT_dartsim_engine`.
+  event bus, a logger, an Edit/Simulation mode controller, record/replay, and
+  a human-readable project format. Unit-tested by `UNIT_dartsim_engine`.
 - `ui/` — panel layer wiring the engine to the backend-hidden `dart::gui`
   visualization library (menu bar, Scene Tree, Inspector, Console, simulation
   controls, replay timeline).

@@ -42,10 +42,12 @@
 #include <dartsim_engine/sim_engine.hpp>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <limits>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <cmath>
 
@@ -126,6 +128,33 @@ TEST(SceneModel, NameUniquenessHelper)
   EXPECT_EQ(NameManager::makeUnique(model, kNoObject, ""), "Object 1");
 }
 
+TEST(SceneModel, MalformedParentsAndMissingIdsAreHandled)
+{
+  SceneModel model;
+  SceneObject orphan;
+  orphan.name = "orphan";
+  orphan.parent = 9999;
+  const ObjectId orphanId = model.add(orphan);
+  ASSERT_NE(model.find(orphanId), nullptr);
+  EXPECT_EQ(model.find(orphanId)->parent, kNoObject);
+  ASSERT_EQ(model.rootChildren().size(), 1u);
+  EXPECT_EQ(model.rootChildren().front(), orphanId);
+
+  EXPECT_FALSE(model.reparent(9999, kNoObject));
+  EXPECT_FALSE(model.reparent(orphanId, 9999));
+  EXPECT_TRUE(model.childrenOf(9999).empty());
+
+  EXPECT_EQ(model.findChildByName(kNoObject, "orphan"), orphanId);
+  EXPECT_FALSE(model.findChildByName(kNoObject, "missing").has_value());
+
+  model.remove(9999);
+  EXPECT_TRUE(model.contains(orphanId));
+
+  model.clear();
+  EXPECT_TRUE(model.empty());
+  EXPECT_TRUE(model.allIds().empty());
+}
+
 //==============================================================================
 // ObjectManager: rebuild + render snapshot
 //==============================================================================
@@ -203,6 +232,66 @@ TEST(ObjectManager, MultiBodyWithLinks)
   EXPECT_EQ(arm->getJointCount(), 1u);
 }
 
+TEST(ObjectManager, RebuildToleratesMalformedFramesAndJointKinds)
+{
+  ObjectManager objects;
+  SceneObject rootFixed;
+  rootFixed.type = ObjectType::FixedFrame;
+  rootFixed.name = "ignored_root_fixed";
+  const ObjectId rootFixedId = objects.model().add(rootFixed);
+
+  SceneObject baseFrame;
+  baseFrame.type = ObjectType::FreeFrame;
+  baseFrame.name = "base_frame";
+  const ObjectId baseFrameId = objects.model().add(baseFrame);
+
+  SceneObject unnamedFixed;
+  unnamedFixed.type = ObjectType::FixedFrame;
+  unnamedFixed.parent = baseFrameId;
+  objects.model().add(unnamedFixed);
+
+  SceneObject mb;
+  mb.type = ObjectType::MultiBody;
+  mb.name = "joint_kinds";
+  const ObjectId mbId = objects.model().add(mb);
+
+  SceneObject base;
+  base.type = ObjectType::Link;
+  base.name = "base";
+  base.parent = mbId;
+  base.multiBody = mbId;
+  const ObjectId baseId = objects.model().add(base);
+
+  std::vector<ObjectId> parents;
+  parents.push_back(baseId);
+  const std::vector<JointKind> kinds{
+      JointKind::Prismatic,
+      JointKind::Screw,
+      JointKind::Universal,
+      JointKind::Ball,
+      JointKind::Planar,
+      JointKind::Free};
+  for (std::size_t i = 0; i < kinds.size(); ++i) {
+    SceneObject link;
+    link.type = ObjectType::Link;
+    link.name = "link_" + std::to_string(i);
+    link.parent = parents.back();
+    link.multiBody = mbId;
+    link.parentLink = parents.back();
+    link.jointType = kinds[i];
+    parents.push_back(objects.model().add(link));
+  }
+
+  EXPECT_NO_THROW(objects.rebuild());
+  EXPECT_TRUE(objects.worldTransformOf(rootFixedId).has_value());
+  ASSERT_TRUE(objects.worldTransformOf(baseFrameId).has_value());
+
+  auto multibody = objects.world().getMultibody("joint_kinds");
+  ASSERT_TRUE(multibody.has_value());
+  EXPECT_EQ(multibody->getLinkCount(), kinds.size() + 1);
+  EXPECT_EQ(multibody->getJointCount(), kinds.size());
+}
+
 //==============================================================================
 // SelectionManager
 //==============================================================================
@@ -224,6 +313,14 @@ TEST(SelectionManager, SelectToggleDeselect)
 
   selection.clear();
   EXPECT_TRUE(selection.empty());
+
+  SelectionState state;
+  state.ids = {3, 4};
+  state.primary = 4;
+  selection.setState(state);
+  EXPECT_EQ(selection.state(), state);
+  EXPECT_EQ(selection.primary(), 4u);
+  EXPECT_EQ(selection.selected().size(), 2u);
 }
 
 //==============================================================================
@@ -252,6 +349,40 @@ TEST(CommandManager, AddUndoRedoRestoresObjectAndSelection)
   EXPECT_EQ(objects.model().size(), 1u);
   EXPECT_EQ(selection.primary(), id);
   EXPECT_TRUE(objects.world().hasRigidBody(objects.model().find(id)->name));
+}
+
+TEST(CommandManager, InvalidCommandsAndLabelsAreStable)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commandManager(objects, selection);
+
+  EXPECT_FALSE(commandManager.execute(nullptr));
+  EXPECT_FALSE(commandManager.undo());
+  EXPECT_FALSE(commandManager.redo());
+  commandManager.endMacro();
+  EXPECT_FALSE(commandManager.inMacro());
+
+  EXPECT_TRUE(commandManager.execute(
+      "Add Body Directly",
+      [](ObjectManager& objectManager, SelectionManager& selectionManager) {
+        SceneObject object;
+        object.type = ObjectType::RigidBody;
+        object.name = "direct";
+        const ObjectId id = objectManager.model().add(std::move(object));
+        objectManager.rebuild();
+        selectionManager.select(id);
+      }));
+  EXPECT_EQ(commandManager.undoLabel(), "Add Body Directly");
+  EXPECT_TRUE(commandManager.redoLabel().empty());
+
+  ASSERT_TRUE(commandManager.undo());
+  EXPECT_TRUE(commandManager.undoLabel().empty());
+  EXPECT_EQ(commandManager.redoLabel(), "Add Body Directly");
+
+  commandManager.clearHistory();
+  EXPECT_FALSE(commandManager.canRedo());
+  EXPECT_TRUE(commandManager.redoLabel().empty());
 }
 
 TEST(CommandManager, EditCommandsAndAutoNaming)
@@ -329,7 +460,7 @@ TEST(CommandManager, SetMassSanitizesInvalidValues)
 }
 
 //==============================================================================
-// SimulationController: edit/run, step, reset
+// SimulationController: Edit/Simulation mode, step, reset
 //==============================================================================
 
 TEST(SimulationController, StepAdvancesAndResetRestores)
@@ -347,7 +478,7 @@ TEST(SimulationController, StepAdvancesAndResetRestores)
   EXPECT_EQ(controller.mode(), SimulationController::Mode::Edit);
 
   controller.step(10);
-  EXPECT_EQ(controller.mode(), SimulationController::Mode::Run);
+  EXPECT_EQ(controller.mode(), SimulationController::Mode::Simulation);
   EXPECT_EQ(controller.frameCount(), 10u);
   EXPECT_GT(controller.simTime(), 0.0);
 
@@ -360,6 +491,40 @@ TEST(SimulationController, StepAdvancesAndResetRestores)
   ASSERT_TRUE(rb.has_value());
   EXPECT_TRUE(
       rb->getTransform().translation().isApprox(Eigen::Vector3d(0, 0, 5)));
+}
+
+TEST(SimulationController, TogglePauseAndAdvanceValidateInputs)
+{
+  ObjectManager objects;
+  SceneObject body;
+  body.type = ObjectType::RigidBody;
+  body.name = "ball";
+  objects.model().add(body);
+  objects.model().timeStep = 0.01;
+  objects.rebuild();
+
+  SimulationController controller(objects);
+  controller.advance(1.0);
+  EXPECT_EQ(controller.frameCount(), 0u);
+
+  controller.togglePause();
+  EXPECT_TRUE(controller.isRunning());
+  controller.advance(-1.0);
+  EXPECT_EQ(controller.frameCount(), 0u);
+
+  controller.advance(0.05);
+  EXPECT_GT(controller.frameCount(), 0u);
+  controller.togglePause();
+  EXPECT_FALSE(controller.isRunning());
+
+  const std::size_t frameCount = controller.frameCount();
+  objects.model().timeStep = 0.0;
+  controller.togglePause();
+  controller.advance(1.0);
+  EXPECT_EQ(controller.frameCount(), frameCount);
+
+  controller.setRealTimeFactor(-2.0);
+  EXPECT_DOUBLE_EQ(controller.realTimeFactor(), 0.0);
 }
 
 //==============================================================================
@@ -521,6 +686,111 @@ TEST(SceneIO, RejectsMalformedNumericFields)
       "id 7\n"
       "transform 1 0 0 0 0 1 0 0 0 0 not-a-number 0 0 0 0 1\n"
       "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type bad\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "parent bad\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "visible bad\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "multibody bad\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "parentlink bad\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "jointkind bad\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "shapetype bad\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "linvel 1 2 nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "angvel 1 2 nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "mass nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "inertia 1 0 0 0 1 0 0 0 nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "dim 1 2 nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "color 1 0 0 nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "jointaxis 1 0 nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "jointpos nope\n"
+      "end\n");
 }
 
 TEST(SceneIO, RejectsUnterminatedObjectBlocks)
@@ -544,6 +814,42 @@ TEST(SceneIO, RejectsUnterminatedObjectBlocks)
       "object\n"
       "id 8\n"
       "end\n");
+}
+
+TEST(SceneIO, EmptyAndMalformedParentsAreHandled)
+{
+  SceneModel out;
+  EXPECT_FALSE(scene_io::load("", out));
+
+  const std::string text
+      = "dartsim-scene 1\n"
+        "timestep 0.001\n"
+        "object\n"
+        "id 1\n"
+        "type 0\n"
+        "parent 2\n"
+        "name cycle-a\n"
+        "end\n"
+        "object\n"
+        "id 2\n"
+        "type 0\n"
+        "parent 1\n"
+        "name cycle-b\n"
+        "end\n"
+        "object\n"
+        "id 3\n"
+        "type 0\n"
+        "parent 999\n"
+        "name missing-parent\n"
+        "end\n";
+
+  ASSERT_TRUE(scene_io::load(text, out));
+  ASSERT_EQ(out.size(), 3u);
+  for (const ObjectId id : out.allIds()) {
+    ASSERT_NE(out.find(id), nullptr);
+    EXPECT_EQ(out.find(id)->parent, kNoObject);
+  }
+  EXPECT_EQ(out.rootChildren().size(), 3u);
 }
 
 TEST(CommandManager, DuplicateExplicitNamesAreDeduplicated)
@@ -682,6 +988,132 @@ TEST(CommandManager, AddLinkPreservesParentChain)
   EXPECT_EQ(armWorld->getLinkCount(), 0u);
 }
 
+TEST(CommandManager, SetLinkParentReparentsWithinMultiBody)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = selection.primary();
+  commands.execute(commands::addLink(arm, kNoObject, JointKind::Fixed, "base"));
+  const ObjectId base = selection.primary();
+  commands.execute(
+      commands::addLink(arm, base, JointKind::Revolute, "forearm"));
+  const ObjectId forearm = selection.primary();
+  commands.execute(
+      commands::addLink(arm, forearm, JointKind::Revolute, "tool"));
+  const ObjectId tool = selection.primary();
+  ASSERT_NE(objects.model().find(base), nullptr);
+  ASSERT_NE(objects.model().find(forearm), nullptr);
+  ASSERT_NE(objects.model().find(tool), nullptr);
+
+  commands.execute(commands::setLinkParent(tool, base));
+  ASSERT_NE(objects.model().find(tool), nullptr);
+  EXPECT_EQ(objects.model().find(tool)->parentLink, base);
+  EXPECT_EQ(objects.model().find(tool)->parent, base);
+  EXPECT_EQ(selection.primary(), tool);
+  EXPECT_TRUE(objects.model().childrenOf(forearm).empty());
+  const auto& baseChildren = objects.model().childrenOf(base);
+  EXPECT_NE(
+      std::find(baseChildren.begin(), baseChildren.end(), tool),
+      baseChildren.end());
+
+  auto armWorld = objects.world().getMultibody("arm");
+  ASSERT_TRUE(armWorld.has_value());
+  EXPECT_EQ(armWorld->getLinkCount(), 3u);
+
+  ASSERT_TRUE(commands.undo());
+  ASSERT_NE(objects.model().find(tool), nullptr);
+  EXPECT_EQ(objects.model().find(tool)->parentLink, forearm);
+  EXPECT_EQ(objects.model().find(tool)->parent, forearm);
+
+  ASSERT_TRUE(commands.redo());
+  ASSERT_NE(objects.model().find(tool), nullptr);
+  EXPECT_EQ(objects.model().find(tool)->parentLink, base);
+
+  commands.execute(commands::setLinkParent(tool, kNoObject));
+  ASSERT_NE(objects.model().find(tool), nullptr);
+  EXPECT_EQ(objects.model().find(tool)->parentLink, kNoObject);
+  EXPECT_EQ(objects.model().find(tool)->parent, arm);
+}
+
+TEST(CommandManager, SetLinkParentRejectsInvalidParentsAndCycles)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = selection.primary();
+  commands.execute(commands::addLink(arm, kNoObject, JointKind::Fixed, "base"));
+  const ObjectId base = selection.primary();
+  commands.execute(
+      commands::addLink(arm, base, JointKind::Revolute, "forearm"));
+  const ObjectId forearm = selection.primary();
+  commands.execute(commands::addMultiBody("other"));
+  const ObjectId other = selection.primary();
+  commands.execute(
+      commands::addLink(other, kNoObject, JointKind::Fixed, "other_base"));
+  const ObjectId otherBase = selection.primary();
+  const SceneModel before = objects.model();
+
+  commands.execute(commands::setLinkParent(base, forearm));
+  EXPECT_EQ(objects.model(), before);
+
+  commands.execute(commands::setLinkParent(forearm, otherBase));
+  EXPECT_EQ(objects.model(), before);
+
+  commands.execute(commands::setLinkParent(forearm, 99999));
+  EXPECT_EQ(objects.model(), before);
+
+  commands.execute(commands::setLinkParent(arm, base));
+  EXPECT_EQ(objects.model(), before);
+}
+
+TEST(CommandManager, SetJointKindAndAxisAreUndoableAndValidated)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = selection.primary();
+  commands.execute(commands::addLink(arm, kNoObject, JointKind::Fixed, "base"));
+  const ObjectId base = selection.primary();
+  commands.execute(
+      commands::addLink(arm, base, JointKind::Revolute, "forearm"));
+  const ObjectId forearm = selection.primary();
+
+  commands.execute(commands::setJointAxis(forearm, Eigen::Vector3d(2, 0, 0)));
+  ASSERT_NE(objects.model().find(forearm), nullptr);
+  EXPECT_TRUE(objects.model().find(forearm)->jointAxis.isApprox(
+      Eigen::Vector3d::UnitX()));
+  EXPECT_EQ(selection.primary(), forearm);
+
+  commands.execute(
+      commands::setJointAxis(
+          forearm,
+          Eigen::Vector3d(std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0)));
+  EXPECT_TRUE(objects.model().find(forearm)->jointAxis.isApprox(
+      Eigen::Vector3d::UnitZ()));
+
+  commands.execute(commands::setJointKind(forearm, JointKind::Ball));
+  EXPECT_EQ(objects.model().find(forearm)->jointType, JointKind::Ball);
+  const SceneModel ballJointModel = objects.model();
+
+  commands.execute(commands::setJointPosition(forearm, 0.75));
+  EXPECT_EQ(objects.model(), ballJointModel);
+
+  commands.execute(commands::setJointAxis(forearm, Eigen::Vector3d::UnitY()));
+  EXPECT_EQ(objects.model(), ballJointModel);
+
+  ASSERT_TRUE(commands.undo());
+  EXPECT_EQ(objects.model().find(forearm)->jointType, JointKind::Revolute);
+  ASSERT_TRUE(commands.redo());
+  EXPECT_EQ(objects.model().find(forearm)->jointType, JointKind::Ball);
+}
+
 TEST(CommandManager, ReparentRejectsUnsupportedMoves)
 {
   ObjectManager objects;
@@ -709,6 +1141,149 @@ TEST(CommandManager, ReparentRejectsUnsupportedMoves)
   commands.execute(commands::reparent(body, frame));
   EXPECT_EQ(objects.model().find(body)->parent, kNoObject);
   EXPECT_TRUE(objects.world().hasRigidBody(objects.model().find(body)->name));
+}
+
+TEST(CommandManager, FixedFrameRequiresExistingFrameParent)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addFixedFrame());
+  EXPECT_TRUE(objects.model().empty());
+  EXPECT_TRUE(selection.empty());
+
+  commands.execute(commands::addFreeFrame(translation(0.0, 0.0, 1.0), "base"));
+  const ObjectId base = selection.primary();
+  ASSERT_NE(base, kNoObject);
+
+  commands.execute(commands::addFixedFrame(base, translation(1.0, 0.0, 0.0)));
+  const ObjectId child = selection.primary();
+  ASSERT_NE(child, kNoObject);
+  ASSERT_NE(objects.model().find(child), nullptr);
+  EXPECT_EQ(objects.model().find(child)->type, ObjectType::FixedFrame);
+  EXPECT_EQ(objects.model().find(child)->parent, base);
+  EXPECT_EQ(objects.model().childrenOf(base).size(), 1u);
+
+  ASSERT_TRUE(commands.undo());
+  EXPECT_TRUE(objects.model().contains(base));
+  EXPECT_FALSE(objects.model().contains(child));
+}
+
+TEST(CommandManager, AttachAndDetachFramesPreserveWorldTransform)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(2.0, 0.0, 0.0), "body"));
+  const ObjectId body = selection.primary();
+  commands.execute(commands::addFreeFrame(translation(5.0, 1.0, 0.0), "tool"));
+  const ObjectId tool = selection.primary();
+  ASSERT_NE(body, kNoObject);
+  ASSERT_NE(tool, kNoObject);
+
+  const Eigen::Isometry3d before = *objects.worldTransformOf(tool);
+  commands.execute(commands::attachFrame(tool, body));
+  ASSERT_NE(objects.model().find(tool), nullptr);
+  EXPECT_EQ(objects.model().find(tool)->parent, body);
+  EXPECT_TRUE(objects.model().find(tool)->transform.translation().isApprox(
+      Eigen::Vector3d(3.0, 1.0, 0.0)));
+  ASSERT_TRUE(objects.worldTransformOf(tool).has_value());
+  EXPECT_TRUE(
+      objects.worldTransformOf(tool)->matrix().isApprox(before.matrix()));
+  EXPECT_EQ(selection.primary(), tool);
+
+  ASSERT_TRUE(commands.undo());
+  ASSERT_NE(objects.model().find(tool), nullptr);
+  EXPECT_EQ(objects.model().find(tool)->parent, kNoObject);
+  EXPECT_TRUE(
+      objects.worldTransformOf(tool)->matrix().isApprox(before.matrix()));
+
+  ASSERT_TRUE(commands.redo());
+  ASSERT_NE(objects.model().find(tool), nullptr);
+  EXPECT_EQ(objects.model().find(tool)->parent, body);
+  EXPECT_TRUE(
+      objects.worldTransformOf(tool)->matrix().isApprox(before.matrix()));
+
+  commands.execute(commands::detachFrame(tool));
+  ASSERT_NE(objects.model().find(tool), nullptr);
+  EXPECT_EQ(objects.model().find(tool)->parent, kNoObject);
+  EXPECT_EQ(objects.model().find(tool)->type, ObjectType::FreeFrame);
+  EXPECT_TRUE(
+      objects.worldTransformOf(tool)->matrix().isApprox(before.matrix()));
+}
+
+TEST(CommandManager, DetachFixedFrameConvertsToRootFreeFrame)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addFreeFrame(translation(0.0, 0.0, 2.0), "base"));
+  const ObjectId base = selection.primary();
+  commands.execute(
+      commands::addFixedFrame(base, translation(1.0, 0.0, 0.5), "tool"));
+  const ObjectId tool = selection.primary();
+  ASSERT_NE(base, kNoObject);
+  ASSERT_NE(tool, kNoObject);
+
+  const Eigen::Isometry3d before = *objects.worldTransformOf(tool);
+  commands.execute(commands::detachFrame(tool));
+  ASSERT_NE(objects.model().find(tool), nullptr);
+  EXPECT_EQ(objects.model().find(tool)->type, ObjectType::FreeFrame);
+  EXPECT_EQ(objects.model().find(tool)->parent, kNoObject);
+  EXPECT_TRUE(
+      objects.model().find(tool)->transform.matrix().isApprox(before.matrix()));
+  EXPECT_TRUE(
+      objects.worldTransformOf(tool)->matrix().isApprox(before.matrix()));
+
+  ASSERT_TRUE(commands.undo());
+  ASSERT_NE(objects.model().find(tool), nullptr);
+  EXPECT_EQ(objects.model().find(tool)->type, ObjectType::FixedFrame);
+  EXPECT_EQ(objects.model().find(tool)->parent, base);
+}
+
+TEST(CommandManager, AttachDetachFramesRejectInvalidRelationships)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(
+      commands::addFreeFrame(translation(0.0, 0.0, 0.0), "parent"));
+  const ObjectId parent = selection.primary();
+  commands.execute(commands::addFreeFrame(translation(1.0, 0.0, 0.0), "child"));
+  const ObjectId child = selection.primary();
+  commands.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(2.0, 0.0, 0.0), "body"));
+  const ObjectId body = selection.primary();
+  ASSERT_NE(parent, kNoObject);
+  ASSERT_NE(child, kNoObject);
+  ASSERT_NE(body, kNoObject);
+
+  commands.execute(commands::attachFrame(parent, child));
+  ASSERT_EQ(objects.model().find(parent)->parent, child);
+
+  // Cycles are rejected.
+  commands.execute(commands::attachFrame(child, parent));
+  EXPECT_EQ(objects.model().find(child)->parent, kNoObject);
+
+  // Rigid bodies can be parents but not attached children in this scene model.
+  commands.execute(commands::attachFrame(body, parent));
+  EXPECT_EQ(objects.model().find(body)->parent, kNoObject);
+
+  commands.execute(commands::detachFrame(parent));
+  EXPECT_EQ(objects.model().find(parent)->parent, kNoObject);
+
+  const SceneModel beforeNoOp = objects.model();
+  commands.execute(commands::detachFrame(parent));
+  EXPECT_EQ(objects.model(), beforeNoOp);
+  commands.execute(commands::attachFrame(child, 99999));
+  EXPECT_EQ(objects.model(), beforeNoOp);
 }
 
 //==============================================================================
@@ -764,6 +1339,68 @@ TEST(SimEngine, NoOpCommandDoesNotSignalChange)
   EXPECT_EQ(changes, 1);
 }
 
+TEST(SimEngine, SetVisibleControlsRenderItemsAndUndoRedo)
+{
+  SimEngine engine;
+  int changes = 0;
+  EventType lastEvent = EventType::ProjectStateChanged;
+  engine.setOnChanged([&]() { ++changes; });
+  engine.events().subscribe(
+      [&](const Event& event) { lastEvent = event.type; });
+
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 1)));
+  const ObjectId id = engine.selection().primary();
+  ASSERT_NE(id, kNoObject);
+  ASSERT_EQ(engine.renderItems().size(), 1u);
+  ASSERT_EQ(changes, 1);
+
+  engine.execute(commands::setVisible(id, false));
+  ASSERT_NE(engine.objects().model().find(id), nullptr);
+  EXPECT_FALSE(engine.objects().model().find(id)->visible);
+  EXPECT_TRUE(engine.renderItems().empty());
+  EXPECT_EQ(changes, 2);
+  EXPECT_EQ(lastEvent, EventType::SceneChanged);
+
+  ASSERT_TRUE(engine.undo());
+  ASSERT_NE(engine.objects().model().find(id), nullptr);
+  EXPECT_TRUE(engine.objects().model().find(id)->visible);
+  EXPECT_EQ(engine.renderItems().size(), 1u);
+  EXPECT_TRUE(engine.commands().canRedo());
+
+  const int changesBeforeNoOp = changes;
+  engine.execute(commands::setVisible(id, true));
+  EXPECT_EQ(changes, changesBeforeNoOp);
+  EXPECT_TRUE(engine.commands().canRedo());
+
+  ASSERT_TRUE(engine.redo());
+  EXPECT_FALSE(engine.objects().model().find(id)->visible);
+  EXPECT_TRUE(engine.renderItems().empty());
+}
+
+TEST(SimEngine, SetVisibleParentHidesRenderableDescendants)
+{
+  SimEngine engine;
+  engine.execute(commands::addMultiBody("arm"));
+  const ObjectId arm = engine.selection().primary();
+  engine.execute(commands::addLink(arm, kNoObject, JointKind::Fixed, "base"));
+  const ObjectId base = engine.selection().primary();
+  ASSERT_NE(arm, kNoObject);
+  ASSERT_NE(base, kNoObject);
+  ASSERT_EQ(engine.renderItems().size(), 1u);
+  EXPECT_EQ(engine.renderItems().front().id, base);
+
+  engine.execute(commands::setVisible(arm, false));
+  ASSERT_NE(engine.objects().model().find(arm), nullptr);
+  EXPECT_FALSE(engine.objects().model().find(arm)->visible);
+  EXPECT_TRUE(engine.renderItems().empty());
+
+  ASSERT_TRUE(engine.undo());
+  ASSERT_NE(engine.objects().model().find(arm), nullptr);
+  EXPECT_TRUE(engine.objects().model().find(arm)->visible);
+  ASSERT_EQ(engine.renderItems().size(), 1u);
+  EXPECT_EQ(engine.renderItems().front().id, base);
+}
+
 TEST(SimEngine, SelectSignalsSelectionChange)
 {
   SimEngine engine;
@@ -811,12 +1448,12 @@ TEST(SimEngine, NoOpRemoveDoesNotResetRunState)
   ASSERT_GT(frameCount, 0u);
 
   engine.execute(commands::removeObject(99999));
-  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Run);
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Simulation);
   EXPECT_DOUBLE_EQ(engine.simulation().simTime(), simTime);
   EXPECT_EQ(engine.simulation().frameCount(), frameCount);
 }
 
-TEST(SimEngine, EditCommandsAreIgnoredInRunMode)
+TEST(SimEngine, EditCommandsAreIgnoredInSimulationMode)
 {
   SimEngine engine;
   engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 5)));
@@ -825,7 +1462,7 @@ TEST(SimEngine, EditCommandsAreIgnoredInRunMode)
   ASSERT_TRUE(engine.canEditScene());
 
   engine.simulation().play();
-  ASSERT_EQ(engine.simulation().mode(), SimulationController::Mode::Run);
+  ASSERT_EQ(engine.simulation().mode(), SimulationController::Mode::Simulation);
   EXPECT_FALSE(engine.canEditScene());
 
   int changes = 0;
@@ -843,6 +1480,32 @@ TEST(SimEngine, EditCommandsAreIgnoredInRunMode)
   EXPECT_TRUE(engine.canEditScene());
   EXPECT_TRUE(engine.undo());
   EXPECT_FALSE(engine.objects().model().contains(id));
+}
+
+TEST(SimEngine, ResetConsumesSimulationSnapshotBeforeNextEdit)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 5)));
+  const ObjectId id = engine.selection().primary();
+  ASSERT_NE(id, kNoObject);
+
+  engine.simulation().play();
+  ASSERT_EQ(engine.simulation().mode(), SimulationController::Mode::Simulation);
+  ASSERT_TRUE(engine.simulation().hasCapturedEditState());
+
+  engine.simulation().reset();
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Edit);
+  EXPECT_FALSE(engine.simulation().hasCapturedEditState());
+
+  engine.execute(commands::setMass(id, 8.0));
+  const SceneObject* edited = engine.objects().model().find(id);
+  ASSERT_NE(edited, nullptr);
+  EXPECT_DOUBLE_EQ(edited->mass, 8.0);
+
+  engine.simulation().reset();
+  const SceneObject* afterReset = engine.objects().model().find(id);
+  ASSERT_NE(afterReset, nullptr);
+  EXPECT_DOUBLE_EQ(afterReset->mass, 8.0);
 }
 
 TEST(SimEngine, SimulationModeChangesEmitModeChanged)
@@ -896,6 +1559,216 @@ TEST(SimEngine, ProjectFileRoundTrip)
   std::filesystem::remove(path);
 }
 
+TEST(SimEngine, ProjectDirtyStateTracksSavedSceneSnapshot)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_engine_dirty_state_test.dartsim";
+
+  SimEngine engine;
+  int changes = 0;
+  EventType lastEvent = EventType::SceneChanged;
+  engine.setOnChanged([&]() { ++changes; });
+  engine.events().subscribe(
+      [&](const Event& event) { lastEvent = event.type; });
+
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_FALSE(engine.hasProjectPath());
+  EXPECT_FALSE(engine.saveProject());
+  EXPECT_EQ(changes, 0);
+
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(1, 1, 1)));
+  EXPECT_TRUE(engine.isProjectDirty());
+  EXPECT_EQ(changes, 1);
+
+  ASSERT_TRUE(engine.saveProject(path.string()));
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_TRUE(engine.hasProjectPath());
+  EXPECT_EQ(engine.projectPath(), path.string());
+  EXPECT_EQ(changes, 2);
+  EXPECT_EQ(lastEvent, EventType::ProjectSaved);
+
+  ASSERT_TRUE(engine.undo());
+  EXPECT_TRUE(engine.isProjectDirty());
+
+  ASSERT_TRUE(engine.redo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  const ObjectId id = engine.selection().primary();
+  ASSERT_NE(id, kNoObject);
+  engine.execute(commands::setMass(id, 2.0));
+  EXPECT_TRUE(engine.isProjectDirty());
+
+  ASSERT_TRUE(engine.saveProject());
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(lastEvent, EventType::ProjectSaved);
+
+  engine.execute(commands::setMass(id, 4.0));
+  ASSERT_TRUE(engine.isProjectDirty());
+  engine.markProjectClean();
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(lastEvent, EventType::ProjectStateChanged);
+
+  std::filesystem::remove(path);
+}
+
+TEST(SimEngine, LoadAndNewProjectResetProjectState)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_engine_project_state_reset_test.dartsim";
+
+  SimEngine saved;
+  saved.execute(
+      commands::addRigidBody(ShapeType::Sphere, translation(2, 0, 1)));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  SimEngine engine;
+  EventType lastEvent = EventType::SceneChanged;
+  std::vector<EventType> projectReplacementEvents;
+  bool dirtyDuringModeChange = false;
+  engine.events().subscribe([&](const Event& event) {
+    lastEvent = event.type;
+    projectReplacementEvents.push_back(event.type);
+    if (event.type == EventType::ModeChanged) {
+      dirtyDuringModeChange = engine.isProjectDirty();
+    }
+  });
+
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 1)));
+  engine.startRecording();
+  engine.simulation().step(2);
+  engine.stopRecording();
+  engine.loadRecordingIntoPlayer();
+  ASSERT_GT(engine.player().frameCount(), 0u);
+  EXPECT_TRUE(engine.isProjectDirty());
+
+  projectReplacementEvents.clear();
+  ASSERT_TRUE(engine.loadProject(path.string()));
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(engine.projectPath(), path.string());
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_TRUE(engine.player().empty());
+  EXPECT_FALSE(dirtyDuringModeChange);
+  EXPECT_EQ(
+      std::count(
+          projectReplacementEvents.begin(),
+          projectReplacementEvents.end(),
+          EventType::SelectionChanged),
+      1);
+  EXPECT_EQ(
+      std::count(
+          projectReplacementEvents.begin(),
+          projectReplacementEvents.end(),
+          EventType::ModeChanged),
+      1);
+  EXPECT_EQ(
+      std::count(
+          projectReplacementEvents.begin(),
+          projectReplacementEvents.end(),
+          EventType::RecordingChanged),
+      1);
+  EXPECT_EQ(
+      std::count(
+          projectReplacementEvents.begin(),
+          projectReplacementEvents.end(),
+          EventType::ProjectStateChanged),
+      1);
+  EXPECT_EQ(lastEvent, EventType::ProjectLoaded);
+
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 2)));
+  EXPECT_TRUE(engine.isProjectDirty());
+  ASSERT_NE(engine.selection().primary(), kNoObject);
+  engine.startRecording();
+  engine.simulation().step(2);
+  engine.stopRecording();
+  engine.loadRecordingIntoPlayer();
+  ASSERT_GT(engine.player().frameCount(), 0u);
+  ASSERT_EQ(engine.simulation().mode(), SimulationController::Mode::Simulation);
+
+  projectReplacementEvents.clear();
+  dirtyDuringModeChange = false;
+  engine.newProject();
+  EXPECT_TRUE(engine.objects().model().empty());
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_FALSE(engine.hasProjectPath());
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_TRUE(engine.selection().empty());
+  EXPECT_FALSE(engine.isRecording());
+  EXPECT_TRUE(engine.recorder().recording().empty());
+  EXPECT_TRUE(engine.player().empty());
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Edit);
+  EXPECT_FALSE(dirtyDuringModeChange);
+  EXPECT_EQ(
+      std::count(
+          projectReplacementEvents.begin(),
+          projectReplacementEvents.end(),
+          EventType::SelectionChanged),
+      1);
+  EXPECT_EQ(
+      std::count(
+          projectReplacementEvents.begin(),
+          projectReplacementEvents.end(),
+          EventType::ModeChanged),
+      1);
+  EXPECT_EQ(
+      std::count(
+          projectReplacementEvents.begin(),
+          projectReplacementEvents.end(),
+          EventType::RecordingChanged),
+      1);
+  EXPECT_EQ(
+      std::count(
+          projectReplacementEvents.begin(),
+          projectReplacementEvents.end(),
+          EventType::ProjectStateChanged),
+      1);
+  EXPECT_EQ(lastEvent, EventType::ProjectCreated);
+
+  std::filesystem::remove(path);
+}
+
+TEST(SimEngine, FailedProjectSaveAndLoadPreserveCurrentState)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_engine_preserve_project_state_test.dartsim";
+  const std::filesystem::path missing
+      = std::filesystem::temp_directory_path()
+        / "dartsim_engine_missing_project_state_test.dartsim";
+  const std::filesystem::path invalidSaveDir
+      = std::filesystem::temp_directory_path() / "missing-dartsim-dir";
+  std::filesystem::remove(missing);
+  std::filesystem::remove_all(invalidSaveDir);
+
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 1)));
+  ASSERT_TRUE(engine.saveProject(path.string()));
+  const SceneModel savedModel = engine.objects().model();
+
+  engine.execute(commands::setMass(engine.selection().primary(), 3.0));
+  ASSERT_TRUE(engine.isProjectDirty());
+  const SceneModel dirtyModel = engine.objects().model();
+
+  EXPECT_FALSE(engine.loadProject(missing.string()));
+  EXPECT_EQ(engine.projectPath(), path.string());
+  EXPECT_TRUE(engine.isProjectDirty());
+  EXPECT_EQ(engine.objects().model(), dirtyModel);
+
+  const std::filesystem::path invalidSavePath
+      = invalidSaveDir / "project.dartsim";
+  EXPECT_FALSE(engine.saveProject(invalidSavePath.string()));
+  EXPECT_EQ(engine.projectPath(), path.string());
+  EXPECT_TRUE(engine.isProjectDirty());
+  EXPECT_EQ(engine.objects().model(), dirtyModel);
+
+  engine.newProject();
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_NE(engine.objects().model(), savedModel);
+
+  std::filesystem::remove(path);
+}
+
 TEST(SimEngine, LoadProjectClearsRunSnapshot)
 {
   const std::filesystem::path path = std::filesystem::temp_directory_path()
@@ -906,7 +1779,7 @@ TEST(SimEngine, LoadProjectClearsRunSnapshot)
   ASSERT_TRUE(saved.saveProject(path.string()));
   const std::size_t savedSize = saved.objects().model().size();
 
-  // Enter Run mode on a different (empty) scene so a design snapshot is
+  // Enter Simulation Mode on a different (empty) scene so an edit snapshot is
   // captured, then load the saved project over it.
   SimEngine engine;
   engine.simulation().play();
@@ -1060,6 +1933,24 @@ TEST(EventBus, UnsubscribeDuringEmitIsSafe)
   bus.emit(EventType::SceneChanged);
   EXPECT_EQ(selfCount, 1); // self no longer notified
   EXPECT_EQ(otherCount, 2);
+}
+
+TEST(EventBus, EmptyListenersAndMissingUnsubscribeAreIgnored)
+{
+  EventBus bus;
+  bus.unsubscribe(42);
+  EXPECT_EQ(bus.listenerCount(), 0u);
+
+  bus.subscribe({});
+  bool called = false;
+  bus.subscribe([&](const Event& event) {
+    called = true;
+    EXPECT_EQ(event.object, 7u);
+  });
+  EXPECT_EQ(bus.listenerCount(), 2u);
+
+  bus.emit(Event{EventType::SceneChanged, 7});
+  EXPECT_TRUE(called);
 }
 
 //==============================================================================

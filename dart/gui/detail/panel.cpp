@@ -36,6 +36,7 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <string>
 
@@ -72,6 +73,19 @@ public:
     return ImGui::Checkbox(labelValue.c_str(), &value);
   }
 
+  bool textInput(std::string_view label, std::string& value) override
+  {
+    const std::string labelValue(label);
+    std::array<char, 256> buffer{};
+    value.copy(buffer.data(), buffer.size() - 1);
+    if (!ImGui::InputText(labelValue.c_str(), buffer.data(), buffer.size())) {
+      return false;
+    }
+
+    value = buffer.data();
+    return true;
+  }
+
   bool slider(
       std::string_view label,
       double& value,
@@ -97,6 +111,37 @@ public:
 
     rgba = Eigen::Vector4d(color[0], color[1], color[2], color[3]);
     return true;
+  }
+
+  bool select(
+      std::string_view label,
+      int& selectedIndex,
+      std::span<const std::string_view> choices) override
+  {
+    if (choices.empty()) {
+      return false;
+    }
+
+    selectedIndex
+        = std::clamp(selectedIndex, 0, static_cast<int>(choices.size()) - 1);
+    const std::string labelValue(label);
+    const std::string preview(choices[static_cast<std::size_t>(selectedIndex)]);
+    bool changed = false;
+    if (ImGui::BeginCombo(labelValue.c_str(), preview.c_str())) {
+      for (std::size_t i = 0; i < choices.size(); ++i) {
+        const bool selected = static_cast<int>(i) == selectedIndex;
+        const std::string choice(choices[i]);
+        if (ImGui::Selectable(choice.c_str(), selected)) {
+          selectedIndex = static_cast<int>(i);
+          changed = true;
+        }
+        if (selected) {
+          ImGui::SetItemDefaultFocus();
+        }
+      }
+      ImGui::EndCombo();
+    }
+    return changed;
   }
 
   void colorSwatch(std::string_view label, const Eigen::Vector4d& rgba) override
