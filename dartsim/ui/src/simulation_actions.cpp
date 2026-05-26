@@ -32,6 +32,7 @@
 
 #include <dartsim_ui/simulation_actions.hpp>
 
+#include <optional>
 #include <string>
 
 #include <cmath>
@@ -44,6 +45,32 @@ SimulationActionResult result(
     bool ok, std::string message, const SimEngine& engine)
 {
   return {ok, std::move(message), buildSimulationStatus(engine)};
+}
+
+SimulationModeAction makeModeAction(
+    SimulationModeActionKind kind,
+    std::string label,
+    bool enabled = true,
+    std::string disabledReason = {})
+{
+  SimulationModeAction action;
+  action.kind = kind;
+  action.label = std::move(label);
+  action.enabled = enabled;
+  action.disabledReason = std::move(disabledReason);
+  return action;
+}
+
+std::optional<SimulationModeAction> findModeAction(
+    const std::vector<SimulationModeAction>& actions,
+    SimulationModeActionKind kind)
+{
+  for (const SimulationModeAction& action : actions) {
+    if (action.kind == kind) {
+      return action;
+    }
+  }
+  return std::nullopt;
 }
 
 } // namespace
@@ -65,12 +92,76 @@ SimulationStatus buildSimulationStatus(const SimEngine& engine)
   status.replayFrameCount = engine.player().frameCount();
   status.replayFrame = engine.player().currentIndex();
   status.modeLabel = status.simulationMode ? "Simulation Mode" : "Edit Mode";
+  status.modeDescription = status.simulationMode
+                               ? "Running from the captured Edit Mode scene"
+                               : "Author the scene before simulation";
+  status.editStateLabel
+      = status.canEditScene ? "Scene edits enabled" : "Scene edits locked";
   status.playbackLabel
       = status.editMode ? "Stopped" : (status.playing ? "Playing" : "Paused");
   status.resetTargetLabel = status.hasCapturedEditState
                                 ? "Captured Edit Mode state"
                                 : "Current Edit Mode state";
   return status;
+}
+
+std::vector<SimulationModeAction> buildSimulationModeActions(
+    const SimEngine& engine)
+{
+  const SimulationStatus status = buildSimulationStatus(engine);
+  std::vector<SimulationModeAction> actions;
+  actions.reserve(4);
+
+  actions.push_back(makeModeAction(
+      SimulationModeActionKind::PlayOrResume,
+      status.simulationMode ? "Resume Simulation" : "Enter Simulation Mode",
+      !status.playing,
+      "Simulation already playing"));
+  actions.push_back(makeModeAction(
+      SimulationModeActionKind::Pause,
+      "Pause Simulation",
+      status.simulationMode && status.playing,
+      status.simulationMode ? "Simulation already paused"
+                            : "Not in Simulation Mode"));
+  actions.push_back(makeModeAction(
+      SimulationModeActionKind::Step,
+      "Step Simulation",
+      !status.playing,
+      "Pause before stepping"));
+  actions.push_back(makeModeAction(
+      SimulationModeActionKind::ReturnToEdit,
+      "Return to Edit Mode",
+      status.simulationMode || status.hasCapturedEditState
+          || status.frameCount > 0,
+      "Already in Edit Mode"));
+  return actions;
+}
+
+SimulationActionResult applySimulationModeAction(
+    SimEngine& engine, SimulationModeActionKind kind)
+{
+  const std::vector<SimulationModeAction> actions
+      = buildSimulationModeActions(engine);
+  const std::optional<SimulationModeAction> action
+      = findModeAction(actions, kind);
+  if (!action.has_value()) {
+    return result(false, "Unknown simulation action", engine);
+  }
+  if (!action->enabled) {
+    return result(false, action->disabledReason, engine);
+  }
+
+  switch (kind) {
+    case SimulationModeActionKind::PlayOrResume:
+      return playSimulation(engine);
+    case SimulationModeActionKind::Pause:
+      return pauseSimulation(engine);
+    case SimulationModeActionKind::Step:
+      return stepSimulation(engine);
+    case SimulationModeActionKind::ReturnToEdit:
+      return resetSimulation(engine);
+  }
+  return result(false, "Unknown simulation action", engine);
 }
 
 SimulationActionResult playSimulation(SimEngine& engine)

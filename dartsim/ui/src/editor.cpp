@@ -605,26 +605,29 @@ void buildSimControls(dart::gui::PanelBuilder& ui, EditorApp& app)
   const SimulationStatus status = buildSimulationStatus(app.engine);
 
   ui.text("Mode: " + status.modeLabel);
+  ui.text(status.modeDescription);
+  ui.text(status.editStateLabel);
   ui.text("Playback: " + status.playbackLabel);
   ui.text("Reset target: " + status.resetTargetLabel);
   ui.text("Sim time: " + std::to_string(status.simTime));
   ui.text("Frame: " + std::to_string(status.frameCount));
   ui.separator();
 
-  if (ui.button("Play")) {
-    app.note(playSimulation(app.engine).message);
-  }
-  ui.sameLine();
-  if (ui.button("Pause")) {
-    app.note(pauseSimulation(app.engine).message);
-  }
-  ui.sameLine();
-  if (ui.button("Step")) {
-    app.note(stepSimulation(app.engine).message);
-  }
-  ui.sameLine();
-  if (ui.button("Reset")) {
-    app.note(resetSimulation(app.engine).message);
+  const std::vector<SimulationModeAction> modeActions
+      = buildSimulationModeActions(app.engine);
+  for (std::size_t i = 0; i < modeActions.size(); ++i) {
+    const SimulationModeAction& action = modeActions[i];
+    if (i > 0) {
+      ui.sameLine();
+    }
+    std::string label = action.label;
+    if (!action.enabled && !action.disabledReason.empty()) {
+      label += " (" + action.disabledReason + ")";
+    }
+    label += "##simulation-mode-" + std::to_string(i);
+    if (ui.button(label)) {
+      app.note(applySimulationModeAction(app.engine, action.kind).message);
+    }
   }
 
   double realTimeFactor = status.realTimeFactor;
@@ -785,17 +788,15 @@ void buildMenuBar(dart::gui::PanelBuilder& ui, EditorApp& app)
     ui.endMenu();
   }
   if (ui.beginMenu("Simulate")) {
-    if (ui.menuItem("Play")) {
-      app.note(playSimulation(app.engine).message);
-    }
-    if (ui.menuItem("Pause")) {
-      app.note(pauseSimulation(app.engine).message);
-    }
-    if (ui.menuItem("Step")) {
-      app.note(stepSimulation(app.engine).message);
-    }
-    if (ui.menuItem("Reset")) {
-      app.note(resetSimulation(app.engine).message);
+    for (const SimulationModeAction& action :
+         buildSimulationModeActions(app.engine)) {
+      std::string label = action.label;
+      if (!action.enabled && !action.disabledReason.empty()) {
+        label += " (" + action.disabledReason + ")";
+      }
+      if (ui.menuItem(label)) {
+        app.note(applySimulationModeAction(app.engine, action.kind).message);
+      }
     }
     ui.endMenu();
   }

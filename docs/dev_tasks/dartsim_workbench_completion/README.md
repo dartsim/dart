@@ -94,6 +94,12 @@ persist their workspace through a tested, backend-hidden GUI.
   seek, and real-time factor updates; Reset consumes the captured Edit Mode
   snapshot so later edit-mode changes are not reverted by a stale runtime
   snapshot.
+- The mode boundary now has a tested action view-model with explicit
+  "Enter Simulation Mode", "Resume Simulation", "Step Simulation", and "Return
+  to Edit Mode" commands. The editor chooses "Edit Mode" for authoring and
+  "Simulation Mode" for runtime playback, matching the existing engine state
+  names while making the play-mode boundary visible in menus and the Simulation
+  panel.
 - The Create menu now uses `dartsim_ui/palette_actions` instead of anonymous
   `editor.cpp` dispatch. The seam is context-sensitive, rejects Simulation Mode
   edits, creates every primitive rigid-body shape with useful defaults, creates
@@ -161,6 +167,11 @@ persist their workspace through a tested, backend-hidden GUI.
   functions) after adding relationship, malformed scene/project, inspector,
   outliner, palette, viewport, simulation, command-history, event-bus, and
   selection-state regression coverage. The 95% line target is currently met.
+- On 2026-05-26, after the explicit Edit Mode / Simulation Mode workflow slice,
+  the same focused Debug lcov capture reported 95.0% line coverage (`2726`
+  lines) and 97.9% function coverage (`332` functions). The filtered 95% line
+  target is still met, but further feature slices should add tests alongside new
+  action-surface code instead of spending this margin.
 - Before the completion PR, run specialized review passes for architecture,
   UI workflow, tests/coverage, and backend-hidden renderer boundaries.
 
