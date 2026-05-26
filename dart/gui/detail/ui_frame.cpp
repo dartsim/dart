@@ -303,7 +303,7 @@ void updateFrameUi(
     const FrameViewport& viewport,
     ExampleScene exampleScene,
     DartScene& dartScene,
-    const dart::gui::OrbitCameraController& cameraController,
+    dart::gui::OrbitCameraController& cameraController,
     const SelectionController& selectionController,
     bool& orbitLight,
     bool& headlightsEnabled,
@@ -363,7 +363,14 @@ void updateFrameUi(
       selectionController.selectedNormal(),
       dartScene.world->getTime(),
       dartScene.world->getLastCollisionResult().getNumContacts(),
-      {cameraBasis.eye, cameraController.camera.target, cameraBasis.up},
+      {cameraBasis.eye,
+       cameraController.camera.target,
+       cameraBasis.up,
+       cameraController.camera,
+       [&cameraController](const dart::gui::OrbitCamera& camera) {
+         cameraController.camera = camera;
+         dart::gui::resetOrbitCameraTracking(cameraController);
+       }},
       {&headlightsEnabled},
       {&dartScene.renderSettings},
       uiState};

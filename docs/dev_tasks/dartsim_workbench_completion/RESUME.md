@@ -45,17 +45,23 @@ Console automation is now routed through `dartsim_ui/console_actions`: the
 Console panel has a command input, quoted-argument parser, help/status text,
 and tested project, create, selection, visibility, rename/delete, simulation
 mode, recording, and replay command dispatch over the existing action seams.
-File > Open Project now opens the in-app project browser first. The native file
-dialog is still available from Browse, but failures leave the user in the
-browser instead of making Open unusable; extensionless paths such as `scene`
+File > Open Project now opens the native file dialog first. Native dialog
+failures and invalid selected paths leave the user in the in-app browser/manual
+path modal instead of making Open unusable; extensionless paths such as `scene`
 resolve to `scene.dartsim` when that file exists.
+Viewport camera workflow controls are now routed through
+`dartsim_ui/viewport_actions`: the View menu exposes Fit Scene,
+Focus Selection, and perspective/front/back/left/right/top/bottom presets, and
+applies the resulting public `dart::gui::OrbitCamera` through
+`PanelContext::CameraViewState` without exposing renderer backend state.
 
 ## Immediate Next Step
 
-Continue Phase 3 with richer relationship inspectors and object grouping, or
-continue Phase 5 with viewport fit/focus and camera presets. Keep behavior in
-testable engine or UI action/view-model helpers before wiring it into
-`editor.cpp`, and keep the filtered coverage line total above 95%.
+Continue Phase 5 with visibility layer filters, camera lock/modes, or multi-view
+layout state, or continue Phase 3 with richer relationship inspectors and object
+grouping. Keep behavior in testable engine or UI action/view-model helpers
+before wiring it into `editor.cpp`, and keep the filtered coverage line total
+above 95%.
 
 ## Context That Would Be Lost
 
@@ -94,9 +100,16 @@ testable engine or UI action/view-model helpers before wiring it into
   inspector, and simulation action seams, so command automation stays
   backend-hidden and testable.
 - Project open remains usable without a working native picker: the File menu
-  opens the in-app browser, Browse reports native picker failures in-place, and
-  `openProject()` accepts extensionless paths when the corresponding `.dartsim`
-  file exists.
+  tries the native picker first, then opens the in-app browser/manual path
+  modal on picker or load failure. Browse reports native picker failures
+  in-place, and `openProject()` accepts extensionless paths when the
+  corresponding `.dartsim` file exists.
+- Viewport camera workflow behavior is covered through
+  `dartsim_ui/viewport_actions` and `UNIT_dartsim_ui_ViewportActions`; fit uses
+  visible render-item bounds, focus uses selected visible renderables and
+  selected frames, presets keep target/distance while setting canonical
+  orientations, and the actions do not mutate project dirty state or undo
+  history.
 - `pixi run coverage-report-dartsim` now extracts the filtered
   `dartsim/engine` plus testable `dartsim/ui` action/view-model coverage
   surface from the broader lcov report. A 2026-05-25 attempt ran 265/265 Debug
