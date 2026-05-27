@@ -2,7 +2,8 @@
 
 ## Status
 
-- Draft: initial plan defined; execution in progress.
+- Phases 1 and 2 complete; Phase 3 closeout and non-`7/*` audit pending. See
+  [`01_progress.md`](01_progress.md) for per-branch verdicts and deletion log.
 
 ## Objective
 
@@ -37,7 +38,7 @@ For each branch:
 - Compute ahead/behind vs origin/main.
 - If ahead is 0: delete the remote branch after confirmation.
 - If ahead > 0: inspect commits, diff, and cherry results; decide delete, rebase
-  + PR, or research + plan.
+  - PR, or research + plan.
 - If rebase is needed: create a new cleanup branch off origin/main.
 
 ## Phase 2 - Remove origin/release-7.0
