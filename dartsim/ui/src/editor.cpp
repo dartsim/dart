@@ -611,12 +611,13 @@ void buildConsole(dart::gui::PanelBuilder& ui, EditorApp& app)
   if (ui.button("Run##console")) {
     if (!app.consoleInput.empty()) {
       app.note("> " + app.consoleInput);
-      app.note(applyConsoleCommand(app.engine, app.consoleInput).message);
+      app.note(
+          applyConsoleCommand(app.engine, app.watch, app.consoleInput).message);
       app.consoleInput.clear();
     }
   }
   if (ui.button("Help##console")) {
-    app.note(consoleCommandHelpText());
+    app.note(consoleCommandHelpText(true));
   }
   ui.separator();
 

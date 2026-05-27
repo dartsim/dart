@@ -37,6 +37,7 @@
 #include <dartsim_ui/palette_actions.hpp>
 #include <dartsim_ui/project_actions.hpp>
 #include <dartsim_ui/simulation_actions.hpp>
+#include <dartsim_ui/watch_actions.hpp>
 
 #include <algorithm>
 #include <charconv>
@@ -96,6 +97,15 @@ std::string ensureProjectExtension(std::string path)
 bool hasFlag(std::span<const std::string> tokens, std::string_view flag)
 {
   return std::find(tokens.begin(), tokens.end(), flag) != tokens.end();
+}
+
+bool hasWatchedObject(const WatchState& watch, ObjectId id)
+{
+  return std::find_if(
+             watch.targets.begin(),
+             watch.targets.end(),
+             [id](const WatchTarget& target) { return target.id == id; })
+         != watch.targets.end();
 }
 
 std::optional<ObjectId> parseObjectId(std::string_view token)
@@ -427,6 +437,65 @@ ConsoleCommandResult applySimulationCommand(
   return result(applied.ok, applied.message);
 }
 
+ConsoleCommandResult applyWatchCommand(
+    SimEngine& engine, WatchState* watch, std::span<const std::string> tokens)
+{
+  if (watch == nullptr) {
+    return result(false, "Watch state unavailable");
+  }
+
+  const std::string command = lower(tokens[0]);
+  if (command == "unwatch") {
+    if (tokens.size() != 2) {
+      return result(false, "Usage: unwatch <id|name|selected>");
+    }
+
+    ObjectId id = kNoObject;
+    if (const std::optional<ObjectId> parsed = parseObjectId(tokens[1]);
+        parsed.has_value() && hasWatchedObject(*watch, *parsed)) {
+      id = *parsed;
+    } else {
+      const TargetResolution target = resolveObjectTarget(engine, tokens[1]);
+      if (target.id == kNoObject) {
+        return result(false, target.error);
+      }
+      id = target.id;
+    }
+
+    const WatchActionResult removed = unwatchObject(*watch, id);
+    return result(removed.ok, removed.message);
+  }
+
+  if (tokens.size() == 1) {
+    const WatchStatus status = buildWatchStatus(*watch, engine);
+    return result(true, status.summary);
+  }
+  if (tokens.size() != 2) {
+    return result(false, "Usage: watch [target|selection|clear|sample]");
+  }
+
+  const std::string targetToken = lower(tokens[1]);
+  if (targetToken == "selection") {
+    const WatchActionResult added = watchSelectedObjects(*watch, engine);
+    return result(added.ok, added.message);
+  }
+  if (targetToken == "clear") {
+    const WatchActionResult cleared = clearWatch(*watch);
+    return result(cleared.ok, cleared.message);
+  }
+  if (targetToken == "sample") {
+    recordWatchSample(*watch, engine);
+    return result(true, "Recorded watch sample");
+  }
+
+  const TargetResolution target = resolveObjectTarget(engine, tokens[1]);
+  if (target.id == kNoObject) {
+    return result(false, target.error);
+  }
+  const WatchActionResult added = watchObject(*watch, engine, target.id);
+  return result(added.ok, added.message);
+}
+
 ConsoleCommandResult buildStatus(const SimEngine& engine)
 {
   const SimulationStatus sim = buildSimulationStatus(engine);
@@ -440,6 +509,9 @@ ConsoleCommandResult buildStatus(const SimEngine& engine)
   }
   return result(true, std::move(message));
 }
+
+ConsoleCommandResult applyConsoleCommandWithWatchState(
+    SimEngine& engine, WatchState* watch, std::string_view input);
 
 } // namespace
 
@@ -509,15 +581,38 @@ ConsoleCommandResult tokenizeConsoleCommand(
 
 std::string consoleCommandHelpText()
 {
+  return consoleCommandHelpText(false);
+}
+
+std::string consoleCommandHelpText(bool watchCommandsAvailable)
+{
   return "Commands: help, status, new [--discard], open <path> [--discard], "
          "save [path], create <kind>, select <id|name>, select-add "
          "<id|name>, deselect <id|name>, clear-selection, rename <name>, "
          "delete, show [target], hide [target], mode <edit|simulation>, play, "
-         "pause, step [count], reset, record <on|off>, replay <frame>";
+         "pause, step [count], reset, record <on|off>, replay <frame>"
+         + std::string(
+             watchCommandsAvailable
+                 ? ", watch [target|selection|clear|sample], unwatch <target>"
+                 : "");
 }
 
 ConsoleCommandResult applyConsoleCommand(
     SimEngine& engine, std::string_view input)
+{
+  return applyConsoleCommandWithWatchState(engine, nullptr, input);
+}
+
+ConsoleCommandResult applyConsoleCommand(
+    SimEngine& engine, WatchState& watch, std::string_view input)
+{
+  return applyConsoleCommandWithWatchState(engine, &watch, input);
+}
+
+namespace {
+
+ConsoleCommandResult applyConsoleCommandWithWatchState(
+    SimEngine& engine, WatchState* watch, std::string_view input)
 {
   std::vector<std::string> tokens;
   ConsoleCommandResult parsed = tokenizeConsoleCommand(input, tokens);
@@ -536,7 +631,7 @@ ConsoleCommandResult applyConsoleCommand(
     if (tokens.size() != 1) {
       return result(false, "Usage: help");
     }
-    return result(true, consoleCommandHelpText());
+    return result(true, consoleCommandHelpText(watch != nullptr));
   }
   if (command == "status") {
     if (tokens.size() != 1) {
@@ -548,7 +643,12 @@ ConsoleCommandResult applyConsoleCommand(
     return applyCreateCommand(engine, view);
   }
   if (command == "new" || command == "open" || command == "save") {
-    return applyProjectCommand(engine, view);
+    ConsoleCommandResult applied = applyProjectCommand(engine, view);
+    if (watch != nullptr && applied.ok
+        && (command == "new" || command == "open")) {
+      clearWatch(*watch);
+    }
+    return applied;
   }
   if (command == "select" || command == "select-add" || command == "deselect"
       || command == "clear-selection") {
@@ -565,8 +665,13 @@ ConsoleCommandResult applyConsoleCommand(
       || command == "replay") {
     return applySimulationCommand(engine, view);
   }
+  if (command == "watch" || command == "unwatch") {
+    return applyWatchCommand(engine, watch, view);
+  }
 
   return result(false, "Unknown command: " + command);
 }
+
+} // namespace
 
 } // namespace dartsim::ui

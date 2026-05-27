@@ -53,12 +53,15 @@ with disabled reasons instead of ambiguous transport-only buttons.
 Console automation is now routed through `dartsim_ui/console_actions`: the
 Console panel has a command input, quoted-argument parser, help/status text,
 and tested project, create, selection, visibility, rename/delete, simulation
-mode, recording, and replay command dispatch over the existing action seams.
+mode, recording, replay, and watch command dispatch over the existing action
+seams.
 Watch values and chart samples are now routed through
 `dartsim_ui/watch_actions`: the Watch panel can add the current selection,
 remove or clear watched objects, display transform/mass/joint values, preserve
 missing watched objects until removal, and plot bounded simulation/object
-series through `PanelBuilder::plotLines`.
+series through `PanelBuilder::plotLines`. Console watch commands reuse the
+same session-local state for add/remove/clear/manual sample automation without
+dirtying the scene.
 File > Open Project now opens the in-app browser/manual path modal first.
 Browse still invokes the native file dialog from inside the modal, and native
 dialog failures or invalid selected paths leave the user in the modal instead
@@ -89,10 +92,9 @@ click-to-activate pane switching, and tiny-framebuffer fallback to single pane.
 ## Immediate Next Step
 
 Continue Phase 5 by adding richer per-pane interaction polish for the four-view
-layout, or continue Phase 4 by adding richer watch signal choices and console
-commands that reuse `dartsim_ui/watch_actions`. Keep behavior in testable engine
-or UI action/view-model helpers before wiring it into `editor.cpp`, and keep
-the filtered coverage line total above 95%.
+layout, or continue Phase 4 by adding richer watch signal choices. Keep
+behavior in testable engine or UI action/view-model helpers before wiring it
+into `editor.cpp`, and keep the filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -128,7 +130,7 @@ the filtered coverage line total above 95%.
   object names in their labels.
 - Console behavior is now covered through `dartsim_ui/console_actions` and
   `UNIT_dartsim_ui_ConsoleActions`; commands reuse project, palette, outliner,
-  inspector, and simulation action seams, so command automation stays
+  inspector, simulation, and watch action seams, so command automation stays
   backend-hidden and testable.
 - Watch behavior is now covered through `dartsim_ui/watch_actions` and
   `UNIT_dartsim_ui_WatchActions`; sampling reads simulation/object values into
@@ -197,11 +199,11 @@ git status --short --branch
 git log -3 --oneline
 ```
 
-Then continue with the viewport/outliner slice and preserve the validation
-pattern:
+Then continue with the next bounded workbench slice and preserve the validation
+pattern for any touched action seams:
 
 ```bash
 pixi run lint
-cmake --build build/default/cpp/Release --target UNIT_dartsim_engine UNIT_dartsim_ui_ProjectActions UNIT_dartsim_ui_ConsoleActions UNIT_dartsim_ui_InspectorActions UNIT_dartsim_ui_OutlinerActions UNIT_dartsim_ui_PaletteActions UNIT_dartsim_ui_RelationshipActions UNIT_dartsim_ui_ViewportActions UNIT_dartsim_ui_SimulationActions UNIT_gui_FilamentSceneExtraction
-ctest --test-dir build/default/cpp/Release -R '^(UNIT_gui_FilamentSceneExtraction|UNIT_dartsim_(engine|ui_(ProjectActions|ConsoleActions|InspectorActions|OutlinerActions|PaletteActions|RelationshipActions|ViewportActions|SimulationActions)))$' --output-on-failure -j 1
+cmake --build build/default/cpp/Release --target UNIT_dartsim_engine UNIT_dartsim_ui_ProjectActions UNIT_dartsim_ui_ConsoleActions UNIT_dartsim_ui_HistoryActions UNIT_dartsim_ui_InspectorActions UNIT_dartsim_ui_OutlinerActions UNIT_dartsim_ui_PaletteActions UNIT_dartsim_ui_RelationshipActions UNIT_dartsim_ui_ViewportActions UNIT_dartsim_ui_SimulationActions UNIT_dartsim_ui_WatchActions UNIT_gui_FilamentSceneExtraction
+ctest --test-dir build/default/cpp/Release -R '^(UNIT_gui_FilamentSceneExtraction|UNIT_dartsim_(engine|ui_(ProjectActions|ConsoleActions|HistoryActions|InspectorActions|OutlinerActions|PaletteActions|RelationshipActions|ViewportActions|SimulationActions|WatchActions)))$' --output-on-failure -j 1
 ```

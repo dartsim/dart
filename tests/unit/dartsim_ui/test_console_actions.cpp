@@ -33,8 +33,10 @@
 #include <dartsim_engine/commands.hpp>
 #include <dartsim_engine/sim_engine.hpp>
 #include <dartsim_ui/console_actions.hpp>
+#include <dartsim_ui/watch_actions.hpp>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <string>
@@ -100,6 +102,16 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
   EXPECT_TRUE(help.ok);
   EXPECT_NE(help.message.find("create <kind>"), std::string::npos);
   EXPECT_NE(help.message.find("record <on|off>"), std::string::npos);
+  EXPECT_EQ(
+      help.message.find("watch [target|selection|clear|sample]"),
+      std::string::npos);
+
+  ui::WatchState watch;
+  const auto watchHelp = ui::applyConsoleCommand(engine, watch, "help");
+  EXPECT_TRUE(watchHelp.ok);
+  EXPECT_NE(
+      watchHelp.message.find("watch [target|selection|clear|sample]"),
+      std::string::npos);
 
   const auto status = ui::applyConsoleCommand(engine, "status");
   EXPECT_TRUE(status.ok);
@@ -112,6 +124,9 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
       ui::applyConsoleCommand(engine, "unknown").message,
       "Unknown command: unknown");
   EXPECT_EQ(ui::applyConsoleCommand(engine, "help now").message, "Usage: help");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "watch").message,
+      "Watch state unavailable");
 }
 
 TEST(DartsimConsoleActions, CreatesSelectsRenamesHidesShowsAndDeletesObjects)
@@ -266,6 +281,92 @@ TEST(DartsimConsoleActions, DrivesSimulationRecordingAndReplay)
   const auto editMode = ui::applyConsoleCommand(engine, "mode edit");
   EXPECT_TRUE(editMode.ok);
   EXPECT_TRUE(engine.canEditScene());
+}
+
+TEST(DartsimConsoleActions, DrivesWatchCommandsThroughSessionState)
+{
+  SimEngine engine;
+  ui::WatchState watch;
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "create box").ok);
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.markProjectClean();
+  const std::size_t undoCount = engine.commands().undoCount();
+  const auto revision = engine.commands().currentRevision();
+
+  const auto emptyStatus = ui::applyConsoleCommand(engine, watch, "watch");
+  EXPECT_TRUE(emptyStatus.ok);
+  EXPECT_EQ(emptyStatus.message, "No watched objects");
+
+  const auto watched
+      = ui::applyConsoleCommand(engine, watch, "watch selection");
+  EXPECT_TRUE(watched.ok);
+  EXPECT_EQ(watched.message, "Watching selection");
+  ASSERT_EQ(watch.targets.size(), 1u);
+  EXPECT_EQ(watch.targets[0].id, box);
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+  EXPECT_EQ(engine.commands().currentRevision(), revision);
+
+  const auto duplicate
+      = ui::applyConsoleCommand(engine, watch, "watch selected");
+  EXPECT_FALSE(duplicate.ok);
+  EXPECT_EQ(duplicate.message, "Object already watched");
+
+  const auto sampled = ui::applyConsoleCommand(engine, watch, "watch sample");
+  EXPECT_TRUE(sampled.ok);
+  EXPECT_EQ(sampled.message, "Recorded watch sample");
+  EXPECT_FALSE(watch.series.empty());
+
+  const std::string boxTarget
+      = std::to_string(static_cast<unsigned long long>(box));
+  const auto deleted = ui::applyConsoleCommand(engine, watch, "delete");
+  EXPECT_TRUE(deleted.ok);
+  const ui::WatchStatus missingStatus = ui::buildWatchStatus(watch, engine);
+  ASSERT_EQ(missingStatus.rows.size(), 1u);
+  EXPECT_FALSE(missingStatus.rows[0].exists);
+
+  const auto removed
+      = ui::applyConsoleCommand(engine, watch, "unwatch " + boxTarget);
+  EXPECT_TRUE(removed.ok);
+  EXPECT_TRUE(watch.targets.empty());
+  EXPECT_TRUE(
+      std::none_of(
+          watch.series.begin(),
+          watch.series.end(),
+          [box](const ui::WatchSeries& series) {
+            return series.object == box;
+          }));
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "create sphere").ok);
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, watch, "unwatch selected").message,
+      "Object was not watched");
+
+  const auto cleared = ui::applyConsoleCommand(engine, watch, "watch clear");
+  EXPECT_TRUE(cleared.ok);
+  EXPECT_TRUE(watch.targets.empty());
+  EXPECT_TRUE(watch.series.empty());
+}
+
+TEST(DartsimConsoleActions, ProjectReplacementClearsWatchSessionState)
+{
+  SimEngine engine;
+  ui::WatchState watch;
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "create box").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "watch selection").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "watch sample").ok);
+  ASSERT_FALSE(watch.targets.empty());
+  ASSERT_FALSE(watch.series.empty());
+  const std::uint64_t oldGeneration = engine.projectGeneration();
+
+  const auto replaced = ui::applyConsoleCommand(engine, watch, "new --discard");
+  EXPECT_TRUE(replaced.ok);
+  EXPECT_NE(engine.projectGeneration(), oldGeneration);
+  EXPECT_TRUE(watch.targets.empty());
+  EXPECT_TRUE(watch.series.empty());
 }
 
 TEST(DartsimConsoleActions, CreatesContextSensitiveModelElements)
