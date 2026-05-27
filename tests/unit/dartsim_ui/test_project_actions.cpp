@@ -38,6 +38,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <vector>
 
 using namespace dartsim;
 
@@ -114,6 +115,84 @@ TEST(DartsimProjectActions, OpenAndNewProjectReturnUiStatus)
   std::filesystem::remove(path);
 }
 
+TEST(DartsimProjectActions, ProjectStatusExposesDirtyPathAndRecentCount)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_project_status_labels.dartsim";
+  std::filesystem::remove(path);
+
+  SimEngine engine;
+  ui::RecentProjectState recent;
+  ui::ProjectStatus status = ui::buildProjectStatus(engine, recent);
+  EXPECT_FALSE(status.hasProjectPath);
+  EXPECT_FALSE(status.dirty);
+  EXPECT_EQ(status.displayName, "Untitled");
+  EXPECT_EQ(status.titleLabel, "Untitled");
+  EXPECT_EQ(status.dirtyLabel, "No unsaved changes");
+  EXPECT_EQ(status.detailLabel, "Untitled - No unsaved changes");
+  EXPECT_EQ(status.recentProjectCount, 0u);
+
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  status = ui::buildProjectStatus(engine, recent);
+  EXPECT_TRUE(status.dirty);
+  EXPECT_EQ(status.dirtyLabel, "Unsaved changes");
+  EXPECT_EQ(status.titleLabel, "Untitled *");
+  EXPECT_EQ(status.detailLabel, "Untitled - Unsaved changes");
+
+  ASSERT_TRUE(engine.saveProject(path.string()));
+  ui::rememberRecentProject(recent, engine.projectPath());
+  status = ui::buildProjectStatus(engine, recent);
+  EXPECT_TRUE(status.hasProjectPath);
+  EXPECT_FALSE(status.dirty);
+  EXPECT_EQ(status.path, path.string());
+  EXPECT_EQ(status.displayName, path.filename().string());
+  EXPECT_EQ(status.titleLabel, path.filename().string());
+  EXPECT_EQ(
+      status.detailLabel,
+      path.filename().string() + " - Saved - " + path.string());
+  EXPECT_EQ(status.recentProjectCount, 1u);
+
+  std::filesystem::remove(path);
+}
+
+TEST(DartsimProjectActions, RecentProjectsDeduplicateAndExposeCurrentEntry)
+{
+  const std::filesystem::path first = std::filesystem::temp_directory_path()
+                                      / "dartsim_ui_recent_first.dartsim";
+  const std::filesystem::path second = std::filesystem::temp_directory_path()
+                                       / "dartsim_ui_recent_second.dartsim";
+  const std::filesystem::path third = std::filesystem::temp_directory_path()
+                                      / "dartsim_ui_recent_third.dartsim";
+
+  ui::RecentProjectState recent;
+  recent.capacity = 2;
+  ui::rememberRecentProject(recent, first.string());
+  ui::rememberRecentProject(recent, second.string());
+  ui::rememberRecentProject(recent, first.string());
+  ui::rememberRecentProject(recent, {});
+  ui::rememberRecentProject(recent, third.string());
+
+  ASSERT_EQ(recent.paths.size(), 2u);
+  EXPECT_EQ(recent.paths[0], third.string());
+  EXPECT_EQ(recent.paths[1], first.string());
+
+  SimEngine engine;
+  ASSERT_TRUE(engine.saveProject(third.string()));
+  const std::vector<ui::RecentProjectEntry> entries
+      = ui::buildRecentProjectEntries(engine, recent);
+  ASSERT_EQ(entries.size(), 2u);
+  EXPECT_EQ(entries[0].path, third.string());
+  EXPECT_EQ(entries[0].label, third.filename().string());
+  EXPECT_TRUE(entries[0].current);
+  EXPECT_EQ(entries[1].path, first.string());
+  EXPECT_EQ(entries[1].label, first.filename().string());
+  EXPECT_FALSE(entries[1].current);
+
+  std::filesystem::remove(third);
+}
+
 TEST(DartsimProjectActions, OpenWithDialogUsesSelectedProjectPath)
 {
   const std::filesystem::path path
@@ -168,6 +247,51 @@ TEST(DartsimProjectActions, OpenAcceptsExtensionlessProjectPath)
   EXPECT_EQ(engine.objects().model().size(), 1u);
 
   std::filesystem::remove(path);
+}
+
+TEST(DartsimProjectActions, OpenRecentProjectTracksSuccessAndDirtyGuard)
+{
+  const std::filesystem::path first = std::filesystem::temp_directory_path()
+                                      / "dartsim_ui_open_recent_first.dartsim";
+  const std::filesystem::path second
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_open_recent_second.dartsim";
+  std::filesystem::remove(first);
+  std::filesystem::remove(second);
+
+  SimEngine firstProject;
+  firstProject.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  ASSERT_TRUE(firstProject.saveProject(first.string()));
+
+  SimEngine secondProject;
+  secondProject.execute(
+      commands::addRigidBody(ShapeType::Sphere, translation(1.0, 0.0, 1.0)));
+  ASSERT_TRUE(secondProject.saveProject(second.string()));
+
+  SimEngine engine;
+  ui::RecentProjectState recent;
+  engine.execute(
+      commands::addRigidBody(ShapeType::Capsule, translation(2.0, 0.0, 1.0)));
+  const SceneModel dirtyModel = engine.objects().model();
+
+  const auto blocked = ui::openRecentProject(engine, recent, first.string());
+  EXPECT_FALSE(blocked.ok);
+  EXPECT_EQ(blocked.message, "Unsaved changes");
+  EXPECT_EQ(engine.objects().model(), dirtyModel);
+  EXPECT_TRUE(recent.paths.empty());
+
+  engine.markProjectClean();
+  const auto opened = ui::openRecentProject(engine, recent, second.string());
+  EXPECT_TRUE(opened.ok);
+  EXPECT_EQ(opened.message, "Loaded " + second.string());
+  ASSERT_EQ(recent.paths.size(), 1u);
+  EXPECT_EQ(recent.paths[0], second.string());
+  EXPECT_EQ(engine.projectPath(), second.string());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  std::filesystem::remove(first);
+  std::filesystem::remove(second);
 }
 
 TEST(DartsimProjectActions, OpenWithDialogHandlesCancelFailureAndDirtyGuard)
@@ -254,6 +378,57 @@ TEST(DartsimProjectActions, DirtyProjectReplacementIsBlockedByDefault)
   EXPECT_FALSE(engine.isProjectDirty());
   EXPECT_EQ(engine.objects().model().size(), saved.objects().model().size());
 
+  std::filesystem::remove(path);
+}
+
+TEST(DartsimProjectActions, ProjectReplacementActionsRejectOpenMacro)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_project_actions_macro_guard.dartsim";
+  std::filesystem::remove(path);
+
+  SimEngine saved;
+  saved.execute(
+      commands::addRigidBody(ShapeType::Sphere, translation(1.0, 0.0, 1.0)));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  SimEngine engine;
+  engine.commands().beginMacro("Open Transaction");
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  const SceneModel transactionModel = engine.objects().model();
+
+  const auto blockedNew = ui::newProject(engine);
+  EXPECT_FALSE(blockedNew.ok);
+  EXPECT_EQ(
+      blockedNew.message,
+      "Cannot create a new project during an edit transaction");
+  EXPECT_EQ(engine.objects().model(), transactionModel);
+
+  const auto blockedOpen = ui::openProject(engine, path.string());
+  EXPECT_FALSE(blockedOpen.ok);
+  EXPECT_EQ(
+      blockedOpen.message, "Cannot load a project during an edit transaction");
+  EXPECT_EQ(engine.objects().model(), transactionModel);
+  EXPECT_TRUE(engine.commands().inMacro());
+
+  bool dialogCalled = false;
+  const auto blockedDialog = ui::openProjectWithDialog(
+      engine, [&](const ui::ProjectFileDialogRequest&) {
+        dialogCalled = true;
+        return ui::ProjectFileDialogResult{
+            ui::ProjectFileDialogStatus::Selected, path.string(), {}};
+      });
+  EXPECT_FALSE(blockedDialog.ok);
+  EXPECT_EQ(
+      blockedDialog.message,
+      "Cannot load a project during an edit transaction");
+  EXPECT_FALSE(dialogCalled);
+  EXPECT_EQ(engine.objects().model(), transactionModel);
+  EXPECT_TRUE(engine.commands().inMacro());
+
+  engine.commands().endMacro();
   std::filesystem::remove(path);
 }
 

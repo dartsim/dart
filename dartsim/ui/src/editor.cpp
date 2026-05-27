@@ -85,6 +85,7 @@ struct EditorApp
   ViewportCameraControlState viewportCamera;
   ViewportLayoutState viewportLayout;
   ViewportTransformGizmo transformGizmo = makeViewportTransformGizmo();
+  RecentProjectState recentProjects;
   ProjectFileDialogKind projectPathKind = ProjectFileDialogKind::Open;
   bool projectPathModalOpen = false;
   bool projectPathModalRequested = false;
@@ -120,6 +121,14 @@ struct EditorApp
     haveRunFrameTime = false;
   }
 };
+
+void noteProjectAction(EditorApp& app, const ProjectActionResult& result)
+{
+  app.note(result.message);
+  if (result.ok && app.engine.hasProjectPath()) {
+    rememberRecentProject(app.recentProjects, app.engine.projectPath());
+  }
+}
 
 std::string ensureProjectExtension(std::string path)
 {
@@ -355,6 +364,9 @@ void applyProjectPathModal(EditorApp& app)
     result = saveProjectAs(app.engine, ensureProjectExtension(app.projectPath));
   }
   app.note(result.message);
+  if (result.ok && app.engine.hasProjectPath()) {
+    rememberRecentProject(app.recentProjects, app.engine.projectPath());
+  }
   app.projectPathStatus = result.message;
   if (result.ok) {
     app.projectPathModalOpen = false;
@@ -823,19 +835,51 @@ void buildMenuBar(
     dart::gui::PanelContext& context)
 {
   if (!ui.beginMenuBar()) {
-    ui.text("dartsim editor");
+    ui.text(buildProjectStatus(app.engine, app.recentProjects).detailLabel);
     return;
   }
+  const ProjectStatus projectStatus
+      = buildProjectStatus(app.engine, app.recentProjects);
+  ui.text(projectStatus.titleLabel);
+  ui.sameLine();
   if (ui.beginMenu("File")) {
+    ui.text(projectStatus.detailLabel);
+    ui.separator();
     if (ui.menuItem("New Project")) {
-      app.note(newProject(app.engine).message);
+      noteProjectAction(app, newProject(app.engine));
     }
     if (ui.menuItem("Open Project...")) {
       requestProjectPathModal(app, ProjectFileDialogKind::Open);
     }
+    if (ui.beginMenu("Open Recent")) {
+      const std::vector<RecentProjectEntry> entries
+          = buildRecentProjectEntries(app.engine, app.recentProjects);
+      if (entries.empty()) {
+        ui.text("(no recent projects)");
+      }
+      for (const RecentProjectEntry& entry : entries) {
+        std::string label = entry.label;
+        if (entry.current) {
+          label += " (current)";
+        }
+        if (!entry.path.empty()) {
+          label += "##recent-project-" + entry.path;
+        }
+        if (ui.menuItem(label)) {
+          if (entry.current) {
+            app.note("Project already open");
+          } else {
+            noteProjectAction(
+                app,
+                openRecentProject(app.engine, app.recentProjects, entry.path));
+          }
+        }
+      }
+      ui.endMenu();
+    }
     if (ui.menuItem("Save Project")) {
       if (app.engine.hasProjectPath()) {
-        app.note(saveProject(app.engine).message);
+        noteProjectAction(app, saveProject(app.engine));
       } else {
         requestProjectPathModal(app, ProjectFileDialogKind::Save);
       }

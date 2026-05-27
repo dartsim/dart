@@ -20,6 +20,10 @@ invokes nativefiledialog-extended as a child of the GUI window and reports
 picker failures in-place; tests inject fake dialog responses through
 `ProjectFileDialog` so selected, canceled, failed, dirty guard, missing-file,
 invalid-file, and directory paths are covered without launching desktop UI.
+The File menu now also displays the current project name with a dirty marker,
+uses `dartsim_ui/project_actions` for saved/dirty/path status text, and keeps a
+session-local recent-project list that de-duplicates paths and uses the same
+dirty-project guard when reopening recent files.
 The Create menu is now routed through `dartsim_ui/palette_actions`: the tested
 palette model covers primitive rigid bodies, multibodies, root/child links with
 explicit joint kinds, free frames, and fixed frames attached to an existing

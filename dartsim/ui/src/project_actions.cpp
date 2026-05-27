@@ -32,6 +32,7 @@
 
 #include <dartsim_ui/project_actions.hpp>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <string_view>
@@ -141,11 +142,79 @@ std::string filenameOrDefault(const std::string& path)
   return filename.empty() ? kDefaultProjectPath : filename;
 }
 
+std::string displayNameForProjectPath(const std::string& path)
+{
+  if (path.empty()) {
+    return "Untitled";
+  }
+  const std::string filename = std::filesystem::path(path).filename().string();
+  return filename.empty() ? path : filename;
+}
+
+ProjectActionResult macroGuardResult(std::string_view action)
+{
+  return {
+      false, "Cannot " + std::string(action) + " during an edit transaction"};
+}
+
 } // namespace
+
+ProjectStatus buildProjectStatus(
+    const SimEngine& engine, const RecentProjectState& recentProjects)
+{
+  ProjectStatus status;
+  status.hasProjectPath = engine.hasProjectPath();
+  status.dirty = engine.isProjectDirty();
+  status.path = engine.projectPath();
+  status.displayName = displayNameForProjectPath(status.path);
+  status.dirtyLabel
+      = status.dirty ? "Unsaved changes"
+                     : (status.hasProjectPath ? "Saved" : "No unsaved changes");
+  status.titleLabel = status.displayName + (status.dirty ? " *" : "");
+  status.detailLabel = status.displayName + " - " + status.dirtyLabel;
+  if (status.hasProjectPath) {
+    status.detailLabel += " - " + status.path;
+  }
+  status.recentProjectCount = recentProjects.paths.size();
+  return status;
+}
+
+void rememberRecentProject(RecentProjectState& state, std::string path)
+{
+  if (path.empty() || state.capacity == 0) {
+    return;
+  }
+  auto duplicate = std::find(state.paths.begin(), state.paths.end(), path);
+  if (duplicate != state.paths.end()) {
+    state.paths.erase(duplicate);
+  }
+  state.paths.insert(state.paths.begin(), std::move(path));
+  if (state.paths.size() > state.capacity) {
+    state.paths.resize(state.capacity);
+  }
+}
+
+std::vector<RecentProjectEntry> buildRecentProjectEntries(
+    const SimEngine& engine, const RecentProjectState& state)
+{
+  std::vector<RecentProjectEntry> entries;
+  entries.reserve(state.paths.size());
+  for (const std::string& path : state.paths) {
+    RecentProjectEntry entry;
+    entry.path = path;
+    entry.label = displayNameForProjectPath(path);
+    entry.current = engine.hasProjectPath() && engine.projectPath() == path;
+    entries.push_back(std::move(entry));
+  }
+  return entries;
+}
 
 ProjectActionResult newProject(
     SimEngine& engine, DirtyProjectPolicy dirtyPolicy)
 {
+  if (engine.commands().inMacro()) {
+    return macroGuardResult("create a new project");
+  }
   if (shouldBlockDirtyProject(engine, dirtyPolicy)) {
     return {false, "Unsaved changes"};
   }
@@ -205,6 +274,9 @@ ProjectActionResult saveProjectWithDialog(
 ProjectActionResult openProject(
     SimEngine& engine, std::string path, DirtyProjectPolicy dirtyPolicy)
 {
+  if (engine.commands().inMacro()) {
+    return macroGuardResult("load a project");
+  }
   if (shouldBlockDirtyProject(engine, dirtyPolicy)) {
     return {false, "Unsaved changes"};
   }
@@ -220,6 +292,9 @@ ProjectActionResult openProjectWithDialog(
     const ProjectFileDialog& dialog,
     DirtyProjectPolicy dirtyPolicy)
 {
+  if (engine.commands().inMacro()) {
+    return macroGuardResult("load a project");
+  }
   if (shouldBlockDirtyProject(engine, dirtyPolicy)) {
     return {false, "Unsaved changes"};
   }
@@ -246,6 +321,20 @@ ProjectActionResult openProjectWithDialog(
       return {false, makeDialogFailureMessage("Open", selection)};
   }
   return {false, "Open dialog failed"};
+}
+
+ProjectActionResult openRecentProject(
+    SimEngine& engine,
+    RecentProjectState& recentProjects,
+    std::string path,
+    DirtyProjectPolicy dirtyPolicy)
+{
+  ProjectActionResult result
+      = openProject(engine, std::move(path), dirtyPolicy);
+  if (result.ok && engine.hasProjectPath()) {
+    rememberRecentProject(recentProjects, engine.projectPath());
+  }
+  return result;
 }
 
 } // namespace dartsim::ui

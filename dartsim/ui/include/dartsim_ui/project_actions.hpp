@@ -36,16 +36,45 @@
 
 #include <functional>
 #include <string>
+#include <vector>
+
+#include <cstddef>
 
 namespace dartsim::ui {
 
 inline constexpr const char* kDefaultProjectPath = "scene.dartsim";
+inline constexpr std::size_t kDefaultRecentProjectCapacity = 8;
 
 /// Result of a user-facing project action.
 struct ProjectActionResult
 {
   bool ok = false;
   std::string message;
+};
+
+struct ProjectStatus
+{
+  bool hasProjectPath = false;
+  bool dirty = false;
+  std::string path;
+  std::string displayName = "Untitled";
+  std::string dirtyLabel = "No unsaved changes";
+  std::string titleLabel = "Untitled";
+  std::string detailLabel = "Untitled - No unsaved changes";
+  std::size_t recentProjectCount = 0;
+};
+
+struct RecentProjectState
+{
+  std::vector<std::string> paths;
+  std::size_t capacity = kDefaultRecentProjectCapacity;
+};
+
+struct RecentProjectEntry
+{
+  std::string path;
+  std::string label;
+  bool current = false;
 };
 
 enum class DirtyProjectPolicy
@@ -85,6 +114,13 @@ struct ProjectFileDialogResult
 using ProjectFileDialog
     = std::function<ProjectFileDialogResult(const ProjectFileDialogRequest&)>;
 
+[[nodiscard]] ProjectStatus buildProjectStatus(
+    const SimEngine& engine,
+    const RecentProjectState& recentProjects = RecentProjectState{});
+void rememberRecentProject(RecentProjectState& state, std::string path);
+[[nodiscard]] std::vector<RecentProjectEntry> buildRecentProjectEntries(
+    const SimEngine& engine, const RecentProjectState& state);
+
 /// Create a fresh project and return the status text for the UI log.
 ProjectActionResult newProject(
     SimEngine& engine,
@@ -113,6 +149,13 @@ ProjectActionResult openProject(
 ProjectActionResult openProjectWithDialog(
     SimEngine& engine,
     const ProjectFileDialog& dialog,
+    DirtyProjectPolicy dirtyPolicy = DirtyProjectPolicy::Block);
+
+/// Load a recent project path and update the recent-project list on success.
+ProjectActionResult openRecentProject(
+    SimEngine& engine,
+    RecentProjectState& recentProjects,
+    std::string path,
     DirtyProjectPolicy dirtyPolicy = DirtyProjectPolicy::Block);
 
 } // namespace dartsim::ui
