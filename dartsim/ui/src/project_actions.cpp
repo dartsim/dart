@@ -151,10 +151,45 @@ std::string displayNameForProjectPath(const std::string& path)
   return filename.empty() ? path : filename;
 }
 
+std::string currentProjectDisplayName(const SimEngine& engine)
+{
+  return displayNameForProjectPath(engine.projectPath());
+}
+
 ProjectActionResult macroGuardResult(std::string_view action)
 {
   return {
       false, "Cannot " + std::string(action) + " during an edit transaction"};
+}
+
+ProjectReplacementActionResult projectReplacementPrompt(
+    const ProjectReplacementRequest& request)
+{
+  return {true, {false, "Unsaved changes"}, request};
+}
+
+ProjectReplacementRequest makeNewProjectReplacementRequest(
+    const SimEngine& engine)
+{
+  ProjectReplacementRequest request;
+  request.kind = ProjectReplacementKind::NewProject;
+  request.message = "Create a new project and discard unsaved changes in "
+                    + currentProjectDisplayName(engine) + "?";
+  request.confirmLabel = "Discard and New";
+  return request;
+}
+
+ProjectReplacementRequest makeOpenProjectReplacementRequest(
+    const SimEngine& engine, const std::string& path)
+{
+  ProjectReplacementRequest request;
+  request.kind = ProjectReplacementKind::OpenProject;
+  request.path = path;
+  request.message = "Open " + displayNameForProjectPath(path)
+                    + " and discard unsaved changes in "
+                    + currentProjectDisplayName(engine) + "?";
+  request.confirmLabel = "Discard and Open";
+  return request;
 }
 
 } // namespace
@@ -220,6 +255,57 @@ ProjectActionResult newProject(
   }
   engine.newProject();
   return {true, "New project"};
+}
+
+ProjectReplacementActionResult requestNewProjectReplacement(SimEngine& engine)
+{
+  if (engine.commands().inMacro()) {
+    return {false, macroGuardResult("create a new project"), {}};
+  }
+  if (engine.isProjectDirty()) {
+    return projectReplacementPrompt(makeNewProjectReplacementRequest(engine));
+  }
+  return {false, newProject(engine, DirtyProjectPolicy::Discard), {}};
+}
+
+ProjectReplacementActionResult requestOpenProjectReplacement(
+    SimEngine& engine, std::string path)
+{
+  if (engine.commands().inMacro()) {
+    return {false, macroGuardResult("load a project"), {}};
+  }
+  if (engine.isProjectDirty()) {
+    return projectReplacementPrompt(
+        makeOpenProjectReplacementRequest(engine, path));
+  }
+  return {
+      false,
+      openProject(engine, std::move(path), DirtyProjectPolicy::Discard),
+      {}};
+}
+
+ProjectActionResult confirmProjectReplacement(
+    SimEngine& engine, const ProjectReplacementRequest& request)
+{
+  switch (request.kind) {
+    case ProjectReplacementKind::NewProject:
+      return newProject(engine, DirtyProjectPolicy::Discard);
+    case ProjectReplacementKind::OpenProject:
+      return openProject(engine, request.path, DirtyProjectPolicy::Discard);
+  }
+  return {false, "Project replacement failed"};
+}
+
+ProjectActionResult cancelProjectReplacement(
+    const ProjectReplacementRequest& request)
+{
+  switch (request.kind) {
+    case ProjectReplacementKind::NewProject:
+      return {false, "New project canceled"};
+    case ProjectReplacementKind::OpenProject:
+      return {false, "Open canceled"};
+  }
+  return {false, "Project replacement canceled"};
 }
 
 ProjectActionResult saveProjectAs(SimEngine& engine, std::string path)

@@ -24,6 +24,10 @@ The File menu now also displays the current project name with a dirty marker,
 uses `dartsim_ui/project_actions` for saved/dirty/path status text, and keeps a
 session-local recent-project list that de-duplicates paths and uses the same
 dirty-project guard when reopening recent files.
+Dirty New/Open/Open Recent replacement now goes through a tested
+`ProjectReplacementRequest` confirmation seam, so destructive replacement is
+deferred until the user confirms and macro/open-transaction rejection remains
+headless and testable.
 The Create menu is now routed through `dartsim_ui/palette_actions`: the tested
 palette model covers primitive rigid bodies, multibodies, root/child links with
 explicit joint kinds, free frames, and fixed frames attached to an existing
@@ -80,10 +84,10 @@ click-to-activate pane switching, and tiny-framebuffer fallback to single pane.
 ## Immediate Next Step
 
 Continue Phase 5 by adding richer per-pane interaction polish for the four-view
-layout, or continue Phase 3 with richer relationship inspectors and object
-grouping. Keep behavior in testable engine or UI action/view-model helpers
-before wiring it into `editor.cpp`, and keep the filtered coverage line total
-above 95%.
+layout, or add the next Phase 1 lifecycle status/event polish only if it can be
+kept in `dartsim_ui/project_actions`. Keep behavior in testable engine or UI
+action/view-model helpers before wiring it into `editor.cpp`, and keep the
+filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -125,6 +129,10 @@ above 95%.
   opens the in-app browser/manual path modal first. Browse reports native picker
   failures in-place, and `openProject()` accepts extensionless paths when the
   corresponding `.dartsim` file exists.
+- Dirty replacement confirmation is owned by `dartsim_ui/project_actions`:
+  `requestNewProjectReplacement()` and `requestOpenProjectReplacement()` either
+  apply clean replacements immediately or return a prompt request that
+  `confirmProjectReplacement()` applies with `DirtyProjectPolicy::Discard`.
 - Viewport camera workflow behavior is covered through
   `dartsim_ui/viewport_actions` and `UNIT_dartsim_ui_ViewportActions`; fit uses
   visible render-item bounds, focus uses selected visible renderables and

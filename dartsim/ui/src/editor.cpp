@@ -86,6 +86,8 @@ struct EditorApp
   ViewportLayoutState viewportLayout;
   ViewportTransformGizmo transformGizmo = makeViewportTransformGizmo();
   RecentProjectState recentProjects;
+  ProjectReplacementPromptState projectReplacementPrompt;
+  bool projectReplacementModalRequested = false;
   ProjectFileDialogKind projectPathKind = ProjectFileDialogKind::Open;
   bool projectPathModalOpen = false;
   bool projectPathModalRequested = false;
@@ -128,6 +130,24 @@ void noteProjectAction(EditorApp& app, const ProjectActionResult& result)
   if (result.ok && app.engine.hasProjectPath()) {
     rememberRecentProject(app.recentProjects, app.engine.projectPath());
   }
+}
+
+void requestProjectReplacementPrompt(
+    EditorApp& app, ProjectReplacementRequest request)
+{
+  app.projectReplacementPrompt.open = true;
+  app.projectReplacementPrompt.request = std::move(request);
+  app.projectReplacementModalRequested = true;
+}
+
+void noteProjectReplacementAction(
+    EditorApp& app, const ProjectReplacementActionResult& result)
+{
+  if (result.promptRequired) {
+    requestProjectReplacementPrompt(app, result.request);
+    return;
+  }
+  noteProjectAction(app, result.result);
 }
 
 std::string ensureProjectExtension(std::string path)
@@ -359,7 +379,14 @@ void applyProjectPathModal(EditorApp& app)
       app.projectPathStatus = "Choose a .dartsim file to open";
       return;
     }
-    result = openProject(app.engine, app.projectPath);
+    const ProjectReplacementActionResult replacement
+        = requestOpenProjectReplacement(app.engine, app.projectPath);
+    if (replacement.promptRequired) {
+      app.projectPathModalOpen = false;
+      requestProjectReplacementPrompt(app, replacement.request);
+      return;
+    }
+    result = replacement.result;
   } else {
     result = saveProjectAs(app.engine, ensureProjectExtension(app.projectPath));
   }
@@ -846,7 +873,8 @@ void buildMenuBar(
     ui.text(projectStatus.detailLabel);
     ui.separator();
     if (ui.menuItem("New Project")) {
-      noteProjectAction(app, newProject(app.engine));
+      noteProjectReplacementAction(
+          app, requestNewProjectReplacement(app.engine));
     }
     if (ui.menuItem("Open Project...")) {
       requestProjectPathModal(app, ProjectFileDialogKind::Open);
@@ -869,9 +897,8 @@ void buildMenuBar(
           if (entry.current) {
             app.note("Project already open");
           } else {
-            noteProjectAction(
-                app,
-                openRecentProject(app.engine, app.recentProjects, entry.path));
+            noteProjectReplacementAction(
+                app, requestOpenProjectReplacement(app.engine, entry.path));
           }
         }
       }
@@ -965,20 +992,62 @@ void buildMenuBar(
   ui.endMenuBar();
 }
 
+void buildProjectReplacementModal(dart::gui::PanelBuilder& ui, EditorApp& app)
+{
+  if (app.projectReplacementModalRequested) {
+    ui.openModal(
+        app.projectReplacementPrompt.request.title,
+        app.projectReplacementPrompt.open);
+  }
+  if (!app.projectReplacementPrompt.open) {
+    app.projectReplacementModalRequested = false;
+    return;
+  }
+
+  if (!ui.beginModal(
+          app.projectReplacementPrompt.request.title,
+          app.projectReplacementPrompt.open)) {
+    return;
+  }
+  // Popup opening can be deferred while another modal is closing.
+  app.projectReplacementModalRequested = false;
+
+  const ProjectReplacementRequest& request
+      = app.projectReplacementPrompt.request;
+  ui.text(request.message);
+  if (ui.button(request.confirmLabel)) {
+    const ProjectActionResult result
+        = confirmProjectReplacement(app.engine, request);
+    noteProjectAction(app, result);
+    if (result.ok) {
+      app.projectReplacementPrompt.open = false;
+    }
+  }
+  ui.sameLine();
+  if (ui.button(request.cancelLabel)) {
+    app.note(cancelProjectReplacement(request).message);
+    app.projectReplacementPrompt.open = false;
+  }
+
+  ui.endModal();
+}
+
 void buildProjectPathModal(dart::gui::PanelBuilder& ui, EditorApp& app)
 {
   const std::string title = projectPathModalTitle(app.projectPathKind);
   if (app.projectPathModalRequested) {
     ui.openModal(title, app.projectPathModalOpen);
-    app.projectPathModalRequested = false;
   }
   if (!app.projectPathModalOpen) {
+    app.projectPathModalRequested = false;
     return;
   }
 
   if (!ui.beginModal(title, app.projectPathModalOpen)) {
     return;
   }
+  // Popup opening can be deferred while another modal is closing.
+  app.projectPathModalRequested = false;
 
   std::string path = app.projectPath;
   if (ui.textInput("Project path", path)) {
@@ -1238,6 +1307,7 @@ int runEditor(int argc, char* argv[])
         app->projectDialogParentWindow = context.nativeWindow;
         buildMenuBar(ui, *app, context);
         buildProjectPathModal(ui, *app);
+        buildProjectReplacementModal(ui, *app);
       }));
   options.panels.push_back(makePanel(
       "Scene Tree",

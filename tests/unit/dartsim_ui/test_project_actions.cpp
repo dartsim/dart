@@ -38,6 +38,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <string>
 #include <vector>
 
 using namespace dartsim;
@@ -381,6 +382,224 @@ TEST(DartsimProjectActions, DirtyProjectReplacementIsBlockedByDefault)
   std::filesystem::remove(path);
 }
 
+TEST(DartsimProjectActions, DirtyNewProjectReplacementRequiresConfirmation)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  const SceneModel dirtyModel = engine.objects().model();
+  ASSERT_TRUE(engine.isProjectDirty());
+
+  const auto requested = ui::requestNewProjectReplacement(engine);
+  EXPECT_TRUE(requested.promptRequired);
+  EXPECT_FALSE(requested.result.ok);
+  EXPECT_EQ(requested.result.message, "Unsaved changes");
+  EXPECT_EQ(requested.request.kind, ui::ProjectReplacementKind::NewProject);
+  EXPECT_EQ(requested.request.title, "Unsaved changes");
+  EXPECT_EQ(requested.request.confirmLabel, "Discard and New");
+  EXPECT_EQ(requested.request.cancelLabel, "Cancel");
+  EXPECT_NE(
+      requested.request.message.find("Create a new project"),
+      std::string::npos);
+  EXPECT_EQ(engine.objects().model(), dirtyModel);
+
+  const auto canceled = ui::cancelProjectReplacement(requested.request);
+  EXPECT_FALSE(canceled.ok);
+  EXPECT_EQ(canceled.message, "New project canceled");
+  EXPECT_EQ(engine.objects().model(), dirtyModel);
+  EXPECT_TRUE(engine.isProjectDirty());
+
+  const auto confirmed
+      = ui::confirmProjectReplacement(engine, requested.request);
+  EXPECT_TRUE(confirmed.ok);
+  EXPECT_EQ(confirmed.message, "New project");
+  EXPECT_TRUE(engine.objects().model().empty());
+  EXPECT_FALSE(engine.hasProjectPath());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimProjectActions, DirtyOpenProjectReplacementRequiresConfirmation)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_project_actions_confirm_open.dartsim";
+  std::filesystem::remove(path);
+
+  SimEngine saved;
+  saved.execute(
+      commands::addRigidBody(ShapeType::Sphere, translation(1.0, 0.0, 1.0)));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  const SceneModel dirtyModel = engine.objects().model();
+  ASSERT_TRUE(engine.isProjectDirty());
+
+  const auto requested
+      = ui::requestOpenProjectReplacement(engine, path.string());
+  EXPECT_TRUE(requested.promptRequired);
+  EXPECT_FALSE(requested.result.ok);
+  EXPECT_EQ(requested.result.message, "Unsaved changes");
+  EXPECT_EQ(requested.request.kind, ui::ProjectReplacementKind::OpenProject);
+  EXPECT_EQ(requested.request.path, path.string());
+  EXPECT_EQ(requested.request.confirmLabel, "Discard and Open");
+  EXPECT_NE(
+      requested.request.message.find(path.filename().string()),
+      std::string::npos);
+  EXPECT_EQ(engine.objects().model(), dirtyModel);
+
+  const auto confirmed
+      = ui::confirmProjectReplacement(engine, requested.request);
+  EXPECT_TRUE(confirmed.ok);
+  EXPECT_EQ(confirmed.message, "Loaded " + path.string());
+  EXPECT_TRUE(engine.hasProjectPath());
+  EXPECT_EQ(engine.projectPath(), path.string());
+  EXPECT_EQ(engine.objects().model().size(), saved.objects().model().size());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  std::filesystem::remove(path);
+}
+
+TEST(DartsimProjectActions, DirtyConfirmedOpenFailurePreservesScene)
+{
+  const std::filesystem::path missing
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_project_actions_missing_confirmed_open.dartsim";
+  std::filesystem::remove(missing);
+
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  const SceneModel dirtyModel = engine.objects().model();
+  ASSERT_TRUE(engine.isProjectDirty());
+
+  const auto requested
+      = ui::requestOpenProjectReplacement(engine, missing.string());
+  ASSERT_TRUE(requested.promptRequired);
+
+  const auto confirmed
+      = ui::confirmProjectReplacement(engine, requested.request);
+  EXPECT_FALSE(confirmed.ok);
+  EXPECT_EQ(
+      confirmed.message,
+      "Open failed: " + missing.string() + " does not exist");
+  EXPECT_EQ(engine.objects().model(), dirtyModel);
+  EXPECT_FALSE(engine.hasProjectPath());
+  EXPECT_TRUE(engine.isProjectDirty());
+}
+
+TEST(DartsimProjectActions, DirtyConfirmedOpenAcceptsExtensionlessPath)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_project_actions_confirm_extensionless.dartsim";
+  const std::filesystem::path extensionless = path.parent_path() / path.stem();
+  std::filesystem::remove(path);
+
+  SimEngine saved;
+  saved.execute(
+      commands::addRigidBody(ShapeType::Sphere, translation(1.0, 0.0, 1.0)));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  ASSERT_TRUE(engine.isProjectDirty());
+
+  const auto requested
+      = ui::requestOpenProjectReplacement(engine, extensionless.string());
+  ASSERT_TRUE(requested.promptRequired);
+  EXPECT_EQ(requested.request.path, extensionless.string());
+
+  const auto confirmed
+      = ui::confirmProjectReplacement(engine, requested.request);
+  EXPECT_TRUE(confirmed.ok);
+  EXPECT_EQ(confirmed.message, "Loaded " + path.string());
+  EXPECT_EQ(engine.projectPath(), path.string());
+  EXPECT_EQ(engine.objects().model().size(), saved.objects().model().size());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  std::filesystem::remove(path);
+}
+
+TEST(DartsimProjectActions, CleanProjectReplacementAppliesImmediately)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_project_actions_clean_replacement.dartsim";
+  std::filesystem::remove(path);
+
+  SimEngine saved;
+  saved.execute(
+      commands::addRigidBody(ShapeType::Sphere, translation(1.0, 0.0, 1.0)));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  SimEngine engine;
+  engine.markProjectClean();
+  auto requested = ui::requestOpenProjectReplacement(engine, path.string());
+  EXPECT_FALSE(requested.promptRequired);
+  EXPECT_TRUE(requested.result.ok);
+  EXPECT_EQ(requested.result.message, "Loaded " + path.string());
+  EXPECT_EQ(engine.projectPath(), path.string());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  requested = ui::requestNewProjectReplacement(engine);
+  EXPECT_FALSE(requested.promptRequired);
+  EXPECT_TRUE(requested.result.ok);
+  EXPECT_EQ(requested.result.message, "New project");
+  EXPECT_FALSE(engine.hasProjectPath());
+  EXPECT_TRUE(engine.objects().model().empty());
+
+  std::filesystem::remove(path);
+}
+
+TEST(DartsimProjectActions, ProjectReplacementConfirmRejectsOpenMacro)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_project_actions_confirm_macro_guard.dartsim";
+  std::filesystem::remove(path);
+
+  SimEngine saved;
+  saved.execute(
+      commands::addRigidBody(ShapeType::Sphere, translation(1.0, 0.0, 1.0)));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  const SceneModel dirtyModel = engine.objects().model();
+  ASSERT_TRUE(engine.isProjectDirty());
+
+  const auto requestedNew = ui::requestNewProjectReplacement(engine);
+  const auto requestedOpen
+      = ui::requestOpenProjectReplacement(engine, path.string());
+  ASSERT_TRUE(requestedNew.promptRequired);
+  ASSERT_TRUE(requestedOpen.promptRequired);
+
+  engine.commands().beginMacro("Pending Transaction");
+  const auto confirmedNew
+      = ui::confirmProjectReplacement(engine, requestedNew.request);
+  EXPECT_FALSE(confirmedNew.ok);
+  EXPECT_EQ(
+      confirmedNew.message,
+      "Cannot create a new project during an edit transaction");
+  EXPECT_EQ(engine.objects().model(), dirtyModel);
+
+  const auto confirmedOpen
+      = ui::confirmProjectReplacement(engine, requestedOpen.request);
+  EXPECT_FALSE(confirmedOpen.ok);
+  EXPECT_EQ(
+      confirmedOpen.message,
+      "Cannot load a project during an edit transaction");
+  EXPECT_EQ(engine.objects().model(), dirtyModel);
+  EXPECT_TRUE(engine.commands().inMacro());
+  engine.commands().endMacro();
+
+  std::filesystem::remove(path);
+}
+
 TEST(DartsimProjectActions, ProjectReplacementActionsRejectOpenMacro)
 {
   const std::filesystem::path path
@@ -427,6 +646,23 @@ TEST(DartsimProjectActions, ProjectReplacementActionsRejectOpenMacro)
   EXPECT_FALSE(dialogCalled);
   EXPECT_EQ(engine.objects().model(), transactionModel);
   EXPECT_TRUE(engine.commands().inMacro());
+
+  const auto blockedRequestedNew = ui::requestNewProjectReplacement(engine);
+  EXPECT_FALSE(blockedRequestedNew.promptRequired);
+  EXPECT_FALSE(blockedRequestedNew.result.ok);
+  EXPECT_EQ(
+      blockedRequestedNew.result.message,
+      "Cannot create a new project during an edit transaction");
+  EXPECT_EQ(engine.objects().model(), transactionModel);
+
+  const auto blockedRequestedOpen
+      = ui::requestOpenProjectReplacement(engine, path.string());
+  EXPECT_FALSE(blockedRequestedOpen.promptRequired);
+  EXPECT_FALSE(blockedRequestedOpen.result.ok);
+  EXPECT_EQ(
+      blockedRequestedOpen.result.message,
+      "Cannot load a project during an edit transaction");
+  EXPECT_EQ(engine.objects().model(), transactionModel);
 
   engine.commands().endMacro();
   std::filesystem::remove(path);

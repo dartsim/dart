@@ -83,6 +83,35 @@ enum class DirtyProjectPolicy
   Discard,
 };
 
+enum class ProjectReplacementKind
+{
+  NewProject,
+  OpenProject,
+};
+
+struct ProjectReplacementRequest
+{
+  ProjectReplacementKind kind = ProjectReplacementKind::NewProject;
+  std::string path;
+  std::string title = "Unsaved changes";
+  std::string message;
+  std::string confirmLabel = "Discard Changes";
+  std::string cancelLabel = "Cancel";
+};
+
+struct ProjectReplacementActionResult
+{
+  bool promptRequired = false;
+  ProjectActionResult result;
+  ProjectReplacementRequest request;
+};
+
+struct ProjectReplacementPromptState
+{
+  bool open = false;
+  ProjectReplacementRequest request;
+};
+
 enum class ProjectFileDialogKind
 {
   Open,
@@ -125,6 +154,23 @@ void rememberRecentProject(RecentProjectState& state, std::string path);
 ProjectActionResult newProject(
     SimEngine& engine,
     DirtyProjectPolicy dirtyPolicy = DirtyProjectPolicy::Block);
+
+/// Create a fresh project, or describe the confirmation required to replace a
+/// dirty project.
+ProjectReplacementActionResult requestNewProjectReplacement(SimEngine& engine);
+
+/// Load a project path, or describe the confirmation required to replace a
+/// dirty project.
+ProjectReplacementActionResult requestOpenProjectReplacement(
+    SimEngine& engine, std::string path = kDefaultProjectPath);
+
+/// Apply a previously requested dirty-project replacement.
+ProjectActionResult confirmProjectReplacement(
+    SimEngine& engine, const ProjectReplacementRequest& request);
+
+/// Cancel a pending dirty-project replacement.
+ProjectActionResult cancelProjectReplacement(
+    const ProjectReplacementRequest& request);
 
 /// Save to the current project path, or `defaultPath` when the project has not
 /// been saved yet.
