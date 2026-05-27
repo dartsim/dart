@@ -827,13 +827,13 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
     validateBoundaryNodes(
         boundary.nodes, nodeCount, "neumannBoundaryConditions", i);
     validateDeformableFiniteVector(
-        boundary.acceleration, "neumannBoundaryConditions.acceleration", i);
+        boundary.force, "neumannBoundaryConditions.force", i);
     validateBoundaryTimeRange(
         boundary.startTime, boundary.endTime, "neumannBoundaryConditions");
 
     comps::DeformableNeumannBoundary internal;
     internal.nodes = boundary.nodes;
-    internal.acceleration = boundary.acceleration;
+    internal.force = boundary.force;
     internal.startTime = boundary.startTime;
     internal.endTime = boundary.endTime;
     data.boundaryConditions.neumann.push_back(std::move(internal));

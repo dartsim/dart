@@ -293,7 +293,7 @@ private:
         component.neumann,
         [&](const DeformableNeumannBoundary& boundary) {
           writeVector(output, boundary.nodes, writeIndex);
-          io::writeVector3d(output, boundary.acceleration);
+          io::writeVector3d(output, boundary.force);
           io::writePOD(output, boundary.startTime);
           io::writePOD(output, boundary.endTime);
         });
@@ -323,7 +323,7 @@ private:
     readVector(
         input, component.neumann, [&](DeformableNeumannBoundary& boundary) {
           readVector(input, boundary.nodes, readIndex);
-          io::readVector3d(input, boundary.acceleration);
+          io::readVector3d(input, boundary.force);
           io::readPOD(input, boundary.startTime);
           io::readPOD(input, boundary.endTime);
         });

@@ -1117,10 +1117,8 @@ void prepareDeformableBoundaryConditions(
         continue;
       }
 
-      // The audited reference scene format stores Neumann vectors as nodal
-      // accelerations in this contact-free replay slice. Keep force-work terms
-      // for later FEM material slices.
-      scratch.externalAccelerations[node] += boundary.acceleration;
+      scratch.externalAccelerations[node]
+          += boundary.force / state.masses[node];
       if (countedNeumann[node] == 0u) {
         countedNeumann[node] = 1u;
         ++stats.activeNeumannNodeCount;

@@ -71,8 +71,8 @@ struct ShapeBoundaryDirichlet
   Eigen::Vector3d maxCorner = Eigen::Vector3d::Zero();
   Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
   Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
-  double startTime = 0.0;
-  double endTime = std::numeric_limits<double>::infinity();
+  std::optional<double> startTime;
+  std::optional<double> endTime;
 };
 
 //==============================================================================
@@ -80,9 +80,9 @@ struct ShapeBoundaryNeumann
 {
   Eigen::Vector3d minCorner = Eigen::Vector3d::Zero();
   Eigen::Vector3d maxCorner = Eigen::Vector3d::Zero();
-  Eigen::Vector3d load = Eigen::Vector3d::Zero();
-  double startTime = 0.0;
-  double endTime = std::numeric_limits<double>::infinity();
+  Eigen::Vector3d force = Eigen::Vector3d::Zero();
+  std::optional<double> startTime;
+  std::optional<double> endTime;
 };
 
 //==============================================================================
@@ -589,20 +589,16 @@ void parseShapeExtra(
       boundary.linearVelocity = readVector3(input, "DBC linear velocity");
       boundary.angularVelocity
           = readVector3(input, "DBC angular velocity") * (M_PI / 180.0);
-      boundary.startTime
-          = readOptionalDouble(input).value_or(scene.dirichletTimeRange[0]);
-      boundary.endTime
-          = readOptionalDouble(input).value_or(scene.dirichletTimeRange[1]);
+      boundary.startTime = readOptionalDouble(input);
+      boundary.endTime = readOptionalDouble(input);
       shape.dirichlet.push_back(boundary);
     } else if (token == "NBC") {
       ShapeBoundaryNeumann boundary;
       boundary.minCorner = readVector3(input, "NBC min");
       boundary.maxCorner = readVector3(input, "NBC max");
-      boundary.load = readVector3(input, "NBC load");
-      boundary.startTime
-          = readOptionalDouble(input).value_or(scene.neumannTimeRange[0]);
-      boundary.endTime
-          = readOptionalDouble(input).value_or(scene.neumannTimeRange[1]);
+      boundary.force = readVector3(input, "NBC force");
+      boundary.startTime = readOptionalDouble(input);
+      boundary.endTime = readOptionalDouble(input);
       shape.neumann.push_back(boundary);
     } else if (token == "meshSeq") {
       std::string unusedPath;
@@ -783,8 +779,9 @@ DeformableBodyOptions makeBodyOptions(
                            * boxCenter(boundary.minCorner, boundary.maxCorner)
                                  .cwiseProduct(shape.scale)
                        + shape.translation;
-    condition.startTime = boundary.startTime;
-    condition.endTime = boundary.endTime;
+    condition.startTime
+        = boundary.startTime.value_or(scene.dirichletTimeRange[0]);
+    condition.endTime = boundary.endTime.value_or(scene.dirichletTimeRange[1]);
     options.dirichletBoundaryConditions.push_back(std::move(condition));
   }
 
@@ -798,9 +795,10 @@ DeformableBodyOptions makeBodyOptions(
     if (condition.nodes.empty()) {
       continue;
     }
-    condition.acceleration = boundary.load;
-    condition.startTime = boundary.startTime;
-    condition.endTime = boundary.endTime;
+    condition.force = boundary.force;
+    condition.startTime
+        = boundary.startTime.value_or(scene.neumannTimeRange[0]);
+    condition.endTime = boundary.endTime.value_or(scene.neumannTimeRange[1]);
     options.neumannBoundaryConditions.push_back(std::move(condition));
   }
 

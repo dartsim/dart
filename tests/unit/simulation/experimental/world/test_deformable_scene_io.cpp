@@ -136,6 +136,29 @@ $EndSurface
 )msh";
 
 //==============================================================================
+constexpr std::string_view kSingleTetraMsh = R"msh($MeshFormat
+4.1 0 8
+$EndMeshFormat
+$Nodes
+1 4 1 4
+3 0 0 4
+1
+2
+3
+4
+0.000000e+00 0.000000e+00 0.000000e+00
+1.000000e+00 0.000000e+00 0.000000e+00
+0.000000e+00 1.000000e+00 0.000000e+00
+0.000000e+00 0.000000e+00 1.000000e+00
+$EndNodes
+$Elements
+1 1 1 1
+3 0 4 1
+1 1 2 3 4
+$EndElements
+)msh";
+
+//==============================================================================
 class TempSceneDir
 {
 public:
@@ -441,7 +464,41 @@ input/tetMeshes/cube.msh 2 0 0  0 0 0  1 1 1 DBC -0.1 -0.1 -0.1  0.1 1.1 1.1  1 
 }
 
 //==============================================================================
-TEST(DeformableSceneIo, NeumannLoadsAreAccelerationLikeAndHalfOpen)
+TEST(DeformableSceneIo, AppliesGlobalBoundaryRangesAfterShapesBlock)
+{
+  TempSceneDir temp;
+  temp.writeMesh("single_tet.msh", kSingleTetraMsh);
+  const auto scenePath = temp.writeScene(
+      "late_ranges.txt",
+      R"scene(
+turnOffGravity
+density 48
+time 0.3 0.1
+shapes input 1
+input/tetMeshes/single_tet.msh 0 0 0  0 0 0  1 1 1  DBC -0.1 -0.1 -0.1  0.1 0.1 0.1  1 0 0  0 0 0  NBC 0.9 -0.1 -0.1  1.1 0.1 0.1  4 0 0
+DBCTimeRange 0.1 0.2
+NBCTimeRange 0.1 0.2
+)scene");
+
+  sx::World world;
+  sxio::DeformableSceneLoadOptions options;
+  options.assetRoot = temp.path();
+  options.addStructuralSprings = false;
+  const auto info = sxio::loadDeformableScene(world, scenePath, options);
+
+  const auto body = info.bodies[0].body;
+
+  world.step();
+  EXPECT_NEAR(body.getPosition(0).x(), 0.0, 1e-12);
+  EXPECT_NEAR(body.getPosition(1).x(), 1.0, 1e-12);
+
+  world.step();
+  EXPECT_NEAR(body.getPosition(0).x(), 0.1, 1e-12);
+  EXPECT_NEAR(body.getPosition(1).x(), 1.02, 1e-12);
+}
+
+//==============================================================================
+TEST(DeformableSceneIo, NeumannLoadsAreForceLikeAndHalfOpen)
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
@@ -449,10 +506,10 @@ TEST(DeformableSceneIo, NeumannLoadsAreAccelerationLikeAndHalfOpen)
 
   sx::DeformableBodyOptions options;
   options.positions = {Eigen::Vector3d::Zero()};
-  options.masses = {1.0};
+  options.masses = {2.0};
   sx::DeformableNeumannBoundaryCondition condition;
   condition.nodes = {0};
-  condition.acceleration = Eigen::Vector3d(2.0, 0.0, 0.0);
+  condition.force = Eigen::Vector3d(4.0, 0.0, 0.0);
   condition.startTime = 0.0;
   condition.endTime = 0.2;
   options.neumannBoundaryConditions.push_back(condition);

@@ -114,18 +114,18 @@ struct DeformableDirichletBoundaryCondition
   double endTime = std::numeric_limits<double>::infinity();
 };
 
-/// Time-ranged Neumann-style acceleration over deformable nodes.
+/// Time-ranged Neumann-style nodal force over deformable nodes.
 ///
-/// This contact-free replay slice stores upstream reference-scene NBC vectors
-/// as nodal accelerations. Force/traction work terms are added with later FEM
-/// material slices.
+/// This contact-free replay slice applies the force as a per-node external
+/// acceleration by dividing by each node's assembled mass. Traction work terms
+/// are added with later FEM material slices.
 struct DeformableNeumannBoundaryCondition
 {
-  /// Node indices receiving the acceleration.
+  /// Node indices receiving the force.
   std::vector<std::size_t> nodes;
 
-  /// Nodal acceleration applied while the time range is active.
-  Eigen::Vector3d acceleration = Eigen::Vector3d::Zero();
+  /// Nodal force applied to each listed node while the time range is active.
+  Eigen::Vector3d force = Eigen::Vector3d::Zero();
 
   /// Inclusive start time in seconds.
   double startTime = 0.0;
@@ -177,7 +177,7 @@ struct DeformableBodyOptions
   /// Optional scripted Dirichlet boundary conditions.
   std::vector<DeformableDirichletBoundaryCondition> dirichletBoundaryConditions;
 
-  /// Optional time-ranged Neumann-style accelerations.
+  /// Optional time-ranged Neumann-style nodal forces.
   std::vector<DeformableNeumannBoundaryCondition> neumannBoundaryConditions;
 
   /// Material properties stored with the body. Only density affects this slice.
