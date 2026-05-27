@@ -45,6 +45,8 @@ struct RunOptions;
 
 namespace dart::gui::detail {
 
+struct GuiScaleState;
+
 class ApplicationWindow
 {
 public:
@@ -66,9 +68,21 @@ private:
 };
 
 ApplicationWindow createApplicationWindow(
-    const dart::gui::RunOptions& options, std::ostream& errors);
+    const dart::gui::RunOptions& options,
+    bool automaticWindowWidth,
+    bool automaticWindowHeight,
+    std::ostream& errors);
 
 void* getNativeWindow(GLFWwindow* window);
+
+double resolveWindowDpiScale(GLFWwindow* window);
+
+void resizeAutomaticApplicationWindow(
+    GLFWwindow* window,
+    const dart::gui::RunOptions& options,
+    const GuiScaleState& guiScale,
+    bool automaticWindowWidth,
+    bool automaticWindowHeight);
 
 bool shouldContinueApplicationLoop(bool headless, GLFWwindow* window);
 

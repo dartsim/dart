@@ -150,6 +150,8 @@ struct AppOptions
   ExampleScene scene = ExampleScene::Mvp;
   bool showUi = true;
   bool showUiExplicit = false;
+  bool windowWidthExplicit = false;
+  bool windowHeightExplicit = false;
   bool profile = false;
   bool showPerfHud = false;
   bool orbitLight = true;

@@ -25,7 +25,11 @@ if(DART_BUILD_GUI OR NOT DART_IN_SOURCE_BUILD)
   #     so they stay multi-file standalone examples.
   #   - wam_ikfast: depends on a generated IKFast library selected via
   #     DART_WAM_IKFAST_LIB_PATH at configure time.
+  #   - experimental_deformable_gui: newly landed upstream (PR #2711);
+  #     migrating it into dart-demos is tracked in
+  #     docs/dev_tasks/examples_strategy/RESUME.md.
   add_subdirectory(atlas_simbicon)
   add_subdirectory(collision_sandbox)
+  add_subdirectory(experimental_deformable_gui)
   add_subdirectory(wam_ikfast)
 endif()

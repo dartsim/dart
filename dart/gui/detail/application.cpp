@@ -37,6 +37,7 @@
 #include <dart/gui/detail/debug_overlay.hpp>
 #include <dart/gui/detail/frame_renderer.hpp>
 #include <dart/gui/detail/frame_viewport.hpp>
+#include <dart/gui/detail/gui_scale.hpp>
 #include <dart/gui/detail/imgui_overlay.hpp>
 #include <dart/gui/detail/input.hpp>
 #include <dart/gui/detail/native_window.hpp>
@@ -75,6 +76,7 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 
@@ -114,6 +116,7 @@ using dart::gui::detail::FrameRenderResult;
 using dart::gui::detail::FrameViewport;
 using dart::gui::detail::getCurrentImGuiIo;
 using dart::gui::detail::getNativeWindow;
+using dart::gui::detail::GuiScaleState;
 using dart::gui::detail::ImGuiOverlay;
 using dart::gui::detail::initialCameraForScene;
 using dart::gui::detail::InitialSceneState;
@@ -126,12 +129,15 @@ using dart::gui::detail::PerfHudState;
 using dart::gui::detail::pollApplicationInput;
 using dart::gui::detail::Renderable;
 using dart::gui::detail::renderApplicationFrame;
+using dart::gui::detail::resizeAutomaticApplicationWindow;
+using dart::gui::detail::resolveWindowDpiScale;
 using dart::gui::detail::SceneFrameUpdater;
 using dart::gui::detail::SceneLights;
 using dart::gui::detail::ScreenshotCapture;
 using dart::gui::detail::SelectionController;
 using dart::gui::detail::shouldContinueApplicationLoop;
 using dart::gui::detail::SimulationStepper;
+using dart::gui::detail::updateConfiguredImGuiOverlayScale;
 using dart::gui::detail::updateFrameUi;
 using dart::gui::detail::updateFrameViewport;
 
@@ -317,7 +323,11 @@ int runGuiBackendApplicationImpl(
 
   configureFilamentLogging();
 
-  ApplicationWindow appWindow = createApplicationWindow(runOptions, std::cerr);
+  ApplicationWindow appWindow = createApplicationWindow(
+      runOptions,
+      !appOptions.windowWidthExplicit,
+      !appOptions.windowHeightExplicit,
+      std::cerr);
   GLFWwindow* window = appWindow.get();
   if (!runOptions.headless && window == nullptr) {
     return 1;
@@ -352,8 +362,14 @@ int runGuiBackendApplicationImpl(
       appOptions.orbitLightPeriodSeconds);
   attachSceneEnvironment(*scene, indirectLight, skybox, lights);
 
-  const float guiScale = static_cast<float>(runOptions.guiScale);
-  ImGuiOverlay imguiOverlay = createConfiguredImGuiOverlay(*engine, guiScale);
+  GuiScaleState guiScale = dart::gui::detail::makeGuiScaleState(
+      runOptions.guiScale, resolveWindowDpiScale(window));
+  double automaticWindowEffectiveScale = guiScale.effectiveScale;
+  bool automaticWindowSizeResolved
+      = runOptions.headless
+        || (appOptions.windowWidthExplicit && appOptions.windowHeightExplicit);
+  ImGuiOverlay imguiOverlay = createConfiguredImGuiOverlay(
+      *engine, static_cast<float>(guiScale.effectiveScale));
   auto& imguiIo = getCurrentImGuiIo();
 
   ViewerLifecycleState lifecycle;
@@ -479,6 +495,23 @@ int runGuiBackendApplicationImpl(
       }
       profile.inputMs += elapsedMs(phaseStart);
 
+      guiScale = dart::gui::detail::makeGuiScaleState(
+          runOptions.guiScale, resolveWindowDpiScale(window));
+      if (!automaticWindowSizeResolved
+          || std::abs(guiScale.effectiveScale - automaticWindowEffectiveScale)
+                 > 1e-4) {
+        resizeAutomaticApplicationWindow(
+            window,
+            runOptions,
+            guiScale,
+            !appOptions.windowWidthExplicit,
+            !appOptions.windowHeightExplicit);
+        automaticWindowEffectiveScale = guiScale.effectiveScale;
+        automaticWindowSizeResolved = true;
+      }
+      updateConfiguredImGuiOverlayScale(
+          *engine, imguiOverlay, static_cast<float>(guiScale.effectiveScale));
+
       phaseStart = ProfileAccumulator::Clock::now();
       FrameViewport viewport;
       {
@@ -493,8 +526,7 @@ int runGuiBackendApplicationImpl(
             runOptions.width,
             runOptions.height,
             dartScene.world->getTimeStep(),
-            appOptions.showUi,
-            runOptions.guiScale);
+            appOptions.showUi);
       }
       profile.viewportCameraMs += elapsedMs(phaseStart);
 

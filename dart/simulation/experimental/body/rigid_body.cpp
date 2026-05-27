@@ -476,6 +476,30 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
 }
 
 //==============================================================================
+void RigidBody::setDeformableGroundBarrier(bool enabled)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  auto& registry = getWorld()->getRegistry();
+  if (enabled) {
+    registry.get_or_emplace<comps::DeformableGroundBarrierTag>(getEntity());
+  } else {
+    registry.remove<comps::DeformableGroundBarrierTag>(getEntity());
+  }
+}
+
+//==============================================================================
+bool RigidBody::isDeformableGroundBarrier() const
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid rigid body handle");
+
+  return getWorld()->getRegistry().all_of<comps::DeformableGroundBarrierTag>(
+      getEntity());
+}
+
+//==============================================================================
 std::optional<CollisionShape> RigidBody::getCollisionShape() const
 {
   DART_EXPERIMENTAL_THROW_T_IF(

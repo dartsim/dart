@@ -30,29 +30,46 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#ifndef DART_GUI_DETAIL_GUI_SCALE_HPP_
+#define DART_GUI_DETAIL_GUI_SCALE_HPP_
 
-#include <dart/simulation/experimental/body/collision_shape.hpp>
-#include <dart/simulation/experimental/comps/component_category.hpp>
+#include <optional>
+#include <string_view>
 
-namespace dart::simulation::experimental::comps {
+namespace dart::gui::detail {
 
-/// Collision geometry attached to a body or link.
-///
-/// **Internal Implementation Detail** - Not exposed in public API. The public
-/// surface is the `CollisionShape` value object plus body/link accessors.
-struct CollisionGeometry
+struct GuiScaleState
 {
-  DART_EXPERIMENTAL_PROPERTY_COMPONENT(CollisionGeometry);
-
-  CollisionShape shape;
+  double userScale = 1.0;
+  double dpiScale = 1.0;
+  double effectiveScale = 1.0;
 };
 
-/// Tag marking static collision geometry as a one-sided ground barrier for
-/// deformable bodies.
-struct DeformableGroundBarrierTag
+struct GuiWindowSize
 {
-  DART_EXPERIMENTAL_TAG_COMPONENT(DeformableGroundBarrierTag);
+  int width = 1;
+  int height = 1;
 };
 
-} // namespace dart::simulation::experimental::comps
+double normalizeGuiUserScale(double scale);
+
+double normalizeGuiDpiScale(double scale);
+
+std::optional<double> parseGuiDpiScaleOverride(std::string_view text);
+
+std::optional<double> guiDpiScaleOverrideFromEnvironment();
+
+GuiScaleState makeGuiScaleState(double userScale, double dpiScale);
+
+GuiWindowSize resolveAutomaticGuiWindowSize(
+    int baseWidth,
+    int baseHeight,
+    double effectiveScale,
+    int maxWidth,
+    int maxHeight,
+    bool automaticWidth,
+    bool automaticHeight);
+
+} // namespace dart::gui::detail
+
+#endif // DART_GUI_DETAIL_GUI_SCALE_HPP_

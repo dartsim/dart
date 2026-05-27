@@ -36,6 +36,14 @@ Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
    hardcoded values in `tests/unit/gui/test_demos_golden_parity.cpp`.
 3. **PLAN-012 + PLAN-101 work.** Cloud Colab smoke (PLAN-012) and editor scene
    loading (PLAN-101) unblock conditions 2 and 3 of the retire-later checklist.
+4. **Migrate `experimental_deformable_gui` into `dart-demos`.** Upstream PR
+   #2711 landed it as a standalone GUI example; the demos consolidation pattern
+   says it should be a scene under `examples/demos/scenes/`. Convert
+   `examples/experimental_deformable_gui/main.cpp` into a
+   `makeExperimentalDeformableScene()` factory (mirroring
+   `experimental_rigid_body_gui.cpp`), register it in `scenes.hpp` /
+   `registry.cpp` / `CMakeLists.txt`, then delete the standalone dir and its
+   entry in `examples/CMakeLists.txt` + `scripts/run_cpp_example.py`.
 
 ## What Is Done
 
