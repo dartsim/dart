@@ -22,6 +22,8 @@ REQUIRED_DOXYFILE_PATTERNS = (
     "*/*_impl.hpp",
     "*::detail",
     "*::detail::*",
+    "*::internal",
+    "*::internal::*",
 )
 GENERATED_DOC_PRIVATE_MARKERS = ("detail", "internal", "-impl", "_impl")
 

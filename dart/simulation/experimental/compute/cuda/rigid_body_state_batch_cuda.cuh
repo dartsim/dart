@@ -69,4 +69,30 @@ void rolloutRigidBodyStateBatchLinearCuda(
     double timeStep,
     std::size_t stepCount);
 
+/// Integrate the full force-driven SoA rigid-body batch path through CUDA.
+///
+/// This matches @c integrateRigidBodyStateBatch without torque: linear
+/// velocity, position, and orientation are updated from the same model, force,
+/// and angular velocity buffers. The wrapper validates the host buffers before
+/// touching the CUDA runtime and includes host/device transfer, kernel
+/// execution, and readback.
+void integrateRigidBodyStateBatchCuda(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    double timeStep);
+
+/// Run repeated full rigid-body batch steps through one CUDA transfer packet.
+///
+/// The state, model, and force buffers are copied to the device once, the
+/// kernel runs @p stepCount times, and the final state is copied back.
+/// Benchmarks use this path so Phase 5 packets measure setup, transfer,
+/// compute, and readback for the full homogeneous-batch workload.
+void rolloutRigidBodyStateBatchCuda(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    double timeStep,
+    std::size_t stepCount);
+
 } // namespace dart::simulation::experimental::compute::cuda

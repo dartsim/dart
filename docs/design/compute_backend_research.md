@@ -256,7 +256,8 @@ GPU binaries do not ship cleanly today on either channel:
 Consequence for DART: GPU support must be an optional, separate component or
 package, never a hard dependency of the core wheel or conda package. The core
 must keep a working CPU fallback with identical semantics, matching the existing
-GPU prototype-gate rules in `scalable_compute_decisions.md`.
+GPU prototype-gate rules and sidecar package shape in
+`scalable_compute_decisions.md`.
 
 ## Verdict
 
