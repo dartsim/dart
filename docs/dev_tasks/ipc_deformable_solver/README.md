@@ -30,9 +30,14 @@
         incident/adjacent exclusion filters, exact activation-distance filtering
         through the primitive distance kernels, sweep-versus-brute-force
         regression tests, and `bm_ipc_candidate_set`.
+  - [x] Internal CCD step-bound sub-slice: conservative point-triangle and
+        edge-edge normalized step bounds through native primitive CCD, initial
+        separation-band handling, deterministic candidate aggregation, exact CCD
+        regression tests, sampled safety checks, and
+        `bm_ipc_continuous_collision_step`.
   - [ ] Remaining Phase 2 work: analytic distance Hessians, tangent bases,
-        conservative PT/EE CCD step bounds, barrier/candidate integration, and
-        solver-owned contact buffers.
+        motion-aware candidate culling, barrier/candidate integration,
+        solver-owned contact buffers, and solver-wired CCD line search.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
@@ -53,8 +58,8 @@ DART-owned implementation.
 - No claim that imported `energy`, `timeIntegration`, contact, ground, or
   friction directives are honored beyond explicit warnings and contact-free
   replay scaffolding.
-- No FEM elasticity, material-driven stiffness, CCD line search, or projected
-  Newton solve in the current point-mass/spring stepping path.
+- No FEM elasticity, material-driven stiffness, solver-wired CCD line search,
+  or projected Newton solve in the current point-mass/spring stepping path.
 - No vendored or runtime dependency on `ipc-sim/IPC`.
 
 ## Key Decisions
@@ -73,10 +78,11 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Continue Phase 2 with conservative CCD line-search bounds, analytic distance
-   Hessian optimization, tangent bases, barrier/candidate integration, and
-   solver-owned contact buffers. The current primitive kernels and candidate
-   sets are internal scaffolding only and are not yet wired into `World::step()`.
+1. Continue Phase 2 with analytic distance Hessian optimization, tangent bases,
+   motion-aware candidate culling, barrier/candidate integration,
+   solver-owned contact buffers, and solver-wired CCD line search. The current
+   primitive kernels, candidate sets, and CCD step-bound helpers are internal
+   scaffolding only and are not yet wired into `World::step()`.
 2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
    scenes: broader scene asset loading, BE/NM state, output diagnostics
    compatibility decisions, and more contact-free mesh replays. The
@@ -131,9 +137,18 @@ covers deterministic surface-edge extraction, internal point-triangle and
 edge-edge candidate assembly, incident/adjacent filtering, exact
 activation-distance filtering through the primitive distance kernels,
 sweep-versus-brute-force regression tests, and benchmark counters. It does not
-yet cover conservative CCD bounds, barrier assembly, solver integration,
+yet cover motion-aware candidate culling, barrier assembly, solver integration,
 projected Newton, friction, persistent contact caches, tangent bases, or
 scene-level IPC contact behavior.
+
+For the CCD step-bound sub-slice, keep the verification language precise: it
+covers conservative internal point-triangle and edge-edge normalized step
+bounds through native primitive CCD, initial separation-band handling,
+deterministic candidate aggregation, exact-CCD comparison where available,
+sampled distance safety before the returned bound, and benchmark counters. It
+does not yet cover motion-aware broad-phase culling, barrier assembly,
+solver-wired CCD line search, projected Newton, friction, persistent contact
+caches, tangent bases, or scene-level IPC contact behavior.
 
 Current primitive-distance local gates:
 
@@ -148,9 +163,9 @@ pixi run check-api-boundaries
 
 The first local gate pass on 2026-05-27 passed `pixi run lint`, the focused
 target build, 13 `test_primitive_distance` cases, the CTest registration path,
-`pixi run check-api-boundaries`, and `pixi run check-lint`. The benchmark smoke
-reported roughly 8-16 ns for value/gradient distance paths, 228 ns for the
-analytic edge-edge mollifier Hessian path, and about 0.59-0.61 us for the
+`pixi run check-api-boundaries`, and `pixi run check-lint`. The latest benchmark
+smoke reported roughly 8-19 ns for value/gradient distance paths, 213 ns for the
+analytic edge-edge mollifier Hessian path, and about 0.61-0.69 us for the
 finite-difference distance Hessian placeholders. Treat those Hessian numbers as
 a temporary optimization target, not as final IPC performance evidence.
 
@@ -165,7 +180,23 @@ cmake --build build/default/cpp/Release --target test_contact_candidate_set bm_i
 The latest local candidate-set gate pass on 2026-05-27 passed the focused
 target build and 6 `test_contact_candidate_set` cases. The benchmark smoke
 reported the sweep path faster than brute force on the checked workloads: cloth
-8x8 was about 37 us versus 358 us, cloth 16x16 was about 0.42 ms versus
-5.20 ms, tetra-surface 4x4 was about 9.7 us versus 81 us, and tetra-surface
-8x8 was about 87 us versus 1.45 ms. CPU scaling was enabled, so treat these as
+8x8 was about 27 us versus 327 us, cloth 16x16 was about 0.35 ms versus
+5.10 ms, tetra-surface 4x4 was about 9.4 us versus 83 us, and tetra-surface
+8x8 was about 89 us versus 1.51 ms. CPU scaling was enabled, so treat these as
 local smoke numbers rather than a final performance claim.
+
+Current CCD step-bound local gates:
+
+```bash
+cmake --build build/default/cpp/Release --target test_continuous_collision_step bm_ipc_continuous_collision_step
+./build/default/cpp/Release/bin/test_continuous_collision_step
+./build/default/cpp/Release/bin/bm_ipc_continuous_collision_step --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
+```
+
+The latest local CCD step-bound gate pass on 2026-05-27 passed the focused
+target build and 6 `test_continuous_collision_step` cases. The benchmark smoke
+reported about 0.20 us for a point-triangle step-bound query, about 0.18 us for
+an edge-edge step-bound query, and about 0.13 ms, 1.81 ms, and 9.25 ms for the
+falling-patch candidate aggregate at resolutions 8, 16, and 24. CPU scaling was
+enabled, so treat these as local smoke numbers rather than a final performance
+claim.

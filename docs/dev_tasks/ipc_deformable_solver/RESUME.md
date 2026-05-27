@@ -37,17 +37,27 @@ primitive distance kernels, sweep-versus-brute-force regression tests, and
 `World::step()`, conservative CCD, barrier assembly, projected Newton, or
 friction.
 
+The CCD step-bound sub-slice adds conservative internal point-triangle and
+edge-edge normalized step bounds through native primitive CCD, initial
+separation-band handling, deterministic minimum aggregation over assembled
+candidate sets, exact-CCD regression checks where available, sampled safety
+checks before the returned bound, and `bm_ipc_continuous_collision_step`. It is
+still scaffolding: the bounds are not wired into `World::step()`, motion-aware
+candidate culling, barrier assembly, projected Newton, or friction.
+
 ## Current Branch
 
 `feature/ipc-deformable-contact-kernels` - stacked on
 `feature/ipc-scene-boundary-diagnostics`, adding internal primitive distance
-kernels and candidate assembly for the next deformable contact slices.
+kernels, candidate assembly, and CCD step-bound helpers for the next deformable
+contact slices.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with conservative PT/EE CCD
-line-search bounds, analytic distance Hessian optimization, tangent bases,
-barrier/candidate integration, and solver-owned contact buffers.
+After this sub-slice lands, continue Phase 2 with analytic distance Hessian
+optimization, tangent bases, motion-aware candidate culling,
+barrier/candidate integration, solver-owned contact buffers, and solver-wired
+CCD line search.
 
 ## Context That Would Be Lost
 
@@ -71,6 +81,9 @@ ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --outp
 cmake --build build/default/cpp/Release --target test_contact_candidate_set bm_ipc_candidate_set
 ./build/default/cpp/Release/bin/test_contact_candidate_set
 ./build/default/cpp/Release/bin/bm_ipc_candidate_set --benchmark_min_time=0.05s --benchmark_filter='BM_IpcCandidateSet'
+cmake --build build/default/cpp/Release --target test_continuous_collision_step bm_ipc_continuous_collision_step
+./build/default/cpp/Release/bin/test_continuous_collision_step
+./build/default/cpp/Release/bin/bm_ipc_continuous_collision_step --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
