@@ -489,6 +489,31 @@
     `benchmark-action/github-action-benchmark`, with a local
     `pixi run bm-dashboard-preview` to render the same dashboard before it is
     published.
+  - Added `pixi run bm-compute-check`, contact-shaped experimental compute
+    coverage, and a Phase 5 CPU-baseline dashboard surface so the full expected
+    scalable-compute benchmark corpus is checked in CI.
+  - Added `pixi run bm-phase5-gpu-packet-check --write-template <packet.json>` /
+    `--input <packet.json>` to create and validate the manual Phase 5 GPU
+    go/no-go benchmark packet once a project GPU runner exists, including
+    build/import and policy-gate evidence booleans.
+  - Added `pixi run -e cuda bm-phase5-cuda-full`,
+    `pixi run bm-phase5-cuda-packet`, and a manual CUDA workflow artifact path
+    that converts Phase 5 CUDA benchmark JSON into a validated GPU go/no-go
+    packet after the CUDA build/import and policy gates pass.
+  - Added `pixi run check-compute-backend-boundaries` to keep CUDA/SYCL/device
+    backend concepts out of public experimental C++ headers and the default
+    dartpy experimental bindings.
+  - Added `pixi run check-no-gpu-runtime-dependencies` to keep default Pixi and
+    dartpy wheel manifests free of GPU runtime dependencies before any optional
+    accelerator sidecar exists.
+  - Added `pixi run check-phase5-cuda-benchmark-contract` to ensure optional
+    CUDA benchmark files register the Phase 5 GPU go/no-go row consumed by the
+    packet validator.
+  - Added `pixi run check-phase5-cuda-workflow` to keep the manual CUDA workflow
+    wired to the Phase 5 policy gates, full benchmark row, packet validator, and
+    artifact upload paths.
+  - Tightened generated Doxygen API documentation exclusions so internal symbols
+    remain filtered after local documentation builds.
   - CodeQL scope updates and coverage workflow fixes. ([#2121](https://github.com/dartsim/dart/pull/2121), [#2128](https://github.com/dartsim/dart/pull/2128), [#2144](https://github.com/dartsim/dart/pull/2144), [#2147](https://github.com/dartsim/dart/pull/2147), [#2197](https://github.com/dartsim/dart/pull/2197), [#2198](https://github.com/dartsim/dart/pull/2198))
   - Documented scalable coverage organization and memory-bounded validation guidance for targeted local builds. ([#2648](https://github.com/dartsim/dart/pull/2648))
   - GitHub Actions and tooling dependency bumps. ([#2049](https://github.com/dartsim/dart/pull/2049), [#2050](https://github.com/dartsim/dart/pull/2050), [#2063](https://github.com/dartsim/dart/pull/2063), [#2064](https://github.com/dartsim/dart/pull/2064), [#2065](https://github.com/dartsim/dart/pull/2065), [#2074](https://github.com/dartsim/dart/pull/2074), [#2075](https://github.com/dartsim/dart/pull/2075), [#2076](https://github.com/dartsim/dart/pull/2076), [#2102](https://github.com/dartsim/dart/pull/2102), [#2103](https://github.com/dartsim/dart/pull/2103), [#2200](https://github.com/dartsim/dart/pull/2200), [#2264](https://github.com/dartsim/dart/pull/2264), [#2344](https://github.com/dartsim/dart/pull/2344), [#2345](https://github.com/dartsim/dart/pull/2345), [#2346](https://github.com/dartsim/dart/pull/2346))
@@ -508,6 +533,10 @@
     profiles and DOT visualization for per-node load, observed parallelism, and
     graph inspection, and added focused tests and benchmark coverage for graph
     batching overhead.
+  - Promoted experimental `World::step()` to the batched SoA rigid-body
+    integration path by default, including parent-before-child local-transform
+    write-back for frame-coupled rigid bodies while keeping executor injection as
+    the only public concurrency seam.
   - Added public experimental multibody joint/link API surface for DART 7 and
     dartpy 7, including `JointType`, `JointSpec`, `Link`, `Joint`, Python
     link/joint lookup, and design guidance for closed-chain topology as
