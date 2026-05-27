@@ -61,7 +61,8 @@ remove or clear watched objects, display transform/mass/joint values, preserve
 missing watched objects until removal, and plot bounded simulation/object
 series through `PanelBuilder::plotLines`. Console watch commands reuse the
 same session-local state for add/remove/clear/manual sample automation without
-dirtying the scene.
+dirtying the scene, and both the Watch panel and Console can toggle charted
+signal choices.
 File > Open Project now opens the in-app browser/manual path modal first.
 Browse still invokes the native file dialog from inside the modal, and native
 dialog failures or invalid selected paths leave the user in the modal instead
@@ -92,9 +93,10 @@ click-to-activate pane switching, and tiny-framebuffer fallback to single pane.
 ## Immediate Next Step
 
 Continue Phase 5 by adding richer per-pane interaction polish for the four-view
-layout, or continue Phase 4 by adding richer watch signal choices. Keep
-behavior in testable engine or UI action/view-model helpers before wiring it
-into `editor.cpp`, and keep the filtered coverage line total above 95%.
+layout, or continue Phase 4 by adding saved watch presets after scene metadata
+can store UI workspace settings. Keep behavior in testable engine or UI
+action/view-model helpers before wiring it into `editor.cpp`, and keep the
+filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -134,7 +136,8 @@ into `editor.cpp`, and keep the filtered coverage line total above 95%.
   automation stays backend-hidden and testable.
 - Watch behavior is now covered through `dartsim_ui/watch_actions` and
   `UNIT_dartsim_ui_WatchActions`; sampling reads simulation/object values into
-  session-local chart buffers and must remain view-only.
+  session-local chart buffers, configurable chart-signal choices remain
+  view-only, and disabled signals drop their old samples.
 - Project open remains usable without a working native picker: the File menu
   opens the in-app browser/manual path modal first. Browse reports native picker
   failures in-place, and `openProject()` accepts extensionless paths when the

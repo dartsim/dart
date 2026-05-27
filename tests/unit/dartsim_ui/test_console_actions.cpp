@@ -113,6 +113,7 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
   EXPECT_NE(
       watchHelp.message.find("watch [target|selection|clear|sample]"),
       std::string::npos);
+  EXPECT_NE(watchHelp.message.find("watch signal"), std::string::npos);
 
   const auto status = ui::applyConsoleCommand(engine, "status");
   EXPECT_TRUE(status.ok);
@@ -319,6 +320,64 @@ TEST(DartsimConsoleActions, DrivesWatchCommandsThroughSessionState)
   EXPECT_TRUE(sampled.ok);
   EXPECT_EQ(sampled.message, "Recorded watch sample");
   EXPECT_FALSE(watch.series.empty());
+
+  const auto disabledHeight
+      = ui::applyConsoleCommand(engine, watch, "watch signal z off");
+  EXPECT_TRUE(disabledHeight.ok);
+  EXPECT_EQ(disabledHeight.message, "Disabled watch signal: z");
+  EXPECT_TRUE(
+      std::none_of(
+          watch.series.begin(),
+          watch.series.end(),
+          [](const ui::WatchSeries& series) {
+            return series.kind == ui::WatchValueKind::TranslationZ;
+          }));
+
+  const auto enabledX
+      = ui::applyConsoleCommand(engine, watch, "watch signal x on");
+  EXPECT_TRUE(enabledX.ok);
+  EXPECT_EQ(enabledX.message, "Enabled watch signal: x");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, watch, "watch signal unknown on").message,
+      "Unknown watch signal: unknown");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, watch, "watch signal x maybe").message,
+      "Usage: watch signal <signal> <on|off>");
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "watch sample").ok);
+  EXPECT_TRUE(
+      std::any_of(
+          watch.series.begin(),
+          watch.series.end(),
+          [box](const ui::WatchSeries& series) {
+            return series.object == box
+                   && series.kind == ui::WatchValueKind::TranslationX;
+          }));
+
+  const auto disabledFrame
+      = ui::applyConsoleCommand(engine, watch, "watch signal frame off");
+  EXPECT_TRUE(disabledFrame.ok);
+  EXPECT_EQ(disabledFrame.message, "Disabled watch signal: Frame");
+  EXPECT_TRUE(
+      std::none_of(
+          watch.series.begin(),
+          watch.series.end(),
+          [](const ui::WatchSeries& series) {
+            return series.object == kNoObject
+                   && series.kind == ui::WatchValueKind::FrameCount;
+          }));
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "watch sample").ok);
+  EXPECT_TRUE(
+      std::none_of(
+          watch.series.begin(),
+          watch.series.end(),
+          [](const ui::WatchSeries& series) {
+            return series.object == kNoObject
+                   && series.kind == ui::WatchValueKind::FrameCount;
+          }));
+  const auto enabledFrame
+      = ui::applyConsoleCommand(engine, watch, "watch signal frame on");
+  EXPECT_TRUE(enabledFrame.ok);
+  EXPECT_EQ(enabledFrame.message, "Enabled watch signal: Frame");
 
   const std::string boxTarget
       = std::to_string(static_cast<unsigned long long>(box));

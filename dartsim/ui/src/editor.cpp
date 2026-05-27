@@ -696,11 +696,25 @@ void buildWatchPanel(dart::gui::PanelBuilder& ui, EditorApp& app)
     app.note(clearWatch(app.watch).message);
   }
 
-  const WatchStatus status = buildWatchStatus(app.watch, app.engine);
+  WatchStatus status = buildWatchStatus(app.watch, app.engine);
   ui.text(status.summary);
+  bool rebuildStatus = false;
+  for (const WatchSignalOption& option : status.signalOptions) {
+    bool enabled = option.enabled;
+    if (ui.checkbox("Plot " + option.label, enabled)) {
+      app.note(
+          setWatchChartSignalEnabled(app.watch, option.kind, enabled).message);
+      rebuildStatus = true;
+    }
+  }
+  if (rebuildStatus) {
+    status = buildWatchStatus(app.watch, app.engine);
+  }
+
   if (status.rows.empty()) {
     ui.text("(no watched objects)");
   }
+  ObjectId removeWatch = kNoObject;
   for (const WatchRow& row : status.rows) {
     ui.separator();
     std::string label = row.name + " - " + row.type;
@@ -709,8 +723,8 @@ void buildWatchPanel(dart::gui::PanelBuilder& ui, EditorApp& app)
     }
     ui.text(label);
     if (ui.button("Remove##watch-" + std::to_string(row.id))) {
-      app.note(unwatchObject(app.watch, row.id).message);
-      continue;
+      removeWatch = row.id;
+      break;
     }
     if (!row.exists) {
       ui.text("missing");
@@ -719,6 +733,10 @@ void buildWatchPanel(dart::gui::PanelBuilder& ui, EditorApp& app)
     for (const WatchValue& value : row.values) {
       ui.text(value.label + ": " + std::to_string(value.value));
     }
+  }
+  if (removeWatch != kNoObject) {
+    app.note(unwatchObject(app.watch, removeWatch).message);
+    status = buildWatchStatus(app.watch, app.engine);
   }
 
   ui.separator();

@@ -58,6 +58,32 @@ bool containsTarget(
          != state.targets.end();
 }
 
+const std::vector<WatchValueKind>& allWatchChartSignals()
+{
+  static const std::vector<WatchValueKind> kSignals{
+      WatchValueKind::SimulationTime,
+      WatchValueKind::FrameCount,
+      WatchValueKind::TranslationX,
+      WatchValueKind::TranslationY,
+      WatchValueKind::TranslationZ,
+      WatchValueKind::Mass,
+      WatchValueKind::JointPosition,
+  };
+  return kSignals;
+}
+
+bool isChartSignalEnabled(const WatchState& state, WatchValueKind kind)
+{
+  return std::find(state.chartSignals.begin(), state.chartSignals.end(), kind)
+         != state.chartSignals.end();
+}
+
+bool isChartSignalKind(WatchValueKind kind)
+{
+  const std::vector<WatchValueKind>& signals = allWatchChartSignals();
+  return std::find(signals.begin(), signals.end(), kind) != signals.end();
+}
+
 std::string valueLabel(WatchValueKind kind)
 {
   switch (kind) {
@@ -183,23 +209,6 @@ std::vector<WatchValueKind> valueKindsForObject(const SceneObject& object)
   return kinds;
 }
 
-std::vector<WatchValueKind> chartKindsForObject(const SceneObject& object)
-{
-  std::vector<WatchValueKind> kinds;
-  const std::vector<WatchValueKind> valueKinds = valueKindsForObject(object);
-  if (std::find(
-          valueKinds.begin(), valueKinds.end(), WatchValueKind::TranslationZ)
-      != valueKinds.end()) {
-    kinds.push_back(WatchValueKind::TranslationZ);
-  }
-  if (std::find(
-          valueKinds.begin(), valueKinds.end(), WatchValueKind::JointPosition)
-      != valueKinds.end()) {
-    kinds.push_back(WatchValueKind::JointPosition);
-  }
-  return kinds;
-}
-
 WatchSeries& ensureSeries(
     WatchState& state,
     const SimEngine& engine,
@@ -246,6 +255,16 @@ void pushSample(WatchState& state, WatchSeries& series, double value)
 }
 
 } // namespace
+
+std::vector<WatchValueKind> defaultWatchChartSignals()
+{
+  return {
+      WatchValueKind::SimulationTime,
+      WatchValueKind::FrameCount,
+      WatchValueKind::TranslationZ,
+      WatchValueKind::JointPosition,
+  };
+}
 
 WatchActionResult watchSelectedObjects(
     WatchState& state, const SimEngine& engine)
@@ -317,6 +336,38 @@ WatchActionResult clearWatch(WatchState& state)
   return {true, "Cleared watch list"};
 }
 
+WatchActionResult setWatchChartSignalEnabled(
+    WatchState& state, WatchValueKind kind, bool enabled)
+{
+  if (!isChartSignalKind(kind)) {
+    return {false, "Unsupported watch signal"};
+  }
+
+  const bool wasEnabled = isChartSignalEnabled(state, kind);
+  if (wasEnabled == enabled) {
+    return {
+        false,
+        std::string("Watch signal already ")
+            + (enabled ? "enabled: " : "disabled: ") + valueLabel(kind)};
+  }
+
+  if (enabled) {
+    state.chartSignals.push_back(kind);
+    return {true, "Enabled watch signal: " + valueLabel(kind)};
+  }
+
+  state.chartSignals.erase(
+      std::remove(state.chartSignals.begin(), state.chartSignals.end(), kind),
+      state.chartSignals.end());
+  state.series.erase(
+      std::remove_if(
+          state.series.begin(),
+          state.series.end(),
+          [kind](const WatchSeries& series) { return series.kind == kind; }),
+      state.series.end());
+  return {true, "Disabled watch signal: " + valueLabel(kind)};
+}
+
 void handleWatchEvent(WatchState& state, const Event& event)
 {
   if (event.type == EventType::ProjectCreated
@@ -328,22 +379,18 @@ void handleWatchEvent(WatchState& state, const Event& event)
 
 void recordWatchSample(WatchState& state, const SimEngine& engine)
 {
-  WatchSeries& simTime = ensureSeries(
-      state,
-      engine,
-      kNoObject,
-      engine.projectGeneration(),
-      WatchValueKind::SimulationTime);
-  pushSample(state, simTime, engine.simulation().simTime());
-
-  WatchSeries& frame = ensureSeries(
-      state,
-      engine,
-      kNoObject,
-      engine.projectGeneration(),
-      WatchValueKind::FrameCount);
-  pushSample(
-      state, frame, static_cast<double>(engine.simulation().frameCount()));
+  for (const WatchValueKind kind :
+       {WatchValueKind::SimulationTime, WatchValueKind::FrameCount}) {
+    if (!isChartSignalEnabled(state, kind)) {
+      continue;
+    }
+    WatchSeries& series = ensureSeries(
+        state, engine, kNoObject, engine.projectGeneration(), kind);
+    const std::optional<double> value = valueFor(engine, kNoObject, kind);
+    if (value.has_value()) {
+      pushSample(state, series, *value);
+    }
+  }
 
   for (const WatchTarget& target : state.targets) {
     if (target.projectGeneration != engine.projectGeneration()) {
@@ -353,7 +400,10 @@ void recordWatchSample(WatchState& state, const SimEngine& engine)
     if (object == nullptr) {
       continue;
     }
-    for (const WatchValueKind kind : chartKindsForObject(*object)) {
+    for (const WatchValueKind kind : allWatchChartSignals()) {
+      if (!isChartSignalEnabled(state, kind)) {
+        continue;
+      }
       const std::optional<double> value = valueFor(engine, target.id, kind);
       if (!value.has_value()) {
         continue;
@@ -373,6 +423,12 @@ WatchStatus buildWatchStatus(const WatchState& state, const SimEngine& engine)
                        : std::to_string(state.targets.size())
                              + " watched object"
                              + (state.targets.size() == 1 ? "" : "s");
+  status.signalOptions.reserve(allWatchChartSignals().size());
+  for (const WatchValueKind kind : allWatchChartSignals()) {
+    status.signalOptions.push_back(
+        {kind, valueLabel(kind), isChartSignalEnabled(state, kind)});
+  }
+
   status.series.reserve(state.series.size());
   for (const WatchSeries& series : state.series) {
     status.series.push_back(

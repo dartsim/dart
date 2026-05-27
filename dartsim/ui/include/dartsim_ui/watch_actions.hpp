@@ -73,10 +73,13 @@ struct WatchTarget
   std::uint64_t projectGeneration = 0;
 };
 
+[[nodiscard]] std::vector<WatchValueKind> defaultWatchChartSignals();
+
 struct WatchState
 {
   std::vector<WatchTarget> targets;
   std::vector<WatchSeries> series;
+  std::vector<WatchValueKind> chartSignals = defaultWatchChartSignals();
   std::size_t historyCapacity = kDefaultWatchHistoryCapacity;
 };
 
@@ -106,9 +109,17 @@ struct WatchChartSeries
   std::span<const double> samples;
 };
 
+struct WatchSignalOption
+{
+  WatchValueKind kind = WatchValueKind::SimulationTime;
+  std::string label;
+  bool enabled = false;
+};
+
 struct WatchStatus
 {
   std::string summary;
+  std::vector<WatchSignalOption> signalOptions;
   std::vector<WatchRow> rows;
   std::vector<WatchChartSeries> series;
 };
@@ -132,6 +143,10 @@ WatchActionResult unwatchObject(WatchState& state, ObjectId id);
 
 /// Clear all watch rows and chart samples.
 WatchActionResult clearWatch(WatchState& state);
+
+/// Enable or disable one plotted signal without mutating the scene.
+WatchActionResult setWatchChartSignalEnabled(
+    WatchState& state, WatchValueKind kind, bool enabled);
 
 /// Keep watch state scoped to the current project when engine events replace
 /// the scene.

@@ -80,6 +80,18 @@ const ui::WatchSeries* findSeries(
   return it == state.series.end() ? nullptr : &*it;
 }
 
+const ui::WatchSignalOption* findSignal(
+    const ui::WatchStatus& status, ui::WatchValueKind kind)
+{
+  const auto it = std::find_if(
+      status.signalOptions.begin(),
+      status.signalOptions.end(),
+      [kind](const ui::WatchSignalOption& option) {
+        return option.kind == kind;
+      });
+  return it == status.signalOptions.end() ? nullptr : &*it;
+}
+
 } // namespace
 
 TEST(DartsimWatchActions, EmptyWatchListReportsStatusAndSamplesGlobals)
@@ -90,6 +102,10 @@ TEST(DartsimWatchActions, EmptyWatchListReportsStatusAndSamplesGlobals)
 
   const ui::WatchStatus empty = ui::buildWatchStatus(state, engine);
   EXPECT_EQ(empty.summary, "No watched objects");
+  ASSERT_NE(findSignal(empty, ui::WatchValueKind::SimulationTime), nullptr);
+  EXPECT_TRUE(findSignal(empty, ui::WatchValueKind::SimulationTime)->enabled);
+  ASSERT_NE(findSignal(empty, ui::WatchValueKind::TranslationX), nullptr);
+  EXPECT_FALSE(findSignal(empty, ui::WatchValueKind::TranslationX)->enabled);
   EXPECT_TRUE(empty.rows.empty());
   EXPECT_TRUE(empty.series.empty());
 
@@ -113,6 +129,89 @@ TEST(DartsimWatchActions, EmptyWatchListReportsStatusAndSamplesGlobals)
   EXPECT_DOUBLE_EQ(time->samples[0], 0.0);
   EXPECT_DOUBLE_EQ(frame->samples[0], 0.0);
   EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimWatchActions, ChartSignalTogglesControlSamples)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 3.0), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.markProjectClean();
+  const std::size_t undoCount = engine.commands().undoCount();
+  const auto revision = engine.commands().currentRevision();
+
+  ui::WatchState state;
+  ASSERT_TRUE(ui::watchSelectedObjects(state, engine).ok);
+  ui::recordWatchSample(state, engine);
+  ASSERT_NE(findSeries(state, box, ui::WatchValueKind::TranslationZ), nullptr);
+  EXPECT_EQ(findSeries(state, box, ui::WatchValueKind::TranslationX), nullptr);
+  EXPECT_EQ(findSeries(state, box, ui::WatchValueKind::Mass), nullptr);
+
+  const auto disabledZ = ui::setWatchChartSignalEnabled(
+      state, ui::WatchValueKind::TranslationZ, false);
+  EXPECT_TRUE(disabledZ.ok);
+  EXPECT_EQ(disabledZ.message, "Disabled watch signal: z");
+  EXPECT_EQ(findSeries(state, box, ui::WatchValueKind::TranslationZ), nullptr);
+
+  const auto duplicateDisable = ui::setWatchChartSignalEnabled(
+      state, ui::WatchValueKind::TranslationZ, false);
+  EXPECT_FALSE(duplicateDisable.ok);
+  EXPECT_EQ(duplicateDisable.message, "Watch signal already disabled: z");
+
+  EXPECT_TRUE(
+      ui::setWatchChartSignalEnabled(
+          state, ui::WatchValueKind::TranslationX, true)
+          .ok);
+  EXPECT_TRUE(
+      ui::setWatchChartSignalEnabled(state, ui::WatchValueKind::Mass, true).ok);
+  ui::recordWatchSample(state, engine);
+
+  const ui::WatchSeries* x
+      = findSeries(state, box, ui::WatchValueKind::TranslationX);
+  const ui::WatchSeries* mass
+      = findSeries(state, box, ui::WatchValueKind::Mass);
+  ASSERT_NE(x, nullptr);
+  ASSERT_NE(mass, nullptr);
+  ASSERT_EQ(x->samples.size(), 1u);
+  ASSERT_EQ(mass->samples.size(), 1u);
+  EXPECT_DOUBLE_EQ(x->samples[0], 1.0);
+  EXPECT_DOUBLE_EQ(mass->samples[0], 1.0);
+  EXPECT_EQ(findSeries(state, box, ui::WatchValueKind::TranslationZ), nullptr);
+
+  const ui::WatchStatus status = ui::buildWatchStatus(state, engine);
+  ASSERT_NE(findSignal(status, ui::WatchValueKind::TranslationX), nullptr);
+  EXPECT_TRUE(findSignal(status, ui::WatchValueKind::TranslationX)->enabled);
+  ASSERT_NE(findSignal(status, ui::WatchValueKind::TranslationZ), nullptr);
+  EXPECT_FALSE(findSignal(status, ui::WatchValueKind::TranslationZ)->enabled);
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+  EXPECT_EQ(engine.commands().currentRevision(), revision);
+
+  const auto disabledFrame = ui::setWatchChartSignalEnabled(
+      state, ui::WatchValueKind::FrameCount, false);
+  EXPECT_TRUE(disabledFrame.ok);
+  EXPECT_EQ(disabledFrame.message, "Disabled watch signal: Frame");
+  EXPECT_EQ(
+      findSeries(state, kNoObject, ui::WatchValueKind::FrameCount), nullptr);
+  ui::recordWatchSample(state, engine);
+  EXPECT_EQ(
+      findSeries(state, kNoObject, ui::WatchValueKind::FrameCount), nullptr);
+
+  const auto enabledFrame = ui::setWatchChartSignalEnabled(
+      state, ui::WatchValueKind::FrameCount, true);
+  EXPECT_TRUE(enabledFrame.ok);
+  EXPECT_EQ(enabledFrame.message, "Enabled watch signal: Frame");
+  ui::recordWatchSample(state, engine);
+  const ui::WatchSeries* frame
+      = findSeries(state, kNoObject, ui::WatchValueKind::FrameCount);
+  ASSERT_NE(frame, nullptr);
+  ASSERT_EQ(frame->samples.size(), 1u);
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+  EXPECT_EQ(engine.commands().currentRevision(), revision);
 }
 
 TEST(DartsimWatchActions, SelectedObjectsBuildRowsAndDeduplicate)

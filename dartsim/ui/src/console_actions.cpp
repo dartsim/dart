@@ -109,6 +109,45 @@ bool hasWatchedObject(const WatchState& watch, ObjectId id)
          != watch.targets.end();
 }
 
+std::optional<WatchValueKind> parseWatchSignalKind(std::string_view token)
+{
+  const std::string signal = lower(token);
+  if (signal == "time" || signal == "sim-time" || signal == "simulation-time") {
+    return WatchValueKind::SimulationTime;
+  }
+  if (signal == "frame" || signal == "frame-count") {
+    return WatchValueKind::FrameCount;
+  }
+  if (signal == "x" || signal == "translation-x") {
+    return WatchValueKind::TranslationX;
+  }
+  if (signal == "y" || signal == "translation-y") {
+    return WatchValueKind::TranslationY;
+  }
+  if (signal == "z" || signal == "height" || signal == "translation-z") {
+    return WatchValueKind::TranslationZ;
+  }
+  if (signal == "mass") {
+    return WatchValueKind::Mass;
+  }
+  if (signal == "joint" || signal == "joint-position") {
+    return WatchValueKind::JointPosition;
+  }
+  return std::nullopt;
+}
+
+std::optional<bool> parseOnOff(std::string_view token)
+{
+  const std::string value = lower(token);
+  if (value == "on" || value == "enable" || value == "enabled") {
+    return true;
+  }
+  if (value == "off" || value == "disable" || value == "disabled") {
+    return false;
+  }
+  return std::nullopt;
+}
+
 std::optional<ObjectId> parseObjectId(std::string_view token)
 {
   ObjectId id = 0;
@@ -493,12 +532,29 @@ ConsoleCommandResult applyWatchCommand(
     return result(removed.ok, removed.message);
   }
 
+  if (tokens.size() == 4 && lower(tokens[1]) == "signal") {
+    const std::optional<WatchValueKind> kind = parseWatchSignalKind(tokens[2]);
+    if (!kind.has_value()) {
+      return result(false, "Unknown watch signal: " + tokens[2]);
+    }
+    const std::optional<bool> enabled = parseOnOff(tokens[3]);
+    if (!enabled.has_value()) {
+      return result(false, "Usage: watch signal <signal> <on|off>");
+    }
+    const WatchActionResult applied
+        = setWatchChartSignalEnabled(*watch, *kind, *enabled);
+    return result(applied.ok, applied.message);
+  }
+
   if (tokens.size() == 1) {
     const WatchStatus status = buildWatchStatus(*watch, engine);
     return result(true, status.summary);
   }
   if (tokens.size() != 2) {
-    return result(false, "Usage: watch [target|selection|clear|sample]");
+    return result(
+        false,
+        "Usage: watch [target|selection|clear|sample] or watch signal "
+        "<signal> <on|off>");
   }
 
   const std::string targetToken = lower(tokens[1]);
@@ -621,7 +677,8 @@ std::string consoleCommandHelpText(bool watchCommandsAvailable)
          "reset, record <on|off>, replay <frame>"
          + std::string(
              watchCommandsAvailable
-                 ? ", watch [target|selection|clear|sample], unwatch <target>"
+                 ? ", watch [target|selection|clear|sample], watch signal "
+                   "<signal> <on|off>, unwatch <target>"
                  : "");
 }
 
