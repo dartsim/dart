@@ -343,12 +343,14 @@ void browseProjectPath(EditorApp& app)
 
 void applyProjectPathModal(EditorApp& app)
 {
+  if (app.projectPath.empty()) {
+    app.projectPathStatus = app.projectPathKind == ProjectFileDialogKind::Open
+                                ? "Choose a .dartsim file to open"
+                                : "Choose a .dartsim file to save";
+    return;
+  }
   ProjectActionResult result;
   if (app.projectPathKind == ProjectFileDialogKind::Open) {
-    if (app.projectPath.empty()) {
-      app.projectPathStatus = "Choose a .dartsim file to open";
-      return;
-    }
     result = openProject(app.engine, app.projectPath);
   } else {
     result = saveProjectAs(app.engine, ensureProjectExtension(app.projectPath));
