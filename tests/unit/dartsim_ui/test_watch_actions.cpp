@@ -143,6 +143,86 @@ TEST(DartsimWatchActions, EmptyWatchListReportsStatusAndSamplesGlobals)
   EXPECT_FALSE(engine.isProjectDirty());
 }
 
+TEST(DartsimWatchActions, ContextActionsWatchAndUnwatchOneObject)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 3.0), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.markProjectClean();
+  const std::size_t undoCount = engine.commands().undoCount();
+  const auto revision = engine.commands().currentRevision();
+  const std::uint64_t generation = engine.projectGeneration();
+
+  ui::WatchState state;
+  EXPECT_TRUE(ui::buildWatchContextActions(state, engine, 99999).empty());
+  EXPECT_TRUE(
+      ui::buildSceneTreeWatchContextActions(state, engine, box, false).empty());
+
+  std::vector<ui::WatchContextAction> actions
+      = ui::buildSceneTreeWatchContextActions(state, engine, box, true);
+  ASSERT_EQ(actions.size(), 1u);
+  EXPECT_EQ(actions[0].kind, ui::WatchContextActionKind::Watch);
+  EXPECT_EQ(actions[0].label, "Watch");
+  EXPECT_TRUE(actions[0].enabled);
+  EXPECT_NE(
+      ui::watchContextButtonLabel(actions[0], box, 0).find("Watch##"),
+      std::string::npos);
+
+  const ui::WatchContextAction disabled{
+      ui::WatchContextActionKind::Watch, "Watch", false, "not available"};
+  EXPECT_NE(
+      ui::watchContextButtonLabel(disabled, box, 1)
+          .find("Watch (not available)##"),
+      std::string::npos);
+
+  const auto watched = ui::applyWatchContextAction(
+      state, engine, box, ui::WatchContextActionKind::Watch);
+  EXPECT_TRUE(watched.ok);
+  EXPECT_EQ(watched.message, "Watching object");
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+  EXPECT_EQ(engine.commands().currentRevision(), revision);
+  ASSERT_EQ(state.targets.size(), 1u);
+  EXPECT_EQ(state.targets[0].id, box);
+  EXPECT_EQ(state.targets[0].projectGeneration, generation);
+
+  ui::recordWatchSample(state, engine);
+  ASSERT_NE(
+      findSeries(state, box, ui::WatchValueKind::TranslationZ, generation),
+      nullptr);
+
+  actions = ui::buildSceneTreeWatchContextActions(state, engine, box, true);
+  ASSERT_EQ(actions.size(), 1u);
+  EXPECT_EQ(actions[0].kind, ui::WatchContextActionKind::Unwatch);
+  EXPECT_EQ(actions[0].label, "Unwatch");
+  EXPECT_TRUE(actions[0].enabled);
+
+  const auto unwatched = ui::applyWatchContextAction(
+      state, engine, box, ui::WatchContextActionKind::Unwatch);
+  EXPECT_TRUE(unwatched.ok);
+  EXPECT_EQ(unwatched.message, "Removed watch");
+  EXPECT_TRUE(state.targets.empty());
+  EXPECT_EQ(findSeries(state, box, ui::WatchValueKind::TranslationZ), nullptr);
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+  EXPECT_EQ(engine.commands().currentRevision(), revision);
+
+  engine.simulation().play();
+  const auto watchedInSimulation = ui::applyWatchContextAction(
+      state, engine, box, ui::WatchContextActionKind::Watch);
+  EXPECT_TRUE(watchedInSimulation.ok);
+  EXPECT_EQ(watchedInSimulation.message, "Watching object");
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+  EXPECT_EQ(engine.commands().currentRevision(), revision);
+  ASSERT_EQ(state.targets.size(), 1u);
+  EXPECT_EQ(state.targets[0].id, box);
+  EXPECT_EQ(state.targets[0].projectGeneration, generation);
+}
+
 TEST(DartsimWatchActions, ChartSignalTogglesControlSamples)
 {
   SimEngine engine;
@@ -655,6 +735,7 @@ TEST(DartsimWatchActions, ProjectGenerationPreventsIdReuseFromBinding)
   const ObjectId newSphere = engine.selection().primary();
   ASSERT_EQ(newSphere, oldBox);
   ASSERT_NE(engine.projectGeneration(), oldGeneration);
+  const std::uint64_t newGeneration = engine.projectGeneration();
 
   const ui::WatchStatus staleStatus = ui::buildWatchStatus(state, engine);
   ASSERT_EQ(staleStatus.rows.size(), 1u);
@@ -668,10 +749,48 @@ TEST(DartsimWatchActions, ProjectGenerationPreventsIdReuseFromBinding)
   EXPECT_EQ(oldSeries->samples.size(), 1u);
   EXPECT_EQ(
       findSeries(
-          state,
-          newSphere,
-          ui::WatchValueKind::TranslationZ,
-          engine.projectGeneration()),
+          state, newSphere, ui::WatchValueKind::TranslationZ, newGeneration),
+      nullptr);
+
+  std::vector<ui::WatchContextAction> actions
+      = ui::buildWatchContextActions(state, engine, newSphere);
+  ASSERT_EQ(actions.size(), 1u);
+  ASSERT_EQ(actions[0].kind, ui::WatchContextActionKind::Watch);
+  ASSERT_TRUE(
+      ui::applyWatchContextAction(
+          state, engine, newSphere, ui::WatchContextActionKind::Watch)
+          .ok);
+  ui::recordWatchSample(state, engine);
+  ASSERT_NE(
+      findSeries(
+          state, newSphere, ui::WatchValueKind::TranslationZ, newGeneration),
+      nullptr);
+  ASSERT_EQ(
+      std::count_if(
+          state.targets.begin(),
+          state.targets.end(),
+          [newSphere](const ui::WatchTarget& target) {
+            return target.id == newSphere;
+          }),
+      2);
+
+  actions = ui::buildWatchContextActions(state, engine, newSphere);
+  ASSERT_EQ(actions.size(), 1u);
+  ASSERT_EQ(actions[0].kind, ui::WatchContextActionKind::Unwatch);
+  const auto removedCurrent = ui::applyWatchContextAction(
+      state, engine, newSphere, ui::WatchContextActionKind::Unwatch);
+  EXPECT_TRUE(removedCurrent.ok);
+  EXPECT_EQ(removedCurrent.message, "Removed watch");
+  ASSERT_EQ(state.targets.size(), 1u);
+  EXPECT_EQ(state.targets[0].id, oldBox);
+  EXPECT_EQ(state.targets[0].projectGeneration, oldGeneration);
+  EXPECT_NE(
+      findSeries(
+          state, oldBox, ui::WatchValueKind::TranslationZ, oldGeneration),
+      nullptr);
+  EXPECT_EQ(
+      findSeries(
+          state, newSphere, ui::WatchValueKind::TranslationZ, newGeneration),
       nullptr);
 }
 

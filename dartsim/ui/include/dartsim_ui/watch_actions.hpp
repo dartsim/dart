@@ -143,6 +143,20 @@ struct WatchActionResult
   std::string message;
 };
 
+enum class WatchContextActionKind
+{
+  Watch,
+  Unwatch,
+};
+
+struct WatchContextAction
+{
+  WatchContextActionKind kind = WatchContextActionKind::Watch;
+  std::string label;
+  bool enabled = false;
+  std::string disabledReason;
+};
+
 /// Add every currently selected object to the watch list.
 WatchActionResult watchSelectedObjects(
     WatchState& state, const SimEngine& engine);
@@ -153,6 +167,22 @@ WatchActionResult watchObject(
 
 /// Remove one object from the watch list and any object-owned chart series.
 WatchActionResult unwatchObject(WatchState& state, ObjectId id);
+
+/// Build and apply view-only context actions for watching one scene object.
+[[nodiscard]] std::vector<WatchContextAction> buildWatchContextActions(
+    const WatchState& state, const SimEngine& engine, ObjectId id);
+[[nodiscard]] std::vector<WatchContextAction> buildSceneTreeWatchContextActions(
+    const WatchState& state,
+    const SimEngine& engine,
+    ObjectId id,
+    bool selected);
+[[nodiscard]] std::string watchContextButtonLabel(
+    const WatchContextAction& action, ObjectId id, std::size_t index);
+WatchActionResult applyWatchContextAction(
+    WatchState& state,
+    const SimEngine& engine,
+    ObjectId id,
+    WatchContextActionKind kind);
 
 /// Clear all watch rows and chart samples.
 WatchActionResult clearWatch(WatchState& state);

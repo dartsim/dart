@@ -543,6 +543,19 @@ void buildSceneTree(dart::gui::PanelBuilder& ui, EditorApp& app)
                 app.transformGizmo, app.engine, app.viewportLayers);
           }
         }
+        const std::vector<WatchContextAction> watchActions
+            = buildSceneTreeWatchContextActions(
+                app.watch, app.engine, row.id, row.selected);
+        for (std::size_t i = 0; i < watchActions.size(); ++i) {
+          const WatchContextAction& action = watchActions[i];
+          ui.sameLine();
+          const std::string label = watchContextButtonLabel(action, row.id, i);
+          if (ui.button(label) && action.enabled) {
+            app.note(applyWatchContextAction(
+                         app.watch, app.engine, row.id, action.kind)
+                         .message);
+          }
+        }
       }
     }
   }

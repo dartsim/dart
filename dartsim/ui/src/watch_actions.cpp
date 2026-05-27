@@ -480,6 +480,91 @@ WatchActionResult unwatchObject(WatchState& state, ObjectId id)
   return {true, "Removed watch"};
 }
 
+namespace {
+
+WatchActionResult unwatchObjectForProject(
+    WatchState& state, ObjectId id, std::uint64_t projectGeneration)
+{
+  const auto oldSize = state.targets.size();
+  state.targets.erase(
+      std::remove_if(
+          state.targets.begin(),
+          state.targets.end(),
+          [id, projectGeneration](const WatchTarget& target) {
+            return target.id == id
+                   && target.projectGeneration == projectGeneration;
+          }),
+      state.targets.end());
+  state.series.erase(
+      std::remove_if(
+          state.series.begin(),
+          state.series.end(),
+          [id, projectGeneration](const WatchSeries& series) {
+            return series.object == id
+                   && series.projectGeneration == projectGeneration;
+          }),
+      state.series.end());
+
+  if (state.targets.size() == oldSize) {
+    return {false, "Object was not watched"};
+  }
+  return {true, "Removed watch"};
+}
+
+} // namespace
+
+std::vector<WatchContextAction> buildWatchContextActions(
+    const WatchState& state, const SimEngine& engine, ObjectId id)
+{
+  if (!engine.objects().model().contains(id)) {
+    return {};
+  }
+
+  if (containsTarget(state, engine, id)) {
+    return {{WatchContextActionKind::Unwatch, "Unwatch", true, {}}};
+  }
+  return {{WatchContextActionKind::Watch, "Watch", true, {}}};
+}
+
+std::vector<WatchContextAction> buildSceneTreeWatchContextActions(
+    const WatchState& state,
+    const SimEngine& engine,
+    ObjectId id,
+    bool selected)
+{
+  if (!selected) {
+    return {};
+  }
+  return buildWatchContextActions(state, engine, id);
+}
+
+std::string watchContextButtonLabel(
+    const WatchContextAction& action, ObjectId id, std::size_t index)
+{
+  std::string label = action.label;
+  if (!action.enabled && !action.disabledReason.empty()) {
+    label += " (" + action.disabledReason + ")";
+  }
+  label
+      += "##outliner-watch-" + std::to_string(id) + "-" + std::to_string(index);
+  return label;
+}
+
+WatchActionResult applyWatchContextAction(
+    WatchState& state,
+    const SimEngine& engine,
+    ObjectId id,
+    WatchContextActionKind kind)
+{
+  switch (kind) {
+    case WatchContextActionKind::Watch:
+      return watchObject(state, engine, id);
+    case WatchContextActionKind::Unwatch:
+      return unwatchObjectForProject(state, id, engine.projectGeneration());
+  }
+  return {false, "Unknown watch action"};
+}
+
 WatchActionResult clearWatch(WatchState& state)
 {
   if (state.targets.empty() && state.series.empty()) {

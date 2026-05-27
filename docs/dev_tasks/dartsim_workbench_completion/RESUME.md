@@ -67,7 +67,8 @@ missing watched objects until removal, and plot bounded simulation/object
 series through `PanelBuilder::plotLines`. Console watch commands reuse the
 same session-local state for add/remove/clear/manual sample automation without
 dirtying the scene, and both the Watch panel and Console can toggle charted
-signal choices.
+signal choices. Selected Scene Tree rows can now Watch/Unwatch objects through
+the same session-local seam without dirtying the scene.
 File > Open Project now opens the in-app browser/manual path modal first.
 Browse still invokes the native file dialog from inside the modal, and native
 dialog failures or invalid selected paths leave the user in the modal instead
@@ -176,7 +177,9 @@ filtered coverage line total above 95%.
   view-only, disabled signals drop their old samples, and saved Watch presets
   persist target/signal choices through project workspace metadata. Console
   preset commands are covered in `UNIT_dartsim_ui_ConsoleActions`, and project
-  file round-trip coverage lives in `UNIT_dartsim_engine`.
+  file round-trip coverage lives in `UNIT_dartsim_engine`. Scene Tree
+  Watch/Unwatch row actions share the same seam and are covered there as
+  view-only context actions.
 - Sensor descriptor behavior is covered through `UNIT_dartsim_engine`,
   `UNIT_dartsim_ui_PaletteActions`, `UNIT_dartsim_ui_InspectorActions`,
   `UNIT_dartsim_ui_OutlinerActions`, `UNIT_dartsim_ui_ViewportActions`,
