@@ -14,6 +14,9 @@ For developers and researchers, DART offers full access to internal kinematic an
 
 DART is intended to be easy to start with and practical to extend. Python and C++ packages cover common installation paths, while pixi-based source builds support reproducible development. Its math, collision, constraint, model-loading, benchmark, and test foundations are organized so new algorithms can be implemented and compared against existing DART baselines. Current platform support is centered on cross-platform CPU execution, with roadmap work tracking multi-core, SIMD, and accelerator backends.
 
+For visible citation guidance and credits for research methods implemented or
+being reproduced in DART, see :doc:`papers`.
+
 DART is suitable for real-time controllers due to its lazy evaluation, which automatically updates forward kinematics and dynamics values to ensure code safety. It also allows for the extension of the API to embed user-provided classes into DART data structures. Contacts and collisions are handled using an implicit time-stepping, velocity-based linear complementarity problem (LCP) to guarantee non-penetration, directional friction, and approximated Coulomb friction cone conditions.
 
 In summary, DART supports robotics, animation, machine-learning research, and best-effort production use with a transparent multibody dynamics engine, kinematic tools for control and motion planning, and extension points for new algorithms.

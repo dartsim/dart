@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/gui/detail/gui_scale.hpp>
 #include <dart/gui/viewer.hpp>
 
 #include <algorithm>
@@ -78,10 +79,7 @@ void normalizeRunOptions(RunOptions& options)
   }
   options.width = std::max(1, options.width);
   options.height = std::max(1, options.height);
-  if (!std::isfinite(options.guiScale) || options.guiScale <= 0.0) {
-    options.guiScale = 1.0;
-  }
-  options.guiScale = std::clamp(options.guiScale, 0.5, 4.0);
+  options.guiScale = detail::normalizeGuiUserScale(options.guiScale);
   if (options.headless && options.maxFrames < 0) {
     options.maxFrames = 1;
   }

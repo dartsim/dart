@@ -53,10 +53,21 @@ cudaError_t launchRigidBodyStateBatchLinearKernel(
     double timeStep,
     std::size_t bodies);
 
+cudaError_t launchRigidBodyStateBatchKernel(
+    double* position,
+    double* linearVelocity,
+    double* orientation,
+    const double* angularVelocity,
+    const double* force,
+    const double* inverseMass,
+    double timeStep,
+    std::size_t bodies);
+
 } // namespace detail
 namespace {
 
 constexpr std::size_t kLinearComponents = 3;
+constexpr std::size_t kOrientationComponents = 4;
 
 void throwIfCudaError(cudaError_t status, std::string_view operation)
 {
@@ -183,6 +194,27 @@ std::size_t validateLinearInputs(
   return bodies;
 }
 
+std::size_t validateFullInputs(
+    const RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    std::string_view operation)
+{
+  const auto bodies = validateLinearInputs(state, model, force, operation);
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      state.orientation.size() != kOrientationComponents * bodies
+          || state.angularVelocity.size() != kLinearComponents * bodies,
+      sx::InvalidArgumentException,
+      "{} orientation/angular-velocity arrays are inconsistent with worldCount "
+      "{} and bodyCount {}",
+      operation,
+      state.worldCount,
+      state.bodyCount);
+
+  return bodies;
+}
+
 void throwIfCudaRuntimeUnavailable()
 {
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -298,6 +330,79 @@ void rolloutRigidBodyStateBatchLinearCuda(
       state.linearVelocity,
       deviceLinearVelocity,
       "linear velocity copy from device");
+}
+
+//==============================================================================
+void integrateRigidBodyStateBatchCuda(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    double timeStep)
+{
+  rolloutRigidBodyStateBatchCuda(state, model, force, timeStep, 1);
+}
+
+//==============================================================================
+void rolloutRigidBodyStateBatchCuda(
+    RigidBodyStateBatch& state,
+    const RigidBodyModelBatch& model,
+    const std::vector<double>& force,
+    double timeStep,
+    std::size_t stepCount)
+{
+  const auto bodies = validateFullInputs(
+      state, model, force, "rolloutRigidBodyStateBatchCuda");
+
+  if (bodies == 0 || stepCount == 0) {
+    return;
+  }
+
+  throwIfCudaRuntimeUnavailable();
+
+  DeviceDoubleBuffer devicePosition(state.position.size());
+  DeviceDoubleBuffer deviceLinearVelocity(state.linearVelocity.size());
+  DeviceDoubleBuffer deviceOrientation(state.orientation.size());
+  DeviceDoubleBuffer deviceAngularVelocity(state.angularVelocity.size());
+  DeviceDoubleBuffer deviceForce(force.size());
+  DeviceDoubleBuffer deviceInverseMass(model.inverseMass.size());
+
+  copyToDevice(devicePosition, state.position, "position copy to device");
+  copyToDevice(
+      deviceLinearVelocity,
+      state.linearVelocity,
+      "linear velocity copy to device");
+  copyToDevice(
+      deviceOrientation, state.orientation, "orientation copy to device");
+  copyToDevice(
+      deviceAngularVelocity,
+      state.angularVelocity,
+      "angular velocity copy to device");
+  copyToDevice(deviceForce, force, "force copy to device");
+  copyToDevice(
+      deviceInverseMass, model.inverseMass, "inverse mass copy to device");
+
+  for (std::size_t step = 0; step < stepCount; ++step) {
+    throwIfCudaError(
+        detail::launchRigidBodyStateBatchKernel(
+            devicePosition.data(),
+            deviceLinearVelocity.data(),
+            deviceOrientation.data(),
+            deviceAngularVelocity.data(),
+            deviceForce.data(),
+            deviceInverseMass.data(),
+            timeStep,
+            bodies),
+        "rigid-body full kernel");
+  }
+  throwIfCudaError(cudaDeviceSynchronize(), "rigid-body full synchronize");
+
+  copyFromDevice(state.position, devicePosition, "position copy from device");
+  copyFromDevice(
+      state.linearVelocity,
+      deviceLinearVelocity,
+      "linear velocity copy from device");
+  copyFromDevice(
+      state.orientation, deviceOrientation, "orientation copy from device");
 }
 
 } // namespace dart::simulation::experimental::compute::cuda

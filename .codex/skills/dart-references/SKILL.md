@@ -15,8 +15,8 @@ experimental simulation world — its public API and its algorithms.
 
 ## Catalog Location
 
-`docs/design/simulation_experimental_references.md` is the single source of
-truth. It is a companion to the experimental API design docs:
+`docs/readthedocs/papers.md` is the single source of truth and the published
+website page. It is a companion to the experimental API design docs:
 
 - `docs/design/simulation_experimental_cpp_api.md`
 - `docs/design/simulation_experimental_python_api.md`
@@ -67,7 +67,7 @@ classic location noted in `Notes`.
 
 ## Full Documentation
 
-For the catalog and its rationale: `docs/design/simulation_experimental_references.md`
+For the catalog and its rationale: `docs/readthedocs/papers.md`
 
 For the API it supports: `docs/design/simulation_experimental_cpp_api.md`,
 `docs/design/simulation_experimental_python_api.md`

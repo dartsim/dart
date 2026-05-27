@@ -39,6 +39,7 @@ namespace dart::simulation::experimental {
 class FixedFrame;
 class Frame;
 class FreeFrame;
+class DeformableBody;
 class Joint;
 class Link;
 class LoopClosure;
@@ -60,6 +61,8 @@ struct Contact;
 // Options structs
 struct FixedFrameOptions;
 struct FreeFrameOptions;
+struct DeformableBodyOptions;
+struct DeformableEdge;
 struct JointOptions;
 struct JointSpec;
 struct LinkOptions;

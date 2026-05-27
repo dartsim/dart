@@ -51,11 +51,13 @@
 #include <filament/View.h>
 #include <filament/Viewport.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <utils/EntityManager.h>
 
 #include <filesystem>
 #include <vector>
 
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 
@@ -100,6 +102,80 @@ template <typename T>
       owned);
 }
 
+void scaleImGuiWindow(ImGuiWindow& window, float scale)
+{
+  const ImVec2 origin
+      = window.Viewport != nullptr ? window.Viewport->Pos : ImVec2(0.0f, 0.0f);
+  window.Pos = ImFloor(ImVec2(
+      (window.Pos.x - origin.x) * scale + origin.x,
+      (window.Pos.y - origin.y) * scale + origin.y));
+  window.Size = ImTrunc(ImVec2(window.Size.x * scale, window.Size.y * scale));
+  window.SizeFull
+      = ImTrunc(ImVec2(window.SizeFull.x * scale, window.SizeFull.y * scale));
+  window.ContentSize = ImTrunc(
+      ImVec2(window.ContentSize.x * scale, window.ContentSize.y * scale));
+}
+
+void scaleExistingImGuiWindows(float scale)
+{
+  if (scale <= 0.0f || !std::isfinite(scale) || scale == 1.0f) {
+    return;
+  }
+
+  auto* context = ImGui::GetCurrentContext();
+  if (context == nullptr) {
+    return;
+  }
+
+  for (ImGuiWindow* window : context->Windows) {
+    if (window != nullptr) {
+      scaleImGuiWindow(*window, scale);
+    }
+  }
+}
+
+::filament::Texture* createFontTexture(::filament::Engine& engine)
+{
+  unsigned char* pixels = nullptr;
+  int width = 0;
+  int height = 0;
+  ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+  std::vector<std::uint8_t> fontPixels(
+      pixels, pixels + static_cast<std::size_t>(width) * height * 4);
+
+  auto* fontTexture = ::filament::Texture::Builder()
+                          .width(static_cast<std::uint32_t>(width))
+                          .height(static_cast<std::uint32_t>(height))
+                          .levels(1)
+                          .sampler(::filament::Texture::Sampler::SAMPLER_2D)
+                          .format(::filament::Texture::InternalFormat::RGBA8)
+                          .build(engine);
+  fontTexture->setImage(
+      engine,
+      0,
+      makePixelBufferDescriptor(
+          std::move(fontPixels),
+          ::filament::backend::PixelDataFormat::RGBA,
+          ::filament::backend::PixelDataType::UBYTE));
+  return fontTexture;
+}
+
+void updateFontTexture(::filament::Engine& engine, ImGuiOverlay& overlay)
+{
+  if (overlay.fontTexture != nullptr) {
+    engine.destroy(overlay.fontTexture);
+    overlay.fontTexture = nullptr;
+  }
+
+  overlay.fontTexture = createFontTexture(engine);
+
+  const ::filament::TextureSampler sampler(
+      ::filament::TextureSampler::MinFilter::LINEAR,
+      ::filament::TextureSampler::MagFilter::LINEAR);
+  overlay.materialInstance->setParameter(
+      "fontTexture", overlay.fontTexture, sampler);
+}
+
 void destroyOverlayMesh(
     ::filament::Engine& engine, ::filament::Scene* scene, OverlayMesh& mesh)
 {
@@ -142,38 +218,14 @@ ImGuiOverlay createImGuiOverlay(::filament::Engine& engine)
                          .build(engine);
   overlay.materialInstance = overlay.material->createInstance();
 
-  unsigned char* pixels = nullptr;
-  int width = 0;
-  int height = 0;
-  ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-  std::vector<std::uint8_t> fontPixels(
-      pixels, pixels + static_cast<std::size_t>(width) * height * 4);
-
-  overlay.fontTexture = ::filament::Texture::Builder()
-                            .width(static_cast<std::uint32_t>(width))
-                            .height(static_cast<std::uint32_t>(height))
-                            .levels(1)
-                            .sampler(::filament::Texture::Sampler::SAMPLER_2D)
-                            .format(::filament::Texture::InternalFormat::RGBA8)
-                            .build(engine);
-  overlay.fontTexture->setImage(
-      engine,
-      0,
-      makePixelBufferDescriptor(
-          std::move(fontPixels),
-          ::filament::backend::PixelDataFormat::RGBA,
-          ::filament::backend::PixelDataType::UBYTE));
-
-  const ::filament::TextureSampler sampler(
-      ::filament::TextureSampler::MinFilter::LINEAR,
-      ::filament::TextureSampler::MagFilter::LINEAR);
-  overlay.materialInstance->setParameter(
-      "fontTexture", overlay.fontTexture, sampler);
+  updateFontTexture(engine, overlay);
   return overlay;
 }
 
-void loadImGuiFont(ImGuiIO& io, float guiScale)
+void loadImGuiFont(ImGuiIO& io, float uiScale)
 {
+  io.Fonts->Clear();
+
   std::vector<std::filesystem::path> candidates;
   if (const char* fontPath = std::getenv("DART_GUI_FILAMENT_FONT");
       fontPath != nullptr && std::strlen(fontPath) > 0) {
@@ -192,7 +244,7 @@ void loadImGuiFont(ImGuiIO& io, float guiScale)
   config.OversampleH = 3;
   config.OversampleV = 2;
   config.PixelSnapH = false;
-  const float fontSize = 15.0f * guiScale;
+  const float fontSize = 15.0f * uiScale;
   for (const auto& path : candidates) {
     std::error_code ec;
     if (!std::filesystem::is_regular_file(path, ec)) {
@@ -204,27 +256,58 @@ void loadImGuiFont(ImGuiIO& io, float guiScale)
     }
   }
 
-  config.SizePixels = 13.0f * guiScale;
+  config.SizePixels = 13.0f * uiScale;
   io.Fonts->AddFontDefault(&config);
 }
 
+void configureImGuiStyle(float uiScale)
+{
+  auto& style = ImGui::GetStyle();
+  style = ImGuiStyle();
+  ImGui::StyleColorsDark();
+  style.ScaleAllSizes(uiScale);
+  style.WindowRounding = 4.0f * uiScale;
+  style.Colors[ImGuiCol_WindowBg].w = 0.72f;
+}
+
+void configureImGuiFonts(float uiScale)
+{
+  auto& io = ImGui::GetIO();
+  loadImGuiFont(io, uiScale);
+  io.Fonts->Build();
+}
+
 ImGuiOverlay createConfiguredImGuiOverlay(
-    ::filament::Engine& engine, float guiScale)
+    ::filament::Engine& engine, float uiScale)
 {
   ImGui::CreateContext();
-  ImGui::StyleColorsDark();
-  auto& style = ImGui::GetStyle();
-  style.ScaleAllSizes(guiScale);
-  style.WindowRounding = 4.0f * guiScale;
-  style.Colors[ImGuiCol_WindowBg].w = 0.72f;
-
-  auto& io = ImGui::GetIO();
 #ifdef IMGUI_HAS_DOCK
-  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 #endif
-  loadImGuiFont(io, guiScale);
-  io.Fonts->Build();
-  return createImGuiOverlay(engine);
+  configureImGuiStyle(uiScale);
+  configureImGuiFonts(uiScale);
+  ImGuiOverlay overlay = createImGuiOverlay(engine);
+  overlay.uiScale = uiScale;
+  return overlay;
+}
+
+void updateConfiguredImGuiOverlayScale(
+    ::filament::Engine& engine, ImGuiOverlay& overlay, float uiScale)
+{
+  if (!std::isfinite(uiScale) || uiScale <= 0.0f) {
+    uiScale = 1.0f;
+  }
+
+  if (std::abs(overlay.uiScale - uiScale) <= 1e-4f) {
+    return;
+  }
+
+  const float previousScale = overlay.uiScale > 0.0f ? overlay.uiScale : 1.0f;
+  configureImGuiStyle(uiScale);
+  configureImGuiFonts(uiScale);
+  updateFontTexture(engine, overlay);
+  scaleExistingImGuiWindows(uiScale / previousScale);
+  overlay.uiScale = uiScale;
 }
 
 ImGuiIO& getCurrentImGuiIo()

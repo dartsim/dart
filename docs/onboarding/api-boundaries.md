@@ -98,6 +98,15 @@ solver registries, or rendering backends until a later plan and benchmark gate
 justify them. Future resource read/write declarations should start as
 diagnostic metadata and validation inputs before becoming scheduler contracts.
 
+Experimental deformable simulation follows the same boundary: public handles
+and options describe model topology, initial state, fixed nodes, and physical
+parameters. Public compute stages may expose broad domain-level hooks such as
+deformable dynamics, but ECS components, algorithm-specific stage names,
+feasibility barriers, and backend/project names stay internal. Static collision
+geometry must be modeled explicitly through public world objects; do not add
+hidden default contact surfaces or expose contact-barrier tuning on body options
+without a design update.
+
 ### Internal API
 
 Internal API may change without compatibility guarantees. It includes:
@@ -168,6 +177,12 @@ they exist locally, and reports any legacy exceptions from
 `scripts/check_api_boundaries_allowlist.txt`. Allowlist entries require
 `replacement`, `remove_by`, `tracking`, and `reason` fields, and stale entries
 fail the checker.
+
+For experimental scalable-compute work, `pixi run check-compute-backend-boundaries`
+also checks public experimental headers and the default dartpy experimental
+bindings for CUDA/SYCL/device/stream/kernel/memory-pool API leakage. The existing
+`ComputeStageAcceleration::Gpu` metadata flag is allowed because it describes
+backend-neutral acceleration intent, not a concrete backend API.
 
 ## Documentation Rules
 

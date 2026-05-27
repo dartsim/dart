@@ -48,4 +48,11 @@ struct CollisionGeometry
   CollisionShape shape;
 };
 
+/// Tag marking static collision geometry as a one-sided ground barrier for
+/// deformable bodies.
+struct DeformableGroundBarrierTag
+{
+  DART_EXPERIMENTAL_TAG_COMPONENT(DeformableGroundBarrierTag);
+};
+
 } // namespace dart::simulation::experimental::comps

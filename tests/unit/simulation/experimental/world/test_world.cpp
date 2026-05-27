@@ -159,6 +159,7 @@ public:
   std::size_t nodeCount{0};
   std::size_t edgeCount{0};
   std::size_t executeCount{0};
+  std::vector<std::vector<std::string>> graphNodeNames;
 
 private:
   void record(
@@ -167,6 +168,13 @@ private:
     ++executeCount;
     nodeCount = graph.getNodeCount();
     edgeCount = graph.getEdgeCount();
+
+    std::vector<std::string> names;
+    names.reserve(graph.getNodeCount());
+    for (const auto* node : graph.getNodes()) {
+      names.push_back(node->getName());
+    }
+    graphNodeNames.push_back(std::move(names));
   }
 
   dart::simulation::experimental::compute::SequentialExecutor sequential;
@@ -3976,10 +3984,10 @@ TEST(World, BatchedRigidBodyIntegrationStageMatchesPerEntityForFreeBodies)
   }
 }
 
-// Test that the batched stage defers to the per-entity stage (producing
-// identical results) when a rigid body is parented to another rigid body, where
-// local-transform bookkeeping needs parent-before-child ordering.
-TEST(World, BatchedRigidBodyIntegrationStageDefersForFrameCoupledBodies)
+// Test that the batched stage keeps the SoA path for frame-coupled rigid bodies
+// and still matches the parent-before-child local-transform bookkeeping of the
+// per-entity integrator.
+TEST(World, BatchedRigidBodyIntegrationStageMatchesFrameCoupledBodies)
 {
   namespace sx = dart::simulation::experimental;
   namespace compute = dart::simulation::experimental::compute;
@@ -4010,7 +4018,14 @@ TEST(World, BatchedRigidBodyIntegrationStageDefersForFrameCoupledBodies)
   compute::RigidBodyIntegrationStage perEntityStage;
   compute::BatchedRigidBodyIntegrationStage batchedStage;
   perEntityStage.execute(perEntityWorld, executor);
-  batchedStage.execute(batchedWorld, executor);
+  RecordingExecutor batchedExecutor;
+  batchedStage.execute(batchedWorld, batchedExecutor);
+
+  ASSERT_EQ(batchedExecutor.executeCount, 1u);
+  ASSERT_EQ(batchedExecutor.nodeCount, 1u);
+  ASSERT_EQ(batchedExecutor.edgeCount, 0u);
+  ASSERT_FALSE(batchedExecutor.graphNodeNames[0].empty());
+  EXPECT_EQ(batchedExecutor.graphNodeNames[0][0], "soa_rigid_body_integration");
 
   EXPECT_TRUE(perEntityParent.getLocalTransform().isApprox(
       batchedParent.getLocalTransform()));

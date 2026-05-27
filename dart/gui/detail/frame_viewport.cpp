@@ -330,11 +330,9 @@ FrameViewport updateFrameViewport(
     int defaultHeight,
     double worldTimeStep,
     bool showUi,
-    double guiScale,
     const dart::gui::OrbitCameraControlOptions& cameraControls,
     const dart::gui::ViewportLayoutOptions& layoutOptions)
 {
-  (void)guiScale;
   int width = defaultWidth;
   int height = defaultHeight;
   if (window != nullptr) {

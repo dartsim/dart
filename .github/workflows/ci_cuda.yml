@@ -98,3 +98,35 @@ jobs:
 
       - name: Run CUDA smoke tests
         run: pixi run --locked -e cuda test-cuda
+
+      - name: Run Phase 5 policy gates
+        run: |
+          pixi run --locked -e cuda check-compute-backend-boundaries
+          pixi run --locked -e cuda check-no-gpu-runtime-dependencies
+          pixi run --locked -e cuda check-phase5-cuda-benchmark-contract
+
+      - name: Run Phase 5 CUDA go/no-go benchmark
+        run: pixi run --locked -e cuda bm-phase5-cuda-full
+
+      - name: Write Phase 5 CUDA packet
+        run: |
+          pixi run --locked -e cuda bm-phase5-cuda-packet \
+            --benchmark-json .benchmark_results/phase5_cuda_ci_full.json \
+            --output .benchmark_results/phase5_cuda_packet.json \
+            --includes-transfer-setup-compute-readback \
+            --gpu-build-import-gate-passed \
+            --compute-backend-boundaries-passed \
+            --no-gpu-runtime-dependencies-passed \
+            --phase5-benchmark-contract-passed
+          pixi run --locked -e cuda bm-phase5-gpu-packet-check \
+            --input .benchmark_results/phase5_cuda_packet.json
+
+      - name: Upload Phase 5 CUDA packet
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: phase5-cuda-packet
+          path: |
+            .benchmark_results/phase5_cuda_ci_full.json
+            .benchmark_results/phase5_cuda_packet.json
+          if-no-files-found: warn

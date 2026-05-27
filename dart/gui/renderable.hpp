@@ -41,6 +41,7 @@
 #include <Eigen/Geometry>
 
 #include <optional>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -183,6 +184,24 @@ struct RenderableSetUpdatePlan
   std::vector<std::size_t> activeRenderableIndicesToRemove;
 };
 
+/// Rendering options for a dynamic deformable surface mesh.
+///
+/// The helper below intentionally accepts node positions and triangle topology
+/// rather than a concrete physics type, so experimental and downstream
+/// deformable solvers can use the same dart::gui rendering path without adding
+/// renderer dependencies to their model code.
+struct DeformableSurfaceRenderOptions
+{
+  Eigen::Vector4d surfaceColor{0.42, 0.74, 0.84, 1.0};
+  double roughnessFactor = 0.72;
+  double metallicFactor = 0.0;
+  double boundsPadding = 0.04;
+  std::size_t version = 0;
+  bool visible = true;
+  bool castsShadows = true;
+  bool receivesShadows = true;
+};
+
 struct ActiveRenderableState
 {
   RenderableId id = 0;
@@ -201,6 +220,23 @@ DART_GUI_API std::optional<GeometryDescriptor> describeShape(
 
 DART_GUI_API std::vector<RenderableDescriptor> extractRenderables(
     const simulation::World& world);
+
+/// Builds a dynamic, shaded surface mesh renderable from deformable node state.
+///
+/// The returned descriptor uses ShapeKind::Mesh with material colors and
+/// per-vertex normals computed from the current triangles. Invalid topology,
+/// empty input, non-finite positions, or a zero renderable id return nullopt.
+DART_GUI_API std::optional<RenderableDescriptor>
+makeDeformableSurfaceRenderable(
+    RenderableId id,
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const Eigen::Vector3i> triangles,
+    const DeformableSurfaceRenderOptions& options
+    = DeformableSurfaceRenderOptions{});
+
+/// Returns a two-triangle-per-cell surface topology for a row-major grid.
+DART_GUI_API std::vector<Eigen::Vector3i> makeGridSurfaceTriangles(
+    std::size_t columns, std::size_t rows);
 
 /// Stateful equivalent of extractRenderables() for the per-frame render loop.
 ///

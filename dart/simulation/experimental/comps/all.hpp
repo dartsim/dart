@@ -34,6 +34,7 @@
 
 #include <dart/simulation/experimental/comps/collision_geometry.hpp>
 #include <dart/simulation/experimental/comps/contact_material.hpp>
+#include <dart/simulation/experimental/comps/deformable_body.hpp>
 #include <dart/simulation/experimental/comps/dynamics.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
 #include <dart/simulation/experimental/comps/joint.hpp>

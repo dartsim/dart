@@ -74,17 +74,35 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Scalable compute
-- Next step: Extend Phase 5 CUDA evidence through the opt-in path. PRs exercise
-  CUDA-on configure and target builds through `CI CUDA / CUDA Build`, while
-  runtime evidence still requires `pixi run -e cuda test-cuda` on a CUDA host
-  or manual `CI CUDA / CUDA Runtime Smoke` on a self-hosted runner labeled
-  `cuda`. Keep CUDA private and non-required until runner stability and
-  representative workload benchmarks justify the Phase 6 GPU track.
-- Gate:
-  [`030-compute-resource-access/evaluator.md`](030-compute-resource-access/evaluator.md)
-  records the focused proof: graph/world tests and the compute-graph benchmark
-  stay green; Taskflow remains behind the experimental executor boundary; graph
-  metadata/profiling/DOT output remain backend-neutral; classic World behavior
+- Next step: Keep the merged Phase 0-4 foundation in
+  `docs/dev_tasks/experimental_world_scalable_compute/` as the active tracker;
+  the default experimental `World::step` path now preserves the rigid-body
+  contact/multibody solver pipeline, while the batched SoA rigid-body stage
+  remains an explicit unconstrained path and benchmark/prototype seam. PRs now
+  exercise CUDA-on configure and target builds through `CI CUDA / CUDA Build`;
+  runtime evidence still requires `pixi run -e cuda test-cuda` on a CUDA host or
+  manual `CI CUDA / CUDA Runtime Smoke` on a self-hosted runner labeled `cuda`.
+  Keep CUDA private and non-required until runner stability and representative
+  workload benchmarks justify the Phase 6 GPU track. The sidecar package shape,
+  go/no-go threshold, `bm-phase5-gpu-packet-check` /
+  `check-compute-backend-boundaries` / `check-no-gpu-runtime-dependencies`
+  evidence gates, and the `check-phase5-cuda-benchmark-contract` row contract
+  are recorded in the owner doc. The manual CUDA workflow writes and validates
+  the Phase 5 packet artifact through `bm-phase5-cuda-full` and
+  `bm-phase5-cuda-packet` when a self-hosted CUDA runner is available, with
+  `check-phase5-cuda-workflow` guarding that wiring. Phase 3's speedup surface
+  is the checked contact-island benchmark, not the trivial Euler rigid-body
+  rows.
+- Gate: `pixi run test-simulation-experimental` covers graph/world parity for
+  the current CPU foundation; `pixi run bm-compute-check` keeps the full
+  expected `bm_compute_graph` corpus reproducible for the current Euler and
+  contact-shaped workloads; the performance dashboard publishes the
+  contact-shaped proxy, contact-island speedup surface, and Phase 5 CPU-baseline
+  history; `pixi run -e cuda test-cuda` covers the opt-in CUDA smoke path on CUDA
+  hosts; and future compute-bound contact/constraint work must extend the
+  checked benchmark gate.
+  Taskflow remains behind the experimental executor boundary, metadata remains
+  backend-neutral, CUDA remains private/non-required, and classic World behavior
   stays untouched.
 
 ### PLAN-080: Rigid-Body Dynamics Solver
@@ -100,6 +118,29 @@ its own line so status updates remain git-history friendly.
 - Gate: Each slice keeps focused experimental tests and `check-api-boundaries`
   green, holds DART 6 parity on shared scenes before any promotion claim, and
   never exposes solver/coupler/domain/backend types or ECS storage publicly.
+
+### PLAN-081: Deformable Implicit-Barrier Solver
+
+- Owner doc:
+  [`081-deformable-implicit-barrier-solver.md`](081-deformable-implicit-barrier-solver.md)
+- Status: Active
+- Horizon: Now
+- Dimension: Algorithm extensibility
+- Next step: Use the PLAN-081 IPC paper/repository gap audit to implement the
+  full mesh-backed IPC-class follow-up. Start a dedicated `docs/dev_tasks/`
+  folder for that multi-session implementation, then work through
+  mesh/material state, scene loading, BE/Newmark integration, PT/EE distance
+  derivatives, conservative CCD line search, projected Newton, friction,
+  diagnostics, and the complete upstream example/test/benchmark/visual corpus.
+- Gate: Full IPC-parity progress is not complete until the implementation
+  distinguishes the first point-mass/static-ground slice from full IPC, keeps
+  IPC naming backend-neutral, proves mesh contact, barrier, distance, CCD,
+  friction, material, boundary-condition, serialization, and diagnostics
+  behavior with focused tests, ports upstream paper/tutorial/stress examples,
+  records benchmark/profiling JSON for kernels/solver/scenes/scaling, verifies
+  long-horizon headless Filament captures for GUI examples, and keeps
+  `pixi run lint`, `pixi run build`, focused C++ tests, and
+  `check-api-boundaries` green.
 
 ### PLAN-035: Native Collision Feature Dashboard
 
