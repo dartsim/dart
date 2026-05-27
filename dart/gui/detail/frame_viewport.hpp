@@ -36,6 +36,7 @@
 #include <dart/gui/application.hpp>
 
 #include <array>
+#include <functional>
 #include <optional>
 #include <string_view>
 
@@ -77,6 +78,11 @@ struct ViewportPaneLabelState
   bool active = false;
 };
 
+struct ViewportPaneActivationState
+{
+  bool wasLeftMousePressed = false;
+};
+
 struct FrameViewport
 {
   int width = 1;
@@ -99,6 +105,33 @@ std::optional<std::size_t> viewportPaneIndexAtCursor(
 
 const ViewportPaneFrame* viewportPaneAtCursor(
     const FrameViewport& viewport, double cursorX, double cursorY);
+
+std::optional<std::size_t> viewportPaneActivationIndexAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY);
+
+const ViewportPaneFrame* viewportPaneActivationAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY);
+
+bool applyViewportPaneActivationAtCursor(
+    ViewportPaneActivationState& state,
+    const FrameViewport& viewport,
+    double cursorX,
+    double cursorY,
+    bool leftMousePressed,
+    bool uiCapturesMouse,
+    dart::gui::OrbitCameraController& cameraController,
+    const std::function<void(dart::gui::ViewportPaneKind)>&
+        onViewportPaneActivated);
+
+bool updateViewportPaneActivation(
+    ViewportPaneActivationState& state,
+    GLFWwindow* window,
+    const FrameViewport& viewport,
+    ImGuiIO& imguiIo,
+    bool showUi,
+    dart::gui::OrbitCameraController& cameraController,
+    const std::function<void(dart::gui::ViewportPaneKind)>&
+        onViewportPaneActivated);
 
 std::string_view viewportPaneDisplayName(dart::gui::ViewportPaneKind kind);
 

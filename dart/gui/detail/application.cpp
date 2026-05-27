@@ -173,6 +173,8 @@ int runGuiBackendApplicationImpl(
   appOptions.cameraControlsProvider = applicationOptions.cameraControlsProvider;
   appOptions.cameraUpdater = applicationOptions.cameraUpdater;
   appOptions.viewportLayoutProvider = applicationOptions.viewportLayoutProvider;
+  appOptions.onViewportPaneActivated
+      = applicationOptions.onViewportPaneActivated;
   if (!hasSceneOption(argc, argv)) {
     appOptions.world = applicationOptions.world;
     appOptions.renderableProvider = applicationOptions.renderableProvider;

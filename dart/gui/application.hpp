@@ -190,6 +190,14 @@ struct ApplicationOptions
   std::function<bool(OrbitCamera&)> cameraUpdater;
   std::function<ViewportLayoutOptions(const OrbitCamera&)>
       viewportLayoutProvider;
+
+  /// Optional callback fired when a multi-view viewport pane is activated.
+  ///
+  /// The callback receives the logical renderer pane selected by a viewport
+  /// click. Applications can use it to update editor-owned active-pane state
+  /// without exposing backend renderer objects.
+  std::function<void(ViewportPaneKind)> onViewportPaneActivated;
+
   RenderSettings renderSettings;
   std::string defaultScene;
   std::vector<Panel> panels;

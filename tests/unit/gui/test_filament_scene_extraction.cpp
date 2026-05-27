@@ -1958,6 +1958,11 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresViewportLayoutProvider)
     layout.panes[1].kind = dart::gui::ViewportPaneKind::Top;
     return layout;
   };
+  dart::gui::ViewportPaneKind activatedPane
+      = dart::gui::ViewportPaneKind::Perspective;
+  options.onViewportPaneActivated = [&](dart::gui::ViewportPaneKind pane) {
+    activatedPane = pane;
+  };
 
   dart::gui::OrbitCamera camera;
   camera.target = Eigen::Vector3d(4.0, 5.0, 6.0);
@@ -1972,6 +1977,10 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresViewportLayoutProvider)
   EXPECT_TRUE(layout.panes[0].camera.target.isApprox(camera.target));
   EXPECT_EQ(layout.panes[0].camera.distance, camera.distance);
   EXPECT_EQ(layout.panes[1].kind, dart::gui::ViewportPaneKind::Top);
+
+  ASSERT_TRUE(static_cast<bool>(options.onViewportPaneActivated));
+  options.onViewportPaneActivated(dart::gui::ViewportPaneKind::Right);
+  EXPECT_EQ(activatedPane, dart::gui::ViewportPaneKind::Right);
 }
 
 TEST(FilamentSceneExtraction, FrameViewportLayoutSplitsQuadPanes)
@@ -1984,6 +1993,11 @@ TEST(FilamentSceneExtraction, FrameViewportLayoutSplitsQuadPanes)
   layout.panes[2].kind = dart::gui::ViewportPaneKind::Front;
   layout.panes[2].active = true;
   layout.panes[3].kind = dart::gui::ViewportPaneKind::Right;
+  layout.panes[1].camera = dart::gui::OrbitCamera{};
+  layout.panes[1].camera.target = Eigen::Vector3d(1.0, 2.0, 3.0);
+  layout.panes[1].camera.yaw = 0.75;
+  layout.panes[1].camera.pitch = 0.25;
+  layout.panes[1].camera.distance = 9.0;
 
   const auto viewport = dart::gui::detail::makeFrameViewport(layout, 640, 480);
   EXPECT_EQ(viewport.width, 640);
@@ -2064,6 +2078,118 @@ TEST(FilamentSceneExtraction, FrameViewportLayoutFallsBackWhenTooSmall)
   EXPECT_EQ(shortViewport.panes[0].kind, dart::gui::ViewportPaneKind::Front);
 }
 
+TEST(FilamentSceneExtraction, FrameViewportActivationFindsInactiveCursorPane)
+{
+  dart::gui::ViewportLayoutOptions layout;
+  layout.mode = dart::gui::ViewportLayoutMode::Quad;
+  layout.paneCount = dart::gui::kMaxViewportPanes;
+  layout.panes[0].kind = dart::gui::ViewportPaneKind::Perspective;
+  layout.panes[1].kind = dart::gui::ViewportPaneKind::Top;
+  layout.panes[2].kind = dart::gui::ViewportPaneKind::Front;
+  layout.panes[2].active = true;
+  layout.panes[3].kind = dart::gui::ViewportPaneKind::Right;
+  layout.panes[1].camera.target = Eigen::Vector3d(1.0, 2.0, 3.0);
+  layout.panes[1].camera.yaw = 0.75;
+  layout.panes[1].camera.pitch = 0.25;
+  layout.panes[1].camera.distance = 9.0;
+
+  const auto viewport = dart::gui::detail::makeFrameViewport(layout, 640, 480);
+  const auto topActivation
+      = dart::gui::detail::viewportPaneActivationIndexAtCursor(
+          viewport, 10.0, 10.0);
+  ASSERT_TRUE(topActivation.has_value());
+  EXPECT_EQ(*topActivation, 1u);
+  ASSERT_NE(
+      dart::gui::detail::viewportPaneActivationAtCursor(viewport, 10.0, 10.0),
+      nullptr);
+  EXPECT_EQ(
+      dart::gui::detail::viewportPaneActivationAtCursor(viewport, 10.0, 10.0)
+          ->kind,
+      dart::gui::ViewportPaneKind::Top);
+
+  EXPECT_FALSE(
+      dart::gui::detail::viewportPaneActivationIndexAtCursor(
+          viewport, 10.0, 250.0)
+          .has_value());
+  EXPECT_FALSE(
+      dart::gui::detail::viewportPaneActivationIndexAtCursor(
+          viewport, 700.0, 10.0)
+          .has_value());
+
+  dart::gui::OrbitCameraController controller;
+  controller.camera.yaw = -0.5;
+  dart::gui::ViewportPaneKind activatedPane
+      = dart::gui::ViewportPaneKind::Perspective;
+  bool callbackCalled = false;
+  dart::gui::detail::ViewportPaneActivationState activationState;
+  EXPECT_TRUE(
+      dart::gui::detail::applyViewportPaneActivationAtCursor(
+          activationState,
+          viewport,
+          10.0,
+          10.0,
+          true,
+          false,
+          controller,
+          [&](dart::gui::ViewportPaneKind pane) {
+            callbackCalled = true;
+            activatedPane = pane;
+          }));
+  EXPECT_TRUE(callbackCalled);
+  EXPECT_EQ(activatedPane, dart::gui::ViewportPaneKind::Top);
+  EXPECT_TRUE(
+      controller.camera.target.isApprox(Eigen::Vector3d(1.0, 2.0, 3.0)));
+  EXPECT_EQ(controller.camera.yaw, 0.75);
+  EXPECT_EQ(controller.camera.pitch, 0.25);
+  EXPECT_EQ(controller.camera.distance, 9.0);
+  callbackCalled = false;
+  EXPECT_FALSE(
+      dart::gui::detail::applyViewportPaneActivationAtCursor(
+          activationState,
+          viewport,
+          10.0,
+          10.0,
+          true,
+          false,
+          controller,
+          [&](dart::gui::ViewportPaneKind) { callbackCalled = true; }));
+  EXPECT_FALSE(callbackCalled);
+
+  dart::gui::OrbitCameraController noCallbackController;
+  noCallbackController.camera.yaw = -0.5;
+  dart::gui::detail::ViewportPaneActivationState noCallbackState;
+  EXPECT_FALSE(
+      dart::gui::detail::applyViewportPaneActivationAtCursor(
+          noCallbackState,
+          viewport,
+          10.0,
+          10.0,
+          true,
+          false,
+          noCallbackController,
+          {}));
+  EXPECT_EQ(noCallbackController.camera.yaw, -0.5);
+
+  dart::gui::detail::ViewportPaneActivationState capturedState;
+  EXPECT_FALSE(
+      dart::gui::detail::applyViewportPaneActivationAtCursor(
+          capturedState,
+          viewport,
+          10.0,
+          10.0,
+          true,
+          true,
+          controller,
+          [&](dart::gui::ViewportPaneKind) { callbackCalled = true; }));
+  EXPECT_FALSE(callbackCalled);
+
+  layout.mode = dart::gui::ViewportLayoutMode::Single;
+  const auto single = dart::gui::detail::makeFrameViewport(layout, 640, 480);
+  EXPECT_FALSE(
+      dart::gui::detail::viewportPaneActivationIndexAtCursor(single, 10.0, 10.0)
+          .has_value());
+}
+
 TEST(FilamentSceneExtraction, ViewportPaneDisplayNamesAreStable)
 {
   EXPECT_EQ(
@@ -2125,11 +2251,16 @@ TEST(FilamentSceneExtraction, DartsimEditorViewportLayoutUsesRendererSeam)
   EXPECT_NE(
       applicationHeader.find("struct ViewportLayoutOptions"),
       std::string::npos);
+  EXPECT_NE(
+      applicationHeader.find("onViewportPaneActivated"), std::string::npos);
 
   const auto applicationSource
       = readSourceFile(kDartGuiDirectory / "detail" / "application.cpp");
   EXPECT_NE(
       applicationSource.find("appOptions.viewportLayoutProvider"),
+      std::string::npos);
+  EXPECT_NE(
+      applicationSource.find("appOptions.onViewportPaneActivated"),
       std::string::npos);
   EXPECT_NE(applicationSource.find("renderContext.views"), std::string::npos);
   EXPECT_NE(applicationSource.find("renderContext.cameras"), std::string::npos);
@@ -2159,6 +2290,9 @@ TEST(FilamentSceneExtraction, DartsimEditorViewportLayoutUsesRendererSeam)
       std::string::npos);
   EXPECT_NE(
       frameViewportSource.find("viewportPaneDisplayName"), std::string::npos);
+  EXPECT_NE(
+      frameViewportSource.find("applyViewportPaneActivationAtCursor"),
+      std::string::npos);
 
   const auto uiFrameSource
       = readSourceFile(kDartGuiDirectory / "detail" / "ui_frame.cpp");
@@ -2169,6 +2303,8 @@ TEST(FilamentSceneExtraction, DartsimEditorViewportLayoutUsesRendererSeam)
   EXPECT_NE(
       uiFrameSource.find("viewportPaneLabelState(viewport, i)"),
       std::string::npos);
+  EXPECT_NE(
+      uiFrameSource.find("updateViewportPaneActivation"), std::string::npos);
 
   const auto editorSource
       = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
@@ -2177,6 +2313,10 @@ TEST(FilamentSceneExtraction, DartsimEditorViewportLayoutUsesRendererSeam)
       std::string::npos);
   EXPECT_NE(
       editorSource.find("options.viewportLayoutProvider"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("options.onViewportPaneActivated"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("applyViewportPaneActivation"), std::string::npos);
 }
 
 TEST(FilamentSceneExtraction, RestoredExamplesUsePromotedGuiBoundary)

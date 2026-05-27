@@ -34,6 +34,7 @@
 #define DART_GUI_DETAIL_SCENES_HPP_
 
 #include <dart/gui/application.hpp>
+#include <dart/gui/detail/frame_viewport.hpp>
 #include <dart/gui/gizmo.hpp>
 #include <dart/gui/panel.hpp>
 #include <dart/gui/scene.hpp>
@@ -82,6 +83,8 @@ struct DartScene
       renderableProvider;
   std::function<dart::gui::RenderableSelection()> selectedRenderableProvider;
   std::function<void(dart::gui::RenderableId)> onRenderableSelected;
+  std::function<void(dart::gui::ViewportPaneKind)> onViewportPaneActivated;
+  ViewportPaneActivationState viewportPaneActivation;
   bool dockingEnabled = false;
   /// Set once after the default dock layout has been applied (or skipped
   /// because a saved layout exists). Runtime-only; not copied from AppOptions.
@@ -138,6 +141,7 @@ struct AppOptions
   std::function<bool(dart::gui::OrbitCamera&)> cameraUpdater;
   std::function<dart::gui::ViewportLayoutOptions(const dart::gui::OrbitCamera&)>
       viewportLayoutProvider;
+  std::function<void(dart::gui::ViewportPaneKind)> onViewportPaneActivated;
   dart::gui::RenderSettings renderSettings;
   bool renderOutputModeExplicit = false;
   std::vector<dart::gui::Panel> panels;

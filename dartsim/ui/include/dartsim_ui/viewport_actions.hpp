@@ -328,6 +328,10 @@ applyViewportCameraControlAction(
     const ViewportLayoutState& state);
 [[nodiscard]] ViewportLayoutActionResult applyViewportLayoutAction(
     ViewportLayoutState& state, ViewportLayoutActionKind kind);
+[[nodiscard]] std::optional<ViewportLayoutActionKind>
+viewportPaneActivationAction(dart::gui::ViewportPaneKind pane);
+[[nodiscard]] ViewportLayoutActionResult applyViewportPaneActivation(
+    ViewportLayoutState& state, dart::gui::ViewportPaneKind pane);
 
 /// Map a logical viewport pane to its canonical camera preset.
 [[nodiscard]] ViewportCameraActionKind viewportPaneCameraAction(

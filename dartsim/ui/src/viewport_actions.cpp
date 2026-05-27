@@ -952,6 +952,33 @@ ViewportLayoutActionResult applyViewportLayoutAction(
   return {false, "Unknown viewport layout", std::nullopt};
 }
 
+std::optional<ViewportLayoutActionKind> viewportPaneActivationAction(
+    dart::gui::ViewportPaneKind pane)
+{
+  switch (pane) {
+    case dart::gui::ViewportPaneKind::Perspective:
+      return ViewportLayoutActionKind::ActivatePerspectivePane;
+    case dart::gui::ViewportPaneKind::Front:
+      return ViewportLayoutActionKind::ActivateFrontPane;
+    case dart::gui::ViewportPaneKind::Right:
+      return ViewportLayoutActionKind::ActivateRightPane;
+    case dart::gui::ViewportPaneKind::Top:
+      return ViewportLayoutActionKind::ActivateTopPane;
+  }
+  return std::nullopt;
+}
+
+ViewportLayoutActionResult applyViewportPaneActivation(
+    ViewportLayoutState& state, dart::gui::ViewportPaneKind pane)
+{
+  const std::optional<ViewportLayoutActionKind> action
+      = viewportPaneActivationAction(pane);
+  if (!action.has_value()) {
+    return {false, "Unknown viewport pane", std::nullopt};
+  }
+  return applyViewportLayoutAction(state, *action);
+}
+
 ViewportCameraActionKind viewportPaneCameraAction(ViewportPaneKind pane)
 {
   switch (pane) {

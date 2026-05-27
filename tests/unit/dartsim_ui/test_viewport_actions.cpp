@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -861,6 +862,60 @@ TEST(DartsimViewportActions, ViewportPaneCameraMappingsAreCanonical)
   EXPECT_EQ(
       ui::viewportPaneCameraAction(ui::ViewportPaneKind::Top),
       ui::ViewportCameraActionKind::Top);
+}
+
+TEST(DartsimViewportActions, RendererPaneActivationUsesLayoutActions)
+{
+  SimEngine engine;
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayoutState layout;
+  const std::array<
+      std::pair<dart::gui::ViewportPaneKind, ui::ViewportLayoutActionKind>,
+      4>
+      expectedActions{
+          std::pair{
+              dart::gui::ViewportPaneKind::Perspective,
+              ui::ViewportLayoutActionKind::ActivatePerspectivePane},
+          std::pair{
+              dart::gui::ViewportPaneKind::Front,
+              ui::ViewportLayoutActionKind::ActivateFrontPane},
+          std::pair{
+              dart::gui::ViewportPaneKind::Right,
+              ui::ViewportLayoutActionKind::ActivateRightPane},
+          std::pair{
+              dart::gui::ViewportPaneKind::Top,
+              ui::ViewportLayoutActionKind::ActivateTopPane}};
+  for (const auto& [pane, expectedAction] : expectedActions) {
+    const std::optional<ui::ViewportLayoutActionKind> action
+        = ui::viewportPaneActivationAction(pane);
+    ASSERT_TRUE(action.has_value());
+    EXPECT_EQ(*action, expectedAction);
+  }
+
+  auto disabled = ui::applyViewportPaneActivation(
+      layout, dart::gui::ViewportPaneKind::Top);
+  EXPECT_FALSE(disabled.ok);
+  EXPECT_EQ(disabled.message, "Enable Four View Layout");
+  EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Single);
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Perspective);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  auto result = ui::applyViewportPaneActivation(
+      layout, dart::gui::ViewportPaneKind::Right);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Right Pane active");
+  EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Right);
+  ASSERT_TRUE(result.cameraAction.has_value());
+  EXPECT_EQ(*result.cameraAction, ui::ViewportCameraActionKind::Right);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
 }
 
 TEST(DartsimViewportActions, ViewportLayoutOptionsExposeRendererPaneViews)

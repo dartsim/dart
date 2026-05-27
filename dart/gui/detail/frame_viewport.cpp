@@ -40,6 +40,7 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <functional>
 #include <string_view>
 
 #include <cmath>
@@ -201,6 +202,90 @@ const ViewportPaneFrame* viewportPaneAtCursor(
   const std::optional<std::size_t> index
       = viewportPaneIndexAtCursor(viewport, cursorX, cursorY);
   return index.has_value() ? &viewport.panes[*index] : nullptr;
+}
+
+std::optional<std::size_t> viewportPaneActivationIndexAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY)
+{
+  if (viewport.paneCount <= 1u) {
+    return std::nullopt;
+  }
+
+  const std::optional<std::size_t> index
+      = viewportPaneIndexAtCursor(viewport, cursorX, cursorY);
+  if (!index.has_value() || *index == activeViewportPaneIndex(viewport)) {
+    return std::nullopt;
+  }
+  return index;
+}
+
+const ViewportPaneFrame* viewportPaneActivationAtCursor(
+    const FrameViewport& viewport, double cursorX, double cursorY)
+{
+  const std::optional<std::size_t> index
+      = viewportPaneActivationIndexAtCursor(viewport, cursorX, cursorY);
+  return index.has_value() ? &viewport.panes[*index] : nullptr;
+}
+
+bool applyViewportPaneActivationAtCursor(
+    ViewportPaneActivationState& state,
+    const FrameViewport& viewport,
+    double cursorX,
+    double cursorY,
+    bool leftMousePressed,
+    bool uiCapturesMouse,
+    dart::gui::OrbitCameraController& cameraController,
+    const std::function<void(dart::gui::ViewportPaneKind)>&
+        onViewportPaneActivated)
+{
+  const bool pressedEdge = leftMousePressed && !state.wasLeftMousePressed;
+  state.wasLeftMousePressed = leftMousePressed;
+  if (!pressedEdge || uiCapturesMouse || !onViewportPaneActivated) {
+    return false;
+  }
+
+  const ViewportPaneFrame* pane
+      = viewportPaneActivationAtCursor(viewport, cursorX, cursorY);
+  if (pane == nullptr) {
+    return false;
+  }
+
+  cameraController.camera = pane->camera;
+  dart::gui::resetOrbitCameraTracking(cameraController);
+  onViewportPaneActivated(pane->kind);
+  return true;
+}
+
+bool updateViewportPaneActivation(
+    ViewportPaneActivationState& state,
+    GLFWwindow* window,
+    const FrameViewport& viewport,
+    ImGuiIO& imguiIo,
+    bool showUi,
+    dart::gui::OrbitCameraController& cameraController,
+    const std::function<void(dart::gui::ViewportPaneKind)>&
+        onViewportPaneActivated)
+{
+  if (window == nullptr) {
+    state.wasLeftMousePressed = false;
+    return false;
+  }
+
+  double cursorX = 0.0;
+  double cursorY = 0.0;
+  getFramebufferCursorPosition(
+      window, viewport.width, viewport.height, cursorX, cursorY);
+  const bool leftMousePressed
+      = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+  return applyViewportPaneActivationAtCursor(
+      state,
+      viewport,
+      cursorX,
+      cursorY,
+      leftMousePressed,
+      isSceneMouseInputCapturedByUi(showUi, imguiIo),
+      cameraController,
+      onViewportPaneActivated);
 }
 
 std::string_view viewportPaneDisplayName(dart::gui::ViewportPaneKind kind)

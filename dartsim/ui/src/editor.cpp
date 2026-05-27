@@ -1137,6 +1137,13 @@ int runEditor(int argc, char* argv[])
               app->viewportLayers,
               app->viewportLayout);
         };
+  options.onViewportPaneActivated = [app](dart::gui::ViewportPaneKind pane) {
+    const ViewportLayoutActionResult result
+        = applyViewportPaneActivation(app->viewportLayout, pane);
+    if (result.ok) {
+      app->note(result.message);
+    }
+  };
   options.cameraUpdater = [app](dart::gui::OrbitCamera& camera) {
     const ViewportCameraActionResult result = trackedSelectionCamera(
         app->engine, camera, app->viewportLayers, app->viewportCamera);

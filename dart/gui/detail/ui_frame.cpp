@@ -505,6 +505,14 @@ void updateFrameUi(
   }
   renderApplicationPanels(
       panels, panelContext, guiScale, dartScene.dockingEnabled);
+  updateViewportPaneActivation(
+      dartScene.viewportPaneActivation,
+      window,
+      viewport,
+      imguiIo,
+      true,
+      cameraController,
+      dartScene.onViewportPaneActivated);
   renderViewportPaneLabels(viewport, guiScale);
   if (dartScene.debugLabels) {
     renderDebugLabels(dartScene.debugLabels(), viewport, guiScale);
