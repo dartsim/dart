@@ -49,13 +49,19 @@ Use these practices:
 - Keep titles plain, scoped, and outcome-focused. Do not add agent prefixes.
 - Fill the PR template with concrete Summary, Motivation, Changes, Testing,
   Breaking Changes, and Related Issues details.
+- Write the opening Summary and Motivation from the perspective of a user or
+  downstream maintainer who is not already familiar with the implementation:
+  lead with what changes for them, what stays compatible, how they would opt in
+  or migrate, and why the evidence matters. Keep implementation details in
+  Changes unless they explain a user-visible outcome or risk.
 - When the change has meaningful user-facing API, workflow, behavior, or
   performance impact, add a concise `## Before / After` section before
   Testing. Use a small table or bullets that cover only relevant dimensions
   such as public API, commands/workflows, behavior, migration, and performance
-  baseline. For performance claims, name the baseline explicitly: CPU path,
-  parent commit, `main`, or prior implementation, plus workload, metric, and
-  important limitations.
+  baseline. Phrase each row as a user-visible before/after, then name the
+  implementation mechanism only as supporting context. For performance claims,
+  name the baseline explicitly: CPU path, parent commit, `main`, or prior
+  implementation, plus workload, metric, and important limitations.
 - In Testing, list exact commands, targets, or test names that ran.
 - For CI, performance, or infrastructure work, include evidence such as CI run
   observations, timing, reruns, benchmark output, or why a skipped check is
