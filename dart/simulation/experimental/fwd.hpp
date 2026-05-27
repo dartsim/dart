@@ -57,7 +57,9 @@ class WorldStepStage;
 
 // Value objects
 struct Contact;
+struct DeformableDirichletBoundaryCondition;
 struct DeformableMaterialProperties;
+struct DeformableNeumannBoundaryCondition;
 struct DeformableSurfaceTriangle;
 struct DeformableTetrahedron;
 

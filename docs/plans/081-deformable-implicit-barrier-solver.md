@@ -197,6 +197,26 @@ The sub-slice must not be used as evidence for FEM elasticity, material-driven
 stiffness, mesh contact, no-intersection or no-inversion guarantees, CCD line
 search, projected Newton, friction, upstream scene parity, or full IPC parity.
 
+## Contact-Free Scene/Boundary Sub-Slice Evidence
+
+The scene/boundary/diagnostics sub-slice is a second narrow PLAN-081 Slice 1
+increment. It adds a DART-owned loader for the audited upstream-style text scene
+subset, a Gmsh 4.1 tetra-mesh subset importer with boundary-surface fallback
+when `$Surface` is absent, generated structural spring edges for contact-free
+replay, scripted Dirichlet and Neumann controls with time ranges, binary
+restart continuity, compact diagnostics JSON, replay/load benchmark counters,
+and `experimental_deformable_gui --deformable-scene` capture in
+combined/surface/points modes. Scene gravity follows the imported reference
+convention for these replay files; public `DeformableBodyOptions` remain
+DART-owned and do not expose upstream solver selectors. Imported IPC metadata
+such as `energy` and `timeIntegration` is reported as ignored until the
+matching solver slices exist.
+
+The sub-slice must not be used as evidence for FEM elasticity, material-driven
+stiffness, upstream ground/contact/friction behavior, mesh self-contact,
+intersection or inversion guarantees, CCD line search, projected Newton,
+friction, complete scene-corpus coverage, or full IPC parity.
+
 ## Non-Goals For The First PR
 
 - Full upstream `ipc-sim/IPC` feature parity.

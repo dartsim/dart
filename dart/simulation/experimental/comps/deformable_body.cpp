@@ -254,6 +254,83 @@ private:
 };
 
 //==============================================================================
+class DeformableBoundaryConditionsSerializer final
+  : public io::TypedComponentSerializer<DeformableBoundaryConditions>
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return DeformableBoundaryConditions::getTypeName();
+  }
+
+private:
+  void saveComponent(
+      std::ostream& output,
+      const DeformableBoundaryConditions& component,
+      const io::EntityMap&) const override
+  {
+    const auto writeIndex = [&](std::size_t value) {
+      io::writePOD(output, value);
+    };
+    const auto writeVector3 = [&](const Eigen::Vector3d& value) {
+      io::writeVector3d(output, value);
+    };
+
+    writeVector(
+        output,
+        component.dirichlet,
+        [&](const DeformableDirichletBoundary& boundary) {
+          writeVector(output, boundary.nodes, writeIndex);
+          writeVector(output, boundary.referencePositions, writeVector3);
+          io::writeVector3d(output, boundary.center);
+          io::writeVector3d(output, boundary.linearVelocity);
+          io::writeVector3d(output, boundary.angularVelocity);
+          io::writePOD(output, boundary.startTime);
+          io::writePOD(output, boundary.endTime);
+        });
+    writeVector(
+        output,
+        component.neumann,
+        [&](const DeformableNeumannBoundary& boundary) {
+          writeVector(output, boundary.nodes, writeIndex);
+          io::writeVector3d(output, boundary.acceleration);
+          io::writePOD(output, boundary.startTime);
+          io::writePOD(output, boundary.endTime);
+        });
+  }
+
+  void loadComponent(
+      std::istream& input,
+      DeformableBoundaryConditions& component) const override
+  {
+    const auto readIndex = [&](std::size_t& value) {
+      io::readPOD(input, value);
+    };
+    const auto readVector3 = [&](Eigen::Vector3d& value) {
+      io::readVector3d(input, value);
+    };
+
+    readVector(
+        input, component.dirichlet, [&](DeformableDirichletBoundary& boundary) {
+          readVector(input, boundary.nodes, readIndex);
+          readVector(input, boundary.referencePositions, readVector3);
+          io::readVector3d(input, boundary.center);
+          io::readVector3d(input, boundary.linearVelocity);
+          io::readVector3d(input, boundary.angularVelocity);
+          io::readPOD(input, boundary.startTime);
+          io::readPOD(input, boundary.endTime);
+        });
+    readVector(
+        input, component.neumann, [&](DeformableNeumannBoundary& boundary) {
+          readVector(input, boundary.nodes, readIndex);
+          io::readVector3d(input, boundary.acceleration);
+          io::readPOD(input, boundary.startTime);
+          io::readPOD(input, boundary.endTime);
+        });
+  }
+};
+
+//==============================================================================
 template <typename SerializerT>
 void registerSerializerIfNeeded(io::SerializerRegistry& registry)
 {
@@ -274,6 +351,7 @@ void registerDeformableBodySerializers(io::SerializerRegistry& registry)
   registerSerializerIfNeeded<DeformableSpringModelSerializer>(registry);
   registerSerializerIfNeeded<DeformableMeshTopologySerializer>(registry);
   registerSerializerIfNeeded<DeformableMaterialSerializer>(registry);
+  registerSerializerIfNeeded<DeformableBoundaryConditionsSerializer>(registry);
 }
 
 namespace {

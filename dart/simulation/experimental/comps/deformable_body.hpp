@@ -120,6 +120,36 @@ struct DeformableMaterial
   double poissonRatio = 0.3;
 };
 
+/// Time-ranged scripted Dirichlet boundary region for deformable nodes.
+struct DeformableDirichletBoundary
+{
+  std::vector<std::size_t> nodes;
+  std::vector<Eigen::Vector3d> referencePositions;
+  Eigen::Vector3d center = Eigen::Vector3d::Zero();
+  Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+  Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+  double startTime = 0.0;
+  double endTime = 0.0;
+};
+
+/// Time-ranged Neumann-style acceleration region for deformable nodes.
+struct DeformableNeumannBoundary
+{
+  std::vector<std::size_t> nodes;
+  Eigen::Vector3d acceleration = Eigen::Vector3d::Zero();
+  double startTime = 0.0;
+  double endTime = 0.0;
+};
+
+/// Internal scripted boundary-condition state for deformable scene replays.
+struct DeformableBoundaryConditions
+{
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(DeformableBoundaryConditions);
+
+  std::vector<DeformableDirichletBoundary> dirichlet;
+  std::vector<DeformableNeumannBoundary> neumann;
+};
+
 /// Transient scratch buffers reused by the default deformable solver.
 ///
 /// These buffers are intentionally not serialized; they are resized lazily from
@@ -131,6 +161,9 @@ struct DeformableSolverScratch
   std::vector<Eigen::Vector3d> gradient;
   std::vector<Eigen::Vector3d> direction;
   std::vector<Eigen::Vector3d> candidate;
+  std::vector<Eigen::Vector3d> previousStepPositions;
+  std::vector<Eigen::Vector3d> externalAccelerations;
+  std::vector<std::uint8_t> activeFixed;
 };
 
 void registerDeformableBodySerializers(

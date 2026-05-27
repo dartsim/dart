@@ -34,6 +34,7 @@
 
 #include <Eigen/Core>
 
+#include <limits>
 #include <vector>
 
 #include <cstddef>
@@ -86,6 +87,53 @@ struct DeformableMaterialProperties
   double poissonRatio = 0.3;
 };
 
+/// Scripted Dirichlet boundary condition over deformable nodes.
+///
+/// Active nodes are removed from the deformable solve while the time range is
+/// active and follow a restartable linearized rigid motion around `center`.
+/// This is boundary-control scaffolding for scene replay, not a public solver
+/// callback mechanism.
+struct DeformableDirichletBoundaryCondition
+{
+  /// Node indices controlled by this boundary condition.
+  std::vector<std::size_t> nodes;
+
+  /// Translation velocity in world units per second.
+  Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+
+  /// Angular velocity in radians per second.
+  Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+
+  /// World-space center used for angular velocity.
+  Eigen::Vector3d center = Eigen::Vector3d::Zero();
+
+  /// Inclusive start time in seconds.
+  double startTime = 0.0;
+
+  /// Exclusive end time in seconds. Infinity means no scheduled stop.
+  double endTime = std::numeric_limits<double>::infinity();
+};
+
+/// Time-ranged Neumann-style acceleration over deformable nodes.
+///
+/// This contact-free replay slice stores upstream reference-scene NBC vectors
+/// as nodal accelerations. Force/traction work terms are added with later FEM
+/// material slices.
+struct DeformableNeumannBoundaryCondition
+{
+  /// Node indices receiving the acceleration.
+  std::vector<std::size_t> nodes;
+
+  /// Nodal acceleration applied while the time range is active.
+  Eigen::Vector3d acceleration = Eigen::Vector3d::Zero();
+
+  /// Inclusive start time in seconds.
+  double startTime = 0.0;
+
+  /// Exclusive end time in seconds. Infinity means no scheduled stop.
+  double endTime = std::numeric_limits<double>::infinity();
+};
+
 /// Options for creating a DeformableBody.
 ///
 /// This experimental model currently steps point-mass nodes joined by distance
@@ -125,6 +173,12 @@ struct DeformableBodyOptions
 
   /// Node indices eliminated from the solve and held fixed in world space.
   std::vector<std::size_t> fixedNodes;
+
+  /// Optional scripted Dirichlet boundary conditions.
+  std::vector<DeformableDirichletBoundaryCondition> dirichletBoundaryConditions;
+
+  /// Optional time-ranged Neumann-style accelerations.
+  std::vector<DeformableNeumannBoundaryCondition> neumannBoundaryConditions;
 
   /// Material properties stored with the body. Only density affects this slice.
   DeformableMaterialProperties material;

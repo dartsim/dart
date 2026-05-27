@@ -10,8 +10,13 @@
         material validation, density-based tetrahedral mass assembly, boundary
         surface extraction, serialization, benchmark counters, and body-owned
         GUI surface topology.
-  - [ ] Remaining Phase 1 work: scene loading, DBC/NBC, scripted motion,
-        restart/output diagnostics, and contact-free mesh scene replays.
+  - [x] Contact-free scene/boundary/diagnostics sub-slice: upstream-style
+        tetra mesh scene loading, generated spring replay edges, scripted
+        Dirichlet/Neumann controls, restart diagnostics, replay benchmarks, and
+        headless GUI scene capture.
+  - [ ] Remaining Phase 1 work: broader scene-option coverage, BE/NM state,
+        output-file compatibility decisions, and additional contact-free mesh
+        scene replays.
 - [ ] Phase 2: PT/EE distance kernels, broad-phase candidates, and conservative
       CCD line-search bounds.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
@@ -27,11 +32,15 @@ until DART covers the IPC paper method family, upstream example corpus,
 material/property options, tests, benchmarks, and visual evidence with a
 DART-owned implementation.
 
-## Non-Goals For The Current Manifest Slice
+## Non-Goals For The Current Implementation Slices
 
-- No new solver behavior, renderer behavior, tests, benchmarks, or GUI examples.
 - No claim that DART has full IPC, mesh contact, projected Newton, friction, or
   paper-level parity.
+- No claim that imported `energy`, `timeIntegration`, contact, ground, or
+  friction directives are honored beyond explicit warnings and contact-free
+  replay scaffolding.
+- No FEM elasticity, material-driven stiffness, CCD line search, or projected
+  Newton solve in the current point-mass/spring stepping path.
 - No vendored or runtime dependency on `ipc-sim/IPC`.
 
 ## Key Decisions
@@ -50,10 +59,11 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Finish the rest of Slice 1 from PLAN-081: scene asset loading, BE/NM state,
-   DBC/NBC, scripted motion, restart, output diagnostics, and contact-free mesh
-   replays. The mesh/material-state sub-slice is scaffolding only and still uses
-   the existing point-mass/spring stepping path.
+1. Finish the rest of Slice 1 from PLAN-081: broader scene asset loading,
+   BE/NM state, output diagnostics compatibility decisions, and more
+   contact-free mesh replays. The mesh/material-state and scene/boundary
+   sub-slices are scaffolding only and still use the existing point-mass/spring
+   stepping path.
 2. Use the scene corpus manifest to select the first tutorial and paper-facing
    scenes, then replace planned artifacts with implemented DART commands as
    each scene lands.
@@ -81,3 +91,11 @@ benchmark setup/step counters, and long-horizon rendering of body-owned surface
 topology. It does not cover FEM elasticity, mesh contact, no-intersection or
 no-inversion guarantees, CCD line search, projected Newton, friction, upstream
 scene parity, or full IPC parity.
+
+For the contact-free scene/boundary/diagnostics sub-slice, keep the verification
+language precise: it covers the audited tetra-mesh scene text subset, generated
+spring replay edges, scripted DBC/NBC controls, binary restart continuity,
+diagnostics JSON, replay/load benchmark counters, and long-horizon GUI captures
+through `--deformable-scene`. It does not cover FEM elasticity, material-driven
+stiffness, mesh contact, ground/friction behavior from upstream scene files,
+CCD line search, projected Newton, or full scene-corpus parity.

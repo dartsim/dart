@@ -14,16 +14,24 @@ counters, and GUI rendering from body-owned surface topology. It still steps
 through the existing point-mass/spring path and must not be described as FEM,
 mesh contact, or full IPC.
 
+The scene/boundary/diagnostics sub-slice adds a contact-free upstream-style
+scene text loader, a Gmsh 4.1 tetra-mesh subset importer, generated structural
+spring replay edges, scripted DBC/NBC controls, binary restart continuity,
+diagnostics JSON, replay/load benchmarks, and `experimental_deformable_gui
+--deformable-scene` headless capture. It still ignores/reports contact and
+friction directives and must not be described as IPC scene parity.
+
 ## Current Branch
 
-`feature/ipc-mesh-material-state` - stacked on
-`feature/ipc-paper-corpus-manifest`, adding mesh/material-state scaffolding.
+`feature/ipc-scene-boundary-diagnostics` - stacked on
+`feature/ipc-mesh-material-state`, adding contact-free scene/boundary/replay
+scaffolding.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue the rest of PLAN-081 Slice 1: scene
-loading, boundary conditions, restart/output diagnostics, and contact-free mesh
-scene replays with focused tests.
+After this sub-slice lands, continue the rest of PLAN-081 Slice 1: broader
+scene-option coverage, BE/NM state, output-file compatibility decisions, and
+additional contact-free mesh scene replays with focused tests.
 
 ## Context That Would Be Lost
 
@@ -39,10 +47,12 @@ scene replays with focused tests.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-paper-corpus-manifest
+git checkout feature/ipc-scene-boundary-diagnostics
 git status && git log -3 --oneline
-pixi run python scripts/check_ipc_scene_manifest.py
+cmake --build build/default/cpp/Release --target test_deformable_scene_io
+./build/default/cpp/Release/bin/test_deformable_scene_io
 ```
 
-Then switch to `feature/ipc-mesh-material-state` for the mesh/material-state
-sub-slice, or create the next stacked branch from it for scene-loading work.
+Switch to `feature/ipc-paper-corpus-manifest` only when updating the scene
+corpus manifest itself, or to `feature/ipc-mesh-material-state` when reviewing
+the stacked mesh/material-state base.

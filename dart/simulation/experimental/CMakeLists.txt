@@ -69,6 +69,7 @@ add_library(${target_name}
   frame/frame.cpp
   frame/free_frame.cpp
   io/binary_io.cpp
+  io/deformable_scene_io.cpp
   io/serializer.cpp
   multibody/joint.cpp
   multibody/link.cpp
