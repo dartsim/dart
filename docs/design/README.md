@@ -23,7 +23,7 @@ fields in `docs/plans/dashboard.md` or `docs/dev_tasks/<task>/`.
 | [`scalable_compute_decisions.md`](scalable_compute_decisions.md)                 | Workload-first CPU, SIMD, and GPU decision framework for scalable computation                                                            |
 | [`simulation_experimental_cpp_api.md`](simulation_experimental_cpp_api.md)       | C++ API shape for promoting `dart::simulation::experimental` to the DART 8 simulation API                                                |
 | [`simulation_experimental_python_api.md`](simulation_experimental_python_api.md) | Python API shape for `dartpy.simulation_experimental` over the experimental simulation stack                                             |
-| [`simulation_experimental_references.md`](simulation_experimental_references.md) | Managed catalog of research papers, textbooks, standards, and comparative engines for the experimental world (status, priority, verdict) |
+| [`../readthedocs/papers.md`](../readthedocs/papers.md)                           | Managed catalog of research papers, textbooks, standards, and comparative engines for the experimental world (status, priority, verdict) |
 | [`simulation_solver_architecture.md`](simulation_solver_architecture.md)         | Internal architecture for solvers, domain assignment, multi-physics coupling, and the step schedule behind the experimental `World`      |
 
 ## Placement Rules

@@ -52,12 +52,12 @@ Contact handling via Linear Complementarity Problems:
 
 ## Related Documentation
 
-| Topic                     | Location                                                                                               | Description                                                                                   |
-| ------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Dynamics code exploration | [`docs/onboarding/dynamics.md`](../onboarding/dynamics.md)                                             | API walkthrough                                                                               |
-| Constraint system         | [`docs/onboarding/constraints.md`](../onboarding/constraints.md)                                       | Solver internals                                                                              |
-| Control theory            | [`docs/readthedocs/topics/control-theory.md`](../readthedocs/topics/control-theory.md)                 | Notation mapping                                                                              |
-| Experimental references   | [`docs/design/simulation_experimental_references.md`](../design/simulation_experimental_references.md) | Research paper/textbook/engine catalog for the experimental world (status, priority, verdict) |
+| Topic                     | Location                                                                               | Description                                                                                   |
+| ------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Dynamics code exploration | [`docs/onboarding/dynamics.md`](../onboarding/dynamics.md)                             | API walkthrough                                                                               |
+| Constraint system         | [`docs/onboarding/constraints.md`](../onboarding/constraints.md)                       | Solver internals                                                                              |
+| Control theory            | [`docs/readthedocs/topics/control-theory.md`](../readthedocs/topics/control-theory.md) | Notation mapping                                                                              |
+| Experimental references   | [`docs/readthedocs/papers.md`](../readthedocs/papers.md)                               | Research paper/textbook/engine catalog for the experimental world (status, priority, verdict) |
 
 ## For AI Agents
 
