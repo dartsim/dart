@@ -899,8 +899,8 @@ void makeInitialPositionsFeasible(
 
 //==============================================================================
 double addStaticGroundBarrierEnergy(
-    const comps::DeformableNodeState& state,
     const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
     std::vector<Eigen::Vector3d>* gradient)
 {
@@ -913,7 +913,7 @@ double addStaticGroundBarrierEnergy(
 
   double energy = 0.0;
   for (std::size_t i = 0; i < positions.size(); ++i) {
-    if (state.fixed[i] != 0u) {
+    if (fixed[i] != 0u) {
       continue;
     }
 
@@ -953,6 +953,7 @@ double evaluateDeformableObjective(
     const comps::DeformableSpringModel& model,
     const std::vector<Eigen::Vector3d>& positions,
     const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
     double timeStep,
     std::vector<Eigen::Vector3d>* gradient)
@@ -967,7 +968,7 @@ double evaluateDeformableObjective(
   double energy = 0.0;
   const double invDt2 = 1.0 / (timeStep * timeStep);
   for (std::size_t i = 0; i < positions.size(); ++i) {
-    if (state.fixed[i] != 0u) {
+    if (fixed[i] != 0u) {
       continue;
     }
 
@@ -992,16 +993,16 @@ double evaluateDeformableObjective(
     if (gradient != nullptr) {
       const Eigen::Vector3d springGradient
           = model.stiffness * stretch * direction;
-      if (state.fixed[edge.nodeA] == 0u) {
+      if (fixed[edge.nodeA] == 0u) {
         (*gradient)[edge.nodeA] -= springGradient;
       }
-      if (state.fixed[edge.nodeB] == 0u) {
+      if (fixed[edge.nodeB] == 0u) {
         (*gradient)[edge.nodeB] += springGradient;
       }
     }
   }
 
-  energy += addStaticGroundBarrierEnergy(state, positions, barriers, gradient);
+  energy += addStaticGroundBarrierEnergy(positions, fixed, barriers, gradient);
   return energy;
 }
 
@@ -1197,6 +1198,7 @@ void advanceDeformableBody(
           model,
           scratch.next,
           scratch.inertialTargets,
+          scratch.activeFixed,
           barriers,
           timeStep,
           &scratch.gradient);
@@ -1242,6 +1244,7 @@ void advanceDeformableBody(
               model,
               scratch.candidate,
               scratch.inertialTargets,
+              scratch.activeFixed,
               barriers,
               timeStep,
               nullptr);

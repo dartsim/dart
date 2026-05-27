@@ -595,6 +595,40 @@ TEST(DeformableBody, ActiveStaticGroundContactAllowsTangentialMotion)
 }
 
 //==============================================================================
+TEST(DeformableBody, ActiveDirichletNodesDoNotBlockGroundBarrierSolve)
+{
+  sx::World world;
+  world.setTimeStep(0.1);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  ground.setDeformableGroundBarrier(true);
+
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.1), Eigen::Vector3d(0.0, 0.0, 0.5)};
+  options.edges = {sx::DeformableEdge{0, 1, -1.0}};
+  options.edgeStiffness = 100.0;
+
+  sx::DeformableDirichletBoundaryCondition boundary;
+  boundary.nodes = {0};
+  boundary.linearVelocity = Eigen::Vector3d(0.0, 0.0, -2.0);
+  options.dirichletBoundaryConditions.push_back(boundary);
+
+  const auto body = world.addDeformableBody("scripted_anchor", options);
+  world.step();
+
+  EXPECT_NEAR(body.getPosition(0).z(), -0.1, 1e-12);
+  EXPECT_LT(body.getPosition(1).z(), 0.5);
+  EXPECT_GE(body.getPosition(1).z(), 1e-4 - 1e-12);
+}
+
+//==============================================================================
 TEST(DeformableBody, StaticGroundBarrierUsesFiniteStaticFootprint)
 {
   sx::World world;
