@@ -125,6 +125,33 @@ double sanitizeUnit(double value)
   return std::clamp(value, 0.0, 1.0);
 }
 
+SensorKind sanitizeSensorKind(SensorKind kind)
+{
+  switch (kind) {
+    case SensorKind::Camera:
+    case SensorKind::Range:
+    case SensorKind::Contact:
+      return kind;
+  }
+  return SensorKind::Camera;
+}
+
+SensorDesc sanitizeSensor(SensorDesc sensor)
+{
+  sensor.kind = sanitizeSensorKind(sensor.kind);
+  sensor.range
+      = std::isfinite(sensor.range) && sensor.range > 0.0 ? sensor.range : 10.0;
+  sensor.fieldOfView
+      = std::isfinite(sensor.fieldOfView) && sensor.fieldOfView > 0.0
+            ? std::clamp(sensor.fieldOfView, 1.0, 179.0)
+            : 60.0;
+  sensor.updateRate
+      = std::isfinite(sensor.updateRate) && sensor.updateRate > 0.0
+            ? sensor.updateRate
+            : 30.0;
+  return sensor;
+}
+
 ShapeDesc sanitizeShape(ShapeDesc shape)
 {
   switch (shape.type) {
@@ -151,6 +178,25 @@ ShapeDesc sanitizeShape(ShapeDesc shape)
   }
   for (int i = 0; i < 4; ++i) {
     shape.color[i] = sanitizeUnit(shape.color[i]);
+  }
+  return shape;
+}
+
+ShapeDesc defaultSensorShape(SensorKind kind)
+{
+  ShapeDesc shape;
+  shape.type = ShapeType::Box;
+  shape.dimensions = Eigen::Vector3d(0.28, 0.18, 0.16);
+  switch (sanitizeSensorKind(kind)) {
+    case SensorKind::Camera:
+      shape.color = Eigen::Vector4d(0.18, 0.42, 0.9, 1.0);
+      break;
+    case SensorKind::Range:
+      shape.color = Eigen::Vector4d(0.2, 0.75, 0.55, 1.0);
+      break;
+    case SensorKind::Contact:
+      shape.color = Eigen::Vector4d(0.9, 0.55, 0.2, 1.0);
+      break;
   }
   return shape;
 }
@@ -368,6 +414,41 @@ std::unique_ptr<Command> addFixedFrame(
       });
 }
 
+std::unique_ptr<Command> addSensor(
+    SensorKind kind,
+    ObjectId parent,
+    const Eigen::Isometry3d& transform,
+    std::string name)
+{
+  return std::make_unique<Command>(
+      "Add Sensor",
+      [kind, parent, transform, name = std::move(name)](
+          ObjectManager& objects, SelectionManager& selection) {
+        SceneModel& model = objects.model();
+        if (parent != kNoObject) {
+          const SceneObject* parentObject = model.find(parent);
+          if (parentObject == nullptr || !isFrameLike(parentObject->type)) {
+            return;
+          }
+        }
+
+        SceneObject object;
+        object.type = ObjectType::Sensor;
+        object.parent = parent;
+        object.transform = transform;
+        object.sensor.kind = sanitizeSensorKind(kind);
+        object.sensor = sanitizeSensor(object.sensor);
+        object.shape = defaultSensorShape(object.sensor.kind);
+        object.name = NameManager::makeUnique(
+            model,
+            parent,
+            name.empty() ? NameManager::defaultBaseName(ObjectType::Sensor)
+                         : name);
+        const ObjectId id = model.add(std::move(object));
+        selection.select(id);
+      });
+}
+
 std::unique_ptr<Command> removeObject(ObjectId id)
 {
   return std::make_unique<Command>(
@@ -428,6 +509,22 @@ std::unique_ptr<Command> setShape(ObjectId id, ShapeDesc shape)
         }
         object->shape = shape;
         objects.rebuild();
+      });
+}
+
+std::unique_ptr<Command> setSensor(ObjectId id, SensorDesc sensor)
+{
+  return std::make_unique<Command>(
+      "Set Sensor",
+      [id, sensor = sanitizeSensor(std::move(sensor))](
+          ObjectManager& objects, SelectionManager&) {
+        SceneObject* object = objects.model().find(id);
+        if (object == nullptr || object->type != ObjectType::Sensor
+            || object->sensor == sensor) {
+          return;
+        }
+        object->sensor = sensor;
+        object->shape = defaultSensorShape(sensor.kind);
       });
 }
 

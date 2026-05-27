@@ -244,6 +244,10 @@ TEST(DartsimWatchActions, SavedWatchPresetsPersistAndRestoreSessionState)
       ui::setWatchChartSignalEnabled(
           state, ui::WatchValueKind::TranslationX, true)
           .ok);
+  ASSERT_TRUE(
+      ui::setWatchChartSignalEnabled(
+          state, ui::WatchValueKind::SensorRange, true)
+          .ok);
 
   const auto saved = ui::saveWatchPreset(state, engine, " motion ");
   EXPECT_TRUE(saved.ok);
@@ -257,7 +261,7 @@ TEST(DartsimWatchActions, SavedWatchPresetsPersistAndRestoreSessionState)
   ASSERT_NE(preset, nullptr);
   EXPECT_EQ(preset->targetCount, 1u);
   EXPECT_EQ(preset->missingTargetCount, 0u);
-  EXPECT_EQ(preset->signalCount, 5u);
+  EXPECT_EQ(preset->signalCount, 6u);
   EXPECT_EQ(preset->ignoredSignalCount, 0u);
 
   const auto duplicate = ui::saveWatchPreset(state, engine, "motion");
@@ -293,6 +297,8 @@ TEST(DartsimWatchActions, SavedWatchPresetsPersistAndRestoreSessionState)
   const ui::WatchStatus restored = ui::buildWatchStatus(state, engine);
   ASSERT_NE(findSignal(restored, ui::WatchValueKind::TranslationX), nullptr);
   EXPECT_TRUE(findSignal(restored, ui::WatchValueKind::TranslationX)->enabled);
+  ASSERT_NE(findSignal(restored, ui::WatchValueKind::SensorRange), nullptr);
+  EXPECT_TRUE(findSignal(restored, ui::WatchValueKind::SensorRange)->enabled);
 
   const std::size_t undoCountBeforeDelete = engine.commands().undoCount();
   const auto revisionBeforeDelete = engine.commands().currentRevision();
@@ -475,6 +481,57 @@ TEST(DartsimWatchActions, LinkWatchExposesJointPosition)
   ASSERT_NE(jointSeries, nullptr);
   ASSERT_EQ(jointSeries->samples.size(), 1u);
   EXPECT_DOUBLE_EQ(jointSeries->samples[0], 0.5);
+}
+
+TEST(DartsimWatchActions, SensorWatchExposesDescriptorValues)
+{
+  SimEngine engine;
+  engine.execute(commands::addSensor(SensorKind::Range, kNoObject));
+  const ObjectId sensor = engine.selection().primary();
+  ASSERT_NE(sensor, kNoObject);
+
+  SensorDesc descriptor;
+  descriptor.kind = SensorKind::Range;
+  descriptor.range = 12.0;
+  descriptor.fieldOfView = 45.0;
+  descriptor.updateRate = 20.0;
+  engine.execute(commands::setSensor(sensor, descriptor));
+
+  ui::WatchState state;
+  ASSERT_TRUE(ui::watchSelectedObjects(state, engine).ok);
+  ASSERT_TRUE(
+      ui::setWatchChartSignalEnabled(
+          state, ui::WatchValueKind::SensorRange, true)
+          .ok);
+  ui::recordWatchSample(state, engine);
+
+  const ui::WatchStatus status = ui::buildWatchStatus(state, engine);
+  ASSERT_EQ(status.rows.size(), 1u);
+  EXPECT_EQ(status.rows[0].type, "Sensor");
+  ASSERT_NE(
+      findValue(status.rows[0], ui::WatchValueKind::TranslationX), nullptr);
+  ASSERT_NE(
+      findValue(status.rows[0], ui::WatchValueKind::SensorRange), nullptr);
+  ASSERT_NE(
+      findValue(status.rows[0], ui::WatchValueKind::SensorFieldOfView),
+      nullptr);
+  ASSERT_NE(
+      findValue(status.rows[0], ui::WatchValueKind::SensorUpdateRate), nullptr);
+  EXPECT_DOUBLE_EQ(
+      findValue(status.rows[0], ui::WatchValueKind::SensorRange)->value, 12.0);
+  EXPECT_DOUBLE_EQ(
+      findValue(status.rows[0], ui::WatchValueKind::SensorFieldOfView)->value,
+      45.0);
+  EXPECT_DOUBLE_EQ(
+      findValue(status.rows[0], ui::WatchValueKind::SensorUpdateRate)->value,
+      20.0);
+
+  const ui::WatchSeries* rangeSeries
+      = findSeries(state, sensor, ui::WatchValueKind::SensorRange);
+  ASSERT_NE(rangeSeries, nullptr);
+  EXPECT_DOUBLE_EQ(rangeSeries->samples.back(), 12.0);
+  ASSERT_NE(findSignal(status, ui::WatchValueKind::SensorRange), nullptr);
+  EXPECT_TRUE(findSignal(status, ui::WatchValueKind::SensorRange)->enabled);
 }
 
 TEST(DartsimWatchActions, RemoveAndClearWatchState)

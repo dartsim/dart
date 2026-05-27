@@ -107,14 +107,19 @@ Watch presets now persist Watch panel target and chart-signal choices in the
 project workspace. The Watch panel and Console can save, apply, and delete
 named presets; saving/deleting is undoable project metadata, while applying a
 preset only changes the session-local Watch state and skips missing targets.
+Editor-owned camera/range/contact sensor descriptors are now authored scene
+objects. The engine can add/edit/serialize them, the Create menu and Console can
+create them, the Inspector can edit descriptor fields, the viewport can render
+and layer-filter them, and Watch rows can display descriptor range/FOV/update
+rate values. They do not imply simulated sensor outputs yet.
 
 ## Immediate Next Step
 
-Continue Phase 5 with future collision/sensor/joint layer filters after those
-render layers exist, or continue Phase 4 by adding sensor-backed watch rows
-after scene sensor descriptors exist. Keep behavior in testable engine or UI
-action/view-model helpers before wiring it into `editor.cpp`, and keep the
-filtered coverage line total above 95%.
+Continue Phase 4 by adding runtime sensor output panes only after the
+simulation layer exposes sensor values, or continue Phase 5 with future
+collision/joint layer filters after those render layers exist. Keep behavior in
+testable engine or UI action/view-model helpers before wiring it into
+`editor.cpp`, and keep the filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -159,6 +164,11 @@ filtered coverage line total above 95%.
   persist target/signal choices through project workspace metadata. Console
   preset commands are covered in `UNIT_dartsim_ui_ConsoleActions`, and project
   file round-trip coverage lives in `UNIT_dartsim_engine`.
+- Sensor descriptor behavior is covered through `UNIT_dartsim_engine`,
+  `UNIT_dartsim_ui_PaletteActions`, `UNIT_dartsim_ui_InspectorActions`,
+  `UNIT_dartsim_ui_OutlinerActions`, `UNIT_dartsim_ui_ViewportActions`,
+  `UNIT_dartsim_ui_WatchActions`, and `UNIT_dartsim_ui_ConsoleActions`; this is
+  descriptor/configuration coverage only, not simulated sensor-output coverage.
 - Project open remains usable without a working native picker: the File menu
   opens the in-app browser/manual path modal first. Browse reports native picker
   failures in-place, and `openProject()` accepts extensionless paths when the

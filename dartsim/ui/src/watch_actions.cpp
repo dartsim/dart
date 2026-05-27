@@ -71,6 +71,9 @@ const std::vector<WatchValueKind>& allWatchChartSignals()
       WatchValueKind::TranslationZ,
       WatchValueKind::Mass,
       WatchValueKind::JointPosition,
+      WatchValueKind::SensorRange,
+      WatchValueKind::SensorFieldOfView,
+      WatchValueKind::SensorUpdateRate,
   };
   return kSignals;
 }
@@ -100,6 +103,12 @@ std::string signalKey(WatchValueKind kind)
       return "mass";
     case WatchValueKind::JointPosition:
       return "joint_position";
+    case WatchValueKind::SensorRange:
+      return "sensor_range";
+    case WatchValueKind::SensorFieldOfView:
+      return "sensor_fov";
+    case WatchValueKind::SensorUpdateRate:
+      return "sensor_rate";
     case WatchValueKind::SimulationTime:
       return "simulation_time";
     case WatchValueKind::FrameCount:
@@ -131,6 +140,12 @@ std::string valueLabel(WatchValueKind kind)
       return "mass";
     case WatchValueKind::JointPosition:
       return "joint position";
+    case WatchValueKind::SensorRange:
+      return "sensor range";
+    case WatchValueKind::SensorFieldOfView:
+      return "sensor FOV";
+    case WatchValueKind::SensorUpdateRate:
+      return "sensor rate";
     case WatchValueKind::SimulationTime:
       return "Simulation time";
     case WatchValueKind::FrameCount:
@@ -237,6 +252,9 @@ std::optional<double> valueFor(
       case WatchValueKind::TranslationZ:
       case WatchValueKind::Mass:
       case WatchValueKind::JointPosition:
+      case WatchValueKind::SensorRange:
+      case WatchValueKind::SensorFieldOfView:
+      case WatchValueKind::SensorUpdateRate:
         return std::nullopt;
     }
   }
@@ -273,6 +291,21 @@ std::optional<double> valueFor(
         return sceneObject->jointPosition;
       }
       return std::nullopt;
+    case WatchValueKind::SensorRange:
+      if (sceneObject->type == ObjectType::Sensor) {
+        return sceneObject->sensor.range;
+      }
+      return std::nullopt;
+    case WatchValueKind::SensorFieldOfView:
+      if (sceneObject->type == ObjectType::Sensor) {
+        return sceneObject->sensor.fieldOfView;
+      }
+      return std::nullopt;
+    case WatchValueKind::SensorUpdateRate:
+      if (sceneObject->type == ObjectType::Sensor) {
+        return sceneObject->sensor.updateRate;
+      }
+      return std::nullopt;
     case WatchValueKind::SimulationTime:
     case WatchValueKind::FrameCount:
       return std::nullopt;
@@ -288,6 +321,7 @@ std::vector<WatchValueKind> valueKindsForObject(const SceneObject& object)
     case ObjectType::Link:
     case ObjectType::FreeFrame:
     case ObjectType::FixedFrame:
+    case ObjectType::Sensor:
       kinds.push_back(WatchValueKind::TranslationX);
       kinds.push_back(WatchValueKind::TranslationY);
       kinds.push_back(WatchValueKind::TranslationZ);
@@ -301,6 +335,11 @@ std::vector<WatchValueKind> valueKindsForObject(const SceneObject& object)
   }
   if (supportsJointPosition(object)) {
     kinds.push_back(WatchValueKind::JointPosition);
+  }
+  if (object.type == ObjectType::Sensor) {
+    kinds.push_back(WatchValueKind::SensorRange);
+    kinds.push_back(WatchValueKind::SensorFieldOfView);
+    kinds.push_back(WatchValueKind::SensorUpdateRate);
   }
   return kinds;
 }

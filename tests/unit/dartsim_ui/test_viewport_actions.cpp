@@ -264,6 +264,49 @@ TEST(DartsimViewportActions, TransformGizmoTracksAndCommitsSelection)
           Eigen::Vector3d(0.0, 0.0, 1.0)));
 }
 
+TEST(
+    DartsimViewportActions, TransformGizmoUsesWorldTransformsForParentedSensors)
+{
+  SimEngine engine;
+  Eigen::Isometry3d parentTransform = translation(1.0, 2.0, 0.5);
+  parentTransform.linear()
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, parentTransform, "body"));
+  const ObjectId parent = engine.selection().primary();
+  ASSERT_NE(parent, kNoObject);
+
+  const Eigen::Isometry3d localSensorTransform = translation(0.0, 1.0, 0.25);
+  engine.execute(
+      commands::addSensor(
+          SensorKind::Camera, parent, localSensorTransform, "camera"));
+  const ObjectId sensor = engine.selection().primary();
+  ASSERT_NE(sensor, kNoObject);
+
+  const Eigen::Isometry3d expectedWorld
+      = parentTransform * localSensorTransform;
+  ui::ViewportTransformGizmo gizmo = ui::makeViewportTransformGizmo();
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine));
+  EXPECT_EQ(gizmo.object, sensor);
+  EXPECT_TRUE(gizmo.target->getWorldTransform().matrix().isApprox(
+      expectedWorld.matrix()));
+
+  Eigen::Isometry3d movedWorld = expectedWorld;
+  movedWorld.translation() += Eigen::Vector3d(0.5, 0.0, 0.0);
+  ASSERT_TRUE(ui::applyViewportTransformGizmo(engine, gizmo, movedWorld));
+  const Eigen::Isometry3d expectedLocal
+      = parentTransform.inverse() * movedWorld;
+  const SceneObject* edited = engine.objects().model().find(sensor);
+  ASSERT_NE(edited, nullptr);
+  EXPECT_TRUE(edited->transform.matrix().isApprox(expectedLocal.matrix()));
+  const std::optional<Eigen::Isometry3d> updatedWorld
+      = engine.objects().worldTransformOf(sensor);
+  ASSERT_TRUE(updatedWorld.has_value());
+  EXPECT_TRUE(updatedWorld->matrix().isApprox(movedWorld.matrix()));
+  EXPECT_TRUE(
+      gizmo.target->getWorldTransform().matrix().isApprox(movedWorld.matrix()));
+}
+
 TEST(DartsimViewportActions, TransformGizmoRejectsUnsupportedHiddenAndRunMode)
 {
   SimEngine engine;
@@ -361,6 +404,11 @@ TEST(DartsimViewportActions, LayerFiltersClassifyAllViewportObjectTypes)
           freeFrame, translation(0.0, 1.0, 0.0), "fixed_frame"));
   const ObjectId fixedFrame = engine.selection().primary();
   ASSERT_NE(fixedFrame, kNoObject);
+  engine.execute(
+      commands::addSensor(
+          SensorKind::Range, fixedFrame, translation(0.0, 0.0, 0.5), "range"));
+  const ObjectId sensor = engine.selection().primary();
+  ASSERT_NE(sensor, kNoObject);
 
   SceneObject joint;
   joint.type = ObjectType::Joint;
@@ -374,6 +422,7 @@ TEST(DartsimViewportActions, LayerFiltersClassifyAllViewportObjectTypes)
   EXPECT_TRUE(ui::isViewportObjectVisible(engine, link, filters));
   EXPECT_TRUE(ui::isViewportObjectVisible(engine, freeFrame, filters));
   EXPECT_TRUE(ui::isViewportObjectVisible(engine, fixedFrame, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, sensor, filters));
   EXPECT_FALSE(ui::isViewportObjectVisible(engine, arm, filters));
   EXPECT_FALSE(ui::isViewportObjectVisible(engine, jointId, filters));
   EXPECT_FALSE(ui::isViewportObjectVisible(engine, 999999, filters));
@@ -395,6 +444,13 @@ TEST(DartsimViewportActions, LayerFiltersClassifyAllViewportObjectTypes)
           .ok);
   EXPECT_FALSE(ui::isViewportObjectVisible(engine, freeFrame, filters));
   EXPECT_FALSE(ui::isViewportObjectVisible(engine, fixedFrame, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, sensor, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Sensors, false)
+          .ok);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, sensor, filters));
 
   ASSERT_TRUE(
       ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Frames, true)
@@ -425,10 +481,11 @@ TEST(DartsimViewportActions, LayerFilterTogglesAreViewOnly)
   EXPECT_TRUE(engine.objects().model().find(box)->visible);
 
   const auto actions = ui::buildViewportLayerFilterActions(filters);
-  ASSERT_EQ(actions.size(), 3u);
+  ASSERT_EQ(actions.size(), 4u);
   EXPECT_FALSE(actions[0].checked);
   EXPECT_TRUE(actions[1].checked);
   EXPECT_TRUE(actions[2].checked);
+  EXPECT_TRUE(actions[3].checked);
 }
 
 TEST(DartsimViewportActions, LayerFiltersAffectViewportSelectionAndMovement)
@@ -502,6 +559,48 @@ TEST(DartsimViewportActions, LayerFiltersAffectViewportSelectionAndMovement)
           filters, ui::ViewportLayerKind::RigidBodies, true)
           .ok);
   EXPECT_TRUE(ui::moveSelectedFromViewport(engine, filters, input));
+}
+
+TEST(DartsimViewportActions, LayerFiltersAffectSensorSelectionAndMovement)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addSensor(
+          SensorKind::Range, kNoObject, translation(1.0, 2.0, 3.0), "range"));
+  const ObjectId sensor = engine.selection().primary();
+  ASSERT_NE(sensor, kNoObject);
+  const Eigen::Vector3d original
+      = engine.objects().model().find(sensor)->transform.translation();
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  EXPECT_NE(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_NE(ui::selectedViewportLabel(engine, filters), "none");
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Sensors, false)
+          .ok);
+  EXPECT_EQ(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_EQ(ui::selectedViewportLabel(engine, filters), "none");
+
+  ui::ViewportMoveInput input;
+  input.right = true;
+  EXPECT_FALSE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(
+      engine.objects().model().find(sensor)->transform.translation().isApprox(
+          original));
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Sensors, true)
+          .ok);
+  EXPECT_TRUE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(
+      engine.objects().model().find(sensor)->transform.translation().isApprox(
+          Eigen::Vector3d(1.1, 2.0, 3.0)));
 }
 
 TEST(DartsimViewportActions, LayerFiltersAffectFrameFocusAndGizmos)
@@ -1502,7 +1601,7 @@ TEST(DartsimViewportActions, ViewportStatusSummarizesViewOnlyState)
   EXPECT_EQ(status.cameraModeLabel, "Pan Camera Mode");
   EXPECT_EQ(status.cameraLockLabel, "Camera: locked");
   EXPECT_EQ(status.trackingLabel, "Selection tracking: paused");
-  EXPECT_EQ(status.visibleLayerLabel, "Visible layers: Rigid Bodies");
+  EXPECT_EQ(status.visibleLayerLabel, "Visible layers: Rigid Bodies, Sensors");
   EXPECT_EQ(status.selectionLabel, "Selection: box [RigidBody]");
   EXPECT_FALSE(engine.commands().canUndo());
   EXPECT_FALSE(engine.isProjectDirty());
@@ -1510,6 +1609,10 @@ TEST(DartsimViewportActions, ViewportStatusSummarizesViewOnlyState)
   ASSERT_TRUE(
       ui::setViewportLayerVisible(
           filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Sensors, false)
           .ok);
   controls.lockCamera = false;
   const ui::ViewportStatus hidden

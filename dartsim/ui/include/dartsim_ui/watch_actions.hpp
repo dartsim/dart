@@ -54,6 +54,9 @@ enum class WatchValueKind
   TranslationZ,
   Mass,
   JointPosition,
+  SensorRange,
+  SensorFieldOfView,
+  SensorUpdateRate,
   SimulationTime,
   FrameCount,
 };

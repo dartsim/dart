@@ -78,6 +78,14 @@ std::unique_ptr<Command> addFixedFrame(
     const Eigen::Isometry3d& transform = Eigen::Isometry3d::Identity(),
     std::string name = {});
 
+/// Add an editor-owned sensor descriptor under the world or a frame-like
+/// parent.
+std::unique_ptr<Command> addSensor(
+    SensorKind kind = SensorKind::Camera,
+    ObjectId parent = kNoObject,
+    const Eigen::Isometry3d& transform = Eigen::Isometry3d::Identity(),
+    std::string name = {});
+
 /// Remove an object (and its descendants) and update the selection.
 std::unique_ptr<Command> removeObject(ObjectId id);
 
@@ -90,6 +98,9 @@ std::unique_ptr<Command> setMass(ObjectId id, double mass);
 
 /// Set a rigid body or link visual shape descriptor.
 std::unique_ptr<Command> setShape(ObjectId id, ShapeDesc shape);
+
+/// Set a sensor descriptor.
+std::unique_ptr<Command> setSensor(ObjectId id, SensorDesc sensor);
 
 /// Set a child link's single-DOF joint position.
 std::unique_ptr<Command> setJointPosition(ObjectId link, double position);

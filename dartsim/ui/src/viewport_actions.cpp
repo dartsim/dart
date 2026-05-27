@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <optional>
 #include <utility>
 
 #include <cmath>
@@ -64,7 +65,7 @@ constexpr std::array<ViewportPaneKind, dart::gui::kMaxViewportPanes>
 bool isTransformable(ObjectType type)
 {
   return type == ObjectType::RigidBody || type == ObjectType::FreeFrame
-         || type == ObjectType::FixedFrame;
+         || type == ObjectType::FixedFrame || type == ObjectType::Sensor;
 }
 
 bool layerEnabled(
@@ -77,6 +78,8 @@ bool layerEnabled(
       return filters.links;
     case ViewportLayerKind::Frames:
       return filters.frames;
+    case ViewportLayerKind::Sensors:
+      return filters.sensors;
   }
   return true;
 }
@@ -94,6 +97,9 @@ void setLayerEnabled(
     case ViewportLayerKind::Frames:
       filters.frames = visible;
       break;
+    case ViewportLayerKind::Sensors:
+      filters.sensors = visible;
+      break;
   }
 }
 
@@ -106,6 +112,8 @@ std::string layerLabel(ViewportLayerKind kind)
       return "Links";
     case ViewportLayerKind::Frames:
       return "Frames";
+    case ViewportLayerKind::Sensors:
+      return "Sensors";
   }
   return "Unknown";
 }
@@ -121,6 +129,8 @@ bool objectLayerEnabled(
     case ObjectType::FreeFrame:
     case ObjectType::FixedFrame:
       return filters.frames;
+    case ObjectType::Sensor:
+      return filters.sensors;
     case ObjectType::MultiBody:
     case ObjectType::Joint:
       return false;
@@ -147,6 +157,23 @@ const SceneObject* selectedTransformableObject(
     return nullptr;
   }
   return object;
+}
+
+std::optional<Eigen::Isometry3d> localTransformForWorldTransform(
+    const SimEngine& engine,
+    const SceneObject& object,
+    const Eigen::Isometry3d& worldTransform)
+{
+  if (object.type == ObjectType::RigidBody || object.parent == kNoObject) {
+    return worldTransform;
+  }
+
+  const std::optional<Eigen::Isometry3d> parentWorld
+      = engine.objects().worldTransformOf(object.parent);
+  if (!parentWorld.has_value()) {
+    return std::nullopt;
+  }
+  return parentWorld->inverse() * worldTransform;
 }
 
 bool isFinitePositive(double value)
@@ -498,6 +525,9 @@ std::string visibleLayerSummary(const ViewportLayerFilterState& filters)
   if (filters.frames) {
     appendLayer(layerLabel(ViewportLayerKind::Frames));
   }
+  if (filters.sensors) {
+    appendLayer(layerLabel(ViewportLayerKind::Sensors));
+  }
   return summary.empty() ? "none" : summary;
 }
 
@@ -647,7 +677,14 @@ bool syncViewportTransformGizmo(
   }
 
   state.object = object->id;
-  state.target->setTransform(object->transform, dart::dynamics::Frame::World());
+  const std::optional<Eigen::Isometry3d> worldTransform
+      = engine.objects().worldTransformOf(object->id);
+  if (!worldTransform.has_value()) {
+    state.object = kNoObject;
+    return false;
+  }
+
+  state.target->setTransform(*worldTransform, dart::dynamics::Frame::World());
   state.gizmo.label = object->name + " Transform";
   return true;
 }
@@ -678,11 +715,20 @@ bool applyViewportTransformGizmo(
     return false;
   }
 
-  if (object->transform.matrix().isApprox(transform.matrix())) {
+  const std::optional<Eigen::Isometry3d> currentWorld
+      = engine.objects().worldTransformOf(object->id);
+  if (!currentWorld.has_value()
+      || currentWorld->matrix().isApprox(transform.matrix())) {
     return false;
   }
 
-  engine.execute(commands::setTransform(state.object, transform));
+  const std::optional<Eigen::Isometry3d> localTransform
+      = localTransformForWorldTransform(engine, *object, transform);
+  if (!localTransform.has_value()) {
+    return false;
+  }
+
+  engine.execute(commands::setTransform(state.object, *localTransform));
   return syncViewportTransformGizmo(state, engine, filters);
 }
 
@@ -709,8 +755,8 @@ bool isViewportObjectVisible(
     return false;
   }
 
-  if (object->type == ObjectType::RigidBody
-      || object->type == ObjectType::Link) {
+  if (object->type == ObjectType::RigidBody || object->type == ObjectType::Link
+      || object->type == ObjectType::Sensor) {
     const std::vector<RenderItem> items
         = filteredViewportRenderItems(engine, filters);
     return std::find_if(
@@ -749,7 +795,8 @@ dart::gui::RenderableId selectedViewportRenderable(
   const SceneObject* object = engine.objects().model().find(selected);
   if (object == nullptr
       || (object->type != ObjectType::RigidBody
-          && object->type != ObjectType::Link)) {
+          && object->type != ObjectType::Link
+          && object->type != ObjectType::Sensor)) {
     return 0;
   }
   return renderableIdForObject(selected);
@@ -784,6 +831,9 @@ std::vector<ViewportLayerFilterAction> buildViewportLayerFilterActions(
       {ViewportLayerKind::Frames,
        "Show Frames",
        layerEnabled(filters, ViewportLayerKind::Frames)},
+      {ViewportLayerKind::Sensors,
+       "Show Sensors",
+       layerEnabled(filters, ViewportLayerKind::Sensors)},
   };
 }
 

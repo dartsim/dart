@@ -36,6 +36,7 @@
 #include <dartsim_ui/outliner_actions.hpp>
 #include <gtest/gtest.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -104,6 +105,7 @@ TEST(DartsimOutlinerActions, BuildsDepthFirstRowsFromSceneModel)
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::Joint), "Joint");
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::FreeFrame), "FreeFrame");
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::FixedFrame), "FixedFrame");
+  EXPECT_EQ(ui::objectTypeLabel(ObjectType::Sensor), "Sensor");
 }
 
 TEST(DartsimOutlinerActions, ExpandCollapseStateFiltersDescendants)
@@ -506,6 +508,40 @@ TEST(DartsimOutlinerActions, MoveSelectedByMovesPrimaryMovableObject)
   const ObjectId arm = engine.selection().primary();
   ASSERT_NE(arm, kNoObject);
   EXPECT_FALSE(ui::moveSelectedBy(engine, Eigen::Vector3d::UnitX()));
+}
+
+TEST(DartsimOutlinerActions, MoveSelectedByMovesParentedSensorsInWorldAxes)
+{
+  SimEngine engine;
+  Eigen::Isometry3d parentTransform = translation(1.0, 2.0, 0.5);
+  parentTransform.linear()
+      = Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, parentTransform, "body"));
+  const ObjectId parent = engine.selection().primary();
+  ASSERT_NE(parent, kNoObject);
+
+  const Eigen::Isometry3d localSensorTransform = translation(0.0, 1.0, 0.25);
+  engine.execute(
+      commands::addSensor(
+          SensorKind::Range, parent, localSensorTransform, "range"));
+  const ObjectId sensor = engine.selection().primary();
+  ASSERT_NE(sensor, kNoObject);
+
+  const Eigen::Isometry3d expectedWorld
+      = parentTransform * localSensorTransform;
+  ASSERT_TRUE(ui::moveSelectedBy(engine, Eigen::Vector3d(0.5, 0.0, 0.0)));
+  Eigen::Isometry3d movedWorld = expectedWorld;
+  movedWorld.translation() += Eigen::Vector3d(0.5, 0.0, 0.0);
+  const Eigen::Isometry3d expectedLocal
+      = parentTransform.inverse() * movedWorld;
+  const SceneObject* edited = engine.objects().model().find(sensor);
+  ASSERT_NE(edited, nullptr);
+  EXPECT_TRUE(edited->transform.matrix().isApprox(expectedLocal.matrix()));
+  const std::optional<Eigen::Isometry3d> updatedWorld
+      = engine.objects().worldTransformOf(sensor);
+  ASSERT_TRUE(updatedWorld.has_value());
+  EXPECT_TRUE(updatedWorld->matrix().isApprox(movedWorld.matrix()));
 }
 
 TEST(DartsimOutlinerActions, MoveSelectedBySupportsFramesAndRejectsRunMode)

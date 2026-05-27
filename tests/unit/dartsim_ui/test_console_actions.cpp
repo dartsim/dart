@@ -337,6 +337,10 @@ TEST(DartsimConsoleActions, DrivesWatchCommandsThroughSessionState)
       = ui::applyConsoleCommand(engine, watch, "watch signal x on");
   EXPECT_TRUE(enabledX.ok);
   EXPECT_EQ(enabledX.message, "Enabled watch signal: x");
+  const auto enabledSensorRange
+      = ui::applyConsoleCommand(engine, watch, "watch signal sensor-range on");
+  EXPECT_TRUE(enabledSensorRange.ok);
+  EXPECT_EQ(enabledSensorRange.message, "Enabled watch signal: sensor range");
   EXPECT_EQ(
       ui::applyConsoleCommand(engine, watch, "watch signal unknown on").message,
       "Unknown watch signal: unknown");
@@ -605,6 +609,18 @@ TEST(DartsimConsoleActions, CreatesContextSensitiveModelElements)
   const ObjectId fixedFrame = engine.selection().primary();
   ASSERT_NE(fixedFrame, kNoObject);
   EXPECT_EQ(engine.objects().model().find(fixedFrame)->parent, childLink);
+
+  const auto sensor = ui::applyConsoleCommand(engine, "create contact-sensor");
+  EXPECT_TRUE(sensor.ok);
+  EXPECT_EQ(sensor.message, "Added contact sensor");
+  const ObjectId contactSensor = engine.selection().primary();
+  ASSERT_NE(contactSensor, kNoObject);
+  const SceneObject* contactObject
+      = engine.objects().model().find(contactSensor);
+  ASSERT_NE(contactObject, nullptr);
+  EXPECT_EQ(contactObject->type, ObjectType::Sensor);
+  EXPECT_EQ(contactObject->sensor.kind, SensorKind::Contact);
+  EXPECT_EQ(contactObject->parent, fixedFrame);
 }
 
 TEST(DartsimConsoleActions, RejectsMissingAndAmbiguousObjectTargets)

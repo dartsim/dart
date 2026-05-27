@@ -198,6 +198,10 @@ void ObjectManager::rebuild()
       case ObjectType::Joint:
         // Links/joints are created as part of their owning MultiBody.
         break;
+      case ObjectType::Sensor:
+        // Sensors are editor-authored descriptors until the experimental World
+        // exposes public sensor runtime concepts.
+        break;
     }
   }
 
@@ -339,7 +343,8 @@ std::optional<Eigen::Isometry3d> ObjectManager::worldTransformOf(
     }
   } else if (
       object->type == ObjectType::FreeFrame
-      || object->type == ObjectType::FixedFrame) {
+      || object->type == ObjectType::FixedFrame
+      || object->type == ObjectType::Sensor) {
     if (object->parent == kNoObject) {
       return object->transform;
     }
@@ -384,7 +389,8 @@ std::vector<RenderItem> ObjectManager::computeRenderItems() const
     }
 
     const bool hasShape = object->type == ObjectType::RigidBody
-                          || object->type == ObjectType::Link;
+                          || object->type == ObjectType::Link
+                          || object->type == ObjectType::Sensor;
     if (!hasShape || !effectivelyVisible) {
       continue;
     }

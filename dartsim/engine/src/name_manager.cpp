@@ -52,6 +52,8 @@ std::string NameManager::defaultBaseName(ObjectType type)
       return "FreeFrame";
     case ObjectType::FixedFrame:
       return "FixedFrame";
+    case ObjectType::Sensor:
+      return "Sensor";
   }
   return "Object";
 }

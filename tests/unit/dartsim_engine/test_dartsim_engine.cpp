@@ -45,6 +45,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -480,6 +481,92 @@ TEST(CommandManager, SetMassSanitizesInvalidValues)
   EXPECT_DOUBLE_EQ(rigidBody->getMass(), 1e-9);
 }
 
+TEST(CommandManager, AddAndEditSensorDescriptors)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  ASSERT_TRUE(commands.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 3.0), "parent")));
+  const ObjectId parent = selection.primary();
+  ASSERT_NE(parent, kNoObject);
+
+  ASSERT_TRUE(commands.execute(
+      commands::addSensor(
+          SensorKind::Range,
+          parent,
+          translation(0.0, 0.0, 0.5),
+          "range_sensor")));
+  const ObjectId sensor = selection.primary();
+  ASSERT_NE(sensor, kNoObject);
+  const SceneObject* sensorObject = objects.model().find(sensor);
+  ASSERT_NE(sensorObject, nullptr);
+  EXPECT_EQ(sensorObject->type, ObjectType::Sensor);
+  EXPECT_EQ(sensorObject->parent, parent);
+  EXPECT_EQ(sensorObject->name, "range_sensor");
+  EXPECT_EQ(sensorObject->sensor.kind, SensorKind::Range);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.range, 10.0);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.fieldOfView, 60.0);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.updateRate, 30.0);
+
+  const std::optional<Eigen::Isometry3d> sensorWorld
+      = objects.worldTransformOf(sensor);
+  ASSERT_TRUE(sensorWorld.has_value());
+  EXPECT_TRUE(
+      sensorWorld->translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.5)));
+
+  const std::vector<RenderItem> items = objects.computeRenderItems();
+  const auto item = std::find_if(
+      items.begin(), items.end(), [sensor](const RenderItem& renderItem) {
+        return renderItem.id == sensor;
+      });
+  ASSERT_NE(item, items.end());
+  EXPECT_EQ(item->shape, ShapeType::Box);
+  EXPECT_TRUE(item->dimensions.isApprox(Eigen::Vector3d(0.28, 0.18, 0.16)));
+  EXPECT_TRUE(item->color.isApprox(Eigen::Vector4d(0.2, 0.75, 0.55, 1.0)));
+
+  const std::size_t beforeNoOp = commands.undoCount();
+  EXPECT_FALSE(
+      commands.execute(commands::setSensor(sensor, sensorObject->sensor)));
+  EXPECT_FALSE(
+      commands.execute(commands::setSensor(parent, sensorObject->sensor)));
+  EXPECT_FALSE(
+      commands.execute(commands::setSensor(999, sensorObject->sensor)));
+  EXPECT_EQ(commands.undoCount(), beforeNoOp);
+
+  SensorDesc edited;
+  edited.kind = SensorKind::Contact;
+  edited.range = -1.0;
+  edited.fieldOfView = 500.0;
+  edited.updateRate = std::numeric_limits<double>::quiet_NaN();
+  ASSERT_TRUE(commands.execute(commands::setSensor(sensor, edited)));
+  sensorObject = objects.model().find(sensor);
+  ASSERT_NE(sensorObject, nullptr);
+  EXPECT_EQ(sensorObject->sensor.kind, SensorKind::Contact);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.range, 10.0);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.fieldOfView, 179.0);
+  EXPECT_DOUBLE_EQ(sensorObject->sensor.updateRate, 30.0);
+  EXPECT_TRUE(
+      sensorObject->shape.color.isApprox(Eigen::Vector4d(0.9, 0.55, 0.2, 1.0)));
+
+  ASSERT_TRUE(commands.undo());
+  sensorObject = objects.model().find(sensor);
+  ASSERT_NE(sensorObject, nullptr);
+  EXPECT_EQ(sensorObject->sensor.kind, SensorKind::Range);
+  EXPECT_TRUE(sensorObject->shape.color.isApprox(
+      Eigen::Vector4d(0.2, 0.75, 0.55, 1.0)));
+
+  ASSERT_TRUE(commands.redo());
+  EXPECT_EQ(objects.model().find(sensor)->sensor.kind, SensorKind::Contact);
+
+  const std::size_t undoCount = commands.undoCount();
+  ASSERT_FALSE(commands.execute(commands::addSensor(SensorKind::Camera, 999)));
+  EXPECT_EQ(commands.undoCount(), undoCount);
+  EXPECT_EQ(selection.primary(), sensor);
+}
+
 //==============================================================================
 // SimulationController: Edit/Simulation mode, step, reset
 //==============================================================================
@@ -643,6 +730,17 @@ TEST(SceneIO, TextRoundTripIsStable)
   link.multiBody = mbId;
   model.add(link);
 
+  SceneObject sensor;
+  sensor.type = ObjectType::Sensor;
+  sensor.name = "range";
+  sensor.parent = bodyId;
+  sensor.sensor.kind = SensorKind::Range;
+  sensor.sensor.range = 12.5;
+  sensor.sensor.fieldOfView = 45.0;
+  sensor.sensor.updateRate = 20.0;
+  sensor.shape.dimensions = Eigen::Vector3d(0.28, 0.18, 0.16);
+  const ObjectId sensorId = model.add(sensor);
+
   const std::string text = scene_io::save(model);
 
   SceneModel loaded;
@@ -650,6 +748,14 @@ TEST(SceneIO, TextRoundTripIsStable)
   EXPECT_EQ(loaded.size(), model.size());
   EXPECT_DOUBLE_EQ(loaded.timeStep, 0.002);
   EXPECT_EQ(loaded.workspace.watchPresets, model.workspace.watchPresets);
+  const SceneObject* loadedSensor = loaded.find(sensorId);
+  ASSERT_NE(loadedSensor, nullptr);
+  EXPECT_EQ(loadedSensor->type, ObjectType::Sensor);
+  EXPECT_EQ(loadedSensor->parent, bodyId);
+  EXPECT_EQ(loadedSensor->sensor.kind, SensorKind::Range);
+  EXPECT_DOUBLE_EQ(loadedSensor->sensor.range, 12.5);
+  EXPECT_DOUBLE_EQ(loadedSensor->sensor.fieldOfView, 45.0);
+  EXPECT_DOUBLE_EQ(loadedSensor->sensor.updateRate, 20.0);
 
   // Re-saving the loaded model yields identical text (stable round-trip).
   EXPECT_EQ(scene_io::save(loaded), text);
@@ -664,9 +770,9 @@ TEST(SceneIO, RejectsBadHeader)
 TEST(SceneIO, RejectsUnsupportedVersion)
 {
   SceneModel out;
-  // A v1 reader must reject a newer format version instead of parsing it with
-  // v1 rules (which would silently produce corrupt state).
-  EXPECT_FALSE(scene_io::load("dartsim-scene 2\ntimestep 0.001\n", out));
+  // A reader must reject newer format versions instead of parsing them with
+  // older rules (which would silently produce corrupt state).
+  EXPECT_FALSE(scene_io::load("dartsim-scene 3\ntimestep 0.001\n", out));
 }
 
 TEST(SceneIO, RejectsDuplicateObjectIds)
@@ -726,6 +832,13 @@ TEST(SceneIO, RejectsMalformedNumericFields)
       "timestep 0.001\n"
       "object\n"
       "id 7\n"
+      "type 99\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
       "parent bad\n"
       "end\n");
   expectRejects(
@@ -762,6 +875,73 @@ TEST(SceneIO, RejectsMalformedNumericFields)
       "object\n"
       "id 7\n"
       "shapetype bad\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "sensorkind bad\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "sensorkind 99\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "sensorrange nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "sensorfov nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "sensorrate nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 6\n"
+      "sensorrange -1\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 6\n"
+      "sensorfov 0.5\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 6\n"
+      "sensorfov 180\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 6\n"
+      "sensorrate 0\n"
       "end\n");
   expectRejects(
       "dartsim-scene 1\n"
@@ -930,6 +1110,32 @@ TEST(SceneIO, EmptyAndMalformedParentsAreHandled)
     EXPECT_EQ(out.find(id)->parent, kNoObject);
   }
   EXPECT_EQ(out.rootChildren().size(), 3u);
+}
+
+TEST(SceneIO, RerootsSensorsWithNonFrameParents)
+{
+  const std::string text
+      = "dartsim-scene 2\n"
+        "timestep 0.001\n"
+        "object\n"
+        "id 1\n"
+        "type 1\n"
+        "name arm\n"
+        "end\n"
+        "object\n"
+        "id 2\n"
+        "type 6\n"
+        "parent 1\n"
+        "name sensor\n"
+        "end\n";
+
+  SceneModel out;
+  ASSERT_TRUE(scene_io::load(text, out));
+  ASSERT_EQ(out.size(), 2u);
+  const SceneObject* sensor = out.find(2);
+  ASSERT_NE(sensor, nullptr);
+  EXPECT_EQ(sensor->type, ObjectType::Sensor);
+  EXPECT_EQ(sensor->parent, kNoObject);
 }
 
 TEST(CommandManager, DuplicateExplicitNamesAreDeduplicated)
@@ -1655,6 +1861,9 @@ TEST(SimEngine, ProjectFileRoundTrip)
   SimEngine engine;
   engine.execute(commands::addRigidBody(ShapeType::Box, translation(1, 1, 1)));
   const ObjectId box = engine.selection().primary();
+  engine.execute(
+      commands::addSensor(SensorKind::Camera, box, translation(0, 0, 0.5)));
+  const ObjectId sensor = engine.selection().primary();
   engine.execute(commands::addMultiBody("arm"));
   WorkspaceWatchPreset preset;
   preset.name = "motion";
@@ -1672,6 +1881,11 @@ TEST(SimEngine, ProjectFileRoundTrip)
       reloaded.objects().model().workspace.watchPresets[0].name, "motion");
   EXPECT_EQ(
       reloaded.objects().model().workspace.watchPresets[0].targets[0], box);
+  const SceneObject* reloadedSensor = reloaded.objects().model().find(sensor);
+  ASSERT_NE(reloadedSensor, nullptr);
+  EXPECT_EQ(reloadedSensor->type, ObjectType::Sensor);
+  EXPECT_EQ(reloadedSensor->parent, box);
+  EXPECT_EQ(reloadedSensor->sensor.kind, SensorKind::Camera);
   EXPECT_FALSE(reloaded.commands().canUndo()); // history cleared on load
 
   std::filesystem::remove(path);

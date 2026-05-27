@@ -133,6 +133,15 @@ std::optional<WatchValueKind> parseWatchSignalKind(std::string_view token)
   if (signal == "joint" || signal == "joint-position") {
     return WatchValueKind::JointPosition;
   }
+  if (signal == "sensor-range" || signal == "range") {
+    return WatchValueKind::SensorRange;
+  }
+  if (signal == "sensor-fov" || signal == "field-of-view") {
+    return WatchValueKind::SensorFieldOfView;
+  }
+  if (signal == "sensor-rate" || signal == "sensor-update-rate") {
+    return WatchValueKind::SensorUpdateRate;
+  }
   return std::nullopt;
 }
 
@@ -229,6 +238,9 @@ std::optional<PaletteActionKind> createActionForToken(std::string_view token)
       {"prismatic-link", PaletteActionKind::AddPrismaticLink},
       {"free-frame", PaletteActionKind::AddFreeFrame},
       {"fixed-frame", PaletteActionKind::AddFixedFrame},
+      {"camera-sensor", PaletteActionKind::AddCameraSensor},
+      {"range-sensor", PaletteActionKind::AddRangeSensor},
+      {"contact-sensor", PaletteActionKind::AddContactSensor},
       {"ground-box", PaletteActionKind::AddGroundAndBoxExample},
       {"two-link-arm", PaletteActionKind::AddTwoLinkArmExample},
   };

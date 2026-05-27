@@ -155,6 +155,15 @@ PaletteActionResult addChildLink(
   return finishCreate(engine, beforeSize, std::move(message));
 }
 
+PaletteActionResult addSensor(
+    SimEngine& engine, SensorKind kind, std::string message)
+{
+  const ObjectId parent = selectedFrameParent(engine);
+  const std::size_t beforeSize = engine.objects().model().size();
+  engine.execute(commands::addSensor(kind, parent));
+  return finishCreate(engine, beforeSize, std::move(message));
+}
+
 class MacroScope
 {
 public:
@@ -341,6 +350,15 @@ std::vector<PaletteAction> buildPaletteActions(const SimEngine& engine)
       canEdit && hasFrameParent,
       canEdit ? "Select a parent frame" : locked));
   actions.push_back(makeAction(
+      PaletteActionKind::AddCameraSensor, "Sensor / Camera", canEdit, locked));
+  actions.push_back(makeAction(
+      PaletteActionKind::AddRangeSensor, "Sensor / Range", canEdit, locked));
+  actions.push_back(makeAction(
+      PaletteActionKind::AddContactSensor,
+      "Sensor / Contact",
+      canEdit,
+      locked));
+  actions.push_back(makeAction(
       PaletteActionKind::AddGroundAndBoxExample,
       "Example / Ground + Box",
       canEdit,
@@ -407,6 +425,12 @@ PaletteActionResult applyPaletteAction(
       engine.execute(commands::addFixedFrame(parentFrame));
       return finishCreate(engine, beforeSize, "Added fixed frame");
     }
+    case PaletteActionKind::AddCameraSensor:
+      return addSensor(engine, SensorKind::Camera, "Added camera sensor");
+    case PaletteActionKind::AddRangeSensor:
+      return addSensor(engine, SensorKind::Range, "Added range sensor");
+    case PaletteActionKind::AddContactSensor:
+      return addSensor(engine, SensorKind::Contact, "Added contact sensor");
     case PaletteActionKind::AddGroundAndBoxExample:
       return addGroundAndBoxExample(engine);
     case PaletteActionKind::AddTwoLinkArmExample:

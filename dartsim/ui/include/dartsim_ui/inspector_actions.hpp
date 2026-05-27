@@ -57,12 +57,16 @@ enum class InspectorNumericPropertyKind
   JointAxisX,
   JointAxisY,
   JointAxisZ,
+  SensorRange,
+  SensorFieldOfView,
+  SensorUpdateRate,
 };
 
 enum class InspectorEnumPropertyKind
 {
   ShapeType,
   JointKind,
+  SensorKind,
 };
 
 struct InspectorNumericProperty

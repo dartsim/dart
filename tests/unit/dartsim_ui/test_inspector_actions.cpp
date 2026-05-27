@@ -370,6 +370,82 @@ TEST(DartsimInspectorActions, ShapePropertiesMatchPrimitiveKinds)
       nullptr);
 }
 
+TEST(
+    DartsimInspectorActions,
+    SensorInspectorEditsDescriptorThroughUndoableCommands)
+{
+  SimEngine engine;
+  engine.execute(commands::addSensor(SensorKind::Camera, kNoObject));
+  const ObjectId sensor = engine.selection().primary();
+  ASSERT_NE(sensor, kNoObject);
+
+  ui::InspectorStatus status = ui::buildInspectorStatus(engine);
+  EXPECT_TRUE(status.hasSelection);
+  EXPECT_EQ(status.type, "Sensor");
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::SensorRange),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::SensorFieldOfView),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::SensorUpdateRate),
+      nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::Mass), nullptr);
+  EXPECT_FALSE(status.colorProperty.has_value());
+
+  const ui::InspectorEnumProperty* sensorKind
+      = findEnum(status, ui::InspectorEnumPropertyKind::SensorKind);
+  ASSERT_NE(sensorKind, nullptr);
+  EXPECT_EQ(sensorKind->label, "sensor kind");
+  ASSERT_EQ(sensorKind->choices.size(), 3u);
+  EXPECT_EQ(sensorKind->choices[0].label, "Camera");
+  EXPECT_EQ(sensorKind->choices[1].label, "Range");
+  EXPECT_EQ(sensorKind->choices[2].label, "Contact");
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine, ui::InspectorNumericPropertyKind::SensorRange, -5.0)
+          .ok);
+  EXPECT_DOUBLE_EQ(engine.objects().model().find(sensor)->sensor.range, 10.0);
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine, ui::InspectorNumericPropertyKind::SensorFieldOfView, 500.0)
+          .ok);
+  EXPECT_DOUBLE_EQ(
+      engine.objects().model().find(sensor)->sensor.fieldOfView, 179.0);
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine,
+          ui::InspectorNumericPropertyKind::SensorUpdateRate,
+          std::numeric_limits<double>::quiet_NaN())
+          .ok);
+  EXPECT_DOUBLE_EQ(
+      engine.objects().model().find(sensor)->sensor.updateRate, 30.0);
+
+  const auto changedKind = ui::setInspectorEnumProperty(
+      engine,
+      ui::InspectorEnumPropertyKind::SensorKind,
+      static_cast<int>(SensorKind::Range));
+  EXPECT_TRUE(changedKind.ok);
+  EXPECT_EQ(changedKind.message, "Updated sensor kind");
+  const SceneObject* edited = engine.objects().model().find(sensor);
+  ASSERT_NE(edited, nullptr);
+  EXPECT_EQ(edited->sensor.kind, SensorKind::Range);
+  EXPECT_TRUE(
+      edited->shape.color.isApprox(Eigen::Vector4d(0.2, 0.75, 0.55, 1.0)));
+
+  ASSERT_TRUE(engine.undo());
+  EXPECT_EQ(
+      engine.objects().model().find(sensor)->sensor.kind, SensorKind::Camera);
+}
+
 TEST(DartsimInspectorActions, UnsupportedPropertiesAreRejected)
 {
   SimEngine engine;

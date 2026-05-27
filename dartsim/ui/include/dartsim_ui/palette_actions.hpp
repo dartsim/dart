@@ -54,6 +54,9 @@ enum class PaletteActionKind
   AddPrismaticLink,
   AddFreeFrame,
   AddFixedFrame,
+  AddCameraSensor,
+  AddRangeSensor,
+  AddContactSensor,
   AddGroundAndBoxExample,
   AddTwoLinkArmExample,
 };

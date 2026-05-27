@@ -78,6 +78,7 @@ enum class ViewportLayerKind
   RigidBodies,
   Links,
   Frames,
+  Sensors,
 };
 
 /// Editor view state for viewport layer filters.
@@ -86,6 +87,7 @@ struct ViewportLayerFilterState
   bool rigidBodies = true;
   bool links = true;
   bool frames = true;
+  bool sensors = true;
 };
 
 /// View-menu action state for viewport layer filters.

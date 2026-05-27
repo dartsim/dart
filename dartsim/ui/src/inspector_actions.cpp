@@ -81,7 +81,7 @@ private:
 bool isTransformEditable(ObjectType type)
 {
   return type == ObjectType::RigidBody || type == ObjectType::FreeFrame
-         || type == ObjectType::FixedFrame;
+         || type == ObjectType::FixedFrame || type == ObjectType::Sensor;
 }
 
 bool isShapeEditable(ObjectType type)
@@ -151,6 +151,15 @@ std::vector<InspectorEnumChoice> jointKindChoices()
   };
 }
 
+std::vector<InspectorEnumChoice> sensorKindChoices()
+{
+  return {
+      {"Camera", static_cast<int>(SensorKind::Camera)},
+      {"Range", static_cast<int>(SensorKind::Range)},
+      {"Contact", static_cast<int>(SensorKind::Contact)},
+  };
+}
+
 std::optional<ShapeType> shapeTypeFromValue(int value)
 {
   switch (static_cast<ShapeType>(value)) {
@@ -176,6 +185,17 @@ std::optional<JointKind> jointKindFromValue(int value)
     case JointKind::Planar:
     case JointKind::Free:
       return static_cast<JointKind>(value);
+  }
+  return std::nullopt;
+}
+
+std::optional<SensorKind> sensorKindFromValue(int value)
+{
+  switch (static_cast<SensorKind>(value)) {
+    case SensorKind::Camera:
+    case SensorKind::Range:
+    case SensorKind::Contact:
+      return static_cast<SensorKind>(value);
   }
   return std::nullopt;
 }
@@ -331,6 +351,34 @@ void appendJointAxisProperties(
       editable));
 }
 
+void appendSensorProperties(
+    std::vector<InspectorNumericProperty>& properties,
+    const SceneObject& object,
+    bool editable)
+{
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::SensorRange,
+      "range",
+      object.sensor.range,
+      0.001,
+      1000.0,
+      editable));
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::SensorFieldOfView,
+      "field of view",
+      object.sensor.fieldOfView,
+      1.0,
+      179.0,
+      editable));
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::SensorUpdateRate,
+      "update rate",
+      object.sensor.updateRate,
+      0.001,
+      1000.0,
+      editable));
+}
+
 const SceneObject* selectedObject(const SimEngine& engine)
 {
   return engine.objects().model().find(engine.selection().primary());
@@ -428,6 +476,24 @@ void setAxisComponent(
   }
 }
 
+void setSensorComponent(
+    SensorDesc& sensor, InspectorNumericPropertyKind kind, double value)
+{
+  switch (kind) {
+    case InspectorNumericPropertyKind::SensorRange:
+      sensor.range = value;
+      break;
+    case InspectorNumericPropertyKind::SensorFieldOfView:
+      sensor.fieldOfView = value;
+      break;
+    case InspectorNumericPropertyKind::SensorUpdateRate:
+      sensor.updateRate = value;
+      break;
+    default:
+      break;
+  }
+}
+
 } // namespace
 
 InspectorStatus buildInspectorStatus(const SimEngine& engine)
@@ -482,6 +548,15 @@ InspectorStatus buildInspectorStatus(const SimEngine& engine)
   }
   if (hasSingleAxisJoint(*object)) {
     appendJointAxisProperties(status.numericProperties, *object, editable);
+  }
+  if (object->type == ObjectType::Sensor) {
+    status.enumProperties.push_back(enumProperty(
+        InspectorEnumPropertyKind::SensorKind,
+        "sensor kind",
+        static_cast<int>(object->sensor.kind),
+        sensorKindChoices(),
+        editable));
+    appendSensorProperties(status.numericProperties, *object, editable);
   }
   if (isShapeEditable(object->type)) {
     status.enumProperties.push_back(enumProperty(
@@ -556,6 +631,17 @@ InspectorActionResult setInspectorNumericProperty(
       engine.execute(commands::setJointAxis(object->id, axis));
       return result(true, "Updated joint axis");
     }
+    case InspectorNumericPropertyKind::SensorRange:
+    case InspectorNumericPropertyKind::SensorFieldOfView:
+    case InspectorNumericPropertyKind::SensorUpdateRate: {
+      if (object->type != ObjectType::Sensor) {
+        return result(false, "Unsupported property");
+      }
+      SensorDesc sensor = object->sensor;
+      setSensorComponent(sensor, kind, value);
+      engine.execute(commands::setSensor(object->id, sensor));
+      return result(true, "Updated sensor");
+    }
   }
 
   return result(false, "Unsupported property");
@@ -597,6 +683,19 @@ InspectorActionResult setInspectorEnumProperty(
       }
       engine.execute(commands::setJointKind(object->id, *jointKind));
       return result(true, "Updated joint kind");
+    }
+    case InspectorEnumPropertyKind::SensorKind: {
+      if (object->type != ObjectType::Sensor) {
+        return result(false, "Unsupported property");
+      }
+      const std::optional<SensorKind> sensorKind = sensorKindFromValue(value);
+      if (!sensorKind.has_value()) {
+        return result(false, "Unsupported choice");
+      }
+      SensorDesc sensor = object->sensor;
+      sensor.kind = *sensorKind;
+      engine.execute(commands::setSensor(object->id, sensor));
+      return result(true, "Updated sensor kind");
     }
   }
 
