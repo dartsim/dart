@@ -25,9 +25,14 @@
         contract, IPC-style edge-edge mollifier threshold/value/gradient/
         Hessian, finite-difference regression tests, and
         `bm_ipc_distance_kernels`.
+  - [x] Internal candidate-set sub-slice: deterministic unique surface-edge
+        extraction, point-triangle and edge-edge primitive candidate assembly,
+        incident/adjacent exclusion filters, exact activation-distance filtering
+        through the primitive distance kernels, sweep-versus-brute-force
+        regression tests, and `bm_ipc_candidate_set`.
   - [ ] Remaining Phase 2 work: analytic distance Hessians, tangent bases,
-        surface candidate-set assembly, adjacency exclusion filters, broad-phase
-        versus brute-force tests, and conservative PT/EE CCD step bounds.
+        conservative PT/EE CCD step bounds, barrier/candidate integration, and
+        solver-owned contact buffers.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
@@ -68,11 +73,10 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Continue Phase 2 with surface candidate-set assembly, adjacency exclusion
-   filters, broad-phase versus brute-force tests, conservative CCD line-search
-   bounds, and analytic distance Hessian optimization. The current primitive
-   kernels are internal scaffolding only and are not yet wired into
-   `World::step()`.
+1. Continue Phase 2 with conservative CCD line-search bounds, analytic distance
+   Hessian optimization, tangent bases, barrier/candidate integration, and
+   solver-owned contact buffers. The current primitive kernels and candidate
+   sets are internal scaffolding only and are not yet wired into `World::step()`.
 2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
    scenes: broader scene asset loading, BE/NM state, output diagnostics
    compatibility decisions, and more contact-free mesh replays. The
@@ -122,6 +126,15 @@ cover analytic distance Hessians, tangent bases, broad-phase candidate assembly,
 CCD line search, barrier assembly, projected Newton, friction, or scene-level
 IPC contact behavior.
 
+For the candidate-set sub-slice, keep the verification language precise: it
+covers deterministic surface-edge extraction, internal point-triangle and
+edge-edge candidate assembly, incident/adjacent filtering, exact
+activation-distance filtering through the primitive distance kernels,
+sweep-versus-brute-force regression tests, and benchmark counters. It does not
+yet cover conservative CCD bounds, barrier assembly, solver integration,
+projected Newton, friction, persistent contact caches, tangent bases, or
+scene-level IPC contact behavior.
+
 Current primitive-distance local gates:
 
 ```bash
@@ -140,3 +153,19 @@ reported roughly 8-16 ns for value/gradient distance paths, 228 ns for the
 analytic edge-edge mollifier Hessian path, and about 0.59-0.61 us for the
 finite-difference distance Hessian placeholders. Treat those Hessian numbers as
 a temporary optimization target, not as final IPC performance evidence.
+
+Current candidate-set local gates:
+
+```bash
+cmake --build build/default/cpp/Release --target test_contact_candidate_set bm_ipc_candidate_set
+./build/default/cpp/Release/bin/test_contact_candidate_set
+./build/default/cpp/Release/bin/bm_ipc_candidate_set --benchmark_min_time=0.05s --benchmark_filter='BM_IpcCandidateSet'
+```
+
+The latest local candidate-set gate pass on 2026-05-27 passed the focused
+target build and 6 `test_contact_candidate_set` cases. The benchmark smoke
+reported the sweep path faster than brute force on the checked workloads: cloth
+8x8 was about 37 us versus 358 us, cloth 16x16 was about 0.42 ms versus
+5.20 ms, tetra-surface 4x4 was about 9.7 us versus 81 us, and tetra-surface
+8x8 was about 87 us versus 1.45 ms. CPU scaling was enabled, so treat these as
+local smoke numbers rather than a final performance claim.

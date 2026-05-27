@@ -765,6 +765,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     classification, derivative regression tests, edge-edge mollifier
     derivatives, and a microbenchmark surface for future deformable contact
     assembly.
+  - Added internal experimental IPC contact candidate assembly for
+    point-triangle and edge-edge primitive pairs with deterministic surface-edge
+    extraction, incident/adjacent filtering, sweep-versus-brute-force
+    regression tests, and indexed/brute-force benchmark counters.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

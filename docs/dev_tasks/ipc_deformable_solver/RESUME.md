@@ -26,22 +26,28 @@ point-triangle and edge-edge squared-distance kernels, closest-feature
 classification, gradients, finite-difference Hessians for the first
 solver-facing validation contract, IPC-style edge-edge mollifier derivatives,
 feature-region regression tests, and `bm_ipc_distance_kernels`. It is still
-scaffolding: analytic distance Hessians, tangent bases, candidate-set assembly,
-broad phase, CCD line-search bounds, barrier assembly, projected Newton, and
-friction are not implemented yet.
+scaffolding: analytic distance Hessians, tangent bases, CCD line-search bounds,
+barrier assembly, projected Newton, and friction are not implemented yet.
+
+The candidate-set sub-slice adds deterministic unique surface-edge extraction,
+internal point-triangle and edge-edge primitive candidate assembly,
+incident/adjacent filtering, exact activation-distance filtering through the
+primitive distance kernels, sweep-versus-brute-force regression tests, and
+`bm_ipc_candidate_set`. It is still scaffolding: candidates are not wired into
+`World::step()`, conservative CCD, barrier assembly, projected Newton, or
+friction.
 
 ## Current Branch
 
 `feature/ipc-deformable-contact-kernels` - stacked on
 `feature/ipc-scene-boundary-diagnostics`, adding internal primitive distance
-kernels for the next deformable contact slices.
+kernels and candidate assembly for the next deformable contact slices.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with analytic distance Hessian
-optimization, tangent bases, surface candidate-set assembly, adjacency
-exclusion filters, broad-phase versus brute-force tests, and conservative
-PT/EE CCD line-search bounds.
+After this sub-slice lands, continue Phase 2 with conservative PT/EE CCD
+line-search bounds, analytic distance Hessian optimization, tangent bases,
+barrier/candidate integration, and solver-owned contact buffers.
 
 ## Context That Would Be Lost
 
@@ -62,6 +68,9 @@ git status && git log -3 --oneline
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
 ./build/default/cpp/Release/bin/bm_ipc_distance_kernels --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
+cmake --build build/default/cpp/Release --target test_contact_candidate_set bm_ipc_candidate_set
+./build/default/cpp/Release/bin/test_contact_candidate_set
+./build/default/cpp/Release/bin/bm_ipc_candidate_set --benchmark_min_time=0.05s --benchmark_filter='BM_IpcCandidateSet'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
