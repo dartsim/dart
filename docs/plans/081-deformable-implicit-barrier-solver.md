@@ -150,9 +150,10 @@
 - Reusable deformable rendering is covered by `UNIT_gui_FilamentSceneExtraction`
   for the `dart::gui` descriptor path.
 - `bm_deformable_body` can be run with:
-  `pixi run bm bm_deformable_body -- --benchmark_filter='BM_(WorldStepWithoutDeformables|DeformableGridStep|DeformableGridStage)' --benchmark_min_time=0.1s`.
+  `pixi run bm bm_deformable_body -- --benchmark_filter='BM_(WorldStepWithoutDeformables|DeformableGridStep|DeformableGridStage|DeformableTetraMeshStep|DeformableSceneLoad|DeformableSceneReplay)' --benchmark_min_time=0.1s`.
 - Local gates run for the slice: `pixi run lint`, `pixi run build`, focused
-  `test_deformable_body`, and `pixi run check-api-boundaries`.
+  `test_deformable_body`, `test_deformable_scene_io`, `test_serialization`,
+  `UNIT_gui_FilamentSceneExtraction`, and `pixi run check-api-boundaries`.
 - This evidence is limited to point masses, springs, an analytic static-ground
   barrier, and render-only deformable surface descriptors. It is not evidence
   for mesh IPC contact, FEM elasticity, projected Newton, CCD line search,
