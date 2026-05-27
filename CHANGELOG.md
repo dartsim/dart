@@ -51,6 +51,12 @@
     that caches each shape's geometry by shape version, so `describeShape` is not
     rebuilt every frame for static geometry; soft meshes, point clouds, and voxel
     grids are still rebuilt every frame so deforming/live geometry stays correct.
+  - Added a renderer-neutral `dart::gui::makeDeformableSurfaceRenderable()`
+    helper for dynamic deformable surface meshes, including per-frame normals,
+    bounds, material options, and stable resource versioning for Filament-backed
+    captures.
+  - Fixed `LineSegmentShape` mutation versioning so animated line geometry is
+    rebuilt correctly by cached GUI renderable extraction.
   - Added a renderer-neutral `dart::gui` panel callback surface for examples
     that need custom controls without including backend UI headers.
   - Added the standalone `dartsim/` GUI simulator (a runtime executable, not a
@@ -742,6 +748,11 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     collision swaps velocities) and a two-tangent friction-pyramid Coulomb model
     bounded by the normal impulse (a body sliding on a static ground decelerates
     and stops).
+  - Added an experimental deformable-body world stage with grid-mesh body
+    construction, explicit mass-spring elastic integration, IPC-style
+    ground-barrier contact with feasibility line search, rigid-body barrier
+    opt-in controls, a Filament GUI example for long-horizon visual inspection,
+    and focused unit/benchmark coverage.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

@@ -44,6 +44,25 @@
 
 namespace dart::simulation::experimental::compute {
 
+/// Summary of the most recent deformable solver execution.
+struct DeformableSolverStats
+{
+  std::size_t bodyCount = 0;
+  std::size_t nodeCount = 0;
+  std::size_t edgeCount = 0;
+  std::size_t objectiveEvaluations = 0;
+  std::size_t solverIterations = 0;
+  std::size_t lineSearchTrials = 0;
+  std::size_t rejectedLineSearchCandidates = 0;
+  std::size_t acceptedLineSearchSteps = 0;
+  std::size_t initialProjectionCount = 0;
+
+  void reset() noexcept
+  {
+    *this = {};
+  }
+};
+
 /// Experimental contract for one stage in the World step pipeline.
 class DART_EXPERIMENTAL_API WorldStepStage
 {
@@ -176,6 +195,25 @@ public:
 
 private:
   std::size_t m_iterations;
+};
+
+/// Default deformable-body dynamics stage.
+///
+/// This stage advances point-mass deformable bodies through the default
+/// experimental World pipeline. The public stage name is intentionally
+/// algorithm-neutral; contact/barrier details remain implementation internals.
+class DART_EXPERIMENTAL_API DeformableDynamicsStage final
+  : public WorldStepStage
+{
+public:
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+
+  [[nodiscard]] const DeformableSolverStats& getLastStats() const noexcept;
+
+private:
+  DeformableSolverStats m_lastStats;
 };
 
 } // namespace dart::simulation::experimental::compute

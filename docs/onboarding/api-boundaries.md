@@ -98,6 +98,15 @@ solver registries, or rendering backends until a later plan and benchmark gate
 justify them. Future resource read/write declarations should start as
 diagnostic metadata and validation inputs before becoming scheduler contracts.
 
+Experimental deformable simulation follows the same boundary: public handles
+and options describe model topology, initial state, fixed nodes, and physical
+parameters. Public compute stages may expose broad domain-level hooks such as
+deformable dynamics, but ECS components, algorithm-specific stage names,
+feasibility barriers, and backend/project names stay internal. Static collision
+geometry must be modeled explicitly through public world objects; do not add
+hidden default contact surfaces or expose contact-barrier tuning on body options
+without a design update.
+
 ### Internal API
 
 Internal API may change without compatibility guarantees. It includes:

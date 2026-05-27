@@ -5392,6 +5392,130 @@ TEST(
   EXPECT_NE(descriptor.renderResourceVersion, 0u);
 }
 
+TEST(
+    FilamentSceneExtraction,
+    MakeDeformableSurfaceRenderable_GridSurface_ReturnsDynamicMeshDescriptor)
+{
+  const auto triangles = dart::gui::makeGridSurfaceTriangles(2u, 2u);
+  ASSERT_EQ(triangles.size(), 2u);
+  EXPECT_TRUE(triangles[0].isApprox(Eigen::Vector3i(0, 1, 2)));
+  EXPECT_TRUE(triangles[1].isApprox(Eigen::Vector3i(1, 3, 2)));
+
+  const std::vector<Eigen::Vector3d> positions{
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0),
+      Eigen::Vector3d(1.0, 1.0, 0.0)};
+  dart::gui::DeformableSurfaceRenderOptions options;
+  options.version = 7u;
+  options.surfaceColor = Eigen::Vector4d(0.4, 0.7, 0.9, 0.85);
+  options.boundsPadding = 0.05;
+
+  const auto descriptor = dart::gui::makeDeformableSurfaceRenderable(
+      42u, positions, triangles, options);
+  ASSERT_TRUE(descriptor.has_value());
+  EXPECT_EQ(descriptor->id, 42u);
+  EXPECT_EQ(descriptor->geometry.kind, ShapeKind::Mesh);
+  EXPECT_TRUE(descriptor->material.rgba.isApprox(options.surfaceColor));
+  EXPECT_TRUE(descriptor->material.visible);
+  EXPECT_TRUE(descriptor->material.castsShadows);
+  EXPECT_TRUE(descriptor->material.receivesShadows);
+  EXPECT_EQ(descriptor->shapeVersion, options.version);
+  EXPECT_NE(descriptor->renderResourceVersion, 0u);
+  EXPECT_EQ(descriptor->geometry.triangleVertices.size(), positions.size());
+  EXPECT_EQ(descriptor->geometry.triangleIndices.size(), triangles.size());
+  EXPECT_EQ(descriptor->geometry.triangleNormals.size(), positions.size());
+  EXPECT_TRUE(descriptor->geometry.meshUsesMaterialColors);
+  EXPECT_EQ(descriptor->geometry.meshAlphaMode, MeshAlphaMode::ShapeAlpha);
+  ASSERT_EQ(descriptor->geometry.meshMaterials.size(), 1u);
+  EXPECT_TRUE(descriptor->geometry.meshMaterials.front().diffuse.isApprox(
+      options.surfaceColor));
+  ASSERT_EQ(descriptor->geometry.meshParts.size(), 1u);
+  EXPECT_EQ(
+      descriptor->geometry.meshParts.front().vertexCount, positions.size());
+  EXPECT_EQ(
+      descriptor->geometry.meshParts.front().triangleCount, triangles.size());
+  EXPECT_TRUE(descriptor->geometry.hasLocalBounds);
+  EXPECT_TRUE(descriptor->geometry.localBoundsMin.isApprox(
+      Eigen::Vector3d(-0.05, -0.05, -0.05)));
+  EXPECT_TRUE(descriptor->geometry.localBoundsMax.isApprox(
+      Eigen::Vector3d(1.05, 1.05, 0.05)));
+  for (const auto& normal : descriptor->geometry.triangleNormals) {
+    EXPECT_TRUE(normal.isApprox(Eigen::Vector3d::UnitZ()));
+  }
+
+  auto movedPositions = positions;
+  movedPositions[3].z() = 0.2;
+  const auto movedDescriptor = dart::gui::makeDeformableSurfaceRenderable(
+      42u, movedPositions, triangles, options);
+  ASSERT_TRUE(movedDescriptor.has_value());
+  EXPECT_EQ(movedDescriptor->id, descriptor->id);
+  EXPECT_NE(
+      movedDescriptor->renderResourceVersion,
+      descriptor->renderResourceVersion);
+}
+
+TEST(
+    FilamentSceneExtraction,
+    RenderableExtractor_LineSegmentVertexMutation_RebuildsDynamicGeometry)
+{
+  auto world = World::create("world");
+  auto line = std::make_shared<LineSegmentShape>(2.0f);
+  const std::size_t first = line->addVertex(Eigen::Vector3d(0.0, 0.0, 0.0));
+  const std::size_t second = line->addVertex(Eigen::Vector3d(1.0, 0.0, 0.0));
+  line->addConnection(first, second);
+
+  auto frame = SimpleFrame::createShared(
+      dart::dynamics::Frame::World(), "dynamic_line");
+  frame->setShape(line);
+  frame->getVisualAspect(true);
+  world->addSimpleFrame(frame);
+
+  dart::gui::RenderableExtractor extractor;
+  const auto before = extractor.extract(*world);
+  ASSERT_EQ(before.size(), 1u);
+  ASSERT_EQ(before.front().geometry.lineVertices.size(), 2u);
+
+  line->setVertex(second, Eigen::Vector3d(1.0, 0.5, 0.0));
+
+  const auto after = extractor.extract(*world);
+  ASSERT_EQ(after.size(), 1u);
+  ASSERT_EQ(after.front().geometry.lineVertices.size(), 2u);
+  EXPECT_EQ(after.front().id, before.front().id);
+  EXPECT_NE(
+      after.front().renderResourceVersion,
+      before.front().renderResourceVersion);
+  EXPECT_TRUE(after.front().geometry.lineVertices[1].isApprox(
+      Eigen::Vector3d(1.0, 0.5, 0.0)));
+}
+
+TEST(
+    FilamentSceneExtraction,
+    MakeDeformableSurfaceRenderable_InvalidTopology_ReturnsNullopt)
+{
+  const std::vector<Eigen::Vector3d> positions{
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0)};
+  const std::vector<Eigen::Vector3i> validTriangle{Eigen::Vector3i(0, 1, 2)};
+  const std::vector<Eigen::Vector3i> outOfRangeTriangle{
+      Eigen::Vector3i(0, 1, 3)};
+  const std::vector<Eigen::Vector3i> negativeTriangle{
+      Eigen::Vector3i(0, -1, 2)};
+
+  EXPECT_FALSE(
+      dart::gui::makeDeformableSurfaceRenderable(0u, positions, validTriangle)
+          .has_value());
+  EXPECT_FALSE(
+      dart::gui::makeDeformableSurfaceRenderable(
+          5u, positions, outOfRangeTriangle)
+          .has_value());
+  EXPECT_FALSE(
+      dart::gui::makeDeformableSurfaceRenderable(
+          5u, positions, negativeTriangle)
+          .has_value());
+}
+
 TEST(FilamentSceneExtraction, ApplyDebugVisualStyle_SimpleFrame_DisablesShadows)
 {
   auto world = World::create("world");

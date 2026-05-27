@@ -35,7 +35,9 @@
 #include "dart/simulation/experimental/body/contact.hpp"
 #include "dart/simulation/experimental/body/rigid_body.hpp"
 #include "dart/simulation/experimental/common/exceptions.hpp"
+#include "dart/simulation/experimental/comps/collision_geometry.hpp"
 #include "dart/simulation/experimental/comps/contact_material.hpp"
+#include "dart/simulation/experimental/comps/deformable_body.hpp"
 #include "dart/simulation/experimental/comps/dynamics.hpp"
 #include "dart/simulation/experimental/comps/frame_types.hpp"
 #include "dart/simulation/experimental/comps/rigid_body.hpp"
@@ -50,7 +52,9 @@
 #include <entt/entt.hpp>
 
 #include <algorithm>
+#include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -687,6 +691,475 @@ double frictionOf(const entt::registry& registry, entt::entity entity)
   return 1.0;
 }
 
+//==============================================================================
+struct StaticGroundBarrier
+{
+  enum class Shape
+  {
+    Box,
+    Sphere,
+  };
+
+  Shape shape = Shape::Box;
+  Eigen::Vector3d center = Eigen::Vector3d::Zero();
+  Eigen::Matrix3d rotation = Eigen::Matrix3d::Identity();
+  Eigen::Vector3d halfExtents = Eigen::Vector3d::Zero();
+  double radius = 0.0;
+  double top = 0.0;
+};
+
+//==============================================================================
+std::optional<double> boxTopAt(
+    const StaticGroundBarrier& barrier, const Eigen::Vector3d& position)
+{
+  constexpr double tolerance = 1e-12;
+  const Eigen::Vector3d worldAtZero(position.x(), position.y(), 0.0);
+  const Eigen::Vector3d localAtZero
+      = barrier.rotation.transpose() * (worldAtZero - barrier.center);
+  const Eigen::Vector3d localVertical
+      = barrier.rotation.transpose() * Eigen::Vector3d::UnitZ();
+
+  double minZ = -std::numeric_limits<double>::infinity();
+  double maxZ = std::numeric_limits<double>::infinity();
+  for (int axis = 0; axis < 3; ++axis) {
+    const double extent = barrier.halfExtents[axis];
+    const double origin = localAtZero[axis];
+    const double direction = localVertical[axis];
+    if (std::abs(direction) <= tolerance) {
+      if (origin < -extent - tolerance || origin > extent + tolerance) {
+        return std::nullopt;
+      }
+      continue;
+    }
+
+    double intervalMin = (-extent - origin) / direction;
+    double intervalMax = (extent - origin) / direction;
+    if (intervalMin > intervalMax) {
+      std::swap(intervalMin, intervalMax);
+    }
+
+    minZ = std::max(minZ, intervalMin);
+    maxZ = std::min(maxZ, intervalMax);
+    if (minZ > maxZ + tolerance) {
+      return std::nullopt;
+    }
+  }
+
+  if (!std::isfinite(maxZ)) {
+    return std::nullopt;
+  }
+  return maxZ;
+}
+
+//==============================================================================
+std::vector<StaticGroundBarrier> collectStaticGroundBarriers(const World& world)
+{
+  const auto& registry = world.getRegistry();
+  auto view = registry.view<
+      comps::RigidBodyTag,
+      comps::StaticBodyTag,
+      comps::DeformableGroundBarrierTag,
+      comps::CollisionGeometry,
+      comps::Transform>();
+
+  std::vector<StaticGroundBarrier> barriers;
+  for (const auto entity : view) {
+    const auto& geometry = view.get<comps::CollisionGeometry>(entity);
+    const auto& transform = view.get<comps::Transform>(entity);
+
+    switch (geometry.shape.type) {
+      case CollisionShapeType::Sphere: {
+        const double radius = geometry.shape.radius;
+        if (!(radius > 0.0) || !std::isfinite(radius)
+            || !transform.position.allFinite()) {
+          break;
+        }
+
+        StaticGroundBarrier barrier;
+        barrier.shape = StaticGroundBarrier::Shape::Sphere;
+        barrier.center = transform.position;
+        barrier.radius = radius;
+        barrier.top = transform.position.z() + radius;
+        barriers.push_back(barrier);
+        break;
+      }
+      case CollisionShapeType::Box: {
+        if (!geometry.shape.halfExtents.allFinite()
+            || (geometry.shape.halfExtents.array() <= 0.0).any()
+            || !transform.position.allFinite()) {
+          break;
+        }
+
+        StaticGroundBarrier barrier;
+        barrier.shape = StaticGroundBarrier::Shape::Box;
+        barrier.center = transform.position;
+        barrier.rotation
+            = normalizeOrIdentity(transform.orientation).toRotationMatrix();
+        barrier.halfExtents = geometry.shape.halfExtents;
+        barriers.push_back(barrier);
+        break;
+      }
+    }
+  }
+
+  return barriers;
+}
+
+//==============================================================================
+std::optional<double> staticGroundTopAt(
+    const Eigen::Vector3d& position,
+    const std::vector<StaticGroundBarrier>& barriers)
+{
+  std::optional<double> top;
+  for (const auto& barrier : barriers) {
+    std::optional<double> candidate;
+    switch (barrier.shape) {
+      case StaticGroundBarrier::Shape::Box:
+        candidate = boxTopAt(barrier, position);
+        break;
+      case StaticGroundBarrier::Shape::Sphere: {
+        const Eigen::Vector2d offset
+            = position.head<2>() - barrier.center.head<2>();
+        const double radiusSquared = barrier.radius * barrier.radius;
+        const double planarDistanceSquared = offset.squaredNorm();
+        if (planarDistanceSquared <= radiusSquared) {
+          candidate = barrier.center.z()
+                      + std::sqrt(radiusSquared - planarDistanceSquared);
+        }
+        break;
+      }
+    }
+
+    if (candidate.has_value() && std::isfinite(*candidate)) {
+      top = top.has_value() ? std::max(*top, *candidate) : candidate;
+    }
+  }
+
+  return top;
+}
+
+//==============================================================================
+double minimumStaticGroundHeight(double groundTop)
+{
+  constexpr double clearance = 1e-4;
+  return groundTop + clearance;
+}
+
+//==============================================================================
+double staticGroundBarrierActivationDistance()
+{
+  return 2e-2;
+}
+
+//==============================================================================
+bool satisfiesStaticGroundBarrier(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<StaticGroundBarrier>& barriers)
+{
+  if (barriers.empty()) {
+    return true;
+  }
+
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    const auto groundTop = staticGroundTopAt(positions[i], barriers);
+    if (fixed[i] == 0u && groundTop.has_value()
+        && positions[i].z() < minimumStaticGroundHeight(*groundTop)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+//==============================================================================
+void makeInitialPositionsFeasible(
+    std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats* stats)
+{
+  if (barriers.empty()) {
+    return;
+  }
+
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (fixed[i] == 0u) {
+      const auto groundTop = staticGroundTopAt(positions[i], barriers);
+      if (groundTop.has_value()) {
+        const double previousZ = positions[i].z();
+        positions[i].z()
+            = std::max(positions[i].z(), minimumStaticGroundHeight(*groundTop));
+        if (stats != nullptr && positions[i].z() != previousZ) {
+          ++stats->initialProjectionCount;
+        }
+      }
+    }
+  }
+}
+
+//==============================================================================
+double addStaticGroundBarrierEnergy(
+    const comps::DeformableNodeState& state,
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<StaticGroundBarrier>& barriers,
+    std::vector<Eigen::Vector3d>* gradient)
+{
+  if (barriers.empty()) {
+    return 0.0;
+  }
+
+  const double activationDistance = staticGroundBarrierActivationDistance();
+  constexpr double barrierScale = 25.0;
+
+  double energy = 0.0;
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (state.fixed[i] != 0u) {
+      continue;
+    }
+
+    const auto groundTop = staticGroundTopAt(positions[i], barriers);
+    if (!groundTop.has_value()) {
+      continue;
+    }
+
+    const double distance = positions[i].z() - *groundTop;
+    if (distance <= 0.0 || !std::isfinite(distance)) {
+      return std::numeric_limits<double>::infinity();
+    }
+    if (distance >= activationDistance) {
+      continue;
+    }
+
+    const double normalizedDistance = distance / activationDistance;
+    const double distanceOffset = distance - activationDistance;
+    energy += -barrierScale * distanceOffset * distanceOffset
+              * std::log(normalizedDistance);
+
+    if (gradient != nullptr) {
+      const double derivative
+          = -barrierScale
+            * (2.0 * distanceOffset * std::log(normalizedDistance)
+               + distanceOffset * distanceOffset / distance);
+      (*gradient)[i].z() += derivative;
+    }
+  }
+
+  return energy;
+}
+
+//==============================================================================
+double evaluateDeformableObjective(
+    const comps::DeformableNodeState& state,
+    const comps::DeformableSpringModel& model,
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<Eigen::Vector3d>& inertialTargets,
+    const std::vector<StaticGroundBarrier>& barriers,
+    double timeStep,
+    std::vector<Eigen::Vector3d>* gradient)
+{
+  if (gradient != nullptr) {
+    if (gradient->size() != positions.size()) {
+      gradient->resize(positions.size());
+    }
+    std::fill(gradient->begin(), gradient->end(), Eigen::Vector3d::Zero());
+  }
+
+  double energy = 0.0;
+  const double invDt2 = 1.0 / (timeStep * timeStep);
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    if (state.fixed[i] != 0u) {
+      continue;
+    }
+
+    const Eigen::Vector3d delta = positions[i] - inertialTargets[i];
+    energy += 0.5 * state.masses[i] * invDt2 * delta.squaredNorm();
+    if (gradient != nullptr) {
+      (*gradient)[i] += state.masses[i] * invDt2 * delta;
+    }
+  }
+
+  constexpr double minLength = 1e-12;
+  for (const auto& edge : model.edges) {
+    const Eigen::Vector3d delta = positions[edge.nodeB] - positions[edge.nodeA];
+    const double length = delta.norm();
+    if (length <= minLength || !std::isfinite(length)) {
+      continue;
+    }
+
+    const Eigen::Vector3d direction = delta / length;
+    const double stretch = length - edge.restLength;
+    energy += 0.5 * model.stiffness * stretch * stretch;
+    if (gradient != nullptr) {
+      const Eigen::Vector3d springGradient
+          = model.stiffness * stretch * direction;
+      if (state.fixed[edge.nodeA] == 0u) {
+        (*gradient)[edge.nodeA] -= springGradient;
+      }
+      if (state.fixed[edge.nodeB] == 0u) {
+        (*gradient)[edge.nodeB] += springGradient;
+      }
+    }
+  }
+
+  energy += addStaticGroundBarrierEnergy(state, positions, barriers, gradient);
+  return energy;
+}
+
+//==============================================================================
+double gradientNormSquared(
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed)
+{
+  double normSquared = 0.0;
+  for (std::size_t i = 0; i < gradient.size(); ++i) {
+    if (fixed[i] == 0u) {
+      normSquared += gradient[i].squaredNorm();
+    }
+  }
+  return normSquared;
+}
+
+//==============================================================================
+void advanceDeformableBody(
+    comps::DeformableNodeState& state,
+    const comps::DeformableSpringModel& model,
+    comps::DeformableSolverScratch& scratch,
+    const Eigen::Vector3d& gravity,
+    double timeStep,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  const auto nodeCount = state.positions.size();
+  if (nodeCount == 0) {
+    return;
+  }
+
+  stats.nodeCount += nodeCount;
+  stats.edgeCount += model.edges.size();
+
+  scratch.inertialTargets.resize(nodeCount);
+  scratch.next.resize(nodeCount);
+  scratch.gradient.resize(nodeCount);
+  scratch.direction.resize(nodeCount);
+  scratch.candidate.resize(nodeCount);
+
+  const double dampingScale = 1.0 / (1.0 + model.damping * timeStep);
+  const Eigen::Vector3d gravityStep = gravity * timeStep * timeStep;
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    scratch.inertialTargets[i] = state.positions[i];
+    scratch.next[i] = state.positions[i];
+    if (state.fixed[i] == 0u) {
+      scratch.inertialTargets[i]
+          += timeStep * dampingScale * state.velocities[i] + gravityStep;
+    }
+  }
+
+  makeInitialPositionsFeasible(scratch.next, state.fixed, barriers, &stats);
+
+  if (model.edges.empty() && barriers.empty()) {
+    for (std::size_t i = 0; i < nodeCount; ++i) {
+      if (state.fixed[i] == 0u) {
+        scratch.next[i] = scratch.inertialTargets[i];
+      }
+    }
+  } else {
+    constexpr std::size_t maxIterations = 64;
+    constexpr std::size_t maxLineSearchIterations = 16;
+    constexpr double gradientToleranceSquared = 1e-18;
+    constexpr double armijo = 1e-4;
+    constexpr double minStep = 1e-12;
+
+    for (std::size_t iteration = 0; iteration < maxIterations; ++iteration) {
+      ++stats.solverIterations;
+      ++stats.objectiveEvaluations;
+      const double energy = evaluateDeformableObjective(
+          state,
+          model,
+          scratch.next,
+          scratch.inertialTargets,
+          barriers,
+          timeStep,
+          &scratch.gradient);
+      if (!std::isfinite(energy)) {
+        break;
+      }
+
+      const double gradSquared
+          = gradientNormSquared(scratch.gradient, state.fixed);
+      if (gradSquared <= gradientToleranceSquared) {
+        break;
+      }
+
+      for (std::size_t i = 0; i < nodeCount; ++i) {
+        if (state.fixed[i] == 0u) {
+          scratch.direction[i]
+              = -(timeStep * timeStep / state.masses[i]) * scratch.gradient[i];
+        } else {
+          scratch.direction[i].setZero();
+        }
+      }
+
+      double step = 1.0;
+      bool accepted = false;
+      for (std::size_t ls = 0; ls < maxLineSearchIterations; ++ls) {
+        ++stats.lineSearchTrials;
+        double directionalDerivative = 0.0;
+        for (std::size_t i = 0; i < nodeCount; ++i) {
+          scratch.candidate[i] = scratch.next[i];
+          if (state.fixed[i] == 0u) {
+            scratch.candidate[i] += step * scratch.direction[i];
+            directionalDerivative += scratch.gradient[i].dot(
+                scratch.candidate[i] - scratch.next[i]);
+          }
+        }
+
+        if (directionalDerivative < -1e-24
+            && satisfiesStaticGroundBarrier(
+                scratch.candidate, state.fixed, barriers)) {
+          ++stats.objectiveEvaluations;
+          const double candidateEnergy = evaluateDeformableObjective(
+              state,
+              model,
+              scratch.candidate,
+              scratch.inertialTargets,
+              barriers,
+              timeStep,
+              nullptr);
+          if (std::isfinite(candidateEnergy)
+              && candidateEnergy <= energy + armijo * directionalDerivative) {
+            std::swap(scratch.next, scratch.candidate);
+            accepted = true;
+            ++stats.acceptedLineSearchSteps;
+            break;
+          }
+        }
+
+        ++stats.rejectedLineSearchCandidates;
+        step *= 0.5;
+        if (step < minStep) {
+          break;
+        }
+      }
+
+      if (!accepted) {
+        break;
+      }
+    }
+  }
+
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    const Eigen::Vector3d previous = state.positions[i];
+    state.previousPositions[i] = previous;
+    if (state.fixed[i] != 0u) {
+      state.positions[i] = previous;
+      state.velocities[i].setZero();
+      continue;
+    }
+    state.positions[i] = scratch.next[i];
+    state.velocities[i] = (state.positions[i] - previous) / timeStep;
+  }
+}
+
 } // namespace
 
 //==============================================================================
@@ -1023,6 +1496,61 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& /*executor*/)
 std::size_t RigidBodyContactStage::getIterations() const noexcept
 {
   return m_iterations;
+}
+
+//==============================================================================
+std::string_view DeformableDynamicsStage::getName() const noexcept
+{
+  return "deformable_dynamics";
+}
+
+//==============================================================================
+ComputeStageMetadata DeformableDynamicsStage::getMetadata() const noexcept
+{
+  return {
+      ComputeStageDomain::DeformableBody,
+      ComputeStageAcceleration::TaskParallel
+          | ComputeStageAcceleration::DataLocality,
+      {{"deformable_body.state", ComputeAccessMode::ReadWrite},
+       {"deformable_body.model", ComputeAccessMode::Read},
+       {"static_collision_geometry", ComputeAccessMode::Read}}};
+}
+
+//==============================================================================
+void DeformableDynamicsStage::execute(
+    World& world, ComputeExecutor& /*executor*/)
+{
+  m_lastStats.reset();
+
+  auto& registry = world.getRegistry();
+  auto view = registry.view<
+      comps::DeformableBodyTag,
+      comps::DeformableNodeState,
+      comps::DeformableSpringModel>();
+  if (view.begin() == view.end()) {
+    return;
+  }
+
+  const auto barriers = collectStaticGroundBarriers(world);
+  const auto timeStep = world.getTimeStep();
+  const auto gravity = world.getGravity();
+
+  for (const auto entity : view) {
+    auto& state = view.get<comps::DeformableNodeState>(entity);
+    const auto& model = view.get<comps::DeformableSpringModel>(entity);
+    auto& scratch
+        = registry.get_or_emplace<comps::DeformableSolverScratch>(entity);
+    ++m_lastStats.bodyCount;
+    advanceDeformableBody(
+        state, model, scratch, gravity, timeStep, barriers, m_lastStats);
+  }
+}
+
+//==============================================================================
+const DeformableSolverStats& DeformableDynamicsStage::getLastStats()
+    const noexcept
+{
+  return m_lastStats;
 }
 
 //==============================================================================

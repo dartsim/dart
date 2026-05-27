@@ -210,6 +210,17 @@ public:
   /// `World::collide()` collision queries. Dimensions must be positive.
   void setCollisionShape(const CollisionShape& shape);
 
+  /// Set whether this static collision shape acts as a one-sided z-up ground
+  /// barrier for experimental deformable bodies.
+  ///
+  /// This does not change rigid-body collision behavior. It is an explicit
+  /// opt-in for the first deformable solver slice so ordinary static fixtures,
+  /// shelves, ceilings, or obstacles are not silently treated as ground.
+  void setDeformableGroundBarrier(bool enabled);
+
+  /// Return whether this body is opted in as a deformable ground barrier.
+  [[nodiscard]] bool isDeformableGroundBarrier() const;
+
   /// Get this body's collision shape, if one is attached.
   [[nodiscard]] std::optional<CollisionShape> getCollisionShape() const;
 
