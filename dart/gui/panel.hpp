@@ -207,6 +207,8 @@ struct PanelContext
     Eigen::Vector2d framebufferScale = Eigen::Vector2d::Ones();
     double fontSize = 0.0;
     double fontGlobalScale = 1.0;
+    double userScale = 1.0;
+    double dpiScale = 1.0;
     double uiScale = 1.0;
     std::optional<std::array<int, 2>> fontTextureSize;
   };

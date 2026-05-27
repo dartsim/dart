@@ -40,6 +40,13 @@
     readout, fixed-scale CPU/GPU history plots against the 60 FPS budget, the
     active backend, and frame counters, building on the existing GUI
     `ProfileAccumulator` without a separate timing system.
+  - Made `dart::gui` UI scaling DPI-aware: `--gui-scale` now acts as a manual
+    user multiplier on top of GLFW content-scale detection, `DART_GUI_DPI_SCALE`
+    can override misreported DPI, implicit interactive app windows now use a
+    larger monitor-aware automatic default and grow with the manual user
+    multiplier and DPI scale, automatic windows resize when GLFW reports a DPI
+    scale change, and explicit/headless render or screenshot dimensions remain
+    fixed.
   - Sped up per-frame scene extraction with a `dart::gui::RenderableExtractor`
     that caches each shape's geometry by shape version, so `describeShape` is not
     rebuilt every frame for static geometry; soft meshes, point clouds, and voxel
