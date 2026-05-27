@@ -760,6 +760,11 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     foundation for upstream-style tetra mesh scene records, scripted
     Dirichlet/Neumann boundary conditions, restart diagnostics, benchmarks, and
     headless GUI scene capture.
+  - Added internal experimental IPC primitive-distance kernels for
+    point-triangle and edge-edge squared distances, closest-feature
+    classification, derivative regression tests, edge-edge mollifier
+    derivatives, and a microbenchmark surface for future deformable contact
+    assembly.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position

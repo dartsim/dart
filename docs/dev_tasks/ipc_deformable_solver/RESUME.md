@@ -21,17 +21,27 @@ diagnostics JSON, replay/load benchmarks, and `experimental_deformable_gui
 --deformable-scene` headless capture. It still ignores/reports contact and
 friction directives and must not be described as IPC scene parity.
 
+The primitive-distance kernel sub-slice starts PLAN-081 Phase 2 with internal
+point-triangle and edge-edge squared-distance kernels, closest-feature
+classification, gradients, finite-difference Hessians for the first
+solver-facing validation contract, IPC-style edge-edge mollifier derivatives,
+feature-region regression tests, and `bm_ipc_distance_kernels`. It is still
+scaffolding: analytic distance Hessians, tangent bases, candidate-set assembly,
+broad phase, CCD line-search bounds, barrier assembly, projected Newton, and
+friction are not implemented yet.
+
 ## Current Branch
 
-`feature/ipc-scene-boundary-diagnostics` - stacked on
-`feature/ipc-mesh-material-state`, adding contact-free scene/boundary/replay
-scaffolding.
+`feature/ipc-deformable-contact-kernels` - stacked on
+`feature/ipc-scene-boundary-diagnostics`, adding internal primitive distance
+kernels for the next deformable contact slices.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue the rest of PLAN-081 Slice 1: broader
-scene-option coverage, BE/NM state, output-file compatibility decisions, and
-additional contact-free mesh scene replays with focused tests.
+After this sub-slice lands, continue Phase 2 with analytic distance Hessian
+optimization, tangent bases, surface candidate-set assembly, adjacency
+exclusion filters, broad-phase versus brute-force tests, and conservative
+PT/EE CCD line-search bounds.
 
 ## Context That Would Be Lost
 
@@ -47,12 +57,14 @@ additional contact-free mesh scene replays with focused tests.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-scene-boundary-diagnostics
+git checkout feature/ipc-deformable-contact-kernels
 git status && git log -3 --oneline
-cmake --build build/default/cpp/Release --target test_deformable_scene_io
-./build/default/cpp/Release/bin/test_deformable_scene_io
+cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
+ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
+./build/default/cpp/Release/bin/bm_ipc_distance_kernels --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
 ```
 
-Switch to `feature/ipc-paper-corpus-manifest` only when updating the scene
-corpus manifest itself, or to `feature/ipc-mesh-material-state` when reviewing
-the stacked mesh/material-state base.
+Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
+scene replay base, `feature/ipc-paper-corpus-manifest` only when updating the
+scene corpus manifest itself, or `feature/ipc-mesh-material-state` when
+reviewing the stacked mesh/material-state base.

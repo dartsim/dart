@@ -19,6 +19,15 @@
         scene replays.
 - [ ] Phase 2: PT/EE distance kernels, broad-phase candidates, and conservative
       CCD line-search bounds.
+  - [x] Internal primitive-distance kernel sub-slice: point-triangle and
+        edge-edge squared-distance values, closest-feature classification,
+        gradients, finite-difference Hessians for the first solver-facing
+        contract, IPC-style edge-edge mollifier threshold/value/gradient/
+        Hessian, finite-difference regression tests, and
+        `bm_ipc_distance_kernels`.
+  - [ ] Remaining Phase 2 work: analytic distance Hessians, tangent bases,
+        surface candidate-set assembly, adjacency exclusion filters, broad-phase
+        versus brute-force tests, and conservative PT/EE CCD step bounds.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
@@ -59,17 +68,22 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Finish the rest of Slice 1 from PLAN-081: broader scene asset loading,
-   BE/NM state, output diagnostics compatibility decisions, and more
-   contact-free mesh replays. The mesh/material-state and scene/boundary
-   sub-slices are scaffolding only and still use the existing point-mass/spring
-   stepping path.
-2. Use the scene corpus manifest to select the first tutorial and paper-facing
+1. Continue Phase 2 with surface candidate-set assembly, adjacency exclusion
+   filters, broad-phase versus brute-force tests, conservative CCD line-search
+   bounds, and analytic distance Hessian optimization. The current primitive
+   kernels are internal scaffolding only and are not yet wired into
+   `World::step()`.
+2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
+   scenes: broader scene asset loading, BE/NM state, output diagnostics
+   compatibility decisions, and more contact-free mesh replays. The
+   mesh/material-state and scene/boundary sub-slices are scaffolding only and
+   still use the existing point-mass/spring stepping path.
+3. Use the scene corpus manifest to select the first tutorial and paper-facing
    scenes, then replace planned artifacts with implemented DART commands as
    each scene lands.
-3. Add focused unit tests and benchmarks for each landed slice before promoting
+4. Add focused unit tests and benchmarks for each landed slice before promoting
    scene-level examples.
-4. For every GUI-facing scene, attach long-horizon headless Filament evidence
+5. For every GUI-facing scene, attach long-horizon headless Filament evidence
    to the PR rather than committing transient screenshots or videos.
 
 ## Verification
@@ -99,3 +113,30 @@ diagnostics JSON, replay/load benchmark counters, and long-horizon GUI captures
 through `--deformable-scene`. It does not cover FEM elasticity, material-driven
 stiffness, mesh contact, ground/friction behavior from upstream scene files,
 CCD line search, projected Newton, or full scene-corpus parity.
+
+For the primitive-distance kernel sub-slice, keep the verification language
+precise: it covers internal squared-distance values, closest-feature
+classification, gradients, finite-difference Hessians, the edge-edge mollifier,
+finite-difference derivative tests, and microbenchmark timings. It does not yet
+cover analytic distance Hessians, tangent bases, broad-phase candidate assembly,
+CCD line search, barrier assembly, projected Newton, friction, or scene-level
+IPC contact behavior.
+
+Current primitive-distance local gates:
+
+```bash
+pixi run lint
+cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
+./build/default/cpp/Release/bin/test_primitive_distance
+ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
+./build/default/cpp/Release/bin/bm_ipc_distance_kernels --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
+pixi run check-api-boundaries
+```
+
+The first local gate pass on 2026-05-27 passed `pixi run lint`, the focused
+target build, 13 `test_primitive_distance` cases, the CTest registration path,
+`pixi run check-api-boundaries`, and `pixi run check-lint`. The benchmark smoke
+reported roughly 8-16 ns for value/gradient distance paths, 228 ns for the
+analytic edge-edge mollifier Hessian path, and about 0.59-0.61 us for the
+finite-difference distance Hessian placeholders. Treat those Hessian numbers as
+a temporary optimization target, not as final IPC performance evidence.
