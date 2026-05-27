@@ -199,15 +199,18 @@ Eigen::Vector3d readVector3(std::istream& input, std::string_view field)
 }
 
 //==============================================================================
+constexpr double kDegreesToRadians
+    = 3.141592653589793238462643383279502884 / 180.0;
+
+//==============================================================================
 Eigen::Matrix3d rotationFromDegrees(const Eigen::Vector3d& degrees)
 {
-  constexpr double degreesToRadians = M_PI / 180.0;
   return (Eigen::AngleAxisd(
-              degrees.x() * degreesToRadians, Eigen::Vector3d::UnitX())
+              degrees.x() * kDegreesToRadians, Eigen::Vector3d::UnitX())
           * Eigen::AngleAxisd(
-              degrees.y() * degreesToRadians, Eigen::Vector3d::UnitY())
+              degrees.y() * kDegreesToRadians, Eigen::Vector3d::UnitY())
           * Eigen::AngleAxisd(
-              degrees.z() * degreesToRadians, Eigen::Vector3d::UnitZ()))
+              degrees.z() * kDegreesToRadians, Eigen::Vector3d::UnitZ()))
       .toRotationMatrix();
 }
 
@@ -574,21 +577,21 @@ void parseShapeExtra(
           "contact-free replay");
     } else if (token == "angularVelocity") {
       shape.angularVelocity
-          = readVector3(input, "angularVelocity") * (M_PI / 180.0);
+          = readVector3(input, "angularVelocity") * kDegreesToRadians;
       scene.warnings.push_back(
           "interpreted shape angularVelocity as initial angular velocity in "
           "contact-free replay");
     } else if (token == "initVel") {
       shape.initialLinearVelocity = readVector3(input, "initVel linear");
       shape.initialAngularVelocity
-          = readVector3(input, "initVel angular") * (M_PI / 180.0);
+          = readVector3(input, "initVel angular") * kDegreesToRadians;
     } else if (token == "DBC") {
       ShapeBoundaryDirichlet boundary;
       boundary.minCorner = readVector3(input, "DBC min");
       boundary.maxCorner = readVector3(input, "DBC max");
       boundary.linearVelocity = readVector3(input, "DBC linear velocity");
       boundary.angularVelocity
-          = readVector3(input, "DBC angular velocity") * (M_PI / 180.0);
+          = readVector3(input, "DBC angular velocity") * kDegreesToRadians;
       boundary.startTime = readOptionalDouble(input);
       boundary.endTime = readOptionalDouble(input);
       shape.dirichlet.push_back(boundary);
