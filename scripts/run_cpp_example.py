@@ -100,6 +100,8 @@ GUI_SCENE_EXAMPLE_DEFAULT_ARGS = {
     "tinkertoy": (),
     "drag_and_drop": (),
     "empty": (),
+    "experimental_deformable_gui": (),
+    "experimental_rigid_body_gui": (),
     "simple_frames": (),
     "soft_bodies": (),
     "point_cloud": (),
@@ -496,12 +498,16 @@ def _prepare_filament_run_args(
 
 def _prepend_runtime_library_path(env: dict[str, str], build_dir: Path) -> None:
     lib_dir = build_dir / "lib"
+    simulation_experimental_dir = build_dir / "dart" / "simulation" / "experimental"
     if sys.platform.startswith("linux"):
         _prepend_env_path(env, "LD_LIBRARY_PATH", lib_dir)
+        _prepend_env_path(env, "LD_LIBRARY_PATH", simulation_experimental_dir)
     elif sys.platform == "darwin":
         _prepend_env_path(env, "DYLD_LIBRARY_PATH", lib_dir)
+        _prepend_env_path(env, "DYLD_LIBRARY_PATH", simulation_experimental_dir)
     elif os.name == "nt":
         _prepend_env_path(env, "PATH", lib_dir)
+        _prepend_env_path(env, "PATH", simulation_experimental_dir)
 
 
 def _runtime_env(

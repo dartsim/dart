@@ -464,6 +464,20 @@ Bounds computeBounds(const std::vector<Vertex>& vertices)
   return bounds;
 }
 
+Bounds resolveDescriptorBounds(
+    const GeometryDescriptor& geometry, const std::vector<Vertex>& vertices)
+{
+  if (geometry.hasLocalBounds && geometry.localBoundsMin.allFinite()
+      && geometry.localBoundsMax.allFinite()
+      && (geometry.localBoundsMin.array() <= geometry.localBoundsMax.array())
+             .all()) {
+    return Bounds{
+        toFloat3(geometry.localBoundsMin), toFloat3(geometry.localBoundsMax)};
+  }
+
+  return computeBounds(vertices);
+}
+
 Bounds computeDebugBounds(const std::vector<DebugVertex>& vertices)
 {
   Bounds bounds{vertices.front().position, vertices.front().position};
@@ -1058,7 +1072,7 @@ std::optional<Renderable> createDescriptorTriangleMeshRenderable(
     }
   }
 
-  const Bounds bounds = computeBounds(vertices);
+  const Bounds bounds = resolveDescriptorBounds(geometry, vertices);
   return createTriangleMeshRenderable(
       engine,
       material,
@@ -1410,7 +1424,7 @@ std::optional<Renderable> createMeshRenderable(
     return materialInstance;
   };
 
-  const Bounds bounds = computeBounds(vertices);
+  const Bounds bounds = resolveDescriptorBounds(geometry, vertices);
   std::vector<MeshPartDescriptor> parts;
   parts.reserve(geometry.meshParts.size());
   std::size_t coveredTriangleCount = 0;

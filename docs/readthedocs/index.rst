@@ -86,6 +86,8 @@ Vision for the next version of DART
 For the current research-focused direction and active execution plans, see the
 `DART north star <https://github.com/dartsim/dart/blob/main/docs/ai/north-star.md>`_
 and `living plans <https://github.com/dartsim/dart/blob/main/docs/plans/README.md>`_.
+Published citation guidance and paper-specific implementation credits are
+collected on :doc:`papers`.
 
 * Elevate the Python binding to a first-class component, ensuring full support
   and equivalent functionality to the C++ APIs, rather than remaining in an
@@ -135,6 +137,7 @@ If you use DART in an academic publication, please consider citing this
 
    overview
    gallery
+   papers
 
 .. toctree::
    :maxdepth: 2

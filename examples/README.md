@@ -25,6 +25,7 @@
 - `drag_and_drop`
 - `imgui`
 - `gui_scene_diagnostics`
+- `experimental_deformable_gui`
 
 ### 02 Performance and Scaling
 
