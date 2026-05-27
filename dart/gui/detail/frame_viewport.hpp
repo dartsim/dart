@@ -67,8 +67,7 @@ FrameViewport updateFrameViewport(
     int defaultWidth,
     int defaultHeight,
     double worldTimeStep,
-    bool showUi,
-    double guiScale);
+    bool showUi);
 
 } // namespace dart::gui::detail
 

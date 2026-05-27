@@ -176,10 +176,10 @@ GroupProduct<S, ComponentsT...>::GroupProduct()
   std::size_t index = 0;
   (..., [&] {
     using Component = ComponentsT<S>;
-    constexpr int ComponentParamSize = Component::ParamSize;
-    m_params.template segment<ComponentParamSize>(index)
+    constexpr int paramSize = Component::ParamSize;
+    m_params.template segment<paramSize>(index)
         = Component::Identity().params();
-    index += ComponentParamSize;
+    index += paramSize;
   }());
 }
 
@@ -198,9 +198,9 @@ GroupProduct<S, ComponentsT...>::GroupProduct(
   std::size_t index = 0;
   (..., [&] {
     using Component = ComponentsT<S>;
-    constexpr int ComponentParamSize = Component::ParamSize;
-    m_params.template segment<ComponentParamSize>(index) = components.params();
-    index += ComponentParamSize;
+    constexpr int paramSize = Component::ParamSize;
+    m_params.template segment<paramSize>(index) = components.params();
+    index += paramSize;
   }());
 }
 
@@ -211,9 +211,9 @@ GroupProduct<S, ComponentsT...>::GroupProduct(ComponentsT<S>&&... components)
   std::size_t index = 0;
   (..., [&] {
     using Component = ComponentsT<S>;
-    constexpr int ComponentParamSize = Component::ParamSize;
-    m_params.template segment<ComponentParamSize>(index) = components.params();
-    index += ComponentParamSize;
+    constexpr int paramSize = Component::ParamSize;
+    m_params.template segment<paramSize>(index) = components.params();
+    index += paramSize;
   }());
 }
 

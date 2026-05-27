@@ -76,10 +76,14 @@ struct ImGuiOverlay
   ::filament::MaterialInstance* materialInstance = nullptr;
   ::filament::Texture* fontTexture = nullptr;
   OverlayMesh mesh;
+  float uiScale = 1.0f;
 };
 
 ImGuiOverlay createConfiguredImGuiOverlay(
-    ::filament::Engine& engine, float guiScale);
+    ::filament::Engine& engine, float uiScale);
+
+void updateConfiguredImGuiOverlayScale(
+    ::filament::Engine& engine, ImGuiOverlay& overlay, float uiScale);
 
 ImGuiIO& getCurrentImGuiIo();
 
