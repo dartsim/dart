@@ -132,11 +132,11 @@ struct DeformableDirichletBoundary
   double endTime = 0.0;
 };
 
-/// Time-ranged Neumann-style nodal force region for deformable nodes.
+/// Time-ranged Neumann-style nodal acceleration region for deformable nodes.
 struct DeformableNeumannBoundary
 {
   std::vector<std::size_t> nodes;
-  Eigen::Vector3d force = Eigen::Vector3d::Zero();
+  Eigen::Vector3d acceleration = Eigen::Vector3d::Zero();
   double startTime = 0.0;
   double endTime = 0.0;
 };

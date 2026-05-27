@@ -494,11 +494,11 @@ NBCTimeRange 0.1 0.2
 
   world.step();
   EXPECT_NEAR(body.getPosition(0).x(), 0.1, 1e-12);
-  EXPECT_NEAR(body.getPosition(1).x(), 1.02, 1e-12);
+  EXPECT_NEAR(body.getPosition(1).x(), 1.04, 1e-12);
 }
 
 //==============================================================================
-TEST(DeformableSceneIo, NeumannLoadsAreForceLikeAndHalfOpen)
+TEST(DeformableSceneIo, NeumannLoadsAreAccelerationLikeAndHalfOpen)
 {
   sx::World world;
   world.setGravity(Eigen::Vector3d::Zero());
@@ -509,7 +509,7 @@ TEST(DeformableSceneIo, NeumannLoadsAreForceLikeAndHalfOpen)
   options.masses = {2.0};
   sx::DeformableNeumannBoundaryCondition condition;
   condition.nodes = {0};
-  condition.force = Eigen::Vector3d(4.0, 0.0, 0.0);
+  condition.acceleration = Eigen::Vector3d(4.0, 0.0, 0.0);
   condition.startTime = 0.0;
   condition.endTime = 0.2;
   options.neumannBoundaryConditions.push_back(condition);
@@ -517,16 +517,16 @@ TEST(DeformableSceneIo, NeumannLoadsAreForceLikeAndHalfOpen)
   const auto body = world.addDeformableBody("load", options);
 
   world.step();
-  EXPECT_NEAR(body.getPosition(0).x(), 0.02, 1e-12);
-  EXPECT_NEAR(body.getVelocity(0).x(), 0.2, 1e-12);
-
-  world.step();
-  EXPECT_NEAR(body.getPosition(0).x(), 0.06, 1e-12);
+  EXPECT_NEAR(body.getPosition(0).x(), 0.04, 1e-12);
   EXPECT_NEAR(body.getVelocity(0).x(), 0.4, 1e-12);
 
   world.step();
-  EXPECT_NEAR(body.getPosition(0).x(), 0.10, 1e-12);
-  EXPECT_NEAR(body.getVelocity(0).x(), 0.4, 1e-12);
+  EXPECT_NEAR(body.getPosition(0).x(), 0.12, 1e-12);
+  EXPECT_NEAR(body.getVelocity(0).x(), 0.8, 1e-12);
+
+  world.step();
+  EXPECT_NEAR(body.getPosition(0).x(), 0.20, 1e-12);
+  EXPECT_NEAR(body.getVelocity(0).x(), 0.8, 1e-12);
 }
 
 //==============================================================================

@@ -1117,8 +1117,7 @@ void prepareDeformableBoundaryConditions(
         continue;
       }
 
-      scratch.externalAccelerations[node]
-          += boundary.force / state.masses[node];
+      scratch.externalAccelerations[node] += boundary.acceleration;
       if (countedNeumann[node] == 0u) {
         countedNeumann[node] = 1u;
         ++stats.activeNeumannNodeCount;

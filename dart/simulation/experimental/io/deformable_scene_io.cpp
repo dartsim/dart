@@ -80,7 +80,7 @@ struct ShapeBoundaryNeumann
 {
   Eigen::Vector3d minCorner = Eigen::Vector3d::Zero();
   Eigen::Vector3d maxCorner = Eigen::Vector3d::Zero();
-  Eigen::Vector3d force = Eigen::Vector3d::Zero();
+  Eigen::Vector3d acceleration = Eigen::Vector3d::Zero();
   std::optional<double> startTime;
   std::optional<double> endTime;
 };
@@ -599,7 +599,7 @@ void parseShapeExtra(
       ShapeBoundaryNeumann boundary;
       boundary.minCorner = readVector3(input, "NBC min");
       boundary.maxCorner = readVector3(input, "NBC max");
-      boundary.force = readVector3(input, "NBC force");
+      boundary.acceleration = readVector3(input, "NBC acceleration");
       boundary.startTime = readOptionalDouble(input);
       boundary.endTime = readOptionalDouble(input);
       shape.neumann.push_back(boundary);
@@ -798,7 +798,7 @@ DeformableBodyOptions makeBodyOptions(
     if (condition.nodes.empty()) {
       continue;
     }
-    condition.force = boundary.force;
+    condition.acceleration = boundary.acceleration;
     condition.startTime
         = boundary.startTime.value_or(scene.neumannTimeRange[0]);
     condition.endTime = boundary.endTime.value_or(scene.neumannTimeRange[1]);
