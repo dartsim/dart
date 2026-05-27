@@ -370,7 +370,7 @@ Eigen::Vector3d selectedNudgeFromKeyboard(
 void updateCameraController(
     GLFWwindow* window,
     dart::gui::OrbitCameraController& controller,
-    bool suppressLeftMouseOrbit,
+    bool suppressCameraMouse,
     const dart::gui::OrbitCameraControlOptions& controls)
 {
   if (window == nullptr) {
@@ -386,12 +386,15 @@ void updateCameraController(
   input.cursorY = y;
   const bool leftMouse
       = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS
-        && !suppressLeftMouseOrbit && !isDragModifierDown(window);
+        && !suppressCameraMouse && !isDragModifierDown(window);
+  const bool rightOrMiddleMouse
+      = !suppressCameraMouse
+        && (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS
+            || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE)
+                   == GLFW_PRESS);
   input.orbit = leftMouse && controls.mouseMode == OrbitCameraMouseMode::Orbit;
-  input.pan
-      = (leftMouse && controls.mouseMode == OrbitCameraMouseMode::Pan)
-        || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS
-        || glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+  input.pan = (leftMouse && controls.mouseMode == OrbitCameraMouseMode::Pan)
+              || rightOrMiddleMouse;
   input.zoom = leftMouse && controls.mouseMode == OrbitCameraMouseMode::Zoom;
   updateOrbitCameraController(controller, input);
 }

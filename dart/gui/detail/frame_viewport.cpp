@@ -368,12 +368,12 @@ FrameViewport updateFrameViewport(
     const bool cursorOverActivePane
         = cursorPane.has_value()
           && *cursorPane == activeViewportPaneIndex(viewport);
-    const bool suppressCameraOrbit
+    const bool suppressCameraMouse
         = selectionController.isDraggingSelection()
           || isSceneMouseInputCapturedByUi(showUi, imguiIo)
           || !cursorOverActivePane;
     updateCameraController(
-        window, cameraController, suppressCameraOrbit, cameraControls);
+        window, cameraController, suppressCameraMouse, cameraControls);
   }
 
   return viewport;
