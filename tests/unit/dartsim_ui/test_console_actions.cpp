@@ -108,6 +108,9 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
   EXPECT_NE(
       help.message.find("reset (return to Edit Mode)"), std::string::npos);
   EXPECT_NE(help.message.find("inspect [id|name|selected]"), std::string::npos);
+  EXPECT_NE(
+      help.message.find("list [all|selected|visible|hidden]"),
+      std::string::npos);
   EXPECT_NE(help.message.find("record <on|off>"), std::string::npos);
   EXPECT_NE(
       help.message.find("replay <first|previous|next|last|frame>"),
@@ -141,9 +144,110 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
   EXPECT_EQ(
       ui::applyConsoleCommand(engine, "inspect a b").message,
       "Usage: inspect [id|name|selected]");
+  EXPECT_EQ(ui::applyConsoleCommand(engine, "list").message, "No objects");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "list selected").message,
+      "No selected objects");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "list nope").message,
+      "Usage: list [all|selected|visible|hidden]");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "list all now").message,
+      "Usage: list [all|selected|visible|hidden]");
   EXPECT_EQ(
       ui::applyConsoleCommand(engine, "watch").message,
       "Watch state unavailable");
+}
+
+TEST(DartsimConsoleActions, ListsObjectsThroughOutlinerRowsWithoutMutation)
+{
+  SimEngine engine;
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create box").ok);
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "rename box").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create sphere").ok);
+  const ObjectId sphere = engine.selection().primary();
+  ASSERT_NE(sphere, kNoObject);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "rename \"hidden sphere\"").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "hide selected").ok);
+  ASSERT_TRUE(engine.select(box));
+  engine.markProjectClean();
+  const std::size_t undoCount = engine.commands().undoCount();
+  const auto revision = engine.commands().currentRevision();
+
+  const auto all = ui::applyConsoleCommand(engine, "list");
+  EXPECT_TRUE(all.ok);
+  EXPECT_NE(all.message.find("Objects (2):"), std::string::npos);
+  EXPECT_NE(all.message.find("box [RigidBody] selected"), std::string::npos);
+  EXPECT_NE(
+      all.message.find("hidden sphere [RigidBody] hidden"), std::string::npos);
+
+  const auto selected = ui::applyConsoleCommand(engine, "list selected");
+  EXPECT_TRUE(selected.ok);
+  EXPECT_NE(selected.message.find("Objects (1):"), std::string::npos);
+  EXPECT_NE(
+      selected.message.find("box [RigidBody] selected"), std::string::npos);
+  EXPECT_EQ(selected.message.find("hidden sphere"), std::string::npos);
+
+  const auto visible = ui::applyConsoleCommand(engine, "list visible");
+  EXPECT_TRUE(visible.ok);
+  EXPECT_NE(
+      visible.message.find("box [RigidBody] selected"), std::string::npos);
+  EXPECT_EQ(visible.message.find("hidden sphere"), std::string::npos);
+
+  const auto hidden = ui::applyConsoleCommand(engine, "list hidden");
+  EXPECT_TRUE(hidden.ok);
+  EXPECT_NE(
+      hidden.message.find("hidden sphere [RigidBody] hidden"),
+      std::string::npos);
+  EXPECT_EQ(hidden.message.find("box [RigidBody]"), std::string::npos);
+  EXPECT_EQ(engine.selection().primary(), box);
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+  EXPECT_EQ(engine.commands().currentRevision(), revision);
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "clear-selection").ok);
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "list selected").message,
+      "No selected objects");
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "show \"hidden sphere\"").ok);
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "list hidden").message,
+      "No hidden objects");
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "hide box").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "hide \"hidden sphere\"").ok);
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "list visible").message,
+      "No visible objects");
+}
+
+TEST(DartsimConsoleActions, ListsEffectiveHiddenDescendants)
+{
+  SimEngine engine;
+  engine.execute(commands::addFreeFrame(Eigen::Isometry3d::Identity(), "rig"));
+  const ObjectId rig = engine.selection().primary();
+  ASSERT_NE(rig, kNoObject);
+  engine.execute(
+      commands::addFixedFrame(rig, Eigen::Isometry3d::Identity(), "tool"));
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "hide rig").ok);
+
+  const auto visible = ui::applyConsoleCommand(engine, "list visible");
+  EXPECT_TRUE(visible.ok);
+  EXPECT_EQ(visible.message, "No visible objects");
+
+  const auto hidden = ui::applyConsoleCommand(engine, "list hidden");
+  EXPECT_TRUE(hidden.ok);
+  EXPECT_NE(hidden.message.find("rig [FreeFrame] hidden"), std::string::npos);
+  EXPECT_NE(
+      hidden.message.find("tool [FixedFrame] selected hidden"),
+      std::string::npos);
+
+  const auto all = ui::applyConsoleCommand(engine, "list all");
+  EXPECT_TRUE(all.ok);
+  EXPECT_NE(
+      all.message.find("tool [FixedFrame] selected hidden"), std::string::npos);
 }
 
 TEST(DartsimConsoleActions, InspectsObjectsWithoutChangingSelectionOrScene)

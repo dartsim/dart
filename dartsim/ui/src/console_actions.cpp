@@ -51,6 +51,7 @@
 #include <system_error>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <cctype>
 #include <cstddef>
@@ -222,6 +223,134 @@ TargetResolution resolveObjectTarget(
     return {kNoObject, "Ambiguous object name: " + std::string(target)};
   }
   return {matches.front(), {}};
+}
+
+enum class ListObjectFilter
+{
+  All,
+  Selected,
+  Visible,
+  Hidden,
+};
+
+std::optional<ListObjectFilter> parseListObjectFilter(std::string_view token)
+{
+  const std::string filter = lower(token);
+  if (filter == "all") {
+    return ListObjectFilter::All;
+  }
+  if (filter == "selected" || filter == "selection") {
+    return ListObjectFilter::Selected;
+  }
+  if (filter == "visible" || filter == "shown") {
+    return ListObjectFilter::Visible;
+  }
+  if (filter == "hidden") {
+    return ListObjectFilter::Hidden;
+  }
+  return std::nullopt;
+}
+
+bool effectiveRowVisibility(const SimEngine& engine, ObjectId id)
+{
+  const SceneModel& model = engine.objects().model();
+  const SceneObject* object = model.find(id);
+  std::size_t remaining = model.size();
+  while (object != nullptr && remaining > 0) {
+    if (!object->visible) {
+      return false;
+    }
+    if (object->parent == kNoObject) {
+      return true;
+    }
+    object = model.find(object->parent);
+    --remaining;
+  }
+  return object != nullptr;
+}
+
+bool rowMatchesFilter(
+    const OutlinerRow& row, ListObjectFilter filter, bool effectivelyVisible)
+{
+  switch (filter) {
+    case ListObjectFilter::All:
+      return true;
+    case ListObjectFilter::Selected:
+      return row.selected;
+    case ListObjectFilter::Visible:
+      return effectivelyVisible;
+    case ListObjectFilter::Hidden:
+      return !effectivelyVisible;
+  }
+  return false;
+}
+
+std::string emptyListMessage(ListObjectFilter filter)
+{
+  switch (filter) {
+    case ListObjectFilter::All:
+      return "No objects";
+    case ListObjectFilter::Selected:
+      return "No selected objects";
+    case ListObjectFilter::Visible:
+      return "No visible objects";
+    case ListObjectFilter::Hidden:
+      return "No hidden objects";
+  }
+  return "No objects";
+}
+
+std::string formatObjectListEntry(
+    const OutlinerRow& row, bool effectivelyVisible)
+{
+  std::string entry = std::to_string(static_cast<unsigned long long>(row.id))
+                      + ":" + row.name + " [" + row.type + "]";
+  if (row.selected) {
+    entry += " selected";
+  }
+  if (!effectivelyVisible) {
+    entry += " hidden";
+  }
+  return entry;
+}
+
+ConsoleCommandResult applyListCommand(
+    const SimEngine& engine, std::span<const std::string> tokens)
+{
+  if (tokens.size() > 2) {
+    return result(false, "Usage: list [all|selected|visible|hidden]");
+  }
+
+  ListObjectFilter filter = ListObjectFilter::All;
+  if (tokens.size() == 2) {
+    const std::optional<ListObjectFilter> parsed
+        = parseListObjectFilter(tokens[1]);
+    if (!parsed.has_value()) {
+      return result(false, "Usage: list [all|selected|visible|hidden]");
+    }
+    filter = *parsed;
+  }
+
+  std::vector<std::string> entries;
+  for (const OutlinerRow& row : buildOutlinerRows(engine)) {
+    const bool effectivelyVisible = effectiveRowVisibility(engine, row.id);
+    if (rowMatchesFilter(row, filter, effectivelyVisible)) {
+      entries.push_back(formatObjectListEntry(row, effectivelyVisible));
+    }
+  }
+
+  if (entries.empty()) {
+    return result(true, emptyListMessage(filter));
+  }
+
+  std::string message = "Objects (" + std::to_string(entries.size()) + "): ";
+  for (std::size_t i = 0; i < entries.size(); ++i) {
+    if (i != 0) {
+      message += "; ";
+    }
+    message += entries[i];
+  }
+  return result(true, std::move(message));
 }
 
 std::string scalarText(double value)
@@ -834,7 +963,8 @@ std::string consoleCommandHelpText(bool watchCommandsAvailable)
   return "Commands: help, status, new [--discard], open <path> [--discard], "
          "save [path], create <kind>, select <id|name>, select-add "
          "<id|name>, deselect <id|name>, clear-selection, rename <name>, "
-         "delete, inspect [id|name|selected], attach, detach, reparent-link, "
+         "delete, inspect [id|name|selected], list "
+         "[all|selected|visible|hidden], attach, detach, reparent-link, "
          "make-root, show [target], hide [target], mode <edit|simulation>, "
          "play, pause, step [count], restart (stay in Simulation Mode), "
          "reset (return to Edit Mode), record <on|off>, replay "
@@ -896,6 +1026,9 @@ ConsoleCommandResult applyConsoleCommandWithWatchState(
   }
   if (command == "inspect") {
     return applyInspectCommand(engine, view);
+  }
+  if (command == "list") {
+    return applyListCommand(engine, view);
   }
   if (command == "new" || command == "open" || command == "save") {
     ConsoleCommandResult applied = applyProjectCommand(engine, view);

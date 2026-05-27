@@ -58,8 +58,9 @@ previous, next, and last replay frames with stable disabled reasons.
 Console automation is now routed through `dartsim_ui/console_actions`: the
 Console panel has a command input, quoted-argument parser, help/status text,
 and tested project, create, selection, visibility, rename/delete, Inspector
-property query, simulation mode, relationship edit, recording, replay, and
-watch command dispatch over the existing action seams.
+property query, Scene Tree object list query, simulation mode, relationship
+edit, recording, replay, and watch command dispatch over the existing action
+seams.
 Watch values and chart samples are now routed through
 `dartsim_ui/watch_actions`: the Watch panel can add the current selection,
 remove or clear watched objects, display transform/mass/joint values, preserve
@@ -171,8 +172,9 @@ filtered coverage line total above 95%.
   `UNIT_dartsim_ui_ConsoleActions`; commands reuse project, palette, outliner,
   inspector, relationship, simulation, and watch action seams. Console
   `inspect` formats Inspector property snapshots for selected or named objects
-  without changing selection, dirty state, or undo history, so command
-  automation stays backend-hidden and testable.
+  and Console `list` formats Scene Tree object snapshots with
+  all/selected/visible/hidden filters without changing selection, dirty state,
+  or undo history, so command automation stays backend-hidden and testable.
 - Watch behavior is now covered through `dartsim_ui/watch_actions` and
   `UNIT_dartsim_ui_WatchActions`; sampling reads simulation/object values into
   session-local chart buffers, configurable chart-signal choices remain
