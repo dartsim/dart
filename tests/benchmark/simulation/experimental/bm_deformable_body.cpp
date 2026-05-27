@@ -52,6 +52,38 @@ namespace sx = dart::simulation::experimental;
 namespace {
 
 //==============================================================================
+sx::DeformableBodyOptions makeTetraMeshOptions(int tetrahedronCount)
+{
+  tetrahedronCount = std::max(tetrahedronCount, 1);
+
+  sx::DeformableBodyOptions options;
+  options.edgeStiffness = 40.0;
+  options.damping = 0.2;
+  options.material.density = 12.0;
+
+  for (int i = 0; i < tetrahedronCount; ++i) {
+    const auto base = static_cast<std::size_t>(4 * i);
+    const double offset = 0.18 * static_cast<double>(i);
+    options.positions.push_back(Eigen::Vector3d(offset, 0.0, 1.0));
+    options.positions.push_back(Eigen::Vector3d(offset + 0.08, 0.0, 1.0));
+    options.positions.push_back(Eigen::Vector3d(offset, 0.08, 1.0));
+    options.positions.push_back(Eigen::Vector3d(offset, 0.0, 1.08));
+    for (int node = 0; node < 4; ++node) {
+      options.velocities.push_back(Eigen::Vector3d::Zero());
+    }
+    options.tetrahedra.push_back({base, base + 1u, base + 2u, base + 3u});
+    options.edges.push_back({base, base + 1u, -1.0});
+    options.edges.push_back({base, base + 2u, -1.0});
+    options.edges.push_back({base, base + 3u, -1.0});
+    options.edges.push_back({base + 1u, base + 2u, -1.0});
+    options.edges.push_back({base + 1u, base + 3u, -1.0});
+    options.edges.push_back({base + 2u, base + 3u, -1.0});
+  }
+
+  return options;
+}
+
+//==============================================================================
 struct DeformableGridWorld
 {
   DeformableGridWorld(int columns, int rows, bool withGround)
@@ -125,6 +157,34 @@ struct DeformableGridWorld
 };
 
 //==============================================================================
+struct DeformableTetraMeshWorld
+{
+  explicit DeformableTetraMeshWorld(int tetrahedronCount)
+  {
+    auto options = makeTetraMeshOptions(tetrahedronCount);
+    body = world.addDeformableBody("tetra_mesh", options);
+    nodeCount = body.getNodeCount();
+    edgeCount = body.getEdgeCount();
+    surfaceTriangleCount = body.getSurfaceTriangleCount();
+    this->tetrahedronCount = body.getTetrahedronCount();
+    for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+      totalMass += body.getMass(i);
+    }
+
+    world.setTimeStep(1.0 / 240.0);
+    world.enterSimulationMode();
+  }
+
+  sx::World world;
+  sx::DeformableBody body;
+  std::size_t nodeCount = 0;
+  std::size_t edgeCount = 0;
+  std::size_t surfaceTriangleCount = 0;
+  std::size_t tetrahedronCount = 0;
+  double totalMass = 0.0;
+};
+
+//==============================================================================
 struct RigidOnlyWorld
 {
   explicit RigidOnlyWorld(int staticBodyCount)
@@ -183,6 +243,50 @@ void BM_DeformableGridStep(benchmark::State& state)
 }
 
 //==============================================================================
+void BM_DeformableTetraMeshSetup(benchmark::State& state)
+{
+  const auto tetrahedronCount = static_cast<int>(state.range(0));
+
+  for (auto _ : state) {
+    sx::World world;
+    auto body = world.addDeformableBody(
+        "tetra_mesh", makeTetraMeshOptions(tetrahedronCount));
+    benchmark::DoNotOptimize(body.getSurfaceTriangleCount());
+    benchmark::DoNotOptimize(body.getMass(body.getNodeCount() - 1u));
+  }
+
+  state.counters["tetrahedra"] = static_cast<double>(tetrahedronCount);
+  state.counters["nodes"] = static_cast<double>(4 * tetrahedronCount);
+  state.counters["surface_triangles"]
+      = static_cast<double>(4 * tetrahedronCount);
+  state.counters["contact_constraints"] = 0.0;
+}
+
+//==============================================================================
+void BM_DeformableTetraMeshStep(benchmark::State& state)
+{
+  const auto tetrahedronCount = static_cast<int>(state.range(0));
+  DeformableTetraMeshWorld fixture(tetrahedronCount);
+
+  for (auto _ : state) {
+    fixture.world.step();
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["edges"] = static_cast<double>(fixture.edgeCount);
+  state.counters["tetrahedra"] = static_cast<double>(fixture.tetrahedronCount);
+  state.counters["surface_triangles"]
+      = static_cast<double>(fixture.surfaceTriangleCount);
+  state.counters["fixed_nodes"] = 0.0;
+  state.counters["total_mass"] = fixture.totalMass;
+  state.counters["contact_constraints"] = 0.0;
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
 void BM_DeformableGridStage(benchmark::State& state)
 {
   const auto columns = static_cast<int>(state.range(0));
@@ -203,7 +307,11 @@ void BM_DeformableGridStage(benchmark::State& state)
   const auto& stats = deformableStage.getLastStats();
   state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
   state.counters["edges"] = static_cast<double>(fixture.edgeCount);
+  state.counters["tetrahedra"] = 0.0;
+  state.counters["surface_triangles"] = 0.0;
+  state.counters["fixed_nodes"] = 2.0;
   state.counters["ground"] = withGround ? 1.0 : 0.0;
+  state.counters["contact_constraints"] = 0.0;
   state.counters["objective_evals"]
       = static_cast<double>(stats.objectiveEvaluations);
   state.counters["solver_iterations"]
@@ -230,6 +338,10 @@ BENCHMARK(BM_DeformableGridStep)
     ->Args({32, 16, 0})
     ->Args({16, 8, 1})
     ->Args({32, 16, 1});
+
+BENCHMARK(BM_DeformableTetraMeshSetup)->Arg(1)->Arg(8)->Arg(32);
+
+BENCHMARK(BM_DeformableTetraMeshStep)->Arg(1)->Arg(8)->Arg(32);
 
 BENCHMARK(BM_DeformableGridStage)
     ->Args({8, 4, 0})

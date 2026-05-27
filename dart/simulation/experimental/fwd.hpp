@@ -57,6 +57,9 @@ class WorldStepStage;
 
 // Value objects
 struct Contact;
+struct DeformableMaterialProperties;
+struct DeformableSurfaceTriangle;
+struct DeformableTetrahedron;
 
 // Options structs
 struct FixedFrameOptions;

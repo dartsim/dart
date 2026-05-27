@@ -266,7 +266,30 @@ sx::DeformableBodyOptions makeNetOptions(
     }
   }
   options.edges = edges;
+
+  for (const auto& triangle : gui::makeGridSurfaceTriangles(columns, rows)) {
+    options.surfaceTriangles.push_back(
+        {static_cast<std::size_t>(triangle.x()),
+         static_cast<std::size_t>(triangle.y()),
+         static_cast<std::size_t>(triangle.z())});
+  }
   return options;
+}
+
+//==============================================================================
+std::vector<Eigen::Vector3i> extractSurfaceTriangles(
+    const sx::DeformableBody& body)
+{
+  std::vector<Eigen::Vector3i> triangles;
+  triangles.reserve(body.getSurfaceTriangleCount());
+  for (std::size_t i = 0; i < body.getSurfaceTriangleCount(); ++i) {
+    const auto triangle = body.getSurfaceTriangle(i);
+    triangles.emplace_back(
+        static_cast<int>(triangle.nodeA),
+        static_cast<int>(triangle.nodeB),
+        static_cast<int>(triangle.nodeC));
+  }
+  return triangles;
 }
 
 //==============================================================================
@@ -279,8 +302,7 @@ void addDeformableNet(ExampleState& state)
   std::vector<std::uint8_t> fixed;
   auto options = makeNetOptions(columns, rows, edges, fixed);
   auto body = state.physicsWorld.addDeformableBody("deformable_net", options);
-
-  auto surfaceTriangles = gui::makeGridSurfaceTriangles(columns, rows);
+  auto surfaceTriangles = extractSurfaceTriangles(body);
 
   auto edgeShape = std::make_shared<dynamics::LineSegmentShape>(2.8f);
   for (const auto& position : options.positions) {

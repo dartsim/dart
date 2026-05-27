@@ -153,11 +153,132 @@ private:
   }
 };
 
+//==============================================================================
+class DeformableMeshTopologySerializer final
+  : public io::TypedComponentSerializer<DeformableMeshTopology>
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return DeformableMeshTopology::getTypeName();
+  }
+
+private:
+  void saveComponent(
+      std::ostream& output,
+      const DeformableMeshTopology& component,
+      const io::EntityMap&) const override
+  {
+    const auto writeVector3 = [&](const Eigen::Vector3d& value) {
+      io::writeVector3d(output, value);
+    };
+    writeVector(output, component.restPositions, writeVector3);
+    writeVector(
+        output,
+        component.surfaceTriangles,
+        [&](const DeformableSurfaceTriangle& triangle) {
+          io::writePOD(output, triangle.nodeA);
+          io::writePOD(output, triangle.nodeB);
+          io::writePOD(output, triangle.nodeC);
+        });
+    writeVector(
+        output,
+        component.tetrahedra,
+        [&](const DeformableTetrahedron& tetrahedron) {
+          io::writePOD(output, tetrahedron.nodeA);
+          io::writePOD(output, tetrahedron.nodeB);
+          io::writePOD(output, tetrahedron.nodeC);
+          io::writePOD(output, tetrahedron.nodeD);
+        });
+    writeVector(output, component.tetrahedronRestVolumes, [&](double volume) {
+      io::writePOD(output, volume);
+    });
+  }
+
+  void loadComponent(
+      std::istream& input, DeformableMeshTopology& component) const override
+  {
+    const auto readVector3 = [&](Eigen::Vector3d& value) {
+      io::readVector3d(input, value);
+    };
+    readVector(input, component.restPositions, readVector3);
+    readVector(
+        input,
+        component.surfaceTriangles,
+        [&](DeformableSurfaceTriangle& triangle) {
+          io::readPOD(input, triangle.nodeA);
+          io::readPOD(input, triangle.nodeB);
+          io::readPOD(input, triangle.nodeC);
+        });
+    readVector(
+        input, component.tetrahedra, [&](DeformableTetrahedron& tetrahedron) {
+          io::readPOD(input, tetrahedron.nodeA);
+          io::readPOD(input, tetrahedron.nodeB);
+          io::readPOD(input, tetrahedron.nodeC);
+          io::readPOD(input, tetrahedron.nodeD);
+        });
+    readVector(input, component.tetrahedronRestVolumes, [&](double& volume) {
+      io::readPOD(input, volume);
+    });
+  }
+};
+
+//==============================================================================
+class DeformableMaterialSerializer final
+  : public io::TypedComponentSerializer<DeformableMaterial>
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return DeformableMaterial::getTypeName();
+  }
+
+private:
+  void saveComponent(
+      std::ostream& output,
+      const DeformableMaterial& component,
+      const io::EntityMap&) const override
+  {
+    io::writePOD(output, component.density);
+    io::writePOD(output, component.youngsModulus);
+    io::writePOD(output, component.poissonRatio);
+  }
+
+  void loadComponent(
+      std::istream& input, DeformableMaterial& component) const override
+  {
+    io::readPOD(input, component.density);
+    io::readPOD(input, component.youngsModulus);
+    io::readPOD(input, component.poissonRatio);
+  }
+};
+
+//==============================================================================
+template <typename SerializerT>
+void registerSerializerIfNeeded(io::SerializerRegistry& registry)
+{
+  SerializerT serializerProbe;
+  if (registry.getSerializer(serializerProbe.getTypeName()) != nullptr) {
+    return;
+  }
+
+  registry.registerSerializer(std::make_unique<SerializerT>());
+}
+
+} // namespace
+
+//==============================================================================
+void registerDeformableBodySerializers(io::SerializerRegistry& registry)
+{
+  registerSerializerIfNeeded<DeformableNodeStateSerializer>(registry);
+  registerSerializerIfNeeded<DeformableSpringModelSerializer>(registry);
+  registerSerializerIfNeeded<DeformableMeshTopologySerializer>(registry);
+  registerSerializerIfNeeded<DeformableMaterialSerializer>(registry);
+}
+
+namespace {
+
 DART_EXPERIMENTAL_REGISTER_COMPONENT(DeformableBodyTag)
-[[maybe_unused]] io::SerializerRegistration<DeformableNodeStateSerializer>
-    s_deformableNodeStateRegistration;
-[[maybe_unused]] io::SerializerRegistration<DeformableSpringModelSerializer>
-    s_deformableSpringModelRegistration;
 
 } // namespace
 } // namespace dart::simulation::experimental::comps

@@ -40,6 +40,10 @@
 #include <cstddef>
 #include <cstdint>
 
+namespace dart::simulation::experimental::io {
+class SerializerRegistry;
+} // namespace dart::simulation::experimental::io
+
 namespace dart::simulation::experimental::comps {
 
 /// Tag marking an entity as a deformable body.
@@ -78,6 +82,44 @@ struct DeformableSpringModel
   double damping = 0.0;
 };
 
+/// Internal surface triangle over deformable nodes.
+struct DeformableSurfaceTriangle
+{
+  std::size_t nodeA = 0;
+  std::size_t nodeB = 0;
+  std::size_t nodeC = 0;
+};
+
+/// Internal tetrahedron over deformable nodes.
+struct DeformableTetrahedron
+{
+  std::size_t nodeA = 0;
+  std::size_t nodeB = 0;
+  std::size_t nodeC = 0;
+  std::size_t nodeD = 0;
+};
+
+/// Internal mesh topology and rest configuration for a deformable body.
+struct DeformableMeshTopology
+{
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(DeformableMeshTopology);
+
+  std::vector<Eigen::Vector3d> restPositions;
+  std::vector<DeformableSurfaceTriangle> surfaceTriangles;
+  std::vector<DeformableTetrahedron> tetrahedra;
+  std::vector<double> tetrahedronRestVolumes;
+};
+
+/// Internal material properties for a deformable body.
+struct DeformableMaterial
+{
+  DART_EXPERIMENTAL_PROPERTY_COMPONENT(DeformableMaterial);
+
+  double density = 1.0;
+  double youngsModulus = 1.0e5;
+  double poissonRatio = 0.3;
+};
+
 /// Transient scratch buffers reused by the default deformable solver.
 ///
 /// These buffers are intentionally not serialized; they are resized lazily from
@@ -90,5 +132,8 @@ struct DeformableSolverScratch
   std::vector<Eigen::Vector3d> direction;
   std::vector<Eigen::Vector3d> candidate;
 };
+
+void registerDeformableBodySerializers(
+    dart::simulation::experimental::io::SerializerRegistry& registry);
 
 } // namespace dart::simulation::experimental::comps

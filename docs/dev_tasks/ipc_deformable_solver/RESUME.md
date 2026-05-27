@@ -7,16 +7,23 @@ The branch established a machine-checkable manifest for the audited upstream
 `.txt` scene paths. The manifest is a planning/data grounding artifact only; it
 does not implement new solver, renderer, benchmark, or GUI behavior.
 
+The follow-up mesh/material-state sub-slice adds optional surface and
+tetrahedral topology, material validation, density-based lumped mass assembly
+for tetrahedral bodies, boundary surface extraction, serialization, benchmark
+counters, and GUI rendering from body-owned surface topology. It still steps
+through the existing point-mass/spring path and must not be described as FEM,
+mesh contact, or full IPC.
+
 ## Current Branch
 
-`feature/ipc-paper-corpus-manifest` - manifest, script, and docs changes for
-the scene-corpus grounding PR.
+`feature/ipc-mesh-material-state` - stacked on
+`feature/ipc-paper-corpus-manifest`, adding mesh/material-state scaffolding.
 
 ## Immediate Next Step
 
-After this manifest PR lands, begin Slice 1 from PLAN-081: mesh/material state,
-scene loading, boundary conditions, restart/output diagnostics, and
-contact-free mesh stepping with focused tests.
+After this sub-slice lands, continue the rest of PLAN-081 Slice 1: scene
+loading, boundary conditions, restart/output diagnostics, and contact-free mesh
+scene replays with focused tests.
 
 ## Context That Would Be Lost
 
@@ -37,5 +44,5 @@ git status && git log -3 --oneline
 pixi run python scripts/check_ipc_scene_manifest.py
 ```
 
-Then continue with PLAN-081 Slice 1 and update this file when the active
-implementation branch changes.
+Then switch to `feature/ipc-mesh-material-state` for the mesh/material-state
+sub-slice, or create the next stacked branch from it for scene-loading work.

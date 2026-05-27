@@ -68,6 +68,19 @@ sx::DeformableBodyOptions makeTwoNodeBody()
   return options;
 }
 
+//==============================================================================
+sx::DeformableBodyOptions makeSingleTetrahedronBody()
+{
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ()};
+  options.tetrahedra = {sx::DeformableTetrahedron{0, 1, 2, 3}};
+  return options;
+}
+
 } // namespace
 
 //==============================================================================
@@ -197,6 +210,163 @@ TEST(DeformableBody, RejectsInvalidModels)
   EXPECT_THROW(
       world.addDeformableBody("bad_finite_damping", nonfiniteDamping),
       sx::InvalidArgumentException);
+
+  auto badMaterial = makeTwoNodeBody();
+  badMaterial.material.density = 0.0;
+  EXPECT_THROW(
+      world.addDeformableBody("bad_density", badMaterial),
+      sx::InvalidArgumentException);
+
+  badMaterial = makeTwoNodeBody();
+  badMaterial.material.youngsModulus = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(
+      world.addDeformableBody("bad_youngs", badMaterial),
+      sx::InvalidArgumentException);
+
+  badMaterial = makeTwoNodeBody();
+  badMaterial.material.poissonRatio = 0.5;
+  EXPECT_THROW(
+      world.addDeformableBody("bad_poisson", badMaterial),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(DeformableBody, MeshTopologyValidationAndSurfaceExtraction)
+{
+  sx::World world;
+
+  auto options = makeSingleTetrahedronBody();
+  auto body = world.addDeformableBody("tetra", options);
+
+  EXPECT_EQ(body.getSurfaceTriangleCount(), 4u);
+  EXPECT_EQ(body.getTetrahedronCount(), 1u);
+  EXPECT_DOUBLE_EQ(body.getTetrahedronRestVolume(0), 1.0 / 6.0);
+
+  const auto tet = body.getTetrahedron(0);
+  EXPECT_EQ(tet.nodeA, 0u);
+  EXPECT_EQ(tet.nodeB, 1u);
+  EXPECT_EQ(tet.nodeC, 2u);
+  EXPECT_EQ(tet.nodeD, 3u);
+
+  const auto face0 = body.getSurfaceTriangle(0);
+  EXPECT_EQ(face0.nodeA, 0u);
+  EXPECT_EQ(face0.nodeB, 2u);
+  EXPECT_EQ(face0.nodeC, 1u);
+
+  sx::World invertedWorld;
+  auto inverted = makeSingleTetrahedronBody();
+  inverted.tetrahedra = {sx::DeformableTetrahedron{0, 1, 3, 2}};
+  auto invertedBody = invertedWorld.addDeformableBody("inverted", inverted);
+  const auto canonical = invertedBody.getTetrahedron(0);
+  EXPECT_DOUBLE_EQ(invertedBody.getTetrahedronRestVolume(0), 1.0 / 6.0);
+  EXPECT_EQ(canonical.nodeC, 2u);
+  EXPECT_EQ(canonical.nodeD, 3u);
+
+  sx::World invalidWorld;
+  auto invalid = makeSingleTetrahedronBody();
+  invalid.tetrahedra = {sx::DeformableTetrahedron{0, 1, 2, 2}};
+  EXPECT_THROW(
+      invalidWorld.addDeformableBody("repeated_node", invalid),
+      sx::InvalidArgumentException);
+
+  invalid = makeSingleTetrahedronBody();
+  invalid.positions[3] = Eigen::Vector3d(1.0, 1.0, 0.0);
+  EXPECT_THROW(
+      invalidWorld.addDeformableBody("flat_tet", invalid),
+      sx::InvalidArgumentException);
+
+  invalid = makeSingleTetrahedronBody();
+  invalid.tetrahedra.push_back(invalid.tetrahedra.front());
+  EXPECT_THROW(
+      invalidWorld.addDeformableBody("duplicate_tet", invalid),
+      sx::InvalidArgumentException);
+
+  invalid.positions
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY()};
+  invalid.tetrahedra.clear();
+  invalid.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+  EXPECT_THROW(
+      invalidWorld.addDeformableBody("surface_without_mass", invalid),
+      sx::InvalidArgumentException);
+
+  invalid.masses = {1.0, 1.0, 1.0};
+  invalid.surfaceTriangles.push_back(invalid.surfaceTriangles.front());
+  EXPECT_THROW(
+      invalidWorld.addDeformableBody("duplicate_surface", invalid),
+      sx::InvalidArgumentException);
+}
+
+//==============================================================================
+TEST(DeformableBody, DensityMassAssemblyUsesTetrahedraOnly)
+{
+  sx::World world;
+
+  auto options = makeSingleTetrahedronBody();
+  options.material.density = 12.0;
+  auto body = world.addDeformableBody("density_mass", options);
+
+  for (std::size_t i = 0; i < body.getNodeCount(); ++i) {
+    EXPECT_DOUBLE_EQ(body.getMass(i), 0.5);
+  }
+  const auto material = body.getMaterialProperties();
+  EXPECT_DOUBLE_EQ(material.density, 12.0);
+  EXPECT_DOUBLE_EQ(material.youngsModulus, 1.0e5);
+  EXPECT_DOUBLE_EQ(material.poissonRatio, 0.3);
+
+  sx::World explicitMassWorld;
+  options.masses = {1.0, 2.0, 3.0, 4.0};
+  options.material.density = 1200.0;
+  auto explicitMassBody
+      = explicitMassWorld.addDeformableBody("explicit_mass", options);
+  EXPECT_DOUBLE_EQ(explicitMassBody.getMass(0), 1.0);
+  EXPECT_DOUBLE_EQ(explicitMassBody.getMass(1), 2.0);
+  EXPECT_DOUBLE_EQ(explicitMassBody.getMass(2), 3.0);
+  EXPECT_DOUBLE_EQ(explicitMassBody.getMass(3), 4.0);
+}
+
+//==============================================================================
+TEST(DeformableBody, MeshMetadataDoesNotChangeSpringStepping)
+{
+  auto makeSpringBody = [](bool withSurface) {
+    sx::DeformableBodyOptions options;
+    options.positions
+        = {Eigen::Vector3d::Zero(),
+           Eigen::Vector3d::UnitX(),
+           Eigen::Vector3d::UnitY()};
+    options.velocities
+        = {Eigen::Vector3d::Zero(),
+           Eigen::Vector3d(0.1, 0.0, 0.0),
+           Eigen::Vector3d(0.0, 0.2, 0.0)};
+    options.masses = {1.0, 1.0, 1.0};
+    options.edges
+        = {sx::DeformableEdge{0, 1, 1.0}, sx::DeformableEdge{0, 2, 1.0}};
+    options.fixedNodes = {0};
+    options.edgeStiffness = 75.0;
+    if (withSurface) {
+      options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0, 1, 2}};
+    }
+    return options;
+  };
+
+  sx::World pointWorld;
+  sx::World meshWorld;
+  pointWorld.setGravity(Eigen::Vector3d(0.0, 0.0, -1.0));
+  meshWorld.setGravity(Eigen::Vector3d(0.0, 0.0, -1.0));
+  pointWorld.setTimeStep(0.05);
+  meshWorld.setTimeStep(0.05);
+
+  auto pointBody = pointWorld.addDeformableBody("point", makeSpringBody(false));
+  auto meshBody = meshWorld.addDeformableBody("mesh", makeSpringBody(true));
+
+  pointWorld.step(4);
+  meshWorld.step(4);
+
+  for (std::size_t i = 0; i < pointBody.getNodeCount(); ++i) {
+    expectVectorNear(meshBody.getPosition(i), pointBody.getPosition(i));
+    expectVectorNear(meshBody.getVelocity(i), pointBody.getVelocity(i));
+  }
 }
 
 //==============================================================================
@@ -598,4 +768,42 @@ TEST(DeformableBody, SerializationPreservesModelAndState)
   expectVectorNear(body2->getVelocity(1), Eigen::Vector3d(0.25, 0.0, 0.0));
   ASSERT_EQ(body2->getEdgeCount(), 1u);
   EXPECT_DOUBLE_EQ(body2->getEdge(0).restLength, 1.0);
+}
+
+//==============================================================================
+TEST(DeformableBody, SerializationPreservesMeshTopologyAndMaterial)
+{
+  sx::World world1;
+  auto options = makeSingleTetrahedronBody();
+  options.material.density = 12.0;
+  options.material.youngsModulus = 2500.0;
+  options.material.poissonRatio = 0.25;
+  auto body1 = world1.addDeformableBody("serialized_mesh", options);
+  body1.setVelocity(3, Eigen::Vector3d(0.0, 0.0, 0.5));
+
+  std::stringstream stream;
+  world1.saveBinary(stream);
+
+  sx::World world2;
+  world2.loadBinary(stream);
+
+  auto body2 = world2.getDeformableBody("serialized_mesh");
+  ASSERT_TRUE(body2.has_value());
+  ASSERT_EQ(body2->getNodeCount(), 4u);
+  ASSERT_EQ(body2->getSurfaceTriangleCount(), 4u);
+  ASSERT_EQ(body2->getTetrahedronCount(), 1u);
+  EXPECT_DOUBLE_EQ(body2->getTetrahedronRestVolume(0), 1.0 / 6.0);
+  for (std::size_t i = 0; i < body2->getNodeCount(); ++i) {
+    EXPECT_DOUBLE_EQ(body2->getMass(i), 0.5);
+  }
+
+  const auto material = body2->getMaterialProperties();
+  EXPECT_DOUBLE_EQ(material.density, 12.0);
+  EXPECT_DOUBLE_EQ(material.youngsModulus, 2500.0);
+  EXPECT_DOUBLE_EQ(material.poissonRatio, 0.25);
+  expectVectorNear(body2->getVelocity(3), Eigen::Vector3d(0.0, 0.0, 0.5));
+
+  world2.setTimeStep(0.05);
+  world2.step();
+  EXPECT_LT(body2->getPosition(3).z(), 1.0 + 0.05 * 0.5);
 }

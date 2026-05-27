@@ -184,6 +184,19 @@ method family. In short, the remaining gap is:
   failure-mode visual examples ported to DART-native tests, benchmarks,
   examples, profiling, and long-horizon headless Filament evidence.
 
+## Mesh/Material-State Sub-Slice Evidence
+
+The mesh/material-state sub-slice is a narrow PLAN-081 Slice 1 increment. It
+adds optional surface triangles, tetrahedra, material properties, density-based
+tetrahedral lumped mass assembly, deterministic boundary-surface extraction,
+custom binary serialization, mesh setup/step benchmark counters, and updates
+`experimental_deformable_gui` to render body-owned surface topology. The
+existing point-mass/spring solver remains the only stepping path.
+
+The sub-slice must not be used as evidence for FEM elasticity, material-driven
+stiffness, mesh contact, no-intersection or no-inversion guarantees, CCD line
+search, projected Newton, friction, upstream scene parity, or full IPC parity.
+
 ## Non-Goals For The First PR
 
 - Full upstream `ipc-sim/IPC` feature parity.
