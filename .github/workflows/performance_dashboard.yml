@@ -82,11 +82,13 @@ jobs:
 
       - name: Check compute benchmark gate
         # This is a coverage/correctness gate for the scalable-compute benchmark
-        # surface, not a speedup threshold. Keep its JSON outside
+        # surface, not a speedup threshold. Keep the noisy speedup sanity check
+        # in `pixi run bm-compute-check`, and keep this JSON outside
         # .benchmark_results so the merge step does not publish duplicate rows.
         run: |
           pixi run --locked -e collision-reference \
             python scripts/check_compute_graph_benchmarks.py \
+              --skip-contact-island-speedup-check \
               --output build/compute_graph_check.json
 
       - name: Merge benchmark results

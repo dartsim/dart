@@ -180,6 +180,21 @@ def test_validate_benchmark_rows_rejects_missing_contact_island_speedup():
         module.validate_benchmark_rows(rows)
 
 
+def test_validate_benchmark_rows_can_skip_contact_island_speedup_check():
+    module = _load_module()
+    rows = _complete_rows()
+    for row in rows:
+        if row["name"] == "BM_ContactIslandShapedParallel/16/512/64":
+            row["real_time"] = 100.0
+
+    summary = module.validate_benchmark_rows(
+        rows,
+        check_contact_island_speedup=False,
+    )
+
+    assert summary["row_count"] == len(REQUIRED_NAMES)
+
+
 def test_main_input_path_skips_benchmark_execution(tmp_path, monkeypatch, capsys):
     module = _load_module()
     input_path = tmp_path / "compute_graph.json"
@@ -196,3 +211,32 @@ def test_main_input_path_skips_benchmark_execution(tmp_path, monkeypatch, capsys
     assert module.main(["--input", str(input_path)]) == 0
     captured = capsys.readouterr()
     assert f"Checked {len(REQUIRED_NAMES)} compute benchmark rows." in captured.out
+
+
+def test_main_skip_speedup_check_accepts_slow_contact_island_ratio(
+    tmp_path,
+    monkeypatch,
+):
+    module = _load_module()
+    rows = _complete_rows()
+    for row in rows:
+        if row["name"] == "BM_ContactIslandShapedParallel/16/512/64":
+            row["real_time"] = 100.0
+    input_path = tmp_path / "compute_graph.json"
+    input_path.write_text(json.dumps({"benchmarks": rows}), encoding="utf-8")
+
+    def fail_run_benchmark(*args, **kwargs):
+        raise AssertionError("input mode should not run benchmarks")
+
+    monkeypatch.setattr(module, "run_benchmark", fail_run_benchmark)
+
+    assert (
+        module.main(
+            [
+                "--input",
+                str(input_path),
+                "--skip-contact-island-speedup-check",
+            ]
+        )
+        == 0
+    )

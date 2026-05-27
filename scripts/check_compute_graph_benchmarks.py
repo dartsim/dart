@@ -7,7 +7,8 @@ contact-island-shaped, and Phase 5 CPU-baseline smoke benchmark rows run and
 report finite positive timings. Ratio summaries are printed for review. The
 current Euler-only rigid-body workload is known to be overhead-bound and must
 not be used to choose CPU/GPU backends, but the contact-island surface is
-compute-bound enough to require a bounded parallel speedup sanity check.
+compute-bound enough to require a bounded parallel speedup sanity check in the
+dedicated benchmark gate.
 
 Usage:
     python scripts/check_compute_graph_benchmarks.py
@@ -113,6 +114,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default="1ms",
         help="Minimum benchmark time passed to Google Benchmark.",
     )
+    parser.add_argument(
+        "--skip-contact-island-speedup-check",
+        action="store_true",
+        help=(
+            "Only validate required rows and finite timings. Use this for noisy "
+            "dashboard publication runs; the default bm-compute-check gate keeps "
+            "the contact-island speedup sanity check enabled."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -153,7 +163,11 @@ def load_benchmark_rows(path: Path) -> list[dict]:
     return rows
 
 
-def validate_benchmark_rows(rows: list[dict]) -> dict:
+def validate_benchmark_rows(
+    rows: list[dict],
+    *,
+    check_contact_island_speedup: bool = True,
+) -> dict:
     missing = []
     invalid = []
     matched_rows: list[dict] = []
@@ -188,7 +202,8 @@ def validate_benchmark_rows(rows: list[dict]) -> dict:
         raise BenchmarkCheckError("; ".join(details))
 
     ratios = compute_parallel_ratios(matched_rows)
-    validate_contact_island_speedup(ratios)
+    if check_contact_island_speedup:
+        validate_contact_island_speedup(ratios)
     return {
         "row_count": len(matched_rows),
         "ratio_count": len(ratios),
@@ -315,7 +330,10 @@ def main(argv: list[str]) -> int:
         path = run_benchmark(args.output, args.build_type, args.benchmark_min_time)
 
     try:
-        summary = validate_benchmark_rows(load_benchmark_rows(path))
+        summary = validate_benchmark_rows(
+            load_benchmark_rows(path),
+            check_contact_island_speedup=not args.skip_contact_island_speedup_check,
+        )
     except BenchmarkCheckError as exc:
         raise SystemExit(str(exc)) from exc
 

@@ -10,6 +10,7 @@ def test_performance_dashboard_workflow_runs_compute_gate():
     assert "scripts/check_compute_graph_benchmarks.py" in text
     assert "Check compute benchmark gate" in text
     assert "python scripts/check_compute_graph_benchmarks.py" in text
+    assert "--skip-contact-island-speedup-check" in text
     assert "--output build/compute_graph_check.json" in text
 
 
