@@ -5364,6 +5364,36 @@ TEST(FilamentSceneExtraction, DartsimSimulationPanelUsesActionSeam)
       editorSource.find("app.engine.simulation().reset()"), std::string::npos);
 }
 
+TEST(FilamentSceneExtraction, DartsimWatchPanelUsesActionSeam)
+{
+  const auto editorSource
+      = readSourceFile(kDartsimUiDirectory / "src" / "editor.cpp");
+
+  EXPECT_NE(
+      editorSource.find("#include <dartsim_ui/watch_actions.hpp>"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("std::string watchPresetName"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("WatchStatus status = buildWatchStatus"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("saveWatchPreset(app.watch, app.engine"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("applyWatchPreset(app.watch, app.engine"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("deleteWatchPreset(app.engine"), std::string::npos);
+  EXPECT_NE(editorSource.find("status.presetOptions"), std::string::npos);
+  EXPECT_NE(editorSource.find("canEditWatchPresets"), std::string::npos);
+  EXPECT_NE(editorSource.find("missingTargetCount"), std::string::npos);
+  EXPECT_NE(editorSource.find("ignoredSignalCount"), std::string::npos);
+  EXPECT_EQ(
+      editorSource.find("app.engine.objects().model().workspace"),
+      std::string::npos);
+}
+
 TEST(FilamentSceneExtraction, DartsimRelationshipMenuUsesActionSeam)
 {
   const auto editorSource

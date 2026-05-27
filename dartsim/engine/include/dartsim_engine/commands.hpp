@@ -38,6 +38,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace dartsim::commands {
 
@@ -127,5 +128,9 @@ std::unique_ptr<Command> detachFrame(ObjectId frame);
 
 /// Set the world time step.
 std::unique_ptr<Command> setTimeStep(double timeStep);
+
+/// Replace persisted Watch panel presets in the project workspace.
+std::unique_ptr<Command> setWorkspaceWatchPresets(
+    std::vector<WorkspaceWatchPreset> presets);
 
 } // namespace dartsim::commands

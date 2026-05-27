@@ -132,6 +132,21 @@ std::string save(const SceneModel& model)
   out << "dartsim-scene " << kSceneFormatVersion << "\n";
   out << "timestep " << model.timeStep << '\n';
 
+  WorkspaceSettings workspace = model.workspace;
+  if (normalizeWorkspaceSettings(workspace)) {
+    for (const WorkspaceWatchPreset& preset : workspace.watchPresets) {
+      out << "watch-preset\n";
+      out << "name " << preset.name << '\n';
+      for (const ObjectId target : preset.targets) {
+        out << "target " << target << '\n';
+      }
+      for (const std::string& signal : preset.chartSignals) {
+        out << "signal " << signal << '\n';
+      }
+      out << "end\n";
+    }
+  }
+
   for (const ObjectId id : model.allIds()) {
     const SceneObject* object = model.find(id);
     if (object == nullptr) {
@@ -185,7 +200,9 @@ bool load(std::string_view text, SceneModel& out)
   SceneModel result;
   std::vector<SceneObject> objects;
   SceneObject current;
+  WorkspaceWatchPreset currentPreset;
   bool inObject = false;
+  bool inWatchPreset = false;
 
   while (std::getline(in, line)) {
     std::istringstream ls(line);
@@ -196,19 +213,32 @@ bool load(std::string_view text, SceneModel& out)
     }
 
     if (key == "timestep") {
+      if (inObject || inWatchPreset) {
+        return false;
+      }
       if (!(ls >> result.timeStep)) {
         return false;
       }
     } else if (key == "object") {
-      if (inObject) {
+      if (inObject || inWatchPreset) {
         return false;
       }
       current = SceneObject{};
       inObject = true;
+    } else if (key == "watch-preset") {
+      if (inObject || inWatchPreset) {
+        return false;
+      }
+      currentPreset = WorkspaceWatchPreset{};
+      inWatchPreset = true;
     } else if (key == "end") {
       if (inObject) {
         objects.push_back(current);
         inObject = false;
+      } else if (inWatchPreset) {
+        result.workspace.watchPresets.push_back(std::move(currentPreset));
+        currentPreset = WorkspaceWatchPreset{};
+        inWatchPreset = false;
       }
     } else if (inObject) {
       if (key == "id") {
@@ -295,9 +325,34 @@ bool load(std::string_view text, SceneModel& out)
         }
         current.name = rest;
       }
+    } else if (inWatchPreset) {
+      if (key == "name") {
+        std::string rest;
+        std::getline(ls, rest);
+        if (!rest.empty() && rest.front() == ' ') {
+          rest.erase(rest.begin());
+        }
+        currentPreset.name = rest;
+      } else if (key == "target") {
+        ObjectId id = kNoObject;
+        if (!(ls >> id)) {
+          return false;
+        }
+        currentPreset.targets.push_back(id);
+      } else if (key == "signal") {
+        std::string signal;
+        std::string extra;
+        if (!(ls >> signal) || (ls >> extra)) {
+          return false;
+        }
+        currentPreset.chartSignals.push_back(std::move(signal));
+      }
     }
   }
-  if (inObject) {
+  if (inObject || inWatchPreset) {
+    return false;
+  }
+  if (!normalizeWorkspaceSettings(result.workspace)) {
     return false;
   }
 

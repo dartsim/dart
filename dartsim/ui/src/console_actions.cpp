@@ -546,6 +546,31 @@ ConsoleCommandResult applyWatchCommand(
     return result(applied.ok, applied.message);
   }
 
+  if (tokens.size() == 3 && lower(tokens[1]) == "save-preset") {
+    const WatchActionResult saved = saveWatchPreset(*watch, engine, tokens[2]);
+    return result(saved.ok, saved.message);
+  }
+  if (tokens.size() == 3 && lower(tokens[1]) == "preset") {
+    const WatchActionResult applied
+        = applyWatchPreset(*watch, engine, tokens[2]);
+    return result(applied.ok, applied.message);
+  }
+  if (tokens.size() == 3 && lower(tokens[1]) == "delete-preset") {
+    const WatchActionResult deleted = deleteWatchPreset(engine, tokens[2]);
+    return result(deleted.ok, deleted.message);
+  }
+  if (tokens.size() == 2) {
+    const std::string subcommand = lower(tokens[1]);
+    if (subcommand == "save-preset" || subcommand == "preset"
+        || subcommand == "delete-preset") {
+      return result(
+          false,
+          "Usage: watch [target|selection|clear|sample] or watch signal "
+          "<signal> <on|off> or watch <save-preset|preset|delete-preset> "
+          "<name>");
+    }
+  }
+
   if (tokens.size() == 1) {
     const WatchStatus status = buildWatchStatus(*watch, engine);
     return result(true, status.summary);
@@ -554,7 +579,8 @@ ConsoleCommandResult applyWatchCommand(
     return result(
         false,
         "Usage: watch [target|selection|clear|sample] or watch signal "
-        "<signal> <on|off>");
+        "<signal> <on|off> or watch <save-preset|preset|delete-preset> "
+        "<name>");
   }
 
   const std::string targetToken = lower(tokens[1]);
@@ -678,7 +704,9 @@ std::string consoleCommandHelpText(bool watchCommandsAvailable)
          + std::string(
              watchCommandsAvailable
                  ? ", watch [target|selection|clear|sample], watch signal "
-                   "<signal> <on|off>, unwatch <target>"
+                   "<signal> <on|off>, watch save-preset <name>, watch "
+                   "preset <name>, watch delete-preset <name>, unwatch "
+                   "<target>"
                  : "");
 }
 

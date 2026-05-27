@@ -89,6 +89,7 @@ struct EditorApp
   ViewportTransformGizmo transformGizmo = makeViewportTransformGizmo();
   RecentProjectState recentProjects;
   WatchState watch;
+  std::string watchPresetName = "default";
   ProjectReplacementPromptState projectReplacementPrompt;
   bool projectReplacementModalRequested = false;
   ProjectFileDialogKind projectPathKind = ProjectFileDialogKind::Open;
@@ -697,6 +698,62 @@ void buildWatchPanel(dart::gui::PanelBuilder& ui, EditorApp& app)
   }
 
   WatchStatus status = buildWatchStatus(app.watch, app.engine);
+  ui.separator();
+  ui.textInput("Preset", app.watchPresetName);
+  const bool canEditWatchPresets = app.engine.canEditScene();
+  if (canEditWatchPresets) {
+    if (ui.button("Save Preset##watch")) {
+      app.note(
+          saveWatchPreset(app.watch, app.engine, app.watchPresetName).message);
+      status = buildWatchStatus(app.watch, app.engine);
+    }
+  } else {
+    ui.text("Save Preset locked during Simulation Mode");
+  }
+  if (ui.button("Apply Preset##watch")) {
+    app.note(
+        applyWatchPreset(app.watch, app.engine, app.watchPresetName).message);
+    status = buildWatchStatus(app.watch, app.engine);
+  }
+  if (canEditWatchPresets) {
+    if (ui.button("Delete Preset##watch")) {
+      app.note(deleteWatchPreset(app.engine, app.watchPresetName).message);
+      status = buildWatchStatus(app.watch, app.engine);
+    }
+  } else {
+    ui.text("Delete Preset locked during Simulation Mode");
+  }
+  if (status.presetOptions.empty()) {
+    ui.text("(no watch presets)");
+  } else {
+    for (const WatchPresetOption& preset : status.presetOptions) {
+      std::string label = "Preset: " + preset.name + " - "
+                          + std::to_string(preset.targetCount) + " target"
+                          + (preset.targetCount == 1 ? "" : "s") + ", "
+                          + std::to_string(preset.signalCount) + " signal"
+                          + (preset.signalCount == 1 ? "" : "s");
+      if (preset.missingTargetCount > 0 || preset.ignoredSignalCount > 0) {
+        label += " (";
+        bool needsComma = false;
+        if (preset.missingTargetCount > 0) {
+          label += std::to_string(preset.missingTargetCount) + " missing target"
+                   + (preset.missingTargetCount == 1 ? "" : "s");
+          needsComma = true;
+        }
+        if (preset.ignoredSignalCount > 0) {
+          if (needsComma) {
+            label += ", ";
+          }
+          label += std::to_string(preset.ignoredSignalCount) + " ignored signal"
+                   + (preset.ignoredSignalCount == 1 ? "" : "s");
+        }
+        label += ")";
+      }
+      ui.text(label);
+    }
+  }
+
+  ui.separator();
   ui.text(status.summary);
   bool rebuildStatus = false;
   for (const WatchSignalOption& option : status.signalOptions) {

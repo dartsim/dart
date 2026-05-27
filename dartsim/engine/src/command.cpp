@@ -43,7 +43,7 @@ CommandManager::EditorState CommandManager::capture() const
 
 void CommandManager::restore(const EditorState& state)
 {
-  m_objects.setModel(state.model);
+  m_objects.restoreModelSnapshot(state.model);
   m_selection.setState(state.selection);
 }
 

@@ -410,6 +410,58 @@ TEST(DartsimConsoleActions, DrivesWatchCommandsThroughSessionState)
   EXPECT_TRUE(watch.series.empty());
 }
 
+TEST(DartsimConsoleActions, DrivesWatchPresetCommandsThroughWorkspace)
+{
+  SimEngine engine;
+  ui::WatchState watch;
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "create box").ok);
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.markProjectClean();
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "watch selection").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "watch signal x on").ok);
+
+  const auto saved
+      = ui::applyConsoleCommand(engine, watch, "watch save-preset motion");
+  EXPECT_TRUE(saved.ok);
+  EXPECT_EQ(saved.message, "Saved watch preset: motion");
+  EXPECT_TRUE(engine.isProjectDirty());
+  ASSERT_EQ(engine.objects().model().workspace.watchPresets.size(), 1u);
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "watch clear").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, watch, "watch signal x off").ok);
+  const auto applied
+      = ui::applyConsoleCommand(engine, watch, "watch preset motion");
+  EXPECT_TRUE(applied.ok);
+  EXPECT_EQ(applied.message, "Applied watch preset: motion");
+  ASSERT_EQ(watch.targets.size(), 1u);
+  EXPECT_EQ(watch.targets[0].id, box);
+  EXPECT_TRUE(
+      std::find(
+          watch.chartSignals.begin(),
+          watch.chartSignals.end(),
+          ui::WatchValueKind::TranslationX)
+      != watch.chartSignals.end());
+
+  const auto missing
+      = ui::applyConsoleCommand(engine, watch, "watch preset missing");
+  EXPECT_FALSE(missing.ok);
+  EXPECT_EQ(missing.message, "Unknown watch preset: missing");
+
+  const auto deleted
+      = ui::applyConsoleCommand(engine, watch, "watch delete-preset motion");
+  EXPECT_TRUE(deleted.ok);
+  EXPECT_EQ(deleted.message, "Deleted watch preset: motion");
+  EXPECT_TRUE(engine.objects().model().workspace.watchPresets.empty());
+
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, watch, "watch save-preset").message,
+      "Usage: watch [target|selection|clear|sample] or watch signal <signal> "
+      "<on|off> or watch <save-preset|preset|delete-preset> <name>");
+}
+
 TEST(DartsimConsoleActions, DrivesRelationshipCommandsFromSelection)
 {
   SimEngine engine;

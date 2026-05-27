@@ -143,6 +143,16 @@ void ObjectManager::setModel(SceneModel model)
   rebuild();
 }
 
+void ObjectManager::restoreModelSnapshot(SceneModel model)
+{
+  if (m_model.hasSameSceneContents(model)) {
+    m_model = std::move(model);
+    return;
+  }
+
+  setModel(std::move(model));
+}
+
 void ObjectManager::rebuild()
 {
   // A fresh World guarantees design mode regardless of prior simulation state.

@@ -31,13 +31,16 @@
  */
 
 #include <Eigen/Geometry>
+#include <dartsim_engine/commands.hpp>
 #include <dartsim_ui/outliner_actions.hpp>
 #include <dartsim_ui/watch_actions.hpp>
 
 #include <algorithm>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 #include <cstddef>
 
@@ -84,6 +87,37 @@ bool isChartSignalKind(WatchValueKind kind)
   return std::find(signals.begin(), signals.end(), kind) != signals.end();
 }
 
+std::string signalKey(WatchValueKind kind)
+{
+  switch (kind) {
+    case WatchValueKind::TranslationX:
+      return "translation_x";
+    case WatchValueKind::TranslationY:
+      return "translation_y";
+    case WatchValueKind::TranslationZ:
+      return "translation_z";
+    case WatchValueKind::Mass:
+      return "mass";
+    case WatchValueKind::JointPosition:
+      return "joint_position";
+    case WatchValueKind::SimulationTime:
+      return "simulation_time";
+    case WatchValueKind::FrameCount:
+      return "frame_count";
+  }
+  return "value";
+}
+
+std::optional<WatchValueKind> signalFromKey(std::string_view key)
+{
+  for (const WatchValueKind kind : allWatchChartSignals()) {
+    if (signalKey(kind) == key) {
+      return kind;
+    }
+  }
+  return std::nullopt;
+}
+
 std::string valueLabel(WatchValueKind kind)
 {
   switch (kind) {
@@ -103,6 +137,68 @@ std::string valueLabel(WatchValueKind kind)
       return "Frame";
   }
   return "value";
+}
+
+std::string trim(std::string name)
+{
+  const std::string whitespace = " \t\r\n";
+  const std::size_t first = name.find_first_not_of(whitespace);
+  if (first == std::string::npos) {
+    return {};
+  }
+  const std::size_t last = name.find_last_not_of(whitespace);
+  return name.substr(first, last - first + 1);
+}
+
+std::vector<WatchValueKind> normalizedChartSignals(
+    const std::vector<WatchValueKind>& signals)
+{
+  std::vector<WatchValueKind> normalized;
+  for (const WatchValueKind supported : allWatchChartSignals()) {
+    if (std::find(signals.begin(), signals.end(), supported) != signals.end()) {
+      normalized.push_back(supported);
+    }
+  }
+  return normalized;
+}
+
+std::vector<std::string> chartSignalKeys(
+    const std::vector<WatchValueKind>& signals)
+{
+  std::vector<std::string> keys;
+  for (const WatchValueKind kind : normalizedChartSignals(signals)) {
+    keys.push_back(signalKey(kind));
+  }
+  return keys;
+}
+
+std::vector<WatchValueKind> chartSignalsFromKeys(
+    const std::vector<std::string>& keys)
+{
+  std::vector<WatchValueKind> signals;
+  for (const std::string& key : keys) {
+    const std::optional<WatchValueKind> kind = signalFromKey(key);
+    if (!kind.has_value()
+        || std::find(signals.begin(), signals.end(), *kind) != signals.end()) {
+      continue;
+    }
+    signals.push_back(*kind);
+  }
+  return signals;
+}
+
+const WorkspaceWatchPreset* findPreset(
+    const SimEngine& engine, std::string_view name)
+{
+  const std::vector<WorkspaceWatchPreset>& presets
+      = engine.objects().model().workspace.watchPresets;
+  const auto it = std::find_if(
+      presets.begin(),
+      presets.end(),
+      [name](const WorkspaceWatchPreset& preset) {
+        return preset.name == name;
+      });
+  return it == presets.end() ? nullptr : &*it;
 }
 
 std::string seriesLabel(
@@ -254,6 +350,24 @@ void pushSample(WatchState& state, WatchSeries& series, double value)
   }
 }
 
+WorkspaceWatchPreset captureWatchPreset(
+    const WatchState& state, const SimEngine& engine, std::string name)
+{
+  WorkspaceWatchPreset preset;
+  preset.name = std::move(name);
+  preset.chartSignals = chartSignalKeys(state.chartSignals);
+  for (const WatchTarget& target : state.targets) {
+    if (target.projectGeneration != engine.projectGeneration()
+        || !engine.objects().model().contains(target.id)
+        || std::find(preset.targets.begin(), preset.targets.end(), target.id)
+               != preset.targets.end()) {
+      continue;
+    }
+    preset.targets.push_back(target.id);
+  }
+  return preset;
+}
+
 } // namespace
 
 std::vector<WatchValueKind> defaultWatchChartSignals()
@@ -368,6 +482,106 @@ WatchActionResult setWatchChartSignalEnabled(
   return {true, "Disabled watch signal: " + valueLabel(kind)};
 }
 
+WatchActionResult saveWatchPreset(
+    WatchState& state, SimEngine& engine, std::string name)
+{
+  name = trim(std::move(name));
+  if (name.empty()) {
+    return {false, "Preset name is required"};
+  }
+  if (!engine.canEditScene()) {
+    return {false, "Watch presets locked during Simulation Mode"};
+  }
+
+  std::vector<WorkspaceWatchPreset> presets
+      = engine.objects().model().workspace.watchPresets;
+  WorkspaceWatchPreset preset = captureWatchPreset(state, engine, name);
+  const auto it = std::find_if(
+      presets.begin(),
+      presets.end(),
+      [&name](const WorkspaceWatchPreset& candidate) {
+        return candidate.name == name;
+      });
+  if (it == presets.end()) {
+    presets.push_back(std::move(preset));
+  } else {
+    *it = std::move(preset);
+  }
+
+  if (presets == engine.objects().model().workspace.watchPresets) {
+    return {false, "Watch preset already saved: " + name};
+  }
+
+  engine.execute(commands::setWorkspaceWatchPresets(std::move(presets)));
+  if (findPreset(engine, name) == nullptr) {
+    return {false, "Failed to save watch preset: " + name};
+  }
+  return {true, "Saved watch preset: " + name};
+}
+
+WatchActionResult applyWatchPreset(
+    WatchState& state, const SimEngine& engine, std::string_view name)
+{
+  const std::string normalizedName = trim(std::string(name));
+  if (normalizedName.empty()) {
+    return {false, "Preset name is required"};
+  }
+  const WorkspaceWatchPreset* preset = findPreset(engine, normalizedName);
+  if (preset == nullptr) {
+    return {false, "Unknown watch preset: " + normalizedName};
+  }
+
+  state.targets.clear();
+  state.series.clear();
+  state.chartSignals = chartSignalsFromKeys(preset->chartSignals);
+
+  std::size_t skipped = 0;
+  for (const ObjectId target : preset->targets) {
+    if (!engine.objects().model().contains(target)) {
+      ++skipped;
+      continue;
+    }
+    state.targets.push_back({target, engine.projectGeneration()});
+  }
+
+  if (skipped > 0) {
+    return {
+        true,
+        "Applied watch preset: " + preset->name + " (" + std::to_string(skipped)
+            + " missing target" + (skipped == 1 ? "" : "s") + " skipped)"};
+  }
+  return {true, "Applied watch preset: " + preset->name};
+}
+
+WatchActionResult deleteWatchPreset(SimEngine& engine, std::string_view name)
+{
+  const std::string normalizedName = trim(std::string(name));
+  if (normalizedName.empty()) {
+    return {false, "Preset name is required"};
+  }
+  if (!engine.canEditScene()) {
+    return {false, "Watch presets locked during Simulation Mode"};
+  }
+
+  std::vector<WorkspaceWatchPreset> presets
+      = engine.objects().model().workspace.watchPresets;
+  const std::size_t oldSize = presets.size();
+  presets.erase(
+      std::remove_if(
+          presets.begin(),
+          presets.end(),
+          [&normalizedName](const WorkspaceWatchPreset& preset) {
+            return preset.name == normalizedName;
+          }),
+      presets.end());
+  if (presets.size() == oldSize) {
+    return {false, "Unknown watch preset: " + normalizedName};
+  }
+
+  engine.execute(commands::setWorkspaceWatchPresets(std::move(presets)));
+  return {true, "Deleted watch preset: " + normalizedName};
+}
+
 void handleWatchEvent(WatchState& state, const Event& event)
 {
   if (event.type == EventType::ProjectCreated
@@ -427,6 +641,32 @@ WatchStatus buildWatchStatus(const WatchState& state, const SimEngine& engine)
   for (const WatchValueKind kind : allWatchChartSignals()) {
     status.signalOptions.push_back(
         {kind, valueLabel(kind), isChartSignalEnabled(state, kind)});
+  }
+  status.presetOptions.reserve(
+      engine.objects().model().workspace.watchPresets.size());
+  for (const WorkspaceWatchPreset& preset :
+       engine.objects().model().workspace.watchPresets) {
+    std::size_t targetCount = 0;
+    std::size_t missingTargetCount = 0;
+    for (const ObjectId target : preset.targets) {
+      if (engine.objects().model().contains(target)) {
+        ++targetCount;
+      } else {
+        ++missingTargetCount;
+      }
+    }
+    const std::vector<WatchValueKind> signals
+        = chartSignalsFromKeys(preset.chartSignals);
+    const std::size_t ignoredSignalCount
+        = preset.chartSignals.size() >= signals.size()
+              ? preset.chartSignals.size() - signals.size()
+              : 0;
+    status.presetOptions.push_back(
+        {preset.name,
+         targetCount,
+         missingTargetCount,
+         signals.size(),
+         ignoredSignalCount});
   }
 
   status.series.reserve(state.series.size());

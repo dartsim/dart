@@ -624,7 +624,13 @@ TEST(SceneIO, TextRoundTripIsStable)
   body.name = "Body With Spaces";
   body.transform = translation(1.5, -2.0, 0.25);
   body.mass = 3.0;
-  model.add(body);
+  const ObjectId bodyId = model.add(body);
+
+  WorkspaceWatchPreset preset;
+  preset.name = "motion";
+  preset.targets = {bodyId};
+  preset.chartSignals = {"simulation_time", "translation_z"};
+  model.workspace.watchPresets.push_back(preset);
 
   SceneObject mb;
   mb.type = ObjectType::MultiBody;
@@ -643,6 +649,7 @@ TEST(SceneIO, TextRoundTripIsStable)
   ASSERT_TRUE(scene_io::load(text, loaded));
   EXPECT_EQ(loaded.size(), model.size());
   EXPECT_DOUBLE_EQ(loaded.timeStep, 0.002);
+  EXPECT_EQ(loaded.workspace.watchPresets, model.workspace.watchPresets);
 
   // Re-saving the loaded model yields identical text (stable round-trip).
   EXPECT_EQ(scene_io::save(loaded), text);
@@ -812,6 +819,45 @@ TEST(SceneIO, RejectsMalformedNumericFields)
       "id 7\n"
       "jointpos nope\n"
       "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name bad preset\n"
+      "target nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name bad preset\n"
+      "signal\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name    \n"
+      "signal translation_z\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name duplicate\n"
+      "signal translation_z\n"
+      "end\n"
+      "watch-preset\n"
+      "name duplicate\n"
+      "signal simulation_time\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name bad signal\n"
+      "signal translation z\n"
+      "end\n");
 }
 
 TEST(SceneIO, RejectsUnterminatedObjectBlocks)
@@ -834,6 +880,19 @@ TEST(SceneIO, RejectsUnterminatedObjectBlocks)
       "id 7\n"
       "object\n"
       "id 8\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name missing end\n");
+  expectRejects(
+      "dartsim-scene 1\n"
+      "timestep 0.001\n"
+      "watch-preset\n"
+      "name nested\n"
+      "object\n"
+      "id 1\n"
       "end\n");
 }
 
@@ -1595,16 +1654,76 @@ TEST(SimEngine, ProjectFileRoundTrip)
 
   SimEngine engine;
   engine.execute(commands::addRigidBody(ShapeType::Box, translation(1, 1, 1)));
+  const ObjectId box = engine.selection().primary();
   engine.execute(commands::addMultiBody("arm"));
+  WorkspaceWatchPreset preset;
+  preset.name = "motion";
+  preset.targets = {box};
+  preset.chartSignals = {"translation_z"};
+  engine.execute(commands::setWorkspaceWatchPresets({preset}));
   const std::size_t expected = engine.objects().model().size();
   ASSERT_TRUE(engine.saveProject(path.string()));
 
   SimEngine reloaded;
   ASSERT_TRUE(reloaded.loadProject(path.string()));
   EXPECT_EQ(reloaded.objects().model().size(), expected);
+  EXPECT_EQ(reloaded.objects().model().workspace.watchPresets.size(), 1u);
+  EXPECT_EQ(
+      reloaded.objects().model().workspace.watchPresets[0].name, "motion");
+  EXPECT_EQ(
+      reloaded.objects().model().workspace.watchPresets[0].targets[0], box);
   EXPECT_FALSE(reloaded.commands().canUndo()); // history cleared on load
 
   std::filesystem::remove(path);
+}
+
+TEST(SimEngine, WorkspaceWatchPresetCommandNormalizesInputs)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+
+  WorkspaceWatchPreset preset;
+  preset.name = " motion ";
+  preset.targets = {box, box, kNoObject};
+  preset.chartSignals = {"translation_z", "translation_z", "custom-signal"};
+  engine.execute(commands::setWorkspaceWatchPresets({preset}));
+
+  const auto& presets = engine.objects().model().workspace.watchPresets;
+  ASSERT_EQ(presets.size(), 1u);
+  EXPECT_EQ(presets[0].name, "motion");
+  ASSERT_EQ(presets[0].targets.size(), 1u);
+  EXPECT_EQ(presets[0].targets[0], box);
+  ASSERT_EQ(presets[0].chartSignals.size(), 2u);
+  EXPECT_EQ(presets[0].chartSignals[0], "translation_z");
+  EXPECT_EQ(presets[0].chartSignals[1], "custom-signal");
+
+  const WorkspaceSettings before = engine.objects().model().workspace;
+  const std::size_t undoCount = engine.commands().undoCount();
+  WorkspaceWatchPreset blankName;
+  blankName.name = "  ";
+  blankName.chartSignals = {"translation_z"};
+  engine.execute(commands::setWorkspaceWatchPresets({blankName}));
+  EXPECT_EQ(engine.objects().model().workspace, before);
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+
+  WorkspaceWatchPreset duplicateA;
+  duplicateA.name = "duplicate";
+  duplicateA.chartSignals = {"translation_z"};
+  WorkspaceWatchPreset duplicateB;
+  duplicateB.name = " duplicate ";
+  duplicateB.chartSignals = {"simulation_time"};
+  engine.execute(commands::setWorkspaceWatchPresets({duplicateA, duplicateB}));
+  EXPECT_EQ(engine.objects().model().workspace, before);
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+
+  WorkspaceWatchPreset badSignal;
+  badSignal.name = "bad";
+  badSignal.chartSignals = {"translation z"};
+  engine.execute(commands::setWorkspaceWatchPresets({badSignal}));
+  EXPECT_EQ(engine.objects().model().workspace, before);
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
 }
 
 TEST(SimEngine, ProjectDirtyStateTracksSavedSceneSnapshot)

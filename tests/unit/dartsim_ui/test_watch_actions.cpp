@@ -92,6 +92,18 @@ const ui::WatchSignalOption* findSignal(
   return it == status.signalOptions.end() ? nullptr : &*it;
 }
 
+const ui::WatchPresetOption* findPreset(
+    const ui::WatchStatus& status, const std::string& name)
+{
+  const auto it = std::find_if(
+      status.presetOptions.begin(),
+      status.presetOptions.end(),
+      [&name](const ui::WatchPresetOption& option) {
+        return option.name == name;
+      });
+  return it == status.presetOptions.end() ? nullptr : &*it;
+}
+
 } // namespace
 
 TEST(DartsimWatchActions, EmptyWatchListReportsStatusAndSamplesGlobals)
@@ -212,6 +224,134 @@ TEST(DartsimWatchActions, ChartSignalTogglesControlSamples)
   EXPECT_FALSE(engine.isProjectDirty());
   EXPECT_EQ(engine.commands().undoCount(), undoCount);
   EXPECT_EQ(engine.commands().currentRevision(), revision);
+}
+
+TEST(DartsimWatchActions, SavedWatchPresetsPersistAndRestoreSessionState)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 3.0), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.markProjectClean();
+  const std::size_t undoCount = engine.commands().undoCount();
+  const auto revision = engine.commands().currentRevision();
+
+  ui::WatchState state;
+  ASSERT_TRUE(ui::watchSelectedObjects(state, engine).ok);
+  ASSERT_TRUE(
+      ui::setWatchChartSignalEnabled(
+          state, ui::WatchValueKind::TranslationX, true)
+          .ok);
+
+  const auto saved = ui::saveWatchPreset(state, engine, " motion ");
+  EXPECT_TRUE(saved.ok);
+  EXPECT_EQ(saved.message, "Saved watch preset: motion");
+  EXPECT_TRUE(engine.isProjectDirty());
+  EXPECT_EQ(engine.commands().undoCount(), undoCount + 1);
+  EXPECT_NE(engine.commands().currentRevision(), revision);
+
+  const ui::WatchStatus withPreset = ui::buildWatchStatus(state, engine);
+  const ui::WatchPresetOption* preset = findPreset(withPreset, "motion");
+  ASSERT_NE(preset, nullptr);
+  EXPECT_EQ(preset->targetCount, 1u);
+  EXPECT_EQ(preset->missingTargetCount, 0u);
+  EXPECT_EQ(preset->signalCount, 5u);
+  EXPECT_EQ(preset->ignoredSignalCount, 0u);
+
+  const auto duplicate = ui::saveWatchPreset(state, engine, "motion");
+  EXPECT_FALSE(duplicate.ok);
+  EXPECT_EQ(duplicate.message, "Watch preset already saved: motion");
+  EXPECT_EQ(engine.commands().undoCount(), undoCount + 1);
+
+  ASSERT_TRUE(ui::clearWatch(state).ok);
+  ASSERT_TRUE(
+      ui::setWatchChartSignalEnabled(
+          state, ui::WatchValueKind::TranslationX, false)
+          .ok);
+  ASSERT_FALSE(
+      findSignal(
+          ui::buildWatchStatus(state, engine), ui::WatchValueKind::TranslationX)
+          ->enabled);
+
+  const bool dirtyBeforeApply = engine.isProjectDirty();
+  const std::size_t undoCountBeforeApply = engine.commands().undoCount();
+  const auto revisionBeforeApply = engine.commands().currentRevision();
+  const auto* worldBeforeApply = &engine.objects().world();
+  const auto applied = ui::applyWatchPreset(state, engine, "motion");
+  EXPECT_TRUE(applied.ok);
+  EXPECT_EQ(applied.message, "Applied watch preset: motion");
+  EXPECT_EQ(engine.isProjectDirty(), dirtyBeforeApply);
+  EXPECT_EQ(engine.commands().undoCount(), undoCountBeforeApply);
+  EXPECT_EQ(engine.commands().currentRevision(), revisionBeforeApply);
+  EXPECT_EQ(&engine.objects().world(), worldBeforeApply);
+  ASSERT_EQ(state.targets.size(), 1u);
+  EXPECT_EQ(state.targets[0].id, box);
+  EXPECT_EQ(state.targets[0].projectGeneration, engine.projectGeneration());
+  EXPECT_TRUE(state.series.empty());
+  const ui::WatchStatus restored = ui::buildWatchStatus(state, engine);
+  ASSERT_NE(findSignal(restored, ui::WatchValueKind::TranslationX), nullptr);
+  EXPECT_TRUE(findSignal(restored, ui::WatchValueKind::TranslationX)->enabled);
+
+  const std::size_t undoCountBeforeDelete = engine.commands().undoCount();
+  const auto revisionBeforeDelete = engine.commands().currentRevision();
+  const auto* worldBeforeDelete = &engine.objects().world();
+  const auto deleted = ui::deleteWatchPreset(engine, "motion");
+  EXPECT_TRUE(deleted.ok);
+  EXPECT_EQ(deleted.message, "Deleted watch preset: motion");
+  EXPECT_EQ(engine.commands().undoCount(), undoCountBeforeDelete + 1);
+  EXPECT_NE(engine.commands().currentRevision(), revisionBeforeDelete);
+  EXPECT_EQ(&engine.objects().world(), worldBeforeDelete);
+  EXPECT_EQ(findPreset(ui::buildWatchStatus(state, engine), "motion"), nullptr);
+
+  const auto* worldBeforeUndoDelete = &engine.objects().world();
+  ASSERT_TRUE(engine.undo());
+  EXPECT_EQ(&engine.objects().world(), worldBeforeUndoDelete);
+  EXPECT_NE(findPreset(ui::buildWatchStatus(state, engine), "motion"), nullptr);
+}
+
+TEST(DartsimWatchActions, WatchPresetSkipsMissingTargetsAndLocksEditsInRunMode)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+
+  WorkspaceWatchPreset preset;
+  preset.name = "stale";
+  preset.targets = {box, 999};
+  preset.chartSignals = {"translation_z", "unknown_signal", "translation_z"};
+  engine.execute(commands::setWorkspaceWatchPresets({preset}));
+  engine.markProjectClean();
+
+  ui::WatchState state;
+  const auto applied = ui::applyWatchPreset(state, engine, "stale");
+  EXPECT_TRUE(applied.ok);
+  EXPECT_EQ(
+      applied.message,
+      "Applied watch preset: stale (1 missing target skipped)");
+  ASSERT_EQ(state.targets.size(), 1u);
+  EXPECT_EQ(state.targets[0].id, box);
+  const ui::WatchStatus status = ui::buildWatchStatus(state, engine);
+  const ui::WatchPresetOption* option = findPreset(status, "stale");
+  ASSERT_NE(option, nullptr);
+  EXPECT_EQ(option->targetCount, 1u);
+  EXPECT_EQ(option->missingTargetCount, 1u);
+  EXPECT_EQ(option->signalCount, 1u);
+  EXPECT_EQ(option->ignoredSignalCount, 1u);
+  EXPECT_TRUE(findSignal(status, ui::WatchValueKind::TranslationZ)->enabled);
+  EXPECT_FALSE(findSignal(status, ui::WatchValueKind::TranslationX)->enabled);
+
+  ASSERT_TRUE(ui::playSimulation(engine).ok);
+  EXPECT_FALSE(engine.canEditScene());
+  const auto lockedSave = ui::saveWatchPreset(state, engine, "run-mode");
+  EXPECT_FALSE(lockedSave.ok);
+  EXPECT_EQ(lockedSave.message, "Watch presets locked during Simulation Mode");
+  const auto lockedDelete = ui::deleteWatchPreset(engine, "stale");
+  EXPECT_FALSE(lockedDelete.ok);
+  EXPECT_EQ(
+      lockedDelete.message, "Watch presets locked during Simulation Mode");
 }
 
 TEST(DartsimWatchActions, SelectedObjectsBuildRowsAndDeduplicate)

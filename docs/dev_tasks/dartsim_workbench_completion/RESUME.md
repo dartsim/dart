@@ -103,14 +103,18 @@ once. Fit All Panes and Focus Selection in All Panes preserve each pane's
 orientation while reframing the visible scene or visible selection, reject
 hidden/missing inputs without partially changing pane memory, and return the
 updated active-pane camera through the existing renderer-neutral camera setter.
+Watch presets now persist Watch panel target and chart-signal choices in the
+project workspace. The Watch panel and Console can save, apply, and delete
+named presets; saving/deleting is undoable project metadata, while applying a
+preset only changes the session-local Watch state and skips missing targets.
 
 ## Immediate Next Step
 
 Continue Phase 5 with future collision/sensor/joint layer filters after those
-render layers exist, or continue Phase 4 by adding saved watch presets after
-scene metadata can store UI workspace settings. Keep behavior in testable
-engine or UI action/view-model helpers before wiring it into `editor.cpp`, and
-keep the filtered coverage line total above 95%.
+render layers exist, or continue Phase 4 by adding sensor-backed watch rows
+after scene sensor descriptors exist. Keep behavior in testable engine or UI
+action/view-model helpers before wiring it into `editor.cpp`, and keep the
+filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -151,7 +155,10 @@ keep the filtered coverage line total above 95%.
 - Watch behavior is now covered through `dartsim_ui/watch_actions` and
   `UNIT_dartsim_ui_WatchActions`; sampling reads simulation/object values into
   session-local chart buffers, configurable chart-signal choices remain
-  view-only, and disabled signals drop their old samples.
+  view-only, disabled signals drop their old samples, and saved Watch presets
+  persist target/signal choices through project workspace metadata. Console
+  preset commands are covered in `UNIT_dartsim_ui_ConsoleActions`, and project
+  file round-trip coverage lives in `UNIT_dartsim_engine`.
 - Project open remains usable without a working native picker: the File menu
   opens the in-app browser/manual path modal first. Browse reports native picker
   failures in-place, and `openProject()` accepts extensionless paths when the

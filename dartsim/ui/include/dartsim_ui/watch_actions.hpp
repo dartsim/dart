@@ -116,10 +116,20 @@ struct WatchSignalOption
   bool enabled = false;
 };
 
+struct WatchPresetOption
+{
+  std::string name;
+  std::size_t targetCount = 0;
+  std::size_t missingTargetCount = 0;
+  std::size_t signalCount = 0;
+  std::size_t ignoredSignalCount = 0;
+};
+
 struct WatchStatus
 {
   std::string summary;
   std::vector<WatchSignalOption> signalOptions;
+  std::vector<WatchPresetOption> presetOptions;
   std::vector<WatchRow> rows;
   std::vector<WatchChartSeries> series;
 };
@@ -147,6 +157,17 @@ WatchActionResult clearWatch(WatchState& state);
 /// Enable or disable one plotted signal without mutating the scene.
 WatchActionResult setWatchChartSignalEnabled(
     WatchState& state, WatchValueKind kind, bool enabled);
+
+/// Save the current watch targets and chart signals as a project preset.
+WatchActionResult saveWatchPreset(
+    WatchState& state, SimEngine& engine, std::string name);
+
+/// Apply a saved project preset to the session-local Watch panel state.
+WatchActionResult applyWatchPreset(
+    WatchState& state, const SimEngine& engine, std::string_view name);
+
+/// Delete a saved project preset.
+WatchActionResult deleteWatchPreset(SimEngine& engine, std::string_view name);
 
 /// Keep watch state scoped to the current project when engine events replace
 /// the scene.

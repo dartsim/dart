@@ -673,4 +673,25 @@ std::unique_ptr<Command> setTimeStep(double timeStep)
       });
 }
 
+std::unique_ptr<Command> setWorkspaceWatchPresets(
+    std::vector<WorkspaceWatchPreset> presets)
+{
+  WorkspaceSettings workspace;
+  workspace.watchPresets = std::move(presets);
+  const bool valid = normalizeWorkspaceSettings(workspace);
+
+  return std::make_unique<Command>(
+      "Set Watch Presets",
+      [valid, presets = std::move(workspace.watchPresets)](
+          ObjectManager& objects, SelectionManager&) {
+        if (!valid) {
+          return;
+        }
+        if (objects.model().workspace.watchPresets == presets) {
+          return;
+        }
+        objects.model().workspace.watchPresets = presets;
+      });
+}
+
 } // namespace dartsim::commands
