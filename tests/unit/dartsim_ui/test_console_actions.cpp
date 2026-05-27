@@ -102,6 +102,7 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
   EXPECT_TRUE(help.ok);
   EXPECT_NE(help.message.find("create <kind>"), std::string::npos);
   EXPECT_NE(help.message.find("record <on|off>"), std::string::npos);
+  EXPECT_NE(help.message.find("reparent-link"), std::string::npos);
   EXPECT_EQ(
       help.message.find("watch [target|selection|clear|sample]"),
       std::string::npos);
@@ -348,6 +349,102 @@ TEST(DartsimConsoleActions, DrivesWatchCommandsThroughSessionState)
   EXPECT_TRUE(cleared.ok);
   EXPECT_TRUE(watch.targets.empty());
   EXPECT_TRUE(watch.series.empty());
+}
+
+TEST(DartsimConsoleActions, DrivesRelationshipCommandsFromSelection)
+{
+  SimEngine engine;
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create free-frame").ok);
+  const ObjectId child = engine.selection().primary();
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "rename child").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create free-frame").ok);
+  const ObjectId parent = engine.selection().primary();
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "rename parent").ok);
+  ASSERT_NE(child, kNoObject);
+  ASSERT_NE(parent, kNoObject);
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "clear-selection").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "select child").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "select-add parent").ok);
+
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "attach now").message, "Usage: attach");
+  const auto attached = ui::applyConsoleCommand(engine, "attach");
+  EXPECT_TRUE(attached.ok);
+  EXPECT_EQ(attached.message, "Attached child to parent");
+  ASSERT_NE(engine.objects().model().find(child), nullptr);
+  EXPECT_EQ(engine.objects().model().find(child)->parent, parent);
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "select child").ok);
+  const auto detached = ui::applyConsoleCommand(engine, "detach");
+  EXPECT_TRUE(detached.ok);
+  EXPECT_EQ(detached.message, "Detached child");
+  ASSERT_NE(engine.objects().model().find(child), nullptr);
+  EXPECT_EQ(engine.objects().model().find(child)->parent, kNoObject);
+}
+
+TEST(DartsimConsoleActions, DrivesLinkRelationshipCommandsFromSelection)
+{
+  SimEngine engine;
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create multibody").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create root-link").ok);
+  const ObjectId base = engine.selection().primary();
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "rename base").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create revolute-link").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "rename forearm").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create revolute-link").ok);
+  const ObjectId tool = engine.selection().primary();
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "rename tool").ok);
+  ASSERT_NE(base, kNoObject);
+  ASSERT_NE(tool, kNoObject);
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "clear-selection").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "select tool").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "select-add base").ok);
+  const auto reparented = ui::applyConsoleCommand(engine, "reparent-link");
+  EXPECT_TRUE(reparented.ok);
+  EXPECT_EQ(reparented.message, "Reparented tool to base");
+  ASSERT_NE(engine.objects().model().find(tool), nullptr);
+  EXPECT_EQ(engine.objects().model().find(tool)->parentLink, base);
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "select tool").ok);
+  const auto rooted = ui::applyConsoleCommand(engine, "make-root");
+  EXPECT_TRUE(rooted.ok);
+  EXPECT_EQ(rooted.message, "Made tool a root link");
+  ASSERT_NE(engine.objects().model().find(tool), nullptr);
+  EXPECT_EQ(engine.objects().model().find(tool)->parentLink, kNoObject);
+}
+
+TEST(DartsimConsoleActions, RelationshipCommandsReportInvalidAndLockedState)
+{
+  SimEngine engine;
+
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "attach").message,
+      "Select one frame and one parent");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "detach").message,
+      "Select an attached frame");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "reparent-link").message,
+      "Select one child link and one parent link");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "make-root").message,
+      "Select a child link");
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create free-frame").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create free-frame").ok);
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "select-add selected").ok);
+  engine.simulation().play();
+
+  EXPECT_EQ(ui::applyConsoleCommand(engine, "attach").message, "Scene locked");
+  EXPECT_EQ(ui::applyConsoleCommand(engine, "detach").message, "Scene locked");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "reparent-link").message, "Scene locked");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "make-root").message, "Scene locked");
 }
 
 TEST(DartsimConsoleActions, ProjectReplacementClearsWatchSessionState)

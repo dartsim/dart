@@ -18,13 +18,14 @@
       palette seam now covers primitives, multibodies, links, and frames; the
       Inspector now has a tested property/action seam for transform, mass, joint,
       shape-dimension, color, and delete edits; and relationship actions now
-      attach/detach frames while preserving world transforms.
+      attach/detach frames while preserving world transforms, reparent links,
+      and make child links root links.
 - [ ] Phase 4: Add simulation workbench panels for watch values, sensor views,
       charts, and console automation. A first tested Console command seam now
-      dispatches create/select/edit/project/simulation commands through the
-      existing action layers, and a tested Watch panel seam samples selected
-      object values plus bounded simulation chart series. Console watch
-      commands now register, remove, clear, and manually sample the same
+      dispatches create/select/edit/project/relationship/simulation commands
+      through the existing action layers, and a tested Watch panel seam samples
+      selected object values plus bounded simulation chart series. Console
+      watch commands now register, remove, clear, and manually sample the same
       session-local Watch state.
 - [ ] Phase 5: Add viewport controls, visibility filters, camera presets,
       workflows, and multi-view layouts. Tested View menu camera seams now cover
@@ -72,7 +73,7 @@ persist their workspace through a tested, backend-hidden GUI.
 | Sensor views             | Camera/range/contact-like sensor panes                                                                                                               | No sensor model in `dartsim` scene data                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Add sensor descriptors and simulated outputs only after scene model supports sensors                       |
 | Viewport controls        | rotate/pan/zoom modes, camera lock, front/side/top/perspective, fit view, four-view layout                                                           | View menu camera actions now compute fit scene, focus selection, perspective/front/back/left/right/top/bottom presets, Orbit/Pan/Zoom mouse modes, selected-object tracking, and single/four-view layout from `dartsim_ui/viewport_actions`, then apply them through renderer-neutral camera and layout seams. Filament renders the active one or four pane views from the public layout provider, with active-pane camera input, cursor-pane picking/dragging, active-pane debug labels, visible pane labels, active-pane status, and click-to-activate pane switching using the same pane geometry | Add richer per-pane interaction polish after the first four-view slice                                     |
 | Visibility filters       | Show/hide links, joints, collisions, sensors, and frames                                                                                             | Per-object `visible` is undoable, wired into the outliner, and honored through hidden ancestors; view-only layer filters now hide/show rigid bodies, links, and frames without mutating scene visibility, dirty state, or undo history                                                                                                                                                                                                                                                                                                                                                               | Add collision/sensor/joint filters after those object/render layers exist                                  |
-| Console automation       | Text commands for create/delete/select/save/load/simulation controls and debug messages                                                              | `dartsim_ui/console_actions` now tokenizes quoted commands and dispatches project lifecycle, Create menu, selection, visibility, rename/delete, Edit/Simulation mode, record, replay, and watch/unwatch commands through the same tested action seams used by the panels                                                                                                                                                                                                                                                                                                                             | Add relationship-specific commands after the command vocabulary stabilizes                                 |
+| Console automation       | Text commands for create/delete/select/save/load/simulation controls and debug messages                                                              | `dartsim_ui/console_actions` now tokenizes quoted commands and dispatches project lifecycle, Create menu, selection, visibility, rename/delete, relationship edits, Edit/Simulation mode, record, replay, and watch/unwatch commands through the same tested action seams used by the panels                                                                                                                                                                                                                                                                                                         | Add richer inspection/query commands after the command vocabulary stabilizes                               |
 
 ## Specialized Review Findings
 
@@ -150,9 +151,9 @@ persist their workspace through a tested, backend-hidden GUI.
 - Console automation now uses `dartsim_ui/console_actions` instead of direct
   `editor.cpp` mutation. The seam parses quoted arguments, reports stable
   usage errors, resolves object targets by id/name/selection, and routes
-  project, create, select, visibility, rename/delete, simulation mode,
-  recording, replay, and watch commands through the same headless action
-  helpers as the menu and panel UI.
+  project, create, select, visibility, rename/delete, relationship edit,
+  simulation mode, recording, replay, and watch commands through the same
+  headless action helpers as the menu and panel UI.
 - Watch values and chart samples now use `dartsim_ui/watch_actions` instead of
   direct panel state. The seam keeps watched objects session-local, preserves
   missing objects until the user removes them, records bounded global

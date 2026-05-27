@@ -36,6 +36,7 @@
 #include <dartsim_ui/outliner_actions.hpp>
 #include <dartsim_ui/palette_actions.hpp>
 #include <dartsim_ui/project_actions.hpp>
+#include <dartsim_ui/relationship_actions.hpp>
 #include <dartsim_ui/simulation_actions.hpp>
 #include <dartsim_ui/watch_actions.hpp>
 
@@ -437,6 +438,32 @@ ConsoleCommandResult applySimulationCommand(
   return result(applied.ok, applied.message);
 }
 
+ConsoleCommandResult applyRelationshipCommand(
+    SimEngine& engine, std::span<const std::string> tokens)
+{
+  const std::string command = lower(tokens[0]);
+  if (tokens.size() != 1) {
+    return result(false, "Usage: " + command);
+  }
+
+  RelationshipActionKind kind = RelationshipActionKind::AttachSelectedToPrimary;
+  if (command == "attach") {
+    kind = RelationshipActionKind::AttachSelectedToPrimary;
+  } else if (command == "detach") {
+    kind = RelationshipActionKind::DetachPrimaryToWorld;
+  } else if (command == "reparent-link") {
+    kind = RelationshipActionKind::ReparentSelectedLinkToPrimary;
+  } else if (command == "make-root") {
+    kind = RelationshipActionKind::MakePrimaryLinkRoot;
+  } else {
+    return result(false, "Unknown relationship command");
+  }
+
+  const RelationshipActionResult applied
+      = applyRelationshipAction(engine, kind);
+  return result(applied.ok, applied.message);
+}
+
 ConsoleCommandResult applyWatchCommand(
     SimEngine& engine, WatchState* watch, std::span<const std::string> tokens)
 {
@@ -589,8 +616,9 @@ std::string consoleCommandHelpText(bool watchCommandsAvailable)
   return "Commands: help, status, new [--discard], open <path> [--discard], "
          "save [path], create <kind>, select <id|name>, select-add "
          "<id|name>, deselect <id|name>, clear-selection, rename <name>, "
-         "delete, show [target], hide [target], mode <edit|simulation>, play, "
-         "pause, step [count], reset, record <on|off>, replay <frame>"
+         "delete, attach, detach, reparent-link, make-root, show [target], "
+         "hide [target], mode <edit|simulation>, play, pause, step [count], "
+         "reset, record <on|off>, replay <frame>"
          + std::string(
              watchCommandsAvailable
                  ? ", watch [target|selection|clear|sample], unwatch <target>"
@@ -659,6 +687,10 @@ ConsoleCommandResult applyConsoleCommandWithWatchState(
   }
   if (command == "delete" || command == "rename") {
     return applyEditCommand(engine, view);
+  }
+  if (command == "attach" || command == "detach" || command == "reparent-link"
+      || command == "make-root") {
+    return applyRelationshipCommand(engine, view);
   }
   if (command == "mode" || command == "play" || command == "pause"
       || command == "step" || command == "reset" || command == "record"

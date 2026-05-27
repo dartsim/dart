@@ -53,8 +53,8 @@ with disabled reasons instead of ambiguous transport-only buttons.
 Console automation is now routed through `dartsim_ui/console_actions`: the
 Console panel has a command input, quoted-argument parser, help/status text,
 and tested project, create, selection, visibility, rename/delete, simulation
-mode, recording, replay, and watch command dispatch over the existing action
-seams.
+mode, relationship edit, recording, replay, and watch command dispatch over the
+existing action seams.
 Watch values and chart samples are now routed through
 `dartsim_ui/watch_actions`: the Watch panel can add the current selection,
 remove or clear watched objects, display transform/mass/joint values, preserve
@@ -130,8 +130,8 @@ into `editor.cpp`, and keep the filtered coverage line total above 95%.
   object names in their labels.
 - Console behavior is now covered through `dartsim_ui/console_actions` and
   `UNIT_dartsim_ui_ConsoleActions`; commands reuse project, palette, outliner,
-  inspector, simulation, and watch action seams, so command automation stays
-  backend-hidden and testable.
+  inspector, relationship, simulation, and watch action seams, so command
+  automation stays backend-hidden and testable.
 - Watch behavior is now covered through `dartsim_ui/watch_actions` and
   `UNIT_dartsim_ui_WatchActions`; sampling reads simulation/object values into
   session-local chart buffers and must remain view-only.
