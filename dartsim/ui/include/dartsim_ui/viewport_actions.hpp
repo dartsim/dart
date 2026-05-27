@@ -171,6 +171,18 @@ struct ViewportCameraControlActionResult
   std::string message;
 };
 
+/// Compact viewport status for panels and diagnostics.
+struct ViewportStatus
+{
+  std::string layoutLabel;
+  std::string activePaneLabel;
+  std::string cameraModeLabel;
+  std::string cameraLockLabel;
+  std::string trackingLabel;
+  std::string visibleLayerLabel;
+  std::string selectionLabel;
+};
+
 /// Viewport layout mode. Quad layout is editor state, not scene data.
 enum class ViewportLayoutKind
 {
@@ -329,6 +341,11 @@ applyViewportCameraControlAction(
     const ViewportLayerFilterState& filters,
     ViewportCameraControlState& controls,
     ViewportCameraControlActionKind kind);
+[[nodiscard]] ViewportStatus buildViewportStatus(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportCameraControlState& controls,
+    const ViewportLayoutState& layout);
 
 /// Convert editor viewport camera controls to the generic GUI input seam.
 [[nodiscard]] dart::gui::OrbitCameraControlOptions viewportCameraControlOptions(

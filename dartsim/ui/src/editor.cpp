@@ -749,6 +749,42 @@ void buildWatchPanel(dart::gui::PanelBuilder& ui, EditorApp& app)
   }
 }
 
+std::string cameraControlMenuLabel(const ViewportCameraControlAction& action);
+void buildViewportLayerFilterMenu(dart::gui::PanelBuilder& ui, EditorApp& app);
+
+void buildViewportPanel(dart::gui::PanelBuilder& ui, EditorApp& app)
+{
+  const ViewportStatus status = buildViewportStatus(
+      app.engine, app.viewportLayers, app.viewportCamera, app.viewportLayout);
+  ui.text(status.layoutLabel);
+  ui.text(status.activePaneLabel);
+  ui.text(status.cameraModeLabel);
+  ui.text(status.cameraLockLabel);
+  ui.text(status.trackingLabel);
+  ui.text(status.visibleLayerLabel);
+  ui.text(status.selectionLabel);
+
+  ui.separator();
+  const std::vector<ViewportCameraControlAction> cameraActions
+      = buildViewportCameraControlActions(
+          app.engine, app.viewportLayers, app.viewportCamera);
+  for (const ViewportCameraControlAction& action : cameraActions) {
+    if (!action.enabled) {
+      ui.text(cameraControlMenuLabel(action));
+      continue;
+    }
+    if (ui.button(cameraControlMenuLabel(action))) {
+      app.note(
+          applyViewportCameraControlAction(
+              app.engine, app.viewportLayers, app.viewportCamera, action.kind)
+              .message);
+    }
+  }
+
+  ui.separator();
+  buildViewportLayerFilterMenu(ui, app);
+}
+
 void advanceRunningSimulation(EditorApp& app)
 {
   SimulationController& sim = app.engine.simulation();
@@ -1430,6 +1466,13 @@ int runEditor(int argc, char* argv[])
       {280.0, 220.0},
       dart::gui::DockSide::Bottom,
       [app](dart::gui::PanelBuilder& ui) { buildSimControls(ui, *app); }));
+  options.panels.push_back(makePanel(
+      "Viewport",
+      false,
+      {300.0, 400.0},
+      {280.0, 220.0},
+      dart::gui::DockSide::Bottom,
+      [app](dart::gui::PanelBuilder& ui) { buildViewportPanel(ui, *app); }));
   options.panels.push_back(makePanel(
       "Watch",
       false,

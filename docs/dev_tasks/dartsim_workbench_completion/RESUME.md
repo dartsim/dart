@@ -85,6 +85,10 @@ Camera lock now shares that same view-only camera-control seam: the View menu
 toggles a locked state, `dart::gui::OrbitCameraControlOptions` suppresses
 mouse/scroll camera input while locked, and selected-object tracking does not
 move the camera until the lock is released.
+The Viewport panel now surfaces the same editor-owned view state through
+`ViewportStatus`: layout, active pane, camera mode/lock, tracking, visible
+layers, and filtered selection labels are built in `dartsim_ui/viewport_actions`
+and displayed next to the existing camera-control and layer-filter actions.
 Viewport layout actions now have tested single-view/four-view state and active
 pane selection. The View menu exposes the four-view layout, the editor converts
 `ViewportLayoutState` into public `dart::gui::ViewportLayoutOptions`, and
@@ -102,12 +106,11 @@ updated active-pane camera through the existing renderer-neutral camera setter.
 
 ## Immediate Next Step
 
-Continue Phase 5 with richer camera status affordances or future
-collision/sensor/joint layer filters after those render layers exist, or
-continue Phase 4 by adding saved watch presets after scene metadata can store UI
-workspace settings. Keep behavior in testable engine or UI action/view-model
-helpers before wiring it into `editor.cpp`, and keep the filtered coverage line
-total above 95%.
+Continue Phase 5 with future collision/sensor/joint layer filters after those
+render layers exist, or continue Phase 4 by adding saved watch presets after
+scene metadata can store UI workspace settings. Keep behavior in testable
+engine or UI action/view-model helpers before wiring it into `editor.cpp`, and
+keep the filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -172,8 +175,9 @@ total above 95%.
   `UNIT_dartsim_ui_ViewportActions` and `UNIT_gui_FilamentSceneExtraction`;
   Orbit/Pan/Zoom mouse mode state, selection-tracking enable/disable paths,
   camera-lock toggles, locked tracking suppression, hidden-selection rejection,
-  generic camera input zoom dragging, and `ApplicationOptions` camera callbacks
-  are tested without renderer backend leakage into `dartsim/ui`.
+  Viewport panel status labels, generic camera input zoom dragging, and
+  `ApplicationOptions` camera callbacks are tested without renderer backend
+  leakage into `dartsim/ui`.
 - Viewport layout behavior is covered through
   `UNIT_dartsim_ui_ViewportActions` and `UNIT_gui_FilamentSceneExtraction`;
   single/four-view mode state, active perspective/front/right/top panes, pane

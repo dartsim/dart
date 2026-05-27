@@ -469,6 +469,38 @@ std::string viewportPaneLabel(ViewportPaneKind pane)
   return "Viewport Pane";
 }
 
+std::string viewportLayoutLabel(ViewportLayoutKind layout)
+{
+  switch (layout) {
+    case ViewportLayoutKind::Single:
+      return "Single View";
+    case ViewportLayoutKind::Quad:
+      return "Four View Layout";
+  }
+  return "Viewport Layout";
+}
+
+std::string visibleLayerSummary(const ViewportLayerFilterState& filters)
+{
+  std::string summary;
+  const auto appendLayer = [&summary](std::string label) {
+    if (!summary.empty()) {
+      summary += ", ";
+    }
+    summary += std::move(label);
+  };
+  if (filters.rigidBodies) {
+    appendLayer(layerLabel(ViewportLayerKind::RigidBodies));
+  }
+  if (filters.links) {
+    appendLayer(layerLabel(ViewportLayerKind::Links));
+  }
+  if (filters.frames) {
+    appendLayer(layerLabel(ViewportLayerKind::Frames));
+  }
+  return summary.empty() ? "none" : summary;
+}
+
 std::optional<ViewportPaneKind> viewportPaneForLayoutAction(
     ViewportLayoutActionKind kind)
 {
@@ -1005,6 +1037,31 @@ ViewportCameraControlActionResult applyViewportCameraControlAction(
   }
 
   return {false, "Unknown camera control"};
+}
+
+ViewportStatus buildViewportStatus(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportCameraControlState& controls,
+    const ViewportLayoutState& layout)
+{
+  ViewportStatus status;
+  status.layoutLabel = "Layout: " + viewportLayoutLabel(layout.layout);
+  status.activePaneLabel
+      = "Active pane: " + viewportPaneLabel(layout.activePane);
+  status.cameraModeLabel = cameraMouseModeLabel(controls.mouseMode);
+  status.cameraLockLabel
+      = controls.lockCamera ? "Camera: locked" : "Camera: unlocked";
+  if (controls.lockCamera && controls.trackSelection) {
+    status.trackingLabel = "Selection tracking: paused";
+  } else {
+    status.trackingLabel = controls.trackSelection ? "Selection tracking: on"
+                                                   : "Selection tracking: off";
+  }
+  status.visibleLayerLabel = "Visible layers: " + visibleLayerSummary(filters);
+  status.selectionLabel
+      = "Selection: " + selectedViewportLabel(engine, filters);
+  return status;
 }
 
 dart::gui::OrbitCameraControlOptions viewportCameraControlOptions(

@@ -5271,6 +5271,40 @@ TEST(FilamentSceneExtraction, DartsimViewportCameraUsesActionSeam)
   EXPECT_NE(
       editorSource.find("buildViewportLayerFilterActions(app.viewportLayers)"),
       std::string::npos);
+  EXPECT_NE(editorSource.find("buildViewportStatus("), std::string::npos);
+  EXPECT_NE(editorSource.find("buildViewportPanel("), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.layoutLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.activePaneLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.cameraModeLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.cameraLockLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.trackingLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.visibleLayerLabel)"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("ui.text(status.selectionLabel)"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "if (!action.enabled) {\n      "
+          "ui.text(cameraControlMenuLabel(action));"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find("if (ui.button(cameraControlMenuLabel(action)))"),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "options.panels.push_back(makePanel(\n      \"Viewport\""),
+      std::string::npos);
+  EXPECT_NE(
+      editorSource.find(
+          "[app](dart::gui::PanelBuilder& ui) { buildViewportPanel(ui, *app); "
+          "}"),
+      std::string::npos);
   EXPECT_NE(
       editorSource.find(
           "setViewportLayerVisible(app.viewportLayers, action.kind, checked)"),

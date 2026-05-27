@@ -1462,3 +1462,62 @@ TEST(DartsimViewportActions, CameraLockSuppressesSelectionTracking)
   EXPECT_FALSE(engine.commands().canUndo());
   EXPECT_FALSE(engine.isProjectDirty());
 }
+
+TEST(DartsimViewportActions, ViewportStatusSummarizesViewOnlyState)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Links, false)
+          .ok);
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Frames, false)
+          .ok);
+
+  ui::ViewportCameraControlState controls;
+  controls.mouseMode = dart::gui::OrbitCameraMouseMode::Pan;
+  controls.trackSelection = true;
+  controls.lockCamera = true;
+
+  ui::ViewportLayoutState layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::ActivateTopPane)
+          .ok);
+
+  const ui::ViewportStatus status
+      = ui::buildViewportStatus(engine, filters, controls, layout);
+  EXPECT_EQ(status.layoutLabel, "Layout: Four View Layout");
+  EXPECT_EQ(status.activePaneLabel, "Active pane: Top Pane");
+  EXPECT_EQ(status.cameraModeLabel, "Pan Camera Mode");
+  EXPECT_EQ(status.cameraLockLabel, "Camera: locked");
+  EXPECT_EQ(status.trackingLabel, "Selection tracking: paused");
+  EXPECT_EQ(status.visibleLayerLabel, "Visible layers: Rigid Bodies");
+  EXPECT_EQ(status.selectionLabel, "Selection: box [RigidBody]");
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  controls.lockCamera = false;
+  const ui::ViewportStatus hidden
+      = ui::buildViewportStatus(engine, filters, controls, layout);
+  EXPECT_EQ(hidden.cameraLockLabel, "Camera: unlocked");
+  EXPECT_EQ(hidden.trackingLabel, "Selection tracking: on");
+  EXPECT_EQ(hidden.visibleLayerLabel, "Visible layers: none");
+  EXPECT_EQ(hidden.selectionLabel, "Selection: none");
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
