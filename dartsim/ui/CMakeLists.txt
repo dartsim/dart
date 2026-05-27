@@ -29,6 +29,7 @@ add_library(${target_name} STATIC
   src/project_file_dialog.cpp
   src/relationship_actions.cpp
   src/simulation_actions.cpp
+  src/watch_actions.cpp
   src/viewport_actions.cpp
 )
 

@@ -34,6 +34,9 @@ target_link_libraries(UNIT_dartsim_ui_ViewportActions dartsim_ui)
 dart_add_test("unit" UNIT_dartsim_ui_SimulationActions test_simulation_actions.cpp)
 target_link_libraries(UNIT_dartsim_ui_SimulationActions dartsim_ui)
 
+dart_add_test("unit" UNIT_dartsim_ui_WatchActions test_watch_actions.cpp)
+target_link_libraries(UNIT_dartsim_ui_WatchActions dartsim_ui)
+
 if(NOT APPLE AND TARGET dart-simulation-experimental)
   if(WIN32)
     set(_dartsim_ui_path_var "PATH")
@@ -50,6 +53,7 @@ if(NOT APPLE AND TARGET dart-simulation-experimental)
       UNIT_dartsim_ui_RelationshipActions
       UNIT_dartsim_ui_ViewportActions
       UNIT_dartsim_ui_SimulationActions
+      UNIT_dartsim_ui_WatchActions
   )
     if(TEST ${_dartsim_ui_test})
       set_property(TEST ${_dartsim_ui_test} APPEND PROPERTY

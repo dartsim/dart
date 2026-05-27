@@ -46,6 +46,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace dartsim {
 
@@ -176,6 +177,10 @@ public:
   {
     return !m_projectPath.empty();
   }
+  [[nodiscard]] std::uint64_t projectGeneration() const
+  {
+    return m_projectGeneration;
+  }
 
   /// Replace the current project with a fresh empty scene.
   void newProject();
@@ -219,6 +224,7 @@ private:
   SceneModel m_cleanProjectModel;
   std::size_t m_cleanHistoryIndex = 0;
   CommandManager::HistoryRevision m_cleanHistoryRevision = 0;
+  std::uint64_t m_projectGeneration = 1;
 };
 
 } // namespace dartsim

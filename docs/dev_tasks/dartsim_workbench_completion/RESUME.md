@@ -54,6 +54,11 @@ Console automation is now routed through `dartsim_ui/console_actions`: the
 Console panel has a command input, quoted-argument parser, help/status text,
 and tested project, create, selection, visibility, rename/delete, simulation
 mode, recording, and replay command dispatch over the existing action seams.
+Watch values and chart samples are now routed through
+`dartsim_ui/watch_actions`: the Watch panel can add the current selection,
+remove or clear watched objects, display transform/mass/joint values, preserve
+missing watched objects until removal, and plot bounded simulation/object
+series through `PanelBuilder::plotLines`.
 File > Open Project now opens the in-app browser/manual path modal first.
 Browse still invokes the native file dialog from inside the modal, and native
 dialog failures or invalid selected paths leave the user in the modal instead
@@ -84,10 +89,10 @@ click-to-activate pane switching, and tiny-framebuffer fallback to single pane.
 ## Immediate Next Step
 
 Continue Phase 5 by adding richer per-pane interaction polish for the four-view
-layout, or add the next Phase 1 lifecycle status/event polish only if it can be
-kept in `dartsim_ui/project_actions`. Keep behavior in testable engine or UI
-action/view-model helpers before wiring it into `editor.cpp`, and keep the
-filtered coverage line total above 95%.
+layout, or continue Phase 4 by adding richer watch signal choices and console
+commands that reuse `dartsim_ui/watch_actions`. Keep behavior in testable engine
+or UI action/view-model helpers before wiring it into `editor.cpp`, and keep
+the filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -125,6 +130,9 @@ filtered coverage line total above 95%.
   `UNIT_dartsim_ui_ConsoleActions`; commands reuse project, palette, outliner,
   inspector, and simulation action seams, so command automation stays
   backend-hidden and testable.
+- Watch behavior is now covered through `dartsim_ui/watch_actions` and
+  `UNIT_dartsim_ui_WatchActions`; sampling reads simulation/object values into
+  session-local chart buffers and must remain view-only.
 - Project open remains usable without a working native picker: the File menu
   opens the in-app browser/manual path modal first. Browse reports native picker
   failures in-place, and `openProject()` accepts extensionless paths when the

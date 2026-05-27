@@ -54,6 +54,7 @@
 #include <dartsim_ui/relationship_actions.hpp>
 #include <dartsim_ui/simulation_actions.hpp>
 #include <dartsim_ui/viewport_actions.hpp>
+#include <dartsim_ui/watch_actions.hpp>
 
 #include <algorithm>
 #include <array>
@@ -61,6 +62,7 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -86,6 +88,7 @@ struct EditorApp
   ViewportLayoutState viewportLayout;
   ViewportTransformGizmo transformGizmo = makeViewportTransformGizmo();
   RecentProjectState recentProjects;
+  WatchState watch;
   ProjectReplacementPromptState projectReplacementPrompt;
   bool projectReplacementModalRequested = false;
   ProjectFileDialogKind projectPathKind = ProjectFileDialogKind::Open;
@@ -682,6 +685,51 @@ void buildSimControls(dart::gui::PanelBuilder& ui, EditorApp& app)
   }
 }
 
+void buildWatchPanel(dart::gui::PanelBuilder& ui, EditorApp& app)
+{
+  if (ui.button("Watch Selection")) {
+    app.note(watchSelectedObjects(app.watch, app.engine).message);
+  }
+  ui.sameLine();
+  if (ui.button("Clear Watch")) {
+    app.note(clearWatch(app.watch).message);
+  }
+
+  const WatchStatus status = buildWatchStatus(app.watch, app.engine);
+  ui.text(status.summary);
+  if (status.rows.empty()) {
+    ui.text("(no watched objects)");
+  }
+  for (const WatchRow& row : status.rows) {
+    ui.separator();
+    std::string label = row.name + " - " + row.type;
+    if (row.selected) {
+      label += " - selected";
+    }
+    ui.text(label);
+    if (ui.button("Remove##watch-" + std::to_string(row.id))) {
+      app.note(unwatchObject(app.watch, row.id).message);
+      continue;
+    }
+    if (!row.exists) {
+      ui.text("missing");
+      continue;
+    }
+    for (const WatchValue& value : row.values) {
+      ui.text(value.label + ": " + std::to_string(value.value));
+    }
+  }
+
+  ui.separator();
+  if (status.series.empty()) {
+    ui.text("(no chart samples)");
+    return;
+  }
+  for (const WatchChartSeries& series : status.series) {
+    ui.plotLines(series.label, series.samples);
+  }
+}
+
 void advanceRunningSimulation(EditorApp& app)
 {
   SimulationController& sim = app.engine.simulation();
@@ -1196,6 +1244,9 @@ int runEditor(int argc, char* argv[])
 
   auto app = std::make_shared<EditorApp>();
   seedDemoScene(*app);
+  app->engine.events().subscribe([watch = &app->watch](const Event& event) {
+    handleWatchEvent(*watch, event);
+  });
 
   dart::gui::ApplicationOptions options;
   // Empty legacy world as a render canvas; the experimental engine owns the
@@ -1284,6 +1335,7 @@ int runEditor(int argc, char* argv[])
     syncViewportTransformGizmo(
         app->transformGizmo, app->engine, app->viewportLayers);
     advanceRunningSimulation(*app);
+    recordWatchSample(app->watch, app->engine);
   };
 
   if (dart::gui::isDockingAvailable()) {
@@ -1330,6 +1382,13 @@ int runEditor(int argc, char* argv[])
       {280.0, 220.0},
       dart::gui::DockSide::Bottom,
       [app](dart::gui::PanelBuilder& ui) { buildSimControls(ui, *app); }));
+  options.panels.push_back(makePanel(
+      "Watch",
+      false,
+      {1000.0, 400.0},
+      {280.0, 220.0},
+      dart::gui::DockSide::Right,
+      [app](dart::gui::PanelBuilder& ui) { buildWatchPanel(ui, *app); }));
   options.panels.push_back(makePanel(
       "Console",
       false,

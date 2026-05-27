@@ -223,6 +223,7 @@ void SimEngine::resetRuntimeStateForProjectReplacement()
   const bool hadSelection = !m_selection.empty();
   m_selection.clear();
   m_commands.clearHistory();
+  ++m_projectGeneration;
   captureCleanProjectModel();
   if (hadSelection) {
     m_events.emit(EventType::SelectionChanged);
