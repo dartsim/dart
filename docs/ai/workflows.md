@@ -49,7 +49,7 @@ all workflows must remain usable from public docs and `pixi run ...` commands.
 | `dart-contribute` | `$dart-contribute` | `docs/onboarding/contributing.md`, `CONTRIBUTING.md`                   |
 | `dart-io`         | `$dart-io`         | `docs/onboarding/io-parsing.md`                                        |
 | `dart-python`     | `$dart-python`     | `docs/onboarding/python-bindings.md`                                   |
-| `dart-references` | `$dart-references` | `docs/design/simulation_experimental_references.md`                    |
+| `dart-references` | `$dart-references` | `docs/readthedocs/papers.md`                                           |
 | `dart-test`       | `$dart-test`       | `docs/onboarding/testing.md`, `pixi run test-unit`, `pixi run test-py` |
 
 ## Expected Routing Scenarios

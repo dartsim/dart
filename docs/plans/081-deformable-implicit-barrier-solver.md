@@ -25,7 +25,7 @@
   [`../design/simulation_experimental_cpp_api.md`](../design/simulation_experimental_cpp_api.md),
   [`../design/simulation_experimental_python_api.md`](../design/simulation_experimental_python_api.md)
 - Research references:
-  [`../design/simulation_experimental_references.md`](../design/simulation_experimental_references.md)
+  [`../readthedocs/papers.md`](../readthedocs/papers.md)
 - IPC paper/repository gap audit:
   [`081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md`](081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md)
   owns the next-session checklist for paper sections, Algorithm 1 phases,
