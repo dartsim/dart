@@ -292,6 +292,11 @@ buildViewportLayerFilterActions(const ViewportLayerFilterState& filters);
     const SimEngine& engine);
 [[nodiscard]] std::vector<ViewportCameraAction> buildViewportCameraActions(
     const SimEngine& engine, const ViewportLayerFilterState& filters);
+[[nodiscard]] std::vector<ViewportCameraAction>
+buildViewportAllPaneCameraActions(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportLayoutState& state);
 
 /// Compute the camera requested by a workflow command.
 [[nodiscard]] ViewportCameraActionResult applyViewportCameraAction(
@@ -303,6 +308,12 @@ buildViewportLayerFilterActions(const ViewportLayerFilterState& filters);
     const dart::gui::OrbitCamera& currentCamera,
     ViewportCameraActionKind kind,
     const ViewportLayerFilterState& filters);
+[[nodiscard]] ViewportCameraActionResult applyViewportCameraActionToAllPanes(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    ViewportCameraActionKind kind,
+    const ViewportLayerFilterState& filters,
+    ViewportLayoutState& state);
 
 /// Build and apply camera mouse-mode and selection-tracking actions.
 [[nodiscard]] std::vector<ViewportCameraControlAction>

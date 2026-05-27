@@ -827,8 +827,28 @@ void applyViewportCameraMenuAction(
     dart::gui::PanelContext& context,
     ViewportCameraActionKind kind)
 {
+  rememberViewportActivePaneCamera(app.viewportLayout, context.camera.orbit);
   const ViewportCameraActionResult result = applyViewportCameraAction(
       app.engine, context.camera.orbit, kind, app.viewportLayers);
+  app.note(result.message);
+  if (result.ok && result.camera.has_value() && context.camera.setOrbitCamera) {
+    context.camera.setOrbitCamera(*result.camera);
+    rememberViewportActivePaneCamera(app.viewportLayout, *result.camera);
+  }
+}
+
+void applyViewportAllPaneCameraMenuAction(
+    EditorApp& app,
+    dart::gui::PanelContext& context,
+    ViewportCameraActionKind kind)
+{
+  rememberViewportActivePaneCamera(app.viewportLayout, context.camera.orbit);
+  const ViewportCameraActionResult result = applyViewportCameraActionToAllPanes(
+      app.engine,
+      context.camera.orbit,
+      kind,
+      app.viewportLayers,
+      app.viewportLayout);
   app.note(result.message);
   if (result.ok && result.camera.has_value() && context.camera.setOrbitCamera) {
     context.camera.setOrbitCamera(*result.camera);
@@ -1043,6 +1063,17 @@ void buildMenuBar(
       }
       if (ui.menuItem(label) && action.enabled) {
         applyViewportCameraMenuAction(app, context, action.kind);
+      }
+    }
+    ui.separator();
+    for (const ViewportCameraAction& action : buildViewportAllPaneCameraActions(
+             app.engine, app.viewportLayers, app.viewportLayout)) {
+      std::string label = action.label;
+      if (!action.enabled && !action.disabledReason.empty()) {
+        label += " (" + action.disabledReason + ")";
+      }
+      if (ui.menuItem(label) && action.enabled) {
+        applyViewportAllPaneCameraMenuAction(app, context, action.kind);
       }
     }
     ui.separator();

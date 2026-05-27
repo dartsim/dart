@@ -54,6 +54,12 @@ constexpr double kPi = 3.141592653589793238462643383279502884;
 constexpr double kMinCameraDistance = 0.8;
 constexpr double kMaxCameraDistance = 80.0;
 constexpr double kDefaultSceneRadius = 1.0;
+constexpr std::array<ViewportPaneKind, dart::gui::kMaxViewportPanes>
+    kLayoutPanes{
+        ViewportPaneKind::Perspective,
+        ViewportPaneKind::Top,
+        ViewportPaneKind::Front,
+        ViewportPaneKind::Right};
 
 bool isTransformable(ObjectType type)
 {
@@ -793,6 +799,51 @@ std::vector<ViewportCameraAction> buildViewportCameraActions(
   };
 }
 
+std::vector<ViewportCameraAction> buildViewportAllPaneCameraActions(
+    const SimEngine& engine,
+    const ViewportLayerFilterState& filters,
+    const ViewportLayoutState& state)
+{
+  const bool quad = state.layout == ViewportLayoutKind::Quad;
+  const std::vector<ViewportCameraAction> cameraActions
+      = buildViewportCameraActions(engine, filters);
+  const auto findAction
+      = [&cameraActions](
+            ViewportCameraActionKind kind) -> const ViewportCameraAction* {
+    const auto action = std::find_if(
+        cameraActions.begin(),
+        cameraActions.end(),
+        [kind](const ViewportCameraAction& candidate) {
+          return candidate.kind == kind;
+        });
+    return action == cameraActions.end() ? nullptr : &*action;
+  };
+  const auto makeAllPaneAction
+      = [quad, findAction](ViewportCameraActionKind kind, std::string label) {
+          if (!quad) {
+            return makeCameraAction(
+                kind, std::move(label), false, "Enable Four View Layout");
+          }
+          const ViewportCameraAction* source = findAction(kind);
+          if (source == nullptr) {
+            return makeCameraAction(
+                kind, std::move(label), false, "Unknown camera action");
+          }
+          if (!source->enabled) {
+            return makeCameraAction(
+                kind, std::move(label), false, source->disabledReason);
+          }
+          return makeCameraAction(kind, std::move(label));
+        };
+
+  return {
+      makeAllPaneAction(ViewportCameraActionKind::FitScene, "Fit All Panes"),
+      makeAllPaneAction(
+          ViewportCameraActionKind::FocusSelection,
+          "Focus Selection in All Panes"),
+  };
+}
+
 ViewportCameraActionResult applyViewportCameraAction(
     const SimEngine& engine,
     const dart::gui::OrbitCamera& currentCamera,
@@ -845,6 +896,49 @@ ViewportCameraActionResult applyViewportCameraAction(
   }
 
   return {false, "Unknown camera action", std::nullopt};
+}
+
+ViewportCameraActionResult applyViewportCameraActionToAllPanes(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    ViewportCameraActionKind kind,
+    const ViewportLayerFilterState& filters,
+    ViewportLayoutState& state)
+{
+  if (state.layout != ViewportLayoutKind::Quad) {
+    return {false, "Enable Four View Layout", std::nullopt};
+  }
+  if (kind != ViewportCameraActionKind::FitScene
+      && kind != ViewportCameraActionKind::FocusSelection) {
+    return {false, "Unsupported all-pane camera action", std::nullopt};
+  }
+
+  ViewportPaneCameraSlots updated = state.paneCameras;
+  for (const ViewportPaneKind pane : kLayoutPanes) {
+    const dart::gui::OrbitCamera paneCamera = cameraForViewportPane(
+        engine, currentCamera, filters, state, pane, true);
+    const ViewportCameraActionResult result
+        = applyViewportCameraAction(engine, paneCamera, kind, filters);
+    if (!result.ok || !result.camera.has_value()) {
+      return result;
+    }
+
+    const std::size_t slot = viewportPaneCameraSlot(pane);
+    if (slot < updated.size()) {
+      updated[slot] = *result.camera;
+    }
+  }
+
+  state.paneCameras = std::move(updated);
+  const std::optional<dart::gui::OrbitCamera> active
+      = storedViewportPaneCamera(state, state.activePane);
+  if (!active.has_value()) {
+    return {false, "Unknown viewport pane", std::nullopt};
+  }
+  if (kind == ViewportCameraActionKind::FitScene) {
+    return {true, "Fit all viewport panes", *active};
+  }
+  return {true, "Focused selection in all viewport panes", *active};
 }
 
 std::vector<ViewportCameraControlAction> buildViewportCameraControlActions(
@@ -1070,22 +1164,18 @@ dart::gui::ViewportLayoutOptions viewportLayoutOptions(
     const ViewportLayerFilterState& filters,
     const ViewportLayoutState& state)
 {
-  const std::array<ViewportPaneKind, dart::gui::kMaxViewportPanes> panes{
-      ViewportPaneKind::Perspective,
-      ViewportPaneKind::Top,
-      ViewportPaneKind::Front,
-      ViewportPaneKind::Right};
   dart::gui::ViewportLayoutOptions options;
   options.mode = state.layout == ViewportLayoutKind::Quad
                      ? dart::gui::ViewportLayoutMode::Quad
                      : dart::gui::ViewportLayoutMode::Single;
-  options.paneCount
-      = options.mode == dart::gui::ViewportLayoutMode::Quad ? panes.size() : 1u;
+  options.paneCount = options.mode == dart::gui::ViewportLayoutMode::Quad
+                          ? kLayoutPanes.size()
+                          : 1u;
 
   for (std::size_t i = 0; i < options.paneCount; ++i) {
     const ViewportPaneKind pane
         = options.mode == dart::gui::ViewportLayoutMode::Quad
-              ? panes[i]
+              ? kLayoutPanes[i]
               : state.activePane;
     options.panes[i].active = pane == state.activePane;
     switch (pane) {

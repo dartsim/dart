@@ -93,6 +93,76 @@ void expectCameraNear(
   EXPECT_EQ(actual.distance, expected.distance);
 }
 
+struct PaneCameraCase
+{
+  ui::ViewportPaneKind uiPane = ui::ViewportPaneKind::Perspective;
+  ui::ViewportLayoutActionKind action
+      = ui::ViewportLayoutActionKind::ActivatePerspectivePane;
+  dart::gui::ViewportPaneKind guiPane
+      = dart::gui::ViewportPaneKind::Perspective;
+  dart::gui::OrbitCamera camera;
+};
+
+std::array<PaneCameraCase, 4> makePaneCameraCases()
+{
+  std::array<PaneCameraCase, 4> cases{
+      PaneCameraCase{
+          ui::ViewportPaneKind::Perspective,
+          ui::ViewportLayoutActionKind::ActivatePerspectivePane,
+          dart::gui::ViewportPaneKind::Perspective,
+          testCamera()},
+      PaneCameraCase{
+          ui::ViewportPaneKind::Top,
+          ui::ViewportLayoutActionKind::ActivateTopPane,
+          dart::gui::ViewportPaneKind::Top,
+          testCamera()},
+      PaneCameraCase{
+          ui::ViewportPaneKind::Front,
+          ui::ViewportLayoutActionKind::ActivateFrontPane,
+          dart::gui::ViewportPaneKind::Front,
+          testCamera()},
+      PaneCameraCase{
+          ui::ViewportPaneKind::Right,
+          ui::ViewportLayoutActionKind::ActivateRightPane,
+          dart::gui::ViewportPaneKind::Right,
+          testCamera()}};
+  for (std::size_t i = 0; i < cases.size(); ++i) {
+    cases[i].camera.target = Eigen::Vector3d(
+        1.0 + static_cast<double>(i),
+        2.0 + static_cast<double>(i) * 3.0,
+        3.0 + static_cast<double>(i) * 5.0);
+    cases[i].camera.yaw = -0.4 + static_cast<double>(i) * 0.2;
+    cases[i].camera.pitch = -0.2 + static_cast<double>(i) * 0.3;
+    cases[i].camera.distance = 6.0 + static_cast<double>(i);
+  }
+  return cases;
+}
+
+void rememberPaneCameras(
+    ui::ViewportLayoutState& layout, const std::array<PaneCameraCase, 4>& cases)
+{
+  for (const PaneCameraCase& paneCase : cases) {
+    ASSERT_TRUE(ui::applyViewportLayoutAction(layout, paneCase.action).ok);
+    ui::rememberViewportActivePaneCamera(layout, paneCase.camera);
+  }
+}
+
+void expectRememberedPaneCameras(
+    const SimEngine& engine,
+    ui::ViewportLayoutState layout,
+    const ui::ViewportLayerFilterState& filters,
+    const std::array<PaneCameraCase, 4>& cases)
+{
+  for (const PaneCameraCase& paneCase : cases) {
+    ASSERT_TRUE(ui::applyViewportLayoutAction(layout, paneCase.action).ok);
+    const auto activeCamera
+        = ui::activeViewportPaneCamera(engine, testCamera(), filters, layout);
+    ASSERT_TRUE(activeCamera.ok);
+    ASSERT_TRUE(activeCamera.camera.has_value());
+    expectCameraNear(*activeCamera.camera, paneCase.camera);
+  }
+}
+
 } // namespace
 
 TEST(DartsimViewportActions, ViewportMoveDeltaUsesWorldAxesAndFastScale)
@@ -512,6 +582,53 @@ TEST(DartsimViewportActions, BuildsCameraActionsFromVisibleSceneState)
   EXPECT_FALSE(hiddenActions[1].enabled);
 }
 
+TEST(DartsimViewportActions, BuildsAllPaneCameraActionsFromLayoutAndSceneState)
+{
+  SimEngine engine;
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+
+  auto actions = ui::buildViewportAllPaneCameraActions(engine, filters, layout);
+  ASSERT_EQ(actions.size(), 2u);
+  EXPECT_EQ(actions[0].kind, ui::ViewportCameraActionKind::FitScene);
+  EXPECT_EQ(actions[0].label, "Fit All Panes");
+  EXPECT_FALSE(actions[0].enabled);
+  EXPECT_EQ(actions[0].disabledReason, "Enable Four View Layout");
+  EXPECT_EQ(actions[1].kind, ui::ViewportCameraActionKind::FocusSelection);
+  EXPECT_EQ(actions[1].label, "Focus Selection in All Panes");
+  EXPECT_FALSE(actions[1].enabled);
+  EXPECT_EQ(actions[1].disabledReason, "Enable Four View Layout");
+
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  actions = ui::buildViewportAllPaneCameraActions(engine, filters, layout);
+  ASSERT_EQ(actions.size(), 2u);
+  EXPECT_FALSE(actions[0].enabled);
+  EXPECT_EQ(actions[0].disabledReason, "No visible objects");
+  EXPECT_FALSE(actions[1].enabled);
+  EXPECT_EQ(actions[1].disabledReason, "No visible selected object");
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  actions = ui::buildViewportAllPaneCameraActions(engine, filters, layout);
+  ASSERT_EQ(actions.size(), 2u);
+  EXPECT_TRUE(actions[0].enabled);
+  EXPECT_TRUE(actions[1].enabled);
+
+  ASSERT_TRUE(ui::setOutlinerVisibility(engine, box, false));
+  actions = ui::buildViewportAllPaneCameraActions(engine, filters, layout);
+  ASSERT_EQ(actions.size(), 2u);
+  EXPECT_FALSE(actions[0].enabled);
+  EXPECT_EQ(actions[0].disabledReason, "No visible objects");
+  EXPECT_FALSE(actions[1].enabled);
+  EXPECT_EQ(actions[1].disabledReason, "No visible selected object");
+}
+
 TEST(DartsimViewportActions, LayerFiltersAffectCameraActionsWithoutEditingScene)
 {
   SimEngine engine;
@@ -883,52 +1000,10 @@ TEST(DartsimViewportActions, ViewportLayoutRemembersIndependentPaneCameras)
           layout, ui::ViewportLayoutActionKind::QuadView)
           .ok);
 
-  struct PaneCase
-  {
-    ui::ViewportPaneKind uiPane = ui::ViewportPaneKind::Perspective;
-    ui::ViewportLayoutActionKind action
-        = ui::ViewportLayoutActionKind::ActivatePerspectivePane;
-    dart::gui::ViewportPaneKind guiPane
-        = dart::gui::ViewportPaneKind::Perspective;
-    dart::gui::OrbitCamera camera;
-  };
+  const auto cases = makePaneCameraCases();
+  rememberPaneCameras(layout, cases);
 
-  std::array<PaneCase, 4> cases{
-      PaneCase{
-          ui::ViewportPaneKind::Perspective,
-          ui::ViewportLayoutActionKind::ActivatePerspectivePane,
-          dart::gui::ViewportPaneKind::Perspective,
-          testCamera()},
-      PaneCase{
-          ui::ViewportPaneKind::Top,
-          ui::ViewportLayoutActionKind::ActivateTopPane,
-          dart::gui::ViewportPaneKind::Top,
-          testCamera()},
-      PaneCase{
-          ui::ViewportPaneKind::Front,
-          ui::ViewportLayoutActionKind::ActivateFrontPane,
-          dart::gui::ViewportPaneKind::Front,
-          testCamera()},
-      PaneCase{
-          ui::ViewportPaneKind::Right,
-          ui::ViewportLayoutActionKind::ActivateRightPane,
-          dart::gui::ViewportPaneKind::Right,
-          testCamera()}};
-  for (std::size_t i = 0; i < cases.size(); ++i) {
-    auto& paneCase = cases[i];
-    paneCase.camera.target = Eigen::Vector3d(
-        1.0 + static_cast<double>(i),
-        2.0 + static_cast<double>(i) * 3.0,
-        3.0 + static_cast<double>(i) * 5.0);
-    paneCase.camera.yaw = -0.4 + static_cast<double>(i) * 0.2;
-    paneCase.camera.pitch = -0.2 + static_cast<double>(i) * 0.3;
-    paneCase.camera.distance = 6.0 + static_cast<double>(i);
-
-    ASSERT_TRUE(ui::applyViewportLayoutAction(layout, paneCase.action).ok);
-    ui::rememberViewportActivePaneCamera(layout, paneCase.camera);
-  }
-
-  for (const PaneCase& paneCase : cases) {
+  for (const PaneCameraCase& paneCase : cases) {
     ASSERT_TRUE(ui::applyViewportLayoutAction(layout, paneCase.action).ok);
     const auto activeCamera
         = ui::activeViewportPaneCamera(engine, testCamera(), filters, layout);
@@ -939,7 +1014,7 @@ TEST(DartsimViewportActions, ViewportLayoutRemembersIndependentPaneCameras)
     const auto layoutOptions
         = ui::viewportLayoutOptions(engine, paneCase.camera, filters, layout);
     ASSERT_EQ(layoutOptions.paneCount, dart::gui::kMaxViewportPanes);
-    for (const PaneCase& expectedPane : cases) {
+    for (const PaneCameraCase& expectedPane : cases) {
       const auto pane = std::find_if(
           layoutOptions.panes.begin(),
           layoutOptions.panes.begin()
@@ -956,6 +1031,137 @@ TEST(DartsimViewportActions, ViewportLayoutRemembersIndependentPaneCameras)
     }
   }
 
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, AllPaneFitFramesSceneForRememberedPaneCameras)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(-2.0, 0.0, 0.5), "left_box"));
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Sphere, translation(4.0, 2.0, 1.0), "right_sphere"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  auto cases = makePaneCameraCases();
+  rememberPaneCameras(layout, cases);
+
+  const auto result = ui::applyViewportCameraActionToAllPanes(
+      engine,
+      cases.back().camera,
+      ui::ViewportCameraActionKind::FitScene,
+      filters,
+      layout);
+  ASSERT_TRUE(result.ok);
+  ASSERT_TRUE(result.camera.has_value());
+  EXPECT_EQ(result.message, "Fit all viewport panes");
+
+  for (PaneCameraCase& paneCase : cases) {
+    const auto expected = ui::applyViewportCameraAction(
+        engine,
+        paneCase.camera,
+        ui::ViewportCameraActionKind::FitScene,
+        filters);
+    ASSERT_TRUE(expected.ok);
+    ASSERT_TRUE(expected.camera.has_value());
+    paneCase.camera = *expected.camera;
+  }
+  expectRememberedPaneCameras(engine, layout, filters, cases);
+  expectCameraNear(*result.camera, cases.back().camera);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+}
+
+TEST(DartsimViewportActions, AllPaneFocusIsAtomicAndPreservesPaneOrientations)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 0.5), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  const auto originalCases = makePaneCameraCases();
+  rememberPaneCameras(layout, originalCases);
+
+  ui::ViewportLayoutState singleLayout = layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          singleLayout, ui::ViewportLayoutActionKind::SingleView)
+          .ok);
+  const auto singleResult = ui::applyViewportCameraActionToAllPanes(
+      engine,
+      originalCases.back().camera,
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters,
+      singleLayout);
+  EXPECT_FALSE(singleResult.ok);
+  EXPECT_EQ(singleResult.message, "Enable Four View Layout");
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          singleLayout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+  expectRememberedPaneCameras(engine, singleLayout, filters, originalCases);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, false)
+          .ok);
+  const auto hiddenResult = ui::applyViewportCameraActionToAllPanes(
+      engine,
+      originalCases.back().camera,
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters,
+      layout);
+  EXPECT_FALSE(hiddenResult.ok);
+  EXPECT_EQ(hiddenResult.message, "No visible selected object");
+  expectRememberedPaneCameras(engine, layout, filters, originalCases);
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::RigidBodies, true)
+          .ok);
+  auto focusedCases = originalCases;
+  const auto focused = ui::applyViewportCameraActionToAllPanes(
+      engine,
+      focusedCases.back().camera,
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters,
+      layout);
+  ASSERT_TRUE(focused.ok);
+  ASSERT_TRUE(focused.camera.has_value());
+  EXPECT_EQ(focused.message, "Focused selection in all viewport panes");
+
+  for (PaneCameraCase& paneCase : focusedCases) {
+    const auto expected = ui::applyViewportCameraAction(
+        engine,
+        paneCase.camera,
+        ui::ViewportCameraActionKind::FocusSelection,
+        filters);
+    ASSERT_TRUE(expected.ok);
+    ASSERT_TRUE(expected.camera.has_value());
+    paneCase.camera = *expected.camera;
+  }
+  expectRememberedPaneCameras(engine, layout, filters, focusedCases);
+  expectCameraNear(*focused.camera, focusedCases.back().camera);
   EXPECT_FALSE(engine.commands().canUndo());
   EXPECT_FALSE(engine.isProjectDirty());
 }

@@ -90,14 +90,19 @@ viewports, active-pane camera controls, cursor-pane picking/dragging,
 active-pane debug labels, visible pane labels with active-pane status,
 click-to-activate pane switching, editor-owned per-pane camera memory, and
 tiny-framebuffer fallback to single pane.
+Four-view fit/focus workflow controls now update all remembered pane cameras at
+once. Fit All Panes and Focus Selection in All Panes preserve each pane's
+orientation while reframing the visible scene or visible selection, reject
+hidden/missing inputs without partially changing pane memory, and return the
+updated active-pane camera through the existing renderer-neutral camera setter.
 
 ## Immediate Next Step
 
-Continue Phase 5 with cross-pane fit/focus polish for the four-view layout, or
-continue Phase 4 by adding saved watch presets after scene metadata can store UI
-workspace settings. Keep behavior in testable engine or UI action/view-model
-helpers before wiring it into `editor.cpp`, and keep the filtered coverage line
-total above 95%.
+Continue Phase 5 with camera-lock polish or future collision/sensor/joint layer
+filters after those render layers exist, or continue Phase 4 by adding saved
+watch presets after scene metadata can store UI workspace settings. Keep
+behavior in testable engine or UI action/view-model helpers before wiring it
+into `editor.cpp`, and keep the filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -171,6 +176,7 @@ total above 95%.
   is active, renderer layout payload conversion, split-pane geometry,
   stable pane display names, active-pane label/status overlay plumbing,
   renderer-pane click activation, per-pane camera memory,
+  all-pane fit/focus camera actions with atomic hidden-input rejection,
   tiny-framebuffer fallback, GUI provider plumbing, and view-only dirty/undo
   invariants are tested.
 - `pixi run coverage-report-dartsim` now extracts the filtered
