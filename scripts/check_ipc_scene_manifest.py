@@ -244,6 +244,7 @@ def check_scene_rows(
             errors.append("summary.target_type_counts does not match scene rows")
 
     if upstream_dir is not None:
+        upstream_dir = upstream_dir.resolve()
         commit = upstream_head(upstream_dir)
         if commit != EXPECTED_COMMIT:
             errors.append(f"upstream checkout must be {EXPECTED_COMMIT}, got {commit}")
