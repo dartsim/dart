@@ -98,6 +98,59 @@ TEST(DartsimInspectorActions, EmptySelectionBuildsEmptyStatus)
   EXPECT_FALSE(ui::deleteInspectorSelection(engine).ok);
 }
 
+TEST(DartsimInspectorActions, ObjectStatusDoesNotDependOnSelection)
+{
+  SimEngine engine;
+  EXPECT_FALSE(ui::buildInspectorObjectStatus(engine, 42).hasSelection);
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 3.0), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Sphere, translation(4.0, 5.0, 6.0), "sphere"));
+  const ObjectId sphere = engine.selection().primary();
+  ASSERT_NE(sphere, kNoObject);
+  ASSERT_TRUE(engine.select(box));
+  engine.markProjectClean();
+  const std::size_t undoCount = engine.commands().undoCount();
+  const auto revision = engine.commands().currentRevision();
+
+  const ui::InspectorStatus status
+      = ui::buildInspectorObjectStatus(engine, sphere);
+  EXPECT_TRUE(status.hasSelection);
+  EXPECT_EQ(status.selectionCount, 1u);
+  EXPECT_EQ(status.selectionSummary, "1 object");
+  EXPECT_FALSE(status.locked);
+  EXPECT_FALSE(status.canDelete);
+  EXPECT_EQ(status.object, sphere);
+  EXPECT_EQ(status.name, "sphere");
+  EXPECT_EQ(status.type, "RigidBody");
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX),
+      nullptr);
+  EXPECT_DOUBLE_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX)
+          ->value,
+      4.0);
+  ASSERT_NE(
+      findEnum(status, ui::InspectorEnumPropertyKind::ShapeType), nullptr);
+  EXPECT_EQ(engine.selection().primary(), box);
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+  EXPECT_EQ(engine.commands().currentRevision(), revision);
+
+  engine.simulation().play();
+  const ui::InspectorStatus locked
+      = ui::buildInspectorObjectStatus(engine, sphere);
+  EXPECT_TRUE(locked.locked);
+  EXPECT_FALSE(locked.canDelete);
+  ASSERT_FALSE(locked.numericProperties.empty());
+  EXPECT_FALSE(locked.numericProperties.front().editable);
+}
+
 TEST(DartsimInspectorActions, RigidBodyPropertiesEditThroughUndoableCommands)
 {
   SimEngine engine;

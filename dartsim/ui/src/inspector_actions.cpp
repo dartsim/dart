@@ -407,6 +407,83 @@ const SceneObject* selectedObject(const SimEngine& engine)
   return engine.objects().model().find(engine.selection().primary());
 }
 
+InspectorStatus buildStatusForObject(
+    const SimEngine& engine,
+    const SceneObject& object,
+    std::size_t selectionCount,
+    std::string selectionSummary,
+    bool canDelete)
+{
+  const bool editable = engine.canEditScene();
+  InspectorStatus status;
+  status.hasSelection = true;
+  status.selectionCount = selectionCount;
+  status.locked = !editable;
+  status.object = object.id;
+  status.name = object.name;
+  status.type = objectTypeLabel(object.type);
+  status.selectionSummary = std::move(selectionSummary);
+  status.canDelete = canDelete && editable;
+
+  if (isTransformEditable(object.type)) {
+    appendTransformProperties(status.numericProperties, object, editable);
+  }
+  if (object.type == ObjectType::RigidBody) {
+    status.numericProperties.push_back(numeric(
+        InspectorNumericPropertyKind::Mass,
+        "mass",
+        object.mass,
+        0.01,
+        100.0,
+        editable));
+  }
+  if (hasSingleDofJoint(object)) {
+    status.numericProperties.push_back(numeric(
+        InspectorNumericPropertyKind::JointPosition,
+        "joint",
+        object.jointPosition,
+        -3.14159,
+        3.14159,
+        editable));
+  }
+  if (object.type == ObjectType::Link && object.parentLink != kNoObject) {
+    status.enumProperties.push_back(enumProperty(
+        InspectorEnumPropertyKind::JointKind,
+        "joint kind",
+        static_cast<int>(object.jointType),
+        jointKindChoices(),
+        editable));
+  }
+  if (hasSingleAxisJoint(object)) {
+    appendJointAxisProperties(status.numericProperties, object, editable);
+  }
+  if (object.type == ObjectType::Sensor) {
+    status.enumProperties.push_back(enumProperty(
+        InspectorEnumPropertyKind::SensorKind,
+        "sensor kind",
+        static_cast<int>(object.sensor.kind),
+        sensorKindChoices(),
+        editable));
+    appendSensorProperties(status.numericProperties, object, editable);
+  }
+  if (object.type == ObjectType::Collision) {
+    appendCollisionProperties(status.numericProperties, object, editable);
+  }
+  if (isShapeEditable(object.type)) {
+    status.enumProperties.push_back(enumProperty(
+        InspectorEnumPropertyKind::ShapeType,
+        "shape",
+        static_cast<int>(object.shape.type),
+        shapeTypeChoices(),
+        editable));
+    appendShapeProperties(status.numericProperties, object, editable);
+    status.colorProperty
+        = InspectorColorProperty{"color", object.shape.color, editable};
+  }
+
+  return status;
+}
+
 bool hasSelectedAncestor(
     const SceneModel& model,
     const std::unordered_set<ObjectId>& selected,
@@ -536,82 +613,30 @@ void setCollisionComponent(
 
 InspectorStatus buildInspectorStatus(const SimEngine& engine)
 {
-  InspectorStatus status;
   const SceneObject* object = selectedObject(engine);
   if (object == nullptr) {
-    return status;
+    return {};
   }
 
-  const bool editable = engine.canEditScene();
-  status.hasSelection = true;
-  status.selectionCount = engine.selection().selected().size();
-  status.locked = !editable;
-  status.object = object->id;
-  status.name = object->name;
-  status.type = objectTypeLabel(object->type);
-  status.selectionSummary = status.selectionCount == 1
-                                ? "1 selected"
-                                : std::to_string(status.selectionCount)
-                                      + " selected; primary: " + status.name;
-  status.canDelete = editable;
+  const std::size_t selectionCount = engine.selection().selected().size();
+  return buildStatusForObject(
+      engine,
+      *object,
+      selectionCount,
+      selectionCount == 1 ? "1 selected"
+                          : std::to_string(selectionCount)
+                                + " selected; primary: " + object->name,
+      true);
+}
 
-  if (isTransformEditable(object->type)) {
-    appendTransformProperties(status.numericProperties, *object, editable);
-  }
-  if (object->type == ObjectType::RigidBody) {
-    status.numericProperties.push_back(numeric(
-        InspectorNumericPropertyKind::Mass,
-        "mass",
-        object->mass,
-        0.01,
-        100.0,
-        editable));
-  }
-  if (hasSingleDofJoint(*object)) {
-    status.numericProperties.push_back(numeric(
-        InspectorNumericPropertyKind::JointPosition,
-        "joint",
-        object->jointPosition,
-        -3.14159,
-        3.14159,
-        editable));
-  }
-  if (object->type == ObjectType::Link && object->parentLink != kNoObject) {
-    status.enumProperties.push_back(enumProperty(
-        InspectorEnumPropertyKind::JointKind,
-        "joint kind",
-        static_cast<int>(object->jointType),
-        jointKindChoices(),
-        editable));
-  }
-  if (hasSingleAxisJoint(*object)) {
-    appendJointAxisProperties(status.numericProperties, *object, editable);
-  }
-  if (object->type == ObjectType::Sensor) {
-    status.enumProperties.push_back(enumProperty(
-        InspectorEnumPropertyKind::SensorKind,
-        "sensor kind",
-        static_cast<int>(object->sensor.kind),
-        sensorKindChoices(),
-        editable));
-    appendSensorProperties(status.numericProperties, *object, editable);
-  }
-  if (object->type == ObjectType::Collision) {
-    appendCollisionProperties(status.numericProperties, *object, editable);
-  }
-  if (isShapeEditable(object->type)) {
-    status.enumProperties.push_back(enumProperty(
-        InspectorEnumPropertyKind::ShapeType,
-        "shape",
-        static_cast<int>(object->shape.type),
-        shapeTypeChoices(),
-        editable));
-    appendShapeProperties(status.numericProperties, *object, editable);
-    status.colorProperty
-        = InspectorColorProperty{"color", object->shape.color, editable};
+InspectorStatus buildInspectorObjectStatus(const SimEngine& engine, ObjectId id)
+{
+  const SceneObject* object = engine.objects().model().find(id);
+  if (object == nullptr) {
+    return {};
   }
 
-  return status;
+  return buildStatusForObject(engine, *object, 1, "1 object", false);
 }
 
 InspectorActionResult setInspectorNumericProperty(

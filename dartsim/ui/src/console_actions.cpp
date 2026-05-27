@@ -43,8 +43,10 @@
 #include <algorithm>
 #include <charconv>
 #include <filesystem>
+#include <iomanip>
 #include <optional>
 #include <span>
+#include <sstream>
 #include <string_view>
 #include <system_error>
 #include <unordered_map>
@@ -220,6 +222,90 @@ TargetResolution resolveObjectTarget(
     return {kNoObject, "Ambiguous object name: " + std::string(target)};
   }
   return {matches.front(), {}};
+}
+
+std::string scalarText(double value)
+{
+  std::ostringstream out;
+  out << std::setprecision(6) << value;
+  return out.str();
+}
+
+std::string enumChoiceText(const InspectorEnumProperty& property)
+{
+  const auto it = std::find_if(
+      property.choices.begin(),
+      property.choices.end(),
+      [&property](const InspectorEnumChoice& choice) {
+        return choice.value == property.value;
+      });
+  return it == property.choices.end() ? std::to_string(property.value)
+                                      : it->label;
+}
+
+void appendInspectorField(
+    std::vector<std::string>& fields, std::string label, std::string value)
+{
+  fields.push_back(std::move(label) + "=" + std::move(value));
+}
+
+std::string formatInspectorStatus(const InspectorStatus& status)
+{
+  std::string message
+      = status.name + " #"
+        + std::to_string(static_cast<unsigned long long>(status.object)) + " ("
+        + status.type + ")";
+  if (status.locked) {
+    message += " [read-only]";
+  }
+
+  std::vector<std::string> fields;
+  for (const InspectorEnumProperty& property : status.enumProperties) {
+    appendInspectorField(fields, property.label, enumChoiceText(property));
+  }
+  for (const InspectorNumericProperty& property : status.numericProperties) {
+    appendInspectorField(fields, property.label, scalarText(property.value));
+  }
+  if (status.colorProperty.has_value()) {
+    const Eigen::Vector4d& color = status.colorProperty->rgba;
+    appendInspectorField(
+        fields,
+        status.colorProperty->label,
+        "(" + scalarText(color.x()) + ", " + scalarText(color.y()) + ", "
+            + scalarText(color.z()) + ", " + scalarText(color.w()) + ")");
+  }
+
+  if (fields.empty()) {
+    return message;
+  }
+  message += ": ";
+  for (std::size_t i = 0; i < fields.size(); ++i) {
+    if (i != 0) {
+      message += ", ";
+    }
+    message += fields[i];
+  }
+  return message;
+}
+
+ConsoleCommandResult applyInspectCommand(
+    const SimEngine& engine, std::span<const std::string> tokens)
+{
+  if (tokens.size() > 2) {
+    return result(false, "Usage: inspect [id|name|selected]");
+  }
+
+  const std::string targetToken = tokens.size() == 2 ? tokens[1] : "selected";
+  const TargetResolution target = resolveObjectTarget(engine, targetToken);
+  if (target.id == kNoObject) {
+    return result(false, target.error);
+  }
+
+  const InspectorStatus status = buildInspectorObjectStatus(engine, target.id);
+  if (!status.hasSelection) {
+    return result(false, "Object not found: " + targetToken);
+  }
+  return result(true, formatInspectorStatus(status));
 }
 
 std::optional<PaletteActionKind> createActionForToken(std::string_view token)
@@ -748,10 +834,11 @@ std::string consoleCommandHelpText(bool watchCommandsAvailable)
   return "Commands: help, status, new [--discard], open <path> [--discard], "
          "save [path], create <kind>, select <id|name>, select-add "
          "<id|name>, deselect <id|name>, clear-selection, rename <name>, "
-         "delete, attach, detach, reparent-link, make-root, show [target], "
-         "hide [target], mode <edit|simulation>, play, pause, step [count], "
-         "restart (stay in Simulation Mode), reset (return to Edit Mode), "
-         "record <on|off>, replay <first|previous|next|last|frame> "
+         "delete, inspect [id|name|selected], attach, detach, reparent-link, "
+         "make-root, show [target], hide [target], mode <edit|simulation>, "
+         "play, pause, step [count], restart (stay in Simulation Mode), "
+         "reset (return to Edit Mode), record <on|off>, replay "
+         "<first|previous|next|last|frame> "
          "(paused Simulation Mode)"
          + std::string(
              watchCommandsAvailable
@@ -806,6 +893,9 @@ ConsoleCommandResult applyConsoleCommandWithWatchState(
   }
   if (command == "create") {
     return applyCreateCommand(engine, view);
+  }
+  if (command == "inspect") {
+    return applyInspectCommand(engine, view);
   }
   if (command == "new" || command == "open" || command == "save") {
     ConsoleCommandResult applied = applyProjectCommand(engine, view);

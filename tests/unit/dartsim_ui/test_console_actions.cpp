@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <Eigen/Geometry>
 #include <dartsim_engine/commands.hpp>
 #include <dartsim_engine/sim_engine.hpp>
 #include <dartsim_ui/console_actions.hpp>
@@ -106,6 +107,7 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
       std::string::npos);
   EXPECT_NE(
       help.message.find("reset (return to Edit Mode)"), std::string::npos);
+  EXPECT_NE(help.message.find("inspect [id|name|selected]"), std::string::npos);
   EXPECT_NE(help.message.find("record <on|off>"), std::string::npos);
   EXPECT_NE(
       help.message.find("replay <first|previous|next|last|frame>"),
@@ -135,8 +137,63 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
       "Unknown command: unknown");
   EXPECT_EQ(ui::applyConsoleCommand(engine, "help now").message, "Usage: help");
   EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "inspect").message, "No object selected");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "inspect a b").message,
+      "Usage: inspect [id|name|selected]");
+  EXPECT_EQ(
       ui::applyConsoleCommand(engine, "watch").message,
       "Watch state unavailable");
+}
+
+TEST(DartsimConsoleActions, InspectsObjectsWithoutChangingSelectionOrScene)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, Eigen::Isometry3d::Identity(), "box"));
+  const ObjectId box = engine.selection().primary();
+  ASSERT_NE(box, kNoObject);
+  Eigen::Isometry3d sphereTransform = Eigen::Isometry3d::Identity();
+  sphereTransform.translation() = Eigen::Vector3d(4.0, 5.0, 6.0);
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Sphere, sphereTransform, "probe sphere"));
+  const ObjectId sphere = engine.selection().primary();
+  ASSERT_NE(sphere, kNoObject);
+  ASSERT_NE(sphere, box);
+  ASSERT_TRUE(engine.select(box));
+  engine.markProjectClean();
+  const std::size_t undoCount = engine.commands().undoCount();
+  const auto revision = engine.commands().currentRevision();
+
+  const auto selected = ui::applyConsoleCommand(engine, "inspect");
+  EXPECT_TRUE(selected.ok);
+  EXPECT_NE(selected.message.find("box #"), std::string::npos);
+  EXPECT_NE(selected.message.find("(RigidBody)"), std::string::npos);
+  EXPECT_NE(selected.message.find("shape=Box"), std::string::npos);
+  EXPECT_NE(selected.message.find("mass=1"), std::string::npos);
+
+  const auto named
+      = ui::applyConsoleCommand(engine, "inspect \"probe sphere\"");
+  EXPECT_TRUE(named.ok);
+  EXPECT_NE(named.message.find("probe sphere #"), std::string::npos);
+  EXPECT_NE(named.message.find("shape=Sphere"), std::string::npos);
+  EXPECT_NE(named.message.find("x=4"), std::string::npos);
+  EXPECT_NE(named.message.find("y=5"), std::string::npos);
+  EXPECT_NE(named.message.find("z=6"), std::string::npos);
+  EXPECT_EQ(engine.selection().primary(), box);
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_EQ(engine.commands().undoCount(), undoCount);
+  EXPECT_EQ(engine.commands().currentRevision(), revision);
+
+  engine.simulation().play();
+  const auto locked = ui::applyConsoleCommand(
+      engine,
+      "inspect " + std::to_string(static_cast<unsigned long long>(sphere)));
+  EXPECT_TRUE(locked.ok);
+  EXPECT_NE(locked.message.find("[read-only]"), std::string::npos);
+  EXPECT_EQ(engine.selection().primary(), box);
 }
 
 TEST(DartsimConsoleActions, CreatesSelectsRenamesHidesShowsAndDeletesObjects)
@@ -734,6 +791,9 @@ TEST(DartsimConsoleActions, RejectsMissingAndAmbiguousObjectTargets)
   EXPECT_EQ(
       ui::applyConsoleCommand(engine, "select missing").message,
       "Object not found: missing");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "inspect missing").message,
+      "Object not found: missing");
   EXPECT_EQ(ui::applyConsoleCommand(engine, "delete").message, "No selection");
 
   engine.execute(commands::addMultiBody("arm_a"));
@@ -746,6 +806,9 @@ TEST(DartsimConsoleActions, RejectsMissingAndAmbiguousObjectTargets)
   const auto ambiguous = ui::applyConsoleCommand(engine, "select link");
   EXPECT_FALSE(ambiguous.ok);
   EXPECT_EQ(ambiguous.message, "Ambiguous object name: link");
+  const auto ambiguousInspect = ui::applyConsoleCommand(engine, "inspect link");
+  EXPECT_FALSE(ambiguousInspect.ok);
+  EXPECT_EQ(ambiguousInspect.message, "Ambiguous object name: link");
 
   EXPECT_EQ(
       ui::applyConsoleCommand(engine, "step many").message,

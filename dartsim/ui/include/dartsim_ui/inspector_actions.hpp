@@ -127,6 +127,10 @@ struct InspectorActionResult
 
 /// Build a typed inspector view model for the current primary selection.
 [[nodiscard]] InspectorStatus buildInspectorStatus(const SimEngine& engine);
+/// Build the same inspector view model for one object without changing
+/// selection.
+[[nodiscard]] InspectorStatus buildInspectorObjectStatus(
+    const SimEngine& engine, ObjectId id);
 
 /// Apply one numeric inspector edit through the undoable command stack.
 InspectorActionResult setInspectorNumericProperty(
