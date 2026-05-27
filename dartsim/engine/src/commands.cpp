@@ -152,6 +152,18 @@ SensorDesc sanitizeSensor(SensorDesc sensor)
   return sensor;
 }
 
+CollisionDesc sanitizeCollision(CollisionDesc collision)
+{
+  collision.friction
+      = std::isfinite(collision.friction) && collision.friction >= 0.0
+            ? collision.friction
+            : 0.8;
+  collision.restitution = std::isfinite(collision.restitution)
+                              ? std::clamp(collision.restitution, 0.0, 1.0)
+                              : 0.0;
+  return collision;
+}
+
 ShapeDesc sanitizeShape(ShapeDesc shape)
 {
   switch (shape.type) {
@@ -266,6 +278,13 @@ ShapeDesc defaultShape(ShapeType type)
   if (type == ShapeType::Plane) {
     shape.dimensions = Eigen::Vector3d::UnitZ();
   }
+  return shape;
+}
+
+ShapeDesc defaultCollisionShape(ShapeType type)
+{
+  ShapeDesc shape = sanitizeShape(defaultShape(type));
+  shape.color = Eigen::Vector4d(0.95, 0.35, 0.25, 0.45);
   return shape;
 }
 
@@ -449,6 +468,50 @@ std::unique_ptr<Command> addSensor(
       });
 }
 
+std::unique_ptr<Command> addCollision(
+    ShapeType shape,
+    ObjectId parent,
+    const Eigen::Isometry3d& transform,
+    std::string name)
+{
+  return addCollision(
+      defaultCollisionShape(shape), parent, transform, std::move(name));
+}
+
+std::unique_ptr<Command> addCollision(
+    const ShapeDesc& shape,
+    ObjectId parent,
+    const Eigen::Isometry3d& transform,
+    std::string name)
+{
+  return std::make_unique<Command>(
+      "Add Collision",
+      [shape, parent, transform, name = std::move(name)](
+          ObjectManager& objects, SelectionManager& selection) {
+        SceneModel& model = objects.model();
+        if (parent != kNoObject) {
+          const SceneObject* parentObject = model.find(parent);
+          if (parentObject == nullptr || !isFrameLike(parentObject->type)) {
+            return;
+          }
+        }
+
+        SceneObject object;
+        object.type = ObjectType::Collision;
+        object.parent = parent;
+        object.transform = transform;
+        object.shape = sanitizeShape(shape);
+        object.collision = sanitizeCollision(object.collision);
+        object.name = NameManager::makeUnique(
+            model,
+            parent,
+            name.empty() ? NameManager::defaultBaseName(ObjectType::Collision)
+                         : name);
+        const ObjectId id = model.add(std::move(object));
+        selection.select(id);
+      });
+}
+
 std::unique_ptr<Command> removeObject(ObjectId id)
 {
   return std::make_unique<Command>(
@@ -503,7 +566,8 @@ std::unique_ptr<Command> setShape(ObjectId id, ShapeDesc shape)
         SceneObject* object = objects.model().find(id);
         if (object == nullptr
             || (object->type != ObjectType::RigidBody
-                && object->type != ObjectType::Link)
+                && object->type != ObjectType::Link
+                && object->type != ObjectType::Collision)
             || object->shape == shape) {
           return;
         }
@@ -525,6 +589,21 @@ std::unique_ptr<Command> setSensor(ObjectId id, SensorDesc sensor)
         }
         object->sensor = sensor;
         object->shape = defaultSensorShape(sensor.kind);
+      });
+}
+
+std::unique_ptr<Command> setCollision(ObjectId id, CollisionDesc collision)
+{
+  return std::make_unique<Command>(
+      "Set Collision",
+      [id, collision = sanitizeCollision(std::move(collision))](
+          ObjectManager& objects, SelectionManager&) {
+        SceneObject* object = objects.model().find(id);
+        if (object == nullptr || object->type != ObjectType::Collision
+            || object->collision == collision) {
+          return;
+        }
+        object->collision = collision;
       });
 }
 

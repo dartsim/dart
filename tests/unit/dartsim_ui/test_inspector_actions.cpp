@@ -446,6 +446,82 @@ TEST(
       engine.objects().model().find(sensor)->sensor.kind, SensorKind::Camera);
 }
 
+TEST(
+    DartsimInspectorActions,
+    CollisionInspectorEditsShapeAndMaterialThroughUndoableCommands)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addCollision(
+          ShapeType::Box, kNoObject, translation(1.0, 2.0, 3.0), "contact"));
+  const ObjectId collision = engine.selection().primary();
+  ASSERT_NE(collision, kNoObject);
+
+  ui::InspectorStatus status = ui::buildInspectorStatus(engine);
+  EXPECT_TRUE(status.hasSelection);
+  EXPECT_EQ(status.type, "Collision");
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::TranslationX),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::ShapeDimensionX),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(status, ui::InspectorNumericPropertyKind::CollisionFriction),
+      nullptr);
+  ASSERT_NE(
+      findNumeric(
+          status, ui::InspectorNumericPropertyKind::CollisionRestitution),
+      nullptr);
+  EXPECT_EQ(
+      findNumeric(status, ui::InspectorNumericPropertyKind::Mass), nullptr);
+  ASSERT_NE(
+      findEnum(status, ui::InspectorEnumPropertyKind::ShapeType), nullptr);
+  ASSERT_TRUE(status.colorProperty.has_value());
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine, ui::InspectorNumericPropertyKind::CollisionFriction, -5.0)
+          .ok);
+  EXPECT_DOUBLE_EQ(
+      engine.objects().model().find(collision)->collision.friction, 0.8);
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine, ui::InspectorNumericPropertyKind::CollisionRestitution, 2.0)
+          .ok);
+  EXPECT_DOUBLE_EQ(
+      engine.objects().model().find(collision)->collision.restitution, 1.0);
+
+  EXPECT_TRUE(
+      ui::setInspectorEnumProperty(
+          engine,
+          ui::InspectorEnumPropertyKind::ShapeType,
+          static_cast<int>(ShapeType::Capsule))
+          .ok);
+  EXPECT_EQ(
+      engine.objects().model().find(collision)->shape.type, ShapeType::Capsule);
+
+  EXPECT_TRUE(
+      ui::setInspectorNumericProperty(
+          engine, ui::InspectorNumericPropertyKind::ShapeDimensionY, 0.75)
+          .ok);
+  EXPECT_DOUBLE_EQ(
+      engine.objects().model().find(collision)->shape.dimensions.y(), 0.75);
+
+  const Eigen::Vector4d color(0.1, 0.2, 0.3, 0.4);
+  EXPECT_TRUE(ui::setInspectorShapeColor(engine, color).ok);
+  EXPECT_TRUE(
+      engine.objects().model().find(collision)->shape.color.isApprox(color));
+
+  ASSERT_TRUE(engine.undo());
+  EXPECT_EQ(
+      engine.objects().model().find(collision)->shape.type, ShapeType::Capsule);
+  ASSERT_TRUE(engine.undo());
+  EXPECT_NE(
+      engine.objects().model().find(collision)->shape.dimensions.y(), 0.75);
+}
+
 TEST(DartsimInspectorActions, UnsupportedPropertiesAreRejected)
 {
   SimEngine engine;

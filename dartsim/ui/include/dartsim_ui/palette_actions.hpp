@@ -57,6 +57,11 @@ enum class PaletteActionKind
   AddCameraSensor,
   AddRangeSensor,
   AddContactSensor,
+  AddBoxCollision,
+  AddSphereCollision,
+  AddCylinderCollision,
+  AddCapsuleCollision,
+  AddPlaneCollision,
   AddGroundAndBoxExample,
   AddTwoLinkArmExample,
 };

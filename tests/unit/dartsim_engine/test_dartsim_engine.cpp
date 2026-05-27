@@ -567,6 +567,96 @@ TEST(CommandManager, AddAndEditSensorDescriptors)
   EXPECT_EQ(selection.primary(), sensor);
 }
 
+TEST(CommandManager, AddAndEditCollisionDescriptors)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  ASSERT_TRUE(commands.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(1.0, 2.0, 3.0), "parent")));
+  const ObjectId parent = selection.primary();
+  ASSERT_NE(parent, kNoObject);
+
+  ASSERT_TRUE(commands.execute(
+      commands::addCollision(
+          ShapeType::Sphere,
+          parent,
+          translation(0.0, 0.0, 0.5),
+          "contact_proxy")));
+  const ObjectId collision = selection.primary();
+  ASSERT_NE(collision, kNoObject);
+  const SceneObject* collisionObject = objects.model().find(collision);
+  ASSERT_NE(collisionObject, nullptr);
+  EXPECT_EQ(collisionObject->type, ObjectType::Collision);
+  EXPECT_EQ(collisionObject->parent, parent);
+  EXPECT_EQ(collisionObject->name, "contact_proxy");
+  EXPECT_EQ(collisionObject->shape.type, ShapeType::Sphere);
+  EXPECT_TRUE(collisionObject->shape.color.isApprox(
+      Eigen::Vector4d(0.95, 0.35, 0.25, 0.45)));
+  EXPECT_DOUBLE_EQ(collisionObject->collision.friction, 0.8);
+  EXPECT_DOUBLE_EQ(collisionObject->collision.restitution, 0.0);
+
+  const std::optional<Eigen::Isometry3d> collisionWorld
+      = objects.worldTransformOf(collision);
+  ASSERT_TRUE(collisionWorld.has_value());
+  EXPECT_TRUE(
+      collisionWorld->translation().isApprox(Eigen::Vector3d(1.0, 2.0, 3.5)));
+
+  std::vector<RenderItem> items = objects.computeRenderItems();
+  auto item = std::find_if(
+      items.begin(), items.end(), [collision](const RenderItem& renderItem) {
+        return renderItem.id == collision;
+      });
+  ASSERT_NE(item, items.end());
+  EXPECT_EQ(item->shape, ShapeType::Sphere);
+
+  const std::size_t beforeNoOp = commands.undoCount();
+  EXPECT_FALSE(commands.execute(
+      commands::setCollision(collision, collisionObject->collision)));
+  EXPECT_FALSE(commands.execute(
+      commands::setCollision(parent, collisionObject->collision)));
+  EXPECT_FALSE(commands.execute(commands::setCollision(999, {})));
+  EXPECT_EQ(commands.undoCount(), beforeNoOp);
+
+  CollisionDesc edited;
+  edited.friction = -1.0;
+  edited.restitution = 2.0;
+  ASSERT_TRUE(commands.execute(commands::setCollision(collision, edited)));
+  collisionObject = objects.model().find(collision);
+  ASSERT_NE(collisionObject, nullptr);
+  EXPECT_DOUBLE_EQ(collisionObject->collision.friction, 0.8);
+  EXPECT_DOUBLE_EQ(collisionObject->collision.restitution, 1.0);
+
+  ShapeDesc shape = collisionObject->shape;
+  shape.type = ShapeType::Capsule;
+  shape.dimensions = Eigen::Vector3d(0.25, 0.75, 0.25);
+  ASSERT_TRUE(commands.execute(commands::setShape(collision, shape)));
+  collisionObject = objects.model().find(collision);
+  ASSERT_NE(collisionObject, nullptr);
+  EXPECT_EQ(collisionObject->shape.type, ShapeType::Capsule);
+  items = objects.computeRenderItems();
+  item = std::find_if(
+      items.begin(), items.end(), [collision](const RenderItem& renderItem) {
+        return renderItem.id == collision;
+      });
+  ASSERT_NE(item, items.end());
+  EXPECT_EQ(item->shape, ShapeType::Capsule);
+
+  ASSERT_TRUE(commands.undo());
+  EXPECT_EQ(objects.model().find(collision)->shape.type, ShapeType::Sphere);
+  ASSERT_TRUE(commands.undo());
+  EXPECT_DOUBLE_EQ(objects.model().find(collision)->collision.restitution, 0.0);
+  ASSERT_TRUE(commands.redo());
+  EXPECT_DOUBLE_EQ(objects.model().find(collision)->collision.restitution, 1.0);
+
+  const std::size_t undoCount = commands.undoCount();
+  ASSERT_FALSE(commands.execute(commands::addCollision(ShapeType::Box, 999)));
+  EXPECT_EQ(commands.undoCount(), undoCount);
+  EXPECT_EQ(selection.primary(), collision);
+}
+
 //==============================================================================
 // SimulationController: Edit/Simulation mode, step, reset
 //==============================================================================
@@ -741,6 +831,16 @@ TEST(SceneIO, TextRoundTripIsStable)
   sensor.shape.dimensions = Eigen::Vector3d(0.28, 0.18, 0.16);
   const ObjectId sensorId = model.add(sensor);
 
+  SceneObject collision;
+  collision.type = ObjectType::Collision;
+  collision.name = "contact_proxy";
+  collision.parent = bodyId;
+  collision.shape.type = ShapeType::Capsule;
+  collision.shape.dimensions = Eigen::Vector3d(0.25, 0.75, 0.25);
+  collision.collision.friction = 0.5;
+  collision.collision.restitution = 0.2;
+  const ObjectId collisionId = model.add(collision);
+
   const std::string text = scene_io::save(model);
 
   SceneModel loaded;
@@ -756,6 +856,13 @@ TEST(SceneIO, TextRoundTripIsStable)
   EXPECT_DOUBLE_EQ(loadedSensor->sensor.range, 12.5);
   EXPECT_DOUBLE_EQ(loadedSensor->sensor.fieldOfView, 45.0);
   EXPECT_DOUBLE_EQ(loadedSensor->sensor.updateRate, 20.0);
+  const SceneObject* loadedCollision = loaded.find(collisionId);
+  ASSERT_NE(loadedCollision, nullptr);
+  EXPECT_EQ(loadedCollision->type, ObjectType::Collision);
+  EXPECT_EQ(loadedCollision->parent, bodyId);
+  EXPECT_EQ(loadedCollision->shape.type, ShapeType::Capsule);
+  EXPECT_DOUBLE_EQ(loadedCollision->collision.friction, 0.5);
+  EXPECT_DOUBLE_EQ(loadedCollision->collision.restitution, 0.2);
 
   // Re-saving the loaded model yields identical text (stable round-trip).
   EXPECT_EQ(scene_io::save(loaded), text);
@@ -772,7 +879,7 @@ TEST(SceneIO, RejectsUnsupportedVersion)
   SceneModel out;
   // A reader must reject newer format versions instead of parsing them with
   // older rules (which would silently produce corrupt state).
-  EXPECT_FALSE(scene_io::load("dartsim-scene 3\ntimestep 0.001\n", out));
+  EXPECT_FALSE(scene_io::load("dartsim-scene 4\ntimestep 0.001\n", out));
 }
 
 TEST(SceneIO, RejectsDuplicateObjectIds)
@@ -912,6 +1019,20 @@ TEST(SceneIO, RejectsMalformedNumericFields)
       "sensorrate nope\n"
       "end\n");
   expectRejects(
+      "dartsim-scene 3\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "collisionfriction nope\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 3\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "collisionrestitution nope\n"
+      "end\n");
+  expectRejects(
       "dartsim-scene 1\n"
       "timestep 0.001\n"
       "object\n"
@@ -942,6 +1063,22 @@ TEST(SceneIO, RejectsMalformedNumericFields)
       "id 7\n"
       "type 6\n"
       "sensorrate 0\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 3\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 7\n"
+      "collisionfriction -1\n"
+      "end\n");
+  expectRejects(
+      "dartsim-scene 3\n"
+      "timestep 0.001\n"
+      "object\n"
+      "id 7\n"
+      "type 7\n"
+      "collisionrestitution 1.5\n"
       "end\n");
   expectRejects(
       "dartsim-scene 1\n"
@@ -1112,10 +1249,10 @@ TEST(SceneIO, EmptyAndMalformedParentsAreHandled)
   EXPECT_EQ(out.rootChildren().size(), 3u);
 }
 
-TEST(SceneIO, RerootsSensorsWithNonFrameParents)
+TEST(SceneIO, RerootsDescriptorsWithNonFrameParents)
 {
   const std::string text
-      = "dartsim-scene 2\n"
+      = "dartsim-scene 3\n"
         "timestep 0.001\n"
         "object\n"
         "id 1\n"
@@ -1127,15 +1264,25 @@ TEST(SceneIO, RerootsSensorsWithNonFrameParents)
         "type 6\n"
         "parent 1\n"
         "name sensor\n"
+        "end\n"
+        "object\n"
+        "id 3\n"
+        "type 7\n"
+        "parent 1\n"
+        "name collision\n"
         "end\n";
 
   SceneModel out;
   ASSERT_TRUE(scene_io::load(text, out));
-  ASSERT_EQ(out.size(), 2u);
+  ASSERT_EQ(out.size(), 3u);
   const SceneObject* sensor = out.find(2);
   ASSERT_NE(sensor, nullptr);
   EXPECT_EQ(sensor->type, ObjectType::Sensor);
   EXPECT_EQ(sensor->parent, kNoObject);
+  const SceneObject* collision = out.find(3);
+  ASSERT_NE(collision, nullptr);
+  EXPECT_EQ(collision->type, ObjectType::Collision);
+  EXPECT_EQ(collision->parent, kNoObject);
 }
 
 TEST(CommandManager, DuplicateExplicitNamesAreDeduplicated)
@@ -1864,6 +2011,9 @@ TEST(SimEngine, ProjectFileRoundTrip)
   engine.execute(
       commands::addSensor(SensorKind::Camera, box, translation(0, 0, 0.5)));
   const ObjectId sensor = engine.selection().primary();
+  engine.execute(
+      commands::addCollision(ShapeType::Sphere, box, translation(0, 0, -0.5)));
+  const ObjectId collision = engine.selection().primary();
   engine.execute(commands::addMultiBody("arm"));
   WorkspaceWatchPreset preset;
   preset.name = "motion";
@@ -1886,6 +2036,12 @@ TEST(SimEngine, ProjectFileRoundTrip)
   EXPECT_EQ(reloadedSensor->type, ObjectType::Sensor);
   EXPECT_EQ(reloadedSensor->parent, box);
   EXPECT_EQ(reloadedSensor->sensor.kind, SensorKind::Camera);
+  const SceneObject* reloadedCollision
+      = reloaded.objects().model().find(collision);
+  ASSERT_NE(reloadedCollision, nullptr);
+  EXPECT_EQ(reloadedCollision->type, ObjectType::Collision);
+  EXPECT_EQ(reloadedCollision->parent, box);
+  EXPECT_EQ(reloadedCollision->shape.type, ShapeType::Sphere);
   EXPECT_FALSE(reloaded.commands().canUndo()); // history cleared on load
 
   std::filesystem::remove(path);

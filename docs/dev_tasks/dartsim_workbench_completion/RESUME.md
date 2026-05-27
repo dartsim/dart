@@ -112,14 +112,20 @@ objects. The engine can add/edit/serialize them, the Create menu and Console can
 create them, the Inspector can edit descriptor fields, the viewport can render
 and layer-filter them, and Watch rows can display descriptor range/FOV/update
 rate values. They do not imply simulated sensor outputs yet.
+Editor-owned collision descriptors are now authored scene objects. The engine
+can add/edit/serialize their shape and material metadata, the Create menu and
+Console can create collision boxes/spheres/cylinders/capsules/planes, the
+Inspector can edit shape and friction/restitution fields, the viewport can
+render, pick, move, and layer-filter them, and Watch rows can display their
+transform values. They do not imply simulated contact behavior yet.
 
 ## Immediate Next Step
 
 Continue Phase 4 by adding runtime sensor output panes only after the
-simulation layer exposes sensor values, or continue Phase 5 with future
-collision/joint layer filters after those render layers exist. Keep behavior in
-testable engine or UI action/view-model helpers before wiring it into
-`editor.cpp`, and keep the filtered coverage line total above 95%.
+simulation layer exposes sensor values, or continue Phase 5 with future joint
+layer filters after those render layers exist. Keep behavior in testable engine
+or UI action/view-model helpers before wiring it into `editor.cpp`, and keep the
+filtered coverage line total above 95%.
 
 ## Context That Would Be Lost
 
@@ -169,6 +175,12 @@ testable engine or UI action/view-model helpers before wiring it into
   `UNIT_dartsim_ui_OutlinerActions`, `UNIT_dartsim_ui_ViewportActions`,
   `UNIT_dartsim_ui_WatchActions`, and `UNIT_dartsim_ui_ConsoleActions`; this is
   descriptor/configuration coverage only, not simulated sensor-output coverage.
+- Collision descriptor behavior is covered through `UNIT_dartsim_engine`,
+  `UNIT_dartsim_ui_PaletteActions`, `UNIT_dartsim_ui_InspectorActions`,
+  `UNIT_dartsim_ui_OutlinerActions`, `UNIT_dartsim_ui_ViewportActions`,
+  `UNIT_dartsim_ui_WatchActions`, and `UNIT_dartsim_ui_ConsoleActions`; this is
+  descriptor/configuration coverage only, not simulated contact-behavior
+  coverage.
 - Project open remains usable without a working native picker: the File menu
   opens the in-app browser/manual path modal first. Browse reports native picker
   failures in-place, and `openProject()` accepts extensionless paths when the

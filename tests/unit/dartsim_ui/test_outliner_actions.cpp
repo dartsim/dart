@@ -106,6 +106,7 @@ TEST(DartsimOutlinerActions, BuildsDepthFirstRowsFromSceneModel)
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::FreeFrame), "FreeFrame");
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::FixedFrame), "FixedFrame");
   EXPECT_EQ(ui::objectTypeLabel(ObjectType::Sensor), "Sensor");
+  EXPECT_EQ(ui::objectTypeLabel(ObjectType::Collision), "Collision");
 }
 
 TEST(DartsimOutlinerActions, ExpandCollapseStateFiltersDescendants)
@@ -510,7 +511,7 @@ TEST(DartsimOutlinerActions, MoveSelectedByMovesPrimaryMovableObject)
   EXPECT_FALSE(ui::moveSelectedBy(engine, Eigen::Vector3d::UnitX()));
 }
 
-TEST(DartsimOutlinerActions, MoveSelectedByMovesParentedSensorsInWorldAxes)
+TEST(DartsimOutlinerActions, MoveSelectedByMovesParentedDescriptorsInWorldAxes)
 {
   SimEngine engine;
   Eigen::Isometry3d parentTransform = translation(1.0, 2.0, 0.5);
@@ -542,6 +543,23 @@ TEST(DartsimOutlinerActions, MoveSelectedByMovesParentedSensorsInWorldAxes)
       = engine.objects().worldTransformOf(sensor);
   ASSERT_TRUE(updatedWorld.has_value());
   EXPECT_TRUE(updatedWorld->matrix().isApprox(movedWorld.matrix()));
+
+  const Eigen::Isometry3d localCollisionTransform = translation(0.25, 0.0, 0.5);
+  engine.execute(
+      commands::addCollision(
+          ShapeType::Sphere, parent, localCollisionTransform, "contact"));
+  const ObjectId collision = engine.selection().primary();
+  ASSERT_NE(collision, kNoObject);
+
+  const Eigen::Isometry3d expectedCollisionWorld
+      = parentTransform * localCollisionTransform;
+  ASSERT_TRUE(ui::moveSelectedBy(engine, Eigen::Vector3d(0.0, -0.5, 0.0)));
+  Eigen::Isometry3d movedCollisionWorld = expectedCollisionWorld;
+  movedCollisionWorld.translation() += Eigen::Vector3d(0.0, -0.5, 0.0);
+  const SceneObject* editedCollision = engine.objects().model().find(collision);
+  ASSERT_NE(editedCollision, nullptr);
+  EXPECT_TRUE(editedCollision->transform.matrix().isApprox(
+      (parentTransform.inverse() * movedCollisionWorld).matrix()));
 }
 
 TEST(DartsimOutlinerActions, MoveSelectedBySupportsFramesAndRejectsRunMode)

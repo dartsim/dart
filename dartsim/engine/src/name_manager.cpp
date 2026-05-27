@@ -54,6 +54,8 @@ std::string NameManager::defaultBaseName(ObjectType type)
       return "FixedFrame";
     case ObjectType::Sensor:
       return "Sensor";
+    case ObjectType::Collision:
+      return "Collision";
   }
   return "Object";
 }

@@ -322,6 +322,7 @@ std::vector<WatchValueKind> valueKindsForObject(const SceneObject& object)
     case ObjectType::FreeFrame:
     case ObjectType::FixedFrame:
     case ObjectType::Sensor:
+    case ObjectType::Collision:
       kinds.push_back(WatchValueKind::TranslationX);
       kinds.push_back(WatchValueKind::TranslationY);
       kinds.push_back(WatchValueKind::TranslationZ);

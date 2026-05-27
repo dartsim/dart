@@ -164,6 +164,15 @@ PaletteActionResult addSensor(
   return finishCreate(engine, beforeSize, std::move(message));
 }
 
+PaletteActionResult addCollision(
+    SimEngine& engine, ShapeType shape, std::string message)
+{
+  const ObjectId parent = selectedFrameParent(engine);
+  const std::size_t beforeSize = engine.objects().model().size();
+  engine.execute(commands::addCollision(shape, parent));
+  return finishCreate(engine, beforeSize, std::move(message));
+}
+
 class MacroScope
 {
 public:
@@ -359,6 +368,28 @@ std::vector<PaletteAction> buildPaletteActions(const SimEngine& engine)
       canEdit,
       locked));
   actions.push_back(makeAction(
+      PaletteActionKind::AddBoxCollision, "Collision / Box", canEdit, locked));
+  actions.push_back(makeAction(
+      PaletteActionKind::AddSphereCollision,
+      "Collision / Sphere",
+      canEdit,
+      locked));
+  actions.push_back(makeAction(
+      PaletteActionKind::AddCylinderCollision,
+      "Collision / Cylinder",
+      canEdit,
+      locked));
+  actions.push_back(makeAction(
+      PaletteActionKind::AddCapsuleCollision,
+      "Collision / Capsule",
+      canEdit,
+      locked));
+  actions.push_back(makeAction(
+      PaletteActionKind::AddPlaneCollision,
+      "Collision / Plane",
+      canEdit,
+      locked));
+  actions.push_back(makeAction(
       PaletteActionKind::AddGroundAndBoxExample,
       "Example / Ground + Box",
       canEdit,
@@ -431,6 +462,18 @@ PaletteActionResult applyPaletteAction(
       return addSensor(engine, SensorKind::Range, "Added range sensor");
     case PaletteActionKind::AddContactSensor:
       return addSensor(engine, SensorKind::Contact, "Added contact sensor");
+    case PaletteActionKind::AddBoxCollision:
+      return addCollision(engine, ShapeType::Box, "Added box collision");
+    case PaletteActionKind::AddSphereCollision:
+      return addCollision(engine, ShapeType::Sphere, "Added sphere collision");
+    case PaletteActionKind::AddCylinderCollision:
+      return addCollision(
+          engine, ShapeType::Cylinder, "Added cylinder collision");
+    case PaletteActionKind::AddCapsuleCollision:
+      return addCollision(
+          engine, ShapeType::Capsule, "Added capsule collision");
+    case PaletteActionKind::AddPlaneCollision:
+      return addCollision(engine, ShapeType::Plane, "Added plane collision");
     case PaletteActionKind::AddGroundAndBoxExample:
       return addGroundAndBoxExample(engine);
     case PaletteActionKind::AddTwoLinkArmExample:

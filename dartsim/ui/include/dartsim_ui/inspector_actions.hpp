@@ -60,6 +60,8 @@ enum class InspectorNumericPropertyKind
   SensorRange,
   SensorFieldOfView,
   SensorUpdateRate,
+  CollisionFriction,
+  CollisionRestitution,
 };
 
 enum class InspectorEnumPropertyKind

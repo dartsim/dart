@@ -90,7 +90,8 @@ void appendOutlinerRows(
 bool isMovable(ObjectType type)
 {
   return type == ObjectType::RigidBody || type == ObjectType::FreeFrame
-         || type == ObjectType::FixedFrame || type == ObjectType::Sensor;
+         || type == ObjectType::FixedFrame || type == ObjectType::Sensor
+         || type == ObjectType::Collision;
 }
 
 bool hasVisibleRenderable(const SimEngine& engine, ObjectId id)
@@ -173,6 +174,8 @@ std::string objectTypeLabel(ObjectType type)
       return "FixedFrame";
     case ObjectType::Sensor:
       return "Sensor";
+    case ObjectType::Collision:
+      return "Collision";
   }
   return "Object";
 }

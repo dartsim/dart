@@ -202,6 +202,10 @@ void ObjectManager::rebuild()
         // Sensors are editor-authored descriptors until the experimental World
         // exposes public sensor runtime concepts.
         break;
+      case ObjectType::Collision:
+        // Collision geometries are editor-authored descriptors until the
+        // experimental World exposes public collision-shape authoring.
+        break;
     }
   }
 
@@ -344,7 +348,8 @@ std::optional<Eigen::Isometry3d> ObjectManager::worldTransformOf(
   } else if (
       object->type == ObjectType::FreeFrame
       || object->type == ObjectType::FixedFrame
-      || object->type == ObjectType::Sensor) {
+      || object->type == ObjectType::Sensor
+      || object->type == ObjectType::Collision) {
     if (object->parent == kNoObject) {
       return object->transform;
     }
@@ -390,7 +395,8 @@ std::vector<RenderItem> ObjectManager::computeRenderItems() const
 
     const bool hasShape = object->type == ObjectType::RigidBody
                           || object->type == ObjectType::Link
-                          || object->type == ObjectType::Sensor;
+                          || object->type == ObjectType::Sensor
+                          || object->type == ObjectType::Collision;
     if (!hasShape || !effectivelyVisible) {
       continue;
     }

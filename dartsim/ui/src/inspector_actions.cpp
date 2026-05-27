@@ -81,12 +81,14 @@ private:
 bool isTransformEditable(ObjectType type)
 {
   return type == ObjectType::RigidBody || type == ObjectType::FreeFrame
-         || type == ObjectType::FixedFrame || type == ObjectType::Sensor;
+         || type == ObjectType::FixedFrame || type == ObjectType::Sensor
+         || type == ObjectType::Collision;
 }
 
 bool isShapeEditable(ObjectType type)
 {
-  return type == ObjectType::RigidBody || type == ObjectType::Link;
+  return type == ObjectType::RigidBody || type == ObjectType::Link
+         || type == ObjectType::Collision;
 }
 
 bool hasSingleDofJoint(const SceneObject& object)
@@ -379,6 +381,27 @@ void appendSensorProperties(
       editable));
 }
 
+void appendCollisionProperties(
+    std::vector<InspectorNumericProperty>& properties,
+    const SceneObject& object,
+    bool editable)
+{
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::CollisionFriction,
+      "collision friction",
+      object.collision.friction,
+      0.0,
+      10.0,
+      editable));
+  properties.push_back(numeric(
+      InspectorNumericPropertyKind::CollisionRestitution,
+      "collision restitution",
+      object.collision.restitution,
+      0.0,
+      1.0,
+      editable));
+}
+
 const SceneObject* selectedObject(const SimEngine& engine)
 {
   return engine.objects().model().find(engine.selection().primary());
@@ -494,6 +517,21 @@ void setSensorComponent(
   }
 }
 
+void setCollisionComponent(
+    CollisionDesc& collision, InspectorNumericPropertyKind kind, double value)
+{
+  switch (kind) {
+    case InspectorNumericPropertyKind::CollisionFriction:
+      collision.friction = value;
+      break;
+    case InspectorNumericPropertyKind::CollisionRestitution:
+      collision.restitution = value;
+      break;
+    default:
+      break;
+  }
+}
+
 } // namespace
 
 InspectorStatus buildInspectorStatus(const SimEngine& engine)
@@ -557,6 +595,9 @@ InspectorStatus buildInspectorStatus(const SimEngine& engine)
         sensorKindChoices(),
         editable));
     appendSensorProperties(status.numericProperties, *object, editable);
+  }
+  if (object->type == ObjectType::Collision) {
+    appendCollisionProperties(status.numericProperties, *object, editable);
   }
   if (isShapeEditable(object->type)) {
     status.enumProperties.push_back(enumProperty(
@@ -641,6 +682,16 @@ InspectorActionResult setInspectorNumericProperty(
       setSensorComponent(sensor, kind, value);
       engine.execute(commands::setSensor(object->id, sensor));
       return result(true, "Updated sensor");
+    }
+    case InspectorNumericPropertyKind::CollisionFriction:
+    case InspectorNumericPropertyKind::CollisionRestitution: {
+      if (object->type != ObjectType::Collision) {
+        return result(false, "Unsupported property");
+      }
+      CollisionDesc collision = object->collision;
+      setCollisionComponent(collision, kind, value);
+      engine.execute(commands::setCollision(object->id, collision));
+      return result(true, "Updated collision");
     }
   }
 

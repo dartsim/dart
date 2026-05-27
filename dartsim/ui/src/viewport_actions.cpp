@@ -65,7 +65,8 @@ constexpr std::array<ViewportPaneKind, dart::gui::kMaxViewportPanes>
 bool isTransformable(ObjectType type)
 {
   return type == ObjectType::RigidBody || type == ObjectType::FreeFrame
-         || type == ObjectType::FixedFrame || type == ObjectType::Sensor;
+         || type == ObjectType::FixedFrame || type == ObjectType::Sensor
+         || type == ObjectType::Collision;
 }
 
 bool layerEnabled(
@@ -80,6 +81,8 @@ bool layerEnabled(
       return filters.frames;
     case ViewportLayerKind::Sensors:
       return filters.sensors;
+    case ViewportLayerKind::Collisions:
+      return filters.collisions;
   }
   return true;
 }
@@ -100,6 +103,9 @@ void setLayerEnabled(
     case ViewportLayerKind::Sensors:
       filters.sensors = visible;
       break;
+    case ViewportLayerKind::Collisions:
+      filters.collisions = visible;
+      break;
   }
 }
 
@@ -114,6 +120,8 @@ std::string layerLabel(ViewportLayerKind kind)
       return "Frames";
     case ViewportLayerKind::Sensors:
       return "Sensors";
+    case ViewportLayerKind::Collisions:
+      return "Collisions";
   }
   return "Unknown";
 }
@@ -131,6 +139,8 @@ bool objectLayerEnabled(
       return filters.frames;
     case ObjectType::Sensor:
       return filters.sensors;
+    case ObjectType::Collision:
+      return filters.collisions;
     case ObjectType::MultiBody:
     case ObjectType::Joint:
       return false;
@@ -528,6 +538,9 @@ std::string visibleLayerSummary(const ViewportLayerFilterState& filters)
   if (filters.sensors) {
     appendLayer(layerLabel(ViewportLayerKind::Sensors));
   }
+  if (filters.collisions) {
+    appendLayer(layerLabel(ViewportLayerKind::Collisions));
+  }
   return summary.empty() ? "none" : summary;
 }
 
@@ -756,7 +769,8 @@ bool isViewportObjectVisible(
   }
 
   if (object->type == ObjectType::RigidBody || object->type == ObjectType::Link
-      || object->type == ObjectType::Sensor) {
+      || object->type == ObjectType::Sensor
+      || object->type == ObjectType::Collision) {
     const std::vector<RenderItem> items
         = filteredViewportRenderItems(engine, filters);
     return std::find_if(
@@ -796,7 +810,8 @@ dart::gui::RenderableId selectedViewportRenderable(
   if (object == nullptr
       || (object->type != ObjectType::RigidBody
           && object->type != ObjectType::Link
-          && object->type != ObjectType::Sensor)) {
+          && object->type != ObjectType::Sensor
+          && object->type != ObjectType::Collision)) {
     return 0;
   }
   return renderableIdForObject(selected);
@@ -834,6 +849,9 @@ std::vector<ViewportLayerFilterAction> buildViewportLayerFilterActions(
       {ViewportLayerKind::Sensors,
        "Show Sensors",
        layerEnabled(filters, ViewportLayerKind::Sensors)},
+      {ViewportLayerKind::Collisions,
+       "Show Collisions",
+       layerEnabled(filters, ViewportLayerKind::Collisions)},
   };
 }
 

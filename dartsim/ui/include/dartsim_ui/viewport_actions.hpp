@@ -79,6 +79,7 @@ enum class ViewportLayerKind
   Links,
   Frames,
   Sensors,
+  Collisions,
 };
 
 /// Editor view state for viewport layer filters.
@@ -88,6 +89,7 @@ struct ViewportLayerFilterState
   bool links = true;
   bool frames = true;
   bool sensors = true;
+  bool collisions = true;
 };
 
 /// View-menu action state for viewport layer filters.

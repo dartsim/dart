@@ -534,6 +534,34 @@ TEST(DartsimWatchActions, SensorWatchExposesDescriptorValues)
   EXPECT_TRUE(findSignal(status, ui::WatchValueKind::SensorRange)->enabled);
 }
 
+TEST(DartsimWatchActions, CollisionWatchExposesTransformValues)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addCollision(
+          ShapeType::Sphere, kNoObject, translation(1.0, 2.0, 3.0), "contact"));
+  const ObjectId collision = engine.selection().primary();
+  ASSERT_NE(collision, kNoObject);
+
+  ui::WatchState state;
+  ASSERT_TRUE(ui::watchSelectedObjects(state, engine).ok);
+  ui::recordWatchSample(state, engine);
+
+  const ui::WatchStatus status = ui::buildWatchStatus(state, engine);
+  ASSERT_EQ(status.rows.size(), 1u);
+  EXPECT_EQ(status.rows[0].type, "Collision");
+  ASSERT_NE(
+      findValue(status.rows[0], ui::WatchValueKind::TranslationX), nullptr);
+  EXPECT_DOUBLE_EQ(
+      findValue(status.rows[0], ui::WatchValueKind::TranslationX)->value, 1.0);
+  EXPECT_EQ(findValue(status.rows[0], ui::WatchValueKind::Mass), nullptr);
+
+  const ui::WatchSeries* height
+      = findSeries(state, collision, ui::WatchValueKind::TranslationZ);
+  ASSERT_NE(height, nullptr);
+  EXPECT_DOUBLE_EQ(height->samples.back(), 3.0);
+}
+
 TEST(DartsimWatchActions, RemoveAndClearWatchState)
 {
   SimEngine engine;

@@ -56,7 +56,7 @@ namespace dartsim::scene_io {
 namespace {
 
 /// Highest scene-file format version this build can read and writes on save.
-constexpr int kSceneFormatVersion = 2;
+constexpr int kSceneFormatVersion = 3;
 
 void writeRow(std::ostream& out, const char* key, const double* data, int n)
 {
@@ -147,6 +147,7 @@ std::optional<ObjectType> objectTypeFromInt(int value)
     case ObjectType::FreeFrame:
     case ObjectType::FixedFrame:
     case ObjectType::Sensor:
+    case ObjectType::Collision:
       return static_cast<ObjectType>(value);
   }
   return std::nullopt;
@@ -165,6 +166,13 @@ bool isValidSensorDesc(const SensorDesc& sensor)
          && std::isfinite(sensor.fieldOfView) && sensor.fieldOfView >= 1.0
          && sensor.fieldOfView <= 179.0 && std::isfinite(sensor.updateRate)
          && sensor.updateRate > 0.0;
+}
+
+bool isValidCollisionDesc(const CollisionDesc& collision)
+{
+  return std::isfinite(collision.friction) && collision.friction >= 0.0
+         && std::isfinite(collision.restitution) && collision.restitution >= 0.0
+         && collision.restitution <= 1.0;
 }
 
 } // namespace
@@ -209,6 +217,8 @@ std::string save(const SceneModel& model)
     out << "sensorrange " << object->sensor.range << '\n';
     out << "sensorfov " << object->sensor.fieldOfView << '\n';
     out << "sensorrate " << object->sensor.updateRate << '\n';
+    out << "collisionfriction " << object->collision.friction << '\n';
+    out << "collisionrestitution " << object->collision.restitution << '\n';
     writeMatrix4(out, object->transform.matrix());
     writeRow(out, "linvel", object->linearVelocity.data(), 3);
     writeRow(out, "angvel", object->angularVelocity.data(), 3);
@@ -355,6 +365,14 @@ bool load(std::string_view text, SceneModel& out)
         if (!(ls >> current.sensor.updateRate)) {
           return false;
         }
+      } else if (key == "collisionfriction") {
+        if (!(ls >> current.collision.friction)) {
+          return false;
+        }
+      } else if (key == "collisionrestitution") {
+        if (!(ls >> current.collision.restitution)) {
+          return false;
+        }
       } else if (key == "transform") {
         if (!readMatrix4(ls, current.transform)) {
           return false;
@@ -436,12 +454,18 @@ bool load(std::string_view text, SceneModel& out)
         && !isValidSensorDesc(object.sensor)) {
       return false;
     }
+    if (object.type == ObjectType::Collision
+        && !isValidCollisionDesc(object.collision)) {
+      return false;
+    }
     if (!objectTypes.emplace(object.id, object.type).second) {
       return false;
     }
   }
   for (SceneObject& object : objects) {
-    if (object.type != ObjectType::Sensor || object.parent == kNoObject) {
+    if ((object.type != ObjectType::Sensor
+         && object.type != ObjectType::Collision)
+        || object.parent == kNoObject) {
       continue;
     }
     const auto parent = objectTypes.find(object.parent);

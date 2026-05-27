@@ -621,6 +621,62 @@ TEST(DartsimConsoleActions, CreatesContextSensitiveModelElements)
   EXPECT_EQ(contactObject->type, ObjectType::Sensor);
   EXPECT_EQ(contactObject->sensor.kind, SensorKind::Contact);
   EXPECT_EQ(contactObject->parent, fixedFrame);
+
+  ASSERT_TRUE(engine.select(fixedFrame));
+  const auto collision
+      = ui::applyConsoleCommand(engine, "create collision-box");
+  EXPECT_TRUE(collision.ok);
+  EXPECT_EQ(collision.message, "Added box collision");
+  const ObjectId contactShape = engine.selection().primary();
+  ASSERT_NE(contactShape, kNoObject);
+  const SceneObject* collisionObject
+      = engine.objects().model().find(contactShape);
+  ASSERT_NE(collisionObject, nullptr);
+  EXPECT_EQ(collisionObject->type, ObjectType::Collision);
+  EXPECT_EQ(collisionObject->shape.type, ShapeType::Box);
+  EXPECT_EQ(collisionObject->parent, fixedFrame);
+}
+
+TEST(DartsimConsoleActions, CreatesCollisionAliasesForEachShape)
+{
+  struct AliasCase
+  {
+    const char* token = "";
+    ShapeType shape = ShapeType::Box;
+  };
+  const std::vector<AliasCase> cases{
+      {"collision-box", ShapeType::Box},
+      {"box-collision", ShapeType::Box},
+      {"collision-sphere", ShapeType::Sphere},
+      {"sphere-collision", ShapeType::Sphere},
+      {"collision-cylinder", ShapeType::Cylinder},
+      {"cylinder-collision", ShapeType::Cylinder},
+      {"collision-capsule", ShapeType::Capsule},
+      {"capsule-collision", ShapeType::Capsule},
+      {"collision-plane", ShapeType::Plane},
+      {"plane-collision", ShapeType::Plane},
+  };
+
+  SimEngine engine;
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create box").ok);
+  const ObjectId parent = engine.selection().primary();
+  ASSERT_NE(parent, kNoObject);
+
+  for (const AliasCase& alias : cases) {
+    if (engine.selection().primary() != parent) {
+      ASSERT_TRUE(engine.select(parent));
+    }
+    const auto created
+        = ui::applyConsoleCommand(engine, std::string("create ") + alias.token);
+    ASSERT_TRUE(created.ok) << alias.token;
+    const ObjectId collision = engine.selection().primary();
+    ASSERT_NE(collision, kNoObject) << alias.token;
+    const SceneObject* object = engine.objects().model().find(collision);
+    ASSERT_NE(object, nullptr) << alias.token;
+    EXPECT_EQ(object->type, ObjectType::Collision) << alias.token;
+    EXPECT_EQ(object->shape.type, alias.shape) << alias.token;
+    EXPECT_EQ(object->parent, parent) << alias.token;
+  }
 }
 
 TEST(DartsimConsoleActions, RejectsMissingAndAmbiguousObjectTargets)

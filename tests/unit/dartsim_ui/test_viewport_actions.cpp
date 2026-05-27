@@ -265,7 +265,8 @@ TEST(DartsimViewportActions, TransformGizmoTracksAndCommitsSelection)
 }
 
 TEST(
-    DartsimViewportActions, TransformGizmoUsesWorldTransformsForParentedSensors)
+    DartsimViewportActions,
+    TransformGizmoUsesWorldTransformsForParentedDescriptors)
 {
   SimEngine engine;
   Eigen::Isometry3d parentTransform = translation(1.0, 2.0, 0.5);
@@ -305,6 +306,20 @@ TEST(
   EXPECT_TRUE(updatedWorld->matrix().isApprox(movedWorld.matrix()));
   EXPECT_TRUE(
       gizmo.target->getWorldTransform().matrix().isApprox(movedWorld.matrix()));
+
+  const Eigen::Isometry3d localCollisionTransform = translation(0.25, 0.0, 0.5);
+  engine.execute(
+      commands::addCollision(
+          ShapeType::Sphere, parent, localCollisionTransform, "contact"));
+  const ObjectId collision = engine.selection().primary();
+  ASSERT_NE(collision, kNoObject);
+
+  const Eigen::Isometry3d expectedCollisionWorld
+      = parentTransform * localCollisionTransform;
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine));
+  EXPECT_EQ(gizmo.object, collision);
+  EXPECT_TRUE(gizmo.target->getWorldTransform().matrix().isApprox(
+      expectedCollisionWorld.matrix()));
 }
 
 TEST(DartsimViewportActions, TransformGizmoRejectsUnsupportedHiddenAndRunMode)
@@ -409,6 +424,14 @@ TEST(DartsimViewportActions, LayerFiltersClassifyAllViewportObjectTypes)
           SensorKind::Range, fixedFrame, translation(0.0, 0.0, 0.5), "range"));
   const ObjectId sensor = engine.selection().primary();
   ASSERT_NE(sensor, kNoObject);
+  engine.execute(
+      commands::addCollision(
+          ShapeType::Sphere,
+          fixedFrame,
+          translation(0.0, 0.0, 0.25),
+          "contact"));
+  const ObjectId collision = engine.selection().primary();
+  ASSERT_NE(collision, kNoObject);
 
   SceneObject joint;
   joint.type = ObjectType::Joint;
@@ -423,6 +446,7 @@ TEST(DartsimViewportActions, LayerFiltersClassifyAllViewportObjectTypes)
   EXPECT_TRUE(ui::isViewportObjectVisible(engine, freeFrame, filters));
   EXPECT_TRUE(ui::isViewportObjectVisible(engine, fixedFrame, filters));
   EXPECT_TRUE(ui::isViewportObjectVisible(engine, sensor, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, collision, filters));
   EXPECT_FALSE(ui::isViewportObjectVisible(engine, arm, filters));
   EXPECT_FALSE(ui::isViewportObjectVisible(engine, jointId, filters));
   EXPECT_FALSE(ui::isViewportObjectVisible(engine, 999999, filters));
@@ -451,6 +475,13 @@ TEST(DartsimViewportActions, LayerFiltersClassifyAllViewportObjectTypes)
           filters, ui::ViewportLayerKind::Sensors, false)
           .ok);
   EXPECT_FALSE(ui::isViewportObjectVisible(engine, sensor, filters));
+  EXPECT_TRUE(ui::isViewportObjectVisible(engine, collision, filters));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Collisions, false)
+          .ok);
+  EXPECT_FALSE(ui::isViewportObjectVisible(engine, collision, filters));
 
   ASSERT_TRUE(
       ui::setViewportLayerVisible(filters, ui::ViewportLayerKind::Frames, true)
@@ -481,11 +512,12 @@ TEST(DartsimViewportActions, LayerFilterTogglesAreViewOnly)
   EXPECT_TRUE(engine.objects().model().find(box)->visible);
 
   const auto actions = ui::buildViewportLayerFilterActions(filters);
-  ASSERT_EQ(actions.size(), 4u);
+  ASSERT_EQ(actions.size(), 5u);
   EXPECT_FALSE(actions[0].checked);
   EXPECT_TRUE(actions[1].checked);
   EXPECT_TRUE(actions[2].checked);
   EXPECT_TRUE(actions[3].checked);
+  EXPECT_TRUE(actions[4].checked);
 }
 
 TEST(DartsimViewportActions, LayerFiltersAffectViewportSelectionAndMovement)
@@ -601,6 +633,93 @@ TEST(DartsimViewportActions, LayerFiltersAffectSensorSelectionAndMovement)
   EXPECT_TRUE(
       engine.objects().model().find(sensor)->transform.translation().isApprox(
           Eigen::Vector3d(1.1, 2.0, 3.0)));
+}
+
+TEST(DartsimViewportActions, LayerFiltersAffectCollisionSelectionAndMovement)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addCollision(
+          ShapeType::Sphere, kNoObject, translation(1.0, 2.0, 3.0), "contact"));
+  const ObjectId collision = engine.selection().primary();
+  ASSERT_NE(collision, kNoObject);
+  const Eigen::Vector3d original
+      = engine.objects().model().find(collision)->transform.translation();
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  const dart::gui::RenderableId renderable
+      = ui::selectedViewportRenderable(engine, filters);
+  EXPECT_EQ(renderable, ui::renderableIdForObject(collision));
+  EXPECT_NE(ui::selectedViewportLabel(engine, filters), "none");
+  EXPECT_TRUE(ui::selectViewportRenderable(engine, filters, 0));
+  EXPECT_EQ(engine.selection().primary(), kNoObject);
+  EXPECT_TRUE(ui::selectViewportRenderable(engine, filters, renderable));
+  EXPECT_EQ(engine.selection().primary(), collision);
+
+  const auto fit = ui::applyViewportCameraAction(
+      engine, testCamera(), ui::ViewportCameraActionKind::FitScene, filters);
+  ASSERT_TRUE(fit.ok);
+  ASSERT_TRUE(fit.camera.has_value());
+  EXPECT_TRUE(fit.camera->target.isApprox(original));
+  const auto focus = ui::applyViewportCameraAction(
+      engine,
+      testCamera(),
+      ui::ViewportCameraActionKind::FocusSelection,
+      filters);
+  ASSERT_TRUE(focus.ok);
+  ASSERT_TRUE(focus.camera.has_value());
+  EXPECT_TRUE(focus.camera->target.isApprox(original));
+
+  ui::ViewportTransformGizmo gizmo = ui::makeViewportTransformGizmo();
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  EXPECT_EQ(gizmo.object, collision);
+  Eigen::Isometry3d moved = translation(4.0, 5.0, 6.0);
+  ASSERT_TRUE(ui::applyViewportTransformGizmo(engine, gizmo, filters, moved));
+  EXPECT_TRUE(engine.objects()
+                  .model()
+                  .find(collision)
+                  ->transform.translation()
+                  .isApprox(Eigen::Vector3d(4.0, 5.0, 6.0)));
+  EXPECT_TRUE(
+      gizmo.target->getWorldTransform().matrix().isApprox(moved.matrix()));
+  ASSERT_TRUE(engine.undo());
+  ASSERT_TRUE(ui::syncViewportTransformGizmo(gizmo, engine, filters));
+  EXPECT_TRUE(engine.objects()
+                  .model()
+                  .find(collision)
+                  ->transform.translation()
+                  .isApprox(original));
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Collisions, false)
+          .ok);
+  EXPECT_EQ(ui::selectedViewportRenderable(engine, filters), 0u);
+  EXPECT_EQ(ui::selectedViewportLabel(engine, filters), "none");
+
+  ui::ViewportMoveInput input;
+  input.right = true;
+  EXPECT_FALSE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(engine.objects()
+                  .model()
+                  .find(collision)
+                  ->transform.translation()
+                  .isApprox(original));
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Collisions, true)
+          .ok);
+  EXPECT_TRUE(ui::moveSelectedFromViewport(engine, filters, input));
+  EXPECT_TRUE(engine.objects()
+                  .model()
+                  .find(collision)
+                  ->transform.translation()
+                  .isApprox(Eigen::Vector3d(1.1, 2.0, 3.0)));
 }
 
 TEST(DartsimViewportActions, LayerFiltersAffectFrameFocusAndGizmos)
@@ -1601,7 +1720,9 @@ TEST(DartsimViewportActions, ViewportStatusSummarizesViewOnlyState)
   EXPECT_EQ(status.cameraModeLabel, "Pan Camera Mode");
   EXPECT_EQ(status.cameraLockLabel, "Camera: locked");
   EXPECT_EQ(status.trackingLabel, "Selection tracking: paused");
-  EXPECT_EQ(status.visibleLayerLabel, "Visible layers: Rigid Bodies, Sensors");
+  EXPECT_EQ(
+      status.visibleLayerLabel,
+      "Visible layers: Rigid Bodies, Sensors, Collisions");
   EXPECT_EQ(status.selectionLabel, "Selection: box [RigidBody]");
   EXPECT_FALSE(engine.commands().canUndo());
   EXPECT_FALSE(engine.isProjectDirty());
@@ -1613,6 +1734,10 @@ TEST(DartsimViewportActions, ViewportStatusSummarizesViewOnlyState)
   ASSERT_TRUE(
       ui::setViewportLayerVisible(
           filters, ui::ViewportLayerKind::Sensors, false)
+          .ok);
+  ASSERT_TRUE(
+      ui::setViewportLayerVisible(
+          filters, ui::ViewportLayerKind::Collisions, false)
           .ok);
   controls.lockCamera = false;
   const ui::ViewportStatus hidden

@@ -61,7 +61,7 @@ TEST(DartsimPaletteActions, BuildsContextSensitiveActionList)
 {
   SimEngine engine;
   std::vector<ui::PaletteAction> actions = ui::buildPaletteActions(engine);
-  ASSERT_EQ(actions.size(), 17u);
+  ASSERT_EQ(actions.size(), 22u);
 
   const auto& box = findAction(actions, ui::PaletteActionKind::AddBoxRigidBody);
   EXPECT_EQ(box.label, "Rigid Body / Box");
@@ -92,6 +92,11 @@ TEST(DartsimPaletteActions, BuildsContextSensitiveActionList)
       = findAction(actions, ui::PaletteActionKind::AddCameraSensor);
   EXPECT_EQ(cameraSensor.label, "Sensor / Camera");
   EXPECT_TRUE(cameraSensor.enabled);
+
+  const auto& boxCollision
+      = findAction(actions, ui::PaletteActionKind::AddBoxCollision);
+  EXPECT_EQ(boxCollision.label, "Collision / Box");
+  EXPECT_TRUE(boxCollision.enabled);
 
   const auto rootRejected
       = ui::applyPaletteAction(engine, ui::PaletteActionKind::AddRootLink);
@@ -257,6 +262,53 @@ TEST(DartsimPaletteActions, CreatesSensorsAtWorldOrSelectedFrameParent)
   ASSERT_NE(contactObject, nullptr);
   EXPECT_EQ(contactObject->sensor.kind, SensorKind::Contact);
   EXPECT_EQ(contactObject->parent, body);
+}
+
+TEST(DartsimPaletteActions, CreatesCollisionsAtWorldOrSelectedFrameParent)
+{
+  SimEngine engine;
+
+  const auto box
+      = ui::applyPaletteAction(engine, ui::PaletteActionKind::AddBoxCollision);
+  ASSERT_TRUE(box.ok);
+  EXPECT_EQ(box.message, "Added box collision");
+  ASSERT_NE(box.object, kNoObject);
+  const SceneObject* boxObject = engine.objects().model().find(box.object);
+  ASSERT_NE(boxObject, nullptr);
+  EXPECT_EQ(boxObject->type, ObjectType::Collision);
+  EXPECT_EQ(boxObject->parent, kNoObject);
+  EXPECT_EQ(boxObject->shape.type, ShapeType::Box);
+  ASSERT_EQ(engine.renderItems().size(), 1u);
+  EXPECT_EQ(engine.renderItems().front().id, box.object);
+
+  ASSERT_TRUE(engine.undo());
+  EXPECT_TRUE(engine.objects().model().empty());
+
+  ASSERT_TRUE(
+      ui::applyPaletteAction(engine, ui::PaletteActionKind::AddBoxRigidBody)
+          .ok);
+  const ObjectId body = engine.selection().primary();
+  ASSERT_NE(body, kNoObject);
+
+  const auto sphere = ui::applyPaletteAction(
+      engine, ui::PaletteActionKind::AddSphereCollision);
+  ASSERT_TRUE(sphere.ok);
+  EXPECT_EQ(sphere.message, "Added sphere collision");
+  const SceneObject* sphereObject
+      = engine.objects().model().find(sphere.object);
+  ASSERT_NE(sphereObject, nullptr);
+  EXPECT_EQ(sphereObject->type, ObjectType::Collision);
+  EXPECT_EQ(sphereObject->parent, body);
+  EXPECT_EQ(sphereObject->shape.type, ShapeType::Sphere);
+
+  ASSERT_TRUE(engine.select(body));
+  const auto plane = ui::applyPaletteAction(
+      engine, ui::PaletteActionKind::AddPlaneCollision);
+  ASSERT_TRUE(plane.ok);
+  const SceneObject* planeObject = engine.objects().model().find(plane.object);
+  ASSERT_NE(planeObject, nullptr);
+  EXPECT_EQ(planeObject->parent, body);
+  EXPECT_EQ(planeObject->shape.type, ShapeType::Plane);
 }
 
 TEST(DartsimPaletteActions, CreatesLinksWithContextAndJointType)

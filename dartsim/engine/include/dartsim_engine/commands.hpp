@@ -86,6 +86,19 @@ std::unique_ptr<Command> addSensor(
     const Eigen::Isometry3d& transform = Eigen::Isometry3d::Identity(),
     std::string name = {});
 
+/// Add an editor-owned collision geometry descriptor under the world or a
+/// frame-like parent.
+std::unique_ptr<Command> addCollision(
+    ShapeType shape = ShapeType::Box,
+    ObjectId parent = kNoObject,
+    const Eigen::Isometry3d& transform = Eigen::Isometry3d::Identity(),
+    std::string name = {});
+std::unique_ptr<Command> addCollision(
+    const ShapeDesc& shape,
+    ObjectId parent = kNoObject,
+    const Eigen::Isometry3d& transform = Eigen::Isometry3d::Identity(),
+    std::string name = {});
+
 /// Remove an object (and its descendants) and update the selection.
 std::unique_ptr<Command> removeObject(ObjectId id);
 
@@ -101,6 +114,9 @@ std::unique_ptr<Command> setShape(ObjectId id, ShapeDesc shape);
 
 /// Set a sensor descriptor.
 std::unique_ptr<Command> setSensor(ObjectId id, SensorDesc sensor);
+
+/// Set a collision geometry descriptor.
+std::unique_ptr<Command> setCollision(ObjectId id, CollisionDesc collision);
 
 /// Set a child link's single-DOF joint position.
 std::unique_ptr<Command> setJointPosition(ObjectId link, double position);
