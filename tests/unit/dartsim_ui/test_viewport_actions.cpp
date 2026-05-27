@@ -1296,13 +1296,19 @@ TEST(DartsimViewportActions, CameraControlActionsSetMouseModeWithoutEditing)
   ui::ViewportCameraControlState controls;
   auto actions
       = ui::buildViewportCameraControlActions(engine, filters, controls);
-  ASSERT_EQ(actions.size(), 4u);
+  ASSERT_EQ(actions.size(), 5u);
   EXPECT_EQ(actions[0].kind, ui::ViewportCameraControlActionKind::OrbitMode);
   EXPECT_TRUE(actions[0].checked);
   EXPECT_FALSE(actions[1].checked);
   EXPECT_FALSE(actions[2].checked);
   EXPECT_FALSE(actions[3].checked);
   EXPECT_TRUE(actions[3].enabled);
+  EXPECT_EQ(
+      actions[4].kind, ui::ViewportCameraControlActionKind::ToggleCameraLock);
+  EXPECT_EQ(actions[4].label, "Lock Camera");
+  EXPECT_FALSE(actions[4].checked);
+  EXPECT_TRUE(actions[4].enabled);
+  EXPECT_TRUE(actions[4].disabledReason.empty());
 
   auto result = ui::applyViewportCameraControlAction(
       engine, filters, controls, ui::ViewportCameraControlActionKind::PanMode);
@@ -1325,6 +1331,32 @@ TEST(DartsimViewportActions, CameraControlActionsSetMouseModeWithoutEditing)
       ui::ViewportCameraControlActionKind::OrbitMode);
   EXPECT_TRUE(result.ok);
   EXPECT_EQ(controls.mouseMode, dart::gui::OrbitCameraMouseMode::Orbit);
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleCameraLock);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Camera locked");
+  EXPECT_TRUE(controls.lockCamera);
+  EXPECT_TRUE(ui::viewportCameraControlOptions(controls).locked);
+  actions = ui::buildViewportCameraControlActions(engine, filters, controls);
+  ASSERT_EQ(actions.size(), 5u);
+  EXPECT_EQ(actions[4].label, "Lock Camera");
+  EXPECT_TRUE(actions[4].checked);
+  EXPECT_TRUE(actions[4].enabled);
+  EXPECT_TRUE(actions[4].disabledReason.empty());
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleCameraLock);
+  EXPECT_TRUE(result.ok);
+  EXPECT_EQ(result.message, "Camera unlocked");
+  EXPECT_FALSE(controls.lockCamera);
+  EXPECT_FALSE(ui::viewportCameraControlOptions(controls).locked);
   EXPECT_FALSE(engine.commands().canUndo());
   EXPECT_FALSE(engine.isProjectDirty());
 }
@@ -1380,7 +1412,7 @@ TEST(DartsimViewportActions, SelectionTrackingFollowsVisibleSelection)
   EXPECT_FALSE(tracked.camera.has_value());
   auto actions
       = ui::buildViewportCameraControlActions(engine, filters, controls);
-  ASSERT_EQ(actions.size(), 4u);
+  ASSERT_EQ(actions.size(), 5u);
   EXPECT_TRUE(actions[3].checked);
   EXPECT_TRUE(actions[3].enabled);
 
@@ -1391,4 +1423,42 @@ TEST(DartsimViewportActions, SelectionTrackingFollowsVisibleSelection)
       ui::ViewportCameraControlActionKind::ToggleTrackSelection);
   EXPECT_TRUE(result.ok);
   EXPECT_FALSE(controls.trackSelection);
+}
+
+TEST(DartsimViewportActions, CameraLockSuppressesSelectionTracking)
+{
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Box, translation(4.0, -2.0, 0.5), "box"));
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportCameraControlState controls;
+  auto result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleTrackSelection);
+  ASSERT_TRUE(result.ok);
+  ASSERT_TRUE(controls.trackSelection);
+
+  result = ui::applyViewportCameraControlAction(
+      engine,
+      filters,
+      controls,
+      ui::ViewportCameraControlActionKind::ToggleCameraLock);
+  ASSERT_TRUE(result.ok);
+  EXPECT_TRUE(controls.lockCamera);
+
+  const dart::gui::OrbitCamera current = testCamera();
+  const auto tracked
+      = ui::trackedSelectionCamera(engine, current, filters, controls);
+  EXPECT_FALSE(tracked.ok);
+  EXPECT_EQ(tracked.message, "Camera locked");
+  EXPECT_FALSE(tracked.camera.has_value());
+  EXPECT_TRUE(controls.trackSelection);
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
 }

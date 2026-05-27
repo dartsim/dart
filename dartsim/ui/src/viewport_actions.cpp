@@ -966,6 +966,10 @@ std::vector<ViewportCameraControlAction> buildViewportCameraControlActions(
           controls.trackSelection,
           controls.trackSelection || hasVisibleSelection,
           "No visible selected object"),
+      makeCameraControlAction(
+          ViewportCameraControlActionKind::ToggleCameraLock,
+          "Lock Camera",
+          controls.lockCamera),
   };
 }
 
@@ -995,6 +999,9 @@ ViewportCameraControlActionResult applyViewportCameraControlAction(
       }
       controls.trackSelection = true;
       return {true, "Selection tracking on"};
+    case ViewportCameraControlActionKind::ToggleCameraLock:
+      controls.lockCamera = !controls.lockCamera;
+      return {true, controls.lockCamera ? "Camera locked" : "Camera unlocked"};
   }
 
   return {false, "Unknown camera control"};
@@ -1005,6 +1012,7 @@ dart::gui::OrbitCameraControlOptions viewportCameraControlOptions(
 {
   dart::gui::OrbitCameraControlOptions options;
   options.mouseMode = controls.mouseMode;
+  options.locked = controls.lockCamera;
   return options;
 }
 
@@ -1016,6 +1024,9 @@ ViewportCameraActionResult trackedSelectionCamera(
 {
   if (!controls.trackSelection) {
     return {false, "Selection tracking off", std::nullopt};
+  }
+  if (controls.lockCamera) {
+    return {false, "Camera locked", std::nullopt};
   }
 
   const ViewportBounds bounds = selectedFocusBounds(engine, filters);

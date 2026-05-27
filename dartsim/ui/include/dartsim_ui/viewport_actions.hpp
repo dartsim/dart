@@ -140,6 +140,7 @@ struct ViewportCameraControlState
   dart::gui::OrbitCameraMouseMode mouseMode
       = dart::gui::OrbitCameraMouseMode::Orbit;
   bool trackSelection = false;
+  bool lockCamera = false;
 };
 
 /// View-menu camera-control command.
@@ -149,6 +150,7 @@ enum class ViewportCameraControlActionKind
   PanMode,
   ZoomMode,
   ToggleTrackSelection,
+  ToggleCameraLock,
 };
 
 /// View-menu action state for camera mouse modes and selection tracking.

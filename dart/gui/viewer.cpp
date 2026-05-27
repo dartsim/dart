@@ -355,6 +355,12 @@ void resetOrbitCameraTracking(OrbitCameraController& controller)
 void updateOrbitCameraController(
     OrbitCameraController& controller, const OrbitCameraControllerInput& input)
 {
+  if (input.locked) {
+    controller.scrollDelta = 0.0;
+    resetOrbitCameraTracking(controller);
+    return;
+  }
+
   const bool hasCursor = input.hasCursor && std::isfinite(input.cursorX)
                          && std::isfinite(input.cursorY);
   double dx = 0.0;

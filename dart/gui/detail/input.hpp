@@ -88,6 +88,16 @@ std::optional<Eigen::Vector3d> selectedDragAxisFromKeyboard(GLFWwindow* window);
 Eigen::Vector3d selectedNudgeFromKeyboard(
     GLFWwindow* window, const dart::gui::OrbitCamera& camera, double stepSize);
 
+dart::gui::OrbitCameraControllerInput makeOrbitCameraControllerInput(
+    double cursorX,
+    double cursorY,
+    bool leftMousePressed,
+    bool rightMousePressed,
+    bool middleMousePressed,
+    bool suppressLeftMouseOrbit,
+    bool dragModifierDown,
+    const dart::gui::OrbitCameraControlOptions& controls);
+
 void updateCameraController(
     GLFWwindow* window,
     dart::gui::OrbitCameraController& controller,

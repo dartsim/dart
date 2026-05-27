@@ -35,6 +35,7 @@
 #include <dart/gui/application.hpp>
 #include <dart/gui/debug.hpp>
 #include <dart/gui/detail/frame_viewport.hpp>
+#include <dart/gui/detail/input.hpp>
 #include <dart/gui/detail/scenes.hpp>
 #include <dart/gui/detail/simulation_stepper.hpp>
 #include <dart/gui/geometry.hpp>
@@ -1928,6 +1929,7 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresCameraControls)
   options.cameraControlsProvider = [] {
     dart::gui::OrbitCameraControlOptions controls;
     controls.mouseMode = dart::gui::OrbitCameraMouseMode::Pan;
+    controls.locked = true;
     return controls;
   };
   options.cameraUpdater = [](dart::gui::OrbitCamera& camera) {
@@ -1939,6 +1941,22 @@ TEST(FilamentSceneExtraction, ApplicationOptionsStoresCameraControls)
   EXPECT_EQ(
       options.cameraControlsProvider().mouseMode,
       dart::gui::OrbitCameraMouseMode::Pan);
+  EXPECT_TRUE(options.cameraControlsProvider().locked);
+
+  const dart::gui::OrbitCameraControllerInput lockedInput
+      = dart::gui::detail::makeOrbitCameraControllerInput(
+          10.0,
+          20.0,
+          true,
+          false,
+          false,
+          false,
+          false,
+          options.cameraControlsProvider());
+  EXPECT_TRUE(lockedInput.locked);
+  EXPECT_TRUE(lockedInput.pan);
+  EXPECT_FALSE(lockedInput.orbit);
+  EXPECT_FALSE(lockedInput.zoom);
 
   dart::gui::OrbitCamera camera;
   ASSERT_TRUE(options.cameraUpdater(camera));
@@ -7395,6 +7413,25 @@ TEST(FilamentSceneExtraction, OrbitCamera_UpdateBasisAndPickingAreStable)
   controllerInput.hasCursor = false;
   dart::gui::updateOrbitCameraController(controller, controllerInput);
   EXPECT_FALSE(controller.hasLastCursor);
+
+  const dart::gui::OrbitCamera cameraBeforeLock = controller.camera;
+  controller.hasLastCursor = true;
+  controller.lastCursorX = 50.0;
+  controller.lastCursorY = 60.0;
+  dart::gui::addOrbitCameraScroll(controller, 1.0);
+  controllerInput.hasCursor = true;
+  controllerInput.locked = true;
+  controllerInput.orbit = true;
+  controllerInput.cursorX = 140.0;
+  controllerInput.cursorY = 160.0;
+  dart::gui::updateOrbitCameraController(controller, controllerInput);
+  EXPECT_FALSE(controller.hasLastCursor);
+  EXPECT_NEAR(controller.scrollDelta, 0.0, 1e-12);
+  EXPECT_TRUE(controller.camera.target.isApprox(cameraBeforeLock.target));
+  EXPECT_TRUE(controller.camera.up.isApprox(cameraBeforeLock.up));
+  EXPECT_EQ(controller.camera.yaw, cameraBeforeLock.yaw);
+  EXPECT_EQ(controller.camera.pitch, cameraBeforeLock.pitch);
+  EXPECT_EQ(controller.camera.distance, cameraBeforeLock.distance);
 
   const auto ray
       = dart::gui::makePerspectivePickRay(camera, 320, 240, 640, 480);

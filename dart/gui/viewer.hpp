@@ -139,6 +139,7 @@ enum class OrbitCameraMouseMode
 struct OrbitCameraControlOptions
 {
   OrbitCameraMouseMode mouseMode = OrbitCameraMouseMode::Orbit;
+  bool locked = false;
 };
 
 struct OrbitCameraController
@@ -155,6 +156,7 @@ struct OrbitCameraControllerInput
   double cursorX = 0.0;
   double cursorY = 0.0;
   bool hasCursor = true;
+  bool locked = false;
   bool orbit = false;
   bool pan = false;
   bool zoom = false;
