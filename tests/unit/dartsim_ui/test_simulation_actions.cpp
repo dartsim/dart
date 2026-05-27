@@ -239,6 +239,15 @@ TEST(DartsimSimulationActions, RecordingAndReplayActionsExposeStatus)
   engine.execute(
       commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 2.0)));
 
+  std::vector<ui::SimulationReplayAction> replayActions
+      = ui::buildSimulationReplayActions(engine);
+  ASSERT_EQ(replayActions.size(), 4u);
+  EXPECT_FALSE(replayActions[0].enabled);
+  EXPECT_EQ(replayActions[0].disabledReason, "No replay loaded");
+  EXPECT_FALSE(replayActions[1].enabled);
+  EXPECT_FALSE(replayActions[2].enabled);
+  EXPECT_FALSE(replayActions[3].enabled);
+
   const auto stopInactive = ui::setSimulationRecording(engine, false);
   EXPECT_FALSE(stopInactive.ok);
   EXPECT_EQ(stopInactive.message, "Recording already stopped");
@@ -252,19 +261,91 @@ TEST(DartsimSimulationActions, RecordingAndReplayActionsExposeStatus)
   EXPECT_FALSE(startAgain.ok);
   EXPECT_EQ(startAgain.message, "Recording already active");
 
+  ASSERT_TRUE(ui::playSimulation(engine).ok);
+  const auto stopWhileRunning = ui::setSimulationRecording(engine, false);
+  EXPECT_FALSE(stopWhileRunning.ok);
+  EXPECT_EQ(stopWhileRunning.message, "Pause before stopping recording");
+  EXPECT_TRUE(stopWhileRunning.status.recording);
+  EXPECT_TRUE(stopWhileRunning.status.playing);
+  EXPECT_FALSE(stopWhileRunning.status.hasReplay);
+
+  ASSERT_TRUE(ui::pauseSimulation(engine).ok);
   ASSERT_TRUE(ui::stepSimulation(engine, 2).ok);
   const auto stop = ui::setSimulationRecording(engine, false);
   EXPECT_TRUE(stop.ok);
   EXPECT_FALSE(stop.status.recording);
   EXPECT_TRUE(stop.status.hasReplay);
   EXPECT_GT(stop.status.replayFrameCount, 0u);
+  EXPECT_EQ(
+      stop.status.replayLabel,
+      "Replay frame 0 of " + std::to_string(stop.status.replayFrameCount - 1));
+
+  replayActions = ui::buildSimulationReplayActions(engine);
+  EXPECT_EQ(replayActions[0].label, "First Replay Frame");
+  EXPECT_FALSE(replayActions[0].enabled);
+  EXPECT_EQ(replayActions[0].disabledReason, "Already at first replay frame");
+  EXPECT_EQ(replayActions[1].label, "Previous Replay Frame");
+  EXPECT_FALSE(replayActions[1].enabled);
+  EXPECT_EQ(replayActions[2].label, "Next Replay Frame");
+  EXPECT_TRUE(replayActions[2].enabled);
+  EXPECT_EQ(replayActions[3].label, "Last Replay Frame");
+  EXPECT_TRUE(replayActions[3].enabled);
 
   const auto seek = ui::seekSimulationReplay(engine, 0);
   EXPECT_TRUE(seek.ok);
   EXPECT_EQ(seek.status.replayFrame, 0u);
 
+  const auto next = ui::applySimulationReplayAction(
+      engine, ui::SimulationReplayActionKind::Next);
+  EXPECT_TRUE(next.ok);
+  EXPECT_EQ(next.message, "Replay frame 1");
+  EXPECT_EQ(next.status.replayFrame, 1u);
+
+  const auto last = ui::applySimulationReplayAction(
+      engine, ui::SimulationReplayActionKind::Last);
+  EXPECT_TRUE(last.ok);
+  EXPECT_EQ(last.status.replayFrame, stop.status.replayFrameCount - 1);
+
+  replayActions = ui::buildSimulationReplayActions(engine);
+  EXPECT_FALSE(replayActions[2].enabled);
+  EXPECT_EQ(replayActions[2].disabledReason, "Already at last replay frame");
+  EXPECT_FALSE(replayActions[3].enabled);
+  EXPECT_EQ(replayActions[3].disabledReason, "Already at last replay frame");
+
+  const auto previous = ui::applySimulationReplayAction(
+      engine, ui::SimulationReplayActionKind::Previous);
+  EXPECT_TRUE(previous.ok);
+  EXPECT_EQ(previous.status.replayFrame, stop.status.replayFrameCount - 2);
+
+  const auto first = ui::applySimulationReplayAction(
+      engine, ui::SimulationReplayActionKind::First);
+  EXPECT_TRUE(first.ok);
+  EXPECT_EQ(first.status.replayFrame, 0u);
+
+  ASSERT_TRUE(ui::resetSimulation(engine).ok);
+  replayActions = ui::buildSimulationReplayActions(engine);
+  EXPECT_FALSE(replayActions[0].enabled);
+  EXPECT_EQ(
+      replayActions[0].disabledReason,
+      "Enter Simulation Mode before replaying");
+  EXPECT_EQ(
+      ui::seekSimulationReplay(engine, 0).message,
+      "Enter Simulation Mode before replaying");
+  ASSERT_TRUE(ui::stepSimulation(engine, 1).ok);
+
   const auto invalidSeek
       = ui::seekSimulationReplay(engine, stop.status.replayFrameCount + 10);
   EXPECT_FALSE(invalidSeek.ok);
   EXPECT_EQ(invalidSeek.message, "Replay seek failed");
+
+  ASSERT_TRUE(ui::playSimulation(engine).ok);
+  const auto playingSeek = ui::seekSimulationReplay(engine, 0);
+  EXPECT_FALSE(playingSeek.ok);
+  EXPECT_EQ(playingSeek.message, "Pause before replaying");
+  ASSERT_TRUE(ui::pauseSimulation(engine).ok);
+
+  ASSERT_TRUE(ui::setSimulationRecording(engine, true).ok);
+  const auto recordingSeek = ui::seekSimulationReplay(engine, 0);
+  EXPECT_FALSE(recordingSeek.ok);
+  EXPECT_EQ(recordingSeek.message, "Stop recording before replaying");
 }

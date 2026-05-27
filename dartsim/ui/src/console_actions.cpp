@@ -496,7 +496,28 @@ ConsoleCommandResult applySimulationCommand(
     return result(applied.ok, applied.message);
   }
   if (tokens.size() != 2) {
-    return result(false, "Usage: replay <frame>");
+    return result(false, "Usage: replay <first|previous|next|last|frame>");
+  }
+  const std::string replayTarget = lower(tokens[1]);
+  if (replayTarget == "first") {
+    const SimulationActionResult applied = applySimulationReplayAction(
+        engine, SimulationReplayActionKind::First);
+    return result(applied.ok, applied.message);
+  }
+  if (replayTarget == "previous" || replayTarget == "prev") {
+    const SimulationActionResult applied = applySimulationReplayAction(
+        engine, SimulationReplayActionKind::Previous);
+    return result(applied.ok, applied.message);
+  }
+  if (replayTarget == "next") {
+    const SimulationActionResult applied
+        = applySimulationReplayAction(engine, SimulationReplayActionKind::Next);
+    return result(applied.ok, applied.message);
+  }
+  if (replayTarget == "last") {
+    const SimulationActionResult applied
+        = applySimulationReplayAction(engine, SimulationReplayActionKind::Last);
+    return result(applied.ok, applied.message);
   }
   const std::optional<std::size_t> frame = parseSize(tokens[1]);
   if (!frame.has_value()) {
@@ -730,7 +751,8 @@ std::string consoleCommandHelpText(bool watchCommandsAvailable)
          "delete, attach, detach, reparent-link, make-root, show [target], "
          "hide [target], mode <edit|simulation>, play, pause, step [count], "
          "restart (stay in Simulation Mode), reset (return to Edit Mode), "
-         "record <on|off>, replay <frame>"
+         "record <on|off>, replay <first|previous|next|last|frame> "
+         "(paused Simulation Mode)"
          + std::string(
              watchCommandsAvailable
                  ? ", watch [target|selection|clear|sample], watch signal "

@@ -1753,8 +1753,55 @@ TEST(SimEngine, EndToEndEditorLoop)
   EXPECT_GE(engine.recorder().recording().frameCount(), 6u);
 
   engine.loadRecordingIntoPlayer();
+  EXPECT_DOUBLE_EQ(engine.objects().world().getTime(), 0.0);
   ASSERT_TRUE(engine.replaySeek(0));
   EXPECT_DOUBLE_EQ(engine.objects().world().getTime(), 0.0);
+}
+
+TEST(SimEngine, ReplaySeekRequiresPausedSimulationModeAndNotifiesObservers)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 5)));
+  engine.objects().model().timeStep = 0.01;
+  engine.objects().rebuild();
+
+  int simulationChanges = 0;
+  engine.events().subscribe([&](const Event& event) {
+    if (event.type == EventType::SimulationChanged) {
+      ++simulationChanges;
+    }
+  });
+
+  engine.startRecording();
+  engine.simulation().step(3);
+  engine.stopRecording();
+
+  ASSERT_GT(engine.simulation().frameCount(), 0u);
+  engine.loadRecordingIntoPlayer();
+  EXPECT_EQ(simulationChanges, 1);
+  EXPECT_EQ(engine.player().currentIndex(), 0u);
+  EXPECT_EQ(engine.simulation().frameCount(), 0u);
+
+  ASSERT_TRUE(engine.replaySeek(2));
+  EXPECT_EQ(simulationChanges, 2);
+  EXPECT_EQ(engine.player().currentIndex(), 2u);
+  EXPECT_EQ(engine.simulation().frameCount(), 2u);
+
+  engine.simulation().play();
+  EXPECT_FALSE(engine.replaySeek(0));
+  EXPECT_EQ(engine.player().currentIndex(), 2u);
+  EXPECT_EQ(simulationChanges, 2);
+
+  engine.simulation().pause();
+  engine.startRecording();
+  EXPECT_FALSE(engine.replaySeek(0));
+  EXPECT_EQ(engine.player().currentIndex(), 2u);
+  EXPECT_EQ(simulationChanges, 2);
+
+  engine.stopRecording();
+  engine.simulation().reset();
+  EXPECT_FALSE(engine.replaySeek(0));
+  EXPECT_EQ(simulationChanges, 2);
 }
 
 TEST(SimEngine, NoOpCommandDoesNotSignalChange)

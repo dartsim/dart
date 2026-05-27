@@ -107,6 +107,9 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
   EXPECT_NE(
       help.message.find("reset (return to Edit Mode)"), std::string::npos);
   EXPECT_NE(help.message.find("record <on|off>"), std::string::npos);
+  EXPECT_NE(
+      help.message.find("replay <first|previous|next|last|frame>"),
+      std::string::npos);
   EXPECT_NE(help.message.find("reparent-link"), std::string::npos);
   EXPECT_EQ(
       help.message.find("watch [target|selection|clear|sample]"),
@@ -260,6 +263,9 @@ TEST(DartsimConsoleActions, DrivesSimulationRecordingAndReplay)
       ui::applyConsoleCommand(engine, "replay 0").message,
       "Replay seek failed");
   EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "replay next").message,
+      "No replay loaded");
+  EXPECT_EQ(
       ui::applyConsoleCommand(engine, "mode invalid").message,
       "Unknown mode: invalid");
 
@@ -293,10 +299,39 @@ TEST(DartsimConsoleActions, DrivesSimulationRecordingAndReplay)
 
   const auto replay = ui::applyConsoleCommand(engine, "replay 0");
   EXPECT_TRUE(replay.ok);
+  EXPECT_EQ(replay.message, "Replay frame 0");
+
+  const auto replayNext = ui::applyConsoleCommand(engine, "replay next");
+  EXPECT_TRUE(replayNext.ok);
+  EXPECT_EQ(replayNext.message, "Replay frame 1");
+  EXPECT_EQ(engine.player().currentIndex(), 1u);
+
+  const auto replayLast = ui::applyConsoleCommand(engine, "replay last");
+  EXPECT_TRUE(replayLast.ok);
+  EXPECT_EQ(
+      engine.player().currentIndex(),
+      engine.player().recording().frameCount() - 1);
+
+  const auto replayPrevious
+      = ui::applyConsoleCommand(engine, "replay previous");
+  EXPECT_TRUE(replayPrevious.ok);
+  EXPECT_EQ(
+      engine.player().currentIndex(),
+      engine.player().recording().frameCount() - 2);
+
+  const auto replayFirst = ui::applyConsoleCommand(engine, "replay first");
+  EXPECT_TRUE(replayFirst.ok);
+  EXPECT_EQ(engine.player().currentIndex(), 0u);
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "replay prev").message,
+      "Already at first replay frame");
 
   const auto editMode = ui::applyConsoleCommand(engine, "mode edit");
   EXPECT_TRUE(editMode.ok);
   EXPECT_TRUE(engine.canEditScene());
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "replay 0").message,
+      "Enter Simulation Mode before replaying");
 }
 
 TEST(DartsimConsoleActions, DrivesWatchCommandsThroughSessionState)

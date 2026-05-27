@@ -63,6 +63,7 @@ struct SimulationStatus
   std::string editStateLabel;
   std::string playbackLabel;
   std::string resetTargetLabel;
+  std::string replayLabel;
 };
 
 /// Result of a user-facing Simulation panel action.
@@ -90,6 +91,22 @@ struct SimulationModeAction
   std::string disabledReason;
 };
 
+enum class SimulationReplayActionKind
+{
+  First,
+  Previous,
+  Next,
+  Last,
+};
+
+struct SimulationReplayAction
+{
+  SimulationReplayActionKind kind = SimulationReplayActionKind::First;
+  std::string label;
+  bool enabled = true;
+  std::string disabledReason;
+};
+
 /// Build panel-facing status from the engine's authoritative state.
 [[nodiscard]] SimulationStatus buildSimulationStatus(const SimEngine& engine);
 
@@ -97,6 +114,11 @@ struct SimulationModeAction
     const SimEngine& engine);
 SimulationActionResult applySimulationModeAction(
     SimEngine& engine, SimulationModeActionKind kind);
+
+[[nodiscard]] std::vector<SimulationReplayAction> buildSimulationReplayActions(
+    const SimEngine& engine);
+SimulationActionResult applySimulationReplayAction(
+    SimEngine& engine, SimulationReplayActionKind kind);
 
 SimulationActionResult playSimulation(SimEngine& engine);
 SimulationActionResult pauseSimulation(SimEngine& engine);

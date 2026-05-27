@@ -200,12 +200,21 @@ bool SimEngine::isRecording() const
 void SimEngine::loadRecordingIntoPlayer()
 {
   m_player.setRecording(m_recorder.recording());
+  if (!m_player.empty() && m_player.seek(m_objects.world(), 0)) {
+    m_events.emit(EventType::SimulationChanged);
+    notifyChanged();
+  }
 }
 
 bool SimEngine::replaySeek(std::size_t index)
 {
+  if (m_recorder.isRecording() || m_simulation.isRunning()
+      || m_simulation.mode() == SimulationController::Mode::Edit) {
+    return false;
+  }
   const bool ok = m_player.seek(m_objects.world(), index);
   if (ok) {
+    m_events.emit(EventType::SimulationChanged);
     notifyChanged();
   }
   return ok;

@@ -10,7 +10,8 @@ palette/inspector/relationship seams are implemented through tested headless UI
 action/view-model helpers. The project-open path now has a native picker plus
 in-app project browser fallback, and the Simulation panel now exposes explicit
 Edit Mode vs Simulation Mode workflow actions, including restart from the
-captured reset target while staying in Simulation Mode.
+captured reset target while staying in Simulation Mode and replay navigation
+buttons for first, previous, next, and last recorded frames.
 
 ## Current Branch
 
@@ -51,7 +52,9 @@ Simulation workflow controls are now routed through a
 `buildSimulationModeActions` view-model: the editor presents "Enter Simulation
 Mode", "Resume Simulation", "Step Simulation", "Restart Simulation", and
 "Return to Edit Mode" labels with disabled reasons instead of ambiguous
-transport-only buttons.
+transport-only buttons. Replay timeline controls are also routed through
+`dartsim_ui/simulation_actions`, so the panel and Console can move to first,
+previous, next, and last replay frames with stable disabled reasons.
 Console automation is now routed through `dartsim_ui/console_actions`: the
 Console panel has a command input, quoted-argument parser, help/status text,
 and tested project, create, selection, visibility, rename/delete, simulation
@@ -146,7 +149,8 @@ filtered coverage line total above 95%.
   Reset consumes the captured Edit Mode snapshot so stale runtime snapshots do
   not later overwrite edit-mode changes. Restart restores the captured Edit
   Mode snapshot while staying in Simulation Mode for another run. The panel/menu
-  use explicit mode action labels and disabled reasons from the same seam.
+  use explicit mode action labels and disabled reasons from the same seam, and
+  replay frame navigation rejects active playback/recording before seeking.
 - Create menu behavior is now covered through `dartsim_ui/palette_actions` and
   `UNIT_dartsim_ui_PaletteActions`; fixed frames require an existing parent frame
   instead of being attached directly to the world frame, and preset examples are

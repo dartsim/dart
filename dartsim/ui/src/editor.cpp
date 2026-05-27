@@ -675,14 +675,39 @@ void buildSimControls(dart::gui::PanelBuilder& ui, EditorApp& app)
 
   const std::size_t frames = status.replayFrameCount;
   if (frames > 0) {
-    ui.text("Replay frames: " + std::to_string(frames));
+    ui.text(status.replayLabel);
+    const std::vector<SimulationReplayAction> replayActions
+        = buildSimulationReplayActions(app.engine);
+    for (std::size_t i = 0; i < replayActions.size(); ++i) {
+      const SimulationReplayAction& action = replayActions[i];
+      if (i > 0) {
+        ui.sameLine();
+      }
+      std::string label = action.label;
+      if (!action.enabled && !action.disabledReason.empty()) {
+        label += " (" + action.disabledReason + ")";
+      }
+      label += "##simulation-replay-" + std::to_string(i);
+      if (ui.button(label) && action.enabled) {
+        const SimulationActionResult applied
+            = applySimulationReplayAction(app.engine, action.kind);
+        app.replayFrame = static_cast<double>(applied.status.replayFrame);
+        app.note(applied.message);
+      }
+    }
     double maxIndex = static_cast<double>(frames - 1);
     if (app.replayFrame > maxIndex) {
       app.replayFrame = maxIndex;
     }
+    if (static_cast<std::size_t>(app.replayFrame + 0.5) != status.replayFrame) {
+      app.replayFrame = static_cast<double>(status.replayFrame);
+    }
     if (ui.slider("timeline", app.replayFrame, 0.0, maxIndex)) {
       const std::size_t frame = static_cast<std::size_t>(app.replayFrame + 0.5);
-      app.note(seekSimulationReplay(app.engine, frame).message);
+      const SimulationActionResult applied
+          = seekSimulationReplay(app.engine, frame);
+      app.replayFrame = static_cast<double>(applied.status.replayFrame);
+      app.note(applied.message);
     }
   }
 }
