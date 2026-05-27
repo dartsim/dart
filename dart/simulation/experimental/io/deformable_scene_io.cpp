@@ -297,7 +297,13 @@ LoadedTetMesh loadGmshTetMesh(const std::filesystem::path& path)
       mesh.positions.reserve(nodeCount);
 
       for (std::size_t block = 0; block < blockCount; ++block) {
-        (void)readRequired<int>(input, "$Nodes entity dim");
+        const auto entityDim = readRequired<int>(input, "$Nodes entity dim");
+        DART_EXPERIMENTAL_THROW_T_IF(
+            entityDim < 0 || entityDim > 3,
+            InvalidArgumentException,
+            "Invalid Gmsh node entity dimension {} in '{}'",
+            entityDim,
+            path.string());
         (void)readRequired<int>(input, "$Nodes entity tag");
         const auto parametric = readRequired<int>(input, "$Nodes parametric");
         const auto blockNodeCount
@@ -309,7 +315,9 @@ LoadedTetMesh loadGmshTetMesh(const std::filesystem::path& path)
         for (std::size_t i = 0; i < blockNodeCount; ++i) {
           const auto position = readVector3(input, "$Nodes position");
           if (parametric != 0) {
-            (void)readRequired<double>(input, "$Nodes parametric coordinate");
+            for (int coord = 0; coord < entityDim; ++coord) {
+              (void)readRequired<double>(input, "$Nodes parametric coordinate");
+            }
           }
           tagToIndex.emplace(tags[i], mesh.positions.size());
           mesh.positions.push_back(position);

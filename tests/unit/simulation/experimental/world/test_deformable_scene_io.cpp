@@ -302,6 +302,53 @@ input/tetMeshes/cube_without_surface.msh 0 0 0  0 0 0  1 1 1
 }
 
 //==============================================================================
+TEST(DeformableSceneIo, LoadsGmshParametricNodeBlocks)
+{
+  TempSceneDir temp;
+  temp.writeMesh(
+      "parametric_tet.msh",
+      R"msh($MeshFormat
+4.1 0 8
+$EndMeshFormat
+$Nodes
+1 4 1 4
+3 0 1 4
+1
+2
+3
+4
+0.000000e+00 0.000000e+00 0.000000e+00  0.1 0.2 0.3
+1.000000e+00 0.000000e+00 0.000000e+00  0.4 0.5 0.6
+0.000000e+00 1.000000e+00 0.000000e+00  0.7 0.8 0.9
+0.000000e+00 0.000000e+00 1.000000e+00  1.0 1.1 1.2
+$EndNodes
+$Elements
+1 1 1 1
+3 0 4 1
+1 1 2 3 4
+$EndElements
+)msh");
+  const auto scenePath = temp.writeScene(
+      "parametric_scene.txt",
+      R"scene(
+turnOffGravity
+time 0.1 0.1
+shapes input 1
+input/tetMeshes/parametric_tet.msh 0 0 0  0 0 0  1 1 1
+)scene");
+
+  sx::World world;
+  sxio::DeformableSceneLoadOptions options;
+  options.assetRoot = temp.path();
+  const auto info = sxio::loadDeformableScene(world, scenePath, options);
+
+  ASSERT_EQ(info.bodies.size(), 1u);
+  EXPECT_EQ(info.bodies[0].nodeCount, 4u);
+  EXPECT_EQ(info.bodies[0].tetrahedronCount, 1u);
+  EXPECT_EQ(info.bodies[0].surfaceTriangleCount, 4u);
+}
+
+//==============================================================================
 TEST(DeformableSceneIo, BoundarySelectionIgnoresInteriorTetraNodes)
 {
   TempSceneDir temp;
