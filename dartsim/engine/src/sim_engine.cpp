@@ -50,6 +50,13 @@ SimEngine::SimEngine()
   m_simulation.onModeChanged = [this]() {
     m_events.emit(EventType::ModeChanged);
   };
+  m_simulation.onRestarted = [this]() {
+    if (m_recorder.isRecording()) {
+      m_recorder.capture(m_objects.world());
+      m_events.emit(EventType::RecordingChanged);
+    }
+    m_events.emit(EventType::SimulationChanged);
+  };
 }
 
 SimEngine::~SimEngine() = default;

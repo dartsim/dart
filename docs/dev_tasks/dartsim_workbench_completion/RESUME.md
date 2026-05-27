@@ -9,7 +9,8 @@ lifecycle, Phase 2 outliner/viewport selection, and the first Phase 3
 palette/inspector/relationship seams are implemented through tested headless UI
 action/view-model helpers. The project-open path now has a native picker plus
 in-app project browser fallback, and the Simulation panel now exposes explicit
-Edit Mode vs Simulation Mode workflow actions.
+Edit Mode vs Simulation Mode workflow actions, including restart from the
+captured reset target while staying in Simulation Mode.
 
 ## Current Branch
 
@@ -48,8 +49,9 @@ root links. Valid relationship menu items name the selected child and primary
 parent/root target before applying the edit.
 Simulation workflow controls are now routed through a
 `buildSimulationModeActions` view-model: the editor presents "Enter Simulation
-Mode", "Resume Simulation", "Step Simulation", and "Return to Edit Mode" labels
-with disabled reasons instead of ambiguous transport-only buttons.
+Mode", "Resume Simulation", "Step Simulation", "Restart Simulation", and
+"Return to Edit Mode" labels with disabled reasons instead of ambiguous
+transport-only buttons.
 Console automation is now routed through `dartsim_ui/console_actions`: the
 Console panel has a command input, quoted-argument parser, help/status text,
 and tested project, create, selection, visibility, rename/delete, simulation
@@ -142,8 +144,9 @@ filtered coverage line total above 95%.
 - Simulation panel behavior is now covered through
   `dartsim_ui/simulation_actions` and `UNIT_dartsim_ui_SimulationActions`;
   Reset consumes the captured Edit Mode snapshot so stale runtime snapshots do
-  not later overwrite edit-mode changes. The panel/menu use explicit mode action
-  labels and disabled reasons from the same seam.
+  not later overwrite edit-mode changes. Restart restores the captured Edit
+  Mode snapshot while staying in Simulation Mode for another run. The panel/menu
+  use explicit mode action labels and disabled reasons from the same seam.
 - Create menu behavior is now covered through `dartsim_ui/palette_actions` and
   `UNIT_dartsim_ui_PaletteActions`; fixed frames require an existing parent frame
   instead of being attached directly to the world frame, and preset examples are

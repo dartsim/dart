@@ -440,6 +440,13 @@ ConsoleCommandResult applySimulationCommand(
     const SimulationActionResult applied = resetSimulation(engine);
     return result(applied.ok, applied.message);
   }
+  if (command == "restart") {
+    if (tokens.size() != 1) {
+      return result(false, "Usage: restart");
+    }
+    const SimulationActionResult applied = restartSimulation(engine);
+    return result(applied.ok, applied.message);
+  }
   if (command == "mode") {
     if (tokens.size() != 2) {
       return result(false, "Usage: mode <edit|simulation>");
@@ -722,7 +729,8 @@ std::string consoleCommandHelpText(bool watchCommandsAvailable)
          "<id|name>, deselect <id|name>, clear-selection, rename <name>, "
          "delete, attach, detach, reparent-link, make-root, show [target], "
          "hide [target], mode <edit|simulation>, play, pause, step [count], "
-         "reset, record <on|off>, replay <frame>"
+         "restart (stay in Simulation Mode), reset (return to Edit Mode), "
+         "record <on|off>, replay <frame>"
          + std::string(
              watchCommandsAvailable
                  ? ", watch [target|selection|clear|sample], watch signal "
@@ -800,8 +808,8 @@ ConsoleCommandResult applyConsoleCommandWithWatchState(
     return applyRelationshipCommand(engine, view);
   }
   if (command == "mode" || command == "play" || command == "pause"
-      || command == "step" || command == "reset" || command == "record"
-      || command == "replay") {
+      || command == "step" || command == "restart" || command == "reset"
+      || command == "record" || command == "replay") {
     return applySimulationCommand(engine, view);
   }
   if (command == "watch" || command == "unwatch") {

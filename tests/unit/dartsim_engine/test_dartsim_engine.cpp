@@ -1968,6 +1968,92 @@ TEST(SimEngine, ResetConsumesSimulationSnapshotBeforeNextEdit)
   EXPECT_DOUBLE_EQ(afterReset->mass, 8.0);
 }
 
+TEST(SimEngine, RestartRestoresSnapshotInsideSimulationMode)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 5)));
+  engine.objects().model().timeStep = 0.01;
+  engine.objects().rebuild();
+
+  EXPECT_FALSE(engine.simulation().restart());
+
+  engine.simulation().play();
+  ASSERT_TRUE(engine.simulation().isRunning());
+  ASSERT_TRUE(engine.simulation().hasCapturedEditState());
+
+  engine.simulation().advance(0.04);
+  ASSERT_EQ(engine.simulation().mode(), SimulationController::Mode::Simulation);
+  ASSERT_GT(engine.simulation().frameCount(), 0u);
+  ASSERT_GT(engine.simulation().simTime(), 0.0);
+
+  EXPECT_TRUE(engine.simulation().restart());
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Simulation);
+  EXPECT_TRUE(engine.simulation().isRunning());
+  EXPECT_TRUE(engine.simulation().hasCapturedEditState());
+  EXPECT_EQ(engine.simulation().frameCount(), 0u);
+  EXPECT_DOUBLE_EQ(engine.simulation().simTime(), 0.0);
+
+  engine.simulation().pause();
+  engine.simulation().step(2);
+  ASSERT_EQ(engine.simulation().frameCount(), 2u);
+
+  EXPECT_TRUE(engine.simulation().restart());
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Simulation);
+  EXPECT_FALSE(engine.simulation().isRunning());
+  EXPECT_TRUE(engine.simulation().hasCapturedEditState());
+  EXPECT_EQ(engine.simulation().frameCount(), 0u);
+
+  engine.simulation().reset();
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Edit);
+  EXPECT_FALSE(engine.simulation().hasCapturedEditState());
+  EXPECT_FALSE(engine.simulation().restart());
+}
+
+TEST(SimEngine, RestartCapturesRecordingFrameAndNotifiesObservers)
+{
+  SimEngine engine;
+  engine.execute(commands::addRigidBody(ShapeType::Box, translation(0, 0, 5)));
+  engine.objects().model().timeStep = 0.01;
+  engine.objects().rebuild();
+
+  int modeChanges = 0;
+  int recordingChanges = 0;
+  int simulationChanges = 0;
+  engine.events().subscribe([&](const Event& event) {
+    if (event.type == EventType::ModeChanged) {
+      ++modeChanges;
+    }
+    if (event.type == EventType::RecordingChanged) {
+      ++recordingChanges;
+    }
+    if (event.type == EventType::SimulationChanged) {
+      ++simulationChanges;
+    }
+  });
+
+  engine.startRecording();
+  ASSERT_EQ(recordingChanges, 1);
+
+  engine.simulation().step(2);
+  ASSERT_EQ(modeChanges, 1);
+  ASSERT_EQ(engine.recorder().recording().frameCount(), 3u);
+  ASSERT_EQ(engine.recorder().recording().frames().back().step, 2u);
+
+  modeChanges = 0;
+  recordingChanges = 0;
+  simulationChanges = 0;
+  ASSERT_TRUE(engine.simulation().restart());
+
+  EXPECT_EQ(modeChanges, 0);
+  EXPECT_EQ(recordingChanges, 1);
+  EXPECT_EQ(simulationChanges, 1);
+  ASSERT_EQ(engine.recorder().recording().frameCount(), 4u);
+  const RecordedFrame& restarted
+      = engine.recorder().recording().frames().back();
+  EXPECT_DOUBLE_EQ(restarted.time, 0.0);
+  EXPECT_EQ(restarted.step, 0u);
+}
+
 TEST(SimEngine, SimulationModeChangesEmitModeChanged)
 {
   SimEngine engine;

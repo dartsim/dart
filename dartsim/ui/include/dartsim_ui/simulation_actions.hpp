@@ -78,6 +78,7 @@ enum class SimulationModeActionKind
   PlayOrResume,
   Pause,
   Step,
+  Restart,
   ReturnToEdit,
 };
 
@@ -100,6 +101,7 @@ SimulationActionResult applySimulationModeAction(
 SimulationActionResult playSimulation(SimEngine& engine);
 SimulationActionResult pauseSimulation(SimEngine& engine);
 SimulationActionResult stepSimulation(SimEngine& engine, std::size_t count = 1);
+SimulationActionResult restartSimulation(SimEngine& engine);
 SimulationActionResult resetSimulation(SimEngine& engine);
 SimulationActionResult setSimulationRealTimeFactor(
     SimEngine& engine, double factor);

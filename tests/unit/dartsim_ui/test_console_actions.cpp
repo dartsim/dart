@@ -101,6 +101,11 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
   const auto help = ui::applyConsoleCommand(engine, "help");
   EXPECT_TRUE(help.ok);
   EXPECT_NE(help.message.find("create <kind>"), std::string::npos);
+  EXPECT_NE(
+      help.message.find("restart (stay in Simulation Mode)"),
+      std::string::npos);
+  EXPECT_NE(
+      help.message.find("reset (return to Edit Mode)"), std::string::npos);
   EXPECT_NE(help.message.find("record <on|off>"), std::string::npos);
   EXPECT_NE(help.message.find("reparent-link"), std::string::npos);
   EXPECT_EQ(
@@ -249,6 +254,9 @@ TEST(DartsimConsoleActions, DrivesSimulationRecordingAndReplay)
   EXPECT_EQ(
       ui::applyConsoleCommand(engine, "reset").message, "Already in Edit Mode");
   EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "restart").message,
+      "Enter Simulation Mode first");
+  EXPECT_EQ(
       ui::applyConsoleCommand(engine, "replay 0").message,
       "Replay seek failed");
   EXPECT_EQ(
@@ -262,6 +270,12 @@ TEST(DartsimConsoleActions, DrivesSimulationRecordingAndReplay)
   const auto stepped = ui::applyConsoleCommand(engine, "step 2");
   EXPECT_TRUE(stepped.ok);
   EXPECT_EQ(engine.simulation().frameCount(), 2u);
+
+  const auto restarted = ui::applyConsoleCommand(engine, "restart");
+  EXPECT_TRUE(restarted.ok);
+  EXPECT_EQ(restarted.message, "Simulation restarted");
+  EXPECT_EQ(engine.simulation().mode(), SimulationController::Mode::Simulation);
+  EXPECT_EQ(engine.simulation().frameCount(), 0u);
 
   const auto createWhileLocked
       = ui::applyConsoleCommand(engine, "create sphere");

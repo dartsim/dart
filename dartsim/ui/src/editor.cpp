@@ -1141,7 +1141,7 @@ void buildMenuBar(
       if (!action.enabled && !action.disabledReason.empty()) {
         label += " (" + action.disabledReason + ")";
       }
-      if (ui.menuItem(label)) {
+      if (ui.menuItem(label) && action.enabled) {
         app.note(applySimulationModeAction(app.engine, action.kind).message);
       }
     }

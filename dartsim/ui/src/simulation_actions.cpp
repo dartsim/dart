@@ -110,7 +110,7 @@ std::vector<SimulationModeAction> buildSimulationModeActions(
 {
   const SimulationStatus status = buildSimulationStatus(engine);
   std::vector<SimulationModeAction> actions;
-  actions.reserve(4);
+  actions.reserve(5);
 
   actions.push_back(makeModeAction(
       SimulationModeActionKind::PlayOrResume,
@@ -128,6 +128,11 @@ std::vector<SimulationModeAction> buildSimulationModeActions(
       "Step Simulation",
       !status.playing,
       "Pause before stepping"));
+  actions.push_back(makeModeAction(
+      SimulationModeActionKind::Restart,
+      "Restart Simulation",
+      status.simulationMode && status.hasCapturedEditState,
+      "Enter Simulation Mode first"));
   actions.push_back(makeModeAction(
       SimulationModeActionKind::ReturnToEdit,
       "Return to Edit Mode",
@@ -158,6 +163,8 @@ SimulationActionResult applySimulationModeAction(
       return pauseSimulation(engine);
     case SimulationModeActionKind::Step:
       return stepSimulation(engine);
+    case SimulationModeActionKind::Restart:
+      return restartSimulation(engine);
     case SimulationModeActionKind::ReturnToEdit:
       return resetSimulation(engine);
   }
@@ -190,6 +197,14 @@ SimulationActionResult stepSimulation(SimEngine& engine, std::size_t count)
   }
   return result(
       true, "Simulation stepped " + std::to_string(count) + " frames", engine);
+}
+
+SimulationActionResult restartSimulation(SimEngine& engine)
+{
+  if (!engine.simulation().restart()) {
+    return result(false, "Enter Simulation Mode first", engine);
+  }
+  return result(true, "Simulation restarted", engine);
 }
 
 SimulationActionResult resetSimulation(SimEngine& engine)
