@@ -39,6 +39,7 @@
 #include <limits>
 
 #include <cmath>
+#include <cstddef>
 
 namespace dart::simulation::experimental::detail::deformable_contact {
 
@@ -111,7 +112,6 @@ namespace detail {
 
 constexpr double kRelativeEpsilon
     = 64.0 * std::numeric_limits<double>::epsilon();
-constexpr double kFiniteDifferenceStep = 1e-6;
 constexpr double kMollifierThresholdScale = 1e-3;
 
 //==============================================================================
@@ -143,47 +143,102 @@ inline bool isParallelEdges(
 }
 
 //==============================================================================
-inline Matrix12d finiteDifferenceHessian(
-    const Vector12d& x, const auto& gradientFunction)
+inline Eigen::Matrix3d skew(const Eigen::Vector3d& value)
+{
+  Eigen::Matrix3d matrix;
+  matrix << 0.0, -value.z(), value.y(), value.z(), 0.0, -value.x(), -value.y(),
+      value.x(), 0.0;
+  return matrix;
+}
+
+//==============================================================================
+inline void scatterPointPointHessian(
+    Matrix12d& destination, const std::size_t blockA, const std::size_t blockB)
+{
+  const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
+  destination.block<3, 3>(3 * blockA, 3 * blockA) += 2.0 * identity;
+  destination.block<3, 3>(3 * blockA, 3 * blockB) -= 2.0 * identity;
+  destination.block<3, 3>(3 * blockB, 3 * blockA) -= 2.0 * identity;
+  destination.block<3, 3>(3 * blockB, 3 * blockB) += 2.0 * identity;
+}
+
+//==============================================================================
+inline Matrix12d pointPointHessianMapped(
+    const std::size_t blockA, const std::size_t blockB)
 {
   Matrix12d hessian = Matrix12d::Zero();
+  scatterPointPointHessian(hessian, blockA, blockB);
+  return hessian;
+}
 
-  for (int axis = 0; axis < 12; ++axis) {
-    Vector12d forward = x;
-    Vector12d backward = x;
-    forward[axis] += kFiniteDifferenceStep;
-    backward[axis] -= kFiniteDifferenceStep;
-    hessian.col(axis) = (gradientFunction(forward) - gradientFunction(backward))
-                        / (2.0 * kFiniteDifferenceStep);
+//==============================================================================
+inline Matrix12d scatterThreeBlockHessian(
+    const Matrix9d& hessian,
+    const std::array<std::size_t, 3>& destinationBlocks)
+{
+  Matrix12d mapped = Matrix12d::Zero();
+  for (std::size_t row = 0; row < destinationBlocks.size(); ++row) {
+    for (std::size_t col = 0; col < destinationBlocks.size(); ++col) {
+      mapped.block<3, 3>(3 * destinationBlocks[row], 3 * destinationBlocks[col])
+          += hessian.block<3, 3>(3 * row, 3 * col);
+    }
   }
-
-  return 0.5 * (hessian + hessian.transpose());
+  return mapped;
 }
 
 //==============================================================================
-inline Vector12d stack4(
-    const Eigen::Vector3d& a,
-    const Eigen::Vector3d& b,
-    const Eigen::Vector3d& c,
-    const Eigen::Vector3d& d)
+inline Vector12d squaredNormGradientFromLinearVector(
+    const Eigen::Vector3d& value, const std::array<double, 4>& coefficients)
 {
-  Vector12d x;
-  x.segment<3>(0) = a;
-  x.segment<3>(3) = b;
-  x.segment<3>(6) = c;
-  x.segment<3>(9) = d;
-  return x;
+  Vector12d gradient = Vector12d::Zero();
+  for (int block = 0; block < 4; ++block) {
+    gradient.segment<3>(3 * block) = 2.0 * coefficients[block] * value;
+  }
+  return gradient;
 }
 
 //==============================================================================
-inline Eigen::Vector3d segment(const Vector12d& x, const int block)
+inline Matrix12d squaredNormHessianFromLinearVector(
+    const std::array<double, 4>& coefficients)
 {
-  return x.segment<3>(3 * block);
+  Matrix12d hessian = Matrix12d::Zero();
+  const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
+  for (int row = 0; row < 4; ++row) {
+    for (int col = 0; col < 4; ++col) {
+      hessian.block<3, 3>(3 * row, 3 * col)
+          = 2.0 * coefficients[row] * coefficients[col] * identity;
+    }
+  }
+  return hessian;
 }
 
 //==============================================================================
-inline Matrix12d crossSquaredNormHessianFromEdges(
-    const Eigen::Vector3d& u, const Eigen::Vector3d& v)
+inline Vector12d crossSquaredNormGradientFromLinearVectors(
+    const Eigen::Vector3d& u,
+    const Eigen::Vector3d& v,
+    const std::array<double, 4>& coefficientsU,
+    const std::array<double, 4>& coefficientsV)
+{
+  const double u2 = u.squaredNorm();
+  const double v2 = v.squaredNorm();
+  const double uv = u.dot(v);
+  const Eigen::Vector3d gradientU = 2.0 * (v2 * u - uv * v);
+  const Eigen::Vector3d gradientV = 2.0 * (u2 * v - uv * u);
+
+  Vector12d gradient = Vector12d::Zero();
+  for (int block = 0; block < 4; ++block) {
+    gradient.segment<3>(3 * block)
+        = coefficientsU[block] * gradientU + coefficientsV[block] * gradientV;
+  }
+  return gradient;
+}
+
+//==============================================================================
+inline Matrix12d crossSquaredNormHessianFromLinearVectors(
+    const Eigen::Vector3d& u,
+    const Eigen::Vector3d& v,
+    const std::array<double, 4>& coefficientsU,
+    const std::array<double, 4>& coefficientsV)
 {
   const double u2 = u.squaredNorm();
   const double v2 = v.squaredNorm();
@@ -197,21 +252,125 @@ inline Matrix12d crossSquaredNormHessianFromEdges(
   const Eigen::Matrix3d hVU = hUV.transpose();
 
   Matrix12d hessian = Matrix12d::Zero();
-  const std::array<double, 4> signU = {-1.0, 1.0, 0.0, 0.0};
-  const std::array<double, 4> signV = {0.0, 0.0, -1.0, 1.0};
-
   for (int row = 0; row < 4; ++row) {
     for (int col = 0; col < 4; ++col) {
       Eigen::Matrix3d block = Eigen::Matrix3d::Zero();
-      block += signU[row] * signU[col] * hUU;
-      block += signU[row] * signV[col] * hUV;
-      block += signV[row] * signU[col] * hVU;
-      block += signV[row] * signV[col] * hVV;
+      block += coefficientsU[row] * coefficientsU[col] * hUU;
+      block += coefficientsU[row] * coefficientsV[col] * hUV;
+      block += coefficientsV[row] * coefficientsU[col] * hVU;
+      block += coefficientsV[row] * coefficientsV[col] * hVV;
       hessian.block<3, 3>(3 * row, 3 * col) = block;
     }
   }
 
   return 0.5 * (hessian + hessian.transpose());
+}
+
+//==============================================================================
+inline Matrix12d crossSquaredNormHessianFromEdges(
+    const Eigen::Vector3d& u, const Eigen::Vector3d& v)
+{
+  return crossSquaredNormHessianFromLinearVectors(
+      u,
+      v,
+      std::array<double, 4>{-1.0, 1.0, 0.0, 0.0},
+      std::array<double, 4>{0.0, 0.0, -1.0, 1.0});
+}
+
+//==============================================================================
+inline Vector12d tripleProductGradientFromLinearVectors(
+    const Eigen::Vector3d& u,
+    const Eigen::Vector3d& v,
+    const Eigen::Vector3d& w,
+    const std::array<double, 4>& coefficientsU,
+    const std::array<double, 4>& coefficientsV,
+    const std::array<double, 4>& coefficientsW)
+{
+  const Eigen::Vector3d gradientU = v.cross(w);
+  const Eigen::Vector3d gradientV = w.cross(u);
+  const Eigen::Vector3d gradientW = u.cross(v);
+
+  Vector12d gradient = Vector12d::Zero();
+  for (int block = 0; block < 4; ++block) {
+    gradient.segment<3>(3 * block) = coefficientsU[block] * gradientU
+                                     + coefficientsV[block] * gradientV
+                                     + coefficientsW[block] * gradientW;
+  }
+  return gradient;
+}
+
+//==============================================================================
+inline Matrix12d tripleProductHessianFromLinearVectors(
+    const Eigen::Vector3d& u,
+    const Eigen::Vector3d& v,
+    const Eigen::Vector3d& w,
+    const std::array<double, 4>& coefficientsU,
+    const std::array<double, 4>& coefficientsV,
+    const std::array<double, 4>& coefficientsW)
+{
+  const Eigen::Matrix3d hUV = -skew(w);
+  const Eigen::Matrix3d hUW = skew(v);
+  const Eigen::Matrix3d hVU = hUV.transpose();
+  const Eigen::Matrix3d hVW = -skew(u);
+  const Eigen::Matrix3d hWU = hUW.transpose();
+  const Eigen::Matrix3d hWV = hVW.transpose();
+
+  Matrix12d hessian = Matrix12d::Zero();
+  for (int row = 0; row < 4; ++row) {
+    for (int col = 0; col < 4; ++col) {
+      Eigen::Matrix3d block = Eigen::Matrix3d::Zero();
+      block += coefficientsU[row] * coefficientsV[col] * hUV;
+      block += coefficientsU[row] * coefficientsW[col] * hUW;
+      block += coefficientsV[row] * coefficientsU[col] * hVU;
+      block += coefficientsV[row] * coefficientsW[col] * hVW;
+      block += coefficientsW[row] * coefficientsU[col] * hWU;
+      block += coefficientsW[row] * coefficientsV[col] * hWV;
+      hessian.block<3, 3>(3 * row, 3 * col) = block;
+    }
+  }
+  return 0.5 * (hessian + hessian.transpose());
+}
+
+//==============================================================================
+inline Matrix12d ratioHessian(
+    const double numerator,
+    const Vector12d& numeratorGradient,
+    const Matrix12d& numeratorHessian,
+    const double denominator,
+    const Vector12d& denominatorGradient,
+    const Matrix12d& denominatorHessian)
+{
+  return numeratorHessian / denominator
+         - numerator * denominatorHessian / (denominator * denominator)
+         - (numeratorGradient * denominatorGradient.transpose()
+            + denominatorGradient * numeratorGradient.transpose())
+               / (denominator * denominator)
+         + 2.0 * numerator
+               * (denominatorGradient * denominatorGradient.transpose())
+               / (denominator * denominator * denominator);
+}
+
+//==============================================================================
+inline Matrix12d squaredRatioHessian(
+    const double numerator,
+    const Vector12d& numeratorGradient,
+    const Matrix12d& numeratorHessian,
+    const double denominator,
+    const Vector12d& denominatorGradient,
+    const Matrix12d& denominatorHessian)
+{
+  const double denominatorSquared = denominator * denominator;
+  const double denominatorCubed = denominatorSquared * denominator;
+
+  return (2.0 * numerator / denominator) * numeratorHessian
+         - (numerator * numerator / denominatorSquared) * denominatorHessian
+         + (2.0 / denominator)
+               * (numeratorGradient * numeratorGradient.transpose())
+         - (2.0 * numerator / denominatorSquared)
+               * (numeratorGradient * denominatorGradient.transpose()
+                  + denominatorGradient * numeratorGradient.transpose())
+         + (2.0 * numerator * numerator / denominatorCubed)
+               * (denominatorGradient * denominatorGradient.transpose());
 }
 
 } // namespace detail
@@ -298,18 +457,40 @@ inline Matrix9d pointEdgeSquaredDistanceHessian(
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b)
 {
-  const Vector12d x = detail::stack4(p, a, b, Eigen::Vector3d::Zero());
-  const auto hessian12
-      = detail::finiteDifferenceHessian(x, [](const Vector12d& value) {
-          Vector12d gradient = Vector12d::Zero();
-          gradient.head<9>() = pointEdgeSquaredDistanceGradient(
-              detail::segment(value, 0),
-              detail::segment(value, 1),
-              detail::segment(value, 2));
-          return gradient;
-        });
+  const auto distance = pointEdgeSquaredDistance(p, a, b);
+  if (distance.feature == PointEdgeFeature::PointEdgeStart) {
+    return detail::pointPointHessianMapped(0, 1).topLeftCorner<9, 9>();
+  }
+  if (distance.feature == PointEdgeFeature::PointEdgeEnd) {
+    return detail::pointPointHessianMapped(0, 2).topLeftCorner<9, 9>();
+  }
 
-  return hessian12.topLeftCorner<9, 9>();
+  const Eigen::Vector3d u = b - a;
+  const Eigen::Vector3d w = p - a;
+  constexpr std::array<double, 4> coefficientsU = {0.0, -1.0, 1.0, 0.0};
+  constexpr std::array<double, 4> coefficientsW = {1.0, -1.0, 0.0, 0.0};
+
+  const double numerator = u.cross(w).squaredNorm();
+  const double denominator = u.squaredNorm();
+  const Vector12d numeratorGradient
+      = detail::crossSquaredNormGradientFromLinearVectors(
+          u, w, coefficientsU, coefficientsW);
+  const Matrix12d numeratorHessian
+      = detail::crossSquaredNormHessianFromLinearVectors(
+          u, w, coefficientsU, coefficientsW);
+  const Vector12d denominatorGradient
+      = detail::squaredNormGradientFromLinearVector(u, coefficientsU);
+  const Matrix12d denominatorHessian
+      = detail::squaredNormHessianFromLinearVector(coefficientsU);
+
+  return detail::ratioHessian(
+             numerator,
+             numeratorGradient,
+             numeratorHessian,
+             denominator,
+             denominatorGradient,
+             denominatorHessian)
+      .topLeftCorner<9, 9>();
 }
 
 //==============================================================================
@@ -438,14 +619,73 @@ inline Matrix12d pointTriangleSquaredDistanceHessian(
     const Eigen::Vector3d& b,
     const Eigen::Vector3d& c)
 {
-  const Vector12d x = detail::stack4(p, a, b, c);
-  return detail::finiteDifferenceHessian(x, [](const Vector12d& value) {
-    return pointTriangleSquaredDistanceGradient(
-        detail::segment(value, 0),
-        detail::segment(value, 1),
-        detail::segment(value, 2),
-        detail::segment(value, 3));
-  });
+  const auto distance = pointTriangleSquaredDistance(p, a, b, c);
+  switch (distance.feature) {
+    case PointTriangleFeature::VertexA:
+      return detail::pointPointHessianMapped(0, 1);
+    case PointTriangleFeature::VertexB:
+      return detail::pointPointHessianMapped(0, 2);
+    case PointTriangleFeature::VertexC:
+      return detail::pointPointHessianMapped(0, 3);
+    case PointTriangleFeature::EdgeAB:
+      return detail::scatterThreeBlockHessian(
+          pointEdgeSquaredDistanceHessian(p, a, b), {0, 1, 2});
+    case PointTriangleFeature::EdgeBC:
+      return detail::scatterThreeBlockHessian(
+          pointEdgeSquaredDistanceHessian(p, b, c), {0, 2, 3});
+    case PointTriangleFeature::EdgeCA:
+      return detail::scatterThreeBlockHessian(
+          pointEdgeSquaredDistanceHessian(p, c, a), {0, 3, 1});
+    case PointTriangleFeature::Degenerate: {
+      const auto abDistance = pointEdgeSquaredDistance(p, a, b);
+      const auto bcDistance = pointEdgeSquaredDistance(p, b, c);
+      const auto caDistance = pointEdgeSquaredDistance(p, c, a);
+      if (bcDistance.squaredDistance < abDistance.squaredDistance
+          && bcDistance.squaredDistance <= caDistance.squaredDistance) {
+        return detail::scatterThreeBlockHessian(
+            pointEdgeSquaredDistanceHessian(p, b, c), {0, 2, 3});
+      }
+      if (caDistance.squaredDistance < abDistance.squaredDistance
+          && caDistance.squaredDistance < bcDistance.squaredDistance) {
+        return detail::scatterThreeBlockHessian(
+            pointEdgeSquaredDistanceHessian(p, c, a), {0, 3, 1});
+      }
+      return detail::scatterThreeBlockHessian(
+          pointEdgeSquaredDistanceHessian(p, a, b), {0, 1, 2});
+    }
+    case PointTriangleFeature::Face:
+      break;
+  }
+
+  const Eigen::Vector3d u = b - a;
+  const Eigen::Vector3d v = c - a;
+  const Eigen::Vector3d w = p - a;
+  constexpr std::array<double, 4> coefficientsU = {0.0, -1.0, 1.0, 0.0};
+  constexpr std::array<double, 4> coefficientsV = {0.0, -1.0, 0.0, 1.0};
+  constexpr std::array<double, 4> coefficientsW = {1.0, -1.0, 0.0, 0.0};
+
+  const double numerator = u.cross(v).dot(w);
+  const double denominator = u.cross(v).squaredNorm();
+  const Vector12d numeratorGradient
+      = detail::tripleProductGradientFromLinearVectors(
+          u, v, w, coefficientsU, coefficientsV, coefficientsW);
+  const Matrix12d numeratorHessian
+      = detail::tripleProductHessianFromLinearVectors(
+          u, v, w, coefficientsU, coefficientsV, coefficientsW);
+  const Vector12d denominatorGradient
+      = detail::crossSquaredNormGradientFromLinearVectors(
+          u, v, coefficientsU, coefficientsV);
+  const Matrix12d denominatorHessian
+      = detail::crossSquaredNormHessianFromLinearVectors(
+          u, v, coefficientsU, coefficientsV);
+
+  return detail::squaredRatioHessian(
+      numerator,
+      numeratorGradient,
+      numeratorHessian,
+      denominator,
+      denominatorGradient,
+      denominatorHessian);
 }
 
 //==============================================================================
@@ -567,14 +807,61 @@ inline Matrix12d edgeEdgeSquaredDistanceHessian(
     const Eigen::Vector3d& c,
     const Eigen::Vector3d& d)
 {
-  const Vector12d x = detail::stack4(a, b, c, d);
-  return detail::finiteDifferenceHessian(x, [](const Vector12d& value) {
-    return edgeEdgeSquaredDistanceGradient(
-        detail::segment(value, 0),
-        detail::segment(value, 1),
-        detail::segment(value, 2),
-        detail::segment(value, 3));
-  });
+  const auto distance = edgeEdgeSquaredDistance(a, b, c, d);
+  switch (distance.feature) {
+    case EdgeEdgeFeature::EdgeAStartEdgeBStart:
+      return detail::pointPointHessianMapped(0, 2);
+    case EdgeEdgeFeature::EdgeAStartEdgeBEnd:
+      return detail::pointPointHessianMapped(0, 3);
+    case EdgeEdgeFeature::EdgeAEndEdgeBStart:
+      return detail::pointPointHessianMapped(1, 2);
+    case EdgeEdgeFeature::EdgeAEndEdgeBEnd:
+      return detail::pointPointHessianMapped(1, 3);
+    case EdgeEdgeFeature::EdgeAInteriorEdgeBStart:
+      return detail::scatterThreeBlockHessian(
+          pointEdgeSquaredDistanceHessian(c, a, b), {2, 0, 1});
+    case EdgeEdgeFeature::EdgeAInteriorEdgeBEnd:
+      return detail::scatterThreeBlockHessian(
+          pointEdgeSquaredDistanceHessian(d, a, b), {3, 0, 1});
+    case EdgeEdgeFeature::EdgeAStartEdgeBInterior:
+      return detail::scatterThreeBlockHessian(
+          pointEdgeSquaredDistanceHessian(a, c, d), {0, 2, 3});
+    case EdgeEdgeFeature::EdgeAEndEdgeBInterior:
+      return detail::scatterThreeBlockHessian(
+          pointEdgeSquaredDistanceHessian(b, c, d), {1, 2, 3});
+    case EdgeEdgeFeature::EdgeAInteriorEdgeBInterior:
+      break;
+  }
+
+  const Eigen::Vector3d u = b - a;
+  const Eigen::Vector3d v = d - c;
+  const Eigen::Vector3d w = a - c;
+  constexpr std::array<double, 4> coefficientsU = {-1.0, 1.0, 0.0, 0.0};
+  constexpr std::array<double, 4> coefficientsV = {0.0, 0.0, -1.0, 1.0};
+  constexpr std::array<double, 4> coefficientsW = {1.0, 0.0, -1.0, 0.0};
+
+  const double numerator = u.cross(v).dot(w);
+  const double denominator = u.cross(v).squaredNorm();
+  const Vector12d numeratorGradient
+      = detail::tripleProductGradientFromLinearVectors(
+          u, v, w, coefficientsU, coefficientsV, coefficientsW);
+  const Matrix12d numeratorHessian
+      = detail::tripleProductHessianFromLinearVectors(
+          u, v, w, coefficientsU, coefficientsV, coefficientsW);
+  const Vector12d denominatorGradient
+      = detail::crossSquaredNormGradientFromLinearVectors(
+          u, v, coefficientsU, coefficientsV);
+  const Matrix12d denominatorHessian
+      = detail::crossSquaredNormHessianFromLinearVectors(
+          u, v, coefficientsU, coefficientsV);
+
+  return detail::squaredRatioHessian(
+      numerator,
+      numeratorGradient,
+      numeratorHessian,
+      denominator,
+      denominatorGradient,
+      denominatorHessian);
 }
 
 //==============================================================================

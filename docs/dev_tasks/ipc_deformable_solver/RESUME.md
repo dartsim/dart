@@ -23,11 +23,15 @@ friction directives and must not be described as IPC scene parity.
 
 The primitive-distance kernel sub-slice starts PLAN-081 Phase 2 with internal
 point-triangle and edge-edge squared-distance kernels, closest-feature
-classification, gradients, finite-difference Hessians for the first
-solver-facing validation contract, IPC-style edge-edge mollifier derivatives,
-feature-region regression tests, and `bm_ipc_distance_kernels`. It is still
-scaffolding: analytic distance Hessians, tangent bases, CCD line-search bounds,
-barrier assembly, projected Newton, and friction are not implemented yet.
+classification, gradients, the first solver-facing Hessian contract, IPC-style
+edge-edge mollifier derivatives, feature-region regression tests, and
+`bm_ipc_distance_kernels`.
+
+The analytic-Hessian optimization sub-slice replaces the finite-difference
+distance Hessian placeholder with feature-wise exact point-triangle and
+edge-edge Hessian paths for vertex, edge, face, and interior closest features.
+It is still scaffolding: tangent bases, solver-wired CCD line search, barrier
+assembly, projected Newton, and friction are not implemented yet.
 
 The candidate-set sub-slice adds deterministic unique surface-edge extraction,
 internal point-triangle and edge-edge primitive candidate assembly,
@@ -47,17 +51,15 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-deformable-contact-kernels` - stacked on
-`feature/ipc-scene-boundary-diagnostics`, adding internal primitive distance
-kernels, candidate assembly, and CCD step-bound helpers for the next deformable
-contact slices.
+`feature/ipc-distance-hessian-optimization` - stacked on
+`feature/ipc-deformable-contact-kernels`, adding feature-wise analytic
+distance Hessians for the next deformable contact slices.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with analytic distance Hessian
-optimization, tangent bases, motion-aware candidate culling,
-barrier/candidate integration, solver-owned contact buffers, and solver-wired
-CCD line search.
+After this sub-slice lands, continue Phase 2 with tangent bases,
+motion-aware candidate culling, barrier/candidate integration,
+solver-owned contact buffers, and solver-wired CCD line search.
 
 ## Context That Would Be Lost
 

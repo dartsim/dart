@@ -765,6 +765,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     classification, derivative regression tests, edge-edge mollifier
     derivatives, and a microbenchmark surface for future deformable contact
     assembly.
+  - Replaced internal experimental IPC finite-difference distance Hessian
+    placeholders with feature-wise analytic point-triangle and edge-edge
+    Hessian paths, reducing local Hessian microbenchmark timings for future
+    deformable contact assembly.
   - Added internal experimental IPC contact candidate assembly for
     point-triangle and edge-edge primitive pairs with deterministic surface-edge
     extraction, incident/adjacent filtering, sweep-versus-brute-force

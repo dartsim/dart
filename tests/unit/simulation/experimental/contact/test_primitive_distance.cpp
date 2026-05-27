@@ -147,6 +147,38 @@ void expectMatrixNear(
 }
 
 //==============================================================================
+template <typename Derived>
+void expectFiniteSymmetric(
+    const Eigen::MatrixBase<Derived>& matrix, const double tolerance = 1e-12)
+{
+  for (int row = 0; row < matrix.rows(); ++row) {
+    for (int col = 0; col < matrix.cols(); ++col) {
+      ASSERT_TRUE(std::isfinite(matrix(row, col)))
+          << "row=" << row << " col=" << col;
+      ASSERT_NEAR(matrix(row, col), matrix(col, row), tolerance)
+          << "row=" << row << " col=" << col;
+    }
+  }
+}
+
+//==============================================================================
+template <typename Derived>
+void expectTranslationNullspace(
+    const Eigen::MatrixBase<Derived>& hessian,
+    const int blockCount,
+    const double tolerance = 1e-10)
+{
+  for (int axis = 0; axis < 3; ++axis) {
+    Eigen::VectorXd translation = Eigen::VectorXd::Zero(3 * blockCount);
+    for (int block = 0; block < blockCount; ++block) {
+      translation[3 * block + axis] = 1.0;
+    }
+    EXPECT_NEAR((hessian * translation).norm(), 0.0, tolerance);
+    EXPECT_NEAR((translation.transpose() * hessian).norm(), 0.0, tolerance);
+  }
+}
+
+//==============================================================================
 void expectPointEdgeDerivativesMatch(
     const Eigen::Vector3d& p,
     const Eigen::Vector3d& a,
@@ -174,6 +206,8 @@ void expectPointEdgeDerivativesMatch(
       = dc::pointEdgeSquaredDistanceHessian(p, a, b);
   const dc::Matrix9d numericHessian
       = finiteHessian(x, value).topLeftCorner<9, 9>();
+  expectFiniteSymmetric(analyticHessian);
+  expectTranslationNullspace(analyticHessian, 3);
   expectMatrixNear(analyticHessian, numericHessian, 2e-4);
 }
 
@@ -205,6 +239,8 @@ void expectPointTriangleDerivativesMatch(
   const dc::Matrix12d analyticHessian
       = dc::pointTriangleSquaredDistanceHessian(p, a, b, c);
   const dc::Matrix12d numericHessian = finiteHessian(x, value);
+  expectFiniteSymmetric(analyticHessian);
+  expectTranslationNullspace(analyticHessian, 4);
   expectMatrixNear(analyticHessian, numericHessian, 2e-4);
 }
 
@@ -236,6 +272,8 @@ void expectEdgeEdgeDerivativesMatch(
   const dc::Matrix12d analyticHessian
       = dc::edgeEdgeSquaredDistanceHessian(a, b, c, d);
   const dc::Matrix12d numericHessian = finiteHessian(x, value);
+  expectFiniteSymmetric(analyticHessian);
+  expectTranslationNullspace(analyticHessian, 4);
   expectMatrixNear(analyticHessian, numericHessian, 2e-4);
 }
 
@@ -361,23 +399,47 @@ TEST(IpcPrimitiveDistance, PointEdgeFeatureDerivativesMatchFiniteDifferences)
 TEST(IpcPrimitiveDistance, PointTriangleDerivativesMatchFiniteDifferences)
 {
   const Eigen::Vector3d a(0.0, 0.0, 0.0);
-  const Eigen::Vector3d b(1.2, 0.1, 0.0);
-  const Eigen::Vector3d c(-0.1, 1.1, 0.2);
+  const Eigen::Vector3d b(1.0, 0.0, 0.0);
+  const Eigen::Vector3d c(0.0, 1.0, 0.0);
 
   expectPointTriangleDerivativesMatch(
-      Eigen::Vector3d(-1.0, -1.0, 1.7),
+      Eigen::Vector3d(-1.0, -1.0, 1.5),
       a,
       b,
       c,
       dc::PointTriangleFeature::VertexA);
   expectPointTriangleDerivativesMatch(
-      Eigen::Vector3d(0.5, -1.0, 1.7),
+      Eigen::Vector3d(2.0, -0.5, 1.5),
+      a,
+      b,
+      c,
+      dc::PointTriangleFeature::VertexB);
+  expectPointTriangleDerivativesMatch(
+      Eigen::Vector3d(-0.5, 2.0, 1.5),
+      a,
+      b,
+      c,
+      dc::PointTriangleFeature::VertexC);
+  expectPointTriangleDerivativesMatch(
+      Eigen::Vector3d(0.5, -1.0, 1.5),
       a,
       b,
       c,
       dc::PointTriangleFeature::EdgeAB);
   expectPointTriangleDerivativesMatch(
-      Eigen::Vector3d(0.23, 0.31, 1.7),
+      Eigen::Vector3d(0.8, 0.8, 1.5),
+      a,
+      b,
+      c,
+      dc::PointTriangleFeature::EdgeBC);
+  expectPointTriangleDerivativesMatch(
+      Eigen::Vector3d(-1.0, 0.5, 1.5),
+      a,
+      b,
+      c,
+      dc::PointTriangleFeature::EdgeCA);
+  expectPointTriangleDerivativesMatch(
+      Eigen::Vector3d(0.25, 0.25, 1.5),
       a,
       b,
       c,
@@ -414,15 +476,51 @@ TEST(IpcPrimitiveDistance, EdgeEdgeDerivativesMatchFiniteDifferences)
   expectEdgeEdgeDerivativesMatch(
       Eigen::Vector3d(0.0, 0.0, 0.0),
       Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(-1.0, 1.0, 0.4),
+      Eigen::Vector3d(-1.0, 2.0, 0.4),
+      dc::EdgeEdgeFeature::EdgeAStartEdgeBStart);
+  expectEdgeEdgeDerivativesMatch(
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(-1.0, -2.0, 0.4),
+      Eigen::Vector3d(-1.0, -1.0, 0.4),
+      dc::EdgeEdgeFeature::EdgeAStartEdgeBEnd);
+  expectEdgeEdgeDerivativesMatch(
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
       Eigen::Vector3d(2.0, 1.0, 0.4),
       Eigen::Vector3d(2.0, 2.0, 0.4),
       dc::EdgeEdgeFeature::EdgeAEndEdgeBStart);
   expectEdgeEdgeDerivativesMatch(
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(2.0, -2.0, 0.4),
+      Eigen::Vector3d(2.0, -1.0, 0.4),
+      dc::EdgeEdgeFeature::EdgeAEndEdgeBEnd);
+  expectEdgeEdgeDerivativesMatch(
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.5, 1.0, 0.4),
+      Eigen::Vector3d(0.5, 2.0, 0.4),
+      dc::EdgeEdgeFeature::EdgeAInteriorEdgeBStart);
+  expectEdgeEdgeDerivativesMatch(
       Eigen::Vector3d(-1.0, 0.0, 0.0),
       Eigen::Vector3d(1.0, 0.0, 0.0),
-      Eigen::Vector3d(0.0, 2.0, 0.4),
-      Eigen::Vector3d(0.0, 3.0, 0.4),
-      dc::EdgeEdgeFeature::EdgeAInteriorEdgeBStart);
+      Eigen::Vector3d(0.0, -3.0, 0.4),
+      Eigen::Vector3d(0.0, -2.0, 0.4),
+      dc::EdgeEdgeFeature::EdgeAInteriorEdgeBEnd);
+  expectEdgeEdgeDerivativesMatch(
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(-1.0, -1.0, 0.4),
+      Eigen::Vector3d(-1.0, 1.0, 0.4),
+      dc::EdgeEdgeFeature::EdgeAStartEdgeBInterior);
+  expectEdgeEdgeDerivativesMatch(
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(2.0, -1.0, 0.4),
+      Eigen::Vector3d(2.0, 1.0, 0.4),
+      dc::EdgeEdgeFeature::EdgeAEndEdgeBInterior);
   expectEdgeEdgeDerivativesMatch(
       Eigen::Vector3d(-0.8, -0.1, 0.0),
       Eigen::Vector3d(1.1, 0.2, 0.3),
@@ -457,6 +555,12 @@ TEST(IpcPrimitiveDistance, HandlesParallelAndNearParallelEdgeEdgeDistances)
   EXPECT_TRUE(std::isfinite(nearParallelSkew.squaredDistance));
   EXPECT_GE(nearParallelSkew.squaredDistance, 0.0);
   EXPECT_LT(std::abs(nearParallelSkew.squaredDistance - 1e-8), 1e-12);
+  expectFiniteSymmetric(
+      dc::edgeEdgeSquaredDistanceHessian(
+          Eigen::Vector3d(-1.0, 0.0, 0.0),
+          Eigen::Vector3d(1.0, 0.0, 0.0),
+          Eigen::Vector3d(-1.0, 1e-8, 1e-4),
+          Eigen::Vector3d(1.0, 2e-8, 1e-4)));
 
   const auto smallParallel = dc::edgeEdgeSquaredDistance(
       Eigen::Vector3d(0.0, 0.0, 0.0),
@@ -466,6 +570,12 @@ TEST(IpcPrimitiveDistance, HandlesParallelAndNearParallelEdgeEdgeDistances)
   EXPECT_NEAR(smallParallel.squaredDistance, 1e-16, 1e-28);
   EXPECT_EQ(
       smallParallel.feature, dc::EdgeEdgeFeature::EdgeAInteriorEdgeBStart);
+  expectFiniteSymmetric(
+      dc::edgeEdgeSquaredDistanceHessian(
+          Eigen::Vector3d(0.0, 0.0, 0.0),
+          Eigen::Vector3d(1e-4, 0.0, 0.0),
+          Eigen::Vector3d(2e-5, 1e-8, 0.0),
+          Eigen::Vector3d(8e-5, 1e-8, 0.0)));
 }
 
 //==============================================================================
