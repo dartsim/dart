@@ -43,6 +43,7 @@
 #include <dartsim_engine/scene_object.hpp>
 #include <dartsim_engine/sim_engine.hpp>
 
+#include <array>
 #include <optional>
 #include <string>
 #include <vector>
@@ -184,11 +185,16 @@ enum class ViewportPaneKind
   Top,
 };
 
+using OptionalOrbitCamera = std::optional<dart::gui::OrbitCamera>;
+using ViewportPaneCameraSlots
+    = std::array<OptionalOrbitCamera, dart::gui::kMaxViewportPanes>;
+
 /// Editor-owned layout state for the rendered viewport area.
 struct ViewportLayoutState
 {
   ViewportLayoutKind layout = ViewportLayoutKind::Single;
   ViewportPaneKind activePane = ViewportPaneKind::Perspective;
+  ViewportPaneCameraSlots paneCameras;
 };
 
 /// View-menu layout command.
@@ -217,7 +223,6 @@ struct ViewportLayoutActionResult
 {
   bool ok = false;
   std::string message;
-  std::optional<ViewportCameraActionKind> cameraAction;
 };
 
 /// Resolve a movement request into a world-space delta.
@@ -336,6 +341,15 @@ viewportPaneActivationAction(dart::gui::ViewportPaneKind pane);
 /// Map a logical viewport pane to its canonical camera preset.
 [[nodiscard]] ViewportCameraActionKind viewportPaneCameraAction(
     ViewportPaneKind pane);
+
+/// Remember and restore editor-owned per-pane cameras.
+void rememberViewportActivePaneCamera(
+    ViewportLayoutState& state, const dart::gui::OrbitCamera& camera);
+[[nodiscard]] ViewportCameraActionResult activeViewportPaneCamera(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    const ViewportLayoutState& state);
 
 /// Convert editor viewport layout state to the generic GUI render layout seam.
 [[nodiscard]] dart::gui::ViewportLayoutOptions viewportLayoutOptions(

@@ -88,15 +88,16 @@ pane selection. The View menu exposes the four-view layout, the editor converts
 provider. The renderer keeps one shared pane geometry model for Filament
 viewports, active-pane camera controls, cursor-pane picking/dragging,
 active-pane debug labels, visible pane labels with active-pane status,
-click-to-activate pane switching, and tiny-framebuffer fallback to single pane.
+click-to-activate pane switching, editor-owned per-pane camera memory, and
+tiny-framebuffer fallback to single pane.
 
 ## Immediate Next Step
 
-Continue Phase 5 by adding richer per-pane interaction polish for the four-view
-layout, or continue Phase 4 by adding saved watch presets after scene metadata
-can store UI workspace settings. Keep behavior in testable engine or UI
-action/view-model helpers before wiring it into `editor.cpp`, and keep the
-filtered coverage line total above 95%.
+Continue Phase 5 with cross-pane fit/focus polish for the four-view layout, or
+continue Phase 4 by adding saved watch presets after scene metadata can store UI
+workspace settings. Keep behavior in testable engine or UI action/view-model
+helpers before wiring it into `editor.cpp`, and keep the filtered coverage line
+total above 95%.
 
 ## Context That Would Be Lost
 
@@ -169,8 +170,9 @@ filtered coverage line total above 95%.
   camera mapping, public action rejection for pane activation while single-view
   is active, renderer layout payload conversion, split-pane geometry,
   stable pane display names, active-pane label/status overlay plumbing,
-  renderer-pane click activation, tiny-framebuffer fallback, GUI provider
-  plumbing, and view-only dirty/undo invariants are tested.
+  renderer-pane click activation, per-pane camera memory,
+  tiny-framebuffer fallback, GUI provider plumbing, and view-only dirty/undo
+  invariants are tested.
 - `pixi run coverage-report-dartsim` now extracts the filtered
   `dartsim/engine` plus testable `dartsim/ui` action/view-model coverage
   surface from the broader lcov report. A 2026-05-25 attempt ran 265/265 Debug

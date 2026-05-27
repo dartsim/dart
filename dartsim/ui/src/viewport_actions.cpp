@@ -482,6 +482,63 @@ std::optional<ViewportPaneKind> viewportPaneForLayoutAction(
   return std::nullopt;
 }
 
+std::size_t viewportPaneCameraSlot(ViewportPaneKind pane)
+{
+  switch (pane) {
+    case ViewportPaneKind::Perspective:
+      return 0u;
+    case ViewportPaneKind::Front:
+      return 1u;
+    case ViewportPaneKind::Right:
+      return 2u;
+    case ViewportPaneKind::Top:
+      return 3u;
+  }
+  return 0u;
+}
+
+std::optional<dart::gui::OrbitCamera> storedViewportPaneCamera(
+    const ViewportLayoutState& state, ViewportPaneKind pane)
+{
+  const std::size_t slot = viewportPaneCameraSlot(pane);
+  if (slot >= state.paneCameras.size()
+      || !state.paneCameras[slot].has_value()) {
+    return std::nullopt;
+  }
+  return sanitizedCurrentCamera(*state.paneCameras[slot]);
+}
+
+dart::gui::OrbitCamera defaultViewportPaneCamera(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    ViewportPaneKind pane)
+{
+  const ViewportCameraActionResult camera = applyViewportCameraAction(
+      engine, currentCamera, viewportPaneCameraAction(pane), filters);
+  return camera.ok && camera.camera.has_value()
+             ? *camera.camera
+             : sanitizedCurrentCamera(currentCamera);
+}
+
+dart::gui::OrbitCamera cameraForViewportPane(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    const ViewportLayoutState& state,
+    ViewportPaneKind pane,
+    bool useCurrentForActivePane)
+{
+  if (useCurrentForActivePane && pane == state.activePane) {
+    return sanitizedCurrentCamera(currentCamera);
+  }
+  if (std::optional<dart::gui::OrbitCamera> stored
+      = storedViewportPaneCamera(state, pane)) {
+    return *stored;
+  }
+  return defaultViewportPaneCamera(engine, currentCamera, filters, pane);
+}
+
 } // namespace
 
 Eigen::Vector3d viewportMoveDelta(const ViewportMoveInput& input)
@@ -921,14 +978,10 @@ ViewportLayoutActionResult applyViewportLayoutAction(
   switch (kind) {
     case ViewportLayoutActionKind::SingleView:
       state.layout = ViewportLayoutKind::Single;
-      return {
-          true,
-          "Single view layout",
-          viewportPaneCameraAction(state.activePane)};
+      return {true, "Single view layout"};
     case ViewportLayoutActionKind::QuadView:
       state.layout = ViewportLayoutKind::Quad;
-      return {
-          true, "Four view layout", viewportPaneCameraAction(state.activePane)};
+      return {true, "Four view layout"};
     case ViewportLayoutActionKind::ActivatePerspectivePane:
     case ViewportLayoutActionKind::ActivateFrontPane:
     case ViewportLayoutActionKind::ActivateRightPane:
@@ -939,17 +992,14 @@ ViewportLayoutActionResult applyViewportLayoutAction(
         break;
       }
       if (state.layout != ViewportLayoutKind::Quad) {
-        return {false, "Enable Four View Layout", std::nullopt};
+        return {false, "Enable Four View Layout"};
       }
       state.activePane = *pane;
-      return {
-          true,
-          viewportPaneLabel(*pane) + " active",
-          viewportPaneCameraAction(*pane)};
+      return {true, viewportPaneLabel(*pane) + " active"};
     }
   }
 
-  return {false, "Unknown viewport layout", std::nullopt};
+  return {false, "Unknown viewport layout"};
 }
 
 std::optional<ViewportLayoutActionKind> viewportPaneActivationAction(
@@ -974,7 +1024,7 @@ ViewportLayoutActionResult applyViewportPaneActivation(
   const std::optional<ViewportLayoutActionKind> action
       = viewportPaneActivationAction(pane);
   if (!action.has_value()) {
-    return {false, "Unknown viewport pane", std::nullopt};
+    return {false, "Unknown viewport pane"};
   }
   return applyViewportLayoutAction(state, *action);
 }
@@ -992,6 +1042,26 @@ ViewportCameraActionKind viewportPaneCameraAction(ViewportPaneKind pane)
       return ViewportCameraActionKind::Top;
   }
   return ViewportCameraActionKind::Perspective;
+}
+
+void rememberViewportActivePaneCamera(
+    ViewportLayoutState& state, const dart::gui::OrbitCamera& camera)
+{
+  const std::size_t slot = viewportPaneCameraSlot(state.activePane);
+  if (slot < state.paneCameras.size()) {
+    state.paneCameras[slot] = sanitizedCurrentCamera(camera);
+  }
+}
+
+ViewportCameraActionResult activeViewportPaneCamera(
+    const SimEngine& engine,
+    const dart::gui::OrbitCamera& currentCamera,
+    const ViewportLayerFilterState& filters,
+    const ViewportLayoutState& state)
+{
+  const dart::gui::OrbitCamera camera = cameraForViewportPane(
+      engine, currentCamera, filters, state, state.activePane, false);
+  return {true, viewportPaneLabel(state.activePane) + " camera", camera};
 }
 
 dart::gui::ViewportLayoutOptions viewportLayoutOptions(
@@ -1035,15 +1105,12 @@ dart::gui::ViewportLayoutOptions viewportLayoutOptions(
 
     if (options.mode == dart::gui::ViewportLayoutMode::Single
         || pane == state.activePane) {
-      options.panes[i].camera = currentCamera;
+      options.panes[i].camera = sanitizedCurrentCamera(currentCamera);
       continue;
     }
 
-    const ViewportCameraActionResult camera = applyViewportCameraAction(
-        engine, currentCamera, viewportPaneCameraAction(pane), filters);
-    options.panes[i].camera = camera.ok && camera.camera.has_value()
-                                  ? *camera.camera
-                                  : currentCamera;
+    options.panes[i].camera = cameraForViewportPane(
+        engine, currentCamera, filters, state, pane, true);
   }
 
   return options;

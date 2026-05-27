@@ -47,6 +47,8 @@
 #include <utility>
 #include <vector>
 
+#include <cstddef>
+
 using namespace dartsim;
 
 namespace {
@@ -78,6 +80,17 @@ std::size_t countRenderItemsOfType(
         const SceneObject* object = engine.objects().model().find(item.id);
         return object != nullptr && object->type == type;
       }));
+}
+
+void expectCameraNear(
+    const dart::gui::OrbitCamera& actual,
+    const dart::gui::OrbitCamera& expected)
+{
+  EXPECT_TRUE(actual.target.isApprox(expected.target));
+  EXPECT_TRUE(actual.up.isApprox(expected.up));
+  EXPECT_EQ(actual.yaw, expected.yaw);
+  EXPECT_EQ(actual.pitch, expected.pitch);
+  EXPECT_EQ(actual.distance, expected.distance);
 }
 
 } // namespace
@@ -802,7 +815,6 @@ TEST(DartsimViewportActions, ViewportLayoutActionsAreViewOnly)
       layout, ui::ViewportLayoutActionKind::ActivateFrontPane);
   EXPECT_FALSE(disabledPane.ok);
   EXPECT_EQ(disabledPane.message, "Enable Four View Layout");
-  EXPECT_FALSE(disabledPane.cameraAction.has_value());
   EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Single);
   EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Perspective);
   EXPECT_FALSE(engine.commands().canUndo());
@@ -812,8 +824,6 @@ TEST(DartsimViewportActions, ViewportLayoutActionsAreViewOnly)
       layout, ui::ViewportLayoutActionKind::QuadView);
   EXPECT_TRUE(result.ok);
   EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Quad);
-  ASSERT_TRUE(result.cameraAction.has_value());
-  EXPECT_EQ(*result.cameraAction, ui::ViewportCameraActionKind::Perspective);
 
   actions = ui::buildViewportLayoutActions(layout);
   ASSERT_EQ(actions.size(), 6u);
@@ -827,11 +837,9 @@ TEST(DartsimViewportActions, ViewportLayoutActionsAreViewOnly)
   EXPECT_TRUE(result.ok);
   EXPECT_EQ(result.message, "Front Pane active");
   EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Front);
-  ASSERT_TRUE(result.cameraAction.has_value());
-  EXPECT_EQ(*result.cameraAction, ui::ViewportCameraActionKind::Front);
 
   const auto frontCamera = ui::applyViewportCameraAction(
-      engine, testCamera(), *result.cameraAction);
+      engine, testCamera(), ui::viewportPaneCameraAction(layout.activePane));
   ASSERT_TRUE(frontCamera.ok);
   ASSERT_TRUE(frontCamera.camera.has_value());
   EXPECT_NEAR(frontCamera.camera->yaw, -3.14159265358979323846 * 0.5, 1e-12);
@@ -842,8 +850,6 @@ TEST(DartsimViewportActions, ViewportLayoutActionsAreViewOnly)
   EXPECT_TRUE(result.ok);
   EXPECT_EQ(layout.layout, ui::ViewportLayoutKind::Single);
   EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Front);
-  ASSERT_TRUE(result.cameraAction.has_value());
-  EXPECT_EQ(*result.cameraAction, ui::ViewportCameraActionKind::Front);
   EXPECT_FALSE(engine.commands().canUndo());
   EXPECT_FALSE(engine.isProjectDirty());
 }
@@ -862,6 +868,96 @@ TEST(DartsimViewportActions, ViewportPaneCameraMappingsAreCanonical)
   EXPECT_EQ(
       ui::viewportPaneCameraAction(ui::ViewportPaneKind::Top),
       ui::ViewportCameraActionKind::Top);
+}
+
+TEST(DartsimViewportActions, ViewportLayoutRemembersIndependentPaneCameras)
+{
+  SimEngine engine;
+  engine.commands().clearHistory();
+  engine.markProjectClean();
+
+  ui::ViewportLayerFilterState filters;
+  ui::ViewportLayoutState layout;
+  ASSERT_TRUE(
+      ui::applyViewportLayoutAction(
+          layout, ui::ViewportLayoutActionKind::QuadView)
+          .ok);
+
+  struct PaneCase
+  {
+    ui::ViewportPaneKind uiPane = ui::ViewportPaneKind::Perspective;
+    ui::ViewportLayoutActionKind action
+        = ui::ViewportLayoutActionKind::ActivatePerspectivePane;
+    dart::gui::ViewportPaneKind guiPane
+        = dart::gui::ViewportPaneKind::Perspective;
+    dart::gui::OrbitCamera camera;
+  };
+
+  std::array<PaneCase, 4> cases{
+      PaneCase{
+          ui::ViewportPaneKind::Perspective,
+          ui::ViewportLayoutActionKind::ActivatePerspectivePane,
+          dart::gui::ViewportPaneKind::Perspective,
+          testCamera()},
+      PaneCase{
+          ui::ViewportPaneKind::Top,
+          ui::ViewportLayoutActionKind::ActivateTopPane,
+          dart::gui::ViewportPaneKind::Top,
+          testCamera()},
+      PaneCase{
+          ui::ViewportPaneKind::Front,
+          ui::ViewportLayoutActionKind::ActivateFrontPane,
+          dart::gui::ViewportPaneKind::Front,
+          testCamera()},
+      PaneCase{
+          ui::ViewportPaneKind::Right,
+          ui::ViewportLayoutActionKind::ActivateRightPane,
+          dart::gui::ViewportPaneKind::Right,
+          testCamera()}};
+  for (std::size_t i = 0; i < cases.size(); ++i) {
+    auto& paneCase = cases[i];
+    paneCase.camera.target = Eigen::Vector3d(
+        1.0 + static_cast<double>(i),
+        2.0 + static_cast<double>(i) * 3.0,
+        3.0 + static_cast<double>(i) * 5.0);
+    paneCase.camera.yaw = -0.4 + static_cast<double>(i) * 0.2;
+    paneCase.camera.pitch = -0.2 + static_cast<double>(i) * 0.3;
+    paneCase.camera.distance = 6.0 + static_cast<double>(i);
+
+    ASSERT_TRUE(ui::applyViewportLayoutAction(layout, paneCase.action).ok);
+    ui::rememberViewportActivePaneCamera(layout, paneCase.camera);
+  }
+
+  for (const PaneCase& paneCase : cases) {
+    ASSERT_TRUE(ui::applyViewportLayoutAction(layout, paneCase.action).ok);
+    const auto activeCamera
+        = ui::activeViewportPaneCamera(engine, testCamera(), filters, layout);
+    ASSERT_TRUE(activeCamera.ok);
+    ASSERT_TRUE(activeCamera.camera.has_value());
+    expectCameraNear(*activeCamera.camera, paneCase.camera);
+
+    const auto layoutOptions
+        = ui::viewportLayoutOptions(engine, paneCase.camera, filters, layout);
+    ASSERT_EQ(layoutOptions.paneCount, dart::gui::kMaxViewportPanes);
+    for (const PaneCase& expectedPane : cases) {
+      const auto pane = std::find_if(
+          layoutOptions.panes.begin(),
+          layoutOptions.panes.begin()
+              + static_cast<std::ptrdiff_t>(layoutOptions.paneCount),
+          [&expectedPane](const dart::gui::ViewportPaneView& view) {
+            return view.kind == expectedPane.guiPane;
+          });
+      ASSERT_NE(
+          pane,
+          layoutOptions.panes.begin()
+              + static_cast<std::ptrdiff_t>(layoutOptions.paneCount));
+      expectCameraNear(pane->camera, expectedPane.camera);
+      EXPECT_EQ(pane->active, expectedPane.uiPane == paneCase.uiPane);
+    }
+  }
+
+  EXPECT_FALSE(engine.commands().canUndo());
+  EXPECT_FALSE(engine.isProjectDirty());
 }
 
 TEST(DartsimViewportActions, RendererPaneActivationUsesLayoutActions)
@@ -912,8 +1008,6 @@ TEST(DartsimViewportActions, RendererPaneActivationUsesLayoutActions)
   EXPECT_TRUE(result.ok);
   EXPECT_EQ(result.message, "Right Pane active");
   EXPECT_EQ(layout.activePane, ui::ViewportPaneKind::Right);
-  ASSERT_TRUE(result.cameraAction.has_value());
-  EXPECT_EQ(*result.cameraAction, ui::ViewportCameraActionKind::Right);
   EXPECT_FALSE(engine.commands().canUndo());
   EXPECT_FALSE(engine.isProjectDirty());
 }

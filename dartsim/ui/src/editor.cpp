@@ -892,19 +892,16 @@ void applyViewportLayoutMenuAction(
     dart::gui::PanelContext& context,
     ViewportLayoutActionKind kind)
 {
+  rememberViewportActivePaneCamera(app.viewportLayout, context.camera.orbit);
   const ViewportLayoutActionResult layoutResult
       = applyViewportLayoutAction(app.viewportLayout, kind);
   app.note(layoutResult.message);
-  if (!layoutResult.ok || !layoutResult.cameraAction.has_value()
-      || !context.camera.setOrbitCamera) {
+  if (!layoutResult.ok || !context.camera.setOrbitCamera) {
     return;
   }
 
-  const ViewportCameraActionResult cameraResult = applyViewportCameraAction(
-      app.engine,
-      context.camera.orbit,
-      *layoutResult.cameraAction,
-      app.viewportLayers);
+  const ViewportCameraActionResult cameraResult = activeViewportPaneCamera(
+      app.engine, context.camera.orbit, app.viewportLayers, app.viewportLayout);
   if (cameraResult.ok && cameraResult.camera.has_value()) {
     context.camera.setOrbitCamera(*cameraResult.camera);
   }
@@ -1321,6 +1318,7 @@ int runEditor(int argc, char* argv[])
   };
   options.viewportLayoutProvider
       = [app](const dart::gui::OrbitCamera& currentCamera) {
+          rememberViewportActivePaneCamera(app->viewportLayout, currentCamera);
           return viewportLayoutOptions(
               app->engine,
               currentCamera,
