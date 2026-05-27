@@ -59,6 +59,7 @@ bool CommandManager::execute(std::unique_ptr<Command> command)
     return true;
   }
   EditorState before = capture();
+  const HistoryRevision beforeRevision = m_currentRevision;
   command->apply(m_objects, m_selection);
   EditorState after = capture();
   if (after == before) {
@@ -67,8 +68,15 @@ bool CommandManager::execute(std::unique_ptr<Command> command)
     // redo branch, which is unexpected data loss in editor workflows.
     return false;
   }
+  const HistoryRevision afterRevision = m_nextRevision++;
+  m_currentRevision = afterRevision;
   m_undo.push_back(
-      HistoryEntry{command->label(), std::move(before), std::move(after)});
+      HistoryEntry{
+          command->label(),
+          std::move(before),
+          std::move(after),
+          beforeRevision,
+          afterRevision});
   m_redo.clear();
   return true;
 }
@@ -77,6 +85,7 @@ void CommandManager::beginMacro(std::string label)
 {
   if (m_macroDepth == 0) {
     m_macroBefore = capture();
+    m_macroBeforeRevision = m_currentRevision;
     m_macroDirty = false;
     m_macroLabel = std::move(label);
   }
@@ -95,11 +104,15 @@ void CommandManager::endMacro()
   if (m_macroDirty) {
     EditorState after = capture();
     if (after != m_macroBefore) {
+      const HistoryRevision afterRevision = m_nextRevision++;
+      m_currentRevision = afterRevision;
       m_undo.push_back(
           HistoryEntry{
               std::move(m_macroLabel),
               std::move(m_macroBefore),
-              std::move(after)});
+              std::move(after),
+              m_macroBeforeRevision,
+              afterRevision});
       m_redo.clear();
     }
   }
@@ -120,6 +133,7 @@ bool CommandManager::undo()
   HistoryEntry entry = std::move(m_undo.back());
   m_undo.pop_back();
   restore(entry.before);
+  m_currentRevision = entry.beforeRevision;
   m_redo.push_back(std::move(entry));
   return true;
 }
@@ -132,6 +146,7 @@ bool CommandManager::redo()
   HistoryEntry entry = std::move(m_redo.back());
   m_redo.pop_back();
   restore(entry.after);
+  m_currentRevision = entry.afterRevision;
   m_undo.push_back(std::move(entry));
   return true;
 }
@@ -150,6 +165,13 @@ void CommandManager::clearHistory()
 {
   m_undo.clear();
   m_redo.clear();
+  m_currentRevision = 0;
+  m_nextRevision = 1;
+  m_macroDepth = 0;
+  m_macroDirty = false;
+  m_macroLabel.clear();
+  m_macroBefore = EditorState{};
+  m_macroBeforeRevision = 0;
 }
 
 } // namespace dartsim

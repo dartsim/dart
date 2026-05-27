@@ -209,6 +209,12 @@ bool SimEngine::isProjectDirty() const
   return !(m_objects.model() == m_cleanProjectModel);
 }
 
+bool SimEngine::isHistoryAtCleanState() const
+{
+  return !isProjectDirty()
+         && m_commands.currentRevision() == m_cleanHistoryRevision;
+}
+
 void SimEngine::resetRuntimeStateForProjectReplacement()
 {
   const bool hadRecordingState = m_recorder.isRecording()
@@ -217,6 +223,7 @@ void SimEngine::resetRuntimeStateForProjectReplacement()
   const bool hadSelection = !m_selection.empty();
   m_selection.clear();
   m_commands.clearHistory();
+  captureCleanProjectModel();
   if (hadSelection) {
     m_events.emit(EventType::SelectionChanged);
   }
@@ -233,11 +240,14 @@ void SimEngine::resetRuntimeStateForProjectReplacement()
 
 void SimEngine::newProject()
 {
+  if (m_commands.inMacro()) {
+    m_logger.warning("Cannot create a new project during an edit transaction");
+    return;
+  }
   const bool wasDirty = isProjectDirty();
   const std::string oldPath = m_projectPath;
   m_objects.setModel(SceneModel{});
   m_projectPath.clear();
-  captureCleanProjectModel();
   resetRuntimeStateForProjectReplacement();
   m_logger.info("New project");
   emitProjectStateChangedIfNeeded(wasDirty, oldPath);
@@ -248,6 +258,8 @@ void SimEngine::newProject()
 void SimEngine::captureCleanProjectModel()
 {
   m_cleanProjectModel = m_objects.model();
+  m_cleanHistoryIndex = m_commands.historyIndex();
+  m_cleanHistoryRevision = m_commands.currentRevision();
 }
 
 void SimEngine::markProjectClean()
@@ -287,6 +299,10 @@ bool SimEngine::saveProject(const std::string& path)
 
 bool SimEngine::loadProject(const std::string& path)
 {
+  if (m_commands.inMacro()) {
+    m_logger.warning("Cannot load a project during an edit transaction");
+    return false;
+  }
   SceneModel model;
   if (!scene_io::loadFromFile(path, model)) {
     return false;
@@ -295,7 +311,6 @@ bool SimEngine::loadProject(const std::string& path)
   const std::string oldPath = m_projectPath;
   m_objects.setModel(std::move(model));
   m_projectPath = path;
-  captureCleanProjectModel();
   resetRuntimeStateForProjectReplacement();
   m_logger.info("Loaded project: " + path);
   emitProjectStateChangedIfNeeded(wasDirty, oldPath);

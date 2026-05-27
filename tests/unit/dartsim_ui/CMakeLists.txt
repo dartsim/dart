@@ -12,6 +12,9 @@ target_link_libraries(UNIT_dartsim_ui_ProjectActions dartsim_ui)
 dart_add_test("unit" UNIT_dartsim_ui_ConsoleActions test_console_actions.cpp)
 target_link_libraries(UNIT_dartsim_ui_ConsoleActions dartsim_ui)
 
+dart_add_test("unit" UNIT_dartsim_ui_HistoryActions test_history_actions.cpp)
+target_link_libraries(UNIT_dartsim_ui_HistoryActions dartsim_ui)
+
 dart_add_test("unit" UNIT_dartsim_ui_InspectorActions test_inspector_actions.cpp)
 target_link_libraries(UNIT_dartsim_ui_InspectorActions dartsim_ui)
 
@@ -40,6 +43,7 @@ if(NOT APPLE AND TARGET dart-simulation-experimental)
   foreach(_dartsim_ui_test
       UNIT_dartsim_ui_ProjectActions
       UNIT_dartsim_ui_ConsoleActions
+      UNIT_dartsim_ui_HistoryActions
       UNIT_dartsim_ui_InspectorActions
       UNIT_dartsim_ui_OutlinerActions
       UNIT_dartsim_ui_PaletteActions

@@ -360,6 +360,10 @@ TEST(CommandManager, InvalidCommandsAndLabelsAreStable)
   EXPECT_FALSE(commandManager.execute(nullptr));
   EXPECT_FALSE(commandManager.undo());
   EXPECT_FALSE(commandManager.redo());
+  EXPECT_EQ(commandManager.undoCount(), 0u);
+  EXPECT_EQ(commandManager.redoCount(), 0u);
+  EXPECT_EQ(commandManager.historyIndex(), 0u);
+  EXPECT_EQ(commandManager.currentRevision(), 0u);
   commandManager.endMacro();
   EXPECT_FALSE(commandManager.inMacro());
 
@@ -373,14 +377,31 @@ TEST(CommandManager, InvalidCommandsAndLabelsAreStable)
         objectManager.rebuild();
         selectionManager.select(id);
       }));
+  const CommandManager::HistoryRevision addRevision
+      = commandManager.currentRevision();
+  EXPECT_NE(addRevision, 0u);
+  EXPECT_EQ(commandManager.undoCount(), 1u);
+  EXPECT_EQ(commandManager.redoCount(), 0u);
+  EXPECT_EQ(commandManager.historyIndex(), 1u);
   EXPECT_EQ(commandManager.undoLabel(), "Add Body Directly");
   EXPECT_TRUE(commandManager.redoLabel().empty());
 
   ASSERT_TRUE(commandManager.undo());
+  EXPECT_EQ(commandManager.currentRevision(), 0u);
+  EXPECT_EQ(commandManager.undoCount(), 0u);
+  EXPECT_EQ(commandManager.redoCount(), 1u);
+  EXPECT_EQ(commandManager.historyIndex(), 0u);
   EXPECT_TRUE(commandManager.undoLabel().empty());
   EXPECT_EQ(commandManager.redoLabel(), "Add Body Directly");
 
+  ASSERT_TRUE(commandManager.redo());
+  EXPECT_EQ(commandManager.currentRevision(), addRevision);
+  EXPECT_EQ(commandManager.undoCount(), 1u);
+  EXPECT_EQ(commandManager.redoCount(), 0u);
+
   commandManager.clearHistory();
+  EXPECT_EQ(commandManager.currentRevision(), 0u);
+  EXPECT_EQ(commandManager.undoCount(), 0u);
   EXPECT_FALSE(commandManager.canRedo());
   EXPECT_TRUE(commandManager.redoLabel().empty());
 }
@@ -1610,6 +1631,9 @@ TEST(SimEngine, ProjectDirtyStateTracksSavedSceneSnapshot)
 
   ASSERT_TRUE(engine.saveProject(path.string()));
   EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_TRUE(engine.isHistoryAtCleanState());
+  EXPECT_EQ(engine.cleanHistoryIndex(), engine.commands().historyIndex());
+  EXPECT_EQ(engine.cleanHistoryRevision(), engine.commands().currentRevision());
   EXPECT_TRUE(engine.hasProjectPath());
   EXPECT_EQ(engine.projectPath(), path.string());
   EXPECT_EQ(changes, 2);
@@ -1628,6 +1652,9 @@ TEST(SimEngine, ProjectDirtyStateTracksSavedSceneSnapshot)
 
   ASSERT_TRUE(engine.saveProject());
   EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_TRUE(engine.isHistoryAtCleanState());
+  EXPECT_EQ(engine.cleanHistoryIndex(), engine.commands().historyIndex());
+  EXPECT_EQ(engine.cleanHistoryRevision(), engine.commands().currentRevision());
   EXPECT_EQ(lastEvent, EventType::ProjectSaved);
 
   engine.execute(commands::setMass(id, 4.0));
@@ -1637,6 +1664,44 @@ TEST(SimEngine, ProjectDirtyStateTracksSavedSceneSnapshot)
   EXPECT_EQ(lastEvent, EventType::ProjectStateChanged);
 
   std::filesystem::remove(path);
+}
+
+TEST(SimEngine, CleanHistoryRevisionTracksSavePointAndRedoBranches)
+{
+  SimEngine engine;
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_TRUE(engine.isHistoryAtCleanState());
+  EXPECT_EQ(engine.cleanHistoryIndex(), 0u);
+  EXPECT_EQ(engine.cleanHistoryRevision(), 0u);
+
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  ASSERT_TRUE(engine.isProjectDirty());
+  ASSERT_FALSE(engine.isHistoryAtCleanState());
+  ASSERT_EQ(engine.commands().historyIndex(), 1u);
+
+  engine.markProjectClean();
+  EXPECT_FALSE(engine.isProjectDirty());
+  EXPECT_TRUE(engine.isHistoryAtCleanState());
+  EXPECT_EQ(engine.cleanHistoryIndex(), 1u);
+  const CommandManager::HistoryRevision cleanRevision
+      = engine.cleanHistoryRevision();
+  EXPECT_EQ(cleanRevision, engine.commands().currentRevision());
+
+  ASSERT_TRUE(engine.undo());
+  EXPECT_TRUE(engine.isProjectDirty());
+  EXPECT_FALSE(engine.isHistoryAtCleanState());
+  EXPECT_EQ(engine.commands().historyIndex(), 0u);
+  EXPECT_TRUE(engine.commands().canRedo());
+
+  engine.execute(
+      commands::addRigidBody(
+          ShapeType::Sphere, translation(2.0, 0.0, 1.0), "replacement"));
+  EXPECT_EQ(engine.commands().historyIndex(), engine.cleanHistoryIndex());
+  EXPECT_NE(engine.commands().currentRevision(), cleanRevision);
+  EXPECT_FALSE(engine.isHistoryAtCleanState());
+  EXPECT_TRUE(engine.isProjectDirty());
+  EXPECT_FALSE(engine.commands().canRedo());
 }
 
 TEST(SimEngine, LoadAndNewProjectResetProjectState)
@@ -1865,6 +1930,48 @@ TEST(SimEngine, LoadProjectClearsRecordingAndPlayer)
   std::filesystem::remove(path);
 }
 
+TEST(SimEngine, ProjectReplacementIsRejectedDuringOpenMacro)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_engine_macro_project_guard.dartsim";
+
+  SimEngine saved;
+  saved.execute(commands::addMultiBody("saved"));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  SimEngine engine;
+  engine.commands().beginMacro("Open Transaction");
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  const SceneModel transactionModel = engine.objects().model();
+  ASSERT_EQ(transactionModel.size(), 1u);
+
+  engine.newProject();
+  EXPECT_TRUE(engine.commands().inMacro());
+  EXPECT_EQ(engine.objects().model(), transactionModel);
+  ASSERT_FALSE(engine.logger().entries().empty());
+  EXPECT_EQ(engine.logger().entries().back().level, LogLevel::Warning);
+  EXPECT_EQ(
+      engine.logger().entries().back().message,
+      "Cannot create a new project during an edit transaction");
+
+  EXPECT_FALSE(engine.loadProject(path.string()));
+  EXPECT_TRUE(engine.commands().inMacro());
+  EXPECT_EQ(engine.objects().model(), transactionModel);
+  ASSERT_FALSE(engine.logger().entries().empty());
+  EXPECT_EQ(engine.logger().entries().back().level, LogLevel::Warning);
+  EXPECT_EQ(
+      engine.logger().entries().back().message,
+      "Cannot load a project during an edit transaction");
+
+  engine.commands().endMacro();
+  EXPECT_FALSE(engine.commands().inMacro());
+  EXPECT_TRUE(engine.commands().canUndo());
+
+  std::filesystem::remove(path);
+}
+
 //==============================================================================
 // Command macros (grouped, single-undo transactions)
 //==============================================================================
@@ -1893,6 +2000,33 @@ TEST(CommandManager, MacroGroupsIntoSingleUndo)
   EXPECT_EQ(objects.model().size(), 2u);
 }
 
+TEST(CommandManager, MacroRevisionsRestoreSavedUndoRedoCursor)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.beginMacro("Add Two Bodies");
+  commands.execute(commands::addRigidBody());
+  commands.execute(commands::addRigidBody());
+  commands.endMacro();
+
+  const CommandManager::HistoryRevision macroRevision
+      = commands.currentRevision();
+  ASSERT_NE(macroRevision, 0u);
+  EXPECT_EQ(commands.historyIndex(), 1u);
+
+  ASSERT_TRUE(commands.undo());
+  EXPECT_EQ(commands.currentRevision(), 0u);
+  EXPECT_EQ(commands.historyIndex(), 0u);
+  EXPECT_EQ(commands.redoCount(), 1u);
+
+  ASSERT_TRUE(commands.redo());
+  EXPECT_EQ(commands.currentRevision(), macroRevision);
+  EXPECT_EQ(commands.historyIndex(), 1u);
+  EXPECT_EQ(commands.undoCount(), 1u);
+}
+
 TEST(CommandManager, EmptyMacroAddsNoHistory)
 {
   ObjectManager objects;
@@ -1902,6 +2036,30 @@ TEST(CommandManager, EmptyMacroAddsNoHistory)
   commands.beginMacro("Nothing");
   commands.endMacro();
   EXPECT_FALSE(commands.canUndo());
+}
+
+TEST(CommandManager, NoOpMacroPreservesRedoBranch)
+{
+  ObjectManager objects;
+  SelectionManager selection;
+  CommandManager commands(objects, selection);
+
+  commands.execute(commands::addRigidBody());
+  ASSERT_TRUE(commands.undo());
+  ASSERT_TRUE(commands.canRedo());
+  EXPECT_EQ(commands.redoCount(), 1u);
+
+  commands.beginMacro("No-op Transaction");
+  EXPECT_TRUE(
+      commands.execute("Do Nothing", [](ObjectManager&, SelectionManager&) {}));
+  commands.endMacro();
+
+  EXPECT_FALSE(commands.canUndo());
+  EXPECT_TRUE(commands.canRedo());
+  EXPECT_EQ(commands.redoCount(), 1u);
+
+  ASSERT_TRUE(commands.redo());
+  EXPECT_EQ(objects.model().size(), 1u);
 }
 
 TEST(CommandManager, NestedMacrosFlattenToOneEntry)

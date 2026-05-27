@@ -41,6 +41,9 @@
 #include <string>
 #include <vector>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace dartsim {
 
 /// A named, forward-only editor operation.
@@ -82,6 +85,8 @@ private:
 class CommandManager
 {
 public:
+  using HistoryRevision = std::uint64_t;
+
   CommandManager(ObjectManager& objects, SelectionManager& selection)
     : m_objects(objects), m_selection(selection)
   {
@@ -122,6 +127,22 @@ public:
   {
     return !m_redo.empty();
   }
+  [[nodiscard]] std::size_t undoCount() const
+  {
+    return m_undo.size();
+  }
+  [[nodiscard]] std::size_t redoCount() const
+  {
+    return m_redo.size();
+  }
+  [[nodiscard]] std::size_t historyIndex() const
+  {
+    return m_undo.size();
+  }
+  [[nodiscard]] HistoryRevision currentRevision() const
+  {
+    return m_currentRevision;
+  }
   [[nodiscard]] std::string undoLabel() const;
   [[nodiscard]] std::string redoLabel() const;
 
@@ -141,6 +162,8 @@ private:
     std::string label;
     EditorState before;
     EditorState after;
+    HistoryRevision beforeRevision = 0;
+    HistoryRevision afterRevision = 0;
   };
 
   [[nodiscard]] EditorState capture() const;
@@ -150,11 +173,14 @@ private:
   SelectionManager& m_selection;
   std::vector<HistoryEntry> m_undo;
   std::vector<HistoryEntry> m_redo;
+  HistoryRevision m_currentRevision = 0;
+  HistoryRevision m_nextRevision = 1;
 
   int m_macroDepth = 0;
   bool m_macroDirty = false;
   std::string m_macroLabel;
   EditorState m_macroBefore;
+  HistoryRevision m_macroBeforeRevision = 0;
 };
 
 } // namespace dartsim

@@ -45,6 +45,7 @@
 #include <dartsim_engine/simulation_controller.hpp>
 #include <dartsim_ui/console_actions.hpp>
 #include <dartsim_ui/editor.hpp>
+#include <dartsim_ui/history_actions.hpp>
 #include <dartsim_ui/inspector_actions.hpp>
 #include <dartsim_ui/outliner_actions.hpp>
 #include <dartsim_ui/palette_actions.hpp>
@@ -845,12 +846,18 @@ void buildMenuBar(
     ui.endMenu();
   }
   if (ui.beginMenu("Edit")) {
-    if (ui.menuItem("Undo")) {
-      app.note(app.engine.undo() ? "Undo" : "Nothing to undo");
+    for (const HistoryAction& action : buildHistoryActions(app.engine)) {
+      std::string label = action.label;
+      if (!action.enabled && !action.disabledReason.empty()) {
+        label += " (" + action.disabledReason + ")";
+      }
+      if (ui.menuItem(label) && action.enabled) {
+        app.note(applyHistoryAction(app.engine, action.kind).message);
+        syncViewportTransformGizmo(
+            app.transformGizmo, app.engine, app.viewportLayers);
+      }
     }
-    if (ui.menuItem("Redo")) {
-      app.note(app.engine.redo() ? "Redo" : "Nothing to redo");
-    }
+    ui.separator();
     for (const RelationshipAction& action :
          buildRelationshipActions(app.engine)) {
       std::string label = action.label;
