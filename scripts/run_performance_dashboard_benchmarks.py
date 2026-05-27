@@ -30,7 +30,10 @@ BENCHMARK_SPECS = [
         benchmark_filter=(
             "BM_WorldUpdateKinematics/.*|"
             "BM_WorldStep(Sequential|Parallel)/.*|"
-            "BM_RigidBodyStep(Sequential|Parallel)/.*"
+            "BM_RigidBodyStep(Sequential|Parallel)/.*|"
+            "BM_ContactShaped(Sequential|Parallel)/.*|"
+            "BM_ContactIslandShaped(Sequential|Parallel)/.*|"
+            "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10"
         ),
         output_name="dashboard_experimental_world.json",
     ),

@@ -32,6 +32,7 @@
 
 #include <cuda_runtime.h>
 
+#include <cmath>
 #include <cstddef>
 
 namespace dart::simulation::experimental::compute::cuda::detail {
@@ -63,6 +64,93 @@ __global__ void integrateRigidBodyStateBatchLinearKernel(
   position[base + 2] += linearVelocity[base + 2] * timeStep;
 }
 
+__device__ void integrateOrientation(
+    double* orientation,
+    const double* angularVelocity,
+    double timeStep,
+    std::size_t body)
+{
+  const std::size_t orientationBase = 4 * body;
+  const std::size_t velocityBase = 3 * body;
+
+  const double w = orientation[orientationBase + 0];
+  const double x = orientation[orientationBase + 1];
+  const double y = orientation[orientationBase + 2];
+  const double z = orientation[orientationBase + 3];
+  const double ox = angularVelocity[velocityBase + 0];
+  const double oy = angularVelocity[velocityBase + 1];
+  const double oz = angularVelocity[velocityBase + 2];
+
+  double nw = w;
+  double nx = x;
+  double ny = y;
+  double nz = z;
+
+  const double speed = sqrt(ox * ox + oy * oy + oz * oz);
+  if (speed > 0.0) {
+    const double halfAngle = 0.5 * speed * timeStep;
+    const double axisScale = sin(halfAngle) / speed;
+    const double dw = cos(halfAngle);
+    const double dx = ox * axisScale;
+    const double dy = oy * axisScale;
+    const double dz = oz * axisScale;
+
+    nw = dw * w - dx * x - dy * y - dz * z;
+    nx = dw * x + dx * w + dy * z - dz * y;
+    ny = dw * y - dx * z + dy * w + dz * x;
+    nz = dw * z + dx * y - dy * x + dz * w;
+  }
+
+  const double norm = sqrt(nw * nw + nx * nx + ny * ny + nz * nz);
+  if (norm > 0.0 && isfinite(norm)) {
+    const double inverse = 1.0 / norm;
+    nw *= inverse;
+    nx *= inverse;
+    ny *= inverse;
+    nz *= inverse;
+  } else {
+    nw = 1.0;
+    nx = 0.0;
+    ny = 0.0;
+    nz = 0.0;
+  }
+
+  orientation[orientationBase + 0] = nw;
+  orientation[orientationBase + 1] = nx;
+  orientation[orientationBase + 2] = ny;
+  orientation[orientationBase + 3] = nz;
+}
+
+__global__ void integrateRigidBodyStateBatchKernel(
+    double* position,
+    double* linearVelocity,
+    double* orientation,
+    const double* angularVelocity,
+    const double* force,
+    const double* inverseMass,
+    double timeStep,
+    std::size_t bodies)
+{
+  const auto body
+      = static_cast<std::size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (body >= bodies) {
+    return;
+  }
+
+  const std::size_t base = 3 * body;
+  const double velocityScale = inverseMass[body] * timeStep;
+
+  linearVelocity[base] += force[base] * velocityScale;
+  linearVelocity[base + 1] += force[base + 1] * velocityScale;
+  linearVelocity[base + 2] += force[base + 2] * velocityScale;
+
+  position[base] += linearVelocity[base] * timeStep;
+  position[base + 1] += linearVelocity[base + 1] * timeStep;
+  position[base + 2] += linearVelocity[base + 2] * timeStep;
+
+  integrateOrientation(orientation, angularVelocity, timeStep, body);
+}
+
 } // namespace
 
 //==============================================================================
@@ -85,6 +173,44 @@ cudaError_t launchRigidBodyStateBatchLinearKernel(
 
   integrateRigidBodyStateBatchLinearKernel<<<gridSize, blockSize>>>(
       position, linearVelocity, force, inverseMass, timeStep, bodies);
+
+  const auto launchStatus = cudaGetLastError();
+  if (launchStatus != cudaSuccess) {
+    return launchStatus;
+  }
+
+  return cudaSuccess;
+}
+
+//==============================================================================
+cudaError_t launchRigidBodyStateBatchKernel(
+    double* position,
+    double* linearVelocity,
+    double* orientation,
+    const double* angularVelocity,
+    const double* force,
+    const double* inverseMass,
+    double timeStep,
+    std::size_t bodies)
+{
+  if (bodies == 0) {
+    return cudaSuccess;
+  }
+
+  constexpr int blockSize = 256;
+  const auto gridSize = static_cast<unsigned int>(
+      (bodies + static_cast<std::size_t>(blockSize) - 1)
+      / static_cast<std::size_t>(blockSize));
+
+  integrateRigidBodyStateBatchKernel<<<gridSize, blockSize>>>(
+      position,
+      linearVelocity,
+      orientation,
+      angularVelocity,
+      force,
+      inverseMass,
+      timeStep,
+      bodies);
 
   const auto launchStatus = cudaGetLastError();
   if (launchStatus != cudaSuccess) {

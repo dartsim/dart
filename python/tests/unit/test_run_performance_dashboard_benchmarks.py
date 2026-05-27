@@ -47,6 +47,9 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     assert "BM_WorldUpdateKinematics" in result.stdout
     assert "BM_WorldStep(Sequential|Parallel)/.*" in result.stdout
     assert "BM_RigidBodyStep(Sequential|Parallel)/.*" in result.stdout
+    assert "BM_ContactShaped(Sequential|Parallel)/.*" in result.stdout
+    assert "BM_ContactIslandShaped(Sequential|Parallel)/.*" in result.stdout
+    assert "BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10" in result.stdout
     assert "BM_Robot_(KR5|Atlas)_WorldStep" not in result.stdout
     assert "BM_LCP_COMPARE_SMOKE" not in result.stdout
     assert "BM_Add_DART_f32(_Baseline)?/1024(/.*)?$" not in result.stdout
