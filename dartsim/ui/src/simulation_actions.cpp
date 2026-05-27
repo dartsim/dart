@@ -278,8 +278,15 @@ SimulationActionResult applySimulationReplayAction(
 
 SimulationActionResult playSimulation(SimEngine& engine)
 {
+  const SimulationStatus before = buildSimulationStatus(engine);
+  if (before.playing) {
+    return result(false, "Simulation already playing", engine);
+  }
   engine.simulation().play();
-  return result(true, "Simulation playing", engine);
+  if (before.editMode) {
+    return result(true, "Entered Simulation Mode", engine);
+  }
+  return result(true, "Simulation resumed", engine);
 }
 
 SimulationActionResult pauseSimulation(SimEngine& engine)

@@ -966,8 +966,9 @@ std::string consoleCommandHelpText(bool watchCommandsAvailable)
          "delete, inspect [id|name|selected], list "
          "[all|selected|visible|hidden], attach, detach, reparent-link, "
          "make-root, show [target], hide [target], mode <edit|simulation>, "
-         "play, pause, step [count], restart (stay in Simulation Mode), "
-         "reset (return to Edit Mode), record <on|off>, replay "
+         "play (enter/resume Simulation Mode), pause, step [count], restart "
+         "(stay in Simulation Mode), reset (return to Edit Mode), record "
+         "<on|off>, replay "
          "<first|previous|next|last|frame> "
          "(paused Simulation Mode)"
          + std::string(

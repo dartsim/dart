@@ -284,6 +284,39 @@ ProjectReplacementActionResult requestOpenProjectReplacement(
       {}};
 }
 
+ProjectReplacementActionResult requestOpenProjectReplacementWithDialog(
+    SimEngine& engine,
+    const ProjectFileDialog& dialog,
+    void* parentNativeWindow)
+{
+  if (engine.commands().inMacro()) {
+    return {false, macroGuardResult("load a project"), {}};
+  }
+  if (!dialog) {
+    return {false, {false, "Open dialog unavailable"}, {}};
+  }
+
+  ProjectFileDialogRequest request;
+  request.kind = ProjectFileDialogKind::Open;
+  request.defaultPath = parentPathOrEmpty(engine.projectPath());
+  request.defaultName = filenameOrDefault(engine.projectPath());
+  request.parentNativeWindow = parentNativeWindow;
+
+  const ProjectFileDialogResult selection = dialog(request);
+  switch (selection.status) {
+    case ProjectFileDialogStatus::Selected:
+      if (selection.path.empty()) {
+        return {false, {false, "Open canceled"}, {}};
+      }
+      return requestOpenProjectReplacement(engine, selection.path);
+    case ProjectFileDialogStatus::Canceled:
+      return {false, {false, "Open canceled"}, {}};
+    case ProjectFileDialogStatus::Failed:
+      return {false, {false, makeDialogFailureMessage("Open", selection)}, {}};
+  }
+  return {false, {false, "Open dialog failed"}, {}};
+}
+
 ProjectActionResult confirmProjectReplacement(
     SimEngine& engine, const ProjectReplacementRequest& request)
 {
@@ -327,7 +360,10 @@ ProjectActionResult saveProject(SimEngine& engine, std::string defaultPath)
 }
 
 ProjectActionResult saveProjectWithDialog(
-    SimEngine& engine, const ProjectFileDialog& dialog, bool forceDialog)
+    SimEngine& engine,
+    const ProjectFileDialog& dialog,
+    bool forceDialog,
+    void* parentNativeWindow)
 {
   if (engine.hasProjectPath() && !forceDialog) {
     return saveProject(engine);
@@ -341,6 +377,7 @@ ProjectActionResult saveProjectWithDialog(
   request.kind = ProjectFileDialogKind::Save;
   request.defaultPath = parentPathOrEmpty(engine.projectPath());
   request.defaultName = filenameOrDefault(engine.projectPath());
+  request.parentNativeWindow = parentNativeWindow;
 
   const ProjectFileDialogResult selection = dialog(request);
   switch (selection.status) {

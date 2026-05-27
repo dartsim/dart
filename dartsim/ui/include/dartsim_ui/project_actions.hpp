@@ -164,6 +164,13 @@ ProjectReplacementActionResult requestNewProjectReplacement(SimEngine& engine);
 ProjectReplacementActionResult requestOpenProjectReplacement(
     SimEngine& engine, std::string path = kDefaultProjectPath);
 
+/// Ask for a project path and either load it or describe the confirmation
+/// required to replace a dirty project.
+ProjectReplacementActionResult requestOpenProjectReplacementWithDialog(
+    SimEngine& engine,
+    const ProjectFileDialog& dialog,
+    void* parentNativeWindow = nullptr);
+
 /// Apply a previously requested dirty-project replacement.
 ProjectActionResult confirmProjectReplacement(
     SimEngine& engine, const ProjectReplacementRequest& request);
@@ -183,7 +190,10 @@ ProjectActionResult saveProjectAs(SimEngine& engine, std::string path);
 /// Save to the current path, or ask for a path when the project has not been
 /// saved yet. When `forceDialog` is true, always ask for a destination path.
 ProjectActionResult saveProjectWithDialog(
-    SimEngine& engine, const ProjectFileDialog& dialog, bool forceDialog);
+    SimEngine& engine,
+    const ProjectFileDialog& dialog,
+    bool forceDialog,
+    void* parentNativeWindow = nullptr);
 
 /// Load a project path and return the status text for the UI log.
 ProjectActionResult openProject(

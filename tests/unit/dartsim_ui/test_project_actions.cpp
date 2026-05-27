@@ -226,6 +226,117 @@ TEST(DartsimProjectActions, OpenWithDialogUsesSelectedProjectPath)
   std::filesystem::remove(path);
 }
 
+TEST(DartsimProjectActions, OpenReplacementWithDialogUsesNativeSelection)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_project_actions_dialog_replacement_open.dartsim";
+  std::filesystem::remove(path);
+
+  SimEngine saved;
+  saved.execute(
+      commands::addRigidBody(ShapeType::Sphere, translation(1.0, 0.0, 1.0)));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  int parentToken = 0;
+  void* parentWindow = &parentToken;
+  bool dialogCalled = false;
+  SimEngine engine;
+  const auto result = ui::requestOpenProjectReplacementWithDialog(
+      engine,
+      [&](const ui::ProjectFileDialogRequest& request) {
+        dialogCalled = true;
+        EXPECT_EQ(request.kind, ui::ProjectFileDialogKind::Open);
+        EXPECT_EQ(request.defaultName, ui::kDefaultProjectPath);
+        EXPECT_EQ(request.parentNativeWindow, parentWindow);
+        return ui::ProjectFileDialogResult{
+            ui::ProjectFileDialogStatus::Selected, path.string(), {}};
+      },
+      parentWindow);
+
+  EXPECT_TRUE(dialogCalled);
+  EXPECT_FALSE(result.promptRequired);
+  EXPECT_TRUE(result.result.ok);
+  EXPECT_EQ(result.result.message, "Loaded " + path.string());
+  EXPECT_EQ(engine.projectPath(), path.string());
+  EXPECT_FALSE(engine.isProjectDirty());
+
+  std::filesystem::remove(path);
+}
+
+TEST(DartsimProjectActions, OpenReplacementWithDialogPromptsForDirtyProject)
+{
+  const std::filesystem::path path
+      = std::filesystem::temp_directory_path()
+        / "dartsim_ui_project_actions_dialog_dirty_open.dartsim";
+  std::filesystem::remove(path);
+
+  SimEngine saved;
+  saved.execute(
+      commands::addRigidBody(ShapeType::Sphere, translation(1.0, 0.0, 1.0)));
+  ASSERT_TRUE(saved.saveProject(path.string()));
+
+  SimEngine engine;
+  engine.execute(
+      commands::addRigidBody(ShapeType::Box, translation(0.0, 0.0, 1.0)));
+  const SceneModel dirtyModel = engine.objects().model();
+  bool dialogCalled = false;
+  const auto result = ui::requestOpenProjectReplacementWithDialog(
+      engine, [&](const ui::ProjectFileDialogRequest&) {
+        dialogCalled = true;
+        return ui::ProjectFileDialogResult{
+            ui::ProjectFileDialogStatus::Selected, path.string(), {}};
+      });
+
+  EXPECT_TRUE(dialogCalled);
+  EXPECT_TRUE(result.promptRequired);
+  EXPECT_FALSE(result.result.ok);
+  EXPECT_EQ(result.result.message, "Unsaved changes");
+  EXPECT_EQ(result.request.kind, ui::ProjectReplacementKind::OpenProject);
+  EXPECT_EQ(result.request.path, path.string());
+  EXPECT_EQ(result.request.confirmLabel, "Discard and Open");
+  EXPECT_EQ(engine.objects().model(), dirtyModel);
+  EXPECT_TRUE(engine.isProjectDirty());
+
+  std::filesystem::remove(path);
+}
+
+TEST(DartsimProjectActions, OpenReplacementWithDialogReportsCancelAndFailure)
+{
+  SimEngine engine;
+  const auto canceled = ui::requestOpenProjectReplacementWithDialog(
+      engine, [](const ui::ProjectFileDialogRequest&) {
+        return ui::ProjectFileDialogResult{
+            ui::ProjectFileDialogStatus::Canceled, {}, {}};
+      });
+  EXPECT_FALSE(canceled.promptRequired);
+  EXPECT_FALSE(canceled.result.ok);
+  EXPECT_EQ(canceled.result.message, "Open canceled");
+
+  const auto failed = ui::requestOpenProjectReplacementWithDialog(
+      engine, [](const ui::ProjectFileDialogRequest&) {
+        return ui::ProjectFileDialogResult{
+            ui::ProjectFileDialogStatus::Failed, {}, "backend unavailable"};
+      });
+  EXPECT_FALSE(failed.promptRequired);
+  EXPECT_FALSE(failed.result.ok);
+  EXPECT_EQ(failed.result.message, "Open dialog failed: backend unavailable");
+
+  const auto empty = ui::requestOpenProjectReplacementWithDialog(
+      engine, [](const ui::ProjectFileDialogRequest&) {
+        return ui::ProjectFileDialogResult{
+            ui::ProjectFileDialogStatus::Selected, {}, {}};
+      });
+  EXPECT_FALSE(empty.promptRequired);
+  EXPECT_FALSE(empty.result.ok);
+  EXPECT_EQ(empty.result.message, "Open canceled");
+
+  EXPECT_FALSE(
+      ui::requestOpenProjectReplacementWithDialog(
+          engine, ui::ProjectFileDialog{})
+          .result.ok);
+}
+
 TEST(DartsimProjectActions, OpenAcceptsExtensionlessProjectPath)
 {
   const std::filesystem::path path
@@ -683,16 +794,20 @@ TEST(DartsimProjectActions, SaveWithDialogChoosesPathForUnsavedProject)
   ASSERT_FALSE(engine.hasProjectPath());
 
   bool dialogCalled = false;
+  int parentToken = 0;
+  void* parentWindow = &parentToken;
   const auto result = ui::saveProjectWithDialog(
       engine,
       [&](const ui::ProjectFileDialogRequest& request) {
         dialogCalled = true;
         EXPECT_EQ(request.kind, ui::ProjectFileDialogKind::Save);
         EXPECT_EQ(request.defaultName, ui::kDefaultProjectPath);
+        EXPECT_EQ(request.parentNativeWindow, parentWindow);
         return ui::ProjectFileDialogResult{
             ui::ProjectFileDialogStatus::Selected, selected.string(), {}};
       },
-      /*forceDialog=*/false);
+      /*forceDialog=*/false,
+      parentWindow);
 
   EXPECT_TRUE(dialogCalled);
   EXPECT_TRUE(result.ok);

@@ -135,8 +135,8 @@ persist their workspace through a tested, backend-hidden GUI.
   Simulation", and "Return to Edit Mode" commands. The editor chooses "Edit
   Mode" for authoring and
   "Simulation Mode" for runtime playback, matching the existing engine state
-  names while making the play-mode boundary visible in menus and the Simulation
-  panel.
+  names while making the play-mode boundary visible in menus, Console help, and
+  enter/resume feedback.
 - Replay timeline controls now use the same tested simulation action seam. The
   Simulation panel and Console can move to the first, previous, next, or last
   replay frame, while active playback and recording reject replay scrubbing with
@@ -202,11 +202,12 @@ persist their workspace through a tested, backend-hidden GUI.
   author and inspect collision shape/material metadata, while runtime contact
   behavior remains future simulation-layer work.
 - Project open now starts from the in-app project browser/manual path modal so
-  the workflow remains usable even when the platform native picker backend is
-  unavailable. Browse still invokes nativefiledialog-extended as a child of the
-  GUI window, retries without the parent when that handle is rejected, and
-  reports failures in-place; extensionless explicit paths resolve to `.dartsim`
-  files when present.
+  the File menu invokes nativefiledialog-extended first, parented to the GUI
+  window, then falls back to the in-app project browser/manual path modal when
+  the platform picker or selected path fails. Browse still retries the native
+  picker without the parent when that handle is rejected, and reports failures
+  in-place; extensionless explicit paths resolve to `.dartsim` files when
+  present.
 - Project status now comes from `dartsim_ui/project_actions`: the Menu bar
   shows the current project name with an unsaved marker, the action seam exposes
   saved/dirty labels and the full path, and the File menu keeps a session-local

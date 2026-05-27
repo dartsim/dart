@@ -65,7 +65,7 @@ TEST(DartsimSimulationActions, StatusTracksModePlaybackAndResetTarget)
 
   const auto play = ui::playSimulation(engine);
   EXPECT_TRUE(play.ok);
-  EXPECT_EQ(play.message, "Simulation playing");
+  EXPECT_EQ(play.message, "Entered Simulation Mode");
   EXPECT_TRUE(play.status.simulationMode);
   EXPECT_TRUE(play.status.playing);
   EXPECT_FALSE(play.status.canEditScene);
@@ -125,7 +125,7 @@ TEST(DartsimSimulationActions, ModeActionsExposeEditAndSimulationWorkflow)
   const auto enter = ui::applySimulationModeAction(
       engine, ui::SimulationModeActionKind::PlayOrResume);
   EXPECT_TRUE(enter.ok);
-  EXPECT_EQ(enter.message, "Simulation playing");
+  EXPECT_EQ(enter.message, "Entered Simulation Mode");
 
   actions = ui::buildSimulationModeActions(engine);
   EXPECT_EQ(actions[0].label, "Resume Simulation");
@@ -136,6 +136,10 @@ TEST(DartsimSimulationActions, ModeActionsExposeEditAndSimulationWorkflow)
   EXPECT_EQ(actions[2].disabledReason, "Pause before stepping");
   EXPECT_TRUE(actions[3].enabled);
   EXPECT_TRUE(actions[4].enabled);
+
+  const auto alreadyPlaying = ui::playSimulation(engine);
+  EXPECT_FALSE(alreadyPlaying.ok);
+  EXPECT_EQ(alreadyPlaying.message, "Simulation already playing");
 
   const auto pause = ui::applySimulationModeAction(
       engine, ui::SimulationModeActionKind::Pause);
@@ -150,6 +154,13 @@ TEST(DartsimSimulationActions, ModeActionsExposeEditAndSimulationWorkflow)
   EXPECT_TRUE(actions[2].enabled);
   EXPECT_TRUE(actions[3].enabled);
   EXPECT_TRUE(actions[4].enabled);
+
+  const auto resume = ui::applySimulationModeAction(
+      engine, ui::SimulationModeActionKind::PlayOrResume);
+  EXPECT_TRUE(resume.ok);
+  EXPECT_EQ(resume.message, "Simulation resumed");
+  EXPECT_TRUE(resume.status.playing);
+  ASSERT_TRUE(ui::pauseSimulation(engine).ok);
 
   const auto step = ui::applySimulationModeAction(
       engine, ui::SimulationModeActionKind::Step);

@@ -16,12 +16,13 @@ buttons for first, previous, next, and last recorded frames.
 ## Current Branch
 
 `feature/dartsim-editor-project-browser-layers` targets a PR into `main`. Open
-Project now opens the in-app project path modal/browser first so it remains
-usable even when the platform native picker backend is unavailable. Browse still
-invokes nativefiledialog-extended as a child of the GUI window and reports
-picker failures in-place; tests inject fake dialog responses through
-`ProjectFileDialog` so selected, canceled, failed, dirty guard, missing-file,
-invalid-file, and directory paths are covered without launching desktop UI.
+Project now invokes nativefiledialog-extended from the File menu first, parented
+to the GUI window, then falls back to the in-app project path modal/browser when
+the platform picker or selected path fails. Browse still invokes the same native
+picker from inside the fallback modal and reports picker failures in-place; tests
+inject fake dialog responses through `ProjectFileDialog` so selected, canceled,
+failed, dirty guard, missing-file, invalid-file, and directory paths are covered
+without launching desktop UI.
 The File menu now also displays the current project name with a dirty marker,
 uses `dartsim_ui/project_actions` for saved/dirty/path status text, and keeps a
 session-local recent-project list that de-duplicates paths and uses the same
@@ -151,8 +152,9 @@ filtered coverage line total above 95%.
   Reset consumes the captured Edit Mode snapshot so stale runtime snapshots do
   not later overwrite edit-mode changes. Restart restores the captured Edit
   Mode snapshot while staying in Simulation Mode for another run. The panel/menu
-  use explicit mode action labels and disabled reasons from the same seam, and
-  replay frame navigation rejects active playback/recording before seeking.
+  use explicit mode action labels, enter/resume feedback, and disabled reasons
+  from the same seam, and replay frame navigation rejects active
+  playback/recording before seeking.
 - Create menu behavior is now covered through `dartsim_ui/palette_actions` and
   `UNIT_dartsim_ui_PaletteActions`; fixed frames require an existing parent frame
   instead of being attached directly to the world frame, and preset examples are
@@ -196,7 +198,8 @@ filtered coverage line total above 95%.
   descriptor/configuration coverage only, not simulated contact-behavior
   coverage.
 - Project open remains usable without a working native picker: the File menu
-  opens the in-app browser/manual path modal first. Browse reports native picker
+  invokes the native picker first, then opens the in-app browser/manual path
+  modal when the picker or selected path fails. Browse reports native picker
   failures in-place, and `openProject()` accepts extensionless paths when the
   corresponding `.dartsim` file exists.
 - Dirty replacement confirmation is owned by `dartsim_ui/project_actions`:

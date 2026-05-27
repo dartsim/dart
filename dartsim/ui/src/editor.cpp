@@ -339,6 +339,57 @@ void requestProjectPathModal(
   app.projectPathModalRequested = true;
 }
 
+bool startsWith(std::string_view text, std::string_view prefix)
+{
+  return text.size() >= prefix.size()
+         && text.substr(0, prefix.size()) == prefix;
+}
+
+void requestProjectPathModalAfterDialogFailure(
+    EditorApp& app, ProjectFileDialogKind kind, std::string status)
+{
+  if (kind == ProjectFileDialogKind::Open) {
+    status += ". Choose a .dartsim file below or enter a path.";
+  } else {
+    status += ". Enter a project path below.";
+  }
+  requestProjectPathModal(app, kind, std::move(status));
+}
+
+void openProjectFromMenu(EditorApp& app)
+{
+  const ProjectReplacementActionResult opened
+      = requestOpenProjectReplacementWithDialog(
+          app.engine, nativeProjectFileDialog, app.projectDialogParentWindow);
+  if (opened.promptRequired) {
+    requestProjectReplacementPrompt(app, opened.request);
+    return;
+  }
+  if (!opened.result.ok
+      && (startsWith(opened.result.message, "Open dialog failed")
+          || startsWith(opened.result.message, "Open failed"))) {
+    requestProjectPathModalAfterDialogFailure(
+        app, ProjectFileDialogKind::Open, opened.result.message);
+    return;
+  }
+  noteProjectAction(app, opened.result);
+}
+
+void saveProjectFromMenu(EditorApp& app, bool forceDialog)
+{
+  const ProjectActionResult saved = saveProjectWithDialog(
+      app.engine,
+      nativeProjectFileDialog,
+      forceDialog,
+      app.projectDialogParentWindow);
+  if (!saved.ok && startsWith(saved.message, "Save dialog failed")) {
+    requestProjectPathModalAfterDialogFailure(
+        app, ProjectFileDialogKind::Save, saved.message);
+    return;
+  }
+  noteProjectAction(app, saved);
+}
+
 void browseProjectPath(EditorApp& app)
 {
   ProjectFileDialogRequest request
@@ -1092,7 +1143,7 @@ void buildMenuBar(
           app, requestNewProjectReplacement(app.engine));
     }
     if (ui.menuItem("Open Project...")) {
-      requestProjectPathModal(app, ProjectFileDialogKind::Open);
+      openProjectFromMenu(app);
     }
     if (ui.beginMenu("Open Recent")) {
       const std::vector<RecentProjectEntry> entries
@@ -1120,14 +1171,10 @@ void buildMenuBar(
       ui.endMenu();
     }
     if (ui.menuItem("Save Project")) {
-      if (app.engine.hasProjectPath()) {
-        noteProjectAction(app, saveProject(app.engine));
-      } else {
-        requestProjectPathModal(app, ProjectFileDialogKind::Save);
-      }
+      saveProjectFromMenu(app, false);
     }
     if (ui.menuItem("Save Project As...")) {
-      requestProjectPathModal(app, ProjectFileDialogKind::Save);
+      saveProjectFromMenu(app, true);
     }
     ui.endMenu();
   }

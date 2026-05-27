@@ -111,6 +111,9 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
   EXPECT_NE(
       help.message.find("list [all|selected|visible|hidden]"),
       std::string::npos);
+  EXPECT_NE(
+      help.message.find("play (enter/resume Simulation Mode)"),
+      std::string::npos);
   EXPECT_NE(help.message.find("record <on|off>"), std::string::npos);
   EXPECT_NE(
       help.message.find("replay <first|previous|next|last|frame>"),
