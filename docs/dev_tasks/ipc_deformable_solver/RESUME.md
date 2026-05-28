@@ -40,6 +40,14 @@ edge-edge mollifier product-rule derivatives. It is still scaffolding: barrier
 stiffness adaptation, PSD projection, candidate-buffer assembly, solver-wired
 CCD line search, projected Newton, and friction are not implemented yet.
 
+The tangent-stencil sub-slice adds internal point-triangle, edge-edge,
+point-edge, and point-point tangent bases, closest-point parameters, tangent
+projection matrices, and tangent metric matrices for future IPC
+contact/friction assembly. It is still scaffolding: friction energy,
+friction gradients/Hessians, lagged friction convergence, solver-owned contact
+caches, solver-wired CCD line search, projected Newton, and scene-level contact
+behavior are not implemented yet.
+
 The candidate-set sub-slice adds deterministic unique surface-edge extraction,
 internal point-triangle and edge-edge primitive candidate assembly,
 incident/adjacent filtering, exact activation-distance filtering through the
@@ -64,9 +72,9 @@ barrier kernel scaffolding for the next deformable contact slices.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with tangent bases,
-motion-aware candidate culling, candidate-buffer integration, solver-owned
-contact buffers, and solver-wired CCD line search.
+After this sub-slice lands, continue Phase 2 with motion-aware candidate
+culling, candidate-buffer integration, solver-owned contact buffers, and
+solver-wired CCD line search.
 
 ## Context That Would Be Lost
 
@@ -96,6 +104,9 @@ cmake --build build/default/cpp/Release --target test_continuous_collision_step 
 cmake --build build/default/cpp/Release --target test_barrier_kernel bm_ipc_barrier_kernel
 ./build/default/cpp/Release/bin/test_barrier_kernel
 ./build/default/cpp/Release/bin/bm_ipc_barrier_kernel --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
+cmake --build build/default/cpp/Release --target test_tangent_stencil bm_ipc_tangent_stencil
+./build/default/cpp/Release/bin/test_tangent_stencil
+./build/default/cpp/Release/bin/bm_ipc_tangent_stencil --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked

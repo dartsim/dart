@@ -778,6 +778,11 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     point-triangle and edge-edge primitive candidates, including raw analytic
     gradients/Hessians, edge-edge mollifier product-rule derivatives, regression
     tests, and microbenchmark coverage.
+  - Added internal experimental IPC tangent-stencil scaffolding for
+    point-triangle, edge-edge, point-edge, and point-point friction/contact
+    stencils, including upstream-style tangent bases, closest-point parameters,
+    tangent projection matrices, metric matrices, regression tests, and
+    microbenchmark coverage.
   - Added internal experimental IPC contact candidate assembly for
     point-triangle and edge-edge primitive pairs with deterministic surface-edge
     extraction, incident/adjacent filtering, sweep-versus-brute-force
