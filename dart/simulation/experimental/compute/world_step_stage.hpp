@@ -239,6 +239,81 @@ private:
   std::size_t m_iterations;
 };
 
+/// Terminal state of the most recent opt-in rigid IPC solver execution.
+enum class RigidIpcSolveStatus
+{
+  NoDofs,
+  Converged,
+  MaxIterations,
+  LineSearchBlocked,
+  FactorizationFailed,
+};
+
+/// Summary of the most recent opt-in rigid IPC solver execution.
+struct RigidIpcSolverStats
+{
+  RigidIpcSolveStatus status = RigidIpcSolveStatus::NoDofs;
+  std::size_t bodyCount = 0;
+  std::size_t dynamicBodyCount = 0;
+  std::size_t surfaceCount = 0;
+  std::size_t skippedUnsupportedShapeCount = 0;
+  std::size_t activeConstraints = 0;
+  std::size_t activeFrictionConstraints = 0;
+  std::size_t activeDynamicsTerms = 0;
+  std::size_t solverIterations = 0;
+  std::size_t frictionIterations = 0;
+  std::size_t acceptedSteps = 0;
+  std::size_t lineSearchLimitedSteps = 0;
+  double initialValue = 0.0;
+  double finalValue = 0.0;
+  double initialGradientNorm = 0.0;
+  double finalGradientNorm = 0.0;
+  double finalMomentumBalance = 0.0;
+  double lastStepNorm = 0.0;
+  double lastLineSearchStepBound = 1.0;
+  bool lastLineSearchIndeterminate = false;
+  std::size_t lineSearchPointPointChecks = 0;
+  std::size_t lineSearchPointEdgeChecks = 0;
+  std::size_t lineSearchEdgeEdgeChecks = 0;
+  std::size_t lineSearchPointTriangleChecks = 0;
+  std::size_t lineSearchHits = 0;
+  std::size_t lineSearchMisses = 0;
+  std::size_t lineSearchIndeterminateCount = 0;
+  std::size_t lineSearchZeroStepCount = 0;
+  bool converged = false;
+  bool failed = false;
+  bool resultApplied = false;
+  bool nonConvergedResultSkipped = false;
+
+  void reset() noexcept
+  {
+    *this = {};
+  }
+};
+
+/// Opt-in rigid IPC world-step stage for free rigid bodies.
+///
+/// This stage is intentionally not part of the default `World::step()`
+/// pipeline yet. It lets tests and custom pipelines exercise the internal IPC
+/// barrier/Newton path on mesh-like rigid bodies while the default rigid solver
+/// remains the established sequential-impulse stage.
+class DART_EXPERIMENTAL_API RigidIpcContactStage final : public WorldStepStage
+{
+public:
+  explicit RigidIpcContactStage(std::size_t maxIterations = 8);
+
+  [[nodiscard]] std::string_view getName() const noexcept override;
+  [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void execute(World& world, ComputeExecutor& executor) override;
+
+  [[nodiscard]] std::size_t getMaxIterations() const noexcept;
+  [[nodiscard]] const RigidIpcSolverStats& getLastStats() const noexcept;
+
+private:
+  std::size_t m_maxIterations;
+  RigidIpcSolverStats m_lastStats;
+};
+
 /// Default deformable-body dynamics stage.
 ///
 /// This stage advances point-mass deformable bodies through the default

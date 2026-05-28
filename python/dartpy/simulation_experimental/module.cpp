@@ -440,6 +440,10 @@ void defSimulationExperimentalModule(nb::module_& m)
   nb::enum_<sim::WorldSyncStage>(m, "WorldSyncStage")
       .value("KINEMATICS", sim::WorldSyncStage::Kinematics);
 
+  nb::enum_<sim::RigidBodySolver>(m, "RigidBodySolver")
+      .value("SEQUENTIAL_IMPULSE", sim::RigidBodySolver::SequentialImpulse)
+      .value("IPC", sim::RigidBodySolver::Ipc);
+
   nb::enum_<sim::CollisionShapeType>(m, "CollisionShapeType")
       .value("SPHERE", sim::CollisionShapeType::Sphere)
       .value("BOX", sim::CollisionShapeType::Box);
@@ -1616,6 +1620,10 @@ void defSimulationExperimentalModule(nb::module_& m)
           [](sim::World& self, const nb::handle& gravity) {
             self.setGravity(toVector3(gravity));
           })
+      .def_prop_rw(
+          "rigid_body_solver",
+          &sim::World::getRigidBodySolver,
+          &sim::World::setRigidBodySolver)
       .def_prop_ro("frame", &sim::World::getFrame)
       .def_prop_ro("num_multibodies", &sim::World::getMultibodyCount)
       .def_prop_ro("num_loop_closures", &sim::World::getLoopClosureCount)

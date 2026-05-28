@@ -24,6 +24,7 @@ __all__: list[str] = [
     "Multibody",
     "RigidBody",
     "RigidBodyOptions",
+    "RigidBodySolver",
     "StateSpace",
     "StateVariable",
     "World",
@@ -85,6 +86,11 @@ class LoopClosureResidualCoordinates(enum.Enum):
 
 class WorldSyncStage(enum.Enum):
     KINEMATICS = 0
+
+class RigidBodySolver(enum.Enum):
+    SEQUENTIAL_IMPULSE = 0
+
+    IPC = 1
 
 class CollisionShapeType(enum.Enum):
     SPHERE = 0
@@ -888,6 +894,12 @@ class World:
 
     @gravity.setter
     def gravity(self, arg: object, /) -> None: ...
+
+    @property
+    def rigid_body_solver(self) -> RigidBodySolver: ...
+
+    @rigid_body_solver.setter
+    def rigid_body_solver(self, arg: RigidBodySolver, /) -> None: ...
 
     @property
     def frame(self) -> int: ...

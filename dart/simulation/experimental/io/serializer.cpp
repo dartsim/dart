@@ -141,6 +141,16 @@ void deserializeJointV1(std::istream& input, comps::Joint& joint)
                                  : Eigen::VectorXd::Constant(dof, infinity);
 }
 
+void deserializeCollisionGeometryV2(
+    std::istream& input, comps::CollisionGeometry& geometry)
+{
+  readPOD(input, geometry.shape.type);
+  readPOD(input, geometry.shape.radius);
+  readVector3d(input, geometry.shape.halfExtents);
+  geometry.shape.vertices.clear();
+  geometry.shape.triangles.clear();
+}
+
 class JointComponentSerializer final
   : public TypedComponentSerializer<comps::Joint>
 {
@@ -188,6 +198,55 @@ void registerJointSerializer(SerializerRegistry& registry)
   registry.registerSerializer(std::make_unique<JointComponentSerializer>());
 }
 
+class CollisionGeometryComponentSerializer final
+  : public TypedComponentSerializer<comps::CollisionGeometry>
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return comps::CollisionGeometry::getTypeName();
+  }
+
+private:
+  void saveComponent(
+      std::ostream& output,
+      const comps::CollisionGeometry& component,
+      const EntityMap& entityMap) const override
+  {
+    autoSerialize(output, component, entityMap);
+  }
+
+  void loadComponent(
+      std::istream& input, comps::CollisionGeometry& component) const override
+  {
+    autoDeserialize(input, component);
+  }
+
+  void loadComponent(
+      std::istream& input,
+      comps::CollisionGeometry& component,
+      std::uint32_t formatVersion) const override
+  {
+    if (formatVersion < 3u) {
+      deserializeCollisionGeometryV2(input, component);
+      return;
+    }
+
+    loadComponent(input, component);
+  }
+};
+
+void registerCollisionGeometrySerializer(SerializerRegistry& registry)
+{
+  if (registry.getSerializer(comps::CollisionGeometry::getTypeName())
+      != nullptr) {
+    return;
+  }
+
+  registry.registerSerializer(
+      std::make_unique<CollisionGeometryComponentSerializer>());
+}
+
 void registerBuiltInSerializers(SerializerRegistry& registry)
 {
   registerComponentIfNeeded<comps::Name>(registry);
@@ -202,7 +261,7 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
 
   registerComponentIfNeeded<comps::RigidBodyTag>(registry);
   registerComponentIfNeeded<comps::StaticBodyTag>(registry);
-  registerComponentIfNeeded<comps::CollisionGeometry>(registry);
+  registerCollisionGeometrySerializer(registry);
   registerComponentIfNeeded<comps::DeformableGroundBarrierTag>(registry);
   registerComponentIfNeeded<comps::DeformableSurfaceCcdObstacleTag>(registry);
   registerComponentIfNeeded<comps::ContactMaterial>(registry);

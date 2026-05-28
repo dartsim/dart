@@ -131,6 +131,54 @@ bool isValidWorldSyncStage(WorldSyncStage stage)
 }
 
 //==============================================================================
+bool isValidRigidBodySolver(RigidBodySolver solver)
+{
+  switch (solver) {
+    case RigidBodySolver::SequentialImpulse:
+    case RigidBodySolver::Ipc:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+void addDefaultDynamicsStages(
+    compute::WorldStepPipeline& pipeline,
+    RigidBodySolver rigidBodySolver,
+    compute::RigidBodyVelocityStage& rigidBodyVelocity,
+    compute::RigidBodyContactStage& rigidBodyContact,
+    compute::RigidBodyPositionStage& rigidBodyPosition,
+    compute::RigidIpcContactStage& rigidIpcContact,
+    compute::MultibodyForwardDynamicsStage& multibodyDynamics,
+    compute::DeformableDynamicsStage& deformableDynamics)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValidRigidBodySolver(rigidBodySolver),
+      InvalidArgumentException,
+      "Rigid-body solver is invalid");
+
+  // The sequential solver is split into force/velocity, contact impulse, and
+  // position stages. The IPC stage assembles its own dynamics objective and
+  // writes both pose and velocity back, so it replaces that split free-rigid
+  // sequence rather than only the contact stage.
+  switch (rigidBodySolver) {
+    case RigidBodySolver::SequentialImpulse:
+      pipeline.addStage(rigidBodyVelocity)
+          .addStage(rigidBodyContact)
+          .addStage(multibodyDynamics)
+          .addStage(deformableDynamics)
+          .addStage(rigidBodyPosition);
+      return;
+    case RigidBodySolver::Ipc:
+      pipeline.addStage(rigidIpcContact)
+          .addStage(multibodyDynamics)
+          .addStage(deformableDynamics);
+      return;
+  }
+}
+
+//==============================================================================
 void validateLoopClosureKinematicsPolicySupport(const World& world)
 {
   auto view = world.getRegistry().view<comps::LoopClosure, comps::Name>();
@@ -932,6 +980,7 @@ void World::clear()
   m_registry.clear();
   m_simulationMode = false;
   m_gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+  m_rigidBodySolver = RigidBodySolver::SequentialImpulse;
   m_timeStep = 0.001;
   m_time = 0.0;
   m_frame = 0;
@@ -1404,6 +1453,23 @@ const Eigen::Vector3d& World::getGravity() const noexcept
 }
 
 //==============================================================================
+void World::setRigidBodySolver(RigidBodySolver solver)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !isValidRigidBodySolver(solver),
+      InvalidArgumentException,
+      "Rigid-body solver is invalid");
+
+  m_rigidBodySolver = solver;
+}
+
+//==============================================================================
+RigidBodySolver World::getRigidBodySolver() const noexcept
+{
+  return m_rigidBodySolver;
+}
+
+//==============================================================================
 void World::setTimeStep(double timeStep)
 {
   DART_EXPERIMENTAL_THROW_T_IF(
@@ -1503,6 +1569,7 @@ void World::step(compute::ComputeExecutor& executor)
   compute::RigidBodyVelocityStage rigidBodyVelocity;
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
+  compute::RigidIpcContactStage rigidIpcContact;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
   compute::DeformableDynamicsStage deformableDynamics;
   compute::KinematicsStage kinematics;
@@ -1510,12 +1577,16 @@ void World::step(compute::ComputeExecutor& executor)
   // Integrate rigid-body positions after the multibody stage so two-sided
   // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
   // the multibody solve) take effect in the same step's pose update.
-  pipeline.addStage(rigidBodyVelocity)
-      .addStage(rigidBodyContact)
-      .addStage(multibodyDynamics)
-      .addStage(deformableDynamics)
-      .addStage(rigidBodyPosition)
-      .addStage(kinematics);
+  addDefaultDynamicsStages(
+      pipeline,
+      m_rigidBodySolver,
+      rigidBodyVelocity,
+      rigidBodyContact,
+      rigidBodyPosition,
+      rigidIpcContact,
+      multibodyDynamics,
+      deformableDynamics);
+  pipeline.addStage(kinematics);
   step(executor, pipeline);
 }
 
@@ -1525,6 +1596,7 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
   compute::RigidBodyVelocityStage rigidBodyVelocity;
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
+  compute::RigidIpcContactStage rigidIpcContact;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
   compute::DeformableDynamicsStage deformableDynamics;
   compute::KinematicsStage kinematics;
@@ -1532,12 +1604,16 @@ void World::step(std::size_t count, compute::ComputeExecutor& executor)
   // Integrate rigid-body positions after the multibody stage so two-sided
   // link-vs-rigid-body contact impulses (applied to rigid-body velocities in
   // the multibody solve) take effect in the same step's pose update.
-  pipeline.addStage(rigidBodyVelocity)
-      .addStage(rigidBodyContact)
-      .addStage(multibodyDynamics)
-      .addStage(deformableDynamics)
-      .addStage(rigidBodyPosition)
-      .addStage(kinematics);
+  addDefaultDynamicsStages(
+      pipeline,
+      m_rigidBodySolver,
+      rigidBodyVelocity,
+      rigidBodyContact,
+      rigidBodyPosition,
+      rigidIpcContact,
+      multibodyDynamics,
+      deformableDynamics);
+  pipeline.addStage(kinematics);
   step(count, executor, pipeline);
 }
 
@@ -1548,15 +1624,20 @@ void World::step(
   compute::RigidBodyVelocityStage rigidBodyVelocity;
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
+  compute::RigidIpcContactStage rigidIpcContact;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
   compute::DeformableDynamicsStage deformableDynamics;
   compute::WorldStepPipeline pipeline;
-  pipeline.addStage(rigidBodyVelocity)
-      .addStage(rigidBodyContact)
-      .addStage(multibodyDynamics)
-      .addStage(deformableDynamics)
-      .addStage(rigidBodyPosition)
-      .addStage(stage);
+  addDefaultDynamicsStages(
+      pipeline,
+      m_rigidBodySolver,
+      rigidBodyVelocity,
+      rigidBodyContact,
+      rigidBodyPosition,
+      rigidIpcContact,
+      multibodyDynamics,
+      deformableDynamics);
+  pipeline.addStage(stage);
   step(executor, pipeline);
 }
 
@@ -1569,15 +1650,20 @@ void World::step(
   compute::RigidBodyVelocityStage rigidBodyVelocity;
   compute::RigidBodyContactStage rigidBodyContact;
   compute::RigidBodyPositionStage rigidBodyPosition;
+  compute::RigidIpcContactStage rigidIpcContact;
   compute::MultibodyForwardDynamicsStage multibodyDynamics;
   compute::DeformableDynamicsStage deformableDynamics;
   compute::WorldStepPipeline pipeline;
-  pipeline.addStage(rigidBodyVelocity)
-      .addStage(rigidBodyContact)
-      .addStage(multibodyDynamics)
-      .addStage(deformableDynamics)
-      .addStage(rigidBodyPosition)
-      .addStage(stage);
+  addDefaultDynamicsStages(
+      pipeline,
+      m_rigidBodySolver,
+      rigidBodyVelocity,
+      rigidBodyContact,
+      rigidBodyPosition,
+      rigidIpcContact,
+      multibodyDynamics,
+      deformableDynamics);
+  pipeline.addStage(stage);
   step(count, executor, pipeline);
 }
 
@@ -1635,6 +1721,10 @@ std::vector<Contact> World::collide()
         break;
       case CollisionShapeType::Box:
         shape = std::make_unique<ncol::BoxShape>(collisionShape.halfExtents);
+        break;
+      case CollisionShapeType::Mesh:
+        shape = std::make_unique<ncol::MeshShape>(
+            collisionShape.vertices, collisionShape.triangles);
         break;
     }
     entries.push_back(

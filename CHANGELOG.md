@@ -813,6 +813,43 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     line-search limiter, with point-triangle and physical box-edge CCD
     regressions and benchmark counters. This is a CCD limiter only, not rigid
     contact response or IPC parity.
+  - Added an opt-in experimental rigid IPC world-step stage that builds
+    mesh-like rigid surfaces and physical dynamics objective terms from runtime
+    rigid-body state, runs the internal projected-Newton barrier solve, and
+    writes solved poses/velocities back without replacing the default rigid
+    contact stage.
+  - Added experimental `World::setRigidBodySolver()` selection so callers can
+    keep the default sequential-impulse rigid pipeline or opt into the rigid
+    IPC free-rigid dynamics stage without exposing solver registries.
+  - Added deterministic runtime sphere triangulation for the experimental rigid
+    IPC world-step stage, allowing analytic sphere collision shapes to
+    participate in the internal mesh-like barrier surface assembly.
+  - Added durable diagnostics to the opt-in experimental rigid IPC world-step
+    stage, reporting solve status, last step and line-search bounds, and
+    aggregate conservative CCD line-search counters.
+  - Added the first activated-contact runtime regression for the opt-in
+    experimental rigid IPC world-step stage, verifying mesh barriers move a
+    dynamic body away from a static surface while reporting line-search
+    diagnostics.
+  - Added point-point curved CCD to rigid IPC conservative line search so
+    vertex-vertex barrier rows can limit unsafe steps and report point-point
+    diagnostics.
+  - Hardened the opt-in experimental rigid IPC world-step stage so malformed
+    runtime mesh topology, non-finite mesh vertices, and invalid box extents
+    are skipped before internal barrier assembly or CCD.
+  - Made the opt-in experimental rigid IPC world-step stage skip non-converged
+    solve results instead of applying partial runtime poses silently, with
+    diagnostics for result application.
+  - Added internal lagged smoothed Coulomb friction potentials for rigid IPC
+    vertex-vertex, edge-vertex, edge-edge, and face-vertex contacts, including
+    world-coordinate derivative coverage and reduced-coordinate coverage for
+    vertex-vertex and edge-vertex terms.
+  - Assembled the first internal lagged friction rows into the rigid IPC
+    projected-Newton objective using lagged active barrier constraints, per-body
+    friction coefficients, and runtime active-friction diagnostics.
+  - Added bounded outer lagged-friction passes to the internal rigid IPC
+    projected-Newton solve, including a zero-iteration friction disable,
+    refreshed momentum-balance diagnostics, and runtime active-pass counts.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

@@ -456,6 +456,14 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   auto ball = world1.addRigidBody("ball");
   ball.setCollisionShape(sx::CollisionShape::makeSphere(0.3));
 
+  auto mesh = world1.addRigidBody("mesh");
+  mesh.setCollisionShape(
+      sx::CollisionShape::makeMesh(
+          {Eigen::Vector3d(0.0, 0.0, 0.0),
+           Eigen::Vector3d(1.0, 0.0, 0.0),
+           Eigen::Vector3d(0.0, 1.0, 0.0)},
+          {Eigen::Vector3i(0, 1, 2)}));
+
   std::stringstream ss;
   world1.saveBinary(ss);
 
@@ -484,6 +492,18 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   ASSERT_TRUE(ballShape.has_value());
   EXPECT_EQ(ballShape->type, sx::CollisionShapeType::Sphere);
   EXPECT_DOUBLE_EQ(ballShape->radius, 0.3);
+
+  auto meshRestored = world2.getRigidBody("mesh");
+  ASSERT_TRUE(meshRestored.has_value());
+  auto meshShape = meshRestored->getCollisionShape();
+  ASSERT_TRUE(meshShape.has_value());
+  EXPECT_EQ(meshShape->type, sx::CollisionShapeType::Mesh);
+  ASSERT_EQ(meshShape->vertices.size(), 3u);
+  ASSERT_EQ(meshShape->triangles.size(), 1u);
+  EXPECT_TRUE(meshShape->vertices[1].isApprox(Eigen::Vector3d(1.0, 0.0, 0.0)));
+  EXPECT_EQ(meshShape->triangles[0].x(), 0);
+  EXPECT_EQ(meshShape->triangles[0].y(), 1);
+  EXPECT_EQ(meshShape->triangles[0].z(), 2);
 }
 
 TEST(Serialization, WithLoopClosures)

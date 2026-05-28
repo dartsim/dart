@@ -1,0 +1,2108 @@
+/*
+ * Copyright (c) 2011, The DART development contributors
+ * All rights reserved.
+ *
+ * The list of contributors can be found at:
+ *   https://github.com/dartsim/dart/blob/main/LICENSE
+ *
+ * This file is provided under the following "BSD-style" License:
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice and this list of conditions in the documentation
+ *     and/or other materials provided with the distribution.
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <dart/simulation/experimental/detail/deformable_contact/tangent_stencil.hpp>
+#include <dart/simulation/experimental/detail/rigid_ipc_barrier.hpp>
+
+#include <Eigen/Cholesky>
+#include <Eigen/Eigenvalues>
+
+#include <algorithm>
+#include <array>
+#include <limits>
+#include <tuple>
+#include <vector>
+
+#include <cassert>
+#include <cmath>
+
+namespace dart::simulation::experimental::detail {
+
+namespace {
+
+constexpr double kRotationDerivativeStep = 1e-6;
+constexpr double kRotationHessianStep = 1e-4;
+
+using Matrix3x6d = Eigen::Matrix<double, 3, 6>;
+using Matrix6d = Eigen::Matrix<double, 6, 6>;
+
+struct SurfaceEdge
+{
+  std::size_t vertexA = 0;
+  std::size_t vertexB = 0;
+
+  [[nodiscard]] friend bool operator==(
+      const SurfaceEdge& lhs, const SurfaceEdge& rhs)
+      = default;
+
+  [[nodiscard]] friend bool operator<(
+      const SurfaceEdge& lhs, const SurfaceEdge& rhs)
+  {
+    return std::tie(lhs.vertexA, lhs.vertexB)
+           < std::tie(rhs.vertexA, rhs.vertexB);
+  }
+};
+
+struct PointTransformDerivatives
+{
+  Matrix3x6d jacobian = Matrix3x6d::Zero();
+  std::array<Matrix6d, 3> hessians{
+      Matrix6d::Zero(), Matrix6d::Zero(), Matrix6d::Zero()};
+};
+
+RigidIpcVector6d poseToVector(const RigidIpcPose& pose)
+{
+  RigidIpcVector6d vector;
+  vector.head<3>() = pose.position;
+  vector.tail<3>() = pose.rotation;
+  return vector;
+}
+
+Eigen::Vector3d transformWithRotation(
+    const Eigen::Vector3d& localPoint, const Eigen::Vector3d& rotation)
+{
+  return rigidIpcRotationVectorToMatrix(rotation) * localPoint;
+}
+
+SurfaceEdge makeSurfaceEdge(std::size_t a, std::size_t b)
+{
+  if (b < a) {
+    std::swap(a, b);
+  }
+  return SurfaceEdge{a, b};
+}
+
+std::size_t checkedTriangleVertex(
+    const Eigen::Vector3i& triangle,
+    const int index,
+    const std::size_t vertexCount)
+{
+  assert(index >= 0 && index < 3);
+  const int vertex = triangle[index];
+  static_cast<void>(vertexCount);
+  assert(vertex >= 0);
+  assert(static_cast<std::size_t>(vertex) < vertexCount);
+  return static_cast<std::size_t>(vertex);
+}
+
+std::vector<SurfaceEdge> buildSurfaceEdges(
+    const RigidIpcBarrierSurface& surface)
+{
+  std::vector<SurfaceEdge> edges;
+  edges.reserve(3 * surface.triangles.size());
+  for (const Eigen::Vector3i& triangle : surface.triangles) {
+    const std::size_t a
+        = checkedTriangleVertex(triangle, 0, surface.vertices.size());
+    const std::size_t b
+        = checkedTriangleVertex(triangle, 1, surface.vertices.size());
+    const std::size_t c
+        = checkedTriangleVertex(triangle, 2, surface.vertices.size());
+    edges.push_back(makeSurfaceEdge(a, b));
+    edges.push_back(makeSurfaceEdge(b, c));
+    edges.push_back(makeSurfaceEdge(c, a));
+  }
+  std::sort(edges.begin(), edges.end());
+  edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
+  return edges;
+}
+
+PointTransformDerivatives pointTransformDerivatives(
+    const Eigen::Vector3d& localPoint, const RigidIpcPose& pose)
+{
+  PointTransformDerivatives derivatives;
+  derivatives.jacobian.leftCols<3>() = Eigen::Matrix3d::Identity();
+
+  const Eigen::Vector3d rotation = pose.rotation;
+  for (int axis = 0; axis < 3; ++axis) {
+    Eigen::Vector3d plus = rotation;
+    Eigen::Vector3d minus = rotation;
+    plus[axis] += kRotationDerivativeStep;
+    minus[axis] -= kRotationDerivativeStep;
+    derivatives.jacobian.col(3 + axis)
+        = (transformWithRotation(localPoint, plus)
+           - transformWithRotation(localPoint, minus))
+          / (2.0 * kRotationDerivativeStep);
+  }
+
+  const Eigen::Vector3d center = transformWithRotation(localPoint, rotation);
+  for (int row = 0; row < 3; ++row) {
+    for (int col = row; col < 3; ++col) {
+      Eigen::Vector3d rowPlus = rotation;
+      Eigen::Vector3d rowMinus = rotation;
+      rowPlus[row] += kRotationHessianStep;
+      rowMinus[row] -= kRotationHessianStep;
+
+      Eigen::Vector3d secondDerivative;
+      if (row == col) {
+        secondDerivative
+            = (transformWithRotation(localPoint, rowPlus) - 2.0 * center
+               + transformWithRotation(localPoint, rowMinus))
+              / (kRotationHessianStep * kRotationHessianStep);
+      } else {
+        Eigen::Vector3d pp = rotation;
+        Eigen::Vector3d pm = rotation;
+        Eigen::Vector3d mp = rotation;
+        Eigen::Vector3d mm = rotation;
+        pp[row] += kRotationHessianStep;
+        pp[col] += kRotationHessianStep;
+        pm[row] += kRotationHessianStep;
+        pm[col] -= kRotationHessianStep;
+        mp[row] -= kRotationHessianStep;
+        mp[col] += kRotationHessianStep;
+        mm[row] -= kRotationHessianStep;
+        mm[col] -= kRotationHessianStep;
+        secondDerivative
+            = (transformWithRotation(localPoint, pp)
+               - transformWithRotation(localPoint, pm)
+               - transformWithRotation(localPoint, mp)
+               + transformWithRotation(localPoint, mm))
+              / (4.0 * kRotationHessianStep * kRotationHessianStep);
+      }
+
+      for (int coord = 0; coord < 3; ++coord) {
+        derivatives.hessians[coord](3 + row, 3 + col) = secondDerivative[coord];
+        derivatives.hessians[coord](3 + col, 3 + row) = secondDerivative[coord];
+      }
+    }
+  }
+
+  return derivatives;
+}
+
+RigidIpcMatrix12d projectToPsd(const RigidIpcMatrix12d& matrix)
+{
+  const RigidIpcMatrix12d symmetric
+      = 0.5 * (matrix + RigidIpcMatrix12d(matrix.transpose()));
+  Eigen::SelfAdjointEigenSolver<RigidIpcMatrix12d> solver(symmetric);
+  if (solver.info() != Eigen::Success) {
+    return symmetric;
+  }
+
+  return solver.eigenvectors() * solver.eigenvalues().cwiseMax(0.0).asDiagonal()
+         * solver.eigenvectors().transpose();
+}
+
+struct SmoothFrictionNormResult
+{
+  double value = 0.0;
+  double firstDerivative = 0.0;
+  double secondDerivative = 0.0;
+  bool dynamicBranch = false;
+};
+
+SmoothFrictionNormResult smoothFrictionNorm(
+    const double norm, const double staticDisplacement)
+{
+  SmoothFrictionNormResult result;
+  if (!(norm >= 0.0) || !std::isfinite(norm) || !(staticDisplacement > 0.0)
+      || !std::isfinite(staticDisplacement)) {
+    return result;
+  }
+
+  if (norm > staticDisplacement) {
+    result.value = norm;
+    result.firstDerivative = 1.0;
+    result.secondDerivative = 0.0;
+    result.dynamicBranch = true;
+    return result;
+  }
+
+  const double invEps = 1.0 / staticDisplacement;
+  const double invEpsSquared = invEps * invEps;
+  result.value = norm * norm * (1.0 - norm * invEps / 3.0) * invEps
+                 + staticDisplacement / 3.0;
+  result.firstDerivative = 2.0 * norm * invEps - norm * norm * invEpsSquared;
+  result.secondDerivative = 2.0 * invEps - 2.0 * norm * invEpsSquared;
+  return result;
+}
+
+template <int Columns>
+RigidIpcFrictionPotentialResult computeProjectedFrictionPotential(
+    const Eigen::Matrix<double, 2, Columns>& projection,
+    const Eigen::Matrix<double, Columns, 1>& displacement,
+    const RigidIpcFrictionOptions& options)
+{
+  RigidIpcFrictionPotentialResult result;
+  if (!projection.allFinite() || !displacement.allFinite()) {
+    return result;
+  }
+
+  const double weight = options.coefficient * options.laggedNormalForce;
+  if (!(weight > 0.0) || !std::isfinite(weight)
+      || !(options.staticFrictionDisplacement > 0.0)
+      || !std::isfinite(options.staticFrictionDisplacement)) {
+    return result;
+  }
+
+  result.tangentialDisplacement = projection * displacement;
+  result.tangentialDisplacementNorm = result.tangentialDisplacement.norm();
+
+  const SmoothFrictionNormResult smooth = smoothFrictionNorm(
+      result.tangentialDisplacementNorm, options.staticFrictionDisplacement);
+  result.weight = weight;
+  result.value = weight * smooth.value;
+  result.active = true;
+  result.dynamicBranch = smooth.dynamicBranch;
+
+  Eigen::Vector2d tangentGradient = Eigen::Vector2d::Zero();
+  Eigen::Matrix2d tangentHessian = Eigen::Matrix2d::Zero();
+  if (result.tangentialDisplacementNorm > 0.0) {
+    const Eigen::Vector2d direction
+        = result.tangentialDisplacement / result.tangentialDisplacementNorm;
+    tangentGradient = smooth.firstDerivative * direction;
+    tangentHessian
+        = (smooth.firstDerivative / result.tangentialDisplacementNorm)
+              * Eigen::Matrix2d::Identity()
+          + (smooth.secondDerivative
+             - smooth.firstDerivative / result.tangentialDisplacementNorm)
+                * (direction * direction.transpose());
+  } else {
+    tangentHessian = smooth.secondDerivative * Eigen::Matrix2d::Identity();
+  }
+
+  result.gradient.template head<Columns>()
+      = weight * projection.transpose() * tangentGradient;
+  result.hessian.template topLeftCorner<Columns, Columns>()
+      = weight * projection.transpose() * tangentHessian * projection;
+  result.hessian
+      = 0.5 * (result.hessian + RigidIpcMatrix12d(result.hessian.transpose()));
+  return result;
+}
+
+RigidIpcReducedFrictionResult chainFrictionPotentialToReducedCoordinates(
+    const RigidIpcFrictionPotentialResult& potential,
+    const std::array<PointTransformDerivatives, 4>& derivatives,
+    const std::array<int, 4>& bodyIds,
+    const bool projectHessianToPsd)
+{
+  RigidIpcReducedFrictionResult result;
+  result.value = potential.value;
+  result.potential = potential;
+  result.active = potential.active;
+
+  if (!potential.active) {
+    return result;
+  }
+
+  RigidIpcMatrix12d jacobian = RigidIpcMatrix12d::Zero();
+  for (int vertex = 0; vertex < 4; ++vertex) {
+    jacobian.block<3, 6>(3 * vertex, 6 * bodyIds[vertex])
+        = derivatives[vertex].jacobian;
+  }
+
+  result.gradient = jacobian.transpose() * potential.gradient;
+  result.hessian = jacobian.transpose() * potential.hessian * jacobian;
+
+  for (int vertex = 0; vertex < 4; ++vertex) {
+    const int bodyOffset = 6 * bodyIds[vertex];
+    for (int coord = 0; coord < 3; ++coord) {
+      result.hessian.block<6, 6>(bodyOffset, bodyOffset)
+          += potential.gradient[3 * vertex + coord]
+             * derivatives[vertex].hessians[coord];
+    }
+  }
+
+  result.hessian
+      = 0.5 * (result.hessian + RigidIpcMatrix12d(result.hessian.transpose()));
+  if (projectHessianToPsd) {
+    result.hessian = projectToPsd(result.hessian);
+  }
+  return result;
+}
+
+RigidIpcReducedBarrierResult chainPrimitiveBarrierToReducedCoordinates(
+    const RigidIpcPrimitiveBarrierResult& primitive,
+    const std::array<PointTransformDerivatives, 4>& derivatives,
+    const std::array<int, 4>& bodyIds,
+    const RigidIpcBarrierOptions& options)
+{
+  RigidIpcReducedBarrierResult result;
+  result.value = primitive.value;
+  result.primitive = primitive;
+  result.active = primitive.active;
+
+  if (!primitive.active) {
+    return result;
+  }
+
+  RigidIpcMatrix12d jacobian = RigidIpcMatrix12d::Zero();
+  for (int vertex = 0; vertex < 4; ++vertex) {
+    jacobian.block<3, 6>(3 * vertex, 6 * bodyIds[vertex])
+        = derivatives[vertex].jacobian;
+  }
+
+  result.gradient = jacobian.transpose() * primitive.gradient;
+  result.hessian = jacobian.transpose() * primitive.hessian * jacobian;
+
+  for (int vertex = 0; vertex < 4; ++vertex) {
+    const int bodyOffset = 6 * bodyIds[vertex];
+    for (int coord = 0; coord < 3; ++coord) {
+      result.hessian.block<6, 6>(bodyOffset, bodyOffset)
+          += primitive.gradient[3 * vertex + coord]
+             * derivatives[vertex].hessians[coord];
+    }
+  }
+
+  result.hessian
+      = 0.5 * (result.hessian + RigidIpcMatrix12d(result.hessian.transpose()));
+  if (options.projectReducedHessianToPsd) {
+    result.hessian = projectToPsd(result.hessian);
+  }
+  return result;
+}
+
+void initializeGlobalAssembly(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    RigidIpcBarrierAssembly& assembly)
+{
+  std::size_t dofCount = 0;
+  assembly.bodyDofOffsets.assign(
+      surfaces.size(), RigidIpcBarrierAssembly::npos);
+  for (std::size_t body = 0; body < surfaces.size(); ++body) {
+    if (!surfaces[body].dynamic) {
+      continue;
+    }
+    assembly.bodyDofOffsets[body] = dofCount;
+    dofCount += 6;
+  }
+
+  assembly.gradient
+      = Eigen::VectorXd::Zero(static_cast<Eigen::Index>(dofCount));
+  assembly.hessian.resize(
+      static_cast<Eigen::Index>(dofCount), static_cast<Eigen::Index>(dofCount));
+}
+
+void scatterReducedBarrier(
+    RigidIpcBarrierAssembly& assembly,
+    std::vector<Eigen::Triplet<double>>& triplets,
+    const std::size_t bodyA,
+    const std::size_t bodyB,
+    const RigidIpcReducedBarrierResult& reduced)
+{
+  if (!reduced.active) {
+    return;
+  }
+
+  assembly.value += reduced.value;
+
+  const std::array<std::size_t, 2> offsets{
+      assembly.bodyDofOffsets[bodyA], assembly.bodyDofOffsets[bodyB]};
+  for (int localBody = 0; localBody < 2; ++localBody) {
+    const std::size_t offset = offsets[localBody];
+    if (offset == RigidIpcBarrierAssembly::npos) {
+      continue;
+    }
+    assembly.gradient.segment<6>(static_cast<Eigen::Index>(offset))
+        += reduced.gradient.segment<6>(6 * localBody);
+  }
+
+  constexpr double kEntryTolerance = 1e-15;
+  for (int localRowBody = 0; localRowBody < 2; ++localRowBody) {
+    const std::size_t rowOffset = offsets[localRowBody];
+    if (rowOffset == RigidIpcBarrierAssembly::npos) {
+      continue;
+    }
+    for (int localColBody = 0; localColBody < 2; ++localColBody) {
+      const std::size_t colOffset = offsets[localColBody];
+      if (colOffset == RigidIpcBarrierAssembly::npos) {
+        continue;
+      }
+      for (int row = 0; row < 6; ++row) {
+        for (int col = 0; col < 6; ++col) {
+          const double value
+              = reduced.hessian(6 * localRowBody + row, 6 * localColBody + col);
+          if (std::abs(value) <= kEntryTolerance) {
+            continue;
+          }
+          triplets.emplace_back(
+              static_cast<Eigen::Index>(rowOffset + row),
+              static_cast<Eigen::Index>(colOffset + col),
+              value);
+        }
+      }
+    }
+  }
+}
+
+void scatterReducedFriction(
+    RigidIpcBarrierAssembly& assembly,
+    std::vector<Eigen::Triplet<double>>& triplets,
+    const std::size_t bodyA,
+    const std::size_t bodyB,
+    const RigidIpcReducedFrictionResult& reduced)
+{
+  if (!reduced.active) {
+    return;
+  }
+
+  assembly.value += reduced.value;
+
+  const std::array<std::size_t, 2> offsets{
+      assembly.bodyDofOffsets[bodyA], assembly.bodyDofOffsets[bodyB]};
+  for (int localBody = 0; localBody < 2; ++localBody) {
+    const std::size_t offset = offsets[localBody];
+    if (offset == RigidIpcBarrierAssembly::npos) {
+      continue;
+    }
+    assembly.gradient.segment<6>(static_cast<Eigen::Index>(offset))
+        += reduced.gradient.segment<6>(6 * localBody);
+  }
+
+  constexpr double kEntryTolerance = 1e-15;
+  for (int localRowBody = 0; localRowBody < 2; ++localRowBody) {
+    const std::size_t rowOffset = offsets[localRowBody];
+    if (rowOffset == RigidIpcBarrierAssembly::npos) {
+      continue;
+    }
+    for (int localColBody = 0; localColBody < 2; ++localColBody) {
+      const std::size_t colOffset = offsets[localColBody];
+      if (colOffset == RigidIpcBarrierAssembly::npos) {
+        continue;
+      }
+      for (int row = 0; row < 6; ++row) {
+        for (int col = 0; col < 6; ++col) {
+          const double value
+              = reduced.hessian(6 * localRowBody + row, 6 * localColBody + col);
+          if (std::abs(value) <= kEntryTolerance) {
+            continue;
+          }
+          triplets.emplace_back(
+              static_cast<Eigen::Index>(rowOffset + row),
+              static_cast<Eigen::Index>(colOffset + col),
+              value);
+        }
+      }
+    }
+  }
+}
+
+void addActiveConstraint(
+    RigidIpcBarrierAssembly& assembly,
+    std::vector<Eigen::Triplet<double>>& triplets,
+    const RigidIpcBarrierPrimitive primitive,
+    const std::size_t bodyA,
+    const std::size_t bodyB,
+    const std::array<std::size_t, 4>& vertices,
+    const RigidIpcReducedBarrierResult& reduced)
+{
+  if (!reduced.active) {
+    return;
+  }
+
+  scatterReducedBarrier(assembly, triplets, bodyA, bodyB, reduced);
+  assembly.activeConstraints.push_back(
+      RigidIpcBarrierConstraint{primitive, bodyA, bodyB, vertices, reduced});
+}
+
+void addActiveFrictionConstraint(
+    RigidIpcBarrierAssembly& assembly,
+    std::vector<Eigen::Triplet<double>>& triplets,
+    const RigidIpcBarrierPrimitive primitive,
+    const std::size_t bodyA,
+    const std::size_t bodyB,
+    const std::array<std::size_t, 4>& vertices,
+    const RigidIpcReducedFrictionResult& reduced,
+    const double coefficient,
+    const double laggedNormalForce)
+{
+  if (!reduced.active) {
+    return;
+  }
+
+  scatterReducedFriction(assembly, triplets, bodyA, bodyB, reduced);
+  assembly.activeFrictionConstraints.push_back(
+      RigidIpcFrictionConstraint{
+          primitive,
+          bodyA,
+          bodyB,
+          vertices,
+          reduced,
+          coefficient,
+          laggedNormalForce});
+}
+
+double combinedFrictionCoefficient(
+    const RigidIpcBarrierSurface& a,
+    const RigidIpcBarrierSurface& b,
+    const RigidIpcFrictionOptions& options)
+{
+  if (!(options.coefficient > 0.0) || !std::isfinite(options.coefficient)) {
+    return 0.0;
+  }
+  if (!(a.frictionCoefficient > 0.0) || !std::isfinite(a.frictionCoefficient)
+      || !(b.frictionCoefficient > 0.0)
+      || !std::isfinite(b.frictionCoefficient)) {
+    return 0.0;
+  }
+  return options.coefficient
+         * std::sqrt(a.frictionCoefficient * b.frictionCoefficient);
+}
+
+double estimateLaggedNormalForce(
+    const RigidIpcPrimitiveBarrierResult& primitive)
+{
+  if (!primitive.active || !primitive.gradient.allFinite()) {
+    return 0.0;
+  }
+
+  double force = 0.0;
+  for (int vertex = 0; vertex < 4; ++vertex) {
+    const double candidate = primitive.gradient.segment<3>(3 * vertex).norm();
+    if (std::isfinite(candidate)) {
+      force = std::max(force, candidate);
+    }
+  }
+  return force;
+}
+
+RigidIpcReducedFrictionResult evaluateFrictionConstraint(
+    const std::span<const RigidIpcBarrierSurface> surfaces,
+    const std::span<const RigidIpcBarrierSurface> laggedSurfaces,
+    const RigidIpcBarrierConstraint& constraint,
+    const RigidIpcFrictionOptions& baseOptions,
+    const double coefficient,
+    const double laggedNormalForce)
+{
+  RigidIpcFrictionOptions options = baseOptions;
+  options.coefficient = coefficient;
+  options.laggedNormalForce = laggedNormalForce;
+
+  const auto npos = RigidIpcBarrierAssembly::npos;
+  if (constraint.bodyA >= surfaces.size() || constraint.bodyB >= surfaces.size()
+      || constraint.bodyA >= laggedSurfaces.size()
+      || constraint.bodyB >= laggedSurfaces.size()) {
+    return {};
+  }
+
+  const RigidIpcBarrierSurface& a = surfaces[constraint.bodyA];
+  const RigidIpcBarrierSurface& b = surfaces[constraint.bodyB];
+  const RigidIpcBarrierSurface& laggedA = laggedSurfaces[constraint.bodyA];
+  const RigidIpcBarrierSurface& laggedB = laggedSurfaces[constraint.bodyB];
+
+  const auto vertex = [](const RigidIpcBarrierSurface& surface,
+                         const std::size_t index) -> const Eigen::Vector3d& {
+    assert(index < surface.vertices.size());
+    return surface.vertices[index];
+  };
+
+  switch (constraint.primitive) {
+    case RigidIpcBarrierPrimitive::VertexVertex:
+      if (constraint.vertices[0] == npos || constraint.vertices[1] == npos) {
+        return {};
+      }
+      return rigidIpcPointPointReducedFrictionPotential(
+          vertex(a, constraint.vertices[0]),
+          laggedA.pose,
+          a.pose,
+          vertex(b, constraint.vertices[1]),
+          laggedB.pose,
+          b.pose,
+          options);
+    case RigidIpcBarrierPrimitive::EdgeVertex:
+      if (constraint.vertices[0] == npos || constraint.vertices[1] == npos
+          || constraint.vertices[2] == npos) {
+        return {};
+      }
+      return rigidIpcPointEdgeReducedFrictionPotential(
+          vertex(a, constraint.vertices[0]),
+          laggedA.pose,
+          a.pose,
+          vertex(b, constraint.vertices[1]),
+          vertex(b, constraint.vertices[2]),
+          laggedB.pose,
+          b.pose,
+          options);
+    case RigidIpcBarrierPrimitive::EdgeEdge:
+      if (constraint.vertices[0] == npos || constraint.vertices[1] == npos
+          || constraint.vertices[2] == npos || constraint.vertices[3] == npos) {
+        return {};
+      }
+      return rigidIpcEdgeEdgeReducedFrictionPotential(
+          vertex(a, constraint.vertices[0]),
+          vertex(a, constraint.vertices[1]),
+          laggedA.pose,
+          a.pose,
+          vertex(b, constraint.vertices[2]),
+          vertex(b, constraint.vertices[3]),
+          laggedB.pose,
+          b.pose,
+          options);
+    case RigidIpcBarrierPrimitive::FaceVertex:
+      if (constraint.vertices[0] == npos || constraint.vertices[1] == npos
+          || constraint.vertices[2] == npos || constraint.vertices[3] == npos) {
+        return {};
+      }
+      return rigidIpcPointTriangleReducedFrictionPotential(
+          vertex(a, constraint.vertices[0]),
+          laggedA.pose,
+          a.pose,
+          vertex(b, constraint.vertices[1]),
+          vertex(b, constraint.vertices[2]),
+          vertex(b, constraint.vertices[3]),
+          laggedB.pose,
+          b.pose,
+          options);
+  }
+
+  return {};
+}
+
+void addLaggedFrictionTerms(
+    RigidIpcBarrierAssembly& assembly,
+    std::vector<Eigen::Triplet<double>>& triplets,
+    const std::span<const RigidIpcBarrierSurface> surfaces,
+    const std::span<const RigidIpcBarrierSurface> laggedSurfaces,
+    const RigidIpcBarrierOptions& barrierOptions,
+    const RigidIpcFrictionOptions& frictionOptions)
+{
+  if (laggedSurfaces.size() != surfaces.size()
+      || !(frictionOptions.staticFrictionDisplacement > 0.0)
+      || !std::isfinite(frictionOptions.staticFrictionDisplacement)) {
+    return;
+  }
+
+  const RigidIpcBarrierAssembly laggedAssembly
+      = assembleRigidIpcBarrierSystem(laggedSurfaces, barrierOptions);
+  for (const RigidIpcBarrierConstraint& constraint :
+       laggedAssembly.activeConstraints) {
+    const double coefficient = combinedFrictionCoefficient(
+        laggedSurfaces[constraint.bodyA],
+        laggedSurfaces[constraint.bodyB],
+        frictionOptions);
+    const double laggedNormalForce
+        = estimateLaggedNormalForce(constraint.reduced.primitive);
+    if (!(coefficient > 0.0) || !(laggedNormalForce > 0.0)
+        || !std::isfinite(laggedNormalForce)) {
+      continue;
+    }
+
+    const RigidIpcReducedFrictionResult reduced = evaluateFrictionConstraint(
+        surfaces,
+        laggedSurfaces,
+        constraint,
+        frictionOptions,
+        coefficient,
+        laggedNormalForce);
+    addActiveFrictionConstraint(
+        assembly,
+        triplets,
+        constraint.primitive,
+        constraint.bodyA,
+        constraint.bodyB,
+        constraint.vertices,
+        reduced,
+        coefficient,
+        laggedNormalForce);
+  }
+}
+
+void addBodyDynamicsTerm(
+    RigidIpcBarrierAssembly& assembly,
+    std::vector<Eigen::Triplet<double>>& triplets,
+    const std::size_t body,
+    const RigidIpcBarrierSurface& surface,
+    const RigidIpcBodyDynamicsTerm& term)
+{
+  if (!term.active || !surface.dynamic) {
+    return;
+  }
+
+  const std::size_t offset = assembly.bodyDofOffsets[body];
+  if (offset == RigidIpcBarrierAssembly::npos) {
+    return;
+  }
+
+  const RigidIpcVector6d weights
+      = term.diagonalWeights.array().max(0.0).matrix();
+  const RigidIpcVector6d q = poseToVector(surface.pose);
+  const RigidIpcVector6d target = poseToVector(term.targetPose);
+  const RigidIpcVector6d residual = q - target;
+
+  assembly.value += 0.5 * weights.dot(residual.cwiseProduct(residual))
+                    - term.generalizedForce.dot(q);
+  assembly.gradient.segment<6>(static_cast<Eigen::Index>(offset))
+      += weights.cwiseProduct(residual) - term.generalizedForce;
+
+  constexpr double kEntryTolerance = 1e-15;
+  for (int dof = 0; dof < 6; ++dof) {
+    if (weights[dof] <= kEntryTolerance) {
+      continue;
+    }
+    triplets.emplace_back(
+        static_cast<Eigen::Index>(offset + dof),
+        static_cast<Eigen::Index>(offset + dof),
+        weights[dof]);
+  }
+  ++assembly.activeDynamicsTerms;
+}
+
+collision::native::CcdOption makeCcdOption(
+    const RigidIpcLineSearchOptions& options)
+{
+  collision::native::CcdOption ccdOption;
+  ccdOption.minSeparation = std::max(0.0, options.minSeparation);
+  ccdOption.tolerance = std::max(0.0, options.tolerance);
+  ccdOption.maxIterations = std::max(1, options.maxIterations);
+  ccdOption.advancement = collision::native::CcdAdvancement::Conservative;
+  return ccdOption;
+}
+
+void assertMatchingSurfaceTopology(
+    const RigidIpcBarrierSurface& start, const RigidIpcBarrierSurface& end)
+{
+  static_cast<void>(end);
+  assert(start.body == end.body);
+  assert(start.dynamic == end.dynamic);
+  assert(start.vertices.size() == end.vertices.size());
+  assert(start.triangles.size() == end.triangles.size());
+  for (std::size_t i = 0; i < start.triangles.size(); ++i) {
+    assert(start.triangles[i] == end.triangles[i]);
+  }
+}
+
+void recordLineSearchCandidate(
+    RigidIpcLineSearchResult& aggregate,
+    const collision::native::CcdPrimitiveResult& candidate,
+    const RigidIpcBarrierPrimitive primitive,
+    const std::size_t bodyA,
+    const std::size_t bodyB,
+    const std::array<std::size_t, 4>& vertices)
+{
+  if (candidate.hit) {
+    ++aggregate.stats.hits;
+    const double candidateStep = std::clamp(candidate.timeOfImpact, 0.0, 1.0);
+    if (candidateStep <= 0.0) {
+      ++aggregate.stats.zeroStepCount;
+    }
+    if (!aggregate.limited || candidateStep < aggregate.stepBound) {
+      aggregate.limited = true;
+      aggregate.stepBound = candidateStep;
+      aggregate.limitingPrimitive = primitive;
+      aggregate.bodyA = bodyA;
+      aggregate.bodyB = bodyB;
+      aggregate.vertices = vertices;
+    }
+    return;
+  }
+
+  if (candidate.status
+      == collision::native::CcdPrimitiveStatus::Indeterminate) {
+    ++aggregate.stats.indeterminate;
+    aggregate.indeterminate = true;
+    aggregate.limited = true;
+    aggregate.stepBound = 0.0;
+    aggregate.limitingPrimitive = primitive;
+    aggregate.bodyA = bodyA;
+    aggregate.bodyB = bodyB;
+    aggregate.vertices = vertices;
+    return;
+  }
+
+  ++aggregate.stats.misses;
+}
+
+RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStepImpl(
+    const RigidIpcBarrierAssembly& assembly,
+    const RigidIpcLineSearchResult* lineSearch,
+    const RigidIpcProjectedNewtonOptions& options)
+{
+  assert(assembly.hessian.rows() == assembly.gradient.size());
+  assert(assembly.hessian.cols() == assembly.gradient.size());
+
+  RigidIpcProjectedNewtonStep result;
+  const Eigen::Index dofs = assembly.gradient.size();
+  result.delta = Eigen::VectorXd::Zero(dofs);
+  result.stats.dofs = static_cast<std::size_t>(dofs);
+  result.stats.gradientNorm = assembly.gradient.norm();
+
+  if (dofs == 0) {
+    result.status = RigidIpcProjectedNewtonStatus::NoDofs;
+    result.success = true;
+    result.converged = true;
+    return result;
+  }
+
+  if (!assembly.gradient.allFinite()) {
+    result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+    return result;
+  }
+
+  const double gradientTolerance = std::max(0.0, options.gradientTolerance);
+  if (result.stats.gradientNorm <= gradientTolerance) {
+    result.status = RigidIpcProjectedNewtonStatus::Converged;
+    result.success = true;
+    result.converged = true;
+    return result;
+  }
+
+  const double regularization = std::max(0.0, options.hessianRegularization);
+  result.stats.hessianRegularization = regularization;
+
+  Eigen::MatrixXd denseHessian(assembly.hessian);
+  denseHessian += regularization * Eigen::MatrixXd::Identity(dofs, dofs).eval();
+  if (!denseHessian.allFinite()) {
+    result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+    return result;
+  }
+
+  Eigen::LDLT<Eigen::MatrixXd> solver(denseHessian);
+  if (solver.info() != Eigen::Success || !solver.isPositive()) {
+    result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+    return result;
+  }
+
+  Eigen::VectorXd rawStep = solver.solve(-assembly.gradient);
+  if (solver.info() != Eigen::Success || !rawStep.allFinite()) {
+    result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+    return result;
+  }
+
+  result.stats.rawStepNorm = rawStep.norm();
+  double stepScale = 1.0;
+  if (std::isfinite(options.maxStepNorm) && options.maxStepNorm >= 0.0
+      && result.stats.rawStepNorm > options.maxStepNorm
+      && result.stats.rawStepNorm > 0.0) {
+    stepScale = options.maxStepNorm / result.stats.rawStepNorm;
+  }
+
+  if (lineSearch != nullptr) {
+    result.stats.usedLineSearch = true;
+    if (!lineSearch->allowsPositiveStep()) {
+      result.status = RigidIpcProjectedNewtonStatus::LineSearchBlocked;
+      result.lineSearchBlocked = true;
+      result.stats.stepScale = 0.0;
+      result.stats.lineSearchLimited = lineSearch->limited;
+      return result;
+    }
+
+    if (lineSearch->limited) {
+      result.stats.lineSearchLimited = true;
+      const double safeBound = std::clamp(
+          lineSearch->stepBound
+              * std::clamp(options.lineSearchSafetyScale, 0.0, 1.0),
+          0.0,
+          1.0);
+      if (safeBound <= 0.0) {
+        result.status = RigidIpcProjectedNewtonStatus::LineSearchBlocked;
+        result.lineSearchBlocked = true;
+        result.stats.stepScale = 0.0;
+        return result;
+      }
+      stepScale = std::min(stepScale, safeBound);
+    }
+  }
+
+  result.delta = stepScale * rawStep;
+  result.stats.stepScale = stepScale;
+  result.stats.stepNorm = result.delta.norm();
+  result.stats.gradientDotStep = assembly.gradient.dot(result.delta);
+  if (!(result.stats.gradientDotStep < 0.0)) {
+    result.status = RigidIpcProjectedNewtonStatus::FactorizationFailed;
+    result.delta.setZero();
+    result.stats.stepNorm = 0.0;
+    result.stats.stepScale = 0.0;
+    result.stats.gradientDotStep = 0.0;
+    return result;
+  }
+
+  result.status = RigidIpcProjectedNewtonStatus::DescentStep;
+  result.success = true;
+  return result;
+}
+
+void applyRigidIpcNewtonDelta(
+    std::vector<RigidIpcBarrierSurface>& surfaces,
+    const RigidIpcBarrierAssembly& assembly,
+    const Eigen::VectorXd& delta)
+{
+  assert(assembly.bodyDofOffsets.size() == surfaces.size());
+  for (std::size_t body = 0; body < surfaces.size(); ++body) {
+    const std::size_t offset = assembly.bodyDofOffsets[body];
+    if (offset == RigidIpcBarrierAssembly::npos) {
+      continue;
+    }
+    assert(static_cast<Eigen::Index>(offset + 6) <= delta.size());
+    surfaces[body].pose.position
+        += delta.segment<3>(static_cast<Eigen::Index>(offset));
+    surfaces[body].pose.rotation
+        += delta.segment<3>(static_cast<Eigen::Index>(offset + 3));
+  }
+}
+
+void recordSolveAssemblyStats(
+    RigidIpcProjectedNewtonSolveResult& result, const bool initial)
+{
+  if (initial) {
+    result.stats.initialValue = result.assembly.value;
+    result.stats.initialGradientNorm = result.assembly.gradient.norm();
+  }
+  result.stats.finalValue = result.assembly.value;
+  result.stats.finalGradientNorm = result.assembly.gradient.norm();
+  result.stats.finalMomentumBalance = result.stats.finalGradientNorm;
+  result.stats.activeFrictionConstraints
+      = result.assembly.activeFrictionConstraints.size();
+}
+
+void recordSolveLineSearchStats(RigidIpcProjectedNewtonSolveResult& result)
+{
+  result.stats.lineSearchPointPointChecks
+      += result.lineSearch.stats.pointPointChecks;
+  result.stats.lineSearchPointEdgeChecks
+      += result.lineSearch.stats.pointEdgeChecks;
+  result.stats.lineSearchEdgeEdgeChecks
+      += result.lineSearch.stats.edgeEdgeChecks;
+  result.stats.lineSearchPointTriangleChecks
+      += result.lineSearch.stats.pointTriangleChecks;
+  result.stats.lineSearchHits += result.lineSearch.stats.hits;
+  result.stats.lineSearchMisses += result.lineSearch.stats.misses;
+  result.stats.lineSearchIndeterminateCount
+      += result.lineSearch.stats.indeterminate;
+  result.stats.lineSearchZeroStepCount += result.lineSearch.stats.zeroStepCount;
+}
+
+} // namespace
+
+RigidIpcBodyDynamicsTerm makeRigidIpcBodyDynamicsTerm(
+    const RigidIpcBodyDynamicsState& state, const double timeStep)
+{
+  RigidIpcBodyDynamicsTerm term;
+  term.targetPose = state.pose;
+
+  const bool validState
+      = state.active && std::isfinite(timeStep) && timeStep > 0.0
+        && std::isfinite(state.mass) && state.mass > 0.0
+        && state.pose.position.allFinite() && state.pose.rotation.allFinite()
+        && state.velocity.allFinite() && state.inertia.allFinite()
+        && state.generalizedForce.allFinite();
+  if (!validState) {
+    return term;
+  }
+
+  const double inverseTimeStepSquared = 1.0 / (timeStep * timeStep);
+  if (!std::isfinite(inverseTimeStepSquared)) {
+    return term;
+  }
+
+  term.active = true;
+  term.targetPose.position
+      = state.pose.position + timeStep * state.velocity.head<3>();
+  term.targetPose.rotation
+      = state.pose.rotation + timeStep * state.velocity.tail<3>();
+  term.diagonalWeights.head<3>().setConstant(
+      state.mass * inverseTimeStepSquared);
+  term.diagonalWeights.tail<3>()
+      = (state.inertia.diagonal().array().max(0.0) * inverseTimeStepSquared)
+            .matrix();
+  term.generalizedForce = state.generalizedForce;
+  return term;
+}
+
+RigidIpcPrimitiveBarrierResult rigidIpcPointTriangleBarrierAtTime(
+    const Eigen::Vector3d& point,
+    const RigidIpcPose& pointPoseStart,
+    const RigidIpcPose& pointPoseEnd,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const RigidIpcPose& trianglePoseStart,
+    const RigidIpcPose& trianglePoseEnd,
+    const double time,
+    const RigidIpcBarrierOptions& options)
+{
+  const Eigen::Vector3d pointWorld
+      = transformRigidIpcPoint(point, pointPoseStart, pointPoseEnd, time);
+  const Eigen::Vector3d triangleAWorld = transformRigidIpcPoint(
+      triangleA, trianglePoseStart, trianglePoseEnd, time);
+  const Eigen::Vector3d triangleBWorld = transformRigidIpcPoint(
+      triangleB, trianglePoseStart, trianglePoseEnd, time);
+  const Eigen::Vector3d triangleCWorld = transformRigidIpcPoint(
+      triangleC, trianglePoseStart, trianglePoseEnd, time);
+
+  return deformable_contact::pointTriangleBarrier(
+      pointWorld,
+      triangleAWorld,
+      triangleBWorld,
+      triangleCWorld,
+      options.squaredActivationDistance,
+      options.stiffness);
+}
+
+RigidIpcPrimitiveBarrierResult rigidIpcPointEdgeBarrierAtTime(
+    const Eigen::Vector3d& point,
+    const RigidIpcPose& pointPoseStart,
+    const RigidIpcPose& pointPoseEnd,
+    const Eigen::Vector3d& edgeA,
+    const Eigen::Vector3d& edgeB,
+    const RigidIpcPose& edgePoseStart,
+    const RigidIpcPose& edgePoseEnd,
+    const double time,
+    const RigidIpcBarrierOptions& options)
+{
+  const Eigen::Vector3d pointWorld
+      = transformRigidIpcPoint(point, pointPoseStart, pointPoseEnd, time);
+  const Eigen::Vector3d edgeAWorld
+      = transformRigidIpcPoint(edgeA, edgePoseStart, edgePoseEnd, time);
+  const Eigen::Vector3d edgeBWorld
+      = transformRigidIpcPoint(edgeB, edgePoseStart, edgePoseEnd, time);
+
+  return deformable_contact::pointEdgeBarrier(
+      pointWorld,
+      edgeAWorld,
+      edgeBWorld,
+      options.squaredActivationDistance,
+      options.stiffness);
+}
+
+RigidIpcReducedBarrierResult rigidIpcPointTriangleReducedBarrier(
+    const Eigen::Vector3d& point,
+    const RigidIpcPose& pointPose,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const RigidIpcPose& trianglePose,
+    const RigidIpcBarrierOptions& options)
+{
+  const Eigen::Vector3d pointWorld = transformRigidIpcPoint(point, pointPose);
+  const Eigen::Vector3d triangleAWorld
+      = transformRigidIpcPoint(triangleA, trianglePose);
+  const Eigen::Vector3d triangleBWorld
+      = transformRigidIpcPoint(triangleB, trianglePose);
+  const Eigen::Vector3d triangleCWorld
+      = transformRigidIpcPoint(triangleC, trianglePose);
+  const RigidIpcPrimitiveBarrierResult primitive
+      = deformable_contact::pointTriangleBarrier(
+          pointWorld,
+          triangleAWorld,
+          triangleBWorld,
+          triangleCWorld,
+          options.squaredActivationDistance,
+          options.stiffness);
+
+  return chainPrimitiveBarrierToReducedCoordinates(
+      primitive,
+      {pointTransformDerivatives(point, pointPose),
+       pointTransformDerivatives(triangleA, trianglePose),
+       pointTransformDerivatives(triangleB, trianglePose),
+       pointTransformDerivatives(triangleC, trianglePose)},
+      {0, 1, 1, 1},
+      options);
+}
+
+RigidIpcReducedBarrierResult rigidIpcPointEdgeReducedBarrier(
+    const Eigen::Vector3d& point,
+    const RigidIpcPose& pointPose,
+    const Eigen::Vector3d& edgeA,
+    const Eigen::Vector3d& edgeB,
+    const RigidIpcPose& edgePose,
+    const RigidIpcBarrierOptions& options)
+{
+  const Eigen::Vector3d pointWorld = transformRigidIpcPoint(point, pointPose);
+  const Eigen::Vector3d edgeAWorld = transformRigidIpcPoint(edgeA, edgePose);
+  const Eigen::Vector3d edgeBWorld = transformRigidIpcPoint(edgeB, edgePose);
+  const RigidIpcPrimitiveBarrierResult primitive
+      = deformable_contact::pointEdgeBarrier(
+          pointWorld,
+          edgeAWorld,
+          edgeBWorld,
+          options.squaredActivationDistance,
+          options.stiffness);
+
+  return chainPrimitiveBarrierToReducedCoordinates(
+      primitive,
+      {pointTransformDerivatives(point, pointPose),
+       pointTransformDerivatives(edgeA, edgePose),
+       pointTransformDerivatives(edgeB, edgePose),
+       PointTransformDerivatives{}},
+      {0, 1, 1, 0},
+      options);
+}
+
+RigidIpcReducedBarrierResult rigidIpcEdgeEdgeReducedBarrier(
+    const Eigen::Vector3d& edgeA0,
+    const Eigen::Vector3d& edgeA1,
+    const RigidIpcPose& edgeAPose,
+    const Eigen::Vector3d& edgeB0,
+    const Eigen::Vector3d& edgeB1,
+    const RigidIpcPose& edgeBPose,
+    const RigidIpcBarrierOptions& options)
+{
+  const Eigen::Vector3d edgeA0World = transformRigidIpcPoint(edgeA0, edgeAPose);
+  const Eigen::Vector3d edgeA1World = transformRigidIpcPoint(edgeA1, edgeAPose);
+  const Eigen::Vector3d edgeB0World = transformRigidIpcPoint(edgeB0, edgeBPose);
+  const Eigen::Vector3d edgeB1World = transformRigidIpcPoint(edgeB1, edgeBPose);
+  const RigidIpcPrimitiveBarrierResult primitive
+      = deformable_contact::edgeEdgeBarrier(
+          edgeA0World,
+          edgeA1World,
+          edgeB0World,
+          edgeB1World,
+          options.squaredActivationDistance,
+          options.stiffness);
+
+  return chainPrimitiveBarrierToReducedCoordinates(
+      primitive,
+      {pointTransformDerivatives(edgeA0, edgeAPose),
+       pointTransformDerivatives(edgeA1, edgeAPose),
+       pointTransformDerivatives(edgeB0, edgeBPose),
+       pointTransformDerivatives(edgeB1, edgeBPose)},
+      {0, 0, 1, 1},
+      options);
+}
+
+RigidIpcReducedBarrierResult rigidIpcPointPointReducedBarrier(
+    const Eigen::Vector3d& pointA,
+    const RigidIpcPose& pointAPose,
+    const Eigen::Vector3d& pointB,
+    const RigidIpcPose& pointBPose,
+    const RigidIpcBarrierOptions& options)
+{
+  const Eigen::Vector3d pointAWorld
+      = transformRigidIpcPoint(pointA, pointAPose);
+  const Eigen::Vector3d pointBWorld
+      = transformRigidIpcPoint(pointB, pointBPose);
+  const RigidIpcPrimitiveBarrierResult primitive
+      = deformable_contact::pointPointBarrier(
+          pointAWorld,
+          pointBWorld,
+          options.squaredActivationDistance,
+          options.stiffness);
+
+  return chainPrimitiveBarrierToReducedCoordinates(
+      primitive,
+      {pointTransformDerivatives(pointA, pointAPose),
+       pointTransformDerivatives(pointB, pointBPose),
+       PointTransformDerivatives{},
+       PointTransformDerivatives{}},
+      {0, 1, 0, 0},
+      options);
+}
+
+RigidIpcFrictionPotentialResult rigidIpcPointPointFrictionPotential(
+    const Eigen::Vector3d& laggedPointA,
+    const Eigen::Vector3d& laggedPointB,
+    const Eigen::Vector3d& pointA,
+    const Eigen::Vector3d& pointB,
+    const RigidIpcFrictionOptions& options)
+{
+  RigidIpcFrictionPotentialResult result;
+  if (!laggedPointA.allFinite() || !laggedPointB.allFinite()
+      || !pointA.allFinite() || !pointB.allFinite()) {
+    return result;
+  }
+
+  const auto stencil = deformable_contact::pointPointTangentStencil(
+      laggedPointA, laggedPointB);
+  Eigen::Matrix<double, 6, 1> displacement;
+  displacement.head<3>() = pointA - laggedPointA;
+  displacement.tail<3>() = pointB - laggedPointB;
+  return computeProjectedFrictionPotential<6>(
+      stencil.projection, displacement, options);
+}
+
+RigidIpcFrictionPotentialResult rigidIpcPointEdgeFrictionPotential(
+    const Eigen::Vector3d& laggedPoint,
+    const Eigen::Vector3d& laggedEdgeA,
+    const Eigen::Vector3d& laggedEdgeB,
+    const Eigen::Vector3d& point,
+    const Eigen::Vector3d& edgeA,
+    const Eigen::Vector3d& edgeB,
+    const RigidIpcFrictionOptions& options)
+{
+  RigidIpcFrictionPotentialResult result;
+  if (!laggedPoint.allFinite() || !laggedEdgeA.allFinite()
+      || !laggedEdgeB.allFinite() || !point.allFinite() || !edgeA.allFinite()
+      || !edgeB.allFinite()) {
+    return result;
+  }
+
+  const auto stencil = deformable_contact::pointEdgeTangentStencil(
+      laggedPoint, laggedEdgeA, laggedEdgeB);
+  Eigen::Matrix<double, 9, 1> displacement;
+  displacement.segment<3>(0) = point - laggedPoint;
+  displacement.segment<3>(3) = edgeA - laggedEdgeA;
+  displacement.segment<3>(6) = edgeB - laggedEdgeB;
+  return computeProjectedFrictionPotential<9>(
+      stencil.projection, displacement, options);
+}
+
+RigidIpcFrictionPotentialResult rigidIpcEdgeEdgeFrictionPotential(
+    const Eigen::Vector3d& laggedEdgeA0,
+    const Eigen::Vector3d& laggedEdgeA1,
+    const Eigen::Vector3d& laggedEdgeB0,
+    const Eigen::Vector3d& laggedEdgeB1,
+    const Eigen::Vector3d& edgeA0,
+    const Eigen::Vector3d& edgeA1,
+    const Eigen::Vector3d& edgeB0,
+    const Eigen::Vector3d& edgeB1,
+    const RigidIpcFrictionOptions& options)
+{
+  RigidIpcFrictionPotentialResult result;
+  if (!laggedEdgeA0.allFinite() || !laggedEdgeA1.allFinite()
+      || !laggedEdgeB0.allFinite() || !laggedEdgeB1.allFinite()
+      || !edgeA0.allFinite() || !edgeA1.allFinite() || !edgeB0.allFinite()
+      || !edgeB1.allFinite()) {
+    return result;
+  }
+
+  const auto stencil = deformable_contact::edgeEdgeTangentStencil(
+      laggedEdgeA0, laggedEdgeA1, laggedEdgeB0, laggedEdgeB1);
+  RigidIpcVector12d displacement;
+  displacement.segment<3>(0) = edgeA0 - laggedEdgeA0;
+  displacement.segment<3>(3) = edgeA1 - laggedEdgeA1;
+  displacement.segment<3>(6) = edgeB0 - laggedEdgeB0;
+  displacement.segment<3>(9) = edgeB1 - laggedEdgeB1;
+  return computeProjectedFrictionPotential<12>(
+      stencil.projection, displacement, options);
+}
+
+RigidIpcFrictionPotentialResult rigidIpcPointTriangleFrictionPotential(
+    const Eigen::Vector3d& laggedPoint,
+    const Eigen::Vector3d& laggedTriangleA,
+    const Eigen::Vector3d& laggedTriangleB,
+    const Eigen::Vector3d& laggedTriangleC,
+    const Eigen::Vector3d& point,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const RigidIpcFrictionOptions& options)
+{
+  RigidIpcFrictionPotentialResult result;
+  if (!laggedPoint.allFinite() || !laggedTriangleA.allFinite()
+      || !laggedTriangleB.allFinite() || !laggedTriangleC.allFinite()
+      || !point.allFinite() || !triangleA.allFinite() || !triangleB.allFinite()
+      || !triangleC.allFinite()) {
+    return result;
+  }
+
+  const auto stencil = deformable_contact::pointTriangleTangentStencil(
+      laggedPoint, laggedTriangleA, laggedTriangleB, laggedTriangleC);
+  RigidIpcVector12d displacement;
+  displacement.segment<3>(0) = point - laggedPoint;
+  displacement.segment<3>(3) = triangleA - laggedTriangleA;
+  displacement.segment<3>(6) = triangleB - laggedTriangleB;
+  displacement.segment<3>(9) = triangleC - laggedTriangleC;
+  return computeProjectedFrictionPotential<12>(
+      stencil.projection, displacement, options);
+}
+
+RigidIpcReducedFrictionResult rigidIpcPointPointReducedFrictionPotential(
+    const Eigen::Vector3d& pointA,
+    const RigidIpcPose& laggedPointAPose,
+    const RigidIpcPose& pointAPose,
+    const Eigen::Vector3d& pointB,
+    const RigidIpcPose& laggedPointBPose,
+    const RigidIpcPose& pointBPose,
+    const RigidIpcFrictionOptions& options)
+{
+  const Eigen::Vector3d laggedPointAWorld
+      = transformRigidIpcPoint(pointA, laggedPointAPose);
+  const Eigen::Vector3d laggedPointBWorld
+      = transformRigidIpcPoint(pointB, laggedPointBPose);
+  const Eigen::Vector3d pointAWorld
+      = transformRigidIpcPoint(pointA, pointAPose);
+  const Eigen::Vector3d pointBWorld
+      = transformRigidIpcPoint(pointB, pointBPose);
+  const RigidIpcFrictionPotentialResult potential
+      = rigidIpcPointPointFrictionPotential(
+          laggedPointAWorld,
+          laggedPointBWorld,
+          pointAWorld,
+          pointBWorld,
+          options);
+
+  return chainFrictionPotentialToReducedCoordinates(
+      potential,
+      {pointTransformDerivatives(pointA, pointAPose),
+       pointTransformDerivatives(pointB, pointBPose),
+       PointTransformDerivatives{},
+       PointTransformDerivatives{}},
+      {0, 1, 0, 0},
+      options.projectReducedHessianToPsd);
+}
+
+RigidIpcReducedFrictionResult rigidIpcPointEdgeReducedFrictionPotential(
+    const Eigen::Vector3d& point,
+    const RigidIpcPose& laggedPointPose,
+    const RigidIpcPose& pointPose,
+    const Eigen::Vector3d& edgeA,
+    const Eigen::Vector3d& edgeB,
+    const RigidIpcPose& laggedEdgePose,
+    const RigidIpcPose& edgePose,
+    const RigidIpcFrictionOptions& options)
+{
+  const Eigen::Vector3d laggedPointWorld
+      = transformRigidIpcPoint(point, laggedPointPose);
+  const Eigen::Vector3d laggedEdgeAWorld
+      = transformRigidIpcPoint(edgeA, laggedEdgePose);
+  const Eigen::Vector3d laggedEdgeBWorld
+      = transformRigidIpcPoint(edgeB, laggedEdgePose);
+  const Eigen::Vector3d pointWorld = transformRigidIpcPoint(point, pointPose);
+  const Eigen::Vector3d edgeAWorld = transformRigidIpcPoint(edgeA, edgePose);
+  const Eigen::Vector3d edgeBWorld = transformRigidIpcPoint(edgeB, edgePose);
+  const RigidIpcFrictionPotentialResult potential
+      = rigidIpcPointEdgeFrictionPotential(
+          laggedPointWorld,
+          laggedEdgeAWorld,
+          laggedEdgeBWorld,
+          pointWorld,
+          edgeAWorld,
+          edgeBWorld,
+          options);
+
+  return chainFrictionPotentialToReducedCoordinates(
+      potential,
+      {pointTransformDerivatives(point, pointPose),
+       pointTransformDerivatives(edgeA, edgePose),
+       pointTransformDerivatives(edgeB, edgePose),
+       PointTransformDerivatives{}},
+      {0, 1, 1, 0},
+      options.projectReducedHessianToPsd);
+}
+
+RigidIpcReducedFrictionResult rigidIpcEdgeEdgeReducedFrictionPotential(
+    const Eigen::Vector3d& edgeA0,
+    const Eigen::Vector3d& edgeA1,
+    const RigidIpcPose& laggedEdgeAPose,
+    const RigidIpcPose& edgeAPose,
+    const Eigen::Vector3d& edgeB0,
+    const Eigen::Vector3d& edgeB1,
+    const RigidIpcPose& laggedEdgeBPose,
+    const RigidIpcPose& edgeBPose,
+    const RigidIpcFrictionOptions& options)
+{
+  const Eigen::Vector3d laggedEdgeA0World
+      = transformRigidIpcPoint(edgeA0, laggedEdgeAPose);
+  const Eigen::Vector3d laggedEdgeA1World
+      = transformRigidIpcPoint(edgeA1, laggedEdgeAPose);
+  const Eigen::Vector3d laggedEdgeB0World
+      = transformRigidIpcPoint(edgeB0, laggedEdgeBPose);
+  const Eigen::Vector3d laggedEdgeB1World
+      = transformRigidIpcPoint(edgeB1, laggedEdgeBPose);
+  const Eigen::Vector3d edgeA0World = transformRigidIpcPoint(edgeA0, edgeAPose);
+  const Eigen::Vector3d edgeA1World = transformRigidIpcPoint(edgeA1, edgeAPose);
+  const Eigen::Vector3d edgeB0World = transformRigidIpcPoint(edgeB0, edgeBPose);
+  const Eigen::Vector3d edgeB1World = transformRigidIpcPoint(edgeB1, edgeBPose);
+  const RigidIpcFrictionPotentialResult potential
+      = rigidIpcEdgeEdgeFrictionPotential(
+          laggedEdgeA0World,
+          laggedEdgeA1World,
+          laggedEdgeB0World,
+          laggedEdgeB1World,
+          edgeA0World,
+          edgeA1World,
+          edgeB0World,
+          edgeB1World,
+          options);
+
+  return chainFrictionPotentialToReducedCoordinates(
+      potential,
+      {pointTransformDerivatives(edgeA0, edgeAPose),
+       pointTransformDerivatives(edgeA1, edgeAPose),
+       pointTransformDerivatives(edgeB0, edgeBPose),
+       pointTransformDerivatives(edgeB1, edgeBPose)},
+      {0, 0, 1, 1},
+      options.projectReducedHessianToPsd);
+}
+
+RigidIpcReducedFrictionResult rigidIpcPointTriangleReducedFrictionPotential(
+    const Eigen::Vector3d& point,
+    const RigidIpcPose& laggedPointPose,
+    const RigidIpcPose& pointPose,
+    const Eigen::Vector3d& triangleA,
+    const Eigen::Vector3d& triangleB,
+    const Eigen::Vector3d& triangleC,
+    const RigidIpcPose& laggedTrianglePose,
+    const RigidIpcPose& trianglePose,
+    const RigidIpcFrictionOptions& options)
+{
+  const Eigen::Vector3d laggedPointWorld
+      = transformRigidIpcPoint(point, laggedPointPose);
+  const Eigen::Vector3d laggedTriangleAWorld
+      = transformRigidIpcPoint(triangleA, laggedTrianglePose);
+  const Eigen::Vector3d laggedTriangleBWorld
+      = transformRigidIpcPoint(triangleB, laggedTrianglePose);
+  const Eigen::Vector3d laggedTriangleCWorld
+      = transformRigidIpcPoint(triangleC, laggedTrianglePose);
+  const Eigen::Vector3d pointWorld = transformRigidIpcPoint(point, pointPose);
+  const Eigen::Vector3d triangleAWorld
+      = transformRigidIpcPoint(triangleA, trianglePose);
+  const Eigen::Vector3d triangleBWorld
+      = transformRigidIpcPoint(triangleB, trianglePose);
+  const Eigen::Vector3d triangleCWorld
+      = transformRigidIpcPoint(triangleC, trianglePose);
+  const RigidIpcFrictionPotentialResult potential
+      = rigidIpcPointTriangleFrictionPotential(
+          laggedPointWorld,
+          laggedTriangleAWorld,
+          laggedTriangleBWorld,
+          laggedTriangleCWorld,
+          pointWorld,
+          triangleAWorld,
+          triangleBWorld,
+          triangleCWorld,
+          options);
+
+  return chainFrictionPotentialToReducedCoordinates(
+      potential,
+      {pointTransformDerivatives(point, pointPose),
+       pointTransformDerivatives(triangleA, trianglePose),
+       pointTransformDerivatives(triangleB, trianglePose),
+       pointTransformDerivatives(triangleC, trianglePose)},
+      {0, 1, 1, 1},
+      options.projectReducedHessianToPsd);
+}
+
+RigidIpcPrimitiveBarrierResult rigidIpcEdgeEdgeBarrierAtTime(
+    const Eigen::Vector3d& edgeA0,
+    const Eigen::Vector3d& edgeA1,
+    const RigidIpcPose& edgeAPoseStart,
+    const RigidIpcPose& edgeAPoseEnd,
+    const Eigen::Vector3d& edgeB0,
+    const Eigen::Vector3d& edgeB1,
+    const RigidIpcPose& edgeBPoseStart,
+    const RigidIpcPose& edgeBPoseEnd,
+    const double time,
+    const RigidIpcBarrierOptions& options)
+{
+  const Eigen::Vector3d edgeA0World
+      = transformRigidIpcPoint(edgeA0, edgeAPoseStart, edgeAPoseEnd, time);
+  const Eigen::Vector3d edgeA1World
+      = transformRigidIpcPoint(edgeA1, edgeAPoseStart, edgeAPoseEnd, time);
+  const Eigen::Vector3d edgeB0World
+      = transformRigidIpcPoint(edgeB0, edgeBPoseStart, edgeBPoseEnd, time);
+  const Eigen::Vector3d edgeB1World
+      = transformRigidIpcPoint(edgeB1, edgeBPoseStart, edgeBPoseEnd, time);
+
+  return deformable_contact::edgeEdgeBarrier(
+      edgeA0World,
+      edgeA1World,
+      edgeB0World,
+      edgeB1World,
+      options.squaredActivationDistance,
+      options.stiffness);
+}
+
+RigidIpcPrimitiveBarrierResult rigidIpcPointPointBarrierAtTime(
+    const Eigen::Vector3d& pointA,
+    const RigidIpcPose& pointAPoseStart,
+    const RigidIpcPose& pointAPoseEnd,
+    const Eigen::Vector3d& pointB,
+    const RigidIpcPose& pointBPoseStart,
+    const RigidIpcPose& pointBPoseEnd,
+    const double time,
+    const RigidIpcBarrierOptions& options)
+{
+  const Eigen::Vector3d pointAWorld
+      = transformRigidIpcPoint(pointA, pointAPoseStart, pointAPoseEnd, time);
+  const Eigen::Vector3d pointBWorld
+      = transformRigidIpcPoint(pointB, pointBPoseStart, pointBPoseEnd, time);
+
+  return deformable_contact::pointPointBarrier(
+      pointAWorld,
+      pointBWorld,
+      options.squaredActivationDistance,
+      options.stiffness);
+}
+
+RigidIpcBarrierAssembly assembleRigidIpcBarrierSystem(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    const RigidIpcBarrierOptions& options)
+{
+  RigidIpcBarrierAssembly assembly;
+  initializeGlobalAssembly(surfaces, assembly);
+
+  std::vector<std::vector<SurfaceEdge>> surfaceEdges;
+  surfaceEdges.reserve(surfaces.size());
+  for (const RigidIpcBarrierSurface& surface : surfaces) {
+    surfaceEdges.push_back(buildSurfaceEdges(surface));
+  }
+
+  std::vector<Eigen::Triplet<double>> triplets;
+  for (std::size_t bodyA = 0; bodyA < surfaces.size(); ++bodyA) {
+    const RigidIpcBarrierSurface& a = surfaces[bodyA];
+    for (std::size_t bodyB = bodyA + 1; bodyB < surfaces.size(); ++bodyB) {
+      const RigidIpcBarrierSurface& b = surfaces[bodyB];
+      if (!a.dynamic && !b.dynamic) {
+        continue;
+      }
+
+      for (std::size_t pointA = 0; pointA < a.vertices.size(); ++pointA) {
+        for (std::size_t pointB = 0; pointB < b.vertices.size(); ++pointB) {
+          const auto reduced = rigidIpcPointPointReducedBarrier(
+              a.vertices[pointA], a.pose, b.vertices[pointB], b.pose, options);
+          addActiveConstraint(
+              assembly,
+              triplets,
+              RigidIpcBarrierPrimitive::VertexVertex,
+              bodyA,
+              bodyB,
+              {pointA,
+               pointB,
+               RigidIpcBarrierAssembly::npos,
+               RigidIpcBarrierAssembly::npos},
+              reduced);
+        }
+      }
+
+      for (std::size_t pointA = 0; pointA < a.vertices.size(); ++pointA) {
+        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
+          const auto reduced = rigidIpcPointEdgeReducedBarrier(
+              a.vertices[pointA],
+              a.pose,
+              b.vertices[edgeB.vertexA],
+              b.vertices[edgeB.vertexB],
+              b.pose,
+              options);
+          addActiveConstraint(
+              assembly,
+              triplets,
+              RigidIpcBarrierPrimitive::EdgeVertex,
+              bodyA,
+              bodyB,
+              {pointA,
+               edgeB.vertexA,
+               edgeB.vertexB,
+               RigidIpcBarrierAssembly::npos},
+              reduced);
+        }
+      }
+      for (std::size_t pointB = 0; pointB < b.vertices.size(); ++pointB) {
+        for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
+          const auto reduced = rigidIpcPointEdgeReducedBarrier(
+              b.vertices[pointB],
+              b.pose,
+              a.vertices[edgeA.vertexA],
+              a.vertices[edgeA.vertexB],
+              a.pose,
+              options);
+          addActiveConstraint(
+              assembly,
+              triplets,
+              RigidIpcBarrierPrimitive::EdgeVertex,
+              bodyB,
+              bodyA,
+              {pointB,
+               edgeA.vertexA,
+               edgeA.vertexB,
+               RigidIpcBarrierAssembly::npos},
+              reduced);
+        }
+      }
+
+      for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
+        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
+          const auto reduced = rigidIpcEdgeEdgeReducedBarrier(
+              a.vertices[edgeA.vertexA],
+              a.vertices[edgeA.vertexB],
+              a.pose,
+              b.vertices[edgeB.vertexA],
+              b.vertices[edgeB.vertexB],
+              b.pose,
+              options);
+          addActiveConstraint(
+              assembly,
+              triplets,
+              RigidIpcBarrierPrimitive::EdgeEdge,
+              bodyA,
+              bodyB,
+              {edgeA.vertexA, edgeA.vertexB, edgeB.vertexA, edgeB.vertexB},
+              reduced);
+        }
+      }
+
+      for (std::size_t pointA = 0; pointA < a.vertices.size(); ++pointA) {
+        for (const Eigen::Vector3i& triangleB : b.triangles) {
+          const std::size_t triangleB0
+              = checkedTriangleVertex(triangleB, 0, b.vertices.size());
+          const std::size_t triangleB1
+              = checkedTriangleVertex(triangleB, 1, b.vertices.size());
+          const std::size_t triangleB2
+              = checkedTriangleVertex(triangleB, 2, b.vertices.size());
+          const auto reduced = rigidIpcPointTriangleReducedBarrier(
+              a.vertices[pointA],
+              a.pose,
+              b.vertices[triangleB0],
+              b.vertices[triangleB1],
+              b.vertices[triangleB2],
+              b.pose,
+              options);
+          addActiveConstraint(
+              assembly,
+              triplets,
+              RigidIpcBarrierPrimitive::FaceVertex,
+              bodyA,
+              bodyB,
+              {pointA, triangleB0, triangleB1, triangleB2},
+              reduced);
+        }
+      }
+      for (std::size_t pointB = 0; pointB < b.vertices.size(); ++pointB) {
+        for (const Eigen::Vector3i& triangleA : a.triangles) {
+          const std::size_t triangleA0
+              = checkedTriangleVertex(triangleA, 0, a.vertices.size());
+          const std::size_t triangleA1
+              = checkedTriangleVertex(triangleA, 1, a.vertices.size());
+          const std::size_t triangleA2
+              = checkedTriangleVertex(triangleA, 2, a.vertices.size());
+          const auto reduced = rigidIpcPointTriangleReducedBarrier(
+              b.vertices[pointB],
+              b.pose,
+              a.vertices[triangleA0],
+              a.vertices[triangleA1],
+              a.vertices[triangleA2],
+              a.pose,
+              options);
+          addActiveConstraint(
+              assembly,
+              triplets,
+              RigidIpcBarrierPrimitive::FaceVertex,
+              bodyB,
+              bodyA,
+              {pointB, triangleA0, triangleA1, triangleA2},
+              reduced);
+        }
+      }
+    }
+  }
+
+  assembly.hessian.setFromTriplets(triplets.begin(), triplets.end());
+  assembly.hessian.makeCompressed();
+  return assembly;
+}
+
+RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystem(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    const RigidIpcBarrierOptions& options)
+{
+  return assembleRigidIpcObjectiveSystem(
+      surfaces, {}, dynamicsTerms, options, {});
+}
+
+RigidIpcBarrierAssembly assembleRigidIpcObjectiveSystem(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    std::span<const RigidIpcBarrierSurface> laggedSurfaces,
+    std::span<const RigidIpcBodyDynamicsTerm> dynamicsTerms,
+    const RigidIpcBarrierOptions& barrierOptions,
+    const RigidIpcFrictionOptions& frictionOptions)
+{
+  RigidIpcBarrierAssembly assembly
+      = assembleRigidIpcBarrierSystem(surfaces, barrierOptions);
+  assert(dynamicsTerms.size() <= surfaces.size());
+
+  const std::size_t termCount = std::min(dynamicsTerms.size(), surfaces.size());
+  std::vector<Eigen::Triplet<double>> triplets;
+  triplets.reserve(6 * termCount);
+  addLaggedFrictionTerms(
+      assembly,
+      triplets,
+      surfaces,
+      laggedSurfaces,
+      barrierOptions,
+      frictionOptions);
+  for (std::size_t body = 0; body < termCount; ++body) {
+    addBodyDynamicsTerm(
+        assembly, triplets, body, surfaces[body], dynamicsTerms[body]);
+  }
+
+  if (!triplets.empty()) {
+    Eigen::SparseMatrix<double> dynamicsHessian(
+        assembly.hessian.rows(), assembly.hessian.cols());
+    dynamicsHessian.setFromTriplets(triplets.begin(), triplets.end());
+    dynamicsHessian.makeCompressed();
+    assembly.hessian += dynamicsHessian;
+    assembly.hessian.makeCompressed();
+  }
+
+  return assembly;
+}
+
+RigidIpcLineSearchResult computeRigidIpcLineSearchStepBound(
+    std::span<const RigidIpcBarrierSurface> startSurfaces,
+    std::span<const RigidIpcBarrierSurface> endSurfaces,
+    const RigidIpcLineSearchOptions& options)
+{
+  assert(startSurfaces.size() == endSurfaces.size());
+
+  RigidIpcLineSearchResult result;
+  const collision::native::CcdOption ccdOption = makeCcdOption(options);
+
+  std::vector<std::vector<SurfaceEdge>> surfaceEdges;
+  surfaceEdges.reserve(startSurfaces.size());
+  for (std::size_t body = 0; body < startSurfaces.size(); ++body) {
+    assertMatchingSurfaceTopology(startSurfaces[body], endSurfaces[body]);
+    surfaceEdges.push_back(buildSurfaceEdges(startSurfaces[body]));
+  }
+
+  for (std::size_t bodyA = 0; bodyA < startSurfaces.size(); ++bodyA) {
+    const RigidIpcBarrierSurface& a0 = startSurfaces[bodyA];
+    const RigidIpcBarrierSurface& a1 = endSurfaces[bodyA];
+    for (std::size_t bodyB = bodyA + 1; bodyB < startSurfaces.size(); ++bodyB) {
+      const RigidIpcBarrierSurface& b0 = startSurfaces[bodyB];
+      const RigidIpcBarrierSurface& b1 = endSurfaces[bodyB];
+      if (!a0.dynamic && !b0.dynamic) {
+        continue;
+      }
+
+      for (std::size_t pointA = 0; pointA < a0.vertices.size(); ++pointA) {
+        for (std::size_t pointB = 0; pointB < b0.vertices.size(); ++pointB) {
+          collision::native::CcdPrimitiveResult ccdResult;
+          ++result.stats.pointPointChecks;
+          const bool hit = rigidIpcPointPointCcd(
+              a0.vertices[pointA],
+              a0.pose,
+              a1.pose,
+              b0.vertices[pointB],
+              b0.pose,
+              b1.pose,
+              ccdOption,
+              ccdResult);
+          static_cast<void>(hit);
+          recordLineSearchCandidate(
+              result,
+              ccdResult,
+              RigidIpcBarrierPrimitive::VertexVertex,
+              bodyA,
+              bodyB,
+              {pointA,
+               pointB,
+               RigidIpcBarrierAssembly::npos,
+               RigidIpcBarrierAssembly::npos});
+        }
+      }
+
+      for (std::size_t pointA = 0; pointA < a0.vertices.size(); ++pointA) {
+        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
+          collision::native::CcdPrimitiveResult ccdResult;
+          ++result.stats.pointEdgeChecks;
+          const bool hit = rigidIpcPointEdgeCcd(
+              a0.vertices[pointA],
+              a0.pose,
+              a1.pose,
+              b0.vertices[edgeB.vertexA],
+              b0.vertices[edgeB.vertexB],
+              b0.pose,
+              b1.pose,
+              ccdOption,
+              ccdResult);
+          static_cast<void>(hit);
+          recordLineSearchCandidate(
+              result,
+              ccdResult,
+              RigidIpcBarrierPrimitive::EdgeVertex,
+              bodyA,
+              bodyB,
+              {pointA,
+               edgeB.vertexA,
+               edgeB.vertexB,
+               RigidIpcBarrierAssembly::npos});
+        }
+      }
+      for (std::size_t pointB = 0; pointB < b0.vertices.size(); ++pointB) {
+        for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
+          collision::native::CcdPrimitiveResult ccdResult;
+          ++result.stats.pointEdgeChecks;
+          const bool hit = rigidIpcPointEdgeCcd(
+              b0.vertices[pointB],
+              b0.pose,
+              b1.pose,
+              a0.vertices[edgeA.vertexA],
+              a0.vertices[edgeA.vertexB],
+              a0.pose,
+              a1.pose,
+              ccdOption,
+              ccdResult);
+          static_cast<void>(hit);
+          recordLineSearchCandidate(
+              result,
+              ccdResult,
+              RigidIpcBarrierPrimitive::EdgeVertex,
+              bodyB,
+              bodyA,
+              {pointB,
+               edgeA.vertexA,
+               edgeA.vertexB,
+               RigidIpcBarrierAssembly::npos});
+        }
+      }
+
+      for (const SurfaceEdge& edgeA : surfaceEdges[bodyA]) {
+        for (const SurfaceEdge& edgeB : surfaceEdges[bodyB]) {
+          collision::native::CcdPrimitiveResult ccdResult;
+          ++result.stats.edgeEdgeChecks;
+          const bool hit = rigidIpcEdgeEdgeCcd(
+              a0.vertices[edgeA.vertexA],
+              a0.vertices[edgeA.vertexB],
+              a0.pose,
+              a1.pose,
+              b0.vertices[edgeB.vertexA],
+              b0.vertices[edgeB.vertexB],
+              b0.pose,
+              b1.pose,
+              ccdOption,
+              ccdResult);
+          static_cast<void>(hit);
+          recordLineSearchCandidate(
+              result,
+              ccdResult,
+              RigidIpcBarrierPrimitive::EdgeEdge,
+              bodyA,
+              bodyB,
+              {edgeA.vertexA, edgeA.vertexB, edgeB.vertexA, edgeB.vertexB});
+        }
+      }
+
+      for (std::size_t pointA = 0; pointA < a0.vertices.size(); ++pointA) {
+        for (const Eigen::Vector3i& triangleB : b0.triangles) {
+          const std::size_t triangleB0
+              = checkedTriangleVertex(triangleB, 0, b0.vertices.size());
+          const std::size_t triangleB1
+              = checkedTriangleVertex(triangleB, 1, b0.vertices.size());
+          const std::size_t triangleB2
+              = checkedTriangleVertex(triangleB, 2, b0.vertices.size());
+          collision::native::CcdPrimitiveResult ccdResult;
+          ++result.stats.pointTriangleChecks;
+          const bool hit = rigidIpcPointTriangleCcd(
+              a0.vertices[pointA],
+              a0.pose,
+              a1.pose,
+              b0.vertices[triangleB0],
+              b0.vertices[triangleB1],
+              b0.vertices[triangleB2],
+              b0.pose,
+              b1.pose,
+              ccdOption,
+              ccdResult);
+          static_cast<void>(hit);
+          recordLineSearchCandidate(
+              result,
+              ccdResult,
+              RigidIpcBarrierPrimitive::FaceVertex,
+              bodyA,
+              bodyB,
+              {pointA, triangleB0, triangleB1, triangleB2});
+        }
+      }
+      for (std::size_t pointB = 0; pointB < b0.vertices.size(); ++pointB) {
+        for (const Eigen::Vector3i& triangleA : a0.triangles) {
+          const std::size_t triangleA0
+              = checkedTriangleVertex(triangleA, 0, a0.vertices.size());
+          const std::size_t triangleA1
+              = checkedTriangleVertex(triangleA, 1, a0.vertices.size());
+          const std::size_t triangleA2
+              = checkedTriangleVertex(triangleA, 2, a0.vertices.size());
+          collision::native::CcdPrimitiveResult ccdResult;
+          ++result.stats.pointTriangleChecks;
+          const bool hit = rigidIpcPointTriangleCcd(
+              b0.vertices[pointB],
+              b0.pose,
+              b1.pose,
+              a0.vertices[triangleA0],
+              a0.vertices[triangleA1],
+              a0.vertices[triangleA2],
+              a0.pose,
+              a1.pose,
+              ccdOption,
+              ccdResult);
+          static_cast<void>(hit);
+          recordLineSearchCandidate(
+              result,
+              ccdResult,
+              RigidIpcBarrierPrimitive::FaceVertex,
+              bodyB,
+              bodyA,
+              {pointB, triangleA0, triangleA1, triangleA2});
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStep(
+    const RigidIpcBarrierAssembly& assembly,
+    const RigidIpcProjectedNewtonOptions& options)
+{
+  return computeRigidIpcProjectedNewtonStepImpl(assembly, nullptr, options);
+}
+
+RigidIpcProjectedNewtonStep computeRigidIpcProjectedNewtonStep(
+    const RigidIpcBarrierAssembly& assembly,
+    const RigidIpcLineSearchResult& lineSearch,
+    const RigidIpcProjectedNewtonOptions& options)
+{
+  return computeRigidIpcProjectedNewtonStepImpl(assembly, &lineSearch, options);
+}
+
+RigidIpcProjectedNewtonSolveResult solveRigidIpcProjectedNewtonBarrierSystem(
+    std::span<const RigidIpcBarrierSurface> surfaces,
+    const RigidIpcProjectedNewtonSolveOptions& options)
+{
+  RigidIpcProjectedNewtonSolveResult result;
+  result.surfaces.assign(surfaces.begin(), surfaces.end());
+  std::vector<RigidIpcBarrierSurface> laggedSurfaces(
+      surfaces.begin(), surfaces.end());
+  const double stepTolerance = std::max(0.0, options.stepTolerance);
+  const double frictionConvergenceTolerance
+      = std::max(0.0, options.frictionConvergenceTolerance);
+
+  RigidIpcFrictionOptions frictionOptions = options.friction;
+  const bool useLaggedFriction
+      = options.frictionIterations > 0u && frictionOptions.coefficient > 0.0
+        && std::isfinite(frictionOptions.coefficient)
+        && frictionOptions.staticFrictionDisplacement > 0.0
+        && std::isfinite(frictionOptions.staticFrictionDisplacement);
+  if (!useLaggedFriction) {
+    frictionOptions.coefficient = 0.0;
+    frictionOptions.laggedNormalForce = 0.0;
+  }
+  const std::size_t frictionIterationCount
+      = useLaggedFriction ? options.frictionIterations : 1u;
+
+  for (std::size_t frictionIteration = 0;
+       frictionIteration < frictionIterationCount;
+       ++frictionIteration) {
+    result.converged = false;
+
+    for (std::size_t iteration = 0; iteration <= options.maxIterations;
+         ++iteration) {
+      result.assembly = assembleRigidIpcObjectiveSystem(
+          result.surfaces,
+          laggedSurfaces,
+          options.dynamicsTerms,
+          options.barrier,
+          frictionOptions);
+      recordSolveAssemblyStats(
+          result, frictionIteration == 0u && iteration == 0u);
+
+      RigidIpcProjectedNewtonStep step
+          = computeRigidIpcProjectedNewtonStep(result.assembly, options.newton);
+      result.lastStep = step;
+
+      if (step.status == RigidIpcProjectedNewtonStatus::NoDofs) {
+        result.status = RigidIpcProjectedNewtonSolveStatus::NoDofs;
+        result.converged = true;
+        return result;
+      }
+      if (step.converged) {
+        result.status = RigidIpcProjectedNewtonSolveStatus::Converged;
+        result.converged = true;
+        break;
+      }
+      if (!step.success) {
+        result.status = RigidIpcProjectedNewtonSolveStatus::FactorizationFailed;
+        result.failed = true;
+        return result;
+      }
+      if (iteration == options.maxIterations) {
+        result.status = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
+        return result;
+      }
+
+      if (options.useLineSearch) {
+        std::vector<RigidIpcBarrierSurface> candidateSurfaces = result.surfaces;
+        applyRigidIpcNewtonDelta(
+            candidateSurfaces, result.assembly, step.delta);
+        result.lineSearch = computeRigidIpcLineSearchStepBound(
+            result.surfaces, candidateSurfaces, options.lineSearch);
+        recordSolveLineSearchStats(result);
+        step = computeRigidIpcProjectedNewtonStep(
+            result.assembly, result.lineSearch, options.newton);
+        result.lastStep = step;
+        if (result.lineSearch.limited) {
+          ++result.stats.lineSearchLimitedSteps;
+        }
+        if (step.lineSearchBlocked) {
+          result.status = RigidIpcProjectedNewtonSolveStatus::LineSearchBlocked;
+          result.failed = true;
+          return result;
+        }
+        if (!step.success) {
+          result.status
+              = RigidIpcProjectedNewtonSolveStatus::FactorizationFailed;
+          result.failed = true;
+          return result;
+        }
+      }
+
+      applyRigidIpcNewtonDelta(result.surfaces, result.assembly, step.delta);
+      ++result.stats.acceptedSteps;
+      ++result.stats.iterations;
+      result.stats.lastStepNorm = step.stats.stepNorm;
+      if (step.stats.stepNorm <= stepTolerance) {
+        result.assembly = assembleRigidIpcObjectiveSystem(
+            result.surfaces,
+            laggedSurfaces,
+            options.dynamicsTerms,
+            options.barrier,
+            frictionOptions);
+        recordSolveAssemblyStats(result, false);
+        result.status = RigidIpcProjectedNewtonSolveStatus::Converged;
+        result.converged = true;
+        break;
+      }
+    }
+
+    if (!result.converged || !useLaggedFriction) {
+      return result;
+    }
+
+    laggedSurfaces = result.surfaces;
+    result.assembly = assembleRigidIpcObjectiveSystem(
+        result.surfaces,
+        laggedSurfaces,
+        options.dynamicsTerms,
+        options.barrier,
+        frictionOptions);
+    recordSolveAssemblyStats(result, false);
+    if (result.assembly.activeFrictionConstraints.empty()) {
+      result.status = RigidIpcProjectedNewtonSolveStatus::Converged;
+      result.converged = true;
+      return result;
+    }
+
+    ++result.stats.frictionIterations;
+    if (frictionIteration + 1u == frictionIterationCount
+        || (frictionConvergenceTolerance > 0.0
+            && result.stats.finalMomentumBalance
+                   <= frictionConvergenceTolerance)) {
+      result.status = RigidIpcProjectedNewtonSolveStatus::Converged;
+      result.converged = true;
+      return result;
+    }
+  }
+
+  result.status = RigidIpcProjectedNewtonSolveStatus::MaxIterations;
+  return result;
+}
+
+} // namespace dart::simulation::experimental::detail

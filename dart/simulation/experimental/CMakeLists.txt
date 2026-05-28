@@ -66,11 +66,14 @@ add_library(${target_name}
   comps/name.cpp
   comps/rigid_body.cpp
   detail/deformable_contact/continuous_collision_step.cpp
+  detail/rigid_ipc_barrier.cpp
+  detail/rigid_ipc_ccd.cpp
   frame/fixed_frame.cpp
   frame/frame.cpp
   frame/free_frame.cpp
   io/binary_io.cpp
   io/deformable_scene_io.cpp
+  io/detail/rigid_ipc_fixture.cpp
   io/serializer.cpp
   multibody/joint.cpp
   multibody/link.cpp

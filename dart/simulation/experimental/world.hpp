@@ -52,6 +52,14 @@
 
 namespace dart::simulation::experimental {
 
+/// Solver family used for free rigid-body dynamics in the default experimental
+/// World step pipeline.
+enum class RigidBodySolver
+{
+  SequentialImpulse,
+  Ipc,
+};
+
 class DART_EXPERIMENTAL_API World
 {
 public:
@@ -133,6 +141,15 @@ public:
 
   /// Get the uniform gravitational acceleration applied to dynamic bodies.
   [[nodiscard]] const Eigen::Vector3d& getGravity() const noexcept;
+
+  /// Select the solver family used by the default rigid-body step pipeline.
+  ///
+  /// The default remains SequentialImpulse. Ipc is experimental and currently
+  /// handles free mesh-like rigid bodies through the internal rigid IPC stage.
+  void setRigidBodySolver(RigidBodySolver solver);
+
+  /// Get the solver family used by the default rigid-body step pipeline.
+  [[nodiscard]] RigidBodySolver getRigidBodySolver() const noexcept;
 
   void setTimeStep(double timeStep);
   [[nodiscard]] double getTimeStep() const noexcept;
@@ -221,6 +238,7 @@ private:
   entt::registry m_registry;
   bool m_simulationMode{false};
   Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
+  RigidBodySolver m_rigidBodySolver{RigidBodySolver::SequentialImpulse};
   double m_timeStep{0.001};
   double m_time{0.0};
   std::size_t m_frame{0};
