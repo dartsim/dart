@@ -108,11 +108,20 @@ open for this current branch.
 
 ## Immediate Next Step
 
-Continue Phase 4 from `docs/dev_tasks/rigid_ipc_solver/README.md`: extend
-bounded outer lagged-friction passes into runtime fixture behavior, corpus
-coverage, and production convergence criteria. Phase 3
-convergence/contact corpus criteria, Phase 2 corpus parity, and Phase 1 runtime
-example coverage remain open fallback slices.
+Phase 4d landed: a differential `World` regression
+(`RigidIpcContactStageFrictionBraketsTangentialSlide`) now proves lagged
+friction observably brakes a tangential slide at an activated mesh contact
+relative to the frictionless solve. Continue Phase 4 from
+`docs/dev_tasks/rigid_ipc_solver/README.md`: extend friction into broader
+runtime fixture behavior, corpus coverage, and production convergence criteria.
+
+Performance pillar is now in scope (maintainer directive): benchmark the rigid
+IPC path against the current DART rigid contact path, the audited reference
+(`/tmp/rigid-ipc` `tools/benchmark.py`), and the paper scene families, then
+optimize until DART beats them. This is gated on completing the algorithm's
+correctness (rigorous interval CCD, corpus parity, production convergence).
+Phase 3 convergence/contact corpus criteria, Phase 2 corpus parity, and Phase 1
+runtime example coverage remain open fallback slices.
 
 ## Context That Would Be Lost
 

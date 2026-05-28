@@ -3632,6 +3632,93 @@ TEST(World, RigidIpcContactStageSeparatesActivatedMeshBarrier)
   EXPECT_GT(body.getLinearVelocity().z(), 0.0);
 }
 
+// Test that lagged friction in the opt-in rigid IPC stage produces an
+// observable runtime effect: at an activated contact a tangential slide is
+// braked relative to the frictionless solve, without reversing direction.
+//
+// The scene mirrors RigidIpcContactStageSeparatesActivatedMeshBarrier but adds
+// a tangential velocity and runs twice. Disabling friction on either body
+// removes friction entirely (combined Coulomb coefficient sqrt(f_a*f_b)), so
+// the frictionless run is the differential baseline.
+TEST(World, RigidIpcContactStageFrictionBraketsTangentialSlide)
+{
+  namespace sx = dart::simulation::experimental;
+
+  const std::vector<Eigen::Vector3d> triangleVertices{
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0)};
+  const std::vector<Eigen::Vector3i> triangleFaces{Eigen::Vector3i(0, 1, 2)};
+  constexpr double initialHeight = 0.005;
+  constexpr double tangentialSpeed = 1.0;
+
+  struct SlideOutcome
+  {
+    sx::compute::RigidIpcSolverStats stats;
+    double x = 0.0;
+    double z = 0.0;
+    double velocityX = 0.0;
+  };
+
+  const auto runSlide = [&](double friction) -> SlideOutcome {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.05);
+
+    sx::RigidBodyOptions staticOptions;
+    staticOptions.isStatic = true;
+    auto ground = world.addRigidBody("static_ipc_triangle", staticOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeMesh(triangleVertices, triangleFaces));
+    ground.setFriction(friction);
+
+    sx::RigidBodyOptions dynamicOptions;
+    dynamicOptions.mass = 1.0;
+    dynamicOptions.position = Eigen::Vector3d(0.0, 0.0, initialHeight);
+    dynamicOptions.linearVelocity = Eigen::Vector3d(tangentialSpeed, 0.0, 0.0);
+    auto body = world.addRigidBody("dynamic_ipc_triangle", dynamicOptions);
+    body.setCollisionShape(
+        sx::CollisionShape::makeMesh(triangleVertices, triangleFaces));
+    body.setFriction(friction);
+
+    sx::compute::SequentialExecutor executor;
+    sx::compute::RigidIpcContactStage ipcStage;
+    sx::compute::WorldStepPipeline pipeline;
+    pipeline.addStage(ipcStage);
+    world.step(executor, pipeline);
+
+    return SlideOutcome{
+        ipcStage.getLastStats(),
+        body.getTranslation().x(),
+        body.getTranslation().z(),
+        body.getLinearVelocity().x()};
+  };
+
+  const SlideOutcome frictionless = runSlide(0.0);
+  const SlideOutcome frictional = runSlide(1.0);
+
+  // Both runs converge and separate along the barrier normal.
+  EXPECT_TRUE(frictionless.stats.converged);
+  EXPECT_TRUE(frictional.stats.converged);
+  EXPECT_GT(frictionless.z, initialHeight);
+  EXPECT_GT(frictional.z, initialHeight);
+
+  // Friction is inactive without a positive combined coefficient and active
+  // once both bodies carry friction.
+  EXPECT_EQ(frictionless.stats.activeFrictionConstraints, 0u);
+  EXPECT_EQ(frictionless.stats.frictionIterations, 0u);
+  EXPECT_GT(frictional.stats.activeFrictionConstraints, 0u);
+  EXPECT_EQ(frictional.stats.frictionIterations, 1u);
+
+  // The frictionless body slides forward toward its free-motion target; the
+  // frictional body advances less and writes back a smaller forward velocity,
+  // but friction does not reverse the slide.
+  EXPECT_GT(frictionless.x, 0.0);
+  EXPECT_GT(frictional.x, 0.0);
+  EXPECT_LT(frictional.x, frictionless.x);
+  EXPECT_LT(frictional.velocityX, frictionless.velocityX);
+}
+
 // Test that unsupported rigid shapes are reported by the opt-in IPC stage
 // without silently falling back to the default rigid-body solver.
 TEST(World, RigidIpcContactStageReportsUnsupportedShapes)

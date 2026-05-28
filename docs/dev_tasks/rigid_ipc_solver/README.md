@@ -159,8 +159,12 @@
         solved poses, supports a zero-iteration friction disable, stops early
         against a refreshed momentum-balance tolerance, and reports active
         friction pass counts through runtime diagnostics.
-  - [ ] Extend friction into runtime fixture behavior, corpus coverage, and
-        production convergence criteria.
+  - [x] Phase 4d: prove lagged friction has an observable runtime effect
+        through the opt-in stage. A differential `World` regression brakes a
+        tangential slide at an activated mesh contact relative to the
+        frictionless solve, and reports active friction constraints/passes.
+  - [ ] Extend friction into broader runtime fixture behavior, corpus coverage,
+        and production convergence criteria.
 - [x] Phase 5a: first same-domain rigid method selection inside the
       experimental `World` without exposing solver registries.
 - [ ] Phase 5b: extend solver selection toward persisted scene policy,
