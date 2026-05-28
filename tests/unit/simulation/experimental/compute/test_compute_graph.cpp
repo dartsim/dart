@@ -431,6 +431,8 @@ TEST(ExperimentalParallelExecutor, ProfileReportsObservedParallelism)
   compute::ComputeGraph graph;
   std::atomic<int> active{0};
   std::atomic<int> maxActive{0};
+  std::atomic<int> ready{0};
+  std::atomic<bool> timedOutWaitingForParallelWork{false};
 
   auto updateMax = [&](int value) {
     auto observed = maxActive.load();
@@ -442,7 +444,16 @@ TEST(ExperimentalParallelExecutor, ProfileReportsObservedParallelism)
   auto parallelWork = [&]() {
     const auto current = active.fetch_add(1) + 1;
     updateMax(current);
-    std::this_thread::sleep_for(20ms);
+    ready.fetch_add(1);
+    const auto deadline = std::chrono::steady_clock::now() + 2s;
+    while (ready.load() < 2) {
+      if (std::chrono::steady_clock::now() >= deadline) {
+        timedOutWaitingForParallelWork.store(true);
+        break;
+      }
+      std::this_thread::yield();
+    }
+    std::this_thread::sleep_for(5ms);
     active.fetch_sub(1);
   };
 
@@ -461,6 +472,7 @@ TEST(ExperimentalParallelExecutor, ProfileReportsObservedParallelism)
 
   ASSERT_EQ(profile.nodes.size(), 4u);
   EXPECT_GE(profile.workerCount, 2u);
+  EXPECT_FALSE(timedOutWaitingForParallelWork.load());
   EXPECT_GE(maxActive.load(), 2);
   EXPECT_GE(profile.maxParallelism, 2u);
   EXPECT_GT(profile.getAverageParallelism(), 1.0);
