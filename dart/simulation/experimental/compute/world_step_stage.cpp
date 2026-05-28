@@ -1216,6 +1216,127 @@ double minimumStaticGroundHeight(double groundTop)
 }
 
 //==============================================================================
+double staticGroundBarrierCcdClearanceTolerance()
+{
+  return 1e-12;
+}
+
+//==============================================================================
+std::optional<double> staticGroundClearanceAt(
+    const Eigen::Vector3d& position,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  ++stats.staticGroundBarrierCcdSampleChecks;
+  const auto groundTop = staticGroundTopAt(position, barriers);
+  if (!groundTop.has_value()) {
+    return std::nullopt;
+  }
+  return position.z() - minimumStaticGroundHeight(*groundTop);
+}
+
+//==============================================================================
+Eigen::Vector3d interpolatePoint(
+    const Eigen::Vector3d& start, const Eigen::Vector3d& end, double t)
+{
+  return start + t * (end - start);
+}
+
+//==============================================================================
+bool isStaticGroundBarrierCcdHit(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    double t,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  const auto clearance = staticGroundClearanceAt(
+      interpolatePoint(start, end, t), barriers, stats);
+  return clearance.has_value()
+         && *clearance < -staticGroundBarrierCcdClearanceTolerance();
+}
+
+//==============================================================================
+std::optional<double> verticalStaticGroundBarrierStepBound(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  const auto startClearance = staticGroundClearanceAt(start, barriers, stats);
+  const auto endClearance = staticGroundClearanceAt(end, barriers, stats);
+  const double tolerance = staticGroundBarrierCcdClearanceTolerance();
+  if (startClearance.has_value() && *startClearance < -tolerance) {
+    return 0.0;
+  }
+  if (!endClearance.has_value() || *endClearance >= -tolerance) {
+    return std::nullopt;
+  }
+  if (!startClearance.has_value()) {
+    return std::nullopt;
+  }
+
+  const double denominator = *startClearance - *endClearance;
+  if (!(denominator > 0.0) || !std::isfinite(denominator)) {
+    return std::nullopt;
+  }
+
+  return std::clamp(*startClearance / denominator, 0.0, 1.0);
+}
+
+//==============================================================================
+std::optional<double> sampledStaticGroundBarrierStepBound(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  if (isStaticGroundBarrierCcdHit(start, end, 0.0, barriers, stats)) {
+    return 0.0;
+  }
+
+  constexpr int samples = 32;
+  constexpr int bisectionIterations = 32;
+  double previousT = 0.0;
+  for (int sample = 1; sample <= samples; ++sample) {
+    const double t = static_cast<double>(sample) / static_cast<double>(samples);
+    if (!isStaticGroundBarrierCcdHit(start, end, t, barriers, stats)) {
+      previousT = t;
+      continue;
+    }
+
+    double lo = previousT;
+    double hi = t;
+    for (int iteration = 0; iteration < bisectionIterations; ++iteration) {
+      const double mid = 0.5 * (lo + hi);
+      if (isStaticGroundBarrierCcdHit(start, end, mid, barriers, stats)) {
+        hi = mid;
+      } else {
+        lo = mid;
+      }
+    }
+    return std::clamp(hi, 0.0, 1.0);
+  }
+
+  return std::nullopt;
+}
+
+//==============================================================================
+std::optional<double> staticGroundBarrierStepBound(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats)
+{
+  constexpr double planarTolerance = 1e-14;
+  if ((end.head<2>() - start.head<2>()).squaredNorm()
+      <= planarTolerance * planarTolerance) {
+    return verticalStaticGroundBarrierStepBound(start, end, barriers, stats);
+  }
+  return sampledStaticGroundBarrierStepBound(start, end, barriers, stats);
+}
+
+//==============================================================================
 double staticGroundBarrierActivationDistance()
 {
   return 2e-2;
@@ -1583,6 +1704,68 @@ bool applyInterBodySurfaceContactCcdLimit(
 }
 
 //==============================================================================
+bool applyStaticGroundBarrierCcdLimit(
+    const std::vector<Eigen::Vector3d>& current,
+    const std::vector<Eigen::Vector3d>& direction,
+    const std::vector<Eigen::Vector3d>& gradient,
+    const std::vector<std::uint8_t>& fixed,
+    const std::vector<StaticGroundBarrier>& barriers,
+    DeformableSolverStats& stats,
+    double& step,
+    std::vector<Eigen::Vector3d>& candidate,
+    double& directionalDerivative)
+{
+  if (barriers.empty()) {
+    return true;
+  }
+
+  bool hit = false;
+  double stepBound = 1.0;
+  for (std::size_t node = 0; node < current.size(); ++node) {
+    if (fixed[node] != 0u) {
+      continue;
+    }
+
+    ++stats.staticGroundBarrierCcdNodeChecks;
+    const auto nodeStepBound = staticGroundBarrierStepBound(
+        current[node], candidate[node], barriers, stats);
+    if (!nodeStepBound.has_value()) {
+      continue;
+    }
+
+    ++stats.staticGroundBarrierCcdHits;
+    if (*nodeStepBound <= 0.0) {
+      ++stats.staticGroundBarrierCcdZeroStepCount;
+      return false;
+    }
+    hit = true;
+    stepBound = std::min(stepBound, *nodeStepBound);
+  }
+
+  if (!hit) {
+    return true;
+  }
+
+  stepBound = std::clamp(stepBound, 0.0, 1.0);
+  if (stepBound <= 0.0) {
+    ++stats.staticGroundBarrierCcdZeroStepCount;
+    return false;
+  }
+
+  const double safeFraction = std::nextafter(stepBound, 0.0);
+  if (safeFraction <= 0.0 || !std::isfinite(safeFraction)) {
+    ++stats.staticGroundBarrierCcdZeroStepCount;
+    return false;
+  }
+
+  step *= safeFraction;
+  ++stats.staticGroundBarrierCcdLimitedSteps;
+  directionalDerivative = buildLineSearchCandidate(
+      current, direction, gradient, fixed, step, candidate);
+  return true;
+}
+
+//==============================================================================
 bool isBoundaryActiveAtStepStart(double time, double start, double end)
 {
   // Contact-free scene controls intentionally use step-start sampling. Later
@@ -1820,6 +2003,16 @@ void advanceDeformableBody(
                 scratch.gradient,
                 scratch.activeFixed,
                 contactScratch,
+                stats,
+                step,
+                scratch.candidate,
+                directionalDerivative)
+            && applyStaticGroundBarrierCcdLimit(
+                scratch.next,
+                scratch.direction,
+                scratch.gradient,
+                scratch.activeFixed,
+                barriers,
                 stats,
                 step,
                 scratch.candidate,
@@ -2249,6 +2442,7 @@ void DeformableDynamicsStage::execute(
   const auto barriers = collectStaticGroundBarriers(world);
   const auto timeStep = world.getTimeStep();
   const auto gravity = world.getGravity();
+  m_lastStats.staticGroundBarrierCount = barriers.size();
 
   for (const auto entity : view) {
     auto& state = view.get<comps::DeformableNodeState>(entity);

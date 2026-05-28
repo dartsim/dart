@@ -419,6 +419,64 @@ struct DeformableInterBodySurfaceContactWorld
 };
 
 //==============================================================================
+struct DeformableStaticGroundBarrierCcdWorld
+{
+  DeformableStaticGroundBarrierCcdWorld(int barrierCount, bool crossing)
+  {
+    barrierCount = std::max(barrierCount, 1);
+
+    sx::DeformableBodyOptions movingOptions;
+    movingOptions.edgeStiffness = 0.0;
+    movingOptions.damping = 0.0;
+
+    constexpr double spacing = 3.0;
+    for (int i = 0; i < barrierCount; ++i) {
+      const double offset = spacing * static_cast<double>(i);
+      movingOptions.positions.push_back(Eigen::Vector3d(offset, 0.0, 1.0));
+      movingOptions.velocities.push_back(
+          Eigen::Vector3d(0.0, 0.0, crossing ? -20.0 : 1.0));
+      movingOptions.masses.push_back(1.0);
+
+      sx::RigidBodyOptions groundOptions;
+      groundOptions.isStatic = true;
+      groundOptions.position = Eigen::Vector3d(offset, 0.0, -0.05);
+      auto ground
+          = world.addRigidBody("ground_" + std::to_string(i), groundOptions);
+      ground.setCollisionShape(
+          sx::CollisionShape::makeBox(Eigen::Vector3d(1.0, 1.0, 0.05)));
+      ground.setDeformableGroundBarrier(true);
+      groundBodies.push_back(ground);
+    }
+
+    initialPositions = movingOptions.positions;
+    initialVelocities = movingOptions.velocities;
+    movingBody = world.addDeformableBody("ground_ccd_nodes", movingOptions);
+    nodeCount = movingBody.getNodeCount();
+    this->barrierCount = static_cast<std::size_t>(barrierCount);
+
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    for (std::size_t i = 0; i < initialPositions.size(); ++i) {
+      movingBody.setPosition(i, initialPositions[i]);
+      movingBody.setVelocity(i, initialVelocities[i]);
+    }
+  }
+
+  sx::World world;
+  sx::DeformableBody movingBody;
+  std::vector<sx::RigidBody> groundBodies;
+  std::vector<Eigen::Vector3d> initialPositions;
+  std::vector<Eigen::Vector3d> initialVelocities;
+  std::size_t nodeCount = 0;
+  std::size_t barrierCount = 0;
+};
+
+//==============================================================================
 struct RigidOnlyWorld
 {
   explicit RigidOnlyWorld(int staticBodyCount)
@@ -666,6 +724,51 @@ void BM_DeformableInterBodySurfaceContactStage(benchmark::State& state)
 }
 
 //==============================================================================
+void BM_DeformableStaticGroundBarrierCcdStage(benchmark::State& state)
+{
+  const auto barrierCount = static_cast<int>(state.range(0));
+  const bool crossing = state.range(1) != 0;
+  DeformableStaticGroundBarrierCcdWorld fixture(barrierCount, crossing);
+  sx::compute::SequentialExecutor executor;
+  sx::compute::DeformableDynamicsStage deformableStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(deformableStage);
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    state.ResumeTiming();
+    fixture.world.step(executor, pipeline);
+    benchmark::DoNotOptimize(
+        fixture.movingBody.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  const auto& stats = deformableStage.getLastStats();
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["ground_barriers"]
+      = static_cast<double>(stats.staticGroundBarrierCount);
+  state.counters["crossing"] = crossing ? 1.0 : 0.0;
+  state.counters["ground_ccd_node_checks"]
+      = static_cast<double>(stats.staticGroundBarrierCcdNodeChecks);
+  state.counters["ground_ccd_sample_checks"]
+      = static_cast<double>(stats.staticGroundBarrierCcdSampleChecks);
+  state.counters["ground_ccd_hits"]
+      = static_cast<double>(stats.staticGroundBarrierCcdHits);
+  state.counters["ground_ccd_limited_steps"]
+      = static_cast<double>(stats.staticGroundBarrierCcdLimitedSteps);
+  state.counters["ground_ccd_zero_steps"]
+      = static_cast<double>(stats.staticGroundBarrierCcdZeroStepCount);
+  state.counters["line_search_trials"]
+      = static_cast<double>(stats.lineSearchTrials);
+  state.counters["line_search_rejects"]
+      = static_cast<double>(stats.rejectedLineSearchCandidates);
+  state.counters["accepted_steps"]
+      = static_cast<double>(stats.acceptedLineSearchSteps);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
 void BM_DeformableSceneLoad(benchmark::State& state)
 {
   const auto scenePath = benchmarkScenePath();
@@ -751,6 +854,12 @@ BENCHMARK(BM_DeformableSurfaceContactStage)
     ->Args({32, 1});
 
 BENCHMARK(BM_DeformableInterBodySurfaceContactStage)
+    ->Args({1, 0})
+    ->Args({1, 1})
+    ->Args({8, 1})
+    ->Args({32, 1});
+
+BENCHMARK(BM_DeformableStaticGroundBarrierCcdStage)
     ->Args({1, 0})
     ->Args({1, 1})
     ->Args({8, 1})
