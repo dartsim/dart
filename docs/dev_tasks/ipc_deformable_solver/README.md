@@ -63,9 +63,13 @@
         sweep-item scratch for static and motion-aware candidate builders,
         per-body world-stage reuse, stale-scratch regressions, and benchmark
         counters for reusable candidate plus reusable sweep buffers.
-  - [ ] Remaining Phase 2 work: inter-body and deformable-rigid contact
-        candidates, broader solver-wired CCD line-search coverage, and
-        allocation-free sweep-pair traversal for larger meshes.
+  - [x] Internal inter-body surface CCD line-search sub-slice: stage-start
+        deformable surface snapshots, cross-surface point-triangle and
+        edge-edge CCD limiting, order-regression tests, and inter-body
+        deformable-stage benchmark counters.
+  - [ ] Remaining Phase 2 work: deformable-rigid contact candidates, broader
+        solver-wired CCD line-search coverage, and allocation-free sweep-pair
+        traversal for larger meshes.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
@@ -86,9 +90,9 @@ DART-owned implementation.
 - No claim that imported `energy`, `timeIntegration`, contact, ground, or
   friction directives are honored beyond explicit warnings and contact-free
   replay scaffolding.
-- No FEM elasticity, material-driven stiffness, inter-body/deformable-rigid
-  CCD line search, or projected Newton solve in the current point-mass/spring
-  stepping path.
+- No FEM elasticity, material-driven stiffness, deformable-rigid CCD line
+  search, coupled inter-body solve, or projected Newton solve in the current
+  point-mass/spring stepping path.
 - No vendored or runtime dependency on `ipc-sim/IPC`.
 
 ## Key Decisions
@@ -107,13 +111,13 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Continue Phase 2 with inter-body and deformable-rigid contact candidates,
-   broader solver-wired CCD coverage, and allocation-free sweep-pair traversal
-   for larger meshes. The current primitive kernels, candidate sets, analytic
+1. Continue Phase 2 with deformable-rigid contact candidates, broader
+   solver-wired CCD coverage, and allocation-free sweep-pair traversal for
+   larger meshes. The current primitive kernels, candidate sets, analytic
    Hessians, clamped-log barrier kernels, tangent stencils, motion-aware swept
-   candidate culling, reusable candidate-output and sweep-item buffers, and
-   per-body surface-contact CCD limiter are internal scaffolding only and are
-   not yet full IPC contact.
+   candidate culling, reusable candidate-output and sweep-item buffers,
+   per-body surface-contact CCD limiter, and inter-body surface CCD limiter are
+   internal scaffolding only and are not yet full IPC contact.
 2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
    scenes: broader scene asset loading, BE/NM state, output diagnostics
    compatibility decisions, and more contact-free mesh replays. The
@@ -232,8 +236,17 @@ it covers reusable internal point/triangle/edge sweep-item arrays for static and
 motion-aware candidate builders, clearing stale scratch across empty and
 changing topologies, preserving scratch capacity, and per-body reuse in the
 same-body surface-contact line search. It does not yet remove the O(n^2)
-sweep-pair traversal itself, add inter-body/deformable-rigid contact, or claim
-full IPC contact behavior.
+sweep-pair traversal itself, add deformable-rigid contact, or claim full IPC
+contact behavior.
+
+For the inter-body surface-contact CCD line-search sub-slice, keep the
+verification language precise: it covers cross-surface point-triangle and
+edge-edge CCD limiting against stage-start deformable surface snapshots,
+including both point-triangle directions and insertion-order regression tests.
+Other deformables are treated as stationary obstacle surfaces for the current
+body's sequential line search. It does not yet cover a coupled multi-body
+Newton solve, barrier forces, deformable-rigid contact, friction, or full
+scene-level IPC contact behavior.
 
 Current primitive-distance local gates:
 
@@ -395,6 +408,30 @@ numbers rather than final performance claims. `perf stat` could not run because
 `perf_event_paranoid=4`; `/usr/bin/time -v` on the motion-aware 128-pair
 reusable-versus-scratch benchmark reported 0.12 s elapsed, 98% CPU, 4400 KB max
 RSS, 0 major page faults, and 380 minor page faults.
+
+Current inter-body surface-contact CCD local gates:
+
+```bash
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.InterBodySurfaceContactCcd*:DeformableBody.SurfaceContactCcd*'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableInterBodySurfaceContactStage'
+```
+
+The inter-body surface-contact CCD gate should prove that the current body's
+line search is limited by another deformable body's stage-start surface
+snapshot for moving-point versus stationary-triangle, moving-triangle versus
+stationary-point, and moving-edge versus stationary-edge cases. It should also
+prove insertion-order stability for the stationary-obstacle slice and keep
+same-body candidates out of the explicit inter-body stats.
+
+The latest local inter-body gate pass on 2026-05-27 passed the focused target
+build and 8 filtered `test_deformable_body` cases covering same-body and
+inter-body CCD. The inter-body benchmark smoke reported about 0.87 us for a
+one-obstacle no-contact stage, about 6.1 us for a one-obstacle crossing stage,
+about 0.11 ms for 8 crossing obstacles, and about 1.59 ms for 32 crossing
+obstacles. The crossing cases reported nonzero inter-body point-triangle
+candidates, CCD hits, and CCD-limited-step counters. CPU scaling was enabled,
+so treat these as local smoke numbers rather than final performance claims.
 
 Current CCD step-bound local gates:
 

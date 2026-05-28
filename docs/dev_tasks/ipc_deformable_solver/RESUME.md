@@ -84,6 +84,15 @@ scaffolding: sweep-pair traversal remains simple O(n^2) over sorted active
 AABBs, and inter-body/deformable-rigid contact, barrier assembly, projected
 Newton, and friction are not implemented yet.
 
+The inter-body surface-contact CCD sub-slice adds stage-start deformable
+surface snapshots and a cross-surface point-triangle/edge-edge CCD limiter
+inside `DeformableDynamicsStage`. It covers moving-point versus
+stationary-triangle, moving-triangle versus stationary-point, moving-edge
+versus stationary-edge, and insertion-order regressions. It is still
+scaffolding: other bodies are stationary obstacles for the current sequential
+line search, not a coupled multi-body Newton solve, and deformable-rigid
+contact, barrier forces, projected Newton, and friction are not implemented yet.
+
 The candidate-set sub-slice adds deterministic unique surface-edge extraction,
 internal point-triangle and edge-edge primitive candidate assembly,
 incident/adjacent filtering, exact activation-distance filtering through the
@@ -102,15 +111,15 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-sweep-scratch` - stacked on `feature/ipc-ccd-line-search`, adding
-reusable sweep-item scratch for IPC contact candidate builders and per-body
-surface-contact line-search reuse.
+`feature/ipc-interbody-surface-ccd` - stacked on
+`feature/ipc-sweep-scratch`, adding a conservative inter-body surface CCD
+line-search limiter.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with inter-body and
-deformable-rigid contact candidates, broader solver-wired CCD coverage, and
-allocation-free sweep-pair traversal for larger meshes.
+After this sub-slice lands, continue Phase 2 with deformable-rigid contact
+candidates, broader solver-wired CCD coverage, and allocation-free sweep-pair
+traversal for larger meshes.
 
 ## Context That Would Be Lost
 
@@ -158,6 +167,9 @@ cmake --build build/default/cpp/Release --target test_contact_candidate_set bm_i
 ./build/default/cpp/Release/bin/test_contact_candidate_set --gtest_filter='IpcContactCandidateSet.*Reusable*:IpcContactCandidateSet.*SweepScratch*'
 ./build/default/cpp/Release/bin/bm_ipc_candidate_set --benchmark_min_time=0.03s --benchmark_filter='BM_IpcCandidateSet(Reusable|Scratch)?Sweep'
 ./build/default/cpp/Release/bin/bm_ipc_motion_aware_candidate_set --benchmark_min_time=0.03s --benchmark_filter='BM_IpcMotionAwareCandidateSet(Reusable|Scratch)?Sweep'
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.InterBodySurfaceContactCcd*:DeformableBody.SurfaceContactCcd*'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableInterBodySurfaceContactStage'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
@@ -166,4 +178,5 @@ set/CCD base, `feature/ipc-barrier-kernels` for clamped barrier scaffolding,
 `feature/ipc-tangent-stencils` for tangent scaffolding,
 `feature/ipc-motion-aware-candidates` for swept candidate culling,
 `feature/ipc-candidate-buffer-reuse` for reusable candidate buffers, or
-`feature/ipc-ccd-line-search` for the immediate stacked base.
+`feature/ipc-ccd-line-search`, `feature/ipc-sweep-scratch`, or
+`feature/ipc-interbody-surface-ccd` for the immediate stacked bases.

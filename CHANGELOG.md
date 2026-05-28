@@ -797,6 +797,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
   - Added reusable internal sweep-item scratch for IPC static and motion-aware
     contact candidate builders and wired the deformable surface-contact line
     search to reuse it per body.
+  - Added internal inter-body deformable surface CCD line-search limiting with
+    stage-start surface snapshots, cross-body point-triangle and edge-edge
+    conservative CCD checks, focused regressions, and benchmark counters.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
