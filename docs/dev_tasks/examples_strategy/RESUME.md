@@ -36,6 +36,11 @@ Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
    `python -m examples.demos.golden._generate`, `(4)` appending the expected
    skeleton state in `goldenScenes()` in
    `tests/unit/gui/test_demos_golden_parity.cpp`.
+   Blocker for `rigid_chain`: the C++ scene calls
+   `dart::math::Random::uniform` to set the initial pose, so the world state is
+   non-deterministic across runs. Either replace the random init with a fixed
+   pose in `examples/demos/scenes/rigid_chain.cpp` (preferred — golden parity
+   relies on determinism) or skip it.
 3. **PLAN-012 + PLAN-101 work.** Cloud Colab smoke (PLAN-012) and editor scene
    loading (PLAN-101) unblock conditions 2 and 3 of the retire-later checklist.
 
