@@ -5494,12 +5494,13 @@ TEST(FilamentSceneExtraction, DartsimProjectMenuUsesBrowserAndNativeDialogSeam)
       std::string::npos);
   EXPECT_NE(
       editorSource.find("ui.menuItem(\"Open Project...\")"), std::string::npos);
+  EXPECT_NE(editorSource.find("openProjectFromMenu(app)"), std::string::npos);
   EXPECT_NE(
-      editorSource.find(
-          "requestProjectPathModal(app, ProjectFileDialogKind::Open)"),
+      editorSource.find("requestOpenProjectReplacementWithDialog("),
       std::string::npos);
-  EXPECT_EQ(
-      editorSource.find("openProjectFromNativeDialog("), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("requestProjectPathModalAfterDialogFailure("),
+      std::string::npos);
   EXPECT_NE(
       editorSource.find(
           "makeProjectFileDialogRequest(app, app.projectPathKind)"),
@@ -5524,9 +5525,13 @@ TEST(FilamentSceneExtraction, DartsimProjectMenuUsesBrowserAndNativeDialogSeam)
       editorSource.find("ui.menuItem(\"Save Project As...\")"),
       std::string::npos);
   EXPECT_NE(
-      editorSource.find(
-          "requestProjectPathModal(app, ProjectFileDialogKind::Save)"),
+      editorSource.find("ui.menuItem(\"Close Project\")"), std::string::npos);
+  EXPECT_NE(
+      editorSource.find("requestCloseProjectReplacement(app.engine)"),
       std::string::npos);
+  EXPECT_NE(
+      editorSource.find("saveProjectFromMenu(app, true)"), std::string::npos);
+  EXPECT_NE(editorSource.find("saveProjectWithDialog("), std::string::npos);
   EXPECT_EQ(
       editorSource.find("app.engine.loadProject(\"scene.dartsim\")"),
       std::string::npos);

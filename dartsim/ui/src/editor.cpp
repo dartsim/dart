@@ -65,7 +65,6 @@
 #include <span>
 #include <string>
 #include <string_view>
-#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -177,107 +176,6 @@ std::string filenameOrDefault(const std::string& path)
   }
   const std::string filename = std::filesystem::path(path).filename().string();
   return filename.empty() ? kDefaultProjectPath : filename;
-}
-
-std::filesystem::path currentDirectory()
-{
-  std::error_code error;
-  std::filesystem::path path = std::filesystem::current_path(error);
-  return error ? std::filesystem::path(".") : path;
-}
-
-std::filesystem::path absolutePath(std::filesystem::path path)
-{
-  std::error_code error;
-  std::filesystem::path absolute = std::filesystem::absolute(path, error);
-  return error ? std::move(path) : absolute.lexically_normal();
-}
-
-std::filesystem::path projectBrowserDirectoryFor(const std::string& path)
-{
-  std::filesystem::path candidate(path);
-  if (candidate.empty()) {
-    candidate = currentDirectory();
-  }
-
-  std::error_code error;
-  if (!std::filesystem::is_directory(candidate, error)) {
-    candidate = candidate.parent_path();
-  }
-  if (candidate.empty()) {
-    candidate = currentDirectory();
-  }
-
-  candidate = absolutePath(candidate);
-  if (!std::filesystem::is_directory(candidate, error)) {
-    return absolutePath(currentDirectory());
-  }
-  return candidate;
-}
-
-struct ProjectBrowserEntry
-{
-  std::filesystem::path path;
-  std::string label;
-  bool directory = false;
-};
-
-std::vector<ProjectBrowserEntry> projectBrowserEntries(
-    const std::filesystem::path& directory, std::string& status)
-{
-  status.clear();
-  std::vector<ProjectBrowserEntry> entries;
-
-  std::error_code error;
-  std::filesystem::directory_iterator it(directory, error);
-  if (error) {
-    status = "Cannot read folder: " + error.message();
-    return entries;
-  }
-
-  const std::filesystem::directory_iterator end;
-  for (; it != end; it.increment(error)) {
-    if (error) {
-      status = "Cannot read folder: " + error.message();
-      break;
-    }
-    const std::filesystem::directory_entry& entry = *it;
-    std::error_code entryError;
-    const bool directoryEntry = entry.is_directory(entryError);
-    if (entryError) {
-      continue;
-    }
-
-    const std::filesystem::path path = entry.path();
-    if (!directoryEntry && path.extension() != ".dartsim") {
-      continue;
-    }
-
-    ProjectBrowserEntry browserEntry;
-    browserEntry.path = path;
-    browserEntry.directory = directoryEntry;
-    browserEntry.label = directoryEntry ? "[dir] " : "";
-    browserEntry.label += path.filename().string();
-    entries.push_back(std::move(browserEntry));
-  }
-
-  std::sort(
-      entries.begin(),
-      entries.end(),
-      [](const ProjectBrowserEntry& lhs, const ProjectBrowserEntry& rhs) {
-        if (lhs.directory != rhs.directory) {
-          return lhs.directory;
-        }
-        return lhs.label < rhs.label;
-      });
-
-  constexpr std::size_t kMaxProjectBrowserEntries = 48;
-  if (entries.size() > kMaxProjectBrowserEntries) {
-    entries.resize(kMaxProjectBrowserEntries);
-    status = "Showing first 48 project entries";
-  }
-
-  return entries;
 }
 
 std::string projectPathOrDefault(const SimEngine& engine)
@@ -1171,6 +1069,10 @@ void buildMenuBar(
         }
       }
       ui.endMenu();
+    }
+    if (ui.menuItem("Close Project")) {
+      noteProjectReplacementAction(
+          app, requestCloseProjectReplacement(app.engine));
     }
     if (ui.menuItem("Save Project")) {
       saveProjectFromMenu(app, false);

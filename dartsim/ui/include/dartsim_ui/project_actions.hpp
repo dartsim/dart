@@ -34,6 +34,7 @@
 
 #include <dartsim_engine/sim_engine.hpp>
 
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <vector>
@@ -77,6 +78,13 @@ struct RecentProjectEntry
   bool current = false;
 };
 
+struct ProjectBrowserEntry
+{
+  std::filesystem::path path;
+  std::string label;
+  bool directory = false;
+};
+
 enum class DirtyProjectPolicy
 {
   Block,
@@ -87,6 +95,7 @@ enum class ProjectReplacementKind
 {
   NewProject,
   OpenProject,
+  CloseProject,
 };
 
 struct ProjectReplacementRequest
@@ -149,15 +158,31 @@ using ProjectFileDialog
 void rememberRecentProject(RecentProjectState& state, std::string path);
 [[nodiscard]] std::vector<RecentProjectEntry> buildRecentProjectEntries(
     const SimEngine& engine, const RecentProjectState& state);
+[[nodiscard]] std::filesystem::path projectBrowserDirectoryFor(
+    const std::string& path);
+[[nodiscard]] std::vector<ProjectBrowserEntry> projectBrowserEntries(
+    const std::filesystem::path& directory,
+    std::string& status,
+    std::size_t maxEntries = 48);
 
 /// Create a fresh project and return the status text for the UI log.
 ProjectActionResult newProject(
     SimEngine& engine,
     DirtyProjectPolicy dirtyPolicy = DirtyProjectPolicy::Block);
 
+/// Close the current project to an untitled empty workspace.
+ProjectActionResult closeProject(
+    SimEngine& engine,
+    DirtyProjectPolicy dirtyPolicy = DirtyProjectPolicy::Block);
+
 /// Create a fresh project, or describe the confirmation required to replace a
 /// dirty project.
 ProjectReplacementActionResult requestNewProjectReplacement(SimEngine& engine);
+
+/// Close the current project, or describe the confirmation required to close a
+/// dirty project.
+ProjectReplacementActionResult requestCloseProjectReplacement(
+    SimEngine& engine);
 
 /// Load a project path, or describe the confirmation required to replace a
 /// dirty project.

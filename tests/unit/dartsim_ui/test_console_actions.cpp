@@ -99,9 +99,11 @@ TEST(DartsimConsoleActions, TokenizesQuotedArgumentsAndReportsErrors)
 TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
 {
   SimEngine engine;
+  EXPECT_EQ(ui::consoleCommandHelpText(), ui::consoleCommandHelpText(false));
   const auto help = ui::applyConsoleCommand(engine, "help");
   EXPECT_TRUE(help.ok);
   EXPECT_NE(help.message.find("create <kind>"), std::string::npos);
+  EXPECT_NE(help.message.find("close [--discard]"), std::string::npos);
   EXPECT_NE(
       help.message.find("restart (stay in Simulation Mode)"),
       std::string::npos);
@@ -136,6 +138,8 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
   EXPECT_NE(status.message.find("Edit Mode"), std::string::npos);
   EXPECT_NE(status.message.find("selected 0"), std::string::npos);
   EXPECT_NE(status.message.find("clean"), std::string::npos);
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "status now").message, "Usage: status");
 
   EXPECT_EQ(ui::applyConsoleCommand(engine, "").message, "No command");
   EXPECT_EQ(
@@ -148,9 +152,13 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
       ui::applyConsoleCommand(engine, "inspect a b").message,
       "Usage: inspect [id|name|selected]");
   EXPECT_EQ(ui::applyConsoleCommand(engine, "list").message, "No objects");
+  EXPECT_EQ(ui::applyConsoleCommand(engine, "close").message, "Closed project");
   EXPECT_EQ(
       ui::applyConsoleCommand(engine, "list selected").message,
       "No selected objects");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "close now").message,
+      "Usage: close [--discard]");
   EXPECT_EQ(
       ui::applyConsoleCommand(engine, "list nope").message,
       "Usage: list [all|selected|visible|hidden]");
@@ -160,6 +168,16 @@ TEST(DartsimConsoleActions, HelpStatusAndInvalidCommandsAreStable)
   EXPECT_EQ(
       ui::applyConsoleCommand(engine, "watch").message,
       "Watch state unavailable");
+}
+
+TEST(DartsimConsoleActions, RenameJoinsUnquotedWords)
+{
+  SimEngine engine;
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create box").ok);
+  const auto renamed = ui::applyConsoleCommand(engine, "rename base link");
+  EXPECT_TRUE(renamed.ok);
+  EXPECT_EQ(renamed.message, "Renamed Body to base link");
+  ASSERT_NE(objectByName(engine, "base link"), nullptr);
 }
 
 TEST(DartsimConsoleActions, ListsObjectsThroughOutlinerRowsWithoutMutation)
@@ -354,6 +372,97 @@ TEST(DartsimConsoleActions, CreatesSelectsRenamesHidesShowsAndDeletesObjects)
   EXPECT_TRUE(engine.objects().model().contains(body));
 }
 
+TEST(DartsimConsoleActions, CreateCommandRecognizesPaletteAliases)
+{
+  SimEngine engine;
+  const std::vector<std::string> aliases{
+      "box",
+      "sphere",
+      "cylinder",
+      "capsule",
+      "plane",
+      "ground",
+      "multibody",
+      "root-link",
+      "fixed-link",
+      "revolute-link",
+      "prismatic-link",
+      "free-frame",
+      "fixed-frame",
+      "camera-sensor",
+      "range-sensor",
+      "contact-sensor",
+      "collision-box",
+      "box-collision",
+      "collision-sphere",
+      "sphere-collision",
+      "collision-cylinder",
+      "cylinder-collision",
+      "collision-capsule",
+      "capsule-collision",
+      "collision-plane",
+      "plane-collision",
+      "ground-box",
+      "two-link-arm"};
+
+  for (const std::string& alias : aliases) {
+    const auto created = ui::applyConsoleCommand(engine, "create " + alias);
+    EXPECT_NE(created.message.find("Unknown create kind"), 0u) << alias;
+    EXPECT_NE(created.message, "Scene locked") << alias;
+  }
+}
+
+TEST(DartsimConsoleActions, RejectsMalformedSceneAndSimulationCommands)
+{
+  SimEngine engine;
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "delete now").message, "Usage: delete");
+  EXPECT_EQ(ui::applyConsoleCommand(engine, "delete").message, "No selection");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "rename").message,
+      "Usage: rename <name>");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "rename body").message,
+      "No object selected");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "select missing").message,
+      "Object not found: missing");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "show selected extra").message,
+      "Usage: show [id|name|selected]");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "hide selected").message,
+      "No object selected");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "attach now").message, "Usage: attach");
+
+  EXPECT_EQ(ui::applyConsoleCommand(engine, "play now").message, "Usage: play");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "pause now").message, "Usage: pause");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "reset now").message, "Usage: reset");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "restart now").message, "Usage: restart");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "mode").message,
+      "Usage: mode <edit|simulation>");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "mode sim").message,
+      "Entered Simulation Mode");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "step one").message,
+      "Invalid step count");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "step 1001").message,
+      "Step count must be 1000 or less");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "record maybe").message,
+      "Usage: record <on|off>");
+  EXPECT_EQ(
+      ui::applyConsoleCommand(engine, "replay nope").message,
+      "Invalid replay frame");
+}
+
 TEST(DartsimConsoleActions, SupportsProjectLifecycleWithDirtyGuards)
 {
   SimEngine engine;
@@ -396,11 +505,21 @@ TEST(DartsimConsoleActions, SupportsProjectLifecycleWithDirtyGuards)
   EXPECT_FALSE(blockedOpen.ok);
   EXPECT_EQ(blockedOpen.message, "Unsaved changes");
 
+  const auto blockedClose = ui::applyConsoleCommand(engine, "close");
+  EXPECT_FALSE(blockedClose.ok);
+  EXPECT_EQ(blockedClose.message, "Unsaved changes");
+
   const auto opened = ui::applyConsoleCommand(
       engine, "open \"" + projectPath.string() + "\" --discard");
   EXPECT_TRUE(opened.ok);
   EXPECT_FALSE(engine.isProjectDirty());
   EXPECT_EQ(engine.objects().model().size(), 1u);
+
+  ASSERT_TRUE(ui::applyConsoleCommand(engine, "create capsule").ok);
+  const auto closed = ui::applyConsoleCommand(engine, "close --discard");
+  EXPECT_TRUE(closed.ok);
+  EXPECT_EQ(closed.message, "Closed project");
+  EXPECT_TRUE(engine.objects().model().empty());
 
   const auto discarded = ui::applyConsoleCommand(engine, "new --discard");
   EXPECT_TRUE(discarded.ok);
@@ -569,6 +688,27 @@ TEST(DartsimConsoleActions, DrivesWatchCommandsThroughSessionState)
             return series.object == box
                    && series.kind == ui::WatchValueKind::TranslationX;
           }));
+
+  const std::vector<std::string> signalAliases{
+      "watch signal sim-time enable",
+      "watch signal simulation-time enabled",
+      "watch signal frame-count on",
+      "watch signal translation-y on",
+      "watch signal mass on",
+      "watch signal joint-position on",
+      "watch signal field-of-view on",
+      "watch signal sensor-update-rate on",
+      "watch signal sensor-fov disabled",
+      "watch signal sensor-rate disable"};
+  for (const std::string& command : signalAliases) {
+    const auto aliasResult = ui::applyConsoleCommand(engine, watch, command);
+    EXPECT_EQ(
+        aliasResult.message.find("Unknown watch signal"), std::string::npos)
+        << command;
+    EXPECT_EQ(
+        aliasResult.message.find("Usage: watch signal"), std::string::npos)
+        << command;
+  }
 
   const auto disabledFrame
       = ui::applyConsoleCommand(engine, watch, "watch signal frame off");

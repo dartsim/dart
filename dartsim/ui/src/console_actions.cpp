@@ -507,6 +507,17 @@ ConsoleCommandResult applyProjectCommand(
     return result(applied.ok, applied.message);
   }
 
+  if (command == "close") {
+    if (tokens.size() > 2 || (tokens.size() == 2 && tokens[1] != "--discard")) {
+      return result(false, "Usage: close [--discard]");
+    }
+    const DirtyProjectPolicy policy = hasFlag(tokens, "--discard")
+                                          ? DirtyProjectPolicy::Discard
+                                          : DirtyProjectPolicy::Block;
+    const ProjectActionResult applied = closeProject(engine, policy);
+    return result(applied.ok, applied.message);
+  }
+
   if (command == "open") {
     if (tokens.size() < 2 || tokens.size() > 3
         || (tokens.size() == 3 && tokens[2] != "--discard")) {
@@ -960,8 +971,9 @@ std::string consoleCommandHelpText()
 
 std::string consoleCommandHelpText(bool watchCommandsAvailable)
 {
-  return "Commands: help, status, new [--discard], open <path> [--discard], "
-         "save [path], create <kind>, select <id|name>, select-add "
+  return "Commands: help, status, new [--discard], close [--discard], open "
+         "<path> [--discard], save [path], create <kind>, select <id|name>, "
+         "select-add "
          "<id|name>, deselect <id|name>, clear-selection, rename <name>, "
          "delete, inspect [id|name|selected], list "
          "[all|selected|visible|hidden], attach, detach, reparent-link, "
@@ -1031,7 +1043,8 @@ ConsoleCommandResult applyConsoleCommandWithWatchState(
   if (command == "list") {
     return applyListCommand(engine, view);
   }
-  if (command == "new" || command == "open" || command == "save") {
+  if (command == "new" || command == "close" || command == "open"
+      || command == "save") {
     ConsoleCommandResult applied = applyProjectCommand(engine, view);
     if (watch != nullptr && applied.ok
         && (command == "new" || command == "open")) {
