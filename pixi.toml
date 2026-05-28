@@ -1685,6 +1685,14 @@ test-all = { cmd = """
     python scripts/test_all.py
 """ }
 
+# ABI check (Linux only). Requires libabigail. Examples:
+# - Default (compare HEAD to latest matching major tag):
+#     pixi run abi-check
+# - Compare tags: pixi run abi-check --from v6.16.0 --to v6.16.2
+# - Compare refs: pixi run abi-check --from v6.16.0 --to HEAD
+# - Override via env: DART_ABI_FROM=v6.16.0 DART_ABI_TO=origin/main pixi run abi-check
+abi-check = { cmd = "python scripts/abi_check.py" }
+
 test-dartpy-install = { cmd = """
     python scripts/test_dartpy_install.py
 """ }
@@ -1780,6 +1788,7 @@ ctest \
 
 [target.linux-64.dependencies]
 lcov = ">=1.16,<2"
+libabigail = ">=2.9,<3"
 mesalib = ">=25.0.5,<26"
 libglvnd = ">=1.7.0,<2"
 libgl-devel = ">=1.7.0,<2"
