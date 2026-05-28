@@ -149,6 +149,20 @@ void defSkeleton(nb::module_& m)
           },
           nb::arg("positions"))
       .def("resetPositions", &Skeleton::resetPositions)
+      .def(
+          "getMassMatrix",
+          [](Skeleton& self) -> Eigen::MatrixXd { return self.getMassMatrix(); })
+      .def(
+          "getCoriolisAndGravityForces",
+          [](Skeleton& self) -> Eigen::VectorXd {
+            return self.getCoriolisAndGravityForces();
+          })
+      .def(
+          "setForces",
+          [](Skeleton& self, const nb::handle& forces) {
+            self.setForces(toVector(forces));
+          },
+          nb::arg("forces"))
       .def("enableSelfCollisionCheck", &Skeleton::enableSelfCollisionCheck)
       .def("disableSelfCollisionCheck", &Skeleton::disableSelfCollisionCheck)
       .def(

@@ -58,6 +58,18 @@ void defBodyNode(nb::module_& m)
           "getSpatialVelocity",
           [](const BodyNode& self) { return self.getSpatialVelocity(); })
       .def(
+          "getLinearVelocity",
+          [](const BodyNode& self) -> Eigen::Vector3d {
+            return self.getLinearVelocity();
+          })
+      .def(
+          "getLinearVelocity",
+          [](const BodyNode& self,
+             const Eigen::Vector3d& offset) -> Eigen::Vector3d {
+            return self.getLinearVelocity(offset);
+          },
+          nb::arg("offset"))
+      .def(
           "getBodyNodePtr",
           [](BodyNode& self) -> BodyNode* { return &self; },
           nb::rv_policy::reference_internal)

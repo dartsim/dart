@@ -14,6 +14,7 @@ from .scenes.cartpole_mpc import SCENE as CARTPOLE_MPC
 from .scenes.hello_world import SCENE as HELLO_WORLD
 from .scenes.kr5_arm import SCENE as KR5_ARM
 from .scenes.legged_balance import SCENE as LEGGED_BALANCE
+from .scenes.operational_space_control import SCENE as OSC
 from .scenes.rigid_chain import SCENE as RIGID_CHAIN
 from .scenes.sensor_descriptors import SCENE as SENSOR_DESCRIPTORS
 from .scenes.sx_articulated import SCENE as SX_ARTICULATED
@@ -34,6 +35,8 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         SX_CONTACT,
         # Robots
         KR5_ARM,
+        # Control & IK
+        OSC,
         # Control & Modern (PLAN-103 Phase 3)
         LEGGED_BALANCE,
         ARM_PUSH_BOX,

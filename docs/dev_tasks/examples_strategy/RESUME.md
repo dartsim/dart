@@ -32,17 +32,21 @@ Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
    `rigid_chain` scene replaced `dart::math::Random::uniform` with a
    deterministic damped-sine initial pose so cross-language state matches; the
    Python mirror loads `dart://sample/skel/chain.skel` via
-   `dartpy.utils.SkelParser.read_world` and applies the same sine. Remaining:
-   `operational_space_control` is blocked on missing dartpy bindings — the
-   controller needs `Skeleton::getMassMatrix`,
-   `Skeleton::getCoriolisAndGravityForces`, `Skeleton::setForces`, and
-   `BodyNode::getLinearVelocity(offset)`, none of which are exposed in
-   `python/dartpy/dynamics/{skeleton,body_node}.cpp`. Adding those bindings
-   (plus regenerating the `dartpy.utils` stubs that the import test enforces)
-   is the prerequisite; once they exist, follow the same four steps used for
-   `boxes`/`rigid_chain` to wire the Python mirror, regenerate the fixture,
-   and append the expected state to `goldenScenes()` in
-   `tests/unit/gui/test_demos_golden_parity.cpp`.
+   `dartpy.utils.SkelParser.read_world` and applies the same sine.
+   `operational_space_control` is wired in Python (the new
+   `examples/demos/scenes/operational_space_control.py` mirror exists, and the
+   prerequisite dartpy bindings — `Skeleton::getMassMatrix`,
+   `Skeleton::getCoriolisAndGravityForces`, `Skeleton::setForces`,
+   `BodyNode::getLinearVelocity(offset)` — were added in
+   `python/dartpy/dynamics/{skeleton,body_node}.cpp`). It is **not** in
+   `GOLDEN_SCENE_IDS` because the OSC controller diverges between languages: at
+   t=0 the Python controller's pos_err is exactly zero (numpy's matrix order
+   produces bit-exact cancellation of the (0.05, 0, 0) offset), so the +cg
+   term holds the arm motionless, while the C++ Eigen path picks up
+   floating-point noise that amplifies through the Kp=50 gain into ~1e-3
+   joint drift over 60 steps. Closing the parity requires either reordering
+   the Python operations to match Eigen bit-for-bit or relaxing the per-scene
+   tolerance for OSC; both are deliberate decisions, not mechanical follow-ups.
 3. **PLAN-012 + PLAN-101 work.** Cloud Colab smoke (PLAN-012) and editor scene
    loading (PLAN-101) unblock conditions 2 and 3 of the retire-later checklist.
 
