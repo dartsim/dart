@@ -805,8 +805,8 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     conservative CCD checks, focused regressions, and benchmark counters.
   - Added internal static-ground-barrier CCD line-search limiting for
     point-mass deformable nodes sweeping against explicitly opted-in static
-    rigid ground barriers, with finite-footprint regressions and benchmark
-    counters.
+    rigid ground barriers, with continuous finite-footprint regressions and
+    benchmark counters.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
