@@ -71,7 +71,7 @@ exists, shortens accepted trials before Armijo evaluation, and rejects zero-step
 initial separation-band hits. For volumetric bodies, the point-triangle CCD
 candidate path is filtered to boundary-surface nodes so interior tetrahedral
 nodes do not over-limit surface contact. It is still scaffolding:
-inter-body contact, deformable-rigid contact, barrier assembly, projected
+inter-body contact, deformable-rigid mesh contact, barrier assembly, projected
 Newton, and friction are not implemented yet.
 
 The sweep-scratch reuse sub-slice adds reusable internal point/triangle/edge
@@ -93,6 +93,17 @@ scaffolding: other bodies are stationary obstacles for the current sequential
 line search, not a coupled multi-body Newton solve, and deformable-rigid
 contact, barrier forces, projected Newton, and friction are not implemented yet.
 
+The static-ground-barrier CCD sub-slice adds a point-mass node sweep limiter
+inside `DeformableDynamicsStage` for existing explicitly opted-in static rigid
+ground barriers. It uses the current analytic box/sphere top-height barrier
+semantics, shortens line-search trials before objective evaluation, covers
+fast vertical sweeps, finite-footprint fly-through, sphere top surfaces,
+ordinary-static opt-out, and fixed-node skip regressions, and reports explicit
+experimental C++ stage stats. It is still scaffolding: it is not
+deformable-rigid mesh contact, rigid collision response, side-face collision,
+moving obstacle contact, IPC barrier-force assembly, projected Newton, or
+friction.
+
 The candidate-set sub-slice adds deterministic unique surface-edge extraction,
 internal point-triangle and edge-edge primitive candidate assembly,
 incident/adjacent filtering, exact activation-distance filtering through the
@@ -111,15 +122,15 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-interbody-surface-ccd` - stacked on
-`feature/ipc-sweep-scratch`, adding a conservative inter-body surface CCD
+`feature/ipc-ground-barrier-ccd` - stacked on
+`feature/ipc-interbody-surface-ccd`, adding a static ground-barrier CCD
 line-search limiter.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with deformable-rigid contact
-candidates, broader solver-wired CCD coverage, and allocation-free sweep-pair
-traversal for larger meshes.
+After this sub-slice lands, continue Phase 2 with deformable-rigid mesh
+contact candidates, broader solver-wired CCD coverage, and allocation-free
+sweep-pair traversal for larger meshes.
 
 ## Context That Would Be Lost
 
@@ -170,6 +181,9 @@ cmake --build build/default/cpp/Release --target test_contact_candidate_set bm_i
 cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
 ./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.InterBodySurfaceContactCcd*:DeformableBody.SurfaceContactCcd*'
 ./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableInterBodySurfaceContactStage'
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.StaticGroundBarrier*:DeformableBody.ActiveStaticGroundContactAllowsTangentialMotion:DeformableBody.ActiveDirichletNodesDoNotBlockGroundBarrierSolve:DeformableBody.StaticCollisionRequiresGroundBarrierOptIn'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableStaticGroundBarrierCcdStage'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
@@ -179,4 +193,5 @@ set/CCD base, `feature/ipc-barrier-kernels` for clamped barrier scaffolding,
 `feature/ipc-motion-aware-candidates` for swept candidate culling,
 `feature/ipc-candidate-buffer-reuse` for reusable candidate buffers, or
 `feature/ipc-ccd-line-search`, `feature/ipc-sweep-scratch`, or
-`feature/ipc-interbody-surface-ccd` for the immediate stacked bases.
+`feature/ipc-interbody-surface-ccd`, or `feature/ipc-ground-barrier-ccd` for
+the immediate stacked bases.

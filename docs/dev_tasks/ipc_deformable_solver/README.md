@@ -67,9 +67,12 @@
         deformable surface snapshots, cross-surface point-triangle and
         edge-edge CCD limiting, order-regression tests, and inter-body
         deformable-stage benchmark counters.
-  - [ ] Remaining Phase 2 work: deformable-rigid contact candidates, broader
-        solver-wired CCD line-search coverage, and allocation-free sweep-pair
-        traversal for larger meshes.
+  - [x] Internal static-ground-barrier CCD line-search sub-slice: analytic
+        point-mass node sweeps against explicitly opted-in static rigid ground
+        barriers, finite-footprint regressions, and benchmark counters.
+  - [ ] Remaining Phase 2 work: deformable-rigid mesh contact candidates,
+        broader solver-wired CCD line-search coverage, and allocation-free
+        sweep-pair traversal for larger meshes.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
@@ -90,8 +93,8 @@ DART-owned implementation.
 - No claim that imported `energy`, `timeIntegration`, contact, ground, or
   friction directives are honored beyond explicit warnings and contact-free
   replay scaffolding.
-- No FEM elasticity, material-driven stiffness, deformable-rigid CCD line
-  search, coupled inter-body solve, or projected Newton solve in the current
+- No FEM elasticity, material-driven stiffness, deformable-rigid mesh contact,
+  coupled inter-body solve, or projected Newton solve in the current
   point-mass/spring stepping path.
 - No vendored or runtime dependency on `ipc-sim/IPC`.
 
@@ -111,13 +114,14 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Continue Phase 2 with deformable-rigid contact candidates, broader
+1. Continue Phase 2 with deformable-rigid mesh contact candidates, broader
    solver-wired CCD coverage, and allocation-free sweep-pair traversal for
    larger meshes. The current primitive kernels, candidate sets, analytic
    Hessians, clamped-log barrier kernels, tangent stencils, motion-aware swept
    candidate culling, reusable candidate-output and sweep-item buffers,
-   per-body surface-contact CCD limiter, and inter-body surface CCD limiter are
-   internal scaffolding only and are not yet full IPC contact.
+   per-body surface-contact CCD limiter, inter-body surface CCD limiter, and
+   static-ground-barrier CCD limiter are internal scaffolding only and are not
+   yet full IPC contact.
 2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
    scenes: broader scene asset loading, BE/NM state, output diagnostics
    compatibility decisions, and more contact-free mesh replays. The
@@ -247,6 +251,19 @@ Other deformables are treated as stationary obstacle surfaces for the current
 body's sequential line search. It does not yet cover a coupled multi-body
 Newton solve, barrier forces, deformable-rigid contact, friction, or full
 scene-level IPC contact behavior.
+
+For the static-ground-barrier CCD line-search sub-slice, keep the verification
+language precise: it covers point-mass deformable nodes sweeping against
+existing explicitly opted-in static rigid ground barriers via the current
+analytic box/sphere top-height barrier semantics in `DeformableDynamicsStage`.
+It shortens line-search trials before objective evaluation and preserves the
+`setDeformableGroundBarrier(true)` opt-in boundary. It does not implement
+deformable-rigid contact, rigid collision response, side-face collision, moving
+obstacles, mesh/codimensional contact, IPC barrier-force assembly, projected
+Newton, adaptive barrier stiffness, friction, no-intersection/no-inversion
+guarantees, Python bindings, solver selection, or full IPC paper parity.
+Ordinary static collision shapes remain ignored unless opted in as deformable
+ground barriers.
 
 Current primitive-distance local gates:
 
@@ -432,6 +449,32 @@ about 0.11 ms for 8 crossing obstacles, and about 1.59 ms for 32 crossing
 obstacles. The crossing cases reported nonzero inter-body point-triangle
 candidates, CCD hits, and CCD-limited-step counters. CPU scaling was enabled,
 so treat these as local smoke numbers rather than final performance claims.
+
+Current static-ground-barrier CCD local gates:
+
+```bash
+cmake --build build/default/cpp/Release --target test_deformable_body bm_deformable_body
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.StaticGroundBarrier*:DeformableBody.ActiveStaticGroundContactAllowsTangentialMotion:DeformableBody.ActiveDirichletNodesDoNotBlockGroundBarrierSolve:DeformableBody.StaticCollisionRequiresGroundBarrierOptIn'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableStaticGroundBarrierCcdStage'
+```
+
+The static-ground-barrier CCD gate should prove that fast vertical node sweeps
+are limited against flat box and sphere top surfaces, that finite-footprint
+fly-through paths are limited before entering an opted-in barrier footprint,
+that ordinary untagged static collision shapes remain ignored, and that fixed
+nodes do not contribute to ground CCD stats.
+
+The latest local static-ground gate pass on 2026-05-27 passed the focused
+target build and 12 filtered `test_deformable_body` cases covering existing
+static-ground behavior, active tangential contact, boundary-condition contact,
+opt-in semantics, new box/sphere/fly-through CCD regressions, and fixed-node
+skipping. The benchmark smoke reported about 0.64 us for a one-barrier
+no-contact stage, about 23 us for one crossing barrier, about 0.50 ms for 8
+crossing barriers, and about 5.7 ms for 32 crossing barriers. The vertical
+fast path reported two clearance samples per node check; crossing cases
+reported nonzero ground CCD hits and limited-step counters. CPU scaling was
+enabled, so treat these as local smoke numbers rather than final performance
+claims.
 
 Current CCD step-bound local gates:
 

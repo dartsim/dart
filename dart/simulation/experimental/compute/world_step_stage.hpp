@@ -58,6 +58,12 @@ struct DeformableSolverStats
   std::size_t rejectedLineSearchCandidates = 0;
   std::size_t acceptedLineSearchSteps = 0;
   std::size_t initialProjectionCount = 0;
+  std::size_t staticGroundBarrierCount = 0;
+  std::size_t staticGroundBarrierCcdNodeChecks = 0;
+  std::size_t staticGroundBarrierCcdSampleChecks = 0;
+  std::size_t staticGroundBarrierCcdHits = 0;
+  std::size_t staticGroundBarrierCcdLimitedSteps = 0;
+  std::size_t staticGroundBarrierCcdZeroStepCount = 0;
   std::size_t surfaceContactCandidateBuilds = 0;
   std::size_t surfaceContactPointTriangleCandidates = 0;
   std::size_t surfaceContactEdgeEdgeCandidates = 0;
