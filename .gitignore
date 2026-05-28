@@ -99,6 +99,9 @@ gh-pages/
 # ImGui configuration
 imgui.ini
 
+# Dartsim editor project files
+*.dartsim
+
 # Gazebo physics plugins
 /libgz-physics-*.so
 *.dylib
