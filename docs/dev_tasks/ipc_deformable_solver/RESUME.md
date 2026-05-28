@@ -51,15 +51,15 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-distance-hessian-optimization` - stacked on
-`feature/ipc-deformable-contact-kernels`, adding feature-wise analytic
-distance Hessians for the next deformable contact slices.
+`feature/ipc-deformable-contact-kernels` - bundles the primitive-distance,
+analytic-Hessian, candidate-set, and CCD step-bound sub-slices for landing the
+IPC deformable contact kernels on `main`.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with tangent bases,
-motion-aware candidate culling, barrier/candidate integration,
-solver-owned contact buffers, and solver-wired CCD line search.
+After this branch lands, continue Phase 2 with tangent bases, motion-aware
+candidate culling, barrier/candidate integration, solver-owned contact buffers,
+and solver-wired CCD line search.
 
 ## Context That Would Be Lost
 
