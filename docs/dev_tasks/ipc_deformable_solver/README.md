@@ -74,9 +74,13 @@
         sweep traversal used by experimental surface candidate and CCD checks
         so the expired right-hand-side AABB prefix is no longer rescanned for
         every left-hand-side item.
-  - [ ] Remaining Phase 2 work: deformable-rigid mesh contact candidates,
-        broader solver-wired CCD line-search coverage, and stronger spatial
-        acceleration for larger meshes.
+  - [x] Internal static rigid surface CCD line-search sub-slice: explicitly
+        opted-in static box collision shapes triangulated into stationary
+        surface snapshots with physical box edges for deformable line-search
+        CCD limiting.
+  - [ ] Remaining Phase 2 work: non-box/deforming/moving rigid surface
+        coverage, broader solver-wired CCD line-search coverage, and stronger
+        spatial acceleration for larger meshes.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
@@ -97,8 +101,8 @@ DART-owned implementation.
 - No claim that imported `energy`, `timeIntegration`, contact, ground, or
   friction directives are honored beyond explicit warnings and contact-free
   replay scaffolding.
-- No FEM elasticity, material-driven stiffness, deformable-rigid mesh contact,
-  coupled inter-body solve, or projected Newton solve in the current
+- No FEM elasticity, material-driven stiffness, general deformable-rigid mesh
+  contact, coupled inter-body solve, or projected Newton solve in the current
   point-mass/spring stepping path.
 - No vendored or runtime dependency on `ipc-sim/IPC`.
 
@@ -122,14 +126,15 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Continue Phase 2 with deformable-rigid mesh contact candidates, broader
-   solver-wired CCD coverage, and stronger spatial acceleration for larger
-   meshes. The current primitive kernels, candidate sets, analytic
+1. Continue Phase 2 with non-box/deforming/moving rigid surface contact
+   candidates, broader solver-wired CCD coverage, and stronger spatial
+   acceleration for larger meshes. The current primitive kernels, candidate
+   sets, analytic
    Hessians, clamped-log barrier kernels, tangent stencils, motion-aware swept
    candidate culling, reusable candidate-output and sweep-item buffers,
-   per-body surface-contact CCD limiter, inter-body surface CCD limiter, and
-   static-ground-barrier CCD limiter are internal scaffolding only and are not
-   yet full IPC contact.
+   per-body surface-contact CCD limiter, inter-body surface CCD limiter,
+   static-ground-barrier CCD limiter, and static box surface CCD limiter are
+   internal scaffolding only and are not yet full IPC contact.
 2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
    scenes: broader scene asset loading, BE/NM state, output diagnostics
    compatibility decisions, and more contact-free mesh replays. The
@@ -283,6 +288,20 @@ Newton, adaptive barrier stiffness, friction, no-intersection/no-inversion
 guarantees, Python bindings, solver selection, or full IPC paper parity.
 Ordinary static collision shapes remain ignored unless opted in as deformable
 ground barriers.
+
+For the static rigid surface CCD line-search sub-slice, keep the verification
+language precise: it covers explicitly opted-in static box collision shapes
+collected at `DeformableDynamicsStage` start and triangulated into stationary
+world-space surface snapshots with 12 physical box edges. The deformable
+line-search limiter reuses the primitive point-triangle and edge-edge CCD
+reducers for point-only deformables, deformable surface edges, rotated boxes,
+and stage-start rigid transforms. It preserves the
+`setDeformableSurfaceCcdObstacle(true)` opt-in boundary and ignores ordinary
+static boxes, non-static bodies, and non-box collision shapes. It does not
+implement rigid collision response, moving obstacle contact, arbitrary mesh
+obstacles, barrier/contact forces, friction, projected Newton, adaptive
+barrier stiffness, no-intersection/no-inversion guarantees, solver selection,
+or full IPC paper parity.
 
 Current primitive-distance local gates:
 
@@ -528,6 +547,35 @@ vertical fast path reported two clearance samples per node check; crossing
 cases reported nonzero ground CCD hits and limited-step counters. CPU scaling
 was enabled, so treat these as local smoke numbers rather than final
 performance claims.
+
+Current static rigid surface CCD local gates:
+
+```bash
+cmake --build build/default/cpp/Release --target test_deformable_body test_serialization bm_deformable_body dartpy
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.StaticRigidSurfaceCcd*:DeformableBody.SurfaceFreeParticlesKeepFastPath:DeformableBody.StaticGroundBarrier*:DeformableBody.InterBodySurfaceContactCcd*'
+./build/default/cpp/Release/bin/test_serialization --gtest_filter='Serialization.PreservesRigidBodyCollisionComponents'
+PYTHONPATH=build/default/cpp/Release/python ./.pixi/envs/default/bin/python -m pytest python/tests/unit/simulation/test_experimental_world.py -k 'collision_query'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableStaticRigidSurfaceCcdStage'
+```
+
+The static rigid surface CCD gate should prove that point-only deformables do
+not stay on the no-contact fast path when an opted-in static box surface can be
+crossed, that ordinary untagged static boxes remain ignored, that physical box
+edges rather than triangulation diagonals drive edge-edge checks, that
+stage-start rigid transforms are used, and that rotated box sides report
+nonzero CCD hit and limited-step counters.
+
+The latest local static rigid surface gate pass on 2026-05-27 passed the
+focused target build, 20 filtered `test_deformable_body` cases covering
+existing ground/inter-body paths and the new point-only, opt-in, edge-edge,
+stage-start transform, and rotated-box regressions, the rigid-body collision
+serialization test, and the dartpy collision-query subset. The benchmark smoke
+reported about 0.38 us for no rigid-surface obstacles, 0.84 us for one
+non-crossing static box, 8.6 us for one crossing static box, 0.080 ms for 8
+crossing static boxes, and 0.47 ms for 32 crossing static boxes, with expected
+box/triangle/edge counts and nonzero point-triangle CCD hit and limited-step
+counters in crossing cases. CPU scaling was enabled, so treat these as local
+smoke numbers rather than final performance claims.
 
 Current CCD step-bound local gates:
 

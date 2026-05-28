@@ -812,6 +812,12 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     point-mass deformable nodes sweeping against explicitly opted-in static
     rigid ground barriers, with continuous finite-footprint regressions and
     benchmark counters.
+  - Added experimental static-box surface CCD obstacle opt-in
+    (`RigidBody::setDeformableSurfaceCcdObstacle`/`isDeformableSurfaceCcdObstacle`,
+    dartpy `is_deformable_surface_ccd_obstacle`) for the deformable
+    line-search limiter, with point-triangle and physical box-edge CCD
+    regressions and benchmark counters. This is a CCD limiter only, not rigid
+    contact response or IPC parity.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

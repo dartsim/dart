@@ -112,6 +112,18 @@ deformable-rigid mesh contact, rigid collision response, side-face collision,
 moving obstacle contact, IPC barrier-force assembly, projected Newton, or
 friction.
 
+The static rigid surface CCD sub-slice adds an explicit
+`RigidBody::setDeformableSurfaceCcdObstacle(true)` opt-in for static box
+collision shapes to become stationary surface obstacles for the deformable CCD
+line-search limiter. `DeformableDynamicsStage` collects stage-start box
+transforms into world-space 12-triangle snapshots with 12 physical box edges,
+then reuses the primitive point-triangle and edge-edge CCD reducer against
+point-only and surfaced deformables. The dartpy property
+`is_deformable_surface_ccd_obstacle` mirrors the C++ opt-in. It is still
+scaffolding: ordinary untagged boxes, non-static bodies, spheres, arbitrary
+meshes, moving obstacles, rigid collision response, barrier/contact forces,
+projected Newton, friction, and IPC parity are not implemented yet.
+
 The candidate-set sub-slice adds deterministic unique surface-edge extraction,
 internal point-triangle and edge-edge primitive candidate assembly,
 incident/adjacent filtering, exact activation-distance filtering through the
@@ -130,15 +142,15 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-sweep-pair-traversal` - stacked on
-`feature/ipc-ground-barrier-ccd`, optimizing internal cross-set sweep-pair
-traversal.
+`feature/ipc-rigid-surface-ccd` - stacked on
+`feature/ipc-sweep-pair-traversal`, adding an explicitly opted-in static box
+surface CCD limiter for deformable line searches.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with deformable-rigid mesh
-contact candidates, broader solver-wired CCD coverage, and stronger spatial
-acceleration for larger meshes.
+After this sub-slice lands, continue Phase 2 with non-box/deforming/moving
+rigid surface contact candidates, broader solver-wired CCD coverage, and
+stronger spatial acceleration for larger meshes.
 
 ## Context That Would Be Lost
 
@@ -197,6 +209,11 @@ cmake --build build/default/cpp/Release --target test_contact_candidate_set test
 ./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.SurfaceContactCcd*:DeformableBody.InterBodySurfaceContactCcd*:DeformableBody.SurfaceFreeParticlesKeepFastPath:DeformableBody.SurfaceContactScratchIsPerBody:DeformableBody.StageMetadataUsesDeformableDomain'
 ./build/default/cpp/Release/bin/bm_ipc_candidate_set --benchmark_min_time=0.03s --benchmark_filter='BM_IpcCandidateSet(CrossSweepExpiredPrefix|(Scratch|Reusable)?Sweep)'
 ./build/default/cpp/Release/bin/bm_ipc_motion_aware_candidate_set --benchmark_min_time=0.03s --benchmark_filter='BM_IpcMotionAwareCandidateSet(Scratch|Reusable)?Sweep'
+cmake --build build/default/cpp/Release --target test_deformable_body test_serialization bm_deformable_body dartpy
+./build/default/cpp/Release/bin/test_deformable_body --gtest_filter='DeformableBody.StaticRigidSurfaceCcd*:DeformableBody.SurfaceFreeParticlesKeepFastPath:DeformableBody.StaticGroundBarrier*:DeformableBody.InterBodySurfaceContactCcd*'
+./build/default/cpp/Release/bin/test_serialization --gtest_filter='Serialization.PreservesRigidBodyCollisionComponents'
+PYTHONPATH=build/default/cpp/Release/python ./.pixi/envs/default/bin/python -m pytest python/tests/unit/simulation/test_experimental_world.py -k 'collision_query'
+./build/default/cpp/Release/bin/bm_deformable_body --benchmark_min_time=0.03s --benchmark_filter='BM_DeformableStaticRigidSurfaceCcdStage'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
@@ -207,4 +224,5 @@ set/CCD base, `feature/ipc-barrier-kernels` for clamped barrier scaffolding,
 `feature/ipc-candidate-buffer-reuse` for reusable candidate buffers, or
 `feature/ipc-ccd-line-search`, `feature/ipc-sweep-scratch`, or
 `feature/ipc-interbody-surface-ccd`, `feature/ipc-ground-barrier-ccd`, or
-`feature/ipc-sweep-pair-traversal` for the immediate stacked bases.
+`feature/ipc-sweep-pair-traversal`, or `feature/ipc-rigid-surface-ccd` for the
+immediate stacked bases.
