@@ -177,6 +177,7 @@ Planning and Control._ Springer, 2009.
 | `macklin-xpbd-2016`    | Macklin et al., "XPBD: position-based simulation of compliant constrained dynamics" (2016) | integration | referenced  | medium   | evaluate  |
 | `gjk-1988`             | Gilbert, Johnson & Keerthi, GJK distance algorithm (1988)                                  | collision   | implemented | —        | adopt     |
 | `ipc-2020`             | Li et al., "Incremental Potential Contact" (2020)                                          | contact     | in-progress | high     | adopt     |
+| `chen-2024-vbd`        | Chen et al., "Vertex Block Descent" (SIGGRAPH 2024)                                        | integration | in-progress | high     | adopt     |
 
 ### `featherstone-1983`
 
@@ -308,6 +309,48 @@ Related public resources:
   repository should remain a reference/baseline rather than a runtime
   dependency.
 
+### `chen-2024-vbd`
+
+Anka He Chen, Ziheng Liu, Yin Yang, and Cem Yuksel. "Vertex Block Descent."
+_ACM Transactions on Graphics (SIGGRAPH 2024)_, 43(4), 2024. DOI:
+[10.1145/3658179](https://doi.org/10.1145/3658179).
+
+Related public resources:
+
+- Paper PDF: <https://graphics.cs.utah.edu/research/projects/vbd/vbd-siggraph2024.pdf>
+- Project page: <https://ankachan.github.io/Projects/VertexBlockDescent/index.html>
+- Talk: <https://www.youtube.com/watch?v=2HCgKfKy3W8>
+- Reference implementations: [AnkaChan/Gaia](https://github.com/AnkaChan/Gaia),
+  [AnkaChan/TinyVBD](https://github.com/AnkaChan/TinyVBD)
+
+```bib
+@article{Chen2024VBD,
+  author = {Chen, Anka He and Liu, Ziheng and Yang, Yin and Yuksel, Cem},
+  title = {Vertex Block Descent},
+  journal = {ACM Transactions on Graphics},
+  volume = {43},
+  number = {4},
+  year = {2024},
+  doi = {10.1145/3658179}
+}
+```
+
+- **Type:** paper · **Topic:** integration/deformable · **Status:** in-progress · **Priority:** high · **Verdict:** adopt
+- **Where used:** [`PLAN-082`](https://github.com/dartsim/dart/blob/main/docs/plans/082-vertex-block-descent-solver.md)
+  and its [VBD paper gap audit](https://github.com/dartsim/dart/blob/main/docs/dev_tasks/vbd_deformable_solver/vbd-paper-gap-audit.md).
+- **Notes:** Block coordinate descent on the variational implicit-Euler
+  objective for elastodynamics: each vertex is a 3-DOF block updated with one
+  regularized Newton step using a positive-definite local 3x3 Hessian, with
+  graph-colored parallel Gauss-Seidel sweeps and adaptive
+  initialization/Chebyshev acceleration. DART targets it as a second deformable
+  inner solver on the same experimental deformable ECS components and the same
+  variational objective the current gradient-descent stage already minimizes.
+  The DART implementation is experimental and DART-owned; DART does not vendor
+  or link `Gaia`/`TinyVBD` as a runtime dependency, and the public deformable
+  stage stays algorithm-neutral. It should not be described as full VBD parity,
+  FEM hyperelasticity, VBD contact/friction, GPU VBD, or reference/paper
+  performance parity until the relevant PLAN-082 phase lands with evidence.
+
 ## Model Formats & Standards
 
 | ID         | Reference                                | Topic        | Status     | Priority | Verdict   |
@@ -348,17 +391,19 @@ MuJoCo XML (MJCF). <https://mujoco.readthedocs.io/en/stable/XMLreference.html>
 Software references that informed the experimental API shape, terminology, and
 algorithm-family choices. These are baselines/comparisons, not dependencies.
 
-| ID            | Engine                               | Used for                                          | Status     | Verdict   |
-| ------------- | ------------------------------------ | ------------------------------------------------- | ---------- | --------- |
-| `drake`       | Drake (`MultibodyPlant`)             | terminology, constraints, stepping API            | referenced | baseline  |
-| `pinocchio`   | Pinocchio (Stack-of-Tasks)           | terminology (Spherical/FreeFlyer), dynamics algos | referenced | baseline  |
-| `rbdl`        | RBDL                                 | terminology (FloatingBase/Helical), ABA/RNEA/CRBA | referenced | baseline  |
-| `mujoco`      | MuJoCo / MJX                         | stepping, equality constraints, state vocabulary  | referenced | baseline  |
-| `physx-isaac` | NVIDIA PhysX / Isaac Sim / Isaac Lab | articulation concept, closed-loop rigging         | referenced | reference |
-| `newton`      | NVIDIA Newton (Warp)                 | model/solver split, GPU direction                 | referenced | reference |
-| `genesis`     | Genesis                              | entity/morph model, batched sim                   | referenced | reference |
-| `bullet`      | Bullet / PyBullet                    | facade-over-engine pattern, `btMultiBody`         | referenced | reference |
-| `gazebo`      | Gazebo / gz-physics / SDFormat       | downstream integration, kinematic loops           | referenced | baseline  |
+| ID            | Engine                               | Used for                                               | Status     | Verdict   |
+| ------------- | ------------------------------------ | ------------------------------------------------------ | ---------- | --------- |
+| `drake`       | Drake (`MultibodyPlant`)             | terminology, constraints, stepping API                 | referenced | baseline  |
+| `pinocchio`   | Pinocchio (Stack-of-Tasks)           | terminology (Spherical/FreeFlyer), dynamics algos      | referenced | baseline  |
+| `rbdl`        | RBDL                                 | terminology (FloatingBase/Helical), ABA/RNEA/CRBA      | referenced | baseline  |
+| `mujoco`      | MuJoCo / MJX                         | stepping, equality constraints, state vocabulary       | referenced | baseline  |
+| `physx-isaac` | NVIDIA PhysX / Isaac Sim / Isaac Lab | articulation concept, closed-loop rigging              | referenced | reference |
+| `newton`      | NVIDIA Newton (Warp)                 | model/solver split, GPU direction                      | referenced | reference |
+| `genesis`     | Genesis                              | entity/morph model, batched sim                        | referenced | reference |
+| `bullet`      | Bullet / PyBullet                    | facade-over-engine pattern, `btMultiBody`              | referenced | reference |
+| `gazebo`      | Gazebo / gz-physics / SDFormat       | downstream integration, kinematic loops                | referenced | baseline  |
+| `gaia`        | Gaia (VBD research framework)        | VBD correctness/performance baseline (`chen-2024-vbd`) | referenced | baseline  |
+| `tinyvbd`     | TinyVBD (minimal VBD reference)      | VBD algorithm reference (`chen-2024-vbd`)              | referenced | baseline  |
 
 ### Notes on engine verdicts
 
@@ -370,6 +415,10 @@ algorithm-family choices. These are baselines/comparisons, not dependencies.
   API patterns and the GPU/batched roadmap, but their engine-specific names
   (e.g., "Articulation", Unity-style "Rigidbody") are deliberately _not_ adopted
   where they diverge from the robotics literature.
+- **`gaia`, `tinyvbd` — baseline:** the reference implementations of Vertex
+  Block Descent (`chen-2024-vbd`). DART's PLAN-082 VBD solver is compared
+  against them for correctness and performance on matched scenes, but DART
+  reimplements VBD independently and does not vendor or link them.
 
 Design-doc links for these comparisons live in
 [`simulation_experimental_cpp_api.md`](https://github.com/dartsim/dart/blob/main/docs/design/simulation_experimental_cpp_api.md)
