@@ -28,12 +28,14 @@ Phase 5 is "not now" by design. Three follow-ups close the retire-later gates:
 1. **Grow Python breadth toward C++ coverage.** Add Python scene modules for
    the categories the 11-scene Python runner currently lacks; targets are
    listed in PLAN-103's "Resolved Decisions" section.
-2. **Extend the golden set.** Add `rigid_chain`, `boxes` (Python ↔ C++
-   parity), `operational_space_control` mirrors and regenerate fixtures via
-   `python -m examples.demos.golden._generate`. The shared-fixture mechanism is
-   in place — adding a scene is `(1)` write its Python mirror, `(2)` add it to
-   `GOLDEN_SCENE_IDS` in `helpers.py`, `(3)` regenerate, `(4)` update the
-   hardcoded values in `tests/unit/gui/test_demos_golden_parity.cpp`.
+2. **Extend the golden set.** `boxes` is now wired (Python mirror already
+   existed; fixture regenerated; C++ test is now table-driven over multiple
+   scenes). Remaining: add `rigid_chain` and `operational_space_control`
+   mirrors by `(1)` writing the Python scene, `(2)` adding the id to
+   `GOLDEN_SCENE_IDS` in `helpers.py`, `(3)` regenerating via
+   `python -m examples.demos.golden._generate`, `(4)` appending the expected
+   skeleton state in `goldenScenes()` in
+   `tests/unit/gui/test_demos_golden_parity.cpp`.
 3. **PLAN-012 + PLAN-101 work.** Cloud Colab smoke (PLAN-012) and editor scene
    loading (PLAN-101) unblock conditions 2 and 3 of the retire-later checklist.
 

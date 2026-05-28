@@ -16,7 +16,7 @@ from typing import Any
 
 # Golden scenes mirror their C++ counterparts and ship a fixture in this dir.
 # Add a scene here once both languages produce identical state for it.
-GOLDEN_SCENE_IDS: tuple[str, ...] = ("hello_world",)
+GOLDEN_SCENE_IDS: tuple[str, ...] = ("hello_world", "boxes")
 
 # Deterministic step count used by all golden fixtures. The DART World default
 # time step (1e-3 s) is the same in C++ and Python, so identical scene
