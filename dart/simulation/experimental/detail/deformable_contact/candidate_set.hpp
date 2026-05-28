@@ -43,6 +43,7 @@
 #include <tuple>
 #include <vector>
 
+#include <cassert>
 #include <cstddef>
 
 namespace dart::simulation::experimental::detail::deformable_contact {
@@ -67,6 +68,9 @@ struct PointTriangleCandidate
 {
   std::size_t point = 0;
   std::size_t triangle = 0;
+  /// Static builders store the current-pose squared distance. Motion-aware
+  /// builders store the minimum endpoint squared distance as representative
+  /// metadata; inclusion comes from swept-AABB overlap, not endpoint distance.
   double squaredDistance = 0.0;
 
   [[nodiscard]] friend bool operator<(
@@ -81,6 +85,9 @@ struct EdgeEdgeCandidate
 {
   std::size_t edgeA = 0;
   std::size_t edgeB = 0;
+  /// Static builders store the current-pose squared distance. Motion-aware
+  /// builders store the minimum endpoint squared distance as representative
+  /// metadata; inclusion comes from swept-AABB overlap, not endpoint distance.
   double squaredDistance = 0.0;
 
   [[nodiscard]] friend bool operator<(
@@ -186,12 +193,40 @@ inline CandidateAabb makePointAabb(
 }
 
 //==============================================================================
+inline CandidateAabb makeSweptPointAabb(
+    const Eigen::Vector3d& start,
+    const Eigen::Vector3d& end,
+    const double margin)
+{
+  CandidateAabb aabb;
+  aabb.min = start.cwiseMin(end);
+  aabb.max = start.cwiseMax(end);
+  aabb.expand(margin);
+  return aabb;
+}
+
+//==============================================================================
 inline CandidateAabb makeSegmentAabb(
     const Eigen::Vector3d& a, const Eigen::Vector3d& b, const double margin)
 {
   CandidateAabb aabb;
   aabb.min = a.cwiseMin(b);
   aabb.max = a.cwiseMax(b);
+  aabb.expand(margin);
+  return aabb;
+}
+
+//==============================================================================
+inline CandidateAabb makeSweptSegmentAabb(
+    const Eigen::Vector3d& aStart,
+    const Eigen::Vector3d& aEnd,
+    const Eigen::Vector3d& bStart,
+    const Eigen::Vector3d& bEnd,
+    const double margin)
+{
+  CandidateAabb aabb;
+  aabb.min = aStart.cwiseMin(aEnd).cwiseMin(bStart).cwiseMin(bEnd);
+  aabb.max = aStart.cwiseMax(aEnd).cwiseMax(bStart).cwiseMax(bEnd);
   aabb.expand(margin);
   return aabb;
 }
@@ -206,6 +241,31 @@ inline CandidateAabb makeTriangleAabb(
   CandidateAabb aabb;
   aabb.min = a.cwiseMin(b).cwiseMin(c);
   aabb.max = a.cwiseMax(b).cwiseMax(c);
+  aabb.expand(margin);
+  return aabb;
+}
+
+//==============================================================================
+inline CandidateAabb makeSweptTriangleAabb(
+    const Eigen::Vector3d& aStart,
+    const Eigen::Vector3d& aEnd,
+    const Eigen::Vector3d& bStart,
+    const Eigen::Vector3d& bEnd,
+    const Eigen::Vector3d& cStart,
+    const Eigen::Vector3d& cEnd,
+    const double margin)
+{
+  CandidateAabb aabb;
+  aabb.min = aStart.cwiseMin(aEnd)
+                 .cwiseMin(bStart)
+                 .cwiseMin(bEnd)
+                 .cwiseMin(cStart)
+                 .cwiseMin(cEnd);
+  aabb.max = aStart.cwiseMax(aEnd)
+                 .cwiseMax(bStart)
+                 .cwiseMax(bEnd)
+                 .cwiseMax(cStart)
+                 .cwiseMax(cEnd);
   aabb.expand(margin);
   return aabb;
 }
@@ -344,6 +404,55 @@ inline void maybeAddPointTriangleCandidate(
 }
 
 //==============================================================================
+inline double endpointPointTriangleSquaredDistance(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const std::size_t point,
+    const std::size_t triangleIndex)
+{
+  const auto& triangle = triangles[triangleIndex];
+  const double startDistance = pointTriangleSquaredDistance(
+                                   positionsStart[point],
+                                   positionsStart[triangle.nodeA],
+                                   positionsStart[triangle.nodeB],
+                                   positionsStart[triangle.nodeC])
+                                   .squaredDistance;
+  const double endDistance = pointTriangleSquaredDistance(
+                                 positionsEnd[point],
+                                 positionsEnd[triangle.nodeA],
+                                 positionsEnd[triangle.nodeB],
+                                 positionsEnd[triangle.nodeC])
+                                 .squaredDistance;
+  return std::min(startDistance, endDistance);
+}
+
+//==============================================================================
+inline void maybeAddMotionAwarePointTriangleCandidate(
+    ContactCandidateSet& candidates,
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const std::size_t point,
+    const std::size_t triangleIndex,
+    const ContactCandidateOptions& options)
+{
+  const auto& triangle = triangles[triangleIndex];
+  if (options.excludeIncidentPointTriangles
+      && pointIsIncidentToTriangle(point, triangle)) {
+    ++candidates.stats.incidentPointTriangleRejectCount;
+    return;
+  }
+
+  const double squaredDistance = endpointPointTriangleSquaredDistance(
+      positionsStart, positionsEnd, triangles, point, triangleIndex);
+  candidates.stats.exactDistanceCheckCount += 2;
+
+  candidates.pointTriangleCandidates.push_back(
+      PointTriangleCandidate{point, triangleIndex, squaredDistance});
+}
+
+//==============================================================================
 inline void maybeAddEdgeEdgeCandidate(
     ContactCandidateSet& candidates,
     std::span<const Eigen::Vector3d> positions,
@@ -375,6 +484,59 @@ inline void maybeAddEdgeEdgeCandidate(
       return;
     }
   }
+
+  candidates.edgeEdgeCandidates.push_back(
+      EdgeEdgeCandidate{edgeA, edgeB, squaredDistance});
+}
+
+//==============================================================================
+inline double endpointEdgeEdgeSquaredDistance(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const SurfaceEdge> surfaceEdges,
+    const std::size_t edgeA,
+    const std::size_t edgeB)
+{
+  const auto& a = surfaceEdges[edgeA];
+  const auto& b = surfaceEdges[edgeB];
+  const double startDistance = edgeEdgeSquaredDistance(
+                                   positionsStart[a.nodeA],
+                                   positionsStart[a.nodeB],
+                                   positionsStart[b.nodeA],
+                                   positionsStart[b.nodeB])
+                                   .squaredDistance;
+  const double endDistance = edgeEdgeSquaredDistance(
+                                 positionsEnd[a.nodeA],
+                                 positionsEnd[a.nodeB],
+                                 positionsEnd[b.nodeA],
+                                 positionsEnd[b.nodeB])
+                                 .squaredDistance;
+  return std::min(startDistance, endDistance);
+}
+
+//==============================================================================
+inline void maybeAddMotionAwareEdgeEdgeCandidate(
+    ContactCandidateSet& candidates,
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::size_t edgeA,
+    std::size_t edgeB,
+    const ContactCandidateOptions& options)
+{
+  if (edgeB < edgeA) {
+    std::swap(edgeA, edgeB);
+  }
+
+  const auto& a = candidates.surfaceEdges[edgeA];
+  const auto& b = candidates.surfaceEdges[edgeB];
+  if (options.excludeAdjacentEdges && edgesAreAdjacent(a, b)) {
+    ++candidates.stats.adjacentEdgeEdgeRejectCount;
+    return;
+  }
+
+  const double squaredDistance = endpointEdgeEdgeSquaredDistance(
+      positionsStart, positionsEnd, candidates.surfaceEdges, edgeA, edgeB);
+  candidates.stats.exactDistanceCheckCount += 2;
 
   candidates.edgeEdgeCandidates.push_back(
       EdgeEdgeCandidate{edgeA, edgeB, squaredDistance});
@@ -504,6 +666,184 @@ inline ContactCandidateSet buildContactCandidatesSweep(
         ++candidates.stats.broadPhaseOverlapCount;
         detail::maybeAddEdgeEdgeCandidate(
             candidates, positions, edgeA, edgeB, options);
+      });
+
+  detail::finishCandidateSet(candidates);
+  return candidates;
+}
+
+//==============================================================================
+/// Builds a conservative motion-aware contact candidate set by sweeping
+/// primitive AABBs over the start and end positions.
+///
+/// Unlike the static builders, this function does not reject candidates whose
+/// endpoint distances exceed `activationDistance`; a fast primitive can be far
+/// at both endpoints while crossing another primitive during the step. The
+/// candidate `squaredDistance` fields therefore store the minimum endpoint
+/// squared distance only as representative metadata. Conservative CCD remains
+/// the downstream safety gate.
+inline ContactCandidateSet buildMotionAwareContactCandidatesBruteForce(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options)
+{
+  assert(positionsStart.size() == positionsEnd.size());
+
+  ContactCandidateSet candidates;
+  candidates.surfaceEdges = makeUniqueSurfaceEdges(triangles);
+  candidates.stats.pointCount = positionsStart.size();
+  candidates.stats.triangleCount = triangles.size();
+  candidates.stats.edgeCount = candidates.surfaceEdges.size();
+
+  const double margin = 0.5 * detail::nonnegativeActivationDistance(options);
+
+  for (std::size_t point = 0; point < positionsStart.size(); ++point) {
+    const auto pointAabb = detail::makeSweptPointAabb(
+        positionsStart[point], positionsEnd[point], margin);
+    for (std::size_t triangle = 0; triangle < triangles.size(); ++triangle) {
+      const auto& t = triangles[triangle];
+      const auto triangleAabb = detail::makeSweptTriangleAabb(
+          positionsStart[t.nodeA],
+          positionsEnd[t.nodeA],
+          positionsStart[t.nodeB],
+          positionsEnd[t.nodeB],
+          positionsStart[t.nodeC],
+          positionsEnd[t.nodeC],
+          margin);
+      if (!pointAabb.overlaps(triangleAabb)) {
+        continue;
+      }
+
+      ++candidates.stats.broadPhaseOverlapCount;
+      detail::maybeAddMotionAwarePointTriangleCandidate(
+          candidates,
+          positionsStart,
+          positionsEnd,
+          triangles,
+          point,
+          triangle,
+          options);
+    }
+  }
+
+  for (std::size_t edgeA = 0; edgeA < candidates.surfaceEdges.size(); ++edgeA) {
+    const auto& a = candidates.surfaceEdges[edgeA];
+    const auto edgeAabb = detail::makeSweptSegmentAabb(
+        positionsStart[a.nodeA],
+        positionsEnd[a.nodeA],
+        positionsStart[a.nodeB],
+        positionsEnd[a.nodeB],
+        margin);
+    for (std::size_t edgeB = edgeA + 1; edgeB < candidates.surfaceEdges.size();
+         ++edgeB) {
+      const auto& b = candidates.surfaceEdges[edgeB];
+      const auto edgeBAabb = detail::makeSweptSegmentAabb(
+          positionsStart[b.nodeA],
+          positionsEnd[b.nodeA],
+          positionsStart[b.nodeB],
+          positionsEnd[b.nodeB],
+          margin);
+      if (!edgeAabb.overlaps(edgeBAabb)) {
+        continue;
+      }
+
+      ++candidates.stats.broadPhaseOverlapCount;
+      detail::maybeAddMotionAwareEdgeEdgeCandidate(
+          candidates, positionsStart, positionsEnd, edgeA, edgeB, options);
+    }
+  }
+
+  detail::finishCandidateSet(candidates);
+  return candidates;
+}
+
+//==============================================================================
+/// Builds a conservative motion-aware contact candidate set with swept-AABB
+/// broad-phase pruning over the start and end positions.
+///
+/// The `exactDistanceFilter` flag is intentionally not used for endpoint
+/// rejection here. The builder records endpoint distances as metadata only so
+/// fast crossings are not culled before the conservative CCD line-search gate.
+inline ContactCandidateSet buildMotionAwareContactCandidatesSweep(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options)
+{
+  assert(positionsStart.size() == positionsEnd.size());
+
+  ContactCandidateSet candidates;
+  candidates.surfaceEdges = makeUniqueSurfaceEdges(triangles);
+  candidates.stats.pointCount = positionsStart.size();
+  candidates.stats.triangleCount = triangles.size();
+  candidates.stats.edgeCount = candidates.surfaceEdges.size();
+
+  const double margin = 0.5 * detail::nonnegativeActivationDistance(options);
+
+  std::vector<detail::SweepItem> pointItems;
+  pointItems.reserve(positionsStart.size());
+  for (std::size_t point = 0; point < positionsStart.size(); ++point) {
+    pointItems.push_back(
+        detail::SweepItem{
+            point,
+            detail::makeSweptPointAabb(
+                positionsStart[point], positionsEnd[point], margin)});
+  }
+
+  std::vector<detail::SweepItem> triangleItems;
+  triangleItems.reserve(triangles.size());
+  for (std::size_t triangle = 0; triangle < triangles.size(); ++triangle) {
+    const auto& t = triangles[triangle];
+    triangleItems.push_back(
+        detail::SweepItem{
+            triangle,
+            detail::makeSweptTriangleAabb(
+                positionsStart[t.nodeA],
+                positionsEnd[t.nodeA],
+                positionsStart[t.nodeB],
+                positionsEnd[t.nodeB],
+                positionsStart[t.nodeC],
+                positionsEnd[t.nodeC],
+                margin)});
+  }
+
+  detail::visitSweepPairs(
+      std::move(pointItems),
+      std::move(triangleItems),
+      [&](const std::size_t point, const std::size_t triangle) {
+        ++candidates.stats.broadPhaseOverlapCount;
+        detail::maybeAddMotionAwarePointTriangleCandidate(
+            candidates,
+            positionsStart,
+            positionsEnd,
+            triangles,
+            point,
+            triangle,
+            options);
+      });
+
+  std::vector<detail::SweepItem> edgeItems;
+  edgeItems.reserve(candidates.surfaceEdges.size());
+  for (std::size_t edge = 0; edge < candidates.surfaceEdges.size(); ++edge) {
+    const auto& e = candidates.surfaceEdges[edge];
+    edgeItems.push_back(
+        detail::SweepItem{
+            edge,
+            detail::makeSweptSegmentAabb(
+                positionsStart[e.nodeA],
+                positionsEnd[e.nodeA],
+                positionsStart[e.nodeB],
+                positionsEnd[e.nodeB],
+                margin)});
+  }
+
+  detail::visitSelfSweepPairs(
+      std::move(edgeItems),
+      [&](const std::size_t edgeA, const std::size_t edgeB) {
+        ++candidates.stats.broadPhaseOverlapCount;
+        detail::maybeAddMotionAwareEdgeEdgeCandidate(
+            candidates, positionsStart, positionsEnd, edgeA, edgeB, options);
       });
 
   detail::finishCandidateSet(candidates);

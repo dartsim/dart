@@ -47,9 +47,12 @@
         edge-edge, point-edge, and point-point tangent bases, closest-point
         parameters, tangent projection matrices, tangent metric matrices,
         regression tests, and `bm_ipc_tangent_stencil`.
-  - [ ] Remaining Phase 2 work: motion-aware candidate culling,
-        candidate-buffer integration, solver-owned contact buffers, and
-        solver-wired CCD line search.
+  - [x] Internal motion-aware candidate-culling sub-slice: conservative
+        start/end swept-AABB point-triangle and edge-edge candidate assembly,
+        endpoint-distance metadata, static-miss crossing regressions, and
+        `bm_ipc_motion_aware_candidate_set`.
+  - [ ] Remaining Phase 2 work: candidate-buffer integration, solver-owned
+        contact buffers, and solver-wired CCD line search.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
@@ -90,11 +93,11 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Continue Phase 2 with motion-aware candidate culling, candidate-buffer
-   integration, solver-owned contact buffers, and solver-wired CCD line search.
-   The current primitive kernels, candidate sets, analytic Hessians,
-   clamped-log barrier kernels, tangent stencils, and CCD step-bound helpers are
-   internal scaffolding only and are not yet wired into `World::step()`.
+1. Continue Phase 2 with candidate-buffer integration, solver-owned contact
+   buffers, and solver-wired CCD line search. The current primitive kernels,
+   candidate sets, analytic Hessians, clamped-log barrier kernels, tangent
+   stencils, motion-aware swept candidate culling, and CCD step-bound helpers
+   are internal scaffolding only and are not yet wired into `World::step()`.
 2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
    scenes: broader scene asset loading, BE/NM state, output diagnostics
    compatibility decisions, and more contact-free mesh replays. The
@@ -180,6 +183,14 @@ stiffness adaptation, PSD projection, projected Newton, candidate-buffer
 assembly, solver-owned contact caches, solver-wired CCD line search, or
 scene-level IPC contact behavior.
 
+For the motion-aware candidate-culling sub-slice, keep the verification
+language precise: it covers internal conservative swept-AABB point-triangle and
+edge-edge candidate assembly over start/end positions, default topology
+filters, endpoint-distance metadata, static-endpoint miss regressions, and a
+brute-force swept-AABB oracle. It does not yet cover solver-owned persistent
+contact buffers, barrier assembly, solver-wired CCD line search, projected
+Newton, friction, or scene-level IPC contact behavior.
+
 Current primitive-distance local gates:
 
 ```bash
@@ -218,6 +229,33 @@ reported the sweep path faster than brute force on the checked workloads: cloth
 5.10 ms, tetra-surface 4x4 was about 9.4 us versus 83 us, and tetra-surface
 8x8 was about 89 us versus 1.51 ms. CPU scaling was enabled, so treat these as
 local smoke numbers rather than a final performance claim.
+
+Current motion-aware candidate-culling local gates:
+
+```bash
+cmake --build build/default/cpp/Release --target test_contact_candidate_set test_continuous_collision_step bm_ipc_motion_aware_candidate_set
+./build/default/cpp/Release/bin/test_contact_candidate_set
+ctest --test-dir build/default/cpp/Release -R '^(test_contact_candidate_set|test_continuous_collision_step)$' --output-on-failure
+./build/default/cpp/Release/bin/bm_ipc_motion_aware_candidate_set --benchmark_min_time=0.05s --benchmark_filter='BM_IpcMotionAwareCandidateSet'
+```
+
+The motion-aware gate should prove that static endpoint candidate construction
+misses fast point-triangle and edge-edge crossings that the swept builder keeps,
+and should compare the swept builder against the brute-force swept-AABB oracle.
+Treat benchmark timings as local smoke numbers unless they are collected in a
+controlled profiling run with CPU frequency scaling addressed.
+
+The first local motion-aware candidate-culling gate pass on 2026-05-27 passed
+the focused target build, 12 `test_contact_candidate_set` cases, 7
+`test_continuous_collision_step` cases, the CTest registration path,
+`pixi run build`, 183 `pixi run test-unit` cases, `pixi run
+check-api-boundaries`, and `git diff --check`. The new benchmark smoke reported
+the swept builder faster than the brute-force swept-AABB oracle on the checked
+falling-point workloads: 16 pairs were about 2.3 us versus 6.0 us, and 64 pairs
+were about 17.9 us versus 84.9 us. The 128-pair swept path was about 40.6 us,
+and the coherent-translation inflation probes were about 3.9 us for 16 pairs
+and 22.0 us for 64 pairs. CPU scaling was enabled, so treat these as local
+smoke numbers rather than a final performance claim.
 
 Current CCD step-bound local gates:
 

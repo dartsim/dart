@@ -112,9 +112,9 @@ edgeEdgeStepBound(
 /// Conservative minimum step bound over an already assembled contact candidate
 /// set.
 ///
-/// This consumes the current static candidate set only. It intentionally does
-/// not provide motion-aware broad-phase culling yet; that remains a separate
-/// solver-integration slice.
+/// Motion-aware candidate construction is provided separately by
+/// `buildMotionAwareContactCandidatesSweep()` so this reducer stays focused on
+/// conservative CCD over the supplied primitive pairs.
 [[nodiscard]] DART_EXPERIMENTAL_API ContinuousCollisionStepResult
 contactCandidateStepBound(
     std::span<const Eigen::Vector3d> positionsStart,

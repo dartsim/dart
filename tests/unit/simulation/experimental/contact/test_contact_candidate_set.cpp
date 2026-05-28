@@ -156,6 +156,31 @@ void expectSweepMatchesBruteForce(
           sweep.edgeEdgeCandidates.begin(), sweep.edgeEdgeCandidates.end()));
 }
 
+//==============================================================================
+void expectMotionAwareSweepMatchesBruteForce(
+    const std::vector<Eigen::Vector3d>& start,
+    const std::vector<Eigen::Vector3d>& end,
+    const std::vector<sx::DeformableSurfaceTriangle>& triangles,
+    const double activationDistance)
+{
+  dc::ContactCandidateOptions options;
+  options.activationDistance = activationDistance;
+
+  const auto sweep = dc::buildMotionAwareContactCandidatesSweep(
+      start, end, triangles, options);
+  const auto brute = dc::buildMotionAwareContactCandidatesBruteForce(
+      start, end, triangles, options);
+
+  expectCandidatesEqual(sweep, brute);
+  EXPECT_TRUE(
+      std::is_sorted(
+          sweep.pointTriangleCandidates.begin(),
+          sweep.pointTriangleCandidates.end()));
+  EXPECT_TRUE(
+      std::is_sorted(
+          sweep.edgeEdgeCandidates.begin(), sweep.edgeEdgeCandidates.end()));
+}
+
 } // namespace
 
 //==============================================================================
@@ -334,6 +359,220 @@ TEST(IpcContactCandidateSet, HandlesEmptyInputsAndDeterministicOutput)
       = dc::buildContactCandidatesSweep(positions, triangles, options);
   const auto second
       = dc::buildContactCandidatesSweep(positions, triangles, options);
+  expectCandidatesEqual(first, second);
+  EXPECT_TRUE(
+      std::is_sorted(
+          first.pointTriangleCandidates.begin(),
+          first.pointTriangleCandidates.end()));
+  EXPECT_TRUE(
+      std::is_sorted(
+          first.edgeEdgeCandidates.begin(), first.edgeEdgeCandidates.end()));
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, MotionAwareStaticPoseMatchesAabbOnlySweep)
+{
+  const std::vector<Eigen::Vector3d> positions = {
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.2, 0.2, 0.4},
+      {0.8, 0.2, 0.4},
+      {0.2, 0.8, 0.4},
+  };
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {
+      {0, 1, 2},
+      {3, 5, 4},
+  };
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.5;
+  options.exactDistanceFilter = false;
+
+  const auto staticSweep
+      = dc::buildContactCandidatesSweep(positions, triangles, options);
+  const auto motionSweep = dc::buildMotionAwareContactCandidatesSweep(
+      positions, positions, triangles, options);
+  expectCandidatesEqual(motionSweep, staticSweep);
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, MotionAwareSweepMatchesBruteForceOnSweptPairs)
+{
+  const std::vector<Eigen::Vector3d> start = {
+      {-1.0, -1.0, 0.0},
+      {1.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 1.0},
+      {-1.0, 0.0, 0.8},
+      {1.0, 0.0, 0.8},
+      {0.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {-0.5, -0.5, 0.8},
+  };
+  auto end = start;
+  end[3] = Eigen::Vector3d(0.0, 0.0, -1.0);
+  end[4].z() = -0.8;
+  end[5].z() = -0.8;
+  end[8] = Eigen::Vector3d(-0.5, -0.5, -0.8);
+
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {
+      {0, 1, 2},
+      {4, 5, 8},
+      {6, 7, 8},
+  };
+
+  expectMotionAwareSweepMatchesBruteForce(start, end, triangles, 0.05);
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, MotionAwareKeepsFastPointTriangleCrossing)
+{
+  const std::vector<Eigen::Vector3d> start = {
+      {-1.0, -1.0, 0.0},
+      {1.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 1.0},
+  };
+  auto end = start;
+  end[3] = Eigen::Vector3d(0.0, 0.0, -1.0);
+
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {{0, 1, 2}};
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.05;
+  options.exactDistanceFilter = true;
+
+  const auto staticStart
+      = dc::buildContactCandidatesSweep(start, triangles, options);
+  const auto staticEnd
+      = dc::buildContactCandidatesSweep(end, triangles, options);
+  EXPECT_FALSE(containsPointTriangle(staticStart, 3, 0));
+  EXPECT_FALSE(containsPointTriangle(staticEnd, 3, 0));
+
+  const auto motion = dc::buildMotionAwareContactCandidatesSweep(
+      start, end, triangles, options);
+  const auto brute = dc::buildMotionAwareContactCandidatesBruteForce(
+      start, end, triangles, options);
+  expectCandidatesEqual(motion, brute);
+
+  ASSERT_TRUE(containsPointTriangle(motion, 3, 0));
+  ASSERT_EQ(motion.pointTriangleCandidates.size(), 1u);
+  EXPECT_NEAR(
+      motion.pointTriangleCandidates.front().squaredDistance, 1.0, 1e-12);
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, MotionAwareKeepsFastEdgeEdgeCrossing)
+{
+  const std::vector<Eigen::Vector3d> start = {
+      {-1.0, 0.0, 0.6},
+      {1.0, 0.0, 0.6},
+      {0.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {-1.0, 0.5, 0.6},
+      {0.5, -1.0, 0.0},
+  };
+  auto end = start;
+  end[0].z() = -0.6;
+  end[1].z() = -0.6;
+  end[4].z() = -0.6;
+
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {
+      {0, 1, 4},
+      {2, 3, 5},
+  };
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.05;
+  options.exactDistanceFilter = true;
+
+  const auto staticStart
+      = dc::buildContactCandidatesSweep(start, triangles, options);
+  const std::size_t movingEdge = findEdge(staticStart.surfaceEdges, 0, 1);
+  const std::size_t staticEdge = findEdge(staticStart.surfaceEdges, 2, 3);
+  EXPECT_FALSE(containsEdgeEdge(staticStart, movingEdge, staticEdge));
+
+  const auto staticEnd
+      = dc::buildContactCandidatesSweep(end, triangles, options);
+  EXPECT_FALSE(containsEdgeEdge(staticEnd, movingEdge, staticEdge));
+
+  const auto motion = dc::buildMotionAwareContactCandidatesSweep(
+      start, end, triangles, options);
+  const auto brute = dc::buildMotionAwareContactCandidatesBruteForce(
+      start, end, triangles, options);
+  expectCandidatesEqual(motion, brute);
+
+  ASSERT_TRUE(containsEdgeEdge(motion, movingEdge, staticEdge));
+  const auto it = std::find_if(
+      motion.edgeEdgeCandidates.begin(),
+      motion.edgeEdgeCandidates.end(),
+      [&](const dc::EdgeEdgeCandidate& candidate) {
+        return candidate.edgeA == movingEdge && candidate.edgeB == staticEdge;
+      });
+  ASSERT_NE(it, motion.edgeEdgeCandidates.end());
+  EXPECT_NEAR(it->squaredDistance, 0.36, 1e-12);
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, MotionAwarePreservesTopologyFilters)
+{
+  const std::vector<Eigen::Vector3d> positions = {
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+  };
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {{0, 1, 2}};
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 1.0;
+  options.exactDistanceFilter = true;
+
+  auto candidates = dc::buildMotionAwareContactCandidatesSweep(
+      positions, positions, triangles, options);
+  EXPECT_TRUE(candidates.pointTriangleCandidates.empty());
+  EXPECT_TRUE(candidates.edgeEdgeCandidates.empty());
+  EXPECT_EQ(candidates.stats.incidentPointTriangleRejectCount, 3u);
+  EXPECT_EQ(candidates.stats.adjacentEdgeEdgeRejectCount, 3u);
+
+  options.excludeIncidentPointTriangles = false;
+  options.excludeAdjacentEdges = false;
+  candidates = dc::buildMotionAwareContactCandidatesSweep(
+      positions, positions, triangles, options);
+  EXPECT_EQ(candidates.pointTriangleCandidates.size(), 3u);
+  EXPECT_EQ(candidates.edgeEdgeCandidates.size(), 3u);
+}
+
+//==============================================================================
+TEST(
+    IpcContactCandidateSet, MotionAwareHandlesEmptyInputsAndDeterministicOutput)
+{
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.1;
+
+  const auto empty = dc::buildMotionAwareContactCandidatesSweep(
+      std::vector<Eigen::Vector3d>{},
+      std::vector<Eigen::Vector3d>{},
+      std::vector<sx::DeformableSurfaceTriangle>{},
+      options);
+  EXPECT_TRUE(empty.surfaceEdges.empty());
+  EXPECT_TRUE(empty.pointTriangleCandidates.empty());
+  EXPECT_TRUE(empty.edgeEdgeCandidates.empty());
+
+  const std::vector<Eigen::Vector3d> start = {
+      {-1.0, -1.0, 0.0},
+      {1.0, -1.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 1.0},
+  };
+  auto end = start;
+  end[3] = Eigen::Vector3d(0.0, 0.0, -1.0);
+  const std::vector<sx::DeformableSurfaceTriangle> triangles = {{0, 1, 2}};
+
+  const auto first = dc::buildMotionAwareContactCandidatesSweep(
+      start, end, triangles, options);
+  const auto second = dc::buildMotionAwareContactCandidatesSweep(
+      start, end, triangles, options);
   expectCandidatesEqual(first, second);
   EXPECT_TRUE(
       std::is_sorted(

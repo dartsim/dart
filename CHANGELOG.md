@@ -782,6 +782,10 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     point-triangle and edge-edge primitive pairs with deterministic surface-edge
     extraction, incident/adjacent filtering, sweep-versus-brute-force
     regression tests, and indexed/brute-force benchmark counters.
+  - Added internal experimental IPC motion-aware candidate culling over
+    start/end swept primitive AABBs, preserving fast point-triangle and
+    edge-edge crossings that static endpoint candidate filters miss, with
+    regression tests and benchmark counters for future CCD line-search wiring.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

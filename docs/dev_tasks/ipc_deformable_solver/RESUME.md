@@ -48,6 +48,13 @@ friction gradients/Hessians, lagged friction convergence, solver-owned contact
 caches, solver-wired CCD line search, projected Newton, and scene-level contact
 behavior are not implemented yet.
 
+The motion-aware candidate-culling sub-slice adds conservative start/end
+swept-AABB point-triangle and edge-edge candidate assembly, preserving fast
+crossings that static endpoint distance filters miss, and stores minimum
+endpoint squared distance as representative metadata. It is still scaffolding:
+the swept candidates are not wired into `World::step()`, solver-owned contact
+buffers, barrier assembly, projected Newton, or friction.
+
 The candidate-set sub-slice adds deterministic unique surface-edge extraction,
 internal point-triangle and edge-edge primitive candidate assembly,
 incident/adjacent filtering, exact activation-distance filtering through the
@@ -66,15 +73,14 @@ candidate culling, barrier assembly, projected Newton, or friction.
 
 ## Current Branch
 
-`feature/ipc-barrier-kernels` - stacked on
-`feature/ipc-distance-hessian-optimization`, adding internal clamped-log
-barrier kernel scaffolding for the next deformable contact slices.
+`feature/ipc-motion-aware-candidates` - stacked on
+`feature/ipc-tangent-stencils`, adding internal conservative swept candidate
+culling for future IPC CCD line-search wiring.
 
 ## Immediate Next Step
 
-After this sub-slice lands, continue Phase 2 with motion-aware candidate
-culling, candidate-buffer integration, solver-owned contact buffers, and
-solver-wired CCD line search.
+After this sub-slice lands, continue Phase 2 with candidate-buffer integration,
+solver-owned contact buffers, and solver-wired CCD line search.
 
 ## Context That Would Be Lost
 
@@ -107,9 +113,13 @@ cmake --build build/default/cpp/Release --target test_barrier_kernel bm_ipc_barr
 cmake --build build/default/cpp/Release --target test_tangent_stencil bm_ipc_tangent_stencil
 ./build/default/cpp/Release/bin/test_tangent_stencil
 ./build/default/cpp/Release/bin/bm_ipc_tangent_stencil --benchmark_min_time=0.05s --benchmark_filter='BM_Ipc'
+cmake --build build/default/cpp/Release --target test_contact_candidate_set test_continuous_collision_step bm_ipc_motion_aware_candidate_set
+./build/default/cpp/Release/bin/test_contact_candidate_set
+ctest --test-dir build/default/cpp/Release -R '^(test_contact_candidate_set|test_continuous_collision_step)$' --output-on-failure
+./build/default/cpp/Release/bin/bm_ipc_motion_aware_candidate_set --benchmark_min_time=0.05s --benchmark_filter='BM_IpcMotionAwareCandidateSet'
 ```
 
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
-scene replay base, `feature/ipc-paper-corpus-manifest` only when updating the
-scene corpus manifest itself, or `feature/ipc-mesh-material-state` when
-reviewing the stacked mesh/material-state base.
+scene replay base, `feature/ipc-deformable-contact-kernels` for the candidate
+set/CCD base, `feature/ipc-barrier-kernels` for clamped barrier scaffolding,
+or `feature/ipc-tangent-stencils` for the immediate stacked base.
