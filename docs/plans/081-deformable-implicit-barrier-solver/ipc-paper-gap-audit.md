@@ -40,10 +40,15 @@ The first PR's point-mass spring net is useful scaffolding, but it must not be
 described as full IPC, mesh IPC, IPC contact, or IPC friction.
 
 The complete upstream `IPC/input` corpus currently contains 480 files. The
-runnable scene inventory is the `.txt` subset: paper examples, time-step/video
-variants, tutorial examples, other validation/stress scenes, comparison
-benchmarks, and failure cases. Meshes, segment sequences, and supplemental
-application files are required assets for those scenes, not optional coverage.
+runnable scene inventory is the tracked `.txt` path subset: paper examples,
+time-step/video variants, tutorial examples, other validation/stress scenes,
+comparison benchmarks, and failure cases. Meshes, segment sequences, and
+supplemental application files are required assets for those scenes, not
+optional coverage. The authoritative scene-path owner is
+[`ipc_scene_corpus_manifest.json`](ipc_scene_corpus_manifest.json), generated
+from `git ls-tree` against upstream commit
+`573d2c7e04104d3f9baf526bdaee7745891a571a`, so it includes 144 regular scene
+files plus 10 tracked symlink aliases.
 
 ## Current DART Slice
 
@@ -267,10 +272,11 @@ Coverage policy:
 - external application files under `supplementB` are manual comparison assets
   unless their dependencies become CI-safe.
 
-Before claiming parity, create a machine-readable or Markdown manifest for the
-scene corpus with one row per upstream `.txt` scene and these fields:
+Before claiming parity, keep the machine-readable scene corpus manifest current
+with one row per upstream `.txt` scene path and these fields:
 
 - upstream path;
+- upstream commit and symlink alias target, when applicable;
 - DART target type: `test`, `benchmark`, `example`, `manual`, or
   `not-applicable`;
 - required assets/importer path;
@@ -282,12 +288,14 @@ scene corpus with one row per upstream `.txt` scene and these fields:
 
 The manifest must have zero `unclassified` rows before a full-parity claim.
 
-Audited `.txt` scene counts by family: 29 top-level paper examples, 10
-time-step variants, 10 Erleben cases, 9 scaling scenes, 8 video examples, 22
-tutorial scenes, 6 CCD scenes, 9 codimensional unit scenes, 7 friction scenes,
-5 typical scenes, 5 material/resolution sweep scenes, 20 SQP benchmark scenes,
-1 Utopia comparison scene, 1 tunnel scene, 1 bar-twist scene, and 6 failure
-case scenes.
+Audited `.txt` scene path counts by family: 24 top-level paper examples, 10
+time-step variants, 10 Erleben cases, 9 scaling scenes, 8 video examples, 30
+SQP benchmark scenes, 1 Utopia comparison scene, 22 tutorial scenes, 6 CCD
+scenes, 9 codimensional unit scenes, 7 friction scenes, 5 typical scenes, 5
+material/resolution sweep scenes, 1 tunnel scene, 1 bar-twist scene, and 6
+failure-case scenes. The 30 SQP rows include 10 symlink aliases to Erleben
+scenes and must remain distinct manifest rows because they are distinct
+upstream paths and benchmark obligations.
 
 ### Paper Figures And Benchmark Scenes
 
@@ -412,6 +420,16 @@ dependency policy is approved.
 - `input/paperExamples/supplementB/SQPBenchmark/14_fiveCubeStack.txt`
 - `input/paperExamples/supplementB/SQPBenchmark/15_cubesCornerCO.txt`
 - `input/paperExamples/supplementB/SQPBenchmark/16_tetsCornerCO.txt`
+- `input/paperExamples/supplementB/SQPBenchmark/17_ErlebenSpikes.txt`
+- `input/paperExamples/supplementB/SQPBenchmark/18_ErlebenSpikeWedge.txt`
+- `input/paperExamples/supplementB/SQPBenchmark/19_ErlebenWedges.txt`
+- `input/paperExamples/supplementB/SQPBenchmark/20_ErlebenSpikeHole.txt`
+- `input/paperExamples/supplementB/SQPBenchmark/21_ErlebenSpikeCrack.txt`
+- `input/paperExamples/supplementB/SQPBenchmark/22_ErlebenWedgeCrack.txt`
+- `input/paperExamples/supplementB/SQPBenchmark/23_ErlebenSlidingSpike.txt`
+- `input/paperExamples/supplementB/SQPBenchmark/24_ErlebenSlidingWedge.txt`
+- `input/paperExamples/supplementB/SQPBenchmark/25_ErlebenCliffEdges.txt`
+- `input/paperExamples/supplementB/SQPBenchmark/26_ErlebenInternalEdges.txt`
 - `input/paperExamples/supplementB/SQPBenchmark/27_chain.txt`
 - `input/paperExamples/supplementB/SQPBenchmark/28_rodPlaneCO.txt`
 - `input/paperExamples/supplementB/SQPBenchmark/29_cowHeadPlaneCO.txt`

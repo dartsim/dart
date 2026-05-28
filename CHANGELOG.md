@@ -489,6 +489,11 @@
     `benchmark-action/github-action-benchmark`, with a local
     `pixi run bm-dashboard-preview` to render the same dashboard before it is
     published.
+  - Added an opt-in `pixi run abi-check` task (Linux only) that builds two refs
+    with identical options and compares shared libraries with libabigail's
+    `abidiff`. The task is diagnostic only and is not wired into CI; ABI
+    stability between minor releases is still a deferred topic (see issue
+    [#1026](https://github.com/dartsim/dart/issues/1026)).
   - Added `pixi run bm-compute-check`, contact-shaped experimental compute
     coverage, and a Phase 5 CPU-baseline dashboard surface so the full expected
     scalable-compute benchmark corpus is checked in CI.

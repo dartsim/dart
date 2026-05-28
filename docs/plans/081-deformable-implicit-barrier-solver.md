@@ -31,6 +31,11 @@
   owns the next-session checklist for paper sections, Algorithm 1 phases,
   upstream scene corpus, material/property options, tests, benchmarks,
   profiling, and visual evidence.
+- IPC upstream scene corpus manifest:
+  [`081-deformable-implicit-barrier-solver/ipc_scene_corpus_manifest.json`](081-deformable-implicit-barrier-solver/ipc_scene_corpus_manifest.json)
+  is the machine-checkable source of truth for every audited upstream
+  `IPC/input` `.txt` scene path, including symlink aliases, target type,
+  expected invariant, profiling requirement, and visual evidence requirement.
 - Implementation tracking: the first C++ slice is complete in this plan; future
   slices continue from the workstreams below. Because full IPC parity is now a
   multi-session implementation, start a new `docs/dev_tasks/` folder when that
