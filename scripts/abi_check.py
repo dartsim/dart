@@ -363,7 +363,8 @@ def main():
         )
         return 1
 
-    baseline_build = work_dir / f"from-{sanitize_ref(from_ref)}" / "build"
+    from_label = f"{sanitize_ref(from_ref)}-{baseline_commit[:12]}"
+    baseline_build = work_dir / f"from-{from_label}" / "build"
     current_build = work_dir / f"to-{to_label}" / "build"
 
     extra_args = shlex.split(os.environ.get("DART_ABI_CMAKE_ARGS", ""))
