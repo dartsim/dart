@@ -33,6 +33,7 @@
 #include <dart/simulation/experimental/body/deformable_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body_options.hpp>
+#include <dart/simulation/experimental/io/deformable_scene_io.hpp>
 #include <dart/simulation/experimental/world.hpp>
 
 #include <dart/gui/application.hpp>
@@ -50,6 +51,8 @@
 #include <Eigen/Geometry>
 
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -65,6 +68,7 @@ namespace dynamics = dart::dynamics;
 namespace gui = dart::gui;
 namespace legacy_sim = dart::simulation;
 namespace sx = dart::simulation::experimental;
+namespace sxio = dart::simulation::experimental::io;
 
 namespace {
 
@@ -97,49 +101,77 @@ struct DeformableVisual
 };
 
 //==============================================================================
+struct LaunchOptions
+{
+  std::filesystem::path scenePath;
+  std::filesystem::path diagnosticsJsonPath;
+  std::string deformableView = "combined";
+};
+
+//==============================================================================
 struct ExampleState
 {
   sx::World physicsWorld;
   legacy_sim::WorldPtr renderWorld
       = legacy_sim::World::create("experimental_deformable_gui");
-  DeformableVisual deformable;
+  std::vector<DeformableVisual> deformables;
   int stepsPerFrame = 2;
   bool showSurfaceMesh = true;
   bool showPointMasses = true;
   bool showSpringEdges = true;
   std::size_t surfaceVersion = 1;
+  std::filesystem::path diagnosticsJsonPath;
+  std::size_t diagnosticsFrameOffset = 0;
 
   void applyVisualOptions()
   {
-    if (deformable.edgeFrame) {
-      auto* visual = deformable.edgeFrame->getVisualAspect();
-      if (showSpringEdges) {
-        visual->show();
-      } else {
-        visual->hide();
+    for (const auto& deformable : deformables) {
+      if (deformable.edgeFrame) {
+        auto* visual = deformable.edgeFrame->getVisualAspect();
+        if (showSpringEdges) {
+          visual->show();
+        } else {
+          visual->hide();
+        }
       }
-    }
 
-    for (const auto& frame : deformable.nodeFrames) {
-      auto* visual = frame->getVisualAspect();
-      if (showPointMasses) {
-        visual->show();
-      } else {
-        visual->hide();
+      for (const auto& frame : deformable.nodeFrames) {
+        auto* visual = frame->getVisualAspect();
+        if (showPointMasses) {
+          visual->show();
+        } else {
+          visual->hide();
+        }
       }
     }
   }
 
   void syncRenderFrames()
   {
-    const auto nodeCount = deformable.body.getNodeCount();
-    for (std::size_t i = 0; i < nodeCount; ++i) {
-      const auto position = deformable.body.getPosition(i);
-      deformable.edgeShape->setVertex(i, position);
-      deformable.nodeFrames[i]->setTransform(makeTransform(position));
+    for (auto& deformable : deformables) {
+      const auto nodeCount = deformable.body.getNodeCount();
+      for (std::size_t i = 0; i < nodeCount; ++i) {
+        const auto position = deformable.body.getPosition(i);
+        deformable.edgeShape->setVertex(i, position);
+        deformable.nodeFrames[i]->setTransform(makeTransform(position));
+      }
     }
     ++surfaceVersion;
     applyVisualOptions();
+  }
+
+  void writeDiagnostics() const
+  {
+    if (diagnosticsJsonPath.empty()) {
+      return;
+    }
+
+    auto diagnostics = sxio::collectDeformableSceneDiagnostics(physicsWorld);
+    diagnostics.frame = diagnostics.frame >= diagnosticsFrameOffset
+                            ? diagnostics.frame - diagnosticsFrameOffset
+                            : 0u;
+    std::ofstream output(diagnosticsJsonPath);
+    sxio::writeDeformableSceneDiagnosticsJson(output, diagnostics);
   }
 
   void step()
@@ -149,50 +181,63 @@ struct ExampleState
     }
     renderWorld->setTime(physicsWorld.getTime());
     syncRenderFrames();
+    writeDiagnostics();
   }
 
   void reset()
   {
     physicsWorld.setTime(0.0);
+    diagnosticsFrameOffset = physicsWorld.getFrame();
     renderWorld->reset();
     renderWorld->setTime(0.0);
 
-    for (std::size_t i = 0; i < deformable.initialPositions.size(); ++i) {
-      deformable.body.setPosition(i, deformable.initialPositions[i]);
-      deformable.body.setVelocity(i, deformable.initialVelocities[i]);
+    for (auto& deformable : deformables) {
+      for (std::size_t i = 0; i < deformable.initialPositions.size(); ++i) {
+        deformable.body.setPosition(i, deformable.initialPositions[i]);
+        deformable.body.setVelocity(i, deformable.initialVelocities[i]);
+      }
     }
 
     syncRenderFrames();
+    writeDiagnostics();
   }
 
   std::vector<gui::RenderableDescriptor> makeSurfaceRenderables() const
   {
-    if (!showSurfaceMesh || deformable.surfaceTriangles.empty()) {
+    if (!showSurfaceMesh) {
       return {};
     }
 
-    const auto nodeCount = deformable.body.getNodeCount();
-    if (nodeCount == 0) {
-      return {};
+    std::vector<gui::RenderableDescriptor> descriptors;
+    for (const auto& deformable : deformables) {
+      if (deformable.surfaceTriangles.empty()) {
+        continue;
+      }
+
+      const auto nodeCount = deformable.body.getNodeCount();
+      if (nodeCount == 0) {
+        continue;
+      }
+
+      std::vector<Eigen::Vector3d> positions;
+      positions.reserve(nodeCount);
+      for (std::size_t i = 0; i < nodeCount; ++i) {
+        positions.push_back(deformable.body.getPosition(i));
+      }
+
+      gui::DeformableSurfaceRenderOptions surfaceOptions;
+      surfaceOptions.version = surfaceVersion;
+      const auto descriptor = gui::makeDeformableSurfaceRenderable(
+          reinterpret_cast<gui::RenderableId>(&deformable.surfaceRenderableKey),
+          positions,
+          deformable.surfaceTriangles,
+          surfaceOptions);
+      if (descriptor) {
+        descriptors.push_back(*descriptor);
+      }
     }
 
-    std::vector<Eigen::Vector3d> positions;
-    positions.reserve(nodeCount);
-    for (std::size_t i = 0; i < nodeCount; ++i) {
-      positions.push_back(deformable.body.getPosition(i));
-    }
-
-    gui::DeformableSurfaceRenderOptions surfaceOptions;
-    surfaceOptions.version = surfaceVersion;
-    const auto descriptor = gui::makeDeformableSurfaceRenderable(
-        reinterpret_cast<gui::RenderableId>(&deformable.surfaceRenderableKey),
-        positions,
-        deformable.surfaceTriangles,
-        surfaceOptions);
-    if (!descriptor) {
-      return {};
-    }
-    return {*descriptor};
+    return descriptors;
   }
 };
 
@@ -266,7 +311,87 @@ sx::DeformableBodyOptions makeNetOptions(
     }
   }
   options.edges = edges;
+
+  for (const auto& triangle : gui::makeGridSurfaceTriangles(columns, rows)) {
+    options.surfaceTriangles.push_back(
+        {static_cast<std::size_t>(triangle.x()),
+         static_cast<std::size_t>(triangle.y()),
+         static_cast<std::size_t>(triangle.z())});
+  }
   return options;
+}
+
+//==============================================================================
+std::vector<Eigen::Vector3i> extractSurfaceTriangles(
+    const sx::DeformableBody& body)
+{
+  std::vector<Eigen::Vector3i> triangles;
+  triangles.reserve(body.getSurfaceTriangleCount());
+  for (std::size_t i = 0; i < body.getSurfaceTriangleCount(); ++i) {
+    const auto triangle = body.getSurfaceTriangle(i);
+    triangles.emplace_back(
+        static_cast<int>(triangle.nodeA),
+        static_cast<int>(triangle.nodeB),
+        static_cast<int>(triangle.nodeC));
+  }
+  return triangles;
+}
+
+//==============================================================================
+void appendDeformableVisual(
+    ExampleState& state, const sx::DeformableBody& body, std::string_view name)
+{
+  DeformableVisual visual;
+  visual.body = body;
+  const auto nodeCount = body.getNodeCount();
+  visual.initialPositions.reserve(nodeCount);
+  visual.initialVelocities.reserve(nodeCount);
+  visual.fixed.reserve(nodeCount);
+  for (std::size_t i = 0; i < nodeCount; ++i) {
+    visual.initialPositions.push_back(body.getPosition(i));
+    visual.initialVelocities.push_back(body.getVelocity(i));
+    visual.fixed.push_back(body.isFixedNode(i) ? 1u : 0u);
+  }
+  auto surfaceTriangles = extractSurfaceTriangles(body);
+
+  auto edgeShape = std::make_shared<dynamics::LineSegmentShape>(2.8f);
+  for (const auto& position : visual.initialPositions) {
+    edgeShape->addVertex(position);
+  }
+  for (std::size_t i = 0; i < body.getEdgeCount(); ++i) {
+    const auto edge = body.getEdge(i);
+    edgeShape->addConnection(edge.nodeA, edge.nodeB);
+  }
+
+  auto edgeFrame = dynamics::SimpleFrame::createShared(
+      dynamics::Frame::World(), std::string(name) + "_edges");
+  edgeFrame->setShape(edgeShape);
+  edgeFrame->getVisualAspect(true)->setRGBA(rgba(0.08, 0.13, 0.17));
+  state.renderWorld->addSimpleFrame(edgeFrame);
+
+  std::vector<dynamics::SimpleFramePtr> nodeFrames;
+  nodeFrames.reserve(visual.initialPositions.size());
+  for (std::size_t i = 0; i < visual.initialPositions.size(); ++i) {
+    auto frame = dynamics::SimpleFrame::createShared(
+        dynamics::Frame::World(),
+        std::string(name) + "_node_" + std::to_string(i),
+        makeTransform(visual.initialPositions[i]));
+    frame->setShape(
+        std::make_shared<dynamics::SphereShape>(
+            visual.fixed[i] != 0u ? 0.045 : 0.032));
+    frame->getVisualAspect(true)->setRGBA(
+        visual.fixed[i] != 0u ? rgba(0.95, 0.50, 0.16)
+                              : rgba(0.12, 0.57, 0.91));
+    state.renderWorld->addSimpleFrame(frame);
+    nodeFrames.push_back(std::move(frame));
+  }
+
+  visual.surfaceRenderableKey = static_cast<int>(state.deformables.size() + 1u);
+  visual.surfaceTriangles = std::move(surfaceTriangles);
+  visual.edgeShape = std::move(edgeShape);
+  visual.edgeFrame = std::move(edgeFrame);
+  visual.nodeFrames = std::move(nodeFrames);
+  state.deformables.push_back(std::move(visual));
 }
 
 //==============================================================================
@@ -279,63 +404,43 @@ void addDeformableNet(ExampleState& state)
   std::vector<std::uint8_t> fixed;
   auto options = makeNetOptions(columns, rows, edges, fixed);
   auto body = state.physicsWorld.addDeformableBody("deformable_net", options);
-
-  auto surfaceTriangles = gui::makeGridSurfaceTriangles(columns, rows);
-
-  auto edgeShape = std::make_shared<dynamics::LineSegmentShape>(2.8f);
-  for (const auto& position : options.positions) {
-    edgeShape->addVertex(position);
-  }
-  for (const auto& edge : edges) {
-    edgeShape->addConnection(edge.nodeA, edge.nodeB);
-  }
-
-  auto edgeFrame = dynamics::SimpleFrame::createShared(
-      dynamics::Frame::World(), "deformable_net_edges");
-  edgeFrame->setShape(edgeShape);
-  edgeFrame->getVisualAspect(true)->setRGBA(rgba(0.08, 0.13, 0.17));
-  state.renderWorld->addSimpleFrame(edgeFrame);
-
-  std::vector<dynamics::SimpleFramePtr> nodeFrames;
-  nodeFrames.reserve(options.positions.size());
-  for (std::size_t i = 0; i < options.positions.size(); ++i) {
-    auto frame = dynamics::SimpleFrame::createShared(
-        dynamics::Frame::World(),
-        "deformable_node_" + std::to_string(i),
-        makeTransform(options.positions[i]));
-    frame->setShape(
-        std::make_shared<dynamics::SphereShape>(
-            fixed[i] != 0u ? 0.045 : 0.032));
-    frame->getVisualAspect(true)->setRGBA(
-        fixed[i] != 0u ? rgba(0.95, 0.50, 0.16) : rgba(0.12, 0.57, 0.91));
-    state.renderWorld->addSimpleFrame(frame);
-    nodeFrames.push_back(std::move(frame));
-  }
-
-  state.deformable.body = body;
-  state.deformable.initialPositions = std::move(options.positions);
-  state.deformable.initialVelocities = std::move(options.velocities);
-  state.deformable.fixed = std::move(fixed);
-  state.deformable.surfaceTriangles = std::move(surfaceTriangles);
-  state.deformable.edgeShape = std::move(edgeShape);
-  state.deformable.edgeFrame = std::move(edgeFrame);
-  state.deformable.nodeFrames = std::move(nodeFrames);
+  appendDeformableVisual(state, body, "deformable_net");
 }
 
 //==============================================================================
-std::shared_ptr<ExampleState> makeExampleState()
+void addLoadedScene(ExampleState& state, const std::filesystem::path& scenePath)
+{
+  sxio::DeformableSceneLoadOptions loadOptions;
+  loadOptions.assetRoot = scenePath.parent_path();
+  auto sceneInfo
+      = sxio::loadDeformableScene(state.physicsWorld, scenePath, loadOptions);
+  for (const auto& bodyInfo : sceneInfo.bodies) {
+    appendDeformableVisual(state, bodyInfo.body, bodyInfo.name);
+  }
+}
+
+//==============================================================================
+std::shared_ptr<ExampleState> makeExampleState(const LaunchOptions& launch)
 {
   auto state = std::make_shared<ExampleState>();
+  state->diagnosticsJsonPath = launch.diagnosticsJsonPath;
 
   constexpr double timeStep = 1.0 / 120.0;
   state->physicsWorld.setTimeStep(timeStep);
   state->renderWorld->setTimeStep(timeStep * state->stepsPerFrame);
 
-  addGround(*state);
-  addDeformableNet(*state);
+  if (launch.scenePath.empty()) {
+    addGround(*state);
+    addDeformableNet(*state);
+  } else {
+    addLoadedScene(*state, launch.scenePath);
+    state->renderWorld->setTimeStep(
+        state->physicsWorld.getTimeStep() * state->stepsPerFrame);
+  }
 
   state->physicsWorld.enterSimulationMode();
   state->syncRenderFrames();
+  state->writeDiagnostics();
   return state;
 }
 
@@ -354,7 +459,7 @@ bool applyDeformableViewMode(
   } else if (value == "points") {
     state->showSurfaceMesh = false;
     state->showPointMasses = true;
-    state->showSpringEdges = true;
+    state->showSpringEdges = false;
   } else {
     return false;
   }
@@ -364,8 +469,7 @@ bool applyDeformableViewMode(
 }
 
 //==============================================================================
-bool parseExampleOptions(
-    int argc, char* argv[], const std::shared_ptr<ExampleState>& state)
+bool parseExampleOptions(int argc, char* argv[], LaunchOptions& options)
 {
   for (int i = 1; i < argc; ++i) {
     const std::string_view arg(argv[i]);
@@ -375,12 +479,27 @@ bool parseExampleOptions(
             << "--deformable-view requires combined, surface, or points\n";
         return false;
       }
-      const std::string_view value(argv[++i]);
-      if (!applyDeformableViewMode(state, value)) {
-        std::cerr << "Invalid --deformable-view value '" << value
+      options.deformableView = std::string(argv[++i]);
+      if (options.deformableView != "combined"
+          && options.deformableView != "surface"
+          && options.deformableView != "points") {
+        std::cerr << "Invalid --deformable-view value '"
+                  << options.deformableView
                   << "'. Expected combined, surface, or points.\n";
         return false;
       }
+    } else if (arg == "--deformable-scene") {
+      if (i + 1 >= argc) {
+        std::cerr << "--deformable-scene requires a scene file path\n";
+        return false;
+      }
+      options.scenePath = argv[++i];
+    } else if (arg == "--diagnostics-json") {
+      if (i + 1 >= argc) {
+        std::cerr << "--diagnostics-json requires an output path\n";
+        return false;
+      }
+      options.diagnosticsJsonPath = argv[++i];
     }
   }
   return true;
@@ -447,8 +566,12 @@ gui::Panel createControlsPanel(const std::shared_ptr<ExampleState>& state)
 
 int main(int argc, char* argv[])
 {
-  const auto state = makeExampleState();
-  if (!parseExampleOptions(argc, argv, state)) {
+  LaunchOptions launch;
+  if (!parseExampleOptions(argc, argv, launch)) {
+    return 2;
+  }
+  const auto state = makeExampleState(launch);
+  if (!applyDeformableViewMode(state, launch.deformableView)) {
     return 2;
   }
 

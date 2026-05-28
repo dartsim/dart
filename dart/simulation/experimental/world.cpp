@@ -60,10 +60,14 @@
 #include <Eigen/Cholesky>
 
 #include <algorithm>
+#include <array>
 #include <format>
 #include <istream>
+#include <map>
 #include <memory>
 #include <ostream>
+#include <set>
+#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -308,16 +312,324 @@ void validateDeformableFiniteVector(
 }
 
 //==============================================================================
+std::array<std::size_t, 3> sortedFaceKey(
+    std::size_t nodeA, std::size_t nodeB, std::size_t nodeC)
+{
+  std::array<std::size_t, 3> key{nodeA, nodeB, nodeC};
+  std::ranges::sort(key);
+  return key;
+}
+
+//==============================================================================
+std::array<std::size_t, 4> sortedTetrahedronKey(
+    std::size_t nodeA, std::size_t nodeB, std::size_t nodeC, std::size_t nodeD)
+{
+  std::array<std::size_t, 4> key{nodeA, nodeB, nodeC, nodeD};
+  std::ranges::sort(key);
+  return key;
+}
+
+//==============================================================================
+bool hasRepeatedNodes(std::span<const std::size_t> nodes)
+{
+  for (std::size_t i = 0; i < nodes.size(); ++i) {
+    for (std::size_t j = i + 1; j < nodes.size(); ++j) {
+      if (nodes[i] == nodes[j]) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+//==============================================================================
+double signedTetrahedronVolume(
+    const std::vector<Eigen::Vector3d>& positions,
+    const comps::DeformableTetrahedron& tetrahedron)
+{
+  const auto& a = positions[tetrahedron.nodeA];
+  const auto& b = positions[tetrahedron.nodeB];
+  const auto& c = positions[tetrahedron.nodeC];
+  const auto& d = positions[tetrahedron.nodeD];
+  return (b - a).cross(c - a).dot(d - a) / 6.0;
+}
+
+//==============================================================================
+double surfaceTriangleAreaSquared(
+    const std::vector<Eigen::Vector3d>& positions,
+    const comps::DeformableSurfaceTriangle& triangle)
+{
+  const auto& a = positions[triangle.nodeA];
+  const auto& b = positions[triangle.nodeB];
+  const auto& c = positions[triangle.nodeC];
+  return 0.25 * (b - a).cross(c - a).squaredNorm();
+}
+
+//==============================================================================
+void validateDeformableMaterial(const DeformableMaterialProperties& material)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(material.density) || material.density <= 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.material.density must be positive and finite");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(material.youngsModulus) || material.youngsModulus <= 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.material.youngsModulus must be positive and "
+      "finite");
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(material.poissonRatio) || material.poissonRatio <= -1.0
+          || material.poissonRatio >= 0.5,
+      InvalidArgumentException,
+      "DeformableBodyOptions.material.poissonRatio must be finite and in "
+      "(-1, 0.5)");
+}
+
+//==============================================================================
 struct PreparedDeformableBodyData
 {
   std::vector<Eigen::Vector3d> positions;
+  std::vector<Eigen::Vector3d> restPositions;
   std::vector<Eigen::Vector3d> velocities;
   std::vector<double> masses;
   std::vector<std::uint8_t> fixed;
   std::vector<comps::DeformableSpringEdge> edges;
+  std::vector<comps::DeformableSurfaceTriangle> surfaceTriangles;
+  std::vector<comps::DeformableTetrahedron> tetrahedra;
+  std::vector<double> tetrahedronRestVolumes;
+  comps::DeformableMaterial material;
+  comps::DeformableBoundaryConditions boundaryConditions;
   double stiffness = 0.0;
   double damping = 0.0;
 };
+
+//==============================================================================
+bool hasValidBoundaryEndTime(double value)
+{
+  return std::isfinite(value)
+         || value == std::numeric_limits<double>::infinity();
+}
+
+//==============================================================================
+bool boundaryRangesOverlap(
+    double startA, double endA, double startB, double endB)
+{
+  return startA < endB && startB < endA;
+}
+
+//==============================================================================
+void validateBoundaryTimeRange(
+    double startTime, double endTime, std::string_view fieldName)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !std::isfinite(startTime) || startTime < 0.0,
+      InvalidArgumentException,
+      "DeformableBodyOptions.{} start time must be finite and non-negative",
+      fieldName);
+  DART_EXPERIMENTAL_THROW_T_IF(
+      !hasValidBoundaryEndTime(endTime) || endTime < startTime,
+      InvalidArgumentException,
+      "DeformableBodyOptions.{} end time must be finite or infinity and must "
+      "not precede the start time",
+      fieldName);
+}
+
+//==============================================================================
+void validateBoundaryNodes(
+    std::span<const std::size_t> nodes,
+    std::size_t nodeCount,
+    std::string_view fieldName,
+    std::size_t boundaryIndex)
+{
+  DART_EXPERIMENTAL_THROW_T_IF(
+      nodes.empty(),
+      InvalidArgumentException,
+      "DeformableBodyOptions.{}[{}] must reference at least one node",
+      fieldName,
+      boundaryIndex);
+  std::set<std::size_t> uniqueNodes;
+  for (const auto node : nodes) {
+    DART_EXPERIMENTAL_THROW_T_IF(
+        node >= nodeCount,
+        InvalidArgumentException,
+        "DeformableBodyOptions.{}[{}] references an out-of-range node",
+        fieldName,
+        boundaryIndex);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !uniqueNodes.insert(node).second,
+        InvalidArgumentException,
+        "DeformableBodyOptions.{}[{}] contains duplicate node {}",
+        fieldName,
+        boundaryIndex,
+        node);
+  }
+}
+
+//==============================================================================
+void validateNoBoundaryConflicts(
+    const DeformableBodyOptions& options,
+    const std::vector<std::uint8_t>& fixed)
+{
+  for (std::size_t dirichletIndex = 0;
+       dirichletIndex < options.dirichletBoundaryConditions.size();
+       ++dirichletIndex) {
+    const auto& dirichlet = options.dirichletBoundaryConditions[dirichletIndex];
+    for (const auto node : dirichlet.nodes) {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          fixed[node] != 0u,
+          InvalidArgumentException,
+          "DeformableBodyOptions.dirichletBoundaryConditions[{}] overlaps "
+          "permanently fixed node {}",
+          dirichletIndex,
+          node);
+    }
+
+    for (std::size_t otherIndex = dirichletIndex + 1;
+         otherIndex < options.dirichletBoundaryConditions.size();
+         ++otherIndex) {
+      const auto& other = options.dirichletBoundaryConditions[otherIndex];
+      if (!boundaryRangesOverlap(
+              dirichlet.startTime,
+              dirichlet.endTime,
+              other.startTime,
+              other.endTime)) {
+        continue;
+      }
+      for (const auto node : dirichlet.nodes) {
+        DART_EXPERIMENTAL_THROW_T_IF(
+            std::ranges::find(other.nodes, node) != other.nodes.end(),
+            InvalidArgumentException,
+            "DeformableBodyOptions.dirichletBoundaryConditions overlap on "
+            "node {}",
+            node);
+      }
+    }
+  }
+
+  for (std::size_t neumannIndex = 0;
+       neumannIndex < options.neumannBoundaryConditions.size();
+       ++neumannIndex) {
+    const auto& neumann = options.neumannBoundaryConditions[neumannIndex];
+    for (const auto node : neumann.nodes) {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          fixed[node] != 0u,
+          InvalidArgumentException,
+          "DeformableBodyOptions.neumannBoundaryConditions[{}] overlaps "
+          "permanently fixed node {}",
+          neumannIndex,
+          node);
+    }
+
+    for (const auto& dirichlet : options.dirichletBoundaryConditions) {
+      if (!boundaryRangesOverlap(
+              neumann.startTime,
+              neumann.endTime,
+              dirichlet.startTime,
+              dirichlet.endTime)) {
+        continue;
+      }
+      for (const auto node : neumann.nodes) {
+        DART_EXPERIMENTAL_THROW_T_IF(
+            std::ranges::find(dirichlet.nodes, node) != dirichlet.nodes.end(),
+            InvalidArgumentException,
+            "DeformableBodyOptions.neumannBoundaryConditions overlap active "
+            "Dirichlet boundary node {}",
+            node);
+      }
+    }
+  }
+}
+
+//==============================================================================
+std::vector<comps::DeformableSurfaceTriangle>
+validateDeformableSurfaceTriangles(const DeformableBodyOptions& options)
+{
+  std::vector<comps::DeformableSurfaceTriangle> surfaceTriangles;
+  surfaceTriangles.reserve(options.surfaceTriangles.size());
+
+  std::set<std::array<std::size_t, 3>> uniqueFaces;
+  for (std::size_t i = 0; i < options.surfaceTriangles.size(); ++i) {
+    const auto& triangle = options.surfaceTriangles[i];
+    const std::array<std::size_t, 3> nodes{
+        triangle.nodeA, triangle.nodeB, triangle.nodeC};
+    DART_EXPERIMENTAL_THROW_T_IF(
+        hasRepeatedNodes(nodes),
+        InvalidArgumentException,
+        "DeformableBodyOptions.surfaceTriangles[{}] nodes must be distinct",
+        i);
+    for (const auto node : nodes) {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          node >= options.positions.size(),
+          InvalidArgumentException,
+          "DeformableBodyOptions.surfaceTriangles[{}] references an "
+          "out-of-range node",
+          i);
+    }
+
+    comps::DeformableSurfaceTriangle internal{
+        triangle.nodeA, triangle.nodeB, triangle.nodeC};
+    DART_EXPERIMENTAL_THROW_T_IF(
+        surfaceTriangleAreaSquared(options.positions, internal) <= 1e-24,
+        InvalidArgumentException,
+        "DeformableBodyOptions.surfaceTriangles[{}] is degenerate",
+        i);
+
+    const auto key
+        = sortedFaceKey(internal.nodeA, internal.nodeB, internal.nodeC);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !uniqueFaces.insert(key).second,
+        InvalidArgumentException,
+        "DeformableBodyOptions.surfaceTriangles[{}] duplicates an existing "
+        "face",
+        i);
+    surfaceTriangles.push_back(internal);
+  }
+
+  return surfaceTriangles;
+}
+
+//==============================================================================
+void addBoundaryFace(
+    std::map<
+        std::array<std::size_t, 3>,
+        std::pair<comps::DeformableSurfaceTriangle, std::size_t>>& faces,
+    comps::DeformableSurfaceTriangle face)
+{
+  const auto key = sortedFaceKey(face.nodeA, face.nodeB, face.nodeC);
+  auto [it, inserted] = faces.emplace(key, std::pair{face, 0u});
+  ++it->second.second;
+  DART_EXPERIMENTAL_THROW_T_IF(
+      it->second.second > 2u,
+      InvalidArgumentException,
+      "DeformableBodyOptions.tetrahedra creates a nonmanifold surface face");
+  if (!inserted && it->second.second == 2u) {
+    it->second.first = face;
+  }
+}
+
+//==============================================================================
+std::vector<comps::DeformableSurfaceTriangle> deriveDeformableBoundarySurface(
+    const std::vector<comps::DeformableTetrahedron>& tetrahedra)
+{
+  std::map<
+      std::array<std::size_t, 3>,
+      std::pair<comps::DeformableSurfaceTriangle, std::size_t>>
+      faces;
+  for (const auto& tet : tetrahedra) {
+    addBoundaryFace(faces, {tet.nodeA, tet.nodeC, tet.nodeB});
+    addBoundaryFace(faces, {tet.nodeA, tet.nodeB, tet.nodeD});
+    addBoundaryFace(faces, {tet.nodeA, tet.nodeD, tet.nodeC});
+    addBoundaryFace(faces, {tet.nodeB, tet.nodeC, tet.nodeD});
+  }
+
+  std::vector<comps::DeformableSurfaceTriangle> surfaceTriangles;
+  for (const auto& [_, faceAndCount] : faces) {
+    if (faceAndCount.second == 1u) {
+      surfaceTriangles.push_back(faceAndCount.first);
+    }
+  }
+  return surfaceTriangles;
+}
 
 //==============================================================================
 PreparedDeformableBodyData prepareDeformableBodyOptions(
@@ -331,15 +643,90 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
 
   PreparedDeformableBodyData data;
   data.positions = options.positions;
+  data.restPositions = data.positions;
   data.velocities.assign(nodeCount, Eigen::Vector3d::Zero());
   data.masses.assign(nodeCount, 1.0);
   data.fixed.assign(nodeCount, 0u);
   data.stiffness = options.edgeStiffness;
   data.damping = options.damping;
+  data.material.density = options.material.density;
+  data.material.youngsModulus = options.material.youngsModulus;
+  data.material.poissonRatio = options.material.poissonRatio;
 
   for (std::size_t i = 0; i < nodeCount; ++i) {
     validateDeformableFiniteVector(options.positions[i], "positions", i);
   }
+
+  validateDeformableMaterial(options.material);
+
+  std::set<std::array<std::size_t, 4>> uniqueTetrahedra;
+  data.tetrahedra.reserve(options.tetrahedra.size());
+  data.tetrahedronRestVolumes.reserve(options.tetrahedra.size());
+  for (std::size_t i = 0; i < options.tetrahedra.size(); ++i) {
+    const auto& tetrahedron = options.tetrahedra[i];
+    const std::array<std::size_t, 4> nodes{
+        tetrahedron.nodeA,
+        tetrahedron.nodeB,
+        tetrahedron.nodeC,
+        tetrahedron.nodeD};
+    DART_EXPERIMENTAL_THROW_T_IF(
+        hasRepeatedNodes(nodes),
+        InvalidArgumentException,
+        "DeformableBodyOptions.tetrahedra[{}] nodes must be distinct",
+        i);
+    for (const auto node : nodes) {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          node >= nodeCount,
+          InvalidArgumentException,
+          "DeformableBodyOptions.tetrahedra[{}] references an out-of-range "
+          "node",
+          i);
+    }
+
+    const auto key = sortedTetrahedronKey(
+        tetrahedron.nodeA,
+        tetrahedron.nodeB,
+        tetrahedron.nodeC,
+        tetrahedron.nodeD);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !uniqueTetrahedra.insert(key).second,
+        InvalidArgumentException,
+        "DeformableBodyOptions.tetrahedra[{}] duplicates an existing "
+        "tetrahedron",
+        i);
+
+    comps::DeformableTetrahedron internal{
+        tetrahedron.nodeA,
+        tetrahedron.nodeB,
+        tetrahedron.nodeC,
+        tetrahedron.nodeD};
+    double volume = signedTetrahedronVolume(options.positions, internal);
+    DART_EXPERIMENTAL_THROW_T_IF(
+        !std::isfinite(volume) || std::abs(volume) <= 1e-18,
+        InvalidArgumentException,
+        "DeformableBodyOptions.tetrahedra[{}] has zero or nonfinite rest "
+        "volume",
+        i);
+    if (volume < 0.0) {
+      std::swap(internal.nodeC, internal.nodeD);
+      volume = -volume;
+    }
+
+    data.tetrahedra.push_back(internal);
+    data.tetrahedronRestVolumes.push_back(volume);
+  }
+
+  data.surfaceTriangles = validateDeformableSurfaceTriangles(options);
+  if (data.surfaceTriangles.empty() && !data.tetrahedra.empty()) {
+    data.surfaceTriangles = deriveDeformableBoundarySurface(data.tetrahedra);
+  }
+
+  DART_EXPERIMENTAL_THROW_T_IF(
+      options.masses.empty() && options.tetrahedra.empty()
+          && !options.surfaceTriangles.empty(),
+      InvalidArgumentException,
+      "DeformableBodyOptions.surfaceTriangles require explicit masses when no "
+      "tetrahedra are provided");
 
   DART_EXPERIMENTAL_THROW_T_IF(
       !options.velocities.empty() && options.velocities.size() != nodeCount,
@@ -354,14 +741,36 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
       !options.masses.empty() && options.masses.size() != nodeCount,
       InvalidArgumentException,
       "DeformableBodyOptions.masses must be empty or match positions");
-  for (std::size_t i = 0; i < options.masses.size(); ++i) {
-    const double mass = options.masses[i];
-    DART_EXPERIMENTAL_THROW_T_IF(
-        !std::isfinite(mass) || mass <= 0.0,
-        InvalidArgumentException,
-        "DeformableBodyOptions.masses[{}] must be positive and finite",
-        i);
-    data.masses[i] = mass;
+  if (!options.masses.empty()) {
+    for (std::size_t i = 0; i < options.masses.size(); ++i) {
+      const double mass = options.masses[i];
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(mass) || mass <= 0.0,
+          InvalidArgumentException,
+          "DeformableBodyOptions.masses[{}] must be positive and finite",
+          i);
+      data.masses[i] = mass;
+    }
+  } else if (!data.tetrahedra.empty()) {
+    data.masses.assign(nodeCount, 0.0);
+    for (std::size_t i = 0; i < data.tetrahedra.size(); ++i) {
+      const auto& tetrahedron = data.tetrahedra[i];
+      const double nodeMass
+          = options.material.density * data.tetrahedronRestVolumes[i] / 4.0;
+      data.masses[tetrahedron.nodeA] += nodeMass;
+      data.masses[tetrahedron.nodeB] += nodeMass;
+      data.masses[tetrahedron.nodeC] += nodeMass;
+      data.masses[tetrahedron.nodeD] += nodeMass;
+    }
+
+    for (std::size_t i = 0; i < data.masses.size(); ++i) {
+      DART_EXPERIMENTAL_THROW_T_IF(
+          !std::isfinite(data.masses[i]) || data.masses[i] <= 0.0,
+          InvalidArgumentException,
+          "DeformableBodyOptions.tetrahedra leave node {} without positive "
+          "finite assembled mass",
+          i);
+    }
   }
 
   for (const auto fixedNode : options.fixedNodes) {
@@ -377,6 +786,60 @@ PreparedDeformableBodyData prepareDeformableBodyOptions(
         fixedNode);
     data.fixed[fixedNode] = 1u;
   }
+
+  data.boundaryConditions.dirichlet.reserve(
+      options.dirichletBoundaryConditions.size());
+  for (std::size_t i = 0; i < options.dirichletBoundaryConditions.size(); ++i) {
+    const auto& boundary = options.dirichletBoundaryConditions[i];
+    validateBoundaryNodes(
+        boundary.nodes, nodeCount, "dirichletBoundaryConditions", i);
+    validateDeformableFiniteVector(
+        boundary.linearVelocity,
+        "dirichletBoundaryConditions.linearVelocity",
+        i);
+    validateDeformableFiniteVector(
+        boundary.angularVelocity,
+        "dirichletBoundaryConditions.angularVelocity",
+        i);
+    validateDeformableFiniteVector(
+        boundary.center, "dirichletBoundaryConditions.center", i);
+    validateBoundaryTimeRange(
+        boundary.startTime, boundary.endTime, "dirichletBoundaryConditions");
+
+    comps::DeformableDirichletBoundary internal;
+    internal.nodes = boundary.nodes;
+    internal.referencePositions.reserve(boundary.nodes.size());
+    for (const auto node : boundary.nodes) {
+      internal.referencePositions.push_back(data.restPositions[node]);
+    }
+    internal.center = boundary.center;
+    internal.linearVelocity = boundary.linearVelocity;
+    internal.angularVelocity = boundary.angularVelocity;
+    internal.startTime = boundary.startTime;
+    internal.endTime = boundary.endTime;
+    data.boundaryConditions.dirichlet.push_back(std::move(internal));
+  }
+
+  data.boundaryConditions.neumann.reserve(
+      options.neumannBoundaryConditions.size());
+  for (std::size_t i = 0; i < options.neumannBoundaryConditions.size(); ++i) {
+    const auto& boundary = options.neumannBoundaryConditions[i];
+    validateBoundaryNodes(
+        boundary.nodes, nodeCount, "neumannBoundaryConditions", i);
+    validateDeformableFiniteVector(
+        boundary.acceleration, "neumannBoundaryConditions.acceleration", i);
+    validateBoundaryTimeRange(
+        boundary.startTime, boundary.endTime, "neumannBoundaryConditions");
+
+    comps::DeformableNeumannBoundary internal;
+    internal.nodes = boundary.nodes;
+    internal.acceleration = boundary.acceleration;
+    internal.startTime = boundary.startTime;
+    internal.endTime = boundary.endTime;
+    data.boundaryConditions.neumann.push_back(std::move(internal));
+  }
+
+  validateNoBoundaryConflicts(options, data.fixed);
 
   DART_EXPERIMENTAL_THROW_T_IF(
       !std::isfinite(options.edgeStiffness) || options.edgeStiffness < 0.0,
@@ -863,6 +1326,22 @@ DeformableBody World::addDeformableBody(
   model.edges = std::move(data.edges);
   model.stiffness = data.stiffness;
   model.damping = data.damping;
+
+  auto& topology = m_registry.emplace<comps::DeformableMeshTopology>(entity);
+  topology.restPositions = std::move(data.restPositions);
+  topology.surfaceTriangles = std::move(data.surfaceTriangles);
+  topology.tetrahedra = std::move(data.tetrahedra);
+  topology.tetrahedronRestVolumes = std::move(data.tetrahedronRestVolumes);
+
+  auto& material = m_registry.emplace<comps::DeformableMaterial>(entity);
+  material = data.material;
+
+  if (!data.boundaryConditions.dirichlet.empty()
+      || !data.boundaryConditions.neumann.empty()) {
+    auto& boundaryConditions
+        = m_registry.emplace<comps::DeformableBoundaryConditions>(entity);
+    boundaryConditions = std::move(data.boundaryConditions);
+  }
 
   return DeformableBody(entt::to_integral(entity), this);
 }

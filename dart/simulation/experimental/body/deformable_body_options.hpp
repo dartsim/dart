@@ -34,6 +34,7 @@
 
 #include <Eigen/Core>
 
+#include <limits>
 #include <vector>
 
 #include <cstddef>
@@ -51,12 +52,96 @@ struct DeformableEdge
   double restLength = -1.0;
 };
 
+/// Surface triangle over deformable body nodes.
+struct DeformableSurfaceTriangle
+{
+  std::size_t nodeA = 0;
+  std::size_t nodeB = 0;
+  std::size_t nodeC = 0;
+};
+
+/// Volumetric tetrahedron over deformable body nodes.
+struct DeformableTetrahedron
+{
+  std::size_t nodeA = 0;
+  std::size_t nodeB = 0;
+  std::size_t nodeC = 0;
+  std::size_t nodeD = 0;
+};
+
+/// Material properties stored with a deformable body.
+///
+/// This mesh-state slice validates and serializes all fields, but only density
+/// is used today, and only to assemble default lumped masses for tetrahedral
+/// bodies when explicit masses are omitted. Elastic material models are added
+/// in later PLAN-081 slices.
+struct DeformableMaterialProperties
+{
+  /// Volumetric density used for default tetrahedral mass assembly.
+  double density = 1.0;
+
+  /// Young's modulus reserved for future elastic material models.
+  double youngsModulus = 1.0e5;
+
+  /// Poisson ratio reserved for future elastic material models.
+  double poissonRatio = 0.3;
+};
+
+/// Scripted Dirichlet boundary condition over deformable nodes.
+///
+/// Active nodes are removed from the deformable solve while the time range is
+/// active and follow a restartable linearized rigid motion around `center`.
+/// This is boundary-control scaffolding for scene replay, not a public solver
+/// callback mechanism.
+struct DeformableDirichletBoundaryCondition
+{
+  /// Node indices controlled by this boundary condition.
+  std::vector<std::size_t> nodes;
+
+  /// Translation velocity in world units per second.
+  Eigen::Vector3d linearVelocity = Eigen::Vector3d::Zero();
+
+  /// Angular velocity in radians per second.
+  Eigen::Vector3d angularVelocity = Eigen::Vector3d::Zero();
+
+  /// World-space center used for angular velocity.
+  Eigen::Vector3d center = Eigen::Vector3d::Zero();
+
+  /// Inclusive start time in seconds.
+  double startTime = 0.0;
+
+  /// Exclusive end time in seconds. Infinity means no scheduled stop.
+  double endTime = std::numeric_limits<double>::infinity();
+};
+
+/// Time-ranged Neumann-style nodal acceleration over deformable nodes.
+///
+/// IPC scene `NBC` records encode acceleration components (`ax ay az`). This
+/// contact-free replay slice applies the vector directly as per-node external
+/// acceleration. Traction work terms are added with later FEM material slices.
+struct DeformableNeumannBoundaryCondition
+{
+  /// Node indices receiving the acceleration.
+  std::vector<std::size_t> nodes;
+
+  /// Nodal acceleration applied while the time range is active.
+  Eigen::Vector3d acceleration = Eigen::Vector3d::Zero();
+
+  /// Inclusive start time in seconds.
+  double startTime = 0.0;
+
+  /// Exclusive end time in seconds. Infinity means no scheduled stop.
+  double endTime = std::numeric_limits<double>::infinity();
+};
+
 /// Options for creating a DeformableBody.
 ///
-/// This first experimental model is intentionally narrow: it represents a set
-/// of point-mass nodes joined by distance springs. Contact and barrier tuning
-/// are solver internals owned by the World step pipeline, not public body
-/// options.
+/// This experimental model currently steps point-mass nodes joined by distance
+/// springs. Optional surface/tetrahedral topology and material properties are
+/// stored as mesh-state scaffolding for later deformable solvers; they do not
+/// enable FEM elasticity, mesh contact, CCD, projected Newton, or friction.
+/// Contact and barrier tuning are solver internals owned by the World step
+/// pipeline, not public body options.
 struct DeformableBodyOptions
 {
   /// Initial world-space node positions. Must be non-empty and finite.
@@ -73,8 +158,30 @@ struct DeformableBodyOptions
   /// Distance-spring edges between nodes.
   std::vector<DeformableEdge> edges;
 
+  /// Optional surface topology for rendering and diagnostics.
+  ///
+  /// If empty and tetrahedra are provided, the boundary surface is derived from
+  /// the tetrahedral topology. Surface-only bodies must provide explicit node
+  /// masses until a shell mass model is introduced.
+  std::vector<DeformableSurfaceTriangle> surfaceTriangles;
+
+  /// Optional volumetric tetrahedral topology.
+  ///
+  /// When masses are omitted and tetrahedra are present, node masses are
+  /// assembled as density * tetrahedron_volume / 4 per incident node.
+  std::vector<DeformableTetrahedron> tetrahedra;
+
   /// Node indices eliminated from the solve and held fixed in world space.
   std::vector<std::size_t> fixedNodes;
+
+  /// Optional scripted Dirichlet boundary conditions.
+  std::vector<DeformableDirichletBoundaryCondition> dirichletBoundaryConditions;
+
+  /// Optional time-ranged Neumann-style nodal accelerations.
+  std::vector<DeformableNeumannBoundaryCondition> neumannBoundaryConditions;
+
+  /// Material properties stored with the body. Only density affects this slice.
+  DeformableMaterialProperties material;
 
   /// Distance-spring stiffness. Must be finite and non-negative.
   double edgeStiffness = 100.0;

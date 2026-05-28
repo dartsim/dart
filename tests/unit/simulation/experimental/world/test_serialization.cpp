@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/experimental/body/deformable_body.hpp>
 #include <dart/simulation/experimental/body/rigid_body.hpp>
 #include <dart/simulation/experimental/common/constants.hpp>
 #include <dart/simulation/experimental/comps/frame_types.hpp>
@@ -171,6 +172,37 @@ TEST(Serialization, EmptyWorld)
   EXPECT_EQ(world2.getMultibodyCount(), 0);
   EXPECT_EQ(world2.getRigidBodyCount(), 0);
   EXPECT_FALSE(world2.isSimulationMode());
+}
+
+// Test deformable custom serializers are restored after registry reset.
+TEST(Serialization, DeformableSerializersAreRegisteredAfterRegistryClear)
+{
+  namespace sx = dart::simulation::experimental;
+
+  sx::io::SerializerRegistry::instance().clear();
+
+  sx::World world1;
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ()};
+  options.tetrahedra = {sx::DeformableTetrahedron{0, 1, 2, 3}};
+  options.material.density = 12.0;
+  [[maybe_unused]] auto body
+      = world1.addDeformableBody("serializer_mesh", options);
+
+  std::stringstream stream;
+  ASSERT_NO_THROW(world1.saveBinary(stream));
+
+  sx::World world2;
+  ASSERT_NO_THROW(world2.loadBinary(stream));
+  auto restored = world2.getDeformableBody("serializer_mesh");
+  ASSERT_TRUE(restored.has_value());
+  EXPECT_EQ(restored->getTetrahedronCount(), 1u);
+  EXPECT_EQ(restored->getSurfaceTriangleCount(), 4u);
+  EXPECT_DOUBLE_EQ(restored->getMass(0), 0.5);
 }
 
 // Test save/load world with single multibody (no links)
