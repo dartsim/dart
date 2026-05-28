@@ -96,7 +96,7 @@ solver-owned contact buffers, and solver-wired CCD line search.
 ## How To Resume
 
 ```bash
-git checkout feature/ipc-barrier-kernels
+git checkout feature/ipc-motion-aware-candidates
 git status && git log -3 --oneline
 cmake --build build/default/cpp/Release --target test_primitive_distance bm_ipc_distance_kernels
 ctest --test-dir build/default/cpp/Release -R '^test_primitive_distance$' --output-on-failure
@@ -122,4 +122,5 @@ ctest --test-dir build/default/cpp/Release -R '^(test_contact_candidate_set|test
 Switch to `feature/ipc-scene-boundary-diagnostics` when reviewing the stacked
 scene replay base, `feature/ipc-deformable-contact-kernels` for the candidate
 set/CCD base, `feature/ipc-barrier-kernels` for clamped barrier scaffolding,
-or `feature/ipc-tangent-stencils` for the immediate stacked base.
+`feature/ipc-tangent-stencils` for the immediate stacked base, or
+`feature/ipc-motion-aware-candidates` for the current sub-slice.
