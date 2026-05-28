@@ -514,16 +514,16 @@ that ordinary untagged static collision shapes remain ignored, and that fixed
 nodes do not contribute to ground CCD stats.
 
 The latest local static-ground gate pass on 2026-05-27 passed the focused
-target build and 12 filtered `test_deformable_body` cases covering existing
+target build and 13 filtered `test_deformable_body` cases covering existing
 static-ground behavior, active tangential contact, boundary-condition contact,
-opt-in semantics, new box/sphere/fly-through CCD regressions, and fixed-node
-skipping. The benchmark smoke reported about 0.64 us for a one-barrier
-no-contact stage, about 23 us for one crossing barrier, about 0.50 ms for 8
-crossing barriers, and about 5.7 ms for 32 crossing barriers. The vertical
-fast path reported two clearance samples per node check; crossing cases
-reported nonzero ground CCD hits and limited-step counters. CPU scaling was
-enabled, so treat these as local smoke numbers rather than final performance
-claims.
+opt-in semantics, new box/sphere/fly-through/narrow-offset CCD regressions, and
+fixed-node skipping. The benchmark smoke reported about 0.52 us for a
+one-barrier no-contact stage, about 19 us for one crossing barrier, about
+0.43 ms for 8 crossing barriers, and about 4.95 ms for 32 crossing barriers. The
+vertical fast path reported two clearance samples per node check; crossing
+cases reported nonzero ground CCD hits and limited-step counters. CPU scaling
+was enabled, so treat these as local smoke numbers rather than final
+performance claims.
 
 Current CCD step-bound local gates:
 

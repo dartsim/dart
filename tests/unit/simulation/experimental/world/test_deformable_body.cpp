@@ -993,6 +993,39 @@ TEST(DeformableBody, StaticGroundBarrierCcdCatchesFiniteFootprintFlyThrough)
 }
 
 //==============================================================================
+TEST(DeformableBody, StaticGroundBarrierCcdCatchesNarrowOffsetFootprint)
+{
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.022, 0.0, -0.05);
+  auto ground = world.addRigidBody("narrow_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.005, 0.5, 0.05)));
+  ground.setDeformableGroundBarrier(true);
+
+  auto body = world.addDeformableBody(
+      "fast_node",
+      makeSingleNodeBodyOptions(
+          Eigen::Vector3d(-1.0, 0.0, -0.2), Eigen::Vector3d(20.0, 0.0, 0.0)));
+
+  compute::SequentialExecutor executor;
+  compute::DeformableDynamicsStage stage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  world.step(executor, pipeline);
+
+  const auto& stats = stage.getLastStats();
+  EXPECT_LT(body.getPosition(0).x(), 0.017);
+  EXPECT_NEAR(body.getPosition(0).z(), -0.2, 1e-12);
+  EXPECT_GT(stats.staticGroundBarrierCcdHits, 0u);
+  EXPECT_GT(stats.staticGroundBarrierCcdLimitedSteps, 0u);
+}
+
+//==============================================================================
 TEST(DeformableBody, StaticGroundBarrierCcdLimitsSphereTopSurface)
 {
   sx::World world;
