@@ -868,6 +868,11 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     distance. The cull is behavior-preserving (covered by an equivalence
     regression) and drops the measured scene-assembly complexity from O(N^2) to
     O(N) (~4.4x faster at 32 bodies, widening with scene size).
+  - Added a same-scene per-step comparison benchmark of the incumbent
+    sequential-impulse rigid path against the opt-in rigid IPC path via
+    `World::setRigidBodySolver()`, establishing the DART rigid baseline to beat.
+    The rigid IPC scaffold is currently ~3 orders of magnitude slower per step,
+    quantifying the optimization gap.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled

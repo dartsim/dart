@@ -72,6 +72,34 @@ single number.
 | ProjectedNewtonSolve (8 iters, two-body) | ~47 µs   |
 | LineSearchStepBound (triangle crossing)  | ~16 µs   |
 
+## DART rigid path comparison (baseline #1)
+
+`bm_rigid_ipc_solver` includes a same-scene per-`World::step()` comparison of the
+incumbent sequential-impulse rigid path against the opt-in rigid IPC path,
+selected through the public `World::setRigidBodySolver()`, on a stack of dynamic
+boxes resting in light contact above a static ground box
+(`BM_RigidWorldStep_SequentialImpulse` vs `BM_RigidWorldStep_Ipc`). The contact
+models differ (velocity-level impulses vs position-level barriers), so this is a
+throughput comparison of advancing the same scene one step, not a
+matched-accuracy claim.
+
+Snapshot (2026-05-28, host `32 x 5300 MHz`, Release, CPU scaling enabled):
+
+| Boxes | Sequential impulse | Rigid IPC | IPC slower by |
+| ----- | ------------------ | --------- | ------------- |
+| 1     | ~45 µs             | ~18 ms    | ~400x         |
+| 2     | ~51 µs             | ~65 ms    | ~1300x        |
+| 4     | ~57 µs             | ~137 ms   | ~2400x        |
+
+Reading: the rigid IPC path is currently ~3 orders of magnitude slower than the
+incumbent and scales super-linearly (~2x per added box) while sequential impulse
+is near-flat. This is the expected starting point for a projected-Newton barrier
+scaffold — per step it runs many ~6-8 us primitive-barrier kernels across Newton
+iterations, friction passes, and CCD line searches. It quantifies the
+optimization gap to close before any reference/paper comparison is meaningful;
+the next targets (per-primitive kernel cost, denser-system Newton solve, warm
+starting, active-set reuse) follow from here.
+
 ## Resolved performance findings
 
 - **Scene assembly was O(N²); now O(N).** The original `assembleRigidIpcBarrierSystem`
