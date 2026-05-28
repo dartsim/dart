@@ -97,9 +97,9 @@ The static-ground-barrier CCD sub-slice adds a point-mass node sweep limiter
 inside `DeformableDynamicsStage` for existing explicitly opted-in static rigid
 ground barriers. It uses the current analytic box/sphere top-height barrier
 semantics, shortens line-search trials before objective evaluation, covers
-fast vertical sweeps, finite-footprint fly-through, sphere top surfaces,
-ordinary-static opt-out, and fixed-node skip regressions, and reports explicit
-experimental C++ stage stats. It is still scaffolding: it is not
+fast vertical sweeps, finite-footprint fly-through, narrow offset footprints,
+sphere top surfaces, ordinary-static opt-out, and fixed-node skip regressions,
+and reports explicit experimental C++ stage stats. It is still scaffolding: it is not
 deformable-rigid mesh contact, rigid collision response, side-face collision,
 moving obstacle contact, IPC barrier-force assembly, projected Newton, or
 friction.
