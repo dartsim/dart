@@ -45,6 +45,26 @@ std::array<Eigen::Vector3d, 4> pointTriangleCase()
 }
 
 //==============================================================================
+std::array<Eigen::Vector3d, 4> pointTriangleEdgeCase()
+{
+  return {
+      Eigen::Vector3d(0.5, -1.0, 1.5),
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0)};
+}
+
+//==============================================================================
+std::array<Eigen::Vector3d, 4> pointTriangleVertexCase()
+{
+  return {
+      Eigen::Vector3d(-1.0, -1.0, 1.5),
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.0, 1.0, 0.0)};
+}
+
+//==============================================================================
 std::array<Eigen::Vector3d, 4> edgeEdgeCase()
 {
   return {
@@ -52,6 +72,26 @@ std::array<Eigen::Vector3d, 4> edgeEdgeCase()
       Eigen::Vector3d(1.1, 0.2, 0.3),
       Eigen::Vector3d(0.2, -1.2, 1.4),
       Eigen::Vector3d(-0.1, 1.3, 1.8)};
+}
+
+//==============================================================================
+std::array<Eigen::Vector3d, 4> edgeEdgePointPointCase()
+{
+  return {
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(-1.0, 1.0, 0.4),
+      Eigen::Vector3d(-1.0, 2.0, 0.4)};
+}
+
+//==============================================================================
+std::array<Eigen::Vector3d, 4> edgeEdgePointEdgeCase()
+{
+  return {
+      Eigen::Vector3d(0.0, 0.0, 0.0),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d(0.5, 1.0, 0.4),
+      Eigen::Vector3d(0.5, 2.0, 0.4)};
 }
 
 //==============================================================================
@@ -100,6 +140,28 @@ static void BM_IpcPointTriangleDistanceHessian(benchmark::State& state)
 BENCHMARK(BM_IpcPointTriangleDistanceHessian);
 
 //==============================================================================
+static void BM_IpcPointTriangleDistanceHessianEdge(benchmark::State& state)
+{
+  const auto [p, a, b, c] = pointTriangleEdgeCase();
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(
+        dc::pointTriangleSquaredDistanceHessian(p, a, b, c));
+  }
+}
+BENCHMARK(BM_IpcPointTriangleDistanceHessianEdge);
+
+//==============================================================================
+static void BM_IpcPointTriangleDistanceHessianVertex(benchmark::State& state)
+{
+  const auto [p, a, b, c] = pointTriangleVertexCase();
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(
+        dc::pointTriangleSquaredDistanceHessian(p, a, b, c));
+  }
+}
+BENCHMARK(BM_IpcPointTriangleDistanceHessianVertex);
+
+//==============================================================================
 static void BM_IpcEdgeEdgeDistanceValue(benchmark::State& state)
 {
   const auto [a, b, c, d] = edgeEdgeCase();
@@ -129,6 +191,26 @@ static void BM_IpcEdgeEdgeDistanceHessian(benchmark::State& state)
   }
 }
 BENCHMARK(BM_IpcEdgeEdgeDistanceHessian);
+
+//==============================================================================
+static void BM_IpcEdgeEdgeDistanceHessianPointPoint(benchmark::State& state)
+{
+  const auto [a, b, c, d] = edgeEdgePointPointCase();
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(dc::edgeEdgeSquaredDistanceHessian(a, b, c, d));
+  }
+}
+BENCHMARK(BM_IpcEdgeEdgeDistanceHessianPointPoint);
+
+//==============================================================================
+static void BM_IpcEdgeEdgeDistanceHessianPointEdge(benchmark::State& state)
+{
+  const auto [a, b, c, d] = edgeEdgePointEdgeCase();
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(dc::edgeEdgeSquaredDistanceHessian(a, b, c, d));
+  }
+}
+BENCHMARK(BM_IpcEdgeEdgeDistanceHessianPointEdge);
 
 //==============================================================================
 static void BM_IpcEdgeEdgeMollifier(benchmark::State& state)

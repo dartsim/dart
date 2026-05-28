@@ -21,10 +21,13 @@
       CCD line-search bounds.
   - [x] Internal primitive-distance kernel sub-slice: point-triangle and
         edge-edge squared-distance values, closest-feature classification,
-        gradients, finite-difference Hessians for the first solver-facing
-        contract, IPC-style edge-edge mollifier threshold/value/gradient/
-        Hessian, finite-difference regression tests, and
-        `bm_ipc_distance_kernels`.
+        gradients, the first solver-facing Hessian contract, IPC-style
+        edge-edge mollifier threshold/value/gradient/Hessian,
+        finite-difference regression tests, and `bm_ipc_distance_kernels`.
+  - [x] Internal analytic-Hessian optimization sub-slice: feature-wise exact
+        point-triangle and edge-edge distance Hessians for vertex, edge, face,
+        and interior closest features, degenerate triangle edge fallback, and
+        benchmark evidence replacing the finite-difference Hessian placeholder.
   - [x] Internal candidate-set sub-slice: deterministic unique surface-edge
         extraction, point-triangle and edge-edge primitive candidate assembly,
         incident/adjacent exclusion filters, exact activation-distance filtering
@@ -35,9 +38,9 @@
         separation-band handling, deterministic candidate aggregation, exact CCD
         regression tests, sampled safety checks, and
         `bm_ipc_continuous_collision_step`.
-  - [ ] Remaining Phase 2 work: analytic distance Hessians, tangent bases,
-        motion-aware candidate culling, barrier/candidate integration,
-        solver-owned contact buffers, and solver-wired CCD line search.
+  - [ ] Remaining Phase 2 work: tangent bases, motion-aware candidate culling,
+        barrier/candidate integration, solver-owned contact buffers, and
+        solver-wired CCD line search.
 - [ ] Phase 3: clamped barriers, projected Newton, sparse assembly, and solver
       statistics.
 - [ ] Phase 4: lagged smoothed friction and friction diagnostics.
@@ -78,11 +81,11 @@ DART-owned implementation.
 
 ## Immediate Next Steps
 
-1. Continue Phase 2 with analytic distance Hessian optimization, tangent bases,
-   motion-aware candidate culling, barrier/candidate integration,
-   solver-owned contact buffers, and solver-wired CCD line search. The current
-   primitive kernels, candidate sets, and CCD step-bound helpers are internal
-   scaffolding only and are not yet wired into `World::step()`.
+1. Continue Phase 2 with tangent bases, motion-aware candidate culling,
+   barrier/candidate integration, solver-owned contact buffers, and
+   solver-wired CCD line search. The current primitive kernels, candidate sets,
+   analytic Hessians, and CCD step-bound helpers are internal scaffolding only
+   and are not yet wired into `World::step()`.
 2. Finish the rest of Slice 1 from PLAN-081 in parallel when needed for corpus
    scenes: broader scene asset loading, BE/NM state, output diagnostics
    compatibility decisions, and more contact-free mesh replays. The
@@ -126,11 +129,11 @@ CCD line search, projected Newton, or full scene-corpus parity.
 
 For the primitive-distance kernel sub-slice, keep the verification language
 precise: it covers internal squared-distance values, closest-feature
-classification, gradients, finite-difference Hessians, the edge-edge mollifier,
-finite-difference derivative tests, and microbenchmark timings. It does not yet
-cover analytic distance Hessians, tangent bases, broad-phase candidate assembly,
-CCD line search, barrier assembly, projected Newton, friction, or scene-level
-IPC contact behavior.
+classification, gradients, feature-wise analytic Hessians, the edge-edge
+mollifier, finite-difference derivative tests, and microbenchmark timings. It
+does not yet cover tangent bases, broad-phase candidate assembly, CCD line
+search, barrier assembly, projected Newton, friction, or scene-level IPC
+contact behavior.
 
 For the candidate-set sub-slice, keep the verification language precise: it
 covers deterministic surface-edge extraction, internal point-triangle and
@@ -163,11 +166,15 @@ pixi run check-api-boundaries
 
 The first local gate pass on 2026-05-27 passed `pixi run lint`, the focused
 target build, 13 `test_primitive_distance` cases, the CTest registration path,
-`pixi run check-api-boundaries`, and `pixi run check-lint`. The latest benchmark
-smoke reported roughly 8-19 ns for value/gradient distance paths, 213 ns for the
-analytic edge-edge mollifier Hessian path, and about 0.61-0.69 us for the
-finite-difference distance Hessian placeholders. Treat those Hessian numbers as
-a temporary optimization target, not as final IPC performance evidence.
+`pixi run check-api-boundaries`, and `pixi run check-lint`. The latest analytic
+Hessian optimization gate passed the same 13-case test binary and reported
+roughly 8-16 ns for value/gradient distance paths, 487 ns for the
+point-triangle face distance Hessian, 486 ns for the point-triangle edge
+Hessian, 26 ns for the point-triangle vertex Hessian, 515 ns for the edge-edge
+interior distance Hessian, 490 ns for the edge-edge point-edge Hessian, 22 ns
+for the edge-edge point-point Hessian, and 203 ns for the analytic edge-edge
+mollifier Hessian path. CPU scaling was enabled, so treat these as local smoke
+numbers rather than a final performance claim.
 
 Current candidate-set local gates:
 
