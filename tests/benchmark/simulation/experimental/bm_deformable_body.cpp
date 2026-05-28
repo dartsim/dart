@@ -604,6 +604,75 @@ struct DeformableMovingRigidSurfaceCcdWorld
 };
 
 //==============================================================================
+struct DeformableSelfContactBarrierWorld
+{
+  explicit DeformableSelfContactBarrierWorld(int pairCount)
+  {
+    pairCount = std::max(pairCount, 1);
+
+    sx::DeformableBodyOptions options;
+    options.edgeStiffness = 0.0;
+    options.damping = 0.0;
+
+    constexpr double gap = 0.015; // inside the barrier activation band (2e-2)
+    constexpr double spacing = 3.0;
+    for (int i = 0; i < pairCount; ++i) {
+      const double x = spacing * static_cast<double>(i);
+      const auto base = static_cast<std::size_t>(options.positions.size());
+      // Lower (fixed) triangle.
+      options.positions.push_back(Eigen::Vector3d(x + 0.0, 0.0, 0.0));
+      options.positions.push_back(Eigen::Vector3d(x + 1.0, 0.0, 0.0));
+      options.positions.push_back(Eigen::Vector3d(x + 0.0, 1.0, 0.0));
+      // Upper triangle driven down onto the lower one.
+      options.positions.push_back(Eigen::Vector3d(x + 0.0, 0.0, gap));
+      options.positions.push_back(Eigen::Vector3d(x + 1.0, 0.0, gap));
+      options.positions.push_back(Eigen::Vector3d(x + 0.0, 1.0, gap));
+      for (int k = 0; k < 3; ++k) {
+        options.velocities.push_back(Eigen::Vector3d::Zero());
+      }
+      for (int k = 0; k < 3; ++k) {
+        options.velocities.push_back(Eigen::Vector3d(0.0, 0.0, -0.2));
+      }
+      for (int k = 0; k < 6; ++k) {
+        options.masses.push_back(1.0);
+      }
+      options.fixedNodes.push_back(base + 0);
+      options.fixedNodes.push_back(base + 1);
+      options.fixedNodes.push_back(base + 2);
+      options.surfaceTriangles.push_back(
+          sx::DeformableSurfaceTriangle{base + 0, base + 1, base + 2});
+      options.surfaceTriangles.push_back(
+          sx::DeformableSurfaceTriangle{base + 3, base + 4, base + 5});
+    }
+
+    initialPositions = options.positions;
+    initialVelocities = options.velocities;
+    body = world.addDeformableBody("self_contact_barrier", options);
+    nodeCount = body.getNodeCount();
+    this->pairCount = static_cast<std::size_t>(pairCount);
+
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.1);
+    world.enterSimulationMode();
+  }
+
+  void reset()
+  {
+    for (std::size_t i = 0; i < initialPositions.size(); ++i) {
+      body.setPosition(i, initialPositions[i]);
+      body.setVelocity(i, initialVelocities[i]);
+    }
+  }
+
+  sx::World world;
+  sx::DeformableBody body;
+  std::vector<Eigen::Vector3d> initialPositions;
+  std::vector<Eigen::Vector3d> initialVelocities;
+  std::size_t nodeCount = 0;
+  std::size_t pairCount = 0;
+};
+
+//==============================================================================
 struct RigidOnlyWorld
 {
   explicit RigidOnlyWorld(int staticBodyCount)
@@ -1012,6 +1081,40 @@ void BM_DeformableMovingRigidSurfaceCcdStage(benchmark::State& state)
 }
 
 //==============================================================================
+void BM_DeformableSelfContactBarrierStage(benchmark::State& state)
+{
+  const auto pairCount = static_cast<int>(state.range(0));
+  DeformableSelfContactBarrierWorld fixture(pairCount);
+  sx::compute::SequentialExecutor executor;
+  sx::compute::DeformableDynamicsStage deformableStage;
+  sx::compute::WorldStepPipeline pipeline;
+  pipeline.addStage(deformableStage);
+
+  for (auto _ : state) {
+    state.PauseTiming();
+    fixture.reset();
+    state.ResumeTiming();
+    fixture.world.step(executor, pipeline);
+    benchmark::DoNotOptimize(
+        fixture.body.getPosition(fixture.nodeCount - 1u).z());
+  }
+
+  const auto& stats = deformableStage.getLastStats();
+  state.counters["nodes"] = static_cast<double>(fixture.nodeCount);
+  state.counters["pairs"] = static_cast<double>(fixture.pairCount);
+  state.counters["barrier_candidate_builds"]
+      = static_cast<double>(stats.selfContactBarrierCandidateBuilds);
+  state.counters["barrier_active_contacts"]
+      = static_cast<double>(stats.selfContactBarrierActiveContacts);
+  state.counters["solver_iterations"]
+      = static_cast<double>(stats.solverIterations);
+  state.counters["line_search_trials"]
+      = static_cast<double>(stats.lineSearchTrials);
+  state.SetItemsProcessed(
+      static_cast<int64_t>(state.iterations() * fixture.nodeCount));
+}
+
+//==============================================================================
 void BM_DeformableSceneLoad(benchmark::State& state)
 {
   const auto scenePath = benchmarkScenePath();
@@ -1121,6 +1224,8 @@ BENCHMARK(BM_DeformableMovingRigidSurfaceCcdStage)
     ->Args({1, 1})
     ->Args({8, 1})
     ->Args({32, 1});
+
+BENCHMARK(BM_DeformableSelfContactBarrierStage)->Arg(1)->Arg(8)->Arg(32);
 
 BENCHMARK(BM_DeformableSceneLoad);
 

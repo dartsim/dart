@@ -45,6 +45,7 @@
 #include "dart/simulation/experimental/compute/compute_graph.hpp"
 #include "dart/simulation/experimental/compute/rigid_body_state_batch.hpp"
 #include "dart/simulation/experimental/compute/world_kinematics_graph.hpp"
+#include "dart/simulation/experimental/detail/deformable_contact/barrier_kernel.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/candidate_set.hpp"
 #include "dart/simulation/experimental/detail/deformable_contact/continuous_collision_step.hpp"
 #include "dart/simulation/experimental/world.hpp"
@@ -721,6 +722,9 @@ struct DeformableContactSolverScratch
   std::vector<DeformableSurfaceTriangle> surfaceTriangles;
   std::vector<std::uint8_t> surfaceContactPointMask;
   dc::ContactCandidateSet candidates;
+  // Self-contact barrier active set, assembled once per outer solver iteration
+  // at the current positions (within the barrier activation distance d_hat).
+  dc::ContactCandidateSet barrierCandidates;
   dc::detail::ContactCandidateSweepScratch sweepScratch;
   std::vector<dc::SurfaceEdge> interBodyCurrentEdges;
   std::vector<dc::detail::SweepItem> interBodyCurrentPointItems;
@@ -1949,6 +1953,110 @@ double addStaticGroundBarrierEnergy(
 }
 
 //==============================================================================
+// Activation distance d_hat for the self-contact barrier. The barrier is active
+// only when a contact pair's distance is below this value.
+double selfContactBarrierActivationDistance()
+{
+  return 2e-2;
+}
+
+// Fixed barrier stiffness (kappa). Adaptive stiffness is a later slice.
+double selfContactBarrierStiffness()
+{
+  return 1e5;
+}
+
+// Inputs for the IPC clamped-log self-contact barrier energy term. Null/zero
+// fields disable the term, preserving the contact-free objective exactly.
+struct SelfContactBarrierInputs
+{
+  const dc::ContactCandidateSet* candidates = nullptr;
+  const std::vector<DeformableSurfaceTriangle>* triangles = nullptr;
+  double squaredActivationDistance = 0.0;
+  double stiffness = 0.0;
+};
+
+// Adds the IPC clamped-log barrier energy/gradient over the active self-contact
+// candidate set (point-triangle and edge-edge). The barrier kernel already
+// returns position-space derivatives (a 12-vector over the four primitive
+// points), so each contact's gradient is scattered into its four nodes. This
+// produces smooth repulsive contact forces; the CCD limiters remain the hard
+// no-penetration guarantee.
+double addSelfContactBarrierEnergy(
+    const std::vector<Eigen::Vector3d>& positions,
+    const std::vector<std::uint8_t>& fixed,
+    const SelfContactBarrierInputs& inputs,
+    std::size_t* activeContacts,
+    std::vector<Eigen::Vector3d>* gradient)
+{
+  if (inputs.candidates == nullptr || inputs.triangles == nullptr
+      || inputs.stiffness <= 0.0 || !(inputs.squaredActivationDistance > 0.0)) {
+    return 0.0;
+  }
+
+  const auto& candidates = *inputs.candidates;
+  const auto& triangles = *inputs.triangles;
+  double energy = 0.0;
+
+  const auto scatter = [&](const dc::PrimitiveBarrierResult& result,
+                           const std::array<std::size_t, 4>& nodes) {
+    energy += result.value;
+    if (activeContacts != nullptr) {
+      ++(*activeContacts);
+    }
+    if (gradient == nullptr) {
+      return;
+    }
+    for (int k = 0; k < 4; ++k) {
+      if (fixed[nodes[k]] != 0u) {
+        continue;
+      }
+      (*gradient)[nodes[k]] += result.gradient.segment<3>(3 * k);
+    }
+  };
+
+  for (const auto& candidate : candidates.pointTriangleCandidates) {
+    const auto& triangle = triangles[candidate.triangle];
+    const auto result = dc::pointTriangleBarrier(
+        positions[candidate.point],
+        positions[triangle.nodeA],
+        positions[triangle.nodeB],
+        positions[triangle.nodeC],
+        inputs.squaredActivationDistance,
+        inputs.stiffness);
+    if (!result.active) {
+      continue;
+    }
+    scatter(
+        result,
+        {candidate.point, triangle.nodeA, triangle.nodeB, triangle.nodeC});
+  }
+
+  // Edge-edge uses the plain (non-mollified) barrier. The IPC edge-edge
+  // mollifier that smooths nearly-parallel configurations is intentionally
+  // deferred: it pairs with the projected-Newton slice that also needs the
+  // mollified Hessian. The plain barrier is finite and safe here; the CCD
+  // limiter remains the hard no-penetration gate.
+  for (const auto& candidate : candidates.edgeEdgeCandidates) {
+    const auto& edgeA = candidates.surfaceEdges[candidate.edgeA];
+    const auto& edgeB = candidates.surfaceEdges[candidate.edgeB];
+    const auto result = dc::edgeEdgeBarrier(
+        positions[edgeA.nodeA],
+        positions[edgeA.nodeB],
+        positions[edgeB.nodeA],
+        positions[edgeB.nodeB],
+        inputs.squaredActivationDistance,
+        inputs.stiffness);
+    if (!result.active) {
+      continue;
+    }
+    scatter(result, {edgeA.nodeA, edgeA.nodeB, edgeB.nodeA, edgeB.nodeB});
+  }
+
+  return energy;
+}
+
+//==============================================================================
 double evaluateDeformableObjective(
     const comps::DeformableNodeState& state,
     const comps::DeformableSpringModel& model,
@@ -1957,7 +2065,9 @@ double evaluateDeformableObjective(
     const std::vector<std::uint8_t>& fixed,
     const std::vector<StaticGroundBarrier>& barriers,
     double timeStep,
-    std::vector<Eigen::Vector3d>* gradient)
+    std::vector<Eigen::Vector3d>* gradient,
+    const SelfContactBarrierInputs* contactBarrier = nullptr,
+    std::size_t* barrierActiveContacts = nullptr)
 {
   if (gradient != nullptr) {
     if (gradient->size() != positions.size()) {
@@ -2004,6 +2114,10 @@ double evaluateDeformableObjective(
   }
 
   energy += addStaticGroundBarrierEnergy(positions, fixed, barriers, gradient);
+  if (contactBarrier != nullptr) {
+    energy += addSelfContactBarrierEnergy(
+        positions, fixed, *contactBarrier, barrierActiveContacts, gradient);
+  }
   return energy;
 }
 
@@ -2651,6 +2765,37 @@ void advanceDeformableBody(
     for (std::size_t iteration = 0; iteration < maxIterations; ++iteration) {
       ++stats.solverIterations;
       ++stats.objectiveEvaluations;
+
+      // Assemble the self-contact barrier active set at the current positions,
+      // held fixed for this outer iteration (standard IPC). Skip when the body
+      // has no surface mesh (point-mass bodies have no self-contact).
+      SelfContactBarrierInputs contactBarrier;
+      if (!contactScratch.surfaceTriangles.empty()) {
+        const double dHat = selfContactBarrierActivationDistance();
+        dc::ContactCandidateOptions barrierOptions;
+        barrierOptions.activationDistance = dHat;
+        barrierOptions.exactDistanceFilter = true;
+        barrierOptions.excludeIncidentPointTriangles = true;
+        barrierOptions.excludeAdjacentEdges = true;
+        dc::buildContactCandidatesSweep(
+            scratch.next,
+            contactScratch.surfaceTriangles,
+            barrierOptions,
+            contactScratch.barrierCandidates,
+            contactScratch.sweepScratch);
+        // Restrict point-triangle barrier candidates to surface-referenced
+        // nodes (same mask the CCD path uses), so volumetric interior nodes do
+        // not receive spurious barrier forces against their own shell.
+        filterSurfaceContactPointCandidates(
+            contactScratch.barrierCandidates,
+            contactScratch.surfaceContactPointMask);
+        ++stats.selfContactBarrierCandidateBuilds;
+        contactBarrier.candidates = &contactScratch.barrierCandidates;
+        contactBarrier.triangles = &contactScratch.surfaceTriangles;
+        contactBarrier.squaredActivationDistance = dHat * dHat;
+        contactBarrier.stiffness = selfContactBarrierStiffness();
+      }
+
       const double energy = evaluateDeformableObjective(
           state,
           model,
@@ -2659,7 +2804,9 @@ void advanceDeformableBody(
           scratch.activeFixed,
           barriers,
           timeStep,
-          &scratch.gradient);
+          &scratch.gradient,
+          &contactBarrier,
+          &stats.selfContactBarrierActiveContacts);
       if (!std::isfinite(energy)) {
         break;
       }
@@ -2757,6 +2904,8 @@ void advanceDeformableBody(
               scratch.activeFixed,
               barriers,
               timeStep,
+              nullptr,
+              &contactBarrier,
               nullptr);
           if (std::isfinite(candidateEnergy)
               && candidateEnergy <= energy + armijo * directionalDerivative) {

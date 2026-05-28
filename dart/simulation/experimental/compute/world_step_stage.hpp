@@ -114,6 +114,12 @@ struct DeformableSolverStats
   std::size_t movingRigidSurfaceCcdIndeterminateCount = 0;
   std::size_t movingRigidSurfaceCcdLimitedSteps = 0;
   std::size_t movingRigidSurfaceCcdZeroStepCount = 0;
+  std::size_t selfContactBarrierCandidateBuilds = 0;
+  // Cumulative count of active barrier contacts summed over the outer solver
+  // iterations of a step (one increment per active candidate per gradient
+  // evaluation), matching the cumulative semantics of solverIterations; it is
+  // not the active-set size of a single iteration.
+  std::size_t selfContactBarrierActiveContacts = 0;
 
   void reset() noexcept
   {
