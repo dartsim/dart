@@ -158,6 +158,51 @@ void runCandidateSetBenchmark(
   recordCounters(state, fixture, candidates);
 }
 
+//==============================================================================
+template <typename Builder>
+void runReusableCandidateSetBenchmark(
+    benchmark::State& state, const MeshFixture& fixture, Builder&& builder)
+{
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.05;
+
+  dc::ContactCandidateSet candidates;
+  builder(fixture.positions, fixture.triangles, options, candidates);
+  for (auto _ : state) {
+    builder(fixture.positions, fixture.triangles, options, candidates);
+    benchmark::DoNotOptimize(candidates.pointTriangleCandidates.data());
+    benchmark::DoNotOptimize(candidates.edgeEdgeCandidates.data());
+  }
+
+  recordCounters(state, fixture, candidates);
+}
+
+//==============================================================================
+template <typename Builder>
+void runSweepScratchCandidateSetBenchmark(
+    benchmark::State& state, const MeshFixture& fixture, Builder&& builder)
+{
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.05;
+
+  dc::ContactCandidateSet candidates;
+  dc::detail::ContactCandidateSweepScratch scratch;
+  builder(fixture.positions, fixture.triangles, options, candidates, scratch);
+  for (auto _ : state) {
+    builder(fixture.positions, fixture.triangles, options, candidates, scratch);
+    benchmark::DoNotOptimize(candidates.pointTriangleCandidates.data());
+    benchmark::DoNotOptimize(candidates.edgeEdgeCandidates.data());
+  }
+
+  recordCounters(state, fixture, candidates);
+  state.counters["scratch_point_capacity"]
+      = static_cast<double>(scratch.pointItems.capacity());
+  state.counters["scratch_triangle_capacity"]
+      = static_cast<double>(scratch.triangleItems.capacity());
+  state.counters["scratch_edge_capacity"]
+      = static_cast<double>(scratch.edgeItems.capacity());
+}
+
 } // namespace
 
 //==============================================================================
@@ -172,6 +217,41 @@ static void BM_IpcCandidateSetSweepCloth(benchmark::State& state)
       });
 }
 BENCHMARK(BM_IpcCandidateSetSweepCloth)->Arg(8)->Arg(16)->Arg(24);
+
+//==============================================================================
+static void BM_IpcCandidateSetReusableSweepCloth(benchmark::State& state)
+{
+  const auto fixture = makeClothGrid(static_cast<int>(state.range(0)));
+  runReusableCandidateSetBenchmark(
+      state,
+      fixture,
+      [](const auto& positions,
+         const auto& triangles,
+         const auto& options,
+         auto& candidates) {
+        dc::buildContactCandidatesSweep(
+            positions, triangles, options, candidates);
+      });
+}
+BENCHMARK(BM_IpcCandidateSetReusableSweepCloth)->Arg(8)->Arg(16)->Arg(24);
+
+//==============================================================================
+static void BM_IpcCandidateSetScratchSweepCloth(benchmark::State& state)
+{
+  const auto fixture = makeClothGrid(static_cast<int>(state.range(0)));
+  runSweepScratchCandidateSetBenchmark(
+      state,
+      fixture,
+      [](const auto& positions,
+         const auto& triangles,
+         const auto& options,
+         auto& candidates,
+         auto& scratch) {
+        dc::buildContactCandidatesSweep(
+            positions, triangles, options, candidates, scratch);
+      });
+}
+BENCHMARK(BM_IpcCandidateSetScratchSweepCloth)->Arg(8)->Arg(16)->Arg(24);
 
 //==============================================================================
 static void BM_IpcCandidateSetBruteForceCloth(benchmark::State& state)
@@ -199,6 +279,41 @@ static void BM_IpcCandidateSetSweepTetraSurface(benchmark::State& state)
       });
 }
 BENCHMARK(BM_IpcCandidateSetSweepTetraSurface)->Arg(4)->Arg(8)->Arg(12);
+
+//==============================================================================
+static void BM_IpcCandidateSetReusableSweepTetraSurface(benchmark::State& state)
+{
+  const auto fixture = makeTetraSurfaceGrid(static_cast<int>(state.range(0)));
+  runReusableCandidateSetBenchmark(
+      state,
+      fixture,
+      [](const auto& positions,
+         const auto& triangles,
+         const auto& options,
+         auto& candidates) {
+        dc::buildContactCandidatesSweep(
+            positions, triangles, options, candidates);
+      });
+}
+BENCHMARK(BM_IpcCandidateSetReusableSweepTetraSurface)->Arg(4)->Arg(8)->Arg(12);
+
+//==============================================================================
+static void BM_IpcCandidateSetScratchSweepTetraSurface(benchmark::State& state)
+{
+  const auto fixture = makeTetraSurfaceGrid(static_cast<int>(state.range(0)));
+  runSweepScratchCandidateSetBenchmark(
+      state,
+      fixture,
+      [](const auto& positions,
+         const auto& triangles,
+         const auto& options,
+         auto& candidates,
+         auto& scratch) {
+        dc::buildContactCandidatesSweep(
+            positions, triangles, options, candidates, scratch);
+      });
+}
+BENCHMARK(BM_IpcCandidateSetScratchSweepTetraSurface)->Arg(4)->Arg(8)->Arg(12);
 
 //==============================================================================
 static void BM_IpcCandidateSetBruteForceTetraSurface(benchmark::State& state)

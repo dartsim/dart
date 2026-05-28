@@ -155,6 +155,13 @@ struct SweepItem
   CandidateAabb aabb;
 };
 
+struct ContactCandidateSweepScratch
+{
+  std::vector<SweepItem> pointItems;
+  std::vector<SweepItem> triangleItems;
+  std::vector<SweepItem> edgeItems;
+};
+
 //==============================================================================
 inline double nonnegativeActivationDistance(
     const ContactCandidateOptions& options)
@@ -280,7 +287,7 @@ inline CandidateAabb makeSweptTriangleAabb(
 }
 
 //==============================================================================
-inline void sortSweepItems(std::vector<SweepItem>& items)
+inline void sortSweepItems(std::span<SweepItem> items)
 {
   std::sort(
       items.begin(),
@@ -294,8 +301,8 @@ inline void sortSweepItems(std::vector<SweepItem>& items)
 //==============================================================================
 template <typename Visitor>
 void visitSweepPairs(
-    std::vector<SweepItem> lhsItems,
-    std::vector<SweepItem> rhsItems,
+    std::span<SweepItem> lhsItems,
+    std::span<SweepItem> rhsItems,
     Visitor&& visitor)
 {
   sortSweepItems(lhsItems);
@@ -318,7 +325,7 @@ void visitSweepPairs(
 
 //==============================================================================
 template <typename Visitor>
-void visitSelfSweepPairs(std::vector<SweepItem> items, Visitor&& visitor)
+void visitSelfSweepPairs(std::span<SweepItem> items, Visitor&& visitor)
 {
   sortSweepItems(items);
 
@@ -638,7 +645,8 @@ inline void buildContactCandidatesSweep(
     std::span<const Eigen::Vector3d> positions,
     std::span<const DeformableSurfaceTriangle> triangles,
     const ContactCandidateOptions& options,
-    ContactCandidateSet& candidates)
+    ContactCandidateSet& candidates,
+    detail::ContactCandidateSweepScratch& scratch)
 {
   detail::clearContactCandidateSet(candidates);
   buildUniqueSurfaceEdges(triangles, candidates.surfaceEdges);
@@ -648,19 +656,19 @@ inline void buildContactCandidatesSweep(
 
   const double margin = 0.5 * detail::nonnegativeActivationDistance(options);
 
-  std::vector<detail::SweepItem> pointItems;
-  pointItems.reserve(positions.size());
+  scratch.pointItems.clear();
+  scratch.pointItems.reserve(positions.size());
   for (std::size_t point = 0; point < positions.size(); ++point) {
-    pointItems.push_back(
+    scratch.pointItems.push_back(
         detail::SweepItem{
             point, detail::makePointAabb(positions[point], margin)});
   }
 
-  std::vector<detail::SweepItem> triangleItems;
-  triangleItems.reserve(triangles.size());
+  scratch.triangleItems.clear();
+  scratch.triangleItems.reserve(triangles.size());
   for (std::size_t triangle = 0; triangle < triangles.size(); ++triangle) {
     const auto& t = triangles[triangle];
-    triangleItems.push_back(
+    scratch.triangleItems.push_back(
         detail::SweepItem{
             triangle,
             detail::makeTriangleAabb(
@@ -671,19 +679,19 @@ inline void buildContactCandidatesSweep(
   }
 
   detail::visitSweepPairs(
-      std::move(pointItems),
-      std::move(triangleItems),
+      scratch.pointItems,
+      scratch.triangleItems,
       [&](const std::size_t point, const std::size_t triangle) {
         ++candidates.stats.broadPhaseOverlapCount;
         detail::maybeAddPointTriangleCandidate(
             candidates, positions, triangles, point, triangle, options);
       });
 
-  std::vector<detail::SweepItem> edgeItems;
-  edgeItems.reserve(candidates.surfaceEdges.size());
+  scratch.edgeItems.clear();
+  scratch.edgeItems.reserve(candidates.surfaceEdges.size());
   for (std::size_t edge = 0; edge < candidates.surfaceEdges.size(); ++edge) {
     const auto& e = candidates.surfaceEdges[edge];
-    edgeItems.push_back(
+    scratch.edgeItems.push_back(
         detail::SweepItem{
             edge,
             detail::makeSegmentAabb(
@@ -691,14 +699,25 @@ inline void buildContactCandidatesSweep(
   }
 
   detail::visitSelfSweepPairs(
-      std::move(edgeItems),
-      [&](const std::size_t edgeA, const std::size_t edgeB) {
+      scratch.edgeItems, [&](const std::size_t edgeA, const std::size_t edgeB) {
         ++candidates.stats.broadPhaseOverlapCount;
         detail::maybeAddEdgeEdgeCandidate(
             candidates, positions, edgeA, edgeB, options);
       });
 
   detail::finishCandidateSet(candidates);
+}
+
+//==============================================================================
+inline void buildContactCandidatesSweep(
+    std::span<const Eigen::Vector3d> positions,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options,
+    ContactCandidateSet& candidates)
+{
+  detail::ContactCandidateSweepScratch scratch;
+  buildContactCandidatesSweep(
+      positions, triangles, options, candidates, scratch);
 }
 
 //==============================================================================
@@ -823,7 +842,8 @@ inline void buildMotionAwareContactCandidatesSweep(
     std::span<const Eigen::Vector3d> positionsEnd,
     std::span<const DeformableSurfaceTriangle> triangles,
     const ContactCandidateOptions& options,
-    ContactCandidateSet& candidates)
+    ContactCandidateSet& candidates,
+    detail::ContactCandidateSweepScratch& scratch)
 {
   assert(positionsStart.size() == positionsEnd.size());
 
@@ -835,21 +855,21 @@ inline void buildMotionAwareContactCandidatesSweep(
 
   const double margin = 0.5 * detail::nonnegativeActivationDistance(options);
 
-  std::vector<detail::SweepItem> pointItems;
-  pointItems.reserve(positionsStart.size());
+  scratch.pointItems.clear();
+  scratch.pointItems.reserve(positionsStart.size());
   for (std::size_t point = 0; point < positionsStart.size(); ++point) {
-    pointItems.push_back(
+    scratch.pointItems.push_back(
         detail::SweepItem{
             point,
             detail::makeSweptPointAabb(
                 positionsStart[point], positionsEnd[point], margin)});
   }
 
-  std::vector<detail::SweepItem> triangleItems;
-  triangleItems.reserve(triangles.size());
+  scratch.triangleItems.clear();
+  scratch.triangleItems.reserve(triangles.size());
   for (std::size_t triangle = 0; triangle < triangles.size(); ++triangle) {
     const auto& t = triangles[triangle];
-    triangleItems.push_back(
+    scratch.triangleItems.push_back(
         detail::SweepItem{
             triangle,
             detail::makeSweptTriangleAabb(
@@ -863,8 +883,8 @@ inline void buildMotionAwareContactCandidatesSweep(
   }
 
   detail::visitSweepPairs(
-      std::move(pointItems),
-      std::move(triangleItems),
+      scratch.pointItems,
+      scratch.triangleItems,
       [&](const std::size_t point, const std::size_t triangle) {
         ++candidates.stats.broadPhaseOverlapCount;
         detail::maybeAddMotionAwarePointTriangleCandidate(
@@ -877,11 +897,11 @@ inline void buildMotionAwareContactCandidatesSweep(
             options);
       });
 
-  std::vector<detail::SweepItem> edgeItems;
-  edgeItems.reserve(candidates.surfaceEdges.size());
+  scratch.edgeItems.clear();
+  scratch.edgeItems.reserve(candidates.surfaceEdges.size());
   for (std::size_t edge = 0; edge < candidates.surfaceEdges.size(); ++edge) {
     const auto& e = candidates.surfaceEdges[edge];
-    edgeItems.push_back(
+    scratch.edgeItems.push_back(
         detail::SweepItem{
             edge,
             detail::makeSweptSegmentAabb(
@@ -893,14 +913,26 @@ inline void buildMotionAwareContactCandidatesSweep(
   }
 
   detail::visitSelfSweepPairs(
-      std::move(edgeItems),
-      [&](const std::size_t edgeA, const std::size_t edgeB) {
+      scratch.edgeItems, [&](const std::size_t edgeA, const std::size_t edgeB) {
         ++candidates.stats.broadPhaseOverlapCount;
         detail::maybeAddMotionAwareEdgeEdgeCandidate(
             candidates, positionsStart, positionsEnd, edgeA, edgeB, options);
       });
 
   detail::finishCandidateSet(candidates);
+}
+
+//==============================================================================
+inline void buildMotionAwareContactCandidatesSweep(
+    std::span<const Eigen::Vector3d> positionsStart,
+    std::span<const Eigen::Vector3d> positionsEnd,
+    std::span<const DeformableSurfaceTriangle> triangles,
+    const ContactCandidateOptions& options,
+    ContactCandidateSet& candidates)
+{
+  detail::ContactCandidateSweepScratch scratch;
+  buildMotionAwareContactCandidatesSweep(
+      positionsStart, positionsEnd, triangles, options, candidates, scratch);
 }
 
 //==============================================================================

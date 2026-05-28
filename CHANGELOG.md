@@ -794,6 +794,9 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     deformable line search as a conservative per-body CCD limiter, with
     primitive-CCD uncertainty status, no-edge surface-contact regressions, and
     focused benchmark counters.
+  - Added reusable internal sweep-item scratch for IPC static and motion-aware
+    contact candidate builders and wired the deformable surface-contact line
+    search to reuse it per body.
   - Added internal experimental IPC conservative continuous-collision step
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
