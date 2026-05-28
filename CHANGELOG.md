@@ -822,6 +822,24 @@ qdot)` that reaches the target exactly even under inertial coupling. The
     bounds for point-triangle and edge-edge primitive candidate pairs by
     wrapping native primitive CCD, with exact-CCD regression tests, sampled
     safety checks, and benchmark counters.
+  - Added internal experimental Vertex Block Descent (VBD) per-vertex block
+    kernels for the variational implicit-Euler objective: the inertia
+    force/Hessian, the mass-spring force/Hessian with an opt-in PSD clamp, and a
+    regularized symmetric-positive-definite 3x3 block Newton solve with a
+    zero-step fallback, with finite-difference derivative regression tests and a
+    microbenchmark.
+  - Added internal experimental VBD vertex graph coloring (element-induced
+    vertex adjacency plus deterministic Welsh-Powell greedy coloring and a
+    conflict-free verifier) so same-color vertex blocks can be updated in
+    parallel while colors are swept Gauss-Seidel, with regression tests and a
+    coloring benchmark.
+  - Added an internal experimental single-body VBD block-descent driver
+    (colored Gauss-Seidel mass-spring solve over the same objective the existing
+    deformable stage minimizes), with regression tests for monotone energy
+    decrease, residual convergence, converged-state parity against an
+    independent gradient-descent minimizer, same-color independence, and a
+    grid-step benchmark. This is internal solver groundwork only and is not yet
+    wired into the deformable world step.
   - Made dartpy experimental `world.step(n=...)` reject negative step counts
     explicitly while preserving zero-count no-op behavior.
   - Updated experimental kinematics refresh so generalized joint-position
